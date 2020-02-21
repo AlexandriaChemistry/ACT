@@ -416,9 +416,18 @@ class MyMol : public MolProp
         /*! \brief get the calculated polarizability
          */
         double CalculatedPolarizability() { return isoPol_calc_; }
+        /*! \brief get the electronic anisotropic polarizability
+         */
+        double ElectronicAnisoPolarizability() { return anisoPol_elec_; }
+        /*! \brief get the calculated anisotropic polarizability
+         */
+        double CalculatedAnisoPolarizability() { return anisoPol_calc_; }
         /*! \brief Return difference between calculated and electronic isotropy polarizability 
          */
         double PolarizabilityDeviation() const { return isoPol_calc_ - isoPol_elec_; }
+        /*! \brief Return difference between calculated and electronic anisotropy polarizability 
+         */
+        double AnisoPolarizabilityDeviation() const { return anisoPol_calc_ - anisoPol_elec_; }
         /*! \brief Return difference between calculated and electronic polarizability tensor
          */
         double PolarizabilityTensorDeviation() const;

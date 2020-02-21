@@ -126,8 +126,9 @@ void print_polarizability(FILE              *fp,
                           real               isopol_toler)
 {
     tensor dalpha;
-    real   delta    = 0;
-    real   diso_pol = 0;
+    real   delta      = 0;
+    real   diso_pol   = 0;
+    real   daniso_pol = 0;
 
     if (nullptr != calc_name)
     {
@@ -136,7 +137,8 @@ void print_polarizability(FILE              *fp,
             m_sub(mol->alpha_elec_, mol->alpha_calc_, dalpha);
             delta = sqrt(gmx::square(dalpha[XX][XX])+gmx::square(dalpha[XX][YY])+gmx::square(dalpha[XX][ZZ])+
                          gmx::square(dalpha[YY][YY])+gmx::square(dalpha[YY][ZZ]));
-            diso_pol = std::abs(mol->PolarizabilityDeviation());
+            diso_pol   = std::abs(mol->PolarizabilityDeviation());
+            daniso_pol = std::abs(mol->AnisoPolarizabilityDeviation());
             fprintf(fp,
                     "%-4s (%6.2f %6.2f %6.2f) Dev: (%6.2f %6.2f %6.2f) Delta: %6.2f %s\n"
                     "     (%6s %6.2f %6.2f)      (%6s %6.2f %6.2f)\n"
@@ -154,6 +156,12 @@ void print_polarizability(FILE              *fp,
                     mol->ElectronicPolarizability(),
                     mol->CalculatedPolarizability(), 
                     diso_pol, (diso_pol > isopol_toler) ? "ISO" : "");
+            fprintf(fp,
+                    "Anisotropic polarizability:  %s Electronic: %6.2f  Calculated: %6.2f  Delta: %6.2f %s\n\n\n",
+                    mol->getMolname().c_str(), 
+                    mol->ElectronicAnisoPolarizability(),
+                    mol->CalculatedAnisoPolarizability(), 
+                    daniso_pol, (daniso_pol > isopol_toler) ? "ANISO" : "");
 
         }
         else
