@@ -60,7 +60,7 @@ static void eemprops_zeta_header(LongTable &lt,
     
     auto  iModel = pd->getChargeModel();
 
-    lt.setColumns("lccc");
+    lt.setColumns("lcccc");
 
     snprintf(longbuf, STRLEN, "The optimized parameters for the Alexandria charge model, %s.The atomic electronegativity and absolute hardness are represented by $\\chi$ and $\\eta$, respectively, in eV. The exponent of the charge density function is represented by $\\beta$ in nm$^{-1}$. The atomic polarizability is represented by $\\alpha$ in {\\AA}$^3$. The uncertainty in each paramter is represented by $\\sigma$", getEemtypeName(iModel));
     lt.setCaption(longbuf);
