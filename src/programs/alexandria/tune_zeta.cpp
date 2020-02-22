@@ -711,7 +711,7 @@ int alex_tune_zeta(int argc, char *argv[])
         {
             FILE        *tp;
             tp = gmx_ffopen(opt2fn("-latex", NFILE, fnm), "w");
-            alexandria_poldata_eemprops_table(tp, opt.poldata());
+            alexandria_eemprops_table(tp, opt.poldata());
             gmx_ffclose(tp);
         }
     }

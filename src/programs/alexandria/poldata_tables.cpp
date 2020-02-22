@@ -44,6 +44,7 @@
 #include "gromacs/utility/cstringutil.h"
 
 #include "categories.h"
+#include "chargemodel.h"
 #include "composition.h"
 #include "latex_util.h"
 #include "poldata_low.h"
@@ -51,49 +52,56 @@
 namespace alexandria
 {
 
-static void eemprops_zeta_header(LongTable &lt)
+static void eemprops_zeta_header(LongTable &lt,
+                                 const Poldata  *pd)
 {
     char             longbuf[STRLEN];
     CompositionSpecs cs;
+    
+    auto  iModel = pd->getChargeModel();
 
     lt.setColumns("lccc");
 
-    snprintf(longbuf, STRLEN, "The optimized parameters for the Alexandria charge model. The exponent of the $1s$-Gaussian density function is represented by $\\beta$ in nm$^{-1}$. The atomic electronegativity and absolute hardness are represented by $\\chi$ and $\\eta$, respectively, in eV.");
+    snprintf(longbuf, STRLEN, "The optimized parameters for the Alexandria charge model, %s.The atomic electronegativity and absolute hardness are represented by $\\chi$ and $\\eta$, respectively, in eV. The exponent of the charge density function is represented by $\\beta$ in nm$^{-1}$. The atomic polarizability is represented by $\\alpha$ in {\\AA}$^3$. The uncertainty in each paramter is represented by $\\sigma$", getEemtypeName(iModel));
     lt.setCaption(longbuf);
     lt.setLabel("eemprop");
-    snprintf(longbuf, STRLEN, "Alexandria Type & $\\chi$($\\sigma$) & $\\eta$($\\sigma$) & $\\beta$($\\sigma$)");
+    snprintf(longbuf, STRLEN, "Alexandria Type & $\\chi$($\\sigma$) & $\\eta$($\\sigma$) & $\\beta$($\\sigma$) & $\\alpha$($\\sigma$)");
     lt.addHeadLine(longbuf);
     lt.printHeader();
 }
 
-void alexandria_poldata_eemprops_table(FILE                   *fp,
-                                       const Poldata          *pd)
+void alexandria_eemprops_table(FILE           *fp,
+                               const Poldata  *pd)
 {
+    double     alpha       = 0;
+    double     alpha_sigma = 0;
+            
     char       longbuf[STRLEN];
     LongTable  lt(fp, false, nullptr);
 
-    eemprops_zeta_header(lt);
-    auto ztypes = pd->ztype_names();
-    for (auto ztp = ztypes.begin(); ztp < ztypes.end(); ztp++)
+    eemprops_zeta_header(lt, pd);
+    for (auto eem = pd->BeginEemprops(); eem < pd->EndEemprops(); eem++)
     {
-        auto qDist  = pd->ztype2Eem(ztp->c_str());
-        auto nzeta  = qDist->getNzeta();
-        if (qDist != pd->EndEemprops())
+        if (eem != pd->EndEemprops())
         {
-            size_t      pos   = ztp->find("z_");
-            std::string ztype = ztp->c_str();
-            if (pos != std::string::npos)
-            {
-                ztype = ztp->substr(pos+2);
-            }
-            snprintf(longbuf, STRLEN, "%s & %0.2f (%0.2f) & %0.2f (%0.2f) & %0.2f (%0.2f)",
-                     ztype.c_str(),
-                     qDist->getChi0(),
-                     qDist->getChi0_sigma() + 0.005,
-                     qDist->getJ0(),
-                     qDist->getJ0_sigma() + 0.005,
-                     qDist->getZeta(nzeta-1),
-                     my_atof(gmx::splitString(qDist->getZeta_sigma()).back().c_str(), "zeta") + 0.005);
+            alpha       = 0;
+            alpha_sigma = 0;
+            
+            auto nzeta = eem->getNzeta();
+            auto atype = pd->ztype2atype(eem->getName());
+            
+            pd->getZtypePol(eem->getName(), &alpha, &alpha_sigma);
+            
+            snprintf(longbuf, STRLEN, "%s & %0.5f (%0.3f) & %0.5f (%0.3f) & %0.5f (%0.3f) & %0.5f (%0.3f)",
+                     atype.c_str(),
+                     eem->getChi0(),
+                     eem->getChi0_sigma() + 0.005,
+                     eem->getJ0(),
+                     eem->getJ0_sigma() + 0.005,
+                     eem->getZeta(nzeta-1),
+                     my_atof(gmx::splitString(eem->getZeta_sigma()).back().c_str(), "zeta") + 0.005,
+                     alpha,
+                     alpha_sigma + 0.005);
             lt.printLine(longbuf);
         }
     }

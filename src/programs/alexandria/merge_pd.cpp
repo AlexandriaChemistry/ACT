@@ -362,7 +362,7 @@ int alex_merge_pd(int argc, char *argv[])
         {
             FILE        *tp;
             tp = gmx_ffopen(opt2fn("-latex", NFILE, fnm), "w");
-            alexandria_poldata_eemprops_table(tp, &pdout);
+            alexandria_eemprops_table(tp, &pdout);
             gmx_ffclose(tp);
         }           
     }
