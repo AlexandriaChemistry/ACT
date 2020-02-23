@@ -109,7 +109,8 @@ void alexandria_eemprops_table(FILE           *fp,
     fflush(fp);
 }
 
-void alexandria_eemprops_corr(const Poldata  *pd)
+void alexandria_eemprops_corr(const Poldata  *pd,
+                              FILE           *fp)
 {
 
     gmx_stats_t  chi_eta    = gmx_stats_init();
@@ -158,13 +159,13 @@ void alexandria_eemprops_corr(const Poldata  *pd)
     gmx_stats_get_corr_coeff(eta_alpha,  &ea);
     gmx_stats_get_corr_coeff(zeta_alpha, &za);
     
-    fprintf(stderr, "\nCorrelation coefficient between eemprop parameters:\n");
-    fprintf(stderr, "Absolute Eelectronegativity and Absolute Hardness: %0.3f \n", 100*ce);
-    fprintf(stderr, "Absolute Eelectronegativity and Exponent of Charge Density: %0.3f \n", 100*cz);
-    fprintf(stderr, "Absolute Eelectronegativity and Atomic Polarizability: %0.3f \n", 100*ca);
-    fprintf(stderr, "Absolute Hardness and Exponent of Charge Density: %0.3f \n", 100*ez);
-    fprintf(stderr, "Absolute Hardness and Atomic Polarizability: %0.3f \n", 100*ea);
-    fprintf(stderr, "Exponent of Charge Density and Atomic Polarizability: %0.3f \n\n", 100*za);
+    fprintf(fp, "\nCorrelation coefficient between eemprop parameters:\n");
+    fprintf(fp, "Absolute Eelectronegativity and Absolute Hardness: %0.3f \n", 100*ce);
+    fprintf(fp, "Absolute Eelectronegativity and Exponent of Charge Density: %0.3f \n", 100*cz);
+    fprintf(fp, "Absolute Eelectronegativity and Atomic Polarizability: %0.3f \n", 100*ca);
+    fprintf(fp, "Absolute Hardness and Exponent of Charge Density: %0.3f \n", 100*ez);
+    fprintf(fp, "Absolute Hardness and Atomic Polarizability: %0.3f \n", 100*ea);
+    fprintf(fp, "Exponent of Charge Density and Atomic Polarizability: %0.3f \n\n", 100*za);
     
 }
 
