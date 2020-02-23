@@ -109,4 +109,63 @@ void alexandria_eemprops_table(FILE           *fp,
     fflush(fp);
 }
 
+void alexandria_eemprops_corr(const Poldata  *pd)
+{
+
+    gmx_stats_t  chi_eta    = gmx_stats_init();
+    gmx_stats_t  chi_zeta   = gmx_stats_init();
+    gmx_stats_t  chi_alpha  = gmx_stats_init();
+    gmx_stats_t  eta_zeta   = gmx_stats_init();
+    gmx_stats_t  eta_alpha  = gmx_stats_init();
+    gmx_stats_t  zeta_alpha = gmx_stats_init();
+    
+    double ce = 0;
+    double cz = 0;
+    double ca = 0;
+    double ez = 0;
+    double ea = 0;
+    double za = 0;
+    
+    double alpha       = 0;
+    double alpha_sigma = 0;
+    
+
+    for (auto eem = pd->BeginEemprops(); eem < pd->EndEemprops(); eem++)
+    {
+        if (eem != pd->EndEemprops())
+        {
+            alpha       = 0;
+            alpha_sigma = 0;
+            
+            auto nzeta = eem->getNzeta();
+            auto atype = pd->ztype2atype(eem->getName()); 
+                      
+            pd->getZtypePol(eem->getName(), &alpha, &alpha_sigma);
+            
+            gmx_stats_add_point(chi_eta,    eem->getChi0(), eem->getJ0(), 0, 0);
+            gmx_stats_add_point(chi_zeta,   eem->getChi0(), eem->getZeta(nzeta-1), 0, 0);
+            gmx_stats_add_point(chi_alpha,  eem->getChi0(), alpha, 0, 0);
+            gmx_stats_add_point(eta_zeta,   eem->getJ0(),   eem->getZeta(nzeta-1), 0, 0);
+            gmx_stats_add_point(eta_alpha,  eem->getJ0(),   alpha, 0, 0);
+            gmx_stats_add_point(zeta_alpha, eem->getZeta(nzeta-1),   alpha, 0, 0);
+        }
+    }
+    
+    gmx_stats_get_corr_coeff(chi_eta,    &ce);
+    gmx_stats_get_corr_coeff(chi_zeta,   &cz);
+    gmx_stats_get_corr_coeff(chi_alpha,  &ca);
+    gmx_stats_get_corr_coeff(eta_zeta,   &ez);
+    gmx_stats_get_corr_coeff(eta_alpha,  &ea);
+    gmx_stats_get_corr_coeff(zeta_alpha, &za);
+    
+    fprintf(stderr, "\nCorrelation coefficient between eemprop parameters:\n");
+    fprintf(stderr, "Absolute Eelectronegativity and Absolute Hardness: %0.3f \n", 100*ce);
+    fprintf(stderr, "Absolute Eelectronegativity and Exponent of Charge Density: %0.3f \n", 100*cz);
+    fprintf(stderr, "Absolute Eelectronegativity and Atomic Polarizability: %0.3f \n", 100*ca);
+    fprintf(stderr, "Absolute Hardness and Exponent of Charge Density: %0.3f \n", 100*ez);
+    fprintf(stderr, "Absolute Hardness and Atomic Polarizability: %0.3f \n", 100*ea);
+    fprintf(stderr, "Exponent of Charge Density and Atomic Polarizability: %0.3f \n\n", 100*za);
+    
+}
+
 } //namespace

@@ -47,7 +47,9 @@ namespace alexandria
  */
 
 void alexandria_eemprops_table(FILE            *fp, 
-                               const Poldata   *pd);                                            
+                               const Poldata   *pd);  
+                               
+void alexandria_eemprops_corr(const Poldata  *pd);                                          
 } //namespace
 
 #endif

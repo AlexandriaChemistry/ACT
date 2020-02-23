@@ -1172,6 +1172,7 @@ int alex_tune_eem(int argc, char *argv[])
                 FILE        *tp;
                 tp = gmx_ffopen(opt2fn("-latex", NFILE, fnm), "w");
                 alexandria_eemprops_table(tp, opt.poldata());
+                alexandria_eemprops_corr(opt.poldata());
                 gmx_ffclose(tp);
             }
         }
