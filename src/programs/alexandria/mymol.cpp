@@ -1873,8 +1873,8 @@ void MyMol::PrintTopology(FILE                   *fp,
     const char *qm_type = "electronic";
     const char *qm_conf = "minimum";
     if (getPropRef(MPO_DIPOLE, iqmQM, method, basis, qm_conf,
-                              qm_type, &value, &error,
-                              &T, &myref, &mylot, vec, myQ))
+                   qm_type, &value, &error,
+                   &T, &myref, &mylot, vec, myQ))
     {
         set_muQM(qtElec, vec);
         if (value > 0)
@@ -1888,7 +1888,7 @@ void MyMol::PrintTopology(FILE                   *fp,
                  norm(mu_qm_[qtElec]));
         commercials.push_back(buf);
     }
-    else
+    else if (bVerbose)
     {
         printf("WARNING: QM dipole of type %s not found for lot %s\n",
                qm_type, mylot.c_str());
@@ -1900,15 +1900,15 @@ void MyMol::PrintTopology(FILE                   *fp,
 
     T = -1;
     if (getPropRef(MPO_QUADRUPOLE, iqmQM, method, basis, qm_conf,
-                              qm_type, &value, &error,
-                              &T, &myref, &mylot, vec, myQ))
+                   qm_type, &value, &error,
+                   &T, &myref, &mylot, vec, myQ))
     {
         set_QQM(qtElec, myQ);
         rotate_tensor(Q_qm_[qtElec], Q_qm_[qtCalc]);
         snprintf(buf, sizeof(buf), "%s Traceless Quadrupole Moments (Buckingham)", mylot.c_str());
         add_tensor(&commercials, buf, Q_qm_[qtElec]);
     }
-    else
+    else if (bVerbose)
     {
         printf("WARNING: QM quadrupole of type %s not found for lot %s\n",
                qm_type, mylot.c_str());

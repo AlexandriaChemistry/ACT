@@ -165,7 +165,7 @@ int alex_gentop(int argc, char *argv[])
     static gmx_bool                  bDihedral      = false;
     static gmx_bool                  bCUBE          = false;
     static gmx_bool                  bH14           = true;
-    static gmx_bool                  bVerbose       = true;
+    static gmx_bool                  bVerbose       = false;
     static gmx_bool                  addHydrogens   = false;
 
     static const char               *ff[]           = {nullptr, "ACM-g", "ACM-pg", "ACM-s", "ACM-ps", "ESP-p", "ESP-pp", "ESP-pg", "ESP-ps", "Yang", "Bultinck", "Rappe", nullptr};
@@ -275,6 +275,10 @@ int alex_gentop(int argc, char *argv[])
 
     /* Read standard atom properties */
     aps = gmx_atomprop_init();
+    if (!bVerbose)
+    {
+        gmx_atomprop_quiet(aps);
+    }
     try
     {
         alexandria::readPoldata(gentop_fnm, pd, aps);

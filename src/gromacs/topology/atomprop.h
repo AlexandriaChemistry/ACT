@@ -54,6 +54,9 @@ gmx_atomprop_t gmx_atomprop_init();
 void gmx_atomprop_destroy(gmx_atomprop_t aps);
 /* Get rid of memory after use */
 
+void gmx_atomprop_quiet(gmx_atomprop_t aps);
+/* Turn off warnings */
+
 char *gmx_atomprop_element(gmx_atomprop_t aps, int atomnumber);
 
 int gmx_atomprop_atomnumber(gmx_atomprop_t aps, const char *element);
