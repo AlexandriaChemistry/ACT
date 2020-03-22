@@ -93,6 +93,7 @@ class OptACM : public MolGen, Bayes
         bool       bFitChi_                      = false;
         bool       bUseCM5_                      = false;
         bool       bRemoveMol_                   = true;
+        bool       bPointCore_                   = false;
         gmx::unique_cptr<FILE, my_fclose> fplog_ = nullptr;
 
     public:
@@ -118,6 +119,8 @@ class OptACM : public MolGen, Bayes
         bool useCM5() const {return bUseCM5_; }
         
         bool removeMol() const {return bRemoveMol_; }
+        
+        void set_pointCore(bool pointCore) {bPointCore_ =  pointCore;}
 
         void add_pargs(std::vector<t_pargs> *pargs)
         {
@@ -645,24 +648,57 @@ void OptACM::InitOpt(real factor)
             }
             if (bFitZeta_)
             {
-                auto nzeta = ei->getNzeta();
-                if (nzeta == 2 && bSameZeta_)
+                auto     pd      = poldata();
+                bool distributed = getEemtypeDistributed(pd->getChargeModel());
+                if (distributed)
                 {
-                    nzeta = 1;
-                }
-                for(auto i = 0; i < nzeta; i++)
-                {
-                    auto zeta  = ei->getZeta(i);
-                    if (0 != zeta)
+                    if (bPointCore_)
                     {
-                        Bayes::addParam(zeta, factor);
-                        Bayes::addParamName(gmx::formatString("%s-Zeta", ai->name().c_str()));
+                        // We only optimize zeta for shell.
+                        auto zeta = ei->getZeta(1);
+                        if (0 != zeta)
+                        {
+                            Bayes::addParam(zeta, factor);
+                            Bayes::addParamName(gmx::formatString("%s-Zeta", ai->name().c_str()));
+                        }
+                        else
+                        {
+                            gmx_fatal(FARGS, "Zeta is zero for atom %s in model %s\n",
+                                      ai->name().c_str(), 
+                                      getEemtypeName(poldata()->getChargeModel()));
+                        }
                     }
                     else
                     {
-                        gmx_fatal(FARGS, "Zeta is zero for atom %s in model %s\n",
-                                  ai->name().c_str(), getEemtypeName(poldata()->getChargeModel()));
+                        // We optimize zeta for shell and core.
+                        // They can have different zeta or the
+                        // same zeta.
+                        auto nzeta = ei->getNzeta();
+                        if (nzeta == 2 && bSameZeta_)
+                        {
+                            nzeta = 1;
+                        }
+                        for(auto i = 0; i < nzeta; i++)
+                        {
+                            auto zeta  = ei->getZeta(i);
+                            if (0 != zeta)
+                            {
+                                Bayes::addParam(zeta, factor);
+                                Bayes::addParamName(gmx::formatString("%s-Zeta", ai->name().c_str()));
+                            }
+                            else
+                            {
+                                gmx_fatal(FARGS, "Zeta is zero for atom %s in model %s\n",
+                                          ai->name().c_str(), 
+                                          getEemtypeName(poldata()->getChargeModel()));
+                            }
+                        }
                     }
+                }
+                else
+                {
+                    gmx_fatal(FARGS, "Zeta cannot be optmized for %s charge model\n", 
+                              getEemtypeName(poldata()->getChargeModel()));
                 }
             }
             if (bFitAlpha_ || weight(ermsPolar))
@@ -728,30 +764,59 @@ void OptACM::toPolData(const std::vector<bool> gmx_unused &changed)
             }
             if (bFitZeta_)
             {
-                std::string zstr, z_sig;
-                std::string qstr   = ei->getQstr();
-                std::string rowstr = ei->getRowstr();
-                auto        nZeta  = ei->getNzeta();
-                double      zeta   = 0;
-                double      sigma  = 0;
                 if (distributed)
                 {
-                    bool readOne = bSameZeta_ && (nZeta == 2);
-                    for (auto i = 0; i < nZeta; i++)
+                    std::string zstr, z_sig;
+                    std::string qstr   = ei->getQstr();
+                    std::string rowstr = ei->getRowstr();
+                    auto        nZeta  = ei->getNzeta();
+                    double      zeta   = 0;
+                    double      sigma  = 0;
+                    if (bPointCore_)
                     {
-                        if (i == 0 || (i > 0 && !readOne))
+                        for (auto i = 0; i < nZeta; i++)
                         {
-                            zeta   = param[n];
-                            sigma  = psigma[n];
-                            n++;
+                            if (i == 0)
+                            {
+                                //core
+                                zeta  = ei->getZeta(i); 
+                                sigma = 0;
+                            }
+                            else
+                            {
+                                // shell
+                                zeta   = param[n]; 
+                                sigma  = psigma[n];
+                                n++;
+                            }
+                            zstr.append(gmx::formatString("%f ", zeta));
+                            z_sig.append(gmx::formatString("%f ", sigma));
                         }
-                        zstr.append(gmx::formatString("%.16f ", zeta));
-                        z_sig.append(gmx::formatString("%f ", sigma));
                     }
+                    else
+                    {
+                        bool readOne = bSameZeta_ && (nZeta == 2);
+                        for (auto i = 0; i < nZeta; i++)
+                        {
+                            if (i == 0 || (i > 0 && !readOne))
+                            {
+                                zeta   = param[n];
+                                sigma  = psigma[n];
+                                n++;
+                            }
+                            zstr.append(gmx::formatString("%f ", zeta));
+                            z_sig.append(gmx::formatString("%f ", sigma));
+                        }
+                    }
+                    ei->setRowZetaQ(rowstr, zstr, qstr);
+                    ei->setZetastr(zstr);
+                    ei->setZeta_sigma(z_sig);
                 }
-                ei->setRowZetaQ(rowstr, zstr, qstr);
-                ei->setZetastr(zstr);
-                ei->setZeta_sigma(z_sig);
+                else
+                {
+                    gmx_fatal(FARGS, "Zeta cannot be optmized for %s charge model\n", 
+                              getEemtypeName(poldata()->getChargeModel()));
+                }
             }
             if (bFitAlpha_ || weight(ermsPolar))
             {
@@ -985,10 +1050,10 @@ int alex_tune_eem(int argc, char *argv[])
     t_filenm                    fnm[] = {
         { efDAT, "-f",         "allmols",       ffREAD  },
         { efDAT, "-d",         "gentop",        ffOPTRD },
-        { efDAT, "-o",         "tunedip",       ffWRITE },
+        { efDAT, "-o",         "tune_eem",      ffWRITE },
         { efDAT, "-sel",       "molselect",     ffREAD  },
         { efXVG, "-table",     "table",         ffOPTRD },
-        { efLOG, "-g",         "charges",       ffWRITE },
+        { efLOG, "-g",         "tune_eem",      ffWRITE },
         { efXVG, "-qhisto",    "q_histo",       ffWRITE },
         { efXVG, "-dipcorr",   "dip_corr",      ffWRITE },
         { efXVG, "-mucorr",    "mu_corr",       ffWRITE },
@@ -1072,25 +1137,37 @@ int alex_tune_eem(int argc, char *argv[])
     alexandria::OptACM opt;
     opt.add_pargs(&pargs);
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW, NFILE, fnm,
-                           pargs.size(), pargs.data(),
-                           asize(desc), desc, 0, nullptr, &oenv))
+    if (!parse_common_args(&argc, 
+                           argv, 
+                           PCA_CAN_VIEW, 
+                           NFILE, 
+                           fnm,
+                           pargs.size(), 
+                           pargs.data(),
+                           asize(desc), 
+                           desc, 
+                           0, 
+                           nullptr, 
+                           &oenv))
     {
         return 0;
     }
+    
     opt.optionsFinished();
+    
     if (MASTER(opt.commrec()))
     {
         opt.openLogFile(opt2fn("-g", NFILE, fnm));
         print_header(opt.logFile(), pargs);
     }
+    
     if (MASTER(opt.commrec()))
     {
         gms.read(opt2fn_null("-sel", NFILE, fnm));
     }
 
-    const char *tabfn = opt2fn_null("-table", NFILE, fnm);
-
+    const char *tabfn = opt2fn_null("-table", NFILE, fnm);   
+    
     opt.Read(opt.logFile() ? opt.logFile() : (debug ? debug : nullptr),
              opt2fn("-f", NFILE, fnm),
              opt2fn_null("-d", NFILE, fnm),
@@ -1104,7 +1181,11 @@ int alex_tune_eem(int argc, char *argv[])
              opt.fitZeta(),
              false,
              tabfn);
-
+             
+    auto  iModel      = opt.poldata()->getChargeModel();
+    bool  pointCore   = isCorePointCharge(iModel);
+    
+    opt.set_pointCore(pointCore);
     opt.initChargeGeneration();
 
     bool bMinimum = false;
@@ -1126,10 +1207,8 @@ int alex_tune_eem(int argc, char *argv[])
     {
         if (bMinimum || bForceOutput)
         {
-            auto  iModel = opt.poldata()->getChargeModel();
             bool  bPolar = getEemtypePolarizable(iModel);
-
-            auto *ic = opt.indexCount();
+            auto *ic     = opt.indexCount();
             print_electric_props(opt.logFile(),
                                  opt.mymols(),
                                  opt.poldata(),
@@ -1166,7 +1245,7 @@ int alex_tune_eem(int argc, char *argv[])
                                  opt.commrec(),
                                  efield,
                                  useOffset);
-            writePoldata(opt2fn("-o", NFILE, fnm), opt.poldata(), bcompress);
+            writePoldata(opt2fn("-o", NFILE, fnm), opt.poldata(), bcompress);            
             if (bPrintTable)
             {
                 FILE        *tp;

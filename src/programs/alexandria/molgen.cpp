@@ -571,6 +571,7 @@ void MolGen::Read(FILE            *fp,
     int              nlocaltop = 0;
     if (MASTER(cr_))
     {
+        printf("Generating molecules!\n");
         for (auto mpi = mp.begin(); mpi < mp.end(); ++mpi)
         {
             if (imsTrain == gms.status(mpi->getIupac()))

@@ -714,7 +714,7 @@ void MolPropRead(const char *fn, std::vector<alexandria::MolProp> *mpt)
 {
     xmlDocPtr     doc;
     const char   *db          = "alexandria.ff/molprops.dat";
-    gmx_bool      bExperiment = FALSE;
+    gmx_bool      bExperiment = false;
     std::string   mpfile;
 
     rmap.clear();
@@ -726,14 +726,19 @@ void MolPropRead(const char *fn, std::vector<alexandria::MolProp> *mpt)
     }
     if ((doc = xmlParseFile(mpfile.c_str())) == nullptr)
     {
-        fprintf(stderr, "Reading XML file %s. Run a syntax checker such as nsgmls.",
-                mpfile.c_str());
-        exit(1);
+        //fprintf(stderr, "Reading XML file %s. Run a syntax checker such as nsgmls.",
+        //        mpfile.c_str());
+        gmx_fatal(FARGS, "Reading XML file %s. Run a syntax checker such as nsgmls.",
+                  mpfile.c_str());
+        // exit(1);
     }
-
-    mp_process_tree(nullptr, doc->children, 0,
-                    mpt, &bExperiment);
-
+    
+    printf("Reading library file %s\n", fn);
+    mp_process_tree(nullptr, 
+                    doc->children, 
+                    0,
+                    mpt, 
+                    &bExperiment);
     xmlFreeDoc(doc);
 }
 

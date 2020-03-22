@@ -147,16 +147,27 @@ void QgenAcm::setInfo(const Poldata            *pd,
                     q_[j][k]    = eem->getQ(k);
                     zeta_[j][k] = eem->getZeta(k);
                     row_[j][k]  = eem->getRow(k);
-                    char buf[256];
-                    snprintf(buf, sizeof(buf), "Row should be at least 1. Here: atype = %s q = %g zeta = %g row = %d model = %s",
-                             atp.c_str(), q_[j][k], zeta_[j][k], row_[j][k],
-                             getEemtypeName(iChargeModel_));
+                    
+                    if (getEemtypeSlater(iChargeModel_)) 
+                    { 
+                        if ((k == 0 && !isCorePointCharge(iChargeModel_)) || k > 0)
+                        {
+                            char buf[256];
+                            snprintf(buf, sizeof(buf), "Row should be at least 1: atype = %s q = %g zeta = %g row = %d model = %s",
+                                     atp.c_str(), 
+                                     q_[j][k], 
+                                     zeta_[j][k], 
+                                     row_[j][k],
+                                     getEemtypeName(iChargeModel_));                         
+                        }
+                    }
+                    
 #if HAVE_LIBCLN
                     if (row_[j][k] > SLATER_MAX_CLN)
                     {
                         if (debug)
                         {
-                            fprintf(debug, "Cannot handle higher slaters than %d for atom %s %s\n",
+                            fprintf(debug, "Cannot handle Slaters higher than %d for atom %s %s\n",
                                     SLATER_MAX_CLN,
                                     *(atoms->resinfo[i].name),
                                     *(atoms->atomname[j]));
@@ -168,7 +179,7 @@ void QgenAcm::setInfo(const Poldata            *pd,
                     {
                         if (debug)
                         {
-                            fprintf(debug, "Cannot handle higher slaters than %d for atom %s %s\n",
+                            fprintf(debug, "Cannot handle Slaters higher than %d for atom %s %s\n",
                                     SLATER_MAX,
                                     *(atoms->resinfo[i].name),
                                     *(atoms->atomname[j]));

@@ -729,16 +729,24 @@ immStatus MyMol::zeta2atoms(const Poldata *pd)
             std::string aname = name.substr(0, name.size()-2);
             zeta = pd->getZeta(aname, 1);
             row  = pd->getRow(aname, 1);
+            
+            if (zeta == 0 && getEemtypeDistributed(eqdModel))
+            {
+                return immZeroZeta;
+            }
         }
         else
         {
             zeta = pd->getZeta(*atoms_->atomtype[i], 0);
             row  = pd->getRow(*atoms_->atomtype[i], 0);
+            
+            if (zeta == 0 && 
+                (getEemtypeDistributed(eqdModel) && !isCorePointCharge(eqdModel)))
+            {
+                return immZeroZeta;
+            }
         }
-        if (zeta == 0 && getEemtypeDistributed(eqdModel))
-        {
-            return immZeroZeta;
-        }
+        
         atoms_->atom[i].zetaA     =
             atoms_->atom[i].zetaB = zeta;
         atoms_->atom[i].row       =  row;
