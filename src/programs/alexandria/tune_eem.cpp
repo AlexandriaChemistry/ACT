@@ -336,7 +336,7 @@ double OptACM::calcDeviation()
                 {
                     auto atype = poldata()->ztype2atype(name);
                     auto nzeta = poldata()->getNzeta(atype);
-                    if (nzeta == 2 && bSameZeta_)
+                    if ((nzeta == 2 && bSameZeta_) || bPointCore_)
                     {
                         nzeta = 1;
                     }
