@@ -30,7 +30,6 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
  
- 
 #ifndef POLDATA_H
 #define POLDATA_H
 
