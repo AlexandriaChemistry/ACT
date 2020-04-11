@@ -917,25 +917,33 @@ static double calcJ(ChargeModel iChargeModel,
 void QgenResp::calcPot(double epsilonr)
 {
     double scale_factor = 1.0/epsilonr;
+    
+    // Loop over ESP points
     for (size_t i = 0; i < nEsp(); i++)
     {
         double vv    = 0;
         auto   espx  = ep_[i].esp();
+        
+        // Loop over RESP atoms
         for (auto &ra : ra_)
         {
             auto  atype = ra.atype();
             auto  rat   = findRAT(atype);
+            
+            // Exclude virtual sites
             if (rat->ptype() != eptVSite)
             {
                 auto  rax   = ra.x();
+                
+                // Loop over Row and Zeta of each RESP atom
                 for (auto k = rat->beginRZ(); k < rat->endRZ(); ++k)
                 {
-                    //auto q = k->q();
-                    //if (q == 0)
-                    //{
-                    auto q = ra.q();
-                    //}
+                    auto q    = ra.q();
                     auto epot = calcJ(iDistributionModel_, espx, rax, k->zeta(), watoms_, k->row());
+                    if (debug)
+                    {
+                        fprintf(debug, "CalcESP: Row: %3d Zeta: %8.5f Charge: %8.4f\n", k->row(), k->zeta(), q);
+                    }
                     vv += (scale_factor*q*epot);
                 }
             }
