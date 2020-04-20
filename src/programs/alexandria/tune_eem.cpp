@@ -153,7 +153,7 @@ class OptACM : public MolGen, Bayes
         {
             MolGen::optionsFinished();
             setBoxConstraint(bConstrain());
-            GMX_RELEASE_ASSERT(bSameZeta_, "Optimization with different zeta is broken.");
+            //GMX_RELEASE_ASSERT(bSameZeta_, "Optimization with different zeta is broken.");
         }
 
         void openLogFile(const char *logfileName)
