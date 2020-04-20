@@ -1,6 +1,8 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
+  <Real Name="izeta">5.7000000000000002</Real>
+  <Real Name="jzeta">5.71</Real>
   <Sequence Name="Potential-Gaussian">
     <Int Name="Length">6</Int>
     <Real>4.5519261747427278</Real>

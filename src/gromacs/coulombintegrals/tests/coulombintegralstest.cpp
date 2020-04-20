@@ -130,6 +130,13 @@ void testCoulomb(ChargeDistribution          cd,
     }
     const char *name = getChargeDistributionName(cd);
     char buf[256];
+    if (cd == ecdSlater)
+    {
+        checker->checkInt64(irow, "irow");
+        checker->checkInt64(jrow, "jrow");
+    }
+    checker->checkDouble(izeta, "izeta");
+    checker->checkDouble(jzeta, "jzeta");
     snprintf(buf, sizeof(buf), "Potential-%s", name);
     checker->checkSequence(coulomb.begin(), coulomb.end(), buf);
     snprintf(buf, sizeof(buf), "Force-%s", name);
