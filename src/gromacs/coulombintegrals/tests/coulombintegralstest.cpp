@@ -207,7 +207,7 @@ TEST_P (SlaterTest, All)
 }
 
 //! Rows for Slater tests
-const std::vector<std::tuple<int, int> > &c_rows()
+const std::vector<std::tuple<int, int> > &make_rows()
 {
     int myints[6][2] = {
         { 1, 1 }, { 1, 2 }, { 2, 2 },
@@ -221,9 +221,10 @@ const std::vector<std::tuple<int, int> > &c_rows()
     }
     return vt;
 };
+static const std::vector<std::tuple<int, int> > c_rows = make_rows();
 
 //! xi and xj for tests
-const std::vector<std::tuple<double, double> > &c_xi()
+const std::vector<std::tuple<double, double> > &make_xi()
 {
     double mydbl[7][2] = {
         {  5.6,   5.7  },
@@ -241,13 +242,14 @@ const std::vector<std::tuple<double, double> > &c_xi()
     }
     return vt;
 };
+static const std::vector<std::tuple<double, double> > c_xi = make_xi();
 
-INSTANTIATE_TEST_CASE_P(Xi, SlaterTest, ::testing::Combine(::testing::ValuesIn(c_rows()), ::testing::ValuesIn(c_xi())));
+INSTANTIATE_TEST_CASE_P(Xi, SlaterTest, ::testing::Combine(::testing::ValuesIn(c_rows), ::testing::ValuesIn(c_xi)));
 
-INSTANTIATE_TEST_CASE_P(Xi, GaussianTest, ::testing::ValuesIn(c_xi()));
+INSTANTIATE_TEST_CASE_P(Xi, GaussianTest, ::testing::ValuesIn(c_xi));
 
 //! integer xi and xj for tests
-const std::vector<std::tuple<double, double> > &c_xiInteger()
+const std::vector<std::tuple<double, double> > &make_xiInteger()
 {
     double mydbl[7][2] = {
         {  3.0,  4.0 },
@@ -265,8 +267,9 @@ const std::vector<std::tuple<double, double> > &c_xiInteger()
     }
     return vt;
 };
+static const std::vector<std::tuple<double, double> > c_xiInteger = make_xiInteger();
 
-INSTANTIATE_TEST_CASE_P(IntegerXi, SlaterTest, ::testing::Combine(::testing::ValuesIn(c_rows()), ::testing::ValuesIn(c_xiInteger())));
+INSTANTIATE_TEST_CASE_P(IntegerXi, SlaterTest, ::testing::Combine(::testing::ValuesIn(c_rows), ::testing::ValuesIn(c_xiInteger)));
 
 } // namespace
 
