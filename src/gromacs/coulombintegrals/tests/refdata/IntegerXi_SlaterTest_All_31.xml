@@ -1,6 +1,10 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
+  <Int64 Name="irow">2</Int64>
+  <Int64 Name="jrow">3</Int64>
+  <Real Name="izeta">29</Real>
+  <Real Name="jzeta">28</Real>
   <Sequence Name="Potential-Slater">
     <Int Name="Length">6</Int>
     <Real>8.3037362425501922</Real>
