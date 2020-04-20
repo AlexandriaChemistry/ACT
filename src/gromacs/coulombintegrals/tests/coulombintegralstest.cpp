@@ -200,41 +200,66 @@ TEST_P (SlaterTest, All)
 }
 
 //! Rows for Slater tests
-std::vector<std::tuple<int, int>> c_rows =
+const std::vector<std::tuple<int, int> > &c_rows()
 {
-    { 1, 1 }, { 1, 2 }, { 2, 2 },
-    { 1, 3 }, { 2, 3 }, { 3, 3 }
+    int myints[6][2] = {
+        { 1, 1 }, { 1, 2 }, { 2, 2 },
+        { 1, 3 }, { 2, 3 }, { 3, 3 }
+    };
+    
+    static std::vector<std::tuple<int, int>> vt;
+    for(int i = 0; i < 6; i++)
+    {
+        vt.push_back(std::make_tuple(myints[i][0], myints[i][1]));
+    }
+    return vt;
 };
 
 //! xi and xj for tests
-std::vector<std::tuple<double, double> > c_xi =
+const std::vector<std::tuple<double, double> > &c_xi()
 {
-    {  5.6,   5.7  },
-    {  5.7,   5.71 },
-    {  5.91,  5.9  },
-    { 15.8,  16.0  },
-    {  6.1,   6.6  },
-    { 22.3,  22.4  },
-    { 34.6,  34.5  }
+    double mydbl[7][2] = {
+        {  5.6,   5.7  },
+        {  5.7,   5.71 },
+        {  5.91,  5.9  },
+        { 15.8,  16.0  },
+        {  6.1,   6.6  },
+        { 22.3,  22.4  },
+        { 34.6,  34.5  }
+    };
+    static std::vector<std::tuple<double, double>> vt;
+    for(int i = 0; i < 7; i++)
+    {
+        vt.push_back(std::make_tuple(mydbl[i][0], mydbl[i][1]));
+    }
+    return vt;
 };
 
-INSTANTIATE_TEST_CASE_P(Xi, SlaterTest, ::testing::Combine(::testing::ValuesIn(c_rows), ::testing::ValuesIn(c_xi)));
+INSTANTIATE_TEST_CASE_P(Xi, SlaterTest, ::testing::Combine(::testing::ValuesIn(c_rows()), ::testing::ValuesIn(c_xi())));
 
-INSTANTIATE_TEST_CASE_P(Xi, GaussianTest, ::testing::ValuesIn(c_xi));
+INSTANTIATE_TEST_CASE_P(Xi, GaussianTest, ::testing::ValuesIn(c_xi()));
 
 //! integer xi and xj for tests
-std::vector<std::tuple<double, double> > c_xiInteger =
+const std::vector<std::tuple<double, double> > &c_xiInteger()
 {
-    {  3.0,  4.0 },
-    { 17.0, 18.0 },
-    { 25.0, 26.0 },
-    { 29.0, 28.0 },
-    { 30.0, 29.0 },
-    { 31.0, 33.0 },
-    { 37.0, 38.0 }
+    double mydbl[7][2] = {
+        {  3.0,  4.0 },
+        { 17.0, 18.0 },
+        { 25.0, 26.0 },
+        { 29.0, 28.0 },
+        { 30.0, 29.0 },
+        { 31.0, 33.0 },
+        { 37.0, 38.0 }
+    };
+    static std::vector<std::tuple<double, double>> vt;
+    for(int i = 0; i < 7; i++)
+    {
+        vt.push_back(std::make_tuple(mydbl[i][0], mydbl[i][1]));
+    }
+    return vt;
 };
 
-INSTANTIATE_TEST_CASE_P(IntegerXi, SlaterTest, ::testing::Combine(::testing::ValuesIn(c_rows), ::testing::ValuesIn(c_xiInteger)));
+INSTANTIATE_TEST_CASE_P(IntegerXi, SlaterTest, ::testing::Combine(::testing::ValuesIn(c_rows()), ::testing::ValuesIn(c_xiInteger())));
 
 } // namespace
 
