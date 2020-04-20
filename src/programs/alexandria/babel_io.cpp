@@ -166,16 +166,21 @@ static OpenBabel::OBConversion *readBabel(const std::string &g09,
                                           OpenBabel::OBMol  *mol,
                                           einformat         *inputformat)
 {
-    if (!gmx_fexist(g09.c_str()))
+    std::string fileName(g09);
+    if (!gmx_fexist(fileName.c_str()))
     {
-        return nullptr;
+        fileName += ".gz";
+        if (!gmx_fexist(fileName.c_str()))
+        {
+            return nullptr;
+        }
     }
     
     std::ifstream g09f;
     std::string   strippedFileName;
-    bool          isGzip = isGzipFile(g09, &strippedFileName);
+    bool          isGzip = isGzipFile(fileName, &strippedFileName);
     
-    g09f.open(g09, std::ios::in);
+    g09f.open(fileName, std::ios::in);
     
     if (!g09f.is_open())
     {
