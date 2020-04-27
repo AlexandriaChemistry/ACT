@@ -881,7 +881,8 @@ double Optimization::calcDeviation()
                         FILE *dbcopy = debug;
                         debug  = nullptr;
                         mymol.changeCoordinate(ei, bpolar);
-                        mymol.computeForces(debug, commrec());
+                        double rmsf;
+                        mymol.computeForces(debug, commrec(), &rmsf);
                         debug  = dbcopy;
 
                         double deltaEref  = spHF - optHF;

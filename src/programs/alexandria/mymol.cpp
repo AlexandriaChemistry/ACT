@@ -1194,7 +1194,7 @@ immStatus MyMol::GenerateGromacs(const gmx::MDLogger       &mdlog,
     return immOK;
 }
 
-immStatus MyMol::computeForces(FILE *fplog, t_commrec *cr)
+immStatus MyMol::computeForces(FILE *fplog, t_commrec *cr, double *rmsf)
 {
     auto mdatoms = MDatoms_->get()->mdatoms();
     for (auto i = 0; i < mtop_->natoms; i++)
@@ -1262,11 +1262,12 @@ immStatus MyMol::computeForces(FILE *fplog, t_commrec *cr)
                     getMolname().c_str(), ex.errorCode());
             imm = immShellMinimization;
         }
+        *rmsf = std::sqrt(force2);
         if (force2 > inputrec_->em_tol && fplog)
         {
             fprintf(fplog, "Shell minimization did not converge in %d steps for %s. RMS Force = %g.\n",
                     inputrec_->niter, getMolname().c_str(),
-                    std::sqrt(force2));
+                    *rmsf);
             pr_rvecs(fplog, 0, "f", f_.rvec_array(), mtop_->natoms);
             imm = immShellMinimization;
         }
@@ -1286,6 +1287,7 @@ immStatus MyMol::computeForces(FILE *fplog, t_commrec *cr)
                  force_flags,
                  DdOpenBalanceRegionBeforeForceComputation::no,
                  DdCloseBalanceRegionAfterForceComputation::no);
+        *rmsf = 0;
     }
     return imm;
 }
@@ -1368,6 +1370,10 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
     auto                iChargeModel = pd->getChargeModel();
 
     GenerateGromacs(mdlog, cr, tabfn, hwinfo, iChargeModel);
+    if (backupCoordinates_.size() == 0)
+    {
+        backupCoordinates();
+    }
     if (bSymmetricCharges)
     {
         symmetric_charges_.clear();
@@ -1425,7 +1431,8 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
                 }
                 if (nullptr != shellfc_)
                 {
-                    auto imm = computeForces(nullptr, cr);
+                    double rmsf;
+                    auto imm = computeForces(nullptr, cr, &rmsf);
                     if (imm != immOK)
                     {
                         return imm;
@@ -1484,7 +1491,8 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
                     }
                     if (nullptr != shellfc_)
                     {
-                        auto imm = computeForces(nullptr, cr);
+                        double rmsf;
+                        auto imm = computeForces(nullptr, cr, &rmsf);
                         if (imm != immOK)
                         {
                             return imm;
@@ -1521,10 +1529,6 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
         default:
             gmx_fatal(FARGS, "Not implemented");
             break;
-    }
-    if (backupCoordinates_.size() == 0)
-    {
-        backupCoordinates();
     }
     return imm;
 }
@@ -1730,17 +1734,18 @@ immStatus MyMol::CalcPolarizability(double     efield,
     std::vector<double> field;
     rvec                mu_ref;
     immStatus           imm = immOK;
-    
+    double              rmsf;
+
     field.resize(DIM, 0);
     myforce_->setField(field);
-    imm          = computeForces(fplog, cr);
+    imm          = computeForces(fplog, cr, &rmsf);
     isoPol_calc_ = 0;
     CalcDipole(mu_ref);
     for (auto m = 0; imm == immOK && m < DIM; m++)
     {
         field[m] = efield;
         myforce_->setField(field);
-        imm = computeForces(fplog, cr);
+        imm = computeForces(fplog, cr, &rmsf);
         field[m] = 0;
         myforce_->setField(field);
         if (imm == immOK)

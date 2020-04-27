@@ -310,8 +310,14 @@ double Bayes::MCMC(FILE *fplog)
         randProbability = uniform(gen);
         mcProbability   = exp(-beta*deltaEval);
         double xiter    = (1.0*iter)/nParam;
-        
-        if ((deltaEval < 0) || (mcProbability > randProbability))
+        bool accept     = (deltaEval < 0) || (mcProbability > randProbability);
+        if (fplog && false)
+        {
+            fprintf(fplog, "Prev: %g  Curr: %g beta %g P(mc) %g  P(rand) %g param %d old %g try %g %s\n",
+                    prevEval, currEval, beta, mcProbability, randProbability,
+                    j, storeParam, param_[j], accept ? "accept" : "reject");
+        }
+        if (accept)
         {
             if (currEval < minEval)
             {

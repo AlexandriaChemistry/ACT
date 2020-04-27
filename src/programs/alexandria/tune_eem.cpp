@@ -427,18 +427,26 @@ double OptACM::calcDeviation()
                 dumpQX(logFile(), &mymol, "LOOP1");
                 if (nullptr != mymol.shellfc_)
                 {
-                    auto imm = mymol.computeForces(logFile(), commrec());
+                    double rmsf;
+                    auto imm = mymol.computeForces(logFile(), commrec(), &rmsf);
                     if (immOK != imm)
                     {
                         if (logFile())
                         {
-                            fprintf(logFile(), "Could not compute forces for %s. Removing it from the data set.\n",
+                            fprintf(logFile(), "Could not compute forces for %s.\n",
                                     mymol.getMolname().c_str());
                         }
                         if (removeMol())
                         {
-                          mymol.eSupp_ = eSupportNo;
-                          break;
+                            mymol.eSupp_ = eSupportNo;
+                            fprintf(logFile()," Removing it from the data set.\n");
+                            break;
+                        }
+                        else
+                        {
+                            double pen = weight(ermsPENALTY)*rmsf;
+                            fprintf(logFile(), " Adding %g penalty.\n", pen);
+                            increaseEnergy(ermsPENALTY, pen);
                         }
                     }
                 }
@@ -511,6 +519,16 @@ double OptACM::calcDeviation()
                         {
                             // Penalty if qH < 0
                             dq = qq + qref;
+                        }
+                        else if (atomnr == 6)
+                        {
+                            // We do not want carbon atoms with excessive
+                            // charges. Excessive here is an absolute value
+                            // of larger than 0.5e.
+                            if (fabs(dq) > 0.5)
+                            {
+                                dq = 0.5-fabs(dq);
+                            }
                         }
                         else if ((atomnr == 8)  || (atomnr == 9) ||
                                  (atomnr == 16) || (atomnr == 17) ||
@@ -910,7 +928,7 @@ bool OptACM::optRun(FILE                   *fp,
     {
         if (PAR(commrec()))
         {
-            int niter = 3 + nrun*Bayes::maxIter()*Bayes::nParam();
+            int niter = 2 + nrun*Bayes::maxIter()*Bayes::nParam();
             for (int dest = 1; dest < commrec()->nnodes; dest++)
             {
                 gmx_send_int(commrec(), dest, niter);
@@ -982,6 +1000,10 @@ bool OptACM::optRun(FILE                   *fp,
         for (auto n = 0; n < niter; n++)
         {
             (void) calcDeviation();
+        }
+        if (debug)
+        {
+            fprintf(debug, "Ready doing calculations on slave nodes\n");
         }
     }
     setFinal();

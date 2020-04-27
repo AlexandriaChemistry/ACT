@@ -147,9 +147,9 @@ list(APPEND LIBGROMACS_SOURCES ${GMXLIB_SOURCES} ${MDLIB_SOURCES} ${PROPERTY_SOU
 
 # This would be the standard way to include thread_mpi, but
 # we want libgromacs to link the functions directly
-if(GMX_THREAD_MPI)
-    add_subdirectory(thread_mpi)
-endif()
+#if(GMX_THREAD_MPI)
+#    add_subdirectory(thread_mpi)
+#endif()
 #target_link_libraries(gmx ${GMX_EXTRA_LIBRARIES} ${THREAD_MPI_LIB})
 
 tmpi_get_source_list(THREAD_MPI_SOURCES ${CMAKE_SOURCE_DIR}/src/external/thread_mpi/src)

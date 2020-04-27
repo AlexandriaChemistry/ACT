@@ -120,12 +120,12 @@ void alexandria_eemprops_corr(const Poldata  *pd,
     gmx_stats_t  eta_alpha  = gmx_stats_init();
     gmx_stats_t  zeta_alpha = gmx_stats_init();
     
-    double ce = 0;
-    double cz = 0;
-    double ca = 0;
-    double ez = 0;
-    double ea = 0;
-    double za = 0;
+    real ce = 0;
+    real cz = 0;
+    real ca = 0;
+    real ez = 0;
+    real ea = 0;
+    real za = 0;
     
     double alpha       = 0;
     double alpha_sigma = 0;

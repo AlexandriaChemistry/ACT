@@ -567,11 +567,12 @@ class MyMol : public MolProp
         /*! \brief
          * Relax the shells (if any) or compute the forces in the molecule
          *
-         * \param[in] fplog
-         * \param[in] cr
+         * \param[in]  fplog Log file pointer
+         * \param[in]  cr    Communication record
+         * \param[out] rmsf  Root mean square force on the shells
          * \return immOK if everything went fine, an error otherwise.
          */
-        immStatus computeForces(FILE *fplog, t_commrec *cr);
+        immStatus computeForces(FILE *fplog, t_commrec *cr, double *rmsf);
 
         /*! \brief
          * Set the force field

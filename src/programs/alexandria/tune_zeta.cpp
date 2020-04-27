@@ -316,7 +316,8 @@ double OptZeta::calcDeviation()
                 {
                     mymol.UpdateIdef(poldata(), eitPOLARIZATION);
                 }
-                mymol.computeForces(nullptr, commrec());
+                double rmsf;
+                mymol.computeForces(nullptr, commrec(), &rmsf);
                 mymol.Qgresp_.updateAtomCoords(mymol.x());
             }
             if (weight(ermsCHARGE))
