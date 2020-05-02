@@ -134,13 +134,26 @@ void Bayes::printParameters(FILE *fp) const
 }
 
 void Bayes::addParam(real val,
-                     real factor)
+                     real factor,
+                     bool bRandom)
 {
     GMX_RELEASE_ASSERT(factor > 0, "Scaling factor for bounds should be larger than zero");
     if (factor < 1)
     {
         factor = 1/factor;
     }
+    
+    if (bRandom)
+    {
+        std::random_device               rd;
+        std::mt19937                     gen(rd());  
+        real delta                       = std::abs((0.5*val));      
+        real a                           = val - delta;
+        real b                           = val + delta;       
+        std::uniform_real_distribution<> uniform(a, b);
+        val                              = uniform(gen);        
+    }
+    
     initial_param_.push_back(val);
     param_.push_back(val);
     prevParam_.push_back(val);
@@ -150,8 +163,20 @@ void Bayes::addParam(real val,
 
 void Bayes::addParam(real val,
                      real lower,
-                     real upper)
+                     real upper,
+                     bool bRandom)
 {
+    if (bRandom)
+    {
+        std::random_device               rd;
+        std::mt19937                     gen(rd());  
+        real delta                       = std::abs((0.5*val));      
+        real a                           = val - delta;
+        real b                           = val + delta;       
+        std::uniform_real_distribution<> uniform(a, b);
+        val                              = uniform(gen);        
+    }
+    
     initial_param_.push_back(val);
     param_.push_back(val);
     prevParam_.push_back(val);

@@ -204,8 +204,10 @@ class OptACM : public MolGen, Bayes
          *                   for allowed parameters are determined by the 
          *                   starting value x, and they are 
          *                   [x/factor, x*factor] assuming factor > 1.
+         *
+         * \param[in] bRandom Generate random initial values for parameters if true
          */
-        void InitOpt(real factor);
+         void InitOpt(real factor, bool bRandom);
 
         /*! \brief
          * Copy the optimization parameters to the poldata structure
@@ -639,7 +641,7 @@ double OptACM::calcDeviation()
     return energy(ermsTOT);
 }
 
-void OptACM::InitOpt(real factor)
+void OptACM::InitOpt(real factor, bool bRandom)
 {
     auto *ic = indexCount();
     for (auto ai = ic->beginIndex(); ai < ic->endIndex(); ++ai)
@@ -654,13 +656,13 @@ void OptACM::InitOpt(real factor)
             if (bFitChi_)
             {
                 auto J00  = ei->getJ0();
-                Bayes::addParam(J00, factor);
+                Bayes::addParam(J00, factor, bRandom);
                 Bayes::addParamName(gmx::formatString("%s-Eta", ai->name().c_str()));
 
                 if (ai->name().compare(fixchi()) != 0)
                 {
                     auto Chi0 = ei->getChi0();
-                    Bayes::addParam(Chi0, factor);
+                    Bayes::addParam(Chi0, factor, bRandom);
                     Bayes::addParamName(gmx::formatString("%s-Chi", ai->name().c_str()));
                 }
             }
@@ -676,7 +678,7 @@ void OptACM::InitOpt(real factor)
                         auto zeta = ei->getZeta(1);
                         if (0 != zeta)
                         {
-                            Bayes::addParam(zeta, factor);
+                            Bayes::addParam(zeta, factor, bRandom);
                             Bayes::addParamName(gmx::formatString("%s-Zeta", ai->name().c_str()));
                         }
                         else
@@ -701,7 +703,7 @@ void OptACM::InitOpt(real factor)
                             auto zeta  = ei->getZeta(i);
                             if (0 != zeta)
                             {
-                                Bayes::addParam(zeta, factor);
+                                Bayes::addParam(zeta, factor, bRandom);
                                 Bayes::addParamName(gmx::formatString("%s-Zeta", ai->name().c_str()));
                             }
                             else
@@ -727,7 +729,7 @@ void OptACM::InitOpt(real factor)
                 {
                     if (0 != alpha)
                     {
-                        Bayes::addParam(alpha, factor);
+                        Bayes::addParam(alpha, factor, bRandom);
                         Bayes::addParamName(gmx::formatString("%s-Alpha", ai->name().c_str()));
                     }
                     else
@@ -744,7 +746,7 @@ void OptACM::InitOpt(real factor)
     }
     if (optHfac())
     {
-        Bayes::addParam(hfac(), factor);
+        Bayes::addParam(hfac(), factor, bRandom);
         Bayes::addParamName(gmx::formatString("hfac"));
     }
 
@@ -1215,7 +1217,7 @@ int alex_tune_eem(int argc, char *argv[])
     {
         if (MASTER(opt.commrec()))
         {
-            opt.InitOpt(factor);
+            opt.InitOpt(factor, bRandom);
         }
 
         bMinimum = opt.optRun(MASTER(opt.commrec()) ? stderr : nullptr,

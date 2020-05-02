@@ -185,10 +185,12 @@ class Bayes : public OptParam
         /*! \brief
          * Append parameter and set it to value
          * \param[in] val The value
-         * \param[in] factor Factor for automatically setting bounds
+         * \param[in] factor  Factor for automatically setting bounds
+         * \param[in] bRandom Generate random initial value for parameters if true.
          */
         void addParam(real val,
-                      real factor);
+                      real factor,
+                      bool bRandom);
         /*! \brief
          * Append parameter and set it to value. Add bounds
          * as specified.
@@ -198,7 +200,8 @@ class Bayes : public OptParam
          */
         void addParam(real val,
                       real lower,
-                      real upper);
+                      real upper,
+                      bool bRandom);
 
         /*! \brief
          * Set parameter j to a new value

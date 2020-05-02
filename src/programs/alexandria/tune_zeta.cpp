@@ -138,11 +138,11 @@ class OptZeta : public MolGen, Bayes
             return (x < min) ? (0.5 * gmx::square(x-min)) : ((x > max) ? (0.5 * gmx::square(x-max)) : 0);
         }
 
-        void polData2TuneZeta(real factor);
+        void polData2TuneZeta(real factor, bool bRandom);
 
         void toPolData(const std::vector<bool> gmx_unused &changed);
 
-        void InitOpt(real factor);
+        void InitOpt(real factor, bool bRandom);
 
         virtual double calcDeviation();
 
@@ -154,7 +154,7 @@ class OptZeta : public MolGen, Bayes
                     const char             *xvgepot);
 };
 
-void OptZeta::polData2TuneZeta(real factor)
+void OptZeta::polData2TuneZeta(real factor, bool bRandom)
 {
     auto *ic = indexCount();
     for (auto ai = ic->beginIndex(); ai < ic->endIndex(); ++ai)
@@ -168,7 +168,7 @@ void OptZeta::polData2TuneZeta(real factor)
             auto zeta  = ei->getZeta(nzeta-1); // only optimize zeta for the shell of the polarizable model
             if (0 != zeta)
             {
-                Bayes::addParam(zeta, factor);
+                Bayes::addParam(zeta, factor, bRandom);
             }
             else
             {
@@ -184,7 +184,7 @@ void OptZeta::polData2TuneZeta(real factor)
                 {
                     if (0 != alpha)
                     {
-                        Bayes::addParam(alpha, factor);
+                        Bayes::addParam(alpha, factor, bRandom);
                     }
                     else
                     {
@@ -261,9 +261,9 @@ void OptZeta::toPolData(const std::vector<bool> gmx_unused &changed)
     }
 }
 
-void OptZeta::InitOpt(real  factor)
+void OptZeta::InitOpt(real  factor, bool bRandom)
 {
-    polData2TuneZeta(factor);
+    polData2TuneZeta(factor, bRandom);
 }
 
 double OptZeta::calcDeviation()
@@ -550,6 +550,7 @@ int alex_tune_zeta(int argc, char *argv[])
     real                        factor        = 0.8;
     real                        efield        = 1;
     char                       *opt_elem      = nullptr;
+    bool                        bRandom       = false;
     gmx_bool                    bcompress     = false;
     gmx_bool                    bZPE          = false;
     gmx_bool                    bPrintTable   = false;
@@ -563,6 +564,8 @@ int alex_tune_zeta(int argc, char *argv[])
           "This many runs will be done, before each run a complete randomization will be done" },
         { "-opt_elem",  FALSE, etSTR, {&opt_elem},
           "Space-separated list of atom types to optimize, e.g. \"H C Br\". The other available atom types in gentop.dat are left unmodified. If this variable is not set, all elements will be optimized." },
+        { "-random", FALSE, etBOOL, {&bRandom},
+          "Generate completely random starting parameters within the limits set by the options. This will be done at the very first step and before each subsequent run." },
         { "-zero", FALSE, etBOOL, {&bZero},
           "Use molecules with zero dipole in the fit as well" },
         { "-zpe",     FALSE, etBOOL, {&bZPE},
@@ -652,7 +655,7 @@ int alex_tune_zeta(int argc, char *argv[])
     {
         if (MASTER(opt.commrec()))
         {
-            opt.InitOpt(factor);
+            opt.InitOpt(factor, bRandom);
         }
 
         opt.optRun(MASTER(opt.commrec()) ? stderr : nullptr,

@@ -251,7 +251,7 @@ class Optimization : public MolGen, Bayes
          * is built based on Poldata.
          * \param[in] factor Scaling factor for parameters
          */
-        void polData2TuneFc(real factor);
+        void polData2TuneFc(real factor, bool Brandom);
 
         /*! \brief
          *
@@ -284,7 +284,7 @@ class Optimization : public MolGen, Bayes
          * Initialize the optimization algorithm.
          * \param[in] fplog Log file for dumping information.
          */
-        void InitOpt(FILE *fplog);
+        void InitOpt(FILE *fplog, bool bRandom);
 
         /*! \brief
          * Do the actual optimization.
@@ -553,7 +553,7 @@ void Optimization::checkSupport(FILE *fp)
     }
 }
 
-void Optimization::polData2TuneFc(real factor)
+void Optimization::polData2TuneFc(real factor, bool bRandom)
 {
     for (auto &fc : ForceConstants_)
     {
@@ -561,17 +561,17 @@ void Optimization::polData2TuneFc(real factor)
         {
             if (optimizeGeometry_)
             {
-                Bayes::addParam(b->geometry(), factor);
+                Bayes::addParam(b->geometry(), factor, bRandom);
             }
             for (const auto &p : b->paramValues())
             {
                 if (fc.ftype() == F_FOURDIHS)
                 {
-                    Bayes::addParam(p, -10, 10);
+                    Bayes::addParam(p, -10, 10, bRandom);
                 }
                 else
                 {
-                    Bayes::addParam(p, factor);
+                    Bayes::addParam(p, factor, bRandom);
                 }
             }
         }
@@ -580,7 +580,7 @@ void Optimization::polData2TuneFc(real factor)
     {
         for (const auto &p : at->paramValues())
         {
-            Bayes::addParam(p, factor);
+            Bayes::addParam(p, factor, bRandom);
         }
     }
     if (debug)
@@ -762,7 +762,7 @@ void Optimization::getDissociationEnergy(FILE *fplog)
     }
 }
 
-void Optimization::InitOpt(FILE *fplog)
+void Optimization::InitOpt(FILE *fplog, bool bRandom)
 {
     for (auto fs = poldata()->forcesBegin();
          fs != poldata()->forcesEnd(); ++fs)
@@ -801,7 +801,7 @@ void Optimization::InitOpt(FILE *fplog)
         NonBondParams_.makeReverseIndex();
         NonBondParams_.dump(fplog);
     }
-    polData2TuneFc(factor_);
+    polData2TuneFc(factor_, bRandom);
 }
 
 double Optimization::calcDeviation()
@@ -1317,6 +1317,7 @@ int alex_tune_fc(int argc, char *argv[])
     int                   reinit        = 0;
     int                   compress      = 0;
     int                   nmultisim     = 0;
+    bool                  bRandom       = false;
     gmx_bool              bZPE          = false;
     gmx_bool              bZero         = true;
     gmx_bool              bTestPar      = false;
@@ -1332,6 +1333,8 @@ int alex_tune_fc(int argc, char *argv[])
           "Test the parallel execution gives the same result." },
         { "-compress", FALSE, etBOOL, {&compress},
           "Compress output XML file" },
+        { "-random", FALSE, etBOOL, {&bRandom},
+          "Generate completely random starting parameters within the limits set by the options. This will be done at the very first step and before each subsequent run." },
         { "-force_output", FALSE, etBOOL, {&bForceOutput},
           "Write output even if no new minimum is found" }
     };
@@ -1391,7 +1394,7 @@ int alex_tune_fc(int argc, char *argv[])
 
     if (MASTER(opt.commrec()))
     {
-        opt.InitOpt(fplog);
+        opt.InitOpt(fplog, bRandom);
         opt.printMolecules(fplog, false, false);
     }
 

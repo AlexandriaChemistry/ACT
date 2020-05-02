@@ -594,7 +594,7 @@ void MolGen::Read(FILE            *fp,
                                              bDihedral,
                                              false,
                                              tabfn);
-                if (debug)
+                if (immOK != imm && debug)
                 {
                     fprintf(debug, "Tried to generate topology for %s. Outcome: %s\n",
                             mymol.getMolname().c_str(), immsg(imm));
@@ -603,7 +603,7 @@ void MolGen::Read(FILE            *fp,
                 {
                     imm = check_data_sufficiency(mymol, &indexCount_);
                 }
-                if (debug)
+                if (immOK != imm && debug)
                 {
                     fprintf(debug, "Checked data sufficiency for %s. Outcome: %s\n",
                             mymol.getMolname().c_str(), immsg(imm));
@@ -630,7 +630,7 @@ void MolGen::Read(FILE            *fp,
                                                 nullptr);
                     (void) mymol.espRms();
                 }
-                if (debug)
+                if (immOK != imm && debug)
                 {
                     fprintf(debug, "Tried to generate charges for %s. Outcome: %s\n",
                             mymol.getMolname().c_str(), immsg(imm));
