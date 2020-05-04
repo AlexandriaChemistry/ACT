@@ -184,6 +184,21 @@ void Bayes::addParam(real val,
     upperBound_.push_back(upper);
 }
 
+void Bayes::addRandomParam(real lower,
+                           real upper)
+{
+    std::random_device               rd;
+    std::mt19937                     gen(rd());  
+    std::uniform_real_distribution<> uniform(lower, upper);
+    real val = uniform(gen);        
+    
+    initial_param_.push_back(val);
+    param_.push_back(val);
+    prevParam_.push_back(val);
+    lowerBound_.push_back(lower);
+    upperBound_.push_back(upper);
+}
+
 
 void Bayes::addParamName(std::string name)
 {

@@ -197,11 +197,19 @@ class Bayes : public OptParam
          * \param[in] val   The value
          * \param[in] lower The new lower bound value
          * \param[in] upper The new lower bound value
+         * \param[in] bRandom Generate random initial value for parameters if true.
          */
         void addParam(real val,
                       real lower,
                       real upper,
                       bool bRandom);
+        /*! \brief
+         * Append random parameter within the bounds specified.
+         * \param[in] lower The new lower bound value
+         * \param[in] upper The new lower bound value
+         */
+        void addRandomParam(real lower,
+                            real upper);
 
         /*! \brief
          * Set parameter j to a new value

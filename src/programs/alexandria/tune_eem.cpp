@@ -655,14 +655,28 @@ void OptACM::InitOpt(real factor, bool bRandom)
             ai->setEemProps(ei);
             if (bFitChi_)
             {
-                auto J00  = ei->getJ0();
-                Bayes::addParam(J00, factor, bRandom);
+                if (bRandom)
+                {
+                    Bayes::addRandomParam(J0Min(), J0Max());
+                }
+                else
+                {                          
+                    auto J00  = ei->getJ0();
+                    Bayes::addParam(J00, factor, bRandom);
+                }
                 Bayes::addParamName(gmx::formatString("%s-Eta", ai->name().c_str()));
 
                 if (ai->name().compare(fixchi()) != 0)
                 {
-                    auto Chi0 = ei->getChi0();
-                    Bayes::addParam(Chi0, factor, bRandom);
+                    if (bRandom)
+                    {
+                        Bayes::addRandomParam(chi0Min(), chi0Max());
+                    }
+                    else
+                    {
+                        auto Chi0 = ei->getChi0();
+                        Bayes::addParam(Chi0, factor, bRandom);
+                    }
                     Bayes::addParamName(gmx::formatString("%s-Chi", ai->name().c_str()));
                 }
             }
@@ -678,7 +692,14 @@ void OptACM::InitOpt(real factor, bool bRandom)
                         auto zeta = ei->getZeta(1);
                         if (0 != zeta)
                         {
-                            Bayes::addParam(zeta, factor, bRandom);
+                            if (bRandom)
+                            {
+                                Bayes::addRandomParam(zetaMin(), zetaMax());
+                            }
+                            else
+                            {
+                                Bayes::addParam(zeta, factor, bRandom);
+                            }
                             Bayes::addParamName(gmx::formatString("%s-Zeta", ai->name().c_str()));
                         }
                         else
@@ -703,7 +724,14 @@ void OptACM::InitOpt(real factor, bool bRandom)
                             auto zeta  = ei->getZeta(i);
                             if (0 != zeta)
                             {
-                                Bayes::addParam(zeta, factor, bRandom);
+                                if (bRandom)
+                                {
+                                    Bayes::addRandomParam(zetaMin(), zetaMax());
+                                }
+                                else
+                                {
+                                    Bayes::addParam(zeta, factor, bRandom);
+                                }
                                 Bayes::addParamName(gmx::formatString("%s-Zeta", ai->name().c_str()));
                             }
                             else
@@ -729,6 +757,7 @@ void OptACM::InitOpt(real factor, bool bRandom)
                 {
                     if (0 != alpha)
                     {
+                        // We do not have alpha_min and alpha_max so cannot set bounds
                         Bayes::addParam(alpha, factor, bRandom);
                         Bayes::addParamName(gmx::formatString("%s-Alpha", ai->name().c_str()));
                     }
