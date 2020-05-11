@@ -515,21 +515,23 @@ double OptACM::calcDeviation()
                     if (mymol.atoms_->atom[j].ptype == eptAtom ||
                         mymol.atoms_->atom[j].ptype == eptNucleus)
                     {
-                        double qref = (isPolarizable ? mymol.atoms_->atom[j+1].q : 0);
-                        double dq   = 0;
+                        double qref  = (isPolarizable ? mymol.atoms_->atom[j+1].q : 0);
+                        double qAtom = qq + qref;
+                        double dq    = 0;
                         if (atomnr == 1)
                         {
                             // Penalty if qH < 0
-                            dq = qq + qref;
+                            dq = qAtom;
                         }
                         else if (atomnr == 6)
                         {
                             // We do not want carbon atoms with excessive
                             // charges. Excessive here is an absolute value
                             // of larger than 0.5e.
-                            if (fabs(dq) > 0.5)
+                            double qCmax = 0.5;
+                            if (fabs(qAtom) > qCmax)
                             {
-                                dq = 0.5-fabs(dq);
+                                dq = qCmax - fabs(qAtom);
                             }
                         }
                         else if ((atomnr == 8)  || (atomnr == 9) ||
@@ -537,7 +539,7 @@ double OptACM::calcDeviation()
                                  (atomnr == 35) || (atomnr == 53))
                         {
                             // Penalty if qO > 0, therefore we reverse the sign
-                            dq = -(qq + qref);
+                            dq = -qAtom;
                         }
                         if (dq < 0)
                         {

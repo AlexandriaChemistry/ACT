@@ -346,7 +346,7 @@ void MolGen::addOptions(std::vector<t_pargs> *pargs, eTune etune)
         { "-maxpot", FALSE, etINT, {&maxESP_},
           "Maximum percent of the electrostatic potential points that will be used to fit partial charges." },
         { "-fixchi", FALSE, etSTR,  {&fixchi_},
-          "Electronegativity for this atom type is fixed. Set to FALSE if you want this variable as well, but read the help text above (or somewhere)." },
+          "Electronegativity for this atom type is fixed. Set to empty string if you want all electronegativities to be variable, but read the help text above (or somewhere)." },
         { "-z0",    FALSE, etREAL, {&zeta_min_},
           "Minimum value that inverse radius (1/nm) can obtain in fitting" },
         { "-z1",    FALSE, etREAL, {&zeta_max_},
