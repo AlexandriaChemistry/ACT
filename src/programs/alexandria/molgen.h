@@ -184,9 +184,11 @@ class MolGen
         real                            J0_min_;
         real                            Chi0_min_;
         real                            zeta_min_;
+        real                            alpha_min_;
         real                            J0_max_;
         real                            Chi0_max_;
         real                            zeta_max_;
+        real                            alpha_max_;
         real                            hfac_;
         real                            hfac0_;
         real                            watoms_;
@@ -321,6 +323,12 @@ class MolGen
         
         //! \brief Return upper boundary for Gaussian and Slater exponent.
         double zetaMax() const { return zeta_max_; }
+        
+        //! \brief Return lower boundary for polarizability
+        double alphaMin() const { return alpha_min_; }
+        
+        //! \brief Return upper boundary for polarizability
+        double alphaMax() const { return alpha_max_; }
         
         //! \brief Return lower boundary for atomic hardness.
         double J0Min() const { return J0_min_; }

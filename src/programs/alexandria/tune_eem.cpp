@@ -352,7 +352,10 @@ double OptACM::calcDeviation()
                 }
                 if (bFitAlpha_ || weight(ermsPolar))
                 {
-                    n++;
+                    auto alpha = param[n++];
+                    std::string label = name + " Alpha"; 
+                    bound += l2_regularizer(alpha, alphaMin(), alphaMax(),
+                                            label, verbose);
                 }
             }
             if (optHfac())

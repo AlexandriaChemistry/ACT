@@ -280,9 +280,11 @@ MolGen::MolGen()
     J0_min_    = 5;
     Chi0_min_  = 1;
     zeta_min_  = 2;
+    alpha_min_ = 0.01;
     J0_max_    = 30;
     Chi0_max_  = 30;
     zeta_max_  = 30;
+    alpha_max_ = 10;
     watoms_    = 0;
     qtol_      = 1e-6;
     qcycle_    = 500;
@@ -350,7 +352,11 @@ void MolGen::addOptions(std::vector<t_pargs> *pargs, eTune etune)
         { "-z0",    FALSE, etREAL, {&zeta_min_},
           "Minimum value that inverse radius (1/nm) can obtain in fitting" },
         { "-z1",    FALSE, etREAL, {&zeta_max_},
-          "Maximum value that inverse radius (1/nm) can obtain in fitting" }
+          "Maximum value that inverse radius (1/nm) can obtain in fitting" },
+        { "-alpha0",    FALSE, etREAL, {&alpha_min_},
+          "Minimum value that polarizability (A^3) can obtain in fitting" },
+        { "-alpha1",    FALSE, etREAL, {&alpha_max_},
+          "Maximum value that polarizability (A^3) can obtain in fitting" }
     };
     t_pargs pa_eem[] =
     {
