@@ -108,10 +108,10 @@ class QgenAcm
         double                                             hardnessFactor_;
         gmx_bool                                           bAllocSave_;
         gmx_bool                                           bHaveShell_;
-        ChargeModel                            iChargeModel_;
+        ChargeModel                                        iChargeModel_;
                
         std::vector<int>                                   atomnr_, nZeta_, coreIndex_, shellIndex_;
-        std::vector<double>                                chi0_, rhs_, j00_;
+        std::vector<double>                                chi0_, rhs_, j00_, q0_;
         std::vector<gmx::RVec>                             x_;   
         std::vector<std::string>                           elem_;            
         std::vector<std::vector<int>>                      row_;       

@@ -971,6 +971,7 @@ Eemprops::Eemprops(const std::string        &name,
                    const std::string        &zetastr,
                    const std::string        &zeta_sigma,
                    const std::string        &qstr,
+                   double                    qref,
                    double                    J0,
                    double                    J0_sigma,
                    double                    chi0,
@@ -981,6 +982,7 @@ Eemprops::Eemprops(const std::string        &name,
       zetastr_(zetastr),
       zeta_sigma_(zeta_sigma),
       qstr_(qstr),
+      qref_(qref),
       J0_(J0),
       J0_sigma_(J0_sigma),
       chi0_(chi0),
@@ -1000,6 +1002,7 @@ CommunicationStatus Eemprops::Send(const t_commrec *cr, int dest)
         gmx_send_str(cr, dest, &zetastr_);
         gmx_send_str(cr, dest, &zeta_sigma_);
         gmx_send_str(cr, dest, &qstr_);
+        gmx_send_double(cr, dest, qref_);
         gmx_send_double(cr, dest, J0_);
         gmx_send_double(cr, dest, J0_sigma_);
         gmx_send_double(cr, dest, chi0_);
@@ -1034,6 +1037,7 @@ CommunicationStatus Eemprops::Receive(const t_commrec *cr, int src)
         gmx_recv_str(cr, src, &zetastr_);
         gmx_recv_str(cr, src, &zeta_sigma_);
         gmx_recv_str(cr, src, &qstr_);
+        qref_       = gmx_recv_double(cr, src);
         J0_         = gmx_recv_double(cr, src);
         J0_sigma_   = gmx_recv_double(cr, src);
         chi0_       = gmx_recv_double(cr, src);

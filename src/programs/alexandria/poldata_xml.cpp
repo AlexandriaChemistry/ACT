@@ -156,15 +156,16 @@ enum {
     exmlZETA_SIGMA         = 76,
     exmlROW                = 77,
     exmlCHARGES            = 80,
-    exmlANGLE_UNIT         = 81,
-    exmlLENGTH_UNIT        = 82,
-    exmlDISTANCE           = 83,
-    exmlNCONTROLATOMS      = 84,
-    exmlNUMBER             = 85,
-    exmlVTYPE              = 86,
-    exmlANGLE              = 87,
-    exmlFIXED              = 88,
-    exmlNR                 = 89
+    exmlREF_CHARGES        = 81,
+    exmlANGLE_UNIT         = 82,
+    exmlLENGTH_UNIT        = 83,
+    exmlDISTANCE           = 84,
+    exmlNCONTROLATOMS      = 85,
+    exmlNUMBER             = 86,
+    exmlVTYPE              = 87,
+    exmlANGLE              = 88,
+    exmlFIXED              = 89,
+    exmlNR                 = 90
 };
 
 std::map<const std::string, int> xmlxxx =
@@ -249,6 +250,7 @@ std::map<const std::string, int> xmlxxx =
     { "zeta_sigma",             exmlZETA_SIGMA       },
     { "row",                    exmlROW              },
     { "charge",                 exmlCHARGES          },
+    { "ref_charge",             exmlREF_CHARGES      },
     { "angle_unit",             exmlANGLE_UNIT       },
     { "length_unit",            exmlLENGTH_UNIT      },
     { "distance",               exmlDISTANCE         },
@@ -594,17 +596,18 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
             }
             break;
         case exmlEEMPROP:
-            if (NN(xbuf[exmlNAME])       &&
-                NN(xbuf[exmlJ0])      && NN(xbuf[exmlJ0_SIGMA])   &&
-                NN(xbuf[exmlCHI0])    && NN(xbuf[exmlCHI0_SIGMA]) &&
-                NN(xbuf[exmlZETA])    && NN(xbuf[exmlZETA_SIGMA]) &&
-                NN(xbuf[exmlCHARGES]) && NN(xbuf[exmlROW]))
+            if (NN(xbuf[exmlNAME])        && NN(xbuf[exmlJ0])      && 
+                NN(xbuf[exmlJ0_SIGMA])    && NN(xbuf[exmlCHI0])    && 
+                NN(xbuf[exmlCHI0_SIGMA])  && NN(xbuf[exmlZETA])    && 
+                NN(xbuf[exmlZETA_SIGMA])  && NN(xbuf[exmlCHARGES]) && 
+                NN(xbuf[exmlREF_CHARGES]) && NN(xbuf[exmlROW]))
             {
                 Eemprops eep(xbuf[exmlNAME],
                              xbuf[exmlROW],
                              xbuf[exmlZETA],
                              xbuf[exmlZETA_SIGMA],
                              xbuf[exmlCHARGES],
+                             xbuf_atof(xbuf, exmlREF_CHARGES),
                              xbuf_atof(xbuf, exmlJ0),
                              xbuf_atof(xbuf, exmlJ0_SIGMA),
                              xbuf_atof(xbuf, exmlCHI0),
@@ -991,6 +994,7 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd)
         add_xml_char(grandchild, exml_names(exmlZETA), eep->getZetastr());
         add_xml_char(grandchild, exml_names(exmlZETA_SIGMA), eep->getZeta_sigma());
         add_xml_char(grandchild, exml_names(exmlCHARGES), eep->getQstr());
+        add_xml_double(grandchild, exml_names(exmlREF_CHARGES), eep->getQref());
         add_xml_char(grandchild, exml_names(exmlROW), eep->getRowstr());
     }
 }

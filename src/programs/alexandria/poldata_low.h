@@ -1019,6 +1019,7 @@ class Eemprops
                  const std::string      &zetastr,
                  const std::string      &zeta_sigma,
                  const std::string      &qstr,
+                 double                  qref,
                  double                  J0,
                  double                  J0_sigma,
                  double                  chi0,
@@ -1035,6 +1036,8 @@ class Eemprops
         const char *getQstr() const { return qstr_.c_str(); }
 
         const char *getRowstr() const { return rowstr_.c_str(); }
+        
+        double getQref() const { return qref_; }
 
         double getJ0() const { return J0_; }
 
@@ -1053,6 +1056,8 @@ class Eemprops
         void setZetastr(const std::string &zetastr) {zetastr_ = zetastr; }
 
         void setZeta_sigma(const std::string &zeta_sigma) {zeta_sigma_ = zeta_sigma; }
+        
+        void setQref(double qref) { qref_ = qref;} 
 
         void setJ0(double J0) { J0_ = J0; }
 
@@ -1084,6 +1089,7 @@ class Eemprops
         std::string             zetastr_;
         std::string             zeta_sigma_;
         std::string             qstr_;
+        double                  qref_;
         double                  J0_;
         double                  J0_sigma_;
         double                  chi0_;

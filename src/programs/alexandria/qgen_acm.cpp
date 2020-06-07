@@ -103,7 +103,8 @@ void QgenAcm::setInfo(const Poldata            *pd,
     Jcc_.resize(natom_ + 1);
     zeta_.resize(natom_);
     j00_.resize(natom_, 0);
-    q_.resize(natom_ + 1);
+    q0_.resize(natom_, 0);
+    q_.resize(natom_ + 1);   
     nZeta_.resize(natom_ + 1, 0);
     x_.resize(atoms->nr);
 
@@ -137,6 +138,7 @@ void QgenAcm::setInfo(const Poldata            *pd,
                 atomnr_[j] = atm;
                 chi0_[j]   = eem->getChi0();
                 j00_[j]    = eem->getJ0();
+                q0_[j]     = eem->getQref();
                 nz         = eem->getNzeta();
                 nZeta_[j]  = nz;
                 q_[j].resize(nz, 0);
@@ -574,12 +576,13 @@ void QgenAcm::calcRhs(t_atoms *atoms, double epsilonr)
     for (auto i = 0; i < natom_; i++)
     {
         rhs_[i]   = 0;
-        rhs_[i]  -= chi0_[i];
+        rhs_[i]  -= chi0_[i];                              // Electronegativity
+        rhs_[i]  += j00_[i]*q0_[i];                        // Hardness * q0
         if (bHaveShell_)
         {
             calcJcs(atoms, coreIndex_[i], i, epsilonr);
-            rhs_[i]   -= hardnessFactor_*j00_[i]*q_[i][1];
-            rhs_[i]   -= Jcs_;
+            rhs_[i]   -= hardnessFactor_*j00_[i]*q_[i][1]; // Hardness * qs
+            rhs_[i]   -= Jcs_;                             // Core-Shell interaction
             qshell    += q_[i][1];
         }
     }
