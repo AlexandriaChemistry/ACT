@@ -1106,21 +1106,21 @@
   </symmetric_charges>
   <eemprops reference="Yang2006a">
   <!-- row equals zero means that point charge will be used instead of Slater -->
-    <eemprop name="H" jaa="13.8904" jaa_sigma="0" chi="4.498" chi_sigma="0" zeta="19.8639" zeta_sigma="0" charge="0" row="1"/>
-    <eemprop name="LI" jaa="4.772" jaa_sigma="0" chi="3.006" chi_sigma="0" zeta="7.88857" zeta_sigma="0" charge="0" row="2"/>
-    <eemprop name="I" jaa="7.524" jaa_sigma="0" chi="5.622" chi_sigma="0" zeta="20.2712" zeta_sigma="0" charge="0" row="5"/>
-    <eemprop name="P" jaa="8" jaa_sigma="0" chi="5.463" chi_sigma="0" zeta="15.6039" zeta_sigma="0" charge="0" row="3"/>
-    <eemprop name="RB" jaa="3.692" jaa_sigma="0" chi="2.331" chi_sigma="0" zeta="9.75505" zeta_sigma="0" charge="0" row="5"/>
-    <eemprop name="O" jaa="13.364" jaa_sigma="0" chi="8.961" chi_sigma="0" zeta="18.3595" zeta_sigma="0" charge="0" row="2"/>
-    <eemprop name="BR" jaa="8.85" jaa_sigma="0" chi="5.79" chi_sigma="0" zeta="19.3764" zeta_sigma="0" charge="0" row="4"/>
-    <eemprop name="K" jaa="3.84" jaa_sigma="0" chi="2.421" chi_sigma="0" zeta="8.5493" zeta_sigma="0" charge="0" row="4"/>
-    <eemprop name="NA" jaa="4.592" jaa_sigma="0" chi="2.843" chi_sigma="0" zeta="8.24724" zeta_sigma="0" charge="0" row="3"/>
-    <eemprop name="SI" jaa="6.974" jaa_sigma="0" chi="4.168" chi_sigma="0" zeta="14.622" zeta_sigma="0" charge="0" row="3"/>
-    <eemprop name="F" jaa="14.498" jaa_sigma="0" chi="6.374" chi_sigma="0" zeta="17.3973" zeta_sigma="0" charge="0" row="2"/>
-    <eemprop name="N" jaa="11.76" jaa_sigma="0" chi="8.599" chi_sigma="0" zeta="17.1783" zeta_sigma="0" charge="0" row="2"/>
-    <eemprop name="CL" jaa="9.892" jaa_sigma="0" chi="5.464" chi_sigma="0" zeta="17.2993" zeta_sigma="0" charge="0" row="3"/>
-    <eemprop name="S" jaa="8.972" jaa_sigma="0" chi="6.268" chi_sigma="0" zeta="18.1579" zeta_sigma="0" charge="0" row="3"/>
-    <eemprop name="CS" jaa="3.422" jaa_sigma="0" chi="2.183" chi_sigma="0" zeta="10.7019" zeta_sigma="0" charge="0" row="6"/>
-    <eemprop name="C" jaa="10.126" jaa_sigma="0" chi="5.723" chi_sigma="0" zeta="16.1825" zeta_sigma="0" charge="0" row="2"/>
+e   <eemprop name="H" jaa="13.8904" jaa_sigma="0" chi="4.498" chi_sigma="0" zeta="19.8639" zeta_sigma="0" charge="0" ref_charge="0" row="1"/>
+    <eemprop name="LI" jaa="4.772" jaa_sigma="0" chi="3.006" chi_sigma="0" zeta="7.88857" zeta_sigma="0" charge="0" ref_charge="0" row="2"/>
+    <eemprop name="I" jaa="7.524" jaa_sigma="0" chi="5.622" chi_sigma="0" zeta="20.2712" zeta_sigma="0" charge="0" ref_charge="0" row="5"/>
+    <eemprop name="P" jaa="8" jaa_sigma="0" chi="5.463" chi_sigma="0" zeta="15.6039" zeta_sigma="0" charge="0" ref_charge="0" row="3"/>
+    <eemprop name="RB" jaa="3.692" jaa_sigma="0" chi="2.331" chi_sigma="0" zeta="9.75505" zeta_sigma="0" charge="0" ref_charge="0" row="5"/>
+    <eemprop name="O" jaa="13.364" jaa_sigma="0" chi="8.961" chi_sigma="0" zeta="18.3595" zeta_sigma="0" charge="0" ref_charge="0" row="2"/>
+    <eemprop name="BR" jaa="8.85" jaa_sigma="0" chi="5.79" chi_sigma="0" zeta="19.3764" zeta_sigma="0" charge="0" ref_charge="0" row="4"/>
+    <eemprop name="K" jaa="3.84" jaa_sigma="0" chi="2.421" chi_sigma="0" zeta="8.5493" zeta_sigma="0" charge="0" ref_charge="0" row="4"/>
+    <eemprop name="NA" jaa="4.592" jaa_sigma="0" chi="2.843" chi_sigma="0" zeta="8.24724" zeta_sigma="0" charge="0" ref_charge="0" row="3"/>
+    <eemprop name="SI" jaa="6.974" jaa_sigma="0" chi="4.168" chi_sigma="0" zeta="14.622" zeta_sigma="0" charge="0" ref_charge="0" row="3"/>
+    <eemprop name="F" jaa="14.498" jaa_sigma="0" chi="6.374" chi_sigma="0" zeta="17.3973" zeta_sigma="0" charge="0" ref_charge="0" row="2"/>
+    <eemprop name="N" jaa="11.76" jaa_sigma="0" chi="8.599" chi_sigma="0" zeta="17.1783" zeta_sigma="0" charge="0" ref_charge="0" row="2"/>
+    <eemprop name="CL" jaa="9.892" jaa_sigma="0" chi="5.464" chi_sigma="0" zeta="17.2993" zeta_sigma="0" charge="0" ref_charge="0" row="3"/>
+    <eemprop name="S" jaa="8.972" jaa_sigma="0" chi="6.268" chi_sigma="0" zeta="18.1579" zeta_sigma="0" charge="0" ref_charge="0" row="3"/>
+    <eemprop name="CS" jaa="3.422" jaa_sigma="0" chi="2.183" chi_sigma="0" zeta="10.7019" zeta_sigma="0" charge="0" ref_charge="0" row="6"/>
+    <eemprop name="C" jaa="10.126" jaa_sigma="0" chi="5.723" chi_sigma="0" zeta="16.1825" zeta_sigma="0" charge="0" ref_charge="0" row="2"/>
   </eemprops>
 </gentop>

@@ -1089,10 +1089,10 @@
   </symmetric_charges>
   <eemprops reference="Bultinck2002a">
   <!-- row equals zero means that point charge will be used instead of Slater -->
-    <eemprop name="C" jaa="9" jaa_sigma="0" chi="5.25" chi_sigma="0" zeta="0" zeta_sigma="0" charge="0" row="1"/>
-    <eemprop name="O" jaa="14.34" jaa_sigma="0" chi="14.72" chi_sigma="0" zeta="0" zeta_sigma="0" charge="0" row="1"/>
-    <eemprop name="N" jaa="9.39" jaa_sigma="0" chi="8.8" chi_sigma="0" zeta="0" zeta_sigma="0" charge="0" row="1"/>
-    <eemprop name="F" jaa="19.97" jaa_sigma="0" chi="15" chi_sigma="0" zeta="0" zeta_sigma="0" charge="0" row="1"/>
-    <eemprop name="H" jaa="17.95" jaa_sigma="0" chi="1" chi_sigma="0" zeta="0" zeta_sigma="0" charge="0" row="1"/>
+    <eemprop name="C" jaa="9" jaa_sigma="0" chi="5.25" chi_sigma="0" zeta="0" zeta_sigma="0" charge="0" ref_charge="0" row="1"/>
+    <eemprop name="O" jaa="14.34" jaa_sigma="0" chi="14.72" chi_sigma="0" zeta="0" zeta_sigma="0" charge="0" ref_charge="0" row="1"/>
+    <eemprop name="N" jaa="9.39" jaa_sigma="0" chi="8.8" chi_sigma="0" zeta="0" zeta_sigma="0" charge="0" ref_charge="0" row="1"/>
+    <eemprop name="F" jaa="19.97" jaa_sigma="0" chi="15" chi_sigma="0" zeta="0" zeta_sigma="0" charge="0" ref_charge="0" row="1"/>
+    <eemprop name="H" jaa="17.95" jaa_sigma="0" chi="1" chi_sigma="0" zeta="0" zeta_sigma="0" charge="0" ref_charge="0" row="1"/>
   </eemprops>
 </gentop>

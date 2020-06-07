@@ -1127,37 +1127,37 @@
   </symmetric_charges>
   <eemprops reference="Ghahremanpour2018b">
   <!-- row equals zero means that point charge will be used instead of Slater -->
-    <eemprop name="z_hw" jaa="56" jaa_sigma="0" chi="3.5" chi_sigma="0" zeta="0 0" zeta_sigma="0 0" charge="0 -1" row="0 1"/>
-    <eemprop name="z_hp" jaa="56" jaa_sigma="0" chi="3.5" chi_sigma="0" zeta="0 0" zeta_sigma="0 0" charge="0 -1" row="0 1"/>
-    <eemprop name="z_n2" jaa="39.4366" jaa_sigma="0" chi="5.5" chi_sigma="0" zeta="0 0" zeta_sigma="0 0" charge="0 -2" row="0 2"/>
-    <eemprop name="z_nb" jaa="39.4366" jaa_sigma="0" chi="5.5" chi_sigma="0" zeta="0 0" zeta_sigma="0 0" charge="0 -2" row="0 2"/>
-    <eemprop name="z_ha" jaa="56" jaa_sigma="0" chi="3.5" chi_sigma="0" zeta="0 0" zeta_sigma="0 0" charge="0 -1" row="0 1"/>
-    <eemprop name="z_hc" jaa="56" jaa_sigma="0" chi="3.5" chi_sigma="0" zeta="0 0" zeta_sigma="0 0" charge="0 -1" row="0 1"/>
-    <eemprop name="z_p4" jaa="26.1682" jaa_sigma="0" chi="5.2" chi_sigma="0" zeta="0 0" zeta_sigma="0 0" charge="0 -2" row="0 3"/>
-    <eemprop name="z_nh" jaa="39.4366" jaa_sigma="0" chi="5.5" chi_sigma="0" zeta="0 0" zeta_sigma="0 0" charge="0 -2" row="0 2"/>
-    <eemprop name="z_no" jaa="39.4366" jaa_sigma="0" chi="5.5" chi_sigma="0" zeta="0 0" zeta_sigma="0 0" charge="0 -2" row="0 2"/>
-    <eemprop name="z_p2" jaa="26.1682" jaa_sigma="0" chi="5.2" chi_sigma="0" zeta="0 0" zeta_sigma="0 0" charge="0 -2" row="0 3"/>
-    <eemprop name="z_s" jaa="26.6667" jaa_sigma="0" chi="5.7" chi_sigma="0" zeta="0 0" zeta_sigma="0 0" charge="0 -2" row="0 3"/>
-    <eemprop name="z_c1" jaa="40.5797" jaa_sigma="0" chi="5" chi_sigma="0" zeta="0 0" zeta_sigma="0 0" charge="0 -2" row="0 2"/>
-    <eemprop name="z_c2" jaa="38.3562" jaa_sigma="0" chi="5" chi_sigma="0" zeta="0 0" zeta_sigma="0 0" charge="0 -2" row="0 2"/>
-    <eemprop name="z_c3" jaa="36.8421" jaa_sigma="0" chi="5" chi_sigma="0" zeta="0 0" zeta_sigma="0 0" charge="0 -2" row="0 2"/>
-    <eemprop name="z_f" jaa="49.1228" jaa_sigma="0" chi="7" chi_sigma="0" zeta="0 0" zeta_sigma="0 0" charge="0 -2" row="0 2"/>
-    <eemprop name="z_i" jaa="20.1439" jaa_sigma="0" chi="5.5" chi_sigma="0" zeta="0 0" zeta_sigma="0 0" charge="0 -2" row="0 5"/>
-    <eemprop name="z_n" jaa="39.4366" jaa_sigma="0" chi="5.5" chi_sigma="0" zeta="0 0" zeta_sigma="0 0" charge="0 -2" row="0 2"/>
-    <eemprop name="z_o" jaa="42.4242" jaa_sigma="0" chi="6" chi_sigma="0" zeta="0 0" zeta_sigma="0 0" charge="0 -2" row="0 2"/>
-    <eemprop name="z_n3" jaa="39.4366" jaa_sigma="0" chi="5.5" chi_sigma="0" zeta="0 0" zeta_sigma="0 0" charge="0 -2" row="0 2"/>
-    <eemprop name="z_h4" jaa="56" jaa_sigma="0" chi="3.5" chi_sigma="0" zeta="0 0" zeta_sigma="0 0" charge="0 -1" row="0 1"/>
-    <eemprop name="z_n1" jaa="39.4366" jaa_sigma="0" chi="5.5" chi_sigma="0" zeta="0 0" zeta_sigma="0 0" charge="0 -2" row="0 2"/>
-    <eemprop name="z_os" jaa="42.4242" jaa_sigma="0" chi="6" chi_sigma="0" zeta="0 0" zeta_sigma="0 0" charge="0 -2" row="0 2"/>
-    <eemprop name="z_h1" jaa="56" jaa_sigma="0" chi="3.5" chi_sigma="0" zeta="0 0" zeta_sigma="0 0" charge="0 -1" row="0 1"/>
-    <eemprop name="z_ow" jaa="42.4242" jaa_sigma="0" chi="6" chi_sigma="0" zeta="0 0" zeta_sigma="0 0" charge="0 -2" row="0 2"/>
-    <eemprop name="z_s4" jaa="26.6667" jaa_sigma="0" chi="5.7" chi_sigma="0" zeta="0 0" zeta_sigma="0 0" charge="0 -2" row="0 3"/>
-    <eemprop name="z_oh" jaa="42.4242" jaa_sigma="0" chi="6" chi_sigma="0" zeta="0 0" zeta_sigma="0 0" charge="0 -2" row="0 2"/>
-    <eemprop name="z_om" jaa="42.4242" jaa_sigma="0" chi="6" chi_sigma="0" zeta="0 0" zeta_sigma="0 0" charge="0 -2" row="0 2"/>
-    <eemprop name="z_br" jaa="23.3333" jaa_sigma="0" chi="5.7" chi_sigma="0" zeta="0 0" zeta_sigma="0 0" charge="0 -2" row="0 4"/>
-    <eemprop name="z_cu" jaa="38.3562" jaa_sigma="0" chi="5" chi_sigma="0" zeta="0 0" zeta_sigma="0 0" charge="0 -2" row="0 2"/>
-    <eemprop name="z_cz" jaa="38.3562" jaa_sigma="0" chi="5" chi_sigma="0" zeta="0 0" zeta_sigma="0 0" charge="0 -2" row="0 2"/>
-    <eemprop name="z_ca" jaa="38.3562" jaa_sigma="0" chi="5" chi_sigma="0" zeta="0 0" zeta_sigma="0 0" charge="0 -2" row="0 2"/>
-    <eemprop name="z_cl" jaa="27.451" jaa_sigma="0" chi="6" chi_sigma="0" zeta="0 0" zeta_sigma="0 0" charge="0 -2" row="0 3"/>
+    <eemprop name="z_hw" jaa="56" jaa_sigma="0" chi="3.5" chi_sigma="0" zeta="0 0" zeta_sigma="0 0" charge="0 -1" ref_charge="0" row="0 1"/>
+    <eemprop name="z_hp" jaa="56" jaa_sigma="0" chi="3.5" chi_sigma="0" zeta="0 0" zeta_sigma="0 0" charge="0 -1" ref_charge="0" row="0 1"/>
+    <eemprop name="z_n2" jaa="39.4366" jaa_sigma="0" chi="5.5" chi_sigma="0" zeta="0 0" zeta_sigma="0 0" charge="0 -2" ref_charge="0" row="0 2"/>
+    <eemprop name="z_nb" jaa="39.4366" jaa_sigma="0" chi="5.5" chi_sigma="0" zeta="0 0" zeta_sigma="0 0" charge="0 -2" ref_charge="0" row="0 2"/>
+    <eemprop name="z_ha" jaa="56" jaa_sigma="0" chi="3.5" chi_sigma="0" zeta="0 0" zeta_sigma="0 0" charge="0 -1" ref_charge="0" row="0 1"/>
+    <eemprop name="z_hc" jaa="56" jaa_sigma="0" chi="3.5" chi_sigma="0" zeta="0 0" zeta_sigma="0 0" charge="0 -1" ref_charge="0" row="0 1"/>
+    <eemprop name="z_p4" jaa="26.1682" jaa_sigma="0" chi="5.2" chi_sigma="0" zeta="0 0" zeta_sigma="0 0" charge="0 -2" ref_charge="0" row="0 3"/>
+    <eemprop name="z_nh" jaa="39.4366" jaa_sigma="0" chi="5.5" chi_sigma="0" zeta="0 0" zeta_sigma="0 0" charge="0 -2" ref_charge="0" row="0 2"/>
+    <eemprop name="z_no" jaa="39.4366" jaa_sigma="0" chi="5.5" chi_sigma="0" zeta="0 0" zeta_sigma="0 0" charge="0 -2" ref_charge="0" row="0 2"/>
+    <eemprop name="z_p2" jaa="26.1682" jaa_sigma="0" chi="5.2" chi_sigma="0" zeta="0 0" zeta_sigma="0 0" charge="0 -2" ref_charge="0" row="0 3"/>
+    <eemprop name="z_s" jaa="26.6667" jaa_sigma="0" chi="5.7" chi_sigma="0" zeta="0 0" zeta_sigma="0 0" charge="0 -2" ref_charge="0" row="0 3"/>
+    <eemprop name="z_c1" jaa="40.5797" jaa_sigma="0" chi="5" chi_sigma="0" zeta="0 0" zeta_sigma="0 0" charge="0 -2" ref_charge="0" row="0 2"/>
+    <eemprop name="z_c2" jaa="38.3562" jaa_sigma="0" chi="5" chi_sigma="0" zeta="0 0" zeta_sigma="0 0" charge="0 -2" ref_charge="0" row="0 2"/>
+    <eemprop name="z_c3" jaa="36.8421" jaa_sigma="0" chi="5" chi_sigma="0" zeta="0 0" zeta_sigma="0 0" charge="0 -2" ref_charge="0" row="0 2"/>
+    <eemprop name="z_f" jaa="49.1228" jaa_sigma="0" chi="7" chi_sigma="0" zeta="0 0" zeta_sigma="0 0" charge="0 -2" ref_charge="0" row="0 2"/>
+    <eemprop name="z_i" jaa="20.1439" jaa_sigma="0" chi="5.5" chi_sigma="0" zeta="0 0" zeta_sigma="0 0" charge="0 -2" ref_charge="0" row="0 5"/>
+    <eemprop name="z_n" jaa="39.4366" jaa_sigma="0" chi="5.5" chi_sigma="0" zeta="0 0" zeta_sigma="0 0" charge="0 -2" ref_charge="0" row="0 2"/>
+    <eemprop name="z_o" jaa="42.4242" jaa_sigma="0" chi="6" chi_sigma="0" zeta="0 0" zeta_sigma="0 0" charge="0 -2" ref_charge="0" row="0 2"/>
+    <eemprop name="z_n3" jaa="39.4366" jaa_sigma="0" chi="5.5" chi_sigma="0" zeta="0 0" zeta_sigma="0 0" charge="0 -2" ref_charge="0" row="0 2"/>
+    <eemprop name="z_h4" jaa="56" jaa_sigma="0" chi="3.5" chi_sigma="0" zeta="0 0" zeta_sigma="0 0" charge="0 -1" ref_charge="0" row="0 1"/>
+    <eemprop name="z_n1" jaa="39.4366" jaa_sigma="0" chi="5.5" chi_sigma="0" zeta="0 0" zeta_sigma="0 0" charge="0 -2" ref_charge="0" row="0 2"/>
+    <eemprop name="z_os" jaa="42.4242" jaa_sigma="0" chi="6" chi_sigma="0" zeta="0 0" zeta_sigma="0 0" charge="0 -2" ref_charge="0" row="0 2"/>
+    <eemprop name="z_h1" jaa="56" jaa_sigma="0" chi="3.5" chi_sigma="0" zeta="0 0" zeta_sigma="0 0" charge="0 -1" ref_charge="0" row="0 1"/>
+    <eemprop name="z_ow" jaa="42.4242" jaa_sigma="0" chi="6" chi_sigma="0" zeta="0 0" zeta_sigma="0 0" charge="0 -2" ref_charge="0" row="0 2"/>
+    <eemprop name="z_s4" jaa="26.6667" jaa_sigma="0" chi="5.7" chi_sigma="0" zeta="0 0" zeta_sigma="0 0" charge="0 -2" ref_charge="0" row="0 3"/>
+    <eemprop name="z_oh" jaa="42.4242" jaa_sigma="0" chi="6" chi_sigma="0" zeta="0 0" zeta_sigma="0 0" charge="0 -2" ref_charge="0" row="0 2"/>
+    <eemprop name="z_om" jaa="42.4242" jaa_sigma="0" chi="6" chi_sigma="0" zeta="0 0" zeta_sigma="0 0" charge="0 -2" ref_charge="0" row="0 2"/>
+    <eemprop name="z_br" jaa="23.3333" jaa_sigma="0" chi="5.7" chi_sigma="0" zeta="0 0" zeta_sigma="0 0" charge="0 -2" ref_charge="0" row="0 4"/>
+    <eemprop name="z_cu" jaa="38.3562" jaa_sigma="0" chi="5" chi_sigma="0" zeta="0 0" zeta_sigma="0 0" charge="0 -2" ref_charge="0" row="0 2"/>
+    <eemprop name="z_cz" jaa="38.3562" jaa_sigma="0" chi="5" chi_sigma="0" zeta="0 0" zeta_sigma="0 0" charge="0 -2" ref_charge="0" row="0 2"/>
+    <eemprop name="z_ca" jaa="38.3562" jaa_sigma="0" chi="5" chi_sigma="0" zeta="0 0" zeta_sigma="0 0" charge="0 -2" ref_charge="0" row="0 2"/>
+    <eemprop name="z_cl" jaa="27.451" jaa_sigma="0" chi="6" chi_sigma="0" zeta="0 0" zeta_sigma="0 0" charge="0 -2" ref_charge="0" row="0 3"/>
   </eemprops>
 </gentop>
