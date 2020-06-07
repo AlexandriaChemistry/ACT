@@ -1073,8 +1073,6 @@
     <gt_angle atom1="b_c1" atom2="b_c1" atom3="b_n3" refValue="176.8" sigma="0.5" ntrain="1" params="150000  30000"/>
     <gt_angle atom1="b_f" atom2="b_s4" atom3="b_f" refValue="180" sigma="0.5" ntrain="3" params="150000  30000"/>
   </gt_angles>
-  <gt_angles unit="degree" interaction="ANGLES" function="UREY_BRADLEY"/>
-  <gt_angles unit="degree" interaction="LINEAR_ANGLES" function="LINEAR_ANGLES"/>
   <gt_dihedrals unit="degree" interaction="PROPER_DIHEDRALS" function="FOURDIHS"/>
   <gt_dihedrals unit="degree" interaction="IMPROPER_DIHEDRALS" function="IDIHS"/>
   <symmetric_charges>
@@ -1091,10 +1089,10 @@
   </symmetric_charges>
   <eemprops reference="Bultinck2002a">
   <!-- row equals zero means that point charge will be used instead of Slater -->
-    <eemprop name="C" jaa="9" jaa_sigma="0" chi="5.25" chi_sigma="0" zeta="0" zeta_sigma="0" charge="0" row="1"/>
-    <eemprop name="O" jaa="14.34" jaa_sigma="0" chi="14.72" chi_sigma="0" zeta="0" zeta_sigma="0" charge="0" row="1"/>
-    <eemprop name="N" jaa="9.39" jaa_sigma="0" chi="8.8" chi_sigma="0" zeta="0" zeta_sigma="0" charge="0" row="1"/>
-    <eemprop name="F" jaa="19.97" jaa_sigma="0" chi="15" chi_sigma="0" zeta="0" zeta_sigma="0" charge="0" row="1"/>
-    <eemprop name="H" jaa="17.95" jaa_sigma="0" chi="1" chi_sigma="0" zeta="0" zeta_sigma="0" charge="0" row="1"/>
+    <eemprop name="C" jaa="9" jaa_sigma="0" chi="5.25" chi_sigma="0" zeta="0" zeta_sigma="0" charge="0" ref_charge="0" row="1"/>
+    <eemprop name="O" jaa="14.34" jaa_sigma="0" chi="14.72" chi_sigma="0" zeta="0" zeta_sigma="0" charge="0" ref_charge="0" row="1"/>
+    <eemprop name="N" jaa="9.39" jaa_sigma="0" chi="8.8" chi_sigma="0" zeta="0" zeta_sigma="0" charge="0" ref_charge="0" row="1"/>
+    <eemprop name="F" jaa="19.97" jaa_sigma="0" chi="15" chi_sigma="0" zeta="0" zeta_sigma="0" charge="0" ref_charge="0" row="1"/>
+    <eemprop name="H" jaa="17.95" jaa_sigma="0" chi="1" chi_sigma="0" zeta="0" zeta_sigma="0" charge="0" ref_charge="0" row="1"/>
   </eemprops>
 </gentop>
