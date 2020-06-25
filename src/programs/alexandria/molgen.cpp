@@ -346,7 +346,7 @@ void MolGen::addOptions(std::vector<t_pargs> *pargs, eTune etune)
         { "-watoms", FALSE, etREAL, {&watoms_},
           "Weight for the atoms when fitting the charges to the electrostatic potential. The potential on atoms is usually two orders of magnitude larger than on other points (and negative). For point charges or single smeared charges use zero. For point+smeared charges 1 is recommended." },
         { "-maxpot", FALSE, etINT, {&maxESP_},
-          "Maximum percent of the electrostatic potential points that will be used to fit partial charges." },
+          "Maximum percent of the electrostatic potential points that will be used to fit partial charges. Note that the input file may have a reduced amount of ESP points compared to the Gaussian output already so do not reduce the amount twice unless you know what you are doing." },
         { "-fixchi", FALSE, etSTR,  {&fixchi_},
           "Electronegativity for this atom type is fixed. Set to empty string if you want all electronegativities to be variable, but read the help text above (or somewhere)." },
         { "-z0",    FALSE, etREAL, {&zeta_min_},
