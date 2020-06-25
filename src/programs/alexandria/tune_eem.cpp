@@ -762,10 +762,17 @@ void OptACM::InitOpt(real factor, bool bRandom)
                 {
                     if (0 != alpha)
                     {
-                        // We do not have alpha_min and alpha_max so cannot set bounds
-                        Bayes::addParam(alpha, factor, bRandom);
-                        Bayes::addParamName(gmx::formatString("%s-Alpha", ai->name().c_str()));
-                    }
+		        // We do not have alpha_min and alpha_max so cannot set bounds
+		        if (bRandom)
+			{
+			    Bayes::addRandomParam(0, alphaMax());
+			}
+			else
+			{
+			    Bayes::addParam(alpha, factor, bRandom);
+			}
+			Bayes::addParamName(gmx::formatString("%s-Alpha", ai->name().c_str()));
+		    }
                     else
                     {
                         gmx_fatal(FARGS, "Polarizability is zero for atom %s\n", ai->name().c_str());
