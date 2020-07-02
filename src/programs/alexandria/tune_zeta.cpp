@@ -553,7 +553,6 @@ int alex_tune_zeta(int argc, char *argv[])
     bool                        bRandom       = false;
     gmx_bool                    bcompress     = false;
     gmx_bool                    bZPE          = false;
-    gmx_bool                    bPrintTable   = false;
     gmx_bool                    bZero         = true;    
     gmx_bool                    bOptimize     = true;
 
@@ -586,8 +585,6 @@ int alex_tune_zeta(int argc, char *argv[])
           "Maximum angle to be considered a planar A-B-C/B-C-D torsion" },
         { "-compress", FALSE, etBOOL, {&bcompress},
           "Compress output XML file" },
-        { "-btex", FALSE, etBOOL, {&bPrintTable},
-          "[HIDDEN]Print the latex table for the Gaussian and Slater exponents" },
         { "-factor", FALSE, etREAL, {&factor},
           "Factor for generating random parameters. Parameters will be taken within the limit factor*x - x/factor" },
         { "-efield",  FALSE, etREAL, {&efield},
@@ -711,7 +708,7 @@ int alex_tune_zeta(int argc, char *argv[])
 
         writePoldata(opt2fn("-o", NFILE, fnm), opt.poldata(), bcompress);
         gmx_ffclose(fp);
-        if (bPrintTable)
+        if (opt2bSet("-latex", NFILE, fnm))
         {
             FILE        *tp;
             tp = gmx_ffopen(opt2fn("-latex", NFILE, fnm), "w");

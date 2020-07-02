@@ -1147,7 +1147,6 @@ int alex_tune_eem(int argc, char *argv[])
     char                       *opt_elem      = nullptr;
     bool                        bRandom       = false;
     bool                        bcompress     = false;
-    bool                        bPrintTable   = false;
     bool                        bZero         = true;
     bool                        bOptimize     = true;
     bool                        bForceOutput  = true;
@@ -1178,8 +1177,6 @@ int alex_tune_eem(int argc, char *argv[])
           "Fit regression analysis of results to y = ax+b instead of y = ax" },
         { "-compress", FALSE, etBOOL, {&bcompress},
           "Compress output XML file" },
-        { "-btex", FALSE, etBOOL, {&bPrintTable},
-          "[HIDDEN]Print the latex table for the Gaussian and Slater exponents" },
         { "-factor", FALSE, etREAL, {&factor},
           "Factor for generating random parameters. Parameters will be taken within the limit factor*x - x/factor" },
         { "-efield",  FALSE, etREAL, {&efield},
@@ -1311,7 +1308,7 @@ int alex_tune_eem(int argc, char *argv[])
                                  efield,
                                  useOffset);
             writePoldata(opt2fn("-o", NFILE, fnm), opt.poldata(), bcompress);            
-            if (bPrintTable)
+            if (opt2bSet("-latex", NFILE, fnm))
             {
                 FILE        *tp;
                 tp = gmx_ffopen(opt2fn("-latex", NFILE, fnm), "w");
