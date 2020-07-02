@@ -276,8 +276,8 @@ int alex_molselect(int argc, char *argv[])
 
     t_filenm    fnm[] =
     {
-        { efDAT, "-f",    "allmols",   ffOPTRD },
-        { efDAT, "-d",    "gentop",    ffOPTRD },
+        { efDAT, "-f",    "allmols",   ffREAD },
+        { efDAT, "-d",    "gentop",    ffREAD },
         { efDAT, "-o",    "selection", ffWRITE },
         { efLOG, "-g",    "molselect", ffWRITE },
         { efDAT, "-sel",  "molselect", ffREAD  },

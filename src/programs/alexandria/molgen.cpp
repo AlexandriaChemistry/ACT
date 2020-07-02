@@ -318,12 +318,15 @@ static void doAddOptions(std::vector<t_pargs> *pargs, size_t npa, t_pargs pa[])
 
 void MolGen::addOptions(std::vector<t_pargs> *pargs, eTune etune)
 {
-    t_pargs pa_general[] =
+    t_pargs pa_low[] =
     {
         { "-mindata", FALSE, etINT, {&mindata_},
           "Minimum number of data points to optimize force field parameters" },
         { "-lot",    FALSE, etSTR,  {&lot_},
-          "Use this method and level of theory when selecting coordinates and charges. Multiple levels can be specified which will be used in the order given, e.g.  B3LYP/aug-cc-pVTZ:HF/6-311G**" },
+          "Use this method and level of theory when selecting coordinates and charges. Multiple levels can be specified which will be used in the order given, e.g.  B3LYP/aug-cc-pVTZ:HF/6-311G**" }
+    };
+    t_pargs pa_general[] = 
+    {
         { "-fc_bound",    FALSE, etREAL, {&fc_[ermsBOUNDS]},
           "Force constant in the penalty function for going outside the borders given with the fitting options (see below)." },
         { "-qtol",   FALSE, etREAL, {&qtol_},
@@ -392,17 +395,20 @@ void MolGen::addOptions(std::vector<t_pargs> *pargs, eTune etune)
         { "-fc_force",  FALSE, etREAL, {&fc_[ermsForce2]},
           "Force constant in the penalty function for the magnitude of the force." }
     };
-    doAddOptions(pargs, asize(pa_general), pa_general);
+    doAddOptions(pargs, asize(pa_low), pa_low);
     switch (etune)
     {
         case etuneEEM:
+	    doAddOptions(pargs, asize(pa_general), pa_general);
             doAddOptions(pargs, asize(pa_eem), pa_eem);
             doAddOptions(pargs, asize(pa_zeta), pa_zeta);
             break;
         case etuneZETA:
+	    doAddOptions(pargs, asize(pa_general), pa_general);
             doAddOptions(pargs, asize(pa_zeta), pa_zeta);
             break;
         case etuneFC:
+	    doAddOptions(pargs, asize(pa_general), pa_general);
             doAddOptions(pargs, asize(pa_fc), pa_fc);
             break;
         default:
