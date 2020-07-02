@@ -47,7 +47,7 @@
 #include "poldata_low.h"
 #include "xml_util.h"
 
-extern int xmlDoValidityCheckingDefaultValue;
+//extern int xmlDoValidityCheckingDefaultValue;
 namespace alexandria
 {
 

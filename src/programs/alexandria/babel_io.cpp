@@ -255,7 +255,6 @@ bool readBabel(const char          *g09,
     const char                *reference   = "Ghahremanpour2016a";
     const char                *mymol       = "AMM";
     const char                *myprogram   = "Alexandria-2018";
-    const char                *mymethod    = "";
     const char                *mybasis     = "";
 
 

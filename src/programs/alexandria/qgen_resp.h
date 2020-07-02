@@ -184,11 +184,23 @@ class QgenResp
         void readCube(const std::string &fn,
                       bool               bESPonly);
 
-        void writeCube(const std::string &fn,
-                       const std::string &title);
+        /*! \brief Write a cube file
+         * \param[in] fn    The file name to write to
+         * \param[in] title Title to add in the file
+         * \param[in] oenv  Gromacs output environment
+         */
+        void writeCube(const std::string      &fn,
+                       const std::string      &title,
+                       const gmx_output_env_t *oenv);
 
-        void writeRho(const std::string &fn,
-                      const std::string &title);
+        /*! \brief Write a cube file containing electron density
+         * \param[in] fn    The file name to write to
+         * \param[in] title Title to add in the file
+         * \param[in] oenv  Gromacs output environment
+         */
+        void writeRho(const std::string      &fn,
+                      const std::string      &title,
+                      const gmx_output_env_t *oenv);
 
         void writeDiffCube(QgenResp                   &src,
                            const std::string          &cubeFn,
@@ -212,8 +224,8 @@ class QgenResp
         // Make sure the total charge is correct and that symmetry is obeyed
         void regularizeCharges();
 
-        void potcomp(const std::string      &potcomp,
-                     const std::string      &pdbdiff,
+        void potcomp(const char             *potcomp,
+                     const char             *pdbdiff,
                      const gmx_output_env_t *oenv);
 
         //! Return the net charge for an atom

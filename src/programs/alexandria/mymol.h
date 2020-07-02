@@ -450,21 +450,14 @@ class MyMol : public MolProp
         immStatus GenerateCharges(const Poldata          *pd,
                                   const gmx::MDLogger    &fplog,
                                   gmx_atomprop_t          ap,
-                                  real                    watoms,
                                   real                    hfac,
-                                  const std::string      &method,
-                                  const std::string      &basis,
-                                  std::string            *mylot,
                                   bool                    bSymmetricCharges,
                                   const char             *symm_string,
                                   t_commrec              *cr,
                                   const char             *tabfn,
                                   gmx_hw_info_t          *hwinfo,
                                   int                     qcycle,
-                                  int                     maxESP,
-                                  real                    qtol,
-                                  const gmx_output_env_t *oenv,
-                                  const char             *ESPcorr);
+                                  real                    qtol);
         /*! \brief
          * Init the Qgresp class
          *
@@ -476,6 +469,16 @@ class MyMol : public MolProp
                         real               watoms,
                         int                maxESP);
 
+        /*! \brief Make a ESP correlation plot
+         *
+         * Will compute the electrostatic potential around the compound
+         * and make a correlation plot between the QM potential and the
+         * Alexandria potential.
+         * \param[in] espcorr File name to plot to
+         * \param[in] oenv    Gromacs output structure
+         */
+        void plotEspCorrelation(const char             *espcorr,
+                                const gmx_output_env_t *oenv);
         /*! \brief
          * Return the root-mean square deviation of
          * the generated ESP from the QM ESP.

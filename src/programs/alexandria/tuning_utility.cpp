@@ -259,13 +259,11 @@ void print_electric_props(FILE                           *fp,
                           const Poldata                  *pd,
                           const gmx::MDLogger            &fplog,
                           gmx_atomprop_t                  ap,
-                          real                            watoms,
                           real                            hfac,
                           const char                     *lot,
                           const char                     *tabfn,
                           gmx_hw_info_t                  *hwinfo,
                           int                             qcycle,
-                          int                             maxESP,
                           real                            qtol,
                           const char                     *qhisto,
                           const char                     *DipCorr,
@@ -345,10 +343,8 @@ void print_electric_props(FILE                           *fp,
                     mol.getMultiplicity());
 
             // Recalculate the atomic charges using the optmized parameters.
-            mol.GenerateCharges(pd, fplog, ap, watoms, hfac, method, basis,
-                                nullptr, false, nullptr,
-                                cr, tabfn, hwinfo, qcycle,
-                                maxESP, qtol, nullptr, nullptr);
+            mol.GenerateCharges(pd, fplog, ap, hfac, false, nullptr,
+                                cr, tabfn, hwinfo, qcycle, qtol);
 
             // Electrostatic potentials
             mol.Qgresp_.updateZeta(mol.atoms_, pd);
@@ -660,7 +656,7 @@ void print_header(FILE                       *fp,
             value = gmx::formatString("%d", *p.u.i);
             break;
         case etINT64:
-            value = gmx::formatString("%lld", *p.u.is);
+            value = gmx::formatString("%ld", *p.u.is);
             break;
         case etREAL:
             value = gmx::formatString("%g", *p.u.r);

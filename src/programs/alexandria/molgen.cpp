@@ -626,21 +626,14 @@ void MolGen::Read(FILE            *fp,
                     imm = mymol.GenerateCharges(&pd_,
                                                 mdlog_,
                                                 atomprop_,
-                                                watoms_,
                                                 hfac_,
-                                                method,
-                                                basis,
-                                                nullptr,
                                                 qsymm_,
                                                 nullptr,
                                                 cr_,
                                                 tabfn,
                                                 hwinfo_,
                                                 qcycle_,
-                                                maxESP_,
-                                                qtol_,
-                                                nullptr,
-                                                nullptr);
+                                                qtol_);
                     (void) mymol.espRms();
                 }
                 if (immOK != imm && debug)
@@ -772,21 +765,14 @@ void MolGen::Read(FILE            *fp,
                 imm = mymol.GenerateCharges(&pd_,
                                             mdlog_,
                                             atomprop_,
-                                            watoms_,
                                             hfac_,
-                                            method,
-                                            basis,
-                                            nullptr,
                                             qsymm_,
                                             nullptr,
                                             cr_,
                                             tabfn,
                                             hwinfo_,
                                             qcycle_,
-                                            maxESP_,
-                                            qtol_,
-                                            nullptr,
-                                            nullptr);
+                                            qtol_);
                 (void) mymol.espRms();
             }
             if (immOK == imm)

@@ -378,31 +378,29 @@ int alex_gentop(int argc, char *argv[])
                                  false,
                                  tabfn);
 
+    mymol.initQgresp(&pd, method, basis, &mylot, 0.0, maxpot);
     if (immOK == imm)
     {
         maxpot = 100; //Use 100 percent of the ESP read from Gaussian file.
         imm    = mymol.GenerateCharges(&pd,
                                        mdlog,
                                        aps,
-                                       watoms,
                                        hfac,
-                                       method,
-                                       basis,
-                                       &mylot,
                                        bQsym,
                                        symm_string,
                                        cr,
                                        tabfn,
                                        nullptr,
                                        qcycle,
-                                       maxpot,
-                                       qtol,
-                                       oenv,
-                                       opt2fn_null("-plotESP", NFILE, fnm));
+                                       qtol);
     }
+    /* Generate output file for debugging if requested */
+    mymol.plotEspCorrelation(opt2fn_null("-plotESP", NFILE, fnm), oenv);
+
     if (bCUBE && immOK == imm)
     {
-        fprintf(stderr, "Fix me: GenerateCube is broken\n");
+        //mymol.initQgresp(&pd, method, basis, &mylot, 0.0, 100);
+
         mymol.GenerateCube(&pd,
                            spacing,
                            opt2fn_null("-ref",      NFILE, fnm),
