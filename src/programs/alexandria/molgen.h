@@ -426,7 +426,8 @@ class MolGen
                   bool             bZPE,
                   bool             bFitZeta,
                   bool             bDHform,
-                  const char      *tabfn);
+                  const char      *tabfn,
+                  iMolSelect       SelectType);
 
 };
 

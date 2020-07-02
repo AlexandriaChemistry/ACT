@@ -1151,6 +1151,8 @@ int alex_tune_eem(int argc, char *argv[])
     bool                        bOptimize     = true;
     bool                        bForceOutput  = true;
     bool                        useOffset     = false;
+    
+    static const char          *select_types[]   = {nullptr, "Train", "Test", "Ignore", "Unknown", nullptr};
 
     t_pargs                     pa[]         = {
         { "-reinit", FALSE, etINT, {&reinit},
@@ -1184,7 +1186,9 @@ int alex_tune_eem(int argc, char *argv[])
         { "-optimize",     FALSE, etBOOL, {&bOptimize},
           "Do parameter optimization when true, or a single calculation otherwise." },
         { "-force_output", FALSE, etBOOL, {&bForceOutput},
-          "Write output even if no new minimum is found" }
+          "Write output even if no new minimum is found" },
+        { "-select", FALSE, etENUM, {select_types},
+          "Select type for making the dataset for training or testing." }
 
     };
 
@@ -1230,6 +1234,7 @@ int alex_tune_eem(int argc, char *argv[])
 
     const char *tabfn = opt2fn_null("-table", NFILE, fnm);   
     
+    iMolSelect select_type = name2molselect(select_types[0]);
     opt.Read(opt.logFile() ? opt.logFile() : (debug ? debug : nullptr),
              opt2fn("-f", NFILE, fnm),
              opt2fn_null("-d", NFILE, fnm),
@@ -1242,7 +1247,8 @@ int alex_tune_eem(int argc, char *argv[])
              false,
              opt.fitZeta(),
              false,
-             tabfn);
+             tabfn,
+             select_type);
              
     auto  iModel      = opt.poldata()->getChargeModel();
     bool  pointCore   = isCorePointCharge(iModel);

@@ -491,7 +491,8 @@ void MolGen::Read(FILE            *fp,
                   bool             bZPE,
                   bool             bFitZeta,
                   bool             bDHform,
-                  const char      *tabfn)
+                  const char      *tabfn,
+                  iMolSelect       SelectType)
 {
     int                              nwarn    = 0;
     int                              imm_count[immNR];
@@ -537,7 +538,7 @@ void MolGen::Read(FILE            *fp,
         for (auto mpi = mp.begin(); mpi < mp.end(); )
         {
             mpi->CheckConsistency();
-            if (false == mpi->GenerateComposition(&pd_) || imsTrain != gms.status(mpi->getIupac()))
+            if (false == mpi->GenerateComposition(&pd_) || SelectType != gms.status(mpi->getIupac()))
             {
                 mpi = mp.erase(mpi);
             }
@@ -580,7 +581,7 @@ void MolGen::Read(FILE            *fp,
         printf("Generating molecules!\n");
         for (auto mpi = mp.begin(); mpi < mp.end(); ++mpi)
         {
-            if (imsTrain == gms.status(mpi->getIupac()))
+            if (SelectType == gms.status(mpi->getIupac()))
             {
                 int               dest = (ntopol % cr_->nnodes);
                 alexandria::MyMol mymol;

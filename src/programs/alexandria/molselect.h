@@ -42,10 +42,18 @@
 #include "poldata.h"
 
 enum iMolSelect {
-    imsTrain, imsTest, imsIgnore, imsUnknown, imsNR
+    imsTrain   = 0, 
+    imsTest    = 1,
+    imsIgnore  = 2, 
+    imsUnknown = 3, 
+    imsNR      = 4
 };
 
+
+
 const char *iMolSelectName(iMolSelect ims);
+
+iMolSelect name2molselect(const std::string name);
 
 namespace alexandria
 {

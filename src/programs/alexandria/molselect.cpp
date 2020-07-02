@@ -35,10 +35,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-
 #include <random>
 #include <vector>
-
 #include <strings.h>
 
 #include "gromacs/commandline/filenm.h"
@@ -62,13 +60,33 @@
 #include "poldata_xml.h"
 #include "stringutil.h"
 
-static const char *ims_names[imsNR] = { "Train", "Test", "Ignore", "Unknown" };
+typedef struct {
+    iMolSelect   eEM;
+    const char   *name;
+} t_iMolSelect;
+
+t_iMolSelect MolSelect_Names[imsNR] = {
+    {imsTrain,   "Train"},
+    {imsTest,    "Test"},
+    {imsIgnore,  "Ignore"},
+    {imsUnknown, "Unknown"}
+};
 
 const char *iMolSelectName(iMolSelect ims)
 {
-    int i = static_cast<int>(ims);
+    return MolSelect_Names[ims].name;
+}
 
-    return ims_names[i];
+iMolSelect name2molselect(const std::string name)
+{
+    for (auto i = 0; i < imsNR; i++)
+    {
+        if (strcasecmp(name.c_str(), MolSelect_Names[i].name) == 0)
+        {
+            return MolSelect_Names[i].eEM;
+        }
+    }
+    return imsNR;
 }
 
 namespace alexandria
@@ -149,18 +167,17 @@ void MolSelect::read(const char *fn)
             && (ptr[1].length() > 1))
         {
             iMolSelect status;
-            int        j;
-
-            for (j = 0; (j < (int)imsNR); j++)
+            int        ims = 0;
+            for (ims = 0; ims < imsNR; ims++)
             {
-                if (strcasecmp(ims_names[j], ptr[1].c_str()) == 0)
+                if (strcasecmp(MolSelect_Names[ims].name, ptr[1].c_str()) == 0)
                 {
                     break;
                 }
             }
-            if (j < imsNR)
+            if (ims < imsNR)
             {
-                status = static_cast<iMolSelect>(j);
+                status = MolSelect_Names[ims].eEM;
             }
             else
             {
@@ -272,6 +289,9 @@ int alex_molselect(int argc, char *argv[])
     static int                  maxatempt = 5000;
     static char                *opt_elem  = nullptr;
     static gmx_bool             bZero     = false;
+    
+    static const char          *select_types[]   = {nullptr, "Train", "Test", "Ignore", "Unknown", nullptr};
+    
     t_pargs                     pa[]      =
     {
         { "-nsample",   FALSE, etINT, {&nsample},
@@ -280,6 +300,8 @@ int alex_molselect(int argc, char *argv[])
           "Take into account molecules with zero dipoles." },
         { "-maxatempt", FALSE, etINT, {&maxatempt},
           "Maximum number of atempts to sample mindata molecules per atom types." },
+        { "-select", FALSE, etENUM, {select_types},
+          "Select type for making the dataset for training or testing." },
         { "-opt_elem",  FALSE, etSTR, {&opt_elem},
           "Space-separated list of atom types to select molecules. If this variable is not set, all elements will be used." }
     };
@@ -296,9 +318,17 @@ int alex_molselect(int argc, char *argv[])
         pargs.push_back(pa[i]);
     }
     mdp.addOptions(&pargs, etuneNR);
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW, NFILE, fnm,
-                           pargs.size(), pargs.data(),
-                           asize(desc), desc, 0, nullptr, &oenv))
+    if (!parse_common_args(&argc, 
+                           argv, 
+                           PCA_CAN_VIEW, 
+                           NFILE, fnm,
+                           pargs.size(), 
+                           pargs.data(),
+                           asize(desc), 
+                           desc, 
+                           0, 
+                           nullptr, 
+                           &oenv))
     {
         return 0;
     }
@@ -313,12 +343,21 @@ int alex_molselect(int argc, char *argv[])
 
     gms.read(opt2fn_null("-sel", NFILE, fnm));
 
+    iMolSelect select_type = name2molselect(select_types[0]);
     mdp.Read(fp ? fp : (debug ? debug : nullptr),
              opt2fn("-f", NFILE, fnm),
              opt2fn_null("-d", NFILE, fnm),
-             bZero, opt_elem,
-             gms, true, false, false,
-             false, true, false, nullptr);
+             bZero,
+             opt_elem,
+             gms, 
+             true, 
+             false, 
+             false,
+             false, 
+             true, 
+             false, 
+             nullptr,
+             select_type);
 
     printAtomtypeStatistics(fp, mdp.poldata(), mdp.mymols());
 

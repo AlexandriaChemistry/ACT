@@ -555,6 +555,8 @@ int alex_tune_zeta(int argc, char *argv[])
     gmx_bool                    bZPE          = false;
     gmx_bool                    bZero         = true;    
     gmx_bool                    bOptimize     = true;
+    
+    static const char          *select_types[]   = {nullptr, "Train", "Test", "Ignore", "Unknown", nullptr};
 
     t_pargs                     pa[]          = {
         { "-reinit", FALSE, etINT, {&reinit},
@@ -591,6 +593,8 @@ int alex_tune_zeta(int argc, char *argv[])
           "The magnitude of the external electric field to calculate polarizability tensor." },
         { "-optimize",     FALSE, etBOOL, {&bOptimize},
           "Optimize zeta values" },
+        { "-select", FALSE, etENUM, {select_types},
+          "Select type for making the dataset for training or testing." }
     };
 
     FILE                       *fp;
@@ -606,9 +610,18 @@ int alex_tune_zeta(int argc, char *argv[])
     alexandria::OptZeta opt;
     opt.add_pargs(&pargs);
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW, NFILE, fnm,
-                           pargs.size(), pargs.data(),
-                           asize(desc), desc, 0, nullptr, &oenv))
+    if (!parse_common_args(&argc, 
+                           argv, 
+                           PCA_CAN_VIEW, 
+                           NFILE, 
+                           fnm,
+                           pargs.size(), 
+                           pargs.data(),
+                           asize(desc), 
+                           desc, 
+                           0, 
+                           nullptr, 
+                           &oenv))
     {
         return 0;
     }
@@ -634,6 +647,7 @@ int alex_tune_zeta(int argc, char *argv[])
 
     const char *tabfn = opt2fn_null("-table", NFILE, fnm);
 
+    iMolSelect select_type = name2molselect(select_types[0]);
     opt.Read(fp ? fp : (debug ? debug : nullptr),
              opt2fn("-f", NFILE, fnm),
              opt2fn_null("-d", NFILE, fnm),
@@ -646,7 +660,8 @@ int alex_tune_zeta(int argc, char *argv[])
              bZPE,
              true,
              false,
-             tabfn);
+             tabfn,
+             select_type);
 
     if (bOptimize)
     {
