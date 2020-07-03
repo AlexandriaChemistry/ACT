@@ -343,7 +343,9 @@ void print_electric_props(FILE                           *fp,
                     mol.getMultiplicity());
 
             // Recalculate the atomic charges using the optmized parameters.
-            mol.GenerateCharges(pd, fplog, ap, hfac, false, nullptr,
+            mol.symmetrizeCharges(pd, ap, false, nullptr);
+            mol.initQgresp(pd, method, basis, nullptr, 0.0, 100);
+            mol.GenerateCharges(pd, fplog, hfac,
                                 cr, tabfn, hwinfo, qcycle, qtol);
 
             // Electrostatic potentials

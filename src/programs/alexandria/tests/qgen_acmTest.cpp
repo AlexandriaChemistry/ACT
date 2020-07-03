@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2014-2018
+ * Copyright (C) 2014-2020
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -87,7 +87,7 @@ class AcmTest : public gmx::test::CommandLineTestBase
         {
         }
 
-        void testAcm(ChargeModel model, informat inputformat)
+        void testAcm(ChargeModel model, informat inputformat, bool qSymm)
         {
             int                   maxpot    = 100;
             int                   nsymm     = 0;
@@ -146,26 +146,18 @@ class AcmTest : public gmx::test::CommandLineTestBase
             fprintf(stderr, "Generated topology for %s\n", dataName.c_str());
 
             // Needed for GenerateCharges
-            real           hfac                  = 0;
-            char          *symm_string           = (char *)"";
-            t_commrec     *cr                    = init_commrec();
-            auto           pnc                   = gmx::PhysicalNodeCommunicator(MPI_COMM_WORLD, 0);
+            real           hfac     = 0;
+            t_commrec     *cr       = init_commrec();
+            auto           pnc      = gmx::PhysicalNodeCommunicator(MPI_COMM_WORLD, 0);
             gmx::MDLogger  mdlog {};
-            auto           hwinfo                = gmx_detect_hardware(mdlog, pnc);
-            int            qcycle                = 100;
-            real           qtol                  = 1e-3;
+            auto           hwinfo   = gmx_detect_hardware(mdlog, pnc);
+            int            qcycle   = 100;
+            real           qtol     = 1e-3;
 
-            mp_.GenerateCharges(pd, 
-                                mdlog, 
-                                aps_,                                 
-                                hfac, 
-                                true, 
-                                symm_string, 
-                                cr,
-                                nullptr, 
-                                hwinfo, 
-                                qcycle,
-                                qtol);
+            mp_.symmetrizeCharges(pd, aps_, qSymm, nullptr);
+            mp_.initQgresp(pd, method, basis, nullptr, 0.0, 100);
+            mp_.GenerateCharges(pd, mdlog, hfac, cr, nullptr, 
+                                hwinfo, qcycle, qtol);
                                 
             fprintf(stderr, "Generated charges for %s\n", dataName.c_str());
 
@@ -188,42 +180,72 @@ class AcmTest : public gmx::test::CommandLineTestBase
 
 TEST_F (AcmTest, BultinckLog)
 {
-    testAcm(eqdBultinck, einfLOG);
+    testAcm(eqdBultinck, einfLOG, true);
 }
 
 TEST_F (AcmTest, BultinckPDB)
 {
-    testAcm(eqdBultinck, einfPDB);
+    testAcm(eqdBultinck, einfPDB, true);
 }
 
 TEST_F (AcmTest, RappeLog)
 {
-    testAcm(eqdRappe, einfLOG);
+    testAcm(eqdRappe, einfLOG, true);
 }
 
 TEST_F (AcmTest, RappePDB)
 {
-    testAcm(eqdRappe, einfPDB);
+    testAcm(eqdRappe, einfPDB, true);
 }
 
 TEST_F (AcmTest, YangLog)
 {
-    testAcm(eqdYang, einfLOG);
+    testAcm(eqdYang, einfLOG, true);
 }
 
 TEST_F (AcmTest, YangPDB)
 {
-    testAcm(eqdYang, einfPDB);
+    testAcm(eqdYang, einfPDB, true);
 }
 
 TEST_F (AcmTest, AXpgLOG)
 {
-    testAcm(eqdACM_pg, einfLOG);
+    testAcm(eqdACM_pg, einfLOG, true);
 }
 
 TEST_F (AcmTest, AXpgPDB)
 {
-    testAcm(eqdACM_pg, einfPDB);
+    testAcm(eqdACM_pg, einfPDB, true);
+}
+
+TEST_F (AcmTest, AXpgNoSymmLOG)
+{
+    testAcm(eqdACM_pg, einfLOG, false);
+}
+
+TEST_F (AcmTest, AXpgNoSymmPDB)
+{
+    testAcm(eqdACM_pg, einfPDB, false);
+}
+
+TEST_F (AcmTest, AXgLOG)
+{
+    testAcm(eqdACM_g, einfLOG, true);
+}
+
+TEST_F (AcmTest, AXgPDB)
+{
+    testAcm(eqdACM_g, einfPDB, true);
+}
+
+TEST_F (AcmTest, AXgNoSymmLOG)
+{
+    testAcm(eqdACM_g, einfLOG, false);
+}
+
+TEST_F (AcmTest, AXgNoSymmPDB)
+{
+    testAcm(eqdACM_g, einfPDB, false);
 }
 
 }

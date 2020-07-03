@@ -63,7 +63,7 @@ void symmetrize_charges(gmx_bool bQsym,
                         ConstPlistWrapperIterator bonds,
                         const Poldata *pd,
                         gmx_atomprop *aps, const char *symm_string,
-                        std::vector<int> &sym_charges);
+                        std::vector<int> *sym_charges);
 
 enum eChargeGroup {
     ecgAtom, ecgGroup, ecgNeutral, ecgNR

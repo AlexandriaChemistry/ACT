@@ -437,30 +437,47 @@ class MyMol : public MolProp
          *
          * \param[in] pd                             Data structure containing atomic properties
          * \param[in] fplog                          Logger
-         * \param[in] ap                             Gromacs atom properties
          * \param[in] watoms
          * \param[in] hfac
          * \param[in] method                         Method used for QM calculation
          * \param[in] basis                          Basis set used for QM calculation
-         * \param[in] bSymmetricCharges              Consider molecular symmetry to calculate partial charge
-         * \param[in] symm_string                    The type of molecular symmetry
          * \param[in] cr
          * \param[in] tabfn
          */
         immStatus GenerateCharges(const Poldata          *pd,
                                   const gmx::MDLogger    &fplog,
-                                  gmx_atomprop_t          ap,
                                   real                    hfac,
-                                  bool                    bSymmetricCharges,
-                                  const char             *symm_string,
                                   t_commrec              *cr,
                                   const char             *tabfn,
                                   gmx_hw_info_t          *hwinfo,
                                   int                     qcycle,
                                   real                    qtol);
-        /*! \brief
-         * Init the Qgresp class
+                                  
+        /*! \brief Implement charge symmetrization
          *
+         * Initiates internal structure for atom charge symmetry
+         * (e.g. CH3 with identical charges on H).
+         * Must be called before initQgresp.
+         * \param[in] pd                 Data structure containing atomic properties
+         * \param[in] ap                 Gromacs atom properties
+         * \param[in] bSymmetricCharges  Consider molecular symmetry to calculate partial charge
+         * \param[in] symm_string        The type of molecular symmetry
+         */
+        void symmetrizeCharges(const Poldata  *pd,
+                               gmx_atomprop_t  ap,
+                               bool            bSymmetricCharges,
+                               const char     *symm_string);
+        /*! \brief Init the class for the RESP algorithm.
+         * This must be called before generateCharges even if no RESP
+         * is used for charge generation, since ESP points can be used
+         * in analysis.
+         * \param[in]  pd                 Data structure containing atomic properties
+         * \param[in]  method  Method used for QM
+         * \param[in]  basis   Basis set used for QM
+         * \param[out] mylot   Combined level of theory, may be nullptr
+         * \param[in]  watoms  Weight for the potential on the atoms in 
+         *                     doing the RESP fit. Should be 0 in most cases.
+         * \param[in]  maxESP  Percentage of the ESP points to consider (<= 100)
          */
         void initQgresp(const Poldata     *pd,
                         const std::string &method,

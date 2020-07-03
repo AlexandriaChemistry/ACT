@@ -378,16 +378,16 @@ int alex_gentop(int argc, char *argv[])
                                  false,
                                  tabfn);
 
+    //imm = mymol.GenerateGromacs(mdlog, cr, tabfn, nullptr, pd.getChargeModel());
+    mymol.symmetrizeCharges(&pd, aps, bQsym, symm_string);
+    maxpot = 100; // Use 100 percent of the ESP read from Gaussian file.
+    
     mymol.initQgresp(&pd, method, basis, &mylot, 0.0, maxpot);
     if (immOK == imm)
     {
-        maxpot = 100; //Use 100 percent of the ESP read from Gaussian file.
         imm    = mymol.GenerateCharges(&pd,
                                        mdlog,
-                                       aps,
                                        hfac,
-                                       bQsym,
-                                       symm_string,
                                        cr,
                                        tabfn,
                                        nullptr,

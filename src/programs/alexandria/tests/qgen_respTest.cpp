@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2014-2018
+ * Copyright (C) 2014-2020
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -95,7 +95,7 @@ class RespTest : public gmx::test::CommandLineTestBase
         {
         }
 
-        void testResp(ChargeModel qdist)
+        void testResp(ChargeModel qdist, bool qSymm)
         {
             //Generate charges and topology
             std::string   method("B3LYP");
@@ -116,32 +116,26 @@ class RespTest : public gmx::test::CommandLineTestBase
                     mp_.getMolname().c_str());
 
             //Needed for GenerateCharges
-            real           hfac                  = 0;
-            char          *symm_string           = (char *)"";
-            t_commrec     *cr                    = init_commrec();
-            auto           pnc                   = gmx::PhysicalNodeCommunicator(MPI_COMM_WORLD, 0);
+            real           hfac        = 0;
+            t_commrec     *cr          = init_commrec();
+            auto           pnc         = gmx::PhysicalNodeCommunicator(MPI_COMM_WORLD, 0);
             gmx::MDLogger  mdlog {};
             auto           hwinfo      = gmx_detect_hardware(mdlog, pnc);
             int            qcycle      = 1;
             real           qtol        = 1e-3;
             std::string    tabFile;
+          
             if (getEemtypeSlater(qdist))
             {
                 inputrec.coulombtype = eelUSER;
                 tabFile              = fileManager().getInputFilePath("table.xvg");
             }
             mp_.setInputrec(&inputrec);
-            mp_.GenerateCharges(getPoldata(qdist), 
-                                mdlog, 
-                                aps_, 
-                                hfac, 
-                                false, 
-                                symm_string, 
-                                cr,
+            mp_.symmetrizeCharges(getPoldata(qdist), aps_, qSymm, nullptr);
+            mp_.initQgresp(getPoldata(qdist), method, basis, nullptr, 0.0, 100);
+            mp_.GenerateCharges(getPoldata(qdist), mdlog, hfac, cr,
                                 tabFile.empty() ? nullptr : tabFile.c_str(),
-                                hwinfo, 
-                                qcycle, 
-                                qtol);
+                                hwinfo, qcycle, qtol);
 
             std::vector<double> qtotValues;
             for (int atom = 0; atom < mp_.mtop_->moltype[0].atoms.nr; atom++)
@@ -163,15 +157,30 @@ class RespTest : public gmx::test::CommandLineTestBase
 
 TEST_F (RespTest, AXpValues)
 {
-    testResp(eqdESP_p);
+    testResp(eqdESP_p, false);
 }
 
 TEST_F (RespTest, AXgPolarValues)
 {
-    testResp(eqdESP_pg);
+    testResp(eqdESP_pg, false);
 }
 
 TEST_F (RespTest, AXsPolarValues)
 {
-    testResp(eqdESP_ps);
+    testResp(eqdESP_ps, false);
+}
+
+TEST_F (RespTest, AXpSymmetricCharges)
+{
+    testResp(eqdESP_p, true);
+}
+
+TEST_F (RespTest, AXgSymmetricPolarCharges)
+{
+    testResp(eqdESP_pg, true);
+}
+
+TEST_F (RespTest, AXsSymmetricPolarCharges)
+{
+    testResp(eqdESP_ps, true);
 }

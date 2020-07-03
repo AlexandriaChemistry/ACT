@@ -179,17 +179,17 @@ void symmetrize_charges(gmx_bool                   bQsym,
                         const Poldata             *pd,
                         gmx_atomprop_t             aps, 
                         const char                *symm_string,
-                        std::vector<int>          &sym_charges)
+                        std::vector<int>          *sym_charges)
 {
     std::string  central, attached;
     int          ai, aj, anri, anrj;
     int          anr_central, anr_attached, nrq;
     double       qaver, qsum;
 
-    sym_charges.clear();
+    sym_charges->clear();
     for (int i = 0; i < atoms->nr; i++)
     {
-        sym_charges.push_back(i);
+        sym_charges->push_back(i);
     }
     if (bQsym)
     {
@@ -205,7 +205,7 @@ void symmetrize_charges(gmx_bool                   bQsym,
             for (auto is = ss.begin();
                  (is < ss.end()); ++is)
             {
-                sym_charges[ii] = atoi(is->c_str());
+                (*sym_charges)[ii] = atoi(is->c_str());
                 ii++;
             }
         }
@@ -247,7 +247,7 @@ void symmetrize_charges(gmx_bool                   bQsym,
                         {
                             for (int j = 0; j < symcharges->getNumattach(); j++)
                             {
-                                sym_charges[hs[j]] = hsmin;
+                                (*sym_charges)[hs[j]] = hsmin;
                             }
                         }
                     }
@@ -261,7 +261,7 @@ void symmetrize_charges(gmx_bool                   bQsym,
             nrq  = 0;
             for (int j = i+1; j < atoms->nr; j++)
             {
-                if (sym_charges[j] == sym_charges[i])
+                if ((*sym_charges)[j] == (*sym_charges)[i])
                 {
                     qsum += atoms->atom[j].q;
                     nrq++;
@@ -272,7 +272,7 @@ void symmetrize_charges(gmx_bool                   bQsym,
                 qaver = qsum/nrq;
                 for (int j = 0; j < atoms->nr; j++)
                 {
-                    if (sym_charges[j] == sym_charges[i])
+                    if ((*sym_charges)[j] == (*sym_charges)[i])
                     {
                         atoms->atom[j].q = atoms->atom[j].qB = qaver;
                     }

@@ -623,12 +623,11 @@ void MolGen::Read(FILE            *fp,
                 }
                 if (immOK == imm)
                 {
+                    mymol.symmetrizeCharges(&pd_, atomprop_, qsymm_, nullptr);
+                    mymol.initQgresp(&pd_, method, basis, nullptr, 0.0, maxESP_);
                     imm = mymol.GenerateCharges(&pd_,
                                                 mdlog_,
-                                                atomprop_,
                                                 hfac_,
-                                                qsymm_,
-                                                nullptr,
                                                 cr_,
                                                 tabfn,
                                                 hwinfo_,
@@ -762,12 +761,11 @@ void MolGen::Read(FILE            *fp,
 
             if (immOK == imm)
             {
+                mymol.symmetrizeCharges(&pd_, atomprop_, qsymm_, nullptr);
+                mymol.initQgresp(&pd_, method, basis, nullptr, 0.0, maxESP_);
                 imm = mymol.GenerateCharges(&pd_,
                                             mdlog_,
-                                            atomprop_,
                                             hfac_,
-                                            qsymm_,
-                                            nullptr,
                                             cr_,
                                             tabfn,
                                             hwinfo_,

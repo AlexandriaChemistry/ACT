@@ -1292,6 +1292,30 @@ immStatus MyMol::computeForces(FILE *fplog, t_commrec *cr, double *rmsf)
     return imm;
 }
 
+void MyMol::symmetrizeCharges(const Poldata  *pd,
+                              gmx_atomprop_t  ap,
+                              bool            bSymmetricCharges,
+                              const char     *symm_string)
+{
+    if (bSymmetricCharges)
+    {
+        symmetric_charges_.clear();
+        ConstPlistWrapperIterator bonds = SearchPlist(plist_, eitBONDS);
+        if (plist_.end() != bonds)
+        {
+            symmetrize_charges(bSymmetricCharges, atoms_, bonds,
+                               pd, ap, symm_string, &symmetric_charges_);
+        }
+    }
+    else
+    {
+        for (auto i = 0; i < atoms_->nr; i++)
+        {
+            symmetric_charges_.push_back(i);
+        }
+    }
+}
+
 void MyMol::initQgresp(const Poldata             *pd,
                        const std::string         &method,
                        const std::string         &basis,
@@ -1345,10 +1369,7 @@ void MyMol::initQgresp(const Poldata             *pd,
 
 immStatus MyMol::GenerateCharges(const Poldata             *pd,
                                  const gmx::MDLogger       &mdlog,
-                                 gmx_atomprop_t             ap,
                                  real                       hfac,
-                                 bool                       bSymmetricCharges,
-                                 const char                *symm_string,
                                  t_commrec                 *cr,
                                  const char                *tabfn,
                                  gmx_hw_info_t             *hwinfo,
@@ -1365,23 +1386,6 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
     if (backupCoordinates_.size() == 0)
     {
         backupCoordinates();
-    }
-    if (bSymmetricCharges)
-    {
-        symmetric_charges_.clear();
-        ConstPlistWrapperIterator bonds = SearchPlist(plist_, eitBONDS);
-        if (plist_.end() != bonds)
-        {
-            symmetrize_charges(bSymmetricCharges, atoms_, bonds,
-                               pd, ap, symm_string, symmetric_charges_);
-        }
-    }
-    else
-    {
-        for (auto i = 0; i < atoms_->nr; i++)
-        {
-            symmetric_charges_.push_back(i);
-        }
     }
     switch (chargeGenerationAlgorithm(pd->getChargeModel()))
     {
