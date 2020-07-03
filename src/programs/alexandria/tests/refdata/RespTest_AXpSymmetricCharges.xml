@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="qtotValuesEqdModel_ESP-p">
+    <Int Name="Length">15</Int>
+    <Real>-0.16297843303046336</Real>
+    <Real>0.036514380014222018</Real>
+    <Real>0.036512280711902184</Real>
+    <Real>0.03651228099130633</Real>
+    <Real>0.079055543196896699</Real>
+    <Real>-0.014443979499609898</Real>
+    <Real>-0.01444320391596159</Real>
+    <Real>-0.0087898565117134758</Real>
+    <Real>0.030830845321630933</Real>
+    <Real>0.030829158389491962</Real>
+    <Real>0.29282570600650754</Real>
+    <Real>-0.036272793070357391</Real>
+    <Real>-0.036273598527493754</Real>
+    <Real>-0.66205638939426359</Real>
+    <Real>0.39217805931790539</Real>
+  </Sequence>
+</ReferenceData>

@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="qtotSize">30</Int>
+  <Sequence Name="qtotValuesEqdAlgorithm_0">
+    <Int Name="Length">30</Int>
+    <Real>1.9258750311241764</Real>
+    <Real>-2</Real>
+    <Real>1.0282764468098522</Real>
+    <Real>-1</Real>
+    <Real>1.0296349429746547</Real>
+    <Real>-1</Real>
+    <Real>1.029634928977897</Real>
+    <Real>-1</Real>
+    <Real>1.9278983942656394</Real>
+    <Real>-2</Real>
+    <Real>1.029610818171246</Real>
+    <Real>-1</Real>
+    <Real>1.0296108694323063</Real>
+    <Real>-1</Real>
+    <Real>1.950233092626541</Real>
+    <Real>-2</Real>
+    <Real>1.0452480180825772</Real>
+    <Real>-1</Real>
+    <Real>1.0452477588383398</Real>
+    <Real>-1</Real>
+    <Real>1.9501997203817241</Real>
+    <Real>-2</Real>
+    <Real>1.0738272335580101</Real>
+    <Real>-1</Real>
+    <Real>1.0738274656411952</Real>
+    <Real>-1</Real>
+    <Real>1.5117745066928383</Real>
+    <Real>-2</Real>
+    <Real>1.3491007724229807</Real>
+    <Real>-1</Real>
+  </Sequence>
+</ReferenceData>
