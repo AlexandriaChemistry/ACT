@@ -117,7 +117,6 @@ class RespTest : public gmx::test::CommandLineTestBase
 
             //Needed for GenerateCharges
             real           hfac                  = 0;
-            real           watoms                = 0;
             char          *symm_string           = (char *)"";
             t_commrec     *cr                    = init_commrec();
             auto           pnc                   = gmx::PhysicalNodeCommunicator(MPI_COMM_WORLD, 0);
@@ -125,7 +124,6 @@ class RespTest : public gmx::test::CommandLineTestBase
             auto           hwinfo      = gmx_detect_hardware(mdlog, pnc);
             int            qcycle      = 1;
             real           qtol        = 1e-3;
-            int            maxpot      = 100;
             std::string    tabFile;
             if (getEemtypeSlater(qdist))
             {
@@ -133,11 +131,17 @@ class RespTest : public gmx::test::CommandLineTestBase
                 tabFile              = fileManager().getInputFilePath("table.xvg");
             }
             mp_.setInputrec(&inputrec);
-            mp_.GenerateCharges(getPoldata(qdist), mdlog, aps_, watoms,
-                                hfac, method, basis, nullptr,
-                                false, symm_string, cr,
+            mp_.GenerateCharges(getPoldata(qdist), 
+                                mdlog, 
+                                aps_, 
+                                hfac, 
+                                false, 
+                                symm_string, 
+                                cr,
                                 tabFile.empty() ? nullptr : tabFile.c_str(),
-                                hwinfo, qcycle, maxpot, qtol, nullptr, nullptr);
+                                hwinfo, 
+                                qcycle, 
+                                qtol);
 
             std::vector<double> qtotValues;
             for (int atom = 0; atom < mp_.mtop_->moltype[0].atoms.nr; atom++)

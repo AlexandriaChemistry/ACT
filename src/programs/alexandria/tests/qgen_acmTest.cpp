@@ -147,7 +147,6 @@ class AcmTest : public gmx::test::CommandLineTestBase
 
             // Needed for GenerateCharges
             real           hfac                  = 0;
-            real           watoms                = 0;
             char          *symm_string           = (char *)"";
             t_commrec     *cr                    = init_commrec();
             auto           pnc                   = gmx::PhysicalNodeCommunicator(MPI_COMM_WORLD, 0);
@@ -156,11 +155,18 @@ class AcmTest : public gmx::test::CommandLineTestBase
             int            qcycle                = 100;
             real           qtol                  = 1e-3;
 
-            mp_.GenerateCharges(pd, mdlog, aps_,
-                                watoms, hfac, method, basis, nullptr,
-                                true, symm_string, cr,
-                                nullptr, hwinfo, qcycle,
-                                maxpot, qtol, nullptr, nullptr);
+            mp_.GenerateCharges(pd, 
+                                mdlog, 
+                                aps_,                                 
+                                hfac, 
+                                true, 
+                                symm_string, 
+                                cr,
+                                nullptr, 
+                                hwinfo, 
+                                qcycle,
+                                qtol);
+                                
             fprintf(stderr, "Generated charges for %s\n", dataName.c_str());
 
             std::vector<double> qtotValues;
