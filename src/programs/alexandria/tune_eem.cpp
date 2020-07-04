@@ -1281,7 +1281,6 @@ int alex_tune_eem(int argc, char *argv[])
                                  opt.mymols(),
                                  opt.poldata(),
                                  opt.mdlog(),
-                                 opt.atomprop(),
                                  opt.hfac(),
                                  opt.lot(),
                                  tabfn,

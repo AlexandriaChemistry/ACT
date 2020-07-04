@@ -250,7 +250,7 @@ void QgenResp::setAtomSymmetry(const std::vector<int> &symmetricAtoms)
     GMX_RELEASE_ASSERT(!ratype_.empty(), "RespAtomType vector not initialized");
     GMX_RELEASE_ASSERT(symmetricAtoms.size() == 0 ||
                        symmetricAtoms.size() == static_cast<size_t>(nRespAtom()),
-                       "Please pass me a correct symmetric atoms vector");
+                       gmx::formatString("Please pass me a correct symmetric atoms vector. There are %d symmetricAtoms and %d RespAtoms", static_cast<int>(symmetricAtoms.size()), nRespAtom()).c_str());
 
     if (symmetricAtoms.size() == 0)
     {

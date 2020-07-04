@@ -258,7 +258,6 @@ void print_electric_props(FILE                           *fp,
                           std::vector<alexandria::MyMol> &mymol,
                           const Poldata                  *pd,
                           const gmx::MDLogger            &fplog,
-                          gmx_atomprop_t                  ap,
                           real                            hfac,
                           const char                     *lot,
                           const char                     *tabfn,
@@ -343,8 +342,6 @@ void print_electric_props(FILE                           *fp,
                     mol.getMultiplicity());
 
             // Recalculate the atomic charges using the optmized parameters.
-            mol.symmetrizeCharges(pd, ap, false, nullptr);
-            mol.initQgresp(pd, method, basis, nullptr, 0.0, 100);
             mol.GenerateCharges(pd, fplog, hfac,
                                 cr, tabfn, hwinfo, qcycle, qtol);
 
