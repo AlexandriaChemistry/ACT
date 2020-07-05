@@ -234,16 +234,7 @@ class MyMol : public MolProp
          */
         void findOutPlaneAtoms(int ca, std::vector<int> &atoms);
 
-        /*! \brief
-         * Compare the iupac name of two MyMol objects.
-         *
-         * \param[in]  mol1  Molecule 1
-         * \param[out] mol2  Molecule 2
-         */
-        friend bool operator==(const MyMol &mol1, const MyMol &mol2)
-        {
-            return (mol1.getMolname().c_str() == mol2.getMolname().c_str());
-        }
+        
 
         /*! \brief Extract charges and electric moments and store them.
          *
@@ -713,6 +704,15 @@ class MyMol : public MolProp
         void setInputrec(t_inputrec  *ir)
         {
             inputrec_ = ir;
+        }
+        
+        /*! \brief
+         * Equal operator for MyMol object
+         *
+         */
+        bool operator==(const MyMol &mol) const
+        {
+            return (this->getMolname() == mol.getMolname());
         }
 };
 
