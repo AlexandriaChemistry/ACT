@@ -63,10 +63,11 @@ void OptParam::add_pargs(std::vector<t_pargs> *pargs)
           "'Temperature' for the Monte Carlo simulation" },
         { "-anneal", FALSE, etBOOL, {&anneal_},
           "Use annealing in Monte Carlo simulation, starting from the second half of the simulation." },
+        { "-adaptive", FALSE, etBOOL, {&adaptive_},
+          "Use Adaptive Monte Carlo simulation." },
         { "-seed",   FALSE, etINT,  {&seed_},
           "Random number seed. If zero, a seed will be generated." },
         { "-step",  FALSE, etREAL, {&step_},
-          //          "Step size in parameter optimization. Is used as a fraction of the starting value, should be less than 10%. At each reinit step the step size is updated." }
           "Step size for the parameter optimization. Is used as fraction of the available range per parameter which depends on the parameter type" }
     };
     for (size_t i = 0; i < asize(pa); i++)
@@ -89,16 +90,13 @@ void OptParam::setOutputFiles(const char                     *xvgconv,
 double OptParam::computeBeta(int iter)
 {
     double temp = temperature_;
-    if (anneal_)
+    if (iter >= maxiter_)
     {
-        if (iter >= maxiter_)
-        {
-            temp = 0;
-        }
-        else
-        {
-            temp = temperature_*(1.0 - iter/(maxiter_ + 1.0));
-        }
+        temp = 1e-6;
+    }
+    else
+    {
+        temp = temperature_*(1.0 - iter/(maxiter_ + 1.0));
     }
     return 1/(BOLTZ*temp);
 }
@@ -106,16 +104,28 @@ double OptParam::computeBeta(int iter)
 double OptParam::computeBeta(int maxiter, int iter, int ncycle)
 {
     double temp = temperature_;
-    if (anneal_)
+    if (iter >= maxiter_)
     {
-        if (iter >= maxiter_)
-        {
-            temp = 0;
-        }
-        else
-        {
-            temp = (0.5*temperature_)*((exp(-iter/(0.2*(maxiter+1)))) * (1.1 + cos((ncycle*M_PI*iter)/(maxiter+1))));
-        }
+        temp = 1e-6;
+    }
+    else
+    {
+        temp = (0.5*temperature_)*((exp(-iter/(0.2*(maxiter+1)))) * (1.1 + cos((ncycle*M_PI*iter)/(maxiter+1))));
+    }
+    return 1/(BOLTZ*temp);
+}
+
+
+double OptParam::adaptBeta(real ratio)
+{
+    double temp = temperature_;
+    if (ratio < 30)
+    {
+        temp *= 1.1;
+    }
+    else if (ratio > 30)
+    {
+        temp *= 0.9;
     }
     return 1/(BOLTZ*temp);
 }
@@ -259,10 +269,6 @@ double Bayes::MCMC(FILE *fplog)
     std::vector<int>                 paramClassIndex;
     FILE                            *fpe             = nullptr;
     
-    std::random_device               rd;
-    std::mt19937                     gen(rd());
-    std::uniform_real_distribution<> uniform(0, 1);
-
     if (xvgConv().empty() || xvgEpot().empty())
     {
         gmx_fatal(FARGS, "You forgot to call setOutputFiles. Back to the drawing board.");
@@ -303,8 +309,11 @@ double Bayes::MCMC(FILE *fplog)
     for(size_t i = 0; i < pClass.size(); i++)
     {
         std::string fileName = pClass[i] + "-" + xvgConv();
-        fpc.push_back(xvgropen(fileName.c_str(), "Parameter convergence",
-                               "iteration", "", oenv()));
+        fpc.push_back(xvgropen(fileName.c_str(), 
+                               "Parameter convergence",
+                               "iteration", 
+                               "", 
+                               oenv()));
         std::vector<const char*> paramNames;
         for (size_t j = 0; j < paramNames_.size(); j++)
         {
@@ -315,9 +324,13 @@ double Bayes::MCMC(FILE *fplog)
         }
         xvgr_legend(fpc[i], paramNames.size(), paramNames.data(), oenv());   
     } 
+    
     // Now parameter output file.
-    fpe = xvgropen(xvgEpot().c_str(), "Parameter energy", "iteration",
-                   "\\f{12}c\\S2\\f{4}", oenv());
+    fpe = xvgropen(xvgEpot().c_str(), 
+                   "Parameter energy", 
+                   "iteration",
+                   "\\f{12}c\\S2\\f{4}", 
+                   oenv());
 
     nParam = param_.size();
     sum.resize(nParam, 0);
@@ -337,26 +350,53 @@ double Bayes::MCMC(FILE *fplog)
     {
         fprintf(fplog, "minEval %g, nParam %d\n", minEval, nParam);
     }
-    for (int iter = 0; iter < nParam*maxIter(); iter++)
-    {
-        double beta = computeBeta(iter/nParam);
-        int       j = static_cast<int>(std::round((1+uniform(gen))*nParam)) % nParam; // Pick random parameter to change
+
+    // Randrom number 
+    std::random_device               rd;
+    std::mt19937                     gen(rd());
+    std::uniform_int_distribution<>  int_uniform(0, nParam-1);
+    std::uniform_real_distribution<> real_uniform(0, 1);
+    
+    // Optmization loop
+    int    j                = 0;
+    bool   accept           = false;
+    double xiter            = 0.0;
+    double beta             = 1/(BOLTZ*temperature());
+    int    total_iterations = nParam*maxIter();
+    
+    for (int iter = 0; iter < total_iterations; iter++)
+    {       
+        // Pick a random parameter to change
+        j                  = int_uniform(gen);        
+        prevParam_         = param_;
+        storeParam         = param_[j];
         attemptedMoves_[j] = attemptedMoves_[j] + 1;
-        prevParam_ = param_;
-        storeParam = param_[j];
-        changeParam(j, uniform(gen));
+        
+        // Change the picked parameter
+        changeParam(j, real_uniform(gen));
+        
+        // Evaluate the energy
         currEval        = objFunction(param_);
-        deltaEval       = currEval-prevEval;
-        randProbability = uniform(gen);
-        mcProbability   = exp(-beta*deltaEval);
-        double xiter    = (1.0*iter)/nParam;
-        bool accept     = (deltaEval < 0) || (mcProbability > randProbability);
-        if (fplog && false)
+        deltaEval       = currEval-prevEval; 
+        
+        // Accept any downhill move       
+        accept          = (deltaEval < 0);
+        
+        // For a uphill move apply the Metropolis Criteria
+        // to decide whether to accept or reject the new parameter
+        if (!accept)
         {
-            fprintf(fplog, "Prev: %g  Curr: %g beta %g P(mc) %g  P(rand) %g param %d old %g try %g %s\n",
-                    prevEval, currEval, beta, mcProbability, randProbability,
-                    j, storeParam, param_[j], accept ? "accept" : "reject");
+            // Wait 5*nParam iterations before temperature reduction  
+            if (anneal() && (iter > (5*nParam)))
+            {
+                beta = computeBeta(iter/nParam);
+            }
+            randProbability = real_uniform(gen);
+            mcProbability   = exp(-beta*deltaEval);
+            accept          = (mcProbability > randProbability);
         }
+        
+        xiter = (1.0*iter)/nParam;
         if (accept)
         {
             if (currEval < minEval)
@@ -411,11 +451,12 @@ double Bayes::MCMC(FILE *fplog)
     }
     if (nsum > 0)
     {
+        double ps2 = 0.0;
         for (auto k = 0; k < nParam; k++)
         {
             pmean_[k]     = (sum[k]/nsum);
             sum_of_sq[k] /= nsum;
-            double ps2    = std::max(0.0, sum_of_sq[k]-gmx::square(pmean_[k]));
+            ps2           = std::max(0.0, sum_of_sq[k]-gmx::square(pmean_[k]));
             psigma_[k]    = sqrt(ps2);
         }
     }
@@ -430,7 +471,7 @@ double Bayes::MCMC(FILE *fplog)
     return minEval;
 }
 
-double Bayes::DRAM(FILE *fplog)
+double Bayes::Adaptive_MCMC(FILE *fplog)
 {
     double                           storeParam;
     int                              nsum            = 0;
@@ -444,70 +485,185 @@ double Bayes::DRAM(FILE *fplog)
     double                           halfIter        = maxIter()/2;   
     parm_t                           sum, sum_of_sq;
     
-    FILE                            *fpc             = nullptr;
+    std::vector<FILE *>              fpc;
+    std::vector<int>                 paramClassIndex;
     FILE                            *fpe             = nullptr;
     
-    std::random_device               rd;
-    std::mt19937                     gen(rd());
-    std::uniform_real_distribution<> uniform(0, 1);
-
     if (xvgConv().empty() || xvgEpot().empty())
     {
         gmx_fatal(FARGS, "You forgot to call setOutputFiles. Back to the drawing board.");
     }
-    fpc = xvgropen(xvgConv().c_str(), "Parameter convergence",
-                   "iteration", "", oenv());
-    fpe = xvgropen(xvgEpot().c_str(), "Parameter energy",
-                   "iteration", "\\f{12}c\\S2\\f{4}", oenv());
+    if (paramNames_.empty())
+    {
+        gmx_fatal(FARGS, "You forgot to add parameterNames. Back to the drawing board.");
+    }
+    // Allocate memory for parameter class index.
+    // Set to -1 to indicate not set, and to crash the program
+    // in case of bugs.
+    paramClassIndex.resize(paramNames_.size(), -1);
+    std::vector<std::string> pClass = paramClass();
+    for(size_t i = 0; i < pClass.size(); i++)
+    {
+        for (size_t j = 0; j < paramNames_.size(); j++)
+        {
+            if (paramNames_[j].find(pClass[i]) != std::string::npos)
+            {
+                paramClassIndex[j] = i;
+            }
+        }
+    } 
+    // Now check for "unclassified parameters"
+    bool restClass = false;
+    for(size_t i = 0; i < paramClassIndex.size(); i++)
+    {
+        if (paramClassIndex[i] == -1)
+        {
+            if (!restClass)
+            {
+                pClass.push_back("Other");
+                restClass = true;
+            }
+            paramClassIndex[i] = pClass.size()-1;
+        }
+    }
+    for(size_t i = 0; i < pClass.size(); i++)
+    {
+        std::string fileName = pClass[i] + "-" + xvgConv();
+        fpc.push_back(xvgropen(fileName.c_str(), 
+                               "Parameter convergence",
+                               "iteration", 
+                               "", 
+                               oenv()));
+        std::vector<const char*> paramNames;
+        for (size_t j = 0; j < paramNames_.size(); j++)
+        {
+            if (paramClassIndex[j] == static_cast<int>(i))
+            {
+                paramNames.push_back(paramNames_[j].c_str());
+            }
+        }
+        xvgr_legend(fpc[i], paramNames.size(), paramNames.data(), oenv());   
+    } 
+    
+    // Now parameter output file.
+    fpe = xvgropen(xvgEpot().c_str(), 
+                   "Parameter energy", 
+                   "iteration",
+                   "\\f{12}c\\S2\\f{4}", 
+                   oenv());
 
     nParam = param_.size();
     sum.resize(nParam, 0);
     sum_of_sq.resize(nParam, 0);
     pmean_.resize(nParam, 0);
     psigma_.resize(nParam, 0);
+    attemptedMoves_.resize(nParam, 0);
+    acceptedMoves_.resize(nParam, 0);
     
     prevEval = objFunction(param_);
     minEval  = prevEval;
+    if (debug)
+    {
+        fprintf(debug, "Initial chi2 value = %g\n", prevEval);
+    }
     if (fplog)
     {
-        fprintf(fplog, "minEval %g nParam %d\n", minEval, nParam);
+        fprintf(fplog, "minEval %g, nParam %d\n", minEval, nParam);
     }
-    for (int iter = 0; iter < nParam*maxIter(); iter++)
-    {
-        double beta = computeBeta(iter/nParam);
-        // Pick random parameter to change
-        int       j = static_cast<int>(std::round((1+uniform(gen))*nParam)) % nParam; 
+
+    // Randrom number 
+    std::random_device               rd;
+    std::mt19937                     gen(rd());
+    std::uniform_int_distribution<>  int_uniform(0, nParam-1);
+    std::uniform_real_distribution<> real_uniform(0, 1);
+    
+    // Optmization loop
+    int    j                = 0;
+    int    nMCaccept        = 0;
+    int    nAdapt           = nParam;
+    bool   accept           = false;
+    double xiter            = 0.0;
+    double beta             = 1/(BOLTZ*temperature());
+    int    total_iterations = nParam*maxIter();
+    
+    for (int iter = 0; iter < total_iterations; iter++)
+    {       
+        // Pick a random parameter to change
+        j                  = int_uniform(gen);        
+        prevParam_         = param_;
+        storeParam         = param_[j];
+        attemptedMoves_[j] = attemptedMoves_[j] + 1;
         
-        storeParam = param_[j];
-        changeParam(j, uniform(gen));
+        // Change the picked parameter
+        changeParam(j, real_uniform(gen));
+        
+        // Evaluate the energy
         currEval        = objFunction(param_);
-        deltaEval       = currEval-prevEval;
-        randProbability = uniform(gen);
-        mcProbability   = exp(-beta*deltaEval);
+        deltaEval       = currEval-prevEval; 
         
-        if ((deltaEval < 0) || (mcProbability > randProbability))
+        // Accept any downhill move       
+        accept          = (deltaEval < 0);
+        
+        // For a uphill move apply the Metropolis Criteria
+        // to decide whether to accept or reject the new parameter
+        if (!accept)
+        {
+            if (iter > 0 && (iter % nAdapt) == 0)
+            {
+                // Adapt temperature to keep acceptance ratio to 25%.                
+                real ratio = (100.0 * nMCaccept)/iter;
+                if (fplog)
+                {
+                    fprintf(fplog, "MC-Ratio %0.2f.\n", ratio);
+                }
+                beta       = adaptBeta(ratio);
+            }
+            randProbability = real_uniform(gen);
+            mcProbability   = exp(-beta*deltaEval);
+            if (mcProbability > randProbability)
+            {
+                accept = true;
+                nMCaccept++; 
+            }          
+        }
+        
+        xiter = (1.0*iter)/nParam;
+        if (accept)
         {
             if (currEval < minEval)
             {
+                if (fplog)
+                {
+                    fprintf(fplog, "iter %g. Found new minimum at %g\n",
+                            xiter, currEval);
+                }
                 bestParam_ = param_;
                 minEval    = currEval;
+                if (false)
+                {
+                    printParameters(fplog);
+                }
             }
             prevEval = currEval;
+            acceptedMoves_[j] = acceptedMoves_[j] + 1;
         }
         else
         {
             param_[j] = storeParam;
         }
-        double xiter = (1.0*iter)/nParam;
-        if (nullptr != fpc)
+
+        for(auto fp: fpc)
         {
-            fprintf(fpc, "%8f", xiter);
-            for (auto value : param_)
-            {
-                fprintf(fpc, "  %10g", value);
-            }
-            fprintf(fpc, "\n");
-            fflush(fpc);
+            fprintf(fp, "%8f", xiter);
+        }
+        for (size_t k = 0; k < param_.size(); k++)
+        {
+            fprintf(fpc[paramClassIndex[k]], "  %10g", param_[k]);
+        }
+        for(auto fp: fpc)
+        {
+            fprintf(fp, "\n");
+            fflush(fp);
         }
         if (nullptr != fpe)
         {
@@ -526,16 +682,18 @@ double Bayes::DRAM(FILE *fplog)
     }
     if (nsum > 0)
     {
+        double ps2 = 0.0;
         for (auto k = 0; k < nParam; k++)
         {
             pmean_[k]     = (sum[k]/nsum);
             sum_of_sq[k] /= nsum;
-            psigma_[k]    = sqrt(sum_of_sq[k]-gmx::square(pmean_[k]));
+            ps2           = std::max(0.0, sum_of_sq[k]-gmx::square(pmean_[k]));
+            psigma_[k]    = sqrt(ps2);
         }
     }
-    if (nullptr != fpc)
+    for(auto fp: fpc)
     {
-        xvgrclose(fpc);
+        xvgrclose(fp);
     }
     if (nullptr != fpe)
     {

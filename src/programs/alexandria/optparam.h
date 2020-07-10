@@ -73,7 +73,9 @@ class OptParam
         //! Temperature in chi2 units
         real                     temperature_    = 5;
         //! Use annealing in the optimization
-        bool                     anneal_         = true;
+        bool                     anneal_         = false;
+        //! Use adaptive MCMC in the optimization
+        bool                     adaptive_       = false;
         //! Base name for parameter convergence file names
         std::string              xvgconv_;
         //! File name for parameter energy (chi2)
@@ -122,9 +124,14 @@ class OptParam
          * \return The Boltzmann factor
          */
         double computeBeta(int maxiter, int iter, int ncycle);
+        
+        double adaptBeta(real ratio);
 
         //! \brief Return Max # iterations
         int maxIter() const { return maxiter_; }
+        
+        //! \brief Return temperature
+        real temperature () const { return temperature_; }
 
         //! \brief Return the step
         real step() const { return step_; }
@@ -137,6 +144,12 @@ class OptParam
 
         //! \brief Return whether or not bounds are used for parameters
         bool boxConstraint() const { return bBoxConstraint_; }
+        
+        // ! \brief Return whether or not call simulated annealing
+        bool anneal () const { return anneal_; }
+        
+        // ! \brief Return whether or not call Adaptive MCMC
+        bool adaptive () const { return adaptive_; }
 
         //! \brief Return xvg file for convergence information
         const std::string &xvgConv() const { return xvgconv_; }
@@ -280,11 +293,11 @@ class Bayes : public OptParam
         double MCMC(FILE *fplog);
         
         /*! \brief
-         * Run the Delayed Rejected Adaptive Monte-Carlo (DRAM) simulation
+         * Run adaptive Markov chain Monte carlo (MCMC) simulation
          * \param[in] fplog File pointer for logging info. May be nullptr.
          * \return minimum energy value
          */
-        double DRAM(FILE *fplog);
+        double Adaptive_MCMC(FILE *fplog);
 
         /*! \brief
          * Copy the optimization parameters to the poldata structure

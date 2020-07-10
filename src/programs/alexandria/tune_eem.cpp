@@ -153,7 +153,6 @@ class OptACM : public MolGen, Bayes
         {
             MolGen::optionsFinished();
             setBoxConstraint(bConstrain());
-            //GMX_RELEASE_ASSERT(bSameZeta_, "Optimization with different zeta is broken.");
         }
 
         void openLogFile(const char *logfileName)
@@ -1002,7 +1001,15 @@ bool OptACM::optRun(FILE                   *fp,
             {
                 fprintf(fp, "\nStarting run %d out of %d\n", n, nrun);
             }
-            double chi2 = Bayes::MCMC(logFile());
+            double chi2 = 0;
+            if (Bayes::adaptive())
+            {
+                chi2 = Bayes::Adaptive_MCMC(logFile());
+            }
+            else
+            {
+                chi2 = Bayes::MCMC(logFile());
+            }
             if (chi2 < chi2_min)
             {
                 bMinimum = true;
