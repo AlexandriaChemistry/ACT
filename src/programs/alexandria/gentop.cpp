@@ -163,7 +163,6 @@ int alex_gentop(int argc, char *argv[])
     static gmx_bool                  bUsePDBcharge  = false;
     static gmx_bool                  bGenVSites     = false;
     static gmx_bool                  bDihedral      = false;
-    static gmx_bool                  bCUBE          = false;
     static gmx_bool                  bH14           = true;
     static gmx_bool                  bVerbose       = false;
     static gmx_bool                  addHydrogens   = false;
@@ -178,8 +177,6 @@ int alex_gentop(int argc, char *argv[])
            "Input file name to be turned into GROMACS input" },
         { "-v",      FALSE, etBOOL, {&bVerbose},
           "Generate verbose output in the top file and on terminal." },
-        { "-cube",   FALSE, etBOOL, {&bCUBE},
-          "Generate cube." },
         { "-db",     FALSE, etSTR,  {&dbname},
           "Read a molecule from the database rather than from a file" },
         { "-lot",    FALSE, etSTR,  {&lot},
@@ -397,9 +394,9 @@ int alex_gentop(int argc, char *argv[])
     /* Generate output file for debugging if requested */
     mymol.plotEspCorrelation(opt2fn_null("-plotESP", NFILE, fnm), oenv);
 
-    if (bCUBE && immOK == imm)
+    if (immOK == imm)
     {
-        //mymol.initQgresp(&pd, method, basis, &mylot, 0.0, 100);
+        mymol.initQgresp(&pd, method, basis, &mylot, 0.0, 100);
 
         mymol.GenerateCube(&pd,
                            spacing,

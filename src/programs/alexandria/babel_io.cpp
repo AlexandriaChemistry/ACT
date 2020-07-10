@@ -167,7 +167,6 @@ static OpenBabel::OBConversion *readBabel(const std::string &g09,
                                           einformat         *inputformat)
 {
     std::string fileName(g09);
-    printf("fileName1: %s\n", fileName.c_str());
     if (!gmx_fexist(fileName.c_str()))
     {
         fileName += ".gz";
