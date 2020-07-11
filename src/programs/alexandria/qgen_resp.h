@@ -158,8 +158,16 @@ class QgenResp
                          double z,
                          double V);
 
+        /*! \brief Make a grid for potential calculations
+         *
+         * Generate a grid, all numbers should be in GROMACS units,
+         * that is nm.
+         * \param[in] spacing Spacing between grid planes
+         * \param[in] border  Distance between atoms and gird edge
+         * \param[in] x       Atomic coordinates
+         */
         void makeGrid(real   spacing,
-                      matrix box,
+                      real   border,
                       rvec   x[]);
 
         void copyGrid(QgenResp &src);

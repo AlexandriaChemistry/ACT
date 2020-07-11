@@ -364,7 +364,7 @@ void QgenResp::copyGrid(QgenResp &src)
     }
 }
 
-void QgenResp::makeGrid(real spacing, matrix box, rvec x[])
+void QgenResp::makeGrid(real spacing, real border, rvec x[])
 {
     if (0 != nEsp())
     {
@@ -372,17 +372,38 @@ void QgenResp::makeGrid(real spacing, matrix box, rvec x[])
     }
     if (spacing <= 0)
     {
-        spacing = 0.1;
-        fprintf(stderr, "Spacing too small, setting it to %g\n", spacing);
+        spacing = 0.005;
+        fprintf(stderr, "Spacing too small, setting it to %g nm\n", spacing);
     }
+    /* Determin extent of compound */
+    rvec xmin = { 100, 100, 100 };
+    rvec xmax = { -100, -100, -100 };
     for (size_t i = 0; (i < nRespAtom()); i++)
     {
         ra_[i].setX(x[i]);
+        for(int m = 0; m < DIM; m++)
+        {
+            xmin[m] = std::min(xmin[m], x[i][m]);
+            xmax[m] = std::max(xmax[m], x[i][m]);
+        }
+    }
+    if (border <= 0)
+    {
+        border = 0.25;
+        fprintf(stderr, "Border too small, setting it to %g nm\n", border);
     }
     for (int m = 0; (m < DIM); m++)
     {
-        nxyz_[m]  = 1+(int) (box[m][m]/spacing);
-        space_[m] = box[m][m]/nxyz_[m];
+        xmin[m]    -= border;
+        xmax[m]    += border;
+        origin_[m]  = xmin[m];
+    }
+    rvec box;
+    rvec_sub(xmax, xmin, box);
+    for (int m = 0; (m < DIM); m++)
+    {
+        nxyz_[m]  = 1+(int) (box[m]/spacing);
+        space_[m] = box[m]/nxyz_[m];
     }
     ep_.clear();
     for (int i = 0; (i < nxyz_[XX]); i++)
@@ -640,7 +661,7 @@ static double calcJ(ChargeModel iChargeModel,
 
 void QgenResp::calcPot(double epsilonr)
 {
-    double scale_factor = 1.0/epsilonr;
+    double scale_factor = 1.0; // /epsilonr;
     
     // Loop over ESP points
     for (size_t i = 0; i < nEsp(); i++)

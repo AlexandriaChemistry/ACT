@@ -156,26 +156,24 @@ void QgenResp::writeDiffCube(QgenResp               &src,
             {
                 for (iz = 0; iz < nxyz_[ZZ]; iz++, m++)
                 {
-                    if (src.nEsp() > 0)
+                    if (src.nEsp() > 0 && nullptr != ppcorr)
                     {
-                        pp = ep_[m].vCalc() - src.ep_[m].v();
-                        if (nullptr != ppcorr)
-                        {
-                            gmx_stats_add_point(ppcorr,
-                                                gmx2convert(src.ep_[m].v(), eg2cHartree_e),
-                                                gmx2convert(ep_[m].vCalc(), eg2cHartree_e), 0, 0);
-                        }
+                        gmx_stats_add_point(ppcorr,
+                                            gmx2convert(src.ep_[m].v(), eg2cHartree_e),
+                                            gmx2convert(ep_[m].vCalc(), eg2cHartree_e), 0, 0);
+                    }
+                    pp = ep_[m].vCalc();
+                    if (!src.ep_.empty())
+                    {
+                        pp -= src.ep_[m].v();
+                    }
+                    if (rho == 0)
+                    {
+                        pp = gmx2convert(pp, eg2cHartree_e);
                     }
                     else
                     {
-                        if (rho == 0)
-                        {
-                            pp = gmx2convert(ep_[m].vCalc(), eg2cHartree_e);
-                        }
-                        else
-                        {
-                            pp = ep_[m].rho()*pow(BOHR2NM, 3);
-                        }
+                        pp = ep_[m].rho()*pow(BOHR2NM, 3);
                     }
                     fprintf(fp, "%13.5e", pp);
                     if (iz % 6 == 5)

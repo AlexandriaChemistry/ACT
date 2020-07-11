@@ -148,7 +148,7 @@ int alex_gentop(int argc, char *argv[])
     static real                      qtot           = 0;
     static real                      hfac           = 0;
     static real                      watoms         = 0;
-    static real                      spacing        = 0.1;
+    static real                      spacing        = 0.01;
     static real                      efield         = 0;
     static char                     *molnm          = (char *)"";
     static char                     *iupac          = (char *)"";

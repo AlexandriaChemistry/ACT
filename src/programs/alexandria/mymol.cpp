@@ -2044,7 +2044,7 @@ void MyMol::GenerateCube(const Poldata          *pd,
         }
         else
         {
-            Qgresp_.makeGrid(spacing, state_->box, as_rvec_array(state_->x.data()));
+            Qgresp_.makeGrid(spacing, 0, as_rvec_array(state_->x.data()));
         }
         if (rhofn)
         {
