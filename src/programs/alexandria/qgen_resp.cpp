@@ -392,14 +392,14 @@ void QgenResp::makeGrid(real spacing, real border, rvec x[])
         border = 0.25;
         fprintf(stderr, "Border too small, setting it to %g nm\n", border);
     }
+    rvec box;
     for (int m = 0; (m < DIM); m++)
     {
         xmin[m]    -= border;
         xmax[m]    += border;
         origin_[m]  = xmin[m];
+        box[m]      = xmax[m]-xmin[m];
     }
-    rvec box;
-    rvec_sub(xmax, xmin, box);
     for (int m = 0; (m < DIM); m++)
     {
         nxyz_[m]  = 1+(int) (box[m]/spacing);
@@ -409,13 +409,13 @@ void QgenResp::makeGrid(real spacing, real border, rvec x[])
     for (int i = 0; (i < nxyz_[XX]); i++)
     {
         gmx::RVec xyz;
-        xyz[XX] = (i-0.5*nxyz_[XX])*space_[XX];
+        xyz[XX] = xmin[XX] + i*space_[XX];
         for (int j = 0; (j < nxyz_[YY]); j++)
         {
-            xyz[YY] = (j-0.5*nxyz_[YY])*space_[YY];
+            xyz[YY] = xmin[YY] + j*space_[YY];
             for (int k = 0; (k < nxyz_[ZZ]); k++)
             {
-                xyz[ZZ] = (k-0.5*nxyz_[ZZ])*space_[ZZ];
+                xyz[ZZ] = xmin[ZZ] + k*space_[ZZ];
                 ep_.push_back(EspPoint(xyz, 0));
             }
         }
@@ -661,12 +661,13 @@ static double calcJ(ChargeModel iChargeModel,
 
 void QgenResp::calcPot(double epsilonr)
 {
-    double scale_factor = 1.0; // /epsilonr;
+    double scale_factor = 1.0/epsilonr;
     
     // Loop over ESP points
     for (size_t i = 0; i < nEsp(); i++)
     {
         double vv    = 0;
+        double qtot  = 0;
         auto   espx  = ep_[i].esp();
         
         // Loop over RESP atoms
@@ -685,13 +686,18 @@ void QgenResp::calcPot(double epsilonr)
                 {
                     auto q    = ra.q();
                     auto epot = calcJ(iDistributionModel_, espx, rax, k->zeta(), watoms_, k->row());
+                    qtot += q;
                     if (debug)
                     {
-                        fprintf(debug, "CalcESP: Row: %3d Zeta: %8.5f Charge: %8.4f\n", k->row(), k->zeta(), q);
+                        fprintf(debug, "CalcESP: Row: %3d Zeta: %8.5f Charge: %8.4f epot: %8.5f q*epot: %8.5f\n", k->row(), k->zeta(), q, epot, q*epot);
                     }
                     vv += (scale_factor*q*epot);
                 }
             }
+        }
+        if (debug)
+        {
+            fprintf(debug, "CalcESP: vv = %8.5f qtot = %g\n", vv, qtot);
         }
         ep_[i].setVCalc(vv);
     }

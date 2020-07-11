@@ -667,6 +667,7 @@ class MyMol : public MolProp
          * \param[in] iModel      The distrbution model of charge (e.x. point charge, gaussian, and slater models)
          * \param[in] pd          Data structure containing atomic properties
          * \param[in] spacing     The grid space
+         * \param[in] border      The amount of space around the molecule
          * \param[in] reffn
          * \param[in] pcfn
          * \param[in] pdbdifffn
@@ -679,6 +680,7 @@ class MyMol : public MolProp
          */
         void GenerateCube(const Poldata          *pd,
                           real                    spacing,
+                          real                    border,
                           const char             *reffn,
                           const char             *pcfn,
                           const char             *pdbdifffn,

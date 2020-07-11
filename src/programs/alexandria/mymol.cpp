@@ -2012,6 +2012,7 @@ immStatus MyMol::GenerateChargeGroups(eChargeGroup ecg, bool bUsePDBcharge)
 
 void MyMol::GenerateCube(const Poldata          *pd,
                          real                    spacing,
+                         real                    border,
                          const char             *reffn,
                          const char             *pcfn,
                          const char             *pdbdifffn,
@@ -2029,6 +2030,8 @@ void MyMol::GenerateCube(const Poldata          *pd,
         char     *gentop_version = (char *)"gentop v0.99b";
         QgenResp  grref;
 
+        Qgresp_.updateAtomCharges(atoms_);
+        Qgresp_.calcPot(pd->getEpsilonR());
         Qgresp_.potcomp(pcfn, pdbdifffn, oenv);
 
         /* This has to be done before the grid is f*cked up by
@@ -2044,7 +2047,7 @@ void MyMol::GenerateCube(const Poldata          *pd,
         }
         else
         {
-            Qgresp_.makeGrid(spacing, 0, as_rvec_array(state_->x.data()));
+            Qgresp_.makeGrid(spacing, border, as_rvec_array(state_->x.data()));
         }
         if (rhofn)
         {

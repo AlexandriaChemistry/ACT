@@ -149,6 +149,7 @@ int alex_gentop(int argc, char *argv[])
     static real                      hfac           = 0;
     static real                      watoms         = 0;
     static real                      spacing        = 0.01;
+    static real                      border         = 0.2;
     static real                      efield         = 0;
     static char                     *molnm          = (char *)"";
     static char                     *iupac          = (char *)"";
@@ -202,7 +203,9 @@ int alex_gentop(int argc, char *argv[])
         { "-pdbq",  FALSE, etBOOL, {&bUsePDBcharge},
           "HIDDENUse the B-factor supplied in a pdb file for the atomic charges" },
         { "-spacing", FALSE, etREAL, {&spacing},
-          "Spacing of grid points for computing the potential (not used when a reference file is read)." },
+          "Spacing of grid points (nm) for computing the potential (not used when a reference file is read)." },
+        { "-border", FALSE, etREAL, {&border},
+          "Spacing around the compound (nm) for computing the potential (not used when a reference file is read)." },
         { "-watoms", FALSE, etREAL, {&watoms},
           "Weight for the atoms when fitting the charges to the electrostatic potential. The potential on atoms is usually two orders of magnitude larger than on other points (and negative). For point charges or single smeared charges use 0. For point+smeared charges 1 is recommended." },
         { "-ff",     FALSE, etENUM, {ff},
@@ -399,7 +402,7 @@ int alex_gentop(int argc, char *argv[])
         mymol.initQgresp(&pd, method, basis, &mylot, 0.0, 100);
 
         mymol.GenerateCube(&pd,
-                           spacing,
+                           spacing, border,
                            opt2fn_null("-ref",      NFILE, fnm),
                            opt2fn_null("-pc",       NFILE, fnm),
                            opt2fn_null("-pdbdiff",  NFILE, fnm),
