@@ -60,6 +60,8 @@ namespace alexandria
 {
 
 void QgenResp::potcomp(const char             *potcomp,
+                       const t_atoms          *atoms,
+                       const rvec             *x,
                        const char             *pdbdiff,
                        const gmx_output_env_t *oenv)
 {
@@ -91,7 +93,12 @@ void QgenResp::potcomp(const char             *potcomp,
     if (pdbdiff)
     {
         fp = fopen(pdbdiff, "w");
-        fprintf(fp, "REMARK All distances are scaled by a factor of two.\n");
+        for (int i = 0; i < atoms->nr; i++)
+        {
+            fprintf(fp, "%-6s%5u  %-4.4s%3.3s %c%4d%c   %8.3f%8.3f%8.3f%6.2f%6.2f\n",
+                    "ATOM", 1, *atoms->atomname[i], "MOL", 'A', i+1,
+                    ' ', 10*x[i][XX], 10*x[i][YY], 10*x[i][ZZ], 0.0, 0.0);
+        }
         for (size_t i = 0; (i < nEsp()); i++)
         {
             exp = gmx2convert(ep_[i].v(), eg2cHartree_e);
@@ -99,8 +106,8 @@ void QgenResp::potcomp(const char             *potcomp,
             pp  = ep_[i].v()-ep_[i].vCalc();
             const gmx::RVec esp = ep_[i].esp();
             fprintf(fp, "%-6s%5u  %-4.4s%3.3s %c%4d%c   %8.3f%8.3f%8.3f%6.2f%6.2f\n",
-                    "ATOM", 1, "HE", "HE", ' ', static_cast<int>(i+1),
-                    ' ', 20*esp[XX], 20*esp[YY], 20*esp[ZZ], 0.0, pp);
+                    "HETATM", 1, "HE", "HE", 'B', static_cast<int>(i+1),
+                    ' ', 10*esp[XX], 10*esp[YY], 10*esp[ZZ], 0.0, pp);
         }
         fclose(fp);
     }

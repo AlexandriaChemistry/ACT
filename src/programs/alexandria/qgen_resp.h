@@ -233,6 +233,8 @@ class QgenResp
         void regularizeCharges();
 
         void potcomp(const char             *potcomp,
+                     const t_atoms          *atoms,
+                     const rvec             *x,
                      const char             *pdbdiff,
                      const gmx_output_env_t *oenv);
 

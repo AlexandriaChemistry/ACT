@@ -2025,14 +2025,15 @@ void MyMol::GenerateCube(const Poldata          *pd,
 {
     ChargeModel iChargeModel = pd->getChargeModel();
 
-    if (potfn || hisfn || rhofn || difffn)
+    if (potfn || hisfn || rhofn || difffn || pdbdifffn)
     {
         char     *gentop_version = (char *)"gentop v0.99b";
         QgenResp  grref;
 
         Qgresp_.updateAtomCharges(atoms_);
         Qgresp_.calcPot(pd->getEpsilonR());
-        Qgresp_.potcomp(pcfn, pdbdifffn, oenv);
+        Qgresp_.potcomp(pcfn, atoms_, 
+                        as_rvec_array(state_->x.data()), pdbdifffn, oenv);
 
         /* This has to be done before the grid is f*cked up by
            writing a cube file */
