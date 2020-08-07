@@ -334,8 +334,8 @@ static void merge_Zeta(std::vector<alexandria::Poldata>     pds,
             auto nzeta  = ei->getNzeta();            
             if (nzeta == 1)
             {
-                double core_ave  = 0;
-                double core_sig  = 0;
+                real core_ave  = 0;
+                real core_sig  = 0;
                 if ((estatsOK == gmx_stats_get_average(core[j], &core_ave))&&
                     (estatsOK == gmx_stats_get_sigma(core[j],   &core_sig)))
                 {
@@ -352,10 +352,10 @@ static void merge_Zeta(std::vector<alexandria::Poldata>     pds,
             }
             else if (nzeta == 2)
             {
-                double core_ave  = 0;
-                double core_sig  = 0;
-                double shell_ave = 0;
-                double shell_sig = 0;
+                real core_ave  = 0;
+                real core_sig  = 0;
+                real shell_ave = 0;
+                real shell_sig = 0;
                 if ((estatsOK == gmx_stats_get_average(core[j],  &core_ave))  &&
                     (estatsOK == gmx_stats_get_sigma(core[j],    &core_sig))  &&
                     (estatsOK == gmx_stats_get_average(shell[j], &shell_ave)) &&
