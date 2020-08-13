@@ -399,8 +399,6 @@ int alex_gentop(int argc, char *argv[])
 
     if (immOK == imm)
     {
-        mymol.initQgresp(&pd, method, basis, &mylot, 0.0, 100);
-
         mymol.GenerateCube(&pd,
                            spacing, border,
                            opt2fn_null("-ref",      NFILE, fnm),
