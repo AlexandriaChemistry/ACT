@@ -252,10 +252,10 @@ void OptACM::initChargeGeneration()
             // If using ESP for fitting we need to be able to compute the
             // electrostatic potential, however we always want to report it
             // so have to initialize the data anyway.
-            mymol.initQgresp(poldata(),
-                             method, basis, nullptr,
-                             watoms(),
-                             maxPot());
+            //mymol.initQgresp(poldata(),
+            //               method, basis, nullptr,
+            //               watoms(),
+            //               maxPot());
             // ACM is needed always as well in this program
             mymol.Qgacm_.setInfo(poldata(),
                                  mymol.atoms_,
