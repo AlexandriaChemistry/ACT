@@ -429,6 +429,7 @@ void print_electric_props(FILE                           *fp,
             auto qMul  = mol.chargeQM(qtMulliken);
             auto x     = mol.x();
             auto qrmsd = 0.0;
+            int  ncore = 0;
             for (j = i = 0; j < mol.atoms_->nr; j++)
             {
                 if (mol.atoms_->atom[j].ptype == eptAtom ||
@@ -442,9 +443,12 @@ void print_electric_props(FILE                           *fp,
                                                  return atlsq.ztype.compare(ztp) == 0;
                                              });
                     qCalc = mol.atoms_->atom[j].q;
-                    if (nullptr != mol.shellfc_)
+                    // TODO: only count in real shells
+                    if (nullptr != mol.shellfc_ && 
+                        j < mol.atoms_->nr-1 && 
+                        mol.atoms_->atom[j+1].ptype == eptShell)
                     {
-                        //qCalc += mol.atoms_->atom[j+1].q;
+                        qCalc += mol.atoms_->atom[j+1].q;
                     }
                     if (k != lsqt.end())
                     {
@@ -452,6 +456,7 @@ void print_electric_props(FILE                           *fp,
                     }
                     gmx_stats_add_point(lsq_charge, qcm5[i], qCalc, 0, 0);
                     qrmsd += gmx::square(qcm5[i]-qCalc);
+                    ncore += 1;
                     fprintf(fp, "%-2d%3d  %-5s  %8.4f  %8.4f  %8.4f  %8.4f  %8.4f %8.3f%8.3f%8.3f\n",
                             mol.atoms_->atom[j].atomnumber,
                             j+1,
@@ -466,8 +471,9 @@ void print_electric_props(FILE                           *fp,
                             x[j][ZZ]);
                     i++;
                 }
-                else
+                else if (false)
                 {
+                    // Turned of printing of shells for now
                     fprintf(fp, "%-2d%3d  %-5s  %8.4f  %8.4f  %8.4f  %8.4f  %8.4f %8.3f%8.3f%8.3f\n",
                             0,
                             j+1,
@@ -480,7 +486,7 @@ void print_electric_props(FILE                           *fp,
                 }
             }
             fprintf(fp, "\n");
-            qrmsd = sqrt(qrmsd/mol.atoms_->nr);
+            qrmsd = sqrt(qrmsd/ncore);
             fprintf(fp, "q rmsd: %g (e) %s\n", qrmsd, (qrmsd > 5e-2) ? "XXX" : "");
             n++;
         }
