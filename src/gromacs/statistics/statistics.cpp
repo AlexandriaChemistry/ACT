@@ -325,7 +325,7 @@ static int gmx_stats_compute(gmx_stats *stats, int weight)
             stats->sigma_a = std::sqrt(stats->chi2/((N-2)*dx2));
             stats->sigma_b = stats->sigma_a*std::sqrt(xx);
             stats->Rfit    = std::abs(ssxy)/std::sqrt(ssxx*ssyy);
-            stats->Rfitaa  = stats->aa*std::sqrt(dx2/dy2);
+            stats->Rfitaa  = stats->Rfit; //stats->aa*std::sqrt(dx2/dy2);
         }
         else
         {

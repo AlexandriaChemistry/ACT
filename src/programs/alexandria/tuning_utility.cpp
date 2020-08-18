@@ -63,15 +63,15 @@ static void print_stats(FILE        *fp,
         if (bHeader)
         {
             fprintf(fp, "Fitting data to y = ax + b, where x = %s and y = %s\n", xaxis, yaxis);
-            fprintf(fp, "%-12s %5s %13s %13s %8s %8s %8s %8s\n",
+            fprintf(fp, "%-26s %6s %13s %13s %7s %8s %8s %8s\n",
                     "Property", "N", "a", "b", "R(%)", "RMSD", "MSE", "MAE");
-            fprintf(fp, "---------------------------------------------------------------\n");
+            fprintf(fp, "-------------------------------------------------------------------------------------\n");
         }
         gmx_stats_get_ab(lsq, elsqWEIGHT_NONE, &a, &b, &da, &db, &chi2, &Rfit);
         gmx_stats_get_rmsd(lsq,    &rmsd);
         gmx_stats_get_mse_mae(lsq, &mse, &mae);
         gmx_stats_get_npoints(lsq, &n);
-        fprintf(fp, "%-12s %5d %6.3f(%5.3f) %6.3f(%5.3f) %7.2f %8.4f %8.4f %8.4f\n",
+        fprintf(fp, "%-26s %6d %6.3f(%5.3f) %6.3f(%5.3f) %7.2f %8.4f %8.4f %8.4f\n",
                 prop, n, a, da, b, db, Rfit*100, rmsd, mse, mae);
     }
     else
@@ -79,15 +79,15 @@ static void print_stats(FILE        *fp,
         if (bHeader)
         {
             fprintf(fp, "Fitting data to y = ax, where x = %s and y = %s\n", xaxis, yaxis);
-            fprintf(fp, "%-12s %5s %13s %8s %8s %8s %8s\n",
+            fprintf(fp, "%-26s %6s %13s %7s %8s %8s %8s\n",
                     "Property", "N", "a", "R(%)", "RMSD", "MSE", "MAE");
-            fprintf(fp, "---------------------------------------------------------------\n");
+            fprintf(fp, "-----------------------------------------------------------------------------------\n");
         }
         gmx_stats_get_a(lsq, elsqWEIGHT_NONE, &a, &da, &chi2, &Rfit);
         gmx_stats_get_rmsd(lsq,    &rmsd);
         gmx_stats_get_mse_mae(lsq, &mse, &mae);
         gmx_stats_get_npoints(lsq, &n);
-        fprintf(fp, "%-12s %5d %6.3f(%5.3f) %7.2f %8.4f %8.4f %8.4f\n",
+        fprintf(fp, "%-26s %6d %6.3f(%5.3f) %7.2f %8.4f %8.4f %8.4f\n",
                 prop, n, a, da, Rfit*100, rmsd, mse, mae);
     }
 }
@@ -507,9 +507,9 @@ void print_electric_props(FILE                           *fp,
         print_stats(fp, "Quadrupoles",   lsq_quad[i], false, "Electronic", name, useOffset);
         if (bPolar && i == qtCalc)
         {
-            print_stats(fp, "Principal Components of Polarizability (A^3)",  lsq_alpha, false,  "Electronic", name, useOffset);
-            print_stats(fp, "Isotropic Polarizability (A^3)",    lsq_isoPol,   false,  "Electronic", name, useOffset);
-            print_stats(fp, "Anisotropic Polarizability (A^3)",  lsq_anisoPol, false,  "Electronic", name, useOffset);
+            print_stats(fp, "Polariz. components (A^3)",  lsq_alpha, false,  "Electronic", name, useOffset);
+            print_stats(fp, "Isotropic Polariz. (A^3)",    lsq_isoPol,   false,  "Electronic", name, useOffset);
+            print_stats(fp, "Anisotropic Polariz. (A^3)",  lsq_anisoPol, false,  "Electronic", name, useOffset);
         }
         fprintf(fp, "\n");
     }
