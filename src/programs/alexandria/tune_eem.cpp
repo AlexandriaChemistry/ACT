@@ -642,7 +642,7 @@ double OptACM::calcDeviation()
         printParameters(logFile());
         printEnergies(logFile());
     }
-    return energy(ermsTOT);
+    return energy(ermsTOT)/nMolSupport();
 }
 
 void OptACM::InitOpt(real factor, bool bRandom)
