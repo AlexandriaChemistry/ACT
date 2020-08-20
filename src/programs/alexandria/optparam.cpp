@@ -59,6 +59,10 @@ void OptParam::add_pargs(std::vector<t_pargs> *pargs)
     t_pargs pa[] = {
         { "-maxiter", FALSE, etINT, {&maxiter_},
           "Max number of iterations for optimization" },
+        { "-mcr", FALSE, etINT, {&mc_ratio_},
+          "Reference acceptance ratio used for running Adaptive-MCMC." },
+        { "-nAdapt", FALSE, etINT, {&nAdapt_},
+          "Adapt Temperature every nAdapt steps when running Adaptive-MCMC." },
         { "-temp",    FALSE, etREAL, {&temperature_},
           "'Temperature' for the Monte Carlo simulation" },
         { "-anneal", FALSE, etBOOL, {&anneal_},
@@ -116,18 +120,10 @@ double OptParam::computeBeta(int maxiter, int iter, int ncycle)
 }
 
 
-double OptParam::adaptBeta(real ratio)
+double OptParam::adaptBeta(real mc_ratio)
 {
-    double temp = temperature_;
-    if (ratio < 30)
-    {
-        temp *= 1.1;
-    }
-    else if (ratio > 30)
-    {
-        temp *= 0.9;
-    }
-    return 1/(BOLTZ*temp);
+    temperature_ *= (mc_ratio/mc_ratio_);
+    return 1/(BOLTZ*temperature_);
 }
 
 void Bayes::printParameters(FILE *fp) const
@@ -580,7 +576,6 @@ double Bayes::Adaptive_MCMC(FILE *fplog)
     // Optmization loop
     int    j                = 0;
     int    nMCaccept        = 0;
-    int    nAdapt           = nParam;
     bool   accept           = false;
     double xiter            = 0.0;
     double beta             = 1/(BOLTZ*temperature());
@@ -608,15 +603,15 @@ double Bayes::Adaptive_MCMC(FILE *fplog)
         // to decide whether to accept or reject the new parameter
         if (!accept)
         {
-            if (iter > 0 && (iter % nAdapt) == 0)
+            if (iter > 0 && (iter % nAdapt()) == 0)
             {
-                // Adapt temperature to keep acceptance ratio to 25%.                
-                real ratio = (100.0 * nMCaccept)/iter;
+                // Adapt temperature to keep MC acceptance ratio to ref_ratio.                
+                real mc_ratio = (100.0 * nMCaccept)/iter;
                 if (fplog)
                 {
-                    fprintf(fplog, "MC-Ratio %0.2f.\n", ratio);
+                    fprintf(fplog, "MC-Ratio %0.2f.\n", mc_ratio);
                 }
-                beta       = adaptBeta(ratio);
+                beta       = adaptBeta(mc_ratio);
             }
             randProbability = real_uniform(gen);
             mcProbability   = exp(-beta*deltaEval);

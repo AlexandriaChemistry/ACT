@@ -62,6 +62,10 @@ class OptParam
     private:
         //! Maximum number of iterations
         int                      maxiter_       = 100;
+        //! Reference MC acceptance ratio
+        int                      mc_ratio_       = 30;
+        //! Adapt Temperature every nAdapt steps
+        int                      nAdapt_         = 50;
         //! Output environment structure
         const gmx_output_env_t  *oenv_          = nullptr;
         //! Use box constraints when optimizing
@@ -132,6 +136,9 @@ class OptParam
         
         //! \brief Return temperature
         real temperature () const { return temperature_; }
+        
+        //! \brief Return nAdapt
+        int nAdapt () const { return nAdapt_; }
 
         //! \brief Return the step
         real step() const { return step_; }
