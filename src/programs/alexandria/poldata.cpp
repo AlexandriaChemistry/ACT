@@ -629,7 +629,7 @@ bool Poldata::searchForceBondOrderIType(std::vector<std::string> &atoms,
     if (forcesEnd() != f)
     {
         if (f->searchForceBondOrder(atoms, params, refValue,
-                           sigma, ntrain, bondOrder))
+                                    sigma, ntrain, bondOrder))
         {
             return true;
         }
