@@ -54,6 +54,17 @@
 namespace alexandria
 {
 
+static std::string make_element(const std::string name)
+{
+    std::string aname;
+    aname += name[0];
+    for (size_t i = 1; i < name.size(); i++)
+    {
+        aname += std::tolower(name[i]);
+    }
+    return aname;
+}
+
 bool readPsi4(const std::string &datafile, MolProp *mp)
 {
     try
@@ -70,6 +81,7 @@ bool readPsi4(const std::string &datafile, MolProp *mp)
         int                   multiplicity  = 0;
         double                energy        = 0;
         rvec                  mu            = { 0, 0, 0 };
+        reference = "Spoel2021a";
         std::vector<CalcAtom> ca;
         while (tr.readLine(&line))
         {
@@ -160,7 +172,8 @@ bool readPsi4(const std::string &datafile, MolProp *mp)
                             auto words = gmx::splitString(line);
                             if (words.size() == 4)
                             {
-                                CalcAtom myatom(words[0], words[0], ca.size()+1);
+                                std::string aname = make_element(words[0]);
+                                CalcAtom myatom(aname, aname, ca.size()+1);
                                 myatom.SetUnit("Angstrom");
                                 myatom.SetCoords(gmx::doubleFromString(words[1].c_str()),
                                                  gmx::doubleFromString(words[2].c_str()),
@@ -197,7 +210,8 @@ bool readPsi4(const std::string &datafile, MolProp *mp)
                             auto words = gmx::splitString(line);
                             if (words.size() == 5)
                             {
-                                CalcAtom myatom(words[0], words[0], ca.size()+1);
+                                std::string aname = make_element(words[0]);
+                                CalcAtom myatom(aname, aname, ca.size()+1);
                                 myatom.SetUnit("Angstrom");
                                 myatom.SetCoords(gmx::doubleFromString(words[1].c_str()),
                                                  gmx::doubleFromString(words[2].c_str()),
