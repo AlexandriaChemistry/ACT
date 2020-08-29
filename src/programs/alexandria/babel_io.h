@@ -122,6 +122,6 @@ bool readBabel(const char          *g98,
  * \param[inout] mmm Molprop object
  * \return true if successful, false otherwise
  */
-bool SetMolpropAtomTypes(alexandria::MolProp *mmm);
+bool SetMolpropAtomTypesAndBonds(alexandria::MolProp *mmm);
 
 #endif

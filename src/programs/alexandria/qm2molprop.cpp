@@ -162,7 +162,7 @@ int alex_qm2molprop(int argc, char *argv[])
             alexandria::MolProp mmm;
             if (alexandria::readPsi4(i, &mmm))
             {
-                if (SetMolpropAtomTypes(&mmm))
+                if (SetMolpropAtomTypesAndBonds(&mmm))
                 {
                     mp.push_back(std::move(mmm));
                 }

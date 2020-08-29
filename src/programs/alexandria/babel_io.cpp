@@ -235,6 +235,30 @@ static OpenBabel::OBConversion *readBabel(const std::string &g09,
     return nullptr;
 }
 
+static bool getBondsFromOpenBabel(OpenBabel::OBMol    *mol,
+                                  alexandria::MolProp *mpt,
+                                  const char          *inputFile)
+{
+    // Bonds
+    auto OBbi = mol->BeginBonds();
+    if (OBbi != mol->EndBonds())
+    {
+        for (auto OBb = mol->BeginBond(OBbi); (nullptr != OBb); OBb = mol->NextBond(OBbi))
+        {
+            alexandria::Bond ab(1+OBb->GetBeginAtom()->GetIndex(),
+                                1+OBb->GetEndAtom()->GetIndex(),
+                                OBb->GetBondOrder());
+            mpt->AddBond(ab);
+        }
+        return true;
+    }
+    else
+    {
+        fprintf(stderr, "No bond is found for %s\n", inputFile);
+        return false;
+    }
+}
+
 bool readBabel(const char          *g09,
                alexandria::MolProp *mpt,
                const char          *molnm,
@@ -560,22 +584,7 @@ bool readBabel(const char          *g09,
     }
 
     // Bonds
-    OBbi = mol.BeginBonds();
-    if (OBbi != mol.EndBonds())
-    {
-        for (OBb = mol.BeginBond(OBbi); (nullptr != OBb); OBb = mol.NextBond(OBbi))
-        {
-            alexandria::Bond ab(1+OBb->GetBeginAtom()->GetIndex(),
-                                1+OBb->GetEndAtom()->GetIndex(),
-                                OBb->GetBondOrder());
-            mpt->AddBond(ab);
-        }
-    }
-    else
-    {
-        fprintf(stderr, "No bond is found for %s\n", g09);
-        return false;
-    }
+    getBondsFromOpenBabel(&mol, mpt, g09);
 
     // Dipole
     dipole = (OpenBabel::OBVectorData *) mol.GetData("Dipole Moment");
@@ -657,7 +666,7 @@ bool readBabel(const char          *g09,
     return true;
 }
 
-bool SetMolpropAtomTypes(alexandria::MolProp *mmm)
+bool SetMolpropAtomTypesAndBonds(alexandria::MolProp *mmm)
 {
     OpenBabel::OBMol mol;
     mol.BeginModify();
@@ -702,6 +711,9 @@ bool SetMolpropAtomTypes(alexandria::MolProp *mmm)
         auto type = static_cast<OpenBabel::OBPairData*>(a->GetData("FFAtomType"));
         ca->setObtype(type->GetValue());
     }
+    // Bonds
+    getBondsFromOpenBabel(&mol, mmm, "psi4 input file");
+
     return true;
 }
 
