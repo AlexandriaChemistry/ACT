@@ -2,7 +2,7 @@
 #
 #  This source file is part of the Alexandria program.
 #
-#  Copyright (C) 2014-2019
+#  Copyright (C) 2014-2020
 #
 #  Developers:
 #             Mohammad Mehdi Ghahremanpour,
@@ -42,6 +42,7 @@ set(ALEXANDRIA_SOURCES
            poldata_xml.cpp
            poldata_tables.cpp
            poldata_low.cpp
+           poldata_eemprops.cpp
            xml_util.cpp
            readpsi4.cpp
            latex_util.cpp

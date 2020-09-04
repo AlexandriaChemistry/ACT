@@ -44,6 +44,7 @@
 #include "gromacs/utility/futil.h"
 
 #include "poldata.h"
+#include "poldata_eemprops.h"
 #include "poldata_low.h"
 #include "xml_util.h"
 
@@ -104,7 +105,7 @@ enum {
     exmlGEOMETRY           = 24,
     exmlNUMBONDS           = 25,
     exmlPOLARIZABILITY     = 26,
-    exmlSIGPOL             = 27,
+    exmlPOLARIZABILITY_SIGMA = 27,
     exmlVDWPARAMS          = 28,
     exmlEREF               = 29,
     exmlFUNCTION           = 30,
@@ -165,7 +166,12 @@ enum {
     exmlVTYPE              = 87,
     exmlANGLE              = 88,
     exmlFIXED              = 89,
-    exmlNR                 = 90
+    exmlBONDCORRECTION     = 90,
+    exmlHARDNESS           = 91,
+    exmlELECTRONEGATIVITY  = 92,
+    exmlHARDNESS_SIGMA     = 93,
+    exmlELECTRONEGATIVITY_SIGMA = 94,
+    exmlNR                 = 95
 };
 
 std::map<const std::string, int> xmlxxx =
@@ -197,7 +203,7 @@ std::map<const std::string, int> xmlxxx =
     { "geometry",               exmlGEOMETRY         },
     { "numbonds",               exmlNUMBONDS         },
     { "polarizability",         exmlPOLARIZABILITY   },
-    { "sigma_pol",              exmlSIGPOL           },
+    { "polarizability_sigma",   exmlPOLARIZABILITY_SIGMA           },
     { "fixed",                  exmlFIXED            },
     { "vdwparams",              exmlVDWPARAMS        },
     { "ref_enthalpy",           exmlEREF             },
@@ -251,6 +257,11 @@ std::map<const std::string, int> xmlxxx =
     { "row",                    exmlROW              },
     { "charge",                 exmlCHARGES          },
     { "ref_charge",             exmlREF_CHARGES      },
+    { "bondcorrection",         exmlBONDCORRECTION   },
+    { "hardness",               exmlHARDNESS         },
+    { "electronegativity",      exmlELECTRONEGATIVITY},
+    { "hardness_sigma",         exmlHARDNESS_SIGMA   },
+    { "electronegativity_sigma", exmlELECTRONEGATIVITY_SIGMA },
     { "angle_unit",             exmlANGLE_UNIT       },
     { "length_unit",            exmlLENGTH_UNIT      },
     { "distance",               exmlDISTANCE         },
@@ -457,13 +468,13 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
             break;
         case exmlPOLTYPE:
             if (NN(xbuf[exmlPTYPE]) && NN(xbuf[exmlMILLER]) && NN(xbuf[exmlBOSQUE]) &&
-                NN(xbuf[exmlPOLARIZABILITY]) && NN(xbuf[exmlSIGPOL]))
+                NN(xbuf[exmlPOLARIZABILITY]) && NN(xbuf[exmlPOLARIZABILITY_SIGMA]))
             {
                 pd.addPtype(xbuf[exmlPTYPE],
                             xbuf[exmlMILLER],
                             xbuf[exmlBOSQUE],
                             xbuf_atof(xbuf, exmlPOLARIZABILITY),
-                            xbuf_atof(xbuf, exmlSIGPOL));
+                            xbuf_atof(xbuf, exmlPOLARIZABILITY_SIGMA));
             }
             break;
         case exmlATOMTYPE:
@@ -593,6 +604,21 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
             if (NN(xbuf[exmlREFERENCE]))
             {
                 pd.setEpref(xbuf[exmlREFERENCE]);
+            }
+            break;
+        case exmlBONDCORRECTION:
+            if (NN(xbuf[exmlNAME]) &&
+                NN(xbuf[exmlHARDNESS]) &&
+                NN(xbuf[exmlHARDNESS_SIGMA]) &&
+                NN(xbuf[exmlELECTRONEGATIVITY]) &&
+                NN(xbuf[exmlELECTRONEGATIVITY_SIGMA]))
+            {
+                BondCorrection bc(xbuf[exmlNAME],
+                                  xbuf_atof(xbuf, exmlHARDNESS),
+                                  xbuf_atof(xbuf, exmlHARDNESS_SIGMA),
+                                  xbuf_atof(xbuf, exmlELECTRONEGATIVITY),
+                                  xbuf_atof(xbuf, exmlELECTRONEGATIVITY_SIGMA));
+                pd.addBondCorrection(std::move(bc));
             }
             break;
         case exmlEEMPROP:
@@ -803,7 +829,7 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd)
         add_xml_char(grandchild, exml_names(exmlMILLER), pType->getMiller().c_str());
         add_xml_char(grandchild, exml_names(exmlBOSQUE), pType->getBosque().c_str());
         add_xml_double(grandchild, exml_names(exmlPOLARIZABILITY), pType->getPolarizability());
-        add_xml_double(grandchild, exml_names(exmlSIGPOL), pType->getSigPol());
+        add_xml_double(grandchild, exml_names(exmlPOLARIZABILITY_SIGMA), pType->getSigPol());
     }
     tmp   = pd->getVsite_angle_unit();
     if (0 != tmp.size())
@@ -996,6 +1022,16 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd)
         add_xml_char(grandchild, exml_names(exmlCHARGES), eep->getQstr());
         add_xml_double(grandchild, exml_names(exmlREF_CHARGES), eep->getQref());
         add_xml_char(grandchild, exml_names(exmlROW), eep->getRowstr());
+    }
+    const auto bCorr = pd->bondCorrections();
+    for (const auto &bc : bCorr)
+    {
+        grandchild = add_xml_child(child, exml_names(exmlBONDCORRECTION));
+        add_xml_char(grandchild, exml_names(exmlNAME), bc.name().c_str());
+        add_xml_double(grandchild, exml_names(exmlHARDNESS), bc.hardness());
+        add_xml_double(grandchild, exml_names(exmlHARDNESS_SIGMA), bc.hardness_sigma());
+        add_xml_double(grandchild, exml_names(exmlELECTRONEGATIVITY), bc.electronegativity());
+        add_xml_double(grandchild, exml_names(exmlELECTRONEGATIVITY_SIGMA), bc.electronegativity_sigma());
     }
 }
 

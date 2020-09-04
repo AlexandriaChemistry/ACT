@@ -39,6 +39,7 @@
 #include "gromacs/utility/stringutil.h"
 
 #include "chargemodel.h"
+#include "poldata_eemprops.h"
 #include "poldata_low.h"
 #include "stringutil.h"
 
@@ -638,6 +639,10 @@ class Poldata
 
         const char *getOpts(const std::string &name) const;
 
+        void  addBondCorrection(BondCorrection bc) { bondCorr_.push_back(bc); }
+        
+        const std::vector<BondCorrection> &bondCorrections() const { return bondCorr_; }
+
         void  addEemprops(Eemprops eep) { eep_.push_back(eep); }
 
         EempropsConstIterator BeginEemprops() const { return eep_.begin(); }
@@ -780,6 +785,7 @@ class Poldata
         std::string                           bosqueRef_;
         std::vector<Symcharges>               symcharges_;
         std::vector<Eemprops>                 eep_;
+        std::vector<BondCorrection>           bondCorr_;
         std::string                           eepReference_;
         ChargeModel                           ChargeModel_ = eqdACM_g;
 

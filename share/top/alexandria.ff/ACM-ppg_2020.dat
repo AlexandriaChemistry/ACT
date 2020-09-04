@@ -72,41 +72,41 @@
     <atomtype elem="I" description="general iodine" atype="i" ptype="p_i" btype="b_i" ztype="z_i" vdwparams="3.830860e-01 2.092000e+00 1.300000e+01" ref_enthalpy="113.361"/>
   </atomtypes>
   <poltypes polarizability_unit="Angstrom3" reference="Molina2011a,Ghahremanpour2018b">
-    <poltype ptype="p_h1" miller="h1" bosque="H" polarizability="0.430168" sigma_pol="0"/>
-    <poltype ptype="p_h4" miller="h4" bosque="H" polarizability="0.386177" sigma_pol="0"/>
-    <poltype ptype="p_ha" miller="H" bosque="H" polarizability="0.463268" sigma_pol="1.13362e-07"/>
-    <poltype ptype="p_hc" miller="hc" bosque="H" polarizability="0.493969" sigma_pol="0"/>
-    <poltype ptype="p_hp" miller="H" bosque="H" polarizability="0.318563" sigma_pol="0"/>
-    <poltype ptype="p_hw" miller="hw" bosque="H" polarizability="0.376" sigma_pol="0"/>
-    <poltype ptype="p_ca" miller="ca" bosque="C" polarizability="2.08709" sigma_pol="0"/>
-    <poltype ptype="p_c1" miller="CDI" bosque="C" polarizability="1.55717" sigma_pol="1.28185e-07"/>
-    <poltype ptype="p_cm" miller="cm" bosque="C" polarizability="1.417" sigma_pol="0.018"/>
-    <poltype ptype="p_cz" miller="cz" bosque="C" polarizability="1.417" sigma_pol="0.018"/>
-    <poltype ptype="p_c2" miller="CTR" bosque="C" polarizability="1.80146" sigma_pol="0"/>
-    <poltype ptype="p_c3" miller="CTE" bosque="C" polarizability="1.45072" sigma_pol="4.47035e-07"/>
-    <poltype ptype="p_cu" miller="cu" bosque="C" polarizability="1.34332" sigma_pol="1.83714e-07"/>
-    <poltype ptype="p_n" miller="NTE" bosque="N" polarizability="0.976191" sigma_pol="2.98953e-07"/>
-    <poltype ptype="p_n1" miller="n1" bosque="N" polarizability="0.857588" sigma_pol="4.25532e-07"/>
-    <poltype ptype="p_n3" miller="n3" bosque="N" polarizability="1.01046" sigma_pol="0"/>
-    <poltype ptype="p_n4" miller="n4" bosque="N" polarizability="0.928" sigma_pol="0.023"/>
-    <poltype ptype="p_nb" miller="nb" bosque="N" polarizability="0.933781" sigma_pol="1.07454e-07"/>
-    <poltype ptype="p_n2" miller="n2" bosque="N" polarizability="0.820837" sigma_pol="0.00252167"/>
-    <poltype ptype="p_nh" miller="nh" bosque="N" polarizability="0.880187" sigma_pol="0"/>
-    <poltype ptype="p_no" miller="no" bosque="N" polarizability="1.58607" sigma_pol="0"/>
-    <poltype ptype="p_o" miller="OTE" bosque="O" polarizability="0.500489" sigma_pol="0"/>
-    <poltype ptype="p_oh" miller="oh" bosque="O" polarizability="0.519083" sigma_pol="0"/>
-    <poltype ptype="p_ow" miller="ow" bosque="O" polarizability="0.689" sigma_pol="0"/>
-    <poltype ptype="p_on" miller="on" bosque="O" polarizability="0.579778" sigma_pol="2.12309e-07"/>
-    <poltype ptype="p_om" miller="om" bosque="O" polarizability="0.565" sigma_pol="4.66004e-07"/>
-    <poltype ptype="p_os" miller="os" bosque="O" polarizability="0.55555" sigma_pol="0"/>
-    <poltype ptype="p_f" miller="F" bosque="F" polarizability="0.386447" sigma_pol="0"/>
-    <poltype ptype="p_p4" miller="p4" bosque="P" polarizability="2.19642" sigma_pol="0"/>
-    <poltype ptype="p_p2" miller="p2" bosque="P" polarizability="3.20183" sigma_pol="0"/>
-    <poltype ptype="p_s4" miller="s4" bosque="S" polarizability="2.61908" sigma_pol="0"/>
-    <poltype ptype="p_s" miller="STE" bosque="S" polarizability="2.99586" sigma_pol="0"/>
-    <poltype ptype="p_cl" miller="Cl" bosque="Cl" polarizability="2.79935" sigma_pol="1.59296e-06"/>
-    <poltype ptype="p_br" miller="Br" bosque="Br" polarizability="3.46748" sigma_pol="1.79161e-06"/>
-    <poltype ptype="p_i" miller="I" bosque="I" polarizability="5.29701" sigma_pol="3.20261e-06"/>
+    <poltype ptype="p_h1" miller="h1" bosque="H" polarizability="0.430168" polarizability_sigma="0"/>
+    <poltype ptype="p_h4" miller="h4" bosque="H" polarizability="0.386177" polarizability_sigma="0"/>
+    <poltype ptype="p_ha" miller="H" bosque="H" polarizability="0.463268" polarizability_sigma="1.13362e-07"/>
+    <poltype ptype="p_hc" miller="hc" bosque="H" polarizability="0.493969" polarizability_sigma="0"/>
+    <poltype ptype="p_hp" miller="H" bosque="H" polarizability="0.318563" polarizability_sigma="0"/>
+    <poltype ptype="p_hw" miller="hw" bosque="H" polarizability="0.376" polarizability_sigma="0"/>
+    <poltype ptype="p_ca" miller="ca" bosque="C" polarizability="2.08709" polarizability_sigma="0"/>
+    <poltype ptype="p_c1" miller="CDI" bosque="C" polarizability="1.55717" polarizability_sigma="1.28185e-07"/>
+    <poltype ptype="p_cm" miller="cm" bosque="C" polarizability="1.417" polarizability_sigma="0.018"/>
+    <poltype ptype="p_cz" miller="cz" bosque="C" polarizability="1.417" polarizability_sigma="0.018"/>
+    <poltype ptype="p_c2" miller="CTR" bosque="C" polarizability="1.80146" polarizability_sigma="0"/>
+    <poltype ptype="p_c3" miller="CTE" bosque="C" polarizability="1.45072" polarizability_sigma="4.47035e-07"/>
+    <poltype ptype="p_cu" miller="cu" bosque="C" polarizability="1.34332" polarizability_sigma="1.83714e-07"/>
+    <poltype ptype="p_n" miller="NTE" bosque="N" polarizability="0.976191" polarizability_sigma="2.98953e-07"/>
+    <poltype ptype="p_n1" miller="n1" bosque="N" polarizability="0.857588" polarizability_sigma="4.25532e-07"/>
+    <poltype ptype="p_n3" miller="n3" bosque="N" polarizability="1.01046" polarizability_sigma="0"/>
+    <poltype ptype="p_n4" miller="n4" bosque="N" polarizability="0.928" polarizability_sigma="0.023"/>
+    <poltype ptype="p_nb" miller="nb" bosque="N" polarizability="0.933781" polarizability_sigma="1.07454e-07"/>
+    <poltype ptype="p_n2" miller="n2" bosque="N" polarizability="0.820837" polarizability_sigma="0.00252167"/>
+    <poltype ptype="p_nh" miller="nh" bosque="N" polarizability="0.880187" polarizability_sigma="0"/>
+    <poltype ptype="p_no" miller="no" bosque="N" polarizability="1.58607" polarizability_sigma="0"/>
+    <poltype ptype="p_o" miller="OTE" bosque="O" polarizability="0.500489" polarizability_sigma="0"/>
+    <poltype ptype="p_oh" miller="oh" bosque="O" polarizability="0.519083" polarizability_sigma="0"/>
+    <poltype ptype="p_ow" miller="ow" bosque="O" polarizability="0.689" polarizability_sigma="0"/>
+    <poltype ptype="p_on" miller="on" bosque="O" polarizability="0.579778" polarizability_sigma="2.12309e-07"/>
+    <poltype ptype="p_om" miller="om" bosque="O" polarizability="0.565" polarizability_sigma="4.66004e-07"/>
+    <poltype ptype="p_os" miller="os" bosque="O" polarizability="0.55555" polarizability_sigma="0"/>
+    <poltype ptype="p_f" miller="F" bosque="F" polarizability="0.386447" polarizability_sigma="0"/>
+    <poltype ptype="p_p4" miller="p4" bosque="P" polarizability="2.19642" polarizability_sigma="0"/>
+    <poltype ptype="p_p2" miller="p2" bosque="P" polarizability="3.20183" polarizability_sigma="0"/>
+    <poltype ptype="p_s4" miller="s4" bosque="S" polarizability="2.61908" polarizability_sigma="0"/>
+    <poltype ptype="p_s" miller="STE" bosque="S" polarizability="2.99586" polarizability_sigma="0"/>
+    <poltype ptype="p_cl" miller="Cl" bosque="Cl" polarizability="2.79935" polarizability_sigma="1.59296e-06"/>
+    <poltype ptype="p_br" miller="Br" bosque="Br" polarizability="3.46748" polarizability_sigma="1.79161e-06"/>
+    <poltype ptype="p_i" miller="I" bosque="I" polarizability="5.29701" polarizability_sigma="3.20261e-06"/>
   </poltypes>
   <gt_bonds unit="pm" interaction="BONDS" function="MORSE">
     <gt_bond atom1="b_br" atom2="b_br" bondorder="1" refValue="231.56" sigma="0.5" ntrain="1" params="450  19"/>

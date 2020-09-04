@@ -1065,7 +1065,6 @@ CommunicationStatus Poldata::Receive(const t_commrec *cr, int src)
 
 void Poldata::broadcast_eemprop(const t_commrec *cr)
 {
-    size_t neep;
     const int src = 0;
     if (MASTER(cr))
     {
@@ -1078,11 +1077,17 @@ void Poldata::broadcast_eemprop(const t_commrec *cr)
                 {
                     fprintf(debug, "Going to update Poldata::eemprop on node %d\n", dest);
                 }
-                /*Send Eemprops*/
+                /* Send Eemprops */
                 gmx_send_int(cr, dest, eep_.size());
                 for (auto &eep : eep_)
                 {
                     cs = eep.Send(cr, dest);
+                }       
+                /* Send BondCorrections */
+                gmx_send_int(cr, dest, bondCorr_.size());
+                for (auto &bc : bondCorr_)
+                {
+                    cs = bc.Send(cr, dest);
                 }       
             }
             gmx_send_done(cr, dest);
@@ -1093,10 +1098,10 @@ void Poldata::broadcast_eemprop(const t_commrec *cr)
         auto cs = gmx_recv_data(cr, src);
         if (CS_OK == cs)
         {
-            /*Receive Eemprops*/
-            neep = gmx_recv_int(cr, src);
+            /* Receive Eemprops */
+            int neep = gmx_recv_int(cr, src);
             eep_.clear();
-            for (size_t n = 0; (CS_OK == cs) && (n < neep); n++)
+            for (int n = 0; (CS_OK == cs) && (n < neep); n++)
             {
                 Eemprops eep;
                 cs = eep.Receive(cr, src);
@@ -1113,6 +1118,29 @@ void Poldata::broadcast_eemprop(const t_commrec *cr)
                     if (nullptr != debug)
                     {
                         fprintf(debug, "Could not update Poldata::eemprop on node %d\n", cr->nodeid);
+                    }
+                }   
+            }
+            /* Receive Eemprops */
+            int nbc = gmx_recv_int(cr, src);
+            bondCorr_.clear();
+            for (int n = 0; (CS_OK == cs) && (n < nbc); n++)
+            {
+                BondCorrection bc;
+                cs = bc.Receive(cr, src);
+                if (CS_OK == cs)
+                {
+                    bondCorr_.push_back(bc);
+                    if (nullptr != debug)
+                    {
+                        fprintf(debug, "Poldata::bondCorr is updated on node %d\n", cr->nodeid);
+                    }
+                }
+                else
+                {
+                    if (nullptr != debug)
+                    {
+                        fprintf(debug, "Could not update Poldata::bondCorr on node %d\n", cr->nodeid);
                     }
                 }   
             }
