@@ -58,7 +58,7 @@ class QgenAcm
 {
     public:
     
-        QgenAcm(){};
+        QgenAcm() {};
     
         void setInfo(const Poldata *pd,
                      t_atoms       *atoms,
@@ -83,9 +83,9 @@ class QgenAcm
 
         int getRow(int atom, int z);
 
-        std::vector<std::vector<double> > q() { return q_;}
+        const std::vector<std::vector<double> > &q() { return q_;}
         
-        int natom() {return natom_;}
+        int natom() { return natom_; }
         
         double getQ(int atom, int z);
 

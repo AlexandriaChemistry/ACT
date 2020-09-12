@@ -170,6 +170,25 @@ TEST_F (PoldataTest, Bosque)
     checker_.checkDouble(bosque->getPolarizability(), "polarizability");
 }
 
+TEST_F (PoldataTest, Verstraelen)
+{
+    auto pd  = getPoldata("Verstraelen");
+    auto bcs = pd->bondCorrections();
+    std::vector<std::string> name;
+    std::vector<double>      hardness;
+    std::vector<double>      electronegativity;
+    for ( auto bc : bcs )
+    {
+        name.push_back(bc.name());
+        hardness.push_back(bc.hardness());
+        electronegativity.push_back(bc.electronegativity());
+    }
+    checker_.checkSequence(name.begin(), name.end(), "name");
+    checker_.checkSequence(hardness.begin(), hardness.end(), "hardness");
+    checker_.checkSequence(electronegativity.begin(), electronegativity.end(),
+                           "electronegativity");
+}
+
 TEST_F (PoldataTest, chi)
 {
     std::vector<double>      chi0s;

@@ -257,11 +257,11 @@ static double Coulomb_PP(double r)
 
 void QgenAcm::dump(FILE *fp, t_atoms *atoms)
 {
-    auto  i  = 0, j = 0;
-    rvec  mu = { 0, 0, 0 };
-
-    if (eQGEN_ == eQGEN_OK)
+    if (fp && eQGEN_ == eQGEN_OK)
     {
+        auto  i  = 0, j = 0;
+        rvec  mu = { 0, 0, 0 };
+
         fprintf(fp, "Jcc_ matrix:\n");
         for (i = 0; i < natom_; i++)
         {
@@ -722,10 +722,7 @@ int QgenAcm::generateCharges(FILE                      *fp,
         calcRhs(atoms, pd->getEpsilonR());
         solveQEem(fp);
         copyChargesToAtoms(atoms);
-        if (fp)
-        {
-            dump(fp, atoms);
-        }
+        dump(fp, atoms);
     }
     return eQGEN_;
 }
