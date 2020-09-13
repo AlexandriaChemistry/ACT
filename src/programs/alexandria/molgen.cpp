@@ -273,7 +273,6 @@ MolGen::MolGen()
     bFinal_    = false;
     bDone_     = false;
     bGenVsite_ = false;
-    bOptHfac_  = false;
     qsymm_     = false;
     constrain_ = false;
     bQM_       = false;
@@ -291,7 +290,6 @@ MolGen::MolGen()
     mindata_   = 3;
     nexcl_     = 2;
     nexcl_orig_= nexcl_;
-    hfac_      = 0;
     maxESP_    = 100;
     fixchi_    = (char *)"";
     lot_       = "B3LYP/aug-cc-pVTZ";
@@ -382,11 +380,7 @@ void MolGen::addOptions(std::vector<t_pargs> *pargs, eTune etune)
         { "-fc_charge",  FALSE, etREAL, {&fc_[ermsCHARGE]},
           "Force constant in the penalty function for 'unchemical' charges, i.e. negative hydrogens, and positive oxygens." },
         { "-fc_polar",  FALSE, etREAL, {&fc_[ermsPolar]},
-          "Force constant in the penalty function for polarizability." },
-        { "-hfac",  FALSE, etREAL, {&hfac_},
-          "[HIDDEN]Fudge factor to scale the J00 of hydrogen by (1 + hfac * qH). Default hfac is 0, means no fudging." },
-        { "-opthfac",  FALSE, etBOOL, {&bOptHfac_},
-          "[HIDDEN]Optimize the fudge factor to scale the J00 of hydrogen (see above). If set, then [TT]-hfac[tt] set the absolute value of the largest hfac. Above this, a penalty is incurred." }
+          "Force constant in the penalty function for polarizability." }
     };
     t_pargs pa_fc[] =
     {
@@ -418,7 +412,6 @@ void MolGen::addOptions(std::vector<t_pargs> *pargs, eTune etune)
 
 void MolGen::optionsFinished()
 {
-    hfac0_                      = hfac_;
     cr_                         = init_commrec();
     mdlog_                      = gmx::MDLogger {};
     gmx_omp_nthreads_init(mdlog_, cr_, 1, 1, 1, 0, false, false);
@@ -627,7 +620,6 @@ void MolGen::Read(FILE            *fp,
                     mymol.initQgenResp(&pd_, method, basis, nullptr, 0.0, maxESP_);
                     imm = mymol.GenerateCharges(&pd_,
                                                 mdlog_,
-                                                hfac_,
                                                 cr_,
                                                 tabfn,
                                                 hwinfo_,
@@ -765,7 +757,6 @@ void MolGen::Read(FILE            *fp,
                 mymol.initQgenResp(&pd_, method, basis, nullptr, 0.0, maxESP_);
                 imm = mymol.GenerateCharges(&pd_,
                                             mdlog_,
-                                            hfac_,
                                             cr_,
                                             tabfn,
                                             hwinfo_,

@@ -688,7 +688,6 @@ int alex_tune_zeta(int argc, char *argv[])
                              opt.mymols(),
                              opt.poldata(),
                              opt.mdlog(),
-                             opt.hfac(),
                              opt.lot(),
                              tabfn,
                              opt.hwinfo(),

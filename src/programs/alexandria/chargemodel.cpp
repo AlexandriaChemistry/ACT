@@ -40,19 +40,20 @@ namespace alexandria
 
 std::map<ChargeModel, const std::string> cmNames =
     {
-     { eqdESP_p,    "ESP-p"    },
-     { eqdESP_pp,   "ESP-pp"   },
-     { eqdESP_pg,   "ESP-pg"   },
-     { eqdESP_ps,   "ESP-ps"   },
-     { eqdACM_g,    "ACM-g"    },
-     { eqdACM_s,    "ACM-s"    },
-     { eqdACM_pg,   "ACM-pg"   },
-     { eqdACM_ps,   "ACM-ps"   },
-     { eqdACM_ppg,  "ACM-ppg"  },
-     { eqdACM_pps,  "ACM-pps"  },
-     { eqdYang,     "Yang"     },
-     { eqdBultinck, "Bultinck" },
-     { eqdRappe,    "Rappe"    }
+     { eqdESP_p,       "ESP-p"       },
+     { eqdESP_pp,      "ESP-pp"      },
+     { eqdESP_pg,      "ESP-pg"      },
+     { eqdESP_ps,      "ESP-ps"      },
+     { eqdACM_g,       "ACM-g"       },
+     { eqdACM_s,       "ACM-s"       },
+     { eqdACM_pg,      "ACM-pg"      },
+     { eqdACM_ps,      "ACM-ps"      },
+     { eqdACM_ppg,     "ACM-ppg"     },
+     { eqdACM_pps,     "ACM-pps"     },
+     { eqdYang,        "Yang"        },
+     { eqdBultinck,    "Bultinck"    },
+     { eqdRappe,       "Rappe"       },
+     { eqdVerstraelen, "Verstraelen" }
     };
 
 std::map<const std::string, ChargeModel> cmEEM;

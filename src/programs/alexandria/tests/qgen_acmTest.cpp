@@ -100,7 +100,7 @@ class AcmTest : public gmx::test::CommandLineTestBase
             std::string           dataName, method, basis;
             alexandria::MolProp   molprop;
             std::vector<MolProp>  vmp;
-
+            
             if (inputformat == einfLOG)
             {
                 method.assign("B3LYP");
@@ -146,7 +146,6 @@ class AcmTest : public gmx::test::CommandLineTestBase
             fprintf(stderr, "Generated topology for %s\n", dataName.c_str());
 
             // Needed for GenerateCharges
-            real           hfac     = 0;
             t_commrec     *cr       = init_commrec();
             auto           pnc      = gmx::PhysicalNodeCommunicator(MPI_COMM_WORLD, 0);
             gmx::MDLogger  mdlog {};
@@ -156,7 +155,7 @@ class AcmTest : public gmx::test::CommandLineTestBase
 
             mp_.symmetrizeCharges(pd, aps_, qSymm, nullptr);
             mp_.initQgenResp(pd, method, basis, nullptr, 0.0, 100);
-            mp_.GenerateCharges(pd, mdlog, hfac, cr, nullptr, 
+            mp_.GenerateCharges(pd, mdlog, cr, nullptr, 
                                 hwinfo, qcycle, qtol);
                                 
             fprintf(stderr, "Generated charges for %s\n", dataName.c_str());
@@ -186,6 +185,16 @@ TEST_F (AcmTest, BultinckLog)
 TEST_F (AcmTest, BultinckPDB)
 {
     testAcm(eqdBultinck, einfPDB, true);
+}
+
+TEST_F (AcmTest, VerstraelenLog)
+{
+    testAcm(eqdVerstraelen, einfLOG, true);
+}
+
+TEST_F (AcmTest, VerstraelenPDB)
+{
+    testAcm(eqdVerstraelen, einfPDB, true);
 }
 
 TEST_F (AcmTest, RappeLog)

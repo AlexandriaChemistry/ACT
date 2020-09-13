@@ -258,7 +258,6 @@ void print_electric_props(FILE                           *fp,
                           std::vector<alexandria::MyMol> &mymol,
                           const Poldata                  *pd,
                           const gmx::MDLogger            &fplog,
-                          real                            hfac,
                           const char                     *lot,
                           const char                     *tabfn,
                           gmx_hw_info_t                  *hwinfo,
@@ -342,8 +341,7 @@ void print_electric_props(FILE                           *fp,
                     mol.getMultiplicity());
 
             // Recalculate the atomic charges using the optmized parameters.
-            mol.GenerateCharges(pd, fplog, hfac,
-                                cr, tabfn, hwinfo, qcycle, qtol);
+            mol.GenerateCharges(pd, fplog, cr, tabfn, hwinfo, qcycle, qtol);
 
             // Electrostatic potentials
             mol.QgenResp_->updateZeta(mol.atoms_, pd);

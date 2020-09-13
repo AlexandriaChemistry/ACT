@@ -189,15 +189,12 @@ class MolGen
         real                            Chi0_max_;
         real                            zeta_max_;
         real                            alpha_max_;
-        real                            hfac_;
-        real                            hfac0_;
         real                            watoms_;
         real                            qtol_;
         int                             qcycle_;
         real                            ener_[ermsNR] = { 0 };
         real                            fc_[ermsNR] = { 0 };
         char                           *fixchi_;
-        gmx_bool                        bOptHfac_;
         gmx_bool                        bQM_;
         gmx_bool                        bDone_;
         gmx_bool                        bFinal_;
@@ -256,28 +253,6 @@ class MolGen
         //! \brief Return the mutable vector of molecules
         std::vector<MyMol> &mymols() { return mymol_; }
 
-        //! \brief Return whether to optimize the H factor
-        bool optHfac() const { return bOptHfac_; }
-
-        //! \brief Return the H factor
-        real hfac() const { return hfac_; }
-
-        //! \brief Set the H factor
-        void setHfac(real hfac) { hfac_ = hfac; }
-
-        real hfacDiff()
-        {
-            if (hfac_ > hfac0_)
-            {
-                return hfac_ - hfac0_;
-            }
-            else if (hfac_ < -hfac0_)
-            {
-                return (hfac() + hfac0_);
-            }
-            return 0;
-        }
-        
         gmx::MDLogger  mdlog()  const {return mdlog_; }
         
         int qcycle() const { return qcycle_;}

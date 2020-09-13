@@ -146,7 +146,6 @@ int alex_gentop(int argc, char *argv[])
     static int                       nexcl          = 2;
     static real                      qtol           = 1e-6;
     static real                      qtot           = 0;
-    static real                      hfac           = 0;
     static real                      watoms         = 0;
     static real                      spacing        = 0.01;
     static real                      border         = 0.2;
@@ -218,8 +217,6 @@ int alex_gentop(int argc, char *argv[])
           "Add hydrogen atoms to the compound - useful for PDB files." },
         { "-qcycle", FALSE, etINT, {&qcycle},
           "Max number of tries for optimizing the charges. The trial with lowest chi2 will be used for generating a topology. Will be turned off if randzeta is No." },
-        { "-hfac",    FALSE, etREAL, {&hfac},
-          "HIDDENFudge factor for AXx algorithms that modulates J00 for hydrogen atoms by multiplying it by (1 + hfac*qH). This hack is originally due to Rappe & Goddard." },
         { "-qsymm",  FALSE, etBOOL, {&bQsym},
           "Symmetrize the charges on symmetric groups, e.g. CH3, NH2." },
         { "-symm",   FALSE, etSTR, {&symm_string},
@@ -387,7 +384,6 @@ int alex_gentop(int argc, char *argv[])
     {
         imm    = mymol.GenerateCharges(&pd,
                                        mdlog,
-                                       hfac,
                                        cr,
                                        tabfn,
                                        nullptr,

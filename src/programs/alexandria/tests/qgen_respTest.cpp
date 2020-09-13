@@ -116,7 +116,6 @@ class RespTest : public gmx::test::CommandLineTestBase
                     mp_.getMolname().c_str());
 
             //Needed for GenerateCharges
-            real           hfac        = 0;
             t_commrec     *cr          = init_commrec();
             auto           pnc         = gmx::PhysicalNodeCommunicator(MPI_COMM_WORLD, 0);
             gmx::MDLogger  mdlog {};
@@ -133,7 +132,7 @@ class RespTest : public gmx::test::CommandLineTestBase
             mp_.setInputrec(&inputrec);
             mp_.symmetrizeCharges(getPoldata(qdist), aps_, qSymm, nullptr);
             mp_.initQgenResp(getPoldata(qdist), method, basis, nullptr, 0.0, 100);
-            mp_.GenerateCharges(getPoldata(qdist), mdlog, hfac, cr,
+            mp_.GenerateCharges(getPoldata(qdist), mdlog, cr,
                                 tabFile.empty() ? nullptr : tabFile.c_str(),
                                 hwinfo, qcycle, qtol);
 

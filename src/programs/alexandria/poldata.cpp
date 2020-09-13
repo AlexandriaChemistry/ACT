@@ -1292,6 +1292,38 @@ void Poldata::makeMappings()
         }
         mapAtypeToEempropsIterator_.insert(std::pair<std::string, EempropsIterator>(atype, eep));
         mapZtypeToEempropsIterator_.insert(std::pair<std::string, EempropsIterator>(ztype, eep));
+        for (auto fb = fa; fb < getAtypeEnd(); fb++)
+        {
+            auto ztypeB = fb->getZtype();
+            std::string name = ztype + "-" + ztypeB;
+            
+            auto bcc  = std::find_if(bondCorr_.begin(),
+                                     bondCorr_.end(),
+                                     [name](BondCorrection &bcc)
+                                     { return (name == bcc.name()); });
+            if (bcc != bondCorr_.end())
+            {
+                //mapAtypesToBccIterator_.insert(std::pair<std::string, BondCorrectionIterator>(bcc->name(), bcc));
+                mapAtypesToBccConstIterator_.insert(std::pair<std::string, BondCorrectionConstIterator>(bcc->name(), static_cast<BondCorrectionConstIterator>(bcc)));
+            }
+        }
+    }
+}
+
+BondCorrectionConstIterator Poldata::atypes2Bcc(const std::string &ai,
+                                                const std::string &aj) const
+{
+    auto zi = findAtype(ai)->getZtype();
+    auto zj = findAtype(aj)->getZtype();
+    std::string name = zi + "-" + zj;
+    auto eic = mapAtypesToBccConstIterator_.find(name);
+    if (eic != mapAtypesToBccConstIterator_.end())
+    {
+        return eic->second;
+    }
+    else
+    {
+        return bondCorr_.end();
     }
 }
 

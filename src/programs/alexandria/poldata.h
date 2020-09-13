@@ -643,6 +643,18 @@ class Poldata
         
         const std::vector<BondCorrection> &bondCorrections() const { return bondCorr_; }
 
+        /*! \brief Find the BCC properties
+         *
+         * Find the BCC properties corresponding to an atom type.
+         * \param[in] ai The Alexandria atom type i
+         * \param[in] aj The Alexandria atom type j
+         * \returns      An iterator pointing to the right BCCprops
+         *               structure or End in case the atom type
+         *               is not found.
+         */
+        BondCorrectionConstIterator atypes2Bcc(const std::string &ai,
+                                               const std::string &aj) const;
+
         void  addEemprops(Eemprops eep) { eep_.push_back(eep); }
 
         EempropsConstIterator BeginEemprops() const { return eep_.begin(); }
@@ -700,7 +712,7 @@ class Poldata
             auto eic = mapZtypeToEempropsConstIterator_.find(ztype);
             if (eic != mapZtypeToEempropsConstIterator_.end())
             {
-                return eic->second;
+              return eic->second;
             }
             else
             {
@@ -799,6 +811,8 @@ class Poldata
             return (pointer - &(vector[0]));
         }
         
+        std::map<std::string, BondCorrectionConstIterator> mapAtypesToBccConstIterator_;
+        std::map<std::string, BondCorrectionIterator> mapAtypesToBccIterator_;
         std::map<std::string, EempropsConstIterator> mapAtypeToEempropsConstIterator_;
         std::map<std::string, EempropsIterator> mapAtypeToEempropsIterator_;
         std::map<std::string, EempropsConstIterator> mapZtypeToEempropsConstIterator_;

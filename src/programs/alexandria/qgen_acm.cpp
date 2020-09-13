@@ -51,27 +51,26 @@
 namespace alexandria
 {
 
-QgenAcm::QgenAcm(const Poldata *pd,
-                 t_atoms       *atoms,
-                 double         hfac,
-                 int            qtotal)
+QgenAcm::QgenAcm(const Poldata          *pd,
+                 t_atoms                *atoms,
+                 int                     qtotal,
+                 const std::vector<Bond> &bonds)
 {
     int          i, j, k, atm, nz;
     bool         bSupport = true;
     std::string  atp;
 
     iChargeModel_   = pd->getChargeModel();
+    bonds_          = bonds;
     bWarned_        = false;
     bAllocSave_     = false;
     bHaveShell_     = getEemtypePolarizable(iChargeModel_);
     eQGEN_          = eQGEN_OK;
-    hardnessFactor_ = 1;
     chieq_          = 0;
     Jcs_            = 0;
     Jss_            = 0;
     rms_            = 0;
     natom_          = 0;
-    hfac_           = hfac;
     qtotal_         = qtotal;
     
     if (coreIndex_.size() != 0)
@@ -136,8 +135,8 @@ QgenAcm::QgenAcm(const Poldata *pd,
                 auto eem   = pd->atype2Eem(atp);
                 elem_[j]   = atp;
                 atomnr_[j] = atm;
-                chi0_[j]   = eem->getChi0();
-                j00_[j]    = eem->getJ0();
+                // chi0_[j]   = eem->getChi0();
+                // j00_[j]    = eem->getJ0();
                 q0_[j]     = eem->getQref();
                 nz         = eem->getNzeta();
                 nZeta_[j]  = nz;
@@ -147,7 +146,7 @@ QgenAcm::QgenAcm(const Poldata *pd,
                 for (k = 0; k < nz; k++)
                 {
                     q_[j][k]    = eem->getQ(k);
-                    zeta_[j][k] = eem->getZeta(k);
+                    // zeta_[j][k] = eem->getZeta(k);
                     row_[j][k]  = eem->getRow(k);
                     
                     if (getEemtypeSlater(iChargeModel_)) 
@@ -158,25 +157,12 @@ QgenAcm::QgenAcm(const Poldata *pd,
                             snprintf(buf, sizeof(buf), "Row should be at least 1: atype = %s q = %g zeta = %g row = %d model = %s",
                                      atp.c_str(), 
                                      q_[j][k], 
-                                     zeta_[j][k], 
+                                     eem->getZeta(k),
                                      row_[j][k],
                                      getEemtypeName(iChargeModel_));                         
                         }
                     }
                     
-#if HAVE_LIBCLN
-                    if (row_[j][k] > SLATER_MAX_CLN)
-                    {
-                        if (debug)
-                        {
-                            fprintf(debug, "Cannot handle Slaters higher than %d for atom %s %s\n",
-                                    SLATER_MAX_CLN,
-                                    *(atoms->resinfo[i].name),
-                                    *(atoms->atomname[j]));
-                        }
-                        row_[j][k] = SLATER_MAX_CLN;
-                    }
-#else
                     if (row_[j][k] > SLATER_MAX)
                     {
                         if (debug)
@@ -188,15 +174,17 @@ QgenAcm::QgenAcm(const Poldata *pd,
                         }
                         row_[j][k] = SLATER_MAX;
                     }
-#endif
                 }
                 j++;
             }
         }
     }
+    // Call routine to set the Chi, J00 and Zeta as well as
+    // bond charge correction parameters.
+    updateParameters(pd);
 }
 
-void QgenAcm::updateInfo(const Poldata *pd)
+void QgenAcm::updateParameters(const Poldata *pd)
 {
     for (auto i = 0; i < natom_; i++)
     {
@@ -206,6 +194,44 @@ void QgenAcm::updateInfo(const Poldata *pd)
         for (auto k = 0; k < nZeta_[i]; k++)
         {
             zeta_[i][k] = ei->getZeta(k);
+        }
+    }
+    
+    if (! pd->bondCorrections().empty() )
+    {
+        for (auto &b : bonds_)
+        {
+            // Confusing stuff: The atoms in  bonds are numbered
+            // from 1 rather than zero. No shells are not taken into
+            // account either.
+            auto ai  = b.getAi()-1;
+            auto aj  = b.getAj()-1;
+            auto bcc = pd->atypes2Bcc(elem_[ai], elem_[aj]);
+            if (bcc != pd->bondCorrections().end())
+            {
+                auto deltaChi = bcc->electronegativity();
+                chi0_[ai] += deltaChi;
+                chi0_[aj] -= deltaChi;
+                auto hardness = bcc->hardness();
+                j00_[ai]  += hardness;
+                j00_[aj]  -= hardness;
+            }
+            else
+            {
+                // Look for reverse correction, then we need to change the signs
+                auto bcc = pd->atypes2Bcc(elem_[aj], elem_[ai]);
+                if (bcc != pd->bondCorrections().end())
+                {
+                    // Do the reverse.
+                    auto deltaChi = -bcc->electronegativity();
+                    chi0_[ai] += deltaChi;
+                    chi0_[aj] -= deltaChi;
+                    auto hardness = -bcc->hardness();
+                    j00_[ai]  += hardness;
+                    j00_[aj]  -= hardness;
+                }
+                // Else do nothing or print a warning.   
+            }
         }
     }
 }
@@ -496,7 +522,7 @@ void QgenAcm::calcJcc(t_atoms *atoms, double epsilonr)
                     }
                     else
                     {
-                        auto j0 = hardnessFactor_*j00_[i];
+                        auto j0 = j00_[i];
                         if (((iChargeModel_ == eqdYang) ||
                              (iChargeModel_ == eqdRappe)) &&
                             (atomnr_[i] == 1))
@@ -581,7 +607,7 @@ void QgenAcm::calcRhs(t_atoms *atoms, double epsilonr)
         if (bHaveShell_)
         {
             calcJcs(atoms, coreIndex_[i], i, epsilonr);
-            rhs_[i]   -= hardnessFactor_*j00_[i]*q_[i][1]; // Hardness * qs
+            rhs_[i]   -= j00_[i]*q_[i][1]; // Hardness * qs
             rhs_[i]   -= Jcs_;                             // Core-Shell interaction
             qshell    += q_[i][1];
         }
@@ -716,7 +742,7 @@ int QgenAcm::generateCharges(FILE                      *fp,
     checkSupport(pd);
     if (eQGEN_OK == eQGEN_)
     {
-        updateInfo(pd);
+        updateParameters(pd);
         updatePositions(x, atoms);
         calcJcc(atoms, pd->getEpsilonR());
         calcRhs(atoms, pd->getEpsilonR());

@@ -1533,6 +1533,9 @@ class MolProp
         //! End Iterator over Bond elements
         BondIterator EndBond() { return bond_.end(); }
 
+        //! Return the whole bond array but in constant form
+        const std::vector<Bond> &bonds() const { return bond_; }
+        
         //! Add an experiment
         void AddExperiment(Experiment myexp) { exper_.push_back(myexp); }
 

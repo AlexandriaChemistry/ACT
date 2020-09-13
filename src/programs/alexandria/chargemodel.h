@@ -49,20 +49,21 @@ namespace alexandria
  * \ingroup module_alexandria
  */
 enum ChargeModel {
-    eqdESP_p    = 0,
-    eqdESP_pg   = 1,
-    eqdESP_ps   = 2,
-    eqdESP_pp   = 3,
-    eqdACM_g    = 4,
-    eqdACM_s    = 5,
-    eqdACM_pg   = 6,
-    eqdACM_ps   = 7,
-    eqdACM_ppg  = 8,
-    eqdACM_pps  = 9,
-    eqdYang     = 10,
-    eqdBultinck = 11,
-    eqdRappe    = 12,
-    eqdNR       = 13
+    eqdESP_p       = 0,
+    eqdESP_pg      = 1,
+    eqdESP_ps      = 2,
+    eqdESP_pp      = 3,
+    eqdACM_g       = 4,
+    eqdACM_s       = 5,
+    eqdACM_pg      = 6,
+    eqdACM_ps      = 7,
+    eqdACM_ppg     = 8,
+    eqdACM_pps     = 9,
+    eqdYang        = 10,
+    eqdBultinck    = 11,
+    eqdRappe       = 12,
+    eqdVerstraelen = 13,
+    eqdNR          = 14
 };
 
 /*! \brief

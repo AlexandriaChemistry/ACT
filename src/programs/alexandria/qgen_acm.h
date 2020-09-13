@@ -39,6 +39,7 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/state.h"
 
+#include "molprop.h"
 #include "poldata.h"
 
 struct t_atoms;
@@ -62,16 +63,14 @@ class QgenAcm
          * 
          * \param in pd     Force field information
          * \param in atoms  Atoms data
-         * \param in hfac   Fudge factor for older algorithms
          * \param in qtotal Total charge for the compound
+         * \param in bonds  List of bonds in this compound
          */
-        QgenAcm(const Poldata *pd,
-                t_atoms       *atoms,
-                double         hfac, 
-                int            qtotal);
+        QgenAcm(const Poldata           *pd,
+                t_atoms                 *atoms,
+                int                      qtotal,
+                const std::vector<Bond> &bonds);
                      
-        void updateInfo(const Poldata *pd);
-
         int generateCharges(FILE              *fp,
                             const std::string  molname,
                             const Poldata     *pd,
@@ -106,21 +105,30 @@ class QgenAcm
         gmx_bool                                           bWarned_;
         double                                             qtotal_;
         double                                             chieq_;
-        double                                             hfac_;
         double                                             Jcs_;
         double                                             Jss_;
         double                                             rms_;
-        double                                             hardnessFactor_;
         gmx_bool                                           bAllocSave_;
         gmx_bool                                           bHaveShell_;
         ChargeModel                                        iChargeModel_;
-               
+        
         std::vector<int>                                   atomnr_, nZeta_, coreIndex_, shellIndex_;
         std::vector<double>                                chi0_, rhs_, j00_, q0_;
         std::vector<gmx::RVec>                             x_;   
         std::vector<std::string>                           elem_;            
         std::vector<std::vector<int>>                      row_;       
         std::vector<std::vector<double>>                   q_, zeta_, qsave_, zetasave_, Jcc_;
+        std::vector<Bond>                                  bonds_;
+
+        /*! \brief Re-read the EEM parameters from the FF
+         *
+         * Update the parameters for the Alexandria Charge model.
+         * This includes, chi, J00, zeta. In case a split charge
+         * equilibration algorithm is used also the bond charge
+         * correction parameters will be updated.
+         * \param[in] pd  Force field database
+         */
+        void updateParameters(const Poldata *pd);
 
         double calcJ(rvec   xI, 
                      rvec   xJ,

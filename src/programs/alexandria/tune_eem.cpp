@@ -251,8 +251,8 @@ void OptACM::initChargeGeneration()
         {
             mymol.QgenAcm_ = new QgenAcm(poldata(),
                                          mymol.atoms_,
-                                         hfac(),
-                                         mymol.getCharge());
+                                         mymol.getCharge(),
+                                         mymol.bonds());
             double ref_pol, error, T;
             if (mymol.getPropRef(MPO_POLARIZABILITY, iqmQM,
                                             method, basis, "",
@@ -348,11 +348,6 @@ double OptACM::calcDeviation()
                     bound += l2_regularizer(alpha, alphaMin(), alphaMax(),
                                             label, verbose);
                 }
-            }
-            if (optHfac())
-            {
-                setHfac(param[n++]);
-                bound += 100*gmx::square(hfacDiff());
             }
             increaseEnergy(ermsBOUNDS, bound);
             GMX_RELEASE_ASSERT(n == param.size(), 
@@ -776,12 +771,6 @@ void OptACM::InitOpt(real factor, bool bRandom)
             }
         }
     }
-    if (optHfac())
-    {
-        Bayes::addParam(hfac(), factor, bRandom);
-        Bayes::addParamName(gmx::formatString("hfac"));
-    }
-
 }
 
 void OptACM::toPolData(const std::vector<bool> gmx_unused &changed)
@@ -884,11 +873,6 @@ void OptACM::toPolData(const std::vector<bool> gmx_unused &changed)
                 }
             }
         }
-    }
-    if (optHfac())
-    {
-        setHfac(param[n]);
-        n++;
     }
     GMX_RELEASE_ASSERT(n == changed.size(),
                        gmx::formatString("n = %zu changed.size() = %zu",
@@ -1280,7 +1264,6 @@ int alex_tune_eem(int argc, char *argv[])
                                  opt.mymols(),
                                  opt.poldata(),
                                  opt.mdlog(),
-                                 opt.hfac(),
                                  opt.lot(),
                                  tabfn,
                                  opt.hwinfo(),

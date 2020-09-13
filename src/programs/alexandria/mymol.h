@@ -429,7 +429,6 @@ class MyMol : public MolProp
          * \param[in] pd                             Data structure containing atomic properties
          * \param[in] fplog                          Logger
          * \param[in] watoms
-         * \param[in] hfac
          * \param[in] method                         Method used for QM calculation
          * \param[in] basis                          Basis set used for QM calculation
          * \param[in] cr
@@ -437,7 +436,6 @@ class MyMol : public MolProp
          */
         immStatus GenerateCharges(const Poldata          *pd,
                                   const gmx::MDLogger    &fplog,
-                                  real                    hfac,
                                   t_commrec              *cr,
                                   const char             *tabfn,
                                   gmx_hw_info_t          *hwinfo,

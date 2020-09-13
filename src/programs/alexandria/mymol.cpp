@@ -1372,7 +1372,6 @@ void MyMol::initQgenResp(const Poldata     *pd,
 
 immStatus MyMol::GenerateCharges(const Poldata             *pd,
                                  const gmx::MDLogger       &mdlog,
-                                 real                       hfac,
                                  t_commrec                 *cr,
                                  const char                *tabfn,
                                  gmx_hw_info_t             *hwinfo,
@@ -1462,7 +1461,7 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
         {
             if (QgenAcm_ == nullptr)
             {
-                QgenAcm_ = new QgenAcm(pd, atoms_, hfac, getCharge());
+                QgenAcm_ = new QgenAcm(pd, atoms_, getCharge(), bonds());
             }
 
             auto q     = QgenAcm_->q();
