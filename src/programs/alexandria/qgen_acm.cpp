@@ -51,10 +51,10 @@
 namespace alexandria
 {
 
-void QgenAcm::setInfo(const Poldata            *pd,
-                      t_atoms                  *atoms,
-                      double                    hfac,
-                      int                       qtotal)
+QgenAcm::QgenAcm(const Poldata *pd,
+                 t_atoms       *atoms,
+                 double         hfac,
+                 int            qtotal)
 {
     int          i, j, k, atm, nz;
     bool         bSupport = true;

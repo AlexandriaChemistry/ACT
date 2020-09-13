@@ -690,7 +690,7 @@ class Poldata
         /*! \brief Find the EEM properties
          *
          * Find the EEM properties corresponding to a zeta type.
-         * \param[in] atype     The Alexandria atom type
+         * \param[in] ztype     The Alexandria zeta type
          * \returns   An iterator pointing to the right EEMprops
          *            structure or EndEemprops in case the atom type
          *            is not found.

@@ -132,7 +132,7 @@ class RespTest : public gmx::test::CommandLineTestBase
             }
             mp_.setInputrec(&inputrec);
             mp_.symmetrizeCharges(getPoldata(qdist), aps_, qSymm, nullptr);
-            mp_.initQgresp(getPoldata(qdist), method, basis, nullptr, 0.0, 100);
+            mp_.initQgenResp(getPoldata(qdist), method, basis, nullptr, 0.0, 100);
             mp_.GenerateCharges(getPoldata(qdist), mdlog, hfac, cr,
                                 tabFile.empty() ? nullptr : tabFile.c_str(),
                                 hwinfo, qcycle, qtol);

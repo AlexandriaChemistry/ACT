@@ -79,6 +79,46 @@ QgenResp::QgenResp()
     bRandQ_             = false;
 }
 
+QgenResp::QgenResp(const QgenResp *src)
+{
+    iDistributionModel_ = src->iDistributionModel_;      
+    watoms_             = src->watoms_;                  
+    qtot_               = src->qtot_;                    
+    qshell_             = src->qshell_;                  
+    rms_                = src->rms_;                     
+    rrms_               = src->rrms_;                    
+    cosangle_           = src->cosangle_;                
+    penalty_            = src->penalty_;                 
+    pfac_               = src->pfac_;                    
+    wtot_               = src->wtot_;                    
+    for(int m = 0; m < DIM; m++)
+    {
+        origin_[m] = src->origin_[m];  
+        space_[m]  = src->space_[m];
+        nxyz_[m]   = src->nxyz_[m];  
+    }  
+    bFitZeta_           = src->bFitZeta_;                
+    bRandZeta_          = src->bRandZeta_;               
+    bRandQ_             = src->bRandQ_;                  
+    qfac_               = src->qfac_;                    
+    zmin_               = src->zmin_;                    
+    zmax_               = src->zmax_;                    
+    deltaZ_             = src->deltaZ_;                  
+    qmin_               = src->qmin_;                    
+    qmax_               = src->qmax_;                    
+    rDecrZeta_          = src->rDecrZeta_;               
+    uniqueQ_            = src->uniqueQ_;                 
+    fitQ_               = src->fitQ_;                    
+    nAtom_              = src->nAtom_;                   
+    nShell_             = src->nShell_;                  
+    ra_                 = src->ra_;                      
+    ratype_             = src->ratype_;                  
+    dzatoms_            = src->dzatoms_;                 
+    stoichiometry_      = src->stoichiometry_;           
+    ep_                 = src->ep_;                      
+    symmetricAtoms_     = src->symmetricAtoms_;          
+}
+
 void QgenResp::updateAtomCoords(const gmx::HostVector<gmx::RVec> x)
 {
     for (size_t i = 0; i < ra_.size(); i++)

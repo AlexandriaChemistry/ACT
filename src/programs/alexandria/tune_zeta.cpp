@@ -308,8 +308,8 @@ double OptZeta::calcDeviation()
         if ((mymol.eSupp_ == eSupportLocal) ||
             (final() && (mymol.eSupp_ == eSupportRemote)))
         {
-            mymol.Qgresp_.updateZeta(mymol.atoms_, poldata());
-            mymol.Qgresp_.optimizeCharges(poldata()->getEpsilonR());
+            mymol.QgenResp_->updateZeta(mymol.atoms_, poldata());
+            mymol.QgenResp_->optimizeCharges(poldata()->getEpsilonR());
             if (nullptr != mymol.shellfc_)
             {
                 if (bFitAlpha_)
@@ -318,7 +318,7 @@ double OptZeta::calcDeviation()
                 }
                 double rmsf;
                 mymol.computeForces(nullptr, commrec(), &rmsf);
-                mymol.Qgresp_.updateAtomCoords(mymol.x());
+                mymol.QgenResp_->updateAtomCoords(mymol.x());
             }
             if (weight(ermsCHARGE))
             {
@@ -360,10 +360,10 @@ double OptZeta::calcDeviation()
                 nChargeResidual++;
                 increaseEnergy(ermsCHARGE, (ChargeResidual/nChargeResidual));
             }
-            mymol.Qgresp_.calcPot(poldata()->getEpsilonR());
+            mymol.QgenResp_->calcPot(poldata()->getEpsilonR());
             real cosangle = 0;
             increaseEnergy(ermsESP,
-                           convert2gmx(mymol.Qgresp_.getRms(&wtot, &rrms, &cosangle), eg2cHartree_e));
+                           convert2gmx(mymol.QgenResp_->getRms(&wtot, &rrms, &cosangle), eg2cHartree_e));
             if (weight(ermsMU))
             {
                 mymol.CalcDipole();

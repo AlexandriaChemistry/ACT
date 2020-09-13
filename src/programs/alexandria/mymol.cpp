@@ -1316,21 +1316,24 @@ void MyMol::symmetrizeCharges(const Poldata  *pd,
     }
 }
 
-void MyMol::initQgresp(const Poldata             *pd,
-                       const std::string         &method,
-                       const std::string         &basis,
-                       std::string               *mylot,
-                       real                       watoms,
-                       int                        maxESP)
+void MyMol::initQgenResp(const Poldata     *pd,
+                         const std::string &method,
+                         const std::string &basis,
+                         std::string       *mylot,
+                         real              watoms,
+                         int               maxESP)
 {
     auto iChargeModel = pd->getChargeModel();
 
-    Qgresp_.setChargeModel(iChargeModel);
-    Qgresp_.setAtomWeight(watoms);
-    Qgresp_.setAtomInfo(atoms_, pd, x(), getCharge());
-    Qgresp_.setAtomSymmetry(symmetric_charges_);
-    Qgresp_.setMolecularCharge(getCharge());
-    Qgresp_.summary(debug);
+    GMX_RELEASE_ASSERT(QgenResp_ == nullptr,
+                       "QgenResp_ already initialized");
+    QgenResp_ = new QgenResp();
+    QgenResp_->setChargeModel(iChargeModel);
+    QgenResp_->setAtomWeight(watoms);
+    QgenResp_->setAtomInfo(atoms_, pd, x(), getCharge());
+    QgenResp_->setAtomSymmetry(symmetric_charges_);
+    QgenResp_->setMolecularCharge(getCharge());
+    QgenResp_->summary(debug);
 
     auto ci = getCalcPropType(method, basis, mylot, MPO_POTENTIAL, nullptr);
     if (ci != EndExperiment())
@@ -1339,7 +1342,7 @@ void MyMol::initQgresp(const Poldata             *pd,
         int iesp = 0;
         for (auto epi = ci->BeginPotential(); epi < ci->EndPotential(); ++epi, ++iesp)
         {
-            if (Qgresp_.myWeight(iesp) == 0 || ((iesp-ci->NAtom()) % mod) != 0)
+            if (QgenResp_->myWeight(iesp) == 0 || ((iesp-ci->NAtom()) % mod) != 0)
             {
                 continue;
             }
@@ -1355,14 +1358,14 @@ void MyMol::initQgresp(const Poldata             *pd,
                 gmx_fatal(FARGS, "No such potential unit '%s' for potential",
                           epi->getVunit().c_str());
             }
-            Qgresp_.addEspPoint(convert2gmx(epi->getX(), xu),
+            QgenResp_->addEspPoint(convert2gmx(epi->getX(), xu),
                                 convert2gmx(epi->getY(), xu),
                                 convert2gmx(epi->getZ(), xu),
                                 convert2gmx(epi->getV(), vu));
         }
         if (debug)
         {
-            fprintf(debug, "Added %zu ESP points to the RESP structure.\n", Qgresp_.nEsp());
+            fprintf(debug, "Added %zu ESP points to the RESP structure.\n", QgenResp_->nEsp());
         }
     }
 }
@@ -1411,10 +1414,9 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
             iter             = 0;
 
             // Init Qgresp should be called before this!
-            //initQgresp(pd, method, basis, mylot, watoms, maxESP);
-            Qgresp_.optimizeCharges(pd->getEpsilonR());
-            Qgresp_.calcPot(pd->getEpsilonR());
-            EspRms_ = chi2[cur] = Qgresp_.getRms(&wtot, &rrms, &cosangle);
+            QgenResp_->optimizeCharges(pd->getEpsilonR());
+            QgenResp_->calcPot(pd->getEpsilonR());
+            EspRms_ = chi2[cur] = QgenResp_->getRms(&wtot, &rrms, &cosangle);
             if (debug)
             {
                 fprintf(debug, "RESP: RMS %g\n", chi2[cur]);
@@ -1424,7 +1426,7 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
                 for (auto i = 0; i < atoms_->nr; i++)
                 {
                     mtop_->moltype[0].atoms.atom[i].q      =
-                        mtop_->moltype[0].atoms.atom[i].qB = Qgresp_.getAtomCharge(i);
+                        mtop_->moltype[0].atoms.atom[i].qB = QgenResp_->getAtomCharge(i);
                 }
                 if (nullptr != shellfc_)
                 {
@@ -1434,12 +1436,12 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
                     {
                         return imm;
                     }
-                    Qgresp_.updateAtomCoords(state_->x);
+                    QgenResp_->updateAtomCoords(state_->x);
                 }
-                Qgresp_.optimizeCharges(pd->getEpsilonR());
-                Qgresp_.calcPot(pd->getEpsilonR());
+                QgenResp_->optimizeCharges(pd->getEpsilonR());
+                QgenResp_->calcPot(pd->getEpsilonR());
                 real cosangle = 0;
-                EspRms_ = chi2[cur] = Qgresp_.getRms(&wtot, &rrms, &cosangle);
+                EspRms_ = chi2[cur] = QgenResp_->getRms(&wtot, &rrms, &cosangle);
                 if (debug)
                 {
                     fprintf(debug, "RESP: RMS %g\n", chi2[cur]);
@@ -1452,16 +1454,19 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
             for (auto i = 0; i < atoms_->nr; i++)
             {
                 atoms_->atom[i].q      =
-                    atoms_->atom[i].qB = Qgresp_.getAtomCharge(i);
+                    atoms_->atom[i].qB = QgenResp_->getAtomCharge(i);
             }
         }
         break;
         case eqgACM:
         {
-            Qgacm_.setInfo(pd, atoms_, hfac, getCharge());
+            if (QgenAcm_ == nullptr)
+            {
+                QgenAcm_ = new QgenAcm(pd, atoms_, hfac, getCharge());
+            }
 
-            auto q     = Qgacm_.q();
-            auto natom = Qgacm_.natom();
+            auto q     = QgenAcm_->q();
+            auto natom = QgenAcm_->natom();
             GMX_RELEASE_ASSERT(static_cast<int>(q.size()) == natom+1, "Internal mismatch in qgen_acm");
             qq.resize(natom + 1);
             for (auto i = 0; i < natom + 1; i++)
@@ -1471,11 +1476,11 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
             iter = 0;
             do
             {
-                if (eQGEN_OK == Qgacm_.generateCharges(debug,
-                                                       getMolname().c_str(),
-                                                       pd,
-                                                       atoms_,
-                                                       state_->x))
+                if (eQGEN_OK == QgenAcm_->generateCharges(debug,
+                                                          getMolname().c_str(),
+                                                          pd,
+                                                          atoms_,
+                                                          state_->x))
                 {
                     for (auto i = 0; i < mtop_->natoms; i++)
                     {
@@ -1491,7 +1496,7 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
                             return imm;
                         }
                     }
-                    q       = Qgacm_.q();
+                    q       = QgenAcm_->q();
                     EemRms_ = 0;
                     for (auto i = 0; i < natom + 1; i++)
                     {
@@ -1531,9 +1536,9 @@ void MyMol::plotEspCorrelation(const char             *espcorr,
 {
     if (espcorr && oenv)
     {
-        Qgresp_.updateAtomCharges(atoms_);
-        Qgresp_.calcPot(1.0);
-        Qgresp_.plotLsq(oenv, espcorr);
+        QgenResp_->updateAtomCharges(atoms_);
+        QgenResp_->calcPot(1.0);
+        QgenResp_->plotLsq(oenv, espcorr);
     }
 }
 
@@ -2028,48 +2033,49 @@ void MyMol::GenerateCube(const Poldata          *pd,
     if (potfn || hisfn || rhofn || difffn || pdbdifffn)
     {
         char     *gentop_version = (char *)"gentop v0.99b";
-        QgenResp  grref;
+        QgenResp *grref;
 
-        Qgresp_.updateAtomCharges(atoms_);
-        Qgresp_.calcPot(pd->getEpsilonR());
-        Qgresp_.potcomp(pcfn, atoms_, 
+        QgenResp_->updateAtomCharges(atoms_);
+        QgenResp_->calcPot(pd->getEpsilonR());
+        QgenResp_->potcomp(pcfn, atoms_, 
                         as_rvec_array(state_->x.data()), pdbdifffn, oenv);
 
         /* This has to be done before the grid is f*cked up by
            writing a cube file */
-        grref = Qgresp_;
+        grref = new QgenResp(QgenResp_);
 
         if (reffn)
         {
-            grref.setAtomInfo(atoms_, pd, state_->x, getCharge());
-            grref.setAtomSymmetry(symmetric_charges_);
-            grref.readCube(reffn, FALSE);
-            Qgresp_ = grref;
+            grref->setAtomInfo(atoms_, pd, state_->x, getCharge());
+            grref->setAtomSymmetry(symmetric_charges_);
+            grref->readCube(reffn, FALSE);
+            delete QgenResp_; 
+            QgenResp_ = new QgenResp(grref);
         }
         else
         {
-            Qgresp_.makeGrid(spacing, border, as_rvec_array(state_->x.data()));
+            QgenResp_->makeGrid(spacing, border, as_rvec_array(state_->x.data()));
         }
         if (rhofn)
         {
             std::string buf = gmx::formatString("Electron density generated by %s based on %s charges",
                                                 gentop_version, getEemtypeName(iChargeModel));
-            Qgresp_.calcRho();
-            Qgresp_.writeRho(rhofn, buf, oenv);
+            QgenResp_->calcRho();
+            QgenResp_->writeRho(rhofn, buf, oenv);
         }
         if (potfn)
         {
             std::string buf = gmx::formatString("Potential generated by %s based on %s charges",
                                                 gentop_version, getEemtypeName(iChargeModel));
-            Qgresp_.calcPot(pd->getEpsilonR());
-            Qgresp_.writeCube(potfn, buf, oenv);
+            QgenResp_->calcPot(pd->getEpsilonR());
+            QgenResp_->writeCube(potfn, buf, oenv);
         }
         if (hisfn)
         {
             std::string buf = gmx::formatString("Potential generated by %s based on %s charges",
                                                 gentop_version,
                                                 getEemtypeName(iChargeModel));
-            Qgresp_.writeHisto(hisfn, buf, oenv);
+            QgenResp_->writeHisto(hisfn, buf, oenv);
         }
         if (difffn || diffhistfn)
         {
@@ -2077,7 +2083,7 @@ void MyMol::GenerateCube(const Poldata          *pd,
                                                 gentop_version,
                                                 getEemtypeName(iChargeModel));
 
-            Qgresp_.writeDiffCube(grref, difffn, diffhistfn, buf, oenv, 0);
+            QgenResp_->writeDiffCube(grref, difffn, diffhistfn, buf, oenv, 0);
         }
     }
 }

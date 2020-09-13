@@ -264,8 +264,8 @@ class MyMol : public MolProp
         PaddedVector<gmx::RVec>        f_;
         PaddedVector<gmx::RVec>        optf_;
         std::vector<int>               symmetric_charges_;
-        QgenResp                       Qgresp_;
-        QgenAcm                        Qgacm_;
+        QgenResp                      *QgenResp_ = nullptr;
+        QgenAcm                       *QgenAcm_ = nullptr;
         std::vector<PlistWrapper>      plist_;
         gmx_mtop_t                    *mtop_;
         gmx_localtop_t                *ltop_;
@@ -448,7 +448,7 @@ class MyMol : public MolProp
          *
          * Initiates internal structure for atom charge symmetry
          * (e.g. CH3 with identical charges on H).
-         * Must be called before initQgresp.
+         * Must be called before initQgenResp.
          * \param[in] pd                 Data structure containing atomic properties
          * \param[in] ap                 Gromacs atom properties
          * \param[in] bSymmetricCharges  Consider molecular symmetry to calculate partial charge
@@ -470,12 +470,12 @@ class MyMol : public MolProp
          *                     doing the RESP fit. Should be 0 in most cases.
          * \param[in]  maxESP  Percentage of the ESP points to consider (<= 100)
          */
-        void initQgresp(const Poldata     *pd,
-                        const std::string &method,
-                        const std::string &basis,
-                        std::string       *mylot,
-                        real               watoms,
-                        int                maxESP);
+        void initQgenResp(const Poldata     *pd,
+                          const std::string &method,
+                          const std::string &basis,
+                          std::string       *mylot,
+                          real               watoms,
+                          int                maxESP);
 
         /*! \brief Make a ESP correlation plot
          *

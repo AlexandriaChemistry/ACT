@@ -155,7 +155,7 @@ class AcmTest : public gmx::test::CommandLineTestBase
             real           qtol     = 1e-3;
 
             mp_.symmetrizeCharges(pd, aps_, qSymm, nullptr);
-            mp_.initQgresp(pd, method, basis, nullptr, 0.0, 100);
+            mp_.initQgenResp(pd, method, basis, nullptr, 0.0, 100);
             mp_.GenerateCharges(pd, mdlog, hfac, cr, nullptr, 
                                 hwinfo, qcycle, qtol);
                                 

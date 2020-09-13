@@ -58,12 +58,17 @@ class QgenAcm
 {
     public:
     
-        QgenAcm() {};
-    
-        void setInfo(const Poldata *pd,
-                     t_atoms       *atoms,
-                     double         hfac, 
-                     int            qtotal);
+        /*! \brief Constructor
+         * 
+         * \param in pd     Force field information
+         * \param in atoms  Atoms data
+         * \param in hfac   Fudge factor for older algorithms
+         * \param in qtotal Total charge for the compound
+         */
+        QgenAcm(const Poldata *pd,
+                t_atoms       *atoms,
+                double         hfac, 
+                int            qtotal);
                      
         void updateInfo(const Poldata *pd);
 

@@ -91,6 +91,9 @@ class QgenResp
     public:
         QgenResp();
 
+        //! Copy constructor
+        QgenResp(const QgenResp *src);
+        
         ChargeModel chargeDistributionModel()
         { return iDistributionModel_; }
 
@@ -210,7 +213,7 @@ class QgenResp
                       const std::string      &title,
                       const gmx_output_env_t *oenv);
 
-        void writeDiffCube(QgenResp                   &src,
+        void writeDiffCube(QgenResp                   *src,
                            const std::string          &cubeFn,
                            const std::string          &histFn,
                            const std::string          &title,

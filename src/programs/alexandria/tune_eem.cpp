@@ -249,18 +249,10 @@ void OptACM::initChargeGeneration()
     {
         if (mymol.eSupp_ != eSupportNo)
         {
-            // If using ESP for fitting we need to be able to compute the
-            // electrostatic potential, however we always want to report it
-            // so have to initialize the data anyway.
-            //mymol.initQgresp(poldata(),
-            //               method, basis, nullptr,
-            //               watoms(),
-            //               maxPot());
-            // ACM is needed always as well in this program
-            mymol.Qgacm_.setInfo(poldata(),
-                                 mymol.atoms_,
-                                 hfac(),
-                                 mymol.getCharge());
+            mymol.QgenAcm_ = new QgenAcm(poldata(),
+                                         mymol.atoms_,
+                                         hfac(),
+                                         mymol.getCharge());
             double ref_pol, error, T;
             if (mymol.getPropRef(MPO_POLARIZABILITY, iqmQM,
                                             method, basis, "",
@@ -402,8 +394,8 @@ double OptACM::calcDeviation()
         {
             dumpQX(logFile(), &mymol, "BEFORE");
             std::vector<double> qq;
-            auto q     = mymol.Qgacm_.q();
-            auto natom = mymol.Qgacm_.natom();
+            auto q     = mymol.QgenAcm_->q();
+            auto natom = mymol.QgenAcm_->natom();
 
             qq.resize(natom + 1, 0);
             for (auto i = 0; i < natom + 1; i++)
@@ -455,7 +447,7 @@ double OptACM::calcDeviation()
                     }
                 }
                 dumpQX(logFile(), &mymol, "LOOP2");
-                auto qgen =  mymol.Qgacm_.generateCharges(debug,
+                auto qgen =  mymol.QgenAcm_->generateCharges(debug,
                                                           mymol.getMolname().c_str(),
                                                           poldata(),
                                                           mymol.atoms_,
@@ -464,9 +456,9 @@ double OptACM::calcDeviation()
                 {
                     gmx_fatal(FARGS, "Could not generate charges for %s: %s",
                               mymol.getMolname().c_str(),
-                              mymol.Qgacm_.message());
+                              mymol.QgenAcm_->message());
                 }
-                q             = mymol.Qgacm_.q();
+                q             = mymol.QgenAcm_->q();
                 double EemRms = 0;
                 for (int i = 0; i < natom; i++)
                 {
@@ -566,17 +558,17 @@ double OptACM::calcDeviation()
                 real cosangle = 0;
                 if (nullptr != mymol.shellfc_)
                 {
-                    mymol.Qgresp_.updateAtomCoords(mymol.x());
+                    mymol.QgenResp_->updateAtomCoords(mymol.x());
                 }
                 if (bFitZeta_)
                 {
-                    mymol.Qgresp_.updateZeta(mymol.atoms_, poldata());
+                    mymol.QgenResp_->updateZeta(mymol.atoms_, poldata());
                 }
                 dumpQX(logFile(), &mymol, "ESP");
-                mymol.Qgresp_.updateAtomCharges(mymol.atoms_);
-                mymol.Qgresp_.calcPot(poldata()->getEpsilonR());
+                mymol.QgenResp_->updateAtomCharges(mymol.atoms_);
+                mymol.QgenResp_->calcPot(poldata()->getEpsilonR());
                 auto myRms =
-                    convert2gmx(mymol.Qgresp_.getRms(&wtot, &rrms, &cosangle),
+                    convert2gmx(mymol.QgenResp_->getRms(&wtot, &rrms, &cosangle),
                                 eg2cHartree_e);
                 increaseEnergy(ermsESP, gmx::square(myRms));
                 if (debug)
