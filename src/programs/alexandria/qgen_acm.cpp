@@ -202,7 +202,7 @@ void QgenAcm::updateParameters(const Poldata *pd)
         for (auto &b : bonds_)
         {
             // Confusing stuff: The atoms in  bonds are numbered
-            // from 1 rather than zero. No shells are not taken into
+            // from 1 rather than zero. Shells are not taken into
             // account either.
             auto ai  = b.getAi()-1;
             auto aj  = b.getAj()-1;
@@ -222,13 +222,13 @@ void QgenAcm::updateParameters(const Poldata *pd)
                 auto bcc = pd->atypes2Bcc(elem_[aj], elem_[ai]);
                 if (bcc != pd->bondCorrections().end())
                 {
-                    // Do the reverse.
-                    auto deltaChi = -bcc->electronegativity();
-                    chi0_[ai] += deltaChi;
-                    chi0_[aj] -= deltaChi;
-                    auto hardness = -bcc->hardness();
-                    j00_[ai]  += hardness;
-                    j00_[aj]  -= hardness;
+                    // Do the reverse, fetch the numbers and multiply by -1.
+                    auto deltaChi = bcc->electronegativity();
+                    chi0_[ai] -= deltaChi;
+                    chi0_[aj] += deltaChi;
+                    auto hardness = bcc->hardness();
+                    j00_[ai]  -= hardness;
+                    j00_[aj]  += hardness;
                 }
                 // Else do nothing or print a warning.   
             }
