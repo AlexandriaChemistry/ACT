@@ -103,6 +103,7 @@ int alex_gentop(int argc, char *argv[])
         "Rappe  : Rappe and Goddard (J Phys Chem 95 (1991) 3358)[PAR]",
         "Yang   : Yang & Sharp (J Chem Theory Comput 2 (2006), 1152)[PAR]",
         "Bultinck: Bultinck et al. (J Phys Chem A 106 (2002) 7887)[PAR]",
+        "Verstraelen: Verstraelen et al. (J. Chem. Phys. 131, 044127, 2009)[PAR]",
         "The corresponding data files can be found in the library directory",
         "in subdirectory alexandria.ff. Check chapter 5 of the manual for more",
         "information about file formats.[PAR]"
@@ -167,7 +168,7 @@ int alex_gentop(int argc, char *argv[])
     static gmx_bool                  bVerbose       = false;
     static gmx_bool                  addHydrogens   = false;
 
-    static const char               *ff[]           = {nullptr, "ACM-g", "ACM-pg", "ACM-s", "ACM-ps", "ESP-p", "ESP-pp", "ESP-pg", "ESP-ps", "Yang", "Bultinck", "Rappe", nullptr};
+    static const char               *ff[]           = {nullptr, "ACM-g", "ACM-pg", "ACM-s", "ACM-ps", "ESP-p", "ESP-pp", "ESP-pg", "ESP-ps", "Yang", "Bultinck", "Rappe", "Verstraelen", nullptr};
     static const char               *cgopt[]        = {nullptr, "Atom", "Group", "Neutral", nullptr};
     static const char               *lot            = nullptr;
 
@@ -262,7 +263,7 @@ int alex_gentop(int argc, char *argv[])
     if (opt2parg_bSet("-ff", asize(pa), pa) && nullptr == gentop_fnm)
     {
         iModel     = name2eemtype(ff[0]);
-        gentop_fnm = gmx::formatString("%s_2020.dat", ff[0]).c_str();
+        gentop_fnm = gmx::formatString("%s.dat", ff[0]).c_str();
     }
     if (nullptr == gentop_fnm)
     {
