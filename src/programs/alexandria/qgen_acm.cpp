@@ -214,7 +214,7 @@ void QgenAcm::updateParameters(const Poldata *pd)
                 chi0_[aj] -= deltaChi;
                 auto hardness = bcc->hardness();
                 j00_[ai]  += hardness;
-                j00_[aj]  -= hardness;
+                j00_[aj]  += hardness;
             }
             else
             {
@@ -227,7 +227,7 @@ void QgenAcm::updateParameters(const Poldata *pd)
                     chi0_[ai] -= deltaChi;
                     chi0_[aj] += deltaChi;
                     auto hardness = bcc->hardness();
-                    j00_[ai]  -= hardness;
+                    j00_[ai]  += hardness;
                     j00_[aj]  += hardness;
                 }
                 // Else do nothing or print a warning.   

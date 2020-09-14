@@ -135,7 +135,7 @@ int main() {
             message(FATAL_ERROR "GROMACS requires version 4.8.1 or later of the GNU C++ compiler for complete C++11 support")
         endif()
     elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-        if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "3.3")
+        if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "10.0")
             message(FATAL_ERROR "GROMACS requires version 3.3 or later of the Clang C++ compiler for complete C++11 support")
         endif()
     elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
