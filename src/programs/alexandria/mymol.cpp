@@ -1461,7 +1461,7 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
         {
             if (QgenAcm_ == nullptr)
             {
-                QgenAcm_ = new QgenAcm(pd, atoms_, getCharge(), bonds());
+                QgenAcm_ = new QgenAcm(pd, atoms_, getCharge());
             }
 
             auto q     = QgenAcm_->q();
@@ -1479,7 +1479,8 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
                                                           getMolname().c_str(),
                                                           pd,
                                                           atoms_,
-                                                          state_->x))
+                                                          state_->x,
+                                                          bonds()))
                 {
                     for (auto i = 0; i < mtop_->natoms; i++)
                     {

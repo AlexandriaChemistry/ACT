@@ -64,18 +64,26 @@ class QgenAcm
          * \param in pd     Force field information
          * \param in atoms  Atoms data
          * \param in qtotal Total charge for the compound
-         * \param in bonds  List of bonds in this compound
          */
         QgenAcm(const Poldata           *pd,
                 t_atoms                 *atoms,
-                int                      qtotal,
-                const std::vector<Bond> &bonds);
-                     
+                int                      qtotal);
+
+        /*! \brief Routine that computes the charges
+         * 
+         * \param in  fp      File for logging information
+         * \param in  molname Molecule name for output
+         * \param in  pd      Force field information
+         * \param out atoms   Atoms structure, charges will be updated in this
+         * \param in  x       Atomic coordinates    
+         * \param in  bonds   List of bonds in this compound
+         */
         int generateCharges(FILE              *fp,
-                            const std::string  molname,
+                            const std::string &molname,
                             const Poldata     *pd,
                             t_atoms           *atoms,
-                            const gmx::HostVector<gmx::RVec> x);     
+                            const gmx::HostVector<gmx::RVec> x,
+                            const std::vector<Bond> &bonds);
                             
         double rms() { return rms_; }
 
@@ -118,7 +126,6 @@ class QgenAcm
         std::vector<std::string>                           elem_;            
         std::vector<std::vector<int>>                      row_;       
         std::vector<std::vector<double>>                   q_, zeta_, qsave_, zetasave_, Jcc_;
-        std::vector<Bond>                                  bonds_;
 
         /*! \brief Re-read the EEM parameters from the FF
          *
@@ -147,7 +154,17 @@ class QgenAcm
                      int      eem_ndx,
                      double   epsilonr);
 
-        void solveQEem(FILE *fp);
+        void solveEEM(FILE *fp);
+        
+        /*! \brief Perform the split charge equilibration algorithm
+         *
+         * \param[in] fp    File for logging
+         * \param[in] pd    Force field information
+         * \param[in] bonds List of bonds in the compound
+         */
+        void solveSQE(FILE                    *fp,
+                      const Poldata           *pd,
+                      const std::vector<Bond> &bonds);
         
         void updatePositions(gmx::HostVector<gmx::RVec> x, t_atoms *atoms);
 
