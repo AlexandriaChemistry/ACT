@@ -53,15 +53,13 @@ namespace alexandria
 
 QgenAcm::QgenAcm(const Poldata          *pd,
                  t_atoms                *atoms,
-                 int                     qtotal,
-                 const std::vector<Bond> &bonds)
+                 int                     qtotal)
 {
     int          i, j, k, atm, nz;
     bool         bSupport = true;
     std::string  atp;
 
     iChargeModel_   = pd->getChargeModel();
-    bonds_          = bonds;
     bWarned_        = false;
     bAllocSave_     = false;
     bHaveShell_     = getEemtypePolarizable(iChargeModel_);
@@ -135,8 +133,6 @@ QgenAcm::QgenAcm(const Poldata          *pd,
                 auto eem   = pd->atype2Eem(atp);
                 elem_[j]   = atp;
                 atomnr_[j] = atm;
-                // chi0_[j]   = eem->getChi0();
-                // j00_[j]    = eem->getJ0();
                 q0_[j]     = eem->getQref();
                 nz         = eem->getNzeta();
                 nZeta_[j]  = nz;
@@ -146,7 +142,6 @@ QgenAcm::QgenAcm(const Poldata          *pd,
                 for (k = 0; k < nz; k++)
                 {
                     q_[j][k]    = eem->getQ(k);
-                    // zeta_[j][k] = eem->getZeta(k);
                     row_[j][k]  = eem->getRow(k);
                     
                     if (getEemtypeSlater(iChargeModel_)) 
@@ -179,8 +174,7 @@ QgenAcm::QgenAcm(const Poldata          *pd,
             }
         }
     }
-    // Call routine to set the Chi, J00 and Zeta as well as
-    // bond charge correction parameters.
+    // Call routine to set the Chi, J00 and Zeta.
     updateParameters(pd);
 }
 
@@ -194,44 +188,6 @@ void QgenAcm::updateParameters(const Poldata *pd)
         for (auto k = 0; k < nZeta_[i]; k++)
         {
             zeta_[i][k] = ei->getZeta(k);
-        }
-    }
-    
-    if (! pd->bondCorrections().empty() )
-    {
-        for (auto &b : bonds_)
-        {
-            // Confusing stuff: The atoms in  bonds are numbered
-            // from 1 rather than zero. Shells are not taken into
-            // account either.
-            auto ai  = b.getAi()-1;
-            auto aj  = b.getAj()-1;
-            auto bcc = pd->atypes2Bcc(elem_[ai], elem_[aj]);
-            if (bcc != pd->bondCorrections().end())
-            {
-                auto deltaChi = bcc->electronegativity();
-                chi0_[ai] += deltaChi;
-                chi0_[aj] -= deltaChi;
-                auto hardness = bcc->hardness();
-                j00_[ai]  += hardness;
-                j00_[aj]  += hardness;
-            }
-            else
-            {
-                // Look for reverse correction, then we need to change the signs
-                auto bcc = pd->atypes2Bcc(elem_[aj], elem_[ai]);
-                if (bcc != pd->bondCorrections().end())
-                {
-                    // Do the reverse, fetch the numbers and multiply by -1.
-                    auto deltaChi = bcc->electronegativity();
-                    chi0_[ai] -= deltaChi;
-                    chi0_[aj] += deltaChi;
-                    auto hardness = bcc->hardness();
-                    j00_[ai]  += hardness;
-                    j00_[aj]  += hardness;
-                }
-                // Else do nothing or print a warning.   
-            }
         }
     }
 }
@@ -674,7 +630,7 @@ void QgenAcm::checkSupport(const Poldata *pd)
     }
 }
 
-void QgenAcm::solveQEem(FILE *fp)
+void QgenAcm::solveEEM(FILE *fp)
 {
     double              qtot;
     int                 i, j, n;
@@ -728,11 +684,105 @@ void QgenAcm::solveQEem(FILE *fp)
     }
 }
 
+void QgenAcm::solveSQE(FILE                    *fp,
+                       const Poldata           *pd,
+                       const std::vector<Bond> &bonds)
+{
+    std::vector<double> q, rhs;
+    q.resize(natom_, 0.0);
+    
+    int nbonds = bonds.size();
+    MatrixWrapper lhs(nbonds, nbonds);
+    rhs.resize(nbonds, 0.0);
+
+    for (int bij = 0; bij < nbonds; bij++)
+    {
+        auto ai  = bonds[bij].getAi()-1;
+        auto aj  = bonds[bij].getAj()-1;
+        auto bcc = pd->atypes2Bcc(elem_[ai], elem_[aj]);
+        bool reverse = (bcc == pd->bondCorrections().end());
+        if (reverse)
+        {
+            bcc = pd->atypes2Bcc(elem_[aj], elem_[ai]);
+            GMX_RELEASE_ASSERT(bcc != pd->bondCorrections().end(), "Cannot find bond corrections");
+        }
+        for (int bkl = 0; bkl < nbonds; bkl++)
+        {
+            auto ak  = bonds[bkl].getAi()-1;
+            auto al  = bonds[bkl].getAj()-1;
+            
+            double J = 2*(Jcc_[ai][ak] - Jcc_[ai][al] - Jcc_[aj][ak] + Jcc_[aj][al]);
+            if (bij == bkl)
+            {
+                J +=  bcc->hardness();
+            }
+            lhs.set(bij, bkl, J);
+        }
+        rhs[bij] = chi0_[aj] - chi0_[ai];
+        if (reverse)
+        {
+            rhs[bij] += 2*bcc->electronegativity();
+        }
+        else
+        {
+            rhs[bij] -= 2*bcc->electronegativity();
+        }
+        if (fp)
+        {
+            fprintf(fp, "(");
+            for(int i = 0; i < nbonds; i++)
+            {
+                fprintf(fp, " %6.2f", lhs.get(bij, i));
+            }
+            fprintf(fp, " ) p[%2d,%2d] = %7.2f\n", ai, aj, rhs[bij]);
+        }
+    }
+    std::vector<double> pij;
+    pij.resize(nbonds, 0.0);
+    lhs.solve(rhs, &pij);
+    for (int bij = 0; bij < nbonds; bij++)
+    {
+        auto ai  = bonds[bij].getAi()-1;
+        auto aj  = bonds[bij].getAj()-1;
+        q[ai] += pij[bij];
+        q[aj] -= pij[bij];
+    }
+    for (int i = 0; i < natom_; i++)
+    {
+        q_[i][0] = q[i];
+    }
+    chieq_  = 0;
+
+    double qtot    = 0;
+    if (bHaveShell_)
+    {
+        for (int i = 0; i < natom_; i++)
+        {
+            for (int j = 0; j < nZeta_[i]; j++)
+            {
+                qtot += q_[i][j];
+            }
+        }
+    }
+    else
+    {
+        for (int i = 0; i < natom_; i++)
+        {
+            qtot += q_[i][0];
+        }
+    }
+    if (fp && (fabs(qtot - qtotal_) > 1e-2))
+    {
+        fprintf(fp, "qtot = %g, it should be %g\n", qtot, qtotal_);
+    }
+}
+
 int QgenAcm::generateCharges(FILE                      *fp,
-                             const std::string          molname,
+                             const std::string         &molname,
                              const Poldata             *pd,
                              t_atoms                   *atoms,
-                             gmx::HostVector<gmx::RVec> x)
+                             gmx::HostVector<gmx::RVec> x,
+                             const std::vector<Bond>   &bonds)
 {
     if (fp)
     {
@@ -745,8 +795,15 @@ int QgenAcm::generateCharges(FILE                      *fp,
         updateParameters(pd);
         updatePositions(x, atoms);
         calcJcc(atoms, pd->getEpsilonR());
-        calcRhs(atoms, pd->getEpsilonR());
-        solveQEem(fp);
+        if (! pd->bondCorrections().empty())
+        {
+            solveSQE(fp, pd, bonds);
+        }
+        else
+        {
+            calcRhs(atoms, pd->getEpsilonR());
+            solveEEM(fp);
+        }
         copyChargesToAtoms(atoms);
         dump(fp, atoms);
     }

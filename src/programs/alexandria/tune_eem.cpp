@@ -251,8 +251,7 @@ void OptACM::initChargeGeneration()
         {
             mymol.QgenAcm_ = new QgenAcm(poldata(),
                                          mymol.atoms_,
-                                         mymol.getCharge(),
-                                         mymol.bonds());
+                                         mymol.getCharge());
             double ref_pol, error, T;
             if (mymol.getPropRef(MPO_POLARIZABILITY, iqmQM,
                                             method, basis, "",
@@ -443,10 +442,11 @@ double OptACM::calcDeviation()
                 }
                 dumpQX(logFile(), &mymol, "LOOP2");
                 auto qgen =  mymol.QgenAcm_->generateCharges(debug,
-                                                          mymol.getMolname().c_str(),
-                                                          poldata(),
-                                                          mymol.atoms_,
-                                                          mymol.x());
+                                                             mymol.getMolname(),
+                                                             poldata(),
+                                                             mymol.atoms_,
+                                                             mymol.x(),
+                                                             mymol.bonds());
                 if (qgen != eQGEN_OK)
                 {
                     gmx_fatal(FARGS, "Could not generate charges for %s: %s",

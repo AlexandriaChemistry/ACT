@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <!DOCTYPE gentop.dtd PUBLIC "gentop.dtd" "gentop.dtd">
 <gentop>
-  <atomtypes chargemodel="Verstraelen" version="2019" function="LJ_SR" combination_rule="Geometric" nexclusions="0" epsilonr="1">
+  <atomtypes chargemodel="ACM-g" version="2020" function="LJ_SR" combination_rule="Geometric" nexclusions="0" epsilonr="1">
     <atomtype elem="H" description="hydrogen on aliphatic C with 1 electron-withdrawal group" atype="h1" ptype="p_h1" btype="b_h1" ztype="H" vdwparams="2.471350e-01 6.568880e-02 1.300000e+01" ref_enthalpy="222.232"/>
     <atomtype elem="H" description="hydrogen on aliphatic C with 2 electron-withdrawal groups" atype="h2" ptype="p_h1" btype="b_h1" ztype="H" vdwparams="2.293170e-01 6.568880e-02 1.300000e+01" ref_enthalpy="222.232"/>
     <atomtype elem="H" description="hydrogen on aliphatic C with 3 electron-withdrawal groups" atype="h3" ptype="p_h1" btype="b_h1" ztype="H" vdwparams="2.114990e-01 6.568880e-02 1.300000e+01" ref_enthalpy="222.232"/>
@@ -98,8 +98,7 @@
     <milatom milname="SPI2" atomnumber="16" tau_ahc="2.982" alpha_ahp="2.7" alexandria_equiv="S2"/>
     <milatom milname="PTE" atomnumber="15" tau_ahc="2.485" alpha_ahp="1.538"/>
     <milatom milname="Si" atomnumber="14" tau_ahc="2.7" alpha_ahp="1.97"/>
-  </milatoms>
-  <gt_bonds unit="pm" interaction="BONDS" function="MORSE">
+  </milatoms>  <gt_bonds unit="pm" interaction="BONDS" function="MORSE">
     <gt_bond atom1="b_br" atom2="b_br" bondorder="1" refValue="231.56" sigma="0.5" ntrain="1" params="450  19"/>
     <gt_bond atom1="b_br" atom2="b_c" bondorder="1" refValue="197.35" sigma="4.35" ntrain="2" params="450  19"/>
     <gt_bond atom1="b_br" atom2="b_c1" bondorder="1" refValue="179.72" sigma="0.73" ntrain="4" params="450  19"/>
@@ -3226,21 +3225,21 @@
   </symmetric_charges>
   <eemprops reference="Verstraelen2009a">
   <!-- row equals zero means that point charge will be used instead of Slater -->
-    <eemprop name="Br" jaa="9.47" jaa_sigma="0" chi="5.19" chi_sigma="0" zeta="0" zeta_sigma="0" charge="0" ref_charge="0" row="1"/>
-    <eemprop name="C2" jaa="11.12" jaa_sigma="0" chi="6.32" chi_sigma="0" zeta="0" zeta_sigma="0" charge="0" ref_charge="0" row="1"/>
-    <eemprop name="C3" jaa="11.57" jaa_sigma="0" chi="5.7" chi_sigma="0" zeta="0" zeta_sigma="0" charge="0" ref_charge="0" row="1"/>
-    <eemprop name="C4" jaa="10.59" jaa_sigma="0" chi="4.56" chi_sigma="0" zeta="0" zeta_sigma="0" charge="0" ref_charge="0" row="1"/>
-    <eemprop name="Cl" jaa="10.03" jaa_sigma="0" chi="5.38" chi_sigma="0" zeta="0" zeta_sigma="0" charge="0" ref_charge="0" row="1"/>
-    <eemprop name="F" jaa="17.07" jaa_sigma="0" chi="7" chi_sigma="0" zeta="0" zeta_sigma="0" charge="0" ref_charge="0" row="1"/>
-    <eemprop name="H" jaa="13.6" jaa_sigma="0" chi="3.49" chi_sigma="0" zeta="0" zeta_sigma="0" charge="0" ref_charge="0" row="1"/>
-    <eemprop name="N1" jaa="11.61" jaa_sigma="0" chi="6.17" chi_sigma="0" zeta="0" zeta_sigma="0" charge="0" ref_charge="0" row="1"/>
-    <eemprop name="N2" jaa="11.57" jaa_sigma="0" chi="6.14" chi_sigma="0" zeta="0" zeta_sigma="0" charge="0" ref_charge="0" row="1"/>
-    <eemprop name="N3" jaa="11" jaa_sigma="0" chi="3.9" chi_sigma="0" zeta="0" zeta_sigma="0" charge="0" ref_charge="0" row="1"/>
-    <eemprop name="N4" jaa="12.43" jaa_sigma="0" chi="-1.41" chi_sigma="0" zeta="0" zeta_sigma="0" charge="0" ref_charge="0" row="1"/>
-    <eemprop name="O1" jaa="12.38" jaa_sigma="0" chi="6.62" chi_sigma="0" zeta="0" zeta_sigma="0" charge="0" ref_charge="0" row="1"/>
-    <eemprop name="O2" jaa="12.13" jaa_sigma="0" chi="5.4" chi_sigma="0" zeta="0" zeta_sigma="0" charge="0" ref_charge="0" row="1"/>
-    <eemprop name="S1" jaa="8.08" jaa_sigma="0" chi="7.86" chi_sigma="0" zeta="0" zeta_sigma="0" charge="0" ref_charge="0" row="1"/>
-    <eemprop name="S2" jaa="8.21" jaa_sigma="0" chi="4.47" chi_sigma="0" zeta="0" zeta_sigma="0" charge="0" ref_charge="0" row="1"/>
+    <eemprop name="Br" jaa="9.47" jaa_sigma="0" chi="5.19" chi_sigma="0" zeta="8.333333333333334" zeta_sigma="0" charge="0" ref_charge="0" row="1"/>
+    <eemprop name="C2" jaa="11.12" jaa_sigma="0" chi="6.32" chi_sigma="0" zeta="14.492753623188406" zeta_sigma="0" charge="0" ref_charge="0" row="1"/>
+    <eemprop name="C3" jaa="11.57" jaa_sigma="0" chi="5.7" chi_sigma="0" zeta="13.698630136986301" zeta_sigma="0" charge="0" ref_charge="0" row="1"/>
+    <eemprop name="C4" jaa="10.59" jaa_sigma="0" chi="4.56" chi_sigma="0" zeta="13.157894736842104" zeta_sigma="0" charge="0" ref_charge="0" row="1"/>
+    <eemprop name="Cl" jaa="10.03" jaa_sigma="0" chi="5.38" chi_sigma="0" zeta="9.803921568627452" zeta_sigma="0" charge="0" ref_charge="0" row="1"/>
+    <eemprop name="F" jaa="17.07" jaa_sigma="0" chi="7" chi_sigma="0" zeta="17.54385964912281" zeta_sigma="0" charge="0" ref_charge="0" row="1"/>
+    <eemprop name="H" jaa="13.6" jaa_sigma="0" chi="3.49" chi_sigma="0" zeta="32.25806451612903" zeta_sigma="0" charge="0" ref_charge="0" row="1"/>
+    <eemprop name="N1" jaa="11.61" jaa_sigma="0" chi="6.17" chi_sigma="0" zeta="14.084507042253522" zeta_sigma="0" charge="0" ref_charge="0" row="1"/>
+    <eemprop name="N2" jaa="11.57" jaa_sigma="0" chi="6.14" chi_sigma="0" zeta="14.084507042253522" zeta_sigma="0" charge="0" ref_charge="0" row="1"/>
+    <eemprop name="N3" jaa="11" jaa_sigma="0" chi="3.9" chi_sigma="0" zeta="14.084507042253522" zeta_sigma="0" charge="0" ref_charge="0" row="1"/>
+    <eemprop name="N4" jaa="12.43" jaa_sigma="0" chi="-1.41" chi_sigma="0" zeta="14.084507042253522" zeta_sigma="0" charge="0" ref_charge="0" row="1"/>
+    <eemprop name="O1" jaa="12.38" jaa_sigma="0" chi="6.62" chi_sigma="0" zeta="15.15151515151515" zeta_sigma="0" charge="0" ref_charge="0" row="1"/>
+    <eemprop name="O2" jaa="12.13" jaa_sigma="0" chi="5.4" chi_sigma="0" zeta="15.15151515151515" zeta_sigma="0" charge="0" ref_charge="0" row="1"/>
+    <eemprop name="S1" jaa="8.08" jaa_sigma="0" chi="7.86" chi_sigma="0" zeta="9.523809523809524" zeta_sigma="0" charge="0" ref_charge="0" row="1"/>
+    <eemprop name="S2" jaa="8.21" jaa_sigma="0" chi="4.47" chi_sigma="0" zeta="9.523809523809524" zeta_sigma="0" charge="0" ref_charge="0" row="1"/>
     <bondcorrection name="C2-C2" hardness="0.51" hardness_sigma="0" electronegativity="0.0" electronegativity_sigma="0"/>
     <bondcorrection name="C2-N1" hardness="1.56" hardness_sigma="0" electronegativity="-0.99" electronegativity_sigma="0"/>
     <bondcorrection name="C2-N2" hardness="1.91" hardness_sigma="0" electronegativity="-0.4" electronegativity_sigma="0"/>
