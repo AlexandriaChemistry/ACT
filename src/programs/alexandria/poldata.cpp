@@ -814,70 +814,77 @@ CommunicationStatus Poldata::Send(const t_commrec *cr, int dest)
         gmx_send_str(cr, dest, &bosqueRef_);
         gmx_send_str(cr, dest, &vsite_angle_unit_);
         gmx_send_str(cr, dest, &vsite_length_unit_);
-        gmx_send_int(cr, dest, ptype_.size());
-        gmx_send_int(cr, dest, vsite_.size());
-        gmx_send_int(cr, dest, alexandria_.size());
-        gmx_send_int(cr, dest, btype_.size());
-        gmx_send_int(cr, dest, forces_.size());
-        gmx_send_int(cr, dest, miller_.size());
-        gmx_send_int(cr, dest, bosque_.size());
-        gmx_send_int(cr, dest, symcharges_.size());
         gmx_send_int(cr, dest, static_cast<int>(ChargeModel_));
         gmx_send_str(cr, dest, &eepReference_);
-        gmx_send_int(cr, dest, eep_.size());
 
-        /*Send ptype*/
+        /* Send ptype */
+        gmx_send_int(cr, dest, ptype_.size());
         for (auto &ptype : ptype_)
         {
             cs = ptype.Send(cr, dest);
         }
 
-        /*Send Ffatype*/
+        /* Send Ffatype */
+        gmx_send_int(cr, dest, alexandria_.size());
         for (auto &alexandria : alexandria_)
         {
             cs = alexandria.Send(cr, dest);
         }
 
-        /*Send Vsite*/
+        /* Send Vsite */
+        gmx_send_int(cr, dest, vsite_.size());
         for (auto &vsite : vsite_)
         {
             cs = vsite.Send(cr, dest);
         }
 
-        /*Send btype*/
+        /* Send btype */
+        gmx_send_int(cr, dest, btype_.size());
         for (auto &btype : btype_)
         {
             gmx_send_str(cr, dest, &btype);
         }
 
-        /*Send Listed Forces*/
+        /* Listed Forces */
+        gmx_send_int(cr, dest, forces_.size());
         for (auto &force : forces_)
         {
             cs = force.Send(cr, dest);
         }
 
-        /*Send Miller*/
+        /* Send Miller */
+        gmx_send_int(cr, dest, miller_.size());
         for (auto &miller : miller_)
         {
             cs = miller.Send(cr, dest);
         }
 
-        /*Send Bosque*/
+        /* Send Bosque */
+        gmx_send_int(cr, dest, bosque_.size());
         for (auto &bosque : bosque_)
         {
             cs = bosque.Send(cr, dest);
         }
 
-        /*Send Symcharge*/
+        /* Send Symcharges */
+        gmx_send_int(cr, dest, symcharges_.size());
         for (auto &symcharges : symcharges_)
         {
             cs = symcharges.Send(cr, dest);
         }
 
-        /*Send Eemprops*/
+        /* Send Eemprops*/
+        gmx_send_int(cr, dest, eep_.size());
         for (auto &eep : eep_)
         {
             cs = eep.Send(cr, dest);
+        }
+        
+        /* Send bondCorrections */
+        gmx_send_int(cr, dest, bondCorr_.size());
+        for (auto &bcc : bondCorr_)
+        {
+            cs = bcc.Send(cr, dest);
         }
     }
     return cs;
@@ -885,8 +892,6 @@ CommunicationStatus Poldata::Send(const t_commrec *cr, int dest)
 
 CommunicationStatus Poldata::Receive(const t_commrec *cr, int src)
 {
-    size_t              nptype, nalexandria, nbtype, nforces, nvsite;
-    size_t              nmiller, nbosque, nsymcharges, neep;
     CommunicationStatus cs;
     cs = gmx_recv_data(cr, src);
     if (CS_OK == cs)
@@ -907,20 +912,11 @@ CommunicationStatus Poldata::Receive(const t_commrec *cr, int src)
         gmx_recv_str(cr, src, &bosqueRef_);
         gmx_recv_str(cr, src, &vsite_angle_unit_);
         gmx_recv_str(cr, src, &vsite_length_unit_);
-        nptype                = gmx_recv_int(cr, src);
-        nvsite                = gmx_recv_int(cr, src);
-        nalexandria           = gmx_recv_int(cr, src);
-        nbtype                = gmx_recv_int(cr, src);
-        nforces               = gmx_recv_int(cr, src);
-        nmiller               = gmx_recv_int(cr, src);
-        nbosque               = gmx_recv_int(cr, src);
-        nsymcharges           = gmx_recv_int(cr, src);
         ChargeModel_          = static_cast<ChargeModel>(gmx_recv_int(cr, src));
         gmx_recv_str(cr, src, &eepReference_);
-        neep                  = gmx_recv_int(cr, src);
 
-
-        /*Receive ptype*/
+        /* Receive ptype */
+        int nptype = gmx_recv_int(cr, src);
         ptype_.clear();
         for (size_t n = 0; (CS_OK == cs) && (n < nptype); n++)
         {
@@ -932,7 +928,8 @@ CommunicationStatus Poldata::Receive(const t_commrec *cr, int src)
             }
         }
 
-        /*Receive Ffatype*/
+        /* Rceive Ffatype */
+        int nalexandria = gmx_recv_int(cr, src);
         alexandria_.clear();
         for (size_t n = 0; (CS_OK == cs) && (n < nalexandria); n++)
         {
@@ -944,7 +941,8 @@ CommunicationStatus Poldata::Receive(const t_commrec *cr, int src)
             }
         }
 
-        /*Receive Ffatype*/
+        /* Receive Vsites */
+        int nvsite = gmx_recv_int(cr, src);
         vsite_.clear();
         for (size_t n = 0; (CS_OK == cs) && (n < nvsite); n++)
         {
@@ -956,7 +954,8 @@ CommunicationStatus Poldata::Receive(const t_commrec *cr, int src)
             }
         }
 
-        /*Receive btype*/
+        /* Receive btype */
+        int nbtype = gmx_recv_int(cr, src);
         btype_.clear();
         for (size_t n = 0; (CS_OK == cs) && (n < nbtype); n++)
         {
@@ -969,6 +968,7 @@ CommunicationStatus Poldata::Receive(const t_commrec *cr, int src)
         }
 
         /* Receive Listed Forces */
+        int nforces           = gmx_recv_int(cr, src);
         forces_.clear();
         for (size_t n = 0; (CS_OK == cs) && (n < nforces); n++)
         {
@@ -980,7 +980,8 @@ CommunicationStatus Poldata::Receive(const t_commrec *cr, int src)
             }
         }
 
-        /*Receive Miller*/
+        /* Receive Miller */
+        int nmiller           = gmx_recv_int(cr, src);
         miller_.clear();
         for (size_t n = 0; (CS_OK == cs) && (n < nmiller); n++)
         {
@@ -992,7 +993,8 @@ CommunicationStatus Poldata::Receive(const t_commrec *cr, int src)
             }
         }
 
-        /*Receive Bosque*/
+        /* Receive Bosque */
+        int nbosque = gmx_recv_int(cr, src);
         bosque_.clear();
         for (size_t n = 0; (CS_OK == cs) && (n < nbosque); n++)
         {
@@ -1004,7 +1006,8 @@ CommunicationStatus Poldata::Receive(const t_commrec *cr, int src)
             }
         }
 
-        /*Receive Symcharges*/
+        /* Receive Symcharges */
+        int nsymcharges = gmx_recv_int(cr, src);
         symcharges_.clear();
         for (size_t n = 0; (CS_OK == cs) && (n < nsymcharges); n++)
         {
@@ -1016,7 +1019,8 @@ CommunicationStatus Poldata::Receive(const t_commrec *cr, int src)
             }
         }
 
-        /*Receive Eemprops*/
+        /* Receive Eemprops */
+        int neep = gmx_recv_int(cr, src);
         eep_.clear();
         for (size_t n = 0; (CS_OK == cs) && (n < neep); n++)
         {
@@ -1025,6 +1029,18 @@ CommunicationStatus Poldata::Receive(const t_commrec *cr, int src)
             if (CS_OK == cs)
             {
                 eep_.push_back(eep);
+            }
+        }
+        /* Bond charge corrections */
+        int nbcc = gmx_recv_int(cr, src);
+        bondCorr_.clear();
+        for (size_t n = 0; (CS_OK == cs) && (n < nbcc); n++)
+        {
+            BondCorrection bcc;
+            cs = bcc.Receive(cr, src);
+            if (CS_OK == cs)
+            {
+                bondCorr_.push_back(bcc);
             }
         }
     }
@@ -1089,7 +1105,7 @@ void Poldata::broadcast_eemprop(const t_commrec *cr)
                     }
                 }   
             }
-            /* Receive Eemprops */
+            /* Receive Bond Corrections */
             int nbc = gmx_recv_int(cr, src);
             bondCorr_.clear();
             for (int n = 0; (CS_OK == cs) && (n < nbc); n++)
@@ -1111,6 +1127,11 @@ void Poldata::broadcast_eemprop(const t_commrec *cr)
                         fprintf(debug, "Could not update Poldata::bondCorr on node %d\n", cr->nodeid);
                     }
                 }   
+            }
+            if (nullptr != debug)
+            {
+                fprintf(debug, "There are %d bond corrections\n",
+                        static_cast<int>(bondCorr_.size()));
             }
         }
         else

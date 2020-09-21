@@ -704,7 +704,11 @@ void QgenAcm::solveSQE(FILE                    *fp,
         if (reverse)
         {
             bcc = pd->atypes2Bcc(elem_[aj], elem_[ai]);
-            GMX_RELEASE_ASSERT(bcc != pd->bondCorrections().end(), "Cannot find bond corrections");
+            GMX_RELEASE_ASSERT(bcc != pd->bondCorrections().end(), 
+                               gmx::formatString("Cannot find %s-%s among %d bond corrections",
+                                                 elem_[ai].c_str(),
+                                                 elem_[aj].c_str(),
+                                                 static_cast<int>(pd->bondCorrections().size())).c_str());
         }
         for (int bkl = 0; bkl < nbonds; bkl++)
         {
