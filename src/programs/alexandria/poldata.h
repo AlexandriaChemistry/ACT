@@ -391,14 +391,6 @@ class Poldata
         bool atypeToPtype(const std::string &atype,
                           std::string       *ptype) const;
 
-        /*! \brief
-         * Return the poltype corresponding to ztype and true if successful
-         *
-         * \param[in]  ztype  Zeta type
-         * \param[out] ptype  Polarizability type.
-         */
-        bool ztypeToPtype(const std::string &ztype,
-                          std::string       *ptype) const;
 
         /*! \brief
          * Return the bond type corresponding to atom type and true if successful
@@ -416,10 +408,6 @@ class Poldata
                          double *sigPol) const;
 
         bool getAtypePol(const std::string &atype,
-                         double *polarizability, 
-                         double *sigPol) const;
-
-        bool getZtypePol(const std::string &ztype,
                          double *polarizability, 
                          double *sigPol) const;
 

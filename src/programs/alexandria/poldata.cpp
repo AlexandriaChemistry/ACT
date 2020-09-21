@@ -205,7 +205,7 @@ std::vector<std::string> Poldata::ztype_names() const
 bool Poldata::atypeToPtype(const std::string &atype,
                            std::string       *ptype) const
 {
-    if (atype.size() == 0)
+    if (atype.empty())
     {
         return false;
     }
@@ -213,26 +213,6 @@ bool Poldata::atypeToPtype(const std::string &atype,
                            [atype](Ffatype const &fa)
                            {
                                return fa.getType().compare(atype) == 0;
-                           });
-    if (ai != alexandria_.end() && ai->getPtype().size() > 0)
-    {
-        ptype->assign(ai->getPtype());
-        return true;
-    }
-    return false;
-}
-
-bool Poldata::ztypeToPtype(const std::string &ztype,
-                           std::string       *ptype) const
-{
-    if (ztype.size() == 0)
-    {
-        return false;
-    }
-    auto ai = std::find_if(alexandria_.begin(), alexandria_.end(),
-                           [ztype](Ffatype const &fa)
-                           {
-                               return fa.getZtype().compare(ztype) == 0;
                            });
     if (ai != alexandria_.end() && ai->getPtype().size() > 0)
     {
@@ -250,18 +230,6 @@ bool Poldata::getAtypePol(const std::string &atype,
     if (alexandria_.end() != fa)
     {
         return getPtypePol(fa->getPtype(), polar, sigPol);
-    }
-    return false;
-}
-
-bool Poldata::getZtypePol(const std::string &ztype,
-                          double            *polar,
-                          double            *sigPol) const
-{
-    std::string ptype;
-    if (ztypeToPtype(ztype, &ptype))
-    {
-        return getPtypePol(ptype, polar, sigPol);
     }
     return false;
 }

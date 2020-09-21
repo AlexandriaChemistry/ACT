@@ -740,25 +740,27 @@ void OptACM::InitOpt(real factor, bool bRandom)
                               getEemtypeName(poldata()->getChargeModel()));
                 }
             }
-            if (bFitAlpha_ || weight(ermsPolar))
+            if ((bFitAlpha_ || weight(ermsPolar)) &&
+                getEemtypePolarizable(poldata()->getChargeModel()))
             {
                 auto alpha     = 0.0;
                 auto sigma     = 0.0;
-                if (poldata()->getZtypePol(ai->name(), &alpha, &sigma))
+                gmx_fatal(FARGS, "Fixme");
+                if (false) //poldata()->getZtypePol(ai->name(), &alpha, &sigma))
                 {
                     if (0 != alpha)
                     {
-		        // We do not have alpha_min and alpha_max so cannot set bounds
-		        if (bRandom)
-			{
-			    Bayes::addRandomParam(0, alphaMax());
-			}
-			else
-			{
-			    Bayes::addParam(alpha, factor, bRandom);
-			}
-			Bayes::addParamName(gmx::formatString("%s-Alpha", ai->name().c_str()));
-		    }
+                        // We do not have alpha_min and alpha_max so cannot set bounds
+                        if (bRandom)
+                        {
+                            Bayes::addRandomParam(0, alphaMax());
+                        }
+                        else
+                        {
+                            Bayes::addParam(alpha, factor, bRandom);
+                        }
+                        Bayes::addParamName(gmx::formatString("%s-Alpha", ai->name().c_str()));
+                    }
                     else
                     {
                         gmx_fatal(FARGS, "Polarizability is zero for atom %s\n", ai->name().c_str());
@@ -862,7 +864,9 @@ void OptACM::toPolData(const std::vector<bool> gmx_unused &changed)
             if (bFitAlpha_ || weight(ermsPolar))
             {
                 std::string ptype;
-                if (pd->ztypeToPtype(ai->name(), &ptype))
+                fprintf(stderr, "Code is broken");
+                exit(1);
+                if (false)//pd->ztypeToPtype(ai->name(), &ptype))
                 {
                     pd->setPtypePolarizability(ptype, param[n], psigma[n]);
                     n++;

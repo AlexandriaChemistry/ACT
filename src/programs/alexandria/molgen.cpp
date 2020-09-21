@@ -147,7 +147,7 @@ static void make_index_count(IndexCount                *ic,
     }
     else
     {
-        /*All types of Eeemprops will be optimized */
+        /* All types of Eeemprops will be optimized */
         bool bConst = false;
         for (auto eep = pd.BeginEemprops(); eep != pd.EndEemprops(); ++eep)
         {
