@@ -38,14 +38,6 @@
 
 #include "gromacs/utility/gmxassert.h"
 
-bool iequals(const string& a, const string& b)
-{
-    return std::equal(a.begin(), a.end(), b.begin(),
-                      [](char a, char b) {
-                          return tolower(a) == tolower(b);
-                      });
-}
-
 namespace alexandria
 {
 
@@ -72,7 +64,7 @@ ChargeType name2ChargeType(const std::string &name)
     {
         return cc->second;
     }
-    fprintf(stderr, "Unknown charge type %s. Please fix your input.\n",
+    fprintf(stderr, "Unknown charge type %s. Note that input is case-sensitive.\n",
             name.c_str());
     return eqtNR;
 }
@@ -91,8 +83,7 @@ std::map<ChargeGenerationAlgorithm, const std::string> cg2Name =
         { eqgNONE, "None" },
         { eqgEEM,  "EEM"  },
         { eqgSQE,  "SQE"  },
-        { eqgESP,  "ESP"  },
-        { eqgNR,   "Incorrect - Fix me" }
+        { eqgESP,  "ESP"  }
     };
 
 std::map<const std::string, ChargeGenerationAlgorithm> name2CG;
@@ -111,7 +102,7 @@ ChargeGenerationAlgorithm name2ChargeGenerationAlgorithm(const std::string &name
     {
         return cc->second;
     }
-    fprintf(stderr, "Unknown charge generation algorithm %s. Please fix your input.\n",
+    fprintf(stderr, "Unknown charge generation algorithm %s. Note that input is case-sensitive.\n",
             name.c_str());
     return eqgNR;
 }

@@ -1,10 +1,10 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <Sequence Name="chargeModel">
+  <Sequence Name="chargeType">
     <Int Name="Length">3</Int>
-    <String>ESP-pp</String>
-    <String>ESP-pg</String>
-    <String>ESP-ps</String>
+    <String>Point</String>
+    <String>Gaussian</String>
+    <String>Slater</String>
   </Sequence>
 </ReferenceData>
