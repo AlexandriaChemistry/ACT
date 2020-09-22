@@ -103,7 +103,7 @@ void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
         gmx::CommandLineModuleGroup group =
             manager->addModuleGroup("Alexandria core tools");
         group.addModule("bastat");
-        group.addModule("tune_pol");
+        //group.addModule("tune_pol");
         //group.addModule("tune_zeta");
         group.addModule("tune_eem");
         group.addModule("tune_fc");
