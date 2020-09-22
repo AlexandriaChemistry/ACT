@@ -61,7 +61,8 @@
     <atomtype elem="Cl" description="general chlorine" atype="cl" ptype="p_cl" btype="b_cl" ztype="C3" vdwparams="3.470940e-01 1.108760e+00 1.300000e+01" ref_enthalpy="125.893"/>
     <atomtype elem="Br" description="general bromine" atype="br" ptype="p_br" btype="b_br" ztype="Br" vdwparams="3.599230e-01 1.757280e+00 1.300000e+01" ref_enthalpy="124.114"/>
   </atomtypes>
-  <poltypes/>
+  <poltypes polarizability_unit="Angstrom3" reference="Molina2011a,Ghahremanpour2018b">
+  </poltypes>
   <bsatoms polarizability_unit="A3" reference="Bosque2002a">
     <bsatom elem="H" polarizability="0.17"/>
     <bsatom elem="C" polarizability="1.51"/>

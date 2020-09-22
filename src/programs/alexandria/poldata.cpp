@@ -1281,8 +1281,8 @@ void Poldata::makeMappings()
                                   { return (eepC.getName() == ztype); });
         if (eepC == EndEemprops())
         {
-            gmx_fatal(FARGS, "Can not find atype %s in eemprops",
-                      atype.c_str());
+            gmx_fatal(FARGS, "Can not find atype %s (ztype %s) in eemprops",
+                      atype.c_str(), ztype.c_str());
         }
         mapAtypeToEempropsConstIterator_.insert(std::pair<std::string, EempropsConstIterator>(atype, eepC));
         mapZtypeToEempropsConstIterator_.insert(std::pair<std::string, EempropsConstIterator>(ztype, eepC));
