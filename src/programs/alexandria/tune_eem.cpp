@@ -674,7 +674,7 @@ void OptACM::InitOpt(real factor, bool bRandom)
             if (bFitZeta_)
             {
                 auto     pd      = poldata();
-                bool distributed = getEemtypeDistributed(pd->getChargeModel());
+                bool distributed = pd->chargeType() != eqtPoint;
                 if (distributed)
                 {
                     if (bPointCore_)
@@ -697,7 +697,7 @@ void OptACM::InitOpt(real factor, bool bRandom)
                         {
                             gmx_fatal(FARGS, "Zeta is zero for atom %s in model %s\n",
                                       ai->name().c_str(), 
-                                      getEemtypeName(poldata()->getChargeModel()));
+                                      chargeTypeName(poldata()->chargeType()).c_str());
                         }
                     }
                     else
@@ -729,7 +729,7 @@ void OptACM::InitOpt(real factor, bool bRandom)
                             {
                                 gmx_fatal(FARGS, "Zeta is zero for atom %s in model %s\n",
                                           ai->name().c_str(), 
-                                          getEemtypeName(poldata()->getChargeModel()));
+                                          chargeTypeName(poldata()->chargeType()).c_str());
                             }
                         }
                     }
@@ -737,14 +737,12 @@ void OptACM::InitOpt(real factor, bool bRandom)
                 else
                 {
                     gmx_fatal(FARGS, "Zeta cannot be optmized for %s charge model\n", 
-                              getEemtypeName(poldata()->getChargeModel()));
+                              chargeTypeName(poldata()->chargeType()).c_str());
                 }
             }
-            if ((bFitAlpha_ || weight(ermsPolar)) &&
-                getEemtypePolarizable(poldata()->getChargeModel()))
+            if ((bFitAlpha_ || weight(ermsPolar)) && poldata()->polarizable())
             {
                 auto alpha     = 0.0;
-                auto sigma     = 0.0;
                 gmx_fatal(FARGS, "Fixme");
                 if (false) //poldata()->getZtypePol(ai->name(), &alpha, &sigma))
                 {
@@ -779,7 +777,7 @@ void OptACM::toPolData(const std::vector<bool> gmx_unused &changed)
 {
     size_t   n           = 0;
     auto     pd          = poldata();
-    bool     distributed = getEemtypeDistributed(pd->getChargeModel());
+    bool     distributed = pd->chargeType() != eqtPoint;
     auto    *ic          = indexCount();
     auto     param       = Bayes::getParam();
     auto     psigma      = Bayes::getPsigma();
@@ -858,7 +856,7 @@ void OptACM::toPolData(const std::vector<bool> gmx_unused &changed)
                 else
                 {
                     gmx_fatal(FARGS, "Zeta cannot be optmized for %s charge model\n", 
-                              getEemtypeName(poldata()->getChargeModel()));
+                              chargeTypeName(poldata()->chargeType()).c_str());
                 }
             }
             if (bFitAlpha_ || weight(ermsPolar))
@@ -1237,8 +1235,7 @@ int alex_tune_eem(int argc, char *argv[])
              tabfn,
              select_type);
              
-    auto  iModel      = opt.poldata()->getChargeModel();
-    bool  pointCore   = isCorePointCharge(iModel);
+    bool  pointCore = opt.poldata()->corePointCharge();
     
     opt.set_pointCore(pointCore);
     opt.initChargeGeneration();
@@ -1262,7 +1259,7 @@ int alex_tune_eem(int argc, char *argv[])
     {
         if (bMinimum || bForceOutput)
         {
-            bool  bPolar = getEemtypePolarizable(iModel);
+            bool  bPolar = opt.poldata()->polarizable();
             auto *ic     = opt.indexCount();
             print_electric_props(opt.logFile(),
                                  opt.mymols(),

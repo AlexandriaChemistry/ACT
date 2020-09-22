@@ -624,7 +624,7 @@ int alex_bastat(int argc, char *argv[])
     };
 
     FILE                            *fp;
-    ChargeModel                      iModel;
+    ChargeType                       iType;
     time_t                           my_t;
     t_bonds                         *bonds = new(t_bonds);
     rvec                             dx, dx2, r_ij, r_kj, r_kl, mm, nn;
@@ -670,8 +670,10 @@ int alex_bastat(int argc, char *argv[])
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
     // This a hack to prevent that no bonds will be found to shells.
-    iModel = pd.getChargeModel();
-    pd.setChargeModel(eqdESP_p);
+    iType = pd.chargeType();
+    pd.setChargeType(eqtPoint);
+    bool polar = pd.polarizable();
+    pd.setPolarizable(false);
 
     /* Read Molprops */
     auto nwarn = merge_xml(opt2fns("-f", NFILE, fnm), &mp, nullptr, nullptr, nullptr, aps, pd, true);
@@ -870,7 +872,8 @@ int alex_bastat(int argc, char *argv[])
     update_pd(fp, bonds, &pd,
               Dm, beta, kt, klin, kp, kimp, kub,
               bond_tol, angle_tol);
-    pd.setChargeModel(iModel);
+    pd.setChargeType(iType);
+    pd.setPolarizable(polar);
     writePoldata(opt2fn("-o", NFILE, fnm), &pd, compress);
     printf("Extracted %zu bondtypes, %zu angletypes, %zu linear-angletypes, %zu dihedraltypes and %zu impropertypes.\n",
            bonds->bond.size(), bonds->angle.size(), bonds->linangle.size(),

@@ -48,23 +48,15 @@ namespace alexandria
  * \inpublicapi
  * \ingroup module_alexandria
  */
-enum ChargeModel {
-    eqdESP_p       = 0,
-    eqdESP_pg      = 1,
-    eqdESP_ps      = 2,
-    eqdESP_pp      = 3,
-    eqdACM_g       = 4,
-    eqdACM_s       = 5,
-    eqdACM_pg      = 6,
-    eqdACM_ps      = 7,
-    eqdACM_ppg     = 8,
-    eqdACM_pps     = 9,
-    eqdYang        = 10,
-    eqdBultinck    = 11,
-    eqdRappe       = 12,
-    eqdVerstraelen = 13,
-    eqdNR          = 14
+enum ChargeType {
+    eqtPoint, eqtGaussian, eqtSlater, eqtNR
 };
+
+//! \brief Return the string corresping to ct
+const std::string &chargeTypeName(ChargeType ct);
+
+//! \brief Return the ChargeType corresponding to name
+ChargeType name2ChargeType(const std::string &name);
 
 /*! \brief
  * Enumerated type holding the charge generation algorithms
@@ -73,77 +65,14 @@ enum ChargeModel {
  * \ingroup module_alexandria
  */
 enum ChargeGenerationAlgorithm {
-    eqgNONE,
-    eqgACM,
-    eqgESP
+    eqgNONE, eqgEEM, eqgSQE, eqgESP, eqgNR
 };
 
-static bool gmx_unused getEemtypePolarizable(ChargeModel eem)
-{
-    return (eem == eqdACM_pg  || 
-            eem == eqdACM_ps  ||
-            eem == eqdACM_ppg || 
-            eem == eqdACM_pps ||
-            eem == eqdESP_pp  || 
-            eem == eqdESP_pg  || 
-            eem == eqdESP_ps);
-}
+//! \brief Return the string corresping to cg
+const std::string &chargeGenerationAlgorithmName(ChargeGenerationAlgorithm cg);
 
-static bool gmx_unused getEemtypeDistributed(ChargeModel eem)
-{
-    return (eem == eqdACM_g   || eem == eqdACM_s   ||
-            eem == eqdACM_pg  || eem == eqdACM_ps  ||
-            eem == eqdACM_ppg || eem == eqdACM_pps ||
-            eem == eqdESP_pg  || eem == eqdESP_ps  ||
-            eem == eqdYang    || eem == eqdRappe);
-}
+//! \brief Return the ChargeAlgorithm corresponding to name
+ChargeGenerationAlgorithm name2ChargeGenerationAlgorithm(const std::string &name);
 
-static bool gmx_unused getEemtypeSlater(ChargeModel eem)
-{
-    return (eem == eqdACM_s   || 
-            eem == eqdACM_ps  ||
-            eem == eqdACM_pps || 
-            eem == eqdESP_ps  ||
-            eem == eqdYang    || 
-            eem == eqdRappe);
-}
-
-static bool gmx_unused getEemtypeGaussian(ChargeModel eem)
-{
-    return (eem == eqdACM_g   || 
-            eem == eqdACM_pg  || 
-            eem == eqdACM_ppg ||
-            eem == eqdESP_pg);
-}
-
-static bool gmx_unused isCorePointCharge(ChargeModel eem)
-{
-    return (eem == eqdACM_pps  || 
-            eem == eqdACM_ppg  ||
-            eem == eqdESP_pp   || 
-            eem == eqdESP_pg   || 
-            eem == eqdESP_ps);
-}
-
-/* Return the charge generation algorithm */
-static ChargeGenerationAlgorithm gmx_unused chargeGenerationAlgorithm(ChargeModel eem)
-{
-    if (eem == eqdESP_p  || eem == eqdESP_pg ||
-        eem == eqdESP_ps || eem == eqdESP_pp)
-    {
-        return eqgESP;
-    }
-    else
-    {
-        return eqgACM;
-    }
-}
-
-//! \brief Return the string corresping to eem
-const char *getEemtypeName(ChargeModel eem);
-
-//! \brief Return the ChargeModel corresponding to name
-ChargeModel name2eemtype(const std::string &name);
-
-} // namespace aleaxndria
+} // namespace alexandria
 #endif

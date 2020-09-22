@@ -244,7 +244,7 @@ int alex_gentop(int argc, char *argv[])
     const char               *tabfn    = opt2fn_null("-table", NFILE, fnm);
     eChargeGroup              ecg      = (eChargeGroup) get_option(cgopt);
     gmx::MDLogger             mdlog {};
-    ChargeModel               iModel;
+    ChargeType                iType;
     std::string               method, basis;
     splitLot(lot, &method, &basis);
 
@@ -262,7 +262,7 @@ int alex_gentop(int argc, char *argv[])
     const char *gentop_fnm = opt2fn_null("-d", NFILE, fnm);
     if (opt2parg_bSet("-ff", asize(pa), pa) && nullptr == gentop_fnm)
     {
-        iModel     = name2eemtype(ff[0]);
+        iType      = name2ChargeType(ff[0]);
         gentop_fnm = gmx::formatString("%s.dat", ff[0]).c_str();
     }
     if (nullptr == gentop_fnm)
@@ -282,9 +282,9 @@ int alex_gentop(int argc, char *argv[])
         alexandria::readPoldata(gentop_fnm, pd, aps);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-    iModel = pd.getChargeModel();
+    iType = pd.chargeType();
     printf("Using force field file %s and charge distribution model %s\n",
-           gentop_fnm, getEemtypeName(iModel));
+           gentop_fnm, chargeTypeName(iType).c_str());
     if (bVerbose)
     {
         printf("Reading force field information. There are %d atomtypes.\n",
@@ -376,7 +376,6 @@ int alex_gentop(int argc, char *argv[])
                                  false,
                                  tabfn);
 
-    //imm = mymol.GenerateGromacs(mdlog, cr, tabfn, nullptr, pd.getChargeModel());
     mymol.symmetrizeCharges(&pd, aps, bQsym, symm_string);
     maxpot = 100; // Use 100 percent of the ESP read from Gaussian file.
     

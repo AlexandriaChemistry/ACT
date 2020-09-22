@@ -87,7 +87,7 @@ class AcmTest : public gmx::test::CommandLineTestBase
         {
         }
 
-        void testAcm(ChargeModel model, informat inputformat, bool qSymm)
+        void testAcm(const std::string &model, informat inputformat, bool qSymm)
         {
             int                   maxpot    = 100;
             int                   nsymm     = 0;
@@ -166,7 +166,8 @@ class AcmTest : public gmx::test::CommandLineTestBase
                 qtotValues.push_back(mp_.atoms_->atom[atom].q);
             }
             char buf[256];
-            snprintf(buf, sizeof(buf), "qtotValuesEqdAlgorithm_%d", static_cast<int>(ChargeGenerationAlgorithm()));
+            snprintf(buf, sizeof(buf), "qtotValuesEqdAlgorithm_%s", 
+                     chargeGenerationAlgorithmName(pd->chargeGenerationAlgorithm()).c_str());
             checker_.checkInteger(static_cast<int>(qtotValues.size()), "qtotSize");
             checker_.checkSequence(qtotValues.begin(), qtotValues.end(), buf);
         }
@@ -179,82 +180,82 @@ class AcmTest : public gmx::test::CommandLineTestBase
 
 TEST_F (AcmTest, BultinckLog)
 {
-    testAcm(eqdBultinck, einfLOG, true);
+    testAcm("Bultinck", einfLOG, true);
 }
 
 TEST_F (AcmTest, BultinckPDB)
 {
-    testAcm(eqdBultinck, einfPDB, true);
+    testAcm("Bultinck", einfPDB, true);
 }
 
 TEST_F (AcmTest, VerstraelenLog)
 {
-    testAcm(eqdVerstraelen, einfLOG, true);
+    testAcm("Verstraelen", einfLOG, true);
 }
 
 TEST_F (AcmTest, VerstraelenPDB)
 {
-    testAcm(eqdVerstraelen, einfPDB, true);
+    testAcm("Verstraelen", einfPDB, true);
 }
 
 TEST_F (AcmTest, RappeLog)
 {
-    testAcm(eqdRappe, einfLOG, true);
+    testAcm("Rappe", einfLOG, true);
 }
 
 TEST_F (AcmTest, RappePDB)
 {
-    testAcm(eqdRappe, einfPDB, true);
+    testAcm("Rappe", einfPDB, true);
 }
 
 TEST_F (AcmTest, YangLog)
 {
-    testAcm(eqdYang, einfLOG, true);
+    testAcm("Yang", einfLOG, true);
 }
 
 TEST_F (AcmTest, YangPDB)
 {
-    testAcm(eqdYang, einfPDB, true);
+    testAcm("Yang", einfPDB, true);
 }
 
 TEST_F (AcmTest, AXpgLOG)
 {
-    testAcm(eqdACM_pg, einfLOG, true);
+    testAcm("ACM-pg", einfLOG, true);
 }
 
 TEST_F (AcmTest, AXpgPDB)
 {
-    testAcm(eqdACM_pg, einfPDB, true);
+    testAcm("ACM-pg", einfPDB, true);
 }
 
 TEST_F (AcmTest, AXpgNoSymmLOG)
 {
-    testAcm(eqdACM_pg, einfLOG, false);
+    testAcm("ACM-pg", einfLOG, false);
 }
 
 TEST_F (AcmTest, AXpgNoSymmPDB)
 {
-    testAcm(eqdACM_pg, einfPDB, false);
+    testAcm("ACM-pg", einfPDB, false);
 }
 
 TEST_F (AcmTest, AXgLOG)
 {
-    testAcm(eqdACM_g, einfLOG, true);
+    testAcm("ACM-g", einfLOG, true);
 }
 
 TEST_F (AcmTest, AXgPDB)
 {
-    testAcm(eqdACM_g, einfPDB, true);
+    testAcm("ACM-g", einfPDB, true);
 }
 
 TEST_F (AcmTest, AXgNoSymmLOG)
 {
-    testAcm(eqdACM_g, einfLOG, false);
+    testAcm("ACM-g", einfLOG, false);
 }
 
 TEST_F (AcmTest, AXgNoSymmPDB)
 {
-    testAcm(eqdACM_g, einfPDB, false);
+    testAcm("ACM-g", einfPDB, false);
 }
 
 }

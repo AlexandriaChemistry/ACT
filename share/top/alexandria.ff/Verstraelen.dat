@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <!DOCTYPE gentop.dtd PUBLIC "gentop.dtd" "gentop.dtd">
 <gentop>
-  <atomtypes chargemodel="ACM-g" version="2020" function="LJ_SR" combination_rule="Geometric" nexclusions="0" epsilonr="1">
+  <atomtypes chargetype="Gaussian" chargegenerationalgorithm="sqe" version="2020" vanderwaals="LJ_SR" combination_rule="Geometric" nexclusions="0" epsilonr="1">
     <atomtype elem="H" description="hydrogen on aliphatic C with 1 electron-withdrawal group" atype="h1" ptype="p_h1" btype="b_h1" ztype="H" vdwparams="2.471350e-01 6.568880e-02 1.300000e+01" ref_enthalpy="222.232"/>
     <atomtype elem="H" description="hydrogen on aliphatic C with 2 electron-withdrawal groups" atype="h2" ptype="p_h1" btype="b_h1" ztype="H" vdwparams="2.293170e-01 6.568880e-02 1.300000e+01" ref_enthalpy="222.232"/>
     <atomtype elem="H" description="hydrogen on aliphatic C with 3 electron-withdrawal groups" atype="h3" ptype="p_h1" btype="b_h1" ztype="H" vdwparams="2.114990e-01 6.568880e-02 1.300000e+01" ref_enthalpy="222.232"/>
@@ -33,17 +33,17 @@
     <atomtype elem="C" description="3-membered ring atom" atype="cx" ptype="p_cu" btype="b_c3" ztype="C4" vdwparams="3.399670e-01 3.598240e-01 1.300000e+01" ref_enthalpy="717.721"/>
     <atomtype elem="C" description="4-membered ring atom" atype="cy" ptype="p_cu" btype="b_c3" ztype="C4" vdwparams="3.399670e-01 3.598240e-01 1.300000e+01" ref_enthalpy="717.721"/>
     <atomtype elem="N" description="sp2 N in amides" atype="n" ptype="p_n" btype="b_n" ztype="N2" vdwparams="3.250000e-01 7.112800e-01 1.300000e+01" ref_enthalpy="477.018"/>
-    <atomtype elem="N" description="sp1 N" atype="n1" ptype="p_n1" btype="b_n1" ztype="N2" vdwparams="3.250000e-01 7.112800e-01 1.300000e+01" ref_enthalpy="477.018"/>
-    <atomtype elem="N" description="sp2 N with 2 subst." atype="n2" ptype="p_n2" btype="b_n2" ztype="N3" vdwparams="3.250000e-01 7.112800e-01 1.300000e+01" ref_enthalpy="477.018"/>
-    <atomtype elem="N" description="sp3 N with 3 subst." atype="n3" ptype="p_n3" btype="b_n3" ztype="N4" vdwparams="3.250000e-01 7.112800e-01 1.300000e+01" ref_enthalpy="477.018"/>
+    <atomtype elem="N" description="sp1 N" atype="n1" ptype="p_n1" btype="b_n1" ztype="N1" vdwparams="3.250000e-01 7.112800e-01 1.300000e+01" ref_enthalpy="477.018"/>
+    <atomtype elem="N" description="sp2 N with 2 subst." atype="n2" ptype="p_n2" btype="b_n2" ztype="N2" vdwparams="3.250000e-01 7.112800e-01 1.300000e+01" ref_enthalpy="477.018"/>
+    <atomtype elem="N" description="sp3 N with 3 subst." atype="n3" ptype="p_n3" btype="b_n3" ztype="N3" vdwparams="3.250000e-01 7.112800e-01 1.300000e+01" ref_enthalpy="477.018"/>
     <atomtype elem="N" description="sp3 N with 4 subst." atype="n4" ptype="p_n4" btype="b_n3" ztype="N4" vdwparams="3.250000e-01 7.112800e-01 1.300000e+01" ref_enthalpy="477.018"/>
-    <atomtype elem="N" description="sp2 N with 3 subst." atype="na" ptype="p_na" btype="b_na" ztype="N3" vdwparams="3.250000e-01 7.112800e-01 1.300000e+01" ref_enthalpy="477.018"/>
-    <atomtype elem="N" description="aromatic N" atype="nb" ptype="p_nb" btype="b_nb" ztype="N3" vdwparams="3.250000e-01 7.112800e-01 1.300000e+01" ref_enthalpy="477.018"/>
-    <atomtype elem="N" description="inner sp2 N of conjugated ring systems" atype="nc" ptype="p_nc" btype="b_nc" ztype="N3" vdwparams="3.250000e-01 7.112800e-01 1.300000e+01" ref_enthalpy="477.018"/>
-    <atomtype elem="N" description="inner sp2 N of conjugated ring systems" atype="nd" ptype="p_nc" btype="b_nc" ztype="N3" vdwparams="3.250000e-01 7.112800e-01 1.300000e+01" ref_enthalpy="477.018"/>
-    <atomtype elem="N" description="inner sp2 N of conjugated chain system" atype="ne" ptype="p_ne" btype="b_ne" ztype="N3" vdwparams="3.250000e-01 7.112800e-01 1.300000e+01" ref_enthalpy="477.018"/>
-    <atomtype elem="N" description="amine N connected to aromatic ring" atype="nh" ptype="p_nh" btype="b_nh" ztype="N4" vdwparams="3.250000e-01 7.112800e-01 1.300000e+01" ref_enthalpy="477.018"/>
-    <atomtype elem="N" description="N in nitro group" atype="no" ptype="p_no" btype="b_no" ztype="N3" vdwparams="3.250000e-01 7.112800e-01 1.300000e+01" ref_enthalpy="477.018"/>
+    <atomtype elem="N" description="sp2 N with 3 subst." atype="na" ptype="p_na" btype="b_na" ztype="N2" vdwparams="3.250000e-01 7.112800e-01 1.300000e+01" ref_enthalpy="477.018"/>
+    <atomtype elem="N" description="aromatic N" atype="nb" ptype="p_nb" btype="b_nb" ztype="N2" vdwparams="3.250000e-01 7.112800e-01 1.300000e+01" ref_enthalpy="477.018"/>
+    <atomtype elem="N" description="inner sp2 N of conjugated ring systems" atype="nc" ptype="p_nc" btype="b_nc" ztype="N2" vdwparams="3.250000e-01 7.112800e-01 1.300000e+01" ref_enthalpy="477.018"/>
+    <atomtype elem="N" description="inner sp2 N of conjugated ring systems" atype="nd" ptype="p_nc" btype="b_nc" ztype="N2" vdwparams="3.250000e-01 7.112800e-01 1.300000e+01" ref_enthalpy="477.018"/>
+    <atomtype elem="N" description="inner sp2 N of conjugated chain system" atype="ne" ptype="p_ne" btype="b_ne" ztype="N2" vdwparams="3.250000e-01 7.112800e-01 1.300000e+01" ref_enthalpy="477.018"/>
+    <atomtype elem="N" description="amine N connected to aromatic ring" atype="nh" ptype="p_nh" btype="b_nh" ztype="N3" vdwparams="3.250000e-01 7.112800e-01 1.300000e+01" ref_enthalpy="477.018"/>
+    <atomtype elem="N" description="N in nitro group" atype="no" ptype="p_no" btype="b_no" ztype="N2" vdwparams="3.250000e-01 7.112800e-01 1.300000e+01" ref_enthalpy="477.018"/>
     <atomtype elem="O" description="sp2 O" atype="o" ptype="p_o" btype="b_o" ztype="O1" vdwparams="2.959920e-01 8.786400e-01 1.300000e+01" ref_enthalpy="253.514"/>
     <atomtype elem="O" description="sp3 O in hydroxyl group" atype="oh" ptype="p_oh" btype="b_oh" ztype="O2" vdwparams="3.066470e-01 8.803140e-01 1.300000e+01" ref_enthalpy="253.514"/>
     <atomtype elem="O" description="O in water" atype="ow" ptype="p_ow" btype="b_ow" ztype="O2" vdwparams="3.000010e-01 7.112800e-01 1.300000e+01" ref_enthalpy="253.514"/>
@@ -62,6 +62,41 @@
     <atomtype elem="Br" description="general bromine" atype="br" ptype="p_br" btype="b_br" ztype="Br" vdwparams="3.599230e-01 1.757280e+00 1.300000e+01" ref_enthalpy="124.114"/>
   </atomtypes>
   <poltypes polarizability_unit="Angstrom3" reference="Molina2011a,Ghahremanpour2018b">
+    <poltype ptype="p_h1" miller="h1" bosque="H" polarizability="0.432" polarizability_sigma="0.014"/>
+    <poltype ptype="p_h4" miller="h4" bosque="H" polarizability="0.432" polarizability_sigma="0.014"/>
+    <poltype ptype="p_ha" miller="H" bosque="H" polarizability="0.384" polarizability_sigma="0.012"/>
+    <poltype ptype="p_hc" miller="hc" bosque="H" polarizability="0.384" polarizability_sigma="0.012"/>
+    <poltype ptype="p_hp" miller="H" bosque="H" polarizability="0.432" polarizability_sigma="0.014"/>
+    <poltype ptype="p_hw" miller="hw" bosque="H" polarizability="0.376" polarizability_sigma="-"/>
+    <poltype ptype="p_ca" miller="ca" bosque="C" polarizability="1.411" polarizability_sigma="0.014"/>
+    <poltype ptype="p_c1" miller="CDI" bosque="C" polarizability="1.459" polarizability_sigma="0.015"/>
+    <poltype ptype="p_cm" miller="cm" bosque="C" polarizability="1.417" polarizability_sigma="0.018"/>
+    <poltype ptype="p_cz" miller="cz" bosque="C" polarizability="1.417" polarizability_sigma="0.018"/>
+    <poltype ptype="p_c2" miller="CTR" bosque="C" polarizability="1.417" polarizability_sigma="0.018"/>
+    <poltype ptype="p_c3" miller="CTE" bosque="C" polarizability="1.074" polarizability_sigma="0.027"/>
+    <poltype ptype="p_cu" miller="cu" bosque="C" polarizability="1.417" polarizability_sigma="0.018"/>
+    <poltype ptype="p_n" miller="NTE" bosque="N" polarizability="0.928" polarizability_sigma="0.023"/>
+    <poltype ptype="p_n1" miller="n1" bosque="N" polarizability="0.928" polarizability_sigma="0.023"/>
+    <poltype ptype="p_n2" miller="n2" bosque="N" polarizability="0.928" polarizability_sigma="0.023"/>
+    <poltype ptype="p_n3" miller="n3" bosque="N" polarizability="0.928" polarizability_sigma="0.023"/>
+    <poltype ptype="p_n4" miller="n4" bosque="N" polarizability="0.928" polarizability_sigma="0.023"/>
+    <poltype ptype="p_na" miller="na" bosque="N" polarizability="0.863" polarizability_sigma="0.078"/>
+    <poltype ptype="p_nb" miller="nb" bosque="N" polarizability="0.928" polarizability_sigma="0.023"/>
+    <poltype ptype="p_nc" miller="nc" bosque="N" polarizability="0" polarizability_sigma="0"/>
+    <poltype ptype="p_ne" miller="ne" bosque="N" polarizability="0" polarizability_sigma="0"/>
+    <poltype ptype="p_nh" miller="nh" bosque="N" polarizability="0.928" polarizability_sigma="0.023"/>
+    <poltype ptype="p_no" miller="no" bosque="N" polarizability="1.657" polarizability_sigma="0.063"/>
+    <poltype ptype="p_o" miller="OTE" bosque="O" polarizability="0.565" polarizability_sigma="0.010"/>
+    <poltype ptype="p_oh" miller="oh" bosque="O" polarizability="0.565" polarizability_sigma="0.010"/>
+    <poltype ptype="p_ow" miller="ow" bosque="O" polarizability="0.689" polarizability_sigma="-"/>
+    <poltype ptype="p_on" miller="on" bosque="O" polarizability="0.565" polarizability_sigma="0.010"/>
+    <poltype ptype="p_om" miller="om" bosque="O" polarizability="0.565" polarizability_sigma="0.010"/>
+    <poltype ptype="p_os" miller="os" bosque="O" polarizability="0.565" polarizability_sigma="0.010"/>
+    <poltype ptype="p_f" miller="F" bosque="F" polarizability="0.415" polarizability_sigma="0.016"/>
+    <poltype ptype="p_s4" miller="s4" bosque="S" polarizability="2.932" polarizability_sigma="0.041"/>
+    <poltype ptype="p_s" miller="STE" bosque="S" polarizability="2.932" polarizability_sigma="0.041"/>
+    <poltype ptype="p_cl" miller="Cl" bosque="Cl" polarizability="2.307" polarizability_sigma="0.013"/>
+    <poltype ptype="p_br" miller="Br" bosque="Br" polarizability="3.441" polarizability_sigma="0.023"/>
   </poltypes>
   <bsatoms polarizability_unit="A3" reference="Bosque2002a">
     <bsatom elem="H" polarizability="0.17"/>

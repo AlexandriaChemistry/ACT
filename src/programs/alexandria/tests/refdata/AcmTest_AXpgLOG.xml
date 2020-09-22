@@ -2,7 +2,7 @@
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
   <Int Name="qtotSize">30</Int>
-  <Sequence Name="qtotValuesEqdAlgorithm_0">
+  <Sequence Name="qtotValuesEqdAlgorithm_EEM">
     <Int Name="Length">30</Int>
     <Real>1.9258750311523967</Real>
     <Real>-2</Real>

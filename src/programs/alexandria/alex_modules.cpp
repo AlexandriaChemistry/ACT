@@ -70,8 +70,8 @@ void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
                    "Optimize force field parameters");
     registerModule(manager, &alex_tune_eem, "tune_eem",
                    "Optimize parameters of the EEM algorithm");
-    registerModule(manager, &alex_tune_pol, "tune_pol",
-                   "Optimize atomic polarizabilities");
+    //    registerModule(manager, &alex_tune_pol, "tune_pol",
+    //             "Optimize atomic polarizabilities");
     //    registerModule(manager, &alex_tune_zeta, "tune_zeta",
     //             "Optimize the distribution of Gaussian and Slater charges");
     registerModule(manager, &alex_bastat, "bastat",

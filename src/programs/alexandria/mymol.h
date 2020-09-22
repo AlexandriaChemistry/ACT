@@ -651,18 +651,17 @@ class MyMol : public MolProp
         immStatus GenerateChargeGroups(eChargeGroup ecg, bool bUsePDBcharge);
 
         /*! \brief
-         * Generate GROMACS.
+         * Generate GROMACS structures.
          */
         immStatus GenerateGromacs(const gmx::MDLogger      &mdlog,
                                   t_commrec                *cr,
                                   const char               *tabfn,
                                   gmx_hw_info_t            *hwinfo,
-                                  ChargeModel               iModel);
+                                  ChargeType               iType);
 
         /*! \brief
          * Generate cube
          *
-         * \param[in] iModel      The distrbution model of charge (e.x. point charge, gaussian, and slater models)
          * \param[in] pd          Data structure containing atomic properties
          * \param[in] spacing     The grid space
          * \param[in] border      The amount of space around the molecule

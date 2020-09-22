@@ -89,8 +89,6 @@ class QgenAcm
 
         const char *message() const;
         
-        gmx_bool SplitQ(ChargeModel iDistributionModel);
-
         int getNzeta(int atom);
 
         int getRow(int atom, int z);
@@ -118,7 +116,7 @@ class QgenAcm
         double                                             rms_;
         gmx_bool                                           bAllocSave_;
         gmx_bool                                           bHaveShell_;
-        ChargeModel                                        iChargeModel_;
+        ChargeType                                         ChargeType_;
         
         std::vector<int>                                   atomnr_, nZeta_, coreIndex_, shellIndex_;
         std::vector<double>                                chi0_, rhs_, j00_, q0_;
@@ -147,7 +145,8 @@ class QgenAcm
 
         void copyChargesToAtoms(t_atoms *atoms);
         
-        void calcJcc(t_atoms *atoms, double epsilonr);
+        void calcJcc(t_atoms *atoms, double epsilonr,
+                     bool bYang, bool bRappe);
         
         void calcJcs(t_atoms *atoms,
                      int      top_ndx,

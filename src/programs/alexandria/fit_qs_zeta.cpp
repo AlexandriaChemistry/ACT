@@ -55,7 +55,7 @@
 static double chi2_coulomb(double zeta, double qs, double alpha, 
                            double delta_q, double rmax,
                            int row, 
-                           alexandria::ChargeModel iChargeModel)
+                           alexandria::ChargeType iChargeType)
 {
     double chi2 = 0;
     int    imax = 10;
@@ -65,12 +65,12 @@ static double chi2_coulomb(double zeta, double qs, double alpha,
         double fpol     = -qs*r/alpha;
         double fcoulomb = 0;
         
-        switch (iChargeModel)
+        switch (iChargeType)
         {
-        case alexandria::eqdESP_pg:
+        case alexandria::eqtGaussian:
             fcoulomb = DNuclear_GG(r, zeta);
             break;
-        case alexandria::eqdESP_ps:
+        case alexandria::eqtSlater:
             fcoulomb = DNuclear_SS(r, row, zeta);
             break;
         default:
@@ -91,7 +91,7 @@ static void print_stats(bool verbose, int iter,
     }
 }
 
-static double gmx_unused zeta0(alexandria::ChargeModel iChargeModel,
+static double gmx_unused zeta0(alexandria::ChargeType iChargeType,
                                double alpha)
 {
     double zeta = 0;
@@ -99,7 +99,7 @@ static double gmx_unused zeta0(alexandria::ChargeModel iChargeModel,
     {
         zeta = std::pow(3.0*std::sqrt(M_PI)/(4.0*alpha), 1.0/3.0);
     }
-    if (iChargeModel == alexandria::eqdESP_ps)
+    if (iChargeType == alexandria::eqtSlater)
     {
         zeta *= 2.0;
     }
@@ -107,7 +107,7 @@ static double gmx_unused zeta0(alexandria::ChargeModel iChargeModel,
 }
 
 static void fit_polarization(double alpha, double delta_q, double rmax, int row,
-                             alexandria::ChargeModel iChargeModel,
+                             alexandria::ChargeType iChargeType,
                              int maxiter, double tolerance,
                              double *zeta_opt, double *qs_opt,
                              bool verbose)
@@ -156,7 +156,7 @@ static void fit_polarization(double alpha, double delta_q, double rmax, int row,
         }
         chi2[Try] = chi2_coulomb(zeta[Try], qs[Try],
                                  alpha, delta_q, rmax, row, 
-                                 iChargeModel);
+                                 iChargeType);
         if (chi2[Try] < chi2[Min])
         {
             Min = Try;
@@ -192,7 +192,7 @@ int alex_fit_qs_zeta(int argc, char *argv[])
     };
 
     const  int         NFILE          = asize(fnm);
-    static const char *cqdist[]       = { nullptr, "ESP-pg", "ESP-ps", nullptr };
+    static const char *cqdist[]       = { nullptr, "Gaussian", "Slater", nullptr };
     bool               bVerbose       = false;
     real               alpha          = 0;
     real               delta_q        = 0;
@@ -238,7 +238,7 @@ int alex_fit_qs_zeta(int argc, char *argv[])
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         for(auto ai = pd.getAtypeBegin(); ai < pd.getAtypeEnd(); ++ai)
         {
-            auto cdm = pd.getChargeModel();
+            auto cdm = pd.chargeType();
             auto eem = pd.atype2Eem(ai->getType());
             if (pd.EndEemprops() != eem)
             {
@@ -263,7 +263,7 @@ int alex_fit_qs_zeta(int argc, char *argv[])
     }
     else
     {
-        auto   cdm = alexandria::name2eemtype(cqdist[0]);
+        auto   cdm = alexandria::name2ChargeType(cqdist[0]);
         double zeta, qs;
         fit_polarization(alpha, delta_q, rmax, row,
                          cdm, maxiter, tolerance, &zeta, &qs, bVerbose);

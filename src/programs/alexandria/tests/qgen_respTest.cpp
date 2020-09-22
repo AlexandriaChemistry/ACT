@@ -95,7 +95,7 @@ class RespTest : public gmx::test::CommandLineTestBase
         {
         }
 
-        void testResp(ChargeModel qdist, bool qSymm)
+        void testResp(const std::string &qdist, bool qSymm)
         {
             //Generate charges and topology
             std::string   method("B3LYP");
@@ -103,7 +103,8 @@ class RespTest : public gmx::test::CommandLineTestBase
             t_inputrec    inputrec;
             fill_inputrec(&inputrec);
             mp_.SetForceField("gaff");
-            auto imm = mp_.GenerateTopology(aps_, getPoldata(qdist), method,
+            Poldata      *pd = getPoldata(qdist);
+            auto imm = mp_.GenerateTopology(aps_, pd, method,
                                             basis, nullptr,
                                             false, false, false,  false,
                                             nullptr);
@@ -124,15 +125,15 @@ class RespTest : public gmx::test::CommandLineTestBase
             real           qtol        = 1e-3;
             std::string    tabFile;
           
-            if (getEemtypeSlater(qdist))
+            if (eqtSlater  == pd->chargeType())
             {
                 inputrec.coulombtype = eelUSER;
                 tabFile              = fileManager().getInputFilePath("table.xvg");
             }
             mp_.setInputrec(&inputrec);
-            mp_.symmetrizeCharges(getPoldata(qdist), aps_, qSymm, nullptr);
-            mp_.initQgenResp(getPoldata(qdist), method, basis, nullptr, 0.0, 100);
-            mp_.GenerateCharges(getPoldata(qdist), mdlog, cr,
+            mp_.symmetrizeCharges(pd, aps_, qSymm, nullptr);
+            mp_.initQgenResp(pd, method, basis, nullptr, 0.0, 100);
+            mp_.GenerateCharges(pd, mdlog, cr,
                                 tabFile.empty() ? nullptr : tabFile.c_str(),
                                 hwinfo, qcycle, qtol);
 
@@ -143,7 +144,7 @@ class RespTest : public gmx::test::CommandLineTestBase
             }
             char buf[256];
             snprintf(buf, sizeof(buf), "qtotValuesEqdModel_%s",
-                     getEemtypeName(qdist));
+                     chargeTypeName(pd->chargeType()).c_str());
             checker_.checkSequence(qtotValues.begin(),
                                    qtotValues.end(), buf);
         }
@@ -156,30 +157,30 @@ class RespTest : public gmx::test::CommandLineTestBase
 
 TEST_F (RespTest, AXpValues)
 {
-    testResp(eqdESP_p, false);
+    testResp("ESP-p", false);
 }
 
 TEST_F (RespTest, AXgPolarValues)
 {
-    testResp(eqdESP_pg, false);
+    testResp("ESP-pg", false);
 }
 
 TEST_F (RespTest, AXsPolarValues)
 {
-    testResp(eqdESP_ps, false);
+    testResp("ESP-ps", false);
 }
 
 TEST_F (RespTest, AXpSymmetricCharges)
 {
-    testResp(eqdESP_p, true);
+    testResp("ESP-p", true);
 }
 
 TEST_F (RespTest, AXgSymmetricPolarCharges)
 {
-    testResp(eqdESP_pg, true);
+    testResp("ESP-pg", true);
 }
 
 TEST_F (RespTest, AXsSymmetricPolarCharges)
 {
-    testResp(eqdESP_ps, true);
+    testResp("ESP-ps", true);
 }

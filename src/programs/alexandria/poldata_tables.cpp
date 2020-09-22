@@ -58,11 +58,11 @@ static void eemprops_zeta_header(LongTable &lt,
     char             longbuf[STRLEN];
     CompositionSpecs cs;
     
-    auto  iModel = pd->getChargeModel();
+    auto  iType = pd->chargeType();
 
     lt.setColumns("lcccc");
 
-    snprintf(longbuf, STRLEN, "The optimized parameters for the Alexandria charge model, %s.The atomic electronegativity and absolute hardness are represented by $\\chi$ and $\\eta$, respectively, in eV. The exponent of the charge density function is represented by $\\beta$ in nm$^{-1}$. The atomic polarizability is represented by $\\alpha$ in {\\AA}$^3$. The uncertainty in each paramter is represented by $\\sigma$", getEemtypeName(iModel));
+    snprintf(longbuf, STRLEN, "The optimized parameters for the Alexandria charge model, %s.The atomic electronegativity and absolute hardness are represented by $\\chi$ and $\\eta$, respectively, in eV. The exponent of the charge density function is represented by $\\beta$ in nm$^{-1}$. The atomic polarizability is represented by $\\alpha$ in {\\AA}$^3$. The uncertainty in each paramter is represented by $\\sigma$", chargeTypeName(iType).c_str());
     lt.setCaption(longbuf);
     lt.setLabel("eemprop");
     snprintf(longbuf, STRLEN, "Alexandria Type & $\\chi$($\\sigma$) & $\\eta$($\\sigma$) & $\\beta$($\\sigma$) & $\\alpha$($\\sigma$)");

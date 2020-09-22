@@ -80,6 +80,15 @@ class Poldata
             return alexandriaVersion_;
         }
 
+        //! Return whether or not the original Rappe & Goddard is used
+        bool rappe() const;
+        
+        //! Return whether Yang & Sharp is used
+        bool yang() const;
+        
+        //! Return whether we use a point charge for cores
+        bool corePointCharge() const { return false; }
+
         /*! \brief
          * Set the potential energy function for VDW interaction.
          * The VDW potentials supported by Alexandria are LJ, Buckingham, and Wang_Buckingham.
@@ -721,19 +730,38 @@ class Poldata
             }
         }
 
-                                   
-        //! Return the charge distribution model used
-        ChargeModel getChargeModel() const { return ChargeModel_; }
+        //! Return the charge distribution type used
+        ChargeType chargeType() const { return ChargeType_; }
+        
+        //! Set the charge distribution type used
+        void setChargeType(ChargeType eqdType) { ChargeType_ = eqdType; }
         
         //! Set the charge distribution model used
-        void setChargeModel(ChargeModel eqdModel) { ChargeModel_ = eqdModel; }
-        
-        //! Set the charge distribution model used
-        void setChargeModel(const std::string eqdModel)
+        void setChargeType(const std::string &eqdType)
         { 
-            ChargeModel_ = name2eemtype(eqdModel);
+            ChargeType_ = name2ChargeType(eqdType);
         }
         
+        //! Return the charge generation algorithm used
+        ChargeGenerationAlgorithm chargeGenerationAlgorithm() const
+        { return ChargeGenerationAlgorithm_; }
+        
+        //! Set the charge generation algorithm used
+        void setChargeGenerationAlgorithm(ChargeGenerationAlgorithm eqgAlgorithm)
+        { ChargeGenerationAlgorithm_ = eqgAlgorithm; }
+        
+        //! Set the charge generation algorithm used
+        void setChargeGenerationAlgorithm(const std::string &eqgAlgorithm)
+        {
+            ChargeGenerationAlgorithm_ = name2ChargeGenerationAlgorithm(eqgAlgorithm);
+        }
+
+        //! Return whether the model used is polarizable.     
+        bool polarizable() const { return polarizable_; }
+
+        //! Turn polarizability on or off.
+        void setPolarizable(bool polar) { polarizable_ = polar; }
+
         //! Return the array of eemprops
         std::vector<Eemprops> &getEemprops() {return eep_; }
 
@@ -772,7 +800,7 @@ class Poldata
         std::string                           alexandriaVersion_;
         std::string                           vsite_angle_unit_;
         std::string                           vsite_length_unit_;
-        int                                   nexcl_;
+        int                                   nexcl_ = 0;
         std::string                           gtVdwFunction_, gtCombinationRule_;
         int                                   gtVdwFtype_, gtCombRule_;
         double                                gtEpsilonR_ = 1.0;
@@ -787,7 +815,9 @@ class Poldata
         std::vector<Eemprops>                 eep_;
         std::vector<BondCorrection>           bondCorr_;
         std::string                           eepReference_;
-        ChargeModel                           ChargeModel_ = eqdACM_g;
+        bool                                  polarizable_ = false;
+        ChargeType                            ChargeType_  = eqtPoint;
+        ChargeGenerationAlgorithm             ChargeGenerationAlgorithm_ = eqgEEM;
 
         void addBtype(const std::string &btype);
 

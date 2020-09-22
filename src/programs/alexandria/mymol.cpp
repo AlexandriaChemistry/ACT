@@ -720,7 +720,7 @@ immStatus MyMol::zeta2atoms(const Poldata *pd)
      */
     auto zeta     = 0.0;
     auto row      = 0;
-    auto eqdModel = pd->getChargeModel();
+    auto eqtModel = pd->chargeType();
     for (auto i = 0; i < atoms_->nr; i++)
     {
         if (atoms_->atom[i].ptype == eptShell)
@@ -730,7 +730,7 @@ immStatus MyMol::zeta2atoms(const Poldata *pd)
             zeta = pd->getZeta(aname, 1);
             row  = pd->getRow(aname, 1);
             
-            if (zeta == 0 && getEemtypeDistributed(eqdModel))
+            if (zeta == 0 && eqtModel != eqtPoint)
             {
                 return immZeroZeta;
             }
@@ -741,7 +741,7 @@ immStatus MyMol::zeta2atoms(const Poldata *pd)
             row  = pd->getRow(*atoms_->atomtype[i], 0);
             
             if (zeta == 0 && 
-                (getEemtypeDistributed(eqdModel) && !isCorePointCharge(eqdModel)))
+                (eqtModel != eqtPoint && !pd->corePointCharge()))
             {
                 return immZeroZeta;
             }
@@ -769,7 +769,6 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t     ap,
     t_param     b;
     immStatus   imm = immOK;
     std::string btype1, btype2;
-    ChargeModel iChargeModel = pd->getChargeModel();
 
     if (nullptr != debug)
     {
@@ -871,7 +870,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t     ap,
         svmul((1.0/atntot), coc_, coc_);
         /*Center of charge*/
 
-        bool bAddShells = getEemtypePolarizable(iChargeModel);
+        bool bAddShells = pd->polarizable();
         if (bAddShells)
         {
             addShells(pd);
@@ -1142,7 +1141,7 @@ immStatus MyMol::GenerateGromacs(const gmx::MDLogger       &mdlog,
                                  t_commrec                 *cr,
                                  const char                *tabfn,
                                  gmx_hw_info_t             *hwinfo,
-                                 ChargeModel                ieqd)
+                                 ChargeType                 ieqt)
 {
     if (gromacsGenerated_)
     {
@@ -1183,7 +1182,7 @@ immStatus MyMol::GenerateGromacs(const gmx::MDLogger       &mdlog,
     {
         make_local_shells(cr, mdatoms, shellfc_);
     }
-    if (!getEemtypeSlater(ieqd))
+    if (eqtSlater != ieqt)
     {
         for (auto i = 0; i < mtop_->natoms; i++)
         {
@@ -1323,12 +1322,12 @@ void MyMol::initQgenResp(const Poldata     *pd,
                          real              watoms,
                          int               maxESP)
 {
-    auto iChargeModel = pd->getChargeModel();
+    auto iChargeType = pd->chargeType();
 
     GMX_RELEASE_ASSERT(QgenResp_ == nullptr,
                        "QgenResp_ already initialized");
     QgenResp_ = new QgenResp();
-    QgenResp_->setChargeModel(iChargeModel);
+    QgenResp_->setChargeType(iChargeType);
     QgenResp_->setAtomWeight(watoms);
     QgenResp_->setAtomInfo(atoms_, pd, x(), getCharge());
     QgenResp_->setAtomSymmetry(symmetric_charges_);
@@ -1370,39 +1369,39 @@ void MyMol::initQgenResp(const Poldata     *pd,
     }
 }
 
-immStatus MyMol::GenerateCharges(const Poldata             *pd,
-                                 const gmx::MDLogger       &mdlog,
-                                 t_commrec                 *cr,
-                                 const char                *tabfn,
-                                 gmx_hw_info_t             *hwinfo,
-                                 int                        maxiter,
-                                 real                       tolerance)
+immStatus MyMol::GenerateCharges(const Poldata       *pd,
+                                 const gmx::MDLogger &mdlog,
+                                 t_commrec           *cr,
+                                 const char          *tabfn,
+                                 gmx_hw_info_t       *hwinfo,
+                                 int                  maxiter,
+                                 real                 tolerance)
 {
     std::vector<double> qq;
     immStatus           imm          = immOK;
     bool                converged    = false;
     int                 iter         = 0;
-    auto                iChargeModel = pd->getChargeModel();
+    auto                iChargeType  = pd->chargeType();
 
-    GenerateGromacs(mdlog, cr, tabfn, hwinfo, iChargeModel);
+    GenerateGromacs(mdlog, cr, tabfn, hwinfo, iChargeType);
     if (backupCoordinates_.size() == 0)
     {
         backupCoordinates();
     }
-    switch (chargeGenerationAlgorithm(pd->getChargeModel()))
+    switch (pd->chargeGenerationAlgorithm())
     {
-        case eqgNONE:
-            if (debug)
-            {
-                fprintf(debug, "WARNING! Using zero charges for %s!\n",
-                        getMolname().c_str());
-            }
-            for (auto i = 0; i < atoms_->nr; i++)
-            {
-                atoms_->atom[i].q  = atoms_->atom[i].qB = 0;
-            }
-            return immOK;
-        case eqgESP:
+    case eqgNONE:
+        if (debug)
+        {
+            fprintf(debug, "WARNING! Using zero charges for %s!\n",
+                    getMolname().c_str());
+        }
+        for (auto i = 0; i < atoms_->nr; i++)
+        {
+            atoms_->atom[i].q  = atoms_->atom[i].qB = 0;
+        }
+        return immOK;
+    case eqgESP:
         {
             double chi2[2]   = {1e8, 1e8};
             real   rrms      = 0;
@@ -1411,7 +1410,7 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
             real   cosangle  = 0;
             EspRms_          = 0;
             iter             = 0;
-
+            
             // Init Qgresp should be called before this!
             QgenResp_->optimizeCharges(pd->getEpsilonR());
             QgenResp_->calcPot(pd->getEpsilonR());
@@ -1457,7 +1456,8 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
             }
         }
         break;
-        case eqgACM:
+    case eqgEEM:
+    case eqgSQE:
         {
             if (QgenAcm_ == nullptr)
             {
@@ -1524,9 +1524,10 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
             }
         }
         break;
-        default:
-            gmx_fatal(FARGS, "Not implemented");
-            break;
+    default:
+        gmx_fatal(FARGS, "ChargeGenerationAlgorithm %s is not implemented",
+                  chargeGenerationAlgorithmName(pd->chargeGenerationAlgorithm()).c_str());
+        break;
     }
     return imm;
 }
@@ -1853,8 +1854,8 @@ void MyMol::PrintTopology(FILE                   *fp,
     tensor                   myQ;
     double                   value = 0, error = 0, T = -1;
     std::string              myref;
-    auto                     iChargeModel = pd->getChargeModel();
-    std::string              mylot        = makeLot(method, basis);
+    auto                     iChargeType = pd->chargeType();
+    std::string              mylot       = makeLot(method, basis);
 
     if (fp == nullptr)
     {
@@ -1883,7 +1884,8 @@ void MyMol::PrintTopology(FILE                   *fp,
     commercials.push_back(buf);
     snprintf(buf, sizeof(buf), "Total Charge = %d (e)", getCharge());
     commercials.push_back(buf);
-    snprintf(buf, sizeof(buf), "Charge Type  = %s\n", getEemtypeName(iChargeModel));
+    snprintf(buf, sizeof(buf), "Charge Type  = %s\n",
+             chargeTypeName(iChargeType).c_str());
     commercials.push_back(buf);
     snprintf(buf, sizeof(buf), "Alexandria Dipole Moment (Debye):\n"
              "; ( %.2f %6.2f %6.2f ) Total= %.2f\n",
@@ -2028,7 +2030,7 @@ void MyMol::GenerateCube(const Poldata          *pd,
                          const char             *diffhistfn,
                          const gmx_output_env_t *oenv)
 {
-    ChargeModel iChargeModel = pd->getChargeModel();
+    ChargeType iChargeType = pd->chargeType();
 
     if (potfn || hisfn || rhofn || difffn || pdbdifffn)
     {
@@ -2059,14 +2061,16 @@ void MyMol::GenerateCube(const Poldata          *pd,
         if (rhofn)
         {
             std::string buf = gmx::formatString("Electron density generated by %s based on %s charges",
-                                                gentop_version, getEemtypeName(iChargeModel));
+                                                gentop_version,
+                                                chargeTypeName(iChargeType).c_str());
             QgenResp_->calcRho();
             QgenResp_->writeRho(rhofn, buf, oenv);
         }
         if (potfn)
         {
             std::string buf = gmx::formatString("Potential generated by %s based on %s charges",
-                                                gentop_version, getEemtypeName(iChargeModel));
+                                                gentop_version,
+                                                chargeTypeName(iChargeType).c_str());
             QgenResp_->calcPot(pd->getEpsilonR());
             QgenResp_->writeCube(potfn, buf, oenv);
         }
@@ -2074,14 +2078,14 @@ void MyMol::GenerateCube(const Poldata          *pd,
         {
             std::string buf = gmx::formatString("Potential generated by %s based on %s charges",
                                                 gentop_version,
-                                                getEemtypeName(iChargeModel));
+                                                chargeTypeName(iChargeType).c_str());
             QgenResp_->writeHisto(hisfn, buf, oenv);
         }
         if (difffn || diffhistfn)
         {
             std::string buf = gmx::formatString("Potential difference generated by %s based on %s charges",
                                                 gentop_version,
-                                                getEemtypeName(iChargeModel));
+                                                chargeTypeName(iChargeType).c_str());
 
             QgenResp_->writeDiffCube(grref, difffn, diffhistfn, buf, oenv, 0);
         }

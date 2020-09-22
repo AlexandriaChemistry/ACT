@@ -154,15 +154,15 @@ void mtop_update_cgs(gmx_mtop_t *mtop);
 
 void put_in_box(int natom, matrix box, rvec x[], real dbox);
 
-void write_zeta_q(FILE                   *fp,
-                  QgenAcm                *qgen,
-                  t_atoms                *atoms,
-                  ChargeModel iChargeModel);
+void write_zeta_q(FILE       *fp,
+                  QgenAcm    *qgen,
+                  t_atoms    *atoms,
+                  ChargeType  iChargeType);
 
-void write_zeta_q2(QgenAcm                *qgen,
-                   gpp_atomtype_t          atype,
-                   t_atoms                *atoms,
-                   ChargeModel iChargeModel);
+void write_zeta_q2(QgenAcm        *qgen,
+                   gpp_atomtype_t  atype,
+                   t_atoms        *atoms,
+                   ChargeType      iChargeType);
 
 int get_subtype(directive d, int ftype);
 

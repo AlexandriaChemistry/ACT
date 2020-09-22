@@ -94,17 +94,19 @@ class QgenResp
         //! Copy constructor
         QgenResp(const QgenResp *src);
         
-        ChargeModel chargeDistributionModel()
-        { return iDistributionModel_; }
+        ChargeType chargeType() const { return ChargeType_; }
 
-        /*! \brief Set options for ESP charge generation
+        /*! \brief Set option for ESP charge generation
          *
-         * \param[in] c          Charge distribution model
-         * \param[in] watoms     Weighting factor for atoms in ESP fit
+         * \param[in] qd Charge distribution type
          */
-        void setChargeModel(ChargeModel qd)
-        { iDistributionModel_ = qd; }
+        void setChargeType(ChargeType qd)
+        { ChargeType_ = qd; }
 
+        /*! \brief Set option for ESP charge generation
+         *
+         * \param[in] watoms Weighting factor for atoms in ESP fit
+         */
         void setAtomWeight(real watoms) { watoms_ = watoms; }
 
         real getMolecularCharge() const { return qtot_; }
@@ -260,7 +262,7 @@ class QgenResp
 
         double calcPenalty();
 
-        ChargeModel   iDistributionModel_;
+        ChargeType                ChargeType_;
         double                    watoms_;
         int                       qtot_;
         int                       qshell_;

@@ -81,7 +81,7 @@ QgenResp::QgenResp()
 
 QgenResp::QgenResp(const QgenResp *src)
 {
-    iDistributionModel_ = src->iDistributionModel_;      
+    ChargeType_         = src->ChargeType_;      
     watoms_             = src->watoms_;                  
     qtot_               = src->qtot_;                    
     qshell_             = src->qshell_;                  
@@ -476,11 +476,11 @@ void QgenResp::calcRho()
             int                  atype = ra.atype();
             RespAtomTypeIterator rat   = findRAT(atype);
             GMX_RELEASE_ASSERT(rat != endRAT(), "Cannot find atomtype");
-            if (getEemtypeGaussian(iDistributionModel_))
+            if (eqtGaussian == ChargeType_)
             {
                 vv = ra.q()*Nuclear_GG(r, rat->beginRZ()->zeta());
             }
-            else if (getEemtypeSlater(iDistributionModel_))
+            else if (eqtSlater == ChargeType_)
             {
                 vv = ra.q()*Nuclear_SS(r,
                                        rat->beginRZ()->row(),
@@ -488,7 +488,8 @@ void QgenResp::calcRho()
             }
             else
             {
-                gmx_fatal(FARGS, "Unsupported charge model %d", iDistributionModel_);
+                gmx_fatal(FARGS, "Unsupported charge model %s",
+                          chargeTypeName(ChargeType_).c_str());
             }
             V  += vv;
         }
@@ -663,7 +664,7 @@ real QgenResp::getRms(real *wtot, real *rrms, real *cosangle)
 }
 
 
-static double calcJ(ChargeModel iChargeModel,
+static double calcJ(ChargeType  chargeType,
                     rvec        espx,
                     rvec        rax,
                     double      zeta,
@@ -678,17 +679,17 @@ static double calcJ(ChargeModel iChargeModel,
     r = norm(dx);
     if (zeta <= 0)
     {
-        iChargeModel = eqdESP_p;
+        chargeType = eqtPoint;
     }
     if (watoms == 0 && r == 0)
     {
         gmx_fatal(FARGS, "Zero distance between the atom and the grid.");
     }
-    if (getEemtypeGaussian(iChargeModel))
+    if (eqtGaussian == chargeType)
     {
         eTot = Nuclear_GG(r, zeta);
     }
-    else if (getEemtypeSlater(iChargeModel))
+    else if (eqtSlater == chargeType)
     {
         eTot = Nuclear_SS(r, row, zeta);
     }
@@ -725,7 +726,7 @@ void QgenResp::calcPot(double epsilonr)
                 for (auto k = rat->beginRZ(); k < rat->endRZ(); ++k)
                 {
                     auto q    = ra.q();
-                    auto epot = calcJ(iDistributionModel_, espx, rax, k->zeta(), watoms_, k->row());
+                    auto epot = calcJ(ChargeType_, espx, rax, k->zeta(), watoms_, k->row());
                     qtot += q;
                     if (debug)
                     {
@@ -780,7 +781,7 @@ void QgenResp::optimizeCharges(double epsilonr)
                 double value = lhs.get(i, j);
                 for (auto k = rat->beginRZ(); k < rat->endRZ(); ++k)
                 {
-                    auto pot = calcJ(iDistributionModel_, espx, rax, k->zeta(), watoms_, k->row());
+                    auto pot = calcJ(ChargeType_, espx, rax, k->zeta(), watoms_, k->row());
                     value += scale_factor*pot;
                 }
                 lhs.set(i, j, value);
@@ -796,7 +797,7 @@ void QgenResp::optimizeCharges(double epsilonr)
                 auto espx  = ep_[j].esp();
                 for (auto k = rat->beginRZ(); k < rat->endRZ(); ++k)
                 {
-                    auto pot = calcJ(iDistributionModel_, espx, rax, k->zeta(), watoms_, k->row());
+                    auto pot = calcJ(ChargeType_, espx, rax, k->zeta(), watoms_, k->row());
                     auto q   = k->q();
                     rhs[j]  -= (scale_factor*q*pot);
                 }

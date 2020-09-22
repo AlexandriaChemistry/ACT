@@ -192,11 +192,11 @@ TEST_F (PoldataTest, Verstraelen)
 TEST_F (PoldataTest, chi)
 {
     std::vector<double>      chi0s;
-    std::vector<ChargeModel> eqd = { eqdACM_g, eqdACM_pg };
+    std::vector<std::string> eqd = { "ACM-g", "ACM-pg" };
 
-    for (auto model : eqd)
+    for (auto type : eqd)
     {
-        auto pd       = getPoldata(model);
+        auto pd       = getPoldata(type);
         auto fa       = pd->findAtype("ha");
         GMX_RELEASE_ASSERT(fa != pd->getAtypeEnd(), "Can not find ha");
         auto atomName = fa->getType();
@@ -224,8 +224,8 @@ TEST_F (PoldataTest, row){
 
 TEST_F (PoldataTest, zeta)
 {
-    std::vector<double>                  zetas;
-    std::vector<ChargeModel>             eqd = { eqdACM_pg, eqdESP_ps };
+    std::vector<double>      zetas;
+    std::vector<std::string> eqd = { "ACM-pg", "ESP-ps" };
 
     for (auto model : eqd)
     {
@@ -239,17 +239,17 @@ TEST_F (PoldataTest, zeta)
     checker_.checkSequence(zetas.begin(), zetas.end(), "zeta");
 }
 
-TEST_F (PoldataTest, chargeModel)
+TEST_F (PoldataTest, chargeType)
 {
-    std::vector<ChargeModel> eqd = { eqdESP_pp, eqdESP_pg, eqdESP_ps };
+    std::vector<std::string> eqd = { "ESP-pp", "ESP-pg", "ESP-ps" };
 
     std::vector<std::string> forces;
     for (auto model : eqd)
     {
         auto mypd = getPoldata(model);
-        forces.push_back(getEemtypeName(mypd->getChargeModel()));
+        forces.push_back(chargeTypeName(mypd->chargeType()));
     }
-    checker_.checkSequence(forces.begin(), forces.end(), "chargeModel");
+    checker_.checkSequence(forces.begin(), forces.end(), "chargeType");
 }
 
 

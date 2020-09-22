@@ -29,15 +29,9 @@
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include <map>
 
-#include "gromacs/utility/exceptions.h"
 #include "programs/alexandria/poldata.h"
-#include "programs/alexandria/poldata_low.h"
-#include "programs/alexandria/poldata_xml.h"
 
 //! Return testing poldata structure
 alexandria::Poldata *getPoldata(std::string qdist);
 
-//! Return testing poldata structure
-alexandria::Poldata *getPoldata(alexandria::ChargeModel qdist);

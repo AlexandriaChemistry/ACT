@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <!DOCTYPE gentop.dtd PUBLIC "gentop.dtd" "gentop.dtd">
 <gentop>
-  <atomtypes chargemodel="Rappe" version="2019" function="LJ_SR" combination_rule="Geometric" nexclusions="2">
+  <atomtypes chargetype="Slater" chargegenerationalgorithm="EEM" version="2019" vanderwaals="LJ_SR" combination_rule="Geometric" nexclusions="2">
     <atomtype elem="H" description="hydrogen on aliphatic C with 1 electron-withdrawal group" atype="h1" ptype="p_ha" btype="b_h1" ztype="H" vdwparams="2.471350e-01 6.568880e-02" ref_enthalpy="222.2325"/>
     <atomtype elem="H" description="hydrogen on aliphatic C with 2 electron-withdrawal groups" atype="h2" ptype="p_ha" btype="b_h1" ztype="H" vdwparams="2.293170e-01 6.568880e-02" ref_enthalpy="222.2325"/>
     <atomtype elem="H" description="hydrogen on aliphatic C with 3 electron-withdrawal groups" atype="h3" ptype="p_ha" btype="b_h1" ztype="H" vdwparams="2.114990e-01 6.568880e-02" ref_enthalpy="222.2325"/>

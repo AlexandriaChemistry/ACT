@@ -62,6 +62,18 @@ void Poldata::setFilename(const std::string &fn2)
     filename_ = fn2;
 }
 
+bool Poldata::yang() const
+{
+    // Note that this is not a good way of doing things. Filenames may change.
+    return (filename_.find("Yang.dat") != std::string::npos);
+}
+
+bool Poldata::rappe() const
+{
+    // Note that this is not a good way of doing things. Filenames may change.
+    return (filename_.find("Rappe.dat") != std::string::npos);
+}
+
 /*
  *-+-+-+-+-+-+-+-+-+-+-+
  * Atom STUFF
@@ -283,6 +295,7 @@ void Poldata::addPtype(const std::string &ptype,
     {
         Ptype sp(ptype, miller, bosque, polarizability, sigPol);
         ptype_.push_back(sp);
+        polarizable_ = true;
     }
     else
     {
@@ -814,7 +827,8 @@ CommunicationStatus Poldata::Send(const t_commrec *cr, int dest)
         gmx_send_str(cr, dest, &bosqueRef_);
         gmx_send_str(cr, dest, &vsite_angle_unit_);
         gmx_send_str(cr, dest, &vsite_length_unit_);
-        gmx_send_int(cr, dest, static_cast<int>(ChargeModel_));
+        gmx_send_int(cr, dest, static_cast<int>(ChargeType_));
+        gmx_send_int(cr, dest, static_cast<int>(ChargeGenerationAlgorithm_));
         gmx_send_str(cr, dest, &eepReference_);
 
         /* Send ptype */
@@ -912,11 +926,12 @@ CommunicationStatus Poldata::Receive(const t_commrec *cr, int src)
         gmx_recv_str(cr, src, &bosqueRef_);
         gmx_recv_str(cr, src, &vsite_angle_unit_);
         gmx_recv_str(cr, src, &vsite_length_unit_);
-        ChargeModel_          = static_cast<ChargeModel>(gmx_recv_int(cr, src));
+        ChargeType_                = static_cast<ChargeType>(gmx_recv_int(cr, src));
+        ChargeGenerationAlgorithm_ = static_cast<ChargeGenerationAlgorithm>(gmx_recv_int(cr, src));
         gmx_recv_str(cr, src, &eepReference_);
 
         /* Receive ptype */
-        int nptype = gmx_recv_int(cr, src);
+        size_t nptype = gmx_recv_int(cr, src);
         ptype_.clear();
         for (size_t n = 0; (CS_OK == cs) && (n < nptype); n++)
         {
@@ -929,7 +944,7 @@ CommunicationStatus Poldata::Receive(const t_commrec *cr, int src)
         }
 
         /* Rceive Ffatype */
-        int nalexandria = gmx_recv_int(cr, src);
+        size_t nalexandria = gmx_recv_int(cr, src);
         alexandria_.clear();
         for (size_t n = 0; (CS_OK == cs) && (n < nalexandria); n++)
         {
@@ -942,7 +957,7 @@ CommunicationStatus Poldata::Receive(const t_commrec *cr, int src)
         }
 
         /* Receive Vsites */
-        int nvsite = gmx_recv_int(cr, src);
+        size_t nvsite = gmx_recv_int(cr, src);
         vsite_.clear();
         for (size_t n = 0; (CS_OK == cs) && (n < nvsite); n++)
         {
@@ -955,7 +970,7 @@ CommunicationStatus Poldata::Receive(const t_commrec *cr, int src)
         }
 
         /* Receive btype */
-        int nbtype = gmx_recv_int(cr, src);
+        size_t nbtype = gmx_recv_int(cr, src);
         btype_.clear();
         for (size_t n = 0; (CS_OK == cs) && (n < nbtype); n++)
         {
@@ -968,7 +983,7 @@ CommunicationStatus Poldata::Receive(const t_commrec *cr, int src)
         }
 
         /* Receive Listed Forces */
-        int nforces           = gmx_recv_int(cr, src);
+        size_t nforces           = gmx_recv_int(cr, src);
         forces_.clear();
         for (size_t n = 0; (CS_OK == cs) && (n < nforces); n++)
         {
@@ -981,7 +996,7 @@ CommunicationStatus Poldata::Receive(const t_commrec *cr, int src)
         }
 
         /* Receive Miller */
-        int nmiller           = gmx_recv_int(cr, src);
+        size_t nmiller           = gmx_recv_int(cr, src);
         miller_.clear();
         for (size_t n = 0; (CS_OK == cs) && (n < nmiller); n++)
         {
@@ -994,7 +1009,7 @@ CommunicationStatus Poldata::Receive(const t_commrec *cr, int src)
         }
 
         /* Receive Bosque */
-        int nbosque = gmx_recv_int(cr, src);
+        size_t nbosque = gmx_recv_int(cr, src);
         bosque_.clear();
         for (size_t n = 0; (CS_OK == cs) && (n < nbosque); n++)
         {
@@ -1007,7 +1022,7 @@ CommunicationStatus Poldata::Receive(const t_commrec *cr, int src)
         }
 
         /* Receive Symcharges */
-        int nsymcharges = gmx_recv_int(cr, src);
+        size_t nsymcharges = gmx_recv_int(cr, src);
         symcharges_.clear();
         for (size_t n = 0; (CS_OK == cs) && (n < nsymcharges); n++)
         {
@@ -1020,7 +1035,7 @@ CommunicationStatus Poldata::Receive(const t_commrec *cr, int src)
         }
 
         /* Receive Eemprops */
-        int neep = gmx_recv_int(cr, src);
+        size_t neep = gmx_recv_int(cr, src);
         eep_.clear();
         for (size_t n = 0; (CS_OK == cs) && (n < neep); n++)
         {
@@ -1032,7 +1047,7 @@ CommunicationStatus Poldata::Receive(const t_commrec *cr, int src)
             }
         }
         /* Bond charge corrections */
-        int nbcc = gmx_recv_int(cr, src);
+        size_t nbcc = gmx_recv_int(cr, src);
         bondCorr_.clear();
         for (size_t n = 0; (CS_OK == cs) && (n < nbcc); n++)
         {

@@ -75,8 +75,8 @@ set(ALEXANDRIA_SOURCES
            tune_eem.cpp
            tune_fc.cpp
            tune_fc_utils.cpp
-           tune_pol.cpp
-           tune_zeta.cpp
+#           tune_pol.cpp
+#           tune_zeta.cpp
 	   optparam.cpp
            communication.cpp
            tuning_utility.cpp          

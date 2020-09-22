@@ -32,57 +32,97 @@
 
 #include "chargemodel.h"
 
+#include <algorithm>
 #include <map>
 #include <string>
+
+#include "gromacs/utility/gmxassert.h"
+
+bool iequals(const string& a, const string& b)
+{
+    return std::equal(a.begin(), a.end(), b.begin(),
+                      [](char a, char b) {
+                          return tolower(a) == tolower(b);
+                      });
+}
 
 namespace alexandria
 {
 
-std::map<ChargeModel, const std::string> cmNames =
+std::map<ChargeType, const std::string> ct2Name =
     {
-     { eqdESP_p,       "ESP-p"       },
-     { eqdESP_pp,      "ESP-pp"      },
-     { eqdESP_pg,      "ESP-pg"      },
-     { eqdESP_ps,      "ESP-ps"      },
-     { eqdACM_g,       "ACM-g"       },
-     { eqdACM_s,       "ACM-s"       },
-     { eqdACM_pg,      "ACM-pg"      },
-     { eqdACM_ps,      "ACM-ps"      },
-     { eqdACM_ppg,     "ACM-ppg"     },
-     { eqdACM_pps,     "ACM-pps"     },
-     { eqdYang,        "Yang"        },
-     { eqdBultinck,    "Bultinck"    },
-     { eqdRappe,       "Rappe"       },
-     { eqdVerstraelen, "Verstraelen" }
+        { eqtPoint,    "Point"    },
+        { eqtGaussian, "Gaussian" },
+        { eqtSlater,   "Slater"   }
     };
 
-std::map<const std::string, ChargeModel> cmEEM;
+std::map<const std::string, ChargeType> name2CT;
 
-ChargeModel name2eemtype(const std::string &name)
+ChargeType name2ChargeType(const std::string &name)
 {
-    if (cmEEM.size() == 0)
+    if (name2CT.empty())
     {
-        for(auto &k : cmNames)
+        for(auto &k : ct2Name)
         {
-            cmEEM.emplace(k.second, k.first);
+            name2CT.emplace(k.second, k.first);
         }
     }
-    auto cc = cmEEM.find(name);
-    if (cc != cmEEM.end())
+    auto cc = name2CT.find(name);
+    if (cc != name2CT.end())
     {
         return cc->second;
     }
-    return eqdNR;
+    fprintf(stderr, "Unknown charge type %s. Please fix your input.\n",
+            name.c_str());
+    return eqtNR;
 }
 
-const char *getEemtypeName(ChargeModel eem)
+const std::string &chargeTypeName(ChargeType ct)
 {
-    auto cm = cmNames.find(eem);
-    if (cm != cmNames.end())
+    auto cc = ct2Name.find(ct);
+
+    GMX_RELEASE_ASSERT(cc != ct2Name.end(), "Internal error.");
+    
+    return cc->second;
+}
+
+std::map<ChargeGenerationAlgorithm, const std::string> cg2Name =
     {
-        return cm->second.c_str();
+        { eqgNONE, "None" },
+        { eqgEEM,  "EEM"  },
+        { eqgSQE,  "SQE"  },
+        { eqgESP,  "ESP"  },
+        { eqgNR,   "Incorrect - Fix me" }
+    };
+
+std::map<const std::string, ChargeGenerationAlgorithm> name2CG;
+
+ChargeGenerationAlgorithm name2ChargeGenerationAlgorithm(const std::string &name)
+{
+    if (name2CG.empty())
+    {
+        for(auto &k : cg2Name)
+        {
+            name2CG.emplace(k.second, k.first);
+        }
     }
-    return nullptr;
+    auto cc = name2CG.find(name);
+    if (cc != name2CG.end())
+    {
+        return cc->second;
+    }
+    fprintf(stderr, "Unknown charge generation algorithm %s. Please fix your input.\n",
+            name.c_str());
+    return eqgNR;
+}
+
+const std::string &chargeGenerationAlgorithmName(ChargeGenerationAlgorithm cg)
+{
+    auto cc = cg2Name.find(cg);
+
+    GMX_RELEASE_ASSERT(cc != cg2Name.end(), "Internal error.");
+    
+    return cc->second;
 }
 
 } // namespace alexandria

@@ -165,7 +165,7 @@ static void gmx_unused wbk(double r,   double eps, double sig,
 
 static void gmx_unused gen_alexandria_rho(Poldata                 &pd,
                                           const char             *fn,
-                                          ChargeModel iDistributionModel,
+                                          ChargeType              iType,
                                           real                    rcut,
                                           real                    spacing,
                                           const gmx_output_env_t *oenv)
@@ -189,7 +189,7 @@ static void gmx_unused gen_alexandria_rho(Poldata                 &pd,
     nmax = 1+(int)(rcut/spacing);
     for (auto eep = pd.getEemprops().begin(); eep != pd.getEemprops().end(); eep++)
     {
-        if (pd.getChargeModel() == iDistributionModel)
+        if (pd.chargeType() == iType)
         {
             name  = eep->getName();        
             nzeta = pd.getNzeta(name);
@@ -204,19 +204,17 @@ static void gmx_unused gen_alexandria_rho(Poldata                 &pd,
                 q[j]    = pd.getQ(name, j);
                 qtot   += q[j];
                 row[j]  = pd.getRow(name, j);
-                switch (iDistributionModel)
+                switch (iType)
                 {
-                    case eqdACM_g:
-                    case eqdACM_pg:
-                    case eqdESP_pg:
-                        A[j] = pow(zeta[j]*zeta[j]/M_PI, 1.5);
-                        break;
-                    case eqdESP_ps:
-                        A[j] = pow(2*zeta[j], 2*row[j]+1)/(4*M_PI*faculty(2*row[j]));
-                        break;
-                    default:
-                        gmx_fatal(FARGS, "Don't know how to handle model %s",
-                                  getEemtypeName(pd.getChargeModel()));
+                case eqtGaussian:
+                    A[j] = pow(zeta[j]*zeta[j]/M_PI, 1.5);
+                    break;
+                case eqtSlater:
+                    A[j] = pow(2*zeta[j], 2*row[j]+1)/(4*M_PI*faculty(2*row[j]));
+                    break;
+                default:
+                    gmx_fatal(FARGS, "Don't know how to handle model %s",
+                              chargeTypeName(pd.chargeType()).c_str());
                 }
             }
             if (q[nzeta-1] == 0)
@@ -233,19 +231,17 @@ static void gmx_unused gen_alexandria_rho(Poldata                 &pd,
                 {
                     if (zeta[j] > 0)
                     {
-                        switch (iDistributionModel)
+                        switch (iType)
                         {
-                            case eqdACM_g:
-                            case eqdACM_pg:
-                            case eqdESP_pg:
-                                rho += A[j]*exp(-gmx::square(rr*zeta[j]));
-                                break;
-                            case eqdESP_ps:
-                                rho += A[j]*pow(rr, 2*row[j]-2)*exp(-2*zeta[j]*rr);
-                                break;
-                            default:
-                                gmx_fatal(FARGS, "Don't know how to handle model %s",
-                                          getEemtypeName(iDistributionModel));
+                        case eqtGaussian:
+                            rho += A[j]*exp(-gmx::square(rr*zeta[j]));
+                            break;
+                        case eqtSlater:
+                            rho += A[j]*pow(rr, 2*row[j]-2)*exp(-2*zeta[j]*rr);
+                            break;
+                        default:
+                            gmx_fatal(FARGS, "Don't know how to handle model %s",
+                                      chargeTypeName(iType).c_str());
                         }
                     }
                 }
@@ -267,7 +263,7 @@ static void gen_alexandria_tables(Poldata                 &pd,
                                   const gmx_output_env_t  *oenv,
                                   char                    *atypes)
 {
-    ChargeModel  iDistributionModel = pd.getChargeModel();
+    ChargeType   iType = pd.chargeType();
                                   
     double       cv = 0;
     double       cf = 0;
@@ -327,42 +323,37 @@ static void gen_alexandria_tables(Poldata                 &pd,
                     for (auto n = 0; n <= nmax; n++)
                     {
                         rr = n*spacing;
-                        switch (iDistributionModel)
+                        switch (iType)
                         {
-                            case eqdESP_p:
-                            case eqdESP_pp:
-                                cv = Coulomb_PP(rr);
-                                cf = DCoulomb_PP(rr);
-                                break;
-                            case eqdACM_g:
-                            case eqdACM_pg:
-                            case eqdESP_pg:
-                                cv = Coulomb_GG(rr, zetaI, zetaJ);
-                                if (zetaI == 0 && zetaJ == 0 && rr != 0)
-                                {
-                                    cf = -DCoulomb_GG(rr, zetaI, zetaJ);
-                                }
-                                else
-                                {
-                                    cf = DCoulomb_GG(rr, zetaI, zetaJ);
-                                }
-                                break;
-                            case eqdESP_ps:
-                            case eqdRappe:
-                            case eqdYang:
-                                cv = Coulomb_SS(rr, rowI, rowJ, zetaI, zetaJ);
-                                if (rowI == 0 && rowJ == 0 && rr !=0)
-                                {
-                                    cf = -DCoulomb_SS(rr, rowI, rowJ, zetaI, zetaJ);
-                                }
-                                else
-                                {
-                                    cf = DCoulomb_SS(rr, rowI, rowJ, zetaI, zetaJ);
-                                }
-                                break;
-                            default:
-                                gmx_fatal(FARGS, "Don't know how to handle model %s",
-                                          getEemtypeName(iDistributionModel));
+                        case eqtPoint:
+                            cv = Coulomb_PP(rr);
+                            cf = DCoulomb_PP(rr);
+                            break;
+                        case eqtGaussian:
+                            cv = Coulomb_GG(rr, zetaI, zetaJ);
+                            if (zetaI == 0 && zetaJ == 0 && rr != 0)
+                            {
+                                cf = -DCoulomb_GG(rr, zetaI, zetaJ);
+                            }
+                            else
+                            {
+                                cf = DCoulomb_GG(rr, zetaI, zetaJ);
+                            }
+                            break;
+                        case eqtSlater:
+                            cv = Coulomb_SS(rr, rowI, rowJ, zetaI, zetaJ);
+                            if (rowI == 0 && rowJ == 0 && rr !=0)
+                            {
+                                cf = -DCoulomb_SS(rr, rowI, rowJ, zetaI, zetaJ);
+                            }
+                            else
+                            {
+                                cf = DCoulomb_SS(rr, rowI, rowJ, zetaI, zetaJ);
+                            }
+                            break;
+                        default:
+                            gmx_fatal(FARGS, "Don't know how to handle model %s",
+                                      chargeTypeName(iType).c_str());
                         }
                         if (rr > 0)
                         {

@@ -78,100 +78,102 @@ const char *xmltypes[] = {
 #define NXMLTYPES sizeof(xmltypes)/sizeof(xmltypes[0])
 
 enum {
-    exmlGENTOP             = 0,
-    exmlREFERENCE          = 1,
-    exmlATOMTYPES          = 2,
-    exmlATOMTYPE           = 3,
-    exmlCHARGEMODEL        = 4,
-    exmlPOLAR_UNIT         = 5,
-    exmlCOMB_RULE          = 6,
-    exmlNEXCL              = 7,
-    exmlVERSION            = 8,
-    exmlEPSILONR           = 9,
-    exmlPOLTYPES           = 10,
-    exmlPOLTYPE            = 11,
-    exmlPTYPE              = 12,
-    exmlELEM               = 13,
-    exmlNAME               = 14,
-    exmlDESC               = 15,
-    exmlATYPE              = 16,
-    exmlMILLER             = 17,
-    exmlVALENCE            = 18,
-    exmlBOSQUE             = 19,
-    exmlBTYPE              = 20,
-    exmlZTYPE              = 21,
-    exmlNEIGHBORS          = 22,
-    exmlAROMATIC           = 23,
-    exmlGEOMETRY           = 24,
-    exmlNUMBONDS           = 25,
-    exmlPOLARIZABILITY     = 26,
-    exmlPOLARIZABILITY_SIGMA = 27,
-    exmlVDWPARAMS          = 28,
-    exmlEREF               = 29,
-    exmlFUNCTION           = 30,
-    exmlINTERACTION        = 31,
-    exmlATOM1              = 32,
-    exmlATOM2              = 33,
-    exmlATOM3              = 34,
-    exmlATOM4              = 35,
-    exmlSIGMA              = 36,
-    exmlBONDORDER          = 37,
-    exmlPARAMS             = 38,
-    exmlREFVALUE           = 39,
-    exmlUNIT               = 40,
-    exmlNTRAIN             = 41,
-    exmlGT_VSITES          = 42,
-    exmlGT_VSITE           = 43,
-    exmlGT_BONDS           = 44,
-    exmlGT_BOND            = 45,
-    exmlGT_ANGLES          = 46,
-    exmlGT_ANGLE           = 47,
-    exmlGT_DIHEDRALS       = 48,
-    exmlGT_DIHEDRAL        = 49,
-    exmlGT_IMPROPERS       = 50,
-    exmlGT_IMPROPER        = 51,
-    exmlBSATOMS            = 52,
-    exmlBSATOM             = 53,
-    exmlMILATOMS           = 54,
-    exmlTAU_UNIT           = 55,
-    exmlAHP_UNIT           = 56,
-    exmlMILATOM            = 57,
-    exmlMILNAME            = 58,
-    exmlALEXANDRIA_EQUIV   = 59,
-    exmlATOMNUMBER         = 60,
-    exmlTAU_AHC            = 61,
-    exmlALPHA_AHP          = 62,
-    exmlSYMMETRIC_CHARGES  = 63,
-    exmlSYM_CHARGE         = 64,
-    exmlCENTRAL            = 65,
-    exmlATTACHED           = 66,
-    exmlNUMATTACH          = 67,
-    exmlEEMPROPS           = 68,
-    exmlEEMPROP            = 69,
-    exmlMODEL              = 70,
-    exmlJ0                 = 71,
-    exmlJ0_SIGMA           = 72,
-    exmlCHI0               = 73,
-    exmlCHI0_SIGMA         = 74,
-    exmlZETA               = 75,
-    exmlZETA_SIGMA         = 76,
-    exmlROW                = 77,
-    exmlCHARGES            = 80,
-    exmlREF_CHARGES        = 81,
-    exmlANGLE_UNIT         = 82,
-    exmlLENGTH_UNIT        = 83,
-    exmlDISTANCE           = 84,
-    exmlNCONTROLATOMS      = 85,
-    exmlNUMBER             = 86,
-    exmlVTYPE              = 87,
-    exmlANGLE              = 88,
-    exmlFIXED              = 89,
-    exmlBONDCORRECTION     = 90,
-    exmlHARDNESS           = 91,
-    exmlELECTRONEGATIVITY  = 92,
-    exmlHARDNESS_SIGMA     = 93,
-    exmlELECTRONEGATIVITY_SIGMA = 94,
-    exmlNR                 = 95
+    exmlGENTOP,
+    exmlREFERENCE,
+    exmlATOMTYPES,
+    exmlATOMTYPE, 
+    exmlCHARGETYPE,
+    exmlPOLAR_UNIT,
+    exmlCOMB_RULE,
+    exmlNEXCL,
+    exmlVERSION,
+    exmlEPSILONR,
+    exmlPOLTYPES,
+    exmlPOLTYPE,
+    exmlPTYPE,
+    exmlELEM,
+    exmlNAME,
+    exmlDESC,
+    exmlATYPE,
+    exmlMILLER,
+    exmlVALENCE,
+    exmlBOSQUE,
+    exmlBTYPE,
+    exmlZTYPE,
+    exmlNEIGHBORS,
+    exmlAROMATIC,
+    exmlGEOMETRY,
+    exmlNUMBONDS,
+    exmlPOLARIZABILITY,
+    exmlPOLARIZABILITY_SIGMA,
+    exmlVDWPARAMS,
+    exmlEREF,
+    exmlVANDERWAALS,
+    exmlINTERACTION,
+    exmlATOM1,
+    exmlATOM2,
+    exmlATOM3,
+    exmlATOM4,
+    exmlSIGMA,
+    exmlBONDORDER,
+    exmlPARAMS,
+    exmlREFVALUE,
+    exmlUNIT,
+    exmlNTRAIN,
+    exmlGT_VSITES,
+    exmlGT_VSITE,
+    exmlGT_BONDS,
+    exmlGT_BOND,
+    exmlGT_ANGLES,
+    exmlGT_ANGLE,
+    exmlGT_DIHEDRALS,
+    exmlGT_DIHEDRAL,
+    exmlGT_IMPROPERS,
+    exmlGT_IMPROPER,
+    exmlBSATOMS,
+    exmlBSATOM,
+    exmlMILATOMS,
+    exmlTAU_UNIT,
+    exmlAHP_UNIT,
+    exmlMILATOM,
+    exmlMILNAME,
+    exmlALEXANDRIA_EQUIV,
+    exmlATOMNUMBER,
+    exmlTAU_AHC,
+    exmlALPHA_AHP,
+    exmlSYMMETRIC_CHARGES,
+    exmlSYM_CHARGE,
+    exmlCENTRAL,
+    exmlATTACHED,
+    exmlNUMATTACH,
+    exmlEEMPROPS,
+    exmlEEMPROP,
+    exmlMODEL,
+    exmlJ0,
+    exmlJ0_SIGMA,
+    exmlCHI0,
+    exmlCHI0_SIGMA,
+    exmlZETA,
+    exmlZETA_SIGMA,
+    exmlROW,
+    exmlCHARGEGENERATIONALGORITHM,
+    exmlCHARGES,
+    exmlREF_CHARGES,
+    exmlANGLE_UNIT,
+    exmlLENGTH_UNIT,
+    exmlDISTANCE,
+    exmlNCONTROLATOMS,
+    exmlNUMBER,
+    exmlVTYPE,
+    exmlANGLE,
+    exmlFIXED,
+    exmlBONDCORRECTION,
+    exmlHARDNESS,
+    exmlELECTRONEGATIVITY,
+    exmlHARDNESS_SIGMA,
+    exmlELECTRONEGATIVITY_SIGMA,
+    exmlFUNCTION,
+    exmlNR
 };
 
 std::map<const std::string, int> xmlxxx =
@@ -180,8 +182,10 @@ std::map<const std::string, int> xmlxxx =
     { "reference",              exmlREFERENCE        },
     { "atomtypes",              exmlATOMTYPES        },
     { "atomtype",               exmlATOMTYPE         },
-    { "chargemodel",            exmlCHARGEMODEL      },
+    { "chargetype",             exmlCHARGETYPE       },
+    { "chargegenerationalgorithm", exmlCHARGEGENERATIONALGORITHM  },
     { "version",                exmlVERSION          },
+    { "function",               exmlFUNCTION         },
     { "polarizability_unit",    exmlPOLAR_UNIT       },
     { "combination_rule",       exmlCOMB_RULE        },
     { "nexclusions",            exmlNEXCL            },
@@ -207,7 +211,7 @@ std::map<const std::string, int> xmlxxx =
     { "fixed",                  exmlFIXED            },
     { "vdwparams",              exmlVDWPARAMS        },
     { "ref_enthalpy",           exmlEREF             },
-    { "function",               exmlFUNCTION         },
+    { "vanderwaals",            exmlVANDERWAALS      },
     { "interaction",            exmlINTERACTION      },
     { "atom1",                  exmlATOM1            },
     { "atom2",                  exmlATOM2            },
@@ -385,17 +389,21 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
             }
             break;
         case exmlATOMTYPES:
-            if (NNobligatory(xbuf, exmlCHARGEMODEL))
+            if (NNobligatory(xbuf, exmlCHARGETYPE))
             {
-                pd.setChargeModel(xbuf[exmlCHARGEMODEL]);
+                pd.setChargeType(xbuf[exmlCHARGETYPE]);
+            }
+            if (NNobligatory(xbuf, exmlCHARGEGENERATIONALGORITHM))
+            {
+                pd.setChargeGenerationAlgorithm(xbuf[exmlCHARGEGENERATIONALGORITHM]);
             }
             if (NNobligatory(xbuf, exmlVERSION))
             {
                 pd.setVersion(xbuf[exmlVERSION]);
             }
-            if (NNobligatory(xbuf, exmlFUNCTION))
+            if (NNobligatory(xbuf, exmlVANDERWAALS))
             {
-                pd.setVdwFunction(xbuf[exmlFUNCTION]);
+                pd.setVdwFunction(xbuf[exmlVANDERWAALS]);
             }
             if (NNobligatory(xbuf, exmlCOMB_RULE))
             {
@@ -771,8 +779,10 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd)
     std::string  tmp, func, blu;
 
     child = add_xml_child(parent, exml_names(exmlATOMTYPES));
-    add_xml_char(child, exml_names(exmlCHARGEMODEL),
-                 getEemtypeName(pd->getChargeModel()));
+    add_xml_char(child, exml_names(exmlCHARGETYPE),
+                 chargeTypeName(pd->chargeType()).c_str());
+    add_xml_char(child, exml_names(exmlCHARGEGENERATIONALGORITHM),
+                 chargeGenerationAlgorithmName(pd->chargeGenerationAlgorithm()).c_str());
     tmp   = pd->getVersion();
     if (0 != tmp.size())
     {
@@ -781,7 +791,7 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd)
     tmp = pd->getVdwFunction();
     if (0 != tmp.size())
     {
-        add_xml_char(child, exml_names(exmlFUNCTION), tmp.c_str());
+        add_xml_char(child, exml_names(exmlVANDERWAALS), tmp.c_str());
     }
     tmp = pd->getCombinationRule();
     if (0 != tmp.size())

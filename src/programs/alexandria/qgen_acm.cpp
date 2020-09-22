@@ -51,18 +51,18 @@
 namespace alexandria
 {
 
-QgenAcm::QgenAcm(const Poldata          *pd,
-                 t_atoms                *atoms,
-                 int                     qtotal)
+QgenAcm::QgenAcm(const Poldata *pd,
+                 t_atoms       *atoms,
+                 int            qtotal)
 {
     int          i, j, k, atm, nz;
     bool         bSupport = true;
     std::string  atp;
 
-    iChargeModel_   = pd->getChargeModel();
+    ChargeType_     = pd->chargeType();
     bWarned_        = false;
     bAllocSave_     = false;
-    bHaveShell_     = getEemtypePolarizable(iChargeModel_);
+    bHaveShell_     = pd->polarizable();
     eQGEN_          = eQGEN_OK;
     chieq_          = 0;
     Jcs_            = 0;
@@ -144,9 +144,9 @@ QgenAcm::QgenAcm(const Poldata          *pd,
                     q_[j][k]    = eem->getQ(k);
                     row_[j][k]  = eem->getRow(k);
                     
-                    if (getEemtypeSlater(iChargeModel_)) 
+                    if (ChargeType_ == eqtSlater) 
                     { 
-                        if ((k == 0 && !isCorePointCharge(iChargeModel_)) || k > 0)
+                        if ((k == 0 && !pd->corePointCharge()) || k > 0)
                         {
                             char buf[256];
                             snprintf(buf, sizeof(buf), "Row should be at least 1: atype = %s q = %g zeta = %g row = %d model = %s",
@@ -154,7 +154,7 @@ QgenAcm::QgenAcm(const Poldata          *pd,
                                      q_[j][k], 
                                      eem->getZeta(k),
                                      row_[j][k],
-                                     getEemtypeName(iChargeModel_));                         
+                                     chargeTypeName(ChargeType_).c_str());
                         }
                     }
                     
@@ -416,38 +416,41 @@ double QgenAcm::calcJ(rvec    xI,
     rvec   dx;
     double r    = 0;
     double eTot = 0;
-    ChargeModel iModel = iChargeModel_;
     rvec_sub(xI, xJ, dx);
     r = norm(dx);
     
-    if ((zetaI < 0) || (zetaJ < 0))
-    {
-        iModel = eqdESP_p;
-    }
-    if (r == 0 && (!getEemtypeDistributed(iModel)))
+    if (r == 0 && ChargeType_ == eqtPoint)
     {
         gmx_fatal(FARGS, "Zero distance between atoms!\n");
     }
-    if (!getEemtypeDistributed(iModel))
+    switch (ChargeType_)
     {
-        eTot = Coulomb_PP(r);
-    }
-    else if (getEemtypeGaussian(iModel))
-    {
-        eTot = Coulomb_GG(r, zetaI, zetaJ);
-    }
-    else if (getEemtypeSlater(iModel))
-    {
-        eTot = Coulomb_SS(r, rowI, rowJ, zetaI, zetaJ);
-    }
-    else
-    {
-        gmx_fatal(FARGS, "Unsupported model %d in calc_jcc", iModel);
+    case eqtPoint:
+        {
+            eTot = Coulomb_PP(r);
+            break;
+        }
+    case eqtGaussian:
+        {
+            eTot = Coulomb_GG(r, zetaI, zetaJ);
+            break;
+        }
+    case eqtSlater:
+        {
+            eTot = Coulomb_SS(r, rowI, rowJ, zetaI, zetaJ);
+            break;
+        }
+    default:
+        {
+            gmx_fatal(FARGS, "Unsupported model %s in calc_jcc",
+                      chargeTypeName(ChargeType_).c_str());
+        }
     }
     return (ONE_4PI_EPS0*eTot)/(epsilonr*ELECTRONVOLT);
 }
 
-void QgenAcm::calcJcc(t_atoms *atoms, double epsilonr)
+void QgenAcm::calcJcc(t_atoms *atoms, double epsilonr,
+                      bool bYang, bool bRappe)
 {
     auto Jcc = 0.0;
     auto i   = 0;
@@ -470,7 +473,7 @@ void QgenAcm::calcJcc(t_atoms *atoms, double epsilonr)
                                     row_[i][0],
                                     row_[j][0],
                                     epsilonr);
-                        if (iChargeModel_ == eqdYang)
+                        if (bYang)
                         {
                             Jcc *= calcSij(i, j);
                         }
@@ -479,9 +482,7 @@ void QgenAcm::calcJcc(t_atoms *atoms, double epsilonr)
                     else
                     {
                         auto j0 = j00_[i];
-                        if (((iChargeModel_ == eqdYang) ||
-                             (iChargeModel_ == eqdRappe)) &&
-                            (atomnr_[i] == 1))
+                        if ((bYang || bRappe) && (atomnr_[i] == 1))
                         {
                             auto zetaH = 1.0698;
                             j0 = (1+q_[i][0]/zetaH)*j0; /* Eqn. 21 in Rappe1991. */
@@ -616,7 +617,8 @@ void QgenAcm::checkSupport(const Poldata *pd)
         if (!pd->haveEemSupport(elem_[i].c_str(), true))
         {
             fprintf(stderr, "No charge generation support for atom %s, model %s\n",
-                    elem_[i].c_str(), getEemtypeName(pd->getChargeModel()));
+                    elem_[i].c_str(),
+                    chargeTypeName(pd->chargeType()).c_str());
             bSupport = false;
         }
     }
@@ -791,14 +793,14 @@ int QgenAcm::generateCharges(FILE                      *fp,
     if (fp)
     {
         fprintf(fp, "Generating charges for %s using %s algorithm\n",
-                molname.c_str(), getEemtypeName(pd->getChargeModel()));
+                molname.c_str(), chargeTypeName(pd->chargeType()).c_str());
     }
     checkSupport(pd);
     if (eQGEN_OK == eQGEN_)
     {
         updateParameters(pd);
         updatePositions(x, atoms);
-        calcJcc(atoms, pd->getEpsilonR());
+        calcJcc(atoms, pd->getEpsilonR(), pd->yang(), pd->rappe());
         if (! pd->bondCorrections().empty())
         {
             solveSQE(fp, pd, bonds);
