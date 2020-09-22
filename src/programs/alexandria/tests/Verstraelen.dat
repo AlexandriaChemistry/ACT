@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <!DOCTYPE gentop.dtd PUBLIC "gentop.dtd" "gentop.dtd">
 <gentop>
-  <atomtypes chargemodel="Verstraelen" version="2019" function="LJ_SR" combination_rule="Geometric" nexclusions="0" epsilonr="1">
+  <atomtypes chargetype="Gaussian" chargegenerationalgorithm="SQE" version="2019" vanderwaals="LJ_SR" combination_rule="Geometric" nexclusions="0" epsilonr="1">
     <atomtype elem="H" description="hydrogen on aliphatic C with 1 electron-withdrawal group" atype="h1" ptype="p_h1" btype="b_h1" ztype="H" vdwparams="2.471350e-01 6.568880e-02 1.300000e+01" ref_enthalpy="222.232"/>
     <atomtype elem="H" description="hydrogen on aliphatic C with 2 electron-withdrawal groups" atype="h2" ptype="p_h1" btype="b_h1" ztype="H" vdwparams="2.293170e-01 6.568880e-02 1.300000e+01" ref_enthalpy="222.232"/>
     <atomtype elem="H" description="hydrogen on aliphatic C with 3 electron-withdrawal groups" atype="h3" ptype="p_h1" btype="b_h1" ztype="H" vdwparams="2.114990e-01 6.568880e-02 1.300000e+01" ref_enthalpy="222.232"/>
