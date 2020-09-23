@@ -81,7 +81,6 @@ const char *vsiteType2string(VsiteType vType);
  */
 VsiteType string2vsiteType(const char *string);
 
-
 /*! \brief
  * Contains all the information realted to
  * alexandria force field atom types.

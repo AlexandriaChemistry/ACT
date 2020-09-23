@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="name">c2</String>
+  <Int Name="index">3</Int>
+  <Real Name="value">11</Real>
+  <Real Name="minimum">8</Real>
+  <Real Name="maximum">15</Real>
+  <Real Name="uncertainty">0.25</Real>
+  <String Name="mutability">Bounded</String>
+  <Bool Name="strict">true</Bool>
+</ReferenceData>
