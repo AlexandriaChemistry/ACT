@@ -125,8 +125,8 @@ TEST_F (ForceFieldParameterTest, UncertaintyNotStrict) {
     ff.setUncertainty(1.0);
 }
 
-TEST_F (ForceFieldParameterTest, UncertaintyNotStrictOriginl) {
-    ForceFieldParameter ff("c2", "ypsilon", 11.0, 0.25, 8.0, 15.0, Mutability::Fixed, false);
+TEST_F (ForceFieldParameterTest, UncertaintyNotStrictOriginal) {
+    ForceFieldParameter ff("c2", "ypsilon", 11.0, 0.25, 8.0, 15.0, Mutability::Free, false);
     ff.setUncertainty(1.0);
     runTest(ff);
 }
