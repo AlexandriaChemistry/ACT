@@ -1,12 +1,14 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <String Name="name">h3</String>
-  <Int Name="index">0</Int>
+  <String Name="identifier">h3</String>
+  <String Name="type">sigma</String>
   <Real Name="value">12</Real>
+  <Real Name="originalValue">12</Real>
   <Real Name="minimum">10</Real>
   <Real Name="maximum">18</Real>
   <Real Name="uncertainty">0.29999999999999999</Real>
+  <Real Name="originalUncertainty">0.29999999999999999</Real>
   <String Name="mutability">Free</String>
   <Bool Name="strict">false</Bool>
 </ReferenceData>

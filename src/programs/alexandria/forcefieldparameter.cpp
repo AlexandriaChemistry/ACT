@@ -39,18 +39,41 @@
 namespace alexandria
 {
 
-std::map<Mutability, const std::string> mut2string =
+static std::map<Mutability, const std::string> mut2string =
     {
         { Mutability::Fixed,   "Fixed"   },
         { Mutability::Bounded, "Bounded" },
         { Mutability::Free,    "Free"    }
     };
+
+static std::map<const std::string, Mutability> string2mut;
     
 const std::string &mutabilityName(Mutability mutability)
 {
     auto m2s = mut2string.find(mutability);
     
     return m2s->second;
+}
+
+bool nameToMutability(const std::string &name, Mutability *mutability)
+{
+    if (string2mut.empty())
+    {
+        for (auto iter = mut2string.begin(); iter != mut2string.end(); ++iter)
+        {
+            string2mut.insert({iter->second, iter->first});
+        }
+    }
+    auto s2m = string2mut.find(name);
+    if (s2m != string2mut.end())
+    {
+        *mutability = s2m->second;
+        return true;
+    }
+    else
+    {
+        return false;
+    }
 }
 
 void ForceFieldParameter::setValue(double value)
@@ -71,7 +94,7 @@ void ForceFieldParameter::setValue(double value)
             if (strict_)
             {
                 auto buf = gmx::formatString("Can not modify value %s outside its bounds of %g-%g. Setting it to %g.",
-                                             name_.c_str(), minimum_, maximum_, newval);
+                                             identifier_.c_str(), minimum_, maximum_, newval);
                     GMX_THROW(gmx::InvalidInputError(buf));
             }
             value_ = newval;
@@ -80,7 +103,7 @@ void ForceFieldParameter::setValue(double value)
     case Mutability::Fixed:
         if (strict_)
         {
-            auto buf = gmx::formatString("Cannot modify parameter %s since it is fixed", name_.c_str());
+            auto buf = gmx::formatString("Cannot modify parameter %s since it is fixed", identifier_.c_str());
             GMX_THROW(gmx::InvalidInputError(buf));
         }
         break;
@@ -95,7 +118,7 @@ void ForceFieldParameter::setUncertainty(double uncertainty)
     }
     else if (strict_)
     {
-        auto buf = gmx::formatString("Cannot modify uncertainty %s since the parameter is fixed", name_.c_str());
+        auto buf = gmx::formatString("Cannot modify uncertainty %s since the parameter is fixed", identifier_.c_str());
         GMX_THROW(gmx::InternalError(buf));
     }
 }

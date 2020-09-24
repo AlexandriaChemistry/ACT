@@ -65,12 +65,14 @@ class ForceFieldParameterTest : public gmx::test::CommandLineTestBase
 
         void runTest(const ForceFieldParameter &ff)
         {
-            checker_.checkString(ff.name(), "name");
-            checker_.checkInteger(ff.index(), "index");
+            checker_.checkString(ff.identifier(), "identifier");
+            checker_.checkString(ff.type(), "type");
             checker_.checkDouble(ff.value(), "value");
+            checker_.checkDouble(ff.originalValue(), "originalValue");
             checker_.checkDouble(ff.minimum(), "minimum");
             checker_.checkDouble(ff.maximum(), "maximum");
             checker_.checkDouble(ff.uncertainty(), "uncertainty");
+            checker_.checkDouble(ff.originalUncertainty(), "originalUncertainty");
             checker_.checkString(mutabilityName(ff.mutability()), "mutability");
             checker_.checkBoolean(ff.strict(), "strict");
         }
@@ -78,42 +80,70 @@ class ForceFieldParameterTest : public gmx::test::CommandLineTestBase
 };
 
 TEST_F (ForceFieldParameterTest, FreeNotStrict) {
-    ForceFieldParameter ff("h3", 0, 12.0, 0.3, 10.0, 18.0, Mutability::Free, false);
+    ForceFieldParameter ff("h3", "sigma", 12.0, 0.3, 10.0, 18.0, Mutability::Free, false);
     runTest(ff);
 }
 
 TEST_F (ForceFieldParameterTest, BoundedStrict) {
-    ForceFieldParameter ff("c2", 3, 11.0, 0.25, 8.0, 15.0, Mutability::Bounded, true);
+    ForceFieldParameter ff("c2", "epsilon", 11.0, 0.25, 8.0, 15.0, Mutability::Bounded, true);
     runTest(ff);
     EXPECT_THROW(ff.setValue(17.0), gmx::InvalidInputError);
 }
 
 TEST_F (ForceFieldParameterTest, FixedStrict) {
-    ForceFieldParameter ff("c2", 3, 11.0, 0.25, 8.0, 15.0, Mutability::Fixed, true);
+    ForceFieldParameter ff("c2", "gamma", 11.0, 0.25, 8.0, 15.0, Mutability::Fixed, true);
     runTest(ff);
     EXPECT_THROW(ff.setValue(13.0), gmx::InvalidInputError);
 }
 
 TEST_F (ForceFieldParameterTest, BoundedNotStrict) {
-    ForceFieldParameter ff("c2", 3, 11.0, 0.25, 8.0, 15.0, Mutability::Bounded, false);
+    ForceFieldParameter ff("c2", "beta", 11.0, 0.25, 8.0, 15.0, Mutability::Bounded, false);
     runTest(ff);
     ff.setValue(17.0);
 }
 
+TEST_F (ForceFieldParameterTest, BoundedNotStrictOriginal) {
+    ForceFieldParameter ff("c2", "beta", 11.0, 0.25, 8.0, 15.0, Mutability::Bounded, false);
+    ff.setValue(17.0);
+    runTest(ff);
+}
+
 TEST_F (ForceFieldParameterTest, FixedNotStrict) {
-    ForceFieldParameter ff("c2", 3, 11.0, 0.25, 8.0, 15.0, Mutability::Fixed, false);
+    ForceFieldParameter ff("c2", "kappa", 11.0, 0.25, 8.0, 15.0, Mutability::Fixed, false);
     runTest(ff);
     ff.setValue(13.0);
 }
 
+TEST_F (ForceFieldParameterTest, FixedNotStrictOriginal) {
+    ForceFieldParameter ff("c2", "kappa", 11.0, 0.25, 8.0, 15.0, Mutability::Fixed, false);
+    ff.setValue(13.0);
+    runTest(ff);
+}
+
 TEST_F (ForceFieldParameterTest, UncertaintyNotStrict) {
-    ForceFieldParameter ff("c2", 3, 11.0, 0.25, 8.0, 15.0, Mutability::Fixed, false);
+    ForceFieldParameter ff("c2", "ypsilon", 11.0, 0.25, 8.0, 15.0, Mutability::Fixed, false);
     ff.setUncertainty(1.0);
 }
 
+TEST_F (ForceFieldParameterTest, UncertaintyNotStrictOriginl) {
+    ForceFieldParameter ff("c2", "ypsilon", 11.0, 0.25, 8.0, 15.0, Mutability::Fixed, false);
+    ff.setUncertainty(1.0);
+    runTest(ff);
+}
+
 TEST_F (ForceFieldParameterTest, UncertaintyStrict) {
-    ForceFieldParameter ff("c2", 3, 11.0, 0.25, 8.0, 15.0, Mutability::Fixed, true);
+    ForceFieldParameter ff("c2", "zeta", 11.0, 0.25, 8.0, 15.0, Mutability::Fixed, true);
     EXPECT_THROW(ff.setUncertainty(3.0), gmx::InternalError);
+}
+
+TEST(ForceFieldParameterSimpleTest, NameToMutability) {
+    Mutability m;
+    EXPECT_TRUE(nameToMutability("Free", &m));
+    EXPECT_TRUE(nameToMutability("Fixed", &m));
+    EXPECT_TRUE(nameToMutability("Bounded", &m));
+    EXPECT_FALSE(nameToMutability("BounDed", &m));
+    EXPECT_FALSE(nameToMutability("Bread", &m));
+    EXPECT_FALSE(nameToMutability("spples", &m));
 }
 
 }

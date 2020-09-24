@@ -3,7 +3,7 @@
 <ReferenceData>
   <String Name="identifier">c2</String>
   <String Name="type">beta</String>
-  <Real Name="value">11</Real>
+  <Real Name="value">15</Real>
   <Real Name="originalValue">11</Real>
   <Real Name="minimum">8</Real>
   <Real Name="maximum">15</Real>

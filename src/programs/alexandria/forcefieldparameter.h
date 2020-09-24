@@ -49,7 +49,15 @@ enum class Mutability
 /*! \brief Return a string corresponding to the mutability
  */
 const std::string &mutabilityName(Mutability mutability);
- 
+
+/*! \brief Lookup a string and return mutability value
+ *
+ * \param[in]  name       String
+ * \param[out] mutability Point to Mutability encoded in the string
+ * \return true if the name could be converted to a Mutability, false otherwise
+ */
+bool nameToMutability(const std::string &name, Mutability *mutability);
+
 /*! \brief Class to hold one force field parameter
  */
 class ForceFieldParameter
@@ -60,8 +68,8 @@ class ForceFieldParameter
     
     /*! \brief Constructor initiating all parameters.
      *
-     * \param[in] name        Description of the parameter
-     * \param[in] index       Index in a parameter list
+     * \param[in] identifier  Id linking the parameter to e.g. an atomtype
+     * \param[in] type        Type of parameter
      * \param[in] value       Actual value of the parameter
      * \param[in] uncertainty Uncertainty in the value
      * \param[in] minimum     Minimum allowed value
@@ -69,25 +77,29 @@ class ForceFieldParameter
      * \param[in] mutability  In what way this parameter may be changed
      * \param[in] strict      Throw an exception in case of value errors
      */
-    ForceFieldParameter(const std::string &name,
-                        int        index,
-                        double     value,
-                        double     uncertainty,
-                        double     minimum,
-                        double     maximum,
-                        Mutability mutability,
-                        bool       strict) : 
-    name_(name), index_(index), value_(value), uncertainty_(uncertainty),
+    ForceFieldParameter(const std::string &identifier,
+                        const std::string &type,
+                        double             value,
+                        double             uncertainty,
+                        double             minimum,
+                        double             maximum,
+                        Mutability         mutability,
+                        bool               strict) : 
+    identifier_(identifier), type_(type), value_(value), originalValue_ (value),
+        uncertainty_(uncertainty), originalUncertainty_(uncertainty),
         minimum_(minimum), maximum_(maximum), mutability_(mutability), strict_(strict) {}
         
-    //! \brief Return parameter name
-    const std::string &name() const { return name_; }
+    //! \brief Return parameter identifier
+    const std::string &identifier() const { return identifier_; }
     
-    //! \brief Return parameter index
-    int index() const { return index_; }
+    //! \brief Return type of parameter
+    const std::string &type() const { return type_; }
     
-    //! \brief Return parameter value
+    //! \brief Return current parameter value
     double value() const { return value_; }
+    
+    //! \brief Return original parameter value
+    double originalValue() const { return originalValue_; }
     
     /*! \brief Set the parameter value if not fixed
      *
@@ -97,8 +109,11 @@ class ForceFieldParameter
      */
     void setValue(double value);
     
-    //! \brief Return the uncertainty in this value
+    //! \brief Return the current uncertainty in this value
     double uncertainty() const { return uncertainty_; }
+    
+    //! \brief Return the original uncertainty in this value
+    double originalUncertainty() const { return originalUncertainty_; }
     
     /*! \brief Set the uncertainty in this value if not fixed
      * \param[in] uncertainty  The new uncertainty
@@ -119,16 +134,28 @@ class ForceFieldParameter
     //! \brief Return whether or not to throw on value errors
     bool strict() const { return strict_; }
  private:
-    //! The name of the parameter
-    std::string name_;
-    int         index_       = 0;
-    //! The index of the parameter
-    double      value_       = 0;
-    double      uncertainty_ = 0;
-    double      minimum_     = 0;
-    double      maximum_     = 0;
-    Mutability  mutability_  = Mutability::Free;
-    bool        strict_      = false;
+    //! The identifier of the parameter
+    std::string identifier_;
+    //! The type of the parameter
+    std::string type_;
+    //! The current value of the parameter
+    double      value_               = 0;
+    //! The original value of the parameter
+    double      originalValue_       = 0;
+    //! The current uncertainty in the parameter
+    double      uncertainty_         = 0;
+    //! The original value of the uncertainty
+    double      originalUncertainty_ = 0;
+    //! Minimum allowed value for the parameter
+    double      minimum_             = 0;
+    //! Maximum allowed value for the parameter
+    double      maximum_             = 0;
+    //! In what way this parameter is mutable
+    Mutability  mutability_          = Mutability::Free;
+    /*! Whether or not to throw an exception in case value or
+     * uncertainty is set incorrectly
+     */
+    bool        strict_              = false;
 };
 
 } // namespace alexandria
