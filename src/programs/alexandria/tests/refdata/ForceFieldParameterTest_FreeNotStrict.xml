@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <String Name="identifier">h3</String>
   <String Name="type">sigma</String>
+  <String Name="unit">nm</String>
   <Real Name="value">12</Real>
   <Real Name="originalValue">12</Real>
   <Real Name="minimum">10</Real>

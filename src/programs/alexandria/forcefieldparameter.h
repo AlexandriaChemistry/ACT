@@ -68,8 +68,8 @@ class ForceFieldParameter
     
     /*! \brief Constructor initiating all parameters.
      *
-     * \param[in] identifier  Id linking the parameter to e.g. an atomtype
      * \param[in] type        Type of parameter
+     * \param[in] unit        Physical unit of parameter, e.g. nm or fs
      * \param[in] value       Actual value of the parameter
      * \param[in] uncertainty Uncertainty in the value
      * \param[in] minimum     Minimum allowed value
@@ -77,23 +77,23 @@ class ForceFieldParameter
      * \param[in] mutability  In what way this parameter may be changed
      * \param[in] strict      Throw an exception in case of value errors
      */
-    ForceFieldParameter(const std::string &identifier,
-                        const std::string &type,
+    ForceFieldParameter(const std::string &type,
+                        const std::string &unit,
                         double             value,
                         double             uncertainty,
                         double             minimum,
                         double             maximum,
                         Mutability         mutability,
                         bool               strict) : 
-    identifier_(identifier), type_(type), value_(value), originalValue_ (value),
+    type_(type), unit_(unit), value_(value), originalValue_ (value),
         uncertainty_(uncertainty), originalUncertainty_(uncertainty),
         minimum_(minimum), maximum_(maximum), mutability_(mutability), strict_(strict) {}
         
-    //! \brief Return parameter identifier
-    const std::string &identifier() const { return identifier_; }
-    
     //! \brief Return type of parameter
     const std::string &type() const { return type_; }
+    
+    //! \brief Return unit of parameter
+    const std::string &unit() const { return unit_; }
     
     //! \brief Return current parameter value
     double value() const { return value_; }
@@ -134,10 +134,10 @@ class ForceFieldParameter
     //! \brief Return whether or not to throw on value errors
     bool strict() const { return strict_; }
  private:
-    //! The identifier of the parameter
-    std::string identifier_;
     //! The type of the parameter
     std::string type_;
+    //! The unit of the parameter
+    std::string unit_;
     //! The current value of the parameter
     double      value_               = 0;
     //! The original value of the parameter

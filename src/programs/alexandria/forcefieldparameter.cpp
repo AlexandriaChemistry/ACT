@@ -94,8 +94,8 @@ void ForceFieldParameter::setValue(double value)
             if (strict_)
             {
                 auto buf = gmx::formatString("Can not modify value %s outside its bounds of %g-%g. Setting it to %g.",
-                                             identifier_.c_str(), minimum_, maximum_, newval);
-                    GMX_THROW(gmx::InvalidInputError(buf));
+                                             type_.c_str(), minimum_, maximum_, newval);
+                GMX_THROW(gmx::InvalidInputError(buf));
             }
             value_ = newval;
         }
@@ -103,7 +103,7 @@ void ForceFieldParameter::setValue(double value)
     case Mutability::Fixed:
         if (strict_)
         {
-            auto buf = gmx::formatString("Cannot modify parameter %s since it is fixed", identifier_.c_str());
+            auto buf = gmx::formatString("Cannot modify parameter %s since it is fixed", type_.c_str());
             GMX_THROW(gmx::InvalidInputError(buf));
         }
         break;
@@ -118,7 +118,7 @@ void ForceFieldParameter::setUncertainty(double uncertainty)
     }
     else if (strict_)
     {
-        auto buf = gmx::formatString("Cannot modify uncertainty %s since the parameter is fixed", identifier_.c_str());
+        auto buf = gmx::formatString("Cannot modify uncertainty %s since the parameter is fixed", type_.c_str());
         GMX_THROW(gmx::InternalError(buf));
     }
 }

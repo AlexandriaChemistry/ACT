@@ -28,6 +28,7 @@
 set(ALEXANDRIA_SOURCES
            chargemodel.cpp
            forcefieldparameter.cpp
+           forcefieldparameterlist.cpp
 	       gentop_core.cpp
 	       gentop_vsite.cpp
            qgen_acm.cpp

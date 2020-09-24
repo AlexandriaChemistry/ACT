@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="function">Improper</String>
+  <Real Name="IntermediateValue">14</Real>
+  <Real Name="MaxValue">18</Real>
+</ReferenceData>
