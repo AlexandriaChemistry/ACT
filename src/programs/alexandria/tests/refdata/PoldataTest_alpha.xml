@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="alpha">
+    <Int Name="Length">5</Int>
+    <Real>0.432</Real>
+    <Real>1.417</Real>
+    <Real>0.41499999999999998</Real>
+    <Real>3.044</Real>
+    <Real>3.4409999999999998</Real>
+  </Sequence>
+</ReferenceData>

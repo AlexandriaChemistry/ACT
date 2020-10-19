@@ -86,8 +86,6 @@ void Poldata::addAtype(const std::string &elem,
                        const std::string &ptype,
                        const std::string &btype,
                        const std::string &ztype,
-                       bool               fixVdw,
-                       std::string       &vdwparams,
                        const std::string &refEnthalpy)
 {
 
@@ -102,7 +100,7 @@ void Poldata::addAtype(const std::string &elem,
     if (i == alexandria_.size())
     {
         Ffatype sp(desc, atype, ptype, btype, ztype,
-                   elem, fixVdw, vdwparams, refEnthalpy);
+                   elem, refEnthalpy);
 
         alexandria_.push_back(sp);
     }
@@ -170,7 +168,8 @@ const std::string &Poldata::ztype2elem(const std::string &ztype) const
     {
         for (i = 0; i < alexandria_.size(); i++)
         {
-            if (alexandria_[i].getZtype().compare(ztype) == 0)
+            if (alexandria_[i].id(eitELECTRONEGATIVITYEQUALIZATION).id() ==
+                ztype)
             {
                 return alexandria_[i].getElem();
             }
@@ -178,7 +177,7 @@ const std::string &Poldata::ztype2elem(const std::string &ztype) const
     }
     gmx_fatal(FARGS, "No such zeta type %s", ztype.c_str());
 }
-
+#ifdef OLDER
 const std::string &Poldata::ztype2atype(const std::string &ztype) const
 {
     size_t i;
@@ -207,6 +206,7 @@ std::vector<std::string> Poldata::ztype_names() const
     }
     return ztype_names;
 }
+#endif
 
 /*
  *-+-+-+-+-+-+-+-+-+-+-+
@@ -217,90 +217,13 @@ std::vector<std::string> Poldata::ztype_names() const
 bool Poldata::atypeToPtype(const std::string &atype,
                            std::string       *ptype) const
 {
-    if (atype.empty())
+    auto ai = findAtype(atype);
+    if (ai != alexandria_.end())
     {
-        return false;
-    }
-    auto ai = std::find_if(alexandria_.begin(), alexandria_.end(),
-                           [atype](Ffatype const &fa)
-                           {
-                               return fa.getType().compare(atype) == 0;
-                           });
-    if (ai != alexandria_.end() && ai->getPtype().size() > 0)
-    {
-        ptype->assign(ai->getPtype());
+        ptype->assign(ai->id(eitPOLARIZATION).id());
         return true;
     }
     return false;
-}
-
-bool Poldata::getAtypePol(const std::string &atype,
-                          double            *polar,
-                          double            *sigPol) const
-{
-    auto fa = findAtype(atype);
-    if (alexandria_.end() != fa)
-    {
-        return getPtypePol(fa->getPtype(), polar, sigPol);
-    }
-    return false;
-}
-
-bool Poldata::getPtypePol(const std::string &ptype,
-                          double            *polar,
-                          double            *sigPol) const
-{
-    size_t j;
-    for (j = 0; j < ptype_.size(); j++)
-    {
-        if (ptype.compare(ptype_[j].getType()) == 0)
-        {
-            *polar   = ptype_[j].getPolarizability();
-            *sigPol  = ptype_[j].getSigPol();
-            return true;
-        }
-    }
-    return false;
-}
-
-bool Poldata::setPtypePolarizability(const std::string &ptype,
-                                     double             polarizability,
-                                     double             sigPol)
-{
-    auto sp = findPtype(ptype);
-    if (ptype_.end() != sp)
-    {
-        sp->setPolarizability(polarizability);
-        sp->setSigPol(sigPol);
-        return true;
-    }
-    return false;
-}
-
-void Poldata::addPtype(const std::string &ptype,
-                       const std::string &miller,
-                       const std::string &bosque,
-                       double             polarizability,
-                       double             sigPol)
-{
-    size_t i;
-    for (i = 0; i < ptype_.size(); i++)
-    {
-        if (ptype_[i].getType().compare(ptype) == 0)
-        {
-            break;
-        }
-    }
-    if (i == ptype_.size())
-    {
-        Ptype sp(ptype, miller, bosque, polarizability, sigPol);
-        ptype_.push_back(sp);
-        polarizable_ = true;
-    }
-    else
-    {
-        fprintf(stderr, "Polarizability type %s was already added to Poldata record\n", ptype.c_str());
-    }
 }
 
 /*
@@ -336,130 +259,44 @@ void  Poldata::addVsite(const std::string &atype,
     }
 }
 
-/*
- *-+-+-+-+-+-+-+-+
- * Bosque STUFF
- *-+-+-+-+-+-+-+-+
- */
-
-bool Poldata::getBosquePol(const std::string &bosque,
-                           double            *polarizability) const
+void Poldata::checkForPolarizability()
 {
-    auto bb  = bosque_.begin(), be = bosque_.end();
-    auto bos = std::find_if(bb, be, [bosque](Bosque const &b)
-                            {
-                                return (bosque.compare(b.getBosque()) == 0);
-                            });
-    if (bosque_.end() != bos)
-    {
-        *polarizability = bos->getPolarizability();
-
-        return true;
-    }
-    return false;
+    auto f = forces_.find(eitPOLARIZATION);
+    
+    polarizable_ = (f != forces_.end() && f->second.numberOfParameters() > 0);
 }
 
-bool Poldata::ptypeToBosque(const std::string &ptype,
-                            std::string       &bosque) const
+void Poldata::addForces(const std::string             &interaction,
+                        const ForceFieldParameterList &forces)
 {
-    for (const auto &i : ptype_)
-    {
-        if (ptype.compare(i.getType()) == 0)
-        {
-            bosque = i.getBosque();
-            return true;
-        }
-    }
-    return false;
-}
-
-/*
- *-+-+-+-+-+-+-+-+
- * Miller STUFF
- *-+-+-+-+-+-+-+-+
- */
-
-bool Poldata::ptypeToMiller(const std::string &ptype,
-                            std::string       &miller) const
-{
-    for (const auto &i : ptype_)
-    {
-        if (ptype.compare(i.getType()) == 0)
-        {
-            miller = i.getMiller();
-            return true;
-        }
-    }
-    return false;
-}
-
-void Poldata::addMiller(const std::string &miller,
-                        int                atomnumber,
-                        double             tauAhc,
-                        double             alphaAhp,
-                        const std::string &alexandria_equiv)
-{
-    Miller mil(miller, atomnumber, tauAhc, alphaAhp, alexandria_equiv);
-    miller_.push_back(mil);
-}
-
-
-bool Poldata::getMillerPol(const std::string &miller,
-                           int               *atomnumber,
-                           double            *tauAhc,
-                           double            *alphaAhp,
-                           std::string       &alexandria_equiv) const
-{
-    auto mb  = miller_.begin(), me = miller_.end();
-    auto mil = std::find_if(mb, me, [miller](Miller const &m)
-                            {
-                                return (miller.compare(m.getMiller()) == 0);
-                            });
-    if (miller_.end() != mil)
-    {
-        *atomnumber      = mil->getAtomnumber();
-        *tauAhc          = mil->getTauAhc();
-        *alphaAhp        = mil->getAlphaAhp();
-        alexandria_equiv = mil->getAlexandriaEquiv();
-
-        return true;
-    }
-    return false;
-}
-
-/*
- *-+-+-+-+-+-+-+-+-+-+
- * LISTED FORCES
- *-+-+-+-+-+-+-+-+-+-+
- */
-void Poldata::addForces(const ListedForces &forces)
-{
-    if (findForces(forces.iType()) == forcesEnd())
-    {
-        forces_.push_back(forces);
-    }
-    else
-    {
-        fprintf(stderr, "Will not add a second ListedForces for %s\n",
-                forces.function().c_str());
-    }
+    auto iType = stringToInteractionType(interaction.c_str());
+    auto f     = forces_.find(iType);
+    
+    GMX_RELEASE_ASSERT(f == forces_.end(),
+                       gmx::formatString("Will not add a second ForceFieldParameterList for %s\n",
+                                         interaction.c_str()).c_str());
+    forces_.insert({iType, forces});
 }
 
 bool Poldata::atypeToBtype(const std::string &atype,
                            std::string       *btype) const
 {
-    if (atype.size() == 0)
+    auto ai = findAtype(atype);
+    if (ai != alexandria_.end())
     {
-        return false;
+        btype->assign(ai->id(eitBONDS).id());
+        return true;
     }
-    auto ai = std::find_if(alexandria_.begin(), alexandria_.end(),
-                           [atype](Ffatype const &fa)
-                           {
-                               return fa.getType().compare(atype) == 0;
-                           });
-    if (ai != alexandria_.end() && ai->getBtype().size() > 0)
+    return false;
+}
+
+bool Poldata::atypeToZtype(const std::string &atype,
+                           std::string       *ztype) const
+{
+    auto ai = findAtype(atype);
+    if (ai != alexandria_.end())
     {
-        btype->assign(ai->getBtype());
+        ztype->assign(ai->id(eitELECTRONEGATIVITYEQUALIZATION).id());
         return true;
     }
     return false;
@@ -482,68 +319,7 @@ void Poldata::addBtype(const std::string &btype)
 }
 
 
-bool Poldata::findForce(std::vector<std::string> &atoms,
-                        ListedForceIterator      *force)
-{
-    for (auto &f : forces_)
-    {
-        auto tmp = f.findForce(atoms);
-        if (f.forceEnd() != tmp)
-        {
-            *force = tmp;
-            return true;
-        }
-    }
-    return false;
-}
-
-bool Poldata::findForce(const std::vector<std::string> &atoms,
-                        ListedForceConstIterator       *force) const
-{
-    for (const auto &f : forces_)
-    {
-        auto tmp = f.findForce(atoms);
-        if (f.forceEnd() != tmp)
-        {
-            *force = tmp;
-            return true;
-        }
-    }
-    return false;
-}
-
-bool Poldata::findForce(std::vector<std::string> &atoms,
-                        ListedForceIterator      *force,
-                        size_t                    bondOrder)
-{
-    for (auto &f : forces_)
-    {
-        auto tmp = f.findForce(atoms, bondOrder);
-        if (f.forceEnd() != tmp)
-        {
-            *force = tmp;
-            return true;
-        }
-    }
-    return false;
-}
-
-bool Poldata::findForce(const std::vector<std::string> &atoms,
-                        ListedForceConstIterator       *force,
-                        size_t                          bondOrder) const
-{
-    for (const auto &f : forces_)
-    {
-        auto tmp = f.findForce(atoms, bondOrder);
-        if (f.forceEnd() != tmp)
-        {
-            *force = tmp;
-            return true;
-        }
-    }
-    return false;
-}
-
+#ifdef OLDER
 bool Poldata::searchForce(std::vector<std::string> &atoms,
                           std::string              &params,
                           double                   *refValue,
@@ -618,48 +394,7 @@ bool Poldata::searchForceBondOrderIType(std::vector<std::string> &atoms,
     return false;
 }
 
-
-/*
- *-+-+-+-+-+-+-+-+
- * VDW STUFF
- *-+-+-+-+-+-+-+-+
- */
-
-void Poldata::setVdwFunction(const std::string &func)
-{
-    size_t i;
-    for (i = 0; i < F_NRE; i++)
-    {
-        if (strcasecmp(interaction_function[i].name, func.c_str()) == 0)
-        {
-            break;
-        }
-    }
-    if (i == F_NRE)
-    {
-        gmx_fatal(FARGS, "Van der Waals function '%s' does not exist in gromacs", func.c_str());
-    }
-    gtVdwFtype_    = i;
-    gtVdwFunction_ = func;
-}
-
-void Poldata::setCombinationRule(const std::string &func)
-{
-    size_t i;
-    for (i = 0; i < eCOMB_NR; i++)
-    {
-        if (strcasecmp(ecomb_names[i], func.c_str()) == 0)
-        {
-            break;
-        }
-    }
-    if (i == eCOMB_NR)
-    {
-        gmx_fatal(FARGS, "Combination rule '%s' does not exist in gromacs", func.c_str());
-    }
-    gtCombRule_        = i;
-    gtCombinationRule_ = func;
-}
+#endif
 
 /*
  *-+-+-+-+-+-+-+-+
@@ -703,108 +438,29 @@ int Poldata::havePolSupport(const std::string &atype) const
     return 0;
 }
 
+const Identifier Poldata::atomtypesToZetaIdentifier(const std::vector<std::string> atoms) const
+{
+    std::vector<std::string> ztypes;
+    for (auto &a : atoms)
+    {
+        std::string ztype;
+        if (!atypeToZtype(a, &ztype))
+        {
+            GMX_THROW(gmx::InternalError(gmx::formatString("Cannot find zeta type for %s", a.c_str()).c_str()));
+        }
+        ztypes.push_back(ztype);
+    }
+    return Identifier(ztypes, CanSwap::No);
+}
+#ifdef OLDER
 bool Poldata::haveEemSupport(const std::string &atype,
                              gmx_bool           bAllowZeroParameters) const
 {
-    auto eep = atype2Eem(atype);
-    return (eep != EndEemprops() &&
+    auto eep = atypeToEempropsConst(atype);
+    return (eep != nullptr &&
             (bAllowZeroParameters || ((eep->getJ0() > 0) && (eep->getChi0() > 0))));
 }
-
-double Poldata::getJ00(const std::string &atype) const
-{
-    EempropsConstIterator eer;
-    if ((eer = atype2Eem(atype)) != EndEemprops())
-    {
-        return eer->getJ0();
-    }
-    return -1;
-}
-
-const char *Poldata::getQstr(const std::string       &atype) const
-{
-    EempropsConstIterator eer;
-    if ((eer = atype2Eem(atype)) != EndEemprops())
-    {
-        return eer->getQstr();
-    }
-    return nullptr;
-}
-
-const char *Poldata::getRowstr(const std::string &name) const
-{
-    EempropsConstIterator eer;
-    if ((eer = atype2Eem(name)) != EndEemprops())
-    {
-        return eer->getRowstr();
-    }
-    return nullptr;
-}
-
-int Poldata::getRow(const std::string       &name,
-                    int                      zz) const
-{
-    EempropsConstIterator eer;
-    if ((eer = atype2Eem(name)) != EndEemprops())
-    {
-        range_check(zz, 0, eer->getNzeta());
-        return eer->getRow(zz);
-    }
-    return -1;
-}
-
-double Poldata::getZeta(const std::string       &name,
-                        int                      zz) const
-{
-    EempropsConstIterator eer;
-    if ((eer = atype2Eem(name)) != EndEemprops())
-    {
-        if ((zz < 0) || (zz >= eer->getNzeta()))
-        {
-            printf("Negative zeta\n");
-        }
-        range_check(zz, 0, eer->getNzeta());
-        return eer->getZeta(zz);
-    }
-    return -1;
-}
-
-int Poldata::getNzeta(const std::string &atype) const
-{
-    EempropsConstIterator eer;
-    if ((eer = atype2Eem(atype)) != EndEemprops())
-    {
-        return eer->getNzeta();
-    }
-    return 0;
-}
-
-double Poldata::getQ(const std::string       &atype,
-                     int                      zz) const
-{
-    EempropsConstIterator eer;
-    if ((eer = atype2Eem(atype)) != EndEemprops())
-    {
-        range_check(zz, 0, eer->getNzeta());
-        return eer->getQ(zz);
-    }
-    return -1;
-}
-
-double Poldata::getChi0(const  std::string &atype) const
-{
-    EempropsConstIterator eer;
-    if ((eer = atype2Eem(atype)) != EndEemprops())
-    {
-        return eer->getChi0();
-    }
-    else
-    {
-        fprintf(stderr, "No chi0 data for atype '%s'", atype.c_str());
-        return -1;
-    }
-}
-
+#endif
 CommunicationStatus Poldata::Send(const t_commrec *cr, int dest)
 {
     CommunicationStatus cs;
@@ -812,31 +468,12 @@ CommunicationStatus Poldata::Send(const t_commrec *cr, int dest)
     if (CS_OK == cs)
     {
         gmx_send_str(cr, dest, &filename_);
-        gmx_send_str(cr, dest, &alexandriaPolarUnit_);
-        gmx_send_str(cr, dest, &alexandriaPolarRef_);
         gmx_send_int(cr, dest, nexcl_);
-        gmx_send_str(cr, dest, &gtVdwFunction_);
-        gmx_send_str(cr, dest, &gtCombinationRule_);
-        gmx_send_int(cr, dest, gtVdwFtype_);
-        gmx_send_int(cr, dest, gtCombRule_);
         gmx_send_double(cr, dest, gtEpsilonR_);
-        gmx_send_str(cr, dest, &millerTauUnit_);
-        gmx_send_str(cr, dest, &millerAhpUnit_);
-        gmx_send_str(cr, dest, &millerRef_);
-        gmx_send_str(cr, dest, &bosquePolarUnit_);
-        gmx_send_str(cr, dest, &bosqueRef_);
         gmx_send_str(cr, dest, &vsite_angle_unit_);
         gmx_send_str(cr, dest, &vsite_length_unit_);
         gmx_send_int(cr, dest, static_cast<int>(ChargeType_));
         gmx_send_int(cr, dest, static_cast<int>(ChargeGenerationAlgorithm_));
-        gmx_send_str(cr, dest, &eepReference_);
-
-        /* Send ptype */
-        gmx_send_int(cr, dest, ptype_.size());
-        for (auto &ptype : ptype_)
-        {
-            cs = ptype.Send(cr, dest);
-        }
 
         /* Send Ffatype */
         gmx_send_int(cr, dest, alexandria_.size());
@@ -859,25 +496,13 @@ CommunicationStatus Poldata::Send(const t_commrec *cr, int dest)
             gmx_send_str(cr, dest, &btype);
         }
 
-        /* Listed Forces */
+        /* Force Field Parameter Lists */
         gmx_send_int(cr, dest, forces_.size());
         for (auto &force : forces_)
         {
-            cs = force.Send(cr, dest);
-        }
-
-        /* Send Miller */
-        gmx_send_int(cr, dest, miller_.size());
-        for (auto &miller : miller_)
-        {
-            cs = miller.Send(cr, dest);
-        }
-
-        /* Send Bosque */
-        gmx_send_int(cr, dest, bosque_.size());
-        for (auto &bosque : bosque_)
-        {
-            cs = bosque.Send(cr, dest);
+            std::string key(interactionTypeToString(force.first));
+            gmx_send_str(cr, dest, &key);
+            cs = force.second.Send(cr, dest);
         }
 
         /* Send Symcharges */
@@ -885,20 +510,6 @@ CommunicationStatus Poldata::Send(const t_commrec *cr, int dest)
         for (auto &symcharges : symcharges_)
         {
             cs = symcharges.Send(cr, dest);
-        }
-
-        /* Send Eemprops*/
-        gmx_send_int(cr, dest, eep_.size());
-        for (auto &eep : eep_)
-        {
-            cs = eep.Send(cr, dest);
-        }
-        
-        /* Send bondCorrections */
-        gmx_send_int(cr, dest, bondCorr_.size());
-        for (auto &bcc : bondCorr_)
-        {
-            cs = bcc.Send(cr, dest);
         }
     }
     return cs;
@@ -911,37 +522,12 @@ CommunicationStatus Poldata::Receive(const t_commrec *cr, int src)
     if (CS_OK == cs)
     {
         gmx_recv_str(cr, src, &filename_);
-        gmx_recv_str(cr, src, &alexandriaPolarUnit_);
-        gmx_recv_str(cr, src, &alexandriaPolarRef_);
         nexcl_                = gmx_recv_int(cr, src);
-        gmx_recv_str(cr, src, &gtVdwFunction_);
-        gmx_recv_str(cr, src, &gtCombinationRule_);
-        gtVdwFtype_           = gmx_recv_int(cr, src);
-        gtCombRule_           = gmx_recv_int(cr, src);
         gtEpsilonR_           = gmx_recv_double(cr, src);
-        gmx_recv_str(cr, src, &millerTauUnit_);
-        gmx_recv_str(cr, src, &millerAhpUnit_);
-        gmx_recv_str(cr, src, &millerRef_);
-        gmx_recv_str(cr, src, &bosquePolarUnit_);
-        gmx_recv_str(cr, src, &bosqueRef_);
         gmx_recv_str(cr, src, &vsite_angle_unit_);
         gmx_recv_str(cr, src, &vsite_length_unit_);
         ChargeType_                = static_cast<ChargeType>(gmx_recv_int(cr, src));
         ChargeGenerationAlgorithm_ = static_cast<ChargeGenerationAlgorithm>(gmx_recv_int(cr, src));
-        gmx_recv_str(cr, src, &eepReference_);
-
-        /* Receive ptype */
-        size_t nptype = gmx_recv_int(cr, src);
-        ptype_.clear();
-        for (size_t n = 0; (CS_OK == cs) && (n < nptype); n++)
-        {
-            Ptype ptype;
-            cs = ptype.Receive(cr, src);
-            if (CS_OK == cs)
-            {
-                ptype_.push_back(ptype);
-            }
-        }
 
         /* Rceive Ffatype */
         size_t nalexandria = gmx_recv_int(cr, src);
@@ -987,37 +573,14 @@ CommunicationStatus Poldata::Receive(const t_commrec *cr, int src)
         forces_.clear();
         for (size_t n = 0; (CS_OK == cs) && (n < nforces); n++)
         {
-            ListedForces fs;
-            cs = fs.Receive(cr, src);
+            ForceFieldParameterList fs;
+            std::string             key;
+            gmx_recv_str(cr, src, &key);
+            InteractionType iType = static_cast<InteractionType>(stringToInteractionType(key.c_str()));
+            cs                    = fs.Receive(cr, src);
             if (CS_OK == cs)
             {
-                forces_.push_back(fs);
-            }
-        }
-
-        /* Receive Miller */
-        size_t nmiller           = gmx_recv_int(cr, src);
-        miller_.clear();
-        for (size_t n = 0; (CS_OK == cs) && (n < nmiller); n++)
-        {
-            Miller miller;
-            cs = miller.Receive(cr, src);
-            if (CS_OK == cs)
-            {
-                miller_.push_back(miller);
-            }
-        }
-
-        /* Receive Bosque */
-        size_t nbosque = gmx_recv_int(cr, src);
-        bosque_.clear();
-        for (size_t n = 0; (CS_OK == cs) && (n < nbosque); n++)
-        {
-            Bosque bosque;
-            cs = bosque.Receive(cr, src);
-            if (CS_OK == cs)
-            {
-                bosque_.push_back(bosque);
+                forces_.insert({iType, fs});
             }
         }
 
@@ -1033,31 +596,6 @@ CommunicationStatus Poldata::Receive(const t_commrec *cr, int src)
                 symcharges_.push_back(symcharges);
             }
         }
-
-        /* Receive Eemprops */
-        size_t neep = gmx_recv_int(cr, src);
-        eep_.clear();
-        for (size_t n = 0; (CS_OK == cs) && (n < neep); n++)
-        {
-            Eemprops eep;
-            cs = eep.Receive(cr, src);
-            if (CS_OK == cs)
-            {
-                eep_.push_back(eep);
-            }
-        }
-        /* Bond charge corrections */
-        size_t nbcc = gmx_recv_int(cr, src);
-        bondCorr_.clear();
-        for (size_t n = 0; (CS_OK == cs) && (n < nbcc); n++)
-        {
-            BondCorrection bcc;
-            cs = bcc.Receive(cr, src);
-            if (CS_OK == cs)
-            {
-                bondCorr_.push_back(bcc);
-            }
-        }
     }
     return cs;
 }
@@ -1065,6 +603,10 @@ CommunicationStatus Poldata::Receive(const t_commrec *cr, int src)
 void Poldata::broadcast_eemprop(const t_commrec *cr)
 {
     const int src = 0;
+    /* Force Field Parameter Lists */
+    std::vector<InteractionType> eemlist = 
+        { eitBONDCORRECTIONS,
+          eitELECTRONEGATIVITYEQUALIZATION };
     if (MASTER(cr))
     {
         for (auto dest = 1; dest < cr->nnodes; dest++)
@@ -1076,18 +618,19 @@ void Poldata::broadcast_eemprop(const t_commrec *cr)
                 {
                     fprintf(debug, "Going to update Poldata::eemprop on node %d\n", dest);
                 }
-                /* Send Eemprops */
-                gmx_send_int(cr, dest, eep_.size());
-                for (auto &eep : eep_)
+                for(auto myeem : eemlist)
                 {
-                    cs = eep.Send(cr, dest);
-                }       
-                /* Send BondCorrections */
-                gmx_send_int(cr, dest, bondCorr_.size());
-                for (auto &bc : bondCorr_)
-                {
-                    cs = bc.Send(cr, dest);
-                }       
+                    auto fs = forces_.find(myeem);
+                    if (fs != forces_.end())
+                    {
+                        gmx_send_int(cr, dest, 1);
+                        cs = fs->second.Send(cr, dest);
+                    }
+                    else
+                    {
+                        gmx_send_int(cr, dest, 0);
+                    }
+                }
             }
             gmx_send_done(cr, dest);
         }
@@ -1097,128 +640,28 @@ void Poldata::broadcast_eemprop(const t_commrec *cr)
         auto cs = gmx_recv_data(cr, src);
         if (CS_OK == cs)
         {
-            /* Receive Eemprops */
-            int neep = gmx_recv_int(cr, src);
-            eep_.clear();
-            for (int n = 0; (CS_OK == cs) && (n < neep); n++)
+            /* Receive EEMprops and Bond Corrections */
+            for(auto myeem : eemlist)
             {
-                Eemprops eep;
-                cs = eep.Receive(cr, src);
-                if (CS_OK == cs)
+                int nbc = gmx_recv_int(cr, src);
+                if (nbc == 1)
                 {
-                    eep_.push_back(eep);
-                    if (nullptr != debug)
+                    auto fs = forces_.find(myeem);
+                    if (fs != forces_.end())
                     {
-                        fprintf(debug, "Poldata::eemprop is updated on node %d\n", cr->nodeid);
+                        forces_.erase(fs);
                     }
+                    ForceFieldParameterList eem;
+                    eem.Receive(cr, src);
+                    addForces(interactionTypeToString(myeem), eem);
                 }
-                else
-                {
-                    if (nullptr != debug)
-                    {
-                        fprintf(debug, "Could not update Poldata::eemprop on node %d\n", cr->nodeid);
-                    }
-                }   
-            }
-            /* Receive Bond Corrections */
-            int nbc = gmx_recv_int(cr, src);
-            bondCorr_.clear();
-            for (int n = 0; (CS_OK == cs) && (n < nbc); n++)
-            {
-                BondCorrection bc;
-                cs = bc.Receive(cr, src);
-                if (CS_OK == cs)
-                {
-                    bondCorr_.push_back(bc);
-                    if (nullptr != debug)
-                    {
-                        fprintf(debug, "Poldata::bondCorr is updated on node %d\n", cr->nodeid);
-                    }
-                }
-                else
-                {
-                    if (nullptr != debug)
-                    {
-                        fprintf(debug, "Could not update Poldata::bondCorr on node %d\n", cr->nodeid);
-                    }
-                }   
-            }
-            if (nullptr != debug)
-            {
-                fprintf(debug, "There are %d bond corrections\n",
-                        static_cast<int>(bondCorr_.size()));
             }
         }
         else
         {
             if (nullptr != debug)
             {
-                fprintf(debug, "Could not update Poldata::eemprop on node %d\n", cr->nodeid);
-            }
-        }
-        gmx_recv_data(cr, src);
-    }   
-}
-
-void Poldata::broadcast_ptype(const t_commrec *cr)
-{
-    size_t nptype;
-    const int src = 0;
-    if (MASTER(cr))
-    {
-        for (auto dest = 1; dest < cr->nnodes; dest++)
-        {
-            auto cs = gmx_send_data(cr, dest);
-            if (CS_OK == cs)
-            {
-                if (nullptr != debug)
-                {
-                    fprintf(debug, "Going to update Poldata::ptype on node %d\n", dest);
-                }
-                /*Send Eemprops*/
-                gmx_send_int(cr, dest, ptype_.size());
-                for (auto &ptype : ptype_)
-                {
-                    cs = ptype.Send(cr, dest);
-                }       
-            }
-            gmx_send_done(cr, dest);
-        }
-    }
-    else
-    {
-        auto cs = gmx_recv_data(cr, src);
-        if (CS_OK == cs)
-        {
-            /*Receive Eemprops*/
-            nptype = gmx_recv_int(cr, src);
-            ptype_.clear();
-            for (size_t n = 0; (CS_OK == cs) && (n < nptype); n++)
-            {
-                Ptype ptype;
-                cs = ptype.Receive(cr, src);
-                if (CS_OK == cs)
-                {
-                    ptype_.push_back(ptype);
-                    if (nullptr != debug)
-                    {
-                        fprintf(debug, "Poldata::ptype is updated on node %d\n", cr->nodeid);
-                    }
-                }
-                else
-                {
-                    if (nullptr != debug)
-                    {
-                        fprintf(debug, "Could not update Poldata::ptype on node %d\n", cr->nodeid);
-                    }
-                }   
-            }
-        }
-        else
-        {
-            if (nullptr != debug)
-            {
-                fprintf(debug, "Could not update Poldata::ptype on node %d\n", cr->nodeid);
+                fprintf(debug, "Could not update eem properties on node %d\n", cr->nodeid);
             }
         }
         gmx_recv_data(cr, src);
@@ -1266,96 +709,42 @@ void Poldata::broadcast(const t_commrec *cr)
             }
         }
         gmx_recv_data(cr, src);
-        makeMappings();
-    }
-}
-
-void Poldata::makeMappings()
-{
-    for (auto fa = getAtypeBegin(); fa < getAtypeEnd(); ++fa)
-    {
-        auto ztype = fa->getZtype();
-        auto atype = fa->getType();
-        auto eepC  = std::find_if(BeginEemprops(), EndEemprops(),
-                                  [ztype](Eemprops const &eepC)
-                                  { return (eepC.getName() == ztype); });
-        if (eepC == EndEemprops())
-        {
-            gmx_fatal(FARGS, "Can not find atype %s (ztype %s) in eemprops",
-                      atype.c_str(), ztype.c_str());
-        }
-        mapAtypeToEempropsConstIterator_.insert(std::pair<std::string, EempropsConstIterator>(atype, eepC));
-        mapZtypeToEempropsConstIterator_.insert(std::pair<std::string, EempropsConstIterator>(ztype, eepC));
-        auto eep = std::find_if(BeginEemprops(), EndEemprops(),
-                                [ztype](Eemprops &eep)
-                                { return (eep.getName() == ztype); });
-        if (eep == EndEemprops())
-        {
-            gmx_fatal(FARGS, "Can not find atype %s in eemprops",
-                      atype.c_str());
-        }
-        mapAtypeToEempropsIterator_.insert(std::pair<std::string, EempropsIterator>(atype, eep));
-        mapZtypeToEempropsIterator_.insert(std::pair<std::string, EempropsIterator>(ztype, eep));
-        for (auto fb = fa; fb < getAtypeEnd(); fb++)
-        {
-            auto ztypeB = fb->getZtype();
-            std::string name = ztype + "-" + ztypeB;
-            
-            auto bcc  = std::find_if(bondCorr_.begin(),
-                                     bondCorr_.end(),
-                                     [name](BondCorrection &bcc)
-                                     { return (name == bcc.name()); });
-            if (bcc != bondCorr_.end())
-            {
-                //mapAtypesToBccIterator_.insert(std::pair<std::string, BondCorrectionIterator>(bcc->name(), bcc));
-                mapAtypesToBccConstIterator_.insert(std::pair<std::string, BondCorrectionConstIterator>(bcc->name(), static_cast<BondCorrectionConstIterator>(bcc)));
-            }
-        }
-    }
-}
-
-BondCorrectionConstIterator Poldata::atypes2Bcc(const std::string &ai,
-                                                const std::string &aj) const
-{
-    auto zi = findAtype(ai)->getZtype();
-    auto zj = findAtype(aj)->getZtype();
-    std::string name = zi + "-" + zj;
-    auto eic = mapAtypesToBccConstIterator_.find(name);
-    if (eic != mapAtypesToBccConstIterator_.end())
-    {
-        return eic->second;
-    }
-    else
-    {
-        return bondCorr_.end();
     }
 }
 
 void Poldata::checkConsistency(FILE *fp) const
 {
-    int nerror = 0;
+    int  nerror = 0;
+    auto cga    = chargeGenerationAlgorithm();
+    if (cga == eqgNONE || cga == eqgESP)
+    {
+        return;
+    }
+    auto eem = findForcesConst(eitELECTRONEGATIVITYEQUALIZATION);
     for (auto atp = getAtypeBegin(); atp < getAtypeEnd(); ++atp)
     {
-        std::string atype = atp->getType();
+        auto atype = atp->id(eitELECTRONEGATIVITYEQUALIZATION);
         // Check whether zeta types are present
-        auto eem = atype2Eem(atype);
-        if (eem == EndEemprops())
+        if (!eem.parameterExists(atype))
         {
-            fprintf(fp, "ERROR: No eemprops for %s\n", atype.c_str());
+            if (fp)
+            {
+                fprintf(fp, "ERROR: No eemprops for %s in Poldata::checkConsistency\n", atype.id().c_str());
+            }
             nerror += 1;
         }
-        double chi0 = getChi0(atype);
-        double J00  = getJ00(atype);
-        if (nullptr != fp)
+        else
         {
-            fprintf(fp, "chi0 %g J00 %g", chi0, J00);
-        }
-        int nZeta = getNzeta(atype);
-        for(int i = 0; i < nZeta; i++)
-        {
-            double zeta = getZeta(atype, i);
-            int row = getRow(atype, i);
-            double q = getQ(atype, i);
+            auto eep = eem.findParametersConst(atype);
+            double chi0 = eep["chi"].value();
+            double J00  = eep["jaa"].value();
+            if (nullptr != fp)
+            {
+                fprintf(fp, "chi0 %g J00 %g", chi0, J00);
+            }
+            double zeta = eep["zeta"].value();
+            int    row  = eep["row"].value();
+            double q    = eep["charge"].value();
             if (nullptr != fp)
             {
                 fprintf(fp, " row %d zeta %g q %g", row, zeta, q);
@@ -1365,16 +754,10 @@ void Poldata::checkConsistency(FILE *fp) const
         {
             fprintf(fp, "\n");
         }
-        // Check whether poltype is present
-        double polarizability, sigPol;
-        if (!getAtypePol(atype, &polarizability, &sigPol) && fp)
-        {
-            fprintf(fp, "WARNING: No polarizability type for %s\n", atype.c_str());
-        }
     }
     if (nerror > 0)
     {
-        gmx_fatal(FARGS, "Poldata inconsistency. Use the -debug 1 flag to find out more");
+        GMX_THROW(gmx::InternalError(gmx::formatString("Poldata inconsistency. Use the -debug 1 flag to find out more").c_str()));
     }
 }
 

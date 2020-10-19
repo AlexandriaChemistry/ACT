@@ -31,51 +31,216 @@
 
 #include "forcefieldparameterlist.h"
 
+#include <map>
+
+#include "gromacs/topology/idef.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace alexandria
 {
 
-void ForceFieldParameterList::addParameter(const std::string         &identifier,
-                                           const ForceFieldParameter &param)
+ForceFieldParameterList::ForceFieldParameterList(const std::string &function,
+                                                 CanSwap            canSwap) : function_(function), canSwap_(canSwap)
 {
-    auto params = parameters_.find(identifier);
-    
-    if (params == parameters_.end())
+    if (function.empty())
     {
-        // New parameter!
-        std::vector<ForceFieldParameter> entry;
-        entry.push_back(param);
-        parameters_.insert({identifier, entry});
+        fType_ = F_NRE;
     }
     else
     {
-        // TODO: Check whether a parameter of this type already exists
-        params->second.push_back(param);
+        size_t funcType;
+        for (funcType = 0; funcType < F_NRE; funcType++)
+        {
+            if (strcasecmp(interaction_function[funcType].name, function_.c_str()) == 0)
+            {
+                break;
+            }
+        }
+        if (funcType == F_NRE)
+        {
+            GMX_THROW(gmx::InvalidInputError(gmx::formatString("Force function '%s' does not exist in gromacs", function_.c_str()).c_str()));
+        }
+        fType_ = funcType;
     }
 }
 
-const std::vector<ForceFieldParameter> &ForceFieldParameterList::searchParameter(const std::string &identifier) const
+void ForceFieldParameterList::addParameter(const Identifier          &identifier,
+                                           const std::string         &type,
+                                           const ForceFieldParameter &param)
+{
+    auto params                  = parameters_.find(identifier);
+    ForceFieldParameter newParam = param;    
+    newParam.setIndex(counter_);
+    if (params == parameters_.end())
+    {
+        // New parameter!
+        std::map<std::string, ForceFieldParameter> entry;
+        entry[type] = newParam;
+        parameters_[identifier] = entry;
+        // Increase counter since we have a new parameter
+        counter_ += 1;
+    }
+    else
+    {
+        if (params->second.find(type) != params->second.end())
+        {
+            GMX_THROW(gmx::InvalidInputError(gmx::formatString("A parameter with type %s was defined for identifier %s already.", type.c_str(), identifier.id().c_str()).c_str()));
+        }
+        parameters_[identifier][type] = newParam;
+    }
+}
+
+size_t ForceFieldParameterList::parameterId(const Identifier &identifier) const
+{
+    auto p = parameters_.find(identifier);
+    if (p == parameters_.end())
+    {
+        GMX_THROW(gmx::InternalError(gmx::formatString("Cannot find parameter %s for %s",
+                                                       identifier.id().c_str(), 
+                                                       interaction_function[fType()].name).c_str()));
+    }
+    auto ffp = p->second.find("unit");
+    if (ffp != p->second.end())
+    {
+        return ffp->second.index();
+    }
+    else
+    {
+        GMX_THROW(gmx::InternalError(gmx::formatString("Empty parameter list for %s in %s",
+                                                       identifier.id().c_str(), 
+                                                       interaction_function[fType()].name).c_str()));
+    }
+}
+
+const std::map<std::string, ForceFieldParameter> &ForceFieldParameterList::findParametersConst(const Identifier &identifier) const
 {
     auto params = parameters_.find(identifier);
     
     if (params == parameters_.end())
     {
-        GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such identifier %s in parameter list for %s", identifier.c_str(), function_.c_str()).c_str()));
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such identifier %s in const parameter list with %d entries for function '%s'",
+                                                           identifier.id().c_str(),
+                                                           static_cast<int>(parameters_.size()),
+                                                           function_.c_str()).c_str()));
     }
     
     return params->second;
 }
 
-std::vector<ForceFieldParameter> &ForceFieldParameterList::findParameter(const std::string &identifier)
+const ForceFieldParameter &ForceFieldParameterList::findParameterTypeConst(const Identifier  &identifier,
+                                                                           const std::string &type) const
 {
     auto params = parameters_.find(identifier);
     
-    GMX_RELEASE_ASSERT(params != parameters_.end(),
-                       gmx::formatString("No such identifier %s in parameter list for %s", identifier.c_str(), function_.c_str()).c_str());
+    if (params == parameters_.end())
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such identifier %s in parameter list for %s looking for type %s", identifier.id().c_str(), function_.c_str(), type.c_str()).c_str()));
+    }
+    auto ffparam = params->second.find(type);
+    if (ffparam == params->second.end())
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such type %s in parameter list for %s", type.c_str(), function_.c_str()).c_str()));
+    }
+    return ffparam->second;
+}
+
+ForceFieldParameter *ForceFieldParameterList::findParameterType(const Identifier  &identifier,
+                                                                const std::string &type)
+{
+    auto params = parameters_.find(identifier);
     
-    return params->second;
+    if (params == parameters_.end())
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such identifier %s in parameter list for %s looking for type %s", identifier.id().c_str(), function_.c_str(), type.c_str()).c_str()));
+    }
+    auto ffparam = params->second.find(type);
+    if (ffparam == params->second.end())
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such type %s in parameter list for %s", type.c_str(), function_.c_str()).c_str()));
+    }
+    return &ffparam->second;
+}
+
+ForceFieldParameterMap *ForceFieldParameterList::findParameters(const Identifier &identifier)
+{
+    auto params = parameters_.find(identifier);
+    
+    if (params == parameters_.end())
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such identifier %s in mutable parameter list for %s", identifier.id().c_str(), function_.c_str()).c_str()));
+    }
+    
+    return &params->second;
+}
+
+CommunicationStatus ForceFieldParameterList::Send(const t_commrec *cr, int dest) const
+{
+    CommunicationStatus cs;
+    cs = gmx_send_data(cr, dest);
+    if (CS_OK == cs)
+    {
+        gmx_send_str(cr, dest, &function_);
+        gmx_send_int(cr, dest, fType_);
+        gmx_send_int(cr, dest, options_.size());
+        for(auto const &x : options_)
+        {
+            gmx_send_str(cr, dest, &x.first);
+            gmx_send_str(cr, dest, &x.second);
+        }
+        gmx_send_int(cr, dest, parameters_.size());
+        for(auto const &x : parameters_)
+        {
+            x.first.Send(cr, dest);
+            gmx_send_int(cr, dest, x.second.size());
+            for(auto const &p : x.second)
+            {
+                gmx_send_str(cr, dest, &p.first);
+                p.second.Send(cr, dest);
+            }
+        }
+    }
+    return cs;
+}
+
+CommunicationStatus ForceFieldParameterList::Receive(const t_commrec *cr, int src)
+{
+    CommunicationStatus cs;
+    cs = gmx_recv_data(cr, src);
+    if (CS_OK == cs)
+    {
+        gmx_recv_str(cr, src, &function_);
+        fType_       = gmx_recv_int(cr, src);
+        int noptions = gmx_recv_int(cr, src);
+        options_.clear();
+        for(int i = 0; i < noptions; i++)
+        {
+            std::string key, value;
+            gmx_recv_str(cr, src, &key);
+            gmx_recv_str(cr, src, &value);
+            options_.insert({key, value});
+        }
+        int nlists =  gmx_recv_int(cr, src);
+        parameters_.clear();
+        for(int i = 0; i < nlists; i++)
+        {
+            Identifier key;
+            key.Receive(cr, src);
+            int nparam =  gmx_recv_int(cr, src);
+            parameters_.clear();
+            for(int j = 0; j < nparam; j++)
+            {
+                std::string type;
+                gmx_recv_str(cr, src, &type);
+                ForceFieldParameter p;
+                p.Receive(cr, src);
+                parameters_[key][type] = p;
+            }
+        }
+    }
+    return cs;
 }
 
 } // namespace

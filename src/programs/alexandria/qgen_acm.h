@@ -89,19 +89,17 @@ class QgenAcm
 
         const char *message() const;
         
-        int getNzeta(int atom);
+        int getRow(int atom);
 
-        int getRow(int atom, int z);
-
-        const std::vector<std::vector<double> > &q() { return q_;}
+        const std::vector<double> &q() { return q_;}
         
         int natom() { return natom_; }
         
-        double getQ(int atom, int z);
+        double getQ(int atom);
 
         void checkSupport(const Poldata *pd);
 
-        double getZeta(int atom, int z);
+        double getZeta(int atom);
 
         void dump(FILE *fp, t_atoms *atoms);
 
@@ -117,13 +115,13 @@ class QgenAcm
         gmx_bool                                           bAllocSave_;
         gmx_bool                                           bHaveShell_;
         ChargeType                                         ChargeType_;
-        
-        std::vector<int>                                   atomnr_, nZeta_, coreIndex_, shellIndex_;
+        std::vector<int>                                   atomnr_, coreIndex_, shellIndex_;
         std::vector<double>                                chi0_, rhs_, j00_, q0_;
         std::vector<gmx::RVec>                             x_;   
-        std::vector<std::string>                           elem_;            
-        std::vector<std::vector<int>>                      row_;       
-        std::vector<std::vector<double>>                   q_, zeta_, qsave_, zetasave_, Jcc_;
+        std::vector<Identifier>                            id_;            
+        std::vector<int>                                   row_;       
+        std::vector<double>                                q_, zeta_, qsave_, zetasave_;
+        std::vector<std::vector<double>>                   Jcc_;
 
         /*! \brief Re-read the EEM parameters from the FF
          *

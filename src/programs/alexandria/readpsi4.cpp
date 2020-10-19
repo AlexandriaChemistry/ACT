@@ -34,7 +34,6 @@
 
 #include "readpsi4.h"
 
-#include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -50,6 +49,7 @@
 #include "molprop_util.h"
 #include "poldata.h"
 #include "stringutil.h"
+#include "units.h"
 
 namespace alexandria
 {
@@ -233,8 +233,8 @@ bool readPsi4(const std::string &datafile, MolProp *mp)
                 auto words = gmx::splitString(line);
                 if (words.size() == 7)
                 {
-                    energy = convert2gmx(my_atof(words[6].c_str(), "energy"),
-                                         eg2cHartree);
+                    energy = convertToGromacs(my_atof(words[6].c_str(), "energy"),
+                                              "Hartree");
                 }
             }
             else if (jobtype == JOB_OPT &&
@@ -243,8 +243,8 @@ bool readPsi4(const std::string &datafile, MolProp *mp)
                 auto words = gmx::splitString(line);
                 if (words.size() == 4)
                 {
-                    energy = convert2gmx(my_atof(words[3].c_str(), "energy"),
-                                         eg2cHartree);
+                    energy = convertToGromacs(my_atof(words[3].c_str(), "energy"),
+                                              "Hartree");
                 }
             }
             else if (jobtype == JOB_OPT &&

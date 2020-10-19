@@ -33,7 +33,14 @@
 #define FORCEFIELDPARAMETER_H
 
 #include <algorithm>
+#include <map>
 #include <string>
+
+#include "gromacs/math/units.h"
+#include "gromacs/mdtypes/commrec.h"
+
+#include "communication.h"
+#include "gmx_simple_comm.h"
 
 namespace alexandria
 {
@@ -42,6 +49,7 @@ namespace alexandria
 enum class Mutability
 {
     Fixed,
+    Dependent,
     Bounded,
     Free
 };
@@ -68,32 +76,44 @@ class ForceFieldParameter
     
     /*! \brief Constructor initiating all parameters.
      *
-     * \param[in] type        Type of parameter
+     * TODO: Check unit
      * \param[in] unit        Physical unit of parameter, e.g. nm or fs
      * \param[in] value       Actual value of the parameter
      * \param[in] uncertainty Uncertainty in the value
+     * \param[in] ntrain      Number of data points used for training
      * \param[in] minimum     Minimum allowed value
      * \param[in] maximum     Maximum allowed value
      * \param[in] mutability  In what way this parameter may be changed
      * \param[in] strict      Throw an exception in case of value errors
      */
-    ForceFieldParameter(const std::string &type,
-                        const std::string &unit,
+    ForceFieldParameter(const std::string &unit,
                         double             value,
                         double             uncertainty,
+                        uint64_t           ntrain,
                         double             minimum,
                         double             maximum,
                         Mutability         mutability,
-                        bool               strict) : 
-    type_(type), unit_(unit), value_(value), originalValue_ (value),
-        uncertainty_(uncertainty), originalUncertainty_(uncertainty),
-        minimum_(minimum), maximum_(maximum), mutability_(mutability), strict_(strict) {}
+                        bool               strict)
+                         : 
+    unit_(unit), value_(value), originalValue_ (value),
+    uncertainty_(uncertainty), originalUncertainty_(uncertainty),
+    ntrain_(ntrain), originalNtrain_(ntrain),
+    minimum_(minimum), maximum_(maximum), mutability_(mutability),
+    strict_(strict) {}
         
-    //! \brief Return type of parameter
-    const std::string &type() const { return type_; }
-    
     //! \brief Return unit of parameter
     const std::string &unit() const { return unit_; }
+    
+    //! \brief Return GROMACS unit of parameter
+    int unitGromacs() const { return string2unit(unit_.c_str()); }
+
+    //! \brief Return index (an externally determined identifier)
+    size_t index() const { return index_; }
+
+    /*! \brief Set the index
+     * \param[in] index The index
+     */
+    void setIndex(size_t index) { index_ = index; }
     
     //! \brief Return current parameter value
     double value() const { return value_; }
@@ -115,10 +135,30 @@ class ForceFieldParameter
     //! \brief Return the original uncertainty in this value
     double originalUncertainty() const { return originalUncertainty_; }
     
+    //! \brief Return the number of training points used
+    uint64_t ntrain() const { return ntrain_; }
+    
+    /*!\brief Set the number of training point used for this value if not fixed
+     * \param[in] ntrain  The number of data points
+     * \throws an exception if the strict flag is true and the
+     * variable is not mutable.
+     */ 
+    void setNtrain(uint64_t ntrain);
+    
+    /*! \brief Add one to the number of training points
+     * \throws when the parameter is not mutable and strict flag is true
+     */
+    void incrementNtrain() { setNtrain(ntrain_+1); }
+
+    /*! \brief Subtract one from the number of training points
+     * \throws when the parameter is not mutable and strict flag is true
+     */
+    void decrementNtrain() { setNtrain(ntrain_-1); }
+
     /*! \brief Set the uncertainty in this value if not fixed
      * \param[in] uncertainty  The new uncertainty
-     * Will throw an exception if the strict flag is true and the
-     * variable is alltogher fixed,
+     * \throws an exception if the strict flag is true and the
+     * variable is not mutable.
      */
     void setUncertainty(double uncertainty);
     
@@ -131,11 +171,25 @@ class ForceFieldParameter
     //! \brief Return how this parameter may be changed
     Mutability mutability() const { return mutability_; }
     
+    //! \brief Return whether this parameter is mutable at all
+    bool isMutable() const { return mutability_ == Mutability::Free || mutability_ == Mutability::Bounded; }
+    
     //! \brief Return whether or not to throw on value errors
     bool strict() const { return strict_; }
+
+    /*! \brief Send the contents to another processor
+     * \param[in] cr   Communication data structure
+     * \param[in] dest Processor id to send the data to
+     */
+    CommunicationStatus Send(const t_commrec *cr, int dest)  const;
+
+    /*! \brief Receive contents from another processor
+     * \param[in] cr  Communication data structure
+     * \param[in] src Processor id to receive the data from
+     */
+    CommunicationStatus Receive(const t_commrec *cr, int src);
+
  private:
-    //! The type of the parameter
-    std::string type_;
     //! The unit of the parameter
     std::string unit_;
     //! The current value of the parameter
@@ -146,6 +200,10 @@ class ForceFieldParameter
     double      uncertainty_         = 0;
     //! The original value of the uncertainty
     double      originalUncertainty_ = 0;
+    //! The number of training points used
+    uint64_t    ntrain_              = 0;
+    //! The original number of training points used
+    uint64_t    originalNtrain_      = 0;
     //! Minimum allowed value for the parameter
     double      minimum_             = 0;
     //! Maximum allowed value for the parameter
@@ -156,7 +214,11 @@ class ForceFieldParameter
      * uncertainty is set incorrectly
      */
     bool        strict_              = false;
+    //! Externally determined index
+    size_t      index_               = 0;
 };
+
+typedef std::map<std::string, ForceFieldParameter> ForceFieldParameterMap;
 
 } // namespace alexandria
 

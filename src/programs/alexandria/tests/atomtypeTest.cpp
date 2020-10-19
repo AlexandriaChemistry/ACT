@@ -90,10 +90,10 @@ class AtomtypeTest : public gmx::test::CommandLineTestBase
             if (readOK)
             {
                 std::vector<std::string> atypes;
-                auto                     exper = molprop.BeginExperiment();
-                for (auto ca = exper->BeginAtom(); ca < exper->EndAtom(); ++ca)
+                auto                     exper = molprop.experimentConst().begin();
+                for (auto &ca : exper->calcAtomConst())
                 {
-                    atypes.push_back(ca->getObtype());
+                    atypes.push_back(ca.getObtype());
                 }
                 checker_.checkInteger(static_cast<int>(atypes.size()), molname);
                 checker_.checkSequence(atypes.begin(), atypes.end(), "atomtypes");

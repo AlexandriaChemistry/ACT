@@ -33,7 +33,10 @@
 
 #include <map>
 
+#include <inttypes.h>
+
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace alexandria
@@ -41,9 +44,10 @@ namespace alexandria
 
 static std::map<Mutability, const std::string> mut2string =
     {
-        { Mutability::Fixed,   "Fixed"   },
-        { Mutability::Bounded, "Bounded" },
-        { Mutability::Free,    "Free"    }
+        { Mutability::Fixed,     "Fixed"     },
+        { Mutability::Dependent, "Dependent" },
+        { Mutability::Bounded,   "Bounded"   },
+        { Mutability::Free,      "Free"      }
     };
 
 static std::map<const std::string, Mutability> string2mut;
@@ -93,17 +97,18 @@ void ForceFieldParameter::setValue(double value)
             double newval = std::min(maximum_, std::max(minimum_, value));
             if (strict_)
             {
-                auto buf = gmx::formatString("Can not modify value %s outside its bounds of %g-%g. Setting it to %g.",
-                                             type_.c_str(), minimum_, maximum_, newval);
+                auto buf = gmx::formatString("Can not modify value outside its bounds of %g-%g. Setting it to %g.",
+                                             minimum_, maximum_, newval);
                 GMX_THROW(gmx::InvalidInputError(buf));
             }
             value_ = newval;
         }
         break;
+    case Mutability::Dependent:
     case Mutability::Fixed:
         if (strict_)
         {
-            auto buf = gmx::formatString("Cannot modify parameter %s since it is fixed", type_.c_str());
+            auto buf = gmx::formatString("Cannot modify parameter since it is fixed/dependent");
             GMX_THROW(gmx::InvalidInputError(buf));
         }
         break;
@@ -112,15 +117,112 @@ void ForceFieldParameter::setValue(double value)
 
 void ForceFieldParameter::setUncertainty(double uncertainty)
 { 
-    if (mutability_ != Mutability::Fixed)
+    if (mutability_ == Mutability::Free || mutability_ == Mutability::Bounded)
     {
         uncertainty_ = std::max(0.0, uncertainty);
     }
     else if (strict_)
     {
-        auto buf = gmx::formatString("Cannot modify uncertainty %s since the parameter is fixed", type_.c_str());
+        auto buf = gmx::formatString("Cannot modify uncertainty since the parameter is fixed/dependent");
         GMX_THROW(gmx::InternalError(buf));
     }
+}
+
+void ForceFieldParameter::setNtrain(uint64_t ntrain)
+{ 
+    if (mutability_ == Mutability::Free || mutability_ == Mutability::Bounded)
+    {
+        ntrain_ = ntrain;
+    }
+    else if (strict_)
+    {
+        auto buf = gmx::formatString("Cannot modify ntrain since the parameter is fixed/dependent");
+        GMX_THROW(gmx::InternalError(buf));
+    }
+}
+
+CommunicationStatus ForceFieldParameter::Send(const t_commrec *cr, int dest) const
+{
+    CommunicationStatus cs;
+    cs = gmx_send_data(cr, dest);
+    if (CS_OK == cs)
+    {
+        gmx_send_str(cr, dest, &unit_);
+        gmx_send_double(cr, dest, value_);
+        gmx_send_double(cr, dest, originalValue_);
+        gmx_send_double(cr, dest, uncertainty_);
+        gmx_send_double(cr, dest, originalUncertainty_);
+        gmx_send_int(cr, dest, static_cast<int>(ntrain_));
+        gmx_send_int(cr, dest, static_cast<int>(originalNtrain_));
+        gmx_send_double(cr, dest, minimum_);
+        gmx_send_double(cr, dest, maximum_);
+        switch (mutability_)
+        {
+        case Mutability::Free:
+            gmx_send_int(cr, dest, 0);
+            break;
+        case Mutability::Bounded:
+            gmx_send_int(cr, dest, 1);
+            break;
+        case Mutability::Dependent:
+            gmx_send_int(cr, dest, 2);
+            break;
+        case Mutability::Fixed:
+            gmx_send_int(cr, dest, 3);
+            break;
+        }
+        gmx_send_int(cr, dest, strict_ ? 1 : 0);
+
+        if (nullptr != debug)
+        {
+            fprintf(debug, "Sent ForceFieldParameter %g %g %s %" PRIu64 ", status %s\n",
+                    value_, uncertainty_, unit_.c_str(), ntrain_, cs_name(cs));
+            fflush(debug);
+        }
+    }
+    return cs;
+}
+
+CommunicationStatus ForceFieldParameter::Receive(const t_commrec *cr, int src)
+{
+    CommunicationStatus cs;
+    cs = gmx_recv_data(cr, src);
+    if (CS_OK == cs)
+    {
+        gmx_recv_str(cr, src, &unit_);
+        value_               = gmx_recv_double(cr, src);
+        originalValue_       = gmx_recv_double(cr, src);
+        uncertainty_         = gmx_recv_double(cr, src);
+        originalUncertainty_ = gmx_recv_double(cr, src);
+        ntrain_              = static_cast<uint64_t>(gmx_recv_int(cr, src));
+        originalNtrain_      = static_cast<uint64_t>(gmx_recv_int(cr, src));
+        int mut              = gmx_recv_int(cr,src);
+        switch (mut)
+        {
+        case 0:
+            mutability_ = Mutability::Free;
+            break;
+        case 1:
+            mutability_ = Mutability::Bounded;
+            break;
+        case 2:
+            mutability_ = Mutability::Dependent;
+            break;
+        case 3:
+            mutability_ = Mutability::Fixed;
+            break;
+        default:
+            // Should not happen.
+            GMX_THROW(gmx::InternalError(gmx::formatString("Unexpected mutability %d", mut))); 
+        }
+        if (nullptr != debug)
+        {
+            fprintf(debug, "Received ForceFieldParameter %g %g %s %" PRIu64 ", status %s\n",
+                    value_, uncertainty_, unit_.c_str(), ntrain_, cs_name(cs));
+            fflush(debug);
+        }
+    }
+    return cs;
 }
 
 } // namespace alexandria

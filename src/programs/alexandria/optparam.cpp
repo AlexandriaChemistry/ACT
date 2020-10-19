@@ -139,38 +139,11 @@ void Bayes::printParameters(FILE *fp) const
     fprintf(fp, "\n");
 }
 
-void Bayes::addParam(real val,
-                     real factor,
-                     bool bRandom)
-{
-    GMX_RELEASE_ASSERT(factor > 0, "Scaling factor for bounds should be larger than zero");
-    if (factor < 1)
-    {
-        factor = 1/factor;
-    }
-    
-    if (bRandom)
-    {
-        std::random_device               rd;
-        std::mt19937                     gen(rd());  
-        real delta                       = std::abs((0.5*val));      
-        real a                           = val - delta;
-        real b                           = val + delta;       
-        std::uniform_real_distribution<> uniform(a, b);
-        val                              = uniform(gen);        
-    }
-    
-    initial_param_.push_back(val);
-    param_.push_back(val);
-    prevParam_.push_back(val);
-    lowerBound_.push_back(val/factor);
-    upperBound_.push_back(val*factor);
-}
-
-void Bayes::addParam(real val,
-                     real lower,
-                     real upper,
-                     bool bRandom)
+void Bayes::addParam(const std::string &name,
+                     real               val,
+                     real               lower,
+                     real               upper,
+                     bool               bRandom)
 {
     if (bRandom)
     {
@@ -188,26 +161,6 @@ void Bayes::addParam(real val,
     prevParam_.push_back(val);
     lowerBound_.push_back(lower);
     upperBound_.push_back(upper);
-}
-
-void Bayes::addRandomParam(real lower,
-                           real upper)
-{
-    std::random_device               rd;
-    std::mt19937                     gen(rd());  
-    std::uniform_real_distribution<> uniform(lower, upper);
-    real val = uniform(gen);        
-    
-    initial_param_.push_back(val);
-    param_.push_back(val);
-    prevParam_.push_back(val);
-    lowerBound_.push_back(lower);
-    upperBound_.push_back(upper);
-}
-
-
-void Bayes::addParamName(std::string name)
-{
     paramNames_.push_back(name);
 }
 
@@ -269,9 +222,10 @@ double Bayes::MCMC(FILE *fplog)
     {
         gmx_fatal(FARGS, "You forgot to call setOutputFiles. Back to the drawing board.");
     }
-    if (paramNames_.empty())
+    if (param_.empty())
     {
-        gmx_fatal(FARGS, "You forgot to add parameterNames. Back to the drawing board.");
+        fprintf(stderr, "No parameters to optimze.\n");
+        return 0;
     }
     // Allocate memory for parameter class index.
     // Set to -1 to indicate not set, and to crash the program

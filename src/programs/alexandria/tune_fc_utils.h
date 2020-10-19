@@ -32,12 +32,14 @@
 #ifndef TUNE_FC_UTILS_H
 #define TUNE_FC_UTILS_H
 
+#include <map>
 #include <string>
 #include <vector>
 
 #include "gromacs/utility/stringutil.h"
 
 #include "communication.h"
+#include "identifier.h"
 #include "mymol.h"
 #include "plistwrapper.h"
 #include "poldata.h"
@@ -47,200 +49,71 @@ struct t_commrec;
 namespace alexandria
 {
 
-class AtomTypes
-{
-    public:
-
-        AtomTypes () {}
-
-        AtomTypes(int                ncopies,
-                  const std::string &name,
-                  const std::string &vdwParams,
-                  int                index)
-            :
-              ncopies_(ncopies),
-              name_(name),
-              vdwParams_(vdwParams),
-              poldataIndex_(index)
-        {
-            extractParams();
-        }
-
-        void inc() { ncopies_++; }
-
-        int nCopies() const { return ncopies_; }
-
-        void setParamString(const std::string &params);
-
-        int poldataIndex() const { return poldataIndex_; }
-
-        const std::string &paramString() const { return vdwParams_; }
-
-        const std::vector<double> &paramValues() const { return p_; }
-
-        const std::string &name() const { return name_; }
-
-        size_t nParams() const { return p_.size(); }
-
-        CommunicationStatus Send(t_commrec *cr, int dest);
-
-        CommunicationStatus Receive(t_commrec *cr, int src);
-
-    private:
-
-        int                 ncopies_;
-        std::string         name_;
-        std::string         vdwParams_;
-        std::vector<double> p_;
-        int                 poldataIndex_;
-        void extractParams();
-};
-
-using AtomTypesIterator = typename std::vector<AtomTypes>::iterator;
-using ConstAtomTypesIterator = typename std::vector<AtomTypes>::const_iterator;
-
-class NonBondParams
-{
-    public:
-
-        NonBondParams () : bOpt_(false), itype_(eitVDW) {}
-
-        NonBondParams(bool bOpt, InteractionType  itype)
-
-            :
-              bOpt_(bOpt),
-              itype_(itype)
-        {}
-
-
-        void addNonBonded(AtomTypes at) { at_.push_back(std::move(at)); }
-
-        void analyzeIdef(const std::vector<MyMol> &mm,
-                         const Poldata            *pd);
-
-        void makeReverseIndex();
-
-        void dump(FILE *fp) const;
-
-        int reverseIndex(int poldataIndex)
-        {
-            GMX_RELEASE_ASSERT(poldataIndex >= 0 && poldataIndex < static_cast<int>(reverseIndex_.size()), "Incorrect poldataIndex");
-            GMX_RELEASE_ASSERT(reverseIndex_[poldataIndex] != -1, "The reverseIndex is incorrect");
-
-            return reverseIndex_[poldataIndex];
-        }
-
-        AtomTypesIterator beginAT() { return at_.begin(); }
-
-        AtomTypesIterator endAT() { return at_.end(); }
-
-        ConstAtomTypesIterator beginAT() const { return at_.begin(); }
-
-        ConstAtomTypesIterator endAT() const { return at_.end(); }
-
-        InteractionType interactionType() const { return itype_; }
-
-        void setInteractionType(InteractionType iType) { itype_ = iType; }
-
-        size_t nAT() const { return at_.size(); }
-        
-        void setOpt(bool Opt) { bOpt_ = Opt; }
-
-        CommunicationStatus Send(t_commrec *cr, int dest);
-
-        CommunicationStatus Receive(t_commrec *cr, int src);
-
-    private:
-
-        bool                   bOpt_;
-        InteractionType        itype_;
-        std::vector<AtomTypes> at_;
-        std::vector<int>       reverseIndex_;
-        std::vector<double>    params_;
-
-};
-
 /*! \brief Helper class storing bond/angle/dihedral names
  *
  * For one bond/angle/dihedral here the name of the bondtypes
  * are stored as in e.g. c c h for an angle, along with the number
  * of occurrences in the force field.
  */
-class BondNames
+class ParameterNames
 {
     public:
 
-        BondNames () {}
+    //! Empty constructor
+        ParameterNames () {}
 
-        BondNames(int                ncopies,
-                  int                ftype,
-                  const std::string &name,
-                  double             geometry,
-                  const std::string &params,
-                  int                index,
-                  double             bondorder = 0)
-
-            :
+    /*! \brief Constructor with initiation
+     *
+     * \param[in] ncopies  Number of copies of this interaction
+     * \param[in] ftype    The GROMACS function type
+     * \param[in] params   String with all the parameters
+     * \param[in] index    Integer identifier
+     * \param[in] bondorder The bond order in case this is a bond.
+     */
+        ParameterNames(int                        ncopies,
+                       int                        ftype,
+                       const std::vector<double> &params,
+                       int                        index) :
               ncopies_(ncopies),
               ftype_(ftype),
-              name_(name),
-              geometry_(geometry),
               params_(params),
-              bondorder_(bondorder),
               poldataIndex_(index)
-        {
-            extractParams();
-        }
+        { }
 
         void inc() { ncopies_++; }
 
         int nCopies() const { return ncopies_; }
 
-        void setParamString(const std::string &params);
-
-        const std::string &name() const { return name_; }
-
-        double geometry() const { return geometry_; }
-        
-        void setGeometry(double geometry) { geometry_ = geometry; }
-        
-        double bondorder() const { return bondorder_; }
+        /*! \brief Update the parameters for this interaction
+         * \param[in] params The new parameters
+         */
+        void setParameterValues(const std::vector<double> &params)
+        {
+            params_ = params;
+        }
 
         int poldataIndex() const { return poldataIndex_; }
 
-        const std::string &paramString() const { return params_; }
+        const std::vector<double> &parameterValues() const { return params_; }
 
-        const std::vector<double> &paramValues() const { return p_; }
-
-        size_t nParams() const { return p_.size(); }
+        size_t nParams() const { return params_.size(); }
 
         CommunicationStatus Send(t_commrec *cr, int dest);
 
         CommunicationStatus Receive(t_commrec *cr, int src);
 
     private:
-
         //! Number of copies in the molecule data set
         int                 ncopies_;
         //! Function type for this particular bond
         int                 ftype_;
-        //! Name of this bond/angle/dihedral
-        std::string         name_;
-        //! Reference bond length or (dihedral) angle
-        double              geometry_;
-        //! String holding all the parameters
-        std::string         params_;
         //! Vector containing all the parameters
-        std::vector<double> p_;
-        //! The bond order in case this is a bond
-        double              bondorder_;
+        std::vector<double> params_;
         //! Index in Poldata structure
         int                 poldataIndex_;
-        //! Internal routine to extract the parameters
-        void extractParams();
 };
 
-using BondNamesIterator = typename std::vector<BondNames>::iterator;
+using ParameterNamesIterator = typename std::vector<ParameterNames>::iterator;
 
 /*! \brief Class holding for one type of interactions all names
  *
@@ -253,9 +126,9 @@ class ForceConstants
 
         ForceConstants () {}
 
-    ForceConstants(int ftype, 
+    ForceConstants(int             ftype, 
                    InteractionType itype, 
-                   bool bOpt)
+                   bool            bOpt)
             :
               ftype_(ftype),
               itype_(itype),
@@ -263,23 +136,29 @@ class ForceConstants
         {
         }
 
-        void addForceConstant(BondNames bn) { bn_.push_back(std::move(bn)); }
+        /*! \brief Add a force constant to the map
+         *
+         * \param[in] identifier A string to identify the parameter
+         * \param[in] bn         ParameterNames structure
+         */
+        void addForceConstant(const Identifier &identifier, ParameterNames bn)
+        { 
+            bn_.insert({identifier, std::move(bn)}); 
+        }
 
         /*! \brief
          * Extract information from the idef structure about parameters
          * \param[in] mm All the molecule structures
          * \param[in] pd The Poldata structure
-         * \param[in] optimizeGeometry Flag stating whether geometry should be extracted
          */
         void analyzeIdef(const std::vector<MyMol> &mm,
-                         const Poldata            *pd,
-                         bool                      optimizeGeometry);
+                         const Poldata            *pd);
 
-        /*! \brief Make reverse index from Poldata to BondNames
+        /*! \brief Make reverse index from Poldata to ParameterNames
          *
-         * The BondNames structure stores the Poldata index for
+         * The ParameterNames structure stores the Poldata index for
          * all interactions. This routine makes an index to convert
-         * the Poldata index to the index in BondNames.
+         * the Poldata index to the index in ParameterNames.
          */
         void makeReverseIndex();
 
@@ -297,9 +176,28 @@ class ForceConstants
 
         void dump(FILE *fp) const;
 
-        BondNamesIterator beginBN() { return bn_.begin(); }
+        /*! \brief Find a particular bond name
+         * 
+         * \param[in] identifier String identifying the bond name
+         * \throw if identifier not found
+         */
+        const ParameterNames &bondNamesConst(const Identifier &identifier) const;
 
-        BondNamesIterator endBN() { return bn_.end(); }
+        /*! \brief Test whether bondname exists
+         * \param[in] identifier identifying the bond name
+         * \return existence of the bond name
+         */
+        bool bondNameExists(const Identifier &identifier) const
+        {
+            return bn_.find(identifier) != bn_.end();
+        }
+
+        /*! \brief Return the whole ParameterNames map const version
+         */
+        const std::map<Identifier, ParameterNames> &bondNamesConst() const { return bn_; }
+        /*! \brief Return the whole ParameterNames map
+         */
+        std::map<Identifier, ParameterNames> &bondNames() { return bn_; }
 
         size_t nbad() const { return bn_.size(); }
 
@@ -308,23 +206,30 @@ class ForceConstants
         CommunicationStatus Receive(t_commrec *cr, int src);
 
     private:
-        int                    ftype_;
-        InteractionType        itype_;
-        bool                   bOpt_;
-        std::vector<BondNames> bn_;
-        std::vector<int>       reverseIndex_;
-        std::vector<double>    params_;
+        int                                  ftype_;
+        InteractionType                      itype_;
+        bool                                 bOpt_;
+        std::map<Identifier, ParameterNames> bn_;
+        std::vector<int>                     reverseIndex_;
 };
 
 
 class PoldataUpdate
 {
 public:
+    /*! Constructor without parameters 
+     */
     PoldataUpdate() {}
-    PoldataUpdate(InteractionType     iType,
-                  int                 index,
-                  double              geometry,
-                  std::string         paramString) : iType_(iType), index_(index), geometry_(geometry), paramString_(paramString)
+    /*! Empty constructor
+     * \param[in] iType           Interaction type, e.g. ietBONDS
+     * \param[in] identifier      Atom / Bond etc. indentifier
+     * \param[in] parameterValues Parameter values
+     */
+    PoldataUpdate(InteractionType            iType,
+                  const Identifier           identifier,
+                  const std::vector<double> &parameterValues) :
+        iType_(iType), identifier_(identifier), 
+        parameterValues_(parameterValues)
     {}
     
     /*! \brief
@@ -344,10 +249,12 @@ public:
     CommunicationStatus Receive(t_commrec *cr, int src);
 
 private:
+    //! Interaction type, e.g. ietBONDS
     InteractionType     iType_;
-    int                 index_;
-    double              geometry_;
-    std::string         paramString_;
+    //! Atom / Bond etc. indentifier
+    Identifier          identifier_;
+    //! String containing the parameter values
+    std::vector<double> parameterValues_;
 };
 
 

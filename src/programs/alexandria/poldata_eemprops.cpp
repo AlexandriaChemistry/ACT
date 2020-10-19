@@ -247,34 +247,4 @@ void Eemprops::setRowZetaQ(const std::string &rowstr,
     }
 }
 
-CommunicationStatus BondCorrection::Send(const t_commrec *cr, int dest)
-{
-    CommunicationStatus cs;
-    cs = gmx_send_data(cr, dest);
-    if (CS_OK == cs)
-    {
-        gmx_send_str(cr, dest, &name_);
-        gmx_send_double(cr, dest, hardness_);
-        gmx_send_double(cr, dest, hardness_sigma_);
-        gmx_send_double(cr, dest, electronegativity_);
-        gmx_send_double(cr, dest, electronegativity_sigma_);
-    }
-    return cs;
-}
-
-CommunicationStatus BondCorrection::Receive(const t_commrec *cr, int src)
-{
-    CommunicationStatus cs;
-    cs = gmx_recv_data(cr, src);
-    if (CS_OK == cs)
-    {
-        gmx_recv_str(cr, src, &name_);
-        hardness_                = gmx_recv_double(cr, src);
-        hardness_sigma_          = gmx_recv_double(cr, src);
-        electronegativity_       = gmx_recv_double(cr, src);
-        electronegativity_sigma_ = gmx_recv_double(cr, src);
-    }
-    return cs;
-}
-
 } // namespace alexandria

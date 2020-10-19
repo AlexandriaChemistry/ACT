@@ -39,7 +39,9 @@
 #include "gromacs/utility/stringutil.h"
 
 #include "chargemodel.h"
-#include "poldata_eemprops.h"
+#include "forcefieldparameter.h"
+#include "forcefieldparameterlist.h"
+#include "interactiontype.h"
 #include "poldata_low.h"
 #include "stringutil.h"
 
@@ -90,20 +92,6 @@ class Poldata
         bool corePointCharge() const { return false; }
 
         /*! \brief
-         * Set the potential energy function for VDW interaction.
-         * The VDW potentials supported by Alexandria are LJ, Buckingham, and Wang_Buckingham.
-         *
-         * \param[in] func  The name of the VDW potential function
-         */
-        void  setVdwFunction(const std::string &func);
-
-        /*! \brief
-         * Set the combination rule
-         *
-         */
-        void setCombinationRule(const std::string &func);
-
-        /*! \brief
          * Set relative dielectric constant
          *
          */
@@ -123,9 +111,6 @@ class Poldata
          **\param[in] ptype         The polarizability type defined for this element in Alexandria FF
          **\param[in] btype         The bond type defined for elem in Alexandria FF
          **\param[in] ztype         The zeta type defined for elem in Alexandria FF
-         **\param[in] fixvdw        Are these parameters mutable?
-         **\param[in] vdwparams     The VDW parameters for elem in Alexandria FF. The number of VDW parameters is 2 for LJ and 3 for
-         *                         Buckingham and Wang_Buckingham potentials
          **\param[in] ref_enthalpy  The reference enthalpy for elem
          */
         void  addAtype(const std::string &elem,
@@ -134,10 +119,12 @@ class Poldata
                        const std::string &ptype,
                        const std::string &btype,
                        const std::string &ztype,
-                       bool               fixvdw,
-                       std::string       &vdwparams,
                        const std::string &ref_enthalpy);
 
+        /*! \brief Add an atom type
+         * \param[in] atp The new atom type
+         */
+        void  addAtype(Ffatype atp) { alexandria_.push_back(atp); }
         /*! \brief
          *  Add the polarizability types
          *
@@ -161,33 +148,6 @@ class Poldata
                        int                ncontrolatoms);
 
         /*! \brief
-         * Set the value and the associated error for the given poltype
-         *
-         **\param[in] ptype            Polarizabilty type
-         **\param[in] polarizability   The value of polarizabilty
-         **\param[in] sigPol           The error
-         */
-        bool setPtypePolarizability(const std::string &ptype,
-                                    double             polarizability,
-                                    double             sigPol);
-
-        /*! \brief
-         * Set the unit of polarizability.
-         */
-        void setPolarUnit(const std::string &polarUnit)
-        {
-            alexandriaPolarUnit_ = polarUnit;
-        }
-
-        /*! \brief
-         * Set the reference polarizability value.
-         */
-        void setPolarRef(const std::string &polarRef)
-        {
-            alexandriaPolarRef_ = polarRef;
-        }
-
-        /*! \brief
          * Set the vsite angle unit.
          */
         void setVsite_angle_unit(const std::string &angle_unit)
@@ -205,13 +165,9 @@ class Poldata
 
         std::vector<Vsite> &getVsite() {return vsite_; }
 
-        int getVdwFtype() const { return gtVdwFtype_; }
-
         int getNexcl() const { return nexcl_; }
 
         size_t getNatypes() const { return alexandria_.size(); }
-
-        size_t getNptypes() const { return ptype_.size(); }
 
         /*! \brief
          * Return the reference enthalpy for the given atom type
@@ -221,17 +177,6 @@ class Poldata
          */
         bool getAtypeRefEnthalpy(const std::string &atype,
                                  double            *Href) const;
-
-        /*! \brief
-         * Return the combination rule
-         *
-         */
-        const std::string &getCombinationRule() const { return gtCombinationRule_; }
-
-        /*! \brief
-         * Return the combination rule.
-         */
-        int  getCombRule() const { return gtCombRule_; }
 
         /*! \brief
          * Return the relative dielectric constant
@@ -266,9 +211,9 @@ class Poldata
          *
          * \param[in] ztype  zeta Type
          */
-        const std::string &ztype2atype(const std::string &ztype) const;
+        //const std::string &ztype2atype(const std::string &ztype) const;
 
-        std::vector<std::string> ztype_names() const;
+        //std::vector<std::string> ztype_names() const;
 
         /*! \brief
          * Return the charge corresponding to the atyom type
@@ -292,12 +237,18 @@ class Poldata
          * Return the iterator corresponding to the atom type
          *
          * \param[in] atype  Atom Type
+         * \throw if atom type not  found.
          */
         FfatypeIterator findAtype(const std::string &atype)
         {
-            return std::find_if(alexandria_.begin(), alexandria_.end(),
-                                [atype](Ffatype const &f)
-                                { return (atype == f.getType()); });
+            auto atp = std::find_if(alexandria_.begin(), alexandria_.end(),
+                                    [atype](Ffatype const &f)
+                                    { return (atype == f.getType()); });
+            if (atp == alexandria_.end())
+            {
+                GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such atom ype %s", atype.c_str()).c_str()));
+            }
+            return atp;
         }
 
         /*! \brief
@@ -311,44 +262,6 @@ class Poldata
                                 [atype](Ffatype const &f)
                                 { return (atype == f.getType()); });
         }
-
-        /*! \brief
-         * Return the atom type corresponding to the bond type
-         *
-         * \param[in] btype  Bond Type
-         */
-        FfatypeIterator btypeToAtype(const std::string &btype)
-        {
-            return std::find_if(alexandria_.begin(), alexandria_.end(),
-                                [btype](Ffatype const &f)
-                                { return (btype == f.getBtype()); });
-        }
-
-        /*! \brief
-         * Return true if a given bond type exists in Alexandria
-         *
-         * \param[in] btype  Bond Type
-         */
-        bool haveBtype(const std::string &btype)
-        {
-            return (btypeToAtype(btype) != alexandria_.end());
-        }
-
-        /*! \brief
-         * Return the atom type corresponding to the polarizability type
-         *
-         * \param[in] ptype  Polarizability Type
-         */
-        FfatypeConstIterator ptypeToAtype(const std::string &ptype) const
-        {
-            return std::find_if(alexandria_.begin(), alexandria_.end(),
-                                [ptype](Ffatype const &f)
-                                { return (ptype == f.getPtype()); });
-        }
-
-        PtypeConstIterator getPtypeBegin() const { return ptype_.begin(); }
-
-        PtypeConstIterator getPtypeEnd() const { return ptype_.end(); }
 
         VsiteIterator getVsiteBegin()  { return vsite_.begin(); }
 
@@ -379,19 +292,6 @@ class Poldata
         }
 
         /*! \brief
-         * Return the iterator corresponding to the polarizability type
-         *
-         * \param[in] ptype  Polarizability Type
-         */
-        PtypeIterator findPtype(const std::string &ptype)
-        {
-            return std::find_if(ptype_.begin(), ptype_.end(),
-                                [ptype](Ptype const &p)
-                                { return (ptype == p.getType()); });
-        }
-
-
-        /*! \brief
          * Return the poltype corresponding to atype and true if successful
          *
          * \param[in]  atype  Atom type
@@ -410,186 +310,74 @@ class Poldata
         bool atypeToBtype(const std::string &atype,
                           std::string       *btype) const;
 
-
-        /* Return 1 if OK, 0 if not found */
-        bool getPtypePol(const std::string &ptype,
-                         double *polarizability, 
-                         double *sigPol) const;
-
-        bool getAtypePol(const std::string &atype,
-                         double *polarizability, 
-                         double *sigPol) const;
-
-        void addMiller(const std::string &miller,
-                       int                atomnumber,
-                       double             tauAhc,
-                       double             alphaAhp,
-                       const std::string &alexandria_equiv);
-
-        /* Return true if "miller" was found */
-        bool getMillerPol(const std::string &miller,
-                          int               *atomnumber,
-                          double            *tauAhc,
-                          double            *alphaAhp,
-                          std::string       &alexandria_equiv) const;
-
-        MillerIterator getMillerBegin() { return miller_.begin(); }
-
-        MillerIterator getMillerEnd() { return miller_.end(); }
-
-        MillerConstIterator getMillerBegin() const { return miller_.begin(); }
-
-        MillerConstIterator getMillerEnd() const { return miller_.end(); }
-
-        void setMillerFlags(const std::string &tauUnit,
-                            const std::string &ahpUnit,
-                            const std::string &ref)
-        {
-            millerTauUnit_ = tauUnit;
-            millerAhpUnit_ = ahpUnit;
-            millerRef_     = ref;
-        }
-
-        void getMillerFlags(std::string &tauUnit,
-                            std::string &ahpUnit,
-                            std::string &ref) const
-        {
-            tauUnit = millerTauUnit_;
-            ahpUnit = millerAhpUnit_;
-            ref     = millerRef_;
-        }
-
         /*! \brief
-         * Convert poltype to miller name. Return true if found
+         * Return the zeta type corresponding to atom type and true if successful
+         *
+         * \param[in]  atype  Atom type
+         * \param[out] ztype  Zeta type.
          */
-        bool ptypeToMiller(const std::string &ptype,
-                           std::string       &mil_type) const;
-
-        void  addBosque(const std::string &bosque,
-                        double             polarizability)
-        {
-            Bosque bos(bosque, polarizability);
-            bosque_.push_back(bos);
-        }
-
-        BosqueIterator getBosqueBegin() { return bosque_.begin(); }
-
-        BosqueIterator getBosqueEnd() { return bosque_.end(); }
-
-        BosqueConstIterator getBosqueBegin() const { return bosque_.begin(); }
-
-        BosqueConstIterator getBosqueEnd() const { return bosque_.end(); }
-
-        void setBosqueFlags(const std::string &polarUnit,
-                            const std::string &ref)
-        {
-            bosquePolarUnit_ = polarUnit;
-            bosqueRef_       = ref;
-        }
-
-        void getBosqueFlags(std::string &polarUnit,
-                            std::string &ref) const
-        {
-            polarUnit = bosquePolarUnit_;
-            ref       = bosqueRef_;
-        }
-
-        /*! \brief
-         * Convert poltype to bosque name.  Return true if found.
+        bool atypeToZtype(const std::string &atype,
+                          std::string       *ztype) const;
+ 
+        /*! \brief Convenience function to create a zeta Identifier
+         *
+         * Routine will convert atom types to a zeta identifier
+         * \param[in] atoms Vector of atom types
+         * \return BCC identifier
+         * \throws if something wrong
          */
-        bool ptypeToBosque(const std::string &ptype,
-                           std::string       &bosque) const;
-
-        bool getBosquePol(const std::string &bosque,
-                          double            *polarizability) const;
-
-        /* Return true on success or false otherwise */
+        const Identifier atomtypesToZetaIdentifier(const std::vector<std::string> atoms) const;
 
         /*! \brief
          * Add a new force list. The routine checks for duplicate itypes
          * and will not add a second block of a certain type is one is
          * present already.
-         * \param[in] forces
+         * \param[in] interaction The type of interaction being modeled
+         * \param[in] forces      The data structure
          */
-        void addForces(const ListedForces &forces);
+        void addForces(const std::string             &interaction,
+                       const ForceFieldParameterList &forces);
 
         size_t nforces() const { return forces_.size(); }
 
-        ListedForces &lastForces() { return forces_.back(); }
+        std::map<InteractionType, ForceFieldParameterList> *forces() { return &forces_; }
+    
+        const std::map<InteractionType, ForceFieldParameterList> &forcesConst() const { return forces_; }
 
-        const ListedForces &lastForces() const { return forces_.back(); }
-
-        ListedForcesIterator forcesBegin() { return forces_.begin(); }
-
-        ListedForcesIterator forcesEnd() { return forces_.end(); }
-
-        ListedForcesConstIterator forcesBegin() const { return forces_.begin(); }
-
-        ListedForcesConstIterator forcesEnd() const { return forces_.end(); }
-
-        ListedForcesIterator findForces(InteractionType iType)
-        {
-            return std::find_if(forces_.begin(), forces_.end(),
-                                [iType](ListedForces const &forces)
-                                { return (iType == forces.iType()); });
-        }
-
-        ListedForcesConstIterator findForces(InteractionType iType) const
-        {
-            return std::find_if(forces_.begin(), forces_.end(),
-                                [iType](ListedForces const &forces)
-                                {return (iType == forces.iType()); });
-        }
-
-        bool findForce(std::vector<std::string> &atoms,
-                       ListedForceIterator      *force);
-
-
-        bool findForce(const std::vector<std::string> &atoms,
-                       ListedForceConstIterator       *force) const;
+        /*! \brief Test whether an interaction is present
+         * \param[in] iType The interaction type
+         * \return true if present
+         */
+        bool interactionPresent(InteractionType iType) const { return forces_.find(iType) != forces_.end(); }
         
-        bool findForce(std::vector<std::string> &atoms,
-                       ListedForceIterator      *force,
-                       size_t                    bondOrder);
+        /*! \brief Return forces
+         * \param[in] iType The interaction type
+         * \return parameter list
+         * \throws if the list does not exist
+         */
+        ForceFieldParameterList *findForces(InteractionType iType)
+        {
+            auto force = forces_.find(iType);
+            if (force == forces_.end())
+            {
+                GMX_THROW(gmx::InternalError(gmx::formatString("No such interaction type %s (there are %d interaction types)",
+                                                               interactionTypeToString(iType).c_str(), 
+                                                               static_cast<int>(forces_.size())).c_str()));
+            }
+            return &force->second;
+        }
 
-
-        bool findForce(const std::vector<std::string> &atoms,
-                       ListedForceConstIterator       *force,
-                       size_t                          bondOrder) const;
-
-        bool searchForce(std::vector<std::string> &atoms,
-                         std::string              &params,
-                         double                   *refValue,
-                         double                   *sigma,
-                         size_t                   *ntrain) const;
-
-        bool searchForceIType(std::vector<std::string> &atoms,
-                         std::string              &params,
-                         double                   *refValue,
-                         double                   *sigma,
-                         size_t                   *ntrain,
-                         InteractionType           iType) const;
-
-        bool searchForceBondOrder(std::vector<std::string> &atoms,
-                         std::string              &params,
-                         double                   *refValue,
-                         double                   *sigma,
-                         size_t                   *ntrain,
-                         size_t                    bondorder) const;
-
-        bool searchForceBondOrderIType(std::vector<std::string> &atoms,
-                         std::string              &params,
-                         double                   *refValue,
-                         double                   *sigma,
-                         size_t                   *ntrain,
-                         size_t                    bondorder,
-                         InteractionType           iType) const;
-
-        const std::string &getVdwFunction() const { return gtVdwFunction_; }
-
-        const std::string &getPolarUnit() const { return alexandriaPolarUnit_; }
-
-        const std::string &getPolarRef() const { return alexandriaPolarRef_; }
+        const ForceFieldParameterList &findForcesConst(InteractionType iType) const
+        {
+            const auto force = forces_.find(iType);
+            if (force == forces_.end())
+            {
+                GMX_THROW(gmx::InternalError(gmx::formatString("No such interaction type %s (there are %d interaction types)",
+                                                               interactionTypeToString(iType).c_str(),
+                                                               static_cast<int>(forces_.size())).c_str()));
+            }
+            return force->second;
+        }
 
         const std::string &getVsite_angle_unit() const { return vsite_angle_unit_; }
 
@@ -607,128 +395,10 @@ class Poldata
 
         SymchargesConstIterator getSymchargesEnd() const { return symcharges_.end(); }
 
-        //! Return number of eemprops
-        size_t getNumprops() const { return eep_.size();}
-
         //! Return whether there is polarizability support for atype
         int havePolSupport(const std::string &atype) const;
 
-        bool haveEemSupport(const std::string &name,
-                            gmx_bool           bAllowZeroParameters) const;
-
-        double getJ00(const std::string &name) const;
-
-        int getNzeta(const std::string &atype) const;
-
-        double getZeta(const std::string &name, int zz) const;
-
-        const char *getQstr(const std::string &name) const;
-
-        const char *getRowstr(const std::string &name) const;
-
-        double getQ(const std::string &name,
-                    int                zz) const;
-
-        int getRow(const std::string &name,
-                   int                zz) const;
-
-        double getChi0(const std::string &name) const;
-
         const char *getOpts(const std::string &name) const;
-
-        void  addBondCorrection(BondCorrection bc) { bondCorr_.push_back(bc); }
-        
-        const std::vector<BondCorrection> &bondCorrections() const { return bondCorr_; }
-
-        /*! \brief Find the BCC properties
-         *
-         * Find the BCC properties corresponding to an atom type.
-         * \param[in] ai The Alexandria atom type i
-         * \param[in] aj The Alexandria atom type j
-         * \returns      An iterator pointing to the right BCCprops
-         *               structure or End in case the atom type
-         *               is not found.
-         */
-        BondCorrectionConstIterator atypes2Bcc(const std::string &ai,
-                                               const std::string &aj) const;
-
-        void  addEemprops(Eemprops eep) { eep_.push_back(eep); }
-
-        EempropsConstIterator BeginEemprops() const { return eep_.begin(); }
-
-        EempropsConstIterator EndEemprops() const { return eep_.end(); }
-
-        EempropsIterator BeginEemprops() { return eep_.begin(); }
-
-        EempropsIterator EndEemprops() { return eep_.end(); }
-
-        /*! \brief Find the EEM properties
-         *
-         * Find the EEM properties corresponding to an atom type.
-         * \param[in] atype     The Alexandria atom type
-         * \returns   An iterator pointing to the right EEMprops
-         *            structure or EndEemprops in case the atom type
-         *            is not found.
-         */
-        EempropsConstIterator atype2Eem(const std::string &atype) const
-        {
-            auto eic = mapAtypeToEempropsConstIterator_.find(atype);
-            if (eic != mapAtypeToEempropsConstIterator_.end())
-            {
-                return eic->second;
-            }
-            else
-            {
-                return EndEemprops();
-            }
-        }
-
-        EempropsIterator atype2Eem(const std::string &atype)
-        {
-            auto eic = mapAtypeToEempropsIterator_.find(atype);
-            if (eic != mapAtypeToEempropsIterator_.end())
-            {
-                return eic->second;
-            }
-            else
-            {
-                return EndEemprops();
-            }
-        }
-                                 
-        /*! \brief Find the EEM properties
-         *
-         * Find the EEM properties corresponding to a zeta type.
-         * \param[in] ztype     The Alexandria zeta type
-         * \returns   An iterator pointing to the right EEMprops
-         *            structure or EndEemprops in case the atom type
-         *            is not found.
-         */
-        EempropsConstIterator ztype2Eem(const std::string &ztype) const
-        {
-            auto eic = mapZtypeToEempropsConstIterator_.find(ztype);
-            if (eic != mapZtypeToEempropsConstIterator_.end())
-            {
-              return eic->second;
-            }
-            else
-            {
-                return EndEemprops();
-            }
-        }
-
-        EempropsIterator ztype2Eem(const std::string &ztype)
-        {
-            auto eic = mapZtypeToEempropsIterator_.find(ztype);
-            if (eic != mapZtypeToEempropsIterator_.end())
-            {
-                return eic->second;
-            }
-            else
-            {
-                return EndEemprops();
-            }
-        }
 
         //! Return the charge distribution type used
         ChargeType chargeType() const { return ChargeType_; }
@@ -762,14 +432,8 @@ class Poldata
         //! Turn polarizability on or off.
         void setPolarizable(bool polar) { polarizable_ = polar; }
 
-        //! Return the array of eemprops
-        std::vector<Eemprops> &getEemprops() {return eep_; }
-
-        //! Set the reference for EEM property calculations
-        void  setEpref(const std::string &epref) { eepReference_ = epref; }
-
-        //! Get the reference for EEM property calculations
-        const std::string &getEpref() const { return eepReference_; }
+        //! Turn polarizability on or off automatically
+        void checkForPolarizability();
 
         //! Spread from master to slave nodes
         void  broadcast(const t_commrec *cr);
@@ -777,44 +441,24 @@ class Poldata
         //! Spread eemprop from master to slave nodes
         void broadcast_eemprop(const t_commrec *cr);
         
-        //! Spread ptype from master to slave nodes
-        void broadcast_ptype(const t_commrec *cr);
-
         CommunicationStatus Send(const t_commrec *cr, int dest);
 
         CommunicationStatus Receive(const t_commrec *cr, int src);
 
-        //! \brief Make tables using std::map to prevent searching
-        void makeMappings();
-        
         //! \brief Check internal consistency of data structures
         void checkConsistency(FILE *fplog) const;
     private:
         std::string                           filename_;
-        std::vector<Ptype>                    ptype_;
         std::vector<Ffatype>                  alexandria_;
         std::vector<Vsite>                    vsite_;
         std::vector<std::string>              btype_;
-        std::string                           alexandriaPolarUnit_;
-        std::string                           alexandriaPolarRef_;
         std::string                           alexandriaVersion_;
         std::string                           vsite_angle_unit_;
         std::string                           vsite_length_unit_;
         int                                   nexcl_ = 0;
-        std::string                           gtVdwFunction_, gtCombinationRule_;
-        int                                   gtVdwFtype_, gtCombRule_;
         double                                gtEpsilonR_ = 1.0;
-        std::vector<ListedForces>             forces_;
-        std::vector<Miller>                   miller_;
-        std::string                           millerTauUnit_, millerAhpUnit_;
-        std::string                           millerRef_;
-        std::vector<Bosque>                   bosque_;
-        std::string                           bosquePolarUnit_;
-        std::string                           bosqueRef_;
+        std::map<InteractionType, ForceFieldParameterList> forces_;
         std::vector<Symcharges>               symcharges_;
-        std::vector<Eemprops>                 eep_;
-        std::vector<BondCorrection>           bondCorr_;
-        std::string                           eepReference_;
         bool                                  polarizable_ = false;
         ChargeType                            ChargeType_  = eqtPoint;
         ChargeGenerationAlgorithm             ChargeGenerationAlgorithm_ = eqgEEM;
@@ -828,13 +472,6 @@ class Poldata
         {
             return (pointer - &(vector[0]));
         }
-        
-        std::map<std::string, BondCorrectionConstIterator> mapAtypesToBccConstIterator_;
-        std::map<std::string, BondCorrectionIterator> mapAtypesToBccIterator_;
-        std::map<std::string, EempropsConstIterator> mapAtypeToEempropsConstIterator_;
-        std::map<std::string, EempropsIterator> mapAtypeToEempropsIterator_;
-        std::map<std::string, EempropsConstIterator> mapZtypeToEempropsConstIterator_;
-        std::map<std::string, EempropsIterator> mapZtypeToEempropsIterator_;
 };
 
 }

@@ -37,14 +37,13 @@
 #include <string>
 #include <vector>
 
-#include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/utility/fatalerror.h"
 
 #include "communication.h"
 #include "composition.h"
 #include "gmx_simple_comm.h"
-
+#include "units.h"
 
 const char *mpo_name[MPO_NR] =
 {
@@ -114,7 +113,7 @@ void GenericProperty::SetUnit(const std::string &unit)
     }
 }
 
-CommunicationStatus GenericProperty::Send(t_commrec *cr, int dest)
+CommunicationStatus GenericProperty::Send(t_commrec *cr, int dest) const
 {
     CommunicationStatus cs;
 
@@ -173,7 +172,8 @@ void CalcAtom::AddCharge(AtomicCharge q)
 {
     AtomicChargeIterator aci;
 
-    for (aci = BeginQ(); (aci < EndQ()); aci++)
+    auto acc = atomicChargeConst();
+    for (aci = acc.begin(); aci < acc.end(); ++aci)
     {
         if ((aci->getType().compare(q.getType()) == 0) &&
             (aci->getUnit().compare(q.getUnit()) == 0) &&
@@ -183,7 +183,7 @@ void CalcAtom::AddCharge(AtomicCharge q)
             break;
         }
     }
-    if (aci == EndQ())
+    if (aci == acc.end())
     {
         q_.push_back(q);
     }
@@ -236,10 +236,9 @@ CommunicationStatus CalcAtom::Receive(t_commrec *cr, int src)
     return cs;
 }
 
-CommunicationStatus CalcAtom::Send(t_commrec *cr, int dest)
+CommunicationStatus CalcAtom::Send(t_commrec *cr, int dest) const
 {
     CommunicationStatus  cs;
-    AtomicChargeIterator qi;
 
     cs = gmx_send_data(cr, dest);
     if (CS_OK == cs)
@@ -255,9 +254,13 @@ CommunicationStatus CalcAtom::Send(t_commrec *cr, int dest)
         gmx_send_double(cr, dest, z_);
         gmx_send_int(cr, dest, q_.size());
 
-        for (qi = BeginQ(); (CS_OK == cs) && (qi < EndQ()); qi++)
+        for (auto qi : atomicChargeConst())
         {
-            cs = qi->Send(cr, dest);
+            cs = qi.Send(cr, dest);
+            if (CS_OK != cs)
+            {
+                break;
+            }
         }
     }
     if (nullptr != debug)
@@ -268,7 +271,7 @@ CommunicationStatus CalcAtom::Send(t_commrec *cr, int dest)
     return cs;
 }
 
-CommunicationStatus Bond::Send(t_commrec *cr, int dest)
+CommunicationStatus Bond::Send(t_commrec *cr, int dest) const
 {
     CommunicationStatus cs;
 
@@ -306,7 +309,7 @@ CommunicationStatus Bond::Receive(t_commrec *cr, int src)
     return cs;
 }
 
-CommunicationStatus AtomNum::Send(t_commrec *cr, int dest)
+CommunicationStatus AtomNum::Send(t_commrec *cr, int dest) const
 {
     CommunicationStatus cs;
 
@@ -346,8 +349,8 @@ CommunicationStatus AtomNum::Receive(t_commrec *cr, int src)
 
 void MolecularComposition::AddAtom(AtomNum an)
 {
-    AtomNumIterator mci = SearchAtom(an.getAtom());
-    if (mci == EndAtomNum())
+    AtomNumIterator mci = searchAtom(an.getAtom());
+    if (mci == atomnum_.end())
     {
         atomnum_.push_back(an);
     }
@@ -361,78 +364,87 @@ void MolecularComposition::DeleteAtom(const std::string &catom)
 {
     AtomNumIterator ani;
 
-    if ((ani = SearchAtom(catom)) != EndAtomNum())
+    if ((ani = searchAtom(catom)) != atomnum_.end())
     {
         atomnum_.erase(ani);
     }
 }
 
-AtomNumIterator MolecularComposition::SearchAtom(const std::string &an)
+AtomNumConstIterator MolecularComposition::searchAtomConst(const std::string &an) const
 {
-    for (auto ani = BeginAtomNum(); (ani < EndAtomNum()); ani++)
+    for (auto ani = atomnum_.begin(); ani < atomnum_.end(); ++ani)
     {
         if (an.compare(ani->getAtom()) == 0)
         {
             return ani;
         }
     }
-    return EndAtomNum();
+    return atomnum_.end();
+}
+
+AtomNumIterator MolecularComposition::searchAtom(const std::string &an)
+{
+    for (auto ani = atomnum_.begin(); ani < atomnum_.end(); ++ani)
+    {
+        if (an.compare(ani->getAtom()) == 0)
+        {
+            return ani;
+        }
+    }
+    return atomnum_.end();
 }
 
 void MolecularComposition::ReplaceAtom(const std::string &oldatom,
                                        const std::string &newatom)
 {
 
-    for (auto i = BeginAtomNum(); (i < EndAtomNum()); i++)
+    for (auto &i : atomnum_)
     {
-        if (oldatom.compare(i->getAtom()) == 0)
+        if (oldatom.compare(i.getAtom()) == 0)
         {
-            i->SetAtom(newatom);
+            i.SetAtom(newatom);
             break;
         }
     }
 }
 
-int MolecularComposition::CountAtoms(const std::string &atom)
+int MolecularComposition::CountAtoms(const std::string &atom) const
 {
-    for (auto i = BeginAtomNum(); (i < EndAtomNum()); i++)
+    for (auto &i : atomnum_)
     {
-        if (atom.compare(i->getAtom()) == 0)
+        if (atom.compare(i.getAtom()) == 0)
         {
-            return i->getNumber();
+            return i.getNumber();
         }
     }
     return 0;
 }
 
-int MolecularComposition::CountAtoms(const char *atom)
-{
-    std::string str(atom);
-
-    return CountAtoms(str);
-}
-
-int MolecularComposition::CountAtoms()
+int MolecularComposition::CountAtoms() const
 {
     int             nat = 0;
 
-    for (auto i = BeginAtomNum(); (i < EndAtomNum()); i++)
+    for (auto &i : atomnum_)
     {
-        nat += i->getNumber();
+        nat += i.getNumber();
     }
     return nat;
 }
 
-CommunicationStatus MolecularComposition::Send(t_commrec *cr, int dest)
+CommunicationStatus MolecularComposition::Send(t_commrec *cr, int dest) const
 {
     CommunicationStatus cs = gmx_send_data(cr, dest);
     if (CS_OK == cs)
     {
         gmx_send_int(cr, dest, atomnum_.size());
         gmx_send_str(cr, dest, &compname_);
-        for (auto ani = BeginAtomNum(); (CS_OK == cs) && (ani < EndAtomNum()); ani++)
+        for (auto &ani : atomnum_)
         {
-            cs = ani->Send(cr, dest);
+            cs = ani.Send(cr, dest);
+            if (CS_OK != cs)
+            {
+                break;
+            }
         }
         if (nullptr != debug)
         {
@@ -495,7 +507,7 @@ CommunicationStatus ElectrostaticPotential::Receive(t_commrec *cr, int src)
     return cs;
 }
 
-CommunicationStatus ElectrostaticPotential::Send(t_commrec *cr, int dest)
+CommunicationStatus ElectrostaticPotential::Send(t_commrec *cr, int dest) const
 {
     CommunicationStatus cs;
 
@@ -540,7 +552,7 @@ CommunicationStatus AtomicCharge::Receive(t_commrec *cr, int src)
     return cs;
 }
 
-CommunicationStatus AtomicCharge::Send(t_commrec *cr, int dest)
+CommunicationStatus AtomicCharge::Send(t_commrec *cr, int dest) const
 {
     CommunicationStatus cs;
 
@@ -562,7 +574,7 @@ CommunicationStatus AtomicCharge::Send(t_commrec *cr, int dest)
     return cs;
 }
 
-CommunicationStatus MolecularDipole::Send(t_commrec *cr, int dest)
+CommunicationStatus MolecularDipole::Send(t_commrec *cr, int dest) const
 {
     CommunicationStatus cs;
 
@@ -612,7 +624,7 @@ CommunicationStatus MolecularDipole::Receive(t_commrec *cr, int src)
     return cs;
 }
 
-CommunicationStatus MolecularQuadrupole::Send(t_commrec *cr, int dest)
+CommunicationStatus MolecularQuadrupole::Send(t_commrec *cr, int dest) const
 {
     CommunicationStatus cs;
 
@@ -683,7 +695,7 @@ void MolecularPolarizability::Set(double xx, double yy, double zz,
     }
 }
 
-CommunicationStatus MolecularPolarizability::Send(t_commrec *cr, int dest)
+CommunicationStatus MolecularPolarizability::Send(t_commrec *cr, int dest) const
 {
     CommunicationStatus cs;
 
@@ -761,7 +773,7 @@ CommunicationStatus MolecularEnergy::Receive(t_commrec *cr, int src)
     return cs;
 }
 
-CommunicationStatus MolecularEnergy::Send(t_commrec *cr, int dest)
+CommunicationStatus MolecularEnergy::Send(t_commrec *cr, int dest) const
 {
     CommunicationStatus cs;
 
@@ -802,7 +814,7 @@ Experiment::Experiment(const std::string &program,
 
 {}
 
-void Experiment::Dump(FILE *fp)
+void Experiment::Dump(FILE *fp) const
 {
     if (nullptr != fp)
     {
@@ -819,19 +831,19 @@ void Experiment::Dump(FILE *fp)
             fprintf(fp, "method     = %s\n", method_.c_str());
             fprintf(fp, "basisset   = %s\n", basisset_.c_str());
             fprintf(fp, "datafile   = %s\n", datafile_.c_str());
-            for (CalcAtomIterator cai = BeginAtom(); (cai < EndAtom()); ++cai)
+            for (auto &cai : calcAtomConst())
             {
                 double   x, y, z;
-                cai->getCoords(&x, &y, &z);
+                cai.getCoords(&x, &y, &z);
                 fprintf(fp, "%-3s  %-3s  %3d  %10.3f  %10.3f  %10.3f\n",
-                        cai->getName().c_str(), cai->getObtype().c_str(),
-                        cai->getAtomid(), x, y, z);
+                        cai.getName().c_str(), cai.getObtype().c_str(),
+                        cai.getAtomid(), x, y, z);
             }
         }
     }
 }
 
-bool Experiment::getHF(double *value)
+bool Experiment::getHF(double *value) const
 {
     double      T    = -1;
     double      error;
@@ -846,111 +858,113 @@ bool Experiment::getHF(double *value)
     return done;
 }
 
-int Experiment::Merge(std::vector<Experiment>::iterator src)
+int Experiment::Merge(const Experiment *src)
 {
     int nwarn = 0;
 
-    for (auto mei = src->BeginEnergy(); (mei < src->EndEnergy()); ++mei)
+    for (auto &mei : src->molecularEnergyConst())
     {
-        alexandria::MolecularEnergy me(mei->getType(),
-                                       mei->getUnit(),
-                                       mei->getTemperature(),
-                                       mei->getPhase(),
-                                       mei->getValue(),
-                                       mei->getError());
+        alexandria::MolecularEnergy me(mei.getType(),
+                                       mei.getUnit(),
+                                       mei.getTemperature(),
+                                       mei.getPhase(),
+                                       mei.getValue(),
+                                       mei.getError());
         AddEnergy(me);
     }
 
-    for (auto dpi = src->BeginDipole(); (dpi < src->EndDipole()); ++dpi)
+    for (auto &dpi : src->dipoleConst())
     {
-        alexandria::MolecularDipole dp(dpi->getType(),
-                                       dpi->getUnit(),
-                                       dpi->getTemperature(),
-                                       dpi->getX(), dpi->getY(), dpi->getZ(),
-                                       dpi->getAver(), dpi->getError());
+        alexandria::MolecularDipole dp(dpi.getType(),
+                                       dpi.getUnit(),
+                                       dpi.getTemperature(),
+                                       dpi.getX(), dpi.getY(), dpi.getZ(),
+                                       dpi.getAver(), dpi.getError());
         AddDipole(dp);
     }
 
-    for (auto mpi = src->BeginPolar(); (mpi < src->EndPolar()); ++mpi)
+    for (auto &mpi : src->polarizabilityConst())
     {
-        alexandria::MolecularPolarizability mp(mpi->getType(),
-                                               mpi->getUnit(),
-                                               mpi->getTemperature(),
-                                               mpi->getXX(), mpi->getYY(), mpi->getZZ(),
-                                               mpi->getXY(), mpi->getXZ(), mpi->getYZ(),
-                                               mpi->getAverage(), mpi->getError());
+        alexandria::MolecularPolarizability mp(mpi.getType(),
+                                               mpi.getUnit(),
+                                               mpi.getTemperature(),
+                                               mpi.getXX(), mpi.getYY(), mpi.getZZ(),
+                                               mpi.getXY(), mpi.getXZ(), mpi.getYZ(),
+                                               mpi.getAverage(), mpi.getError());
         AddPolar(mp);
     }
 
-    for (auto mqi = src->BeginQuadrupole(); (mqi < src->EndQuadrupole()); ++mqi)
+    for (auto &mqi : src->quadrupoleConst())
     {
-        alexandria::MolecularQuadrupole mq(mqi->getType(), mqi->getUnit(),
-                                           mqi->getTemperature(),
-                                           mqi->getXX(), mqi->getYY(), mqi->getZZ(),
-                                           mqi->getXY(), mqi->getXZ(), mqi->getYZ());
+        alexandria::MolecularQuadrupole mq(mqi.getType(), mqi.getUnit(),
+                                           mqi.getTemperature(),
+                                           mqi.getXX(), mqi.getYY(), mqi.getZZ(),
+                                           mqi.getXY(), mqi.getXZ(), mqi.getYZ());
         AddQuadrupole(mq);
     }
 
-    for (auto cai = src->BeginAtom(); (cai < src->EndAtom()); ++cai)
+    for (auto &cai : src->calcAtomConst())
     {
         double   x, y, z;
-        CalcAtom caa(cai->getName(), cai->getObtype(), cai->getAtomid());
+        CalcAtom caa(cai.getName(), cai.getObtype(), cai.getAtomid());
 
-        cai->getCoords(&x, &y, &z);
+        cai.getCoords(&x, &y, &z);
         caa.SetCoords(x, y, z);
-        caa.SetUnit(cai->getUnit());
-        caa.SetResidue(cai->ResidueName(), cai->ResidueNumber());
-        for (auto aci = cai->BeginQ(); (aci < cai->EndQ()); ++aci)
+        caa.SetUnit(cai.getUnit());
+        caa.SetResidue(cai.ResidueName(), cai.ResidueNumber());
+        for (auto &aci : cai.atomicChargeConst())
         {
-            AtomicCharge aq(aci->getType(), aci->getUnit(),
-                            aci->getTemperature(), aci->getQ());
+            AtomicCharge aq(aci.getType(), aci.getUnit(),
+                            aci.getTemperature(), aci.getQ());
             caa.AddCharge(aq);
         }
         AddAtom(caa);
     }
 
-    for (auto mep = src->BeginPotential(); (mep < src->EndPotential()); mep++)
+    for (auto &mep : src->electrostaticPotentialConst())
     {
-        alexandria::ElectrostaticPotential ep(mep->getXYZunit(), mep->getVunit(),
-                                              mep->getEspid(),
-                                              mep->getX(), mep->getY(), mep->getZ(), mep->getV());
+        alexandria::ElectrostaticPotential ep(mep.getXYZunit(), mep.getVunit(),
+                                              mep.getEspid(),
+                                              mep.getX(), mep.getY(),
+                                              mep.getZ(), mep.getV());
         AddPotential(ep);
     }
 
     return nwarn;
 }
 
-CalcAtomIterator Experiment::SearchAtom(CalcAtom ca)
+CalcAtomIterator Experiment::searchAtom(CalcAtom ca)
 {
     CalcAtomIterator cai;
-    for (cai = BeginAtom(); (cai < EndAtom()); ++cai)
+    for (auto cai = catom_.begin(); (cai < catom_.end()); ++cai)
     {
         if (cai->Equal(ca))
         {
-            break;
+            return cai;
         }
     }
-    return cai;
+    return catom_.end();
 }
 
 void Experiment::AddAtom(CalcAtom ca)
 {
-    CalcAtomIterator cai = SearchAtom(ca);
+    CalcAtomIterator cai = searchAtom(ca);
 
-    if (cai == EndAtom())
+    if (cai == catom_.end())
     {
         gmx::RVec x;
-        int       unit = string2unit(ca.getUnit().c_str());
-        x[XX]          = convert2gmx(ca.getX(), unit);
-        x[YY]          = convert2gmx(ca.getY(), unit);
-        x[ZZ]          = convert2gmx(ca.getZ(), unit);
+        auto      unit = ca.getUnit();
+        x[XX]          = convertToGromacs(ca.getX(), unit);
+        x[YY]          = convertToGromacs(ca.getY(), unit);
+        x[ZZ]          = convertToGromacs(ca.getZ(), unit);
         coordinates_.push_back(x);
         catom_.push_back(ca);
     }
     else
     {
         printf("Trying to add identical atom %s (%s) twice. N = %d\n",
-               ca.getName().c_str(), ca.getObtype().c_str(), (int)catom_.size());
+               ca.getName().c_str(), ca.getObtype().c_str(),
+               (int)catom_.size());
     }
 }
 
@@ -960,7 +974,7 @@ bool Experiment::getVal(const std::string &type,
                         double            *error,
                         double            *T,
                         rvec               vec,
-                        tensor             quad_polar)
+                        tensor             quad_polar) const
 {
     bool   done = false;
     double x, y, z;
@@ -970,41 +984,43 @@ bool Experiment::getVal(const std::string &type,
     {
         case MPO_ENERGY:
         case MPO_ENTROPY:
-            for (auto mei = BeginEnergy(); !done && (mei < EndEnergy()); ++mei)
+            for (auto &mei : molecularEnergyConst())
             {
-                if (((type.size() == 0) || (type.compare(mei->getType()) == 0)) &&
-                    bCheckTemperature(Told, mei->getTemperature()))
+                if (((type.size() == 0) || (type.compare(mei.getType()) == 0)) &&
+                    bCheckTemperature(Told, mei.getTemperature()))
                 {
-                    mei->get(value, error);
-                    *T   = mei->getTemperature();
+                    mei.get(value, error);
+                    *T   = mei.getTemperature();
                     done = true;
+                    break;
                 }
             }
             break;
         case MPO_DIPOLE:
-            for (auto mdp = BeginDipole(); !done && (mdp < EndDipole()); ++mdp)
+            for (auto &mdp : dipoleConst())
             {
-                if (((type.size() == 0) || (type.compare(mdp->getType()) == 0))  &&
-                    bCheckTemperature(Told, mdp->getTemperature()))
+                if (((type.size() == 0) || (type.compare(mdp.getType()) == 0))  &&
+                    bCheckTemperature(Told, mdp.getTemperature()))
                 {
-                    mdp->get(&x, &y, &z, value, error);
+                    mdp.get(&x, &y, &z, value, error);
                     vec[XX] = x;
                     vec[YY] = y;
                     vec[ZZ] = z;
-                    *T      = mdp->getTemperature();
+                    *T      = mdp.getTemperature();
                     done    = true;
+                    break;
                 }
             }
             break;
         case MPO_POLARIZABILITY:
         {
-            for (auto mdp = BeginPolar(); !done && (mdp < EndPolar()); ++mdp)
+            for (auto &mdp : polarizabilityConst())
             {
-                if (((type.size() == 0) || (type.compare(mdp->getType()) == 0)) &&
-                    bCheckTemperature(Told, mdp->getTemperature()))
+                if (((type.size() == 0) || (type.compare(mdp.getType()) == 0)) &&
+                    bCheckTemperature(Told, mdp.getTemperature()))
                 {
                     double xx, yy, zz, xy, xz, yz;
-                    mdp->get(&xx, &yy, &zz, &xy, &xz, &yz, value, error);
+                    mdp.get(&xx, &yy, &zz, &xy, &xz, &yz, value, error);
                     quad_polar[XX][XX] = xx;
                     quad_polar[XX][YY] = xy;
                     quad_polar[XX][ZZ] = xz;
@@ -1014,20 +1030,21 @@ bool Experiment::getVal(const std::string &type,
                     quad_polar[ZZ][XX] = 0;
                     quad_polar[ZZ][YY] = 0;
                     quad_polar[ZZ][ZZ] = zz;
-                    *T                 = mdp->getTemperature();
+                    *T                 = mdp.getTemperature();
                     done               = true;
+                    break;
                 }
             }
         }
         break;
         case MPO_QUADRUPOLE:
-            for (auto mqi = BeginQuadrupole(); !done && (mqi < EndQuadrupole()); ++mqi)
+            for (auto &mqi : quadrupoleConst())
             {
-                if (((type.size() == 0) || (type.compare(mqi->getType()) == 0)) &&
-                    bCheckTemperature(Told, mqi->getTemperature()))
+                if (((type.size() == 0) || (type.compare(mqi.getType()) == 0)) &&
+                    bCheckTemperature(Told, mqi.getTemperature()))
                 {
                     double xx, yy, zz, xy, xz, yz;
-                    mqi->get(&xx, &yy, &zz, &xy, &xz, &yz);
+                    mqi.get(&xx, &yy, &zz, &xy, &xz, &yz);
                     quad_polar[XX][XX] = xx;
                     quad_polar[XX][YY] = xy;
                     quad_polar[XX][ZZ] = xz;
@@ -1037,22 +1054,23 @@ bool Experiment::getVal(const std::string &type,
                     quad_polar[ZZ][XX] = 0;
                     quad_polar[ZZ][YY] = 0;
                     quad_polar[ZZ][ZZ] = zz;
-                    *T                 = mqi->getTemperature();
+                    *T                 = mqi.getTemperature();
                     done               = true;
+                    break;
                 }
             }
             break;
         case MPO_CHARGE:
         {
             int i = 0;
-            for (auto mai = BeginAtom(); mai < EndAtom(); ++mai)
+            for (auto &mai : calcAtomConst())
             {
-                for (auto q = mai->BeginQ(); q <  mai->EndQ(); ++q)
+                for (auto &q : mai.atomicChargeConst())
                 {
-                    if (((type.size() == 0) || (type.compare(q->getType()) == 0)) &&
-                        bCheckTemperature(Told, q->getTemperature()))
+                    if (((type.size() == 0) || (type.compare(q.getType()) == 0)) &&
+                        bCheckTemperature(Told, q.getTemperature()))
                     {
-                        vec[i] = q->getQ();
+                        vec[i] = q.getQ();
                         i++;
                     }
                 }
@@ -1063,8 +1081,8 @@ bool Experiment::getVal(const std::string &type,
             }
         }
         break;
-        default:
-            break;
+    default:
+        break;
     }
     return done;
 }
@@ -1171,12 +1189,10 @@ CommunicationStatus Experiment::Receive(t_commrec *cr, int src)
     return cs;
 }
 
-CommunicationStatus Experiment::Send(t_commrec *cr, int dest)
+CommunicationStatus Experiment::Send(t_commrec *cr, int dest) const
 {
-    CalcAtomIterator               cai;
-    CommunicationStatus            cs;
-    ElectrostaticPotentialIterator epi;
-    std::string                    jobtype;
+    CommunicationStatus cs;
+    std::string         jobtype;
 
     cs = gmx_send_data(cr, dest);
     if (CS_OK == cs)
@@ -1198,39 +1214,78 @@ CommunicationStatus Experiment::Send(t_commrec *cr, int dest)
         gmx_send_int(cr, dest, catom_.size());
 
         //! Send Polarizabilities
-        for (auto dpi = BeginPolar(); (CS_OK == cs) && (dpi < EndPolar()); dpi++)
+        for (auto &dpi : polarizabilityConst())
         {
-            cs = dpi->Send(cr, dest);
+            cs = dpi.Send(cr, dest);
+            if (CS_OK != cs)
+            {
+                break;
+            }
         }
 
         //! Send Dipoles
-        for (auto dpi = BeginDipole(); (CS_OK == cs) && (dpi < EndDipole()); dpi++)
+        if (CS_OK == cs)
         {
-            cs = dpi->Send(cr, dest);
+            for (auto &dpi : dipoleConst())
+            {
+                cs = dpi.Send(cr, dest);
+                if (CS_OK != cs)
+                {
+                    break;
+                }
+            }
         }
 
         //! Send Quadrupoles
-        for (auto dqi = BeginQuadrupole(); (CS_OK == cs) && (dqi < EndQuadrupole()); dqi++)
+        if (CS_OK == cs)
         {
-            cs = dqi->Send(cr, dest);
+            for (auto &dqi : quadrupoleConst())
+            {
+                cs = dqi.Send(cr, dest);
+                if (CS_OK != cs)
+                {
+                    break;
+                }
+            }
         }
-
+        
         //! Send Energies
-        for (auto mei = BeginEnergy(); (CS_OK == cs) && (mei < EndEnergy()); mei++)
+        if (CS_OK == cs)
         {
-            cs = mei->Send(cr, dest);
+            for (auto &mei : molecularEnergyConst())
+            {
+                cs = mei.Send(cr, dest);
+                if (CS_OK != cs)
+                {
+                    break;
+                }
+            }
         }
 
         //! Send Potentials
-        for (epi = BeginPotential(); (CS_OK == cs) && (epi < EndPotential()); epi++)
+        if (CS_OK == cs)
         {
-            cs = epi->Send(cr, dest);
+            for (auto &epi : electrostaticPotentialConst())
+            {
+                cs = epi.Send(cr, dest);
+                if (CS_OK != cs)
+                {
+                    break;
+                }
+            }
         }
 
         //! Send Atoms
-        for (cai = BeginAtom(); (CS_OK == cs) && (cai < EndAtom()); cai++)
+        if (CS_OK == cs)
         {
-            cs = cai->Send(cr, dest);
+            for (auto &cai : calcAtomConst())
+            {
+                cs = cai.Send(cr, dest);
+                if (CS_OK != cs)
+                {
+                    break;
+                }
+            }
         }
     }
 
@@ -1254,10 +1309,10 @@ int MolProp::NAtom()
 
 void MolProp::AddBond(Bond b)
 {
-    BondIterator bi;
-    bool         bFound = false;
+    BondConstIterator bi;
+    bool              bFound = false;
 
-    for (bi = BeginBond(); !bFound && (bi < EndBond()); bi++)
+    for (bi = bondConst().begin(); bi < bondConst().end(); ++bi)
     {
         bFound = (((bi->getAi() == b.getAi()) && (bi->getAj() == b.getAj())) ||
                   ((bi->getAi() == b.getAj()) && (bi->getAj() == b.getAi())));
@@ -1305,7 +1360,7 @@ void MolProp::DeleteComposition(const std::string &compname)
 void MolProp::AddComposition(MolecularComposition mc)
 {
     MolecularCompositionIterator mci = SearchMolecularComposition(mc.getCompName());
-    if (mci == EndMolecularComposition())
+    if (mci == mol_comp_.end())
     {
         mol_comp_.push_back(mc);
     }
@@ -1313,10 +1368,10 @@ void MolProp::AddComposition(MolecularComposition mc)
 
 bool MolProp::BondExists(Bond b)
 {
-    for (auto bi = BeginBond(); (bi < EndBond()); bi++)
+    for (auto &bi : bondConst())
     {
-        if (((bi->getAi() == b.getAi()) && (bi->getAj() == b.getAj())) ||
-            ((bi->getAi() == b.getAj()) && (bi->getAj() == b.getAi())))
+        if (((bi.getAi() == b.getAi()) && (bi.getAj() == b.getAj())) ||
+            ((bi.getAi() == b.getAj()) && (bi.getAj() == b.getAi())))
         {
             return true;
         }
@@ -1324,15 +1379,15 @@ bool MolProp::BondExists(Bond b)
     return false;
 }
 
-int MolProp::Merge(std::vector<MolProp>::iterator src)
+int MolProp::Merge(const MolProp *src)
 {
     double      q = 0, sq = 0;
     std::string stmp;
     int         nwarn = 0;
 
-    for (auto si = src->BeginCategory(); (si < src->EndCategory()); si++)
+    for (auto &si : src->categoryConst())
     {
-        AddCategory(*si);
+        AddCategory(si);
     }
     SetFormula(src->formula());
     SetMass(src->getMass());
@@ -1394,56 +1449,55 @@ int MolProp::Merge(std::vector<MolProp>::iterator src)
     }
     if (NBond() == 0)
     {
-        for (auto bi = src->BeginBond(); (bi < src->EndBond()); bi++)
+        for (auto &bi : src->bondConst())
         {
-            alexandria::Bond bb(bi->getAi(), bi->getAj(), bi->getBondOrder());
+            alexandria::Bond bb(bi.getAi(), bi.getAj(), bi.getBondOrder());
             AddBond(bb);
         }
     }
     else
     {
-        for (auto bi = src->BeginBond(); (bi < src->EndBond()); bi++)
+        for (auto &bi : src->bondConst())
         {
-            alexandria::Bond bb(bi->getAi(), bi->getAj(), bi->getBondOrder());
+            alexandria::Bond bb(bi.getAi(), bi.getAj(), bi.getBondOrder());
             if (!BondExists(bb))
             {
                 fprintf(stderr, "WARNING bond %d-%d not present in %s\n",
-                        bi->getAi(), bi->getAj(), getMolname().c_str());
+                        bi.getAi(), bi.getAj(), getMolname().c_str());
                 nwarn++;
             }
         }
     }
 
-    for (auto ei = src->BeginExperiment(); (ei < src->EndExperiment()); ei++)
+    for (auto &ei : src->experimentConst())
     {
-        if (dsExperiment == ei->dataSource())
+        if (dsExperiment == ei.dataSource())
         {
-            Experiment ex(ei->getReference(), ei->getConformation());
-            nwarn += ex.Merge(ei);
+            Experiment ex(ei.getReference(), ei.getConformation());
+            nwarn += ex.Merge(&ei);
             AddExperiment(ex);
         }
         else
         {
-            auto jtype = ei->getJobtype();
+            auto jtype = ei.getJobtype();
             if (jtype != JOB_NR)
             {
-                Experiment ca(ei->getProgram(), ei->getMethod(),
-                              ei->getBasisset(), ei->getReference(),
-                              ei->getConformation(), ei->getDatafile(),
+                Experiment ca(ei.getProgram(), ei.getMethod(),
+                              ei.getBasisset(), ei.getReference(),
+                              ei.getConformation(), ei.getDatafile(),
                               jtype);
-                nwarn += ca.Merge(ei);
+                nwarn += ca.Merge(&ei);
                 AddExperiment(ca);
             }
         }
     }
-    for (auto mci = src->BeginMolecularComposition();
-         (mci < src->EndMolecularComposition()); mci++)
+    for (auto &mci : src->molecularCompositionConst())
     {
-        alexandria::MolecularComposition mc(mci->getCompName());
+        alexandria::MolecularComposition mc(mci.getCompName());
 
-        for (auto ani = mci->BeginAtomNum(); (ani < mci->EndAtomNum()); ani++)
+        for (auto &ani : mci.atomNumConst())
         {
-            AtomNum an(ani->getAtom(), ani->getNumber());
+            AtomNum an(ani.getAtom(), ani.getNumber());
             mc.AddAtom(an);
         }
         AddComposition(mc);
@@ -1469,11 +1523,8 @@ MolecularCompositionConstIterator MolProp::SearchMolecularComposition(const std:
                         });
 }
 
-void MolProp::Dump(FILE *fp)
+void MolProp::Dump(FILE *fp) const
 {
-    std::vector<std::string>::iterator si;
-    ExperimentIterator                 ei;
-
     if (fp)
     {
         fprintf(fp, "formula:      %s\n", formula().c_str());
@@ -1486,80 +1537,58 @@ void MolProp::Dump(FILE *fp)
         fprintf(fp, "charge:       %d\n", getCharge());
         fprintf(fp, "multiplicity: %d\n", getMultiplicity());
         fprintf(fp, "category:    ");
-        for (si = BeginCategory(); (si < EndCategory()); si++)
+        for (auto &si : categoryConst())
         {
-            fprintf(fp, " '%s'", si->c_str());
+            fprintf(fp, " '%s'", si.c_str());
         }
         fprintf(fp, "\n");
-        for (ei = BeginExperiment(); (ei < EndExperiment()); ei++)
+        for (auto &ei : experimentConst())
         {
-            ei->Dump(fp);
+            ei.Dump(fp);
         }
     }
 }
 
-bool MolProp::GenerateComposition(const Poldata *pd)
+bool MolProp::GenerateComposition()
 {
     ExperimentIterator   ci;
     CalcAtomIterator     cai;
     CompositionSpecs     cs;
-    MolecularComposition mci_bosque(cs.searchCS(iCbosque)->name());
     MolecularComposition mci_alexandria(cs.searchCS(iCalexandria)->name());
-    MolecularComposition mci_miller(cs.searchCS(iCmiller)->name());
 
     // Why was this again?
     mol_comp_.clear();
 
     int natoms = 0;
-    for (ci = BeginExperiment(); (mci_alexandria.CountAtoms() <= 0) && (ci < EndExperiment()); ci++)
+    for (auto &ci : experimentConst())
     {
         /* This assumes we have either all atoms or none.
          * A consistency check could be
          * to compare the number of atoms to the formula */
         int nat = 0;
-        for (cai = ci->BeginAtom(); (cai < ci->EndAtom()); cai++)
+        for (auto &cai : ci.calcAtomConst())
         {
             nat++;
-            AtomNum ans(cai->getObtype(), 1);
+            AtomNum ans(cai.getObtype(), 1);
             mci_alexandria.AddAtom(ans);
-
-            std::string ptype;
-            if (pd->atypeToPtype(cai->getObtype(), &ptype))
-            {
-                std::string bos_type;
-                if (pd->ptypeToBosque(ptype, bos_type))
-                {
-                    AtomNum anb(bos_type, 1);
-                    mci_bosque.AddAtom(anb);
-                }
-                std::string mil_type;
-                if (pd->ptypeToMiller(ptype, mil_type))
-                {
-                    AtomNum anm(mil_type.c_str(), 1);
-                    mci_miller.AddAtom(anm);
-                }
-            }
         }
         natoms = std::max(natoms, nat);
+        if (mci_alexandria.CountAtoms() > 0)
+        {
+            break;
+        }
     }
 
-    if (natoms == mci_bosque.CountAtoms())
-    {
-        AddComposition(mci_bosque);
-    }
-    if (natoms == mci_miller.CountAtoms())
-    {
-        AddComposition(mci_miller);
-    }
     if (natoms == mci_alexandria.CountAtoms())
     {
         AddComposition(mci_alexandria);
         if (nullptr != debug)
         {
             fprintf(debug, "LO_COMP: ");
-            for (auto ani = mci_alexandria.BeginAtomNum(); (ani < mci_alexandria.EndAtomNum()); ani++)
+            for (auto &ani : mci_alexandria.atomNumConst())
             {
-                fprintf(debug, " %s:%d", ani->getAtom().c_str(), ani->getNumber());
+                fprintf(debug, " %s:%d",
+                        ani.getAtom().c_str(), ani.getNumber());
             }
             fprintf(debug, "\n");
             fflush(debug);
@@ -1597,14 +1626,14 @@ bool MolProp::GenerateFormula(gmx_atomprop_t ap)
     myform[0]  = '\0';
     texform[0] = '\0';
     mci        = SearchMolecularComposition("bosque");
-    if (mci != EndMolecularComposition())
+    if (mci != mol_comp_.end())
     {
-        for (auto ani = mci->BeginAtomNum(); (ani < mci->EndAtomNum()); ani++)
+        for (auto &ani : mci->atomNumConst())
         {
             int         cnumber, an;
             real        value;
-            std::string catom = ani->getAtom();
-            cnumber = ani->getNumber();
+            std::string catom = ani.getAtom();
+            cnumber = ani.getNumber();
             if (gmx_atomprop_query(ap, epropElement, "???", catom.c_str(), &value))
             {
                 an = std::lround(value);
@@ -1651,12 +1680,11 @@ bool MolProp::GenerateFormula(gmx_atomprop_t ap)
 
 bool MolProp::HasComposition(const std::string &composition) const
 {
-    return std::find_if(BeginMolecularComposition(),
-                        EndMolecularComposition(),
+    return std::find_if(mol_comp_.begin(), mol_comp_.end(),
                         [composition](const MolecularComposition &mi)
                         {
                             return mi.getCompName().compare(composition) == 0;
-                        }) != EndMolecularComposition();
+                        }) != mol_comp_.end();
 }
 
 
@@ -1696,15 +1724,15 @@ bool MolProp::getPropRef(MolPropObservable mpo, iqmType iQM,
 
     if (iQM == iqmBoth)
     {
-        for (auto ei = BeginExperiment(); !done && (ei < EndExperiment()); ++ei)
+        for (auto &ei : experimentConst())
         {
             if ((conf.size() == 0) ||
-                stringEqual(ei->getConformation(), conf))
+                stringEqual(ei.getConformation(), conf))
             {
-                if (ei->getVal(type, mpo, value, error, T, vec, quad_polar) &&
+                if (ei.getVal(type, mpo, value, error, T, vec, quad_polar) &&
                     bCheckTemperature(Told, *T))
                 {
-                    ref->assign(ei->getReference());
+                    ref->assign(ei.getReference());
                     mylot->assign("Experiment");
                     done = true;
                     break;
@@ -1714,19 +1742,19 @@ bool MolProp::getPropRef(MolPropObservable mpo, iqmType iQM,
     }
     if (iQM == iqmExp)
     {
-        for (auto ei = BeginExperiment(); !done && (ei < EndExperiment()); ++ei)
+        for (auto &ei : experimentConst())
         {
-            if (dsExperiment != ei->dataSource())
+            if (dsExperiment != ei.dataSource())
             {
                 continue;
             }
             if ((conf.size() == 0) ||
-                stringEqual(ei->getConformation(), conf))
+                stringEqual(ei.getConformation(), conf))
             {
-                if (ei->getVal(type, mpo, value, error, T, vec, quad_polar) &&
+                if (ei.getVal(type, mpo, value, error, T, vec, quad_polar) &&
                     bCheckTemperature(Told, *T))
                 {
-                    ref->assign(ei->getReference());
+                    ref->assign(ei.getReference());
                     mylot->assign("Experiment");
                     done = true;
                     break;
@@ -1736,20 +1764,20 @@ bool MolProp::getPropRef(MolPropObservable mpo, iqmType iQM,
     }
     else if (iQM == iqmQM)
     {
-        for (auto ci = BeginExperiment(); !done && (ci < EndExperiment()); ++ci)
+        for (auto &ci : experimentConst())
         {
-            if (dsExperiment == ci->dataSource())
+            if (dsExperiment == ci.dataSource())
             {
                 continue;
             }
-            if (((method.size() == 0 || method == ci->getMethod()) &&
-                 (basis.size() == 0  || basis == ci->getBasisset())) &&
-                (conf.size() == 0    || conf == ci->getConformation()))
+            if (((method.size() == 0 || method == ci.getMethod()) &&
+                 (basis.size() == 0  || basis == ci.getBasisset())) &&
+                (conf.size() == 0    || conf == ci.getConformation()))
             {
-                if  (ci->getVal(type.c_str(), mpo, value, error, T, vec, quad_polar) &&
+                if  (ci.getVal(type.c_str(), mpo, value, error, T, vec, quad_polar) &&
                      bCheckTemperature(Told, *T))
                 {
-                    ref->assign(ci->getReference());
+                    ref->assign(ci.getReference());
                     mylot->assign(method + "/" + basis);
                     done = true;
                     break;
@@ -1764,11 +1792,11 @@ bool MolProp::getOptHF(double *value)
 {
     bool done = false;
 
-    for (auto ei = BeginExperiment(); !done && (ei < EndExperiment()); ++ei)
+    for (auto &ei : experimentConst())
     {
-        if (ei->getJobtype() == JOB_OPT)
+        if (ei.getJobtype() == JOB_OPT)
         {
-            if (ei->getHF(value))
+            if (ei.getHF(value))
             {
                 done = true;
             }
@@ -1781,10 +1809,10 @@ int MolProp::NOptSP()
 {
     int n = 0;
 
-    for (auto ei = BeginExperiment(); ei < EndExperiment(); ++ei)
+    for (auto &ei : experimentConst())
     {
-        if (ei->getJobtype() == JOB_OPT ||
-            ei->getJobtype() == JOB_SP)
+        if (ei.getJobtype() == JOB_OPT ||
+            ei.getJobtype() == JOB_SP)
         {
             n++;
         }
@@ -1822,9 +1850,9 @@ ExperimentIterator MolProp::getCalcPropType(const std::string &method,
                                             MolPropObservable  mpo,
                                             const char        *type)
 {
-    ExperimentIterator       ci;
+    ExperimentIterator ci;
 
-    for (ci = BeginExperiment(); (ci < EndExperiment()); ci++)
+    for (ci = exper_.begin(); (ci < exper_.end()); ci++)
     {
         if ((method.size() == 0 || strcasecmp(method.c_str(), ci->getMethod().c_str()) == 0) &&
             (basis.size() == 0  || strcasecmp(basis.c_str(), ci->getBasisset().c_str()) == 0))
@@ -1836,32 +1864,48 @@ ExperimentIterator MolProp::getCalcPropType(const std::string &method,
                     done = ci->NPotential() > 0;
                     break;
                 case MPO_DIPOLE:
-                    for (auto mdp = ci->BeginDipole(); !done && (mdp < ci->EndDipole()); mdp++)
+                    for (auto &mdp : ci->dipoleConst())
                     {
-                        done =  ((nullptr == type) ||
-                                 (strcasecmp(type, mdp->getType().c_str()) == 0));
+                        done = ((nullptr == type) ||
+                                (strcasecmp(type, mdp.getType().c_str()) == 0));
+                        if (done)
+                        {
+                            break;
+                        }
                     }
                     break;
                 case MPO_QUADRUPOLE:
-                    for (auto mdp = ci->BeginQuadrupole(); !done && (mdp < ci->EndQuadrupole()); mdp++)
+                    for (auto &mdp : ci->quadrupoleConst())
                     {
-                        done =  ((nullptr == type) ||
-                                 (strcasecmp(type, mdp->getType().c_str()) == 0));
+                        done = ((nullptr == type) ||
+                                (strcasecmp(type, mdp.getType().c_str()) == 0));
+                        if (done)
+                        {
+                            break;
+                        }
                     }
                     break;
                 case MPO_POLARIZABILITY:
-                    for (auto mdp = ci->BeginPolar(); !done && (mdp < ci->EndPolar()); mdp++)
+                    for (auto &mdp : ci->polarizabilityConst())
                     {
-                        done =  ((nullptr == type) ||
-                                 (strcasecmp(type, mdp->getType().c_str()) == 0));
+                        done = ((nullptr == type) ||
+                                (strcasecmp(type, mdp.getType().c_str()) == 0));
+                        if (done)
+                        {
+                            break;
+                        }
                     }
                     break;
                 case MPO_ENERGY:
                 case MPO_ENTROPY:
-                    for (auto mdp = ci->BeginEnergy(); !done && (mdp < ci->EndEnergy()); mdp++)
+                    for (auto &mdp : ci->molecularEnergyConst())
                     {
-                        done =  ((nullptr == type) ||
-                                 (strcasecmp(type, mdp->getType().c_str()) == 0));
+                        done = ((nullptr == type) ||
+                                (strcasecmp(type, mdp.getType().c_str()) == 0));
+                        if (done)
+                        {
+                            break;
+                        }
                     }
                     break;
                 default:
@@ -1885,7 +1929,7 @@ ExperimentIterator MolProp::getCalc(const std::string &method,
                                     std::string       *mylot)
 {
     ExperimentIterator ci;
-    for (ci = BeginExperiment(); (ci < EndExperiment()); ci++)
+    for (ci = exper_.begin(); (ci < exper_.end()); ++ci)
     {
         if ((method.size() == 0 || strcasecmp(method.c_str(), ci->getMethod().c_str()) == 0) &&
             (basis.size() == 0  || strcasecmp(basis.c_str(), ci->getBasisset().c_str()) == 0))
@@ -1900,7 +1944,7 @@ ExperimentIterator MolProp::getCalc(const std::string &method,
     return ci;
 }
 
-CommunicationStatus MolProp::Send(t_commrec *cr, int dest)
+CommunicationStatus MolProp::Send(t_commrec *cr, int dest) const
 {
     CommunicationStatus                cs;
     BondIterator                       bi;
@@ -1928,39 +1972,59 @@ CommunicationStatus MolProp::Send(t_commrec *cr, int dest)
         gmx_send_int(cr, dest, exper_.size());
 
         /* Send Bonds */
-        for (bi = BeginBond(); (CS_OK == cs) && (bi < EndBond()); bi++)
+        for (auto &bi : bondConst())
         {
-            cs = bi->Send(cr, dest);
+            cs = bi.Send(cr, dest);
+            if (CS_OK != cs)
+            {
+                break;
+            }
         }
 
         /* Send Composition */
-        for (mci = BeginMolecularComposition(); (CS_OK == cs) && (mci < EndMolecularComposition()); mci++)
+        if (CS_OK == cs)
         {
-            cs = mci->Send(cr, dest);
+            for (auto &mci : molecularCompositionConst())
+            {
+                cs = mci.Send(cr, dest);
+                if (CS_OK != cs)
+                {
+                    break;
+                }
+            }
         }
 
         /* send Categories */
-        for (si = BeginCategory(); (CS_OK == cs) && (si < EndCategory()); si++)
+        if (CS_OK == cs)
         {
-            cs = gmx_send_data(cr, dest);
-            if (CS_OK == cs)
+            for (auto &si : categoryConst())
             {
-                std::string sii = si->c_str();
-                gmx_send_str(cr, dest, &sii);
-                if (nullptr != debug)
+                cs = gmx_send_data(cr, dest);
+                if (CS_OK == cs)
                 {
-                    fprintf(debug, "Sent category %s\n", si->c_str());
-                    fflush(debug);
+                    std::string sii = si.c_str();
+                    gmx_send_str(cr, dest, &sii);
+                    if (nullptr != debug)
+                    {
+                        fprintf(debug, "Sent category %s\n", si.c_str());
+                        fflush(debug);
+                    }
                 }
             }
         }
 
         /* Send Experiments */
-        for (ei = BeginExperiment(); (CS_OK == cs) && (ei < EndExperiment()); ei++)
+        if (CS_OK == cs)
         {
-            cs = ei->Send(cr, dest);
+            for (auto &ei : experimentConst())
+            {
+                cs = ei.Send(cr, dest);
+                if (CS_OK != cs)
+                {
+                    break;
+                }
+            }
         }
-
         if (nullptr != debug)
         {
             fprintf(debug, "Sent MolProp %s, status %s\n",

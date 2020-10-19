@@ -42,7 +42,6 @@
 #include "gromacs/coulombintegrals/coulombintegrals.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/listed-forces/bonded.h"
-#include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/statistics/statistics.h"
@@ -55,6 +54,7 @@
 
 #include "poldata.h"
 #include "regression.h"
+#include "units.h"
 
 namespace alexandria
 {
@@ -67,20 +67,20 @@ void QgenResp::potcomp(const char             *potcomp,
 {
     double  pp, exp, eem;
     FILE   *fp;
-    int     unit = eg2cHartree_e;
+    std::string unit("Hartree/e");
 
     if (potcomp)
     {
         const char *pcleg[2] = { "Atoms", "ESP points" };
-        fp = xvgropen(potcomp, "Electrostatic potential", unit2string(unit), unit2string(unit), oenv);
+        fp = xvgropen(potcomp, "Electrostatic potential", unit, unit, oenv);
         xvgr_legend(fp, 2, pcleg, oenv);
         fprintf(fp, "@type xy\n");
         for (size_t i = 0; (i < nEsp()); i++)
         {
             /* Conversion may or may not be in vain depending on unit */
-            exp = gmx2convert(ep_[i].v(), unit);
-            eem = gmx2convert(ep_[i].vCalc(), unit);
-            if (i == nRespAtom())
+            exp = convertFromGromacs(ep_[i].v(), unit);
+            eem = convertFromGromacs(ep_[i].vCalc(), unit);
+            if (i == static_cast<size_t>(natoms()))
             {
                 fprintf(fp, "&\n");
                 fprintf(fp, "@type xy\n");
@@ -90,6 +90,7 @@ void QgenResp::potcomp(const char             *potcomp,
         fprintf(fp, "&\n");
         fclose(fp);
     }
+    std::string potUnit("Hartree/e");
     if (pdbdiff)
     {
         fp = fopen(pdbdiff, "w");
@@ -101,8 +102,8 @@ void QgenResp::potcomp(const char             *potcomp,
         }
         for (size_t i = 0; (i < nEsp()); i++)
         {
-            exp = gmx2convert(ep_[i].v(), eg2cHartree_e);
-            eem = gmx2convert(ep_[i].vCalc(), eg2cHartree_e);
+            exp = convertFromGromacs(ep_[i].v(), potUnit);
+            eem = convertFromGromacs(ep_[i].vCalc(), potUnit);
             pp  = ep_[i].v()-ep_[i].vCalc();
             const gmx::RVec esp = ep_[i].esp();
             fprintf(fp, "%-6s%5u  %-4.4s%3.3s %c%4d%c   %8.3f%8.3f%8.3f%6.2f%6.2f\n",
@@ -122,7 +123,7 @@ void QgenResp::writeDiffCube(QgenResp               *src,
 {
     FILE       *fp;
     int         i, m, ix, iy, iz;
-    real        pp, q, r, rmin;
+    real        pp, r, rmin;
     gmx_stats_t gst = nullptr, ppcorr = nullptr;
 
     if (0 != histFn.size())
@@ -130,31 +131,32 @@ void QgenResp::writeDiffCube(QgenResp               *src,
         gst    = gmx_stats_init();
         ppcorr = gmx_stats_init();
     }
+    std::string lengthUnit("Bohr");
+    std::string potUnit("Hartree/e");
     if (0 != cubeFn.size())
     {
         fp = gmx_ffopen(cubeFn.c_str(), "w");
         fprintf(fp, "%s\n", title.c_str());
         fprintf(fp, "POTENTIAL\n");
         fprintf(fp, "%5d%12.6f%12.6f%12.6f\n",
-                static_cast<int>(nRespAtom()),
-                gmx2convert(origin_[XX], eg2cBohr),
-                gmx2convert(origin_[YY], eg2cBohr),
-                gmx2convert(origin_[ZZ], eg2cBohr));
+                static_cast<int>(natoms()),
+                convertFromGromacs(origin_[XX], lengthUnit),
+                convertFromGromacs(origin_[YY], lengthUnit),
+                convertFromGromacs(origin_[ZZ], lengthUnit));
         fprintf(fp, "%5d%12.6f%12.6f%12.6f\n", nxyz_[XX],
-                gmx2convert(space_[XX], eg2cBohr), 0.0, 0.0);
+                convertFromGromacs(space_[XX], lengthUnit), 0.0, 0.0);
         fprintf(fp, "%5d%12.6f%12.6f%12.6f\n", nxyz_[YY],
-                0.0, gmx2convert(space_[YY], eg2cBohr), 0.0);
+                0.0, convertFromGromacs(space_[YY], lengthUnit), 0.0);
         fprintf(fp, "%5d%12.6f%12.6f%12.6f\n", nxyz_[ZZ],
-                0.0, 0.0, gmx2convert(space_[ZZ], eg2cBohr));
+                0.0, 0.0, convertFromGromacs(space_[ZZ], lengthUnit));
 
-        for (size_t m = 0; (m < nRespAtom()); m++)
+        for (int m = 0; (m < natoms()); m++)
         {
-            q = ra_[m].q();
             fprintf(fp, "%5d%12.6f%12.6f%12.6f%12.6f\n",
-                    ra_[m].atomnumber(), q,
-                    gmx2convert(ra_[m].x()[XX], eg2cBohr),
-                    gmx2convert(ra_[m].x()[YY], eg2cBohr),
-                    gmx2convert(ra_[m].x()[ZZ], eg2cBohr));
+                    atomnumber_[m], q_[m],
+                    convertFromGromacs(x_[m][XX], lengthUnit),
+                    convertFromGromacs(x_[m][YY], lengthUnit),
+                    convertFromGromacs(x_[m][ZZ], lengthUnit));
         }
 
         for (ix = m = 0; ix < nxyz_[XX]; ix++)
@@ -166,8 +168,8 @@ void QgenResp::writeDiffCube(QgenResp               *src,
                     if (src->nEsp() > 0 && nullptr != ppcorr)
                     {
                         gmx_stats_add_point(ppcorr,
-                                            gmx2convert(src->ep_[m].v(), eg2cHartree_e),
-                                            gmx2convert(ep_[m].vCalc(), eg2cHartree_e), 0, 0);
+                                            convertFromGromacs(src->ep_[m].v(), potUnit),
+                                            convertFromGromacs(ep_[m].vCalc(), potUnit), 0, 0);
                     }
                     pp = ep_[m].vCalc();
                     if (!src->ep_.empty())
@@ -176,7 +178,7 @@ void QgenResp::writeDiffCube(QgenResp               *src,
                     }
                     if (rho == 0)
                     {
-                        pp = gmx2convert(pp, eg2cHartree_e);
+                        pp = convertFromGromacs(pp, potUnit);
                     }
                     else
                     {
@@ -191,10 +193,10 @@ void QgenResp::writeDiffCube(QgenResp               *src,
                     {
                         rmin = 1000;
                         /* Add point to histogram! */
-                        for (auto i = ra_.begin(); i < ra_.end(); ++i)
+                        for (auto i = 0; i < nAtom_; ++i)
                         {
                             gmx::RVec dx;
-                            rvec_sub(i->x(), ep_[m].esp(), dx);
+                            rvec_sub(x_[i], ep_[m].esp(), dx);
                             r = norm(dx);
                             if (r < rmin)
                             {
@@ -267,6 +269,7 @@ void QgenResp::readCube(const std::string &fn, bool bESPonly)
     std::string         tmp;
     int                 line = 0;
     bool                bOK  = true;
+    std::string         Bohr("Bohr");
     while (bOK && tr.readLine(&tmp))
     {
         while (!tmp.empty() && tmp[tmp.length()-1] == '\n')
@@ -316,8 +319,8 @@ void QgenResp::readCube(const std::string &fn, bool bESPonly)
                 }
                 for (int m = 0; (m < DIM); m++)
                 {
-                    origin_[m] = convert2gmx(origin_[m], eg2cBohr);
-                    space_[m]  = convert2gmx(space_[m], eg2cBohr);
+                    origin_[m] = convertToGromacs(origin_[m], Bohr);
+                    space_[m]  = convertToGromacs(space_[m], Bohr);
                 }
             }
             pot.clear();
@@ -332,14 +335,12 @@ void QgenResp::readCube(const std::string &fn, bool bESPonly)
             {
                 if (!bESPonly)
                 {
-                    ra_[m].setAtomnumber(anr);
-                    ra_[m].setQ(qq);
+                    atomnumber_[m] = anr;
+                    q_[m] = qq;
                 }
-                gmx::RVec xx;
-                xx[XX] = convert2gmx(lx, eg2cBohr);
-                xx[YY] = convert2gmx(ly, eg2cBohr);
-                xx[ZZ] = convert2gmx(lz, eg2cBohr);
-                ra_[m].setX(xx);
+                x_[m][XX] = convertToGromacs(lx, Bohr);
+                x_[m][YY] = convertToGromacs(ly, Bohr);
+                x_[m][ZZ] = convertToGromacs(lz, Bohr);
             }
         }
         else if (line >= 6+natom)
@@ -347,7 +348,7 @@ void QgenResp::readCube(const std::string &fn, bool bESPonly)
             std::vector<std::string> ss = gmx::splitString(tmp);
             for (const auto &s : ss)
             {
-                pot.push_back(convert2gmx(my_atof(s.c_str(), "energy"), eg2cHartree_e));
+                pot.push_back(convertToGromacs(my_atof(s.c_str(), "energy"), "Hartree/e"));
             }
         }
 
@@ -377,7 +378,96 @@ void QgenResp::readCube(const std::string &fn, bool bESPonly)
     {
         gmx_fatal(FARGS, "Error reading %s. Found %d potential values, %d coordinates and %d atoms",
                   fn.c_str(), static_cast<int>(pot.size()), static_cast<int>(ep_.size()),
-                  static_cast<int>(ra_.size()));
+                  nAtom_);
+    }
+}
+
+void QgenResp::makeGrid(real spacing, real border, rvec x[])
+{
+    if (0 != nEsp())
+    {
+        fprintf(stderr, "Overwriting existing ESP grid\n");
+    }
+    if (spacing <= 0)
+    {
+        spacing = 0.005;
+        fprintf(stderr, "Spacing too small, setting it to %g nm\n", spacing);
+    }
+    /* Determine extent of compound */
+    rvec xmin = {  100,  100,  100 };
+    rvec xmax = { -100, -100, -100 };
+    for (int i = 0; (i < nAtom_); i++)
+    {
+        for(int m = 0; m < DIM; m++)
+        {
+            x_[i][m] = x[i][m];
+            xmin[m]  = std::min(xmin[m], x[i][m]);
+            xmax[m]  = std::max(xmax[m], x[i][m]);
+        }
+    }
+    
+    if (border <= 0)
+    {
+        border = 0.25; // nanometer
+        fprintf(stderr, "Border too small, setting it to %g nm\n", border);
+    }
+    rvec box;
+    for (int m = 0; (m < DIM); m++)
+    {
+        xmin[m]    -= border;
+        xmax[m]    += border;
+        origin_[m]  = xmin[m];
+        box[m]      = xmax[m]-xmin[m];
+    }
+    for (int m = 0; (m < DIM); m++)
+    {
+        nxyz_[m]  = 1+(int) (box[m]/spacing);
+        space_[m] = box[m]/nxyz_[m];
+    }
+    ep_.clear();
+    for (int i = 0; (i < nxyz_[XX]); i++)
+    {
+        gmx::RVec xyz;
+        xyz[XX] = xmin[XX] + i*space_[XX];
+        for (int j = 0; (j < nxyz_[YY]); j++)
+        {
+            xyz[YY] = xmin[YY] + j*space_[YY];
+            for (int k = 0; (k < nxyz_[ZZ]); k++)
+            {
+                xyz[ZZ] = xmin[ZZ] + k*space_[ZZ];
+                ep_.push_back(EspPoint(xyz, 0));
+            }
+        }
+    }
+}
+
+void QgenResp::calcRho()
+{
+    for (size_t i = 0; (i < nEsp()); i++)
+    {
+        double V = 0;
+        for (int j = 0; j < nAtom_; j++)
+        {
+            double               vv = 0;
+            gmx::RVec            dx;
+            rvec_sub(ep_[i].esp(), x_[j], dx);
+            double               r     = norm(dx);
+            if (eqtGaussian == ChargeType_)
+            {
+                vv = q_[j]*Nuclear_GG(r, zeta_[j]);
+            }
+            else if (eqtSlater == ChargeType_)
+            {
+                vv = q_[j]*Nuclear_SS(r, row_[j], zeta_[j]);
+            }
+            else
+            {
+                gmx_fatal(FARGS, "Unsupported charge model %s",
+                          chargeTypeName(ChargeType_).c_str());
+            }
+            V  += vv;
+        }
+        ep_[i].setRho(V);
     }
 }
 

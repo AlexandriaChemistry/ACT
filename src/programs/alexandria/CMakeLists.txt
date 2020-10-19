@@ -26,62 +26,65 @@
 #
 
 set(ALEXANDRIA_SOURCES
-           chargemodel.cpp
-           forcefieldparameter.cpp
-           forcefieldparameterlist.cpp
-	       gentop_core.cpp
-	       gentop_vsite.cpp
-           qgen_acm.cpp
-	       qgen_cube.cpp
-	       qgen_resp.cpp
-           qgen_resp_atom.cpp
-	       gmx_simple_comm.cpp
-      	   molprop.cpp
-           molprop_util.cpp
-           molprop_xml.cpp
-           molselect.cpp
-           poldata.cpp
-           poldata_xml.cpp
-           poldata_tables.cpp
-           poldata_low.cpp
-           poldata_eemprops.cpp
-           xml_util.cpp
-           readpsi4.cpp
-           latex_util.cpp
-           mymol_low.cpp
-           mymol.cpp
            alex_modules.cpp
-           analyze.cpp
            bastat.cpp
            categories.cpp
+           chargemodel.cpp
+           communication.cpp
            composition.cpp
            fill_inputrec.cpp
-           qm2molprop.cpp
-           babel_io.cpp
-           fit_qs_zeta.cpp
-           gen_table.cpp
+#           fit_qs_zeta.cpp
+           forcefieldparameter.cpp
+           forcefieldparameterlist.cpp
+#           gen_table.cpp
            gentop.cpp
+           gentop_core.cpp
+           gentop_vsite.cpp
+           gmx_simple_comm.cpp
+           identifier.cpp
+           interactiontype.cpp
+           latex_util.cpp
            merge_mp.cpp
            merge_pd.cpp
            molgen.cpp
+      	   molprop.cpp
            molprop_check.cpp
-           molprop_tables.cpp
+           molprop_csv.cpp
            molprop_sqlite3.cpp
            molprop_test.cpp
-           molprop_csv.cpp
+           molprop_util.cpp
+           molprop_xml.cpp
+           molselect.cpp
+           mymol.cpp
+           mymol_low.cpp
+	   optparam.cpp
            phase.cpp
            plistwrapper.cpp
+           poldata.cpp
+#           poldata_eemprops.cpp
+           poldata_low.cpp
+           poldata_tables.cpp
            poldata_test.cpp
+           poldata_xml.cpp
+           qgen_acm.cpp
+           qgen_cube.cpp
+           qgen_resp.cpp
+#           qgen_resp_atom.cpp
+           qm2molprop.cpp
+           readpsi4.cpp
            regression.cpp
            stringutil.cpp
            tune_eem.cpp
            tune_fc.cpp
            tune_fc_utils.cpp
+           tuning_utility.cpp          
+           units.cpp
+           xml_util.cpp
+           babel_io.cpp
+#           analyze.cpp
+#           molprop_tables.cpp
 #           tune_pol.cpp
 #           tune_zeta.cpp
-	   optparam.cpp
-           communication.cpp
-           tuning_utility.cpp          
 	)
 	
 #add_library(libalexandria ${ALEXANDRIA_SOURCES})	

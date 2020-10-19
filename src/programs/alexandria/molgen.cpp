@@ -79,194 +79,6 @@ const char *rmsName(int e)
 namespace alexandria
 {
 
-static void dump_index_count(const IndexCount       *ic,
-                             FILE                   *fp,
-                             const Poldata          &pd,
-                             gmx_bool                bFitZeta)
-{
-    if (!fp)
-    {
-        return;
-    }
-    fprintf(fp, "Atom index for this optimization.\n");
-    fprintf(fp, "Name  Number  Action   #Zeta\n");
-    for (auto i = ic->beginIndex(); i < ic->endIndex(); ++i)
-    {
-        int nZeta  = pd.getNzeta(i->name());
-        int nZopt  = 0;
-        for (int j = 0; (j < nZeta); j++)
-        {
-            if (pd.getZeta(i->name(), j) > 0)
-            {
-                nZopt++;
-            }
-        }
-        if (i->isConst())
-        {
-            fprintf(fp, "%-4s  %6d  Constant\n",
-                    i->name().c_str(), i->count());
-        }
-        else
-        {
-            fprintf(fp, "%-4s  %6d  Optimized %4d%s\n",
-                    i->name().c_str(),
-                    i->count(), nZopt,
-                    bFitZeta ? " optimized" : " constant");
-        }
-    }
-    fprintf(fp, "\n");
-    fflush(fp);
-}
-
-static void make_index_count(IndexCount                *ic,
-                             const Poldata             &pd,
-                             char                      *opt_elem,
-                             gmx_bool                   bFitZeta)
-{
-    if (nullptr != opt_elem)
-    {
-        /* Only members of opt_elem will be optimized */
-        std::vector<std::string> opt_elems = gmx::splitString(opt_elem);
-        for (auto eep = pd.BeginEemprops(); eep != pd.EndEemprops(); ++eep)
-        {
-            auto bConst   = true;
-            auto name     = eep->getName();
-            auto opt_elem = std::find_if(opt_elems.begin(), opt_elems.end(),
-                                         [name](const std::string a)
-                                         {
-                                             return a == name;
-                                         });
-
-            if (opt_elems.end() != opt_elem)
-            {
-                bConst = false;
-            }
-
-            ic->addName(eep->getName(), bConst);
-        }
-    }
-    else
-    {
-        /* All types of Eeemprops will be optimized */
-        bool bConst = false;
-        for (auto eep = pd.BeginEemprops(); eep != pd.EndEemprops(); ++eep)
-        {
-            ic->addName(eep->getName(), bConst);
-        }
-    }
-    dump_index_count(ic, debug, pd, bFitZeta);
-}
-
-void IndexCount::addName(const std::string &name,
-                         bool               bConst)
-{
-    auto ai = std::find_if(atomIndex_.begin(), atomIndex_.end(),
-                           [name](const AtomIndex a)
-                           {
-                               return a.name().compare(name) == 0;
-                           });
-    if (atomIndex_.end() == ai)
-    {
-        AtomIndex aaa(name, bConst);
-        atomIndex_.push_back(aaa);
-    }
-    else
-    {
-        if (ai->isConst() == bConst)
-        {
-            gmx_fatal(FARGS, "Trying to add atom %s as both constant and optimized", name.c_str());
-        }
-        else
-        {
-            fprintf(stderr, "Trying to add %s twice\n", name.c_str());
-            // ai.increment();
-        }
-    }
-}
-
-void IndexCount::sumCount(t_commrec *cr)
-{
-    totCount_.resize(atomIndex_.size(), 0);
-    int i = 0;
-    for (const auto &ai : atomIndex_)
-    {
-        totCount_[i++] = ai.count();
-    }
-    if (cr->nnodes > 1)
-    {
-        gmx_sumi(totCount_.size(), totCount_.data(), cr);
-    }
-}
-
-void IndexCount::incrementName(const std::string &name)
-{
-    auto ai = findName(name);
-    if (ai == atomIndex_.end())
-    {
-        gmx_fatal(FARGS, "No such atom %s", name.c_str());
-    }
-    ai->increment();
-}
-
-bool IndexCount::isOptimized(const std::string &name)
-{
-    bool isObtimized = false;
-    auto ai          = findName(name);
-    if (ai != atomIndex_.end())
-    {
-        if (!ai->isConst())
-        {
-            isObtimized = true;
-        }
-    }
-    return isObtimized;
-}
-
-void IndexCount::decrementName(const std::string &name)
-{
-    auto ai = findName(name);
-    if (ai == atomIndex_.end())
-    {
-        gmx_fatal(FARGS, "No such atom %s", name.c_str());
-    }
-    ai->decrement();
-}
-
-int IndexCount::count(const std::string &name)
-{
-    auto ai = findName(name);
-    if (ai == atomIndex_.end())
-    {
-        return ai->count();
-    }
-    return 0;
-}
-
-int IndexCount::cleanIndex(int   minimum_data,
-                           FILE *fp)
-{
-    int nremove = 0;
-
-    for (auto ai = atomIndex_.begin(); ai < atomIndex_.end(); )
-    {
-        if (!ai->isConst() && (ai->count() < minimum_data))
-        {
-            if (fp)
-            {
-                fprintf(fp, "Not enough support (%d/%d) in data set for optimizing %s\n",
-                        ai->count(), minimum_data, ai->name().c_str());
-            }
-            ai = atomIndex_.erase(ai);
-            nremove++;
-        }
-        else
-        {
-            ++ai;
-        }
-    }
-    return nremove;
-}
-
 MolGen::MolGen()
 {
     cr_        = nullptr;
@@ -276,21 +88,14 @@ MolGen::MolGen()
     qsymm_     = false;
     constrain_ = false;
     bQM_       = false;
-    J0_min_    = 5;
-    Chi0_min_  = 1;
-    zeta_min_  = 2;
-    alpha_min_ = 0.01;
-    J0_max_    = 30;
-    Chi0_max_  = 30;
-    zeta_max_  = 30;
-    alpha_max_ = 10;
     watoms_    = 0;
     qtol_      = 1e-6;
     qcycle_    = 500;
     mindata_   = 3;
-    nexcl_     = 2;
+    nexcl_     = 0;
     nexcl_orig_= nexcl_;
     maxESP_    = 100;
+    etune_     = etuneEEM;
     fixchi_    = (char *)"";
     lot_       = "B3LYP/aug-cc-pVTZ";
     inputrec_  = new t_inputrec();
@@ -316,15 +121,21 @@ static void doAddOptions(std::vector<t_pargs> *pargs, size_t npa, t_pargs pa[])
 
 void MolGen::addOptions(std::vector<t_pargs> *pargs, eTune etune)
 {
-    t_pargs pa_low[] =
+    std::vector<InteractionType> itypes = {
+        eitBONDS,  eitANGLES, eitLINEAR_ANGLES, eitPROPER_DIHEDRALS,
+        eitIMPROPER_DIHEDRALS, eitVDW, eitPOLARIZATION,
+        eitBONDCORRECTIONS, eitELECTRONEGATIVITYEQUALIZATION 
+    };
+    for (auto &it : itypes)
+    {
+        iOpt_[it] = false;
+    }
+    t_pargs pa_general[] =
     {
         { "-mindata", FALSE, etINT, {&mindata_},
           "Minimum number of data points to optimize force field parameters" },
         { "-lot",    FALSE, etSTR,  {&lot_},
-          "Use this method and level of theory when selecting coordinates and charges. Multiple levels can be specified which will be used in the order given, e.g.  B3LYP/aug-cc-pVTZ:HF/6-311G**" }
-    };
-    t_pargs pa_general[] = 
-    {
+          "Use this method and level of theory when selecting coordinates and charges. Multiple levels can be specified which will be used in the order given, e.g.  B3LYP/aug-cc-pVTZ:HF/6-311G**" },
         { "-fc_bound",    FALSE, etREAL, {&fc_[ermsBOUNDS]},
           "Force constant in the penalty function for going outside the borders given with the fitting options (see below)." },
         { "-qtol",   FALSE, etREAL, {&qtol_},
@@ -342,71 +153,57 @@ void MolGen::addOptions(std::vector<t_pargs> *pargs, eTune etune)
         { "-qm",     FALSE, etBOOL, {&bQM_},
           "[HIDDEN]Use only quantum chemistry results (from the levels of theory below) in order to fit the parameters. If not set, experimental values will be used as reference with optional quantum chemistry results, in case no experimental results are available" }
     };
-    t_pargs pa_zeta[] =
+    doAddOptions(pargs, asize(pa_general), pa_general);
+    
+    if (etune == etuneEEM)
     {
-        { "-watoms", FALSE, etREAL, {&watoms_},
-          "Weight for the atoms when fitting the charges to the electrostatic potential. The potential on atoms is usually two orders of magnitude larger than on other points (and negative). For point charges or single smeared charges use zero. For point+smeared charges 1 is recommended." },
-        { "-maxpot", FALSE, etINT, {&maxESP_},
-          "Maximum percent of the electrostatic potential points that will be used to fit partial charges. Note that the input file may have a reduced amount of ESP points compared to the Gaussian output already so do not reduce the amount twice unless you know what you are doing." },
-        { "-fixchi", FALSE, etSTR,  {&fixchi_},
-          "Electronegativity for this atom type is fixed. Set to empty string if you want all electronegativities to be variable, but read the help text above (or somewhere)." },
-        { "-z0",    FALSE, etREAL, {&zeta_min_},
-          "Minimum value that inverse radius (1/nm) can obtain in fitting" },
-        { "-z1",    FALSE, etREAL, {&zeta_max_},
-          "Maximum value that inverse radius (1/nm) can obtain in fitting" },
-        { "-alpha0",    FALSE, etREAL, {&alpha_min_},
-          "Minimum value that polarizability (A^3) can obtain in fitting" },
-        { "-alpha1",    FALSE, etREAL, {&alpha_max_},
-          "Maximum value that polarizability (A^3) can obtain in fitting" }
-    };
-    t_pargs pa_eem[] =
+        t_pargs pa_eem[] =
+            {
+                { "-watoms", FALSE, etREAL, {&watoms_},
+                  "Weight for the atoms when fitting the charges to the electrostatic potential. The potential on atoms is usually two orders of magnitude larger than on other points (and negative). For point charges or single smeared charges use zero. For point+smeared charges 1 is recommended." },
+                { "-maxpot", FALSE, etINT, {&maxESP_},
+                  "Maximum percent of the electrostatic potential points that will be used to fit partial charges. Note that the input file may have a reduced amount of ESP points compared to the Gaussian output already so do not reduce the amount twice unless you know what you are doing." },
+                { "-fc_mu",    FALSE, etREAL, {&fc_[ermsMU]},
+                  "Force constant in the penalty function for the magnitude of the dipole components." },
+                { "-fc_quad",  FALSE, etREAL, {&fc_[ermsQUAD]},
+                  "Force constant in the penalty function for the magnitude of the quadrupole components." },
+                { "-fc_esp",   FALSE, etREAL, {&fc_[ermsESP]},
+                  "Force constant in the penalty function for the magnitude of the electrostatic potential." },
+                { "-fc_charge",  FALSE, etREAL, {&fc_[ermsCHARGE]},
+                  "Force constant in the penalty function for 'unchemical' charges, i.e. negative hydrogens, and positive oxygens." },
+                { "-fc_polar",  FALSE, etREAL, {&fc_[ermsPolar]},
+                  "Force constant in the penalty function for polarizability." },
+                { "-eem", FALSE, etBOOL, {&iOpt_[eitELECTRONEGATIVITYEQUALIZATION]},
+                  "Optimize parameters for the electronegativity equalization algorithm" },
+                { "-bcc", FALSE, etBOOL, {&iOpt_[eitBONDCORRECTIONS]},
+                  "Optimize parameters for the bond charge corrections" },
+                { "-pol", FALSE, etBOOL, {&iOpt_[eitPOLARIZATION]},
+                  "Optimize polarizability parameters" }
+            };
+        doAddOptions(pargs, asize(pa_eem), pa_eem);
+    }
+    else if (etune == etuneFC)
     {
-        { "-j0",    FALSE, etREAL, {&J0_min_},
-          "Minimum value that J0 (eV) can obtain in fitting" },
-        { "-j1",    FALSE, etREAL, {&J0_max_},
-          "Maximum value that J0 (eV) can obtain in fitting" },
-        { "-chi0",    FALSE, etREAL, {&Chi0_min_},
-          "Minimum value that Chi0 (eV) can obtain in fitting" },
-        { "-chi1",    FALSE, etREAL, {&Chi0_max_},
-          "Maximum value that Chi0 (eV) can obtain in fitting" },
-        { "-penalty", FALSE, etREAL, {&fc_[ermsPENALTY]},
-          "penalty to keep the Chi0 and J0 in order." },
-        { "-fc_mu",    FALSE, etREAL, {&fc_[ermsMU]},
-          "Force constant in the penalty function for the magnitude of the dipole components." },
-        { "-fc_quad",  FALSE, etREAL, {&fc_[ermsQUAD]},
-          "Force constant in the penalty function for the magnitude of the quadrupole components." },
-        { "-fc_esp",   FALSE, etREAL, {&fc_[ermsESP]},
-          "Force constant in the penalty function for the magnitude of the electrostatic potential." },
-        { "-fc_charge",  FALSE, etREAL, {&fc_[ermsCHARGE]},
-          "Force constant in the penalty function for 'unchemical' charges, i.e. negative hydrogens, and positive oxygens." },
-        { "-fc_polar",  FALSE, etREAL, {&fc_[ermsPolar]},
-          "Force constant in the penalty function for polarizability." }
-    };
-    t_pargs pa_fc[] =
-    {
-        { "-fc_epot",  FALSE, etREAL, {&fc_[ermsEPOT]},
-          "Force constant in the penalty function for the magnitude of the potential energy." },
-        { "-fc_force",  FALSE, etREAL, {&fc_[ermsForce2]},
-          "Force constant in the penalty function for the magnitude of the force." }
-    };
-    doAddOptions(pargs, asize(pa_low), pa_low);
-    switch (etune)
-    {
-        case etuneEEM:
-	    doAddOptions(pargs, asize(pa_general), pa_general);
-            doAddOptions(pargs, asize(pa_eem), pa_eem);
-            doAddOptions(pargs, asize(pa_zeta), pa_zeta);
-            break;
-        case etuneZETA:
-	    doAddOptions(pargs, asize(pa_general), pa_general);
-            doAddOptions(pargs, asize(pa_zeta), pa_zeta);
-            break;
-        case etuneFC:
-	    doAddOptions(pargs, asize(pa_general), pa_general);
-            doAddOptions(pargs, asize(pa_fc), pa_fc);
-            break;
-        default:
-            break;
+        t_pargs pa_fc[] =
+            {
+                { "-fc_epot",  FALSE, etREAL, {&fc_[ermsEPOT]},
+                  "Force constant in the penalty function for the magnitude of the potential energy." },
+                { "-fc_force",  FALSE, etREAL, {&fc_[ermsForce2]},
+                  "Force constant in the penalty function for the magnitude of the force." },
+                { "-bonds", FALSE, etBOOL, {&iOpt_[eitBONDS]},
+                  "Optimize bond parameters" },
+                { "-angles", FALSE, etBOOL, {&iOpt_[eitANGLES]},
+                  "Optimize angle parameters" },
+                { "-langles", FALSE, etBOOL, {&iOpt_[eitLINEAR_ANGLES]},
+                  "Optimize linear angle parameters" },
+                { "-dihedrals", FALSE, etBOOL, {&iOpt_[eitPROPER_DIHEDRALS]},
+                  "Optimize proper dihedral parameters" },
+                { "-impropers", FALSE, etBOOL, {&iOpt_[eitIMPROPER_DIHEDRALS]},
+                  "Optimize improper dihedral parameters" },
+                { "-vdw", FALSE, etBOOL, {&iOpt_[eitVDW]},
+                  "Optimize van der Waals parameters" }
+            };
+        doAddOptions(pargs, asize(pa_fc), pa_fc);
     }
 }
 
@@ -421,74 +218,153 @@ void MolGen::optionsFinished()
     {
         printf("There are %d threads/processes.\n", cr_->nnodes);
     }
-    // Make sure all the nodes know about the fitting options
-    // Not needed anymore
-    // gmx_sum(ermsNR, fc_, cr_);
 }
 
-immStatus MolGen::check_data_sufficiency(alexandria::MyMol mymol,
-                                         IndexCount       *ic)
+void MolGen::checkDataSufficiency(FILE *fp)
 {
-    immStatus imm = immOK;
-
-    for (int i = 0; i < mymol.atoms_->nr; i++)
+    size_t nmol = 0;
+    do
     {
-        if ((mymol.atoms_->atom[i].atomnumber > 0) &&
-            (mymol.atoms_->atom[i].ptype == eptAtom))
+        nmol = mymol_.size();
+        /* First set the ntrain values for all forces
+         * present zero.
+         */
+        for(auto &io : iOpt_)
         {
-            auto fa = pd_.findAtype(*(mymol.atoms_->atomtype[i]));
-            if (pd_.getAtypeEnd() != fa)
+            if (io.second)
             {
-                const std::string &ztype = fa->getZtype();
-                auto               ai    = ic->findName(ztype);
-                if (ic->endIndex() == ai)
+                ForceFieldParameterList *fplist = pd_.findForces(io.first);
+                for(auto &force : *(fplist->parameters()))
                 {
-                    if (debug)
+                    for(auto &ff : force.second)
                     {
-                        fprintf(debug, "Removing %s because of lacking support for atom %s\n",
-                                mymol.getMolname().c_str(),
-                                ztype.c_str());
+                        if (ff.second.isMutable())
+                        {
+                            ff.second.setNtrain(0);
+                        }
                     }
-                    imm = immInsufficientDATA;
                 }
-            }
-            else
-            {
-                if (debug)
-                {
-                    fprintf(debug, "No support in poldata for atomtype %s\n",
-                            *(mymol.atoms_->atomtype[i]));
-                }
-                imm = immInsufficientDATA;
             }
         }
-    }
-    if (imm == immOK)
-    {
-        for (int i = 0; i < mymol.atoms_->nr; i++)
+        // TODO: Handle bonded interactions
+        std::vector<InteractionType> atomicItypes = {
+            eitVDW, eitPOLARIZATION, eitELECTRONEGATIVITYEQUALIZATION
+        };
+        // Now loop over molecules and add interactions
+        for(auto &mol : mymol_)
         {
-            if ((mymol.atoms_->atom[i].atomnumber > 0) &&
-                (mymol.atoms_->atom[i].ptype == eptAtom))
+            for(int i = 0; i < mol.atoms_->nr; i++)
             {
-                auto fa = pd_.findAtype(*(mymol.atoms_->atomtype[i]));
-                ic->incrementName(fa->getZtype());
+                for(auto &itype : atomicItypes)
+                {
+                    if (iOpt_[itype])
+                    {
+                        auto atype  = pd_.findAtype(*mol.atoms_->atomtype[i]);
+                        auto fplist = pd_.findForces(itype);
+                        for(auto &ff : *(fplist->findParameters(atype->id(itype))))
+                        {
+                            if (ff.second.isMutable())
+                            {
+                                ff.second.incrementNtrain();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        // Now loop over molecules and remove those without sufficient support
+        std::vector<std::string> removeMol;
+        for(auto &mol : mymol_)
+        {
+            bool keep = true;
+            for(int i = 0; i < mol.atoms_->nr; i++)
+            {
+                auto atype = pd_.findAtype(*mol.atoms_->atomtype[i]);
+                for(auto &itype : atomicItypes)
+                {
+                    if (iOpt_[itype])
+                    {
+                        auto fplist = pd_.findForces(itype);
+                        auto ztype  = atype->id(itype);
+                        for(auto &force : fplist->findParametersConst(ztype))
+                        {
+                            if (force.second.ntrain() < static_cast<uint64_t>(mindata_))
+                            {
+                                keep = false;
+                                break;
+                            }
+                        }
+                    }
+                    if (!keep)
+                    {
+                        break;
+                    }
+                }
+                if (!keep)
+                {
+                    break;
+                }
+            }
+            if (!keep)
+            {
+                removeMol.push_back(mol.getIupac());
+            }
+        }
+        for(auto &rmol : removeMol)
+        {
+            auto moliter = std::find_if(mymol_.begin(), mymol_.end(),
+                                        [rmol](MyMol const &f)
+                                        { return (rmol == f.getIupac()); });
+            if (moliter == mymol_.end())
+            {
+                GMX_THROW(gmx::InternalError(gmx::formatString("Cannot find %s in mymol_", rmol.c_str()).c_str()));
+            }
+            if (debug)
+            {
+                fprintf(debug, "Removing %s because of lacking support\n",
+                        rmol.c_str());
+            }
+            mymol_.erase(moliter);
+        }
+    }
+    while (mymol_.size() > 0 && mymol_.size() < nmol);
+    if (fp)
+    {
+        fprintf(fp, "There are %zu molecules left to optimize the parameters for.\n", nmol);
+    }
+}
+
+void MolGen::generateOptimizationIndex(FILE *fp)
+{
+    for(auto &fs : pd_.forcesConst())
+    {
+        if (iOpt_[fs.first])
+        {
+            for(auto &fpl : fs.second.parametersConst())
+            {
+                for(auto &param : fpl.second)
+                {
+                    if (param.second.isMutable() && param.second.ntrain() >= static_cast<uint64_t>(mindata_))
+                    {
+                        optIndex_.push_back(OptimizationIndex(fs.first, fpl.first, param.first));
+                    }
+                }
             }
         }
     }
-    return imm;
+    if (fp)
+    {
+        fprintf(fp, "There are %zu variables to optimize.\n", optIndex_.size());
+    }
 }
 
 void MolGen::Read(FILE            *fp,
                   const char      *fn,
                   const char      *pd_fn,
                   gmx_bool         bZero,
-                  char            *opt_elem,
                   const MolSelect &gms,
                   gmx_bool         bCheckSupport,
-                  bool             bPairs,
-                  bool             bDihedral,
                   bool             bZPE,
-                  bool             bFitZeta,
                   bool             bDHform,
                   const char      *tabfn,
                   iMolSelect       SelectType)
@@ -537,7 +413,7 @@ void MolGen::Read(FILE            *fp,
         for (auto mpi = mp.begin(); mpi < mp.end(); )
         {
             mpi->CheckConsistency();
-            if (false == mpi->GenerateComposition(&pd_) || SelectType != gms.status(mpi->getIupac()))
+            if (!mpi->GenerateComposition() || SelectType != gms.status(mpi->getIupac()))
             {
                 mpi = mp.erase(mpi);
             }
@@ -558,23 +434,13 @@ void MolGen::Read(FILE            *fp,
                       return (mp1.NAtom() < mp2.NAtom());
                   });
     }
-    if (bCheckSupport && MASTER(cr_))
-    {
-        /* Make a index of eemprop types to be either optimized or
-         * being kept constant.
-         * TODO: This should probably only be done for tune_eem
-         */
-        make_index_count(&indexCount_,
-                         pd_,
-                         opt_elem,
-                         bFitZeta);
-    }
     /* Generate topology for Molecules and distribute them among the nodes */
     std::string      method, basis;
     splitLot(lot_, &method, &basis);
-    int              ntopol    = 0;
     std::vector<int> nmolpar;
     int              nlocaltop = 0;
+    int              ntopol = 0;
+    
     if (MASTER(cr_))
     {
         printf("Generating molecules!\n");
@@ -582,13 +448,12 @@ void MolGen::Read(FILE            *fp,
         {
             if (SelectType == gms.status(mpi->getIupac()))
             {
-                int               dest = (ntopol % cr_->nnodes);
                 alexandria::MyMol mymol;
                 if (debug)
                 {
                     fprintf(debug, "%s\n", mpi->getMolname().c_str());
                 }
-                mymol.Merge(mpi);
+                mymol.Merge(&(*mpi));
                 mymol.setInputrec(inputrec_);
                 imm = mymol.GenerateTopology(atomprop_,
                                              &pd_,
@@ -596,22 +461,13 @@ void MolGen::Read(FILE            *fp,
                                              basis,
                                              nullptr,
                                              bGenVsite_,
-                                             bPairs,
-                                             bDihedral,
+                                             false,
+                                             iOpt_[eitPROPER_DIHEDRALS],
                                              false,
                                              tabfn);
                 if (immOK != imm && debug)
                 {
                     fprintf(debug, "Tried to generate topology for %s. Outcome: %s\n",
-                            mymol.getMolname().c_str(), immsg(imm));
-                }
-                if (bCheckSupport && immOK == imm)
-                {
-                    imm = check_data_sufficiency(mymol, &indexCount_);
-                }
-                if (immOK != imm && debug)
-                {
-                    fprintf(debug, "Checked data sufficiency for %s. Outcome: %s\n",
                             mymol.getMolname().c_str(), immsg(imm));
                 }
                 if (immOK == imm)
@@ -643,57 +499,52 @@ void MolGen::Read(FILE            *fp,
                 }
                 if (immOK == imm)
                 {
-                    if (dest > 0)
-                    {
-                        mymol.eSupp_ = eSupportRemote;
-                        if (nullptr != debug)
-                        {
-                            fprintf(debug, "Going to send %s to cpu %d\n", mpi->getMolname().c_str(), dest);
-                        }
-                        gmx_send_int(cr_, dest, 1);
-                        CommunicationStatus cs = mpi->Send(cr_, dest);
-                        if (CS_OK != cs)
-                        {
-                            imm = immCommProblem;
-                        }
-                        else
-                        {
-                            imm = (immStatus)gmx_recv_int(cr_, dest);
-                        }
-                        if (imm != immOK)
-                        {
-                            fprintf(stderr, "Molecule %s was not accepted on node %d - error %s\n",
-                                    mymol.getMolname().c_str(), dest, alexandria::immsg(imm));
-                        }
-                        else if (nullptr != debug)
-                        {
-                            fprintf(debug, "Succesfully beamed over %s\n", mpi->getMolname().c_str());
-                        }
-
-                    }
-                    else
-                    {
-                        mymol.eSupp_ = eSupportLocal;
-                        nlocaltop   += 1;
-                    }
-                    if (immOK == imm)
-                    {
-                        mymol_.push_back(std::move(mymol));
-                        ntopol += 1;
-                        if (nullptr != debug)
-                        {
-                            fprintf(debug, "Added %s, ntopol = %d\n", mymol.getMolname().c_str(), ntopol);
-                        }
-                    }
+                    mymol_.push_back(std::move(mymol));
                 }
-                if ((immOK != imm) && (nullptr != debug))
+            }
+        }
+        checkDataSufficiency(fp);
+        generateOptimizationIndex(fp);
+        for(auto &mymol : mymol_)
+        {
+            int dest = (ntopol++ % cr_->nnodes);
+
+            if (dest > 0)
+            {
+                mymol.eSupp_ = eSupportRemote;
+                if (nullptr != debug)
                 {
-                    fprintf(debug, "IMM: Dest: %d %s - %s\n", dest, mpi->getMolname().c_str(), immsg(imm));
+                    fprintf(debug, "Going to send %s to cpu %d\n", mymol.getMolname().c_str(), dest);
+                }
+                gmx_send_int(cr_, dest, 1);
+                CommunicationStatus cs = mymol.Send(cr_, dest);
+                if (CS_OK != cs)
+                {
+                    imm = immCommProblem;
+                }
+                else
+                {
+                    imm = (immStatus)gmx_recv_int(cr_, dest);
+                }
+                if (imm != immOK)
+                {
+                    fprintf(stderr, "Molecule %s was not accepted on node %d - error %s\n",
+                            mymol.getMolname().c_str(), dest, alexandria::immsg(imm));
+                }
+                else if (nullptr != debug)
+                {
+                    fprintf(debug, "Succesfully beamed over %s\n", mymol.getMolname().c_str());
                 }
             }
             else
             {
-                imm = immTest;
+                mymol.eSupp_ = eSupportLocal;
+                nlocaltop   += 1;
+            }
+            if ((immOK != imm) && (nullptr != debug))
+            {
+                fprintf(debug, "IMM: Dest: %d %s - %s\n",
+                        dest, mymol.getMolname().c_str(), immsg(imm));
             }
             imm_count[imm]++;
         }
@@ -746,8 +597,8 @@ void MolGen::Read(FILE            *fp,
                                          basis,
                                          nullptr,
                                          bGenVsite_,
-                                         bPairs,
-                                         bDihedral,
+                                         false,
+                                         iOpt_[eitPROPER_DIHEDRALS],
                                          false,
                                          tabfn);
 
@@ -810,7 +661,7 @@ void MolGen::Read(FILE            *fp,
     }
     if (bCheckSupport && MASTER(cr_))
     {
-        indexCount_.cleanIndex(mindata_, fp);
+        //        indexCount_.cleanIndex(mindata_, fp);
     }
     gmx_sumi(1, &nlocaltop, cr_);
     nmol_support_ = nlocaltop;

@@ -38,6 +38,7 @@
 #include <cstring>
 
 #include <algorithm>
+#include <map>
 #include <vector>
 
 #include "gromacs/topology/ifunc.h"
@@ -45,26 +46,54 @@
 #include "gromacs/utility/stringutil.h"
 
 #include "gmx_simple_comm.h"
+#include "identifier.h"
 #include "plistwrapper.h"
 #include "stringutil.h"
 
 namespace alexandria
 {
 
-static const char * eit_names[eitNR] = {
-    "BONDS",
-    "ANGLES",
-    "LINEAR_ANGLES",
-    "PROPER_DIHEDRALS",
-    "IMPROPER_DIHEDRALS",
-    "VDW",
-    "LJ14",
-    "POLARIZATION",
-    "CONSTR",
-    "VSITE2",
-    "VSITE3FAD",
-    "VSITE3OUT"
-};
+Ffatype::Ffatype(const std::string &desc,
+                 const std::string &type,
+                 const std::string &ptype,
+                 const std::string &btype,
+                 const std::string &ztype,
+                 const std::string &elem,
+                 const std::string &refEnthalpy) :
+    desc_(desc), type_(type),
+    elem_(elem), refEnthalpy_(refEnthalpy) 
+{
+    subType_.insert({eitVDW, type});
+    subType_.insert({eitPOLARIZATION, ptype});
+    for(auto &it : {eitBONDS, eitANGLES, eitLINEAR_ANGLES,
+                    eitPROPER_DIHEDRALS,  eitIMPROPER_DIHEDRALS })
+    {
+        subType_.insert({it, btype});
+    }
+    subType_.insert({eitELECTRONEGATIVITYEQUALIZATION, ztype});
+    subType_.insert({eitBONDCORRECTIONS, ztype});
+    if (type_.empty())
+    {
+        GMX_THROW(gmx::InternalError(gmx::formatString("Trying to a type with no name. ptype = %s btype = %s ztype = %s.",
+                                                       ptype.c_str(), btype.c_str(),
+                                                       ztype.c_str()).c_str()));
+    }
+}
+
+Identifier Ffatype::id(InteractionType iType) const
+{
+    auto ss = subType_.find(iType);
+    if (ss == subType_.end())
+    {
+        GMX_THROW(gmx::InternalError(gmx::formatString("No such subType %s for atomtype '%s'",
+                                                       interactionTypeToString(iType).c_str(),
+                                                       type_.c_str()).c_str()));
+    }
+    else
+    {
+        return Identifier({ss->second}, CanSwap::No);
+    }
+}
 
 static const char * evt_names[evtNR] = {
     "linear",
@@ -74,29 +103,6 @@ static const char * evt_names[evtNR] = {
     "out_of_plane",
     "all"
 };
-
-const char *iType2string(InteractionType iType)
-
-{
-    if (iType < eitNR)
-    {
-        return eit_names[iType];
-    }
-    return nullptr;
-}
-
-InteractionType string2iType(const char *string)
-{
-    int i;
-    for (i = 0; i < eitNR; i++)
-    {
-        if (gmx_strcasecmp(string, eit_names[i]) == 0)
-        {
-            return static_cast<InteractionType>(i);
-        }
-    }
-    return eitNR;
-}
 
 const char *vsiteType2string(VsiteType vType)
 {
@@ -120,27 +126,6 @@ VsiteType string2vsiteType(const char *string)
     return evtNR;
 }
 
-Ffatype::Ffatype(const std::string &desc,
-                 const std::string &type,
-                 const std::string &ptype,
-                 const std::string &btype,
-                 const std::string &ztype,
-                 const std::string &elem,
-                 bool               fixed,
-                 const std::string &vdwparams,
-                 const std::string &refEnthalpy)
-    :
-      desc_(desc),
-      type_(type),
-      ptype_(ptype),
-      btype_(btype),
-      ztype_(ztype),
-      elem_(elem),
-      fixed_(fixed),
-      vdwparams_(vdwparams),
-      refEnthalpy_(refEnthalpy)
-{}
-
 CommunicationStatus Ffatype::Send(const t_commrec *cr, int dest)
 {
     CommunicationStatus cs;
@@ -149,19 +134,22 @@ CommunicationStatus Ffatype::Send(const t_commrec *cr, int dest)
     {
         gmx_send_str(cr, dest, &desc_);
         gmx_send_str(cr, dest, &type_);
-        gmx_send_str(cr, dest, &ptype_);
-        gmx_send_str(cr, dest, &btype_);
-        gmx_send_str(cr, dest, &ztype_);
+        gmx_send_int(cr, dest, subType_.size());
+        for(auto &it : subType_)
+        {
+            std::string key = interactionTypeToString(it.first);
+            gmx_send_str(cr, dest, &key);
+            gmx_send_str(cr, dest, &it.second);
+        }
         gmx_send_str(cr, dest, &elem_);
-        gmx_send_int(cr, dest, fixed_ ? 1 : 0);
-        gmx_send_str(cr, dest, &vdwparams_);
         gmx_send_str(cr, dest, &refEnthalpy_);
         if (nullptr != debug)
         {
-            fprintf(debug, "Sent Fftype %s %s %s %s %s(%s) %s %s, status %s\n",
-                    desc_.c_str(), type_.c_str(), ptype_.c_str(),
-                    btype_.c_str(), elem_.c_str(), vdwparams_.c_str(),
-                    fixed_ ? "fixed" : "free",
+            fprintf(debug, "Sent Fftype %s %s %s %s %s %s, status %s\n",
+                    desc_.c_str(), type_.c_str(), 
+                    subType_[eitBONDS].c_str(),
+                    subType_[eitPOLARIZATION].c_str(),
+                    elem_.c_str(), 
                     refEnthalpy_.c_str(), cs_name(cs));
             fflush(debug);
         }
@@ -178,20 +166,26 @@ CommunicationStatus Ffatype::Receive(const t_commrec *cr, int src)
     {
         gmx_recv_str(cr, src, &desc_);
         gmx_recv_str(cr, src, &type_);
-        gmx_recv_str(cr, src, &ptype_);
-        gmx_recv_str(cr, src, &btype_);
-        gmx_recv_str(cr, src, &ztype_);
+        int nsub = gmx_recv_int(cr, src);
+        subType_.clear();
+        for(int i = 0; i < nsub; i++)
+        {
+            std::string key, value;
+            gmx_recv_str(cr, src, &key);
+            gmx_recv_str(cr, src, &value);
+            InteractionType iType = stringToInteractionType(key);
+            subType_.insert({iType, value});
+        }
         gmx_recv_str(cr, src, &elem_);
-        fixed_ = (1 == gmx_recv_int(cr, src));
-        gmx_recv_str(cr, src, &vdwparams_);
         gmx_recv_str(cr, src, &refEnthalpy_);
 
         if (nullptr != debug)
         {
-            fprintf(debug, "Received Fftype %s %s %s %s %s(%s) %s %s, status %s\n",
-                    desc_.c_str(), type_.c_str(), ptype_.c_str(),
-                    btype_.c_str(), elem_.c_str(), vdwparams_.c_str(),
-                    fixed_ ? "fixed" : "free",
+            fprintf(debug, "Received Fftype %s %s %s %s %s %s, status %s\n",
+                    desc_.c_str(), type_.c_str(), 
+                    subType_[eitBONDS].c_str(),
+                    subType_[eitPOLARIZATION].c_str(),
+                    elem_.c_str(), 
                     refEnthalpy_.c_str(), cs_name(cs));
             fflush(debug);
         }
@@ -199,6 +193,7 @@ CommunicationStatus Ffatype::Receive(const t_commrec *cr, int src)
     return cs;
 }
 
+#ifdef OLDER
 Ptype::Ptype(const std::string &ptype,
              const std::string &miller,
              const std::string &bosque,
@@ -257,7 +252,7 @@ CommunicationStatus Ptype::Receive(const t_commrec *cr, int src)
     }
     return cs;
 }
-
+#endif
 Vsite::Vsite(const std::string &atype,
              const std::string &type,
              int                number,
@@ -321,420 +316,6 @@ CommunicationStatus Vsite::Receive(const t_commrec *cr, int src)
         }
     }
     return cs;
-}
-
-static std::string condense_atoms(const std::vector<std::string> atoms)
-{
-    std::string catoms;
-    if (!atoms.empty())
-    {
-        catoms = atoms[0];
-        for (size_t i = 1; i < atoms.size(); i++)
-        {
-            catoms.append("-").append(atoms[i]);
-        }
-    }
-    return catoms;
-}
-
-void ListedForce::MakeCondensed()
-{
-    condensed_atoms_ = condense_atoms(atoms_);
-    std::vector<std::string> ratoms(atoms_.rbegin(), atoms_.rend());
-    reverse_condensed_atoms_ = condense_atoms(ratoms);
-    if (nullptr != debug)
-    {
-        fprintf(debug, "%s %s\n", condensed_atoms_.c_str(), reverse_condensed_atoms_.c_str());
-    }
-}
-
-ListedForce::ListedForce(const std::vector<std::string> &atoms,
-                         const std::string              &params,
-                         bool                            fixed,
-                         double                          refValue,
-                         double                          sigma,
-                         size_t                          ntrain)
-    :
-      atoms_(atoms),
-      params_(params),
-      fixed_(fixed),
-      refValue_(refValue),
-      sigma_(sigma),
-      ntrain_(ntrain),
-      bondOrder_(0)
-
-{
-    MakeCondensed();
-}
-
-ListedForce::ListedForce(const std::vector<std::string> &atoms,
-                         const std::string              &params,
-                         bool                            fixed,
-                         double                          refValue,
-                         double                          sigma,
-                         size_t                          ntrain,
-                         size_t                          bondOrder)
-    :
-      atoms_(atoms),
-      params_(params),
-      fixed_(fixed),
-      refValue_(refValue),
-      sigma_(sigma),
-      ntrain_(ntrain),
-      bondOrder_(bondOrder)
-
-{
-    MakeCondensed();
-}
-
-CommunicationStatus ListedForce::Send(const t_commrec *cr, int dest)
-{
-    CommunicationStatus cs;
-    cs = gmx_send_data(cr, dest);
-    if (CS_OK == cs)
-    {
-        gmx_send_str(cr, dest, &params_);
-        gmx_send_double(cr, dest, refValue_);
-        gmx_send_double(cr, dest, sigma_);
-        gmx_send_int(cr, dest, static_cast<int>(ntrain_));
-        gmx_send_int(cr, dest, static_cast<int>(bondOrder_));
-        gmx_send_int(cr, dest, atoms_.size());
-        gmx_send_int(cr, dest, fixed_ ? 1 : 0);
-        for (auto &atom : atoms_)
-        {
-            gmx_send_str(cr, dest, &atom);
-        }
-
-        if (nullptr != debug)
-        {
-            fprintf(debug, "Sent ListedForce %s %g %g %zu, status %s\n",
-                    params_.c_str(), refValue_, sigma_,
-                    ntrain_, cs_name(cs));
-            fflush(debug);
-        }
-    }
-    return cs;
-}
-
-CommunicationStatus ListedForce::Receive(const t_commrec *cr, int src)
-{
-    int                 natom;
-    CommunicationStatus cs;
-    cs = gmx_recv_data(cr, src);
-    if (CS_OK == cs)
-    {
-        gmx_recv_str(cr, src, &params_);
-        refValue_  = gmx_recv_double(cr, src);
-        sigma_     = gmx_recv_double(cr, src);
-        ntrain_    = static_cast<size_t>(gmx_recv_int(cr, src));
-        bondOrder_ = static_cast<size_t>(gmx_recv_int(cr, src));
-        natom      = gmx_recv_int(cr, src);
-        fixed_     = (1 == gmx_recv_int(cr, src));
-        for (auto n = 0; n < natom; n++)
-        {
-            std::string atom;
-            gmx_recv_str(cr, src, &atom);
-            if (!atom.empty())
-            {
-                const_cast<std::vector<std::string> &>(atoms_).push_back(atom);
-            }
-            else
-            {
-                gmx_fatal(FARGS, "A category was promised but I got a nullptr pointer");
-            }
-        }
-        MakeCondensed();
-        if (nullptr != debug)
-        {
-            fprintf(debug, "Received ListedForce %s %g %g %zu, status %s\n",
-                    params_.c_str(), refValue_, sigma_,
-                    ntrain_, cs_name(cs));
-            fflush(debug);
-        }
-    }
-    return cs;
-}
-
-ListedForces::ListedForces(const std::string   iType,
-                           const std::string  &function,
-                           const std::string  &unit)
-    :
-      iType_(string2iType(iType.c_str())),
-      function_(function),
-      unit_(unit)
-{
-    size_t funcType;
-    for (funcType = 0; funcType < F_NRE; funcType++)
-    {
-        if (strcasecmp(interaction_function[funcType].name, function_.c_str()) == 0)
-        {
-            break;
-        }
-    }
-    if (funcType == F_NRE)
-    {
-        gmx_fatal(FARGS, "Force function '%s' does not exist in gromacs", function_.c_str());
-    }
-
-    fType_ = funcType;
-}
-
-CommunicationStatus ListedForces::Send(const t_commrec *cr, int dest)
-{
-    CommunicationStatus cs;
-    std::string         itype;
-
-    cs = gmx_send_data(cr, dest);
-    if (CS_OK == cs)
-    {
-        itype.assign(iType2string(iType_));
-        gmx_send_str(cr, dest, &itype);
-        gmx_send_str(cr, dest, &function_);
-        gmx_send_str(cr, dest, &unit_);
-        gmx_send_int(cr, dest, static_cast<int>(fType_));
-        gmx_send_int(cr, dest, force_.size());
-
-        for (auto &f : force_)
-        {
-            f.Send(cr, dest);
-        }
-
-        if (nullptr != debug)
-        {
-            fprintf(debug, "Sent ListedForces %s %s %s %d, status %s\n",
-                    iType2string(iType_), function_.c_str(), unit_.c_str(),
-                    fType_, cs_name(cs));
-            fflush(debug);
-        }
-    }
-    return cs;
-}
-
-CommunicationStatus ListedForces::Receive(const t_commrec *cr, int src)
-{
-    size_t              nforce;
-    CommunicationStatus cs;
-    std::string         iType, function, unit;
-
-    cs = gmx_recv_data(cr, src);
-    if (CS_OK == cs)
-    {
-        gmx_recv_str(cr, src, &iType);
-        gmx_recv_str(cr, src, &function);
-        gmx_recv_str(cr, src, &unit);
-        iType_    = string2iType(iType.c_str());
-        const_cast<std::string &>(function_) = function;
-        const_cast<std::string &>(unit_)     = unit;
-        fType_    = static_cast<unsigned int>(gmx_recv_int(cr, src));
-        nforce    = gmx_recv_int(cr, src);
-
-        force_.clear();
-        for (size_t n = 0; n < nforce; n++)
-        {
-            ListedForce f;
-            cs = f.Receive(cr, src);
-            if (CS_OK == cs)
-            {
-                force_.push_back(f);
-            }
-        }
-
-        if (nullptr != debug)
-        {
-            fprintf(debug, "Received ListedForces %s %s %s %d, status %s\n",
-                    iType2string(iType_), function_.c_str(), unit_.c_str(),
-                    fType_, cs_name(cs));
-            fflush(debug);
-        }
-    }
-    return cs;
-}
-
-ListedForceIterator ListedForces::findForce(const std::vector<std::string> &atoms)
-{
-    auto                catoms = condense_atoms(atoms);
-    ListedForceIterator fb     = forceBegin(), fe = forceEnd();
-    return std::find_if(fb, fe, [catoms](const ListedForce &force)
-                        {
-                            return (catoms == force.condensed_atoms() ||
-                                    catoms == force.reverse_condensed_atoms());
-                        });
-}
-
-ListedForceConstIterator ListedForces::findForceRandomOrder(const std::vector<std::string> &atoms) const
-{
-    ListedForceConstIterator fb = forceBegin(), fe = forceEnd();
-    return std::find_if(fb, fe, [atoms](const ListedForce &force)
-    {
-        auto aa = split(force.condensed_atoms().c_str(), '-');
-        for(auto a : atoms)
-        {
-            for(size_t b = 0; b < aa.size(); ++b)
-            {
-                if (a == aa[b])
-                {
-                    aa.erase(aa.begin()+b);
-                    break;
-                }
-            }
-        }
-        return aa.size() == 0;
-    });
-}
-
-ListedForceConstIterator ListedForces::findForce(const std::vector<std::string> &atoms) const
-{
-    auto                     catoms = condense_atoms(atoms);
-    ListedForceConstIterator fb     = forceBegin(), fe = forceEnd();
-    return std::find_if(fb, fe, [catoms](const ListedForce &force)
-                        {
-                            return (catoms == force.condensed_atoms() ||
-                                    catoms == force.reverse_condensed_atoms());
-                        });
-}
-
-ListedForceIterator ListedForces::findForce(const std::vector<std::string> &atoms,
-                                            size_t                          bondOrder)
-{
-    auto                catoms = condense_atoms(atoms);
-    ListedForceIterator fb     = forceBegin(), fe = forceEnd();
-    return std::find_if(fb, fe, [catoms, bondOrder](const ListedForce &force)
-                        {
-                            return (bondOrder == force.bondOrder() &&
-                                    (catoms == force.condensed_atoms() ||
-                                     catoms == force.reverse_condensed_atoms()));
-                        });
-}
-
-ListedForceConstIterator ListedForces::findForce(const std::vector<std::string> &atoms,
-                                                 size_t                          bondOrder) const
-{
-    auto                     catoms = condense_atoms(atoms);
-    ListedForceConstIterator fb     = forceBegin(), fe = forceEnd();
-    return std::find_if(fb, fe, [catoms, bondOrder](const ListedForce &force)
-                        {
-                            return (bondOrder == force.bondOrder() &&
-                                    (catoms == force.condensed_atoms() ||
-                                     catoms == force.reverse_condensed_atoms()));
-                        });
-}
-
-bool ListedForces::setForceParams(const std::vector<std::string> &atoms,
-                                  const std::string              &params,
-                                  double                          refValue,
-                                  double                          sigma,
-                                  size_t                          ntrain)
-{
-    auto force = findForce(atoms);
-    if (forceEnd() != force)
-    {
-        force->setRefValue(refValue);
-        force->setSigma(sigma);
-        force->setNtrain(ntrain);
-        force->setParams(params);
-
-        return true;
-    }
-    return false;
-}
-
-bool ListedForces::setForceParams(const std::vector<std::string> &atoms,
-                                  const std::string              &params,
-                                  double                          refValue,
-                                  double                          sigma,
-                                  size_t                          ntrain,
-                                  size_t                          bondOrder)
-{
-    auto force = findForce(atoms, bondOrder);
-    if (forceEnd() != force)
-    {
-        force->setRefValue(refValue);
-        force->setSigma(sigma);
-        force->setNtrain(ntrain);
-        force->setParams(params);
-
-        return true;
-    }
-    return false;
-}
-
-void ListedForces::addForce(const std::vector<std::string> &atoms,
-                            const std::string              &params,
-                            bool                            fixed,
-                            double                          refValue,
-                            double                          sigma,
-                            size_t                          ntrain)
-{
-    if (setForceParams(atoms, params, refValue, sigma, ntrain))
-    {
-        return;
-    }
-    ListedForce force(atoms, params, fixed, refValue, sigma, ntrain);
-    force_.push_back(force);
-}
-
-void ListedForces::addForce(const std::vector<std::string> &atoms,
-                            const std::string              &params,
-                            bool                            fixed,
-                            double                          refValue,
-                            double                          sigma,
-                            size_t                          ntrain,
-                            size_t                          bondOrder)
-{
-    if (setForceParams(atoms, params, refValue, sigma, ntrain, bondOrder))
-    {
-        return;
-    }
-    ListedForce force(atoms, params, fixed, refValue, sigma, ntrain, bondOrder);
-    force_.push_back(force);
-}
-
-bool ListedForces::searchForce(std::vector<std::string> &atoms,
-                               std::string              &params,
-                               double                   *refValue,
-                               double                   *sigma,
-                               size_t                   *ntrain,
-                               bool                      randomAtomOrder) const
-{
-    ListedForceConstIterator force;
-    if (randomAtomOrder)
-    {
-        force = findForceRandomOrder(atoms);
-    }
-    else
-    {
-        force = findForce(atoms);
-    }
-    if (forceEnd() != force)
-    {
-        *refValue  = force->refValue();
-        *sigma     = force->sigma();
-        *ntrain    = force->ntrain();
-        params     = force->params();
-
-        return true;
-    }
-    return false;
-}
-
-bool ListedForces::searchForceBondOrder(std::vector<std::string> &atoms,
-                                        std::string              &params,
-                                        double                   *refValue,
-                                        double                   *sigma,
-                                        size_t                   *ntrain,
-                                        size_t                    bondOrder) const
-{
-    auto force = findForce(atoms, bondOrder);
-    if (forceEnd() != force)
-    {
-        *refValue  = force->refValue();
-        *sigma     = force->sigma();
-        *ntrain    = force->ntrain();
-        params     = force->params();
-
-        return true;
-    }
-    return false;
 }
 
 Bosque::Bosque(const std::string &bosque, double polarizability)

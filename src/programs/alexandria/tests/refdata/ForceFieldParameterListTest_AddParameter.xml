@@ -1,7 +1,10 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <String Name="function">Torsion</String>
+  <String Name="function">PDIHS</String>
+  <String Name="atom1">c2</String>
   <Int Name="c2">1</Int>
+  <String Name="atom2">h3</String>
   <Int Name="h3">2</Int>
+  <String Name="atom3">c3</String>
 </ReferenceData>

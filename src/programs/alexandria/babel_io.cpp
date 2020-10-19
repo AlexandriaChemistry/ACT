@@ -43,7 +43,6 @@
 #include <fstream>
 #include <iostream>
 
-#include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/symtab.h"
@@ -59,6 +58,7 @@
 #include "molprop_util.h"
 #include "poldata.h"
 #include "stringutil.h"
+#include "units.h"
 
 // Include Open Babel classes for OBMol and OBConversion
 #if HAVE_LIBOPENBABEL3
@@ -429,6 +429,10 @@ bool readBabel(const char          *g09,
     {
         mpt->SetIupac(mymol);
     }
+    
+    // Units for conversion
+    std::string energyUnit("kcal/mol");
+    std::string entropyUnit("cal/mol K");
 
     // Thermochemistry
     if (inputformat == einfGaussian)
@@ -454,42 +458,42 @@ bool readBabel(const char          *g09,
                                             mpo_unit[MPO_ENERGY],
                                             0,
                                             epGAS,
-                                            convert2gmx(DeltaHf0, eg2cKcal_Mole),
+                                            alexandria::convertToGromacs(DeltaHf0, energyUnit),
                                             0);
             mpt->LastExperiment()->AddEnergy(me1);
             alexandria::MolecularEnergy me2("DeltaHform",
                                             mpo_unit[MPO_ENERGY],
                                             temperature,
                                             epGAS,
-                                            convert2gmx(DeltaHfT, eg2cKcal_Mole),
+                                            alexandria::convertToGromacs(DeltaHfT, energyUnit),
                                             0);
             mpt->LastExperiment()->AddEnergy(me2);
             alexandria::MolecularEnergy me3("DeltaGform",
                                             mpo_unit[MPO_ENERGY],
                                             temperature,
                                             epGAS,
-                                            convert2gmx(DeltaGfT, eg2cKcal_Mole),
+                                            alexandria::convertToGromacs(DeltaGfT, energyUnit),
                                             0);
             mpt->LastExperiment()->AddEnergy(me3);
             alexandria::MolecularEnergy me4("DeltaSform",
                                             mpo_unit[MPO_ENTROPY],
                                             temperature,
                                             epGAS,
-                                            convert2gmx(DeltaSfT, eg2cCal_MolK),
+                                            alexandria::convertToGromacs(DeltaSfT, entropyUnit),
                                             0);
             mpt->LastExperiment()->AddEnergy(me4);
             alexandria::MolecularEnergy me5("S0",
                                             mpo_unit[MPO_ENTROPY],
                                             temperature,
                                             epGAS,
-                                            convert2gmx(S0T, eg2cCal_MolK),
+                                            alexandria::convertToGromacs(S0T, entropyUnit),
                                             0);
             mpt->LastExperiment()->AddEnergy(me5);
             alexandria::MolecularEnergy me6("cp",
                                             mpo_unit[MPO_ENTROPY],
                                             temperature,
                                             epGAS,
-                                            convert2gmx(CPT, eg2cCal_MolK),
+                                            alexandria::convertToGromacs(CPT, entropyUnit),
                                             0);
             mpt->LastExperiment()->AddEnergy(me6);
             const char *scomp[3] = { "Strans", "Srot", "Svib" };
@@ -499,7 +503,7 @@ bool readBabel(const char          *g09,
                                                 mpo_unit[MPO_ENTROPY],
                                                 temperature,
                                                 epGAS,
-                                                convert2gmx(Scomponents[i], eg2cCal_MolK),
+                                                alexandria::convertToGromacs(Scomponents[i], entropyUnit),
                                                 0);
                 mpt->LastExperiment()->AddEnergy(mes);
             }
@@ -507,14 +511,15 @@ bool readBabel(const char          *g09,
                                             mpo_unit[MPO_ENERGY],
                                             0,
                                             epGAS,
-                                            convert2gmx(ZPE, eg2cKcal_Mole),
+                                            alexandria::convertToGromacs(ZPE, energyUnit),
                                             0);
             mpt->LastExperiment()->AddEnergy(me7);
         }
     }
 
     // HF Eenergy
-    alexandria::MolecularEnergy mes("HF", mpo_unit[MPO_ENERGY], 0, epGAS, convert2gmx( mol.GetEnergy(), eg2cKcal_Mole), 0);
+    alexandria::MolecularEnergy mes("HF", mpo_unit[MPO_ENERGY], 0, epGAS, 
+                                    alexandria::convertToGromacs(mol.GetEnergy(), energyUnit), 0);
     mpt->LastExperiment()->AddEnergy(mes);
 
     if (addHydrogen)
@@ -544,7 +549,7 @@ bool readBabel(const char          *g09,
             alexandria::CalcAtom ca(OpenBabel::OBElements::GetSymbol(atom->GetAtomicNum()),
                                     type->GetValue(), atom->GetIdx());
 
-            ca.SetUnit(unit2string(eg2cPm));
+            ca.SetUnit("pm");
             ca.SetCoords(A2PM(atom->x()), A2PM(atom->y()), A2PM(atom->z()));
             auto myres = atom->GetResidue();
             ca.SetResidue(myres->GetName(), myres->GetNum());
@@ -592,7 +597,7 @@ bool readBabel(const char          *g09,
     {
         OpenBabel::vector3            v3 = dipole->GetData();
         alexandria::MolecularDipole   dp("electronic",
-                                         unit2string(eg2cDebye),
+                                         "Debye",
                                          0.0,
                                          v3.GetX(),
                                          v3.GetY(),
@@ -610,7 +615,7 @@ bool readBabel(const char          *g09,
         double                          mm[9];
         m3.GetArray(mm);
         alexandria::MolecularQuadrupole mq("electronic",
-                                           unit2string(eg2cBuckingham),
+                                           "Buckingham",
                                            0.0,
                                            mm[0], mm[4], mm[8],
                                            mm[1], mm[2], mm[5]);
@@ -625,7 +630,7 @@ bool readBabel(const char          *g09,
         double               mm[9], alpha, fac;
         int                  i;
         m3.GetArray(mm);
-        fac = NM_cubed_to_A_cubed(pow(convert2gmx(1, eg2cBohr), 3));
+        fac = NM_cubed_to_A_cubed(pow(alexandria::convertToGromacs(1, "Bohr"), 3));
         for (i = 0; i < 9; i++)
         {
             mm[i] *= fac;
@@ -633,7 +638,7 @@ bool readBabel(const char          *g09,
         alpha = (mm[0]+mm[4]+mm[8])/3.0;
 
         alexandria::MolecularPolarizability mdp("electronic",
-                                                unit2string(eg2cAngstrom3),
+                                                "Angstrom3",
                                                 0.0,
                                                 mm[0], mm[4], mm[8],
                                                 mm[1], mm[2], mm[5],
@@ -647,8 +652,8 @@ bool readBabel(const char          *g09,
     {
         OpenBabel::OBFreeGridPoint        *fgp;
         OpenBabel::OBFreeGridPointIterator fgpi;
-        std::string                        xyz_unit(unit2string(eg2cPm));
-        std::string                        V_unit(unit2string(eg2cHartree_e));
+        std::string                        xyz_unit("pm");
+        std::string                        V_unit("Hartree/e");
         int                                espid = 0;
 
         fgpi = esp->BeginPoints();
@@ -672,14 +677,14 @@ bool SetMolpropAtomTypesAndBonds(alexandria::MolProp *mmm)
     mol.BeginModify();
     mol.SetTotalCharge(mmm->getCharge());
     mol.SetTotalSpinMultiplicity(mmm->getMultiplicity());
-    auto ei  = mmm->BeginExperiment();
+    auto ei  = mmm->experiment().begin();
     mol.ReserveAtoms(ei->NAtom());
     int  idx = 0;
-    for (auto ca = ei->BeginAtom(); ca < ei->EndAtom(); ca++)
+    for (auto &ca : ei->calcAtomConst())
     {
-        int  atomicNum = OpenBabel::OBElements::GetAtomicNum(ca->getName().c_str());
+        int  atomicNum = OpenBabel::OBElements::GetAtomicNum(ca.getName().c_str());
         auto atom      = mol.NewAtom(idx++);
-        atom->SetVector(ca->getX(), ca->getY(), ca->getZ());
+        atom->SetVector(ca.getX(), ca.getY(), ca.getZ());
         atom->SetAtomicNum(atomicNum);
     }
     mol.ConnectTheDots();
@@ -705,7 +710,7 @@ bool SetMolpropAtomTypesAndBonds(alexandria::MolProp *mmm)
         return false;
     }
     pFF->GetAtomTypes(mol);
-    auto ca = ei->BeginAtom();
+    auto ca = ei->calcAtom()->begin();
     for (OpenBabel::OBMolAtomIter a(mol); a; ++a, ++ca)
     {
         auto type = static_cast<OpenBabel::OBPairData*>(a->GetData("FFAtomType"));

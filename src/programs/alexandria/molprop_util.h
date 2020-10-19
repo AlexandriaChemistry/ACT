@@ -132,8 +132,7 @@ class QmCount
 
 };
 
-void generate_composition(std::vector<MolProp> &mp,
-                          const Poldata        *pd);
+void generate_composition(std::vector<MolProp> &mp);
 
 void generate_formula(std::vector<MolProp> &mp,
                       gmx_atomprop_t        ap);
@@ -144,7 +143,6 @@ int merge_xml(gmx::ArrayRef<const std::string>  infiles,
               std::vector<alexandria::MolProp> *mp,
               char *outf, char *sorted, char *doubles,
               gmx_atomprop_t ap,
-              const Poldata &pd,
               bool bForceMerge);
 
 /* Check the available molprops to see what kind of calculations are stored in there */

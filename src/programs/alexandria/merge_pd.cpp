@@ -31,6 +31,8 @@
  */
 #include "gmxpre.h"
 
+#include <map>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -48,6 +50,7 @@
 #include "gromacs/utility/smalloc.h"
 
 #include "alex_modules.h"
+#include "identifier.h"
 #include "poldata.h"
 #include "poldata_tables.h"
 #include "poldata_xml.h"
@@ -86,10 +89,12 @@ static EemAtomProps name2eemprop(const std::string name)
     return eEMNR;
 }
 
-static void merge_Chi(std::vector<alexandria::Poldata>     pds,
-                      alexandria::Poldata                 &pdout)
+static void merge_parameter(const std::vector<alexandria::Poldata> &pds,
+                            alexandria::InteractionType             iType,
+                            const std::string                      &parameter,
+                            alexandria::Poldata                    *pdout)
 {  
-    auto nAtypes = pdout.getNatypes();
+    auto nAtypes = pdout->getNatypes();
     gmx_stats_t lsq[nAtypes];
     
     for (size_t i = 0; i < nAtypes; i++)
@@ -97,299 +102,44 @@ static void merge_Chi(std::vector<alexandria::Poldata>     pds,
         lsq[i] =  gmx_stats_init();
     }    
     int j = 0;
-    for (auto atp = pdout.getAtypeBegin(); 
-         atp < pdout.getAtypeEnd(); atp++, j++)
+    for (auto atp = pdout->getAtypeBegin(); 
+         atp < pdout->getAtypeEnd(); atp++, j++)
     {
         for (const auto& pd : pds)
         {
-            auto ei = pd.atype2Eem(atp->getType());
-            if (ei != pd.EndEemprops())
-            {
-                gmx_stats_add_point(lsq[j], 0, ei->getChi0(), 0, 0);
-
-            }
-            else
-            {
-                gmx_fatal(FARGS, "%s atomtype does not exists in Eeemprops.\n", 
-                          atp->getType().c_str());
-            }
+            auto fs    = pd.findForcesConst(iType);
+            auto ztype = atp->id(alexandria::eitELECTRONEGATIVITYEQUALIZATION);
+            auto ei    = fs.findParametersConst(ztype);
+            gmx_stats_add_point(lsq[j], 0, ei[parameter].value(), 0, 0);
         }
+        j++;
     }
     
     j = 0;
-    for (auto atp = pdout.getAtypeBegin(); 
-         atp < pdout.getAtypeEnd(); atp++, j++)
+    for (auto atp = pdout->getAtypeBegin(); 
+         atp < pdout->getAtypeEnd(); atp++, j++)
     {
-        auto ei = pdout.atype2Eem(atp->getType());
-        if (ei != pdout.EndEemprops())
+        auto fs      = pdout->findForces(iType);
+        auto ztype   = atp->id(alexandria::eitELECTRONEGATIVITYEQUALIZATION);
+        auto ei      = fs->findParameters(ztype);
+        real average = 0;
+        real sigma   = 0;
+        int  N       = 0;
+        if ((estatsOK == gmx_stats_get_average(lsq[j], &average)) &&
+            (estatsOK == gmx_stats_get_sigma(lsq[j], &sigma)) &&
+            (estatsOK == gmx_stats_get_npoints(lsq[j], &N)))
         {
-            real average = 0;
-            real sigma   = 0;
-            if ((estatsOK == gmx_stats_get_average(lsq[j], &average))&&
-                (estatsOK == gmx_stats_get_sigma(lsq[j], &sigma)))
-            {
-                ei->setChi0(average);
-                ei->setChi0_sigma(sigma);
-                
-            }
-            else
-            {
-                gmx_fatal(FARGS, "estats is not OK for %s for Chi.\n", 
-                          atp->getType().c_str());
-            }
+            (*ei)[parameter].setValue(average);
+            (*ei)[parameter].setUncertainty(sigma);
+            (*ei)[parameter].setNtrain(N);
         }
-        else
-        {
-            gmx_fatal(FARGS, "%s atomtype does not exists in Eeemprops.\n", 
-                      atp->getType().c_str());
-        }
-    }    
+        j++;
+    }
     for (size_t i = 0; i < nAtypes; i++)
     {
          gmx_stats_free(lsq[i]);
     }
 }
-
-static void merge_Eta(std::vector<alexandria::Poldata>     pds,
-                      alexandria::Poldata                 &pdout)
-{
-    auto nAtypes = pdout.getNatypes();
-    gmx_stats_t lsq[nAtypes];
-    
-    for (size_t i = 0; i < nAtypes; i++)
-    {
-        lsq[i] =  gmx_stats_init();
-    }    
-    int j = 0;
-    for (auto atp = pdout.getAtypeBegin(); 
-         atp < pdout.getAtypeEnd(); atp++, j++)
-    {
-        for (const auto& pd : pds)
-        {
-            auto ei = pd.atype2Eem(atp->getType());
-            if (ei != pd.EndEemprops())
-            {
-                gmx_stats_add_point(lsq[j], 0, ei->getJ0(), 0, 0);
-
-            }
-            else
-            {
-                gmx_fatal(FARGS, "%s atomtype does not exists in Eeemprops.\n", 
-                          atp->getType().c_str());
-            }
-        }
-    }
-    
-    j = 0;
-    for (auto atp = pdout.getAtypeBegin(); 
-         atp < pdout.getAtypeEnd(); atp++, j++)
-    {
-        auto ei = pdout.atype2Eem(atp->getType());
-        if (ei != pdout.EndEemprops())
-        {
-            real average = 0;
-            real sigma   = 0;
-            if ((estatsOK == gmx_stats_get_average(lsq[j], &average))&&
-                (estatsOK == gmx_stats_get_sigma(lsq[j], &sigma)))
-            {
-                ei->setJ0(average);
-                ei->setJ0_sigma(sigma);
-                
-            }
-            else
-            {
-                gmx_fatal(FARGS, "estats is not OK for %s for Eta.\n", 
-                          atp->getType().c_str());
-            }
-        }
-        else
-        {
-            gmx_fatal(FARGS, "%s atomtype does not exists in Eeemprops.\n", 
-                      atp->getType().c_str());
-        }
-    }    
-    for (size_t i = 0; i < nAtypes; i++)
-    {
-         gmx_stats_free(lsq[i]);
-    }
-}
-
-static void merge_Alpha(std::vector<alexandria::Poldata>     pds,
-                        alexandria::Poldata                 &pdout)
-{
-    
-    auto nAtypes = pdout.getNatypes();
-    gmx_stats_t lsq[nAtypes];
-    
-    for (size_t i = 0; i < nAtypes; i++)
-    {
-        lsq[i] =  gmx_stats_init();
-    }    
-    int j = 0;
-    for (auto pt = pdout.getPtypeBegin(); 
-         pt < pdout.getPtypeEnd(); pt++, j++)
-    {
-        for (const auto& pd : pds)
-        {
-            double alpha = 0;
-            double sigma = 0;
-            if (pd.getPtypePol(pt->getType(), &alpha, &sigma))
-            {                
-                gmx_stats_add_point(lsq[j], 0, alpha, 0, 0);
-
-            }
-            else
-            {
-                gmx_fatal(FARGS, "%s atomtype does not exists in Eeemprops.\n", 
-                          pt->getType().c_str());
-            }
-        }
-    }
-    
-    j = 0;
-    for (auto pt = pdout.getPtypeBegin(); 
-         pt < pdout.getPtypeEnd(); pt++, j++)
-    {
-        std::string  ptype;           
-        if (pt != pdout.getPtypeEnd())
-        {
-            real average = 0;
-            real sigma   = 0;
-            if ((estatsOK == gmx_stats_get_average(lsq[j], &average))&&
-                (estatsOK == gmx_stats_get_sigma(lsq[j], &sigma)))
-            {
-                pdout.setPtypePolarizability(pt->getType(), average, sigma);                
-            }
-            else
-            {
-                gmx_fatal(FARGS, "estats is not OK for %s for Eta.\n", 
-                          pt->getType().c_str());
-            }
-        }
-        else
-        {
-            gmx_fatal(FARGS, "%s atomtype does not exists in Eeemprops.\n", 
-                      pt->getType().c_str());
-        }
-    }    
-    for (size_t i = 0; i < nAtypes; i++)
-    {
-         gmx_stats_free(lsq[i]);
-    }
-}
-
-static void merge_Zeta(std::vector<alexandria::Poldata>     pds,
-                       alexandria::Poldata                 &pdout)
-{   
-    auto nAtypes = pdout.getNatypes();   
-    
-    gmx_stats_t core[nAtypes];
-    gmx_stats_t shell[nAtypes];
-       
-    for (size_t i = 0; i < nAtypes; i++)
-    {
-        core[i]  =  gmx_stats_init();
-        shell[i] =  gmx_stats_init();
-    }     
-    
-    // Reading Zeta from all pds   
-    int j = 0;
-    for (auto atp = pdout.getAtypeBegin(); 
-         atp < pdout.getAtypeEnd(); atp++, j++)
-    {
-        for (const auto& pd : pds)
-        {
-            auto ei = pd.ztype2Eem(atp->getZtype());
-            if (ei != pd.EndEemprops())
-            {
-                auto nzeta = ei->getNzeta();
-                if (nzeta == 1)
-                {
-                    gmx_stats_add_point(core[j], 0, ei->getZeta(0), 0, 0);
-                }
-                else if (nzeta == 2)
-                {
-                    gmx_stats_add_point(core[j],  0, ei->getZeta(0), 0, 0);
-                    gmx_stats_add_point(shell[j], 0, ei->getZeta(1), 0, 0);
-                }
-                else
-                {
-                    gmx_fatal(FARGS, "The number of Zeta is wrong for %s atomtype.\n", 
-                              ei->getName());
-                }
-                
-            }   
-        }
-    }
-    
-    // Merging Zeta
-    j = 0;
-    for (auto atp = pdout.getAtypeBegin(); 
-         atp < pdout.getAtypeEnd(); atp++, j++)
-    {
-        auto ei = pdout.ztype2Eem(atp->getZtype());
-        if (ei != pdout.EndEemprops())
-        {
-            std::string zstr, z_sig;
-            auto nzeta  = ei->getNzeta();            
-            if (nzeta == 1)
-            {
-                real core_ave  = 0;
-                real core_sig  = 0;
-                if ((estatsOK == gmx_stats_get_average(core[j], &core_ave))&&
-                    (estatsOK == gmx_stats_get_sigma(core[j],   &core_sig)))
-                {
-                    zstr.append(gmx::formatString("%f ", core_ave));
-                    z_sig.append(gmx::formatString("%f ", core_sig));
-                    ei->setZetastr(zstr);
-                    ei->setZeta_sigma(z_sig);
-                }
-                else
-                {
-                    gmx_fatal(FARGS, "estats is not OK for %s.\n", 
-                              ei->getName());
-                }
-            }
-            else if (nzeta == 2)
-            {
-                real core_ave  = 0;
-                real core_sig  = 0;
-                real shell_ave = 0;
-                real shell_sig = 0;
-                if ((estatsOK == gmx_stats_get_average(core[j],  &core_ave))  &&
-                    (estatsOK == gmx_stats_get_sigma(core[j],    &core_sig))  &&
-                    (estatsOK == gmx_stats_get_average(shell[j], &shell_ave)) &&
-                    (estatsOK == gmx_stats_get_sigma(shell[j],   &shell_sig)))
-                {
-                    zstr.append(gmx::formatString("%f ", core_ave));
-                    zstr.append(gmx::formatString("%f ", shell_ave));
-                    z_sig.append(gmx::formatString("%f ", core_sig));
-                    z_sig.append(gmx::formatString("%f ", shell_sig));
-                        
-                    ei->setZetastr(zstr);
-                    ei->setZeta_sigma(z_sig);
-                }
-                else
-                {
-                    gmx_fatal(FARGS, "estats is not OK for %s.\n", 
-                              ei->getName());
-                }
-            }
-            else
-            {
-                gmx_fatal(FARGS, "The number of Zeta is wrong for %s atomtype.\n", 
-                          ei->getName());
-            }
-        }        
-    }    
-    for (size_t i = 0; i < nAtypes; i++)
-    {
-         gmx_stats_free(core[i]);
-         gmx_stats_free(shell[i]);
-    }
-}
-
-
 
 int alex_merge_pd(int argc, char *argv[])
 {
@@ -453,32 +203,36 @@ int alex_merge_pd(int argc, char *argv[])
         pds.push_back(std::move(pd));
     }    
 
-    // Copy the first gentop file into pdout.
+    // Copy the first gentop file into pdout->
     readPoldata(filenames[0].c_str(), pdout, aps); 
     
-    //We now update different parts of pdout.    
+    //We now update different parts of pdout->    
     EemAtomProps eem = name2eemprop(eemprop[0]);        
     if (eem == eEMEta || eem == eEMAll)
     {
-        merge_Eta(pds, pdout);
+        merge_parameter(pds, alexandria::eitELECTRONEGATIVITYEQUALIZATION,
+                        "jaa", &pdout);
     }
     if (eem == eEMChi || eem == eEMAll)
     {
-        merge_Chi(pds, pdout);
+        merge_parameter(pds, alexandria::eitELECTRONEGATIVITYEQUALIZATION,
+                        "chi", &pdout);
     }
     if (eem == eEMAlpha || eem == eEMAll)
     {
-        merge_Alpha(pds, pdout);
+        merge_parameter(pds, alexandria::eitPOLARIZATION,
+                        "alpha", &pdout);
     }
     if (eem == eEMZeta || eem == eEMAll)
     {
-        merge_Zeta(pds, pdout);
+        merge_parameter(pds, alexandria::eitELECTRONEGATIVITYEQUALIZATION,
+                        "zeta", &pdout);
     }
     if (eem == eEMNR)
     {
         gmx_fatal(FARGS, "There is no atomic electric property called %s in alexandria.\n", eemprop[0]);
     }    
-    alexandria::writePoldata(opt2fn("-do", NFILE, fnm), &pdout, bcompress);
+    writePoldata(opt2fn("-do", NFILE, fnm), &pdout, bcompress);
     if (opt2bSet("-latex", NFILE, fnm))
     {
         FILE        *tp;

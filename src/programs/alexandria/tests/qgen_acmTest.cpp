@@ -99,7 +99,6 @@ class AcmTest : public gmx::test::CommandLineTestBase
 
             std::string           dataName, method, basis;
             alexandria::MolProp   molprop;
-            std::vector<MolProp>  vmp;
             
             if (inputformat == einfLOG)
             {
@@ -124,8 +123,7 @@ class AcmTest : public gmx::test::CommandLineTestBase
                       0.0,
                       false);
 
-            vmp.push_back(molprop);
-            mp_.Merge(vmp.begin());
+            mp_.Merge(&molprop);
             fprintf(stderr, "Read babel for %s\n", dataName.c_str());
             // Generate charges and topology
             eDih            edih       = (eDih) get_option(dihopt);
@@ -154,7 +152,7 @@ class AcmTest : public gmx::test::CommandLineTestBase
             real           qtol     = 1e-3;
 
             mp_.symmetrizeCharges(pd, aps_, qSymm, nullptr);
-            mp_.initQgenResp(pd, method, basis, nullptr, 0.0, 100);
+            //            mp_.initQgenResp(pd, method, basis, nullptr, 0.0, 100);
             mp_.GenerateCharges(pd, mdlog, cr, nullptr, 
                                 hwinfo, qcycle, qtol);
                                 

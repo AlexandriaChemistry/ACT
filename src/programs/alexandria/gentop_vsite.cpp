@@ -39,14 +39,15 @@
 #include <map>
 
 #include "gromacs/math/paddedvector.h"
-#include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "identifier.h"
 #include "mymol_low.h"
 #include "plistwrapper.h"
 #include "poldata.h"
+#include "units.h"
 
 namespace alexandria
 {
@@ -559,9 +560,6 @@ void GentopVsites::gen_Vsites(const Poldata             *pd,
                               t_state                    *state)
 {
     int                      nvsite    = 0;
-    size_t                   ntrain    = 0;
-    size_t                   bondorder = 0;
-    double                   sigma     = 0;       
     double                   akjl      = 0;
     double                   bij       = 0;
     double                   bjk       = 0;
@@ -612,17 +610,13 @@ void GentopVsites::gen_Vsites(const Poldata             *pd,
         auto vsite = pd->findVsite(atype);
         if (vsite != pd->getVsiteEnd())
         {
-            auto lengthUnit = string2unit(pd->getVsite_length_unit().c_str());
-            if (-1 == lengthUnit)
-            {
-                gmx_fatal(FARGS, "No such length unit '%s'", pd->getVsite_length_unit().c_str());
-            }
+            auto lengthUnit = pd->getVsite_length_unit();
             if(vsite->type() == evtIN_PLANE)
             {
                 auto inplane = findInPlane(vsite->nvsite(), i);
                 if (inplane != inplaneEnd())
                 {
-                    bij        = convert2gmx(vsite->distance(), lengthUnit);
+                    bij        = convertToGromacs(vsite->distance(), lengthUnit);
                     aijk       = vsite->angle();
                     aijl       = aijk; // Must be in Degree here, will be converetd to RAD inside GROMACS.                 
                     for (int n = 1; n <= vsite->nvsite(); n++)
@@ -651,44 +645,44 @@ void GentopVsites::gen_Vsites(const Poldata             *pd,
                         pd->atypeToBtype(*atoms->atomtype[outplane->ca()],   &j) &&
                         pd->atypeToBtype(*atoms->atomtype[outplane->bca2()], &l))
                     {
-                        bij      = convert2gmx(vsite->distance(), lengthUnit);
+                        bij      = convertToGromacs(vsite->distance(), lengthUnit);
                         aijk     = 
                         aijl     = DEG2RAD*vsite->angle(); // Must be in RAD here.
-                        Akjl     = {k, j, l};
-                        Bjk      = {j, k};
-                        Bjl      = {j, l};
-                        //bond order needs to be fixed. 
-                        if (pd->searchForceBondOrderIType(Akjl, params, &akjl, &sigma, &ntrain, bondorder, eitANGLES) &&
-                            pd->searchForceBondOrderIType(Bjk,  params, &bjk,  &sigma, &ntrain, bondorder, eitBONDS)  &&
-                            pd->searchForceBondOrderIType(Bjl,  params, &bjl,  &sigma, &ntrain, bondorder, eitBONDS))
-                        {   
-                            bjk  = convert2gmx(bjk, lengthUnit);
-                            bjl  = convert2gmx(bjl, lengthUnit);
-                            akjl = DEG2RAD*akjl;
-                            
-                            auto pijk = std::cos(aijk)*bij;
-                            auto pijl = std::cos(aijl)*bij;
-                            auto a    = ( pijk + (pijk*std::cos(akjl)-pijl) * std::cos(akjl) / gmx::square(std::sin(akjl)) ) / bjk;
-                            auto b    = ( pijl + (pijl*std::cos(akjl)-pijk) * std::cos(akjl) / gmx::square(std::sin(akjl)) ) / bjl;
-                            auto c    = std::sqrt( gmx::square(bij) -
-                                                   ( gmx::square(pijk) - 2*pijk*pijl*std::cos(akjl) + gmx::square(pijl) )
-                                                   / gmx::square(std::sin(akjl)) ) / ( bjk*bjl*std::sin(akjl) );
-                            
-                            for (int n = 1; n <= vsite->nvsite(); n++)
+                        
+                        Identifier angleId({k, j, l}, CanSwap::No);
+                        Identifier bondId1({j, k}, CanSwap::No);
+                        Identifier bondId2({j, l}, CanSwap::No);
+                        
+                        auto fpAkjl = pd->findForcesConst(eitANGLES).findParameterTypeConst(angleId, "angle");
+                        auto fpBjk  = pd->findForcesConst(eitBONDS).findParameterTypeConst(bondId1, "bond");
+                        auto fpBjl  = pd->findForcesConst(eitBONDS).findParameterTypeConst(bondId2, "bond");
+                        
+                        bjk  = convertToGromacs(fpBjk.value(), lengthUnit);
+                        bjl  = convertToGromacs(fpBjl.value(), lengthUnit);
+                        akjl = DEG2RAD*fpAkjl.value();
+                        
+                        auto pijk = std::cos(aijk)*bij;
+                        auto pijl = std::cos(aijl)*bij;
+                        auto a    = ( pijk + (pijk*std::cos(akjl)-pijl) * std::cos(akjl) / gmx::square(std::sin(akjl)) ) / bjk;
+                        auto b    = ( pijl + (pijl*std::cos(akjl)-pijk) * std::cos(akjl) / gmx::square(std::sin(akjl)) ) / bjl;
+                        auto c    = std::sqrt( gmx::square(bij) -
+                                               ( gmx::square(pijk) - 2*pijk*pijl*std::cos(akjl) + gmx::square(pijl) )
+                                               / gmx::square(std::sin(akjl)) ) / ( bjk*bjl*std::sin(akjl) );
+                        
+                        for (int n = 1; n <= vsite->nvsite(); n++)
+                        {
+                            vs.a[0] = renum[outplane->ca()] + n; /* vsite     i   */
+                            vs.a[1] = renum[outplane->ca()];     /* nucleus   j   */
+                            vs.a[2] = renum[outplane->bca1()];   /*          / \  */
+                            vs.a[3] = renum[outplane->bca2()];   /*         k   l */            
+                            vs.c[0] = a;
+                            vs.c[1] = b;  
+                            vs.c[2] = c;
+                            if (n == vsite->nvsite())
                             {
-                                vs.a[0] = renum[outplane->ca()] + n; /* vsite     i   */
-                                vs.a[1] = renum[outplane->ca()];     /* nucleus   j   */
-                                vs.a[2] = renum[outplane->bca1()];   /*          / \  */
-                                vs.a[3] = renum[outplane->bca2()];   /*         k   l */            
-                                vs.c[0] = a;
-                                vs.c[1] = b;  
-                                vs.c[2] = c;
-                                if (n == vsite->nvsite())
-                                {
-                                    vs.c[2] = (-1)*c;
-                                }
-                                add_param_to_plist(plist, F_VSITE3OUT, eitVSITE3OUT, vs);
-                            }                            
+                                vs.c[2] = (-1)*c;
+                            }
+                            add_param_to_plist(plist, F_VSITE3OUT, eitVSITE3OUT, vs);
                         }
                     }
                 }
@@ -894,11 +888,11 @@ void GentopVsites::generateSpecial(const Poldata              *pd,
 
     mergeLinear(bUseVsites);
 
-    ftb     = pd->findForces(eitBONDS)->fType();
-    fta     = pd->findForces(eitANGLES)->fType();
-    ftl     = pd->findForces(eitLINEAR_ANGLES)->fType();
-    ftp     = pd->findForces(eitPROPER_DIHEDRALS)->fType();
-    fti     = pd->findForces(eitIMPROPER_DIHEDRALS)->fType();
+    ftb     = pd->findForcesConst(eitBONDS).fType();
+    fta     = pd->findForcesConst(eitANGLES).fType();
+    ftl     = pd->findForcesConst(eitLINEAR_ANGLES).fType();
+    ftp     = pd->findForcesConst(eitPROPER_DIHEDRALS).fType();
+    fti     = pd->findForcesConst(eitIMPROPER_DIHEDRALS).fType();
 
     nlin_at = 0;
     for (unsigned int i = 0; (i < linear_.size()); i++)

@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Real Name="Angstrom">0.29999999999999999</Real>
+  <Real Name="nm">3</Real>
+  <Real Name="pm">0.0030000000000000001</Real>
+  <Real Name="Bohr">0.158753163276</Real>
+  <Real Name="kcal/mol">12.552</Real>
+  <Real Name="kJ/mol">3</Real>
+  <Real Name="J/mol K">3</Real>
+  <Real Name="cal/mol K">12.552</Real>
+  <Real Name="Hartree">7876.4989292077698</Real>
+  <Real Name="Hartree/e">7876.4989292077698</Real>
+  <Real Name="Angstrom3">0.0029999999999999992</Real>
+  <Real Name="Coulomb">1.8724528029780537e+19</Real>
+  <Real Name="Debye">0.062458302502661836</Real>
+  <Real Name="Electron">3</Real>
+  <Real Name="Buckingham">0.0062458302502661827</Real>
+  <Real Name="1/nm">3</Real>
+  <Real Name="degree">0.05235987755982989</Real>
+  <Real Name="kJ/mol/rad2">3</Real>
+  <Real Name="kJ/mol/nm2">3</Real>
+</ReferenceData>

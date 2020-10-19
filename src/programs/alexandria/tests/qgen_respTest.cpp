@@ -82,9 +82,7 @@ class RespTest : public gmx::test::CommandLineTestBase
             auto dataName = gmx::test::TestFileManager::getInputFilePath("1-butanol-3-oep.log");
             readBabel(dataName.c_str(), &molprop, molnm, iupac, conf, basis,
                       maxpot, nsymm, jobtype, 0.0, false);
-            std::vector<MolProp> vmp;
-            vmp.push_back(molprop);
-            mp_.Merge(vmp.begin());
+            mp_.Merge(&molprop);
 
             auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 5e-2);
             checker_.setDefaultTolerance(tolerance);
@@ -127,8 +125,14 @@ class RespTest : public gmx::test::CommandLineTestBase
           
             if (eqtSlater  == pd->chargeType())
             {
+                const char *tabname =  "table.xvg";
                 inputrec.coulombtype = eelUSER;
-                tabFile              = fileManager().getInputFilePath("table.xvg");
+                tabFile              = fileManager().getInputFilePath(tabname);
+                if (tabFile.empty())
+                {
+                    GMX_THROW(gmx::InternalError(gmx::formatString("Cannot find file %s", tabname).c_str()));
+                }
+                printf("tabfn %s\n", tabFile.c_str());
             }
             mp_.setInputrec(&inputrec);
             mp_.symmetrizeCharges(pd, aps_, qSymm, nullptr);
@@ -165,10 +169,10 @@ TEST_F (RespTest, AXgPolarValues)
     testResp("ESP-pg", false);
 }
 
-TEST_F (RespTest, AXsPolarValues)
-{
-    testResp("ESP-ps", false);
-}
+//TEST_F (RespTest, AXsPolarValues)
+//{
+//    testResp("ESP-ps", false);
+//}
 
 TEST_F (RespTest, AXpSymmetricCharges)
 {
@@ -180,7 +184,7 @@ TEST_F (RespTest, AXgSymmetricPolarCharges)
     testResp("ESP-pg", true);
 }
 
-TEST_F (RespTest, AXsSymmetricPolarCharges)
-{
-    testResp("ESP-ps", true);
-}
+//TEST_F (RespTest, AXsSymmetricPolarCharges)
+//{
+//    testResp("ESP-ps", true);
+//}

@@ -94,124 +94,6 @@ static void add_refc(std::vector<RefCount> &rc, std::string ref)
     rc.push_back(RefCount(ref));
 }
 
-static void calc_frag_miller(alexandria::Poldata              &pd,
-                             std::vector<alexandria::MolProp> &mp,
-                             const alexandria::MolSelect      &gms)
-{
-    double                       bos0      = 0;
-    double                       polar     = 0;
-    double                       sig_pol   = 0;
-    char                        *null      = (char *)"0";
-    char                        *empirical = (char *)"empirical";
-    char                        *minimum   = (char *)"minimum";
-    char                        *minus     = (char *)"-";
-    char                        *nofile    = (char *)"none";
-    const char                  *program   = "alexandria";
-    const char                  *ang3;
-    iMolSelect                   ims;
-    alexandria::jobType          jobtype   = alexandria::JOB_UNKNOWN;
-    alexandria::CompositionSpecs cs;
-
-    ang3    = unit2string(eg2cAngstrom3);
-    if (0 == pd.getBosquePol( null, &bos0))
-    {
-        gmx_fatal(FARGS, "Cannot find Bosque polarizability for %s", null);
-    }
-
-    for (auto &mpi : mp)
-    {
-        ims = gms.status(mpi.getIupac());
-        if ((ims == imsTrain) || (ims == imsTest))
-        {
-            for (auto csi = cs.beginCS(); csi < cs.endCS(); ++csi)
-            {
-                alexandria::iComp ic  = csi->iC();
-                auto              mci = mpi.SearchMolecularComposition(csi->name());
-                if (mci != mpi.EndMolecularComposition())
-                {
-                    double p         = 0, sp = 0;
-                    double ahc       = 0, ahp = 0;
-                    bool   bSupport  = true;
-                    int    natom_tot = 0, Nelec = 0;
-                    for (auto ani = mci->BeginAtomNum(); bSupport && (ani < mci->EndAtomNum()); ani++)
-                    {
-                        const char *atomname = ani->getAtom().c_str();
-                        int         natom    = ani->getNumber();
-                        switch (ic)
-                        {
-                            case alexandria::iCalexandria:
-                                bSupport = (pd.getAtypePol( (char *)atomname, &polar, &sig_pol) == 1);
-                                break;
-                            case alexandria::iCbosque:
-                                bSupport = (pd.getBosquePol( (char *)atomname, &polar) == 1);
-                                sig_pol  = 0;
-                                break;
-                            case alexandria::iCmiller:
-                            {
-                                double      tau_ahc, alpha_ahp;
-                                int         atomnumber;
-                                std::string aequiv;
-                                bSupport = (pd.getMillerPol((char *)atomname,
-                                                            &atomnumber,
-                                                            &tau_ahc,
-                                                            &alpha_ahp,
-                                                            aequiv) == 1);
-
-                                ahc   += tau_ahc*natom;
-                                ahp   += alpha_ahp*natom;
-                                Nelec += atomnumber*natom;
-                            }
-                            break;
-                            default:
-                                gmx_incons("Out of range");
-                        }
-
-                        if (bSupport && (ic != alexandria::iCmiller))
-                        {
-                            p         += polar*natom;
-                            sp        += gmx::square(sig_pol)*natom;
-                            natom_tot += natom;
-                        }
-                    }
-                    sp = sqrt(sp/natom_tot);
-                    if (bSupport)
-                    {
-                        const char *type = csi->abbreviation();
-                        const char *ref  = csi->reference();
-                        if (ic == alexandria::iCmiller)
-                        {
-                            alexandria::Experiment calc1(program, type, (char *)"ahc",
-                                                         ref, minimum, nofile, jobtype);
-                            ahc = 4*gmx::square(ahc)/Nelec;
-                            alexandria::MolecularPolarizability md1(empirical, ang3, 0, 0, 0, 0, 0, 0, 0, ahc, 0);
-                            calc1.AddPolar(md1);
-                            mpi.AddExperiment(calc1);
-
-                            alexandria::Experiment              calc2(program, type, (char *)"ahp",
-                                                                      ref, minimum, nofile, jobtype);
-                            alexandria::MolecularPolarizability md2(empirical, ang3, 0, 0, 0, 0, 0, 0, 0, ahp, 0);
-                            calc2.AddPolar(md2);
-                            mpi.AddExperiment(calc2);
-                        }
-                        else
-                        {
-                            alexandria::Experiment              calc(program, type, minus,
-                                                                     ref, minimum, nofile, jobtype);
-                            alexandria::MolecularPolarizability md(empirical, ang3, 0, 0, 0, 0, 0, 0, 0, p, sp);
-                            calc.AddPolar(md);
-                            mpi.AddExperiment(calc);
-                            if (nullptr != debug)
-                            {
-                                fprintf(debug, "Added polarizability %g for %s\n", p, mpi.getIupac().c_str());
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
 static void write_corr_xvg(FILE                             *fplog,
                            const char                       *fn,
                            std::vector<alexandria::MolProp> &mp,
@@ -339,8 +221,6 @@ static void write_corr_xvg(FILE                             *fplog,
 
 static void alexandria_molprop_analyze(FILE                              *fplog,
                                        std::vector<alexandria::MolProp>  &mp,
-                                       alexandria::Poldata               &pd,
-                                       gmx_bool                           bCalcPol,
                                        MolPropObservable                  mpo,
                                        char                              *exp_type,
                                        real                               rtoler,
@@ -371,10 +251,6 @@ static void alexandria_molprop_analyze(FILE                              *fplog,
     alexandria::CategoryList  cList;
     std::vector<RefCount>     rc;
 
-    if (bCalcPol)
-    {
-        calc_frag_miller(pd, mp, gms);
-    }
     find_calculations(mp, mpo, fc_str, &qmc);
     for (auto &mpi : mp)
     {
@@ -620,7 +496,7 @@ int alex_analyze(int argc, char *argv[])
 
     if (bMerge)
     {
-        int nwarn = merge_xml(mpname, &mp, nullptr, nullptr, nullptr, ap, pd, TRUE);
+        int nwarn = merge_xml(mpname, &mp, nullptr, nullptr, nullptr, ap, TRUE);
         if (nwarn > maxwarn)
         {
             printf("Too many warnings (%d). Terminating.\n", nwarn);
@@ -630,7 +506,7 @@ int alex_analyze(int argc, char *argv[])
     else if (mpname.size() > 0)
     {
         MolPropRead(mpname[0].c_str(), &mp);
-        generate_composition(mp, &pd);
+        generate_composition(mp);
         generate_formula(mp, ap);
     }
     if (mpsa != MPSA_NR)
@@ -640,8 +516,6 @@ int alex_analyze(int argc, char *argv[])
     fplog  = opt2FILE("-g", NFILE, fnm, "w");
     alexandria_molprop_analyze(fplog,
                                mp,
-                               pd,
-                               bCalcPol,
                                mpo,
                                exp_type,
                                rtoler,

@@ -48,6 +48,7 @@
 #include "gromacs/utility/smalloc.h"
 
 #include "alex_modules.h"
+#include "plistwrapper.h"
 #include "poldata.h"
 #include "poldata_low.h"
 #include "poldata_xml.h"
@@ -236,28 +237,27 @@ int alex_fit_qs_zeta(int argc, char *argv[])
             alexandria::readPoldata(gentop_fnm ? gentop_fnm : "", pd, aps);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+        auto fs  = pd.findForces(alexandria::eitELECTRONEGATIVITYEQUALIZATION);
+        auto cdm = pd.chargeType();
         for(auto ai = pd.getAtypeBegin(); ai < pd.getAtypeEnd(); ++ai)
         {
-            auto cdm = pd.chargeType();
-            auto eem = pd.atype2Eem(ai->getType());
-            if (pd.EndEemprops() != eem)
-            {
-                double zeta, qs;
-                auto pname = ai->getPtype();
-                auto ptype = pd.findPtype(pname);
-                // TODO: Fix unit conversion
-                fit_polarization(ptype->getPolarizability()/1000, 
-                                 0.5, rmax, 
-                                 eem->getRow(1),
-                                 cdm,
-                                 maxiter, tolerance,
-                                 &zeta, &qs, bVerbose);
-                printf("atype %s zeta_old %7g qs_old %3g alpha %7g zeta_new %7g qs_new %7g\n",
-                       ai->getType().c_str(), eem->getZeta(1), eem->getQ(1),  
-                       ptype->getPolarizability(), zeta, qs);
-                eem->setZeta(1, zeta);
-                eem->setQ(1, qs);
-            }
+            alexandria::Identifier ztp({ai->getType()}, false);
+            auto eem = fs->findParameters(ztp);
+            double zeta, qs;
+            alexandria::Identifier pname({ai->getPtype()}, false);
+            auto ptype = pd.findForcesConst(alexandria::eitPOLARIZATION).findParameterTypeConst(pname, "alpha");
+            // TODO: Fix unit conversion
+            fit_polarization(convertToGromacs(ptype.value(), ptype.unit()), 
+                             0.5, rmax,
+                             (*eem)["row"].value(),
+                             cdm,
+                             maxiter, tolerance,
+                             &zeta, &qs, bVerbose);
+            printf("atype %s zeta_old %7g qs_old %3g alpha %7g zeta_new %7g qs_new %7g\n",
+                   ai->getType().c_str(), eem->getZeta(1), eem->getQ(1),  
+                   ptype->value(), zeta, qs);
+            eem->setZeta(1, zeta);
+            eem->setQ(1, qs);
         }
         writePoldata(opt2fn("-do", NFILE, fnm), &pd, true);
     }

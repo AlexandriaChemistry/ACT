@@ -40,25 +40,10 @@
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/gmxpreprocess/hackblock.h"
 
+#include "interactiontype.h"
+
 namespace alexandria
 {
-//! Interaction type
-enum InteractionType
-{
-    eitBONDS              = 0,
-    eitANGLES             = 1,
-    eitLINEAR_ANGLES      = 2,
-    eitPROPER_DIHEDRALS   = 3,
-    eitIMPROPER_DIHEDRALS = 4,
-    eitVDW                = 5,
-    eitLJ14               = 6,
-    eitPOLARIZATION       = 7,
-    eitCONSTR             = 8,
-    eitVSITE2             = 9,
-    eitVSITE3FAD          = 10,
-    eitVSITE3OUT          = 11,
-    eitNR                 = 12
-};
 
 using ParamIterator      = typename std::vector<t_param>::iterator;
 using ConstParamIterator = typename std::vector<t_param>::const_iterator;
@@ -90,6 +75,9 @@ class PlistWrapper
         //! Update the function type
         void setFtype(int ftype) { ftype_ = ftype; }
 
+        //! Return  the parameter array for editing
+        std::vector<t_param> *params() { return &p_; }
+        
         //! Loop over parameters
         ConstParamIterator beginParam() const { return p_.begin(); }
 

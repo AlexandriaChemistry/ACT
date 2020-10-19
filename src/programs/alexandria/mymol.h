@@ -594,9 +594,10 @@ class MyMol : public MolProp
          * on the coordinate of the conformation stored
          * in molprop experiment class.
          *
-         * \param[in] ei   ExperimentIterator
+         * \param[in] ei     Experiment
+         * \param[in] bpolar Whether or not there are shells
          */
-        void changeCoordinate(ExperimentIterator ei, gmx_bool bpolar);
+        void changeCoordinate(const Experiment &ei, gmx_bool bpolar);
 
         /*! \brief
          * Return the optimized geometry of the molecule from the data file.

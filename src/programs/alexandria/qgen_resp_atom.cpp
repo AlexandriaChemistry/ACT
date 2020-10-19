@@ -71,10 +71,15 @@ RespAtomType::RespAtomType(int                             atype,
     atomtype_    = atomtype;
     bRestrained_ = bRestr;
     bHasShell_   = hasShell;
-    int nZeta    = std::max(1, pd->getNzeta(atomtype_));
+    auto       fs  = pd->findForcesConst(eitELECTRONEGATIVITYEQUALIZATION);
+    Identifier myid({atomtype_}, false);
+    auto eep       = fs.findParametersConst(myid);
+    // TODO Fix number of zeta
+    int nZeta    = 1;//eep->getNzeta();
     if (ptype_ == eptShell)
     {
         int         shell        = nZeta-1;
+        // TODO fix this
         size_t      shell_name   = atomtype_.find("_s");
         std::string atomtype_new = atomtype_;
         if (shell_name != std::string::npos)
@@ -82,7 +87,7 @@ RespAtomType::RespAtomType(int                             atype,
             shell        = 1;
             atomtype_new = atomtype_.substr(0, shell_name);
         }
-        rz_.push_back(RowZetaQ(pd->getRow(atomtype_new, shell), zeta, q));
+        rz_.push_back(RowZetaQ(eep->getRow(shell), zeta, q));
     }
     else if (ptype_ == eptVSite)
     {
@@ -94,7 +99,7 @@ RespAtomType::RespAtomType(int                             atype,
             vsite        = 1;
             atomtype_new = atomtype_.substr(0, vsite_name);
         }
-        rz_.push_back(RowZetaQ(pd->getRow(atomtype_new, vsite), zeta, q));
+        rz_.push_back(RowZetaQ(eep->getRow(vsite), zeta, q));
     }
     else
     {
@@ -104,7 +109,7 @@ RespAtomType::RespAtomType(int                             atype,
         }
         for (int i = 0; i < nZeta; i++)
         {
-            rz_.push_back(RowZetaQ(pd->getRow(atomtype, i), zeta, q));
+            rz_.push_back(RowZetaQ(eep->getRow(i), zeta, q));
         }
     }
 }

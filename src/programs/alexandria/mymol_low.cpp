@@ -43,7 +43,6 @@
 #include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/gmxpreprocess/topdirs.h"
 #include "gromacs/listed-forces/bonded.h"
-#include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdtypes/inputrec.h"
@@ -55,7 +54,10 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strconvert.h"
 
+#include "forcefieldparameter.h"
+#include "plistwrapper.h"
 #include "poldata.h"
+#include "units.h"
 
 namespace alexandria
 {
@@ -243,29 +245,22 @@ void cp_plist(t_params                   plist[],
 }
 
 real calc_r13(const Poldata     *pd,
-              const std::string  aai,
-              const std::string  aaj,
-              const std::string  aak,
+              const std::string &aai,
+              const std::string &aaj,
+              const std::string &aak,
               const real         angle)
 {
-    std::string              params;
-    size_t                   ntrain;
-    double                   sigma;
-    double                   rij = 0, rjk = 0;
-    double                   r12 = 0, r23 = 0;
-    double                   r13 = 0;
+    double r12 = 0, r23 = 0, r13 = 0;
 
-    std::vector<std::string> aij = {aai, aaj};
-    std::vector<std::string> ajk = {aaj, aak};
+    Identifier aij ({aai, aaj}, CanSwap::Yes);
+    Identifier ajk ({aaj, aak}, CanSwap::Yes);
 
-    auto                     fs = pd->findForces(eitBONDS);
-    auto                     lu = string2unit(fs->unit().c_str());
+    std::string type("bondlength");
+    auto bij = pd->findForcesConst(eitBONDS).findParameterTypeConst(aij, type);
+    auto bjk = pd->findForcesConst(eitBONDS).findParameterTypeConst(ajk, type);
 
-    pd->searchForce(aij, params, &rij, &sigma, &ntrain);
-    pd->searchForce(ajk, params, &rjk, &sigma, &ntrain);
-
-    r12 = convert2gmx(rij, lu);
-    r23 = convert2gmx(rjk, lu);
+    r12 = convertToGromacs(bij.value(), bij.unit());
+    r23 = convertToGromacs(bjk.value(), bjk.unit());
 
     r13 = std::sqrt((r12*r12) + (r23*r23) - (2*r12*r23*std::cos(DEG2RAD*angle)));
 
@@ -277,24 +272,17 @@ real calc_relposition(const Poldata     *pd,
                       const std::string  aaj,
                       const std::string  aak)
 {
-    std::string              params;
-    size_t                   ntrain;
-    double                   sigma;
-    double                   rij               = 0, rjk = 0;
-    double                   b0                = 0, b1 = 0;
-    double                   relative_position = 0;
+    double b0 = 0, b1 = 0, relative_position = 0;
 
-    std::vector<std::string> aij = {aai, aaj};
-    std::vector<std::string> ajk = {aaj, aak};
+    Identifier aij({aai, aaj}, CanSwap::Yes);
+    Identifier ajk({aaj, aak}, CanSwap::Yes);
 
-    auto                     fs = pd->findForces(eitBONDS);
-    auto                     lu = string2unit(fs->unit().c_str());
+    std::string type("bondlength");
+    auto bij = pd->findForcesConst(eitBONDS).findParameterTypeConst(aij, type);
+    auto bjk = pd->findForcesConst(eitBONDS).findParameterTypeConst(ajk, type);
 
-    pd->searchForce(aij, params, &rij, &sigma, &ntrain);
-    pd->searchForce(ajk, params, &rjk, &sigma, &ntrain);
-
-    b0 = convert2gmx(rij, lu);
-    b1 = convert2gmx(rjk, lu);
+    b0 = convertToGromacs(bij.value(), bij.unit());
+    b1 = convertToGromacs(bjk.value(), bjk.unit());
 
     relative_position = (b1/(b0+b1));
 
@@ -302,189 +290,77 @@ real calc_relposition(const Poldata     *pd,
 }
 
 immStatus updatePlist(const Poldata             *pd,
-                      std::vector<PlistWrapper> &plist,
-                      t_atoms                   *atoms,
+                      std::vector<PlistWrapper> *plist,
+                      const t_atoms              *atoms,
                       bool                       bBASTAT,
-                      std::string                molname,
-                      std::vector<std::string>  &errors)
+                      const std::string         &molname,
+                      std::vector<std::string>  *errors)
 {
-    std::string              aai, aaj, aak, aal, params;
-    std::vector<std::string> atomNames, ptr;
-    int                      lu, n;
-    size_t                   ntrain;
-    double                   value, sigma, r13 = 0;
-
-    for (auto &pw : plist)
+    for (auto pw = plist->begin(); pw < plist->end(); ++pw)
     {
-        auto iType = pw.getItype();
-        auto fs    = pd->findForces(iType);
-
-        if (fs != pd->forcesEnd())
+        auto iType   = pw->getItype();
+        auto fs      = pd->findForcesConst(iType);
+        auto canSwap = fs.canSwap();
+        pw->setFtype(fs.fType());
+        auto nratoms = interaction_function[fs.fType()].nratoms;
+        int bondOrder_index = 0;
+        for (auto pwi = pw->beginParam(); pwi < pw->endParam(); ++pwi)
         {
-            pw.setFtype(fs->fType());
-
-            if (eitBONDS == iType)
+            std::vector<std::string> bondAtomType;
+            bool bondNamesOK = true;
+            // Store last atom type in case something goes wrong
+            std::string lastAtype;
+            for(int i = 0; i < nratoms && bondNamesOK; i++)
             {
-                int bondOrder_index = 0;
-                lu = string2unit(fs->unit().c_str());
-                for (auto pwi = pw.beginParam(); pwi < pw.endParam(); ++pwi)
+                std::string tmp;
+                GMX_RELEASE_ASSERT(i < atoms->nr, "BAH");
+                lastAtype.assign(*atoms->atomtype[pwi->a[i]]);
+                bondNamesOK = pd->atypeToBtype(lastAtype, &tmp);
+                bondAtomType.push_back(tmp);
+            }
+            if (bondNamesOK)
+            {
+                Identifier bondId;
+                if (eitBONDS == iType)
                 {
-                    if (pd->atypeToBtype(*atoms->atomtype[pwi->a[0]], &aai) &&
-                        pd->atypeToBtype(*atoms->atomtype[pwi->a[1]], &aaj))
+                    bondId = Identifier(bondAtomType,
+                                        pw->bondOrder(bondOrder_index++),
+                                        canSwap);
+                }
+                else
+                {
+                    bondId = Identifier(bondAtomType, canSwap);
+                }
+                int n = 0;
+                if (fs.parameterExists(bondId))
+                {
+                    for(const auto &fp : fs.findParametersConst(bondId))
                     {
-                        atomNames = {aai, aaj};
-                        auto  bondOrder = pw.bondOrder(bondOrder_index);
-                        n     = 0;
-                        value = 0;
-                        if ((fs->searchForce(atomNames, params, &value, &sigma, &ntrain, bondOrder)) != 0)
-                        {
-                            pwi->c[n++] = convert2gmx(value, lu);
-                            ptr         = gmx::splitString(params);
-                            for (auto pi = ptr.begin(); pi < ptr.end(); ++pi)
-                            {
-                                pwi->c[n++] = gmx::doubleFromString(pi->c_str());
-                            }
-                        }
-                        else if (!bBASTAT)
-                        {
-                            errors.push_back(gmx::formatString("Could not find bond information for %s - %s (atoms %d %d) with bondorder of %zu in %s\n",
-                                                               *atoms->atomtype[pwi->a[0]], 
-                                                               *atoms->atomtype[pwi->a[1]], 
-                                                               1+pwi->a[0], 
-                                                               1+pwi->a[1], 
-                                                               bondOrder, 
-                                                               molname.c_str()));
-                            return immNotSupportedBond;
-                        }
-                        bondOrder_index++;
+                        pwi->c[n++] = convertToGromacs(fp.second.value(), fp.second.unit());
+                    }
+                }
+                else if (!bBASTAT)
+                {
+                    errors->push_back(gmx::formatString("Could not find bond information for %s in %s\n",
+                                                        bondId.id().c_str(), molname.c_str()));
+                    if (iType == eitBONDS)
+                    {
+                        return immNotSupportedBond;
+                    }
+                    else if (iType ==  eitANGLES)
+                    {
+                        return immNotSupportedAngle;
                     }
                     else
                     {
-                        errors.push_back(gmx::formatString("Unsupported atom types: %d, %d!\n", 
-                                                           1+pwi->a[0], 1+pwi->a[1]));
-                        return immAtomTypes;
+                        return immNotSupportedDihedral;
                     }
                 }
             }
-            else if (eitANGLES == iType ||
-                     eitLINEAR_ANGLES == iType)
+            else
             {
-                for (auto b = pw.beginParam(); b < pw.endParam(); ++b)
-                {
-                    if (pd->atypeToBtype(*atoms->atomtype[b->a[0]], &aai) &&
-                        pd->atypeToBtype(*atoms->atomtype[b->a[1]], &aaj) &&
-                        pd->atypeToBtype(*atoms->atomtype[b->a[2]], &aak))
-                    {
-                        atomNames = {aai, aaj, aak};
-                        n     = 0;
-                        value = 0;
-                        if ((fs->searchForce(atomNames, params, &value, &sigma, &ntrain, false)) != 0)
-                        {
-                            r13 = calc_r13(pd, aai, aaj, aak, value);
-
-                            b->c[n++] = value;
-                            ptr       = gmx::splitString(params);
-                            for (auto pi = ptr.begin(); pi < ptr.end(); ++pi)
-                            {
-                                b->c[n++] = gmx::doubleFromString(pi->c_str());
-                                if (n == 2)
-                                {
-                                    b->c[n++] = r13;
-                                }
-                            }
-                        }
-                        else if (!bBASTAT)
-                        {
-                            errors.push_back(gmx::formatString("Could not find angle information for %s - %s - %s (atoms %d %d %d) in %s\n",
-                                                               *atoms->atomtype[b->a[0]],
-                                                               *atoms->atomtype[b->a[1]], 
-                                                               *atoms->atomtype[b->a[2]], 
-                                                               1+b->a[0], 
-                                                               1+b->a[1], 
-                                                               1+b->a[2], 
-                                                               molname.c_str()));
-                            return immNotSupportedAngle;
-                        }
-                    }
-                    else
-                    {
-                        errors.push_back(gmx::formatString("Unsuppotred atoms: %d, %d, %d!\n", 
-                                                           1+b->a[0], 1+b->a[1], 1+b->a[2]));
-                        return immAtomTypes;
-                    }
-                }
-            }
-            else if (eitPROPER_DIHEDRALS == iType ||
-                     eitIMPROPER_DIHEDRALS == iType)
-            {
-                auto ftype = fs->fType();
-                for (auto b = pw.beginParam(); b < pw.endParam(); ++b)
-                {
-                    std::vector<std::string> bondTypes;
-                    std::vector<char*>       atomTypes;
-                    for (int j = 0; j < interaction_function[ftype].nratoms; j++)
-                    {
-                        std::string bondType;
-                        if (pd->atypeToBtype(*atoms->atomtype[b->a[j]], &bondType))
-                        {
-                            bondTypes.push_back(bondType);
-                            atomTypes.push_back(*atoms->atomtype[b->a[j]]);
-                        }
-                        else
-                        {
-                            errors.push_back(gmx::formatString("Cannot find bonded type for %s\n",
-                                                               *atoms->atomtype[b->a[j]]));
-                        }
-                    }
-                    if (static_cast<int>(bondTypes.size()) == interaction_function[ftype].nratoms)
-                    {
-                        n     = 0;
-                        value = 0;
-                        if (fs->searchForce(bondTypes, params, &value, &sigma,
-                                            &ntrain, iType == eitIMPROPER_DIHEDRALS))
-                        {
-                            b->c[n++] = value;
-                            ptr       = gmx::splitString(params);
-                            int n = 0;
-                            for (auto pi = ptr.begin(); pi < ptr.end(); ++pi)
-                            {
-                                if (n == 0)
-                                {
-                                    b->c[n++] = gmx::doubleFromString(pi->c_str());
-                                }
-                                else
-                                {
-                                    /* Multiplicity for Proper Dihedral must be integer
-                                       This assumes that the second paramter is Multiplicity */
-                                    b->c[n++] = atoi(pi->c_str());
-                                }
-                            }
-                        }
-                        else if (!bBASTAT)
-                        {
-
-                            errors.push_back(gmx::formatString("Could not find %s information for %s - %s - %s - %s (atoms %d %d %d %d) in %s\n",
-                                                               iType2string(iType),
-                                                               atomTypes[0], 
-                                                               atomTypes[1],
-                                                               atomTypes[2], 
-                                                               atomTypes[3], 
-                                                               1+b->a[0], 
-                                                               1+b->a[1], 
-                                                               1+b->a[2], 
-                                                               1+b->a[3], 
-                                                               molname.c_str()));
-
-                            return immNotSupportedDihedral;
-                        }
-                    }
-                    else
-                    {
-                        errors.push_back(gmx::formatString("Unsupported atoms: %d, %d, %d, %d!\n",
-                                                           1+b->a[0], 1+b->a[1], 1+b->a[2], 1+b->a[3]));
-                        return immAtomTypes;
-                    }
-                }
+                errors->push_back(gmx::formatString("Unsupported atom type: %s!\n", lastAtype.c_str()));
+                return immAtomTypes;
             }
         }
     }
@@ -502,69 +378,66 @@ std::vector<double> getDoubles(const std::string &s)
     return d;
 }
 
+static int getCombinationRule(const ForceFieldParameterList &vdw)
+{
+    auto combRule = vdw.optionValue("combination_rule");
+    int  i;
+    for(i = 0; i < eCOMB_NR; i++)
+    {
+        if (combRule.compare(ecomb_names[i]) == 0)
+        {
+            break;
+        }
+    }
+    GMX_RELEASE_ASSERT(i < eCOMB_NR, gmx::formatString("Cannot find combination rule %s in GROMACS",
+                                                       combRule.c_str()).c_str());
+    return i;
+}
+
 static void getLjParams(const Poldata     *pd,
                         const std::string &ai,
                         const std::string &aj,
                         double            *c6,
                         double            *cn)
 {
-    std::vector<double> vdwi, vdwj;
+    auto fa       = pd->findForcesConst(eitVDW);
+    Identifier idI({ai}, CanSwap::Yes); 
+    Identifier idJ({aj}, CanSwap::Yes); 
+    auto sigmaI   = fa.findParameterTypeConst(idI, "sigma").value();
+    auto sigmaJ   = fa.findParameterTypeConst(idJ, "sigma").value();
+    auto epsilonI = fa.findParameterTypeConst(idI, "epsilon").value();
+    auto epsilonJ = fa.findParameterTypeConst(idJ, "epsilon").value();
 
-    auto                fai = pd->findAtype(ai);
-    if (fai != pd->getAtypeEnd())
+    auto comb     = getCombinationRule(fa);     
+    switch (comb)
     {
-        vdwi  = getDoubles(fai->getVdwparams());
-    }
-    else
-    {
-        gmx_fatal(FARGS, "Cannot find atomtype %s looking for LJ", ai.c_str());
-    }
-    auto faj = pd->findAtype(aj);
-    if (faj != pd->getAtypeEnd())
-    {
-        vdwj  = getDoubles(faj->getVdwparams());
-    }
-    else
-    {
-        gmx_fatal(FARGS, "Cannot find atomtype %s looking for LJ", aj.c_str());
-    }
-
-    auto si = vdwi[0];
-    auto ei = vdwi[1];
-
-    auto sj = vdwj[0];
-    auto ej = vdwj[1];
-
-    switch (pd->getCombRule())
-    {
-        case eCOMB_GEOMETRIC:
+    case eCOMB_GEOMETRIC:
         {
-            *c6 = std::sqrt(si * sj);
-            *cn = std::sqrt(ei * ej);
+            *c6 = std::sqrt(sigmaI * sigmaJ);
+            *cn = std::sqrt(epsilonI * epsilonJ);
         }
         break;
-        case eCOMB_ARITHMETIC:
+    case eCOMB_ARITHMETIC:
         {
-            double sig  = 0.5 * (si + sj);
-            double eps  = std::sqrt(ei + ej);
+            double sig  = 0.5 * (sigmaI + sigmaJ);
+            double eps  = std::sqrt(epsilonI + epsilonJ);
             double sig6 = std::pow(sig, 6.0);
             *c6 = 4*eps*sig6;
             *cn = *c6 * sig6;
         }
         break;
-        case eCOMB_GEOM_SIG_EPS:
+    case eCOMB_GEOM_SIG_EPS:
         {
-            double sig  = std::sqrt(si * sj);
-            double eps  = std::sqrt(si * sj);
+            double sig  = std::sqrt(sigmaI * sigmaJ);
+            double eps  = std::sqrt(epsilonI * epsilonJ);
             double sig6 = std::pow(sig, 6.0);
             *c6 = 4*eps*sig6;
             *cn = *c6 * sig6;
         }
         break;
-        case eCOMB_NONE:
-        case eCOMB_NR:
-            gmx_fatal(FARGS, "Unsupported combination rule %d for Lennard Jones",
-                      pd->getCombRule());
+    case eCOMB_NONE:
+    case eCOMB_NR:
+        gmx_fatal(FARGS, "Unsupported combination rule %d for Lennard Jones", comb);
     }
 }
 
@@ -575,50 +448,38 @@ static void getBhamParams(const Poldata     *pd,
                           double            *b,
                           double            *c)
 {
-    std::vector<std::vector<double> > vdw;
-    for (auto a : { ai, aj })
-    {
-        auto fai = pd->findAtype(a);
-        if (fai != pd->getAtypeEnd())
-        {
-            vdw.push_back(getDoubles(fai->getVdwparams()));
-        }
-        else
-        {
-            gmx_fatal(FARGS, "Cannot find atomtype %s looking for BHAM", a.c_str());
-        }
-    }
+    auto fa       = pd->findForcesConst(eitVDW);
+    Identifier idI({ai}, CanSwap::Yes);
+    Identifier idJ({aj}, CanSwap::Yes);
+    auto sigmaI   = fa.findParameterTypeConst(idI, "sigma").value();
+    auto sigmaJ   = fa.findParameterTypeConst(idJ, "sigma").value();
+    auto epsilonI = fa.findParameterTypeConst(idI, "epsilon").value();
+    auto epsilonJ = fa.findParameterTypeConst(idJ, "epsilon").value();
+    auto gammaI   = fa.findParameterTypeConst(idI, "gamma").value();
+    auto gammaJ   = fa.findParameterTypeConst(idJ, "gamma").value();
 
-    auto si = vdw[0][0];
-    auto ei = vdw[0][1];
-    auto gi = vdw[0][2];
-
-    auto sj = vdw[1][0];
-    auto ej = vdw[1][1];
-    auto gj = vdw[1][2];
-
-    switch (pd->getCombRule())
+    auto comb     = getCombinationRule(fa);
+    switch (comb)
     {
         case eCOMB_GEOMETRIC:
-            *a = std::sqrt(si * sj);
-            *b = std::sqrt(ei * ej);
-            *c = std::sqrt(gi * gj);
+            *a = std::sqrt(sigmaI * sigmaJ);
+            *b = std::sqrt(epsilonI * epsilonJ);
+            *c = std::sqrt(gammaI * gammaJ);
             break;
         case eCOMB_ARITHMETIC:
-            *a = 0.5 * (si + sj);
-            *b = std::sqrt(ei * ej);
-            *c = 0.5 * (gi + gj);
+            *a = 0.5 * (sigmaI + sigmaJ);
+            *b = std::sqrt(epsilonI * epsilonJ);
+            *c = 0.5 * (gammaI + gammaJ);
             break;
         case eCOMB_KONG_MASON:
-            *a = std::sqrt(si * sj);
-            *b = 2.0 * (ei * ej)/(ei + ej);
-            *c = *a * (0.5*((gi/si)+(gj/sj)));
+            *a = std::sqrt(sigmaI * sigmaJ);
+            *b = 2.0 * (epsilonI * epsilonJ)/(epsilonI + epsilonJ);
+            *c = *a * (0.5*((gammaI/sigmaI)+(gammaJ/sigmaJ)));
             break;
         case eCOMB_GEOM_SIG_EPS:
         case eCOMB_NONE:
         case eCOMB_NR:
-            gmx_fatal(FARGS, "Unsupported combination rule %d for Buckingham",
-                      pd->getCombRule());
+            gmx_fatal(FARGS, "Unsupported combination rule %d for Buckingham", comb);
     }
     if (debug)
     {
@@ -642,7 +503,8 @@ void nonbondedFromPdToMtop(gmx_mtop_t    *mtop,
     {
         mtop->ffparams.iparams.resize(ntype2, {});
     }
-    auto ftypeVdW   = pd->getVdwFtype();
+    auto forcesVdw = pd->findForcesConst(eitVDW);
+    auto ftypeVdW  = forcesVdw.fType();
     typedef struct
     {
         std::string name;
@@ -729,7 +591,7 @@ void nonbondedFromPdToMtop(gmx_mtop_t    *mtop,
                         break;
                         default:
                             fprintf(stderr, "Invalid van der waals type %s\n",
-                                    pd->getVdwFunction().c_str());
+                                    interaction_function[ftypeVdW].longname);
                     }
                 }
             }
@@ -747,12 +609,15 @@ void polarizabilityFromPdToMtop(gmx_mtop_t     *mtop,
     {
         auto   tp      = ltop->idef.il[ft].iatoms[i];
         auto   ai      = ltop->idef.il[ft].iatoms[i+1];
-        auto polarUnit = string2unit(pd->getPolarUnit().c_str());
-        double alpha, sigma;
-        if (pd->getAtypePol(*atoms->atomtype[ai], &alpha, &sigma))
+        std::string ptype;
+        if (pd->atypeToPtype(*atoms->atomtype[ai], &ptype))
         {
+            Identifier idS({ptype}, CanSwap::No);
+            auto param = pd->findForcesConst(eitPOLARIZATION).findParameterTypeConst(idS, "alpha");
+            auto alpha = param.value();
+            auto unit  = param.unit(); 
             mtop->ffparams.iparams[tp].polarize.alpha =
-                ltop->idef.iparams[tp].polarize.alpha = convert2gmx(alpha, polarUnit);
+                ltop->idef.iparams[tp].polarize.alpha = convertToGromacs(alpha, unit);
         }
     }
 }
@@ -978,7 +843,7 @@ void write_zeta_q(FILE       *fp,
                   t_atoms    *atoms,
                   ChargeType  iChargeType)
 {
-    int    i, ii, j, k, nz, row;
+    int    i, ii, k, row;
     double zeta, q;
     bool   bAtom, bTypeSet;
 
@@ -1008,45 +873,31 @@ void write_zeta_q(FILE       *fp,
         {
             gmx_fatal(FARGS, "The first atom must be a real atom, not a shell");
         }
-        nz = qgen->getNzeta( k);
-        if (nz != NOTSET)
+        bTypeSet = false;
+        for (ii = 0; !bTypeSet && (ii < i); ii++)
         {
-            bTypeSet = false;
-            for (ii = 0; !bTypeSet && (ii < i); ii++)
+            bTypeSet = (atoms->atom[ii].type == atoms->atom[i].type);
+        }
+        if (!bTypeSet)
+        {
+            fprintf(fp, "%5s %6s",
+                    *atoms->atomtype[i],
+                    chargeTypeName(iChargeType).c_str());
+            row   = qgen->getRow(k);
+            q     = qgen->getQ(k);
+            zeta  = qgen->getZeta(k);
+            if ((row != NOTSET) && (q != NOTSET) && (zeta != NOTSET))
             {
-                bTypeSet = (atoms->atom[ii].type == atoms->atom[i].type);
-            }
-            if (!bTypeSet)
-            {
-                fprintf(fp, "%5s %6s %3d",
-                        *atoms->atomtype[i],
-                        chargeTypeName(iChargeType).c_str(),
-                        (bAtom) ? nz : 1);
-            }
-            for (j = (bAtom ? 0 : nz); (j < (bAtom ? nz : nz)); j++)
-            {
-                row   = qgen->getRow( k, j);
-                q     = qgen->getQ( k, j);
-                zeta  = qgen->getZeta( k, j);
-                if ((row != NOTSET) && (q != NOTSET) && (zeta != NOTSET))
+                atoms->atom[i].q      =
+                    atoms->atom[i].qB = q;
+                if (!bTypeSet)
                 {
-                    if (j == nz-1)
+                    if (eqtSlater == iChargeType)
                     {
-                        atoms->atom[i].q      =
-                            atoms->atom[i].qB = q;
+                        fprintf(fp, "  %4d", row);
                     }
-                    if (!bTypeSet)
-                    {
-                        if (eqtSlater == iChargeType)
-                        {
-                            fprintf(fp, "  %4d", row);
-                        }
-                        fprintf(fp, " %10f", zeta);
-                        if (j < nz-1)
-                        {
-                            fprintf(fp, " %10f", q);
-                        }
-                    }
+                    fprintf(fp, " %10f", zeta);
+                    fprintf(fp, " %10f", q);
                 }
             }
             if (!bTypeSet)
@@ -1064,7 +915,7 @@ void write_zeta_q2(QgenAcm        *qgen,
                    ChargeType      iChargeType)
 {
     FILE      *fp;
-    int        i, j, k, nz, row;
+    int        i, k, row;
     double     zeta, q, qtot;
     gmx_bool   bAtom;
 
@@ -1086,27 +937,19 @@ void write_zeta_q2(QgenAcm        *qgen,
         {
             gmx_fatal(FARGS, "The first atom must be a real atom, not a shell");
         }
-        nz = qgen->getNzeta( k);
-        if (nz != NOTSET)
+        fprintf(fp, "%6s  %5s", chargeTypeName(iChargeType).c_str(),
+                get_atomtype_name(atoms->atom[i].type, atype));
+        qtot = 0;
+        row   = qgen->getRow(k);
+        q     = qgen->getQ(k);
+        zeta  = qgen->getZeta(k);
+        if ((row != NOTSET) && (q != NOTSET) && (zeta != NOTSET))
         {
-            fprintf(fp, "%6s  %5s  %5d", chargeTypeName(iChargeType).c_str(),
-                    get_atomtype_name(atoms->atom[i].type, atype),
-                    (bAtom) ? nz-1 : 1);
-            qtot = 0;
-            for (j = (bAtom ? 0 : nz-1); (j < (bAtom ? nz-1 : nz)); j++)
-            {
-                row   = qgen->getRow( k, j);
-                q     = qgen->getQ( k, j);
-                zeta  = qgen->getZeta( k, j);
-                if ((row != NOTSET) && (q != NOTSET) && (zeta != NOTSET))
-                {
-                    qtot += q;
-                    fprintf(fp, "%5d %10g %10g", row, zeta, q);
-                }
-            }
-            atoms->atom[i].q = qtot;
-            fprintf(fp, "\n");
+            qtot += q;
+            fprintf(fp, "%5d %10g %10g", row, zeta, q);
         }
+        atoms->atom[i].q = qtot;
+        fprintf(fp, "\n");
     }
     fprintf(fp, "\n");
     fclose(fp);
@@ -1181,19 +1024,21 @@ void write_top(FILE                            *out,
         fprintf(out, "; %-15s %5s\n", "Name", "nrexcl");
         fprintf(out, "%-15s %5d\n\n", molname ? molname : "Protein", nrexcl);
         print_atoms(out, atype, at, cgnr, bRTPresname);
-        for (auto fs = pd->forcesBegin(); fs != pd->forcesEnd(); fs++)
+        for (auto &fs : pd->forcesConst())
         {
-            if (eitBONDS == fs->iType())
+            auto iType = fs.first;
+            auto fType = fs.second.fType();
+            if (eitBONDS == fs.first)
             {
-                print_bondeds(out, d_bonds, fs->fType(), fs->fType(), plist);
+                print_bondeds(out, d_bonds, fType, fType, plist);
             }
-            else if (eitANGLES == fs->iType() || eitLINEAR_ANGLES == fs->iType())
+            else if (eitANGLES == iType || eitLINEAR_ANGLES == iType)
             {
-                print_bondeds(out, d_angles, fs->fType(), fs->fType(), plist);
+                print_bondeds(out, d_angles, fType, fType, plist);
             }
-            else if (eitPROPER_DIHEDRALS == fs->iType() || eitIMPROPER_DIHEDRALS == fs->iType())
+            else if (eitPROPER_DIHEDRALS == iType || eitIMPROPER_DIHEDRALS == iType)
             {
-                print_bondeds(out, d_dihedrals, fs->fType(), fs->fType(), plist);
+                print_bondeds(out, d_dihedrals, fType, fType, plist);
             }
         }
         print_bondeds(out, d_constraints, F_CONSTR, F_CONSTR, plist);
@@ -1221,7 +1066,6 @@ void print_top_header(FILE                    *fp,
                       bool                     bItp)
 {
     std::string   gt_old, gt_type;
-    std::string   btype;
     int           atomnumber;
     real          mass;
     ChargeType    iChargeType = pd->chargeType();
@@ -1238,14 +1082,16 @@ void print_top_header(FILE                    *fp,
     {
         fprintf(fp, "[ defaults ]\n");
         fprintf(fp, "; nbfunc         comb-rule       gen-pairs       fudgeLJ     fudgeQQ\n");
-        std::string ff = pd->getVdwFunction();
-        if (strcasecmp(ff.c_str(), "LJ_SR") == 0)
+        auto ftype = pd->findForcesConst(eitVDW).fType();
+        std::string ff;
+        if (ftype == F_LJ)
         {
-            ff = "LJ";
+            ff.assign("LJ");
         }
+        auto combRule = getCombinationRule(pd->findForcesConst(eitVDW));
         fprintf(fp, "%-15s  %-15s no           %10g  %10g\n\n",
                 ff.c_str(),
-                pd->getCombinationRule().c_str(),
+                ecomb_names[combRule],
                 1.0, 1.0);
 
         fprintf(fp, "[ atomtypes ]\n");
@@ -1255,35 +1101,41 @@ void print_top_header(FILE                    *fp,
 
         gt_old = "";
 
+        auto vdw = pd->findForcesConst(eitVDW);
         for (auto aType = pd->getAtypeBegin(); aType != pd->getAtypeEnd(); aType++)
         {
-            gt_type = aType->getType();
-            btype   = aType->getBtype();
+            gt_type    = aType->getType();
+            auto btype = aType->id(eitBONDS);
             if (gmx_atomprop_query(aps, epropMass, "", aType->getElem().c_str(), &mass))
             {
                 atomnumber = gmx_atomprop_atomnumber(aps, aType->getElem().c_str());
                 if ((0 ==  gt_old.size()) || (gt_old.compare(gt_type) != 0))
                 {
-                    char sgt_type[32];
-                    snprintf(sgt_type, 32, "%s_s", gt_type.c_str());
-                    if (0 == btype.size())
-                    {
-                        btype = gt_type;
-                    }
-                    fprintf(fp, "%-6s %-6s %6d  %12.6f  %10.4f  A     %-s  %s\n",
-                            gt_type.c_str(), aType->getBtype().c_str(), atomnumber, mass, 0.0, aType->getVdwparams().c_str(),
+                    auto sgt_type= aType->id(eitPOLARIZATION);
+                    auto vdwtype = aType->id(eitVDW);
+                    auto myvdw   = vdw.findParametersConst(vdwtype);
+                    fprintf(fp, "%-6s %-6s %6d  %12.6f  %10.4f  A   %g %g %g %s\n",
+                            gt_type.c_str(), btype.id().c_str(),
+                            atomnumber, mass, 0.0,
+                            myvdw["sigma"].value(),
+                            myvdw["epsilon"].value(),
+                            myvdw["gamma"].value(),
                             aType->getRefEnthalpy().c_str());
                     if (bPol)
                     {
                         if (strcasecmp(ff.c_str(), "LJ") == 0)
                         {
                             fprintf(fp, "%-6s %-6s %6d  %12.6f  %10.4f  S     0  0\n",
-                                    sgt_type, sgt_type, 0, 0.0, 0.0);
+                                    sgt_type.id().c_str(),
+                                    sgt_type.id().c_str(),
+                                    0, 0.0, 0.0);
                         }
                         else
                         {
                             fprintf(fp, "%-6s %-6s %6d  %12.6f  %10.4f  S     0  0  0\n",
-                                    sgt_type, sgt_type, 0, 0.0, 0.0);
+                                    sgt_type.id().c_str(),
+                                    sgt_type.id().c_str(),
+                                    0, 0.0, 0.0);
                         }
                     }
                 }
@@ -1293,35 +1145,34 @@ void print_top_header(FILE                    *fp,
         fprintf(fp, "\n");
         if (iChargeType != eqtPoint)
         {
+            auto eem = pd->findForcesConst(eitELECTRONEGATIVITYEQUALIZATION);
             fprintf(fp, "[ distributed_charges ]\n");
             for (auto atype = pd->getAtypeBegin(); atype != pd->getAtypeEnd(); atype++)
             {
-                auto eem = pd->atype2Eem(atype->getType());
-                if (eem == pd->EndEemprops())
-                {
-                    continue;
-                }
-                std::string shellName = atype->getType() + std::string("_s");
-                auto polar            = pd->polarizable();
+                auto ztype     = atype->id(eitELECTRONEGATIVITYEQUALIZATION);
+                auto eep       = eem.findParametersConst(ztype);
+                auto shellName = atype->id(eitPOLARIZATION);
                 if (eqtSlater == iChargeType)
                 {
-                    fprintf(fp, "%-7s  2  %d  %g\n", atype->getType().c_str(),
-                            eem->getRow(0), eem->getZeta(0));
-                    if (polar)
-                    {
-                        fprintf(fp, "%-7s  2  %d  %g\n", shellName.c_str(),
-                                eem->getRow(1), eem->getZeta(1));
-                    }
+                    fprintf(fp, "%-7s  2  %g  %g\n", atype->getType().c_str(),
+                            eep["row"].value(), eep["zeta"].value());
+                    // TODO: Check whether this is necessary
+                    //if (polar)
+                    //{
+                    //  fprintf(fp, "%-7s  2  %d  %g\n", shellName.id().c_str(),
+                    //          eem->getRow(1), eem->getZeta(1));
+                    //}
                 }
                 else if (eqtGaussian == iChargeType)
                 {
                     fprintf(fp, "%-7s  1  %g\n", atype->getType().c_str(),
-                            eem->getZeta(0));
-                    if (polar)
-                    {
-                        fprintf(fp, "%-7s  1  %g\n", shellName.c_str(),
-                                eem->getZeta(1));
-                    }
+                            eep["zeta"].value());
+                    // TODO see above
+                    //if (polar)
+                    //{
+                    //   fprintf(fp, "%-7s  1  %g\n", shellName.c_str(),
+                    //          eem->getZeta(1));
+                    //}
                 }
                 else
                 {

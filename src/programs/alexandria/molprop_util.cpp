@@ -59,8 +59,7 @@ void generate_index(std::vector<MolProp> *mp)
     }
 }
 
-void generate_composition(std::vector<MolProp> &mp,
-                          const Poldata        *pd)
+void generate_composition(std::vector<MolProp> &mp)
 {
     int              nOK = 0;
     CompositionSpecs cs;
@@ -71,7 +70,7 @@ void generate_composition(std::vector<MolProp> &mp,
         {
             mpi.DeleteComposition(csi->name());
         }
-        if (true == mpi.GenerateComposition(pd))
+        if (true == mpi.GenerateComposition())
         {
             nOK++;
         }
@@ -146,7 +145,7 @@ int MergeDoubleMolprops(std::vector<alexandria::MolProp> *mp,
                     {
                         fprintf(fp, "%5d  %s\n", ndouble+1, molname[prev].c_str());
                     }
-                    nwarn += mmm[prev]->Merge(mmm[cur]);
+                    nwarn += mmm[prev]->Merge(&(*mmm[cur]));
                     mpi    = mp->erase(mmm[cur]);
 
                     bDouble = true;
@@ -200,7 +199,6 @@ int merge_xml(gmx::ArrayRef<const std::string> filens,
               std::vector<alexandria::MolProp> *mpout,
               char *outf, char *sorted, char *doubles,
               gmx_atomprop_t ap,
-              const Poldata &pd,
               bool bForceMerge)
 {
     int npout = 0, tmp;
@@ -213,7 +211,7 @@ int merge_xml(gmx::ArrayRef<const std::string> filens,
             continue;
         }
         MolPropRead(fn.c_str(), &mp);
-        generate_composition(mp, &pd);
+        generate_composition(mp);
         generate_formula(mp, ap);
         for (auto mpi : mp)
         {
@@ -238,12 +236,12 @@ int merge_xml(gmx::ArrayRef<const std::string> filens,
     if (outf)
     {
         printf("There are %d entries to store in output file %s\n", npout, outf);
-        MolPropWrite(outf, mpout, false);
+        MolPropWrite(outf, *mpout, false);
     }
     if (sorted)
     {
         MolPropSort(mpout, MPSA_FORMULA, nullptr, gms);
-        MolPropWrite(sorted, mpout, false);
+        MolPropWrite(sorted, *mpout, false);
         dump_mp(mpout);
     }
     return nwarn;
@@ -280,7 +278,7 @@ static bool comp_mp_elem(alexandria::MolProp ma,
                          alexandria::MolProp mb)
 {
     int         i;
-    alexandria::MolecularCompositionIterator mcia, mcib;
+    alexandria::MolecularCompositionConstIterator mcia, mcib;
     std::string bosque("bosque"), C("C");
 
     mcia = ma.SearchMolecularComposition(bosque);
@@ -434,11 +432,11 @@ void find_calculations(std::vector<alexandria::MolProp> &mp,
 {
     std::vector<std::string> types;
 
-    for (auto mpi = mp.begin(); (mpi < mp.end()); mpi++)
+    for (auto &mpi : mp)
     {
-        for (auto ei = mpi->BeginExperiment(); (ei < mpi->EndExperiment()); ei++)
+        for (auto &ei : mpi.experimentConst())
         {
-            qmc->addConf(ei->getConformation());
+            qmc->addConf(ei.getConformation());
         }
     }
     if (nullptr != fc_str)
@@ -471,28 +469,28 @@ void find_calculations(std::vector<alexandria::MolProp> &mp,
         }
     }
 
-    for (auto mpi = mp.begin(); (mpi < mp.end()); mpi++)
+    for (auto &mpi : mp)
     {
-        for (auto ci = mpi->BeginExperiment(); (ci < mpi->EndExperiment()); ++ci)
+        for (auto &ci : mpi.experimentConst())
         {
-            if (dsExperiment ==  ci->dataSource())
+            if (dsExperiment ==  ci.dataSource())
             {
                 continue;
             }
             for (auto ti = types.begin(); (ti < types.end()); ti++)
             {
-                if ((nullptr == fc_str) || (qmc->qmCalcCount(ci->getMethod(),
-                                                             ci->getBasisset(),
+                if ((nullptr == fc_str) || (qmc->qmCalcCount(ci.getMethod(),
+                                                             ci.getBasisset(),
                                                              *ti) > 0))
                 {
                     double T, value, error;
                     rvec   vec;
                     tensor quadrupole;
-                    if (ci->getVal(ti->c_str(), mpo, &value, &error, &T,
+                    if (ci.getVal(ti->c_str(), mpo, &value, &error, &T,
                                    vec, quadrupole))
                     {
-                        qmc->addCalc(ci->getMethod(),
-                                     ci->getBasisset(),
+                        qmc->addCalc(ci.getMethod(),
+                                     ci.getBasisset(),
                                      *ti);
                     }
                 }

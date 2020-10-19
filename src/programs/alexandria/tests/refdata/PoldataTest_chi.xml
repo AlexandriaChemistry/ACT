@@ -2,8 +2,14 @@
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
   <Sequence Name="chi">
-    <Int Name="Length">2</Int>
-    <Real>2.8172000000000001</Real>
-    <Real>2.5493899999999998</Real>
+    <Int Name="Length">8</Int>
+    <Real>3.5</Real>
+    <Real>3.5</Real>
+    <Real>7</Real>
+    <Real>7</Real>
+    <Real>5.2000000000000002</Real>
+    <Real>5.2000000000000002</Real>
+    <Real>5.7000000000000002</Real>
+    <Real>5.7000000000000002</Real>
   </Sequence>
 </ReferenceData>

@@ -76,6 +76,8 @@ double convert2gmx(double x, int unit)
             return x;
         case eg2cBuckingham:
             return x*A2NM*DEBYE2ENM;
+        case eg2c_Nm:
+            return x;
         default:
             fprintf(stderr, "Unknown unit %d, not converting to gmx.\n", unit);
     }
@@ -116,6 +118,8 @@ double gmx2convert(double x, int unit)
             return x;
         case eg2cBuckingham:
             return x/(A2NM*DEBYE2ENM);
+        case  eg2c_Nm:
+            return x;
         default:
             fprintf(stderr, "Unknown unit %d, not converting from gmx.\n", unit);
     }
@@ -124,10 +128,10 @@ double gmx2convert(double x, int unit)
 
 /* This has to have the same order as the enums. */
 static const char *eg2c_names[eg2cNR] = {
-    "Angstrom", "Nm", "Pm", "Bohr", "Kcal_Mole",
-    "Kj_Mole", "J_MolK", "Cal_MolK",
-    "Hartree", "Hartree_e", "Angstrom3", "Coulomb",
-    "Debye", "e", "Buckingham"
+    "Angstrom", "nm", "pm", "Bohr", "Kcal_Mole",
+    "kJ/mol",   "J/molK", "Cal_MolK",
+    "Hartree",  "Hartree_e", "Angstrom3", "Coulomb",
+    "Debye", "e", "Buckingham", "1/nm"
 };
 
 int string2unit(const char *string)
@@ -141,7 +145,9 @@ int string2unit(const char *string)
             return i;
         }
     }
-    return -1;
+    fprintf(stderr, "Unknown unit %s\n", string);
+    // Returning a unit that does not convert anything since it yield a factor of 1.
+    return 1;
 }
 
 const char *unit2string(int unit)

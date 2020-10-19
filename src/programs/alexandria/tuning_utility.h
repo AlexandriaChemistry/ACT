@@ -119,10 +119,10 @@ void print_electric_props(FILE                           *fp,
                           bool                            bDipole,
                           bool                            bQuadrupole,
                           bool                            bfullTensor,
-                          IndexCount                     *indexCount,
                           t_commrec                      *cr,
                           real                            efield,
-                          bool                            useOffset);
+                          bool                            useOffset,
+                          const std::vector<OptimizationIndex> &optIndex);
 
 /*! \brief Print header and command line arguments
  *

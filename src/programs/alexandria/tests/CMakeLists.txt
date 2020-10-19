@@ -39,15 +39,19 @@ gmx_add_unit_test(
     ${testname}
     ${exename}
     # files with code for tests
-    forcefieldparameter.cpp
-    forcefieldparameterlist.cpp
+    atomtypeTest.cpp
+    forcefieldparameterTest.cpp
+    forcefieldparameterlistTest.cpp
+    identifierTest.cpp
+    identifierMapTest.cpp
+    interactiontypeTest.cpp
     molpropTest.cpp
     poldataTest.cpp
     poldata_utils.cpp
     qgen_acmTest.cpp
     qgen_respTest.cpp
-    regression.cpp
-    atomtypeTest.cpp
+    regressionTest.cpp
+    unitsTest.cpp
     #rotationTest.cpp
     # pseudo-library for code for alexandria
     $<TARGET_OBJECTS:alexandria_objlib>

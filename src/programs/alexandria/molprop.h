@@ -211,7 +211,7 @@ class AtomNum
          * \param[in] dest      Destination processor
          * \return the CommunicationStatus of the operation
          */
-        CommunicationStatus Send(t_commrec *cr, int dest);
+        CommunicationStatus Send(t_commrec *cr, int dest) const;
 
         /*! \brief
          * Receives this object over an MPI connection
@@ -305,41 +305,34 @@ class MolecularComposition
         void ReplaceAtom(const std::string &oldatom,
                          const std::string &newatom);
 
+        //! Return const vector of AtomNum
+        const std::vector<AtomNum> atomNumConst() const { return atomnum_; }
+    
         /*! \brief
-         * Return iterator to begin looping over AtomNum
+         * Return const iterator pointing to a specific atom or EndAtomNum if not found
+         *
+         * \param[in] an Atom number
          */
-        AtomNumIterator BeginAtomNum() { return atomnum_.begin(); }
-
-        /*! \brief
-         * Return iterator to end looping over AtomNum
-         */
-        AtomNumIterator EndAtomNum() { return atomnum_.end(); }
+        AtomNumConstIterator searchAtomConst(const std::string &an) const;
 
         /*! \brief
          * Return iterator pointing to a specific atom or EndAtomNum if not found
          *
          * \param[in] an Atom number
          */
-        AtomNumIterator SearchAtom(const std::string &an);
+        AtomNumIterator searchAtom(const std::string &an);
 
         /*! \brief
          * Return the number of atoms of a certain type
          *
          **\param[in] atom Atom name
          */
-        int CountAtoms(const char *atom);
-
-        /*! \brief
-         * Return the number of atoms of a certain type
-         *
-         **\param[in] atom Atom name
-         */
-        int CountAtoms(const std::string &atom);
+        int CountAtoms(const std::string &atom) const;
 
         /*! \brief
          * Return the total number of atoms
          */
-        int CountAtoms();
+        int CountAtoms() const;
 
         /*! \brief
          * Sends this object over an MPI connection
@@ -348,7 +341,7 @@ class MolecularComposition
          * \param[in] dest      Destination processor
          * \return the CommunicationStatus of the operation
          */
-        CommunicationStatus Send(t_commrec *cr, int dest);
+        CommunicationStatus Send(t_commrec *cr, int dest) const;
 
         /*! \brief
          * Receives this object over an MPI connection
@@ -460,7 +453,7 @@ class GenericProperty
          * \param[in] dest      Destination processor
          * \return the CommunicationStatus of the operation
          */
-        CommunicationStatus Send(t_commrec *cr, int dest);
+        CommunicationStatus Send(t_commrec *cr, int dest) const;
 
         /*! \brief
          * Receives this object over an MPI connection
@@ -505,7 +498,7 @@ class MolecularQuadrupole : public GenericProperty
         { xx_ = xx; yy_ = yy; zz_ = zz; xy_ = xy; xz_ = xz; yz_ = yz; };
 
         //! get all the elements of the qudrupole tensor
-        void get(double *xx, double *yy, double *zz, double *xy, double *xz, double *yz)
+        void get(double *xx, double *yy, double *zz, double *xy, double *xz, double *yz) const
         { *xx = xx_; *yy = yy_; *zz = zz_; *xy = xy_; *xz = xz_; *yz = yz_; };
 
         //! Return the XX component of the quadrupole tensor
@@ -533,7 +526,7 @@ class MolecularQuadrupole : public GenericProperty
          * \param[in] dest      Destination processor
          * \return the CommunicationStatus of the operation
          */
-        CommunicationStatus Send(t_commrec *cr, int dest);
+        CommunicationStatus Send(t_commrec *cr, int dest) const;
 
         /*! \brief
          * Receives this object over an MPI connection
@@ -622,7 +615,7 @@ class MolecularPolarizability : public GenericProperty
          * \param[in] dest      Destination processor
          * \return the CommunicationStatus of the operation
          */
-        CommunicationStatus Send(t_commrec *cr, int dest);
+        CommunicationStatus Send(t_commrec *cr, int dest) const;
 
         /*! \brief
          * Receives this object over an MPI connection
@@ -687,7 +680,7 @@ class MolecularEnergy : public GenericProperty
          * \param[in] dest      Destination processor
          * \return the CommunicationStatus of the operation
          */
-        CommunicationStatus Send(t_commrec *cr, int dest);
+        CommunicationStatus Send(t_commrec *cr, int dest) const;
 
         /*! \brief
          * Receives this object over an MPI connection
@@ -755,7 +748,7 @@ class MolecularDipole : public GenericProperty
          * \param[in] dest      Destination processor
          * \return the CommunicationStatus of the operation
          */
-        CommunicationStatus Send(t_commrec *cr, int dest);
+        CommunicationStatus Send(t_commrec *cr, int dest) const;
 
         /*! \brief
          * Receives this object over an MPI connection
@@ -849,7 +842,7 @@ class ElectrostaticPotential
          * \param[in] dest      Destination processor
          * \return the CommunicationStatus of the operation
          */
-        CommunicationStatus Send(t_commrec *cr, int dest);
+        CommunicationStatus Send(t_commrec *cr, int dest) const;
 
         /*! \brief
          * Receives this object over an MPI connection
@@ -908,7 +901,7 @@ class Bond
          * \param[in] dest      Destination processor
          * \return the CommunicationStatus of the operation
          */
-        CommunicationStatus Send(t_commrec *cr, int dest);
+        CommunicationStatus Send(t_commrec *cr, int dest) const;
 
         /*! \brief
          * Receives this object over an MPI connection
@@ -960,7 +953,7 @@ class AtomicCharge : public GenericProperty
          * \param[in] dest      Destination processor
          * \return the CommunicationStatus of the operation
          */
-        CommunicationStatus Send(t_commrec *cr, int dest);
+        CommunicationStatus Send(t_commrec *cr, int dest) const;
 
         /*! \brief
          * Receives this object over an MPI connection
@@ -1017,11 +1010,8 @@ class CalcAtom
         //! Add an AtomicCharge element to the atom
         void AddCharge(AtomicCharge aq);
 
-        //! Begin Iterator over AtomicCharge items
-        AtomicChargeIterator BeginQ() { return q_.begin(); }
-
-        //! End Iterator over AtomicCharge items
-        AtomicChargeIterator EndQ() { return q_.end(); }
+        //! Return const vector of AtomicCharge
+        const std::vector<AtomicCharge> &atomicChargeConst() const { return q_; }
 
         //! Return the atom id of the atom
         int getAtomid() const { return atomID_; }
@@ -1090,7 +1080,7 @@ class CalcAtom
          * \param[in] dest      Destination processor
          * \return the CommunicationStatus of the operation
          */
-        CommunicationStatus Send(t_commrec *cr, int dest);
+        CommunicationStatus Send(t_commrec *cr, int dest) const;
 
         /*! \brief
          * Receives this object over an MPI connection
@@ -1142,52 +1132,40 @@ class Experiment
         DataSource dataSource() const { return dataSource_; }
 
         //! Dump the contents of this object to a file
-        void Dump(FILE *fp);
+        void Dump(FILE *fp) const;
 
         //! Add a MolecularDipole element containing polarizability data
         void AddPolar(MolecularPolarizability mdp) { polar_.push_back(mdp); }
 
-        //! Return Begin Iterator over polarizability elements
-        MolecularPolarizabilityIterator BeginPolar() { return polar_.begin(); }
-
-        //! Return End Iterator over polarizability elements
-        MolecularPolarizabilityIterator EndPolar()   { return polar_.end(); }
+        //! Return const vector of polarizabilities
+        const std::vector<MolecularPolarizability> polarizabilityConst() const { return polar_; }
 
         //! Number of polarizability values
-        int NPolar() { return polar_.size(); }
+        int NPolar() const { return polar_.size(); }
 
         //! Number of dipole values
-        int NDipole() { return dipole_.size(); }
+        int NDipole() const { return dipole_.size(); }
 
         //! Add a MolecularDipole element containing dipole data
         void AddDipole(MolecularDipole mdp) { dipole_.push_back(mdp); }
 
-        //! Return Begin Iterator over dipole elements
-        MolecularDipoleIterator BeginDipole() { return dipole_.begin(); }
+        //! Return const vector of dipoles
+        const std::vector<MolecularDipole> dipoleConst() const { return dipole_; }
 
-        //! Return End Iterator over dipole elements
-        MolecularDipoleIterator EndDipole()   { return dipole_.end(); }
-
+        //! Return const vector of quadrupoles
+       const std::vector<MolecularQuadrupole> quadrupoleConst() const { return quadrupole_; }
+    
         //! Number of quadrupole values
-        int NQuadrupole() { return quadrupole_.size(); }
+        int NQuadrupole() const  { return quadrupole_.size(); }
 
         //! Add a MolecularQuadrupole element
         void AddQuadrupole(MolecularQuadrupole mq) { quadrupole_.push_back(mq); }
 
-        //! Return Begin Iterator over quadrupole elements
-        MolecularQuadrupoleIterator BeginQuadrupole() { return quadrupole_.begin(); }
-
-        //! Return End Iterator over quadrupole elements
-        MolecularQuadrupoleIterator EndQuadrupole() { return quadrupole_.end(); }
-
         //! Add a MolecularEnergy element
         void AddEnergy(MolecularEnergy me) { energy_.push_back(me); }
 
-        //! Return Begin Iterator over energy elements
-        MolecularEnergyIterator BeginEnergy() { return energy_.begin(); }
-
-        //! Return End Iterator over energy elements
-        MolecularEnergyIterator EndEnergy()   { return energy_.end(); }
+        //! Return const array of energies
+        const std::vector<MolecularEnergy> &molecularEnergyConst() const { return energy_; }
 
         //! Return the molecular conformation
         const std::string &getConformation() const { return conformation_; }
@@ -1202,16 +1180,16 @@ class Experiment
         void AddAtom(CalcAtom ca);
 
         //! Return the number of atoms
-        int NAtom() { return catom_.size(); }
+        int NAtom() const { return catom_.size(); }
 
-        //! Iterator Begin over CalcAtom objects
-        CalcAtomIterator BeginAtom() { return catom_.begin(); }
+        //! Return const vector of calcatom
+        const std::vector<CalcAtom> &calcAtomConst() const { return catom_; }
 
-        //! Iterator End over CalcAtom objects
-        CalcAtomIterator EndAtom() { return catom_.end(); }
+        //! Return mutable vector of calcatom
+        std::vector<CalcAtom> *calcAtom() { return &catom_; }
 
         //! Return iterator pointint to this particular atom or EndAtom() if not found
-        CalcAtomIterator SearchAtom(CalcAtom ca);
+        CalcAtomIterator searchAtom(CalcAtom ca);
 
         //! Return a complete coordinate array
         const std::vector<gmx::RVec> &getCoordinates() const { return coordinates_; }
@@ -1220,13 +1198,10 @@ class Experiment
         void AddPotential(ElectrostaticPotential ep) { potential_.push_back(ep); }
 
         //! Return the number of potential points
-        int NPotential() { return potential_.size(); };
+        int NPotential() const { return potential_.size(); };
 
-        //! Iterator Begin over ElectrostaticPotential objects
-        ElectrostaticPotentialIterator BeginPotential() { return potential_.begin(); }
-
-        //! Iterator End over ElectrostaticPotential objects
-        ElectrostaticPotentialIterator EndPotential() { return potential_.end(); }
+        //! Return const vector of electrostaticpotentials
+        const std::vector<ElectrostaticPotential> &electrostaticPotentialConst() const { return potential_; }
 
         //! Return the program used to perform the calculation
         const std::string &getProgram() const { return program_; }
@@ -1259,15 +1234,15 @@ class Experiment
                     double            *error,
                     double            *T,
                     rvec               vec,
-                    tensor             quadrupole);
+                    tensor             quadrupole) const;
 
         /*! \brief
          * Return the HF energy of the molecule
          */
-        bool getHF(double *value);
+        bool getHF(double *value) const;
 
         //! Merge in another object. Return number of warnings.
-        int Merge(std::vector<Experiment>::iterator src);
+        int Merge(const Experiment *src);
 
         /*! \brief
          * Sends this object over an MPI connection
@@ -1276,7 +1251,7 @@ class Experiment
          * \param[in] dest      Destination processor
          * \return the CommunicationStatus of the operation
          */
-        CommunicationStatus Send(t_commrec *cr, int dest);
+        CommunicationStatus Send(t_commrec *cr, int dest) const;
 
         /*! \brief
          * Receives this object over an MPI connection
@@ -1367,10 +1342,10 @@ class MolProp
          * \return Number of warnings
          * \todo Check and double check
          */
-        int Merge(std::vector<MolProp>::iterator mpi);
+        int Merge(const MolProp *mpi);
 
         //! Dump the contents of this object to a file
-        void Dump(FILE *fp);
+        void Dump(FILE *fp) const;
 
         //! Set the LaTeX formula
         void SetTexFormula(const std::string &formula) { texform_.assign(formula); }
@@ -1467,12 +1442,8 @@ class MolProp
         //! Return the number of categories
         int NCategory() { return category_.size(); }
 
-        //! Return iterator Begin over categories
-        std::vector<std::string>::iterator BeginCategory() { return category_.begin(); }
-
-        //! Return iterator End over categories
-        std::vector<std::string>::iterator EndCategory() { return category_.end(); }
-
+        //! Return category array as const
+        const std::vector<std::string> &categoryConst() const { return category_; }
         //! Return true if catname is an existing category
         bool SearchCategory(const std::string &catname) const;
 
@@ -1482,23 +1453,11 @@ class MolProp
         //! Add a composition entry
         void AddComposition(MolecularComposition mc);
 
-        std::vector<MolecularComposition> &MolComp()
+        std::vector<MolecularComposition> &molecularComposition()
         { return mol_comp_; }
 
-        const std::vector<MolecularComposition> &MolComp() const
+        const std::vector<MolecularComposition> &molecularCompositionConst() const
         { return mol_comp_; }
-
-        //! Begin Iterator over MolecularCompostion items
-        MolecularCompositionConstIterator BeginMolecularComposition() const { return mol_comp_.begin(); }
-
-        //! End Iterator over MolecularCompostion items
-        MolecularCompositionConstIterator EndMolecularComposition() const { return mol_comp_.end(); }
-
-        //! Begin Iterator over MolecularCompostion items
-        MolecularCompositionIterator BeginMolecularComposition() { return mol_comp_.begin(); }
-
-        //! End Iterator over MolecularCompostion items
-        MolecularCompositionIterator EndMolecularComposition()   { return mol_comp_.end(); }
 
         //! Last Iterator over MolecularCompostion items
         MolecularComposition *LastMolecularComposition()   { return &(mol_comp_.back()); }
@@ -1509,11 +1468,14 @@ class MolProp
         //! Search for particular MolecularCompostion item or return EndMolecularComposition if not found
         MolecularCompositionConstIterator SearchMolecularComposition(const std::string &str) const;
 
+        //! Return end of vector
+        MolecularCompositionConstIterator EndMolecularComposition() const { return mol_comp_.end(); }
+    
         //! Return number of atoms in the first composition if present, or 0 otherwise
         int NAtom();
 
         //! Routine to generate compositions based on calculation data
-        bool GenerateComposition(const Poldata *pd);
+        bool GenerateComposition();
 
         //! Returns boolean stating whether a particular composition is present
         bool HasComposition(const std::string &composition) const;
@@ -1527,14 +1489,11 @@ class MolProp
         //! Return the number of Bond elements
         int NBond() const { return bond_.size(); }
 
-        //! Begin Iterator over Bond elements
-        BondIterator BeginBond() { return bond_.begin(); }
-
-        //! End Iterator over Bond elements
-        BondIterator EndBond() { return bond_.end(); }
-
-        //! Return the whole bond array but in constant form
-        const std::vector<Bond> &bonds() const { return bond_; }
+        //! Return const vector of bonds
+        const std::vector<Bond> &bondConst() const { return bond_; }
+        
+        //! Return the whole bond array 
+        std::vector<Bond> &bonds() { return bond_; }
         
         //! Add an experiment
         void AddExperiment(Experiment myexp) { exper_.push_back(myexp); }
@@ -1548,12 +1507,15 @@ class MolProp
         //! Return the number of experiments
         int NExperiment() const { return exper_.size(); }
 
-        //! Iterator Begin over experiments
-        ExperimentIterator BeginExperiment() { return exper_.begin(); }
+        //! Return const vector of experiments
+        const std::vector<Experiment> &experimentConst() const { return exper_; }
 
-        //! Iterator End over experiments
-        ExperimentIterator EndExperiment() { return exper_.end(); }
+        //! Return mutable vector of experiments
+        std::vector<Experiment> &experiment() { return exper_; }
 
+        //! Return end of experiment vector
+        ExperimentConstIterator EndExperiment()  const { return exper_.end(); }
+        
         //! Return pointer to the last inserted experiment or nullptr if the number of experiments is zero
         Experiment *LastExperiment()
         {
@@ -1606,7 +1568,7 @@ class MolProp
          * \param[in] dest      Destination processor
          * \return the CommunicationStatus of the operation
          */
-        CommunicationStatus Send(t_commrec *cr, int dest);
+        CommunicationStatus Send(t_commrec *cr, int dest) const;
 
         /*! \brief
          * Receives this object over an MPI connection

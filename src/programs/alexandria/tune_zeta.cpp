@@ -63,6 +63,7 @@
 #include "poldata_tables.h"
 #include "poldata_xml.h"
 #include "tuning_utility.h"
+#include "units.h"
 
 namespace alexandria
 {
@@ -363,7 +364,8 @@ double OptZeta::calcDeviation()
             mymol.QgenResp_->calcPot(poldata()->getEpsilonR());
             real cosangle = 0;
             increaseEnergy(ermsESP,
-                           convert2gmx(mymol.QgenResp_->getRms(&wtot, &rrms, &cosangle), eg2cHartree_e));
+                           convertToGromacs(mymol.QgenResp_->getRms(&wtot, &rrms, &cosangle),
+                                            "Hartree/e"));
             if (weight(ermsMU))
             {
                 mymol.CalcDipole();

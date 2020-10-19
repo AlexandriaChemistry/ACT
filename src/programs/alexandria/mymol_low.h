@@ -106,9 +106,9 @@ void cp_plist(t_params                   plist[],
               std::vector<PlistWrapper> &plist_);
 
 real calc_r13(const Poldata     *pd,
-              const std::string  aai,
-              const std::string  aaj,
-              const std::string  aak,
+              const std::string &aai,
+              const std::string &aaj,
+              const std::string &aak,
               const real         angle);
 
 real calc_relposition(const Poldata     *pd,
@@ -116,12 +116,25 @@ real calc_relposition(const Poldata     *pd,
                       const std::string  aaj,
                       const std::string  aak);
 
+/*! \brief Update GROMACS force field parameters
+ *
+ * The force field parameters in gromacs idef-style structures are updated from the
+ * Poldata structure. This can be a heavy calculation for a large system, but it will 
+ * only handle the  bonds etc. in the system (a molecule typically).
+ * \param[in]  pd      Poldata structure
+ * \param[out] plist   The parameter vector
+ * \param[in]  atoms   GROMACS atom structure
+ * \param[in]  bBASTAT Boolean determining whether parameters are being generated from scratch
+ * \param[in]  molname Molecule name
+ * \param[out] errors  Error messages are appended to this vector.
+ * \return Warning status
+ */ 
 immStatus updatePlist(const Poldata             *pd,
-                      std::vector<PlistWrapper> &plist,
-                      t_atoms                   *atoms,
+                      std::vector<PlistWrapper> *plist,
+                      const t_atoms             *atoms,
                       bool                       bBASTAT,
-                      std::string                molname,
-                      std::vector<std::string>  &errors);
+                      const std::string         &molname,
+                      std::vector<std::string>  *errors);
 
 std::vector<double> getDoubles(const std::string &s);
 

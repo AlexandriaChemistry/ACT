@@ -203,33 +203,31 @@ class Bayes : public OptParam
         size_t nParam() const { return param_.size(); }
 
         /*! \brief
-         * Append parameter and set it to value
-         * \param[in] val The value
-         * \param[in] factor  Factor for automatically setting bounds
-         * \param[in] bRandom Generate random initial value for parameters if true.
-         */
-        void addParam(real val,
-                      real factor,
-                      bool bRandom);
-        /*! \brief
          * Append parameter and set it to value. Add bounds
          * as specified.
+         * \param[in] name  String describing the parameter
          * \param[in] val   The value
          * \param[in] lower The new lower bound value
          * \param[in] upper The new lower bound value
          * \param[in] bRandom Generate random initial value for parameters if true.
          */
-        void addParam(real val,
+        void addParam(const std::string &name,
+                      real val,
                       real lower,
                       real upper,
                       bool bRandom);
         /*! \brief
          * Append random parameter within the bounds specified.
+         * \param[in] name  String describing the parameter
          * \param[in] lower The new lower bound value
          * \param[in] upper The new lower bound value
          */
-        void addRandomParam(real lower,
-                            real upper);
+        void addRandomParam(const std::string &name,
+                            real               lower,
+                            real               upper)
+        {
+            addParam(name, (lower+upper)*0.5, lower, upper, true);
+        }
 
         /*! \brief
          * Set parameter j to a new value
@@ -268,14 +266,9 @@ class Bayes : public OptParam
         const parm_t &getPsigma() const { return psigma_; };
 
         /*! \brief
-         * Add the name for parameter
-         */
-        void addParamName(std::string name);
-
-        /*! \brief
          * Return the vector of parameter names. 
          */
-        const param_name_t &getParamNames() const {return paramNames_;};
+        const param_name_t &getParamNames() const { return paramNames_; };
 
         /*! \brief
          * Print the paramters to a file

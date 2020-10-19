@@ -2,15 +2,18 @@
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
   <Sequence Name="row">
-    <Int Name="Length">9</Int>
+    <Int Name="Length">12</Int>
     <Int>1</Int>
     <Int>1</Int>
     <Int>1</Int>
+    <Int>1</Int>
+    <Int>2</Int>
+    <Int>2</Int>
     <Int>1</Int>
     <Int>3</Int>
     <Int>3</Int>
     <Int>1</Int>
-    <Int>3</Int>
-    <Int>3</Int>
+    <Int>4</Int>
+    <Int>4</Int>
   </Sequence>
 </ReferenceData>

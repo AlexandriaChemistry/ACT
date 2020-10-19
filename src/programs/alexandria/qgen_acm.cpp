@@ -55,9 +55,8 @@ QgenAcm::QgenAcm(const Poldata *pd,
                  t_atoms       *atoms,
                  int            qtotal)
 {
-    int          i, j, k, atm, nz;
+    int          j;
     bool         bSupport = true;
-    std::string  atp;
 
     ChargeType_     = pd->chargeType();
     bWarned_        = false;
@@ -71,15 +70,7 @@ QgenAcm::QgenAcm(const Poldata *pd,
     natom_          = 0;
     qtotal_         = qtotal;
     
-    if (coreIndex_.size() != 0)
-    {
-        coreIndex_.clear();
-    }
-    if (shellIndex_.size() != 0)
-    {
-        shellIndex_.clear();
-    }
-    for (i = 0; i < atoms->nr; i++)
+    for (int i = 0; i < atoms->nr; i++)
     {
         if (atoms->atom[i].ptype == eptAtom)
         {
@@ -91,10 +82,9 @@ QgenAcm::QgenAcm(const Poldata *pd,
             shellIndex_.push_back(i);
         }
     }
-
     chi0_.resize(natom_, 0);
     rhs_.resize(natom_ + 1, 0);
-    elem_.resize(natom_);
+    id_.resize(natom_);
     atomnr_.resize(natom_, 0);
     row_.resize(natom_);
     Jcc_.resize(natom_ + 1);
@@ -102,63 +92,43 @@ QgenAcm::QgenAcm(const Poldata *pd,
     j00_.resize(natom_, 0);
     q0_.resize(natom_, 0);
     q_.resize(natom_ + 1);   
-    nZeta_.resize(natom_ + 1, 0);
     x_.resize(atoms->nr);
 
-    /* Special case for chi_eq */
-    nZeta_[natom_] = 1;
-    q_[natom_].resize(nZeta_[natom_], 0);
-
-    for (i = j = 0; (i < atoms->nr) && bSupport; i++)
+    auto fs = pd->findForcesConst(eitELECTRONEGATIVITYEQUALIZATION);
+    for (int i = j = 0; (i < atoms->nr) && bSupport; i++)
     {
+        // TODO This code assuses that shells are to be kept fixed
+        // without checking the Poldata.
         if (atoms->atom[i].ptype == eptAtom)
         {
+            auto atype = pd->findAtype(*atoms->atomtype[i]);
             Jcc_[j].resize(natom_ + 1, 0);
-            atm = atoms->atom[i].atomnumber;
+            int atm = atoms->atom[i].atomnumber;
             if (atm == 0)
             {
                 gmx_fatal(FARGS, "Don't know atomic number for %s %s",
                           *(atoms->resinfo[i].name),
                           *(atoms->atomname[j]));
             }
-            atp.assign(*atoms->atomtype[i]);
-            if (!pd->haveEemSupport(atp, true))
+            id_[j] = atype->id(eitELECTRONEGATIVITYEQUALIZATION);
+            if (!fs.parameterExists(id_[j]))
             {
                 fprintf(stderr, "No charge distribution support for atom %s\n",
-                        *atoms->atomtype[i]);
+                        id_[j].id().c_str());
                 bSupport = false;
             }
             if (bSupport)
             {
-                auto eem   = pd->atype2Eem(atp);
-                elem_[j]   = atp;
+                auto eem   = fs.findParametersConst(id_[j]);
                 atomnr_[j] = atm;
-                q0_[j]     = eem->getQref();
-                nz         = eem->getNzeta();
-                nZeta_[j]  = nz;
-                q_[j].resize(nz, 0);
-                zeta_[j].resize(nz, 0);
-                row_[j].resize(nz, 0);
-                for (k = 0; k < nz; k++)
-                {
-                    q_[j][k]    = eem->getQ(k);
-                    row_[j][k]  = eem->getRow(k);
+                q0_[j]     = eem.find("ref_charge")->second.value();
+                // TODO Fix this business
+                q_[j]    = eem.find("charge")->second.value();
+                row_[j]  = eem.find("row")->second.value();
                     
-                    if (ChargeType_ == eqtSlater) 
-                    { 
-                        if ((k == 0 && !pd->corePointCharge()) || k > 0)
-                        {
-                            char buf[256];
-                            snprintf(buf, sizeof(buf), "Row should be at least 1: atype = %s q = %g zeta = %g row = %d model = %s",
-                                     atp.c_str(), 
-                                     q_[j][k], 
-                                     eem->getZeta(k),
-                                     row_[j][k],
-                                     chargeTypeName(ChargeType_).c_str());
-                        }
-                    }
-                    
-                    if (row_[j][k] > SLATER_MAX)
+                if (ChargeType_ == eqtSlater) 
+                { 
+                    if (row_[j] > SLATER_MAX)
                     {
                         if (debug)
                         {
@@ -167,7 +137,7 @@ QgenAcm::QgenAcm(const Poldata *pd,
                                     *(atoms->resinfo[i].name),
                                     *(atoms->atomname[j]));
                         }
-                        row_[j][k] = SLATER_MAX;
+                        row_[j] = SLATER_MAX;
                     }
                 }
                 j++;
@@ -180,54 +150,40 @@ QgenAcm::QgenAcm(const Poldata *pd,
 
 void QgenAcm::updateParameters(const Poldata *pd)
 {
+    auto fs = pd->findForcesConst(eitELECTRONEGATIVITYEQUALIZATION);
     for (auto i = 0; i < natom_; i++)
     {
-        auto ei  = pd->atype2Eem(elem_[i]);
-        chi0_[i] = ei->getChi0();
-        j00_[i]  = ei->getJ0();
-        for (auto k = 0; k < nZeta_[i]; k++)
-        {
-            zeta_[i][k] = ei->getZeta(k);
-        }
+        auto ei  = fs.findParametersConst(id_[i]);
+        chi0_[i] = ei.find("chi")->second.value();
+        j00_[i]  = ei.find("jaa")->second.value();
+        zeta_[i] = ei.find("zeta")->second.value();
     }
 }
 
-int QgenAcm::getNzeta( int atom)
+double QgenAcm::getQ(int atom)
 {
     if ((0 <= atom) && (atom < natom_))
     {
-        return nZeta_[atom];
+        return q_[atom];
     }
     return 0;
 }
 
-double QgenAcm::getQ(int atom, int z)
+int QgenAcm::getRow( int atom)
 {
-    if ((0 <= atom) && (atom < natom_) &&
-        (0 <= z) && (z <= nZeta_[atom]))
+    if ((0 <= atom) && (atom < natom_))
     {
-        return q_[atom][z];
-    }
-    return 0;
-}
-
-int QgenAcm::getRow( int atom, int z)
-{
-    if ((0 <= atom) && (atom < natom_) &&
-        (0 <= z) && (z <= nZeta_[atom]))
-    {
-        return row_[atom][z];
+        return row_[atom];
     }
     return 0;
 
 }
 
-double QgenAcm::getZeta(int atom, int z)
+double QgenAcm::getZeta(int atom)
 {
-    if ((0 <= atom) && (atom < natom_) &&
-        (0 <= z) && (z <= nZeta_[atom]))
+    if ((0 <= atom) && (atom < natom_))
     {
-        return zeta_[atom][z];
+        return zeta_[atom];
     }
     return 0;
 }
@@ -275,11 +231,7 @@ void QgenAcm::dump(FILE *fp, t_atoms *atoms)
                 fprintf(fp, "%4s %4s%5d %8g %8g",
                         *(atoms->resinfo[atoms->atom[i].resind].name),
                         *(atoms->atomname[i]), i+1, j00_[j], chi0_[j]);
-                for (auto k = 0; k < nZeta_[j]; k++)
-                {
-                    fprintf(fp, " %3d %8.5f %8.4f", row_[j][k], q_[j][k], zeta_[j][k]);
-                }
-                fprintf(fp, "\n");
+                fprintf(fp, " %3d %8.5f %8.4f\n", row_[j], q_[j], zeta_[j]);
                 j++;
             }
         }
@@ -358,7 +310,7 @@ double QgenAcm::calcSij(int i, int j)
                     if (sqrt(dism) < 0.105)
                     {
                         printf("dist %5d %5d %5s  %5s %8.3f\n",
-                               i, l, elem_[tag].c_str(), elem_[l].c_str(), sqrt(dism));
+                               i, l, id_[tag].id().c_str(), id_[l].id().c_str(), sqrt(dism));
                         Sij = Sij*1.605;
                     }
                 }
@@ -468,10 +420,10 @@ void QgenAcm::calcJcc(t_atoms *atoms, double epsilonr,
                         j++;
                         Jcc = calcJ(x_[n],
                                     x_[m],
-                                    zeta_[i][0],
-                                    zeta_[j][0],
-                                    row_[i][0],
-                                    row_[j][0],
+                                    zeta_[i],
+                                    zeta_[j],
+                                    row_[i],
+                                    row_[j],
                                     epsilonr);
                         if (bYang)
                         {
@@ -485,7 +437,7 @@ void QgenAcm::calcJcc(t_atoms *atoms, double epsilonr,
                         if ((bYang || bRappe) && (atomnr_[i] == 1))
                         {
                             auto zetaH = 1.0698;
-                            j0 = (1+q_[i][0]/zetaH)*j0; /* Eqn. 21 in Rappe1991. */
+                            j0 = (1+q_[i]/zetaH)*j0; /* Eqn. 21 in Rappe1991. */
                             if (j0 < 0 && !bWarned_)
                             {
                                 bWarned_ = true;
@@ -520,17 +472,17 @@ void QgenAcm::calcJcs(t_atoms *atoms,
             {
                 if (shell_ndx_gromacs != itsShell)
                 {
-                    Jcs_ += (q_[i][1]*calcJ(x_[core_ndx_gromacs],
-                                            x_[shell_ndx_gromacs],
-                                            zeta_[core_ndx_eem][0],
-                                            zeta_[i][1],
-                                            row_[core_ndx_eem][0],
-                                            row_[i][1],
-                                            epsilonr));  
+                    Jcs_ += (q_[i]*calcJ(x_[core_ndx_gromacs],
+                                         x_[shell_ndx_gromacs],
+                                         zeta_[core_ndx_eem],
+                                         zeta_[i],
+                                         row_[core_ndx_eem],
+                                         row_[i],
+                                         epsilonr));  
                     if (debug)
                     {
                         fprintf(debug, "core_ndx: %d shell_ndx: %d shell_charge: %0.1f\n", 
-                                core_ndx_gromacs, shell_ndx_gromacs, q_[i][1]);
+                                core_ndx_gromacs, shell_ndx_gromacs, q_[i]);
                     }
                 }
             }
@@ -564,9 +516,9 @@ void QgenAcm::calcRhs(t_atoms *atoms, double epsilonr)
         if (bHaveShell_)
         {
             calcJcs(atoms, coreIndex_[i], i, epsilonr);
-            rhs_[i]   -= j00_[i]*q_[i][1]; // Hardness * qs
+            rhs_[i]   -= j00_[i]*q_[i]; // Hardness * qs
             rhs_[i]   -= Jcs_;                             // Core-Shell interaction
-            qshell    += q_[i][1];
+            qshell    += q_[i];
         }
     }
     qcore        = qtotal_ - qshell;
@@ -582,11 +534,11 @@ void QgenAcm::copyChargesToAtoms(t_atoms *atoms)
         {
             if (atoms->atom[i].ptype == eptAtom)
             {
-                atoms->atom[i].q = atoms->atom[i].qB = q_[j][0];
+                atoms->atom[i].q = atoms->atom[i].qB = q_[j];
             }
             else if (atoms->atom[i].ptype == eptShell)
             {
-                atoms->atom[i].q = atoms->atom[i].qB = q_[j][1];
+                atoms->atom[i].q = atoms->atom[i].qB = q_[j];
                 j++;
             }
         }
@@ -595,7 +547,7 @@ void QgenAcm::copyChargesToAtoms(t_atoms *atoms)
     {
         for (auto i = 0; i < atoms->nr; i++)
         {
-            atoms->atom[i].q = atoms->atom[i].qB = q_[i][0];
+            atoms->atom[i].q = atoms->atom[i].qB = q_[i];
         }
     }
 }
@@ -612,12 +564,13 @@ void QgenAcm::updatePositions(gmx::HostVector<gmx::RVec> x,
 void QgenAcm::checkSupport(const Poldata *pd)
 {
     bool bSupport = true;
+    auto fs = pd->findForcesConst(eitELECTRONEGATIVITYEQUALIZATION);
     for (auto i = 0; i < natom_; i++)
     {
-        if (!pd->haveEemSupport(elem_[i].c_str(), true))
+        if (!fs.parameterExists(id_[i]))
         {
             fprintf(stderr, "No charge generation support for atom %s, model %s\n",
-                    elem_[i].c_str(),
+                    id_[i].id().c_str(),
                     chargeTypeName(pd->chargeType()).c_str());
             bSupport = false;
         }
@@ -634,17 +587,14 @@ void QgenAcm::checkSupport(const Poldata *pd)
 
 void QgenAcm::solveEEM(FILE *fp)
 {
-    double              qtot;
-    int                 i, j, n;
     std::vector<double> q;
 
-    n = natom_ + 1;
-    q.resize(n);
-    MatrixWrapper lhs(n, n);
+    q.resize(natom_+1, 0.0);
+    MatrixWrapper lhs(natom_+1, natom_+1);
 
-    for (i = 0; i < natom_; i++)
+    for (int i = 0; i < natom_; i++)
     {
-        for (j = 0; j < natom_; j++)
+        for (int j = 0; j < natom_; j++)
         {
             lhs.set(i, j, Jcc_[i][j]);
         }
@@ -656,30 +606,14 @@ void QgenAcm::solveEEM(FILE *fp)
 
     lhs.solve(rhs_, &q);
 
-    for (i = 0; i < n; i++)
+    double qtot    = 0;
+    for (int i = 0; i < natom_; i++)
     {
-        q_[i][0] = q[i];
+        q_[i] = q[i];
+        qtot += q_[i];
     }
-    chieq_  = q_[natom_][0];
+    chieq_  = q_[natom_] = q[natom_];
 
-    qtot    = 0;
-    if (bHaveShell_)
-    {
-        for (i = 0; i < natom_; i++)
-        {
-            for (j = 0; j < nZeta_[i]; j++)
-            {
-                qtot += q_[i][j];
-            }
-        }
-    }
-    else
-    {
-        for (i = 0; i < natom_; i++)
-        {
-            qtot += q_[i][0];
-        }
-    }
     if (fp && (fabs(qtot - qtotal_) > 1e-2))
     {
         fprintf(fp, "qtot = %g, it should be %g\n", qtot, qtotal_);
@@ -690,28 +624,21 @@ void QgenAcm::solveSQE(FILE                    *fp,
                        const Poldata           *pd,
                        const std::vector<Bond> &bonds)
 {
-    std::vector<double> q, rhs;
-    q.resize(natom_, 0.0);
+    std::vector<double> rhs;
     
     int nbonds = bonds.size();
     MatrixWrapper lhs(nbonds, nbonds);
     rhs.resize(nbonds, 0.0);
 
+    auto fs = pd->findForcesConst(eitBONDCORRECTIONS);
     for (int bij = 0; bij < nbonds; bij++)
     {
-        auto ai  = bonds[bij].getAi()-1;
-        auto aj  = bonds[bij].getAj()-1;
-        auto bcc = pd->atypes2Bcc(elem_[ai], elem_[aj]);
-        bool reverse = (bcc == pd->bondCorrections().end());
-        if (reverse)
-        {
-            bcc = pd->atypes2Bcc(elem_[aj], elem_[ai]);
-            GMX_RELEASE_ASSERT(bcc != pd->bondCorrections().end(), 
-                               gmx::formatString("Cannot find %s-%s among %d bond corrections",
-                                                 elem_[ai].c_str(),
-                                                 elem_[aj].c_str(),
-                                                 static_cast<int>(pd->bondCorrections().size())).c_str());
-        }
+        auto ai    = bonds[bij].getAi()-1;
+        auto aj    = bonds[bij].getAj()-1;
+        Identifier bccId({id_[ai].id(), id_[aj].id()}, CanSwap::No);
+        double hardness = fs.findParameterTypeConst(bccId, "hardness").value();
+        double deltachi = fs.findParameterTypeConst(bccId, "electronegativity").value();
+
         for (int bkl = 0; bkl < nbonds; bkl++)
         {
             auto ak  = bonds[bkl].getAi()-1;
@@ -720,19 +647,13 @@ void QgenAcm::solveSQE(FILE                    *fp,
             double J = 2*(Jcc_[ai][ak] - Jcc_[ai][al] - Jcc_[aj][ak] + Jcc_[aj][al]);
             if (bij == bkl)
             {
-                J +=  bcc->hardness();
+                J += hardness;
             }
             lhs.set(bij, bkl, J);
         }
         rhs[bij] = chi0_[aj] - chi0_[ai];
-        if (reverse)
-        {
-            rhs[bij] += 2*bcc->electronegativity();
-        }
-        else
-        {
-            rhs[bij] -= 2*bcc->electronegativity();
-        }
+        rhs[bij] -= 2*deltachi;
+        
         if (fp)
         {
             fprintf(fp, "(");
@@ -743,8 +664,9 @@ void QgenAcm::solveSQE(FILE                    *fp,
             fprintf(fp, " ) p[%2d,%2d] = %7.2f\n", ai, aj, rhs[bij]);
         }
     }
-    std::vector<double> pij;
+    std::vector<double> pij, q;
     pij.resize(nbonds, 0.0);
+    q.resize(natom_, 0.0);
     lhs.solve(rhs, &pij);
     for (int bij = 0; bij < nbonds; bij++)
     {
@@ -755,7 +677,7 @@ void QgenAcm::solveSQE(FILE                    *fp,
     }
     for (int i = 0; i < natom_; i++)
     {
-        q_[i][0] = q[i];
+        q_[i] = q[i];
     }
     chieq_  = 0;
 
@@ -764,17 +686,14 @@ void QgenAcm::solveSQE(FILE                    *fp,
     {
         for (int i = 0; i < natom_; i++)
         {
-            for (int j = 0; j < nZeta_[i]; j++)
-            {
-                qtot += q_[i][j];
-            }
+            qtot += q_[i];
         }
     }
     else
     {
         for (int i = 0; i < natom_; i++)
         {
-            qtot += q_[i][0];
+            qtot += q_[i];
         }
     }
     if (fp && (fabs(qtot - qtotal_) > 1e-2))
@@ -801,7 +720,7 @@ int QgenAcm::generateCharges(FILE                      *fp,
         updateParameters(pd);
         updatePositions(x, atoms);
         calcJcc(atoms, pd->getEpsilonR(), pd->yang(), pd->rappe());
-        if (! pd->bondCorrections().empty())
+        if (pd->interactionPresent(eitBONDCORRECTIONS))
         {
             solveSQE(fp, pd, bonds);
         }

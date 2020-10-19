@@ -32,10 +32,10 @@
 
 #include "mymol.h"
 
-#include <assert.h>
-
 #include <cstdio>
-#include <cstring>
+
+#include <random>
+#include <string>
 
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/fileio/confio.h"
@@ -47,7 +47,6 @@
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/listed-forces/manage-threading.h"
-#include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vecdump.h"
 #include "gromacs/math/vectypes.h"
@@ -75,8 +74,10 @@
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringcompare.h"
 
+#include "forcefieldparameter.h"
 #include "molprop_util.h"
 #include "mymol_low.h"
+#include "units.h"
 
 namespace alexandria
 {
@@ -296,40 +297,38 @@ void MyMol::findInPlaneAtoms(int ca, std::vector<int> &atoms)
 {
     int bca = 0;
     /*First try to find the atom bound to the central atom (ca).*/
-    for (auto bi = BeginBond();
-         bi < EndBond(); bi++)
+    for (auto &bi : bondConst())
     {
-        if ((ca == (bi->getAj() - 1) ||
-             ca == (bi->getAi() - 1)))
+        if ((ca == (bi.getAj() - 1) ||
+             ca == (bi.getAi() - 1)))
         {
-            if (ca == (bi->getAi() - 1))
+            if (ca == (bi.getAi() - 1))
             {
-                bca = (bi->getAj() - 1);
+                bca = (bi.getAj() - 1);
                 atoms.push_back(bca);
             }
             else
             {
-                bca = (bi->getAi() - 1);
+                bca = (bi.getAi() - 1);
                 atoms.push_back(bca);
             }
         }
     }
     /*Now try to find atoms bound to bca, except ca.*/
-    for (auto bi = BeginBond();
-         bi < EndBond(); bi++)
+    for (auto bi : bondConst())
     {
-        if ((ca != (bi->getAj() - 1)   &&
-             ca != (bi->getAi() - 1))  &&
-            (bca == (bi->getAj() - 1)  ||
-             bca == (bi->getAi() - 1)))
+        if ((ca != (bi.getAj() - 1)   &&
+             ca != (bi.getAi() - 1))  &&
+            (bca == (bi.getAj() - 1)  ||
+             bca == (bi.getAi() - 1)))
         {
-            if (bca == (bi->getAi() - 1))
+            if (bca == (bi.getAi() - 1))
             {
-                atoms.push_back(bi->getAj() - 1);
+                atoms.push_back(bi.getAj() - 1);
             }
             else
             {
-                atoms.push_back(bi->getAi() - 1);
+                atoms.push_back(bi.getAi() - 1);
             }
         }
     }
@@ -337,20 +336,19 @@ void MyMol::findInPlaneAtoms(int ca, std::vector<int> &atoms)
 
 void MyMol::findOutPlaneAtoms(int ca, std::vector<int> &atoms)
 {
-    for (auto bi = BeginBond();
-         bi < EndBond(); bi++)
+    for (auto &bi : bondConst())
     {
-        if (bi->getBondOrder() == 1  &&
-            (ca == (bi->getAj() - 1) ||
-             ca == (bi->getAi() - 1)))
+        if (bi.getBondOrder() == 1  &&
+            (ca == (bi.getAj() - 1) ||
+             ca == (bi.getAi() - 1)))
         {
-            if (ca == (bi->getAi() - 1))
+            if (ca == (bi.getAi() - 1))
             {
-                atoms.push_back(bi->getAj() - 1);
+                atoms.push_back(bi.getAj() - 1);
             }
             else
             {
-                atoms.push_back(bi->getAi() - 1);
+                atoms.push_back(bi.getAi() - 1);
             }
         }
     }
@@ -387,11 +385,11 @@ void MyMol::MakeSpecialInteractions(const Poldata *pd,
     set_pbc(&pbc, epbcNONE, state_->box);
 
     bonds.resize(atoms_->nr);
-    for (auto bi = BeginBond(); (bi < EndBond()); bi++)
+    for (auto &bi : bondConst())
     {
         // Store bonds bidirectionally to get the number correct
-        bonds[bi->getAi() - 1].push_back(bi->getAj() - 1);
-        bonds[bi->getAj() - 1].push_back(bi->getAi() - 1);
+        bonds[bi.getAi() - 1].push_back(bi.getAj() - 1);
+        bonds[bi.getAj() - 1].push_back(bi.getAi() - 1);
     }
     nbonds.resize(atoms_->nr);
     for (auto i = 0; i < atoms_->nr; i++)
@@ -590,7 +588,6 @@ immStatus MyMol::GenerateAtoms(gmx_atomprop_t     ap,
                                const std::string &basis,
                                std::string       *mylot)
 {
-    int                 myunit;
     double              xx, yy, zz;
     int                 natom = 0;
     immStatus           imm   = immOK;
@@ -606,49 +603,44 @@ immStatus MyMol::GenerateAtoms(gmx_atomprop_t     ap,
         snew(atoms_->atomtypeB, ci->NAtom());
         int res0 = -1;
         int nres =  0;
-        for (auto cai = ci->BeginAtom(); (cai < ci->EndAtom()); cai++)
+        for (auto &cai : ci->calcAtomConst())
         {
-            myunit = string2unit((char *)cai->getUnit().c_str());
-            if (myunit == -1)
-            {
-                gmx_fatal(FARGS, "Unknown length unit '%s' for atom coordinates",
-                          cai->getUnit().c_str());
-            }
-            cai->getCoords(&xx, &yy, &zz);
-            int resnr = cai->ResidueNumber();
+            auto myunit = cai.getUnit();
+            cai.getCoords(&xx, &yy, &zz);
+            int resnr = cai.ResidueNumber();
             if (resnr != res0)
             {
                 res0  = resnr;
                 nres += 1;
             }
-            state_->x[natom][XX] = convert2gmx(xx, myunit);
-            state_->x[natom][YY] = convert2gmx(yy, myunit);
-            state_->x[natom][ZZ] = convert2gmx(zz, myunit);
+            state_->x[natom][XX] = convertToGromacs(xx, myunit);
+            state_->x[natom][YY] = convertToGromacs(yy, myunit);
+            state_->x[natom][ZZ] = convertToGromacs(zz, myunit);
 
             double q = 0;
-            for (auto qi = cai->BeginQ(); (qi < cai->EndQ()); qi++)
+            for (auto &qi : cai.atomicChargeConst())
             {
                 // TODO Clean up this mess.
-                if (qi->getType().compare("ESP") == 0)
+                if (qi.getType().compare("ESP") == 0)
                 {
-                    myunit = string2unit((char *)qi->getUnit().c_str());
-                    q      = convert2gmx(qi->getQ(), myunit);
+                    myunit = string2unit((char *)qi.getUnit().c_str());
+                    q      = convertToGromacs(qi.getQ(), myunit);
                     break;
                 }
             }
             atoms_->atom[natom].q      =
                 atoms_->atom[natom].qB = q;
             atoms_->atom[natom].resind = resnr;
-            t_atoms_set_resinfo(atoms_, natom, symtab_, cai->ResidueName().c_str(),
+            t_atoms_set_resinfo(atoms_, natom, symtab_, cai.ResidueName().c_str(),
                                 atoms_->atom[natom].resind, ' ', 
-                                cai->chainId(), cai->chain());
-            atoms_->atomname[natom]        = put_symtab(symtab_, cai->getName().c_str());
-            atoms_->atom[natom].atomnumber = gmx_atomprop_atomnumber(ap, cai->getName().c_str());
+                                cai.chainId(), cai.chain());
+            atoms_->atomname[natom]        = put_symtab(symtab_, cai.getName().c_str());
+            atoms_->atom[natom].atomnumber = gmx_atomprop_atomnumber(ap, cai.getName().c_str());
 
             real mass = 0;
-            if (!gmx_atomprop_query(ap, epropMass, "???", cai->getName().c_str(), &mass))
+            if (!gmx_atomprop_query(ap, epropMass, "???", cai.getName().c_str(), &mass))
             {
-                fprintf(stderr, "Could not find mass for %s\n", cai->getName().c_str());
+                fprintf(stderr, "Could not find mass for %s\n", cai.getName().c_str());
             }
             atoms_->atom[natom].m      =
                 atoms_->atom[natom].mB = mass;
@@ -658,7 +650,7 @@ immStatus MyMol::GenerateAtoms(gmx_atomprop_t     ap,
 
             // First set the atomtype
             atoms_->atomtype[natom]      =
-                atoms_->atomtypeB[natom] = put_symtab(symtab_, cai->getObtype().c_str());
+                atoms_->atomtypeB[natom] = put_symtab(symtab_, cai.getObtype().c_str());
 
             natom++;
         }
@@ -721,30 +713,23 @@ immStatus MyMol::zeta2atoms(const Poldata *pd)
     auto zeta     = 0.0;
     auto row      = 0;
     auto eqtModel = pd->chargeType();
+    auto eem      = pd->findForcesConst(eitELECTRONEGATIVITYEQUALIZATION);
     for (auto i = 0; i < atoms_->nr; i++)
     {
+        auto atype = pd->findAtype(*atoms_->atomtype[i]);
         if (atoms_->atom[i].ptype == eptShell)
         {
-            std::string name(*atoms_->atomtype[i]);
-            std::string aname = name.substr(0, name.size()-2);
-            zeta = pd->getZeta(aname, 1);
-            row  = pd->getRow(aname, 1);
-            
-            if (zeta == 0 && eqtModel != eqtPoint)
-            {
-                return immZeroZeta;
-            }
+            auto shellId = atype->id(eitPOLARIZATION);
+            atype = pd->findAtype(shellId.id());
         }
-        else
+        auto        ztype = atype->id(eitELECTRONEGATIVITYEQUALIZATION);
+        auto        eep   = eem.findParametersConst(ztype);
+        zeta = eep["zeta"].value();
+        row  = eep["row"].value();
+        
+        if (zeta == 0 && eqtModel != eqtPoint)
         {
-            zeta = pd->getZeta(*atoms_->atomtype[i], 0);
-            row  = pd->getRow(*atoms_->atomtype[i], 0);
-            
-            if (zeta == 0 && 
-                (eqtModel != eqtPoint && !pd->corePointCharge()))
-            {
-                return immZeroZeta;
-            }
+            return immZeroZeta;
         }
         
         atoms_->atom[i].zetaA     =
@@ -765,8 +750,6 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t     ap,
                                   bool               bBASTAT,
                                   const char        *tabfn)
 {
-    int         ftb;
-    t_param     b;
     immStatus   imm = immOK;
     std::string btype1, btype2;
 
@@ -775,7 +758,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t     ap,
         fprintf(debug, "Generating topology for %s\n", getMolname().c_str());
     }
     nexcl_ = pd->getNexcl();
-    GenerateComposition(pd);
+    GenerateComposition();
     if (NAtom() <= 0)
     {
         imm = immAtomTypes;
@@ -795,49 +778,49 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t     ap,
         imm = zeta2atoms(pd);
     }
     /* Store bonds in harmonic potential list first, update type later */
-    ftb = F_BONDS;
     if (immOK == imm)
     {
-        for (auto fs = pd->forcesBegin(); fs != pd->forcesEnd(); fs++)
+        int  ftb = F_BONDS;
+        auto fs  = pd->findForcesConst(eitBONDS);
+        for (auto &bi : bondConst())
         {
-            if (eitBONDS == fs->iType())
+            t_param b;
+            memset(&b, 0, sizeof(b));
+            b.a[0] = bi.getAi() - 1;
+            b.a[1] = bi.getAj() - 1;
+            pd->atypeToBtype(*atoms_->atomtype[b.a[0]], &btype1);
+            pd->atypeToBtype(*atoms_->atomtype[b.a[1]], &btype2);
+            Identifier bondId({btype1, btype2}, bi.getBondOrder(), CanSwap::Yes);
+            int ii = 0;
+            if (!bBASTAT)
             {
-                ListedForceConstIterator force;
-                auto                     lengthUnit = string2unit(fs->unit().c_str());
-                if (-1 == lengthUnit)
+                // If we are running bastat, the list is still empty.
+                for(const auto &fp : fs.findParametersConst(bondId))
                 {
-                    gmx_fatal(FARGS, "No such length unit '%s' for bonds", fs->unit().c_str());
+                    if (ii >= MAXFORCEPARAM)
+                    {
+                        GMX_THROW(gmx::InternalError(gmx::formatString("Too many parameters inserted into t_param").c_str()));
+                    }
+                    b.c[ii++] = convertToGromacs(fp.second.value(), fp.second.unit());
                 }
-                memset(&b, 0, sizeof(b));
-                for (auto bi = BeginBond(); bi < EndBond(); bi++)
+            }
+            else
+            {
+                // Just set the counter to the correct number
+                ii = interaction_function[ftb].nrfpA;
+            }
+            if (ii == interaction_function[ftb].nrfpA)
+            {
+                add_param_to_plist(plist_, ftb, eitBONDS, b, bi.getBondOrder());
+            }
+            else
+            {
+                // Insert a dummy bond with a bond order of 1 to be replaced later
+                for (auto i = 0; i < MAXFORCEPARAM; i++)
                 {
-                    b.a[0] = bi->getAi() - 1;
-                    b.a[1] = bi->getAj() - 1;
-                    pd->atypeToBtype(*atoms_->atomtype[b.a[0]], &btype1);
-                    pd->atypeToBtype(*atoms_->atomtype[b.a[1]], &btype2);
-                    std::vector<std::string> atoms = {btype1, btype2};
-                    if (pd->findForce(atoms, &force))
-                    {
-                        std::string         pp = force->params();
-                        std::vector<double> dd = getDoubles(pp);
-                        int                 ii = 0;
-                        b.c[ii++] = convert2gmx(force->refValue(), lengthUnit);
-                        for (auto &d : dd)
-                        {
-                            b.c[ii++] = d;
-                        }
-                        add_param_to_plist(plist_, ftb, eitBONDS, b, bi->getBondOrder());
-                    }
-                    else
-                    {
-                        // Insert a dummy bond with a bond order of 1 to be replaced later
-                        for (auto i = 0; i < MAXFORCEPARAM; i++)
-                        {
-                            b.c[i] = 0;
-                        }
-                        add_param_to_plist(plist_, ftb, eitBONDS, b, 1);
-                    }
+                    b.c[i] = 0;
                 }
+                add_param_to_plist(plist_, ftb, eitBONDS, b, 1);
             }
         }
         auto pw = SearchPlist(plist_, ftb);
@@ -852,7 +835,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t     ap,
 
         MakeSpecialInteractions(pd, bUseVsites);
 
-        imm = updatePlist(pd, plist_, atoms_, bBASTAT, getMolname(), error_messages_);
+        imm = updatePlist(pd, &plist_, atoms_, bBASTAT, getMolname(), &error_messages_);
     }
     if (immOK == imm)
     {
@@ -900,32 +883,22 @@ void MyMol::addShells(const Poldata *pd)
 {
     int                    shell  = 0;
     int                    nshell = 0;
-    double                 pol    = 0;
-    double                 sigpol = 0;
-
     std::vector<int>       renum;
     std::vector<int>       inv_renum;
-
-    char                   buf[32];
-    char                 **newname;
+    std::vector<std::string> newname;
     t_atoms               *newatoms;
     t_excls               *newexcls;
     std::vector<gmx::RVec> newx;
     t_param                p;
 
-    auto                   polarUnit = string2unit(pd->getPolarUnit().c_str());
-    if (-1 == polarUnit)
-    {
-        gmx_fatal(FARGS, "No such polarizability unit '%s'", pd->getPolarUnit().c_str());
-    }
-
-    /*Calculate the total number of Atom and Vsite particles.*/
+    /* Calculate the total number of Atom and Vsite particles. */
     auto nParticles = atoms_->nr;
     for (int i = 0; i < atoms_->nr; i++)
     {
         if (atoms_->atom[i].ptype == eptAtom ||
             atoms_->atom[i].ptype == eptVSite)
         {
+            // TODO: Check that the atom or vsite has a shell
             nParticles++; // We add 1 shell particle per Atom and Vsite particles
         }
     }
@@ -933,7 +906,7 @@ void MyMol::addShells(const Poldata *pd)
     inv_renum.resize(nParticles, -1);
     renum.resize(atoms_->nr, 0);
 
-    /*Renumber the atoms.*/
+    /* Renumber the atoms. */
     for (int i = 0; i < atoms_->nr; i++)
     {
         renum[i]              = i + nshell;
@@ -945,8 +918,9 @@ void MyMol::addShells(const Poldata *pd)
         }
     }
 
-    /*Add Polarization to the plist.*/
+    /* Add Polarization to the plist. */
     memset(&p, 0, sizeof(p));
+    auto eem = pd->findForcesConst(eitELECTRONEGATIVITYEQUALIZATION);
     for (int i = 0; i < atoms_->nr; i++)
     {
         if (atoms_->atom[i].ptype == eptAtom ||
@@ -957,9 +931,10 @@ void MyMol::addShells(const Poldata *pd)
             auto        fa    = pd->findAtype(atomtype);
             if (pd->getAtypeEnd() != fa)
             {
-                auto ztype = fa->getZtype();
-                if (pd->getAtypePol(atomtype, &pol, &sigpol) && (pol > 0) &&
-                    (pd->getNzeta(atomtype) == 2))
+                auto ptype = fa->id(eitPOLARIZATION);
+                auto param = pd->findForcesConst(eitPOLARIZATION).findParameterTypeConst(ptype, "alpha");
+                auto pol   = param.value();
+                if (pol > 0)
                 {
                     p.a[0] = renum[i];
                     p.a[1] = renum[i]+1;
@@ -971,16 +946,8 @@ void MyMol::addShells(const Poldata *pd)
                             pol /= vsite->nvsite();
                         }
                     }
-
-                    p.c[0] = convert2gmx(pol, polarUnit);
+                    p.c[0] = convertToGromacs(pol, param.unit());
                     add_param_to_plist(plist_, F_POLARIZATION, eitPOLARIZATION, p);
-                }
-                else
-                {
-                    gmx_fatal(FARGS, "Polarizability is %f for %s ztype %s btype %s ptype %s nzeta %d.\n",
-                              pol, *atoms_->atomtype[i], ztype.c_str(),
-                              fa->getBtype().c_str(), fa->getPtype().c_str(),
-                              pd->getNzeta(atomtype));
                 }
             }
             else
@@ -999,9 +966,10 @@ void MyMol::addShells(const Poldata *pd)
     init_t_atoms(newatoms, nParticles, true);
     snew(newatoms->atomtype, nParticles);
     snew(newatoms->atomtypeB, nParticles);
+    snew(newatoms->atomname, nParticles);
     newatoms->nres = atoms_->nres;
     newx.resize(newatoms->nr);
-    snew(newname, newatoms->nr);
+    newname.resize(newatoms->nr);
 
     /* Make a new exclusion array and put the shells in it. */
     snew(newexcls, newatoms->nr);
@@ -1051,7 +1019,7 @@ void MyMol::addShells(const Poldata *pd)
         newatoms->atomtype[renum[i]]  = put_symtab(symtab_, *atoms_->atomtype[i]);
         newatoms->atomtypeB[renum[i]] = put_symtab(symtab_, *atoms_->atomtypeB[i]);
         copy_rvec(state_->x[i], newx[renum[i]]);
-        newname[renum[i]] = *atoms_->atomtype[i];
+        newname[renum[i]].assign(*atoms_->atomtype[i]);
         int resind = atoms_->atom[i].resind;
         t_atoms_set_resinfo(newatoms, renum[i], symtab_,
                             *atoms_->resinfo[resind].name,
@@ -1071,29 +1039,31 @@ void MyMol::addShells(const Poldata *pd)
 
             auto        atomtypeName = get_atomtype_name(atoms_->atom[i].type, atype_);
             vsiteType_to_atomType(atomtypeName, &atomtype);
-
+            auto fa    = pd->findAtype(atomtypeName);
+            auto ztype = fa->id(eitELECTRONEGATIVITYEQUALIZATION);
+            auto eep   = eem.findParametersConst(ztype);
             newatoms->atom[j]               = atoms_->atom[i];
             newatoms->atom[j].m             = 0;
             newatoms->atom[j].mB            = 0;
-            newatoms->atom[j].atomnumber    = atoms_->atom[i].atomnumber;
-            sprintf(buf, "%s_s", atoms_->atom[i].elem);
-            newatoms->atomname[j]           = put_symtab(symtab_, buf);
-            sprintf(buf, "%s_s", atomtype.c_str());
-            newname[j]                      = strdup(buf);
-            shell                           = add_atomtype(atype_, symtab_, shell_atom, buf, &p, 0, 0);
+            newatoms->atom[j].atomnumber    = 0;//atoms_->atom[i].atomnumber;
+            auto shellid                    = fa->id(eitPOLARIZATION);
+            shell                           = add_atomtype(atype_, symtab_, shell_atom, shellid.id().c_str(), &p, 0, 0);
+            auto shellzetaid                = pd->findAtype(shellid.id())->id(eitELECTRONEGATIVITYEQUALIZATION);
+            auto shelleep                   = eem.findParametersConst(shellzetaid);
             newatoms->atom[j].type          = shell;
             newatoms->atom[j].typeB         = shell;
-            newatoms->atomtype[j]           = put_symtab(symtab_, buf);
-            newatoms->atomtypeB[j]          = put_symtab(symtab_, buf);
+            newatoms->atomtype[j]           = put_symtab(symtab_, shellid.id().c_str());
+            newatoms->atomtypeB[j]          = put_symtab(symtab_, shellid.id().c_str());
+            newatoms->atomname[j]           = put_symtab(symtab_, atomtypeName);
             newatoms->atom[j].ptype         = eptShell;
-            newatoms->atom[j].zetaA         = pd->getZeta(atomtype, 1);
+            newatoms->atom[j].zetaA         = shelleep["zeta"].value();
             newatoms->atom[j].zetaB         = newatoms->atom[j].zetaA;
-            newatoms->atom[j].row           = pd->getRow(atomtype, 1);
+            newatoms->atom[j].row           = shelleep["row"].value();
             newatoms->atom[j].resind        = atoms_->atom[i].resind;
             copy_rvec(state_->x[i], newx[j]);
 
             newatoms->atom[j].q      =
-                newatoms->atom[j].qB = pd->getQ(atomtype, 1);
+                newatoms->atom[j].qB = shelleep["charge"].value();
             if (bHaveVSites_)
             {
                 auto vsite = pd->findVsite(atomtype);
@@ -1111,9 +1081,9 @@ void MyMol::addShells(const Poldata *pd)
     for (int i = 0; i < newatoms->nr; i++)
     {
         copy_rvec(newx[i], state_->x[i]);
-        atoms_->atomtype[i] = put_symtab(symtab_, newname[i]);
+        atoms_->atomtype[i] = 
+            atoms_->atomtypeB[i] = put_symtab(symtab_, *newatoms->atomtype[i]);
     }
-    sfree(newname);
 
     /* Copy exclusions, empty the original first */
     sfree(excls_);
@@ -1334,33 +1304,28 @@ void MyMol::initQgenResp(const Poldata     *pd,
     QgenResp_->setMolecularCharge(getCharge());
     QgenResp_->summary(debug);
 
+    std::random_device               rd;
+    std::mt19937                     gen(rd());  
+    std::uniform_real_distribution<> uniform(0.0, 1.0);
+    double                           cutoff = 0.01*maxESP;
+ 
     auto ci = getCalcPropType(method, basis, mylot, MPO_POTENTIAL, nullptr);
     if (ci != EndExperiment())
     {
-        int mod  = 100/maxESP;
         int iesp = 0;
-        for (auto epi = ci->BeginPotential(); epi < ci->EndPotential(); ++epi, ++iesp)
+        for (auto &epi : ci->electrostaticPotentialConst())
         {
-            if (QgenResp_->myWeight(iesp) == 0 || ((iesp-ci->NAtom()) % mod) != 0)
+            auto val = uniform(gen);
+            if (QgenResp_->myWeight(iesp) > 0 && val < cutoff)
             {
-                continue;
+                auto xu = epi.getXYZunit();
+                auto vu = epi.getVunit();
+                QgenResp_->addEspPoint(convertToGromacs(epi.getX(), xu),
+                                       convertToGromacs(epi.getY(), xu),
+                                       convertToGromacs(epi.getZ(), xu),
+                                       convertToGromacs(epi.getV(), vu));
             }
-            auto xu = string2unit(epi->getXYZunit().c_str());
-            auto vu = string2unit(epi->getVunit().c_str());
-            if (-1 == xu)
-            {
-                gmx_fatal(FARGS, "No such length unit '%s' for potential",
-                          epi->getXYZunit().c_str());
-            }
-            if (-1 == vu)
-            {
-                gmx_fatal(FARGS, "No such potential unit '%s' for potential",
-                          epi->getVunit().c_str());
-            }
-            QgenResp_->addEspPoint(convert2gmx(epi->getX(), xu),
-                                convert2gmx(epi->getY(), xu),
-                                convert2gmx(epi->getZ(), xu),
-                                convert2gmx(epi->getV(), vu));
+            iesp++;
         }
         if (debug)
         {
@@ -1405,7 +1370,6 @@ immStatus MyMol::GenerateCharges(const Poldata       *pd,
         {
             double chi2[2]   = {1e8, 1e8};
             real   rrms      = 0;
-            real   wtot      = 0;
             int    cur       = 0;
             real   cosangle  = 0;
             EspRms_          = 0;
@@ -1414,7 +1378,7 @@ immStatus MyMol::GenerateCharges(const Poldata       *pd,
             // Init Qgresp should be called before this!
             QgenResp_->optimizeCharges(pd->getEpsilonR());
             QgenResp_->calcPot(pd->getEpsilonR());
-            EspRms_ = chi2[cur] = QgenResp_->getRms(&wtot, &rrms, &cosangle);
+            EspRms_ = chi2[cur] = QgenResp_->getRms(&rrms, &cosangle);
             if (debug)
             {
                 fprintf(debug, "RESP: RMS %g\n", chi2[cur]);
@@ -1424,7 +1388,7 @@ immStatus MyMol::GenerateCharges(const Poldata       *pd,
                 for (auto i = 0; i < atoms_->nr; i++)
                 {
                     mtop_->moltype[0].atoms.atom[i].q      =
-                        mtop_->moltype[0].atoms.atom[i].qB = QgenResp_->getAtomCharge(i);
+                        mtop_->moltype[0].atoms.atom[i].qB = QgenResp_->getCharge(i);
                 }
                 if (nullptr != shellfc_)
                 {
@@ -1439,7 +1403,7 @@ immStatus MyMol::GenerateCharges(const Poldata       *pd,
                 QgenResp_->optimizeCharges(pd->getEpsilonR());
                 QgenResp_->calcPot(pd->getEpsilonR());
                 real cosangle = 0;
-                EspRms_ = chi2[cur] = QgenResp_->getRms(&wtot, &rrms, &cosangle);
+                EspRms_ = chi2[cur] = QgenResp_->getRms(&rrms, &cosangle);
                 if (debug)
                 {
                     fprintf(debug, "RESP: RMS %g\n", chi2[cur]);
@@ -1452,7 +1416,7 @@ immStatus MyMol::GenerateCharges(const Poldata       *pd,
             for (auto i = 0; i < atoms_->nr; i++)
             {
                 atoms_->atom[i].q      =
-                    atoms_->atom[i].qB = QgenResp_->getAtomCharge(i);
+                    atoms_->atom[i].qB = QgenResp_->getCharge(i);
             }
         }
         break;
@@ -1470,7 +1434,7 @@ immStatus MyMol::GenerateCharges(const Poldata       *pd,
             qq.resize(natom + 1);
             for (auto i = 0; i < natom + 1; i++)
             {
-                qq[i] = q[i][0];
+                qq[i] = q[i];
             }
             iter = 0;
             do
@@ -1500,8 +1464,8 @@ immStatus MyMol::GenerateCharges(const Poldata       *pd,
                     EemRms_ = 0;
                     for (auto i = 0; i < natom + 1; i++)
                     {
-                        EemRms_  += gmx::square(qq[i] - q[i][0]);
-                        qq[i]     = q[i][0];
+                        EemRms_  += gmx::square(qq[i] - q[i]);
+                        qq[i]     = q[i];
                     }
                     EemRms_  /= natom;
                     converged = (EemRms_ < tolerance) || (nullptr == shellfc_);
@@ -1543,9 +1507,9 @@ void MyMol::plotEspCorrelation(const char             *espcorr,
     }
 }
 
-void MyMol::changeCoordinate(ExperimentIterator ei, gmx_bool bpolar)
+void MyMol::changeCoordinate(const Experiment &ei, gmx_bool bpolar)
 {
-    const std::vector<gmx::RVec> &x = ei->getCoordinates();
+    const std::vector<gmx::RVec> &x = ei.getCoordinates();
 
     if (bpolar)
     {
@@ -1568,17 +1532,17 @@ bool MyMol::getOptimizedGeometry(rvec *x)
 {
     bool    bopt = false;
 
-    for (auto ei = BeginExperiment();
-         (!bopt) && (ei < EndExperiment()); ++ei)
+    for (auto &ei : experimentConst())
     {
-        if (JOB_OPT == ei->getJobtype())
+        if (JOB_OPT == ei.getJobtype())
         {
-            const std::vector<gmx::RVec> &xxx = ei->getCoordinates();
+            const std::vector<gmx::RVec> &xxx = ei.getCoordinates();
             for (size_t i = 0; i < xxx.size(); i++)
             {
                 copy_rvec(xxx[i], x[i]);
             }
             bopt = true;
+            break;
         }
     }
     return bopt;
@@ -1659,20 +1623,25 @@ void MyMol::CalcQMbasedMoments(real *q, rvec mu, tensor Q)
 void MyMol::CalcQPol(const Poldata *pd, rvec mu)
 
 {
-    int     i, np;
-    double  poltot, pol, sigpol, sptot, ereftot, eref;
+    int     np;
+    double  poltot, sptot, ereftot, eref;
 
     poltot  = 0;
     sptot   = 0;
     ereftot = 0;
     np      = 0;
-    for (i = 0; i < atoms_->nr; i++)
+    auto eep = pd->findForcesConst(eitPOLARIZATION);
+    for (int i = 0; i < atoms_->nr; i++)
     {
-        if (pd->getAtypePol(*atoms_->atomtype[i], &pol, &sigpol))
+        std::string ptype;
+        auto atype = pd->findAtype(*atoms_->atomtype[i]);
+        auto idP   = atype->id(eitPOLARIZATION);
+        if (eep.parameterExists(idP))
         {
+            auto param  = eep.findParameterTypeConst(idP, "alpha");
+            poltot += param.value();
+            sptot  += gmx::square(param.uncertainty());
             np++;
-            poltot += pol;
-            sptot  += gmx::square(sigpol);
         }
         if (pd->getAtypeRefEnthalpy(*atoms_->atomtype[i], &eref))
         {
@@ -1682,8 +1651,11 @@ void MyMol::CalcQPol(const Poldata *pd, rvec mu)
     CalcDipole(mu);
     CalcQuadrupole();
     ref_enthalpy_   = ereftot;
-    polarizability_ = poltot;
-    sig_pol_        = sqrt(sptot/atoms_->nr);
+    if (np > 0)
+    {
+        polarizability_ = poltot;
+        sig_pol_        = sqrt(sptot/np);
+    }
 }
 
 void MyMol::CalcAnisoPolarizability(tensor polar, double *anisoPol)
@@ -2332,7 +2304,7 @@ void MyMol::UpdateIdef(const Poldata   *pd,
 
     if (debug)
     {
-        fprintf(debug, "UpdateIdef for %s\n", iType2string(iType));
+        fprintf(debug, "UpdateIdef for %s\n", interactionTypeToString(iType).c_str());
     }
     if (iType == eitVDW)
     {
@@ -2354,13 +2326,8 @@ void MyMol::UpdateIdef(const Poldata   *pd,
     else
     {
         // Update other iTypes
-        auto fs = pd->findForces(iType);
-        if (fs == pd->forcesEnd())
-        {
-            gmx_fatal(FARGS, "Can not find the force %s to update",
-                      iType2string(iType));
-        }
-        auto ftype = fs->fType();
+        auto fs    = pd->findForcesConst(iType);
+        auto ftype = fs.fType();
         // Make a list of bonded types that can be indexed
         // with the atomtype. That should speed up the code
         // below somewhat.
@@ -2379,247 +2346,150 @@ void MyMol::UpdateIdef(const Poldata   *pd,
                           *atoms_->atomtype[i]);
             }
         }
-        switch (iType)
+        for (auto i = 0; i < ltop_->idef.il[ftype].nr; i += interaction_function[ftype].nratoms+1)
         {
-            case eitBONDS:
+            auto                     tp  = ltop_->idef.il[ftype].iatoms[i];
+            std::vector<std::string> atoms;
+            for (int j = 1; j < interaction_function[ftype].nratoms+1; j++)
             {
-                auto lu = string2unit(fs->unit().c_str());
-                if (-1 == lu)
-                {
-                    gmx_fatal(FARGS, "Unknown length unit '%s' for bonds",
-                              fs->unit().c_str());
-                }
-                for (auto i = 0; i < ltop_->idef.il[ftype].nr; i += interaction_function[ftype].nratoms+1)
-                {
-                    auto                     tp  = ltop_->idef.il[ftype].iatoms[i];
-                    std::vector<std::string> atoms;
-                    for (int j = 1; j < interaction_function[ftype].nratoms+1; j++)
-                    {
-                        atoms.push_back(btype[atoms_->atom[ltop_->idef.il[ftype].iatoms[i+j]].type]);
-                    }
-                    double value, sigma;
-                    size_t ntrain;
-                    if (pd->searchForceIType(atoms, params, &value, &sigma, &ntrain, iType))
-                    {
-                        auto bondLength = convert2gmx(value, lu);
-                        auto parameters = gmx::splitString(params);
-                        switch (ftype)
-                        {
-                            case F_MORSE:
-                            {
-                                mtop_->ffparams.iparams[tp].morse.b0A         =
-                                    mtop_->ffparams.iparams[tp].morse.b0B     =
-                                        ltop_->idef.iparams[tp].morse.b0A     =
-                                            ltop_->idef.iparams[tp].morse.b0B = bondLength;
-                                GMX_RELEASE_ASSERT(parameters.size() == 2, "Need exactly two parameters for Morse bonds");
-                                mtop_->ffparams.iparams[tp].morse.cbA         =
-                                    mtop_->ffparams.iparams[tp].morse.cbB     =
-                                        ltop_->idef.iparams[tp].morse.cbA     =
-                                            ltop_->idef.iparams[tp].morse.cbB =
-                                    gmx::doubleFromString(parameters[0].c_str());
-                                mtop_->ffparams.iparams[tp].morse.betaA         =
-                                    mtop_->ffparams.iparams[tp].morse.betaB     =
-                                        ltop_->idef.iparams[tp].morse.betaA     =
-                                            ltop_->idef.iparams[tp].morse.betaB =
-                                    gmx::doubleFromString(parameters[1].c_str());
-                            }
-                            break;
-                            default:
-                                gmx_fatal(FARGS, "Unsupported bondtype %s in UpdateIdef",
-                                          fs->function().c_str());
-                        }
-                    }
-                }
+                atoms.push_back(btype[atoms_->atom[ltop_->idef.il[ftype].iatoms[i+j]].type]);
             }
-            break;
-            case eitANGLES:
-            case eitLINEAR_ANGLES:
+            auto fs = pd->findForcesConst(iType);
+            Identifier bondId(atoms, fs.canSwap());
+            std::vector<double> parameters;
+            for(const auto &fp : fs.findParametersConst(bondId))
+            { 
+                parameters.push_back(fp.second.value());
+            }
+            if (static_cast<int>(parameters.size()) != interaction_function[ftype].nrfpA)
             {
-                for (auto i = 0; i < ltop_->idef.il[ftype].nr; i += interaction_function[ftype].nratoms+1)
-                {
-                    auto                     tp  = ltop_->idef.il[ftype].iatoms[i];
-                    std::vector<std::string> atoms;
-                    for (int j = 1; j < interaction_function[ftype].nratoms+1; j++)
-                    {
-                        atoms.push_back(btype[atoms_->atom[ltop_->idef.il[ftype].iatoms[i+j]].type]);
-                    }
-                    double angle, sigma;
-                    size_t ntrain;
-                    if (pd->searchForceIType(atoms, params, &angle, &sigma, &ntrain, iType))
-                    {
-                        auto parameters = gmx::splitString(params);
-                        auto r13        = calc_r13(pd, atoms[0], atoms[1], atoms[2], angle);
-                        switch (ftype)
-                        {
-                            case F_ANGLES:
-                            {
-                                mtop_->ffparams.iparams[tp].harmonic.rA         =
-                                    mtop_->ffparams.iparams[tp].harmonic.rB     =
-                                        ltop_->idef.iparams[tp].harmonic.rA     =
-                                            ltop_->idef.iparams[tp].harmonic.rB = angle;
-                                GMX_RELEASE_ASSERT(parameters.size() == 1, "Need exactly one parameters for Harmonic angles");
-                                mtop_->ffparams.iparams[tp].harmonic.krA         =
-                                    mtop_->ffparams.iparams[tp].harmonic.krB     =
-                                        ltop_->idef.iparams[tp].harmonic.krA     =
-                                            ltop_->idef.iparams[tp].harmonic.krB =
-                                    gmx::doubleFromString(parameters[0].c_str());
-                            }
-                            break;
-                            case F_UREY_BRADLEY:
-                            {
-                                mtop_->ffparams.iparams[tp].u_b.thetaA         =
-                                    mtop_->ffparams.iparams[tp].u_b.thetaB     =
-                                        ltop_->idef.iparams[tp].u_b.thetaA     =
-                                            ltop_->idef.iparams[tp].u_b.thetaB = angle;
-                                
-                                mtop_->ffparams.iparams[tp].u_b.r13A         =
-                                    mtop_->ffparams.iparams[tp].u_b.r13B     =
-                                        ltop_->idef.iparams[tp].u_b.r13A     =
-                                            ltop_->idef.iparams[tp].u_b.r13B = r13;
-                                GMX_RELEASE_ASSERT(parameters.size() == 2, "Need exactly two parameters for Urey-Bradley angles");
-
-                                mtop_->ffparams.iparams[tp].u_b.kthetaA         =
-                                    mtop_->ffparams.iparams[tp].u_b.kthetaB     =
-                                        ltop_->idef.iparams[tp].u_b.kthetaA     =
-                                            ltop_->idef.iparams[tp].u_b.kthetaB =
-                                    gmx::doubleFromString(parameters[0].c_str());
-                                mtop_->ffparams.iparams[tp].u_b.kUBA         =
-                                    mtop_->ffparams.iparams[tp].u_b.kUBB     =
-                                        ltop_->idef.iparams[tp].u_b.kUBA     =
-                                            ltop_->idef.iparams[tp].u_b.kUBB =
-                                    gmx::doubleFromString(parameters[1].c_str());
-                            }
-                            break;
-                            case F_LINEAR_ANGLES:
-                            {
-                                double relative_position = calc_relposition(pd, atoms[0], atoms[1], atoms[2]);
-                                
-                                mtop_->ffparams.iparams[tp].linangle.aA         =
-                                    mtop_->ffparams.iparams[tp].linangle.aB     =
-                                        ltop_->idef.iparams[tp].linangle.aA     =
-                                            ltop_->idef.iparams[tp].linangle.aB = relative_position;
-                                
-                                mtop_->ffparams.iparams[tp].linangle.r13A         =
-                                    mtop_->ffparams.iparams[tp].linangle.r13B     =
-                                        ltop_->idef.iparams[tp].linangle.r13A     =
-                                            ltop_->idef.iparams[tp].linangle.r13B = r13;
-                                GMX_RELEASE_ASSERT(parameters.size() == 2, "Need exactly two parameters for Linear angles");
-
-                                mtop_->ffparams.iparams[tp].linangle.klinA         =
-                                    mtop_->ffparams.iparams[tp].linangle.klinB     =
-                                        ltop_->idef.iparams[tp].linangle.klinA     =
-                                            ltop_->idef.iparams[tp].linangle.klinB =
-                                    gmx::doubleFromString(parameters[0].c_str());
-                                mtop_->ffparams.iparams[tp].linangle.kUBA         =
-                                    mtop_->ffparams.iparams[tp].linangle.kUBB     =
-                                        ltop_->idef.iparams[tp].linangle.kUBA     =
-                                            ltop_->idef.iparams[tp].linangle.kUBB =
-                                    gmx::doubleFromString(parameters[1].c_str());
-                            }
-                            break;
-                            default:
-                                gmx_fatal(FARGS, "Unsupported angletype %s in UpdateIdef",
-                                          fs->function().c_str());
-                        }
-                    }
-                }
+                GMX_THROW(gmx::InternalError(gmx::formatString("Cannot find all %d force field parameters for %s",
+                                                               interaction_function[ftype].nrfpA, interactionTypeToString(iType).c_str()).c_str()));
             }
-            break;
-            case eitPROPER_DIHEDRALS:
-            case eitIMPROPER_DIHEDRALS:
+            switch (ftype)
             {
-                for (auto i = 0; i < ltop_->idef.il[ftype].nr; i += interaction_function[ftype].nratoms+1)
+            case F_MORSE:
                 {
-                    auto                     tp  = ltop_->idef.il[ftype].iatoms[i];
-                    std::vector<std::string> atoms;
-                    for (int j = 1; j < interaction_function[ftype].nratoms+1; j++)
-                    {
-                        atoms.push_back(btype[atoms_->atom[ltop_->idef.il[ftype].iatoms[i+j]].type]);
-                    }
-                    double angle, sigma;
-                    size_t ntrain;
-                    if (pd->searchForceIType(atoms, params,
-                                             &angle, &sigma, &ntrain, iType))
-                    {
-                        auto parameters = gmx::splitString(params);
-                        switch (ftype)
-                        {
-                            case F_FOURDIHS:
-                            {
-                                std::vector<double> old;
-                                for (auto parm : parameters)
-                                {
-                                    old.push_back(gmx::doubleFromString(parm.c_str()));
-                                }
-                                auto newparam = &mtop_->ffparams.iparams[tp];
-                                newparam->rbdihs.rbcA[0] = old[1]+0.5*(old[0]+old[2]);
-                                newparam->rbdihs.rbcA[1] = 0.5*(3.0*old[2]-old[0]);
-                                newparam->rbdihs.rbcA[2] = 4.0*old[3]-old[1];
-                                newparam->rbdihs.rbcA[3] = -2.0*old[2];
-                                newparam->rbdihs.rbcA[4] = -4.0*old[3];
-                                newparam->rbdihs.rbcA[5] = 0.0;
-                                for (int k = 0; k < NR_RBDIHS; k++)
-                                {
-                                    ltop_->idef.iparams[tp].rbdihs.rbcA[k]     =
-                                        ltop_->idef.iparams[tp].rbdihs.rbcB[k] =
-                                            newparam->rbdihs.rbcB[k]           =
-                                        newparam->rbdihs.rbcA[k];
-                                }
-                                break;
-                            }
-                            case F_PDIHS:
-                            {
-                                mtop_->ffparams.iparams[tp].pdihs.phiA         =
-                                    mtop_->ffparams.iparams[tp].pdihs.phiB     =
-                                        ltop_->idef.iparams[tp].pdihs.phiA     =
-                                            ltop_->idef.iparams[tp].pdihs.phiB = angle;
-                                
-                                GMX_RELEASE_ASSERT(parameters.size() == 2, "Need exactly two parameters for proper dihedrals");
-                                mtop_->ffparams.iparams[tp].pdihs.cpA         =
-                                    mtop_->ffparams.iparams[tp].pdihs.cpB     =
-                                        ltop_->idef.iparams[tp].pdihs.cpA     =
-                                            ltop_->idef.iparams[tp].pdihs.cpB =
-                                    gmx::doubleFromString(parameters[0].c_str());
-                                /* Multiplicity for Proper Dihedral must be integer
-                                   This assumes that the second parameter is Multiplicity */
-                                mtop_->ffparams.iparams[tp].pdihs.mult =
-                                    ltop_->idef.iparams[tp].pdihs.mult =
-                                    atoi(parameters[1].c_str());
-                            }
-                            break;
-                            case F_IDIHS:
-                            {
-                                mtop_->ffparams.iparams[tp].harmonic.rA         =
-                                    mtop_->ffparams.iparams[tp].harmonic.rB     =
-                                        ltop_->idef.iparams[tp].harmonic.rA     =
-                                            ltop_->idef.iparams[tp].harmonic.rB = angle;
-                                
-                                GMX_RELEASE_ASSERT(parameters.size() == 1, "Need exactly one parameter for proper dihedrals");
-                                mtop_->ffparams.iparams[tp].harmonic.krA         =
-                                    mtop_->ffparams.iparams[tp].harmonic.krB     =
-                                        ltop_->idef.iparams[tp].harmonic.krA     =
-                                            ltop_->idef.iparams[tp].harmonic.krB =
-                                    gmx::doubleFromString(parameters[0].c_str());
-                            }
-                            break;
-                            default:
-                                gmx_fatal(FARGS, "Unsupported dihedral type %s in UpdateIdef",
-                                      fs->function().c_str());
-                        }
-                    }
+                    mtop_->ffparams.iparams[tp].morse.b0A         =
+                        mtop_->ffparams.iparams[tp].morse.b0B     =
+                        ltop_->idef.iparams[tp].morse.b0A     =
+                        ltop_->idef.iparams[tp].morse.b0B = parameters[0];
+                    mtop_->ffparams.iparams[tp].morse.cbA         =
+                        mtop_->ffparams.iparams[tp].morse.cbB     =
+                        ltop_->idef.iparams[tp].morse.cbA     =
+                        ltop_->idef.iparams[tp].morse.cbB = parameters[1];
+                    mtop_->ffparams.iparams[tp].morse.betaA         =
+                        mtop_->ffparams.iparams[tp].morse.betaB     =
+                        ltop_->idef.iparams[tp].morse.betaA     =
+                        ltop_->idef.iparams[tp].morse.betaB = parameters[2];
                 }
-            }
-            break;
-            case eitLJ14:
-            case eitPOLARIZATION:
-            case eitVDW:
-            case eitVSITE2:
-            case eitVSITE3FAD:
-            case eitVSITE3OUT:
-            case eitCONSTR:
-            case eitNR:
-            default:
                 break;
+            case F_ANGLES:
+                {
+                    mtop_->ffparams.iparams[tp].harmonic.rA         =
+                        mtop_->ffparams.iparams[tp].harmonic.rB     =
+                        ltop_->idef.iparams[tp].harmonic.rA     =
+                        ltop_->idef.iparams[tp].harmonic.rB = parameters[0];
+                    mtop_->ffparams.iparams[tp].harmonic.krA         =
+                        mtop_->ffparams.iparams[tp].harmonic.krB     =
+                        ltop_->idef.iparams[tp].harmonic.krA     =
+                        ltop_->idef.iparams[tp].harmonic.krB = parameters[1];
+                }
+                break;
+            case F_UREY_BRADLEY:
+                {
+                    mtop_->ffparams.iparams[tp].u_b.thetaA         =
+                        mtop_->ffparams.iparams[tp].u_b.thetaB     =
+                        ltop_->idef.iparams[tp].u_b.thetaA     =
+                        ltop_->idef.iparams[tp].u_b.thetaB = parameters[0];
+                    mtop_->ffparams.iparams[tp].u_b.r13A         =
+                        mtop_->ffparams.iparams[tp].u_b.r13B     =
+                        ltop_->idef.iparams[tp].u_b.r13A     =
+                        ltop_->idef.iparams[tp].u_b.r13B = parameters[1];
+                    mtop_->ffparams.iparams[tp].u_b.kthetaA         =
+                        mtop_->ffparams.iparams[tp].u_b.kthetaB     =
+                        ltop_->idef.iparams[tp].u_b.kthetaA     =
+                        ltop_->idef.iparams[tp].u_b.kthetaB = parameters[2];
+                    mtop_->ffparams.iparams[tp].u_b.kUBA         =
+                        mtop_->ffparams.iparams[tp].u_b.kUBB     =
+                        ltop_->idef.iparams[tp].u_b.kUBA     =
+                        ltop_->idef.iparams[tp].u_b.kUBB = parameters[3];
+                }
+                break;
+            case F_LINEAR_ANGLES:
+                {
+                    // TODO: Check whether this is still needed!
+                    double relative_position = calc_relposition(pd, atoms[0], atoms[1], atoms[2]);
+                    
+                    mtop_->ffparams.iparams[tp].linangle.aA         =
+                        mtop_->ffparams.iparams[tp].linangle.aB     =
+                        ltop_->idef.iparams[tp].linangle.aA     =
+                        ltop_->idef.iparams[tp].linangle.aB = relative_position;
+                    
+                    mtop_->ffparams.iparams[tp].linangle.r13A         =
+                        mtop_->ffparams.iparams[tp].linangle.r13B     =
+                        ltop_->idef.iparams[tp].linangle.r13A     =
+                        ltop_->idef.iparams[tp].linangle.r13B = parameters[1];
+
+                    mtop_->ffparams.iparams[tp].linangle.klinA         =
+                        mtop_->ffparams.iparams[tp].linangle.klinB     =
+                        ltop_->idef.iparams[tp].linangle.klinA     =
+                        ltop_->idef.iparams[tp].linangle.klinB = parameters[2];
+                    mtop_->ffparams.iparams[tp].linangle.kUBA         =
+                        mtop_->ffparams.iparams[tp].linangle.kUBB     =
+                        ltop_->idef.iparams[tp].linangle.kUBA     =
+                        ltop_->idef.iparams[tp].linangle.kUBB = parameters[3];
+                }
+                break;
+            case F_FOURDIHS:
+                {
+                    auto newparam = &mtop_->ffparams.iparams[tp];
+                    newparam->rbdihs.rbcA[0] = parameters[1]+0.5*(parameters[0]+parameters[2]);
+                    newparam->rbdihs.rbcA[1] = 0.5*(3.0*parameters[2]-parameters[0]);
+                    newparam->rbdihs.rbcA[2] = 4.0*parameters[3]-parameters[1];
+                    newparam->rbdihs.rbcA[3] = -2.0*parameters[2];
+                    newparam->rbdihs.rbcA[4] = -4.0*parameters[3];
+                    newparam->rbdihs.rbcA[5] = 0.0;
+                    for (int k = 0; k < NR_RBDIHS; k++)
+                    {
+                        ltop_->idef.iparams[tp].rbdihs.rbcA[k]     =
+                            ltop_->idef.iparams[tp].rbdihs.rbcB[k] =
+                            newparam->rbdihs.rbcB[k]           =
+                            newparam->rbdihs.rbcA[k];
+                    }
+                    break;
+                }
+            case F_PDIHS:
+                {
+                    mtop_->ffparams.iparams[tp].pdihs.phiA         =
+                        mtop_->ffparams.iparams[tp].pdihs.phiB     =
+                        ltop_->idef.iparams[tp].pdihs.phiA     =
+                        ltop_->idef.iparams[tp].pdihs.phiB = parameters[0];
+                    mtop_->ffparams.iparams[tp].pdihs.cpA         =
+                        mtop_->ffparams.iparams[tp].pdihs.cpB     =
+                        ltop_->idef.iparams[tp].pdihs.cpA     =
+                        ltop_->idef.iparams[tp].pdihs.cpB = parameters[1];
+                    mtop_->ffparams.iparams[tp].pdihs.mult =
+                        ltop_->idef.iparams[tp].pdihs.mult = std::round(parameters[2]);
+                }
+                break;
+            case F_IDIHS:
+                {
+                    mtop_->ffparams.iparams[tp].harmonic.rA         =
+                        mtop_->ffparams.iparams[tp].harmonic.rB     =
+                        ltop_->idef.iparams[tp].harmonic.rA     =
+                        ltop_->idef.iparams[tp].harmonic.rB = parameters[0];
+                    mtop_->ffparams.iparams[tp].harmonic.krA         =
+                        mtop_->ffparams.iparams[tp].harmonic.krB     =
+                        ltop_->idef.iparams[tp].harmonic.krA     =
+                        ltop_->idef.iparams[tp].harmonic.krB = parameters[1];
+                }
+                break;
+            default:
+                GMX_THROW(gmx::InternalError(gmx::formatString("Do not know what to do for %s",
+                                                               interaction_function[ftype].longname).c_str()));
+                break;
+            }
         }
     }
 }

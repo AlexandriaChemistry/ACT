@@ -2,36 +2,21 @@
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
   <Sequence Name="qtotValuesEqdModel_Slater">
-    <Int Name="Length">30</Int>
-    <Real>7.4134999975607272</Real>
-    <Real>-2</Real>
-    <Real>-0.57486167273232025</Real>
-    <Real>-1</Real>
-    <Real>-0.57486008393424803</Real>
-    <Real>-1</Real>
-    <Real>-0.57486008423381829</Real>
-    <Real>-1</Real>
-    <Real>3.315133717190939</Real>
-    <Real>-2</Real>
-    <Real>-0.084758908371546107</Real>
-    <Real>-1</Real>
-    <Real>-0.084757670422086498</Real>
-    <Real>-1</Real>
-    <Real>4.308930759127394</Real>
-    <Real>-2</Real>
-    <Real>-0.27826654350295454</Real>
-    <Real>-1</Real>
-    <Real>-0.27826706899158693</Real>
-    <Real>-1</Real>
-    <Real>6.5810596817323885</Real>
-    <Real>-2</Real>
-    <Real>-0.44395539688384389</Real>
-    <Real>-1</Real>
-    <Real>-0.4439530833057751</Real>
-    <Real>-1</Real>
-    <Real>0.30886947326350733</Real>
-    <Real>-2</Real>
-    <Real>1.4110468835032226</Real>
-    <Real>-1</Real>
+    <Int Name="Length">15</Int>
+    <Real>-0.075771581539079313</Real>
+    <Real>0.016705618111763659</Real>
+    <Real>0.016701464890971556</Real>
+    <Real>0.01670146544998425</Real>
+    <Real>0.03894520987942858</Real>
+    <Real>-0.0077672450775559026</Real>
+    <Real>-0.0077668529860787719</Real>
+    <Real>-0.0016900580666257673</Real>
+    <Real>0.014164910457817276</Real>
+    <Real>0.014164055524745502</Real>
+    <Real>0.15222753429620381</Real>
+    <Real>-0.020378169962096689</Real>
+    <Real>-0.020378577941130155</Real>
+    <Real>-0.33380774280127856</Real>
+    <Real>0.1979499697629305</Real>
   </Sequence>
 </ReferenceData>

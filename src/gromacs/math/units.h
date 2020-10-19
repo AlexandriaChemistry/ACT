@@ -143,7 +143,7 @@ enum {
     eg2cAngstrom, eg2cNm, eg2cPm, eg2cBohr, eg2cKcal_Mole,
     eg2cKj_Mole, eg2cJ_MolK, eg2cCal_MolK,
     eg2cHartree, eg2cHartree_e, eg2cAngstrom3, eg2cCoulomb,
-    eg2cDebye, eg2cElectron, eg2cBuckingham, eg2cNR
+    eg2cDebye, eg2cElectron, eg2cBuckingham, eg2c_Nm, eg2cNR
 };
 
 /* Convert value x to GROMACS units. Energy -> Energy, Length -> Length etc.

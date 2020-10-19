@@ -187,12 +187,12 @@ static void gmx_unused gen_alexandria_rho(Poldata                 &pd,
     char                          buf[STRLEN];
 
     nmax = 1+(int)(rcut/spacing);
-    for (auto eep = pd.getEemprops().begin(); eep != pd.getEemprops().end(); eep++)
+    for (auto &eep : pd.eempropsConst())
     {
         if (pd.chargeType() == iType)
         {
-            name  = eep->getName();        
-            nzeta = pd.getNzeta(name);
+            name  = eep.first;
+            nzeta = eep.second.getNzeta();
             snew(zeta, nzeta);
             snew(q, nzeta);
             snew(row, nzeta);
@@ -200,10 +200,10 @@ static void gmx_unused gen_alexandria_rho(Poldata                 &pd,
             qtot = 0;
             for (j = 0; j < nzeta; j++)
             {
-                zeta[j] = pd.getZeta(name, j);
-                q[j]    = pd.getQ(name, j);
+                zeta[j] = eep.second.getZeta(j);
+                q[j]    = eep.second.getQ(j);
                 qtot   += q[j];
-                row[j]  = pd.getRow(name, j);
+                row[j]  = eep.second.getRow(j);
                 switch (iType)
                 {
                 case eqtGaussian:
@@ -273,6 +273,7 @@ static void gen_alexandria_tables(Poldata                 &pd,
     double       vr = 0;
     double       fr = 0;
     
+    // TODO Fix this
     const char  *ns[2]  = {"", "_s"};
     
     FILE        *fp1 = nullptr;
@@ -285,19 +286,19 @@ static void gen_alexandria_tables(Poldata                 &pd,
     for (auto atpi = FFatypes.begin(); atpi != FFatypes.end(); atpi++)
     {
         auto eei    = pd.ztype2Eem(atpi->getZtype());
-        auto nzetaI = pd.getNzeta(eei->getName());
+        auto nzetaI = eei->getNzeta();
         for (auto atpj = atpi; atpj != FFatypes.end(); atpj++)
         {
             auto eej    = pd.ztype2Eem(atpj->getZtype());
-            auto nzetaJ =  pd.getNzeta(eej->getName());
+            auto nzetaJ =  eej->getNzeta();
             for (auto i = 0; i < nzetaI; i++)
             {
-                auto zetaI = pd.getZeta(eei->getName(), i);
-                auto rowI  = pd.getRow(eei->getName(), i);
+                auto zetaI = eei->getZeta(i);
+                auto rowI  = eei->getRow(i);
                 for (auto j = 0; j < nzetaJ; j++)
                 {
-                    auto zetaJ = pd.getZeta(eej->getName(), j);
-                    auto rowJ  = pd.getRow(eej->getName(), j);
+                    auto zetaJ = eej->getZeta(j);
+                    auto rowJ  = eej->getRow(j);
 
                     std::string fnbuf(fn, fn+strlen(fn)-4);
                     std::string buf1 = 

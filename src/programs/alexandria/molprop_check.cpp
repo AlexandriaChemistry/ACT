@@ -66,12 +66,12 @@ int alex_molprop_check(int argc, char*argv[])
 
     for (auto &m : mp)
     {
-        for (alexandria::ExperimentIterator ci = m.BeginExperiment(); ci < m.EndExperiment(); ++ci)
+        for (auto &ci : m.experimentConst())
         {
             int nH = 0, nC = 0;
-            for (alexandria::CalcAtomIterator cai = ci->BeginAtom(); cai < ci->EndAtom(); ++cai)
+            for (auto &cai : ci.calcAtomConst())
             {
-                std::string name = cai->getName();
+                std::string name = cai.getName();
                 if (name.compare("H") == 0)
                 {
                     nH++;
@@ -84,7 +84,7 @@ int alex_molprop_check(int argc, char*argv[])
             if (nC > 0 && nH == 0)
             {
                 printf("%s #C %d #H %d\n",
-                       ci->getDatafile().c_str(),
+                       ci.getDatafile().c_str(),
                        nC, nH);
             }
         }

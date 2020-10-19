@@ -50,9 +50,9 @@
  * \param[in] bCompress  Determines whether zlib compression is used when writing
  * \ingroup module_alexandria
  */
-void MolPropWrite(const char                       *fn,
-                  std::vector<alexandria::MolProp> *mpt,
-                  gmx_bool                          bCompress);
+void MolPropWrite(const char                             *fn,
+                  const std::vector<alexandria::MolProp> &mpt,
+                  gmx_bool                                bCompress);
 
 /*! \brief
  * Reads a vector of molprops from an XML file

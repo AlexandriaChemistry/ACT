@@ -122,16 +122,15 @@ static void sample_molecules(FILE                           *log,
                 auto  mci   = mol.SearchMolecularComposition(alexandria);
                 if (mci != mol.EndMolecularComposition())
                 {
-                    auto  flag = false;
-                    for (auto ani = mci->BeginAtomNum(); (!flag) && (ani < mci->EndAtomNum()); ++ani)
+                    for (auto &ani : mci->atomNumConst())
                     {
-                        if (atp->getType() == ani->getAtom())
+                        if (atp->getType() == ani.getAtom())
                         {
                             if ((std::find(sample.begin(), sample.end(), mol) == sample.end()))
                             {
                                 sample.push_back(mol);
-                                flag = true;
                                 nmol++;
+                                break;
                             }
                         }
                     }
@@ -328,7 +327,7 @@ int alex_molselect(int argc, char *argv[])
     {
         pargs.push_back(pa[i]);
     }
-    mgn.addOptions(&pargs, etuneNR);
+    mgn.addOptions(&pargs, etuneNone);
     if (!parse_common_args(&argc, 
                            argv, 
                            PCA_CAN_VIEW, 
@@ -359,13 +358,9 @@ int alex_molselect(int argc, char *argv[])
              opt2fn("-f", NFILE, fnm),
              opt2fn_null("-d", NFILE, fnm),
              bZero,
-             opt_elem,
              gms, 
              true, 
              false, 
-             false,
-             false, 
-             true, 
              false, 
              nullptr,
              select_type);

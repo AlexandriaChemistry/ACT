@@ -3,12 +3,13 @@
 <ReferenceData>
   <String Name="type">beta</String>
   <String Name="unit">1/nm</String>
-  <Real Name="value">15</Real>
+  <Real Name="value">11</Real>
   <Real Name="originalValue">11</Real>
   <Real Name="minimum">8</Real>
   <Real Name="maximum">15</Real>
   <Real Name="uncertainty">0.25</Real>
   <Real Name="originalUncertainty">0.25</Real>
+  <UInt64 Name="ntrain">35</UInt64>
   <String Name="mutability">Bounded</String>
   <Bool Name="strict">false</Bool>
 </ReferenceData>

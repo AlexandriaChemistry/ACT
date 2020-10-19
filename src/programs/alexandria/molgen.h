@@ -62,7 +62,6 @@ enum eRMS {
     ermsEPOT    = 5,
     ermsForce2  = 6,
     ermsPolar   = 7,
-    ermsPENALTY = 8,
     ermsTOT     = 9,
     ermsNR      = 10
 };
@@ -74,19 +73,15 @@ namespace alexandria
 {
 
 enum eTune {
-    etuneEEM = 0,
-    etuneZETA = 1,
-    etuneFC = 2,
-    etuneNR = 3
+    etuneEEM, etuneFC, etuneNone
 };
 
 class AtomIndex
 {
     private:
-        std::string      name_;
-        int              count_;
-        bool             const_;
-        EempropsIterator eem_;
+        std::string  name_;
+        int          count_;
+        bool         const_;
     public:
         AtomIndex(const std::string name, bool bConst) :
             name_(name), count_(0), const_(bConst) {}
@@ -96,10 +91,6 @@ class AtomIndex
         int count() const { return count_; }
 
         bool isConst() const { return const_; }
-        
-        void setEemProps(EempropsIterator eem) { eem_ = eem; }
-    
-        EempropsIterator eemProps() const { return eem_; }
         
         void increment() { count_++; }
 
@@ -120,59 +111,45 @@ class AtomIndex
 using AtomIndexIterator      = typename std::vector<AtomIndex>::iterator;
 using AtomIndexConstIterator = typename std::vector<AtomIndex>::const_iterator;
 
-class IndexCount
+/*! \brief Convenience storage of parameters to optimize
+ */
+class OptimizationIndex
 {
-    private:
-        std::vector<AtomIndex> atomIndex_;
-        std::vector<int>       totCount_;
-    public:
-        IndexCount() {};
+ private:
+    //! The interaction type
+    InteractionType iType_;
+    //! The name of the parameter matching poldata
+    Identifier      parameterId_;
+    //! The type of parameter, eg. sigma, epsilon
+    std::string     parameterType_;
+ public:
+    /*! \brief Constructor
+     * \param[in] iType         The interaction type
+     * \param[in] parameterId   The identifier
+     * \param[in] parameterType The type
+     */
+    OptimizationIndex(InteractionType    iType,
+                      Identifier         parameterId,
+                      const std::string &parameterType) :
+        iType_(iType),parameterId_(parameterId), parameterType_(parameterType) {}
+    
+    //! Return the interaction type
+    InteractionType iType() const { return iType_; }
+    
+    //! Return the id
+    Identifier id() const { return parameterId_; }
+    
+    //! Return the type
+    const std::string type() const { return parameterType_; }
 
-        int nOpt() const
-        {
-            return std::count_if(atomIndex_.begin(), atomIndex_.end(),
-                                 [](AtomIndex ai) { return ai.isConst(); });
-        }
-        
-        int nConst() const { return atomIndex_.size() - nOpt(); }
-
-        int nName(const std::string &name) const;
-
-        void sumCount(t_commrec *cr);
-
-        int cleanIndex(int   minimum_data,
-                       FILE *fp);
-
-        void addName(const std::string &name,
-                     bool               bConst);
-
-        void incrementName(const std::string &name);
-
-        void decrementName(const std::string &name);
-
-        int count(const std::string &name);
-
-        bool isOptimized(const std::string &name);
-
-        std::vector<AtomIndex>::iterator beginIndex() { return atomIndex_.begin(); }
-
-        std::vector<AtomIndex>::iterator endIndex() { return atomIndex_.end(); }
-
-        std::vector<AtomIndex>::const_iterator beginIndex() const { return atomIndex_.begin(); }
-
-        std::vector<AtomIndex>::const_iterator endIndex() const { return atomIndex_.end(); }
-
-        std::vector<AtomIndex>::iterator findName(const std::string &name)
-        {
-            return std::find_if(atomIndex_.begin(), atomIndex_.end(),
-                                [name](const AtomIndex a)
-                                { return a.name().compare(name) == 0; });
-        }
+    //! Return a compound string representing the index
+    std::string name() const
+    {
+        return gmx::formatString("%s-%s-%s", interactionTypeToString(iType_).c_str(),
+                                 parameterId_.id().c_str(), parameterType_.c_str()); 
+    }
 };
-
-using IndexCountIterator      = typename std::vector<IndexCount>::iterator;
-using IndexCountConstIterator = typename std::vector<IndexCount>::const_iterator;
-
+    
 class MolGen
 {
     private:
@@ -181,15 +158,8 @@ class MolGen
         int                             maxESP_;
         int                             nexcl_;
         int                             nexcl_orig_;
-        real                            J0_min_;
-        real                            Chi0_min_;
-        real                            zeta_min_;
-        real                            alpha_min_;
-        real                            J0_max_;
-        real                            Chi0_max_;
-        real                            zeta_max_;
-        real                            alpha_max_;
         real                            watoms_;
+        eTune                           etune_;
         real                            qtol_;
         int                             qcycle_;
         real                            ener_[ermsNR] = { 0 };
@@ -205,13 +175,25 @@ class MolGen
         t_commrec                      *cr_;
         gmx::MDLogger                   mdlog_;
         t_inputrec                     *inputrec_;
-        IndexCount                      indexCount_;
         gmx_hw_info_t                  *hwinfo_;
         gmx_atomprop_t                  atomprop_;
         gmx::MDModules                  mdModules_;
         std::vector<alexandria::MyMol>  mymol_;
         const char                     *lot_;
+        /*! \brief Check that we have enough data 
+         * Check that we have enough data for all parameters to optimize
+         * in this molecule.
+         * \param[in] fp File to print logging information to. May be nullptr.
+         */
+        void checkDataSufficiency(FILE *fp);
+        /*! \brief Generate optIndex
+         * \param[in] fp File to print logging information to. May be nullptr.
+         */
+        void generateOptimizationIndex(FILE *fp);
+
     public:
+        std::vector<OptimizationIndex>  optIndex_;
+        std::map<InteractionType, bool> iOpt_;
 
         /*! \brief 
          * Constructor of MolGen class.
@@ -223,21 +205,12 @@ class MolGen
          */
         ~MolGen();
 
-        /*! \brief 
-         * Return the indexCount.
-         */
-        IndexCount *indexCount() { return &indexCount_; }
-
         //! \brief Add options to the command line
         void addOptions(std::vector<t_pargs> *pargs, eTune etune);
 
         //! \brief Process options after parsing
         void optionsFinished();
 
-        //! \brief Check that we have enough data for all parameters tp optimize. 
-        immStatus check_data_sufficiency(alexandria::MyMol  mymol,
-                                         IndexCount        *ic);
-                                         
         //! \brief Return the poldata as const variable
         const Poldata *poldata() const { return &pd_; }
         
@@ -292,30 +265,6 @@ class MolGen
         const char *lot() const { return lot_; }
 
         void setFinal() { bFinal_ = true; }
-        
-        //! \brief Return lower boundary for Gaussian and Slater exponent.
-        double zetaMin() const { return zeta_min_; }
-        
-        //! \brief Return upper boundary for Gaussian and Slater exponent.
-        double zetaMax() const { return zeta_max_; }
-        
-        //! \brief Return lower boundary for polarizability
-        double alphaMin() const { return alpha_min_; }
-        
-        //! \brief Return upper boundary for polarizability
-        double alphaMax() const { return alpha_max_; }
-        
-        //! \brief Return lower boundary for atomic hardness.
-        double J0Min() const { return J0_min_; }
-        
-        //! \brief Return upper boundary for atomic hardness.
-        double J0Max() const { return J0_max_; }
-        
-        //! \brief Return lower boundary for atomic electronegativity.
-        double chi0Min() const { return Chi0_min_; }
-        
-        //! \brief Return upper boundary for atomic electronegativity.
-        double chi0Max() const { return Chi0_max_; }
         
         //! \brief Return the number of compounds in the data set
         int nMolSupport() const { return nmol_support_; }
@@ -393,13 +342,9 @@ class MolGen
                   const char      *fn,
                   const char      *pd_fn,
                   gmx_bool         bZero,
-                  char            *opt_elem,
                   const MolSelect &gms,
-                  gmx_bool         bCheckSupport,
-                  bool             bPairs,
-                  bool             bDihedral,
+                  bool             bCheckSupport,
                   bool             bZPE,
-                  bool             bFitZeta,
                   bool             bDHform,
                   const char      *tabfn,
                   iMolSelect       SelectType);

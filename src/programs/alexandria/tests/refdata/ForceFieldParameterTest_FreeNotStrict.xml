@@ -9,6 +9,7 @@
   <Real Name="maximum">18</Real>
   <Real Name="uncertainty">0.29999999999999999</Real>
   <Real Name="originalUncertainty">0.29999999999999999</Real>
+  <UInt64 Name="ntrain">13</UInt64>
   <String Name="mutability">Free</String>
   <Bool Name="strict">false</Bool>
 </ReferenceData>

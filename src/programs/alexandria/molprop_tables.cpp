@@ -429,7 +429,7 @@ void alexandria_molprop_composition_table(FILE                 *fp,
             {
                 qbuf[0] = '\0';
             }
-            char buf[1024];
+            char buf[STRLEN];
             snprintf(buf, STRLEN, "%3d. %s%s & %s & ",
                      ++iline,
                      mpi->getIupac().c_str(),
@@ -597,17 +597,6 @@ static void alexandria_molprop_atomtype_polar_table(FILE                       *
             }
 
             /* Determine Miller and Bosque polarizabilities for this Alexandria element */
-            ahc = ahp = bos_pol = 0;
-            std::string aequiv;
-            if (1 == pd->getMillerPol(pType->getMiller(), &atomnumber, &ahc, &ahp, aequiv))
-            {
-                ahc = (4.0/atomnumber)*gmx::square(ahc);
-            }
-            if (0 == pd->getBosquePol(pType->getBosque(), &bos_pol))
-            {
-                bos_pol = 0;
-            }
-
             size_t      pos   = pType->getType().find("p_");
             std::string ptype = pType->getType();
             if (pos != std::string::npos)
@@ -619,8 +608,6 @@ static void alexandria_molprop_atomtype_polar_table(FILE                       *
                      (nexp > 0)     ? gmx_itoa(nexp).c_str()     : "-",
                      (pType->getPolarizability() > 0)  ? gmx_ftoa(pType->getPolarizability()).c_str()  : "-",
                      (pType->getSigPol() > 0)  ? gmx_ftoa(pType->getSigPol()).c_str() : "-",
-                     (ahc > 0)         ? gmx_ftoa(ahc).c_str()         : "-",
-                     (ahp > 0)         ? gmx_ftoa(ahp).c_str()         : "-",
                      (bos_pol > 0)     ? gmx_ftoa(bos_pol).c_str()     : "-");
             lt.printLine(longbuf);
         }

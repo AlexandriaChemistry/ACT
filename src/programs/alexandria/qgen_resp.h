@@ -45,7 +45,7 @@
 
 #include "molprop.h"
 #include "poldata.h"
-#include "qgen_resp_atom.h"
+//#include "qgen_resp_atom.h"
 
 struct gmx_output_env_t;
 struct t_atoms;
@@ -77,19 +77,19 @@ class EspPoint
 
     private:
         //! The coordinates of a point
-        gmx::RVec esp_;
+        gmx::RVec esp_   = { 0, 0,  0};
         //! The measured potential
-        double    v_;
+        double    v_     = 0;
         //! The calculated potential
-        double    vCalc_;
+        double    vCalc_ = 0;
         //! The electron density in the point
-        double    rho_;
+        double    rho_   = 0;
 };
 
 class QgenResp
 {
     public:
-        QgenResp();
+        QgenResp() {}
 
         //! Copy constructor
         QgenResp(const QgenResp *src);
@@ -113,15 +113,15 @@ class QgenResp
 
         void setMolecularCharge(int qtot) { qtot_ = qtot; }
 
-        size_t nRespAtom() const { return ra_.size(); }
-
-        size_t nRespAtomType() const { return ratype_.size(); }
-
         size_t nEsp() const { return ep_.size(); }
 
         std::vector<EspPoint> &espPoint() {return ep_; }
 
         void summary(FILE *gp);
+#ifdef OLDER
+        size_t nRespAtom() const { return ra_.size(); }
+
+        size_t nRespAtomType() const { return ratype_.size(); }
 
         RespAtomTypeIterator beginRAT() { return ratype_.begin(); }
 
@@ -144,13 +144,15 @@ class QgenResp
                                 [atype](RespAtomType const &rat)
                                 { return rat.getAtype() == atype; });
         }
+#endif
+        void setAtomInfo(t_atoms                          *atoms,
+                         const Poldata                    *pd,
+                         const gmx::HostVector<gmx::RVec> &x,
+                         const int                         qtotal);
 
-        void setAtomInfo(t_atoms                         *atoms,
-                         const Poldata                   *pd,
-                         const gmx::HostVector<gmx::RVec> x,
-                         const int                        qtotal);
-
-        void updateAtomCoords(const gmx::HostVector<gmx::RVec> x);
+        int natoms() const { return nAtom_; }
+        
+        void updateAtomCoords(const gmx::HostVector<gmx::RVec> &x);
 
         void updateAtomCharges(t_atoms  *atoms);
 
@@ -179,7 +181,7 @@ class QgenResp
 
         void calcRms();
 
-        real getRms(real *wtot, real *rrms, real *cosangle);
+        real getRms(real *rrms, real *cosangle);
 
         void plotLsq(const gmx_output_env_t *oenv,
                      const char             *ESPcorr);
@@ -243,48 +245,52 @@ class QgenResp
                      const char             *pdbdiff,
                      const gmx_output_env_t *oenv);
 
-        //! Return the net charge for an atom
-        double getAtomCharge(int atom) const;
-
         real myWeight(int iatom) const;
 
         void updateZeta(t_atoms *atoms, const Poldata *pd);
+        //! Return the charge for one particle
+        double getCharge(int atom) const { return q_[atom]; }
+
+        double getZeta(int atom) const { return zeta_[atom]; }
+
 
     private:
-        //! Return the charge for one "shell" of an atom
-        double getCharge(int atom, size_t zz) const;
+        void setCharge(int atom, double q) { q_[atom] = q; }
 
-        double getZeta(int atom, int zz) const;
+        void setZeta(int atom, double zeta) { zeta_[atom] = zeta; }
 
-        void setCharge(int atom, int zz, double q);
-
-        void setZeta(int atom, int zz, double zeta);
-
-        double calcPenalty();
-
-        ChargeType                ChargeType_;
-        double                    watoms_;
-        int                       qtot_;
-        int                       qshell_;
-        double                    rms_, rrms_, cosangle_;
-        double                    penalty_, pfac_, wtot_;
-        dvec                      origin_, space_;
-        bool                      bFitZeta_;
-        bool                      bRandZeta_, bRandQ_;
-        ivec                      nxyz_;
-        real                      qfac_, zmin_, zmax_, deltaZ_, qmin_, qmax_, rDecrZeta_;
-        int                       uniqueQ_;
-        int                       fitQ_;
-        int                       nAtom_;
-        int                       nShell_;
+        ChargeType                ChargeType_  = eqtPoint;
+        double                    watoms_      = 0;
+        int                       qtot_        = 0;
+        double                    qshell_      = 0;
+        double                    rms_         = 0;
+        double                    rrms_        = 0;
+        double                    cosangle_    = 0;
+        dvec                      origin_      = { 0, 0, 0 };
+        dvec                      space_       = { 0, 0, 0 };
+        ivec                      nxyz_        = { 0, 0, 0 };
+        int                       uniqueQ_     = 0;
+        int                       fitQ_        = 0;
+        int                       nAtom_       = 0;
+        int                       nParticle_   = 0;
+        int                       nFixed_      = 0;
 
         //! Total number of parameters
+#ifdef OLDER
         std::vector<RespAtom>     ra_;
         std::vector<RespAtomType> ratype_;
-        std::vector<std::string>  dzatoms_;
-        std::string               stoichiometry_;
-        std::vector<EspPoint>     ep_;
-        std::vector<int>          symmetricAtoms_;
+#endif
+        std::vector<double>        q_;
+        std::vector<double>        zeta_;
+        std::vector<int>           atomnumber_;
+        std::vector<int>           row_;
+        std::vector<bool>          mutable_;
+        std::vector<int>           ptype_;
+        gmx::HostVector<gmx::RVec> x_;
+        std::vector<std::string>   dzatoms_;
+        std::string                stoichiometry_;
+        std::vector<EspPoint>      ep_;
+        std::vector<int>           symmetricAtoms_;
 };
 
 } // namespace

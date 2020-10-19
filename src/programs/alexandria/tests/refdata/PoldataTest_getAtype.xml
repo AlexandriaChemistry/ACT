@@ -4,9 +4,8 @@
   <String Name="elem">H</String>
   <String Name="desc">hydrogen on aliphatic C with 1 electron-withdrawal group</String>
   <String Name="type">h1</String>
-  <String Name="ptype">p_ha</String>
-  <String Name="btype">b_h1</String>
-  <String Name="ztype">z_h1</String>
-  <String Name="vdwparams">2.471350e-01 6.568880e-02 1.300000e+01</String>
-  <String Name="refEnthalpy">222.2325</String>
+  <String Name="ptype">h1_s</String>
+  <String Name="btype">h1_b</String>
+  <String Name="ztype">h1_z</String>
+  <String Name="refEnthalpy">222.232</String>
 </ReferenceData>

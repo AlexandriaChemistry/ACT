@@ -185,12 +185,8 @@ class Optimization : public MolGen, Bayes
     using param_type = std::vector<double>;
 
     private:
-        std::vector<ForceConstants> ForceConstants_;
-        NonBondParams               NonBondParams_;
-        int                         iOpt_[eitNR]      = { 0 };
-        bool                        optimizeGeometry_ = false;
-        std::vector<PoldataUpdate>  poldataUpdates_;
-        real                        factor_           = 1;
+        std::map<InteractionType, ForceConstants> ForceConstants_;
+        std::vector<PoldataUpdate>                poldataUpdates_;
         bool                        bDissoc_          = true;
         real                        w_dhf_            = 1;
         const char                 *lot_              = nullptr;
@@ -204,16 +200,7 @@ class Optimization : public MolGen, Bayes
          *
          * Constructor
          */
-        Optimization()
-        {
-            iOpt_[eitBONDS] = 1;
-        };
-
-        /*! \brief
-         *
-         * Destructor
-         */
-        ~Optimization() {};
+        Optimization() {};
 
         /*! \brief
          * Add command line options.
@@ -228,8 +215,6 @@ class Optimization : public MolGen, Bayes
             setBoxConstraint(bConstrain());
         }
 
-        int iOpt(int itype) { return iOpt_[itype]; }
-    
         void setCalcAll(bool calcAll) { calcAll_ = calcAll; }
 
         //! \brief Return the level of theory used as reference
@@ -248,10 +233,11 @@ class Optimization : public MolGen, Bayes
         /*! \brief
          *
          * Fill parameter vector using ForceConstants which
-         * is built based on Poldata.
-         * \param[in] factor Scaling factor for parameters
+         * is built based on Poldata. Will generate parameters
+         * within the bounds set or free, depening in the input in gentop.dat file.
+         * \param[in] bRandom Whether or not to generate random parameters 
          */
-        void polData2TuneFc(real factor, bool Brandom);
+        void polData2TuneFc(bool bRandom);
 
         /*! \brief
          *
@@ -357,9 +343,10 @@ CommunicationStatus Optimization::Send(t_commrec *cr, int dest)
         gmx_send_int(cr, dest, ForceConstants_.size());
         for (auto &fc : ForceConstants_)
         {
-            fc.Send(cr, dest);
+            std::string itype(interactionTypeToString(fc.first));
+            gmx_send_str(cr, dest, &itype);
+            fc.second.Send(cr, dest);
         }
-        NonBondParams_.Send(cr, dest);
     }
     return cs;
 }
@@ -374,14 +361,15 @@ CommunicationStatus Optimization::Receive(t_commrec *cr, int src)
 
         for (int n = 0; (CS_OK == cs) && (n < nfc); n++)
         {
+            std::string itype;
+            gmx_recv_str(cr, src, &itype);
             alexandria::ForceConstants fc;
             cs = fc.Receive(cr, src);
             if (CS_OK == cs)
             {
-                ForceConstants_.push_back(fc);
+                ForceConstants_.insert({stringToInteractionType(itype), fc});
             }
         }
-        cs = NonBondParams_.Receive(cr, src);
     }
     return cs;
 }
@@ -392,22 +380,8 @@ void Optimization::add_pargs(std::vector<t_pargs> *pargs)
     {
         { "-dissoc",  FALSE, etBOOL, {&bDissoc_},
           "Derive dissociation energy from the enthalpy of formation. If not chosen, the dissociation energy will be read from the gentop.dat file." },
-        { "-opt_geom", FALSE, etBOOL, {&optimizeGeometry_},
-          "Optimize bond lengths, angles and dihedral angles" },
         { "-weight_dhf", FALSE, etREAL, {&w_dhf_},
-          "Fitting weight of the minimum energy structure, representing the enthalpy of formation relative to high energy structures." },
-        { "-angles",  FALSE, etINT, {&(iOpt_[eitANGLES])},
-          "Optimize angle parameters" },
-        { "-langles", FALSE, etINT, {&(iOpt_[eitLINEAR_ANGLES])},
-          "Optimize linear angle parameters" },
-        { "-dihedrals", FALSE, etINT, {&(iOpt_[eitPROPER_DIHEDRALS])},
-          "Optimize proper dihedral parameters" },
-        { "-impropers", FALSE, etINT, {&(iOpt_[eitIMPROPER_DIHEDRALS])},
-          "Optimize improper dihedral parameters" },
-        { "-vdw", FALSE, etINT, {&(iOpt_[eitVDW])},
-          "Optimize van der Waals parameters" },
-        { "-factor", FALSE, etREAL, {&factor_},
-          "Parameters will be taken within the limit factor*x - x/factor." }
+          "Fitting weight of the minimum energy structure, representing the enthalpy of formation relative to high energy structures." }
     };
     for (size_t i = 0; i < sizeof(pa)/sizeof(pa[0]); i++)
     {
@@ -471,7 +445,7 @@ void Optimization::broadcast()
     {
         if (nullptr != debug)
         {
-            fprintf(debug, "Updating ForceConstants and NonBondParams on node %d\n",
+            fprintf(debug, "Updating ForceConstants on node %d\n",
                     cr->nodeid);
         }
         Receive(cr, src);
@@ -493,16 +467,12 @@ void Optimization::checkSupport(FILE *fp)
         }
 
         bool bSupport = true;
-        for (int bt = 0; bSupport && (bt < eitNR); bt++)
+        for (auto &bt : iOpt_) 
         {
-            if (iOpt_[bt])
+            if (bSupport && bt.second)
             {
-                auto iType = static_cast<InteractionType>(bt);
+                auto iType = bt.first;
                 auto fs    = poldata()->findForces(iType);
-                if (fs == poldata()->forcesEnd())
-                {
-                    continue;
-                }
                 int ft     = fs->fType();
                 bSupport   = (mymol->ltop_ != nullptr);
                 for (int i = 0; (i < mymol->ltop_->idef.il[ft].nr) && bSupport;
@@ -525,7 +495,9 @@ void Optimization::checkSupport(FILE *fp)
                     }
                     if (bSupport)
                     {
-                        bSupport = fs->findForce(atoms) != fs->forceEnd();
+                        // TODO: Check whether true is correct
+                        Identifier bondId(atoms, CanSwap::Yes);
+                        bSupport = fs->parameterExists(bondId);
                     }
                 }
             }
@@ -553,34 +525,20 @@ void Optimization::checkSupport(FILE *fp)
     }
 }
 
-void Optimization::polData2TuneFc(real factor, bool bRandom)
+void Optimization::polData2TuneFc(bool bRandom)
 {
     for (auto &fc : ForceConstants_)
     {
-        for (auto b = fc.beginBN(); b  < fc.endBN(); ++b)
+        auto fs = poldata()->findForces(fc.first);
+        for (auto &b : fc.second.bondNamesConst())
         {
-            if (optimizeGeometry_)
-            {
-                Bayes::addParam(b->geometry(), factor, bRandom);
+            ForceFieldParameterMap *ptr = fs->findParameters(b.first);
+            for (auto &p : *ptr)
+            { 
+                Bayes::addParam("test",
+                                p.second.value(), p.second.minimum(),
+                                p.second.maximum(), bRandom);
             }
-            for (const auto &p : b->paramValues())
-            {
-                if (fc.ftype() == F_FOURDIHS)
-                {
-                    Bayes::addParam(p, -10, 10, bRandom);
-                }
-                else
-                {
-                    Bayes::addParam(p, factor, bRandom);
-                }
-            }
-        }
-    }
-    for (auto at = NonBondParams_.beginAT(); at < NonBondParams_.endAT(); ++at)
-    {
-        for (const auto &p : at->paramValues())
-        {
-            Bayes::addParam(p, factor, bRandom);
         }
     }
     if (debug)
@@ -597,50 +555,22 @@ void Optimization::toPolData(const std::vector<bool> &changed)
     auto param = Bayes::getParam();
     for (auto &fc : ForceConstants_)
     {
-        const auto iType = fc.interactionType();
-        for (auto b = fc.beginBN(); b  < fc.endBN(); ++b)
+        const auto iType = fc.first;
+        for (auto &b : fc.second.bondNames())
         {
-            std::string paramString;
-            // Check for geometry changes
-            bool        bondChanged = false;
-            double      geometry    = 0;
-            if (optimizeGeometry_)
-            {
-                bondChanged = changed[n];
-                geometry    = param[n++]; 
-            }
-            for (size_t p = 0; p < b->nParams(); p++)
+            std::vector<double> parameterValues;
+            bool                bondChanged = false;
+            for (size_t p = 0; p < b.second.nParams(); p++)
             {
                 bondChanged = bondChanged || changed[n];
-                paramString.append(gmx::formatString(" %g", param[n++]));
+                parameterValues.push_back(param[n++]);
             }
             if (bondChanged)
             {
-                b->setParamString(paramString);
-                poldataUpdates_.push_back(PoldataUpdate(iType, 
-                                                        b->poldataIndex(),
-                                                        geometry,
-                                                        paramString));
+                b.second.setParameterValues(parameterValues);
+                poldataUpdates_.push_back(PoldataUpdate(iType, b.first,
+                                                        parameterValues));
             }
-        }
-    }
-    for (auto at = NonBondParams_.beginAT(); at < NonBondParams_.endAT(); ++at)
-    {
-        bool        bondChanged = false;
-        double      geometry    = 0;
-        std::string paramString;
-        for (size_t p = 0; p < at->nParams(); p++)
-        {
-            bondChanged = bondChanged || changed[n];
-            paramString.append(gmx::formatString(" %g", param[n++]));
-        }
-        if (bondChanged)
-        {
-            at->setParamString(paramString);
-            poldataUpdates_.push_back(PoldataUpdate(eitVDW,
-                                                    at->poldataIndex(),
-                                                    geometry,
-                                                    paramString));
         }
     }
     GMX_RELEASE_ASSERT(n == param.size(), "Number of parameters set should be equal to the length of the parameter array");
@@ -670,48 +600,38 @@ void Optimization::getDissociationEnergy(FILE *fplog)
     fprintf(fplog, "There are %d (experimental) reference heat of formation.\n", nMol);
 
     auto fs  = poldata()->findForces(eitBONDS);
-    auto ftb = fs->fType();
     auto j   = 0;
 
-    for (auto mymol =  mymols().begin(); mymol <  mymols().end(); mymol++, j++)
+    for (auto &mymol :  mymols())
     {
-        for (auto i = 0; i < mymol->ltop_->idef.il[ftb].nr;
-             i += interaction_function[ftb].nratoms+1)
+        for (auto &b : mymol.bonds())
         {
-            auto                     ai = mymol->ltop_->idef.il[ftb].iatoms[i+1];
-            auto                     aj = mymol->ltop_->idef.il[ftb].iatoms[i+2];
-            std::string              aai, aaj;
-            std::vector<std::string> atoms;
-            if (poldata()->atypeToBtype(*mymol->atoms_->atomtype[ai], &aai) &&
-                poldata()->atypeToBtype(*mymol->atoms_->atomtype[aj], &aaj))
+            const char *atypeI = *mymol.atoms_->atomtype[b.getAi()];
+            const char *atypeJ = *mymol.atoms_->atomtype[b.getAj()];
+            std::string btypeI, btypeJ;
+            if (poldata()->atypeToBtype(atypeI, &btypeI) &&
+                poldata()->atypeToBtype(atypeJ, &btypeJ))
             {
-                atoms  = {aai, aaj};
-                auto f = fs->findForce(atoms);
-                if (fs->forceEnd() != f)
+                Identifier bondId({btypeI, btypeJ}, b.getBondOrder(), CanSwap::Yes);
+                auto f   = fs->findParameterTypeConst(bondId, "Dm");
+                auto gt  = f.index();
+                auto gti = ForceConstants_[eitBONDS].reverseIndex(gt);
+                a.set(gti, j, a.get(gti, j) + 1);
+                a_copy.set(gti, j, a.get(gti, j));
+                ntest[gti]++;
+                if (ctest[gti].empty())
                 {
-                    auto  gt  = f - fs->forceBegin();
-                    auto  gti = ForceConstants_[eitBONDS].reverseIndex(gt);
-                    a.set(gti, j, a.get(gti, j) + 1);
-                    a_copy.set(gti, j, a.get(gti, j));
-                    ntest[gti]++;
-                    if (ctest[gti].empty())
-                    {
-                        char buf[STRLEN];
-                        snprintf(buf, sizeof(buf), "%s-%s", aai.c_str(), aaj.c_str());
-                        ctest[gti].assign(buf);
-                    }
+                    ctest[gti].assign(bondId.id());
                 }
             }
             else
             {
-                gmx_fatal(FARGS, "No parameters for bond %s-%s in the force field, atoms %s-%s mol %s",
-                          aai.c_str(), aaj.c_str(),
-                          *mymol->atoms_->atomtype[ai],
-                          *mymol->atoms_->atomtype[aj],
-                          mymol->getIupac().c_str());
+                gmx_fatal(FARGS, "No parameters for bond in the force field, atoms %s-%s mol %s",
+                          atypeI, atypeJ,
+                          mymol.getIupac().c_str());
             }
         }
-        rhs.push_back(-mymol->Emol_);
+        rhs.push_back(-mymol.Emol_);
     }
 
     char buf[STRLEN];
@@ -740,41 +660,36 @@ void Optimization::getDissociationEnergy(FILE *fplog)
         }
     }
 
-    auto i = 0;
-    for (auto b = ForceConstants_[eitBONDS].beginBN();
-         b < ForceConstants_[eitBONDS].endBN(); ++b)
+    int i = 0;
+    for (auto &b : ForceConstants_[eitBONDS].bondNames())
     {
-        const auto       atoms = gmx::splitString(b->name());
-        auto             fs    = poldata()->findForces(eitBONDS);
-        auto             f     = fs->findForce(atoms);
-        GMX_RELEASE_ASSERT(fs->forceEnd() != f, "Cannot find my bonds");
-        const auto       pp    = gmx::splitString(b->paramString());
-        char             buf[256];
-
-        if (!f->fixed())
+        auto fs = poldata()->findForces(eitBONDS);
+        for(auto &fp : *(fs->findParameters(b.first)))
         {
-            /* TODO: De is assumed to be the first parameter. Please fix. */
-            snprintf(buf, sizeof(buf), "%.2f  %s", std::max(100.0, Edissoc[i]), pp[1].c_str());
-            f->setParams(buf);
-            b->setParamString(buf);
-            i++;
+            if (fp.second.mutability() == Mutability::Free ||
+                fp.second.mutability() == Mutability::Bounded)
+            {
+                if (fp.first == "De")
+                {
+                    fp.second.setValue(std::max(100.0, Edissoc[i++]));
+                }
+            }
         }
     }
 }
 
 void Optimization::InitOpt(FILE *fplog, bool bRandom)
 {
-    for (auto fs = poldata()->forcesBegin();
-         fs != poldata()->forcesEnd(); ++fs)
+    for (auto fs : poldata()->forcesConst())
     {
-        int bt = static_cast<int>(fs->iType());
-        if (iOpt_[bt])
+        auto bt = iOpt_.find(fs.first);
+        if (bt != iOpt_.end() && bt->second)
         {
-            ForceConstants fc(fs->fType(), fs->iType(), iOpt_[bt]);
-            fc.analyzeIdef(mymols(), poldata(), optimizeGeometry_);
+            ForceConstants fc(fs.second.fType(), fs.first, bt->second);
+            fc.analyzeIdef(mymols(), poldata());
             fc.makeReverseIndex();
             fc.dump(fplog);
-            ForceConstants_.push_back(std::move(fc));
+            ForceConstants_.insert({fs.first, std::move(fc)});
         }
     }
     if (bDissoc_)
@@ -794,14 +709,7 @@ void Optimization::InitOpt(FILE *fplog, bool bRandom)
         }
     }
     
-    if (iOpt_[eitVDW])
-    {
-        NonBondParams_.setOpt(true);
-        NonBondParams_.analyzeIdef(mymols(), poldata());
-        NonBondParams_.makeReverseIndex();
-        NonBondParams_.dump(fplog);
-    }
-    polData2TuneFc(factor_, bRandom);
+    polData2TuneFc(bRandom);
 }
 
 double Optimization::calcDeviation()
@@ -838,19 +746,14 @@ double Optimization::calcDeviation()
             double   optHF;
             if (mymol.getOptHF(&optHF))
             {
-                for (const auto fc : ForceConstants_)
+                for (const auto &fc : ForceConstants_)
                 {
-                    if (fc.nbad() > 0)
+                    if (fc.second.nbad() > 0)
                     {
-                        mymol.UpdateIdef(poldata(), fc.interactionType());
+                        mymol.UpdateIdef(poldata(), fc.first);
                     }
                 }
 
-                if (NonBondParams_.nAT() > 0)
-                {
-                    mymol.UpdateIdef(poldata(),
-                                     NonBondParams_.interactionType());
-                }
                 mymol.f_.resizeWithPadding(natoms);
                 mymol.optf_.resizeWithPadding(natoms);
                 int  molid          = mymol.getIndex();
@@ -865,15 +768,14 @@ double Optimization::calcDeviation()
                 }
                 molEnergyEntry->second.clear();
                 // Now loop over experiments!
-                for (auto ei = mymol.BeginExperiment();
-                     ei < mymol.EndExperiment(); ++ei)
+                for (auto &ei : mymol.experimentConst())
                 {
-                    auto jtype = ei->getJobtype();
+                    auto jtype = ei.getJobtype();
                     // Exclude other experimental data points!
                     if (jtype == JOB_OPT || jtype == JOB_SP)
                     {
                         double spHF;
-                        if (!ei->getHF(&spHF))
+                        if (!ei.getHF(&spHF))
                         {
                             continue;
                         }
@@ -891,7 +793,7 @@ double Optimization::calcDeviation()
                             gmx_fatal(FARGS, "Energy mismatch for %s. spHF = %g (%s) optHF = %g",
                                       mymol.getMolname().c_str(),
                                       spHF,
-                                      ei->getDatafile().c_str(),
+                                      ei.getDatafile().c_str(),
                                       optHF);
                         }
                         double deltaEalex = mymol.enerd_->term[F_EPOT] - mymol.Emol_;
@@ -920,7 +822,7 @@ double Optimization::calcDeviation()
                             int angleType = poldata()->findForces(eitANGLES)->fType();
                             int pdihType  = poldata()->findForces(eitPROPER_DIHEDRALS)->fType();
                             int idihType  = poldata()->findForces(eitIMPROPER_DIHEDRALS)->fType();
-                            int vdwType   = poldata()->getVdwFtype();
+                            int vdwType   = poldata()->findForces(eitVDW)->fType();
                             fprintf(debug, "spHF: %g  optHF: %g  deltaRef: %g  deltaEalex: %g\n",
                                     spHF, optHF, deltaEref, deltaEalex);
                             fprintf(debug, "%s Chi2 %g Morse %g  "
@@ -1090,9 +992,9 @@ void Optimization::printMolecules(FILE *fp,
     for (auto &mi : mymols())
     {
         int nSP = 0, nOpt = 0;
-        for (auto ei = mi.BeginExperiment(); ei < mi.EndExperiment(); ++ei)
+        for (auto &ei : mi.experimentConst())
         {
-            auto jtype = ei->getJobtype();
+            auto jtype = ei.getJobtype();
             if (jtype == JOB_SP)
             {
                 nSP += 1;
@@ -1394,13 +1296,9 @@ int alex_tune_fc(int argc, char *argv[])
              opt2fn("-f", NFILE, fnm),
              opt2fn_null("-d", NFILE, fnm),
              bZero,
-             nullptr,
              gms,
-             false,
-             false,
-             opt.iOpt(eitPROPER_DIHEDRALS),
+             true,
              bZPE,
-             false,
              true,
              tabfn,
              select_type);

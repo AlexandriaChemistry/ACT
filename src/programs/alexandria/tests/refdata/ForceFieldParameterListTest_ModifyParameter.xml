@@ -1,7 +1,15 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <String Name="function">Improper</String>
+  <String Name="function">IDIHS</String>
+  <String Name="atom1">c2</String>
+  <String Name="atom2">h3</String>
   <Real Name="IntermediateValue">14</Real>
   <Real Name="MaxValue">18</Real>
+  <Real Name="Before">12</Real>
+  <Real Name="After">24</Real>
+  <Real Name="Original">12</Real>
+  <String Name="atom3">c3</String>
+  <Real Name="OriginalValue">0.20000000000000001</Real>
+  <Real Name="UnchangedValue">0.20000000000000001</Real>
 </ReferenceData>

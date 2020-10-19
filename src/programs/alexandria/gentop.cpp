@@ -113,9 +113,6 @@ int alex_gentop(int argc, char *argv[])
     };
     gmx_output_env_t                *oenv;
     gmx_atomprop_t                   aps;
-    std::vector<alexandria::MolProp> mps;
-    alexandria::MolPropIterator      mpi;
-    alexandria::MyMol                mymol;
     immStatus                        imm;
 
     t_filenm                         fnm[] = {
@@ -297,6 +294,7 @@ int alex_gentop(int argc, char *argv[])
         fprintf(stderr, "         to %d (command line), Please check your output carefully.\n", nexcl);
         pd.setNexcl(nexcl);
     }
+    alexandria::MyMol                mymol;
     if (strlen(dbname) > 0)
     {
         const char *molpropDatabase = opt2fn_null("-mpdb", NFILE, fnm);
@@ -309,6 +307,8 @@ int alex_gentop(int argc, char *argv[])
             printf("Looking up %s in molecule database %s.\n",
                    dbname, molpropDatabase);
         }
+        alexandria::MolPropIterator      mpi;
+        std::vector<alexandria::MolProp> mps;
         MolPropRead(molpropDatabase, &mps);
         for (mpi = mps.begin(); (mpi < mps.end()); mpi++)
         {
@@ -321,44 +321,32 @@ int alex_gentop(int argc, char *argv[])
         {
             gmx_fatal(FARGS, "Molecule %s not found in database", dbname);
         }
-        mymol.Merge(mpi);
+        mymol.Merge(&(*mpi));
     }
     else
     {
-        std::string fnm = filename;
-        auto fns = gmx::splitString(fnm);
         if (strlen(molnm) == 0)
         {
             molnm = (char *)"MOL";
         }
-        if (fns.size() > 0)
+        alexandria::MolProp  mp;
+        if (readBabel(filename,
+                      &mp,
+                      molnm,
+                      iupac,
+                      conf,
+                      basis.c_str(),
+                      maxpot,
+                      nsymm,
+                      jobtype,
+                      qtot,
+                      addHydrogens))
         {
-            for (auto &i : fns)
-            {
-                alexandria::MolProp  mp;
-                if (readBabel(i.c_str(),
-                              &mp,
-                              molnm,
-                              iupac,
-                              conf,
-                              basis.c_str(),
-                              maxpot,
-                              nsymm,
-                              jobtype,
-                              qtot,
-                              addHydrogens))
-                {
-                    mps.push_back(mp);
-                }
-            }
+            mymol.Merge(&mp);
         }
         else
         {
             gmx_fatal(FARGS, "No input file has been specified.");
-        }
-        for (auto mpi = mps.begin(); mpi < mps.end(); mpi++)
-        {
-            mymol.Merge(mpi);
         }
     }
     mymol.SetForceField(ff[0]);
@@ -376,12 +364,13 @@ int alex_gentop(int argc, char *argv[])
                                  false,
                                  tabfn);
 
-    mymol.symmetrizeCharges(&pd, aps, bQsym, symm_string);
-    maxpot = 100; // Use 100 percent of the ESP read from Gaussian file.
-    
-    mymol.initQgenResp(&pd, method, basis, &mylot, 0.0, maxpot);
     if (immOK == imm)
     {
+        mymol.symmetrizeCharges(&pd, aps, bQsym, symm_string);
+        maxpot = 100; // Use 100 percent of the ESP read from Gaussian file.
+    
+        mymol.initQgenResp(&pd, method, basis, &mylot, 0.0, maxpot);
+
         imm    = mymol.GenerateCharges(&pd,
                                        mdlog,
                                        cr,

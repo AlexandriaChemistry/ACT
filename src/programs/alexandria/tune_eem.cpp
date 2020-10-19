@@ -68,6 +68,7 @@
 #include "poldata_tables.h"
 #include "poldata_xml.h"
 #include "tuning_utility.h"
+#include "units.h"
 
 namespace alexandria
 {
@@ -199,14 +200,9 @@ class OptACM : public MolGen, Bayes
         /*! \brief
          *
          * Fill parameter vector based on Poldata.
-         * \param[in] factor Scaling factor for parameters. The boundaries
-         *                   for allowed parameters are determined by the 
-         *                   starting value x, and they are 
-         *                   [x/factor, x*factor] assuming factor > 1.
-         *
          * \param[in] bRandom Generate random initial values for parameters if true
          */
-         void InitOpt(real factor, bool bRandom);
+        void InitOpt(bool bRandom);
 
         /*! \brief
          * Copy the optimization parameters to the poldata structure
@@ -215,14 +211,6 @@ class OptACM : public MolGen, Bayes
         virtual void toPolData(const std::vector<bool> gmx_unused &changed);
 
         virtual double calcDeviation();
-
-        /*! \brief
-         * Calculate the penalty for "non-chemical" values
-         * \param verbose If true, relevant information will be printed
-         *                to the logFile()
-         * \return penalty value
-         */ 
-        double calcPenalty(bool verbose);
 
         /*! \brief
          * Do the actual optimization.
@@ -301,60 +289,16 @@ double OptACM::calcDeviation()
             const param_type &param = Bayes::getParam();
             double            bound = 0;
             size_t            n     = 0;
-            auto *ic                = indexCount();
-            for (auto ai = ic->beginIndex(); ai < ic->endIndex(); ++ai)
+            for (auto &optIndex : optIndex_)
             {
-                if (ai->isConst())
-                {
-                    continue;
-                }
-                auto name = ai->name();
-                    
-                if (bFitChi_)
-                {
-                    auto J00  = param[n++];
-                    std::string label = name + " J00";
-                    bound    += l2_regularizer(J00, J0Min(), J0Max(),
-                                               label, verbose);
-                    if (strcasecmp(name.c_str(), fixchi()) != 0)
-                    {
-                        auto Chi0 = param[n++];
-                        label = name + " Chi0";
-                        bound    += l2_regularizer(Chi0, chi0Min(), chi0Max(),
-                                                   label, verbose);
-                    }
-                }
-                if (bFitZeta_)
-                {
-                    auto atype = poldata()->ztype2atype(name);
-                    auto nzeta = poldata()->getNzeta(atype);
-                    if ((nzeta == 2 && bSameZeta_) || bPointCore_)
-                    {
-                        nzeta = 1;
-                    }
-                    for (auto zz = 0; zz < nzeta; zz++)
-                    {
-                        auto zeta = param[n++];
-                        std::string label = name + " Zeta";
-                        bound += l2_regularizer(zeta, zetaMin(), zetaMax(),
-                                                label, verbose);
-                    }
-                }
-                if (bFitAlpha_ || weight(ermsPolar))
-                {
-                    auto alpha = param[n++];
-                    std::string label = name + " Alpha"; 
-                    bound += l2_regularizer(alpha, alphaMin(), alphaMax(),
-                                            label, verbose);
-                }
+                auto p = poldata()->findForcesConst(optIndex.iType()).findParameterTypeConst(optIndex.id(), optIndex.type());
+
+                bound  += l2_regularizer(param[n++], p.minimum(), p.maximum(),
+                                         optIndex.name(), verbose);
             }
             increaseEnergy(ermsBOUNDS, bound);
             GMX_RELEASE_ASSERT(n == param.size(), 
                                gmx::formatString("Death horror error. n=%zu param.size()=%zu", n, param.size()).c_str());
-        }
-        if (weight(ermsPENALTY))
-        {
-            increaseEnergy(ermsPENALTY, calcPenalty(final()));
         }
     }
 
@@ -369,10 +313,14 @@ double OptACM::calcDeviation()
         else
         {
             // Communicate the force field data.
-            poldata()->broadcast_eemprop(commrec());
             if (bFitAlpha_ || weight(ermsPolar))
             {
-                poldata()->broadcast_ptype(commrec());
+                // TODO: Optimize to only do relevant stuff
+                poldata()->broadcast(commrec());
+            }
+            else
+            {
+                poldata()->broadcast_eemprop(commrec());
             }
         }
     }
@@ -394,7 +342,7 @@ double OptACM::calcDeviation()
             qq.resize(natom + 1, 0);
             for (auto i = 0; i < natom + 1; i++)
             {
-                qq[i] = q[i][0];
+                qq[i] = q[i];
             }
             // Update the polarizabilities only once before the loop
             if (bFitAlpha_ || weight(ermsPolar))
@@ -432,12 +380,6 @@ double OptACM::calcDeviation()
                             fprintf(logFile()," Removing it from the data set.\n");
                             break;
                         }
-                        else
-                        {
-                            double pen = weight(ermsPENALTY)*rmsf;
-                            fprintf(logFile(), " Adding %g penalty.\n", pen);
-                            increaseEnergy(ermsPENALTY, pen);
-                        }
                     }
                 }
                 dumpQX(logFile(), &mymol, "LOOP2");
@@ -457,8 +399,8 @@ double OptACM::calcDeviation()
                 double EemRms = 0;
                 for (int i = 0; i < natom; i++)
                 {
-                    EemRms   += gmx::square(qq[i] - q[i][0]);
-                    qq[i]     = q[i][0];
+                    EemRms   += gmx::square(qq[i] - q[i]);
+                    qq[i]     = q[i];
                 }
                 EemRms   /= natom;
                 converged = (EemRms < qtol()) || (nullptr == mymol.shellfc_);
@@ -549,7 +491,6 @@ double OptACM::calcDeviation()
             if (weight(ermsESP))
             {
                 real rrms     = 0;
-                real wtot     = 0;
                 real cosangle = 0;
                 if (nullptr != mymol.shellfc_)
                 {
@@ -563,8 +504,8 @@ double OptACM::calcDeviation()
                 mymol.QgenResp_->updateAtomCharges(mymol.atoms_);
                 mymol.QgenResp_->calcPot(poldata()->getEpsilonR());
                 auto myRms =
-                    convert2gmx(mymol.QgenResp_->getRms(&wtot, &rrms, &cosangle),
-                                eg2cHartree_e);
+                    convertToGromacs(mymol.QgenResp_->getRms(&rrms, &cosangle),
+                                     "Hartree/e");
                 increaseEnergy(ermsESP, gmx::square(myRms));
                 if (debug)
                 {
@@ -632,309 +573,41 @@ double OptACM::calcDeviation()
     return energy(ermsTOT)/nMolSupport();
 }
 
-void OptACM::InitOpt(real factor, bool bRandom)
+void OptACM::InitOpt(bool bRandom)
 {
-    auto *ic = indexCount();
-    for (auto ai = ic->beginIndex(); ai < ic->endIndex(); ++ai)
+    for(auto &optIndex : optIndex_)
     {
-        if (!ai->isConst())
+        auto param = poldata()->findForcesConst(optIndex.iType()).findParameterTypeConst(optIndex.id(), optIndex.type());
+        if (param.ntrain() >= static_cast<uint64_t>(mindata()))
         {
-            auto ei   = poldata()->ztype2Eem(ai->name());
-            GMX_RELEASE_ASSERT(ei != poldata()->EndEemprops(),
-                               gmx::formatString("Cannot find eemprops for %s",
-                                                 ai->name().c_str()).c_str());
-            ai->setEemProps(ei);
-            if (bFitChi_)
-            {
-                if (bRandom)
-                {
-                    Bayes::addRandomParam(J0Min(), J0Max());
-                }
-                else
-                {                          
-                    auto J00  = ei->getJ0();
-                    Bayes::addParam(J00, factor, bRandom);
-                }
-                Bayes::addParamName(gmx::formatString("%s-Eta", ai->name().c_str()));
-
-                if (ai->name().compare(fixchi()) != 0)
-                {
-                    if (bRandom)
-                    {
-                        Bayes::addRandomParam(chi0Min(), chi0Max());
-                    }
-                    else
-                    {
-                        auto Chi0 = ei->getChi0();
-                        Bayes::addParam(Chi0, factor, bRandom);
-                    }
-                    Bayes::addParamName(gmx::formatString("%s-Chi", ai->name().c_str()));
-                }
-            }
-            if (bFitZeta_)
-            {
-                auto     pd      = poldata();
-                bool distributed = pd->chargeType() != eqtPoint;
-                if (distributed)
-                {
-                    if (bPointCore_)
-                    {
-                        // We only optimize zeta for shell.
-                        auto zeta = ei->getZeta(1);
-                        if (0 != zeta)
-                        {
-                            if (bRandom)
-                            {
-                                Bayes::addRandomParam(zetaMin(), zetaMax());
-                            }
-                            else
-                            {
-                                Bayes::addParam(zeta, factor, bRandom);
-                            }
-                            Bayes::addParamName(gmx::formatString("%s-Zeta", ai->name().c_str()));
-                        }
-                        else
-                        {
-                            gmx_fatal(FARGS, "Zeta is zero for atom %s in model %s\n",
-                                      ai->name().c_str(), 
-                                      chargeTypeName(poldata()->chargeType()).c_str());
-                        }
-                    }
-                    else
-                    {
-                        // We optimize zeta for shell and core.
-                        // They can have different zeta or the
-                        // same zeta.
-                        auto nzeta = ei->getNzeta();
-                        if (nzeta == 2 && bSameZeta_)
-                        {
-                            nzeta = 1;
-                        }
-                        for(auto i = 0; i < nzeta; i++)
-                        {
-                            auto zeta  = ei->getZeta(i);
-                            if (0 != zeta)
-                            {
-                                if (bRandom)
-                                {
-                                    Bayes::addRandomParam(zetaMin(), zetaMax());
-                                }
-                                else
-                                {
-                                    Bayes::addParam(zeta, factor, bRandom);
-                                }
-                                Bayes::addParamName(gmx::formatString("%s-Zeta", ai->name().c_str()));
-                            }
-                            else
-                            {
-                                gmx_fatal(FARGS, "Zeta is zero for atom %s in model %s\n",
-                                          ai->name().c_str(), 
-                                          chargeTypeName(poldata()->chargeType()).c_str());
-                            }
-                        }
-                    }
-                }
-                else
-                {
-                    gmx_fatal(FARGS, "Zeta cannot be optmized for %s charge model\n", 
-                              chargeTypeName(poldata()->chargeType()).c_str());
-                }
-            }
-            if ((bFitAlpha_ || weight(ermsPolar)) && poldata()->polarizable())
-            {
-                auto alpha     = 0.0;
-                gmx_fatal(FARGS, "Fixme");
-                if (false) //poldata()->getZtypePol(ai->name(), &alpha, &sigma))
-                {
-                    if (0 != alpha)
-                    {
-                        // We do not have alpha_min and alpha_max so cannot set bounds
-                        if (bRandom)
-                        {
-                            Bayes::addRandomParam(0, alphaMax());
-                        }
-                        else
-                        {
-                            Bayes::addParam(alpha, factor, bRandom);
-                        }
-                        Bayes::addParamName(gmx::formatString("%s-Alpha", ai->name().c_str()));
-                    }
-                    else
-                    {
-                        gmx_fatal(FARGS, "Polarizability is zero for atom %s\n", ai->name().c_str());
-                    }
-                }
-                else
-                {
-                    gmx_fatal(FARGS, "No Ptype for zeta type %s\n", ai->name().c_str());
-                }
-            }
+            Bayes::addParam(optIndex.name(),
+                            param.value(), param.minimum(), param.maximum(),
+                            bRandom);
         }
     }
 }
 
 void OptACM::toPolData(const std::vector<bool> gmx_unused &changed)
 {
-    size_t   n           = 0;
-    auto     pd          = poldata();
-    bool     distributed = pd->chargeType() != eqtPoint;
-    auto    *ic          = indexCount();
-    auto     param       = Bayes::getParam();
-    auto     psigma      = Bayes::getPsigma();
+    size_t   n      = 0;
+    auto     param  = Bayes::getParam();
+    auto     psigma = Bayes::getPsigma();
     if (psigma.empty())
     {
         psigma.resize(param.size(), 0);
     }
     Bayes::printParameters(debug);
-    for (auto ai = ic->beginIndex(); ai < ic->endIndex(); ++ai)
+    for (auto optIndex : optIndex_)
     {
-        if (!ai->isConst())
-        {
-            auto ei = ai->eemProps();
-            if (bFitChi_)
-            {
-                ei->setJ0(param[n]);
-                ei->setJ0_sigma(psigma[n]);
-                n++;
-                if (ai->name().compare(fixchi()) != 0)
-                {
-                    ei->setChi0(param[n]);
-                    ei->setChi0_sigma(psigma[n]);
-                    n++;
-                }
-            }
-            if (bFitZeta_)
-            {
-                if (distributed)
-                {
-                    std::string zstr, z_sig;
-                    std::string qstr   = ei->getQstr();
-                    std::string rowstr = ei->getRowstr();
-                    auto        nZeta  = ei->getNzeta();
-                    double      zeta   = 0;
-                    double      sigma  = 0;
-                    if (bPointCore_)
-                    {
-                        for (auto i = 0; i < nZeta; i++)
-                        {
-                            if (i == 0)
-                            {
-                                //core
-                                zeta  = ei->getZeta(i); 
-                                sigma = 0;
-                            }
-                            else
-                            {
-                                // shell
-                                zeta   = param[n]; 
-                                sigma  = psigma[n];
-                                n++;
-                            }
-                            zstr.append(gmx::formatString("%f ", zeta));
-                            z_sig.append(gmx::formatString("%f ", sigma));
-                        }
-                    }
-                    else
-                    {
-                        bool readOne = bSameZeta_ && (nZeta == 2);
-                        for (auto i = 0; i < nZeta; i++)
-                        {
-                            if (i == 0 || (i > 0 && !readOne))
-                            {
-                                zeta   = param[n];
-                                sigma  = psigma[n];
-                                n++;
-                            }
-                            zstr.append(gmx::formatString("%f ", zeta));
-                            z_sig.append(gmx::formatString("%f ", sigma));
-                        }
-                    }
-                    ei->setRowZetaQ(rowstr, zstr, qstr);
-                    ei->setZetastr(zstr);
-                    ei->setZeta_sigma(z_sig);
-                }
-                else
-                {
-                    gmx_fatal(FARGS, "Zeta cannot be optmized for %s charge model\n", 
-                              chargeTypeName(poldata()->chargeType()).c_str());
-                }
-            }
-            if (bFitAlpha_ || weight(ermsPolar))
-            {
-                std::string ptype;
-                fprintf(stderr, "Code is broken");
-                exit(1);
-                if (false)//pd->ztypeToPtype(ai->name(), &ptype))
-                {
-                    pd->setPtypePolarizability(ptype, param[n], psigma[n]);
-                    n++;
-                }
-                else
-                {
-                    gmx_fatal(FARGS, "No Ptype for zeta type %s\n", ai->name().c_str());
-                }
-            }
-        }
+        auto p = poldata()->findForces(optIndex.iType())->findParameterType(optIndex.id(), optIndex.type());
+
+        p->setValue(param[n]);
+        p->setUncertainty(psigma[n]);
+        n++;
     }
     GMX_RELEASE_ASSERT(n == changed.size(),
                        gmx::formatString("n = %zu changed.size() = %zu",
                                          n, changed.size()).c_str());
-}
-
-double OptACM::calcPenalty(bool verbose)
-{
-    double            penalty  = 0;
-    double            deltaChi = 2;
-    double            chi_Max  = chi0Max();
-    const auto        pd       = poldata();
-    auto             *ic       = indexCount();
-    
-    // Determine highest chi and J0 for hydrogens
-    std::vector<int>  atomnumber;
-    double            chiHmax = 0;
-    double            J0Hmax  = 0;
-    for (auto ai = ic->beginIndex(); ai < ic->endIndex(); ++ai)
-    {
-        if (!ai->isConst())
-        {
-            auto ei      = ai->eemProps();
-            auto ai_elem = pd->ztype2elem(ei->getName());
-            auto ai_atn  = gmx_atomprop_atomnumber(atomprop(), ai_elem.c_str());
-            atomnumber.push_back(ai_atn);
-            if (ai_atn == 1)
-            {
-                auto ei = ai->eemProps();
-                chiHmax = std::max(chiHmax, ei->getChi0());
-                J0Hmax  = std::max(J0Hmax, ei->getJ0());
-            }
-        }
-    }
-    // Now check the other elements
-    for (auto ai = ic->beginIndex(); ai < ic->endIndex(); ++ai)
-    {
-        auto ai_atn  = atomnumber[ai - ic->beginIndex()];
-        if (ai->isConst() || ai_atn == 1)
-        {
-            continue;
-        }
-    
-        if (strlen(fixchi()) != 0)
-        {
-            const auto ref_eem = pd->atype2Eem(fixchi());
-            auto ei            = ai->eemProps();
-            double dchi        = ref_eem->getChi0() - ei->getChi0();
-            penalty           += std::max(0.0, dchi);
-        }
-        else
-        {
-            auto ei      = ai->eemProps();
-            auto ai_chi  = ei->getChi0();
-    
-            std::string label = ai->name() + " chi";
-            penalty += l2_regularizer(ai_chi, chiHmax+deltaChi, chi_Max, label, verbose);
-        }
-    }
-    return penalty;
 }
 
 bool OptACM::optRun(FILE                   *fp,
@@ -1127,7 +800,6 @@ int alex_tune_eem(int argc, char *argv[])
     real                        quad_toler    = 5;
     real                        alpha_toler   = 3;
     real                        isopol_toler  = 2;
-    real                        factor        = 0.8;
     real                        efield        = 10;
     char                       *opt_elem      = nullptr;
     bool                        bRandom       = false;
@@ -1164,8 +836,6 @@ int alex_tune_eem(int argc, char *argv[])
           "Fit regression analysis of results to y = ax+b instead of y = ax" },
         { "-compress", FALSE, etBOOL, {&bcompress},
           "Compress output XML file" },
-        { "-factor", FALSE, etREAL, {&factor},
-          "Factor for generating random parameters. Parameters will be taken within the limit factor*x - x/factor" },
         { "-efield",  FALSE, etREAL, {&efield},
           "The magnitude of the external electeric field to calculate polarizability tensor." },
         { "-optimize",     FALSE, etBOOL, {&bOptimize},
@@ -1224,13 +894,9 @@ int alex_tune_eem(int argc, char *argv[])
              opt2fn("-f", NFILE, fnm),
              opt2fn_null("-d", NFILE, fnm),
              bZero,
-             opt_elem,
              gms,
              true,
              false,
-             false,
-             false,
-             opt.fitZeta(),
              false,
              tabfn,
              select_type);
@@ -1245,7 +911,7 @@ int alex_tune_eem(int argc, char *argv[])
     {
         if (MASTER(opt.commrec()))
         {
-            opt.InitOpt(factor, bRandom);
+            opt.InitOpt(bRandom);
         }
 
         bMinimum = opt.optRun(MASTER(opt.commrec()) ? stderr : nullptr,
@@ -1260,7 +926,6 @@ int alex_tune_eem(int argc, char *argv[])
         if (bMinimum || bForceOutput)
         {
             bool  bPolar = opt.poldata()->polarizable();
-            auto *ic     = opt.indexCount();
             print_electric_props(opt.logFile(),
                                  opt.mymols(),
                                  opt.poldata(),
@@ -1289,10 +954,10 @@ int alex_tune_eem(int argc, char *argv[])
                                  opt.dipole(),
                                  opt.quadrupole(),
                                  opt.fullTensor(),
-                                 ic,
                                  opt.commrec(),
                                  efield,
-                                 useOffset);
+                                 useOffset,
+                                 opt.optIndex_);
             writePoldata(opt2fn("-o", NFILE, fnm), opt.poldata(), bcompress);            
             if (opt2bSet("-latex", NFILE, fnm))
             {

@@ -43,8 +43,9 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/futil.h"
 
+#include "forcefieldparameter.h"
+#include "forcefieldparameterlist.h"
 #include "poldata.h"
-#include "poldata_eemprops.h"
 #include "poldata_low.h"
 #include "xml_util.h"
 
@@ -77,13 +78,13 @@ const char *xmltypes[] = {
 };
 #define NXMLTYPES sizeof(xmltypes)/sizeof(xmltypes[0])
 
-enum {
-    exmlGENTOP,
+enum xmlEntry {
+    exmlFirst,
+    exmlGENTOP = exmlFirst,
     exmlREFERENCE,
     exmlATOMTYPES,
     exmlATOMTYPE, 
     exmlCHARGETYPE,
-    exmlPOLAR_UNIT,
     exmlCOMB_RULE,
     exmlNEXCL,
     exmlVERSION,
@@ -95,21 +96,28 @@ enum {
     exmlNAME,
     exmlDESC,
     exmlATYPE,
-    exmlMILLER,
     exmlVALENCE,
-    exmlBOSQUE,
     exmlBTYPE,
     exmlZTYPE,
     exmlNEIGHBORS,
     exmlAROMATIC,
     exmlGEOMETRY,
     exmlNUMBONDS,
-    exmlPOLARIZABILITY,
-    exmlPOLARIZABILITY_SIGMA,
     exmlVDWPARAMS,
     exmlEREF,
     exmlVANDERWAALS,
     exmlINTERACTION,
+    exmlIDENTIFIER,
+    exmlCANSWAP,
+    exmlTYPE,
+    exmlVALUE,
+    exmlOPTION,
+    exmlPARAMETERLIST,
+    exmlPARAMETER,
+    exmlUNCERTAINTY,
+    exmlMINIMUM,
+    exmlMAXIMUM,
+    exmlMUTABILITY,
     exmlATOM1,
     exmlATOM2,
     exmlATOM3,
@@ -122,22 +130,6 @@ enum {
     exmlNTRAIN,
     exmlGT_VSITES,
     exmlGT_VSITE,
-    exmlGT_BONDS,
-    exmlGT_BOND,
-    exmlGT_ANGLES,
-    exmlGT_ANGLE,
-    exmlGT_DIHEDRALS,
-    exmlGT_DIHEDRAL,
-    exmlGT_IMPROPERS,
-    exmlGT_IMPROPER,
-    exmlBSATOMS,
-    exmlBSATOM,
-    exmlMILATOMS,
-    exmlTAU_UNIT,
-    exmlAHP_UNIT,
-    exmlMILATOM,
-    exmlMILNAME,
-    exmlALEXANDRIA_EQUIV,
     exmlATOMNUMBER,
     exmlTAU_AHC,
     exmlALPHA_AHP,
@@ -146,16 +138,7 @@ enum {
     exmlCENTRAL,
     exmlATTACHED,
     exmlNUMATTACH,
-    exmlEEMPROPS,
-    exmlEEMPROP,
     exmlMODEL,
-    exmlJ0,
-    exmlJ0_SIGMA,
-    exmlCHI0,
-    exmlCHI0_SIGMA,
-    exmlZETA,
-    exmlZETA_SIGMA,
-    exmlROW,
     exmlCHARGEGENERATIONALGORITHM,
     exmlCHARGES,
     exmlREF_CHARGES,
@@ -166,28 +149,22 @@ enum {
     exmlNUMBER,
     exmlVTYPE,
     exmlANGLE,
-    exmlFIXED,
-    exmlBONDCORRECTION,
-    exmlHARDNESS,
-    exmlELECTRONEGATIVITY,
-    exmlHARDNESS_SIGMA,
-    exmlELECTRONEGATIVITY_SIGMA,
     exmlFUNCTION,
-    exmlNR
+    exmlLast
 };
 
-std::map<const std::string, int> xmlxxx =
+std::map<const std::string, xmlEntry> xmlxxx =
 {
     { "gentop",                 exmlGENTOP           },
     { "reference",              exmlREFERENCE        },
     { "atomtypes",              exmlATOMTYPES        },
     { "atomtype",               exmlATOMTYPE         },
     { "chargetype",             exmlCHARGETYPE       },
-    { "chargegenerationalgorithm", exmlCHARGEGENERATIONALGORITHM  },
+    { "chargegenerationalgorithm", exmlCHARGEGENERATIONALGORITHM },
+    { "parameterlist",          exmlPARAMETERLIST    },
+    { "parameter",              exmlPARAMETER        },
     { "version",                exmlVERSION          },
     { "function",               exmlFUNCTION         },
-    { "polarizability_unit",    exmlPOLAR_UNIT       },
-    { "combination_rule",       exmlCOMB_RULE        },
     { "nexclusions",            exmlNEXCL            },
     { "epsilonr",               exmlEPSILONR         },
     { "poltypes",               exmlPOLTYPES         },
@@ -197,26 +174,25 @@ std::map<const std::string, int> xmlxxx =
     { "name",                   exmlNAME             },
     { "description",            exmlDESC             },
     { "atype",                  exmlATYPE            },
-    { "miller",                 exmlMILLER           },
-    { "valence",                exmlVALENCE          },
-    { "bosque",                 exmlBOSQUE           },
     { "btype",                  exmlBTYPE            },
     { "ztype",                  exmlZTYPE            },
     { "neighbors",              exmlNEIGHBORS        },
     { "aromatic",               exmlAROMATIC         },
     { "geometry",               exmlGEOMETRY         },
     { "numbonds",               exmlNUMBONDS         },
-    { "polarizability",         exmlPOLARIZABILITY   },
-    { "polarizability_sigma",   exmlPOLARIZABILITY_SIGMA           },
-    { "fixed",                  exmlFIXED            },
     { "vdwparams",              exmlVDWPARAMS        },
     { "ref_enthalpy",           exmlEREF             },
     { "vanderwaals",            exmlVANDERWAALS      },
     { "interaction",            exmlINTERACTION      },
-    { "atom1",                  exmlATOM1            },
-    { "atom2",                  exmlATOM2            },
-    { "atom3",                  exmlATOM3            },
-    { "atom4",                  exmlATOM4            },
+    { "identifier",             exmlIDENTIFIER       },
+    { "canswap",                exmlCANSWAP          },
+    { "type",                   exmlTYPE             },
+    { "value",                  exmlVALUE            },
+    { "option",                 exmlOPTION           },
+    { "uncertainty",            exmlUNCERTAINTY      },
+    { "minimum",                exmlMINIMUM          },
+    { "maximum",                exmlMAXIMUM          },
+    { "mutability",             exmlMUTABILITY       },
     { "sigma",                  exmlSIGMA            },
     { "bondorder",              exmlBONDORDER        },
     { "params",                 exmlPARAMS           },
@@ -225,22 +201,6 @@ std::map<const std::string, int> xmlxxx =
     { "ntrain",                 exmlNTRAIN           },
     { "gt_vsites",              exmlGT_VSITES        },
     { "gt_vsite",               exmlGT_VSITE         },
-    { "gt_bonds",               exmlGT_BONDS         },
-    { "gt_bond",                exmlGT_BOND          },
-    { "gt_angles",              exmlGT_ANGLES        },
-    { "gt_angle",               exmlGT_ANGLE         },
-    { "gt_dihedrals",           exmlGT_DIHEDRALS     },
-    { "gt_dihedral",            exmlGT_DIHEDRAL      },
-    { "gt_impropers",           exmlGT_IMPROPERS     },
-    { "gt_improper",            exmlGT_IMPROPER      },
-    { "bsatoms",                exmlBSATOMS          },
-    { "bsatom",                 exmlBSATOM           },
-    { "milatoms",               exmlMILATOMS         },
-    { "tau_ahc_unit",           exmlTAU_UNIT         },
-    { "alpha_ahp_unit",         exmlAHP_UNIT         },
-    { "milatom",                exmlMILATOM          },
-    { "milname",                exmlMILNAME          },
-    { "alexandria_equiv",       exmlALEXANDRIA_EQUIV },
     { "atomnumber",             exmlATOMNUMBER       },
     { "tau_ahc",                exmlTAU_AHC          },
     { "alpha_ahp",              exmlALPHA_AHP        },
@@ -249,23 +209,7 @@ std::map<const std::string, int> xmlxxx =
     { "central",                exmlCENTRAL          },
     { "attached",               exmlATTACHED         },
     { "numattach",              exmlNUMATTACH        },
-    { "eemprops",               exmlEEMPROPS         },
-    { "eemprop",                exmlEEMPROP          },
     { "model",                  exmlMODEL            },
-    { "jaa",                    exmlJ0               },
-    { "jaa_sigma",              exmlJ0_SIGMA         },
-    { "chi",                    exmlCHI0             },
-    { "chi_sigma",              exmlCHI0_SIGMA       },
-    { "zeta",                   exmlZETA             },
-    { "zeta_sigma",             exmlZETA_SIGMA       },
-    { "row",                    exmlROW              },
-    { "charge",                 exmlCHARGES          },
-    { "ref_charge",             exmlREF_CHARGES      },
-    { "bondcorrection",         exmlBONDCORRECTION   },
-    { "hardness",               exmlHARDNESS         },
-    { "electronegativity",      exmlELECTRONEGATIVITY},
-    { "hardness_sigma",         exmlHARDNESS_SIGMA   },
-    { "electronegativity_sigma", exmlELECTRONEGATIVITY_SIGMA },
     { "angle_unit",             exmlANGLE_UNIT       },
     { "length_unit",            exmlLENGTH_UNIT      },
     { "distance",               exmlDISTANCE         },
@@ -275,37 +219,49 @@ std::map<const std::string, int> xmlxxx =
     { "angle",                  exmlANGLE            }
 };
 
-std::map<int, const std::string> rmap = {};
+std::map<xmlEntry, const std::string> rmap = {};
 
-static const char *exml_names(int xml)
+typedef std::map<xmlEntry, std::string> xmlBuffer;
+
+static const char *exml_names(xmlEntry xml)
 {
     if (rmap.empty())
     {
-        for (auto iter = xmlxxx.begin(); iter != xmlxxx.end(); ++iter)
+        for (auto &iter : xmlxxx)
         {
-            rmap.insert({iter->second, iter->first});
+            rmap.insert({iter.second, iter.first});
         }
     }
-    auto iter = rmap.find(xml);
-    if (iter != rmap.end())
-    {
-        return iter->second.c_str();
-    }
-    return nullptr;
+    return rmap[xml].c_str();
 }
 
-static bool NN(const std::string &x)
+static bool NNlow(xmlBuffer *xbuf, xmlEntry xml, bool obligatory)
 {
-    return (0 != x.size());
-}
-
-static bool NNobligatory(const std::string xbuf[], int xml)
-{
-    if (0 == xbuf[xml].size())
+    if (xbuf->find(xml) == xbuf->end())
     {
-        gmx_fatal(FARGS, "Missing required variable '%s'", exml_names(xml));
+        std::string buf = gmx::formatString("Missing%s variable %d (%s)", obligatory ? " required" : "",
+                                            static_cast<int>(xml), exml_names(xml));
+        if (obligatory)
+        {
+            GMX_THROW(gmx::InvalidInputError(buf.c_str()));
+        }
+        else
+        {
+            fprintf(stderr, "%s\n", buf.c_str());
+            return false;
+        }
     }
     return true;
+}
+
+static bool NNobligatory(xmlBuffer *xbuf, xmlEntry xml)
+{
+    return NNlow(xbuf, xml, true);
+}
+
+static bool NN(xmlBuffer *xbuf, xmlEntry xml)
+{
+    return NNlow(xbuf, xml, false);
 }
 
 static void sp(int n, char buf[], int maxindent)
@@ -324,38 +280,39 @@ static void sp(int n, char buf[], int maxindent)
     buf[i] = '\0';
 }
 
-static double xbuf_atof(const std::string xbuf[],
-                        int               xbuf_index)
+static double xbuf_atof(xmlBuffer *xbuf, xmlEntry  xbuf_index)
 {
-    return my_atof(xbuf[xbuf_index].c_str(), rmap[xbuf_index].c_str());
+    auto xb = xbuf->find(xbuf_index);
+    if (xb == xbuf->end())
+    {
+        GMX_THROW(gmx::InternalError(gmx::formatString("No such entry '%d' in xbuf",
+                                                       static_cast<int>(xbuf_index)).c_str()));
+    }
+    auto rm = exml_names(xbuf_index);
+    return my_atof(xb->second.c_str(), rm);
 }
 
-static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
-                        int indent, Poldata &pd)
+static void processAttr(FILE       *fp, 
+                        xmlAttrPtr  attr,
+                        xmlBuffer  *xbuf,
+                        int         elem,
+                        int         indent, 
+                        Poldata    *pd)
 {
     std::string attrname, attrval;
     char        buf[100];
-    int         i;
-    std::string xbuf[exmlNR];
+    //    Identifer   identifier;
 
-    for (i = 0; (i < exmlNR); i++)
-    {
-        xbuf[i] = "";
-    }
+    xbuf->clear();
     while (attr != nullptr)
     {
         attrname.assign((char *)attr->name);
         attrval.assign((char *)attr->children->content);
 
-#define atest(s) ((strcasecmp(attrname, s) == 0) && (attrval != nullptr))
         auto iter = xmlxxx.find(attrname);
         if (iter != xmlxxx.end())
         {
-            int kkk = iter->second;
-            if (attrval.size() != 0)
-            {
-                xbuf[kkk] = attrval;
-            }
+            xbuf->insert({iter->second, attrval});
 
             if (nullptr != fp)
             {
@@ -368,306 +325,164 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
             fprintf(stderr, "Ignoring invalid attribute %s\n", attrname.c_str());
         }
         attr = attr->next;
-#undef atest
     }
     /* Done processing attributes for this element. Let's see if we still need
      *  to interpret them.
      */
-    bool fixed = false;
-    if (NN(xbuf[exmlFIXED]))
-    {
-        fixed = (xbuf[exmlFIXED] == "true" ||
-                 xbuf[exmlFIXED] == "yes");
-    }
+#define xbufString(x) xbuf->find(x)->second
+    // Some local variables that we need
+    static InteractionType currentItype = eitBONDS;
+    static Identifier      myIdentifier;
     switch (elem)
     {
-        case exmlPOLTYPES:
-            if (NN(xbuf[exmlPOLAR_UNIT]) && NN(xbuf[exmlREFERENCE]))
+    case exmlATOMTYPES:
+        if (NNobligatory(xbuf, exmlCHARGETYPE))
+        {
+            pd->setChargeType(xbufString(exmlCHARGETYPE));
+        }
+        if (NNobligatory(xbuf, exmlCHARGEGENERATIONALGORITHM))
+        {
+            pd->setChargeGenerationAlgorithm(xbufString(exmlCHARGEGENERATIONALGORITHM));
+        }
+        if (NNobligatory(xbuf, exmlVERSION))
+        {
+            pd->setVersion(xbufString(exmlVERSION));
+        }
+        if (NNobligatory(xbuf, exmlNEXCL))
+        {
+            pd->setNexcl(atoi(xbufString(exmlNEXCL).c_str()));
+        }
+        if (NN(xbuf, exmlEPSILONR))
+        {
+            pd->setEpsilonR(atof(xbufString(exmlEPSILONR).c_str()));
+        }
+        break;
+    case exmlINTERACTION:
+        if (NNobligatory(xbuf, exmlTYPE) &&
+            NNobligatory(xbuf, exmlFUNCTION) && 
+            NNobligatory(xbuf, exmlCANSWAP))
+        {
+            CanSwap canSwap = stringToCanSwap(xbufString(exmlCANSWAP));
+            ForceFieldParameterList newparam(xbufString(exmlFUNCTION), canSwap);
+            pd->addForces(xbufString(exmlTYPE), newparam);
+            currentItype = stringToInteractionType(xbufString(exmlTYPE).c_str());
+        }
+        break;
+    case exmlOPTION:
+        if (NNobligatory(xbuf, exmlTYPE) &&
+            NNobligatory(xbuf, exmlVALUE))
+        {
+            auto fpl = pd->findForces(currentItype);
+            fpl->addOption(xbufString(exmlTYPE), xbufString(exmlVALUE));
+        }
+        break;
+    case exmlPARAMETERLIST:
+        if (NNobligatory(xbuf, exmlIDENTIFIER))
+        {
+            myIdentifier = Identifier(currentItype,
+                                      xbufString(exmlIDENTIFIER),
+                                      pd->findForces(currentItype)->canSwap());
+        }
+        break;
+    case exmlPARAMETER:
+        if (NNobligatory(xbuf, exmlTYPE)    && NNobligatory(xbuf, exmlUNIT) &&
+            NNobligatory(xbuf, exmlVALUE)   && NNobligatory(xbuf, exmlUNCERTAINTY) &&
+            NNobligatory(xbuf, exmlMINIMUM) && NNobligatory(xbuf, exmlMAXIMUM) &&
+            NNobligatory(xbuf, exmlMUTABILITY))
+        {
+            Mutability mut;
+            if (nameToMutability(xbufString(exmlMUTABILITY), &mut))
             {
-                pd.setPolarUnit(xbuf[exmlPOLAR_UNIT]);
-                pd.setPolarRef(xbuf[exmlREFERENCE]);
-            }
-            break;
-        case exmlATOMTYPES:
-            if (NNobligatory(xbuf, exmlCHARGETYPE))
-            {
-                pd.setChargeType(xbuf[exmlCHARGETYPE]);
-            }
-            if (NNobligatory(xbuf, exmlCHARGEGENERATIONALGORITHM))
-            {
-                pd.setChargeGenerationAlgorithm(xbuf[exmlCHARGEGENERATIONALGORITHM]);
-            }
-            if (NNobligatory(xbuf, exmlVERSION))
-            {
-                pd.setVersion(xbuf[exmlVERSION]);
-            }
-            if (NNobligatory(xbuf, exmlVANDERWAALS))
-            {
-                pd.setVdwFunction(xbuf[exmlVANDERWAALS]);
-            }
-            if (NNobligatory(xbuf, exmlCOMB_RULE))
-            {
-                pd.setCombinationRule(xbuf[exmlCOMB_RULE]);
-            }
-            if (NNobligatory(xbuf, exmlNEXCL))
-            {
-                pd.setNexcl(atoi(xbuf[exmlNEXCL].c_str()));
-            }
-            if (NN(xbuf[exmlEPSILONR]))
-            {
-                pd.setEpsilonR(atof(xbuf[exmlEPSILONR].c_str()));
-            }
-            break;
-        case exmlBSATOMS:
-            if (NN(xbuf[exmlPOLAR_UNIT]) &&
-                NN(xbuf[exmlREFERENCE]))
-            {
-                pd.setBosqueFlags(xbuf[exmlPOLAR_UNIT], xbuf[exmlREFERENCE]);
-            }
-            break;
-        case exmlGT_VSITES:
-            if (NN(xbuf[exmlANGLE_UNIT]) && NN(xbuf[exmlLENGTH_UNIT]))
-            {
-                pd.setVsite_angle_unit(xbuf[exmlANGLE_UNIT]);
-                pd.setVsite_length_unit(xbuf[exmlLENGTH_UNIT]);
-            }
-            break;
-        case exmlGT_BONDS:
-            if (NN(xbuf[exmlINTERACTION]) &&
-                NN(xbuf[exmlFUNCTION])    &&
-                NN(xbuf[exmlUNIT]))
-            {
-                ListedForces bonds (xbuf[exmlINTERACTION],
-                                    xbuf[exmlFUNCTION],
-                                    xbuf[exmlUNIT]);
-                pd.addForces(bonds);
-            }
-            break;
-        case exmlGT_ANGLES:
-            if (NN(xbuf[exmlINTERACTION]) &&
-                NN(xbuf[exmlFUNCTION])    &&
-                NN(xbuf[exmlUNIT]))
-            {
-                ListedForces angles (xbuf[exmlINTERACTION],
-                                     xbuf[exmlFUNCTION],
-                                     xbuf[exmlUNIT]);
-                pd.addForces(angles);
-            }
-            break;
-        case exmlGT_DIHEDRALS:
-            if (NN(xbuf[exmlINTERACTION]) &&
-                NN(xbuf[exmlFUNCTION])    &&
-                NN(xbuf[exmlUNIT]))
-            {
-                ListedForces dihedrals (xbuf[exmlINTERACTION],
-                                        xbuf[exmlFUNCTION],
-                                        xbuf[exmlUNIT]);
-                pd.addForces(dihedrals);
-            }
-            break;
-        case exmlMILATOMS:
-            if (NN(xbuf[exmlTAU_UNIT]) &&
-                NN(xbuf[exmlAHP_UNIT]) &&
-                NN(xbuf[exmlREFERENCE]))
-            {
-                pd.setMillerFlags(xbuf[exmlTAU_UNIT], xbuf[exmlAHP_UNIT],
-                                  xbuf[exmlREFERENCE]);
-            }
-            break;
-        case exmlPOLTYPE:
-            if (NN(xbuf[exmlPTYPE]) && NN(xbuf[exmlMILLER]) && NN(xbuf[exmlBOSQUE]) &&
-                NN(xbuf[exmlPOLARIZABILITY]) && NN(xbuf[exmlPOLARIZABILITY_SIGMA]))
-            {
-                pd.addPtype(xbuf[exmlPTYPE],
-                            xbuf[exmlMILLER],
-                            xbuf[exmlBOSQUE],
-                            xbuf_atof(xbuf, exmlPOLARIZABILITY),
-                            xbuf_atof(xbuf, exmlPOLARIZABILITY_SIGMA));
-            }
-            break;
-        case exmlATOMTYPE:
-            if (NN(xbuf[exmlELEM]) &&
-                NN(xbuf[exmlATYPE]) &&
-                NN(xbuf[exmlBTYPE]) &&
-                NN(xbuf[exmlPTYPE]) &&
-                NN(xbuf[exmlZTYPE]) &&
-                NN(xbuf[exmlVDWPARAMS]) &&
-                NN(xbuf[exmlEREF]))
-            {
-                pd.addAtype(xbuf[exmlELEM],
-                            xbuf[exmlDESC],
-                            xbuf[exmlATYPE],
-                            xbuf[exmlPTYPE],
-                            xbuf[exmlBTYPE],
-                            xbuf[exmlZTYPE],
-                            fixed,
-                            xbuf[exmlVDWPARAMS],
-                            xbuf[exmlEREF]);
-            }
-            break;
-        case exmlMILATOM:
-            if (NN(xbuf[exmlMILNAME]) && NN(xbuf[exmlATOMNUMBER]) &&
-                NN(xbuf[exmlTAU_AHC]) && NN(xbuf[exmlALPHA_AHP]))
-            {
-                pd.addMiller(xbuf[exmlMILNAME],
-                             atoi(xbuf[exmlATOMNUMBER].c_str()),
-                             xbuf_atof(xbuf, exmlTAU_AHC),
-                             xbuf_atof(xbuf, exmlALPHA_AHP),
-                             xbuf[exmlALEXANDRIA_EQUIV]);
-            }
-            break;
-        case exmlBSATOM:
-            if (NN(xbuf[exmlELEM]) && NN(xbuf[exmlPOLARIZABILITY]))
-            {
-                pd.addBosque(xbuf[exmlELEM],
-                             xbuf_atof(xbuf, exmlPOLARIZABILITY));
-            }
-            break;
-        case exmlGT_VSITE:
-            if (NN(xbuf[exmlATYPE])  && NN(xbuf[exmlVTYPE])    &&
-                NN(xbuf[exmlNUMBER]) && NN(xbuf[exmlDISTANCE]) &&
-                NN(xbuf[exmlANGLE])  && NN(xbuf[exmlNCONTROLATOMS]))
-            {
-                pd.addVsite(xbuf[exmlATYPE],
-                            xbuf[exmlVTYPE],
-                            atoi(xbuf[exmlNUMBER].c_str()),
-                            atof(xbuf[exmlDISTANCE].c_str()),
-                            atof(xbuf[exmlANGLE].c_str()),
-                            atoi(xbuf[exmlNCONTROLATOMS].c_str()));
-            }
-            break;
-        case exmlGT_BOND:
-            if (NN(xbuf[exmlATOM1])    && NN(xbuf[exmlATOM2]) &&
-                NN(xbuf[exmlREFVALUE]) && NN(xbuf[exmlSIGMA]) &&
-                NN(xbuf[exmlNTRAIN]))
-            {
-
-                const std::vector<std::string> &atoms = {
-                    xbuf[exmlATOM1].c_str(),
-                    xbuf[exmlATOM2].c_str()
-                };
-
-                auto &force = pd.lastForces();
-
-                force.addForce(atoms, xbuf[exmlPARAMS].c_str(),
-                               fixed,
-                               xbuf_atof(xbuf, exmlREFVALUE),
-                               xbuf_atof(xbuf, exmlSIGMA),
-                               atoi(xbuf[exmlNTRAIN].c_str()),
-                               atoi(xbuf[exmlBONDORDER].c_str()));
-            }
-            break;
-        case exmlGT_ANGLE:
-            if (NN(xbuf[exmlATOM1]) && NN(xbuf[exmlATOM2])    &&
-                NN(xbuf[exmlATOM3]) && NN(xbuf[exmlREFVALUE]) &&
-                NN(xbuf[exmlSIGMA]) && NN(xbuf[exmlNTRAIN]))
-            {
-                const std::vector<std::string> &atoms = {
-                    xbuf[exmlATOM1].c_str(),
-                    xbuf[exmlATOM2].c_str(),
-                    xbuf[exmlATOM3].c_str()
-                };
-
-                auto &force  = pd.lastForces();
-
-                force.addForce(atoms, xbuf[exmlPARAMS].c_str(),
-                               fixed,
-                               xbuf_atof(xbuf, exmlREFVALUE),
-                               xbuf_atof(xbuf, exmlSIGMA),
-                               atoi(xbuf[exmlNTRAIN].c_str()));
-            }
-            break;
-        case exmlGT_DIHEDRAL:
-            if (NN(xbuf[exmlATOM1])    && NN(xbuf[exmlATOM2]) &&
-                NN(xbuf[exmlATOM3])    && NN(xbuf[exmlATOM4]) &&
-                NN(xbuf[exmlREFVALUE]) && NN(xbuf[exmlSIGMA]) &&
-                NN(xbuf[exmlNTRAIN]))
-            {
-                const std::vector<std::string> &atoms = {
-                    xbuf[exmlATOM1].c_str(),
-                    xbuf[exmlATOM2].c_str(),
-                    xbuf[exmlATOM3].c_str(),
-                    xbuf[exmlATOM4].c_str()
-                };
-
-                auto &force = pd.lastForces();
-
-                force.addForce(atoms, xbuf[exmlPARAMS].c_str(),
-                               fixed,
-                               xbuf_atof(xbuf, exmlREFVALUE),
-                               xbuf_atof(xbuf, exmlSIGMA),
-                               atoi(xbuf[exmlNTRAIN].c_str()));
-            }
-            break;
-        case exmlSYM_CHARGE:
-            if (NN(xbuf[exmlCENTRAL]) && NN(xbuf[exmlATTACHED]) &&
-                NN(xbuf[exmlNUMATTACH]))
-            {
-                pd.addSymcharges(xbuf[exmlCENTRAL],
-                                 xbuf[exmlATTACHED],
-                                 atoi(xbuf[exmlNUMATTACH].c_str()));
-            }
-            break;
-        case exmlEEMPROPS:
-            if (NN(xbuf[exmlREFERENCE]))
-            {
-                pd.setEpref(xbuf[exmlREFERENCE]);
-            }
-            break;
-        case exmlBONDCORRECTION:
-            if (NN(xbuf[exmlNAME]) &&
-                NN(xbuf[exmlHARDNESS]) &&
-                NN(xbuf[exmlHARDNESS_SIGMA]) &&
-                NN(xbuf[exmlELECTRONEGATIVITY]) &&
-                NN(xbuf[exmlELECTRONEGATIVITY_SIGMA]))
-            {
-                BondCorrection bc(xbuf[exmlNAME],
-                                  xbuf_atof(xbuf, exmlHARDNESS),
-                                  xbuf_atof(xbuf, exmlHARDNESS_SIGMA),
-                                  xbuf_atof(xbuf, exmlELECTRONEGATIVITY),
-                                  xbuf_atof(xbuf, exmlELECTRONEGATIVITY_SIGMA));
-                pd.addBondCorrection(std::move(bc));
-            }
-            break;
-        case exmlEEMPROP:
-            if (NN(xbuf[exmlNAME])        && NN(xbuf[exmlJ0])      && 
-                NN(xbuf[exmlJ0_SIGMA])    && NN(xbuf[exmlCHI0])    && 
-                NN(xbuf[exmlCHI0_SIGMA])  && NN(xbuf[exmlZETA])    && 
-                NN(xbuf[exmlZETA_SIGMA])  && NN(xbuf[exmlCHARGES]) && 
-                NN(xbuf[exmlREF_CHARGES]) && NN(xbuf[exmlROW]))
-            {
-                Eemprops eep(xbuf[exmlNAME],
-                             xbuf[exmlROW],
-                             xbuf[exmlZETA],
-                             xbuf[exmlZETA_SIGMA],
-                             xbuf[exmlCHARGES],
-                             xbuf_atof(xbuf, exmlREF_CHARGES),
-                             xbuf_atof(xbuf, exmlJ0),
-                             xbuf_atof(xbuf, exmlJ0_SIGMA),
-                             xbuf_atof(xbuf, exmlCHI0),
-                             xbuf_atof(xbuf, exmlCHI0_SIGMA));
-                pd.addEemprops(std::move(eep));
-            }
-            break;
-        default:
-            if (nullptr != debug)
-            {
-                fprintf(debug, "Unknown combination of attributes:\n");
-                for (i = 0; (i < exmlNR); i++)
+                uint64_t ntrain = 0;
+                if (NN(xbuf, exmlNTRAIN))
                 {
-                    if (xbuf[i].size() != 0)
-                    {
-                        fprintf(debug, "%s = %s\n", exml_names(i), xbuf[i].c_str());
-                    }
+                    ntrain = atoi(xbufString(exmlNTRAIN).c_str());
+                }
+                ForceFieldParameter ffp(xbufString(exmlUNIT),
+                                        xbuf_atof(xbuf, exmlVALUE),
+                                        xbuf_atof(xbuf, exmlUNCERTAINTY),
+                                        ntrain,
+                                        xbuf_atof(xbuf, exmlMINIMUM), xbuf_atof(xbuf, exmlMAXIMUM),
+                                        mut, false);
+                auto fs = pd->findForces(currentItype);
+                fs->addParameter(myIdentifier, xbufString(exmlTYPE), std::move(ffp));
+            }
+            else
+            {
+                GMX_THROW(gmx::InvalidInputError(gmx::formatString("Mutability value %s unknown",
+                                                                   xbufString(exmlMUTABILITY).c_str()).c_str()));
+            }
+        }
+        break;
+    case exmlGT_VSITES:
+        if (NN(xbuf, exmlANGLE_UNIT) && NN(xbuf, exmlLENGTH_UNIT))
+        {
+            pd->setVsite_angle_unit(xbufString(exmlANGLE_UNIT));
+            pd->setVsite_length_unit(xbufString(exmlLENGTH_UNIT));
+        }
+        break;
+    case exmlATOMTYPE:
+        if (NN(xbuf, exmlELEM) &&
+            NN(xbuf, exmlATYPE) &&
+            NN(xbuf, exmlBTYPE) &&
+            NN(xbuf, exmlPTYPE) &&
+            NN(xbuf, exmlZTYPE) &&
+            NN(xbuf, exmlEREF))
+        {
+            Ffatype sp(xbufString(exmlDESC),  xbufString(exmlATYPE), xbufString(exmlPTYPE),
+                       xbufString(exmlBTYPE), xbufString(exmlZTYPE), xbufString(exmlELEM),
+                       xbufString(exmlEREF));
+                pd->addAtype(std::move(sp));
+        }
+        break;
+    case exmlGT_VSITE:
+        if (NN(xbuf, exmlATYPE)  && NN(xbuf, exmlVTYPE)    &&
+            NN(xbuf, exmlNUMBER) && NN(xbuf, exmlDISTANCE) &&
+            NN(xbuf, exmlANGLE)  && NN(xbuf, exmlNCONTROLATOMS))
+            {
+                pd->addVsite(xbufString(exmlATYPE),
+                             xbufString(exmlVTYPE),
+                             atoi(xbufString(exmlNUMBER).c_str()),
+                             atof(xbufString(exmlDISTANCE).c_str()),
+                             atof(xbufString(exmlANGLE).c_str()),
+                             atoi(xbufString(exmlNCONTROLATOMS).c_str()));
+            }
+        break;
+    case exmlSYM_CHARGE:
+        if (NN(xbuf, exmlCENTRAL) && NN(xbuf, exmlATTACHED) &&
+            NN(xbuf, exmlNUMATTACH))
+        {
+            pd->addSymcharges(xbufString(exmlCENTRAL),
+                              xbufString(exmlATTACHED),
+                              atoi(xbufString(exmlNUMATTACH).c_str()));
+        }
+        break;
+    default:
+        if (nullptr != debug)
+        {
+            fprintf(debug, "Unknown combination of attributes:\n");
+            for (int i = exmlFirst; i < exmlLast; i++)
+            {
+                xmlEntry ix = static_cast<xmlEntry>(i);
+                if (xbuf->find(ix) != xbuf->end() &&
+                    xbuf->find(ix)->second.size() != 0)
+                {
+                    fprintf(debug, "%s = %s\n", exml_names(ix), xbuf->find(ix)->second.c_str());
                 }
             }
+        }
     }
+#undef xbufString
 }
 
-static void processTree(FILE *fp, xmlNodePtr tree, int indent,
-                        Poldata &pd, gmx_atomprop_t aps)
+static void processTree(FILE          *fp, 
+                        xmlBuffer     *xbuf,
+                        xmlNodePtr     tree,
+                        int            indent,
+                        Poldata       *pd,
+                        gmx_atomprop_t aps)
 {
-    char buf[100];
+    char             buf[100];
 
     while (tree != nullptr)
     {
@@ -697,12 +512,12 @@ static void processTree(FILE *fp, xmlNodePtr tree, int indent,
                 int elem = iter->second;
                 if (elem != exmlGENTOP)
                 {
-                    processAttr(fp, tree->properties, elem, indent+2, pd);
+                    processAttr(fp, tree->properties, xbuf, elem, indent+2, pd);
                 }
 
                 if (tree->children)
                 {
-                    processTree(fp, tree->children, indent+2, pd, aps);
+                    processTree(fp, xbuf, tree->children, indent+2, pd, aps);
                 }
             }
         }
@@ -755,12 +570,13 @@ void readPoldata(const std::string &fileName,
     }
 
     pd.setFilename(fn2);
-    processTree(debug, doc->children, 0, pd, aps);
+    xmlBuffer xbuf;
+    processTree(debug, &xbuf, doc->children, 0, &pd, aps);
 
     xmlFreeDoc(doc);
 
     // Generate maps
-    pd.makeMappings();
+    pd.checkForPolarizability();
     pd.checkConsistency(debug);
     if (nullptr != debug)
     {
@@ -788,16 +604,6 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd)
     {
         add_xml_char(child, exml_names(exmlVERSION), tmp.c_str());
     }
-    tmp = pd->getVdwFunction();
-    if (0 != tmp.size())
-    {
-        add_xml_char(child, exml_names(exmlVANDERWAALS), tmp.c_str());
-    }
-    tmp = pd->getCombinationRule();
-    if (0 != tmp.size())
-    {
-        add_xml_char(child, exml_names(exmlCOMB_RULE), tmp.c_str());
-    }
     nexcl = pd->getNexcl();
     add_xml_int(child, exml_names(exmlNEXCL), nexcl);
     double epsilonr = pd->getEpsilonR();
@@ -810,36 +616,10 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd)
         add_xml_char(grandchild, exml_names(exmlELEM), aType->getElem().c_str());
         add_xml_char(grandchild, exml_names(exmlDESC), aType->getDesc().c_str());
         add_xml_char(grandchild, exml_names(exmlATYPE), aType->getType().c_str());
-        add_xml_char(grandchild, exml_names(exmlPTYPE), aType->getPtype().c_str());
-        add_xml_char(grandchild, exml_names(exmlBTYPE), aType->getBtype().c_str());
-        add_xml_char(grandchild, exml_names(exmlZTYPE), aType->getZtype().c_str());
-        add_xml_char(grandchild, exml_names(exmlVDWPARAMS), aType->getVdwparams().c_str());
-        if (aType->fixed())
-        {
-            add_xml_char(grandchild, exml_names(exmlFIXED), "true");
-        }
+        add_xml_char(grandchild, exml_names(exmlPTYPE), aType->id(eitPOLARIZATION).id().c_str());
+        add_xml_char(grandchild, exml_names(exmlBTYPE), aType->id(eitBONDS).id().c_str());
+        add_xml_char(grandchild, exml_names(exmlZTYPE), aType->id(eitELECTRONEGATIVITYEQUALIZATION).id().c_str());
         add_xml_char(grandchild, exml_names(exmlEREF), aType->getRefEnthalpy().c_str());
-    }
-    child = add_xml_child(parent, exml_names(exmlPOLTYPES));
-    tmp   = pd->getPolarUnit();
-    if (0 != tmp.size())
-    {
-        add_xml_char(child, exml_names(exmlPOLAR_UNIT), tmp.c_str());
-    }
-    tmp = pd->getPolarRef();
-    if (0 != tmp.size())
-    {
-        add_xml_char(child, exml_names(exmlREFERENCE), tmp.c_str());
-    }
-    for (auto pType = pd->getPtypeBegin();
-         pType != pd->getPtypeEnd(); pType++)
-    {
-        grandchild = add_xml_child(child, exml_names(exmlPOLTYPE));
-        add_xml_char(grandchild, exml_names(exmlPTYPE), pType->getType().c_str());
-        add_xml_char(grandchild, exml_names(exmlMILLER), pType->getMiller().c_str());
-        add_xml_char(grandchild, exml_names(exmlBOSQUE), pType->getBosque().c_str());
-        add_xml_double(grandchild, exml_names(exmlPOLARIZABILITY), pType->getPolarizability());
-        add_xml_double(grandchild, exml_names(exmlPOLARIZABILITY_SIGMA), pType->getSigPol());
     }
     tmp   = pd->getVsite_angle_unit();
     if (0 != tmp.size())
@@ -862,147 +642,35 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd)
         add_xml_double(grandchild, exml_names(exmlANGLE), vsite->angle());
         add_xml_int(grandchild, exml_names(exmlNCONTROLATOMS), vsite->ncontrolatoms());
     }
-    for (auto fs = pd->forcesBegin(); fs != pd->forcesEnd(); fs++)
+    for (auto &fs : pd->forcesConst())
     {
-        if (eitBONDS == fs->iType())
+        child = add_xml_child(parent,  exml_names(exmlINTERACTION));
+        add_xml_char(child, exml_names(exmlTYPE), interactionTypeToString(fs.first).c_str());
+        add_xml_char(child, exml_names(exmlFUNCTION), fs.second.function().c_str());
+        add_xml_char(child, exml_names(exmlCANSWAP), 
+                     canSwapToString(fs.second.canSwap()).c_str());
+        for (auto &option : fs.second.option())
         {
-            child = add_xml_child(parent, exml_names(exmlGT_BONDS));
-            blu   = fs->unit();
-            if (blu.size() != 0)
-            {
-                add_xml_char(child, exml_names(exmlUNIT), blu.c_str());
-            }
-
-            add_xml_char(child, exml_names(exmlINTERACTION), iType2string(fs->iType()));
-
-            func = fs->function();
-            if (func.size() != 0)
-            {
-                add_xml_char(child, exml_names(exmlFUNCTION), func.c_str());
-            }
-            for (auto f = fs->forceBegin(); f != fs->forceEnd(); f++)
-            {
-                const std::vector<std::string> atoms = f->atoms();
-
-                grandchild = add_xml_child(child, exml_names(exmlGT_BOND));
-                add_xml_char(grandchild, exml_names(exmlATOM1), atoms[0].c_str());
-                add_xml_char(grandchild, exml_names(exmlATOM2), atoms[1].c_str());
-                add_xml_int(grandchild, exml_names(exmlBONDORDER), f->bondOrder());
-                add_xml_double(grandchild, exml_names(exmlREFVALUE), f->refValue());
-                add_xml_double(grandchild, exml_names(exmlSIGMA), f->sigma());
-                add_xml_int(grandchild, exml_names(exmlNTRAIN), f->ntrain());
-                if (f->fixed())
-                {
-                    add_xml_char(grandchild, exml_names(exmlFIXED), "true");
-                }
-                add_xml_char(grandchild, exml_names(exmlPARAMS), f->params().c_str());
-            }
+            auto grandChild = add_xml_child(child, exml_names(exmlOPTION));
+            add_xml_char(grandChild, exml_names(exmlTYPE), option.first.c_str());
+            add_xml_char(grandChild, exml_names(exmlVALUE), option.second.c_str());
         }
-        else if (eitANGLES == fs->iType() ||
-                 eitLINEAR_ANGLES == fs->iType())
+        for (auto &params : fs.second.parametersConst())
         {
-            child = add_xml_child(parent, exml_names(exmlGT_ANGLES));
-            blu   = fs->unit();
-            if (blu.size() != 0)
+            auto grandChild = add_xml_child(child, exml_names(exmlPARAMETERLIST));
+            add_xml_char(grandChild, exml_names(exmlIDENTIFIER), params.first.id().c_str());
+            for (auto &param : params.second)
             {
-                add_xml_char(child, exml_names(exmlUNIT), blu.c_str());
+                auto baby = add_xml_child(grandChild, exml_names(exmlPARAMETER));
+                add_xml_char(baby, exml_names(exmlTYPE), param.first.c_str());
+                add_xml_char(baby, exml_names(exmlUNIT), param.second.unit().c_str());
+                add_xml_double(baby, exml_names(exmlVALUE), param.second.value());
+                add_xml_double(baby, exml_names(exmlUNCERTAINTY), param.second.uncertainty());
+                add_xml_int(baby, exml_names(exmlNTRAIN), param.second.ntrain());
+                add_xml_double(baby, exml_names(exmlMINIMUM), param.second.minimum());
+                add_xml_double(baby, exml_names(exmlMAXIMUM), param.second.maximum());
+                add_xml_char(baby, exml_names(exmlMUTABILITY), mutabilityName(param.second.mutability()).c_str());
             }
-
-            add_xml_char(child, exml_names(exmlINTERACTION), iType2string(fs->iType()));
-
-            func = fs->function();
-            if (func.size() != 0)
-            {
-                add_xml_char(child, exml_names(exmlFUNCTION), func.c_str());
-            }
-            for (auto f = fs->forceBegin(); f != fs->forceEnd(); f++)
-            {
-                const std::vector<std::string> atoms = f->atoms();
-
-                grandchild = add_xml_child(child, exml_names(exmlGT_ANGLE));
-                add_xml_char(grandchild, exml_names(exmlATOM1), atoms[0].c_str());
-                add_xml_char(grandchild, exml_names(exmlATOM2), atoms[1].c_str());
-                add_xml_char(grandchild, exml_names(exmlATOM3), atoms[2].c_str());
-                add_xml_double(grandchild, exml_names(exmlREFVALUE), f->refValue());
-                add_xml_double(grandchild, exml_names(exmlSIGMA), f->sigma());
-                add_xml_int(grandchild, exml_names(exmlNTRAIN), f->ntrain());
-                if (f->fixed())
-                {
-                    add_xml_char(grandchild, exml_names(exmlFIXED), "true");
-                }
-                add_xml_char(grandchild, exml_names(exmlPARAMS), f->params().c_str());
-            }
-        }
-        else if (eitPROPER_DIHEDRALS   == fs->iType() ||
-                 eitIMPROPER_DIHEDRALS == fs->iType())
-        {
-            child = add_xml_child(parent, exml_names(exmlGT_DIHEDRALS));
-            blu   = fs->unit();
-            if (blu.size() != 0)
-            {
-                add_xml_char(child, exml_names(exmlUNIT), blu.c_str());
-            }
-
-            add_xml_char(child, exml_names(exmlINTERACTION), iType2string(fs->iType()));
-
-            func = fs->function();
-            if (func.size() != 0)
-            {
-                add_xml_char(child, exml_names(exmlFUNCTION), func.c_str());
-            }
-
-            for (auto f = fs->forceBegin(); f != fs->forceEnd(); f++)
-            {
-                const std::vector<std::string> atoms = f->atoms();
-
-                grandchild = add_xml_child(child, exml_names(exmlGT_DIHEDRAL));
-                add_xml_char(grandchild, exml_names(exmlATOM1), atoms[0].c_str());
-                add_xml_char(grandchild, exml_names(exmlATOM2), atoms[1].c_str());
-                add_xml_char(grandchild, exml_names(exmlATOM3), atoms[2].c_str());
-                add_xml_char(grandchild, exml_names(exmlATOM4), atoms[3].c_str());
-                add_xml_double(grandchild, exml_names(exmlREFVALUE), f->refValue());
-                add_xml_double(grandchild, exml_names(exmlSIGMA), f->sigma());
-                add_xml_int(grandchild, exml_names(exmlNTRAIN), f->ntrain());
-                if (f->fixed())
-                {
-                    add_xml_char(grandchild, exml_names(exmlFIXED), "true");
-                }
-                add_xml_char(grandchild, exml_names(exmlPARAMS), f->params().c_str());
-            }
-        }
-    }
-
-    child = add_xml_child(parent, exml_names(exmlBSATOMS));
-    std::string ref;
-    pd->getBosqueFlags(tmp, ref);
-    add_xml_char(child, exml_names(exmlPOLAR_UNIT), tmp.c_str());
-    add_xml_char(child, exml_names(exmlREFERENCE), ref.c_str());
-
-    for (auto bosque = pd->getBosqueBegin();
-         bosque != pd->getBosqueEnd(); bosque++)
-    {
-        grandchild = add_xml_child(child, exml_names(exmlBSATOM));
-        add_xml_char(grandchild, exml_names(exmlELEM), bosque->getBosque().c_str());
-        add_xml_double(grandchild, exml_names(exmlPOLARIZABILITY), bosque->getPolarizability());
-    }
-    child = add_xml_child(parent, exml_names(exmlMILATOMS));
-    std::string milref;
-    pd->getMillerFlags(tau_unit, ahp_unit, milref);
-    add_xml_char(child, exml_names(exmlTAU_UNIT), tau_unit.c_str());
-    add_xml_char(child, exml_names(exmlAHP_UNIT), ahp_unit.c_str());
-    add_xml_char(child, exml_names(exmlREFERENCE), milref.c_str());
-    for (auto miller = pd->getMillerBegin();
-         miller != pd->getMillerEnd(); miller++)
-    {
-        grandchild = add_xml_child(child, exml_names(exmlMILATOM));
-        add_xml_char(grandchild, exml_names(exmlMILNAME), miller->getMiller().c_str());
-        add_xml_int(grandchild, exml_names(exmlATOMNUMBER), miller->getAtomnumber());
-        add_xml_double(grandchild, exml_names(exmlTAU_AHC), miller->getTauAhc());
-        add_xml_double(grandchild, exml_names(exmlALPHA_AHP), miller->getAlphaAhp());
-        const std::string ae = miller->getAlexandriaEquiv();
-        if (ae.size() > 0)
-        {
-            add_xml_char(grandchild, exml_names(exmlALEXANDRIA_EQUIV), ae.c_str());
         }
     }
 
@@ -1014,34 +682,6 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd)
         add_xml_char(grandchild, exml_names(exmlCENTRAL), symcharges->getCentral().c_str());
         add_xml_char(grandchild, exml_names(exmlATTACHED), symcharges->getAttached().c_str());
         add_xml_int(grandchild, exml_names(exmlNUMATTACH), symcharges->getNumattach());
-    }
-
-    child = add_xml_child(parent, exml_names(exmlEEMPROPS));
-    add_xml_char(child, exml_names(exmlREFERENCE), pd->getEpref().c_str());
-    for (auto eep = pd->BeginEemprops();
-         eep != pd->EndEemprops(); eep++)
-    {
-        grandchild = add_xml_child(child, exml_names(exmlEEMPROP));
-        add_xml_char(grandchild, exml_names(exmlNAME), eep->getName());
-        add_xml_double(grandchild, exml_names(exmlJ0), eep->getJ0());
-        add_xml_double(grandchild, exml_names(exmlJ0_SIGMA), eep->getJ0_sigma());
-        add_xml_double(grandchild, exml_names(exmlCHI0), eep->getChi0());
-        add_xml_double(grandchild, exml_names(exmlCHI0_SIGMA), eep->getChi0_sigma());
-        add_xml_char(grandchild, exml_names(exmlZETA), eep->getZetastr());
-        add_xml_char(grandchild, exml_names(exmlZETA_SIGMA), eep->getZeta_sigma());
-        add_xml_char(grandchild, exml_names(exmlCHARGES), eep->getQstr());
-        add_xml_double(grandchild, exml_names(exmlREF_CHARGES), eep->getQref());
-        add_xml_char(grandchild, exml_names(exmlROW), eep->getRowstr());
-    }
-    const auto bCorr = pd->bondCorrections();
-    for (const auto &bc : bCorr)
-    {
-        grandchild = add_xml_child(child, exml_names(exmlBONDCORRECTION));
-        add_xml_char(grandchild, exml_names(exmlNAME), bc.name().c_str());
-        add_xml_double(grandchild, exml_names(exmlHARDNESS), bc.hardness());
-        add_xml_double(grandchild, exml_names(exmlHARDNESS_SIGMA), bc.hardness_sigma());
-        add_xml_double(grandchild, exml_names(exmlELECTRONEGATIVITY), bc.electronegativity());
-        add_xml_double(grandchild, exml_names(exmlELECTRONEGATIVITY_SIGMA), bc.electronegativity_sigma());
     }
 }
 

@@ -38,9 +38,13 @@
 #include "gromacs/utility/stringutil.h"
 
 #include "forcefieldparameter.h"
+#include "identifier.h"
 
 namespace alexandria
 {
+
+//! \brief Shortcut for recurring declaration
+typedef std::map<const Identifier, ForceFieldParameterMap> ForceFieldParameterListMap;
 
 /*! \brief Class to hold the parameters for an interaction type
  *
@@ -51,14 +55,27 @@ namespace alexandria
 class ForceFieldParameterList
 {
  public:
+    //! Empty constructor for slave nodes
+    ForceFieldParameterList() {};
     /*! \brief Constructor
      *
-     * \param[in] function The function for which parameters are stored
+     * \param[in] function The function for which parameters are stored. This may be an empty variable.
+     * \param[in] canSwap  Can atom/bond identifiers be swapped in order
+     * \throw if function is not recognized.
      */
-    ForceFieldParameterList(const std::string &function) : function_(function) {}
+    ForceFieldParameterList(const std::string &function,
+                            CanSwap            canSwap);
    
     //! \brief Return the function name
     const std::string &function() const { return function_; }
+
+    //! \brief Return whether or not identifiers can be swapped
+    CanSwap canSwap() const { return canSwap_; }
+
+    /* \brief
+     * Return the GROMACS function type
+     */
+    const unsigned int &fType() const { return fType_; }
 
     /*! \brief Add function specific options
      *
@@ -79,6 +96,7 @@ class ForceFieldParameterList
     {
         return options_.find(option) != options_.end();
     }
+
     /*! \brief Extract the value corresponding to an option
      *
      * \param[in] option Name of the option
@@ -96,15 +114,29 @@ class ForceFieldParameterList
         return ov->second;
     }
 
+    //! Return the options map
+    const std::map<const std::string, const std::string> &option() const { return options_; }
+
+    //! Return the parameters map as a const variable
+    const ForceFieldParameterListMap &parametersConst() const { return parameters_; };
+    
+    //! Return the parameters map as an editable variable
+    ForceFieldParameterListMap *parameters() { return &parameters_; };
+    
+    //! Clear the parameter map
+    void clearParameters() { parameters_.clear(); }
+
     /*! \brief Add one parameter to the map
      *
      * Add one parameter for the given identifier (e.g. atomtype or bond).
      * If the parameter type has been set already an exception will be raised 
      * (this check has not been implemented yet).
      * \param[in] identifier Name of the atomtype or bond
+     * \param[in] type       The parameter type
      * \param[in] param      The force field parameter structure
      */
-    void addParameter(const std::string         &identifier,
+    void addParameter(const Identifier          &identifier,
+                      const std::string         &type,
                       const ForceFieldParameter &param);
        
     
@@ -113,34 +145,90 @@ class ForceFieldParameterList
      * \param[in] identifier  Name of the bond or atomtype
      * \return bool value 
      */
-    bool parameterExists(const std::string &identifier) const
+    bool parameterExists(const Identifier &identifier) const
     {
         return parameters_.find(identifier) != parameters_.end();
     }
 
-    /*! \brief Look up vector of parameters
+    /*! \brief Get number of parameters in this list
+     * \return number of parameters
+     */
+    size_t numberOfParameters() const { return parameters_.size(); }
+
+    /*! \brief check whether any parameter exists for identifier
+     *
+     * \param[in] identifier  Name of the bond or atomtype
+     * \return Parameter index
+     */
+    size_t parameterId(const Identifier &identifier) const;
+
+    /*! \brief Look up mao of parameters
      * Will throw an exception when identifier is not found
      * \param[in] identifier Name of the atomtype or bond
      * \return vector of parameters
      */
-    const std::vector<ForceFieldParameter> &searchParameter(const std::string &identifier) const;
+    const ForceFieldParameterMap &findParametersConst(const Identifier &identifier) const;
     
-    /*! \brief Find vector of parameters for editing
+    /*! \brief Find map of parameters for editing
      * Will throw an exception when identifier is not found
      * \param[in] identifier Name of the atomtype or bond
      * \return vector of parameters
      */
-    std::vector<ForceFieldParameter> &findParameter(const std::string &identifier);
-    
+    ForceFieldParameterMap *findParameters(const Identifier &identifier);
+
+    /*! \brief Convenience function to look up specific parameter
+     *
+     * \param[in] identifier String with atoms or bonds
+     * \param[in] type       The parameter type, e.g. sigma or bondlength
+     * \throws if not found
+     */
+    const ForceFieldParameter &findParameterTypeConst(const Identifier  &identifier,
+                                                      const std::string &type) const;
+
+    /*! \brief Convenience function to look up specific parameter for editing
+     *
+     * \param[in] identifier String with atoms or bonds
+     * \param[in] type       The parameter type, e.g. sigma or bondlength
+     * \throws if not found
+     */
+    ForceFieldParameter *findParameterType(const Identifier  &identifier,
+                                           const std::string &type);
+
+    /*! \brief
+     * Clear the parameter map. Used in bastat to rebuild the parameters.
+     */
+    void eraseParameter() { parameters_.clear(); }
+
+    /*! \brief Send the contents to another processor
+     * \param[in] cr   Communication data structure
+     * \param[in] dest Processor id to send the data to
+     */
+    CommunicationStatus Send(const t_commrec *cr, int dest) const;
+
+    /*! \brief Receive contents from another processor
+     * \param[in] cr  Communication data structure
+     * \param[in] src Processor id to receive the data from
+     */
+    CommunicationStatus Receive(const t_commrec *cr, int src);
+
  private:
-    //! The function type
-    std::string function_;
+    //! The function type string
+    std::string  function_;
+
+    //! Whether or not swapping is allowed
+    CanSwap      canSwap_;
+
+    //! The GROMACS function type
+    unsigned int fType_;
 
     //! Map structure for the options associated with the parameter list
-    std::map<const std::string, const std::string>   options_;
+    std::map<const std::string, const std::string> options_;
         
     //! Map of parameters 
-    std::map<const std::string, std::vector<ForceFieldParameter> > parameters_;
+    ForceFieldParameterListMap parameters_;
+
+    //! Counter for index
+    size_t counter_ = 0;
 };
 
 } // namespace

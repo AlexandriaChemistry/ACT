@@ -41,6 +41,7 @@
 
 #include "molprop_util.h"
 #include "mymol.h"
+#include "units.h"
 
 namespace alexandria
 {
@@ -282,10 +283,10 @@ void print_electric_props(FILE                           *fp,
                           bool                            bDipole,
                           bool                            bQuadrupole,
                           bool                            bfullTensor,
-                          IndexCount                     *indexCount,
                           t_commrec                      *cr,
                           real                            efield,
-                          bool                            useOffset)
+                          bool                            useOffset,
+                          const std::vector<OptimizationIndex> &optIndex)
 {
     int            i    = 0, j     = 0, n     = 0;
     int            nout = 0, mm    = 0, nn    = 0;
@@ -318,13 +319,15 @@ void print_electric_props(FILE                           *fp,
     lsq_charge   = gmx_stats_init();
     n            = 0;
 
-    for (auto ai = indexCount->beginIndex(); ai < indexCount->endIndex(); ++ai)
+    for (auto ai : optIndex)
     {
         // More than 1 data point is needed for doing statistical analysis for each zeta type.
-        if (ai->count() > 1)
+        auto p = pd->findForcesConst(ai.iType()).findParameterTypeConst(ai.id(), ai.type());
+
+        if (p.ntrain() > 1)
         {
             ZetaTypeLsq k;
-            k.ztype.assign(ai->name());
+            k.ztype.assign(ai.name());
             k.lsq = gmx_stats_init();
             lsqt.push_back(std::move(k));
         }
@@ -348,7 +351,7 @@ void print_electric_props(FILE                           *fp,
             mol.QgenResp_->updateAtomCharges(mol.atoms_);
             mol.QgenResp_->updateAtomCoords(mol.x());
             mol.QgenResp_->calcPot(pd->getEpsilonR());
-            real rrms    = 0, wtot = 0, cosangle = 0;
+            real rrms    = 0, cosangle = 0;
             bool espZero = false;
             for (size_t i = 0; i < mol.QgenResp_->nEsp(); i++)
             {
@@ -359,8 +362,8 @@ void print_electric_props(FILE                           *fp,
                     espZero = true;
                 }
             }
-            auto rms    = mol.QgenResp_->getRms(&wtot, &rrms, &cosangle);
-            auto espRms = convert2gmx(rms, eg2cHartree_e);
+            auto rms    = mol.QgenResp_->getRms(&rrms, &cosangle);
+            auto espRms = convertToGromacs(rms, "Hartree/e");
             fprintf(fp, "ESP rms: %g (kJ/mol e) %s\n", espRms, (espRms > esp_toler) ? " EEE" : "");
             fprintf(fp, "ESP cosangle: %.3f%s\n", cosangle, (cosangle < 0.5) ? " WWW" : "");
             if (espZero)
@@ -434,7 +437,7 @@ void print_electric_props(FILE                           *fp,
                     mol.atoms_->atom[j].ptype == eptNucleus)
                 {
                     auto  atp = pd->findAtype(*(mol.atoms_->atomtype[j]));
-                    auto  ztp = atp->getZtype();
+                    auto  ztp = atp->id(eitELECTRONEGATIVITYEQUALIZATION).id();
                     auto  k   = std::find_if(lsqt.begin(), lsqt.end(),
                                              [ztp](const ZetaTypeLsq &atlsq)
                                              {
@@ -659,7 +662,7 @@ void print_header(FILE                       *fp,
             value = gmx::formatString("%d", *p.u.i);
             break;
         case etINT64:
-            value = gmx::formatString("%ld", *p.u.is);
+            value = gmx::formatString("%lld", *p.u.is);
             break;
         case etREAL:
             value = gmx::formatString("%g", *p.u.r);

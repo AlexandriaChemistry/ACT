@@ -128,9 +128,9 @@ void makeCategoryList(CategoryList         &cList,
         if ((ims == gms.status(mpi->getIupac())) &&
             mpi->HasComposition(alex))
         {
-            for (std::vector<std::string>::iterator si = mpi->BeginCategory(); (si < mpi->EndCategory()); si++)
+            for (auto &si : mpi->categoryConst())
             {
-                cList.addCategory(*si, mpi->getIupac());
+                cList.addCategory(si, mpi->getIupac());
             }
         }
     }

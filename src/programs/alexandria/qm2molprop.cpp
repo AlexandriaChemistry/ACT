@@ -176,7 +176,7 @@ int alex_qm2molprop(int argc, char *argv[])
     MergeDoubleMolprops(&mp, nullptr, TRUE);
     if (mp.size() > 0)
     {
-        MolPropWrite(opt2fn("-o", NFILE, fnm), &mp, (int)compress);
+        MolPropWrite(opt2fn("-o", NFILE, fnm), mp, (int)compress);
     }
 
     return 0;

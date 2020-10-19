@@ -54,8 +54,6 @@ class RespAtomType
                      double                          zeta,
                      double                          q);
 
-        size_t getNZeta() const { return rz_.size(); }
-
         const std::string &getAtomtype() const { return atomtype_; }
 
         void setAtomtype(const std::string &type) { atomtype_ = type; }
@@ -70,6 +68,9 @@ class RespAtomType
 
         void setAtype(int i) { atype_ = i; }
 
+#ifdef OLDER
+        size_t getNZeta() const { return rz_.size(); }
+
         RowZetaQIterator beginRZ() { return rz_.begin(); }
 
         RowZetaQIterator endRZ() { return rz_.end(); }
@@ -77,7 +78,7 @@ class RespAtomType
         RowZetaQConstIterator beginRZ() const { return rz_.begin(); }
 
         RowZetaQConstIterator endRZ() const { return rz_.end(); }
-
+#endif
     private:
         //! Atom type index
         int                   atype_;
@@ -89,8 +90,10 @@ class RespAtomType
         bool                  bHasShell_;
         //! String corresponding to atom type
         std::string           atomtype_;
+#ifdef OLDER
         //! Arrays of charge components
         std::vector<RowZetaQ> rz_;
+#endif
 };
 
 using RespAtomTypeIterator      = typename std::vector<RespAtomType>::iterator;

@@ -73,27 +73,21 @@ static void eemprops_zeta_header(LongTable &lt,
 void alexandria_eemprops_table(FILE           *fp,
                                const Poldata  *pd)
 {
-    char       longbuf[STRLEN];
     LongTable  lt(fp, false, nullptr);
 
     eemprops_zeta_header(lt, pd);
-    for (auto eem = pd->BeginEemprops(); eem < pd->EndEemprops(); eem++)
+    auto eep = pd->findForcesConst(eitELECTRONEGATIVITYEQUALIZATION);
+    for (auto &eem : eep.parametersConst())
     {
-        if (eem != pd->EndEemprops())
-        {
-            auto nzeta = eem->getNzeta();
-            auto atype = pd->ztype2atype(eem->getName());
-            
-            snprintf(longbuf, STRLEN, "%s & %0.5f (%0.3f) & %0.5f (%0.3f) & %0.5f (%0.3f)",
-                     atype.c_str(),
-                     eem->getChi0(),
-                     eem->getChi0_sigma() + 0.005,
-                     eem->getJ0(),
-                     eem->getJ0_sigma() + 0.005,
-                     eem->getZeta(nzeta-1),
-                     my_atof(gmx::splitString(eem->getZeta_sigma()).back().c_str(), "zeta") + 0.005);
-            lt.printLine(longbuf);
-        }
+        auto chi  = &eem.second.find("chi")->second;
+        auto jaa  = &eem.second.find("jaa")->second;
+        auto zeta = &eem.second.find("zeta")->second;
+        auto buf  = gmx::formatString("%s & %0.5f (%0.3f) & %0.5f (%0.3f) & %0.5f (%0.3f)",
+                                     eem.first.id().c_str(),
+                                     chi->value(), chi->uncertainty() + 0.005,
+                                     jaa->value(), jaa->uncertainty() + 0.005,
+                                     zeta->value(), zeta->uncertainty() + 0.005);
+        lt.printLine(buf.c_str());
     }
     lt.printFooter();
     fflush(fp);
@@ -111,17 +105,16 @@ void alexandria_eemprops_corr(const Poldata  *pd,
     real cz = 0;
     real ez = 0;
     
-    for (auto eem = pd->BeginEemprops(); eem < pd->EndEemprops(); eem++)
+    auto eep = pd->findForcesConst(eitELECTRONEGATIVITYEQUALIZATION);
+    for (auto &eem : eep.parametersConst())
     {
-        if (eem != pd->EndEemprops())
-        {
-            auto nzeta = eem->getNzeta();
-            auto atype = pd->ztype2atype(eem->getName()); 
-                      
-            gmx_stats_add_point(chi_eta,    eem->getChi0(), eem->getJ0(), 0, 0);
-            gmx_stats_add_point(chi_zeta,   eem->getChi0(), eem->getZeta(nzeta-1), 0, 0);
-            gmx_stats_add_point(eta_zeta,   eem->getJ0(),   eem->getZeta(nzeta-1), 0, 0);
-        }
+        auto chi  = eem.second.find("chi")->second.value();
+        auto jaa  = eem.second.find("jaa")->second.value();
+        auto zeta = eem.second.find("zeta")->second.value();
+        
+        gmx_stats_add_point(chi_eta,  chi, jaa, 0, 0);
+        gmx_stats_add_point(chi_zeta, chi, zeta, 0, 0);
+        gmx_stats_add_point(eta_zeta, jaa, zeta, 0, 0);
     }
     
     gmx_stats_get_corr_coeff(chi_eta,    &ce);
