@@ -208,7 +208,7 @@ class OptACM : public MolGen, Bayes
          * Copy the optimization parameters to the poldata structure
          * \param[in] changed List over the parameters that have changed.
          */
-        virtual void toPolData(const std::vector<bool> gmx_unused &changed);
+        virtual void toPoldata(const std::vector<bool> &changed);
 
         virtual double calcDeviation();
 
@@ -411,7 +411,7 @@ double OptACM::calcDeviation()
             {
                 if (logFile())
                 {
-                    fprintf(logFile(), "Could not generate charges for %s. Removing compound.",
+                    fprintf(logFile(), "Could not generate charges for %s. Removing compound.\n",
                             mymol.getMolname().c_str());
                 }
                 if (removeMol())
@@ -587,7 +587,7 @@ void OptACM::InitOpt(bool bRandom)
     }
 }
 
-void OptACM::toPolData(const std::vector<bool> gmx_unused &changed)
+void OptACM::toPoldata(const std::vector<bool> &changed)
 {
     size_t   n      = 0;
     auto     param  = Bayes::getParam();
@@ -599,10 +599,13 @@ void OptACM::toPolData(const std::vector<bool> gmx_unused &changed)
     Bayes::printParameters(debug);
     for (auto optIndex : optIndex_)
     {
-        auto p = poldata()->findForces(optIndex.iType())->findParameterType(optIndex.id(), optIndex.type());
-
-        p->setValue(param[n]);
-        p->setUncertainty(psigma[n]);
+        if (changed[n])
+        {
+            auto p = poldata()->findForces(optIndex.iType())->findParameterType(optIndex.id(), optIndex.type());
+            
+            p->setValue(param[n]);
+            p->setUncertainty(psigma[n]);
+        }
         n++;
     }
     GMX_RELEASE_ASSERT(n == changed.size(),
@@ -642,8 +645,7 @@ bool OptACM::optRun(FILE                   *fp,
             paramClass.push_back("Eta");
         }
         Bayes::setOutputFiles(xvgconv, paramClass, xvgepot, oenv);
-        param_type param    = Bayes::getParam();
-        double     chi2_min = Bayes::objFunction(param);
+        double     chi2_min = calcDeviation();
         fprintf(logFile(), "Initial chi2 value %g\n", chi2_min);
         printEnergies(logFile());
         for (auto n = 0; n < nrun; n++)
@@ -710,12 +712,17 @@ bool OptACM::optRun(FILE                   *fp,
     setFinal();
     if (MASTER(commrec()))
     {
-        param_type best = Bayes::getBestParam();
+        auto best = Bayes::getBestParam();
         if (!best.empty())
         {
-            // Calling objFunction will copy these parameters to
-            // poldata if all is well.
-            double chi2 = Bayes::objFunction(best);
+            // Restore best parameter set
+            Bayes::setParam(best);
+            // Copy it to Poldata
+            std::vector<bool> changed;
+            changed.resize(best.size(), true);
+            toPoldata(changed);
+            // Compute the deviation once more
+            double chi2 = calcDeviation();
             printEnergies(fp);
             printEnergies(logFile());
             fprintf(logFile(), "Minimum energy chi2 %g\n", chi2);

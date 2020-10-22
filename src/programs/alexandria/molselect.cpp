@@ -255,10 +255,11 @@ static void printAtomtypeStatistics(FILE                                 *fp,
     }
     for (const auto &mol : mymol)
     {
-        int ntypes = get_atomtype_ntypes(mol.atype_);
+        auto atype = mol.gromppAtomtype();
+        int ntypes = get_atomtype_ntypes(*atype);
         for (int i = 0; i < ntypes; i++)
         {
-            char *tp = get_atomtype_name(i, mol.atype_);
+            char *tp = get_atomtype_name(i, *atype);
             for (auto &n : nn)
             {
                 if (n.name.compare(tp) == 0)

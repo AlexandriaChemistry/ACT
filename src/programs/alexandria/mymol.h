@@ -137,7 +137,12 @@ class MyMol : public MolProp
         MyForceProvider                 *myforce_;
         GentopVsites                     gvt_;
         std::string                      forcefield_;
-        
+        double                           isoPol_elec_   = 0;
+        double                           isoPol_calc_   = 0;
+        bool                             gromacsGenerated_ = false;
+        gpp_atomtype_t                   gromppAtomtype_;
+        //! Store the bond order for an atom pair
+        std::map<std::pair<int, int>, int> bondOrder_;
 
         //! Array of dipole vectors
         rvec                      mu_qm_[qtNR];
@@ -244,11 +249,21 @@ class MyMol : public MolProp
          */
         void setQandMoments(qType qt, int natom, real q[]);
         
-        
-
-        double                         isoPol_elec_   = 0;
-        double                         isoPol_calc_   = 0;
-        bool                           gromacsGenerated_ = false;
+        /*! \brief Utility function to construct an identifier from GROMACS
+         * topology indices.
+         *
+         * \param[in] pd     Poldata
+         * \param[in] iType  The interaction type
+         * \param[in] btype  Vector of all bond types for the atoms in this mymol
+         * \param[in] natoms Number of atoms in this interaction
+         * \param[in] iatoms The atom indices
+         * \return An identifier
+         */
+        Identifier getIdentifier(const Poldata                  *pd,
+                                 InteractionType                 iType,
+                                 const std::vector<std::string> &btype,
+                                 int                             natoms,
+                                 const int                      *iatoms);
     public:
         double                         chieq_         = 0;
         // Enthalpy of formation (experimental) for this compound
@@ -269,7 +284,6 @@ class MyMol : public MolProp
         std::vector<PlistWrapper>      plist_;
         gmx_mtop_t                    *mtop_;
         gmx_localtop_t                *ltop_;
-        gpp_atomtype_t                 atype_;
         gmx_shellfc_t                 *shellfc_;
         t_symtab                      *symtab_;
         t_inputrec                    *inputrec_;
@@ -357,7 +371,11 @@ class MyMol : public MolProp
         /*! \brief
          * Return mtop structure
          */
-        const gmx_mtop_t *mtop() { return mtop_; }
+        const gmx_mtop_t *mtop() const { return mtop_; }
+        /*! \brief
+         * Return grompp Atomtype structure
+         */
+        const gpp_atomtype_t *gromppAtomtype() const { return &gromppAtomtype_; }
         /*! \brief
          * Return mol state
          */

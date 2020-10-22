@@ -341,8 +341,8 @@ immStatus updatePlist(const Poldata             *pd,
                 }
                 else if (!bBASTAT)
                 {
-                    errors->push_back(gmx::formatString("Could not find bond information for %s in %s\n",
-                                                        bondId.id().c_str(), molname.c_str()));
+                    errors->push_back(gmx::formatString("Could not find information for %s in %s - ftype %s\n",
+                                                        bondId.id().c_str(), molname.c_str(), interaction_function[fs.fType()].longname).c_str());
                     if (iType == eitBONDS)
                     {
                         return immNotSupportedBond;

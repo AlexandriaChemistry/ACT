@@ -116,8 +116,17 @@ class Ffatype
 
         /*! \brief
          * Return an identifier for an interaction type
+         * \throws if iType is not present
          */
         Identifier id(InteractionType iType) const;
+
+        /*! \brief
+         * Return whether an identifier for an interaction type is present
+         */
+        bool hasId(InteractionType iType) const
+        { 
+            return subType_.find(iType) != subType_.end();
+        }
 
         /*! \brief
          * Return the element name of atoms

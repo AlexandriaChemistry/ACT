@@ -33,7 +33,6 @@ set(ALEXANDRIA_SOURCES
            communication.cpp
            composition.cpp
            fill_inputrec.cpp
-#           fit_qs_zeta.cpp
            forcefieldparameter.cpp
            forcefieldparameterlist.cpp
 #           gen_table.cpp
@@ -61,7 +60,6 @@ set(ALEXANDRIA_SOURCES
            phase.cpp
            plistwrapper.cpp
            poldata.cpp
-#           poldata_eemprops.cpp
            poldata_low.cpp
            poldata_tables.cpp
            poldata_test.cpp
@@ -69,7 +67,6 @@ set(ALEXANDRIA_SOURCES
            qgen_acm.cpp
            qgen_cube.cpp
            qgen_resp.cpp
-#           qgen_resp_atom.cpp
            qm2molprop.cpp
            readpsi4.cpp
            regression.cpp
@@ -83,8 +80,6 @@ set(ALEXANDRIA_SOURCES
            babel_io.cpp
 #           analyze.cpp
 #           molprop_tables.cpp
-#           tune_pol.cpp
-#           tune_zeta.cpp
 	)
 	
 #add_library(libalexandria ${ALEXANDRIA_SOURCES})	

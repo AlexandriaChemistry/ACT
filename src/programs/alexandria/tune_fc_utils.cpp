@@ -174,6 +174,7 @@ void ForceConstants::analyzeIdef(const std::vector<MyMol> &mm,
     }
     for (auto &mymol : mm)
     {
+        GMX_THROW(gmx::InternalError("Use UpdateIdef"));
         bool bondsFound = true;
         for (int i = 0; (i < mymol.ltop_->idef.il[ftype_].nr) && bondsFound;
              i += interaction_function[ftype_].nratoms+1)

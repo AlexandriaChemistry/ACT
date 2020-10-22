@@ -183,23 +183,6 @@ void Bayes::changeParam(size_t j, real rand)
     }
 }
 
-double Bayes::objFunction(std::vector<double> v)
-{
-    auto              np = param_.size();
-    GMX_RELEASE_ASSERT(np == v.size(), 
-                       gmx::formatString("Vector size mismatch np=%zu, v=%zu",
-                                         np, v.size()).c_str());
-    std::vector<bool> changed;
-    changed.resize(np, false);
-    for (size_t i = 0; i < np; i++)
-    {
-        changed[i] = (param_[i] != v[i]);
-        param_[i]  = v[i];
-    }
-    toPolData(changed);
-    return calcDeviation();
-}
-
 double Bayes::MCMC(FILE *fplog)
 {
     double                           storeParam;
@@ -289,8 +272,10 @@ double Bayes::MCMC(FILE *fplog)
     psigma_.resize(nParam, 0);
     attemptedMoves_.resize(nParam, 0);
     acceptedMoves_.resize(nParam, 0);
-    
-    prevEval = objFunction(param_);
+    std::vector<bool> changed;
+    changed.resize(nParam, false);
+    toPoldata(changed);
+    prevEval = calcDeviation();
     minEval  = prevEval;
     if (debug)
     {
@@ -317,16 +302,18 @@ double Bayes::MCMC(FILE *fplog)
     for (int iter = 0; iter < total_iterations; iter++)
     {       
         // Pick a random parameter to change
-        j                  = int_uniform(gen);        
+        j                  = int_uniform(gen);
         prevParam_         = param_;
         storeParam         = param_[j];
         attemptedMoves_[j] = attemptedMoves_[j] + 1;
         
         // Change the picked parameter
         changeParam(j, real_uniform(gen));
+        changed[j]         = true;
         
         // Evaluate the energy
-        currEval        = objFunction(param_);
+        toPoldata(changed);
+        currEval        = calcDeviation();
         deltaEval       = currEval-prevEval; 
         
         // Accept any downhill move       
@@ -370,6 +357,7 @@ double Bayes::MCMC(FILE *fplog)
         {
             param_[j] = storeParam;
         }
+        changed[j] = false;
 
         for(auto fp: fpc)
         {
@@ -509,8 +497,10 @@ double Bayes::Adaptive_MCMC(FILE *fplog)
     psigma_.resize(nParam, 0);
     attemptedMoves_.resize(nParam, 0);
     acceptedMoves_.resize(nParam, 0);
-    
-    prevEval = objFunction(param_);
+    std::vector<bool> changed;
+    changed.resize(nParam, false);
+    toPoldata(changed);
+    prevEval = calcDeviation();
     minEval  = prevEval;
     if (debug)
     {
@@ -545,9 +535,11 @@ double Bayes::Adaptive_MCMC(FILE *fplog)
         
         // Change the picked parameter
         changeParam(j, real_uniform(gen));
+        changed[j]         = true;
         
         // Evaluate the energy
-        currEval        = objFunction(param_);
+        toPoldata(changed);
+        currEval        = calcDeviation();
         deltaEval       = currEval-prevEval; 
         
         // Accept any downhill move       
@@ -600,7 +592,8 @@ double Bayes::Adaptive_MCMC(FILE *fplog)
         {
             param_[j] = storeParam;
         }
-
+        changed[j] = false;
+        
         for(auto fp: fpc)
         {
             fprintf(fp, "%8f", xiter);

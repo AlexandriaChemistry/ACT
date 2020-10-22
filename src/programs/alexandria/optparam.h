@@ -241,6 +241,15 @@ class Bayes : public OptParam
         }
 
         /*! \brief
+         * Set all parameters to the array passed
+         */
+        void setParam(parm_t param)
+        {
+            GMX_RELEASE_ASSERT(param.size() == param_.size() || param_.empty(),
+                               "Incorrect size of input parameters");
+            param_ = param;
+        }
+        /*! \brief
          * Returns the current vector of parameters.
          */
         const parm_t &getInitialParam() const { return initial_param_; }
@@ -303,17 +312,10 @@ class Bayes : public OptParam
          * Copy the optimization parameters to the poldata structure
          * \param[in] changed List over the parameters that have changed.
          */
-        virtual void toPolData(const std::vector<bool> &changed) = 0;
+        virtual void toPoldata(const std::vector<bool> &changed) = 0;
 
         //! Compute the chi2 from the target function
         virtual double calcDeviation() = 0;
-
-        /*! \brief
-         * Objective function for parameter optimization
-         * \param[in] v Array of parameters.
-         * \return Total value (chi2) corresponding to deviation
-         */
-        double objFunction(std::vector<double> v);
 
         /*! Return number of planned function calls 
          * Return the number of calls to the objective function

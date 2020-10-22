@@ -245,7 +245,7 @@ class Optimization : public MolGen, Bayes
          *
          * \param[in] changed Boolean list stating whether a parameter has changed
          */
-        void toPolData(const std::vector<bool> &changed);
+        void toPoldata(const std::vector<bool> &changed);
 
         /*! \brief
          * Broadcast changes in Poldata to the
@@ -548,7 +548,7 @@ void Optimization::polData2TuneFc(bool bRandom)
     }
 }
 
-void Optimization::toPolData(const std::vector<bool> &changed)
+void Optimization::toPoldata(const std::vector<bool> &changed)
 {
     size_t n   = 0;
     poldataUpdates_.clear();
@@ -930,7 +930,7 @@ bool Optimization::optRun(FILE                   *fplog,
                 gmx_send_int(commrec(), dest, niter);
             }
         }
-        double chi2_min = Bayes::objFunction(Bayes::getParam());
+        double chi2_min = calcDeviation();
         if (fplog)
         {
             fprintf(fplog, "Initial chi2 %g\n", chi2_min);
@@ -956,16 +956,22 @@ bool Optimization::optRun(FILE                   *fplog,
                 auto psigma = Bayes::getPsigma();
                 auto best   = Bayes::getBestParam();
                 // This call copies data to poldata as well.
-                double chi2 = Bayes::objFunction(best);
-                fprintf(fplog, "\nLowest RMSD value during optimization: %g.\n",
-                        std::sqrt(chi2));
-                fprintf(fplog, "Parameters after the optimization:\n");
-                fprintf(fplog, "%-5s  %10s  %10s  %10s\n", "Index",
-                        "Average", "Std. Dev.", "Optimum");
-                for (size_t k = 0; k < Bayes::nParam(); k++)
+                if (!best.empty())
                 {
-                    fprintf(fplog, "%5zu  %10g  %10g  %10g\n",
-                            k, pmean[k], psigma[k], best[k]);
+                    std::vector<bool> changed;
+                    changed.resize(best.size(), true);
+                    toPoldata(changed);
+                    double chi2 = calcDeviation();
+                    fprintf(fplog, "\nLowest RMSD value during optimization: %g.\n",
+                            std::sqrt(chi2));
+                    fprintf(fplog, "Parameters after the optimization:\n");
+                    fprintf(fplog, "%-5s  %10s  %10s  %10s\n", "Index",
+                            "Average", "Std. Dev.", "Optimum");
+                    for (size_t k = 0; k < Bayes::nParam(); k++)
+                    {
+                        fprintf(fplog, "%5zu  %10g  %10g  %10g\n",
+                                k, pmean[k], psigma[k], best[k]);
+                    }
                 }
             }
             printEnergies(fplog);

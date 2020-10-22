@@ -227,7 +227,7 @@ void MolGen::checkDataSufficiency(FILE *fp)
     {
         nmol = mymol_.size();
         /* First set the ntrain values for all forces
-         * present zero.
+         * present that should be optimized to zero.
          */
         for(auto &io : iOpt_)
         {
