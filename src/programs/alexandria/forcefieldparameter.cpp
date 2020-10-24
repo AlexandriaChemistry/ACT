@@ -156,6 +156,12 @@ CommunicationStatus ForceFieldParameter::Send(const t_commrec *cr, int dest) con
         gmx_send_int(cr, dest, static_cast<int>(originalNtrain_));
         gmx_send_double(cr, dest, minimum_);
         gmx_send_double(cr, dest, maximum_);
+        gmx_send_int(cr, dest, strict_ ? 1 : 0);
+        if (debug)
+        {
+            fprintf(debug, "Sent most of a parameter\n");
+            fflush(debug);
+        }
         switch (mutability_)
         {
         case Mutability::Free:
@@ -171,7 +177,6 @@ CommunicationStatus ForceFieldParameter::Send(const t_commrec *cr, int dest) con
             gmx_send_int(cr, dest, 3);
             break;
         }
-        gmx_send_int(cr, dest, strict_ ? 1 : 0);
 
         if (nullptr != debug)
         {
@@ -196,6 +201,14 @@ CommunicationStatus ForceFieldParameter::Receive(const t_commrec *cr, int src)
         originalUncertainty_ = gmx_recv_double(cr, src);
         ntrain_              = static_cast<uint64_t>(gmx_recv_int(cr, src));
         originalNtrain_      = static_cast<uint64_t>(gmx_recv_int(cr, src));
+        minimum_             = gmx_recv_double(cr, src);
+        maximum_             = gmx_recv_double(cr, src);
+        strict_              = gmx_recv_int(cr, src);
+        if (debug)
+        {
+            fprintf(debug, "Received most of ff param\n");
+            fflush(debug);
+        }
         int mut              = gmx_recv_int(cr,src);
         switch (mut)
         {

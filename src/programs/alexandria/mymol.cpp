@@ -584,7 +584,7 @@ void MyMol::MakeAngles(bool bPairs,
     }
 }
 
-immStatus MyMol::GenerateAtoms(gmx_atomprop_t     ap,
+immStatus MyMol::GenerateAtoms(const Poldata     *pd,
                                const std::string &method,
                                const std::string &basis,
                                std::string       *mylot)
@@ -636,24 +636,24 @@ immStatus MyMol::GenerateAtoms(gmx_atomprop_t     ap,
                                 atoms_->atom[natom].resind, ' ', 
                                 cai.chainId(), cai.chain());
             atoms_->atomname[natom]        = put_symtab(symtab_, cai.getName().c_str());
-            atoms_->atom[natom].atomnumber = gmx_atomprop_atomnumber(ap, cai.getName().c_str());
-
-            real mass = 0;
-            if (!gmx_atomprop_query(ap, epropMass, "???", cai.getName().c_str(), &mass))
-            {
-                fprintf(stderr, "Could not find mass for %s\n", cai.getName().c_str());
-            }
-            atoms_->atom[natom].m      =
-                atoms_->atom[natom].mB = mass;
-
-            strcpy(atoms_->atom[natom].elem,
-                   gmx_atomprop_element(ap, atoms_->atom[natom].atomnumber));
 
             // First set the atomtype
             atoms_->atomtype[natom]      =
                 atoms_->atomtypeB[natom] = put_symtab(symtab_, cai.getObtype().c_str());
-
-            natom++;
+            auto atype = pd->findAtype(cai.getObtype());
+            if (atype != pd->getAtypeEnd())
+            {
+                atoms_->atom[natom].m      =
+                    atoms_->atom[natom].mB = atype->mass();
+                atoms_->atom[natom].atomnumber = atype->atomnumber();
+                strncpy(atoms_->atom[natom].elem, atype->getElem().c_str(), sizeof(atoms_->atom[natom].elem)-1);
+                
+                natom++;
+            }
+            else
+            {
+                GMX_THROW(gmx::InternalError(gmx::formatString("Cannot find atomtype %s in poldata", cai.getObtype().c_str()).c_str()));
+            }
         }
         for (auto i = 0; i < natom; i++)
         {
@@ -732,8 +732,7 @@ immStatus MyMol::zeta2atoms(const Poldata *pd)
     return immOK;
 }
 
-immStatus MyMol::GenerateTopology(gmx_atomprop_t     ap,
-                                  const Poldata     *pd,
+immStatus MyMol::GenerateTopology(const Poldata     *pd,
                                   const std::string &method,
                                   const std::string &basis,
                                   std::string       *mylot,
@@ -760,7 +759,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t     ap,
     {
         snew(atoms_, 1);
         state_change_natoms(state_, NAtom());
-        imm = GenerateAtoms(ap, method, basis, mylot);
+        imm = GenerateAtoms(pd, method, basis, mylot);
     }
     if (immOK == imm)
     {
@@ -786,43 +785,10 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t     ap,
             Identifier bondId({btype1, btype2}, bi.getBondOrder(), CanSwap::Yes);
             // Store the bond order for later usage.
             bondOrder_.insert({std::make_pair(b.a[0],b.a[1]), bi.getBondOrder()});
-            
-            int ii = 0;
-            // We need to mix up the ftype for bond between F_BONDS (default
-            // for the force field) and whatever is given in the gentop.dat
-            // file.
-            auto realFtype = fs.fType();
-            if (!bBASTAT)
-            {
-                // If we are running bastat, the list is still empty.
-                // TODO this code mixes up the parameters in the wrong order
-                for(const auto &fp : fs.findParametersConst(bondId))
-                {
-                    if (ii >= MAXFORCEPARAM)
-                    {
-                        GMX_THROW(gmx::InternalError(gmx::formatString("Too many parameters inserted into t_param").c_str()));
-                    }
-                    b.c[ii++] = convertToGromacs(fp.second.value(), fp.second.unit());
-                }
-            }
-            else
-            {
-                // Just set the counter to the correct number
-                ii = interaction_function[realFtype].nrfpA;
-            }
-            if (ii == interaction_function[realFtype].nrfpA)
-            {
-                add_param_to_plist(plist_, ftb, eitBONDS, b, bi.getBondOrder());
-            }
-            else
-            {
-                // Insert a dummy bond with a bond order of 1 to be replaced later
-                for (auto i = 0; i < MAXFORCEPARAM; i++)
-                {
-                    b.c[i] = 0;
-                }
-                add_param_to_plist(plist_, ftb, eitBONDS, b, 1);
-            }
+            // We add the parameter with zero parameters, they will be
+            // set further down. However it is important to set the
+            // bondorder.
+            add_param_to_plist(plist_, ftb, eitBONDS, b, bi.getBondOrder());
         }
         auto pw = SearchPlist(plist_, ftb);
         if (plist_.end() == pw || pw->nParam() == 0)
@@ -938,7 +904,7 @@ void MyMol::addShells(const Poldata *pd)
             {
                 auto ptype = fa->id(eitPOLARIZATION);
                 auto param = pd->findForcesConst(eitPOLARIZATION).findParameterTypeConst(ptype, "alpha");
-                auto pol   = param.value();
+                auto pol   = convertToGromacs(param.value(), param.unit());
                 if (pol > 0)
                 {
                     p.a[0] = renum[i];
@@ -951,7 +917,7 @@ void MyMol::addShells(const Poldata *pd)
                             pol /= vsite->nvsite();
                         }
                     }
-                    p.c[0] = convertToGromacs(pol, param.unit());
+                    p.c[0] = pol;
                     add_param_to_plist(plist_, F_POLARIZATION, eitPOLARIZATION, p);
                 }
             }
@@ -1031,22 +997,23 @@ void MyMol::addShells(const Poldata *pd)
             atoms_->atom[i].ptype == eptVSite)
         {
             std::string atomtype;
-            auto        iat = renum[i]; // Atom or Vsite
-            auto        j   = iat + 1;  // Shell sits next to the Atom or Vsite
-
+            // Shell sits next to the Atom or Vsite
+            auto        j            = 1+renum[i];
             auto        atomtypeName = get_atomtype_name(atoms_->atom[i].type, gromppAtomtype_);
-            vsiteType_to_atomType(atomtypeName, &atomtype);
-            auto fa    = pd->findAtype(atomtypeName);
-            auto ztype = fa->id(eitELECTRONEGATIVITYEQUALIZATION);
-            auto eep   = eem.findParametersConst(ztype);
+            auto fa                  = pd->findAtype(atomtypeName);
+            auto ztype               = fa->id(eitELECTRONEGATIVITYEQUALIZATION);
+            auto eep                 = eem.findParametersConst(ztype);
+            auto shellid             = fa->id(eitPOLARIZATION);
+            auto shelltype           = pd->findAtype(shellid.id());
+            auto shellzetaid         = shelltype->id(eitELECTRONEGATIVITYEQUALIZATION);
+            auto shelleep            = eem.findParametersConst(shellzetaid);
+            // Now fill the newatom
             newatoms->atom[j]               = atoms_->atom[i];
-            newatoms->atom[j].m             = 0;
-            newatoms->atom[j].mB            = 0;
-            newatoms->atom[j].atomnumber    = 0;//atoms_->atom[i].atomnumber;
-            auto shellid                    = fa->id(eitPOLARIZATION);
+            newatoms->atom[j].m             =
+                newatoms->atom[j].mB            = shelltype->mass();
+            // Shell has no core
+            newatoms->atom[j].atomnumber    = 0;
             shell                           = add_atomtype(gromppAtomtype_, symtab_, &shell_atom, shellid.id().c_str(), &p, 0, 0);
-            auto shellzetaid                = pd->findAtype(shellid.id())->id(eitELECTRONEGATIVITYEQUALIZATION);
-            auto shelleep                   = eem.findParametersConst(shellzetaid);
             newatoms->atom[j].type          = shell;
             newatoms->atom[j].typeB         = shell;
             newatoms->atomtype[j]           = put_symtab(symtab_, shellid.id().c_str());
@@ -1063,6 +1030,10 @@ void MyMol::addShells(const Poldata *pd)
                 newatoms->atom[j].qB = shelleep["charge"].value();
             if (bHaveVSites_)
             {
+                if (atoms_->atom[i].ptype == eptVSite)
+                {
+                    vsiteType_to_atomType(atomtypeName, &atomtype);
+                }
                 auto vsite = pd->findVsite(atomtype);
                 if (vsite != pd->getVsiteEnd())
                 {
@@ -1275,7 +1246,6 @@ immStatus MyMol::computeForces(FILE *fplog, t_commrec *cr, double *rmsf)
 }
 
 void MyMol::symmetrizeCharges(const Poldata  *pd,
-                              gmx_atomprop_t  ap,
                               bool            bSymmetricCharges,
                               const char     *symm_string)
 {
@@ -1286,7 +1256,7 @@ void MyMol::symmetrizeCharges(const Poldata  *pd,
         if (plist_.end() != bonds)
         {
             symmetrize_charges(bSymmetricCharges, atoms_, bonds,
-                               pd, ap, symm_string, &symmetric_charges_);
+                               pd, symm_string, &symmetric_charges_);
         }
     }
     else
@@ -1355,7 +1325,6 @@ immStatus MyMol::GenerateCharges(const Poldata       *pd,
                                  int                  maxiter,
                                  real                 tolerance)
 {
-    std::vector<double> qq;
     immStatus           imm          = immOK;
     bool                converged    = false;
     int                 iter         = 0;
@@ -1441,15 +1410,9 @@ immStatus MyMol::GenerateCharges(const Poldata       *pd,
                 QgenAcm_ = new QgenAcm(pd, atoms_, getCharge());
             }
 
-            auto q     = QgenAcm_->q();
-            auto natom = QgenAcm_->natom();
-            GMX_RELEASE_ASSERT(static_cast<int>(q.size()) == natom+1, "Internal mismatch in qgen_acm");
-            qq.resize(natom + 1);
-            for (auto i = 0; i < natom + 1; i++)
-            {
-                qq[i] = q[i];
-            }
-            iter = 0;
+            auto q                 = QgenAcm_->q();
+            std::vector<double> qq = q;
+            iter                   = 0;
             do
             {
                 if (eQGEN_OK == QgenAcm_->generateCharges(debug,
@@ -1473,14 +1436,13 @@ immStatus MyMol::GenerateCharges(const Poldata       *pd,
                             return imm;
                         }
                     }
-                    q       = QgenAcm_->q();
                     EemRms_ = 0;
-                    for (auto i = 0; i < natom + 1; i++)
+                    for (size_t i = 0; i < q.size(); i++)
                     {
                         EemRms_  += gmx::square(qq[i] - q[i]);
                         qq[i]     = q[i];
                     }
-                    EemRms_  /= natom;
+                    EemRms_  /= q.size();
                     converged = (EemRms_ < tolerance) || (nullptr == shellfc_);
                     iter++;
                 }

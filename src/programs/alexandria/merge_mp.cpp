@@ -206,6 +206,7 @@ int alex_merge_mp(int argc, char *argv[])
     static int                       compress    = 1;
     static real                      temperature = 298.15;
     static int                       maxwarn     = 0;
+    gmx_atomprop_t                   ap;
     t_pargs                          pa[]        =
     {
         { "-sort",   FALSE, etENUM, {sort},
@@ -218,7 +219,6 @@ int alex_merge_mp(int argc, char *argv[])
           "Temperature corresponding to the experimental data (options [TT]-x[tt] or [TT]-c[tt])" }
     };
     std::vector<alexandria::MolProp> mp;
-    gmx_atomprop_t                   ap;
     alexandria::Poldata              pd;
     gmx_output_env_t                *oenv;
 
@@ -228,13 +228,13 @@ int alex_merge_mp(int argc, char *argv[])
         return 0;
     }
 
-    ap = gmx_atomprop_init();
     try 
     {
-        alexandria::readPoldata(opt2fn("-di", NFILE, fnm), pd, ap);
+        alexandria::readPoldata(opt2fn("-di", NFILE, fnm), &pd);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
+    ap = gmx_atomprop_init();
     auto fns = opt2fns("-f", NFILE, fnm);
     int nwarn = merge_xml(fns, &mp, nullptr, nullptr, nullptr, ap, true);
 

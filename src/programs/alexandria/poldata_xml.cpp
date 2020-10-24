@@ -93,6 +93,8 @@ enum xmlEntry {
     exmlPOLTYPE,
     exmlPTYPE,
     exmlELEM,
+    exmlMASS,
+    exmlATOMNUMBER,
     exmlNAME,
     exmlDESC,
     exmlATYPE,
@@ -130,7 +132,6 @@ enum xmlEntry {
     exmlNTRAIN,
     exmlGT_VSITES,
     exmlGT_VSITE,
-    exmlATOMNUMBER,
     exmlTAU_AHC,
     exmlALPHA_AHP,
     exmlSYMMETRIC_CHARGES,
@@ -171,6 +172,8 @@ std::map<const std::string, xmlEntry> xmlxxx =
     { "poltype",                exmlPOLTYPE          },
     { "ptype",                  exmlPTYPE            },
     { "elem",                   exmlELEM             },
+    { "mass",                   exmlMASS             },
+    { "atomnumber",             exmlATOMNUMBER       },
     { "name",                   exmlNAME             },
     { "description",            exmlDESC             },
     { "atype",                  exmlATYPE            },
@@ -201,7 +204,6 @@ std::map<const std::string, xmlEntry> xmlxxx =
     { "ntrain",                 exmlNTRAIN           },
     { "gt_vsites",              exmlGT_VSITES        },
     { "gt_vsite",               exmlGT_VSITE         },
-    { "atomnumber",             exmlATOMNUMBER       },
     { "tau_ahc",                exmlTAU_AHC          },
     { "alpha_ahp",              exmlALPHA_AHP        },
     { "symmetric_charges",      exmlSYMMETRIC_CHARGES},
@@ -423,6 +425,8 @@ static void processAttr(FILE       *fp,
         break;
     case exmlATOMTYPE:
         if (NN(xbuf, exmlELEM) &&
+            NN(xbuf, exmlMASS) &&
+            NN(xbuf, exmlATOMNUMBER) &&
             NN(xbuf, exmlATYPE) &&
             NN(xbuf, exmlBTYPE) &&
             NN(xbuf, exmlPTYPE) &&
@@ -431,6 +435,8 @@ static void processAttr(FILE       *fp,
         {
             Ffatype sp(xbufString(exmlDESC),  xbufString(exmlATYPE), xbufString(exmlPTYPE),
                        xbufString(exmlBTYPE), xbufString(exmlZTYPE), xbufString(exmlELEM),
+                       atof(xbufString(exmlMASS).c_str()),
+                       atoi(xbufString(exmlATOMNUMBER).c_str()),
                        xbufString(exmlEREF));
                 pd->addAtype(std::move(sp));
         }
@@ -479,8 +485,7 @@ static void processTree(FILE          *fp,
                         xmlBuffer     *xbuf,
                         xmlNodePtr     tree,
                         int            indent,
-                        Poldata       *pd,
-                        gmx_atomprop_t aps)
+                        Poldata       *pd)
 {
     char             buf[100];
 
@@ -517,7 +522,7 @@ static void processTree(FILE          *fp,
 
                 if (tree->children)
                 {
-                    processTree(fp, xbuf, tree->children, indent+2, pd, aps);
+                    processTree(fp, xbuf, tree->children, indent+2, pd);
                 }
             }
         }
@@ -526,8 +531,7 @@ static void processTree(FILE          *fp,
 }
 
 void readPoldata(const std::string &fileName,
-                 Poldata           &pd,
-                 gmx_atomprop_t     aps)
+                 Poldata           *pd)
 {
     xmlDocPtr   doc;
     std::string fn, fn2;
@@ -569,18 +573,18 @@ void readPoldata(const std::string &fileName,
         GMX_THROW(gmx::FileIOError(buf));
     }
 
-    pd.setFilename(fn2);
+    pd->setFilename(fn2);
     xmlBuffer xbuf;
-    processTree(debug, &xbuf, doc->children, 0, &pd, aps);
+    processTree(debug, &xbuf, doc->children, 0, pd);
 
     xmlFreeDoc(doc);
 
     // Generate maps
-    pd.checkForPolarizability();
-    pd.checkConsistency(debug);
+    pd->checkForPolarizability();
+    pd->checkConsistency(debug);
     if (nullptr != debug)
     {
-        writePoldata("pdout.dat", &pd, false);
+        writePoldata("pdout.dat", pd, false);
     }
 }
 
@@ -614,6 +618,8 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd)
     {
         grandchild = add_xml_child(child, exml_names(exmlATOMTYPE));
         add_xml_char(grandchild, exml_names(exmlELEM), aType->getElem().c_str());
+        add_xml_int(grandchild, exml_names(exmlATOMNUMBER), aType->atomnumber());
+        add_xml_double(grandchild, exml_names(exmlMASS), aType->mass());
         add_xml_char(grandchild, exml_names(exmlDESC), aType->getDesc().c_str());
         add_xml_char(grandchild, exml_names(exmlATYPE), aType->getType().c_str());
         add_xml_char(grandchild, exml_names(exmlPTYPE), aType->id(eitPOLARIZATION).id().c_str());

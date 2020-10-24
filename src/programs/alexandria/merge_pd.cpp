@@ -168,7 +168,6 @@ int alex_merge_pd(int argc, char *argv[])
     };
     std::vector<alexandria::Poldata> pds;
     alexandria::Poldata              pdout;
-    gmx_atomprop_t                   aps;
     gmx_output_env_t                *oenv;
 
     if (!parse_common_args(&argc, 
@@ -186,7 +185,6 @@ int alex_merge_pd(int argc, char *argv[])
     {
         return 0;
     }
-    aps = gmx_atomprop_init();    
     /*
       Read all the gentop files.
      */
@@ -199,12 +197,12 @@ int alex_merge_pd(int argc, char *argv[])
     for (auto &i : filenames)
     {
         alexandria::Poldata pd;
-        readPoldata(i.c_str(), pd, aps);
+        readPoldata(i.c_str(), &pd);
         pds.push_back(std::move(pd));
     }    
 
     // Copy the first gentop file into pdout->
-    readPoldata(filenames[0].c_str(), pdout, aps); 
+    readPoldata(filenames[0].c_str(), &pdout);
     
     //We now update different parts of pdout->    
     EemAtomProps eem = name2eemprop(eemprop[0]);        

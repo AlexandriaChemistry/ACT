@@ -85,15 +85,11 @@ class QgenAcm
                             const gmx::HostVector<gmx::RVec> x,
                             const std::vector<Bond> &bonds);
                             
-        double rms() { return rms_; }
-
         const char *message() const;
         
         int getRow(int atom);
 
         const std::vector<double> &q() { return q_;}
-        
-        int natom() { return natom_; }
         
         double getQ(int atom);
 
@@ -104,21 +100,26 @@ class QgenAcm
         void dump(FILE *fp, t_atoms *atoms);
 
     private:
-        int                                                natom_;
         int                                                eQGEN_;
         gmx_bool                                           bWarned_;
         double                                             qtotal_;
         double                                             chieq_;
-        double                                             Jcs_;
-        double                                             Jss_;
-        double                                             rms_;
         gmx_bool                                           bAllocSave_;
         gmx_bool                                           bHaveShell_;
         ChargeType                                         ChargeType_;
-        std::vector<int>                                   atomnr_, coreIndex_, shellIndex_;
-        std::vector<double>                                chi0_, rhs_, j00_, q0_;
+        int                                                natom_;
+        std::vector<int>                                   atomnr_;
+        std::vector<double>                                chi0_, rhs_, jaa_, q0_;
         std::vector<gmx::RVec>                             x_;   
-        std::vector<Identifier>                            id_;            
+        std::vector<Identifier>                            id_;
+        //! The atoms/shells to optimize charges for
+        std::vector<int>                                   nonFixed_;
+        //! The atoms/shells not to optimize charges for
+        std::vector<int>                                   fixed_;
+        //! Reverse mapping of the charges
+        std::map<int, int>                                 nfToGromacs_;
+        //! Mapping from nonFixed particles to shells
+        std::map<int, int>                                 myShell_;
         std::vector<int>                                   row_;       
         std::vector<double>                                q_, zeta_, qsave_, zetasave_;
         std::vector<std::vector<double>>                   Jcc_;
@@ -126,7 +127,7 @@ class QgenAcm
         /*! \brief Re-read the EEM parameters from the FF
          *
          * Update the parameters for the Alexandria Charge model.
-         * This includes, chi, J00, zeta. In case a split charge
+         * This includes, chi, JAA, zeta. In case a split charge
          * equilibration algorithm is used also the bond charge
          * correction parameters will be updated.
          * \param[in] pd  Force field database
@@ -143,13 +144,23 @@ class QgenAcm
 
         void copyChargesToAtoms(t_atoms *atoms);
         
-        void calcJcc(t_atoms *atoms, double epsilonr,
-                     bool bYang, bool bRappe);
-        
-        void calcJcs(t_atoms *atoms,
-                     int      top_ndx,
-                     int      eem_ndx,
-                     double   epsilonr);
+        /*! \brief Compute the Jcc matrix
+         *
+         * \param[in] epsilonr Relative  dielectric constant
+         * \param[in] bYang    Whether or not the Yang and Sharp model is used
+         * \param[in] bRappe   Whether or not the Rappe and Goddard model is used
+         */
+        void calcJcc(double epsilonr,
+                     bool   bYang,
+                     bool   bRappe);
+                     
+        /*! \brief Compute shell potential at atom position
+         * \param[in] top_ndx  Atom number
+         * \param[in] epsilonr Relative  dielectric constant
+         * \return The potential
+         */
+        double calcJcs(int      top_ndx,
+                       double   epsilonr);
 
         void solveEEM(FILE *fp);
         
@@ -167,7 +178,7 @@ class QgenAcm
 
         double calcSij(int i, int j);
 
-        void calcRhs(t_atoms *atoms, double epsilonr);
+        void calcRhs(double epsilonr);
 };
 }
 #endif

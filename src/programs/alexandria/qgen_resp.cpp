@@ -124,7 +124,8 @@ void QgenResp::setAtomInfo(t_atoms                          *atoms,
         zeta_.push_back(fs.findParameterTypeConst(ztype, "zeta").value());
         mutable_.push_back(fs.findParameterTypeConst(ztype, "charge").mutability() != Mutability::Fixed);
         ptype_.push_back(atoms->atom[i].ptype);
-        if (!fs.findParameterTypeConst(ztype, "charge").isMutable())
+        if (fs.findParameterTypeConst(ztype, "charge").mutability() ==
+            Mutability::Fixed)
         {
             nFixed_++;
             qshell_ += q_[i];
@@ -379,6 +380,10 @@ static double calcJ(ChargeType  chargeType,
     }
     else
     {
+        if (r == 0)
+        {
+            GMX_THROW(gmx::InternalError(gmx::formatString("r = 0 when computing Coulomb potential in %s, %d.", __FILE__, __LINE__)));
+        }
         eTot = (1.0/r);
     }
     return ONE_4PI_EPS0*eTot;

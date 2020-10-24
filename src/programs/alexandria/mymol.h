@@ -173,12 +173,12 @@ class MyMol : public MolProp
         /*! \brief
          * Generate Atoms based on quantum calculation with specified level of theory
          *
-         * \param[in] ap      Gromacs atom properties
+         * \param[in] pd      Force field data
          * \param[in] method  Method used for QM calculations
          * \param[in] basis   Basis set used for QM calculations
          * \param[out] mylot  Level of theory used
          */
-        immStatus GenerateAtoms(gmx_atomprop_t     ap,
+        immStatus GenerateAtoms(const Poldata     *pd,
                                 const std::string &method,
                                 const std::string &basis,
                                 std::string       *mylot);
@@ -384,7 +384,6 @@ class MyMol : public MolProp
         /*! \brief
          * It generates the atoms structure which will be used to print the topology file.
          *
-         * \param[in] ap          Gromacs atom properties
          * \param[in] pd          Data structure containing atomic properties
          * \param[in] method      Method used for QM calculation
          * \param[in] basis       Basis set used for QM calculation
@@ -393,8 +392,7 @@ class MyMol : public MolProp
          * \param[in] bPairs      Add pairs to the topology structure
          * \param[in] bDih        Add dihedrals to the topology structure
          */
-        immStatus GenerateTopology(gmx_atomprop_t     ap,
-                                   const Poldata     *pd,
+        immStatus GenerateTopology(const Poldata     *pd,
                                    const std::string &method,
                                    const std::string &basis,
                                    std::string       *mylot,
@@ -466,12 +464,10 @@ class MyMol : public MolProp
          * (e.g. CH3 with identical charges on H).
          * Must be called before initQgenResp.
          * \param[in] pd                 Data structure containing atomic properties
-         * \param[in] ap                 Gromacs atom properties
          * \param[in] bSymmetricCharges  Consider molecular symmetry to calculate partial charge
          * \param[in] symm_string        The type of molecular symmetry
          */
         void symmetrizeCharges(const Poldata  *pd,
-                               gmx_atomprop_t  ap,
                                bool            bSymmetricCharges,
                                const char     *symm_string);
         /*! \brief Init the class for the RESP algorithm.

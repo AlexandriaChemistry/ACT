@@ -106,15 +106,12 @@ TEST_F(PoldataTest, addAtype){
     const std::string        ptype        = "p_U";
     const std::string        ztype        = "z_U";
     const std::string        btype        = "b_U";
+    double                   mass         = 238.29;
+    int                      atomnumber   = 92;
     const std::string        ref_enthalpy = "1000";
     alexandria::Poldata     *pd           = getPoldata("ACM-g");
-    pd->addAtype(elem,
-                 desc,
-                 atype,
-                 ptype,
-                 btype,
-                 ztype,
-                 ref_enthalpy);
+    Ffatype atp(desc, elem, ptype, btype, ztype, elem, mass, atomnumber, ref_enthalpy);
+    pd->addAtype(atp);
 
     auto fa = pd->findAtype(atype);
     if (fa != pd->getAtypeEnd())

@@ -56,11 +56,9 @@ namespace alexandria
      *
      * \param[in]  fileName The filename to read from
      * \param[out] pd       The Poldata class instance
-     * \param[in]  aps      Atom properties
      */
     void readPoldata(const std::string &fileName,
-                     Poldata &pd,
-                     const gmx_atomprop_t aps);
+                     Poldata           *pd);
 
 } // namespace alexandria
 

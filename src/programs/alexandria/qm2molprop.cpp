@@ -108,7 +108,6 @@ int alex_qm2molprop(int argc, char *argv[])
     };
     
     gmx_output_env_t                *oenv;
-    gmx_atomprop_t                   aps;
     alexandria::Poldata              pd;
     std::vector<alexandria::MolProp> mp;
 
@@ -118,13 +117,10 @@ int alex_qm2molprop(int argc, char *argv[])
         return 0;
     }
 
-    /* Read standard atom properties */
-    aps = gmx_atomprop_init();
-
     /* Read force field stuff */
     try
     {
-        readPoldata(opt2fn_null("-d", NFILE, fnm), pd, aps);
+        readPoldata(opt2fn_null("-d", NFILE, fnm), &pd);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 

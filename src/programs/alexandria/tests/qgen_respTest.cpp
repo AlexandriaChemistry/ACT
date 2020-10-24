@@ -61,13 +61,11 @@ class RespTest : public gmx::test::CommandLineTestBase
     protected:
         gmx::test::TestReferenceChecker checker_;
         alexandria::MyMol               mp_;
-        gmx_atomprop_t                  aps_;
 
         //init set tolecrance
         RespTest () : checker_(this->rootChecker())
         {
             alexandria::MolProp     molprop;
-            aps_ = gmx_atomprop_init();
 
             // needed for ReadGauss
             const char *molnm    = (char *)"XXX";
@@ -102,7 +100,7 @@ class RespTest : public gmx::test::CommandLineTestBase
             fill_inputrec(&inputrec);
             mp_.SetForceField("gaff");
             Poldata      *pd = getPoldata(qdist);
-            auto imm = mp_.GenerateTopology(aps_, pd, method,
+            auto imm = mp_.GenerateTopology(pd, method,
                                             basis, nullptr,
                                             false, false, false,  false,
                                             nullptr);
@@ -135,7 +133,7 @@ class RespTest : public gmx::test::CommandLineTestBase
                 printf("tabfn %s\n", tabFile.c_str());
             }
             mp_.setInputrec(&inputrec);
-            mp_.symmetrizeCharges(pd, aps_, qSymm, nullptr);
+            mp_.symmetrizeCharges(pd, qSymm, nullptr);
             mp_.initQgenResp(pd, method, basis, nullptr, 0.0, 100);
             mp_.GenerateCharges(pd, mdlog, cr,
                                 tabFile.empty() ? nullptr : tabFile.c_str(),

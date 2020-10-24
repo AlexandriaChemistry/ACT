@@ -102,25 +102,6 @@ class Poldata
          */
         void setNexcl(int nexcl) { nexcl_ = nexcl; }
 
-        /*! \brief
-         * Add the atom types used in Alexandria FF
-         *
-         **\param[in] elem          The element of the atom type
-         **\param[in] desc          The description of the atom type
-         **\param[in] atype         The atom type defined for this element in Alexandria FF
-         **\param[in] ptype         The polarizability type defined for this element in Alexandria FF
-         **\param[in] btype         The bond type defined for elem in Alexandria FF
-         **\param[in] ztype         The zeta type defined for elem in Alexandria FF
-         **\param[in] ref_enthalpy  The reference enthalpy for elem
-         */
-        void  addAtype(const std::string &elem,
-                       const std::string &desc,
-                       const std::string &atype,
-                       const std::string &ptype,
-                       const std::string &btype,
-                       const std::string &ztype,
-                       const std::string &ref_enthalpy);
-
         /*! \brief Add an atom type
          * \param[in] atp The new atom type
          */

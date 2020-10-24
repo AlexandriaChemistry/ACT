@@ -385,7 +385,7 @@ void MolGen::Read(FILE            *fp,
         GMX_RELEASE_ASSERT(nullptr != pd_fn, "Give me a poldata file name");
         try
         {
-            alexandria::readPoldata(pd_fn, pd_, atomprop_);
+            alexandria::readPoldata(pd_fn, &pd_);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         if (pd_.getNexcl() != nexcl_ && nexcl_ != nexcl_orig_)
@@ -455,8 +455,7 @@ void MolGen::Read(FILE            *fp,
                 }
                 mymol.Merge(&(*mpi));
                 mymol.setInputrec(inputrec_);
-                imm = mymol.GenerateTopology(atomprop_,
-                                             &pd_,
+                imm = mymol.GenerateTopology(&pd_,
                                              method,
                                              basis,
                                              nullptr,
@@ -472,7 +471,7 @@ void MolGen::Read(FILE            *fp,
                 }
                 if (immOK == imm)
                 {
-                    mymol.symmetrizeCharges(&pd_, atomprop_, qsymm_, nullptr);
+                    mymol.symmetrizeCharges(&pd_, qsymm_, nullptr);
                     mymol.initQgenResp(&pd_, method, basis, nullptr, 0.0, maxESP_);
                     imm = mymol.GenerateCharges(&pd_,
                                                 mdlog_,
@@ -591,8 +590,7 @@ void MolGen::Read(FILE            *fp,
                 fflush(debug);
             }
             mymol.setInputrec(inputrec_);
-            imm = mymol.GenerateTopology(atomprop_,
-                                         &pd_,
+            imm = mymol.GenerateTopology(&pd_,
                                          method,
                                          basis,
                                          nullptr,
@@ -604,7 +602,7 @@ void MolGen::Read(FILE            *fp,
 
             if (immOK == imm)
             {
-                mymol.symmetrizeCharges(&pd_, atomprop_, qsymm_, nullptr);
+                mymol.symmetrizeCharges(&pd_, qsymm_, nullptr);
                 mymol.initQgenResp(&pd_, method, basis, nullptr, 0.0, maxESP_);
                 imm = mymol.GenerateCharges(&pd_,
                                             mdlog_,

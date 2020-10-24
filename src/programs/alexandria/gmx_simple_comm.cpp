@@ -114,6 +114,10 @@ void gmx_recv_str(const t_commrec *cr, int src, std::string *str)
         str->resize(len);
         gmx_recv(cr, src, (void*)str->data(), len);
     }
+    if (nullptr != debug)
+    {
+        fprintf(debug, "Received string '%s' from %d\n", str->c_str(), src);
+    }
 }
 
 void gmx_send_double(const t_commrec *cr, int dest, double d)
@@ -130,6 +134,10 @@ double gmx_recv_double(const t_commrec *cr, int src)
     double d;
 
     gmx_recv(cr, src, &d, sizeof(d));
+    if (nullptr != debug)
+    {
+        fprintf(debug, "Received double '%g' from %d\n", d, src);
+    }
 
     return d;
 }
@@ -148,6 +156,10 @@ int gmx_recv_int(const t_commrec *cr, int src)
     int d;
 
     gmx_recv(cr, src, &d, sizeof(d));
+    if (nullptr != debug)
+    {
+        fprintf(debug, "Received int '%d' from %d\n", d, src);
+    }
 
     return d;
 }

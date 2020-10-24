@@ -177,13 +177,11 @@ void symmetrize_charges(gmx_bool                   bQsym,
                         t_atoms                   *atoms,
                         ConstPlistWrapperIterator  bonds,
                         const Poldata             *pd,
-                        gmx_atomprop_t             aps, 
                         const char                *symm_string,
                         std::vector<int>          *sym_charges)
 {
     std::string  central, attached;
-    int          ai, aj, anri, anrj;
-    int          anr_central, anr_attached, nrq;
+    int          nrq;
     double       qaver, qsum;
 
     sym_charges->clear();
@@ -214,26 +212,24 @@ void symmetrize_charges(gmx_bool                   bQsym,
             for (auto symcharges = pd->getSymchargesBegin();
                  symcharges != pd->getSymchargesEnd(); symcharges++)
             {
-                anr_central  = gmx_atomprop_atomnumber(aps, symcharges->getCentral().c_str());
-                anr_attached = gmx_atomprop_atomnumber(aps, symcharges->getAttached().c_str());
                 for (int i = 0; i < atoms->nr; i++)
                 {
-                    if (atoms->atom[i].atomnumber == anr_central)
+                    if (symcharges->getCentral().compare(atoms->atom[i].elem) == 0)
                     {
                         int              hsmin = -1;
                         std::vector<int> hs;
                         for (auto j = bonds->beginParam(); j < bonds->endParam(); ++j)
                         {
-                            ai   = j->a[0];
-                            aj   = j->a[1];
-                            anri = atoms->atom[ai].atomnumber;
-                            anrj = atoms->atom[aj].atomnumber;
+                            auto ai = j->a[0];
+                            auto aj = j->a[1];
                             
-                            if ((ai == i) && (anrj == anr_attached))
+                            if (ai == i && 
+                                symcharges->getAttached().compare(atoms->atom[aj].elem) == 0)
                             {
                                 hs.push_back(aj);
                             }
-                            else if ((aj == i) && (anri == anr_attached))
+                            else if (aj == i &&
+                                     symcharges->getAttached().compare(atoms->atom[ai].elem) == 0)
                             {
                                 hs.push_back(ai);
                             }

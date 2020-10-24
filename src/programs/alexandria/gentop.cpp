@@ -276,7 +276,7 @@ int alex_gentop(int argc, char *argv[])
     }
     try
     {
-        alexandria::readPoldata(gentop_fnm, pd, aps);
+        alexandria::readPoldata(gentop_fnm, &pd);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     iType = pd.chargeType();
@@ -353,8 +353,7 @@ int alex_gentop(int argc, char *argv[])
     fill_inputrec(inputrec);
     mymol.setInputrec(inputrec);
     std::string mylot;
-    imm = mymol.GenerateTopology(aps,
-                                 &pd,
+    imm = mymol.GenerateTopology(&pd,
                                  method,
                                  basis,
                                  &mylot,
@@ -366,7 +365,7 @@ int alex_gentop(int argc, char *argv[])
 
     if (immOK == imm)
     {
-        mymol.symmetrizeCharges(&pd, aps, bQsym, symm_string);
+        mymol.symmetrizeCharges(&pd, bQsym, symm_string);
         maxpot = 100; // Use 100 percent of the ESP read from Gaussian file.
     
         mymol.initQgenResp(&pd, method, basis, &mylot, 0.0, maxpot);

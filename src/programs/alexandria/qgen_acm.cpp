@@ -55,96 +55,86 @@ QgenAcm::QgenAcm(const Poldata *pd,
                  t_atoms       *atoms,
                  int            qtotal)
 {
-    int          j;
-    bool         bSupport = true;
-
     ChargeType_     = pd->chargeType();
     bWarned_        = false;
     bAllocSave_     = false;
     bHaveShell_     = pd->polarizable();
     eQGEN_          = eQGEN_OK;
     chieq_          = 0;
-    Jcs_            = 0;
-    Jss_            = 0;
-    rms_            = 0;
-    natom_          = 0;
+    natom_          = atoms->nr;
     qtotal_         = qtotal;
     
+    auto fs = pd->findForcesConst(eitELECTRONEGATIVITYEQUALIZATION);
     for (int i = 0; i < atoms->nr; i++)
     {
-        if (atoms->atom[i].ptype == eptAtom)
+        auto atype = pd->findAtype(*atoms->atomtype[i]);
+        atomnr_.push_back(atype->atomnumber());
+        auto ztype = atype->id(eitELECTRONEGATIVITYEQUALIZATION);
+        if (fs.findParameterTypeConst(ztype, "charge").mutability() !=
+            Mutability::Fixed)
         {
-            coreIndex_.push_back(i);
-            natom_++;
+            nonFixed_.push_back(i);
+            nfToGromacs_.insert({ i, nonFixed_.size()-1 });
+            q_.push_back(0.0);
+            // If this particle has a shell, it is the next particle
+            // TODO: check the polarization array instead.
+            if (atype->hasId(eitPOLARIZATION) && i < atoms->nr-1 &&
+                atoms->atom[i+1].ptype ==  eptShell)
+            {
+                myShell_.insert({ i, i+1 });
+            }
         }
-        else if (atoms->atom[i].ptype == eptShell)
+        else
         {
-            shellIndex_.push_back(i);
+            fixed_.push_back(i);
+            q_.push_back(atoms->atom[i].q);
         }
+        zeta_.push_back(fs.findParameterTypeConst(ztype, "zeta").value());
+        jaa_.push_back(fs.findParameterTypeConst(ztype, "jaa").value());
+        row_.push_back(fs.findParameterTypeConst(ztype, "row").value());
+        chi0_.push_back(fs.findParameterTypeConst(ztype, "chi").value());
+        id_.push_back(ztype);
     }
-    chi0_.resize(natom_, 0);
-    rhs_.resize(natom_ + 1, 0);
-    id_.resize(natom_);
-    atomnr_.resize(natom_, 0);
-    row_.resize(natom_);
-    Jcc_.resize(natom_ + 1);
-    zeta_.resize(natom_);
-    j00_.resize(natom_, 0);
-    q0_.resize(natom_, 0);
-    q_.resize(natom_ + 1);   
+    rhs_.resize(nonFixed_.size() + 1, 0);
+    Jcc_.resize(nonFixed_.size() + 1);
+    q0_.resize(nonFixed_.size(), 0);
     x_.resize(atoms->nr);
 
-    auto fs = pd->findForcesConst(eitELECTRONEGATIVITYEQUALIZATION);
-    for (int i = j = 0; (i < atoms->nr) && bSupport; i++)
+    bool bSupport = true;
+    for (size_t ii = 0; (ii < nonFixed_.size()) && bSupport; ii++)
     {
-        // TODO This code assuses that shells are to be kept fixed
-        // without checking the Poldata.
-        if (atoms->atom[i].ptype == eptAtom)
+        auto ai    = nonFixed_[ii];
+        auto atype = pd->findAtype(*atoms->atomtype[ai]);
+        Jcc_[ii].resize(nonFixed_.size() + 1, 0);
+        id_[ii]    = atype->id(eitELECTRONEGATIVITYEQUALIZATION);
+        if (!fs.parameterExists(id_[ii]))
         {
-            auto atype = pd->findAtype(*atoms->atomtype[i]);
-            Jcc_[j].resize(natom_ + 1, 0);
-            int atm = atoms->atom[i].atomnumber;
-            if (atm == 0)
-            {
-                gmx_fatal(FARGS, "Don't know atomic number for %s %s",
-                          *(atoms->resinfo[i].name),
-                          *(atoms->atomname[j]));
-            }
-            id_[j] = atype->id(eitELECTRONEGATIVITYEQUALIZATION);
-            if (!fs.parameterExists(id_[j]))
-            {
-                fprintf(stderr, "No charge distribution support for atom %s\n",
-                        id_[j].id().c_str());
-                bSupport = false;
-            }
-            if (bSupport)
-            {
-                auto eem   = fs.findParametersConst(id_[j]);
-                atomnr_[j] = atm;
-                q0_[j]     = eem.find("ref_charge")->second.value();
-                // TODO Fix this business
-                q_[j]    = eem.find("charge")->second.value();
-                row_[j]  = eem.find("row")->second.value();
-                    
-                if (ChargeType_ == eqtSlater) 
-                { 
-                    if (row_[j] > SLATER_MAX)
+            fprintf(stderr, "No charge distribution support for atom %s\n",
+                    id_[ii].id().c_str());
+            bSupport = false;
+        }
+        if (bSupport)
+        {
+            auto eem = fs.findParametersConst(id_[ii]);
+            q0_[ii]  = eem.find("ref_charge")->second.value();
+            
+            if (ChargeType_ == eqtSlater) 
+            { 
+                if (row_[ii] > SLATER_MAX)
+                {
+                    if (debug)
                     {
-                        if (debug)
-                        {
-                            fprintf(debug, "Cannot handle Slaters higher than %d for atom %s %s\n",
-                                    SLATER_MAX,
-                                    *(atoms->resinfo[i].name),
-                                    *(atoms->atomname[j]));
-                        }
-                        row_[j] = SLATER_MAX;
+                        fprintf(debug, "Cannot handle Slaters higher than %d for atom %s %s\n",
+                                SLATER_MAX,
+                                *(atoms->resinfo[ai].name),
+                                *(atoms->atomname[ai]));
                     }
+                    row_[ii] = SLATER_MAX;
                 }
-                j++;
             }
         }
     }
-    // Call routine to set the Chi, J00 and Zeta.
+    // Call routine to set the Chi, JAA and Zeta.
     updateParameters(pd);
 }
 
@@ -153,10 +143,14 @@ void QgenAcm::updateParameters(const Poldata *pd)
     auto fs = pd->findForcesConst(eitELECTRONEGATIVITYEQUALIZATION);
     for (auto i = 0; i < natom_; i++)
     {
-        auto ei  = fs.findParametersConst(id_[i]);
-        chi0_[i] = ei.find("chi")->second.value();
-        j00_[i]  = ei.find("jaa")->second.value();
-        zeta_[i] = ei.find("zeta")->second.value();
+        if (!fs.parameterExists(id_[i]))
+        {
+            GMX_THROW(gmx::InternalError(gmx::formatString("Cannot find %s", 
+                                                           id_[i].id().c_str()).c_str()));
+        }
+        chi0_[i] = fs.findParameterTypeConst(id_[i], "chi").value();
+        jaa_[i]  = fs.findParameterTypeConst(id_[i], "jaa").value();
+        zeta_[i] = fs.findParameterTypeConst(id_[i], "zeta").value();
     }
 }
 
@@ -197,13 +191,12 @@ void QgenAcm::dump(FILE *fp, t_atoms *atoms)
 {
     if (fp && eQGEN_ == eQGEN_OK)
     {
-        auto  i  = 0, j = 0;
         rvec  mu = { 0, 0, 0 };
 
         fprintf(fp, "Jcc_ matrix:\n");
-        for (i = 0; i < natom_; i++)
+        for (int i = 0; i < natom_; i++)
         {
-            for (j = 0; j <= i; j++)
+            for (int j = 0; j <= i; j++)
             {
                 fprintf(fp, "  %6.2f", Jcc_[i][j]);
             }
@@ -212,7 +205,7 @@ void QgenAcm::dump(FILE *fp, t_atoms *atoms)
         fprintf(fp, "\n");
 
         fprintf(fp, "RHS_ matrix:\n");
-        for (i = 0; i < natom_; i++)
+        for (int i = 0; i < natom_; i++)
         {
             fprintf(fp, "%2d RHS_ = %10g\n", i, rhs_[i]);
         }
@@ -220,20 +213,16 @@ void QgenAcm::dump(FILE *fp, t_atoms *atoms)
 
         fprintf(fp, "                                          Core                 Shell\n");
         fprintf(fp, "Res  Atom   Nr       J0    chi0  row   q   zeta        row    q     zeta\n");
-        for (i = j = 0; i < atoms->nr; i++)
+        for (int i = 0; i < atoms->nr; i++)
         {
             for (auto m = 0; m < DIM; m++)
             {
                 mu[m] += atoms->atom[i].q * x_[i][m] * ENM2DEBYE;
             }
-            if (atoms->atom[i].ptype == eptAtom)
-            {
-                fprintf(fp, "%4s %4s%5d %8g %8g",
-                        *(atoms->resinfo[atoms->atom[i].resind].name),
-                        *(atoms->atomname[i]), i+1, j00_[j], chi0_[j]);
-                fprintf(fp, " %3d %8.5f %8.4f\n", row_[j], q_[j], zeta_[j]);
-                j++;
-            }
+            fprintf(fp, "%4s %4s%5d %8g %8g",
+                    *(atoms->resinfo[atoms->atom[i].resind].name),
+                    *(atoms->atomname[i]), i+1, jaa_[i], chi0_[i]);
+            fprintf(fp, " %3d %8.5f %8.4f\n", row_[i], q_[i], zeta_[i]);
         }
         fprintf(fp, "\n");
         fprintf(fp, "chieq = %10g\n|mu| = %8.3f ( %8.3f  %8.3f  %8.3f )\n\n",
@@ -264,6 +253,10 @@ double QgenAcm::calcSij(int i, int j)
     rvec   dx;
     int    l, m, tag;
 
+    if (atomnr_[i] == 0 || atomnr_[j] == 0)
+    {
+        GMX_THROW(gmx::InternalError(gmx::formatString("Cannot compute Sij for shells").c_str()));
+    }
     rvec_sub(x_[i], x_[j], dx);
     dist = norm(dx);
     if ((dist < 0.118) && (atomnr_[i] != 1) && (atomnr_[j] != 1))
@@ -401,154 +394,123 @@ double QgenAcm::calcJ(rvec    xI,
     return (ONE_4PI_EPS0*eTot)/(epsilonr*ELECTRONVOLT);
 }
 
-void QgenAcm::calcJcc(t_atoms *atoms, double epsilonr,
-                      bool bYang, bool bRappe)
+void QgenAcm::calcJcc(double epsilonr,
+                      bool   bYang, 
+                      bool   bRappe)
 {
     auto Jcc = 0.0;
-    auto i   = 0;
-    for (auto n = 0; n < atoms->nr; n++)
+    for (size_t n = 0; n < nonFixed_.size(); n++)
     {
-        if (atoms->atom[n].ptype == eptAtom)
+        auto i = nonFixed_[n];
+        for (size_t m = n; m < nonFixed_.size(); m++)
         {
-            auto j = i;
-            for (auto m = n; m < atoms->nr; m++)
+            auto j = nonFixed_[m];
+            if (j != i)
             {
-                if (atoms->atom[m].ptype == eptAtom)
+                Jcc = calcJ(x_[i],
+                            x_[j],
+                            zeta_[i],
+                            zeta_[j],
+                            row_[i],
+                            row_[j],
+                            epsilonr);
+                if (bYang)
                 {
-                    if (n != m)
-                    {
-                        j++;
-                        Jcc = calcJ(x_[n],
-                                    x_[m],
-                                    zeta_[i],
-                                    zeta_[j],
-                                    row_[i],
-                                    row_[j],
-                                    epsilonr);
-                        if (bYang)
-                        {
-                            Jcc *= calcSij(i, j);
-                        }
-                        Jcc_[i][j] = Jcc_[j][i] = (0.5 * Jcc);
-                    }
-                    else
-                    {
-                        auto j0 = j00_[i];
-                        if ((bYang || bRappe) && (atomnr_[i] == 1))
-                        {
-                            auto zetaH = 1.0698;
-                            j0 = (1+q_[i]/zetaH)*j0; /* Eqn. 21 in Rappe1991. */
-                            if (j0 < 0 && !bWarned_)
-                            {
-                                bWarned_ = true;
-                            }
-                            Jcc_[i][i] = (j0 > 0) ? j0 : 0;
-                        }
-                        else
-                        {
-                            Jcc_[i][i] = (j0 > 0) ? j0 : 0;
-                        }
-                    }
+                    Jcc *= calcSij(i, j);
                 }
-            }
-            i++;
-        }
-    }
-}
-
-void QgenAcm::calcJcs(t_atoms *atoms,
-                      int      core_ndx_gromacs,
-                      int      core_ndx_eem,
-                      double   epsilonr)
-{
-    Jcs_ = 0;
-    if (atoms->atom[core_ndx_gromacs].ptype == eptAtom)
-    {
-        auto itsShell = core_ndx_gromacs + 1;
-        for (auto i = 0; i < natom_; i++)
-        {
-            auto shell_ndx_gromacs = shellIndex_[i];
-            if (atoms->atom[shell_ndx_gromacs].ptype == eptShell)
-            {
-                if (shell_ndx_gromacs != itsShell)
-                {
-                    Jcs_ += (q_[i]*calcJ(x_[core_ndx_gromacs],
-                                         x_[shell_ndx_gromacs],
-                                         zeta_[core_ndx_eem],
-                                         zeta_[i],
-                                         row_[core_ndx_eem],
-                                         row_[i],
-                                         epsilonr));  
-                    if (debug)
-                    {
-                        fprintf(debug, "core_ndx: %d shell_ndx: %d shell_charge: %0.1f\n", 
-                                core_ndx_gromacs, shell_ndx_gromacs, q_[i]);
-                    }
-                }
+                Jcc_[n][m] = Jcc_[m][n] = (0.5 * Jcc);
             }
             else
             {
-                gmx_fatal(FARGS, "atom %d must be eptShell, but it is not\n", shell_ndx_gromacs);
+                auto j0 = jaa_[j];
+                if ((bYang || bRappe) && (atomnr_[i] == 1))
+                {
+                    auto zetaH = 1.0698;
+                    j0 = (1+q_[i]/zetaH)*j0; /* Eqn. 21 in Rappe1991. */
+                    if (j0 < 0 && !bWarned_)
+                    {
+                        bWarned_ = true;
+                    }
+                }
+                Jcc_[n][n] = (j0 > 0) ? j0 : 0;
             }
         }
-        Jcs_ *= 0.5;
-        if (debug)
-        {
-            fprintf(debug, "Jcs_:%0.3f\n", Jcs_);
-        }
-    }
-    else
-    {
-        gmx_fatal(FARGS, "atom %d must be eptAtom, but it is not\n", core_ndx_gromacs);
     }
 }
 
-void QgenAcm::calcRhs(t_atoms *atoms, double epsilonr)
+double QgenAcm::calcJcs(int    core_ndx,
+                        double epsilonr)
 {
-    auto   qcore     = 0.0;
-    auto   qshell    = 0.0;
-
-    for (auto i = 0; i < natom_; i++)
+    double Jcs     = 0;
+    int    shellId = -1;
+    if (myShell_.find(core_ndx) != myShell_.end())
     {
-        rhs_[i]   = 0;
-        rhs_[i]  -= chi0_[i];                              // Electronegativity
-        rhs_[i]  += j00_[i]*q0_[i];                        // Hardness * q0
-        if (bHaveShell_)
+        shellId =  myShell_.find(core_ndx)->second;
+    }
+    for (size_t i = 0; i < fixed_.size(); i++)
+    {
+        auto shell_ndx = fixed_[i];
+        // Exclude interaction between a particle and its shell
+        // TODO: check exclusion array instead
+        if (shell_ndx !=  shellId)
         {
-            calcJcs(atoms, coreIndex_[i], i, epsilonr);
-            rhs_[i]   -= j00_[i]*q_[i]; // Hardness * qs
-            rhs_[i]   -= Jcs_;                             // Core-Shell interaction
-            qshell    += q_[i];
+            Jcs += (q_[shell_ndx]*calcJ(x_[core_ndx],
+                                        x_[shell_ndx],
+                                        zeta_[core_ndx],
+                                        zeta_[shell_ndx],
+                                        row_[core_ndx],
+                                        row_[shell_ndx],
+                                        epsilonr));  
+            if (debug)
+            {
+                fprintf(debug, "core_ndx: %d shell_ndx: %d shell_charge: %0.1f\n", 
+                        core_ndx, shell_ndx, q_[shell_ndx]);
+            }
         }
     }
-    qcore        = qtotal_ - qshell;
-    rhs_[natom_] = qcore;
+    Jcs *= 0.5;
+    if (debug)
+    {
+        fprintf(debug, "Jcs:%0.3f\n", Jcs);
+    }
+    return Jcs;
+}
+
+void QgenAcm::calcRhs(double epsilonr)
+{
+    // Compute total fixed charge
+    double qfixed = 0.0;
+    for (size_t i = 0; i < fixed_.size(); i++)
+    {
+        qfixed += q_[fixed_[i]];
+    }
+    for (size_t i = 0; i < nonFixed_.size(); i++)
+    {
+        auto nfi = nonFixed_[i];
+        // Electronegativity
+        rhs_[i]  = -chi0_[nfi]; 
+        // Hardness * q0
+        rhs_[i] += jaa_[nfi]*q0_[i];
+        if (bHaveShell_)
+        {
+            // Core-Shell interaction
+            rhs_[i] -= calcJcs(nfi, epsilonr);
+            // Hardness of atom multiplied by charge of shell
+            if (myShell_.find(nfi) != myShell_.end())
+            {
+                auto shellId = myShell_.find(nfi)->second;
+                rhs_[i]     -= jaa_[nfi]*q_[shellId];
+            }
+        }
+    }
+    rhs_[nonFixed_.size()] = qtotal_ - qfixed;
 }
 
 void QgenAcm::copyChargesToAtoms(t_atoms *atoms)
 {
-    if (bHaveShell_)
+    for (auto i = 0; i < atoms->nr; i++)
     {
-        auto j = 0;
-        for (auto i = j = 0; i < atoms->nr; i++)
-        {
-            if (atoms->atom[i].ptype == eptAtom)
-            {
-                atoms->atom[i].q = atoms->atom[i].qB = q_[j];
-            }
-            else if (atoms->atom[i].ptype == eptShell)
-            {
-                atoms->atom[i].q = atoms->atom[i].qB = q_[j];
-                j++;
-            }
-        }
-    }
-    else
-    {
-        for (auto i = 0; i < atoms->nr; i++)
-        {
-            atoms->atom[i].q = atoms->atom[i].qB = q_[i];
-        }
+        atoms->atom[i].q = atoms->atom[i].qB = q_[i];
     }
 }
 
@@ -588,31 +550,32 @@ void QgenAcm::checkSupport(const Poldata *pd)
 void QgenAcm::solveEEM(FILE *fp)
 {
     std::vector<double> q;
+    size_t              nelem = nonFixed_.size();
 
-    q.resize(natom_+1, 0.0);
-    MatrixWrapper lhs(natom_+1, natom_+1);
+    q.resize(nelem+1, 0.0);
+    MatrixWrapper lhs(nelem+1, nelem+1);
 
-    for (int i = 0; i < natom_; i++)
+    for (size_t i = 0; i < nelem; i++)
     {
-        for (int j = 0; j < natom_; j++)
+        for (size_t j = 0; j < nelem; j++)
         {
             lhs.set(i, j, Jcc_[i][j]);
         }
         lhs.set(i, i, Jcc_[i][i]);
-        lhs.set(i, natom_, 1);
-        lhs.set(natom_, i, -1);
+        lhs.set(i, nelem, 1);
+        lhs.set(nelem, i, -1);
     }
-    lhs.set(natom_, natom_, 0);
+    lhs.set(nelem, nelem, 0);
 
     lhs.solve(rhs_, &q);
 
     double qtot    = 0;
-    for (int i = 0; i < natom_; i++)
+    for (size_t i = 0; i < nelem; i++)
     {
-        q_[i] = q[i];
-        qtot += q_[i];
+        q_[nonFixed_[i]] = q[i];
+        qtot += q[i];
     }
-    chieq_  = q_[natom_] = q[natom_];
+    chieq_ = q[nelem];
 
     if (fp && (fabs(qtot - qtotal_) > 1e-2))
     {
@@ -666,7 +629,7 @@ void QgenAcm::solveSQE(FILE                    *fp,
     }
     std::vector<double> pij, q;
     pij.resize(nbonds, 0.0);
-    q.resize(natom_, 0.0);
+    q.resize(nonFixed_.size(), 0.0);
     lhs.solve(rhs, &pij);
     for (int bij = 0; bij < nbonds; bij++)
     {
@@ -675,26 +638,16 @@ void QgenAcm::solveSQE(FILE                    *fp,
         q[ai] += pij[bij];
         q[aj] -= pij[bij];
     }
-    for (int i = 0; i < natom_; i++)
+    for (size_t i = 0; i < nonFixed_.size(); i++)
     {
-        q_[i] = q[i];
+        q_[nonFixed_[i]] = q[i];
     }
     chieq_  = 0;
 
     double qtot    = 0;
-    if (bHaveShell_)
+    for (int i = 0; i < natom_; i++)
     {
-        for (int i = 0; i < natom_; i++)
-        {
-            qtot += q_[i];
-        }
-    }
-    else
-    {
-        for (int i = 0; i < natom_; i++)
-        {
-            qtot += q_[i];
-        }
+        qtot += q_[i];
     }
     if (fp && (fabs(qtot - qtotal_) > 1e-2))
     {
@@ -719,14 +672,14 @@ int QgenAcm::generateCharges(FILE                      *fp,
     {
         updateParameters(pd);
         updatePositions(x, atoms);
-        calcJcc(atoms, pd->getEpsilonR(), pd->yang(), pd->rappe());
+        calcJcc(pd->getEpsilonR(), pd->yang(), pd->rappe());
         if (pd->interactionPresent(eitBONDCORRECTIONS))
         {
             solveSQE(fp, pd, bonds);
         }
         else
         {
-            calcRhs(atoms, pd->getEpsilonR());
+            calcRhs(pd->getEpsilonR());
             solveEEM(fp);
         }
         copyChargesToAtoms(atoms);

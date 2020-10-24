@@ -72,14 +72,12 @@ class AcmTest : public gmx::test::CommandLineTestBase
     protected:
         gmx::test::TestReferenceChecker checker_;
         alexandria::MyMol               mp_;
-        gmx_atomprop_t                  aps_;
 
         //init set tolerance
         AcmTest () : checker_(this->rootChecker())
         {
             auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 1e-5);
             checker_.setDefaultTolerance(tolerance);
-            aps_ = gmx_atomprop_init();
         }
 
         // Static initiation, only run once every test.
@@ -124,7 +122,6 @@ class AcmTest : public gmx::test::CommandLineTestBase
                       false);
 
             mp_.Merge(&molprop);
-            fprintf(stderr, "Read babel for %s\n", dataName.c_str());
             // Generate charges and topology
             eDih            edih       = (eDih) get_option(dihopt);
             t_inputrec      inputrecInstance;
@@ -134,14 +131,13 @@ class AcmTest : public gmx::test::CommandLineTestBase
 
             // Get poldata
             auto pd  = getPoldata(model);
-            auto imm = mp_.GenerateTopology(aps_, pd, method, basis, nullptr,
+            auto imm = mp_.GenerateTopology(pd, method, basis, nullptr,
                                             false, false, edih, false, nullptr);
             if (immOK != imm)
             {
                 fprintf(stderr, "Error generating topology: %s\n", immsg(imm));
                 return;
             }
-            fprintf(stderr, "Generated topology for %s\n", dataName.c_str());
 
             // Needed for GenerateCharges
             t_commrec     *cr       = init_commrec();
@@ -151,13 +147,11 @@ class AcmTest : public gmx::test::CommandLineTestBase
             int            qcycle   = 100;
             real           qtol     = 1e-3;
 
-            mp_.symmetrizeCharges(pd, aps_, qSymm, nullptr);
+            mp_.symmetrizeCharges(pd, qSymm, nullptr);
             //            mp_.initQgenResp(pd, method, basis, nullptr, 0.0, 100);
             mp_.GenerateCharges(pd, mdlog, cr, nullptr, 
                                 hwinfo, qcycle, qtol);
                                 
-            fprintf(stderr, "Generated charges for %s\n", dataName.c_str());
-
             std::vector<double> qtotValues;
             for (int atom = 0; atom < mp_.atoms_->nr; atom++)
             {

@@ -2,86 +2,86 @@
 <!DOCTYPE gentop.dtd PUBLIC "gentop.dtd" "gentop.dtd">
 <gentop>
   <atomtypes chargetype="Point" chargegenerationalgorithm="ESP" version="2020" nexclusions="0" epsilonr="1">
-    <atomtype elem="H" description="hydrogen on aliphatic C with 1 electron-withdrawal group" atype="h1" ptype="h1_s" btype="h1_b" ztype="h1_z" ref_enthalpy="222.232"/>
-    <atomtype elem="H" description="hydrogen on aliphatic C with 2 electron-withdrawal groups" atype="h2" ptype="h1_s" btype="h1_b" ztype="h1_z" ref_enthalpy="222.232"/>
-    <atomtype elem="H" description="hydrogen on aliphatic C with 3 electron-withdrawal groups" atype="h3" ptype="h1_s" btype="h1_b" ztype="h1_z" ref_enthalpy="222.232"/>
-    <atomtype elem="H" description="hydrogen on aromatic C with 1 electron-withdrawal group" atype="h4" ptype="h4_s" btype="h2_b" ztype="h4_z" ref_enthalpy="222.232"/>
-    <atomtype elem="H" description="hydrogen on aromatic C with 2 electron-withdrawal groups" atype="h5" ptype="h4_s" btype="h2_b" ztype="h4_z" ref_enthalpy="222.232"/>
-    <atomtype elem="H" description="hydrogen on aromatic or sp2 aliphatic C" atype="ha" ptype="ha_s" btype="ha_b" ztype="ha_z" ref_enthalpy="222.232"/>
-    <atomtype elem="H" description="hydrogen on sp3 aliphatic C" atype="hc" ptype="hc_s" btype="ha_b" ztype="hc_z" ref_enthalpy="222.232"/>
-    <atomtype elem="H" description="hydrogen on nitrogen" atype="hn" ptype="hp_s" btype="hp_b" ztype="hp_z" ref_enthalpy="222.232"/>
-    <atomtype elem="H" description="hydrogen on oxygen" atype="ho" ptype="hp_s" btype="hp_b" ztype="hp_z" ref_enthalpy="222.232"/>
-    <atomtype elem="H" description="hydrogen on phosphor" atype="hp" ptype="hp_s" btype="hp_b" ztype="hp_z" ref_enthalpy="222.232"/>
-    <atomtype elem="H" description="hydrogen on sulphur" atype="hs" ptype="hp_s" btype="hp_b" ztype="hp_z" ref_enthalpy="222.232"/>
-    <atomtype elem="H" description="hydrogen in water" atype="hw" ptype="hw_s" btype="hw_b" ztype="hw_z" ref_enthalpy="222.232"/>
-    <atomtype elem="Be" description="beryllium ion" atype="Be2+" ptype="Be2+_s" btype="_b" ztype="Be2+_z" ref_enthalpy="0.0"/>
-    <atomtype elem="C" description="sp C" atype="c1" ptype="c1_s" btype="c1_b" ztype="c1_z" ref_enthalpy="717.721"/>
-    <atomtype elem="C" description="C=O or C=S" atype="c" ptype="c2_s" btype="c_b" ztype="c2_z" ref_enthalpy="717.721"/>
-    <atomtype elem="C" description="pure aromatic atom" atype="ca" ptype="ca_s" btype="ca_b" ztype="ca_z" ref_enthalpy="717.721"/>
-    <atomtype elem="C" description="bridge aromatic c in byphenyl system" atype="cq" ptype="c2_s" btype="c2_b" ztype="c2_z" ref_enthalpy="717.721"/>
-    <atomtype elem="C" description="bridge aromatic c in byphenyl system" atype="cp" ptype="c2_s" btype="c2_b" ztype="c2_z" ref_enthalpy="717.721"/>
-    <atomtype elem="C" description="inner sp2 C of conjugated ring systems" atype="cc" ptype="c2_s" btype="c2_b" ztype="c2_z" ref_enthalpy="717.721"/>
-    <atomtype elem="C" description="inner sp2 C of conjugated ring systems" atype="cd" ptype="c2_s" btype="c2_b" ztype="c2_z" ref_enthalpy="717.721"/>
-    <atomtype elem="C" description="sp C of conjugated system" atype="cg" ptype="c1_s" btype="c1_b" ztype="c1_z" ref_enthalpy="717.721"/>
-    <atomtype elem="C" description="inner sp2 C of conjugated chain systems" atype="ce" ptype="c2_s" btype="c2_b" ztype="c2_z" ref_enthalpy="717.721"/>
-    <atomtype elem="C" description="inner sp2 C of conjugated chain systems" atype="cf" ptype="c2_s" btype="c2_b" ztype="c2_z" ref_enthalpy="717.721"/>
-    <atomtype elem="C" description="carbon COO- groups" atype="cm" ptype="cm_s" btype="cm_b" ztype="cm_z" ref_enthalpy="717.721"/>
-    <atomtype elem="C" description="sp2 carbon in a 3-membered ring" atype="cu" ptype="cu_s" btype="c2_b" ztype="cu_z" ref_enthalpy="717.721"/>
-    <atomtype elem="C" description="sp2 carbon in a 4-membered ring" atype="cv" ptype="cu_s" btype="c2_b" ztype="cu_z" ref_enthalpy="717.721"/>
-    <atomtype elem="C" description="guanidine carbon" atype="cz" ptype="cz_s" btype="c2_b" ztype="cz_z" ref_enthalpy="717.721"/>
-    <atomtype elem="C" description="sp2 C, aliphatic" atype="c2" ptype="c2_s" btype="c2_b" ztype="c2_z" ref_enthalpy="717.721"/>
-    <atomtype elem="C" description="sp3 C" atype="c3" ptype="c3_s" btype="c3_b" ztype="c3_z" ref_enthalpy="717.721"/>
-    <atomtype elem="C" description="3-membered ring atom" atype="cx" ptype="cu_s" btype="c3_b" ztype="cu_z" ref_enthalpy="717.721"/>
-    <atomtype elem="C" description="4-membered ring atom" atype="cy" ptype="cu_s" btype="c3_b" ztype="cu_z" ref_enthalpy="717.721"/>
-    <atomtype elem="N" description="sp2 N in amides" atype="n" ptype="n_s" btype="n_b" ztype="n_z" ref_enthalpy="477.018"/>
-    <atomtype elem="N" description="sp1 N" atype="n1" ptype="n1_s" btype="n1_b" ztype="n1_z" ref_enthalpy="477.018"/>
-    <atomtype elem="N" description="sp2 N with 2 subst." atype="n2" ptype="n2_s" btype="n2_b" ztype="n2_z" ref_enthalpy="477.018"/>
-    <atomtype elem="N" description="sp3 N with 3 subst." atype="n3" ptype="n3_s" btype="n3_b" ztype="n3_z" ref_enthalpy="477.018"/>
-    <atomtype elem="N" description="sp3 N with 4 subst." atype="n4" ptype="n4_s" btype="n3_b" ztype="n4_z" ref_enthalpy="477.018"/>
-    <atomtype elem="N" description="sp2 N with 3 subst." atype="na" ptype="na_s" btype="na_b" ztype="na_z" ref_enthalpy="477.018"/>
-    <atomtype elem="N" description="aromatic N" atype="nb" ptype="nb_s" btype="nb_b" ztype="nb_z" ref_enthalpy="477.018"/>
-    <atomtype elem="N" description="inner sp2 N of conjugated ring systems" atype="nc" ptype="nc_s" btype="nc_b" ztype="nc_z" ref_enthalpy="477.018"/>
-    <atomtype elem="N" description="inner sp2 N of conjugated ring systems" atype="nd" ptype="nc_s" btype="nc_b" ztype="nc_z" ref_enthalpy="477.018"/>
-    <atomtype elem="N" description="inner sp2 N of conjugated chain system" atype="ne" ptype="ne_s" btype="ne_b" ztype="ne_z" ref_enthalpy="477.018"/>
-    <atomtype elem="N" description="amine N connected to aromatic ring" atype="nh" ptype="nh_s" btype="nh_b" ztype="nh_z" ref_enthalpy="477.018"/>
-    <atomtype elem="N" description="N in nitro group" atype="no" ptype="no_s" btype="no_b" ztype="no_z" ref_enthalpy="477.018"/>
-    <atomtype elem="O" description="sp2 O" atype="o" ptype="o_s" btype="o_b" ztype="o_z" ref_enthalpy="253.514"/>
-    <atomtype elem="O" description="sp3 O in hydroxyl group" atype="oh" ptype="oh_s" btype="oh_b" ztype="oh_z" ref_enthalpy="253.514"/>
-    <atomtype elem="O" description="O in water" atype="ow" ptype="ow_s" btype="ow_b" ztype="ow_z" ref_enthalpy="253.514"/>
-    <atomtype elem="O" description="O in NO2" atype="on" ptype="on_s" btype="on_b" ztype="on_z" ref_enthalpy="253.514"/>
-    <atomtype elem="O" description="O- in COO" atype="om" ptype="om_s" btype="om_b" ztype="om_z" ref_enthalpy="253.514"/>
-    <atomtype elem="O" description="sp3 O in esters and ethers" atype="os" ptype="os_s" btype="os_b" ztype="os_z" ref_enthalpy="253.514"/>
-    <atomtype elem="F" description="general fluorine" atype="f" ptype="f_s" btype="f_b" ztype="f_z" ref_enthalpy="83.8025"/>
-    <atomtype elem="Mg" description="magnesium ion" atype="Mg2+" ptype="Mg2+_s" btype="_b" ztype="Mg2+_z" ref_enthalpy="152.098"/>
-    <atomtype elem="P" description="other sp2 P" atype="p2" ptype="p2_s" btype="p2_b" ztype="p2_z" ref_enthalpy="321.75"/>
-    <atomtype elem="P" description="other sp3 P" atype="p3" ptype="p2_s" btype="p3_b" ztype="p2_z" ref_enthalpy="321.75"/>
-    <atomtype elem="P" description="hypervalent P" atype="p4" ptype="p4_s" btype="p4_b" ztype="p4_z" ref_enthalpy="321.75"/>
-    <atomtype elem="P" description="hypervalent P" atype="p5" ptype="p4_s" btype="p4_b" ztype="p4_z" ref_enthalpy="321.75"/>
-    <atomtype elem="P" description="aromatic P" atype="pb" ptype="p2_s" btype="p_b" ztype="p2_z" ref_enthalpy="321.75"/>
-    <atomtype elem="P" description="inner sp2 P of conjugated ring systems" atype="pc" ptype="p2_s" btype="p_b" ztype="p2_z" ref_enthalpy="321.75"/>
-    <atomtype elem="P" description="inner sp2 P of conjugated chain system" atype="pe" ptype="p2_s" btype="p_b" ztype="p2_z" ref_enthalpy="321.75"/>
-    <atomtype elem="P" description="sp2 P of conjugated system" atype="px" ptype="p2_s" btype="p_b" ztype="p2_z" ref_enthalpy="321.75"/>
-    <atomtype elem="P" description="P of conjugated system" atype="py" ptype="p2_s" btype="p_b" ztype="p2_z" ref_enthalpy="321.75"/>
-    <atomtype elem="S" description="sp2 sulphur, p=s and c=s" atype="s" ptype="s_s" btype="s_b" ztype="s_z" ref_enthalpy="281.392"/>
-    <atomtype elem="S" description="hypervalent S, 3 subst." atype="s4" ptype="s4_s" btype="s4_b" ztype="s4_z" ref_enthalpy="281.392"/>
-    <atomtype elem="S" description="hypervalent S, 4 subst" atype="s6" ptype="s4_s" btype="s4_b" ztype="s4_z" ref_enthalpy="281.392"/>
-    <atomtype elem="S" description="sp3 S in thiol" atype="sh" ptype="s_s" btype="s_b" ztype="s_z" ref_enthalpy="281.392"/>
-    <atomtype elem="S" description="sp3 sulphur in S-R and S-S" atype="ss" ptype="s_s" btype="s_b" ztype="s_z" ref_enthalpy="281.392"/>
-    <atomtype elem="S" description="conjugated S, 3 subst." atype="sx" ptype="s_s" btype="s_b" ztype="s_z" ref_enthalpy="281.392"/>
-    <atomtype elem="S" description="conjugated S, 4 subst." atype="sy" ptype="s_s" btype="s_b" ztype="s_z" ref_enthalpy="281.392"/>
-    <atomtype elem="Cl" description="general chlorine" atype="cl" ptype="cl_s" btype="cl_b" ztype="cl_z" ref_enthalpy="125.893"/>
-    <atomtype elem="Ca" description="calcium ion" atype="Ca2+" ptype="Ca2+_s" btype="_b" ztype="Ca2+_z" ref_enthalpy="0.0"/>
-    <atomtype elem="Br" description="general bromine" atype="br" ptype="br_s" btype="br_b" ztype="br_z" ref_enthalpy="124.114"/>
-    <atomtype elem="I" description="general iodine" atype="i" ptype="i_s" btype="i_b" ztype="i_z" ref_enthalpy="113.361"/>
-    <atomtype elem="Na" description="sodium ion" atype="Na+" ptype="Na+_s" btype="_b" ztype="Na+_z" ref_enthalpy="0.0"/>
-    <atomtype elem="Cl" description="chloride ion" atype="Cl-" ptype="Cl-_s" btype="_b" ztype="Cl-_z" ref_enthalpy="0.0"/>
-    <atomtype elem="I" description="iodide ion" atype="I-" ptype="I-_s" btype="_b" ztype="I-_z" ref_enthalpy="0.0"/>
-    <atomtype elem="F" description="fluoride ion" atype="F-" ptype="F-_s" btype="_b" ztype="F-_z" ref_enthalpy="0.0"/>
-    <atomtype elem="Rb" description="rubidium ion" atype="Rb+" ptype="Rb+_s" btype="_b" ztype="Rb+_z" ref_enthalpy="0.0"/>
-    <atomtype elem="Li" description="lithium ion" atype="Li+" ptype="Li+_s" btype="_b" ztype="Li+_z" ref_enthalpy="0.0"/>
-    <atomtype elem="Br" description="bromide ion" atype="Br-" ptype="Br-_s" btype="_b" ztype="Br-_z" ref_enthalpy="0.0"/>
-    <atomtype elem="Cs" description="cesium ion" atype="Cs+" ptype="Cs+_s" btype="_b" ztype="Cs+_z" ref_enthalpy="0.0"/>
-    <atomtype elem="K" description="potassium ion" atype="K+" ptype="K+_s" btype="_b" ztype="K+_z" ref_enthalpy="0.0"/>
+    <atomtype elem="H" atomnumber="1" mass="1.0079" description="hydrogen on aliphatic C with 1 electron-withdrawal group" atype="h1" ptype="h1_s" btype="h1_b" ztype="h1_z" ref_enthalpy="222.232"/>
+    <atomtype elem="H" atomnumber="1" mass="1.0079" description="hydrogen on aliphatic C with 2 electron-withdrawal groups" atype="h2" ptype="h1_s" btype="h1_b" ztype="h1_z" ref_enthalpy="222.232"/>
+    <atomtype elem="H" atomnumber="1" mass="1.0079" description="hydrogen on aliphatic C with 3 electron-withdrawal groups" atype="h3" ptype="h1_s" btype="h1_b" ztype="h1_z" ref_enthalpy="222.232"/>
+    <atomtype elem="H" atomnumber="1" mass="1.0079" description="hydrogen on aromatic C with 1 electron-withdrawal group" atype="h4" ptype="h4_s" btype="h2_b" ztype="h4_z" ref_enthalpy="222.232"/>
+    <atomtype elem="H" atomnumber="1" mass="1.0079" description="hydrogen on aromatic C with 2 electron-withdrawal groups" atype="h5" ptype="h4_s" btype="h2_b" ztype="h4_z" ref_enthalpy="222.232"/>
+    <atomtype elem="H" atomnumber="1" mass="1.0079" description="hydrogen on aromatic or sp2 aliphatic C" atype="ha" ptype="ha_s" btype="ha_b" ztype="ha_z" ref_enthalpy="222.232"/>
+    <atomtype elem="H" atomnumber="1" mass="1.0079" description="hydrogen on sp3 aliphatic C" atype="hc" ptype="hc_s" btype="ha_b" ztype="hc_z" ref_enthalpy="222.232"/>
+    <atomtype elem="H" atomnumber="1" mass="1.0079" description="hydrogen on nitrogen" atype="hn" ptype="hp_s" btype="hp_b" ztype="hp_z" ref_enthalpy="222.232"/>
+    <atomtype elem="H" atomnumber="1" mass="1.0079" description="hydrogen on oxygen" atype="ho" ptype="hp_s" btype="hp_b" ztype="hp_z" ref_enthalpy="222.232"/>
+    <atomtype elem="H" atomnumber="1" mass="1.0079" description="hydrogen on phosphor" atype="hp" ptype="hp_s" btype="hp_b" ztype="hp_z" ref_enthalpy="222.232"/>
+    <atomtype elem="H" atomnumber="1" mass="1.0079" description="hydrogen on sulphur" atype="hs" ptype="hp_s" btype="hp_b" ztype="hp_z" ref_enthalpy="222.232"/>
+    <atomtype elem="H" atomnumber="1" mass="1.0079" description="hydrogen in water" atype="hw" ptype="hw_s" btype="hw_b" ztype="hw_z" ref_enthalpy="222.232"/>
+    <atomtype elem="Be" atomnumber="4" mass="9.0122" description="beryllium ion" atype="Be2+" ptype="Be2+_s" btype="_b" ztype="Be2+_z" ref_enthalpy="0.0"/>
+    <atomtype elem="C" atomnumber="6" mass="12.0107" description="sp C" atype="c1" ptype="c1_s" btype="c1_b" ztype="c1_z" ref_enthalpy="717.721"/>
+    <atomtype elem="C" atomnumber="6" mass="12.0107" description="C=O or C=S" atype="c" ptype="c2_s" btype="c_b" ztype="c2_z" ref_enthalpy="717.721"/>
+    <atomtype elem="C" atomnumber="6" mass="12.0107" description="pure aromatic atom" atype="ca" ptype="ca_s" btype="ca_b" ztype="ca_z" ref_enthalpy="717.721"/>
+    <atomtype elem="C" atomnumber="6" mass="12.0107" description="bridge aromatic c in byphenyl system" atype="cq" ptype="c2_s" btype="c2_b" ztype="c2_z" ref_enthalpy="717.721"/>
+    <atomtype elem="C" atomnumber="6" mass="12.0107" description="bridge aromatic c in byphenyl system" atype="cp" ptype="c2_s" btype="c2_b" ztype="c2_z" ref_enthalpy="717.721"/>
+    <atomtype elem="C" atomnumber="6" mass="12.0107" description="inner sp2 C of conjugated ring systems" atype="cc" ptype="c2_s" btype="c2_b" ztype="c2_z" ref_enthalpy="717.721"/>
+    <atomtype elem="C" atomnumber="6" mass="12.0107" description="inner sp2 C of conjugated ring systems" atype="cd" ptype="c2_s" btype="c2_b" ztype="c2_z" ref_enthalpy="717.721"/>
+    <atomtype elem="C" atomnumber="6" mass="12.0107" description="sp C of conjugated system" atype="cg" ptype="c1_s" btype="c1_b" ztype="c1_z" ref_enthalpy="717.721"/>
+    <atomtype elem="C" atomnumber="6" mass="12.0107" description="inner sp2 C of conjugated chain systems" atype="ce" ptype="c2_s" btype="c2_b" ztype="c2_z" ref_enthalpy="717.721"/>
+    <atomtype elem="C" atomnumber="6" mass="12.0107" description="inner sp2 C of conjugated chain systems" atype="cf" ptype="c2_s" btype="c2_b" ztype="c2_z" ref_enthalpy="717.721"/>
+    <atomtype elem="C" atomnumber="6" mass="12.0107" description="carbon COO- groups" atype="cm" ptype="cm_s" btype="cm_b" ztype="cm_z" ref_enthalpy="717.721"/>
+    <atomtype elem="C" atomnumber="6" mass="12.0107" description="sp2 carbon in a 3-membered ring" atype="cu" ptype="cu_s" btype="c2_b" ztype="cu_z" ref_enthalpy="717.721"/>
+    <atomtype elem="C" atomnumber="6" mass="12.0107" description="sp2 carbon in a 4-membered ring" atype="cv" ptype="cu_s" btype="c2_b" ztype="cu_z" ref_enthalpy="717.721"/>
+    <atomtype elem="C" atomnumber="6" mass="12.0107" description="guanidine carbon" atype="cz" ptype="cz_s" btype="c2_b" ztype="cz_z" ref_enthalpy="717.721"/>
+    <atomtype elem="C" atomnumber="6" mass="12.0107" description="sp2 C, aliphatic" atype="c2" ptype="c2_s" btype="c2_b" ztype="c2_z" ref_enthalpy="717.721"/>
+    <atomtype elem="C" atomnumber="6" mass="12.0107" description="sp3 C" atype="c3" ptype="c3_s" btype="c3_b" ztype="c3_z" ref_enthalpy="717.721"/>
+    <atomtype elem="C" atomnumber="6" mass="12.0107" description="3-membered ring atom" atype="cx" ptype="cu_s" btype="c3_b" ztype="cu_z" ref_enthalpy="717.721"/>
+    <atomtype elem="C" atomnumber="6" mass="12.0107" description="4-membered ring atom" atype="cy" ptype="cu_s" btype="c3_b" ztype="cu_z" ref_enthalpy="717.721"/>
+    <atomtype elem="N" atomnumber="7" mass="14.0067" description="sp2 N in amides" atype="n" ptype="n_s" btype="n_b" ztype="n_z" ref_enthalpy="477.018"/>
+    <atomtype elem="N" atomnumber="7" mass="14.0067" description="sp1 N" atype="n1" ptype="n1_s" btype="n1_b" ztype="n1_z" ref_enthalpy="477.018"/>
+    <atomtype elem="N" atomnumber="7" mass="14.0067" description="sp2 N with 2 subst." atype="n2" ptype="n2_s" btype="n2_b" ztype="n2_z" ref_enthalpy="477.018"/>
+    <atomtype elem="N" atomnumber="7" mass="14.0067" description="sp3 N with 3 subst." atype="n3" ptype="n3_s" btype="n3_b" ztype="n3_z" ref_enthalpy="477.018"/>
+    <atomtype elem="N" atomnumber="7" mass="14.0067" description="sp3 N with 4 subst." atype="n4" ptype="n4_s" btype="n3_b" ztype="n4_z" ref_enthalpy="477.018"/>
+    <atomtype elem="N" atomnumber="7" mass="14.0067" description="sp2 N with 3 subst." atype="na" ptype="na_s" btype="na_b" ztype="na_z" ref_enthalpy="477.018"/>
+    <atomtype elem="N" atomnumber="7" mass="14.0067" description="aromatic N" atype="nb" ptype="nb_s" btype="nb_b" ztype="nb_z" ref_enthalpy="477.018"/>
+    <atomtype elem="N" atomnumber="7" mass="14.0067" description="inner sp2 N of conjugated ring systems" atype="nc" ptype="nc_s" btype="nc_b" ztype="nc_z" ref_enthalpy="477.018"/>
+    <atomtype elem="N" atomnumber="7" mass="14.0067" description="inner sp2 N of conjugated ring systems" atype="nd" ptype="nc_s" btype="nc_b" ztype="nc_z" ref_enthalpy="477.018"/>
+    <atomtype elem="N" atomnumber="7" mass="14.0067" description="inner sp2 N of conjugated chain system" atype="ne" ptype="ne_s" btype="ne_b" ztype="ne_z" ref_enthalpy="477.018"/>
+    <atomtype elem="N" atomnumber="7" mass="14.0067" description="amine N connected to aromatic ring" atype="nh" ptype="nh_s" btype="nh_b" ztype="nh_z" ref_enthalpy="477.018"/>
+    <atomtype elem="N" atomnumber="7" mass="14.0067" description="N in nitro group" atype="no" ptype="no_s" btype="no_b" ztype="no_z" ref_enthalpy="477.018"/>
+    <atomtype elem="O" atomnumber="8" mass="15.9994" description="sp2 O" atype="o" ptype="o_s" btype="o_b" ztype="o_z" ref_enthalpy="253.514"/>
+    <atomtype elem="O" atomnumber="8" mass="15.9994" description="sp3 O in hydroxyl group" atype="oh" ptype="oh_s" btype="oh_b" ztype="oh_z" ref_enthalpy="253.514"/>
+    <atomtype elem="O" atomnumber="8" mass="15.9994" description="O in water" atype="ow" ptype="ow_s" btype="ow_b" ztype="ow_z" ref_enthalpy="253.514"/>
+    <atomtype elem="O" atomnumber="8" mass="15.9994" description="O in NO2" atype="on" ptype="on_s" btype="on_b" ztype="on_z" ref_enthalpy="253.514"/>
+    <atomtype elem="O" atomnumber="8" mass="15.9994" description="O- in COO" atype="om" ptype="om_s" btype="om_b" ztype="om_z" ref_enthalpy="253.514"/>
+    <atomtype elem="O" atomnumber="8" mass="15.9994" description="sp3 O in esters and ethers" atype="os" ptype="os_s" btype="os_b" ztype="os_z" ref_enthalpy="253.514"/>
+    <atomtype elem="F" atomnumber="9" mass="18.9984" description="general fluorine" atype="f" ptype="f_s" btype="f_b" ztype="f_z" ref_enthalpy="83.8025"/>
+    <atomtype elem="Mg" atomnumber="12" mass="24.305" description="magnesium ion" atype="Mg2+" ptype="Mg2+_s" btype="_b" ztype="Mg2+_z" ref_enthalpy="152.098"/>
+    <atomtype elem="P" atomnumber="15" mass="30.9738" description="other sp2 P" atype="p2" ptype="p2_s" btype="p2_b" ztype="p2_z" ref_enthalpy="321.75"/>
+    <atomtype elem="P" atomnumber="15" mass="30.9738" description="other sp3 P" atype="p3" ptype="p2_s" btype="p3_b" ztype="p2_z" ref_enthalpy="321.75"/>
+    <atomtype elem="P" atomnumber="15" mass="30.9738" description="hypervalent P" atype="p4" ptype="p4_s" btype="p4_b" ztype="p4_z" ref_enthalpy="321.75"/>
+    <atomtype elem="P" atomnumber="15" mass="30.9738" description="hypervalent P" atype="p5" ptype="p4_s" btype="p4_b" ztype="p4_z" ref_enthalpy="321.75"/>
+    <atomtype elem="P" atomnumber="15" mass="30.9738" description="aromatic P" atype="pb" ptype="p2_s" btype="p_b" ztype="p2_z" ref_enthalpy="321.75"/>
+    <atomtype elem="P" atomnumber="15" mass="30.9738" description="inner sp2 P of conjugated ring systems" atype="pc" ptype="p2_s" btype="p_b" ztype="p2_z" ref_enthalpy="321.75"/>
+    <atomtype elem="P" atomnumber="15" mass="30.9738" description="inner sp2 P of conjugated chain system" atype="pe" ptype="p2_s" btype="p_b" ztype="p2_z" ref_enthalpy="321.75"/>
+    <atomtype elem="P" atomnumber="15" mass="30.9738" description="sp2 P of conjugated system" atype="px" ptype="p2_s" btype="p_b" ztype="p2_z" ref_enthalpy="321.75"/>
+    <atomtype elem="P" atomnumber="15" mass="30.9738" description="P of conjugated system" atype="py" ptype="p2_s" btype="p_b" ztype="p2_z" ref_enthalpy="321.75"/>
+    <atomtype elem="S" atomnumber="16" mass="32.065" description="sp2 sulphur, p=s and c=s" atype="s" ptype="s_s" btype="s_b" ztype="s_z" ref_enthalpy="281.392"/>
+    <atomtype elem="S" atomnumber="16" mass="32.065" description="hypervalent S, 3 subst." atype="s4" ptype="s4_s" btype="s4_b" ztype="s4_z" ref_enthalpy="281.392"/>
+    <atomtype elem="S" atomnumber="16" mass="32.065" description="hypervalent S, 4 subst" atype="s6" ptype="s4_s" btype="s4_b" ztype="s4_z" ref_enthalpy="281.392"/>
+    <atomtype elem="S" atomnumber="16" mass="32.065" description="sp3 S in thiol" atype="sh" ptype="s_s" btype="s_b" ztype="s_z" ref_enthalpy="281.392"/>
+    <atomtype elem="S" atomnumber="16" mass="32.065" description="sp3 sulphur in S-R and S-S" atype="ss" ptype="s_s" btype="s_b" ztype="s_z" ref_enthalpy="281.392"/>
+    <atomtype elem="S" atomnumber="16" mass="32.065" description="conjugated S, 3 subst." atype="sx" ptype="s_s" btype="s_b" ztype="s_z" ref_enthalpy="281.392"/>
+    <atomtype elem="S" atomnumber="16" mass="32.065" description="conjugated S, 4 subst." atype="sy" ptype="s_s" btype="s_b" ztype="s_z" ref_enthalpy="281.392"/>
+    <atomtype elem="Cl" atomnumber="17" mass="35.453" description="general chlorine" atype="cl" ptype="cl_s" btype="cl_b" ztype="cl_z" ref_enthalpy="125.893"/>
+    <atomtype elem="Ca" atomnumber="20" mass="40.078" description="calcium ion" atype="Ca2+" ptype="Ca2+_s" btype="_b" ztype="Ca2+_z" ref_enthalpy="0.0"/>
+    <atomtype elem="Br" atomnumber="35" mass="79.904" description="general bromine" atype="br" ptype="br_s" btype="br_b" ztype="br_z" ref_enthalpy="124.114"/>
+    <atomtype elem="I" atomnumber="53" mass="126.904" description="general iodine" atype="i" ptype="i_s" btype="i_b" ztype="i_z" ref_enthalpy="113.361"/>
+    <atomtype elem="Na" atomnumber="11" mass="22.9897" description="sodium ion" atype="Na+" ptype="Na+_s" btype="_b" ztype="Na+_z" ref_enthalpy="0.0"/>
+    <atomtype elem="Cl" atomnumber="17" mass="35.453" description="chloride ion" atype="Cl-" ptype="Cl-_s" btype="_b" ztype="Cl-_z" ref_enthalpy="0.0"/>
+    <atomtype elem="I" atomnumber="53" mass="126.904" description="iodide ion" atype="I-" ptype="I-_s" btype="_b" ztype="I-_z" ref_enthalpy="0.0"/>
+    <atomtype elem="F" atomnumber="9" mass="18.9984" description="fluoride ion" atype="F-" ptype="F-_s" btype="_b" ztype="F-_z" ref_enthalpy="0.0"/>
+    <atomtype elem="Rb" atomnumber="37" mass="85.4678" description="rubidium ion" atype="Rb+" ptype="Rb+_s" btype="_b" ztype="Rb+_z" ref_enthalpy="0.0"/>
+    <atomtype elem="Li" atomnumber="3" mass="6.941" description="lithium ion" atype="Li+" ptype="Li+_s" btype="_b" ztype="Li+_z" ref_enthalpy="0.0"/>
+    <atomtype elem="Br" atomnumber="35" mass="79.904" description="bromide ion" atype="Br-" ptype="Br-_s" btype="_b" ztype="Br-_z" ref_enthalpy="0.0"/>
+    <atomtype elem="Cs" atomnumber="55" mass="132.905" description="cesium ion" atype="Cs+" ptype="Cs+_s" btype="_b" ztype="Cs+_z" ref_enthalpy="0.0"/>
+    <atomtype elem="K" atomnumber="19" mass="39.0983" description="potassium ion" atype="K+" ptype="K+_s" btype="_b" ztype="K+_z" ref_enthalpy="0.0"/>
   </atomtypes>
   <interaction type="POLARIZATION" function="Polarization" canswap="false">
   </interaction>
@@ -16286,7 +16286,7 @@
       <parameter type="c3" unit="kJ/mol" value="1" uncertainty="0" ntrain="1" minimum="0.8" maximum="1.25" mutability="Bounded"/>
     </parameterlist>
   </interaction>
-  <interaction type="IMPROPER_DIHEDRALS" function="IDIHS" canswap="false">
+  <interaction type="IMPROPER_DIHEDRALS" function="IDIHS" canswap="true">
     <parameterlist identifier="br_b#ca_b#ca_b#ca_b">
       <parameter type="kimp" unit="kJ/mol" value="0.5" uncertainty="0" ntrain="1" minimum="0.4" maximum="0.625" mutability="Bounded"/>
       <parameter type="phi" unit="degree" value="0" uncertainty="0.5" ntrain="2" minimum="0" maximum="0" mutability="Bounded"/>
@@ -18606,7 +18606,7 @@
       <parameter type="jaa" unit="eV/e" value="11.8644" minimum="9.49153" maximum="14.8305" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="chi" unit="eV" value="7.49112" minimum="5.9929" maximum="9.3639" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="zeta" unit="1/nm" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Bounded" ntrain="1"/>
-      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Free" ntrain="1"/>
+      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Dependent" ntrain="1"/>
       <parameter type="ref_charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Fixed" ntrain="1"/>
       <parameter type="row" unit="" value="2" minimum="2" maximum="2" uncertainty="0" mutability="Fixed" ntrain="1"/>
     </parameterlist>
@@ -18614,7 +18614,7 @@
       <parameter type="jaa" unit="eV/e" value="3.84615" minimum="3.07692" maximum="4.80769" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="chi" unit="eV" value="5.7" minimum="4.56" maximum="7.125" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="zeta" unit="1/nm" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Bounded" ntrain="1"/>
-      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Free" ntrain="1"/>
+      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Dependent" ntrain="1"/>
       <parameter type="ref_charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Fixed" ntrain="1"/>
       <parameter type="row" unit="" value="4" minimum="4" maximum="4" uncertainty="0" mutability="Fixed" ntrain="1"/>
     </parameterlist>
@@ -18622,7 +18622,7 @@
       <parameter type="jaa" unit="eV/e" value="6.14035" minimum="4.91228" maximum="7.67544" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="chi" unit="eV" value="7.49112" minimum="5.9929" maximum="9.3639" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="zeta" unit="1/nm" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Bounded" ntrain="1"/>
-      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Free" ntrain="1"/>
+      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Dependent" ntrain="1"/>
       <parameter type="ref_charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Fixed" ntrain="1"/>
       <parameter type="row" unit="" value="4" minimum="4" maximum="4" uncertainty="0" mutability="Fixed" ntrain="1"/>
     </parameterlist>
@@ -18630,7 +18630,7 @@
       <parameter type="jaa" unit="eV/e" value="4.19162" minimum="3.35329" maximum="5.23952" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="chi" unit="eV" value="6" minimum="4.8" maximum="7.5" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="zeta" unit="1/nm" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Bounded" ntrain="1"/>
-      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Free" ntrain="1"/>
+      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Dependent" ntrain="1"/>
       <parameter type="ref_charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Fixed" ntrain="1"/>
       <parameter type="row" unit="" value="3" minimum="3" maximum="3" uncertainty="0" mutability="Fixed" ntrain="1"/>
     </parameterlist>
@@ -18638,7 +18638,7 @@
       <parameter type="jaa" unit="eV/e" value="3.8674" minimum="3.09392" maximum="4.83425" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="chi" unit="eV" value="7.49112" minimum="5.9929" maximum="9.3639" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="zeta" unit="1/nm" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Bounded" ntrain="1"/>
-      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Free" ntrain="1"/>
+      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Dependent" ntrain="1"/>
       <parameter type="ref_charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Fixed" ntrain="1"/>
       <parameter type="row" unit="" value="6" minimum="6" maximum="6" uncertainty="0" mutability="Fixed" ntrain="1"/>
     </parameterlist>
@@ -18646,7 +18646,7 @@
       <parameter type="jaa" unit="eV/e" value="5.88235" minimum="4.70588" maximum="7.35294" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="chi" unit="eV" value="7" minimum="5.6" maximum="8.75" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="zeta" unit="1/nm" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Bounded" ntrain="1"/>
-      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Free" ntrain="1"/>
+      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Dependent" ntrain="1"/>
       <parameter type="ref_charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Fixed" ntrain="1"/>
       <parameter type="row" unit="" value="2" minimum="2" maximum="2" uncertainty="0" mutability="Fixed" ntrain="1"/>
     </parameterlist>
@@ -18654,7 +18654,7 @@
       <parameter type="jaa" unit="eV/e" value="3.39806" minimum="2.71845" maximum="4.24757" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="chi" unit="eV" value="5.5" minimum="4.4" maximum="6.875" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="zeta" unit="1/nm" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Bounded" ntrain="1"/>
-      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Free" ntrain="1"/>
+      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Dependent" ntrain="1"/>
       <parameter type="ref_charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Fixed" ntrain="1"/>
       <parameter type="row" unit="" value="5" minimum="5" maximum="5" uncertainty="0" mutability="Fixed" ntrain="1"/>
     </parameterlist>
@@ -18662,7 +18662,7 @@
       <parameter type="jaa" unit="eV/e" value="4.60526" minimum="3.68421" maximum="5.75658" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="chi" unit="eV" value="7.49112" minimum="5.9929" maximum="9.3639" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="zeta" unit="1/nm" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Bounded" ntrain="1"/>
-      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Free" ntrain="1"/>
+      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Dependent" ntrain="1"/>
       <parameter type="ref_charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Fixed" ntrain="1"/>
       <parameter type="row" unit="" value="4" minimum="4" maximum="4" uncertainty="0" mutability="Fixed" ntrain="1"/>
     </parameterlist>
@@ -18670,7 +18670,7 @@
       <parameter type="jaa" unit="eV/e" value="7.77778" minimum="6.22222" maximum="9.72222" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="chi" unit="eV" value="7.49112" minimum="5.9929" maximum="9.3639" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="zeta" unit="1/nm" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Bounded" ntrain="1"/>
-      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Free" ntrain="1"/>
+      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Dependent" ntrain="1"/>
       <parameter type="ref_charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Fixed" ntrain="1"/>
       <parameter type="row" unit="" value="2" minimum="2" maximum="2" uncertainty="0" mutability="Fixed" ntrain="1"/>
     </parameterlist>
@@ -18678,7 +18678,7 @@
       <parameter type="jaa" unit="eV/e" value="4.96454" minimum="3.97163" maximum="6.20567" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="chi" unit="eV" value="7.49112" minimum="5.9929" maximum="9.3639" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="zeta" unit="1/nm" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Bounded" ntrain="1"/>
-      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Free" ntrain="1"/>
+      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Dependent" ntrain="1"/>
       <parameter type="ref_charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Fixed" ntrain="1"/>
       <parameter type="row" unit="" value="3" minimum="3" maximum="3" uncertainty="0" mutability="Fixed" ntrain="1"/>
     </parameterlist>
@@ -18686,7 +18686,7 @@
       <parameter type="jaa" unit="eV/e" value="4.21687" minimum="3.37349" maximum="5.27108" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="chi" unit="eV" value="7.49112" minimum="5.9929" maximum="9.3639" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="zeta" unit="1/nm" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Bounded" ntrain="1"/>
-      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Free" ntrain="1"/>
+      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Dependent" ntrain="1"/>
       <parameter type="ref_charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Fixed" ntrain="1"/>
       <parameter type="row" unit="" value="3" minimum="3" maximum="3" uncertainty="0" mutability="Fixed" ntrain="1"/>
     </parameterlist>
@@ -18694,7 +18694,7 @@
       <parameter type="jaa" unit="eV/e" value="4.21687" minimum="3.37349" maximum="5.27108" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="chi" unit="eV" value="7.49112" minimum="5.9929" maximum="9.3639" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="zeta" unit="1/nm" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Bounded" ntrain="1"/>
-      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Free" ntrain="1"/>
+      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Dependent" ntrain="1"/>
       <parameter type="ref_charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Fixed" ntrain="1"/>
       <parameter type="row" unit="" value="5" minimum="5" maximum="5" uncertainty="0" mutability="Fixed" ntrain="1"/>
     </parameterlist>
@@ -18702,7 +18702,7 @@
       <parameter type="jaa" unit="eV/e" value="5.83333" minimum="4.66667" maximum="7.29167" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="chi" unit="eV" value="5.7" minimum="4.56" maximum="7.125" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="zeta" unit="1/nm" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Bounded" ntrain="1"/>
-      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Free" ntrain="1"/>
+      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Dependent" ntrain="1"/>
       <parameter type="ref_charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Fixed" ntrain="1"/>
       <parameter type="row" unit="" value="4" minimum="4" maximum="4" uncertainty="0" mutability="Fixed" ntrain="1"/>
     </parameterlist>
@@ -18710,7 +18710,7 @@
       <parameter type="jaa" unit="eV/e" value="9.58904" minimum="7.67123" maximum="11.9863" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="chi" unit="eV" value="5" minimum="4" maximum="6.25" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="zeta" unit="1/nm" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Bounded" ntrain="1"/>
-      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Free" ntrain="1"/>
+      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Dependent" ntrain="1"/>
       <parameter type="ref_charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Fixed" ntrain="1"/>
       <parameter type="row" unit="" value="2" minimum="2" maximum="2" uncertainty="0" mutability="Fixed" ntrain="1"/>
     </parameterlist>
@@ -18718,7 +18718,7 @@
       <parameter type="jaa" unit="eV/e" value="9.58904" minimum="7.67123" maximum="11.9863" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="chi" unit="eV" value="5" minimum="4" maximum="6.25" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="zeta" unit="1/nm" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Bounded" ntrain="1"/>
-      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Free" ntrain="1"/>
+      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Dependent" ntrain="1"/>
       <parameter type="ref_charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Fixed" ntrain="1"/>
       <parameter type="row" unit="" value="2" minimum="2" maximum="2" uncertainty="0" mutability="Fixed" ntrain="1"/>
     </parameterlist>
@@ -18726,7 +18726,7 @@
       <parameter type="jaa" unit="eV/e" value="9.21053" minimum="7.36842" maximum="11.5132" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="chi" unit="eV" value="5" minimum="4" maximum="6.25" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="zeta" unit="1/nm" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Bounded" ntrain="1"/>
-      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Free" ntrain="1"/>
+      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Dependent" ntrain="1"/>
       <parameter type="ref_charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Fixed" ntrain="1"/>
       <parameter type="row" unit="" value="2" minimum="2" maximum="2" uncertainty="0" mutability="Fixed" ntrain="1"/>
     </parameterlist>
@@ -18734,7 +18734,7 @@
       <parameter type="jaa" unit="eV/e" value="9.58904" minimum="7.67123" maximum="11.9863" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="chi" unit="eV" value="5" minimum="4" maximum="6.25" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="zeta" unit="1/nm" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Bounded" ntrain="1"/>
-      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Free" ntrain="1"/>
+      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Dependent" ntrain="1"/>
       <parameter type="ref_charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Fixed" ntrain="1"/>
       <parameter type="row" unit="" value="2" minimum="2" maximum="2" uncertainty="0" mutability="Fixed" ntrain="1"/>
     </parameterlist>
@@ -18742,7 +18742,7 @@
       <parameter type="jaa" unit="eV/e" value="6.86275" minimum="5.4902" maximum="8.57843" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="chi" unit="eV" value="6" minimum="4.8" maximum="7.5" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="zeta" unit="1/nm" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Bounded" ntrain="1"/>
-      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Free" ntrain="1"/>
+      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Dependent" ntrain="1"/>
       <parameter type="ref_charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Fixed" ntrain="1"/>
       <parameter type="row" unit="" value="3" minimum="3" maximum="3" uncertainty="0" mutability="Fixed" ntrain="1"/>
     </parameterlist>
@@ -18750,7 +18750,7 @@
       <parameter type="jaa" unit="eV/e" value="9.58904" minimum="7.67123" maximum="11.9863" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="chi" unit="eV" value="5" minimum="4" maximum="6.25" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="zeta" unit="1/nm" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Bounded" ntrain="1"/>
-      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Free" ntrain="1"/>
+      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Dependent" ntrain="1"/>
       <parameter type="ref_charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Fixed" ntrain="1"/>
       <parameter type="row" unit="" value="2" minimum="2" maximum="2" uncertainty="0" mutability="Fixed" ntrain="1"/>
     </parameterlist>
@@ -18758,7 +18758,7 @@
       <parameter type="jaa" unit="eV/e" value="9.21053" minimum="7.36842" maximum="11.5132" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="chi" unit="eV" value="5" minimum="4" maximum="6.25" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="zeta" unit="1/nm" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Bounded" ntrain="1"/>
-      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Free" ntrain="1"/>
+      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Dependent" ntrain="1"/>
       <parameter type="ref_charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Fixed" ntrain="1"/>
       <parameter type="row" unit="" value="2" minimum="2" maximum="2" uncertainty="0" mutability="Fixed" ntrain="1"/>
     </parameterlist>
@@ -18766,7 +18766,7 @@
       <parameter type="jaa" unit="eV/e" value="9.58904" minimum="7.67123" maximum="11.9863" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="chi" unit="eV" value="5" minimum="4" maximum="6.25" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="zeta" unit="1/nm" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Bounded" ntrain="1"/>
-      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Free" ntrain="1"/>
+      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Dependent" ntrain="1"/>
       <parameter type="ref_charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Fixed" ntrain="1"/>
       <parameter type="row" unit="" value="2" minimum="2" maximum="2" uncertainty="0" mutability="Fixed" ntrain="1"/>
     </parameterlist>
@@ -18774,7 +18774,7 @@
       <parameter type="jaa" unit="eV/e" value="12.2807" minimum="9.82456" maximum="15.3509" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="chi" unit="eV" value="7" minimum="5.6" maximum="8.75" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="zeta" unit="1/nm" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Bounded" ntrain="1"/>
-      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Free" ntrain="1"/>
+      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Dependent" ntrain="1"/>
       <parameter type="ref_charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Fixed" ntrain="1"/>
       <parameter type="row" unit="" value="2" minimum="2" maximum="2" uncertainty="0" mutability="Fixed" ntrain="1"/>
     </parameterlist>
@@ -18782,7 +18782,7 @@
       <parameter type="jaa" unit="eV/e" value="14" minimum="11.2" maximum="17.5" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="chi" unit="eV" value="3.5" minimum="2.8" maximum="4.375" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="zeta" unit="1/nm" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Bounded" ntrain="1"/>
-      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Free" ntrain="1"/>
+      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Dependent" ntrain="1"/>
       <parameter type="ref_charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Fixed" ntrain="1"/>
       <parameter type="row" unit="" value="1" minimum="1" maximum="1" uncertainty="0" mutability="Fixed" ntrain="1"/>
     </parameterlist>
@@ -18790,7 +18790,7 @@
       <parameter type="jaa" unit="eV/e" value="14" minimum="11.2" maximum="17.5" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="chi" unit="eV" value="3.5" minimum="2.8" maximum="4.375" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="zeta" unit="1/nm" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Bounded" ntrain="1"/>
-      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Free" ntrain="1"/>
+      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Dependent" ntrain="1"/>
       <parameter type="ref_charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Fixed" ntrain="1"/>
       <parameter type="row" unit="" value="1" minimum="1" maximum="1" uncertainty="0" mutability="Fixed" ntrain="1"/>
     </parameterlist>
@@ -18798,7 +18798,7 @@
       <parameter type="jaa" unit="eV/e" value="14" minimum="11.2" maximum="17.5" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="chi" unit="eV" value="3.5" minimum="2.8" maximum="4.375" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="zeta" unit="1/nm" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Bounded" ntrain="1"/>
-      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Free" ntrain="1"/>
+      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Dependent" ntrain="1"/>
       <parameter type="ref_charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Fixed" ntrain="1"/>
       <parameter type="row" unit="" value="1" minimum="1" maximum="1" uncertainty="0" mutability="Fixed" ntrain="1"/>
     </parameterlist>
@@ -18806,7 +18806,7 @@
       <parameter type="jaa" unit="eV/e" value="14" minimum="11.2" maximum="17.5" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="chi" unit="eV" value="3.5" minimum="2.8" maximum="4.375" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="zeta" unit="1/nm" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Bounded" ntrain="1"/>
-      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Free" ntrain="1"/>
+      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Dependent" ntrain="1"/>
       <parameter type="ref_charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Fixed" ntrain="1"/>
       <parameter type="row" unit="" value="1" minimum="1" maximum="1" uncertainty="0" mutability="Fixed" ntrain="1"/>
     </parameterlist>
@@ -18814,7 +18814,7 @@
       <parameter type="jaa" unit="eV/e" value="14" minimum="11.2" maximum="17.5" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="chi" unit="eV" value="3.5" minimum="2.8" maximum="4.375" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="zeta" unit="1/nm" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Bounded" ntrain="1"/>
-      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Free" ntrain="1"/>
+      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Dependent" ntrain="1"/>
       <parameter type="ref_charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Fixed" ntrain="1"/>
       <parameter type="row" unit="" value="1" minimum="1" maximum="1" uncertainty="0" mutability="Fixed" ntrain="1"/>
     </parameterlist>
@@ -18822,7 +18822,7 @@
       <parameter type="jaa" unit="eV/e" value="14" minimum="11.2" maximum="17.5" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="chi" unit="eV" value="3.5" minimum="2.8" maximum="4.375" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="zeta" unit="1/nm" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Bounded" ntrain="1"/>
-      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Free" ntrain="1"/>
+      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Dependent" ntrain="1"/>
       <parameter type="ref_charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Fixed" ntrain="1"/>
       <parameter type="row" unit="" value="1" minimum="1" maximum="1" uncertainty="0" mutability="Fixed" ntrain="1"/>
     </parameterlist>
@@ -18830,7 +18830,7 @@
       <parameter type="jaa" unit="eV/e" value="5.03597" minimum="4.02878" maximum="6.29496" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="chi" unit="eV" value="5.5" minimum="4.4" maximum="6.875" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="zeta" unit="1/nm" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Bounded" ntrain="1"/>
-      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Free" ntrain="1"/>
+      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Dependent" ntrain="1"/>
       <parameter type="ref_charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Fixed" ntrain="1"/>
       <parameter type="row" unit="" value="5" minimum="5" maximum="5" uncertainty="0" mutability="Fixed" ntrain="1"/>
     </parameterlist>
@@ -18838,7 +18838,7 @@
       <parameter type="jaa" unit="eV/e" value="9.85915" minimum="7.88732" maximum="12.3239" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="chi" unit="eV" value="5.5" minimum="4.4" maximum="6.875" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="zeta" unit="1/nm" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Bounded" ntrain="1"/>
-      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Free" ntrain="1"/>
+      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Dependent" ntrain="1"/>
       <parameter type="ref_charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Fixed" ntrain="1"/>
       <parameter type="row" unit="" value="2" minimum="2" maximum="2" uncertainty="0" mutability="Fixed" ntrain="1"/>
     </parameterlist>
@@ -18846,7 +18846,7 @@
       <parameter type="jaa" unit="eV/e" value="9.85915" minimum="7.88732" maximum="12.3239" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="chi" unit="eV" value="5.5" minimum="4.4" maximum="6.875" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="zeta" unit="1/nm" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Bounded" ntrain="1"/>
-      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Free" ntrain="1"/>
+      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Dependent" ntrain="1"/>
       <parameter type="ref_charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Fixed" ntrain="1"/>
       <parameter type="row" unit="" value="2" minimum="2" maximum="2" uncertainty="0" mutability="Fixed" ntrain="1"/>
     </parameterlist>
@@ -18854,7 +18854,7 @@
       <parameter type="jaa" unit="eV/e" value="9.85915" minimum="7.88732" maximum="12.3239" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="chi" unit="eV" value="5.5" minimum="4.4" maximum="6.875" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="zeta" unit="1/nm" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Bounded" ntrain="1"/>
-      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Free" ntrain="1"/>
+      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Dependent" ntrain="1"/>
       <parameter type="ref_charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Fixed" ntrain="1"/>
       <parameter type="row" unit="" value="2" minimum="2" maximum="2" uncertainty="0" mutability="Fixed" ntrain="1"/>
     </parameterlist>
@@ -18862,7 +18862,7 @@
       <parameter type="jaa" unit="eV/e" value="9.85915" minimum="7.88732" maximum="12.3239" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="chi" unit="eV" value="5.5" minimum="4.4" maximum="6.875" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="zeta" unit="1/nm" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Bounded" ntrain="1"/>
-      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Free" ntrain="1"/>
+      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Dependent" ntrain="1"/>
       <parameter type="ref_charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Fixed" ntrain="1"/>
       <parameter type="row" unit="" value="2" minimum="2" maximum="2" uncertainty="0" mutability="Fixed" ntrain="1"/>
     </parameterlist>
@@ -18870,7 +18870,7 @@
       <parameter type="jaa" unit="eV/e" value="9.85915" minimum="7.88732" maximum="12.3239" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="chi" unit="eV" value="5.5" minimum="4.4" maximum="6.875" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="zeta" unit="1/nm" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Bounded" ntrain="1"/>
-      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Free" ntrain="1"/>
+      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Dependent" ntrain="1"/>
       <parameter type="ref_charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Fixed" ntrain="1"/>
       <parameter type="row" unit="" value="2" minimum="2" maximum="2" uncertainty="0" mutability="Fixed" ntrain="1"/>
     </parameterlist>
@@ -18878,7 +18878,7 @@
       <parameter type="jaa" unit="eV/e" value="9.85915" minimum="7.88732" maximum="12.3239" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="chi" unit="eV" value="5.5" minimum="4.4" maximum="6.875" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="zeta" unit="1/nm" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Bounded" ntrain="1"/>
-      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Free" ntrain="1"/>
+      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Dependent" ntrain="1"/>
       <parameter type="ref_charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Fixed" ntrain="1"/>
       <parameter type="row" unit="" value="2" minimum="2" maximum="2" uncertainty="0" mutability="Fixed" ntrain="1"/>
     </parameterlist>
@@ -18886,7 +18886,7 @@
       <parameter type="jaa" unit="eV/e" value="9.85915" minimum="7.88732" maximum="12.3239" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="chi" unit="eV" value="5.5" minimum="4.4" maximum="6.875" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="zeta" unit="1/nm" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Bounded" ntrain="1"/>
-      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Free" ntrain="1"/>
+      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Dependent" ntrain="1"/>
       <parameter type="ref_charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Fixed" ntrain="1"/>
       <parameter type="row" unit="" value="2" minimum="2" maximum="2" uncertainty="0" mutability="Fixed" ntrain="1"/>
     </parameterlist>
@@ -18894,7 +18894,7 @@
       <parameter type="jaa" unit="eV/e" value="9.85915" minimum="7.88732" maximum="12.3239" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="chi" unit="eV" value="5.5" minimum="4.4" maximum="6.875" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="zeta" unit="1/nm" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Bounded" ntrain="1"/>
-      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Free" ntrain="1"/>
+      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Dependent" ntrain="1"/>
       <parameter type="ref_charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Fixed" ntrain="1"/>
       <parameter type="row" unit="" value="2" minimum="2" maximum="2" uncertainty="0" mutability="Fixed" ntrain="1"/>
     </parameterlist>
@@ -18902,7 +18902,7 @@
       <parameter type="jaa" unit="eV/e" value="9.85915" minimum="7.88732" maximum="12.3239" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="chi" unit="eV" value="5.5" minimum="4.4" maximum="6.875" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="zeta" unit="1/nm" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Bounded" ntrain="1"/>
-      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Free" ntrain="1"/>
+      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Dependent" ntrain="1"/>
       <parameter type="ref_charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Fixed" ntrain="1"/>
       <parameter type="row" unit="" value="2" minimum="2" maximum="2" uncertainty="0" mutability="Fixed" ntrain="1"/>
     </parameterlist>
@@ -18910,7 +18910,7 @@
       <parameter type="jaa" unit="eV/e" value="9.85915" minimum="7.88732" maximum="12.3239" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="chi" unit="eV" value="5.5" minimum="4.4" maximum="6.875" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="zeta" unit="1/nm" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Bounded" ntrain="1"/>
-      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Free" ntrain="1"/>
+      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Dependent" ntrain="1"/>
       <parameter type="ref_charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Fixed" ntrain="1"/>
       <parameter type="row" unit="" value="2" minimum="2" maximum="2" uncertainty="0" mutability="Fixed" ntrain="1"/>
     </parameterlist>
@@ -18918,7 +18918,7 @@
       <parameter type="jaa" unit="eV/e" value="9.85915" minimum="7.88732" maximum="12.3239" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="chi" unit="eV" value="5.5" minimum="4.4" maximum="6.875" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="zeta" unit="1/nm" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Bounded" ntrain="1"/>
-      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Free" ntrain="1"/>
+      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Dependent" ntrain="1"/>
       <parameter type="ref_charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Fixed" ntrain="1"/>
       <parameter type="row" unit="" value="2" minimum="2" maximum="2" uncertainty="0" mutability="Fixed" ntrain="1"/>
     </parameterlist>
@@ -18926,7 +18926,7 @@
       <parameter type="jaa" unit="eV/e" value="10.6061" minimum="8.48485" maximum="13.2576" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="chi" unit="eV" value="6" minimum="4.8" maximum="7.5" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="zeta" unit="1/nm" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Bounded" ntrain="1"/>
-      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Free" ntrain="1"/>
+      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Dependent" ntrain="1"/>
       <parameter type="ref_charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Fixed" ntrain="1"/>
       <parameter type="row" unit="" value="2" minimum="2" maximum="2" uncertainty="0" mutability="Fixed" ntrain="1"/>
     </parameterlist>
@@ -18934,7 +18934,7 @@
       <parameter type="jaa" unit="eV/e" value="10.6061" minimum="8.48485" maximum="13.2576" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="chi" unit="eV" value="6" minimum="4.8" maximum="7.5" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="zeta" unit="1/nm" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Bounded" ntrain="1"/>
-      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Free" ntrain="1"/>
+      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Dependent" ntrain="1"/>
       <parameter type="ref_charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Fixed" ntrain="1"/>
       <parameter type="row" unit="" value="2" minimum="2" maximum="2" uncertainty="0" mutability="Fixed" ntrain="1"/>
     </parameterlist>
@@ -18942,7 +18942,7 @@
       <parameter type="jaa" unit="eV/e" value="10.6061" minimum="8.48485" maximum="13.2576" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="chi" unit="eV" value="6" minimum="4.8" maximum="7.5" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="zeta" unit="1/nm" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Bounded" ntrain="1"/>
-      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Free" ntrain="1"/>
+      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Dependent" ntrain="1"/>
       <parameter type="ref_charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Fixed" ntrain="1"/>
       <parameter type="row" unit="" value="2" minimum="2" maximum="2" uncertainty="0" mutability="Fixed" ntrain="1"/>
     </parameterlist>
@@ -18950,7 +18950,7 @@
       <parameter type="jaa" unit="eV/e" value="10.6061" minimum="8.48485" maximum="13.2576" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="chi" unit="eV" value="6" minimum="4.8" maximum="7.5" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="zeta" unit="1/nm" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Bounded" ntrain="1"/>
-      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Free" ntrain="1"/>
+      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Dependent" ntrain="1"/>
       <parameter type="ref_charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Fixed" ntrain="1"/>
       <parameter type="row" unit="" value="2" minimum="2" maximum="2" uncertainty="0" mutability="Fixed" ntrain="1"/>
     </parameterlist>
@@ -18958,7 +18958,7 @@
       <parameter type="jaa" unit="eV/e" value="10.6061" minimum="8.48485" maximum="13.2576" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="chi" unit="eV" value="6" minimum="4.8" maximum="7.5" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="zeta" unit="1/nm" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Bounded" ntrain="1"/>
-      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Free" ntrain="1"/>
+      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Dependent" ntrain="1"/>
       <parameter type="ref_charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Fixed" ntrain="1"/>
       <parameter type="row" unit="" value="2" minimum="2" maximum="2" uncertainty="0" mutability="Fixed" ntrain="1"/>
     </parameterlist>
@@ -18966,7 +18966,7 @@
       <parameter type="jaa" unit="eV/e" value="10.6061" minimum="8.48485" maximum="13.2576" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="chi" unit="eV" value="6" minimum="4.8" maximum="7.5" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="zeta" unit="1/nm" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Bounded" ntrain="1"/>
-      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Free" ntrain="1"/>
+      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Dependent" ntrain="1"/>
       <parameter type="ref_charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Fixed" ntrain="1"/>
       <parameter type="row" unit="" value="2" minimum="2" maximum="2" uncertainty="0" mutability="Fixed" ntrain="1"/>
     </parameterlist>
@@ -18974,7 +18974,7 @@
       <parameter type="jaa" unit="eV/e" value="6.54206" minimum="5.23364" maximum="8.17757" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="chi" unit="eV" value="5.2" minimum="4.16" maximum="6.5" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="zeta" unit="1/nm" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Bounded" ntrain="1"/>
-      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Free" ntrain="1"/>
+      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Dependent" ntrain="1"/>
       <parameter type="ref_charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Fixed" ntrain="1"/>
       <parameter type="row" unit="" value="3" minimum="3" maximum="3" uncertainty="0" mutability="Fixed" ntrain="1"/>
     </parameterlist>
@@ -18982,7 +18982,7 @@
       <parameter type="jaa" unit="eV/e" value="6.54206" minimum="5.23364" maximum="8.17757" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="chi" unit="eV" value="5.2" minimum="4.16" maximum="6.5" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="zeta" unit="1/nm" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Bounded" ntrain="1"/>
-      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Free" ntrain="1"/>
+      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Dependent" ntrain="1"/>
       <parameter type="ref_charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Fixed" ntrain="1"/>
       <parameter type="row" unit="" value="3" minimum="3" maximum="3" uncertainty="0" mutability="Fixed" ntrain="1"/>
     </parameterlist>
@@ -18990,7 +18990,7 @@
       <parameter type="jaa" unit="eV/e" value="6.66667" minimum="5.33333" maximum="8.33333" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="chi" unit="eV" value="5.7" minimum="4.56" maximum="7.125" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="zeta" unit="1/nm" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Bounded" ntrain="1"/>
-      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Free" ntrain="1"/>
+      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Dependent" ntrain="1"/>
       <parameter type="ref_charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Fixed" ntrain="1"/>
       <parameter type="row" unit="" value="3" minimum="3" maximum="3" uncertainty="0" mutability="Fixed" ntrain="1"/>
     </parameterlist>
@@ -18998,7 +18998,7 @@
       <parameter type="jaa" unit="eV/e" value="6.66667" minimum="5.33333" maximum="8.33333" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="chi" unit="eV" value="5.7" minimum="4.56" maximum="7.125" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="zeta" unit="1/nm" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Bounded" ntrain="1"/>
-      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Free" ntrain="1"/>
+      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Dependent" ntrain="1"/>
       <parameter type="ref_charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Fixed" ntrain="1"/>
       <parameter type="row" unit="" value="3" minimum="3" maximum="3" uncertainty="0" mutability="Fixed" ntrain="1"/>
     </parameterlist>

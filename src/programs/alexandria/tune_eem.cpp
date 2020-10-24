@@ -336,11 +336,10 @@ double OptACM::calcDeviation()
         {
             dumpQX(logFile(), &mymol, "BEFORE");
             std::vector<double> qq;
-            auto q     = mymol.QgenAcm_->q();
-            auto natom = mymol.QgenAcm_->natom();
+            auto q = mymol.QgenAcm_->q();
 
-            qq.resize(natom + 1, 0);
-            for (auto i = 0; i < natom + 1; i++)
+            qq.resize(q.size(), 0);
+            for (size_t i = 0; i < q.size(); i++)
             {
                 qq[i] = q[i];
             }
@@ -395,14 +394,13 @@ double OptACM::calcDeviation()
                               mymol.getMolname().c_str(),
                               mymol.QgenAcm_->message());
                 }
-                q             = mymol.QgenAcm_->q();
                 double EemRms = 0;
-                for (int i = 0; i < natom; i++)
+                for (size_t i = 0; i < q.size(); i++)
                 {
                     EemRms   += gmx::square(qq[i] - q[i]);
                     qq[i]     = q[i];
                 }
-                EemRms   /= natom;
+                EemRms   /= q.size();
                 converged = (EemRms < qtol()) || (nullptr == mymol.shellfc_);
                 iter++;
             }

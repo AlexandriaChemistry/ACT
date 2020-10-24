@@ -695,7 +695,7 @@ int alex_bastat(int argc, char *argv[])
     /* Read PolData */
     try
     {
-        readPoldata(opt2fn_null("-d", NFILE, fnm), pd, aps);
+        readPoldata(opt2fn_null("-d", NFILE, fnm), &pd);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
@@ -728,8 +728,7 @@ int alex_bastat(int argc, char *argv[])
                 continue;
             }
             std::string mylot;
-            auto        imm = mmi.GenerateTopology(aps,
-                                                   &pd,
+            auto        imm = mmi.GenerateTopology(&pd,
                                                    method,
                                                    basis,
                                                    &mylot,

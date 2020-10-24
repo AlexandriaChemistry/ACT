@@ -89,6 +89,8 @@ class Ffatype
          * \param[in] btype       Bond type
          * \param[in] ztype       Zeta type
          * \param[in] elem        Element name
+         * \param[in] mass        Mass of the particle
+         * \param[in] atomnumber  Atomic number
          * \param[in] refEnthalpy Reference Enthalpy of Formation
          */
         Ffatype(const std::string &desc,
@@ -97,6 +99,8 @@ class Ffatype
                 const std::string &btype,
                 const std::string &ztype,
                 const std::string &elem,
+                double             mass,
+                int                atomnumber,
                 const std::string &refEnthalpy);
 
         /*! \brief
@@ -120,6 +124,16 @@ class Ffatype
          */
         Identifier id(InteractionType iType) const;
 
+        /*! \brief Return mass
+         * \return mass of the particle
+         */
+        double mass() const { return mass_; }
+        
+        /*! \brief Return atomnumber
+         * \return atomnumber of the particle
+         */
+        int atomnumber() const { return atomnumber_; }
+    
         /*! \brief
          * Return whether an identifier for an interaction type is present
          */
@@ -147,6 +161,8 @@ class Ffatype
         std::string type_;
         std::string elem_;
         std::string refEnthalpy_;
+        double      mass_;
+        int         atomnumber_;
         std::map<InteractionType, const std::string> subType_;
 };
 

@@ -193,12 +193,23 @@ CommunicationStatus ForceFieldParameterList::Send(const t_commrec *cr, int dest)
         gmx_send_int(cr, dest, parameters_.size());
         for(auto const &x : parameters_)
         {
-            x.first.Send(cr, dest);
-            gmx_send_int(cr, dest, x.second.size());
-            for(auto const &p : x.second)
+            cs = x.first.Send(cr, dest);
+            if (CS_OK == cs)
             {
-                gmx_send_str(cr, dest, &p.first);
-                p.second.Send(cr, dest);
+                gmx_send_int(cr, dest, x.second.size());
+                for(auto const &p : x.second)
+                {
+                    gmx_send_str(cr, dest, &p.first);
+                    cs = p.second.Send(cr, dest);
+                    if (CS_OK != cs)
+                    {
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                break;
             }
         }
     }
@@ -222,21 +233,59 @@ CommunicationStatus ForceFieldParameterList::Receive(const t_commrec *cr, int sr
             gmx_recv_str(cr, src, &value);
             options_.insert({key, value});
         }
-        int nlists =  gmx_recv_int(cr, src);
+        if (debug)
+        {
+            fprintf(debug, "Done receiving options\n");
+            fflush(debug);
+        }
+        int nparam =  gmx_recv_int(cr, src);
         parameters_.clear();
-        for(int i = 0; i < nlists; i++)
+        for(int i = 0; i < nparam; i++)
         {
             Identifier key;
-            key.Receive(cr, src);
-            int nparam =  gmx_recv_int(cr, src);
-            parameters_.clear();
-            for(int j = 0; j < nparam; j++)
+            cs = key.Receive(cr, src);
+            if (debug)
             {
-                std::string type;
-                gmx_recv_str(cr, src, &type);
-                ForceFieldParameter p;
-                p.Receive(cr, src);
-                parameters_[key][type] = p;
+                fprintf(debug, "Done receiving key %s\n", key.id().c_str());
+                fflush(debug);
+            }
+            if (CS_OK == cs)
+            {
+                int ntype = gmx_recv_int(cr, src);
+                if (debug)
+                {
+                    fprintf(debug, "Done receiving ntype = %d\n", ntype);
+                    fflush(debug);
+                }
+                for(int j = 0; j < ntype; j++)
+                {
+                    std::string type;
+                    gmx_recv_str(cr, src, &type);
+                    ForceFieldParameter p;
+                    cs = p.Receive(cr, src);
+                    if (CS_OK == cs)
+                    {
+                        parameters_[key].insert({type, p});
+                        if (debug)
+                        {
+                            fprintf(debug, "Done receiving parameter\n");
+                            fflush(debug);
+                        }
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+                if (debug)
+                {
+                    fprintf(debug, "Done receiving %d parameters\n", nparam);
+                    fflush(debug);
+                }
+            }
+            else
+            {
+                break;
             }
         }
     }

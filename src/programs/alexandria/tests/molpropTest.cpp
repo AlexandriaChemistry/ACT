@@ -73,7 +73,6 @@ class MolpropTest : public gmx::test::CommandLineTestBase
         {
             int mol = 1;
             gmx::test::TestReferenceChecker myCheck(this->rootChecker());
-            printf("Number of molecules %zu\n", mp_.size());
             for (auto &mpi : mp_)
             {
                 char mbuf[256];

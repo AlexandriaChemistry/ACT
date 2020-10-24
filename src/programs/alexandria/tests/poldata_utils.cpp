@@ -40,14 +40,9 @@
 #include "testutils/testfilemanager.h"
 
 static std::map<std::string, alexandria::Poldata> pdTest;
-static gmx_atomprop_t                             aps     = nullptr;
 
 alexandria::Poldata *getPoldata(std::string qdist)
 {
-    if (!aps)
-    {
-        aps = gmx_atomprop_init();
-    }
     if (pdTest.count(qdist) == 0)
     {
         std::string baseName = gmx::formatString("%s.dat", qdist.c_str());
@@ -55,7 +50,7 @@ alexandria::Poldata *getPoldata(std::string qdist)
         try
         {
             alexandria::Poldata pd;
-            alexandria::readPoldata(dataName, pd, aps);
+            alexandria::readPoldata(dataName, &pd);
             pdTest.insert(std::pair<std::string, alexandria::Poldata>(qdist, std::move(pd)));
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;

@@ -80,36 +80,6 @@ bool Poldata::rappe() const
  *-+-+-+-+-+-+-+-+-+-+-+
  */
 
-void Poldata::addAtype(const std::string &elem,
-                       const std::string &desc,
-                       const std::string &atype,
-                       const std::string &ptype,
-                       const std::string &btype,
-                       const std::string &ztype,
-                       const std::string &refEnthalpy)
-{
-
-    size_t i;
-    for (i = 0; i < alexandria_.size(); i++)
-    {
-        if (alexandria_[i].getType().compare(atype) == 0)
-        {
-            break;
-        }
-    }
-    if (i == alexandria_.size())
-    {
-        Ffatype sp(desc, atype, ptype, btype, ztype,
-                   elem, refEnthalpy);
-
-        alexandria_.push_back(sp);
-    }
-    else
-    {
-        fprintf(stderr, "Atom type %s was already added to Poldata record\n", atype.c_str());
-    }
-}
-
 gmx_bool Poldata::strcasestrStart(std::string needle, std::string haystack)
 {
     std::string ptr;
@@ -480,36 +450,64 @@ CommunicationStatus Poldata::Send(const t_commrec *cr, int dest)
         for (auto &alexandria : alexandria_)
         {
             cs = alexandria.Send(cr, dest);
+            if (CS_OK != cs)
+            {
+                break;
+            }
         }
 
         /* Send Vsite */
-        gmx_send_int(cr, dest, vsite_.size());
-        for (auto &vsite : vsite_)
+        if (CS_OK == cs)
         {
-            cs = vsite.Send(cr, dest);
+            gmx_send_int(cr, dest, vsite_.size());
+            for (auto &vsite : vsite_)
+            {
+                cs = vsite.Send(cr, dest);
+                if (CS_OK != cs)
+                {
+                    break;
+                }
+            }
         }
 
         /* Send btype */
-        gmx_send_int(cr, dest, btype_.size());
-        for (auto &btype : btype_)
+        if (CS_OK == cs)
         {
-            gmx_send_str(cr, dest, &btype);
+            gmx_send_int(cr, dest, btype_.size());
+            for (auto &btype : btype_)
+            {
+                gmx_send_str(cr, dest, &btype);
+            }
         }
 
         /* Force Field Parameter Lists */
-        gmx_send_int(cr, dest, forces_.size());
-        for (auto &force : forces_)
+        if (CS_OK == cs)
         {
-            std::string key(interactionTypeToString(force.first));
-            gmx_send_str(cr, dest, &key);
-            cs = force.second.Send(cr, dest);
+            gmx_send_int(cr, dest, forces_.size());
+            for (auto &force : forces_)
+            {
+                std::string key(interactionTypeToString(force.first));
+                gmx_send_str(cr, dest, &key);
+                cs = force.second.Send(cr, dest);
+                if (CS_OK != cs)
+                {
+                    break;
+                }
+            }
         }
 
         /* Send Symcharges */
-        gmx_send_int(cr, dest, symcharges_.size());
-        for (auto &symcharges : symcharges_)
+        if (CS_OK == cs)
         {
-            cs = symcharges.Send(cr, dest);
+            gmx_send_int(cr, dest, symcharges_.size());
+            for (auto &symcharges : symcharges_)
+            {
+                cs = symcharges.Send(cr, dest);
+                if (CS_OK != cs)
+                {
+                    break;
+                }
+            }
         }
     }
     return cs;
@@ -541,6 +539,11 @@ CommunicationStatus Poldata::Receive(const t_commrec *cr, int src)
                 alexandria_.push_back(alexandria);
             }
         }
+        if (debug)
+        {
+            fprintf(debug, "Done receiving atomtypes\n");
+            fflush(debug);
+        }
 
         /* Receive Vsites */
         size_t nvsite = gmx_recv_int(cr, src);
@@ -554,18 +557,31 @@ CommunicationStatus Poldata::Receive(const t_commrec *cr, int src)
                 vsite_.push_back(vsite);
             }
         }
+        if (debug)
+        {
+            fprintf(debug, "Done receiving vsites\n");
+            fflush(debug);
+        }
 
         /* Receive btype */
-        size_t nbtype = gmx_recv_int(cr, src);
-        btype_.clear();
-        for (size_t n = 0; (CS_OK == cs) && (n < nbtype); n++)
+        if (CS_OK == cs)
         {
-            std::string btype;
-            gmx_recv_str(cr, src, &btype);
-            if (!btype.empty())
+            size_t nbtype = gmx_recv_int(cr, src);
+            btype_.clear();
+            for (size_t n = 0; (CS_OK == cs) && (n < nbtype); n++)
             {
-                btype_.push_back(btype);
+                std::string btype;
+                gmx_recv_str(cr, src, &btype);
+                if (!btype.empty())
+                {
+                    btype_.push_back(btype);
+                }
             }
+        }
+        if (debug)
+        {
+            fprintf(debug, "Done receiving btypes\n");
+            fflush(debug);
         }
 
         /* Receive Listed Forces */
@@ -576,24 +592,36 @@ CommunicationStatus Poldata::Receive(const t_commrec *cr, int src)
             ForceFieldParameterList fs;
             std::string             key;
             gmx_recv_str(cr, src, &key);
-            InteractionType iType = static_cast<InteractionType>(stringToInteractionType(key.c_str()));
+            InteractionType iType = stringToInteractionType(key.c_str());
             cs                    = fs.Receive(cr, src);
             if (CS_OK == cs)
             {
                 forces_.insert({iType, fs});
             }
-        }
-
-        /* Receive Symcharges */
-        size_t nsymcharges = gmx_recv_int(cr, src);
-        symcharges_.clear();
-        for (size_t n = 0; (CS_OK == cs) && (n < nsymcharges); n++)
-        {
-            Symcharges symcharges;
-            cs = symcharges.Receive(cr, src);
-            if (CS_OK == cs)
+            if (debug)
             {
-                symcharges_.push_back(symcharges);
+                fprintf(debug, "Done Listed force %s\n", key.c_str());
+                fflush(debug);
+            }
+        }
+        if (debug)
+        {
+            fprintf(debug, "Done Listed forces\n");
+            fflush(debug);
+        }
+        /* Receive Symcharges */
+        if (CS_OK == cs)
+        {
+            size_t nsymcharges = gmx_recv_int(cr, src);
+            symcharges_.clear();
+            for (size_t n = 0; (CS_OK == cs) && (n < nsymcharges); n++)
+            {
+                Symcharges symcharges;
+                cs = symcharges.Receive(cr, src);
+                if (CS_OK == cs)
+                {
+                    symcharges_.push_back(symcharges);
+                }
             }
         }
     }

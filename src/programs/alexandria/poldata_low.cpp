@@ -59,9 +59,14 @@ Ffatype::Ffatype(const std::string &desc,
                  const std::string &btype,
                  const std::string &ztype,
                  const std::string &elem,
+                 double             mass,
+                 int                atomnumber,
                  const std::string &refEnthalpy) :
     desc_(desc), type_(type),
-    elem_(elem), refEnthalpy_(refEnthalpy) 
+    elem_(elem),
+    refEnthalpy_(refEnthalpy),
+    mass_(mass),
+    atomnumber_(atomnumber)
 {
     subType_.insert({eitVDW, type});
     subType_.insert({eitPOLARIZATION, ptype});
@@ -142,6 +147,8 @@ CommunicationStatus Ffatype::Send(const t_commrec *cr, int dest)
             gmx_send_str(cr, dest, &it.second);
         }
         gmx_send_str(cr, dest, &elem_);
+        gmx_send_double(cr, dest, mass_);
+        gmx_send_int(cr, dest, atomnumber_);
         gmx_send_str(cr, dest, &refEnthalpy_);
         if (nullptr != debug)
         {
@@ -177,6 +184,8 @@ CommunicationStatus Ffatype::Receive(const t_commrec *cr, int src)
             subType_.insert({iType, value});
         }
         gmx_recv_str(cr, src, &elem_);
+        mass_ = gmx_recv_double(cr, src);
+        atomnumber_ = gmx_recv_int(cr, src);
         gmx_recv_str(cr, src, &refEnthalpy_);
 
         if (nullptr != debug)
