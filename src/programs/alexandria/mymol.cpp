@@ -826,6 +826,13 @@ immStatus MyMol::GenerateTopology(const Poldata     *pd,
             UpdateIdef(pd, eitPROPER_DIHEDRALS);
         }
     }
+    if (immStatus::OK != imm && debug)
+    {
+        for(const auto &emsg : error_messages_)
+        {
+            fprintf(debug, "%s\n", emsg.c_str());
+        }
+    }
     return imm;
 }
 

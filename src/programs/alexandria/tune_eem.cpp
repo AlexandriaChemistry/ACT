@@ -900,7 +900,6 @@ int alex_tune_eem(int argc, char *argv[])
              opt2fn_null("-d", NFILE, fnm),
              bZero,
              gms,
-             true,
              false,
              false,
              tabfn,

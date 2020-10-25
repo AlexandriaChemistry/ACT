@@ -183,6 +183,8 @@ CommunicationStatus ForceFieldParameterList::Send(const t_commrec *cr, int dest)
     if (CS_OK == cs)
     {
         gmx_send_str(cr, dest, &function_);
+        std::string canSwapString = canSwapToString(canSwap_);
+        gmx_send_str(cr, dest, &canSwapString);
         gmx_send_int(cr, dest, fType_);
         gmx_send_int(cr, dest, options_.size());
         for(auto const &x : options_)
@@ -223,6 +225,9 @@ CommunicationStatus ForceFieldParameterList::Receive(const t_commrec *cr, int sr
     if (CS_OK == cs)
     {
         gmx_recv_str(cr, src, &function_);
+        std::string canSwapString;
+        gmx_recv_str(cr, src, &canSwapString);
+        canSwap_     = stringToCanSwap(canSwapString);
         fType_       = gmx_recv_int(cr, src);
         int noptions = gmx_recv_int(cr, src);
         options_.clear();
