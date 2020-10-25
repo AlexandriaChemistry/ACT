@@ -737,7 +737,7 @@ int alex_bastat(int argc, char *argv[])
                                                    bDih,
                                                    true,
                                                    nullptr);
-            if (immOK != imm)
+            if (immStatus::OK != imm)
             {
                 if (nullptr != debug)
                 {

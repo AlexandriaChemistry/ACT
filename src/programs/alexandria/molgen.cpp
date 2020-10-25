@@ -358,27 +358,34 @@ void MolGen::generateOptimizationIndex(FILE *fp)
     }
 }
 
+static void incrementImmCount(std::map<immStatus, int> *map, immStatus imm)
+{
+    if (map->find(imm) == map->end())
+    {
+        map->insert({imm, 1});
+    }
+    else
+    {
+        map->find(imm)->second++;
+    }
+}
+
 void MolGen::Read(FILE            *fp,
                   const char      *fn,
                   const char      *pd_fn,
                   gmx_bool         bZero,
                   const MolSelect &gms,
-                  gmx_bool         bCheckSupport,
                   bool             bZPE,
                   bool             bDHform,
                   const char      *tabfn,
                   iMolSelect       SelectType)
 {
     int                              nwarn    = 0;
-    int                              imm_count[immNR];
-    immStatus                        imm      = immOK;
+    std::map<immStatus, int>         imm_count;
+    immStatus                        imm      = immStatus::OK;
     std::vector<alexandria::MolProp> mp;
 
     atomprop_  = gmx_atomprop_init();
-    for (int i = 0; i < immNR; i++)
-    {
-        imm_count[i] = 0;
-    }
     /* Reading Force Field Data from gentop.dat */
     if (MASTER(cr_))
     {
@@ -464,12 +471,12 @@ void MolGen::Read(FILE            *fp,
                                              iOpt_[eitPROPER_DIHEDRALS],
                                              false,
                                              tabfn);
-                if (immOK != imm && debug)
+                if (immStatus::OK != imm && debug)
                 {
                     fprintf(debug, "Tried to generate topology for %s. Outcome: %s\n",
                             mymol.getMolname().c_str(), immsg(imm));
                 }
-                if (immOK == imm)
+                if (immStatus::OK == imm)
                 {
                     mymol.symmetrizeCharges(&pd_, qsymm_, nullptr);
                     mymol.initQgenResp(&pd_, method, basis, nullptr, 0.0, maxESP_);
@@ -482,21 +489,21 @@ void MolGen::Read(FILE            *fp,
                                                 qtol_);
                     (void) mymol.espRms();
                 }
-                if (immOK != imm && debug)
+                if (immStatus::OK != imm && debug)
                 {
                     fprintf(debug, "Tried to generate charges for %s. Outcome: %s\n",
                             mymol.getMolname().c_str(), immsg(imm));
                 }
-                if (immOK == imm)
+                if (immStatus::OK == imm)
                 {
                     imm = mymol.GenerateChargeGroups(ecgGroup, false);
                 }
-                if (immOK == imm)
+                if (immStatus::OK == imm)
                 {
                     imm = mymol.getExpProps(bQM_, bZero, bZPE, bDHform,
                                             method, basis, &pd_);
                 }
-                if (immOK == imm)
+                if (immStatus::OK == imm)
                 {
                     mymol_.push_back(std::move(mymol));
                 }
@@ -519,13 +526,13 @@ void MolGen::Read(FILE            *fp,
                 CommunicationStatus cs = mymol.Send(cr_, dest);
                 if (CS_OK != cs)
                 {
-                    imm = immCommProblem;
+                    imm = immStatus::CommProblem;
                 }
                 else
                 {
-                    imm = (immStatus)gmx_recv_int(cr_, dest);
+                    imm = static_cast<immStatus>(gmx_recv_int(cr_, dest));
                 }
-                if (imm != immOK)
+                if (imm != immStatus::OK)
                 {
                     fprintf(stderr, "Molecule %s was not accepted on node %d - error %s\n",
                             mymol.getMolname().c_str(), dest, alexandria::immsg(imm));
@@ -540,12 +547,12 @@ void MolGen::Read(FILE            *fp,
                 mymol.eSupp_ = eSupportLocal;
                 nlocaltop   += 1;
             }
-            if ((immOK != imm) && (nullptr != debug))
+            if ((immStatus::OK != imm) && (nullptr != debug))
             {
                 fprintf(debug, "IMM: Dest: %d %s - %s\n",
                         dest, mymol.getMolname().c_str(), immsg(imm));
             }
-            imm_count[imm]++;
+            incrementImmCount(&imm_count, imm);
         }
         /* Send signal done with transferring molecules */
         for (int i = 1; i < cr_->nnodes; i++)
@@ -582,7 +589,7 @@ void MolGen::Read(FILE            *fp,
             CommunicationStatus cs = mymol.Receive(cr_, 0);
             if (CS_OK != cs)
             {
-                imm = immCommProblem;
+                imm = immStatus::CommProblem;
             }
             else if (nullptr != debug)
             {
@@ -600,7 +607,7 @@ void MolGen::Read(FILE            *fp,
                                          false,
                                          tabfn);
 
-            if (immOK == imm)
+            if (immStatus::OK == imm)
             {
                 mymol.symmetrizeCharges(&pd_, qsymm_, nullptr);
                 mymol.initQgenResp(&pd_, method, basis, nullptr, 0.0, maxESP_);
@@ -613,18 +620,18 @@ void MolGen::Read(FILE            *fp,
                                             qtol_);
                 (void) mymol.espRms();
             }
-            if (immOK == imm)
+            if (immStatus::OK == imm)
             {
                 imm = mymol.GenerateChargeGroups(ecgAtom, false);
             }
-            if (immOK == imm)
+            if (immStatus::OK == imm)
             {
                 imm = mymol.getExpProps(bQM_, bZero, bZPE, bDHform,
                                         method, basis, &pd_);
             }
             mymol.eSupp_ = eSupportLocal;
-            imm_count[imm]++;
-            if (immOK == imm)
+            incrementImmCount(&imm_count, imm);
+            if (immStatus::OK == imm)
             {
                 mymol_.push_back(std::move(mymol));
                 nlocaltop += 1;
@@ -635,7 +642,7 @@ void MolGen::Read(FILE            *fp,
                             mymol.Hform_, mymol.Emol_);
                 }
             }
-            gmx_send_int(cr_, 0, imm);
+            gmx_send_int(cr_, 0, static_cast<int>(imm));
         }
         gmx_send_int(cr_, 0, nlocaltop);
     }
@@ -645,21 +652,18 @@ void MolGen::Read(FILE            *fp,
         fprintf(fp, "Made topologies for %d out of %d molecules.\n",
                 ntopol, static_cast<int>(mp.size()));
 
-        for (int i = 0; (i < immNR); i++)
+        for (const auto &imm : imm_count)
         {
-            if (imm_count[i] > 0)
+            fprintf(fp, "%d molecules - %s.\n", imm.second,
+                    alexandria::immsg(imm.first));
+        }
+        if (imm_count.find(immStatus::OK) != imm_count.end())
+        {
+            if (imm_count.find(immStatus::OK)->second != static_cast<int>(mp.size()))
             {
-                fprintf(fp, "%d molecules - %s.\n", imm_count[i], alexandria::immsg((immStatus)i));
+                fprintf(fp, "Check alexandria.debug for more information.\nYou may have to use the -debug 1 flag.\n\n");
             }
         }
-        if (imm_count[immOK] != (int)mp.size())
-        {
-            fprintf(fp, "Check alexandria.debug for more information.\nYou may have to use the -debug 1 flag.\n\n");
-        }
-    }
-    if (bCheckSupport && MASTER(cr_))
-    {
-        //        indexCount_.cleanIndex(mindata_, fp);
     }
     gmx_sumi(1, &nlocaltop, cr_);
     nmol_support_ = nlocaltop;

@@ -360,7 +360,6 @@ int alex_molselect(int argc, char *argv[])
              opt2fn_null("-d", NFILE, fnm),
              bZero,
              gms, 
-             true, 
              false, 
              false, 
              nullptr,

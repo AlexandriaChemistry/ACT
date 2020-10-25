@@ -1303,7 +1303,6 @@ int alex_tune_fc(int argc, char *argv[])
              opt2fn_null("-d", NFILE, fnm),
              bZero,
              gms,
-             true,
              bZPE,
              true,
              tabfn,

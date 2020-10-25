@@ -366,7 +366,7 @@ double OptACM::calcDeviation()
                 {
                     double rmsf;
                     auto imm = mymol.computeForces(logFile(), commrec(), &rmsf);
-                    if (immOK != imm)
+                    if (immStatus::OK != imm)
                     {
                         if (logFile())
                         {
@@ -900,7 +900,6 @@ int alex_tune_eem(int argc, char *argv[])
              opt2fn_null("-d", NFILE, fnm),
              bZero,
              gms,
-             true,
              false,
              false,
              tabfn,

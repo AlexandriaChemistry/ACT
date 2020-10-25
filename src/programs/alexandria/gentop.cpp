@@ -363,7 +363,7 @@ int alex_gentop(int argc, char *argv[])
                                  false,
                                  tabfn);
 
-    if (immOK == imm)
+    if (immStatus::OK == imm)
     {
         mymol.symmetrizeCharges(&pd, bQsym, symm_string);
         maxpot = 100; // Use 100 percent of the ESP read from Gaussian file.
@@ -381,7 +381,7 @@ int alex_gentop(int argc, char *argv[])
     /* Generate output file for debugging if requested */
     mymol.plotEspCorrelation(opt2fn_null("-plotESP", NFILE, fnm), oenv);
 
-    if (immOK == imm)
+    if (immStatus::OK == imm)
     {
         mymol.GenerateCube(&pd,
                            spacing, border,
@@ -396,12 +396,12 @@ int alex_gentop(int argc, char *argv[])
                            oenv);
     }
 
-    if (immOK == imm)
+    if (immStatus::OK == imm)
     {
         imm = mymol.GenerateChargeGroups(ecg, bUsePDBcharge);
     }
 
-    if (immOK == imm && mymol.errors().size() == 0)
+    if (immStatus::OK == imm && mymol.errors().size() == 0)
     {
         splitLot(mylot.c_str(), &method, &basis);
         mymol.PrintConformation(opt2fn("-c", NFILE, fnm));

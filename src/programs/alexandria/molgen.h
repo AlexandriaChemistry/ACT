@@ -343,7 +343,6 @@ class MolGen
                   const char      *pd_fn,
                   gmx_bool         bZero,
                   const MolSelect &gms,
-                  bool             bCheckSupport,
                   bool             bZPE,
                   bool             bDHform,
                   const char      *tabfn,
