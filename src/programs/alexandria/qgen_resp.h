@@ -118,33 +118,7 @@ class QgenResp
         std::vector<EspPoint> &espPoint() {return ep_; }
 
         void summary(FILE *gp);
-#ifdef OLDER
-        size_t nRespAtom() const { return ra_.size(); }
-
-        size_t nRespAtomType() const { return ratype_.size(); }
-
-        RespAtomTypeIterator beginRAT() { return ratype_.begin(); }
-
-        RespAtomTypeIterator endRAT() { return ratype_.end(); }
-
-        RespAtomTypeConstIterator beginRAT() const { return ratype_.begin(); }
-
-        RespAtomTypeConstIterator endRAT() const { return ratype_.end(); }
-
-        RespAtomTypeIterator findRAT(int atype)
-        {
-            return std::find_if(ratype_.begin(), ratype_.end(),
-                                [atype](RespAtomType const &rat)
-                                { return rat.getAtype() == atype; });
-        }
-
-        RespAtomTypeConstIterator findRAT(int atype) const
-        {
-            return std::find_if(ratype_.begin(), ratype_.end(),
-                                [atype](RespAtomType const &rat)
-                                { return rat.getAtype() == atype; });
-        }
-#endif
+        
         void setAtomInfo(t_atoms                          *atoms,
                          const Poldata                    *pd,
                          const gmx::HostVector<gmx::RVec> &x,
@@ -276,10 +250,6 @@ class QgenResp
         int                       nFixed_      = 0;
 
         //! Total number of parameters
-#ifdef OLDER
-        std::vector<RespAtom>     ra_;
-        std::vector<RespAtomType> ratype_;
-#endif
         std::vector<double>        q_;
         std::vector<double>        zeta_;
         std::vector<int>           atomnumber_;

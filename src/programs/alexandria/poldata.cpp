@@ -38,6 +38,7 @@
 #include <cstring>
 
 #include <algorithm>
+#include <map>
 #include <vector>
 
 #include "gromacs/mdtypes/md_enums.h"
@@ -147,36 +148,38 @@ const std::string &Poldata::ztype2elem(const std::string &ztype) const
     }
     gmx_fatal(FARGS, "No such zeta type %s", ztype.c_str());
 }
-#ifdef OLDER
-const std::string &Poldata::ztype2atype(const std::string &ztype) const
+
+InteractionType Poldata::typeToInteractionType(const std::string &type)
 {
-    size_t i;
-    if (ztype.size() != 0)
+    if (type2Itype_.empty())
     {
-        for (i = 0; i < alexandria_.size(); i++)
+        for(const auto &fs : forcesConst())
         {
-            if (alexandria_[i].getZtype().compare(ztype) == 0)
+            auto iType = fs.first;
+            for(const auto &fp : fs.second.parametersConst())
             {
-                return alexandria_[i].getType();
+                for(const auto &myfp : fp.second)
+                {
+                    auto mytype = myfp.first;
+                    if (type2Itype_.find(mytype) != type2Itype_.end() &&
+                        type2Itype_.find(mytype)->second != iType)
+                    {
+                        GMX_THROW(gmx::InvalidInputError(gmx::formatString("Parameter type %s used for more than one InteractionType (%s and %s).",
+                                                                           mytype.c_str(),
+                                                                           interactionTypeToString(iType).c_str(),
+                                                                           interactionTypeToString(type2Itype_.find(mytype)->second).c_str()).c_str()));
+                    }
+                    type2Itype_.insert({mytype, iType});
+                }
             }
         }
     }
-    gmx_fatal(FARGS, "No such zeta type %s", ztype.c_str());
-}
-
-std::vector<std::string> Poldata::ztype_names() const
-{
-    std::vector<std::string> ztype_names;   
-    for (auto atpi = alexandria_.begin(); atpi != alexandria_.end(); atpi++)
-    { 
-        if (std::find(ztype_names.begin(), ztype_names.end(), atpi->getZtype()) == ztype_names.end()) 
-        {
-            ztype_names.push_back(atpi->getZtype());
-        }
+    if (type2Itype_.find(type) == type2Itype_.end())
+    {
+        GMX_THROW(gmx::InternalError(gmx::formatString("Cannot find type %s in force field file %s", type.c_str(), filename_.c_str()).c_str()));
     }
-    return ztype_names;
+    return type2Itype_.find(type)->second;
 }
-#endif
 
 /*
  *-+-+-+-+-+-+-+-+-+-+-+
@@ -288,84 +291,6 @@ void Poldata::addBtype(const std::string &btype)
     }
 }
 
-
-#ifdef OLDER
-bool Poldata::searchForce(std::vector<std::string> &atoms,
-                          std::string              &params,
-                          double                   *refValue,
-                          double                   *sigma,
-                          size_t                   *ntrain) const
-{
-    for (auto &f : forces_)
-    {
-        if (f.searchForce(atoms, params, refValue,
-                          sigma, ntrain, false))
-        {
-            return true;
-        }
-    }
-    return false;
-}
-
-bool Poldata::searchForceIType(std::vector<std::string> &atoms,
-                               std::string              &params,
-                               double                   *refValue,
-                               double                   *sigma,
-                               size_t                   *ntrain,
-                               InteractionType           iType) const
-{
-    auto f  = findForces(iType);
-    if (forcesEnd() != f)
-    {
-        if (f->searchForce(atoms, params, refValue,
-                           sigma, ntrain, iType == eitIMPROPER_DIHEDRALS))
-        {
-            return true;
-        }
-    }
-    return false;
-}
-
-bool Poldata::searchForceBondOrder(std::vector<std::string> &atoms,
-                                   std::string              &params,
-                                   double                   *refValue,
-                                   double                   *sigma,
-                                   size_t                   *ntrain,
-                                   size_t                    bondOrder) const
-{
-    for (auto &f : forces_)
-    {
-        if (f.searchForceBondOrder(atoms, params, refValue,
-                                   sigma, ntrain, bondOrder))
-        {
-            return true;
-        }
-    }
-    return false;
-}
-
-bool Poldata::searchForceBondOrderIType(std::vector<std::string> &atoms,
-                                        std::string              &params,
-                                        double                   *refValue,
-                                        double                   *sigma,
-                                        size_t                   *ntrain,
-                                        size_t                    bondOrder,
-                                        InteractionType           iType) const
-{
-    auto f  = findForces(iType);
-    if (forcesEnd() != f)
-    {
-        if (f->searchForceBondOrder(atoms, params, refValue,
-                                    sigma, ntrain, bondOrder))
-        {
-            return true;
-        }
-    }
-    return false;
-}
-
-#endif
-
 /*
  *-+-+-+-+-+-+-+-+
  * COULOMB STUFF
@@ -422,15 +347,7 @@ const Identifier Poldata::atomtypesToZetaIdentifier(const std::vector<std::strin
     }
     return Identifier(ztypes, CanSwap::No);
 }
-#ifdef OLDER
-bool Poldata::haveEemSupport(const std::string &atype,
-                             gmx_bool           bAllowZeroParameters) const
-{
-    auto eep = atypeToEempropsConst(atype);
-    return (eep != nullptr &&
-            (bAllowZeroParameters || ((eep->getJ0() > 0) && (eep->getChi0() > 0))));
-}
-#endif
+
 CommunicationStatus Poldata::Send(const t_commrec *cr, int dest)
 {
     CommunicationStatus cs;

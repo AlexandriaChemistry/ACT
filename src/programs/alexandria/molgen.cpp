@@ -121,15 +121,6 @@ static void doAddOptions(std::vector<t_pargs> *pargs, size_t npa, t_pargs pa[])
 
 void MolGen::addOptions(std::vector<t_pargs> *pargs, eTune etune)
 {
-    std::vector<InteractionType> itypes = {
-        eitBONDS,  eitANGLES, eitLINEAR_ANGLES, eitPROPER_DIHEDRALS,
-        eitIMPROPER_DIHEDRALS, eitVDW, eitPOLARIZATION,
-        eitBONDCORRECTIONS, eitELECTRONEGATIVITYEQUALIZATION 
-    };
-    for (auto &it : itypes)
-    {
-        iOpt_[it] = false;
-    }
     t_pargs pa_general[] =
     {
         { "-mindata", FALSE, etINT, {&mindata_},
@@ -148,6 +139,8 @@ void MolGen::addOptions(std::vector<t_pargs> *pargs, eTune etune)
           "Perform Box-Constraint optimization" },
         { "-genvsites", FALSE, etBOOL, {&bGenVsite_},
           "Generate virtual sites. Check and double check." },
+        { "-fit", FALSE, etSTR, {&fitString_},
+          "Quoted list of parameters to fit,  e.g. 'alpha zeta'." },
         { "-nexcl",  FALSE, etINT, {&nexcl_},
           "[HIDDEN]Exclusion number." },
         { "-qm",     FALSE, etBOOL, {&bQM_},
@@ -172,13 +165,7 @@ void MolGen::addOptions(std::vector<t_pargs> *pargs, eTune etune)
                 { "-fc_charge",  FALSE, etREAL, {&fc_[ermsCHARGE]},
                   "Force constant in the penalty function for 'unchemical' charges, i.e. negative hydrogens, and positive oxygens." },
                 { "-fc_polar",  FALSE, etREAL, {&fc_[ermsPolar]},
-                  "Force constant in the penalty function for polarizability." },
-                { "-eem", FALSE, etBOOL, {&iOpt_[eitELECTRONEGATIVITYEQUALIZATION]},
-                  "Optimize parameters for the electronegativity equalization algorithm" },
-                { "-bcc", FALSE, etBOOL, {&iOpt_[eitBONDCORRECTIONS]},
-                  "Optimize parameters for the bond charge corrections" },
-                { "-pol", FALSE, etBOOL, {&iOpt_[eitPOLARIZATION]},
-                  "Optimize polarizability parameters" }
+                  "Force constant in the penalty function for polarizability." }
             };
         doAddOptions(pargs, asize(pa_eem), pa_eem);
     }
@@ -189,19 +176,7 @@ void MolGen::addOptions(std::vector<t_pargs> *pargs, eTune etune)
                 { "-fc_epot",  FALSE, etREAL, {&fc_[ermsEPOT]},
                   "Force constant in the penalty function for the magnitude of the potential energy." },
                 { "-fc_force",  FALSE, etREAL, {&fc_[ermsForce2]},
-                  "Force constant in the penalty function for the magnitude of the force." },
-                { "-bonds", FALSE, etBOOL, {&iOpt_[eitBONDS]},
-                  "Optimize bond parameters" },
-                { "-angles", FALSE, etBOOL, {&iOpt_[eitANGLES]},
-                  "Optimize angle parameters" },
-                { "-langles", FALSE, etBOOL, {&iOpt_[eitLINEAR_ANGLES]},
-                  "Optimize linear angle parameters" },
-                { "-dihedrals", FALSE, etBOOL, {&iOpt_[eitPROPER_DIHEDRALS]},
-                  "Optimize proper dihedral parameters" },
-                { "-impropers", FALSE, etBOOL, {&iOpt_[eitIMPROPER_DIHEDRALS]},
-                  "Optimize improper dihedral parameters" },
-                { "-vdw", FALSE, etBOOL, {&iOpt_[eitVDW]},
-                  "Optimize van der Waals parameters" }
+                  "Force constant in the penalty function for the magnitude of the force." }
             };
         doAddOptions(pargs, asize(pa_fc), pa_fc);
     }
@@ -214,9 +189,22 @@ void MolGen::optionsFinished()
     gmx_omp_nthreads_init(mdlog_, cr_, 1, 1, 1, 0, false, false);
     auto pnc                    = gmx::PhysicalNodeCommunicator(MPI_COMM_WORLD, 0);
     hwinfo_                     = gmx_detect_hardware(mdlog_, pnc);
+    for(const auto &toFit : gmx::splitString(fitString_))
+    {
+        fit_.insert({ toFit, true });
+    }
     if (MASTER(cr_))
     {
-        printf("There are %d threads/processes.\n", cr_->nnodes);
+        printf("There are %d threads/processes and %zu parameter types to optimize.\n", cr_->nnodes, fit_.size());
+    }
+}
+
+void MolGen::fillIopt()
+{
+    for(const auto &fit : fit_)
+    {
+        auto itype = poldata()->typeToInteractionType(fit.first);
+        iOpt_.insert({ itype, true });
     }
 }
 
@@ -257,15 +245,19 @@ void MolGen::checkDataSufficiency(FILE *fp)
             {
                 for(auto &itype : atomicItypes)
                 {
-                    if (iOpt_[itype])
+                    if (optimize(itype))
                     {
                         auto atype  = pd_.findAtype(*mol.atoms_->atomtype[i]);
                         auto fplist = pd_.findForces(itype);
-                        for(auto &ff : *(fplist->findParameters(atype->id(itype))))
+                        auto subId  = atype->id(itype);
+                        if (!subId.id().empty())
                         {
-                            if (ff.second.isMutable())
+                            for(auto &ff : *(fplist->findParameters(subId)))
                             {
-                                ff.second.incrementNtrain();
+                                if (ff.second.isMutable())
+                                {
+                                    ff.second.incrementNtrain();
+                                }
                             }
                         }
                     }
@@ -282,16 +274,19 @@ void MolGen::checkDataSufficiency(FILE *fp)
                 auto atype = pd_.findAtype(*mol.atoms_->atomtype[i]);
                 for(auto &itype : atomicItypes)
                 {
-                    if (iOpt_[itype])
+                    if (optimize(itype))
                     {
                         auto fplist = pd_.findForces(itype);
                         auto ztype  = atype->id(itype);
-                        for(auto &force : fplist->findParametersConst(ztype))
+                        if (!ztype.id().empty())
                         {
-                            if (force.second.ntrain() < static_cast<uint64_t>(mindata_))
+                            for(auto &force : fplist->findParametersConst(ztype))
                             {
-                                keep = false;
-                                break;
+                                if (force.second.ntrain() < static_cast<uint64_t>(mindata_))
+                                {
+                                    keep = false;
+                                    break;
+                                }
                             }
                         }
                     }
@@ -338,15 +333,18 @@ void MolGen::generateOptimizationIndex(FILE *fp)
 {
     for(auto &fs : pd_.forcesConst())
     {
-        if (iOpt_[fs.first])
+        if (optimize(fs.first))
         {
             for(auto &fpl : fs.second.parametersConst())
             {
                 for(auto &param : fpl.second)
                 {
-                    if (param.second.isMutable() && param.second.ntrain() >= static_cast<uint64_t>(mindata_))
+                    if (fit(param.first))
                     {
-                        optIndex_.push_back(OptimizationIndex(fs.first, fpl.first, param.first));
+                        if (param.second.isMutable() && param.second.ntrain() >= static_cast<uint64_t>(mindata_))
+                        {
+                            optIndex_.push_back(OptimizationIndex(fs.first, fpl.first, param.first));
+                        }
                     }
                 }
             }
@@ -413,6 +411,8 @@ void MolGen::Read(FILE            *fp,
                 static_cast<int>(pd_.getNatypes()), pd_fn);
         fprintf(fp, "---\n\n");
     }
+    //  Now  we have read the poldata and spread it to processors
+    fillIopt();
     /* Reading Molecules from allmols.dat */
     if (MASTER(cr_))
     {
@@ -468,7 +468,7 @@ void MolGen::Read(FILE            *fp,
                                              nullptr,
                                              bGenVsite_,
                                              false,
-                                             iOpt_[eitPROPER_DIHEDRALS],
+                                             optimize(eitPROPER_DIHEDRALS),
                                              false,
                                              tabfn);
                 if (immStatus::OK != imm && debug)
@@ -603,7 +603,7 @@ void MolGen::Read(FILE            *fp,
                                          nullptr,
                                          bGenVsite_,
                                          false,
-                                         iOpt_[eitPROPER_DIHEDRALS],
+                                         optimize(eitPROPER_DIHEDRALS),
                                          false,
                                          tabfn);
 

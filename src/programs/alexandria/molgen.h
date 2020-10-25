@@ -148,6 +148,12 @@ class OptimizationIndex
         return gmx::formatString("%s-%s-%s", interactionTypeToString(iType_).c_str(),
                                  parameterId_.id().c_str(), parameterType_.c_str()); 
     }
+    
+    //! Return a compound string representing the atomindex
+    std::string parameterName() const
+    {
+        return parameterId_.id().c_str();
+    }
 };
     
 class MolGen
@@ -177,6 +183,10 @@ class MolGen
         t_inputrec                     *inputrec_;
         gmx_hw_info_t                  *hwinfo_;
         gmx_atomprop_t                  atomprop_;
+        //! String for command line to harvest the options to fit
+        char                            *fitString_ = nullptr;
+        //! Map to determine whether or not to  fit a parameter type
+        std::map<std::string, bool>     fit_;
         gmx::MDModules                  mdModules_;
         std::vector<alexandria::MyMol>  mymol_;
         const char                     *lot_;
@@ -191,10 +201,13 @@ class MolGen
          */
         void generateOptimizationIndex(FILE *fp);
 
-    public:
-        std::vector<OptimizationIndex>  optIndex_;
+        //! \brief Fill the  iOpt_ map
+        void fillIopt();
+        //! Tell us whether this interaction type needs optimizing
         std::map<InteractionType, bool> iOpt_;
 
+    public:
+        std::vector<OptimizationIndex>  optIndex_;
         /*! \brief 
          * Constructor of MolGen class.
          */ 
@@ -227,6 +240,17 @@ class MolGen
         std::vector<MyMol> &mymols() { return mymol_; }
 
         gmx::MDLogger  mdlog()  const {return mdlog_; }
+
+        //! Tell the user whether this parameter needs to be fitted
+        bool fit(const std::string &type) const { return fit_.find(type) != fit_.end(); }
+        //! Return all the type to  fit
+        std::map<std::string, bool> typesToFit() const { return fit_; }
+        
+        //! Tell  the user whether this interaction type needs optimization
+        bool optimize(InteractionType itype) const { return iOpt_.find(itype) !=  iOpt_.end(); }
+        
+        //! Return the whole optimization map
+        const std::map<InteractionType, bool> iopt() const { return iOpt_; }
         
         int qcycle() const { return qcycle_;}
         

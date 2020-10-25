@@ -104,7 +104,7 @@ class RespTest : public gmx::test::CommandLineTestBase
                                             basis, nullptr,
                                             false, false, false,  false,
                                             nullptr);
-            if (immOK != imm)
+            if (immStatus::OK != imm)
             {
                 fprintf(stderr, "Error generating topology: %s\n", immsg(imm));
                 return;

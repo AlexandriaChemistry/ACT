@@ -34,6 +34,7 @@
 #define POLDATA_H
 
 #include <algorithm>
+#include <map>
 #include <vector>
 
 #include "gromacs/utility/stringutil.h"
@@ -359,6 +360,9 @@ class Poldata
             }
             return force->second;
         }
+        
+        //! Return the interaction type corresponding to this parameter type
+        InteractionType typeToInteractionType(const std::string &type);
 
         const std::string &getVsite_angle_unit() const { return vsite_angle_unit_; }
 
@@ -429,6 +433,7 @@ class Poldata
         //! \brief Check internal consistency of data structures
         void checkConsistency(FILE *fplog) const;
     private:
+        std::map<std::string, InteractionType> type2Itype_;
         std::string                           filename_;
         std::vector<Ffatype>                  alexandria_;
         std::vector<Vsite>                    vsite_;

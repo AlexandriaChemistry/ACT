@@ -202,66 +202,6 @@ CommunicationStatus Ffatype::Receive(const t_commrec *cr, int src)
     return cs;
 }
 
-#ifdef OLDER
-Ptype::Ptype(const std::string &ptype,
-             const std::string &miller,
-             const std::string &bosque,
-             double             polarizability,
-             double             sigPol)
-    :
-      type_(ptype),
-      miller_(miller),
-      bosque_(bosque),
-      polarizability_(polarizability),
-      sigPol_(sigPol)
-{}
-
-CommunicationStatus Ptype::Send(const t_commrec *cr, int dest)
-{
-    CommunicationStatus cs;
-    cs = gmx_send_data(cr, dest);
-    if (CS_OK == cs)
-    {
-        gmx_send_str(cr, dest, &type_);
-        gmx_send_str(cr, dest, &miller_);
-        gmx_send_str(cr, dest, &bosque_);
-        gmx_send_double(cr, dest, polarizability_);
-        gmx_send_double(cr, dest, sigPol_);
-        if (nullptr != debug)
-        {
-            fprintf(debug, "Sent Ptype %s %s %s %g %g, status %s\n",
-                    type_.c_str(), miller_.c_str(),
-                    bosque_.c_str(), polarizability_,
-                    sigPol_, cs_name(cs));
-            fflush(debug);
-        }
-    }
-    return cs;
-}
-
-CommunicationStatus Ptype::Receive(const t_commrec *cr, int src)
-{
-    CommunicationStatus cs;
-    cs = gmx_recv_data(cr, src);
-    if (CS_OK == cs)
-    {
-        gmx_recv_str(cr, src, &type_);
-        gmx_recv_str(cr, src, &miller_);
-        gmx_recv_str(cr, src, &bosque_);
-        polarizability_ = gmx_recv_double(cr, src);
-        sigPol_         = gmx_recv_double(cr, src);
-        if (nullptr != debug)
-        {
-            fprintf(debug, "Received Ptype %s %s %s %g %g, status %s\n",
-                    type_.c_str(), miller_.c_str(),
-                    bosque_.c_str(), polarizability_,
-                    sigPol_, cs_name(cs));
-            fflush(debug);
-        }
-    }
-    return cs;
-}
-#endif
 Vsite::Vsite(const std::string &atype,
              const std::string &type,
              int                number,

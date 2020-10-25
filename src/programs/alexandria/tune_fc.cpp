@@ -467,7 +467,7 @@ void Optimization::checkSupport(FILE *fp)
         }
 
         bool bSupport = true;
-        for (auto &bt : iOpt_) 
+        for (auto &bt : iopt()) 
         {
             if (bSupport && bt.second)
             {
@@ -682,10 +682,9 @@ void Optimization::InitOpt(FILE *fplog, bool bRandom)
 {
     for (auto fs : poldata()->forcesConst())
     {
-        auto bt = iOpt_.find(fs.first);
-        if (bt != iOpt_.end() && bt->second)
+        if (optimize(fs.first))
         {
-            ForceConstants fc(fs.second.fType(), fs.first, bt->second);
+            ForceConstants fc(fs.second.fType(), fs.first, true);
             fc.analyzeIdef(mymols(), poldata());
             fc.makeReverseIndex();
             fc.dump(fplog);

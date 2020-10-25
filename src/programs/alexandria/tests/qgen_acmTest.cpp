@@ -133,7 +133,7 @@ class AcmTest : public gmx::test::CommandLineTestBase
             auto pd  = getPoldata(model);
             auto imm = mp_.GenerateTopology(pd, method, basis, nullptr,
                                             false, false, edih, false, nullptr);
-            if (immOK != imm)
+            if (immStatus::OK != imm)
             {
                 fprintf(stderr, "Error generating topology: %s\n", immsg(imm));
                 return;

@@ -88,10 +88,7 @@ class OptACM : public MolGen, Bayes
 
     private:
         bool       bFullTensor_                  = false;
-        bool       bFitAlpha_                    = false;
-        bool       bFitZeta_                     = false;
         bool       bSameZeta_                    = true;
-        bool       bFitChi_                      = false;
         bool       bUseCM5_                      = false;
         bool       bRemoveMol_                   = true;
         bool       bPointCore_                   = false;
@@ -111,11 +108,7 @@ class OptACM : public MolGen, Bayes
 
         bool fullTensor() const { return bFullTensor_; }
 
-        bool fitZeta() const { return bFitZeta_; }
-
         bool sameZeta() const { return bSameZeta_; }
-
-        bool fitChi() const { return bFitChi_; }
 
         bool useCM5() const {return bUseCM5_; }
         
@@ -129,14 +122,8 @@ class OptACM : public MolGen, Bayes
             {
                 { "-fullTensor", FALSE, etBOOL, {&bFullTensor_},
                   "Consider both diagonal and off-diagonal elements of the Q_Calc matrix for optimization" },
-                { "-fitalpha", FALSE, etBOOL, {&bFitAlpha_},
-                  "Calibrate atomic polarizability." },
-                { "-fitzeta", FALSE, etBOOL, {&bFitZeta_},
-                  "Calibrate orbital exponent." },
                 { "-samezeta", FALSE, etBOOL, {&bSameZeta_},
                   "Use the same zeta for both the core and the shell of the Drude model." },
-                { "-fitchi", FALSE, etBOOL, {&bFitChi_},
-                  "Calibrate electronegativity and hardness." },
                 { "-cm5", FALSE, etBOOL, {&bUseCM5_},
                   "Reproduce CM5 charges in fitting." },
                 { "-removemol", FALSE, etBOOL, {&bRemoveMol_},
@@ -313,7 +300,7 @@ double OptACM::calcDeviation()
         else
         {
             // Communicate the force field data.
-            if (bFitAlpha_ || weight(ermsPolar))
+            if (fit("alpha"))
             {
                 // TODO: Optimize to only do relevant stuff
                 poldata()->broadcast(commrec());
@@ -344,7 +331,7 @@ double OptACM::calcDeviation()
                 qq[i] = q[i];
             }
             // Update the polarizabilities only once before the loop
-            if (bFitAlpha_ || weight(ermsPolar))
+            if (fit("alpha"))
             {
                 mymol.UpdateIdef(poldata(), eitPOLARIZATION);
             }
@@ -494,7 +481,7 @@ double OptACM::calcDeviation()
                 {
                     mymol.QgenResp_->updateAtomCoords(mymol.x());
                 }
-                if (bFitZeta_)
+                if (fit("zeta"))
                 {
                     mymol.QgenResp_->updateZeta(mymol.atoms_, poldata());
                 }
@@ -629,18 +616,9 @@ bool OptACM::optRun(FILE                   *fp,
             }
         }
         std::vector<std::string> paramClass;
-        if (bFitAlpha_ || weight(ermsPolar))
+        for(const auto &fm : typesToFit())
         {
-            paramClass.push_back("Alpha");
-        }
-        if (bFitZeta_)
-        {
-            paramClass.push_back("Zeta");
-        }
-        if (bFitChi_)
-        {
-            paramClass.push_back("Chi");
-            paramClass.push_back("Eta");
+            paramClass.push_back(fm.first);
         }
         Bayes::setOutputFiles(xvgconv, paramClass, xvgepot, oenv);
         double     chi2_min = calcDeviation();
@@ -806,7 +784,6 @@ int alex_tune_eem(int argc, char *argv[])
     real                        alpha_toler   = 3;
     real                        isopol_toler  = 2;
     real                        efield        = 10;
-    char                       *opt_elem      = nullptr;
     bool                        bRandom       = false;
     bool                        bcompress     = false;
     bool                        bZero         = true;
@@ -821,8 +798,6 @@ int alex_tune_eem(int argc, char *argv[])
           "After this many iterations the search vectors are randomized again. A vlue of 0 means this is never done at all." },
         { "-nrun",   FALSE, etINT,  {&nrun},
           "This many runs will be done, before each run a complete randomization will be done" },
-        { "-opt_elem",  FALSE, etSTR, {&opt_elem},
-          "Space-separated list of atom types to optimize, e.g. \"H C Br\". The other available atom types in gentop.dat are left unmodified. If this variable is not set, all elements will be optimized." },
         { "-random", FALSE, etBOOL, {&bRandom},
           "Generate completely random starting parameters within the limits set by the options. This will be done at the very first step and before each subsequent run." },
         { "-zero", FALSE, etBOOL, {&bZero},
