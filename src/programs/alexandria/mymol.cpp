@@ -848,7 +848,7 @@ immStatus MyMol::GenerateTopology(const Poldata     *pd,
             ltop_ = gmx_mtop_generate_local_top(mtop_, false);
         }
     }
-    if (immOK == imm)
+    if (immOK == imm && !bBASTAT)
     {
         UpdateIdef(pd, eitBONDS);
         UpdateIdef(pd, eitANGLES);
