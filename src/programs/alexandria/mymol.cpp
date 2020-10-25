@@ -111,39 +111,7 @@ const char *qTypeName(qType qt)
             return "Unknown charge type";
     }
 }
-
-const char *immsg(immStatus imm)
-{
-    static const char *msg[immNR] = {
-        "Unknown status",
-        "OK",
-        "Zero Dipole",
-        "No Quadrupole",
-        "Charged",
-        "Atom type problem",
-        "Atom number problem",
-        "Converting from molprop",
-        "Determining bond order",
-        "RESP Initialization",
-        "Charge generation",
-        "Shell minimization",
-        "Requested level of theory missing",
-        "QM Inconsistency (ESP dipole does not match Elec)",
-        "Not in training set",
-        "No experimental data",
-        "Generating shells",
-        "Generating bonds",
-        "Communicating MolProp",
-        "Zeta is zero",
-        "The number of data is lower than mindata",
-        "No Dipole moment",
-        "NotSupportedBond",
-        "NotSupportedAngle",
-        "NotSupportedDihedral"
-    };
-    return msg[imm];
-}
-
+   
 class MyForceProvider : public gmx::IForceProvider
 {
     private:
@@ -204,9 +172,9 @@ MyMol::MyMol() : gvt_(evtALL)
     bHaveVSites_       = false;
     bNeedVsites_       = false;
     cgnr_              = nullptr;
-    immAtoms_          = immOK;
-    immTopology_       = immOK;
-    immCharges_        = immOK;
+    immAtoms_          = immStatus::OK;
+    immTopology_       = immStatus::OK;
+    immCharges_        = immStatus::OK;
     shellfc_           = nullptr;
     vsite_             = nullptr;
     myforce_           = new MyForceProvider;
@@ -591,7 +559,7 @@ immStatus MyMol::GenerateAtoms(const Poldata     *pd,
 {
     double              xx, yy, zz;
     int                 natom = 0;
-    immStatus           imm   = immOK;
+    immStatus           imm   = immStatus::OK;
 
     ExperimentIterator  ci = getCalc(method, basis, mylot);
     if (ci < EndExperiment())
@@ -670,7 +638,7 @@ immStatus MyMol::GenerateAtoms(const Poldata     *pd,
     }
     else
     {
-        imm = immLOT;
+        imm = immStatus::LOT;
     }
     if (nullptr != debug)
     {
@@ -699,9 +667,9 @@ immStatus MyMol::checkAtoms(const Poldata *pd)
     }
     if (nmissing > 0)
     {
-        return immAtomTypes;
+        return immStatus::AtomTypes;
     }
-    return immOK;
+    return immStatus::OK;
 }
 
 immStatus MyMol::zeta2atoms(const Poldata *pd)
@@ -722,14 +690,14 @@ immStatus MyMol::zeta2atoms(const Poldata *pd)
         
         if (zeta == 0 && eqtModel != eqtPoint)
         {
-            return immZeroZeta;
+            return immStatus::ZeroZeta;
         }
         
         atoms_->atom[i].zetaA     =
             atoms_->atom[i].zetaB = zeta;
         atoms_->atom[i].row       = eep["row"].value();
     }
-    return immOK;
+    return immStatus::OK;
 }
 
 immStatus MyMol::GenerateTopology(const Poldata     *pd,
@@ -742,7 +710,7 @@ immStatus MyMol::GenerateTopology(const Poldata     *pd,
                                   bool               bBASTAT,
                                   const char        *tabfn)
 {
-    immStatus   imm = immOK;
+    immStatus   imm = immStatus::OK;
     std::string btype1, btype2;
 
     if (nullptr != debug)
@@ -753,24 +721,24 @@ immStatus MyMol::GenerateTopology(const Poldata     *pd,
     GenerateComposition();
     if (NAtom() <= 0)
     {
-        imm = immAtomTypes;
+        imm = immStatus::AtomTypes;
     }
-    if (immOK == imm)
+    if (immStatus::OK == imm)
     {
         snew(atoms_, 1);
         state_change_natoms(state_, NAtom());
         imm = GenerateAtoms(pd, method, basis, mylot);
     }
-    if (immOK == imm)
+    if (immStatus::OK == imm)
     {
         imm = checkAtoms(pd);
     }
-    if (immOK == imm)
+    if (immStatus::OK == imm)
     {
         imm = zeta2atoms(pd);
     }
     /* Store bonds in harmonic potential list first, update type later */
-    if (immOK == imm)
+    if (immStatus::OK == imm)
     {
         int  ftb = F_BONDS;
         auto fs  = pd->findForcesConst(eitBONDS);
@@ -793,17 +761,17 @@ immStatus MyMol::GenerateTopology(const Poldata     *pd,
         auto pw = SearchPlist(plist_, ftb);
         if (plist_.end() == pw || pw->nParam() == 0)
         {
-            imm = immGenBonds;
+            imm = immStatus::GenBonds;
         }
     }
-    if (immOK == imm)
+    if (immStatus::OK == imm)
     {
         MakeAngles(bPairs, bDih);
 
         MakeSpecialInteractions(pd, bUseVsites);
         imm = updatePlist(pd, &plist_, atoms_, bBASTAT, getMolname(), &error_messages_);
     }
-    if (immOK == imm)
+    if (immStatus::OK == imm)
     {
         /* Center of charge */
         auto atntot = 0;
@@ -848,7 +816,7 @@ immStatus MyMol::GenerateTopology(const Poldata     *pd,
             ltop_ = gmx_mtop_generate_local_top(mtop_, false);
         }
     }
-    if (immOK == imm && !bBASTAT)
+    if (immStatus::OK == imm && !bBASTAT)
     {
         UpdateIdef(pd, eitBONDS);
         UpdateIdef(pd, eitANGLES);
@@ -1090,7 +1058,7 @@ immStatus MyMol::GenerateGromacs(const gmx::MDLogger       &mdlog,
 {
     if (gromacsGenerated_)
     {
-        return immOK;
+        return immStatus::OK;
     }
     GMX_RELEASE_ASSERT(nullptr != mtop_, "mtop_ == nullptr. You forgot to call GenerateTopology");
 
@@ -1135,7 +1103,7 @@ immStatus MyMol::GenerateGromacs(const gmx::MDLogger       &mdlog,
         }
     }
     gromacsGenerated_ = true;
-    return immOK;
+    return immStatus::OK;
 }
 
 immStatus MyMol::computeForces(FILE *fplog, t_commrec *cr, double *rmsf)
@@ -1181,7 +1149,7 @@ immStatus MyMol::computeForces(FILE *fplog, t_commrec *cr, double *rmsf)
         }
     }
     restoreCoordinates();
-    immStatus imm =  immOK;
+    immStatus imm =  immStatus::OK;
     if (nullptr != shellfc_)
     {
         auto nnodes = cr->nnodes;
@@ -1204,7 +1172,7 @@ immStatus MyMol::computeForces(FILE *fplog, t_commrec *cr, double *rmsf)
         {
             fprintf(stderr, "Something wrong minimizing shells for %s. Error code %d\n",
                     getMolname().c_str(), ex.errorCode());
-            imm = immShellMinimization;
+            imm = immStatus::ShellMinimization;
         }
         *rmsf = std::sqrt(force2);
         if (force2 > inputrec_->em_tol && fplog)
@@ -1222,7 +1190,7 @@ immStatus MyMol::computeForces(FILE *fplog, t_commrec *cr, double *rmsf)
                     inputrec_->niter, getMolname().c_str(),
                     *rmsf);
             pr_rvecs(fplog, 0, "f", f_.rvec_array(), mtop_->natoms);
-            imm = immShellMinimization;
+            imm = immStatus::ShellMinimization;
         }
         cr->nnodes = nnodes;
     }
@@ -1325,7 +1293,7 @@ immStatus MyMol::GenerateCharges(const Poldata       *pd,
                                  int                  maxiter,
                                  real                 tolerance)
 {
-    immStatus           imm          = immOK;
+    immStatus           imm          = immStatus::OK;
     bool                converged    = false;
     int                 iter         = 0;
     auto                iChargeType  = pd->chargeType();
@@ -1347,7 +1315,7 @@ immStatus MyMol::GenerateCharges(const Poldata       *pd,
         {
             atoms_->atom[i].q  = atoms_->atom[i].qB = 0;
         }
-        return immOK;
+        return immStatus::OK;
     case eqgESP:
         {
             double chi2[2]   = {1e8, 1e8};
@@ -1376,7 +1344,7 @@ immStatus MyMol::GenerateCharges(const Poldata       *pd,
                 {
                     double rmsf;
                     auto imm = computeForces(nullptr, cr, &rmsf);
-                    if (imm != immOK)
+                    if (imm != immStatus::OK)
                     {
                         return imm;
                     }
@@ -1431,7 +1399,7 @@ immStatus MyMol::GenerateCharges(const Poldata       *pd,
                     {
                         double rmsf;
                         auto imm = computeForces(nullptr, cr, &rmsf);
-                        if (imm != immOK)
+                        if (imm != immStatus::OK)
                         {
                             return imm;
                         }
@@ -1448,10 +1416,10 @@ immStatus MyMol::GenerateCharges(const Poldata       *pd,
                 }
                 else
                 {
-                    imm = immChargeGeneration;
+                    imm = immStatus::ChargeGeneration;
                 }
             }
-            while (imm == immOK && (!converged) && (iter < maxiter));
+            while (imm == immStatus::OK && (!converged) && (iter < maxiter));
             for (auto i = 0; i < mtop_->natoms; i++)
             {
                 mtop_->moltype[0].atoms.atom[i].q      =
@@ -1690,7 +1658,7 @@ immStatus MyMol::CalcPolarizability(double     efield,
     const double        POLFAC = 29.957004; /* C.m**2.V*-1 to Å**3 */
     std::vector<double> field;
     rvec                mu_ref;
-    immStatus           imm = immOK;
+    immStatus           imm = immStatus::OK;
     double              rmsf;
 
     field.resize(DIM, 0);
@@ -1698,14 +1666,14 @@ immStatus MyMol::CalcPolarizability(double     efield,
     imm          = computeForces(fplog, cr, &rmsf);
     isoPol_calc_ = 0;
     CalcDipole(mu_ref);
-    for (auto m = 0; imm == immOK && m < DIM; m++)
+    for (auto m = 0; imm == immStatus::OK && m < DIM; m++)
     {
         field[m] = efield;
         myforce_->setField(field);
         imm = computeForces(fplog, cr, &rmsf);
         field[m] = 0;
         myforce_->setField(field);
-        if (imm == immOK)
+        if (imm == immStatus::OK)
         {
             rvec mu_tot;
             CalcDipole(mu_tot);
@@ -1716,7 +1684,7 @@ immStatus MyMol::CalcPolarizability(double     efield,
             isoPol_calc_ += alpha_calc_[m][m]/DIM;
         }
     }
-    if (immOK == imm)
+    if (immStatus::OK == imm)
     {
         CalcAnisoPolarizability(alpha_calc_, &anisoPol_calc_);
     }
@@ -1891,7 +1859,7 @@ void MyMol::PrintTopology(FILE                   *fp,
     if (efield > 0 && nullptr != cr)
     {
         auto imm = CalcPolarizability(efield, cr, debug);
-        if (imm == immOK)
+        if (imm == immStatus::OK)
         {
             add_tensor(&commercials, "Alexandria Polarizability components (A^3)", alpha_calc_);
             
@@ -1954,14 +1922,14 @@ immStatus MyMol::GenerateChargeGroups(eChargeGroup ecg, bool bUsePDBcharge)
     if ((cgnr_ = generate_charge_groups(ecg, atoms_, plist_, bUsePDBcharge,
                                         &qtot, &mtot)) == nullptr)
     {
-        return immChargeGeneration;
+        return immStatus::ChargeGeneration;
     }
     if (ecg != ecgAtom)
     {
         //sort_on_charge_groups(cgnr_, atoms_,
         //                    plist_, x_, excls_, ndxfn, nmol);
     }
-    return immOK;
+    return immStatus::OK;
 }
 
 void MyMol::GenerateCube(const Poldata          *pd,
@@ -2155,7 +2123,7 @@ immStatus MyMol::getExpProps(gmx_bool           bQM,
 
     }
     T = 298.15;
-    immStatus imm = immOK;
+    immStatus imm = immStatus::OK;
     if (bDHform &&
         getProp(MPO_ENERGY, (bQM ? iqmQM : iqmExp),
                            method, basis, "",
@@ -2177,7 +2145,7 @@ immStatus MyMol::getExpProps(gmx_bool           bQM,
                     fprintf(stderr, "WARNING: NO reference enthalpy for molecule %s.\n",
                             getMolname().c_str());
                     Emol_ = 0;
-                    imm   = immNoData;
+                    imm   = immStatus::NoData;
                     break;
                 }
             }
@@ -2195,15 +2163,15 @@ immStatus MyMol::getExpProps(gmx_bool           bQM,
             {
                 fprintf(stderr, "No zero-point energy for molecule %s.\n",
                         getMolname().c_str());
-                imm = immNoData;
+                imm = immStatus::NoData;
             }
         }
         if (ia < atoms_->nr)
         {
-            imm = immNoData;
+            imm = immStatus::NoData;
         }
     }
-    if (imm == immOK)
+    if (imm == immStatus::OK)
     {
         T = -1;
         if (getPropRef(MPO_DIPOLE, iqmQM,
@@ -2230,19 +2198,19 @@ immStatus MyMol::getExpProps(gmx_bool           bQM,
 
             if (!bZero && (dipQM(qtElec) - 0.0) < 1e-2)
             {
-                imm = immZeroDip;
+                imm = immStatus::ZeroDip;
             }
-            if (immOK == imm && esp_dipole_found)
+            if (immStatus::OK == imm && esp_dipole_found)
             {
                 rotateDipole(mu_qm_[qtElec], mu_qm_[qtESP]);
             }
         }
         else
         {
-            imm = immNoDipole;
+            imm = immStatus::NoDipole;
         }
     }
-    if (immOK == imm)
+    if (immStatus::OK == imm)
     {
         T = -1;
         if (getPropRef(MPO_QUADRUPOLE, iqmQM,
@@ -2252,7 +2220,7 @@ immStatus MyMol::getExpProps(gmx_bool           bQM,
                        vec, quadrupole))
         {
             set_QQM(qtElec, quadrupole);
-            if (immOK == imm && esp_dipole_found && norm(mu_qm_[qtElec]) > 0)
+            if (immStatus::OK == imm && esp_dipole_found && norm(mu_qm_[qtElec]) > 0)
             {
                 rotate_tensor(Q_qm_[qtElec], Q_qm_[qtESP]);
             }

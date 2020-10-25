@@ -49,39 +49,39 @@
 #include "qgen_acm.h"
 #include "qgen_resp.h"
 
-
-enum immStatus {
-    immUnknown,
-    immOK,
-    immZeroDip,
-    immNoQuad,
-    immCharged,
-    immAtomTypes,
-    immAtomNumber,
-    immMolpropConv,
-    immBondOrder,
-    immRespInit,
-    immChargeGeneration,
-    immShellMinimization,
-    immLOT,
-    immQMInconsistency,
-    immTest,
-    immNoData,
-    immGenShells,
-    immGenBonds,
-    immCommProblem,
-    immZeroZeta,
-    immInsufficientDATA,
-    immNoDipole,
-    immNotSupportedBond,
-    immNotSupportedAngle,
-    immNotSupportedDihedral,
-    immNR
-};
-
 namespace alexandria
 {
 
+enum class immStatus {
+    Unknown,
+    OK,
+    ZeroDip,
+    NoQuad,
+    Charged,
+    AtomTypes,
+    AtomNumber,
+    MolpropConv,
+    BondOrder,
+    RespInit,
+    ChargeGeneration,
+    ShellMinimization,
+    LOT,
+    QMInconsistency,
+    Test,
+    NoData,
+    GenShells,
+    GenBonds,
+    CommProblem,
+    ZeroZeta,
+    InsufficientDATA,
+    NoDipole,
+    NotSupportedBond,
+    NotSupportedAngle,
+    NotSupportedDihedral
+};
+
+const char *immsg(immStatus imm);
+ 
 bool is_planar(rvec   xi,  rvec xj,
                rvec   xk,  rvec xl,
                t_pbc *pbc, real phi_toler);

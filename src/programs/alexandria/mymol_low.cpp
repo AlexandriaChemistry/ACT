@@ -62,6 +62,39 @@
 namespace alexandria
 {
 
+std::map<immStatus, const char *> immMessages = {
+    { immStatus::Unknown,                  "Unknown status" },
+    { immStatus::OK,                       "OK" },
+    { immStatus::ZeroDip,                  "Zero Dipole" },
+    { immStatus::NoQuad,                   "No Quadrupole" },
+    { immStatus::Charged,                  "Charged" },
+    { immStatus::AtomTypes,                "Atom type problem" },
+    { immStatus::AtomNumber,               "Atom number problem" },
+    { immStatus::MolpropConv,              "Converting from molprop" },
+    { immStatus::BondOrder,                "Determining bond order" },
+    { immStatus::RespInit,                 "RESP Initialization" },
+    { immStatus::ChargeGeneration,         "Charge generation" },
+    { immStatus::ShellMinimization,        "Shell minimization" },
+    { immStatus::LOT,                      "Requested level of theory missing" },
+    { immStatus::QMInconsistency,          "QM Inconsistency (ESP dipole does not match Elec)" },
+    { immStatus::Test,                     "Not in training set" },
+    { immStatus::NoData,                   "No experimental data" },
+    { immStatus::GenShells,                "Generating shells" },
+    { immStatus::GenBonds,                 "Generating bonds" },
+    { immStatus::CommProblem,              "Communicating MolProp" },
+    { immStatus::ZeroZeta,                 "Zeta is zero" },
+    { immStatus::InsufficientDATA,         "The number of data is lower than mindata" },
+    { immStatus::NoDipole,                 "No Dipole moment" },
+    { immStatus::NotSupportedBond,         "NotSupportedBond" },
+    { immStatus::NotSupportedAngle,        "NotSupportedAngle" },
+    { immStatus::NotSupportedDihedral,     "NotSupportedDihedral" }
+};
+
+const char *immsg(immStatus imm)
+{
+    return immMessages[imm];
+}
+
 bool is_planar(rvec xi, rvec xj, rvec xk,
                rvec xl, t_pbc *pbc,
                real phi_toler)
@@ -341,30 +374,30 @@ immStatus updatePlist(const Poldata             *pd,
                 }
                 else if (!bBASTAT)
                 {
-                    errors->push_back(gmx::formatString("Could not find information for %s in %s - ftype %s\n",
+                    errors->push_back(gmx::formatString("Could not find bond/angle/dihedral information for %s in %s - ftype %s\n",
                                                         bondId.id().c_str(), molname.c_str(), interaction_function[fs.fType()].longname).c_str());
                     if (iType == eitBONDS)
                     {
-                        return immNotSupportedBond;
+                        return immStatus::NotSupportedBond;
                     }
                     else if (iType ==  eitANGLES)
                     {
-                        return immNotSupportedAngle;
+                        return immStatus::NotSupportedAngle;
                     }
                     else
                     {
-                        return immNotSupportedDihedral;
+                        return immStatus::NotSupportedDihedral;
                     }
                 }
             }
             else
             {
                 errors->push_back(gmx::formatString("Unsupported atom type: %s!\n", lastAtype.c_str()));
-                return immAtomTypes;
+                return immStatus::AtomTypes;
             }
         }
     }
-    return immOK;
+    return immStatus::OK;
 }
 
 std::vector<double> getDoubles(const std::string &s)

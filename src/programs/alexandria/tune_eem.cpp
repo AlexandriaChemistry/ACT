@@ -366,7 +366,7 @@ double OptACM::calcDeviation()
                 {
                     double rmsf;
                     auto imm = mymol.computeForces(logFile(), commrec(), &rmsf);
-                    if (immOK != imm)
+                    if (immStatus::OK != imm)
                     {
                         if (logFile())
                         {

@@ -87,6 +87,7 @@ struct t_nrnb;
 
 namespace alexandria
 {
+
 /*! \brief Enumerated type to differentiate the charge types */
 enum qType {
     qtCalc      = 0,
@@ -729,8 +730,6 @@ class MyMol : public MolProp
             return (this->getMolname() == mol.getMolname());
         }
 };
-
-const char *immsg(immStatus imm);
 
 }
 
