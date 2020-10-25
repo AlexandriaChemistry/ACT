@@ -70,10 +70,6 @@ void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
                    "Optimize force field parameters");
     registerModule(manager, &alex_tune_eem, "tune_eem",
                    "Optimize parameters of the EEM algorithm");
-    //    registerModule(manager, &alex_tune_pol, "tune_pol",
-    //             "Optimize atomic polarizabilities");
-    //    registerModule(manager, &alex_tune_zeta, "tune_zeta",
-    //             "Optimize the distribution of Gaussian and Slater charges");
     registerModule(manager, &alex_bastat, "bastat",
                    "Deduce bond/angle/dihedral distributions from a set of strucures");
     //  registerModule(manager, &alex_analyze, "analyze",
@@ -82,8 +78,6 @@ void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
     //             "Generate tables for interaction functions used in mdrun");
     registerModule(manager, &alex_poldata_test, "poldata_test",
                    "Test the force field file I/O");
-    //   registerModule(manager, &alex_fit_qs_zeta, "fit_qs_zeta",
-    //                   "Fit qshell and zeta based on polarizability");
     registerModule(manager, &alex_molprop_test, "molprop_test",
                    "Test the molecular property file I/O");
     registerModule(manager, &alex_molprop_check, "molprop_check",
@@ -103,8 +97,6 @@ void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
         gmx::CommandLineModuleGroup group =
             manager->addModuleGroup("Alexandria core tools");
         group.addModule("bastat");
-        //group.addModule("tune_pol");
-        //group.addModule("tune_zeta");
         group.addModule("tune_eem");
         group.addModule("tune_fc");
         group.addModule("qm2molprop");
