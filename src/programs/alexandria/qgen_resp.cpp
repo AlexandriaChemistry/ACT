@@ -558,12 +558,11 @@ void QgenResp::optimizeCharges(double epsilonr)
 
 void QgenResp::updateZeta(t_atoms *atoms, const Poldata *pd)
 {
-    auto    fs   = pd->findForcesConst(InteractionType::ELECTRONEGATIVITYEQUALIZATION);
+    auto    fs   = pd->findForcesConst(InteractionType::CHARGEDISTRIBUTION);
     for (int i = 0; i < nAtom_; i++)
     {
-        // TODO: Take into account different Zeta
         auto atype = pd->findAtype(*(atoms->atomtype[i]));
-        auto myid  = atype->id(InteractionType::ELECTRONEGATIVITYEQUALIZATION);
+        auto myid  = atype->id(InteractionType::CHARGEDISTRIBUTION);
         auto eep   = fs.findParametersConst(myid);
         zeta_[i]   = eep.find("zeta")->second.value();
     }
