@@ -199,8 +199,11 @@ TEST_F (ForceFieldParameterListTest, ModifyParameter) {
 }
 
 TEST(CanSwap, InvalidInputThrows) {
-    CanSwap cs;
+    CanSwap cs = CanSwap::No;
     EXPECT_THROW(cs = stringToCanSwap("Pirate"), gmx::InvalidInputError);
+    // Code will not be reached in normal cases but the compiler
+    // warns about cs not being used otherwise.
+    printf("This should not happen. cs = %s\n", canSwapToString(cs).c_str());
 }
 
 }

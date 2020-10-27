@@ -57,8 +57,12 @@ TEST(IdentifierSimpleTest, BSmallerThanA) {
 TEST(IdentifierSimpleTest, CompareDifferentLength) {
     Identifier a({"C", "H"}, CanSwap::Yes);
     Identifier b({"C", "O", "H"}, CanSwap::Yes);
-    bool compare;
+    bool compare = false;
     EXPECT_THROW((compare = b < a), gmx::InternalError);
+    // Code will not be reached in normal cases but the compiler
+    // warns about compare not being used otherwise.
+    printf("This should not happen. compare = %s\n",
+           compare ? "true" : "false");
 }
 
 TEST(IdentifierSimpleTest, BSmallerThanASecondAtom) {
