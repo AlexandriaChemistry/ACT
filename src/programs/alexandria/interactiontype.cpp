@@ -41,20 +41,21 @@ namespace alexandria
 {
 
 std::map<InteractionType, std::string> eitNames = {
-    { eitBONDS,              "BONDS"              },
-    { eitANGLES,             "ANGLES"             },
-    { eitLINEAR_ANGLES,      "LINEAR_ANGLES"      },
-    { eitPROPER_DIHEDRALS,   "PROPER_DIHEDRALS"   },
-    { eitIMPROPER_DIHEDRALS, "IMPROPER_DIHEDRALS" },
-    { eitVDW,                "VANDERWAALS"        },
-    { eitLJ14,               "LJ14"               },
-    { eitPOLARIZATION,       "POLARIZATION"       },
-    { eitCONSTR,             "CONSTR"             },
-    { eitVSITE2,             "VSITE2"             },
-    { eitVSITE3FAD,          "VSITE3FAD"          },
-    { eitVSITE3OUT,          "VSITE3OUT"          },
-    { eitBONDCORRECTIONS,    "BONDCORRECTIONS"    },
-    { eitELECTRONEGATIVITYEQUALIZATION, "ELECTRONEGATIVITYEQUALIZATION" }
+    { InteractionType::BONDS,              "BONDS"              },
+    { InteractionType::ANGLES,             "ANGLES"             },
+    { InteractionType::LINEAR_ANGLES,      "LINEAR_ANGLES"      },
+    { InteractionType::PROPER_DIHEDRALS,   "PROPER_DIHEDRALS"   },
+    { InteractionType::IMPROPER_DIHEDRALS, "IMPROPER_DIHEDRALS" },
+    { InteractionType::VDW,                "VANDERWAALS"        },
+    { InteractionType::LJ14,               "LJ14"               },
+    { InteractionType::POLARIZATION,       "POLARIZATION"       },
+    { InteractionType::CONSTR,             "CONSTR"             },
+    { InteractionType::VSITE2,             "VSITE2"             },
+    { InteractionType::VSITE3FAD,          "VSITE3FAD"          },
+    { InteractionType::VSITE3OUT,          "VSITE3OUT"          },
+    { InteractionType::CHARGEDISTRIBUTION, "CHARGEDISTRIBUTION" },
+    { InteractionType::BONDCORRECTIONS,    "BONDCORRECTIONS"    },
+    { InteractionType::ELECTRONEGATIVITYEQUALIZATION, "ELECTRONEGATIVITYEQUALIZATION" }
 };
 
 const std::string &interactionTypeToString(InteractionType iType)
@@ -79,7 +80,7 @@ InteractionType stringToInteractionType(const std::string &name)
     }
     GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such interaction type %s",
                                                        name.c_str()).c_str()));
-    return eitBONDS;
+    return InteractionType::BONDS;
 }
 
 } // namespace alexandria

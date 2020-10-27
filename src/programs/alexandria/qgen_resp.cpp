@@ -109,23 +109,23 @@ void QgenResp::setAtomInfo(t_atoms                          *atoms,
                            const gmx::HostVector<gmx::RVec> &x,
                            const int                         qtotal)
 {
-    nAtom_  = atoms->nr;
-    qtot_   = qtotal;
-    qshell_ = 0;
-    x_      = x;
-    auto fs = pd->findForcesConst(eitELECTRONEGATIVITYEQUALIZATION);
+    nAtom_   = atoms->nr;
+    qtot_    = qtotal;
+    qshell_  = 0;
+    x_       = x;
+    auto zzz = pd->findForcesConst(InteractionType::CHARGEDISTRIBUTION);
     nFixed_ = 0;
     for (int i = 0; i < atoms->nr; i++)
     {
         auto atype = pd->findAtype(*atoms->atomtype[i]);
-        auto ztype = atype->id(eitELECTRONEGATIVITYEQUALIZATION);
-        q_.push_back(fs.findParameterTypeConst(ztype, "charge").value());
-        row_.push_back(fs.findParameterTypeConst(ztype, "row").value());
-        zeta_.push_back(fs.findParameterTypeConst(ztype, "zeta").value());
-        mutable_.push_back(fs.findParameterTypeConst(ztype, "charge").mutability() != Mutability::Fixed);
+        auto ztype = atype->id(InteractionType::CHARGEDISTRIBUTION);
+        q_.push_back(atype->charge());
+        row_.push_back(atype->row());
+        zeta_.push_back(zzz.findParameterTypeConst(ztype, "zeta").value());
+        
+        mutable_.push_back(atype->mutability() != Mutability::Fixed);
         ptype_.push_back(atoms->atom[i].ptype);
-        if (fs.findParameterTypeConst(ztype, "charge").mutability() ==
-            Mutability::Fixed)
+        if (atype->mutability() == Mutability::Fixed)
         {
             nFixed_++;
             qshell_ += q_[i];
@@ -364,17 +364,17 @@ static double calcJ(ChargeType  chargeType,
     r = norm(dx);
     if (zeta <= 0)
     {
-        chargeType = eqtPoint;
+        chargeType = ChargeType::Point;
     }
     if (watoms == 0 && r == 0)
     {
         gmx_fatal(FARGS, "Zero distance between the atom and the grid.");
     }
-    if (eqtGaussian == chargeType)
+    if (ChargeType::Gaussian == chargeType)
     {
         eTot = Nuclear_GG(r, zeta);
     }
-    else if (eqtSlater == chargeType)
+    else if (ChargeType::Slater == chargeType)
     {
         eTot = Nuclear_SS(r, row, zeta);
     }
@@ -558,12 +558,12 @@ void QgenResp::optimizeCharges(double epsilonr)
 
 void QgenResp::updateZeta(t_atoms *atoms, const Poldata *pd)
 {
-    auto    fs   = pd->findForcesConst(eitELECTRONEGATIVITYEQUALIZATION);
+    auto    fs   = pd->findForcesConst(InteractionType::ELECTRONEGATIVITYEQUALIZATION);
     for (int i = 0; i < nAtom_; i++)
     {
         // TODO: Take into account different Zeta
         auto atype = pd->findAtype(*(atoms->atomtype[i]));
-        auto myid  = atype->id(eitELECTRONEGATIVITYEQUALIZATION);
+        auto myid  = atype->id(InteractionType::ELECTRONEGATIVITYEQUALIZATION);
         auto eep   = fs.findParametersConst(myid);
         zeta_[i]   = eep.find("zeta")->second.value();
     }

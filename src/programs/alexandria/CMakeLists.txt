@@ -54,6 +54,7 @@ set(ALEXANDRIA_SOURCES
            molprop_util.cpp
            molprop_xml.cpp
            molselect.cpp
+           mutability.cpp
            mymol.cpp
            mymol_low.cpp
 	   optparam.cpp

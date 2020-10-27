@@ -1,57 +1,57 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <!DOCTYPE gentop.dtd PUBLIC "gentop.dtd" "gentop.dtd">
 <gentop>
-  <atomtypes chargetype="Point" chargegenerationalgorithm="EEM" version="2020" nexclusions="0" epsilonr="1">
-    <atomtype elem="H" atomnumber="1" mass="1.0079" description="hydrogen on aliphatic C with 1 electron-withdrawal group" atype="h1" ptype="h1_s" btype="h1_b" ztype="H" ref_enthalpy="222.232"/>
-    <atomtype elem="H" atomnumber="1" mass="1.0079" description="hydrogen on aliphatic C with 2 electron-withdrawal groups" atype="h2" ptype="h1_s" btype="h1_b" ztype="H" ref_enthalpy="222.232"/>
-    <atomtype elem="H" atomnumber="1" mass="1.0079" description="hydrogen on aliphatic C with 3 electron-withdrawal groups" atype="h3" ptype="h1_s" btype="h1_b" ztype="H" ref_enthalpy="222.232"/>
-    <atomtype elem="H" atomnumber="1" mass="1.0079" description="hydrogen on aromatic C with 1 electron-withdrawal group" atype="h4" ptype="h4_s" btype="h2_b" ztype="H" ref_enthalpy="222.232"/>
-    <atomtype elem="H" atomnumber="1" mass="1.0079" description="hydrogen on aromatic C with 2 electron-withdrawal groups" atype="h5" ptype="h4_s" btype="h2_b" ztype="H" ref_enthalpy="222.232"/>
-    <atomtype elem="H" atomnumber="1" mass="1.0079" description="hydrogen on aromatic or sp2 aliphatic C" atype="ha" ptype="ha_s" btype="ha_b" ztype="H" ref_enthalpy="222.232"/>
-    <atomtype elem="H" atomnumber="1" mass="1.0079" description="hydrogen on sp3 aliphatic C" atype="hc" ptype="hc_s" btype="ha_b" ztype="H" ref_enthalpy="222.232"/>
-    <atomtype elem="H" atomnumber="1" mass="1.0079" description="hydrogen on nitrogen" atype="hn" ptype="hp_s" btype="hp_b" ztype="H" ref_enthalpy="222.232"/>
-    <atomtype elem="H" atomnumber="1" mass="1.0079" description="hydrogen on oxygen" atype="ho" ptype="hp_s" btype="hp_b" ztype="H" ref_enthalpy="222.232"/>
-    <atomtype elem="H" atomnumber="1" mass="1.0079" description="hydrogen on phosphor" atype="hp" ptype="hp_s" btype="hp_b" ztype="H" ref_enthalpy="222.232"/>
-    <atomtype elem="H" atomnumber="1" mass="1.0079" description="hydrogen on sulphur" atype="hs" ptype="hp_s" btype="hp_b" ztype="H" ref_enthalpy="222.232"/>
-    <atomtype elem="H" atomnumber="1" mass="1.0079" description="hydrogen in water" atype="hw" ptype="hw_s" btype="hw_b" ztype="H" ref_enthalpy="222.232"/>
-    <atomtype elem="C" atomnumber="6" mass="12.0107" description="sp C" atype="c1" ptype="c1_s" btype="c1_b" ztype="C" ref_enthalpy="717.721"/>
-    <atomtype elem="C" atomnumber="6" mass="12.0107" description="C=O or C=S" atype="c" ptype="c2_s" btype="c_b" ztype="C" ref_enthalpy="717.721"/>
-    <atomtype elem="C" atomnumber="6" mass="12.0107" description="pure aromatic atom" atype="ca" ptype="ca_s" btype="ca_b" ztype="C" ref_enthalpy="717.721"/>
-    <atomtype elem="C" atomnumber="6" mass="12.0107" description="bridge aromatic c in byphenyl system" atype="cq" ptype="c2_s" btype="c2_b" ztype="C" ref_enthalpy="717.721"/>
-    <atomtype elem="C" atomnumber="6" mass="12.0107" description="bridge aromatic c in byphenyl system" atype="cp" ptype="c2_s" btype="c2_b" ztype="C" ref_enthalpy="717.721"/>
-    <atomtype elem="C" atomnumber="6" mass="12.0107" description="inner sp2 C of conjugated ring systems" atype="cc" ptype="c2_s" btype="c2_b" ztype="C" ref_enthalpy="717.721"/>
-    <atomtype elem="C" atomnumber="6" mass="12.0107" description="inner sp2 C of conjugated ring systems" atype="cd" ptype="c2_s" btype="c2_b" ztype="C" ref_enthalpy="717.721"/>
-    <atomtype elem="C" atomnumber="6" mass="12.0107" description="sp C of conjugated system" atype="cg" ptype="c1_s" btype="c1_b" ztype="C" ref_enthalpy="717.721"/>
-    <atomtype elem="C" atomnumber="6" mass="12.0107" description="inner sp2 C of conjugated chain systems" atype="ce" ptype="c2_s" btype="c2_b" ztype="C" ref_enthalpy="717.721"/>
-    <atomtype elem="C" atomnumber="6" mass="12.0107" description="inner sp2 C of conjugated chain systems" atype="cf" ptype="c2_s" btype="c2_b" ztype="C" ref_enthalpy="717.721"/>
-    <atomtype elem="C" atomnumber="6" mass="12.0107" description="carbon COO- groups" atype="cm" ptype="cm_s" btype="cm_b" ztype="C" ref_enthalpy="717.721"/>
-    <atomtype elem="C" atomnumber="6" mass="12.0107" description="sp2 carbon in a 3-membered ring" atype="cu" ptype="cu_s" btype="c2_b" ztype="C" ref_enthalpy="717.721"/>
-    <atomtype elem="C" atomnumber="6" mass="12.0107" description="sp2 carbon in a 4-membered ring" atype="cv" ptype="cu_s" btype="c2_b" ztype="C" ref_enthalpy="717.721"/>
-    <atomtype elem="C" atomnumber="6" mass="12.0107" description="guanidine carbon" atype="cz" ptype="cz_s" btype="c2_b" ztype="C" ref_enthalpy="717.721"/>
-    <atomtype elem="C" atomnumber="6" mass="12.0107" description="sp2 C, aliphatic" atype="c2" ptype="c2_s" btype="c2_b" ztype="C" ref_enthalpy="717.721"/>
-    <atomtype elem="C" atomnumber="6" mass="12.0107" description="sp3 C" atype="c3" ptype="c3_s" btype="c3_b" ztype="C" ref_enthalpy="717.721"/>
-    <atomtype elem="C" atomnumber="6" mass="12.0107" description="3-membered ring atom" atype="cx" ptype="cu_s" btype="c3_b" ztype="C" ref_enthalpy="717.721"/>
-    <atomtype elem="C" atomnumber="6" mass="12.0107" description="4-membered ring atom" atype="cy" ptype="cu_s" btype="c3_b" ztype="C" ref_enthalpy="717.721"/>
-    <atomtype elem="N" atomnumber="7" mass="14.0067" description="sp2 N in amides" atype="n" ptype="n_s" btype="n_b" ztype="N" ref_enthalpy="477.018"/>
-    <atomtype elem="N" atomnumber="7" mass="14.0067" description="sp1 N" atype="n1" ptype="n1_s" btype="n1_b" ztype="N" ref_enthalpy="477.018"/>
-    <atomtype elem="N" atomnumber="7" mass="14.0067" description="sp2 N with 2 subst." atype="n2" ptype="n2_s" btype="n2_b" ztype="N" ref_enthalpy="477.018"/>
-    <atomtype elem="N" atomnumber="7" mass="14.0067" description="sp3 N with 3 subst." atype="n3" ptype="n3_s" btype="n3_b" ztype="N" ref_enthalpy="477.018"/>
-    <atomtype elem="N" atomnumber="7" mass="14.0067" description="sp3 N with 4 subst." atype="n4" ptype="n4_s" btype="n3_b" ztype="N" ref_enthalpy="477.018"/>
-    <atomtype elem="N" atomnumber="7" mass="14.0067" description="sp2 N with 3 subst." atype="na" ptype="na_s" btype="na_b" ztype="N" ref_enthalpy="477.018"/>
-    <atomtype elem="N" atomnumber="7" mass="14.0067" description="aromatic N" atype="nb" ptype="nb_s" btype="nb_b" ztype="N" ref_enthalpy="477.018"/>
-    <atomtype elem="N" atomnumber="7" mass="14.0067" description="inner sp2 N of conjugated ring systems" atype="nc" ptype="nc_s" btype="nc_b" ztype="N" ref_enthalpy="477.018"/>
-    <atomtype elem="N" atomnumber="7" mass="14.0067" description="inner sp2 N of conjugated ring systems" atype="nd" ptype="nc_s" btype="nc_b" ztype="N" ref_enthalpy="477.018"/>
-    <atomtype elem="N" atomnumber="7" mass="14.0067" description="inner sp2 N of conjugated chain system" atype="ne" ptype="ne_s" btype="ne_b" ztype="N" ref_enthalpy="477.018"/>
-    <atomtype elem="N" atomnumber="7" mass="14.0067" description="amine N connected to aromatic ring" atype="nh" ptype="nh_s" btype="nh_b" ztype="N" ref_enthalpy="477.018"/>
-    <atomtype elem="N" atomnumber="7" mass="14.0067" description="N in nitro group" atype="no" ptype="no_s" btype="no_b" ztype="N" ref_enthalpy="477.018"/>
-    <atomtype elem="O" atomnumber="8" mass="15.9994" description="sp2 O" atype="o" ptype="o_s" btype="o_b" ztype="O" ref_enthalpy="253.514"/>
-    <atomtype elem="O" atomnumber="8" mass="15.9994" description="sp3 O in hydroxyl group" atype="oh" ptype="oh_s" btype="oh_b" ztype="O" ref_enthalpy="253.514"/>
-    <atomtype elem="O" atomnumber="8" mass="15.9994" description="O in water" atype="ow" ptype="ow_s" btype="ow_b" ztype="O" ref_enthalpy="253.514"/>
-    <atomtype elem="O" atomnumber="8" mass="15.9994" description="O in NO2" atype="on" ptype="on_s" btype="on_b" ztype="O" ref_enthalpy="253.514"/>
-    <atomtype elem="O" atomnumber="8" mass="15.9994" description="O- in COO" atype="om" ptype="om_s" btype="om_b" ztype="O" ref_enthalpy="253.514"/>
-    <atomtype elem="O" atomnumber="8" mass="15.9994" description="sp3 O in esters and ethers" atype="os" ptype="os_s" btype="os_b" ztype="O" ref_enthalpy="253.514"/>
-    <atomtype elem="F" atomnumber="9" mass="18.9984" description="general fluorine" atype="f" ptype="f_s" btype="f_b" ztype="F" ref_enthalpy="83.8025"/>
-    <atomtype elem="F" atomnumber="9" mass="18.9984" description="fluoride ion" atype="F-" ptype="F-_s" btype="_b" ztype="F" ref_enthalpy="0.0"/>
+  <atomtypes chargegenerationalgorithm="EEM" version="2020" nexclusions="0" epsilonr="1">
+    <atomtype elem="H" atomnumber="1" mass="1.0079" charge="0.0" row="1" description="hydrogen on aliphatic C with 1 electron-withdrawal group" atype="h1" ptype="h1_s" btype="h1_b" ztype="H" acmtype="H" mutability="Free" ref_enthalpy="222.232"/>
+    <atomtype elem="H" atomnumber="1" mass="1.0079" charge="0.0" row="1" description="hydrogen on aliphatic C with 2 electron-withdrawal groups" atype="h2" ptype="h1_s" btype="h1_b" ztype="H" acmtype="H" mutability="Free" ref_enthalpy="222.232"/>
+    <atomtype elem="H" atomnumber="1" mass="1.0079" charge="0.0" row="1" description="hydrogen on aliphatic C with 3 electron-withdrawal groups" atype="h3" ptype="h1_s" btype="h1_b" ztype="H" acmtype="H" mutability="Free" ref_enthalpy="222.232"/>
+    <atomtype elem="H" atomnumber="1" mass="1.0079" charge="0.0" row="1" description="hydrogen on aromatic C with 1 electron-withdrawal group" atype="h4" ptype="h4_s" btype="h2_b" ztype="H" acmtype="H" mutability="Free" ref_enthalpy="222.232"/>
+    <atomtype elem="H" atomnumber="1" mass="1.0079" charge="0.0" row="1" description="hydrogen on aromatic C with 2 electron-withdrawal groups" atype="h5" ptype="h4_s" btype="h2_b" ztype="H" acmtype="H" mutability="Free" ref_enthalpy="222.232"/>
+    <atomtype elem="H" atomnumber="1" mass="1.0079" charge="0.0" row="1" description="hydrogen on aromatic or sp2 aliphatic C" atype="ha" ptype="ha_s" btype="ha_b" ztype="H" acmtype="H" mutability="Free" ref_enthalpy="222.232"/>
+    <atomtype elem="H" atomnumber="1" mass="1.0079" charge="0.0" row="1" description="hydrogen on sp3 aliphatic C" atype="hc" ptype="hc_s" btype="ha_b" ztype="H" acmtype="H" mutability="Free" ref_enthalpy="222.232"/>
+    <atomtype elem="H" atomnumber="1" mass="1.0079" charge="0.0" row="1" description="hydrogen on nitrogen" atype="hn" ptype="hp_s" btype="hp_b" ztype="H" acmtype="H" mutability="Free" ref_enthalpy="222.232"/>
+    <atomtype elem="H" atomnumber="1" mass="1.0079" charge="0.0" row="1" description="hydrogen on oxygen" atype="ho" ptype="hp_s" btype="hp_b" ztype="H" acmtype="H" mutability="Free" ref_enthalpy="222.232"/>
+    <atomtype elem="H" atomnumber="1" mass="1.0079" charge="0.0" row="1" description="hydrogen on phosphor" atype="hp" ptype="hp_s" btype="hp_b" ztype="H" acmtype="H" mutability="Free" ref_enthalpy="222.232"/>
+    <atomtype elem="H" atomnumber="1" mass="1.0079" charge="0.0" row="1" description="hydrogen on sulphur" atype="hs" ptype="hp_s" btype="hp_b" ztype="H" acmtype="H" mutability="Free" ref_enthalpy="222.232"/>
+    <atomtype elem="H" atomnumber="1" mass="1.0079" charge="0.0" row="1" description="hydrogen in water" atype="hw" ptype="hw_s" btype="hw_b" ztype="H" acmtype="H" mutability="Free" ref_enthalpy="222.232"/>
+    <atomtype elem="C" atomnumber="6" mass="12.0107" charge="0.0" row="2" description="sp C" atype="c1" ptype="c1_s" btype="c1_b" ztype="C" acmtype="C" mutability="Free" ref_enthalpy="717.721"/>
+    <atomtype elem="C" atomnumber="6" mass="12.0107" charge="0.0" row="2" description="C=O or C=S" atype="c" ptype="c2_s" btype="c_b" ztype="C" acmtype="C" mutability="Free" ref_enthalpy="717.721"/>
+    <atomtype elem="C" atomnumber="6" mass="12.0107" charge="0.0" row="2" description="pure aromatic atom" atype="ca" ptype="ca_s" btype="ca_b" ztype="C" acmtype="C" mutability="Free" ref_enthalpy="717.721"/>
+    <atomtype elem="C" atomnumber="6" mass="12.0107" charge="0.0" row="2" description="bridge aromatic c in byphenyl system" atype="cq" ptype="c2_s" btype="c2_b" ztype="C" acmtype="C" mutability="Free" ref_enthalpy="717.721"/>
+    <atomtype elem="C" atomnumber="6" mass="12.0107" charge="0.0" row="2" description="bridge aromatic c in byphenyl system" atype="cp" ptype="c2_s" btype="c2_b" ztype="C" acmtype="C" mutability="Free" ref_enthalpy="717.721"/>
+    <atomtype elem="C" atomnumber="6" mass="12.0107" charge="0.0" row="2" description="inner sp2 C of conjugated ring systems" atype="cc" ptype="c2_s" btype="c2_b" ztype="C" acmtype="C" mutability="Free" ref_enthalpy="717.721"/>
+    <atomtype elem="C" atomnumber="6" mass="12.0107" charge="0.0" row="2" description="inner sp2 C of conjugated ring systems" atype="cd" ptype="c2_s" btype="c2_b" ztype="C" acmtype="C" mutability="Free" ref_enthalpy="717.721"/>
+    <atomtype elem="C" atomnumber="6" mass="12.0107" charge="0.0" row="2" description="sp C of conjugated system" atype="cg" ptype="c1_s" btype="c1_b" ztype="C" acmtype="C" mutability="Free" ref_enthalpy="717.721"/>
+    <atomtype elem="C" atomnumber="6" mass="12.0107" charge="0.0" row="2" description="inner sp2 C of conjugated chain systems" atype="ce" ptype="c2_s" btype="c2_b" ztype="C" acmtype="C" mutability="Free" ref_enthalpy="717.721"/>
+    <atomtype elem="C" atomnumber="6" mass="12.0107" charge="0.0" row="2" description="inner sp2 C of conjugated chain systems" atype="cf" ptype="c2_s" btype="c2_b" ztype="C" acmtype="C" mutability="Free" ref_enthalpy="717.721"/>
+    <atomtype elem="C" atomnumber="6" mass="12.0107" charge="0.0" row="2" description="carbon COO- groups" atype="cm" ptype="cm_s" btype="cm_b" ztype="C" acmtype="C" mutability="Free" ref_enthalpy="717.721"/>
+    <atomtype elem="C" atomnumber="6" mass="12.0107" charge="0.0" row="2" description="sp2 carbon in a 3-membered ring" atype="cu" ptype="cu_s" btype="c2_b" ztype="C" acmtype="C" mutability="Free" ref_enthalpy="717.721"/>
+    <atomtype elem="C" atomnumber="6" mass="12.0107" charge="0.0" row="2" description="sp2 carbon in a 4-membered ring" atype="cv" ptype="cu_s" btype="c2_b" ztype="C" acmtype="C" mutability="Free" ref_enthalpy="717.721"/>
+    <atomtype elem="C" atomnumber="6" mass="12.0107" charge="0.0" row="2" description="guanidine carbon" atype="cz" ptype="cz_s" btype="c2_b" ztype="C" acmtype="C" mutability="Free" ref_enthalpy="717.721"/>
+    <atomtype elem="C" atomnumber="6" mass="12.0107" charge="0.0" row="2" description="sp2 C  aliphatic" atype="c2" ptype="c2_s" btype="c2_b" ztype="C" acmtype="C" mutability="Free" ref_enthalpy="717.721"/>
+    <atomtype elem="C" atomnumber="6" mass="12.0107" charge="0.0" row="2" description="sp3 C" atype="c3" ptype="c3_s" btype="c3_b" ztype="C" acmtype="C" mutability="Free" ref_enthalpy="717.721"/>
+    <atomtype elem="C" atomnumber="6" mass="12.0107" charge="0.0" row="2" description="3-membered ring atom" atype="cx" ptype="cu_s" btype="c3_b" ztype="C" acmtype="C" mutability="Free" ref_enthalpy="717.721"/>
+    <atomtype elem="C" atomnumber="6" mass="12.0107" charge="0.0" row="2" description="4-membered ring atom" atype="cy" ptype="cu_s" btype="c3_b" ztype="C" acmtype="C" mutability="Free" ref_enthalpy="717.721"/>
+    <atomtype elem="N" atomnumber="7" mass="14.0067" charge="0.0" row="2" description="sp2 N in amides" atype="n" ptype="n_s" btype="n_b" ztype="N" acmtype="N" mutability="Free" ref_enthalpy="477.018"/>
+    <atomtype elem="N" atomnumber="7" mass="14.0067" charge="0.0" row="2" description="sp1 N" atype="n1" ptype="n1_s" btype="n1_b" ztype="N" acmtype="N" mutability="Free" ref_enthalpy="477.018"/>
+    <atomtype elem="N" atomnumber="7" mass="14.0067" charge="0.0" row="2" description="sp2 N with 2 subst." atype="n2" ptype="n2_s" btype="n2_b" ztype="N" acmtype="N" mutability="Free" ref_enthalpy="477.018"/>
+    <atomtype elem="N" atomnumber="7" mass="14.0067" charge="0.0" row="2" description="sp3 N with 3 subst." atype="n3" ptype="n3_s" btype="n3_b" ztype="N" acmtype="N" mutability="Free" ref_enthalpy="477.018"/>
+    <atomtype elem="N" atomnumber="7" mass="14.0067" charge="0.0" row="2" description="sp3 N with 4 subst." atype="n4" ptype="n4_s" btype="n3_b" ztype="N" acmtype="N" mutability="Free" ref_enthalpy="477.018"/>
+    <atomtype elem="N" atomnumber="7" mass="14.0067" charge="0.0" row="2" description="sp2 N with 3 subst." atype="na" ptype="na_s" btype="na_b" ztype="N" acmtype="N" mutability="Free" ref_enthalpy="477.018"/>
+    <atomtype elem="N" atomnumber="7" mass="14.0067" charge="0.0" row="2" description="aromatic N" atype="nb" ptype="nb_s" btype="nb_b" ztype="N" acmtype="N" mutability="Free" ref_enthalpy="477.018"/>
+    <atomtype elem="N" atomnumber="7" mass="14.0067" charge="0.0" row="2" description="inner sp2 N of conjugated ring systems" atype="nc" ptype="nc_s" btype="nc_b" ztype="N" acmtype="N" mutability="Free" ref_enthalpy="477.018"/>
+    <atomtype elem="N" atomnumber="7" mass="14.0067" charge="0.0" row="2" description="inner sp2 N of conjugated ring systems" atype="nd" ptype="nc_s" btype="nc_b" ztype="N" acmtype="N" mutability="Free" ref_enthalpy="477.018"/>
+    <atomtype elem="N" atomnumber="7" mass="14.0067" charge="0.0" row="2" description="inner sp2 N of conjugated chain system" atype="ne" ptype="ne_s" btype="ne_b" ztype="N" acmtype="N" mutability="Free" ref_enthalpy="477.018"/>
+    <atomtype elem="N" atomnumber="7" mass="14.0067" charge="0.0" row="2" description="amine N connected to aromatic ring" atype="nh" ptype="nh_s" btype="nh_b" ztype="N" acmtype="N" mutability="Free" ref_enthalpy="477.018"/>
+    <atomtype elem="N" atomnumber="7" mass="14.0067" charge="0.0" row="2" description="N in nitro group" atype="no" ptype="no_s" btype="no_b" ztype="N" acmtype="N" mutability="Free" ref_enthalpy="477.018"/>
+    <atomtype elem="O" atomnumber="8" mass="15.9994" charge="0.0" row="2" description="sp2 O" atype="o" ptype="o_s" btype="o_b" ztype="O" acmtype="O" mutability="Free" ref_enthalpy="253.514"/>
+    <atomtype elem="O" atomnumber="8" mass="15.9994" charge="0.0" row="2" description="sp3 O in hydroxyl group" atype="oh" ptype="oh_s" btype="oh_b" ztype="O" acmtype="O" mutability="Free" ref_enthalpy="253.514"/>
+    <atomtype elem="O" atomnumber="8" mass="15.9994" charge="0.0" row="2" description="O in water" atype="ow" ptype="ow_s" btype="ow_b" ztype="O" acmtype="O" mutability="Free" ref_enthalpy="253.514"/>
+    <atomtype elem="O" atomnumber="8" mass="15.9994" charge="0.0" row="2" description="O in NO2" atype="on" ptype="on_s" btype="on_b" ztype="O" acmtype="O" mutability="Free" ref_enthalpy="253.514"/>
+    <atomtype elem="O" atomnumber="8" mass="15.9994" charge="0.0" row="2" description="O- in COO" atype="om" ptype="om_s" btype="om_b" ztype="O" acmtype="O" mutability="Free" ref_enthalpy="253.514"/>
+    <atomtype elem="O" atomnumber="8" mass="15.9994" charge="0.0" row="2" description="sp3 O in esters and ethers" atype="os" ptype="os_s" btype="os_b" ztype="O" acmtype="O" mutability="Free" ref_enthalpy="253.514"/>
+    <atomtype elem="F" atomnumber="9" mass="18.9984" charge="0.0" row="2" description="general fluorine" atype="f" ptype="f_s" btype="f_b" ztype="F" acmtype="F" mutability="Free" ref_enthalpy="83.8025"/>
+    <atomtype elem="F" atomnumber="9" mass="18.9984" charge="5.59" row="2" description="fluoride ion" atype="F-" ptype="F-_s" btype="_b" ztype="F" acmtype="F" mutability="Free" ref_enthalpy="0.0"/>
   </atomtypes>
   <interaction type="POLARIZATION" function="Polarization" canswap="false">
   </interaction>
@@ -18420,47 +18420,46 @@
     <sym_charge central="C" attached="I" numattach="3"/>
     <sym_charge central="Si" attached="H" numattach="3"/>
   </symmetric_charges>
+  <interaction type="CHARGEDISTRIBUTION" function="" canswap="false">
+    <option type="chargetype" value="Point"/>
+    <option type="reference=" value="Bultinck2002a"/>
+    <parameterlist identifier="C">
+      <parameter type="zeta" unit="1/nm" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Bounded" ntrain="1"/>
+    </parameterlist>
+    <parameterlist identifier="F">
+      <parameter type="zeta" unit="1/nm" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Bounded" ntrain="1"/>
+    </parameterlist>
+    <parameterlist identifier="H">
+      <parameter type="zeta" unit="1/nm" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Bounded" ntrain="1"/>
+    </parameterlist>
+    <parameterlist identifier="N">
+      <parameter type="zeta" unit="1/nm" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Bounded" ntrain="1"/>
+    </parameterlist>
+    <parameterlist identifier="O">
+      <parameter type="zeta" unit="1/nm" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Bounded" ntrain="1"/>
+    </parameterlist>
+  </interaction>
   <interaction type="ELECTRONEGATIVITYEQUALIZATION" function="" canswap="false">
     <option type="reference=" value="Bultinck2002a"/>
     <parameterlist identifier="C">
-      <parameter type="jaa" unit="eV/e" value="9" minimum="7.2" maximum="11.25" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="chi" unit="eV" value="5.25" minimum="4.2" maximum="6.5625" uncertainty="0" mutability="Bounded" ntrain="1"/>
-      <parameter type="zeta" unit="1/nm" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Bounded" ntrain="1"/>
-      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Dependent" ntrain="1"/>
-      <parameter type="ref_charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Fixed" ntrain="1"/>
-      <parameter type="row" unit="" value="1" minimum="1" maximum="1" uncertainty="0" mutability="Fixed" ntrain="1"/>
+      <parameter type="jaa" unit="eV/e" value="9" minimum="7.2" maximum="11.25" uncertainty="0" mutability="Bounded" ntrain="1"/>
     </parameterlist>
     <parameterlist identifier="F">
-      <parameter type="jaa" unit="eV/e" value="19.97" minimum="15.976" maximum="24.9625" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="chi" unit="eV" value="15" minimum="12" maximum="18.75" uncertainty="0" mutability="Bounded" ntrain="1"/>
-      <parameter type="zeta" unit="1/nm" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Bounded" ntrain="1"/>
-      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Dependent" ntrain="1"/>
-      <parameter type="ref_charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Fixed" ntrain="1"/>
-      <parameter type="row" unit="" value="1" minimum="1" maximum="1" uncertainty="0" mutability="Fixed" ntrain="1"/>
+      <parameter type="jaa" unit="eV/e" value="19.97" minimum="15.976" maximum="24.9625" uncertainty="0" mutability="Bounded" ntrain="1"/>
     </parameterlist>
     <parameterlist identifier="H">
-      <parameter type="jaa" unit="eV/e" value="17.95" minimum="14.36" maximum="22.4375" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="chi" unit="eV" value="1" minimum="0.8" maximum="1.25" uncertainty="0" mutability="Bounded" ntrain="1"/>
-      <parameter type="zeta" unit="1/nm" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Bounded" ntrain="1"/>
-      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Dependent" ntrain="1"/>
-      <parameter type="ref_charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Fixed" ntrain="1"/>
-      <parameter type="row" unit="" value="1" minimum="1" maximum="1" uncertainty="0" mutability="Fixed" ntrain="1"/>
+      <parameter type="jaa" unit="eV/e" value="17.95" minimum="14.36" maximum="22.4375" uncertainty="0" mutability="Bounded" ntrain="1"/>
     </parameterlist>
     <parameterlist identifier="N">
-      <parameter type="jaa" unit="eV/e" value="9.39" minimum="7.512" maximum="11.7375" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="chi" unit="eV" value="8.8" minimum="7.04" maximum="11" uncertainty="0" mutability="Bounded" ntrain="1"/>
-      <parameter type="zeta" unit="1/nm" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Bounded" ntrain="1"/>
-      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Dependent" ntrain="1"/>
-      <parameter type="ref_charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Fixed" ntrain="1"/>
-      <parameter type="row" unit="" value="1" minimum="1" maximum="1" uncertainty="0" mutability="Fixed" ntrain="1"/>
+      <parameter type="jaa" unit="eV/e" value="9.39" minimum="7.512" maximum="11.7375" uncertainty="0" mutability="Bounded" ntrain="1"/>
     </parameterlist>
     <parameterlist identifier="O">
-      <parameter type="jaa" unit="eV/e" value="14.34" minimum="11.472" maximum="17.925" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="chi" unit="eV" value="14.72" minimum="11.776" maximum="18.4" uncertainty="0" mutability="Bounded" ntrain="1"/>
-      <parameter type="zeta" unit="1/nm" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Bounded" ntrain="1"/>
-      <parameter type="charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Dependent" ntrain="1"/>
-      <parameter type="ref_charge" unit="e" value="0" minimum="0" maximum="0" uncertainty="0" mutability="Fixed" ntrain="1"/>
-      <parameter type="row" unit="" value="1" minimum="1" maximum="1" uncertainty="0" mutability="Fixed" ntrain="1"/>
+      <parameter type="jaa" unit="eV/e" value="14.34" minimum="11.472" maximum="17.925" uncertainty="0" mutability="Bounded" ntrain="1"/>
     </parameterlist>
   </interaction>
 </gentop>

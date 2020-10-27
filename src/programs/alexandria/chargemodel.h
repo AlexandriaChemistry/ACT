@@ -48,8 +48,8 @@ namespace alexandria
  * \inpublicapi
  * \ingroup module_alexandria
  */
-enum ChargeType {
-    eqtPoint, eqtGaussian, eqtSlater, eqtNR
+enum class ChargeType {
+    Point, Gaussian, Slater
 };
 
 //! \brief Return the string corresping to ct
@@ -64,8 +64,8 @@ ChargeType name2ChargeType(const std::string &name);
  * \inpublicapi
  * \ingroup module_alexandria
  */
-enum ChargeGenerationAlgorithm {
-    eqgNONE, eqgEEM, eqgSQE, eqgESP, eqgNR
+enum class ChargeGenerationAlgorithm {
+    NONE, EEM, SQE, ESP
 };
 
 //! \brief Return the string corresping to cg

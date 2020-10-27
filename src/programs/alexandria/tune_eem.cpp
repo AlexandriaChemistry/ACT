@@ -222,7 +222,7 @@ void OptACM::initChargeGeneration()
     rvec             vec;
     for (auto &mymol : mymols())
     {
-        if (mymol.eSupp_ != eSupportNo)
+        if (mymol.eSupp_ != eSupport::No)
         {
             mymol.QgenAcm_ = new QgenAcm(poldata(),
                                          mymol.atoms_,
@@ -318,8 +318,8 @@ double OptACM::calcDeviation()
     }
     for (auto &mymol : mymols())
     {
-        if ((mymol.eSupp_ == eSupportLocal) ||
-            (final() && (mymol.eSupp_ == eSupportRemote)))
+        if ((mymol.eSupp_ == eSupport::Local) ||
+            (final() && (mymol.eSupp_ == eSupport::Remote)))
         {
             dumpQX(logFile(), &mymol, "BEFORE");
             std::vector<double> qq;
@@ -333,7 +333,7 @@ double OptACM::calcDeviation()
             // Update the polarizabilities only once before the loop
             if (fit("alpha"))
             {
-                mymol.UpdateIdef(poldata(), eitPOLARIZATION);
+                mymol.UpdateIdef(poldata(), InteractionType::POLARIZATION);
             }
             bool converged = false;
             int  iter      = 0;
@@ -362,7 +362,7 @@ double OptACM::calcDeviation()
                         }
                         if (removeMol())
                         {
-                            mymol.eSupp_ = eSupportNo;
+                            mymol.eSupp_ = eSupport::No;
                             fprintf(logFile()," Removing it from the data set.\n");
                             break;
                         }
@@ -375,7 +375,7 @@ double OptACM::calcDeviation()
                                                              mymol.atoms_,
                                                              mymol.x(),
                                                              mymol.bonds());
-                if (qgen != eQGEN_OK)
+                if (qgen != eQgen::OK)
                 {
                     gmx_fatal(FARGS, "Could not generate charges for %s: %s",
                               mymol.getMolname().c_str(),
@@ -401,11 +401,11 @@ double OptACM::calcDeviation()
                 }
                 if (removeMol())
                 {
-                    mymol.eSupp_ = eSupportNo;
+                    mymol.eSupp_ = eSupport::No;
                 }
             }
             // Check whether we have disabled this compound
-            if (mymol.eSupp_ == eSupportNo)
+            if (mymol.eSupp_ == eSupport::No)
             {
                 continue;
             }

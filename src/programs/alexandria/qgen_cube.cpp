@@ -452,11 +452,11 @@ void QgenResp::calcRho()
             gmx::RVec            dx;
             rvec_sub(ep_[i].esp(), x_[j], dx);
             double               r     = norm(dx);
-            if (eqtGaussian == ChargeType_)
+            if (ChargeType::Gaussian == ChargeType_)
             {
                 vv = q_[j]*Nuclear_GG(r, zeta_[j]);
             }
-            else if (eqtSlater == ChargeType_)
+            else if (ChargeType::Slater == ChargeType_)
             {
                 vv = q_[j]*Nuclear_SS(r, row_[j], zeta_[j]);
             }

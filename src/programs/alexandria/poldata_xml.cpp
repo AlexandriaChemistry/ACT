@@ -84,7 +84,6 @@ enum xmlEntry {
     exmlREFERENCE,
     exmlATOMTYPES,
     exmlATOMTYPE, 
-    exmlCHARGETYPE,
     exmlCOMB_RULE,
     exmlNEXCL,
     exmlVERSION,
@@ -101,6 +100,9 @@ enum xmlEntry {
     exmlVALENCE,
     exmlBTYPE,
     exmlZTYPE,
+    exmlACMTYPE,
+    exmlROW,
+    exmlCHARGE,
     exmlNEIGHBORS,
     exmlAROMATIC,
     exmlGEOMETRY,
@@ -160,7 +162,6 @@ std::map<const std::string, xmlEntry> xmlxxx =
     { "reference",              exmlREFERENCE        },
     { "atomtypes",              exmlATOMTYPES        },
     { "atomtype",               exmlATOMTYPE         },
-    { "chargetype",             exmlCHARGETYPE       },
     { "chargegenerationalgorithm", exmlCHARGEGENERATIONALGORITHM },
     { "parameterlist",          exmlPARAMETERLIST    },
     { "parameter",              exmlPARAMETER        },
@@ -173,12 +174,15 @@ std::map<const std::string, xmlEntry> xmlxxx =
     { "ptype",                  exmlPTYPE            },
     { "elem",                   exmlELEM             },
     { "mass",                   exmlMASS             },
+    { "charge",                 exmlCHARGE           },
+    { "row",                    exmlROW              },
     { "atomnumber",             exmlATOMNUMBER       },
     { "name",                   exmlNAME             },
     { "description",            exmlDESC             },
     { "atype",                  exmlATYPE            },
     { "btype",                  exmlBTYPE            },
     { "ztype",                  exmlZTYPE            },
+    { "acmtype",                exmlACMTYPE          },
     { "neighbors",              exmlNEIGHBORS        },
     { "aromatic",               exmlAROMATIC         },
     { "geometry",               exmlGEOMETRY         },
@@ -333,15 +337,11 @@ static void processAttr(FILE       *fp,
      */
 #define xbufString(x) xbuf->find(x)->second
     // Some local variables that we need
-    static InteractionType currentItype = eitBONDS;
+    static InteractionType currentItype = InteractionType::BONDS;
     static Identifier      myIdentifier;
     switch (elem)
     {
     case exmlATOMTYPES:
-        if (NNobligatory(xbuf, exmlCHARGETYPE))
-        {
-            pd->setChargeType(xbufString(exmlCHARGETYPE));
-        }
         if (NNobligatory(xbuf, exmlCHARGEGENERATIONALGORITHM))
         {
             pd->setChargeGenerationAlgorithm(xbufString(exmlCHARGEGENERATIONALGORITHM));
@@ -424,6 +424,7 @@ static void processAttr(FILE       *fp,
         }
         break;
     case exmlATOMTYPE:
+        Mutability  mut;
         if (NN(xbuf, exmlELEM) &&
             NN(xbuf, exmlMASS) &&
             NN(xbuf, exmlATOMNUMBER) &&
@@ -431,12 +432,21 @@ static void processAttr(FILE       *fp,
             NN(xbuf, exmlBTYPE) &&
             NN(xbuf, exmlPTYPE) &&
             NN(xbuf, exmlZTYPE) &&
-            NN(xbuf, exmlEREF))
+            NN(xbuf, exmlACMTYPE) &&
+            NN(xbuf, exmlROW) &&
+            NN(xbuf, exmlCHARGE) &&
+            NN(xbuf, exmlMUTABILITY) &&
+            NN(xbuf, exmlEREF) &&
+            nameToMutability(xbufString(exmlMUTABILITY), &mut))
         {
             Ffatype sp(xbufString(exmlDESC),  xbufString(exmlATYPE), xbufString(exmlPTYPE),
-                       xbufString(exmlBTYPE), xbufString(exmlZTYPE), xbufString(exmlELEM),
+                       xbufString(exmlBTYPE), xbufString(exmlZTYPE), 
+                       xbufString(exmlACMTYPE), xbufString(exmlELEM),
                        atof(xbufString(exmlMASS).c_str()),
                        atoi(xbufString(exmlATOMNUMBER).c_str()),
+                       atof(xbufString(exmlCHARGE).c_str()),
+                       atoi(xbufString(exmlROW).c_str()),
+                       mut,
                        xbufString(exmlEREF));
                 pd->addAtype(std::move(sp));
         }
@@ -599,8 +609,6 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd)
     std::string  tmp, func, blu;
 
     child = add_xml_child(parent, exml_names(exmlATOMTYPES));
-    add_xml_char(child, exml_names(exmlCHARGETYPE),
-                 chargeTypeName(pd->chargeType()).c_str());
     add_xml_char(child, exml_names(exmlCHARGEGENERATIONALGORITHM),
                  chargeGenerationAlgorithmName(pd->chargeGenerationAlgorithm()).c_str());
     tmp   = pd->getVersion();
@@ -620,11 +628,16 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd)
         add_xml_char(grandchild, exml_names(exmlELEM), aType->getElem().c_str());
         add_xml_int(grandchild, exml_names(exmlATOMNUMBER), aType->atomnumber());
         add_xml_double(grandchild, exml_names(exmlMASS), aType->mass());
+        add_xml_double(grandchild, exml_names(exmlCHARGE), aType->charge());
+        add_xml_int(grandchild, exml_names(exmlROW), aType->row());
         add_xml_char(grandchild, exml_names(exmlDESC), aType->getDesc().c_str());
         add_xml_char(grandchild, exml_names(exmlATYPE), aType->getType().c_str());
-        add_xml_char(grandchild, exml_names(exmlPTYPE), aType->id(eitPOLARIZATION).id().c_str());
-        add_xml_char(grandchild, exml_names(exmlBTYPE), aType->id(eitBONDS).id().c_str());
-        add_xml_char(grandchild, exml_names(exmlZTYPE), aType->id(eitELECTRONEGATIVITYEQUALIZATION).id().c_str());
+        add_xml_char(grandchild, exml_names(exmlPTYPE), aType->id(InteractionType::POLARIZATION).id().c_str());
+        add_xml_char(grandchild, exml_names(exmlBTYPE), aType->id(InteractionType::BONDS).id().c_str());
+        add_xml_char(grandchild, exml_names(exmlACMTYPE), aType->id(InteractionType::ELECTRONEGATIVITYEQUALIZATION).id().c_str());
+        add_xml_char(grandchild, exml_names(exmlZTYPE), aType->id(InteractionType::CHARGEDISTRIBUTION).id().c_str());
+        add_xml_char(grandchild, exml_names(exmlMUTABILITY), 
+                     mutabilityName(aType->mutability()).c_str());
         add_xml_char(grandchild, exml_names(exmlEREF), aType->getRefEnthalpy().c_str());
     }
     tmp   = pd->getVsite_angle_unit();
@@ -671,11 +684,11 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd)
                 add_xml_char(baby, exml_names(exmlTYPE), param.first.c_str());
                 add_xml_char(baby, exml_names(exmlUNIT), param.second.unit().c_str());
                 add_xml_double(baby, exml_names(exmlVALUE), param.second.value());
-                add_xml_double(baby, exml_names(exmlUNCERTAINTY), param.second.uncertainty());
-                add_xml_int(baby, exml_names(exmlNTRAIN), param.second.ntrain());
                 add_xml_double(baby, exml_names(exmlMINIMUM), param.second.minimum());
                 add_xml_double(baby, exml_names(exmlMAXIMUM), param.second.maximum());
+                add_xml_double(baby, exml_names(exmlUNCERTAINTY), param.second.uncertainty());
                 add_xml_char(baby, exml_names(exmlMUTABILITY), mutabilityName(param.second.mutability()).c_str());
+                add_xml_int(baby, exml_names(exmlNTRAIN), param.second.ntrain());
             }
         }
     }

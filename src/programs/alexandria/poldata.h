@@ -385,18 +385,6 @@ class Poldata
 
         const char *getOpts(const std::string &name) const;
 
-        //! Return the charge distribution type used
-        ChargeType chargeType() const { return ChargeType_; }
-        
-        //! Set the charge distribution type used
-        void setChargeType(ChargeType eqdType) { ChargeType_ = eqdType; }
-        
-        //! Set the charge distribution model used
-        void setChargeType(const std::string &eqdType)
-        { 
-            ChargeType_ = name2ChargeType(eqdType);
-        }
-        
         //! Return the charge generation algorithm used
         ChargeGenerationAlgorithm chargeGenerationAlgorithm() const
         { return ChargeGenerationAlgorithm_; }
@@ -446,8 +434,7 @@ class Poldata
         std::map<InteractionType, ForceFieldParameterList> forces_;
         std::vector<Symcharges>               symcharges_;
         bool                                  polarizable_ = false;
-        ChargeType                            ChargeType_  = eqtPoint;
-        ChargeGenerationAlgorithm             ChargeGenerationAlgorithm_ = eqgEEM;
+        ChargeGenerationAlgorithm             ChargeGenerationAlgorithm_ = ChargeGenerationAlgorithm::EEM;
 
         void addBtype(const std::string &btype);
 

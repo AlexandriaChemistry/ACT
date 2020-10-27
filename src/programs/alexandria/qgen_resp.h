@@ -233,7 +233,7 @@ class QgenResp
 
         void setZeta(int atom, double zeta) { zeta_[atom] = zeta; }
 
-        ChargeType                ChargeType_  = eqtPoint;
+        ChargeType                ChargeType_  = ChargeType::Point;
         double                    watoms_      = 0;
         int                       qtot_        = 0;
         double                    qshell_      = 0;

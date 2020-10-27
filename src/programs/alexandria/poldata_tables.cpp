@@ -58,7 +58,8 @@ static void eemprops_zeta_header(LongTable &lt,
     char             longbuf[STRLEN];
     CompositionSpecs cs;
     
-    auto  iType = pd->chargeType();
+    auto qt    = pd->findForcesConst(InteractionType::CHARGEDISTRIBUTION);
+    auto iType = name2ChargeType(qt.optionValue("chargetype"));
 
     lt.setColumns("lcccc");
 
@@ -76,7 +77,7 @@ void alexandria_eemprops_table(FILE           *fp,
     LongTable  lt(fp, false, nullptr);
 
     eemprops_zeta_header(lt, pd);
-    auto eep = pd->findForcesConst(eitELECTRONEGATIVITYEQUALIZATION);
+    auto eep = pd->findForcesConst(InteractionType::ELECTRONEGATIVITYEQUALIZATION);
     for (auto &eem : eep.parametersConst())
     {
         auto chi  = &eem.second.find("chi")->second;
@@ -105,7 +106,7 @@ void alexandria_eemprops_corr(const Poldata  *pd,
     real cz = 0;
     real ez = 0;
     
-    auto eep = pd->findForcesConst(eitELECTRONEGATIVITYEQUALIZATION);
+    auto eep = pd->findForcesConst(InteractionType::ELECTRONEGATIVITYEQUALIZATION);
     for (auto &eem : eep.parametersConst())
     {
         auto chi  = eem.second.find("chi")->second.value();

@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020 
+ * Copyright (C) 2020 
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -26,52 +26,53 @@
  
 /*! \internal \brief
  * Implements part of the alexandria program.
- * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#ifndef INTERACTIONTYPE_H
-#define INTERACTIONTYPE_H
 
+#include "mutability.h"
+
+#include <map>
 #include <string>
 
 namespace alexandria
 {
-//! Interaction type
-enum class InteractionType
+
+static std::map<Mutability, const std::string> mut2string =
+    {
+        { Mutability::Fixed,     "Fixed"     },
+        { Mutability::Dependent, "Dependent" },
+        { Mutability::Bounded,   "Bounded"   },
+        { Mutability::Free,      "Free"      }
+    };
+
+static std::map<const std::string, Mutability> string2mut;
+    
+const std::string &mutabilityName(Mutability mutability)
 {
-    BONDS,
-    ANGLES,
-    LINEAR_ANGLES,
-    PROPER_DIHEDRALS,
-    IMPROPER_DIHEDRALS,
-    VDW,
-    LJ14,
-    POLARIZATION,
-    CONSTR,
-    VSITE2,
-    VSITE3FAD,
-    VSITE3OUT,
-    CHARGEDISTRIBUTION,
-    BONDCORRECTIONS,
-    ELECTRONEGATIVITYEQUALIZATION
-};
+    auto m2s = mut2string.find(mutability);
+    
+    return m2s->second;
+}
 
-/*! \brief
- * Convert interaction type to string
- * \param[in] iType The interaction type
- * \return The corresponding string
- */
-const std::string &interactionTypeToString(InteractionType iType);
-
-/*! \brief
- * Convert string to interaction type
- * \param[in] name Name of the interaction
- * \return The corresponding interaction type
- * \throws if there is no corresponding interaction type
- */
-InteractionType stringToInteractionType(const std::string &name);
-
+bool nameToMutability(const std::string &name, Mutability *mutability)
+{
+    if (string2mut.empty())
+    {
+        for (auto iter = mut2string.begin(); iter != mut2string.end(); ++iter)
+        {
+            string2mut.insert({iter->second, iter->first});
+        }
+    }
+    auto s2m = string2mut.find(name);
+    if (s2m != string2mut.end())
+    {
+        *mutability = s2m->second;
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
 
 } // namespace
-
-#endif

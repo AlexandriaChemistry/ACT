@@ -36,16 +36,17 @@
 #include <map>
 #include <string>
 
-#include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/stringutil.h"
 
 namespace alexandria
 {
 
 std::map<ChargeType, const std::string> ct2Name =
     {
-        { eqtPoint,    "Point"    },
-        { eqtGaussian, "Gaussian" },
-        { eqtSlater,   "Slater"   }
+        { ChargeType::Point,    "Point"    },
+        { ChargeType::Gaussian, "Gaussian" },
+        { ChargeType::Slater,   "Slater"   }
     };
 
 std::map<const std::string, ChargeType> name2CT;
@@ -60,30 +61,31 @@ ChargeType name2ChargeType(const std::string &name)
         }
     }
     auto cc = name2CT.find(name);
-    if (cc != name2CT.end())
+    if (cc == name2CT.end())
     {
-        return cc->second;
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("Unknown charge type %s. Note that input is case-sensitive.\n", name.c_str()).c_str()));
     }
-    fprintf(stderr, "Unknown charge type %s. Note that input is case-sensitive.\n",
-            name.c_str());
-    return eqtNR;
+    return cc->second;
 }
 
 const std::string &chargeTypeName(ChargeType ct)
 {
     auto cc = ct2Name.find(ct);
 
-    GMX_RELEASE_ASSERT(cc != ct2Name.end(), "Internal error.");
+    if (cc == ct2Name.end())
+    {
+        GMX_THROW(gmx::InternalError("Invalid ChargeType."));
+    }
     
     return cc->second;
 }
 
 std::map<ChargeGenerationAlgorithm, const std::string> cg2Name =
     {
-        { eqgNONE, "None" },
-        { eqgEEM,  "EEM"  },
-        { eqgSQE,  "SQE"  },
-        { eqgESP,  "ESP"  }
+        { ChargeGenerationAlgorithm::NONE, "None" },
+        { ChargeGenerationAlgorithm::EEM,  "EEM"  },
+        { ChargeGenerationAlgorithm::SQE,  "SQE"  },
+        { ChargeGenerationAlgorithm::ESP,  "ESP"  }
     };
 
 std::map<const std::string, ChargeGenerationAlgorithm> name2CG;
@@ -98,13 +100,12 @@ ChargeGenerationAlgorithm name2ChargeGenerationAlgorithm(const std::string &name
         }
     }
     auto cc = name2CG.find(name);
-    if (cc != name2CG.end())
+    if (cc == name2CG.end())
     {
-        return cc->second;
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("Unknown charge generation algorithm %s. Note that input is case-sensitive.\n",
+                                                           name.c_str()).c_str()));
     }
-    fprintf(stderr, "Unknown charge generation algorithm %s. Note that input is case-sensitive.\n",
-            name.c_str());
-    return eqgNR;
+    return cc->second;
 }
 
 const std::string &chargeGenerationAlgorithmName(ChargeGenerationAlgorithm cg)

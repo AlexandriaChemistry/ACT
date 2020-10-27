@@ -93,9 +93,9 @@ TEST_F (PoldataTest, getAtype){
     checker_.checkString(aType->getElem(), "elem");
     checker_.checkString(aType->getDesc(), "desc");
     checker_.checkString(aType->getType(), "type");
-    checker_.checkString(aType->id(eitPOLARIZATION).id(), "ptype");
-    checker_.checkString(aType->id(eitBONDS).id(), "btype");
-    checker_.checkString(aType->id(eitELECTRONEGATIVITYEQUALIZATION).id(), "ztype");
+    checker_.checkString(aType->id(InteractionType::POLARIZATION).id(), "ptype");
+    checker_.checkString(aType->id(InteractionType::BONDS).id(), "btype");
+    checker_.checkString(aType->id(InteractionType::ELECTRONEGATIVITYEQUALIZATION).id(), "ztype");
     checker_.checkString(aType->getRefEnthalpy(), "refEnthalpy");
 }
 
@@ -105,12 +105,13 @@ TEST_F(PoldataTest, addAtype){
     const std::string        atype        = "U";
     const std::string        ptype        = "p_U";
     const std::string        ztype        = "z_U";
+    const std::string        acmtype      = "z_U";
     const std::string        btype        = "b_U";
     double                   mass         = 238.29;
     int                      atomnumber   = 92;
     const std::string        ref_enthalpy = "1000";
     alexandria::Poldata     *pd           = getPoldata("ACM-g");
-    Ffatype atp(desc, elem, ptype, btype, ztype, elem, mass, atomnumber, ref_enthalpy);
+    Ffatype atp(desc, elem, ptype, btype, ztype, acmtype, elem, mass, atomnumber, 2, 6, Mutability::Free, ref_enthalpy);
     pd->addAtype(atp);
 
     auto fa = pd->findAtype(atype);
@@ -120,16 +121,16 @@ TEST_F(PoldataTest, addAtype){
         checker_.checkString(fa->getElem(), elem.c_str());
         checker_.checkString(fa->getDesc(), desc.c_str());
         checker_.checkString(fa->getType(), atype.c_str());
-        checker_.checkString(fa->id(eitPOLARIZATION).id(), "ptype");
-        checker_.checkString(fa->id(eitBONDS).id(), "btype");
-        checker_.checkString(fa->id(eitELECTRONEGATIVITYEQUALIZATION).id(), "ztype");
+        checker_.checkString(fa->id(InteractionType::POLARIZATION).id(), "ptype");
+        checker_.checkString(fa->id(InteractionType::BONDS).id(), "btype");
+        checker_.checkString(fa->id(InteractionType::ELECTRONEGATIVITYEQUALIZATION).id(), "ztype");
     }
 }
 
 TEST_F (PoldataTest, Verstraelen)
 {
     auto pd  = getPoldata("Verstraelen");
-    auto bcs = pd->findForcesConst(eitBONDCORRECTIONS);
+    auto bcs = pd->findForcesConst(InteractionType::BONDCORRECTIONS);
     std::vector<std::string> name;
     std::vector<double>      hardness;
     std::vector<double>      electronegativity;
@@ -156,8 +157,8 @@ TEST_F (PoldataTest, chi)
         for (auto model : eqd)
         {
             auto pd       = getPoldata(model);
-            auto fa       = pd->findAtype(atom)->id(eitELECTRONEGATIVITYEQUALIZATION);
-            auto eep      = pd->findForcesConst(eitELECTRONEGATIVITYEQUALIZATION);
+            auto fa       = pd->findAtype(atom)->id(InteractionType::ELECTRONEGATIVITYEQUALIZATION);
+            auto eep      = pd->findForcesConst(InteractionType::ELECTRONEGATIVITYEQUALIZATION);
             auto p        = eep.findParameterTypeConst(fa, "chi");
             chi0s.push_back(p.value());
         }
@@ -176,8 +177,8 @@ TEST_F (PoldataTest, alpha)
         for (auto model : eqd)
         {
             auto pd       = getPoldata(model);
-            auto fa       = pd->findAtype(atom)->id(eitPOLARIZATION);
-            auto eep      = pd->findForcesConst(eitPOLARIZATION);
+            auto fa       = pd->findAtype(atom)->id(InteractionType::POLARIZATION);
+            auto eep      = pd->findForcesConst(InteractionType::POLARIZATION);
             auto p        = eep.findParameterTypeConst(fa, "alpha");
             alphas.push_back(p.value());
         }
@@ -196,10 +197,9 @@ TEST_F (PoldataTest, row)
         for (auto &model : models)
         {
             auto pd  = getPoldata(model);
-            auto fa  = pd->findAtype(atom)->id(eitELECTRONEGATIVITYEQUALIZATION);
-            auto eep = pd->findForcesConst(eitELECTRONEGATIVITYEQUALIZATION);
-            auto p   = eep.findParameterTypeConst(fa, "row");
-            rows.push_back(p.value());
+            auto fa  = pd->findAtype(atom);
+            auto p   = fa->row();
+            rows.push_back(p);
         }
     }
     checker_.checkSequence(rows.begin(), rows.end(), "row");
@@ -217,8 +217,8 @@ TEST_F (PoldataTest, zeta)
         {
             auto pd  = getPoldata(model);
             auto fa  = pd->findAtype(atom);
-            auto ztp = fa->id(eitELECTRONEGATIVITYEQUALIZATION);
-            auto eep = pd->findForcesConst(eitELECTRONEGATIVITYEQUALIZATION);
+            auto ztp = fa->id(InteractionType::CHARGEDISTRIBUTION);
+            auto eep = pd->findForcesConst(InteractionType::CHARGEDISTRIBUTION);
             auto p   = eep.findParameterTypeConst(ztp, "zeta");
             zetas.push_back(p.value());
         }
@@ -233,7 +233,9 @@ TEST_F (PoldataTest, chargeType)
     std::vector<std::string> forces;
     for (auto &model : eqd)
     {
-        auto ct = getPoldata(model)->chargeType();
+        auto pd = getPoldata(model);
+        auto qt = pd->findForcesConst(InteractionType::CHARGEDISTRIBUTION);
+        auto ct = name2ChargeType(qt.optionValue("chargetype"));
         forces.push_back(chargeTypeName(ct));
     }
     checker_.checkSequence(forces.begin(), forces.end(), "chargeType");

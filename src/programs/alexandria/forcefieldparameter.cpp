@@ -42,44 +42,6 @@
 namespace alexandria
 {
 
-static std::map<Mutability, const std::string> mut2string =
-    {
-        { Mutability::Fixed,     "Fixed"     },
-        { Mutability::Dependent, "Dependent" },
-        { Mutability::Bounded,   "Bounded"   },
-        { Mutability::Free,      "Free"      }
-    };
-
-static std::map<const std::string, Mutability> string2mut;
-    
-const std::string &mutabilityName(Mutability mutability)
-{
-    auto m2s = mut2string.find(mutability);
-    
-    return m2s->second;
-}
-
-bool nameToMutability(const std::string &name, Mutability *mutability)
-{
-    if (string2mut.empty())
-    {
-        for (auto iter = mut2string.begin(); iter != mut2string.end(); ++iter)
-        {
-            string2mut.insert({iter->second, iter->first});
-        }
-    }
-    auto s2m = string2mut.find(name);
-    if (s2m != string2mut.end())
-    {
-        *mutability = s2m->second;
-        return true;
-    }
-    else
-    {
-        return false;
-    }
-}
-
 void ForceFieldParameter::setValue(double value)
 {
     switch (mutability_)

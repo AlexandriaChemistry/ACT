@@ -194,7 +194,7 @@ void add_param_to_plist(std::vector<PlistWrapper> &plist,
         pwi = plist.end() - 1;
     }
     pwi->addParam(p);
-    if (eitBONDS == itype)
+    if (InteractionType::BONDS == itype)
     {
         pwi->addBondOrder(bondOrder);
     }

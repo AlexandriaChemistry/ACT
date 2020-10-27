@@ -68,25 +68,15 @@ struct t_forcerec;
 struct t_inputrec;
 struct gmx_hw_info_t;
 
-enum eDih {
-    edihNo,
-    edihOne,
-    edihAll,
-    edihNR
-};
-
-enum eSupport {
-    eSupportNo,
-    eSupportLocal,
-    eSupportRemote,
-    eSupportNR
-};
-
 struct gmx_vsite_t;
 struct t_nrnb;
 
 namespace alexandria
 {
+
+enum class eSupport {
+    No, Local, Remote
+};
 
 /*! \brief Enumerated type to differentiate the charge types */
 enum qType {

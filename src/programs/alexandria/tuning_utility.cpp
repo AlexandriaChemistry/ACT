@@ -336,7 +336,7 @@ void print_electric_props(FILE                           *fp,
     splitLot(lot, &method, &basis);
     for (auto &mol : mymol)
     {
-        if (mol.eSupp_ != eSupportNo)
+        if (mol.eSupp_ != eSupport::No)
         {
             fprintf(fp, "Molecule %d: %s Qtot: %d, Multiplicity %d\n", n+1,
                     mol.getMolname().c_str(),
@@ -437,7 +437,7 @@ void print_electric_props(FILE                           *fp,
                     mol.atoms_->atom[j].ptype == eptNucleus)
                 {
                     auto  atp = pd->findAtype(*(mol.atoms_->atomtype[j]));
-                    auto  ztp = atp->id(eitELECTRONEGATIVITYEQUALIZATION).id();
+                    auto  ztp = atp->id(InteractionType::ELECTRONEGATIVITYEQUALIZATION).id();
                     auto  k   = std::find_if(lsqt.begin(), lsqt.end(),
                                              [ztp](const ZetaTypeLsq &atlsq)
                                              {
@@ -607,7 +607,7 @@ void print_electric_props(FILE                           *fp,
     for (auto &mol : mymol)
     {
         auto deviation = std::abs(mol.dipQM(qtCalc) - mol.dipQM(qtElec));
-        if ((mol.eSupp_ != eSupportNo)  &&
+        if ((mol.eSupp_ != eSupport::No)  &&
             (mol.dipQM(qtElec) > sigma) &&
             (deviation > 2*sigma))
         {

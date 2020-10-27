@@ -460,7 +460,7 @@ void Optimization::checkSupport(FILE *fp)
 
     for (auto mymol =  mymols().begin(); mymol <  mymols().end(); )
     {
-        if (mymol->eSupp_ != eSupportLocal)
+        if (mymol->eSupp_ != eSupport::Local)
         {
             mymol++;
             continue;
@@ -582,7 +582,7 @@ void Optimization::getDissociationEnergy(FILE *fplog)
     std::vector<int>            ntest;
     std::vector<std::string>    ctest;
 
-    int nD   = ForceConstants_[eitBONDS].nbad();
+    int nD   = ForceConstants_[InteractionType::BONDS].nbad();
     int nMol = mymols().size();
 
     if ((0 == nD) || (0 == nMol))
@@ -599,7 +599,7 @@ void Optimization::getDissociationEnergy(FILE *fplog)
     fprintf(fplog, "There are %d different bondtypes to optimize the heat of formation\n", nD);
     fprintf(fplog, "There are %d (experimental) reference heat of formation.\n", nMol);
 
-    auto fs  = poldata()->findForces(eitBONDS);
+    auto fs  = poldata()->findForces(InteractionType::BONDS);
     auto j   = 0;
 
     for (auto &mymol :  mymols())
@@ -615,7 +615,7 @@ void Optimization::getDissociationEnergy(FILE *fplog)
                 Identifier bondId({btypeI, btypeJ}, b.getBondOrder(), CanSwap::Yes);
                 auto f   = fs->findParameterTypeConst(bondId, "Dm");
                 auto gt  = f.index();
-                auto gti = ForceConstants_[eitBONDS].reverseIndex(gt);
+                auto gti = ForceConstants_[InteractionType::BONDS].reverseIndex(gt);
                 a.set(gti, j, a.get(gti, j) + 1);
                 a_copy.set(gti, j, a.get(gti, j));
                 ntest[gti]++;
@@ -661,9 +661,9 @@ void Optimization::getDissociationEnergy(FILE *fplog)
     }
 
     int i = 0;
-    for (auto &b : ForceConstants_[eitBONDS].bondNames())
+    for (auto &b : ForceConstants_[InteractionType::BONDS].bondNames())
     {
-        auto fs = poldata()->findForces(eitBONDS);
+        auto fs = poldata()->findForces(InteractionType::BONDS);
         for(auto &fp : *(fs->findParameters(b.first)))
         {
             if (fp.second.mutability() == Mutability::Free ||
@@ -693,7 +693,7 @@ void Optimization::InitOpt(FILE *fplog, bool bRandom)
     }
     if (bDissoc_)
     {
-        if (ForceConstants_[eitBONDS].nbad() <= mymols().size())
+        if (ForceConstants_[InteractionType::BONDS].nbad() <= mymols().size())
         {
             getDissociationEnergy(fplog);
         }
@@ -704,7 +704,7 @@ void Optimization::InitOpt(FILE *fplog, bool bRandom)
                    "         energy for %zu bond type(s) using linear regression. Default\n"
                    "         values from gentop.dat will be used as the initial guess.\n"
                    "         Recomendation is to add more molecules having the same bond types.\n\n",
-                   mymols().size(), ForceConstants_[eitBONDS].nbad());
+                   mymols().size(), ForceConstants_[InteractionType::BONDS].nbad());
         }
     }
     
@@ -736,8 +736,8 @@ double Optimization::calcDeviation()
     // First compute all the energies and store them
     for (auto &mymol : mymols())
     {
-        if ((mymol.eSupp_ == eSupportLocal) ||
-            (calcAll_ && (mymol.eSupp_ == eSupportRemote)))
+        if ((mymol.eSupp_ == eSupport::Local) ||
+            (calcAll_ && (mymol.eSupp_ == eSupport::Remote)))
         {
             int      nSP    = 0, nOpt = 0;
             int      natoms = mymol.atoms_->nr;
@@ -818,10 +818,10 @@ double Optimization::calcDeviation()
                         }
                         if (nullptr != debug)
                         {
-                            int angleType = poldata()->findForces(eitANGLES)->fType();
-                            int pdihType  = poldata()->findForces(eitPROPER_DIHEDRALS)->fType();
-                            int idihType  = poldata()->findForces(eitIMPROPER_DIHEDRALS)->fType();
-                            int vdwType   = poldata()->findForces(eitVDW)->fType();
+                            int angleType = poldata()->findForces(InteractionType::ANGLES)->fType();
+                            int pdihType  = poldata()->findForces(InteractionType::PROPER_DIHEDRALS)->fType();
+                            int idihType  = poldata()->findForces(InteractionType::IMPROPER_DIHEDRALS)->fType();
+                            int vdwType   = poldata()->findForces(InteractionType::VDW)->fType();
                             fprintf(debug, "spHF: %g  optHF: %g  deltaRef: %g  deltaEalex: %g\n",
                                     spHF, optHF, deltaEref, deltaEalex);
                             fprintf(debug, "%s Chi2 %g Morse %g  "
@@ -864,8 +864,8 @@ double Optimization::calcDeviation()
     double ePot2 = 0;
     for (auto &mymol : mymols())
     {
-        if ((mymol.eSupp_ == eSupportLocal) ||
-            (calcAll_ && (mymol.eSupp_ == eSupportRemote)))
+        if ((mymol.eSupp_ == eSupport::Local) ||
+            (calcAll_ && (mymol.eSupp_ == eSupport::Remote)))
         {
             int  molid          = mymol.getIndex();
             auto molEnergyEntry = MolEnergyMap_.find(molid);

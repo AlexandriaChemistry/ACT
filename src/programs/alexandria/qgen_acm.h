@@ -44,12 +44,11 @@
 
 struct t_atoms;
 
-enum {
-    eQGEN_OK, 
-    eQGEN_NOTCONVERGED, 
-    eQGEN_NOSUPPORT, 
-    eQGEN_ERROR, 
-    eQGEN_NR
+enum class eQgen {
+    OK, 
+    NOTCONVERGED, 
+    NOSUPPORT, 
+    ERROR
 };
 
 namespace alexandria
@@ -78,12 +77,12 @@ class QgenAcm
          * \param in  x       Atomic coordinates    
          * \param in  bonds   List of bonds in this compound
          */
-        int generateCharges(FILE              *fp,
-                            const std::string &molname,
-                            const Poldata     *pd,
-                            t_atoms           *atoms,
-                            const gmx::HostVector<gmx::RVec> x,
-                            const std::vector<Bond> &bonds);
+        eQgen generateCharges(FILE              *fp,
+                              const std::string &molname,
+                              const Poldata     *pd,
+                              t_atoms           *atoms,
+                              const gmx::HostVector<gmx::RVec> x,
+                              const std::vector<Bond> &bonds);
                             
         const char *message() const;
         
@@ -100,29 +99,27 @@ class QgenAcm
         void dump(FILE *fp, t_atoms *atoms);
 
     private:
-        int                                                eQGEN_;
-        gmx_bool                                           bWarned_;
-        double                                             qtotal_;
-        double                                             chieq_;
-        gmx_bool                                           bAllocSave_;
-        gmx_bool                                           bHaveShell_;
-        ChargeType                                         ChargeType_;
-        int                                                natom_;
-        std::vector<int>                                   atomnr_;
-        std::vector<double>                                chi0_, rhs_, jaa_, q0_;
-        std::vector<gmx::RVec>                             x_;   
-        std::vector<Identifier>                            id_;
+        eQgen                            eQGEN_       = eQgen::OK;
+        gmx_bool                         bWarned_     = false;
+        double                           qtotal_      = 0;
+        gmx_bool                         bHaveShell_  = false;
+        ChargeType                       ChargeType_  = ChargeType::Point;
+        int                              natom_       = 0;
+        std::vector<int>                 atomnr_;
+        std::vector<double>              chi0_, rhs_, jaa_;
+        std::vector<gmx::RVec>           x_;   
+        std::vector<Identifier>          id_;
         //! The atoms/shells to optimize charges for
-        std::vector<int>                                   nonFixed_;
+        std::vector<int>                 nonFixed_;
         //! The atoms/shells not to optimize charges for
-        std::vector<int>                                   fixed_;
+        std::vector<int>                 fixed_;
         //! Reverse mapping of the charges
-        std::map<int, int>                                 nfToGromacs_;
+        std::map<int, int>               nfToGromacs_;
         //! Mapping from nonFixed particles to shells
-        std::map<int, int>                                 myShell_;
-        std::vector<int>                                   row_;       
-        std::vector<double>                                q_, zeta_, qsave_, zetasave_;
-        std::vector<std::vector<double>>                   Jcc_;
+        std::map<int, int>               myShell_;
+        std::vector<int>                 row_;       
+        std::vector<double>              q_, zeta_, qsave_, zetasave_;
+        std::vector<std::vector<double>> Jcc_;
 
         /*! \brief Re-read the EEM parameters from the FF
          *

@@ -243,7 +243,7 @@ static void add_angle(FILE *fplog, const char *molname, t_bonds *b,
                       double refValue, double spacing, InteractionType iType)
 {
     lo_add_angle(fplog, molname,
-                 (eitANGLES == iType) ? b->angle : b->linangle,
+                 (InteractionType::ANGLES == iType) ? b->angle : b->linangle,
                  a1, a2, a3, refValue, spacing, iType);
 }
 
@@ -263,7 +263,7 @@ static void lo_add_dih(FILE *fplog, const char *molname,
     {
         angle += 360;
     }
-    if (iType == eitIMPROPER_DIHEDRALS)
+    if (iType == InteractionType::IMPROPER_DIHEDRALS)
     {
         while (angle > 176)
         {
@@ -327,7 +327,7 @@ static void add_dih(FILE *fplog, const char *molname, t_bonds *b,
                     double angle, double spacing, InteractionType iType)
 {
     lo_add_dih(fplog, molname,
-               (eitPROPER_DIHEDRALS == iType) ? b->dih : b->imp,
+               (InteractionType::PROPER_DIHEDRALS == iType) ? b->dih : b->imp,
                a1, a2, a3, a4, angle, spacing, iType);
 }
 
@@ -444,7 +444,7 @@ static void update_pd(FILE          *fp,
                       real           angle_tol,
                       real           factor)
 {
-    std::vector<InteractionType> myIt = { eitBONDS, eitANGLES, eitLINEAR_ANGLES, eitPROPER_DIHEDRALS, eitIMPROPER_DIHEDRALS };
+    std::vector<InteractionType> myIt = { InteractionType::BONDS, InteractionType::ANGLES, InteractionType::LINEAR_ANGLES, InteractionType::PROPER_DIHEDRALS, InteractionType::IMPROPER_DIHEDRALS };
     int                          N;
     real                         av, sig;
 
@@ -456,7 +456,7 @@ static void update_pd(FILE          *fp,
     
         switch (iType)
         {
-        case eitBONDS:
+        case InteractionType::BONDS:
             // Note that the order of parameters is important!
             for (auto &i : b->bond)
             {
@@ -476,7 +476,7 @@ static void update_pd(FILE          *fp,
                         bondId.id().c_str(), av, sig, N, (sig > bond_tol) ? " WARNING" : "");
             }
         break;
-        case eitANGLES:
+        case InteractionType::ANGLES:
             for (auto &i : b->angle)
             {
                 gmx_stats_get_average(i.lsq, &av);
@@ -500,7 +500,7 @@ static void update_pd(FILE          *fp,
                         bondId.id().c_str(), av, sig, N, (sig > angle_tol) ? " WARNING" : "");
             }
             break;
-        case eitLINEAR_ANGLES:
+        case InteractionType::LINEAR_ANGLES:
             for (auto &i : b->linangle)
             {
                 gmx_stats_get_average(i.lsq, &av);
@@ -518,7 +518,7 @@ static void update_pd(FILE          *fp,
                         bondId.id().c_str(), av, sig, N, (sig > angle_tol) ? " WARNING" : "");
             }
             break;
-        case eitPROPER_DIHEDRALS:
+        case InteractionType::PROPER_DIHEDRALS:
             for (auto &i : b->dih)
             {
                 Identifier bondId({i.a1, i.a2, i.a3, i.a4}, CanSwap::Yes);
@@ -558,7 +558,7 @@ static void update_pd(FILE          *fp,
                         bondId.id().c_str(), av, sig);
             }
             break;
-        case eitIMPROPER_DIHEDRALS:
+        case InteractionType::IMPROPER_DIHEDRALS:
             for (auto &i : b->imp)
             {
                 gmx_stats_get_average(i.lsq, &av);
@@ -652,7 +652,6 @@ int alex_bastat(int argc, char *argv[])
     };
 
     FILE                            *fp;
-    ChargeType                       iType;
     time_t                           my_t;
     t_bonds                         *bonds = new(t_bonds);
     rvec                             dx, dx2, r_ij, r_kj, r_kl, mm, nn;
@@ -700,8 +699,6 @@ int alex_bastat(int argc, char *argv[])
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
     // This a hack to prevent that no bonds will be found to shells.
-    iType = pd.chargeType();
-    pd.setChargeType(eqtPoint);
     bool polar = pd.polarizable();
     pd.setPolarizable(false);
 
@@ -779,7 +776,7 @@ int alex_bastat(int argc, char *argv[])
                 auto funcType = fs.second.fType();
                 switch (iType)
                 {
-                case eitBONDS:
+                case InteractionType::BONDS:
                     {
                         for (auto j = 0; j < mmi.ltop_->idef.il[funcType].nr;
                              j += interaction_function[funcType].nratoms+1)
@@ -817,8 +814,8 @@ int alex_bastat(int argc, char *argv[])
                         }
                     }
                     break;
-                case eitANGLES:
-                case eitLINEAR_ANGLES:
+                case InteractionType::ANGLES:
+                case InteractionType::LINEAR_ANGLES:
                     {
                         for (auto j = 0; j < mmi.ltop_->idef.il[funcType].nr;
                              j += interaction_function[funcType].nratoms+1)
@@ -841,7 +838,7 @@ int alex_bastat(int argc, char *argv[])
                             {
                                 add_angle(fp, mmi.getMolname().c_str(), bonds,
                                           cai, caj, cak, refValue, aspacing,
-                                          (linear) ? eitLINEAR_ANGLES : eitANGLES);
+                                          (linear) ? InteractionType::LINEAR_ANGLES : InteractionType::ANGLES);
                                 
                                 if (nullptr != debug)
                                 {
@@ -857,8 +854,8 @@ int alex_bastat(int argc, char *argv[])
                         }
                     }
                     break;
-                case eitPROPER_DIHEDRALS:
-                case eitIMPROPER_DIHEDRALS:
+                case InteractionType::PROPER_DIHEDRALS:
+                case InteractionType::IMPROPER_DIHEDRALS:
                     {
                         auto angle    = 0.0;
                         for (auto j = 0; j < mmi.ltop_->idef.il[funcType].nr;
@@ -907,7 +904,6 @@ int alex_bastat(int argc, char *argv[])
     update_pd(fp, bonds, &pd,
               Dm, beta, kt, klin, kp, kimp, kub,
               bond_tol, angle_tol, factor);
-    pd.setChargeType(iType);
     pd.setPolarizable(polar);
     writePoldata(opt2fn("-o", NFILE, fnm), &pd, compress);
     printf("Extracted %zu bondtypes, %zu angletypes, %zu linear-angletypes, %zu dihedraltypes and %zu impropertypes.\n",

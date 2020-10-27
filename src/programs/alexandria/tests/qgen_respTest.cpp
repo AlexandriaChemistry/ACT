@@ -120,8 +120,10 @@ class RespTest : public gmx::test::CommandLineTestBase
             int            qcycle      = 1;
             real           qtol        = 1e-3;
             std::string    tabFile;
+            auto qt = pd->findForcesConst(InteractionType::CHARGEDISTRIBUTION);
+            auto ct = name2ChargeType(qt.optionValue("chargetype"));
           
-            if (eqtSlater  == pd->chargeType())
+            if (ChargeType::Slater  == ct)
             {
                 const char *tabname =  "table.xvg";
                 inputrec.coulombtype = eelUSER;
@@ -146,7 +148,7 @@ class RespTest : public gmx::test::CommandLineTestBase
             }
             char buf[256];
             snprintf(buf, sizeof(buf), "qtotValuesEqdModel_%s",
-                     chargeTypeName(pd->chargeType()).c_str());
+                     chargeTypeName(ct).c_str());
             checker_.checkSequence(qtotValues.begin(),
                                    qtotValues.end(), buf);
         }

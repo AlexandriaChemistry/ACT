@@ -139,7 +139,7 @@ const std::string &Poldata::ztype2elem(const std::string &ztype) const
     {
         for (i = 0; i < alexandria_.size(); i++)
         {
-            if (alexandria_[i].id(eitELECTRONEGATIVITYEQUALIZATION).id() ==
+            if (alexandria_[i].id(InteractionType::ELECTRONEGATIVITYEQUALIZATION).id() ==
                 ztype)
             {
                 return alexandria_[i].getElem();
@@ -193,7 +193,7 @@ bool Poldata::atypeToPtype(const std::string &atype,
     auto ai = findAtype(atype);
     if (ai != alexandria_.end())
     {
-        ptype->assign(ai->id(eitPOLARIZATION).id());
+        ptype->assign(ai->id(InteractionType::POLARIZATION).id());
         return true;
     }
     return false;
@@ -234,7 +234,7 @@ void  Poldata::addVsite(const std::string &atype,
 
 void Poldata::checkForPolarizability()
 {
-    auto f = forces_.find(eitPOLARIZATION);
+    auto f = forces_.find(InteractionType::POLARIZATION);
     
     polarizable_ = (f != forces_.end() && f->second.numberOfParameters() > 0);
 }
@@ -257,7 +257,7 @@ bool Poldata::atypeToBtype(const std::string &atype,
     auto ai = findAtype(atype);
     if (ai != alexandria_.end())
     {
-        btype->assign(ai->id(eitBONDS).id());
+        btype->assign(ai->id(InteractionType::BONDS).id());
         return true;
     }
     return false;
@@ -269,7 +269,7 @@ bool Poldata::atypeToZtype(const std::string &atype,
     auto ai = findAtype(atype);
     if (ai != alexandria_.end())
     {
-        ztype->assign(ai->id(eitELECTRONEGATIVITYEQUALIZATION).id());
+        ztype->assign(ai->id(InteractionType::ELECTRONEGATIVITYEQUALIZATION).id());
         return true;
     }
     return false;
@@ -359,7 +359,6 @@ CommunicationStatus Poldata::Send(const t_commrec *cr, int dest)
         gmx_send_double(cr, dest, gtEpsilonR_);
         gmx_send_str(cr, dest, &vsite_angle_unit_);
         gmx_send_str(cr, dest, &vsite_length_unit_);
-        gmx_send_int(cr, dest, static_cast<int>(ChargeType_));
         gmx_send_int(cr, dest, static_cast<int>(ChargeGenerationAlgorithm_));
 
         /* Send Ffatype */
@@ -441,7 +440,6 @@ CommunicationStatus Poldata::Receive(const t_commrec *cr, int src)
         gtEpsilonR_           = gmx_recv_double(cr, src);
         gmx_recv_str(cr, src, &vsite_angle_unit_);
         gmx_recv_str(cr, src, &vsite_length_unit_);
-        ChargeType_                = static_cast<ChargeType>(gmx_recv_int(cr, src));
         ChargeGenerationAlgorithm_ = static_cast<ChargeGenerationAlgorithm>(gmx_recv_int(cr, src));
 
         /* Rceive Ffatype */
@@ -550,8 +548,8 @@ void Poldata::broadcast_eemprop(const t_commrec *cr)
     const int src = 0;
     /* Force Field Parameter Lists */
     std::vector<InteractionType> eemlist = 
-        { eitBONDCORRECTIONS,
-          eitELECTRONEGATIVITYEQUALIZATION };
+        { InteractionType::BONDCORRECTIONS,
+          InteractionType::ELECTRONEGATIVITYEQUALIZATION };
     if (MASTER(cr))
     {
         for (auto dest = 1; dest < cr->nnodes; dest++)
@@ -661,14 +659,18 @@ void Poldata::checkConsistency(FILE *fp) const
 {
     int  nerror = 0;
     auto cga    = chargeGenerationAlgorithm();
-    if (cga == eqgNONE || cga == eqgESP)
+    if (cga == ChargeGenerationAlgorithm::NONE || cga == ChargeGenerationAlgorithm::ESP)
     {
         return;
     }
-    auto eem = findForcesConst(eitELECTRONEGATIVITYEQUALIZATION);
+    auto eem = findForcesConst(InteractionType::ELECTRONEGATIVITYEQUALIZATION);
     for (auto atp = getAtypeBegin(); atp < getAtypeEnd(); ++atp)
     {
-        auto atype = atp->id(eitELECTRONEGATIVITYEQUALIZATION);
+        auto atype = atp->id(InteractionType::ELECTRONEGATIVITYEQUALIZATION);
+        if (atype.id().empty())
+        {
+            continue;
+        }
         // Check whether zeta types are present
         if (!eem.parameterExists(atype))
         {
@@ -687,7 +689,7 @@ void Poldata::checkConsistency(FILE *fp) const
             {
                 fprintf(fp, "chi0 %g J00 %g", chi0, J00);
             }
-            double zeta = eep["zeta"].value();
+            double zeta = 0;//eep["zeta"].value();
             int    row  = eep["row"].value();
             double q    = eep["charge"].value();
             if (nullptr != fp)

@@ -43,7 +43,7 @@
 namespace alexandria
 {
 
-enum CanSwap { No, Yes };
+enum class CanSwap { No, Yes };
 
 /*! \brief Convert string to CanSwap
  * \param[in] str The string

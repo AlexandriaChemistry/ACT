@@ -407,7 +407,7 @@ static void calc_vsite2parm(t_atoms                   *atoms,
     pp.a[0] = gvl->a[0];
     pp.a[1] = natoms;
     pp.c[0] = rVV;
-    add_param_to_plist(plist, F_CONSTR, eitCONSTR, pp);
+    add_param_to_plist(plist, F_CONSTR, InteractionType::CONSTR, pp);
 
     /* Add vsites */
     for (i = 1; (i < gvl->nline); i++)
@@ -417,7 +417,7 @@ static void calc_vsite2parm(t_atoms                   *atoms,
         pp.a[1] = gvl->a[0];
         pp.a[2] = natoms;
         pp.c[0] = ac[i];
-        add_param_to_plist(plist, F_VSITE2, eitVSITE2, pp);
+        add_param_to_plist(plist, F_VSITE2, InteractionType::VSITE2, pp);
     }
 }
 
@@ -519,7 +519,7 @@ static void set_linear_angle_params(const int                  atoms[],
     t_param pp;
     bool    found = false;
 
-    auto    pangle = SearchPlist(plist, eitANGLES);
+    auto    pangle = SearchPlist(plist, InteractionType::ANGLES);
 
     if (plist.end() == pangle)
     {
@@ -538,7 +538,7 @@ static void set_linear_angle_params(const int                  atoms[],
             {
                 pp.a[i] = atoms[i];
             }
-            add_param_to_plist(plist, F_LINEAR_ANGLES, eitLINEAR_ANGLES, pp);
+            add_param_to_plist(plist, F_LINEAR_ANGLES, InteractionType::LINEAR_ANGLES, pp);
             found = true;
             break;
         }
@@ -632,7 +632,7 @@ void GentopVsites::gen_Vsites(const Poldata             *pd,
                             vs.a[3] = renum[inplane->bbca2()];                            
                             vs.c[0] = aijl;
                         }
-                        add_param_to_plist(plist, F_VSITE3FAD, eitVSITE3FAD, vs);
+                        add_param_to_plist(plist, F_VSITE3FAD, InteractionType::VSITE3FAD, vs);
                     }                                                
                 }
             }
@@ -653,9 +653,9 @@ void GentopVsites::gen_Vsites(const Poldata             *pd,
                         Identifier bondId1({j, k}, CanSwap::No);
                         Identifier bondId2({j, l}, CanSwap::No);
                         
-                        auto fpAkjl = pd->findForcesConst(eitANGLES).findParameterTypeConst(angleId, "angle");
-                        auto fpBjk  = pd->findForcesConst(eitBONDS).findParameterTypeConst(bondId1, "bond");
-                        auto fpBjl  = pd->findForcesConst(eitBONDS).findParameterTypeConst(bondId2, "bond");
+                        auto fpAkjl = pd->findForcesConst(InteractionType::ANGLES).findParameterTypeConst(angleId, "angle");
+                        auto fpBjk  = pd->findForcesConst(InteractionType::BONDS).findParameterTypeConst(bondId1, "bond");
+                        auto fpBjl  = pd->findForcesConst(InteractionType::BONDS).findParameterTypeConst(bondId2, "bond");
                         
                         bjk  = convertToGromacs(fpBjk.value(), lengthUnit);
                         bjl  = convertToGromacs(fpBjl.value(), lengthUnit);
@@ -682,7 +682,7 @@ void GentopVsites::gen_Vsites(const Poldata             *pd,
                             {
                                 vs.c[2] = (-1)*c;
                             }
-                            add_param_to_plist(plist, F_VSITE3OUT, eitVSITE3OUT, vs);
+                            add_param_to_plist(plist, F_VSITE3OUT, InteractionType::VSITE3OUT, vs);
                         }
                     }
                 }
@@ -888,11 +888,11 @@ void GentopVsites::generateSpecial(const Poldata              *pd,
 
     mergeLinear(bUseVsites);
 
-    ftb     = pd->findForcesConst(eitBONDS).fType();
-    fta     = pd->findForcesConst(eitANGLES).fType();
-    ftl     = pd->findForcesConst(eitLINEAR_ANGLES).fType();
-    ftp     = pd->findForcesConst(eitPROPER_DIHEDRALS).fType();
-    fti     = pd->findForcesConst(eitIMPROPER_DIHEDRALS).fType();
+    ftb     = pd->findForcesConst(InteractionType::BONDS).fType();
+    fta     = pd->findForcesConst(InteractionType::ANGLES).fType();
+    ftl     = pd->findForcesConst(InteractionType::LINEAR_ANGLES).fType();
+    ftp     = pd->findForcesConst(InteractionType::PROPER_DIHEDRALS).fType();
+    fti     = pd->findForcesConst(InteractionType::IMPROPER_DIHEDRALS).fType();
 
     nlin_at = 0;
     for (unsigned int i = 0; (i < linear_.size()); i++)
@@ -1017,7 +1017,7 @@ void GentopVsites::generateSpecial(const Poldata              *pd,
             {
                 pp.a[j] = planar_[i].a[j];
             }
-            add_param_to_plist(plist, F_IDIHS, eitIMPROPER_DIHEDRALS, pp);
+            add_param_to_plist(plist, F_IDIHS, InteractionType::IMPROPER_DIHEDRALS, pp);
         }
     }
     if (bUseVsites && (inplane_.size() > 0 || outplane_.size() > 0))

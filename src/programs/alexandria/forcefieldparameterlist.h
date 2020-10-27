@@ -103,7 +103,7 @@ class ForceFieldParameterList
      * \return Value
      * \throws gmx::InvalidInputError if the option is non-existent
      */
-    const std::string &optionValue(const std::string option) const
+    const std::string &optionValue(const std::string &option) const
     {
         auto ov = options_.find(option);
         if (ov == options_.end())

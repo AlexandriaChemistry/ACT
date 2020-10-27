@@ -58,25 +58,33 @@ Ffatype::Ffatype(const std::string &desc,
                  const std::string &ptype,
                  const std::string &btype,
                  const std::string &ztype,
+                 const std::string &acmtype,
                  const std::string &elem,
                  double             mass,
                  int                atomnumber,
+                 double             charge,
+                 int                row,
+                 Mutability         mutability,
                  const std::string &refEnthalpy) :
     desc_(desc), type_(type),
     elem_(elem),
     refEnthalpy_(refEnthalpy),
     mass_(mass),
-    atomnumber_(atomnumber)
+    atomnumber_(atomnumber),
+    charge_(charge),
+    row_(row),
+    mutability_(mutability)
 {
-    subType_.insert({eitVDW, type});
-    subType_.insert({eitPOLARIZATION, ptype});
-    for(auto &it : {eitBONDS, eitANGLES, eitLINEAR_ANGLES,
-                    eitPROPER_DIHEDRALS,  eitIMPROPER_DIHEDRALS })
+    subType_.insert({InteractionType::VDW, type});
+    subType_.insert({InteractionType::POLARIZATION, ptype});
+    for(auto &it : {InteractionType::BONDS, InteractionType::ANGLES, InteractionType::LINEAR_ANGLES,
+                    InteractionType::PROPER_DIHEDRALS,  InteractionType::IMPROPER_DIHEDRALS })
     {
         subType_.insert({it, btype});
     }
-    subType_.insert({eitELECTRONEGATIVITYEQUALIZATION, ztype});
-    subType_.insert({eitBONDCORRECTIONS, ztype});
+    subType_.insert({InteractionType::CHARGEDISTRIBUTION, ztype});
+    subType_.insert({InteractionType::ELECTRONEGATIVITYEQUALIZATION, acmtype});
+    subType_.insert({InteractionType::BONDCORRECTIONS, acmtype});
     if (type_.empty())
     {
         GMX_THROW(gmx::InternalError(gmx::formatString("Trying to a type with no name. ptype = %s btype = %s ztype = %s.",
@@ -154,8 +162,8 @@ CommunicationStatus Ffatype::Send(const t_commrec *cr, int dest)
         {
             fprintf(debug, "Sent Fftype %s %s %s %s %s %s, status %s\n",
                     desc_.c_str(), type_.c_str(), 
-                    subType_[eitBONDS].c_str(),
-                    subType_[eitPOLARIZATION].c_str(),
+                    subType_[InteractionType::BONDS].c_str(),
+                    subType_[InteractionType::POLARIZATION].c_str(),
                     elem_.c_str(), 
                     refEnthalpy_.c_str(), cs_name(cs));
             fflush(debug);
@@ -192,8 +200,8 @@ CommunicationStatus Ffatype::Receive(const t_commrec *cr, int src)
         {
             fprintf(debug, "Received Fftype %s %s %s %s %s %s, status %s\n",
                     desc_.c_str(), type_.c_str(), 
-                    subType_[eitBONDS].c_str(),
-                    subType_[eitPOLARIZATION].c_str(),
+                    subType_[InteractionType::BONDS].c_str(),
+                    subType_[InteractionType::POLARIZATION].c_str(),
                     elem_.c_str(), 
                     refEnthalpy_.c_str(), cs_name(cs));
             fflush(debug);

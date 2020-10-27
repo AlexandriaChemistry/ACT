@@ -108,7 +108,7 @@ static void merge_parameter(const std::vector<alexandria::Poldata> &pds,
         for (const auto& pd : pds)
         {
             auto fs    = pd.findForcesConst(iType);
-            auto ztype = atp->id(alexandria::eitELECTRONEGATIVITYEQUALIZATION);
+            auto ztype = atp->id(alexandria::InteractionType::ELECTRONEGATIVITYEQUALIZATION);
             auto ei    = fs.findParametersConst(ztype);
             gmx_stats_add_point(lsq[j], 0, ei[parameter].value(), 0, 0);
         }
@@ -120,7 +120,7 @@ static void merge_parameter(const std::vector<alexandria::Poldata> &pds,
          atp < pdout->getAtypeEnd(); atp++, j++)
     {
         auto fs      = pdout->findForces(iType);
-        auto ztype   = atp->id(alexandria::eitELECTRONEGATIVITYEQUALIZATION);
+        auto ztype   = atp->id(alexandria::InteractionType::ELECTRONEGATIVITYEQUALIZATION);
         auto ei      = fs->findParameters(ztype);
         real average = 0;
         real sigma   = 0;
@@ -208,22 +208,22 @@ int alex_merge_pd(int argc, char *argv[])
     EemAtomProps eem = name2eemprop(eemprop[0]);        
     if (eem == eEMEta || eem == eEMAll)
     {
-        merge_parameter(pds, alexandria::eitELECTRONEGATIVITYEQUALIZATION,
+        merge_parameter(pds, alexandria::InteractionType::ELECTRONEGATIVITYEQUALIZATION,
                         "jaa", &pdout);
     }
     if (eem == eEMChi || eem == eEMAll)
     {
-        merge_parameter(pds, alexandria::eitELECTRONEGATIVITYEQUALIZATION,
+        merge_parameter(pds, alexandria::InteractionType::ELECTRONEGATIVITYEQUALIZATION,
                         "chi", &pdout);
     }
     if (eem == eEMAlpha || eem == eEMAll)
     {
-        merge_parameter(pds, alexandria::eitPOLARIZATION,
+        merge_parameter(pds, alexandria::InteractionType::POLARIZATION,
                         "alpha", &pdout);
     }
     if (eem == eEMZeta || eem == eEMAll)
     {
-        merge_parameter(pds, alexandria::eitELECTRONEGATIVITYEQUALIZATION,
+        merge_parameter(pds, alexandria::InteractionType::ELECTRONEGATIVITYEQUALIZATION,
                         "zeta", &pdout);
     }
     if (eem == eEMNR)

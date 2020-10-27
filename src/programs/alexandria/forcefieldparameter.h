@@ -41,30 +41,10 @@
 
 #include "communication.h"
 #include "gmx_simple_comm.h"
+#include "mutability.h"
 
 namespace alexandria
 {
-
-//! \brief Enum determining whether a parameter can be changed
-enum class Mutability
-{
-    Fixed,
-    Dependent,
-    Bounded,
-    Free
-};
-
-/*! \brief Return a string corresponding to the mutability
- */
-const std::string &mutabilityName(Mutability mutability);
-
-/*! \brief Lookup a string and return mutability value
- *
- * \param[in]  name       String
- * \param[out] mutability Point to Mutability encoded in the string
- * \return true if the name could be converted to a Mutability, false otherwise
- */
-bool nameToMutability(const std::string &name, Mutability *mutability);
 
 /*! \brief Class to hold one force field parameter
  */

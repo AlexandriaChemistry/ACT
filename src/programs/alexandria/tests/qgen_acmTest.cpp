@@ -89,7 +89,6 @@ class AcmTest : public gmx::test::CommandLineTestBase
         {
             int                   maxpot    = 100;
             int                   nsymm     = 0;
-            const char           *dihopt[]  = { nullptr, "No", "Single", "All", nullptr };
             const char           *molnm     = (char *)"1-butanol";
             const char           *iupac     = (char *)"1-butanol";
             const char           *conf      = (char *)"minimum";
@@ -123,7 +122,6 @@ class AcmTest : public gmx::test::CommandLineTestBase
 
             mp_.Merge(&molprop);
             // Generate charges and topology
-            eDih            edih       = (eDih) get_option(dihopt);
             t_inputrec      inputrecInstance;
             t_inputrec     *inputrec   = &inputrecInstance;
             fill_inputrec(inputrec);
@@ -132,7 +130,7 @@ class AcmTest : public gmx::test::CommandLineTestBase
             // Get poldata
             auto pd  = getPoldata(model);
             auto imm = mp_.GenerateTopology(pd, method, basis, nullptr,
-                                            false, false, edih, false, nullptr);
+                                            false, false, false, false, nullptr);
             if (immStatus::OK != imm)
             {
                 fprintf(stderr, "Error generating topology: %s\n", immsg(imm));

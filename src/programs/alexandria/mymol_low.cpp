@@ -289,8 +289,8 @@ real calc_r13(const Poldata     *pd,
     Identifier ajk ({aaj, aak}, CanSwap::Yes);
 
     std::string type("bondlength");
-    auto bij = pd->findForcesConst(eitBONDS).findParameterTypeConst(aij, type);
-    auto bjk = pd->findForcesConst(eitBONDS).findParameterTypeConst(ajk, type);
+    auto bij = pd->findForcesConst(InteractionType::BONDS).findParameterTypeConst(aij, type);
+    auto bjk = pd->findForcesConst(InteractionType::BONDS).findParameterTypeConst(ajk, type);
 
     r12 = convertToGromacs(bij.value(), bij.unit());
     r23 = convertToGromacs(bjk.value(), bjk.unit());
@@ -311,8 +311,8 @@ real calc_relposition(const Poldata     *pd,
     Identifier ajk({aaj, aak}, CanSwap::Yes);
 
     std::string type("bondlength");
-    auto bij = pd->findForcesConst(eitBONDS).findParameterTypeConst(aij, type);
-    auto bjk = pd->findForcesConst(eitBONDS).findParameterTypeConst(ajk, type);
+    auto bij = pd->findForcesConst(InteractionType::BONDS).findParameterTypeConst(aij, type);
+    auto bjk = pd->findForcesConst(InteractionType::BONDS).findParameterTypeConst(ajk, type);
 
     b0 = convertToGromacs(bij.value(), bij.unit());
     b1 = convertToGromacs(bjk.value(), bjk.unit());
@@ -354,7 +354,7 @@ immStatus updatePlist(const Poldata             *pd,
             if (bondNamesOK)
             {
                 Identifier bondId;
-                if (eitBONDS == iType)
+                if (InteractionType::BONDS == iType)
                 {
                     bondId = Identifier(bondAtomType,
                                         pw->bondOrder(bondOrder_index++),
@@ -376,11 +376,11 @@ immStatus updatePlist(const Poldata             *pd,
                 {
                     errors->push_back(gmx::formatString("Could not find bond/angle/dihedral information for %s in %s - ftype %s\n",
                                                         bondId.id().c_str(), molname.c_str(), interaction_function[fs.fType()].longname).c_str());
-                    if (iType == eitBONDS)
+                    if (iType == InteractionType::BONDS)
                     {
                         return immStatus::NotSupportedBond;
                     }
-                    else if (iType ==  eitANGLES)
+                    else if (iType ==  InteractionType::ANGLES)
                     {
                         return immStatus::NotSupportedAngle;
                     }
@@ -433,7 +433,7 @@ static void getLjParams(const Poldata     *pd,
                         double            *c6,
                         double            *cn)
 {
-    auto fa       = pd->findForcesConst(eitVDW);
+    auto fa       = pd->findForcesConst(InteractionType::VDW);
     Identifier idI({ai}, CanSwap::Yes); 
     Identifier idJ({aj}, CanSwap::Yes); 
     auto sigmaI   = fa.findParameterTypeConst(idI, "sigma").value();
@@ -481,7 +481,7 @@ static void getBhamParams(const Poldata     *pd,
                           double            *b,
                           double            *c)
 {
-    auto fa       = pd->findForcesConst(eitVDW);
+    auto fa       = pd->findForcesConst(InteractionType::VDW);
     Identifier idI({ai}, CanSwap::Yes);
     Identifier idJ({aj}, CanSwap::Yes);
     auto sigmaI   = fa.findParameterTypeConst(idI, "sigma").value();
@@ -536,7 +536,7 @@ void nonbondedFromPdToMtop(gmx_mtop_t    *mtop,
     {
         mtop->ffparams.iparams.resize(ntype2, {});
     }
-    auto forcesVdw = pd->findForcesConst(eitVDW);
+    auto forcesVdw = pd->findForcesConst(InteractionType::VDW);
     auto ftypeVdW  = forcesVdw.fType();
     typedef struct
     {
@@ -646,7 +646,7 @@ void polarizabilityFromPdToMtop(gmx_mtop_t     *mtop,
         if (pd->atypeToPtype(*atoms->atomtype[ai], &ptype))
         {
             Identifier idS({ptype}, CanSwap::No);
-            auto param = pd->findForcesConst(eitPOLARIZATION).findParameterTypeConst(idS, "alpha");
+            auto param = pd->findForcesConst(InteractionType::POLARIZATION).findParameterTypeConst(idS, "alpha");
             auto alpha = param.value();
             auto unit  = param.unit(); 
             mtop->ffparams.iparams[tp].polarize.alpha =
@@ -892,7 +892,7 @@ void write_zeta_q(FILE       *fp,
     fprintf(fp, "; charge as well. The final charge is different between atoms however,\n");
     fprintf(fp, "; and it is listed below in the [ atoms ] section.\n");
     fprintf(fp, "; atype stype  nq%s      zeta          q  ...\n",
-            (eqtSlater == iChargeType) ? "  row" : "");
+            (ChargeType::Slater == iChargeType) ? "  row" : "");
 
     k = -1;
     for (i = 0; (i < atoms->nr); i++)
@@ -925,7 +925,7 @@ void write_zeta_q(FILE       *fp,
                     atoms->atom[i].qB = q;
                 if (!bTypeSet)
                 {
-                    if (eqtSlater == iChargeType)
+                    if (ChargeType::Slater == iChargeType)
                     {
                         fprintf(fp, "  %4d", row);
                     }
@@ -1061,15 +1061,15 @@ void write_top(FILE                            *out,
         {
             auto iType = fs.first;
             auto fType = fs.second.fType();
-            if (eitBONDS == fs.first)
+            if (InteractionType::BONDS == fs.first)
             {
                 print_bondeds(out, d_bonds, fType, fType, plist);
             }
-            else if (eitANGLES == iType || eitLINEAR_ANGLES == iType)
+            else if (InteractionType::ANGLES == iType || InteractionType::LINEAR_ANGLES == iType)
             {
                 print_bondeds(out, d_angles, fType, fType, plist);
             }
-            else if (eitPROPER_DIHEDRALS == iType || eitIMPROPER_DIHEDRALS == iType)
+            else if (InteractionType::PROPER_DIHEDRALS == iType || InteractionType::IMPROPER_DIHEDRALS == iType)
             {
                 print_bondeds(out, d_dihedrals, fType, fType, plist);
             }
@@ -1101,7 +1101,8 @@ void print_top_header(FILE                    *fp,
     std::string   gt_old, gt_type;
     int           atomnumber;
     real          mass;
-    ChargeType    iChargeType = pd->chargeType();
+    auto qt          = pd->findForcesConst(InteractionType::CHARGEDISTRIBUTION);
+    auto iChargeType = name2ChargeType(qt.optionValue("chargetype"));
 
     fprintf(fp, ";\n");
     fprintf(fp, "; Topology generated by alexandria gentop.\n");
@@ -1115,13 +1116,13 @@ void print_top_header(FILE                    *fp,
     {
         fprintf(fp, "[ defaults ]\n");
         fprintf(fp, "; nbfunc         comb-rule       gen-pairs       fudgeLJ     fudgeQQ\n");
-        auto ftype = pd->findForcesConst(eitVDW).fType();
+        auto ftype = pd->findForcesConst(InteractionType::VDW).fType();
         std::string ff;
         if (ftype == F_LJ)
         {
             ff.assign("LJ");
         }
-        auto combRule = getCombinationRule(pd->findForcesConst(eitVDW));
+        auto combRule = getCombinationRule(pd->findForcesConst(InteractionType::VDW));
         fprintf(fp, "%-15s  %-15s no           %10g  %10g\n\n",
                 ff.c_str(),
                 ecomb_names[combRule],
@@ -1134,18 +1135,18 @@ void print_top_header(FILE                    *fp,
 
         gt_old = "";
 
-        auto vdw = pd->findForcesConst(eitVDW);
+        auto vdw = pd->findForcesConst(InteractionType::VDW);
         for (auto aType = pd->getAtypeBegin(); aType != pd->getAtypeEnd(); aType++)
         {
             gt_type    = aType->getType();
-            auto btype = aType->id(eitBONDS);
+            auto btype = aType->id(InteractionType::BONDS);
             if (gmx_atomprop_query(aps, epropMass, "", aType->getElem().c_str(), &mass))
             {
                 atomnumber = gmx_atomprop_atomnumber(aps, aType->getElem().c_str());
                 if ((0 ==  gt_old.size()) || (gt_old.compare(gt_type) != 0))
                 {
-                    auto sgt_type= aType->id(eitPOLARIZATION);
-                    auto vdwtype = aType->id(eitVDW);
+                    auto sgt_type= aType->id(InteractionType::POLARIZATION);
+                    auto vdwtype = aType->id(InteractionType::VDW);
                     auto myvdw   = vdw.findParametersConst(vdwtype);
                     fprintf(fp, "%-6s %-6s %6d  %12.6f  %10.4f  A   %g %g %g %s\n",
                             gt_type.c_str(), btype.id().c_str(),
@@ -1176,40 +1177,24 @@ void print_top_header(FILE                    *fp,
             gt_old = gt_type;
         }
         fprintf(fp, "\n");
-        if (iChargeType != eqtPoint)
+        if (iChargeType != ChargeType::Point)
         {
-            auto eem = pd->findForcesConst(eitELECTRONEGATIVITYEQUALIZATION);
+            auto eem = pd->findForcesConst(InteractionType::CHARGEDISTRIBUTION);
             fprintf(fp, "[ distributed_charges ]\n");
             for (auto atype = pd->getAtypeBegin(); atype != pd->getAtypeEnd(); atype++)
             {
-                auto ztype     = atype->id(eitELECTRONEGATIVITYEQUALIZATION);
+                auto ztype     = atype->id(InteractionType::CHARGEDISTRIBUTION);
                 auto eep       = eem.findParametersConst(ztype);
-                auto shellName = atype->id(eitPOLARIZATION);
-                if (eqtSlater == iChargeType)
+                auto shellName = atype->id(InteractionType::POLARIZATION);
+                if (ChargeType::Slater == iChargeType)
                 {
-                    fprintf(fp, "%-7s  2  %g  %g\n", atype->getType().c_str(),
-                            eep["row"].value(), eep["zeta"].value());
-                    // TODO: Check whether this is necessary
-                    //if (polar)
-                    //{
-                    //  fprintf(fp, "%-7s  2  %d  %g\n", shellName.id().c_str(),
-                    //          eem->getRow(1), eem->getZeta(1));
-                    //}
+                    fprintf(fp, "%-7s  2  %d  %g\n", atype->getType().c_str(),
+                            atype->row(), eep["zeta"].value());
                 }
-                else if (eqtGaussian == iChargeType)
+                else if (ChargeType::Gaussian == iChargeType)
                 {
                     fprintf(fp, "%-7s  1  %g\n", atype->getType().c_str(),
                             eep["zeta"].value());
-                    // TODO see above
-                    //if (polar)
-                    //{
-                    //   fprintf(fp, "%-7s  1  %g\n", shellName.c_str(),
-                    //          eem->getZeta(1));
-                    //}
-                }
-                else
-                {
-                    GMX_RELEASE_ASSERT(false, "Incorrect charge distribution.");
                 }
             }
             fprintf(fp, "\n");

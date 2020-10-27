@@ -236,7 +236,7 @@ void MolGen::checkDataSufficiency(FILE *fp)
         }
         // TODO: Handle bonded interactions
         std::vector<InteractionType> atomicItypes = {
-            eitVDW, eitPOLARIZATION, eitELECTRONEGATIVITYEQUALIZATION
+            InteractionType::VDW, InteractionType::POLARIZATION, InteractionType::ELECTRONEGATIVITYEQUALIZATION
         };
         // Now loop over molecules and add interactions
         for(auto &mol : mymol_)
@@ -468,7 +468,7 @@ void MolGen::Read(FILE            *fp,
                                              nullptr,
                                              bGenVsite_,
                                              false,
-                                             optimize(eitPROPER_DIHEDRALS),
+                                             optimize(InteractionType::PROPER_DIHEDRALS),
                                              false,
                                              tabfn);
                 if (immStatus::OK != imm && debug)
@@ -517,7 +517,7 @@ void MolGen::Read(FILE            *fp,
 
             if (dest > 0)
             {
-                mymol.eSupp_ = eSupportRemote;
+                mymol.eSupp_ = eSupport::Remote;
                 if (nullptr != debug)
                 {
                     fprintf(debug, "Going to send %s to cpu %d\n", mymol.getMolname().c_str(), dest);
@@ -544,7 +544,7 @@ void MolGen::Read(FILE            *fp,
             }
             else
             {
-                mymol.eSupp_ = eSupportLocal;
+                mymol.eSupp_ = eSupport::Local;
                 nlocaltop   += 1;
             }
             if ((immStatus::OK != imm) && (nullptr != debug))
@@ -603,7 +603,7 @@ void MolGen::Read(FILE            *fp,
                                          nullptr,
                                          bGenVsite_,
                                          false,
-                                         optimize(eitPROPER_DIHEDRALS),
+                                         optimize(InteractionType::PROPER_DIHEDRALS),
                                          false,
                                          tabfn);
 
@@ -629,7 +629,7 @@ void MolGen::Read(FILE            *fp,
                 imm = mymol.getExpProps(bQM_, bZero, bZPE, bDHform,
                                         method, basis, &pd_);
             }
-            mymol.eSupp_ = eSupportLocal;
+            mymol.eSupp_ = eSupport::Local;
             incrementImmCount(&imm_count, imm);
             if (immStatus::OK == imm)
             {

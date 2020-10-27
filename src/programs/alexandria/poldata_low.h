@@ -43,6 +43,7 @@
 
 #include "communication.h"
 #include "identifier.h"
+#include "mutability.h"
 #include "plistwrapper.h"
 
 namespace alexandria
@@ -88,9 +89,13 @@ class Ffatype
          * \param[in] ptype       Polarizability type
          * \param[in] btype       Bond type
          * \param[in] ztype       Zeta type
+         * \param[in] acmtype     Alexandria Charge Model type
          * \param[in] elem        Element name
          * \param[in] mass        Mass of the particle
          * \param[in] atomnumber  Atomic number
+         * \param[in] charge      The charge on this particle
+         * \param[in] row         The row in the periodic table
+         * \param[in] mutability  Whether or not this charge can be changed
          * \param[in] refEnthalpy Reference Enthalpy of Formation
          */
         Ffatype(const std::string &desc,
@@ -98,9 +103,13 @@ class Ffatype
                 const std::string &ptype,
                 const std::string &btype,
                 const std::string &ztype,
+                const std::string &acmtype,
                 const std::string &elem,
                 double             mass,
                 int                atomnumber,
+                double             charge,
+                int                row,
+                Mutability         mutability,
                 const std::string &refEnthalpy);
 
         /*! \brief
@@ -134,6 +143,16 @@ class Ffatype
          */
         int atomnumber() const { return atomnumber_; }
     
+        /*! \brief Return charge
+         * \return charge of the particle
+         */
+        double charge() const { return charge_; }
+        
+        /*! \brief Return row in periodic table
+         * \return row
+         */
+        int row() const { return row_; }
+    
         /*! \brief
          * Return whether an identifier for an interaction type is present
          */
@@ -142,6 +161,10 @@ class Ffatype
             return subType_.find(iType) != subType_.end();
         }
 
+        /*! \brief
+         * Return whether or not this charge can be changed
+         */
+        Mutability mutability() const { return mutability_; }
         /*! \brief
          * Return the element name of atoms
          */
@@ -163,6 +186,9 @@ class Ffatype
         std::string refEnthalpy_;
         double      mass_;
         int         atomnumber_;
+        double      charge_;
+        int         row_;
+        Mutability  mutability_;
         std::map<InteractionType, const std::string> subType_;
 };
 

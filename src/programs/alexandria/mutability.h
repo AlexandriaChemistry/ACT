@@ -1,11 +1,11 @@
 /*
- * This source file is part of the Alexandria program.
+ * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2020
+ * Copyright (C) 2020 
  *
  * Developers:
- *             Mohammad Mehdi Ghahremanpour,
- *             Paul J. van Maaren,
+ *             Mohammad Mehdi Ghahremanpour, 
+ *             Paul J. van Maaren, 
  *             David van der Spoel (Project leader)
  *
  * This program is free software; you can redistribute it and/or
@@ -20,38 +20,44 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, 
  * Boston, MA  02110-1301, USA.
  */
-
+ 
 /*! \internal \brief
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include <gtest/gtest.h>
 
-#include "programs/alexandria/interactiontype.h"
+#ifndef MUTABILITY_H
+#define MUTABILITY_H
 
-#include "testutils/cmdlinetest.h"
-#include "testutils/refdata.h"
-#include "testutils/testasserts.h"
-#include "testutils/testfilemanager.h"
-
-#include "gromacs/utility/exceptions.h"
+#include <string>
 
 namespace alexandria
 {
 
-namespace
+//! \brief Enum determining whether a parameter can be changed
+enum class Mutability
 {
+    Fixed,
+    Dependent,
+    Bounded,
+    Free
+};
 
-TEST(InteractionTypeTest, stringToInteractionType) {
-    EXPECT_TRUE(stringToInteractionType("BONDCORRECTIONS") == InteractionType::BONDCORRECTIONS);
-    EXPECT_FALSE(stringToInteractionType("BONDS") == InteractionType::ANGLES);
-    InteractionType itype;
-    EXPECT_THROW(itype = stringToInteractionType("FOO"), gmx::InvalidInputError);
-}
+/*! \brief Return a string corresponding to the mutability
+ */
+const std::string &mutabilityName(Mutability mutability);
 
-}
+/*! \brief Lookup a string and return mutability value
+ *
+ * \param[in]  name       String
+ * \param[out] mutability Point to Mutability encoded in the string
+ * \return true if the name could be converted to a Mutability, false otherwise
+ */
+bool nameToMutability(const std::string &name, Mutability *mutability);
 
-}
+} // namespace alexandria
+
+#endif
