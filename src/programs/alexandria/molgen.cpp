@@ -236,7 +236,10 @@ void MolGen::checkDataSufficiency(FILE *fp)
         }
         // TODO: Handle bonded interactions
         std::vector<InteractionType> atomicItypes = {
-            InteractionType::VDW, InteractionType::POLARIZATION, InteractionType::ELECTRONEGATIVITYEQUALIZATION
+            InteractionType::VDW,
+            InteractionType::POLARIZATION,
+            InteractionType::CHARGEDISTRIBUTION,
+            InteractionType::ELECTRONEGATIVITYEQUALIZATION
         };
         // Now loop over molecules and add interactions
         for(auto &mol : mymol_)

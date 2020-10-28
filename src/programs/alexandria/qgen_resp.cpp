@@ -131,6 +131,10 @@ void QgenResp::setAtomInfo(t_atoms                          *atoms,
             qshell_ += q_[i];
         }
     }
+    if (atoms->nr == nFixed_)
+    {
+        GMX_THROW(gmx::InternalError(gmx::formatString("All %d atoms are fixed - no charges to fit", atoms->nr).c_str()));
+    }
 }
 
 void QgenResp::summary(FILE *fp)
@@ -179,7 +183,10 @@ void QgenResp::setAtomSymmetry(const std::vector<int> &symmetricAtoms)
             }
         }
     }
-    GMX_RELEASE_ASSERT(fitQ_ > 0, "No charges to fit");
+    if (fitQ_ == 0)
+    {
+        GMX_THROW(gmx::InternalError(gmx::formatString("No charges to fit. nAtom_ = %d", nAtom_).c_str()));
+    }
 }
 
 void QgenResp::writeHisto(const std::string      &fn,

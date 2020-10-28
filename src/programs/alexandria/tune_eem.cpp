@@ -300,15 +300,8 @@ double OptACM::calcDeviation()
         else
         {
             // Communicate the force field data.
-            if (fit("alpha"))
-            {
-                // TODO: Optimize to only do relevant stuff
-                poldata()->broadcast(commrec());
-            }
-            else
-            {
-                poldata()->broadcast_eemprop(commrec());
-            }
+            // TODO: Optimize to only do relevant stuff
+            poldata()->broadcast_eemprop(commrec());
         }
     }
     if (false && logFile())

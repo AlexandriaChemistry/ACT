@@ -549,6 +549,8 @@ void Poldata::broadcast_eemprop(const t_commrec *cr)
     /* Force Field Parameter Lists */
     std::vector<InteractionType> eemlist = 
         { InteractionType::BONDCORRECTIONS,
+          InteractionType::CHARGEDISTRIBUTION,
+          InteractionType::POLARIZATION,
           InteractionType::ELECTRONEGATIVITYEQUALIZATION };
     if (MASTER(cr))
     {

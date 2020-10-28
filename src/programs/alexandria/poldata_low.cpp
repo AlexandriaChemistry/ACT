@@ -157,20 +157,23 @@ CommunicationStatus Ffatype::Send(const t_commrec *cr, int dest)
         gmx_send_str(cr, dest, &elem_);
         gmx_send_double(cr, dest, mass_);
         gmx_send_int(cr, dest, atomnumber_);
+        gmx_send_double(cr, dest, charge_);
+        gmx_send_int(cr, dest, row_);
+        std::string mut = mutabilityName(mutability_);
+        gmx_send_str(cr, dest, &mut);
         gmx_send_str(cr, dest, &refEnthalpy_);
         if (nullptr != debug)
         {
-            fprintf(debug, "Sent Fftype %s %s %s %s %s %s, status %s\n",
+            fprintf(debug, "Sent Fftype %s %s %s %s %s %s %g %g %d %s, status %s\n",
                     desc_.c_str(), type_.c_str(), 
                     subType_[InteractionType::BONDS].c_str(),
                     subType_[InteractionType::POLARIZATION].c_str(),
-                    elem_.c_str(), 
+                    elem_.c_str(), mass_, charge_, row_, mut.c_str(),
                     refEnthalpy_.c_str(), cs_name(cs));
             fflush(debug);
         }
     }
     return cs;
-
 }
 
 CommunicationStatus Ffatype::Receive(const t_commrec *cr, int src)
@@ -194,15 +197,23 @@ CommunicationStatus Ffatype::Receive(const t_commrec *cr, int src)
         gmx_recv_str(cr, src, &elem_);
         mass_ = gmx_recv_double(cr, src);
         atomnumber_ = gmx_recv_int(cr, src);
+        charge_ = gmx_recv_double(cr, src);
+        row_ = gmx_recv_int(cr, src);
+        std::string mut;
+        gmx_recv_str(cr, src, &mut);
+        if (!nameToMutability(mut, &mutability_))
+        {
+            GMX_THROW(gmx::InternalError(gmx::formatString("Should not happen but did. mut = %s", mut.c_str()).c_str()));
+        }
         gmx_recv_str(cr, src, &refEnthalpy_);
 
         if (nullptr != debug)
         {
-            fprintf(debug, "Received Fftype %s %s %s %s %s %s, status %s\n",
+            fprintf(debug, "Received Fftype %s %s %s %s %s %s %g %g %d %s, status %s\n",
                     desc_.c_str(), type_.c_str(), 
                     subType_[InteractionType::BONDS].c_str(),
                     subType_[InteractionType::POLARIZATION].c_str(),
-                    elem_.c_str(), 
+                    elem_.c_str(), mass_, charge_, row_, mut.c_str(),
                     refEnthalpy_.c_str(), cs_name(cs));
             fflush(debug);
         }
