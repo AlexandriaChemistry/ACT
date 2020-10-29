@@ -209,7 +209,7 @@ CommunicationStatus Ffatype::Receive(const t_commrec *cr, int src)
 
         if (nullptr != debug)
         {
-            fprintf(debug, "Received Fftype %s %s %s %s %s %s %g %g %d %s, status %s\n",
+            fprintf(debug, "Received Fftype %s %s %s %s %s %g %g %d %s %s, status %s\n",
                     desc_.c_str(), type_.c_str(), 
                     subType_[InteractionType::BONDS].c_str(),
                     subType_[InteractionType::POLARIZATION].c_str(),
