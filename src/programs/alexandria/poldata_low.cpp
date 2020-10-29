@@ -164,7 +164,7 @@ CommunicationStatus Ffatype::Send(const t_commrec *cr, int dest)
         gmx_send_str(cr, dest, &refEnthalpy_);
         if (nullptr != debug)
         {
-            fprintf(debug, "Sent Fftype %s %s %s %s %s %s %g %g %d %s, status %s\n",
+            fprintf(debug, "Sent Fftype %s %s %s %s %s %g %g %d %s %s, status %s\n",
                     desc_.c_str(), type_.c_str(), 
                     subType_[InteractionType::BONDS].c_str(),
                     subType_[InteractionType::POLARIZATION].c_str(),
