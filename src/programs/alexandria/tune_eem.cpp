@@ -225,7 +225,7 @@ void OptACM::initChargeGeneration()
         if (fit("alpha"))
         {
             // For fitting alpha we need a reference polarizability
-            double ref_pol, error, T;
+            double ref_pol, error, T = 0;
             if (mymol.getPropRef(MPO_POLARIZABILITY, iqmQM,
                                  method, basis, "",
                                  (char *)"electronic",
@@ -238,7 +238,9 @@ void OptACM::initChargeGeneration()
             {
                 if (logFile())
                 {
-                    fprintf(logFile(), "Removing %s due to lacking reference polarizability.\n", mymol.getMolname().c_str());
+                    fprintf(logFile(), "Removing %s due to lacking reference polarizability at the %s/%s LoT.\n",
+                            mymol.getMolname().c_str(),
+                            method.c_str(), basis.c_str());
                 }
                 mymol.eSupp_ = eSupport::No;
             }
