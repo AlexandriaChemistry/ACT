@@ -1169,17 +1169,13 @@ immStatus MyMol::computeForces(FILE *fplog, t_commrec *cr, double *rmsf)
             enerd_->grpp.ener[j][i] = 0;
         }
     }
-    if (fplog)
-    {
-        fprintf(fplog, "Hi from node %d\n", cr->nodeid);
-    }
     restoreCoordinates();
     immStatus imm =  immStatus::OK;
     if (nullptr != shellfc_)
     {
-        if (fplog)
+        if (debug)
         {
-            fprintf(fplog, "cr->nodide %d mol %s alpha %g\n", cr->nodeid,
+            fprintf(debug, "cr->nodide %d mol %s alpha %g\n", cr->nodeid,
                     getMolname().c_str(),
                     mtop_->ffparams.iparams[mtop_->moltype[0].ilist[F_POLARIZATION].iatoms[0]].polarize.alpha);
         }
