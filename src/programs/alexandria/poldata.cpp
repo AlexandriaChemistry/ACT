@@ -360,7 +360,7 @@ CommunicationStatus Poldata::Send(const t_commrec *cr, int dest)
         gmx_send_str(cr, dest, &vsite_angle_unit_);
         gmx_send_str(cr, dest, &vsite_length_unit_);
         gmx_send_int(cr, dest, static_cast<int>(ChargeGenerationAlgorithm_));
-
+        gmx_send_int(cr, dest, polarizable_ ? 1 : 0);
         /* Send Ffatype */
         gmx_send_int(cr, dest, alexandria_.size());
         for (auto &alexandria : alexandria_)
@@ -441,7 +441,7 @@ CommunicationStatus Poldata::Receive(const t_commrec *cr, int src)
         gmx_recv_str(cr, src, &vsite_angle_unit_);
         gmx_recv_str(cr, src, &vsite_length_unit_);
         ChargeGenerationAlgorithm_ = static_cast<ChargeGenerationAlgorithm>(gmx_recv_int(cr, src));
-
+        polarizable_          = static_cast<bool>(gmx_recv_int(cr, src));
         /* Rceive Ffatype */
         size_t nalexandria = gmx_recv_int(cr, src);
         alexandria_.clear();

@@ -632,29 +632,6 @@ void nonbondedFromPdToMtop(gmx_mtop_t    *mtop,
     }
 }
 
-void polarizabilityFromPdToMtop(gmx_mtop_t     *mtop,
-                                gmx_localtop_t *ltop,
-                                t_atoms        *atoms,
-                                const Poldata  *pd,
-                                unsigned int    ft)
-{
-    for (auto i = 0; i < ltop->idef.il[ft].nr; i += interaction_function[ft].nratoms+1)
-    {
-        auto   tp      = ltop->idef.il[ft].iatoms[i];
-        auto   ai      = ltop->idef.il[ft].iatoms[i+1];
-        std::string ptype;
-        if (pd->atypeToPtype(*atoms->atomtype[ai], &ptype))
-        {
-            Identifier idS({ptype}, CanSwap::No);
-            auto param = pd->findForcesConst(InteractionType::POLARIZATION).findParameterTypeConst(idS, "alpha");
-            auto alpha = param.value();
-            auto unit  = param.unit(); 
-            mtop->ffparams.iparams[tp].polarize.alpha =
-                ltop->idef.iparams[tp].polarize.alpha = convertToGromacs(alpha, unit);
-        }
-    }
-}
-
 void plist_to_mtop(const std::vector<PlistWrapper> &plist,
                    gmx_mtop_t                      *mtop_)
 {

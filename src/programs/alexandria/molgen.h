@@ -170,7 +170,6 @@ class MolGen
         int                             qcycle_;
         real                            ener_[ermsNR] = { 0 };
         real                            fc_[ermsNR] = { 0 };
-        char                           *fixchi_;
         gmx_bool                        bQM_;
         gmx_bool                        bDone_;
         gmx_bool                        bFinal_;
@@ -262,9 +261,6 @@ class MolGen
         
         gmx_bool bConstrain() const { return constrain_;}
         
-        //! \brief The atom to fix
-        const char *fixchi() const { return fixchi_; }
-
         //! \brief Return ESP weighting factor for atoms
         real watoms() const { return watoms_; }
 
@@ -327,37 +323,12 @@ class MolGen
         }
 
         //! \brief Sum over the energies of the cores. 
-        void sumEnergies()
-        {
-            // Now sum over processors
-            if (PAR(commrec()) && !final())
-            {
-                gmx_sum(ermsNR, ener_, commrec());
-            }
-            ener_[ermsTOT] = 0;
-            for (auto e = 0; e < ermsTOT; e++)
-            {
-                ener_[ermsTOT] += fc_[e]*ener_[e];
-            }
-        }
+        void sumEnergies();
 
-        //! \brief Print the energy components.
-        void printEnergies(FILE *fp)
-        {
-            if (nullptr != fp && MASTER(commrec()))
-            {
-                fprintf(fp, "Components of fitting function\n");
-                for (int j = 0; j < ermsNR; j++)
-                {
-                    auto eee = energy(j);
-                    if (eee > 0)
-                    {
-                        fprintf(fp, "%-8s  %10.5f  weight: %g\n",
-                                rmsName(j), eee, fc_[j]);
-                    }
-                }
-            }
-        }
+        /*! \brief Print the energy components.
+         * \param[in] fp File pointer to print to, maybe nullptr
+         */  
+        void printEnergies(FILE *fp) const;
 
         /*! \brief Read the molecular property data file to generate molecues.
          * TODO: update comments

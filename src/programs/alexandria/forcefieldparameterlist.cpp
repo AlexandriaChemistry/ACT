@@ -176,6 +176,32 @@ ForceFieldParameterMap *ForceFieldParameterList::findParameters(const Identifier
     return &params->second;
 }
 
+void ForceFieldParameterList::dump(FILE *fp) const
+{
+    if (!fp)
+    {
+        return;
+    }
+    fprintf(fp, "Function: %s\n", function_.c_str());
+    fprintf(fp, "CanSwap: %s\n", canSwapToString(canSwap_).c_str());
+    fprintf(fp, "Ftype: %d\n", fType_);
+    for(const auto &opt : options_)
+    {
+        fprintf(fp, "Option: type='%s' value='%s'\n", opt.first.c_str(),
+                opt.second.c_str());
+    }
+    for(const auto &param : parameters_)
+    {
+        fprintf(fp, "Identifier: %s\n", param.first.id().c_str());
+        for(const auto &key: param.second)
+        {
+            fprintf(fp, "  Type: %s Value %g\n",
+                    key.first.c_str(),
+                    key.second.value());
+        }
+    }
+}
+
 CommunicationStatus ForceFieldParameterList::Send(const t_commrec *cr, int dest) const
 {
     CommunicationStatus cs;
@@ -214,6 +240,7 @@ CommunicationStatus ForceFieldParameterList::Send(const t_commrec *cr, int dest)
                 break;
             }
         }
+        gmx_send_int(cr, dest, counter_);
     }
     return cs;
 }
@@ -293,6 +320,7 @@ CommunicationStatus ForceFieldParameterList::Receive(const t_commrec *cr, int sr
                 break;
             }
         }
+        counter_ = gmx_recv_int(cr, src);
     }
     return cs;
 }

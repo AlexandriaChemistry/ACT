@@ -650,8 +650,8 @@ void print_header(FILE                       *fp,
     time_t my_t;
     time(&my_t);
     fprintf(fp, "# This file was created %s", ctime(&my_t));
-    fprintf(fp, "# alexandria is part of GROMACS:\n#\n");
-    fprintf(fp, "# %s\n#\n", gmx::bromacs().c_str());
+    fprintf(fp, "# alexandria is the engine of the Alexandria Chemistry Toolkit\n#\n");
+    fprintf(fp, "# https://github.com/dspoel/ACT\n#\n");
     fprintf(fp, "%-15s  %s\n", "Option", "Value");
     for (auto &p: pargs)
     {

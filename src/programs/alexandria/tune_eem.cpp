@@ -75,7 +75,7 @@ namespace alexandria
 
 static void my_fclose(FILE *fp)
 {
-    int myerrno = fclose(fp);
+    int myerrno = gmx_ffclose(fp);
     if (myerrno != 0)
     {
         fprintf(stderr, "Error %d closing file\n", myerrno);
@@ -145,7 +145,7 @@ class OptACM : public MolGen, Bayes
 
         void openLogFile(const char *logfileName)
         {
-            fplog_.reset(std::fopen(logfileName, "w"));
+            fplog_.reset(gmx_ffopen(logfileName, "w"));
         }
         
         FILE *logFile()
@@ -222,20 +222,31 @@ void OptACM::initChargeGeneration()
     rvec             vec;
     for (auto &mymol : mymols())
     {
-        if (mymol.eSupp_ != eSupport::No)
+        if (fit("alpha"))
         {
-            mymol.QgenAcm_ = new QgenAcm(poldata(),
-                                         mymol.atoms_,
-                                         mymol.getCharge());
+            // For fitting alpha we need a reference polarizability
             double ref_pol, error, T;
             if (mymol.getPropRef(MPO_POLARIZABILITY, iqmQM,
-                                            method, basis, "",
-                                            (char *)"electronic",
-                                            &ref_pol, &error, &T,
-                                            &myref, &mylot, vec, polar))
+                                 method, basis, "",
+                                 (char *)"electronic",
+                                 &ref_pol, &error, &T,
+                                 &myref, &mylot, vec, polar))
             {
                 mymol.SetElectronicPolarizability(ref_pol);
             }
+            else
+            {
+                if (logFile())
+                {
+                    fprintf(logFile(), "Removing %s due to lacking reference polarizability.\n", mymol.getMolname().c_str());
+                }
+                mymol.eSupp_ = eSupport::No;
+            }
+        }
+        if (mymol.eSupp_ != eSupport::No)
+        {
+            mymol.QgenAcm_ = new QgenAcm(poldata(), mymol.atoms_, 
+                                         mymol.getCharge());
         }
     }
 }
@@ -543,7 +554,7 @@ double OptACM::calcDeviation()
         }
     }
     sumEnergies();
-    if (false && logFile())
+    if (logFile())
     {
         printParameters(logFile());
         printEnergies(logFile());
@@ -731,12 +742,6 @@ int alex_tune_eem(int argc, char *argv[])
         "added if atoms from row VI or VII in the periodic table have a positive",
         "charge. The penalty is equal to the force constant given on the command line",
         "time the square of the charge.[PAR]",
-        "One of the electronegativities (chi) is redundant in the optimization,",
-        "only the relative values are meaningful.",
-        "Therefore by default we fix the value for hydrogen to what is written",
-        "in the eemprops.dat file (or whatever is given with the [tt]-d[TT] flag).",
-        "A suitable value would be 2.3, the original, value due to Pauling,",
-        "this can by overridden by setting the [tt]-fixchi[TT] flag to something else (e.g. a non-existing atom).[PAR]",
         "A selection of molecules into a training set and a test set (or ignore set)",
         "can be made using option [TT]-sel[tt]. The format of this file is:[BR]",
         "iupac|Train[BR]",
@@ -853,6 +858,12 @@ int alex_tune_eem(int argc, char *argv[])
     {
         opt.openLogFile(opt2fn("-g", NFILE, fnm));
         print_header(opt.logFile(), pargs);
+    }
+    else if (false)
+    {
+        std::string logf = gmx::formatString("log%d.log",
+                                             opt.commrec()->nodeid);
+        opt.openLogFile(logf.c_str());
     }
     
     if (MASTER(opt.commrec()))

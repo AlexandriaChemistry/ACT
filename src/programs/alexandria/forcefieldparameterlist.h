@@ -199,6 +199,11 @@ class ForceFieldParameterList
      */
     void eraseParameter() { parameters_.clear(); }
 
+    /*! \brief Dump contents to a file
+     * \param[in] fp File pointer
+     */
+    void dump(FILE *fp) const;
+    
     /*! \brief Send the contents to another processor
      * \param[in] cr   Communication data structure
      * \param[in] dest Processor id to send the data to

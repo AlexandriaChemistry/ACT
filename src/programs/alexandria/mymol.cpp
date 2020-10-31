@@ -798,8 +798,7 @@ immStatus MyMol::GenerateTopology(const Poldata     *pd,
         svmul((1.0/atntot), coc_, coc_);
         /* Center of charge */
 
-        bool bAddShells = pd->polarizable();
-        if (bAddShells)
+        if (pd->polarizable())
         {
             addShells(pd);
         }
@@ -808,7 +807,7 @@ immStatus MyMol::GenerateTopology(const Poldata     *pd,
         mtop_ = do_init_mtop(pd, molnameptr, atoms_, plist_,
                              inputrec_, symtab_, tabfn);
         excls_to_blocka(atoms_->nr, excls_, &(mtop_->moltype[0].excls));
-        if (bAddShells)
+        if (pd->polarizable())
         {
             // Update mtop internals to account for shell type
             srenew(mtop_->atomtypes.atomnumber,
@@ -831,6 +830,11 @@ immStatus MyMol::GenerateTopology(const Poldata     *pd,
     {
         UpdateIdef(pd, InteractionType::BONDS);
         UpdateIdef(pd, InteractionType::ANGLES);
+        if (pd->polarizable())
+        {
+            UpdateIdef(pd, InteractionType::POLARIZATION);
+        }
+        UpdateIdef(pd, InteractionType::LINEAR_ANGLES);
         UpdateIdef(pd, InteractionType::IMPROPER_DIHEDRALS);
         if (bDih)
         {
@@ -1165,10 +1169,20 @@ immStatus MyMol::computeForces(FILE *fplog, t_commrec *cr, double *rmsf)
             enerd_->grpp.ener[j][i] = 0;
         }
     }
+    if (fplog)
+    {
+        fprintf(fplog, "Hi from node %d\n", cr->nodeid);
+    }
     restoreCoordinates();
     immStatus imm =  immStatus::OK;
     if (nullptr != shellfc_)
     {
+        if (fplog)
+        {
+            fprintf(fplog, "cr->nodide %d mol %s alpha %g\n", cr->nodeid,
+                    getMolname().c_str(),
+                    mtop_->ffparams.iparams[mtop_->moltype[0].ilist[F_POLARIZATION].iatoms[0]].polarize.alpha);
+        }
         auto nnodes = cr->nnodes;
         cr->nnodes  = 1;
         real force2 = 0;
@@ -2265,7 +2279,12 @@ Identifier MyMol::getIdentifier(const Poldata                  *pd,
     std::vector<std::string> batoms;
     for (int j = 0; j < natoms; j++)
     {
-        batoms.push_back(btype[iatoms[j]]);
+        // Some atom types can be empty, e.g. polarizability of shells
+        // since this a property of the atom.
+        if (!btype[iatoms[j]].empty())
+        {
+            batoms.push_back(btype[iatoms[j]]);
+        }
     }
     auto fs = pd->findForcesConst(iType);
     if (iType == InteractionType::BONDS && natoms == 2)
@@ -2294,8 +2313,6 @@ Identifier MyMol::getIdentifier(const Poldata                  *pd,
 void MyMol::UpdateIdef(const Poldata   *pd,
                        InteractionType  iType)
 {
-    std::string params;
-
     if (debug)
     {
         fprintf(debug, "UpdateIdef for %s\n", interactionTypeToString(iType).c_str());
@@ -2308,27 +2325,24 @@ void MyMol::UpdateIdef(const Poldata   *pd,
             pr_ffparams(debug, 0, "UpdateIdef Before", &mtop_->ffparams, false);
         }
     }
-    else if (iType == InteractionType::POLARIZATION)
-    {
-        auto pw = SearchPlist(plist_, iType);
-        if (plist_.end() != pw)
-        {
-            auto ft = pw->getFtype();
-            polarizabilityFromPdToMtop(mtop_, ltop_, atoms_, pd, ft);           
-        }
-    }
     else
     {
         // Update other iTypes
         auto fs    = pd->findForcesConst(iType);
         auto ftype = fs.fType();
         // Small optimization. This assumes angles etc. use the same
-        // types as bonds.
+        // types as bonds. For this reason there is some special
+        // treatment for polarization.
         std::vector<std::string> btype;
         for(int j = 0; j < atoms_->nr; j++)
         {
             auto atype = pd->findAtype(*atoms_->atomtype[j]);
-            btype.push_back(atype->id(InteractionType::BONDS).id());
+            auto itype = iType;
+            if (itype != InteractionType::POLARIZATION)
+            {
+                itype = InteractionType::BONDS;
+            }
+            btype.push_back(atype->id(itype).id());
         }
         for (auto i = 0; i < ltop_->idef.il[ftype].nr; i += interaction_function[ftype].nratoms+1)
         {
@@ -2377,6 +2391,14 @@ void MyMol::UpdateIdef(const Poldata   *pd,
                         mtop_->ffparams.iparams[tp].harmonic.krB     =
                         ltop_->idef.iparams[tp].harmonic.krA     =
                         ltop_->idef.iparams[tp].harmonic.krB =
+                        convertToGromacs(fp.value(), fp.unit());
+                }
+                break;
+            case F_POLARIZATION:
+                {
+                    auto fp = fs.findParameterTypeConst(bondId, "alpha");
+                    mtop_->ffparams.iparams[tp].polarize.alpha =
+                        ltop_->idef.iparams[tp].polarize.alpha =
                         convertToGromacs(fp.value(), fp.unit());
                 }
                 break;

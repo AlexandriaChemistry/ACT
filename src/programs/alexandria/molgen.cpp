@@ -96,7 +96,6 @@ MolGen::MolGen()
     nexcl_orig_= nexcl_;
     maxESP_    = 100;
     etune_     = etuneEEM;
-    fixchi_    = (char *)"";
     lot_       = "B3LYP/aug-cc-pVTZ";
     inputrec_  = new t_inputrec();
     fill_inputrec(inputrec_);
@@ -196,6 +195,37 @@ void MolGen::optionsFinished()
     if (MASTER(cr_))
     {
         printf("There are %d threads/processes and %zu parameter types to optimize.\n", cr_->nnodes, fit_.size());
+    }
+}
+
+void MolGen::printEnergies(FILE *fp) const
+{
+    if (nullptr != fp && MASTER(commrec()))
+    {
+        fprintf(fp, "Components of fitting function\n");
+        for (int j = 0; j < ermsNR; j++)
+        {
+            auto eee = energy(j);
+            if (eee > 0)
+            {
+                fprintf(fp, "%-8s  %10.5f  weight: %g\n",
+                        rmsName(j), eee, fc_[j]);
+            }
+        }
+    }
+}
+
+void MolGen::sumEnergies()
+{
+    // Now sum over processors
+    if (PAR(commrec()) && !final())
+    {
+        gmx_sum(ermsNR, ener_, commrec());
+    }
+    ener_[ermsTOT] = 0;
+    for (auto e = 0; e < ermsTOT; e++)
+    {
+        ener_[ermsTOT] += fc_[e]*ener_[e];
     }
 }
 
