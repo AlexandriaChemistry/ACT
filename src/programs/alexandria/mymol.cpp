@@ -561,7 +561,7 @@ immStatus MyMol::GenerateAtoms(const Poldata     *pd,
     int                 natom = 0;
     immStatus           imm   = immStatus::OK;
 
-    ExperimentIterator  ci = getCalc(method, basis, mylot);
+    auto ci     = getCalc(method, basis, mylot);
     if (ci < EndExperiment())
     {
         t_param nb;
@@ -608,13 +608,13 @@ immStatus MyMol::GenerateAtoms(const Poldata     *pd,
             // First set the atomtype
             atoms_->atomtype[natom]      =
                 atoms_->atomtypeB[natom] = put_symtab(symtab_, cai.getObtype().c_str());
-            auto atype = pd->findAtype(cai.getObtype());
-            if (atype != pd->getAtypeEnd())
+            if (pd->hasParticleType(cai.getObtype()))
             {
+                auto atype = pd->findParticleType(cai.getObtype());
                 atoms_->atom[natom].m      =
                     atoms_->atom[natom].mB = atype->mass();
                 atoms_->atom[natom].atomnumber = atype->atomnumber();
-                strncpy(atoms_->atom[natom].elem, atype->getElem().c_str(), sizeof(atoms_->atom[natom].elem)-1);
+                strncpy(atoms_->atom[natom].elem, atype->element().c_str(), sizeof(atoms_->atom[natom].elem)-1);
                 
                 natom++;
             }
@@ -656,8 +656,7 @@ immStatus MyMol::checkAtoms(const Poldata *pd)
     for (auto i = 0; i < atoms_->nr; i++)
     {
         const auto atype(*atoms_->atomtype[i]);
-        auto       fa = pd->findAtype(atype);
-        if (fa == pd->getAtypeEnd())
+        if (!pd->hasParticleType(atype))
         {
             printf("Could not find a force field entry for atomtype %s atom %d in compound '%s'\n",
                    *atoms_->atomtype[i], i+1,
@@ -688,14 +687,14 @@ immStatus MyMol::zeta2atoms(const Poldata *pd)
     auto eqtModel  = name2ChargeType(qt.optionValue(ct));
     for (auto i = 0; i < atoms_->nr; i++)
     {
-        auto atype = pd->findAtype(*atoms_->atomtype[i]);
-        auto ztype = atype->id(InteractionType::CHARGEDISTRIBUTION);
+        auto atype = pd->findParticleType(*atoms_->atomtype[i]);
+        auto ztype = atype->interactionTypeToIdentifier(InteractionType::CHARGEDISTRIBUTION);
         auto eep   = qt.findParametersConst(ztype);
         const char *zzz =  "zeta";
         if (eep.find(zzz) ==  eep.end())
         {
             GMX_THROW(gmx::InvalidInputError(gmx::formatString("Cannot find parameter type %s for atomtype %s",
-                                                               zzz, atype->getType().c_str()).c_str()));
+                                                               zzz, atype->id().id().c_str()).c_str()));
         }
         auto zeta  = eep["zeta"].value();
         
@@ -869,10 +868,10 @@ void MyMol::addShells(const Poldata *pd)
     renum.resize(atoms_->nr, 0);
     for (int i = 0; i < atoms_->nr; i++)
     {
-        auto atype          = pd->findAtype(*atoms_->atomtype[i]);
+        auto atype          = pd->findParticleType(*atoms_->atomtype[i]);
         renum[i]            = i + nshell;
         inv_renum[renum[i]] = i;
-        if (atype->hasId(InteractionType::POLARIZATION))
+        if (atype->hasInteractionType(InteractionType::POLARIZATION))
         {
             nshell++;
         }
@@ -890,26 +889,29 @@ void MyMol::addShells(const Poldata *pd)
         if (atoms_->atom[i].ptype == eptAtom ||
             atoms_->atom[i].ptype == eptVSite)
         {
-            auto fa = pd->findAtype(atomtype);
-            if (pd->getAtypeEnd() != fa && fa->hasId(InteractionType::POLARIZATION))
+            if (pd->hasParticleType(atomtype))
             {
-                auto ptype = fa->id(InteractionType::POLARIZATION);
-                auto param = pd->findForcesConst(InteractionType::POLARIZATION).findParameterTypeConst(ptype, "alpha");
-                auto pol   = convertToGromacs(param.value(), param.unit());
-                if (pol > 0)
+                auto fa = pd->findParticleType(atomtype);
+                if (fa->hasInteractionType(InteractionType::POLARIZATION))
                 {
-                    p.a[0] = renum[i];
-                    p.a[1] = renum[i]+1;
-                    if (bHaveVSites_)
+                    auto ptype = fa->interactionTypeToIdentifier(InteractionType::POLARIZATION);
+                    auto param = pd->findForcesConst(InteractionType::POLARIZATION).findParameterTypeConst(ptype, "alpha");
+                    auto pol   = convertToGromacs(param.value(), param.unit());
+                    if (pol > 0)
                     {
-                        auto vsite = pd->findVsite(atomtype);
-                        if (vsite != pd->getVsiteEnd())
+                        p.a[0] = renum[i];
+                        p.a[1] = renum[i]+1;
+                        if (bHaveVSites_)
                         {
-                            pol /= vsite->nvsite();
+                            auto vsite = pd->findVsite(atomtype);
+                            if (vsite != pd->getVsiteEnd())
+                            {
+                                pol /= vsite->nvsite();
+                            }
                         }
+                        p.c[0] = pol;
+                        add_param_to_plist(plist_, F_POLARIZATION, InteractionType::POLARIZATION, p);
                     }
-                    p.c[0] = pol;
-                    add_param_to_plist(plist_, F_POLARIZATION, InteractionType::POLARIZATION, p);
                 }
             }
             else
@@ -991,10 +993,10 @@ void MyMol::addShells(const Poldata *pd)
             // Shell sits next to the Atom or Vsite
             auto j            = 1+renum[i];
             auto atomtypeName = get_atomtype_name(atoms_->atom[i].type, gromppAtomtype_);
-            auto fa           = pd->findAtype(atomtypeName);
-            auto shellid      = fa->id(InteractionType::POLARIZATION);
-            auto shelltype    = pd->findAtype(shellid.id());
-            auto shellzetaid  = shelltype->id(InteractionType::CHARGEDISTRIBUTION);
+            auto fa           = pd->findParticleType(atomtypeName);
+            auto shellid      = fa->interactionTypeToIdentifier(InteractionType::POLARIZATION);
+            auto shelltype    = pd->findParticleType(shellid.id());
+            auto shellzetaid  = shelltype->interactionTypeToIdentifier(InteractionType::CHARGEDISTRIBUTION);
             auto shelleep     = qt.findParametersConst(shellzetaid);
             // Now fill the newatom
             newatoms->atom[j]               = atoms_->atom[i];
@@ -1592,7 +1594,7 @@ void MyMol::CalcQPol(const Poldata *pd, rvec mu)
 
 {
     int     np;
-    double  poltot, sptot, ereftot, eref;
+    double  poltot, sptot, ereftot;
 
     poltot  = 0;
     sptot   = 0;
@@ -1602,8 +1604,8 @@ void MyMol::CalcQPol(const Poldata *pd, rvec mu)
     for (int i = 0; i < atoms_->nr; i++)
     {
         std::string ptype;
-        auto atype = pd->findAtype(*atoms_->atomtype[i]);
-        auto idP   = atype->id(InteractionType::POLARIZATION);
+        auto atype = pd->findParticleType(*atoms_->atomtype[i]);
+        auto idP   = atype->interactionTypeToIdentifier(InteractionType::POLARIZATION);
         if (eep.parameterExists(idP))
         {
             auto param  = eep.findParameterTypeConst(idP, "alpha");
@@ -1611,10 +1613,7 @@ void MyMol::CalcQPol(const Poldata *pd, rvec mu)
             sptot  += gmx::square(param.uncertainty());
             np++;
         }
-        if (pd->getAtypeRefEnthalpy(*atoms_->atomtype[i], &eref))
-        {
-            ereftot += eref;
-        }
+        ereftot += atype->refEnthalpy();
     }
     CalcDipole(mu);
     CalcQuadrupole();
@@ -1729,7 +1728,6 @@ void MyMol::PrintConformation(const char *fn)
 void MyMol::PrintTopology(const char        *fn,
                           bool               bVerbose,
                           const Poldata     *pd,
-                          gmx_atomprop_t     aps,
                           t_commrec         *cr,
                           double             efield,
                           const std::string &method,
@@ -1738,7 +1736,7 @@ void MyMol::PrintTopology(const char        *fn,
     FILE  *fp   = gmx_ffopen(fn, "w");
     bool   bITP = (fn2ftp(fn) == efITP);
 
-    PrintTopology(fp, bVerbose, pd, aps, bITP, cr, efield, method, basis);
+    PrintTopology(fp, bVerbose, pd, bITP, cr, efield, method, basis);
 
     fclose(fp);
 }
@@ -1780,7 +1778,6 @@ static void rotate_tensor(tensor Q, tensor Qreference)
 void MyMol::PrintTopology(FILE                   *fp,
                           bool                    bVerbose,
                           const Poldata          *pd,
-                          gmx_atomprop_t          aps,
                           bool                    bITP,
                           t_commrec              *cr,
                           double                  efield,
@@ -1916,7 +1913,7 @@ void MyMol::PrintTopology(FILE                   *fp,
         }
     }
 
-    print_top_header(fp, pd, aps, bHaveShells_, commercials, bITP);
+    print_top_header(fp, pd, bHaveShells_, commercials, bITP);
     write_top(fp, printmol.name, atoms_, false,
               plist_, excls_, gromppAtomtype_, cgnr_, nexcl_, pd);
     if (!bITP)
@@ -2079,7 +2076,6 @@ immStatus MyMol::getExpProps(gmx_bool           bQM,
     int          natom = 0;
     unsigned int nwarn = 0;
     double       value = 0;
-    double       Hatom = 0;
     double       ZPE   = 0;
     double       error = 0;
     double       T     = -1;
@@ -2163,18 +2159,8 @@ immStatus MyMol::getExpProps(gmx_bool           bQM,
             if (atoms_->atom[ia].ptype == eptAtom ||
                 atoms_->atom[ia].ptype == eptNucleus)
             {
-                if (pd->getAtypeRefEnthalpy(*atoms_->atomtype[ia], &Hatom))
-                {
-                    Emol_ -= Hatom;
-                }
-                else
-                {
-                    fprintf(stderr, "WARNING: NO reference enthalpy for molecule %s.\n",
-                            getMolname().c_str());
-                    Emol_ = 0;
-                    imm   = immStatus::NoData;
-                    break;
-                }
+                auto atype = pd->findParticleType(*atoms_->atomtype[ia]);
+                Emol_ -= atype->refEnthalpy();
             }
         }
         if (bZPE)
@@ -2332,13 +2318,13 @@ void MyMol::UpdateIdef(const Poldata   *pd,
         std::vector<std::string> btype;
         for(int j = 0; j < atoms_->nr; j++)
         {
-            auto atype = pd->findAtype(*atoms_->atomtype[j]);
+            auto atype = pd->findParticleType(*atoms_->atomtype[j]);
             auto itype = iType;
             if (itype != InteractionType::POLARIZATION)
             {
                 itype = InteractionType::BONDS;
             }
-            btype.push_back(atype->id(itype).id());
+            btype.push_back(atype->interactionTypeToIdentifier(itype).id());
         }
         for (auto i = 0; i < ltop_->idef.il[ftype].nr; i += interaction_function[ftype].nratoms+1)
         {

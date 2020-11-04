@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <String Name="U">U</String>
-  <String Name="temporary test atom">temporary test atom</String>
-  <String Name="ptype">p_U</String>
-  <String Name="btype">b_U</String>
-  <String Name="ztype">z_U</String>
+  <String Name="element">U</String>
+  <String Name="description">temporary test atom</String>
+  <String Name="poltype">p_U</String>
+  <String Name="bondtype">b_U</String>
+  <String Name="zetatype">z_U</String>
 </ReferenceData>

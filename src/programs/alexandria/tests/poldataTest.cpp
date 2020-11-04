@@ -70,10 +70,9 @@ class PoldataTest : public gmx::test::CommandLineTestBase
         static void SetUpTestCase()
         {
             Poldata *mypd     = getPoldata("ACM-g");
-            auto     atomName = mypd->findAtype("ha")->getType();
-            for (auto iter = mypd->getAtypeBegin(); iter != mypd->getAtypeEnd(); iter++)
+            for (const auto &iter : mypd->particleTypesConst())
             {
-                atomNames.push_back(iter->getType());
+                atomNames.push_back(iter.id().id());
             }
         }
 
@@ -88,42 +87,45 @@ std::vector<std::string> PoldataTest::atomNames;
 std::string              PoldataTest::atomName;
 
 TEST_F (PoldataTest, getAtype){
-    alexandria::FfatypeIterator aType =  getPoldata("ACM-g")->findAtype("h1");
+    auto aType = getPoldata("ACM-g")->findParticleType("h1");
 
-    checker_.checkString(aType->getElem(), "elem");
-    checker_.checkString(aType->getDesc(), "desc");
-    checker_.checkString(aType->getType(), "type");
-    checker_.checkString(aType->id(InteractionType::POLARIZATION).id(), "ptype");
-    checker_.checkString(aType->id(InteractionType::BONDS).id(), "btype");
-    checker_.checkString(aType->id(InteractionType::ELECTRONEGATIVITYEQUALIZATION).id(), "ztype");
-    checker_.checkString(aType->getRefEnthalpy(), "refEnthalpy");
+    checker_.checkString(aType->element(), "element");
+    checker_.checkString(aType->description(), "description");
+    checker_.checkString(aType->id().id(), "type");
+    checker_.checkString(aType->interactionTypeToIdentifier(InteractionType::POLARIZATION).id().c_str(), "poltype");
+    checker_.checkString(aType->interactionTypeToIdentifier(InteractionType::BONDS).id().c_str(), "bondtype");
+    checker_.checkString(aType->interactionTypeToIdentifier(InteractionType::ELECTRONEGATIVITYEQUALIZATION).id().c_str(), "zetatype");
+    checker_.checkDouble(aType->refEnthalpy(), "refEnthalpy");
 }
 
 TEST_F(PoldataTest, addAtype){
-    const std::string        elem         = "U";
-    const std::string        desc         = "temporary test atom";
-    const std::string        atype        = "U";
-    const std::string        ptype        = "p_U";
-    const std::string        ztype        = "z_U";
-    const std::string        acmtype      = "z_U";
-    const std::string        btype        = "b_U";
-    double                   mass         = 238.29;
-    int                      atomnumber   = 92;
-    const std::string        ref_enthalpy = "1000";
-    alexandria::Poldata     *pd           = getPoldata("ACM-g");
-    Ffatype atp(desc, elem, ptype, btype, ztype, acmtype, elem, mass, atomnumber, 2, 6, Mutability::Free, ref_enthalpy);
-    pd->addAtype(atp);
+    std::string          atype("U");
+    std::string          elem("U");
+    std::string          desc("temporary test atom");
+    alexandria::Poldata *pd = getPoldata("ACM-g");
+    Identifier   atpId({"U"}, CanSwap::No);
+    ParticleType atp(atpId, desc, eptAtom);
+    atp.setOption("poltype", "p_U");
+    atp.setOption("zetatype", "z_U");
+    atp.setOption("bondtype", "b_U");
+    atp.setOption("acmtype", "z_U");
+    atp.setOption("element", elem);
+    atp.setOption("atomnumber", "92");
+    ForceFieldParameter mm("Da", 238.29, 0.0,  1, 230, 240, Mutability::Free, true);
+    atp.addForceFieldParameter("mass", mm);
+    ForceFieldParameter rr("kJ/mol", 1000.0, 0.0,  1, 990, 1010, Mutability::Free, true);
+    atp.addForceFieldParameter("ref_enthalpy", rr);
+    pd->addParticleType(atp);
 
-    auto fa = pd->findAtype(atype);
-    if (fa != pd->getAtypeEnd())
+    if (pd->hasParticleType(atype))
     {
+        auto fa = pd->findParticleType(atype);
         /* Test if the extractions where correct */
-        checker_.checkString(fa->getElem(), elem.c_str());
-        checker_.checkString(fa->getDesc(), desc.c_str());
-        checker_.checkString(fa->getType(), atype.c_str());
-        checker_.checkString(fa->id(InteractionType::POLARIZATION).id(), "ptype");
-        checker_.checkString(fa->id(InteractionType::BONDS).id(), "btype");
-        checker_.checkString(fa->id(InteractionType::ELECTRONEGATIVITYEQUALIZATION).id(), "ztype");
+        checker_.checkString(fa->element().c_str(), "element");
+        checker_.checkString(fa->description().c_str(), "description");
+        checker_.checkString(fa->interactionTypeToIdentifier(InteractionType::POLARIZATION).id(), "poltype");
+        checker_.checkString(fa->interactionTypeToIdentifier(InteractionType::BONDS).id(), "bondtype");
+        checker_.checkString(fa->interactionTypeToIdentifier(InteractionType::ELECTRONEGATIVITYEQUALIZATION).id(), "zetatype");
     }
 }
 
@@ -157,7 +159,7 @@ TEST_F (PoldataTest, chi)
         for (auto model : eqd)
         {
             auto pd       = getPoldata(model);
-            auto fa       = pd->findAtype(atom)->id(InteractionType::ELECTRONEGATIVITYEQUALIZATION);
+            auto fa       = pd->findParticleType(atom)->interactionTypeToIdentifier(InteractionType::ELECTRONEGATIVITYEQUALIZATION);
             auto eep      = pd->findForcesConst(InteractionType::ELECTRONEGATIVITYEQUALIZATION);
             auto p        = eep.findParameterTypeConst(fa, "chi");
             chi0s.push_back(p.value());
@@ -177,7 +179,7 @@ TEST_F (PoldataTest, alpha)
         for (auto model : eqd)
         {
             auto pd       = getPoldata(model);
-            auto fa       = pd->findAtype(atom)->id(InteractionType::POLARIZATION);
+            auto fa       = pd->findParticleType(atom)->interactionTypeToIdentifier(InteractionType::POLARIZATION);
             auto eep      = pd->findForcesConst(InteractionType::POLARIZATION);
             auto p        = eep.findParameterTypeConst(fa, "alpha");
             alphas.push_back(p.value());
@@ -197,7 +199,7 @@ TEST_F (PoldataTest, row)
         for (auto &model : models)
         {
             auto pd  = getPoldata(model);
-            auto fa  = pd->findAtype(atom);
+            auto fa  = pd->findParticleType(atom);
             auto p   = fa->row();
             rows.push_back(p);
         }
@@ -216,8 +218,8 @@ TEST_F (PoldataTest, zeta)
         for (auto &model : eqd)
         {
             auto pd  = getPoldata(model);
-            auto fa  = pd->findAtype(atom);
-            auto ztp = fa->id(InteractionType::CHARGEDISTRIBUTION);
+            auto fa  = pd->findParticleType(atom);
+            auto ztp = fa->interactionTypeToIdentifier(InteractionType::CHARGEDISTRIBUTION);
             auto eep = pd->findForcesConst(InteractionType::CHARGEDISTRIBUTION);
             auto p   = eep.findParameterTypeConst(ztp, "zeta");
             zetas.push_back(p.value());

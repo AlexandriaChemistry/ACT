@@ -588,7 +588,7 @@ void OptACM::toPoldata(const std::vector<bool> &changed)
         psigma.resize(param.size(), 0);
     }
     Bayes::printParameters(debug);
-    for (auto optIndex : optIndex_)
+    for (const auto &optIndex : optIndex_)
     {
         if (changed[n])
         {

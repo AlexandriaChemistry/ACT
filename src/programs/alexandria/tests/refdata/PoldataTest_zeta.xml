@@ -4,12 +4,12 @@
   <Sequence Name="zeta">
     <Int Name="Length">8</Int>
     <Real>11.8863</Real>
-    <Real>18.897300000000001</Real>
-    <Real>8.0805900000000008</Real>
-    <Real>30.392499999999998</Real>
-    <Real>8.1883300000000006</Real>
-    <Real>40.105699999999999</Real>
-    <Real>9.2118800000000007</Real>
-    <Real>18.4238</Real>
+    <Real>11.8863</Real>
+    <Real>8.08059</Real>
+    <Real>8.08059</Real>
+    <Real>5</Real>
+    <Real>5</Real>
+    <Real>4.5</Real>
+    <Real>4.5</Real>
   </Sequence>
 </ReferenceData>

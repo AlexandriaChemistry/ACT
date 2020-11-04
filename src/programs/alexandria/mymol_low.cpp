@@ -1070,14 +1070,11 @@ void write_top(FILE                            *out,
 
 void print_top_header(FILE                    *fp,
                       const Poldata           *pd,
-                      gmx_atomprop_t           aps,
                       bool                     bPol,
                       std::vector<std::string> commercials,
                       bool                     bItp)
 {
     std::string   gt_old, gt_type;
-    int           atomnumber;
-    real          mass;
     auto qt          = pd->findForcesConst(InteractionType::CHARGEDISTRIBUTION);
     auto iChargeType = name2ChargeType(qt.optionValue("chargetype"));
 
@@ -1113,41 +1110,38 @@ void print_top_header(FILE                    *fp,
         gt_old = "";
 
         auto vdw = pd->findForcesConst(InteractionType::VDW);
-        for (auto aType = pd->getAtypeBegin(); aType != pd->getAtypeEnd(); aType++)
+        for (const auto &aType : pd->particleTypesConst())
         {
-            gt_type    = aType->getType();
-            auto btype = aType->id(InteractionType::BONDS);
-            if (gmx_atomprop_query(aps, epropMass, "", aType->getElem().c_str(), &mass))
+            gt_type    = aType.id().id();
+            auto btype = aType.interactionTypeToIdentifier(InteractionType::BONDS);
+            if ((0 ==  gt_old.size()) || (gt_old.compare(gt_type) != 0))
             {
-                atomnumber = gmx_atomprop_atomnumber(aps, aType->getElem().c_str());
-                if ((0 ==  gt_old.size()) || (gt_old.compare(gt_type) != 0))
+                auto sgt_type= aType.interactionTypeToIdentifier(InteractionType::POLARIZATION);
+                auto vdwtype = aType.interactionTypeToIdentifier(InteractionType::VDW);
+                auto myvdw   = vdw.findParametersConst(vdwtype);
+                fprintf(fp, "%-6s %-6s %6d  %12.6f  %10.4f  A   %g %g %g %g\n",
+                        gt_type.c_str(), btype.id().c_str(),
+                        aType.atomnumber(), 
+                        aType.mass(), 0.0,
+                        myvdw["sigma"].value(),
+                        myvdw["epsilon"].value(),
+                        myvdw["gamma"].value(),
+                        aType.refEnthalpy());
+                if (bPol)
                 {
-                    auto sgt_type= aType->id(InteractionType::POLARIZATION);
-                    auto vdwtype = aType->id(InteractionType::VDW);
-                    auto myvdw   = vdw.findParametersConst(vdwtype);
-                    fprintf(fp, "%-6s %-6s %6d  %12.6f  %10.4f  A   %g %g %g %s\n",
-                            gt_type.c_str(), btype.id().c_str(),
-                            atomnumber, mass, 0.0,
-                            myvdw["sigma"].value(),
-                            myvdw["epsilon"].value(),
-                            myvdw["gamma"].value(),
-                            aType->getRefEnthalpy().c_str());
-                    if (bPol)
+                    if (strcasecmp(ff.c_str(), "LJ") == 0)
                     {
-                        if (strcasecmp(ff.c_str(), "LJ") == 0)
-                        {
-                            fprintf(fp, "%-6s %-6s %6d  %12.6f  %10.4f  S     0  0\n",
-                                    sgt_type.id().c_str(),
-                                    sgt_type.id().c_str(),
-                                    0, 0.0, 0.0);
-                        }
-                        else
-                        {
-                            fprintf(fp, "%-6s %-6s %6d  %12.6f  %10.4f  S     0  0  0\n",
-                                    sgt_type.id().c_str(),
-                                    sgt_type.id().c_str(),
-                                    0, 0.0, 0.0);
-                        }
+                        fprintf(fp, "%-6s %-6s %6d  %12.6f  %10.4f  S     0  0\n",
+                                sgt_type.id().c_str(),
+                                sgt_type.id().c_str(),
+                                0, 0.0, 0.0);
+                    }
+                    else
+                    {
+                        fprintf(fp, "%-6s %-6s %6d  %12.6f  %10.4f  S     0  0  0\n",
+                                sgt_type.id().c_str(),
+                                sgt_type.id().c_str(),
+                                0, 0.0, 0.0);
                     }
                 }
             }
@@ -1158,19 +1152,19 @@ void print_top_header(FILE                    *fp,
         {
             auto eem = pd->findForcesConst(InteractionType::CHARGEDISTRIBUTION);
             fprintf(fp, "[ distributed_charges ]\n");
-            for (auto atype = pd->getAtypeBegin(); atype != pd->getAtypeEnd(); atype++)
+            for (const auto &atype : pd->particleTypesConst())
             {
-                auto ztype     = atype->id(InteractionType::CHARGEDISTRIBUTION);
+                auto ztype     = atype.interactionTypeToIdentifier(InteractionType::CHARGEDISTRIBUTION);
                 auto eep       = eem.findParametersConst(ztype);
-                auto shellName = atype->id(InteractionType::POLARIZATION);
+                auto shellName = atype.interactionTypeToIdentifier(InteractionType::POLARIZATION);
                 if (ChargeType::Slater == iChargeType)
                 {
-                    fprintf(fp, "%-7s  2  %d  %g\n", atype->getType().c_str(),
-                            atype->row(), eep["zeta"].value());
+                    fprintf(fp, "%-7s  2  %d  %g\n", atype.id().id().c_str(),
+                            atype.row(), eep["zeta"].value());
                 }
                 else if (ChargeType::Gaussian == iChargeType)
                 {
-                    fprintf(fp, "%-7s  1  %g\n", atype->getType().c_str(),
+                    fprintf(fp, "%-7s  1  %g\n", atype.id().id().c_str(),
                             eep["zeta"].value());
                 }
             }

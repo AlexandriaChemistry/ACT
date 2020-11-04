@@ -145,7 +145,7 @@ class OptimizationIndex
     //! Return a compound string representing the index
     std::string name() const
     {
-        return gmx::formatString("%s-%s-%s", interactionTypeToString(iType_).c_str(),
+        return gmx::formatString("%s-%s", //interactionTypeToString(iType_).c_str(),
                                  parameterId_.id().c_str(), parameterType_.c_str()); 
     }
     

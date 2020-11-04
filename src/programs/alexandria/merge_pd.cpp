@@ -102,13 +102,12 @@ static void merge_parameter(const std::vector<alexandria::Poldata> &pds,
         lsq[i] =  gmx_stats_init();
     }    
     int j = 0;
-    for (auto atp = pdout->getAtypeBegin(); 
-         atp < pdout->getAtypeEnd(); atp++, j++)
+    for (const auto &atp : pdout->particleTypesConst())
     {
         for (const auto& pd : pds)
         {
             auto fs    = pd.findForcesConst(iType);
-            auto ztype = atp->id(alexandria::InteractionType::ELECTRONEGATIVITYEQUALIZATION);
+            auto ztype = atp.interactionTypeToIdentifier(iType);
             auto ei    = fs.findParametersConst(ztype);
             gmx_stats_add_point(lsq[j], 0, ei[parameter].value(), 0, 0);
         }
@@ -116,11 +115,10 @@ static void merge_parameter(const std::vector<alexandria::Poldata> &pds,
     }
     
     j = 0;
-    for (auto atp = pdout->getAtypeBegin(); 
-         atp < pdout->getAtypeEnd(); atp++, j++)
+    for (const auto &atp : pdout->particleTypesConst())
     {
         auto fs      = pdout->findForces(iType);
-        auto ztype   = atp->id(alexandria::InteractionType::ELECTRONEGATIVITYEQUALIZATION);
+        auto ztype   = atp.interactionTypeToIdentifier(iType);
         auto ei      = fs->findParameters(ztype);
         real average = 0;
         real sigma   = 0;
@@ -223,7 +221,7 @@ int alex_merge_pd(int argc, char *argv[])
     }
     if (eem == eEMZeta || eem == eEMAll)
     {
-        merge_parameter(pds, alexandria::InteractionType::ELECTRONEGATIVITYEQUALIZATION,
+        merge_parameter(pds, alexandria::InteractionType::BONDCORRECTIONS,
                         "zeta", &pdout);
     }
     if (eem == eEMNR)

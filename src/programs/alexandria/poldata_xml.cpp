@@ -78,151 +78,117 @@ const char *xmltypes[] = {
 };
 #define NXMLTYPES sizeof(xmltypes)/sizeof(xmltypes[0])
 
-enum xmlEntry {
-    exmlFirst,
-    exmlGENTOP = exmlFirst,
-    exmlREFERENCE,
-    exmlATOMTYPES,
-    exmlATOMTYPE, 
-    exmlCOMB_RULE,
-    exmlNEXCL,
-    exmlVERSION,
-    exmlEPSILONR,
-    exmlPOLTYPES,
-    exmlPOLTYPE,
-    exmlPTYPE,
-    exmlELEM,
-    exmlMASS,
-    exmlATOMNUMBER,
-    exmlNAME,
-    exmlDESC,
-    exmlATYPE,
-    exmlVALENCE,
-    exmlBTYPE,
-    exmlZTYPE,
-    exmlACMTYPE,
-    exmlROW,
-    exmlCHARGE,
-    exmlNEIGHBORS,
-    exmlAROMATIC,
-    exmlGEOMETRY,
-    exmlNUMBONDS,
-    exmlVDWPARAMS,
-    exmlEREF,
-    exmlVANDERWAALS,
-    exmlINTERACTION,
-    exmlIDENTIFIER,
-    exmlCANSWAP,
-    exmlTYPE,
-    exmlVALUE,
-    exmlOPTION,
-    exmlPARAMETERLIST,
-    exmlPARAMETER,
-    exmlUNCERTAINTY,
-    exmlMINIMUM,
-    exmlMAXIMUM,
-    exmlMUTABILITY,
-    exmlATOM1,
-    exmlATOM2,
-    exmlATOM3,
-    exmlATOM4,
-    exmlSIGMA,
-    exmlBONDORDER,
-    exmlPARAMS,
-    exmlREFVALUE,
-    exmlUNIT,
-    exmlNTRAIN,
-    exmlGT_VSITES,
-    exmlGT_VSITE,
-    exmlTAU_AHC,
-    exmlALPHA_AHP,
-    exmlSYMMETRIC_CHARGES,
-    exmlSYM_CHARGE,
-    exmlCENTRAL,
-    exmlATTACHED,
-    exmlNUMATTACH,
-    exmlMODEL,
-    exmlCHARGEGENERATIONALGORITHM,
-    exmlCHARGES,
-    exmlREF_CHARGES,
-    exmlANGLE_UNIT,
-    exmlLENGTH_UNIT,
-    exmlDISTANCE,
-    exmlNCONTROLATOMS,
-    exmlNUMBER,
-    exmlVTYPE,
-    exmlANGLE,
-    exmlFUNCTION,
-    exmlLast
+enum class xmlEntry {
+    GENTOP,
+    REFERENCE,
+    PARTICLETYPES,
+    PARTICLETYPE, 
+    COMB_RULE,
+    NEXCL,
+    VERSION,
+    EPSILONR,
+    DESC,
+    AROMATIC,
+    GEOMETRY,
+    NUMBONDS,
+    VDWPARAMS,
+    EREF,
+    VANDERWAALS,
+    INTERACTION,
+    IDENTIFIER,
+    CANSWAP,
+    KEY,
+    TYPE,
+    ATYPE,
+    VALUE,
+    OPTION,
+    PARAMETERLIST,
+    PARAMETER,
+    UNCERTAINTY,
+    MINIMUM,
+    MAXIMUM,
+    MUTABILITY,
+    ATOM1,
+    ATOM2,
+    ATOM3,
+    ATOM4,
+    BONDORDER,
+    PARAMS,
+    REFVALUE,
+    UNIT,
+    NTRAIN,
+    GT_VSITES,
+    GT_VSITE,
+    SYMMETRIC_CHARGES,
+    SYM_CHARGE,
+    CENTRAL,
+    ATTACHED,
+    NUMATTACH,
+    MODEL,
+    CHARGEGENERATIONALGORITHM,
+    CHARGES,
+    REF_CHARGES,
+    ANGLE_UNIT,
+    LENGTH_UNIT,
+    DISTANCE,
+    NCONTROLATOMS,
+    NUMBER,
+    VTYPE,
+    ANGLE,
+    FUNCTION
 };
 
 std::map<const std::string, xmlEntry> xmlxxx =
 {
-    { "gentop",                 exmlGENTOP           },
-    { "reference",              exmlREFERENCE        },
-    { "atomtypes",              exmlATOMTYPES        },
-    { "atomtype",               exmlATOMTYPE         },
-    { "chargegenerationalgorithm", exmlCHARGEGENERATIONALGORITHM },
-    { "parameterlist",          exmlPARAMETERLIST    },
-    { "parameter",              exmlPARAMETER        },
-    { "version",                exmlVERSION          },
-    { "function",               exmlFUNCTION         },
-    { "nexclusions",            exmlNEXCL            },
-    { "epsilonr",               exmlEPSILONR         },
-    { "poltypes",               exmlPOLTYPES         },
-    { "poltype",                exmlPOLTYPE          },
-    { "ptype",                  exmlPTYPE            },
-    { "elem",                   exmlELEM             },
-    { "mass",                   exmlMASS             },
-    { "charge",                 exmlCHARGE           },
-    { "row",                    exmlROW              },
-    { "atomnumber",             exmlATOMNUMBER       },
-    { "name",                   exmlNAME             },
-    { "description",            exmlDESC             },
-    { "atype",                  exmlATYPE            },
-    { "btype",                  exmlBTYPE            },
-    { "ztype",                  exmlZTYPE            },
-    { "acmtype",                exmlACMTYPE          },
-    { "neighbors",              exmlNEIGHBORS        },
-    { "aromatic",               exmlAROMATIC         },
-    { "geometry",               exmlGEOMETRY         },
-    { "numbonds",               exmlNUMBONDS         },
-    { "vdwparams",              exmlVDWPARAMS        },
-    { "ref_enthalpy",           exmlEREF             },
-    { "vanderwaals",            exmlVANDERWAALS      },
-    { "interaction",            exmlINTERACTION      },
-    { "identifier",             exmlIDENTIFIER       },
-    { "canswap",                exmlCANSWAP          },
-    { "type",                   exmlTYPE             },
-    { "value",                  exmlVALUE            },
-    { "option",                 exmlOPTION           },
-    { "uncertainty",            exmlUNCERTAINTY      },
-    { "minimum",                exmlMINIMUM          },
-    { "maximum",                exmlMAXIMUM          },
-    { "mutability",             exmlMUTABILITY       },
-    { "sigma",                  exmlSIGMA            },
-    { "bondorder",              exmlBONDORDER        },
-    { "params",                 exmlPARAMS           },
-    { "refValue",               exmlREFVALUE         },
-    { "unit",                   exmlUNIT             },
-    { "ntrain",                 exmlNTRAIN           },
-    { "gt_vsites",              exmlGT_VSITES        },
-    { "gt_vsite",               exmlGT_VSITE         },
-    { "tau_ahc",                exmlTAU_AHC          },
-    { "alpha_ahp",              exmlALPHA_AHP        },
-    { "symmetric_charges",      exmlSYMMETRIC_CHARGES},
-    { "sym_charge",             exmlSYM_CHARGE       },
-    { "central",                exmlCENTRAL          },
-    { "attached",               exmlATTACHED         },
-    { "numattach",              exmlNUMATTACH        },
-    { "model",                  exmlMODEL            },
-    { "angle_unit",             exmlANGLE_UNIT       },
-    { "length_unit",            exmlLENGTH_UNIT      },
-    { "distance",               exmlDISTANCE         },
-    { "ncontrolatoms",          exmlNCONTROLATOMS    },
-    { "number",                 exmlNUMBER           },
-    { "vtype",                  exmlVTYPE            },
-    { "angle",                  exmlANGLE            }
+    { "gentop",                    xmlEntry::GENTOP           },
+    { "reference",                 xmlEntry::REFERENCE        },
+    { "particletypes",             xmlEntry::PARTICLETYPES        },
+    { "particletype",              xmlEntry::PARTICLETYPE         },
+    { "chargegenerationalgorithm", xmlEntry::CHARGEGENERATIONALGORITHM },
+    { "parameterlist",             xmlEntry::PARAMETERLIST    },
+    { "parameter",                 xmlEntry::PARAMETER        },
+    { "version",                   xmlEntry::VERSION          },
+    { "function",                  xmlEntry::FUNCTION         },
+    { "nexclusions",               xmlEntry::NEXCL            },
+    { "epsilonr",                  xmlEntry::EPSILONR         },
+    { "description",               xmlEntry::DESC             },
+    { "aromatic",                  xmlEntry::AROMATIC         },
+    { "geometry",                  xmlEntry::GEOMETRY         },
+    { "numbonds",                  xmlEntry::NUMBONDS         },
+    { "vdwparams",                 xmlEntry::VDWPARAMS        },
+    { "vanderwaals",               xmlEntry::VANDERWAALS      },
+    { "interaction",               xmlEntry::INTERACTION      },
+    { "identifier",                xmlEntry::IDENTIFIER       },
+    { "canswap",                   xmlEntry::CANSWAP          },
+    { "key",                       xmlEntry::KEY              },
+    { "type",                      xmlEntry::TYPE             },
+    { "atype",                     xmlEntry::ATYPE            },
+    { "value",                     xmlEntry::VALUE            },
+    { "option",                    xmlEntry::OPTION           },
+    { "uncertainty",               xmlEntry::UNCERTAINTY      },
+    { "minimum",                   xmlEntry::MINIMUM          },
+    { "maximum",                   xmlEntry::MAXIMUM          },
+    { "mutability",                xmlEntry::MUTABILITY       },
+    { "bondorder",                 xmlEntry::BONDORDER        },
+    { "params",                    xmlEntry::PARAMS           },
+    { "refValue",                  xmlEntry::REFVALUE         },
+    { "unit",                      xmlEntry::UNIT             },
+    { "ntrain",                    xmlEntry::NTRAIN           },
+    { "gt_vsites",                 xmlEntry::GT_VSITES        },
+    { "gt_vsite",                  xmlEntry::GT_VSITE         },
+    { "symmetric_charges",         xmlEntry::SYMMETRIC_CHARGES},
+    { "sym_charge",                xmlEntry::SYM_CHARGE       },
+    { "central",                   xmlEntry::CENTRAL          },
+    { "attached",                  xmlEntry::ATTACHED         },
+    { "numattach",                 xmlEntry::NUMATTACH        },
+    { "model",                     xmlEntry::MODEL            },
+    { "angle_unit",             xmlEntry::ANGLE_UNIT       },
+    { "length_unit",            xmlEntry::LENGTH_UNIT      },
+    { "distance",               xmlEntry::DISTANCE         },
+    { "ncontrolatoms",          xmlEntry::NCONTROLATOMS    },
+    { "number",                 xmlEntry::NUMBER           },
+    { "vtype",                  xmlEntry::VTYPE            },
+    { "angle",                  xmlEntry::ANGLE            }
 };
 
 std::map<xmlEntry, const std::string> rmap = {};
@@ -301,7 +267,7 @@ static double xbuf_atof(xmlBuffer *xbuf, xmlEntry  xbuf_index)
 static void processAttr(FILE       *fp, 
                         xmlAttrPtr  attr,
                         xmlBuffer  *xbuf,
-                        int         elem,
+                        xmlEntry    elem,
                         int         indent, 
                         Poldata    *pd)
 {
@@ -337,149 +303,165 @@ static void processAttr(FILE       *fp,
      */
 #define xbufString(x) xbuf->find(x)->second
     // Some local variables that we need
+    static xmlEntry        parentEntry  = xmlEntry::GENTOP;
     static InteractionType currentItype = InteractionType::BONDS;
     static Identifier      myIdentifier;
     switch (elem)
     {
-    case exmlATOMTYPES:
-        if (NNobligatory(xbuf, exmlCHARGEGENERATIONALGORITHM))
+    case xmlEntry::PARTICLETYPES:
+        if (NNobligatory(xbuf, xmlEntry::CHARGEGENERATIONALGORITHM))
         {
-            pd->setChargeGenerationAlgorithm(xbufString(exmlCHARGEGENERATIONALGORITHM));
+            pd->setChargeGenerationAlgorithm(xbufString(xmlEntry::CHARGEGENERATIONALGORITHM));
         }
-        if (NNobligatory(xbuf, exmlVERSION))
+        if (NNobligatory(xbuf, xmlEntry::VERSION))
         {
-            pd->setVersion(xbufString(exmlVERSION));
+            pd->setVersion(xbufString(xmlEntry::VERSION));
         }
-        if (NNobligatory(xbuf, exmlNEXCL))
+        if (NNobligatory(xbuf, xmlEntry::NEXCL))
         {
-            pd->setNexcl(atoi(xbufString(exmlNEXCL).c_str()));
+            pd->setNexcl(atoi(xbufString(xmlEntry::NEXCL).c_str()));
         }
-        if (NN(xbuf, exmlEPSILONR))
+        if (NN(xbuf, xmlEntry::EPSILONR))
         {
-            pd->setEpsilonR(atof(xbufString(exmlEPSILONR).c_str()));
-        }
-        break;
-    case exmlINTERACTION:
-        if (NNobligatory(xbuf, exmlTYPE) &&
-            NNobligatory(xbuf, exmlFUNCTION) && 
-            NNobligatory(xbuf, exmlCANSWAP))
-        {
-            CanSwap canSwap = stringToCanSwap(xbufString(exmlCANSWAP));
-            ForceFieldParameterList newparam(xbufString(exmlFUNCTION), canSwap);
-            pd->addForces(xbufString(exmlTYPE), newparam);
-            currentItype = stringToInteractionType(xbufString(exmlTYPE).c_str());
+            pd->setEpsilonR(atof(xbufString(xmlEntry::EPSILONR).c_str()));
         }
         break;
-    case exmlOPTION:
-        if (NNobligatory(xbuf, exmlTYPE) &&
-            NNobligatory(xbuf, exmlVALUE))
+    case xmlEntry::INTERACTION:
+        if (NNobligatory(xbuf, xmlEntry::TYPE) &&
+            NNobligatory(xbuf, xmlEntry::FUNCTION) && 
+            NNobligatory(xbuf, xmlEntry::CANSWAP))
         {
-            auto fpl = pd->findForces(currentItype);
-            fpl->addOption(xbufString(exmlTYPE), xbufString(exmlVALUE));
+            CanSwap canSwap = stringToCanSwap(xbufString(xmlEntry::CANSWAP));
+            ForceFieldParameterList newparam(xbufString(xmlEntry::FUNCTION), canSwap);
+            pd->addForces(xbufString(xmlEntry::TYPE), newparam);
+            currentItype = stringToInteractionType(xbufString(xmlEntry::TYPE).c_str());
+            parentEntry = elem;
         }
         break;
-    case exmlPARAMETERLIST:
-        if (NNobligatory(xbuf, exmlIDENTIFIER))
+    case xmlEntry::OPTION:
+        if (NNobligatory(xbuf, xmlEntry::KEY) &&
+            NNobligatory(xbuf, xmlEntry::VALUE))
+        {
+            if (xmlEntry::INTERACTION == parentEntry)
+            {
+                auto fpl = pd->findForces(currentItype);
+                fpl->addOption(xbufString(xmlEntry::KEY), xbufString(xmlEntry::VALUE));
+            }
+            else if (xmlEntry::PARTICLETYPE == parentEntry)
+            {
+                pd->findParticleType(myIdentifier)->setOption(xbufString(xmlEntry::KEY), xbufString(xmlEntry::VALUE));
+            }
+        }
+        break;
+    case xmlEntry::PARAMETERLIST:
+        if (NNobligatory(xbuf, xmlEntry::IDENTIFIER))
         {
             myIdentifier = Identifier(currentItype,
-                                      xbufString(exmlIDENTIFIER),
+                                      xbufString(xmlEntry::IDENTIFIER),
                                       pd->findForces(currentItype)->canSwap());
+            parentEntry = elem;
         }
         break;
-    case exmlPARAMETER:
-        if (NNobligatory(xbuf, exmlTYPE)    && NNobligatory(xbuf, exmlUNIT) &&
-            NNobligatory(xbuf, exmlVALUE)   && NNobligatory(xbuf, exmlUNCERTAINTY) &&
-            NNobligatory(xbuf, exmlMINIMUM) && NNobligatory(xbuf, exmlMAXIMUM) &&
-            NNobligatory(xbuf, exmlMUTABILITY))
+    case xmlEntry::PARAMETER:
+        if (NNobligatory(xbuf, xmlEntry::TYPE)    && NNobligatory(xbuf, xmlEntry::UNIT) &&
+            NNobligatory(xbuf, xmlEntry::VALUE)   && NNobligatory(xbuf, xmlEntry::UNCERTAINTY) &&
+            NNobligatory(xbuf, xmlEntry::MINIMUM) && NNobligatory(xbuf, xmlEntry::MAXIMUM) &&
+            NNobligatory(xbuf, xmlEntry::MUTABILITY))
         {
             Mutability mut;
-            if (nameToMutability(xbufString(exmlMUTABILITY), &mut))
+            if (nameToMutability(xbufString(xmlEntry::MUTABILITY), &mut))
             {
                 uint64_t ntrain = 0;
-                if (NN(xbuf, exmlNTRAIN))
+                if (NN(xbuf, xmlEntry::NTRAIN))
                 {
-                    ntrain = atoi(xbufString(exmlNTRAIN).c_str());
+                    ntrain = atoi(xbufString(xmlEntry::NTRAIN).c_str());
                 }
-                ForceFieldParameter ffp(xbufString(exmlUNIT),
-                                        xbuf_atof(xbuf, exmlVALUE),
-                                        xbuf_atof(xbuf, exmlUNCERTAINTY),
+                ForceFieldParameter ffp(xbufString(xmlEntry::UNIT),
+                                        xbuf_atof(xbuf, xmlEntry::VALUE),
+                                        xbuf_atof(xbuf, xmlEntry::UNCERTAINTY),
                                         ntrain,
-                                        xbuf_atof(xbuf, exmlMINIMUM), xbuf_atof(xbuf, exmlMAXIMUM),
+                                        xbuf_atof(xbuf, xmlEntry::MINIMUM), xbuf_atof(xbuf, xmlEntry::MAXIMUM),
                                         mut, false);
-                auto fs = pd->findForces(currentItype);
-                fs->addParameter(myIdentifier, xbufString(exmlTYPE), std::move(ffp));
+                if (xmlEntry::PARAMETERLIST == parentEntry)
+                {
+                    auto fs = pd->findForces(currentItype);
+                    fs->addParameter(myIdentifier, xbufString(xmlEntry::TYPE), std::move(ffp));
+                }
+                else if (xmlEntry::PARTICLETYPE == parentEntry)
+                {
+                    pd->findParticleType(myIdentifier)->addForceFieldParameter(xbufString(xmlEntry::TYPE), std::move(ffp));
+                }
+                else
+                {
+                    GMX_THROW(gmx::InternalError("Don't know what to do with this parameter"));
+                }
             }
             else
             {
                 GMX_THROW(gmx::InvalidInputError(gmx::formatString("Mutability value %s unknown",
-                                                                   xbufString(exmlMUTABILITY).c_str()).c_str()));
+                                                                   xbufString(xmlEntry::MUTABILITY).c_str()).c_str()));
             }
         }
         break;
-    case exmlGT_VSITES:
-        if (NN(xbuf, exmlANGLE_UNIT) && NN(xbuf, exmlLENGTH_UNIT))
+    case xmlEntry::GT_VSITES:
+        if (NN(xbuf, xmlEntry::ANGLE_UNIT) && NN(xbuf, xmlEntry::LENGTH_UNIT))
         {
-            pd->setVsite_angle_unit(xbufString(exmlANGLE_UNIT));
-            pd->setVsite_length_unit(xbufString(exmlLENGTH_UNIT));
+            pd->setVsite_angle_unit(xbufString(xmlEntry::ANGLE_UNIT));
+            pd->setVsite_length_unit(xbufString(xmlEntry::LENGTH_UNIT));
         }
         break;
-    case exmlATOMTYPE:
-        Mutability  mut;
-        if (NN(xbuf, exmlELEM) &&
-            NN(xbuf, exmlMASS) &&
-            NN(xbuf, exmlATOMNUMBER) &&
-            NN(xbuf, exmlATYPE) &&
-            NN(xbuf, exmlBTYPE) &&
-            NN(xbuf, exmlPTYPE) &&
-            NN(xbuf, exmlZTYPE) &&
-            NN(xbuf, exmlACMTYPE) &&
-            NN(xbuf, exmlROW) &&
-            NN(xbuf, exmlCHARGE) &&
-            NN(xbuf, exmlMUTABILITY) &&
-            NN(xbuf, exmlEREF) &&
-            nameToMutability(xbufString(exmlMUTABILITY), &mut))
+    case xmlEntry::PARTICLETYPE:
+        if (NN(xbuf, xmlEntry::TYPE) &&
+            NN(xbuf, xmlEntry::IDENTIFIER) &&
+            NN(xbuf, xmlEntry::DESC))
         {
-            Ffatype sp(xbufString(exmlDESC),  xbufString(exmlATYPE), xbufString(exmlPTYPE),
-                       xbufString(exmlBTYPE), xbufString(exmlZTYPE), 
-                       xbufString(exmlACMTYPE), xbufString(exmlELEM),
-                       atof(xbufString(exmlMASS).c_str()),
-                       atoi(xbufString(exmlATOMNUMBER).c_str()),
-                       atof(xbufString(exmlCHARGE).c_str()),
-                       atoi(xbufString(exmlROW).c_str()),
-                       mut,
-                       xbufString(exmlEREF));
-                pd->addAtype(std::move(sp));
-        }
-        break;
-    case exmlGT_VSITE:
-        if (NN(xbuf, exmlATYPE)  && NN(xbuf, exmlVTYPE)    &&
-            NN(xbuf, exmlNUMBER) && NN(xbuf, exmlDISTANCE) &&
-            NN(xbuf, exmlANGLE)  && NN(xbuf, exmlNCONTROLATOMS))
+            int ept;
+            for(ept = 0; ept < eptNR; ept++)
             {
-                pd->addVsite(xbufString(exmlATYPE),
-                             xbufString(exmlVTYPE),
-                             atoi(xbufString(exmlNUMBER).c_str()),
-                             atof(xbufString(exmlDISTANCE).c_str()),
-                             atof(xbufString(exmlANGLE).c_str()),
-                             atoi(xbufString(exmlNCONTROLATOMS).c_str()));
+                if (xbufString(xmlEntry::TYPE).compare(ptype_str[ept]) == 0)
+                {
+                    break;
+                }
+            }
+            if (ept == eptNR)
+            {
+                GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such particle type %s", xbufString(xmlEntry::TYPE).c_str()).c_str()));
+            }
+            myIdentifier = Identifier({xbufString(xmlEntry::IDENTIFIER)}, CanSwap::No);
+            pd->addParticleType(ParticleType(myIdentifier,
+                                             xbufString(xmlEntry::DESC), ept));
+            parentEntry = elem;
+        }
+        break;
+    case xmlEntry::GT_VSITE:
+        if (NN(xbuf, xmlEntry::ATYPE)  && NN(xbuf, xmlEntry::VTYPE)    &&
+            NN(xbuf, xmlEntry::NUMBER) && NN(xbuf, xmlEntry::DISTANCE) &&
+            NN(xbuf, xmlEntry::ANGLE)  && NN(xbuf, xmlEntry::NCONTROLATOMS))
+            {
+                pd->addVsite(xbufString(xmlEntry::ATYPE),
+                             xbufString(xmlEntry::VTYPE),
+                             atoi(xbufString(xmlEntry::NUMBER).c_str()),
+                             atof(xbufString(xmlEntry::DISTANCE).c_str()),
+                             atof(xbufString(xmlEntry::ANGLE).c_str()),
+                             atoi(xbufString(xmlEntry::NCONTROLATOMS).c_str()));
             }
         break;
-    case exmlSYM_CHARGE:
-        if (NN(xbuf, exmlCENTRAL) && NN(xbuf, exmlATTACHED) &&
-            NN(xbuf, exmlNUMATTACH))
+    case xmlEntry::SYM_CHARGE:
+        if (NN(xbuf, xmlEntry::CENTRAL) && NN(xbuf, xmlEntry::ATTACHED) &&
+            NN(xbuf, xmlEntry::NUMATTACH))
         {
-            pd->addSymcharges(xbufString(exmlCENTRAL),
-                              xbufString(exmlATTACHED),
-                              atoi(xbufString(exmlNUMATTACH).c_str()));
+            pd->addSymcharges(xbufString(xmlEntry::CENTRAL),
+                              xbufString(xmlEntry::ATTACHED),
+                              atoi(xbufString(xmlEntry::NUMATTACH).c_str()));
         }
         break;
     default:
         if (nullptr != debug)
         {
             fprintf(debug, "Unknown combination of attributes:\n");
-            for (int i = exmlFirst; i < exmlLast; i++)
+            for (const auto &i : xmlxxx)
             {
-                xmlEntry ix = static_cast<xmlEntry>(i);
+                xmlEntry ix = i.second;
                 if (xbuf->find(ix) != xbuf->end() &&
                     xbuf->find(ix)->second.size() != 0)
                 {
@@ -524,8 +506,8 @@ static void processTree(FILE          *fp,
             auto iter = xmlxxx.find((const char *)tree->name);
             if (iter != xmlxxx.end())
             {
-                int elem = iter->second;
-                if (elem != exmlGENTOP)
+                auto elem = iter->second;
+                if (elem != xmlEntry::GENTOP)
                 {
                     processAttr(fp, tree->properties, xbuf, elem, indent+2, pd);
                 }
@@ -598,109 +580,113 @@ void readPoldata(const std::string &fileName,
     }
 }
 
+static void addOption(xmlNodePtr         parent,
+                      const std::string &key,
+                      const std::string &value)
+{
+    auto baby = add_xml_child(parent, exml_names(xmlEntry::OPTION));
+    add_xml_char(baby, exml_names(xmlEntry::KEY), key.c_str());
+    add_xml_char(baby, exml_names(xmlEntry::VALUE), value.c_str());
+}
+
+static void addParameter(xmlNodePtr parent, const std::string &type,
+                         const ForceFieldParameter &param)
+{
+    auto baby = add_xml_child(parent, exml_names(xmlEntry::PARAMETER));
+    add_xml_char(baby, exml_names(xmlEntry::TYPE), type.c_str());
+    add_xml_char(baby, exml_names(xmlEntry::UNIT), param.unit().c_str());
+    add_xml_double(baby, exml_names(xmlEntry::VALUE), param.value());
+    add_xml_double(baby, exml_names(xmlEntry::UNCERTAINTY), param.uncertainty());
+    add_xml_double(baby, exml_names(xmlEntry::MINIMUM), param.minimum());
+    add_xml_double(baby, exml_names(xmlEntry::MAXIMUM), param.maximum());
+    add_xml_int(baby, exml_names(xmlEntry::NTRAIN), param.ntrain());
+    add_xml_char(baby, exml_names(xmlEntry::MUTABILITY), mutabilityName(param.mutability()).c_str());
+}
+
 static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd)
 {
-    xmlNodePtr   child, grandchild;
-    int          nexcl;
     std::string  geometry, name,
-                 acentral, attached, tau_unit, ahp_unit,
-                 epref, desc, params;
-    std::string  neighbors, zeta, qstr, rowstr;
-    std::string  tmp, func, blu;
+        acentral, attached, tau_unit, ahp_unit,
+        epref, desc, params, tmp;
 
-    child = add_xml_child(parent, exml_names(exmlATOMTYPES));
-    add_xml_char(child, exml_names(exmlCHARGEGENERATIONALGORITHM),
+    auto child = add_xml_child(parent, exml_names(xmlEntry::PARTICLETYPES));
+    add_xml_char(child, exml_names(xmlEntry::CHARGEGENERATIONALGORITHM),
                  chargeGenerationAlgorithmName(pd->chargeGenerationAlgorithm()).c_str());
     tmp   = pd->getVersion();
     if (0 != tmp.size())
     {
-        add_xml_char(child, exml_names(exmlVERSION), tmp.c_str());
+        add_xml_char(child, exml_names(xmlEntry::VERSION), tmp.c_str());
     }
-    nexcl = pd->getNexcl();
-    add_xml_int(child, exml_names(exmlNEXCL), nexcl);
+    add_xml_int(child, exml_names(xmlEntry::NEXCL), pd->getNexcl());
     double epsilonr = pd->getEpsilonR();
-    add_xml_double(child, exml_names(exmlEPSILONR), epsilonr);
+    add_xml_double(child, exml_names(xmlEntry::EPSILONR), epsilonr);
 
-    for (auto aType = pd->getAtypeBegin();
-         aType != pd->getAtypeEnd(); aType++)
+    for (const auto &aType : pd->particleTypesConst())
     {
-        grandchild = add_xml_child(child, exml_names(exmlATOMTYPE));
-        add_xml_char(grandchild, exml_names(exmlELEM), aType->getElem().c_str());
-        add_xml_int(grandchild, exml_names(exmlATOMNUMBER), aType->atomnumber());
-        add_xml_double(grandchild, exml_names(exmlMASS), aType->mass());
-        add_xml_double(grandchild, exml_names(exmlCHARGE), aType->charge());
-        add_xml_int(grandchild, exml_names(exmlROW), aType->row());
-        add_xml_char(grandchild, exml_names(exmlDESC), aType->getDesc().c_str());
-        add_xml_char(grandchild, exml_names(exmlATYPE), aType->getType().c_str());
-        add_xml_char(grandchild, exml_names(exmlPTYPE), aType->id(InteractionType::POLARIZATION).id().c_str());
-        add_xml_char(grandchild, exml_names(exmlBTYPE), aType->id(InteractionType::BONDS).id().c_str());
-        add_xml_char(grandchild, exml_names(exmlACMTYPE), aType->id(InteractionType::ELECTRONEGATIVITYEQUALIZATION).id().c_str());
-        add_xml_char(grandchild, exml_names(exmlZTYPE), aType->id(InteractionType::CHARGEDISTRIBUTION).id().c_str());
-        add_xml_char(grandchild, exml_names(exmlMUTABILITY), 
-                     mutabilityName(aType->mutability()).c_str());
-        add_xml_char(grandchild, exml_names(exmlEREF), aType->getRefEnthalpy().c_str());
+        auto grandchild = add_xml_child(child, exml_names(xmlEntry::PARTICLETYPE));
+        add_xml_char(grandchild, exml_names(xmlEntry::IDENTIFIER), aType.id().id().c_str());
+        add_xml_char(grandchild, exml_names(xmlEntry::TYPE), ptype_str[aType.gmxParticleType()]);
+        add_xml_char(grandchild, exml_names(xmlEntry::DESC), aType.description().c_str());
+        for(const auto &opt: aType.optionsConst())
+        {
+            addOption(grandchild, opt.first, opt.second);
+        }
+        for(const auto &param : aType.parametersConst())
+        {
+            addParameter(grandchild, param.first, param.second);
+        }
     }
     tmp   = pd->getVsite_angle_unit();
     if (0 != tmp.size())
     {
-        child = add_xml_child(parent, exml_names(exmlGT_VSITES));
-        add_xml_char(child, exml_names(exmlANGLE_UNIT), tmp.c_str());
+        child = add_xml_child(parent, exml_names(xmlEntry::GT_VSITES));
+        add_xml_char(child, exml_names(xmlEntry::ANGLE_UNIT), tmp.c_str());
     }
     tmp   = pd->getVsite_length_unit();
     if (0 != tmp.size())
     {
-        add_xml_char(child, exml_names(exmlLENGTH_UNIT), tmp.c_str());
+        add_xml_char(child, exml_names(xmlEntry::LENGTH_UNIT), tmp.c_str());
     }
     for (auto vsite = pd->getVsiteBegin(); vsite != pd->getVsiteEnd(); vsite++)
     {
-        grandchild = add_xml_child(child, exml_names(exmlGT_VSITE));
-        add_xml_char(grandchild, exml_names(exmlATYPE), vsite->atype().c_str());
-        add_xml_char(grandchild, exml_names(exmlVTYPE), vsiteType2string(vsite->type()));
-        add_xml_int(grandchild, exml_names(exmlNUMBER), vsite->nvsite());
-        add_xml_double(grandchild, exml_names(exmlDISTANCE), vsite->distance());
-        add_xml_double(grandchild, exml_names(exmlANGLE), vsite->angle());
-        add_xml_int(grandchild, exml_names(exmlNCONTROLATOMS), vsite->ncontrolatoms());
+        auto grandchild = add_xml_child(child, exml_names(xmlEntry::GT_VSITE));
+        add_xml_char(grandchild, exml_names(xmlEntry::ATYPE), vsite->atype().c_str());
+        add_xml_char(grandchild, exml_names(xmlEntry::VTYPE), vsiteType2string(vsite->type()));
+        add_xml_int(grandchild, exml_names(xmlEntry::NUMBER), vsite->nvsite());
+        add_xml_double(grandchild, exml_names(xmlEntry::DISTANCE), vsite->distance());
+        add_xml_double(grandchild, exml_names(xmlEntry::ANGLE), vsite->angle());
+        add_xml_int(grandchild, exml_names(xmlEntry::NCONTROLATOMS), vsite->ncontrolatoms());
     }
     for (auto &fs : pd->forcesConst())
     {
-        child = add_xml_child(parent,  exml_names(exmlINTERACTION));
-        add_xml_char(child, exml_names(exmlTYPE), interactionTypeToString(fs.first).c_str());
-        add_xml_char(child, exml_names(exmlFUNCTION), fs.second.function().c_str());
-        add_xml_char(child, exml_names(exmlCANSWAP), 
+        auto child = add_xml_child(parent,  exml_names(xmlEntry::INTERACTION));
+        add_xml_char(child, exml_names(xmlEntry::TYPE), interactionTypeToString(fs.first).c_str());
+        add_xml_char(child, exml_names(xmlEntry::FUNCTION), fs.second.function().c_str());
+        add_xml_char(child, exml_names(xmlEntry::CANSWAP), 
                      canSwapToString(fs.second.canSwap()).c_str());
         for (auto &option : fs.second.option())
         {
-            auto grandChild = add_xml_child(child, exml_names(exmlOPTION));
-            add_xml_char(grandChild, exml_names(exmlTYPE), option.first.c_str());
-            add_xml_char(grandChild, exml_names(exmlVALUE), option.second.c_str());
+            addOption(child, option.first, option.second);
         }
         for (auto &params : fs.second.parametersConst())
         {
-            auto grandChild = add_xml_child(child, exml_names(exmlPARAMETERLIST));
-            add_xml_char(grandChild, exml_names(exmlIDENTIFIER), params.first.id().c_str());
-            for (auto &param : params.second)
+            auto grandchild = add_xml_child(child, exml_names(xmlEntry::PARAMETERLIST));
+            add_xml_char(grandchild, exml_names(xmlEntry::IDENTIFIER), params.first.id().c_str());
+            for (const auto &param : params.second)
             {
-                auto baby = add_xml_child(grandChild, exml_names(exmlPARAMETER));
-                add_xml_char(baby, exml_names(exmlTYPE), param.first.c_str());
-                add_xml_char(baby, exml_names(exmlUNIT), param.second.unit().c_str());
-                add_xml_double(baby, exml_names(exmlVALUE), param.second.value());
-                add_xml_double(baby, exml_names(exmlMINIMUM), param.second.minimum());
-                add_xml_double(baby, exml_names(exmlMAXIMUM), param.second.maximum());
-                add_xml_double(baby, exml_names(exmlUNCERTAINTY), param.second.uncertainty());
-                add_xml_char(baby, exml_names(exmlMUTABILITY), mutabilityName(param.second.mutability()).c_str());
-                add_xml_int(baby, exml_names(exmlNTRAIN), param.second.ntrain());
+                addParameter(grandchild, param.first, param.second);
             }
         }
     }
 
-    child = add_xml_child(parent, exml_names(exmlSYMMETRIC_CHARGES));
+    child = add_xml_child(parent, exml_names(xmlEntry::SYMMETRIC_CHARGES));
     for (auto symcharges = pd->getSymchargesBegin();
          symcharges != pd->getSymchargesEnd(); symcharges++)
     {
-        grandchild = add_xml_child(child, exml_names(exmlSYM_CHARGE));
-        add_xml_char(grandchild, exml_names(exmlCENTRAL), symcharges->getCentral().c_str());
-        add_xml_char(grandchild, exml_names(exmlATTACHED), symcharges->getAttached().c_str());
-        add_xml_int(grandchild, exml_names(exmlNUMATTACH), symcharges->getNumattach());
+        auto grandchild = add_xml_child(child, exml_names(xmlEntry::SYM_CHARGE));
+        add_xml_char(grandchild, exml_names(xmlEntry::CENTRAL), symcharges->getCentral().c_str());
+        add_xml_char(grandchild, exml_names(xmlEntry::ATTACHED), symcharges->getAttached().c_str());
+        add_xml_int(grandchild, exml_names(xmlEntry::NUMATTACH), symcharges->getNumattach());
     }
 }
 

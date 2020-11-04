@@ -58,6 +58,7 @@ set(ALEXANDRIA_SOURCES
            mymol.cpp
            mymol_low.cpp
 	   optparam.cpp
+           particletype.cpp
            phase.cpp
            plistwrapper.cpp
            poldata.cpp

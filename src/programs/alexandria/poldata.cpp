@@ -88,61 +88,16 @@ gmx_bool Poldata::strcasestrStart(std::string needle, std::string haystack)
     return (ptr == haystack);
 }
 
-bool Poldata::getAtypeRefEnthalpy(const std::string &atype,
-                                  double            *Href) const
-{
-    auto fa = findAtype(atype);
-    if (alexandria_.end() != fa)
-    {
-        *Href = my_atof(fa->getRefEnthalpy().c_str(), "Href");
-        return true;
-    }
-    return false;
-}
-
-const std::string &Poldata::getDesc(const std::string &atype) const
-{
-    size_t i;
-    if (atype.size() != 0)
-    {
-        for (i = 0; i < alexandria_.size(); i++)
-        {
-            if (alexandria_[i].getType().compare(atype) == 0)
-            {
-                return alexandria_[i].getDesc();
-            }
-        }
-    }
-    gmx_fatal(FARGS, "No such atomtype %s", atype.c_str());
-}
-
-const std::string &Poldata::getElem(const std::string &atype) const
-{
-    size_t i;
-    if (atype.size() != 0)
-    {
-        for (i = 0; i < alexandria_.size(); i++)
-        {
-            if (alexandria_[i].getType().compare(atype) == 0)
-            {
-                return alexandria_[i].getElem();
-            }
-        }
-    }
-    gmx_fatal(FARGS, "No such atomtype %s", atype.c_str());
-}
-
-const std::string &Poldata::ztype2elem(const std::string &ztype) const
+const std::string Poldata::ztype2elem(const std::string &ztype) const
 {
     size_t i;
     if (ztype.size() != 0)
     {
         for (i = 0; i < alexandria_.size(); i++)
         {
-            if (alexandria_[i].id(InteractionType::ELECTRONEGATIVITYEQUALIZATION).id() ==
-                ztype)
+            if (alexandria_[i].interactionTypeToIdentifier(InteractionType::CHARGEDISTRIBUTION).id() == ztype)
             {
-                return alexandria_[i].getElem();
+                return alexandria_[i].element();
             }
         }
     }
@@ -190,10 +145,10 @@ InteractionType Poldata::typeToInteractionType(const std::string &type)
 bool Poldata::atypeToPtype(const std::string &atype,
                            std::string       *ptype) const
 {
-    auto ai = findAtype(atype);
+    auto ai = findParticleType(atype);
     if (ai != alexandria_.end())
     {
-        ptype->assign(ai->id(InteractionType::POLARIZATION).id());
+        ptype->assign(ai->interactionTypeToIdentifier(InteractionType::POLARIZATION).id());
         return true;
     }
     return false;
@@ -254,10 +209,10 @@ void Poldata::addForces(const std::string             &interaction,
 bool Poldata::atypeToBtype(const std::string &atype,
                            std::string       *btype) const
 {
-    auto ai = findAtype(atype);
+    auto ai = findParticleType(atype);
     if (ai != alexandria_.end())
     {
-        btype->assign(ai->id(InteractionType::BONDS).id());
+        btype->assign(ai->interactionTypeToIdentifier(InteractionType::BONDS).id());
         return true;
     }
     return false;
@@ -266,10 +221,10 @@ bool Poldata::atypeToBtype(const std::string &atype,
 bool Poldata::atypeToZtype(const std::string &atype,
                            std::string       *ztype) const
 {
-    auto ai = findAtype(atype);
+    auto ai = findParticleType(atype);
     if (ai != alexandria_.end())
     {
-        ztype->assign(ai->id(InteractionType::ELECTRONEGATIVITYEQUALIZATION).id());
+        ztype->assign(ai->interactionTypeToIdentifier(InteractionType::ELECTRONEGATIVITYEQUALIZATION).id());
         return true;
     }
     return false;
@@ -318,19 +273,6 @@ void Poldata::addSymcharges(const std::string &central,
         Symcharges symcharges(central, attached, numattach);
         symcharges_.push_back(symcharges);
     }
-}
-
-int Poldata::havePolSupport(const std::string &atype) const
-{
-    size_t i;
-    for (i = 0; i < alexandria_.size(); i++)
-    {
-        if (atype.compare(alexandria_[i].getType()) == 0)
-        {
-            return 1;
-        }
-    }
-    return 0;
 }
 
 const Identifier Poldata::atomtypesToZetaIdentifier(const std::vector<std::string> atoms) const
@@ -447,7 +389,7 @@ CommunicationStatus Poldata::Receive(const t_commrec *cr, int src)
         alexandria_.clear();
         for (size_t n = 0; (CS_OK == cs) && (n < nalexandria); n++)
         {
-            Ffatype alexandria;
+            ParticleType alexandria;
             cs = alexandria.Receive(cr, src);
             if (CS_OK == cs)
             {
@@ -666,25 +608,25 @@ void Poldata::checkConsistency(FILE *fp) const
         return;
     }
     auto eem = findForcesConst(InteractionType::ELECTRONEGATIVITYEQUALIZATION);
-    for (auto atp = getAtypeBegin(); atp < getAtypeEnd(); ++atp)
+    for (const auto &atp : alexandria_)
     {
-        auto atype = atp->id(InteractionType::ELECTRONEGATIVITYEQUALIZATION);
-        if (atype.id().empty())
+        auto ztype = atp.interactionTypeToIdentifier(InteractionType::ELECTRONEGATIVITYEQUALIZATION);
+        if (ztype.id().empty())
         {
             continue;
         }
         // Check whether zeta types are present
-        if (!eem.parameterExists(atype))
+        if (!eem.parameterExists(ztype))
         {
             if (fp)
             {
-                fprintf(fp, "ERROR: No eemprops for %s in Poldata::checkConsistency\n", atype.id().c_str());
+                fprintf(fp, "ERROR: No eemprops for %s in Poldata::checkConsistency\n", ztype.id().c_str());
             }
             nerror += 1;
         }
         else
         {
-            auto eep = eem.findParametersConst(atype);
+            auto eep = eem.findParametersConst(ztype);
             double chi0 = eep["chi"].value();
             double J00  = eep["jaa"].value();
             if (nullptr != fp)

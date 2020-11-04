@@ -117,15 +117,16 @@ void QgenResp::setAtomInfo(t_atoms                          *atoms,
     nFixed_ = 0;
     for (int i = 0; i < atoms->nr; i++)
     {
-        auto atype = pd->findAtype(*atoms->atomtype[i]);
-        auto ztype = atype->id(InteractionType::CHARGEDISTRIBUTION);
-        q_.push_back(atype->charge());
+        auto atype = pd->findParticleType(*atoms->atomtype[i]);
+        auto ztype = atype->interactionTypeToIdentifier(InteractionType::CHARGEDISTRIBUTION);
+        auto qparm = atype->parameter("charge");
+        q_.push_back(qparm.value());
         row_.push_back(atype->row());
         zeta_.push_back(zzz.findParameterTypeConst(ztype, "zeta").value());
         
-        mutable_.push_back(atype->mutability() != Mutability::Fixed);
+        mutable_.push_back(qparm.mutability() != Mutability::Fixed);
         ptype_.push_back(atoms->atom[i].ptype);
-        if (atype->mutability() == Mutability::Fixed)
+        if (qparm.mutability() == Mutability::Fixed)
         {
             nFixed_++;
             qshell_ += q_[i];
@@ -568,8 +569,8 @@ void QgenResp::updateZeta(t_atoms *atoms, const Poldata *pd)
     auto    fs   = pd->findForcesConst(InteractionType::CHARGEDISTRIBUTION);
     for (int i = 0; i < nAtom_; i++)
     {
-        auto atype = pd->findAtype(*(atoms->atomtype[i]));
-        auto myid  = atype->id(InteractionType::CHARGEDISTRIBUTION);
+        auto atype = pd->findParticleType(*(atoms->atomtype[i]));
+        auto myid  = atype->interactionTypeToIdentifier(InteractionType::CHARGEDISTRIBUTION);
         auto eep   = fs.findParametersConst(myid);
         zeta_[i]   = eep.find("zeta")->second.value();
     }

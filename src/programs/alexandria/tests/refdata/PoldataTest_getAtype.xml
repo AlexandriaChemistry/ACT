@@ -1,11 +1,11 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <String Name="elem">H</String>
-  <String Name="desc">hydrogen on aliphatic C with 1 electron-withdrawal group</String>
+  <String Name="element">H</String>
+  <String Name="description">hydrogen on aliphatic C with 1 electron-withdrawal group</String>
   <String Name="type">h1</String>
-  <String Name="ptype">h1_s</String>
-  <String Name="btype">h1_b</String>
-  <String Name="ztype">h1_z</String>
-  <String Name="refEnthalpy">222.232</String>
+  <String Name="poltype">h1_s</String>
+  <String Name="bondtype">h1_b</String>
+  <String Name="zetatype">h1_z</String>
+  <Real Name="refEnthalpy">222.232</Real>
 </ReferenceData>

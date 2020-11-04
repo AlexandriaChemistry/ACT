@@ -280,11 +280,11 @@ void MolGen::checkDataSufficiency(FILE *fp)
                 {
                     if (optimize(itype))
                     {
-                        auto atype  = pd_.findAtype(*mol.atoms_->atomtype[i]);
+                        auto atype  = pd_.findParticleType(*mol.atoms_->atomtype[i]);
                         auto fplist = pd_.findForces(itype);
-                        auto subId  = atype->id(itype);
-                        if (!subId.id().empty())
+                        if (atype->hasInteractionType(itype))
                         {
+                            auto subId  = atype->interactionTypeToIdentifier(itype);
                             for(auto &ff : *(fplist->findParameters(subId)))
                             {
                                 if (ff.second.isMutable())
@@ -304,15 +304,15 @@ void MolGen::checkDataSufficiency(FILE *fp)
             bool keep = true;
             for(int i = 0; i < mol.atoms_->nr; i++)
             {
-                auto atype = pd_.findAtype(*mol.atoms_->atomtype[i]);
+                auto atype = pd_.findParticleType(*mol.atoms_->atomtype[i]);
                 for(auto &itype : atomicItypes)
                 {
                     if (optimize(itype))
                     {
                         auto fplist = pd_.findForces(itype);
-                        auto ztype  = atype->id(itype);
-                        if (!ztype.id().empty())
+                        if (atype->hasInteractionType(itype))
                         {
+                            auto ztype  = atype->interactionTypeToIdentifier(itype);
                             for(auto &force : fplist->findParametersConst(ztype))
                             {
                                 if (force.second.ntrain() < static_cast<uint64_t>(mindata_))

@@ -43,6 +43,7 @@
 #include "forcefieldparameter.h"
 #include "forcefieldparameterlist.h"
 #include "interactiontype.h"
+#include "particletype.h"
 #include "poldata_low.h"
 #include "stringutil.h"
 
@@ -106,7 +107,7 @@ class Poldata
         /*! \brief Add an atom type
          * \param[in] atp The new atom type
          */
-        void  addAtype(Ffatype atp) { alexandria_.push_back(atp); }
+        void  addParticleType(ParticleType ptp) { alexandria_.push_back(ptp); }
         /*! \brief
          *  Add the polarizability types
          *
@@ -152,15 +153,6 @@ class Poldata
         size_t getNatypes() const { return alexandria_.size(); }
 
         /*! \brief
-         * Return the reference enthalpy for the given atom type
-         *
-         **\param[in] atype Atom type
-         **\param[ou] Href  Reference enthalpy
-         */
-        bool getAtypeRefEnthalpy(const std::string &atype,
-                                 double            *Href) const;
-
-        /*! \brief
          * Return the relative dielectric constant
          */
         double getEpsilonR() const { return gtEpsilonR_; }
@@ -168,69 +160,54 @@ class Poldata
         std::string  getGeometry(std::string gtBrule);
 
         /*! \brief
-         * Return the discription corresponding to the atom type
-         *
-         * \param[in] atype  Atom Type
-         */
-        const std::string &getDesc(const std::string &atype) const;
-
-        /*! \brief
-         * Return the element name corresponding to the atom type
-         *
-         * \param[in] atype  Atom Type
-         */
-        const std::string &getElem(const std::string &atype) const;
-        
-        /*! \brief
          * Return the element name corresponding to the zeta type
          *
          * \param[in] ztype  zeta Type
          */
-        const std::string &ztype2elem(const std::string &ztype) const;
+        const std::string ztype2elem(const std::string &ztype) const;
 
-        /*! \brief
-         * Return the atom type corresponding to the zeta type
-         *
-         * \param[in] ztype  zeta Type
-         */
-        //const std::string &ztype2atype(const std::string &ztype) const;
-
-        //std::vector<std::string> ztype_names() const;
-
-        /*! \brief
-         * Return the charge corresponding to the atyom type
-         * from the gentop.dat file
-         *
-         * \param[in] atype  Atom type
-         */
-        std::string  getCharge(  std::string atype);
+    /*! \brief Check whether particle type exists
+     * \param[in] id The identifier of the particle type
+     * \return true if ptype exists
+     */
+    bool hasParticleType(const Identifier &id) const
+    {
+        auto atp = std::find_if(alexandria_.begin(), alexandria_.end(),
+                                [id](ParticleType const &f)
+                                { return (id == f.id()); });
+        return (atp != alexandria_.end());
+    }
+    /*! \brief Check whether particle type exists
+     * \param[in] ptype The name of the particle type
+     * \return true if ptype exists
+     */
+    bool hasParticleType(const std::string &ptype) const
+    {
+        Identifier id({ptype}, CanSwap::No);
+        return hasParticleType(id);
+    }
         
-        std::vector<Ffatype> &getAtypes() {return alexandria_; }
-
-        FfatypeIterator getAtypeBegin() { return alexandria_.begin(); }
-
-        FfatypeIterator getAtypeEnd() { return alexandria_.end(); }
-
-        FfatypeConstIterator getAtypeBegin() const { return alexandria_.begin(); }
-
-        FfatypeConstIterator getAtypeEnd() const { return alexandria_.end(); }
-
+        ParticleTypeIterator findParticleType(Identifier id)
+        {
+            auto atp = std::find_if(alexandria_.begin(), alexandria_.end(),
+                                    [id](ParticleType const &f)
+                                    { return (id == f.id()); });
+            if (atp == alexandria_.end())
+            {
+                GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such atom ype %s", id.id().c_str()).c_str()));
+            }
+            return atp;
+        }
         /*! \brief
          * Return the iterator corresponding to the atom type
          *
          * \param[in] atype  Atom Type
          * \throw if atom type not  found.
          */
-        FfatypeIterator findAtype(const std::string &atype)
+        ParticleTypeIterator findParticleType(const std::string &atype)
         {
-            auto atp = std::find_if(alexandria_.begin(), alexandria_.end(),
-                                    [atype](Ffatype const &f)
-                                    { return (atype == f.getType()); });
-            if (atp == alexandria_.end())
-            {
-                GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such atom ype %s", atype.c_str()).c_str()));
-            }
-            return atp;
+            Identifier id({atype}, CanSwap::No);
+            return findParticleType(id);
         }
 
         /*! \brief
@@ -238,12 +215,21 @@ class Poldata
          *
          * \param[in] atype  Atom Type
          */
-        FfatypeConstIterator findAtype(const std::string &atype) const
+        ParticleTypeConstIterator findParticleType(const std::string &atype) const
         {
+            Identifier id({atype}, CanSwap::No);
             return std::find_if(alexandria_.begin(), alexandria_.end(),
-                                [atype](Ffatype const &f)
-                                { return (atype == f.getType()); });
+                                [id](ParticleType const &f)
+                                { return (id == f.id()); });
         }
+        
+        /*! \brief Return mutable vector
+         */
+        std::vector<ParticleType> *particleTypes() { return &alexandria_; }
+
+        /*! \brief Return const vector
+         */
+        const std::vector<ParticleType> &particleTypesConst() const { return alexandria_; }
 
         VsiteIterator getVsiteBegin()  { return vsite_.begin(); }
 
@@ -380,11 +366,6 @@ class Poldata
 
         SymchargesConstIterator getSymchargesEnd() const { return symcharges_.end(); }
 
-        //! Return whether there is polarizability support for atype
-        int havePolSupport(const std::string &atype) const;
-
-        const char *getOpts(const std::string &name) const;
-
         //! Return the charge generation algorithm used
         ChargeGenerationAlgorithm chargeGenerationAlgorithm() const
         { return ChargeGenerationAlgorithm_; }
@@ -423,7 +404,7 @@ class Poldata
     private:
         std::map<std::string, InteractionType> type2Itype_;
         std::string                           filename_;
-        std::vector<Ffatype>                  alexandria_;
+        std::vector<ParticleType>             alexandria_;
         std::vector<Vsite>                    vsite_;
         std::vector<std::string>              btype_;
         std::string                           alexandriaVersion_;

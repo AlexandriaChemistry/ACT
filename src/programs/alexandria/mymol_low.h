@@ -191,7 +191,6 @@ void write_top(FILE                            *out,
 
 void print_top_header(FILE                    *fp,
                       const Poldata           *pd,
-                      gmx_atomprop_t           aps,
                       bool                     bPol,
                       std::vector<std::string> commercials,
                       bool                     bItp);

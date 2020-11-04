@@ -436,8 +436,8 @@ void print_electric_props(FILE                           *fp,
                 if (mol.atoms_->atom[j].ptype == eptAtom ||
                     mol.atoms_->atom[j].ptype == eptNucleus)
                 {
-                    auto  atp = pd->findAtype(*(mol.atoms_->atomtype[j]));
-                    auto  ztp = atp->id(InteractionType::ELECTRONEGATIVITYEQUALIZATION).id();
+                    auto  atp = pd->findParticleType(*(mol.atoms_->atomtype[j]));
+                    auto  ztp = atp->interactionTypeToIdentifier(InteractionType::ELECTRONEGATIVITYEQUALIZATION).id();
                     auto  k   = std::find_if(lsqt.begin(), lsqt.end(),
                                              [ztp](const ZetaTypeLsq &atlsq)
                                              {

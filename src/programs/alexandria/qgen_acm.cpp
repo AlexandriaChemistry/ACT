@@ -65,15 +65,16 @@ QgenAcm::QgenAcm(const Poldata *pd,
     auto eem = pd->findForcesConst(InteractionType::ELECTRONEGATIVITYEQUALIZATION);
     for (int i = 0; i < atoms->nr; i++)
     {
-        auto atype = pd->findAtype(*atoms->atomtype[i]);
+        auto atype = pd->findParticleType(*atoms->atomtype[i]);
         atomnr_.push_back(atype->atomnumber());
-        if (atype->mutability() != Mutability::Fixed)
+        auto qparam = atype->parameter("charge");
+        if (qparam.mutability() != Mutability::Fixed)
         {
-            auto acmtype = atype->id(InteractionType::ELECTRONEGATIVITYEQUALIZATION);
+            auto acmtype = atype->interactionTypeToIdentifier(InteractionType::ELECTRONEGATIVITYEQUALIZATION);
             if (acmtype.id().empty())
             {
                 GMX_THROW(gmx::InternalError(gmx::formatString("No ACM information for %s",
-                                                               atype->getType().c_str()).c_str()));
+                                                               atype->id().id().c_str()).c_str()));
             }
             jaa_.push_back(eem.findParameterTypeConst(acmtype, "jaa").value());
             auto myrow = std::min(atype->row(), SLATER_MAX);
@@ -84,8 +85,8 @@ QgenAcm::QgenAcm(const Poldata *pd,
             q_.push_back(0.0);
             // If this particle has a shell, it is assumed to be the next particle
             // TODO: check the polarization array instead.
-            if (atype->hasId(InteractionType::POLARIZATION) && i < atoms->nr-1 &&
-                atoms->atom[i+1].ptype ==  eptShell)
+            if (atype->hasInteractionType(InteractionType::POLARIZATION) && i < atoms->nr-1 &&
+                atoms->atom[i+1].ptype == eptShell)
             {
                 myShell_.insert({ i, i+1 });
             }
@@ -98,7 +99,7 @@ QgenAcm::QgenAcm(const Poldata *pd,
             chi0_.push_back(0.0);
             row_.push_back(0);
         }
-        auto qtype = atype->id(InteractionType::CHARGEDISTRIBUTION);
+        auto qtype = atype->interactionTypeToIdentifier(InteractionType::CHARGEDISTRIBUTION);
         zeta_.push_back(qt.findParameterTypeConst(qtype, "zeta").value());
         id_.push_back(qtype);
         

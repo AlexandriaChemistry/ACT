@@ -1,425 +1,1253 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <!DOCTYPE gentop.dtd PUBLIC "gentop.dtd" "gentop.dtd">
 <gentop>
-  <atomtypes chargegenerationalgorithm="EEM" version="2020" nexclusions="0" epsilonr="1">
-    <atomtype elem="H" atomnumber="1" mass="1.0079" charge="0.0" row="1" description="hydrogen on aliphatic C with 1 electron-withdrawal group" atype="h1" ptype="h1_s" btype="h1_b" ztype="H" acmtype="H" mutability="Free" ref_enthalpy="222.232"/>
-    <atomtype elem="H" atomnumber="1" mass="1.0079" charge="0.0" row="1" description="hydrogen on aliphatic C with 2 electron-withdrawal groups" atype="h2" ptype="h1_s" btype="h1_b" ztype="H" acmtype="H" mutability="Free" ref_enthalpy="222.232"/>
-    <atomtype elem="H" atomnumber="1" mass="1.0079" charge="0.0" row="1" description="hydrogen on aliphatic C with 3 electron-withdrawal groups" atype="h3" ptype="h1_s" btype="h1_b" ztype="H" acmtype="H" mutability="Free" ref_enthalpy="222.232"/>
-    <atomtype elem="H" atomnumber="1" mass="1.0079" charge="0.0" row="1" description="hydrogen on aromatic C with 1 electron-withdrawal group" atype="h4" ptype="h4_s" btype="h2_b" ztype="H" acmtype="H" mutability="Free" ref_enthalpy="222.232"/>
-    <atomtype elem="H" atomnumber="1" mass="1.0079" charge="0.0" row="1" description="hydrogen on aromatic C with 2 electron-withdrawal groups" atype="h5" ptype="h4_s" btype="h2_b" ztype="H" acmtype="H" mutability="Free" ref_enthalpy="222.232"/>
-    <atomtype elem="H" atomnumber="1" mass="1.0079" charge="0.0" row="1" description="hydrogen on aromatic or sp2 aliphatic C" atype="ha" ptype="ha_s" btype="ha_b" ztype="H" acmtype="H" mutability="Free" ref_enthalpy="222.232"/>
-    <atomtype elem="H" atomnumber="1" mass="1.0079" charge="0.0" row="1" description="hydrogen on sp3 aliphatic C" atype="hc" ptype="hc_s" btype="ha_b" ztype="H" acmtype="H" mutability="Free" ref_enthalpy="222.232"/>
-    <atomtype elem="H" atomnumber="1" mass="1.0079" charge="0.0" row="1" description="hydrogen on nitrogen" atype="hn" ptype="hp_s" btype="hp_b" ztype="H" acmtype="H" mutability="Free" ref_enthalpy="222.232"/>
-    <atomtype elem="H" atomnumber="1" mass="1.0079" charge="0.0" row="1" description="hydrogen on oxygen" atype="ho" ptype="hp_s" btype="hp_b" ztype="H" acmtype="H" mutability="Free" ref_enthalpy="222.232"/>
-    <atomtype elem="H" atomnumber="1" mass="1.0079" charge="0.0" row="1" description="hydrogen on phosphor" atype="hp" ptype="hp_s" btype="hp_b" ztype="H" acmtype="H" mutability="Free" ref_enthalpy="222.232"/>
-    <atomtype elem="H" atomnumber="1" mass="1.0079" charge="0.0" row="1" description="hydrogen on sulphur" atype="hs" ptype="hp_s" btype="hp_b" ztype="H" acmtype="H" mutability="Free" ref_enthalpy="222.232"/>
-    <atomtype elem="H" atomnumber="1" mass="1.0079" charge="0.0" row="1" description="hydrogen in water" atype="hw" ptype="hw_s" btype="hw_b" ztype="H" acmtype="H" mutability="Free" ref_enthalpy="222.232"/>
-    <atomtype elem="C" atomnumber="6" mass="12.0107" charge="0.0" row="2" description="sp C" atype="c1" ptype="c1_s" btype="c1_b" ztype="C" acmtype="C" mutability="Free" ref_enthalpy="717.721"/>
-    <atomtype elem="C" atomnumber="6" mass="12.0107" charge="0.0" row="2" description="C=O or C=S" atype="c" ptype="c2_s" btype="c_b" ztype="C" acmtype="C" mutability="Free" ref_enthalpy="717.721"/>
-    <atomtype elem="C" atomnumber="6" mass="12.0107" charge="0.0" row="2" description="pure aromatic atom" atype="ca" ptype="ca_s" btype="ca_b" ztype="C" acmtype="C" mutability="Free" ref_enthalpy="717.721"/>
-    <atomtype elem="C" atomnumber="6" mass="12.0107" charge="0.0" row="2" description="bridge aromatic c in byphenyl system" atype="cq" ptype="c2_s" btype="c2_b" ztype="C" acmtype="C" mutability="Free" ref_enthalpy="717.721"/>
-    <atomtype elem="C" atomnumber="6" mass="12.0107" charge="0.0" row="2" description="bridge aromatic c in byphenyl system" atype="cp" ptype="c2_s" btype="c2_b" ztype="C" acmtype="C" mutability="Free" ref_enthalpy="717.721"/>
-    <atomtype elem="C" atomnumber="6" mass="12.0107" charge="0.0" row="2" description="inner sp2 C of conjugated ring systems" atype="cc" ptype="c2_s" btype="c2_b" ztype="C" acmtype="C" mutability="Free" ref_enthalpy="717.721"/>
-    <atomtype elem="C" atomnumber="6" mass="12.0107" charge="0.0" row="2" description="inner sp2 C of conjugated ring systems" atype="cd" ptype="c2_s" btype="c2_b" ztype="C" acmtype="C" mutability="Free" ref_enthalpy="717.721"/>
-    <atomtype elem="C" atomnumber="6" mass="12.0107" charge="0.0" row="2" description="sp C of conjugated system" atype="cg" ptype="c1_s" btype="c1_b" ztype="C" acmtype="C" mutability="Free" ref_enthalpy="717.721"/>
-    <atomtype elem="C" atomnumber="6" mass="12.0107" charge="0.0" row="2" description="inner sp2 C of conjugated chain systems" atype="ce" ptype="c2_s" btype="c2_b" ztype="C" acmtype="C" mutability="Free" ref_enthalpy="717.721"/>
-    <atomtype elem="C" atomnumber="6" mass="12.0107" charge="0.0" row="2" description="inner sp2 C of conjugated chain systems" atype="cf" ptype="c2_s" btype="c2_b" ztype="C" acmtype="C" mutability="Free" ref_enthalpy="717.721"/>
-    <atomtype elem="C" atomnumber="6" mass="12.0107" charge="0.0" row="2" description="carbon COO- groups" atype="cm" ptype="cm_s" btype="cm_b" ztype="C" acmtype="C" mutability="Free" ref_enthalpy="717.721"/>
-    <atomtype elem="C" atomnumber="6" mass="12.0107" charge="0.0" row="2" description="sp2 carbon in a 3-membered ring" atype="cu" ptype="cu_s" btype="c2_b" ztype="C" acmtype="C" mutability="Free" ref_enthalpy="717.721"/>
-    <atomtype elem="C" atomnumber="6" mass="12.0107" charge="0.0" row="2" description="sp2 carbon in a 4-membered ring" atype="cv" ptype="cu_s" btype="c2_b" ztype="C" acmtype="C" mutability="Free" ref_enthalpy="717.721"/>
-    <atomtype elem="C" atomnumber="6" mass="12.0107" charge="0.0" row="2" description="guanidine carbon" atype="cz" ptype="cz_s" btype="c2_b" ztype="C" acmtype="C" mutability="Free" ref_enthalpy="717.721"/>
-    <atomtype elem="C" atomnumber="6" mass="12.0107" charge="0.0" row="2" description="sp2 C  aliphatic" atype="c2" ptype="c2_s" btype="c2_b" ztype="C" acmtype="C" mutability="Free" ref_enthalpy="717.721"/>
-    <atomtype elem="C" atomnumber="6" mass="12.0107" charge="0.0" row="2" description="sp3 C" atype="c3" ptype="c3_s" btype="c3_b" ztype="C" acmtype="C" mutability="Free" ref_enthalpy="717.721"/>
-    <atomtype elem="C" atomnumber="6" mass="12.0107" charge="0.0" row="2" description="3-membered ring atom" atype="cx" ptype="cu_s" btype="c3_b" ztype="C" acmtype="C" mutability="Free" ref_enthalpy="717.721"/>
-    <atomtype elem="C" atomnumber="6" mass="12.0107" charge="0.0" row="2" description="4-membered ring atom" atype="cy" ptype="cu_s" btype="c3_b" ztype="C" acmtype="C" mutability="Free" ref_enthalpy="717.721"/>
-    <atomtype elem="N" atomnumber="7" mass="14.0067" charge="0.0" row="2" description="sp2 N in amides" atype="n" ptype="n_s" btype="n_b" ztype="N" acmtype="N" mutability="Free" ref_enthalpy="477.018"/>
-    <atomtype elem="N" atomnumber="7" mass="14.0067" charge="0.0" row="2" description="sp1 N" atype="n1" ptype="n1_s" btype="n1_b" ztype="N" acmtype="N" mutability="Free" ref_enthalpy="477.018"/>
-    <atomtype elem="N" atomnumber="7" mass="14.0067" charge="0.0" row="2" description="sp2 N with 2 subst." atype="n2" ptype="n2_s" btype="n2_b" ztype="N" acmtype="N" mutability="Free" ref_enthalpy="477.018"/>
-    <atomtype elem="N" atomnumber="7" mass="14.0067" charge="0.0" row="2" description="sp3 N with 3 subst." atype="n3" ptype="n3_s" btype="n3_b" ztype="N" acmtype="N" mutability="Free" ref_enthalpy="477.018"/>
-    <atomtype elem="N" atomnumber="7" mass="14.0067" charge="0.0" row="2" description="sp3 N with 4 subst." atype="n4" ptype="n4_s" btype="n3_b" ztype="N" acmtype="N" mutability="Free" ref_enthalpy="477.018"/>
-    <atomtype elem="N" atomnumber="7" mass="14.0067" charge="0.0" row="2" description="sp2 N with 3 subst." atype="na" ptype="na_s" btype="na_b" ztype="N" acmtype="N" mutability="Free" ref_enthalpy="477.018"/>
-    <atomtype elem="N" atomnumber="7" mass="14.0067" charge="0.0" row="2" description="aromatic N" atype="nb" ptype="nb_s" btype="nb_b" ztype="N" acmtype="N" mutability="Free" ref_enthalpy="477.018"/>
-    <atomtype elem="N" atomnumber="7" mass="14.0067" charge="0.0" row="2" description="inner sp2 N of conjugated ring systems" atype="nc" ptype="nc_s" btype="nc_b" ztype="N" acmtype="N" mutability="Free" ref_enthalpy="477.018"/>
-    <atomtype elem="N" atomnumber="7" mass="14.0067" charge="0.0" row="2" description="inner sp2 N of conjugated ring systems" atype="nd" ptype="nc_s" btype="nc_b" ztype="N" acmtype="N" mutability="Free" ref_enthalpy="477.018"/>
-    <atomtype elem="N" atomnumber="7" mass="14.0067" charge="0.0" row="2" description="inner sp2 N of conjugated chain system" atype="ne" ptype="ne_s" btype="ne_b" ztype="N" acmtype="N" mutability="Free" ref_enthalpy="477.018"/>
-    <atomtype elem="N" atomnumber="7" mass="14.0067" charge="0.0" row="2" description="amine N connected to aromatic ring" atype="nh" ptype="nh_s" btype="nh_b" ztype="N" acmtype="N" mutability="Free" ref_enthalpy="477.018"/>
-    <atomtype elem="N" atomnumber="7" mass="14.0067" charge="0.0" row="2" description="N in nitro group" atype="no" ptype="no_s" btype="no_b" ztype="N" acmtype="N" mutability="Free" ref_enthalpy="477.018"/>
-    <atomtype elem="O" atomnumber="8" mass="15.9994" charge="0.0" row="2" description="sp2 O" atype="o" ptype="o_s" btype="o_b" ztype="O" acmtype="O" mutability="Free" ref_enthalpy="253.514"/>
-    <atomtype elem="O" atomnumber="8" mass="15.9994" charge="0.0" row="2" description="sp3 O in hydroxyl group" atype="oh" ptype="oh_s" btype="oh_b" ztype="O" acmtype="O" mutability="Free" ref_enthalpy="253.514"/>
-    <atomtype elem="O" atomnumber="8" mass="15.9994" charge="0.0" row="2" description="O in water" atype="ow" ptype="ow_s" btype="ow_b" ztype="O" acmtype="O" mutability="Free" ref_enthalpy="253.514"/>
-    <atomtype elem="O" atomnumber="8" mass="15.9994" charge="0.0" row="2" description="O in NO2" atype="on" ptype="on_s" btype="on_b" ztype="O" acmtype="O" mutability="Free" ref_enthalpy="253.514"/>
-    <atomtype elem="O" atomnumber="8" mass="15.9994" charge="0.0" row="2" description="O- in COO" atype="om" ptype="om_s" btype="om_b" ztype="O" acmtype="O" mutability="Free" ref_enthalpy="253.514"/>
-    <atomtype elem="O" atomnumber="8" mass="15.9994" charge="0.0" row="2" description="sp3 O in esters and ethers" atype="os" ptype="os_s" btype="os_b" ztype="O" acmtype="O" mutability="Free" ref_enthalpy="253.514"/>
-    <atomtype elem="F" atomnumber="9" mass="18.9984" charge="0.0" row="2" description="general fluorine" atype="f" ptype="f_s" btype="f_b" ztype="F" acmtype="F" mutability="Free" ref_enthalpy="83.8025"/>
-    <atomtype elem="P" atomnumber="15" mass="30.9738" charge="0.0" row="3" description="other sp2 P" atype="p2" ptype="p2_s" btype="p2_b" ztype="P" acmtype="P" mutability="Free" ref_enthalpy="321.75"/>
-    <atomtype elem="P" atomnumber="15" mass="30.9738" charge="0.0" row="3" description="other sp3 P" atype="p3" ptype="p2_s" btype="p3_b" ztype="P" acmtype="P" mutability="Free" ref_enthalpy="321.75"/>
-    <atomtype elem="P" atomnumber="15" mass="30.9738" charge="0.0" row="3" description="hypervalent P" atype="p4" ptype="p4_s" btype="p4_b" ztype="P" acmtype="P" mutability="Free" ref_enthalpy="321.75"/>
-    <atomtype elem="P" atomnumber="15" mass="30.9738" charge="0.0" row="3" description="hypervalent P" atype="p5" ptype="p4_s" btype="p4_b" ztype="P" acmtype="P" mutability="Free" ref_enthalpy="321.75"/>
-    <atomtype elem="P" atomnumber="15" mass="30.9738" charge="0.0" row="3" description="aromatic P" atype="pb" ptype="p2_s" btype="p_b" ztype="P" acmtype="P" mutability="Free" ref_enthalpy="321.75"/>
-    <atomtype elem="P" atomnumber="15" mass="30.9738" charge="0.0" row="3" description="inner sp2 P of conjugated ring systems" atype="pc" ptype="p2_s" btype="p_b" ztype="P" acmtype="P" mutability="Free" ref_enthalpy="321.75"/>
-    <atomtype elem="P" atomnumber="15" mass="30.9738" charge="0.0" row="3" description="inner sp2 P of conjugated chain system" atype="pe" ptype="p2_s" btype="p_b" ztype="P" acmtype="P" mutability="Free" ref_enthalpy="321.75"/>
-    <atomtype elem="P" atomnumber="15" mass="30.9738" charge="0.0" row="3" description="sp2 P of conjugated system" atype="px" ptype="p2_s" btype="p_b" ztype="P" acmtype="P" mutability="Free" ref_enthalpy="321.75"/>
-    <atomtype elem="P" atomnumber="15" mass="30.9738" charge="0.0" row="3" description="P of conjugated system" atype="py" ptype="p2_s" btype="p_b" ztype="P" acmtype="P" mutability="Free" ref_enthalpy="321.75"/>
-    <atomtype elem="S" atomnumber="16" mass="32.065" charge="0.0" row="3" description="sp2 sulphur, p=s and c=s" atype="s" ptype="s_s" btype="s_b" ztype="S" acmtype="S" mutability="Free" ref_enthalpy="281.392"/>
-    <atomtype elem="S" atomnumber="16" mass="32.065" charge="0.0" row="3" description="hypervalent S,  3 subst." atype="s4" ptype="s4_s" btype="s4_b" ztype="S" acmtype="S" mutability="Free" ref_enthalpy="281.392"/>
-    <atomtype elem="S" atomnumber="16" mass="32.065" charge="0.0" row="3" description="hypervalent S,  4 subst" atype="s6" ptype="s4_s" btype="s4_b" ztype="S" acmtype="S" mutability="Free" ref_enthalpy="281.392"/>
-    <atomtype elem="S" atomnumber="16" mass="32.065" charge="0.0" row="3" description="sp3 S in thiol" atype="sh" ptype="s_s" btype="s_b" ztype="S" acmtype="S" mutability="Free" ref_enthalpy="281.392"/>
-    <atomtype elem="S" atomnumber="16" mass="32.065" charge="0.0" row="3" description="sp3 sulphur in S-R and S-S" atype="ss" ptype="s_s" btype="s_b" ztype="S" acmtype="S" mutability="Free" ref_enthalpy="281.392"/>
-    <atomtype elem="S" atomnumber="16" mass="32.065" charge="0.0" row="3" description="conjugated S,  3 subst." atype="sx" ptype="s_s" btype="s_b" ztype="S" acmtype="S" mutability="Free" ref_enthalpy="281.392"/>
-    <atomtype elem="S" atomnumber="16" mass="32.065" charge="0.0" row="3" description="conjugated S,  4 subst." atype="sy" ptype="s_s" btype="s_b" ztype="S" acmtype="S" mutability="Free" ref_enthalpy="281.392"/>
-    <atomtype elem="I" atomnumber="53" mass="126.904" charge="0.0" row="5" description="general iodine" atype="i" ptype="i_s" btype="i_b" ztype="I" acmtype="I" mutability="Free" ref_enthalpy="113.361"/>
-    <atomtype elem="I" atomnumber="53" mass="126.904" charge="7.613" row="5" description="iodide ion" atype="I-" ptype="I-_s" btype="_b" ztype="I" acmtype="I" mutability="Free" ref_enthalpy="0.0"/>
-    <atomtype elem="F" atomnumber="9" mass="18.9984" charge="5.59" row="2" description="fluoride ion" atype="F-" ptype="F-_s" btype="_b" ztype="F" acmtype="F" mutability="Free" ref_enthalpy="0.0"/>
-    <atomtype elem="K" atomnumber="19" mass="39.0983" charge="5.464" row="4" description="potassium ion" atype="K+" ptype="K+_s" btype="_b" ztype="K" acmtype="K" mutability="Free" ref_enthalpy="0.0"/>
-  </atomtypes>
+  <particletypes chargegenerationalgorithm="EEM" version="2020" nexclusions="0" epsilonr="1">
+    <particletype identifier="h1" type="Atom" description="hydrogen on aliphatic C with 1 electron-withdrawal group">
+      <option key="acmtype" value="H"/>
+      <option key="atomnumber" value="1"/>
+      <option key="bondtype" value="h1_b"/>
+      <option key="element" value="H"/>
+      <option key="poltype" value="h1_s"/>
+      <option key="row" value="1"/>
+      <option key="vdwtype" value="h1"/>
+      <option key="zetatype" value="H"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="1.0079" uncertainty="0" minimum="1.0079" maximum="1.0079" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="222.232" uncertainty="0" minimum="222.232" maximum="222.232" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="h2" type="Atom" description="hydrogen on aliphatic C with 2 electron-withdrawal groups">
+      <option key="acmtype" value="H"/>
+      <option key="atomnumber" value="1"/>
+      <option key="bondtype" value="h1_b"/>
+      <option key="element" value="H"/>
+      <option key="poltype" value="h1_s"/>
+      <option key="row" value="1"/>
+      <option key="vdwtype" value="h2"/>
+      <option key="zetatype" value="H"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="1.0079" uncertainty="0" minimum="1.0079" maximum="1.0079" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="222.232" uncertainty="0" minimum="222.232" maximum="222.232" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="h3" type="Atom" description="hydrogen on aliphatic C with 3 electron-withdrawal groups">
+      <option key="acmtype" value="H"/>
+      <option key="atomnumber" value="1"/>
+      <option key="bondtype" value="h1_b"/>
+      <option key="element" value="H"/>
+      <option key="poltype" value="h1_s"/>
+      <option key="row" value="1"/>
+      <option key="vdwtype" value="h3"/>
+      <option key="zetatype" value="H"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="1.0079" uncertainty="0" minimum="1.0079" maximum="1.0079" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="222.232" uncertainty="0" minimum="222.232" maximum="222.232" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="h4" type="Atom" description="hydrogen on aromatic C with 1 electron-withdrawal group">
+      <option key="acmtype" value="H"/>
+      <option key="atomnumber" value="1"/>
+      <option key="bondtype" value="h2_b"/>
+      <option key="element" value="H"/>
+      <option key="poltype" value="h4_s"/>
+      <option key="row" value="1"/>
+      <option key="vdwtype" value="h4"/>
+      <option key="zetatype" value="H"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="1.0079" uncertainty="0" minimum="1.0079" maximum="1.0079" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="222.232" uncertainty="0" minimum="222.232" maximum="222.232" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="h5" type="Atom" description="hydrogen on aromatic C with 2 electron-withdrawal groups">
+      <option key="acmtype" value="H"/>
+      <option key="atomnumber" value="1"/>
+      <option key="bondtype" value="h2_b"/>
+      <option key="element" value="H"/>
+      <option key="poltype" value="h4_s"/>
+      <option key="row" value="1"/>
+      <option key="vdwtype" value="h5"/>
+      <option key="zetatype" value="H"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="1.0079" uncertainty="0" minimum="1.0079" maximum="1.0079" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="222.232" uncertainty="0" minimum="222.232" maximum="222.232" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="ha" type="Atom" description="hydrogen on aromatic or sp2 aliphatic C">
+      <option key="acmtype" value="H"/>
+      <option key="atomnumber" value="1"/>
+      <option key="bondtype" value="ha_b"/>
+      <option key="element" value="H"/>
+      <option key="poltype" value="ha_s"/>
+      <option key="row" value="1"/>
+      <option key="vdwtype" value="ha"/>
+      <option key="zetatype" value="H"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="1.0079" uncertainty="0" minimum="1.0079" maximum="1.0079" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="222.232" uncertainty="0" minimum="222.232" maximum="222.232" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="hc" type="Atom" description="hydrogen on sp3 aliphatic C">
+      <option key="acmtype" value="H"/>
+      <option key="atomnumber" value="1"/>
+      <option key="bondtype" value="ha_b"/>
+      <option key="element" value="H"/>
+      <option key="poltype" value="hc_s"/>
+      <option key="row" value="1"/>
+      <option key="vdwtype" value="hc"/>
+      <option key="zetatype" value="H"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="1.0079" uncertainty="0" minimum="1.0079" maximum="1.0079" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="222.232" uncertainty="0" minimum="222.232" maximum="222.232" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="hn" type="Atom" description="hydrogen on nitrogen">
+      <option key="acmtype" value="H"/>
+      <option key="atomnumber" value="1"/>
+      <option key="bondtype" value="hp_b"/>
+      <option key="element" value="H"/>
+      <option key="poltype" value="hp_s"/>
+      <option key="row" value="1"/>
+      <option key="vdwtype" value="hn"/>
+      <option key="zetatype" value="H"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="1.0079" uncertainty="0" minimum="1.0079" maximum="1.0079" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="222.232" uncertainty="0" minimum="222.232" maximum="222.232" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="ho" type="Atom" description="hydrogen on oxygen">
+      <option key="acmtype" value="H"/>
+      <option key="atomnumber" value="1"/>
+      <option key="bondtype" value="hp_b"/>
+      <option key="element" value="H"/>
+      <option key="poltype" value="hp_s"/>
+      <option key="row" value="1"/>
+      <option key="vdwtype" value="ho"/>
+      <option key="zetatype" value="H"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="1.0079" uncertainty="0" minimum="1.0079" maximum="1.0079" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="222.232" uncertainty="0" minimum="222.232" maximum="222.232" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="hp" type="Atom" description="hydrogen on phosphor">
+      <option key="acmtype" value="H"/>
+      <option key="atomnumber" value="1"/>
+      <option key="bondtype" value="hp_b"/>
+      <option key="element" value="H"/>
+      <option key="poltype" value="hp_s"/>
+      <option key="row" value="1"/>
+      <option key="vdwtype" value="hp"/>
+      <option key="zetatype" value="H"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="1.0079" uncertainty="0" minimum="1.0079" maximum="1.0079" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="222.232" uncertainty="0" minimum="222.232" maximum="222.232" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="hs" type="Atom" description="hydrogen on sulphur">
+      <option key="acmtype" value="H"/>
+      <option key="atomnumber" value="1"/>
+      <option key="bondtype" value="hp_b"/>
+      <option key="element" value="H"/>
+      <option key="poltype" value="hp_s"/>
+      <option key="row" value="1"/>
+      <option key="vdwtype" value="hs"/>
+      <option key="zetatype" value="H"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="1.0079" uncertainty="0" minimum="1.0079" maximum="1.0079" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="222.232" uncertainty="0" minimum="222.232" maximum="222.232" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="hw" type="Atom" description="hydrogen in water">
+      <option key="acmtype" value="H"/>
+      <option key="atomnumber" value="1"/>
+      <option key="bondtype" value="hw_b"/>
+      <option key="element" value="H"/>
+      <option key="poltype" value="hw_s"/>
+      <option key="row" value="1"/>
+      <option key="vdwtype" value="hw"/>
+      <option key="zetatype" value="H"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="1.0079" uncertainty="0" minimum="1.0079" maximum="1.0079" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="222.232" uncertainty="0" minimum="222.232" maximum="222.232" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="c1" type="Atom" description="sp C">
+      <option key="acmtype" value="C"/>
+      <option key="atomnumber" value="6"/>
+      <option key="bondtype" value="c1_b"/>
+      <option key="element" value="C"/>
+      <option key="poltype" value="c1_s"/>
+      <option key="row" value="2"/>
+      <option key="vdwtype" value="c1"/>
+      <option key="zetatype" value="C"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="12.0107" uncertainty="0" minimum="12.0107" maximum="12.0107" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="717.721" uncertainty="0" minimum="717.721" maximum="717.721" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="c" type="Atom" description="C=O or C=S">
+      <option key="acmtype" value="C"/>
+      <option key="atomnumber" value="6"/>
+      <option key="bondtype" value="c_b"/>
+      <option key="element" value="C"/>
+      <option key="poltype" value="c2_s"/>
+      <option key="row" value="2"/>
+      <option key="vdwtype" value="c"/>
+      <option key="zetatype" value="C"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="12.0107" uncertainty="0" minimum="12.0107" maximum="12.0107" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="717.721" uncertainty="0" minimum="717.721" maximum="717.721" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="ca" type="Atom" description="pure aromatic atom">
+      <option key="acmtype" value="C"/>
+      <option key="atomnumber" value="6"/>
+      <option key="bondtype" value="ca_b"/>
+      <option key="element" value="C"/>
+      <option key="poltype" value="ca_s"/>
+      <option key="row" value="2"/>
+      <option key="vdwtype" value="ca"/>
+      <option key="zetatype" value="C"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="12.0107" uncertainty="0" minimum="12.0107" maximum="12.0107" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="717.721" uncertainty="0" minimum="717.721" maximum="717.721" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="cq" type="Atom" description="bridge aromatic c in byphenyl system">
+      <option key="acmtype" value="C"/>
+      <option key="atomnumber" value="6"/>
+      <option key="bondtype" value="c2_b"/>
+      <option key="element" value="C"/>
+      <option key="poltype" value="c2_s"/>
+      <option key="row" value="2"/>
+      <option key="vdwtype" value="cq"/>
+      <option key="zetatype" value="C"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="12.0107" uncertainty="0" minimum="12.0107" maximum="12.0107" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="717.721" uncertainty="0" minimum="717.721" maximum="717.721" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="cp" type="Atom" description="bridge aromatic c in byphenyl system">
+      <option key="acmtype" value="C"/>
+      <option key="atomnumber" value="6"/>
+      <option key="bondtype" value="c2_b"/>
+      <option key="element" value="C"/>
+      <option key="poltype" value="c2_s"/>
+      <option key="row" value="2"/>
+      <option key="vdwtype" value="cp"/>
+      <option key="zetatype" value="C"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="12.0107" uncertainty="0" minimum="12.0107" maximum="12.0107" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="717.721" uncertainty="0" minimum="717.721" maximum="717.721" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="cc" type="Atom" description="inner sp2 C of conjugated ring systems">
+      <option key="acmtype" value="C"/>
+      <option key="atomnumber" value="6"/>
+      <option key="bondtype" value="c2_b"/>
+      <option key="element" value="C"/>
+      <option key="poltype" value="c2_s"/>
+      <option key="row" value="2"/>
+      <option key="vdwtype" value="cc"/>
+      <option key="zetatype" value="C"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="12.0107" uncertainty="0" minimum="12.0107" maximum="12.0107" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="717.721" uncertainty="0" minimum="717.721" maximum="717.721" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="cd" type="Atom" description="inner sp2 C of conjugated ring systems">
+      <option key="acmtype" value="C"/>
+      <option key="atomnumber" value="6"/>
+      <option key="bondtype" value="c2_b"/>
+      <option key="element" value="C"/>
+      <option key="poltype" value="c2_s"/>
+      <option key="row" value="2"/>
+      <option key="vdwtype" value="cd"/>
+      <option key="zetatype" value="C"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="12.0107" uncertainty="0" minimum="12.0107" maximum="12.0107" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="717.721" uncertainty="0" minimum="717.721" maximum="717.721" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="cg" type="Atom" description="sp C of conjugated system">
+      <option key="acmtype" value="C"/>
+      <option key="atomnumber" value="6"/>
+      <option key="bondtype" value="c1_b"/>
+      <option key="element" value="C"/>
+      <option key="poltype" value="c1_s"/>
+      <option key="row" value="2"/>
+      <option key="vdwtype" value="cg"/>
+      <option key="zetatype" value="C"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="12.0107" uncertainty="0" minimum="12.0107" maximum="12.0107" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="717.721" uncertainty="0" minimum="717.721" maximum="717.721" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="ce" type="Atom" description="inner sp2 C of conjugated chain systems">
+      <option key="acmtype" value="C"/>
+      <option key="atomnumber" value="6"/>
+      <option key="bondtype" value="c2_b"/>
+      <option key="element" value="C"/>
+      <option key="poltype" value="c2_s"/>
+      <option key="row" value="2"/>
+      <option key="vdwtype" value="ce"/>
+      <option key="zetatype" value="C"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="12.0107" uncertainty="0" minimum="12.0107" maximum="12.0107" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="717.721" uncertainty="0" minimum="717.721" maximum="717.721" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="cf" type="Atom" description="inner sp2 C of conjugated chain systems">
+      <option key="acmtype" value="C"/>
+      <option key="atomnumber" value="6"/>
+      <option key="bondtype" value="c2_b"/>
+      <option key="element" value="C"/>
+      <option key="poltype" value="c2_s"/>
+      <option key="row" value="2"/>
+      <option key="vdwtype" value="cf"/>
+      <option key="zetatype" value="C"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="12.0107" uncertainty="0" minimum="12.0107" maximum="12.0107" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="717.721" uncertainty="0" minimum="717.721" maximum="717.721" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="cm" type="Atom" description="carbon COO- groups">
+      <option key="acmtype" value="C"/>
+      <option key="atomnumber" value="6"/>
+      <option key="bondtype" value="cm_b"/>
+      <option key="element" value="C"/>
+      <option key="poltype" value="cm_s"/>
+      <option key="row" value="2"/>
+      <option key="vdwtype" value="cm"/>
+      <option key="zetatype" value="C"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="12.0107" uncertainty="0" minimum="12.0107" maximum="12.0107" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="717.721" uncertainty="0" minimum="717.721" maximum="717.721" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="cu" type="Atom" description="sp2 carbon in a 3-membered ring">
+      <option key="acmtype" value="C"/>
+      <option key="atomnumber" value="6"/>
+      <option key="bondtype" value="c2_b"/>
+      <option key="element" value="C"/>
+      <option key="poltype" value="cu_s"/>
+      <option key="row" value="2"/>
+      <option key="vdwtype" value="cu"/>
+      <option key="zetatype" value="C"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="12.0107" uncertainty="0" minimum="12.0107" maximum="12.0107" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="717.721" uncertainty="0" minimum="717.721" maximum="717.721" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="cv" type="Atom" description="sp2 carbon in a 4-membered ring">
+      <option key="acmtype" value="C"/>
+      <option key="atomnumber" value="6"/>
+      <option key="bondtype" value="c2_b"/>
+      <option key="element" value="C"/>
+      <option key="poltype" value="cu_s"/>
+      <option key="row" value="2"/>
+      <option key="vdwtype" value="cv"/>
+      <option key="zetatype" value="C"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="12.0107" uncertainty="0" minimum="12.0107" maximum="12.0107" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="717.721" uncertainty="0" minimum="717.721" maximum="717.721" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="cz" type="Atom" description="guanidine carbon">
+      <option key="acmtype" value="C"/>
+      <option key="atomnumber" value="6"/>
+      <option key="bondtype" value="c2_b"/>
+      <option key="element" value="C"/>
+      <option key="poltype" value="cz_s"/>
+      <option key="row" value="2"/>
+      <option key="vdwtype" value="cz"/>
+      <option key="zetatype" value="C"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="12.0107" uncertainty="0" minimum="12.0107" maximum="12.0107" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="717.721" uncertainty="0" minimum="717.721" maximum="717.721" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="c2" type="Atom" description="sp2 C  aliphatic">
+      <option key="acmtype" value="C"/>
+      <option key="atomnumber" value="6"/>
+      <option key="bondtype" value="c2_b"/>
+      <option key="element" value="C"/>
+      <option key="poltype" value="c2_s"/>
+      <option key="row" value="2"/>
+      <option key="vdwtype" value="c2"/>
+      <option key="zetatype" value="C"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="12.0107" uncertainty="0" minimum="12.0107" maximum="12.0107" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="717.721" uncertainty="0" minimum="717.721" maximum="717.721" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="c3" type="Atom" description="sp3 C">
+      <option key="acmtype" value="C"/>
+      <option key="atomnumber" value="6"/>
+      <option key="bondtype" value="c3_b"/>
+      <option key="element" value="C"/>
+      <option key="poltype" value="c3_s"/>
+      <option key="row" value="2"/>
+      <option key="vdwtype" value="c3"/>
+      <option key="zetatype" value="C"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="12.0107" uncertainty="0" minimum="12.0107" maximum="12.0107" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="717.721" uncertainty="0" minimum="717.721" maximum="717.721" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="cx" type="Atom" description="3-membered ring atom">
+      <option key="acmtype" value="C"/>
+      <option key="atomnumber" value="6"/>
+      <option key="bondtype" value="c3_b"/>
+      <option key="element" value="C"/>
+      <option key="poltype" value="cu_s"/>
+      <option key="row" value="2"/>
+      <option key="vdwtype" value="cx"/>
+      <option key="zetatype" value="C"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="12.0107" uncertainty="0" minimum="12.0107" maximum="12.0107" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="717.721" uncertainty="0" minimum="717.721" maximum="717.721" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="cy" type="Atom" description="4-membered ring atom">
+      <option key="acmtype" value="C"/>
+      <option key="atomnumber" value="6"/>
+      <option key="bondtype" value="c3_b"/>
+      <option key="element" value="C"/>
+      <option key="poltype" value="cu_s"/>
+      <option key="row" value="2"/>
+      <option key="vdwtype" value="cy"/>
+      <option key="zetatype" value="C"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="12.0107" uncertainty="0" minimum="12.0107" maximum="12.0107" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="717.721" uncertainty="0" minimum="717.721" maximum="717.721" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="n" type="Atom" description="sp2 N in amides">
+      <option key="acmtype" value="N"/>
+      <option key="atomnumber" value="7"/>
+      <option key="bondtype" value="n_b"/>
+      <option key="element" value="N"/>
+      <option key="poltype" value="n_s"/>
+      <option key="row" value="2"/>
+      <option key="vdwtype" value="n"/>
+      <option key="zetatype" value="N"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="14.0067" uncertainty="0" minimum="14.0067" maximum="14.0067" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="477.018" uncertainty="0" minimum="477.018" maximum="477.018" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="n1" type="Atom" description="sp1 N">
+      <option key="acmtype" value="N"/>
+      <option key="atomnumber" value="7"/>
+      <option key="bondtype" value="n1_b"/>
+      <option key="element" value="N"/>
+      <option key="poltype" value="n1_s"/>
+      <option key="row" value="2"/>
+      <option key="vdwtype" value="n1"/>
+      <option key="zetatype" value="N"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="14.0067" uncertainty="0" minimum="14.0067" maximum="14.0067" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="477.018" uncertainty="0" minimum="477.018" maximum="477.018" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="n2" type="Atom" description="sp2 N with 2 subst.">
+      <option key="acmtype" value="N"/>
+      <option key="atomnumber" value="7"/>
+      <option key="bondtype" value="n2_b"/>
+      <option key="element" value="N"/>
+      <option key="poltype" value="n2_s"/>
+      <option key="row" value="2"/>
+      <option key="vdwtype" value="n2"/>
+      <option key="zetatype" value="N"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="14.0067" uncertainty="0" minimum="14.0067" maximum="14.0067" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="477.018" uncertainty="0" minimum="477.018" maximum="477.018" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="n3" type="Atom" description="sp3 N with 3 subst.">
+      <option key="acmtype" value="N"/>
+      <option key="atomnumber" value="7"/>
+      <option key="bondtype" value="n3_b"/>
+      <option key="element" value="N"/>
+      <option key="poltype" value="n3_s"/>
+      <option key="row" value="2"/>
+      <option key="vdwtype" value="n3"/>
+      <option key="zetatype" value="N"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="14.0067" uncertainty="0" minimum="14.0067" maximum="14.0067" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="477.018" uncertainty="0" minimum="477.018" maximum="477.018" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="n4" type="Atom" description="sp3 N with 4 subst.">
+      <option key="acmtype" value="N"/>
+      <option key="atomnumber" value="7"/>
+      <option key="bondtype" value="n3_b"/>
+      <option key="element" value="N"/>
+      <option key="poltype" value="n4_s"/>
+      <option key="row" value="2"/>
+      <option key="vdwtype" value="n4"/>
+      <option key="zetatype" value="N"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="14.0067" uncertainty="0" minimum="14.0067" maximum="14.0067" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="477.018" uncertainty="0" minimum="477.018" maximum="477.018" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="na" type="Atom" description="sp2 N with 3 subst.">
+      <option key="acmtype" value="N"/>
+      <option key="atomnumber" value="7"/>
+      <option key="bondtype" value="na_b"/>
+      <option key="element" value="N"/>
+      <option key="poltype" value="na_s"/>
+      <option key="row" value="2"/>
+      <option key="vdwtype" value="na"/>
+      <option key="zetatype" value="N"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="14.0067" uncertainty="0" minimum="14.0067" maximum="14.0067" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="477.018" uncertainty="0" minimum="477.018" maximum="477.018" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="nb" type="Atom" description="aromatic N">
+      <option key="acmtype" value="N"/>
+      <option key="atomnumber" value="7"/>
+      <option key="bondtype" value="nb_b"/>
+      <option key="element" value="N"/>
+      <option key="poltype" value="nb_s"/>
+      <option key="row" value="2"/>
+      <option key="vdwtype" value="nb"/>
+      <option key="zetatype" value="N"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="14.0067" uncertainty="0" minimum="14.0067" maximum="14.0067" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="477.018" uncertainty="0" minimum="477.018" maximum="477.018" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="nc" type="Atom" description="inner sp2 N of conjugated ring systems">
+      <option key="acmtype" value="N"/>
+      <option key="atomnumber" value="7"/>
+      <option key="bondtype" value="nc_b"/>
+      <option key="element" value="N"/>
+      <option key="poltype" value="nc_s"/>
+      <option key="row" value="2"/>
+      <option key="vdwtype" value="nc"/>
+      <option key="zetatype" value="N"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="14.0067" uncertainty="0" minimum="14.0067" maximum="14.0067" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="477.018" uncertainty="0" minimum="477.018" maximum="477.018" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="nd" type="Atom" description="inner sp2 N of conjugated ring systems">
+      <option key="acmtype" value="N"/>
+      <option key="atomnumber" value="7"/>
+      <option key="bondtype" value="nc_b"/>
+      <option key="element" value="N"/>
+      <option key="poltype" value="nc_s"/>
+      <option key="row" value="2"/>
+      <option key="vdwtype" value="nd"/>
+      <option key="zetatype" value="N"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="14.0067" uncertainty="0" minimum="14.0067" maximum="14.0067" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="477.018" uncertainty="0" minimum="477.018" maximum="477.018" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="ne" type="Atom" description="inner sp2 N of conjugated chain system">
+      <option key="acmtype" value="N"/>
+      <option key="atomnumber" value="7"/>
+      <option key="bondtype" value="ne_b"/>
+      <option key="element" value="N"/>
+      <option key="poltype" value="ne_s"/>
+      <option key="row" value="2"/>
+      <option key="vdwtype" value="ne"/>
+      <option key="zetatype" value="N"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="14.0067" uncertainty="0" minimum="14.0067" maximum="14.0067" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="477.018" uncertainty="0" minimum="477.018" maximum="477.018" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="nh" type="Atom" description="amine N connected to aromatic ring">
+      <option key="acmtype" value="N"/>
+      <option key="atomnumber" value="7"/>
+      <option key="bondtype" value="nh_b"/>
+      <option key="element" value="N"/>
+      <option key="poltype" value="nh_s"/>
+      <option key="row" value="2"/>
+      <option key="vdwtype" value="nh"/>
+      <option key="zetatype" value="N"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="14.0067" uncertainty="0" minimum="14.0067" maximum="14.0067" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="477.018" uncertainty="0" minimum="477.018" maximum="477.018" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="no" type="Atom" description="N in nitro group">
+      <option key="acmtype" value="N"/>
+      <option key="atomnumber" value="7"/>
+      <option key="bondtype" value="no_b"/>
+      <option key="element" value="N"/>
+      <option key="poltype" value="no_s"/>
+      <option key="row" value="2"/>
+      <option key="vdwtype" value="no"/>
+      <option key="zetatype" value="N"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="14.0067" uncertainty="0" minimum="14.0067" maximum="14.0067" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="477.018" uncertainty="0" minimum="477.018" maximum="477.018" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="o" type="Atom" description="sp2 O">
+      <option key="acmtype" value="O"/>
+      <option key="atomnumber" value="8"/>
+      <option key="bondtype" value="o_b"/>
+      <option key="element" value="O"/>
+      <option key="poltype" value="o_s"/>
+      <option key="row" value="2"/>
+      <option key="vdwtype" value="o"/>
+      <option key="zetatype" value="O"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="15.9994" uncertainty="0" minimum="15.9994" maximum="15.9994" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="253.514" uncertainty="0" minimum="253.514" maximum="253.514" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="oh" type="Atom" description="sp3 O in hydroxyl group">
+      <option key="acmtype" value="O"/>
+      <option key="atomnumber" value="8"/>
+      <option key="bondtype" value="oh_b"/>
+      <option key="element" value="O"/>
+      <option key="poltype" value="oh_s"/>
+      <option key="row" value="2"/>
+      <option key="vdwtype" value="oh"/>
+      <option key="zetatype" value="O"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="15.9994" uncertainty="0" minimum="15.9994" maximum="15.9994" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="253.514" uncertainty="0" minimum="253.514" maximum="253.514" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="ow" type="Atom" description="O in water">
+      <option key="acmtype" value="O"/>
+      <option key="atomnumber" value="8"/>
+      <option key="bondtype" value="ow_b"/>
+      <option key="element" value="O"/>
+      <option key="poltype" value="ow_s"/>
+      <option key="row" value="2"/>
+      <option key="vdwtype" value="ow"/>
+      <option key="zetatype" value="O"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="15.9994" uncertainty="0" minimum="15.9994" maximum="15.9994" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="253.514" uncertainty="0" minimum="253.514" maximum="253.514" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="on" type="Atom" description="O in NO2">
+      <option key="acmtype" value="O"/>
+      <option key="atomnumber" value="8"/>
+      <option key="bondtype" value="on_b"/>
+      <option key="element" value="O"/>
+      <option key="poltype" value="on_s"/>
+      <option key="row" value="2"/>
+      <option key="vdwtype" value="on"/>
+      <option key="zetatype" value="O"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="15.9994" uncertainty="0" minimum="15.9994" maximum="15.9994" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="253.514" uncertainty="0" minimum="253.514" maximum="253.514" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="om" type="Atom" description="O- in COO">
+      <option key="acmtype" value="O"/>
+      <option key="atomnumber" value="8"/>
+      <option key="bondtype" value="om_b"/>
+      <option key="element" value="O"/>
+      <option key="poltype" value="om_s"/>
+      <option key="row" value="2"/>
+      <option key="vdwtype" value="om"/>
+      <option key="zetatype" value="O"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="15.9994" uncertainty="0" minimum="15.9994" maximum="15.9994" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="253.514" uncertainty="0" minimum="253.514" maximum="253.514" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="os" type="Atom" description="sp3 O in esters and ethers">
+      <option key="acmtype" value="O"/>
+      <option key="atomnumber" value="8"/>
+      <option key="bondtype" value="os_b"/>
+      <option key="element" value="O"/>
+      <option key="poltype" value="os_s"/>
+      <option key="row" value="2"/>
+      <option key="vdwtype" value="os"/>
+      <option key="zetatype" value="O"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="15.9994" uncertainty="0" minimum="15.9994" maximum="15.9994" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="253.514" uncertainty="0" minimum="253.514" maximum="253.514" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="f" type="Atom" description="general fluorine">
+      <option key="acmtype" value="F"/>
+      <option key="atomnumber" value="9"/>
+      <option key="bondtype" value="f_b"/>
+      <option key="element" value="F"/>
+      <option key="poltype" value="f_s"/>
+      <option key="row" value="2"/>
+      <option key="vdwtype" value="f"/>
+      <option key="zetatype" value="F"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="18.9984" uncertainty="0" minimum="18.9984" maximum="18.9984" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="83.8025" uncertainty="0" minimum="83.8025" maximum="83.8025" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="p2" type="Atom" description="other sp2 P">
+      <option key="acmtype" value="P"/>
+      <option key="atomnumber" value="15"/>
+      <option key="bondtype" value="p2_b"/>
+      <option key="element" value="P"/>
+      <option key="poltype" value="p2_s"/>
+      <option key="row" value="3"/>
+      <option key="vdwtype" value="p2"/>
+      <option key="zetatype" value="P"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="30.9738" uncertainty="0" minimum="30.9738" maximum="30.9738" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="321.75" uncertainty="0" minimum="321.75" maximum="321.75" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="p3" type="Atom" description="other sp3 P">
+      <option key="acmtype" value="P"/>
+      <option key="atomnumber" value="15"/>
+      <option key="bondtype" value="p3_b"/>
+      <option key="element" value="P"/>
+      <option key="poltype" value="p2_s"/>
+      <option key="row" value="3"/>
+      <option key="vdwtype" value="p3"/>
+      <option key="zetatype" value="P"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="30.9738" uncertainty="0" minimum="30.9738" maximum="30.9738" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="321.75" uncertainty="0" minimum="321.75" maximum="321.75" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="p4" type="Atom" description="hypervalent P">
+      <option key="acmtype" value="P"/>
+      <option key="atomnumber" value="15"/>
+      <option key="bondtype" value="p4_b"/>
+      <option key="element" value="P"/>
+      <option key="poltype" value="p4_s"/>
+      <option key="row" value="3"/>
+      <option key="vdwtype" value="p4"/>
+      <option key="zetatype" value="P"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="30.9738" uncertainty="0" minimum="30.9738" maximum="30.9738" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="321.75" uncertainty="0" minimum="321.75" maximum="321.75" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="p5" type="Atom" description="hypervalent P">
+      <option key="acmtype" value="P"/>
+      <option key="atomnumber" value="15"/>
+      <option key="bondtype" value="p4_b"/>
+      <option key="element" value="P"/>
+      <option key="poltype" value="p4_s"/>
+      <option key="row" value="3"/>
+      <option key="vdwtype" value="p5"/>
+      <option key="zetatype" value="P"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="30.9738" uncertainty="0" minimum="30.9738" maximum="30.9738" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="321.75" uncertainty="0" minimum="321.75" maximum="321.75" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="pb" type="Atom" description="aromatic P">
+      <option key="acmtype" value="P"/>
+      <option key="atomnumber" value="15"/>
+      <option key="bondtype" value="p_b"/>
+      <option key="element" value="P"/>
+      <option key="poltype" value="p2_s"/>
+      <option key="row" value="3"/>
+      <option key="vdwtype" value="pb"/>
+      <option key="zetatype" value="P"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="30.9738" uncertainty="0" minimum="30.9738" maximum="30.9738" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="321.75" uncertainty="0" minimum="321.75" maximum="321.75" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="pc" type="Atom" description="inner sp2 P of conjugated ring systems">
+      <option key="acmtype" value="P"/>
+      <option key="atomnumber" value="15"/>
+      <option key="bondtype" value="p_b"/>
+      <option key="element" value="P"/>
+      <option key="poltype" value="p2_s"/>
+      <option key="row" value="3"/>
+      <option key="vdwtype" value="pc"/>
+      <option key="zetatype" value="P"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="30.9738" uncertainty="0" minimum="30.9738" maximum="30.9738" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="321.75" uncertainty="0" minimum="321.75" maximum="321.75" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="pe" type="Atom" description="inner sp2 P of conjugated chain system">
+      <option key="acmtype" value="P"/>
+      <option key="atomnumber" value="15"/>
+      <option key="bondtype" value="p_b"/>
+      <option key="element" value="P"/>
+      <option key="poltype" value="p2_s"/>
+      <option key="row" value="3"/>
+      <option key="vdwtype" value="pe"/>
+      <option key="zetatype" value="P"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="30.9738" uncertainty="0" minimum="30.9738" maximum="30.9738" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="321.75" uncertainty="0" minimum="321.75" maximum="321.75" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="px" type="Atom" description="sp2 P of conjugated system">
+      <option key="acmtype" value="P"/>
+      <option key="atomnumber" value="15"/>
+      <option key="bondtype" value="p_b"/>
+      <option key="element" value="P"/>
+      <option key="poltype" value="p2_s"/>
+      <option key="row" value="3"/>
+      <option key="vdwtype" value="px"/>
+      <option key="zetatype" value="P"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="30.9738" uncertainty="0" minimum="30.9738" maximum="30.9738" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="321.75" uncertainty="0" minimum="321.75" maximum="321.75" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="py" type="Atom" description="P of conjugated system">
+      <option key="acmtype" value="P"/>
+      <option key="atomnumber" value="15"/>
+      <option key="bondtype" value="p_b"/>
+      <option key="element" value="P"/>
+      <option key="poltype" value="p2_s"/>
+      <option key="row" value="3"/>
+      <option key="vdwtype" value="py"/>
+      <option key="zetatype" value="P"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="30.9738" uncertainty="0" minimum="30.9738" maximum="30.9738" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="321.75" uncertainty="0" minimum="321.75" maximum="321.75" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="s" type="Atom" description="sp2 sulphur, p=s and c=s">
+      <option key="acmtype" value="S"/>
+      <option key="atomnumber" value="16"/>
+      <option key="bondtype" value="s_b"/>
+      <option key="element" value="S"/>
+      <option key="poltype" value="s_s"/>
+      <option key="row" value="3"/>
+      <option key="vdwtype" value="s"/>
+      <option key="zetatype" value="S"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="32.065" uncertainty="0" minimum="32.065" maximum="32.065" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="281.392" uncertainty="0" minimum="281.392" maximum="281.392" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="s4" type="Atom" description="hypervalent S,  3 subst.">
+      <option key="acmtype" value="S"/>
+      <option key="atomnumber" value="16"/>
+      <option key="bondtype" value="s4_b"/>
+      <option key="element" value="S"/>
+      <option key="poltype" value="s4_s"/>
+      <option key="row" value="3"/>
+      <option key="vdwtype" value="s4"/>
+      <option key="zetatype" value="S"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="32.065" uncertainty="0" minimum="32.065" maximum="32.065" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="281.392" uncertainty="0" minimum="281.392" maximum="281.392" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="s6" type="Atom" description="hypervalent S,  4 subst">
+      <option key="acmtype" value="S"/>
+      <option key="atomnumber" value="16"/>
+      <option key="bondtype" value="s4_b"/>
+      <option key="element" value="S"/>
+      <option key="poltype" value="s4_s"/>
+      <option key="row" value="3"/>
+      <option key="vdwtype" value="s6"/>
+      <option key="zetatype" value="S"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="32.065" uncertainty="0" minimum="32.065" maximum="32.065" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="281.392" uncertainty="0" minimum="281.392" maximum="281.392" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="sh" type="Atom" description="sp3 S in thiol">
+      <option key="acmtype" value="S"/>
+      <option key="atomnumber" value="16"/>
+      <option key="bondtype" value="s_b"/>
+      <option key="element" value="S"/>
+      <option key="poltype" value="s_s"/>
+      <option key="row" value="3"/>
+      <option key="vdwtype" value="sh"/>
+      <option key="zetatype" value="S"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="32.065" uncertainty="0" minimum="32.065" maximum="32.065" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="281.392" uncertainty="0" minimum="281.392" maximum="281.392" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="ss" type="Atom" description="sp3 sulphur in S-R and S-S">
+      <option key="acmtype" value="S"/>
+      <option key="atomnumber" value="16"/>
+      <option key="bondtype" value="s_b"/>
+      <option key="element" value="S"/>
+      <option key="poltype" value="s_s"/>
+      <option key="row" value="3"/>
+      <option key="vdwtype" value="ss"/>
+      <option key="zetatype" value="S"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="32.065" uncertainty="0" minimum="32.065" maximum="32.065" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="281.392" uncertainty="0" minimum="281.392" maximum="281.392" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="sx" type="Atom" description="conjugated S,  3 subst.">
+      <option key="acmtype" value="S"/>
+      <option key="atomnumber" value="16"/>
+      <option key="bondtype" value="s_b"/>
+      <option key="element" value="S"/>
+      <option key="poltype" value="s_s"/>
+      <option key="row" value="3"/>
+      <option key="vdwtype" value="sx"/>
+      <option key="zetatype" value="S"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="32.065" uncertainty="0" minimum="32.065" maximum="32.065" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="281.392" uncertainty="0" minimum="281.392" maximum="281.392" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="sy" type="Atom" description="conjugated S,  4 subst.">
+      <option key="acmtype" value="S"/>
+      <option key="atomnumber" value="16"/>
+      <option key="bondtype" value="s_b"/>
+      <option key="element" value="S"/>
+      <option key="poltype" value="s_s"/>
+      <option key="row" value="3"/>
+      <option key="vdwtype" value="sy"/>
+      <option key="zetatype" value="S"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="32.065" uncertainty="0" minimum="32.065" maximum="32.065" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="281.392" uncertainty="0" minimum="281.392" maximum="281.392" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="i" type="Atom" description="general iodine">
+      <option key="acmtype" value="I"/>
+      <option key="atomnumber" value="53"/>
+      <option key="bondtype" value="i_b"/>
+      <option key="element" value="I"/>
+      <option key="poltype" value="i_s"/>
+      <option key="row" value="5"/>
+      <option key="vdwtype" value="i"/>
+      <option key="zetatype" value="I"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="126.904" uncertainty="0" minimum="126.904" maximum="126.904" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="113.361" uncertainty="0" minimum="113.361" maximum="113.361" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="I-" type="Atom" description="iodide ion">
+      <option key="acmtype" value="I"/>
+      <option key="atomnumber" value="53"/>
+      <option key="bondtype" value="_b"/>
+      <option key="element" value="I"/>
+      <option key="poltype" value="I-_s"/>
+      <option key="row" value="5"/>
+      <option key="vdwtype" value="I-"/>
+      <option key="zetatype" value="I"/>
+      <parameter type="charge" unit="e" value="7.613" uncertainty="0" minimum="7.613" maximum="7.613" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="126.904" uncertainty="0" minimum="126.904" maximum="126.904" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="F-" type="Atom" description="fluoride ion">
+      <option key="acmtype" value="F"/>
+      <option key="atomnumber" value="9"/>
+      <option key="bondtype" value="_b"/>
+      <option key="element" value="F"/>
+      <option key="poltype" value="F-_s"/>
+      <option key="row" value="2"/>
+      <option key="vdwtype" value="F-"/>
+      <option key="zetatype" value="F"/>
+      <parameter type="charge" unit="e" value="5.59" uncertainty="0" minimum="5.59" maximum="5.59" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="18.9984" uncertainty="0" minimum="18.9984" maximum="18.9984" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed"/>
+    </particletype>
+    <particletype identifier="K+" type="Atom" description="potassium ion">
+      <option key="acmtype" value="K"/>
+      <option key="atomnumber" value="19"/>
+      <option key="bondtype" value="_b"/>
+      <option key="element" value="K"/>
+      <option key="poltype" value="K+_s"/>
+      <option key="row" value="4"/>
+      <option key="vdwtype" value="K+"/>
+      <option key="zetatype" value="K"/>
+      <parameter type="charge" unit="e" value="5.464" uncertainty="0" minimum="5.464" maximum="5.464" ntrain="0" mutability="Free"/>
+      <parameter type="mass" unit="Da" value="39.0983" uncertainty="0" minimum="39.0983" maximum="39.0983" ntrain="0" mutability="Fixed"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed"/>
+    </particletype>
+  </particletypes>
   <interaction type="POLARIZATION" function="Polarization" canswap="false">
   </interaction>
   <interaction type="VANDERWAALS" function="LJ_SR" canswap="true">
-    <option type="combination_rule" value="Geometric"/>
+    <option key="combination_rule" value="Geometric"/>
     <parameterlist identifier="h1">
-      <parameter type="sigma" unit="nm" value="2.471350e-01" uncertainty="0" minimum="0.20" maximum="0.31" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="6.568880e-02" uncertainty="0" minimum="0.05" maximum="0.08" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="2.471350e-01" uncertainty="0" minimum="0.20" maximum="0.31" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="h2">
-      <parameter type="sigma" unit="nm" value="2.293170e-01" uncertainty="0" minimum="0.18" maximum="0.29" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="6.568880e-02" uncertainty="0" minimum="0.05" maximum="0.08" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="2.293170e-01" uncertainty="0" minimum="0.18" maximum="0.29" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="h3">
-      <parameter type="sigma" unit="nm" value="2.114990e-01" uncertainty="0" minimum="0.17" maximum="0.26" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="6.568880e-02" uncertainty="0" minimum="0.05" maximum="0.08" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="2.114990e-01" uncertainty="0" minimum="0.17" maximum="0.26" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="h4">
-      <parameter type="sigma" unit="nm" value="2.510550e-01" uncertainty="0" minimum="0.20" maximum="0.31" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="6.276000e-02" uncertainty="0" minimum="0.05" maximum="0.08" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="2.510550e-01" uncertainty="0" minimum="0.20" maximum="0.31" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="h5">
-      <parameter type="sigma" unit="nm" value="2.421460e-01" uncertainty="0" minimum="0.19" maximum="0.30" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="6.276000e-02" uncertainty="0" minimum="0.05" maximum="0.08" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="2.421460e-01" uncertainty="0" minimum="0.19" maximum="0.30" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="ha">
-      <parameter type="sigma" unit="nm" value="2.599640e-01" uncertainty="0" minimum="0.21" maximum="0.32" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="6.276000e-02" uncertainty="0" minimum="0.05" maximum="0.08" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="2.599640e-01" uncertainty="0" minimum="0.21" maximum="0.32" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="hc">
-      <parameter type="sigma" unit="nm" value="2.649530e-01" uncertainty="0" minimum="0.21" maximum="0.33" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="6.568880e-02" uncertainty="0" minimum="0.05" maximum="0.08" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="2.649530e-01" uncertainty="0" minimum="0.21" maximum="0.33" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="hn">
-      <parameter type="sigma" unit="nm" value="1.069080e-01" uncertainty="0" minimum="0.09" maximum="0.13" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="6.568880e-02" uncertainty="0" minimum="0.05" maximum="0.08" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="1.069080e-01" uncertainty="0" minimum="0.09" maximum="0.13" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="ho">
-      <parameter type="sigma" unit="nm" value="1.069080e-01" uncertainty="0" minimum="0.09" maximum="0.13" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="6.568880e-02" uncertainty="0" minimum="0.05" maximum="0.08" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="1.069080e-01" uncertainty="0" minimum="0.09" maximum="0.13" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="hp">
-      <parameter type="sigma" unit="nm" value="1.069080e-01" uncertainty="0" minimum="0.09" maximum="0.13" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="6.568880e-02" uncertainty="0" minimum="0.05" maximum="0.08" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="1.069080e-01" uncertainty="0" minimum="0.09" maximum="0.13" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="hs">
-      <parameter type="sigma" unit="nm" value="1.069080e-01" uncertainty="0" minimum="0.09" maximum="0.13" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="6.568880e-02" uncertainty="0" minimum="0.05" maximum="0.08" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="1.069080e-01" uncertainty="0" minimum="0.09" maximum="0.13" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="hw">
-      <parameter type="sigma" unit="nm" value="1.069080e-01" uncertainty="0" minimum="0.09" maximum="0.13" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="6.568880e-02" uncertainty="0" minimum="0.05" maximum="0.08" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="1.069080e-01" uncertainty="0" minimum="0.09" maximum="0.13" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="c1">
-      <parameter type="sigma" unit="nm" value="3.399670e-01" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="8.786400e-01" uncertainty="0" minimum="0.70" maximum="1.10" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="3.399670e-01" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="c">
-      <parameter type="sigma" unit="nm" value="3.399670e-01" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="3.598240e-01" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="3.399670e-01" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="ca">
-      <parameter type="sigma" unit="nm" value="3.399670e-01" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="3.598240e-01" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="3.399670e-01" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="cq">
-      <parameter type="sigma" unit="nm" value="3.399670e-01" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="3.598240e-01" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="3.399670e-01" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="cp">
-      <parameter type="sigma" unit="nm" value="3.399670e-01" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="3.598240e-01" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="3.399670e-01" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="cc">
-      <parameter type="sigma" unit="nm" value="3.399670e-01" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="3.598240e-01" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="3.399670e-01" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="cd">
-      <parameter type="sigma" unit="nm" value="3.399670e-01" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="3.598240e-01" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="3.399670e-01" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="cg">
-      <parameter type="sigma" unit="nm" value="3.399670e-01" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="8.786400e-01" uncertainty="0" minimum="0.70" maximum="1.10" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="3.399670e-01" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="ce">
-      <parameter type="sigma" unit="nm" value="3.399670e-01" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="3.598240e-01" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="3.399670e-01" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="cf">
-      <parameter type="sigma" unit="nm" value="3.399670e-01" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="3.598240e-01" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="3.399670e-01" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="cm">
-      <parameter type="sigma" unit="nm" value="0.2" uncertainty="0" minimum="0.16" maximum="0.25" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="0.2" uncertainty="0" minimum="0.16" maximum="0.25" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="10" uncertainty="0" minimum="8.00" maximum="12.50" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="0.2" uncertainty="0" minimum="0.16" maximum="0.25" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="cu">
-      <parameter type="sigma" unit="nm" value="3.399670e-01" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="3.598240e-01" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="3.399670e-01" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="cv">
-      <parameter type="sigma" unit="nm" value="3.399670e-01" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="3.598240e-01" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="3.399670e-01" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="cz">
-      <parameter type="sigma" unit="nm" value="3.399670e-01" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="3.598240e-01" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="3.399670e-01" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="c2">
-      <parameter type="sigma" unit="nm" value="3.399670e-01" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="3.598240e-01" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="3.399670e-01" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="c3">
-      <parameter type="sigma" unit="nm" value="3.399670e-01" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="4.577300e-01" uncertainty="0" minimum="0.37" maximum="0.57" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="3.399670e-01" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="cx">
-      <parameter type="sigma" unit="nm" value="3.399670e-01" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="3.598240e-01" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="3.399670e-01" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="cy">
-      <parameter type="sigma" unit="nm" value="3.399670e-01" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="3.598240e-01" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="3.399670e-01" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="n">
-      <parameter type="sigma" unit="nm" value="3.250000e-01" uncertainty="0" minimum="0.26" maximum="0.41" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="7.112800e-01" uncertainty="0" minimum="0.57" maximum="0.89" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="3.250000e-01" uncertainty="0" minimum="0.26" maximum="0.41" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="n1">
-      <parameter type="sigma" unit="nm" value="3.250000e-01" uncertainty="0" minimum="0.26" maximum="0.41" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="7.112800e-01" uncertainty="0" minimum="0.57" maximum="0.89" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="3.250000e-01" uncertainty="0" minimum="0.26" maximum="0.41" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="n2">
-      <parameter type="sigma" unit="nm" value="3.250000e-01" uncertainty="0" minimum="0.26" maximum="0.41" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="7.112800e-01" uncertainty="0" minimum="0.57" maximum="0.89" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="3.250000e-01" uncertainty="0" minimum="0.26" maximum="0.41" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="n3">
-      <parameter type="sigma" unit="nm" value="3.250000e-01" uncertainty="0" minimum="0.26" maximum="0.41" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="7.112800e-01" uncertainty="0" minimum="0.57" maximum="0.89" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="3.250000e-01" uncertainty="0" minimum="0.26" maximum="0.41" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="n4">
-      <parameter type="sigma" unit="nm" value="3.250000e-01" uncertainty="0" minimum="0.26" maximum="0.41" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="7.112800e-01" uncertainty="0" minimum="0.57" maximum="0.89" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="3.250000e-01" uncertainty="0" minimum="0.26" maximum="0.41" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="na">
-      <parameter type="sigma" unit="nm" value="3.250000e-01" uncertainty="0" minimum="0.26" maximum="0.41" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="7.112800e-01" uncertainty="0" minimum="0.57" maximum="0.89" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="3.250000e-01" uncertainty="0" minimum="0.26" maximum="0.41" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="nb">
-      <parameter type="sigma" unit="nm" value="3.250000e-01" uncertainty="0" minimum="0.26" maximum="0.41" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="7.112800e-01" uncertainty="0" minimum="0.57" maximum="0.89" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="3.250000e-01" uncertainty="0" minimum="0.26" maximum="0.41" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="nc">
-      <parameter type="sigma" unit="nm" value="3.250000e-01" uncertainty="0" minimum="0.26" maximum="0.41" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="7.112800e-01" uncertainty="0" minimum="0.57" maximum="0.89" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="3.250000e-01" uncertainty="0" minimum="0.26" maximum="0.41" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="nd">
-      <parameter type="sigma" unit="nm" value="3.250000e-01" uncertainty="0" minimum="0.26" maximum="0.41" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="7.112800e-01" uncertainty="0" minimum="0.57" maximum="0.89" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="3.250000e-01" uncertainty="0" minimum="0.26" maximum="0.41" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="ne">
-      <parameter type="sigma" unit="nm" value="3.250000e-01" uncertainty="0" minimum="0.26" maximum="0.41" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="7.112800e-01" uncertainty="0" minimum="0.57" maximum="0.89" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="3.250000e-01" uncertainty="0" minimum="0.26" maximum="0.41" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="nh">
-      <parameter type="sigma" unit="nm" value="3.250000e-01" uncertainty="0" minimum="0.26" maximum="0.41" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="7.112800e-01" uncertainty="0" minimum="0.57" maximum="0.89" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="3.250000e-01" uncertainty="0" minimum="0.26" maximum="0.41" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="no">
-      <parameter type="sigma" unit="nm" value="3.250000e-01" uncertainty="0" minimum="0.26" maximum="0.41" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="7.112800e-01" uncertainty="0" minimum="0.57" maximum="0.89" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="3.250000e-01" uncertainty="0" minimum="0.26" maximum="0.41" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="o">
-      <parameter type="sigma" unit="nm" value="2.959920e-01" uncertainty="0" minimum="0.24" maximum="0.37" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="8.786400e-01" uncertainty="0" minimum="0.70" maximum="1.10" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="2.959920e-01" uncertainty="0" minimum="0.24" maximum="0.37" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="oh">
-      <parameter type="sigma" unit="nm" value="3.066470e-01" uncertainty="0" minimum="0.25" maximum="0.38" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="8.803140e-01" uncertainty="0" minimum="0.70" maximum="1.10" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="3.066470e-01" uncertainty="0" minimum="0.25" maximum="0.38" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="ow">
-      <parameter type="sigma" unit="nm" value="3.000010e-01" uncertainty="0" minimum="0.24" maximum="0.38" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="7.112800e-01" uncertainty="0" minimum="0.57" maximum="0.89" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="3.000010e-01" uncertainty="0" minimum="0.24" maximum="0.38" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="on">
-      <parameter type="sigma" unit="nm" value="3.000010e-01" uncertainty="0" minimum="0.24" maximum="0.38" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="7.112800e-01" uncertainty="0" minimum="0.57" maximum="0.89" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="3.000010e-01" uncertainty="0" minimum="0.24" maximum="0.38" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="om">
-      <parameter type="sigma" unit="nm" value="0.2" uncertainty="0" minimum="0.16" maximum="0.25" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="0.2" uncertainty="0" minimum="0.16" maximum="0.25" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="10" uncertainty="0" minimum="8.00" maximum="12.50" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="0.2" uncertainty="0" minimum="0.16" maximum="0.25" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="os">
-      <parameter type="sigma" unit="nm" value="3.000010e-01" uncertainty="0" minimum="0.24" maximum="0.38" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="7.112800e-01" uncertainty="0" minimum="0.57" maximum="0.89" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="3.000010e-01" uncertainty="0" minimum="0.24" maximum="0.38" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="f">
-      <parameter type="sigma" unit="nm" value="3.118150e-01" uncertainty="0" minimum="0.25" maximum="0.39" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="2.552240e-01" uncertainty="0" minimum="0.20" maximum="0.32" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="3.118150e-01" uncertainty="0" minimum="0.25" maximum="0.39" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="p2">
-      <parameter type="sigma" unit="nm" value="3.741770e-01" uncertainty="0" minimum="0.30" maximum="0.47" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="8.368000e-01" uncertainty="0" minimum="0.67" maximum="1.05" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="3.741770e-01" uncertainty="0" minimum="0.30" maximum="0.47" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="p3">
-      <parameter type="sigma" unit="nm" value="3.741770e-01" uncertainty="0" minimum="0.30" maximum="0.47" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="8.368000e-01" uncertainty="0" minimum="0.67" maximum="1.05" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="3.741770e-01" uncertainty="0" minimum="0.30" maximum="0.47" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="p4">
-      <parameter type="sigma" unit="nm" value="3.741770e-01" uncertainty="0" minimum="0.30" maximum="0.47" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="8.368000e-01" uncertainty="0" minimum="0.67" maximum="1.05" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="3.741770e-01" uncertainty="0" minimum="0.30" maximum="0.47" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="p5">
-      <parameter type="sigma" unit="nm" value="3.741770e-01" uncertainty="0" minimum="0.30" maximum="0.47" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="8.368000e-01" uncertainty="0" minimum="0.67" maximum="1.05" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="3.741770e-01" uncertainty="0" minimum="0.30" maximum="0.47" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="pb">
-      <parameter type="sigma" unit="nm" value="3.741770e-01" uncertainty="0" minimum="0.30" maximum="0.47" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="8.368000e-01" uncertainty="0" minimum="0.67" maximum="1.05" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="3.741770e-01" uncertainty="0" minimum="0.30" maximum="0.47" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="pc">
-      <parameter type="sigma" unit="nm" value="3.741770e-01" uncertainty="0" minimum="0.30" maximum="0.47" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="8.368000e-01" uncertainty="0" minimum="0.67" maximum="1.05" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="3.741770e-01" uncertainty="0" minimum="0.30" maximum="0.47" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="pe">
-      <parameter type="sigma" unit="nm" value="3.741770e-01" uncertainty="0" minimum="0.30" maximum="0.47" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="8.368000e-01" uncertainty="0" minimum="0.67" maximum="1.05" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="3.741770e-01" uncertainty="0" minimum="0.30" maximum="0.47" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="px">
-      <parameter type="sigma" unit="nm" value="3.741770e-01" uncertainty="0" minimum="0.30" maximum="0.47" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="8.368000e-01" uncertainty="0" minimum="0.67" maximum="1.05" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="3.741770e-01" uncertainty="0" minimum="0.30" maximum="0.47" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="py">
-      <parameter type="sigma" unit="nm" value="3.741770e-01" uncertainty="0" minimum="0.30" maximum="0.47" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="8.368000e-01" uncertainty="0" minimum="0.67" maximum="1.05" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="3.741770e-01" uncertainty="0" minimum="0.30" maximum="0.47" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="s">
-      <parameter type="sigma" unit="nm" value="3.563590e-01" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="1.046000e+00" uncertainty="0" minimum="0.84" maximum="1.31" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="3.563590e-01" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="s4">
-      <parameter type="sigma" unit="nm" value="3.563590e-01" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="1.046000e+00" uncertainty="0" minimum="0.84" maximum="1.31" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="3.563590e-01" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="s6">
-      <parameter type="sigma" unit="nm" value="3.563590e-01" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="1.046000e+00" uncertainty="0" minimum="0.84" maximum="1.31" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="3.563590e-01" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="sh">
-      <parameter type="sigma" unit="nm" value="3.563590e-01" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="1.046000e+00" uncertainty="0" minimum="0.84" maximum="1.31" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="3.563590e-01" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="ss">
-      <parameter type="sigma" unit="nm" value="3.563590e-01" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="1.046000e+00" uncertainty="0" minimum="0.84" maximum="1.31" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="3.563590e-01" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="sx">
-      <parameter type="sigma" unit="nm" value="3.563590e-01" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="1.046000e+00" uncertainty="0" minimum="0.84" maximum="1.31" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="3.563590e-01" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="sy">
-      <parameter type="sigma" unit="nm" value="3.563590e-01" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="1.046000e+00" uncertainty="0" minimum="0.84" maximum="1.31" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="3.563590e-01" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="i">
-      <parameter type="sigma" unit="nm" value="3.830860e-01" uncertainty="0" minimum="0.31" maximum="0.48" ntrain="0" mutability="Bounded"/>
       <parameter type="epsilon" unit="kJ/mol" value="2.092000e+00" uncertainty="0" minimum="1.67" maximum="2.61" ntrain="0" mutability="Bounded"/>
       <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="3.830860e-01" uncertainty="0" minimum="0.31" maximum="0.48" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="I-">
-      <parameter type="sigma" unit="nm" value="4.961618e-01" uncertainty="0" minimum="0.40" maximum="0.62" ntrain="0" mutability="Fixed"/>
-      <parameter type="epsilon" unit="kJ/mol" value="8.907727e-01" uncertainty="0" minimum="0.71" maximum="1.11" ntrain="0" mutability="Fixed"/>
-      <parameter type="gamma" unit="" value="1.510427e+01" uncertainty="0" minimum="12.08" maximum="18.88" ntrain="0" mutability="Fixed"/>
+      <parameter type="epsilon" unit="kJ/mol" value="0.890773" uncertainty="0" minimum="0.71" maximum="1.11" ntrain="0" mutability="Fixed"/>
+      <parameter type="gamma" unit="" value="15.1043" uncertainty="0" minimum="12.08" maximum="18.88" ntrain="0" mutability="Fixed"/>
+      <parameter type="sigma" unit="nm" value="0.496162" uncertainty="0" minimum="0.40" maximum="0.62" ntrain="0" mutability="Fixed"/>
     </parameterlist>
     <parameterlist identifier="F-">
-      <parameter type="sigma" unit="nm" value="3.903453e-01" uncertainty="0" minimum="0.31" maximum="0.49" ntrain="0" mutability="Fixed"/>
-      <parameter type="epsilon" unit="kJ/mol" value="3.311747e-02" uncertainty="0" minimum="0.03" maximum="0.04" ntrain="0" mutability="Fixed"/>
-      <parameter type="gamma" unit="" value="1.494227e+01" uncertainty="0" minimum="11.95" maximum="18.68" ntrain="0" mutability="Fixed"/>
+      <parameter type="epsilon" unit="kJ/mol" value="0.0331175" uncertainty="0" minimum="0.03" maximum="0.04" ntrain="0" mutability="Fixed"/>
+      <parameter type="gamma" unit="" value="14.9423" uncertainty="0" minimum="11.95" maximum="18.68" ntrain="0" mutability="Fixed"/>
+      <parameter type="sigma" unit="nm" value="0.390345" uncertainty="0" minimum="0.31" maximum="0.49" ntrain="0" mutability="Fixed"/>
     </parameterlist>
     <parameterlist identifier="K+">
-      <parameter type="sigma" unit="nm" value="4.170159e-01" uncertainty="0" minimum="0.33" maximum="0.52" ntrain="0" mutability="Fixed"/>
-      <parameter type="epsilon" unit="kJ/mol" value="3.105139e-01" uncertainty="0" minimum="0.25" maximum="0.39" ntrain="0" mutability="Fixed"/>
-      <parameter type="gamma" unit="" value="1.689629e+01" uncertainty="0" minimum="13.52" maximum="21.12" ntrain="0" mutability="Fixed"/>
+      <parameter type="epsilon" unit="kJ/mol" value="0.310514" uncertainty="0" minimum="0.25" maximum="0.39" ntrain="0" mutability="Fixed"/>
+      <parameter type="gamma" unit="" value="16.8963" uncertainty="0" minimum="13.52" maximum="21.12" ntrain="0" mutability="Fixed"/>
+      <parameter type="sigma" unit="nm" value="0.417016" uncertainty="0" minimum="0.33" maximum="0.52" ntrain="0" mutability="Fixed"/>
     </parameterlist>
   </interaction>
   <interaction type="BONDS" function="MORSE" canswap="true">
@@ -18535,8 +19363,8 @@
     <sym_charge central="Si" attached="H" numattach="3"/>
   </symmetric_charges>
   <interaction type="CHARGEDISTRIBUTION" function="" canswap="false">
-    <option type="chargetype" value="Slater"/>
-    <option type="reference=" value="Yang2006a"/>
+    <option key="chargetype" value="Slater"/>
+    <option key="reference" value="Yang2006a"/>
     <parameterlist identifier="BR">
       <parameter type="zeta" unit="1/nm" value="19.3764" minimum="15.5011" maximum="24.2205" uncertainty="0" mutability="Bounded" ntrain="1"/>
     </parameterlist>
@@ -18587,7 +19415,7 @@
     </parameterlist>
   </interaction>
   <interaction type="ELECTRONEGATIVITYEQUALIZATION" function="" canswap="false">
-    <option type="reference=" value="Yang2006a"/>
+    <option key="reference" value="Ghahremanpour2020a"/>
     <parameterlist identifier="BR">
       <parameter type="chi" unit="eV" value="5.79" minimum="4.632" maximum="7.2375" uncertainty="0" mutability="Bounded" ntrain="1"/>
       <parameter type="jaa" unit="eV/e" value="8.85" minimum="7.08" maximum="11.0625" uncertainty="0" mutability="Bounded" ntrain="1"/>

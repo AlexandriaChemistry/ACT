@@ -110,9 +110,9 @@ static void sample_molecules(FILE                           *log,
     std::vector<alexandria::MyMol>        sample;
 
     const char  *alexandria = cs.searchCS(alexandria::iCalexandria)->name();
-    for (auto atp = pd->getAtypeBegin(); atp < pd->getAtypeEnd(); atp++)
+    for (const auto &atp : pd->particleTypesConst())
     {
-        if (atp->getElem() != "H")
+        if (atp.element().compare("H") == 0)
         {
             nmol   = 0;
             atempt = 0;
@@ -124,7 +124,7 @@ static void sample_molecules(FILE                           *log,
                 {
                     for (auto &ani : mci->atomNumConst())
                     {
-                        if (atp->getType() == ani.getAtom())
+                        if (atp.id().id() == ani.getAtom())
                         {
                             if ((std::find(sample.begin(), sample.end(), mol) == sample.end()))
                             {
@@ -141,7 +141,7 @@ static void sample_molecules(FILE                           *log,
             if (atempt >= maxatempt)
             {
                 fprintf(log, "Picked only %d out of %d molecules required for %s atom type after %d attempts\n", 
-                        nmol, mindata, atp->getType().c_str(), atempt);
+                        nmol, mindata, atp.id().id().c_str(), atempt);
             }
         }
     }
@@ -246,10 +246,10 @@ static void printAtomtypeStatistics(FILE                                 *fp,
         int         count;
     };
     std::vector<NN> nn;
-    for (auto atype = pd->getAtypeBegin(); atype < pd->getAtypeEnd(); ++atype)
+    for (const auto &atype : pd->particleTypesConst())
     {
         struct NN n;
-        n.name   = atype->getType();
+        n.name   = atype.id().id();
         n.count  = 0;
         nn.push_back(n);
     }
