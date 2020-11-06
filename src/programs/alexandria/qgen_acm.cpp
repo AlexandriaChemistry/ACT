@@ -562,15 +562,34 @@ void QgenAcm::solveSQE(FILE                    *fp,
     int nbonds = bonds.size();
     MatrixWrapper lhs(nbonds, nbonds);
     rhs.resize(nbonds, 0.0);
-
-    auto fs = pd->findForcesConst(InteractionType::BONDCORRECTIONS);
+    
+    auto itype = InteractionType::BONDCORRECTIONS;
+    auto fs    = pd->findForcesConst(itype);
     for (int bij = 0; bij < nbonds; bij++)
     {
-        auto ai    = bonds[bij].getAi()-1;
-        auto aj    = bonds[bij].getAj()-1;
-        Identifier bccId({id_[ai].id(), id_[aj].id()}, CanSwap::No);
+        auto ai      = bonds[bij].getAi()-1;
+        auto aj      = bonds[bij].getAj()-1;
+        auto canSwap = fs.canSwap();
+        bool swapped = false;
+        Identifier bccId({id_[ai].id(), id_[aj].id()}, canSwap);
+        if (!fs.parameterExists(bccId))
+        {
+            if (CanSwap::Yes == canSwap)
+            {
+                GMX_THROW(gmx::InternalError(gmx::formatString("Cannot find identifier %s in list %s", bccId.id().c_str(), interactionTypeToString(itype).c_str()).c_str()));
+            }
+            else
+            {
+                bccId   = Identifier({id_[aj].id(), id_[ai].id()}, canSwap);
+                swapped = true;
+            }
+        }
         double hardness = fs.findParameterTypeConst(bccId, "hardness").value();
         double deltachi = fs.findParameterTypeConst(bccId, "electronegativity").value();
+        if (swapped)
+        {
+            deltachi *= -1;
+        }
 
         for (int bkl = 0; bkl < nbonds; bkl++)
         {

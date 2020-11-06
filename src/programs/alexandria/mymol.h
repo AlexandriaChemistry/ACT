@@ -359,6 +359,12 @@ class MyMol : public MolProp
          */
         t_mdatoms *getMdatoms() { return MDatoms_->get()->mdatoms(); }
 
+        /*! \brief Return the bond order
+         * \param[in] ai Atom I
+         * \param[in] aj Atom J
+         * \return bond order or 0 if not present
+         */
+        int bondOrder(int ai, int aj) const;
         /*! \brief
          * Return mtop structure
          */

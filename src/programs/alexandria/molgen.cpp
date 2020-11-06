@@ -296,6 +296,54 @@ void MolGen::checkDataSufficiency(FILE *fp)
                     }
                 }
             }
+            // Now check bonds and bondcorrections
+            auto btype = InteractionType::BONDS;
+            auto bonds = pd_.findForces(btype);
+            for(int i = 0; i < mol.ltop_->idef.il[bonds->fType()].nr;
+                i+= interaction_function[bonds->fType()].nratoms+1)
+            {
+                // Skip type, which is the first entry in iatoms
+                int ai = mol.ltop_->idef.il[bonds->fType()].iatoms[i+1];
+                int aj = mol.ltop_->idef.il[bonds->fType()].iatoms[i+2];
+                if (optimize(btype))
+                {
+                    auto iPType = pd_.findParticleType(*mol.atoms_->atomtype[ai])->interactionTypeToIdentifier(btype).id();
+                    auto jPType = pd_.findParticleType(*mol.atoms_->atomtype[aj])->interactionTypeToIdentifier(btype).id();
+                    auto bo     = mol.bondOrder(ai, aj);
+                    auto bondId = Identifier({iPType, jPType}, bo, bonds->canSwap());
+                    for(auto &ff : *(bonds->findParameters(bondId)))
+                    {
+                        if (ff.second.isMutable())
+                        {
+                            ff.second.incrementNtrain();
+                        }
+                    }
+                }
+                auto bcctype = InteractionType::BONDCORRECTIONS;
+                if (optimize(bcctype) && pd_.interactionPresent(bcctype))
+                {
+                    auto ztype  = InteractionType::ELECTRONEGATIVITYEQUALIZATION;
+                    auto iPType = pd_.findParticleType(*mol.atoms_->atomtype[ai])->interactionTypeToIdentifier(ztype).id();
+                    auto jPType = pd_.findParticleType(*mol.atoms_->atomtype[aj])->interactionTypeToIdentifier(ztype).id();
+                    auto bcc   = pd_.findForces(bcctype);
+                    auto bccId = Identifier({iPType, jPType}, bcc->canSwap());
+                    if (!bcc->parameterExists(bccId))
+                    {
+                        bccId = Identifier({jPType, iPType}, bcc->canSwap());
+                        if (!bcc->parameterExists(bccId))
+                        {
+                            GMX_THROW(gmx::InternalError("Unknown bondcorrection"));
+                        }
+                    }
+                    for(auto &ff : *(bcc->findParameters(bccId)))
+                    {
+                        if (ff.second.isMutable())
+                        {
+                            ff.second.incrementNtrain();
+                        }
+                    }
+                }
+            }
         }
         // Now loop over molecules and remove those without sufficient support
         std::vector<std::string> removeMol;

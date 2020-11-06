@@ -280,12 +280,12 @@ static void dumpQX(FILE *fp, MyMol *mol, const std::string &info)
 
 double OptACM::calcDeviation()
 {
+    bool  verbose = final();
     resetEnergies();
     if (MASTER(commrec()))
     {
         if (weight(ermsBOUNDS))
         {
-            bool  verbose           = final();
             const param_type &param = Bayes::getParam();
             double            bound = 0;
             size_t            n     = 0;
@@ -316,11 +316,6 @@ double OptACM::calcDeviation()
             // TODO: Optimize to only do relevant stuff
             poldata()->broadcast_eemprop(commrec());
         }
-    }
-    if (false && logFile())
-    {
-        fprintf(logFile(), "Parameters:");
-        printParameters(logFile());
     }
     for (auto &mymol : mymols())
     {
@@ -556,7 +551,7 @@ double OptACM::calcDeviation()
         }
     }
     sumEnergies();
-    if (logFile())
+    if (verbose && logFile())
     {
         printParameters(logFile());
         printEnergies(logFile());

@@ -620,7 +620,7 @@ immStatus MyMol::GenerateAtoms(const Poldata     *pd,
             }
             else
             {
-                GMX_THROW(gmx::InternalError(gmx::formatString("Cannot find atomtype %s in poldata", cai.getObtype().c_str()).c_str()));
+                return immStatus::AtomTypes;
             }
         }
         for (auto i = 0; i < natom; i++)
@@ -1071,6 +1071,19 @@ void MyMol::addShells(const Poldata *pd)
         }
     }
     bHaveShells_ = true;
+}
+
+int MyMol::bondOrder(int ai, int aj) const
+{
+    if (bondOrder_.find({ai, aj}) != bondOrder_.end())
+    {
+        return bondOrder_.find({ai, aj})->second;
+    }
+    else if (bondOrder_.find({aj, ai}) != bondOrder_.end())
+    {
+        return bondOrder_.find({aj, ai})->second;
+    }
+    return 0;
 }
 
 immStatus MyMol::GenerateGromacs(const gmx::MDLogger       &mdlog,
