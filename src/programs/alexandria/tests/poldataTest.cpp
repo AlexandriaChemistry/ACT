@@ -80,7 +80,25 @@ class PoldataTest : public gmx::test::CommandLineTestBase
         {
         }
 
-
+        void addAtype(alexandria::Poldata *pd)
+        {
+            std::string          atype("U");
+            std::string          elem("U");
+            std::string          desc("temporary test atom");
+            Identifier   atpId({"U"}, CanSwap::No);
+            ParticleType atp(atpId, desc, eptAtom);
+            atp.setOption("poltype", "p_U");
+            atp.setOption("zetatype", "z_U");
+            atp.setOption("bondtype", "b_U");
+            atp.setOption("acmtype", "z_U");
+            atp.setOption("element", elem);
+            atp.setOption("atomnumber", "92");
+            ForceFieldParameter mm("Da", 238.29, 0.0,  1, 230, 240, Mutability::Free, true);
+            atp.addForceFieldParameter("mass", mm);
+            ForceFieldParameter rr("kJ/mol", 1000.0, 0.0,  1, 990, 1010, Mutability::Free, true);
+            atp.addForceFieldParameter("ref_enthalpy", rr);
+            pd->addParticleType(atp);
+        }
 };
 
 std::vector<std::string> PoldataTest::atomNames;
@@ -98,24 +116,18 @@ TEST_F (PoldataTest, getAtype){
     checker_.checkDouble(aType->refEnthalpy(), "refEnthalpy");
 }
 
-TEST_F(PoldataTest, addAtype){
-    std::string          atype("U");
-    std::string          elem("U");
-    std::string          desc("temporary test atom");
+TEST_F(PoldataTest, addingParticleTypeTwiceThrows)
+{
     alexandria::Poldata *pd = getPoldata("ACM-g");
-    Identifier   atpId({"U"}, CanSwap::No);
-    ParticleType atp(atpId, desc, eptAtom);
-    atp.setOption("poltype", "p_U");
-    atp.setOption("zetatype", "z_U");
-    atp.setOption("bondtype", "b_U");
-    atp.setOption("acmtype", "z_U");
-    atp.setOption("element", elem);
-    atp.setOption("atomnumber", "92");
-    ForceFieldParameter mm("Da", 238.29, 0.0,  1, 230, 240, Mutability::Free, true);
-    atp.addForceFieldParameter("mass", mm);
-    ForceFieldParameter rr("kJ/mol", 1000.0, 0.0,  1, 990, 1010, Mutability::Free, true);
-    atp.addForceFieldParameter("ref_enthalpy", rr);
-    pd->addParticleType(atp);
+    addAtype(pd);
+    EXPECT_THROW(addAtype(pd), gmx::InvalidInputError);
+}
+
+TEST_F(PoldataTest, addAtype){
+    alexandria::Poldata *pd = getPoldata("ACM-g");
+    std::string          atype("U");
+    // For some reason this test "inherits" the same Poldata as the previous test
+    //addAtype(pd);
 
     if (pd->hasParticleType(atype))
     {
@@ -127,7 +139,6 @@ TEST_F(PoldataTest, addAtype){
         checker_.checkString(fa->interactionTypeToIdentifier(InteractionType::BONDS).id(), "bondtype");
         checker_.checkString(fa->interactionTypeToIdentifier(InteractionType::ELECTRONEGATIVITYEQUALIZATION).id(), "zetatype");
     }
-    EXPECT_THROW(pd->addParticleType(atp), gmx::InvalidInputError);
 }
 
 TEST_F (PoldataTest, Verstraelen)
