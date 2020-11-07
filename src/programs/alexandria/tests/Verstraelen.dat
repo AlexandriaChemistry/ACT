@@ -762,114 +762,114 @@
   <interaction type="VANDERWAALS" function="LJ_SR" canswap="true">
     <option key="combination_rule" value="Geometric"/>
     <parameterlist identifier="h1">
-      <parameter type="epsilon" unit="kJ/mol" value="6.568880e-02" uncertainty="0" minimum="0.05" maximum="0.08" ntrain="0" mutability="Bounded"/>
-      <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
-      <parameter type="sigma" unit="nm" value="2.471350e-01" uncertainty="0" minimum="0.20" maximum="0.31" ntrain="0" mutability="Bounded"/>
+      <parameter type="epsilon" unit="kJ/mol" value="0.0656888" uncertainty="0" minimum="0.05" maximum="0.08" ntrain="0" mutability="Bounded"/>
+      <parameter type="gamma" unit="" value="13" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="0.247135" uncertainty="0" minimum="0.20" maximum="0.31" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="h2">
-      <parameter type="epsilon" unit="kJ/mol" value="6.568880e-02" uncertainty="0" minimum="0.05" maximum="0.08" ntrain="0" mutability="Bounded"/>
-      <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
-      <parameter type="sigma" unit="nm" value="2.293170e-01" uncertainty="0" minimum="0.18" maximum="0.29" ntrain="0" mutability="Bounded"/>
+      <parameter type="epsilon" unit="kJ/mol" value="0.0656888" uncertainty="0" minimum="0.05" maximum="0.08" ntrain="0" mutability="Bounded"/>
+      <parameter type="gamma" unit="" value="13" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="0.229317" uncertainty="0" minimum="0.18" maximum="0.29" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="h3">
-      <parameter type="epsilon" unit="kJ/mol" value="6.568880e-02" uncertainty="0" minimum="0.05" maximum="0.08" ntrain="0" mutability="Bounded"/>
-      <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
-      <parameter type="sigma" unit="nm" value="2.114990e-01" uncertainty="0" minimum="0.17" maximum="0.26" ntrain="0" mutability="Bounded"/>
+      <parameter type="epsilon" unit="kJ/mol" value="0.0656888" uncertainty="0" minimum="0.05" maximum="0.08" ntrain="0" mutability="Bounded"/>
+      <parameter type="gamma" unit="" value="13" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="0.211499" uncertainty="0" minimum="0.17" maximum="0.26" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="h4">
-      <parameter type="epsilon" unit="kJ/mol" value="6.276000e-02" uncertainty="0" minimum="0.05" maximum="0.08" ntrain="0" mutability="Bounded"/>
-      <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
-      <parameter type="sigma" unit="nm" value="2.510550e-01" uncertainty="0" minimum="0.20" maximum="0.31" ntrain="0" mutability="Bounded"/>
+      <parameter type="epsilon" unit="kJ/mol" value="0.06276" uncertainty="0" minimum="0.05" maximum="0.08" ntrain="0" mutability="Bounded"/>
+      <parameter type="gamma" unit="" value="13" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="0.251055" uncertainty="0" minimum="0.20" maximum="0.31" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="h5">
-      <parameter type="epsilon" unit="kJ/mol" value="6.276000e-02" uncertainty="0" minimum="0.05" maximum="0.08" ntrain="0" mutability="Bounded"/>
-      <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
-      <parameter type="sigma" unit="nm" value="2.421460e-01" uncertainty="0" minimum="0.19" maximum="0.30" ntrain="0" mutability="Bounded"/>
+      <parameter type="epsilon" unit="kJ/mol" value="0.06276" uncertainty="0" minimum="0.05" maximum="0.08" ntrain="0" mutability="Bounded"/>
+      <parameter type="gamma" unit="" value="13" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="0.242146" uncertainty="0" minimum="0.19" maximum="0.30" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="ha">
-      <parameter type="epsilon" unit="kJ/mol" value="6.276000e-02" uncertainty="0" minimum="0.05" maximum="0.08" ntrain="0" mutability="Bounded"/>
-      <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
-      <parameter type="sigma" unit="nm" value="2.599640e-01" uncertainty="0" minimum="0.21" maximum="0.32" ntrain="0" mutability="Bounded"/>
+      <parameter type="epsilon" unit="kJ/mol" value="0.06276" uncertainty="0" minimum="0.05" maximum="0.08" ntrain="0" mutability="Bounded"/>
+      <parameter type="gamma" unit="" value="13" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="0.259964" uncertainty="0" minimum="0.21" maximum="0.32" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="hc">
-      <parameter type="epsilon" unit="kJ/mol" value="6.568880e-02" uncertainty="0" minimum="0.05" maximum="0.08" ntrain="0" mutability="Bounded"/>
-      <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
-      <parameter type="sigma" unit="nm" value="2.649530e-01" uncertainty="0" minimum="0.21" maximum="0.33" ntrain="0" mutability="Bounded"/>
+      <parameter type="epsilon" unit="kJ/mol" value="0.0656888" uncertainty="0" minimum="0.05" maximum="0.08" ntrain="0" mutability="Bounded"/>
+      <parameter type="gamma" unit="" value="13" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="0.264953" uncertainty="0" minimum="0.21" maximum="0.33" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="hn">
-      <parameter type="epsilon" unit="kJ/mol" value="6.568880e-02" uncertainty="0" minimum="0.05" maximum="0.08" ntrain="0" mutability="Bounded"/>
-      <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
-      <parameter type="sigma" unit="nm" value="1.069080e-01" uncertainty="0" minimum="0.09" maximum="0.13" ntrain="0" mutability="Bounded"/>
+      <parameter type="epsilon" unit="kJ/mol" value="0.0656888" uncertainty="0" minimum="0.05" maximum="0.08" ntrain="0" mutability="Bounded"/>
+      <parameter type="gamma" unit="" value="13" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="0.106908" uncertainty="0" minimum="0.09" maximum="0.13" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="ho">
-      <parameter type="epsilon" unit="kJ/mol" value="6.568880e-02" uncertainty="0" minimum="0.05" maximum="0.08" ntrain="0" mutability="Bounded"/>
-      <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
-      <parameter type="sigma" unit="nm" value="1.069080e-01" uncertainty="0" minimum="0.09" maximum="0.13" ntrain="0" mutability="Bounded"/>
+      <parameter type="epsilon" unit="kJ/mol" value="0.0656888" uncertainty="0" minimum="0.05" maximum="0.08" ntrain="0" mutability="Bounded"/>
+      <parameter type="gamma" unit="" value="13" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="0.106908" uncertainty="0" minimum="0.09" maximum="0.13" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="hp">
-      <parameter type="epsilon" unit="kJ/mol" value="6.568880e-02" uncertainty="0" minimum="0.05" maximum="0.08" ntrain="0" mutability="Bounded"/>
-      <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
-      <parameter type="sigma" unit="nm" value="1.069080e-01" uncertainty="0" minimum="0.09" maximum="0.13" ntrain="0" mutability="Bounded"/>
+      <parameter type="epsilon" unit="kJ/mol" value="0.0656888" uncertainty="0" minimum="0.05" maximum="0.08" ntrain="0" mutability="Bounded"/>
+      <parameter type="gamma" unit="" value="13" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="0.106908" uncertainty="0" minimum="0.09" maximum="0.13" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="hs">
-      <parameter type="epsilon" unit="kJ/mol" value="6.568880e-02" uncertainty="0" minimum="0.05" maximum="0.08" ntrain="0" mutability="Bounded"/>
-      <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
-      <parameter type="sigma" unit="nm" value="1.069080e-01" uncertainty="0" minimum="0.09" maximum="0.13" ntrain="0" mutability="Bounded"/>
+      <parameter type="epsilon" unit="kJ/mol" value="0.0656888" uncertainty="0" minimum="0.05" maximum="0.08" ntrain="0" mutability="Bounded"/>
+      <parameter type="gamma" unit="" value="13" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="0.106908" uncertainty="0" minimum="0.09" maximum="0.13" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="hw">
-      <parameter type="epsilon" unit="kJ/mol" value="6.568880e-02" uncertainty="0" minimum="0.05" maximum="0.08" ntrain="0" mutability="Bounded"/>
-      <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
-      <parameter type="sigma" unit="nm" value="1.069080e-01" uncertainty="0" minimum="0.09" maximum="0.13" ntrain="0" mutability="Bounded"/>
+      <parameter type="epsilon" unit="kJ/mol" value="0.0656888" uncertainty="0" minimum="0.05" maximum="0.08" ntrain="0" mutability="Bounded"/>
+      <parameter type="gamma" unit="" value="13" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="0.106908" uncertainty="0" minimum="0.09" maximum="0.13" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="c1">
-      <parameter type="epsilon" unit="kJ/mol" value="8.786400e-01" uncertainty="0" minimum="0.70" maximum="1.10" ntrain="0" mutability="Bounded"/>
-      <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
-      <parameter type="sigma" unit="nm" value="3.399670e-01" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
+      <parameter type="epsilon" unit="kJ/mol" value="0.87864" uncertainty="0" minimum="0.70" maximum="1.10" ntrain="0" mutability="Bounded"/>
+      <parameter type="gamma" unit="" value="13" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="0.339967" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="c">
-      <parameter type="epsilon" unit="kJ/mol" value="3.598240e-01" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
-      <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
-      <parameter type="sigma" unit="nm" value="3.399670e-01" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
+      <parameter type="epsilon" unit="kJ/mol" value="0.359824" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
+      <parameter type="gamma" unit="" value="13" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="0.339967" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="ca">
-      <parameter type="epsilon" unit="kJ/mol" value="3.598240e-01" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
-      <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
-      <parameter type="sigma" unit="nm" value="3.399670e-01" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
+      <parameter type="epsilon" unit="kJ/mol" value="0.359824" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
+      <parameter type="gamma" unit="" value="13" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="0.339967" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="cq">
-      <parameter type="epsilon" unit="kJ/mol" value="3.598240e-01" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
-      <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
-      <parameter type="sigma" unit="nm" value="3.399670e-01" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
+      <parameter type="epsilon" unit="kJ/mol" value="0.359824" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
+      <parameter type="gamma" unit="" value="13" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="0.339967" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="cp">
-      <parameter type="epsilon" unit="kJ/mol" value="3.598240e-01" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
-      <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
-      <parameter type="sigma" unit="nm" value="3.399670e-01" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
+      <parameter type="epsilon" unit="kJ/mol" value="0.359824" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
+      <parameter type="gamma" unit="" value="13" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="0.339967" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="cc">
-      <parameter type="epsilon" unit="kJ/mol" value="3.598240e-01" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
-      <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
-      <parameter type="sigma" unit="nm" value="3.399670e-01" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
+      <parameter type="epsilon" unit="kJ/mol" value="0.359824" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
+      <parameter type="gamma" unit="" value="13" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="0.339967" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="cd">
-      <parameter type="epsilon" unit="kJ/mol" value="3.598240e-01" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
-      <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
-      <parameter type="sigma" unit="nm" value="3.399670e-01" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
+      <parameter type="epsilon" unit="kJ/mol" value="0.359824" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
+      <parameter type="gamma" unit="" value="13" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="0.339967" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="cg">
-      <parameter type="epsilon" unit="kJ/mol" value="8.786400e-01" uncertainty="0" minimum="0.70" maximum="1.10" ntrain="0" mutability="Bounded"/>
-      <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
-      <parameter type="sigma" unit="nm" value="3.399670e-01" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
+      <parameter type="epsilon" unit="kJ/mol" value="0.87864" uncertainty="0" minimum="0.70" maximum="1.10" ntrain="0" mutability="Bounded"/>
+      <parameter type="gamma" unit="" value="13" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="0.339967" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="ce">
-      <parameter type="epsilon" unit="kJ/mol" value="3.598240e-01" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
-      <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
-      <parameter type="sigma" unit="nm" value="3.399670e-01" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
+      <parameter type="epsilon" unit="kJ/mol" value="0.359824" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
+      <parameter type="gamma" unit="" value="13" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="0.339967" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="cf">
-      <parameter type="epsilon" unit="kJ/mol" value="3.598240e-01" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
-      <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
-      <parameter type="sigma" unit="nm" value="3.399670e-01" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
+      <parameter type="epsilon" unit="kJ/mol" value="0.359824" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
+      <parameter type="gamma" unit="" value="13" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="0.339967" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="cm">
       <parameter type="epsilon" unit="kJ/mol" value="0.2" uncertainty="0" minimum="0.16" maximum="0.25" ntrain="0" mutability="Bounded"/>
@@ -877,119 +877,119 @@
       <parameter type="sigma" unit="nm" value="0.2" uncertainty="0" minimum="0.16" maximum="0.25" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="cu">
-      <parameter type="epsilon" unit="kJ/mol" value="3.598240e-01" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
-      <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
-      <parameter type="sigma" unit="nm" value="3.399670e-01" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
+      <parameter type="epsilon" unit="kJ/mol" value="0.359824" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
+      <parameter type="gamma" unit="" value="13" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="0.339967" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="cv">
-      <parameter type="epsilon" unit="kJ/mol" value="3.598240e-01" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
-      <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
-      <parameter type="sigma" unit="nm" value="3.399670e-01" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
+      <parameter type="epsilon" unit="kJ/mol" value="0.359824" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
+      <parameter type="gamma" unit="" value="13" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="0.339967" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="cz">
-      <parameter type="epsilon" unit="kJ/mol" value="3.598240e-01" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
-      <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
-      <parameter type="sigma" unit="nm" value="3.399670e-01" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
+      <parameter type="epsilon" unit="kJ/mol" value="0.359824" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
+      <parameter type="gamma" unit="" value="13" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="0.339967" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="c2">
-      <parameter type="epsilon" unit="kJ/mol" value="3.598240e-01" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
-      <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
-      <parameter type="sigma" unit="nm" value="3.399670e-01" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
+      <parameter type="epsilon" unit="kJ/mol" value="0.359824" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
+      <parameter type="gamma" unit="" value="13" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="0.339967" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="c3">
-      <parameter type="epsilon" unit="kJ/mol" value="4.577300e-01" uncertainty="0" minimum="0.37" maximum="0.57" ntrain="0" mutability="Bounded"/>
-      <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
-      <parameter type="sigma" unit="nm" value="3.399670e-01" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
+      <parameter type="epsilon" unit="kJ/mol" value="0.45773" uncertainty="0" minimum="0.37" maximum="0.57" ntrain="0" mutability="Bounded"/>
+      <parameter type="gamma" unit="" value="13" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="0.339967" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="cx">
-      <parameter type="epsilon" unit="kJ/mol" value="3.598240e-01" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
-      <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
-      <parameter type="sigma" unit="nm" value="3.399670e-01" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
+      <parameter type="epsilon" unit="kJ/mol" value="0.359824" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
+      <parameter type="gamma" unit="" value="13" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="0.339967" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="cy">
-      <parameter type="epsilon" unit="kJ/mol" value="3.598240e-01" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
-      <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
-      <parameter type="sigma" unit="nm" value="3.399670e-01" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
+      <parameter type="epsilon" unit="kJ/mol" value="0.359824" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
+      <parameter type="gamma" unit="" value="13" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="0.339967" uncertainty="0" minimum="0.27" maximum="0.42" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="n">
-      <parameter type="epsilon" unit="kJ/mol" value="7.112800e-01" uncertainty="0" minimum="0.57" maximum="0.89" ntrain="0" mutability="Bounded"/>
-      <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
-      <parameter type="sigma" unit="nm" value="3.250000e-01" uncertainty="0" minimum="0.26" maximum="0.41" ntrain="0" mutability="Bounded"/>
+      <parameter type="epsilon" unit="kJ/mol" value="0.71128" uncertainty="0" minimum="0.57" maximum="0.89" ntrain="0" mutability="Bounded"/>
+      <parameter type="gamma" unit="" value="13" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="0.325" uncertainty="0" minimum="0.26" maximum="0.41" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="n1">
-      <parameter type="epsilon" unit="kJ/mol" value="7.112800e-01" uncertainty="0" minimum="0.57" maximum="0.89" ntrain="0" mutability="Bounded"/>
-      <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
-      <parameter type="sigma" unit="nm" value="3.250000e-01" uncertainty="0" minimum="0.26" maximum="0.41" ntrain="0" mutability="Bounded"/>
+      <parameter type="epsilon" unit="kJ/mol" value="0.71128" uncertainty="0" minimum="0.57" maximum="0.89" ntrain="0" mutability="Bounded"/>
+      <parameter type="gamma" unit="" value="13" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="0.325" uncertainty="0" minimum="0.26" maximum="0.41" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="n2">
-      <parameter type="epsilon" unit="kJ/mol" value="7.112800e-01" uncertainty="0" minimum="0.57" maximum="0.89" ntrain="0" mutability="Bounded"/>
-      <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
-      <parameter type="sigma" unit="nm" value="3.250000e-01" uncertainty="0" minimum="0.26" maximum="0.41" ntrain="0" mutability="Bounded"/>
+      <parameter type="epsilon" unit="kJ/mol" value="0.71128" uncertainty="0" minimum="0.57" maximum="0.89" ntrain="0" mutability="Bounded"/>
+      <parameter type="gamma" unit="" value="13" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="0.325" uncertainty="0" minimum="0.26" maximum="0.41" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="n3">
-      <parameter type="epsilon" unit="kJ/mol" value="7.112800e-01" uncertainty="0" minimum="0.57" maximum="0.89" ntrain="0" mutability="Bounded"/>
-      <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
-      <parameter type="sigma" unit="nm" value="3.250000e-01" uncertainty="0" minimum="0.26" maximum="0.41" ntrain="0" mutability="Bounded"/>
+      <parameter type="epsilon" unit="kJ/mol" value="0.71128" uncertainty="0" minimum="0.57" maximum="0.89" ntrain="0" mutability="Bounded"/>
+      <parameter type="gamma" unit="" value="13" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="0.325" uncertainty="0" minimum="0.26" maximum="0.41" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="n4">
-      <parameter type="epsilon" unit="kJ/mol" value="7.112800e-01" uncertainty="0" minimum="0.57" maximum="0.89" ntrain="0" mutability="Bounded"/>
-      <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
-      <parameter type="sigma" unit="nm" value="3.250000e-01" uncertainty="0" minimum="0.26" maximum="0.41" ntrain="0" mutability="Bounded"/>
+      <parameter type="epsilon" unit="kJ/mol" value="0.71128" uncertainty="0" minimum="0.57" maximum="0.89" ntrain="0" mutability="Bounded"/>
+      <parameter type="gamma" unit="" value="13" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="0.325" uncertainty="0" minimum="0.26" maximum="0.41" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="na">
-      <parameter type="epsilon" unit="kJ/mol" value="7.112800e-01" uncertainty="0" minimum="0.57" maximum="0.89" ntrain="0" mutability="Bounded"/>
-      <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
-      <parameter type="sigma" unit="nm" value="3.250000e-01" uncertainty="0" minimum="0.26" maximum="0.41" ntrain="0" mutability="Bounded"/>
+      <parameter type="epsilon" unit="kJ/mol" value="0.71128" uncertainty="0" minimum="0.57" maximum="0.89" ntrain="0" mutability="Bounded"/>
+      <parameter type="gamma" unit="" value="13" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="0.325" uncertainty="0" minimum="0.26" maximum="0.41" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="nb">
-      <parameter type="epsilon" unit="kJ/mol" value="7.112800e-01" uncertainty="0" minimum="0.57" maximum="0.89" ntrain="0" mutability="Bounded"/>
-      <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
-      <parameter type="sigma" unit="nm" value="3.250000e-01" uncertainty="0" minimum="0.26" maximum="0.41" ntrain="0" mutability="Bounded"/>
+      <parameter type="epsilon" unit="kJ/mol" value="0.71128" uncertainty="0" minimum="0.57" maximum="0.89" ntrain="0" mutability="Bounded"/>
+      <parameter type="gamma" unit="" value="13" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="0.325" uncertainty="0" minimum="0.26" maximum="0.41" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="nc">
-      <parameter type="epsilon" unit="kJ/mol" value="7.112800e-01" uncertainty="0" minimum="0.57" maximum="0.89" ntrain="0" mutability="Bounded"/>
-      <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
-      <parameter type="sigma" unit="nm" value="3.250000e-01" uncertainty="0" minimum="0.26" maximum="0.41" ntrain="0" mutability="Bounded"/>
+      <parameter type="epsilon" unit="kJ/mol" value="0.71128" uncertainty="0" minimum="0.57" maximum="0.89" ntrain="0" mutability="Bounded"/>
+      <parameter type="gamma" unit="" value="13" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="0.325" uncertainty="0" minimum="0.26" maximum="0.41" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="nd">
-      <parameter type="epsilon" unit="kJ/mol" value="7.112800e-01" uncertainty="0" minimum="0.57" maximum="0.89" ntrain="0" mutability="Bounded"/>
-      <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
-      <parameter type="sigma" unit="nm" value="3.250000e-01" uncertainty="0" minimum="0.26" maximum="0.41" ntrain="0" mutability="Bounded"/>
+      <parameter type="epsilon" unit="kJ/mol" value="0.71128" uncertainty="0" minimum="0.57" maximum="0.89" ntrain="0" mutability="Bounded"/>
+      <parameter type="gamma" unit="" value="13" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="0.325" uncertainty="0" minimum="0.26" maximum="0.41" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="ne">
-      <parameter type="epsilon" unit="kJ/mol" value="7.112800e-01" uncertainty="0" minimum="0.57" maximum="0.89" ntrain="0" mutability="Bounded"/>
-      <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
-      <parameter type="sigma" unit="nm" value="3.250000e-01" uncertainty="0" minimum="0.26" maximum="0.41" ntrain="0" mutability="Bounded"/>
+      <parameter type="epsilon" unit="kJ/mol" value="0.71128" uncertainty="0" minimum="0.57" maximum="0.89" ntrain="0" mutability="Bounded"/>
+      <parameter type="gamma" unit="" value="13" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="0.325" uncertainty="0" minimum="0.26" maximum="0.41" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="nh">
-      <parameter type="epsilon" unit="kJ/mol" value="7.112800e-01" uncertainty="0" minimum="0.57" maximum="0.89" ntrain="0" mutability="Bounded"/>
-      <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
-      <parameter type="sigma" unit="nm" value="3.250000e-01" uncertainty="0" minimum="0.26" maximum="0.41" ntrain="0" mutability="Bounded"/>
+      <parameter type="epsilon" unit="kJ/mol" value="0.71128" uncertainty="0" minimum="0.57" maximum="0.89" ntrain="0" mutability="Bounded"/>
+      <parameter type="gamma" unit="" value="13" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="0.325" uncertainty="0" minimum="0.26" maximum="0.41" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="no">
-      <parameter type="epsilon" unit="kJ/mol" value="7.112800e-01" uncertainty="0" minimum="0.57" maximum="0.89" ntrain="0" mutability="Bounded"/>
-      <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
-      <parameter type="sigma" unit="nm" value="3.250000e-01" uncertainty="0" minimum="0.26" maximum="0.41" ntrain="0" mutability="Bounded"/>
+      <parameter type="epsilon" unit="kJ/mol" value="0.71128" uncertainty="0" minimum="0.57" maximum="0.89" ntrain="0" mutability="Bounded"/>
+      <parameter type="gamma" unit="" value="13" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="0.325" uncertainty="0" minimum="0.26" maximum="0.41" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="o">
-      <parameter type="epsilon" unit="kJ/mol" value="8.786400e-01" uncertainty="0" minimum="0.70" maximum="1.10" ntrain="0" mutability="Bounded"/>
-      <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
-      <parameter type="sigma" unit="nm" value="2.959920e-01" uncertainty="0" minimum="0.24" maximum="0.37" ntrain="0" mutability="Bounded"/>
+      <parameter type="epsilon" unit="kJ/mol" value="0.87864" uncertainty="0" minimum="0.70" maximum="1.10" ntrain="0" mutability="Bounded"/>
+      <parameter type="gamma" unit="" value="13" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="0.295992" uncertainty="0" minimum="0.24" maximum="0.37" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="oh">
-      <parameter type="epsilon" unit="kJ/mol" value="8.803140e-01" uncertainty="0" minimum="0.70" maximum="1.10" ntrain="0" mutability="Bounded"/>
-      <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
-      <parameter type="sigma" unit="nm" value="3.066470e-01" uncertainty="0" minimum="0.25" maximum="0.38" ntrain="0" mutability="Bounded"/>
+      <parameter type="epsilon" unit="kJ/mol" value="0.880314" uncertainty="0" minimum="0.70" maximum="1.10" ntrain="0" mutability="Bounded"/>
+      <parameter type="gamma" unit="" value="13" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="0.306647" uncertainty="0" minimum="0.25" maximum="0.38" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="ow">
-      <parameter type="epsilon" unit="kJ/mol" value="7.112800e-01" uncertainty="0" minimum="0.57" maximum="0.89" ntrain="0" mutability="Bounded"/>
-      <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
-      <parameter type="sigma" unit="nm" value="3.000010e-01" uncertainty="0" minimum="0.24" maximum="0.38" ntrain="0" mutability="Bounded"/>
+      <parameter type="epsilon" unit="kJ/mol" value="0.71128" uncertainty="0" minimum="0.57" maximum="0.89" ntrain="0" mutability="Bounded"/>
+      <parameter type="gamma" unit="" value="13" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="0.300001" uncertainty="0" minimum="0.24" maximum="0.38" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="on">
-      <parameter type="epsilon" unit="kJ/mol" value="7.112800e-01" uncertainty="0" minimum="0.57" maximum="0.89" ntrain="0" mutability="Bounded"/>
-      <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
-      <parameter type="sigma" unit="nm" value="3.000010e-01" uncertainty="0" minimum="0.24" maximum="0.38" ntrain="0" mutability="Bounded"/>
+      <parameter type="epsilon" unit="kJ/mol" value="0.71128" uncertainty="0" minimum="0.57" maximum="0.89" ntrain="0" mutability="Bounded"/>
+      <parameter type="gamma" unit="" value="13" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="0.300001" uncertainty="0" minimum="0.24" maximum="0.38" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="om">
       <parameter type="epsilon" unit="kJ/mol" value="0.2" uncertainty="0" minimum="0.16" maximum="0.25" ntrain="0" mutability="Bounded"/>
@@ -997,59 +997,59 @@
       <parameter type="sigma" unit="nm" value="0.2" uncertainty="0" minimum="0.16" maximum="0.25" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="os">
-      <parameter type="epsilon" unit="kJ/mol" value="7.112800e-01" uncertainty="0" minimum="0.57" maximum="0.89" ntrain="0" mutability="Bounded"/>
-      <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
-      <parameter type="sigma" unit="nm" value="3.000010e-01" uncertainty="0" minimum="0.24" maximum="0.38" ntrain="0" mutability="Bounded"/>
+      <parameter type="epsilon" unit="kJ/mol" value="0.71128" uncertainty="0" minimum="0.57" maximum="0.89" ntrain="0" mutability="Bounded"/>
+      <parameter type="gamma" unit="" value="13" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="0.300001" uncertainty="0" minimum="0.24" maximum="0.38" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="f">
-      <parameter type="epsilon" unit="kJ/mol" value="2.552240e-01" uncertainty="0" minimum="0.20" maximum="0.32" ntrain="0" mutability="Bounded"/>
-      <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
-      <parameter type="sigma" unit="nm" value="3.118150e-01" uncertainty="0" minimum="0.25" maximum="0.39" ntrain="0" mutability="Bounded"/>
+      <parameter type="epsilon" unit="kJ/mol" value="0.255224" uncertainty="0" minimum="0.20" maximum="0.32" ntrain="0" mutability="Bounded"/>
+      <parameter type="gamma" unit="" value="13" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="0.311815" uncertainty="0" minimum="0.25" maximum="0.39" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="s">
-      <parameter type="epsilon" unit="kJ/mol" value="1.046000e+00" uncertainty="0" minimum="0.84" maximum="1.31" ntrain="0" mutability="Bounded"/>
-      <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
-      <parameter type="sigma" unit="nm" value="3.563590e-01" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
+      <parameter type="epsilon" unit="kJ/mol" value="1.046" uncertainty="0" minimum="0.84" maximum="1.31" ntrain="0" mutability="Bounded"/>
+      <parameter type="gamma" unit="" value="13" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="0.356359" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="s4">
-      <parameter type="epsilon" unit="kJ/mol" value="1.046000e+00" uncertainty="0" minimum="0.84" maximum="1.31" ntrain="0" mutability="Bounded"/>
-      <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
-      <parameter type="sigma" unit="nm" value="3.563590e-01" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
+      <parameter type="epsilon" unit="kJ/mol" value="1.046" uncertainty="0" minimum="0.84" maximum="1.31" ntrain="0" mutability="Bounded"/>
+      <parameter type="gamma" unit="" value="13" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="0.356359" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="s6">
-      <parameter type="epsilon" unit="kJ/mol" value="1.046000e+00" uncertainty="0" minimum="0.84" maximum="1.31" ntrain="0" mutability="Bounded"/>
-      <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
-      <parameter type="sigma" unit="nm" value="3.563590e-01" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
+      <parameter type="epsilon" unit="kJ/mol" value="1.046" uncertainty="0" minimum="0.84" maximum="1.31" ntrain="0" mutability="Bounded"/>
+      <parameter type="gamma" unit="" value="13" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="0.356359" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="sh">
-      <parameter type="epsilon" unit="kJ/mol" value="1.046000e+00" uncertainty="0" minimum="0.84" maximum="1.31" ntrain="0" mutability="Bounded"/>
-      <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
-      <parameter type="sigma" unit="nm" value="3.563590e-01" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
+      <parameter type="epsilon" unit="kJ/mol" value="1.046" uncertainty="0" minimum="0.84" maximum="1.31" ntrain="0" mutability="Bounded"/>
+      <parameter type="gamma" unit="" value="13" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="0.356359" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="ss">
-      <parameter type="epsilon" unit="kJ/mol" value="1.046000e+00" uncertainty="0" minimum="0.84" maximum="1.31" ntrain="0" mutability="Bounded"/>
-      <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
-      <parameter type="sigma" unit="nm" value="3.563590e-01" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
+      <parameter type="epsilon" unit="kJ/mol" value="1.046" uncertainty="0" minimum="0.84" maximum="1.31" ntrain="0" mutability="Bounded"/>
+      <parameter type="gamma" unit="" value="13" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="0.356359" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="sx">
-      <parameter type="epsilon" unit="kJ/mol" value="1.046000e+00" uncertainty="0" minimum="0.84" maximum="1.31" ntrain="0" mutability="Bounded"/>
-      <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
-      <parameter type="sigma" unit="nm" value="3.563590e-01" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
+      <parameter type="epsilon" unit="kJ/mol" value="1.046" uncertainty="0" minimum="0.84" maximum="1.31" ntrain="0" mutability="Bounded"/>
+      <parameter type="gamma" unit="" value="13" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="0.356359" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="sy">
-      <parameter type="epsilon" unit="kJ/mol" value="1.046000e+00" uncertainty="0" minimum="0.84" maximum="1.31" ntrain="0" mutability="Bounded"/>
-      <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
-      <parameter type="sigma" unit="nm" value="3.563590e-01" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
+      <parameter type="epsilon" unit="kJ/mol" value="1.046" uncertainty="0" minimum="0.84" maximum="1.31" ntrain="0" mutability="Bounded"/>
+      <parameter type="gamma" unit="" value="13" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="0.356359" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="cl">
-      <parameter type="epsilon" unit="kJ/mol" value="1.108760e+00" uncertainty="0" minimum="0.89" maximum="1.39" ntrain="0" mutability="Bounded"/>
-      <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
-      <parameter type="sigma" unit="nm" value="3.470940e-01" uncertainty="0" minimum="0.28" maximum="0.43" ntrain="0" mutability="Bounded"/>
+      <parameter type="epsilon" unit="kJ/mol" value="1.10876" uncertainty="0" minimum="0.89" maximum="1.39" ntrain="0" mutability="Bounded"/>
+      <parameter type="gamma" unit="" value="13" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="0.347094" uncertainty="0" minimum="0.28" maximum="0.43" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="br">
-      <parameter type="epsilon" unit="kJ/mol" value="1.757280e+00" uncertainty="0" minimum="1.41" maximum="2.20" ntrain="0" mutability="Bounded"/>
-      <parameter type="gamma" unit="" value="1.300000e+01" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
-      <parameter type="sigma" unit="nm" value="3.599230e-01" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
+      <parameter type="epsilon" unit="kJ/mol" value="1.75728" uncertainty="0" minimum="1.41" maximum="2.20" ntrain="0" mutability="Bounded"/>
+      <parameter type="gamma" unit="" value="13" uncertainty="0" minimum="10.40" maximum="16.25" ntrain="0" mutability="Bounded"/>
+      <parameter type="sigma" unit="nm" value="0.359923" uncertainty="0" minimum="0.29" maximum="0.45" ntrain="0" mutability="Bounded"/>
     </parameterlist>
   </interaction>
   <interaction type="BONDS" function="MORSE" canswap="true">
@@ -19279,528 +19279,528 @@
   <interaction type="BONDCORRECTIONS" function="" canswap="false">
     <parameterlist identifier="Br#C3">
 >
-      <parameter type="hardness" unit="eV/e" value="5.77" uncertainty="0" minimum="5.77" maximum="5.77" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="-0.1" uncertainty="0" minimum="-0.1" maximum="-0.1" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="5.77" uncertainty="0" minimum="0" maximum="11.54" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="-0.1" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="Br#C4">
 >
-      <parameter type="hardness" unit="eV/e" value="5.3" uncertainty="0" minimum="5.3" maximum="5.3" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="-0.09" uncertainty="0" minimum="-0.09" maximum="-0.09" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="5.3" uncertainty="0" minimum="0" maximum="10.6" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="-0.09" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="C2#C2">
 >
-      <parameter type="hardness" unit="eV/e" value="0.51" uncertainty="0" minimum="0.51" maximum="0.51" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="0.0" uncertainty="0" minimum="0.0" maximum="0.0" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="0.51" uncertainty="0" minimum="0" maximum="1.02" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="0.0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="C2#C3">
 >
-      <parameter type="hardness" unit="eV/e" value="9.64" uncertainty="0" minimum="9.64" maximum="9.64" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="0.13" uncertainty="0" minimum="0.13" maximum="0.13" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="9.64" uncertainty="0" minimum="0" maximum="19.28" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="0.13" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="C2#C4">
 >
-      <parameter type="hardness" unit="eV/e" value="15.3" uncertainty="0" minimum="15.3" maximum="15.3" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="0.17" uncertainty="0" minimum="0.17" maximum="0.17" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="15.3" uncertainty="0" minimum="0" maximum="30.6" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="0.17" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="C2#H">
 >
-      <parameter type="hardness" unit="eV/e" value="8.66" uncertainty="0" minimum="8.66" maximum="8.66" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="-0.06" uncertainty="0" minimum="-0.06" maximum="-0.06" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="8.66" uncertainty="0" minimum="0" maximum="17.32" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="-0.06" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="C2#N1">
 >
-      <parameter type="hardness" unit="eV/e" value="1.56" uncertainty="0" minimum="1.56" maximum="1.56" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="-0.99" uncertainty="0" minimum="-0.99" maximum="-0.99" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="1.56" uncertainty="0" minimum="0" maximum="3.12" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="-0.99" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="C2#N2">
 >
-      <parameter type="hardness" unit="eV/e" value="1.91" uncertainty="0" minimum="1.91" maximum="1.91" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="-0.4" uncertainty="0" minimum="-0.4" maximum="-0.4" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="1.91" uncertainty="0" minimum="0" maximum="3.82" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="-0.4" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="C2#N3">
 >
-      <parameter type="hardness" unit="eV/e" value="7.68" uncertainty="0" minimum="7.68" maximum="7.68" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="-0.59" uncertainty="0" minimum="-0.59" maximum="-0.59" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="7.68" uncertainty="0" minimum="0" maximum="15.36" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="-0.59" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="C2#O1">
 >
-      <parameter type="hardness" unit="eV/e" value="3.6" uncertainty="0" minimum="3.6" maximum="3.6" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="-1.39" uncertainty="0" minimum="-1.39" maximum="-1.39" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="3.6" uncertainty="0" minimum="0" maximum="7.2" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="-1.39" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="C2#O2">
 >
-      <parameter type="hardness" unit="eV/e" value="8.81" uncertainty="0" minimum="8.81" maximum="8.81" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="-0.67" uncertainty="0" minimum="-0.67" maximum="-0.67" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="8.81" uncertainty="0" minimum="0" maximum="17.62" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="-0.67" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="C2#S1">
 >
-      <parameter type="hardness" unit="eV/e" value="2.02" uncertainty="0" minimum="2.02" maximum="2.02" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="0.44" uncertainty="0" minimum="0.44" maximum="0.44" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="2.02" uncertainty="0" minimum="0" maximum="4.04" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="0.44" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="C2#S2">
 >
-      <parameter type="hardness" unit="eV/e" value="8.8" uncertainty="0" minimum="8.8" maximum="8.8" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="0.11" uncertainty="0" minimum="0.11" maximum="0.11" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="8.8" uncertainty="0" minimum="0" maximum="17.6" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="0.11" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="C3#Br">
 >
-      <parameter type="hardness" unit="eV/e" value="5.77" uncertainty="0" minimum="5.77" maximum="5.77" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="0.1" uncertainty="0" minimum="0.1" maximum="0.1" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="5.77" uncertainty="0" minimum="0" maximum="11.54" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="0.1" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="C3#C2">
 >
-      <parameter type="hardness" unit="eV/e" value="9.64" uncertainty="0" minimum="9.64" maximum="9.64" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="-0.13" uncertainty="0" minimum="-0.13" maximum="-0.13" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="9.64" uncertainty="0" minimum="0" maximum="19.28" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="-0.13" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="C3#C3">
 >
-      <parameter type="hardness" unit="eV/e" value="3.75" uncertainty="0" minimum="3.75" maximum="3.75" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="0.0" uncertainty="0" minimum="0.0" maximum="0.0" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="3.75" uncertainty="0" minimum="0" maximum="7.5" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="0.0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="C3#C4">
 >
-      <parameter type="hardness" unit="eV/e" value="13.41" uncertainty="0" minimum="13.41" maximum="13.41" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="0.22" uncertainty="0" minimum="0.22" maximum="0.22" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="13.41" uncertainty="0" minimum="0" maximum="26.82" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="0.22" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="C3#Cl">
 >
-      <parameter type="hardness" unit="eV/e" value="6.86" uncertainty="0" minimum="6.86" maximum="6.86" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="-0.35" uncertainty="0" minimum="-0.35" maximum="-0.35" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="6.86" uncertainty="0" minimum="0" maximum="13.72" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="-0.35" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="C3#F">
 >
-      <parameter type="hardness" unit="eV/e" value="9.71" uncertainty="0" minimum="9.71" maximum="9.71" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="-1.09" uncertainty="0" minimum="-1.09" maximum="-1.09" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="9.71" uncertainty="0" minimum="0" maximum="19.42" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="-1.09" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="C3#H">
 >
-      <parameter type="hardness" unit="eV/e" value="8.68" uncertainty="0" minimum="8.68" maximum="8.68" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="-0.21" uncertainty="0" minimum="-0.21" maximum="-0.21" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="8.68" uncertainty="0" minimum="0" maximum="17.36" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="-0.21" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="C3#N2">
 >
-      <parameter type="hardness" unit="eV/e" value="3.02" uncertainty="0" minimum="3.02" maximum="3.02" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="-0.47" uncertainty="0" minimum="-0.47" maximum="-0.47" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="3.02" uncertainty="0" minimum="0" maximum="6.04" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="-0.47" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="C3#N3">
 >
-      <parameter type="hardness" unit="eV/e" value="6.45" uncertainty="0" minimum="6.45" maximum="6.45" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="-0.62" uncertainty="0" minimum="-0.62" maximum="-0.62" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="6.45" uncertainty="0" minimum="0" maximum="12.9" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="-0.62" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="C3#N4">
 >
-      <parameter type="hardness" unit="eV/e" value="16.23" uncertainty="0" minimum="16.23" maximum="16.23" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="-1.29" uncertainty="0" minimum="-1.29" maximum="-1.29" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="16.23" uncertainty="0" minimum="0" maximum="32.46" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="-1.29" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="C3#O1">
 >
-      <parameter type="hardness" unit="eV/e" value="2.84" uncertainty="0" minimum="2.84" maximum="2.84" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="-1.33" uncertainty="0" minimum="-1.33" maximum="-1.33" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="2.84" uncertainty="0" minimum="0" maximum="5.68" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="-1.33" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="C3#O2">
 >
-      <parameter type="hardness" unit="eV/e" value="7.62" uncertainty="0" minimum="7.62" maximum="7.62" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="-0.71" uncertainty="0" minimum="-0.71" maximum="-0.71" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="7.62" uncertainty="0" minimum="0" maximum="15.24" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="-0.71" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="C3#S1">
 >
-      <parameter type="hardness" unit="eV/e" value="1.66" uncertainty="0" minimum="1.66" maximum="1.66" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="0.58" uncertainty="0" minimum="0.58" maximum="0.58" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="1.66" uncertainty="0" minimum="0" maximum="3.32" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="0.58" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="C3#S2">
 >
-      <parameter type="hardness" unit="eV/e" value="5.15" uncertainty="0" minimum="5.15" maximum="5.15" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="-0.02" uncertainty="0" minimum="-0.02" maximum="-0.02" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="5.15" uncertainty="0" minimum="0" maximum="10.3" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="-0.02" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="C4#Br">
 >
-      <parameter type="hardness" unit="eV/e" value="5.3" uncertainty="0" minimum="5.3" maximum="5.3" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="0.09" uncertainty="0" minimum="0.09" maximum="0.09" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="5.3" uncertainty="0" minimum="0" maximum="10.6" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="0.09" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="C4#C2">
 >
-      <parameter type="hardness" unit="eV/e" value="15.3" uncertainty="0" minimum="15.3" maximum="15.3" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="-0.17" uncertainty="0" minimum="-0.17" maximum="-0.17" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="15.3" uncertainty="0" minimum="0" maximum="30.6" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="-0.17" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="C4#C3">
 >
-      <parameter type="hardness" unit="eV/e" value="13.41" uncertainty="0" minimum="13.41" maximum="13.41" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="-0.22" uncertainty="0" minimum="-0.22" maximum="-0.22" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="13.41" uncertainty="0" minimum="0" maximum="26.82" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="-0.22" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="C4#C4">
 >
-      <parameter type="hardness" unit="eV/e" value="12.62" uncertainty="0" minimum="12.62" maximum="12.62" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="0.0" uncertainty="0" minimum="0.0" maximum="0.0" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="12.62" uncertainty="0" minimum="0" maximum="25.24" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="0.0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="C4#Cl">
 >
-      <parameter type="hardness" unit="eV/e" value="6.71" uncertainty="0" minimum="6.71" maximum="6.71" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="-0.29" uncertainty="0" minimum="-0.29" maximum="-0.29" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="6.71" uncertainty="0" minimum="0" maximum="13.42" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="-0.29" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="C4#F">
 >
-      <parameter type="hardness" unit="eV/e" value="9.44" uncertainty="0" minimum="9.44" maximum="9.44" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="-0.74" uncertainty="0" minimum="-0.74" maximum="-0.74" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="9.44" uncertainty="0" minimum="0" maximum="18.88" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="-0.74" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="C4#H">
 >
-      <parameter type="hardness" unit="eV/e" value="6.65" uncertainty="0" minimum="6.65" maximum="6.65" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="-0.11" uncertainty="0" minimum="-0.11" maximum="-0.11" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="6.65" uncertainty="0" minimum="0" maximum="13.3" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="-0.11" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="C4#N2">
 >
-      <parameter type="hardness" unit="eV/e" value="11.49" uncertainty="0" minimum="11.49" maximum="11.49" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="-0.48" uncertainty="0" minimum="-0.48" maximum="-0.48" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="11.49" uncertainty="0" minimum="0" maximum="22.98" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="-0.48" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="C4#N3">
 >
-      <parameter type="hardness" unit="eV/e" value="11.89" uncertainty="0" minimum="11.89" maximum="11.89" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="-0.45" uncertainty="0" minimum="-0.45" maximum="-0.45" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="11.89" uncertainty="0" minimum="0" maximum="23.78" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="-0.45" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="C4#N4">
 >
-      <parameter type="hardness" unit="eV/e" value="15.53" uncertainty="0" minimum="15.53" maximum="15.53" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="-0.82" uncertainty="0" minimum="-0.82" maximum="-0.82" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="15.53" uncertainty="0" minimum="0" maximum="31.06" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="-0.82" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="C4#O1">
 >
-      <parameter type="hardness" unit="eV/e" value="4.1" uncertainty="0" minimum="4.1" maximum="4.1" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="-0.76" uncertainty="0" minimum="-0.76" maximum="-0.76" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="4.1" uncertainty="0" minimum="0" maximum="8.2" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="-0.76" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="C4#O2">
 >
-      <parameter type="hardness" unit="eV/e" value="10.68" uncertainty="0" minimum="10.68" maximum="10.68" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="-0.6" uncertainty="0" minimum="-0.6" maximum="-0.6" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="10.68" uncertainty="0" minimum="0" maximum="21.36" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="-0.6" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="C4#S1">
 >
-      <parameter type="hardness" unit="eV/e" value="3.97" uncertainty="0" minimum="3.97" maximum="3.97" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="0.39" uncertainty="0" minimum="0.39" maximum="0.39" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="3.97" uncertainty="0" minimum="0" maximum="7.94" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="0.39" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="C4#S2">
 >
-      <parameter type="hardness" unit="eV/e" value="7.94" uncertainty="0" minimum="7.94" maximum="7.94" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="0.04" uncertainty="0" minimum="0.04" maximum="0.04" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="7.94" uncertainty="0" minimum="0" maximum="15.88" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="0.04" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="Cl#C3">
 >
-      <parameter type="hardness" unit="eV/e" value="6.86" uncertainty="0" minimum="6.86" maximum="6.86" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="0.35" uncertainty="0" minimum="0.35" maximum="0.35" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="6.86" uncertainty="0" minimum="0" maximum="13.72" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="0.35" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="Cl#C4">
 >
-      <parameter type="hardness" unit="eV/e" value="6.71" uncertainty="0" minimum="6.71" maximum="6.71" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="6.71" uncertainty="0" minimum="0" maximum="13.42" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="0.29" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="Cl#N3">
 >
-      <parameter type="hardness" unit="eV/e" value="5.69" uncertainty="0" minimum="5.69" maximum="5.69" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="0.28" uncertainty="0" minimum="0.28" maximum="0.28" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="5.69" uncertainty="0" minimum="0" maximum="11.38" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="0.28" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="F#C3">
 >
-      <parameter type="hardness" unit="eV/e" value="9.71" uncertainty="0" minimum="9.71" maximum="9.71" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="1.09" uncertainty="0" minimum="1.09" maximum="1.09" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="9.71" uncertainty="0" minimum="0" maximum="19.42" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="1.09" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="F#C4">
 >
-      <parameter type="hardness" unit="eV/e" value="9.44" uncertainty="0" minimum="9.44" maximum="9.44" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="0.74" uncertainty="0" minimum="0.74" maximum="0.74" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="9.44" uncertainty="0" minimum="0" maximum="18.88" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="0.74" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="F#N3">
 >
-      <parameter type="hardness" unit="eV/e" value="7.55" uncertainty="0" minimum="7.55" maximum="7.55" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="-0.08" uncertainty="0" minimum="-0.08" maximum="-0.08" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="7.55" uncertainty="0" minimum="0" maximum="15.1" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="-0.08" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="H#C2">
 >
-      <parameter type="hardness" unit="eV/e" value="8.66" uncertainty="0" minimum="8.66" maximum="8.66" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="0.06" uncertainty="0" minimum="0.06" maximum="0.06" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="8.66" uncertainty="0" minimum="0" maximum="17.32" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="0.06" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="H#C3">
 >
-      <parameter type="hardness" unit="eV/e" value="8.68" uncertainty="0" minimum="8.68" maximum="8.68" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="0.21" uncertainty="0" minimum="0.21" maximum="0.21" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="8.68" uncertainty="0" minimum="0" maximum="17.36" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="0.21" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="H#C4">
 >
-      <parameter type="hardness" unit="eV/e" value="6.65" uncertainty="0" minimum="6.65" maximum="6.65" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="0.11" uncertainty="0" minimum="0.11" maximum="0.11" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="6.65" uncertainty="0" minimum="0" maximum="13.3" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="0.11" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="H#N2">
 >
-      <parameter type="hardness" unit="eV/e" value="7.42" uncertainty="0" minimum="7.42" maximum="7.42" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="-0.99" uncertainty="0" minimum="-0.99" maximum="-0.99" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="7.42" uncertainty="0" minimum="0" maximum="14.84" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="-0.99" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="H#N3">
 >
-      <parameter type="hardness" unit="eV/e" value="7.29" uncertainty="0" minimum="7.29" maximum="7.29" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="-1.06" uncertainty="0" minimum="-1.06" maximum="-1.06" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="7.29" uncertainty="0" minimum="0" maximum="14.58" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="-1.06" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="H#N4">
 >
-      <parameter type="hardness" unit="eV/e" value="8.81" uncertainty="0" minimum="8.81" maximum="8.81" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="-2.14" uncertainty="0" minimum="-2.14" maximum="-2.14" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="8.81" uncertainty="0" minimum="0" maximum="17.62" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="-2.14" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="H#O2">
 >
-      <parameter type="hardness" unit="eV/e" value="8.43" uncertainty="0" minimum="8.43" maximum="8.43" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="-1.49" uncertainty="0" minimum="-1.49" maximum="-1.49" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="8.43" uncertainty="0" minimum="0" maximum="16.86" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="-1.49" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="H#S2">
 >
-      <parameter type="hardness" unit="eV/e" value="5.62" uncertainty="0" minimum="5.62" maximum="5.62" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="-0.28" uncertainty="0" minimum="-0.28" maximum="-0.28" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="5.62" uncertainty="0" minimum="0" maximum="11.24" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="-0.28" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="N1#C2">
 >
-      <parameter type="hardness" unit="eV/e" value="1.56" uncertainty="0" minimum="1.56" maximum="1.56" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="0.99" uncertainty="0" minimum="0.99" maximum="0.99" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="1.56" uncertainty="0" minimum="0" maximum="3.12" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="0.99" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="N1#N2">
 >
-      <parameter type="hardness" unit="eV/e" value="1.63" uncertainty="0" minimum="1.63" maximum="1.63" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="-0.99" uncertainty="0" minimum="-0.99" maximum="-0.99" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="1.63" uncertainty="0" minimum="0" maximum="3.26" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="-0.99" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="N2#C2">
 >
-      <parameter type="hardness" unit="eV/e" value="1.91" uncertainty="0" minimum="1.91" maximum="1.91" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="0.4" uncertainty="0" minimum="0.4" maximum="0.4" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="1.91" uncertainty="0" minimum="0" maximum="3.82" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="0.4" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="N2#C3">
 >
-      <parameter type="hardness" unit="eV/e" value="3.02" uncertainty="0" minimum="3.02" maximum="3.02" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="0.47" uncertainty="0" minimum="0.47" maximum="0.47" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="3.02" uncertainty="0" minimum="0" maximum="6.04" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="0.47" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="N2#C4">
 >
-      <parameter type="hardness" unit="eV/e" value="11.49" uncertainty="0" minimum="11.49" maximum="11.49" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="0.48" uncertainty="0" minimum="0.48" maximum="0.48" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="11.49" uncertainty="0" minimum="0" maximum="22.98" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="0.48" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="N2#H">
 >
-      <parameter type="hardness" unit="eV/e" value="7.42" uncertainty="0" minimum="7.42" maximum="7.42" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="0.99" uncertainty="0" minimum="0.99" maximum="0.99" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="7.42" uncertainty="0" minimum="0" maximum="14.84" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="0.99" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="N2#N1">
 >
-      <parameter type="hardness" unit="eV/e" value="1.63" uncertainty="0" minimum="1.63" maximum="1.63" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="0.99" uncertainty="0" minimum="0.99" maximum="0.99" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="1.63" uncertainty="0" minimum="0" maximum="3.26" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="0.99" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="N2#N2">
 >
-      <parameter type="hardness" unit="eV/e" value="2.46" uncertainty="0" minimum="2.46" maximum="2.46" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="0.0" uncertainty="0" minimum="0.0" maximum="0.0" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="2.46" uncertainty="0" minimum="0" maximum="4.92" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="0.0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="N2#N3">
 >
-      <parameter type="hardness" unit="eV/e" value="5.09" uncertainty="0" minimum="5.09" maximum="5.09" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="0.07" uncertainty="0" minimum="0.07" maximum="0.07" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="5.09" uncertainty="0" minimum="0" maximum="10.18" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="0.07" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="N2#O1">
 >
-      <parameter type="hardness" unit="eV/e" value="3.65" uncertainty="0" minimum="3.65" maximum="3.65" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="-0.97" uncertainty="0" minimum="-0.97" maximum="-0.97" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="3.65" uncertainty="0" minimum="0" maximum="7.3" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="-0.97" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="N2#O2">
 >
-      <parameter type="hardness" unit="eV/e" value="6.12" uncertainty="0" minimum="6.12" maximum="6.12" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="-0.21" uncertainty="0" minimum="-0.21" maximum="-0.21" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="6.12" uncertainty="0" minimum="0" maximum="12.24" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="-0.21" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="N2#S2">
 >
-      <parameter type="hardness" unit="eV/e" value="3.88" uncertainty="0" minimum="3.88" maximum="3.88" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="0.29" uncertainty="0" minimum="0.29" maximum="0.29" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="3.88" uncertainty="0" minimum="0" maximum="7.76" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="0.29" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="N3#C2">
 >
-      <parameter type="hardness" unit="eV/e" value="7.68" uncertainty="0" minimum="7.68" maximum="7.68" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="0.59" uncertainty="0" minimum="0.59" maximum="0.59" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="7.68" uncertainty="0" minimum="0" maximum="15.36" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="0.59" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="N3#C3">
 >
-      <parameter type="hardness" unit="eV/e" value="6.45" uncertainty="0" minimum="6.45" maximum="6.45" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="0.62" uncertainty="0" minimum="0.62" maximum="0.62" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="6.45" uncertainty="0" minimum="0" maximum="12.9" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="0.62" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="N3#C4">
 >
-      <parameter type="hardness" unit="eV/e" value="11.89" uncertainty="0" minimum="11.89" maximum="11.89" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="0.45" uncertainty="0" minimum="0.45" maximum="0.45" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="11.89" uncertainty="0" minimum="0" maximum="23.78" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="0.45" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="N3#Cl">
 >
-      <parameter type="hardness" unit="eV/e" value="5.69" uncertainty="0" minimum="5.69" maximum="5.69" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="-0.28" uncertainty="0" minimum="-0.28" maximum="-0.28" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="5.69" uncertainty="0" minimum="0" maximum="11.38" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="-0.28" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="N3#F">
 >
-      <parameter type="hardness" unit="eV/e" value="7.55" uncertainty="0" minimum="7.55" maximum="7.55" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="0.08" uncertainty="0" minimum="0.08" maximum="0.08" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="7.55" uncertainty="0" minimum="0" maximum="15.1" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="0.08" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="N3#H">
 >
-      <parameter type="hardness" unit="eV/e" value="7.29" uncertainty="0" minimum="7.29" maximum="7.29" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="1.06" uncertainty="0" minimum="1.06" maximum="1.06" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="7.29" uncertainty="0" minimum="0" maximum="14.58" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="1.06" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="N3#N2">
 >
-      <parameter type="hardness" unit="eV/e" value="5.09" uncertainty="0" minimum="5.09" maximum="5.09" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="-0.07" uncertainty="0" minimum="-0.07" maximum="-0.07" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="5.09" uncertainty="0" minimum="0" maximum="10.18" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="-0.07" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="N3#N3">
 >
-      <parameter type="hardness" unit="eV/e" value="9.61" uncertainty="0" minimum="9.61" maximum="9.61" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="0.0" uncertainty="0" minimum="0.0" maximum="0.0" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="9.61" uncertainty="0" minimum="0" maximum="19.22" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="0.0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="N3#O1">
 >
-      <parameter type="hardness" unit="eV/e" value="3.68" uncertainty="0" minimum="3.68" maximum="3.68" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="-0.2" uncertainty="0" minimum="-0.2" maximum="-0.2" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="3.68" uncertainty="0" minimum="0" maximum="7.36" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="-0.2" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="N3#O2">
 >
-      <parameter type="hardness" unit="eV/e" value="9.2" uncertainty="0" minimum="9.2" maximum="9.2" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="-0.16" uncertainty="0" minimum="-0.16" maximum="-0.16" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="9.2" uncertainty="0" minimum="0" maximum="18.4" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="-0.16" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="N3#S2">
 >
-      <parameter type="hardness" unit="eV/e" value="6.9" uncertainty="0" minimum="6.9" maximum="6.9" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="0.58" uncertainty="0" minimum="0.58" maximum="0.58" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="6.9" uncertainty="0" minimum="0" maximum="13.8" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="0.58" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="N4#C3">
 >
-      <parameter type="hardness" unit="eV/e" value="16.23" uncertainty="0" minimum="16.23" maximum="16.23" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="1.29" uncertainty="0" minimum="1.29" maximum="1.29" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="16.23" uncertainty="0" minimum="0" maximum="32.46" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="1.29" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="N4#C4">
 >
-      <parameter type="hardness" unit="eV/e" value="15.53" uncertainty="0" minimum="15.53" maximum="15.53" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="0.82" uncertainty="0" minimum="0.82" maximum="0.82" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="15.53" uncertainty="0" minimum="0" maximum="31.06" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="0.82" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="N4#H">
 >
-      <parameter type="hardness" unit="eV/e" value="8.81" uncertainty="0" minimum="8.81" maximum="8.81" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="2.14" uncertainty="0" minimum="2.14" maximum="2.14" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="8.81" uncertainty="0" minimum="0" maximum="17.62" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="2.14" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="O1#C2">
 >
-      <parameter type="hardness" unit="eV/e" value="3.6" uncertainty="0" minimum="3.6" maximum="3.6" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="1.39" uncertainty="0" minimum="1.39" maximum="1.39" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="3.6" uncertainty="0" minimum="0" maximum="7.2" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="1.39" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="O1#C3">
 >
-      <parameter type="hardness" unit="eV/e" value="2.84" uncertainty="0" minimum="2.84" maximum="2.84" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="1.33" uncertainty="0" minimum="1.33" maximum="1.33" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="2.84" uncertainty="0" minimum="0" maximum="5.68" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="1.33" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="O1#C4">
 >
-      <parameter type="hardness" unit="eV/e" value="4.1" uncertainty="0" minimum="4.1" maximum="4.1" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="0.76" uncertainty="0" minimum="0.76" maximum="0.76" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="4.1" uncertainty="0" minimum="0" maximum="8.2" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="0.76" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="O1#N2">
 >
-      <parameter type="hardness" unit="eV/e" value="3.65" uncertainty="0" minimum="3.65" maximum="3.65" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="0.97" uncertainty="0" minimum="0.97" maximum="0.97" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="3.65" uncertainty="0" minimum="0" maximum="7.3" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="0.97" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="O1#N3">
 >
-      <parameter type="hardness" unit="eV/e" value="3.68" uncertainty="0" minimum="3.68" maximum="3.68" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="0.2" uncertainty="0" minimum="0.2" maximum="0.2" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="3.68" uncertainty="0" minimum="0" maximum="7.36" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="0.2" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="O2#C2">
 >
-      <parameter type="hardness" unit="eV/e" value="8.81" uncertainty="0" minimum="8.81" maximum="8.81" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="0.67" uncertainty="0" minimum="0.67" maximum="0.67" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="8.81" uncertainty="0" minimum="0" maximum="17.62" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="0.67" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="O2#C3">
 >
-      <parameter type="hardness" unit="eV/e" value="7.62" uncertainty="0" minimum="7.62" maximum="7.62" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="0.71" uncertainty="0" minimum="0.71" maximum="0.71" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="7.62" uncertainty="0" minimum="0" maximum="15.24" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="0.71" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="O2#C4">
 >
-      <parameter type="hardness" unit="eV/e" value="10.68" uncertainty="0" minimum="10.68" maximum="10.68" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="0.6" uncertainty="0" minimum="0.6" maximum="0.6" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="10.68" uncertainty="0" minimum="0" maximum="21.36" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="0.6" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="O2#H">
 >
-      <parameter type="hardness" unit="eV/e" value="8.43" uncertainty="0" minimum="8.43" maximum="8.43" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="1.49" uncertainty="0" minimum="1.49" maximum="1.49" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="8.43" uncertainty="0" minimum="0" maximum="16.86" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="1.49" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="O2#N2">
 >
-      <parameter type="hardness" unit="eV/e" value="6.12" uncertainty="0" minimum="6.12" maximum="6.12" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="0.21" uncertainty="0" minimum="0.21" maximum="0.21" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="6.12" uncertainty="0" minimum="0" maximum="12.24" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="0.21" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="O2#N3">
 >
-      <parameter type="hardness" unit="eV/e" value="9.2" uncertainty="0" minimum="9.2" maximum="9.2" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="0.16" uncertainty="0" minimum="0.16" maximum="0.16" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="9.2" uncertainty="0" minimum="0" maximum="18.4" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="0.16" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="O2#O2">
 >
-      <parameter type="hardness" unit="eV/e" value="7.95" uncertainty="0" minimum="7.95" maximum="7.95" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="0.0" uncertainty="0" minimum="0.0" maximum="0.0" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="7.95" uncertainty="0" minimum="0" maximum="15.9" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="0.0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="O2#S2">
 >
-      <parameter type="hardness" unit="eV/e" value="6.83" uncertainty="0" minimum="6.83" maximum="6.83" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="0.57" uncertainty="0" minimum="0.57" maximum="0.57" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="6.83" uncertainty="0" minimum="0" maximum="13.66" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="0.57" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="S1#C2">
 >
-      <parameter type="hardness" unit="eV/e" value="2.02" uncertainty="0" minimum="2.02" maximum="2.02" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="-0.44" uncertainty="0" minimum="-0.44" maximum="-0.44" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="2.02" uncertainty="0" minimum="0" maximum="4.04" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="-0.44" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="S1#C3">
 >
-      <parameter type="hardness" unit="eV/e" value="1.66" uncertainty="0" minimum="1.66" maximum="1.66" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="-0.58" uncertainty="0" minimum="-0.58" maximum="-0.58" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="1.66" uncertainty="0" minimum="0" maximum="3.32" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="-0.58" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="S1#C4">
 >
-      <parameter type="hardness" unit="eV/e" value="3.97" uncertainty="0" minimum="3.97" maximum="3.97" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="-0.39" uncertainty="0" minimum="-0.39" maximum="-0.39" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="3.97" uncertainty="0" minimum="0" maximum="7.94" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="-0.39" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="S2#C2">
 >
-      <parameter type="hardness" unit="eV/e" value="8.8" uncertainty="0" minimum="8.8" maximum="8.8" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="-0.11" uncertainty="0" minimum="-0.11" maximum="-0.11" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="8.8" uncertainty="0" minimum="0" maximum="17.6" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="-0.11" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="S2#C3">
 >
-      <parameter type="hardness" unit="eV/e" value="5.15" uncertainty="0" minimum="5.15" maximum="5.15" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="0.02" uncertainty="0" minimum="0.02" maximum="0.02" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="5.15" uncertainty="0" minimum="0" maximum="10.3" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="0.02" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="S2#C4">
 >
-      <parameter type="hardness" unit="eV/e" value="7.94" uncertainty="0" minimum="7.94" maximum="7.94" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="-0.04" uncertainty="0" minimum="-0.04" maximum="-0.04" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="7.94" uncertainty="0" minimum="0" maximum="15.88" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="-0.04" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="S2#H">
 >
-      <parameter type="hardness" unit="eV/e" value="5.62" uncertainty="0" minimum="5.62" maximum="5.62" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="0.28" uncertainty="0" minimum="0.28" maximum="0.28" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="5.62" uncertainty="0" minimum="0" maximum="11.24" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="0.28" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="S2#N2">
 >
-      <parameter type="hardness" unit="eV/e" value="3.88" uncertainty="0" minimum="3.88" maximum="3.88" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="-0.29" uncertainty="0" minimum="-0.29" maximum="-0.29" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="3.88" uncertainty="0" minimum="0" maximum="7.76" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="-0.29" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="S2#N3">
 >
-      <parameter type="hardness" unit="eV/e" value="6.9" uncertainty="0" minimum="6.9" maximum="6.9" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="-0.58" uncertainty="0" minimum="-0.58" maximum="-0.58" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="6.9" uncertainty="0" minimum="0" maximum="13.8" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="-0.58" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="S2#O2">
 >
-      <parameter type="hardness" unit="eV/e" value="6.83" uncertainty="0" minimum="6.83" maximum="6.83" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="-0.57" uncertainty="0" minimum="-0.57" maximum="-0.57" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="6.83" uncertainty="0" minimum="0" maximum="13.66" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="-0.57" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
     <parameterlist identifier="S2#S2">
 >
-      <parameter type="hardness" unit="eV/e" value="5.26" uncertainty="0" minimum="5.26" maximum="5.26" ntrain="1" mutability="Fixed"/>
-      <parameter type="electronegativity" unit="eV" value="0.0" uncertainty="0" minimum="0.0" maximum="0.0" ntrain="1" mutability="Fixed"/>
+      <parameter type="hardness" unit="eV/e" value="5.26" uncertainty="0" minimum="0" maximum="10.52" ntrain="0" mutability="Bounded"/>
+      <parameter type="electronegativity" unit="eV" value="0.0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded"/>
     </parameterlist>
   </interaction>
 </gentop>

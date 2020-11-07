@@ -285,11 +285,14 @@ void MolGen::checkDataSufficiency(FILE *fp)
                         if (atype->hasInteractionType(itype))
                         {
                             auto subId  = atype->interactionTypeToIdentifier(itype);
-                            for(auto &ff : *(fplist->findParameters(subId)))
+                            if (!subId.id().empty())
                             {
-                                if (ff.second.isMutable())
+                                for(auto &ff : *(fplist->findParameters(subId)))
                                 {
-                                    ff.second.incrementNtrain();
+                                    if (ff.second.isMutable())
+                                    {
+                                        ff.second.incrementNtrain();
+                                    }
                                 }
                             }
                         }
@@ -361,12 +364,15 @@ void MolGen::checkDataSufficiency(FILE *fp)
                         if (atype->hasInteractionType(itype))
                         {
                             auto ztype  = atype->interactionTypeToIdentifier(itype);
-                            for(auto &force : fplist->findParametersConst(ztype))
+                            if (!ztype.id().empty())
                             {
-                                if (force.second.ntrain() < static_cast<uint64_t>(mindata_))
+                                for(auto &force : fplist->findParametersConst(ztype))
                                 {
-                                    keep = false;
-                                    break;
+                                    if (force.second.ntrain() < static_cast<uint64_t>(mindata_))
+                                    {
+                                        keep = false;
+                                        break;
+                                    }
                                 }
                             }
                         }

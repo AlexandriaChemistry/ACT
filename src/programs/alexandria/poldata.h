@@ -106,8 +106,9 @@ class Poldata
 
         /*! \brief Add an atom type
          * \param[in] atp The new atom type
+         * \throw if this particle type exists already
          */
-        void  addParticleType(ParticleType ptp) { alexandria_.push_back(ptp); }
+        void  addParticleType(const ParticleType &ptp);
         /*! \brief
          *  Add the polarizability types
          *

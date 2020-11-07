@@ -124,21 +124,8 @@ CommunicationStatus ForceFieldParameter::Send(const t_commrec *cr, int dest) con
             fprintf(debug, "Sent most of a parameter\n");
             fflush(debug);
         }
-        switch (mutability_)
-        {
-        case Mutability::Free:
-            gmx_send_int(cr, dest, 0);
-            break;
-        case Mutability::Bounded:
-            gmx_send_int(cr, dest, 1);
-            break;
-        case Mutability::Dependent:
-            gmx_send_int(cr, dest, 2);
-            break;
-        case Mutability::Fixed:
-            gmx_send_int(cr, dest, 3);
-            break;
-        }
+        std::string mname = mutabilityName(mutability_);
+        gmx_send_str(cr, dest, &mname);
 
         if (nullptr != debug)
         {
@@ -171,24 +158,11 @@ CommunicationStatus ForceFieldParameter::Receive(const t_commrec *cr, int src)
             fprintf(debug, "Received most of ff param\n");
             fflush(debug);
         }
-        int mut              = gmx_recv_int(cr,src);
-        switch (mut)
+        std::string mname;
+        gmx_recv_str(cr, src, &mname);
+        if (!nameToMutability(mname, &mutability_))
         {
-        case 0:
-            mutability_ = Mutability::Free;
-            break;
-        case 1:
-            mutability_ = Mutability::Bounded;
-            break;
-        case 2:
-            mutability_ = Mutability::Dependent;
-            break;
-        case 3:
-            mutability_ = Mutability::Fixed;
-            break;
-        default:
-            // Should not happen.
-            GMX_THROW(gmx::InternalError(gmx::formatString("Unexpected mutability %d", mut))); 
+            GMX_THROW(gmx::InternalError("Communicating mutability"));
         }
         if (nullptr != debug)
         {

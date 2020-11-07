@@ -194,6 +194,15 @@ void Poldata::checkForPolarizability()
     polarizable_ = (f != forces_.end() && f->second.numberOfParameters() > 0);
 }
 
+void Poldata::addParticleType(const ParticleType &ptp)
+{
+    if (hasParticleType(ptp.id()))
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("Trying to add the same particle type %s twice", ptp.id().id().c_str()).c_str()));
+    }
+    alexandria_.push_back(ptp);
+}
+
 void Poldata::addForces(const std::string             &interaction,
                         const ForceFieldParameterList &forces)
 {
@@ -297,6 +306,7 @@ CommunicationStatus Poldata::Send(const t_commrec *cr, int dest)
     if (CS_OK == cs)
     {
         gmx_send_str(cr, dest, &filename_);
+        gmx_send_str(cr, dest, &alexandriaVersion_);
         gmx_send_int(cr, dest, nexcl_);
         gmx_send_double(cr, dest, gtEpsilonR_);
         gmx_send_str(cr, dest, &vsite_angle_unit_);
@@ -378,6 +388,7 @@ CommunicationStatus Poldata::Receive(const t_commrec *cr, int src)
     if (CS_OK == cs)
     {
         gmx_recv_str(cr, src, &filename_);
+        gmx_recv_str(cr, src, &alexandriaVersion_);
         nexcl_                = gmx_recv_int(cr, src);
         gtEpsilonR_           = gmx_recv_double(cr, src);
         gmx_recv_str(cr, src, &vsite_angle_unit_);

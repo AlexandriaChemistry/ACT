@@ -198,7 +198,7 @@ std::string ParticleType::element() const
 
 CommunicationStatus ParticleType::Send(const t_commrec *cr, int dest)
 {
-    CommunicationStatus cs;
+    CommunicationStatus cs = CS_OK;
     id_.Send(cr, dest);
     gmx_send_str(cr, dest, &desc_);
     gmx_send_int(cr, dest, gmxParticleType_);
@@ -219,11 +219,12 @@ CommunicationStatus ParticleType::Send(const t_commrec *cr, int dest)
     
 CommunicationStatus ParticleType::Receive(const t_commrec *cr, int src)
 {
-    CommunicationStatus cs;
+    CommunicationStatus cs = CS_OK;
     cs = id_.Receive(cr, src);
     gmx_recv_str(cr, src, &desc_);
     gmxParticleType_ = gmx_recv_int(cr, src);
     int nopt = gmx_recv_int(cr, src);
+    option_.clear();
     for(int i = 0; i < nopt; i++)
     {
         std::string key, value;
@@ -232,6 +233,7 @@ CommunicationStatus ParticleType::Receive(const t_commrec *cr, int src)
         option_.insert({key, value});
     }
     int nparm = gmx_recv_int(cr, src);
+    parameterMap_.clear();
     for(int i = 0; i < nparm; i++)
     {
         std::string type;

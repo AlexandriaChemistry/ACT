@@ -127,6 +127,7 @@ TEST_F(PoldataTest, addAtype){
         checker_.checkString(fa->interactionTypeToIdentifier(InteractionType::BONDS).id(), "bondtype");
         checker_.checkString(fa->interactionTypeToIdentifier(InteractionType::ELECTRONEGATIVITYEQUALIZATION).id(), "zetatype");
     }
+    EXPECT_THROW(pd->addParticleType(atp), gmx::InvalidInputError);
 }
 
 TEST_F (PoldataTest, Verstraelen)

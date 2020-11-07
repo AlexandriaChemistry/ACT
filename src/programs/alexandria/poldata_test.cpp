@@ -51,22 +51,43 @@ int alex_poldata_test(int argc, char*argv[])
         { efDAT, "-o", "pdout", ffWRITE }
     };
     
-    int                              NFILE = asize(fnm);
-
-    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, 0, nullptr,
-                           1, desc, 0, nullptr, &oenv))
-    {
-        return 0;
-    }
-
+    int                 NFILE = asize(fnm);
     alexandria::Poldata pd;
-    try 
+    
+    auto cr = init_commrec();
+    if (MASTER(cr))
     {
-        alexandria::readPoldata(opt2fn("-f", NFILE, fnm), &pd);
+        if (!parse_common_args(&argc, argv, 0, NFILE, fnm, 0, nullptr,
+                               1, desc, 0, nullptr, &oenv))
+        {
+            return 0;
+        }
+        
+        try 
+        {
+            alexandria::readPoldata(opt2fn("-f", NFILE, fnm), &pd);
+        }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
-    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-
-    alexandria::writePoldata(opt2fn("-o", NFILE, fnm), &pd, 0);
-
+    if (PAR(cr))
+    {
+        if (MASTER(cr))
+        {
+            pd.Send(cr, 1);
+            std::string outfile(opt2fn("-o", NFILE, fnm));
+            gmx_send_str(cr, 1, &outfile);
+        }
+        else if (cr->nodeid == 1)
+        {
+            pd.Receive(cr, 0);
+            std::string outfile;
+            gmx_recv_str(cr, 0, &outfile);
+            alexandria::writePoldata(outfile, &pd, 0);
+        }
+    }
+    else
+    {
+        alexandria::writePoldata(opt2fn("-o", NFILE, fnm), &pd, 0);
+    }
     return 0;
 }
