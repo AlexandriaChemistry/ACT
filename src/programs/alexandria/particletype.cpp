@@ -230,7 +230,7 @@ CommunicationStatus ParticleType::Receive(const t_commrec *cr, int src)
         std::string key, value;
         gmx_recv_str(cr, src, &key);
         gmx_recv_str(cr, src, &value);
-        option_.insert({key, value});
+        setOption(key, value);
     }
     int nparm = gmx_recv_int(cr, src);
     parameterMap_.clear();

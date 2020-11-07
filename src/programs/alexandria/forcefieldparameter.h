@@ -145,8 +145,14 @@ class ForceFieldParameter
     //! \brief Return minimum allowed value
     double minimum() const { return minimum_; }
     
+    //! \brief Set minimum allowed value irrespective of mutability
+    void setMinimum(double minimum) { minimum_ = minimum; } 
+    
     //! \brief Return maximum allowed value
     double maximum() const { return maximum_; }
+    
+    //! \brief Set maximum allowed value irrespective of mutability
+    void setMaximum(double maximum) { maximum_ = maximum; }
     
     //! \brief Return how this parameter may be changed
     Mutability mutability() const { return mutability_; }

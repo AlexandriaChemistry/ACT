@@ -64,7 +64,7 @@ set(ALEXANDRIA_SOURCES
            poldata.cpp
            poldata_low.cpp
            poldata_tables.cpp
-           poldata_test.cpp
+           poldata_edit.cpp
            poldata_xml.cpp
            qgen_acm.cpp
            qgen_cube.cpp
