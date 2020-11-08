@@ -42,7 +42,8 @@
 #include "poldata_xml.h"
 
 static void modifyPoldata(alexandria::Poldata *pd,
-                          const char *pname,
+                          const char *ptype,
+                          const char *particle,
                           bool bSetMin, real pmin,
                           bool bSetMax, real pmax,
                           bool force)
@@ -51,9 +52,10 @@ static void modifyPoldata(alexandria::Poldata *pd,
     {
         return;
     }
-    auto itype = pd->typeToInteractionType(pname);
-    printf("Will change parameter %s in %s\n", pname,
+    auto itype = pd->typeToInteractionType(ptype);
+    printf("Will change parameter type %s in %s\n", ptype,
            interactionTypeToString(itype).c_str());
+    printf("for particle type %s.\n", strlen(particle) > 0 ? particle : "all");
     if (bSetMin)
     {
         printf("Minimum will be set to %g\n", pmin);
@@ -65,23 +67,26 @@ static void modifyPoldata(alexandria::Poldata *pd,
     auto fs = pd->findForces(itype)->parameters();
     for(auto &ffs : *fs)
     {
-        for(auto &pp : ffs.second)
+        if (strlen(particle) == 0 || particle == ffs.first.id())
         {
-            if (pp.first == pname)
+            for(auto &pp : ffs.second)
             {
-                if (force || pp.second.isMutable())
+                if (pp.first == ptype)
                 {
-                    if (bSetMin)
+                    if (force || pp.second.isMutable())
                     {
-                        pp.second.setMinimum(pmin);
-                        pp.second.setValue(std::max(pmin, pp.second.value()));
-                        pp.second.setMaximum(std::max(pmin, pp.second.maximum()));
-                    }
-                    if (bSetMax)
-                    {
-                        pp.second.setMaximum(pmax);
-                        pp.second.setValue(std::min(pmax, pp.second.value()));
-                        pp.second.setMinimum(std::min(pmax, pp.second.minimum()));
+                        if (bSetMin)
+                        {
+                            pp.second.setMinimum(pmin);
+                            pp.second.setValue(std::max(pmin, pp.second.value()));
+                            pp.second.setMaximum(std::max(pmin, pp.second.maximum()));
+                        }
+                        if (bSetMax)
+                        {
+                            pp.second.setMaximum(pmax);
+                            pp.second.setValue(std::min(pmax, pp.second.value()));
+                            pp.second.setMinimum(std::min(pmax, pp.second.minimum()));
+                        }
                     }
                 }
             }
@@ -107,13 +112,16 @@ int alex_poldata_edit(int argc, char*argv[])
         { efDAT, "-o", "pdout", ffWRITE }
     };
     static char *parameter = (char *)"";
+    static char *particle  = (char *)"";
     real         pmin      = 0;
     real         pmax      = 0;
     gmx_bool     force     = false;
     t_pargs                          pa[]     = 
     {
         { "-p",      FALSE, etSTR,  {&parameter},
-           "Name of parameter to change/" },
+          "Type of parameter to change, e.g. zeta." },
+        { "-a",      FALSE, etSTR,  {&particle},
+          "Particle type to change, if not set all particles of the correct type will be changed." },
         { "-min",    FALSE, etREAL, {&pmin},
           "Minimum value of parameter." },
         { "-max",    FALSE, etREAL,  {&pmax},
@@ -140,7 +148,7 @@ int alex_poldata_edit(int argc, char*argv[])
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         
-        modifyPoldata(&pd, parameter,
+        modifyPoldata(&pd, parameter, particle,
                       opt2parg_bSet("-min", npargs, pa), pmin,
                       opt2parg_bSet("-max", npargs, pa), pmax,
                       force);
