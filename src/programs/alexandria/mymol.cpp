@@ -897,21 +897,22 @@ void MyMol::addShells(const Poldata *pd)
                     auto ptype = fa->interactionTypeToIdentifier(InteractionType::POLARIZATION);
                     auto param = pd->findForcesConst(InteractionType::POLARIZATION).findParameterTypeConst(ptype, "alpha");
                     auto pol   = convertToGromacs(param.value(), param.unit());
-                    if (pol > 0)
+                    if (pol <= 0)
                     {
-                        p.a[0] = renum[i];
-                        p.a[1] = renum[i]+1;
-                        if (bHaveVSites_)
-                        {
-                            auto vsite = pd->findVsite(atomtype);
-                            if (vsite != pd->getVsiteEnd())
-                            {
-                                pol /= vsite->nvsite();
-                            }
-                        }
-                        p.c[0] = pol;
-                        add_param_to_plist(plist_, F_POLARIZATION, InteractionType::POLARIZATION, p);
+                        GMX_THROW(gmx::InvalidInputError(gmx::formatString("Polarizability should be positive for %s", fa->id().id().c_str()).c_str()));
                     }
+                    p.a[0] = renum[i];
+                    p.a[1] = renum[i]+1;
+                    if (bHaveVSites_)
+                    {
+                        auto vsite = pd->findVsite(atomtype);
+                        if (vsite != pd->getVsiteEnd())
+                        {
+                            pol /= vsite->nvsite();
+                        }
+                    }
+                    p.c[0] = pol;
+                    add_param_to_plist(plist_, F_POLARIZATION, InteractionType::POLARIZATION, p);
                 }
             }
             else
