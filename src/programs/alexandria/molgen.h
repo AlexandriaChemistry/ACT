@@ -322,7 +322,9 @@ class MolGen
             ener_[rms] += delta;
         }
 
-        //! \brief Sum over the energies of the cores. 
+        /*! \brief Sum over the energies of the cores.
+         * Also multiplies the terms by the weighting factors.
+         */
         void sumEnergies();
 
         /*! \brief Print the energy components.

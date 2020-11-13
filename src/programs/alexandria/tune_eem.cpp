@@ -419,60 +419,42 @@ double OptACM::calcDeviation()
             dumpQX(logFile(), &mymol, "AFTERLOOP");
             if (weight(ermsCHARGE))
             {
-                int    nChargeResidual = 0; // number of charge residuals added per molecule
-                double ChargeResidual  = 0;
-                bool   isPolarizable   = (nullptr != mymol.shellfc_);
-                double qtot            = 0;
-                int    i, j;
-                for (j = i = 0; j < mymol.atoms_->nr; j++)
+                double qtot = 0;
+                int    i;
+                for (int j = i = 0; j < mymol.atoms_->nr; j++)
                 {
-                    auto atomnr = mymol.atoms_->atom[j].atomnumber;
-                    auto qq     = mymol.atoms_->atom[j].q;
-                    qtot       += qq;
-                    if (mymol.atoms_->atom[j].ptype == eptAtom ||
-                        mymol.atoms_->atom[j].ptype == eptNucleus)
+                    auto atype = poldata()->findParticleType(*mymol.atoms_->atomtype[j]);
+                    auto qparm = atype->parameter("charge");
+                    double qj  = mymol.atoms_->atom[j].q;
+                    qtot += qj;
+                    switch (qparm.mutability())
                     {
-                        double qref  = (isPolarizable ? mymol.atoms_->atom[j+1].q : 0);
-                        double qAtom = qq + qref;
-                        double dq    = 0;
-                        if (atomnr == 1)
+                    case Mutability::Fixed:
+                        if (qparm.value() != qj)
                         {
-                            // Penalty if qH < 0
-                            dq = qAtom;
+                            GMX_THROW(gmx::InternalError(gmx::formatString("Fixed charge for atom %s in %s was changed from %g to %g",
+                                                                           *mymol.atoms_->atomname[j], mymol.getMolname().c_str(), qparm.value(), qj).c_str()));
                         }
-                        else if (atomnr == 6)
+                        break;
+                    case Mutability::Bounded:
                         {
-                            // We do not want carbon atoms with excessive
-                            // charges. Excessive here is an absolute value
-                            // of larger than 0.5e.
-                            double qCmax = 0.5;
-                            if (fabs(qAtom) > qCmax)
+                            real dq = 0;
+                            if (qj < qparm.minimum())
                             {
-                                dq = qCmax - fabs(qAtom);
+                                dq = qparm.minimum() - qj;
                             }
+                            else if (qj > qparm.maximum())
+                            {
+                                dq = qj - qparm.maximum();
+                            } 
+                            increaseEnergy(ermsCHARGE, dq*dq);
                         }
-                        else if ((atomnr == 8)  || (atomnr == 9) ||
-                                 (atomnr == 16) || (atomnr == 17) ||
-                                 (atomnr == 35) || (atomnr == 53))
-                        {
-                            // Penalty if qO > 0, therefore we reverse the sign
-                            dq = -qAtom;
-                        }
-                        if (dq < 0)
-                        {
-                            ChargeResidual += gmx::square(dq);
-                            nChargeResidual++;
-                        }
-                        if (useCM5())
-                        {
-                            ChargeResidual += gmx::square(qq + qref - mymol.chargeQM(qtCM5)[i++]);
-                            nChargeResidual++;
-                        }
+                        break;
+                    default:
+                        break;
                     }
                 }
-                ChargeResidual += gmx::square(qtot - mymol.getCharge());
-                nChargeResidual++;
-                increaseEnergy(ermsCHARGE, (ChargeResidual/nChargeResidual));
+                increaseEnergy(ermsCHARGE, gmx::square(qtot - mymol.getCharge()));
             }
             if (weight(ermsESP))
             {
