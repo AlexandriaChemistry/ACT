@@ -69,7 +69,7 @@ main(int argc, char *argv[])
         gmx::finalizeForCommandLine();
         if (MASTER(cr))
         {
-            printf("\nThanks for using  the Alexandria Chemistry Toolkit.\n");
+            printf("\nThanks for using the Alexandria Chemistry Toolkit.\n");
         }
         return rc;
     }

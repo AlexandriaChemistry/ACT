@@ -1620,7 +1620,7 @@ void MyMol::CalcQPol(const Poldata *pd, rvec mu)
         std::string ptype;
         auto atype = pd->findParticleType(*atoms_->atomtype[i]);
         auto idP   = atype->interactionTypeToIdentifier(InteractionType::POLARIZATION);
-        if (eep.parameterExists(idP))
+        if (!idP.id().empty() && eep.parameterExists(idP))
         {
             auto param  = eep.findParameterTypeConst(idP, "alpha");
             poltot += param.value();

@@ -1118,16 +1118,23 @@ void print_top_header(FILE                    *fp,
             {
                 auto sgt_type= aType.interactionTypeToIdentifier(InteractionType::POLARIZATION);
                 auto vdwtype = aType.interactionTypeToIdentifier(InteractionType::VDW);
-                auto myvdw   = vdw.findParametersConst(vdwtype);
-                fprintf(fp, "%-6s %-6s %6d  %12.6f  %10.4f  A   %g %g %g %g\n",
-                        gt_type.c_str(), btype.id().c_str(),
+                double sigma = 0, epsilon = 0, gamma = 0;
+                if (!vdwtype.id().empty())
+                {
+                    auto myvdw = vdw.findParametersConst(vdwtype);
+                    sigma      = myvdw["sigma"].value();
+                    epsilon    = myvdw["epsilon"].value();
+                    gamma      = myvdw["gamma"].value();
+                }
+                fprintf(fp, "%-6s %-6s %6d  %12.6f  %10.4f %s %g %g %g %g\n",
+                        gt_type.c_str(), 
+                        !btype.id().empty() ? btype.id().c_str() : gt_type.c_str(), 
                         aType.atomnumber(), 
                         aType.mass(), 0.0,
-                        myvdw["sigma"].value(),
-                        myvdw["epsilon"].value(),
-                        myvdw["gamma"].value(),
+                        ptype_str[aType.gmxParticleType()],
+                        sigma, epsilon, gamma,
                         aType.refEnthalpy());
-                if (bPol)
+                if (false && bPol)
                 {
                     if (strcasecmp(ff.c_str(), "LJ") == 0)
                     {

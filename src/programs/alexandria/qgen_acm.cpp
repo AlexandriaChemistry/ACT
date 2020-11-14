@@ -61,7 +61,10 @@ QgenAcm::QgenAcm(const Poldata *pd,
     eQGEN_      = eQgen::OK;
     natom_      = atoms->nr;
     qtotal_     = qtotal;
-    
+    if (debug)
+    {
+        fprintf(debug, "QgenACM: qtotal = %g\n", qtotal_);
+    }
     auto eem = pd->findForcesConst(InteractionType::ELECTRONEGATIVITYEQUALIZATION);
     for (int i = 0; i < atoms->nr; i++)
     {
@@ -474,6 +477,10 @@ void QgenAcm::calcRhs(double epsilonr)
             }
         }
     }
+    if (debug)
+    {
+        fprintf(debug, "QgenACM: qtotal_ = %g qfixed = %g\n", qtotal_, qfixed);
+    }
     rhs_[nonFixed_.size()] = qtotal_ - qfixed;
 }
 
@@ -627,8 +634,15 @@ void QgenAcm::solveSQE(FILE                    *fp,
         q[ai] += pij[bij];
         q[aj] -= pij[bij];
     }
+    // Compute total fixed charge
+    double qfixed = 0.0;
+    for (size_t i = 0; i < fixed_.size(); i++)
+    {
+        qfixed += q_[fixed_[i]];
+    }
     for (size_t i = 0; i < nonFixed_.size(); i++)
     {
+        q[i] += (qtotal_-qfixed)/nonFixed_.size();
         q_[nonFixed_[i]] = q[i];
     }
 
