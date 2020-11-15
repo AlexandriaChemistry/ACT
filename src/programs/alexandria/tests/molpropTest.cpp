@@ -84,7 +84,7 @@ class MolpropTest : public gmx::test::CommandLineTestBase
                 snprintf(mbuf, sizeof(mbuf), "molecule %d number of bonds", mol);
                 myCheck.checkInteger(mpi.NBond(), mbuf);
                 int i = 1;
-                for (auto &bi : mpi.bondConst())
+                for (auto &bi : mpi.bondsConst())
                 {
                     char buf[256];
                     snprintf(buf, sizeof(buf), "atoms %d %d order %d",

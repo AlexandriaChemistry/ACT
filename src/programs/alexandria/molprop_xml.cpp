@@ -870,7 +870,7 @@ static void add_xml_molprop(xmlNodePtr                 parent,
     add_xml_string(child, exml_names(exmlCID), mp.getCid());
     add_xml_string(child, exml_names(exmlINCHI), mp.getInchi());
 
-    for (auto &b : mp.bondConst())
+    for (auto &b : mp.bondsConst())
     {
         xmlNodePtr child = add_xml_child(ptr, exml_names(exmlBOND));
         add_xml_int(child, exml_names(exmlAI), b.getAi());

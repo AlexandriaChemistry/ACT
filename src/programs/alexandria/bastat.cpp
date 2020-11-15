@@ -787,7 +787,7 @@ int alex_bastat(int argc, char *argv[])
                             if (pd.atypeToBtype(*mmi.atoms_->atomtype[ai], &cai) &&
                                 pd.atypeToBtype(*mmi.atoms_->atomtype[aj], &caj))
                             {
-                                for (auto &bi : mmi.bondConst())
+                                for (auto &bi : mmi.bondsConst())
                                 {
                                     auto xi = 0, xj = 0, xb = 0;
                                     bi.get(&xi, &xj, &xb);

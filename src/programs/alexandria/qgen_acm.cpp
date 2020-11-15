@@ -562,13 +562,18 @@ void QgenAcm::solveEEM(FILE *fp)
 
 void QgenAcm::solveSQE(FILE                    *fp,
                        const Poldata           *pd,
-                       const std::vector<Bond> &bonds)
+                       const std::vector<Bond> &bonds,
+                       const std::vector<int>  &shellRenumber)
 {
     std::vector<double> rhs;
     
     int nbonds = bonds.size();
     MatrixWrapper lhs(nbonds, nbonds);
     rhs.resize(nbonds, 0.0);
+    if (shellRenumber.empty())
+    {
+        GMX_THROW(gmx::InternalError("shellRenumber is empty in solveSQE"));
+    }
     
     auto itype = InteractionType::BONDCORRECTIONS;
     auto fs    = pd->findForcesConst(itype);
@@ -578,7 +583,7 @@ void QgenAcm::solveSQE(FILE                    *fp,
         auto aj      = bonds[bij].getAj()-1;
         auto canSwap = fs.canSwap();
         bool swapped = false;
-        Identifier bccId({id_[ai].id(), id_[aj].id()}, canSwap);
+        Identifier bccId({id_[shellRenumber[ai]].id(), id_[shellRenumber[aj]].id()}, canSwap);
         if (!fs.parameterExists(bccId))
         {
             if (CanSwap::Yes == canSwap)
@@ -587,7 +592,7 @@ void QgenAcm::solveSQE(FILE                    *fp,
             }
             else
             {
-                bccId   = Identifier({id_[aj].id(), id_[ai].id()}, canSwap);
+                bccId   = Identifier({id_[shellRenumber[aj]].id(), id_[shellRenumber[ai]].id()}, canSwap);
                 swapped = true;
             }
         }
@@ -662,7 +667,8 @@ eQgen QgenAcm::generateCharges(FILE                      *fp,
                                const Poldata             *pd,
                                t_atoms                   *atoms,
                                gmx::HostVector<gmx::RVec> x,
-                               const std::vector<Bond>   &bonds)
+                               const std::vector<Bond>   &bonds,
+                               const std::vector<int>    &shellRenumber)
 {
     if (fp)
     {
@@ -678,7 +684,7 @@ eQgen QgenAcm::generateCharges(FILE                      *fp,
         calcJcc(pd->getEpsilonR(), pd->yang(), pd->rappe());
         if (pd->interactionPresent(InteractionType::BONDCORRECTIONS))
         {
-            solveSQE(fp, pd, bonds);
+            solveSQE(fp, pd, bonds, shellRenumber);
         }
         else
         {

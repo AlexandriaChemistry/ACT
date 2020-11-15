@@ -604,7 +604,7 @@ void Optimization::getDissociationEnergy(FILE *fplog)
 
     for (auto &mymol :  mymols())
     {
-        for (auto &b : mymol.bonds())
+        for (auto &b : mymol.bondsConst())
         {
             const char *atypeI = *mymol.atoms_->atomtype[b.getAi()];
             const char *atypeJ = *mymol.atoms_->atomtype[b.getAj()];

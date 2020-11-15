@@ -375,7 +375,8 @@ double OptACM::calcDeviation()
                                                              poldata(),
                                                              mymol.atoms_,
                                                              mymol.x(),
-                                                             mymol.bonds());
+                                                             mymol.bondsConst(),
+                                                             mymol.shellRenumber_);
                 if (qgen != eQgen::OK)
                 {
                     gmx_fatal(FARGS, "Could not generate charges for %s: %s",

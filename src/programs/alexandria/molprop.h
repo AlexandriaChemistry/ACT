@@ -1490,10 +1490,10 @@ class MolProp
         int NBond() const { return bond_.size(); }
 
         //! Return const vector of bonds
-        const std::vector<Bond> &bondConst() const { return bond_; }
+        const std::vector<Bond> &bondsConst() const { return bond_; }
         
-        //! Return the whole bond array 
-        std::vector<Bond> &bonds() { return bond_; }
+        //! Return pointer to the whole bond array for editing
+        std::vector<Bond> *bonds() { return &bond_; }
         
         //! Add an experiment
         void AddExperiment(Experiment myexp) { exper_.push_back(myexp); }

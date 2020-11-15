@@ -266,7 +266,7 @@ void MyMol::findInPlaneAtoms(int ca, std::vector<int> &atoms)
 {
     int bca = 0;
     /*First try to find the atom bound to the central atom (ca).*/
-    for (auto &bi : bondConst())
+    for (auto &bi : bondsConst())
     {
         if ((ca == (bi.getAj() - 1) ||
              ca == (bi.getAi() - 1)))
@@ -284,7 +284,7 @@ void MyMol::findInPlaneAtoms(int ca, std::vector<int> &atoms)
         }
     }
     /*Now try to find atoms bound to bca, except ca.*/
-    for (auto bi : bondConst())
+    for (auto bi : bondsConst())
     {
         if ((ca != (bi.getAj() - 1)   &&
              ca != (bi.getAi() - 1))  &&
@@ -305,7 +305,7 @@ void MyMol::findInPlaneAtoms(int ca, std::vector<int> &atoms)
 
 void MyMol::findOutPlaneAtoms(int ca, std::vector<int> &atoms)
 {
-    for (auto &bi : bondConst())
+    for (auto &bi : bondsConst())
     {
         if (bi.getBondOrder() == 1  &&
             (ca == (bi.getAj() - 1) ||
@@ -354,7 +354,7 @@ void MyMol::MakeSpecialInteractions(const Poldata *pd,
     set_pbc(&pbc, epbcNONE, state_->box);
 
     bonds.resize(atoms_->nr);
-    for (auto &bi : bondConst())
+    for (auto &bi : bondsConst())
     {
         // Store bonds bidirectionally to get the number correct
         bonds[bi.getAi() - 1].push_back(bi.getAj() - 1);
@@ -752,7 +752,7 @@ immStatus MyMol::GenerateTopology(const Poldata     *pd,
     {
         int  ftb = F_BONDS;
         auto fs  = pd->findForcesConst(InteractionType::BONDS);
-        for (auto &bi : bondConst())
+        for (auto &bi : bondsConst())
         {
             t_param b;
             memset(&b, 0, sizeof(b));
@@ -800,6 +800,15 @@ immStatus MyMol::GenerateTopology(const Poldata     *pd,
         if (pd->polarizable())
         {
             addShells(pd);
+        }
+        else
+        {
+            // We need to make a dummy shellRenumber array
+            shellRenumber_.clear();
+            for (auto i = 0; i < atoms_->nr; i++)
+            {
+                shellRenumber_.push_back(i);
+            }
         }
         char **molnameptr = put_symtab(symtab_, getMolname().c_str());
         // Generate mtop
@@ -854,7 +863,6 @@ void MyMol::addShells(const Poldata *pd)
 {
     int                    shell  = 0;
     int                    nshell = 0;
-    std::vector<int>       renum;
     std::map<int, int>     inv_renum;
     std::vector<std::string> newname;
     t_atoms               *newatoms;
@@ -865,12 +873,12 @@ void MyMol::addShells(const Poldata *pd)
     /* Calculate the total number of Atom and Vsite particles and
      * generate the renumbering array.
      */
-    renum.resize(atoms_->nr, 0);
+    shellRenumber_.resize(atoms_->nr, 0);
     for (int i = 0; i < atoms_->nr; i++)
     {
         auto atype          = pd->findParticleType(*atoms_->atomtype[i]);
-        renum[i]            = i + nshell;
-        inv_renum[renum[i]] = i;
+        shellRenumber_[i]            = i + nshell;
+        inv_renum[shellRenumber_[i]] = i;
         if (atype->hasInteractionType(InteractionType::POLARIZATION))
         {
             nshell++;
@@ -901,8 +909,8 @@ void MyMol::addShells(const Poldata *pd)
                     {
                         GMX_THROW(gmx::InvalidInputError(gmx::formatString("Polarizability should be positive for %s", fa->id().id().c_str()).c_str()));
                     }
-                    p.a[0] = renum[i];
-                    p.a[1] = renum[i]+1;
+                    p.a[0] = shellRenumber_[i];
+                    p.a[1] = shellRenumber_[i]+1;
                     if (bHaveVSites_)
                     {
                         auto vsite = pd->findVsite(atomtype);
@@ -954,8 +962,8 @@ void MyMol::addShells(const Poldata *pd)
             int  i0 = inv_renum[j->a[0]];
             for (auto j0 = 0; j0 < excls_[i0].nr; j0++)
             {
-                add_excl_pair(newexcls, j->a[0], renum[excls_[i0].e[j0]]);
-                add_excl_pair(newexcls, j->a[1], renum[excls_[i0].e[j0]]);
+                add_excl_pair(newexcls, j->a[0], shellRenumber_[excls_[i0].e[j0]]);
+                add_excl_pair(newexcls, j->a[1], shellRenumber_[excls_[i0].e[j0]]);
             }
         }
         for (auto j = pw->beginParam(); j < pw->endParam(); ++j)
@@ -970,14 +978,14 @@ void MyMol::addShells(const Poldata *pd)
     /* Copy the old atoms to the new structures. */
     for (int i = 0; i < atoms_->nr; i++)
     {
-        newatoms->atom[renum[i]]      = atoms_->atom[i];
-        newatoms->atomname[renum[i]]  = put_symtab(symtab_, *atoms_->atomname[i]);
-        newatoms->atomtype[renum[i]]  = put_symtab(symtab_, *atoms_->atomtype[i]);
-        newatoms->atomtypeB[renum[i]] = put_symtab(symtab_, *atoms_->atomtypeB[i]);
-        copy_rvec(state_->x[i], newx[renum[i]]);
-        newname[renum[i]].assign(*atoms_->atomtype[i]);
+        newatoms->atom[shellRenumber_[i]]      = atoms_->atom[i];
+        newatoms->atomname[shellRenumber_[i]]  = put_symtab(symtab_, *atoms_->atomname[i]);
+        newatoms->atomtype[shellRenumber_[i]]  = put_symtab(symtab_, *atoms_->atomtype[i]);
+        newatoms->atomtypeB[shellRenumber_[i]] = put_symtab(symtab_, *atoms_->atomtypeB[i]);
+        copy_rvec(state_->x[i], newx[shellRenumber_[i]]);
+        newname[shellRenumber_[i]].assign(*atoms_->atomtype[i]);
         int resind = atoms_->atom[i].resind;
-        t_atoms_set_resinfo(newatoms, renum[i], symtab_,
+        t_atoms_set_resinfo(newatoms, shellRenumber_[i], symtab_,
                             *atoms_->resinfo[resind].name,
                             atoms_->resinfo[resind].nr,
                             atoms_->resinfo[resind].ic, 
@@ -992,7 +1000,7 @@ void MyMol::addShells(const Poldata *pd)
         {
             std::string atomtype;
             // Shell sits next to the Atom or Vsite
-            auto j            = 1+renum[i];
+            auto j            = 1+shellRenumber_[i];
             auto atomtypeName = get_atomtype_name(atoms_->atom[i].type, gromppAtomtype_);
             auto fa           = pd->findParticleType(atomtypeName);
             auto shellid      = fa->interactionTypeToIdentifier(InteractionType::POLARIZATION);
@@ -1050,14 +1058,14 @@ void MyMol::addShells(const Poldata *pd)
     bondOrder_.clear();
     for(const auto &boc : boCopy)
     {
-        bondOrder_.insert({std::make_pair(renum[boc.first.first],
-                                          renum[boc.first.second]), boc.second});
+        bondOrder_.insert({std::make_pair(shellRenumber_[boc.first.first],
+                                          shellRenumber_[boc.first.second]), boc.second});
     }
     /* Copy exclusions, empty the original first */
     sfree(excls_);
     excls_ = newexcls;
 
-    /*Now renumber atoms in all other plist interaction types */
+    /* Now renumber atoms in all other plist interaction types */
     for (auto i = plist_.begin(); i < plist_.end(); ++i)
     {
         if (i->getFtype() != F_POLARIZATION)
@@ -1066,7 +1074,7 @@ void MyMol::addShells(const Poldata *pd)
             {
                 for (int k = 0; k < NRAL(i->getFtype()); k++)
                 {
-                    j->a[k] = renum[j->a[k]];
+                    j->a[k] = shellRenumber_[j->a[k]];
                 }
             }
         }
@@ -1433,7 +1441,8 @@ immStatus MyMol::GenerateCharges(const Poldata       *pd,
                                                            pd,
                                                            atoms_,
                                                            state_->x,
-                                                           bonds()))
+                                                           bondsConst(),
+                                                           shellRenumber_))
                 {
                     for (auto i = 0; i < mtop_->natoms; i++)
                     {

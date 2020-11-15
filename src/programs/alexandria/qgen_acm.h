@@ -82,7 +82,8 @@ class QgenAcm
                               const Poldata     *pd,
                               t_atoms           *atoms,
                               const gmx::HostVector<gmx::RVec> x,
-                              const std::vector<Bond> &bonds);
+                              const std::vector<Bond> &bonds,
+                              const std::vector<int>  &shellRenumber);
                             
         const char *message() const;
         
@@ -169,7 +170,8 @@ class QgenAcm
          */
         void solveSQE(FILE                    *fp,
                       const Poldata           *pd,
-                      const std::vector<Bond> &bonds);
+                      const std::vector<Bond> &bonds,
+                      const std::vector<int>  &shellRenumber);
         
         void updatePositions(gmx::HostVector<gmx::RVec> x, t_atoms *atoms);
 

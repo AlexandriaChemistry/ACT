@@ -1312,7 +1312,7 @@ void MolProp::AddBond(Bond b)
     BondConstIterator bi;
     bool              bFound = false;
 
-    for (bi = bondConst().begin(); bi < bondConst().end(); ++bi)
+    for (bi = bondsConst().begin(); bi < bondsConst().end(); ++bi)
     {
         bFound = (((bi->getAi() == b.getAi()) && (bi->getAj() == b.getAj())) ||
                   ((bi->getAi() == b.getAj()) && (bi->getAj() == b.getAi())));
@@ -1368,7 +1368,7 @@ void MolProp::AddComposition(MolecularComposition mc)
 
 bool MolProp::BondExists(Bond b)
 {
-    for (auto &bi : bondConst())
+    for (auto &bi : bondsConst())
     {
         if (((bi.getAi() == b.getAi()) && (bi.getAj() == b.getAj())) ||
             ((bi.getAi() == b.getAj()) && (bi.getAj() == b.getAi())))
@@ -1449,7 +1449,7 @@ int MolProp::Merge(const MolProp *src)
     }
     if (NBond() == 0)
     {
-        for (auto &bi : src->bondConst())
+        for (auto &bi : src->bondsConst())
         {
             alexandria::Bond bb(bi.getAi(), bi.getAj(), bi.getBondOrder());
             AddBond(bb);
@@ -1457,7 +1457,7 @@ int MolProp::Merge(const MolProp *src)
     }
     else
     {
-        for (auto &bi : src->bondConst())
+        for (auto &bi : src->bondsConst())
         {
             alexandria::Bond bb(bi.getAi(), bi.getAj(), bi.getBondOrder());
             if (!BondExists(bb))
@@ -1972,7 +1972,7 @@ CommunicationStatus MolProp::Send(t_commrec *cr, int dest) const
         gmx_send_int(cr, dest, exper_.size());
 
         /* Send Bonds */
-        for (auto &bi : bondConst())
+        for (auto &bi : bondsConst())
         {
             cs = bi.Send(cr, dest);
             if (CS_OK != cs)
