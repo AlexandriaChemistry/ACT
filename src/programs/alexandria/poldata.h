@@ -407,7 +407,6 @@ class Poldata
         std::string                           filename_;
         std::vector<ParticleType>             alexandria_;
         std::vector<Vsite>                    vsite_;
-        std::vector<std::string>              btype_;
         std::string                           alexandriaVersion_;
         std::string                           vsite_angle_unit_;
         std::string                           vsite_length_unit_;
@@ -417,8 +416,6 @@ class Poldata
         std::vector<Symcharges>               symcharges_;
         bool                                  polarizable_ = false;
         ChargeGenerationAlgorithm             ChargeGenerationAlgorithm_ = ChargeGenerationAlgorithm::EEM;
-
-        void addBtype(const std::string &btype);
 
         gmx_bool strcasestrStart(std::string needle, std::string haystack);
 

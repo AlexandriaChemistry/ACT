@@ -582,6 +582,64 @@ static void update_pd(FILE          *fp,
     }
 }
 
+static void generate_bcc(Poldata *pd,
+                         double   hardness)
+{
+    // Bonds should be present, so no checking
+    auto bonds = pd->findForcesConst(InteractionType::BONDS);
+    auto itype = InteractionType::BONDCORRECTIONS;
+    if (!pd->interactionPresent(itype))
+    {
+        auto canSwap = CanSwap::No;
+        ForceFieldParameterList newparam("", canSwap);
+        pd->addForces(interactionTypeToString(itype), newparam);
+    }
+    auto bcc   = pd->findForces(itype);
+    bcc->clearParameters();
+
+    auto hardnessParam = ForceFieldParameter("eV/e", hardness, 0, 0, 0, 2, Mutability::Bounded, true);
+    auto enpBounded    = ForceFieldParameter("eV", 0, 0, 0, -2, 2, Mutability::Bounded, true);
+    auto enpFixed      = ForceFieldParameter("eV", 0, 0, 0, 0, 0, Mutability::Fixed, true);
+    auto ptypes = pd->particleTypesConst();
+    for (auto &ai : ptypes)
+    {
+        for (auto &aj : ptypes)
+        {
+            for(int bondOrder = 1; bondOrder < 4; bondOrder++)
+            {
+                auto bi = ai.interactionTypeToIdentifier(InteractionType::BONDS).id();
+                auto bj = aj.interactionTypeToIdentifier(InteractionType::BONDS).id();
+                Identifier bondId({ bi, bj }, bondOrder, bonds.canSwap());
+                if (bonds.parameterExists(bondId))
+                {
+                    auto entype = InteractionType::ELECTRONEGATIVITYEQUALIZATION;
+                    auto zi = ai.interactionTypeToIdentifier(entype).id();
+                    auto zj = aj.interactionTypeToIdentifier(entype).id();
+                    if (!zi.empty() && !zj.empty())
+                    {
+                        Identifier bccId1({ zi, zj }, bondOrder, bcc->canSwap());
+                        Identifier bccId2({ zj, zi }, bondOrder, bcc->canSwap());
+                        if (!bcc->parameterExists(bccId1) && 
+                            !bcc->parameterExists(bccId2))
+                        {
+                            if (zi == zj)
+                            {
+                                bcc->addParameter(bccId1, "electronegativity", enpBounded);
+                            }
+                            else
+                            {
+                                bcc->addParameter(bccId1, "electronegativity", enpFixed);
+                            }
+                            bcc->addParameter(bccId1, "hardness", hardnessParam);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    printf("Have generated %zu entries for BCC\n", bcc->parameters()->size());
+}
+
 int alex_bastat(int argc, char *argv[])
 {
     static const char               *desc[] = {
@@ -608,6 +666,7 @@ int alex_bastat(int argc, char *argv[])
     static real                      kimp        = 0;
     static real                      beta        = 0;
     static real                      klin        = 0;
+    static real                      hardness    = 1;
     static real                      kub         = 0;
     static real                      bond_tol    = 5;
     static real                      angle_tol   = 5;
@@ -616,6 +675,7 @@ int alex_bastat(int argc, char *argv[])
     static gmx_bool                  bHisto      = false;
     static gmx_bool                  bDih        = false;
     static gmx_bool                  bBondOrder  = true;
+    static gmx_bool                  genBCC      = true;
     t_pargs                          pa[]        = {
         { "-lot",    FALSE, etSTR,  {&lot},
           "Use this method and level of theory when selecting coordinates and charges" },
@@ -647,6 +707,10 @@ int alex_bastat(int argc, char *argv[])
           "Compress output XML file" },
         { "-bondorder", FALSE, etBOOL, {&bBondOrder},
           "Make separate bonds for different bond orders" },
+        { "-genBCC", FALSE, etBOOL, {&genBCC},
+          "Re-generate bond charge corrections based on the list of bonds" },
+        { "-hardness", FALSE, etREAL, {&hardness},
+          "Default bond hardness when generating bond charge corrections based on the list of bonds" },
         { "-factor", FALSE, etBOOL, {&factor},
           "Scale factor to set minimum and maximum values of parameters" }
     };
@@ -905,6 +969,10 @@ int alex_bastat(int argc, char *argv[])
               Dm, beta, kt, klin, kp, kimp, kub,
               bond_tol, angle_tol, factor);
     pd.setPolarizable(polar);
+    if (genBCC)
+    {
+        generate_bcc(&pd, hardness);
+    }
     writePoldata(opt2fn("-o", NFILE, fnm), &pd, compress);
     printf("Extracted %zu bondtypes, %zu angletypes, %zu linear-angletypes, %zu dihedraltypes and %zu impropertypes.\n",
            bonds->bond.size(), bonds->angle.size(), bonds->linangle.size(),

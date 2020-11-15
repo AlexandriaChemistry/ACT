@@ -162,7 +162,7 @@ class ForceFieldParameterList
      */
     size_t parameterId(const Identifier &identifier) const;
 
-    /*! \brief Look up mao of parameters
+    /*! \brief Look up map of parameters
      * Will throw an exception when identifier is not found
      * \param[in] identifier Name of the atomtype or bond
      * \return vector of parameters

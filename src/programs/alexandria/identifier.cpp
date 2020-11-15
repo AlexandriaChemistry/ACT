@@ -113,7 +113,8 @@ Identifier::Identifier(InteractionType    iType,
     id_        = id;
     auto ids   = split(id, IdDelimeter[0]);
     auto idEnd = ids.end();
-    if (iType == InteractionType::BONDS)
+    if (iType == InteractionType::BONDS ||
+        iType == InteractionType::BONDCORRECTIONS)
     {
         idEnd--;
         bondOrder_ = atoi(ids[ids.size()-1].c_str());
@@ -129,7 +130,8 @@ Identifier::Identifier(InteractionType    iType,
     }
     if (canSwap == CanSwap::Yes)
     {
-        if (iType == InteractionType::BONDS)
+        if (iType == InteractionType::BONDS ||
+            iType == InteractionType::BONDCORRECTIONS)
         {
             swappedId_ = gmx::formatString("%s%s%s%s%d", ids[1].c_str(), IdDelimeter,
                                            ids[0].c_str(), IdDelimeter, bondOrder_);

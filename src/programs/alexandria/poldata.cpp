@@ -239,22 +239,6 @@ bool Poldata::atypeToZtype(const std::string &atype,
     return false;
 }
 
-void Poldata::addBtype(const std::string &btype)
-{
-    size_t i;
-    for (i = 0; i < btype_.size(); i++)
-    {
-        if (btype.compare(btype_[i]) == 0)
-        {
-            break;
-        }
-    }
-    if (i == btype_.size())
-    {
-        btype_.push_back(btype);
-    }
-}
-
 /*
  *-+-+-+-+-+-+-+-+
  * COULOMB STUFF
@@ -338,16 +322,6 @@ CommunicationStatus Poldata::Send(const t_commrec *cr, int dest)
             }
         }
 
-        /* Send btype */
-        if (CS_OK == cs)
-        {
-            gmx_send_int(cr, dest, btype_.size());
-            for (auto &btype : btype_)
-            {
-                gmx_send_str(cr, dest, &btype);
-            }
-        }
-
         /* Force Field Parameter Lists */
         if (CS_OK == cs)
         {
@@ -428,27 +402,6 @@ CommunicationStatus Poldata::Receive(const t_commrec *cr, int src)
         if (debug)
         {
             fprintf(debug, "Done receiving vsites\n");
-            fflush(debug);
-        }
-
-        /* Receive btype */
-        if (CS_OK == cs)
-        {
-            size_t nbtype = gmx_recv_int(cr, src);
-            btype_.clear();
-            for (size_t n = 0; (CS_OK == cs) && (n < nbtype); n++)
-            {
-                std::string btype;
-                gmx_recv_str(cr, src, &btype);
-                if (!btype.empty())
-                {
-                    btype_.push_back(btype);
-                }
-            }
-        }
-        if (debug)
-        {
-            fprintf(debug, "Done receiving btypes\n");
             fflush(debug);
         }
 

@@ -308,11 +308,11 @@ void MolGen::checkDataSufficiency(FILE *fp)
                 // Skip type, which is the first entry in iatoms
                 int ai = mol.ltop_->idef.il[bonds->fType()].iatoms[i+1];
                 int aj = mol.ltop_->idef.il[bonds->fType()].iatoms[i+2];
+                auto bo     = mol.bondOrder(ai, aj);
                 if (optimize(btype))
                 {
                     auto iPType = pd_.findParticleType(*mol.atoms_->atomtype[ai])->interactionTypeToIdentifier(btype).id();
                     auto jPType = pd_.findParticleType(*mol.atoms_->atomtype[aj])->interactionTypeToIdentifier(btype).id();
-                    auto bo     = mol.bondOrder(ai, aj);
                     auto bondId = Identifier({iPType, jPType}, bo, bonds->canSwap());
                     for(auto &ff : *(bonds->findParameters(bondId)))
                     {
@@ -329,10 +329,10 @@ void MolGen::checkDataSufficiency(FILE *fp)
                     auto iPType = pd_.findParticleType(*mol.atoms_->atomtype[ai])->interactionTypeToIdentifier(ztype).id();
                     auto jPType = pd_.findParticleType(*mol.atoms_->atomtype[aj])->interactionTypeToIdentifier(ztype).id();
                     auto bcc   = pd_.findForces(bcctype);
-                    auto bccId = Identifier({iPType, jPType}, bcc->canSwap());
+                    auto bccId = Identifier({iPType, jPType}, bo, bcc->canSwap());
                     if (!bcc->parameterExists(bccId))
                     {
-                        bccId = Identifier({jPType, iPType}, bcc->canSwap());
+                        bccId = Identifier({jPType, iPType}, bo, bcc->canSwap());
                         if (!bcc->parameterExists(bccId))
                         {
                             GMX_THROW(gmx::InternalError("Unknown bondcorrection"));

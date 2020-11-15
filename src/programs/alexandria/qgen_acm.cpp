@@ -583,7 +583,7 @@ void QgenAcm::solveSQE(FILE                    *fp,
         auto aj      = bonds[bij].getAj()-1;
         auto canSwap = fs.canSwap();
         bool swapped = false;
-        Identifier bccId({id_[shellRenumber[ai]].id(), id_[shellRenumber[aj]].id()}, canSwap);
+        Identifier bccId({id_[shellRenumber[ai]].id(), id_[shellRenumber[aj]].id()}, bonds[bij].getBondOrder(), canSwap);
         if (!fs.parameterExists(bccId))
         {
             if (CanSwap::Yes == canSwap)
@@ -592,7 +592,7 @@ void QgenAcm::solveSQE(FILE                    *fp,
             }
             else
             {
-                bccId   = Identifier({id_[shellRenumber[aj]].id(), id_[shellRenumber[ai]].id()}, canSwap);
+                bccId   = Identifier({id_[shellRenumber[aj]].id(), id_[shellRenumber[ai]].id()}, bonds[bij].getBondOrder(), canSwap);
                 swapped = true;
             }
         }
