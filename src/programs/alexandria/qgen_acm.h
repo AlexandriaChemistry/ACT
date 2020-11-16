@@ -108,8 +108,11 @@ class QgenAcm
         int                              natom_       = 0;
         std::vector<int>                 atomnr_;
         std::vector<double>              chi0_, rhs_, jaa_;
-        std::vector<gmx::RVec>           x_;   
-        std::vector<Identifier>          id_;
+        std::vector<gmx::RVec>           x_;
+        // Store ids locally, first for chargedistristribution
+        std::vector<Identifier>          qdist_id_;
+        // Store ids locally, second for EEM and bond charge corrections
+        std::vector<Identifier>          acm_id_;
         //! The atoms/shells to optimize charges for
         std::vector<int>                 nonFixed_;
         //! The atoms/shells not to optimize charges for

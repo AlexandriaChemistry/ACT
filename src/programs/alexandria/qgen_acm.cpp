@@ -104,7 +104,9 @@ QgenAcm::QgenAcm(const Poldata *pd,
         }
         auto qtype = atype->interactionTypeToIdentifier(InteractionType::CHARGEDISTRIBUTION);
         zeta_.push_back(qt.findParameterTypeConst(qtype, "zeta").value());
-        id_.push_back(qtype);
+        qdist_id_.push_back(qtype);
+        auto acmtype = atype->interactionTypeToIdentifier(InteractionType::ELECTRONEGATIVITYEQUALIZATION);
+        acm_id_.push_back(acmtype);
         
     }
     rhs_.resize(nonFixed_.size() + 1, 0);
@@ -123,14 +125,19 @@ void QgenAcm::updateParameters(const Poldata *pd)
     auto fs = pd->findForcesConst(InteractionType::ELECTRONEGATIVITYEQUALIZATION);
     for (auto i = 0; i < natom_; i++)
     {
-        if (!fs.parameterExists(id_[i]))
+        if (!fs.parameterExists(qdist_id_[i]))
         {
             GMX_THROW(gmx::InternalError(gmx::formatString("Cannot find %s", 
-                                                           id_[i].id().c_str()).c_str()));
+                                                           qdist_id_[i].id().c_str()).c_str()));
         }
-        chi0_[i] = fs.findParameterTypeConst(id_[i], "chi").value();
-        jaa_[i]  = fs.findParameterTypeConst(id_[i], "jaa").value();
-        zeta_[i] = qt.findParameterTypeConst(id_[i], "zeta").value();
+        chi0_[i] = fs.findParameterTypeConst(qdist_id_[i], "chi").value();
+        jaa_[i]  = fs.findParameterTypeConst(qdist_id_[i], "jaa").value();
+        if (!qt.parameterExists(acm_id_[i]))
+        {
+            GMX_THROW(gmx::InternalError(gmx::formatString("Cannot find %s", 
+                                                           acm_id_[i].id().c_str()).c_str()));
+        }
+        zeta_[i] = qt.findParameterTypeConst(acm_id_[i], "zeta").value();
     }
 }
 
@@ -282,7 +289,7 @@ double QgenAcm::calcSij(int i, int j)
                     if (sqrt(dism) < 0.105)
                     {
                         printf("dist %5d %5d %5s  %5s %8.3f\n",
-                               i, l, id_[tag].id().c_str(), id_[l].id().c_str(), sqrt(dism));
+                               i, l, qdist_id_[tag].id().c_str(), qdist_id_[l].id().c_str(), sqrt(dism));
                         Sij = Sij*1.605;
                     }
                 }
@@ -507,11 +514,11 @@ void QgenAcm::checkSupport(const Poldata *pd)
     auto fs = pd->findForcesConst(InteractionType::ELECTRONEGATIVITYEQUALIZATION);
     for (auto i = 0; i < natom_; i++)
     {
-        if (!fs.parameterExists(id_[i]))
+        if (!fs.parameterExists(acm_id_[i]))
         {
             fprintf(stderr, "No %s charge generation support for atom %s.\n",
                     chargeTypeName(ChargeType_).c_str(),
-                    id_[i].id().c_str());
+                    acm_id_[i].id().c_str());
             bSupport = false;
         }
     }
@@ -583,7 +590,7 @@ void QgenAcm::solveSQE(FILE                    *fp,
         auto aj      = bonds[bij].getAj()-1;
         auto canSwap = fs.canSwap();
         bool swapped = false;
-        Identifier bccId({id_[shellRenumber[ai]].id(), id_[shellRenumber[aj]].id()}, bonds[bij].getBondOrder(), canSwap);
+        Identifier bccId({acm_id_[shellRenumber[ai]].id(), acm_id_[shellRenumber[aj]].id()}, bonds[bij].getBondOrder(), canSwap);
         if (!fs.parameterExists(bccId))
         {
             if (CanSwap::Yes == canSwap)
@@ -592,7 +599,7 @@ void QgenAcm::solveSQE(FILE                    *fp,
             }
             else
             {
-                bccId   = Identifier({id_[shellRenumber[aj]].id(), id_[shellRenumber[ai]].id()}, bonds[bij].getBondOrder(), canSwap);
+                bccId   = Identifier({acm_id_[shellRenumber[aj]].id(), acm_id_[shellRenumber[ai]].id()}, bonds[bij].getBondOrder(), canSwap);
                 swapped = true;
             }
         }
