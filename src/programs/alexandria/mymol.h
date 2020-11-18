@@ -272,9 +272,6 @@ class MyMol : public MolProp
         std::vector<int>               symmetric_charges_;
         QgenResp                      *QgenResp_ = nullptr;
         QgenAcm                       *QgenAcm_ = nullptr;
-        // Array to map original atom numbers to numbers 
-        // when shells have been added
-        std::vector<int>               shellRenumber_;
         std::vector<PlistWrapper>      plist_;
         gmx_mtop_t                    *mtop_;
         gmx_localtop_t                *ltop_;
