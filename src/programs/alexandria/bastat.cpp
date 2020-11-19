@@ -624,11 +624,11 @@ static void generate_bcc(Poldata *pd,
                         {
                             if (zi == zj)
                             {
-                                bcc->addParameter(bccId1, "electronegativity", enpBounded);
+                                bcc->addParameter(bccId1, "electronegativity", enpFixed);
                             }
                             else
                             {
-                                bcc->addParameter(bccId1, "electronegativity", enpFixed);
+                                bcc->addParameter(bccId1, "electronegativity", enpBounded);
                             }
                             bcc->addParameter(bccId1, "hardness", hardnessParam);
                         }
