@@ -634,7 +634,7 @@ void QgenAcm::solveSQE(FILE                    *fp,
             }
             lhs.set(bij, bkl, J);
         }
-        rhs[bij] = chi0_[aj] - chi0_[ai];
+        rhs[bij] = chi0_[nonFixed_[aj]] - chi0_[nonFixed_[ai]];
         rhs[bij] -= 2*deltachi;
         
         if (fp)
