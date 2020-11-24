@@ -588,8 +588,9 @@ void QgenAcm::solveSQE(FILE                    *fp,
     MatrixWrapper lhs(nbonds, nbonds);
     rhs.resize(nbonds, 0.0);
     
-    auto itype = InteractionType::BONDCORRECTIONS;
-    auto fs    = pd->findForcesConst(itype);
+    auto epsilonr = pd->getEpsilonR();
+    auto itype    = InteractionType::BONDCORRECTIONS;
+    auto fs       = pd->findForcesConst(itype);
     for (int bij = 0; bij < nbonds; bij++)
     {
         auto ai      = bonds[bij].getAi()-1;
@@ -636,7 +637,11 @@ void QgenAcm::solveSQE(FILE                    *fp,
         }
         rhs[bij] = chi0_[nonFixed_[aj]] - chi0_[nonFixed_[ai]];
         rhs[bij] -= 2*deltachi;
-        
+        // Check this! Only to be done when there are shells!
+        if (nonFixed_.size() < static_cast<size_t>(natom_))
+        {
+            rhs[bij] -= 0.5*(calcJcs(ai, epsilonr) - calcJcs(aj, epsilonr));
+        }
         if (fp)
         {
             fprintf(fp, "(");
@@ -651,6 +656,15 @@ void QgenAcm::solveSQE(FILE                    *fp,
     pij.resize(nbonds, 0.0);
     q.resize(nonFixed_.size(), 0.0);
     lhs.solve(rhs, &pij);
+    if (fp)
+    {
+        fprintf(fp, "pij: ");
+        for(auto &p: pij)
+        {
+            fprintf(fp, " %8g", p);
+        }
+        fprintf(fp, "\n");
+    }
     for (int bij = 0; bij < nbonds; bij++)
     {
         auto ai  = bonds[bij].getAi()-1;
