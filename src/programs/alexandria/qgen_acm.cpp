@@ -640,7 +640,10 @@ void QgenAcm::solveSQE(FILE                    *fp,
         // Check this! Only to be done when there are shells!
         if (nonFixed_.size() < static_cast<size_t>(natom_))
         {
-            rhs[bij] -= 0.5*(calcJcs(ai, epsilonr) - calcJcs(aj, epsilonr));
+            rhs[bij] -= (jaa_[fixed_[ai]]*q_[fixed_[ai]]-
+                         jaa_[fixed_[aj]]*q_[fixed_[aj]]);
+            rhs[bij] -= 0.5*(calcJcs(nonFixed_[ai], epsilonr) - 
+                             calcJcs(nonFixed_[aj], epsilonr));
         }
         if (fp)
         {
