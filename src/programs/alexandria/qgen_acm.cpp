@@ -628,7 +628,7 @@ void QgenAcm::solveSQE(FILE                    *fp,
             auto ak  = bonds[bkl].getAi()-1;
             auto al  = bonds[bkl].getAj()-1;
             
-            double J = 2*(Jcc_[ai][ak] - Jcc_[ai][al] - Jcc_[aj][ak] + Jcc_[aj][al]);
+            double J = (Jcc_[ai][ak] - Jcc_[ai][al] - Jcc_[aj][ak] + Jcc_[aj][al]);
             if (bij == bkl)
             {
                 J += hardness;
