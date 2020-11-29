@@ -146,6 +146,12 @@ class QgenAcm
         
         /*! \brief Compute the Jcc matrix
          *
+         * Only half the matrix is computed for efficiency,
+         * but the symmetric values are filled in anyway. That
+         * means all the interactions are in there twice. However,
+         * the off-diagonal numbers are multiplied by 0.5 such that
+         * the total electrostatic potetential is correct nevertheless.
+         * The diagonal is filled with the atomic hardness values.
          * \param[in] epsilonr Relative  dielectric constant
          * \param[in] bYang    Whether or not the Yang and Sharp model is used
          * \param[in] bRappe   Whether or not the Rappe and Goddard model is used
@@ -155,6 +161,7 @@ class QgenAcm
                      bool   bRappe);
                      
         /*! \brief Compute shell potential at atom position
+         * This takes into account all the shells in the molecule.
          * \param[in] top_ndx  Atom number
          * \param[in] epsilonr Relative  dielectric constant
          * \return The potential

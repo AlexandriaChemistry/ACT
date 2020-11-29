@@ -452,12 +452,11 @@ double QgenAcm::calcJcs(int    core_ndx,
                                         epsilonr));  
             if (debug)
             {
-                fprintf(debug, "core_ndx: %d shell_ndx: %d shell_charge: %0.1f\n", 
+                fprintf(debug, "calcJcs: core_ndx: %d shell_ndx: %d shell_charge: %0.1f\n", 
                         core_ndx, shell_ndx, q_[shell_ndx]);
             }
         }
     }
-    Jcs *= 0.5;
     if (debug)
     {
         fprintf(debug, "Jcs:%0.3f\n", Jcs);
@@ -483,7 +482,7 @@ void QgenAcm::calcRhs(double epsilonr)
         if (bHaveShell_)
         {
             // Core-Shell interaction
-            rhs_[i] -= calcJcs(nfi, epsilonr);
+            rhs_[i] -= 0.5*calcJcs(nfi, epsilonr);
             // Hardness of atom multiplied by charge of shell
             if (myShell_.find(nfi) != myShell_.end())
             {
@@ -574,7 +573,8 @@ void QgenAcm::solveEEM(FILE *fp)
 
     if (fp && (fabs(qtot - qtotal_) > 1e-2))
     {
-        fprintf(fp, "qtot = %g, it should be %g\n", qtot, qtotal_);
+        fprintf(fp, "qtot = %g, it should be %g rhs[%zu] = %g\n",
+                qtot, qtotal_, nelem, rhs_[nelem]);
     }
 }
 
@@ -640,10 +640,13 @@ void QgenAcm::solveSQE(FILE                    *fp,
         // Check this! Only to be done when there are shells!
         if (nonFixed_.size() < static_cast<size_t>(natom_))
         {
-            rhs[bij] -= (jaa_[fixed_[ai]]*q_[fixed_[ai]]-
-                         jaa_[fixed_[aj]]*q_[fixed_[aj]]);
-            rhs[bij] -= 0.5*(calcJcs(nonFixed_[ai], epsilonr) - 
-                             calcJcs(nonFixed_[aj], epsilonr));
+            auto nfi = nonFixed_[ai];
+            auto nfj = nonFixed_[aj];
+            double qsi = q_[myShell_.find(nfi)->second];
+            double qsj = q_[myShell_.find(nfj)->second];
+                
+            rhs[bij] -= (jaa_[nfi]*qsi - jaa_[nfj]*qsj);
+            rhs[bij] -= 0.5*(calcJcs(nfi, epsilonr) - calcJcs(nfj, epsilonr));
         }
         if (fp)
         {
@@ -717,7 +720,8 @@ eQgen QgenAcm::generateCharges(FILE                      *fp,
         updateParameters(pd);
         updatePositions(x, atoms);
         calcJcc(pd->getEpsilonR(), pd->yang(), pd->rappe());
-        if (pd->interactionPresent(InteractionType::BONDCORRECTIONS))
+        if (pd->interactionPresent(InteractionType::BONDCORRECTIONS) &&
+            pd->chargeGenerationAlgorithm() == ChargeGenerationAlgorithm::SQE)
         {
             solveSQE(fp, pd, bonds);
         }
