@@ -142,6 +142,22 @@ class QgenAcm
                      int    rowJ,
                      double epsilonr);
 
+        /*! \brief Return delta chi and bond hardness for atom pair
+         *
+         * \param[in]  pd  Poldata structure
+         * \param[in]  ai  Atom id i
+         * \param[in]  aj  Atom id j
+         * \param[in]  bondorder The bond order for this bond
+         * \param[out] deltachi the electronegativity correction
+         * \param[out] hardness the bond hardness
+         */
+        void getBccParams(const Poldata *pd,
+                          int            ai,
+                          int            aj,
+                          int            bondorder,
+                          double        *deltachi,
+                          double        *hardness);
+    
         void copyChargesToAtoms(t_atoms *atoms);
         
         /*! \brief Compute the Jcc matrix
