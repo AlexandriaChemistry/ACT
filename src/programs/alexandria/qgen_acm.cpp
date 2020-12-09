@@ -668,6 +668,10 @@ void QgenAcm::solveSQE(FILE                    *fp,
                 chi_corr[i] -= delta_chis[bij];
             }
         }
+        for(size_t l = 0; l < nonFixed_.size(); l++)
+        {
+            chi_corr[i] += (Jcc_[i][l]*qtotal_)/nonFixed_.size();
+        }
     }
     for (int bij = 0; bij < nbonds; bij++)
     {
