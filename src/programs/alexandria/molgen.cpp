@@ -188,9 +188,12 @@ void MolGen::optionsFinished()
     gmx_omp_nthreads_init(mdlog_, cr_, 1, 1, 1, 0, false, false);
     auto pnc                    = gmx::PhysicalNodeCommunicator(MPI_COMM_WORLD, 0);
     hwinfo_                     = gmx_detect_hardware(mdlog_, pnc);
-    for(const auto &toFit : gmx::splitString(fitString_))
+    if (nullptr != fitString_)
     {
-        fit_.insert({ toFit, true });
+        for(const auto &toFit : gmx::splitString(fitString_))
+        {
+            fit_.insert({ toFit, true });
+        }
     }
     if (MASTER(cr_))
     {
