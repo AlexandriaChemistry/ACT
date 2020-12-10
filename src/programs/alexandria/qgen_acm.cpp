@@ -670,7 +670,14 @@ void QgenAcm::solveSQE(FILE                    *fp,
         }
         for(size_t l = 0; l < nonFixed_.size(); l++)
         {
-            chi_corr[i] += (Jcc_[i][l]*qtotal_)/nonFixed_.size();
+            double qcorr = qtotal_/nonFixed_.size();
+            // Check this! Only to be done when there are shells!
+            if (nonFixed_.size() < static_cast<size_t>(natom_))
+            {
+                auto nfl = nonFixed_[l];
+                qcorr += q_[myShell_.find(nfl)->second];
+            }
+            chi_corr[i] += Jcc_[i][l]*(qcorr);
         }
     }
     for (int bij = 0; bij < nbonds; bij++)
