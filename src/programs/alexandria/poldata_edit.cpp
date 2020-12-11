@@ -44,8 +44,8 @@
 static void modifyPoldata(alexandria::Poldata *pd,
                           const char *ptype,
                           const char *particle,
-                          bool bSetMin, real pmin,
-                          bool bSetMax, real pmax,
+                          bool bSetMin, double pmin,
+                          bool bSetMax, double pmax,
                           bool force)
 {
     if (!(bSetMin || bSetMax))

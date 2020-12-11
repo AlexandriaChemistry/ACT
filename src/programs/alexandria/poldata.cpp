@@ -571,6 +571,12 @@ void Poldata::checkConsistency(FILE *fp) const
     {
         return;
     }
+    if (interactionPresent(InteractionType::BONDCORRECTIONS) &&
+        chargeGenerationAlgorithm() != ChargeGenerationAlgorithm::SQE)
+    {
+        fprintf(fp, "Can only have bond corrections when ChargeGenerationAlgorithm = SQE\n");
+        nerror += 1;
+    }
     auto eem = findForcesConst(InteractionType::ELECTRONEGATIVITYEQUALIZATION);
     for (const auto &atp : alexandria_)
     {
