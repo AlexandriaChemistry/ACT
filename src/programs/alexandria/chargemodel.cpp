@@ -90,7 +90,7 @@ std::map<ChargeGenerationAlgorithm, const std::string> cg2Name =
 
 std::map<const std::string, ChargeGenerationAlgorithm> name2CG;
 
-ChargeGenerationAlgorithm name2ChargeGenerationAlgorithm(const std::string &name)
+static ChargeGenerationAlgorithm name2ChargeGenerationAlgorithm(const std::string &name)
 {
     if (name2CG.empty())
     {

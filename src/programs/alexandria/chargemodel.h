@@ -71,8 +71,5 @@ enum class ChargeGenerationAlgorithm {
 //! \brief Return the string corresping to cg
 const std::string &chargeGenerationAlgorithmName(ChargeGenerationAlgorithm cg);
 
-//! \brief Return the ChargeAlgorithm corresponding to name
-ChargeGenerationAlgorithm name2ChargeGenerationAlgorithm(const std::string &name);
-
 } // namespace alexandria
 #endif

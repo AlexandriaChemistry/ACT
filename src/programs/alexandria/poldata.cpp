@@ -136,6 +136,25 @@ InteractionType Poldata::typeToInteractionType(const std::string &type)
     return type2Itype_.find(type)->second;
 }
 
+ChargeGenerationAlgorithm Poldata::chargeGenerationAlgorithm() const
+{
+    if (interactionPresent(InteractionType::ELECTRONEGATIVITYEQUALIZATION))
+    {
+        if (interactionPresent(InteractionType::BONDCORRECTIONS))
+        {
+            return ChargeGenerationAlgorithm::SQE;
+        }
+        else
+        {
+            return ChargeGenerationAlgorithm::EEM;
+        }
+    }
+    else
+    {
+        return ChargeGenerationAlgorithm::ESP;
+    } 
+}
+
 /*
  *-+-+-+-+-+-+-+-+-+-+-+
  * Polarizability STUFF

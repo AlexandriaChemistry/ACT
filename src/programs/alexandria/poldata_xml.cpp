@@ -125,7 +125,6 @@ enum class xmlEntry {
     ATTACHED,
     NUMATTACH,
     MODEL,
-    CHARGEGENERATIONALGORITHM,
     CHARGES,
     REF_CHARGES,
     ANGLE_UNIT,
@@ -144,7 +143,6 @@ std::map<const std::string, xmlEntry> xmlxxx =
     { "reference",                 xmlEntry::REFERENCE        },
     { "particletypes",             xmlEntry::PARTICLETYPES        },
     { "particletype",              xmlEntry::PARTICLETYPE         },
-    { "chargegenerationalgorithm", xmlEntry::CHARGEGENERATIONALGORITHM },
     { "parameterlist",             xmlEntry::PARAMETERLIST    },
     { "parameter",                 xmlEntry::PARAMETER        },
     { "version",                   xmlEntry::VERSION          },
@@ -309,10 +307,6 @@ static void processAttr(FILE       *fp,
     switch (elem)
     {
     case xmlEntry::PARTICLETYPES:
-        if (NNobligatory(xbuf, xmlEntry::CHARGEGENERATIONALGORITHM))
-        {
-            pd->setChargeGenerationAlgorithm(xbufString(xmlEntry::CHARGEGENERATIONALGORITHM));
-        }
         if (NNobligatory(xbuf, xmlEntry::VERSION))
         {
             pd->setVersion(xbufString(xmlEntry::VERSION));
@@ -610,8 +604,6 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd)
         epref, desc, params, tmp;
 
     auto child = add_xml_child(parent, exml_names(xmlEntry::PARTICLETYPES));
-    add_xml_char(child, exml_names(xmlEntry::CHARGEGENERATIONALGORITHM),
-                 chargeGenerationAlgorithmName(pd->chargeGenerationAlgorithm()).c_str());
     tmp   = pd->getVersion();
     if (0 != tmp.size())
     {

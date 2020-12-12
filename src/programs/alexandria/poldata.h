@@ -368,19 +368,8 @@ class Poldata
         SymchargesConstIterator getSymchargesEnd() const { return symcharges_.end(); }
 
         //! Return the charge generation algorithm used
-        ChargeGenerationAlgorithm chargeGenerationAlgorithm() const
-        { return ChargeGenerationAlgorithm_; }
+        ChargeGenerationAlgorithm chargeGenerationAlgorithm() const;
         
-        //! Set the charge generation algorithm used
-        void setChargeGenerationAlgorithm(ChargeGenerationAlgorithm eqgAlgorithm)
-        { ChargeGenerationAlgorithm_ = eqgAlgorithm; }
-        
-        //! Set the charge generation algorithm used
-        void setChargeGenerationAlgorithm(const std::string &eqgAlgorithm)
-        {
-            ChargeGenerationAlgorithm_ = name2ChargeGenerationAlgorithm(eqgAlgorithm);
-        }
-
         //! Return whether the model used is polarizable.     
         bool polarizable() const { return polarizable_; }
 
