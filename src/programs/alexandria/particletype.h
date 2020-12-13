@@ -153,8 +153,12 @@ class ParticleType
      */
     double paramValue(const std::string &type) const;
     
-    //! Return pointer to force field parameter corresponding to type
-    const ForceFieldParameter &parameter(const std::string &type) const;
+    //! Return force field parameter corresponding to type
+    const ForceFieldParameter &parameterConst(const std::string &type) const;
+
+    //! Return mutable force field parameter corresponding to type
+    ForceFieldParameter *parameter(const std::string &type);
+
     /*! \brief Return mass
      * \return mass of the particle if present, zero otherwise
      */

@@ -157,6 +157,9 @@ class ForceFieldParameter
     //! \brief Return how this parameter may be changed
     Mutability mutability() const { return mutability_; }
     
+    //! \brief Change the mutability of this parameter
+    void setMutability(Mutability m) { mutability_ = m; }
+    
     //! \brief Return whether this parameter is mutable at all
     bool isMutable() const { return mutability_ == Mutability::Free || mutability_ == Mutability::Bounded; }
     

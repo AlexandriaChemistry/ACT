@@ -37,21 +37,82 @@
 #include "gromacs/utility/arraysize.h"
 
 #include "alex_modules.h"
+#include "forcefieldparameter.h"
 #include "interactiontype.h"
+#include "mutability.h"
 #include "poldata.h"
 #include "poldata_xml.h"
+
+static void setMinMaxMut(alexandria::ForceFieldParameter *pp,
+                         bool bSetMin, double pmin,
+                         bool bSetMax, double pmax,
+                         bool bSetMut, const char *mutability)
+{
+    if (bSetMin)
+    {
+        pp->setMinimum(pmin);
+        pp->setValue(std::max(pmin, pp->value()));
+        pp->setMaximum(std::max(pmin, pp->maximum()));
+    }
+    if (bSetMax)
+    {
+        pp->setMaximum(pmax);
+        pp->setValue(std::min(pmax, pp->value()));
+        pp->setMinimum(std::min(pmax, pp->minimum()));
+    }
+    if (bSetMut)
+    {
+        alexandria::Mutability mut;
+        if (nameToMutability(mutability, &mut))
+        {
+            pp->setMutability(mut);
+        }
+    }
+}
 
 static void modifyPoldata(alexandria::Poldata *pd,
                           const char *ptype,
                           const char *particle,
                           bool bSetMin, double pmin,
                           bool bSetMax, double pmax,
+                          bool bSetMut, const char *mutability,
                           bool force)
 {
-    if (!(bSetMin || bSetMax))
+    if (!(bSetMin || bSetMax || bSetMut))
     {
         return;
     }
+    bool done = false;
+    // Check whether we have a parameter type belonging to atomtypes
+    if ((strlen(particle) > 0) && pd->hasParticleType(particle))
+    {
+        auto pt = pd->findParticleType(particle);
+        if (pt->hasParameter(ptype))
+        {
+            setMinMaxMut(pt->parameter(ptype),
+                         bSetMin, pmin, bSetMax, pmax,
+                         bSetMut, mutability);
+            done = true;
+        }
+    }
+    else
+    {
+        auto particleTypes = pd->particleTypes();
+        for (auto pt=particleTypes->begin(); pt < particleTypes->end(); ++pt)
+        {
+            if (pt->hasParameter(ptype))
+            {
+                setMinMaxMut(pt->parameter(ptype),
+                             bSetMin, pmin, bSetMax, pmax,
+                             bSetMut, mutability);
+                done = true;
+            }
+        }
+    }
+    if (done)
+    {
+        return;
+    }    
     auto itype = pd->typeToInteractionType(ptype);
     printf("Will change parameter type %s in %s\n", ptype,
            interactionTypeToString(itype).c_str());
@@ -75,18 +136,9 @@ static void modifyPoldata(alexandria::Poldata *pd,
                 {
                     if (force || pp.second.isMutable())
                     {
-                        if (bSetMin)
-                        {
-                            pp.second.setMinimum(pmin);
-                            pp.second.setValue(std::max(pmin, pp.second.value()));
-                            pp.second.setMaximum(std::max(pmin, pp.second.maximum()));
-                        }
-                        if (bSetMax)
-                        {
-                            pp.second.setMaximum(pmax);
-                            pp.second.setValue(std::min(pmax, pp.second.value()));
-                            pp.second.setMinimum(std::min(pmax, pp.second.minimum()));
-                        }
+                        setMinMaxMut(&pp.second,
+                                     bSetMin, pmin, bSetMax, pmax,
+                                     bSetMut, mutability);
                     }
                 }
             }
@@ -111,11 +163,12 @@ int alex_poldata_edit(int argc, char*argv[])
         { efDAT, "-f", "pdin", ffREAD },
         { efDAT, "-o", "pdout", ffWRITE }
     };
-    static char *parameter = (char *)"";
-    static char *particle  = (char *)"";
-    real         pmin      = 0;
-    real         pmax      = 0;
-    gmx_bool     force     = false;
+    static char *parameter  = (char *)"";
+    static char *particle   = (char *)"";
+    static char *mutability = (char *)"";
+    real         pmin       = 0;
+    real         pmax       = 0;
+    gmx_bool     force      = false;
     t_pargs                          pa[]     = 
     {
         { "-p",      FALSE, etSTR,  {&parameter},
@@ -126,6 +179,8 @@ int alex_poldata_edit(int argc, char*argv[])
           "Minimum value of parameter." },
         { "-max",    FALSE, etREAL,  {&pmax},
           "Maximum value of parameter." },
+        { "-mut",    FALSE, etSTR,  {&mutability},
+          "Set the mutability for the given parameters to the value. The following values are supported: Free, Fixed, Bounded" },
         { "-force",  FALSE, etBOOL, {&force},
           "Will change also non-mutable parameters. Use with care!" }
     };
@@ -151,6 +206,7 @@ int alex_poldata_edit(int argc, char*argv[])
         modifyPoldata(&pd, parameter, particle,
                       opt2parg_bSet("-min", npargs, pa), pmin,
                       opt2parg_bSet("-max", npargs, pa), pmax,
+                      opt2parg_bSet("-mut", npargs, pa), mutability,
                       force);
                       
     }

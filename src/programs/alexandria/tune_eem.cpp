@@ -424,7 +424,7 @@ double OptACM::calcDeviation()
                 for (int j = i = 0; j < mymol.atoms_->nr; j++)
                 {
                     auto atype = poldata()->findParticleType(*mymol.atoms_->atomtype[j]);
-                    auto qparm = atype->parameter("charge");
+                    auto qparm = atype->parameterConst("charge");
                     double qj  = mymol.atoms_->atom[j].q;
                     qtot += qj;
                     switch (qparm.mutability())

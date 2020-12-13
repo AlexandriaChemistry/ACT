@@ -119,7 +119,7 @@ void QgenResp::setAtomInfo(t_atoms                          *atoms,
     {
         auto atype = pd->findParticleType(*atoms->atomtype[i]);
         auto ztype = atype->interactionTypeToIdentifier(InteractionType::CHARGEDISTRIBUTION);
-        auto qparm = atype->parameter("charge");
+        auto qparm = atype->parameterConst("charge");
         q_.push_back(qparm.value());
         row_.push_back(atype->row());
         zeta_.push_back(zzz.findParameterTypeConst(ztype, "zeta").value());

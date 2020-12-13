@@ -70,7 +70,7 @@ QgenAcm::QgenAcm(const Poldata *pd,
     {
         auto atype = pd->findParticleType(*atoms->atomtype[i]);
         atomnr_.push_back(atype->atomnumber());
-        auto qparam = atype->parameter("charge");
+        auto qparam = atype->parameterConst("charge");
         if (qparam.mutability() != Mutability::Fixed)
         {
             auto acmtype = atype->interactionTypeToIdentifier(InteractionType::ELECTRONEGATIVITYEQUALIZATION);

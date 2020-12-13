@@ -115,13 +115,22 @@ double ParticleType::paramValue(const std::string &type) const
     return pm->second.value();
 }    
 
-const ForceFieldParameter &ParticleType::parameter(const std::string &type) const
+const ForceFieldParameter &ParticleType::parameterConst(const std::string &type) const
 {
     if (parameterMap_.find(type) == parameterMap_.end())
     {
         GMX_THROW(gmx::InternalError(gmx::formatString("No such parameter %s in particle %s", type.c_str(), id().id().c_str()).c_str()));
     }
     return parameterMap_.find(type)->second;
+}
+
+ForceFieldParameter *ParticleType::parameter(const std::string &type)
+{
+    if (parameterMap_.find(type) == parameterMap_.end())
+    {
+        GMX_THROW(gmx::InternalError(gmx::formatString("No such parameter %s in particle %s", type.c_str(), id().id().c_str()).c_str()));
+    }
+    return &parameterMap_.find(type)->second;
 }
 
 double ParticleType::mass() const
