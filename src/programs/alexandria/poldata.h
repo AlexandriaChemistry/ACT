@@ -66,6 +66,9 @@ class Poldata
          */
         void  setFilename(const std::string &fn2);
 
+        //! Return the actual filename
+        const std::string &filename() const { return filename_; }
+
         /*! \brief
          * Set the force field version
          * \param[in] version Force field version
@@ -319,7 +322,7 @@ class Poldata
          */
         bool interactionPresent(InteractionType iType) const { return forces_.find(iType) != forces_.end(); }
         
-        /*! \brief Return forces
+        /*! \brief Return forces in a mutable form
          * \param[in] iType The interaction type
          * \return parameter list
          * \throws if the list does not exist
@@ -348,8 +351,13 @@ class Poldata
             return force->second;
         }
         
-        //! Return the interaction type corresponding to this parameter type
-        InteractionType typeToInteractionType(const std::string &type);
+        /*! Check whether an interaction type corresponding to parameter 
+         *  type exists, and return it.
+         * \param[in]  type  The string describing e.g. "zeta"
+         * \param[out] itype The itype
+         * \return whether or not the type was found.
+         */
+        bool typeToInteractionType(const std::string &type, InteractionType *itype);
 
         const std::string &getVsite_angle_unit() const { return vsite_angle_unit_; }
 

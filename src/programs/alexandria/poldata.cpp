@@ -104,7 +104,8 @@ const std::string Poldata::ztype2elem(const std::string &ztype) const
     gmx_fatal(FARGS, "No such zeta type %s", ztype.c_str());
 }
 
-InteractionType Poldata::typeToInteractionType(const std::string &type)
+bool Poldata::typeToInteractionType(const std::string &type, 
+                                    InteractionType   *itype)
 {
     if (type2Itype_.empty())
     {
@@ -131,9 +132,14 @@ InteractionType Poldata::typeToInteractionType(const std::string &type)
     }
     if (type2Itype_.find(type) == type2Itype_.end())
     {
-        GMX_THROW(gmx::InternalError(gmx::formatString("Cannot find type %s in force field file %s", type.c_str(), filename_.c_str()).c_str()));
+        printf("Cannot find type %s in force field file %s", type.c_str(), filename_.c_str());
+        return false;
     }
-    return type2Itype_.find(type)->second;
+    else
+    {
+        *itype = type2Itype_.find(type)->second;
+        return true;
+    }
 }
 
 ChargeGenerationAlgorithm Poldata::chargeGenerationAlgorithm() const
