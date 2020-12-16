@@ -197,7 +197,7 @@ static void analyzePoldata(alexandria::Poldata *pd)
                         printf("%s %s %s at maximum %g\n",
                                alexandria::interactionTypeToString(itype).c_str(),
                                myid.id().c_str(),
-                               ptype.c_str(), ppp.minimum());
+                               ptype.c_str(), ppp.maximum());
                     }
                 }
             }
