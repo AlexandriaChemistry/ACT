@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="qtotSize">14</Int>
+  <Sequence Name="qtotValuesEqdAlgorithm_EEM">
+    <Int Name="Length">14</Int>
+    <Real>1.7412173915474878</Real>
+    <Real>-2</Real>
+    <Real>1.8690383750763715</Real>
+    <Real>-2</Real>
+    <Real>1.6775853122483917</Real>
+    <Real>-2</Real>
+    <Real>1.6775776364093193</Real>
+    <Real>-2</Real>
+    <Real>1.0122054962881837</Real>
+    <Real>-1</Real>
+    <Real>1.010121057430472</Real>
+    <Real>-1</Real>
+    <Real>1.0122547309998073</Real>
+    <Real>-1</Real>
+  </Sequence>
+</ReferenceData>
