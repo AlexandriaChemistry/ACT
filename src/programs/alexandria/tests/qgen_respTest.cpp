@@ -115,8 +115,8 @@ class RespTest : public gmx::test::CommandLineTestBase
             auto           pnc         = gmx::PhysicalNodeCommunicator(MPI_COMM_WORLD, 0);
             gmx::MDLogger  mdlog {};
             auto           hwinfo      = gmx_detect_hardware(mdlog, pnc);
-            int            qcycle      = 1;
-            real           qtol        = 1e-3;
+            int            qcycle      = 100;
+            real           qtol        = 1e-6;
             std::string    tabFile;
             auto qt = pd->findForcesConst(InteractionType::CHARGEDISTRIBUTION);
             auto ct = name2ChargeType(qt.optionValue("chargetype"));
