@@ -439,8 +439,7 @@ double QgenAcm::calcJcs(int    core_ndx,
     for (size_t i = 0; i < fixed_.size(); i++)
     {
         auto shell_ndx = fixed_[i];
-        // Exclude interaction between a particle and its shell
-        // TODO: check exclusion array instead
+        // Exclude interaction between a particle and its own shell
         if (shell_ndx !=  shellId)
         {
             Jcs += (q_[shell_ndx]*calcJ(x_[core_ndx],
@@ -484,10 +483,10 @@ void QgenAcm::calcRhs(double epsilonr)
             // Core-Shell interaction
             rhs_[i] -= 0.5*calcJcs(nfi, epsilonr);
             // Hardness of atom multiplied by charge of shell
-            if (myShell_.find(nfi) != myShell_.end())
+            auto shellId = myShell_.find(nfi);
+            if (shellId != myShell_.end())
             {
-                auto shellId = myShell_.find(nfi)->second;
-                rhs_[i]     -= jaa_[nfi]*q_[shellId];
+                rhs_[i] -= jaa_[nfi]*q_[shellId->second];
             }
         }
     }

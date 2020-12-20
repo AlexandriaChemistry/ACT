@@ -236,8 +236,11 @@ void MolGen::fillIopt()
 {
     for(const auto &fit : fit_)
     {
-        auto itype = poldata()->typeToInteractionType(fit.first);
-        iOpt_.insert({ itype, true });
+        InteractionType itype;
+        if (poldata()->typeToInteractionType(fit.first, &itype))
+        {
+            iOpt_.insert({ itype, true });
+        }
     }
 }
 

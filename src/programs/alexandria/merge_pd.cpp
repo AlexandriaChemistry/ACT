@@ -221,7 +221,7 @@ int alex_merge_pd(int argc, char *argv[])
     }
     if (eem == eEMZeta || eem == eEMAll)
     {
-        merge_parameter(pds, alexandria::InteractionType::BONDCORRECTIONS,
+        merge_parameter(pds, alexandria::InteractionType::CHARGEDISTRIBUTION,
                         "zeta", &pdout);
     }
     if (eem == eEMNR)
