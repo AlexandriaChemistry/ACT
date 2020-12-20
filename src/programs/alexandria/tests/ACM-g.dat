@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <!DOCTYPE gentop.dtd PUBLIC "gentop.dtd" "gentop.dtd">
 <gentop>
-  <particletypes chargegenerationalgorithm="EEM" version="2020" nexclusions="0" epsilonr="1">
+  <particletypes version="2020" nexclusions="0" epsilonr="1">
     <particletype identifier="h1" type="Atom" description="hydrogen on aliphatic C with 1 electron-withdrawal group">
       <option key="acmtype" value="h1_z"/>
       <option key="atomnumber" value="1"/>

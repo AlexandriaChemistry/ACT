@@ -109,8 +109,6 @@ class RespTest : public gmx::test::CommandLineTestBase
                 fprintf(stderr, "Error generating topology: %s\n", immsg(imm));
                 return;
             }
-            fprintf(stderr, "Generated topology for %s\n",
-                    mp_.getMolname().c_str());
 
             //Needed for GenerateCharges
             t_commrec     *cr          = init_commrec();
