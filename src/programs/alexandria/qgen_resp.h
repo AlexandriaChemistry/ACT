@@ -111,8 +111,6 @@ class QgenResp
 
         real getMolecularCharge() const { return qtot_; }
 
-        void setMolecularCharge(int qtot) { qtot_ = qtot; }
-
         size_t nEsp() const { return ep_.size(); }
 
         std::vector<EspPoint> &espPoint() {return ep_; }

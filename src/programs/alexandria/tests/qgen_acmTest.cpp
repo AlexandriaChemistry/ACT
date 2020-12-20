@@ -64,6 +64,7 @@ namespace
 enum informat{
     einfLOG = 0,
     einfPDB = 1,
+    einfSDF = 2,
     einfNR
 };
 
@@ -85,39 +86,45 @@ class AcmTest : public gmx::test::CommandLineTestBase
         {
         }
 
-        void testAcm(const std::string &model, informat inputformat, bool qSymm)
+        void testAcm(const std::string &model, informat inputformat, 
+                     const std::string &molname, bool qSymm,
+                     double qtotal)
         {
             int                   maxpot    = 100;
             int                   nsymm     = 0;
-            const char           *molnm     = (char *)"1-butanol";
-            const char           *iupac     = (char *)"1-butanol";
             const char           *conf      = (char *)"minimum";
             const char           *jobtype   = (char *)"Opt";
-
-            std::string           dataName, method, basis;
+            std::string           method;
+            std::string           basis;
+            std::string           fileName(molname);
             alexandria::MolProp   molprop;
             
             if (inputformat == einfLOG)
             {
+                fileName.append("-3-oep.log");
                 method.assign("B3LYP");
                 basis.assign("GEN");
-                dataName = gmx::test::TestFileManager::getInputFilePath("1-butanol-3-oep.log");
             }
-            else
+            else if (inputformat == einfPDB)
             {
-                dataName = gmx::test::TestFileManager::getInputFilePath("1-butanol.pdb");
+                fileName.append(".pdb");
             }
+            else if (inputformat == einfSDF)
+            {
+                fileName.append(".sdf");
+            }
+            std::string dataName = gmx::test::TestFileManager::getInputFilePath(fileName);
 
             readBabel(dataName.c_str(),
                       &molprop,
-                      molnm,
-                      iupac,
+                      molname.c_str(),
+                      molname.c_str(),
                       conf,
                       basis.c_str(),
                       maxpot,
                       nsymm,
                       jobtype,
-                      0.0,
+                      qtotal,
                       false);
 
             mp_.Merge(&molprop);
@@ -143,17 +150,17 @@ class AcmTest : public gmx::test::CommandLineTestBase
             gmx::MDLogger  mdlog {};
             auto           hwinfo   = gmx_detect_hardware(mdlog, pnc);
             int            qcycle   = 100;
-            real           qtol     = 1e-3;
+            real           qtol     = 1e-6;
 
             mp_.symmetrizeCharges(pd, qSymm, nullptr);
-            //            mp_.initQgenResp(pd, method, basis, nullptr, 0.0, 100);
             mp_.GenerateCharges(pd, mdlog, cr, nullptr, 
                                 hwinfo, qcycle, qtol);
                                 
             std::vector<double> qtotValues;
-            for (int atom = 0; atom < mp_.atoms_->nr; atom++)
+            auto myatoms = mp_.atomsConst();
+            for (int atom = 0; atom < myatoms.nr; atom++)
             {
-                qtotValues.push_back(mp_.atoms_->atom[atom].q);
+                qtotValues.push_back(myatoms.atom[atom].q);
             }
             char buf[256];
             snprintf(buf, sizeof(buf), "qtotValuesEqdAlgorithm_%s", 
@@ -170,82 +177,102 @@ class AcmTest : public gmx::test::CommandLineTestBase
 
 TEST_F (AcmTest, BultinckLog)
 {
-    testAcm("Bultinck", einfLOG, true);
+    testAcm("Bultinck", einfLOG, "1-butanol", true, 0);
 }
 
 TEST_F (AcmTest, BultinckPDB)
 {
-    testAcm("Bultinck", einfPDB, true);
+    testAcm("Bultinck", einfPDB, "1-butanol", true, 0);
 }
 
 TEST_F (AcmTest, VerstraelenLog)
 {
-    testAcm("Verstraelen", einfLOG, true);
+    testAcm("Verstraelen", einfLOG, "1-butanol", true, 0);
 }
 
 TEST_F (AcmTest, VerstraelenPDB)
 {
-    testAcm("Verstraelen", einfPDB, true);
+    testAcm("Verstraelen", einfPDB, "1-butanol", true, 0);
 }
 
 TEST_F (AcmTest, RappeLog)
 {
-    testAcm("Rappe", einfLOG, true);
+    testAcm("Rappe", einfLOG, "1-butanol", true, 0);
 }
 
 TEST_F (AcmTest, RappePDB)
 {
-    testAcm("Rappe", einfPDB, true);
+    testAcm("Rappe", einfPDB, "1-butanol", true, 0);
 }
 
 TEST_F (AcmTest, YangLog)
 {
-    testAcm("Yang", einfLOG, true);
+    testAcm("Yang", einfLOG, "1-butanol", true, 0);
 }
 
 TEST_F (AcmTest, YangPDB)
 {
-    testAcm("Yang", einfPDB, true);
+    testAcm("Yang", einfPDB, "1-butanol", true, 0);
 }
 
 TEST_F (AcmTest, AXpgLOG)
 {
-    testAcm("ACM-pg", einfLOG, true);
+    testAcm("ACM-pg", einfLOG, "1-butanol", true, 0);
 }
 
 TEST_F (AcmTest, AXpgPDB)
 {
-    testAcm("ACM-pg", einfPDB, true);
+    testAcm("ACM-pg", einfPDB, "1-butanol", true, 0);
 }
 
 TEST_F (AcmTest, AXpgNoSymmLOG)
 {
-    testAcm("ACM-pg", einfLOG, false);
+    testAcm("ACM-pg", einfLOG, "1-butanol", false, 0);
 }
 
 TEST_F (AcmTest, AXpgNoSymmPDB)
 {
-    testAcm("ACM-pg", einfPDB, false);
+    testAcm("ACM-pg", einfPDB, "1-butanol", false, 0);
 }
 
 TEST_F (AcmTest, AXgLOG)
 {
-    testAcm("ACM-g", einfLOG, true);
+    testAcm("ACM-g", einfLOG, "1-butanol", true, 0);
 }
 
 TEST_F (AcmTest, AXgPDB)
 {
-    testAcm("ACM-g", einfPDB, true);
+    testAcm("ACM-g", einfPDB, "1-butanol", true, 0);
 }
 
 TEST_F (AcmTest, AXgNoSymmLOG)
 {
-    testAcm("ACM-g", einfLOG, false);
+    testAcm("ACM-g", einfLOG, "1-butanol", false, 0);
 }
 
 TEST_F (AcmTest, AXgNoSymmPDB)
 {
-    testAcm("ACM-g", einfPDB, false);
+    testAcm("ACM-g", einfPDB, "1-butanol", false, 0);
+}
+
+TEST_F (AcmTest, AXgNegative)
+{
+    testAcm("ACM-g", einfPDB, "acetate-3-oep.log", false, -1);
+}
+
+TEST_F (AcmTest, AXpgNegative)
+{
+    testAcm("ACM-pg", einfPDB, "acetate-3-oep.log", true, -1);
+}
+
+TEST_F (AcmTest, AXgPositive)
+{
+    testAcm("ACM-g", einfSDF, "guanidinium", false, 1);
+}
+
+TEST_F (AcmTest, AXpgPositive)
+{
+    testAcm("ACM-pg", einfSDF, "guanidinium", true, 1);
 }
 
 }

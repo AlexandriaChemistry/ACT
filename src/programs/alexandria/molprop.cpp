@@ -1406,14 +1406,14 @@ int MolProp::Merge(const MolProp *src)
             fflush(debug);
         }
     }
-    q = getCharge();
+    q = totalCharge();
     if (q == 0)
     {
-        SetCharge(src->getCharge());
+        SetTotalCharge(src->totalCharge());
     }
     else
     {
-        sq = src->getCharge();
+        sq = src->totalCharge();
         if ((nullptr != debug) && (sq != q))
         {
             fprintf(debug, "Not overriding charge to %g when merging since it is %g (%s)\n",
@@ -1534,7 +1534,7 @@ void MolProp::Dump(FILE *fp) const
         fprintf(fp, "cis:          %s\n", getCid().c_str());
         fprintf(fp, "InChi:        %s\n", getInchi().c_str());
         fprintf(fp, "mass:         %g\n", getMass());
-        fprintf(fp, "charge:       %d\n", getCharge());
+        fprintf(fp, "charge:       %d\n", totalCharge());
         fprintf(fp, "multiplicity: %d\n", getMultiplicity());
         fprintf(fp, "category:    ");
         for (auto &si : categoryConst())

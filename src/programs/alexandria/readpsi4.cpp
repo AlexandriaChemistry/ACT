@@ -278,7 +278,7 @@ bool readPsi4(const std::string &datafile, MolProp *mp)
                                         mu[XX], mu[YY], mu[ZZ], dip, 0));
         }
         mp->AddExperiment(std::move(e));
-        mp->SetCharge(charge);
+        mp->SetTotalCharge(charge);
         mp->SetMultiplicity(multiplicity);
         return true;
     }

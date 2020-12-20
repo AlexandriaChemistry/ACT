@@ -30,7 +30,6 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-
 #include "molgen.h"
 
 #include <cmath>
@@ -99,7 +98,7 @@ MolGen::MolGen()
     lot_       = "B3LYP/aug-cc-pVTZ";
     inputrec_  = new t_inputrec();
     fill_inputrec(inputrec_);
-    fc_[ermsTOT] = 1;
+    relativeWeight_[ermsTOT] = 1;
 }
 
 MolGen::~MolGen()
@@ -126,7 +125,7 @@ void MolGen::addOptions(std::vector<t_pargs> *pargs, eTune etune)
           "Minimum number of data points to optimize force field parameters" },
         { "-lot",    FALSE, etSTR,  {&lot_},
           "Use this method and level of theory when selecting coordinates and charges. Multiple levels can be specified which will be used in the order given, e.g.  B3LYP/aug-cc-pVTZ:HF/6-311G**" },
-        { "-fc_bound",    FALSE, etREAL, {&fc_[ermsBOUNDS]},
+        { "-fc_bound",    FALSE, etREAL, {&relativeWeight_[ermsBOUNDS]},
           "Force constant in the penalty function for going outside the borders given with the fitting options (see below)." },
         { "-qtol",   FALSE, etREAL, {&qtol_},
           "Tolerance for assigning charge generation algorithm." },
@@ -155,15 +154,15 @@ void MolGen::addOptions(std::vector<t_pargs> *pargs, eTune etune)
                   "Weight for the atoms when fitting the charges to the electrostatic potential. The potential on atoms is usually two orders of magnitude larger than on other points (and negative). For point charges or single smeared charges use zero. For point+smeared charges 1 is recommended." },
                 { "-maxpot", FALSE, etINT, {&maxESP_},
                   "Maximum percent of the electrostatic potential points that will be used to fit partial charges. Note that the input file may have a reduced amount of ESP points compared to the Gaussian output already so do not reduce the amount twice unless you know what you are doing." },
-                { "-fc_mu",    FALSE, etREAL, {&fc_[ermsMU]},
+                { "-fc_mu",    FALSE, etREAL, {&relativeWeight_[ermsMU]},
                   "Force constant in the penalty function for the magnitude of the dipole components." },
-                { "-fc_quad",  FALSE, etREAL, {&fc_[ermsQUAD]},
+                { "-fc_quad",  FALSE, etREAL, {&relativeWeight_[ermsQUAD]},
                   "Force constant in the penalty function for the magnitude of the quadrupole components." },
-                { "-fc_esp",   FALSE, etREAL, {&fc_[ermsESP]},
+                { "-fc_esp",   FALSE, etREAL, {&relativeWeight_[ermsESP]},
                   "Force constant in the penalty function for the magnitude of the electrostatic potential." },
-                { "-fc_charge",  FALSE, etREAL, {&fc_[ermsCHARGE]},
+                { "-fc_charge",  FALSE, etREAL, {&relativeWeight_[ermsCHARGE]},
                   "Force constant in the penalty function for 'unchemical' charges, i.e. negative hydrogens, and positive oxygens." },
-                { "-fc_polar",  FALSE, etREAL, {&fc_[ermsPolar]},
+                { "-fc_polar",  FALSE, etREAL, {&relativeWeight_[ermsPolar]},
                   "Force constant in the penalty function for polarizability." }
             };
         doAddOptions(pargs, asize(pa_eem), pa_eem);
@@ -172,9 +171,9 @@ void MolGen::addOptions(std::vector<t_pargs> *pargs, eTune etune)
     {
         t_pargs pa_fc[] =
             {
-                { "-fc_epot",  FALSE, etREAL, {&fc_[ermsEPOT]},
+                { "-fc_epot",  FALSE, etREAL, {&relativeWeight_[ermsEPOT]},
                   "Force constant in the penalty function for the magnitude of the potential energy." },
-                { "-fc_force",  FALSE, etREAL, {&fc_[ermsForce2]},
+                { "-fc_force",  FALSE, etREAL, {&relativeWeight_[ermsForce2]},
                   "Force constant in the penalty function for the magnitude of the force." }
             };
         doAddOptions(pargs, asize(pa_fc), pa_fc);
@@ -199,36 +198,48 @@ void MolGen::optionsFinished()
     {
         printf("There are %d threads/processes and %zu parameter types to optimize.\n", cr_->nnodes, fit_.size());
     }
+    if (debug)
+    {
+        fprintf(debug, "optionsFinished: qtol = %g mindata = %d nexcl = %d qcycle = %d\n",
+                qtol_, mindata_, nexcl_, qcycle_);
+    }
 }
 
-void MolGen::printEnergies(FILE *fp) const
+void MolGen::printChiSquared(FILE *fp) const
 {
     if (nullptr != fp && MASTER(commrec()))
     {
         fprintf(fp, "Components of fitting function\n");
         for (int j = 0; j < ermsNR; j++)
         {
-            auto eee = energy(j);
+            auto eee = chiSquared(j);
             if (eee > 0)
             {
-                fprintf(fp, "%-8s  %10.5f  weight: %g\n",
-                        rmsName(j), eee, fc_[j]);
+                fprintf(fp, "%-8s  %10.2f  N: %6d  weight: %g\n",
+                        rmsName(j), eee, numberOfDatapoints_[j],
+                        relativeWeight_[j]);
             }
         }
     }
 }
 
-void MolGen::sumEnergies()
+void MolGen::sumChiSquared()
 {
     // Now sum over processors
     if (PAR(commrec()) && !final())
     {
-        gmx_sum(ermsNR, ener_, commrec());
+        gmx_sum(ermsNR, chiSquared_, commrec());
+        gmx_sumi(ermsNR, numberOfDatapoints_, commrec());
     }
-    ener_[ermsTOT] = 0;
+    chiSquared_[ermsTOT] = 0;
     for (auto e = 0; e < ermsTOT; e++)
     {
-        ener_[ermsTOT] += fc_[e]*ener_[e];
+        double factor = 1;
+        if (numberOfDatapoints_[e] > 0)
+        {
+            factor = 1.0/numberOfDatapoints_[e];
+        }
+        chiSquared_[ermsTOT] += relativeWeight_[e]*chiSquared_[e]*factor;
     }
 }
 
@@ -280,13 +291,14 @@ void MolGen::checkDataSufficiency(FILE *fp)
         // Now loop over molecules and add interactions
         for(auto &mol : mymol_)
         {
-            for(int i = 0; i < mol.atoms_->nr; i++)
+            auto myatoms = mol.atomsConst();
+            for(int i = 0; i < myatoms.nr; i++)
             {
                 for(auto &itype : atomicItypes)
                 {
                     if (optimize(itype))
                     {
-                        auto atype  = pd_.findParticleType(*mol.atoms_->atomtype[i]);
+                        auto atype  = pd_.findParticleType(*myatoms.atomtype[i]);
                         auto fplist = pd_.findForces(itype);
                         if (atype->hasInteractionType(itype))
                         {
@@ -317,8 +329,8 @@ void MolGen::checkDataSufficiency(FILE *fp)
                 auto bo     = mol.bondOrder(ai, aj);
                 if (optimize(btype))
                 {
-                    auto iPType = pd_.findParticleType(*mol.atoms_->atomtype[ai])->interactionTypeToIdentifier(btype).id();
-                    auto jPType = pd_.findParticleType(*mol.atoms_->atomtype[aj])->interactionTypeToIdentifier(btype).id();
+                    auto iPType = pd_.findParticleType(*myatoms.atomtype[ai])->interactionTypeToIdentifier(btype).id();
+                    auto jPType = pd_.findParticleType(*myatoms.atomtype[aj])->interactionTypeToIdentifier(btype).id();
                     auto bondId = Identifier({iPType, jPType}, bo, bonds->canSwap());
                     for(auto &ff : *(bonds->findParameters(bondId)))
                     {
@@ -332,8 +344,8 @@ void MolGen::checkDataSufficiency(FILE *fp)
                 if (optimize(bcctype) && pd_.interactionPresent(bcctype))
                 {
                     auto ztype  = InteractionType::ELECTRONEGATIVITYEQUALIZATION;
-                    auto iPType = pd_.findParticleType(*mol.atoms_->atomtype[ai])->interactionTypeToIdentifier(ztype).id();
-                    auto jPType = pd_.findParticleType(*mol.atoms_->atomtype[aj])->interactionTypeToIdentifier(ztype).id();
+                    auto iPType = pd_.findParticleType(*myatoms.atomtype[ai])->interactionTypeToIdentifier(ztype).id();
+                    auto jPType = pd_.findParticleType(*myatoms.atomtype[aj])->interactionTypeToIdentifier(ztype).id();
                     auto bcc   = pd_.findForces(bcctype);
                     auto bccId = Identifier({iPType, jPType}, bo, bcc->canSwap());
                     if (!bcc->parameterExists(bccId))
@@ -359,9 +371,10 @@ void MolGen::checkDataSufficiency(FILE *fp)
         for(auto &mol : mymol_)
         {
             bool keep = true;
-            for(int i = 0; i < mol.atoms_->nr; i++)
+            auto myatoms = mol.atomsConst();
+            for(int i = 0; i < myatoms.nr; i++)
             {
-                auto atype = pd_.findParticleType(*mol.atoms_->atomtype[i]);
+                auto atype = pd_.findParticleType(*myatoms.atomtype[i]);
                 for(auto &itype : atomicItypes)
                 {
                     if (optimize(itype))
@@ -523,10 +536,8 @@ void MolGen::Read(FILE            *fp,
             }
         }
         generate_index(&mp);
-    }
-    /* Sort Molecules based on the number of atoms */
-    if (MASTER(cr_))
-    {
+
+        /* Sort Molecules based on the number of atoms */
         std::sort(mp.begin(), mp.end(),
                   [](alexandria::MolProp &mp1,
                      alexandria::MolProp &mp2)

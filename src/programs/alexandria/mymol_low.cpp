@@ -522,7 +522,6 @@ static void getBhamParams(const Poldata     *pd,
 }
 
 void nonbondedFromPdToMtop(gmx_mtop_t    *mtop,
-                           t_atoms       *atoms,
                            const Poldata *pd,
                            t_forcerec    *fr)
 {
@@ -545,6 +544,7 @@ void nonbondedFromPdToMtop(gmx_mtop_t    *mtop,
     } mytype;
     std::vector<mytype> mytypes;
     mytypes.resize(ntype);
+    t_atoms *atoms = &mtop->moltype[0].atoms;
     for (int i = 0; i < atoms->nr; i++)
     {
         auto itype = atoms->atom[i].type;
@@ -702,15 +702,15 @@ gmx_mtop_t *do_init_mtop(const Poldata                   *pd,
     mtop->groups.grps[egcENER].nr = 1;
     mtop->natoms                  = atoms->nr;
     init_t_atoms(&(mtop->moltype[0].atoms), atoms->nr, false);
-
-
-    /*Count the number of atom types in the molecule*/
+    snew(mtop->moltype[0].atoms.atomtype, atoms->nr);
+    /* Count the number of atom types in the molecule */
     int ntype      = 0;
     for (int i = 0; (i < atoms->nr); i++)
     {
         bool found = false;
         int  itp   = atoms->atom[i].type;
-        mtop->moltype[0].atoms.atom[i] = atoms->atom[i];
+        mtop->moltype[0].atoms.atom[i]     = atoms->atom[i];
+        mtop->moltype[0].atoms.atomtype[i] = put_symtab(symtab, *atoms->atomtype[i]);
         for (int j = 0; !found && (j < i); j++)
         {
             found = (itp == atoms->atom[j].type);
@@ -758,7 +758,7 @@ gmx_mtop_t *do_init_mtop(const Poldata                   *pd,
         }
     }
 
-    nonbondedFromPdToMtop(mtop, atoms, pd, nullptr);
+    nonbondedFromPdToMtop(mtop, pd, nullptr);
 
     gmx_mtop_finalize(mtop);
     /* Create a charge group block */

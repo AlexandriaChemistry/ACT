@@ -168,8 +168,9 @@ class MolGen
         eTune                           etune_;
         real                            qtol_;
         int                             qcycle_;
-        real                            ener_[ermsNR] = { 0 };
-        real                            fc_[ermsNR] = { 0 };
+        real                            chiSquared_[ermsNR] = { 0 };
+        int                             numberOfDatapoints_[ermsNR] = { 0 };
+        real                            relativeWeight_[ermsNR] = { 0 };
         gmx_bool                        bQM_;
         gmx_bool                        bDone_;
         gmx_bool                        bFinal_;
@@ -289,48 +290,60 @@ class MolGen
         //! \brief Return the number of compounds in the data set
         int nMolSupport() const { return nmol_support_; }
 
-        //! \brief Set the energy value for the corresponding rms.
-        void setEnergy(int rms, real ener)
+        /*! \brief
+         * Set the rms component of the chiSquared vector to value. 
+         * \param[in] rms   Index in chiSquared array
+         * \param[in] ndata Number of data points
+         * \param[in] value New value of chiSquared
+         */
+        void setChiSquared(int rms, int    ndata, real value)
         {
-            ener_[rms] = ener;
+            numberOfDatapoints_[rms] = ndata;
+            chiSquared_[rms]         = value;
         }
         
-        //! \brief Return the energy of the corresponding rms. 
-        double energy(int rms) const 
+        //! \brief Return the chiSquared of the corresponding rms. 
+        double chiSquared(int rms) const 
         { 
-            return ener_[rms]; 
+            return chiSquared_[rms]; 
         }
         
         //! \brief Return the weighting factor of the energy.
         double weight(int rms) const 
         { 
-            return fc_[rms]; 
+            return relativeWeight_[rms]; 
         }
         
-        //! \brief Set all the energies to zero.
-        void resetEnergies()
+        //! \brief Set all the chiSquared to zero.
+        void resetChiSquared()
         {
             for (int rms = 0; rms < ermsNR; rms++)
             {
-                ener_[rms] = 0;
+                setChiSquared(rms, 0, 0);
             }
         }
 
-        //! \brief Increase the rms component of the energy vector by delta. 
-        void increaseEnergy(int rms, real delta)
+        /*! \brief
+         * Increase the rms component of the energy vector by delta. 
+         * \param[in] rms  Index in chiSquared array
+         * \param[in] ndata Number of data points
+         * \param[in] delta Change in chiSquared
+         */
+        void increaseChiSquared(int rms, int    ndata, real delta)
         {
-            ener_[rms] += delta;
+            numberOfDatapoints_[rms] += ndata;
+            chiSquared_[rms]         += delta;
         }
 
         /*! \brief Sum over the energies of the cores.
          * Also multiplies the terms by the weighting factors.
          */
-        void sumEnergies();
+        void sumChiSquared();
 
-        /*! \brief Print the energy components.
-         * \param[in] fp File pointer to print to, maybe nullptr
+        /*! \brief Print the chiSquared components.
+         * \param[in] fp File pointer to print to, may be nullptr
          */  
-        void printEnergies(FILE *fp) const;
+        void printChiSquared(FILE *fp) const;
 
         /*! \brief Read the molecular property data file to generate molecues.
          * TODO: update comments

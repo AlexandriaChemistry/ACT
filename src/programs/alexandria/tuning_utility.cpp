@@ -340,15 +340,15 @@ void print_electric_props(FILE                           *fp,
         {
             fprintf(fp, "Molecule %d: %s Qtot: %d, Multiplicity %d\n", n+1,
                     mol.getMolname().c_str(),
-                    mol.getCharge(),
+                    mol.totalCharge(),
                     mol.getMultiplicity());
 
             // Recalculate the atomic charges using the optmized parameters.
             mol.GenerateCharges(pd, fplog, cr, tabfn, hwinfo, qcycle, qtol);
 
             // Electrostatic potentials
-            mol.QgenResp_->updateZeta(mol.atoms_, pd);
-            mol.QgenResp_->updateAtomCharges(mol.atoms_);
+            mol.QgenResp_->updateZeta(mol.atoms(), pd);
+            mol.QgenResp_->updateAtomCharges(mol.atoms());
             mol.QgenResp_->updateAtomCoords(mol.x());
             mol.QgenResp_->calcPot(pd->getEpsilonR());
             real rrms    = 0, cosangle = 0;
@@ -431,25 +431,26 @@ void print_electric_props(FILE                           *fp,
             auto x     = mol.x();
             auto qrmsd = 0.0;
             int  ncore = 0;
-            for (j = i = 0; j < mol.atoms_->nr; j++)
+            auto myatoms = mol.atomsConst();
+            for (j = i = 0; j < myatoms.nr; j++)
             {
-                if (mol.atoms_->atom[j].ptype == eptAtom ||
-                    mol.atoms_->atom[j].ptype == eptNucleus)
+                if (myatoms.atom[j].ptype == eptAtom ||
+                    myatoms.atom[j].ptype == eptNucleus)
                 {
-                    auto  atp = pd->findParticleType(*(mol.atoms_->atomtype[j]));
+                    auto  atp = pd->findParticleType(*(myatoms.atomtype[j]));
                     auto  ztp = atp->interactionTypeToIdentifier(InteractionType::ELECTRONEGATIVITYEQUALIZATION).id();
                     auto  k   = std::find_if(lsqt.begin(), lsqt.end(),
                                              [ztp](const ZetaTypeLsq &atlsq)
                                              {
                                                  return atlsq.ztype.compare(ztp) == 0;
                                              });
-                    qCalc = mol.atoms_->atom[j].q;
+                    qCalc = myatoms.atom[j].q;
                     // TODO: only count in real shells
                     if (nullptr != mol.shellfc_ && 
-                        j < mol.atoms_->nr-1 && 
-                        mol.atoms_->atom[j+1].ptype == eptShell)
+                        j < myatoms.nr-1 && 
+                        myatoms.atom[j+1].ptype == eptShell)
                     {
-                        qCalc += mol.atoms_->atom[j+1].q;
+                        qCalc += myatoms.atom[j+1].q;
                     }
                     if (k != lsqt.end())
                     {
@@ -459,9 +460,9 @@ void print_electric_props(FILE                           *fp,
                     qrmsd += gmx::square(qcm5[i]-qCalc);
                     ncore += 1;
                     fprintf(fp, "%-2d%3d  %-5s  %8.4f  %8.4f  %8.4f  %8.4f  %8.4f %8.3f%8.3f%8.3f\n",
-                            mol.atoms_->atom[j].atomnumber,
+                            myatoms.atom[j].atomnumber,
                             j+1,
-                            *(mol.atoms_->atomtype[j]),
+                            *(myatoms.atomtype[j]),
                             qCalc,
                             qESP.size() > 0 ? qESP[i] : 0.0,
                             qcm5.size() > 0 ? qcm5[i] : 0.0,
@@ -478,8 +479,8 @@ void print_electric_props(FILE                           *fp,
                     fprintf(fp, "%-2d%3d  %-5s  %8.4f  %8.4f  %8.4f  %8.4f  %8.4f %8.3f%8.3f%8.3f\n",
                             0,
                             j+1,
-                            *(mol.atoms_->atomtype[j]),
-                            mol.atoms_->atom[j].q,
+                            *(myatoms.atomtype[j]),
+                            myatoms.atom[j].q,
                             0.0, 0.0, 0.0, 0.0,
                             x[j][XX],
                             x[j][YY],

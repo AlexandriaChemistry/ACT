@@ -397,7 +397,7 @@ bool readBabel(const char          *g09,
 
     if (inputformat == einfGaussian)
     {
-        mpt->SetCharge(mol.GetTotalCharge());
+        mpt->SetTotalCharge(mol.GetTotalCharge());
         if (debug)
         {
             fprintf(debug, "The total charge of the molecule (%0.2f) is taken from %s\n", qtot, g09);
@@ -405,7 +405,7 @@ bool readBabel(const char          *g09,
     }
     else
     {
-        mpt->SetCharge(qtot);
+        mpt->SetTotalCharge(qtot);
         if (debug)
         {
             fprintf(debug, "The total charge of the molecule (%0.2f) is assigned from the gentop command line\n", qtot);
@@ -675,7 +675,7 @@ bool SetMolpropAtomTypesAndBonds(alexandria::MolProp *mmm)
 {
     OpenBabel::OBMol mol;
     mol.BeginModify();
-    mol.SetTotalCharge(mmm->getCharge());
+    mol.SetTotalCharge(mmm->totalCharge());
     mol.SetTotalSpinMultiplicity(mmm->getMultiplicity());
     auto ei  = mmm->experiment().begin();
     mol.ReserveAtoms(ei->NAtom());

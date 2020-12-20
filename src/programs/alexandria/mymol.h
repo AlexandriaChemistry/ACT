@@ -164,12 +164,14 @@ class MyMol : public MolProp
         /*! \brief
          * Generate Atoms based on quantum calculation with specified level of theory
          *
-         * \param[in] pd      Force field data
-         * \param[in] method  Method used for QM calculations
-         * \param[in] basis   Basis set used for QM calculations
+         * \param[in]  pd     Force field data
+         * \param[out] atoms  The structure to update
+         * \param[in]  method Method used for QM calculations
+         * \param[in]  basis  Basis set used for QM calculations
          * \param[out] mylot  Level of theory used
          */
         immStatus GenerateAtoms(const Poldata     *pd,
+                                t_atoms           *atoms,
                                 const std::string &method,
                                 const std::string &basis,
                                 std::string       *mylot);
@@ -177,33 +179,42 @@ class MyMol : public MolProp
         /*! \brief
          * Generate angles, dihedrals, exclusions etc.
          *
-         * \param[in] bPairs
-         * \param[in] bDihs
+         * \param[in] atoms  The atoms structure
+         * \param[in] bPairs Whether to generate pairs
+         * \param[in] bDihs  Whether to generate dihedrals
          */
-        void MakeAngles(bool bPairs,
-                        bool bDihs);
+        void MakeAngles(t_atoms *atoms,
+                        bool     bPairs,
+                        bool     bDihs);
 
         /*! \brief
          * Generate virtual sites or linear angles
          *
-         * \param[in] bUseVsites
+         * \param[in] pd         Poldata
+         * \param[in] atoms      Atoms structure
+         * \param[in] bUseVsites Flag
          */
         void MakeSpecialInteractions(const Poldata *pd,
+                                     t_atoms       *atoms,
                                      bool           bUseVsites);
 
         /*! \brief
          * Add shell particles
          *
-         * \param[in] pd       Data structure containing atomic properties
+         * \param[in] pd     Data structure containing atomic properties
+         * \paran[out] atoms Structure to modify with new particles.
          */
-        void addShells(const Poldata *pd);
+        void addShells(const Poldata *pd,
+                       t_atoms       *atoms);
 
         /*! \brief
          * Check whether atom types exist in the force field
          *
-         * \param[in] pd
+         * \param[in] pd    The force field structure
+         * \param[in] atoms The structure to check
          */
-        immStatus checkAtoms(const Poldata *pd);
+        immStatus checkAtoms(const Poldata *pd,
+                             const t_atoms *atoms);
 
         /*! \brief
          * Return true if atom type neesd to have virtual site.
@@ -279,7 +290,6 @@ class MyMol : public MolProp
         t_symtab                      *symtab_;
         t_inputrec                    *inputrec_;
         gmx_enerdata_t                *enerd_;
-        t_atoms                       *atoms_;
         t_fcdata                      *fcd_;
         t_nrnb                         nrnb_;
         gmx_wallcycle_t                wcycle_;
@@ -345,9 +355,11 @@ class MyMol : public MolProp
         /*! \brief
          * Add the screening factors of the distributed charge to atom structure
          *
-         * \param[in] pd      Data structure containing atomic properties
+         * \param[in] pd     Data structure containing atomic properties
+         * \param[out] atoms Structure to fill with force field data
          */
-        immStatus zeta2atoms(const Poldata *pd);
+        immStatus zetaToAtoms(const Poldata *pd,
+                              t_atoms       *atoms);
 
         /*! \brief
          * Return the coordinate vector of the molecule
@@ -359,6 +371,16 @@ class MyMol : public MolProp
          */
         t_mdatoms *getMdatoms() { return MDatoms_->get()->mdatoms(); }
 
+        /*! \brief
+         * \return atoms structure for editing
+         */
+        t_atoms *atoms();
+        
+        /*! \brief
+         * \return atoms const structure
+         */
+        const t_atoms &atomsConst() const;
+        
         /*! \brief Return the bond order
          * \param[in] ai Atom I
          * \param[in] aj Atom J
@@ -441,11 +463,11 @@ class MyMol : public MolProp
          *
          * \param[in] pd                             Data structure containing atomic properties
          * \param[in] fplog                          Logger
-         * \param[in] watoms
-         * \param[in] method                         Method used for QM calculation
-         * \param[in] basis                          Basis set used for QM calculation
-         * \param[in] cr
-         * \param[in] tabfn
+         * \param[in] cr      Communication parameters
+         * \param[in] tabfn   Table function
+         * \param[in] hwinfo  Gromacs structure with hardware info
+         * \param[in] qcycle  Number of cycles for computing charges
+         * \param[in] qtol    Convergence of charges tolerance
          */
         immStatus GenerateCharges(const Poldata          *pd,
                                   const gmx::MDLogger    &fplog,
@@ -454,7 +476,20 @@ class MyMol : public MolProp
                                   gmx_hw_info_t          *hwinfo,
                                   int                     qcycle,
                                   real                    qtol);
-                                  
+        /*! \brief
+         * Generate atomic partial charges using EEM or SQE.
+         * If shells are present they will be minimized.
+         *
+         * \param[in] pd      Data structure containing atomic properties
+         * \param[in] cr      Communication parameters
+         * \param[in] qcycle  Number of cycles for computing charges
+         * \param[in] qtol    Convergence of charges tolerance
+         */
+        immStatus GenerateAcmCharges(const Poldata *pd,
+                                     t_commrec     *cr,
+                                     int            qcycle,
+                                     real           qtol);
+                                     
         /*! \brief Implement charge symmetrization
          *
          * Initiates internal structure for atom charge symmetry

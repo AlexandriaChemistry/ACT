@@ -212,6 +212,12 @@ class OptACM : public MolGen, Bayes
                     const gmx_output_env_t *oenv,
                     const char             *xvgconv,
                     const char             *xvgepot);
+                    
+        /* \brief
+         * Print the final results to the logFile.
+         * \param[in] chi2_min Final chi2 in optimization
+         */
+        void printResults(double chi2_min);
 };
 
 void OptACM::initChargeGeneration()
@@ -247,8 +253,8 @@ void OptACM::initChargeGeneration()
         }
         if (mymol.eSupp_ != eSupport::No)
         {
-            mymol.QgenAcm_ = new QgenAcm(poldata(), mymol.atoms_, 
-                                         mymol.getCharge());
+            mymol.QgenAcm_ = new QgenAcm(poldata(), mymol.atoms(), 
+                                         mymol.totalCharge());
         }
     }
 }
@@ -260,9 +266,10 @@ static void dumpQX(FILE *fp, MyMol *mol, const std::string &info)
         std::string label = mol->getMolname() + "-" + info;
         fprintf(fp, "%s q:", label.c_str());
         t_mdatoms *md = mol->getMdatoms();
-        for (int i = 0; i < mol->atoms_->nr; i++)
+        auto myatoms = mol->atomsConst();
+        for (int i = 0; i < myatoms.nr; i++)
         {
-            fprintf(fp, " %g (%g)", mol->atoms_->atom[i].q,
+            fprintf(fp, " %g (%g)", myatoms.atom[i].q,
                     md->chargeA[i]);
         }
         fprintf(fp, "\n");
@@ -274,14 +281,14 @@ static void dumpQX(FILE *fp, MyMol *mol, const std::string &info)
             fprintf(fp, " %g", mol->ltop_->idef.iparams[tp].polarize.alpha);
         }
         fprintf(fp, "\n");
-        pr_rvecs(fp, 0, label.c_str(), mol->x().rvec_array(), mol->atoms_->nr);
+        pr_rvecs(fp, 0, label.c_str(), mol->x().rvec_array(), myatoms.nr);
     }
 }
 
 double OptACM::calcDeviation()
 {
     bool  verbose = final();
-    resetEnergies();
+    resetChiSquared();
     if (MASTER(commrec()))
     {
         if (weight(ermsBOUNDS))
@@ -296,7 +303,7 @@ double OptACM::calcDeviation()
                 bound  += l2_regularizer(param[n++], p.minimum(), p.maximum(),
                                          optIndex.name(), verbose);
             }
-            increaseEnergy(ermsBOUNDS, bound);
+            increaseChiSquared(ermsBOUNDS, 1, bound);
             GMX_RELEASE_ASSERT(n == param.size(), 
                                gmx::formatString("Death horror error. n=%zu param.size()=%zu", n, param.size()).c_str());
         }
@@ -322,110 +329,34 @@ double OptACM::calcDeviation()
         if ((mymol.eSupp_ == eSupport::Local) ||
             (final() && (mymol.eSupp_ == eSupport::Remote)))
         {
-            dumpQX(logFile(), &mymol, "BEFORE");
-            std::vector<double> qq;
-            auto q = mymol.QgenAcm_->q();
-
-            qq.resize(q.size(), 0);
-            for (size_t i = 0; i < q.size(); i++)
-            {
-                qq[i] = q[i];
-            }
             // Update the polarizabilities only once before the loop
             if (fit("alpha"))
             {
                 mymol.UpdateIdef(poldata(), InteractionType::POLARIZATION);
             }
-            bool converged = false;
-            int  iter      = 0;
-            do
+            // Update the electronegativity parameters
+            mymol.zetaToAtoms(poldata(), mymol.atoms());
+            // Run charge generation including shell minimization
+            auto imm = mymol.GenerateAcmCharges(poldata(), commrec(),
+                                                qcycle(), qtol());
+
+            // Check whether we have to disable this compound
+            if (immStatus::OK != imm && removeMol())
             {
-                // Update charges in mtop before doing
-                // shell optimization.
-                for (int i = 0; i < mymol.mtop_->natoms; i++)
-                {
-                    mymol.mtop_->moltype[0].atoms.atom[i].q      =
-                        mymol.mtop_->moltype[0].atoms.atom[i].qB =
-                            mymol.atoms_->atom[i].q;
-                }
-                mymol.zeta2atoms(poldata());
-                dumpQX(logFile(), &mymol, "LOOP1");
-                if (nullptr != mymol.shellfc_)
-                {
-                    double rmsf;
-                    auto imm = mymol.computeForces(logFile(), commrec(), &rmsf);
-                    if (immStatus::OK != imm)
-                    {
-                        if (logFile())
-                        {
-                            fprintf(logFile(), "Could not compute forces for %s.\n",
-                                    mymol.getMolname().c_str());
-                        }
-                        if (removeMol())
-                        {
-                            mymol.eSupp_ = eSupport::No;
-                            fprintf(logFile()," Removing it from the data set.\n");
-                            break;
-                        }
-                    }
-                }
-                dumpQX(logFile(), &mymol, "LOOP2");
-                auto qgen =  mymol.QgenAcm_->generateCharges(debug,
-                                                             mymol.getMolname(),
-                                                             poldata(),
-                                                             mymol.atoms_,
-                                                             mymol.x(),
-                                                             mymol.bondsConst());
-                if (qgen != eQgen::OK)
-                {
-                    gmx_fatal(FARGS, "Could not generate charges for %s: %s",
-                              mymol.getMolname().c_str(),
-                              mymol.QgenAcm_->message());
-                }
-                double EemRms = 0;
-                for (size_t i = 0; i < q.size(); i++)
-                {
-                    EemRms   += gmx::square(qq[i] - q[i]);
-                    qq[i]     = q[i];
-                }
-                EemRms   /= q.size();
-                converged = (EemRms < qtol()) || (nullptr == mymol.shellfc_);
-                iter++;
-            }
-            while ((!converged) && (iter < qcycle()));
-            if (!converged)
-            {
-                if (logFile())
-                {
-                    fprintf(logFile(), "Could not generate charges for %s. Removing compound.\n",
-                            mymol.getMolname().c_str());
-                }
-                if (removeMol())
-                {
-                    mymol.eSupp_ = eSupport::No;
-                }
-            }
-            // Check whether we have disabled this compound
-            if (mymol.eSupp_ == eSupport::No)
-            {
+                mymol.eSupp_ = eSupport::No;
                 continue;
             }
-            for (int i = 0; i < mymol.mtop_->natoms; i++)
-            {
-                mymol.mtop_->moltype[0].atoms.atom[i].q      =
-                    mymol.mtop_->moltype[0].atoms.atom[i].qB =
-                    mymol.atoms_->atom[i].q;
-            }
-            dumpQX(logFile(), &mymol, "AFTERLOOP");
+            
             if (weight(ermsCHARGE))
             {
                 double qtot = 0;
                 int    i;
-                for (int j = i = 0; j < mymol.atoms_->nr; j++)
+                auto myatoms = mymol.atomsConst();
+                for (int j = i = 0; j < myatoms.nr; j++)
                 {
-                    auto atype = poldata()->findParticleType(*mymol.atoms_->atomtype[j]);
+                    auto atype = poldata()->findParticleType(*myatoms.atomtype[j]);
                     auto qparm = atype->parameterConst("charge");
-                    double qj  = mymol.atoms_->atom[j].q;
+                    double qj  = myatoms.atom[j].q;
                     qtot += qj;
                     switch (qparm.mutability())
                     {
@@ -433,7 +364,7 @@ double OptACM::calcDeviation()
                         if (qparm.value() != qj)
                         {
                             GMX_THROW(gmx::InternalError(gmx::formatString("Fixed charge for atom %s in %s was changed from %g to %g",
-                                                                           *mymol.atoms_->atomname[j], mymol.getMolname().c_str(), qparm.value(), qj).c_str()));
+                                                                           *myatoms.atomname[j], mymol.getMolname().c_str(), qparm.value(), qj).c_str()));
                         }
                         break;
                     case Mutability::Bounded:
@@ -447,14 +378,14 @@ double OptACM::calcDeviation()
                             {
                                 dq = qj - qparm.maximum();
                             } 
-                            increaseEnergy(ermsCHARGE, dq*dq);
+                            increaseChiSquared(ermsCHARGE, 1, dq*dq);
                         }
                         break;
                     default:
                         break;
                     }
                 }
-                increaseEnergy(ermsCHARGE, gmx::square(qtot - mymol.getCharge()));
+                increaseChiSquared(ermsCHARGE, 1, gmx::square(qtot - mymol.totalCharge()));
             }
             if (weight(ermsESP))
             {
@@ -466,15 +397,16 @@ double OptACM::calcDeviation()
                 }
                 if (fit("zeta"))
                 {
-                    mymol.QgenResp_->updateZeta(mymol.atoms_, poldata());
+                    mymol.QgenResp_->updateZeta(mymol.atoms(), poldata());
                 }
                 dumpQX(logFile(), &mymol, "ESP");
-                mymol.QgenResp_->updateAtomCharges(mymol.atoms_);
+                mymol.QgenResp_->updateAtomCharges(mymol.atoms());
                 mymol.QgenResp_->calcPot(poldata()->getEpsilonR());
                 auto myRms =
                     convertToGromacs(mymol.QgenResp_->getRms(&rrms, &cosangle),
                                      "Hartree/e");
-                increaseEnergy(ermsESP, gmx::square(myRms));
+                auto nEsp = mymol.QgenResp_->nEsp();
+                increaseChiSquared(ermsESP, nEsp, gmx::square(myRms)*nEsp);
                 if (debug)
                 {
                     fprintf(debug, "%s ESPrms = %g cosangle = %g\n",
@@ -490,11 +422,11 @@ double OptACM::calcDeviation()
                 {
                     rvec dmu;
                     rvec_sub(mymol.muQM(qtCalc), mymol.muQM(qtElec), dmu);
-                    increaseEnergy(ermsMU, iprod(dmu, dmu));
+                    increaseChiSquared(ermsMU, 1, iprod(dmu, dmu));
                 }
                 else
                 {
-                    increaseEnergy(ermsMU, gmx::square(mymol.dipQM(qtCalc) - mymol.dipExper()));
+                    increaseChiSquared(ermsMU, 1, gmx::square(mymol.dipQM(qtCalc) - mymol.dipExper()));
                 }
             }
             if (weight(ermsQUAD))
@@ -506,7 +438,8 @@ double OptACM::calcDeviation()
                     {
                         if (bFullTensor_ || mm == nn)
                         {
-                            increaseEnergy(ermsQUAD, gmx::square(mymol.QQM(qtCalc)[mm][nn] - mymol.QQM(qtElec)[mm][nn]));
+                            increaseChiSquared(ermsQUAD, 1,
+                                               gmx::square(mymol.QQM(qtCalc)[mm][nn] - mymol.QQM(qtElec)[mm][nn]));
                         }
                     }
                 }
@@ -528,17 +461,17 @@ double OptACM::calcDeviation()
                 {
                     fprintf(logFile(), "DIFF %s %g\n", mymol.getMolname().c_str(), diff2);
                 }
-                increaseEnergy(ermsPolar, diff2);
+                increaseChiSquared(ermsPolar, 1, diff2);
             }
         }
     }
-    sumEnergies();
+    sumChiSquared();
     if (verbose && logFile())
     {
         printParameters(logFile());
-        printEnergies(logFile());
+        printChiSquared(logFile());
     }
-    return energy(ermsTOT)/nMolSupport();
+    return chiSquared(ermsTOT);
 }
 
 void OptACM::InitOpt(bool bRandom)
@@ -581,6 +514,33 @@ void OptACM::toPoldata(const std::vector<bool> &changed)
                                          n, changed.size()).c_str());
 }
 
+void OptACM::printResults(double chi2_min)
+{
+    auto i_param        = Bayes::getInitialParam();
+    auto best           = Bayes::getBestParam();
+    auto pmean          = Bayes::getPmean();
+    auto psigma         = Bayes::getPsigma();
+    auto attemptedMoves = Bayes::getAttemptedMoves();
+    auto acceptedMoves  = Bayes::getAcceptedMoves();
+    auto paramNames     = Bayes::getParamNames();
+    if (logFile())
+    {
+        fprintf(logFile(), "\nMinimum RMSD value during optimization: %.3f.\n", sqrt(chi2_min));
+        fprintf(logFile(), "Statistics of parameters after optimization\n");
+        fprintf(logFile(), "#best %zu #mean %zu #sigma %zu #param %zu\n",
+                best.size(), pmean.size(), psigma.size(), paramNames.size());
+        if (best.size() == Bayes::nParam())
+        {
+            for (size_t k = 0; k < Bayes::nParam(); k++)
+            {
+                double acceptance_ratio = 100*(double(acceptedMoves[k])/attemptedMoves[k]);
+                fprintf(logFile(), "%-10s  Initial: %6.3f  Best: %6.3f  Mean: %6.3f  Sigma: %6.3f  Attempted moves: %4d  Acceptance ratio: %5.1f%%\n",
+                        paramNames[k].c_str(), i_param[k], best[k], pmean[k], psigma[k], attemptedMoves[k], acceptance_ratio);
+            }
+        }
+    }
+}
+
 bool OptACM::optRun(FILE                   *fp,
                     int                     nrun,
                     const gmx_output_env_t *oenv,
@@ -606,7 +566,7 @@ bool OptACM::optRun(FILE                   *fp,
         Bayes::setOutputFiles(xvgconv, paramClass, xvgepot, oenv);
         double     chi2_min = calcDeviation();
         fprintf(logFile(), "Initial chi2 value %g\n", chi2_min);
-        printEnergies(logFile());
+        printChiSquared(logFile());
         for (auto n = 0; n < nrun; n++)
         {
             if ((nullptr != fp) && (0 == n))
@@ -628,32 +588,6 @@ bool OptACM::optRun(FILE                   *fp,
                 chi2_min = chi2;
             }
         }
-        if (bMinimum)
-        {
-            auto i_param        = Bayes::getInitialParam();
-            auto best           = Bayes::getBestParam();
-            auto pmean          = Bayes::getPmean();
-            auto psigma         = Bayes::getPsigma();
-            auto attemptedMoves = Bayes::getAttemptedMoves();
-            auto acceptedMoves  = Bayes::getAcceptedMoves();
-            auto paramNames     = Bayes::getParamNames();
-            if (logFile())
-            {
-                fprintf(logFile(), "\nMinimum RMSD value during optimization: %.3f.\n", sqrt(chi2_min));
-                fprintf(logFile(), "Statistics of parameters after optimization\n");
-                fprintf(logFile(), "#best %zu #mean %zu #sigma %zu #param %zu\n",
-                        best.size(), pmean.size(), psigma.size(), paramNames.size());
-                if (best.size() == Bayes::nParam())
-                {
-                    for (size_t k = 0; k < Bayes::nParam(); k++)
-                    {
-                        double acceptance_ratio = 100*(double(acceptedMoves[k])/attemptedMoves[k]);
-                        fprintf(logFile(), "%-10s  Initial:%10g  Best:%10g  Mean:%10g  Sigma:%10g  Attempted moves:%3d  Acceptance ratio:%5g\n",
-                                paramNames[k].c_str(), i_param[k], best[k], pmean[k], psigma[k], attemptedMoves[k], acceptance_ratio);
-                    }
-                }
-            }
-        }
     }
     else
     {
@@ -671,9 +605,13 @@ bool OptACM::optRun(FILE                   *fp,
     setFinal();
     if (MASTER(commrec()))
     {
-        auto best = Bayes::getBestParam();
-        if (!best.empty())
+        if (bMinimum)
         {
+            auto best = Bayes::getBestParam();
+            if (best.empty())
+            {
+                GMX_THROW(gmx::InternalError("Minimum found but not best parameters"));
+            }
             // Restore best parameter set
             Bayes::setParam(best);
             // Copy it to Poldata
@@ -682,9 +620,10 @@ bool OptACM::optRun(FILE                   *fp,
             toPoldata(changed);
             // Compute the deviation once more
             double chi2 = calcDeviation();
-            printEnergies(fp);
-            printEnergies(logFile());
-            fprintf(logFile(), "Minimum energy chi2 %g\n", chi2);
+            printResults(chi2);
+            printChiSquared(fp);
+            printChiSquared(logFile());
+            fprintf(logFile(), "Minimum chi2 %g\n", chi2);
         }
         else
         {

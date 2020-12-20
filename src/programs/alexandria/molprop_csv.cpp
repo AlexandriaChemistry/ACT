@@ -129,7 +129,7 @@ static void gmx_molprop_csv(const char *fn,
                 mpi->getIupac().c_str(),
                 mpi->formula().c_str(),
                 mpi->getInchi().c_str(),
-                mpi->getCharge(),
+                mpi->totalCharge(),
                 mpi->getMultiplicity(),
                 mpi->getMass());
         for (k = 0; (k < NEMP); k++)

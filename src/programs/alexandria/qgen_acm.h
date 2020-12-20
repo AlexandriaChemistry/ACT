@@ -88,8 +88,6 @@ class QgenAcm
         
         int getRow(int atom);
 
-        const std::vector<double> &q() { return q_;}
-        
         double getQ(int atom);
 
         void checkSupport(const Poldata *pd);

@@ -139,7 +139,6 @@ immStatus updatePlist(const Poldata             *pd,
 std::vector<double> getDoubles(const std::string &s);
 
 void nonbondedFromPdToMtop(gmx_mtop_t    *mtop,
-                           t_atoms       *atoms,
                            const Poldata *pd,
                            t_forcerec    *fr);
 

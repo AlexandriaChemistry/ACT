@@ -180,12 +180,13 @@ void ForceConstants::analyzeIdef(const std::vector<MyMol> &mm,
              i += interaction_function[ftype_].nratoms+1)
         {
             std::vector<std::string> atoms;
+            auto myatoms = mymol.atomsConst();
             // Loop starts from 1 because the first value is the function type
             for(int j = 1; j <= interaction_function[ftype_].nratoms && bondsFound; j++)
             {
                 std::string aa;
                 int         ai = mymol.ltop_->idef.il[ftype_].iatoms[i+j];
-                if (!pd->atypeToBtype(*mymol.atoms_->atomtype[ai], &aa))
+                if (!pd->atypeToBtype(*myatoms.atomtype[ai], &aa))
                 {
                     bondsFound = false;
                 }

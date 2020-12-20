@@ -281,12 +281,8 @@ double Bayes::MCMC(FILE *fplog)
     {
         fprintf(debug, "Initial chi2 value = %g\n", prevEval);
     }
-    if (fplog)
-    {
-        fprintf(fplog, "minEval %g, nParam %d\n", minEval, nParam);
-    }
 
-    // Randrom number 
+    // Random number 
     std::random_device               rd;
     std::mt19937                     gen(rd());
     std::uniform_int_distribution<>  int_uniform(0, nParam-1);

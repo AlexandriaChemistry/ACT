@@ -100,6 +100,11 @@ static void modifyPoldata(alexandria::Poldata *pd,
     {
         return;
     }
+    if (strlen(ptype) == 0)
+    {
+        printf("Empty parameter type. Nothing to modify.\n");
+        return;
+    }
     bool done = false;
     // Check whether we have a parameter type belonging to atomtypes
     if ((strlen(particle) > 0) && pd->hasParticleType(particle))

@@ -441,7 +441,7 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                             }
                             if (NN(xbuf[exmlCHARGE]))
                             {
-                                mp.SetCharge(atoi(xbuf[exmlCHARGE].c_str()));
+                                mp.SetTotalCharge(atoi(xbuf[exmlCHARGE].c_str()));
                             }
                             if (NN(xbuf[exmlMULTIPLICITY]))
                             {
@@ -861,7 +861,7 @@ static void add_xml_molprop(xmlNodePtr                 parent,
     add_xml_string(ptr, exml_names(exmlMOLNAME), mp.getMolname());
     add_xml_string(ptr, exml_names(exmlFORMULA), mp.formula());
     add_xml_double(ptr, exml_names(exmlMASS), mp.getMass());
-    add_xml_double(ptr, exml_names(exmlCHARGE), mp.getCharge());
+    add_xml_double(ptr, exml_names(exmlCHARGE), mp.totalCharge());
     add_xml_double(ptr, exml_names(exmlMULTIPLICITY), mp.getMultiplicity());
 
     xmlNodePtr child = add_xml_child(ptr, exml_names(exmlMOLINFO));

@@ -1324,10 +1324,10 @@ class MolProp
         double getMass() const { return mass_; }
 
         //! Set the total charge of the molecule
-        void SetCharge(double charge) { charge_ = charge; }
+        void SetTotalCharge(double charge) { charge_ = charge; }
 
         //! Return the total charge of the molecule
-        int getCharge() const { return charge_; }
+        int totalCharge() const { return charge_; }
 
         //! Set the multiplicity of the molecule
         void SetMultiplicity(int multiplicity) { multiplicity_ = multiplicity; }

@@ -480,11 +480,12 @@ void Optimization::checkSupport(FILE *fp)
                 {
                     // Loop starts from 1 because the first value is the function type
                     std::vector<std::string> atoms;
+                    auto myatoms = mymol->atoms();
                     for(int j = 1; j <= interaction_function[ft].nratoms && bSupport; j++)
                     {
                         std::string aa;
                         int         ai = mymol->ltop_->idef.il[ft].iatoms[i+j];
-                        if (!poldata()->atypeToBtype(*mymol->atoms_->atomtype[ai], &aa))
+                        if (!poldata()->atypeToBtype(*myatoms->atomtype[ai], &aa))
                         {
                             bSupport = false;
                         }
@@ -604,10 +605,11 @@ void Optimization::getDissociationEnergy(FILE *fplog)
 
     for (auto &mymol :  mymols())
     {
+        auto myatoms = mymol.atoms();
         for (auto &b : mymol.bondsConst())
         {
-            const char *atypeI = *mymol.atoms_->atomtype[b.getAi()];
-            const char *atypeJ = *mymol.atoms_->atomtype[b.getAj()];
+            const char *atypeI = *myatoms->atomtype[b.getAi()];
+            const char *atypeJ = *myatoms->atomtype[b.getAj()];
             std::string btypeI, btypeJ;
             if (poldata()->atypeToBtype(atypeI, &btypeI) &&
                 poldata()->atypeToBtype(atypeJ, &btypeJ))
@@ -740,7 +742,7 @@ double Optimization::calcDeviation()
             (calcAll_ && (mymol.eSupp_ == eSupport::Remote)))
         {
             int      nSP    = 0, nOpt = 0;
-            int      natoms = mymol.atoms_->nr;
+            int      natoms = mymol.mtop_->natoms;
             gmx_bool bpolar = (mymol.shellfc_ != nullptr);
             double   optHF;
             if (mymol.getOptHF(&optHF))
@@ -859,7 +861,7 @@ double Optimization::calcDeviation()
         }
     }
     // Now compute the deviation for the fitting or otherwise
-    resetEnergies();
+    resetChiSquared();
     double nCalc = 0;
     double ePot2 = 0;
     for (auto &mymol : mymols())
@@ -871,7 +873,7 @@ double Optimization::calcDeviation()
             auto molEnergyEntry = MolEnergyMap_.find(molid);
             if (molEnergyEntry != MolEnergyMap_.end())
             {
-                increaseEnergy(ermsForce2, molEnergyEntry->second.force2());
+                increaseChiSquared(ermsForce2, 1, molEnergyEntry->second.force2());
                 if (debug)
                 {
                     fprintf(debug, "%d: %s molid: %d nEntries: %zu\n",
@@ -904,11 +906,11 @@ double Optimization::calcDeviation()
         fprintf(debug, "%d: ePot2 = %g nCalc = %g chi2 = %g\n",
                 commrec()->nodeid, ePot2, nCalc, chi2);
     }
-    setEnergy(ermsEPOT, chi2);
-    setEnergy(ermsTOT, chi2);
-    printEnergies(debug);
+    setChiSquared(ermsEPOT, 1, chi2);
+    setChiSquared(ermsTOT, 1, chi2);
+    printChiSquared(debug);
     
-    return energy(ermsTOT);
+    return chiSquared(ermsTOT);
 }
 
 bool Optimization::optRun(FILE                   *fplog,
@@ -973,7 +975,7 @@ bool Optimization::optRun(FILE                   *fplog,
                     }
                 }
             }
-            printEnergies(fplog);
+            printChiSquared(fplog);
         }
     }
     else
@@ -1015,15 +1017,16 @@ void Optimization::printMolecules(FILE *fp,
         }
         fprintf(fp, "%s natoms: %d Opt conformations: %d SP conformations: %d\n",
                 mi.getMolname().c_str(),
-                mi.atoms_->nr,
+                mi.mtop_->natoms,
                 nOpt,
                 nSP);
-        for (j = 0; j < mi.atoms_->nr; j++)
+        auto myatoms = mi.atoms();
+        for (j = 0; j < myatoms->nr; j++)
         {
             fprintf(fp, "  %-5s  %-5s  q = %10g",
-                    *(mi.atoms_->atomname[j]),
-                    *(mi.atoms_->atomtype[j]),
-                    mi.atoms_->atom[j].q);
+                    *(myatoms->atomname[j]),
+                    *(myatoms->atomtype[j]),
+                    myatoms->atom[j].q);
             if (bForce)
             {
                 fprintf(fp, "   f = %8.3f  %8.3f  %8.3f",
@@ -1152,7 +1155,7 @@ void Optimization::printResults(FILE                   *fp,
         }
     }
     fprintf(fp, "RMSD from target energies for %zu compounds and %d conformation is %g.\n",
-            mymols().size(), nconformation, std::sqrt(energy(ermsTOT)));
+            mymols().size(), nconformation, std::sqrt(chiSquared(ermsTOT)));
     fprintf(fp, "\n");
     if (nullptr != hform_xvg)
     {
