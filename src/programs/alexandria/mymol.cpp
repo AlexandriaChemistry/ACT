@@ -880,7 +880,6 @@ void MyMol::addShells(const Poldata *pd)
 
     /* Add Polarization to the plist. */
     memset(&p, 0, sizeof(p));
-    auto eem = pd->findForcesConst(InteractionType::ELECTRONEGATIVITYEQUALIZATION);
     auto qt  = pd->findForcesConst(InteractionType::CHARGEDISTRIBUTION);
     for (int i = 0; i < atoms_->nr; i++)
     {

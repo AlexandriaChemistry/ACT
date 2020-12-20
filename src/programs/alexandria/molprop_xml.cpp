@@ -729,8 +729,10 @@ void MolPropRead(const char *fn, std::vector<alexandria::MolProp> *mpt)
         gmx_fatal(FARGS, "Failed reading XML file %s. Run a syntax checker such as nsgmls.",
                   mpfile.c_str());
     }
-    
-    printf("Reading library file %s\n", fn);
+    if (nullptr != debug)
+    {
+        fprintf(debug, "Reading library file %s\n", fn);
+    }
     mp_process_tree(nullptr, 
                     doc->children, 
                     0,
