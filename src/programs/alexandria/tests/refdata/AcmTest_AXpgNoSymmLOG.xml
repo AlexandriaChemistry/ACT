@@ -4,35 +4,35 @@
   <Int Name="qtotSize">30</Int>
   <Sequence Name="qtotValuesEqdAlgorithm_EEM">
     <Int Name="Length">30</Int>
-    <Real>1.8071679043667597</Real>
+    <Real>1.8091356042166897</Real>
     <Real>-2</Real>
-    <Real>1.0721234624774343</Real>
+    <Real>1.0764118395948814</Real>
     <Real>-1</Real>
-    <Real>1.0753873321662493</Real>
+    <Real>1.0783809987948818</Real>
     <Real>-1</Real>
-    <Real>1.0753873171061172</Real>
+    <Real>1.078380991209408</Real>
     <Real>-1</Real>
-    <Real>1.830891189730427</Real>
+    <Real>1.8292542109866843</Real>
     <Real>-2</Real>
-    <Real>1.0837838190581732</Real>
+    <Real>1.0869429377749427</Real>
     <Real>-1</Real>
-    <Real>1.0837838601175414</Real>
+    <Real>1.0869429340660717</Real>
     <Real>-1</Real>
-    <Real>1.8553801087254838</Real>
+    <Real>1.8473066648907819</Real>
     <Real>-2</Real>
-    <Real>1.0981761652188959</Real>
+    <Real>1.0960852455722083</Real>
     <Real>-1</Real>
-    <Real>1.0981759206533153</Real>
+    <Real>1.096085089031742</Real>
     <Real>-1</Real>
-    <Real>1.867713629086805</Real>
+    <Real>1.861679509740108</Real>
     <Real>-2</Real>
-    <Real>1.0922274508558725</Real>
+    <Real>1.0960749663664731</Real>
     <Real>-1</Real>
-    <Real>1.0922275374418935</Real>
+    <Real>1.0960750068051588</Real>
     <Real>-1</Real>
-    <Real>1.7440302769381115</Real>
+    <Real>1.7344455811046928</Real>
     <Real>-2</Real>
-    <Real>1.1235440260569303</Real>
+    <Real>1.1267984198452838</Real>
     <Real>-1</Real>
   </Sequence>
 </ReferenceData>

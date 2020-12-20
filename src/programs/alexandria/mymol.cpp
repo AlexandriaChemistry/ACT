@@ -1458,7 +1458,7 @@ immStatus MyMol::GenerateCharges(const Poldata       *pd,
             // Init Qgresp should be called before this!
             QgenResp_->optimizeCharges(pd->getEpsilonR());
             QgenResp_->calcPot(pd->getEpsilonR());
-            EspRms_ = chi2[1-cur] = QgenResp_->getRms(&rrms, &cosangle);
+            EspRms_ = chi2[cur] = QgenResp_->getRms(&rrms, &cosangle);
             if (debug)
             {
                 fprintf(debug, "RESP: RMS %g\n", chi2[cur]);
