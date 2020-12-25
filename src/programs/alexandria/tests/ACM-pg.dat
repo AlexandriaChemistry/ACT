@@ -188,24 +188,6 @@
       <parameter type="charge" unit="e" value="-1" uncertainty="0" minimum="-1" maximum="-1" ntrain="0" mutability="Fixed"/>
       <parameter type="mass" unit="Da" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed"/>
     </particletype>
-    <particletype identifier="Be2+" type="Atom" description="beryllium ion">
-      <option key="acmtype" value=""/>
-      <option key="atomnumber" value="4"/>
-      <option key="bondtype" value="_b"/>
-      <option key="element" value="Be"/>
-      <option key="poltype" value="Be2+_s"/>
-      <option key="row" value="2"/>
-      <option key="vdwtype" value="Be2+"/>
-      <option key="zetatype" value="Be2+_z"/>
-      <parameter type="charge" unit="e" value="4" uncertainty="0" minimum="4" maximum="4" ntrain="0" mutability="Free"/>
-      <parameter type="mass" unit="Da" value="9.0122" uncertainty="0" minimum="9.0122" maximum="9.0122" ntrain="0" mutability="Fixed"/>
-      <parameter type="ref_enthalpy" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed"/>
-    </particletype>
-    <particletype identifier="Be2+_s" type="Shell" description="shell particle for Be2+">
-      <option key="zetatype" value="Be2+_z"/>
-      <parameter type="charge" unit="e" value="-2" uncertainty="0" minimum="-2" maximum="-2" ntrain="0" mutability="Fixed"/>
-      <parameter type="mass" unit="Da" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed"/>
-    </particletype>
     <particletype identifier="c1" type="Atom" description="sp C">
       <option key="acmtype" value="c1_z"/>
       <option key="atomnumber" value="6"/>
@@ -812,24 +794,6 @@
       <parameter type="charge" unit="e" value="-2" uncertainty="0" minimum="-2" maximum="-2" ntrain="0" mutability="Fixed"/>
       <parameter type="mass" unit="Da" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed"/>
     </particletype>
-    <particletype identifier="Mg2+" type="Atom" description="magnesium ion">
-      <option key="acmtype" value=""/>
-      <option key="atomnumber" value="12"/>
-      <option key="bondtype" value="_b"/>
-      <option key="element" value="Mg"/>
-      <option key="poltype" value="Mg2+_s"/>
-      <option key="row" value="3"/>
-      <option key="vdwtype" value="Mg2+"/>
-      <option key="zetatype" value="Mg2+_z"/>
-      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Free"/>
-      <parameter type="mass" unit="Da" value="24.305" uncertainty="0" minimum="24.305" maximum="24.305" ntrain="0" mutability="Fixed"/>
-      <parameter type="ref_enthalpy" unit="kJ/mol" value="152.098" uncertainty="0" minimum="152.098" maximum="152.098" ntrain="0" mutability="Fixed"/>
-    </particletype>
-    <particletype identifier="Mg2+_s" type="Shell" description="shell particle for Mg2+">
-      <option key="zetatype" value="Mg2+_z"/>
-      <parameter type="charge" unit="e" value="-2" uncertainty="0" minimum="-2" maximum="-2" ntrain="0" mutability="Fixed"/>
-      <parameter type="mass" unit="Da" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed"/>
-    </particletype>
     <particletype identifier="p2" type="Atom" description="other sp2 P">
       <option key="acmtype" value="p2_z"/>
       <option key="atomnumber" value="15"/>
@@ -1076,24 +1040,6 @@
       <parameter type="charge" unit="e" value="-2" uncertainty="0" minimum="-2" maximum="-2" ntrain="0" mutability="Fixed"/>
       <parameter type="mass" unit="Da" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed"/>
     </particletype>
-    <particletype identifier="Ca2+" type="Atom" description="calcium ion">
-      <option key="acmtype" value=""/>
-      <option key="atomnumber" value="20"/>
-      <option key="bondtype" value="_b"/>
-      <option key="element" value="Ca"/>
-      <option key="poltype" value="Ca2+_s"/>
-      <option key="row" value="4"/>
-      <option key="vdwtype" value="Ca2+"/>
-      <option key="zetatype" value="Ca2+_z"/>
-      <parameter type="charge" unit="e" value="4" uncertainty="0" minimum="4" maximum="4" ntrain="0" mutability="Free"/>
-      <parameter type="mass" unit="Da" value="40.078" uncertainty="0" minimum="40.078" maximum="40.078" ntrain="0" mutability="Fixed"/>
-      <parameter type="ref_enthalpy" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed"/>
-    </particletype>
-    <particletype identifier="Ca2+_s" type="Shell" description="shell particle for Ca2+">
-      <option key="zetatype" value="Ca2+_z"/>
-      <parameter type="charge" unit="e" value="-2" uncertainty="0" minimum="-2" maximum="-2" ntrain="0" mutability="Fixed"/>
-      <parameter type="mass" unit="Da" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed"/>
-    </particletype>
     <particletype identifier="br" type="Atom" description="general bromine">
       <option key="acmtype" value="br_z"/>
       <option key="atomnumber" value="35"/>
@@ -1128,168 +1074,6 @@
     <particletype identifier="i_s" type="Shell" description="shell particle for i">
       <option key="zetatype" value="i_z"/>
       <parameter type="charge" unit="e" value="-2" uncertainty="0" minimum="-2" maximum="-2" ntrain="0" mutability="Fixed"/>
-      <parameter type="mass" unit="Da" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed"/>
-    </particletype>
-    <particletype identifier="Na+" type="Atom" description="sodium ion">
-      <option key="acmtype" value=""/>
-      <option key="atomnumber" value="11"/>
-      <option key="bondtype" value="_b"/>
-      <option key="element" value="Na"/>
-      <option key="poltype" value="Na+_s"/>
-      <option key="row" value="3"/>
-      <option key="vdwtype" value="Na+"/>
-      <option key="zetatype" value="Na+_z"/>
-      <parameter type="charge" unit="e" value="4.007" uncertainty="0" minimum="4.007" maximum="4.007" ntrain="0" mutability="Free"/>
-      <parameter type="mass" unit="Da" value="22.9897" uncertainty="0" minimum="22.9897" maximum="22.9897" ntrain="0" mutability="Fixed"/>
-      <parameter type="ref_enthalpy" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed"/>
-    </particletype>
-    <particletype identifier="Na+_s" type="Shell" description="shell particle for Na+">
-      <option key="zetatype" value="Na+_z"/>
-      <parameter type="charge" unit="e" value="-3.007" uncertainty="0" minimum="-3.007" maximum="-3.007" ntrain="0" mutability="Fixed"/>
-      <parameter type="mass" unit="Da" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed"/>
-    </particletype>
-    <particletype identifier="Cl-" type="Atom" description="chloride ion">
-      <option key="acmtype" value=""/>
-      <option key="atomnumber" value="17"/>
-      <option key="bondtype" value="_b"/>
-      <option key="element" value="Cl"/>
-      <option key="poltype" value="Cl-_s"/>
-      <option key="row" value="3"/>
-      <option key="vdwtype" value="Cl-"/>
-      <option key="zetatype" value="Cl-_z"/>
-      <parameter type="charge" unit="e" value="5.713" uncertainty="0" minimum="5.713" maximum="5.713" ntrain="0" mutability="Free"/>
-      <parameter type="mass" unit="Da" value="35.453" uncertainty="0" minimum="35.453" maximum="35.453" ntrain="0" mutability="Fixed"/>
-      <parameter type="ref_enthalpy" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed"/>
-    </particletype>
-    <particletype identifier="Cl-_s" type="Shell" description="shell particle for Cl-">
-      <option key="zetatype" value="Cl-_z"/>
-      <parameter type="charge" unit="e" value="-6.713" uncertainty="0" minimum="-6.713" maximum="-6.713" ntrain="0" mutability="Fixed"/>
-      <parameter type="mass" unit="Da" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed"/>
-    </particletype>
-    <particletype identifier="I-" type="Atom" description="iodide ion">
-      <option key="acmtype" value=""/>
-      <option key="atomnumber" value="53"/>
-      <option key="bondtype" value="_b"/>
-      <option key="element" value="I"/>
-      <option key="poltype" value="I-_s"/>
-      <option key="row" value="5"/>
-      <option key="vdwtype" value="I-"/>
-      <option key="zetatype" value="I-_z"/>
-      <parameter type="charge" unit="e" value="7.613" uncertainty="0" minimum="7.613" maximum="7.613" ntrain="0" mutability="Free"/>
-      <parameter type="mass" unit="Da" value="126.904" uncertainty="0" minimum="126.904" maximum="126.904" ntrain="0" mutability="Fixed"/>
-      <parameter type="ref_enthalpy" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed"/>
-    </particletype>
-    <particletype identifier="I-_s" type="Shell" description="shell particle for I-">
-      <option key="zetatype" value="I-_z"/>
-      <parameter type="charge" unit="e" value="-8.613" uncertainty="0" minimum="-8.613" maximum="-8.613" ntrain="0" mutability="Fixed"/>
-      <parameter type="mass" unit="Da" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed"/>
-    </particletype>
-    <particletype identifier="F-" type="Atom" description="fluoride ion">
-      <option key="acmtype" value=""/>
-      <option key="atomnumber" value="9"/>
-      <option key="bondtype" value="_b"/>
-      <option key="element" value="F"/>
-      <option key="poltype" value="F-_s"/>
-      <option key="row" value="2"/>
-      <option key="vdwtype" value="F-"/>
-      <option key="zetatype" value="F-_z"/>
-      <parameter type="charge" unit="e" value="5.59" uncertainty="0" minimum="5.59" maximum="5.59" ntrain="0" mutability="Free"/>
-      <parameter type="mass" unit="Da" value="18.9984" uncertainty="0" minimum="18.9984" maximum="18.9984" ntrain="0" mutability="Fixed"/>
-      <parameter type="ref_enthalpy" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed"/>
-    </particletype>
-    <particletype identifier="F-_s" type="Shell" description="shell particle for F-">
-      <option key="zetatype" value="F-_z"/>
-      <parameter type="charge" unit="e" value="-6.59" uncertainty="0" minimum="-6.59" maximum="-6.59" ntrain="0" mutability="Fixed"/>
-      <parameter type="mass" unit="Da" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed"/>
-    </particletype>
-    <particletype identifier="Rb+" type="Atom" description="rubidium ion">
-      <option key="acmtype" value=""/>
-      <option key="atomnumber" value="37"/>
-      <option key="bondtype" value="_b"/>
-      <option key="element" value="Rb"/>
-      <option key="poltype" value="Rb+_s"/>
-      <option key="row" value="5"/>
-      <option key="vdwtype" value="Rb+"/>
-      <option key="zetatype" value="Rb+_z"/>
-      <parameter type="charge" unit="e" value="6.402" uncertainty="0" minimum="6.402" maximum="6.402" ntrain="0" mutability="Free"/>
-      <parameter type="mass" unit="Da" value="85.4678" uncertainty="0" minimum="85.4678" maximum="85.4678" ntrain="0" mutability="Fixed"/>
-      <parameter type="ref_enthalpy" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed"/>
-    </particletype>
-    <particletype identifier="Rb+_s" type="Shell" description="shell particle for Rb+">
-      <option key="zetatype" value="Rb+_z"/>
-      <parameter type="charge" unit="e" value="-5.402" uncertainty="0" minimum="-5.402" maximum="-5.402" ntrain="0" mutability="Fixed"/>
-      <parameter type="mass" unit="Da" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed"/>
-    </particletype>
-    <particletype identifier="Li+" type="Atom" description="lithium ion">
-      <option key="acmtype" value=""/>
-      <option key="atomnumber" value="3"/>
-      <option key="bondtype" value="_b"/>
-      <option key="element" value="Li"/>
-      <option key="poltype" value="Li+_s"/>
-      <option key="row" value="2"/>
-      <option key="vdwtype" value="Li+"/>
-      <option key="zetatype" value="Li+_z"/>
-      <parameter type="charge" unit="e" value="3.391" uncertainty="0" minimum="3.391" maximum="3.391" ntrain="0" mutability="Free"/>
-      <parameter type="mass" unit="Da" value="6.941" uncertainty="0" minimum="6.941" maximum="6.941" ntrain="0" mutability="Fixed"/>
-      <parameter type="ref_enthalpy" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed"/>
-    </particletype>
-    <particletype identifier="Li+_s" type="Shell" description="shell particle for Li+">
-      <option key="zetatype" value="Li+_z"/>
-      <parameter type="charge" unit="e" value="-2.391" uncertainty="0" minimum="-2.391" maximum="-2.391" ntrain="0" mutability="Fixed"/>
-      <parameter type="mass" unit="Da" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed"/>
-    </particletype>
-    <particletype identifier="Br-" type="Atom" description="bromide ion">
-      <option key="acmtype" value=""/>
-      <option key="atomnumber" value="35"/>
-      <option key="bondtype" value="_b"/>
-      <option key="element" value="Br"/>
-      <option key="poltype" value="Br-_s"/>
-      <option key="row" value="4"/>
-      <option key="vdwtype" value="Br-"/>
-      <option key="zetatype" value="Br-_z"/>
-      <parameter type="charge" unit="e" value="5.778" uncertainty="0" minimum="5.778" maximum="5.778" ntrain="0" mutability="Free"/>
-      <parameter type="mass" unit="Da" value="79.904" uncertainty="0" minimum="79.904" maximum="79.904" ntrain="0" mutability="Fixed"/>
-      <parameter type="ref_enthalpy" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed"/>
-    </particletype>
-    <particletype identifier="Br-_s" type="Shell" description="shell particle for Br-">
-      <option key="zetatype" value="Br-_z"/>
-      <parameter type="charge" unit="e" value="-6.778" uncertainty="0" minimum="-6.778" maximum="-6.778" ntrain="0" mutability="Fixed"/>
-      <parameter type="mass" unit="Da" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed"/>
-    </particletype>
-    <particletype identifier="Cs+" type="Atom" description="cesium ion">
-      <option key="acmtype" value=""/>
-      <option key="atomnumber" value="55"/>
-      <option key="bondtype" value="_b"/>
-      <option key="element" value="Cs"/>
-      <option key="poltype" value="Cs+_s"/>
-      <option key="row" value="6"/>
-      <option key="vdwtype" value="Cs+"/>
-      <option key="zetatype" value="Cs+_z"/>
-      <parameter type="charge" unit="e" value="8.542" uncertainty="0" minimum="8.542" maximum="8.542" ntrain="0" mutability="Free"/>
-      <parameter type="mass" unit="Da" value="132.905" uncertainty="0" minimum="132.905" maximum="132.905" ntrain="0" mutability="Fixed"/>
-      <parameter type="ref_enthalpy" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed"/>
-    </particletype>
-    <particletype identifier="Cs+_s" type="Shell" description="shell particle for Cs+">
-      <option key="zetatype" value="Cs+_z"/>
-      <parameter type="charge" unit="e" value="-7.542" uncertainty="0" minimum="-7.542" maximum="-7.542" ntrain="0" mutability="Fixed"/>
-      <parameter type="mass" unit="Da" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed"/>
-    </particletype>
-    <particletype identifier="K+" type="Atom" description="potassium ion">
-      <option key="acmtype" value=""/>
-      <option key="atomnumber" value="19"/>
-      <option key="bondtype" value="_b"/>
-      <option key="element" value="K"/>
-      <option key="poltype" value="K+_s"/>
-      <option key="row" value="4"/>
-      <option key="vdwtype" value="K+"/>
-      <option key="zetatype" value="K+_z"/>
-      <parameter type="charge" unit="e" value="5.464" uncertainty="0" minimum="5.464" maximum="5.464" ntrain="0" mutability="Free"/>
-      <parameter type="mass" unit="Da" value="39.0983" uncertainty="0" minimum="39.0983" maximum="39.0983" ntrain="0" mutability="Fixed"/>
-      <parameter type="ref_enthalpy" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed"/>
-    </particletype>
-    <particletype identifier="K+_s" type="Shell" description="shell particle for K+">
-      <option key="zetatype" value="K+_z"/>
-      <parameter type="charge" unit="e" value="-4.464" uncertainty="0" minimum="-4.464" maximum="-4.464" ntrain="0" mutability="Fixed"/>
       <parameter type="mass" unit="Da" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed"/>
     </particletype>
   </particletypes>

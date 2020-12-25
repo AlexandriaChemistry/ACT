@@ -590,6 +590,7 @@ immStatus MyMol::GenerateAtoms(const Poldata     *pd,
         init_t_atoms(atoms, ci->NAtom(), false);
         snew(atoms->atomtype, ci->NAtom());
         snew(atoms->atomtypeB, ci->NAtom());
+        snew(atoms->resinfo, ci->NAtom()+1);
         int res0 = -1;
         int nres =  0;
         for (auto &cai : ci->calcAtomConst())

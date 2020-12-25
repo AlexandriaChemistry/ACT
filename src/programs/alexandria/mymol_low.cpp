@@ -703,6 +703,9 @@ gmx_mtop_t *do_init_mtop(const Poldata                   *pd,
     mtop->natoms                  = atoms->nr;
     init_t_atoms(&(mtop->moltype[0].atoms), atoms->nr, false);
     snew(mtop->moltype[0].atoms.atomtype, atoms->nr);
+    snew(mtop->moltype[0].atoms.atomname, atoms->nr);
+    snew(mtop->moltype[0].atoms.resinfo, atoms->nres+1);
+    mtop->moltype[0].atoms.nres = atoms->nres;
     /* Count the number of atom types in the molecule */
     int ntype      = 0;
     for (int i = 0; (i < atoms->nr); i++)
@@ -711,6 +714,14 @@ gmx_mtop_t *do_init_mtop(const Poldata                   *pd,
         int  itp   = atoms->atom[i].type;
         mtop->moltype[0].atoms.atom[i]     = atoms->atom[i];
         mtop->moltype[0].atoms.atomtype[i] = put_symtab(symtab, *atoms->atomtype[i]);
+        mtop->moltype[0].atoms.atomname[i] = put_symtab(symtab, *atoms->atomname[i]);
+        t_atoms_set_resinfo(&mtop->moltype[0].atoms, i, symtab,
+                            *atoms->resinfo[atoms->atom[i].resind].name,
+                            atoms->atom[i].resind,
+                            atoms->resinfo[atoms->atom[i].resind].ic,
+                            atoms->resinfo[atoms->atom[i].resind].chainid,
+                            atoms->resinfo[atoms->atom[i].resind].chainnum);
+
         for (int j = 0; !found && (j < i); j++)
         {
             found = (itp == atoms->atom[j].type);
