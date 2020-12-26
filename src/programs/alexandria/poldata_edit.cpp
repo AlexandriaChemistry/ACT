@@ -224,10 +224,10 @@ static void compare_pd(alexandria::Poldata *pd1,
     }
     auto f1     = pd1->findForcesConst(itype1);
     auto f2     = pd2->findForcesConst(itype2);
-    printf("%s %6s %9s %9s %9s   %9s %9s %9s\n",
+    printf("%s %6s %9s %9s %9s   %9s %9s %9s %9s\n",
            "Param", "Ptype", 
            "Minimum_1", "Value_1", "Maximum_1",
-           "Minimum_2", "Value_2", "Maximum_2");
+           "Minimum_2", "Value_2", "Maximum_2", "Difference");
     double psum2 = 0;
     int    np2   = 0;
     for(auto &id1 : f1.parametersConst())
@@ -240,13 +240,14 @@ static void compare_pd(alexandria::Poldata *pd1,
             auto p2  = fp2[ptype];
             if (p1.value() != p2.value())
             {
-                printf("%s %6s %9g %9g %9g   %9g %9g %9g\n",
-                       ptype.c_str(), id1.first.id().c_str(),
-                       p1.minimum(), p1.value(), p1.maximum(),
-                       p2.minimum(), p2.value(), p2.maximum());
                 double d = p1.value()-p2.value();
                 psum2   += d*d;
                 np2     += 1;
+                printf("%s %6s %9g %9g %9g   %9g %9g %9g %9g\n",
+                       ptype.c_str(), id1.first.id().c_str(),
+                       p1.minimum(), p1.value(), p1.maximum(),
+                       p2.minimum(), p2.value(), p2.maximum(),
+                       d);
             }
         }
     }

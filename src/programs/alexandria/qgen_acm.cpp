@@ -667,16 +667,10 @@ void QgenAcm::solveSQE(FILE                    *fp,
                 chi_corr[i] -= delta_chis[bij];
             }
         }
+        double qcorr = qtotal_/nonFixed_.size();
         for(size_t l = 0; l < nonFixed_.size(); l++)
         {
-            double qcorr = qtotal_/nonFixed_.size();
-            // Check this! Only to be done when there are shells!
-            if (nonFixed_.size() < static_cast<size_t>(natom_))
-            {
-                auto nfl = nonFixed_[l];
-                qcorr += q_[myShell_.find(nfl)->second];
-            }
-            chi_corr[i] += Jcc_[i][l]*(qcorr);
+            chi_corr[i] += Jcc_[i][l]*qcorr;
         }
     }
     for (int bij = 0; bij < nbonds; bij++)
@@ -684,19 +678,16 @@ void QgenAcm::solveSQE(FILE                    *fp,
         auto ai    = bonds[bij].getAi()-1;
         auto aj    = bonds[bij].getAj()-1;
         rhs[bij]   = chi_corr[aj] - chi_corr[ai];
-        // Correction for charges compounds
-        auto nfi   = nonFixed_[ai];
-        auto nfj   = nonFixed_[aj];
-        double dq = qtotal_/nonFixed_.size();
-        rhs[bij]  -= dq*(jaa_[nfi] - jaa_[nfj]);
             
         // Check this! Only to be done when there are shells!
         if (nonFixed_.size() < static_cast<size_t>(natom_))
         {
+            auto nfi   = nonFixed_[ai];
+            auto nfj   = nonFixed_[aj];
             double qsi = q_[myShell_.find(nfi)->second];
             double qsj = q_[myShell_.find(nfj)->second];
-            rhs[bij]  -= (jaa_[nfi]*qsi - jaa_[nfj]*qsj);
-            rhs[bij]  -= 0.5*(calcJcs(nfi, epsilonr) - calcJcs(nfj, epsilonr));
+            rhs[bij]  += (jaa_[nfj]*qsj - jaa_[nfi]*qsi);
+            rhs[bij]  += 0.5*(calcJcs(nfj, epsilonr) - calcJcs(nfi, epsilonr));
         }
     }
 
