@@ -30,7 +30,10 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include <stdlib.h>
+#include <cstdlib>
+
+#include <map>
+#include <set>
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/oenv.h"
@@ -43,11 +46,14 @@
 #include "poldata.h"
 #include "poldata_xml.h"
 
-static void setMinMaxMut(alexandria::ForceFieldParameter *pp,
+namespace alexandria
+{
+
+static void setMinMaxMut(ForceFieldParameter *pp,
                          bool bSetMin, double pmin,
                          bool bSetVal, double pval,
                          bool bSetMax, double pmax,
-                         bool bSetMut, const char *mutability)
+                         bool bSetMut, const std::string &mutability)
 {
     if (bSetVal && bSetMin)
     {
@@ -79,7 +85,7 @@ static void setMinMaxMut(alexandria::ForceFieldParameter *pp,
     }
     if (bSetMut)
     {
-        alexandria::Mutability mut;
+        Mutability mut;
         if (nameToMutability(mutability, &mut))
         {
             pp->setMutability(mut);
@@ -87,100 +93,169 @@ static void setMinMaxMut(alexandria::ForceFieldParameter *pp,
     }
 }
 
-static void modifyPoldata(alexandria::Poldata *pd,
-                          const char *ptype,
-                          const char *particle,
+static void modifyPoldataLow(Poldata *pd,
+                             const std::string &ptype,
+                             const std::string &particle,
+                             bool bSetMin, double pmin,
+                             bool bSetVal, double pval,
+                             bool bSetMax, double pmax,
+                             bool bSetMut, const std::string &mutability,
+                             bool force)
+{
+    InteractionType itype; 
+    if (pd->typeToInteractionType(ptype, &itype))
+    {
+        printf("Will change parameter type %s in %s for particle type %s\n",
+               ptype.c_str(),
+               interactionTypeToString(itype).c_str(),
+               particle.c_str());
+        if (bSetMin)
+        {
+            printf("Minimum will be set to %g\n", pmin);
+        }
+        if (bSetMax)
+        {
+            printf("Maximum will be set to %g\n", pmax);
+        }
+        auto fs = pd->findForces(itype)->parameters();
+        for(auto &ffs : *fs)
+        {
+            if (!particle.empty() || particle == ffs.first.id())
+            {
+                for(auto &pp : ffs.second)
+                {
+                    if (pp.first == ptype)
+                    {
+                        if (force || pp.second.isMutable())
+                        {
+                            setMinMaxMut(&pp.second,
+                                         bSetMin, pmin, 
+                                         bSetVal, pval, bSetMax, pmax,
+                                         bSetMut, mutability);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    else
+    {
+        // Check particletypes instead
+        auto pti = pd->findParticleType(particle);
+        if (pti->hasParameter(ptype))
+        {
+            auto ff = pti->parameter(ptype);
+            setMinMaxMut(ff,
+                         bSetMin, pmin, 
+                         bSetVal, pval, bSetMax, pmax,
+                         bSetMut, mutability);
+        }
+        else
+        {
+            printf("No interaction type corresponding to %s\n", ptype.c_str());
+        }
+    }
+}
+
+static void modifyPoldata(Poldata *pd,
+                          const std::string &ptype,
+                          const std::string &particle,
                           bool bSetMin, double pmin,
                           bool bSetVal, double pval,
                           bool bSetMax, double pmax,
-                          bool bSetMut, const char *mutability,
+                          bool bSetMut, const std::string &mutability,
                           bool force)
 {
     if (!(bSetMin || bSetMax || bSetMut))
     {
+        printf("No parameter to change\n");
         return;
     }
-    if (strlen(ptype) == 0)
+    if (ptype.empty())
     {
         printf("Empty parameter type. Nothing to modify.\n");
         return;
     }
-    bool done = false;
-    // Check whether we have a parameter type belonging to atomtypes
-    if ((strlen(particle) > 0) && pd->hasParticleType(particle))
+    std::vector<std::string> particles;
+    if (!particle.empty())
     {
-        auto pt = pd->findParticleType(particle);
-        if (pt->hasParameter(ptype))
-        {
-            setMinMaxMut(pt->parameter(ptype),
-                         bSetMin, pmin, bSetVal, pval, bSetMax, pmax,
-                         bSetMut, mutability);
-            done = true;
-        }
+        particles = gmx::splitString(particle);
     }
     else
     {
         auto particleTypes = pd->particleTypes();
         for (auto pt=particleTypes->begin(); pt < particleTypes->end(); ++pt)
         {
-            if (pt->hasParameter(ptype))
-            {
-                setMinMaxMut(pt->parameter(ptype),
-                             bSetMin, pmin, bSetVal, pval, bSetMax, pmax,
-                             bSetMut, mutability);
-                done = true;
-            }
+            particles.push_back(pt->id().id());
         }
     }
-    if (done)
+        
+    for (const auto &p : particles)
     {
-        return;
-    }    
-    alexandria::InteractionType itype; 
-    if (!pd->typeToInteractionType(ptype, &itype))
-    {
-        return;
-    }
-    printf("Will change parameter type %s in %s\n", ptype,
-           interactionTypeToString(itype).c_str());
-    printf("for particle type %s.\n", strlen(particle) > 0 ? particle : "all");
-    if (bSetMin)
-    {
-        printf("Minimum will be set to %g\n", pmin);
-    }
-    if (bSetMax)
-    {
-        printf("Maximum will be set to %g\n", pmax);
-    }
-    auto fs = pd->findForces(itype)->parameters();
-    for(auto &ffs : *fs)
-    {
-        if (strlen(particle) == 0 || particle == ffs.first.id())
-        {
-            for(auto &pp : ffs.second)
-            {
-                if (pp.first == ptype)
-                {
-                    if (force || pp.second.isMutable())
-                    {
-                        setMinMaxMut(&pp.second,
-                                     bSetMin, pmin, 
-                                     bSetVal, pval, bSetMax, pmax,
-                                     bSetMut, mutability);
-                    }
-                }
-            }
-        }
+        modifyPoldataLow(pd, ptype, p,
+                         bSetMin, pmin,
+                         bSetVal, pval,
+                         bSetMax, pmax,
+                         bSetMut, mutability, force);
     }
 }
 
-static void analyzePoldata(alexandria::Poldata *pd)
+static const std::set<InteractionType> &findInteractionMap(const std::string &analyze,
+                                                           bool              *found)
 {
+    static std::set<InteractionType> bonds = {
+        InteractionType::BONDS,
+        InteractionType::ANGLES,
+        InteractionType::LINEAR_ANGLES,
+        InteractionType::PROPER_DIHEDRALS,
+        InteractionType::IMPROPER_DIHEDRALS };
+    static std::set<InteractionType> other = {
+        InteractionType::VDW,
+        InteractionType::LJ14,
+        InteractionType::CONSTR,
+        InteractionType::VSITE2,
+        InteractionType::VSITE3FAD,
+        InteractionType::VSITE3OUT };
+    static std::set<InteractionType> eem = {
+        InteractionType::POLARIZATION,
+        InteractionType::CHARGEDISTRIBUTION,
+        InteractionType::BONDCORRECTIONS,
+        InteractionType::ELECTRONEGATIVITYEQUALIZATION };
+    static std::map<const std::string, std::set<InteractionType> > mymap = {
+        { "EEM", eem }, { "BONDS", bonds }, { "OTHER", other } 
+    };
+    if (mymap.find(analyze)== mymap.end())
+    {
+        printf("Don't know how to analyze this group %s\n", analyze.c_str());
+        *found = false;
+        return mymap["EEM"];
+    }
+    else
+    {
+        *found = true;
+        return mymap[analyze];
+    }
+}
+
+static void analyzePoldata(Poldata           *pd,
+                           const std::string &analyze)
+{
+    bool found;
+    
+    auto myset = findInteractionMap(analyze, &found);
+    if (!found)
+    {
+        return;
+    }
     size_t mindata   = 1;
     double tolerance = 0.001;
     for(auto &fc : pd->forcesConst())
     {
         auto itype = fc.first;
+        if (myset.find(itype) == myset.end())
+        {
+            continue;
+        }
         for(auto &fm : fc.second.parametersConst())
         {
             auto myid = fm.first;
@@ -193,14 +268,14 @@ static void analyzePoldata(alexandria::Poldata *pd)
                     if (fabs(ppp.value() - ppp.minimum()) < tolerance)
                     {
                         printf("%s %s %s at minimum %g\n",
-                               alexandria::interactionTypeToString(itype).c_str(),
+                               interactionTypeToString(itype).c_str(),
                                myid.id().c_str(),
                                ptype.c_str(), ppp.minimum());
                     }
                     else if (fabs(ppp.value() - ppp.maximum()) < tolerance)
                     {
                         printf("%s %s %s at maximum %g\n",
-                               alexandria::interactionTypeToString(itype).c_str(),
+                               interactionTypeToString(itype).c_str(),
                                myid.id().c_str(),
                                ptype.c_str(), ppp.maximum());
                     }
@@ -210,13 +285,55 @@ static void analyzePoldata(alexandria::Poldata *pd)
     }
 }
 
-static void compare_pd(alexandria::Poldata *pd1,
-                       alexandria::Poldata *pd2,
+static void dumpPoldata(Poldata           *pd,
+                        const std::string &analyze,
+                        const std::string &particle,
+                        const std::string &filenm)
+{
+    bool found;
+    
+    auto myset = findInteractionMap(analyze, &found);
+    if (!found)
+    {
+        return;
+    }
+    auto particles = gmx::splitString(particle);
+    FILE *fp = fopen(filenm.c_str(), "w");
+    int nparm = 0;
+    for(auto &fc : pd->forcesConst())
+    {
+        auto itype = fc.first;
+        if (myset.find(itype) == myset.end())
+        {
+            continue;
+        }
+        for(auto &fm : fc.second.parametersConst())
+        {
+            auto myid = fm.first;
+            if (std::find(particles.begin(), particles.end(), myid.id()) != particles.end())
+            {
+                for(auto &param : fm.second)
+                {
+                    auto ptype = param.first;
+                    auto ppp   = param.second;
+                    fprintf(fp, "%s|%s|%g\n",
+                            ptype.c_str(), myid.id().c_str(), ppp.value());
+                    nparm++;
+                }
+            }
+        }
+    }
+    fclose(fp);
+    printf("Stored %d parameters in %s\n", nparm, filenm.c_str());
+}
+
+static void compare_pd(Poldata *pd1,
+                       Poldata *pd2,
                        const std::string   &ptype)
 {
     printf("Comparing %s and %s\n",
            pd1->filename().c_str(), pd2->filename().c_str());
-    alexandria::InteractionType itype1, itype2;
+    InteractionType itype1, itype2;
     if (!pd1->typeToInteractionType(ptype, &itype1) ||
         !pd2->typeToInteractionType(ptype, &itype2))
     {
@@ -257,6 +374,8 @@ static void compare_pd(alexandria::Poldata *pd1,
     }
 }
 
+} // namespace
+
 int alex_poldata_edit(int argc, char*argv[])
 {
     static const char               *desc[] = {
@@ -279,7 +398,8 @@ int alex_poldata_edit(int argc, char*argv[])
     t_filenm                         fnm[] = {
         { efDAT, "-f",  "pdin" , ffREAD  },
         { efDAT, "-f2", "pdin2", ffOPTRD },
-        { efDAT, "-o", "pdout",  ffOPTWR }
+        { efDAT, "-o", "pdout",  ffOPTWR },
+        { efDAT, "-dump", "params", ffOPTWR }
     };
     static char *parameter  = (char *)"";
     static char *particle   = (char *)"";
@@ -288,13 +408,13 @@ int alex_poldata_edit(int argc, char*argv[])
     real         pmax       = 0;
     real         pval       = 0;
     gmx_bool     force      = false;
-    gmx_bool     analyze    = false;
+    static char *analyze    = (char *)"";
     t_pargs                          pa[]     = 
     {
         { "-p",      FALSE, etSTR,  {&parameter},
           "Type of parameter to change, e.g. zeta." },
         { "-a",      FALSE, etSTR,  {&particle},
-          "Particle type to change, if not set all particles of the correct type will be changed." },
+          "Particle type to change, if not set all particles of the correct type will be changed. A quoted string may be passed to adjust multiple particle types at once, e.g. -a 'h1_z hc_z'" },
         { "-min",    FALSE, etREAL, {&pmin},
           "Minimum value of parameter." },
         { "-val",    FALSE, etREAL, {&pval},
@@ -305,8 +425,8 @@ int alex_poldata_edit(int argc, char*argv[])
           "Set the mutability for the given parameters to the value. The following values are supported: Free, Fixed, Bounded" },
         { "-force",  FALSE, etBOOL, {&force},
           "Will change also non-mutable parameters. Use with care!" },
-        { "-analyze", FALSE, etBOOL, {&analyze},
-          "Analyze the parameters in a simple manner" }
+        { "-ana", FALSE, etSTR, {&analyze},
+          "Analyze either the EEM, the BONDED or OTHER parameters in a simple manner" }
     };
     int                 npargs = asize(pa);
     int                 NFILE  = asize(fnm);
@@ -333,9 +453,16 @@ int alex_poldata_edit(int argc, char*argv[])
                       opt2parg_bSet("-max", npargs, pa), pmax,
                       opt2parg_bSet("-mut", npargs, pa), mutability,
                       force);
-        if (analyze)
+        if (strlen(analyze) > 0)
         {
-            analyzePoldata(&pd);
+            if (strlen(particle) > 0)
+            {
+                dumpPoldata(&pd, analyze, particle, opt2fn("-dump", NFILE, fnm));
+            }
+            else
+            {
+                analyzePoldata(&pd, analyze);
+            }
         }
         if (opt2bSet("-f2", NFILE, fnm))
         {
@@ -368,8 +495,9 @@ int alex_poldata_edit(int argc, char*argv[])
         }
         else
         {
-            alexandria::writePoldata(opt2fn("-o", NFILE, fnm), &pd, 0);
+            writePoldata(opt2fn("-o", NFILE, fnm), &pd, 0);
         }
     }
     return 0;
 }
+

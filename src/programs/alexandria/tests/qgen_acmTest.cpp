@@ -275,6 +275,36 @@ TEST_F (AcmTest, AXpgPositive)
     testAcm("ACM-pg", einfSDF, "guanidinium", true, 1);
 }
 
+TEST_F (AcmTest, SQEgNeutral)
+{
+    testAcm("ACS-g", einfPDB, "1-butanol", false, 0);
+}
+
+TEST_F (AcmTest, SQEgNegative)
+{
+    testAcm("ACS-g", einfPDB, "acetate-3-oep.log", false, -1);
+}
+
+TEST_F (AcmTest, SQEgPositive)
+{
+    testAcm("ACS-g", einfSDF, "guanidinium", false, 1);
+}
+#ifdef LATER
+TEST_F (AcmTest, SQEpgNeutral)
+{
+    testAcm("ACS-pg", einfPDB, "1-butanol", false, 0);
+}
+
+TEST_F (AcmTest, SQEpgNegative)
+{
+    testAcm("ACS-pg", einfPDB, "acetate-3-oep.log", true, -1);
+}
+
+TEST_F (AcmTest, SQEpgPositive)
+{
+    testAcm("ACS-pg", einfSDF, "guanidinium", true, 1);
+}
+#endif
 }
 
 }

@@ -632,6 +632,11 @@ void QgenAcm::solveSQE(FILE                    *fp,
         double delta_chi = 0, hardness = 0;
         getBccParams(pd, ai, aj, bonds[bij].getBondOrder(),
                      &delta_chi, &hardness);
+        if (debug)
+        {
+            fprintf(debug, "Delta_chi %10g Hardness %10g\n",
+                    delta_chi, hardness);
+        }
         // The bonds use the original numbering, to get to the ACM data
         // we have to map to numbers including shells.
         delta_chis.push_back(delta_chi);
@@ -647,6 +652,18 @@ void QgenAcm::solveSQE(FILE                    *fp,
                 J += hardness;
             }
             lhs.set(bij, bkl, J);
+        }
+    }
+    if (debug)
+    {
+        fprintf(debug, "Jsqe\n");
+        for(int i = 0; i < nbonds; i++)
+        {
+            for(int j = 0; j <= i; j++)
+            {
+                fprintf(debug, " %7.2f", lhs.get(i, j));
+            }
+            fprintf(debug, "\n");
         }
     }
     // Now fill the right hand side
