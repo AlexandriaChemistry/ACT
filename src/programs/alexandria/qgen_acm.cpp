@@ -671,8 +671,9 @@ void QgenAcm::solveSQE(FILE                    *fp,
     chi_corr.resize(nonFixed_.size(), 0.0);
     for(size_t i = 0; i < nonFixed_.size(); i++)
     {
-        int ai = static_cast<int>(i);
-        chi_corr[i] += chi0_[nonFixed_[i]];
+        int  ai  = static_cast<int>(i);
+        auto nfi = nonFixed_[ai];
+        chi_corr[i] += chi0_[nfi];
         for (int bij = 0; bij < nbonds; bij++)
         {
             if (ai == bonds[bij].getAi()-1)
@@ -689,23 +690,18 @@ void QgenAcm::solveSQE(FILE                    *fp,
         {
             chi_corr[i] += Jcc_[i][l]*qcorr;
         }
+        // Check this! Only to be done when there are shells!
+        if (nonFixed_.size() < static_cast<size_t>(natom_))
+        {
+            chi_corr[i] += jaa_[nfi] * q_[myShell_.find(nfi)->second];
+            chi_corr[i] += 0.5*calcJcs(nfi, epsilonr);
+        }
     }
     for (int bij = 0; bij < nbonds; bij++)
     {
         auto ai    = bonds[bij].getAi()-1;
         auto aj    = bonds[bij].getAj()-1;
         rhs[bij]   = chi_corr[aj] - chi_corr[ai];
-            
-        // Check this! Only to be done when there are shells!
-        if (nonFixed_.size() < static_cast<size_t>(natom_))
-        {
-            auto nfi   = nonFixed_[ai];
-            auto nfj   = nonFixed_[aj];
-            double qsi = q_[myShell_.find(nfi)->second];
-            double qsj = q_[myShell_.find(nfj)->second];
-            rhs[bij]  += (jaa_[nfj]*qsj - jaa_[nfi]*qsi);
-            rhs[bij]  += 0.5*(calcJcs(nfj, epsilonr) - calcJcs(nfi, epsilonr));
-        }
     }
 
     std::vector<double> pij, q;
@@ -714,6 +710,12 @@ void QgenAcm::solveSQE(FILE                    *fp,
     lhs.solve(rhs, &pij);
     if (fp)
     {
+        fprintf(fp, "rhs: ");
+        for(auto &p: rhs)
+        {
+            fprintf(fp, " %8g", p);
+        }
+        fprintf(fp, "\n");
         fprintf(fp, "pij: ");
         for(auto &p: pij)
         {
@@ -728,16 +730,14 @@ void QgenAcm::solveSQE(FILE                    *fp,
         q[ai] += pij[bij];
         q[aj] -= pij[bij];
     }
-    // Compute total fixed charge
-    double qfixed = 0.0;
-    for (size_t i = 0; i < fixed_.size(); i++)
-    {
-        qfixed += q_[fixed_[i]];
-    }
     for (size_t i = 0; i < nonFixed_.size(); i++)
     {
-        q[i] += (qtotal_-qfixed)/nonFixed_.size();
-        q_[nonFixed_[i]] = q[i];
+        q[i] += qtotal_/nonFixed_.size();
+        if (nonFixed_.size() < static_cast<size_t>(natom_))
+        {
+            auto nfi = nonFixed_[i];
+            q_[nfi] = q[i] - q_[myShell_.find(nfi)->second];
+        }
     }
 
     double qtot    = 0;
@@ -745,9 +745,18 @@ void QgenAcm::solveSQE(FILE                    *fp,
     {
         qtot += q_[i];
     }
-    if (fp && (fabs(qtot - qtotal_) > 1e-2))
+    if (fp)
     {
-        fprintf(fp, "qtot = %g, it should be %g\n", qtot, qtotal_);
+        fprintf(fp, "q: ");
+        for (auto &qq : q_)
+        {
+            fprintf(fp, " %9g", qq);
+        }
+        fprintf(fp, "\n");
+        if (fabs(qtot - qtotal_) > 1e-2)
+        {
+            fprintf(fp, "qtot = %g, it should be %g\n", qtot, qtotal_);
+        }
     }
 }
 
