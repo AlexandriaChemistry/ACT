@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="qtotSize">7</Int>
+  <Sequence Name="qtotValuesEqdAlgorithm_SQE">
+    <Int Name="Length">7</Int>
+    <Real>-0.48654256610453689</Real>
+    <Real>-0.023156098271012573</Real>
+    <Real>-0.2428230598521996</Real>
+    <Real>-0.24282032960188324</Real>
+    <Real>-0.0013697676532534175</Real>
+    <Real>-0.0019644785653489816</Real>
+    <Real>-0.0013236999517652892</Real>
+  </Sequence>
+</ReferenceData>
