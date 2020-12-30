@@ -704,9 +704,9 @@ void QgenAcm::solveSQE(FILE                    *fp,
         rhs[bij]   = chi_corr[aj] - chi_corr[ai];
     }
 
-    std::vector<double> pij, q;
+    std::vector<double> pij, myq;
     pij.resize(nbonds, 0.0);
-    q.resize(nonFixed_.size(), 0.0);
+    myq.resize(nonFixed_.size(), 0.0);
     lhs.solve(rhs, &pij);
     if (fp)
     {
@@ -727,17 +727,18 @@ void QgenAcm::solveSQE(FILE                    *fp,
     {
         auto ai  = bonds[bij].getAi()-1;
         auto aj  = bonds[bij].getAj()-1;
-        q[ai] += pij[bij];
-        q[aj] -= pij[bij];
+        myq[ai] += pij[bij];
+        myq[aj] -= pij[bij];
     }
     for (size_t i = 0; i < nonFixed_.size(); i++)
     {
-        q[i] += qtotal_/nonFixed_.size();
+        auto nfi = nonFixed_[i];
+        myq[i] += qtotal_/nonFixed_.size();
         if (nonFixed_.size() < static_cast<size_t>(natom_))
         {
-            auto nfi = nonFixed_[i];
-            q_[nfi] = q[i] - q_[myShell_.find(nfi)->second];
+            myq[i] -= q_[myShell_.find(nfi)->second];
         }
+        q_[nfi] = myq[i];
     }
 
     double qtot    = 0;
