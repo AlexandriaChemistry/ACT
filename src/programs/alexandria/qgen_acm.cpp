@@ -691,7 +691,7 @@ void QgenAcm::solveSQE(FILE                    *fp,
             chi_corr[i] += Jcc_[i][l]*qcorr;
         }
         // Check this! Only to be done when there are shells!
-        if (nonFixed_.size() < static_cast<size_t>(natom_))
+        if (false && nonFixed_.size() < static_cast<size_t>(natom_))
         {
             chi_corr[i] += jaa_[nfi] * q_[myShell_.find(nfi)->second];
             chi_corr[i] += 0.5*calcJcs(nfi, epsilonr);
