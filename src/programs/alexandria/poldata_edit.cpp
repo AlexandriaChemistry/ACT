@@ -164,7 +164,7 @@ static void modifyPoldata(Poldata *pd,
                           bool bSetVal, double pval,
                           bool bSetMax, double pmax,
                           bool bSetMut, const std::string &mutability,
-                          bool force)
+                          bool force, bool stretch)
 {
     if (!(bSetMin || bSetMax || bSetMut))
     {
@@ -263,7 +263,7 @@ static void analyzePoldata(Poldata           *pd,
             {
                 auto ptype = param.first;
                 auto ppp   = param.second;
-                if (ppp.ntrain() >= mindata)
+                if (ppp.ntrain() >= mindata && ppp.isMutable())
                 {
                     if (fabs(ppp.value() - ppp.minimum()) < tolerance)
                     {
@@ -408,6 +408,7 @@ int alex_poldata_edit(int argc, char*argv[])
     real         pmax       = 0;
     real         pval       = 0;
     gmx_bool     force      = false;
+    gmx_bool     stretch    = false;
     static char *analyze    = (char *)"";
     t_pargs                          pa[]     = 
     {
@@ -425,6 +426,8 @@ int alex_poldata_edit(int argc, char*argv[])
           "Set the mutability for the given parameters to the value. The following values are supported: Free, Fixed, Bounded" },
         { "-force",  FALSE, etBOOL, {&force},
           "Will change also non-mutable parameters. Use with care!" },
+        { "-stretch", FALSE, etBOOL, {&stretch},
+          " Will automatically stretch boundaries for individual parameters" },
         { "-ana", FALSE, etSTR, {&analyze},
           "Analyze either the EEM, the BONDED or OTHER parameters in a simple manner" }
     };
@@ -452,7 +455,7 @@ int alex_poldata_edit(int argc, char*argv[])
                       opt2parg_bSet("-val", npargs, pa), pval,
                       opt2parg_bSet("-max", npargs, pa), pmax,
                       opt2parg_bSet("-mut", npargs, pa), mutability,
-                      force);
+                      force, stretch);
         if (strlen(analyze) > 0)
         {
             if (strlen(particle) > 0)
