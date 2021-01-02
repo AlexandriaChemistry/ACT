@@ -71,6 +71,12 @@ const std::string &interactionTypeToString(InteractionType iType);
  */
 InteractionType stringToInteractionType(const std::string &name);
 
+/*! \brief
+ * Return number of atoms involved with this interaction type
+ * \param[in] iType The interactionType
+ * \return number of atoms typically 1-4.
+ */
+int interactionTypeToNatoms(InteractionType iType);
 
 } // namespace
 

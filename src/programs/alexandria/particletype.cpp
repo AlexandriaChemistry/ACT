@@ -79,9 +79,26 @@ void ParticleType::setOption(const std::string &key,
         GMX_THROW(gmx::InternalError(gmx::formatString("Will not add unknown option %s to particle type %s", key.c_str(), id_.id().c_str()).c_str()));
     }
 }
+
+static InteractionType remapInteractionType(InteractionType itype)
+{
+    if (itype == InteractionType::BONDCORRECTIONS)
+    {
+        itype = InteractionType::ELECTRONEGATIVITYEQUALIZATION;
+    }
+    else if (itype == InteractionType::ANGLES || 
+             itype == InteractionType::LINEAR_ANGLES ||
+             itype == InteractionType::IMPROPER_DIHEDRALS ||
+             itype == InteractionType::PROPER_DIHEDRALS)
+    {
+        itype = InteractionType::BONDS;
+    } 
+    return itype;
+}
     
 bool ParticleType::hasInteractionType(InteractionType itype) const
 {
+    itype = remapInteractionType(itype);
     for(const auto &s2i : stringToItype)
     {
         if (s2i.second == itype)
@@ -94,6 +111,7 @@ bool ParticleType::hasInteractionType(InteractionType itype) const
 
 Identifier ParticleType::interactionTypeToIdentifier(InteractionType itype) const
 {
+    itype = remapInteractionType(itype);
     for(const auto &s2i : stringToItype)
     {
         if (s2i.second == itype && hasOption(s2i.first))

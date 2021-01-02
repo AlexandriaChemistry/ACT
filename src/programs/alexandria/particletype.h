@@ -77,7 +77,7 @@ class ParticleType
      */
     const std::string &description() const { return desc_; }
 
-    /*! \brief Return the type of particle
+    /*! \brief Return the type of particle according to GROMACS
      */
     int gmxParticleType() const { return gmxParticleType_; }
 

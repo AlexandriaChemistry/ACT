@@ -49,11 +49,13 @@
 namespace alexandria
 {
 
-static void setMinMaxMut(ForceFieldParameter *pp,
+static void setMinMaxMut(FILE *fp,
+                         ForceFieldParameter *pp,
                          bool bSetMin, double pmin,
                          bool bSetVal, double pval,
                          bool bSetMax, double pmax,
-                         bool bSetMut, const std::string &mutability)
+                         bool bSetMut, const std::string &mutability,
+                         bool stretch, const std::string &particleId)
 {
     if (bSetVal && bSetMin)
     {
@@ -72,16 +74,28 @@ static void setMinMaxMut(ForceFieldParameter *pp,
         pp->setMinimum(pmin);
         pp->setValue(std::max(pmin, pp->value()));
         pp->setMaximum(std::max(pmin, pp->maximum()));
+        if (fp)
+        {
+            fprintf(fp, "Minimum set to %g for %s\n", pmin, particleId.c_str());
+        }
     }
     if (bSetMax)
     {
         pp->setMaximum(pmax);
         pp->setValue(std::min(pmax, pp->value()));
         pp->setMinimum(std::min(pmax, pp->minimum()));
+        if (fp)
+        {
+            fprintf(fp, "Maximum set to %g %s\n", pmax, particleId.c_str());
+        }
     }
     if (bSetVal)
     {
         pp->setValue(pval);
+        if (fp)
+        {
+            fprintf(fp, "Value set to %g %s\n", pval, particleId.c_str());
+        }
         if (pval < pp->minimum())
         {
             pp->setMinimum(pval);
@@ -99,74 +113,106 @@ static void setMinMaxMut(ForceFieldParameter *pp,
             pp->setMutability(mut);
         }
     }
+    if (stretch)
+    {
+        auto range = pp->maximum()-pp->minimum();
+        if (pp->value() == pp->minimum() && range > 0)
+        {
+            if (pp->minimum() < 0)
+            {
+                pp->setMinimum(pp->minimum()-0.1*range);
+            }
+            else
+            {
+                pp->setMinimum(std::max(pp->minimum()-0.1*range, 0.9*pp->minimum()));
+            }
+            if (fp)
+            {
+                fprintf(fp, "Minimum stretched to %g for %s\n",
+                        pp->minimum(), particleId.c_str());
+            }
+        }
+        if (pp->value() == pp->maximum() && range > 0)
+        {
+            pp->setMaximum(std::min(pp->maximum()+0.1*range, 1.1*pp->maximum()));
+            if (fp)
+            {
+                fprintf(fp, "Maximum stretched to %g for %s\n",
+                        pp->maximum(), particleId.c_str());
+            }
+        }
+    }
 }
 
-static void modifyPoldataLow(Poldata *pd,
-                             const std::string &ptype,
-                             const std::string &particle,
-                             bool bSetMin, double pmin,
-                             bool bSetVal, double pval,
-                             bool bSetMax, double pmax,
-                             bool bSetMut, const std::string &mutability,
-                             bool force)
+static void modifyParticle(const std::string &paramType,
+                           ParticleTypeIterator particle,
+                           bool bSetMin, double pmin,
+                           bool bSetVal, double pval,
+                           bool bSetMax, double pmax,
+                           bool bSetMut, const std::string &mutability,
+                           bool force, bool stretch)
 {
-    InteractionType itype; 
-    if (pd->typeToInteractionType(ptype, &itype))
+    // Check particletypes instead
+    if (particle->hasParameter(paramType))
     {
-        printf("Will change parameter type %s in %s for particle type %s\n",
-               ptype.c_str(),
-               interactionTypeToString(itype).c_str(),
-               particle.c_str());
-        if (bSetMin)
+        auto ff = particle->parameter(paramType);
+        if (force || ff->isMutable())
         {
-            printf("Minimum will be set to %g\n", pmin);
+            std::string particleId = 
+                gmx::formatString("%s - %s",
+                                  particle->id().id().c_str(),
+                                  paramType.c_str());
+            setMinMaxMut(stdout, ff,
+                         bSetMin, pmin, 
+                         bSetVal, pval, bSetMax, pmax,
+                         bSetMut, mutability, stretch, particleId);
         }
-        if (bSetMax)
+    }
+    else
+    {
+        printf("No interaction type corresponding to %s\n", paramType.c_str());
+    }
+}
+
+static void modifyInteraction(Poldata *pd,
+                              InteractionType itype,
+                              const std::string &paramType,
+                              const Identifier &id,
+                              bool bSetMin, double pmin,
+                              bool bSetVal, double pval,
+                              bool bSetMax, double pmax,
+                              bool bSetMut, const std::string &mutability,
+                              bool force, bool stretch)
+{
+    auto fs = pd->findForces(itype)->parameters();
+    for(auto &ffs : *fs)
+    {
+        if (id == ffs.first)
         {
-            printf("Maximum will be set to %g\n", pmax);
-        }
-        auto fs = pd->findForces(itype)->parameters();
-        for(auto &ffs : *fs)
-        {
-            if (!particle.empty() || particle == ffs.first.id())
+            for(auto &pp : ffs.second)
             {
-                for(auto &pp : ffs.second)
+                if (pp.first == paramType)
                 {
-                    if (pp.first == ptype)
+                    if (force || pp.second.isMutable())
                     {
-                        if (force || pp.second.isMutable())
-                        {
-                            setMinMaxMut(&pp.second,
-                                         bSetMin, pmin, 
-                                         bSetVal, pval, bSetMax, pmax,
-                                         bSetMut, mutability);
-                        }
+                        std::string myId = 
+                            gmx::formatString("%s - %s - %s",
+                                              id.id().c_str(),
+                                              paramType.c_str(),
+                                              interactionTypeToString(itype).c_str());
+                        setMinMaxMut(stdout, &pp.second,
+                                     bSetMin, pmin, 
+                                     bSetVal, pval, bSetMax, pmax,
+                                     bSetMut, mutability, stretch, myId);
                     }
                 }
             }
         }
     }
-    else
-    {
-        // Check particletypes instead
-        auto pti = pd->findParticleType(particle);
-        if (pti->hasParameter(ptype))
-        {
-            auto ff = pti->parameter(ptype);
-            setMinMaxMut(ff,
-                         bSetMin, pmin, 
-                         bSetVal, pval, bSetMax, pmax,
-                         bSetMut, mutability);
-        }
-        else
-        {
-            printf("No interaction type corresponding to %s\n", ptype.c_str());
-        }
-    }
 }
 
 static void modifyPoldata(Poldata *pd,
-                          const std::string &ptype,
+                          const std::string &paramType,
                           const std::string &particle,
                           bool bSetMin, double pmin,
                           bool bSetVal, double pval,
@@ -174,37 +220,96 @@ static void modifyPoldata(Poldata *pd,
                           bool bSetMut, const std::string &mutability,
                           bool force, bool stretch)
 {
-    if (!(bSetVal || bSetMin || bSetMax || bSetMut))
+    if (!(bSetVal || bSetMin || bSetMax || bSetMut || stretch))
     {
         printf("No parameter to change\n");
         return;
     }
-    if (ptype.empty())
+    if (paramType.empty())
     {
         printf("Empty parameter type. Nothing to modify.\n");
         return;
     }
-    std::vector<std::string> particles;
+    std::vector<ParticleTypeIterator> myParticles;
     if (!particle.empty())
     {
-        particles = gmx::splitString(particle);
+        for (const auto &s : gmx::splitString(particle))
+        {
+            if (pd->hasParticleType(s))
+            {
+                myParticles.push_back(pd->findParticleType(s));
+            }
+        }
     }
     else
     {
         auto particleTypes = pd->particleTypes();
         for (auto pt=particleTypes->begin(); pt < particleTypes->end(); ++pt)
         {
-            particles.push_back(pt->id().id());
+            myParticles.push_back(pt);
         }
     }
         
-    for (const auto &p : particles)
+    for (auto p : myParticles)
     {
-        modifyPoldataLow(pd, ptype, p,
-                         bSetMin, pmin,
-                         bSetVal, pval,
-                         bSetMax, pmax,
-                         bSetMut, mutability, force);
+        InteractionType itype;
+        if (pd->typeToInteractionType(paramType, &itype))
+        {
+            if (!p->hasInteractionType(itype))
+            {
+                continue;
+            }
+            auto pId    = p->interactionTypeToIdentifier(itype);
+            if (pId.id().empty())
+            {
+                continue;
+            }
+            auto natoms = interactionTypeToNatoms(itype);
+            switch (natoms)
+            {
+            case 1:
+                {
+                    modifyInteraction(pd, itype, paramType, pId,
+                                      bSetMin, pmin,
+                                      bSetVal, pval,
+                                      bSetMax, pmax,
+                                      bSetMut, mutability, force, stretch);
+                    break;
+                }
+            case 2:
+                {
+                    for (auto q : myParticles)
+                    {
+                        if (!q->hasInteractionType(itype))
+                        {
+                            continue;
+                        }
+                        auto qId = q->interactionTypeToIdentifier(itype);
+                        if (qId.id().empty())
+                        {
+                            continue;
+                        }
+                        Identifier id({pId.id(), qId.id()}, 1, CanSwap::No);
+                        modifyInteraction(pd, itype, paramType, id,
+                                          bSetMin, pmin,
+                                          bSetVal, pval,
+                                          bSetMax, pmax,
+                                          bSetMut, mutability, force, stretch);
+                    }
+                    break;
+                }
+            default:
+                fprintf(stderr, "Don't know how to handle interactions with %d atoms", natoms);
+            }
+        }
+        else
+        {
+            modifyParticle(paramType, p,
+                           bSetMin, pmin,
+                           bSetVal, pval,
+                           bSetMax, pmax,
+                           bSetMut, mutability, force, stretch);
+        }
     }
 }
 

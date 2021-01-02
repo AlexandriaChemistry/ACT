@@ -117,7 +117,7 @@ class Identifier
      * \return Whether a == b
      */
     friend bool operator==(const Identifier &a, const Identifier &b);
-    
+
     //! \brief Return the atoms
     const std::vector<std::string> atoms() const { return atoms_; }
     

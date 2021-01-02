@@ -83,4 +83,31 @@ InteractionType stringToInteractionType(const std::string &name)
     return InteractionType::BONDS;
 }
 
+int interactionTypeToNatoms(InteractionType iType)
+{
+    switch (iType)
+    {
+    case InteractionType::PROPER_DIHEDRALS:
+    case InteractionType::IMPROPER_DIHEDRALS:
+        return 4;
+    case InteractionType::ANGLES:
+    case InteractionType::LINEAR_ANGLES:
+    case InteractionType::VSITE3FAD:
+    case InteractionType::VSITE3OUT:
+        return 3;
+    case InteractionType::VDW:
+    case InteractionType::POLARIZATION:
+    case InteractionType::CHARGEDISTRIBUTION:
+    case InteractionType::ELECTRONEGATIVITYEQUALIZATION:
+        return 1;
+    case InteractionType::BONDS:
+    case InteractionType::VSITE2:
+    case InteractionType::LJ14:
+    case InteractionType::CONSTR:
+    case InteractionType::BONDCORRECTIONS:
+        return 2;
+    }
+    return 0;
+}
+
 } // namespace alexandria
