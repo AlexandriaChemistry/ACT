@@ -67,10 +67,6 @@ static void setMinMaxMut(ForceFieldParameter *pp,
     {
         GMX_RELEASE_ASSERT(pmin < pmax, "Please choose minimum to be at most the maximum");
     }
-    if (bSetVal)
-    {
-        pp->setValue(pval);
-    }
     if (bSetMin)
     {
         pp->setMinimum(pmin);
@@ -82,6 +78,18 @@ static void setMinMaxMut(ForceFieldParameter *pp,
         pp->setMaximum(pmax);
         pp->setValue(std::min(pmax, pp->value()));
         pp->setMinimum(std::min(pmax, pp->minimum()));
+    }
+    if (bSetVal)
+    {
+        pp->setValue(pval);
+        if (pval < pp->minimum())
+        {
+            pp->setMinimum(pval);
+        }
+        if (pval > pp->maximum())
+        {
+            pp->setMaximum(pval);
+        }
     }
     if (bSetMut)
     {
@@ -166,7 +174,7 @@ static void modifyPoldata(Poldata *pd,
                           bool bSetMut, const std::string &mutability,
                           bool force, bool stretch)
 {
-    if (!(bSetMin || bSetMax || bSetMut))
+    if (!(bSetVal || bSetMin || bSetMax || bSetMut))
     {
         printf("No parameter to change\n");
         return;
