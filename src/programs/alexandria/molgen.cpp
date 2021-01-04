@@ -220,6 +220,7 @@ void MolGen::printChiSquared(FILE *fp) const
                         relativeWeight_[j]);
             }
         }
+        fflush(fp);
     }
 }
 
