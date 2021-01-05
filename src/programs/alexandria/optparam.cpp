@@ -345,6 +345,7 @@ double Bayes::MCMC(FILE *fplog)
                 {
                     printParameters(fplog);
                 }
+                saveState();
             }
             prevEval = currEval;
             acceptedMoves_[j] = acceptedMoves_[j] + 1;

@@ -45,9 +45,10 @@
 struct t_atoms;
 
 enum class eQgen {
-    OK, 
-    NOTCONVERGED, 
-    NOSUPPORT, 
+    OK,
+    NOTCONVERGED,
+    NOSUPPORT,
+    MATRIXSOLVER,
     ERROR
 };
 
@@ -183,17 +184,22 @@ class QgenAcm
         double calcJcs(int      top_ndx,
                        double   epsilonr);
 
-        void solveEEM(FILE *fp);
+        /*! \brief Solve the matrix equation to determine charges
+         * \param[in] fp File pointer for optional outptu
+         * \return 0 if all is OK, > 0 if not.
+         */
+        int solveEEM(FILE *fp);
         
         /*! \brief Perform the split charge equilibration algorithm
          *
          * \param[in] fp    File for logging
          * \param[in] pd    Force field information
          * \param[in] bonds List of bonds in the compound
+         * \return 0 if all is OK, > 0 if not.
          */
-        void solveSQE(FILE                    *fp,
-                      const Poldata           *pd,
-                      const std::vector<Bond> &bonds);
+        int solveSQE(FILE                    *fp,
+                     const Poldata           *pd,
+                     const std::vector<Bond> &bonds);
         
         void updatePositions(gmx::HostVector<gmx::RVec> x, t_atoms *atoms);
 

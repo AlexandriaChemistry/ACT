@@ -539,6 +539,7 @@ if (GMX_ALEXANDRIA)
   else(OPENBABEL3_FOUND)
     message(FATAL_ERROR "OpenBabel3 library not found.")
   endif(OPENBABEL3_FOUND)
+  
 endif (GMX_ALEXANDRIA)
 
 gmx_option_trivalue(

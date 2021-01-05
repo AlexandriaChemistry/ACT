@@ -93,7 +93,7 @@ class OptACM : public MolGen, Bayes
         bool       bRemoveMol_                   = true;
         bool       bPointCore_                   = false;
         gmx::unique_cptr<FILE, my_fclose> fplog_ = nullptr;
-
+        std::string outputFile_;
     public:
 
         OptACM() {}
@@ -115,6 +115,8 @@ class OptACM : public MolGen, Bayes
         bool removeMol() const {return bRemoveMol_; }
         
         void set_pointCore(bool pointCore) {bPointCore_ =  pointCore;}
+        
+        void saveState();
 
         void add_pargs(std::vector<t_pargs> *pargs)
         {
@@ -137,10 +139,11 @@ class OptACM : public MolGen, Bayes
             Bayes::add_pargs(pargs);
         }
 
-        void optionsFinished()
+        void optionsFinished(const std::string &outputFile)
         {
             MolGen::optionsFinished();
             setBoxConstraint(bConstrain());
+            outputFile_ = outputFile;
         }
 
         void openLogFile(const char *logfileName)
@@ -219,6 +222,11 @@ class OptACM : public MolGen, Bayes
          */
         void printResults(double chi2_min);
 };
+
+void OptACM::saveState()
+{
+    writePoldata(outputFile_, poldata(), false);
+}
 
 void OptACM::initChargeGeneration()
 {
@@ -770,7 +778,7 @@ int alex_tune_eem(int argc, char *argv[])
         return 0;
     }
     
-    opt.optionsFinished();
+    opt.optionsFinished(opt2fn("-o", NFILE, fnm));
     
     if (MASTER(opt.commrec()))
     {
@@ -859,7 +867,7 @@ int alex_tune_eem(int argc, char *argv[])
                                  efield,
                                  useOffset,
                                  opt.optIndex_);
-            writePoldata(opt2fn("-o", NFILE, fnm), opt.poldata(), bcompress);            
+            //writePoldata(opt2fn("-o", NFILE, fnm), opt.poldata(), bcompress);
             if (opt2bSet("-latex", NFILE, fnm))
             {
                 FILE        *tp;

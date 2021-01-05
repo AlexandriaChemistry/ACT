@@ -112,6 +112,12 @@ class OptParam
 
         //! Return the class of parameters registered
         const std::vector<std::string> &paramClass() { return paramClass_; }
+        //! \brief Return Max # iterations
+        int maxIter() const { return maxiter_; }
+        
+        //! \brief Return temperature
+        real temperature () const { return temperature_; }
+        
         /*! \brief Compute and return the Boltzmann factor
          *
          * \param[in] iter  The iteration number
@@ -131,12 +137,6 @@ class OptParam
         
         double adaptBeta(real ratio);
 
-        //! \brief Return Max # iterations
-        int maxIter() const { return maxiter_; }
-        
-        //! \brief Return temperature
-        real temperature () const { return temperature_; }
-        
         //! \brief Return nAdapt
         int nAdapt () const { return nAdapt_; }
 
@@ -166,6 +166,11 @@ class OptParam
 
         //! \brief Return output environment
         const gmx_output_env_t *oenv() const { return oenv_; }
+        
+        /*! \brief Save the current state
+         * Must be overridden by child class.
+         */
+        virtual void saveState() = 0;
 };
 
 class Bayes : public OptParam

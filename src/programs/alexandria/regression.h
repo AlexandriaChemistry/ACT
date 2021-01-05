@@ -90,8 +90,9 @@ class MatrixWrapper
          *
          * \param[in] rhs  Vector of right hand side values
          * \param[out] solution Pointer to vector of solution
+         * \return 0 if ok, non-zero if not.
          */
-        void solve(std::vector<double> rhs, std::vector<double> *solution);
+        int solve(std::vector<double> rhs, std::vector<double> *solution);
     private:
         // Number of rows
         int      nrow_;

@@ -57,8 +57,8 @@ void dgesvd_(const char* jobu, const char* jobvt, int* m, int* n, double* a,
 
 }
 
-static void multi_regression2(int nrow, double y[], int ncol,
-                              double **a, double x[])
+static int multi_regression2(int nrow, double y[], int ncol,
+                             double **a, double x[])
 {
     /* Query and allocate the optimal workspace */
     int                 lwork = -1;
@@ -108,14 +108,16 @@ static void multi_regression2(int nrow, double y[], int ncol,
     /* Check for convergence */
     if (info > 0)
     {
-        char buf[256];
-        snprintf(buf, sizeof(buf), "The algorithm computing SVD failed to converge and the least squares solution could not be computed. Info = %d.", info);
-        GMX_THROW(gmx::InvalidInputError(buf));
+        fprintf(stderr, "The algorithm computing SVD failed to converge and the least squares solution could not be computed. Info = %d.", info);
     }
-    for (int i = 0; i < ncol; i++)
+    else
     {
-        x[i] = y[i];
+        for (int i = 0; i < ncol; i++)
+        {
+            x[i] = y[i];
+        }
     }
+    return info;
 }
 
 static void tensor2matrix(tensor c, double **a)
@@ -254,7 +256,7 @@ void MatrixWrapper::setRow(int row, const double value[])
     }
 }
 
-void MatrixWrapper::solve(std::vector<double> rhs, std::vector<double> *solution)
+int MatrixWrapper::solve(std::vector<double> rhs, std::vector<double> *solution)
 {
-    multi_regression2(nrow_, rhs.data(), ncolumn_, a_, solution->data());
+    return multi_regression2(nrow_, rhs.data(), ncolumn_, a_, solution->data());
 }

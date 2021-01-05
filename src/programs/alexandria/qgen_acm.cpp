@@ -235,6 +235,8 @@ const char *QgenAcm::message() const
             return "Charge generation did not converge.";
         case eQgen::NOSUPPORT:
             return "No charge generation support for (some of) the atomtypes.";
+        case eQgen::MATRIXSOLVER:
+            return "A problem occurred solving a matrix equation.";
         case eQgen::ERROR:
             return "Unknown error in charge generation";
     }
@@ -541,7 +543,7 @@ void QgenAcm::checkSupport(const Poldata *pd)
     }
 }
 
-void QgenAcm::solveEEM(FILE *fp)
+int QgenAcm::solveEEM(FILE *fp)
 {
     std::vector<double> q;
     size_t              nelem = nonFixed_.size();
@@ -561,20 +563,24 @@ void QgenAcm::solveEEM(FILE *fp)
     }
     lhs.set(nelem, nelem, 0);
 
-    lhs.solve(rhs_, &q);
+    int info = lhs.solve(rhs_, &q);
 
-    double qtot    = 0;
-    for (size_t i = 0; i < nelem; i++)
+    if (info == 0)
     {
-        q_[nonFixed_[i]] = q[i];
-        qtot += q[i];
+        double qtot    = 0;
+        for (size_t i = 0; i < nelem; i++)
+        {
+            q_[nonFixed_[i]] = q[i];
+            qtot += q[i];
+        }
+        
+        if (fp && (fabs(qtot - qtotal_) > 1e-2))
+        {
+            fprintf(fp, "qtot = %g, it should be %g rhs[%zu] = %g\n",
+                    qtot, qtotal_, nelem, rhs_[nelem]);
+        }
     }
-
-    if (fp && (fabs(qtot - qtotal_) > 1e-2))
-    {
-        fprintf(fp, "qtot = %g, it should be %g rhs[%zu] = %g\n",
-                qtot, qtotal_, nelem, rhs_[nelem]);
-    }
+    return info;
 }
 
 void QgenAcm::getBccParams(const Poldata *pd,
@@ -611,9 +617,9 @@ void QgenAcm::getBccParams(const Poldata *pd,
     *hardness = fs.findParameterTypeConst(bccId, "hardness").value();
 }
 
-void QgenAcm::solveSQE(FILE                    *fp,
-                       const Poldata           *pd,
-                       const std::vector<Bond> &bonds)
+int QgenAcm::solveSQE(FILE                    *fp,
+                      const Poldata           *pd,
+                      const std::vector<Bond> &bonds)
 {
     std::vector<double> rhs;
     
@@ -707,7 +713,11 @@ void QgenAcm::solveSQE(FILE                    *fp,
     std::vector<double> pij, myq;
     pij.resize(nbonds, 0.0);
     myq.resize(nonFixed_.size(), 0.0);
-    lhs.solve(rhs, &pij);
+    int info = lhs.solve(rhs, &pij);
+    if (info > 0)
+    {
+        return info;
+    }
     if (fp)
     {
         fprintf(fp, "rhs: ");
@@ -759,6 +769,7 @@ void QgenAcm::solveSQE(FILE                    *fp,
             fprintf(fp, "qtot = %g, it should be %g\n", qtot, qtotal_);
         }
     }
+    return info;
 }
 
 eQgen QgenAcm::generateCharges(FILE                      *fp,
@@ -775,6 +786,7 @@ eQgen QgenAcm::generateCharges(FILE                      *fp,
                 chargeGenerationAlgorithmName(pd->chargeGenerationAlgorithm()).c_str());
     }
     checkSupport(pd);
+    int info = 0;
     if (eQgen::OK == eQGEN_)
     {
         updateParameters(pd);
@@ -783,15 +795,22 @@ eQgen QgenAcm::generateCharges(FILE                      *fp,
         if (pd->interactionPresent(InteractionType::BONDCORRECTIONS) &&
             pd->chargeGenerationAlgorithm() == ChargeGenerationAlgorithm::SQE)
         {
-            solveSQE(fp, pd, bonds);
+            info = solveSQE(fp, pd, bonds);
         }
         else
         {
             calcRhs(pd->getEpsilonR());
-            solveEEM(fp);
+            info = solveEEM(fp);
         }
-        copyChargesToAtoms(atoms);
-        dump(fp, atoms);
+        if (info == 0)
+        {
+            copyChargesToAtoms(atoms);
+            dump(fp, atoms);
+        }
+        else
+        {
+            eQGEN_ = eQgen::MATRIXSOLVER;
+        }
     }
     return eQGEN_;
 }

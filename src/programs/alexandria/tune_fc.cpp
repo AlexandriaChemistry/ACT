@@ -193,6 +193,7 @@ class Optimization : public MolGen, Bayes
         bool                        calcAll_          = false;
         // Map from molid to MolEnergy
         std::map<int, MolEnergy>    MolEnergyMap_;
+        std::string                 outputFile_;
     public:
 
 
@@ -209,12 +210,15 @@ class Optimization : public MolGen, Bayes
         void add_pargs(std::vector<t_pargs> *pargs);
 
         //! \brief To be called after processing options
-        void optionsFinished()
+        void optionsFinished(const std::string &outputFile)
         {
             MolGen::optionsFinished();
             setBoxConstraint(bConstrain());
+            outputFile_ = outputFile;
         }
 
+        void saveState();
+        
         void setCalcAll(bool calcAll) { calcAll_ = calcAll; }
 
         //! \brief Return the level of theory used as reference
@@ -547,6 +551,11 @@ void Optimization::polData2TuneFc(bool bRandom)
         fprintf(debug, "poldata2TuneFc: Copied %zu parameters.\n",
                 Bayes::nParam());
     }
+}
+
+void Optimization::saveState()
+{
+    writePoldata(outputFile_, poldata(), false);
 }
 
 void Optimization::toPoldata(const std::vector<bool> &changed)
@@ -1280,7 +1289,7 @@ int alex_tune_fc(int argc, char *argv[])
     {
         return 0;
     }
-    opt.optionsFinished();
+    opt.optionsFinished(opt2fn("-o", NFILE, fnm));
 
     if (MASTER(opt.commrec()))
     {
@@ -1361,7 +1370,7 @@ int alex_tune_fc(int argc, char *argv[])
                              opt2fn("-x", NFILE, fnm),
                              opt2fn("-hf", NFILE, fnm),
                              oenv);
-            writePoldata(opt2fn("-o", NFILE, fnm), opt.poldata(), compress);
+            //writePoldata(opt2fn("-o", NFILE, fnm), opt.poldata(), compress);
         }
         else if (!bMinimum)
         {

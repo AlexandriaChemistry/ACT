@@ -55,11 +55,15 @@ class RegressionTest : public gmx::test::CommandLineTestBase
             checker_.setDefaultTolerance(tolerance);
         }
 
-        void testRegression(MatrixWrapper &a, std::vector<double> b)
+        int testRegression(MatrixWrapper &a, std::vector<double> b)
         {
             std::vector<double> x(a.nColumn());
-            a.solve(b, &x);
-            checker_.checkSequence(x.begin(), x.end(), "solution");
+            int info = a.solve(b, &x);
+            if (info == 0)
+            {
+                checker_.checkSequence(x.begin(), x.end(), "solution");
+            }
+            return info;
         }
 };
 
@@ -81,7 +85,7 @@ TEST_F (RegressionTest, Solve_A_x_is_B_2)
     std::vector<double> b({ 3, 4, 5 });
 
     // Diagonal matrix, should give as answer ( 1, 2, 5 )
-    testRegression(a, b);
+    EXPECT_FALSE(testRegression(a, b));
 #undef NCOL
 #undef NROW
 }
@@ -104,7 +108,7 @@ TEST_F (RegressionTest, Solve_A_x_is_B_3)
     }
     std::vector<double> b({ 6, 2, 2, 4 });
     // Answer should be ( 2, 1 )
-    testRegression(a, b);
+    EXPECT_FALSE(testRegression(a, b));
 #undef NCOL
 #undef NROW
 }
@@ -125,7 +129,7 @@ TEST_F (RegressionTest, Solve_A_x_is_B_4)
     }
     std::vector<double> b({ 6, 4 });
     // Answer should be ( 2 )
-    testRegression(a, b);
+    EXPECT_FALSE(testRegression(a, b));
 #undef NCOL
 #undef NROW
 }
@@ -146,7 +150,7 @@ TEST_F (RegressionTest, Solve_A_x_is_B_5)
     }
     std::vector<double> b({ 5, -5 });
     // Answer should be ( 1.6666, -2.5)
-    testRegression(a, b);
+    EXPECT_FALSE(testRegression(a, b));
 #undef NCOL
 #undef NROW
 }
@@ -168,7 +172,30 @@ TEST_F (RegressionTest, Solve_A_x_is_B_6)
     }
     std::vector<double> b({ 1, 2, 5 });
     // Answer should be ( 1, 2 )
-    testRegression(a, b);
+    EXPECT_FALSE(testRegression(a, b));
 #undef NCOL
 #undef NROW
 }
+
+TEST_F (RegressionTest, Fail_A_x_is_B)
+{
+#define NCOL 3
+#define NROW 3
+    double        aa[NROW][NCOL] =
+    {
+        { 1, 0, 0 },
+        { 0, 0, 0 },
+        { 0, 0, 0 }
+    };
+    MatrixWrapper a(NCOL, NROW);
+    for (int i = 0; i < NROW; i++)
+    {
+        a.setRow(i, aa[i]);
+    }
+    std::vector<double> b({ 1, -1, 1 });
+    // Answer should be ( 1, 2 )
+    EXPECT_FALSE(testRegression(a, b));
+#undef NCOL
+#undef NROW
+}
+
