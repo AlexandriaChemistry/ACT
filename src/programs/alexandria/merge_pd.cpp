@@ -55,38 +55,34 @@
 #include "poldata_tables.h"
 #include "poldata_xml.h"
 
-enum EemAtomProps {
-    eEMEta   = 0, 
-    eEMChi   = 1, 
-    eEMZeta  = 2,  
-    eEMAlpha = 3,
-    eEMAll   = 4,
-    eEMNR    = 5
+enum class EemProps {
+    jaa, 
+    chi, 
+    zeta,  
+    alpha,
+    hardness,
+    electronegativity,
+    all
 };
 
-typedef struct {
-    EemAtomProps  eEM;
-    const char   *name;
-} t_eemAtom_props;
-
-t_eemAtom_props eemAtom_props[eEMNR] = {
-    {eEMEta,   "eta"},
-    {eEMChi,   "chi"},
-    {eEMZeta,  "zeta"},
-    {eEMAlpha, "alpha"},
-    {eEMAll,   "all"}
+std::map<EemProps, std::string> eem_props = {
+    { EemProps::jaa,               "jaa" },
+    { EemProps::chi,               "chi" },
+    { EemProps::zeta,              "zeta" },
+    { EemProps::alpha,             "alpha" },
+    { EemProps::hardness,          "hardness" },
+    { EemProps::electronegativity, "electronegativity" },
+    { EemProps::all,               "all" }
 };
 
-static EemAtomProps name2eemprop(const std::string name)
+static EemProps name2eemprop(const std::string &name)
 {
-    for (auto i = 0; i < eEMNR; i++)
+    for (auto it = eem_props.begin(); it != eem_props.end(); ++it)
     {
-        if (strcasecmp(name.c_str(), eemAtom_props[i].name) == 0)
-        {
-            return eemAtom_props[i].eEM;
-        }
+        if (it->second == name)
+            return it->first;
     }
-    return eEMNR;
+    GMX_THROW(gmx::InternalError(gmx::formatString("No such property %s", name.c_str()).c_str()));
 }
 
 static void merge_parameter(const std::vector<alexandria::Poldata> &pds,
@@ -106,10 +102,16 @@ static void merge_parameter(const std::vector<alexandria::Poldata> &pds,
     {
         for (const auto& pd : pds)
         {
-            auto fs    = pd.findForcesConst(iType);
-            auto ztype = atp.interactionTypeToIdentifier(iType);
-            auto ei    = fs.findParametersConst(ztype);
-            gmx_stats_add_point(lsq[j], 0, ei[parameter].value(), 0, 0);
+            if (pdout->interactionPresent(iType))
+            {
+                auto fs    = pd.findForcesConst(iType);
+                auto ztype = atp.interactionTypeToIdentifier(iType);
+                if (!ztype.id().empty())
+                {
+                    auto ei    = fs.findParametersConst(ztype);
+                    gmx_stats_add_point(lsq[j], 0, ei[parameter].value(), 0, 0);
+                }
+            }
         }
         j++;
     }
@@ -117,21 +119,27 @@ static void merge_parameter(const std::vector<alexandria::Poldata> &pds,
     j = 0;
     for (const auto &atp : pdout->particleTypesConst())
     {
-        auto fs      = pdout->findForces(iType);
-        auto ztype   = atp.interactionTypeToIdentifier(iType);
-        auto ei      = fs->findParameters(ztype);
-        real average = 0;
-        real sigma   = 0;
-        int  N       = 0;
-        if ((estatsOK == gmx_stats_get_average(lsq[j], &average)) &&
-            (estatsOK == gmx_stats_get_sigma(lsq[j], &sigma)) &&
-            (estatsOK == gmx_stats_get_npoints(lsq[j], &N)))
+        if (pdout->interactionPresent(iType))
         {
-            (*ei)[parameter].setValue(average);
-            (*ei)[parameter].setUncertainty(sigma);
-            (*ei)[parameter].setNtrain(N);
+            auto fs      = pdout->findForces(iType);
+            auto ztype   = atp.interactionTypeToIdentifier(iType);
+            if (!ztype.id().empty())
+            {
+                auto ei      = fs->findParameters(ztype);
+                real average = 0;
+                real sigma   = 0;
+                int  N       = 0;
+                if ((estatsOK == gmx_stats_get_average(lsq[j], &average)) &&
+                    (estatsOK == gmx_stats_get_sigma(lsq[j], &sigma)) &&
+                    (estatsOK == gmx_stats_get_npoints(lsq[j], &N)))
+                {
+                    (*ei)[parameter].setValue(average);
+                    (*ei)[parameter].setUncertainty(sigma);
+                    (*ei)[parameter].setNtrain(N);
+                }
+                j++;
+            }
         }
-        j++;
     }
     for (size_t i = 0; i < nAtypes; i++)
     {
@@ -155,7 +163,7 @@ int alex_merge_pd(int argc, char *argv[])
     int                              NFILE       = asize(fnm);;
     
     static gmx_bool                  bcompress   = false;    
-    static const char               *eemprop[]   = {nullptr, "eta", "chi", "zeta", "alpha", "all", nullptr};
+    static const char               *eemprop[]   = {nullptr, "jaa", "chi", "zeta", "alpha", "hardness", "electronegativity", "all", nullptr};
     
     t_pargs                          pa[]        =
     {
@@ -203,31 +211,37 @@ int alex_merge_pd(int argc, char *argv[])
     readPoldata(filenames[0].c_str(), &pdout);
     
     //We now update different parts of pdout->    
-    EemAtomProps eem = name2eemprop(eemprop[0]);        
-    if (eem == eEMEta || eem == eEMAll)
+    EemProps eem = name2eemprop(eemprop[0]);        
+    if (eem == EemProps::jaa || eem == EemProps::all)
     {
         merge_parameter(pds, alexandria::InteractionType::ELECTRONEGATIVITYEQUALIZATION,
                         "jaa", &pdout);
     }
-    if (eem == eEMChi || eem == eEMAll)
+    if (eem == EemProps::chi || eem == EemProps::all)
     {
         merge_parameter(pds, alexandria::InteractionType::ELECTRONEGATIVITYEQUALIZATION,
                         "chi", &pdout);
     }
-    if (eem == eEMAlpha || eem == eEMAll)
+    if (eem == EemProps::alpha || eem == EemProps::all)
     {
         merge_parameter(pds, alexandria::InteractionType::POLARIZATION,
                         "alpha", &pdout);
     }
-    if (eem == eEMZeta || eem == eEMAll)
+    if (eem == EemProps::zeta || eem == EemProps::all)
     {
         merge_parameter(pds, alexandria::InteractionType::CHARGEDISTRIBUTION,
                         "zeta", &pdout);
     }
-    if (eem == eEMNR)
+    if (eem == EemProps::hardness || eem == EemProps::all)
     {
-        gmx_fatal(FARGS, "There is no atomic electric property called %s in alexandria.\n", eemprop[0]);
-    }    
+        merge_parameter(pds, alexandria::InteractionType::BONDCORRECTIONS,
+                        "hardness", &pdout);
+    }
+    if (eem == EemProps::electronegativity || eem == EemProps::all)
+    {
+        merge_parameter(pds, alexandria::InteractionType::BONDCORRECTIONS,
+                        "electronegativity", &pdout);
+    }
     writePoldata(opt2fn("-do", NFILE, fnm), &pdout, bcompress);
     if (opt2bSet("-latex", NFILE, fnm))
     {

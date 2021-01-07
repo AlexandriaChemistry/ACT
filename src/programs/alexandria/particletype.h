@@ -119,7 +119,7 @@ class ParticleType
     /*! \brief Get identifier corresponding to interactiontype
      * 
      * \param[in] key itype
-     * \return value will be empty if option does not exist an
+     * \return value will be empty if option does not exist.
      */
     Identifier interactionTypeToIdentifier(InteractionType itype) const;
     
