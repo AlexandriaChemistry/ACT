@@ -32,9 +32,9 @@
 
 #include "poldata_tables.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cinttypes>
+#include <cstdio>
+#include <cstdlib>
 
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/linearalgebra/matrix.h"
@@ -75,10 +75,10 @@ static void eemprops_zeta_header(LongTable &lt,
     longbuf = gmx::formatString("Optimized parameters for the Alexandria Charge Model, %s. Atomic electronegativity $\\chi$ (eV), atomic hardness $\\eta$ (eV), exponent of the charge density function $\\beta$ in nm$^{-1}$. %sThe uncertainty in each parameter is given by $\\sigma$.", model.c_str(), polstring.c_str());
     lt.setCaption(longbuf.c_str());
     lt.setLabel("eemprop");
-    longbuf.assign("Type & $\\chi$($\\sigma$) & $\\eta$($\\sigma$) & $\\beta$($\\sigma$)"); 
+    longbuf.assign("Type & $\\chi$(N, $\\sigma$) & $\\eta$(N, $\\sigma$) & $\\beta$(N, $\\sigma$)"); 
     if (pol)
     {
-        longbuf.append("& $\\alpha$($\\sigma$)");
+        longbuf.append("& $\\alpha$(N, $\\sigma$)");
     }
     lt.addHeadLine(longbuf.c_str());
     lt.printHeader();
@@ -104,7 +104,7 @@ void alexandria_eemprops_table(FILE           *fp,
             continue;
         }
         std::string line = pt.id().id() + " ";
-
+        bool        skip = false;
         if (pt.hasInteractionType(itEem))
         {
             auto id  = pt.interactionTypeToIdentifier(itEem);
@@ -112,13 +112,17 @@ void alexandria_eemprops_table(FILE           *fp,
             {
                 auto chi = eep.findParameterTypeConst(id, "chi");
                 auto jaa = eep.findParameterTypeConst(id, "jaa");
-                line.append(gmx::formatString("& %0.3f(%0.3f) & %0.3f(%0.3f) ",
-                                              chi.value(), chi.uncertainty() + 0.005,
-                                              jaa.value(), jaa.uncertainty() + 0.005));
+                line.append(gmx::formatString("& %0.3f(%llu, %0.3f) & %0.3f(%llu, %0.3f) ",
+                                              chi.value(), chi.ntrain(),
+                                              chi.uncertainty() + 0.005,
+                                              jaa.value(), jaa.ntrain(),
+                                              jaa.uncertainty() + 0.005));
             }
             else
             {
                 line.append(" & &");
+                // If there are no EEM data we skip printing this.
+                skip = true;
             }
         }
         else
@@ -132,8 +136,9 @@ void alexandria_eemprops_table(FILE           *fp,
             if (cdist.parameterExists(id))
             {
                 auto zeta = cdist.findParameterTypeConst(id, "zeta");
-                line.append(gmx::formatString("& %0.4f(%0.3f) ",
-                                              zeta.value(), zeta.uncertainty() + 0.005));
+                line.append(gmx::formatString("& %0.4f(%llu, %0.3f) ",
+                                              zeta.value(), zeta.ntrain(),
+                                              zeta.uncertainty() + 0.005));
             }
             else
             {
@@ -152,8 +157,9 @@ void alexandria_eemprops_table(FILE           *fp,
                 if (polariz.parameterExists(id))
                 {
                     auto alpha = polariz.findParameterTypeConst(id, "alpha");
-                    line.append(gmx::formatString("& %0.5f(%0.4f) ",
-                                                  alpha.value(), alpha.uncertainty() + 0.005));
+                    line.append(gmx::formatString("& %0.5f(%llu, %0.4f) ",
+                                                  alpha.value(), alpha.ntrain(),
+                                                  alpha.uncertainty() + 0.005));
                 }
                 else
                 {
@@ -165,7 +171,10 @@ void alexandria_eemprops_table(FILE           *fp,
                 line.append(" &");
             }
         }
-        lt.printLine(line);
+        if (!skip)
+        {
+            lt.printLine(line);
+        }
     }
     lt.printFooter();
     fflush(fp);
