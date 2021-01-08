@@ -194,7 +194,6 @@ double Bayes::MCMC(FILE *fplog)
     double                           deltaEval       = 0;
     double                           randProbability = 0;
     double                           mcProbability   = 0; 
-    double                           halfIter        = maxIter()/2;   
     parm_t                           sum, sum_of_sq;
     
     std::vector<FILE *>              fpc;
@@ -319,8 +318,8 @@ double Bayes::MCMC(FILE *fplog)
         // to decide whether to accept or reject the new parameter
         if (!accept)
         {
-            // Wait 5*nParam iterations before temperature reduction  
-            if (anneal() && (iter > (5*nParam)))
+            // Only anneal after half the simulation
+            if (anneal() && iter > maxIter()/2)
             {
                 beta = computeBeta(iter/nParam);
             }
@@ -374,7 +373,7 @@ double Bayes::MCMC(FILE *fplog)
             fprintf(fpe, "%8f  %10g\n", xiter, prevEval);
             fflush(fpe);
         }
-        if (iter >= halfIter)
+        if (iter >= maxIter()/2)
         {
             for (auto k = 0; k < nParam; k++)
             {
