@@ -112,7 +112,7 @@ void alexandria_eemprops_table(FILE           *fp,
             {
                 auto chi = eep.findParameterTypeConst(id, "chi");
                 auto jaa = eep.findParameterTypeConst(id, "jaa");
-                line.append(gmx::formatString("& %0.3f(%llu, %0.3f) & %0.3f(%llu, %0.3f) ",
+                line.append(gmx::formatString("& %0.3f(%lu, %0.3f) & %0.3f(%lu, %0.3f) ",
                                               chi.value(), chi.ntrain(),
                                               chi.uncertainty() + 0.005,
                                               jaa.value(), jaa.ntrain(),
@@ -136,7 +136,7 @@ void alexandria_eemprops_table(FILE           *fp,
             if (cdist.parameterExists(id))
             {
                 auto zeta = cdist.findParameterTypeConst(id, "zeta");
-                line.append(gmx::formatString("& %0.4f(%llu, %0.3f) ",
+                line.append(gmx::formatString("& %0.4f(%lu, %0.3f) ",
                                               zeta.value(), zeta.ntrain(),
                                               zeta.uncertainty() + 0.005));
             }
@@ -157,7 +157,7 @@ void alexandria_eemprops_table(FILE           *fp,
                 if (polariz.parameterExists(id))
                 {
                     auto alpha = polariz.findParameterTypeConst(id, "alpha");
-                    line.append(gmx::formatString("& %0.5f(%llu, %0.4f) ",
+                    line.append(gmx::formatString("& %0.5f(%lu, %0.4f) ",
                                                   alpha.value(), alpha.ntrain(),
                                                   alpha.uncertainty() + 0.005));
                 }
