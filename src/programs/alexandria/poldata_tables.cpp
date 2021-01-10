@@ -52,166 +52,119 @@
 namespace alexandria
 {
 
-static void eemprops_zeta_header(LongTable &lt,
-                                 const Poldata  *pd)
-{
-    std::string      longbuf;
-    CompositionSpecs cs;
-    
-    auto pol   = pd->polarizable();
-    auto qt    = pd->findForcesConst(InteractionType::CHARGEDISTRIBUTION);
-
-    std::string model = gmx::formatString("ACM-%s", pol ? "pg" : "g");
-    std::string polstring;
-    if (pol)
-    {    
-        lt.setColumns("lccccc");
-        polstring.assign("Atomic polarizability ($\\alpha$) in {\\AA}$^3$. ");
-    }
-    else
-    {
-        lt.setColumns("lcccc");
-    }
-    longbuf = gmx::formatString("Optimized parameters for the Alexandria Charge Model, %s. Atomic electronegativity $\\chi$ (eV), atomic hardness $\\eta$ (eV), exponent of the charge density function $\\beta$ in nm$^{-1}$. %sThe uncertainty in each parameter is given by $\\sigma$.", model.c_str(), polstring.c_str());
-    lt.setCaption(longbuf.c_str());
-    lt.setLabel("eemprop");
-    longbuf.assign("Type & $\\chi$(N, $\\sigma$) & $\\eta$(N, $\\sigma$) & $\\beta$(N, $\\sigma$)"); 
-    if (pol)
-    {
-        longbuf.append("& $\\alpha$(N, $\\sigma$)");
-    }
-    lt.addHeadLine(longbuf.c_str());
-    lt.printHeader();
-}
-
-void alexandria_eemprops_table(FILE           *fp,
-                               const Poldata  *pd)
+void alexandria_subtype_table(FILE          *fp,
+                              const Poldata *pd)
 {
     LongTable  lt(fp, false, nullptr);
 
-    eemprops_zeta_header(lt, pd);
-    auto itEem   = InteractionType::ELECTRONEGATIVITYEQUALIZATION;
-    auto eep     = pd->findForcesConst(itEem);
-    auto itCdist = InteractionType::CHARGEDISTRIBUTION;
-    auto cdist   = pd->findForcesConst(itCdist);
-    auto itPol   = InteractionType::POLARIZATION;
-    auto polariz = pd->findForcesConst(itPol);
-    auto pol     = pd->polarizable();
+    lt.setColumns("lcccc");
+    auto longbuf = gmx::formatString("Mapping from atom type to subtypes: Alexandria Charge Model (ACM), Charge distribution (Beta), Bond and Polarizability (Pol) types.");
+    lt.setCaption(longbuf.c_str());
+    lt.setLabel("subtype");
+    auto header = gmx::formatString("Atom type & ACM & Beta & Bond & Pol");
+    lt.addHeadLine(header.c_str());
+    lt.printHeader();
+    std::vector<std::string> subtypes = { "acmtype", "zetatype", "bondtype", "poltype" };
     for (const auto &pt : pd->particleTypesConst())
     {
         if (pt.mass() == 0)
         {
             continue;
         }
-        std::string line = pt.id().id() + " ";
-        bool        skip = false;
-        if (pt.hasInteractionType(itEem))
+        auto line = pt.id().id();
+        for(const auto &st : subtypes)
         {
-            auto id  = pt.interactionTypeToIdentifier(itEem);
-            if (eep.parameterExists(id))
+            if (pt.hasOption(st))
             {
-                auto chi = eep.findParameterTypeConst(id, "chi");
-                auto jaa = eep.findParameterTypeConst(id, "jaa");
-                line.append(gmx::formatString("& %0.3f(%lu, %0.3f) & %0.3f(%lu, %0.3f) ",
-                                              chi.value(), chi.ntrain(),
-                                              chi.uncertainty() + 0.005,
-                                              jaa.value(), jaa.ntrain(),
-                                              jaa.uncertainty() + 0.005));
+                line.append(gmx::formatString(" & %s",
+                                              pt.optionValue(st).c_str()));
             }
             else
             {
-                line.append(" & &");
-                // If there are no EEM data we skip printing this.
-                skip = true;
+                line.append(" & -");
             }
         }
-        else
+        lt.printLine(line);
+    }
+    lt.printFooter();
+}
+
+static void alexandria_itype_table(FILE           *fp,
+                                   const Poldata  *pd,
+                                   InteractionType itype)
+{
+    LongTable  lt(fp, false, nullptr);
+    lt.setCaption(gmx::formatString("Parameters for %s. Average value(s) is/are given, with number of data points N and standard deviation $\\sigma$.", 
+                                    interactionTypeToDescription(itype).c_str()).c_str());
+    lt.setLabel(interactionTypeToString(itype).c_str());
+    auto        eep      = pd->findForcesConst(itype);
+    bool        first    = true;
+    std::string header;
+    int         ncolumns = 1;
+    for (const auto &ep : eep.parametersConst())
+    {
+        std::string line = ep.first.id();
+        if (first)
         {
-            line.append(" & &");
+            header = "Type";
         }
-        if (pt.hasInteractionType(itCdist))
+        int ntrain = 0;
+        for (const auto &fp : ep.second)
         {
-            auto id   = pt.interactionTypeToIdentifier(itCdist);
-            
-            if (cdist.parameterExists(id))
+            // Round upwards the sigma values.
+            if (fp.second.ntrain() > 0)
             {
-                auto zeta = cdist.findParameterTypeConst(id, "zeta");
-                line.append(gmx::formatString("& %0.4f(%lu, %0.3f) ",
-                                              zeta.value(), zeta.ntrain(),
-                                              zeta.uncertainty() + 0.005));
+                line += gmx::formatString(" & %.2f(%d, %.2f)",
+                                          fp.second.value(),
+                                          fp.second.ntrain(),
+                                          fp.second.uncertainty()+0.005);
             }
             else
             {
-                line.append(" &");
+                line += " & - ";
+            }
+            ntrain += fp.second.ntrain();
+            if (first)
+            {
+                header   += gmx::formatString(" & %s (N, $\\sigma$)", fp.first.c_str());
+                ncolumns += 1;
             }
         }
-        else
+        if (first)
         {
-            line.append(" &");
+            lt.setColumns(ncolumns);
+            lt.addHeadLine(header.c_str());
+            lt.printHeader();
+            first = false;
         }
-        if (pol)
-        { 
-            if (pt.hasInteractionType(itPol))
-            {
-                auto id    = pt.interactionTypeToIdentifier(itPol);
-                if (polariz.parameterExists(id))
-                {
-                    auto alpha = polariz.findParameterTypeConst(id, "alpha");
-                    line.append(gmx::formatString("& %0.5f(%lu, %0.4f) ",
-                                                  alpha.value(), alpha.ntrain(),
-                                                  alpha.uncertainty() + 0.005));
-                }
-                else
-                {
-                    line.append(" &");
-                }
-            }
-            else
-            {
-                line.append(" &");
-            }
-        }
-        if (!skip)
+        if (ntrain > 0)
         {
             lt.printLine(line);
         }
     }
     lt.printFooter();
-    fflush(fp);
 }
 
-void alexandria_eemprops_corr(const Poldata  *pd,
-                              FILE           *fp)
+void alexandria_eemprops_table(FILE           *fp,
+                               const Poldata  *pd)
 {
-
-    gmx_stats_t  chi_eta    = gmx_stats_init();
-    gmx_stats_t  chi_zeta   = gmx_stats_init();
-    gmx_stats_t  eta_zeta   = gmx_stats_init();
-    
-    real ce = 0;
-    real cz = 0;
-    real ez = 0;
-    
-    auto eep = pd->findForcesConst(InteractionType::ELECTRONEGATIVITYEQUALIZATION);
-    for (auto &eem : eep.parametersConst())
-    {
-        auto chi  = eem.second.find("chi")->second.value();
-        auto jaa  = eem.second.find("jaa")->second.value();
-        auto zeta = eem.second.find("zeta")->second.value();
-        
-        gmx_stats_add_point(chi_eta,  chi, jaa, 0, 0);
-        gmx_stats_add_point(chi_zeta, chi, zeta, 0, 0);
-        gmx_stats_add_point(eta_zeta, jaa, zeta, 0, 0);
+    std::vector<InteractionType> itypes = {
+        InteractionType::ELECTRONEGATIVITYEQUALIZATION,
+        InteractionType::CHARGEDISTRIBUTION,
+        InteractionType::POLARIZATION,
+        InteractionType::BONDCORRECTIONS
+    };
+    for (const auto &itype : itypes)
+    { 
+        if (pd->interactionPresent(itype))
+        {
+            auto fs = pd->findForcesConst(itype);
+            if (fs.numberOfParameters() > 0)
+            {
+                alexandria_itype_table(fp, pd, itype);
+            }
+        }
     }
-    
-    gmx_stats_get_corr_coeff(chi_eta,    &ce);
-    gmx_stats_get_corr_coeff(chi_zeta,   &cz);
-    gmx_stats_get_corr_coeff(eta_zeta,   &ez);
-    
-    fprintf(fp, "\nCorrelation coefficient between eemprop parameters:\n");
-    fprintf(fp, "Absolute Eelectronegativity and Absolute Hardness: %0.3f \n", 100*ce);
-    fprintf(fp, "Absolute Eelectronegativity and Exponent of Charge Density: %0.3f \n", 100*cz);
-    fprintf(fp, "Absolute Hardness and Exponent of Charge Density: %0.3f \n", 100*ez);    
 }
 
 } //namespace

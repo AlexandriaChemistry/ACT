@@ -360,7 +360,7 @@ static void analyzePoldata(Poldata           *pd,
     {
         return;
     }
-    size_t mindata   = 1;
+    int    mindata   = 1;
     double tolerance = 0.001;
     for(auto &fc : pd->forcesConst())
     {

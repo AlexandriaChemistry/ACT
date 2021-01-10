@@ -46,11 +46,15 @@ namespace alexandria
  * \param[in]  pd   Force field data
  */
 
-void alexandria_eemprops_table(FILE            *fp, 
-                               const Poldata   *pd);  
+    void alexandria_eemprops_table(FILE            *fp, 
+                                   const Poldata   *pd);  
                                
- void alexandria_eemprops_corr(const Poldata  *pd,
-                               FILE           *fp);                                          
+    void alexandria_eemprops_corr(const Poldata  *pd,
+                                  FILE           *fp);                             
+                               
+    void alexandria_subtype_table(FILE           *fp,
+                                  const Poldata  *pd);
+             
 } //namespace
 
 #endif

@@ -115,7 +115,17 @@ void LongTable::printFooter()
 
 void LongTable::printLine(const std::string &line)
 {
-    fprintf(fp_, "%s\\\\\n", line.c_str());
+    std::string myline;
+    
+    for(auto &c : line)
+    {
+        if (c == '_' || c == '#')
+        {
+            myline.append("\\");
+        }
+        myline += c;
+    }
+    fprintf(fp_, "%s\\\\\n", myline.c_str());
 }
 
 void LongTable::printHLine()

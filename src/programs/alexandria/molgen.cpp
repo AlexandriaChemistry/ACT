@@ -388,7 +388,7 @@ void MolGen::checkDataSufficiency(FILE *fp)
                             {
                                 for(auto &force : fplist->findParametersConst(ztype))
                                 {
-                                    if (force.second.ntrain() < static_cast<uint64_t>(mindata_))
+                                    if (force.second.ntrain() < mindata_)
                                     {
                                         keep = false;
                                         break;
@@ -448,7 +448,7 @@ void MolGen::generateOptimizationIndex(FILE *fp)
                 {
                     if (fit(param.first))
                     {
-                        if (param.second.isMutable() && param.second.ntrain() >= static_cast<uint64_t>(mindata_))
+                        if (param.second.isMutable() && param.second.ntrain() >= mindata_)
                         {
                             optIndex_.push_back(OptimizationIndex(fs.first, fpl.first, param.first));
                         }

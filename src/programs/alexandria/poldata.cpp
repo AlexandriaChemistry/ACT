@@ -132,7 +132,6 @@ bool Poldata::typeToInteractionType(const std::string &type,
     }
     if (type2Itype_.find(type) == type2Itype_.end())
     {
-        printf("Cannot find type '%s' in force field file %s", type.c_str(), filename_.c_str());
         return false;
     }
     else

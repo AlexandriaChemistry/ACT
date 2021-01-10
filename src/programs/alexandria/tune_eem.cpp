@@ -487,7 +487,7 @@ void OptACM::InitOpt(bool bRandom)
     for(auto &optIndex : optIndex_)
     {
         auto param = poldata()->findForcesConst(optIndex.iType()).findParameterTypeConst(optIndex.id(), optIndex.type());
-        if (param.ntrain() >= static_cast<uint64_t>(mindata()))
+        if (param.ntrain() >= mindata())
         {
             Bayes::addParam(optIndex.name(),
                             param.value(), param.minimum(), param.maximum(),
@@ -694,8 +694,7 @@ int alex_tune_eem(int argc, char *argv[])
         { efXVG, "-isopol",    "isopol_corr",   ffWRITE },
         { efXVG, "-anisopol",  "anisopol_corr", ffWRITE },
         { efXVG, "-conv",      "param-conv",    ffWRITE },
-        { efXVG, "-epot",      "param-epot",    ffWRITE },
-        { efTEX, "-latex",     "eemprop",       ffWRITE }
+        { efXVG, "-epot",      "param-epot",    ffWRITE }
     };
 
     const int                   NFILE         = asize(fnm);
@@ -867,15 +866,6 @@ int alex_tune_eem(int argc, char *argv[])
                                  efield,
                                  useOffset,
                                  opt.optIndex_);
-            //writePoldata(opt2fn("-o", NFILE, fnm), opt.poldata(), bcompress);
-            if (opt2bSet("-latex", NFILE, fnm))
-            {
-                FILE        *tp;
-                tp = gmx_ffopen(opt2fn("-latex", NFILE, fnm), "w");
-                alexandria_eemprops_table(tp, opt.poldata());
-                alexandria_eemprops_corr(opt.poldata(), opt.logFile());
-                gmx_ffclose(tp);
-            }
         }
         else if (!bMinimum)
         {

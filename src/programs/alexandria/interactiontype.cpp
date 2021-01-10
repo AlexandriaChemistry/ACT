@@ -40,22 +40,27 @@
 namespace alexandria
 {
 
-std::map<InteractionType, std::string> eitNames = {
-    { InteractionType::BONDS,              "BONDS"              },
-    { InteractionType::ANGLES,             "ANGLES"             },
-    { InteractionType::LINEAR_ANGLES,      "LINEAR_ANGLES"      },
-    { InteractionType::PROPER_DIHEDRALS,   "PROPER_DIHEDRALS"   },
-    { InteractionType::IMPROPER_DIHEDRALS, "IMPROPER_DIHEDRALS" },
-    { InteractionType::VDW,                "VANDERWAALS"        },
-    { InteractionType::LJ14,               "LJ14"               },
-    { InteractionType::POLARIZATION,       "POLARIZATION"       },
-    { InteractionType::CONSTR,             "CONSTR"             },
-    { InteractionType::VSITE2,             "VSITE2"             },
-    { InteractionType::VSITE3FAD,          "VSITE3FAD"          },
-    { InteractionType::VSITE3OUT,          "VSITE3OUT"          },
-    { InteractionType::CHARGEDISTRIBUTION, "CHARGEDISTRIBUTION" },
-    { InteractionType::BONDCORRECTIONS,    "BONDCORRECTIONS"    },
-    { InteractionType::ELECTRONEGATIVITYEQUALIZATION, "ELECTRONEGATIVITYEQUALIZATION" }
+typedef struct
+{
+    std::string name, description;
+} NameDescr;
+
+std::map<InteractionType, NameDescr> eitNames = {
+    { InteractionType::BONDS,              { "BONDS", "bonded forces" } },
+    { InteractionType::ANGLES,             { "ANGLES", "angle forces" } },
+    { InteractionType::LINEAR_ANGLES,      { "LINEAR_ANGLES", "linear angle forces" } },
+    { InteractionType::PROPER_DIHEDRALS,   { "PROPER_DIHEDRALS", "proper dihedrals" } },
+    { InteractionType::IMPROPER_DIHEDRALS, { "IMPROPER_DIHEDRALS", "improper dihedrals" } },
+    { InteractionType::VDW,                { "VANDERWAALS", "Van der Waals interactions" } },
+    { InteractionType::LJ14,               { "LJ14", "1-4 Lennard-Jones forces" } },
+    { InteractionType::POLARIZATION,       { "POLARIZATION", "polarization" } },
+    { InteractionType::CONSTR,             { "CONSTR", "constraints" } },
+    { InteractionType::VSITE2,             { "VSITE2", "virtual sites with two constructing atoms" } },
+    { InteractionType::VSITE3FAD,          { "VSITE3FAD", "virtual sites with 3FAD" } },
+    { InteractionType::VSITE3OUT,          { "VSITE3OUT", "virtual sites with three contructing atoms, out of plane" } },
+    { InteractionType::CHARGEDISTRIBUTION, { "CHARGEDISTRIBUTION", "charge distributions" } },
+    { InteractionType::BONDCORRECTIONS,    { "BONDCORRECTIONS", "bond charge corrections" } },
+    { InteractionType::ELECTRONEGATIVITYEQUALIZATION, { "ELECTRONEGATIVITYEQUALIZATION", "electronegativity equalization" } }
 };
 
 const std::string &interactionTypeToString(InteractionType iType)
@@ -66,14 +71,25 @@ const std::string &interactionTypeToString(InteractionType iType)
         GMX_THROW(gmx::InternalError(gmx::formatString("No string corresponding to interaction type %d",
                                                        static_cast<int>(iType)).c_str()));
     }
-    return en->second;
+    return en->second.name;
+}
+
+const std::string &interactionTypeToDescription(InteractionType iType)
+{
+    auto en = eitNames.find(iType);
+    if (en == eitNames.end())
+    {
+        GMX_THROW(gmx::InternalError(gmx::formatString("No string corresponding to interaction type %d",
+                                                       static_cast<int>(iType)).c_str()));
+    }
+    return en->second.description;
 }
 
 InteractionType stringToInteractionType(const std::string &name)
 {
     for (auto &eit : eitNames)
     {
-        if (name == eit.second)
+        if (name == eit.second.name)
         {
             return eit.first;
         }

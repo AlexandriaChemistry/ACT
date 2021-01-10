@@ -90,7 +90,7 @@ void ForceFieldParameter::setUncertainty(double uncertainty)
     }
 }
 
-void ForceFieldParameter::setNtrain(uint64_t ntrain)
+void ForceFieldParameter::setNtrain(int ntrain)
 { 
     if (mutability_ == Mutability::Free || mutability_ == Mutability::Bounded)
     {
@@ -114,8 +114,8 @@ CommunicationStatus ForceFieldParameter::Send(const t_commrec *cr, int dest) con
         gmx_send_double(cr, dest, originalValue_);
         gmx_send_double(cr, dest, uncertainty_);
         gmx_send_double(cr, dest, originalUncertainty_);
-        gmx_send_int(cr, dest, static_cast<int>(ntrain_));
-        gmx_send_int(cr, dest, static_cast<int>(originalNtrain_));
+        gmx_send_int(cr, dest, ntrain_);
+        gmx_send_int(cr, dest, originalNtrain_);
         gmx_send_double(cr, dest, minimum_);
         gmx_send_double(cr, dest, maximum_);
         gmx_send_int(cr, dest, strict_ ? 1 : 0);
@@ -129,7 +129,7 @@ CommunicationStatus ForceFieldParameter::Send(const t_commrec *cr, int dest) con
 
         if (nullptr != debug)
         {
-            fprintf(debug, "Sent ForceFieldParameter %g %g %s %" PRIu64 ", status %s\n",
+            fprintf(debug, "Sent ForceFieldParameter %g %g %s %d, status %s\n",
                     value_, uncertainty_, unit_.c_str(), ntrain_, cs_name(cs));
             fflush(debug);
         }
@@ -148,8 +148,8 @@ CommunicationStatus ForceFieldParameter::Receive(const t_commrec *cr, int src)
         originalValue_       = gmx_recv_double(cr, src);
         uncertainty_         = gmx_recv_double(cr, src);
         originalUncertainty_ = gmx_recv_double(cr, src);
-        ntrain_              = static_cast<uint64_t>(gmx_recv_int(cr, src));
-        originalNtrain_      = static_cast<uint64_t>(gmx_recv_int(cr, src));
+        ntrain_              = gmx_recv_int(cr, src);
+        originalNtrain_      = gmx_recv_int(cr, src);
         minimum_             = gmx_recv_double(cr, src);
         maximum_             = gmx_recv_double(cr, src);
         strict_              = gmx_recv_int(cr, src);
@@ -166,7 +166,7 @@ CommunicationStatus ForceFieldParameter::Receive(const t_commrec *cr, int src)
         }
         if (nullptr != debug)
         {
-            fprintf(debug, "Received ForceFieldParameter %g %g %s %" PRIu64 ", status %s\n",
+            fprintf(debug, "Received ForceFieldParameter %g %g %s %d, status %s\n",
                     value_, uncertainty_, unit_.c_str(), ntrain_, cs_name(cs));
             fflush(debug);
         }

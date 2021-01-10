@@ -69,7 +69,7 @@ class ForceFieldParameter
     ForceFieldParameter(const std::string &unit,
                         double             value,
                         double             uncertainty,
-                        uint64_t           ntrain,
+                        int                ntrain,
                         double             minimum,
                         double             maximum,
                         Mutability         mutability,
@@ -116,14 +116,14 @@ class ForceFieldParameter
     double originalUncertainty() const { return originalUncertainty_; }
     
     //! \brief Return the number of training points used
-    uint64_t ntrain() const { return ntrain_; }
+    int ntrain() const { return ntrain_; }
     
     /*!\brief Set the number of training point used for this value if not fixed
      * \param[in] ntrain  The number of data points
      * \throws an exception if the strict flag is true and the
      * variable is not mutable.
      */ 
-    void setNtrain(uint64_t ntrain);
+    void setNtrain(int ntrain);
     
     /*! \brief Add one to the number of training points
      * \throws when the parameter is not mutable and strict flag is true
@@ -190,9 +190,9 @@ class ForceFieldParameter
     //! The original value of the uncertainty
     double      originalUncertainty_ = 0;
     //! The number of training points used
-    uint64_t    ntrain_              = 0;
+    int         ntrain_              = 0;
     //! The original number of training points used
-    uint64_t    originalNtrain_      = 0;
+    int         originalNtrain_      = 0;
     //! Minimum allowed value for the parameter
     double      minimum_             = 0;
     //! Maximum allowed value for the parameter

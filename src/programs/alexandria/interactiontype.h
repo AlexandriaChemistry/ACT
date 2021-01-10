@@ -57,14 +57,22 @@ enum class InteractionType
 };
 
 /*! \brief
- * Convert interaction type to string
+ * Convert interaction type to string.
  * \param[in] iType The interaction type
  * \return The corresponding string
  */
 const std::string &interactionTypeToString(InteractionType iType);
 
 /*! \brief
- * Convert string to interaction type
+ * Convert interaction type to descriptive string rather than 
+ * what is force field files.
+ * \param[in] iType The interaction type
+ * \return The corresponding string
+ */
+const std::string &interactionTypeToDescription(InteractionType iType);
+
+/*! \brief
+ * Convert string to interaction type.
  * \param[in] name Name of the interaction
  * \return The corresponding interaction type
  * \throws if there is no corresponding interaction type
