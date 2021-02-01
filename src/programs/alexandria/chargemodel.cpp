@@ -82,10 +82,11 @@ const std::string &chargeTypeName(ChargeType ct)
 
 std::map<ChargeGenerationAlgorithm, const std::string> cg2Name =
     {
-        { ChargeGenerationAlgorithm::NONE, "None" },
-        { ChargeGenerationAlgorithm::EEM,  "EEM"  },
-        { ChargeGenerationAlgorithm::SQE,  "SQE"  },
-        { ChargeGenerationAlgorithm::ESP,  "ESP"  }
+        { ChargeGenerationAlgorithm::NONE,   "None"   },
+        { ChargeGenerationAlgorithm::EEM,    "EEM"    },
+        { ChargeGenerationAlgorithm::SQE,    "SQE"    },
+        { ChargeGenerationAlgorithm::ESP,    "ESP"    },
+        { ChargeGenerationAlgorithm::Custom, "Custom" }
     };
 
 std::map<const std::string, ChargeGenerationAlgorithm> name2CG;

@@ -707,6 +707,11 @@ immStatus MyMol::zetaToAtoms(const Poldata *pd,
         GMX_THROW(gmx::InvalidInputError(gmx::formatString("No option %s in in the force field file", ct).c_str()));
     }
     auto eqtModel = name2ChargeType(qt.optionValue(ct));
+    if (eqtModel == ChargeType::Point)
+    {
+        return immStatus::OK;
+    }
+    
     for (auto i = 0; i < atoms->nr; i++)
     {
         auto atype = pd->findParticleType(*atoms->atomtype[i]);
@@ -808,6 +813,7 @@ immStatus MyMol::GenerateTopology(const Poldata     *pd,
     {
         /* Center of charge */
         auto atntot = 0;
+        clear_rvec(coc_);
         for (auto i = 0; i < atoms->nr; i++)
         {
             auto atn = atoms->atom[i].atomnumber;
@@ -1412,13 +1418,14 @@ immStatus MyMol::GenerateAcmCharges(const Poldata       *pd,
     return imm;
 }
 
-immStatus MyMol::GenerateCharges(const Poldata       *pd,
-                                 const gmx::MDLogger &mdlog,
-                                 t_commrec           *cr,
-                                 const char          *tabfn,
-                                 gmx_hw_info_t       *hwinfo,
-                                 int                  maxiter,
-                                 real                 tolerance)
+immStatus MyMol::GenerateCharges(const Poldata             *pd,
+                                 const gmx::MDLogger       &mdlog,
+                                 t_commrec                 *cr,
+                                 const char                *tabfn,
+                                 gmx_hw_info_t             *hwinfo,
+                                 int                        maxiter,
+                                 real                       tolerance,
+                                 const std::vector<double> &qcustom)
 {
     immStatus imm         = immStatus::OK;
     bool      converged   = false;
@@ -1431,7 +1438,12 @@ immStatus MyMol::GenerateCharges(const Poldata       *pd,
     {
         backupCoordinates();
     }
-    switch (pd->chargeGenerationAlgorithm())
+    auto algorithm = pd->chargeGenerationAlgorithm();
+    if (atoms()->nr - qcustom.size() == 0)
+    {
+        algorithm = ChargeGenerationAlgorithm::Custom;
+    }
+    switch (algorithm)
     {
     case ChargeGenerationAlgorithm::NONE:
         {
@@ -1444,6 +1456,15 @@ immStatus MyMol::GenerateCharges(const Poldata       *pd,
             for (auto i = 0; i < mtop_->natoms; i++)
             {
                 myatoms->atom[i].q  = myatoms->atom[i].qB = 0;
+            }
+            return immStatus::OK;
+        }
+    case ChargeGenerationAlgorithm::Custom:
+        {
+            auto myatoms = atoms();
+            for (auto i = 0; i < mtop_->natoms; i++)
+            {
+                myatoms->atom[i].q  = myatoms->atom[i].qB = qcustom[i];
             }
             return immStatus::OK;
         }

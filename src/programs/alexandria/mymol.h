@@ -468,14 +468,16 @@ class MyMol : public MolProp
          * \param[in] hwinfo  Gromacs structure with hardware info
          * \param[in] qcycle  Number of cycles for computing charges
          * \param[in] qtol    Convergence of charges tolerance
+         * \param[in] qcustom Custom (user-provided) charges
          */
-        immStatus GenerateCharges(const Poldata          *pd,
-                                  const gmx::MDLogger    &fplog,
-                                  t_commrec              *cr,
-                                  const char             *tabfn,
-                                  gmx_hw_info_t          *hwinfo,
-                                  int                     qcycle,
-                                  real                    qtol);
+        immStatus GenerateCharges(const Poldata             *pd,
+                                  const gmx::MDLogger       &fplog,
+                                  t_commrec                 *cr,
+                                  const char                *tabfn,
+                                  gmx_hw_info_t             *hwinfo,
+                                  int                        qcycle,
+                                  real                       qtol,
+                                  const std::vector<double> &qcustom);
         /*! \brief
          * Generate atomic partial charges using EEM or SQE.
          * If shells are present they will be minimized.

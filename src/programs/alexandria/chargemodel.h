@@ -65,7 +65,7 @@ ChargeType name2ChargeType(const std::string &name);
  * \ingroup module_alexandria
  */
 enum class ChargeGenerationAlgorithm {
-    NONE, EEM, SQE, ESP
+    NONE, EEM, SQE, ESP, Custom
 };
 
 //! \brief Return the string corresping to cg

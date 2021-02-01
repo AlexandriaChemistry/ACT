@@ -344,7 +344,8 @@ void print_electric_props(FILE                           *fp,
                     mol.getMultiplicity());
 
             // Recalculate the atomic charges using the optmized parameters.
-            mol.GenerateCharges(pd, fplog, cr, tabfn, hwinfo, qcycle, qtol);
+            std::vector<double> dummy;
+            mol.GenerateCharges(pd, fplog, cr, tabfn, hwinfo, qcycle, qtol, dummy);
 
             // Electrostatic potentials
             mol.QgenResp_->updateZeta(mol.atoms(), pd);

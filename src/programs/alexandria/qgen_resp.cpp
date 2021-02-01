@@ -114,6 +114,9 @@ void QgenResp::setAtomInfo(t_atoms                          *atoms,
     qshell_  = 0;
     x_       = x;
     auto zzz = pd->findForcesConst(InteractionType::CHARGEDISTRIBUTION);
+    auto eqtModel = name2ChargeType(zzz.optionValue("chargetype"));
+    bool haveZeta = eqtModel != ChargeType::Point;
+
     nFixed_ = 0;
     for (int i = 0; i < atoms->nr; i++)
     {
@@ -122,7 +125,14 @@ void QgenResp::setAtomInfo(t_atoms                          *atoms,
         auto qparm = atype->parameterConst("charge");
         q_.push_back(qparm.value());
         row_.push_back(atype->row());
-        zeta_.push_back(zzz.findParameterTypeConst(ztype, "zeta").value());
+        if (haveZeta)
+        {
+            zeta_.push_back(zzz.findParameterTypeConst(ztype, "zeta").value());
+        }
+        else
+        {
+            zeta_.push_back(0.0);
+        }
         
         mutable_.push_back(qparm.mutability() != Mutability::Fixed);
         ptype_.push_back(atoms->atom[i].ptype);

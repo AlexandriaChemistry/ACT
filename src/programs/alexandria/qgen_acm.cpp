@@ -104,7 +104,15 @@ QgenAcm::QgenAcm(const Poldata *pd,
             row_.push_back(0);
         }
         auto qtype = atype->interactionTypeToIdentifier(InteractionType::CHARGEDISTRIBUTION);
-        zeta_.push_back(qt.findParameterTypeConst(qtype, "zeta").value());
+        auto eqtModel = name2ChargeType(qt.optionValue("chargetype"));
+        if (eqtModel != ChargeType::Point)
+        {
+            zeta_.push_back(qt.findParameterTypeConst(qtype, "zeta").value());
+        }
+        else
+        {
+            zeta_.push_back(0.0);
+        }
         qdist_id_.push_back(qtype);
         auto acmtype = atype->interactionTypeToIdentifier(InteractionType::ELECTRONEGATIVITYEQUALIZATION);
         acm_id_.push_back(acmtype);
@@ -121,16 +129,20 @@ QgenAcm::QgenAcm(const Poldata *pd,
 
 void QgenAcm::updateParameters(const Poldata *pd)
 {
-    // Zeta must exist for atoms and shells
     auto qt = pd->findForcesConst(InteractionType::CHARGEDISTRIBUTION);
-    for (size_t i = 0; i < qdist_id_.size(); i++)
+    auto eqtModel = name2ChargeType(qt.optionValue("chargetype"));
+    if (eqtModel != ChargeType::Point)
     {
-        if (!qt.parameterExists(qdist_id_[i]))
+        // Zeta must exist for atoms and shells in this case
+        for (size_t i = 0; i < qdist_id_.size(); i++)
         {
-            GMX_THROW(gmx::InternalError(gmx::formatString("Cannot find %s", 
-                                                           qdist_id_[i].id().c_str()).c_str()));
+            if (!qt.parameterExists(qdist_id_[i]))
+            {
+                GMX_THROW(gmx::InternalError(gmx::formatString("Cannot find %s", 
+                                                               qdist_id_[i].id().c_str()).c_str()));
+            }
+            zeta_[i] = qt.findParameterTypeConst(qdist_id_[i], "zeta").value();
         }
-        zeta_[i] = qt.findParameterTypeConst(qdist_id_[i], "zeta").value();
     }
     // ACM typically for atoms only
     auto fs = pd->findForcesConst(InteractionType::ELECTRONEGATIVITYEQUALIZATION);

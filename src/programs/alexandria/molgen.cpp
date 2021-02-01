@@ -585,13 +585,15 @@ void MolGen::Read(FILE            *fp,
                 {
                     mymol.symmetrizeCharges(&pd_, qsymm_, nullptr);
                     mymol.initQgenResp(&pd_, method, basis, nullptr, 0.0, maxESP_);
+                    std::vector<double> dummy;
                     imm = mymol.GenerateCharges(&pd_,
                                                 mdlog_,
                                                 cr_,
                                                 tabfn,
                                                 hwinfo_,
                                                 qcycle_,
-                                                qtol_);
+                                                qtol_,
+                                                dummy);
                     (void) mymol.espRms();
                 }
                 if (immStatus::OK != imm && debug)
@@ -714,6 +716,7 @@ void MolGen::Read(FILE            *fp,
 
             if (immStatus::OK == imm)
             {
+                std::vector<double> dummy;
                 mymol.symmetrizeCharges(&pd_, qsymm_, nullptr);
                 mymol.initQgenResp(&pd_, method, basis, nullptr, 0.0, maxESP_);
                 imm = mymol.GenerateCharges(&pd_,
@@ -722,7 +725,8 @@ void MolGen::Read(FILE            *fp,
                                             tabfn,
                                             hwinfo_,
                                             qcycle_,
-                                            qtol_);
+                                            qtol_,
+                                            dummy);
                 (void) mymol.espRms();
             }
             if (immStatus::OK == imm)

@@ -168,6 +168,7 @@ int alex_gentop(int argc, char *argv[])
     static const char               *ff[]           = {nullptr, "ACM-g", "ACM-pg", "ACM-s", "ACM-ps", "ESP-p", "ESP-pp", "ESP-pg", "ESP-ps", "Yang", "Bultinck", "Rappe", "Verstraelen", nullptr};
     static const char               *cgopt[]        = {nullptr, "Atom", "Group", "Neutral", nullptr};
     static const char               *lot            = nullptr;
+    static const char               *qcustom        = nullptr;
 
     t_pargs                          pa[]     = 
     {
@@ -219,6 +220,8 @@ int alex_gentop(int argc, char *argv[])
           "Symmetrize the charges on symmetric groups, e.g. CH3, NH2." },
         { "-symm",   FALSE, etSTR, {&symm_string},
           "Use the order given here for symmetrizing, e.g. when specifying [TT]-symm '0 1 0'[tt] for a water molecule (H-O-H) the hydrogens will have obtain the same charge. For simple groups, like methyl (or water) this is done automatically, but higher symmetry is not detected by the program. The numbers should correspond to atom numbers minus 1, and point to either the atom itself or to a previous atom." },
+        { "-qcustom", FALSE, etSTR, {&qcustom}, 
+          "Here a quoted string of custom charges can be provided such that a third party source can be used. It is then possible to generate multipoles and compare the ESP to a quantum chemistry result. The number of charges provided must match the number of particles (including shells if present in the force field used)." },
         { "-cgsort", FALSE, etSTR, {cgopt},
           "HIDDENOption for assembling charge groups: based on Atom (default, does not change the atom order), Group (e.g. CH3 groups are kept together), or Neutral sections (try to find groups that together are neutral). If the order of atoms is changed an index file is written in order to facilitate changing the order in old files." },
         { "-nexcl",    FALSE, etINT, {&nexcl},
@@ -375,16 +378,29 @@ int alex_gentop(int argc, char *argv[])
     
         mymol.initQgenResp(&pd, method, basis, &mylot, 0.0, maxpot);
 
+        std::vector<double> myq;
+        if (qcustom)
+        {
+            auto mycharges = gmx::splitString(qcustom);
+            for(auto &q : mycharges)
+            {
+                myq.push_back(my_atof(q.c_str(), "custom q"));
+            }
+        }
         imm    = mymol.GenerateCharges(&pd,
                                        mdlog,
                                        cr,
                                        tabfn,
                                        nullptr,
                                        qcycle,
-                                       qtol);
+                                       qtol,
+                                       myq);
     }
     /* Generate output file for debugging if requested */
-    mymol.plotEspCorrelation(opt2fn_null("-plotESP", NFILE, fnm), oenv);
+    if (immStatus::OK == imm)
+    {
+        mymol.plotEspCorrelation(opt2fn_null("-plotESP", NFILE, fnm), oenv);
+    }
 
     if (immStatus::OK == imm)
     {
