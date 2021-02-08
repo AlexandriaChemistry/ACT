@@ -113,7 +113,7 @@ class QgenResp
 
         size_t nEsp() const { return ep_.size(); }
 
-        std::vector<EspPoint> &espPoint() {return ep_; }
+        const std::vector<EspPoint> &espPoint() const {return ep_; }
 
         void summary(FILE *gp);
         
@@ -126,7 +126,15 @@ class QgenResp
         
         void updateAtomCoords(const gmx::HostVector<gmx::RVec> &x);
 
+        /*! \brief Update the charges
+         * \param[in] atoms Atoms struct containing charges
+         */
         void updateAtomCharges(t_atoms  *atoms);
+
+        /*! \brief Update the charges
+         * \param[in] q Vector containing new charges
+         */
+        void updateAtomCharges(const std::vector<double> &q);
 
         const std::string &getStoichiometry() const { return stoichiometry_; }
 

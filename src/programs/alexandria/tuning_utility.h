@@ -61,36 +61,6 @@
 namespace alexandria
 {
 
-void print_stats(FILE        *fp,
-                 const char  *prop,
-                 gmx_stats_t  lsq,
-                 gmx_bool     bHeader,
-                 char        *xaxis,
-                 char        *yaxis);
-
-void print_lsq_set(FILE *fp, gmx_stats_t lsq);
-
-void xvgr_symbolize(FILE                   *xvgf,
-                    int                     nsym,
-                    const char             *leg[],
-                    const gmx_output_env_t *oenv);
-
-void print_polarizability(FILE              *fp,
-                          alexandria::MyMol *mol,
-                          char              *calc_name,
-                          real               alpha_toler,
-                          real               isopol_toler);
-
-void print_dipole(FILE                      *fp,
-                  alexandria::MyMol         *mol,
-                  char                      *calc_name,
-                  real                       toler);
-
-void print_quadrapole(FILE                  *fp,
-                      alexandria::MyMol     *mol,
-                      char                  *calc_name,
-                      real                   toler);
-
 void print_electric_props(FILE                           *fp,
                           std::vector<alexandria::MyMol> &mymol,
                           const Poldata                  *pd,

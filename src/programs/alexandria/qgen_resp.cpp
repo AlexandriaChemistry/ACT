@@ -104,6 +104,17 @@ void QgenResp::updateAtomCharges(t_atoms  *atoms)
     }
 }
 
+void QgenResp::updateAtomCharges(const std::vector<double> &q)
+{
+    GMX_RELEASE_ASSERT(nAtom_ == static_cast<int>(q.size()),
+                       "Inconsistency between number of resp atoms and topology atoms");
+
+    for (int i = 0; i < nAtom_; i++)
+    {
+        q_[i] = q[i];
+    }
+}
+
 void QgenResp::setAtomInfo(t_atoms                          *atoms,
                            const alexandria::Poldata        *pd,
                            const gmx::HostVector<gmx::RVec> &x,

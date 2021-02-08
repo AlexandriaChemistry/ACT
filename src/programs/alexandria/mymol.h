@@ -60,7 +60,6 @@
 #include "qgen_acm.h"
 #include "qgen_resp.h"
 
-
 struct gmx_enerdata_t;
 struct gmx_shellfc_t;
 struct t_commrec;
@@ -116,8 +115,8 @@ class MyMol : public MolProp
         double                           ref_enthalpy_;
         double                           polarizability_;
         double                           sig_pol_;
-        double                           EspRms_;
-        double                           EemRms_;
+        real                             EspRms_[qtNR] = { 0 };
+        real                             CosEsp_[qtNR] = { 0 };
         t_excls                         *excls_;
         immStatus                        immAtoms_;
         immStatus                        immCharges_;
@@ -504,6 +503,14 @@ class MyMol : public MolProp
         void symmetrizeCharges(const Poldata  *pd,
                                bool            bSymmetricCharges,
                                const char     *symm_string);
+
+        /*! \brief Calculate the RMSD from ESP for QM charges
+         * \param[in]  pd     Poldata structure
+         * \param[out] allEsp Vector of Vector of calculated ESP points
+         */
+        void calcEspRms(const Poldata                       *pd,
+                        std::vector<std::vector<EspPoint> > *allEsp);
+
         /*! \brief Init the class for the RESP algorithm.
          * This must be called before generateCharges even if no RESP
          * is used for charge generation, since ESP points can be used
@@ -535,16 +542,25 @@ class MyMol : public MolProp
                                 const gmx_output_env_t *oenv);
         /*! \brief
          * Return the root-mean square deviation of
-         * the generated ESP from the QM ESP.
+         * the generated ESP from the QM ESP for charge type
+         * \param[in] qtype The charge type
          *
          */
-        double espRms() const { return EspRms_; }
+        double espRms(int qtype) const { return EspRms_[qtype]; }
+
+        /*! \brief
+         * Return the cosine of the angle between
+         * the vector of generated ESP and the QM ESP for charge type
+         * \param[in] qtype The charge type
+         *
+         */
+        double cosEsp(int qtype) const { return CosEsp_[qtype]; }
 
         /*! \brief
          * Collect the experimental properties
          *
-         * \param[in] bQM
-         * \param[in] bZero
+         * \param[in] bQM      Allow QM results
+         * \param[in] bZero    Allow zero dipoles
          * \param[in] method   Method used for QM calculation
          * \param[in] basis    Basis set used for QM calculation
          * \param[in] gap      Gaussian atom property
@@ -680,14 +696,13 @@ class MyMol : public MolProp
 
         /*! \brief Calculates dipole components, and quadrupoles.
          *
-         * Compute moments using QM-based charges like
-         * Mulliken, Hirshfeld, CM5, etc. Since there is no Shell particle in
-         * QM calculations, it loops over eptAtoms, only.
+         * Compute moments using user defined charges but ignoring
+         * shell particle. Hence, it loops over eptAtoms, only.
          * \param[in]  q  Array of charges
          * \param[out] mu Dipole vector
          * \param[out] Q  Quadrupole tensor
          */
-        void CalcQMbasedMoments(real *q, rvec mu, tensor Q);
+        void computeMoments(real q[], rvec mu, tensor Q);
 
         /*! \brief
          * Generate Charge Groups

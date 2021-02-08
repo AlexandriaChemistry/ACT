@@ -63,37 +63,37 @@ static void print_stats(FILE        *fp,
     {
         if (bHeader)
         {
-            fprintf(fp, "Fitting data to y = ax + b, where x = %s and y = %s\n", xaxis, yaxis);
-            fprintf(fp, "%-26s %6s %13s %13s %7s %8s %8s %8s\n",
-                    "Property", "N", "a", "b", "R(%)", "RMSD", "MSE", "MAE");
-            fprintf(fp, "-------------------------------------------------------------------------------------\n");
+            fprintf(fp, "Fitting data to y = ax + b, where x = %s\n", xaxis);
+            fprintf(fp, "%-26s %6s %13s %13s %7s %8s %8s %8s %10s\n",
+                    "Property", "N", "a", "b", "R(%)", "RMSD", "MSE", "MAE", "Model");
+            fprintf(fp, "------------------------------------------------------------------------------------------------\n");
         }
         gmx_stats_get_ab(lsq, elsqWEIGHT_NONE, &a, &b, &da, &db, &chi2, &Rfit);
         gmx_stats_get_rmsd(lsq,    &rmsd);
         gmx_stats_get_mse_mae(lsq, &mse, &mae);
         gmx_stats_get_npoints(lsq, &n);
-        fprintf(fp, "%-26s %6d %6.3f(%5.3f) %6.3f(%5.3f) %7.2f %8.4f %8.4f %8.4f\n",
-                prop, n, a, da, b, db, Rfit*100, rmsd, mse, mae);
+        fprintf(fp, "%-26s %6d %6.3f(%5.3f) %6.3f(%5.3f) %7.2f %8.4f %8.4f %8.4f %10s\n",
+                prop, n, a, da, b, db, Rfit*100, rmsd, mse, mae, yaxis);
     }
     else
     {
         if (bHeader)
         {
-            fprintf(fp, "Fitting data to y = ax, where x = %s and y = %s\n", xaxis, yaxis);
-            fprintf(fp, "%-26s %6s %13s %7s %8s %8s %8s\n",
-                    "Property", "N", "a", "R(%)", "RMSD", "MSE", "MAE");
-            fprintf(fp, "-----------------------------------------------------------------------------------\n");
+            fprintf(fp, "Fitting data to y = ax, where x = %s\n", xaxis);
+            fprintf(fp, "%-26s %6s %13s %7s %8s %8s %8s %10s\n",
+                    "Property", "N", "a", "R(%)", "RMSD", "MSE", "MAE", "Model");
+            fprintf(fp, "----------------------------------------------------------------------------------------------\n");
         }
         gmx_stats_get_a(lsq, elsqWEIGHT_NONE, &a, &da, &chi2, &Rfit);
         gmx_stats_get_rmsd(lsq,    &rmsd);
         gmx_stats_get_mse_mae(lsq, &mse, &mae);
         gmx_stats_get_npoints(lsq, &n);
-        fprintf(fp, "%-26s %6d %6.3f(%5.3f) %7.2f %8.4f %8.4f %8.4f\n",
-                prop, n, a, da, Rfit*100, rmsd, mse, mae);
+        fprintf(fp, "%-26s %6d %6.3f(%5.3f) %7.2f %8.4f %8.4f %8.4f %10s\n",
+                prop, n, a, da, Rfit*100, rmsd, mse, mae, yaxis);
     }
 }
 
-void print_lsq_set(FILE *fp, gmx_stats_t lsq)
+static void print_lsq_set(FILE *fp, gmx_stats_t lsq)
 {
     real   x, y;
 
@@ -105,10 +105,10 @@ void print_lsq_set(FILE *fp, gmx_stats_t lsq)
     fprintf(fp, "&\n");
 }
 
-void xvgr_symbolize(FILE                   *xvgf,
-                    int                     nsym,
-                    const char             *leg[],
-                    const gmx_output_env_t *oenv)
+static void xvgr_symbolize(FILE                   *xvgf,
+                           int                     nsym,
+                           const char             *leg[],
+                           const gmx_output_env_t *oenv)
 {
     int i;
 
@@ -120,20 +120,20 @@ void xvgr_symbolize(FILE                   *xvgf,
     }
 }
 
-void print_polarizability(FILE              *fp,
-                          alexandria::MyMol *mol,
-                          char              *calc_name,
-                          real               alpha_toler,
-                          real               isopol_toler)
+static void print_polarizability(FILE              *fp,
+                                 alexandria::MyMol *mol,
+                                 const std::string &calc_name,
+                                 real               alpha_toler,
+                                 real               isopol_toler)
 {
     tensor dalpha;
     real   delta      = 0;
     real   diso_pol   = 0;
     real   daniso_pol = 0;
 
-    if (nullptr != calc_name)
+    if (!calc_name.empty())
     {
-        if (strcmp(calc_name, (char *)"Calculated") == 0)
+        if (calc_name == qTypeName(qtCalc))
         {
             m_sub(mol->alpha_elec_, mol->alpha_calc_, dalpha);
             delta = sqrt(gmx::square(dalpha[XX][XX])+gmx::square(dalpha[XX][YY])+gmx::square(dalpha[XX][ZZ])+
@@ -144,7 +144,7 @@ void print_polarizability(FILE              *fp,
                     "%-4s (%6.2f %6.2f %6.2f) Dev: (%6.2f %6.2f %6.2f) Delta: %6.2f %s\n"
                     "     (%6s %6.2f %6.2f)      (%6s %6.2f %6.2f)\n"
                     "     (%6s %6s %6.2f)      (%6s %6s %6.2f)\n",
-                    calc_name,
+                    calc_name.c_str(),
                     mol->alpha_calc_[XX][XX], mol->alpha_calc_[XX][YY], mol->alpha_calc_[XX][ZZ],
                     dalpha[XX][XX], dalpha[XX][YY], dalpha[XX][ZZ], delta, (delta > alpha_toler) ? "ALPHA" : "",
                     "", mol->alpha_calc_[YY][YY], mol->alpha_calc_[YY][ZZ],
@@ -255,6 +255,32 @@ static void print_dipole(FILE              *fp,
     fprintf(fp, "\n");
 }
 
+static void print_corr(const char             *outfile,
+                       const char             *title,
+                       const char             *xaxis,
+                       const char             *yaxis, 
+                       int                     nstats,
+                       gmx_stats_t             stats[],
+                       const gmx_output_env_t *oenv)
+{
+    FILE *muc = xvgropen(outfile, title, xaxis, yaxis, oenv);
+    const char *eprnm[qtElec];
+    for (int i = 0; i < qtElec; i++)
+    {
+        eprnm[i] = qTypeName(static_cast<qType>(i));
+    }
+    xvgr_symbolize(muc, qtElec, eprnm, oenv);
+    if (nstats > qtElec)
+    {
+        nstats = qtElec;
+    }
+    for (int i = 0; i < nstats; i++)
+    {
+        print_lsq_set(muc, stats[i]);
+    }
+    fclose(muc);
+}
+
 void print_electric_props(FILE                           *fp,
                           std::vector<alexandria::MyMol> &mymol,
                           const Poldata                  *pd,
@@ -292,27 +318,22 @@ void print_electric_props(FILE                           *fp,
     int            nout = 0, mm    = 0, nn    = 0;
     real           sse  = 0, sigma = 0, qCalc = 0;
 
-    FILE          *dipc, *muc,  *Qc;
-    FILE          *hh,   *espc, *alphac, *isopolc, *anisopolc, *qc;
-
     struct ZetaTypeLsq {
         std::string ztype;
         gmx_stats_t lsq;
     };
 
     gmx_stats_t               lsq_mu[qtNR], lsq_dip[qtNR], lsq_quad[qtNR];
-    gmx_stats_t               lsq_esp, lsq_alpha, lsq_isoPol, lsq_anisoPol, lsq_charge;
-    const char               *eprnm[qtNR];
+    gmx_stats_t               lsq_esp[qtNR], lsq_alpha, lsq_isoPol, lsq_anisoPol, lsq_charge;
     std::vector<ZetaTypeLsq>  lsqt;
 
     for (int i = 0; i < qtNR; i++)
     {
-        eprnm[i]    = qTypeName(static_cast<qType>(i));
+        lsq_esp[i]  = gmx_stats_init();
         lsq_quad[i] = gmx_stats_init();
         lsq_dip[i]  = gmx_stats_init();
         lsq_mu[i]   = gmx_stats_init();
     }
-    lsq_esp      = gmx_stats_init();
     lsq_alpha    = gmx_stats_init();
     lsq_isoPol   = gmx_stats_init();
     lsq_anisoPol = gmx_stats_init();
@@ -347,35 +368,25 @@ void print_electric_props(FILE                           *fp,
             std::vector<double> dummy;
             mol.GenerateCharges(pd, fplog, cr, tabfn, hwinfo, qcycle, qtol, dummy);
 
-            // Electrostatic potentials
-            mol.QgenResp_->updateZeta(mol.atoms(), pd);
-            mol.QgenResp_->updateAtomCharges(mol.atoms());
-            mol.QgenResp_->updateAtomCoords(mol.x());
-            mol.QgenResp_->calcPot(pd->getEpsilonR());
-            real rrms    = 0, cosangle = 0;
-            bool espZero = false;
-            for (size_t i = 0; i < mol.QgenResp_->nEsp(); i++)
+            // Now compute all the ESP RMSDs.
+            std::vector<std::vector<EspPoint> > allEsp;
+            mol.calcEspRms(pd, &allEsp);
+            for (i = 0; i < qtElec; i++)
             {
-                auto vqm   = mol.QgenResp_->espPoint()[i].v();
-                auto valex = mol.QgenResp_->espPoint()[i].vCalc();
-                if (std::abs(vqm) > 100 && std::abs(valex) < 10)
+                auto qi  = static_cast<qType>(i);
+                auto rms = convertToGromacs(mol.espRms(qi), "Hartree/e");
+                std::string warning;
+                if (rms > esp_toler || mol.cosEsp(qi) < 0.5)
                 {
-                    espZero = true;
+                    warning.assign(" EEE");
+                }
+                fprintf(fp, "ESP rms: %8.3f (kJ/mol e) CosAngle: %6.3f - %s%s\n",
+                        rms, mol.cosEsp(qi), qTypeName(qi), warning.c_str());
+                for (size_t j = 0; j < mol.QgenResp_->nEsp(); j++)
+                {
+                    gmx_stats_add_point(lsq_esp[i], allEsp[i][j].v(), allEsp[i][j].vCalc(), 0, 0);
                 }
             }
-            auto rms    = mol.QgenResp_->getRms(&rrms, &cosangle);
-            auto espRms = convertToGromacs(rms, "Hartree/e");
-            fprintf(fp, "ESP rms: %g (kJ/mol e) %s\n", espRms, (espRms > esp_toler) ? " EEE" : "");
-            fprintf(fp, "ESP cosangle: %.3f%s\n", cosangle, (cosangle < 0.5) ? " WWW" : "");
-            if (espZero)
-            {
-                fprintf(fp, "Orthogonal ESP\n");
-            }
-            for (size_t i = 0; i < mol.QgenResp_->nEsp(); i++)
-            {
-                gmx_stats_add_point(lsq_esp, mol.QgenResp_->espPoint()[i].v(), mol.QgenResp_->espPoint()[i].vCalc(), 0, 0);
-            }
-
             // Dipoles
             mol.CalcDipole();
             mol.rotateDipole(mol.muQM(qtCalc), mol.muQM(qtElec));
@@ -412,8 +423,8 @@ void print_electric_props(FILE                           *fp,
             if (bPolar)
             {
                 mol.CalcPolarizability(efield, cr, nullptr);
-                print_polarizability(fp, &mol, (char *)"Electronic", alpha_toler, isopol_toler);
-                print_polarizability(fp, &mol, (char *)"Calculated", alpha_toler, isopol_toler);
+                print_polarizability(fp, &mol, qTypeName(qtElec), alpha_toler, isopol_toler);
+                print_polarizability(fp, &mol, qTypeName(qtCalc), alpha_toler, isopol_toler);
                 gmx_stats_add_point(lsq_isoPol, mol.ElectronicPolarizability(),
                                     mol.CalculatedPolarizability(),       0, 0);
                 gmx_stats_add_point(lsq_anisoPol, mol.anisoPol_elec_, mol.anisoPol_calc_, 0, 0);
@@ -495,24 +506,24 @@ void print_electric_props(FILE                           *fp,
         }
     }
 
-    fprintf(fp, "Dipoles are %s in Calc Parametrization.\n",     (bDipole ?     "used" : "not used"));
-    fprintf(fp, "Quadrupoles are %s in Calc Parametrization.\n", (bQuadrupole ? "used" : "not used"));
+    fprintf(fp, "Dipoles were %s in Calc Parametrization.\n",     (bDipole ?     "used" : "not used"));
+    fprintf(fp, "Quadrupoles were %s in Calc Parametrization.\n", (bQuadrupole ? "used" : "not used"));
     fprintf(fp, "\n");
 
-    print_stats(fp, "ESP  (kJ/mol e)",  lsq_esp, true,  "Electronic", "Calculated", useOffset);
-    fprintf(fp, "\n");
-
+    bool header = true;
     for (int i = 0; i < qtElec; i++)
     {
         const char *name = qTypeName(static_cast<qType>(i));
-        print_stats(fp, "Dipoles",       lsq_mu[i],   true,  "Electronic", name, useOffset);
-        print_stats(fp, "Dipole Moment", lsq_dip[i],  false, "Electronic", name, useOffset);
-        print_stats(fp, "Quadrupoles",   lsq_quad[i], false, "Electronic", name, useOffset);
+        print_stats(fp, "ESP  (kJ/mol e)", lsq_esp[i],  header, "Electronic", name, useOffset);
+        header = false;
+        print_stats(fp, "Dipoles",         lsq_mu[i],   header, "Electronic", name, useOffset);
+        print_stats(fp, "Dipole Moment",   lsq_dip[i],  header, "Electronic", name, useOffset);
+        print_stats(fp, "Quadrupoles",     lsq_quad[i], header, "Electronic", name, useOffset);
         if (bPolar && i == qtCalc)
         {
-            print_stats(fp, "Polariz. components (A^3)",  lsq_alpha, false,  "Electronic", name, useOffset);
-            print_stats(fp, "Isotropic Polariz. (A^3)",    lsq_isoPol,   false,  "Electronic", name, useOffset);
-            print_stats(fp, "Anisotropic Polariz. (A^3)",  lsq_anisoPol, false,  "Electronic", name, useOffset);
+            print_stats(fp, "Polariz. components (A^3)",  lsq_alpha,    header, "Electronic", name, useOffset);
+            print_stats(fp, "Isotropic Polariz. (A^3)",   lsq_isoPol,   header, "Electronic", name, useOffset);
+            print_stats(fp, "Anisotropic Polariz. (A^3)", lsq_anisoPol, header, "Electronic", name, useOffset);
         }
         fprintf(fp, "\n");
     }
@@ -522,9 +533,9 @@ void print_electric_props(FILE                           *fp,
     {
         types.push_back(k.ztype.c_str());
     }
-    hh = xvgropen(qhisto, "Histogram for charges", "q (e)", "a.u.", oenv);
+    FILE *hh = xvgropen(qhisto, "Histogram for charges", "q (e)", "a.u.", oenv);
     xvgr_legend(hh, types.size(), types.data(), oenv);
-    print_stats(fp, "All Partial Charges  (e)",  lsq_charge, true,  "CM5", "Calculated", useOffset);
+    print_stats(fp, "All Partial Charges  (e)",  lsq_charge, true, qTypeName(qtCM5), qTypeName(qtCalc), useOffset);
     for (auto k = lsqt.begin(); k < lsqt.end(); ++k)
     {
         int   nbins;
@@ -549,56 +560,17 @@ void print_electric_props(FILE                           *fp,
     fclose(hh);
     fprintf(fp, "\n");
 
-    dipc = xvgropen(DipCorr, "Dipole Moment (Debye)", "Electronic", "Empirical", oenv);
-    xvgr_symbolize(dipc, 5, eprnm, oenv);
-    for (int i = 0; i < qtElec; i++)
-    {
-        print_lsq_set(dipc, lsq_dip[i]);
-    }
-    fclose(dipc);
-
-    muc = xvgropen(MuCorr, "Dipoles (Debye)", "Electronic", "Empirical", oenv);
-    xvgr_symbolize(muc, 5, eprnm, oenv);
-    for (int i = 0; i < qtElec; i++)
-    {
-        print_lsq_set(muc, lsq_mu[i]);
-    }
-    fclose(muc);
-
-    Qc = xvgropen(Qcorr, "Quadrupoles (Buckingham)", "Electronic", "Empirical", oenv);
-    xvgr_symbolize(Qc, 5, eprnm, oenv);
-    for (int i = 0; i < qtElec; i++)
-    {
-        print_lsq_set(Qc, lsq_quad[i]);
-    }
-    fclose(Qc);
-
-    espc = xvgropen(EspCorr, "Electrostatic Potential (Hartree/e)", "Electronic", "Calc", oenv);
-    xvgr_symbolize(espc, 1, eprnm, oenv);
-    print_lsq_set(espc, lsq_esp);
-    fclose(espc);
-
-    qc = xvgropen(qCorr, "Atomic Partial Charge", "q (e)", "a.u.", oenv);
-    xvgr_symbolize(qc, 1, eprnm, oenv);
-    print_lsq_set(qc, lsq_charge);
-    fclose(qc);
+    print_corr(DipCorr, "Dipole Moment (Debye)", "Electronic", "Empirical", qtElec, lsq_dip, oenv);
+    print_corr(MuCorr, "Dipoles (Debye)", "Electronic", "Empirical", qtElec, lsq_mu, oenv);
+    print_corr(Qcorr, "Quadrupoles (Buckingham)", "Electronic", "Empirical", qtElec, lsq_quad, oenv);
+    print_corr(EspCorr, "Electrostatic Potential (Hartree/e)", "Electronic", "Calc", qtElec, lsq_esp, oenv);
+    print_corr(qCorr, "Atomic Partial Charge", "q (e)", "a.u.", 1, &lsq_charge, oenv);
 
     if (bPolar)
     {
-        alphac = xvgropen(alphaCorr, "Pricipal Components of Polarizability Tensor (A\\S3\\N)", "Electronic", "Calc", oenv);
-        xvgr_symbolize(alphac, 1, eprnm, oenv);
-        print_lsq_set(alphac, lsq_alpha);
-        fclose(alphac);
-
-        isopolc = xvgropen(isopolCorr, "Isotropic Polarizability (A\\S3\\N)", "Electronic", "Calc", oenv);
-        xvgr_symbolize(isopolc, 1, eprnm, oenv);
-        print_lsq_set(isopolc, lsq_isoPol);
-        fclose(isopolc);
-
-        anisopolc = xvgropen(anisopolCorr, "Anisotropic Polarizability (A\\S3\\N)", "Electronic", "Calc", oenv);
-        xvgr_symbolize(anisopolc, 1, eprnm, oenv);
-        print_lsq_set(anisopolc, lsq_anisoPol);
-        fclose(anisopolc);
+        print_corr(alphaCorr, "Pricipal Components of Polarizability Tensor (A\\S3\\N)", "Electronic", "Calc", 1, &lsq_alpha, oenv);
+        print_corr(isopolCorr, "Isotropic Polarizability (A\\S3\\N)", "Electronic", "Calc", 1, &lsq_isoPol, oenv);
+        print_corr(anisopolCorr, "Anisotropic Polarizability (A\\S3\\N)", "Electronic", "Calc", 1, &lsq_anisoPol, oenv);
     }
 
     // List outliers based on the deviation in the total dipole moment
@@ -619,23 +591,44 @@ void print_electric_props(FILE                           *fp,
             nout++;
         }
     }
-    if (nout)
+    
+    real espAver;
+    if (estatsOK == gmx_stats_get_rmsd(lsq_esp[qtCalc], &espAver))
     {
-        printf("There were %d outliers. See at the very bottom of the log file\n", nout);
-    }
-    else
-    {
-        printf("No outliers! Well done.\n");
+        nout = 0;
+        double espMax = 1.5*espAver;
+        fprintf(fp, "\nOverview of ESP outliers for %s (RMSD > %.3f)\n", qTypeName(qtCalc), espMax);
+        fprintf(fp, "----------------------------------\n");
+        fprintf(fp, "%-20s  %12s  %12s\n", "Name", qTypeName(qtCalc), qTypeName(qtESP));
+        for (auto &mol : mymol)
+        {
+            if ((mol.eSupp_ != eSupport::No)  &&
+                (mol.espRms(qtCalc) > espMax))
+            {
+                fprintf(fp, "%-20s  %12.3f  %12.3f\n",
+                        mol.getMolname().c_str(),
+                        mol.espRms(qtCalc), mol.espRms(qtESP));
+                nout++;
+            }
+        }
+        if (nout)
+        {
+            printf("There were %d ESP outliers. See at the very bottom of the log file\n", nout);
+        }
+        else
+        {
+            printf("No outliers! Well done.\n");
+        }
     }
 
     // Free allocated memory
-    for (int i = 0; i < qtNR; i++)
+    for (int i = 0; i < qtElec; i++)
     {
         gmx_stats_free(lsq_quad[i]);
         gmx_stats_free(lsq_mu[i]);
         gmx_stats_free(lsq_dip[i]);
+        gmx_stats_free(lsq_esp[i]);
     }
-    gmx_stats_free(lsq_esp);
     gmx_stats_free(lsq_alpha);
     gmx_stats_free(lsq_isoPol);
     gmx_stats_free(lsq_anisoPol);

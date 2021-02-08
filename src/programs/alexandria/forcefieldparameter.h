@@ -84,9 +84,6 @@ class ForceFieldParameter
     //! \brief Return unit of parameter
     const std::string &unit() const { return unit_; }
     
-    //! \brief Return GROMACS unit of parameter
-    int unitGromacs() const { return string2unit(unit_.c_str()); }
-
     //! \brief Return index (an externally determined identifier)
     size_t index() const { return index_; }
 

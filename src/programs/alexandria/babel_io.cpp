@@ -556,27 +556,19 @@ bool readBabel(const char          *g09,
             ca.SetChain(myres->GetChainNum(), myres->GetChain());
             if (inputformat == einfGaussian)
             {
-                std::vector<std::string> QM_charge_models = {"Mulliken charges", "ESP charges", "Hirshfeld charges", "CM5 charges"};
+                std::vector<std::string> QM_charge_models = {"Mulliken", "ESP", "Hirshfeld", "CM5"};
                 for (const auto &cs : QM_charge_models)
                 {
-                    OBpd = (OpenBabel::OBPairData *) mol.GetData(cs);
+                    auto QM_charge_model = cs + " charges";
+                    OBpd = (OpenBabel::OBPairData *) mol.GetData(QM_charge_model.c_str());
                     if (nullptr != OBpd)
                     {
-                        QM_charge_model    = strdup(OBpd->GetValue().c_str());
-                        OBpc               = (OpenBabel::OBPcharge *) mol.GetData(QM_charge_model);
-                        auto                     PartialCharge = OBpc->GetPartialCharge();
-                        alexandria::AtomicCharge aq(QM_charge_model, "e", 0.0, PartialCharge[atom->GetIdx()-1]);
+                        //auto QM_charge_model = gmx::formatString("%s charges", OBpd->GetValue().c_str());
+                        OBpc                 = (OpenBabel::OBPcharge *) mol.GetData(QM_charge_model.c_str());
+                        auto PartialCharge   = OBpc->GetPartialCharge();
+                        alexandria::AtomicCharge aq(cs, "e", 0.0, PartialCharge[atom->GetIdx()-1]);
                         ca.AddCharge(aq);
                     }
-                }
-                if (nullptr == QM_charge_model)
-                {
-                    printf("\n"
-                           "WARNING: None of the QM charge models known to Alexandria found in %s\n"
-                           "         Partial charge is assigned to zero for atom %d\n\n",
-                           g09, atom->GetIdx());
-                    alexandria::AtomicCharge aq("UnknownQMCharge", "e", 0.0, 0.0);
-                    ca.AddCharge(aq);
                 }
             }
             mpt->LastExperiment()->AddAtom(ca);

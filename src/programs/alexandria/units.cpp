@@ -65,6 +65,7 @@ static std::map<const std::string, double> unitConversion =
         { "degree",     M_PI/180.0 },
         { "kJ/mol/rad2",1 },
         { "kJ/mol/nm2", 1 },
+        { "e",          1 },
         { "", 1 }
     };
 

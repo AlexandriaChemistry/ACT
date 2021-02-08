@@ -594,7 +594,7 @@ void MolGen::Read(FILE            *fp,
                                                 qcycle_,
                                                 qtol_,
                                                 dummy);
-                    (void) mymol.espRms();
+                    (void) mymol.espRms(qtCalc);
                 }
                 if (immStatus::OK != imm && debug)
                 {
@@ -727,7 +727,6 @@ void MolGen::Read(FILE            *fp,
                                             qcycle_,
                                             qtol_,
                                             dummy);
-                (void) mymol.espRms();
             }
             if (immStatus::OK == imm)
             {

@@ -30,9 +30,12 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+
+#include <map>
+#include <string>
+#include <vector>
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/utility/strconvert.h"
@@ -45,7 +48,8 @@
 int alex_molprop_check(int argc, char*argv[])
 {
     static const char               *desc[] = {
-        "molprop_check checks calculations for missing hydrogens"
+        "molprop_check checks calculations for missing hydrogens",
+        "and inconsistent dipoles."
     };
     t_filenm                         fnm[] =
     {
@@ -66,6 +70,13 @@ int alex_molprop_check(int argc, char*argv[])
 
     for (auto &m : mp)
     {
+        typedef struct
+        {
+            std::string name;
+            rvec        mu;
+        } name_mu;
+        
+        std::vector<name_mu> mus;
         for (auto &ci : m.experimentConst())
         {
             int nH = 0, nC = 0;
@@ -87,6 +98,22 @@ int alex_molprop_check(int argc, char*argv[])
                        ci.getDatafile().c_str(),
                        nC, nH);
             }
+            rvec   mu;
+            tensor Q;
+            double value, error, T;
+            std::string type;
+            if (ci.getVal(type, MPO_DIPOLE, &value, &error,
+                          &T, mu, Q))
+            {
+                name_mu nmu = { ci.getDatafile(), { mu[XX], mu[YY], mu[ZZ] } };
+                mus.push_back(nmu);
+            }
+        }
+        // Check dipoles
+        for(const auto &mi : mus)
+        {
+            printf("%s %s %.2f %.2f %.2f\n", m.getMolname().c_str(),
+                   mi.name.c_str(), mi.mu[XX], mi.mu[YY], mi.mu[ZZ]);
         }
     }
 
