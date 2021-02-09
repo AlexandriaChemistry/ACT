@@ -334,4 +334,22 @@ TEST_F (AcmTest, SQEpgPositive)
 #endif
 }
 
+TEST_F (AcmTest, CustomButanolPDB)
+{
+    std::vector<double> qcustom = { -0.18, 0.06, 0.06, 0.06, -0.12, 0.06, 0.06,  -0.12, 0.06, 0.06, -0.12, 0.06, 0.06, -0.4, 0.4};
+    testAcm("ACM-g", einfPDB, "1-butanol", false, 0, qcustom);
+}
+
+TEST_F (AcmTest, CustomAcetatePDB)
+{
+    std::vector<double> qcustom = { -0.18, 0.06, 0.06, 0.06, 0.1, -0.55, -0.55 };
+    testAcm("ACM-g", einfPDB, "acetate-3-oep.log", false, -1, qcustom);
+}
+
+TEST_F (AcmTest, CustomGuanidiniumSDF)
+{
+    std::vector<double> qcustom = { -0.4, -0.4, -0.4, 0.1, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3 };
+    testAcm("ACM-g", einfSDF, "guanidinium", false, 1, qcustom);
+}
+
 }
