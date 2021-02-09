@@ -135,9 +135,10 @@ class RespTest : public gmx::test::CommandLineTestBase
             mp_.setInputrec(&inputrec);
             mp_.symmetrizeCharges(pd, qSymm, nullptr);
             mp_.initQgenResp(pd, method, basis, nullptr, 0.0, 100);
+            std::vector<double> qcustom;
             mp_.GenerateCharges(pd, mdlog, cr,
                                 tabFile.empty() ? nullptr : tabFile.c_str(),
-                                hwinfo, qcycle, qtol);
+                                hwinfo, qcycle, qtol, qcustom);
 
             std::vector<double> qtotValues;
             for (int atom = 0; atom < mp_.mtop_->moltype[0].atoms.nr; atom++)

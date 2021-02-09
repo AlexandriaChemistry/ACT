@@ -88,7 +88,8 @@ class AcmTest : public gmx::test::CommandLineTestBase
 
         void testAcm(const std::string &model, informat inputformat, 
                      const std::string &molname, bool qSymm,
-                     double qtotal)
+                     double qtotal,
+                     const std::vector<double> &qcustom)
         {
             int                   maxpot    = 100;
             int                   nsymm     = 0;
@@ -154,7 +155,7 @@ class AcmTest : public gmx::test::CommandLineTestBase
 
             mp_.symmetrizeCharges(pd, qSymm, nullptr);
             mp_.GenerateCharges(pd, mdlog, cr, nullptr, 
-                                hwinfo, qcycle, qtol);
+                                hwinfo, qcycle, qtol, qcustom);
                                 
             std::vector<double> qtotValues;
             auto myatoms = mp_.atomsConst();
@@ -177,132 +178,158 @@ class AcmTest : public gmx::test::CommandLineTestBase
 
 TEST_F (AcmTest, BultinckLog)
 {
-    testAcm("Bultinck", einfLOG, "1-butanol", true, 0);
+    std::vector<double> qcustom;
+    testAcm("Bultinck", einfLOG, "1-butanol", true, 0, qcustom);
 }
 
 TEST_F (AcmTest, BultinckPDB)
 {
-    testAcm("Bultinck", einfPDB, "1-butanol", true, 0);
+    std::vector<double> qcustom;
+    testAcm("Bultinck", einfPDB, "1-butanol", true, 0, qcustom);
 }
 
 TEST_F (AcmTest, VerstraelenLog)
 {
-    testAcm("Verstraelen", einfLOG, "1-butanol", true, 0);
+    std::vector<double> qcustom;
+    testAcm("Verstraelen", einfLOG, "1-butanol", true, 0, qcustom);
 }
 
 TEST_F (AcmTest, VerstraelenPDB)
 {
-    testAcm("Verstraelen", einfPDB, "1-butanol", true, 0);
+    std::vector<double> qcustom;
+    testAcm("Verstraelen", einfPDB, "1-butanol", true, 0, qcustom);
 }
 
 TEST_F (AcmTest, RappeLog)
 {
-    testAcm("Rappe", einfLOG, "1-butanol", true, 0);
+    std::vector<double> qcustom;
+    testAcm("Rappe", einfLOG, "1-butanol", true, 0, qcustom);
 }
 
 TEST_F (AcmTest, RappePDB)
 {
-    testAcm("Rappe", einfPDB, "1-butanol", true, 0);
+    std::vector<double> qcustom;
+    testAcm("Rappe", einfPDB, "1-butanol", true, 0, qcustom);
 }
 
 TEST_F (AcmTest, YangLog)
 {
-    testAcm("Yang", einfLOG, "1-butanol", true, 0);
+    std::vector<double> qcustom;
+    testAcm("Yang", einfLOG, "1-butanol", true, 0, qcustom);
 }
 
 TEST_F (AcmTest, YangPDB)
 {
-    testAcm("Yang", einfPDB, "1-butanol", true, 0);
+    std::vector<double> qcustom;
+    testAcm("Yang", einfPDB, "1-butanol", true, 0, qcustom);
 }
 
 TEST_F (AcmTest, AXpgLOG)
 {
-    testAcm("ACM-pg", einfLOG, "1-butanol", true, 0);
+    std::vector<double> qcustom;
+    testAcm("ACM-pg", einfLOG, "1-butanol", true, 0, qcustom);
 }
 
 TEST_F (AcmTest, AXpgPDB)
 {
-    testAcm("ACM-pg", einfPDB, "1-butanol", true, 0);
+    std::vector<double> qcustom;
+    testAcm("ACM-pg", einfPDB, "1-butanol", true, 0, qcustom);
 }
 
 TEST_F (AcmTest, AXpgNoSymmLOG)
 {
-    testAcm("ACM-pg", einfLOG, "1-butanol", false, 0);
+    std::vector<double> qcustom;
+    testAcm("ACM-pg", einfLOG, "1-butanol", false, 0, qcustom);
 }
 
 TEST_F (AcmTest, AXpgNoSymmPDB)
 {
-    testAcm("ACM-pg", einfPDB, "1-butanol", false, 0);
+    std::vector<double> qcustom;
+    testAcm("ACM-pg", einfPDB, "1-butanol", false, 0, qcustom);
 }
 
 TEST_F (AcmTest, AXgLOG)
 {
-    testAcm("ACM-g", einfLOG, "1-butanol", true, 0);
+    std::vector<double> qcustom;
+    testAcm("ACM-g", einfLOG, "1-butanol", true, 0, qcustom);
 }
 
 TEST_F (AcmTest, AXgPDB)
 {
-    testAcm("ACM-g", einfPDB, "1-butanol", true, 0);
+    std::vector<double> qcustom;
+    testAcm("ACM-g", einfPDB, "1-butanol", true, 0, qcustom);
 }
 
 TEST_F (AcmTest, AXgNoSymmLOG)
 {
-    testAcm("ACM-g", einfLOG, "1-butanol", false, 0);
+    std::vector<double> qcustom;
+    testAcm("ACM-g", einfLOG, "1-butanol", false, 0, qcustom);
 }
 
 TEST_F (AcmTest, AXgNoSymmPDB)
 {
-    testAcm("ACM-g", einfPDB, "1-butanol", false, 0);
+    std::vector<double> qcustom;
+    testAcm("ACM-g", einfPDB, "1-butanol", false, 0, qcustom);
 }
 
 TEST_F (AcmTest, AXgNegative)
 {
-    testAcm("ACM-g", einfPDB, "acetate-3-oep.log", false, -1);
+    std::vector<double> qcustom;
+    testAcm("ACM-g", einfPDB, "acetate-3-oep.log", false, -1, qcustom);
 }
 
 TEST_F (AcmTest, AXpgNegative)
 {
-    testAcm("ACM-pg", einfPDB, "acetate-3-oep.log", true, -1);
+    std::vector<double> qcustom;
+    testAcm("ACM-pg", einfPDB, "acetate-3-oep.log", true, -1, qcustom);
 }
 
 TEST_F (AcmTest, AXgPositive)
 {
-    testAcm("ACM-g", einfSDF, "guanidinium", false, 1);
+    std::vector<double> qcustom;
+    testAcm("ACM-g", einfSDF, "guanidinium", false, 1, qcustom);
 }
 
 TEST_F (AcmTest, AXpgPositive)
 {
-    testAcm("ACM-pg", einfSDF, "guanidinium", true, 1);
+    std::vector<double> qcustom;
+    testAcm("ACM-pg", einfSDF, "guanidinium", true, 1, qcustom);
 }
 
 TEST_F (AcmTest, SQEgNeutral)
 {
-    testAcm("ACS-g", einfPDB, "1-butanol", false, 0);
+    std::vector<double> qcustom;
+    testAcm("ACS-g", einfPDB, "1-butanol", false, 0, qcustom);
 }
 
 TEST_F (AcmTest, SQEgNegative)
 {
-    testAcm("ACS-g", einfPDB, "acetate-3-oep.log", false, -1);
+    std::vector<double> qcustom;
+    testAcm("ACS-g", einfPDB, "acetate-3-oep.log", false, -1, qcustom);
 }
 
 TEST_F (AcmTest, SQEgPositive)
 {
-    testAcm("ACS-g", einfSDF, "guanidinium", false, 1);
+    std::vector<double> qcustom;
+    testAcm("ACS-g", einfSDF, "guanidinium", false, 1, qcustom);
 }
 #ifdef LATER
 TEST_F (AcmTest, SQEpgNeutral)
 {
-    testAcm("ACS-pg", einfPDB, "1-butanol", false, 0);
+    std::vector<double> qcustom;
+    testAcm("ACS-pg", einfPDB, "1-butanol", false, 0, qcustom);
 }
 
 TEST_F (AcmTest, SQEpgNegative)
 {
-    testAcm("ACS-pg", einfPDB, "acetate-3-oep.log", true, -1);
+    std::vector<double> qcustom;
+    testAcm("ACS-pg", einfPDB, "acetate-3-oep.log", true, -1, qcustom);
 }
 
 TEST_F (AcmTest, SQEpgPositive)
 {
-    testAcm("ACS-pg", einfSDF, "guanidinium", true, 1);
+    std::vector<double> qcustom;
+    testAcm("ACS-pg", einfSDF, "guanidinium", true, 1, qcustom);
 }
 #endif
 }
