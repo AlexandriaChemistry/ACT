@@ -65,6 +65,7 @@ enum informat{
     einfLOG = 0,
     einfPDB = 1,
     einfSDF = 2,
+    einfZIP = 3,
     einfNR
 };
 
@@ -228,6 +229,12 @@ TEST_F (AcmTest, AXpgLOG)
 {
     std::vector<double> qcustom;
     testAcm("ACM-pg", einfLOG, "1-butanol", true, 0, qcustom);
+}
+
+TEST_F (AcmTest, AXpgZIP)
+{
+    std::vector<double> qcustom;
+    testAcm("ACM-pg", einfZIP, "trimethylphosphate3-esp.log.gz", true, 0, qcustom);
 }
 
 TEST_F (AcmTest, AXpgPDB)

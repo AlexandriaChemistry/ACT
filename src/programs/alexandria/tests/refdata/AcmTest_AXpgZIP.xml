@@ -1,0 +1,42 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="qtotSize">34</Int>
+  <Sequence Name="qtotValuesEqdAlgorithm_EEM">
+    <Int Name="Length">34</Int>
+    <Real>1.111113190736553</Real>
+    <Real>-1</Real>
+    <Real>1.8943345790198831</Real>
+    <Real>-2</Real>
+    <Real>1.8334065586792883</Real>
+    <Real>-2</Real>
+    <Real>1.9965898218758167</Real>
+    <Real>-2</Real>
+    <Real>1.8198861463764116</Real>
+    <Real>-2</Real>
+    <Real>1.8871947371026558</Real>
+    <Real>-2</Real>
+    <Real>1.1085124788389156</Real>
+    <Real>-1</Real>
+    <Real>1.8517175206239445</Real>
+    <Real>-2</Real>
+    <Real>1.8198861463764138</Real>
+    <Real>-2</Real>
+    <Real>1.8871947371026538</Real>
+    <Real>-2</Real>
+    <Real>1.1085124788389178</Real>
+    <Real>-1</Real>
+    <Real>1.116217330060018</Real>
+    <Real>-1</Real>
+    <Real>1.1162173300600182</Real>
+    <Real>-1</Real>
+    <Real>1.1069861016696483</Real>
+    <Real>-1</Real>
+    <Real>1.1176223704846147</Real>
+    <Real>-1</Real>
+    <Real>1.1176223704846155</Real>
+    <Real>-1</Real>
+    <Real>1.1069861016696472</Real>
+    <Real>-1</Real>
+  </Sequence>
+</ReferenceData>
