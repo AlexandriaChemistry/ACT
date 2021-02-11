@@ -602,12 +602,13 @@ void print_electric_props(FILE                           *fp,
         fprintf(fp, "%-20s  %12s  %12s\n", "Name", qTypeName(qtCalc), qTypeName(qtESP));
         for (auto &mol : mymol)
         {
-            if ((mol.eSupp_ != eSupport::No)  &&
-                (mol.espRms(qtCalc) > espMax))
+            auto rms = convertToGromacs(mol.espRms(qtCalc), "Hartree/e");
+            if ((mol.eSupp_ != eSupport::No) && (rms > espMax))
             {
                 fprintf(fp, "%-20s  %12.3f  %12.3f\n",
                         mol.getMolname().c_str(),
-                        mol.espRms(qtCalc), mol.espRms(qtESP));
+                        rms, 
+                        convertToGromacs(mol.espRms(qtESP), "Hartree/e"));
                 nout++;
             }
         }
