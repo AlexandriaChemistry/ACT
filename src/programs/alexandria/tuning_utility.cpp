@@ -249,8 +249,9 @@ static void print_dipole(FILE              *fp,
             mol->dipQM(qt));
     if (qt != qtElec)
     {
-        fprintf(fp, " Dev: (%6.3f,%6.3f,%6.3f) |%6.3f|%s",
-                dmu[XX], dmu[YY], dmu[ZZ], ndmu, ebuf);
+        //fprintf(fp, " Dev: (%6.3f,%6.3f,%6.3f) |%6.3f|%s",
+        //      dmu[XX], dmu[YY], dmu[ZZ], ndmu, ebuf);
+        fprintf(fp, " Dev: |%6.3f| CosAngle %6.3f %s", ndmu, cosa, ebuf);
     }
     fprintf(fp, "\n");
 }
