@@ -454,10 +454,10 @@ static void compare_pd(Poldata *pd1,
     }
     auto f1     = pd1->findForcesConst(itype1);
     auto f2     = pd2->findForcesConst(itype2);
-    printf("%s %6s %9s %9s %9s   %9s %9s %9s %9s\n",
+    printf("%-17s %11s %9s %9s %9s %4s | %9s %9s %9s %4s | %9s\n",
            "Param", "Ptype", 
-           "Minimum_1", "Value_1", "Maximum_1",
-           "Minimum_2", "Value_2", "Maximum_2", "Difference");
+           "Minimum_1", "Value_1", "Maximum_1", "N_1",
+           "Minimum_2", "Value_2", "Maximum_2", "N_2", "Differ.");
     double psum2 = 0;
     int    np2   = 0;
     for(auto &id1 : f1.parametersConst())
@@ -468,15 +468,16 @@ static void compare_pd(Poldata *pd1,
             auto fp2 = f2.findParametersConst(id1.first);
             auto p1  = fp1[ptype];
             auto p2  = fp2[ptype];
-            if (p1.value() != p2.value())
+            if (p1.ntrain() > 0 && p2.ntrain() > 0 &&
+                p1.value() != p2.value())
             {
                 double d = p1.value()-p2.value();
                 psum2   += d*d;
                 np2     += 1;
-                printf("%s %6s %9g %9g %9g   %9g %9g %9g %9g\n",
+                printf("%-17s %11s %9.4f %9.4f %9.4f %4d | %9.4f %9.4f %9g %4d | %9.4f\n",
                        ptype.c_str(), id1.first.id().c_str(),
-                       p1.minimum(), p1.value(), p1.maximum(),
-                       p2.minimum(), p2.value(), p2.maximum(),
+                       p1.minimum(), p1.value(), p1.maximum(), p1.ntrain(),
+                       p2.minimum(), p2.value(), p2.maximum(), p2.ntrain(),
                        d);
             }
         }
