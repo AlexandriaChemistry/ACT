@@ -231,14 +231,10 @@ static void print_dipole(FILE              *fp,
 
     rvec_sub(mol->muQM(qtElec), mol->muQM(qt), dmu);
     ndmu = norm(dmu);
-    cosa = cos_angle(mol->muQM(qtElec), mol->muQM(qtCalc));
-    if (ndmu > toler)
+    cosa = cos_angle(mol->muQM(qtElec), mol->muQM(qt));
+    if (ndmu > toler || fabs(cosa) < 0.1)
     {
         sprintf(ebuf, "DIP");
-    }
-    else if (fabs(cosa) < 0.1)
-    {
-        sprintf(ebuf, "YYY");
     }
     else
     {
@@ -249,9 +245,7 @@ static void print_dipole(FILE              *fp,
             mol->dipQM(qt));
     if (qt != qtElec)
     {
-        //fprintf(fp, " Dev: (%6.3f,%6.3f,%6.3f) |%6.3f|%s",
-        //      dmu[XX], dmu[YY], dmu[ZZ], ndmu, ebuf);
-        fprintf(fp, " Dev: |%6.3f| CosAngle %6.3f %s", ndmu, cosa, ebuf);
+        fprintf(fp, " |Dev|: %6.3f CosAngle %6.3f %s", ndmu, cosa, ebuf);
     }
     fprintf(fp, "\n");
 }
