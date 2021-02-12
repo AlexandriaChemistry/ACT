@@ -38,6 +38,7 @@
 #include <vector>
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/utility/strconvert.h"
 
 #include "alex_modules.h"
@@ -100,13 +101,39 @@ int alex_molprop_check(int argc, char*argv[])
             }
             rvec   mu;
             tensor Q;
-            double value, error, T;
+            double value, error, T = 0;
             std::string type;
             if (ci.getVal(type, MPO_DIPOLE, &value, &error,
                           &T, mu, Q))
             {
                 name_mu nmu = { ci.getDatafile(), { mu[XX], mu[YY], mu[ZZ] } };
                 mus.push_back(nmu);
+            }
+            auto Xcalc = ci.getCoordinates();
+            auto Esp   = ci.electrostaticPotentialConst();
+            if (Esp.size() >= Xcalc.size() && Xcalc.size() > 1)
+            {
+                double msd = 0;
+                double fac = 0.001;
+                for(size_t i = 0; i < Xcalc.size(); i++)
+                {
+                    msd += (gmx::square(Xcalc[i][XX]-fac*Esp[i].getX())+
+                            gmx::square(Xcalc[i][YY]-fac*Esp[i].getY())+
+                            gmx::square(Xcalc[i][ZZ]-fac*Esp[i].getZ()));
+                }
+                double rmsd = std::sqrt(msd/Xcalc.size());
+                printf("%s RMSD coordinates %g\n", m.getMolname().c_str(),
+                       rmsd);
+                if (rmsd > 1e-3)
+                {
+                    for(size_t i = 0; i < Xcalc.size(); i++)
+                    {
+                        printf("%2d %8.3f %8.3f %8.3f %8.3f %8.3f %8.3f\n", i+1,
+                               Xcalc[i][XX], Xcalc[i][YY], Xcalc[i][ZZ],
+                               fac*Esp[i].getX(), fac*Esp[i].getY(),
+                               fac*Esp[i].getZ());
+                    }
+                }
             }
         }
         // Check dipoles
