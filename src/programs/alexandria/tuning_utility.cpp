@@ -64,9 +64,9 @@ private:
         int N; 
         if (gmx_stats_get_npoints(lsq_, &N) == estatsOK)
         {
-            return N > 0;
+            return N == 0;
         }
-        return false;
+        return true;
     }
     
     ~ZetaTypeLsq()
@@ -325,10 +325,9 @@ static void write_q_histo(FILE                           *fplog,
     print_stats(fplog, "All Partial Charges  (e)",  lsq_charge, true, qTypeName(qtCM5), qTypeName(qtCalc), useOffset);
     for (auto &k : lsqt)
     {
-        int   nbins;
-        if (!k.empty() &&
-            gmx_stats_get_npoints(k.lsq_, &nbins) == estatsOK)
+        if (!k.empty())
         {
+            int  nbins = 20;
             real *x, *y;
             if (gmx_stats_make_histogram(k.lsq_, 0, &nbins, ehistoY, 1, &x, &y) == estatsOK)
             {
@@ -524,7 +523,6 @@ void print_electric_props(FILE                           *fp,
                     }
                     if (k != lsqt.end())
                     {
-                        fprintf(fp, "Adding data for %s\n", atp->id().id().c_str());
                         gmx_stats_add_point(k->lsq_, qcm5[i], qCalc, 0, 0);
                     }
                     gmx_stats_add_point(lsq_charge, qcm5[i], qCalc, 0, 0);

@@ -155,6 +155,9 @@ class ForceFieldParameterList
      */
     size_t numberOfParameters() const { return parameters_.size(); }
 
+    //! \brief return whether or not there are any parameters
+    bool empty() const { return parameters_.size() == 0; }
+    
     /*! \brief check whether any parameter exists for identifier
      *
      * \param[in] identifier  Name of the bond or atomtype

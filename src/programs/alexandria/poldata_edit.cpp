@@ -506,7 +506,7 @@ int alex_poldata_edit(int argc, char*argv[])
         "input and output files and what parameters to change.",
         "If the value, the minimum",
         "or the maximum is to be changed, the actual value may be set to the",
-        "new minmum or maximum if it falls outside the new bounds."
+        "new minmum or maximum if it falls outside the new bounds.",
     };
     gmx_output_env_t                *oenv;
     t_filenm                         fnm[] = {
