@@ -46,6 +46,35 @@
 namespace alexandria
 {
 
+class ZetaTypeLsq {
+private:
+    std::string ztype_;
+ public:
+    gmx_stats_t lsq_;
+    
+    ZetaTypeLsq(const std::string &ztype) : ztype_(ztype)
+    {
+        lsq_ = gmx_stats_init();
+    }
+    
+    const std::string &name() const { return ztype_; }
+    
+    bool empty() const
+    { 
+        int N; 
+        if (gmx_stats_get_npoints(lsq_, &N) == estatsOK)
+        {
+            return N > 0;
+        }
+        return false;
+    }
+    
+    ~ZetaTypeLsq()
+    {
+        gmx_stats_free(lsq_);
+    }
+};
+
 static void print_stats(FILE        *fp,
                         const char  *prop,
                         gmx_stats_t  lsq,
@@ -276,6 +305,49 @@ static void print_corr(const char             *outfile,
     fclose(muc);
 }
 
+static void write_q_histo(FILE                           *fplog,
+                          const char                     *qhisto,
+                          const std::vector<ZetaTypeLsq> &lsqt,
+                          const gmx_output_env_t         *oenv,
+                          gmx_stats_t                     lsq_charge,
+                          bool                            useOffset)
+{
+    std::vector<const char*> types;
+    for (const auto &k : lsqt)
+    {
+        if (!k.empty())
+        {
+            types.push_back(k.name().c_str());
+        }
+    }
+    FILE *hh = xvgropen(qhisto, "Histogram for charges", "q (e)", "a.u.", oenv);
+    xvgr_legend(hh, types.size(), types.data(), oenv);
+    print_stats(fplog, "All Partial Charges  (e)",  lsq_charge, true, qTypeName(qtCM5), qTypeName(qtCalc), useOffset);
+    for (auto &k : lsqt)
+    {
+        int   nbins;
+        if (!k.empty() &&
+            gmx_stats_get_npoints(k.lsq_, &nbins) == estatsOK)
+        {
+            real *x, *y;
+            if (gmx_stats_make_histogram(k.lsq_, 0, &nbins, ehistoY, 1, &x, &y) == estatsOK)
+            {
+                fprintf(hh, "@type xy\n");
+                for (int i = 0; i < nbins; i++)
+                {
+                    fprintf(hh, "%10g  %10g\n", x[i], y[i]);
+                }
+                fprintf(hh, "&\n");
+                print_stats(fplog, k.name().c_str(),  k.lsq_, false,  "CM5", "Calculated", useOffset);
+                sfree(x);
+                sfree(y);
+            }
+        }
+    }
+    fclose(hh);
+    fprintf(fplog, "\n");
+}
+
 void print_electric_props(FILE                           *fp,
                           std::vector<alexandria::MyMol> &mymol,
                           const Poldata                  *pd,
@@ -306,17 +378,11 @@ void print_electric_props(FILE                           *fp,
                           bool                            bfullTensor,
                           t_commrec                      *cr,
                           real                            efield,
-                          bool                            useOffset,
-                          const std::vector<OptimizationIndex> &optIndex)
+                          bool                            useOffset)
 {
     int            i    = 0, j     = 0, n     = 0;
     int            nout = 0, mm    = 0, nn    = 0;
     real           sse  = 0, sigma = 0, qCalc = 0;
-
-    struct ZetaTypeLsq {
-        std::string ztype;
-        gmx_stats_t lsq;
-    };
 
     gmx_stats_t               lsq_mu[qtNR], lsq_dip[qtNR], lsq_quad[qtNR];
     gmx_stats_t               lsq_esp[qtNR], lsq_alpha, lsq_isoPol, lsq_anisoPol, lsq_charge;
@@ -335,19 +401,16 @@ void print_electric_props(FILE                           *fp,
     lsq_charge   = gmx_stats_init();
     n            = 0;
 
-    for (auto ai : optIndex)
+    for (auto ai : pd->particleTypesConst())
     {
-        // More than 1 data point is needed for doing statistical analysis for each zeta type.
-        auto p = pd->findForcesConst(ai.iType()).findParameterTypeConst(ai.id(), ai.type());
-
-        if (p.ntrain() > 1)
+        auto qparam = ai.parameterConst("charge");
+        if (qparam.isMutable())
         {
-            ZetaTypeLsq k;
-            k.ztype.assign(ai.name());
-            k.lsq = gmx_stats_init();
-            lsqt.push_back(std::move(k));
+            ZetaTypeLsq newz(ai.id().id());
+            lsqt.push_back(std::move(newz));
         }
     }
+    printf("There are %d lsqt\n", static_cast<int>(lsqt.size()));
     std::string method, basis;
     splitLot(lot, &method, &basis);
     for (auto &mol : mymol)
@@ -445,11 +508,11 @@ void print_electric_props(FILE                           *fp,
                     myatoms.atom[j].ptype == eptNucleus)
                 {
                     auto  atp = pd->findParticleType(*(myatoms.atomtype[j]));
-                    auto  ztp = atp->interactionTypeToIdentifier(InteractionType::ELECTRONEGATIVITYEQUALIZATION).id();
+                    //auto  ztp = atp->interactionTypeToIdentifier(InteractionType::ELECTRONEGATIVITYEQUALIZATION).id();
                     auto  k   = std::find_if(lsqt.begin(), lsqt.end(),
-                                             [ztp](const ZetaTypeLsq &atlsq)
+                                             [atp](const ZetaTypeLsq &atlsq)
                                              {
-                                                 return atlsq.ztype.compare(ztp) == 0;
+                                                 return atp->id().id() == atlsq.name();
                                              });
                     qCalc = myatoms.atom[j].q;
                     // TODO: only count in real shells
@@ -461,7 +524,8 @@ void print_electric_props(FILE                           *fp,
                     }
                     if (k != lsqt.end())
                     {
-                        gmx_stats_add_point(k->lsq, qcm5[i], qCalc, 0, 0);
+                        fprintf(fp, "Adding data for %s\n", atp->id().id().c_str());
+                        gmx_stats_add_point(k->lsq_, qcm5[i], qCalc, 0, 0);
                     }
                     gmx_stats_add_point(lsq_charge, qcm5[i], qCalc, 0, 0);
                     qrmsd += gmx::square(qcm5[i]-qCalc);
@@ -523,37 +587,7 @@ void print_electric_props(FILE                           *fp,
         fprintf(fp, "\n");
     }
 
-    std::vector<const char*> types;
-    for (const auto &k : lsqt)
-    {
-        types.push_back(k.ztype.c_str());
-    }
-    FILE *hh = xvgropen(qhisto, "Histogram for charges", "q (e)", "a.u.", oenv);
-    xvgr_legend(hh, types.size(), types.data(), oenv);
-    print_stats(fp, "All Partial Charges  (e)",  lsq_charge, true, qTypeName(qtCM5), qTypeName(qtCalc), useOffset);
-    for (auto k = lsqt.begin(); k < lsqt.end(); ++k)
-    {
-        int   nbins;
-        if (gmx_stats_get_npoints(k->lsq, &nbins) == estatsOK)
-        {
-            real *x, *y;
-            if (gmx_stats_make_histogram(k->lsq, 0, &nbins, ehistoY, 1, &x, &y) == estatsOK)
-            {
-                fprintf(hh, "@type xy\n");
-                for (int i = 0; i < nbins; i++)
-                {
-                    fprintf(hh, "%10g  %10g\n", x[i], y[i]);
-                }
-                fprintf(hh, "&\n");
-                print_stats(fp, k->ztype.c_str(),  k->lsq, false,  "CM5", "Calculated", useOffset);
-                free(x);
-                free(y);
-            }
-        }
-        gmx_stats_free(k->lsq);
-    }
-    fclose(hh);
-    fprintf(fp, "\n");
+    write_q_histo(fp, qhisto, lsqt, oenv, lsq_charge, useOffset);
 
     print_corr(DipCorr, "Dipole Moment (Debye)", "Electronic", "Empirical", qtElec, lsq_dip, oenv);
     print_corr(MuCorr, "Dipoles (Debye)", "Electronic", "Empirical", qtElec, lsq_mu, oenv);

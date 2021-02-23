@@ -91,8 +91,7 @@ void print_electric_props(FILE                           *fp,
                           bool                            bfullTensor,
                           t_commrec                      *cr,
                           real                            efield,
-                          bool                            useOffset,
-                          const std::vector<OptimizationIndex> &optIndex);
+                          bool                            useOffset);
 
 /*! \brief Print header and command line arguments
  *

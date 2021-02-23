@@ -783,16 +783,6 @@ int alex_tune_eem(int argc, char *argv[])
     {
         opt.openLogFile(opt2fn("-g", NFILE, fnm));
         print_header(opt.logFile(), pargs);
-    }
-    else if (false)
-    {
-        std::string logf = gmx::formatString("log%d.log",
-                                             opt.commrec()->nodeid);
-        opt.openLogFile(logf.c_str());
-    }
-    
-    if (MASTER(opt.commrec()))
-    {
         gms.read(opt2fn_null("-sel", NFILE, fnm));
     }
 
@@ -831,7 +821,7 @@ int alex_tune_eem(int argc, char *argv[])
 
     if (MASTER(opt.commrec()))
     {
-        if (bMinimum || bForceOutput)
+        if (bMinimum || bForceOutput || !bOptimize)
         {
             bool  bPolar = opt.poldata()->polarizable();
             print_electric_props(opt.logFile(),
@@ -864,8 +854,7 @@ int alex_tune_eem(int argc, char *argv[])
                                  opt.fullTensor(),
                                  opt.commrec(),
                                  efield,
-                                 useOffset,
-                                 opt.optIndex_);
+                                 useOffset);
         }
         else if (!bMinimum)
         {
