@@ -684,7 +684,7 @@ bool SetMolpropAtomTypesAndBonds(alexandria::MolProp *mmm)
     mol.EndModify();
     mmm->SetFormula(mol.GetFormula());
     mmm->SetMass(mol.GetMolWt());
-    const char *ff  = "gaff";
+    const char *ff  = "alexandria";
     auto        pFF = OpenBabel::OBForceField::FindForceField(ff);
     if (!pFF)
     {
