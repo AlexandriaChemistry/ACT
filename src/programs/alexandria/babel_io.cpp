@@ -527,7 +527,7 @@ bool readBabel(const char          *g09,
         mol.AddHydrogens();
     }
     // Atoms
-    std::string forcefield = "gaff";
+    std::string forcefield = "alexandria";
     auto       *ff         = OpenBabel::OBForceField::FindForceField(forcefield);
     if (ff && (ff->Setup(mol)))
     {

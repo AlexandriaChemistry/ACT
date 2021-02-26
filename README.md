@@ -1,4 +1,17 @@
+Alexandria Chemistry Toolkit
+============================
 
+This code is based on the GROMACS software package, however it adds
+about 30000 lines of code for force field development.
+
+Prerequisites
+-------------
+
+A patched version of OpenBabel is needed that can be found at
+https://github.com/dspoel/openbabel 
+You need to check out the alexandria branch in order to work with it.
+        
+        
                Welcome to the official version of GROMACS!
 
 If you are familiar with Unix, it should be fairly trivial to compile and
