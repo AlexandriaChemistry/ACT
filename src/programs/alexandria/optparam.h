@@ -184,7 +184,6 @@ class Bayes : public OptParam
         func_t        func_;
         parm_t        initial_param_;
         parm_t        param_;
-        parm_t        prevParam_;
         parm_t        psigma_;
         parm_t        pmean_;
         parm_t        lowerBound_;

@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020
+ * Copyright (C) 2014-2021
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -158,7 +158,7 @@ void Bayes::addParam(const std::string &name,
     
     initial_param_.push_back(val);
     param_.push_back(val);
-    prevParam_.push_back(val);
+    //    prevParam_.push_back(val);
     lowerBound_.push_back(lower);
     upperBound_.push_back(upper);
     paramNames_.push_back(name);
@@ -298,7 +298,7 @@ double Bayes::MCMC(FILE *fplog)
     {       
         // Pick a random parameter to change
         j                  = int_uniform(gen);
-        prevParam_         = param_;
+        //prevParam_         = param_;
         storeParam         = param_[j];
         attemptedMoves_[j] = attemptedMoves_[j] + 1;
         
@@ -340,9 +340,11 @@ double Bayes::MCMC(FILE *fplog)
                 }
                 bestParam_ = param_;
                 minEval    = currEval;
-                if (false)
+                if (debug && false)
                 {
-                    printParameters(fplog);
+                    fprintf(debug, "iter %g. Found new minimum at %g\n",
+                            xiter, currEval);
+                    printParameters(debug);
                 }
                 saveState();
             }
@@ -352,6 +354,8 @@ double Bayes::MCMC(FILE *fplog)
         else
         {
             param_[j] = storeParam;
+            // poldata needs to change back!
+            toPoldata(changed);
         }
         changed[j] = false;
 
@@ -525,7 +529,7 @@ double Bayes::Adaptive_MCMC(FILE *fplog)
     {       
         // Pick a random parameter to change
         j                  = int_uniform(gen);        
-        prevParam_         = param_;
+        //        prevParam_         = param_;
         storeParam         = param_[j];
         attemptedMoves_[j] = attemptedMoves_[j] + 1;
         
@@ -587,6 +591,8 @@ double Bayes::Adaptive_MCMC(FILE *fplog)
         else
         {
             param_[j] = storeParam;
+            // poldata needs to change back!
+            toPoldata(changed);
         }
         changed[j] = false;
         
