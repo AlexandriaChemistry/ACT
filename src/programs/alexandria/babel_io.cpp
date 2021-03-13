@@ -282,12 +282,10 @@ bool readBabel(const char          *g09,
 
 
     /* Variables to read a Gaussian log file */
-    char                      *QM_charge_model  = nullptr;
     char                      *g09ptr;
     OpenBabel::OBMol           mol;
     OpenBabel::OBAtomIterator  OBai;
     OpenBabel::OBBondIterator  OBbi;
-    OpenBabel::OBBond         *OBb;
     OpenBabel::OBPairData     *OBpd;
     OpenBabel::OBPcharge      *OBpc       = new OpenBabel::OBPcharge();
     OpenBabel::OBVectorData   *dipole     = new OpenBabel::OBVectorData;

@@ -56,6 +56,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/unique_cptr.h"
 
 #include "alex_modules.h"
 #include "gentop_core.h"
@@ -823,9 +824,10 @@ int alex_tune_eem(int argc, char *argv[])
     {
         if (bMinimum || bForceOutput || !bOptimize)
         {
-            bool  bPolar = opt.poldata()->polarizable();
+            bool bPolar = opt.poldata()->polarizable();
+            auto mymols = opt.mymols();
             print_electric_props(opt.logFile(),
-                                 opt.mymols(),
+                                 &mymols,
                                  opt.poldata(),
                                  opt.mdlog(),
                                  opt.lot(),

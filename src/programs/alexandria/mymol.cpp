@@ -204,6 +204,13 @@ MyMol::MyMol() : gvt_(evtALL)
     }
 }
 
+MyMol::~MyMol()
+{
+    destroy_enerdata(enerd_);
+    sfree(enerd_);
+    done_forcerec(fr_, 1, 1);
+}
+
 t_atoms *MyMol::atoms()
 {
     if (!mtop_ || mtop_->moltype.size() != 1) 

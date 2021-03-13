@@ -299,6 +299,7 @@ class MyMol : public MolProp
          */
         MyMol();
 
+        ~MyMol();
         /*! \brief
          * Return QM dipole corresponding to charge type qt
          */

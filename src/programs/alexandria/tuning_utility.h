@@ -62,7 +62,7 @@ namespace alexandria
 {
 
 void print_electric_props(FILE                           *fp,
-                          std::vector<alexandria::MyMol> &mymol,
+                          std::vector<alexandria::MyMol> *mymol,
                           const Poldata                  *pd,
                           const gmx::MDLogger            &fplog,
                           const char                     *lot,

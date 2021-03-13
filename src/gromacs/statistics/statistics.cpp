@@ -85,6 +85,7 @@ void gmx_stats_free(gmx_stats_t gstats)
     sfree(stats->y);
     sfree(stats->dx);
     sfree(stats->dy);
+    sfree(stats);
 }
 
 int gmx_stats_add_point_ydy(gmx_stats_t gstats, double y, double dy)

@@ -128,7 +128,8 @@ int alex_molprop_check(int argc, char*argv[])
                 {
                     for(size_t i = 0; i < Xcalc.size(); i++)
                     {
-                        printf("%2d %8.3f %8.3f %8.3f %8.3f %8.3f %8.3f\n", i+1,
+                        printf("%2d %8.3f %8.3f %8.3f %8.3f %8.3f %8.3f\n",
+                               static_cast<int>(i+1),
                                Xcalc[i][XX], Xcalc[i][YY], Xcalc[i][ZZ],
                                fac*Esp[i].getX(), fac*Esp[i].getY(),
                                fac*Esp[i].getZ());

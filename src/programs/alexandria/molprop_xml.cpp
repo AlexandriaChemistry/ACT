@@ -615,7 +615,7 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                                         (nullptr != tc->children->content))
                                     {
                                         node       = iter->second;
-                                        xbuf[node] = strdup((char *)tc->children->content);
+                                        xbuf[node].assign((char *)tc->children->content);
                                     }
 
                                     if (NN(xbuf[exmlX]) && NN(xbuf[exmlY]) && NN(xbuf[exmlZ])
