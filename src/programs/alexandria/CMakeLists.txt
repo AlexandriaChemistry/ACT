@@ -43,6 +43,7 @@ set(ALEXANDRIA_SOURCES
            identifier.cpp
            interactiontype.cpp
            latex_util.cpp
+           memory_check.cpp
            merge_mp.cpp
            merge_pd.cpp
            molgen.cpp

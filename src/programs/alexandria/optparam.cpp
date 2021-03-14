@@ -51,6 +51,8 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "memory_check.h"
+
 namespace alexandria
 {
 
@@ -287,6 +289,7 @@ double Bayes::MCMC(FILE *fplog)
     std::uniform_int_distribution<>  int_uniform(0, nParam-1);
     std::uniform_real_distribution<> real_uniform(0, 1);
     
+    print_memory_usage(fplog);
     // Optmization loop
     int    j                = 0;
     bool   accept           = false;

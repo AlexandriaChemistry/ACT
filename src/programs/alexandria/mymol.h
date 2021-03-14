@@ -107,37 +107,37 @@ class MyMol : public MolProp
         /*! \brief
          * Gromacs structures
          */
-        int                              nexcl_;
-        int                             *cgnr_;
-        bool                             bHaveShells_;
-        bool                             bHaveVSites_;
-        bool                             bNeedVsites_;
-        double                           ref_enthalpy_;
-        double                           polarizability_;
-        double                           sig_pol_;
-        real                             EspRms_[qtNR] = { 0 };
-        real                             CosEsp_[qtNR] = { 0 };
-        t_excls                         *excls_;
-        immStatus                        immAtoms_;
-        immStatus                        immCharges_;
-        immStatus                        immTopology_;
-        std::unique_ptr<gmx_vsite_t>    *vsite_     = nullptr;
-        std::unique_ptr<gmx::MDAtoms>   *MDatoms_   = nullptr;
-        std::unique_ptr<gmx::MDModules> *mdModules_ = nullptr;
-        MyForceProvider                 *myforce_;
+        int                              nexcl_          = 0;
+        int                             *cgnr_           = nullptr;
+        bool                             bHaveShells_    = false;
+        bool                             bHaveVSites_    = false;
+        bool                             bNeedVsites_    = false;
+        double                           ref_enthalpy_   = 0;
+        double                           polarizability_ = 0;
+        double                           sig_pol_        = 0;
+        real                             EspRms_[qtNR]   = { 0 };
+        real                             CosEsp_[qtNR]   = { 0 };
+        t_excls                         *excls_          = nullptr;
+        immStatus                        immAtoms_       = immStatus::OK;
+        immStatus                        immCharges_     = immStatus::OK;
+        immStatus                        immTopology_    = immStatus::OK;
+        std::unique_ptr<gmx_vsite_t>    *vsite_          = nullptr;
+        std::unique_ptr<gmx::MDAtoms>   *MDatoms_        = nullptr;
+        std::unique_ptr<gmx::MDModules> *mdModules_      = nullptr;
+        MyForceProvider                 *myforce_        = nullptr;
         GentopVsites                     gvt_;
         std::string                      forcefield_;
-        double                           isoPol_elec_   = 0;
-        double                           isoPol_calc_   = 0;
+        double                           isoPol_elec_      = 0;
+        double                           isoPol_calc_      = 0;
         bool                             gromacsGenerated_ = false;
         gpp_atomtype_t                   gromppAtomtype_;
         //! Store the bond order for an atom pair
         std::map<std::pair<int, int>, int> bondOrder_;
 
         //! Array of dipole vectors
-        rvec                      mu_qm_[qtNR];
+        rvec                      mu_qm_[qtNR] = { 0 };
         //! Array of quadrupole tensors
-        tensor                    Q_qm_[qtNR];
+        tensor                    Q_qm_[qtNR]  = { 0 };
         //! Array of vectors of charges
         std::vector<double>       charge_QM_[qtNR];
         //! Experimental dipole
@@ -149,9 +149,9 @@ class MyMol : public MolProp
         //! Center of charge
         rvec                      coc_        = {0, 0, 0};
         //! GROMACS state variable
-        t_state                  *state_;
+        t_state                  *state_      = nullptr;
         //! GROMACS force record
-        t_forcerec               *fr_;
+        t_forcerec               *fr_         = nullptr;
         //! Function that returns true if a molecule is symmetric
         bool             IsSymmetric(real toler);
         //! Vector to back up coordinates
@@ -276,20 +276,20 @@ class MyMol : public MolProp
         double                         mpad_          = 0; //molecular polarizability anisotropy difference (mpad)
         tensor                         alpha_elec_    = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
         tensor                         alpha_calc_    = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
-        eSupport                       eSupp_;
+        eSupport                       eSupp_         = eSupport::Local;
         PaddedVector<gmx::RVec>        f_;
         PaddedVector<gmx::RVec>        optf_;
         std::vector<int>               symmetric_charges_;
-        QgenResp                      *QgenResp_ = nullptr;
-        QgenAcm                       *QgenAcm_ = nullptr;
+        QgenResp                      *QgenResp_       = nullptr;
+        QgenAcm                       *QgenAcm_        = nullptr;
         std::vector<PlistWrapper>      plist_;
-        gmx_mtop_t                    *mtop_;
-        gmx_localtop_t                *ltop_;
-        gmx_shellfc_t                 *shellfc_;
-        t_symtab                      *symtab_;
-        t_inputrec                    *inputrec_;
-        gmx_enerdata_t                *enerd_;
-        t_fcdata                      *fcd_;
+        gmx_mtop_t                    *mtop_           = nullptr;
+        gmx_localtop_t                *ltop_           = nullptr;
+        gmx_shellfc_t                 *shellfc_        = nullptr;
+        t_symtab                      *symtab_         = nullptr;
+        t_inputrec                    *inputrec_       = nullptr;
+        gmx_enerdata_t                *enerd_          = nullptr;
+        t_fcdata                      *fcd_            = nullptr;
         t_nrnb                         nrnb_;
         gmx_wallcycle_t                wcycle_;
         std::vector<std::string>       error_messages_;

@@ -61,6 +61,7 @@
 #include "alex_modules.h"
 #include "gentop_core.h"
 #include "gmx_simple_comm.h"
+#include "memory_check.h"
 #include "molgen.h"
 #include "molprop_util.h"
 #include "mymol_low.h"
@@ -567,6 +568,7 @@ bool OptACM::optRun(FILE                   *fp,
                 gmx_send_int(commrec(), dest, niter);
             }
         }
+        print_memory_usage(logFile());
         std::vector<std::string> paramClass;
         for(const auto &fm : typesToFit())
         {
@@ -783,8 +785,10 @@ int alex_tune_eem(int argc, char *argv[])
     if (MASTER(opt.commrec()))
     {
         opt.openLogFile(opt2fn("-g", NFILE, fnm));
+        print_memory_usage(opt.logFile());
         print_header(opt.logFile(), pargs);
         gms.read(opt2fn_null("-sel", NFILE, fnm));
+        print_memory_usage(opt.logFile());
     }
 
     const char *tabfn = opt2fn_null("-table", NFILE, fnm);   
@@ -857,6 +861,7 @@ int alex_tune_eem(int argc, char *argv[])
                                  opt.commrec(),
                                  efield,
                                  useOffset);
+            print_memory_usage(opt.logFile());
         }
         else if (!bMinimum)
         {

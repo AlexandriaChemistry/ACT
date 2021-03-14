@@ -168,22 +168,10 @@ void MyForceProvider::calculateForces(const gmx::ForceProviderInput &forceProvid
 MyMol::MyMol() : gvt_(evtALL)
 
 {
-    bHaveShells_       = false;
-    bHaveVSites_       = false;
-    bNeedVsites_       = false;
-    cgnr_              = nullptr;
-    immAtoms_          = immStatus::OK;
-    immTopology_       = immStatus::OK;
-    immCharges_        = immStatus::OK;
-    shellfc_           = nullptr;
-    vsite_             = nullptr;
     myforce_           = new MyForceProvider;
     snew(symtab_, 1);
     open_symtab(symtab_);
     gromppAtomtype_    = init_atomtype();
-    mtop_          = nullptr;
-    fr_            = nullptr;
-    ltop_          = nullptr;
     state_         = new t_state;
     state_->flags |= (1<<estX);
     state_->flags |= (1<<estV);
@@ -206,9 +194,12 @@ MyMol::MyMol() : gvt_(evtALL)
 
 MyMol::~MyMol()
 {
-    destroy_enerdata(enerd_);
-    sfree(enerd_);
-    done_forcerec(fr_, 1, 1);
+    //destroy_enerdata(enerd_);
+    //done_forcerec(fr_, 1, 1);
+    //done_symtab(symtab_);
+    //free_symtab(symtab_);
+    //delete mtop_;
+    //sfree(enerd_);
 }
 
 t_atoms *MyMol::atoms()
