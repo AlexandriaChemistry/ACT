@@ -192,15 +192,15 @@ MyMol::MyMol() : gvt_(evtALL)
     }
 }
 
-MyMol::~MyMol()
-{
+//MyMol::~MyMol()
+//{
     //destroy_enerdata(enerd_);
     //done_forcerec(fr_, 1, 1);
     //done_symtab(symtab_);
     //free_symtab(symtab_);
     //delete mtop_;
     //sfree(enerd_);
-}
+//}
 
 t_atoms *MyMol::atoms()
 {

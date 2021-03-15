@@ -118,9 +118,6 @@ class MyMol : public MolProp
         real                             EspRms_[qtNR]   = { 0 };
         real                             CosEsp_[qtNR]   = { 0 };
         t_excls                         *excls_          = nullptr;
-        immStatus                        immAtoms_       = immStatus::OK;
-        immStatus                        immCharges_     = immStatus::OK;
-        immStatus                        immTopology_    = immStatus::OK;
         std::unique_ptr<gmx_vsite_t>    *vsite_          = nullptr;
         std::unique_ptr<gmx::MDAtoms>   *MDatoms_        = nullptr;
         std::unique_ptr<gmx::MDModules> *mdModules_      = nullptr;
@@ -135,9 +132,9 @@ class MyMol : public MolProp
         std::map<std::pair<int, int>, int> bondOrder_;
 
         //! Array of dipole vectors
-        rvec                      mu_qm_[qtNR] = { 0 };
+        rvec                      mu_qm_[qtNR] = { { 0 } };
         //! Array of quadrupole tensors
-        tensor                    Q_qm_[qtNR]  = { 0 };
+        tensor                    Q_qm_[qtNR]  = { { { 0 } } };
         //! Array of vectors of charges
         std::vector<double>       charge_QM_[qtNR];
         //! Experimental dipole
@@ -299,7 +296,7 @@ class MyMol : public MolProp
          */
         MyMol();
 
-        ~MyMol();
+        //~MyMol();
         /*! \brief
          * Return QM dipole corresponding to charge type qt
          */

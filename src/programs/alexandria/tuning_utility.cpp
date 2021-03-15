@@ -50,15 +50,41 @@ class ZetaTypeLsq {
 private:
     std::string ztype_;
  public:
-    gmx_stats_t lsq_;
+    gmx_stats_t lsq_ = nullptr;
     
     ZetaTypeLsq(const std::string &ztype) : ztype_(ztype)
     {
         lsq_ = gmx_stats_init();
     }
+    ZetaTypeLsq(const ZetaTypeLsq &zlsq)
+    {
+        lsq_   = zlsq.lsq_;
+        ztype_ = zlsq.ztype_;
+    }
+    ZetaTypeLsq(ZetaTypeLsq &zlsq)
+    {
+        lsq_   = zlsq.lsq_;
+        ztype_ = zlsq.ztype_;
+    }
+    ZetaTypeLsq& operator=(const ZetaTypeLsq &zlsq)
+    {
+        ZetaTypeLsq zt(zlsq.name());
+        zt.lsq_ = zlsq.lsq_;
+        return zt;
+    }
+    ZetaTypeLsq& operator=(ZetaTypeLsq &zlsq)
+    {
+        ZetaTypeLsq zt(zlsq.name());
+        zt.lsq_ = zlsq.lsq_;
+        return zt;
+    }
     ~ZetaTypeLsq()
     {
-        gmx_stats_free(lsq_);
+        if (nullptr != lsq_)
+        {
+            gmx_stats_free(lsq_);
+        }
+        lsq_ = nullptr;
     }
         
     const std::string &name() const { return ztype_; }
