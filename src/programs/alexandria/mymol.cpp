@@ -1533,6 +1533,7 @@ void MyMol::plotEspCorrelation(const char             *espcorr,
     if (espcorr && oenv)
     {
         QgenResp_->updateAtomCharges(atoms());
+        QgenResp_->updateAtomCoords(state_->x);
         QgenResp_->calcPot(1.0);
         QgenResp_->plotLsq(oenv, espcorr);
     }

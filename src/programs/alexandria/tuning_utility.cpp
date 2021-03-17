@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020
+ * Copyright (C) 2014-2021
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -68,15 +68,15 @@ private:
     }
     ZetaTypeLsq& operator=(const ZetaTypeLsq &zlsq)
     {
-        ZetaTypeLsq zt(zlsq.name());
-        zt.lsq_ = zlsq.lsq_;
-        return zt;
+        ZetaTypeLsq *zt = new ZetaTypeLsq(zlsq.name());
+        zt->lsq_ = zlsq.lsq_;
+        return *zt;
     }
     ZetaTypeLsq& operator=(ZetaTypeLsq &zlsq)
     {
-        ZetaTypeLsq zt(zlsq.name());
-        zt.lsq_ = zlsq.lsq_;
-        return zt;
+        ZetaTypeLsq *zt = new ZetaTypeLsq(zlsq.name());
+        zt->lsq_ = zlsq.lsq_;
+        return *zt;
     }
     ~ZetaTypeLsq()
     {
