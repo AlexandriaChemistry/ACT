@@ -82,7 +82,7 @@ private:
     {
         if (nullptr != lsq_)
         {
-            gmx_stats_free(lsq_);
+            //            gmx_stats_free(lsq_);
         }
         lsq_ = nullptr;
     }
