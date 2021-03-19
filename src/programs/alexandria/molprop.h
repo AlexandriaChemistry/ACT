@@ -36,6 +36,7 @@
 
 #include <string.h>
 
+#include <map>
 #include <string>
 #include <vector>
 
@@ -917,62 +918,10 @@ using BondIterator      = typename std::vector<Bond>::iterator;
 using BondConstIterator = typename std::vector<Bond>::const_iterator;
 
 /*! \brief
- * Contains the charge of an atom
- *
- * The charge of an atom can be derived from quantum chemistry codes in different
- * ways, despite it not being a physical observable.
- *
- * \inpublicapi
- * \ingroup module_alexandria
- */
-class AtomicCharge : public GenericProperty
-{
-    private:
-        double q_;
-    public:
-        //! Default constructor
-        AtomicCharge() {}
-
-        //! Constructor setting type, unit and charge itself
-        AtomicCharge(const std::string &type,
-                     const std::string &unit,
-                     double             T,
-                     double             q)
-            : GenericProperty(type, unit, T, epGAS) { SetQ(q); };
-
-        //! Set the charge to q
-        void SetQ(double q) { q_ = q; };
-
-        //! Return the charge
-        double getQ() const { return q_; }
-
-        /*! \brief
-         * Sends this object over an MPI connection
-         *
-         * \param[in] commrec   GROMACS data structure for MPI communication
-         * \param[in] dest      Destination processor
-         * \return the CommunicationStatus of the operation
-         */
-        CommunicationStatus Send(t_commrec *cr, int dest) const;
-
-        /*! \brief
-         * Receives this object over an MPI connection
-         *
-         * \param[in] commrec   GROMACS data structure for MPI communication
-         * \param[in] src       Source processor
-         * \return the CommunicationStatus of the operation
-         */
-        CommunicationStatus Receive(t_commrec *cr, int src);
-};
-//! Iterates over AtomicCharge items
-using  AtomicChargeIterator      = typename std::vector<AtomicCharge>::iterator;
-using  AtomicChargeConstIterator = typename std::vector<AtomicCharge>::const_iterator;
-
-/*! \brief
  * Contains data on an atom based on a calculation.
  *
  * This class coordinates, name, atom type and an array of
- * AtomicCharge values based on different methods.
+ * Charge values based on different methods.
  *
  * \inpublicapi
  * \ingroup module_alexandria
@@ -980,11 +929,11 @@ using  AtomicChargeConstIterator = typename std::vector<AtomicCharge>::const_ite
 class CalcAtom
 {
     private:
-        std::string               name_, obType_, unit_, residueName_;
-        double                    x_ = 0, y_ = 0, z_ = 0;
-        int                       atomID_ = 0, residueNumber_ = 0, chainId_ = 0;
-        char                      chain_ = ' ';
-        std::vector<AtomicCharge> q_;
+        std::string                   name_, obType_, unit_, residueName_;
+        double                        x_ = 0, y_ = 0, z_ = 0;
+        int                           atomID_ = 0, residueNumber_ = 0, chainId_ = 0;
+        char                          chain_ = ' ';
+        std::map<std::string, double> q_;
     public:
         //! Default constructor
         CalcAtom() {}
@@ -1007,11 +956,35 @@ class CalcAtom
         //! Function returning true if the two atoms are equal
         bool Equal(CalcAtom ca);
 
-        //! Add an AtomicCharge element to the atom
-        void AddCharge(AtomicCharge aq);
+        /*! \brief Add an AtomicCharge element to the atom
+         * \param[in] type Charge type
+         * \param[in] q    The charge
+         */
+        void AddCharge(const std::string &type, double q)
+        {
+            q_.insert(std::pair<std::string,double>(type, q));
+        }
 
-        //! Return const vector of AtomicCharge
-        const std::vector<AtomicCharge> &atomicChargeConst() const { return q_; }
+        /*! \brief Return whether the charge type is present
+         * \param[in] type Charge type
+         * \return true if found
+         */
+        bool hasCharge(const std::string &type)
+        {
+            return q_.find(type) != q_.end();
+        }
+    
+        /*! \brief Return charge of a certain type
+         * \param[in] type Charge type
+         * \return charge if found, or crash otherwise
+         */
+        double charge(const std::string &type) const
+        {
+            return q_.find(type)->second;
+        }
+        
+        //! \brief Return the whole charge map
+        const std::map<std::string, double> &chargesConst() const { return q_; }
 
         //! Return the atom id of the atom
         int getAtomid() const { return atomID_; }

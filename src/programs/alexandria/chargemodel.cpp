@@ -82,16 +82,19 @@ const std::string &chargeTypeName(ChargeType ct)
 
 std::map<ChargeGenerationAlgorithm, const std::string> cg2Name =
     {
-        { ChargeGenerationAlgorithm::NONE,   "None"   },
-        { ChargeGenerationAlgorithm::EEM,    "EEM"    },
-        { ChargeGenerationAlgorithm::SQE,    "SQE"    },
-        { ChargeGenerationAlgorithm::ESP,    "ESP"    },
-        { ChargeGenerationAlgorithm::Custom, "Custom" }
+        { ChargeGenerationAlgorithm::NONE,      "None"      },
+        { ChargeGenerationAlgorithm::EEM,       "EEM"       },
+        { ChargeGenerationAlgorithm::SQE,       "SQE"       },
+        { ChargeGenerationAlgorithm::ESP,       "ESP"       },
+        { ChargeGenerationAlgorithm::Custom,    "Custom"    },
+        { ChargeGenerationAlgorithm::CM5,       "CM5"       },
+        { ChargeGenerationAlgorithm::Hirshfeld, "Hirshfeld" },
+        { ChargeGenerationAlgorithm::Mulliken,  "Mulliken"  }
     };
 
 std::map<const std::string, ChargeGenerationAlgorithm> name2CG;
 
-static ChargeGenerationAlgorithm name2ChargeGenerationAlgorithm(const std::string &name)
+ChargeGenerationAlgorithm nameToChargeGenerationAlgorithm(const std::string &name)
 {
     if (name2CG.empty())
     {

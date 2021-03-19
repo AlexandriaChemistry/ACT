@@ -152,6 +152,7 @@ int alex_gentop(int argc, char *argv[])
     static char                     *iupac          = (char *)"";
     static char                     *dbname         = (char *)"";
     static char                     *symm_string    = (char *)"";
+    static char                     *qqm            = (char *)"";
     static char                     *conf           = (char *)"minimum";
     static char                     *jobtype        = (char *)"unknown";
     static char                     *filename       = (char *)"";
@@ -212,6 +213,8 @@ int alex_gentop(int argc, char *argv[])
           "Tolerance for assigning charge generation algorithm" },
         { "-qtot",   FALSE, etREAL, {&qtot},
           "Total charge of the molecule. If the input file is a Gaussian log file, qtot will be taken from the log file." },
+        { "-qqm",    FALSE, etSTR,  {&qqm},
+          "Use a method from quantum mechanics that needs to be present in the input file. Either ESP, Hirshfeld, CM5 or Mulliken may be available." },
         { "-addh",   FALSE, etBOOL, {&addHydrogens},
           "Add hydrogen atoms to the compound - useful for PDB files." },
         { "-qcycle", FALSE, etINT, {&qcycle},
@@ -387,6 +390,12 @@ int alex_gentop(int argc, char *argv[])
                 myq.push_back(my_atof(q.c_str(), "custom q"));
             }
         }
+        ChargeGenerationAlgorithm alg = ChargeGenerationAlgorithm::NONE;
+        if (strlen(qqm) > 0)
+        {
+            GMX_RELEASE_ASSERT(nullptr != lot, "Please specify the level of theory to use when selecting QM charges.");
+            alg = nameToChargeGenerationAlgorithm(qqm);
+        }
         imm    = mymol.GenerateCharges(&pd,
                                        mdlog,
                                        cr,
@@ -394,7 +403,9 @@ int alex_gentop(int argc, char *argv[])
                                        nullptr,
                                        qcycle,
                                        qtol,
-                                       myq);
+                                       alg,
+                                       myq,
+                                       lot);
     }
     /* Generate output file for debugging if requested */
     if (immStatus::OK == imm)

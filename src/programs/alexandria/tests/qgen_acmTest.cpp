@@ -153,10 +153,17 @@ class AcmTest : public gmx::test::CommandLineTestBase
             auto           hwinfo   = gmx_detect_hardware(mdlog, pnc);
             int            qcycle   = 100;
             real           qtol     = 1e-6;
-
+            std::string    lot(method);
+            lot += "/" + basis;
+            auto alg = ChargeGenerationAlgorithm::NONE;
+            if (!qcustom.empty())
+            {
+                alg = ChargeGenerationAlgorithm::Custom;
+            }
             mp_.symmetrizeCharges(pd, qSymm, nullptr);
             mp_.GenerateCharges(pd, mdlog, cr, nullptr, 
-                                hwinfo, qcycle, qtol, qcustom);
+                                hwinfo, qcycle, qtol, 
+                                alg, qcustom, lot);
                                 
             std::vector<double> qtotValues;
             auto myatoms = mp_.atomsConst();
@@ -355,7 +362,7 @@ TEST_F (AcmTest, CustomAcetatePDB)
 
 TEST_F (AcmTest, CustomGuanidiniumSDF)
 {
-    std::vector<double> qcustom = { -0.4, -0.4, -0.4, 0.1, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3 };
+    std::vector<double> qcustom = { -0.4, -0.4, -0.4, 0.1, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3 };
     testAcm("ACM-g", einfSDF, "guanidinium", false, 1, qcustom);
 }
 

@@ -630,16 +630,11 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                                         xbuf[exmlZ].clear();
                                         xbuf[exmlUNIT].clear();
                                     }
-                                    if (NN(xbuf[exmlQ]) && NN(xbuf[exmlTYPE]) &&
-                                        NN(xbuf[exmlTEMPERATURE]) &&
-                                        NN(xbuf[exmlUNIT]))
+                                    if (NN(xbuf[exmlQ]) && NN(xbuf[exmlTYPE]))
                                     {
-                                        alexandria::AtomicCharge aq(xbuf[exmlTYPE], xbuf[exmlUNIT],
-                                                                    xbuf_atof(xbuf, exmlTEMPERATURE),
-                                                                    xbuf_atof(xbuf, exmlQ));
-                                        ca.AddCharge(aq);
+                                        ca.AddCharge(xbuf[exmlTYPE],
+                                                     xbuf_atof(xbuf, exmlQ));
                                         xbuf[exmlQ].clear();
-                                        xbuf[exmlUNIT].clear();
                                         xbuf[exmlTYPE].clear();
                                     }
                                 }
@@ -916,12 +911,10 @@ static void add_xml_molprop(xmlNodePtr                 parent,
             baby = add_xml_child_val(grandchild, exml_names(exmlZ), gmx::formatString("%g", z).c_str());
             add_xml_string(baby, exml_names(exmlUNIT), ca.getUnit());
 
-            for (auto &q : ca.atomicChargeConst())
+            for (auto &q : ca.chargesConst())
             {
-                xmlNodePtr atomptr = add_xml_child_val(grandchild, exml_names(exmlQ), gmx::formatString("%g", q.getQ()).c_str());
-                add_xml_string(atomptr, exml_names(exmlTYPE), q.getType());
-                add_xml_string(atomptr, exml_names(exmlUNIT), q.getUnit());
-                add_xml_double(atomptr, exml_names(exmlTEMPERATURE), q.getTemperature());
+                xmlNodePtr atomptr = add_xml_child_val(grandchild, exml_names(exmlQ), gmx::formatString("%g", q.second).c_str());
+                add_xml_string(atomptr, exml_names(exmlTYPE), q.first);
             }
         }
     }

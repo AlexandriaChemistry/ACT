@@ -168,27 +168,6 @@ void CalcAtom::SetUnit(const std::string &unit)
     }
 }
 
-void CalcAtom::AddCharge(AtomicCharge q)
-{
-    AtomicChargeIterator aci;
-
-    auto acc = atomicChargeConst();
-    for (aci = acc.begin(); aci < acc.end(); ++aci)
-    {
-        if ((aci->getType().compare(q.getType()) == 0) &&
-            (aci->getUnit().compare(q.getUnit()) == 0) &&
-            (aci->getTemperature() == q.getTemperature()) &&
-            (aci->getQ() == q.getQ()))
-        {
-            break;
-        }
-    }
-    if (aci == acc.end())
-    {
-        q_.push_back(q);
-    }
-}
-
 bool CalcAtom::Equal(CalcAtom ca)
 {
     return !((name_.compare(ca.getName()) != 0) ||
@@ -220,12 +199,10 @@ CommunicationStatus CalcAtom::Receive(t_commrec *cr, int src)
 
         for (int n = 0; (CS_OK == cs) && (n < Ncharge); n++)
         {
-            AtomicCharge aq;
-            cs = aq.Receive(cr, src);
-            if (CS_OK == cs)
-            {
-                AddCharge(aq);
-            }
+            std::string type;
+            gmx_recv_str(cr, src, &type);
+            double q = gmx_recv_double(cr, src);
+            AddCharge(type, q);
         }
     }
     if (nullptr != debug)
@@ -254,13 +231,10 @@ CommunicationStatus CalcAtom::Send(t_commrec *cr, int dest) const
         gmx_send_double(cr, dest, z_);
         gmx_send_int(cr, dest, q_.size());
 
-        for (auto qi : atomicChargeConst())
+        for (const auto &qi : q_)
         {
-            cs = qi.Send(cr, dest);
-            if (CS_OK != cs)
-            {
-                break;
-            }
+            gmx_send_str(cr, dest, &qi.first);
+            gmx_send_double(cr, dest, qi.second);
         }
     }
     if (nullptr != debug)
@@ -525,50 +499,6 @@ CommunicationStatus ElectrostaticPotential::Send(t_commrec *cr, int dest) const
     else if (nullptr != debug)
     {
         fprintf(debug, "Trying to send ElectrostaticPotential, status %s\n", cs_name(cs));
-        fflush(debug);
-    }
-    return cs;
-}
-
-CommunicationStatus AtomicCharge::Receive(t_commrec *cr, int src)
-{
-    CommunicationStatus cs;
-
-    cs = GenericProperty::Receive(cr, src);
-
-    if (CS_OK == cs)
-    {
-        cs = gmx_recv_data(cr, src);
-    }
-    if (CS_OK == cs)
-    {
-        q_ = gmx_recv_double(cr, src);
-    }
-    else if (nullptr != debug)
-    {
-        fprintf(debug, "Trying to receive AtomicCharge, status %s\n", cs_name(cs));
-        fflush(debug);
-    }
-    return cs;
-}
-
-CommunicationStatus AtomicCharge::Send(t_commrec *cr, int dest) const
-{
-    CommunicationStatus cs;
-
-    cs = GenericProperty::Send(cr, dest);
-
-    if (CS_OK == cs)
-    {
-        cs = gmx_send_data(cr, dest);
-    }
-    if (CS_OK == cs)
-    {
-        gmx_send_double(cr, dest, q_);
-    }
-    else if (nullptr != debug)
-    {
-        fprintf(debug, "Trying to send AtomicCharge, status %s\n", cs_name(cs));
         fflush(debug);
     }
     return cs;
@@ -912,11 +842,9 @@ int Experiment::Merge(const Experiment *src)
         caa.SetCoords(x, y, z);
         caa.SetUnit(cai.getUnit());
         caa.SetResidue(cai.ResidueName(), cai.ResidueNumber());
-        for (auto &aci : cai.atomicChargeConst())
+        for (const auto &aci : cai.chargesConst())
         {
-            AtomicCharge aq(aci.getType(), aci.getUnit(),
-                            aci.getTemperature(), aci.getQ());
-            caa.AddCharge(aq);
+            caa.AddCharge(aci.first, aci.second);
         }
         AddAtom(caa);
     }
@@ -1065,15 +993,8 @@ bool Experiment::getVal(const std::string &type,
             int i = 0;
             for (auto &mai : calcAtomConst())
             {
-                for (auto &q : mai.atomicChargeConst())
-                {
-                    if (((type.size() == 0) || (type.compare(q.getType()) == 0)) &&
-                        bCheckTemperature(Told, q.getTemperature()))
-                    {
-                        vec[i] = q.getQ();
-                        i++;
-                    }
-                }
+                vec[i] = mai.charge(type);
+                i++;
             }
             if (i == NAtom())
             {

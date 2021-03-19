@@ -448,7 +448,7 @@ void print_electric_props(FILE                           *fp,
 
             // Recalculate the atomic charges using the optmized parameters.
             std::vector<double> dummy;
-            mol->GenerateCharges(pd, fplog, cr, tabfn, hwinfo, qcycle, qtol, dummy);
+            mol->GenerateCharges(pd, fplog, cr, tabfn, hwinfo, qcycle, qtol, ChargeGenerationAlgorithm::NONE, dummy, lot);
 
             // Now compute all the ESP RMSDs.
             std::vector<std::vector<EspPoint> > allEsp;

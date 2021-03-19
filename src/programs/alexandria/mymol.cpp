@@ -605,17 +605,8 @@ immStatus MyMol::GenerateAtoms(const Poldata     *pd,
             state_->x[natom][YY] = convertToGromacs(yy, myunit);
             state_->x[natom][ZZ] = convertToGromacs(zz, myunit);
 
-            double q = 0;
-            for (auto &qi : cai.atomicChargeConst())
-            {
-                if (qi.getType().compare("ESP") == 0)
-                {
-                    q  = convertToGromacs(qi.getQ(), qi.getUnit());
-                    break;
-                }
-            }
             atoms->atom[natom].q      =
-                atoms->atom[natom].qB = q;
+                atoms->atom[natom].qB = 0;
             atoms->atom[natom].resind = resnr;
             t_atoms_set_resinfo(atoms, natom, symtab_, cai.ResidueName().c_str(),
                                 atoms->atom[natom].resind, ' ', 
@@ -1422,7 +1413,9 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
                                  gmx_hw_info_t             *hwinfo,
                                  int                        maxiter,
                                  real                       tolerance,
-                                 const std::vector<double> &qcustom)
+                                 ChargeGenerationAlgorithm  algorithm,
+                                 const std::vector<double> &qcustom,
+                                 const std::string         &lot)
 {
     immStatus imm         = immStatus::OK;
     bool      converged   = false;
@@ -1435,10 +1428,14 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
     {
         backupCoordinates();
     }
-    auto algorithm = pd->chargeGenerationAlgorithm();
-    if (atoms()->nr - qcustom.size() == 0)
+    if (algorithm == ChargeGenerationAlgorithm::Custom)
     {
-        algorithm = ChargeGenerationAlgorithm::Custom;
+        GMX_RELEASE_ASSERT(0 == atoms()->nr - qcustom.size(),
+                           gmx::formatString("Number of custom charges %d does not match the number of atoms %d", static_cast<int>(qcustom.size()), atoms()->nr).c_str());
+    }
+    else if (algorithm == ChargeGenerationAlgorithm::NONE)
+    {
+        algorithm = pd->chargeGenerationAlgorithm();
     }
     switch (algorithm)
     {
@@ -1450,9 +1447,31 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
                         getMolname().c_str());
             }
             auto myatoms = atoms();
-            for (auto i = 0; i < mtop_->natoms; i++)
+            for (auto i = 0; i < myatoms->nr; i++)
             {
                 myatoms->atom[i].q  = myatoms->atom[i].qB = 0;
+            }
+            return immStatus::OK;
+        }
+    case ChargeGenerationAlgorithm::CM5:
+    case ChargeGenerationAlgorithm::Hirshfeld:
+    case ChargeGenerationAlgorithm::Mulliken:
+        {
+            auto myatoms = atoms();
+            for (auto exper : experimentConst())
+            {
+                std::string mylot(exper.getMethod());
+                mylot += "/" + exper.getBasisset();
+                if (lot == mylot)
+                {
+                    std::string qtype = chargeGenerationAlgorithmName(algorithm);
+                    int i = 0;
+                    for (auto &ca : exper.calcAtomConst())
+                    {
+                        myatoms->atom[i].q  = myatoms->atom[i].qB = ca.charge(qtype);
+                        i++;
+                    }
+                }
             }
             return immStatus::OK;
         }

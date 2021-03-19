@@ -598,7 +598,9 @@ void MolGen::Read(FILE            *fp,
                                                 hwinfo_,
                                                 qcycle_,
                                                 qtol_,
-                                                dummy);
+                                                ChargeGenerationAlgorithm::NONE,
+                                                dummy,
+                                                lot_);
                     (void) mymol.espRms(qtCalc);
                 }
                 if (immStatus::OK != imm && debug)
@@ -733,7 +735,9 @@ void MolGen::Read(FILE            *fp,
                                             hwinfo_,
                                             qcycle_,
                                             qtol_,
-                                            dummy);
+                                            ChargeGenerationAlgorithm::NONE,
+                                            dummy,
+                                            lot_);
             }
             if (immStatus::OK == imm)
             {

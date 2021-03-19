@@ -120,7 +120,9 @@ class RespTest : public gmx::test::CommandLineTestBase
             std::string    tabFile;
             auto qt = pd->findForcesConst(InteractionType::CHARGEDISTRIBUTION);
             auto ct = name2ChargeType(qt.optionValue("chargetype"));
-          
+            std::string    lot(method);
+            lot += "/" + basis;
+            
             if (ChargeType::Slater  == ct)
             {
                 const char *tabname =  "table.xvg";
@@ -138,7 +140,8 @@ class RespTest : public gmx::test::CommandLineTestBase
             std::vector<double> qcustom;
             mp_.GenerateCharges(pd, mdlog, cr,
                                 tabFile.empty() ? nullptr : tabFile.c_str(),
-                                hwinfo, qcycle, qtol, qcustom);
+                                hwinfo, qcycle, qtol, 
+                                ChargeGenerationAlgorithm::NONE, qcustom, lot);
 
             std::vector<double> qtotValues;
             for (int atom = 0; atom < mp_.mtop_->moltype[0].atoms.nr; atom++)
