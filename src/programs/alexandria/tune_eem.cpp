@@ -427,16 +427,16 @@ double OptACM::calcDeviation()
             if (weight(ermsMU))
             {
                 mymol.CalcDipole();
-                mymol.rotateDipole(mymol.muQM(qtCalc), mymol.muQM(qtElec));
+                mymol.rotateDipole(mymol.muQM(qType::Calc), mymol.muQM(qType::Elec));
                 if (bQM())
                 {
                     rvec dmu;
-                    rvec_sub(mymol.muQM(qtCalc), mymol.muQM(qtElec), dmu);
+                    rvec_sub(mymol.muQM(qType::Calc), mymol.muQM(qType::Elec), dmu);
                     increaseChiSquared(ermsMU, 1, iprod(dmu, dmu));
                 }
                 else
                 {
-                    increaseChiSquared(ermsMU, 1, gmx::square(mymol.dipQM(qtCalc) - mymol.dipExper()));
+                    increaseChiSquared(ermsMU, 1, gmx::square(mymol.dipQM(qType::Calc) - mymol.dipExper()));
                 }
             }
             if (weight(ermsQUAD))
@@ -449,7 +449,7 @@ double OptACM::calcDeviation()
                         if (bFullTensor_ || mm == nn)
                         {
                             increaseChiSquared(ermsQUAD, 1,
-                                               gmx::square(mymol.QQM(qtCalc)[mm][nn] - mymol.QQM(qtElec)[mm][nn]));
+                                               gmx::square(mymol.QQM(qType::Calc)[mm][nn] - mymol.QQM(qType::Elec)[mm][nn]));
                         }
                     }
                 }

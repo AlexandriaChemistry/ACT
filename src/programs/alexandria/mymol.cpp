@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020
+ * Copyright (C) 2014-2021
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -97,21 +97,25 @@ static void vsiteType_to_atomType(const std::string &vsiteType, std::string *ato
     *atomType        = vsiteType.substr (0, pos);
 }
 
-const char *qTypeName(qType qt)
+static std::map<qType, std::string> qTypeNames = {
+    { qType::ESP,       "ESP"        },
+    { qType::Mulliken,  "Mulliken"   },
+    { qType::Hirshfeld, "Hirshfeld"  },
+    { qType::CM5,       "CM5"        },
+    { qType::Calc,      "Alexandria" },
+    { qType::Elec,      "Electronic" }
+};
+
+const std::string &qTypeName(qType qt)
 {
-    switch (qt)
-    {
-        case qtESP:       return "ESP";
-        case qtMulliken:  return "Mulliken";
-        case qtHirshfeld: return "Hirshfeld";
-        case qtCM5:       return "CM5";
-        case qtCalc:      return "Alexandria";
-        case qtElec:      return "Electronic";
-        default:
-            return "Unknown charge type";
-    }
+    return qTypeNames[qt];
 }
-   
+
+const std::map<qType, std::string> &qTypes()
+{
+    return qTypeNames;
+}
+
 class MyForceProvider : public gmx::IForceProvider
 {
     private:
@@ -185,10 +189,10 @@ MyMol::MyMol() : gvt_(evtALL)
     }
     init_enerdata(1, 0, enerd_);
     init_nrnb(&nrnb_);
-    for (int j = 0; j < qtNR; j++)
+    for (auto &j : qTypeNames)
     {
-        clear_rvec(mu_qm_[j]);
-        clear_mat(Q_qm_[j]);
+        clear_rvec(mu_qm_[j.first]);
+        clear_mat(Q_qm_[j.first]);
     }
 }
 
@@ -1475,7 +1479,7 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
             // Init Qgresp should be called before this!
             QgenResp_->optimizeCharges(pd->getEpsilonR());
             QgenResp_->calcPot(pd->getEpsilonR());
-            EspRms_[qtCalc] = chi2[cur] = QgenResp_->getRms(&rrms, &CosEsp_[qtCalc]);
+            EspRms_[qType::Calc] = chi2[cur] = QgenResp_->getRms(&rrms, &CosEsp_[qType::Calc]);
             if (debug)
             {
                 fprintf(debug, "RESP: RMS %g\n", chi2[cur]);
@@ -1500,7 +1504,7 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
                 QgenResp_->optimizeCharges(pd->getEpsilonR());
                 QgenResp_->calcPot(pd->getEpsilonR());
                 real cosangle = 0;
-                EspRms_[qtCalc] = chi2[cur] = QgenResp_->getRms(&rrms, &cosangle);
+                EspRms_[qType::Calc] = chi2[cur] = QgenResp_->getRms(&rrms, &cosangle);
                 if (debug)
                 {
                     fprintf(debug, "RESP: RMS %g\n", chi2[cur]);
@@ -1584,7 +1588,7 @@ void MyMol::CalcDipole()
 {
     rvec mu;
     CalcDipole(mu);
-    set_muQM(qtCalc, mu);
+    set_muQM(qType::Calc, mu);
 }
 
 void MyMol::CalcDipole(rvec mu)
@@ -1623,7 +1627,7 @@ void MyMol::CalcQuadrupole()
             }
         }
     }
-    set_QQM(qtCalc, Q);
+    set_QQM(qType::Calc, Q);
 }
 
 void MyMol::computeMoments(real q[], rvec mu, tensor Q)
@@ -1906,16 +1910,16 @@ void MyMol::PrintTopology(FILE                   *fp,
                    qm_type, &value, &error,
                    &T, &myref, &mylot, vec, myQ))
     {
-        set_muQM(qtElec, vec);
+        set_muQM(qType::Elec, vec);
         if (value > 0)
         {
-            rotateDipole(mu_qm_[qtElec], mu);
+            rotateDipole(mu_qm_[qType::Elec], mu);
         }
         snprintf(buf, sizeof(buf), "%s Dipole Moment (Debye):\n"
                  "; ( %.2f %6.2f %6.2f ) Total= %.2f\n",
                  mylot.c_str(),
-                 mu_qm_[qtElec][XX], mu_qm_[qtElec][YY], mu_qm_[qtElec][ZZ],
-                 norm(mu_qm_[qtElec]));
+                 mu_qm_[qType::Elec][XX], mu_qm_[qType::Elec][YY], mu_qm_[qType::Elec][ZZ],
+                 norm(mu_qm_[qType::Elec]));
         commercials.push_back(buf);
     }
     else if (bVerbose)
@@ -1926,17 +1930,17 @@ void MyMol::PrintTopology(FILE                   *fp,
 
     add_tensor(&commercials,
                "Alexandria Traceless Quadrupole Moments (Buckingham)",
-               QQM(qtCalc));
+               QQM(qType::Calc));
 
     T = -1;
     if (getPropRef(MPO_QUADRUPOLE, iqmQM, method, basis, qm_conf,
                    qm_type, &value, &error,
                    &T, &myref, &mylot, vec, myQ))
     {
-        set_QQM(qtElec, myQ);
-        rotate_tensor(Q_qm_[qtElec], Q_qm_[qtCalc]);
+        set_QQM(qType::Elec, myQ);
+        rotate_tensor(Q_qm_[qType::Elec], Q_qm_[qType::Calc]);
         snprintf(buf, sizeof(buf), "%s Traceless Quadrupole Moments (Buckingham)", mylot.c_str());
-        add_tensor(&commercials, buf, Q_qm_[qtElec]);
+        add_tensor(&commercials, buf, Q_qm_[qType::Elec]);
     }
     else if (bVerbose)
     {
@@ -2134,8 +2138,8 @@ void MyMol::setQandMoments(qType qt, int natom, real q[])
     }
 }
 
-void MyMol::calcEspRms(const Poldata                       *pd,
-                       std::vector<std::vector<EspPoint> > *allEsp)
+void MyMol::calcEspRms(const Poldata                           *pd,
+                       std::map<qType, std::vector<EspPoint> > *allEsp)
 {
     int natoms = 0;
     for (int i = 0; i < atoms()->nr; i++)
@@ -2176,32 +2180,31 @@ void MyMol::calcEspRms(const Poldata                       *pd,
         qg.addEspPoint(r[XX], r[YY], r[ZZ], ep.v());
     }
     double T = 0;
-    allEsp->resize(qtElec);
-    for(int i = 0; i < qtElec; i++)
+    for(auto &i : qTypeNames)
     {
+        auto qi = i.first;
         std::vector<EspPoint> ep;
-        qType qi = static_cast<qType>(i);
-        if (qtCalc == qi)
+        if (qType::Calc == qi)
         {
             QgenResp_->setAtomInfo(atoms(), pd, x(), totalCharge());
             QgenResp_->updateAtomCharges(atoms());
             QgenResp_->calcPot(pd->getEpsilonR());
-            EspRms_[i] = QgenResp_->getRms(&rrms, &CosEsp_[i]);
-            ep         = QgenResp_->espPoint();
+            EspRms_[qi] = QgenResp_->getRms(&rrms, &CosEsp_[qi]);
+            ep          = QgenResp_->espPoint();
         }
         else if (getPropRef(MPO_CHARGE, iqmQM,
-                       method, basis, "",
-                       qTypeName(qi),
-                       &value, &error, &T,
-                       &myref, &mylot, q.data(), quadrupole))
+                            method, basis, "",
+                            qTypeName(qi),
+                            &value, &error, &T,
+                            &myref, &mylot, q.data(), quadrupole))
         {
             qg.setAtomInfo(&myatoms, pd, myx, totalCharge());
             qg.updateAtomCharges(q);
             qg.calcPot(pd->getEpsilonR());
-            EspRms_[i] = qg.getRms(&rrms, &CosEsp_[i]);
-            ep         = qg.espPoint();
+            EspRms_[qi] = qg.getRms(&rrms, &CosEsp_[qi]);
+            ep          = qg.espPoint();
         }
-        for (size_t j = 0; j < qg.nEsp(); j++)
+        for (size_t j = 0; j < ep.size(); j++)
         {
             (*allEsp)[qi].push_back(ep[j]);
         }
@@ -2241,9 +2244,10 @@ immStatus MyMol::getExpProps(gmx_bool           bQM,
         }
     }
     real q[natom];
-    for(int i = qtESP; i < qtElec; i++)
+    
+    for(auto &i : qTypeNames)
     {
-        qType qi = static_cast<qType>(i);
+        qType qi = i.first;
         if (getPropRef(MPO_CHARGE, iqmQM,
                        method, basis, "",
                        qTypeName(qi),
@@ -2251,19 +2255,19 @@ immStatus MyMol::getExpProps(gmx_bool           bQM,
                        &myref, &mylot, q, quadrupole))
         {
             setQandMoments(qi, natom, q);
-            if (qi == qtESP)
+            if (qi == qType::ESP)
             {
                 esp_dipole_found = true;
             }
             if (esp_dipole_found && dipQM(qi) > 0)
             {
-                rotate_tensor(Q_qm_[qi], Q_qm_[qtESP]);
+                rotate_tensor(Q_qm_[qi], Q_qm_[qType::ESP]);
             }
         }
         else
         {
             printf("WARNING: cannot find %s charges for %s\n",
-                   qTypeName(qi), getMolname().c_str());
+                   qTypeName(qi).c_str(), getMolname().c_str());
         }
     }
     T = 298.15;
@@ -2316,7 +2320,7 @@ immStatus MyMol::getExpProps(gmx_bool           bQM,
         {
             dip_exp_  = value;
             dip_err_  = error;
-            set_muQM(qtElec, vec);
+            set_muQM(qType::Elec, vec);
 
             if (error <= 0)
             {
@@ -2330,13 +2334,13 @@ immStatus MyMol::getExpProps(gmx_bool           bQM,
             }
             dip_weight_ = gmx::square(1.0/error);
 
-            if (!bZero && (dipQM(qtElec) - 0.0) < 1e-2)
+            if (!bZero && (dipQM(qType::Elec) - 0.0) < 1e-2)
             {
                 imm = immStatus::ZeroDip;
             }
             if (immStatus::OK == imm && esp_dipole_found)
             {
-                rotateDipole(mu_qm_[qtElec], mu_qm_[qtESP]);
+                rotateDipole(mu_qm_[qType::Elec], mu_qm_[qType::ESP]);
             }
         }
         else
@@ -2353,10 +2357,10 @@ immStatus MyMol::getExpProps(gmx_bool           bQM,
                        &value, &error, &T, &myref, &mylot,
                        vec, quadrupole))
         {
-            set_QQM(qtElec, quadrupole);
-            if (immStatus::OK == imm && esp_dipole_found && norm(mu_qm_[qtElec]) > 0)
+            set_QQM(qType::Elec, quadrupole);
+            if (immStatus::OK == imm && esp_dipole_found && norm(mu_qm_[qType::Elec]) > 0)
             {
-                rotate_tensor(Q_qm_[qtElec], Q_qm_[qtESP]);
+                rotate_tensor(Q_qm_[qType::Elec], Q_qm_[qType::ESP]);
             }
         }
         T = -1;

@@ -78,19 +78,23 @@ enum class eSupport {
 };
 
 /*! \brief Enumerated type to differentiate the charge types */
-enum qType {
-    qtCalc      = 0,
-    qtESP       = 1,
-    qtMulliken  = 2,
-    qtHirshfeld = 3,
-    qtCM5       = 4,
-    qtElec      = 5,
-    qtNR        = 6
+enum class qType {
+    Calc      = 0,
+    ESP       = 1,
+    Mulliken  = 2,
+    Hirshfeld = 3,
+    CM5       = 4,
+    Elec      = 5
 };
 
-/*! \brief return string corresponding to charge type */
-const char *qTypeName(qType qt);
+/*! \brief return string corresponding to charge type
+ */
+const std::string &qTypeName(qType qt);
 
+/*! \brief Return a complete mape of qTypes and their names
+ */
+const std::map<qType, std::string> &qTypes();
+ 
 class MyForceProvider;
 /*! \brief
  * Contains molecular properties from a range of sources.
@@ -115,8 +119,8 @@ class MyMol : public MolProp
         double                           ref_enthalpy_   = 0;
         double                           polarizability_ = 0;
         double                           sig_pol_        = 0;
-        real                             EspRms_[qtNR]   = { 0 };
-        real                             CosEsp_[qtNR]   = { 0 };
+        std::map<qType, real>            EspRms_;
+        std::map<qType, real>            CosEsp_;
         t_excls                         *excls_          = nullptr;
         std::unique_ptr<gmx_vsite_t>    *vsite_          = nullptr;
         std::unique_ptr<gmx::MDAtoms>   *MDatoms_        = nullptr;
@@ -132,11 +136,11 @@ class MyMol : public MolProp
         std::map<std::pair<int, int>, int> bondOrder_;
 
         //! Array of dipole vectors
-        rvec                      mu_qm_[qtNR] = { { 0 } };
+        std::map<qType, rvec>     mu_qm_;
         //! Array of quadrupole tensors
-        tensor                    Q_qm_[qtNR]  = { { { 0 } } };
+        std::map<qType, tensor>   Q_qm_;
         //! Array of vectors of charges
-        std::vector<double>       charge_QM_[qtNR];
+        std::map<qType, std::vector<double> > charge_QM_;
         //! Experimental dipole
         double                    dip_exp_    = 0;
         //! Error in experimental dipole
@@ -296,23 +300,22 @@ class MyMol : public MolProp
          */
         MyMol();
 
-        //~MyMol();
         /*! \brief
          * Return QM dipole corresponding to charge type qt
          */
-        const rvec &muQM(qType qt) const { return mu_qm_[qt]; }
+        const rvec &muQM(qType qt) const { return mu_qm_.find(qt)->second; }
 
         rvec &muQM(qType qt) { return mu_qm_[qt]; }
 
         /*! \brief
          * Return QM quadrupole corresponding to charge type qt.
          */
-        const tensor &QQM(qType qt) const { return Q_qm_[qt]; }
+        const tensor &QQM(qType qt) const { return Q_qm_.find(qt)->second; }
 
         /*! \brief
          * Return Charge vector corresponding to charge type qt.
          */
-        const std::vector<double> &chargeQM(qType qt) const { return charge_QM_[qt]; }
+        const std::vector<double> &chargeQM(qType qt) const { return charge_QM_.find(qt)->second; }
         
         
         const std::vector<std::string> &errors() const {return error_messages_;}
@@ -342,7 +345,7 @@ class MyMol : public MolProp
         /*! \brief
          * Return computed dipole for charge type qt.
          */
-        double dipQM(qType qt) const { return norm(mu_qm_[qt]); }
+        double dipQM(qType qt) const { return norm(mu_qm_.find(qt)->second); }
 
         /*! \brief
          * Return experimental dipole
@@ -506,8 +509,8 @@ class MyMol : public MolProp
          * \param[in]  pd     Poldata structure
          * \param[out] allEsp Vector of Vector of calculated ESP points
          */
-        void calcEspRms(const Poldata                       *pd,
-                        std::vector<std::vector<EspPoint> > *allEsp);
+        void calcEspRms(const Poldata                           *pd,
+                        std::map<qType, std::vector<EspPoint> > *allEsp);
 
         /*! \brief Init the class for the RESP algorithm.
          * This must be called before generateCharges even if no RESP
@@ -544,7 +547,7 @@ class MyMol : public MolProp
          * \param[in] qtype The charge type
          *
          */
-        double espRms(int qtype) const { return EspRms_[qtype]; }
+        double espRms(qType qtype) const { return EspRms_.find(qtype)->second; }
 
         /*! \brief
          * Return the cosine of the angle between
@@ -552,7 +555,7 @@ class MyMol : public MolProp
          * \param[in] qtype The charge type
          *
          */
-        double cosEsp(int qtype) const { return CosEsp_[qtype]; }
+        double cosEsp(qType qtype) const { return CosEsp_.find(qtype)->second; }
 
         /*! \brief
          * Collect the experimental properties

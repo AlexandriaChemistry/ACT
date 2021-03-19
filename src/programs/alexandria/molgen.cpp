@@ -599,7 +599,7 @@ void MolGen::Read(FILE            *fp,
                                                 qcycle_,
                                                 qtol_,
                                                 dummy);
-                    (void) mymol.espRms(qtCalc);
+                    (void) mymol.espRms(qType::Calc);
                 }
                 if (immStatus::OK != imm && debug)
                 {

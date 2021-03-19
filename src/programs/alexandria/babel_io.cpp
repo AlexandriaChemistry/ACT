@@ -56,6 +56,7 @@
 
 #include "molprop.h"
 #include "molprop_util.h"
+#include "mymol.h"
 #include "poldata.h"
 #include "stringutil.h"
 #include "units.h"
@@ -554,18 +555,22 @@ bool readBabel(const char          *g09,
             ca.SetChain(myres->GetChainNum(), myres->GetChain());
             if (inputformat == einfGaussian)
             {
-                std::vector<std::string> QM_charge_models = {"Mulliken", "ESP", "Hirshfeld", "CM5"};
-                for (const auto &cs : QM_charge_models)
+                for (const auto &cs : qTypes())
                 {
-                    auto QM_charge_model = cs + " charges";
-                    OBpd = (OpenBabel::OBPairData *) mol.GetData(QM_charge_model.c_str());
-                    if (nullptr != OBpd)
+                    if (cs.first == qType::Mulliken ||
+                        cs.first == qType::ESP ||
+                        cs.first == qType::Hirshfeld ||
+                        cs.first == qType::CM5)
                     {
+                        OBpd = (OpenBabel::OBPairData *) mol.GetData(cs.second.c_str());
+                        if (nullptr != OBpd)
+                        {
                         //auto QM_charge_model = gmx::formatString("%s charges", OBpd->GetValue().c_str());
-                        OBpc                 = (OpenBabel::OBPcharge *) mol.GetData(QM_charge_model.c_str());
-                        auto PartialCharge   = OBpc->GetPartialCharge();
-                        alexandria::AtomicCharge aq(cs, "e", 0.0, PartialCharge[atom->GetIdx()-1]);
-                        ca.AddCharge(aq);
+                            OBpc                 = (OpenBabel::OBPcharge *) mol.GetData(cs.second.c_str());
+                            auto PartialCharge   = OBpc->GetPartialCharge();
+                            alexandria::AtomicCharge aq(cs.second, "e", 0.0, PartialCharge[atom->GetIdx()-1]);
+                            ca.AddCharge(aq);
+                        }
                     }
                 }
             }
