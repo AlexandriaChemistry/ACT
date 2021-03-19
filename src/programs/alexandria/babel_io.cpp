@@ -567,8 +567,7 @@ bool readBabel(const char          *g09,
                         {
                             OBpc                 = (OpenBabel::OBPcharge *) mol.GetData(cs.second.c_str());
                             auto PartialCharge   = OBpc->GetPartialCharge();
-                            alexandria::AtomicCharge aq(cs.second, "e", 0.0, PartialCharge[atom->GetIdx()-1]);
-                            ca.AddCharge(aq);
+                            ca.AddCharge(cs.second, PartialCharge[atom->GetIdx()-1]);
                         }
                     }
                 }
