@@ -918,7 +918,7 @@ int alex_bastat(int argc, char *argv[])
                             if ( (refValue > 175) || (refValue < 5))
                             {
                                 linear   = true;
-                                refValue = norm(dx)/(norm(dx)+norm(dx2));
+                                refValue = norm(dx2)/(norm(dx)+norm(dx2));
                                 spacing  = laspacing;
                             }
                             if (pd.atypeToBtype(*myatoms.atomtype[ai], &cai) &&
