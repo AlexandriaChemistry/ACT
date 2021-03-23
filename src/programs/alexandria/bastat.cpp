@@ -58,6 +58,7 @@
 #include "gromacs/utility/real.h"
 
 #include "alex_modules.h"
+#include "memory_check.h"
 #include "molprop_util.h"
 #include "mymol.h"
 #include "poldata_xml.h"
@@ -83,11 +84,11 @@ typedef struct {
 } t_dih;
 
 typedef struct {
-    std::vector<t_bond>  bond;
-    std::vector<t_angle> angle;
+    std::vector<t_bond>     bond;
+    std::vector<t_angle>    angle;
     std::vector<t_angle> linangle;
-    std::vector<t_dih>   dih;
-    std::vector<t_dih>   imp;
+    std::vector<t_dih>      dih;
+    std::vector<t_dih>      imp;
 } t_bonds;
 
 static void sort_dihs(std::vector<t_dih> &dih)
@@ -242,8 +243,7 @@ static void add_angle(FILE *fplog, const char *molname, t_bonds *b,
                       const std::string a1, const std::string a2, const std::string a3,
                       double refValue, double spacing, InteractionType iType)
 {
-    lo_add_angle(fplog, molname,
-                 (InteractionType::ANGLES == iType) ? b->angle : b->linangle,
+    lo_add_angle(fplog, molname, iType == InteractionType::ANGLES ? b->angle : b->linangle,
                  a1, a2, a3, refValue, spacing, iType);
 }
 
@@ -424,10 +424,10 @@ static void dump_histo(t_bonds *b, double bspacing,
     }
 }
 
-static void round_numbers(real *av, real *sig)
+static void round_numbers(real *av, real *sig, int power10)
 {
-    *av  = ((int)(*av*100))/100.0;
-    *sig = ((int)(*sig*100+50))/100.0;
+    *av  = ((int)(*av*power10))/(1.0*power10);
+    *sig = ((int)(*sig*1.5*power10))/(1.0*power10);
 }
 
 static void update_pd(FILE          *fp,
@@ -444,9 +444,14 @@ static void update_pd(FILE          *fp,
                       real           angle_tol,
                       real           factor)
 {
-    std::vector<InteractionType> myIt = { InteractionType::BONDS, InteractionType::ANGLES, InteractionType::LINEAR_ANGLES, InteractionType::PROPER_DIHEDRALS, InteractionType::IMPROPER_DIHEDRALS };
-    int                          N;
-    real                         av, sig;
+    std::vector<InteractionType> myIt =
+        { 
+            InteractionType::BONDS,
+            InteractionType::ANGLES,
+            InteractionType::LINEAR_ANGLES,
+            InteractionType::PROPER_DIHEDRALS,
+            InteractionType::IMPROPER_DIHEDRALS 
+        };
 
     for(auto &iType : myIt)
     {
@@ -460,10 +465,12 @@ static void update_pd(FILE          *fp,
             // Note that the order of parameters is important!
             for (auto &i : b->bond)
             {
+                int  N;
+                real av, sig;
                 gmx_stats_get_average(i.lsq, &av);
                 gmx_stats_get_sigma(i.lsq, &sig);
                 gmx_stats_get_npoints(i.lsq, &N);
-                round_numbers(&av, &sig); // Rounding the numbers to 1/10 pm and 1/10 degree
+                round_numbers(&av, &sig, 10); // Rounding the numbers to 1/10 pm and 1/10 degree
                 Identifier bondId({i.a1, i.a2}, i.order, CanSwap::Yes);
                 fs->addParameter(bondId, "bondlength",
                                  ForceFieldParameter("pm", av, sig, N, av*factor, av/factor, Mutability::Bounded, false));
@@ -479,10 +486,12 @@ static void update_pd(FILE          *fp,
         case InteractionType::ANGLES:
             for (auto &i : b->angle)
             {
+                int  N;
+                real av, sig;
                 gmx_stats_get_average(i.lsq, &av);
                 gmx_stats_get_sigma(i.lsq, &sig);
                 gmx_stats_get_npoints(i.lsq, &N);
-                round_numbers(&av, &sig);
+                round_numbers(&av, &sig, 10);
                 Identifier bondId({i.a1, i.a2, i.a3}, CanSwap::Yes);
                 fs->addParameter(bondId, "angle",
                                  ForceFieldParameter("degree", av, sig, N, av*factor, av/factor, Mutability::Bounded, false));
@@ -503,24 +512,29 @@ static void update_pd(FILE          *fp,
         case InteractionType::LINEAR_ANGLES:
             for (auto &i : b->linangle)
             {
+                int  N;
+                real av, sig;
                 gmx_stats_get_average(i.lsq, &av);
                 gmx_stats_get_sigma(i.lsq, &sig);
                 gmx_stats_get_npoints(i.lsq, &N);
-                round_numbers(&av, &sig);
+                round_numbers(&av, &sig, 1000000);
                 Identifier bondId({i.a1, i.a2, i.a3}, CanSwap::No);
                 // TODO Fix the parameters to be correct!
-                fs->addParameter(bondId, "a", 
-                                 ForceFieldParameter("", av, sig, N, av*factor, av/factor, Mutability::Bounded, false));
+                double myfactor = 0.99;
+                fs->addParameter(bondId, "a",
+                                 ForceFieldParameter("", av, sig, N, av*myfactor, av/myfactor, Mutability::Bounded, false));
                 fs->addParameter(bondId, "klin", 
                                  ForceFieldParameter("kJ/mol/nm2", klin, 0, 1, av*factor, av/factor, Mutability::Bounded, false));
                 
-                fprintf(fp, "linear_angle-%s angle %g sigma %g (deg) N = %d%s\n",
+                fprintf(fp, "linear_angle-%s angle %g sigma %g N = %d%s\n",
                         bondId.id().c_str(), av, sig, N, (sig > angle_tol) ? " WARNING" : "");
             }
             break;
         case InteractionType::PROPER_DIHEDRALS:
             for (auto &i : b->dih)
             {
+                int  N;
+                real av, sig;
                 Identifier bondId({i.a1, i.a2, i.a3, i.a4}, CanSwap::Yes);
                  
                 switch (fType)
@@ -541,7 +555,7 @@ static void update_pd(FILE          *fp,
                         gmx_stats_get_average(i.lsq, &av);
                         gmx_stats_get_sigma(i.lsq, &sig);
                         gmx_stats_get_npoints(i.lsq, &N);
-                        round_numbers(&av, &sig);
+                        round_numbers(&av, &sig, 10);
                         fs->addParameter(bondId, "angle", 
                                          ForceFieldParameter("degree", av, sig, N, av*factor, av/factor, Mutability::Bounded, false));
                         fs->addParameter(bondId, "kp", 
@@ -561,10 +575,12 @@ static void update_pd(FILE          *fp,
         case InteractionType::IMPROPER_DIHEDRALS:
             for (auto &i : b->imp)
             {
+                int  N;
+                real av, sig;
                 gmx_stats_get_average(i.lsq, &av);
                 gmx_stats_get_sigma(i.lsq, &sig);
                 gmx_stats_get_npoints(i.lsq, &N);
-                round_numbers(&av, &sig);
+                round_numbers(&av, &sig, 10);
                 Identifier bondId({i.a1, i.a2, i.a3, i.a4}, CanSwap::No);
 
                 fs->addParameter(bondId, "phi", 
@@ -722,10 +738,11 @@ int alex_bastat(int argc, char *argv[])
     t_pbc                            pbc;
     int                              t1, t2, t3;
     matrix                           box;
-    double                           bspacing = 1;   /* pm */
-    double                           aspacing = 0.5; /* degree */
-    double                           dspacing = 1;   /* degree */
-    gmx_output_env_t                *oenv     = nullptr;
+    double                           bspacing  = 1;   /* pm */
+    double                           aspacing  = 0.5; /* degree */
+    double                           laspacing = 0.000001; /* relative number for linear angles */
+    double                           dspacing  = 1;   /* degree */
+    gmx_output_env_t                *oenv      = nullptr;
     Poldata                          pd;
     gmx_atomprop_t                   aps;
     MolSelect                        gms;
@@ -733,6 +750,7 @@ int alex_bastat(int argc, char *argv[])
     std::string                      cai, caj, cak, cal;
     std::string                      method, basis;
     splitLot(lot, &method, &basis);
+    
     if (!parse_common_args(&argc, argv, PCA_CAN_VIEW, NFILE, fnm,
                            asize(pa), pa, asize(desc), desc,
                            0, nullptr, &oenv))
@@ -741,19 +759,21 @@ int alex_bastat(int argc, char *argv[])
     }
 
     fp                 = gmx_ffopen(opt2fn("-g", NFILE, fnm), "w");
-
+    print_memory_usage(fp);
     time(&my_t);
     fprintf(fp, "# This file was created %s", ctime(&my_t));
     fprintf(fp, "# The Alexandria Chemistry Toolkit.\n#\n");
 
     auto selfile = opt2fn("-sel", NFILE, fnm);
     gms.read(selfile);
+    print_memory_usage(fp);
     printf("There are %d molecules in the selection file %s.\n",
            (gms.count(imsTrain) + gms.count(imsTest)), selfile);
     fprintf(fp, "# There are %d molecules.\n#\n", (gms.count(imsTrain) + gms.count(imsTest)));
 
     /* Read standard atom properties */
     aps = gmx_atomprop_init();
+    print_memory_usage(fp);
 
     /* Read PolData */
     try
@@ -761,6 +781,7 @@ int alex_bastat(int argc, char *argv[])
         readPoldata(opt2fn_null("-d", NFILE, fnm), &pd);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+    print_memory_usage(fp);
 
     // This a hack to prevent that no bonds will be found to shells.
     bool polar = pd.polarizable();
@@ -768,6 +789,7 @@ int alex_bastat(int argc, char *argv[])
 
     /* Read Molprops */
     auto nwarn = merge_xml(opt2fns("-f", NFILE, fnm), &mp, nullptr, nullptr, nullptr, aps, true);
+    print_memory_usage(fp);
 
     if (nwarn > maxwarn)
     {
@@ -892,16 +914,19 @@ int alex_bastat(int argc, char *argv[])
                             rvec_sub(x[ai], x[aj], dx);
                             rvec_sub(x[ak], x[aj], dx2);
                             refValue = RAD2DEG*gmx_angle(dx, dx2);
+                            auto spacing  = aspacing;
                             if ( (refValue > 175) || (refValue < 5))
                             {
-                                linear = true;
+                                linear   = true;
+                                refValue = norm(dx)/(norm(dx)+norm(dx2));
+                                spacing  = laspacing;
                             }
                             if (pd.atypeToBtype(*myatoms.atomtype[ai], &cai) &&
                                 pd.atypeToBtype(*myatoms.atomtype[aj], &caj) &&
                                 pd.atypeToBtype(*myatoms.atomtype[ak], &cak))
                             {
                                 add_angle(fp, mmi.getMolname().c_str(), bonds,
-                                          cai, caj, cak, refValue, aspacing,
+                                          cai, caj, cak, refValue, spacing,
                                           (linear) ? InteractionType::LINEAR_ANGLES : InteractionType::ANGLES);
                                 
                                 if (nullptr != debug)
@@ -961,6 +986,7 @@ int alex_bastat(int argc, char *argv[])
         }
     }
     sort_bonds(bonds);
+    print_memory_usage(fp);
     if (bHisto)
     {
         dump_histo(bonds, bspacing, aspacing, oenv);
@@ -973,10 +999,12 @@ int alex_bastat(int argc, char *argv[])
     {
         generate_bcc(&pd, hardness);
     }
+    print_memory_usage(fp);
     writePoldata(opt2fn("-o", NFILE, fnm), &pd, compress);
     printf("Extracted %zu bondtypes, %zu angletypes, %zu linear-angletypes, %zu dihedraltypes and %zu impropertypes.\n",
            bonds->bond.size(), bonds->angle.size(), bonds->linangle.size(),
            bonds->dih.size(), bonds->imp.size());
+    print_memory_usage(fp);
     gmx_ffclose(fp);
     return 0;
 }

@@ -4,6 +4,9 @@
 #include <fstream>
 #include <string>
 
+#include <sys/time.h>
+#include <sys/resource.h>
+
 //
 // Code taken from
 // https://www.tutorialspoint.com/how-to-get-memory-usage-under-linux-in-cplusplus
@@ -37,6 +40,16 @@ static void mem_usage(double *vm_usage, double *resident_set)
        *vm_usage = vsize / 1024.0;
        *resident_set = rss * page_size_kb;
    }
+   else
+   {
+       // Apple
+       // https://stackoverflow.com/questions/1543157/how-can-i-find-out-how-much-memory-my-c-app-is-using-on-the-mac
+       struct rusage usage;
+       if (0 == getrusage(RUSAGE_SELF, &usage))
+       {
+           *resident_set = usage.ru_maxrss; // bytes
+       }
+   }
 }
 
 void print_memory_usage_low(FILE *fp, const char *file, int line)
@@ -48,6 +61,7 @@ void print_memory_usage_low(FILE *fp, const char *file, int line)
        if (rss > 0)
        {
            fprintf(fp, "%s %d VMEM %g Resident %g\n", file, line, vm, rss);
+           fflush(fp);
        }
    }
 }

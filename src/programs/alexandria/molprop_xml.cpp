@@ -44,6 +44,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 
+#include "memory_check.h"
 #include "molprop.h"
 #include "stringutil.h"
 #include "xml_util.h"
@@ -719,11 +720,13 @@ void MolPropRead(const char *fn, std::vector<alexandria::MolProp> *mpt)
     {
         fprintf(debug, "Opening %s\n", mpfile.c_str());
     }
+    print_memory_usage(stderr);
     if ((doc = xmlParseFile(mpfile.c_str())) == nullptr)
     {
         gmx_fatal(FARGS, "Failed reading XML file %s. Run a syntax checker such as nsgmls.",
                   mpfile.c_str());
     }
+    print_memory_usage(stderr);
     if (nullptr != debug)
     {
         fprintf(debug, "Reading library file %s\n", fn);

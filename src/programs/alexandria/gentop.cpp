@@ -405,7 +405,7 @@ int alex_gentop(int argc, char *argv[])
                                        qtol,
                                        alg,
                                        myq,
-                                       lot);
+                                       mylot);
     }
     /* Generate output file for debugging if requested */
     if (immStatus::OK == imm)

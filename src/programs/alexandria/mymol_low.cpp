@@ -339,7 +339,7 @@ immStatus updatePlist(const Poldata             *pd,
         int bondOrder_index = 0;
         for (auto pwi = pw->beginParam(); pwi < pw->endParam(); ++pwi)
         {
-            std::vector<std::string> bondAtomType;
+            std::vector<std::string> bondAtomType, reverseAtomType;
             bool bondNamesOK = true;
             // Store last atom type in case something goes wrong
             std::string lastAtype;
@@ -350,6 +350,12 @@ immStatus updatePlist(const Poldata             *pd,
                 lastAtype.assign(*atoms->atomtype[pwi->a[i]]);
                 bondNamesOK = pd->atypeToBtype(lastAtype, &tmp);
                 bondAtomType.push_back(tmp);
+                // Check whether we can swap the order of atoms and
+                // find a parameter in that case. For some interactions
+                // the force field parameters depend on the order of
+                // the atoms. E.g. the force constant for a linear angle
+                // for H-C#N is not the same as N#C-H.
+                reverseAtomType.insert(reverseAtomType.begin(), 1, tmp); 
             }
             if (bondNamesOK)
             {
@@ -365,6 +371,20 @@ immStatus updatePlist(const Poldata             *pd,
                     bondId = Identifier(bondAtomType, canSwap);
                 }
                 int n = 0;
+                if (!fs.parameterExists(bondId))
+                {
+                    bondId = Identifier(reverseAtomType, canSwap);
+                    // Swap the plist wrapper as well
+                    std::vector<int> aa;
+                    for (int i = 0; i < nratoms; i++)
+                    {
+                        aa.push_back(pwi->a[nratoms-1-i]);
+                    }
+                    for (int i = 0; i < nratoms; i++)
+                    {
+                        pwi->a[i] = aa[i];
+                    }
+                }
                 if (fs.parameterExists(bondId))
                 {
                     for(const auto &fp : fs.findParametersConst(bondId))
