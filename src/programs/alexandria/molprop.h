@@ -969,7 +969,7 @@ class CalcAtom
          * \param[in] type Charge type
          * \return true if found
          */
-        bool hasCharge(const std::string &type)
+        bool hasCharge(const std::string &type) const
         {
             return q_.find(type) != q_.end();
         }

@@ -381,6 +381,7 @@ int alex_gentop(int argc, char *argv[])
     
         mymol.initQgenResp(&pd, method, basis, &mylot, 0.0, maxpot);
 
+        ChargeGenerationAlgorithm alg = ChargeGenerationAlgorithm::NONE;
         std::vector<double> myq;
         if (qcustom)
         {
@@ -389,9 +390,9 @@ int alex_gentop(int argc, char *argv[])
             {
                 myq.push_back(my_atof(q.c_str(), "custom q"));
             }
+            alg = ChargeGenerationAlgorithm::Custom;
         }
-        ChargeGenerationAlgorithm alg = ChargeGenerationAlgorithm::NONE;
-        if (strlen(qqm) > 0)
+        else if (strlen(qqm) > 0)
         {
             GMX_RELEASE_ASSERT(nullptr != lot, "Please specify the level of theory to use when selecting QM charges.");
             alg = nameToChargeGenerationAlgorithm(qqm);

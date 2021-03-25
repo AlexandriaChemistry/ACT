@@ -1472,8 +1472,15 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
                     int i = 0;
                     for (auto &ca : exper.calcAtomConst())
                     {
-                        myatoms->atom[i].q  = myatoms->atom[i].qB = ca.charge(qtype);
-                        i++;
+                        if (ca.hasCharge(qtype))
+                        {
+                            myatoms->atom[i].q  = myatoms->atom[i].qB = ca.charge(qtype);
+                            i++;
+                        }
+                        else
+                        {
+                            gmx_fatal(FARGS, "No charge type %s for %s", qtype.c_str(), getMolname().c_str());
+                        }
                     }
                 }
             }

@@ -562,12 +562,23 @@ bool readBabel(const char          *g09,
                         cs.first == qType::Hirshfeld ||
                         cs.first == qType::CM5)
                     {
-                        OBpd = (OpenBabel::OBPairData *) mol.GetData(cs.second.c_str());
+                        std::string qstr = cs.second;
+                        qstr.append(" charges");
+                        OBpd = (OpenBabel::OBPairData *) mol.GetData(qstr.c_str());
                         if (nullptr != OBpd)
                         {
-                            OBpc                 = (OpenBabel::OBPcharge *) mol.GetData(cs.second.c_str());
-                            auto PartialCharge   = OBpc->GetPartialCharge();
-                            ca.AddCharge(cs.second, PartialCharge[atom->GetIdx()-1]);
+                            OBpc                 = (OpenBabel::OBPcharge *) mol.GetData(qstr.c_str());
+                            if (OBpc)
+                            {
+                                auto PartialCharge   = OBpc->GetPartialCharge();
+                                ca.AddCharge(cs.second, PartialCharge[atom->GetIdx()-1]);
+                            }
+                            else
+                            {
+                                fprintf(stderr, "Inconsistency reading %s from %s", qstr.c_str(), g09);
+                                return false;
+                                
+                            }
                         }
                     }
                 }
