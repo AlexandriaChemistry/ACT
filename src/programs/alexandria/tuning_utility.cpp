@@ -473,6 +473,10 @@ void print_electric_props(FILE                           *fp,
             for (auto &j : qTypes())
             {
                 qType qt = j.first;
+                if (qt == qType::Elec)
+                {
+                    continue;
+                }
                 print_dipole(fp, mol, qt,   dip_toler);
                 gmx_stats_add_point(lsq_dip[qt], mol->dipQM(qType::Elec), mol->dipQM(qt), 0, 0);
             }
@@ -484,6 +488,10 @@ void print_electric_props(FILE                           *fp,
             for (auto &j : qTypes())
             {
                 qType qt = j.first;
+                if (qt == qType::Elec)
+                {
+                    continue;
+                }
                 print_quadrapole(fp, mol, qt, quad_toler);
                 for (mm = 0; mm < DIM; mm++)
                 {
@@ -593,6 +601,10 @@ void print_electric_props(FILE                           *fp,
     for (auto &i : qTypes())
     {
         auto qt = i.first;
+        if (qt == qType::Elec)
+        {
+            continue;
+        }
         const char *name = qTypeName(qt).c_str();
         print_stats(fp, "ESP  (kJ/mol e)", lsq_esp[qt],  header, "Electronic", name, useOffset);
         header = false;
