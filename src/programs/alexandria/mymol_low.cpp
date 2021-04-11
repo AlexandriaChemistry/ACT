@@ -394,8 +394,15 @@ immStatus updatePlist(const Poldata             *pd,
                 }
                 else if (!bBASTAT)
                 {
-                    errors->push_back(gmx::formatString("Could not find bond/angle/dihedral information for %s in %s - ftype %s\n",
-                                                        bondId.id().c_str(), molname.c_str(), interaction_function[fs.fType()].longname).c_str());
+                    std::string atomnum = gmx::formatString("%d %d",
+                                                            1+pwi->a[0],
+                                                            1-pwi->a[1]);
+                    for(int i = 2; i < nratoms; i++)
+                    {
+                        atomnum += gmx::formatString(" %d", 1+pwi->a[i]);
+                    }
+                    errors->push_back(gmx::formatString("Could not find bond/angle/dihedral information for %s in %s - ftype %s. Atom numbers %s",
+                                                        bondId.id().c_str(), molname.c_str(), interaction_function[fs.fType()].longname, atomnum.c_str()).c_str());
                     if (iType == InteractionType::BONDS)
                     {
                         return immStatus::NotSupportedBond;
