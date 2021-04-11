@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020 
+ * Copyright (C) 2014-2021 
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -55,6 +55,7 @@ static void setMinMaxMut(FILE *fp,
                          bool bSetVal, double pval,
                          bool bSetMax, double pmax,
                          bool bSetMut, const std::string &mutability,
+                         bool bScale,  double scale,
                          bool stretch, const std::string &particleId)
 {
     if (bSetVal && bSetMin)
@@ -89,12 +90,16 @@ static void setMinMaxMut(FILE *fp,
             fprintf(fp, "Maximum set to %g %s\n", pmax, particleId.c_str());
         }
     }
-    if (bSetVal)
+    if (bSetVal || bScale)
     {
-        pp->setValue(pval);
-        if (fp)
+        if (bScale)
         {
-            fprintf(fp, "Value set to %g %s\n", pval, particleId.c_str());
+            printf("scaling by %g\n", scale);
+            if (bSetVal && fp)
+            {
+                fprintf(fp, "Ignoring -val when using -scale\n");
+            }
+            pval = scale * pp->value();
         }
         if (pval < pp->minimum())
         {
@@ -103,6 +108,11 @@ static void setMinMaxMut(FILE *fp,
         if (pval > pp->maximum())
         {
             pp->setMaximum(pval);
+        }
+        pp->setValue(pval);
+        if (fp)
+        {
+            fprintf(fp, "Value set to %g %s\n", pval, particleId.c_str());
         }
     }
     if (bSetMut)
@@ -150,6 +160,7 @@ static void modifyParticle(const std::string &paramType,
                            bool bSetVal, double pval,
                            bool bSetMax, double pmax,
                            bool bSetMut, const std::string &mutability,
+                           bool bScale,  double scale,
                            bool force, bool stretch)
 {
     // Check particletypes instead
@@ -165,7 +176,9 @@ static void modifyParticle(const std::string &paramType,
             setMinMaxMut(stdout, ff,
                          bSetMin, pmin, 
                          bSetVal, pval, bSetMax, pmax,
-                         bSetMut, mutability, stretch, particleId);
+                         bSetMut, mutability, 
+                         bScale,  scale,
+                         stretch, particleId);
         }
     }
     else
@@ -182,8 +195,10 @@ static void modifyInteraction(Poldata *pd,
                               bool bSetVal, double pval,
                               bool bSetMax, double pmax,
                               bool bSetMut, const std::string &mutability,
+                              bool bScale,  double scale,
                               bool force, bool stretch)
 {
+    printf("About to modify %s for %s\n", paramType.c_str(), id.id().c_str());
     auto fs = pd->findForces(itype)->parameters();
     for(auto &ffs : *fs)
     {
@@ -203,7 +218,9 @@ static void modifyInteraction(Poldata *pd,
                         setMinMaxMut(stdout, &pp.second,
                                      bSetMin, pmin, 
                                      bSetVal, pval, bSetMax, pmax,
-                                     bSetMut, mutability, stretch, myId);
+                                     bSetMut, mutability, 
+                                     bScale,  scale,
+                                     stretch, myId);
                     }
                 }
             }
@@ -218,9 +235,10 @@ static void modifyPoldata(Poldata *pd,
                           bool bSetVal, double pval,
                           bool bSetMax, double pmax,
                           bool bSetMut, const std::string &mutability,
+                          bool bScale,  double scale,
                           bool force, bool stretch)
 {
-    if (!(bSetVal || bSetMin || bSetMax || bSetMut || stretch))
+    if (!(bSetVal || bSetMin || bSetMax || bSetMut || stretch || bScale))
     {
         printf("No parameter to change\n");
         return;
@@ -249,7 +267,10 @@ static void modifyPoldata(Poldata *pd,
             myParticles.push_back(pt);
         }
     }
-        
+    if (myParticles.empty())
+    {
+        printf("Cannot find any particle %s\n", particle.c_str());
+    }
     for (auto p : myParticles)
     {
         InteractionType itype;
@@ -273,7 +294,9 @@ static void modifyPoldata(Poldata *pd,
                                       bSetMin, pmin,
                                       bSetVal, pval,
                                       bSetMax, pmax,
-                                      bSetMut, mutability, force, stretch);
+                                      bSetMut, mutability,
+                                      bScale,  scale,
+                                      force, stretch);
                     break;
                 }
             case 2:
@@ -294,7 +317,9 @@ static void modifyPoldata(Poldata *pd,
                                           bSetMin, pmin,
                                           bSetVal, pval,
                                           bSetMax, pmax,
-                                          bSetMut, mutability, force, stretch);
+                                          bSetMut, mutability,
+                                          bScale,  scale,
+                                          force, stretch);
                     }
                     break;
                 }
@@ -308,7 +333,9 @@ static void modifyPoldata(Poldata *pd,
                            bSetMin, pmin,
                            bSetVal, pval,
                            bSetMax, pmax,
-                           bSetMut, mutability, force, stretch);
+                           bSetMut, mutability,
+                           bScale,  scale,
+                           force, stretch);
         }
     }
 }
@@ -521,6 +548,7 @@ int alex_poldata_edit(int argc, char*argv[])
     real         pmin       = 0;
     real         pmax       = 0;
     real         pval       = 0;
+    real         scale      = 1;
     gmx_bool     force      = false;
     gmx_bool     stretch    = false;
     static char *analyze    = (char *)"";
@@ -534,6 +562,8 @@ int alex_poldata_edit(int argc, char*argv[])
           "Minimum value of parameter." },
         { "-val",    FALSE, etREAL, {&pval},
           "New value of parameter." },
+        { "-scale",  FALSE, etREAL, {&scale},
+          "Scale the value of a parameter by this number, e.g. -scale 0.99." },
         { "-max",    FALSE, etREAL,  {&pmax},
           "Maximum value of parameter." },
         { "-mut",    FALSE, etSTR,  {&mutability},
@@ -569,6 +599,7 @@ int alex_poldata_edit(int argc, char*argv[])
                       opt2parg_bSet("-val", npargs, pa), pval,
                       opt2parg_bSet("-max", npargs, pa), pmax,
                       opt2parg_bSet("-mut", npargs, pa), mutability,
+                      opt2parg_bSet("-scale", npargs, pa), scale,
                       force, stretch);
         if (strlen(analyze) > 0)
         {
