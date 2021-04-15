@@ -67,8 +67,8 @@ void OptParam::add_pargs(std::vector<t_pargs> *pargs)
           "Adapt Temperature every nAdapt steps when running Adaptive-MCMC." },
         { "-temp",    FALSE, etREAL, {&temperature_},
           "'Temperature' for the Monte Carlo simulation" },
-        { "-anneal", FALSE, etBOOL, {&anneal_},
-          "Use annealing in Monte Carlo simulation, starting from the second half of the simulation." },
+        { "-anneal", FALSE, etREAL, {&anneal_},
+          "Use annealing in Monte Carlo simulation, starting from this fraction of the simulation. Value should be between 0 and 1." },
         { "-adaptive", FALSE, etBOOL, {&adaptive_},
           "Use Adaptive Monte Carlo simulation." },
         { "-seed",   FALSE, etINT,  {&seed_},
@@ -183,6 +183,22 @@ void Bayes::changeParam(size_t j, real rand)
             param_[j] = upperBound_[j];
         }
     }
+}
+
+bool OptParam::anneal(int iter) const
+{
+    if (anneal_ >= 1)
+    {
+        return false;
+    }
+    else if (anneal_ <= 0)
+    {
+        return true;
+    }
+    else
+    {
+        return iter >= anneal_ * maxiter_;
+    }   
 }
 
 double Bayes::MCMC(FILE *fplog)
@@ -321,8 +337,8 @@ double Bayes::MCMC(FILE *fplog)
         // to decide whether to accept or reject the new parameter
         if (!accept)
         {
-            // Only anneal after half the simulation
-            if (anneal() && iter > maxIter()/2)
+            // Only anneal if the simulation reached a certain number of steps
+            if (anneal(iter))
             {
                 beta = computeBeta(iter/nParam);
             }

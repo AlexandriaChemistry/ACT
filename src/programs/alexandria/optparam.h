@@ -76,8 +76,8 @@ class OptParam
         real                     step_           = 0.02;
         //! Temperature in chi2 units
         real                     temperature_    = 5;
-        //! Use annealing in the optimization
-        bool                     anneal_         = false;
+        //! Use annealing in the optimization. Value < 1 means annealing will happen
+        real                     anneal_         = 1;
         //! Use adaptive MCMC in the optimization
         bool                     adaptive_       = false;
         //! Base name for parameter convergence file names
@@ -152,8 +152,10 @@ class OptParam
         //! \brief Return whether or not bounds are used for parameters
         bool boxConstraint() const { return bBoxConstraint_; }
         
-        // ! \brief Return whether or not call simulated annealing
-        bool anneal () const { return anneal_; }
+        /*! \brief Return whether or not to do simulated annealing
+         * \param iter The iteration number
+         */
+        bool anneal (int iter) const;
         
         // ! \brief Return whether or not call Adaptive MCMC
         bool adaptive () const { return adaptive_; }
