@@ -818,7 +818,7 @@ int alex_bastat(int argc, char *argv[])
                                                    false,
                                                    false,
                                                    bDih,
-                                                   true,
+                                                   missingParameters::Generate,
                                                    nullptr);
             if (immStatus::OK != imm)
             {

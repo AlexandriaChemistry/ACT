@@ -632,6 +632,9 @@ immStatus MyMol::GenerateAtoms(const Poldata     *pd,
             }
             else
             {
+                error_messages_.push_back(gmx::formatString("Cannot find atomtype %s (atom %d) in poldata\n", 
+                                                            cai.getObtype().c_str(), natom));
+
                 return immStatus::AtomTypes;
             }
         }
@@ -735,7 +738,7 @@ immStatus MyMol::GenerateTopology(const Poldata     *pd,
                                   bool               bUseVsites,
                                   bool               bPairs,
                                   bool               bDih,
-                                  bool               bBASTAT,
+                                  missingParameters  missing,
                                   const char        *tabfn)
 {
     immStatus   imm = immStatus::OK;
@@ -798,7 +801,8 @@ immStatus MyMol::GenerateTopology(const Poldata     *pd,
         MakeAngles(atoms, bPairs, bDih);
 
         MakeSpecialInteractions(pd, atoms, bUseVsites);
-        imm = updatePlist(pd, &plist_, atoms, bBASTAT, getMolname(), &error_messages_);
+        imm = updatePlist(pd, &plist_, atoms, missing,
+                          getMolname(), &error_messages_);
     }
     if (immStatus::OK == imm)
     {
@@ -845,7 +849,7 @@ immStatus MyMol::GenerateTopology(const Poldata     *pd,
             ltop_ = gmx_mtop_generate_local_top(mtop_, false);
         }
     }
-    if (immStatus::OK == imm && !bBASTAT)
+    if (immStatus::OK == imm && missing != missingParameters::Generate)
     {
         UpdateIdef(pd, InteractionType::BONDS);
         UpdateIdef(pd, InteractionType::ANGLES);

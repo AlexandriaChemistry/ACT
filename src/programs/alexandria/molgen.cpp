@@ -579,7 +579,7 @@ void MolGen::Read(FILE            *fp,
                                              bGenVsite_,
                                              false,
                                              optimize(InteractionType::PROPER_DIHEDRALS),
-                                             false,
+                                             missingParameters::Error,
                                              tabfn);
                 if (immStatus::OK != imm && debug)
                 {
@@ -720,7 +720,7 @@ void MolGen::Read(FILE            *fp,
                                          bGenVsite_,
                                          false,
                                          optimize(InteractionType::PROPER_DIHEDRALS),
-                                         false,
+                                         missingParameters::Error,
                                          tabfn);
 
             if (immStatus::OK == imm)

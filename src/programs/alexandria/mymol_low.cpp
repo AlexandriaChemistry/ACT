@@ -324,8 +324,8 @@ real calc_relposition(const Poldata     *pd,
 
 immStatus updatePlist(const Poldata             *pd,
                       std::vector<PlistWrapper> *plist,
-                      const t_atoms              *atoms,
-                      bool                       bBASTAT,
+                      const t_atoms             *atoms,
+                      missingParameters          missing,
                       const std::string         &molname,
                       std::vector<std::string>  *errors)
 {
@@ -392,11 +392,11 @@ immStatus updatePlist(const Poldata             *pd,
                         pwi->c[n++] = convertToGromacs(fp.second.value(), fp.second.unit());
                     }
                 }
-                else if (!bBASTAT)
+                else if (missing == missingParameters::Error)
                 {
                     std::string atomnum = gmx::formatString("%d %d",
                                                             1+pwi->a[0],
-                                                            1-pwi->a[1]);
+                                                            1+pwi->a[1]);
                     for(int i = 2; i < nratoms; i++)
                     {
                         atomnum += gmx::formatString(" %d", 1+pwi->a[i]);

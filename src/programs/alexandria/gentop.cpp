@@ -164,6 +164,7 @@ int alex_gentop(int argc, char *argv[])
     static gmx_bool                  bDihedral      = false;
     static gmx_bool                  bH14           = true;
     static gmx_bool                  bVerbose       = false;
+    static gmx_bool                  bAllowMissing  = false;
     static gmx_bool                  addHydrogens   = false;
 
     static const char               *ff[]           = {nullptr, "ACM-g", "ACM-pg", "ACM-s", "ACM-ps", "ESP-p", "ESP-pp", "ESP-pg", "ESP-ps", "Yang", "Bultinck", "Rappe", "Verstraelen", nullptr};
@@ -195,6 +196,8 @@ int alex_gentop(int argc, char *argv[])
           "Conformation of the molecule" },
         { "-maxpot", FALSE, etINT, {&maxpot},
           "Fraction of potential points to read from the gaussian file (percent). If 100 all points are registered, else a selection of points evenly spread over the range of values is taken" },
+        { "-allowmissing", FALSE, etBOOL, {&bAllowMissing},
+          "Make a topology even if there are no force field parameters for all interactions" },
         { "-nsymm", FALSE, etINT, {&nsymm},
           "Symmetry number of the molecule can be supplied here if you know there is an error in the input file" },
         { "-genvsites", FALSE, etBOOL, {&bGenVSites},
@@ -371,7 +374,7 @@ int alex_gentop(int argc, char *argv[])
                                  bGenVSites,
                                  bPairs,
                                  bDihedral,
-                                 false,
+                                 bAllowMissing ? missingParameters::Ignore : missingParameters::Error,
                                  tabfn);
 
     if (immStatus::OK == imm)

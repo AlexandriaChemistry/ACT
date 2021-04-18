@@ -52,6 +52,8 @@
 namespace alexandria
 {
 
+enum class missingParameters { Error, Ignore, Generate }; 
+
 enum class immStatus {
     Unknown,
     OK,
@@ -124,7 +126,7 @@ real calc_relposition(const Poldata     *pd,
  * \param[in]  pd      Poldata structure
  * \param[out] plist   The parameter vector
  * \param[in]  atoms   GROMACS atom structure
- * \param[in]  bBASTAT Boolean determining whether parameters are being generated from scratch
+ * \param[in]  bAllowMissingParameters Boolean determining whether parameters can be missing
  * \param[in]  molname Molecule name
  * \param[out] errors  Error messages are appended to this vector.
  * \return Warning status
@@ -132,7 +134,7 @@ real calc_relposition(const Poldata     *pd,
 immStatus updatePlist(const Poldata             *pd,
                       std::vector<PlistWrapper> *plist,
                       const t_atoms             *atoms,
-                      bool                       bBASTAT,
+                      missingParameters          missing,
                       const std::string         &molname,
                       std::vector<std::string>  *errors);
 

@@ -409,6 +409,7 @@ class MyMol : public MolProp
          * \param[in] nexcl       Number of Exclusions
          * \param[in] bUseVsites  Add virtual sites to the topology structure
          * \param[in] bPairs      Add pairs to the topology structure
+         * \param[in] bAllowMissingParameters Generate dummy parameters if nothing found in force field file
          * \param[in] bDih        Add dihedrals to the topology structure
          */
         immStatus GenerateTopology(const Poldata     *pd,
@@ -418,7 +419,7 @@ class MyMol : public MolProp
                                    bool               bUseVsites,
                                    bool               bPairs,
                                    bool               bDih,
-                                   bool               bBASTAT,
+                                   missingParameters  missing,
                                    const char        *tabfn);
 
         /*! \brief
