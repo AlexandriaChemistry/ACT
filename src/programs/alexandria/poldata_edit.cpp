@@ -467,6 +467,52 @@ static void dumpPoldata(Poldata           *pd,
     printf("Stored %d parameters in %s\n", nparm, filenm.c_str());
 }
 
+static void copy_missing(const Poldata     *pdref,
+                         Poldata           *pdout,
+                         const std::string &analyze)
+{
+    bool found;
+    auto myset = findInteractionMap(analyze, &found);
+    if (!found)
+    {
+        return;
+    }
+    printf("Copying missing interactions from %s to %s\n",
+           pdref->filename().c_str(), pdout->filename().c_str());
+
+    for(auto &fc : pdref->forcesConst())
+    {
+        auto itype = fc.first;
+        if (myset.find(itype) == myset.end())
+        {
+            continue;
+        }
+        if (!pdout->interactionPresent(itype))
+        {
+            printf("Cannot find interaction %s in %s, giving up\n",
+                   interactionTypeToDescription(itype).c_str(), pdout->filename().c_str());
+            return;
+        }
+        auto fcout = pdout->findForces(itype);
+        for(auto &fm : fc.second.parametersConst())
+        {
+            auto myid = fm.first;
+            if (!fcout->parameterExists(myid))
+            {
+                printf("Parameter %s missing from %s for %s\n",
+                       myid.id().c_str(), pdout->filename().c_str(),
+                       interactionTypeToDescription(itype).c_str());
+                for(auto &param : fm.second)
+                {
+                    auto ptype = param.first;
+                    auto ppp   = param.second;
+                    fcout->addParameter(myid, ptype, ppp);
+                }
+            }
+        }
+    }
+}
+
 static void compare_pd(Poldata *pd1,
                        Poldata *pd2,
                        const std::string   &ptype)
@@ -551,6 +597,7 @@ int alex_poldata_edit(int argc, char*argv[])
     real         scale      = 1;
     gmx_bool     force      = false;
     gmx_bool     stretch    = false;
+    static char *missing    = (char *)"";
     static char *analyze    = (char *)"";
     t_pargs                          pa[]     = 
     {
@@ -573,7 +620,9 @@ int alex_poldata_edit(int argc, char*argv[])
         { "-stretch", FALSE, etBOOL, {&stretch},
           " Will automatically stretch boundaries for individual parameters" },
         { "-ana", FALSE, etSTR, {&analyze},
-          "Analyze either the EEM, the BONDED or OTHER parameters in a simple manner" }
+          "Analyze either the EEM, the BONDED or OTHER parameters in a simple manner" },
+        { "-copy_missing", FALSE, etSTR, {&missing},
+          "Copy either the EEM, the BONDED or OTHER parameters from file two [TT]-f2[tt] that are missing from file one [TT]-f[tt] to another [TT]-o[tt]." }
     };
     int                 npargs = asize(pa);
     int                 NFILE  = asize(fnm);
@@ -594,14 +643,24 @@ int alex_poldata_edit(int argc, char*argv[])
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         
-        modifyPoldata(&pd, parameter, particle,
-                      opt2parg_bSet("-min", npargs, pa), pmin,
-                      opt2parg_bSet("-val", npargs, pa), pval,
-                      opt2parg_bSet("-max", npargs, pa), pmax,
-                      opt2parg_bSet("-mut", npargs, pa), mutability,
-                      opt2parg_bSet("-scale", npargs, pa), scale,
-                      force, stretch);
-        if (strlen(analyze) > 0)
+        if (opt2bSet("-f2", NFILE, fnm))
+        {
+            alexandria::Poldata pd2;
+            try 
+            {
+                alexandria::readPoldata(opt2fn("-f2", NFILE, fnm), &pd2);
+            }
+            GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+            if (strlen(missing) > 0)
+            {
+                copy_missing(&pd2, &pd, missing);
+            }
+            else
+            {
+                compare_pd(&pd, &pd2, parameter);
+            }
+        }
+        else if (strlen(analyze) > 0)
         {
             if (strlen(particle) > 0)
             {
@@ -612,15 +671,15 @@ int alex_poldata_edit(int argc, char*argv[])
                 analyzePoldata(&pd, analyze);
             }
         }
-        if (opt2bSet("-f2", NFILE, fnm))
+        else
         {
-            alexandria::Poldata pd2;
-            try 
-            {
-                alexandria::readPoldata(opt2fn("-f2", NFILE, fnm), &pd2);
-            }
-            GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-            compare_pd(&pd, &pd2, parameter);
+            modifyPoldata(&pd, parameter, particle,
+                          opt2parg_bSet("-min", npargs, pa), pmin,
+                          opt2parg_bSet("-val", npargs, pa), pval,
+                          opt2parg_bSet("-max", npargs, pa), pmax,
+                          opt2parg_bSet("-mut", npargs, pa), mutability,
+                          opt2parg_bSet("-scale", npargs, pa), scale,
+                          force, stretch);
         }
     }
     if (opt2bSet("-o", NFILE, fnm))
