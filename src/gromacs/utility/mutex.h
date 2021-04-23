@@ -46,7 +46,7 @@
 #ifndef GMX_THREADING_MUTEX_H
 #define GMX_THREADING_MUTEX_H
 
-#include "thread_mpi/mutex.h"
+//#include "thread_mpi/mutex.h"
 
 namespace gmx
 {
@@ -55,9 +55,9 @@ namespace gmx
 /*! \libinternal \brief
  * C++11-compatible basic mutex.
  */
-typedef tMPI::mutex Mutex;
+//typedef tMPI::mutex Mutex;
 //! \endcond
-using tMPI::lock_guard;
+//using tMPI::lock_guard;
 
 } // namespace gmx
 

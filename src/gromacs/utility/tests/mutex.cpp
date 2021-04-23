@@ -66,37 +66,37 @@ namespace
 {
 
 //! Convenience definition.
-using Lock = gmx::lock_guard<Mutex>;
+//using Lock = gmx::lock_guard<Mutex>;
 
 TEST(MutexBasicTest, CanBeMade)
 {
-    Mutex m;
+    //    Mutex m;
 }
 
 TEST(MutexBasicTest, CanBeLocked)
 {
-    Mutex m;
+    //    Mutex m;
     ASSERT_NO_THROW(m.lock());
     m.unlock();
 }
 
 TEST(MutexBasicTest, CanBeTryLocked)
 {
-    Mutex m;
+    //Mutex m;
     ASSERT_TRUE(m.try_lock());
     m.unlock();
 }
 
 TEST(MutexBasicTest, CanBeUsedInLockGuard)
 {
-    Mutex m;
-    Lock  g(m);
+    //    Mutex m;
+    //Lock  g(m);
 }
 
 //! A shared value for a mutex to protect
 int   g_sharedValue;
 //! A mutex to protect a shared value
-Mutex g_sharedValueMutex;
+//Mutex g_sharedValueMutex;
 
 //! Function type for asynchronous tasks.
 using TaskType = std::function<int(void)>;
@@ -110,7 +110,7 @@ int updateSharedValue()
 //! A task that does work after it gets the mutex.
 int updateSharedValueWithLock()
 {
-    Lock guard(g_sharedValueMutex);
+    //    Lock guard(g_sharedValueMutex);
     return updateSharedValue();
 }
 
@@ -123,7 +123,7 @@ int updateSharedValueWithTryLock()
     if (g_sharedValueMutex.try_lock())
     {
         result = updateSharedValue();
-        g_sharedValueMutex.unlock();
+        //        g_sharedValueMutex.unlock();
     }
     return result;
 }

@@ -57,7 +57,7 @@
 #include "buildinfo.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/mutex.h"
+//#include "gromacs/utility/mutex.h"
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -314,7 +314,7 @@ class CommandLineProgramContext::Impl
         mutable std::string           fullBinaryPath_;
         mutable std::string           installationPrefix_;
         mutable bool                  bSourceLayout_;
-        mutable Mutex                 binaryPathMutex_;
+    //        mutable Mutex                 binaryPathMutex_;
 };
 
 CommandLineProgramContext::Impl::Impl()
@@ -406,14 +406,14 @@ const char *CommandLineProgramContext::commandLine() const
 
 const char *CommandLineProgramContext::fullBinaryPath() const
 {
-    lock_guard<Mutex> lock(impl_->binaryPathMutex_);
+    //    lock_guard<Mutex> lock(impl_->binaryPathMutex_);
     impl_->findBinaryPath();
     return impl_->fullBinaryPath_.c_str();
 }
 
 InstallationPrefixInfo CommandLineProgramContext::installationPrefix() const
 {
-    lock_guard<Mutex> lock(impl_->binaryPathMutex_);
+    //    lock_guard<Mutex> lock(impl_->binaryPathMutex_);
     if (impl_->installationPrefix_.empty())
     {
         impl_->findBinaryPath();

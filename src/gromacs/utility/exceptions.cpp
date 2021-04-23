@@ -523,10 +523,10 @@ void printFatalErrorMessage(FILE *fp, const std::exception &ex)
     {
         title = getErrorCodeString(gmxEx->errorCode());
     }
-    else if (dynamic_cast<const tMPI::system_error *>(&ex) != nullptr)
-    {
-        title = "System error in thread synchronization";
-    }
+    //    else if (dynamic_cast<const tMPI::system_error *>(&ex) != nullptr)
+    //{
+    //   title = "System error in thread synchronization";
+    //}
     else if (dynamic_cast<const std::bad_alloc *>(&ex) != nullptr)
     {
         title = "Memory allocation failed";

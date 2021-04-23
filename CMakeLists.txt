@@ -254,12 +254,7 @@ gmx_option_multichoice(
     GMX_FFT_LIBRARY
     "FFT library"
     "${GMX_FFT_LIBRARY_DEFAULT}"
-    fftw3 mkl "fftpack[built-in]")
-gmx_dependent_option(
-    GMX_BUILD_OWN_FFTW
-    "Download and build FFTW 3 during the GROMACS build process, rather than fall back on the really slow fftpack."
-    OFF
-    "GMX_FFT_LIBRARY STREQUAL FFTW3")
+    fftw3 mkl)
 gmx_dependent_option(
     GMX_DISABLE_FFTW_MEASURE
     "Do not optimize FFTW setups (not needed with SSE)"
@@ -611,19 +606,6 @@ if (GMX_X11)
                 "gmx view will not be available.")
     endif()
     include_directories(SYSTEM ${X11_INCLUDE_DIR})
-endif()
-
-include(ThreadMPI)
-# Enable core threading facilities
-tmpi_enable_core("${CMAKE_SOURCE_DIR}/src/external/thread_mpi/include")
-if(GMX_THREAD_MPI)
-    # enable MPI functions
-    tmpi_enable()
-    set(MPI_IN_PLACE_EXISTS 1)
-endif()
-# If atomics are manually disabled a define is needed because atomics.h doesn't depend on config.h
-if (TMPI_ATOMICS_DISABLED)
-   add_definitions(-DTMPI_ATOMICS_DISABLED)
 endif()
 
 include(gmxManageTNG)

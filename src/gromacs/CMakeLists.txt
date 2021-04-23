@@ -83,7 +83,7 @@ function (gmx_install_headers)
                 DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${_dest}"
                 COMPONENT   development)
     endif()
-    _gmx_add_files_to_property(GMX_INSTALLED_HEADERS ${ARGN})
+    #_gmx_add_files_to_property(GMX_INSTALLED_HEADERS ${ARGN})
 endfunction ()
 
 function (gmx_write_installed_header_list)
@@ -105,7 +105,7 @@ add_subdirectory(gpu_utils)
 add_subdirectory(hardware)
 add_subdirectory(linearalgebra)
 add_subdirectory(math)
-add_subdirectory(mdrun)
+#add_subdirectory(mdrun)
 add_subdirectory(mdrunutility)
 add_subdirectory(mdspan)
 add_subdirectory(mdtypes)
@@ -131,15 +131,15 @@ add_subdirectory(coulombintegrals)
 add_subdirectory(compat)
 add_subdirectory(mimic)
 if (NOT GMX_BUILD_MDRUN_ONLY)
-    add_subdirectory(gmxana)
+#    add_subdirectory(gmxana)
     add_subdirectory(gmxpreprocess)
-    add_subdirectory(correlationfunctions)
+#    add_subdirectory(correlationfunctions)
     add_subdirectory(statistics)
-    add_subdirectory(analysisdata)
+#    add_subdirectory(analysisdata)
     add_subdirectory(selection)
-    add_subdirectory(trajectoryanalysis)
-    add_subdirectory(energyanalysis)
-    add_subdirectory(tools)
+#    add_subdirectory(trajectoryanalysis)
+#    add_subdirectory(energyanalysis)
+#    add_subdirectory(tools)
 endif()
 
 get_property(PROPERTY_SOURCES GLOBAL PROPERTY GMX_LIBGROMACS_SOURCES)
@@ -152,19 +152,19 @@ list(APPEND LIBGROMACS_SOURCES ${GMXLIB_SOURCES} ${MDLIB_SOURCES} ${PROPERTY_SOU
 #endif()
 #target_link_libraries(gmx ${GMX_EXTRA_LIBRARIES} ${THREAD_MPI_LIB})
 
-tmpi_get_source_list(THREAD_MPI_SOURCES ${CMAKE_SOURCE_DIR}/src/external/thread_mpi/src)
-target_sources(libgromacs_external PRIVATE ${THREAD_MPI_SOURCES})
+#tmpi_get_source_list(THREAD_MPI_SOURCES ${CMAKE_SOURCE_DIR}/src/external/thread_mpi/src)
+#target_sources(libgromacs_external PRIVATE ${THREAD_MPI_SOURCES})
 
 configure_file(version.h.cmakein version.h)
 gmx_install_headers(
-    analysisdata.h
-    commandline.h
-    options.h
-    random.h
-    selection.h
-    trajectoryanalysis.h
-    utility.h
-    ${CMAKE_CURRENT_BINARY_DIR}/version.h
+#    analysisdata.h
+#    commandline.h
+#    options.h
+#    random.h
+#    selection.h
+#    trajectoryanalysis.h
+#    utility.h
+#    ${CMAKE_CURRENT_BINARY_DIR}/version.h
     )
 
 # This code is here instead of utility/CMakeLists.txt, because CMake

@@ -52,7 +52,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/errorcodes.h"
 #include "gromacs/utility/futil.h"
-#include "gromacs/utility/mutex.h"
+//#include "gromacs/utility/mutex.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -64,15 +64,15 @@
 #include "errorformat.h"
 
 static bool       bDebug         = false;
-static gmx::Mutex where_mutex;
+//static gmx::Mutex where_mutex;
 
 FILE             *debug          = nullptr;
 gmx_bool          gmx_debug_at   = FALSE;
 
 static FILE      *log_file       = nullptr;
-static gmx::Mutex error_mutex;
+//static gmx::Mutex error_mutex;
 
-using Lock = gmx::lock_guard<gmx::Mutex>;
+//using Lock = gmx::lock_guard<gmx::Mutex>;
 
 void gmx_init_debug(const int dbglevel, const char *dbgfile)
 {
@@ -116,7 +116,7 @@ static gmx_error_handler_t gmx_error_handler = default_error_handler;
 
 void gmx_set_error_handler(gmx_error_handler_t func)
 {
-    Lock lock(error_mutex);
+    //    Lock lock(error_mutex);
     gmx_error_handler = func;
 }
 
@@ -155,7 +155,7 @@ static const char *gmx_strerror(const char *key)
 
 static void call_error_handler(const char *key, const char *file, int line, const std::string &msg)
 {
-    Lock lock(error_mutex);
+    //    Lock lock(error_mutex);
     gmx_error_handler(gmx_strerror(key),
                       msg.empty() ? "Empty gmx_fatal message (bug)." : msg,
                       file, line);

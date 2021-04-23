@@ -85,12 +85,12 @@ FILE* debug = 0;
 #if GMX_FFT_FFTW3
 
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/mutex.h"
+//#include "gromacs/utility/mutex.h"
 /* none of the fftw3 calls, except execute(), are thread-safe, so
    we need to serialize them with this mutex. */
-static gmx::Mutex big_fftw_mutex;
-#define FFTW_LOCK try { big_fftw_mutex.lock(); } GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
-#define FFTW_UNLOCK try { big_fftw_mutex.unlock(); } GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
+//static gmx::Mutex big_fftw_mutex;
+#define FFTW_LOCK //try { big_fftw_mutex.lock(); } GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
+#define FFTW_UNLOCK //try { big_fftw_mutex.unlock(); } GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERRORfftw_
 #endif /* GMX_FFT_FFTW3 */
 
 #if GMX_MPI

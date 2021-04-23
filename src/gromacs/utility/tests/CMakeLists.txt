@@ -40,7 +40,7 @@ gmx_add_unit_test(UtilityUnitTests utility-test
                   keyvaluetreetransform.cpp
                   gmxregex.cpp
                   logger.cpp
-                  mutex.cpp
+#                  mutex.cpp
                   path.cpp
                   physicalnodecommunicator.cpp
                   stringutil.cpp

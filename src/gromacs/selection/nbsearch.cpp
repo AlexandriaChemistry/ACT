@@ -67,7 +67,7 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/mutex.h"
+//#include "gromacs/utility/mutex.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace gmx
@@ -320,7 +320,7 @@ class AnalysisNeighborhoodSearchImpl
         //! Data structure to hold the grid cell contents.
         CellList                cells_;
 
-        Mutex                   createPairSearchMutex_;
+    //        Mutex                   createPairSearchMutex_;
         PairSearchList          pairSearchList_;
 
         friend class AnalysisNeighborhoodPairSearchImpl;
@@ -457,7 +457,7 @@ AnalysisNeighborhoodSearchImpl::~AnalysisNeighborhoodSearchImpl()
 AnalysisNeighborhoodSearchImpl::PairSearchImplPointer
 AnalysisNeighborhoodSearchImpl::getPairSearch()
 {
-    lock_guard<Mutex> lock(createPairSearchMutex_);
+    //    lock_guard<Mutex> lock(createPairSearchMutex_);
     // TODO: Consider whether this needs to/can be faster, e.g., by keeping a
     // separate pool of unused search objects.
     PairSearchList::const_iterator i;
@@ -1284,7 +1284,7 @@ class AnalysisNeighborhood::Impl
 
         SearchImplPointer getSearch();
 
-        Mutex                   createSearchMutex_;
+    //        Mutex                   createSearchMutex_;
         SearchList              searchList_;
         real                    cutoff_;
         const t_blocka         *excls_;
@@ -1295,7 +1295,7 @@ class AnalysisNeighborhood::Impl
 AnalysisNeighborhood::Impl::SearchImplPointer
 AnalysisNeighborhood::Impl::getSearch()
 {
-    lock_guard<Mutex> lock(createSearchMutex_);
+    //    lock_guard<Mutex> lock(createSearchMutex_);
     // TODO: Consider whether this needs to/can be faster, e.g., by keeping a
     // separate pool of unused search objects.
     SearchList::const_iterator i;

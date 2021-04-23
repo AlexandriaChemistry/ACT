@@ -38,8 +38,8 @@ gmx_add_libgromacs_sources(
     restraintmdmodule.cpp
     )
 
-gmx_install_headers(restraintpotential.h)
+#gmx_install_headers(restraintpotential.h)
 
 if (BUILD_TESTING)
-    add_subdirectory(tests)
+#    add_subdirectory(tests)
 endif()

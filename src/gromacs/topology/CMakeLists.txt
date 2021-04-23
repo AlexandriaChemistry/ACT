@@ -36,16 +36,16 @@ file(GLOB TOPOLOGY_SOURCES *.cpp)
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${TOPOLOGY_SOURCES} PARENT_SCOPE)
 
 gmx_install_headers(
-    atomprop.h
-    atoms.h
-    block.h
-    forcefieldparameters.h
-    idef.h
-    ifunc.h
-    index.h
-    mtop_util.h
-    symtab.h
-    topology.h
+#    atomprop.h
+#    atoms.h
+#    block.h
+#    forcefieldparameters.h
+#    idef.h
+#    ifunc.h
+#    index.h
+#    mtop_util.h
+#    symtab.h
+#    topology.h
     )
 
 if (BUILD_TESTING)

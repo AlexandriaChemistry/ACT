@@ -45,7 +45,7 @@
 #include "gromacs/fft/fft.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/mutex.h"
+//#include "gromacs/utility/mutex.h"
 
 #if GMX_DOUBLE
 #define FFTWPREFIX(name) fftw_ ## name
@@ -55,9 +55,9 @@
 
 /* none of the fftw3 calls, except execute(), are thread-safe, so
    we need to serialize them with this mutex. */
-static gmx::Mutex big_fftw_mutex;
-#define FFTW_LOCK try { big_fftw_mutex.lock(); } GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
-#define FFTW_UNLOCK try { big_fftw_mutex.unlock(); } GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
+//static gmx::Mutex big_fftw_mutex;
+#define FFTW_LOCK //try { big_fftw_mutex.lock(); } GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
+#define FFTW_UNLOCK //try { big_fftw_mutex.unlock(); } GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
 
 /* We assume here that aligned memory starts at multiple of 16 bytes and unaligned memory starts at multiple of 8 bytes. The later is guranteed for all malloc implementation.
    Consequesences:

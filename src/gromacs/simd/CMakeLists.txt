@@ -36,5 +36,5 @@ file(GLOB SIMD_SOURCES *.cpp)
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${SIMD_SOURCES} PARENT_SCOPE)
 
 if (BUILD_TESTING)
-    add_subdirectory(tests)
+#    add_subdirectory(tests)
 endif()

@@ -36,18 +36,18 @@ file(GLOB MATH_SOURCES *.cpp)
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${MATH_SOURCES} PARENT_SCOPE)
 
 gmx_install_headers(
-    3dtransforms.h
-    arrayrefwithpadding.h
-    do_fit.h
-    functions.h
-    gmxcomplex.h
-    units.h
-    utilities.h
-    vec.h
-    vectypes.h
-    paddedvector.h
+#    3dtransforms.h
+#    arrayrefwithpadding.h
+#    do_fit.h
+#    functions.h
+#    gmxcomplex.h
+#    units.h
+#    utilities.h
+#    vec.h
+#    vectypes.h
+#    paddedvector.h
     )
 
 if (BUILD_TESTING)
-    add_subdirectory(tests)
+#    add_subdirectory(tests)
 endif()

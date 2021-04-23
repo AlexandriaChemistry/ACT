@@ -61,7 +61,7 @@
 #endif
 
 static gmx_bool            g_bOverAllocDD     = FALSE;
-static tMPI_Thread_mutex_t g_over_alloc_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
+//static tMPI_Thread_mutex_t g_over_alloc_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
 
 void *save_malloc(const char *name, const char *file, int line, size_t size)
 {
@@ -250,11 +250,11 @@ void save_free_aligned(const char gmx_unused *name, const char gmx_unused *file,
 
 void set_over_alloc_dd(gmx_bool set)
 {
-    tMPI_Thread_mutex_lock(&g_over_alloc_mutex);
+    //    tMPI_Thread_mutex_lock(&g_over_alloc_mutex);
     /* we just make sure that we don't set this at the same time.
        We don't worry too much about reading this rarely-set variable */
     g_bOverAllocDD = set;
-    tMPI_Thread_mutex_unlock(&g_over_alloc_mutex);
+    //tMPI_Thread_mutex_unlock(&g_over_alloc_mutex);
 }
 
 int over_alloc_dd(int n)

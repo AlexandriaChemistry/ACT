@@ -33,5 +33,5 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 if (BUILD_TESTING)
-    add_subdirectory(tests)
+#    add_subdirectory(tests)
 endif()

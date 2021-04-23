@@ -73,7 +73,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/mutex.h"
+//#include "gromacs/utility/mutex.h"
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
@@ -1364,9 +1364,9 @@ calculateVectorForces(const pull_coord_work_t &pcrd)
  * We could use a different, local mutex for each pull object, but the overhead
  * is extremely small here and registration is only done during initialization.
  */
-static gmx::Mutex registrationMutex;
+//static gmx::Mutex registrationMutex;
 
-using Lock = gmx::lock_guard<gmx::Mutex>;
+//using Lock = gmx::lock_guard<gmx::Mutex>;
 
 void register_external_pull_potential(struct pull_t *pull,
                                       int            coord_index,
@@ -1401,7 +1401,7 @@ void register_external_pull_potential(struct pull_t *pull,
      * pcrd->bExternalPotentialProviderHasBeenRegistered and
      * pull->numUnregisteredExternalPotentials.
      */
-    Lock registrationLock(registrationMutex);
+    //    Lock registrationLock(registrationMutex);
 
     if (pcrd->bExternalPotentialProviderHasBeenRegistered)
     {

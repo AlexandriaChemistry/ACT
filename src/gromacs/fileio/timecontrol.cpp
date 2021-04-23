@@ -59,16 +59,16 @@ static t_timecontrol       timecontrol[TNR] = {
     { 0, FALSE }
 };
 
-static tMPI_Thread_mutex_t tc_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
+//static tMPI_Thread_mutex_t tc_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
 
 gmx_bool bTimeSet(int tcontrol)
 {
     gmx_bool ret;
 
-    tMPI_Thread_mutex_lock(&tc_mutex);
+    //    tMPI_Thread_mutex_lock(&tc_mutex);
     range_check(tcontrol, 0, TNR);
     ret = timecontrol[tcontrol].bSet;
-    tMPI_Thread_mutex_unlock(&tc_mutex);
+    //tMPI_Thread_mutex_unlock(&tc_mutex);
 
     return ret;
 }
@@ -77,18 +77,18 @@ real rTimeValue(int tcontrol)
 {
     real ret;
 
-    tMPI_Thread_mutex_lock(&tc_mutex);
+    //    tMPI_Thread_mutex_lock(&tc_mutex);
     range_check(tcontrol, 0, TNR);
     ret = timecontrol[tcontrol].t;
-    tMPI_Thread_mutex_unlock(&tc_mutex);
+    //tMPI_Thread_mutex_unlock(&tc_mutex);
     return ret;
 }
 
 void setTimeValue(int tcontrol, real value)
 {
-    tMPI_Thread_mutex_lock(&tc_mutex);
+    //tMPI_Thread_mutex_lock(&tc_mutex);
     range_check(tcontrol, 0, TNR);
     timecontrol[tcontrol].t    = value;
     timecontrol[tcontrol].bSet = TRUE;
-    tMPI_Thread_mutex_unlock(&tc_mutex);
+    //tMPI_Thread_mutex_unlock(&tc_mutex);
 }

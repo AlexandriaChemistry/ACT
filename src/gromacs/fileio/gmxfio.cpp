@@ -59,7 +59,7 @@
 #include "gromacs/fileio/md5.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
-#include "gromacs/utility/mutex.h"
+//#include "gromacs/utility/mutex.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "gmxfio-impl.h"
@@ -82,9 +82,9 @@ static t_fileio *open_files = nullptr;
    opening and closing of files, or during global operations like
    iterating along all open files. All these cases should be rare
    during the simulation. */
-static gmx::Mutex open_file_mutex;
+//static gmx::Mutex open_file_mutex;
 
-using Lock = gmx::lock_guard<gmx::Mutex>;
+//using Lock = gmx::lock_guard<gmx::Mutex>;
 
 /******************************************************************
  *
@@ -108,12 +108,12 @@ static int gmx_fio_int_flush(t_fileio* fio)
    type of access to the fio's elements. */
 void gmx_fio_lock(t_fileio *fio)
 {
-    tMPI_Lock_lock(&(fio->mtx));
+    //    tMPI_Lock_lock(&(fio->mtx));
 }
 /* unlock the mutex associated with this fio.  */
 void gmx_fio_unlock(t_fileio *fio)
 {
-    tMPI_Lock_unlock(&(fio->mtx));
+    //    tMPI_Lock_unlock(&(fio->mtx));
 }
 
 /* make a dummy head element, assuming we locked everything. */
@@ -126,7 +126,7 @@ static void gmx_fio_make_dummy()
         open_files->fn   = nullptr;
         open_files->next = open_files;
         open_files->prev = open_files;
-        tMPI_Lock_init(&(open_files->mtx));
+        // tMPI_Lock_init(&(open_files->mtx));
     }
 }
 
@@ -147,7 +147,7 @@ static void gmx_fio_make_dummy()
 static void gmx_fio_insert(t_fileio *fio)
 {
     t_fileio *prev;
-    Lock      openFilesLock(open_file_mutex);
+    //   Lock      openFilesLock(open_file_mutex);
     gmx_fio_make_dummy();
 
     /* and lock the fio we got and the list's head **/
@@ -304,7 +304,7 @@ t_fileio *gmx_fio_open(const char *fn, const char *mode)
     }
 
     fio = new t_fileio {};
-    tMPI_Lock_init(&(fio->mtx));
+    //    tMPI_Lock_init(&(fio->mtx));
     bRead      = (newmode[0] == 'r' && newmode[1] != '+');
     bReadWrite = (newmode[1] == '+');
     fio->fp    = nullptr;
@@ -379,7 +379,7 @@ int gmx_fio_close(t_fileio *fio)
 {
     int  rc = 0;
 
-    Lock openFilesLock(open_file_mutex);
+    //    Lock openFilesLock(open_file_mutex);
 
     gmx_fio_lock(fio);
     /* first remove it from the list */
@@ -426,7 +426,7 @@ int gmx_fio_fclose(FILE *fp)
     t_fileio *cur;
     int       rc    = -1;
 
-    Lock      openFilesLock(open_file_mutex);
+    //    Lock      openFilesLock(open_file_mutex);
     cur = gmx_fio_get_first();
     while (cur)
     {
@@ -588,7 +588,7 @@ std::vector<gmx_file_position_t> gmx_fio_get_output_file_positions()
     std::vector<gmx_file_position_t> outputfiles;
     t_fileio                        *cur;
 
-    Lock openFilesLock(open_file_mutex);
+    //    Lock openFilesLock(open_file_mutex);
     cur = gmx_fio_get_first();
     while (cur)
     {
@@ -700,7 +700,7 @@ t_fileio *gmx_fio_all_output_fsync()
     t_fileio *ret = nullptr;
     t_fileio *cur;
 
-    Lock      openFilesLock(open_file_mutex);
+    //    Lock      openFilesLock(open_file_mutex);
     cur = gmx_fio_get_first();
     while (cur)
     {

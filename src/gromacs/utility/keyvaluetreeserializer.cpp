@@ -39,7 +39,7 @@
 #include "gromacs/utility/iserializer.h"
 #include "gromacs/utility/keyvaluetree.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
-#include "gromacs/utility/mutex.h"
+//#include "gromacs/utility/mutex.h"
 
 namespace gmx
 {
@@ -68,12 +68,12 @@ class ValueSerializer
             DeserializerFunction  deserialize;
         };
 
-        static Mutex                                         s_initMutex;
+    //        static Mutex                                         s_initMutex;
         static std::map<std::type_index, Serializer>         s_serializers;
         static std::map<unsigned char, DeserializerFunction> s_deserializers;
 };
 
-Mutex                                                          ValueSerializer::s_initMutex;
+//Mutex                                                          ValueSerializer::s_initMutex;
 std::map<std::type_index, ValueSerializer::Serializer>         ValueSerializer::s_serializers;
 std::map<unsigned char, ValueSerializer::DeserializerFunction> ValueSerializer::s_deserializers;
 
@@ -242,7 +242,7 @@ void serializeValueType(const KeyValueTreeValue &value, ISerializer *serializer)
 // static
 void ValueSerializer::initSerializers()
 {
-    lock_guard<Mutex> lock(s_initMutex);
+    //    lock_guard<Mutex> lock(s_initMutex);
     if (!s_serializers.empty())
     {
         return;

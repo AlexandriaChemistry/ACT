@@ -65,7 +65,7 @@
 #include "gromacs/utility/dir_separator.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/mutex.h"
+//#include "gromacs/utility/mutex.h"
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
@@ -86,9 +86,9 @@ static int          s_maxBackupCount = 0;
 
 /* this linked list is an intrinsically globally shared object, so we have
    to protect it with mutexes */
-static gmx::Mutex pstack_mutex;
+//static gmx::Mutex pstack_mutex;
 
-using Lock = gmx::lock_guard<gmx::Mutex>;
+//using Lock = gmx::lock_guard<gmx::Mutex>;
 
 namespace gmx
 {
@@ -150,7 +150,7 @@ static void push_ps(FILE *fp)
 {
     t_pstack *ps;
 
-    Lock      pstackLock(pstack_mutex);
+    //    Lock      pstackLock(pstack_mutex);
 
     snew(ps, 1);
     ps->fp   = fp;
@@ -192,7 +192,7 @@ int gmx_ffclose(FILE *fp)
     t_pstack *ps, *tmp;
     int       ret = 0;
 
-    Lock      pstackLock(pstack_mutex);
+    //    Lock      pstackLock(pstack_mutex);
 
     ps = pstack;
     if (ps == nullptr)
@@ -243,7 +243,7 @@ int gmx_ffclose(FILE *fp)
 
 void frewind(FILE *fp)
 {
-    Lock      pstackLock(pstack_mutex);
+    //    Lock      pstackLock(pstack_mutex);
 
     t_pstack *ps = pstack;
     while (ps != nullptr)

@@ -72,11 +72,11 @@ class DefaultThreadAffinityAccess : public gmx::IThreadAffinityAccess
     public:
         bool isThreadAffinitySupported() const override
         {
-            return tMPI_Thread_setaffinity_support() == TMPI_SETAFFINITY_SUPPORT_YES;
+            return true; //tMPI_Thread_setaffinity_support() == TMPI_SETAFFINITY_SUPPORT_YES;
         }
         bool setCurrentThreadAffinityToCore(int core) override
         {
-            const int ret = tMPI_Thread_setaffinity_single(tMPI_Thread_self(), core);
+            const int ret = 0;// tMPI_Thread_setaffinity_single(tMPI_Thread_self(), core);
             return ret == 0;
         }
 };

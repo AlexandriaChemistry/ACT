@@ -742,9 +742,11 @@ gmx_mtop_t *do_init_mtop(const Poldata                   *pd,
         mtop->moltype[0].atoms.atom[i]     = atoms->atom[i];
         mtop->moltype[0].atoms.atomtype[i] = put_symtab(symtab, *atoms->atomtype[i]);
         mtop->moltype[0].atoms.atomname[i] = put_symtab(symtab, *atoms->atomname[i]);
+        GMX_RELEASE_ASSERT(atoms->atom[i].resind <= atoms->nres, gmx::formatString("Residue number inconsistency. Atom %d has res number %d out of %d", i, atoms->atom[i].resind, atoms->nres).c_str());
+        GMX_RELEASE_ASSERT(atoms->atom[i].resind >= 1, gmx::formatString("Residue number inconsistency. Atom %d has res number %d out of %d", i, atoms->atom[i].resind, atoms->nres).c_str());
         t_atoms_set_resinfo(&mtop->moltype[0].atoms, i, symtab,
                             *atoms->resinfo[atoms->atom[i].resind].name,
-                            atoms->atom[i].resind,
+                            atoms->atom[i].resind-1,
                             atoms->resinfo[atoms->atom[i].resind].ic,
                             atoms->resinfo[atoms->atom[i].resind].chainid,
                             atoms->resinfo[atoms->atom[i].resind].chainnum);

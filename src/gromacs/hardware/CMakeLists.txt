@@ -42,5 +42,5 @@ gmx_add_libgromacs_sources(
     )
 
 if (BUILD_TESTING)
-    add_subdirectory(tests)
+#    add_subdirectory(tests)
 endif()

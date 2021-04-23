@@ -766,7 +766,7 @@ void nbnxn_atomdata_init(const gmx::MDLogger &mdlog,
     {
         GMX_LOG(mdlog.info).asParagraph().appendText("Using tree force reduction");
 
-        nbat->syncStep = new tMPI_Atomic[nth];
+        //        nbat->syncStep = new tMPI_Atomic[nth];
     }
 }
 
@@ -1357,8 +1357,8 @@ static void nbnxn_atomdata_add_nbat_f_to_f_treereduce(const nbnxn_atomdata_t *nb
                     /* wait on partner thread - replaces full barrier */
                     int sync_th, sync_group_size;
 
-                    tMPI_Atomic_memory_barrier();                         /* gurantee data is saved before marking work as done */
-                    tMPI_Atomic_set(&(nbat->syncStep[th]), group_size/2); /* mark previous step as completed */
+                    //         tMPI_Atomic_memory_barrier();                         /* gurantee data is saved before marking work as done */
+                    //tMPI_Atomic_set(&(nbat->syncStep[th]), group_size/2); /* mark previous step as completed */
 
                     /* find thread to sync with. Equal to partner_th unless nth is not a power of two. */
                     for (sync_th = partner_th, sync_group_size = group_size; sync_th >= nth && sync_group_size > 2; sync_group_size /= 2)
@@ -1368,12 +1368,12 @@ static void nbnxn_atomdata_add_nbat_f_to_f_treereduce(const nbnxn_atomdata_t *nb
                     if (sync_th < nth) /* otherwise nothing to sync index[1] will be >=nout */
                     {
                         /* wait on the thread which computed input data in previous step */
-                        while (tMPI_Atomic_get(static_cast<volatile tMPI_Atomic_t*>(&(nbat->syncStep[sync_th]))) < group_size/2)
-                        {
-                            gmx_pause();
-                        }
+                        //                        while (tMPI_Atomic_get(static_cast<volatile tMPI_Atomic_t*>(&(nbat->syncStep[sync_th]))) < group_size/2)
+                        //{
+                        //  gmx_pause();
+                        //}
                         /* guarantee that no later load happens before wait loop is finisehd */
-                        tMPI_Atomic_memory_barrier();
+                        //tMPI_Atomic_memory_barrier();
                     }
 #else               /* TMPI_ATOMICS */
 #pragma omp barrier

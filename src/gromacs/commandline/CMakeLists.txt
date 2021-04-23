@@ -36,17 +36,17 @@ file(GLOB COMMANDLINE_SOURCES *.cpp)
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${COMMANDLINE_SOURCES} PARENT_SCOPE)
 
 gmx_install_headers(
-    cmdlinehelpwriter.h
-    cmdlineinit.h
-    cmdlinemodule.h
-    cmdlineoptionsmodule.h
-    cmdlineparser.h
-    cmdlineprogramcontext.h
-    filenm.h
-    pargs.h
-    viewit.h
+#    cmdlinehelpwriter.h
+#    cmdlineinit.h
+#    cmdlinemodule.h
+#    cmdlineoptionsmodule.h
+#    cmdlineparser.h
+#    cmdlineprogramcontext.h
+#    filenm.h
+#    pargs.h
+#    viewit.h
     )
 
 if (BUILD_TESTING)
-    add_subdirectory(tests)
+#    add_subdirectory(tests)
 endif()

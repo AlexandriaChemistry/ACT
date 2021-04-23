@@ -48,7 +48,7 @@ set(LINEARALGEBRA_SOURCES
 target_sources(libgromacs_external PRIVATE ${LINEARALGEBRA_SOURCES})
 
 gmx_install_headers(
-    eigensolver.h
-    matrix.h
-    sparsematrix.h
+#    eigensolver.h
+#    matrix.h
+#    sparsematrix.h
     )

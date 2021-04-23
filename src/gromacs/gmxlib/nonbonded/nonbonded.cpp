@@ -99,7 +99,7 @@
 #    include "gromacs/gmxlib/nonbonded/nb_kernel_avx_256_double/nb_kernel_avx_256_double.h"
 #endif
 
-static tMPI_Thread_mutex_t nonbonded_setup_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
+//static tMPI_Thread_mutex_t nonbonded_setup_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
 static gmx_bool            nonbonded_setup_done  = FALSE;
 
 
@@ -107,7 +107,7 @@ void
 gmx_nonbonded_setup(t_forcerec *   fr,
                     gmx_bool       bGenericKernelOnly)
 {
-    tMPI_Thread_mutex_lock(&nonbonded_setup_mutex);
+    //    tMPI_Thread_mutex_lock(&nonbonded_setup_mutex);
     /* Here we are guaranteed only one thread made it. */
     if (!nonbonded_setup_done)
     {
@@ -155,7 +155,7 @@ gmx_nonbonded_setup(t_forcerec *   fr,
 
         nonbonded_setup_done = TRUE;
     }
-    tMPI_Thread_mutex_unlock(&nonbonded_setup_mutex);
+    //    tMPI_Thread_mutex_unlock(&nonbonded_setup_mutex);
 }
 
 

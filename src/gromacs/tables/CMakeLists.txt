@@ -36,5 +36,5 @@ file(GLOB TABLE_SOURCES *.cpp)
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${TABLE_SOURCES} PARENT_SCOPE)
 
 if (BUILD_TESTING)
-    add_subdirectory(tests)
+#    add_subdirectory(tests)
 endif()

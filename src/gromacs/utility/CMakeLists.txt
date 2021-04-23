@@ -39,31 +39,31 @@ endif()
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${UTILITY_SOURCES} PARENT_SCOPE)
 
 gmx_install_headers(
-    alignedallocator.h
-    allocator.h
-    arrayref.h
-    arraysize.h
-    basedefinitions.h
-    baseversion.h
-    classhelpers.h
-    cstringutil.h
-    current_function.h
-    datafilefinder.h
-    errorcodes.h
-    exceptions.h
-    fatalerror.h
-    flags.h
-    fileptr.h
-    futil.h
-    gmxassert.h
-    init.h
-    programcontext.h
-    real.h
-    smalloc.h
-    stringutil.h
-    unique_cptr.h
+#    alignedallocator.h
+#    allocator.h
+#    arrayref.h
+#    arraysize.h
+#    basedefinitions.h
+#    baseversion.h
+#    classhelpers.h
+#    cstringutil.h
+#    current_function.h
+#    datafilefinder.h
+#    errorcodes.h
+#    exceptions.h
+#    fatalerror.h
+#    flags.h
+#    fileptr.h
+#    futil.h
+#    gmxassert.h
+#    init.h
+#    programcontext.h
+#    real.h
+#    smalloc.h
+#    stringutil.h
+#    unique_cptr.h
     )
 
 if (BUILD_TESTING)
-    add_subdirectory(tests)
+#    add_subdirectory(tests)
 endif()

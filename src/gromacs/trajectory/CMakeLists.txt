@@ -38,6 +38,6 @@ gmx_add_libgromacs_sources(
     )
 
 gmx_install_headers(
-    energyframe.h
-    trajectoryframe.h
+#    energyframe.h
+#    trajectoryframe.h
     )

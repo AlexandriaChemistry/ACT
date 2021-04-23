@@ -106,7 +106,7 @@ static std::unique_ptr<gmx_hw_info_t> hwinfo_g;
 //! A reference counter for the hwinfo structure
 static int                            n_hwinfo = 0;
 //! A lock to protect the hwinfo structure
-static tMPI_Thread_mutex_t            hw_info_lock = TMPI_THREAD_MUTEX_INITIALIZER;
+//static tMPI_Thread_mutex_t            hw_info_lock = TMPI_THREAD_MUTEX_INITIALIZER;
 
 //! Detect GPUs, if that makes sense to attempt.
 static void gmx_detect_gpus(const gmx::MDLogger            &mdlog,
@@ -420,10 +420,10 @@ hardwareTopologyDoubleCheckDetection(const gmx::MDLogger gmx_unused         &mdl
 gmx_hw_info_t *gmx_detect_hardware(const gmx::MDLogger            &mdlog,
                                    const PhysicalNodeCommunicator &physicalNodeComm)
 {
-    int ret;
+    int ret = 0;
 
     /* make sure no one else is doing the same thing */
-    ret = tMPI_Thread_mutex_lock(&hw_info_lock);
+    //    ret = tMPI_Thread_mutex_lock(&hw_info_lock);
     if (ret != 0)
     {
         gmx_fatal(FARGS, "Error locking hwinfo mutex: %s", strerror(errno));
@@ -461,7 +461,7 @@ gmx_hw_info_t *gmx_detect_hardware(const gmx::MDLogger            &mdlog,
     /* increase the reference counter */
     n_hwinfo++;
 
-    ret = tMPI_Thread_mutex_unlock(&hw_info_lock);
+    ret = 0; //tMPI_Thread_mutex_unlock(&hw_info_lock);
     if (ret != 0)
     {
         gmx_fatal(FARGS, "Error unlocking hwinfo mutex: %s", strerror(errno));
@@ -479,7 +479,7 @@ void gmx_hardware_info_free()
 {
     int ret;
 
-    ret = tMPI_Thread_mutex_lock(&hw_info_lock);
+    ret = 0;//tMPI_Thread_mutex_lock(&hw_info_lock);
     if (ret != 0)
     {
         gmx_fatal(FARGS, "Error locking hwinfo mutex: %s", strerror(errno));
@@ -502,7 +502,7 @@ void gmx_hardware_info_free()
         hwinfo_g.reset();
     }
 
-    ret = tMPI_Thread_mutex_unlock(&hw_info_lock);
+    ret = 0; //tMPI_Thread_mutex_unlock(&hw_info_lock);
     if (ret != 0)
     {
         gmx_fatal(FARGS, "Error unlocking hwinfo mutex: %s", strerror(errno));

@@ -34,7 +34,7 @@
 
 #add_subdirectory(template)
 
-install(FILES README.tutor README_FreeEnergyModifications.txt
+install(FILES 
     DESTINATION ${GMX_INSTALL_GMXDATADIR}
     COMPONENT data)
 install(DIRECTORY top

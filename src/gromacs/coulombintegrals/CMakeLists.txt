@@ -79,10 +79,10 @@ file(GLOB COULOMBINTEGRALS_SOURCES
           slater_integrals.cpp)
 
 gmx_install_headers(
-    slater_integrals.h      
-    coulombintegrals.h   
-    gaussian_integrals.h   
-    slater_low.h
+#    slater_integrals.h      
+#    coulombintegrals.h   
+#    gaussian_integrals.h   
+#    slater_low.h
     )
 
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${COULOMBINTEGRALS_SOURCES} PARENT_SCOPE)

@@ -1,8 +1,8 @@
 # This is a convenience script to determine which
-# type of shell you have, and then run GMXRC.[csh|bash|zsh]
+# type of shell you have, and then run ACTRC.[csh|bash|zsh]
 # from the Gromacs binary directory.
 #
-# If you only use one shell you can copy that GMXRC.* instead.
+# If you only use one shell you can copy that ACTRC.* instead.
 
 # only csh/tcsh set the variable $shell (note: lower case!)
 # but check for the contents to be sure, since some environments may
@@ -10,9 +10,9 @@
 echo $shell | grep -q csh && goto CSH
 
 # if we got here, shell is bsh/bash/zsh/ksh
-. @CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_BINDIR@/GMXRC.bash
+. @CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_BINDIR@/ACTRC.bash
 return
 
 # csh/tcsh jump here
 CSH:
-source @CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_BINDIR@/GMXRC.csh
+source @CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_BINDIR@/ACTRC.csh
