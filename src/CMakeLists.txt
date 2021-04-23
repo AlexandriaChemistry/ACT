@@ -106,7 +106,7 @@ if (BUILD_TESTING)
 endif()
 
 add_subdirectory(gromacs)
-add_subdirectory(programs)
+add_subdirectory(alexandria)
 
 # Activate targets for new C++ API components and docs.
 if(GMX_NATIVE_WINDOWS OR GMX_BUILD_MDRUN_ONLY OR NOT BUILD_SHARED_LIBS)
@@ -130,5 +130,5 @@ if (GMXAPI)
        # TODO: gmxapi should gracefully build for dynamic linking or static linking for PIC or without.
        message(FATAL_ERROR "GMXAPI requires position-independent code. Set -DGMXAPI=OFF or -DBUILD_SHARED_LIBS=ON.")
    endif()
-   add_subdirectory(api)
+#   add_subdirectory(api)
 endif()
