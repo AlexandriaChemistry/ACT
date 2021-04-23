@@ -107,7 +107,6 @@ add_subdirectory(gpu_utils)
 add_subdirectory(hardware)
 add_subdirectory(linearalgebra)
 add_subdirectory(math)
-#add_subdirectory(mdrun)
 add_subdirectory(mdrunutility)
 add_subdirectory(mdspan)
 add_subdirectory(mdtypes)
@@ -132,15 +131,9 @@ add_subdirectory(imd)
 add_subdirectory(compat)
 add_subdirectory(mimic)
 if (NOT GMX_BUILD_MDRUN_ONLY)
-#    add_subdirectory(gmxana)
     add_subdirectory(gmxpreprocess)
-#    add_subdirectory(correlationfunctions)
     add_subdirectory(statistics)
-#    add_subdirectory(analysisdata)
     add_subdirectory(selection)
-#    add_subdirectory(trajectoryanalysis)
-#    add_subdirectory(energyanalysis)
-#    add_subdirectory(tools)
 endif()
 
 get_property(PROPERTY_SOURCES GLOBAL PROPERTY GMX_LIBGROMACS_SOURCES)
@@ -157,16 +150,6 @@ list(APPEND LIBGROMACS_SOURCES ${GMXLIB_SOURCES} ${MDLIB_SOURCES} ${PROPERTY_SOU
 #target_sources(libgromacs_external PRIVATE ${THREAD_MPI_SOURCES})
 
 configure_file(version.h.cmakein version.h)
-gmx_install_headers(
-#    analysisdata.h
-#    commandline.h
-#    options.h
-#    random.h
-#    selection.h
-#    trajectoryanalysis.h
-#    utility.h
-#    ${CMAKE_CURRENT_BINARY_DIR}/version.h
-    )
 
 # This code is here instead of utility/CMakeLists.txt, because CMake
 # custom commands and source file properties can only be set in the directory
