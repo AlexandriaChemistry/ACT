@@ -38,7 +38,6 @@
 
 #include <map>
 
-#include "gromacs/commandline/filenm.h"
 #include "gromacs/coulombintegrals/coulombintegrals.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/listed-forces/bonded.h"
