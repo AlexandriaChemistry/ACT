@@ -30,7 +30,7 @@
  */
 #include <gtest/gtest.h>
 
-#include "alexandria/act/forcefieldparameter.h"
+#include "alexandria/forcefieldparameter.h"
 
 #include <map>
 

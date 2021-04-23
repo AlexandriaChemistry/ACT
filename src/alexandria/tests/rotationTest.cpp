@@ -37,7 +37,7 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/math/functions.h"
-#include "alexandria/act/regression.h"
+#include "alexandria/regression.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"

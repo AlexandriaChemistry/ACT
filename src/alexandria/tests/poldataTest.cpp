@@ -35,10 +35,10 @@
 
 #include <gtest/gtest.h>
 
-#include "alexandria/act/plistwrapper.h"
-#include "alexandria/act/poldata.h"
-#include "alexandria/act/poldata_low.h"
-#include "alexandria/act/poldata_xml.h"
+#include "alexandria/plistwrapper.h"
+#include "alexandria/poldata.h"
+#include "alexandria/poldata_low.h"
+#include "alexandria/poldata_xml.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"

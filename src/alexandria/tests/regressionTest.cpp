@@ -31,7 +31,7 @@
  */
  
  
-#include "alexandria/act/regression.h"
+#include "alexandria/regression.h"
 
 #include <cmath>
 #include <cstdlib>

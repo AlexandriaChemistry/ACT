@@ -30,7 +30,7 @@
  */
 #include <gtest/gtest.h>
 
-#include "alexandria/act/identifier.h"
+#include "alexandria/identifier.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"

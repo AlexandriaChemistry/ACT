@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2020
+ * Copyright (C) 2014-2018
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -26,36 +26,12 @@
 
 /*! \internal \brief
  * Implements part of the alexandria program.
+ * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include <gtest/gtest.h>
 
-#include "alexandria/act/interactiontype.h"
+#include "alexandria/poldata.h"
 
-#include "testutils/cmdlinetest.h"
-#include "testutils/refdata.h"
-#include "testutils/testasserts.h"
-#include "testutils/testfilemanager.h"
+//! Return testing poldata structure
+alexandria::Poldata *getPoldata(std::string qdist);
 
-#include "gromacs/utility/exceptions.h"
-
-namespace alexandria
-{
-
-namespace
-{
-
-TEST(InteractionTypeTest, stringToInteractionType) {
-    EXPECT_TRUE(stringToInteractionType("BONDCORRECTIONS") == InteractionType::BONDCORRECTIONS);
-    EXPECT_FALSE(stringToInteractionType("BONDS") == InteractionType::ANGLES);
-    InteractionType itype = InteractionType::ANGLES;
-    EXPECT_THROW(itype = stringToInteractionType("FOO"), gmx::InvalidInputError);
-    // Code will not be reached in normal cases but the compiler
-    // warns about itype not being used otherwise.
-    printf("This should not happen. itype = %s\n",
-           interactionTypeToString(itype).c_str());
-}
-
-}
-
-}

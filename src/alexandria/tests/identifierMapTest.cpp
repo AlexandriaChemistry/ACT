@@ -30,7 +30,7 @@
  */
 #include <gtest/gtest.h>
 
-#include "alexandria/act/identifier.h"
+#include "alexandria/identifier.h"
 
 #include <cstdio>
 

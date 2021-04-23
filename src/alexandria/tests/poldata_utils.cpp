@@ -33,9 +33,9 @@
 #include <map>
 
 #include "gromacs/utility/exceptions.h"
-#include "alexandria/act/poldata.h"
-#include "alexandria/act/poldata_low.h"
-#include "alexandria/act/poldata_xml.h"
+#include "alexandria/poldata.h"
+#include "alexandria/poldata_low.h"
+#include "alexandria/poldata_xml.h"
 
 #include "testutils/testfilemanager.h"
 

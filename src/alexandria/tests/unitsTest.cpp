@@ -30,7 +30,7 @@
  */
 #include <gtest/gtest.h>
 
-#include "alexandria/act/units.h"
+#include "alexandria/units.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"

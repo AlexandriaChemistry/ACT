@@ -30,7 +30,7 @@
  */
 #include <gtest/gtest.h>
 
-#include "alexandria/act/forcefieldparameterlist.h"
+#include "alexandria/forcefieldparameterlist.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"

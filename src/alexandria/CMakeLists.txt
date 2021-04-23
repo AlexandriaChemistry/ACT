@@ -1,35 +1,118 @@
 #
-# This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2018, by the GROMACS development team, led by
-# Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
-# and including many others, as listed in the AUTHORS file in the
-# top-level source directory and at http://www.gromacs.org.
+#  This source file is part of the Alexandria program.
 #
-# GROMACS is free software; you can redistribute it and/or
-# modify it under the terms of the GNU Lesser General Public License
-# as published by the Free Software Foundation; either version 2.1
-# of the License, or (at your option) any later version.
+#  Copyright (C) 2014-2020
 #
-# GROMACS is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-# Lesser General Public License for more details.
+#  Developers:
+#             Mohammad Mehdi Ghahremanpour,
+#             Paul J. van Maaren,
+#             David van der Spoel (Project leader)
 #
-# You should have received a copy of the GNU Lesser General Public
-# License along with GROMACS; if not, see
-# http://www.gnu.org/licenses, or write to the Free Software Foundation,
-# Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+#  This program is free software; you can redistribute it and/or
+#  modify it under the terms of the GNU General Public License
+#  as published by the Free Software Foundation; either version 2
+#  of the License, or (at your option) any later version.
 #
-# If you want to redistribute modifications to GROMACS, please
-# consider that scientific software is very special. Version
-# control is crucial - bugs must be traceable. We will be happy to
-# consider code for inclusion in the official distribution, but
-# derived work must not be called official GROMACS. Details are found
-# in the README & COPYING files - if they are missing, get the
-# official version at http://www.gromacs.org.
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
 #
-# To help us fund GROMACS development, we humbly ask that you cite
-# the research papers on the package. Check out http://www.gromacs.org.
+#  You should have received a copy of the GNU General Public License
+#  along with this program; if not, write to the Free Software
+#  Foundation, Inc., 51 Franklin Street, Fifth Floor,
+#  Boston, MA  02110-1301, USA.
+#
 
-add_subdirectory(act)
+set(ALEXANDRIA_SOURCES
+           alex_modules.cpp
+           bastat.cpp
+           categories.cpp
+           chargemodel.cpp
+           communication.cpp
+           composition.cpp
+           fill_inputrec.cpp
+           forcefieldparameter.cpp
+           forcefieldparameterlist.cpp
+#           gen_table.cpp
+           gentop.cpp
+           gentop_core.cpp
+           gentop_vsite.cpp
+           gmx_simple_comm.cpp
+           identifier.cpp
+           interactiontype.cpp
+           latex_util.cpp
+           memory_check.cpp
+           merge_mp.cpp
+           merge_pd.cpp
+           molgen.cpp
+      	   molprop.cpp
+           molprop_check.cpp
+           molprop_csv.cpp
+           molprop_sqlite3.cpp
+           molprop_test.cpp
+           molprop_util.cpp
+           molprop_xml.cpp
+           molselect.cpp
+           mutability.cpp
+           mymol.cpp
+           mymol_low.cpp
+	   optparam.cpp
+           particletype.cpp
+           phase.cpp
+           plistwrapper.cpp
+           poldata.cpp
+           poldata_low.cpp
+           poldata_tables.cpp
+           poldata_edit.cpp
+           poldata_xml.cpp
+           qgen_acm.cpp
+           qgen_cube.cpp
+           qgen_resp.cpp
+           qm2molprop.cpp
+           readpsi4.cpp
+           regression.cpp
+           stringutil.cpp
+           tune_eem.cpp
+           tune_fc.cpp
+           tune_fc_utils.cpp
+           tuning_utility.cpp          
+           units.cpp
+           xml_util.cpp
+           babel_io.cpp
+#           analyze.cpp
+#           molprop_tables.cpp
+	)
+	
+#add_library(libalexandria ${ALEXANDRIA_SOURCES})	
+#target_link_libraries(libalexandria libgromacs ${GMX_EXTRA_LIBRARIES})
+
+add_library(alexandria_objlib OBJECT ${ALEXANDRIA_SOURCES})
+
+#set_target_properties(alexandria_objlib PROPERTIES
+#                      OUTPUT_NAME "alexandria${GMX_LIBS_SUFFIX}"
+#                      COMPILE_FLAGS "${OpenMP_C_FLAGS}")
+
+add_executable(alexandria alexandria.cpp
+         $<TARGET_OBJECTS:alexandria_objlib>
+         )
+target_link_libraries(alexandria libgromacs ${GMX_EXTRA_LIBRARIES} ${XML_LIBRARIES}
+         ${GMX_EXE_LINKER_FLAGS})
+set(BINARY_NAME "alexandria${GMX_BINARY_SUFFIX}")
+set_target_properties(alexandria PROPERTIES 
+                      OUTPUT_NAME "${BINARY_NAME}")
+
+install(TARGETS alexandria
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libalexandria.pc.cmakein ${CMAKE_CURRENT_BINARY_DIR}/libalexandria.pc @ONLY)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libalexandria.pc
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
+        RENAME "libalexandria${GMX_LIBS_SUFFIX}.pc"
+        COMPONENT development)
+
+if (BUILD_TESTING)
+    add_subdirectory(tests)
+endif()
+
