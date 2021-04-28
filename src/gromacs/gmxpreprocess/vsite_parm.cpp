@@ -61,7 +61,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strconvert.h"
 
-typedef struct {
+typedef struct t_mybonded {
     t_iatom  a[4];
     real     c;
     t_iatom &ai() { return a[0]; }

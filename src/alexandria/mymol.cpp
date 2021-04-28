@@ -2646,22 +2646,6 @@ void MyMol::UpdateIdef(const Poldata   *pd,
                 break;
             case F_IDIHS:
                 {
-                    int *iatoms = &ltop_->idef.il[ftype].iatoms[i+1];
-                    if (!fs.parameterExists(bondId))
-                    {
-                        int  iatoms2[4] = { iatoms[0], iatoms[2], iatoms[1], iatoms[3] };
-                        bondId = getIdentifier(pd, iType, btype, 
-                                               interaction_function[ftype].nratoms,
-                                               iatoms2);
-                    }
-                    if (!fs.parameterExists(bondId))
-                    {
-                        int  iatoms2[4] = { iatoms[3], iatoms[1], iatoms[2], iatoms[0] };
-                        bondId = getIdentifier(pd, iType, btype, 
-                                               interaction_function[ftype].nratoms,
-                                               iatoms2);
-            
-                    }
                     auto fp = fs.findParameterTypeConst(bondId, "phi");
                     mtop_->ffparams.iparams[tp].harmonic.rA         =
                         mtop_->ffparams.iparams[tp].harmonic.rB     =

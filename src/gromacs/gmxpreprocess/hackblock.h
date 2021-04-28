@@ -55,7 +55,7 @@ extern const int   btsNiatoms[ebtsNR];
    free/clear/copy/merge_t_* functions stay updated */
 
 /* BONDEDS */
-typedef struct {
+typedef struct t_rbonded {
     char  *a[MAXATOMLIST]; /* atom names */
     char  *s;              /* optional define string which gets copied from
                               .rtp/.tdb to .top and will be parsed by cpp
@@ -68,7 +68,7 @@ typedef struct {
     char*   &am() { return a[4]; }
 } t_rbonded;
 
-typedef struct {
+typedef struct t_rbondeds {
     int        type;     /* The type of bonded interaction */
     int        nb;       /* number of bondeds */
     t_rbonded *b;        /* bondeds */
@@ -94,7 +94,7 @@ typedef struct {
 } t_restp;
 
 /* Block to hack residues */
-typedef struct {
+typedef struct t_hack {
     int      nr;      /* Number of atoms to hack    */
     char    *oname;   /* Old name                   */
     char    *nname;   /* New name                   */
@@ -118,7 +118,7 @@ typedef struct {
     char*      &al() { return a[3]; }
 } t_hack;
 
-typedef struct {
+typedef struct t_hackblock {
     char      *name;     /* Name of hack block (residue or terminus) */
     char      *filebase; /* The base file name this entry was read from */
     int        nhack;    /* Number of atoms to hack                  */
@@ -128,7 +128,7 @@ typedef struct {
     t_rbondeds rb[ebtsNR];
 } t_hackblock;
 
-typedef struct {
+typedef struct t_specbond {
     char *res1, *res2;
     char *atom1, *atom2;
     char *newres1, *newres2;

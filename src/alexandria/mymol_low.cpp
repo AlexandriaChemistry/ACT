@@ -373,12 +373,29 @@ immStatus updatePlist(const Poldata             *pd,
                 int n = 0;
                 if (!fs.parameterExists(bondId))
                 {
-                    bondId = Identifier(reverseAtomType, canSwap);
-                    // Swap the plist wrapper as well
                     std::vector<int> aa;
-                    for (int i = 0; i < nratoms; i++)
+                    if (fs.fType() == F_IDIHS)
                     {
-                        aa.push_back(pwi->a[nratoms-1-i]);
+                        bondId = Identifier({ bondAtomType[0], bondAtomType[2], bondAtomType[1], bondAtomType[3] }, canSwap);
+                
+                        if (fs.parameterExists(bondId))
+                        {
+                            aa = { pwi->a[0], pwi->a[2], pwi->a[1], pwi->a[3] };
+                        }
+                        else
+                        {
+                            bondId = Identifier({ bondAtomType[3], bondAtomType[1], bondAtomType[2], bondAtomType[0] }, canSwap);
+                            aa = { pwi->a[3], pwi->a[1], pwi->a[2], pwi->a[0] };
+                        }
+                    }
+                    else
+                    {
+                        bondId = Identifier(reverseAtomType, canSwap);
+                        // Swap the plist wrapper as well
+                        for (int i = 0; i < nratoms; i++)
+                        {
+                            aa.push_back(pwi->a[nratoms-1-i]);
+                        }
                     }
                     for (int i = 0; i < nratoms; i++)
                     {

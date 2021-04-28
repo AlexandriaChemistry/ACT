@@ -57,7 +57,7 @@ typedef struct {
  * non-bonded parameter combinations, which will be copied to t_params.
  */
 
-typedef struct {
+typedef struct t_param {
     int        a[MAXATOMLIST];   /* The atom list (eg. bonds: particle	*/
     /* i = a[0] (ai), j = a[1] (aj))	*/
     real       c[MAXFORCEPARAM]; /* Force parameters (eg. b0 = c[0])	*/
