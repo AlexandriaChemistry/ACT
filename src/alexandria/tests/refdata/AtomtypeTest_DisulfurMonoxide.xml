@@ -4,7 +4,7 @@
   <Int Name="disulfur-monoxide-3-oep.log.pdb">3</Int>
   <Sequence Name="atomtypes">
     <Int Name="Length">3</Int>
-    <String>ss</String>
+    <String>s2</String>
     <String>s</String>
     <String>o</String>
   </Sequence>

@@ -1268,7 +1268,7 @@ int alex_tune_fc(int argc, char *argv[])
     MolSelect             gms;
 
     std::vector<t_pargs>  pargs;
-    for (size_t i = 0; i < asize(pa); i++)
+    for (int i = 0; i < asize(pa); i++)
     {
         pargs.push_back(pa[i]);
     }

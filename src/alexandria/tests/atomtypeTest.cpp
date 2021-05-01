@@ -206,6 +206,11 @@ TEST_F (AtomtypeTest, Water)
     testAtype("water-3-oep.log.pdb");
 }
 
+TEST_F (AtomtypeTest, TrimethylImidazolium)
+{
+    testAtype("123-trimethyl-imidazolium.sdf");
+}
+
 }
 
 }

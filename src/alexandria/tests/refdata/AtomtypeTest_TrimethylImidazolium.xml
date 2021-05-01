@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="123-trimethyl-imidazolium.sdf">19</Int>
+  <Sequence Name="atomtypes">
+    <Int Name="Length">19</Int>
+    <String>cd</String>
+    <String>cc</String>
+    <String>na</String>
+    <String>cc</String>
+    <String>na</String>
+    <String>c3</String>
+    <String>c3</String>
+    <String>h4</String>
+    <String>h4</String>
+    <String>h1</String>
+    <String>h1</String>
+    <String>h1</String>
+    <String>h1</String>
+    <String>h1</String>
+    <String>h1</String>
+    <String>c3</String>
+    <String>hc</String>
+    <String>hc</String>
+    <String>hc</String>
+  </Sequence>
+</ReferenceData>
