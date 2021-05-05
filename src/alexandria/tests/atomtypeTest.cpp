@@ -206,6 +206,16 @@ TEST_F (AtomtypeTest, Water)
     testAtype("water-3-oep.log.pdb");
 }
 
+TEST_F (AtomtypeTest, Aniline)
+{
+    testAtype("aniline.sdf");
+}
+
+TEST_F (AtomtypeTest, EthaneDiamine)
+{
+    testAtype("ethane-12-diamine.sdf");
+}
+
 }
 
 }
