@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="1-nitroethyne.pdb">5</Int>
+  <Sequence Name="bondorder">
+    <Int Name="Length">5</Int>
+    <String>on-1 no-3: 2</String>
+    <String>on-2 no-3: 2</String>
+    <String>no-3 c1-4: 1</String>
+    <String>c1-4 c1-5: 3</String>
+    <String>c1-5 ha-6: 1</String>
+  </Sequence>
+</ReferenceData>

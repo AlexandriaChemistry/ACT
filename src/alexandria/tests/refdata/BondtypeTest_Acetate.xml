@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="acetate-3-oep.log.pdb">6</Int>
+  <Sequence Name="bondorder">
+    <Int Name="Length">6</Int>
+    <String>c3-1 hc-7: 1</String>
+    <String>c3-1 hc-5: 1</String>
+    <String>c3-1 cm-2: 1</String>
+    <String>c3-1 hc-6: 1</String>
+    <String>cm-2 om-3: 2</String>
+    <String>cm-2 om-4: 1</String>
+  </Sequence>
+</ReferenceData>

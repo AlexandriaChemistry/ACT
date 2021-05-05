@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="guanidinium.sdf">9</Int>
+  <Sequence Name="bondorder">
+    <Int Name="Length">9</Int>
+    <String>nh-1 cz-4: 2</String>
+    <String>nh-1 hn-5: 1</String>
+    <String>nh-1 hn-6: 1</String>
+    <String>nh-2 cz-4: 1</String>
+    <String>nh-2 hn-7: 1</String>
+    <String>nh-2 hn-8: 1</String>
+    <String>nh-3 cz-4: 1</String>
+    <String>nh-3 hn-9: 1</String>
+    <String>nh-3 hn-10: 1</String>
+  </Sequence>
+</ReferenceData>

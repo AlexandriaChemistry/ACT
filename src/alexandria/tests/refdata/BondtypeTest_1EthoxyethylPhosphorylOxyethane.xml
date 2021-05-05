@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="1--ethoxyethylphosphoryl-oxyethane-3-oep.log.pdb">24</Int>
+  <Sequence Name="bondorder">
+    <Int Name="Length">24</Int>
+    <String>p5-1 c3-5: 1</String>
+    <String>p5-1 os-3: 1</String>
+    <String>p5-1 os-2: 1</String>
+    <String>p5-1 o-4: 2</String>
+    <String>os-2 c3-7: 1</String>
+    <String>os-3 c3-8: 1</String>
+    <String>c3-5 hc-11: 1</String>
+    <String>c3-5 hc-12: 1</String>
+    <String>c3-5 c3-6: 1</String>
+    <String>c3-6 hc-13: 1</String>
+    <String>c3-6 hc-14: 1</String>
+    <String>c3-6 hc-15: 1</String>
+    <String>c3-7 c3-9: 1</String>
+    <String>c3-7 h1-16: 1</String>
+    <String>c3-7 h1-17: 1</String>
+    <String>c3-8 c3-10: 1</String>
+    <String>c3-8 h1-19: 1</String>
+    <String>c3-8 h1-18: 1</String>
+    <String>c3-9 hc-22: 1</String>
+    <String>c3-9 hc-21: 1</String>
+    <String>c3-9 hc-20: 1</String>
+    <String>c3-10 hc-25: 1</String>
+    <String>c3-10 hc-24: 1</String>
+    <String>c3-10 hc-23: 1</String>
+  </Sequence>
+</ReferenceData>

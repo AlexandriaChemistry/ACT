@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="1-amino-1-hydroxyguanidine-3-oep.log.pdb">11</Int>
+  <Sequence Name="bondorder">
+    <Int Name="Length">11</Int>
+    <String>oh-1 ho-11: 1</String>
+    <String>oh-1 n3-2: 1</String>
+    <String>n3-2 nh-3: 1</String>
+    <String>n3-2 c2-6: 1</String>
+    <String>nh-3 hn-7: 1</String>
+    <String>nh-3 hn-8: 1</String>
+    <String>nh-4 hn-9: 1</String>
+    <String>nh-4 hn-10: 1</String>
+    <String>nh-4 c2-6: 1</String>
+    <String>n2-5 hn-12: 1</String>
+    <String>n2-5 c2-6: 2</String>
+  </Sequence>
+</ReferenceData>

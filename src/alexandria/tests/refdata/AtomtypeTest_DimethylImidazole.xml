@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="12-dimethyl-imidazole.sdf">15</Int>
+  <Sequence Name="atomtypes">
+    <Int Name="Length">15</Int>
+    <String>cc</String>
+    <String>cd</String>
+    <String>na</String>
+    <String>cc</String>
+    <String>nc</String>
+    <String>c3</String>
+    <String>h1</String>
+    <String>h1</String>
+    <String>h1</String>
+    <String>h1</String>
+    <String>h1</String>
+    <String>c3</String>
+    <String>hc</String>
+    <String>hc</String>
+    <String>hc</String>
+  </Sequence>
+</ReferenceData>

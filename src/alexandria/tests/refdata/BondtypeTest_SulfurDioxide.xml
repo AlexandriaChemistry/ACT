@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="sulfur-dioxide-3-oep.log.pdb">2</Int>
+  <Sequence Name="bondorder">
+    <Int Name="Length">2</Int>
+    <String>o-1 s2-2: 2</String>
+    <String>s2-2 o-3: 2</String>
+  </Sequence>
+</ReferenceData>

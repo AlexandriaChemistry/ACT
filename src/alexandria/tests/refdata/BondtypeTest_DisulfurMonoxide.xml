@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="disulfur-monoxide-3-oep.log.pdb">2</Int>
+  <Sequence Name="bondorder">
+    <Int Name="Length">2</Int>
+    <String>s2-1 s-2: 2</String>
+    <String>s2-1 o-3: 2</String>
+  </Sequence>
+</ReferenceData>

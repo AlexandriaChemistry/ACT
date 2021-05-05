@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="propa-1-2-dienylidenephosphane.sdf">6</Int>
+  <Sequence Name="bondorder">
+    <Int Name="Length">6</Int>
+    <String>p2-1 c1-4: 2</String>
+    <String>p2-1 hp-7: 1</String>
+    <String>c2-2 c1-3: 2</String>
+    <String>c2-2 ha-5: 1</String>
+    <String>c2-2 ha-6: 1</String>
+    <String>c1-3 c1-4: 2</String>
+  </Sequence>
+</ReferenceData>

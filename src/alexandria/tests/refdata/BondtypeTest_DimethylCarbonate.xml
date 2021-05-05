@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="dimethyl-carbonate.pdb">11</Int>
+  <Sequence Name="bondorder">
+    <Int Name="Length">11</Int>
+    <String>c3-1 os-5: 1</String>
+    <String>c3-1 h1-4: 1</String>
+    <String>c3-1 h1-2: 1</String>
+    <String>c3-1 h1-3: 1</String>
+    <String>os-5 c-6: 1</String>
+    <String>c-6 os-8: 1</String>
+    <String>c-6 o-7: 2</String>
+    <String>os-8 c3-9: 1</String>
+    <String>c3-9 h1-10: 1</String>
+    <String>c3-9 h1-11: 1</String>
+    <String>c3-9 h1-12: 1</String>
+  </Sequence>
+</ReferenceData>

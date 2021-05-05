@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="acetone-3-oep.log.pdb">9</Int>
+  <Sequence Name="bondorder">
+    <Int Name="Length">9</Int>
+    <String>o-1 c-2: 2</String>
+    <String>c-2 c3-4: 1</String>
+    <String>c-2 c3-3: 1</String>
+    <String>c3-3 hc-6: 1</String>
+    <String>c3-3 hc-7: 1</String>
+    <String>c3-3 hc-5: 1</String>
+    <String>c3-4 hc-9: 1</String>
+    <String>c3-4 hc-10: 1</String>
+    <String>c3-4 hc-8: 1</String>
+  </Sequence>
+</ReferenceData>

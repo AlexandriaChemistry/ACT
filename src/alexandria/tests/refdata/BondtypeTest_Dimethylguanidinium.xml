@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="1-1-dimethylguanidinium.sdf">15</Int>
+  <Sequence Name="bondorder">
+    <Int Name="Length">15</Int>
+    <String>n3-1 c3-4: 1</String>
+    <String>nh-2 cz-6: 2</String>
+    <String>nh-2 hn-14: 1</String>
+    <String>nh-3 hn-16: 1</String>
+    <String>c3-4 h1-7: 1</String>
+    <String>c3-4 h1-8: 1</String>
+    <String>c3-5 n3-1: 1</String>
+    <String>c3-5 h1-10: 1</String>
+    <String>cz-6 n3-1: 1</String>
+    <String>cz-6 nh-3: 1</String>
+    <String>h1-9 c3-4: 1</String>
+    <String>h1-11 c3-5: 1</String>
+    <String>h1-12 c3-5: 1</String>
+    <String>hn-13 nh-2: 1</String>
+    <String>hn-15 nh-3: 1</String>
+  </Sequence>
+</ReferenceData>

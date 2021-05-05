@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="guanidine.pdb">8</Int>
+  <Sequence Name="bondorder">
+    <Int Name="Length">8</Int>
+    <String>c2-1 nh-2: 1</String>
+    <String>c2-1 nh-3: 1</String>
+    <String>c2-1 n2-4: 2</String>
+    <String>nh-2 hn-7: 1</String>
+    <String>nh-2 hn-8: 1</String>
+    <String>nh-3 hn-5: 1</String>
+    <String>nh-3 hn-6: 1</String>
+    <String>n2-4 hn-9: 1</String>
+  </Sequence>
+</ReferenceData>

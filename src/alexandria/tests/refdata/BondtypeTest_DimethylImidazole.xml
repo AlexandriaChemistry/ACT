@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="12-dimethyl-imidazole.sdf">15</Int>
+  <Sequence Name="bondorder">
+    <Int Name="Length">15</Int>
+    <String>cc-1 cd-2: 2</String>
+    <String>cd-2 h1-8: 1</String>
+    <String>na-3 cc-4: 1</String>
+    <String>na-3 c2-2: 1</String>
+    <String>na-3 c3-6: 1</String>
+    <String>cc-4 c3-12: 1</String>
+    <String>nc-5 cc-4: 2</String>
+    <String>nc-5 c2-1: 1</String>
+    <String>c3-6 h1-10: 1</String>
+    <String>h1-7 c2-1: 1</String>
+    <String>h1-9 c3-6: 1</String>
+    <String>h1-11 c3-6: 1</String>
+    <String>c3-12 hc-13: 1</String>
+    <String>c3-12 hc-15: 1</String>
+    <String>hc-14 c3-12: 1</String>
+  </Sequence>
+</ReferenceData>

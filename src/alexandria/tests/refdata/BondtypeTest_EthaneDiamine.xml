@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="ethane-12-diamine.sdf">11</Int>
+  <Sequence Name="bondorder">
+    <Int Name="Length">11</Int>
+    <String>c3-1 c3-2: 1</String>
+    <String>c3-2 h1-8: 1</String>
+    <String>c3-2 h1-7: 1</String>
+    <String>c3-2 nh-3: 1</String>
+    <String>nh-3 hn-10: 1</String>
+    <String>nh-4 hn-11: 1</String>
+    <String>nh-4 c3-1: 1</String>
+    <String>h1-5 c3-1: 1</String>
+    <String>h1-6 c3-1: 1</String>
+    <String>hn-9 nh-3: 1</String>
+    <String>hn-12 nh-4: 1</String>
+  </Sequence>
+</ReferenceData>
