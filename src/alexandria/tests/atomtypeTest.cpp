@@ -215,6 +215,11 @@ TEST_F (AtomtypeTest, EthaneDiamine)
 {
     testAtype("ethane-12-diamine.sdf");
 }
+    
+TEST_F (AtomtypeTest, TrimethylImidazolium)
+{
+    testAtype("123-trimethyl-imidazolium.sdf");
+}
 
 }
 

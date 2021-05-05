@@ -133,7 +133,7 @@ class OptACM : public MolGen, Bayes
                 { "-removemol", FALSE, etBOOL, {&bRemoveMol_},
                   "Remove a molecule from training set if shell minimzation does not converge." },
             };
-            for (size_t i = 0; i < asize(pa); i++)
+            for (int i = 0; i < asize(pa); i++)
             {
                 pargs->push_back(pa[i]);
             }
@@ -757,7 +757,7 @@ int alex_tune_eem(int argc, char *argv[])
     MolSelect                   gms;
 
     std::vector<t_pargs>        pargs;
-    for (size_t i = 0; i < asize(pa); i++)
+    for (int i = 0; i < asize(pa); i++)
     {
         pargs.push_back(pa[i]);
     }

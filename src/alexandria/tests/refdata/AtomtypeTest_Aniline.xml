@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="aniline.sdf">14</Int>
+  <Sequence Name="atomtypes">
+    <Int Name="Length">14</Int>
+    <String>ca</String>
+    <String>ca</String>
+    <String>ca</String>
+    <String>ca</String>
+    <String>ca</String>
+    <String>ca</String>
+    <String>nh</String>
+    <String>ha</String>
+    <String>ha</String>
+    <String>ha</String>
+    <String>ha</String>
+    <String>ha</String>
+    <String>hn</String>
+    <String>hn</String>
+  </Sequence>
+</ReferenceData>
