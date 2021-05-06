@@ -128,6 +128,11 @@ TEST_F (AtomtypeTest, PropaDienelydinephosphane)
     testAtype("propa-1-2-dienylidenephosphane.sdf");
 }
 
+TEST_F (AtomtypeTest, 3H_Diphosphole)
+{
+    testAtype("3H-diphosphole.sdf");
+}
+
 TEST_F (BondtypeTest, Butanol)
 {
     testAtype("1-butanol.pdb");
@@ -256,5 +261,10 @@ TEST_F (BondtypeTest, DimethylImidazole)
 TEST_F (BondtypeTest, PropaDienelydinephosphane)
 {
     testAtype("propa-1-2-dienylidenephosphane.sdf");
+}
+
+TEST_F (BondtypeTest, 3H_Diphosphole)
+{
+    testAtype("3H-diphosphole.sdf");
 }
 

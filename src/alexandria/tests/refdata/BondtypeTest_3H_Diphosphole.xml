@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="3H-diphosphole.sdf">9</Int>
+  <Sequence Name="bondorder">
+    <Int Name="Length">9</Int>
+    <String>p2-2 c2-5: 1</String>
+    <String>p2-2 p2-1: 2</String>
+    <String>c3-3 c2-4: 1</String>
+    <String>c3-3 p2-1: 1</String>
+    <String>c3-3 hc-7: 1</String>
+    <String>c2-4 c2-5: 2</String>
+    <String>c2-4 ha-8: 1</String>
+    <String>c2-5 ha-9: 1</String>
+    <String>hc-6 c3-3: 1</String>
+  </Sequence>
+</ReferenceData>

@@ -28,7 +28,8 @@ filelist = {
   "ethane-12-diamine.sdf": "EthaneDiamine",
   "123-trimethyl-imidazolium.sdf": "TrimethylImidazolium",
   "12-dimethyl-imidazole.sdf": "DimethylImidazole",
-  "propa-1-2-dienylidenephosphane.sdf": "PropaDienelydinephosphane"
+  "propa-1-2-dienylidenephosphane.sdf": "PropaDienelydinephosphane",
+  "3H-diphosphole.sdf": "3H_Diphosphole"
 }
 
 mytests  = [ "AtomtypeTest", "BondtypeTest" ]
