@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="furan.sdf">9</Int>
+  <Sequence Name="atomtypes">
+    <Int Name="Length">9</Int>
+    <String>cc</String>
+    <String>h4</String>
+    <String>cd</String>
+    <String>ha</String>
+    <String>cd</String>
+    <String>ha</String>
+    <String>cc</String>
+    <String>h4</String>
+    <String>os</String>
+  </Sequence>
+</ReferenceData>

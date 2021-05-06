@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="fluoranthene.sdf">26</Int>
+  <Sequence Name="atomtypes">
+    <Int Name="Length">26</Int>
+    <String>ca</String>
+    <String>cp</String>
+    <String>cp</String>
+    <String>cp</String>
+    <String>cp</String>
+    <String>ca</String>
+    <String>ca</String>
+    <String>ca</String>
+    <String>ca</String>
+    <String>ca</String>
+    <String>ca</String>
+    <String>ca</String>
+    <String>ca</String>
+    <String>ca</String>
+    <String>ca</String>
+    <String>ca</String>
+    <String>ha</String>
+    <String>ha</String>
+    <String>ha</String>
+    <String>ha</String>
+    <String>ha</String>
+    <String>ha</String>
+    <String>ha</String>
+    <String>ha</String>
+    <String>ha</String>
+    <String>ha</String>
+  </Sequence>
+</ReferenceData>

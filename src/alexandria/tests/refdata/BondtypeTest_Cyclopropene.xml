@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="cyclopropene.sdf">7</Int>
+  <Sequence Name="bondorder">
+    <Int Name="Length">7</Int>
+    <String>cu-1 cu-2: 2</String>
+    <String>cu-1 cx-3: 1</String>
+    <String>cu-1 ha-6: 1</String>
+    <String>cu-2 cx-3: 1</String>
+    <String>cu-2 ha-7: 1</String>
+    <String>cx-3 hc-4: 1</String>
+    <String>hc-5 cx-3: 1</String>
+  </Sequence>
+</ReferenceData>

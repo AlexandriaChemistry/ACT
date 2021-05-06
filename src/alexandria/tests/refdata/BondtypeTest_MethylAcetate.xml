@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="methyl-acetate.sdf">10</Int>
+  <Sequence Name="bondorder">
+    <Int Name="Length">10</Int>
+    <String>c3-1 hc-2: 1</String>
+    <String>c3-1 c-5: 1</String>
+    <String>c3-1 hc-3: 1</String>
+    <String>hc-4 c3-1: 1</String>
+    <String>c-5 o-6: 2</String>
+    <String>c-5 os-7: 1</String>
+    <String>os-7 c3-8: 1</String>
+    <String>c3-8 h1-9: 1</String>
+    <String>c3-8 h1-10: 1</String>
+    <String>h1-11 c3-8: 1</String>
+  </Sequence>
+</ReferenceData>

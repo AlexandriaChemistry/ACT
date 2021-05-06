@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="pentachlorophosphorane.sdf">6</Int>
+  <Sequence Name="atomtypes">
+    <Int Name="Length">6</Int>
+    <String>p5</String>
+    <String>cl</String>
+    <String>cl</String>
+    <String>cl</String>
+    <String>cl</String>
+    <String>cl</String>
+  </Sequence>
+</ReferenceData>

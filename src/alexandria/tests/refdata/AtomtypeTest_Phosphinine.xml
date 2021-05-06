@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="phosphinine.sdf">11</Int>
+  <Sequence Name="atomtypes">
+    <Int Name="Length">11</Int>
+    <String>pb</String>
+    <String>ca</String>
+    <String>ca</String>
+    <String>ca</String>
+    <String>c2</String>
+    <String>c2</String>
+    <String>ha</String>
+    <String>ha</String>
+    <String>ha</String>
+    <String>ha</String>
+    <String>ha</String>
+  </Sequence>
+</ReferenceData>

@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="methanethiol.sdf">5</Int>
+  <Sequence Name="bondorder">
+    <Int Name="Length">5</Int>
+    <String>sh-1 hs-2: 1</String>
+    <String>sh-1 c3-3: 1</String>
+    <String>c3-3 h1-5: 1</String>
+    <String>c3-3 h1-4: 1</String>
+    <String>h1-6 c3-3: 1</String>
+  </Sequence>
+</ReferenceData>

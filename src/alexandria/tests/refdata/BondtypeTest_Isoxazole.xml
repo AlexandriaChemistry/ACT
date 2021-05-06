@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="isoxazole.sdf">8</Int>
+  <Sequence Name="bondorder">
+    <Int Name="Length">8</Int>
+    <String>os-1 nc-2: 1</String>
+    <String>os-1 cc-3: 1</String>
+    <String>nc-2 cd-5: 2</String>
+    <String>cc-3 cd-4: 2</String>
+    <String>cc-3 h4-6: 1</String>
+    <String>cd-4 cd-5: 1</String>
+    <String>cd-4 ha-7: 1</String>
+    <String>cd-5 h4-8: 1</String>
+  </Sequence>
+</ReferenceData>

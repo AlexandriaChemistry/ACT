@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="phosphoethanoamine.sdf">12</Int>
+  <Sequence Name="atomtypes">
+    <Int Name="Length">12</Int>
+    <String>p4</String>
+    <String>o</String>
+    <String>o</String>
+    <String>nh</String>
+    <String>c3</String>
+    <String>c3</String>
+    <String>hc</String>
+    <String>hc</String>
+    <String>h1</String>
+    <String>h1</String>
+    <String>hn</String>
+    <String>hn</String>
+  </Sequence>
+</ReferenceData>

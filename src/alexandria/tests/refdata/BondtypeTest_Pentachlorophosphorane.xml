@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="pentachlorophosphorane.sdf">5</Int>
+  <Sequence Name="bondorder">
+    <Int Name="Length">5</Int>
+    <String>p5-1 cl-2: 1</String>
+    <String>p5-1 cl-3: 1</String>
+    <String>p5-1 cl-4: 1</String>
+    <String>p5-1 cl-5: 1</String>
+    <String>p5-1 cl-6: 1</String>
+  </Sequence>
+</ReferenceData>

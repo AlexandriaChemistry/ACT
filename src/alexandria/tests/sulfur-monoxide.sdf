@@ -1,0 +1,18 @@
+OPT/sulfur-monoxide/sulfur-monoxide3-opt.log.gz
+ OpenBabel07261715183D
+Gaussian lap/gaussian/09.c.01/g09/g09 #P B3LYP/gen Int(Grid=Ultrafine) maxdisk=6
+  2  1  0  0  0  0  0  0  0  0999 V2000
+    0.0000    0.0000    0.4998 S   0  0  0  0  0  0  0  0  0  0  0  0
+    0.0000    0.0000   -0.9996 O   0  0  0  0  0  0  0  0  0  0  0  0
+  2  1  2  0  0  0  0
+M  END
+>  <program>
+Gaussian 09, Revision C.01
+
+>  <basis>
+gen
+
+>  <method>
+B3LYP
+
+$$$$

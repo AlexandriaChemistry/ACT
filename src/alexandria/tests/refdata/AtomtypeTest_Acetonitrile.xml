@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="acetonitrile.sdf">6</Int>
+  <Sequence Name="atomtypes">
+    <Int Name="Length">6</Int>
+    <String>c3</String>
+    <String>hc</String>
+    <String>hc</String>
+    <String>hc</String>
+    <String>c1</String>
+    <String>n1</String>
+  </Sequence>
+</ReferenceData>

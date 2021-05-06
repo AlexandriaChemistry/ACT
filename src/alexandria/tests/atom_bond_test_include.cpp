@@ -133,6 +133,186 @@ TEST_F (AtomtypeTest, 3H_Diphosphole)
     testAtype("3H-diphosphole.sdf");
 }
 
+TEST_F (AtomtypeTest, Acetonitrile)
+{
+    testAtype("acetonitrile.sdf");
+}
+
+TEST_F (AtomtypeTest, N__ethenyl_N_hydroxyethanimidamide)
+{
+    testAtype("N--ethenyl-N-hydroxyethanimidamide.sdf");
+}
+
+TEST_F (AtomtypeTest, Pyridine)
+{
+    testAtype("pyridine.sdf");
+}
+
+TEST_F (AtomtypeTest, Fluoranthene)
+{
+    testAtype("fluoranthene.sdf");
+}
+
+TEST_F (AtomtypeTest, 1_Buten_3_yne)
+{
+    testAtype("1-buten-3-yne.sdf");
+}
+
+TEST_F (AtomtypeTest, Cyclopropene)
+{
+    testAtype("cyclopropene.sdf");
+}
+
+TEST_F (AtomtypeTest, Cyclobutene)
+{
+    testAtype("cyclobutene.sdf");
+}
+
+TEST_F (AtomtypeTest, Formamide)
+{
+    testAtype("formamide.sdf");
+}
+
+TEST_F (AtomtypeTest, N_MethylMethanimine)
+{
+    testAtype("N-methylmethanimine.sdf");
+}
+
+TEST_F (AtomtypeTest, Ammonia)
+{
+    testAtype("ammonia.sdf");
+}
+
+TEST_F (AtomtypeTest, 125_Thiadiazole)
+{
+    testAtype("125-thiadiazole.sdf");
+}
+
+TEST_F (AtomtypeTest, Acetaldehyde)
+{
+    testAtype("acetaldehyde.sdf");
+}
+
+TEST_F (AtomtypeTest, CarbonDioxide)
+{
+    testAtype("carbon-dioxide.sdf");
+}
+
+TEST_F (AtomtypeTest, MethylAcetate)
+{
+    testAtype("methyl-acetate.sdf");
+}
+
+TEST_F (AtomtypeTest, Furan)
+{
+    testAtype("furan.sdf");
+}
+
+TEST_F (AtomtypeTest, Dimethylether)
+{
+    testAtype("dimethylether.sdf");
+}
+
+TEST_F (AtomtypeTest, Thiophene)
+{
+    testAtype("thiophene.sdf");
+}
+
+TEST_F (AtomtypeTest, Isoxazole)
+{
+    testAtype("isoxazole.sdf");
+}
+
+TEST_F (AtomtypeTest, Pyrazole)
+{
+    testAtype("pyrazole.sdf");
+}
+
+TEST_F (AtomtypeTest, PhosphorusNitride)
+{
+    testAtype("phosphorus-nitride.sdf");
+}
+
+TEST_F (AtomtypeTest, Oxophosphane)
+{
+    testAtype("oxophosphane.sdf");
+}
+
+TEST_F (AtomtypeTest, Phosphine)
+{
+    testAtype("phosphine.sdf");
+}
+
+TEST_F (AtomtypeTest, Phosphoethanoamine)
+{
+    testAtype("phosphoethanoamine.sdf");
+}
+
+TEST_F (AtomtypeTest, DihydrogenPhosphate)
+{
+    testAtype("dihydrogen-phosphate.sdf");
+}
+
+TEST_F (AtomtypeTest, Pentafluorophosphorane)
+{
+    testAtype("pentafluorophosphorane.sdf");
+}
+
+TEST_F (AtomtypeTest, Pentachlorophosphorane)
+{
+    testAtype("pentachlorophosphorane.sdf");
+}
+
+TEST_F (AtomtypeTest, FormylphosphonicAcid)
+{
+    testAtype("formylphosphonic-acid.sdf");
+}
+
+TEST_F (AtomtypeTest, Phosphinine)
+{
+    testAtype("phosphinine.sdf");
+}
+
+TEST_F (AtomtypeTest, SulfurMonoxide)
+{
+    testAtype("sulfur-monoxide.sdf");
+}
+
+TEST_F (AtomtypeTest, Sulfate)
+{
+    testAtype("sulfate.sdf");
+}
+
+TEST_F (AtomtypeTest, Methanethiol)
+{
+    testAtype("methanethiol.sdf");
+}
+
+TEST_F (AtomtypeTest, HydrogenSulfide)
+{
+    testAtype("hydrogen-sulfide.sdf");
+}
+
+TEST_F (AtomtypeTest, HydrogenChloride)
+{
+    testAtype("hydrogen-chloride.sdf");
+}
+
+TEST_F (AtomtypeTest, DimethylSulfide)
+{
+    testAtype("dimethyl-sulfide.sdf");
+}
+
+TEST_F (AtomtypeTest, 1MethylSulfinylethene)
+{
+    testAtype("1-methylsulfinylethene.sdf");
+}
+
+TEST_F (AtomtypeTest, EthylSulfonylFormaldehyde)
+{
+    testAtype("ethylsulfonylformaldehyde.sdf");
+}
+
 TEST_F (BondtypeTest, Butanol)
 {
     testAtype("1-butanol.pdb");
@@ -266,5 +446,185 @@ TEST_F (BondtypeTest, PropaDienelydinephosphane)
 TEST_F (BondtypeTest, 3H_Diphosphole)
 {
     testAtype("3H-diphosphole.sdf");
+}
+
+TEST_F (BondtypeTest, Acetonitrile)
+{
+    testAtype("acetonitrile.sdf");
+}
+
+TEST_F (BondtypeTest, N__ethenyl_N_hydroxyethanimidamide)
+{
+    testAtype("N--ethenyl-N-hydroxyethanimidamide.sdf");
+}
+
+TEST_F (BondtypeTest, Pyridine)
+{
+    testAtype("pyridine.sdf");
+}
+
+TEST_F (BondtypeTest, Fluoranthene)
+{
+    testAtype("fluoranthene.sdf");
+}
+
+TEST_F (BondtypeTest, 1_Buten_3_yne)
+{
+    testAtype("1-buten-3-yne.sdf");
+}
+
+TEST_F (BondtypeTest, Cyclopropene)
+{
+    testAtype("cyclopropene.sdf");
+}
+
+TEST_F (BondtypeTest, Cyclobutene)
+{
+    testAtype("cyclobutene.sdf");
+}
+
+TEST_F (BondtypeTest, Formamide)
+{
+    testAtype("formamide.sdf");
+}
+
+TEST_F (BondtypeTest, N_MethylMethanimine)
+{
+    testAtype("N-methylmethanimine.sdf");
+}
+
+TEST_F (BondtypeTest, Ammonia)
+{
+    testAtype("ammonia.sdf");
+}
+
+TEST_F (BondtypeTest, 125_Thiadiazole)
+{
+    testAtype("125-thiadiazole.sdf");
+}
+
+TEST_F (BondtypeTest, Acetaldehyde)
+{
+    testAtype("acetaldehyde.sdf");
+}
+
+TEST_F (BondtypeTest, CarbonDioxide)
+{
+    testAtype("carbon-dioxide.sdf");
+}
+
+TEST_F (BondtypeTest, MethylAcetate)
+{
+    testAtype("methyl-acetate.sdf");
+}
+
+TEST_F (BondtypeTest, Furan)
+{
+    testAtype("furan.sdf");
+}
+
+TEST_F (BondtypeTest, Dimethylether)
+{
+    testAtype("dimethylether.sdf");
+}
+
+TEST_F (BondtypeTest, Thiophene)
+{
+    testAtype("thiophene.sdf");
+}
+
+TEST_F (BondtypeTest, Isoxazole)
+{
+    testAtype("isoxazole.sdf");
+}
+
+TEST_F (BondtypeTest, Pyrazole)
+{
+    testAtype("pyrazole.sdf");
+}
+
+TEST_F (BondtypeTest, PhosphorusNitride)
+{
+    testAtype("phosphorus-nitride.sdf");
+}
+
+TEST_F (BondtypeTest, Oxophosphane)
+{
+    testAtype("oxophosphane.sdf");
+}
+
+TEST_F (BondtypeTest, Phosphine)
+{
+    testAtype("phosphine.sdf");
+}
+
+TEST_F (BondtypeTest, Phosphoethanoamine)
+{
+    testAtype("phosphoethanoamine.sdf");
+}
+
+TEST_F (BondtypeTest, DihydrogenPhosphate)
+{
+    testAtype("dihydrogen-phosphate.sdf");
+}
+
+TEST_F (BondtypeTest, Pentafluorophosphorane)
+{
+    testAtype("pentafluorophosphorane.sdf");
+}
+
+TEST_F (BondtypeTest, Pentachlorophosphorane)
+{
+    testAtype("pentachlorophosphorane.sdf");
+}
+
+TEST_F (BondtypeTest, FormylphosphonicAcid)
+{
+    testAtype("formylphosphonic-acid.sdf");
+}
+
+TEST_F (BondtypeTest, Phosphinine)
+{
+    testAtype("phosphinine.sdf");
+}
+
+TEST_F (BondtypeTest, SulfurMonoxide)
+{
+    testAtype("sulfur-monoxide.sdf");
+}
+
+TEST_F (BondtypeTest, Sulfate)
+{
+    testAtype("sulfate.sdf");
+}
+
+TEST_F (BondtypeTest, Methanethiol)
+{
+    testAtype("methanethiol.sdf");
+}
+
+TEST_F (BondtypeTest, HydrogenSulfide)
+{
+    testAtype("hydrogen-sulfide.sdf");
+}
+
+TEST_F (BondtypeTest, HydrogenChloride)
+{
+    testAtype("hydrogen-chloride.sdf");
+}
+
+TEST_F (BondtypeTest, DimethylSulfide)
+{
+    testAtype("dimethyl-sulfide.sdf");
+}
+
+TEST_F (BondtypeTest, 1MethylSulfinylethene)
+{
+    testAtype("1-methylsulfinylethene.sdf");
+}
+
+TEST_F (BondtypeTest, EthylSulfonylFormaldehyde)
+{
+    testAtype("ethylsulfonylformaldehyde.sdf");
 }
 

@@ -1,0 +1,26 @@
+OPT/formamide/formamide3-opt.log.gz
+ OpenBabel07261715153D
+Gaussian 03 #P B3LYP/gen Int(Grid=Ultrafine) maxdisk=40GB SCF(Save,MaxCycle=100)
+  6  5  0  0  0  0  0  0  0  0999 V2000
+   -1.1939   -0.2459    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0
+   -0.1617    0.3864    0.0001 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -0.1386    1.4901   -0.0002 H   0  0  0  0  0  0  0  0  0  0  0  0
+    1.0817   -0.1576   -0.0001 N   0  0  0  0  0  0  0  0  0  0  0  0
+    1.1854   -1.1588    0.0001 H   0  0  0  0  0  0  0  0  0  0  0  0
+    1.9027    0.4203    0.0004 H   0  0  0  0  0  0  0  0  0  0  0  0
+  1  2  2  0  0  0  0
+  3  2  1  0  0  0  0
+  4  2  1  0  0  0  0
+  4  5  1  0  0  0  0
+  4  6  1  0  0  0  0
+M  END
+>  <program>
+Gaussian 03, Revision D.01
+
+>  <basis>
+gen
+
+>  <method>
+B3LYP
+
+$$$$

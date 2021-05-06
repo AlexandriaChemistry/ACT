@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="acetaldehyde.sdf">6</Int>
+  <Sequence Name="bondorder">
+    <Int Name="Length">6</Int>
+    <String>c-1 c3-2: 1</String>
+    <String>c-1 o-3: 2</String>
+    <String>c-1 h1-4: 1</String>
+    <String>c3-2 hc-5: 1</String>
+    <String>c3-2 hc-6: 1</String>
+    <String>hc-7 c3-2: 1</String>
+  </Sequence>
+</ReferenceData>

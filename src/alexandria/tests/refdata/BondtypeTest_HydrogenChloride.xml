@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="hydrogen-chloride.sdf">1</Int>
+  <Sequence Name="bondorder">
+    <Int Name="Length">1</Int>
+    <String>ha-2 cl-1: 1</String>
+  </Sequence>
+</ReferenceData>

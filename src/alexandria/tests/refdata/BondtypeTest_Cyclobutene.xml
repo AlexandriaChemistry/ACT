@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="cyclobutene.sdf">10</Int>
+  <Sequence Name="bondorder">
+    <Int Name="Length">10</Int>
+    <String>cv-1 cv-2: 2</String>
+    <String>cv-1 cy-3: 1</String>
+    <String>cv-1 ha-9: 1</String>
+    <String>cv-2 cy-4: 1</String>
+    <String>cv-2 ha-10: 1</String>
+    <String>cy-3 cy-4: 1</String>
+    <String>cy-3 hc-5: 1</String>
+    <String>cy-4 hc-8: 1</String>
+    <String>hc-6 cy-3: 1</String>
+    <String>hc-7 cy-4: 1</String>
+  </Sequence>
+</ReferenceData>

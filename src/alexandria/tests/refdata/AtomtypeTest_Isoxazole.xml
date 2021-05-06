@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="isoxazole.sdf">8</Int>
+  <Sequence Name="atomtypes">
+    <Int Name="Length">8</Int>
+    <String>os</String>
+    <String>nc</String>
+    <String>cc</String>
+    <String>cd</String>
+    <String>cd</String>
+    <String>h4</String>
+    <String>ha</String>
+    <String>h4</String>
+  </Sequence>
+</ReferenceData>

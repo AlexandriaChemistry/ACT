@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="ammonia.sdf">3</Int>
+  <Sequence Name="bondorder">
+    <Int Name="Length">3</Int>
+    <String>hn-1 n3-2: 1</String>
+    <String>hn-3 n3-2: 1</String>
+    <String>hn-4 n3-2: 1</String>
+  </Sequence>
+</ReferenceData>

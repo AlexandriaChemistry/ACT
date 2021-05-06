@@ -1,0 +1,18 @@
+OPT/phosphorus-nitride/phosphorus-nitride3-opt.log.gz
+ OpenBabel07261715163D
+Gaussian 03 #P B3LYP/gen Int(Grid=Ultrafine) maxdisk=40GB SCF(Save,MaxCycle=100)
+  2  1  0  0  0  0  0  0  0  0999 V2000
+    0.0000    0.0000    0.4735 P   0  0  0  0  0  0  0  0  0  0  0  0
+    0.0000    0.0000   -1.0145 N   0  0  0  0  0  0  0  0  0  0  0  0
+  2  1  3  0  0  0  0
+M  END
+>  <program>
+Gaussian 03, Revision D.01
+
+>  <basis>
+gen
+
+>  <method>
+B3LYP
+
+$$$$

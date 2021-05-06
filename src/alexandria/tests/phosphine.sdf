@@ -1,0 +1,22 @@
+OPT/phosphine/phosphine3-opt.log.gz
+ OpenBabel07261715163D
+Gaussian 03 #P B3LYP/gen Int(Grid=Ultrafine) maxdisk=40GB SCF(Save,MaxCycle=100)
+  4  3  0  0  0  0  0  0  0  0999 V2000
+   -0.0000   -0.0000    0.1282 P   0  0  0  0  0  0  0  0  0  0  0  0
+    1.1875   -0.1395   -0.6408 H   0  0  0  0  0  0  0  0  0  0  0  0
+   -0.7147   -0.9580   -0.6410 H   0  0  0  0  0  0  0  0  0  0  0  0
+   -0.4728    1.0979   -0.6406 H   0  0  0  0  0  0  0  0  0  0  0  0
+  2  1  1  0  0  0  0
+  3  1  1  0  0  0  0
+  4  1  1  0  0  0  0
+M  END
+>  <program>
+Gaussian 03, Revision D.01
+
+>  <basis>
+gen
+
+>  <method>
+B3LYP
+
+$$$$

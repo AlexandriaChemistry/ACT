@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="dihydrogen-phosphate.sdf">6</Int>
+  <Sequence Name="bondorder">
+    <Int Name="Length">6</Int>
+    <String>p5-1 om-3: 2</String>
+    <String>p5-1 om-5: 1</String>
+    <String>oh-2 ho-6: 1</String>
+    <String>oh-2 p5-1: 1</String>
+    <String>oh-4 ho-7: 1</String>
+    <String>oh-4 p5-1: 1</String>
+  </Sequence>
+</ReferenceData>

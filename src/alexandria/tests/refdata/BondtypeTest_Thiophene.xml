@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="thiophene.sdf">9</Int>
+  <Sequence Name="bondorder">
+    <Int Name="Length">9</Int>
+    <String>cc-1 h4-2: 1</String>
+    <String>cc-1 cd-3: 2</String>
+    <String>cc-1 ss-9: 1</String>
+    <String>cd-3 ha-4: 1</String>
+    <String>cd-3 cd-5: 1</String>
+    <String>cd-5 ha-6: 1</String>
+    <String>cd-5 cc-7: 2</String>
+    <String>cc-7 h4-8: 1</String>
+    <String>cc-7 ss-9: 1</String>
+  </Sequence>
+</ReferenceData>

@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="1-methylsulfinylethene.sdf">10</Int>
+  <Sequence Name="bondorder">
+    <Int Name="Length">10</Int>
+    <String>sx-1 o-2: 2</String>
+    <String>sx-1 c3-3: 1</String>
+    <String>sx-1 ce-4: 1</String>
+    <String>c3-3 h1-6: 1</String>
+    <String>c3-3 h1-7: 1</String>
+    <String>c3-3 h1-8: 1</String>
+    <String>ce-4 c2-5: 2</String>
+    <String>ce-4 h1-9: 1</String>
+    <String>c2-5 ha-10: 1</String>
+    <String>c2-5 ha-11: 1</String>
+  </Sequence>
+</ReferenceData>

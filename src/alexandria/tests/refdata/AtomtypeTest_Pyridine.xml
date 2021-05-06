@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="pyridine.sdf">11</Int>
+  <Sequence Name="atomtypes">
+    <Int Name="Length">11</Int>
+    <String>nb</String>
+    <String>ca</String>
+    <String>h4</String>
+    <String>ca</String>
+    <String>ha</String>
+    <String>ca</String>
+    <String>ha</String>
+    <String>ca</String>
+    <String>ha</String>
+    <String>ca</String>
+    <String>h4</String>
+  </Sequence>
+</ReferenceData>

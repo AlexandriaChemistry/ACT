@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="phosphoethanoamine.sdf">11</Int>
+  <Sequence Name="bondorder">
+    <Int Name="Length">11</Int>
+    <String>p4-1 o-2: 2</String>
+    <String>p4-1 o-3: 2</String>
+    <String>p4-1 c3-5: 1</String>
+    <String>nh-4 c3-6: 1</String>
+    <String>nh-4 hn-11: 1</String>
+    <String>nh-4 hn-12: 1</String>
+    <String>c3-5 c3-6: 1</String>
+    <String>c3-5 hc-7: 1</String>
+    <String>c3-5 hc-8: 1</String>
+    <String>c3-6 h1-9: 1</String>
+    <String>c3-6 h1-10: 1</String>
+  </Sequence>
+</ReferenceData>

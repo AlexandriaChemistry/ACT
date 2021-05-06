@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="N-methylmethanimine.sdf">8</Int>
+  <Sequence Name="atomtypes">
+    <Int Name="Length">8</Int>
+    <String>n2</String>
+    <String>c3</String>
+    <String>c2</String>
+    <String>h1</String>
+    <String>h1</String>
+    <String>h1</String>
+    <String>h1</String>
+    <String>h1</String>
+  </Sequence>
+</ReferenceData>

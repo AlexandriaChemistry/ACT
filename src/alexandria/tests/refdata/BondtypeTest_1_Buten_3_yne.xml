@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="1-buten-3-yne.sdf">7</Int>
+  <Sequence Name="bondorder">
+    <Int Name="Length">7</Int>
+    <String>c1-1 cg-2: 3</String>
+    <String>c1-1 ha-4: 1</String>
+    <String>cg-2 ce-3: 1</String>
+    <String>ce-3 c2-5: 2</String>
+    <String>ce-3 ha-8: 1</String>
+    <String>c2-5 ha-6: 1</String>
+    <String>c2-5 ha-7: 1</String>
+  </Sequence>
+</ReferenceData>

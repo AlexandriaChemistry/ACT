@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="phosphine.sdf">4</Int>
+  <Sequence Name="atomtypes">
+    <Int Name="Length">4</Int>
+    <String>p3</String>
+    <String>hp</String>
+    <String>hp</String>
+    <String>hp</String>
+  </Sequence>
+</ReferenceData>

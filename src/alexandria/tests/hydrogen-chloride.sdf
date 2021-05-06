@@ -1,0 +1,18 @@
+OPT/hydrogen-chloride/hydrogen-chloride3-opt.log.gz
+ OpenBabel07261715153D
+Gaussian 03 #P B3LYP/gen Int(Grid=Ultrafine) maxdisk=40GB SCF(Save,MaxCycle=100)
+  2  1  0  0  0  0  0  0  0  0999 V2000
+    0.0000    0.0000    0.0713 Cl  0  0  0  0  0  0  0  0  0  0  0  0
+    0.0000    0.0000   -1.2127 H   0  0  0  0  0  0  0  0  0  0  0  0
+  2  1  1  0  0  0  0
+M  END
+>  <program>
+Gaussian 03, Revision D.01
+
+>  <basis>
+gen
+
+>  <method>
+B3LYP
+
+$$$$

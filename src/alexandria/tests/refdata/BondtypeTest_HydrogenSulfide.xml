@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="hydrogen-sulfide.sdf">2</Int>
+  <Sequence Name="bondorder">
+    <Int Name="Length">2</Int>
+    <String>hs-1 ss-2: 1</String>
+    <String>hs-3 ss-2: 1</String>
+  </Sequence>
+</ReferenceData>

@@ -1,0 +1,20 @@
+OPT/carbon-dioxide/carbon-dioxide3-opt.log.gz
+ OpenBabel07261715153D
+Gaussian lap/gaussian/09.d.01/g09/g09 #P B3LYP/gen Pseudo=Read Int(Grid=Ultrafin
+  3  2  0  0  0  0  0  0  0  0999 V2000
+    0.0000    0.0000    1.1605 O   0  0  0  0  0  0  0  0  0  0  0  0
+    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.0000    0.0000   -1.1605 O   0  0  0  0  0  0  0  0  0  0  0  0
+  2  1  2  0  0  0  0
+  3  2  2  0  0  0  0
+M  END
+>  <program>
+Gaussian 09, Revision D.01
+
+>  <basis>
+gen
+
+>  <method>
+B3LYP
+
+$$$$

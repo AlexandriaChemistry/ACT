@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="formylphosphonic-acid.sdf">8</Int>
+  <Sequence Name="bondorder">
+    <Int Name="Length">8</Int>
+    <String>py-1 oh-2: 1</String>
+    <String>py-1 oh-3: 1</String>
+    <String>py-1 o-4: 2</String>
+    <String>py-1 c-6: 1</String>
+    <String>oh-2 ho-8: 1</String>
+    <String>oh-3 ho-9: 1</String>
+    <String>o-5 c-6: 2</String>
+    <String>c-6 h1-7: 1</String>
+  </Sequence>
+</ReferenceData>

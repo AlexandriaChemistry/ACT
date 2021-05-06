@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="1-buten-3-yne.sdf">8</Int>
+  <Sequence Name="atomtypes">
+    <Int Name="Length">8</Int>
+    <String>c1</String>
+    <String>cg</String>
+    <String>ce</String>
+    <String>ha</String>
+    <String>c2</String>
+    <String>ha</String>
+    <String>ha</String>
+    <String>ha</String>
+  </Sequence>
+</ReferenceData>

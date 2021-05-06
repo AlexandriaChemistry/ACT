@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="N--ethenyl-N-hydroxyethanimidamide.sdf">15</Int>
+  <Sequence Name="atomtypes">
+    <Int Name="Length">15</Int>
+    <String>c3</String>
+    <String>c2</String>
+    <String>n3</String>
+    <String>oh</String>
+    <String>ne</String>
+    <String>ce</String>
+    <String>c2</String>
+    <String>hc</String>
+    <String>hc</String>
+    <String>hc</String>
+    <String>hn</String>
+    <String>ho</String>
+    <String>h1</String>
+    <String>ha</String>
+    <String>ha</String>
+  </Sequence>
+</ReferenceData>

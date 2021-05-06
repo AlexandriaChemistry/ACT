@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="ethylsulfonylformaldehyde.sdf">12</Int>
+  <Sequence Name="bondorder">
+    <Int Name="Length">12</Int>
+    <String>c3-1 hc-10: 1</String>
+    <String>c3-2 c3-1: 1</String>
+    <String>c3-2 sy-3: 1</String>
+    <String>c3-2 h1-12: 1</String>
+    <String>sy-3 o-5: 2</String>
+    <String>o-4 sy-3: 2</String>
+    <String>c-6 h2-13: 1</String>
+    <String>c-6 sy-3: 1</String>
+    <String>o-7 c-6: 2</String>
+    <String>hc-8 c3-1: 1</String>
+    <String>hc-9 c3-1: 1</String>
+    <String>h1-11 c3-2: 1</String>
+  </Sequence>
+</ReferenceData>

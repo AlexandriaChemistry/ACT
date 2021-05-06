@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="N-methylmethanimine.sdf">7</Int>
+  <Sequence Name="bondorder">
+    <Int Name="Length">7</Int>
+    <String>n2-1 c3-2: 1</String>
+    <String>n2-1 c2-3: 2</String>
+    <String>c3-2 h1-4: 1</String>
+    <String>c3-2 h1-5: 1</String>
+    <String>c2-3 h1-7: 1</String>
+    <String>c2-3 h1-8: 1</String>
+    <String>h1-6 c3-2: 1</String>
+  </Sequence>
+</ReferenceData>

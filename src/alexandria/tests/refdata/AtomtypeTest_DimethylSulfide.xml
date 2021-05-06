@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="dimethyl-sulfide.sdf">9</Int>
+  <Sequence Name="atomtypes">
+    <Int Name="Length">9</Int>
+    <String>c3</String>
+    <String>h1</String>
+    <String>h1</String>
+    <String>h1</String>
+    <String>ss</String>
+    <String>c3</String>
+    <String>h1</String>
+    <String>h1</String>
+    <String>h1</String>
+  </Sequence>
+</ReferenceData>

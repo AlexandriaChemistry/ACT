@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="phosphine.sdf">3</Int>
+  <Sequence Name="bondorder">
+    <Int Name="Length">3</Int>
+    <String>hp-2 p3-1: 1</String>
+    <String>hp-3 p3-1: 1</String>
+    <String>hp-4 p3-1: 1</String>
+  </Sequence>
+</ReferenceData>
