@@ -13,16 +13,16 @@
     <String>c-3 oh-4: 1</String>
     <String>c-3 o-11: 2</String>
     <String>oh-4 ho-12: 1</String>
-    <String>c3-5 cc-6: 1</String>
+    <String>c3-5 cd-6: 1</String>
     <String>c3-5 hc-16: 1</String>
     <String>c3-5 hc-17: 1</String>
-    <String>cc-6 c2-7: 2</String>
-    <String>cc-6 na-9: 1</String>
-    <String>c2-7 na-10: 1</String>
-    <String>c2-7 h1-19: 1</String>
-    <String>c3-8 h2-20: 1</String>
-    <String>c3-8 na-10: 1</String>
-    <String>c3-8 na-9: 1</String>
+    <String>cd-6 cc-7: 2</String>
+    <String>cd-6 na-9: 1</String>
+    <String>cc-7 na-10: 1</String>
+    <String>cc-7 h4-19: 1</String>
+    <String>cc-8 h5-20: 1</String>
+    <String>cc-8 na-10: 1</String>
+    <String>cc-8 na-9: 2</String>
     <String>na-9 hn-18: 1</String>
     <String>na-10 hn-21: 1</String>
   </Sequence>
