@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="uracil.sdf">12</Int>
+  <Sequence Name="atomtypes">
+    <Int Name="Length">12</Int>
+    <String>n</String>
+    <String>hn</String>
+    <String>c</String>
+    <String>o</String>
+    <String>c</String>
+    <String>hn</String>
+    <String>cc</String>
+    <String>h4</String>
+    <String>n</String>
+    <String>ha</String>
+    <String>cd</String>
+    <String>o</String>
+  </Sequence>
+</ReferenceData>

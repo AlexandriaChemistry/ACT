@@ -65,7 +65,9 @@ filelist = {
     "hydrogen-chloride.sdf": "HydrogenChloride",
     "dimethyl-sulfide.sdf": "DimethylSulfide",
     "1-methylsulfinylethene.sdf": "1MethylSulfinylethene",
-    "ethylsulfonylformaldehyde.sdf": "EthylSulfonylFormaldehyde"
+    "ethylsulfonylformaldehyde.sdf": "EthylSulfonylFormaldehyde",
+    "thiazirene.sdf": "Thiazirene",
+    "uracil.sdf": "Uracil"
 }
 
 mytests  = [ "AtomtypeTest", "BondtypeTest" ]

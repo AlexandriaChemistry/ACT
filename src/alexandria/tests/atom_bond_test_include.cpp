@@ -313,6 +313,16 @@ TEST_F (AtomtypeTest, EthylSulfonylFormaldehyde)
     testAtype("ethylsulfonylformaldehyde.sdf");
 }
 
+TEST_F (AtomtypeTest, Thiazirene)
+{
+    testAtype("thiazirene.sdf");
+}
+
+TEST_F (AtomtypeTest, Uracil)
+{
+    testAtype("uracil.sdf");
+}
+
 TEST_F (BondtypeTest, Butanol)
 {
     testAtype("1-butanol.pdb");
@@ -626,5 +636,15 @@ TEST_F (BondtypeTest, 1MethylSulfinylethene)
 TEST_F (BondtypeTest, EthylSulfonylFormaldehyde)
 {
     testAtype("ethylsulfonylformaldehyde.sdf");
+}
+
+TEST_F (BondtypeTest, Thiazirene)
+{
+    testAtype("thiazirene.sdf");
+}
+
+TEST_F (BondtypeTest, Uracil)
+{
+    testAtype("uracil.sdf");
 }
 

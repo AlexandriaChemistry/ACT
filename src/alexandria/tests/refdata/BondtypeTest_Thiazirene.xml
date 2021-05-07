@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="thiazirene.sdf">4</Int>
+  <Sequence Name="bondorder">
+    <Int Name="Length">4</Int>
+    <String>s2-1 nd-2: 1</String>
+    <String>s2-1 cu-3: 1</String>
+    <String>nd-2 cu-3: 2</String>
+    <String>cu-3 h2-4: 1</String>
+  </Sequence>
+</ReferenceData>

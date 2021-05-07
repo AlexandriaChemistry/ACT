@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="thiazirene.sdf">4</Int>
+  <Sequence Name="atomtypes">
+    <Int Name="Length">4</Int>
+    <String>s2</String>
+    <String>nd</String>
+    <String>cu</String>
+    <String>h2</String>
+  </Sequence>
+</ReferenceData>

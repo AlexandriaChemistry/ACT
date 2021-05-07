@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="uracil.sdf">12</Int>
+  <Sequence Name="bondorder">
+    <Int Name="Length">12</Int>
+    <String>n-1 hn-2: 1</String>
+    <String>n-1 c-3: 1</String>
+    <String>n-1 c-5: 1</String>
+    <String>c-3 n-9: 1</String>
+    <String>c-3 o-12: 2</String>
+    <String>o-4 c-5: 2</String>
+    <String>c-5 cd-11: 1</String>
+    <String>hn-6 n-9: 1</String>
+    <String>cc-7 h4-8: 1</String>
+    <String>cc-7 n-9: 1</String>
+    <String>cc-7 cd-11: 2</String>
+    <String>ha-10 cd-11: 1</String>
+  </Sequence>
+</ReferenceData>
