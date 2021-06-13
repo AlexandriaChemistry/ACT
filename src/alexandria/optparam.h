@@ -175,6 +175,35 @@ class OptParam
         virtual void saveState() = 0;
 };
 
+class Sensitivity
+{
+private:
+    //! \brief parameter values used
+    std::vector<double> p_;
+    //! \brief chi2 values obtains
+    std::vector<double> chi2_;
+    //! \brief Constants for the parabola fitting
+    double a_ = 0, b_ = 0, c_ = 0;
+public:
+    //! \brief Constructor
+    Sensitivity() {}
+    
+    //! \brief Add a point
+    void add(double p, double chi2)
+    {
+        p_.push_back(p);
+        chi2_.push_back(chi2);
+    }
+    //! \brief Compute the fit to the curve
+    void computeForceConstants();
+    
+    double a() const { return a_; }
+    double b() const { return b_; }
+    double c() const { return c_; }
+    
+    void print(FILE *fp, const std::string &label);
+};
+
 class Bayes : public OptParam
 {
     using func_t       = std::function<double (double v[])>;
@@ -313,6 +342,12 @@ class Bayes : public OptParam
          * \return minimum energy value
          */
         double Adaptive_MCMC(FILE *fplog);
+
+        /*! \brief
+         * Perform a sensitivity analysis by systematically changing
+         * all parameters and re-evaluating the chi2.
+         */
+        void SensitivityAnalysis(FILE *fplog);
 
         /*! \brief
          * Copy the optimization parameters to the poldata structure
