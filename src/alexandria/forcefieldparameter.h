@@ -163,6 +163,11 @@ class ForceFieldParameter
     //! \brief Return whether or not to throw on value errors
     bool strict() const { return strict_; }
 
+    /*! \brief Copy all values except the index
+     * \param[in] src Source to take the values from
+     */
+    void copy(const ForceFieldParameter &src);
+
     /*! \brief Send the contents to another processor
      * \param[in] cr   Communication data structure
      * \param[in] dest Processor id to send the data to

@@ -469,7 +469,8 @@ static void dumpPoldata(Poldata           *pd,
 
 static void copy_missing(const Poldata     *pdref,
                          Poldata           *pdout,
-                         const std::string &analyze)
+                         const std::string &analyze,
+                         bool               replace)
 {
     bool found;
     auto myset = findInteractionMap(analyze, &found);
@@ -477,9 +478,69 @@ static void copy_missing(const Poldata     *pdref,
     {
         return;
     }
-    printf("Copying missing interactions from %s to %s\n",
-           pdref->filename().c_str(), pdout->filename().c_str());
+    if (replace)
+    {
+        printf("Replacing %s interactions from %s to %s\n",
+               analyze.c_str(),
+               pdref->filename().c_str(), pdout->filename().c_str());
+    }
+    else
+    {
+        printf("Copying %s missing interactions from %s to %s\n",
+               analyze.c_str(),
+               pdref->filename().c_str(), pdout->filename().c_str());
+    }
+    for(auto &fc : pdref->forcesConst())
+    {
+        auto itype = fc.first;
+        if (myset.find(itype) == myset.end())
+        {
+            continue;
+        }
+        if (!pdout->interactionPresent(itype))
+        {
+            printf("Cannot find interaction %s in %s, giving up\n",
+                   interactionTypeToDescription(itype).c_str(), pdout->filename().c_str());
+            return;
+        }
+        auto fcout = pdout->findForces(itype);
+        if (replace)
+        {
+            fcout->clearParameters();
+        }
+        for(auto &fm : fc.second.parametersConst())
+        {
+            auto myid = fm.first;
+            if (!fcout->parameterExists(myid))
+            {
+                printf("Parameter %s missing from %s for %s\n",
+                       myid.id().c_str(), pdout->filename().c_str(),
+                       interactionTypeToDescription(itype).c_str());
+                for(auto &param : fm.second)
+                {
+                    auto ptype = param.first;
+                    auto ppp   = param.second;
+                    fcout->addParameter(myid, ptype, ppp);
+                }
+            }
+        }
+    }
+}
 
+static void implant_values(const Poldata     *pdref,
+                           Poldata           *pdout,
+                           const std::string &analyze)
+{
+    bool found;
+    auto myset = findInteractionMap(analyze, &found);
+    if (!found)
+    {
+        return;
+    }
+    printf("Implanting optimized values for %s interactions from %s to %s\n",
+           analyze.c_str(),
+           pdref->filename().c_str(), pdout->filename().c_str());
+    
     for(auto &fc : pdref->forcesConst())
     {
         auto itype = fc.first;
@@ -497,16 +558,25 @@ static void copy_missing(const Poldata     *pdref,
         for(auto &fm : fc.second.parametersConst())
         {
             auto myid = fm.first;
-            if (!fcout->parameterExists(myid))
+            if (fcout->parameterExists(myid))
             {
-                printf("Parameter %s missing from %s for %s\n",
-                       myid.id().c_str(), pdout->filename().c_str(),
-                       interactionTypeToDescription(itype).c_str());
-                for(auto &param : fm.second)
+                for(auto &fmp : fm.second)
                 {
-                    auto ptype = param.first;
-                    auto ppp   = param.second;
-                    fcout->addParameter(myid, ptype, ppp);
+                    auto pout = fcout->findParameterType(myid, fmp.first);
+                
+                    if (fmp.second.ntrain() > pout->ntrain())
+                    {
+                        printf("Parameter %s , interaction %s will be replaced in %s\n",
+                               myid.id().c_str(), interactionTypeToDescription(itype).c_str(),
+                               pdout->filename().c_str());
+                        pout->copy(fmp.second);
+                    }
+                    else
+                    {
+                        printf("Parameter %s , interaction %s will not be replaced in %s, old one has ntrain %d new %d\n",
+                               myid.id().c_str(), interactionTypeToDescription(itype).c_str(),
+                               pdout->filename().c_str(), pout->ntrain(), fmp.second.ntrain());
+                    }
                 }
             }
         }
@@ -598,6 +668,8 @@ int alex_poldata_edit(int argc, char*argv[])
     gmx_bool     force      = false;
     gmx_bool     stretch    = false;
     static char *missing    = (char *)"";
+    static char *replace    = (char *)"";
+    static char *implant    = (char *)"";
     static char *analyze    = (char *)"";
     t_pargs                          pa[]     = 
     {
@@ -622,7 +694,11 @@ int alex_poldata_edit(int argc, char*argv[])
         { "-ana", FALSE, etSTR, {&analyze},
           "Analyze either the EEM, the BONDED or OTHER parameters in a simple manner" },
         { "-copy_missing", FALSE, etSTR, {&missing},
-          "Copy either the EEM, the BONDED or OTHER parameters from file two [TT]-f2[tt] that are missing from file one [TT]-f[tt] to another [TT]-o[tt]." }
+          "Copy either the EEM, the BONDED or OTHER parameters from file two [TT]-f2[tt] that are missing from file one [TT]-f[tt] to another [TT]-o[tt]." },
+        { "-replace", FALSE, etSTR, {&replace},
+          "Replace either the EEM, the BONDED or OTHER parameters in file one [TT]-f[ff] by those from file two [TT]-f2[tt] and store in another [TT]-o[tt]." },
+        { "-implant", FALSE, etSTR, {&implant},
+          "Implant (write over) either the EEM, the BONDED or OTHER parameters in file one [TT]-f[ff] by those from file two [TT]-f2[tt] and store in another [TT]-o[tt]." }
     };
     int                 npargs = asize(pa);
     int                 NFILE  = asize(fnm);
@@ -653,7 +729,15 @@ int alex_poldata_edit(int argc, char*argv[])
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
             if (strlen(missing) > 0)
             {
-                copy_missing(&pd2, &pd, missing);
+                copy_missing(&pd2, &pd, missing, false);
+            }
+            else if (strlen(replace) > 0)
+            {
+                copy_missing(&pd2, &pd, replace, true);
+            }
+            else if (strlen(implant) > 0)
+            {
+                implant_values(&pd2, &pd, implant);
             }
             else
             {

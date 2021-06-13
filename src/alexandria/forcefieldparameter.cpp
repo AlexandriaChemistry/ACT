@@ -103,6 +103,21 @@ void ForceFieldParameter::setNtrain(int ntrain)
     }
 }
 
+void ForceFieldParameter::copy(const ForceFieldParameter &src)
+{
+    unit_                = src.unit();
+    value_               = src.value();
+    originalValue_       = src.originalValue();
+    uncertainty_         = src.uncertainty();
+    originalUncertainty_ = src.uncertainty();
+    ntrain_              = src.ntrain();
+    originalNtrain_      = src.ntrain();
+    minimum_             = src.minimum();
+    maximum_             = src.maximum();
+    mutability_          = src.mutability();
+    strict_              = src.strict();
+}
+
 CommunicationStatus ForceFieldParameter::Send(const t_commrec *cr, int dest) const
 {
     CommunicationStatus cs;
