@@ -52,6 +52,7 @@
 #include "gromacs/utility/smalloc.h"
 
 #include "memory_check.h"
+#include "regression.h"
 
 namespace alexandria
 {
@@ -130,6 +131,54 @@ double OptParam::adaptBeta(real mc_ratio)
     return 1/(BOLTZ*temperature_);
 }
 
+void Sensitivity::computeForceConstants()
+{
+    if (p_.size() >= 3)
+    {
+        MatrixWrapper M(3, p_.size());
+        std::vector<double> solution;
+        solution.resize(3, 0.0);
+        for (size_t i = 0; i < p_.size(); ++i)
+        {
+            M.set(0, i, p_[i]*p_[i]);
+            M.set(1, i, p_[i]);
+            M.set(2, i, 1.0);
+        }
+        auto result = M.solve(chi2_, &solution);
+        if (result == 0)
+        {
+            a_ = solution[0];
+            b_ = solution[1];
+            c_ = solution[2];
+        }
+    }
+    else
+    {
+        printf("Not enough parameters %d to do sensitivty analysis\n",
+               static_cast<int>(p_.size()));
+    }
+}
+
+void Sensitivity::print(FILE *fp, const std::string &label)
+{
+    if (fp)
+    {
+        fprintf(fp, "Sensitivity %s Fit to parabola: a %10g b %10g c %10g\n",
+                label.c_str(), a_, b_, c_);
+        for(int i = 0; i < static_cast<int>(p_.size()); ++i)
+        {
+            fprintf(fp, "    p[%d] %g chi2[%d] %g\n", i, p_[i], i, chi2_[i]);
+        }
+        if (a_ != 0.0)
+        {
+            double p_min = -b_/(2.0*a_);
+            double chi2_min = a_*p_min*p_min + b_*p_min + c_;
+            fprintf(fp, "    pmin %g chi2min %g (estimate based on parabola)\n", 
+                    p_min, chi2_min);
+        }
+    }
+}
+
 void Bayes::printParameters(FILE *fp) const
 {
     if (nullptr == fp)
@@ -201,6 +250,49 @@ bool OptParam::anneal(int iter) const
     {
         return iter >= anneal_ * maxiter_;
     }   
+}
+
+void Bayes::SensitivityAnalysis(FILE *fplog)
+{
+    std::vector<bool> changed;
+    changed.resize(param_.size(), true);
+    toPoldata(changed);
+    std::fill(changed.begin(), changed.end(), false);
+    double chi2_0 = calcDeviation();
+    if (fplog)
+    {
+        fprintf(fplog, "Starting sensitivity analysis. chi2_0 = %g nParam = %d\n",
+                chi2_0, static_cast<int>(param_.size()));
+        fflush(fplog);
+    }
+    for (size_t i = 0; i < param_.size(); ++i)
+    {
+        Sensitivity s;
+        double p_0    = param_[i];
+        changed[i]    = true;
+        param_[i]     = 0.99*p_0;
+        toPoldata(changed);
+        s.add(param_[i], calcDeviation());
+        param_[i]     = 0.995*p_0;
+        toPoldata(changed);
+        s.add(param_[i], calcDeviation());
+        s.add(p_0, chi2_0);
+        param_[i]     = 1.005*p_0;
+        toPoldata(changed);
+        s.add(param_[i],  calcDeviation());
+        param_[i]     = 1.01*p_0;
+        toPoldata(changed);
+        s.add(param_[i],  calcDeviation());
+        param_[i]     = p_0;
+        toPoldata(changed);
+        changed[i]    = false;
+        s.computeForceConstants();
+        s.print(fplog, paramNames_[i]);
+    }
+    if (fplog)
+    {
+        fflush(fplog);
+    }
 }
 
 double Bayes::MCMC(FILE *fplog)

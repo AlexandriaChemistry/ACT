@@ -453,6 +453,10 @@ void print_electric_props(FILE                           *fp,
             for (auto &i : qTypes())
             {
                 auto qi  = i.first;
+                if (qi == qType::Elec)
+                {
+                    continue;
+                }
                 auto rms = convertToGromacs(mol->espRms(qi), "Hartree/e");
                 std::string warning;
                 if (rms > esp_toler || mol->cosEsp(qi) < 0.5)

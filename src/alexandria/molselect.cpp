@@ -199,7 +199,8 @@ void MolSelect::read(const char *fn)
         }
         else
         {
-            fprintf(stderr, "Invalid selection file\n");
+            fprintf(stderr, "Invalid line '%s' in selection file\n",
+                    tmp.c_str());
         }
     }
 }
