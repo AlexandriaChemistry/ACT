@@ -581,7 +581,7 @@ void OptACM::communicateNumberOfCalculations(bool bOptimize,
             }
             if (bSensitivity)
             {
-                numberCalculateDeviation_ += 1 + 2*Bayes::nParam();
+                numberCalculateDeviation_ += 1 + 4*Bayes::nParam();
             }
             fprintf(logFile(), "Will do %d force evaluations\n",
                     numberCalculateDeviation_);
@@ -832,7 +832,6 @@ int alex_tune_eem(int argc, char *argv[])
     
     opt.set_pointCore(pointCore);
     opt.initChargeGeneration();
-    opt.communicateNumberOfCalculations(bOptimize, bSensitivity);
 
     bool bMinimum = false;
     if (MASTER(opt.commrec()))
@@ -841,6 +840,7 @@ int alex_tune_eem(int argc, char *argv[])
         {
             opt.InitOpt(bRandom);
         }
+        opt.communicateNumberOfCalculations(bOptimize, bSensitivity);
         if (bOptimize)
         {
             bMinimum = opt.runMaster(MASTER(opt.commrec()) ? stderr : nullptr,
@@ -855,6 +855,7 @@ int alex_tune_eem(int argc, char *argv[])
     }
     else if (bOptimize || bSensitivity)
     {
+        opt.communicateNumberOfCalculations(bOptimize, bSensitivity);
         opt.runSlave();
     }
    

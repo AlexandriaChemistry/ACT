@@ -261,6 +261,7 @@ void Bayes::SensitivityAnalysis(FILE *fplog)
     {
         fprintf(fplog, "Starting sensitivity analysis. chi2_0 = %g nParam = %d\n",
                 chi2_0, static_cast<int>(param_.size()));
+        fflush(fplog);
     }
     for (size_t i = 0; i < param_.size(); ++i)
     {
@@ -285,6 +286,10 @@ void Bayes::SensitivityAnalysis(FILE *fplog)
         changed[i]    = false;
         s.computeForceConstants();
         s.print(fplog, paramNames_[i]);
+    }
+    if (fplog)
+    {
+        fflush(fplog);
     }
 }
 
