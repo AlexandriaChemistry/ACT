@@ -128,23 +128,27 @@ int alex_qm2molprop(int argc, char *argv[])
     if (opt2bSet("-g03", NFILE, fnm))
     {
         gmx::ArrayRef<const std::string> gfns = ftp2fns(efLOG, NFILE, fnm);    
+        int nread = 0;
         for (auto &i : gfns)
         {
             alexandria::MolProp mmm;
-            readBabel(i.c_str(), 
-                      &mmm, 
-                      molnm, 
-                      iupac, 
-                      conf, 
-                      basis,
-                      maxpot, 
-                      nsymm, 
-                      jobtype,
-                      0.0,
-                      false);
-            mp.push_back(std::move(mmm));
+            if (readBabel(i.c_str(), 
+                          &mmm, 
+                          molnm, 
+                          iupac, 
+                          conf, 
+                          basis,
+                          maxpot, 
+                          nsymm, 
+                          jobtype,
+                          0.0,
+                          false))
+            {
+                nread += 1;
+                mp.push_back(std::move(mmm));
+            }
         }
-        printf("Succesfully read %d molprops from %d Gaussian files.\n", 
+        printf("Read %d molprops from %d Gaussian files.\n", 
                static_cast<int>(mp.size()), static_cast<int>(gfns.size()));
     }
     auto mpsize = mp.size();
@@ -164,7 +168,7 @@ int alex_qm2molprop(int argc, char *argv[])
                 }
             }
         }
-        printf("Succesfully read %d molprops from %d Psi4 files.\n", 
+        printf("Read %d molprops from %d Psi4 files.\n", 
                static_cast<int>(mp.size()-mpsize), static_cast<int>(pfns.size()));
     }
     alexandria::MolSelect gms;
