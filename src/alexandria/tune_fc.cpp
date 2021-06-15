@@ -190,7 +190,6 @@ class Optimization : public MolGen, Bayes
         bool                        bDissoc_          = true;
         real                        w_dhf_            = 1;
         const char                 *lot_              = nullptr;
-        bool                        calcAll_          = false;
         // Map from molid to MolEnergy
         std::map<int, MolEnergy>    MolEnergyMap_;
         std::string                 outputFile_;
@@ -219,8 +218,6 @@ class Optimization : public MolGen, Bayes
 
         void saveState();
         
-        void setCalcAll(bool calcAll) { calcAll_ = calcAll; }
-
         //! \brief Return the level of theory used as reference
         const char *lot() const { return lot_; }
 
@@ -317,8 +314,12 @@ class Optimization : public MolGen, Bayes
                             bool  bMtop);
         /*! \brief
          * Compute the deviation from the reference energies etc.
+         * \param[in] verbose Whether or not to print stuff
+         * \param[in] calcAll If true, compute the deviation for all compounds
+         *                    rather than those for this processor only.
          */
-        virtual double calcDeviation();
+        virtual double calcDeviation(bool verbose,
+                                     bool calcAll);
 
         /*! \brief
          * Send the information from this processor to destination
@@ -722,9 +723,10 @@ void Optimization::InitOpt(FILE *fplog, bool bRandom)
     polData2TuneFc(bRandom);
 }
 
-double Optimization::calcDeviation()
+double Optimization::calcDeviation(bool verbose,
+                                   bool calcAll)
 {
-    if (!calcAll_)
+    if (!calcAll)
     {
         if (PAR(commrec()))
         {
@@ -736,7 +738,7 @@ double Optimization::calcDeviation()
         pUpd.execute(poldata());
     }
     poldataUpdates_.clear();
-    if (calcAll_)
+    if (calcAll)
     {
         Bayes::printParameters(debug);
     }
@@ -748,7 +750,7 @@ double Optimization::calcDeviation()
     for (auto &mymol : mymols())
     {
         if ((mymol.eSupp_ == eSupport::Local) ||
-            (calcAll_ && (mymol.eSupp_ == eSupport::Remote)))
+            (calcAll && (mymol.eSupp_ == eSupport::Remote)))
         {
             int      nSP    = 0, nOpt = 0;
             int      natoms = mymol.mtop_->natoms;
@@ -876,7 +878,7 @@ double Optimization::calcDeviation()
     for (auto &mymol : mymols())
     {
         if ((mymol.eSupp_ == eSupport::Local) ||
-            (calcAll_ && (mymol.eSupp_ == eSupport::Remote)))
+            (calcAll && (mymol.eSupp_ == eSupport::Remote)))
         {
             int  molid          = mymol.getIndex();
             auto molEnergyEntry = MolEnergyMap_.find(molid);
@@ -904,7 +906,7 @@ double Optimization::calcDeviation()
         fprintf(debug, "%d: ePot2 = %g nCalc = %g\n",
                 commrec()->nodeid, ePot2, nCalc);
     }
-    if (!calcAll_ && PAR(commrec()))
+    if (!calcAll && PAR(commrec()))
     {
         gmx_sumd(1, &ePot2, commrec());
         gmx_sumd(1, &nCalc, commrec());
@@ -940,7 +942,7 @@ bool Optimization::optRun(FILE                   *fplog,
                 gmx_send_int(commrec(), dest, niter);
             }
         }
-        double chi2_min = calcDeviation();
+        double chi2_min = calcDeviation(false, false);
         if (fplog)
         {
             fprintf(fplog, "Initial chi2 %g\n", chi2_min);
@@ -959,7 +961,6 @@ bool Optimization::optRun(FILE                   *fplog,
             chi2_min = chi2;
             bMinimum = true;
 
-            setCalcAll(true);
             if (fplog)
             {
                 auto pmean  = Bayes::getPmean();
@@ -971,7 +972,7 @@ bool Optimization::optRun(FILE                   *fplog,
                     std::vector<bool> changed;
                     changed.resize(best.size(), true);
                     toPoldata(changed);
-                    double chi2 = calcDeviation();
+                    double chi2 = calcDeviation(true, true);
                     fprintf(fplog, "\nLowest RMSD value during optimization: %g.\n",
                             std::sqrt(chi2));
                     fprintf(fplog, "Parameters after the optimization:\n");
@@ -993,8 +994,7 @@ bool Optimization::optRun(FILE                   *fplog,
         int niter = gmx_recv_int(commrec(), 0);
         for (int n = 0; n < niter; n++)
         {
-            calcAll_ = false;
-            (void) calcDeviation();
+            (void) calcDeviation(false, false);
         }
     }
     return bMinimum;
@@ -1331,8 +1331,7 @@ int alex_tune_fc(int argc, char *argv[])
 
     if (bTestPar)
     {
-        opt.setCalcAll(false);
-        auto chi2 = opt.calcDeviation();
+        auto chi2 = opt.calcDeviation(false, false);
         if (MASTER(opt.commrec()))
         {
             fprintf(fplog, "chi2 = %g\n", chi2);
@@ -1342,12 +1341,10 @@ int alex_tune_fc(int argc, char *argv[])
     }
     if (MASTER(opt.commrec()))
     {
-        opt.setCalcAll(true);
-        auto chi2 = opt.calcDeviation();
+        auto chi2 = opt.calcDeviation(false, true);
         fprintf(fplog, "chi2 = %g\n", chi2);
         opt.printResults(fplog, (char *)"Before optimization",
                          nullptr, nullptr, oenv);
-        opt.setCalcAll(false);
     }
     if (bTestPar)
     {

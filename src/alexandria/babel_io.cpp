@@ -536,7 +536,7 @@ bool readBabel(const char          *g09,
             OpenBabel::OBPairData *type = (OpenBabel::OBPairData*) atom->GetData("FFAtomType");
             if (nullptr == type)
             {
-                fprintf(stderr, "Cannot find %s atom type for atom %d",
+                fprintf(stderr, "Error: OpenBabel cannot find the %s atomtype for atom %d\n",
                         forcefield.c_str(), static_cast<int>(atom->GetIdx()));
                 return false;
             }
@@ -588,7 +588,8 @@ bool readBabel(const char          *g09,
     }
     else
     {
-        fprintf(stderr, "Cannot read %s force field", forcefield.c_str());
+        fprintf(stderr, "Error: OpenBabel cannot read the '%s' force field\n",
+                forcefield.c_str());
         return false;
     }
 

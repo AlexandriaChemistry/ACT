@@ -82,7 +82,6 @@ namespace alexandria
 MolGen::MolGen()
 {
     cr_        = nullptr;
-    bFinal_    = false;
     bDone_     = false;
     bGenVsite_ = false;
     qsymm_     = false;
@@ -225,10 +224,10 @@ void MolGen::printChiSquared(FILE *fp) const
     }
 }
 
-void MolGen::sumChiSquared()
+void MolGen::sumChiSquared(bool parallel)
 {
     // Now sum over processors
-    if (PAR(commrec()) && !final())
+    if (PAR(commrec()) && parallel)
     {
         gmx_sum(ermsNR, chiSquared_, commrec());
         gmx_sumi(ermsNR, numberOfDatapoints_, commrec());
