@@ -129,7 +129,7 @@ double OptParam::adaptBeta(real mc_ratio)
     return 1/(BOLTZ*temperature_);
 }
 
-void Sensitivity::computeForceConstants()
+void Sensitivity::computeForceConstants(FILE *fp)
 {
     if (p_.size() >= 3)
     {
@@ -150,10 +150,10 @@ void Sensitivity::computeForceConstants()
             c_ = solution[2];
         }
     }
-    else
+    else if (fp)
     {
-        printf("Not enough parameters %d to do sensitivty analysis\n",
-               static_cast<int>(p_.size()));
+        fprintf(fp, "Not enough parameters %d to do sensitivty analysis\n",
+                static_cast<int>(p_.size()));
     }
 }
 
@@ -256,7 +256,7 @@ void Bayes::SensitivityAnalysis(FILE *fplog)
     changed.resize(param_.size(), true);
     toPoldata(changed);
     std::fill(changed.begin(), changed.end(), false);
-    double chi2_0 = calcDeviation();
+    double chi2_0 = calcDeviation(false, false);
     if (fplog)
     {
         fprintf(fplog, "Starting sensitivity analysis. chi2_0 = %g nParam = %d\n",
@@ -270,25 +270,26 @@ void Bayes::SensitivityAnalysis(FILE *fplog)
         changed[i]    = true;
         param_[i]     = 0.99*p_0;
         toPoldata(changed);
-        s.add(param_[i], calcDeviation());
+        s.add(param_[i], calcDeviation(false, false));
         param_[i]     = 0.995*p_0;
         toPoldata(changed);
-        s.add(param_[i], calcDeviation());
+        s.add(param_[i], calcDeviation(false, false));
         s.add(p_0, chi2_0);
         param_[i]     = 1.005*p_0;
         toPoldata(changed);
-        s.add(param_[i],  calcDeviation());
+        s.add(param_[i],  calcDeviation(false, false));
         param_[i]     = 1.01*p_0;
         toPoldata(changed);
-        s.add(param_[i],  calcDeviation());
+        s.add(param_[i],  calcDeviation(false, false));
         param_[i]     = p_0;
         toPoldata(changed);
         changed[i]    = false;
-        s.computeForceConstants();
+        s.computeForceConstants(fplog);
         s.print(fplog, paramNames_[i]);
     }
     if (fplog)
     {
+        fprintf(fplog, "Sensitiviy analysis done.\n\n");
         fflush(fplog);
     }
 }
@@ -384,7 +385,7 @@ double Bayes::MCMC(FILE *fplog)
     std::vector<bool> changed;
     changed.resize(nParam, false);
     toPoldata(changed);
-    prevEval = calcDeviation();
+    prevEval = calcDeviation(true, false);
     minEval  = prevEval;
     if (debug)
     {
@@ -419,7 +420,7 @@ double Bayes::MCMC(FILE *fplog)
         
         // Evaluate the energy
         toPoldata(changed);
-        currEval        = calcDeviation();
+        currEval        = calcDeviation(false, false);
         deltaEval       = currEval-prevEval; 
         
         // Accept any downhill move       
@@ -611,7 +612,7 @@ double Bayes::Adaptive_MCMC(FILE *fplog)
     std::vector<bool> changed;
     changed.resize(nParam, false);
     toPoldata(changed);
-    prevEval = calcDeviation();
+    prevEval = calcDeviation(true, false);
     minEval  = prevEval;
     if (debug)
     {
@@ -650,7 +651,7 @@ double Bayes::Adaptive_MCMC(FILE *fplog)
         
         // Evaluate the energy
         toPoldata(changed);
-        currEval        = calcDeviation();
+        currEval        = calcDeviation(false, false);
         deltaEval       = currEval-prevEval; 
         
         // Accept any downhill move       

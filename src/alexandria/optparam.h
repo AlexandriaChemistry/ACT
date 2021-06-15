@@ -188,19 +188,31 @@ public:
     //! \brief Constructor
     Sensitivity() {}
     
-    //! \brief Add a point
+    /*! \brief 
+     * Add a point
+     * \param[in] p    The parameter value
+     * \param[in] chi2 The chi-squared value
+     */
     void add(double p, double chi2)
     {
         p_.push_back(p);
         chi2_.push_back(chi2);
     }
-    //! \brief Compute the fit to the curve
-    void computeForceConstants();
+    /*! \brief
+     * Compute the fit to the curve
+     * \param[in] fp File pointer for debugging output
+     */
+    void computeForceConstants(FILE *fp);
     
+    //! Return the constants after computation
     double a() const { return a_; }
     double b() const { return b_; }
     double c() const { return c_; }
     
+    /*! \brief Print output
+     * \param[in] fp    File pointer for output
+     * \param[in] label Label for identifying the parameter
+     */
     void print(FILE *fp, const std::string &label);
 };
 
@@ -355,8 +367,14 @@ class Bayes : public OptParam
          */
         virtual void toPoldata(const std::vector<bool> &changed) = 0;
 
-        //! Compute the chi2 from the target function
-        virtual double calcDeviation() = 0;
+        /*! \brief
+         * Compute the chi2 from the target function
+         * \param[in] verbose Whether or not to print stuff
+         * \param[in] calcAll If true, compute the deviation for all compounds
+         *                    rather than those for this processor only.
+         */
+        virtual double calcDeviation(bool verbose,
+                                     bool calcAll) = 0;
 
         /*! Return number of planned function calls 
          * Return the number of calls to the objective function

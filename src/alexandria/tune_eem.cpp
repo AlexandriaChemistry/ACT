@@ -95,6 +95,7 @@ class OptACM : public MolGen, Bayes
         bool       bRemoveMol_                   = true;
         bool       bPointCore_                   = false;
         int        numberCalculateDeviation_     = 0;
+        int        numberCalcDevCalled_          = 0;
         gmx::unique_cptr<FILE, my_fclose> fplog_ = nullptr;
         std::string outputFile_;
     public:
@@ -203,7 +204,8 @@ class OptACM : public MolGen, Bayes
          */
         virtual void toPoldata(const std::vector<bool> &changed);
 
-        virtual double calcDeviation();
+        virtual double calcDeviation(bool verbose,
+                                     bool calcAll);
 
         /*! \brief
          * Master sends number of calcdevs to slave
@@ -214,26 +216,25 @@ class OptACM : public MolGen, Bayes
                                              bool bSensitivity);
         /*! \brief
          * Do the actual optimization.
-         * \param[in] fp     FILE pointer for logging
-         * \param[in] oenv   Output environment for managing xvg files etc.
-         * \param[in] xvgconv Output file monitoring parameters
-         * \param[in] xvgepot Output file monitoring penalty function
+         * \param[in] fp          FILE pointer for logging
+         * \param[in] oenv        Output environment for managing xvg files etc.
+         * \param[in] xvgconv     Output file monitoring parameters
+         * \param[in] xvgepot     Output file monitoring penalty function
+         * \param[in] optimize    If true an optimization will be done
+         * \param[in] sensitivity If true, a sensitivity analysis will be done
          * \return true if better parameters were found.
          */
         bool runMaster(FILE                   *fp,
                        const gmx_output_env_t *oenv,
                        const char             *xvgconv,
-                       const char             *xvgepot);
+                       const char             *xvgepot,
+                       bool                    optimize,
+                       bool                    sensitivity);
         /*! \brief 
          * For the slave nodes.
          */
         void runSlave();
     
-        /*! \brief
-         * Run a sensitivity analysis
-         */  
-        void SensitivityAnalysis() { Bayes::SensitivityAnalysis(logFile()); }
-
         /* \brief
          * Print the final results to the logFile.
          * \param[in] chi2_min Final chi2 in optimization
@@ -311,9 +312,9 @@ static void dumpQX(FILE *fp, MyMol *mol, const std::string &info)
     }
 }
 
-double OptACM::calcDeviation()
+double OptACM::calcDeviation(bool verbose,
+                             bool calcAll)
 {
-    bool  verbose = final();
     resetChiSquared();
     if (MASTER(commrec()))
     {
@@ -337,23 +338,15 @@ double OptACM::calcDeviation()
 
     if (PAR(commrec()))
     {
-        bool bFinal = final();
-        gmx_bcast(sizeof(final()), &bFinal, commrec());
-        if (bFinal)
+        if (! calcAll)
         {
-            setFinal();
-        }
-        else
-        {
-            // Communicate the force field data.
-            // TODO: Optimize to only do relevant stuff
             poldata()->broadcast_eemprop(commrec());
         }
     }
     for (auto &mymol : mymols())
     {
         if ((mymol.eSupp_ == eSupport::Local) ||
-            (final() && (mymol.eSupp_ == eSupport::Remote)))
+            (calcAll && (mymol.eSupp_ == eSupport::Remote)))
         {
             // Update the polarizabilities only once before the loop
             if (fit("alpha"))
@@ -491,12 +484,13 @@ double OptACM::calcDeviation()
             }
         }
     }
-    sumChiSquared();
+    sumChiSquared(!calcAll);
     if (verbose && logFile())
     {
         printParameters(logFile());
         printChiSquared(logFile());
     }
+    numberCalcDevCalled_ += 1;
     return chiSquared(ermsTOT);
 }
 
@@ -600,7 +594,9 @@ void OptACM::communicateNumberOfCalculations(bool bOptimize,
 bool OptACM::runMaster(FILE                   *fp,
                        const gmx_output_env_t *oenv,
                        const char             *xvgconv,
-                       const char             *xvgepot)
+                       const char             *xvgepot,
+                       bool                    optimize,
+                       bool                    sensitivity)
 {
     bool bMinimum = false;
     GMX_RELEASE_ASSERT(MASTER(commrec()), "WTF");
@@ -611,24 +607,31 @@ bool OptACM::runMaster(FILE                   *fp,
     {
         paramClass.push_back(fm.first);
     }
-    Bayes::setOutputFiles(xvgconv, paramClass, xvgepot, oenv);
-    double     chi2_min = calcDeviation();
-    fprintf(logFile(), "Initial chi2 value %g\n", chi2_min);
-    printChiSquared(logFile());
-
-    double chi2 = 0;
-    if (Bayes::adaptive())
+    if (optimize)
     {
-        chi2 = Bayes::Adaptive_MCMC(logFile());
+        Bayes::setOutputFiles(xvgconv, paramClass, xvgepot, oenv);
+        double     chi2_min = calcDeviation(true, false);
+        fprintf(logFile(), "Initial chi2 value %g\n", chi2_min);
+        printChiSquared(logFile());
+        
+        double chi2 = 0;
+        if (Bayes::adaptive())
+        {
+            chi2 = Bayes::Adaptive_MCMC(logFile());
+        }
+        else
+        {
+            chi2 = Bayes::MCMC(logFile());
+        }
+        if (chi2 < chi2_min)
+        {
+            bMinimum = true;
+            chi2_min = chi2;
+        }
     }
-    else
+    if (sensitivity)
     {
-        chi2 = Bayes::MCMC(logFile());
-    }
-    if (chi2 < chi2_min)
-    {
-        bMinimum = true;
-        chi2_min = chi2;
+        Bayes::SensitivityAnalysis(logFile());
     }
     
     if (bMinimum)
@@ -645,7 +648,7 @@ bool OptACM::runMaster(FILE                   *fp,
         changed.resize(best.size(), true);
         toPoldata(changed);
         // Compute the deviation once more
-        double chi2 = calcDeviation();
+        double chi2 = calcDeviation(true, true);
         printResults(chi2);
         printChiSquared(fp);
         printChiSquared(logFile());
@@ -663,9 +666,9 @@ void OptACM::runSlave()
     /* S L A V E   N O D E S */
     for (auto n = 0; n < numberCalculateDeviation_; n++)
     {
-        (void) calcDeviation();
+        (void) calcDeviation(false, false);
     }
-    setFinal();
+    //setFinal();
 }
 
 } // namespace alexandria
@@ -841,17 +844,12 @@ int alex_tune_eem(int argc, char *argv[])
             opt.InitOpt(bRandom);
         }
         opt.communicateNumberOfCalculations(bOptimize, bSensitivity);
-        if (bOptimize)
-        {
-            bMinimum = opt.runMaster(MASTER(opt.commrec()) ? stderr : nullptr,
-                                     oenv,
-                                     opt2fn("-conv", NFILE, fnm),
-                                     opt2fn("-epot", NFILE, fnm));
-        }
-        if (bSensitivity)
-        {
-            opt.SensitivityAnalysis();
-        }
+        bMinimum = opt.runMaster(MASTER(opt.commrec()) ? stderr : nullptr,
+                                 oenv,
+                                 opt2fn("-conv", NFILE, fnm),
+                                 opt2fn("-epot", NFILE, fnm),
+                                 bOptimize,
+                                 bSensitivity);
     }
     else if (bOptimize || bSensitivity)
     {

@@ -173,7 +173,6 @@ class MolGen
         real                            relativeWeight_[ermsNR] = { 0 };
         gmx_bool                        bQM_;
         gmx_bool                        bDone_;
-        gmx_bool                        bFinal_;
         gmx_bool                        bGenVsite_;
         gmx_bool                        qsymm_;
         gmx_bool                        constrain_; 
@@ -276,17 +275,12 @@ class MolGen
         
         gmx_hw_info_t *hwinfo() {return hwinfo_;}
         
-        //! \brief Is this the last calculation?
-        bool final() const { return bFinal_; }
-
         //! \brief Are we using QM only?
         bool bQM() const { return bQM_; }
 
         //! \brief Return level of theory
         const char *lot() const { return lot_; }
 
-        void setFinal() { bFinal_ = true; }
-        
         //! \brief Return the number of compounds in the data set
         int nMolSupport() const { return nmol_support_; }
 
@@ -335,10 +329,12 @@ class MolGen
             chiSquared_[rms]         += delta;
         }
 
-        /*! \brief Sum over the energies of the cores.
+        /*! \brief 
+         * Sum over the energies of the cores if desired.
          * Also multiplies the terms by the weighting factors.
+         * \param[in] parallel Whether or not to sum in parallel
          */
-        void sumChiSquared();
+        void sumChiSquared(bool parallel);
 
         /*! \brief Print the chiSquared components.
          * \param[in] fp File pointer to print to, may be nullptr
