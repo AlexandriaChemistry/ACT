@@ -215,9 +215,14 @@ void MolGen::printChiSquared(FILE *fp) const
             auto eee = chiSquared(j);
             if (eee > 0)
             {
-                fprintf(fp, "%-8s  %10.2f  N: %6d  weight: %g\n",
+                double factor = 1;
+                if (numberOfDatapoints_[j] > 0)
+                {
+                    factor = 1.0/numberOfDatapoints_[j];
+                }
+                fprintf(fp, "%-8s  %10.3f  N: %6d  fc: %10g  weighted: %10g\n",
                         rmsName(j), eee, numberOfDatapoints_[j],
-                        relativeWeight_[j]);
+                        relativeWeight_[j], eee*factor*relativeWeight_[j]);
             }
         }
         fflush(fp);

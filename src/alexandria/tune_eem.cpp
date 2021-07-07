@@ -572,8 +572,8 @@ void OptACM::communicateNumberOfCalculations(bool bOptimize,
             {
                 numberCalculateDeviation_ += 1 + 4*Bayes::nParam();
             }
-            fprintf(logFile(), "Will do %d force evaluations\n",
-                    numberCalculateDeviation_);
+            fprintf(logFile(), "Will do %d force evaluations on %d processors\n",
+                    numberCalculateDeviation_, commrec()->nnodes);
             for (int dest = 1; dest < commrec()->nnodes; dest++)
             {
                 gmx_send_int(commrec(), dest, numberCalculateDeviation_);
