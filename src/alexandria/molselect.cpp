@@ -60,33 +60,28 @@
 #include "poldata_xml.h"
 #include "stringutil.h"
 
-typedef struct {
-    iMolSelect   eEM;
-    const char   *name;
-} t_iMolSelect;
-
-t_iMolSelect MolSelect_Names[imsNR] = {
-    {imsTrain,   "Train"},
-    {imsTest,    "Test"},
-    {imsIgnore,  "Ignore"},
-    {imsUnknown, "Unknown"}
+std::map<iMolSelect, const char *> MolSelect_Names = {
+    { iMolSelect::Train,   "Train"   },
+    { iMolSelect::Test,    "Test"    },
+    { iMolSelect::Unknown, "Unknown" }
 };
 
 const char *iMolSelectName(iMolSelect ims)
 {
-    return MolSelect_Names[ims].name;
+    return MolSelect_Names[ims];
 }
 
-iMolSelect name2molselect(const std::string name)
+bool name2molselect(const std::string &name, iMolSelect *ims)
 {
-    for (auto i = 0; i < imsNR; i++)
+    for (auto iter = MolSelect_Names.begin(); iter != MolSelect_Names.end(); ++iter)
     {
-        if (strcasecmp(name.c_str(), MolSelect_Names[i].name) == 0)
+        if (name.compare(iter->second) == 0)
         {
-            return MolSelect_Names[i].eEM;
+            *ims = iter->first;
+            return true;
         }
     }
-    return imsNR;
+    return false;
 }
 
 namespace alexandria
@@ -176,22 +171,17 @@ void MolSelect::read(const char *fn)
         if ((ptr.size() == 2) && (ptr[0].length() > 1)
             && (ptr[1].length() > 1))
         {
-            iMolSelect status;
-            int        ims = 0;
-            for (ims = 0; ims < imsNR; ims++)
+            iMolSelect status = iMolSelect::Unknown;
+            for (auto iter = MolSelect_Names.begin(); iter != MolSelect_Names.end(); ++iter)
             {
-                if (strcasecmp(MolSelect_Names[ims].name, ptr[1].c_str()) == 0)
+                if (strcasecmp(iter->second, ptr[1].c_str()) == 0)
                 {
+                    status = iter->first;
                     break;
                 }
             }
-            if (ims < imsNR)
+            if (status == iMolSelect::Unknown)
             {
-                status = MolSelect_Names[ims].eEM;
-            }
-            else
-            {
-                status = imsUnknown;
                 fprintf(stderr, "Unknown status '%s' for molecule %s on line %d in file %s\n",
                         ptr[1].c_str(), ptr[0].c_str(), index, fn);
             }
@@ -218,7 +208,7 @@ iMolSelect MolSelect::status(const std::string &iupac) const
         return imi->status();
     }
 
-    return imsUnknown;
+    return iMolSelect::Unknown;
 }
 
 int MolSelect::index(const std::string &iupac) const
@@ -355,7 +345,11 @@ int alex_molselect(int argc, char *argv[])
 
     gms.read(opt2fn_null("-sel", NFILE, fnm));
 
-    iMolSelect select_type = name2molselect(select_types[0]);
+    iMolSelect select_type;
+    if (!name2molselect(select_types[0], &select_type))
+    {
+        gmx_fatal(FARGS, "No such selection type %s", select_types[0]);
+    }
     mgn.Read(fp ? fp : (debug ? debug : nullptr),
              opt2fn("-f", NFILE, fnm),
              opt2fn_null("-d", NFILE, fnm),

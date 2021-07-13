@@ -1308,7 +1308,11 @@ int alex_tune_fc(int argc, char *argv[])
 
     const char *tabfn = opt2fn_null("-table", NFILE, fnm);
 
-    iMolSelect select_type = name2molselect(select_types[0]);
+    iMolSelect select_type;
+    if (!name2molselect(select_types[0], &select_type))
+    {
+        gmx_fatal(FARGS, "No such selection type %s", select_types[0]);
+    }
     opt.Read(fplog ? fplog : (debug ? debug : nullptr),
              opt2fn("-f", NFILE, fnm),
              opt2fn_null("-d", NFILE, fnm),

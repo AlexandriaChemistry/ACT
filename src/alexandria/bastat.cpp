@@ -768,8 +768,8 @@ int alex_bastat(int argc, char *argv[])
     gms.read(selfile);
     print_memory_usage(fp);
     printf("There are %d molecules in the selection file %s.\n",
-           (gms.count(imsTrain) + gms.count(imsTest)), selfile);
-    fprintf(fp, "# There are %d molecules.\n#\n", (gms.count(imsTrain) + gms.count(imsTest)));
+           (gms.count(iMolSelect::Train) + gms.count(iMolSelect::Test)), selfile);
+    fprintf(fp, "# There are %d molecules.\n#\n", (gms.count(iMolSelect::Train) + gms.count(iMolSelect::Test)));
 
     /* Read standard atom properties */
     aps = gmx_atomprop_init();
@@ -799,7 +799,7 @@ int alex_bastat(int argc, char *argv[])
     for (auto mpi = mp.begin(); mpi < mp.end(); mpi++)
     {
         auto imol = gms.status(mpi->getIupac());
-        if (imol == imsTrain || imol == imsTest)
+        if (imol == iMolSelect::Train || imol == iMolSelect::Test)
         {
             alexandria::MyMol mmi;
             int               i;
