@@ -126,7 +126,7 @@ static void setMinMaxMut(FILE *fp,
     if (stretch)
     {
         auto range = pp->maximum()-pp->minimum();
-        if (pp->value() == pp->minimum() && range > 0)
+        if (std::fabs(pp->value() - pp->minimum()) < 0.01*range && range > 0)
         {
             if (pp->minimum() < 0)
             {
@@ -142,7 +142,7 @@ static void setMinMaxMut(FILE *fp,
                         pp->minimum(), particleId.c_str());
             }
         }
-        if (pp->value() == pp->maximum() && range > 0)
+        if (std::fabs(pp->value() - pp->maximum()) < 0.01*range && range > 0)
         {
             pp->setMaximum(std::min(pp->maximum()+0.1*range, 1.1*pp->maximum()));
             if (fp)
@@ -190,7 +190,7 @@ static void modifyParticle(const std::string &paramType,
 static void modifyInteraction(Poldata *pd,
                               InteractionType itype,
                               const std::string &paramType,
-                              const Identifier &id,
+                              const Identifier &pId,
                               bool bSetMin, double pmin,
                               bool bSetVal, double pval,
                               bool bSetMax, double pmax,
@@ -198,11 +198,10 @@ static void modifyInteraction(Poldata *pd,
                               bool bScale,  double scale,
                               bool force, bool stretch)
 {
-    printf("About to modify %s for %s\n", paramType.c_str(), id.id().c_str());
     auto fs = pd->findForces(itype)->parameters();
     for(auto &ffs : *fs)
     {
-        if (id == ffs.first)
+        if (pId == ffs.first)
         {
             for(auto &pp : ffs.second)
             {
@@ -212,7 +211,7 @@ static void modifyInteraction(Poldata *pd,
                     {
                         std::string myId = 
                             gmx::formatString("%s - %s - %s",
-                                              id.id().c_str(),
+                                              pId.id().c_str(),
                                               paramType.c_str(),
                                               interactionTypeToString(itype).c_str());
                         setMinMaxMut(stdout, &pp.second,
@@ -301,25 +300,21 @@ static void modifyPoldata(Poldata *pd,
                 }
             case 2:
                 {
-                    for (auto q : myParticles)
+                    auto q1id = pId.id();
+                    for (auto q2: myParticles)
                     {
-                        if (!q->hasInteractionType(itype))
+                        auto q2id = q2->interactionTypeToIdentifier(itype).id();
+                        for(int bo = 1; bo < 4; bo++)
                         {
-                            continue;
+                            auto qId = Identifier({q1id, q2id}, bo, CanSwap::No);
+                            modifyInteraction(pd, itype, paramType, qId,
+                                              bSetMin, pmin,
+                                              bSetVal, pval,
+                                              bSetMax, pmax,
+                                              bSetMut, mutability,
+                                              bScale,  scale,
+                                              force, stretch);
                         }
-                        auto qId = q->interactionTypeToIdentifier(itype);
-                        if (qId.id().empty())
-                        {
-                            continue;
-                        }
-                        Identifier id({pId.id(), qId.id()}, 1, CanSwap::No);
-                        modifyInteraction(pd, itype, paramType, id,
-                                          bSetMin, pmin,
-                                          bSetVal, pval,
-                                          bSetMax, pmax,
-                                          bSetMut, mutability,
-                                          bScale,  scale,
-                                          force, stretch);
                     }
                     break;
                 }
@@ -658,6 +653,7 @@ int alex_poldata_edit(int argc, char*argv[])
         { efDAT, "-o", "pdout",  ffOPTWR },
         { efDAT, "-dump", "params", ffOPTWR }
     };
+
     static char *parameter  = (char *)"";
     static char *particle   = (char *)"";
     static char *mutability = (char *)"";
@@ -671,7 +667,7 @@ int alex_poldata_edit(int argc, char*argv[])
     static char *replace    = (char *)"";
     static char *implant    = (char *)"";
     static char *analyze    = (char *)"";
-    t_pargs                          pa[]     = 
+    t_pargs      pa[]       =
     {
         { "-p",      FALSE, etSTR,  {&parameter},
           "Type of parameter to change, e.g. zeta." },
