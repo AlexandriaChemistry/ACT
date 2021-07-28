@@ -66,7 +66,7 @@
 
 typedef struct {
     std::string      a1, a2;
-    int              order;
+    double           order;
     std::vector<int> histo;
     gmx_stats_t      lsq;
 } t_bond;
@@ -142,7 +142,8 @@ static void sort_bonds(t_bonds *b)
 
 static void add_bond(FILE *fplog, const char *molname, t_bonds *bonds,
                      const std::string a1, const std::string a2,
-                     double blen, double spacing, int order, InteractionType iType)
+                     double blen, double spacing, double order,
+                     InteractionType iType)
 {
     GMX_RELEASE_ASSERT(a1.size() > 0, "atom name a1 is empty");
     GMX_RELEASE_ASSERT(a2.size() > 0, "atom name a2 is empty");
@@ -181,7 +182,7 @@ static void add_bond(FILE *fplog, const char *molname, t_bonds *bonds,
     b->histo[index]++;
     if (nullptr != fplog)
     {
-        fprintf(fplog, "%s %s-%s-%s-%d %g\n",
+        fprintf(fplog, "%s %s-%s-%s-%g %g\n",
                 molname, interactionTypeToString(iType).c_str(),
                 a1.c_str(),
                 a2.c_str(),
@@ -377,7 +378,7 @@ static void dump_histo(t_bonds *b, double bspacing,
     {
         if ((gmx_stats_get_npoints(i.lsq, &N) == 0) && (i.histo.size() > 0))
         {
-            snprintf(buf, sizeof(buf), "bond-%s-%s-%d.xvg", i.a1.c_str(), i.a2.c_str(), i.order);
+            snprintf(buf, sizeof(buf), "bond-%s-%s-%g.xvg", i.a1.c_str(), i.a2.c_str(), i.order);
             lo_dump_histo(buf, (char *)"Distance (pm)", oenv, N,
                           i.histo.size(), i.histo.data(), bspacing);
         }
