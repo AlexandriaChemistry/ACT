@@ -48,8 +48,8 @@ namespace alexandria
 using ParamIterator      = typename std::vector<t_param>::iterator;
 using ConstParamIterator = typename std::vector<t_param>::const_iterator;
 
-using BondOrderIterator      = typename std::vector<size_t>::iterator;
-using ConstBondOrderIterator = typename std::vector<size_t>::const_iterator;
+using BondOrderIterator      = typename std::vector<double>::iterator;
+using ConstBondOrderIterator = typename std::vector<double>::const_iterator;
 
 //! Cleaner version of plist array
 class PlistWrapper
@@ -100,13 +100,13 @@ class PlistWrapper
         unsigned int nParam() const { return p_.size(); }
         
         //! Set bond order
-        void addBondOrder (size_t bondOrder) {bondOrder_.push_back(bondOrder);}
+        void addBondOrder (double bondOrder) {bondOrder_.push_back(bondOrder);}
         
         //! Return bond order vector
-        std::vector<size_t> bondOrder () const {return bondOrder_;}
+        const std::vector<double> &bondOrder () const {return bondOrder_;}
         
         //! Return bond order for bond j
-        size_t bondOrder (int j) const {return bondOrder_[j];}
+        double bondOrder (int j) const {return bondOrder_[j];}
         
         //! Loop over parameters
         ConstBondOrderIterator beginBondOrder() const { return bondOrder_.begin(); }
@@ -128,7 +128,7 @@ class PlistWrapper
         //! Array of parameters
         std::vector<t_param> p_;
         //! Bond order 
-        std::vector<size_t>  bondOrder_;
+        std::vector<double>  bondOrder_;
 };
 
 //! Another utility typedef for a looper
@@ -160,7 +160,7 @@ void add_param_to_plist(std::vector<PlistWrapper> &plist,
                         int                        ftype,
                         InteractionType            itype,
                         const t_param             &p,
-                        size_t                     bondOrder);
+                        double                     bondOrder);
 }
 
 #endif

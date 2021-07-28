@@ -133,7 +133,7 @@ class MyMol : public MolProp
         bool                             gromacsGenerated_ = false;
         gpp_atomtype_t                   gromppAtomtype_;
         //! Store the bond order for an atom pair
-        std::map<std::pair<int, int>, int> bondOrder_;
+        std::map<std::pair<int, int>, double> bondOrder_;
 
         //! Array of dipole vectors
         std::map<qType, rvec>     mu_qm_;
@@ -386,7 +386,7 @@ class MyMol : public MolProp
          * \param[in] aj Atom J
          * \return bond order or 0 if not present
          */
-        int bondOrder(int ai, int aj) const;
+        double bondOrder(int ai, int aj) const;
         /*! \brief
          * Return mtop structure
          */

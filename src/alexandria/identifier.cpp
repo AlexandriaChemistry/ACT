@@ -117,7 +117,7 @@ Identifier::Identifier(InteractionType    iType,
         iType == InteractionType::BONDCORRECTIONS)
     {
         idEnd--;
-        bondOrder_ = atoi(ids[ids.size()-1].c_str());
+        bondOrder_ = atof(ids[ids.size()-1].c_str());
     }
     else
     {
@@ -133,7 +133,7 @@ Identifier::Identifier(InteractionType    iType,
         if (iType == InteractionType::BONDS ||
             iType == InteractionType::BONDCORRECTIONS)
         {
-            swappedId_ = gmx::formatString("%s%s%s%s%d", ids[1].c_str(), IdDelimeter,
+            swappedId_ = gmx::formatString("%s%s%s%s%g", ids[1].c_str(), IdDelimeter,
                                            ids[0].c_str(), IdDelimeter, bondOrder_);
         }
         else
@@ -153,18 +153,18 @@ Identifier::Identifier(InteractionType    iType,
 }
 
 Identifier::Identifier(const std::vector<std::string> &atoms,
-                       int                             bondOrder,
+                       double                          bondOrder,
                        CanSwap                         canSwap)
 {
     GMX_RELEASE_ASSERT(atoms.size() == 2,
                        "Bonds should have two atoms exactly");
-    id_.assign(gmx::formatString("%s%s%s%s%d",
+    id_.assign(gmx::formatString("%s%s%s%s%g",
                                  atoms[0].c_str(), IdDelimeter,
                                  atoms[1].c_str(), IdDelimeter,
                                  bondOrder));
     if (canSwap == CanSwap::Yes)
     {
-        swappedId_.assign(gmx::formatString("%s%s%s%s%d",
+        swappedId_.assign(gmx::formatString("%s%s%s%s%g",
                                             atoms[1].c_str(), IdDelimeter,
                                             atoms[0].c_str(), IdDelimeter,
                                             bondOrder));
@@ -172,7 +172,7 @@ Identifier::Identifier(const std::vector<std::string> &atoms,
     atoms_     = atoms;
     if (bondOrder < 1 || bondOrder > 3)
     {
-        GMX_THROW(gmx::InvalidInputError(gmx::formatString("Bond order should be 1, 2 or 3, not %d", bondOrder).c_str()));
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("Bond order should be 1, 2 or 3, not %g", bondOrder).c_str()));
     }
     bondOrder_ = bondOrder;
     orderAtoms();
@@ -182,7 +182,7 @@ CommunicationStatus Identifier::Send(const t_commrec *cr, int dest) const
 {
     gmx_send_str(cr, dest, &id_);
     gmx_send_str(cr, dest, &swappedId_);
-    gmx_send_int(cr, dest, bondOrder_);
+    gmx_send_double(cr, dest, bondOrder_);
     gmx_send_int(cr, dest, static_cast<int>(atoms_.size()));
     for(auto &a : atoms_)
     {
@@ -195,7 +195,7 @@ CommunicationStatus Identifier::Receive(const t_commrec *cr, int src)
 {
     gmx_recv_str(cr, src, &id_);
     gmx_recv_str(cr, src, &swappedId_);
-    bondOrder_ = gmx_recv_int(cr, src);
+    bondOrder_ = gmx_recv_double(cr, src);
     int natoms = gmx_recv_int(cr, src);
     atoms_.clear();
     for(int i = 0; i < natoms; i++)

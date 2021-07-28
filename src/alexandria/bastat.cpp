@@ -621,11 +621,13 @@ static void generate_bcc(Poldata *pd,
     {
         for (auto &aj : ptypes)
         {
-            for(int bondOrder = 1; bondOrder < 4; bondOrder++)
+            const double bondorders[] = { 1, 1.5, 2, 3 };
+            const size_t nBondorder   = std::extent<decltype(bondorders)>::value;
+            for(size_t bb = 0; bb < nBondorder; bb++)
             {
                 auto bi = ai.interactionTypeToIdentifier(InteractionType::BONDS).id();
                 auto bj = aj.interactionTypeToIdentifier(InteractionType::BONDS).id();
-                Identifier bondId({ bi, bj }, bondOrder, bonds.canSwap());
+                Identifier bondId({ bi, bj }, bondorders[bb], bonds.canSwap());
                 if (bonds.parameterExists(bondId))
                 {
                     auto entype = InteractionType::ELECTRONEGATIVITYEQUALIZATION;
@@ -633,8 +635,8 @@ static void generate_bcc(Poldata *pd,
                     auto zj = aj.interactionTypeToIdentifier(entype).id();
                     if (!zi.empty() && !zj.empty())
                     {
-                        Identifier bccId1({ zi, zj }, bondOrder, bcc->canSwap());
-                        Identifier bccId2({ zj, zi }, bondOrder, bcc->canSwap());
+                        Identifier bccId1({ zi, zj }, bondorders[bb], bcc->canSwap());
+                        Identifier bccId2({ zj, zi }, bondorders[bb], bcc->canSwap());
                         if (!bcc->parameterExists(bccId1) && 
                             !bcc->parameterExists(bccId2))
                         {
@@ -875,7 +877,8 @@ int alex_bastat(int argc, char *argv[])
                             {
                                 for (auto &bi : mmi.bondsConst())
                                 {
-                                    auto xi = 0, xj = 0, xb = 0;
+                                    int    xi = 0, xj = 0;
+                                    double xb = 0;
                                     bi.get(&xi, &xj, &xb);
                                     xi--;
                                     xj--;

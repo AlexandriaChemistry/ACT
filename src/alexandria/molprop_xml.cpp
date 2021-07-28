@@ -558,7 +558,7 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                                 NN(xbuf[exmlBONDORDER]))
                             {
                                 alexandria::Bond b(atoi(xbuf[exmlAI].c_str()), atoi(xbuf[exmlAJ].c_str()),
-                                                   atoi(xbuf[exmlBONDORDER].c_str()));
+                                                   xbuf_atof(xbuf, exmlBONDORDER));
                                 mpt->AddBond(b);
                             }
                             break;
@@ -875,7 +875,7 @@ static void add_xml_molprop(xmlNodePtr                 parent,
         xmlNodePtr child = add_xml_child(ptr, exml_names(exmlBOND));
         add_xml_int(child, exml_names(exmlAI), b.getAi());
         add_xml_int(child, exml_names(exmlAJ), b.getAj());
-        add_xml_int(child, exml_names(exmlBONDORDER), b.getBondOrder());
+        add_xml_double(child, exml_names(exmlBONDORDER), b.getBondOrder());
     }
 
     for (auto &me : mp.experimentConst())

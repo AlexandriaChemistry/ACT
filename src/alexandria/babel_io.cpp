@@ -236,9 +236,51 @@ static OpenBabel::OBConversion *readBabel(const std::string &g09,
     return nullptr;
 }
 
+static void checkBondOrders(alexandria::MolProp *mpt)
+{
+    // We cannot be sure that this is the right one
+    auto exper = mpt->LastExperiment();
+    std::vector<std::string> atomName;
+    for(auto &ca : exper->calcAtomConst())
+    {
+        atomName.push_back(ca.getObtype());
+    }
+    std::map<std::string, std::string> my_pairs =
+        { { "no", "on" }, { "cm", "om" }, { "p5", "om" }, { "s6", "om" } };
+    for(const auto &my_pair : my_pairs)
+    {
+        for(size_t i = 0; i < atomName.size(); i++)
+        {
+            if (atomName[i] == my_pair.first)
+            {
+                std::vector<size_t> bondIndex;
+                auto allBonds = mpt->bonds();
+                for(size_t b = 0; b < (*allBonds).size(); b++)
+                {
+                    size_t ai = (*allBonds)[b].getAi()-1;
+                    size_t aj = (*allBonds)[b].getAj()-1;
+                    if ((ai == i && atomName[aj] == my_pair.second) ||
+                        (aj == i && atomName[ai] == my_pair.second))
+                    {
+                        bondIndex.push_back(b);
+                    }
+                }
+                if (bondIndex.size() >= 2)
+                {
+                    for (size_t j = 0; j < bondIndex.size(); j++)
+                    {
+                        (*allBonds)[bondIndex[j]].setBondOrder(1.5);
+                    }
+                }
+            }
+        }
+    }
+}
+
 static bool getBondsFromOpenBabel(OpenBabel::OBMol    *mol,
                                   alexandria::MolProp *mpt,
-                                  const char          *inputFile)
+                                  const char          *inputFile,
+                                  bool                 changeAromaticBondOrders)
 {
     // Bonds
     auto OBbi = mol->BeginBonds();
@@ -246,10 +288,19 @@ static bool getBondsFromOpenBabel(OpenBabel::OBMol    *mol,
     {
         for (auto OBb = mol->BeginBond(OBbi); (nullptr != OBb); OBb = mol->NextBond(OBbi))
         {
+            double bo = OBb->GetBondOrder();
+            if (changeAromaticBondOrders && OBb->IsAromatic())
+            {
+                bo = 1.5;
+            }
             alexandria::Bond ab(1+OBb->GetBeginAtom()->GetIndex(),
                                 1+OBb->GetEndAtom()->GetIndex(),
-                                OBb->GetBondOrder());
+                                bo);
             mpt->AddBond(ab);
+        }
+        if (changeAromaticBondOrders)
+        {
+            checkBondOrders(mpt);
         }
         return true;
     }
@@ -526,7 +577,7 @@ bool readBabel(const char          *g09,
         mol.AddHydrogens();
     }
     // Atoms
-    std::string forcefield = "alexandria";
+    const std::string forcefield("alexandria");
     auto       *ff         = OpenBabel::OBForceField::FindForceField(forcefield);
     if (ff && (ff->Setup(mol)))
     {
@@ -594,7 +645,7 @@ bool readBabel(const char          *g09,
     }
 
     // Bonds
-    getBondsFromOpenBabel(&mol, mpt, g09);
+    getBondsFromOpenBabel(&mol, mpt, g09, forcefield.compare("alexandria"));
 
     // Dipole
     dipole = (OpenBabel::OBVectorData *) mol.GetData("Dipole Moment");
@@ -697,11 +748,11 @@ bool SetMolpropAtomTypesAndBonds(alexandria::MolProp *mmm)
     mol.EndModify();
     mmm->SetFormula(mol.GetFormula());
     mmm->SetMass(mol.GetMolWt());
-    const char *ff  = "alexandria";
-    auto        pFF = OpenBabel::OBForceField::FindForceField(ff);
+    const char *forcefield = "alexandria";
+    auto        pFF        = OpenBabel::OBForceField::FindForceField(forcefield);
     if (!pFF)
     {
-        fprintf(stderr, "could not find forcefield %s\n", ff);
+        fprintf(stderr, "could not find forcefield %s\n", forcefield);
         return false;
     }
     if (debug)
@@ -711,7 +762,7 @@ bool SetMolpropAtomTypesAndBonds(alexandria::MolProp *mmm)
     }
     if (!pFF->Setup(mol))
     {
-        fprintf(stderr, "could not setup force field %s.\n", ff);
+        fprintf(stderr, "could not setup force field %s.\n", forcefield);
         return false;
     }
     pFF->GetAtomTypes(mol);
@@ -722,7 +773,7 @@ bool SetMolpropAtomTypesAndBonds(alexandria::MolProp *mmm)
         ca->setObtype(type->GetValue());
     }
     // Bonds
-    getBondsFromOpenBabel(&mol, mmm, "psi4 input file");
+    getBondsFromOpenBabel(&mol, mmm, "psi4 input file", true);
 
     return true;
 }

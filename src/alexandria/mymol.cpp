@@ -1098,7 +1098,7 @@ void MyMol::addShells(const Poldata *pd,
     bHaveShells_ = true;
 }
 
-int MyMol::bondOrder(int ai, int aj) const
+double MyMol::bondOrder(int ai, int aj) const
 {
     if (bondOrder_.find({ai, aj}) != bondOrder_.end())
     {
