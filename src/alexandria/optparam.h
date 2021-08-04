@@ -227,6 +227,7 @@ class Bayes : public OptParam
         func_t        func_;
         parm_t        initial_param_;
         parm_t        param_;
+        std::vector<int> ntrain_;
         parm_t        psigma_;
         parm_t        pmean_;
         parm_t        lowerBound_;
@@ -252,28 +253,32 @@ class Bayes : public OptParam
         /*! \brief
          * Append parameter and set it to value. Add bounds
          * as specified.
-         * \param[in] name  String describing the parameter
-         * \param[in] val   The value
-         * \param[in] lower The new lower bound value
-         * \param[in] upper The new lower bound value
+         * \param[in] name    String describing the parameter
+         * \param[in] val     The value
+         * \param[in] lower   The new lower bound value
+         * \param[in] upper   The new lower bound value
+         * \param[in] ntrain  Number of copies in the training set
          * \param[in] bRandom Generate random initial value for parameters if true.
          */
         void addParam(const std::string &name,
                       real val,
                       real lower,
                       real upper,
+                      int  ntrain,
                       bool bRandom);
         /*! \brief
          * Append random parameter within the bounds specified.
          * \param[in] name  String describing the parameter
          * \param[in] lower The new lower bound value
          * \param[in] upper The new lower bound value
+         * \param[in] ntrain  Number of copies in the training set
          */
         void addRandomParam(const std::string &name,
                             real               lower,
-                            real               upper)
+                            real               upper,
+                            int                ntrain)
         {
-            addParam(name, (lower+upper)*0.5, lower, upper, true);
+            addParam(name, (lower+upper)*0.5, lower, upper, ntrain, true);
         }
 
         /*! \brief
@@ -305,6 +310,11 @@ class Bayes : public OptParam
          * Returns the current vector of parameters.
          */
         const parm_t &getParam() const { return param_; }
+
+        /*! \brief
+         * Returns the number of training points per parameter
+         */
+        const std::vector<int> &getNtrain() const { return ntrain_; }
 
         /*! \brief
          * Returns the vector of best found value for each parameter.
