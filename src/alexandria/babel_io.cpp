@@ -246,7 +246,7 @@ static void checkBondOrders(alexandria::MolProp *mpt)
         atomName.push_back(ca.getObtype());
     }
     std::map<std::string, std::string> my_pairs =
-        { { "no", "on" }, { "cm", "om" }, { "p5", "om" }, { "s6", "om" } };
+        { { "no", "on" }, { "cm", "om" }, { "p5", "om" }, { "s6", "om" }, { "s4", "om" }, { "s3", "om" }, { "py", "om" } };
     for(const auto &my_pair : my_pairs)
     {
         for(size_t i = 0; i < atomName.size(); i++)

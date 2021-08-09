@@ -543,7 +543,7 @@ void Optimization::polData2TuneFc(bool bRandom)
             { 
                 Bayes::addParam("test",
                                 p.second.value(), p.second.minimum(),
-                                p.second.maximum(), bRandom);
+                                p.second.maximum(), p.second.ntrain(), bRandom);
             }
         }
     }
