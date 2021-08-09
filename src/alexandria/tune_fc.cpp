@@ -460,10 +460,10 @@ void Optimization::broadcast()
 
 void Optimization::checkSupport(FILE *fp)
 {
-    auto ntotal  = mymols().size();
+    auto ntotal  = molset().size();
     auto nlocal  = 0;
 
-    for (auto mymol =  mymols().begin(); mymol <  mymols().end(); )
+    for (auto mymol =  molset().begin(); mymol <  molset().end(); )
     {
         if (mymol->eSupp_ != eSupport::Local)
         {
@@ -512,7 +512,7 @@ void Optimization::checkSupport(FILE *fp)
         {
             fprintf(stderr, "No force field support for %s\n",
                     mymol->getMolname().c_str());
-            mymol =  mymols().erase(mymol);
+            mymol =  molset().erase(mymol);
         }
         else
         {
@@ -594,7 +594,7 @@ void Optimization::getDissociationEnergy(FILE *fplog)
     std::vector<std::string>    ctest;
 
     int nD   = ForceConstants_[InteractionType::BONDS].nbad();
-    int nMol = mymols().size();
+    int nMol = molset().size();
 
     if ((0 == nD) || (0 == nMol))
     {
@@ -613,7 +613,7 @@ void Optimization::getDissociationEnergy(FILE *fplog)
     auto fs  = poldata()->findForces(InteractionType::BONDS);
     auto j   = 0;
 
-    for (auto &mymol :  mymols())
+    for (auto &mymol :  molset())
     {
         auto myatoms = mymol.atoms();
         for (auto &b : mymol.bondsConst())
@@ -661,7 +661,7 @@ void Optimization::getDissociationEnergy(FILE *fplog)
     a.solve(rhs, &Edissoc);
     if (debug)
     {
-        dump_csv(ctest,  mymols(), ntest, Edissoc, a_copy, rhs.data());
+        dump_csv(ctest,  molset(), ntest, Edissoc, a_copy, rhs.data());
     }
     for (size_t i = 0; i < ctest.size(); i++)
     {
@@ -697,7 +697,7 @@ void Optimization::InitOpt(FILE *fplog, bool bRandom)
         if (optimize(fs.first))
         {
             ForceConstants fc(fs.second.fType(), fs.first, true);
-            fc.analyzeIdef(mymols(), poldata());
+            fc.analyzeIdef(molset(), poldata());
             fc.makeReverseIndex();
             fc.dump(fplog);
             ForceConstants_.insert({fs.first, std::move(fc)});
@@ -705,7 +705,7 @@ void Optimization::InitOpt(FILE *fplog, bool bRandom)
     }
     if (bDissoc_)
     {
-        if (ForceConstants_[InteractionType::BONDS].nbad() <= mymols().size())
+        if (ForceConstants_[InteractionType::BONDS].nbad() <= molset().size())
         {
             getDissociationEnergy(fplog);
         }
@@ -716,7 +716,7 @@ void Optimization::InitOpt(FILE *fplog, bool bRandom)
                    "         energy for %zu bond type(s) using linear regression. Default\n"
                    "         values from gentop.dat will be used as the initial guess.\n"
                    "         Recomendation is to add more molecules having the same bond types.\n\n",
-                   mymols().size(), ForceConstants_[InteractionType::BONDS].nbad());
+                   molset().size(), ForceConstants_[InteractionType::BONDS].nbad());
         }
     }
     
@@ -747,7 +747,7 @@ double Optimization::calcDeviation(bool verbose,
         mem.second.clear();
     }
     // First compute all the energies and store them
-    for (auto &mymol : mymols())
+    for (auto &mymol : molset())
     {
         if ((mymol.eSupp_ == eSupport::Local) ||
             (calcAll && (mymol.eSupp_ == eSupport::Remote)))
@@ -875,7 +875,7 @@ double Optimization::calcDeviation(bool verbose,
     resetChiSquared();
     double nCalc = 0;
     double ePot2 = 0;
-    for (auto &mymol : mymols())
+    for (auto &mymol : molset())
     {
         if ((mymol.eSupp_ == eSupport::Local) ||
             (calcAll && (mymol.eSupp_ == eSupport::Remote)))
@@ -1005,7 +1005,7 @@ void Optimization::printMolecules(FILE *fp,
                                   bool  bMtop)
 {
     int j, k;
-    for (auto &mi : mymols())
+    for (auto &mi : molset())
     {
         int nSP = 0, nOpt = 0;
         for (auto &ei : mi.experimentConst())
@@ -1051,7 +1051,7 @@ void Optimization::printMolecules(FILE *fp,
     }
     if (bForce)
     {
-        for (const auto &mi : mymols())
+        for (const auto &mi : molset())
         {
             int  molid     = mi.getIndex();
             auto molEnergy = MolEnergyMap_.find(molid);
@@ -1107,7 +1107,7 @@ void Optimization::printResults(FILE                   *fp,
 
     int    imol          = 0;
     int    nconformation = 0;
-    for (auto mi = mymols().begin(); mi < mymols().end(); mi++, imol++)
+    for (auto mi = molset().begin(); mi < molset().end(); mi++, imol++)
     {
         int  molid      = mi->getIndex();
         auto molEnergy  = MolEnergyMap_.find(molid);
@@ -1164,7 +1164,7 @@ void Optimization::printResults(FILE                   *fp,
         }
     }
     fprintf(fp, "RMSD from target energies for %zu compounds and %d conformation is %g.\n",
-            mymols().size(), nconformation, std::sqrt(chiSquared(ermsTOT)));
+            molset().size(), nconformation, std::sqrt(chiSquared(ermsTOT)));
     fprintf(fp, "\n");
     if (nullptr != hform_xvg)
     {

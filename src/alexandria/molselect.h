@@ -44,6 +44,7 @@
 enum class iMolSelect {
     Train,
     Test,
+    Ignore,
     Unknown
 };
 

@@ -360,7 +360,7 @@ int alex_molselect(int argc, char *argv[])
              nullptr,
              select_type);
 
-    printAtomtypeStatistics(fp, mgn.poldata(), mgn.mymols());
+    printAtomtypeStatistics(fp, mgn.poldata(), mgn.molset());
 
     for (int i = 0; i < nsample; i++)
     {
@@ -374,7 +374,7 @@ int alex_molselect(int argc, char *argv[])
         
         sample_molecules(fp,
                          dat, 
-                         mgn.mymols(), 
+                         mgn.molset(), 
                          mgn.poldata(),
                          mgn.mindata(), 
                          maxatempt);

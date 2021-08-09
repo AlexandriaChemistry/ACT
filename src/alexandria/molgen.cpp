@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020
+ * Copyright (C) 2014-2021
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -266,7 +266,7 @@ void MolGen::checkDataSufficiency(FILE *fp)
     size_t nmol = 0;
     do
     {
-        nmol = mymol_.size();
+        nmol = molset_.size();
         /* First set the ntrain values for all forces
          * present that should be optimized to zero.
          */
@@ -295,7 +295,7 @@ void MolGen::checkDataSufficiency(FILE *fp)
             InteractionType::ELECTRONEGATIVITYEQUALIZATION
         };
         // Now loop over molecules and add interactions
-        for(auto &mol : mymol_)
+        for(auto &mol : molset_)
         {
             auto myatoms = mol.atomsConst();
             for(int i = 0; i < myatoms.nr; i++)
@@ -374,7 +374,7 @@ void MolGen::checkDataSufficiency(FILE *fp)
         }
         // Now loop over molecules and remove those without sufficient support
         std::vector<std::string> removeMol;
-        for(auto &mol : mymol_)
+        for(auto &mol : molset_)
         {
             bool keep = true;
             auto myatoms = mol.atomsConst();
@@ -419,22 +419,22 @@ void MolGen::checkDataSufficiency(FILE *fp)
         }
         for(auto &rmol : removeMol)
         {
-            auto moliter = std::find_if(mymol_.begin(), mymol_.end(),
+            auto moliter = std::find_if(molset_.begin(), molset_.end(),
                                         [rmol](MyMol const &f)
                                         { return (rmol == f.getIupac()); });
-            if (moliter == mymol_.end())
+            if (moliter == molset_.end())
             {
-                GMX_THROW(gmx::InternalError(gmx::formatString("Cannot find %s in mymol_", rmol.c_str()).c_str()));
+                GMX_THROW(gmx::InternalError(gmx::formatString("Cannot find %s in molset_", rmol.c_str()).c_str()));
             }
             if (debug)
             {
                 fprintf(debug, "Removing %s because of lacking support\n",
                         rmol.c_str());
             }
-            mymol_.erase(moliter);
+            molset_.erase(moliter);
         }
     }
-    while (mymol_.size() > 0 && mymol_.size() < nmol);
+    while (molset_.size() > 0 && molset_.size() < nmol);
     if (fp)
     {
         fprintf(fp, "There are %zu molecules left to optimize the parameters for.\n", nmol);
@@ -535,8 +535,14 @@ void MolGen::Read(FILE            *fp,
         for (auto mpi = mp.begin(); mpi < mp.end(); )
         {
             mpi->CheckConsistency();
-            if (!mpi->GenerateComposition() || SelectType != gms.status(mpi->getIupac()))
+            if (!mpi->GenerateComposition() || 
+		iMolSelect::Unknown == gms.status(mpi->getIupac()) || 
+		iMolSelect::Ignore == gms.status(mpi->getIupac()))
             {
+		/*
+		 * Here we remove a compound if its iMolSelect status 
+		 * is either Ignore or Unknown. 
+		 */
                 mpi = mp.erase(mpi);
             }
             else
@@ -567,7 +573,8 @@ void MolGen::Read(FILE            *fp,
         printf("Generating molecules!\n");
         for (auto mpi = mp.begin(); mpi < mp.end(); ++mpi)
         {
-            if (SelectType == gms.status(mpi->getIupac()))
+            if (iMolSelect::Train == gms.status(mpi->getIupac()) || 
+		iMolSelect::Test == gms.status(mpi->getIupac()))
             {
                 alexandria::MyMol mymol;
                 if (debug)
@@ -622,14 +629,14 @@ void MolGen::Read(FILE            *fp,
                 }
                 if (immStatus::OK == imm)
                 {
-                    mymol_.push_back(std::move(mymol));
+                    molset_.push_back(std::move(mymol));
                 }
             }
         }
         print_memory_usage(fp);
         checkDataSufficiency(fp);
         generateOptimizationIndex(fp);
-        for(auto &mymol : mymol_)
+        for(auto &mymol : molset_)
         {
             int dest = (ntopol++ % cr_->nnodes);
 
@@ -755,7 +762,7 @@ void MolGen::Read(FILE            *fp,
             incrementImmCount(&imm_count, imm);
             if (immStatus::OK == imm)
             {
-                mymol_.push_back(std::move(mymol));
+                molset_.push_back(std::move(mymol));
                 nlocaltop += 1;
                 if (nullptr != debug)
                 {
@@ -786,6 +793,10 @@ void MolGen::Read(FILE            *fp,
                 fprintf(fp, "Check alexandria.debug for more information.\nYou may have to use the -debug 1 flag.\n\n");
             }
         }
+    }
+    for (auto mymol : &molset_)
+    {
+
     }
     gmx_sumi(1, &nlocaltop, cr_);
     nmol_support_ = nlocaltop;

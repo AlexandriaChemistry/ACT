@@ -187,7 +187,9 @@ class MolGen
         //! Map to determine whether or not to  fit a parameter type
         std::map<std::string, bool>     fit_;
         gmx::MDModules                  mdModules_;
-        std::vector<alexandria::MyMol>  mymol_;
+        std::vector<alexandria::MyMol>  molset_;
+        std::vector<alexandria::MyMol>  trainingset_;
+        std::vector<alexandria::MyMol>  testset_;
         const char                     *lot_;
         /*! \brief Check that we have enough data 
          * Check that we have enough data for all parameters to optimize
@@ -232,11 +234,23 @@ class MolGen
         //! \brief Return the atomprop structure
         gmx_atomprop_t atomprop() const { return atomprop_; }
 
-        //! \brief Return the const vector of molecules
-        const std::vector<MyMol> &mymols() const { return mymol_; }
+        //! \brief Return the const vector of all  molecules
+        const std::vector<MyMol> &molset() const { return molset_; }
+
+        //! \brief Return the const vector of training molecules
+        const std::vector<MyMol> &trainingset() const { return trainingset_; }
+
+        //! \brief Return the const vector of test molecules
+        const std::vector<MyMol> &testset() const { return testset_; }
 
         //! \brief Return the mutable vector of molecules
-        std::vector<MyMol> &mymols() { return mymol_; }
+        std::vector<MyMol> &molset() { return molset_; }
+
+        //! \brief Return the mutable vector of molecules
+        std::vector<MyMol> &trainingset() { return trainingset_; }
+
+        //! \brief Return the mutable vector of test molecules
+        std::vector<MyMol> &testset() { return testset_; }
 
         gmx::MDLogger  mdlog()  const {return mdlog_; }
 

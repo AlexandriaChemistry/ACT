@@ -253,7 +253,7 @@ void OptACM::initChargeGeneration()
     splitLot(lot(), &method, &basis);
     tensor           polar      = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
     rvec             vec;
-    for (auto &mymol : mymols())
+    for (auto &mymol : molset())
     {
         if (fit("alpha"))
         {
@@ -338,7 +338,7 @@ double OptACM::calcDeviation(bool verbose,
             poldata()->broadcast_eemprop(commrec());
         }
     }
-    for (auto &mymol : mymols())
+    for (auto &mymol : molset())
     {
         if ((mymol.eSupp_ == eSupport::Local) ||
             (calcAll && (mymol.eSupp_ == eSupport::Remote)))
@@ -861,9 +861,9 @@ int alex_tune_eem(int argc, char *argv[])
         if (bMinimum || bForceOutput || !bOptimize)
         {
             bool bPolar = opt.poldata()->polarizable();
-            auto mymols = opt.mymols();
+            auto molset = opt.molset();
             print_electric_props(opt.logFile(),
-                                 &mymols,
+                                 &molset,
                                  opt.poldata(),
                                  opt.mdlog(),
                                  opt.lot(),
