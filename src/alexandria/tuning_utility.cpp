@@ -175,7 +175,7 @@ static void xvgr_symbolize(FILE                   *xvgf,
 }
 
 static void print_polarizability(FILE              *fp,
-                                 const std::vector<alexandria::MyMol>::iterator mol,
+                                 const std::vector<alexandria::MyMol>::iterator &mol,
                                  const std::string &calc_name,
                                  real               alpha_toler,
                                  real               isopol_toler)
@@ -234,7 +234,7 @@ static void print_polarizability(FILE              *fp,
 }
 
 static void print_quadrapole(FILE              *fp,
-                             const std::vector<alexandria::MyMol>::iterator mol,
+                             const std::vector<alexandria::MyMol>::iterator &mol,
                              qType              qt,
                              real               q_toler)
 {

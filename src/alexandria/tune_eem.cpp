@@ -91,7 +91,6 @@ class OptACM : public MolGen, Bayes
     private:
         bool       bFullTensor_                  = false;
         bool       bSameZeta_                    = true;
-        bool       bUseCM5_                      = false;
         bool       bRemoveMol_                   = true;
         bool       bPointCore_                   = false;
         int        numberCalculateDeviation_     = 0;
@@ -104,18 +103,10 @@ class OptACM : public MolGen, Bayes
 
         ~OptACM() {}
 
-        bool bESP() const { return weight(ermsESP); }
-
-        bool dipole() const { return weight(ermsMU); }
-
-        bool quadrupole() const { return weight(ermsQUAD); }
-
         bool fullTensor() const { return bFullTensor_; }
 
         bool sameZeta() const { return bSameZeta_; }
 
-        bool useCM5() const {return bUseCM5_; }
-        
         bool removeMol() const {return bRemoveMol_; }
         
         void set_pointCore(bool pointCore) {bPointCore_ =  pointCore;}
@@ -130,8 +121,6 @@ class OptACM : public MolGen, Bayes
                   "Consider both diagonal and off-diagonal elements of the Q_Calc matrix for optimization" },
                 { "-samezeta", FALSE, etBOOL, {&bSameZeta_},
                   "Use the same zeta for both the core and the shell of the Drude model." },
-                { "-cm5", FALSE, etBOOL, {&bUseCM5_},
-                  "Reproduce CM5 charges in fitting." },
                 { "-removemol", FALSE, etBOOL, {&bRemoveMol_},
                   "Remove a molecule from training set if shell minimzation does not converge." },
             };
@@ -311,9 +300,10 @@ double OptACM::calcDeviation(bool verbose,
                              bool calcAll)
 {
     resetChiSquared();
+    auto targets = fittingTargets();
     if (MASTER(commrec()))
     {
-        if (weight(ermsBOUNDS))
+      if ((*targets).find(eRMS::BOUNDS)->second.weight() > 0)
         {
             const param_type &param = Bayes::getParam();
             double            bound = 0;
@@ -325,7 +315,7 @@ double OptACM::calcDeviation(bool verbose,
                 bound  += l2_regularizer(param[n++], p.minimum(), p.maximum(),
                                          optIndex.name(), verbose);
             }
-            increaseChiSquared(ermsBOUNDS, 1, bound);
+	    (*targets).find(eRMS::BOUNDS)->second.increase(1, bound);
             GMX_RELEASE_ASSERT(n == param.size(), 
                                gmx::formatString("Death horror error. n=%zu param.size()=%zu", n, param.size()).c_str());
         }
@@ -361,16 +351,32 @@ double OptACM::calcDeviation(bool verbose,
                 continue;
             }
             
-            if (weight(ermsCHARGE))
-            {
-                double qtot = 0;
-                int    i;
-                auto myatoms = mymol.atomsConst();
-                for (int j = i = 0; j < myatoms.nr; j++)
+            if ((*targets).find(eRMS::CHARGE)->second.weight() > 0 ||
+		(*targets).find(eRMS::CM5)->second.weight() > 0)
+	      {
+                double qtot    = 0;
+                //int    i;
+                auto   myatoms = mymol.atomsConst();
+		auto   qcm5    = mymol.chargeQM(qType::CM5);
+		if (debug)
+		  {
+		    for (int j = 0; j < myatoms.nr; j++)
+		      {
+			fprintf(debug, "Charge %d. CM5 = %g ACM = %g\n", j, qcm5[j], myatoms.atom[j].q);
+		      }
+		  }
+                for (int j = 0; j < myatoms.nr; j++)
                 {
                     auto atype = poldata()->findParticleType(*myatoms.atomtype[j]);
                     auto qparm = atype->parameterConst("charge");
                     double qj  = myatoms.atom[j].q;
+                    // TODO: only count in real shells
+                    if (nullptr != mymol.shellfc_ && 
+                        j < myatoms.nr-1 && 
+                        myatoms.atom[j+1].ptype == eptShell)
+                    {
+		      qj += myatoms.atom[j+1].q;
+                    }
                     qtot += qj;
                     switch (qparm.mutability())
                     {
@@ -383,25 +389,35 @@ double OptACM::calcDeviation(bool verbose,
                         break;
                     case Mutability::Bounded:
                         {
-                            real dq = 0;
-                            if (qj < qparm.minimum())
-                            {
-                                dq = qparm.minimum() - qj;
-                            }
-                            else if (qj > qparm.maximum())
-                            {
-                                dq = qj - qparm.maximum();
-                            } 
-                            increaseChiSquared(ermsCHARGE, 1, dq*dq);
-                        }
+			  if ((*targets).find(eRMS::CHARGE)->second.weight() > 0)
+			    {
+			      real dq = 0;
+			      if (qj < qparm.minimum())
+				{
+				  dq = qparm.minimum() - qj;
+				}
+			      else if (qj > qparm.maximum())
+				{
+				  dq = qj - qparm.maximum();
+			      }
+			      (*targets).find(eRMS::CHARGE)->second.increase(1, dq*dq);
+			    }
+                       }
                         break;
                     default:
                         break;
-                    }
+		    }
+		    if (qparm.mutability() != Mutability::Fixed &&
+			(*targets).find(eRMS::CM5)->second.weight() > 0)
+		      {
+			// TODO: Add charge of shell!
+			real dq2 = gmx::square(qj - qcm5[j]);
+			(*targets).find(eRMS::CM5)->second.increase(1, dq2);
+		      }
                 }
-                increaseChiSquared(ermsCHARGE, 1, gmx::square(qtot - mymol.totalCharge()));
+		(*targets).find(eRMS::CHARGE)->second.increase(1, gmx::square(qtot - mymol.totalCharge()));
             }
-            if (weight(ermsESP))
+            if ((*targets).find(eRMS::ESP)->second.weight() > 0)
             {
                 real rrms     = 0;
                 real cosangle = 0;
@@ -420,7 +436,7 @@ double OptACM::calcDeviation(bool verbose,
                     convertToGromacs(mymol.QgenResp_->getRms(&rrms, &cosangle),
                                      "Hartree/e");
                 auto nEsp = mymol.QgenResp_->nEsp();
-                increaseChiSquared(ermsESP, nEsp, gmx::square(myRms)*nEsp);
+		(*targets).find(eRMS::ESP)->second.increase(nEsp, gmx::square(myRms)*nEsp);
                 if (debug)
                 {
                     fprintf(debug, "%s ESPrms = %g cosangle = %g\n",
@@ -428,22 +444,24 @@ double OptACM::calcDeviation(bool verbose,
                             myRms, cosangle);
                 }
             }
-            if (weight(ermsMU))
+            if ((*targets).find(eRMS::MU)->second.weight() > 0)
             {
                 mymol.CalcDipole();
                 mymol.rotateDipole(mymol.muQM(qType::Calc), mymol.muQM(qType::Elec));
+		real delta = 0;
                 if (bQM())
                 {
                     rvec dmu;
                     rvec_sub(mymol.muQM(qType::Calc), mymol.muQM(qType::Elec), dmu);
-                    increaseChiSquared(ermsMU, 1, iprod(dmu, dmu));
-                }
+                    delta = iprod(dmu, dmu);
+		}
                 else
                 {
-                    increaseChiSquared(ermsMU, 1, gmx::square(mymol.dipQM(qType::Calc) - mymol.dipExper()));
+		  delta = gmx::square(mymol.dipQM(qType::Calc) - mymol.dipExper());
                 }
+		(*targets).find(eRMS::MU)->second.increase(1, delta);
             }
-            if (weight(ermsQUAD))
+            if ((*targets).find(eRMS::QUAD)->second.weight() > 0)
             {
                 mymol.CalcQuadrupole();
                 for (int mm = 0; mm < DIM; mm++)
@@ -452,13 +470,12 @@ double OptACM::calcDeviation(bool verbose,
                     {
                         if (bFullTensor_ || mm == nn)
                         {
-                            increaseChiSquared(ermsQUAD, 1,
-                                               gmx::square(mymol.QQM(qType::Calc)[mm][nn] - mymol.QQM(qType::Elec)[mm][nn]));
+			  (*targets).find(eRMS::QUAD)->second.increase(1, gmx::square(mymol.QQM(qType::Calc)[mm][nn] - mymol.QQM(qType::Elec)[mm][nn]));
                         }
                     }
                 }
             }
-            if (weight(ermsPolar))
+            if ((*targets).find(eRMS::Polar)->second.weight() > 0)
             {
                 double diff2 = 0;
                 mymol.CalcPolarizability(10, commrec(), nullptr);
@@ -475,7 +492,7 @@ double OptACM::calcDeviation(bool verbose,
                 {
                     fprintf(logFile(), "DIFF %s %g\n", mymol.getMolname().c_str(), diff2);
                 }
-                increaseChiSquared(ermsPolar, 1, diff2);
+		(*targets).find(eRMS::Polar)->second.increase(1, diff2);
             }
         }
     }
@@ -486,7 +503,7 @@ double OptACM::calcDeviation(bool verbose,
         printChiSquared(logFile());
     }
     numberCalcDevCalled_ += 1;
-    return chiSquared(ermsTOT);
+    return (*targets).find(eRMS::TOT)->second.chiSquared();
 }
 
 void OptACM::InitOpt(bool bRandom)
@@ -890,8 +907,8 @@ int alex_tune_eem(int argc, char *argv[])
                                  isopol_toler,
                                  oenv,
                                  bPolar,
-                                 opt.dipole(),
-                                 opt.quadrupole(),
+                                 true,
+				 true,
                                  opt.fullTensor(),
                                  opt.commrec(),
                                  efield,
