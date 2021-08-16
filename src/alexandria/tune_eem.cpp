@@ -503,7 +503,7 @@ void OptACM::InitOpt(bool bRandom)
         {
             Bayes::addParam(optIndex.name(),
                             param.value(), param.minimum(), param.maximum(),
-                            bRandom);
+                            param.ntrain(), bRandom);
         }
     }
 }
@@ -543,6 +543,7 @@ void OptACM::printResults(double chi2_min)
     auto attemptedMoves = Bayes::getAttemptedMoves();
     auto acceptedMoves  = Bayes::getAcceptedMoves();
     auto paramNames     = Bayes::getParamNames();
+    auto ntrain         = Bayes::getNtrain();
     if (logFile())
     {
         fprintf(logFile(), "\nMinimum RMSD value during optimization: %.3f.\n", sqrt(chi2_min));
@@ -551,11 +552,13 @@ void OptACM::printResults(double chi2_min)
                 best.size(), pmean.size(), psigma.size(), paramNames.size());
         if (best.size() == Bayes::nParam())
         {
+            fprintf(logFile(), "Parameter                     Ncopies Initial   Best    Mean    Sigma Attempt  Acceptance\n");
             for (size_t k = 0; k < Bayes::nParam(); k++)
             {
                 double acceptance_ratio = 100*(double(acceptedMoves[k])/attemptedMoves[k]);
-                fprintf(logFile(), "%-10s  Initial: %6.3f  Best: %6.3f  Mean: %6.3f  Sigma: %6.3f  Attempted moves: %4d  Acceptance ratio: %5.1f%%\n",
-                        paramNames[k].c_str(), i_param[k], best[k], pmean[k], psigma[k], attemptedMoves[k], acceptance_ratio);
+                fprintf(logFile(), "%-30s  %5d  %6.3f  %6.3f  %6.3f  %6.3f    %4d %5.1f%%\n",
+                        paramNames[k].c_str(), ntrain[k],
+                        i_param[k], best[k], pmean[k], psigma[k], attemptedMoves[k], acceptance_ratio);
             }
         }
     }
@@ -820,7 +823,11 @@ int alex_tune_eem(int argc, char *argv[])
 
     const char *tabfn = opt2fn_null("-table", NFILE, fnm);   
     
-    iMolSelect select_type = name2molselect(select_types[0]);
+    iMolSelect select_type;
+    if (!name2molselect(select_types[0], &select_type))
+    {
+        gmx_fatal(FARGS, "No such selection type %s", select_types[0]);
+    }
     opt.Read(opt.logFile() ? opt.logFile() : (debug ? debug : nullptr),
              opt2fn("-f", NFILE, fnm),
              opt2fn_null("-d", NFILE, fnm),

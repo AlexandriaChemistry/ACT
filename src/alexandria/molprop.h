@@ -871,19 +871,20 @@ using ElectrostaticPotentialConstIterator = typename std::vector<ElectrostaticPo
 class Bond
 {
     private:
-        int ai_, aj_, bondorder_;
+        int ai_, aj_;
+        double bondorder_;
     public:
         //! Default constructor
         Bond() {}
 
         //! Constructor setting the ids of the atoms and the bondorder
-        Bond(int ai, int aj, int bondorder) { Set(ai, aj, bondorder); }
+        Bond(int ai, int aj, double bondorder) { Set(ai, aj, bondorder); }
 
         //! Sets the ids of the atoms and the bondorder
-        void Set(int ai, int aj, int bondorder) {ai_ = ai; aj_ = aj; bondorder_ = bondorder; };
+        void Set(int ai, int aj, double bondorder) {ai_ = ai; aj_ = aj; bondorder_ = bondorder; };
 
         //! Returns the ids of the atoms and the bondorder
-        void get(int *ai, int *aj, int *bondorder) const
+        void get(int *ai, int *aj, double *bondorder) const
         { *ai = ai_; *aj = aj_; *bondorder = bondorder_; };
 
         //! Returns the first atom id
@@ -893,7 +894,10 @@ class Bond
         int getAj() const { return aj_; }
 
         //! Returns the bondorder
-        int getBondOrder() const { return bondorder_; }
+        double getBondOrder() const { return bondorder_; }
+
+        //! Update the bondorder
+        void setBondOrder(double bondorder) { bondorder_ = bondorder; }
 
         /*! \brief
          * Sends this object over an MPI connection

@@ -254,7 +254,7 @@ CommunicationStatus Bond::Send(t_commrec *cr, int dest) const
     {
         gmx_send_int(cr, dest, ai_);
         gmx_send_int(cr, dest, aj_);
-        gmx_send_int(cr, dest, bondorder_);
+        gmx_send_double(cr, dest, bondorder_);
     }
     else if (nullptr != debug)
     {
@@ -273,7 +273,7 @@ CommunicationStatus Bond::Receive(t_commrec *cr, int src)
     {
         ai_        = gmx_recv_int(cr, src);
         aj_        = gmx_recv_int(cr, src);
-        bondorder_ = gmx_recv_int(cr, src);
+        bondorder_ = gmx_recv_double(cr, src);
     }
     else if (nullptr != debug)
     {

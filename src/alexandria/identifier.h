@@ -88,7 +88,7 @@ class Identifier
      * \param[in] canSwap   Can the order of the atoms be swapped
      */
     Identifier(const std::vector<std::string> &atoms,
-               int                             bondorder,
+               double                          bondorder,
                CanSwap                         canSwap);
 
     //! \brief Return standard identifier string
@@ -98,7 +98,7 @@ class Identifier
     //const std::string &swappedId() const { return swappedId_; }
 
     //! \brief Return the bond order
-    int bondOrder() const { return bondOrder_; }
+    double bondOrder() const { return bondOrder_; }
     
     /*! \brief Comparison operator
      *
@@ -139,7 +139,7 @@ class Identifier
     //! The swapped id
     std::string swappedId_;
     //! The bond order
-    int         bondOrder_ = 0;
+    double      bondOrder_ = 0;
     //! The atoms
     std::vector<std::string> atoms_ = {};
     //! Correct the order of atoms

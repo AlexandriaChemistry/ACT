@@ -598,7 +598,7 @@ int QgenAcm::solveEEM(FILE *fp)
 void QgenAcm::getBccParams(const Poldata *pd,
                            int            ai,
                            int            aj,
-                           int            bondorder,
+                           double         bondorder,
                            double        *deltachi,
                            double        *hardness)
 {

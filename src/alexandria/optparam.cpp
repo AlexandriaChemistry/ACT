@@ -196,6 +196,7 @@ void Bayes::addParam(const std::string &name,
                      real               val,
                      real               lower,
                      real               upper,
+                     int                ntrain,
                      bool               bRandom)
 {
     if (bRandom)
@@ -211,6 +212,7 @@ void Bayes::addParam(const std::string &name,
     
     initial_param_.push_back(val);
     param_.push_back(val);
+    ntrain_.push_back(ntrain);
     //    prevParam_.push_back(val);
     lowerBound_.push_back(lower);
     upperBound_.push_back(upper);

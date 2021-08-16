@@ -66,7 +66,7 @@
 
 typedef struct {
     std::string      a1, a2;
-    int              order;
+    double           order;
     std::vector<int> histo;
     gmx_stats_t      lsq;
 } t_bond;
@@ -142,7 +142,8 @@ static void sort_bonds(t_bonds *b)
 
 static void add_bond(FILE *fplog, const char *molname, t_bonds *bonds,
                      const std::string a1, const std::string a2,
-                     double blen, double spacing, int order, InteractionType iType)
+                     double blen, double spacing, double order,
+                     InteractionType iType)
 {
     GMX_RELEASE_ASSERT(a1.size() > 0, "atom name a1 is empty");
     GMX_RELEASE_ASSERT(a2.size() > 0, "atom name a2 is empty");
@@ -181,7 +182,7 @@ static void add_bond(FILE *fplog, const char *molname, t_bonds *bonds,
     b->histo[index]++;
     if (nullptr != fplog)
     {
-        fprintf(fplog, "%s %s-%s-%s-%d %g\n",
+        fprintf(fplog, "%s %s-%s-%s-%g %g\n",
                 molname, interactionTypeToString(iType).c_str(),
                 a1.c_str(),
                 a2.c_str(),
@@ -377,7 +378,7 @@ static void dump_histo(t_bonds *b, double bspacing,
     {
         if ((gmx_stats_get_npoints(i.lsq, &N) == 0) && (i.histo.size() > 0))
         {
-            snprintf(buf, sizeof(buf), "bond-%s-%s-%d.xvg", i.a1.c_str(), i.a2.c_str(), i.order);
+            snprintf(buf, sizeof(buf), "bond-%s-%s-%g.xvg", i.a1.c_str(), i.a2.c_str(), i.order);
             lo_dump_histo(buf, (char *)"Distance (pm)", oenv, N,
                           i.histo.size(), i.histo.data(), bspacing);
         }
@@ -621,11 +622,13 @@ static void generate_bcc(Poldata *pd,
     {
         for (auto &aj : ptypes)
         {
-            for(int bondOrder = 1; bondOrder < 4; bondOrder++)
+            const double bondorders[] = { 1, 1.5, 2, 3 };
+            const size_t nBondorder   = std::extent<decltype(bondorders)>::value;
+            for(size_t bb = 0; bb < nBondorder; bb++)
             {
                 auto bi = ai.interactionTypeToIdentifier(InteractionType::BONDS).id();
                 auto bj = aj.interactionTypeToIdentifier(InteractionType::BONDS).id();
-                Identifier bondId({ bi, bj }, bondOrder, bonds.canSwap());
+                Identifier bondId({ bi, bj }, bondorders[bb], bonds.canSwap());
                 if (bonds.parameterExists(bondId))
                 {
                     auto entype = InteractionType::ELECTRONEGATIVITYEQUALIZATION;
@@ -633,8 +636,8 @@ static void generate_bcc(Poldata *pd,
                     auto zj = aj.interactionTypeToIdentifier(entype).id();
                     if (!zi.empty() && !zj.empty())
                     {
-                        Identifier bccId1({ zi, zj }, bondOrder, bcc->canSwap());
-                        Identifier bccId2({ zj, zi }, bondOrder, bcc->canSwap());
+                        Identifier bccId1({ zi, zj }, bondorders[bb], bcc->canSwap());
+                        Identifier bccId2({ zj, zi }, bondorders[bb], bcc->canSwap());
                         if (!bcc->parameterExists(bccId1) && 
                             !bcc->parameterExists(bccId2))
                         {
@@ -768,8 +771,8 @@ int alex_bastat(int argc, char *argv[])
     gms.read(selfile);
     print_memory_usage(fp);
     printf("There are %d molecules in the selection file %s.\n",
-           (gms.count(imsTrain) + gms.count(imsTest)), selfile);
-    fprintf(fp, "# There are %d molecules.\n#\n", (gms.count(imsTrain) + gms.count(imsTest)));
+           (gms.count(iMolSelect::Train) + gms.count(iMolSelect::Test)), selfile);
+    fprintf(fp, "# There are %d molecules.\n#\n", (gms.count(iMolSelect::Train) + gms.count(iMolSelect::Test)));
 
     /* Read standard atom properties */
     aps = gmx_atomprop_init();
@@ -799,7 +802,7 @@ int alex_bastat(int argc, char *argv[])
     for (auto mpi = mp.begin(); mpi < mp.end(); mpi++)
     {
         auto imol = gms.status(mpi->getIupac());
-        if (imol == imsTrain || imol == imsTest)
+        if (imol == iMolSelect::Train || imol == iMolSelect::Test)
         {
             alexandria::MyMol mmi;
             int               i;
@@ -875,7 +878,8 @@ int alex_bastat(int argc, char *argv[])
                             {
                                 for (auto &bi : mmi.bondsConst())
                                 {
-                                    auto xi = 0, xj = 0, xb = 0;
+                                    int    xi = 0, xj = 0;
+                                    double xb = 0;
                                     bi.get(&xi, &xj, &xb);
                                     xi--;
                                     xj--;

@@ -183,7 +183,7 @@ void add_param_to_plist(std::vector<PlistWrapper> &plist,
                         int                        ftype,
                         InteractionType            itype,
                         const t_param             &p,
-                        size_t                     bondOrder)
+                        double                     bondOrder)
 {
     std::vector<PlistWrapper>::iterator pwi = SearchPlist(plist, ftype);
 
