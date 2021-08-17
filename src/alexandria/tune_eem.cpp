@@ -224,11 +224,6 @@ class OptACM : public MolGen, Bayes
          */
         void runSlave();
     
-        /* \brief
-         * Print the final results to the logFile.
-         * \param[in] chi2_min Final chi2 in optimization
-         */
-        void printResults(double chi2_min);
 };
 
 void OptACM::saveState()
@@ -352,32 +347,37 @@ double OptACM::calcDeviation(bool verbose,
             }
             
             if ((*targets).find(eRMS::CHARGE)->second.weight() > 0 ||
-		(*targets).find(eRMS::CM5)->second.weight() > 0)
-	      {
+                (*targets).find(eRMS::CM5)->second.weight() > 0)
+            {
                 double qtot    = 0;
-                //int    i;
+                int    i = 0;
                 auto   myatoms = mymol.atomsConst();
-		auto   qcm5    = mymol.chargeQM(qType::CM5);
-		if (debug)
-		  {
-		    for (int j = 0; j < myatoms.nr; j++)
-		      {
-			fprintf(debug, "Charge %d. CM5 = %g ACM = %g\n", j, qcm5[j], myatoms.atom[j].q);
-		      }
-		  }
+                auto   qcm5    = mymol.chargeQM(qType::CM5);
+                if (debug)
+                {
+                    for (int j = 0; j < myatoms.nr; j++)
+                    {
+                        fprintf(debug, "Charge %d. CM5 = %g ACM = %g\n", j, qcm5[j], myatoms.atom[j].q);
+                    }
+                }
                 for (int j = 0; j < myatoms.nr; j++)
                 {
+                    if (myatoms.atom[j].ptype == eptShell)
+                    {
+                        continue;
+                    }
                     auto atype = poldata()->findParticleType(*myatoms.atomtype[j]);
                     auto qparm = atype->parameterConst("charge");
                     double qj  = myatoms.atom[j].q;
+                    double qjj = qj;
                     // TODO: only count in real shells
                     if (nullptr != mymol.shellfc_ && 
                         j < myatoms.nr-1 && 
                         myatoms.atom[j+1].ptype == eptShell)
                     {
-		      qj += myatoms.atom[j+1].q;
+                        qjj += myatoms.atom[j+1].q;
                     }
-                    qtot += qj;
+                    qtot += qjj;
                     switch (qparm.mutability())
                     {
                     case Mutability::Fixed:
@@ -389,33 +389,34 @@ double OptACM::calcDeviation(bool verbose,
                         break;
                     case Mutability::Bounded:
                         {
-			  if ((*targets).find(eRMS::CHARGE)->second.weight() > 0)
-			    {
-			      real dq = 0;
-			      if (qj < qparm.minimum())
-				{
-				  dq = qparm.minimum() - qj;
-				}
-			      else if (qj > qparm.maximum())
-				{
-				  dq = qj - qparm.maximum();
-			      }
-			      (*targets).find(eRMS::CHARGE)->second.increase(1, dq*dq);
-			    }
-                       }
+                            if ((*targets).find(eRMS::CHARGE)->second.weight() > 0)
+                            {
+                                real dq = 0;
+                                if (qj < qparm.minimum())
+                                {
+                                    dq = qparm.minimum() - qj;
+                                }
+                                else if (qj > qparm.maximum())
+                                {
+                                    dq = qj - qparm.maximum();
+                                }
+                                (*targets).find(eRMS::CHARGE)->second.increase(1, dq*dq);
+                            }
+                        }
                         break;
                     default:
                         break;
-		    }
-		    if (qparm.mutability() != Mutability::Fixed &&
-			(*targets).find(eRMS::CM5)->second.weight() > 0)
-		      {
-			// TODO: Add charge of shell!
-			real dq2 = gmx::square(qj - qcm5[j]);
-			(*targets).find(eRMS::CM5)->second.increase(1, dq2);
-		      }
+                    }
+                    if (qparm.mutability() != Mutability::Fixed &&
+                        (*targets).find(eRMS::CM5)->second.weight() > 0)
+                    {
+                        // TODO: Add charge of shell!
+                        real dq2 = gmx::square(qjj - qcm5[i]);
+                        (*targets).find(eRMS::CM5)->second.increase(1, dq2);
+                    }
+                    i += 1;
                 }
-		(*targets).find(eRMS::CHARGE)->second.increase(1, gmx::square(qtot - mymol.totalCharge()));
+                (*targets).find(eRMS::CHARGE)->second.increase(1, gmx::square(qtot - mymol.totalCharge()));
             }
             if ((*targets).find(eRMS::ESP)->second.weight() > 0)
             {
@@ -546,36 +547,6 @@ void OptACM::toPoldata(const std::vector<bool> &changed)
                                          n, changed.size()).c_str());
 }
 
-void OptACM::printResults(double chi2_min)
-{
-    auto i_param        = Bayes::getInitialParam();
-    auto best           = Bayes::getBestParam();
-    auto pmean          = Bayes::getPmean();
-    auto psigma         = Bayes::getPsigma();
-    auto attemptedMoves = Bayes::getAttemptedMoves();
-    auto acceptedMoves  = Bayes::getAcceptedMoves();
-    auto paramNames     = Bayes::getParamNames();
-    auto ntrain         = Bayes::getNtrain();
-    if (logFile())
-    {
-        fprintf(logFile(), "\nMinimum RMSD value during optimization: %.3f.\n", sqrt(chi2_min));
-        fprintf(logFile(), "Statistics of parameters after optimization\n");
-        fprintf(logFile(), "#best %zu #mean %zu #sigma %zu #param %zu\n",
-                best.size(), pmean.size(), psigma.size(), paramNames.size());
-        if (best.size() == Bayes::nParam())
-        {
-            fprintf(logFile(), "Parameter                     Ncopies Initial   Best    Mean    Sigma Attempt  Acceptance\n");
-            for (size_t k = 0; k < Bayes::nParam(); k++)
-            {
-                double acceptance_ratio = 100*(double(acceptedMoves[k])/attemptedMoves[k]);
-                fprintf(logFile(), "%-30s  %5d  %6.3f  %6.3f  %6.3f  %6.3f    %4d %5.1f%%\n",
-                        paramNames[k].c_str(), ntrain[k],
-                        i_param[k], best[k], pmean[k], psigma[k], attemptedMoves[k], acceptance_ratio);
-            }
-        }
-    }
-}
-
 void OptACM::communicateNumberOfCalculations(bool bOptimize,
                                              bool bSensitivity)
 {
@@ -664,7 +635,7 @@ bool OptACM::runMaster(FILE                   *fp,
         toPoldata(changed);
         // Compute the deviation once more
         double chi2 = calcDeviation(true, true);
-        printResults(chi2);
+        printResults(logFile(), chi2);
         printChiSquared(fp);
         printChiSquared(logFile());
         fprintf(logFile(), "Minimum chi2 %g\n", chi2);

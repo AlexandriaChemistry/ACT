@@ -68,6 +68,8 @@ void OptParam::add_pargs(std::vector<t_pargs> *pargs)
           "Adapt Temperature every nAdapt steps when running Adaptive-MCMC." },
         { "-temp",    FALSE, etREAL, {&temperature_},
           "'Temperature' for the Monte Carlo simulation" },
+        { "-tweight", FALSE, etBOOL, {&tempWeight_},
+          "Weight the temperature in the MC/MC algorithm according to the square root of the number of data points. This is in order to get a lower probability ofaccepting a step in the wrong direction for parameters of which there are few copies." },
         { "-anneal", FALSE, etREAL, {&anneal_},
           "Use annealing in Monte Carlo simulation, starting from this fraction of the simulation. Value should be between 0 and 1." },
         { "-adaptive", FALSE, etBOOL, {&adaptive_},
@@ -77,7 +79,7 @@ void OptParam::add_pargs(std::vector<t_pargs> *pargs)
         { "-step",  FALSE, etREAL, {&step_},
           "Step size for the parameter optimization. Is used as fraction of the available range per parameter which depends on the parameter type" }
     };
-    for (size_t i = 0; i < asize(pa); i++)
+    for (int i = 0; i < asize(pa); i++)
     {
         pargs->push_back(pa[i]);
     }
@@ -308,7 +310,6 @@ double Bayes::MCMC(FILE *fplog)
     double                           randProbability = 0;
     double                           mcProbability   = 0; 
     parm_t                           sum, sum_of_sq;
-    
     std::vector<FILE *>              fpc;
     std::vector<int>                 paramClassIndex;
     FILE                            *fpe             = nullptr;
@@ -368,7 +369,24 @@ double Bayes::MCMC(FILE *fplog)
             }
         }
         xvgr_legend(fpc[i], paramNames.size(), paramNames.data(), oenv());   
-    } 
+    }
+    // Compute temperature weights if relevant, otherwise the numbers are all 1.0
+    weightedTemperature_.resize(paramNames_.size(), 1.0);
+    if (temperatureWeighting())
+    {
+        double nparamTotal = 0;
+        for(size_t j = 0; j < paramNames_.size(); j++)
+        {
+            GMX_RELEASE_ASSERT(ntrain_[j] > 0, "ntrain should be > 0 for all parameters");
+            weightedTemperature_[j] = 1.0*ntrain_[j];
+            nparamTotal += ntrain_[j];
+        }
+        double factor = 1.0/nparamTotal;
+        for(size_t j = 0; j < paramNames_.size(); j++)
+        {
+            weightedTemperature_[j] *= factor;
+        }
+    }
     
     // Now parameter output file.
     fpe = xvgropen(xvgEpot().c_str(), 
@@ -405,7 +423,7 @@ double Bayes::MCMC(FILE *fplog)
     int    j                = 0;
     bool   accept           = false;
     double xiter            = 0.0;
-    double beta             = 1/(BOLTZ*temperature());
+    double beta0            = 1/(BOLTZ*temperature());
     int    total_iterations = nParam*maxIter();
     
     for (int iter = 0; iter < total_iterations; iter++)
@@ -435,10 +453,10 @@ double Bayes::MCMC(FILE *fplog)
             // Only anneal if the simulation reached a certain number of steps
             if (anneal(iter))
             {
-                beta = computeBeta(iter/nParam);
+                beta0 = computeBeta(iter/nParam);
             }
             randProbability = real_uniform(gen);
-            mcProbability   = exp(-beta*deltaEval);
+            mcProbability   = exp(-(beta0/weightedTemperature_[j])*deltaEval);
             accept          = (mcProbability > randProbability);
         }
         
@@ -758,6 +776,30 @@ double Bayes::Adaptive_MCMC(FILE *fplog)
         xvgrclose(fpe);
     }
     return minEval;
+}
+
+void Bayes::printResults(FILE *fp, double chi2_min)
+{
+    if (!fp)
+    {
+        return;
+    }
+    fprintf(fp, "\nMinimum RMSD value during optimization: %.3f.\n", sqrt(chi2_min));
+    fprintf(fp, "Statistics of parameters after optimization\n");
+    fprintf(fp, "#best %zu #mean %zu #sigma %zu #param %zu\n",
+            bestParam_.size(), pmean_.size(), psigma_.size(), paramNames_.size());
+    if (bestParam_.size() == nParam())
+    {
+        fprintf(fp, "Parameter                     Ncopies Initial   Best    Mean    Sigma Attempt  Acceptance  T-Weight\n");
+        for (size_t k = 0; k < Bayes::nParam(); k++)
+        {
+            double acceptance_ratio = 100*(double(acceptedMoves_[k])/attemptedMoves_[k]);
+            fprintf(fp, "%-30s  %5d  %6.3f  %6.3f  %6.3f  %6.3f    %4d %5.1f%%  %8.3f\n",
+                    paramNames_[k].c_str(), ntrain_[k],
+                    initial_param_[k], bestParam_[k], pmean_[k], psigma_[k],
+                    attemptedMoves_[k], acceptance_ratio, weightedTemperature_[k]);
+        }
+    }
 }
 
 }

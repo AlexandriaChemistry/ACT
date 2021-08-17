@@ -76,6 +76,10 @@ class OptParam
         real                     step_           = 0.02;
         //! Temperature in chi2 units
         real                     temperature_    = 5;
+        //! Weight temperature after number of training points
+        bool                     tempWeight_     = false;
+        //! Weighted temperatures
+        std::vector<double>      weightedTemperature_;
         //! Use annealing in the optimization. Value < 1 means annealing will happen
         real                     anneal_         = 1;
         //! Use adaptive MCMC in the optimization
@@ -151,6 +155,9 @@ class OptParam
 
         //! \brief Return whether or not bounds are used for parameters
         bool boxConstraint() const { return bBoxConstraint_; }
+        
+        //! \brief Return whether or not temperature weighting should be considered
+        bool temperatureWeighting() const { return tempWeight_; }
         
         /*! \brief Return whether or not to do simulated annealing
          * \param iter The iteration number
@@ -233,6 +240,7 @@ class Bayes : public OptParam
         parm_t        lowerBound_;
         parm_t        upperBound_;
         parm_t        bestParam_;
+        parm_t        weightedTemperature_;
         mc_t          attemptedMoves_;
         mc_t          acceptedMoves_;
         param_name_t  paramNames_;
@@ -394,6 +402,11 @@ class Bayes : public OptParam
         {
             return 1+maxIter()*nParam();
         }
+        /* \brief
+         * Print the final results to the logFile.
+         * \param[in] chi2_min Final chi2 in optimization
+         */
+        void printResults(FILE *fp, double chi2_min);
 };
 
 }
