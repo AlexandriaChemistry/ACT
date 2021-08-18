@@ -873,8 +873,9 @@ double Optimization::calcDeviation(bool verbose,
     }
     // Now compute the deviation for the fitting or otherwise
     resetChiSquared();
-    double nCalc = 0;
-    double ePot2 = 0;
+    double nCalc   = 0;
+    double ePot2   = 0;
+    auto   targets = fittingTargets();
     for (auto &mymol : mymols())
     {
         if ((mymol.eSupp_ == eSupport::Local) ||
@@ -884,7 +885,7 @@ double Optimization::calcDeviation(bool verbose,
             auto molEnergyEntry = MolEnergyMap_.find(molid);
             if (molEnergyEntry != MolEnergyMap_.end())
             {
-                increaseChiSquared(ermsForce2, 1, molEnergyEntry->second.force2());
+	      (*targets).find(eRMS::Force2)->second.increase(1, molEnergyEntry->second.force2());
                 if (debug)
                 {
                     fprintf(debug, "%d: %s molid: %d nEntries: %zu\n",
@@ -917,11 +918,11 @@ double Optimization::calcDeviation(bool verbose,
         fprintf(debug, "%d: ePot2 = %g nCalc = %g chi2 = %g\n",
                 commrec()->nodeid, ePot2, nCalc, chi2);
     }
-    setChiSquared(ermsEPOT, 1, chi2);
-    setChiSquared(ermsTOT, 1, chi2);
+    (*targets).find(eRMS::EPOT)->second.setChiSquared(chi2);
+    (*targets).find(eRMS::TOT)->second.setChiSquared(chi2);
     printChiSquared(debug);
     
-    return chiSquared(ermsTOT);
+    return (*targets).find(eRMS::TOT)->second.chiSquared();
 }
 
 bool Optimization::optRun(FILE                   *fplog,
@@ -1163,8 +1164,10 @@ void Optimization::printResults(FILE                   *fp,
             gmx_stats_free(gmol);
         }
     }
+    auto targets = fittingTargets();
     fprintf(fp, "RMSD from target energies for %zu compounds and %d conformation is %g.\n",
-            mymols().size(), nconformation, std::sqrt(chiSquared(ermsTOT)));
+            mymols().size(), nconformation, 
+	    std::sqrt((*targets).find(eRMS::TOT)->second.chiSquared()));
     fprintf(fp, "\n");
     if (nullptr != hform_xvg)
     {

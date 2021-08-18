@@ -33,7 +33,7 @@
 #include "molgen.h"
 
 #include <cmath>
-
+#include <map>
 #include <vector>
 
 #include "gromacs/commandline/pargs.h"
@@ -59,26 +59,38 @@
 
 #define STRLEN 256
 
-const char *rmsName(int e)
-{
-    static const char *rms[ermsNR] =
-    {
-        "BOUNDS", "MU", "QUAD", "CHARGE", "ESP",
-        "EPOT", "Force2", "Polar", "Penalty", "TOT"
-    };
-    if (e >= 0 && e < ermsNR)
-    {
-        return rms[e];
-    }
-    else
-    {
-        return "Incorrect index in rmsName";
-    }
-}
-
 namespace alexandria
 {
 
+  std::map<eRMS, const char *> ermsNames = 
+    {
+     { eRMS::BOUNDS, "BOUNDS" },
+     { eRMS::MU,     "MU" },
+     { eRMS::QUAD,   "QUAD" },
+     { eRMS::CHARGE, "CHARGE" },
+     { eRMS::CM5,    "CM5" },
+     { eRMS::ESP,    "ESP" },
+     { eRMS::EPOT,   "EPOT" },
+     { eRMS::Force2, "Force2" },
+     { eRMS::Polar,  "Polar" },
+     { eRMS::TOT,    "TOT" }
+    };					    
+
+const char *rmsName(eRMS e)
+{
+  return ermsNames[e];
+}
+
+void FittingTarget::print(FILE *fp) const
+{
+  if (fp != nullptr && chiSquared_ > 0 && numberOfDatapoints_ > 0)
+    {
+      fprintf(fp, "%-8s  %10.3f  N: %6d  fc: %10g  weighted: %10g\n",
+	      rmsName(erms_), chiSquared_, numberOfDatapoints_,
+	      weight_, chiSquaredWeighted());
+    }
+}
+ 
 MolGen::MolGen()
 {
     cr_        = nullptr;
@@ -98,7 +110,12 @@ MolGen::MolGen()
     lot_       = "B3LYP/aug-cc-pVTZ";
     inputrec_  = new t_inputrec();
     fill_inputrec(inputrec_);
-    relativeWeight_[ermsTOT] = 1;
+    for ( auto &rms : ermsNames )
+      {
+	FittingTarget ft(rms.first);
+	fittingTargets_.insert(std::pair<eRMS, FittingTarget>(rms.first, ft));
+      }
+    fittingTargets_.find(eRMS::TOT)->second.setWeight(1);
 }
 
 MolGen::~MolGen()
@@ -125,7 +142,7 @@ void MolGen::addOptions(std::vector<t_pargs> *pargs, eTune etune)
           "Minimum number of data points to optimize force field parameters" },
         { "-lot",    FALSE, etSTR,  {&lot_},
           "Use this method and level of theory when selecting coordinates and charges. Multiple levels can be specified which will be used in the order given, e.g.  B3LYP/aug-cc-pVTZ:HF/6-311G**" },
-        { "-fc_bound",    FALSE, etREAL, {&relativeWeight_[ermsBOUNDS]},
+        { "-fc_bound",    FALSE, etREAL, {fittingTargets_.find(eRMS::BOUNDS)->second.weightPtr()},
           "Force constant in the penalty function for going outside the borders given with the fitting options (see below)." },
         { "-qtol",   FALSE, etREAL, {&qtol_},
           "Tolerance for assigning charge generation algorithm." },
@@ -154,15 +171,17 @@ void MolGen::addOptions(std::vector<t_pargs> *pargs, eTune etune)
                   "Weight for the atoms when fitting the charges to the electrostatic potential. The potential on atoms is usually two orders of magnitude larger than on other points (and negative). For point charges or single smeared charges use zero. For point+smeared charges 1 is recommended." },
                 { "-maxpot", FALSE, etINT, {&maxESP_},
                   "Maximum percent of the electrostatic potential points that will be used to fit partial charges. Note that the input file may have a reduced amount of ESP points compared to the Gaussian output already so do not reduce the amount twice unless you know what you are doing." },
-                { "-fc_mu",    FALSE, etREAL, {&relativeWeight_[ermsMU]},
+                { "-fc_mu",    FALSE, etREAL, {fittingTargets_.find(eRMS::MU)->second.weightPtr()},
                   "Force constant in the penalty function for the magnitude of the dipole components." },
-                { "-fc_quad",  FALSE, etREAL, {&relativeWeight_[ermsQUAD]},
+                { "-fc_quad",  FALSE, etREAL, {fittingTargets_.find(eRMS::QUAD)->second.weightPtr()},
                   "Force constant in the penalty function for the magnitude of the quadrupole components." },
-                { "-fc_esp",   FALSE, etREAL, {&relativeWeight_[ermsESP]},
+                { "-fc_esp",   FALSE, etREAL, {fittingTargets_.find(eRMS::ESP)->second.weightPtr()},
                   "Force constant in the penalty function for the magnitude of the electrostatic potential." },
-                { "-fc_charge",  FALSE, etREAL, {&relativeWeight_[ermsCHARGE]},
+                { "-fc_charge",  FALSE, etREAL, {fittingTargets_.find(eRMS::CHARGE)->second.weightPtr()},
                   "Force constant in the penalty function for 'unchemical' charges, i.e. negative hydrogens, and positive oxygens." },
-                { "-fc_polar",  FALSE, etREAL, {&relativeWeight_[ermsPolar]},
+                { "-fc_cm5",  FALSE, etREAL, {fittingTargets_.find(eRMS::CM5)->second.weightPtr()},
+                  "Force constant in the penalty function for deviation from CM5 charges." },
+                { "-fc_polar",  FALSE, etREAL, {fittingTargets_.find(eRMS::Polar)->second.weightPtr()},
                   "Force constant in the penalty function for polarizability." }
             };
         doAddOptions(pargs, asize(pa_eem), pa_eem);
@@ -171,9 +190,9 @@ void MolGen::addOptions(std::vector<t_pargs> *pargs, eTune etune)
     {
         t_pargs pa_fc[] =
             {
-                { "-fc_epot",  FALSE, etREAL, {&relativeWeight_[ermsEPOT]},
+                { "-fc_epot",  FALSE, etREAL, {fittingTargets_.find(eRMS::EPOT)->second.weightPtr()},
                   "Force constant in the penalty function for the magnitude of the potential energy." },
-                { "-fc_force",  FALSE, etREAL, {&relativeWeight_[ermsForce2]},
+                { "-fc_force",  FALSE, etREAL, {fittingTargets_.find(eRMS::Force2)->second.weightPtr()},
                   "Force constant in the penalty function for the magnitude of the force." }
             };
         doAddOptions(pargs, asize(pa_fc), pa_fc);
@@ -210,20 +229,9 @@ void MolGen::printChiSquared(FILE *fp) const
     if (nullptr != fp && MASTER(commrec()))
     {
         fprintf(fp, "Components of fitting function\n");
-        for (int j = 0; j < ermsNR; j++)
+        for (auto &ft : fittingTargets_)
         {
-            auto eee = chiSquared(j);
-            if (eee > 0)
-            {
-                double factor = 1;
-                if (numberOfDatapoints_[j] > 0)
-                {
-                    factor = 1.0/numberOfDatapoints_[j];
-                }
-                fprintf(fp, "%-8s  %10.3f  N: %6d  fc: %10g  weighted: %10g\n",
-                        rmsName(j), eee, numberOfDatapoints_[j],
-                        relativeWeight_[j], eee*factor*relativeWeight_[j]);
-            }
+	  ft.second.print(fp);
         }
         fflush(fp);
     }
@@ -234,18 +242,24 @@ void MolGen::sumChiSquared(bool parallel)
     // Now sum over processors
     if (PAR(commrec()) && parallel)
     {
-        gmx_sum(ermsNR, chiSquared_, commrec());
-        gmx_sumi(ermsNR, numberOfDatapoints_, commrec());
+      for( auto &ft : fittingTargets_ )
+	{
+	  auto chi2 = ft.second.chiSquared();
+	  gmx_sum(1, &chi2, commrec());
+	  ft.second.setChiSquared(chi2);
+	  auto ndp = ft.second.numberOfDatapoints();
+	  gmx_sumi(1, &ndp, commrec());
+	  ft.second.setNumberOfDatapoints(ndp);
+	}
     }
-    chiSquared_[ermsTOT] = 0;
-    for (auto e = 0; e < ermsTOT; e++)
+    auto etot = fittingTargets_.find(eRMS::TOT);
+    etot->second.reset();
+    for (auto &ft : fittingTargets_ )
     {
-        double factor = 1;
-        if (numberOfDatapoints_[e] > 0)
-        {
-            factor = 1.0/numberOfDatapoints_[e];
-        }
-        chiSquared_[ermsTOT] += relativeWeight_[e]*chiSquared_[e]*factor;
+      if (ft.first != eRMS::TOT)
+	{ 
+	  etot->second.increase(1, ft.second.chiSquaredWeighted());
+	}
     }
 }
 

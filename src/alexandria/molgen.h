@@ -33,6 +33,8 @@
 #ifndef MOLGEN_H
 #define MOLGEN_H
 
+#include <map>
+
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/mdrunutility/mdmodules.h"
@@ -53,25 +55,73 @@ typedef struct {
 
 extern char *opt_index_count(t_index_count *ic);
 
-enum eRMS {
-    ermsBOUNDS  = 0,
-    ermsMU      = 1,
-    ermsQUAD    = 2,
-    ermsCHARGE  = 3,
-    ermsESP     = 4,
-    ermsEPOT    = 5,
-    ermsForce2  = 6,
-    ermsPolar   = 7,
-    ermsTOT     = 9,
-    ermsNR      = 10
-};
-
-//! \brief Return string corresponding to eRMS
-const char *rmsName(int e);
-
 namespace alexandria
 {
 
+enum class eRMS { BOUNDS, MU, QUAD, CHARGE, CM5, ESP, EPOT, Force2, Polar, TOT };
+
+//! \brief Return string corresponding to eRMS
+const char *rmsName(eRMS e);
+
+class FittingTarget 
+{
+private:
+  eRMS erms_; 
+  real weight_             = 0;
+  int  numberOfDatapoints_ = 0;
+  real chiSquared_         = 0;
+public:
+  FittingTarget(eRMS e) : erms_(e) {};
+  
+  void setWeight(real w) { weight_ = w; }
+  
+  real weight() const { return weight_; }
+  
+  real *weightPtr() { return &weight_; }
+  
+  void setNumberOfDatapoints(int n) { numberOfDatapoints_ = n; }
+  
+  int numberOfDatapoints() const { return numberOfDatapoints_; }
+  
+  void setChiSquared(real chi2) { chiSquared_ = chi2; }
+  
+  real chiSquared() const { return chiSquared_; }
+  
+  real chiSquaredWeighted() const 
+  { 
+    if (chiSquared_ > 0 && numberOfDatapoints_ > 0)
+	{ 
+	  return chiSquared_*weight_/numberOfDatapoints_;
+	}
+    else
+      {
+	return 0;
+      }
+  } 
+
+  /*! \brief
+   * Increase the chi2 by delta. 
+   * \param[in] ndata Number of data points
+   * \param[in] delta Change in chiSquared
+   */
+  void increase(int ndata, real delta)
+  {
+    numberOfDatapoints_ += ndata;
+    chiSquared_         += delta;
+  }
+  
+  void reset()
+  {
+    numberOfDatapoints_ = 0;
+    chiSquared_         = 0;
+  }
+  
+  /*! \brief Print if non zero
+   * \param[in] fp   File pointer, print only if non null
+   */
+  void print(FILE *fp) const;
+};
+  
 enum eTune {
     etuneEEM, etuneFC, etuneNone
 };
@@ -168,9 +218,7 @@ class MolGen
         eTune                           etune_;
         real                            qtol_;
         int                             qcycle_;
-        real                            chiSquared_[ermsNR] = { 0 };
-        int                             numberOfDatapoints_[ermsNR] = { 0 };
-        real                            relativeWeight_[ermsNR] = { 0 };
+        std::map<eRMS, FittingTarget>   fittingTargets_;
         gmx_bool                        bQM_;
         gmx_bool                        bDone_;
         gmx_bool                        bGenVsite_;
@@ -284,49 +332,16 @@ class MolGen
         //! \brief Return the number of compounds in the data set
         int nMolSupport() const { return nmol_support_; }
 
-        /*! \brief
-         * Set the rms component of the chiSquared vector to value. 
-         * \param[in] rms   Index in chiSquared array
-         * \param[in] ndata Number of data points
-         * \param[in] value New value of chiSquared
-         */
-        void setChiSquared(int rms, int    ndata, real value)
-        {
-            numberOfDatapoints_[rms] = ndata;
-            chiSquared_[rms]         = value;
-        }
-        
-        //! \brief Return the chiSquared of the corresponding rms. 
-        double chiSquared(int rms) const 
-        { 
-            return chiSquared_[rms]; 
-        }
-        
-        //! \brief Return the weighting factor of the energy.
-        double weight(int rms) const 
-        { 
-            return relativeWeight_[rms]; 
-        }
-        
+        //! \brief Return the fitting targets for editing
+        std::map<eRMS, FittingTarget> *fittingTargets() { return &fittingTargets_; }
+	
         //! \brief Set all the chiSquared to zero.
         void resetChiSquared()
         {
-            for (int rms = 0; rms < ermsNR; rms++)
+	  for (auto &ft : fittingTargets_)
             {
-                setChiSquared(rms, 0, 0);
+	      ft.second.reset();
             }
-        }
-
-        /*! \brief
-         * Increase the rms component of the energy vector by delta. 
-         * \param[in] rms  Index in chiSquared array
-         * \param[in] ndata Number of data points
-         * \param[in] delta Change in chiSquared
-         */
-        void increaseChiSquared(int rms, int    ndata, real delta)
-        {
-            numberOfDatapoints_[rms] += ndata;
-            chiSquared_[rms]         += delta;
         }
 
         /*! \brief 
