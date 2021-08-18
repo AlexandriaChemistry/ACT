@@ -246,7 +246,7 @@ static void checkBondOrders(alexandria::MolProp *mpt)
         atomName.push_back(ca.getObtype());
     }
     std::map<std::string, std::string> my_pairs =
-        { { "no", "on" }, { "cm", "om" }, { "p5", "om" }, { "s6", "om" }, { "s4", "om" }, { "s3", "om" }, { "py", "om" } };
+        { { "no", "on" }, { "cm", "om" }, { "p5", "om" }, { "s6", "om" }, { "s4", "om" }, { "s3", "om" }, { "py", "om" }, { "cz", "n" } };
     for(const auto &my_pair : my_pairs)
     {
         for(size_t i = 0; i < atomName.size(); i++)
@@ -265,6 +265,8 @@ static void checkBondOrders(alexandria::MolProp *mpt)
                         bondIndex.push_back(b);
                     }
                 }
+                // The first atom has to have at least two bonds to the
+                // second atom in the map.
                 if (bondIndex.size() >= 2)
                 {
                     for (size_t j = 0; j < bondIndex.size(); j++)
@@ -645,7 +647,7 @@ bool readBabel(const char          *g09,
     }
 
     // Bonds
-    getBondsFromOpenBabel(&mol, mpt, g09, forcefield.compare("alexandria"));
+    getBondsFromOpenBabel(&mol, mpt, g09, forcefield.compare("alexandria") == 0);
 
     // Dipole
     dipole = (OpenBabel::OBVectorData *) mol.GetData("Dipole Moment");

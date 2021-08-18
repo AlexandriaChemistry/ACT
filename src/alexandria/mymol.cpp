@@ -2212,8 +2212,9 @@ void MyMol::calcEspRms(const Poldata                           *pd,
     double T = 0;
     for(auto &i : qTypeNames)
     {
-        auto qi = i.first;
+        auto                  qi = i.first;
         std::vector<EspPoint> ep;
+        bool                  espFound = false;
         if (qType::Calc == qi)
         {
             QgenResp_->setAtomInfo(atoms(), pd, x(), totalCharge());
@@ -2221,6 +2222,7 @@ void MyMol::calcEspRms(const Poldata                           *pd,
             QgenResp_->calcPot(pd->getEpsilonR());
             EspRms_[qi] = QgenResp_->getRms(&rrms, &CosEsp_[qi]);
             ep          = QgenResp_->espPoint();
+            espFound    = true;
         }
         else if (getPropRef(MPO_CHARGE, iqmQM,
                             method, basis, "",
@@ -2233,10 +2235,14 @@ void MyMol::calcEspRms(const Poldata                           *pd,
             qg.calcPot(pd->getEpsilonR());
             EspRms_[qi] = qg.getRms(&rrms, &CosEsp_[qi]);
             ep          = qg.espPoint();
+            espFound    = true;
         }
-        for (size_t j = 0; j < ep.size(); j++)
+        if (espFound)
         {
-            (*allEsp)[qi].push_back(ep[j]);
+            for (size_t j = 0; j < ep.size(); j++)
+            {
+                (*allEsp)[qi].push_back(ep[j]);
+            }
         }
     }
     done_atom(&myatoms);
