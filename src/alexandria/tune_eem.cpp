@@ -883,8 +883,6 @@ int alex_tune_eem(int argc, char *argv[])
                                  isopol_toler,
                                  oenv,
                                  bPolar,
-                                 true,
-				 true,
                                  opt.fullTensor(),
                                  opt.commrec(),
                                  efield,
