@@ -393,8 +393,6 @@ void print_electric_props(FILE                           *fp,
                           real                            isopol_toler,
                           const gmx_output_env_t         *oenv,
                           bool                            bPolar,
-                          bool                            bDipole,
-                          bool                            bQuadrupole,
                           bool                            bfullTensor,
                           t_commrec                      *cr,
                           real                            efield,
@@ -600,10 +598,6 @@ void print_electric_props(FILE                           *fp,
             n++;
         }
     }
-
-    fprintf(fp, "Dipoles were %s in Calc Parametrization.\n",     (bDipole ?     "used" : "not used"));
-    fprintf(fp, "Quadrupoles were %s in Calc Parametrization.\n", (bQuadrupole ? "used" : "not used"));
-    fprintf(fp, "\n");
 
     bool header = true;
     for (auto &i : qTypes())
