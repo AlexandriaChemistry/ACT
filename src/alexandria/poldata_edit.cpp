@@ -304,9 +304,11 @@ static void modifyPoldata(Poldata *pd,
                     for (auto q2: myParticles)
                     {
                         auto q2id = q2->interactionTypeToIdentifier(itype).id();
-                        for(int bo = 1; bo < 4; bo++)
-                        {
-                            auto qId = Identifier({q1id, q2id}, bo, CanSwap::No);
+			const double bondorders[] = { 1, 1.5, 2, 3 };
+			const size_t nBondorder   = std::extent<decltype(bondorders)>::value;
+			for(size_t bb = 0; bb < nBondorder; bb++)
+			  {
+                            auto qId = Identifier({q1id, q2id}, bondorders[bb], CanSwap::No);
                             modifyInteraction(pd, itype, paramType, qId,
                                               bSetMin, pmin,
                                               bSetVal, pval,
@@ -314,7 +316,7 @@ static void modifyPoldata(Poldata *pd,
                                               bSetMut, mutability,
                                               bScale,  scale,
                                               force, stretch);
-                        }
+			  }
                     }
                     break;
                 }
