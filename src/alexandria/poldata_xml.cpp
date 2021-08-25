@@ -108,6 +108,7 @@ enum class xmlEntry {
     MINIMUM,
     MAXIMUM,
     MUTABILITY,
+    NONNEGATIVE,
     ATOM1,
     ATOM2,
     ATOM3,
@@ -141,8 +142,8 @@ std::map<const std::string, xmlEntry> xmlxxx =
 {
     { "gentop",                    xmlEntry::GENTOP           },
     { "reference",                 xmlEntry::REFERENCE        },
-    { "particletypes",             xmlEntry::PARTICLETYPES        },
-    { "particletype",              xmlEntry::PARTICLETYPE         },
+    { "particletypes",             xmlEntry::PARTICLETYPES    },
+    { "particletype",              xmlEntry::PARTICLETYPE     },
     { "parameterlist",             xmlEntry::PARAMETERLIST    },
     { "parameter",                 xmlEntry::PARAMETER        },
     { "version",                   xmlEntry::VERSION          },
@@ -166,6 +167,7 @@ std::map<const std::string, xmlEntry> xmlxxx =
     { "uncertainty",               xmlEntry::UNCERTAINTY      },
     { "minimum",                   xmlEntry::MINIMUM          },
     { "maximum",                   xmlEntry::MAXIMUM          },
+    { "nonnegative",               xmlEntry::NONNEGATIVE      },
     { "mutability",                xmlEntry::MUTABILITY       },
     { "bondorder",                 xmlEntry::BONDORDER        },
     { "params",                    xmlEntry::PARAMS           },
@@ -180,13 +182,13 @@ std::map<const std::string, xmlEntry> xmlxxx =
     { "attached",                  xmlEntry::ATTACHED         },
     { "numattach",                 xmlEntry::NUMATTACH        },
     { "model",                     xmlEntry::MODEL            },
-    { "angle_unit",             xmlEntry::ANGLE_UNIT       },
-    { "length_unit",            xmlEntry::LENGTH_UNIT      },
-    { "distance",               xmlEntry::DISTANCE         },
-    { "ncontrolatoms",          xmlEntry::NCONTROLATOMS    },
-    { "number",                 xmlEntry::NUMBER           },
-    { "vtype",                  xmlEntry::VTYPE            },
-    { "angle",                  xmlEntry::ANGLE            }
+    { "angle_unit",                xmlEntry::ANGLE_UNIT       },
+    { "length_unit",               xmlEntry::LENGTH_UNIT      },
+    { "distance",                  xmlEntry::DISTANCE         },
+    { "ncontrolatoms",             xmlEntry::NCONTROLATOMS    },
+    { "number",                    xmlEntry::NUMBER           },
+    { "vtype",                     xmlEntry::VTYPE            },
+    { "angle",                     xmlEntry::ANGLE            }
 };
 
 std::map<xmlEntry, const std::string> rmap = {};
@@ -370,12 +372,18 @@ static void processAttr(FILE       *fp,
                 {
                     ntrain = atoi(xbufString(xmlEntry::NTRAIN).c_str());
                 }
+                bool nonNegative = false;
+                if (NN(xbuf, xmlEntry::NONNEGATIVE))
+                {
+                    nonNegative = stringToBoolean(xbufString(xmlEntry::NONNEGATIVE));
+                }
                 ForceFieldParameter ffp(xbufString(xmlEntry::UNIT),
                                         xbuf_atof(xbuf, xmlEntry::VALUE),
                                         xbuf_atof(xbuf, xmlEntry::UNCERTAINTY),
                                         ntrain,
                                         xbuf_atof(xbuf, xmlEntry::MINIMUM), xbuf_atof(xbuf, xmlEntry::MAXIMUM),
-                                        mut, false);
+                                        mut, false,
+                                        nonNegative);
                 if (xmlEntry::PARAMETERLIST == parentEntry)
                 {
                     auto fs = pd->findForces(currentItype);
@@ -594,6 +602,8 @@ static void addParameter(xmlNodePtr parent, const std::string &type,
     add_xml_double(baby, exml_names(xmlEntry::MAXIMUM), param.maximum());
     add_xml_int(baby, exml_names(xmlEntry::NTRAIN), param.ntrain());
     add_xml_char(baby, exml_names(xmlEntry::MUTABILITY), mutabilityName(param.mutability()).c_str());
+    add_xml_char(baby, exml_names(xmlEntry::NONNEGATIVE),
+                 param.nonNegative() ? "yes" : "no");
 }
 
 static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd)

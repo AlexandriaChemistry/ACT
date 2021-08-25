@@ -43,6 +43,12 @@
 #include "gmx_simple_comm.h"
 #include "mutability.h"
 
+/*! \brief Convert string to boolean
+ * \param[in] str The string to convert
+ * \return boolean
+ */
+bool stringToBoolean(const std::string &str);
+
 namespace alexandria
 {
 
@@ -73,13 +79,14 @@ class ForceFieldParameter
                         double             minimum,
                         double             maximum,
                         Mutability         mutability,
-                        bool               strict)
+                        bool               strict,
+                        bool               nonNegative)
                          : 
     unit_(unit), value_(value), originalValue_ (value),
     uncertainty_(uncertainty), originalUncertainty_(uncertainty),
     ntrain_(ntrain), originalNtrain_(ntrain),
     minimum_(minimum), maximum_(maximum), mutability_(mutability),
-    strict_(strict) {}
+    strict_(strict), nonNegative_(nonNegative) {}
         
     //! \brief Return unit of parameter
     const std::string &unit() const { return unit_; }
@@ -138,12 +145,30 @@ class ForceFieldParameter
      * variable is not mutable.
      */
     void setUncertainty(double uncertainty);
-    
+
     //! \brief Return minimum allowed value
     double minimum() const { return minimum_; }
     
     //! \brief Set minimum allowed value irrespective of mutability
-    void setMinimum(double minimum) { minimum_ = minimum; } 
+    void setMinimum(double minimum)
+    { 
+        if (!nonNegative_ || minimum > 0)
+        {
+            minimum_ = minimum;
+        }
+    }
+    
+    //! Force non-negative values
+    void setNonNegative()
+    {
+        minimum_ = std::max(0.0, minimum_);
+        maximum_ = std::max(minimum_, maximum_);
+        value_   = std::max(minimum_, value_);
+        value_   = std::min(maximum_, value_);
+        nonNegative_ = true; 
+    }
+
+    bool nonNegative() const { return nonNegative_; }
     
     //! \brief Return maximum allowed value
     double maximum() const { return maximum_; }
@@ -205,6 +230,8 @@ class ForceFieldParameter
      * uncertainty is set incorrectly
      */
     bool        strict_              = false;
+    //! Whether this parameter should be strictly positive
+    bool        nonNegative_         = false;
     //! Externally determined index
     size_t      index_               = 0;
 };

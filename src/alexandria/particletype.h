@@ -131,6 +131,10 @@ class ParticleType
                                 const ForceFieldParameter &param)
     {
         parameterMap_.insert({type, param});
+        if (type.compare("charge") != 0)
+        {
+            parameterMap_.find(type)->second.setNonNegative();
+        }
     }
     
     /*! \brief Return all parameters
