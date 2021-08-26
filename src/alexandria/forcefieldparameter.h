@@ -149,13 +149,18 @@ class ForceFieldParameter
     //! \brief Return minimum allowed value
     double minimum() const { return minimum_; }
     
-    //! \brief Set minimum allowed value irrespective of mutability
-    void setMinimum(double minimum)
+    /*! \brief Set minimum allowed value irrespective of mutability
+     * \param[in] minimum the new value
+     * \return true if successful, false otherwise
+     */
+    bool setMinimum(double minimum)
     { 
         if (!nonNegative_ || minimum > 0)
         {
             minimum_ = minimum;
+            return true;
         }
+        return false;
     }
     
     //! Force non-negative values
