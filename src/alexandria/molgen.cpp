@@ -111,10 +111,10 @@ MolGen::MolGen()
     inputrec_  = new t_inputrec();
     fill_inputrec(inputrec_);
     for ( auto &rms : ermsNames )
-      {
-	FittingTarget ft(rms.first);
-	fittingTargets_.insert(std::pair<eRMS, FittingTarget>(rms.first, ft));
-      }
+    {
+        FittingTarget ft(rms.first);
+        fittingTargets_.insert(std::pair<eRMS, FittingTarget>(rms.first, ft));
+    }
     fittingTargets_.find(eRMS::TOT)->second.setWeight(1);
 }
 
