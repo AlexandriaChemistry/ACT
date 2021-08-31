@@ -50,6 +50,7 @@
 #include "molprop_xml.h"
 #include "mymol.h"
 #include "poldata_xml.h"
+#include "units.h"
 
 int alex_molprop_check(int argc, char*argv[])
 {
@@ -144,7 +145,8 @@ std::vector<alexandria::MolProp> mp;
             if (Esp.size() >= Xcalc.size() && Xcalc.size() > 1)
             {
                 double msd = 0;
-                double fac = 0.001;
+                auto xunit = Esp[0].getXYZunit();
+                double fac = convertToGromacs(1.0, xunit);
                 for(size_t i = 0; i < Xcalc.size(); i++)
                 {
                     msd += (gmx::square(Xcalc[i][XX]-fac*Esp[i].getX())+

@@ -87,6 +87,7 @@ std::map<immStatus, const char *> immMessages = {
     { immStatus::NoDipole,                 "No Dipole moment" },
     { immStatus::NotSupportedBond,         "NotSupportedBond" },
     { immStatus::NotSupportedAngle,        "NotSupportedAngle" },
+    { immStatus::NotSupportedLinearAngle,  "NotSupportedLinearAngle" },
     { immStatus::NotSupportedDihedral,     "NotSupportedDihedral" }
 };
 
@@ -427,6 +428,10 @@ immStatus updatePlist(const Poldata             *pd,
                     else if (iType ==  InteractionType::ANGLES)
                     {
                         return immStatus::NotSupportedAngle;
+                    }
+                    else if (iType ==  InteractionType::LINEAR_ANGLES)
+                    {
+                        return immStatus::NotSupportedLinearAngle;
                     }
                     else
                     {
