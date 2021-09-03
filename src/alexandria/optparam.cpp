@@ -435,7 +435,7 @@ double Bayes::MCMC(FILE *fplog)
         if (!accept)
         {
             // Only anneal if the simulation reached a certain number of steps
-            if (anneal(iter))
+            if (anneal(iter/nParam))
             {
                 beta = computeBeta(iter/nParam);
             }
