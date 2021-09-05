@@ -59,9 +59,8 @@ class QtypeProps
     //! Identity
     qType                  qtype_;
     //! Electrostatic moments
-    int                    charge_;
     rvec                   mu_         = { 0 };
-    tensor                 quadrupole_ = { 0 };
+    tensor                 quadrupole_ = {{ 0 }};
     //! Norm of the dipole
     double                 dipole_     = 0;
     //! The coordinates
@@ -76,9 +75,8 @@ class QtypeProps
  public:
     /*! \brief Constructor
      * \param[in] qType  My own identity
-     * \param[in] charge The net charge of the compound
      */
-    QtypeProps(qType qtype, int charge) : qtype_(qtype), charge_(charge) {}
+    QtypeProps(qType qtype) : qtype_(qtype)  {}
     
     /*! \brief Set charges and coordinates.
      *

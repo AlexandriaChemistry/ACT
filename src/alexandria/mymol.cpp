@@ -833,8 +833,8 @@ immStatus MyMol::GenerateTopology(const Poldata     *pd,
             fprintf(debug, "%s\n", emsg.c_str());
         }
     }
-    qProps_.insert(std::pair<qType, QtypeProps>(qType::Calc, QtypeProps(qType::Calc, totalCharge())));
-    qProps_.insert(std::pair<qType, QtypeProps>(qType::Elec, QtypeProps(qType::Elec, totalCharge())));
+    qProps_.insert(std::pair<qType, QtypeProps>(qType::Calc, QtypeProps(qType::Calc)));
+    qProps_.insert(std::pair<qType, QtypeProps>(qType::Elec, QtypeProps(qType::Elec)));
     return imm;
 }
 
@@ -1638,7 +1638,7 @@ immStatus MyMol::CalcPolarizability(double     efield,
     rvec                mu_ref;
     immStatus           imm = immStatus::OK;
     double              rmsf;
-    QtypeProps          qtp(qType::Calc, totalCharge());
+    QtypeProps          qtp(qType::Calc);
 
     field.resize(DIM, 0);
     myforce_->setField(field);
@@ -2072,8 +2072,8 @@ immStatus MyMol::getExpProps(gmx_bool           bQM,
     double       error = 0;
     double       T     = -1;
     rvec         vec   = { 0 };
-    tensor       quadrupole = { 0 };
-    tensor       polar      = { 0 };
+    tensor       quadrupole = {{ 0 }};
+    tensor       polar      = {{ 0 }};
     std::string  myref;
     std::string  mylot;
 
@@ -2103,7 +2103,7 @@ immStatus MyMol::getExpProps(gmx_bool           bQM,
             auto qp = qProps_.find(qi);
             if (qp == qProps_.end())
             {
-                qProps_.insert(std::pair<qType, QtypeProps>(qi, QtypeProps(qi, totalCharge())));
+                qProps_.insert(std::pair<qType, QtypeProps>(qi, QtypeProps(qi)));
                 qp = qProps_.find(qi);
                 GMX_RELEASE_ASSERT(qp != qProps_.end(), "Could not insert a new QtypeProps in qProps_");
             }
