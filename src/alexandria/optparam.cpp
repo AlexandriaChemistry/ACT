@@ -807,7 +807,11 @@ void Bayes::printResults(FILE *fp, double chi2_min)
         fprintf(fp, "Parameter                     Ncopies Initial   Best    Mean    Sigma Attempt  Acceptance  T-Weight\n");
         for (size_t k = 0; k < Bayes::nParam(); k++)
         {
-            double acceptance_ratio = 100*(double(acceptedMoves_[k])/attemptedMoves_[k]);
+            double acceptance_ratio = 0;
+            if (attemptedMoves_[k] > 0)
+            {
+                acceptance_ratio = 100*(double(acceptedMoves_[k])/attemptedMoves_[k]);
+            }
             fprintf(fp, "%-30s  %5d  %6.3f  %6.3f  %6.3f  %6.3f    %4d %5.1f%%  %8.3f\n",
                     paramNames_[k].c_str(), ntrain_[k],
                     initial_param_[k], bestParam_[k], pmean_[k], psigma_[k],

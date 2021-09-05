@@ -71,6 +71,7 @@ class ForceFieldParameter
      * \param[in] maximum     Maximum allowed value
      * \param[in] mutability  In what way this parameter may be changed
      * \param[in] strict      Throw an exception in case of value errors
+     * \param[in] nonnegative Prevent parameter from obtaining a negative value
      */
     ForceFieldParameter(const std::string &unit,
                         double             value,

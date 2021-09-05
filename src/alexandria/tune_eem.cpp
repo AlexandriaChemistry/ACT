@@ -357,12 +357,17 @@ double OptACM::calcDeviation(bool verbose,
                 double qtot    = 0;
                 int    i = 0;
                 auto   myatoms = mymol.atomsConst();
-                auto   qcm5    = mymol.chargeQM(qType::CM5);
-                if (debug)
+                std::vector<double> qcm5;
+                auto qp = mymol.qTypeProps(qType::CM5);
+                if (qp)
                 {
-                    for (int j = 0; j < myatoms.nr; j++)
+                    qcm5 = qp->charge();
+                    if (debug)
                     {
-                        fprintf(debug, "Charge %d. CM5 = %g ACM = %g\n", j, qcm5[j], myatoms.atom[j].q);
+                        for (int j = 0; j < myatoms.nr; j++)
+                        {
+                            fprintf(debug, "Charge %d. CM5 = %g ACM = %g\n", j, qcm5[j], myatoms.atom[j].q);
+                        }
                     }
                 }
                 for (int j = 0; j < myatoms.nr; j++)
@@ -412,7 +417,8 @@ double OptACM::calcDeviation(bool verbose,
                     default:
                         break;
                     }
-                    if (qparm.mutability() != Mutability::Fixed &&
+                    if (qp &&
+                        qparm.mutability() != Mutability::Fixed &&
                         (*targets).find(eRMS::CM5)->second.weight() > 0)
                     {
                         // TODO: Add charge of shell!
@@ -427,22 +433,23 @@ double OptACM::calcDeviation(bool verbose,
             {
                 real rrms     = 0;
                 real cosangle = 0;
+                auto qgr = mymol.qTypeProps(qType::Calc)->qgenResp();
                 if (nullptr != mymol.shellfc_)
                 {
-                    mymol.QgenResp_->updateAtomCoords(mymol.x());
+                    qgr->updateAtomCoords(mymol.x());
                 }
                 if (fit("zeta"))
                 {
-                    mymol.QgenResp_->updateZeta(mymol.atoms(), poldata());
+                    qgr->updateZeta(mymol.atoms(), poldata());
                 }
                 dumpQX(logFile(), &mymol, "ESP");
-                mymol.QgenResp_->updateAtomCharges(mymol.atoms());
-                mymol.QgenResp_->calcPot(poldata()->getEpsilonR());
+                qgr->updateAtomCharges(mymol.atoms());
+                qgr->calcPot(poldata()->getEpsilonR());
                 auto myRms =
-                    convertToGromacs(mymol.QgenResp_->getRms(&rrms, &cosangle),
+                    convertToGromacs(qgr->getRms(&rrms, &cosangle),
                                      "Hartree/e");
-                auto nEsp = mymol.QgenResp_->nEsp();
-		(*targets).find(eRMS::ESP)->second.increase(nEsp, gmx::square(myRms)*nEsp);
+                auto nEsp = qgr->nEsp();
+                (*targets).find(eRMS::ESP)->second.increase(nEsp, gmx::square(myRms)*nEsp);
                 if (debug)
                 {
                     fprintf(debug, "%s ESPrms = %g cosangle = %g\n",
@@ -450,36 +457,45 @@ double OptACM::calcDeviation(bool verbose,
                             myRms, cosangle);
                 }
             }
+            // These two things need to be present, if not the code will crash
+            auto qelec = mymol.qTypeProps(qType::Elec);
+            auto qcalc = mymol.qTypeProps(qType::Calc);
+            if ((*targets).find(eRMS::MU)->second.weight() > 0 ||
+                (*targets).find(eRMS::QUAD)->second.weight() > 0)
+            {
+                qcalc->setQ(mymol.atoms());
+                qcalc->setX(mymol.x());
+                qcalc->calcMoments();
+            }
             if ((*targets).find(eRMS::MU)->second.weight() > 0)
             {
-                mymol.CalcDipole();
-                mymol.rotateDipole(mymol.muQM(qType::Calc), mymol.muQM(qType::Elec));
-		real delta = 0;
+                real delta = 0;
                 if (bQM())
                 {
                     rvec dmu;
-                    rvec_sub(mymol.muQM(qType::Calc), mymol.muQM(qType::Elec), dmu);
+                    rvec_sub(qcalc->mu(), qelec->mu(), dmu);
                     delta = iprod(dmu, dmu);
-		}
+                }
                 else
                 {
-		  delta = gmx::square(mymol.dipQM(qType::Calc) - mymol.dipExper());
+                    delta = gmx::square(qcalc->dipole() - mymol.dipExper());
                 }
-		(*targets).find(eRMS::MU)->second.increase(1, delta);
+                (*targets).find(eRMS::MU)->second.increase(1, delta);
             }
             if ((*targets).find(eRMS::QUAD)->second.weight() > 0)
             {
-                mymol.CalcQuadrupole();
+                double delta    = 0; 
                 for (int mm = 0; mm < DIM; mm++)
                 {
                     for (int nn = 0; nn < DIM; nn++)
                     {
                         if (bFullTensor_ || mm == nn)
                         {
-			  (*targets).find(eRMS::QUAD)->second.increase(1, gmx::square(mymol.QQM(qType::Calc)[mm][nn] - mymol.QQM(qType::Elec)[mm][nn]));
+                            delta += gmx::square(qcalc->quad()[mm][nn] - qelec->quad()[mm][nn]);
                         }
                     }
                 }
+                (*targets).find(eRMS::QUAD)->second.increase(1, delta);
             }
             if ((*targets).find(eRMS::Polar)->second.weight() > 0)
             {
@@ -858,35 +874,35 @@ int alex_tune_eem(int argc, char *argv[])
         {
             bool bPolar = opt.poldata()->polarizable();
             auto mymols = opt.mymols();
-            print_electric_props(opt.logFile(),
-                                 &mymols,
-                                 opt.poldata(),
-                                 opt.mdlog(),
-                                 opt.lot(),
-                                 tabfn,
-                                 opt.hwinfo(),
-                                 opt.qcycle(),
-                                 opt.qtol(),
-                                 opt2fn("-qhisto",    NFILE, fnm),
-                                 opt2fn("-dipcorr",   NFILE, fnm),
-                                 opt2fn("-mucorr",    NFILE, fnm),
-                                 opt2fn("-thetacorr", NFILE, fnm),
-                                 opt2fn("-espcorr",   NFILE, fnm),
-                                 opt2fn("-alphacorr", NFILE, fnm),
-                                 opt2fn("-isopol",    NFILE, fnm),
-                                 opt2fn("-anisopol",  NFILE, fnm),
-                                 opt2fn("-qcorr",     NFILE, fnm),
-                                 esp_toler,
-                                 dip_toler,
-                                 quad_toler,
-                                 alpha_toler,
-                                 isopol_toler,
-                                 oenv,
-                                 bPolar,
-                                 opt.fullTensor(),
-                                 opt.commrec(),
-                                 efield,
-                                 useOffset);
+            alexandria::print_electric_props(opt.logFile(),
+                                             &mymols,
+                                             opt.poldata(),
+                                             opt.mdlog(),
+                                             opt.lot(),
+                                             tabfn,
+                                             opt.hwinfo(),
+                                             opt.qcycle(),
+                                             opt.qtol(),
+                                             opt2fn("-qhisto",    NFILE, fnm),
+                                             opt2fn("-dipcorr",   NFILE, fnm),
+                                             opt2fn("-mucorr",    NFILE, fnm),
+                                             opt2fn("-thetacorr", NFILE, fnm),
+                                             opt2fn("-espcorr",   NFILE, fnm),
+                                             opt2fn("-alphacorr", NFILE, fnm),
+                                             opt2fn("-isopol",    NFILE, fnm),
+                                             opt2fn("-anisopol",  NFILE, fnm),
+                                             opt2fn("-qcorr",     NFILE, fnm),
+                                             esp_toler,
+                                             dip_toler,
+                                             quad_toler,
+                                             alpha_toler,
+                                             isopol_toler,
+                                             oenv,
+                                             bPolar,
+                                             opt.fullTensor(),
+                                             opt.commrec(),
+                                             efield,
+                                             useOffset);
             print_memory_usage(opt.logFile());
         }
         else if (!bMinimum)

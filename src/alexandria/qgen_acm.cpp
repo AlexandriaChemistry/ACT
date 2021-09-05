@@ -791,6 +791,10 @@ eQgen QgenAcm::generateCharges(FILE                      *fp,
                                gmx::HostVector<gmx::RVec> x,
                                const std::vector<Bond>   &bonds)
 {
+    if (nonFixed_.empty())
+    {
+        return eQgen::OK;
+    }
     if (fp)
     {
         fprintf(fp, "Generating charges for %s using %s algorithm\n",
