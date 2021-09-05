@@ -87,8 +87,7 @@ class MolpropTest : public gmx::test::CommandLineTestBase
                 for (auto &bi : mpi.bondsConst())
                 {
                     char buf[256];
-                    snprintf(buf, sizeof(buf), "atoms %d %d order %d",
-                             bi.getAi(), bi.getAj(), bi.getBondOrder());
+                    snprintf(buf, sizeof(buf), "atoms %d %d order %g", bi.getAi(), bi.getAj(), bi.getBondOrder());
                     std::string bond("bond");
                     char        ibuf[256];
                     snprintf(ibuf, sizeof(ibuf), "molecule %d bond %d", mol, i++);

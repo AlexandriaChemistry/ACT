@@ -381,8 +381,8 @@ int alex_gentop(int argc, char *argv[])
     {
         mymol.symmetrizeCharges(&pd, bQsym, symm_string);
         maxpot = 100; // Use 100 percent of the ESP read from Gaussian file.
-    
-        mymol.initQgenResp(&pd, method, basis, &mylot, 0.0, maxpot);
+        
+        mymol.initQgenResp(&pd, method, basis, 0.0, maxpot);
 
         ChargeGenerationAlgorithm alg = ChargeGenerationAlgorithm::NONE;
         std::vector<double> myq;

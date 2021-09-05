@@ -993,8 +993,11 @@ bool Experiment::getVal(const std::string &type,
             int i = 0;
             for (auto &mai : calcAtomConst())
             {
-                vec[i] = mai.charge(type);
-                i++;
+                if (mai.hasCharge(type))
+                {
+                    vec[i] = mai.charge(type);
+                    i++;
+                }
             }
             if (i == NAtom())
             {

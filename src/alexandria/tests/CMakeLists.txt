@@ -39,7 +39,7 @@ gmx_add_unit_test(
     ${testname}
     ${exename}
     # files with code for tests
-    atomtypeTest.cpp
+#    atomtypeTest.cpp
     forcefieldparameterTest.cpp
     forcefieldparameterlistTest.cpp
     identifierTest.cpp

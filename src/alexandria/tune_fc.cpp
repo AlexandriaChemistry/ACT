@@ -1297,7 +1297,7 @@ int alex_tune_fc(int argc, char *argv[])
     if (MASTER(opt.commrec()))
     {
         fplog = gmx_ffopen(opt2fn("-g", NFILE, fnm), "w");
-        print_header(fplog, pargs);
+        alexandria::print_header(fplog, pargs);
     }
     else
     {

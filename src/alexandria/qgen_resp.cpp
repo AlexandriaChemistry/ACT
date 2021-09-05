@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020
+ * Copyright (C) 2014-2021
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -92,7 +92,7 @@ void QgenResp::updateAtomCoords(const gmx::HostVector<gmx::RVec> &x)
     }
 }
 
-void QgenResp::updateAtomCharges(t_atoms  *atoms)
+void QgenResp::updateAtomCharges(const t_atoms  *atoms)
 {
     GMX_RELEASE_ASSERT(nAtom_ == atoms->nr,
                        "Inconsistency between number of resp atoms and topology atoms");
@@ -114,7 +114,7 @@ void QgenResp::updateAtomCharges(const std::vector<double> &q)
     }
 }
 
-void QgenResp::setAtomInfo(t_atoms                          *atoms,
+void QgenResp::setAtomInfo(const t_atoms                    *atoms,
                            const alexandria::Poldata        *pd,
                            const gmx::HostVector<gmx::RVec> &x,
                            const int                         qtotal)
@@ -151,10 +151,6 @@ void QgenResp::setAtomInfo(t_atoms                          *atoms,
             nFixed_++;
             qshell_ += q_[i];
         }
-    }
-    if (atoms->nr == nFixed_)
-    {
-        GMX_THROW(gmx::InternalError(gmx::formatString("All %d atoms are fixed - no charges to fit", atoms->nr).c_str()));
     }
 }
 
@@ -203,10 +199,6 @@ void QgenResp::setAtomSymmetry(const std::vector<int> &symmetricAtoms)
                 uniqueQ_ += 1;
             }
         }
-    }
-    if (fitQ_ == 0)
-    {
-        GMX_THROW(gmx::InternalError(gmx::formatString("No charges to fit. nAtom_ = %d", nAtom_).c_str()));
     }
 }
 

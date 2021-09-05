@@ -117,7 +117,7 @@ class QgenResp
 
         void summary(FILE *gp);
         
-        void setAtomInfo(t_atoms                          *atoms,
+        void setAtomInfo(const t_atoms                    *atoms,
                          const Poldata                    *pd,
                          const gmx::HostVector<gmx::RVec> &x,
                          const int                         qtotal);
@@ -129,7 +129,7 @@ class QgenResp
         /*! \brief Update the charges
          * \param[in] atoms Atoms struct containing charges
          */
-        void updateAtomCharges(t_atoms  *atoms);
+        void updateAtomCharges(const t_atoms  *atoms);
 
         /*! \brief Update the charges
          * \param[in] q Vector containing new charges
