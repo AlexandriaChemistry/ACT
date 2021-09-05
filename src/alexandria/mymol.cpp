@@ -390,7 +390,7 @@ void MyMol::MakeSpecialInteractions(const Poldata *pd,
     {
         /* Now test initial geometry */
         if ((bonds[i].size() == 2) &&
-            is_linear(x[i], x[bonds[i][0]], x[bonds[i][1]],
+            is_linear(x[bonds[i][0]], x[i], x[bonds[i][1]],
                       &pbc, th_toler))
         {
             if (nullptr != debug)
@@ -2528,7 +2528,7 @@ void MyMol::UpdateIdef(const Poldata   *pd,
                         mtop_->ffparams.iparams[tp].harmonic.rB     =
                         ltop_->idef.iparams[tp].harmonic.rA     =
                         ltop_->idef.iparams[tp].harmonic.rB =
-                        convertToGromacs(fp.value(), fp.unit());
+                        fp.value();
                         
                     fp = fs.findParameterTypeConst(bondId, "kt");
                     mtop_->ffparams.iparams[tp].harmonic.krA         =
@@ -2553,7 +2553,7 @@ void MyMol::UpdateIdef(const Poldata   *pd,
                         mtop_->ffparams.iparams[tp].u_b.thetaB     =
                         ltop_->idef.iparams[tp].u_b.thetaA     =
                         ltop_->idef.iparams[tp].u_b.thetaB =
-                        convertToGromacs(fp.value(), fp.unit());
+                        fp.value();
                         
                     fp = fs.findParameterTypeConst(bondId, "r13");
                     mtop_->ffparams.iparams[tp].u_b.r13A         =
