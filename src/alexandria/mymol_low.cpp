@@ -476,13 +476,12 @@ static int getCombinationRule(const ForceFieldParameterList &vdw)
     return i;
 }
 
-static void getLjParams(const Poldata     *pd,
-                        const std::string &ai,
-                        const std::string &aj,
-                        double            *c6,
-                        double            *cn)
+static void getLjParams(const ForceFieldParameterList &fa,
+                        const std::string             &ai,
+                        const std::string             &aj,
+                        double                        *c6,
+                        double                        *cn)
 {
-    auto fa       = pd->findForcesConst(InteractionType::VDW);
     Identifier idI({ai}, CanSwap::Yes); 
     Identifier idJ({aj}, CanSwap::Yes); 
     auto sigmaI   = fa.findParameterTypeConst(idI, "sigma").value();
@@ -523,14 +522,13 @@ static void getLjParams(const Poldata     *pd,
     }
 }
 
-static void getBhamParams(const Poldata     *pd,
-                          const std::string &ai,
-                          const std::string &aj,
-                          double            *a,
-                          double            *b,
-                          double            *c)
+static void getBhamParams(const ForceFieldParameterList &fa,
+                          const std::string             &ai,
+                          const std::string             &aj,
+                          double                        *a,
+                          double                        *b,
+                          double                        *c)
 {
-    auto fa       = pd->findForcesConst(InteractionType::VDW);
     Identifier idI({ai}, CanSwap::Yes);
     Identifier idJ({aj}, CanSwap::Yes);
     auto sigmaI   = fa.findParameterTypeConst(idI, "sigma").value();
@@ -618,6 +616,7 @@ void nonbondedFromPdToMtop(gmx_mtop_t    *mtop,
         }
     }
     // TODO: Use the symmetry in the matrix
+    auto fa = pd->findForcesConst(InteractionType::VDW);
     for (auto i = 0; (i < ntype); i++)
     {
         if (mytypes[i].ptype == eptAtom)
@@ -633,7 +632,7 @@ void nonbondedFromPdToMtop(gmx_mtop_t    *mtop,
                         case F_LJ:
                         {
                             double c6 = 0, c12 = 0;
-                            getLjParams(pd, mytypes[i].name,
+                            getLjParams(fa, mytypes[i].name,
                                         mytypes[j].name, &c6, &c12);
                             mtop->ffparams.iparams[idx].lj.c6  = c6;
                             mtop->ffparams.iparams[idx].lj.c12 = c12;
@@ -647,7 +646,7 @@ void nonbondedFromPdToMtop(gmx_mtop_t    *mtop,
                         case F_BHAM:
                         {
                             double a = 0, b = 0, c = 0;
-                            getBhamParams(pd, mytypes[i].name,
+                            getBhamParams(fa, mytypes[i].name,
                                           mytypes[j].name, &a, &b, &c);
                             mtop->ffparams.iparams[idx].bham.a = a;
                             mtop->ffparams.iparams[idx].bham.b = b;

@@ -870,7 +870,8 @@ void MyMol::addShells(const Poldata *pd,
 
     /* Add Polarization to the plist. */
     memset(&p, 0, sizeof(p));
-    auto qt  = pd->findForcesConst(InteractionType::CHARGEDISTRIBUTION);
+    auto qt = pd->findForcesConst(InteractionType::CHARGEDISTRIBUTION);
+    auto fs = pd->findForcesConst(InteractionType::POLARIZATION);
     for (int i = 0; i < atoms->nr; i++)
     {
         std::string atomtype(*atoms->atomtype[i]);
@@ -883,7 +884,7 @@ void MyMol::addShells(const Poldata *pd,
                 if (fa->hasInteractionType(InteractionType::POLARIZATION))
                 {
                     auto ptype = fa->interactionTypeToIdentifier(InteractionType::POLARIZATION);
-                    auto param = pd->findForcesConst(InteractionType::POLARIZATION).findParameterTypeConst(ptype, "alpha");
+                    auto param = fs.findParameterTypeConst(ptype, "alpha");
                     auto pol   = convertToGromacs(param.value(), param.unit());
                     if (pol <= 0)
                     {
