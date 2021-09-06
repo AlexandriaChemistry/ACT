@@ -620,11 +620,11 @@ bool readBabel(const char          *g09,
                         OBpd = (OpenBabel::OBPairData *) mol.GetData(qstr.c_str());
                         if (nullptr != OBpd)
                         {
-                            OBpc                 = (OpenBabel::OBPcharge *) mol.GetData(qstr.c_str());
-                            if (OBpc)
+                            OBpc = (OpenBabel::OBPcharge *) mol.GetData(qstr.c_str());
+                            if (OBpc && !OBpc->GetPartialCharge().empty())
                             {
-                                auto PartialCharge   = OBpc->GetPartialCharge();
-                                ca.AddCharge(cs.second, PartialCharge[atom->GetIdx()-1]);
+                                ca.AddCharge(cs.second,
+                                             OBpc->GetPartialCharge()[atom->GetIdx()-1]);
                             }
                             else
                             {
