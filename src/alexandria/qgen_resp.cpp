@@ -106,7 +106,7 @@ void QgenResp::updateAtomCharges(const t_atoms  *atoms)
 void QgenResp::updateAtomCharges(const std::vector<double> &q)
 {
     GMX_RELEASE_ASSERT(nAtom_ == static_cast<int>(q.size()),
-                       "Inconsistency between number of resp atoms and topology atoms");
+                       gmx::formatString("Inconsistency between number of resp atoms (%d) and charges (%d)", nAtom_, static_cast<int>(q.size())).c_str());
 
     for (int i = 0; i < nAtom_; i++)
     {

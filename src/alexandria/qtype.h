@@ -104,6 +104,9 @@ class QtypeProps
      */
     void setX(const gmx::HostVector<gmx::RVec> &x);
     
+    //! Return the coordinates
+    const gmx::HostVector<gmx::RVec> &x() const { return x_; }
+    
     /*! \brief Store center of charge
      * \param[in] coc The center of charge
      */

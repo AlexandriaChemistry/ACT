@@ -2013,17 +2013,12 @@ void MyMol::calcEspRms(const Poldata *pd)
         }
     }
     
-    std::vector<double> q;
-    q.resize(myatoms.nr);
-    std::string method, basis, myref, mylot;
-    tensor      quadrupole;
-    double      value, error;
-
     auto qcalc   = qTypeProps(qType::Calc);
     auto qgrcalc = qcalc->qgenResp();
     GMX_RELEASE_ASSERT(qgrcalc->nEsp() - atoms()->nr > 0, "Not enough ESP point in qType::Calc");
-    double T = 0;
-    for(auto &i : qTypes())
+    auto qt          = pd->findForcesConst(InteractionType::CHARGEDISTRIBUTION);
+    auto iChargeType = name2ChargeType(qt.optionValue("chargetype"));
+    for(auto &i : qProps_)
     {
         auto qi = i.first;
         if (qType::Calc == qi)
@@ -2032,20 +2027,14 @@ void MyMol::calcEspRms(const Poldata *pd)
             qgrcalc->updateAtomCharges(atoms());
             qgrcalc->calcPot(pd->getEpsilonR());
         }
-        else if (getPropRef(MPO_CHARGE, iqmQM,
-                            method, basis, "",
-                            qTypeName(qi),
-                            &value, &error, &T,
-                            &myref, &mylot, q.data(), quadrupole))
+        else if (qType::Elec != qi)
         {
-            auto qt          = pd->findForcesConst(InteractionType::CHARGEDISTRIBUTION);
-            auto iChargeType = name2ChargeType(qt.optionValue("chargetype"));
-            real watoms      = 0;
-            QgenResp *qgr = qTypeProps(qi)->qgenResp();
+            real watoms   = 0;
+            QgenResp *qgr = i.second.qgenResp();
             qgr->setChargeType(iChargeType);
             qgr->setAtomWeight(watoms);
             qgr->setAtomInfo(&myatoms, pd, myx, totalCharge());
-            qgr->updateAtomCharges(q);
+            qgr->updateAtomCharges(i.second.charge());
             for (const auto &ep : qgrcalc->espPoint())
             {
                 auto r = ep.esp();
