@@ -115,6 +115,11 @@ static void print_stats(FILE        *fp,
     real Rfit = 0;
     int  n;
 
+    gmx_stats_get_npoints(lsq, &n);
+    if (n == 0)
+    {
+        return;
+    }
     if (useOffset)
     {
         if (bHeader)
@@ -127,7 +132,6 @@ static void print_stats(FILE        *fp,
         gmx_stats_get_ab(lsq, elsqWEIGHT_NONE, &a, &b, &da, &db, &chi2, &Rfit);
         gmx_stats_get_rmsd(lsq,    &rmsd);
         gmx_stats_get_mse_mae(lsq, &mse, &mae);
-        gmx_stats_get_npoints(lsq, &n);
         fprintf(fp, "%-26s %6d %6.3f(%5.3f) %6.3f(%5.3f) %7.2f %8.4f %8.4f %8.4f %10s\n",
                 prop, n, a, da, b, db, Rfit*100, rmsd, mse, mae, yaxis);
     }
@@ -143,7 +147,6 @@ static void print_stats(FILE        *fp,
         gmx_stats_get_a(lsq, elsqWEIGHT_NONE, &a, &da, &chi2, &Rfit);
         gmx_stats_get_rmsd(lsq,    &rmsd);
         gmx_stats_get_mse_mae(lsq, &mse, &mae);
-        gmx_stats_get_npoints(lsq, &n);
         fprintf(fp, "%-26s %6d %6.3f(%5.3f) %7.2f %8.4f %8.4f %8.4f %10s\n",
                 prop, n, a, da, Rfit*100, rmsd, mse, mae, yaxis);
     }
@@ -571,7 +574,6 @@ void print_electric_props(FILE                           *fp,
                     myatoms.atom[j].ptype == eptNucleus)
                 {
                     auto  atp = pd->findParticleType(*(myatoms.atomtype[j]));
-                    //auto  ztp = atp->interactionTypeToIdentifier(InteractionType::ELECTRONEGATIVITYEQUALIZATION).id();
                     auto  k   = std::find_if(lsqt.begin(), lsqt.end(),
                                              [atp](const ZetaTypeLsq &atlsq)
                                              {
@@ -585,9 +587,9 @@ void print_electric_props(FILE                           *fp,
                     {
                         qCalc += myatoms.atom[j+1].q;
                     }
-                    if (!qQM.find(qType::CM5)->second.empty())
+                    if (qQM.find(qType::CM5) != qQM.end())
                     {
-                        auto qcm5 = qQM[qType::CM5][i];
+                        auto qcm5 = qQM.find(qType::CM5)->second[i];
                         if (k != lsqt.end())
                         {
                             gmx_stats_add_point(k->lsq_, qcm5, qCalc, 0, 0);
