@@ -465,7 +465,6 @@ void print_electric_props(FILE                           *fp,
             mol->GenerateCharges(pd, fplog, cr, tabfn, hwinfo, qcycle, qtol, ChargeGenerationAlgorithm::NONE, dummy, lot);
 
             // Now compute all the ESP RMSDs.
-            std::map<qType, std::vector<EspPoint> > allEsp;
             mol->calcEspRms(pd);
             for (auto &i : qTypes())
             {

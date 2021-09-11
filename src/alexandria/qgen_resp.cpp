@@ -63,7 +63,6 @@ namespace alexandria
 QgenResp::QgenResp(const QgenResp *src)
 {
     ChargeType_         = src->ChargeType_;      
-    watoms_             = src->watoms_;                  
     qtot_               = src->qtot_;                    
     qshell_             = src->qshell_;                  
     rms_                = src->rms_;                     
@@ -86,6 +85,8 @@ QgenResp::QgenResp(const QgenResp *src)
 
 void QgenResp::updateAtomCoords(const gmx::HostVector<gmx::RVec> &x)
 {
+    GMX_RELEASE_ASSERT(x.size()-nAtom_ == 0,
+                       gmx::formatString("Trying to set %d coordinates for %d atoms", static_cast<int>(x.size()), nAtom_).c_str());
     for (int i = 0; i < nAtom_; i++)
     {
         x_[i] = x[i];
@@ -95,7 +96,7 @@ void QgenResp::updateAtomCoords(const gmx::HostVector<gmx::RVec> &x)
 void QgenResp::updateAtomCharges(const t_atoms  *atoms)
 {
     GMX_RELEASE_ASSERT(nAtom_ == atoms->nr,
-                       "Inconsistency between number of resp atoms and topology atoms");
+                       gmx::formatString("Inconsistency between number of resp atoms %d and topology atoms %d", atoms->nr, nAtom_).c_str());
 
     for (int i = 0; i < nAtom_; i++)
     {
@@ -119,7 +120,11 @@ void QgenResp::setAtomInfo(const t_atoms                    *atoms,
                            const gmx::HostVector<gmx::RVec> &x,
                            const int                         qtotal)
 {
+    GMX_RELEASE_ASSERT(nAtom_ == 0 || (nAtom_ == atoms->nr),
+                       gmx::formatString("Changing the number of atoms from %d to %d", nAtom_, atoms->nr).c_str());
     nAtom_   = atoms->nr;
+    GMX_RELEASE_ASSERT(nAtom_ - x.size() == 0,
+                       gmx::formatString("Number of coordinates %d does not match atoms structure %d", static_cast<int>(x.size()), nAtom_).c_str());
     qtot_    = qtotal;
     qshell_  = 0;
     x_       = x;
@@ -145,7 +150,6 @@ void QgenResp::setAtomInfo(const t_atoms                    *atoms,
         }
         
         mutable_.push_back(qparm.mutability() != Mutability::Fixed);
-        ptype_.push_back(atoms->atom[i].ptype);
         if (qparm.mutability() == Mutability::Fixed)
         {
             nFixed_++;
@@ -259,18 +263,6 @@ void QgenResp::addEspPoint(double x, double y,
     ep_.push_back(EspPoint(rv, V));
 }
 
-real QgenResp::myWeight(int iatom) const
-{
-    if (iatom < nAtom_)
-    {
-        return watoms_;
-    }
-    else
-    {
-        return 1.0;
-    }
-}
-
 void QgenResp::plotLsq(const gmx_output_env_t *oenv,
                        const char             *ESPcorr)
 {
@@ -373,7 +365,6 @@ static double calcJ(ChargeType  chargeType,
                     rvec        espx,
                     rvec        rax,
                     double      zeta,
-                    int         watoms,
                     int         row)
 {
     rvec   dx;
@@ -386,7 +377,7 @@ static double calcJ(ChargeType  chargeType,
     {
         chargeType = ChargeType::Point;
     }
-    if (watoms == 0 && r == 0)
+    if (chargeType == ChargeType::Point && r == 0)
     {
         gmx_fatal(FARGS, "Zero distance between the atom and the grid.");
     }
@@ -424,7 +415,7 @@ void QgenResp::calcPot(double epsilonr)
         for (int j = 0; j < nAtom_; j++)
         {
             auto epot = calcJ(ChargeType_, espx, x_[j], zeta_[j],
-                              watoms_, row_[j]);
+                              row_[j]);
             qtot += q_[j];
             vv += (scale_factor*q_[j]*epot);
         }
@@ -468,7 +459,7 @@ void QgenResp::optimizeCharges(double epsilonr)
             // Compute potential due to this partice at grid
             // position j
             auto pot = scale_factor*calcJ(ChargeType_, espx, x_[ii],
-                                          zeta_[ii], watoms_, row_[ii]);
+                                          zeta_[ii], row_[ii]);
             // If this is a mutable atom
             // TODO check with symmetric charges and virtual sites
             if (mutable_[ii])

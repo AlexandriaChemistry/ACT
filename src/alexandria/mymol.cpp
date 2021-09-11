@@ -1932,8 +1932,6 @@ void MyMol::GenerateCube(const Poldata          *pd,
             grref.setAtomInfo(atoms(), pd, state_->x, totalCharge());
             grref.setAtomSymmetry(symmetric_charges_);
             grref.readCube(reffn, FALSE);
-            //delete QgenResp_; 
-            //QgenResp_ = new QgenResp(grref);
         }
         else
         {
@@ -2015,9 +2013,6 @@ void MyMol::calcEspRms(const Poldata *pd)
     
     auto qcalc   = qTypeProps(qType::Calc);
     auto qgrcalc = qcalc->qgenResp();
-    GMX_RELEASE_ASSERT(qgrcalc->nEsp() - atoms()->nr > 0, "Not enough ESP point in qType::Calc");
-    auto qt          = pd->findForcesConst(InteractionType::CHARGEDISTRIBUTION);
-    auto iChargeType = name2ChargeType(qt.optionValue("chargetype"));
     for(auto &i : qProps_)
     {
         auto qi = i.first;
@@ -2029,10 +2024,8 @@ void MyMol::calcEspRms(const Poldata *pd)
         }
         else if (qType::Elec != qi)
         {
-            real watoms   = 0;
             QgenResp *qgr = i.second.qgenResp();
-            qgr->setChargeType(iChargeType);
-            qgr->setAtomWeight(watoms);
+            qgr->setChargeType(ChargeType::Point);
             qgr->setAtomInfo(&myatoms, pd, myx, totalCharge());
             qgr->updateAtomCharges(i.second.charge());
             for (const auto &ep : qgrcalc->espPoint())
@@ -2476,13 +2469,22 @@ void MyMol::initQgenResp(const Poldata     *pd,
     auto qp          = qTypeProps(qType::Calc);
     QgenResp *qgr = qp->qgenResp();
     qgr->setChargeType(iChargeType);
-    qgr->setAtomWeight(watoms);
     qgr->setAtomInfo(atoms(), pd, state_->x, totalCharge());
     qp->setQ(atoms());
     qp->setX(state_->x);
     qgr->setAtomSymmetry(symmetric_charges_);
     qgr->summary(debug);
 
+    auto myatoms = atoms();
+    int natoms = 0;
+    for (int aa = 0; aa < myatoms->nr; aa++)
+    {
+        if (myatoms->atom[aa].ptype == eptAtom ||
+            myatoms->atom[aa].ptype == eptNucleus)
+        {
+            natoms++;
+        }
+    }
     std::random_device               rd;
     std::mt19937                     gen(rd());  
     std::uniform_real_distribution<> uniform(0.0, 1.0);
@@ -2495,7 +2497,7 @@ void MyMol::initQgenResp(const Poldata     *pd,
         for (auto &epi : ci->electrostaticPotentialConst())
         {
             auto val = uniform(gen);
-            if (qgr->myWeight(iesp) > 0 && val < cutoff)
+            if ((iesp >= natoms || watoms > 0) && val <= cutoff)
             {
                 auto xu = epi.getXYZunit();
                 auto vu = epi.getVunit();
@@ -2508,7 +2510,9 @@ void MyMol::initQgenResp(const Poldata     *pd,
         }
         if (debug)
         {
-            fprintf(debug, "Added %zu ESP points to the RESP structure.\n", qgr->nEsp());
+            fprintf(debug, "%s added %zu out of %zu ESP points to the RESP structure.\n",
+                    getMolname().c_str(), qgr->nEsp(),
+                    ci->electrostaticPotentialConst().size());
         }
     }
 }

@@ -103,12 +103,6 @@ class QgenResp
         void setChargeType(ChargeType qd)
         { ChargeType_ = qd; }
 
-        /*! \brief Set option for ESP charge generation
-         *
-         * \param[in] watoms Weighting factor for atoms in ESP fit
-         */
-        void setAtomWeight(real watoms) { watoms_ = watoms; }
-
         real getMolecularCharge() const { return qtot_; }
 
         size_t nEsp() const { return ep_.size(); }
@@ -117,6 +111,15 @@ class QgenResp
 
         void summary(FILE *gp);
         
+        /*! \brief Set the inforamtion about atoms
+         * The size of arrays in atoms and x is checked and compared 
+         * to what was there previously if anything. 
+         * \param[in] atoms  The gromacs atoms structure
+         * \param[in] pd     The force field
+         * \param[in] x      The coordinates
+         * \param[in] qtotal Total charge of the compound, needed when
+         *                   generating charges
+         */
         void setAtomInfo(const t_atoms                    *atoms,
                          const Poldata                    *pd,
                          const gmx::HostVector<gmx::RVec> &x,
@@ -240,7 +243,6 @@ class QgenResp
         void setZeta(int atom, double zeta) { zeta_[atom] = zeta; }
 
         ChargeType                ChargeType_  = ChargeType::Point;
-        double                    watoms_      = 0;
         int                       qtot_        = 0;
         double                    qshell_      = 0;
         double                    rms_         = 0;
@@ -261,7 +263,6 @@ class QgenResp
         std::vector<int>           atomnumber_;
         std::vector<int>           row_;
         std::vector<bool>          mutable_;
-        std::vector<int>           ptype_;
         gmx::HostVector<gmx::RVec> x_;
         std::vector<std::string>   dzatoms_;
         std::string                stoichiometry_;
