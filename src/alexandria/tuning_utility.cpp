@@ -438,10 +438,11 @@ void print_electric_props(FILE                           *fp,
     {
         if (mol->eSupp_ != eSupport::No)
         {
-            fprintf(fp, "Molecule %d: %s Qtot: %d, Multiplicity %d\n", n+1,
+            fprintf(fp, "Molecule %d: Name: %s, Qtot: %d, Multiplicity: %d, Dataset: %s\n", n+1,
                     mol->getMolname().c_str(),
                     mol->totalCharge(),
-                    mol->getMultiplicity());
+                    mol->getMultiplicity(),
+		    iMolSelectName(mol->get_datasetType()));
 
             // Recalculate the atomic charges using the optmized parameters.
             std::vector<double> dummy;

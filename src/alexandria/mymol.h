@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020
+ * Copyright (C) 2014-2021
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -300,6 +300,15 @@ class MyMol : public MolProp
          * Constructor
          */
         MyMol();
+
+	iMolSelect                       dataset_type_     = iMolSelect::Unknown;
+
+	iMolSelect get_datasetType() { return dataset_type_;}
+
+	void set_datasetType(iMolSelect dataset_type) 
+	{
+	   dataset_type_ = dataset_type;
+	}
 
         /*! \brief
          * Return QM dipole corresponding to charge type qt

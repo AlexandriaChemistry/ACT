@@ -910,8 +910,7 @@ int alex_tune_eem(int argc, char *argv[])
         if (bMinimum || bForceOutput || !bOptimize)
         {
             bool bPolar = opt.poldata()->polarizable();
-	    // training set
-            auto molset = opt.dataset(true);
+            auto molset = opt.molset();
             print_electric_props(opt.logFile(),
                                  &molset,
                                  opt.poldata(),

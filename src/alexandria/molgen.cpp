@@ -675,6 +675,10 @@ void MolGen::Read(FILE            *fp,
                 }
                 if (immStatus::OK == imm)
                 {
+		    mymol.set_datasetType(gms.status(mymol.getIupac()));
+
+		    // molset contains all molecules
+
 		    molset_.push_back(mymol);
 		    if (iMolSelect::Train == gms.status(mymol.getIupac()))
 		    {
