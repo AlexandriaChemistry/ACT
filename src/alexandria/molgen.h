@@ -168,8 +168,10 @@ class MolGen
         eTune                           etune_;
         real                            qtol_;
         int                             qcycle_;
-        real                            chiSquared_[ermsNR] = { 0 };
-        int                             numberOfDatapoints_[ermsNR] = { 0 };
+        real                            TrainingSet_ChiSquared_[ermsNR] = { 0 };
+        real                            TestSet_ChiSquared_[ermsNR] = { 0 };
+        int                             TrainingSet_nDataPoints_[ermsNR] = { 0 };
+        int                             TestSet_nDataPoints_[ermsNR] = { 0 };
         real                            relativeWeight_[ermsNR] = { 0 };
         gmx_bool                        bQM_;
         gmx_bool                        bDone_;
@@ -234,23 +236,47 @@ class MolGen
         //! \brief Return the atomprop structure
         gmx_atomprop_t atomprop() const { return atomprop_; }
 
-        //! \brief Return the const vector of all  molecules
-        const std::vector<MyMol> &molset() const { return molset_; }
+	const std::vector<MyMol> &molset() const
+	{
+	   return molset_;
+	}
 
-        //! \brief Return the const vector of training molecules
-        const std::vector<MyMol> &trainingset() const { return trainingset_; }
+	std::vector<MyMol> &molset()
+	{
+	   return molset_;
+	}
 
-        //! \brief Return the const vector of test molecules
-        const std::vector<MyMol> &testset() const { return testset_; }
+        //! \brief Return the const vector of molecules
+        const std::vector<MyMol> &dataset(bool training) const 
+	{
+	    if (training)
+	    {	    
+		return trainingset_;
+	    }
+    	    else
+	    {
+		return testset_;
+	    }	    
+	}
 
         //! \brief Return the mutable vector of molecules
-        std::vector<MyMol> &molset() { return molset_; }
+        std::vector<MyMol> &dataset(bool training) 
+	{ 
+	    if (training)
+	    {	    
+		return trainingset_;
+	    }
+    	    else
+	    {
+		return testset_;
+	    }	    
+	}
 
-        //! \brief Return the mutable vector of molecules
-        std::vector<MyMol> &trainingset() { return trainingset_; }
+	//! \brief Return size of test set
+	size_t nTestset() const { return testset_.size(); }
 
-        //! \brief Return the mutable vector of test molecules
-        std::vector<MyMol> &testset() { return testset_; }
+	//! \brief Return size of training set
+	size_t nTrainingset() const { return trainingset_.size(); }
 
         gmx::MDLogger  mdlog()  const {return mdlog_; }
 
@@ -304,16 +330,31 @@ class MolGen
          * \param[in] ndata Number of data points
          * \param[in] value New value of chiSquared
          */
-        void setChiSquared(int rms, int    ndata, real value)
+        void setChiSquared(int rms, int  ndata, real value, bool training)
         {
-            numberOfDatapoints_[rms] = ndata;
-            chiSquared_[rms]         = value;
+	    if (training)
+	    {
+                TrainingSet_nDataPoints_[rms] = ndata;
+                TrainingSet_ChiSquared_[rms]  = value;
+	    }
+	    else
+	    {
+		TestSet_nDataPoints_[rms] = ndata;
+		TestSet_ChiSquared_[rms]  = value;
+	    }
         }
         
         //! \brief Return the chiSquared of the corresponding rms. 
-        double chiSquared(int rms) const 
+        double getChiSquared(int rms, bool training) const 
         { 
-            return chiSquared_[rms]; 
+	    if (training)
+	    {
+            	return TrainingSet_ChiSquared_[rms];
+	    }
+    	    else
+	    {
+		return TestSet_ChiSquared_[rms];
+	    }	    
         }
         
         //! \brief Return the weighting factor of the energy.
@@ -323,12 +364,22 @@ class MolGen
         }
         
         //! \brief Set all the chiSquared to zero.
-        void resetChiSquared()
+        void resetChiSquared(bool training)
         {
-            for (int rms = 0; rms < ermsNR; rms++)
-            {
-                setChiSquared(rms, 0, 0);
-            }
+	    if (training)
+	    {
+                for (int rms = 0; rms < ermsNR; rms++)
+                {
+                    setChiSquared(rms, 0, 0, true);
+                }	
+	    }
+	    else
+	    {
+                for (int rms = 0; rms < ermsNR; rms++)
+                {
+                    setChiSquared(rms, 0, 0, false);
+                }	
+	    }
         }
 
         /*! \brief
@@ -337,10 +388,18 @@ class MolGen
          * \param[in] ndata Number of data points
          * \param[in] delta Change in chiSquared
          */
-        void increaseChiSquared(int rms, int    ndata, real delta)
+        void increaseChiSquared(int rms, int ndata, real delta, bool training)
         {
-            numberOfDatapoints_[rms] += ndata;
-            chiSquared_[rms]         += delta;
+	    if (training)
+ 	    {
+                TrainingSet_nDataPoints_[rms] += ndata;
+                TrainingSet_ChiSquared_[rms]  += delta;
+	    }
+	    else
+	    {
+		TestSet_nDataPoints_[rms] += ndata;
+		TestSet_ChiSquared_[rms]  += delta;
+	    }
         }
 
         /*! \brief 
@@ -348,12 +407,12 @@ class MolGen
          * Also multiplies the terms by the weighting factors.
          * \param[in] parallel Whether or not to sum in parallel
          */
-        void sumChiSquared(bool parallel);
+        void sumChiSquared(bool parallel, bool training);
 
         /*! \brief Print the chiSquared components.
          * \param[in] fp File pointer to print to, may be nullptr
          */  
-        void printChiSquared(FILE *fp) const;
+        void printChiSquared(FILE *fp, bool bEvaluate_testset) const;
 
         /*! \brief Read the molecular property data file to generate molecues.
          * TODO: update comments
@@ -365,8 +424,7 @@ class MolGen
                   const MolSelect &gms,
                   bool             bZPE,
                   bool             bDHform,
-                  const char      *tabfn,
-                  iMolSelect       SelectType);
+                  const char      *tabfn);
 
 };
 

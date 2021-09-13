@@ -266,6 +266,7 @@ class MyMol : public MolProp
                                  const std::vector<std::string> &btype,
                                  int                             natoms,
                                  const int                      *iatoms);
+
     public:
         double                         chieq_         = 0;
         // Enthalpy of formation (experimental) for this compound

@@ -354,9 +354,10 @@ class Bayes : public OptParam
         /*! \brief
          * Run the Markov chain Monte carlo (MCMC) simulation
          * \param[in] fplog File pointer for logging info. May be nullptr.
+	 * \param[in] evaluate_testset If true, evalaute the energy on the test set
          * \return minimum energy value
          */
-        double MCMC(FILE *fplog);
+        double MCMC(FILE *fplog, bool evaluate_testset);
         
         /*! \brief
          * Run adaptive Markov chain Monte carlo (MCMC) simulation
@@ -368,8 +369,9 @@ class Bayes : public OptParam
         /*! \brief
          * Perform a sensitivity analysis by systematically changing
          * all parameters and re-evaluating the chi2.
+	 * \param[in] training Perform senitivity analysis on the training set if true, otherwise on the test set
          */
-        void SensitivityAnalysis(FILE *fplog);
+        void SensitivityAnalysis(FILE *fplog, bool training);
 
         /*! \brief
          * Copy the optimization parameters to the poldata structure
@@ -382,9 +384,12 @@ class Bayes : public OptParam
          * \param[in] verbose Whether or not to print stuff
          * \param[in] calcAll If true, compute the deviation for all compounds
          *                    rather than those for this processor only.
+	 * \param[in] training If true, evealuate the energy on the training set,
+	 * 			otherwise on the test set. 
          */
         virtual double calcDeviation(bool verbose,
-                                     bool calcAll) = 0;
+                                     bool calcAll,
+				     bool training) = 0;
 
         /*! Return number of planned function calls 
          * Return the number of calls to the objective function

@@ -205,47 +205,93 @@ void MolGen::optionsFinished()
     }
 }
 
-void MolGen::printChiSquared(FILE *fp) const
+void MolGen::printChiSquared(FILE *fp, bool bEvaluate_testset) const
 {
     if (nullptr != fp && MASTER(commrec()))
     {
         fprintf(fp, "Components of fitting function\n");
+        fprintf(fp, "Training Set:\n");
         for (int j = 0; j < ermsNR; j++)
         {
-            auto eee = chiSquared(j);
+            auto eee = getChiSquared(j, true);
             if (eee > 0)
             {
                 double factor = 1;
-                if (numberOfDatapoints_[j] > 0)
+                if (TrainingSet_nDataPoints_[j] > 0)
                 {
-                    factor = 1.0/numberOfDatapoints_[j];
+                    factor = 1.0/TrainingSet_nDataPoints_[j];
                 }
                 fprintf(fp, "%-8s  %10.3f  N: %6d  fc: %10g  weighted: %10g\n",
-                        rmsName(j), eee, numberOfDatapoints_[j],
+                        rmsName(j), eee, TrainingSet_nDataPoints_[j],
                         relativeWeight_[j], eee*factor*relativeWeight_[j]);
             }
         }
-        fflush(fp);
+	fflush(fp);
+	if (bEvaluate_testset)
+	{	
+            fprintf(fp, "Test Set:\n");
+            for (int j = 0; j < ermsNR; j++)
+            {
+                auto eee = getChiSquared(j, false);
+                if (eee > 0)
+                {
+                    double factor = 1;
+                    if (TestSet_nDataPoints_[j] > 0)
+                    {
+                        factor = 1.0/TestSet_nDataPoints_[j];
+                    }
+                    fprintf(fp, "%-8s  %10.3f  N: %6d  fc: %10g  weighted: %10g\n",
+                            rmsName(j), eee, TestSet_nDataPoints_[j],
+                            relativeWeight_[j], eee*factor*relativeWeight_[j]);
+                }
+            }
+            fflush(fp);
+	}
     }
 }
 
-void MolGen::sumChiSquared(bool parallel)
+void MolGen::sumChiSquared(bool parallel, bool training)
 {
     // Now sum over processors
     if (PAR(commrec()) && parallel)
     {
-        gmx_sum(ermsNR, chiSquared_, commrec());
-        gmx_sumi(ermsNR, numberOfDatapoints_, commrec());
+	if (training)
+	{
+            gmx_sum(ermsNR, TrainingSet_ChiSquared_, commrec());
+            gmx_sumi(ermsNR, TrainingSet_nDataPoints_, commrec());
+	}
+	else
+	{
+	    gmx_sum(ermsNR, TestSet_ChiSquared_, commrec());
+	    gmx_sumi(ermsNR, TestSet_nDataPoints_, commrec());
+    	}
     }
-    chiSquared_[ermsTOT] = 0;
-    for (auto e = 0; e < ermsTOT; e++)
+
+    if (training)
     {
-        double factor = 1;
-        if (numberOfDatapoints_[e] > 0)
-        {
-            factor = 1.0/numberOfDatapoints_[e];
+        TrainingSet_ChiSquared_[ermsTOT] = 0;
+    	for (auto e = 0; e < ermsTOT; e++)
+    	{
+            double factor = 1;
+            if (TrainingSet_nDataPoints_[e] > 0)
+            {
+                factor = 1.0/TrainingSet_nDataPoints_[e];
+            }
+            TrainingSet_ChiSquared_[ermsTOT] += relativeWeight_[e]*TrainingSet_ChiSquared_[e]*factor;
         }
-        chiSquared_[ermsTOT] += relativeWeight_[e]*chiSquared_[e]*factor;
+    }
+    else
+    {
+        TestSet_ChiSquared_[ermsTOT] = 0;
+        for (auto e = 0; e < ermsTOT; e++)
+        {
+            double factor = 1;
+            if (TestSet_nDataPoints_[e] > 0)
+            {
+                factor = 1.0/TestSet_nDataPoints_[e];
+            }
+            TestSet_ChiSquared_[ermsTOT] += relativeWeight_[e]*TestSet_ChiSquared_[e]*factor;
+        }
     }
 }
 
@@ -266,7 +312,8 @@ void MolGen::checkDataSufficiency(FILE *fp)
     size_t nmol = 0;
     do
     {
-        nmol = molset_.size();
+	// We check data sufficiency only for the training set
+        nmol = trainingset_.size();
         /* First set the ntrain values for all forces
          * present that should be optimized to zero.
          */
@@ -295,7 +342,7 @@ void MolGen::checkDataSufficiency(FILE *fp)
             InteractionType::ELECTRONEGATIVITYEQUALIZATION
         };
         // Now loop over molecules and add interactions
-        for(auto &mol : molset_)
+        for(auto &mol : trainingset_)
         {
             auto myatoms = mol.atomsConst();
             for(int i = 0; i < myatoms.nr; i++)
@@ -374,7 +421,7 @@ void MolGen::checkDataSufficiency(FILE *fp)
         }
         // Now loop over molecules and remove those without sufficient support
         std::vector<std::string> removeMol;
-        for(auto &mol : molset_)
+        for(auto &mol : trainingset_)
         {
             bool keep = true;
             auto myatoms = mol.atomsConst();
@@ -419,22 +466,22 @@ void MolGen::checkDataSufficiency(FILE *fp)
         }
         for(auto &rmol : removeMol)
         {
-            auto moliter = std::find_if(molset_.begin(), molset_.end(),
+            auto moliter = std::find_if(trainingset_.begin(), trainingset_.end(),
                                         [rmol](MyMol const &f)
                                         { return (rmol == f.getIupac()); });
-            if (moliter == molset_.end())
+            if (moliter == trainingset_.end())
             {
-                GMX_THROW(gmx::InternalError(gmx::formatString("Cannot find %s in molset_", rmol.c_str()).c_str()));
+                GMX_THROW(gmx::InternalError(gmx::formatString("Cannot find %s in trainingset_", rmol.c_str()).c_str()));
             }
             if (debug)
             {
                 fprintf(debug, "Removing %s because of lacking support\n",
                         rmol.c_str());
             }
-            molset_.erase(moliter);
+            trainingset_.erase(moliter);
         }
     }
-    while (molset_.size() > 0 && molset_.size() < nmol);
+    while (trainingset_.size() > 0 && trainingset_.size() < nmol);
     if (fp)
     {
         fprintf(fp, "There are %zu molecules left to optimize the parameters for.\n", nmol);
@@ -487,8 +534,7 @@ void MolGen::Read(FILE            *fp,
                   const MolSelect &gms,
                   bool             bZPE,
                   bool             bDHform,
-                  const char      *tabfn,
-                  iMolSelect       SelectType)
+                  const char      *tabfn)
 {
     int                              nwarn    = 0;
     std::map<immStatus, int>         imm_count;
@@ -629,7 +675,15 @@ void MolGen::Read(FILE            *fp,
                 }
                 if (immStatus::OK == imm)
                 {
-                    molset_.push_back(std::move(mymol));
+		    molset_.push_back(mymol);
+		    if (iMolSelect::Train == gms.status(mymol.getIupac()))
+		    {
+			trainingset_.push_back(std::move(mymol));
+		    }
+		    else
+		    {
+			testset_.push_back(std::move(mymol));
+		    }
                 }
             }
         }
@@ -762,7 +816,15 @@ void MolGen::Read(FILE            *fp,
             incrementImmCount(&imm_count, imm);
             if (immStatus::OK == imm)
             {
-                molset_.push_back(std::move(mymol));
+		if (iMolSelect::Train == gms.status(mymol.getIupac()))
+		{
+		    trainingset_.push_back(std::move(mymol));
+		}
+		else
+		{
+		    testset_.push_back(std::move(mymol));
+		}
+
                 nlocaltop += 1;
                 if (nullptr != debug)
                 {
@@ -793,10 +855,6 @@ void MolGen::Read(FILE            *fp,
                 fprintf(fp, "Check alexandria.debug for more information.\nYou may have to use the -debug 1 flag.\n\n");
             }
         }
-    }
-    for (auto mymol : &molset_)
-    {
-
     }
     gmx_sumi(1, &nlocaltop, cr_);
     nmol_support_ = nlocaltop;

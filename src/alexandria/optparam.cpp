@@ -252,13 +252,13 @@ bool OptParam::anneal(int iter) const
     }   
 }
 
-void Bayes::SensitivityAnalysis(FILE *fplog)
+void Bayes::SensitivityAnalysis(FILE *fplog, bool training)
 {
     std::vector<bool> changed;
     changed.resize(param_.size(), true);
     toPoldata(changed);
     std::fill(changed.begin(), changed.end(), false);
-    double chi2_0 = calcDeviation(false, false);
+    double chi2_0 = calcDeviation(false, false, training);
     if (fplog)
     {
         fprintf(fplog, "Starting sensitivity analysis. chi2_0 = %g nParam = %d\n",
@@ -272,17 +272,17 @@ void Bayes::SensitivityAnalysis(FILE *fplog)
         changed[i]    = true;
         param_[i]     = 0.99*p_0;
         toPoldata(changed);
-        s.add(param_[i], calcDeviation(false, false));
+        s.add(param_[i], calcDeviation(false, false, training));
         param_[i]     = 0.995*p_0;
         toPoldata(changed);
-        s.add(param_[i], calcDeviation(false, false));
+        s.add(param_[i], calcDeviation(false, false, training));
         s.add(p_0, chi2_0);
         param_[i]     = 1.005*p_0;
         toPoldata(changed);
-        s.add(param_[i],  calcDeviation(false, false));
+        s.add(param_[i],  calcDeviation(false, false, training));
         param_[i]     = 1.01*p_0;
         toPoldata(changed);
-        s.add(param_[i],  calcDeviation(false, false));
+        s.add(param_[i],  calcDeviation(false, false, training));
         param_[i]     = p_0;
         toPoldata(changed);
         changed[i]    = false;
@@ -296,17 +296,20 @@ void Bayes::SensitivityAnalysis(FILE *fplog)
     }
 }
 
-double Bayes::MCMC(FILE *fplog)
+double Bayes::MCMC(FILE *fplog,
+		   bool bEvaluate_testset)
 {
     double                           storeParam;
-    int                              nsum            = 0;
-    int                              nParam          = 0; 
-    double                           currEval        = 0;
-    double                           minEval         = 0;
-    double                           prevEval        = 0;
-    double                           deltaEval       = 0;
-    double                           randProbability = 0;
-    double                           mcProbability   = 0; 
+    int                              nsum             = 0;
+    int                              nParam           = 0; 
+    double                           currEval         = 0;
+    double                           minEval          = 0;
+    double                           prevEval         = 0;
+    double                           deltaEval        = 0;
+    double                           currEval_testset = 0;
+    double                           prevEval_testset = 0;
+    double                           randProbability  = 0;
+    double                           mcProbability    = 0; 
     parm_t                           sum, sum_of_sq;
     
     std::vector<FILE *>              fpc;
@@ -387,11 +390,19 @@ double Bayes::MCMC(FILE *fplog)
     std::vector<bool> changed;
     changed.resize(nParam, false);
     toPoldata(changed);
-    prevEval = calcDeviation(true, false);
+
+    // training set
+    prevEval = calcDeviation(true, false, true);
     minEval  = prevEval;
     if (debug)
     {
         fprintf(debug, "Initial chi2 value = %g\n", prevEval);
+    }
+
+    if (bEvaluate_testset)
+    {
+	// test set
+        prevEval_testset = calcDeviation(true, false, false);
     }
 
     // Random number 
@@ -420,10 +431,18 @@ double Bayes::MCMC(FILE *fplog)
         changeParam(j, real_uniform(gen));
         changed[j]         = true;
         
-        // Evaluate the energy
+	// Update FF parameter data structure with the new value of parameter j
         toPoldata(changed);
-        currEval        = calcDeviation(false, false);
+
+        // Evaluate the energy on training set
+        currEval        = calcDeviation(false, false, true);
         deltaEval       = currEval-prevEval; 
+
+	// Evaluate the energy on the test set
+	if (bEvaluate_testset)
+	{
+	    currEval_testset = calcDeviation(false, false, false);
+	}
         
         // Accept any downhill move       
         accept          = (deltaEval < 0);
@@ -449,8 +468,16 @@ double Bayes::MCMC(FILE *fplog)
             {
                 if (fplog)
                 {
-                    fprintf(fplog, "iter %g. Found new minimum at %g\n",
-                            xiter, currEval);
+		    if (bEvaluate_testset)
+		    {
+			fprintf(fplog, "iter %g. Found new minimum at %g. Corresponding energy on the test set: %g\n",
+				xiter, currEval, currEval_testset);
+		    }
+		    else
+		    {
+                        fprintf(fplog, "iter %g. Found new minimum at %g\n",
+                                xiter, currEval);
+		    }
                 }
                 bestParam_ = param_;
                 minEval    = currEval;
@@ -463,6 +490,10 @@ double Bayes::MCMC(FILE *fplog)
                 saveState();
             }
             prevEval = currEval;
+	    if (bEvaluate_testset)
+	    {
+	        prevEval_testset = currEval_testset;
+	    }
             acceptedMoves_[j] = acceptedMoves_[j] + 1;
         }
         else
@@ -488,7 +519,14 @@ double Bayes::MCMC(FILE *fplog)
         }
         if (nullptr != fpe)
         {
-            fprintf(fpe, "%8f  %10g\n", xiter, prevEval);
+	    if (bEvaluate_testset)
+	    {
+		fprintf(fpe, "%8f  %10g  %10g\n", xiter, prevEval, prevEval_testset);
+	    }
+	    else
+	    {
+                fprintf(fpe, "%8f  %10g\n", xiter, prevEval);
+	    }
             fflush(fpe);
         }
         if (iter >= maxIter()/2)
@@ -614,7 +652,7 @@ double Bayes::Adaptive_MCMC(FILE *fplog)
     std::vector<bool> changed;
     changed.resize(nParam, false);
     toPoldata(changed);
-    prevEval = calcDeviation(true, false);
+    prevEval = calcDeviation(true, false, true);
     minEval  = prevEval;
     if (debug)
     {
@@ -653,7 +691,7 @@ double Bayes::Adaptive_MCMC(FILE *fplog)
         
         // Evaluate the energy
         toPoldata(changed);
-        currEval        = calcDeviation(false, false);
+        currEval        = calcDeviation(false, false, true);
         deltaEval       = currEval-prevEval; 
         
         // Accept any downhill move       

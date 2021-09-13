@@ -284,7 +284,8 @@ class Optimization : public MolGen, Bayes
         bool optRun(FILE                   *fplog,
                     const gmx_output_env_t *oenv,
                     const char             *xvgconv,
-                    const char             *xvgepot);
+                    const char             *xvgepot,
+		    bool                    bEvaluate_testset);
 
         /*! \brief
          * Print the results of the optimization per molecule
@@ -319,7 +320,8 @@ class Optimization : public MolGen, Bayes
          *                    rather than those for this processor only.
          */
         virtual double calcDeviation(bool verbose,
-                                     bool calcAll);
+                                     bool calcAll,
+				     bool training);
 
         /*! \brief
          * Send the information from this processor to destination
@@ -724,7 +726,8 @@ void Optimization::InitOpt(FILE *fplog, bool bRandom)
 }
 
 double Optimization::calcDeviation(bool verbose,
-                                   bool calcAll)
+                                   bool calcAll,
+				   bool training)
 {
     if (!calcAll)
     {
@@ -872,10 +875,10 @@ double Optimization::calcDeviation(bool verbose,
         }
     }
     // Now compute the deviation for the fitting or otherwise
-    resetChiSquared();
+    resetChiSquared(training);
     double nCalc = 0;
     double ePot2 = 0;
-    for (auto &mymol : molset())
+    for (auto &mymol : dataset(training))
     {
         if ((mymol.eSupp_ == eSupport::Local) ||
             (calcAll && (mymol.eSupp_ == eSupport::Remote)))
@@ -884,7 +887,7 @@ double Optimization::calcDeviation(bool verbose,
             auto molEnergyEntry = MolEnergyMap_.find(molid);
             if (molEnergyEntry != MolEnergyMap_.end())
             {
-                increaseChiSquared(ermsForce2, 1, molEnergyEntry->second.force2());
+                increaseChiSquared(ermsForce2, 1, molEnergyEntry->second.force2(), training);
                 if (debug)
                 {
                     fprintf(debug, "%d: %s molid: %d nEntries: %zu\n",
@@ -917,17 +920,18 @@ double Optimization::calcDeviation(bool verbose,
         fprintf(debug, "%d: ePot2 = %g nCalc = %g chi2 = %g\n",
                 commrec()->nodeid, ePot2, nCalc, chi2);
     }
-    setChiSquared(ermsEPOT, 1, chi2);
-    setChiSquared(ermsTOT, 1, chi2);
-    printChiSquared(debug);
+    setChiSquared(ermsEPOT, 1, chi2, training);
+    setChiSquared(ermsTOT, 1, chi2, training);
+    printChiSquared(debug, training);
     
-    return chiSquared(ermsTOT);
+    return getChiSquared(ermsTOT, training);
 }
 
 bool Optimization::optRun(FILE                   *fplog,
                           const gmx_output_env_t *oenv,
                           const char             *xvgconv,
-                          const char             *xvgepot)
+                          const char             *xvgepot,
+			  bool                    bEvaluate_testset)
 {
     bool bMinimum = false;
     if (MASTER(commrec()))
@@ -942,7 +946,8 @@ bool Optimization::optRun(FILE                   *fplog,
                 gmx_send_int(commrec(), dest, niter);
             }
         }
-        double chi2_min = calcDeviation(false, false);
+	// calculate chi2_min on the training set
+        double chi2_min = calcDeviation(false, false, true);
         if (fplog)
         {
             fprintf(fplog, "Initial chi2 %g\n", chi2_min);
@@ -951,7 +956,7 @@ bool Optimization::optRun(FILE                   *fplog,
             std::vector<std::string> paramClass;
             Bayes::setOutputFiles(xvgconv, paramClass, xvgepot, oenv);
         }
-        double chi2 = Bayes::MCMC(fplog);
+        double chi2 = Bayes::MCMC(fplog, bEvaluate_testset);
         if (fplog)
         {
             fprintf(fplog, "Final chi2 %g\n", chi2_min);
@@ -972,7 +977,8 @@ bool Optimization::optRun(FILE                   *fplog,
                     std::vector<bool> changed;
                     changed.resize(best.size(), true);
                     toPoldata(changed);
-                    double chi2 = calcDeviation(true, true);
+		    // calculate chi2 on the training set
+                    double chi2 = calcDeviation(true, true, true);
                     fprintf(fplog, "\nLowest RMSD value during optimization: %g.\n",
                             std::sqrt(chi2));
                     fprintf(fplog, "Parameters after the optimization:\n");
@@ -985,7 +991,7 @@ bool Optimization::optRun(FILE                   *fplog,
                     }
                 }
             }
-            printChiSquared(fplog);
+            printChiSquared(fplog, bEvaluate_testset);
         }
     }
     else
@@ -994,7 +1000,13 @@ bool Optimization::optRun(FILE                   *fplog,
         int niter = gmx_recv_int(commrec(), 0);
         for (int n = 0; n < niter; n++)
         {
-            (void) calcDeviation(false, false);
+	    // training set
+            (void) calcDeviation(false, false, true);
+	    if (bEvaluate_testset)
+	    {
+		// test set
+		(void) calcDeviation(false, false, false);
+	    }
         }
     }
     return bMinimum;
@@ -1163,8 +1175,9 @@ void Optimization::printResults(FILE                   *fp,
             gmx_stats_free(gmol);
         }
     }
+    // Print RMSD of the training set
     fprintf(fp, "RMSD from target energies for %zu compounds and %d conformation is %g.\n",
-            molset().size(), nconformation, std::sqrt(chiSquared(ermsTOT)));
+            molset().size(), nconformation, std::sqrt(getChiSquared(ermsTOT, true)));
     fprintf(fp, "\n");
     if (nullptr != hform_xvg)
     {
@@ -1237,12 +1250,11 @@ int alex_tune_fc(int argc, char *argv[])
     int                   compress      = 0;
     int                   nmultisim     = 0;
     bool                  bRandom       = false;
+    bool 		  bEvaluate_testset = false;
     gmx_bool              bZPE          = false;
     gmx_bool              bZero         = true;
     gmx_bool              bTestPar      = false;
     gmx_bool              bForceOutput  = true;
-    
-    static const char          *select_types[]   = {nullptr, "Train", "Test", "Ignore", "Unknown", nullptr};
     
     t_pargs               pa[]          = {
         { "-multi",   FALSE, etINT, {&nmultisim},
@@ -1259,8 +1271,8 @@ int alex_tune_fc(int argc, char *argv[])
           "Generate completely random starting parameters within the limits set by the options. This will be done at the very first step and before each subsequent run." },
         { "-force_output", FALSE, etBOOL, {&bForceOutput},
           "Write output even if no new minimum is found" },
-        { "-select", FALSE, etENUM, {select_types},
-          "Select type for making the dataset for training or testing." }
+        { "-evaluate_testset", FALSE, etBOOL, {&bEvaluate_testset},
+          "Evaluate the MCMC energy on the test set." }
     };
 
     FILE                 *fplog;
@@ -1291,6 +1303,7 @@ int alex_tune_fc(int argc, char *argv[])
     }
     opt.optionsFinished(opt2fn("-o", NFILE, fnm));
 
+
     if (MASTER(opt.commrec()))
     {
         fplog = gmx_ffopen(opt2fn("-g", NFILE, fnm), "w");
@@ -1308,11 +1321,6 @@ int alex_tune_fc(int argc, char *argv[])
 
     const char *tabfn = opt2fn_null("-table", NFILE, fnm);
 
-    iMolSelect select_type;
-    if (!name2molselect(select_types[0], &select_type))
-    {
-        gmx_fatal(FARGS, "No such selection type %s", select_types[0]);
-    }
     opt.Read(fplog ? fplog : (debug ? debug : nullptr),
              opt2fn("-f", NFILE, fnm),
              opt2fn_null("-d", NFILE, fnm),
@@ -1320,8 +1328,7 @@ int alex_tune_fc(int argc, char *argv[])
              gms,
              bZPE,
              true,
-             tabfn,
-             select_type);
+             tabfn);
 
     opt.checkSupport(fplog);
 
@@ -1329,13 +1336,19 @@ int alex_tune_fc(int argc, char *argv[])
     {
         opt.InitOpt(fplog, bRandom);
         opt.printMolecules(fplog, false, false);
+
+	if (bEvaluate_testset && opt.nTestset() == 0)
+	{
+	    gmx_fatal(FARGS, "You cannot evaluate your test set when it is empty!.");
+	}
     }
 
     opt.broadcast();
 
     if (bTestPar)
     {
-        auto chi2 = opt.calcDeviation(false, false);
+	// calculate chi2 on the training set
+        auto chi2 = opt.calcDeviation(false, false, true);
         if (MASTER(opt.commrec()))
         {
             fprintf(fplog, "chi2 = %g\n", chi2);
@@ -1345,7 +1358,8 @@ int alex_tune_fc(int argc, char *argv[])
     }
     if (MASTER(opt.commrec()))
     {
-        auto chi2 = opt.calcDeviation(false, true);
+	// calculate chi2 on the training set
+        auto chi2 = opt.calcDeviation(false, true, true);
         fprintf(fplog, "chi2 = %g\n", chi2);
         opt.printResults(fplog, (char *)"Before optimization",
                          nullptr, nullptr, oenv);
@@ -1359,7 +1373,8 @@ int alex_tune_fc(int argc, char *argv[])
     bool bMinimum = opt.optRun(fplog,
                                oenv,
                                opt2fn("-conv", NFILE, fnm),
-                               opt2fn("-epot", NFILE, fnm));
+                               opt2fn("-epot", NFILE, fnm),
+			       bEvaluate_testset);
 
     if (MASTER(opt.commrec()))
     {

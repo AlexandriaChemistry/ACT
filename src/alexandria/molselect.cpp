@@ -292,8 +292,6 @@ int alex_molselect(int argc, char *argv[])
     static char                *opt_elem  = nullptr;
     static gmx_bool             bZero     = false;
     
-    static const char          *select_types[]   = {nullptr, "Train", "Test", "Ignore", "Unknown", nullptr};
-    
     t_pargs                     pa[]      =
     {
         { "-nsample",   FALSE, etINT, {&nsample},
@@ -302,8 +300,6 @@ int alex_molselect(int argc, char *argv[])
           "Take into account molecules with zero dipoles." },
         { "-maxatempt", FALSE, etINT, {&maxatempt},
           "Maximum number of atempts to sample mindata molecules per atom types." },
-        { "-select", FALSE, etENUM, {select_types},
-          "Select type for making the dataset for training or testing." },
         { "-opt_elem",  FALSE, etSTR, {&opt_elem},
           "Space-separated list of atom types to select molecules. If this variable is not set, all elements will be used." }
     };
@@ -345,11 +341,6 @@ int alex_molselect(int argc, char *argv[])
 
     gms.read(opt2fn_null("-sel", NFILE, fnm));
 
-    iMolSelect select_type;
-    if (!name2molselect(select_types[0], &select_type))
-    {
-        gmx_fatal(FARGS, "No such selection type %s", select_types[0]);
-    }
     mgn.Read(fp ? fp : (debug ? debug : nullptr),
              opt2fn("-f", NFILE, fnm),
              opt2fn_null("-d", NFILE, fnm),
@@ -357,8 +348,7 @@ int alex_molselect(int argc, char *argv[])
              gms, 
              false, 
              false, 
-             nullptr,
-             select_type);
+             nullptr);
 
     printAtomtypeStatistics(fp, mgn.poldata(), mgn.molset());
 
