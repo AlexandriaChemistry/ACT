@@ -581,12 +581,12 @@ void print_electric_props(FILE                           *fp,
                                              });
                     qCalc = myatoms.atom[j].q;
                     // TODO: only count in real shells
-                    if (nullptr != mol->shellfc_ && 
-                        j < myatoms.nr-1 && 
-                        myatoms.atom[j+1].ptype == eptShell)
-                    {
-                        qCalc += myatoms.atom[j+1].q;
-                    }
+                    //if (nullptr != mol->shellfc_ && 
+                    //  j < myatoms.nr-1 && 
+                    //  myatoms.atom[j+1].ptype == eptShell)
+                    //{
+                    //  qCalc += myatoms.atom[j+1].q;
+                    //}
                     if (qQM.find(qType::CM5) != qQM.end())
                     {
                         auto qcm5 = qQM.find(qType::CM5)->second[i];
@@ -619,12 +619,19 @@ void print_electric_props(FILE                           *fp,
                 else
                 {
                     // Turned on printing of shells again
-                    fprintf(fp, "%-2d%3d  %-5s  %8.4f  %8.4f  %8.4f  %8.4f  %8.4f %8.3f%8.3f%8.3f\n",
+                    fprintf(fp, "%-2d%3d  %-5s  %8.4f",
                             0,
                             j+1,
                             *(myatoms.atomtype[j]),
-                            myatoms.atom[j].q,
-                            0.0, 0.0, 0.0, 0.0,
+                            myatoms.atom[j].q);
+                    for(auto &qt : qQM)
+                    {
+                        if (!qQM.find(qt.first)->second.empty())
+                        {
+                            fprintf(fp, "          ");
+                        }
+                    }
+                    fprintf(fp," %8.3f%8.3f%8.3f\n", 
                             convertFromGromacs(x[j][XX], "pm"),
                             convertFromGromacs(x[j][YY], "pm"),
                             convertFromGromacs(x[j][ZZ], "pm"));
