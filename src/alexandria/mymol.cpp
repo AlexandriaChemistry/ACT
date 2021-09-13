@@ -1397,6 +1397,19 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
                 auto qval  = ptype->parameterConst("charge").value();
                 myatoms->atom[i].q  = myatoms->atom[i].qB = qval;
             }
+            // Now if we have shells, we still have to minimize them!
+            if (nullptr != shellfc_)
+            {
+                double rmsf;
+                auto imm = computeForces(nullptr, cr, &rmsf);
+                if (imm != immStatus::OK)
+                {
+                    return imm;
+                }
+                auto qcalc = qTypeProps(qType::Calc);
+                qcalc->setX(state_->x);
+            }
+            
             return immStatus::OK;
         }
     case ChargeGenerationAlgorithm::CM5:
