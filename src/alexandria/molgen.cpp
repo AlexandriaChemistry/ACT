@@ -407,8 +407,18 @@ void MolGen::checkDataSufficiency(FILE *fp)
                             {
                                 for(auto &force : fplist->findParametersConst(ztype))
                                 {
-                                    if (force.second.ntrain() < mindata_)
+                                    if (force.second.isMutable() &&
+                                        force.second.ntrain() < mindata_)
                                     {
+                                        if (fp)
+                                        {
+                                            fprintf(fp, "No support for %s - %s in %s. Ntrain is %d, should be at least %d.\n",
+                                                    ztype.id().c_str(),
+                                                    interactionTypeToString(itype).c_str(),
+                                                    mol.getMolname().c_str(),
+                                                    force.second.ntrain(),
+                                                    mindata_);
+                                        }
                                         keep = false;
                                         break;
                                     }
@@ -440,9 +450,9 @@ void MolGen::checkDataSufficiency(FILE *fp)
             {
                 GMX_THROW(gmx::InternalError(gmx::formatString("Cannot find %s in mymol_", rmol.c_str()).c_str()));
             }
-            if (debug)
+            if (fp)
             {
-                fprintf(debug, "Removing %s because of lacking support\n",
+                fprintf(fp, "Removing %s because of lacking support\n",
                         rmol.c_str());
             }
             mymol_.erase(moliter);

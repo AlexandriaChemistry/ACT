@@ -563,7 +563,7 @@ void print_electric_props(FILE                           *fp,
                     fprintf(fp, "%10s", qTypeName(qt.first).c_str());
                 }
             }
-            fprintf(fp, "       x       y       z\n");
+            fprintf(fp, "       x       y       z (pm)\n");
             auto x     = mol->x();
             auto qrmsd = 0.0;
             int  ncore = 0;
@@ -610,21 +610,24 @@ void print_electric_props(FILE                           *fp,
                             fprintf(fp, "  %8.4f", qt.second[i]);
                         }
                     }
-                    fprintf(fp," %8.3f%8.3f%8.3f\n", x[j][XX],x[j][YY],x[j][ZZ]);
+                    fprintf(fp," %8.3f%8.3f%8.3f\n", 
+                            convertFromGromacs(x[j][XX], "pm"),
+                            convertFromGromacs(x[j][YY], "pm"),
+                            convertFromGromacs(x[j][ZZ], "pm"));
                     i++;
                 }
-                else if (false)
+                else
                 {
-                    // Turned of printing of shells for now
+                    // Turned on printing of shells again
                     fprintf(fp, "%-2d%3d  %-5s  %8.4f  %8.4f  %8.4f  %8.4f  %8.4f %8.3f%8.3f%8.3f\n",
                             0,
                             j+1,
                             *(myatoms.atomtype[j]),
                             myatoms.atom[j].q,
                             0.0, 0.0, 0.0, 0.0,
-                            x[j][XX],
-                            x[j][YY],
-                            x[j][ZZ]);
+                            convertFromGromacs(x[j][XX], "pm"),
+                            convertFromGromacs(x[j][YY], "pm"),
+                            convertFromGromacs(x[j][ZZ], "pm"));
                 }
             }
             fprintf(fp, "\n");
