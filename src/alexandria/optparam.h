@@ -80,6 +80,8 @@ class OptParam
         real                     anneal_         = 1;
         //! Use adaptive MCMC in the optimization
         bool                     adaptive_       = false;
+        //! Flag determining whether to be verbose printing
+        bool                     verbose_        = false;
         //! Base name for parameter convergence file names
         std::string              xvgconv_;
         //! File name for parameter energy (chi2)
@@ -114,6 +116,9 @@ class OptParam
         const std::vector<std::string> &paramClass() { return paramClass_; }
         //! \brief Return Max # iterations
         int maxIter() const { return maxiter_; }
+
+        //! \brief Return verbosity
+        bool verbose() const { return verbose_; }
         
         //! \brief Return temperature
         real temperature () const { return temperature_; }

@@ -283,6 +283,11 @@ void OptACM::initChargeGeneration(bool training)
                 mymol.eSupp_ = eSupport::No;
             }
         }
+        if (mymol.eSupp_ != eSupport::No)
+        {
+            mymol.QgenAcm_ = new QgenAcm(poldata(), mymol.atoms(), 
+                                         mymol.totalCharge());
+        }
     }
 }
 

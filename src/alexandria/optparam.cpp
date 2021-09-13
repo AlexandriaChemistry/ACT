@@ -75,7 +75,9 @@ void OptParam::add_pargs(std::vector<t_pargs> *pargs)
         { "-seed",   FALSE, etINT,  {&seed_},
           "Random number seed. If zero, a seed will be generated." },
         { "-step",  FALSE, etREAL, {&step_},
-          "Step size for the parameter optimization. Is used as fraction of the available range per parameter which depends on the parameter type" }
+          "Step size for the parameter optimization. Is used as fraction of the available range per parameter which depends on the parameter type." },
+        { "-v",     FALSE, etBOOL, {&verbose_},
+          "Flush output immediately rather than letting the OS buffer it. Don't use for production simulations." }
     };
     for (size_t i = 0; i < asize(pa); i++)
     {
@@ -452,7 +454,7 @@ double Bayes::MCMC(FILE *fplog,
         if (!accept)
         {
             // Only anneal if the simulation reached a certain number of steps
-            if (anneal(iter))
+            if (anneal(iter/nParam))
             {
                 beta = computeBeta(iter/nParam);
             }
@@ -515,7 +517,10 @@ double Bayes::MCMC(FILE *fplog,
         for(auto fp: fpc)
         {
             fprintf(fp, "\n");
-            fflush(fp);
+            if (verbose())
+            {
+                fflush(fp);
+            }
         }
         if (nullptr != fpe)
         {
@@ -759,12 +764,18 @@ double Bayes::Adaptive_MCMC(FILE *fplog)
         for(auto fp: fpc)
         {
             fprintf(fp, "\n");
-            fflush(fp);
+            if (verbose())
+            {
+                fflush(fp);
+            }
         }
         if (nullptr != fpe)
         {
             fprintf(fpe, "%8f  %10g\n", xiter, prevEval);
-            fflush(fpe);
+            if (verbose())
+            {
+                fflush(fpe);
+            }
         }
         if (iter >= halfIter)
         {
