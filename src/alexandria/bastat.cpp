@@ -141,7 +141,7 @@ static void sort_bonds(t_bonds *b)
 }
 
 static void add_bond(FILE *fplog, const char *molname, t_bonds *bonds,
-                     const std::string a1, const std::string a2,
+                     const std::string &a1, const std::string &a2,
                      double blen, double spacing, double order,
                      InteractionType iType)
 {
@@ -184,15 +184,15 @@ static void add_bond(FILE *fplog, const char *molname, t_bonds *bonds,
     {
         fprintf(fplog, "%s %s-%s-%s-%g %g\n",
                 molname, interactionTypeToString(iType).c_str(),
-                a1.c_str(),
-                a2.c_str(),
+                b->a1.c_str(),
+                b->a2.c_str(),
                 order,
                 blen);
     }
 }
 
 static void lo_add_angle(FILE *fplog, const char *molname, std::vector<t_angle> &angle,
-                         const std::string a1, const std::string a2, const std::string a3,
+                         const std::string &a1, const std::string &a2, const std::string &a3,
                          double refValue, double spacing, InteractionType iType)
 {
     GMX_RELEASE_ASSERT(a1.size() > 0, "atom name a1 is empty");
@@ -236,12 +236,12 @@ static void lo_add_angle(FILE *fplog, const char *molname, std::vector<t_angle> 
     if (nullptr != fplog)
     {
         fprintf(fplog, "%s %s-%s-%s-%s %g\n", molname, interactionTypeToString(iType).c_str(),
-                a1.c_str(), a2.c_str(), a3.c_str(), refValue);
+                a->a1.c_str(), a->a2.c_str(), a->a3.c_str(), refValue);
     }
 }
 
 static void add_angle(FILE *fplog, const char *molname, t_bonds *b,
-                      const std::string a1, const std::string a2, const std::string a3,
+                      const std::string &a1, const std::string &a2, const std::string &a3,
                       double refValue, double spacing, InteractionType iType)
 {
     lo_add_angle(fplog, molname, iType == InteractionType::ANGLES ? b->angle : b->linangle,
@@ -250,8 +250,8 @@ static void add_angle(FILE *fplog, const char *molname, t_bonds *b,
 
 static void lo_add_dih(FILE *fplog, const char *molname,
                        std::vector<t_dih> &dih,
-                       const std::string a1, const std::string a2,
-                       const std::string a3, const std::string a4,
+                       const std::string &a1, const std::string &a2,
+                       const std::string &a3, const std::string &a4,
                        double angle, double spacing, InteractionType iType)
 
 {
@@ -323,8 +323,8 @@ static void lo_add_dih(FILE *fplog, const char *molname,
 }
 
 static void add_dih(FILE *fplog, const char *molname, t_bonds *b,
-                    const std::string a1, const std::string a2,
-                    const std::string a3, const std::string a4,
+                    const std::string &a1, const std::string &a2,
+                    const std::string &a3, const std::string &a4,
                     double angle, double spacing, InteractionType iType)
 {
     lo_add_dih(fplog, molname,
