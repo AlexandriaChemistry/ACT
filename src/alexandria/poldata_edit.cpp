@@ -128,13 +128,9 @@ static void setMinMaxMut(FILE *fp,
         auto range = pp->maximum()-pp->minimum();
         if (std::fabs(pp->value() - pp->minimum()) < 0.01*range && range > 0)
         {
-            if (pp->minimum() < 0)
+            if (!pp->setMinimum(pp->minimum()-0.1*range))
             {
-                pp->setMinimum(pp->minimum()-0.1*range);
-            }
-            else
-            {
-                pp->setMinimum(std::max(pp->minimum()-0.1*range, 0.9*pp->minimum()));
+                pp->setMinimum(0.8*pp->minimum());
             }
             if (fp)
             {
@@ -144,7 +140,7 @@ static void setMinMaxMut(FILE *fp,
         }
         if (std::fabs(pp->value() - pp->maximum()) < 0.01*range && range > 0)
         {
-            pp->setMaximum(std::min(pp->maximum()+0.1*range, 1.1*pp->maximum()));
+            pp->setMaximum(pp->maximum()+0.1*range);
             if (fp)
             {
                 fprintf(fp, "Maximum stretched to %g for %s\n",
@@ -304,9 +300,11 @@ static void modifyPoldata(Poldata *pd,
                     for (auto q2: myParticles)
                     {
                         auto q2id = q2->interactionTypeToIdentifier(itype).id();
-                        for(int bo = 1; bo < 4; bo++)
+                        const double bondorders[] = { 1, 1.5, 2, 3 };
+                        const size_t nBondorder   = std::extent<decltype(bondorders)>::value;
+                        for(size_t bb = 0; bb < nBondorder; bb++)
                         {
-                            auto qId = Identifier({q1id, q2id}, bo, CanSwap::No);
+                            auto qId = Identifier({q1id, q2id}, bondorders[bb], CanSwap::No);
                             modifyInteraction(pd, itype, paramType, qId,
                                               bSetMin, pmin,
                                               bSetVal, pval,

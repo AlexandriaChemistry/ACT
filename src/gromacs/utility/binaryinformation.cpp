@@ -352,11 +352,8 @@ void printBinaryInformation(TextWriter                      *writer,
     {
         writer->writeLine(formatString("%sCreated by:%s", prefix, suffix));
     }
-    // TODO: It would be nice to know here whether we are really running a
-    // Gromacs binary or some other binary that is calling Gromacs; we
-    // could then print "%s is part of GROMACS" or some alternative text.
     std::string title
-        = formatString(":-) GROMACS - %s, %s%s (-:", name, gmx_version(), precisionString);
+        = formatString(":-) ACT - %s, %s%s (-:", name, gmx_version(), precisionString);
     const int   indent
         = centeringOffset(78 - std::strlen(prefix) - std::strlen(suffix), title.length()) + 1;
     writer->writeLine(formatString("%s%*c%s%s", prefix, indent, ' ', title.c_str(), suffix));

@@ -79,6 +79,7 @@ enum class immStatus {
     NoDipole,
     NotSupportedBond,
     NotSupportedAngle,
+    NotSupportedLinearAngle,
     NotSupportedDihedral
 };
 

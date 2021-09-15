@@ -66,8 +66,8 @@ void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
     // Modules from this directory
     registerModule(manager, &alex_gentop, "gentop",
                    "Generate topology for structure files");
-    registerModule(manager, &alex_tune_fc, "tune_fc",
-                   "Optimize force field parameters");
+    //registerModule(manager, &alex_tune_fc, "tune_fc",
+    //              "Optimize force field parameters");
     registerModule(manager, &alex_tune_eem, "tune_eem",
                    "Optimize parameters of the EEM algorithm");
     registerModule(manager, &alex_bastat, "bastat",
@@ -98,7 +98,7 @@ void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
             manager->addModuleGroup("Alexandria core tools");
         group.addModule("bastat");
         group.addModule("tune_eem");
-        group.addModule("tune_fc");
+        //group.addModule("tune_fc");
         group.addModule("qm2molprop");
         group.addModule("molprop_check");
     }

@@ -45,8 +45,12 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/real.h"
 
+#include "molselect.h"
+
 namespace alexandria
 {
+
+enum class CalcDev { Parallel, Master, Final };
 
 /*! \brief
  * Does Bayesian Monte Carlo (BMC) simulation to find the best paramater set,
@@ -55,8 +59,6 @@ namespace alexandria
  * \inpublicapi
  * \ingroup module_alexandria
  */
-
-
 class OptParam
 {
     private:
@@ -76,6 +78,10 @@ class OptParam
         real                     step_           = 0.02;
         //! Temperature in chi2 units
         real                     temperature_    = 5;
+        //! Weight temperature after number of training points
+        bool                     tempWeight_     = false;
+        //! Weighted temperatures
+        std::vector<double>      weightedTemperature_;
         //! Use annealing in the optimization. Value < 1 means annealing will happen
         real                     anneal_         = 1;
         //! Use adaptive MCMC in the optimization
@@ -156,6 +162,9 @@ class OptParam
 
         //! \brief Return whether or not bounds are used for parameters
         bool boxConstraint() const { return bBoxConstraint_; }
+        
+        //! \brief Return whether or not temperature weighting should be considered
+        bool temperatureWeighting() const { return tempWeight_; }
         
         /*! \brief Return whether or not to do simulated annealing
          * \param iter The iteration number
@@ -238,6 +247,7 @@ class Bayes : public OptParam
         parm_t        lowerBound_;
         parm_t        upperBound_;
         parm_t        bestParam_;
+        parm_t        weightedTemperature_;
         mc_t          attemptedMoves_;
         mc_t          acceptedMoves_;
         param_name_t  paramNames_;
@@ -374,9 +384,10 @@ class Bayes : public OptParam
         /*! \brief
          * Perform a sensitivity analysis by systematically changing
          * all parameters and re-evaluating the chi2.
-	 * \param[in] training Perform senitivity analysis on the training set if true, otherwise on the test set
+         * \param[in] fplog    File pointer to print to
+         * \param[in] ims   Data set to perform sensitivity analysis on
          */
-        void SensitivityAnalysis(FILE *fplog, bool training);
+        void SensitivityAnalysis(FILE *fplog, iMolSelect ims);
 
         /*! \brief
          * Copy the optimization parameters to the poldata structure
@@ -387,14 +398,13 @@ class Bayes : public OptParam
         /*! \brief
          * Compute the chi2 from the target function
          * \param[in] verbose Whether or not to print stuff
-         * \param[in] calcAll If true, compute the deviation for all compounds
-         *                    rather than those for this processor only.
-	 * \param[in] training If true, evealuate the energy on the training set,
-	 * 			otherwise on the test set. 
+         * \param[in] calcDev How to compute the deviation for all compounds
+         * \param[in] ims     The data set to evaluate the energy upon.
+         * \return the square deviation or -1 when done.
          */
-        virtual double calcDeviation(bool verbose,
-                                     bool calcAll,
-				     bool training) = 0;
+        virtual double calcDeviation(bool       verbose,
+                                     CalcDev    calcDev,
+                                     iMolSelect ims) = 0;
 
         /*! Return number of planned function calls 
          * Return the number of calls to the objective function
@@ -404,6 +414,11 @@ class Bayes : public OptParam
         {
             return 1+maxIter()*nParam();
         }
+        /* \brief
+         * Print the final results to the logFile.
+         * \param[in] chi2_min Final chi2 in optimization
+         */
+        void printResults(FILE *fp, double chi2_min);
 };
 
 }

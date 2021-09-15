@@ -35,6 +35,7 @@
 #define MOLSELECT_H
 
 #include <algorithm>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -44,11 +45,12 @@
 enum class iMolSelect {
     Train,
     Test,
-    Ignore,
-    Unknown
+    Ignore
 };
 
 const char *iMolSelectName(iMolSelect ims);
+
+const std::map<iMolSelect, const char *> &iMolSelectNames();
 
 bool name2molselect(const std::string &name, iMolSelect *ims);
 
@@ -90,10 +92,20 @@ class MolSelect
         void read(const char *filename);
         
         size_t nMol() const { return ims_.size(); }
+    
+        /*! \brief Get data set for iupac
+         * \param[in]  iupac The molecule name
+         * \param[out] ims   The data set
+         * \return true if found, false otherwise
+         */    
+        bool status(const std::string &iupac, iMolSelect *ims) const;
         
-        iMolSelect status(const std::string &iupac) const;
-        
-        int index(const std::string &iupac) const;
+        /*! \brief Get index for iupac
+         * \param[in]  iupac The molecule name
+         * \param[out] index The index
+         * \return true if found, false otherwise
+         */    
+       bool index(const std::string &iupac, int *index) const;
         
         int count(iMolSelect ims) const
         {

@@ -136,7 +136,7 @@ class RespTest : public gmx::test::CommandLineTestBase
             }
             mp_.setInputrec(&inputrec);
             mp_.symmetrizeCharges(pd, qSymm, nullptr);
-            mp_.initQgenResp(pd, method, basis, nullptr, 0.0, 100);
+            mp_.initQgenResp(pd, method, basis, 0.0, 100);
             std::vector<double> qcustom;
             mp_.GenerateCharges(pd, mdlog, cr,
                                 tabFile.empty() ? nullptr : tabFile.c_str(),

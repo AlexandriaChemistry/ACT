@@ -383,8 +383,6 @@ int alex_analyze(int argc, char *argv[])
     static real                      rtoler            = 0.15;
     static real                      atoler            = 0;
     static real                      outlier           = 1;
-    static real                      th_toler          = 170;
-    static real                      ph_toler          = 5;
     static gmx_bool                  bMerge            = true;
     static gmx_bool                  bAll              = false;
     static gmx_bool                  bCalcPol          = true;
@@ -430,10 +428,6 @@ int alex_analyze(int argc, char *argv[])
           "Print a table of properties (slect which with the [TT]-prop[tt] flag)." },
         { "-statstable", FALSE, etBOOL, {&bStatsTable},
           "Print a table of statistics per category" },
-        { "-th_toler", FALSE, etREAL, {&th_toler},
-          "If bond angles are larger than this value the group will be treated as a linear one and a virtual site will be created to keep the group linear" },
-        { "-ph_toler", FALSE, etREAL, {&ph_toler},
-          "If dihedral angles are less than this (in absolute value) the atoms will be treated as a planar group with an improper dihedral being added to keep the group planar" },
         { "-fc_str", FALSE, etSTR, {&fc_str},
           "Selection of the stuff you want in the tables, given as a single string with spaces like: method1/basis1/type1:method2/basis2/type2 (you may have to put quotes around the whole thing in order to prevent the shell from interpreting it)." },
         { "-exp_type", FALSE, etSTR, {&exp_type},

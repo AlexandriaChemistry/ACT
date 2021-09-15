@@ -875,10 +875,18 @@ double Optimization::calcDeviation(bool verbose,
         }
     }
     // Now compute the deviation for the fitting or otherwise
+<<<<<<< HEAD
     resetChiSquared(training);
     double nCalc = 0;
     double ePot2 = 0;
     for (auto &mymol : dataset(training))
+=======
+    resetChiSquared();
+    double nCalc   = 0;
+    double ePot2   = 0;
+    auto   targets = fittingTargets();
+    for (auto &mymol : mymols())
+>>>>>>> david
     {
         if ((mymol.eSupp_ == eSupport::Local) ||
             (calcAll && (mymol.eSupp_ == eSupport::Remote)))
@@ -887,7 +895,11 @@ double Optimization::calcDeviation(bool verbose,
             auto molEnergyEntry = MolEnergyMap_.find(molid);
             if (molEnergyEntry != MolEnergyMap_.end())
             {
+<<<<<<< HEAD
                 increaseChiSquared(ermsForce2, 1, molEnergyEntry->second.force2(), training);
+=======
+	      (*targets).find(eRMS::Force2)->second.increase(1, molEnergyEntry->second.force2());
+>>>>>>> david
                 if (debug)
                 {
                     fprintf(debug, "%d: %s molid: %d nEntries: %zu\n",
@@ -920,11 +932,19 @@ double Optimization::calcDeviation(bool verbose,
         fprintf(debug, "%d: ePot2 = %g nCalc = %g chi2 = %g\n",
                 commrec()->nodeid, ePot2, nCalc, chi2);
     }
+<<<<<<< HEAD
     setChiSquared(ermsEPOT, 1, chi2, training);
     setChiSquared(ermsTOT, 1, chi2, training);
     printChiSquared(debug, training);
     
     return getChiSquared(ermsTOT, training);
+=======
+    (*targets).find(eRMS::EPOT)->second.setChiSquared(chi2);
+    (*targets).find(eRMS::TOT)->second.setChiSquared(chi2);
+    printChiSquared(debug);
+    
+    return (*targets).find(eRMS::TOT)->second.chiSquared();
+>>>>>>> david
 }
 
 bool Optimization::optRun(FILE                   *fplog,
@@ -1175,9 +1195,16 @@ void Optimization::printResults(FILE                   *fp,
             gmx_stats_free(gmol);
         }
     }
+<<<<<<< HEAD
     // Print RMSD of the training set
     fprintf(fp, "RMSD from target energies for %zu compounds and %d conformation is %g.\n",
             molset().size(), nconformation, std::sqrt(getChiSquared(ermsTOT, true)));
+=======
+    auto targets = fittingTargets();
+    fprintf(fp, "RMSD from target energies for %zu compounds and %d conformation is %g.\n",
+            mymols().size(), nconformation, 
+	    std::sqrt((*targets).find(eRMS::TOT)->second.chiSquared()));
+>>>>>>> david
     fprintf(fp, "\n");
     if (nullptr != hform_xvg)
     {
@@ -1307,7 +1334,7 @@ int alex_tune_fc(int argc, char *argv[])
     if (MASTER(opt.commrec()))
     {
         fplog = gmx_ffopen(opt2fn("-g", NFILE, fnm), "w");
-        print_header(fplog, pargs);
+        alexandria::print_header(fplog, pargs);
     }
     else
     {

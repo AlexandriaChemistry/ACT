@@ -125,7 +125,10 @@ void makeCategoryList(CategoryList         &cList,
 
     for (std::vector<alexandria::MolProp>::iterator mpi = mp.begin(); (mpi < mp.end()); mpi++)
     {
-        if ((ims == gms.status(mpi->getIupac())) &&
+        iMolSelect ims2;
+        
+        if (gms.status(mpi->getIupac(), &ims2) &&
+            ims2 == ims &&
             mpi->HasComposition(alex))
         {
             for (auto &si : mpi->categoryConst())

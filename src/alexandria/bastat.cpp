@@ -141,7 +141,7 @@ static void sort_bonds(t_bonds *b)
 }
 
 static void add_bond(FILE *fplog, const char *molname, t_bonds *bonds,
-                     const std::string a1, const std::string a2,
+                     const std::string &a1, const std::string &a2,
                      double blen, double spacing, double order,
                      InteractionType iType)
 {
@@ -184,15 +184,15 @@ static void add_bond(FILE *fplog, const char *molname, t_bonds *bonds,
     {
         fprintf(fplog, "%s %s-%s-%s-%g %g\n",
                 molname, interactionTypeToString(iType).c_str(),
-                a1.c_str(),
-                a2.c_str(),
+                b->a1.c_str(),
+                b->a2.c_str(),
                 order,
                 blen);
     }
 }
 
 static void lo_add_angle(FILE *fplog, const char *molname, std::vector<t_angle> &angle,
-                         const std::string a1, const std::string a2, const std::string a3,
+                         const std::string &a1, const std::string &a2, const std::string &a3,
                          double refValue, double spacing, InteractionType iType)
 {
     GMX_RELEASE_ASSERT(a1.size() > 0, "atom name a1 is empty");
@@ -236,12 +236,12 @@ static void lo_add_angle(FILE *fplog, const char *molname, std::vector<t_angle> 
     if (nullptr != fplog)
     {
         fprintf(fplog, "%s %s-%s-%s-%s %g\n", molname, interactionTypeToString(iType).c_str(),
-                a1.c_str(), a2.c_str(), a3.c_str(), refValue);
+                a->a1.c_str(), a->a2.c_str(), a->a3.c_str(), refValue);
     }
 }
 
 static void add_angle(FILE *fplog, const char *molname, t_bonds *b,
-                      const std::string a1, const std::string a2, const std::string a3,
+                      const std::string &a1, const std::string &a2, const std::string &a3,
                       double refValue, double spacing, InteractionType iType)
 {
     lo_add_angle(fplog, molname, iType == InteractionType::ANGLES ? b->angle : b->linangle,
@@ -250,8 +250,8 @@ static void add_angle(FILE *fplog, const char *molname, t_bonds *b,
 
 static void lo_add_dih(FILE *fplog, const char *molname,
                        std::vector<t_dih> &dih,
-                       const std::string a1, const std::string a2,
-                       const std::string a3, const std::string a4,
+                       const std::string &a1, const std::string &a2,
+                       const std::string &a3, const std::string &a4,
                        double angle, double spacing, InteractionType iType)
 
 {
@@ -323,8 +323,8 @@ static void lo_add_dih(FILE *fplog, const char *molname,
 }
 
 static void add_dih(FILE *fplog, const char *molname, t_bonds *b,
-                    const std::string a1, const std::string a2,
-                    const std::string a3, const std::string a4,
+                    const std::string &a1, const std::string &a2,
+                    const std::string &a3, const std::string &a4,
                     double angle, double spacing, InteractionType iType)
 {
     lo_add_dih(fplog, molname,
@@ -474,11 +474,11 @@ static void update_pd(FILE          *fp,
                 round_numbers(&av, &sig, 10); // Rounding the numbers to 1/10 pm and 1/10 degree
                 Identifier bondId({i.a1, i.a2}, i.order, CanSwap::Yes);
                 fs->addParameter(bondId, "bondlength",
-                                 ForceFieldParameter("pm", av, sig, N, av*factor, av/factor, Mutability::Bounded, false));
+                                 ForceFieldParameter("pm", av, sig, N, av*factor, av/factor, Mutability::Bounded, false, true));
                 fs->addParameter(bondId, "Dm",
-                                 ForceFieldParameter("kJ/mol", Dm, 0, 1, Dm*factor, Dm/factor, Mutability::Bounded, false));
+                                 ForceFieldParameter("kJ/mol", Dm, 0, 1, Dm*factor, Dm/factor, Mutability::Bounded, false, true));
                 fs->addParameter(bondId, "beta",
-                                 ForceFieldParameter("1/nm", beta, 0, 1, beta*factor, beta/factor, Mutability::Bounded, false));
+                                 ForceFieldParameter("1/nm", beta, 0, 1, beta*factor, beta/factor, Mutability::Bounded, false, true));
         
                 fprintf(fp, "bond-%s len %g sigma %g (pm) N = %d%s\n",
                         bondId.id().c_str(), av, sig, N, (sig > bond_tol) ? " WARNING" : "");
@@ -495,15 +495,15 @@ static void update_pd(FILE          *fp,
                 round_numbers(&av, &sig, 10);
                 Identifier bondId({i.a1, i.a2, i.a3}, CanSwap::Yes);
                 fs->addParameter(bondId, "angle",
-                                 ForceFieldParameter("degree", av, sig, N, av*factor, av/factor, Mutability::Bounded, false));
+                                 ForceFieldParameter("degree", av, sig, N, av*factor, av/factor, Mutability::Bounded, false, true));
                 fs->addParameter(bondId, "kt",
-                                 ForceFieldParameter("kJ/mol/rad2", kt, 0, 1, kt*factor, kt/factor, Mutability::Bounded, false));
+                                 ForceFieldParameter("kJ/mol/rad2", kt, 0, 1, kt*factor, kt/factor, Mutability::Bounded, false, false));
                 if (fType == F_UREY_BRADLEY)
                 {
                     fs->addParameter(bondId, "r13", 
-                                     ForceFieldParameter("nm", 0, 0, 1, 0, 0, Mutability::Dependent, false));
+                                     ForceFieldParameter("nm", 0, 0, 1, 0, 0, Mutability::Dependent, false, true));
                     fs->addParameter(bondId, "kub", 
-                                     ForceFieldParameter("kJ/mol/nm2", kub, 0, 1, kub*factor, kub/factor, Mutability::Bounded, false));
+                                     ForceFieldParameter("kJ/mol/nm2", kub, 0, 1, kub*factor, kub/factor, Mutability::Bounded, false, false));
                 }
                 
                 fprintf(fp, "angle-%s angle %g sigma %g (deg) N = %d%s\n",
@@ -523,9 +523,9 @@ static void update_pd(FILE          *fp,
                 // TODO Fix the parameters to be correct!
                 double myfactor = 0.99;
                 fs->addParameter(bondId, "a",
-                                 ForceFieldParameter("", av, sig, N, av*myfactor, av/myfactor, Mutability::Bounded, false));
+                                 ForceFieldParameter("", av, sig, N, av*myfactor, av/myfactor, Mutability::Bounded, false, true));
                 fs->addParameter(bondId, "klin", 
-                                 ForceFieldParameter("kJ/mol/nm2", klin, 0, 1, av*factor, av/factor, Mutability::Bounded, false));
+                                 ForceFieldParameter("kJ/mol/nm2", klin, 0, 1, av*factor, av/factor, Mutability::Bounded, false, true));
                 
                 fprintf(fp, "linear_angle-%s angle %g sigma %g N = %d%s\n",
                         bondId.id().c_str(), av, sig, N, (sig > angle_tol) ? " WARNING" : "");
@@ -547,7 +547,7 @@ static void update_pd(FILE          *fp,
                         for(auto &c : cname)
                         {
                             fs->addParameter(bondId, c,
-                                             ForceFieldParameter("kJ/mol", val, 0, 1, val*factor, val/factor, Mutability::Bounded, false));
+                                             ForceFieldParameter("kJ/mol", val, 0, 1, val*factor, val/factor, Mutability::Bounded, false, false));
                         }
                     }
                     break;
@@ -558,11 +558,11 @@ static void update_pd(FILE          *fp,
                         gmx_stats_get_npoints(i.lsq, &N);
                         round_numbers(&av, &sig, 10);
                         fs->addParameter(bondId, "angle", 
-                                         ForceFieldParameter("degree", av, sig, N, av*factor, av/factor, Mutability::Bounded, false));
+                                         ForceFieldParameter("degree", av, sig, N, av*factor, av/factor, Mutability::Bounded, false, true));
                         fs->addParameter(bondId, "kp", 
-                                         ForceFieldParameter("kJ/mol", kp, 0, 1, kp*factor, kp/factor, Mutability::Bounded, false));
+                                         ForceFieldParameter("kJ/mol", kp, 0, 1, kp*factor, kp/factor, Mutability::Bounded, false, true));
                         fs->addParameter(bondId, "mult", 
-                                         ForceFieldParameter("", 3, 0, 1, 3, 3, Mutability::Fixed, true));
+                                         ForceFieldParameter("", 3, 0, 1, 3, 3, Mutability::Fixed, true, true));
                     }
                     break;
                 default:
@@ -585,9 +585,9 @@ static void update_pd(FILE          *fp,
                 Identifier bondId({i.a1, i.a2, i.a3, i.a4}, CanSwap::No);
 
                 fs->addParameter(bondId, "phi", 
-                                 ForceFieldParameter("degree", av, sig, N, av*factor, av/factor, Mutability::Bounded, false));
+                                 ForceFieldParameter("degree", av, sig, N, av*factor, av/factor, Mutability::Bounded, false, true));
                 fs->addParameter(bondId, "kimp", 
-                                 ForceFieldParameter("kJ/mol", kimp, 0, 1, kimp*factor, kimp/factor, Mutability::Bounded, false));
+                                 ForceFieldParameter("kJ/mol", kimp, 0, 1, kimp*factor, kimp/factor, Mutability::Bounded, false, true));
                 
                 fprintf(fp, "improper-%s angle %g sigma %g (deg)\n",
                         bondId.id().c_str(), av, sig);
@@ -614,9 +614,9 @@ static void generate_bcc(Poldata *pd,
     auto bcc   = pd->findForces(itype);
     bcc->clearParameters();
 
-    auto hardnessParam = ForceFieldParameter("eV/e", hardness, 0, 0, 0, 2, Mutability::Bounded, true);
-    auto enpBounded    = ForceFieldParameter("eV", 0, 0, 0, -2, 2, Mutability::Bounded, true);
-    auto enpFixed      = ForceFieldParameter("eV", 0, 0, 0, 0, 0, Mutability::Fixed, true);
+    auto hardnessParam = ForceFieldParameter("eV/e", hardness, 0, 0, 0, 2, Mutability::Bounded, true, false);
+    auto enpBounded    = ForceFieldParameter("eV", 0, 0, 0, -2, 2, Mutability::Bounded, true, false);
+    auto enpFixed      = ForceFieldParameter("eV", 0, 0, 0, 0, 0, Mutability::Fixed, true, true);
     auto ptypes = pd->particleTypesConst();
     for (auto &ai : ptypes)
     {
@@ -801,8 +801,9 @@ int alex_bastat(int argc, char *argv[])
     }
     for (auto mpi = mp.begin(); mpi < mp.end(); mpi++)
     {
-        auto imol = gms.status(mpi->getIupac());
-        if (imol == iMolSelect::Train || imol == iMolSelect::Test)
+        iMolSelect imol;
+        if (gms.status(mpi->getIupac(), &imol) && 
+            (imol == iMolSelect::Train || imol == iMolSelect::Test))
         {
             alexandria::MyMol mmi;
             int               i;

@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020
+ * Copyright (C) 2014-2021
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -30,33 +30,20 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#ifndef TUNNING_UTILITY_H
-#define TUNNING_UTILITY_H
+#ifndef TUNING_UTILITY_H
+#define TUNING_UTILITY_H
 
-#include <cctype>
-#include <cmath>
 #include <cstdio>
-#include <cstdlib>
 
 #include <vector>
 
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/commandline/viewit.h"
-#include "gromacs/fileio/xvgr.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/topology/mtop_util.h"
-#include "gromacs/utility/coolstuff.h"
-#include "gromacs/utility/cstringutil.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/futil.h"
-#include "gromacs/utility/smalloc.h"
 
-#include "gmx_simple_comm.h"
-#include "molgen.h"
-#include "optparam.h"
+#include "mymol.h"
 #include "poldata.h"
-#include "poldata_xml.h"
 
 namespace alexandria
 {
@@ -86,8 +73,6 @@ void print_electric_props(FILE                           *fp,
                           real                            isopol_toler,
                           const gmx_output_env_t         *oenv,
                           bool                            bPolar,
-                          bool                            bDipole,
-                          bool                            bQuadrupole,
                           bool                            bfullTensor,
                           t_commrec                      *cr,
                           real                            efield,
@@ -102,6 +87,6 @@ void print_electric_props(FILE                           *fp,
 void print_header(FILE                       *fp, 
                   const std::vector<t_pargs> &pargs);
 
-}
+} // namespace alexandria
 
 #endif

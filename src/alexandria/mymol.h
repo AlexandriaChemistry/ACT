@@ -30,9 +30,10 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-
 #ifndef MYMOL_H
 #define MYMOL_H
+
+#include <map>
 
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
@@ -59,6 +60,7 @@
 #include "poldata.h"
 #include "qgen_acm.h"
 #include "qgen_resp.h"
+#include "qtype.h"
 
 struct gmx_enerdata_t;
 struct gmx_shellfc_t;
@@ -73,40 +75,22 @@ struct t_nrnb;
 namespace alexandria
 {
 
-enum class eSupport {
-    No, Local, Remote
-};
+    enum class eSupport {
+        No, Local, Remote
+            };
 
-/*! \brief Enumerated type to differentiate the charge types */
-enum class qType {
-    Calc      = 0,
-    ESP       = 1,
-    Mulliken  = 2,
-    Hirshfeld = 3,
-    CM5       = 4,
-    Elec      = 5
-};
-
-/*! \brief return string corresponding to charge type
- */
-const std::string &qTypeName(qType qt);
-
-/*! \brief Return a complete mape of qTypes and their names
- */
-const std::map<qType, std::string> &qTypes();
- 
-class MyForceProvider;
-/*! \brief
- * Contains molecular properties from a range of sources.
- * Overloads the regular molprop and adds a lot of functionality.
- * For one thing, it can generate molprop contents from a coordinate
- * file if needed.
- *
- * \inpublicapi
- * \ingroup module_alexandria
- */
-class MyMol : public MolProp
-{
+    class MyForceProvider;
+    /*! \brief
+     * Contains molecular properties from a range of sources.
+     * Overloads the regular molprop and adds a lot of functionality.
+     * For one thing, it can generate molprop contents from a coordinate
+     * file if needed.
+     *
+     * \inpublicapi
+     * \ingroup module_alexandria
+     */
+    class MyMol : public MolProp
+    {
     private:
         /*! \brief
          * Gromacs structures
@@ -119,8 +103,6 @@ class MyMol : public MolProp
         double                           ref_enthalpy_   = 0;
         double                           polarizability_ = 0;
         double                           sig_pol_        = 0;
-        std::map<qType, real>            EspRms_;
-        std::map<qType, real>            CosEsp_;
         t_excls                         *excls_          = nullptr;
         std::unique_ptr<gmx_vsite_t>    *vsite_          = nullptr;
         std::unique_ptr<gmx::MDAtoms>   *MDatoms_        = nullptr;
@@ -135,20 +117,14 @@ class MyMol : public MolProp
         //! Store the bond order for an atom pair
         std::map<std::pair<int, int>, double> bondOrder_;
 
-        //! Array of dipole vectors
-        std::map<qType, rvec>     mu_qm_;
-        //! Array of quadrupole tensors
-        std::map<qType, tensor>   Q_qm_;
-        //! Array of vectors of charges
-        std::map<qType, std::vector<double> > charge_QM_;
+        //! Map of charge type dependent properties
+        std::map<qType, QtypeProps>           qProps_;
         //! Experimental dipole
         double                    dip_exp_    = 0;
         //! Error in experimental dipole
         double                    dip_err_    = 0;
         //! Weighting factor for dipole????
         double                    dip_weight_ = 0;
-        //! Center of charge
-        rvec                      coc_        = {0, 0, 0};
         //! GROMACS state variable
         t_state                  *state_      = nullptr;
         //! GROMACS force record
@@ -241,16 +217,6 @@ class MyMol : public MolProp
          */
         void findOutPlaneAtoms(int ca, std::vector<int> &atoms);
 
-        
-
-        /*! \brief Extract charges and electric moments and store them.
-         *
-         * \param[in] qt     Charge type to store in
-         * \param[in] natom  Number of atoms
-         * \param[in] q      The charges
-         */
-        void setQandMoments(qType qt, int natom, real q[]);
-        
         /*! \brief Utility function to construct an identifier from GROMACS
          * topology indices.
          *
@@ -282,7 +248,6 @@ class MyMol : public MolProp
         PaddedVector<gmx::RVec>        f_;
         PaddedVector<gmx::RVec>        optf_;
         std::vector<int>               symmetric_charges_;
-        QgenResp                      *QgenResp_       = nullptr;
         QgenAcm                       *QgenAcm_        = nullptr;
         std::vector<PlistWrapper>      plist_;
         gmx_mtop_t                    *mtop_           = nullptr;
@@ -301,41 +266,28 @@ class MyMol : public MolProp
          */
         MyMol();
 
-	iMolSelect                       dataset_type_     = iMolSelect::Unknown;
+        iMolSelect                     dataset_type_   = iMolSelect::Ignore;
 
-	iMolSelect get_datasetType() { return dataset_type_;}
+        iMolSelect datasetType() const { return dataset_type_; }
 
-	void set_datasetType(iMolSelect dataset_type) 
-	{
-	   dataset_type_ = dataset_type;
-	}
+        void set_datasetType(iMolSelect dataset_type) 
+        {
+            dataset_type_ = dataset_type;
+        }
 
-        /*! \brief
-         * Return QM dipole corresponding to charge type qt
+        /*! \brief Return QtypeProps for a charge type
+         * \param[in] qt The charge type, e.g. qType::CM5
+         * \return the corresponding structure or nullptr 
          */
-        const rvec &muQM(qType qt) const { return mu_qm_.find(qt)->second; }
-
-        rvec &muQM(qType qt) { return mu_qm_[qt]; }
-
-        /*! \brief
-         * Return QM quadrupole corresponding to charge type qt.
-         */
-        const tensor &QQM(qType qt) const { return Q_qm_.find(qt)->second; }
-
-        /*! \brief
-         * Return Charge vector corresponding to charge type qt.
-         */
-        const std::vector<double> &chargeQM(qType qt) const { return charge_QM_.find(qt)->second; }
+        QtypeProps *qTypeProps(qType qt);
         
+        /*! \brief Return QtypeProps for a charge type
+         * \param[in] qt The charge type, e.g. qType::CM5
+         * \return the corresponding structure or nullptr 
+         */
+        const QtypeProps *qTypeProps(qType qt) const;
         
         const std::vector<std::string> &errors() const {return error_messages_;}
-
-        /*! \brief Store dipole in appropriate vector
-         *
-         * \param[in] qt The charge type
-         * \param[in] mu The dipole to be stored
-         */
-        void set_muQM(qType qt, rvec mu) { copy_rvec(mu, mu_qm_[qt]); }
 
         /*! \brief
          * Rotate the molcular dipole vector onto a reference vector
@@ -344,18 +296,6 @@ class MyMol : public MolProp
          * \param[in] muReference    The reference vector
          */
         void rotateDipole(rvec mu, rvec muReference);
-
-        /*! \brief Store quadrupole in appropriate tensor
-         *
-         * \param[in] qt The charge type
-         * \param[in] Q  The quadrupole to be stored
-         */
-        void set_QQM(qType qt, tensor Q) { copy_mat(Q, Q_qm_[qt]); }
-
-        /*! \brief
-         * Return computed dipole for charge type qt.
-         */
-        double dipQM(qType qt) const { return norm(mu_qm_.find(qt)->second); }
 
         /*! \brief
          * Return experimental dipole
@@ -523,29 +463,8 @@ class MyMol : public MolProp
 
         /*! \brief Calculate the RMSD from ESP for QM charges
          * \param[in]  pd     Poldata structure
-         * \param[out] allEsp Vector of Vector of calculated ESP points
          */
-        void calcEspRms(const Poldata                           *pd,
-                        std::map<qType, std::vector<EspPoint> > *allEsp);
-
-        /*! \brief Init the class for the RESP algorithm.
-         * This must be called before generateCharges even if no RESP
-         * is used for charge generation, since ESP points can be used
-         * in analysis.
-         * \param[in]  pd                 Data structure containing atomic properties
-         * \param[in]  method  Method used for QM
-         * \param[in]  basis   Basis set used for QM
-         * \param[out] mylot   Combined level of theory, may be nullptr
-         * \param[in]  watoms  Weight for the potential on the atoms in 
-         *                     doing the RESP fit. Should be 0 in most cases.
-         * \param[in]  maxESP  Percentage of the ESP points to consider (<= 100)
-         */
-        void initQgenResp(const Poldata     *pd,
-                          const std::string &method,
-                          const std::string &basis,
-                          std::string       *mylot,
-                          real               watoms,
-                          int                maxESP);
+        void calcEspRms(const Poldata *pd);
 
         /*! \brief Make a ESP correlation plot
          *
@@ -557,21 +476,6 @@ class MyMol : public MolProp
          */
         void plotEspCorrelation(const char             *espcorr,
                                 const gmx_output_env_t *oenv);
-        /*! \brief
-         * Return the root-mean square deviation of
-         * the generated ESP from the QM ESP for charge type
-         * \param[in] qtype The charge type
-         *
-         */
-        double espRms(qType qtype) const { return EspRms_.find(qtype)->second; }
-
-        /*! \brief
-         * Return the cosine of the angle between
-         * the vector of generated ESP and the QM ESP for charge type
-         * \param[in] qtype The charge type
-         *
-         */
-        double cosEsp(qType qtype) const { return CosEsp_.find(qtype)->second; }
 
         /*! \brief
          * Collect the experimental properties
@@ -629,19 +533,8 @@ class MyMol : public MolProp
          *  Compute or derive global info about the molecule
          *
          * \param[in] pd   Data structure containing atomic properties
-         * \param[out] mu  The dipole
          */
-        void CalcQPol(const Poldata *pd, rvec mu);
-
-        /*! \brief
-         * Compute the molecular dipole vector
-         */
-        void CalcDipole();
-
-        /*! \brief
-         * Compute the molecular dipole vector and store them in the vector mu
-         */
-        void CalcDipole(rvec mu);
+        void CalcQPol(const Poldata *pd);
 
         /*! \brief
          * Compute the anisotropic polarizability from the polarizability tensor
@@ -705,21 +598,6 @@ class MyMol : public MolProp
          * \param[out] forcefield_     Force field
          */
         std::string getForceField() { return forcefield_; }
-
-        /*! \brief
-         * Calculate quadrupole tensor
-         */
-        void CalcQuadrupole();
-
-        /*! \brief Calculates dipole components, and quadrupoles.
-         *
-         * Compute moments using user defined charges but ignoring
-         * shell particle. Hence, it loops over eptAtoms, only.
-         * \param[in]  q  Array of charges
-         * \param[out] mu Dipole vector
-         * \param[out] Q  Quadrupole tensor
-         */
-        void computeMoments(real q[], rvec mu, tensor Q);
 
         /*! \brief
          * Generate Charge Groups
@@ -792,7 +670,43 @@ class MyMol : public MolProp
         {
             return (this->getMolname() == mol.getMolname());
         }
-};
+        
+        /*! \brief Init the class for the RESP algorithm.
+         * This must be called before generateCharges even if no RESP
+         * is used for charge generation, since ESP points can be used
+         * in analysis.
+         * \param[in]  pd      Data structure containing atomic properties
+         * \param[in]  method  Method used for QM
+         * \param[in]  basis   Basis set used for QM
+         * \param[in]  watoms  Weight for the potential on the atoms in 
+         *                     doing the RESP fit. Should be 0 in most cases.
+         * \param[in]  maxESP  Percentage of the ESP points to consider (<= 100)
+         */
+        void initQgenResp(const Poldata     *pd,
+                          const std::string &method,
+                          const std::string &basis,
+                          real               watoms,
+                          int                maxESP);
+
+        /*! \brief
+         * Sends this object over an MPI connection
+         *
+         * \param[in] commrec   GROMACS data structure for MPI communication
+         * \param[in] dest      Destination processor
+         * \return the CommunicationStatus of the operation
+         */
+        CommunicationStatus Send(t_commrec *cr, int dest) const;
+
+        /*! \brief
+         * Receives this object over an MPI connection
+         *
+         * \param[in] commrec   GROMACS data structure for MPI communication
+         * \param[in] src       Source processor
+         * \return the CommunicationStatus of the operation
+         */
+        CommunicationStatus Receive(t_commrec *cr, int src);
+
+    };
 
 }
 

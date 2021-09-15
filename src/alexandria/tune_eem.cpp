@@ -91,11 +91,8 @@ class OptACM : public MolGen, Bayes
     private:
         bool       bFullTensor_                  = false;
         bool       bSameZeta_                    = true;
-        bool       bUseCM5_                      = false;
         bool       bRemoveMol_                   = true;
         bool       bPointCore_                   = false;
-        int        numberOptimizationCalcs_      = 0;
-        int        numberSensitivityCalcs_       = 0;
         int        numberCalcDevCalled_          = 0;
         gmx::unique_cptr<FILE, my_fclose> fplog_ = nullptr;
         std::string outputFile_;
@@ -106,18 +103,10 @@ class OptACM : public MolGen, Bayes
 
         ~OptACM() {}
 
-        bool bESP() const { return weight(ermsESP); }
-
-        bool dipole() const { return weight(ermsMU); }
-
-        bool quadrupole() const { return weight(ermsQUAD); }
-
         bool fullTensor() const { return bFullTensor_; }
 
         bool sameZeta() const { return bSameZeta_; }
 
-        bool useCM5() const {return bUseCM5_; }
-        
         bool removeMol() const {return bRemoveMol_; }
         
         void set_pointCore(bool pointCore) {bPointCore_ =  pointCore;}
@@ -132,8 +121,6 @@ class OptACM : public MolGen, Bayes
                   "Consider both diagonal and off-diagonal elements of the Q_Calc matrix for optimization" },
                 { "-samezeta", FALSE, etBOOL, {&bSameZeta_},
                   "Use the same zeta for both the core and the shell of the Drude model." },
-                { "-cm5", FALSE, etBOOL, {&bUseCM5_},
-                  "Reproduce CM5 charges in fitting." },
                 { "-removemol", FALSE, etBOOL, {&bRemoveMol_},
                   "Remove a molecule from training set if shell minimzation does not converge." },
             };
@@ -191,7 +178,10 @@ class OptACM : public MolGen, Bayes
             return p;
         }
         
-        void initChargeGeneration(bool training);
+        /*! \brief Initialize charge generation 
+         * \param[in] ims The data set to do the work for
+         */
+        void initChargeGeneration(iMolSelect ims);
 
         /*! \brief
          *
@@ -206,17 +196,16 @@ class OptACM : public MolGen, Bayes
          */
         virtual void toPoldata(const std::vector<bool> &changed);
 
-        virtual double calcDeviation(bool verbose,
-                                     bool calcAll,
-				     bool training);
-
         /*! \brief
-         * Master sends number of calcdevs to slave
-         * \param[in] bOptimize    Whether or not to optimize
-         * \param[in] bSensitivity Whether or not to do sensitivity analysis
+         * Computes deviation from target
+         * \param[in] verbose Whether or not to prin a lot
+         * \param[in] calcDev The type of calculation to do
+         * \param[in] ims     The data set to do computations on
+         * \return the squayre deviation
          */
-        void communicateNumberOfCalculations(bool bOptimize,
-                                             bool bSensitivity);
+        virtual double calcDeviation(bool       verbose,
+                                     CalcDev    calcDev,
+                                     iMolSelect ims);
 
         /*! \brief
          * Do the actual optimization.
@@ -238,13 +227,8 @@ class OptACM : public MolGen, Bayes
         /*! \brief 
          * For the slave nodes.
          */
-        void runSlave(bool bEvaluate_testset);
+        void runSlave();
     
-        /* \brief
-         * Print the final results to the logFile.
-         * \param[in] chi2_min Final chi2 in optimization
-         */
-        void printResults(double chi2_min);
 };
 
 void OptACM::saveState()
@@ -252,14 +236,18 @@ void OptACM::saveState()
     writePoldata(outputFile_, poldata(), false);
 }
 
-void OptACM::initChargeGeneration(bool training)
+void OptACM::initChargeGeneration(iMolSelect ims)
 {
     std::string method, basis, conf, type, myref, mylot;
     splitLot(lot(), &method, &basis);
     tensor           polar      = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
     rvec             vec;
-    for (auto &mymol : dataset(training))
+    for (auto &mymol : mymols())
     {
+        if (mymol.datasetType() != ims)
+        {
+            continue;
+        }
         if (fit("alpha"))
         {
             // For fitting alpha we need a reference polarizability
@@ -317,14 +305,36 @@ static void dumpQX(FILE *fp, MyMol *mol, const std::string &info)
     }
 }
 
-double OptACM::calcDeviation(bool verbose,
-                             bool calcAll,
-			     bool training)
+double OptACM::calcDeviation(bool       verbose,
+                             CalcDev    calcDev,
+                             iMolSelect ims)
 {
-    resetChiSquared(training);
+    auto cr = commrec();
+    if (PAR(cr))
+    {
+        if (MASTER(cr))
+        {
+            for(int i = 1; i < cr->nnodes; i++)
+            {
+                gmx_send_int(cr, i, static_cast<int>(calcDev));
+                gmx_send_int(cr, i, static_cast<int>(ims));
+            }
+        }
+        else
+        {
+            calcDev = static_cast<CalcDev>(gmx_recv_int(cr, 0));
+            ims     = static_cast<iMolSelect>(gmx_recv_int(cr, 0));
+        }
+    }
+    if (calcDev == CalcDev::Final)
+    {
+        return -1;
+    }
+    resetChiSquared(ims);
+    auto targets = fittingTargets(ims);
     if (MASTER(commrec()))
     {
-        if (weight(ermsBOUNDS))
+        if ((*targets).find(eRMS::BOUNDS)->second.weight() > 0)
         {
             const param_type &param = Bayes::getParam();
             double            bound = 0;
@@ -336,7 +346,7 @@ double OptACM::calcDeviation(bool verbose,
                 bound  += l2_regularizer(param[n++], p.minimum(), p.maximum(),
                                          optIndex.name(), verbose);
             }
-            increaseChiSquared(ermsBOUNDS, 1, bound, training);
+            (*targets).find(eRMS::BOUNDS)->second.increase(1, bound);
             GMX_RELEASE_ASSERT(n == param.size(), 
                                gmx::formatString("Death horror error. n=%zu param.size()=%zu", n, param.size()).c_str());
         }
@@ -345,16 +355,22 @@ double OptACM::calcDeviation(bool verbose,
 
     if (PAR(commrec()))
     {
-        if (! calcAll)
+        if (calcDev == CalcDev::Parallel)
         {
             poldata()->broadcast_eemprop(commrec());
         }
     }
-    for (auto &mymol : dataset(training))
+    int nmolCalculated = 0;
+    for (auto &mymol : mymols())
     {
-        if ((mymol.eSupp_ == eSupport::Local) ||
-            (calcAll && (mymol.eSupp_ == eSupport::Remote)))
+        if (ims != mymol.datasetType())
         {
+            continue;
+        }
+        if ((mymol.eSupp_ == eSupport::Local) ||
+            (calcDev == CalcDev::Master && mymol.eSupp_ == eSupport::Remote))
+        {
+            nmolCalculated += 1;
             // Update the polarizabilities only once before the loop
             if (fit("alpha"))
             {
@@ -373,17 +389,43 @@ double OptACM::calcDeviation(bool verbose,
                 continue;
             }
             
-            if (weight(ermsCHARGE))
+            if ((*targets).find(eRMS::CHARGE)->second.weight() > 0 ||
+                (*targets).find(eRMS::CM5)->second.weight() > 0)
             {
-                double qtot = 0;
-                int    i;
-                auto myatoms = mymol.atomsConst();
-                for (int j = i = 0; j < myatoms.nr; j++)
+                double qtot    = 0;
+                int    i = 0;
+                auto   myatoms = mymol.atomsConst();
+                std::vector<double> qcm5;
+                auto qp = mymol.qTypeProps(qType::CM5);
+                if (qp)
                 {
+                    qcm5 = qp->charge();
+                    if (debug)
+                    {
+                        for (int j = 0; j < myatoms.nr; j++)
+                        {
+                            fprintf(debug, "Charge %d. CM5 = %g ACM = %g\n", j, qcm5[j], myatoms.atom[j].q);
+                        }
+                    }
+                }
+                for (int j = 0; j < myatoms.nr; j++)
+                {
+                    if (myatoms.atom[j].ptype == eptShell)
+                    {
+                        continue;
+                    }
                     auto atype = poldata()->findParticleType(*myatoms.atomtype[j]);
                     auto qparm = atype->parameterConst("charge");
                     double qj  = myatoms.atom[j].q;
-                    qtot += qj;
+                    double qjj = qj;
+                    // TODO: only count in real shells
+                    if (nullptr != mymol.shellfc_ && 
+                        j < myatoms.nr-1 && 
+                        myatoms.atom[j+1].ptype == eptShell)
+                    {
+                        qjj += myatoms.atom[j+1].q;
+                    }
+                    qtot += qjj;
                     switch (qparm.mutability())
                     {
                     case Mutability::Fixed:
@@ -395,44 +437,57 @@ double OptACM::calcDeviation(bool verbose,
                         break;
                     case Mutability::Bounded:
                         {
-                            real dq = 0;
-                            if (qj < qparm.minimum())
+                            if ((*targets).find(eRMS::CHARGE)->second.weight() > 0)
                             {
-                                dq = qparm.minimum() - qj;
+                                real dq = 0;
+                                if (qj < qparm.minimum())
+                                {
+                                    dq = qparm.minimum() - qj;
+                                }
+                                else if (qj > qparm.maximum())
+                                {
+                                    dq = qj - qparm.maximum();
+                                }
+                                (*targets).find(eRMS::CHARGE)->second.increase(1, dq*dq);
                             }
-                            else if (qj > qparm.maximum())
-                            {
-                                dq = qj - qparm.maximum();
-                            } 
-                            increaseChiSquared(ermsCHARGE, 1, dq*dq, training);
                         }
                         break;
                     default:
                         break;
                     }
+                    if (qp &&
+                        qparm.mutability() != Mutability::Fixed &&
+                        (*targets).find(eRMS::CM5)->second.weight() > 0)
+                    {
+                        // TODO: Add charge of shell!
+                        real dq2 = gmx::square(qjj - qcm5[i]);
+                        (*targets).find(eRMS::CM5)->second.increase(1, dq2);
+                    }
+                    i += 1;
                 }
-                increaseChiSquared(ermsCHARGE, 1, gmx::square(qtot - mymol.totalCharge()), training);
+                (*targets).find(eRMS::CHARGE)->second.increase(1, gmx::square(qtot - mymol.totalCharge()));
             }
-            if (weight(ermsESP))
+            if ((*targets).find(eRMS::ESP)->second.weight() > 0)
             {
                 real rrms     = 0;
                 real cosangle = 0;
+                auto qgr = mymol.qTypeProps(qType::Calc)->qgenResp();
                 if (nullptr != mymol.shellfc_)
                 {
-                    mymol.QgenResp_->updateAtomCoords(mymol.x());
+                    qgr->updateAtomCoords(mymol.x());
                 }
                 if (fit("zeta"))
                 {
-                    mymol.QgenResp_->updateZeta(mymol.atoms(), poldata());
+                    qgr->updateZeta(mymol.atoms(), poldata());
                 }
                 dumpQX(logFile(), &mymol, "ESP");
-                mymol.QgenResp_->updateAtomCharges(mymol.atoms());
-                mymol.QgenResp_->calcPot(poldata()->getEpsilonR());
+                qgr->updateAtomCharges(mymol.atoms());
+                qgr->calcPot(poldata()->getEpsilonR());
                 auto myRms =
-                    convertToGromacs(mymol.QgenResp_->getRms(&rrms, &cosangle),
+                    convertToGromacs(qgr->getRms(&rrms, &cosangle),
                                      "Hartree/e");
-                auto nEsp = mymol.QgenResp_->nEsp();
-                increaseChiSquared(ermsESP, nEsp, gmx::square(myRms)*nEsp, training);
+                auto nEsp = qgr->nEsp();
+                (*targets).find(eRMS::ESP)->second.increase(nEsp, gmx::square(myRms)*nEsp);
                 if (debug)
                 {
                     fprintf(debug, "%s ESPrms = %g cosangle = %g\n",
@@ -440,38 +495,47 @@ double OptACM::calcDeviation(bool verbose,
                             myRms, cosangle);
                 }
             }
-            if (weight(ermsMU))
+            // These two things need to be present, if not the code will crash
+            auto qelec = mymol.qTypeProps(qType::Elec);
+            auto qcalc = mymol.qTypeProps(qType::Calc);
+            if ((*targets).find(eRMS::MU)->second.weight() > 0 ||
+                (*targets).find(eRMS::QUAD)->second.weight() > 0)
             {
-                mymol.CalcDipole();
-                mymol.rotateDipole(mymol.muQM(qType::Calc), mymol.muQM(qType::Elec));
+                qcalc->setQ(mymol.atoms());
+                qcalc->setX(mymol.x());
+                qcalc->calcMoments();
+            }
+            if ((*targets).find(eRMS::MU)->second.weight() > 0)
+            {
+                real delta = 0;
                 if (bQM())
                 {
                     rvec dmu;
-                    rvec_sub(mymol.muQM(qType::Calc), mymol.muQM(qType::Elec), dmu);
-                    increaseChiSquared(ermsMU, 1, iprod(dmu, dmu), training);
+                    rvec_sub(qcalc->mu(), qelec->mu(), dmu);
+                    delta = iprod(dmu, dmu);
                 }
                 else
                 {
-                    increaseChiSquared(ermsMU, 1, gmx::square(mymol.dipQM(qType::Calc) - mymol.dipExper()),training);
+                    delta = gmx::square(qcalc->dipole() - mymol.dipExper());
                 }
+                (*targets).find(eRMS::MU)->second.increase(1, delta);
             }
-            if (weight(ermsQUAD))
+            if ((*targets).find(eRMS::QUAD)->second.weight() > 0)
             {
-                mymol.CalcQuadrupole();
+                double delta    = 0; 
                 for (int mm = 0; mm < DIM; mm++)
                 {
                     for (int nn = 0; nn < DIM; nn++)
                     {
                         if (bFullTensor_ || mm == nn)
                         {
-                            increaseChiSquared(ermsQUAD, 1,
-                                               gmx::square(mymol.QQM(qType::Calc)[mm][nn] - mymol.QQM(qType::Elec)[mm][nn]),
-					       training);
+                            delta += gmx::square(qcalc->quad()[mm][nn] - qelec->quad()[mm][nn]);
                         }
                     }
                 }
+                (*targets).find(eRMS::QUAD)->second.increase(1, delta);
             }
-            if (weight(ermsPolar))
+            if ((*targets).find(eRMS::Polar)->second.weight() > 0)
             {
                 double diff2 = 0;
                 mymol.CalcPolarizability(10, commrec(), nullptr);
@@ -488,18 +552,18 @@ double OptACM::calcDeviation(bool verbose,
                 {
                     fprintf(logFile(), "DIFF %s %g\n", mymol.getMolname().c_str(), diff2);
                 }
-                increaseChiSquared(ermsPolar, 1, diff2, training);
+                (*targets).find(eRMS::Polar)->second.increase(1, diff2);
             }
         }
     }
-    sumChiSquared(!calcAll,training);
+    sumChiSquared(calcDev == CalcDev::Parallel, ims);
     if (verbose && logFile())
     {
         printParameters(logFile());
-        printChiSquared(logFile(), training);
+        printChiSquared(logFile(), ims);
     }
     numberCalcDevCalled_ += 1;
-    return getChiSquared(ermsTOT, training);
+    return (*targets).find(eRMS::TOT)->second.chiSquared();
 }
 
 void OptACM::InitOpt(bool bRandom)
@@ -542,82 +606,13 @@ void OptACM::toPoldata(const std::vector<bool> &changed)
                                          n, changed.size()).c_str());
 }
 
-void OptACM::printResults(double chi2_min)
-{
-    auto i_param        = Bayes::getInitialParam();
-    auto best           = Bayes::getBestParam();
-    auto pmean          = Bayes::getPmean();
-    auto psigma         = Bayes::getPsigma();
-    auto attemptedMoves = Bayes::getAttemptedMoves();
-    auto acceptedMoves  = Bayes::getAcceptedMoves();
-    auto paramNames     = Bayes::getParamNames();
-    auto ntrain         = Bayes::getNtrain();
-    if (logFile())
-    {
-        fprintf(logFile(), "\nMinimum RMSD value during optimization: %.3f.\n", sqrt(chi2_min));
-        fprintf(logFile(), "Statistics of parameters after optimization\n");
-        fprintf(logFile(), "#best %zu #mean %zu #sigma %zu #param %zu\n",
-                best.size(), pmean.size(), psigma.size(), paramNames.size());
-        if (best.size() == Bayes::nParam())
-        {
-            fprintf(logFile(), "Parameter                     Ncopies Initial   Best    Mean    Sigma Attempt  Acceptance\n");
-            for (size_t k = 0; k < Bayes::nParam(); k++)
-            {
-                double acceptance_ratio = 100*(double(acceptedMoves[k])/attemptedMoves[k]);
-                fprintf(logFile(), "%-30s  %5d  %6.3f  %6.3f  %6.3f  %6.3f    %4d %5.1f%%\n",
-                        paramNames[k].c_str(), ntrain[k],
-                        i_param[k], best[k], pmean[k], psigma[k], attemptedMoves[k], acceptance_ratio);
-            }
-        }
-    }
-}
-
-void OptACM::communicateNumberOfCalculations(bool bOptimize,
-                                             bool bSensitivity)
-{
-    if (MASTER(commrec()))
-    {
-        if (PAR(commrec()))
-        {
-            numberOptimizationCalcs_ = 0;
-            numberSensitivityCalcs_  = 0;
-
-            if (bOptimize)
-            {
-                numberOptimizationCalcs_ += 2 + Bayes::maxIter()*Bayes::nParam();
-            }
-            if (bSensitivity)
-            {
-                numberSensitivityCalcs_ += 1 + 4*Bayes::nParam();
-            }
-            fprintf(logFile(), "Will do %d energy evaluations for optimization on %d processors\n",
-                    numberOptimizationCalcs_, commrec()->nnodes);
-            for (int dest = 1; dest < commrec()->nnodes; dest++)
-            {
-                gmx_send_int(commrec(), dest, numberOptimizationCalcs_);
-            }
-            fprintf(logFile(), "Will do %d energy evaluations for sensitivity on %d processors\n",
-                    numberSensitivityCalcs_, commrec()->nnodes);
-            for (int dest = 1; dest < commrec()->nnodes; dest++)
-            {
-                gmx_send_int(commrec(), dest, numberSensitivityCalcs_);
-            }
-        }
-    }
-    else
-    {
-        numberOptimizationCalcs_ = gmx_recv_int(commrec(), 0);
-        numberSensitivityCalcs_  = gmx_recv_int(commrec(), 0);
-    }
-}
-
 bool OptACM::runMaster(FILE                   *fp,
                        const gmx_output_env_t *oenv,
                        const char             *xvgconv,
                        const char             *xvgepot,
                        bool                    optimize,
                        bool                    sensitivity,
-		       bool 		       bEvaluate_testset)
+                       bool 		       bEvaluate_testset)
 {
     bool bMinimum = false;
     GMX_RELEASE_ASSERT(MASTER(commrec()), "WTF");
@@ -631,14 +626,19 @@ bool OptACM::runMaster(FILE                   *fp,
     if (optimize)
     {
         Bayes::setOutputFiles(xvgconv, paramClass, xvgepot, oenv);
-	// calcDeviation on the training set
-        double     chi2_min = calcDeviation(true, false, true);
-	// calcDeviation on the test set
-        double     chi2_min_testset = calcDeviation(true, false, false);
-        fprintf(logFile(), "Initial chi2 value training set %g\n", chi2_min);
-        fprintf(logFile(), "Initial chi2 value test set %g\n", chi2_min_testset);
-        printChiSquared(logFile(), bEvaluate_testset);
-        
+        double chi2_min = 0;
+        for ( const auto &ims : iMolSelectNames()) 
+        {
+            // calcDeviation on the training set
+            double chi2 = calcDeviation(true, CalcDev::Parallel, ims.first);
+            fprintf(logFile(), "Initial chi2 value on %s set %g\n",
+                    iMolSelectName(ims.first), chi2_min);
+            printChiSquared(logFile(), ims.first);
+            if (ims.first == iMolSelect::Train)
+            {
+                chi2_min = chi2;
+            }
+        }
         double chi2 = 0;
         if (Bayes::adaptive())
         {
@@ -646,7 +646,7 @@ bool OptACM::runMaster(FILE                   *fp,
         }
         else
         {
-            chi2 = Bayes::MCMC(logFile(),  bEvaluate_testset);
+            chi2 = Bayes::MCMC(logFile(), bEvaluate_testset);
         }
         if (chi2 < chi2_min)
         {
@@ -656,10 +656,12 @@ bool OptACM::runMaster(FILE                   *fp,
     }
     if (sensitivity)
     {
-	// only on the training set
-        Bayes::SensitivityAnalysis(logFile(), true);
+        // only on the training set
+        Bayes::SensitivityAnalysis(logFile(), iMolSelect::Train);
     }
-    
+    // Finalize the calculations on the slaves
+    (void) calcDeviation(true, CalcDev::Final, iMolSelect::Train);
+
     if (bMinimum)
     {
         auto best = Bayes::getBestParam();
@@ -673,15 +675,18 @@ bool OptACM::runMaster(FILE                   *fp,
         std::vector<bool> changed;
         changed.resize(best.size(), true);
         toPoldata(changed);
-        // Compute the deviation once more on the training set
-        double chi2 = calcDeviation(true, true, true);
-        // Compute the deviation once more on the test set
-        double chi2_testset = calcDeviation(true, true, false);
-        printResults(chi2);
-        printChiSquared(fp, bEvaluate_testset);
-        printChiSquared(logFile(), bEvaluate_testset);
-        fprintf(logFile(), "Minimum chi2 training set %g\n", chi2);
-        fprintf(logFile(), "Minimum chi2 test set %g\n", chi2_testset);
+        for (const auto &ims : iMolSelectNames())
+        {
+            double chi2 = calcDeviation(true, CalcDev::Master, ims.first);
+            if (ims.first == iMolSelect::Train)
+            {
+                printResults(logFile(), chi2);
+            }
+            printChiSquared(fp, ims.first);
+            printChiSquared(logFile(), ims.first);
+            fprintf(logFile(), "Minimum chi2 for %s %g\n",
+                    iMolSelectName(ims.first), chi2);
+        }
     }
     else
     {
@@ -690,28 +695,14 @@ bool OptACM::runMaster(FILE                   *fp,
     return bMinimum;
 }
 
-void OptACM::runSlave(bool bEvaluate_testset)
+void OptACM::runSlave()
 {
     /* S L A V E   N O D E S */
-
-    // Optimization loop
-    for (auto n = 0; n < numberOptimizationCalcs_; n++)
+    while (calcDeviation(false, CalcDev::Parallel, iMolSelect::Train) >= 0)
     {
-	// calcDeviation on the training set
-        (void) calcDeviation(false, false, true);
-	if (bEvaluate_testset)
-	{
-	   // calcDeviation on the test set
-	   (void) calcDeviation(false, false, false);
-	}
+        ;
     }
 
-    // Sensitivity loop
-    for (auto n = 0; n < numberSensitivityCalcs_; n++)
-    {
-	// calcDeviation on the training set
-        (void) calcDeviation(false, false, true);
-    }
 }
 
 } // namespace alexandria
@@ -876,16 +867,16 @@ int alex_tune_eem(int argc, char *argv[])
     opt.set_pointCore(pointCore);
     // init charge generation for compounds in the 
     // training set
-    opt.initChargeGeneration(true);
+    opt.initChargeGeneration(iMolSelect::Train);
     if (bEvaluate_testset)
     {
-	if (opt.nTestset() == 0)
-	{
-	    gmx_fatal(FARGS, "You cannot evaluate your test set when it is empty!.");
-	}
-	// init charge generation for compounds in the
-	// test set
-	opt.initChargeGeneration(false);
+        if (opt.iMolSelectSize(iMolSelect::Test) == 0)
+        {
+            gmx_fatal(FARGS, "You cannot evaluate your test set when it is empty!.");
+        }
+        // init charge generation for compounds in the
+        // test set
+        opt.initChargeGeneration(iMolSelect::Test);
     }
 
     bool bMinimum = false;
@@ -895,19 +886,17 @@ int alex_tune_eem(int argc, char *argv[])
         {
             opt.InitOpt(bRandom);
         }
-        opt.communicateNumberOfCalculations(bOptimize, bSensitivity);
         bMinimum = opt.runMaster(MASTER(opt.commrec()) ? stderr : nullptr,
                                  oenv,
                                  opt2fn("-conv", NFILE, fnm),
                                  opt2fn("-epot", NFILE, fnm),
                                  bOptimize,
                                  bSensitivity,
-				 bEvaluate_testset);
+                                 bEvaluate_testset);
     }
     else if (bOptimize || bSensitivity)
     {
-        opt.communicateNumberOfCalculations(bOptimize, bSensitivity);
-        opt.runSlave(bEvaluate_testset);
+        opt.runSlave();
     }
    
     if (MASTER(opt.commrec()))
@@ -915,38 +904,36 @@ int alex_tune_eem(int argc, char *argv[])
         if (bMinimum || bForceOutput || !bOptimize)
         {
             bool bPolar = opt.poldata()->polarizable();
-            auto molset = opt.molset();
-            print_electric_props(opt.logFile(),
-                                 &molset,
-                                 opt.poldata(),
-                                 opt.mdlog(),
-                                 opt.lot(),
-                                 tabfn,
-                                 opt.hwinfo(),
-                                 opt.qcycle(),
-                                 opt.qtol(),
-                                 opt2fn("-qhisto",    NFILE, fnm),
-                                 opt2fn("-dipcorr",   NFILE, fnm),
-                                 opt2fn("-mucorr",    NFILE, fnm),
-                                 opt2fn("-thetacorr", NFILE, fnm),
-                                 opt2fn("-espcorr",   NFILE, fnm),
-                                 opt2fn("-alphacorr", NFILE, fnm),
-                                 opt2fn("-isopol",    NFILE, fnm),
-                                 opt2fn("-anisopol",  NFILE, fnm),
-                                 opt2fn("-qcorr",     NFILE, fnm),
-                                 esp_toler,
-                                 dip_toler,
-                                 quad_toler,
-                                 alpha_toler,
-                                 isopol_toler,
-                                 oenv,
-                                 bPolar,
-                                 opt.dipole(),
-                                 opt.quadrupole(),
-                                 opt.fullTensor(),
-                                 opt.commrec(),
-                                 efield,
-                                 useOffset);
+            auto mymols = opt.mymols();
+            alexandria::print_electric_props(opt.logFile(),
+                                             &mymols,
+                                             opt.poldata(),
+                                             opt.mdlog(),
+                                             opt.lot(),
+                                             tabfn,
+                                             opt.hwinfo(),
+                                             opt.qcycle(),
+                                             opt.qtol(),
+                                             opt2fn("-qhisto",    NFILE, fnm),
+                                             opt2fn("-dipcorr",   NFILE, fnm),
+                                             opt2fn("-mucorr",    NFILE, fnm),
+                                             opt2fn("-thetacorr", NFILE, fnm),
+                                             opt2fn("-espcorr",   NFILE, fnm),
+                                             opt2fn("-alphacorr", NFILE, fnm),
+                                             opt2fn("-isopol",    NFILE, fnm),
+                                             opt2fn("-anisopol",  NFILE, fnm),
+                                             opt2fn("-qcorr",     NFILE, fnm),
+                                             esp_toler,
+                                             dip_toler,
+                                             quad_toler,
+                                             alpha_toler,
+                                             isopol_toler,
+                                             oenv,
+                                             bPolar,
+                                             opt.fullTensor(),
+                                             opt.commrec(),
+                                             efield,
+                                             useOffset);
             print_memory_usage(opt.logFile());
         }
         else if (!bMinimum)

@@ -2,7 +2,7 @@
 #
 #  This source file is part of the Alexandria program.
 #
-#  Copyright (C) 2014-2020
+#  Copyright (C) 2014-2021
 #
 #  Developers:
 #             Mohammad Mehdi Ghahremanpour,
@@ -71,11 +71,12 @@ set(ALEXANDRIA_SOURCES
            qgen_cube.cpp
            qgen_resp.cpp
            qm2molprop.cpp
+           qtype.cpp
            readpsi4.cpp
            regression.cpp
            stringutil.cpp
            tune_eem.cpp
-           tune_fc.cpp
+#           tune_fc.cpp
            tune_fc_utils.cpp
            tuning_utility.cpp          
            units.cpp

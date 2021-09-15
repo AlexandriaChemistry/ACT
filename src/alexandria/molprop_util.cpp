@@ -367,7 +367,11 @@ void MolPropSort(std::vector<alexandria::MolProp> *mp,
             {
                 for (auto mpi = mp->begin(); mpi < mp->end(); mpi++)
                 {
-                    int index = gms.index(mpi->getIupac());
+                    int index;
+                    if (!gms.index(mpi->getIupac(), &index))
+                    {
+                        gmx_fatal(FARGS, "Cannot find index for %s", mpi->getIupac().c_str());
+                    }
                     mpi->SetIndex(index);
                 }
                 std::sort(mp->begin(), mp->end(), comp_mp_index);

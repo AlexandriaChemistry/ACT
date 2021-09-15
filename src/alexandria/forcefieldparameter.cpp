@@ -39,6 +39,12 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/stringutil.h"
 
+bool stringToBoolean(const std::string &str)
+{
+    return (str.compare("yes") == 0 || str.compare("Yes") == 0 ||
+            str.compare("YES") == 0);
+}
+
 namespace alexandria
 {
 

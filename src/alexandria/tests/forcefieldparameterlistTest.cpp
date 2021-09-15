@@ -92,7 +92,7 @@ class ForceFieldParameterListTest : public gmx::test::CommandLineTestBase
                                 {
                                     checker_.checkDouble(p.value(), "Before");
                                     p.setValue(2*p.value());
-                                    checker_.checkDouble(p.value(), "After");  
+                                    checker_.checkDouble(p.value(), "After");
                                     checker_.checkDouble(p.originalValue(), "Original");  
                                     break;
                                 }
@@ -177,24 +177,24 @@ TEST (ForceFieldParameterListSimpleTest, EmptyFunctionOK) {
 TEST_F (ForceFieldParameterListTest, AddParameter) {
     ForceFieldParameterList ff("PDIHS", CanSwap::Yes);
     ff.addParameter(Identifier({"h3"}, CanSwap::Yes), "sigma",
-                    ForceFieldParameter("nm", 12.0, 0.3, 13, 10.0, 18.0, Mutability::Free, false) );
+                    ForceFieldParameter("nm", 12.0, 0.3, 13, 10.0, 18.0, Mutability::Free, false, false) );
     ff.addParameter(Identifier({"c2"}, CanSwap::Yes), "gamma",
-                    ForceFieldParameter("", 11.0, 0.25, 17, 8.0, 15.0, Mutability::Fixed, true) );
+                    ForceFieldParameter("", 11.0, 0.25, 17, 8.0, 15.0, Mutability::Fixed, true, false) );
     ff.addParameter(Identifier({"h3"}, CanSwap::Yes), "epsilon", 
-                    ForceFieldParameter("kJ/mol", 0.2, 0.3, 24, 10.0, 18.0, Mutability::Fixed, false) );
+                    ForceFieldParameter("kJ/mol", 0.2, 0.3, 24, 10.0, 18.0, Mutability::Fixed, false, true) );
     runTest(&ff, false);
 }
 
 TEST_F (ForceFieldParameterListTest, ModifyParameter) {
     ForceFieldParameterList ff("IDIHS", CanSwap::No);
     ff.addParameter(Identifier({"h3"}, CanSwap::Yes), "sigma", 
-                    ForceFieldParameter("nm", 12.0, 0.3, 3, 10.0, 18.0, Mutability::Free, false));
+                    ForceFieldParameter("nm", 12.0, 0.3, 3, 10.0, 18.0, Mutability::Free, false, false));
     ff.addParameter(Identifier({"c2"}, CanSwap::Yes), "gamma",
-                    ForceFieldParameter("", 11.0, 0.25, 12, 8.0, 15.0, Mutability::Fixed, true));
+                    ForceFieldParameter("", 11.0, 0.25, 12, 8.0, 15.0, Mutability::Fixed, true, true));
     ff.addParameter(Identifier({"h3"}, CanSwap::Yes), "epsilon",
-                    ForceFieldParameter("kJ/mol", 0.2, 0.3, 1, 10.0, 18.0, Mutability::Bounded, false));
+                    ForceFieldParameter("kJ/mol", 0.2, 0.3, 1, 10.0, 18.0, Mutability::Bounded, false, false));
     ff.addParameter(Identifier({"c3"}, CanSwap::Yes), "epsilon",
-                    ForceFieldParameter("kJ/mol", 0.2, 0.3, 1, 10.0, 18.0, Mutability::Fixed, false));
+                    ForceFieldParameter("kJ/mol", 0.2, 0.3, 1, 10.0, 18.0, Mutability::Fixed, false, true));
     runTest(&ff, true);
 }
 

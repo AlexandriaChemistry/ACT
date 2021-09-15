@@ -33,7 +33,7 @@
 #include "molgen.h"
 
 #include <cmath>
-
+#include <map>
 #include <vector>
 
 #include "gromacs/commandline/pargs.h"
@@ -59,26 +59,39 @@
 
 #define STRLEN 256
 
-const char *rmsName(int e)
-{
-    static const char *rms[ermsNR] =
-    {
-        "BOUNDS", "MU", "QUAD", "CHARGE", "ESP",
-        "EPOT", "Force2", "Polar", "Penalty", "TOT"
-    };
-    if (e >= 0 && e < ermsNR)
-    {
-        return rms[e];
-    }
-    else
-    {
-        return "Incorrect index in rmsName";
-    }
-}
-
 namespace alexandria
 {
 
+  std::map<eRMS, const char *> ermsNames = 
+    {
+     { eRMS::BOUNDS, "BOUNDS" },
+     { eRMS::MU,     "MU" },
+     { eRMS::QUAD,   "QUAD" },
+     { eRMS::CHARGE, "CHARGE" },
+     { eRMS::CM5,    "CM5" },
+     { eRMS::ESP,    "ESP" },
+     { eRMS::EPOT,   "EPOT" },
+     { eRMS::Force2, "Force2" },
+     { eRMS::Polar,  "Polar" },
+     { eRMS::TOT,    "TOT" }
+    };					    
+
+const char *rmsName(eRMS e)
+{
+  return ermsNames[e];
+}
+
+void FittingTarget::print(FILE *fp) const
+{
+  if (fp != nullptr && chiSquared_ > 0 && numberOfDatapoints_ > 0)
+    {
+      fprintf(fp, "%-8s  %10.3f  N: %6d  fc: %10g  weighted: %10g  %s\n",
+              rmsName(erms_), chiSquared_, numberOfDatapoints_,
+              weight_, chiSquaredWeighted(),
+              iMolSelectName(ims_));
+    }
+}
+ 
 MolGen::MolGen()
 {
     cr_        = nullptr;
@@ -98,7 +111,19 @@ MolGen::MolGen()
     lot_       = "B3LYP/aug-cc-pVTZ";
     inputrec_  = new t_inputrec();
     fill_inputrec(inputrec_);
-    relativeWeight_[ermsTOT] = 1;
+    for ( const auto &ims : iMolSelectNames()) 
+    {
+        RmsFittingTarget ft;
+        for ( auto &rms : ermsNames )
+        {
+            FittingTarget    fft(rms.first, ims.first);
+            ft.insert(std::pair<eRMS, FittingTarget>(rms.first, std::move(fft)));
+        }
+        targets_.insert(std::pair<iMolSelect, RmsFittingTarget>(ims.first, std::move(ft)));
+        auto etot = target(ims.first, eRMS::TOT);
+        GMX_RELEASE_ASSERT(etot != nullptr, "Could not find etot");
+        etot->setWeight(1);
+    }
 }
 
 MolGen::~MolGen()
@@ -107,6 +132,21 @@ MolGen::~MolGen()
     {
         done_commrec(cr_);
     }
+}
+
+FittingTarget *MolGen::target(iMolSelect ims, eRMS rms)
+{
+    auto itarget = targets_.find(ims);
+    if (itarget == targets_.end())
+    {
+        return nullptr;
+    }
+    auto ift = itarget->second.find(rms);
+    if (ift == itarget->second.end())
+    {
+        return nullptr;
+    }
+    return &ift->second;
 }
 
 static void doAddOptions(std::vector<t_pargs> *pargs, size_t npa, t_pargs pa[])
@@ -125,7 +165,7 @@ void MolGen::addOptions(std::vector<t_pargs> *pargs, eTune etune)
           "Minimum number of data points to optimize force field parameters" },
         { "-lot",    FALSE, etSTR,  {&lot_},
           "Use this method and level of theory when selecting coordinates and charges. Multiple levels can be specified which will be used in the order given, e.g.  B3LYP/aug-cc-pVTZ:HF/6-311G**" },
-        { "-fc_bound",    FALSE, etREAL, {&relativeWeight_[ermsBOUNDS]},
+        { "-fc_bound",    FALSE, etREAL, {target(iMolSelect::Train, eRMS::BOUNDS)->weightPtr()},
           "Force constant in the penalty function for going outside the borders given with the fitting options (see below)." },
         { "-qtol",   FALSE, etREAL, {&qtol_},
           "Tolerance for assigning charge generation algorithm." },
@@ -154,15 +194,17 @@ void MolGen::addOptions(std::vector<t_pargs> *pargs, eTune etune)
                   "Weight for the atoms when fitting the charges to the electrostatic potential. The potential on atoms is usually two orders of magnitude larger than on other points (and negative). For point charges or single smeared charges use zero. For point+smeared charges 1 is recommended." },
                 { "-maxpot", FALSE, etINT, {&maxESP_},
                   "Maximum percent of the electrostatic potential points that will be used to fit partial charges. Note that the input file may have a reduced amount of ESP points compared to the Gaussian output already so do not reduce the amount twice unless you know what you are doing." },
-                { "-fc_mu",    FALSE, etREAL, {&relativeWeight_[ermsMU]},
+                { "-fc_mu",    FALSE, etREAL, {target(iMolSelect::Train, eRMS::MU)->weightPtr()},
                   "Force constant in the penalty function for the magnitude of the dipole components." },
-                { "-fc_quad",  FALSE, etREAL, {&relativeWeight_[ermsQUAD]},
+                { "-fc_quad",  FALSE, etREAL, {target(iMolSelect::Train, eRMS::QUAD)->weightPtr()},
                   "Force constant in the penalty function for the magnitude of the quadrupole components." },
-                { "-fc_esp",   FALSE, etREAL, {&relativeWeight_[ermsESP]},
+                { "-fc_esp",   FALSE, etREAL, {target(iMolSelect::Train, eRMS::ESP)->weightPtr()},
                   "Force constant in the penalty function for the magnitude of the electrostatic potential." },
-                { "-fc_charge",  FALSE, etREAL, {&relativeWeight_[ermsCHARGE]},
+                { "-fc_charge",  FALSE, etREAL, {target(iMolSelect::Train, eRMS::CHARGE)->weightPtr()},
                   "Force constant in the penalty function for 'unchemical' charges, i.e. negative hydrogens, and positive oxygens." },
-                { "-fc_polar",  FALSE, etREAL, {&relativeWeight_[ermsPolar]},
+                { "-fc_cm5",  FALSE, etREAL, {target(iMolSelect::Train, eRMS::CM5)->weightPtr()},
+                  "Force constant in the penalty function for deviation from CM5 charges." },
+                { "-fc_polar",  FALSE, etREAL, {target(iMolSelect::Train, eRMS::Polar)->weightPtr()},
                   "Force constant in the penalty function for polarizability." }
             };
         doAddOptions(pargs, asize(pa_eem), pa_eem);
@@ -171,9 +213,9 @@ void MolGen::addOptions(std::vector<t_pargs> *pargs, eTune etune)
     {
         t_pargs pa_fc[] =
             {
-                { "-fc_epot",  FALSE, etREAL, {&relativeWeight_[ermsEPOT]},
+                { "-fc_epot",  FALSE, etREAL, {target(iMolSelect::Train, eRMS::EPOT)->weightPtr()},
                   "Force constant in the penalty function for the magnitude of the potential energy." },
-                { "-fc_force",  FALSE, etREAL, {&relativeWeight_[ermsForce2]},
+                { "-fc_force",  FALSE, etREAL, {target(iMolSelect::Train, eRMS::Force2)->weightPtr()},
                   "Force constant in the penalty function for the magnitude of the force." }
             };
         doAddOptions(pargs, asize(pa_fc), pa_fc);
@@ -203,96 +245,64 @@ void MolGen::optionsFinished()
         fprintf(debug, "optionsFinished: qtol = %g mindata = %d nexcl = %d qcycle = %d\n",
                 qtol_, mindata_, nexcl_, qcycle_);
     }
+    // Copy the fitting weights from the training set to the other sets
+    for(auto &ims : iMolSelectNames())
+    {
+        if (ims.first != iMolSelect::Train)
+        {
+            auto ft = fittingTargets(ims.first);
+            if (ft != nullptr)
+            {
+                for(auto &rms : ermsNames)
+                {
+                    auto w = target(iMolSelect::Train, rms.first)->weight();
+                    target(ims.first, rms.first)->setWeight(w);
+                }
+            }
+        }
+    }
 }
 
-void MolGen::printChiSquared(FILE *fp, bool bEvaluate_testset) const
+void MolGen::printChiSquared(FILE *fp, iMolSelect ims) const
 {
     if (nullptr != fp && MASTER(commrec()))
     {
         fprintf(fp, "Components of fitting function\n");
-        fprintf(fp, "Training Set:\n");
-        for (int j = 0; j < ermsNR; j++)
+        for (const auto &ft : fittingTargetsConst(ims))
         {
-            auto eee = getChiSquared(j, true);
-            if (eee > 0)
-            {
-                double factor = 1;
-                if (TrainingSet_nDataPoints_[j] > 0)
-                {
-                    factor = 1.0/TrainingSet_nDataPoints_[j];
-                }
-                fprintf(fp, "%-8s  %10.3f  N: %6d  fc: %10g  weighted: %10g\n",
-                        rmsName(j), eee, TrainingSet_nDataPoints_[j],
-                        relativeWeight_[j], eee*factor*relativeWeight_[j]);
-            }
+            ft.second.print(fp);
         }
-	fflush(fp);
-	if (bEvaluate_testset)
-	{	
-            fprintf(fp, "Test Set:\n");
-            for (int j = 0; j < ermsNR; j++)
-            {
-                auto eee = getChiSquared(j, false);
-                if (eee > 0)
-                {
-                    double factor = 1;
-                    if (TestSet_nDataPoints_[j] > 0)
-                    {
-                        factor = 1.0/TestSet_nDataPoints_[j];
-                    }
-                    fprintf(fp, "%-8s  %10.3f  N: %6d  fc: %10g  weighted: %10g\n",
-                            rmsName(j), eee, TestSet_nDataPoints_[j],
-                            relativeWeight_[j], eee*factor*relativeWeight_[j]);
-                }
-            }
-            fflush(fp);
-	}
+        fflush(fp);
     }
 }
 
-void MolGen::sumChiSquared(bool parallel, bool training)
+void MolGen::sumChiSquared(bool parallel, iMolSelect ims)
 {
     // Now sum over processors
     if (PAR(commrec()) && parallel)
     {
-	if (training)
-	{
-            gmx_sum(ermsNR, TrainingSet_ChiSquared_, commrec());
-            gmx_sumi(ermsNR, TrainingSet_nDataPoints_, commrec());
-	}
-	else
-	{
-	    gmx_sum(ermsNR, TestSet_ChiSquared_, commrec());
-	    gmx_sumi(ermsNR, TestSet_nDataPoints_, commrec());
-    	}
-    }
-
-    if (training)
-    {
-        TrainingSet_ChiSquared_[ermsTOT] = 0;
-    	for (auto e = 0; e < ermsTOT; e++)
-    	{
-            double factor = 1;
-            if (TrainingSet_nDataPoints_[e] > 0)
-            {
-                factor = 1.0/TrainingSet_nDataPoints_[e];
-            }
-            TrainingSet_ChiSquared_[ermsTOT] += relativeWeight_[e]*TrainingSet_ChiSquared_[e]*factor;
-        }
-    }
-    else
-    {
-        TestSet_ChiSquared_[ermsTOT] = 0;
-        for (auto e = 0; e < ermsTOT; e++)
+        auto target = targets_.find(ims);
+        for( auto &ft : target->second )
         {
-            double factor = 1;
-            if (TestSet_nDataPoints_[e] > 0)
-            {
-                factor = 1.0/TestSet_nDataPoints_[e];
-            }
-            TestSet_ChiSquared_[ermsTOT] += relativeWeight_[e]*TestSet_ChiSquared_[e]*factor;
+            auto chi2 = ft.second.chiSquared();
+            gmx_sum(1, &chi2, commrec());
+            ft.second.setChiSquared(chi2);
+            auto ndp = ft.second.numberOfDatapoints();
+            gmx_sumi(1, &ndp, commrec());
+            ft.second.setNumberOfDatapoints(ndp);
         }
     }
+    auto etot = target(ims, eRMS::TOT);
+    GMX_RELEASE_ASSERT(etot != nullptr, "Cannot find etot");
+    etot->reset();
+    for (const auto &ft : fittingTargetsConst(ims) )
+    {
+        if (ft.first != eRMS::TOT)
+        { 
+            etot->increase(1.0, ft.second.chiSquaredWeighted());
+        }
+    }
+    etot->setNumberOfDatapoints(1);
 }
 
 void MolGen::fillIopt()
@@ -312,8 +322,8 @@ void MolGen::checkDataSufficiency(FILE *fp)
     size_t nmol = 0;
     do
     {
-	// We check data sufficiency only for the training set
-        nmol = trainingset_.size();
+        // We check data sufficiency only for the training set
+        nmol = targetSize_.find(iMolSelect::Train)->second;
         /* First set the ntrain values for all forces
          * present that should be optimized to zero.
          */
@@ -342,7 +352,7 @@ void MolGen::checkDataSufficiency(FILE *fp)
             InteractionType::ELECTRONEGATIVITYEQUALIZATION
         };
         // Now loop over molecules and add interactions
-        for(auto &mol : trainingset_)
+        for(auto &mol : mymol_)
         {
             auto myatoms = mol.atomsConst();
             for(int i = 0; i < myatoms.nr; i++)
@@ -421,7 +431,7 @@ void MolGen::checkDataSufficiency(FILE *fp)
         }
         // Now loop over molecules and remove those without sufficient support
         std::vector<std::string> removeMol;
-        for(auto &mol : trainingset_)
+        for(auto &mol : mymol_)
         {
             bool keep = true;
             auto myatoms = mol.atomsConst();
@@ -440,8 +450,18 @@ void MolGen::checkDataSufficiency(FILE *fp)
                             {
                                 for(auto &force : fplist->findParametersConst(ztype))
                                 {
-                                    if (force.second.ntrain() < mindata_)
+                                    if (force.second.isMutable() &&
+                                        force.second.ntrain() < mindata_)
                                     {
+                                        if (fp)
+                                        {
+                                            fprintf(fp, "No support for %s - %s in %s. Ntrain is %d, should be at least %d.\n",
+                                                    ztype.id().c_str(),
+                                                    interactionTypeToString(itype).c_str(),
+                                                    mol.getMolname().c_str(),
+                                                    force.second.ntrain(),
+                                                    mindata_);
+                                        }
                                         keep = false;
                                         break;
                                     }
@@ -466,22 +486,22 @@ void MolGen::checkDataSufficiency(FILE *fp)
         }
         for(auto &rmol : removeMol)
         {
-            auto moliter = std::find_if(trainingset_.begin(), trainingset_.end(),
+            auto moliter = std::find_if(mymol_.begin(), mymol_.end(),
                                         [rmol](MyMol const &f)
                                         { return (rmol == f.getIupac()); });
-            if (moliter == trainingset_.end())
+            if (moliter == mymol_.end())
             {
-                GMX_THROW(gmx::InternalError(gmx::formatString("Cannot find %s in trainingset_", rmol.c_str()).c_str()));
+                GMX_THROW(gmx::InternalError(gmx::formatString("Cannot find %s in mymol", rmol.c_str()).c_str()));
             }
-            if (debug)
+            if (fp)
             {
-                fprintf(debug, "Removing %s because of lacking support\n",
+                fprintf(fp, "Removing %s because of lacking support\n",
                         rmol.c_str());
             }
-            trainingset_.erase(moliter);
+            mymol_.erase(moliter);
         }
     }
-    while (trainingset_.size() > 0 && trainingset_.size() < nmol);
+    while (mymol_.size() > 0 && mymol_.size() < nmol);
     if (fp)
     {
         fprintf(fp, "There are %zu molecules left to optimize the parameters for.\n", nmol);
@@ -524,6 +544,24 @@ static void incrementImmCount(std::map<immStatus, int> *map, immStatus imm)
     else
     {
         map->find(imm)->second++;
+    }
+}
+
+void MolGen::countTargetSize()
+{
+    targetSize_.clear();
+    for(auto &m : mymol_)
+    {
+        auto ims = m.datasetType();
+        auto ts  = targetSize_.find(ims);
+        if (ts == targetSize_.end())
+        {
+            targetSize_.insert(std::pair<iMolSelect, size_t>(ims, 1));
+        }
+        else
+        {
+            ts->second += 1;
+        }
     }
 }
 
@@ -581,14 +619,12 @@ void MolGen::Read(FILE            *fp,
         for (auto mpi = mp.begin(); mpi < mp.end(); )
         {
             mpi->CheckConsistency();
-            if (!mpi->GenerateComposition() || 
-		iMolSelect::Unknown == gms.status(mpi->getIupac()) || 
-		iMolSelect::Ignore == gms.status(mpi->getIupac()))
+            if (!mpi->GenerateComposition())
             {
-		/*
-		 * Here we remove a compound if its iMolSelect status 
-		 * is either Ignore or Unknown. 
-		 */
+                /*
+                 * Here we remove a compound if we cannot generate it's
+                 * composition.
+                 */
                 mpi = mp.erase(mpi);
             }
             else
@@ -613,14 +649,15 @@ void MolGen::Read(FILE            *fp,
     std::vector<int> nmolpar;
     int              nlocaltop = 0;
     int              ntopol = 0;
-    
+
     if (MASTER(cr_))
     {
         printf("Generating molecules!\n");
         for (auto mpi = mp.begin(); mpi < mp.end(); ++mpi)
         {
-            if (iMolSelect::Train == gms.status(mpi->getIupac()) || 
-		iMolSelect::Test == gms.status(mpi->getIupac()))
+            iMolSelect ims;
+            if (gms.status(mpi->getIupac(), &ims) && 
+                (iMolSelect::Train == ims || iMolSelect::Test == ims))
             {
                 alexandria::MyMol mymol;
                 if (debug)
@@ -646,7 +683,7 @@ void MolGen::Read(FILE            *fp,
                 if (immStatus::OK == imm)
                 {
                     mymol.symmetrizeCharges(&pd_, qsymm_, nullptr);
-                    mymol.initQgenResp(&pd_, method, basis, nullptr, 0.0, maxESP_);
+                    mymol.initQgenResp(&pd_, method, basis, 0.0, maxESP_);
                     std::vector<double> dummy;
                     imm = mymol.GenerateCharges(&pd_,
                                                 mdlog_,
@@ -658,7 +695,7 @@ void MolGen::Read(FILE            *fp,
                                                 ChargeGenerationAlgorithm::NONE,
                                                 dummy,
                                                 lot_);
-                    (void) mymol.espRms(qType::Calc);
+                    //(void) mymol.espRms(qType::Calc);
                 }
                 if (immStatus::OK != imm && debug)
                 {
@@ -676,26 +713,17 @@ void MolGen::Read(FILE            *fp,
                 }
                 if (immStatus::OK == imm)
                 {
-		    mymol.set_datasetType(gms.status(mymol.getIupac()));
+                    mymol.set_datasetType(ims);
 
-		    // molset contains all molecules
-
-		    molset_.push_back(mymol);
-		    if (iMolSelect::Train == gms.status(mymol.getIupac()))
-		    {
-			trainingset_.push_back(std::move(mymol));
-		    }
-		    else
-		    {
-			testset_.push_back(std::move(mymol));
-		    }
+                    // mymol_ contains all molecules
+                    mymol_.push_back(std::move(mymol));
                 }
             }
         }
         print_memory_usage(fp);
         checkDataSufficiency(fp);
         generateOptimizationIndex(fp);
-        for(auto &mymol : molset_)
+        for(auto &mymol : mymol_)
         {
             int dest = (ntopol++ % cr_->nnodes);
 
@@ -716,6 +744,7 @@ void MolGen::Read(FILE            *fp,
                 {
                     imm = static_cast<immStatus>(gmx_recv_int(cr_, dest));
                 }
+                
                 if (imm != immStatus::OK)
                 {
                     fprintf(stderr, "Molecule %s was not accepted on node %d - error %s\n",
@@ -782,6 +811,7 @@ void MolGen::Read(FILE            *fp,
                 fflush(debug);
             }
             mymol.setInputrec(inputrec_);
+
             imm = mymol.GenerateTopology(&pd_,
                                          method,
                                          basis,
@@ -796,7 +826,7 @@ void MolGen::Read(FILE            *fp,
             {
                 std::vector<double> dummy;
                 mymol.symmetrizeCharges(&pd_, qsymm_, nullptr);
-                mymol.initQgenResp(&pd_, method, basis, nullptr, 0.0, maxESP_);
+                mymol.initQgenResp(&pd_, method, basis, 0.0, maxESP_);
                 imm = mymol.GenerateCharges(&pd_,
                                             mdlog_,
                                             cr_,
@@ -821,15 +851,8 @@ void MolGen::Read(FILE            *fp,
             incrementImmCount(&imm_count, imm);
             if (immStatus::OK == imm)
             {
-		if (iMolSelect::Train == gms.status(mymol.getIupac()))
-		{
-		    trainingset_.push_back(std::move(mymol));
-		}
-		else
-		{
-		    testset_.push_back(std::move(mymol));
-		}
-
+                mymol_.push_back(std::move(mymol));
+                
                 nlocaltop += 1;
                 if (nullptr != debug)
                 {
@@ -867,5 +890,7 @@ void MolGen::Read(FILE            *fp,
     {
         gmx_fatal(FARGS, "No support for any molecule!");
     }
+    countTargetSize();
 }
-}
+
+} // namespace alexandria

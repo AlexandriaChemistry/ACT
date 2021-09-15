@@ -63,8 +63,13 @@
 std::map<iMolSelect, const char *> MolSelect_Names = {
     { iMolSelect::Train,   "Train"   },
     { iMolSelect::Test,    "Test"    },
-    { iMolSelect::Unknown, "Unknown" }
+    { iMolSelect::Ignore,  "Ignore"  }
 };
+
+const std::map<iMolSelect, const char *> &iMolSelectNames()
+{
+    return MolSelect_Names;
+}
 
 const char *iMolSelectName(iMolSelect ims)
 {
@@ -171,21 +176,16 @@ void MolSelect::read(const char *fn)
         if ((ptr.size() == 2) && (ptr[0].length() > 1)
             && (ptr[1].length() > 1))
         {
-            iMolSelect status = iMolSelect::Unknown;
-            for (auto iter = MolSelect_Names.begin(); iter != MolSelect_Names.end(); ++iter)
+            iMolSelect status;
+            if (name2molselect(ptr[1], &status))
             {
-                if (strcasecmp(iter->second, ptr[1].c_str()) == 0)
-                {
-                    status = iter->first;
-                    break;
-                }
+                ims_.push_back(IMolSelect(ptr[0], status, index++));
             }
-            if (status == iMolSelect::Unknown)
+            else
             {
                 fprintf(stderr, "Unknown status '%s' for molecule %s on line %d in file %s\n",
                         ptr[1].c_str(), ptr[0].c_str(), index, fn);
             }
-            ims_.push_back(IMolSelect(ptr[0], status, index++));
         }
         else
         {
@@ -195,7 +195,7 @@ void MolSelect::read(const char *fn)
     }
 }
 
-iMolSelect MolSelect::status(const std::string &iupac) const
+bool MolSelect::status(const std::string &iupac, iMolSelect *ims) const
 {
     auto imi = std::find_if(ims_.begin(), ims_.end(),
                             [iupac](IMolSelect const &i)
@@ -203,28 +203,27 @@ iMolSelect MolSelect::status(const std::string &iupac) const
                                 return i.iupac().compare(iupac) == 0;
                             });
 
-    if (imi != ims_.end())
+    if (imi == ims_.end())
     {
-        return imi->status();
+        return false;
     }
-
-    return iMolSelect::Unknown;
+    *ims = imi->status();
+    return true;
 }
 
-int MolSelect::index(const std::string &iupac) const
+bool MolSelect::index(const std::string &iupac, int *index) const
 {
     auto imi = std::find_if(ims_.begin(), ims_.end(),
                             [iupac](IMolSelect const &i)
                             {
                                 return i.iupac().compare(iupac) == 0;
                             });
-
-    if (imi != ims_.end())
+    if (imi == ims_.end())
     {
-        return imi->index();
+        return false;
     }
-
-    return -1;
+    *index = imi->index();
+    return true;
 }
 
 static void printAtomtypeStatistics(FILE                                 *fp,
@@ -350,7 +349,7 @@ int alex_molselect(int argc, char *argv[])
              false, 
              nullptr);
 
-    printAtomtypeStatistics(fp, mgn.poldata(), mgn.molset());
+    printAtomtypeStatistics(fp, mgn.poldata(), mgn.mymols());
 
     for (int i = 0; i < nsample; i++)
     {
@@ -364,7 +363,7 @@ int alex_molselect(int argc, char *argv[])
         
         sample_molecules(fp,
                          dat, 
-                         mgn.molset(), 
+                         mgn.mymols(), 
                          mgn.poldata(),
                          mgn.mindata(), 
                          maxatempt);

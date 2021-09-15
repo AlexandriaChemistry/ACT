@@ -93,9 +93,9 @@ class PoldataTest : public gmx::test::CommandLineTestBase
             atp.setOption("acmtype", "z_U");
             atp.setOption("element", elem);
             atp.setOption("atomnumber", "92");
-            ForceFieldParameter mm("Da", 238.29, 0.0,  1, 230, 240, Mutability::Free, true);
+            ForceFieldParameter mm("Da", 238.29, 0.0,  1, 230, 240, Mutability::Free, true, false);
             atp.addForceFieldParameter("mass", mm);
-            ForceFieldParameter rr("kJ/mol", 1000.0, 0.0,  1, 990, 1010, Mutability::Free, true);
+            ForceFieldParameter rr("kJ/mol", 1000.0, 0.0,  1, 990, 1010, Mutability::Free, true, true);
             atp.addForceFieldParameter("ref_enthalpy", rr);
             pd->addParticleType(atp);
         }
