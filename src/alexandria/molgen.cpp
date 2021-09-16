@@ -85,7 +85,7 @@ void FittingTarget::print(FILE *fp) const
 {
   if (fp != nullptr && chiSquared_ > 0 && numberOfDatapoints_ > 0)
     {
-      fprintf(fp, "%-8s  %10.3f  N: %6d  fc: %10g  weighted: %10g  %s\n",
+      fprintf(fp, "%-8s  %12.3f  N: %6d  fc: %10g  weighted: %10g  %s\n",
               rmsName(erms_), chiSquared_, numberOfDatapoints_,
               weight_, chiSquaredWeighted(),
               iMolSelectName(ims_));
@@ -646,9 +646,12 @@ void MolGen::Read(FILE            *fp,
     /* Generate topology for Molecules and distribute them among the nodes */
     std::string      method, basis;
     splitLot(lot_, &method, &basis);
-    std::vector<int> nmolpar;
-    int              nlocaltop = 0;
     int              ntopol = 0;
+    std::map<iMolSelect, int> nLocal;
+    for(const auto &ims : iMolSelectNames())
+    {
+        nLocal.insert(std::pair<iMolSelect, int>(ims.first, 0));
+    }
 
     if (MASTER(cr_))
     {
@@ -721,6 +724,7 @@ void MolGen::Read(FILE            *fp,
             }
         }
         print_memory_usage(fp);
+        countTargetSize();
         checkDataSufficiency(fp);
         generateOptimizationIndex(fp);
         for(auto &mymol : mymol_)
@@ -758,7 +762,7 @@ void MolGen::Read(FILE            *fp,
             else
             {
                 mymol.eSupp_ = eSupport::Local;
-                nlocaltop   += 1;
+                nLocal.find(mymol.datasetType())->second += 1;
             }
             if ((immStatus::OK != imm) && (nullptr != debug))
             {
@@ -772,16 +776,27 @@ void MolGen::Read(FILE            *fp,
         {
             gmx_send_int(cr_, i, 0);
         }
-        nmolpar.push_back(nlocaltop);
-        for (int i = 1; i < cr_->nnodes; i++)
+        for (int i = 0; i < cr_->nnodes; i++)
         {
-            nmolpar.push_back(gmx_recv_int(cr_, i));
-        }
-        if (fp)
-        {
-            for (int i = 0; i < cr_->nnodes; i++)
+            if (fp)
             {
-                fprintf(fp, "Node %d has %d compounds\n", i, nmolpar[i]);
+                fprintf(fp, "Node %2d ", i);
+            }
+            for(const auto &ims : iMolSelectNames())
+            {
+                int n = nLocal.find(ims.first)->second;
+                if (i > 0)
+                {
+                    n = gmx_recv_int(cr_, i);
+                }
+                if (fp)
+                {
+                    fprintf(fp, " %s: %d", ims.second, n);
+                }
+            }
+            if (fp)
+            {
+                fprintf(fp, " compounds.\n");
             }
         }
         print_memory_usage(fp);
@@ -853,7 +868,7 @@ void MolGen::Read(FILE            *fp,
             {
                 mymol_.push_back(std::move(mymol));
                 
-                nlocaltop += 1;
+                nLocal.find(mymol.datasetType())->second += 1;
                 if (nullptr != debug)
                 {
                     fprintf(debug, "Added molecule %s. Hform = %g Emol = %g\n",
@@ -863,7 +878,11 @@ void MolGen::Read(FILE            *fp,
             }
             gmx_send_int(cr_, 0, static_cast<int>(imm));
         }
-        gmx_send_int(cr_, 0, nlocaltop);
+        for(const auto &ims : iMolSelectNames())
+        {
+            gmx_send_int(cr_, 0, nLocal.find(ims.first)->second);
+        }
+        countTargetSize();
     }
     if (fp)
     {
@@ -884,13 +903,11 @@ void MolGen::Read(FILE            *fp,
             }
         }
     }
-    gmx_sumi(1, &nlocaltop, cr_);
-    nmol_support_ = nlocaltop;
+    nmol_support_ = nLocal.find(iMolSelect::Train)->second;
     if (nmol_support_ == 0)
     {
-        gmx_fatal(FARGS, "No support for any molecule!");
+        gmx_fatal(FARGS, "No support for training any molecule!");
     }
-    countTargetSize();
 }
 
 } // namespace alexandria

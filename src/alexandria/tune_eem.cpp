@@ -556,10 +556,13 @@ double OptACM::calcDeviation(bool       verbose,
             }
         }
     }
+    if (debug)
+    {
+        printParameters(debug);
+    }
     sumChiSquared(calcDev == CalcDev::Parallel, ims);
     if (verbose && logFile())
     {
-        printParameters(logFile());
         printChiSquared(logFile(), ims);
     }
     numberCalcDevCalled_ += 1;
@@ -626,32 +629,14 @@ bool OptACM::runMaster(FILE                   *fp,
     if (optimize)
     {
         Bayes::setOutputFiles(xvgconv, paramClass, xvgepot, oenv);
-        double chi2_min = 0;
-        for ( const auto &ims : iMolSelectNames()) 
-        {
-            // calcDeviation on the training set
-            double chi2 = calcDeviation(true, CalcDev::Parallel, ims.first);
-            fprintf(logFile(), "Initial chi2 value on %s set %g\n",
-                    iMolSelectName(ims.first), chi2_min);
-            printChiSquared(logFile(), ims.first);
-            if (ims.first == iMolSelect::Train)
-            {
-                chi2_min = chi2;
-            }
-        }
-        double chi2 = 0;
+        double chi2     = 0;
         if (Bayes::adaptive())
         {
-            chi2 = Bayes::Adaptive_MCMC(logFile());
+            bMinimum = Bayes::Adaptive_MCMC(logFile(), &chi2);
         }
         else
         {
-            chi2 = Bayes::MCMC(logFile(), bEvaluate_testset);
-        }
-        if (chi2 < chi2_min)
-        {
-            bMinimum = true;
-            chi2_min = chi2;
+            bMinimum = Bayes::MCMC(logFile(), bEvaluate_testset, &chi2);
         }
     }
     if (sensitivity)

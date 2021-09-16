@@ -368,18 +368,22 @@ class Bayes : public OptParam
 
         /*! \brief
          * Run the Markov chain Monte carlo (MCMC) simulation
-         * \param[in] fplog File pointer for logging info. May be nullptr.
-	 * \param[in] evaluate_testset If true, evalaute the energy on the test set
-         * \return minimum energy value
+         * \param[in]  fplog            File pointer for logging info. 
+         *                              May be nullptr.
+         * \param[in]  evaluate_testset If true, evaluate the energy on 
+         *                              the test set.
+         * \param[out] chi2             The lowest chi-quared
+         * \return True if the energy decreased during the MCMC
          */
-        double MCMC(FILE *fplog, bool evaluate_testset);
+        bool MCMC(FILE *fplog, bool evaluate_testset, double *chi2);
         
         /*! \brief
          * Run adaptive Markov chain Monte carlo (MCMC) simulation
          * \param[in] fplog File pointer for logging info. May be nullptr.
-         * \return minimum energy value
+         * \param[out] chi2             The lowest chi-quared
+         * \return True if the energy decreased during the MCMC
          */
-        double Adaptive_MCMC(FILE *fplog);
+        bool Adaptive_MCMC(FILE *fplog, double *chi2);
 
         /*! \brief
          * Perform a sensitivity analysis by systematically changing

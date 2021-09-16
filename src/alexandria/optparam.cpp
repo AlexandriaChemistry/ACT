@@ -300,7 +300,7 @@ void Bayes::SensitivityAnalysis(FILE *fplog, iMolSelect ims)
     }
 }
 
-double Bayes::MCMC(FILE *fplog, bool bEvaluate_testset)
+bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
 {
     double                           storeParam;
     int                              nsum             = 0;
@@ -398,7 +398,13 @@ double Bayes::MCMC(FILE *fplog, bool bEvaluate_testset)
                    "iteration",
                    "\\f{12}c\\S2\\f{4}", 
                    oenv());
-
+    if (bEvaluate_testset)
+    {
+        std::vector<std::string> legend;
+        legend.push_back(iMolSelectName(iMolSelect::Train));
+        legend.push_back(iMolSelectName(iMolSelect::Test));
+        xvgrLegend(fpe, legend, oenv());
+    }
     nParam = param_.size();
     sum.resize(nParam, 0);
     sum_of_sq.resize(nParam, 0);
@@ -413,10 +419,7 @@ double Bayes::MCMC(FILE *fplog, bool bEvaluate_testset)
     // training set
     prevEval = calcDeviation(true, CalcDev::Parallel, iMolSelect::Train);
     minEval  = prevEval;
-    if (debug)
-    {
-        fprintf(debug, "Initial chi2 value = %g\n", prevEval);
-    }
+    *chi2    = prevEval;
 
     if (bEvaluate_testset)
     {
@@ -432,133 +435,135 @@ double Bayes::MCMC(FILE *fplog, bool bEvaluate_testset)
     
     print_memory_usage(fplog);
     // Optmization loop
-    int    j                = 0;
-    bool   accept           = false;
-    double xiter            = 0.0;
+    //int    j                = 0;
+    //bool   accept           = false;
+    //double xiter            = 0.0;
     double beta0            = 1/(BOLTZ*temperature());
-    int    total_iterations = nParam*maxIter();
     
-    for (int iter = 0; iter < total_iterations; iter++)
-    {       
-        // Pick a random parameter to change
-        j                  = int_uniform(gen);
-        //prevParam_         = param_;
-        storeParam         = param_[j];
-        attemptedMoves_[j] = attemptedMoves_[j] + 1;
+    for (int iter = 0; iter < maxIter(); iter++)
+    { 
+        for (int pp = 0; pp < nParam; pp++)
+        {      
+            // Pick a random parameter to change
+            int j              = int_uniform(gen);
+            storeParam         = param_[j];
+            attemptedMoves_[j] = attemptedMoves_[j] + 1;
         
-        // Change the picked parameter
-        changeParam(j, real_uniform(gen));
-        changed[j]         = true;
+            // Change the picked parameter
+            changeParam(j, real_uniform(gen));
+            changed[j]         = true;
         
-        // Update FF parameter data structure with the new value of parameter j
-        toPoldata(changed);
-
-        // Evaluate the energy on training set
-        currEval        = calcDeviation(false, CalcDev::Parallel, iMolSelect::Train);
-        deltaEval       = currEval-prevEval; 
-
-        // Evaluate the energy on the test set
-        if (bEvaluate_testset)
-        {
-            currEval_testset = calcDeviation(false, CalcDev::Parallel, iMolSelect::Test);
-        }
-        
-        // Accept any downhill move       
-        accept          = (deltaEval < 0);
-        
-        // For a uphill move apply the Metropolis Criteria
-        // to decide whether to accept or reject the new parameter
-        if (!accept)
-        {
-            // Only anneal if the simulation reached a certain number of steps
-            if (anneal(iter/nParam))
-            {
-                beta0 = computeBeta(iter/nParam);
-            }
-            randProbability = real_uniform(gen);
-            mcProbability   = exp(-(beta0/weightedTemperature_[j])*deltaEval);
-            accept          = (mcProbability > randProbability);
-        }
-        
-        xiter = (1.0*iter)/nParam;
-        if (accept)
-        {
-            if (currEval < minEval)
-            {
-                if (fplog)
-                {
-                    if (bEvaluate_testset)
-                    {
-                        fprintf(fplog, "iter %g. Found new minimum at %g. Corresponding energy on the test set: %g\n",
-                                xiter, currEval, currEval_testset);
-                    }
-                    else
-                    {
-                        fprintf(fplog, "iter %g. Found new minimum at %g\n",
-                                xiter, currEval);
-                    }
-                }
-                bestParam_ = param_;
-                minEval    = currEval;
-                if (debug && false)
-                {
-                    fprintf(debug, "iter %g. Found new minimum at %g\n",
-                            xiter, currEval);
-                    printParameters(debug);
-                }
-                saveState();
-            }
-            prevEval = currEval;
-	    if (bEvaluate_testset)
-	    {
-	        prevEval_testset = currEval_testset;
-	    }
-            acceptedMoves_[j] = acceptedMoves_[j] + 1;
-        }
-        else
-        {
-            param_[j] = storeParam;
-            // poldata needs to change back!
+            // Update FF parameter data structure with 
+            // the new value of parameter j
             toPoldata(changed);
-        }
-        changed[j] = false;
 
-        for(auto fp: fpc)
-        {
-            fprintf(fp, "%8f", xiter);
-        }
-        for (size_t k = 0; k < param_.size(); k++)
-        {
-            fprintf(fpc[paramClassIndex[k]], "  %10g", param_[k]);
-        }
-        for(auto fp: fpc)
-        {
-            fprintf(fp, "\n");
-            if (verbose())
+            // Evaluate the energy on training set
+            currEval        = calcDeviation(false, CalcDev::Parallel, iMolSelect::Train);
+            deltaEval       = currEval-prevEval; 
+
+            // Evaluate the energy on the test set only on whole steps!
+            if (bEvaluate_testset && pp == 0)
             {
-                fflush(fp);
+                currEval_testset = calcDeviation(false, CalcDev::Parallel, iMolSelect::Test);
             }
-        }
-        if (nullptr != fpe)
-        {
-	    if (bEvaluate_testset)
-	    {
-		fprintf(fpe, "%8f  %10g  %10g\n", xiter, prevEval, prevEval_testset);
-	    }
-	    else
-	    {
-                fprintf(fpe, "%8f  %10g\n", xiter, prevEval);
-	    }
-            fflush(fpe);
-        }
-        if (iter >= maxIter()/2)
-        {
-            for (auto k = 0; k < nParam; k++)
+        
+            // Accept any downhill move       
+            bool accept = (deltaEval < 0);
+        
+            // For a uphill move apply the Metropolis Criteria
+            // to decide whether to accept or reject the new parameter
+            if (!accept)
             {
-                sum[k]       += param_[k];
-                sum_of_sq[k] += gmx::square(param_[k]);
+                // Only anneal if the simulation reached a certain number of steps
+                if (anneal(iter))
+                {
+                    beta0 = computeBeta(iter);
+                }
+                randProbability = real_uniform(gen);
+                mcProbability   = exp(-(beta0/weightedTemperature_[j])*deltaEval);
+                accept          = (mcProbability > randProbability);
             }
-            nsum++;
+            
+            double xiter = iter + (1.0*pp)/nParam;
+            if (accept)
+            {
+                if (currEval < minEval)
+                {
+                    if (fplog)
+                    {
+                        if (bEvaluate_testset)
+                        {
+                            fprintf(fplog, "iter %g. Found new minimum at %g. Corresponding energy on the test set: %g\n",
+                                    xiter, currEval, currEval_testset);
+                        }
+                        else
+                        {
+                            fprintf(fplog, "iter %g. Found new minimum at %g\n",
+                                    xiter, currEval);
+                        }
+                    }
+                    bestParam_ = param_;
+                    minEval    = currEval;
+                    if (debug && false)
+                    {
+                        fprintf(debug, "iter %g. Found new minimum at %g\n",
+                                xiter, currEval);
+                        printParameters(debug);
+                    }
+                    saveState();
+                }
+                prevEval = currEval;
+                if (bEvaluate_testset)
+                {
+                    prevEval_testset = currEval_testset;
+                }
+                acceptedMoves_[j] = acceptedMoves_[j] + 1;
+            }
+            else
+            {
+                param_[j] = storeParam;
+                // poldata needs to change back!
+                toPoldata(changed);
+            }
+            changed[j] = false;
+
+            for(auto fp: fpc)
+            {
+                fprintf(fp, "%8f", xiter);
+            }
+            for (size_t k = 0; k < param_.size(); k++)
+            {
+                fprintf(fpc[paramClassIndex[k]], "  %10g", param_[k]);
+            }
+            for(auto fp: fpc)
+            {
+                fprintf(fp, "\n");
+                if (verbose())
+                {
+                    fflush(fp);
+                }
+            }
+            if (nullptr != fpe)
+            {
+                if (bEvaluate_testset)
+                {
+                    fprintf(fpe, "%8f  %10g  %10g\n", xiter, prevEval, prevEval_testset);
+                }
+                else
+                {
+                    fprintf(fpe, "%8f  %10g\n", xiter, prevEval);
+                }
+                fflush(fpe);
+            }
+            if (iter >= maxIter()/2)
+            {
+                for (auto k = 0; k < nParam; k++)
+                {
+                    sum[k]       += param_[k];
+                    sum_of_sq[k] += gmx::square(param_[k]);
+                }
+                nsum++;
+            }
         }
     }
     if (nsum > 0)
@@ -580,10 +585,16 @@ double Bayes::MCMC(FILE *fplog, bool bEvaluate_testset)
     {
         xvgrclose(fpe);
     }
-    return minEval;
+    bool bMinimum = false;
+    if (minEval < *chi2)
+    {
+        *chi2 = minEval;
+        bMinimum = true;
+    }
+    return bMinimum;
 }
 
-double Bayes::Adaptive_MCMC(FILE *fplog)
+bool Bayes::Adaptive_MCMC(FILE *fplog, double *chi2)
 {
     double                           storeParam;
     int                              nsum            = 0;
@@ -676,14 +687,7 @@ double Bayes::Adaptive_MCMC(FILE *fplog)
     toPoldata(changed);
     prevEval = calcDeviation(true, CalcDev::Parallel, iMolSelect::Train);
     minEval  = prevEval;
-    if (debug)
-    {
-        fprintf(debug, "Initial chi2 value = %g\n", prevEval);
-    }
-    if (fplog)
-    {
-        fprintf(fplog, "minEval %g, nParam %d\n", minEval, nParam);
-    }
+    *chi2    = prevEval;
 
     // Randrom number 
     std::random_device               rd;
@@ -823,7 +827,13 @@ double Bayes::Adaptive_MCMC(FILE *fplog)
     {
         xvgrclose(fpe);
     }
-    return minEval;
+    bool bMinimum = false;
+    if (minEval < *chi2)
+    {
+        *chi2 = minEval;
+        bMinimum = true;
+    }
+    return bMinimum;
 }
 
 void Bayes::printResults(FILE *fp, double chi2_min)
