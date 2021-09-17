@@ -382,13 +382,11 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
         for(size_t j = 0; j < paramNames_.size(); j++)
         {
             GMX_RELEASE_ASSERT(ntrain_[j] > 0, "ntrain should be > 0 for all parameters");
-            weightedTemperature_[j] = 1.0*ntrain_[j];
             nparamTotal += ntrain_[j];
         }
-        double factor = 1.0/nparamTotal;
         for(size_t j = 0; j < paramNames_.size(); j++)
         {
-            weightedTemperature_[j] *= factor;
+            weightedTemperature_[j] = nparamTotal/(1.0*ntrain_[j]);
         }
     }
     
@@ -856,7 +854,7 @@ void Bayes::printResults(FILE *fp, double chi2_min)
             {
                 acceptance_ratio = 100*(double(acceptedMoves_[k])/attemptedMoves_[k]);
             }
-            fprintf(fp, "%-30s  %5d  %6.3f  %6.3f  %6.3f  %6.3f    %4d %5.1f%%  %8.3f\n",
+            fprintf(fp, "%-30s  %5d  %6.3f  %6.3f  %6.3f  %6.3f    %4d %5.1f%%  %10.5f\n",
                     paramNames_[k].c_str(), ntrain_[k],
                     initial_param_[k], bestParam_[k], pmean_[k], psigma_[k],
                     attemptedMoves_[k], acceptance_ratio, weightedTemperature_[k]);

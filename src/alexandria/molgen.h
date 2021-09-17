@@ -256,6 +256,16 @@ class MolGen
 
         //! Compute amount of compounds in each group
         void countTargetSize();
+        
+        size_t nTargetSize(iMolSelect ims) const
+        {
+            auto ts = targetSize_.find(ims);
+            if (ts != targetSize_.end())
+            {
+                return ts->second;
+            }
+            return 0;
+        }
 
         //! \brief Fill the  iOpt_ map
         void fillIopt();

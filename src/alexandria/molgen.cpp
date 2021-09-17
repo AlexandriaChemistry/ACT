@@ -646,7 +646,6 @@ void MolGen::Read(FILE            *fp,
     /* Generate topology for Molecules and distribute them among the nodes */
     std::string      method, basis;
     splitLot(lot_, &method, &basis);
-    int              ntopol = 0;
     std::map<iMolSelect, int> nLocal;
     for(const auto &ims : iMolSelectNames())
     {
@@ -727,49 +726,83 @@ void MolGen::Read(FILE            *fp,
         countTargetSize();
         checkDataSufficiency(fp);
         generateOptimizationIndex(fp);
-        for(auto &mymol : mymol_)
+        // Now distribute the molecules over processors.
+        // Make sure the master has a bit less work to do
+        // than the slaves and that in particular train
+        // compounds are distributed equally otherwise. 
+        for(auto &ts: targetSize_)
         {
-            int dest = (ntopol++ % cr_->nnodes);
-
-            if (dest > 0)
+            std::vector<int> ntsNode;
+            int              nts  = nTargetSize(ts.first);
+            double           ntsD = 0;
+            if (cr_->nnodes > 32)
             {
-                mymol.eSupp_ = eSupport::Remote;
-                if (nullptr != debug)
-                {
-                    fprintf(debug, "Going to send %s to cpu %d\n", mymol.getMolname().c_str(), dest);
-                }
-                gmx_send_int(cr_, dest, 1);
-                CommunicationStatus cs = mymol.Send(cr_, dest);
-                if (CS_OK != cs)
-                {
-                    imm = immStatus::CommProblem;
-                }
-                else
-                {
-                    imm = static_cast<immStatus>(gmx_recv_int(cr_, dest));
-                }
-                
-                if (imm != immStatus::OK)
-                {
-                    fprintf(stderr, "Molecule %s was not accepted on node %d - error %s\n",
-                            mymol.getMolname().c_str(), dest, alexandria::immsg(imm));
-                }
-                else if (nullptr != debug)
-                {
-                    fprintf(debug, "Succesfully beamed over %s\n", mymol.getMolname().c_str());
-                }
+                ntsNode.push_back(nts/(2*cr_->nnodes));
+                ntsD  = (1.0*(nts-ntsNode[0]))/(cr_->nnodes-1);
             }
             else
             {
-                mymol.eSupp_ = eSupport::Local;
-                nLocal.find(mymol.datasetType())->second += 1;
+                ntsNode.push_back(nts/cr_->nnodes);
+                ntsD = (1.0*nts)/cr_->nnodes;
             }
-            if ((immStatus::OK != imm) && (nullptr != debug))
+            double nTot = ntsNode[0]+0.001;
+            for(int i = 1; i < cr_->nnodes; i++)
             {
-                fprintf(debug, "IMM: Dest: %d %s - %s\n",
-                        dest, mymol.getMolname().c_str(), immsg(imm));
+                nTot += ntsD;
+                ntsNode.push_back(std::min(nts, int(std::round(nTot))));
             }
-            incrementImmCount(&imm_count, imm);
+            int mymolIndex = 0;
+            int dest       = 0;
+            for(auto &mymol : mymol_)
+            {
+                if (mymol.datasetType() != ts.first)
+                {
+                    continue;
+                }
+                if (mymolIndex++ >= ntsNode[dest])
+                {
+                    dest = std::min(cr_->nnodes-1, dest + 1);
+                }
+                if (dest > 0)
+                {
+                    mymol.eSupp_ = eSupport::Remote;
+                    if (nullptr != debug)
+                    {
+                        fprintf(debug, "Going to send %s to cpu %d\n", mymol.getMolname().c_str(), dest);
+                    }
+                    gmx_send_int(cr_, dest, 1);
+                    CommunicationStatus cs = mymol.Send(cr_, dest);
+                    if (CS_OK != cs)
+                    {
+                        imm = immStatus::CommProblem;
+                    }
+                    else
+                    {
+                        imm = static_cast<immStatus>(gmx_recv_int(cr_, dest));
+                    }
+                    
+                    if (imm != immStatus::OK)
+                    {
+                        fprintf(stderr, "Molecule %s was not accepted on node %d - error %s\n",
+                                mymol.getMolname().c_str(), dest, alexandria::immsg(imm));
+                    }
+                    else if (nullptr != debug)
+                    {
+                        fprintf(debug, "Succesfully beamed over %s\n", mymol.getMolname().c_str());
+                    }
+                }
+                else
+                {
+                    mymol.eSupp_ = eSupport::Local;
+                    nLocal.find(mymol.datasetType())->second += 1;
+                }
+                if ((immStatus::OK != imm) && (nullptr != debug))
+                {
+                    fprintf(debug, "IMM: Dest: %d %s - %s\n",
+                            dest, mymol.getMolname().c_str(), immsg(imm));
+                }
+                incrementImmCount(&imm_count, imm);
+            }
         }
         /* Send signal done with transferring molecules */
         for (int i = 1; i < cr_->nnodes; i++)
@@ -888,7 +921,8 @@ void MolGen::Read(FILE            *fp,
     {
         fprintf(fp, "There were %d warnings because of zero error bars.\n", nwarn);
         fprintf(fp, "Made topologies for %d out of %d molecules.\n",
-                ntopol, static_cast<int>(mp.size()));
+                static_cast<int>(nTargetSize(iMolSelect::Train)+nTargetSize(iMolSelect::Test)),
+                static_cast<int>(mp.size()));
 
         for (const auto &imm : imm_count)
         {
