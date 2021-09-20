@@ -111,7 +111,7 @@ MolGen::MolGen()
     lot_       = "B3LYP/aug-cc-pVTZ";
     inputrec_  = new t_inputrec();
     fill_inputrec(inputrec_);
-    for ( const auto &ims : iMolSelectNames()) 
+    for (const auto &ims : iMolSelectNames()) 
     {
         RmsFittingTarget ft;
         for ( auto &rms : ermsNames )
@@ -658,8 +658,7 @@ void MolGen::Read(FILE            *fp,
         for (auto mpi = mp.begin(); mpi < mp.end(); ++mpi)
         {
             iMolSelect ims;
-            if (gms.status(mpi->getIupac(), &ims) && 
-                (iMolSelect::Train == ims || iMolSelect::Test == ims))
+            if (gms.status(mpi->getIupac(), &ims))
             {
                 alexandria::MyMol mymol;
                 if (debug)
@@ -921,7 +920,8 @@ void MolGen::Read(FILE            *fp,
     {
         fprintf(fp, "There were %d warnings because of zero error bars.\n", nwarn);
         fprintf(fp, "Made topologies for %d out of %d molecules.\n",
-                static_cast<int>(nTargetSize(iMolSelect::Train)+nTargetSize(iMolSelect::Test)),
+                static_cast<int>(nTargetSize(iMolSelect::Train)+nTargetSize(iMolSelect::Test)+
+                                 nTargetSize(iMolSelect::Ignore)),
                 static_cast<int>(mp.size()));
 
         for (const auto &imm : imm_count)

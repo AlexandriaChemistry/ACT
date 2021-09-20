@@ -682,7 +682,9 @@ bool OptACM::runMaster(FILE                   *fp,
 
 void OptACM::runSlave()
 {
-    /* S L A V E   N O D E S */
+    // S L A V E   N O D E S
+    // The second and third variable are set by the master, but
+    // we have to pass something.
     while (calcDeviation(false, CalcDev::Parallel, iMolSelect::Train) >= 0)
     {
         ;
@@ -862,6 +864,7 @@ int alex_tune_eem(int argc, char *argv[])
         // init charge generation for compounds in the
         // test set
         opt.initChargeGeneration(iMolSelect::Test);
+        opt.initChargeGeneration(iMolSelect::Ignore);
     }
 
     bool bMinimum = false;
