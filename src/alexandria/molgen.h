@@ -214,7 +214,6 @@ class OptimizationIndex
 class MolGen
 {
     private:
-        int                             nmol_support_;
         int                             mindata_;
         int                             maxESP_;
         int                             nexcl_;
@@ -364,9 +363,6 @@ class MolGen
 
         //! \brief Return level of theory
         const char *lot() const { return lot_; }
-
-        //! \brief Return the number of compounds in the data set
-        int nMolSupport() const { return nmol_support_; }
 
         /*! \brief Return the fitting targets for editing
          * \param[in] ims The selection to return

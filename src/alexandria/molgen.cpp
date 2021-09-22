@@ -354,6 +354,15 @@ void MolGen::checkDataSufficiency(FILE *fp)
         // Now loop over molecules and add interactions
         for(auto &mol : mymol_)
         {
+            // We can only consider molecules in the training set here
+            // since it is only for those that we will update the 
+            // parameters. That means that if there is no support in the
+            // training set for a compound, we can not compute charges
+            // or other parameters for the Test or Ignore set either.
+            if (mol.datasetType() != iMolSelect::Train)
+            {
+                continue;
+            }
             auto myatoms = mol.atomsConst();
             for(int i = 0; i < myatoms.nr; i++)
             {
@@ -433,6 +442,8 @@ void MolGen::checkDataSufficiency(FILE *fp)
         std::vector<std::string> removeMol;
         for(auto &mol : mymol_)
         {
+            // Now we check all molecules, including the Test and Ignore
+            // set.
             bool keep = true;
             auto myatoms = mol.atomsConst();
             for(int i = 0; i < myatoms.nr; i++)
@@ -495,8 +506,9 @@ void MolGen::checkDataSufficiency(FILE *fp)
             }
             if (fp)
             {
-                fprintf(fp, "Removing %s because of lacking support\n",
-                        rmol.c_str());
+                fprintf(fp, "Removing %s from %s set because of lacking support\n",
+                        rmol.c_str(),
+                        iMolSelectName(moliter->datasetType()));
             }
             mymol_.erase(moliter);
         }
@@ -936,11 +948,6 @@ void MolGen::Read(FILE            *fp,
                 fprintf(fp, "Check alexandria.debug for more information.\nYou may have to use the -debug 1 flag.\n\n");
             }
         }
-    }
-    nmol_support_ = nLocal.find(iMolSelect::Train)->second;
-    if (nmol_support_ == 0)
-    {
-        gmx_fatal(FARGS, "No support for training any molecule!");
     }
 }
 
