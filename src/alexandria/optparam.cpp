@@ -324,7 +324,7 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
     }
     if (param_.empty())
     {
-        fprintf(stderr, "No parameters to optimze.\n");
+        fprintf(stderr, "No parameters to optimize.\n");
         return 0;
     }
     // Allocate memory for parameter class index.

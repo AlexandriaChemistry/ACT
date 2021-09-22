@@ -730,28 +730,31 @@ immStatus MyMol::GenerateTopology(const Poldata     *pd,
     /* Store bonds in harmonic potential list first, update type later */
     if (immStatus::OK == imm)
     {
-        int  ftb = F_BONDS;
-        auto fs  = pd->findForcesConst(InteractionType::BONDS);
-        for (auto &bi : bondsConst())
+        if (NBond() > 0)
         {
-            t_param b;
-            memset(&b, 0, sizeof(b));
-            b.a[0] = bi.getAi() - 1;
-            b.a[1] = bi.getAj() - 1;
-            pd->atypeToBtype(*atoms->atomtype[b.a[0]], &btype1);
-            pd->atypeToBtype(*atoms->atomtype[b.a[1]], &btype2);
-            Identifier bondId({btype1, btype2}, bi.getBondOrder(), CanSwap::Yes);
-            // Store the bond order for later usage.
-            bondOrder_.insert({std::make_pair(b.a[0],b.a[1]), bi.getBondOrder()});
-            // We add the parameter with zero parameters, they will be
-            // set further down. However it is important to set the
-            // bondorder.
-            add_param_to_plist(plist_, ftb, InteractionType::BONDS, b, bi.getBondOrder());
-        }
-        auto pw = SearchPlist(plist_, ftb);
-        if (plist_.end() == pw || pw->nParam() == 0)
-        {
-            imm = immStatus::GenBonds;
+            int  ftb = F_BONDS;
+            auto fs  = pd->findForcesConst(InteractionType::BONDS);
+            for (auto &bi : bondsConst())
+            {
+                t_param b;
+                memset(&b, 0, sizeof(b));
+                b.a[0] = bi.getAi() - 1;
+                b.a[1] = bi.getAj() - 1;
+                pd->atypeToBtype(*atoms->atomtype[b.a[0]], &btype1);
+                pd->atypeToBtype(*atoms->atomtype[b.a[1]], &btype2);
+                Identifier bondId({btype1, btype2}, bi.getBondOrder(), CanSwap::Yes);
+                // Store the bond order for later usage.
+                bondOrder_.insert({std::make_pair(b.a[0],b.a[1]), bi.getBondOrder()});
+                // We add the parameter with zero parameters, they will be
+                // set further down. However it is important to set the
+                // bondorder.
+                add_param_to_plist(plist_, ftb, InteractionType::BONDS, b, bi.getBondOrder());
+            }
+            auto pw = SearchPlist(plist_, ftb);
+            if (plist_.end() == pw || pw->nParam() == 0)
+            {
+                imm = immStatus::GenBonds;
+            }
         }
     }
     if (immStatus::OK == imm)
