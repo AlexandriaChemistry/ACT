@@ -1621,7 +1621,6 @@ double MyMol::PolarizabilityTensorDeviation() const
 
 void MyMol::backupCoordinates()
 {
-    GMX_RELEASE_ASSERT(backupCoordinates_.size() == 0, "Can only backup coordinates once");
     backupCoordinates_.resize(mtop_->natoms);
     for(int i = 0; i < mtop_->natoms; i++)
     {
@@ -1657,6 +1656,7 @@ immStatus MyMol::CalcPolarizability(double     efield,
     double              rmsf;
     QtypeProps          qtp(qType::Calc);
 
+    backupCoordinates();
     field.resize(DIM, 0);
     myforce_->setField(field);
     imm          = computeForces(fplog, cr, &rmsf);

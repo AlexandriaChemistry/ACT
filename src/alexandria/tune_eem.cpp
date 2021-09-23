@@ -709,7 +709,7 @@ int alex_tune_eem(int argc, char *argv[])
         "by the minima and maxima. If the [TT]-random[tt] flag is",
         "given a completely random set of parameters is generated at the start",
         "of each run. At reinit steps however, the parameters are only changed",
-        "slightly, in order to speed-up local search but not global search."
+        "slightly, in order to speed-up local search but not global search.",
         "In other words, complete random starts are done only at the beginning of each",
         "run, and only when explicitly requested.[PAR]",
         "The absolut dipole moment of a molecule remains unchanged if all the",
@@ -857,10 +857,6 @@ int alex_tune_eem(int argc, char *argv[])
     opt.initChargeGeneration(iMolSelect::Train);
     if (bEvaluate_testset)
     {
-        if (opt.iMolSelectSize(iMolSelect::Test) == 0)
-        {
-            gmx_fatal(FARGS, "You cannot evaluate your test set when it is empty!.");
-        }
         // init charge generation for compounds in the
         // test set
         opt.initChargeGeneration(iMolSelect::Test);

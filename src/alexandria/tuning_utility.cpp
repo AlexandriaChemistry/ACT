@@ -596,7 +596,7 @@ void print_electric_props(FILE                           *fp,
                     fprintf(fp, "%10s", qTypeName(qt.first).c_str());
                 }
             }
-            fprintf(fp, "       x       y       z (pm)\n");
+            fprintf(fp, "        x        y        z (pm)\n");
             auto x       = mol->x();
             auto qrmsd   = 0.0;
             int  ncore   = 0;
@@ -668,7 +668,7 @@ void print_electric_props(FILE                           *fp,
                             fprintf(fp, "          ");
                         }
                     }
-                    fprintf(fp," %8.3f%8.3f%8.3f\n", 
+                    fprintf(fp," %8.3f %8.3f %8.3f\n", 
                             convertFromGromacs(x[j][XX], "pm"),
                             convertFromGromacs(x[j][YY], "pm"),
                             convertFromGromacs(x[j][ZZ], "pm"));
