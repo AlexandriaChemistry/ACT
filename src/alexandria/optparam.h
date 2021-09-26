@@ -50,7 +50,7 @@
 namespace alexandria
 {
 
-enum class CalcDev { Parallel, Master, Final };
+enum class CalcDev { Parallel = 1, Master = 2, Final = 3 };
 
 /*! \brief
  * Does Bayesian Monte Carlo (BMC) simulation to find the best paramater set,

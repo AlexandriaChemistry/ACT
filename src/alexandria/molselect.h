@@ -43,9 +43,9 @@
 #include "poldata.h"
 
 enum class iMolSelect {
-    Train,
-    Test,
-    Ignore
+    Train = 5,
+    Test = 6,
+    Ignore = 7
 };
 
 const char *iMolSelectName(iMolSelect ims);
