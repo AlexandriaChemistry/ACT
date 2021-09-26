@@ -265,7 +265,7 @@ void Bayes::SensitivityAnalysis(FILE *fplog, iMolSelect ims)
     double chi2_0 = calcDeviation(false, CalcDev::Parallel, ims);
     if (fplog)
     {
-        fprintf(fplog, "Starting sensitivity analysis. chi2_0 = %g nParam = %d\n",
+        fprintf(fplog, "\nStarting sensitivity analysis. chi2_0 = %g nParam = %d\n",
                 chi2_0, static_cast<int>(param_.size()));
         fflush(fplog);
     }
@@ -295,8 +295,7 @@ void Bayes::SensitivityAnalysis(FILE *fplog, iMolSelect ims)
     }
     if (fplog)
     {
-        fprintf(fplog, "Sensitiviy analysis done.\n\n");
-        fflush(fplog);
+        fprintf(fplog, "Sensitivity analysis done.\n");
     }
 }
 
@@ -428,9 +427,6 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
     
     print_memory_usage(fplog);
     // Optmization loop
-    //int    j                = 0;
-    //bool   accept           = false;
-    //double xiter            = 0.0;
     double beta0            = 1/(BOLTZ*temperature());
     
     for (int iter = 0; iter < maxIter(); iter++)
@@ -486,12 +482,12 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
                     {
                         if (bEvaluate_testset)
                         {
-                            fprintf(fplog, "iter %g. Found new minimum at %g. Corresponding energy on the test set: %g\n",
+                            fprintf(fplog, "iter %10g. Found new minimum at %10g. Corresponding energy on the test set: %g\n",
                                     xiter, currEval, currEval_testset);
                         }
                         else
                         {
-                            fprintf(fplog, "iter %g. Found new minimum at %g\n",
+                            fprintf(fplog, "iter %10g. Found new minimum at 10%g\n",
                                     xiter, currEval);
                         }
                     }
@@ -510,12 +506,12 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
                 {
                     prevEval_testset = currEval_testset;
                 }
-                acceptedMoves_[j] = acceptedMoves_[j] + 1;
+                acceptedMoves_[j] += 1;
             }
             else
             {
                 param_[j] = storeParam;
-                // poldata needs to change back!
+                // poldata needs to change back as well!
                 toPoldata(changed);
             }
             changed[j] = false;
@@ -546,7 +542,10 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
                 {
                     fprintf(fpe, "%8f  %10g\n", xiter, prevEval);
                 }
-                fflush(fpe);
+                if (verbose())
+                {
+                    fflush(fpe);
+                }
             }
             if (iter >= maxIter()/2)
             {
@@ -829,14 +828,13 @@ bool Bayes::Adaptive_MCMC(FILE *fplog, double *chi2)
     return bMinimum;
 }
 
-void Bayes::printResults(FILE *fp, double chi2_min)
+void Bayes::printMonteCarloStatistics(FILE *fp)
 {
     if (!fp)
     {
         return;
     }
-    fprintf(fp, "\nMinimum RMSD value during optimization: %.3f.\n", sqrt(chi2_min));
-    fprintf(fp, "Statistics of parameters after optimization\n");
+    fprintf(fp, "\nMonte Carlo statistics of parameters after optimization\n");
     fprintf(fp, "#best %zu #mean %zu #sigma %zu #param %zu\n",
             bestParam_.size(), pmean_.size(), psigma_.size(), paramNames_.size());
     if (bestParam_.size() == nParam())

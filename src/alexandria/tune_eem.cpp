@@ -209,7 +209,6 @@ class OptACM : public MolGen, Bayes
 
         /*! \brief
          * Do the actual optimization.
-         * \param[in] fp          FILE pointer for logging
          * \param[in] oenv        Output environment for managing xvg files etc.
          * \param[in] xvgconv     Output file monitoring parameters
          * \param[in] xvgepot     Output file monitoring penalty function
@@ -217,8 +216,7 @@ class OptACM : public MolGen, Bayes
          * \param[in] sensitivity If true, a sensitivity analysis will be done
          * \return true if better parameters were found.
          */
-        bool runMaster(FILE                   *fp,
-                       const gmx_output_env_t *oenv,
+        bool runMaster(const gmx_output_env_t *oenv,
                        const char             *xvgconv,
                        const char             *xvgepot,
                        bool                    optimize,
@@ -609,8 +607,7 @@ void OptACM::toPoldata(const std::vector<bool> &changed)
                                          n, changed.size()).c_str());
 }
 
-bool OptACM::runMaster(FILE                   *fp,
-                       const gmx_output_env_t *oenv,
+bool OptACM::runMaster(const gmx_output_env_t *oenv,
                        const char             *xvgconv,
                        const char             *xvgepot,
                        bool                    optimize,
@@ -645,8 +642,9 @@ bool OptACM::runMaster(FILE                   *fp,
         Bayes::SensitivityAnalysis(logFile(), iMolSelect::Train);
     }
     // Finalize the calculations on the slaves
-    (void) calcDeviation(true, CalcDev::Final, iMolSelect::Train);
+    GMX_RELEASE_ASSERT(calcDeviation(false, CalcDev::Final, iMolSelect::Train) < 0, "Result for final parallel calcDeviation should be less than zero");
 
+    printMonteCarloStatistics(logFile());
     if (bMinimum)
     {
         auto best = Bayes::getBestParam();
@@ -663,12 +661,6 @@ bool OptACM::runMaster(FILE                   *fp,
         for (const auto &ims : iMolSelectNames())
         {
             double chi2 = calcDeviation(true, CalcDev::Master, ims.first);
-            if (ims.first == iMolSelect::Train)
-            {
-                printResults(logFile(), chi2);
-            }
-            printChiSquared(fp, ims.first);
-            printChiSquared(logFile(), ims.first);
             fprintf(logFile(), "Minimum chi2 for %s %g\n",
                     iMolSelectName(ims.first), chi2);
         }
@@ -685,6 +677,7 @@ void OptACM::runSlave()
     // S L A V E   N O D E S
     // The second and third variable are set by the master, but
     // we have to pass something.
+    // If the result is less than zero, we are done.
     while (calcDeviation(false, CalcDev::Parallel, iMolSelect::Train) >= 0)
     {
         ;
@@ -870,8 +863,7 @@ int alex_tune_eem(int argc, char *argv[])
         {
             opt.InitOpt(bRandom);
         }
-        bMinimum = opt.runMaster(MASTER(opt.commrec()) ? stderr : nullptr,
-                                 oenv,
+        bMinimum = opt.runMaster(oenv,
                                  opt2fn("-conv", NFILE, fnm),
                                  opt2fn("-epot", NFILE, fnm),
                                  bOptimize,

@@ -419,10 +419,10 @@ class Bayes : public OptParam
             return 1+maxIter()*nParam();
         }
         /* \brief
-         * Print the final results to the logFile.
-         * \param[in] chi2_min Final chi2 in optimization
+         * Print the MC statistics to a file.
+         * \param[in] fp File pointer to print to
          */
-        void printResults(FILE *fp, double chi2_min);
+        void printMonteCarloStatistics(FILE *fp);
 };
 
 }

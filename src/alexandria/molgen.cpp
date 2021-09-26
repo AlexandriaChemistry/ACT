@@ -267,7 +267,8 @@ void MolGen::printChiSquared(FILE *fp, iMolSelect ims) const
 {
     if (nullptr != fp && MASTER(commrec()))
     {
-        fprintf(fp, "Components of fitting function\n");
+        fprintf(fp, "\nComponents of fitting function for %s set\n",
+                iMolSelectName(ims));
         for (const auto &ft : fittingTargetsConst(ims))
         {
             ft.second.print(fp);

@@ -210,13 +210,13 @@ static void print_polarizability(FILE              *fp,
                     "", "", mol->alpha_calc_[ZZ][ZZ],
                     "", "", dalpha[ZZ][ZZ]);
             fprintf(fp,
-                    "Isotropic polarizability:  %s Electronic: %6.2f  Calculated: %6.2f  Delta: %6.2f %s\n\n\n",
+                    "Isotropic polarizability:  %s Electronic: %6.2f  Calculated: %6.2f  Delta: %6.2f %s\n\n",
                     mol->getMolname().c_str(), 
                     mol->ElectronicPolarizability(),
                     mol->CalculatedPolarizability(), 
                     diso_pol, (diso_pol > isopol_toler) ? "ISO" : "");
             fprintf(fp,
-                    "Anisotropic polarizability:  %s Electronic: %6.2f  Calculated: %6.2f  Delta: %6.2f %s\n\n\n",
+                    "Anisotropic polarizability:  %s Electronic: %6.2f  Calculated: %6.2f  Delta: %6.2f %s\n\n",
                     mol->getMolname().c_str(), 
                     mol->ElectronicAnisoPolarizability(),
                     mol->CalculatedAnisoPolarizability(), 
@@ -487,7 +487,7 @@ void print_electric_props(FILE                           *fp,
         if (mol->eSupp_ != eSupport::No)
         {
             auto ims = mol->datasetType();
-            fprintf(fp, "Molecule %d: Name: %s, Qtot: %d, Multiplicity: %d, Dataset: %s\n", n+1,
+            fprintf(fp, "\nMolecule %d: Name: %s, Qtot: %d, Multiplicity: %d, Dataset: %s\n", n+1,
                     mol->getMolname().c_str(),
                     mol->totalCharge(),
                     mol->getMultiplicity(),
@@ -615,12 +615,13 @@ void print_electric_props(FILE                           *fp,
                                              });
                     real qCalc = myatoms.atom[j].q;
                     // TODO: only count in real shells
-                    //if (nullptr != mol->shellfc_ && 
-                    //  j < myatoms.nr-1 && 
-                    //  myatoms.atom[j+1].ptype == eptShell)
-                    //{
-                    //  qCalc += myatoms.atom[j+1].q;
-                    //}
+                    real qCplusShell = qCalc;
+                    if (nullptr != mol->shellfc_ && 
+                        j < myatoms.nr-1 && 
+                        myatoms.atom[j+1].ptype == eptShell)
+                    {
+                        qCplusShell += myatoms.atom[j+1].q;
+                    }
                     if (mol->datasetType() == ims)
                     {
                         if (qQM.find(qType::CM5) != qQM.end())
@@ -628,10 +629,10 @@ void print_electric_props(FILE                           *fp,
                             auto qcm5 = qQM.find(qType::CM5)->second[i];
                             if (k != lsqt[ims].end())
                             {
-                                gmx_stats_add_point(k->lsq_, qcm5, qCalc, 0, 0);
+                                gmx_stats_add_point(k->lsq_, qcm5, qCplusShell, 0, 0);
                             }
-                            gmx_stats_add_point(lsq_charge[ims][qType::Calc], qcm5, qCalc, 0, 0);
-                            qrmsd += gmx::square(qcm5-qCalc);
+                            gmx_stats_add_point(lsq_charge[ims][qType::Calc], qcm5, qCplusShell, 0, 0);
+                            qrmsd += gmx::square(qcm5-qCplusShell);
                         }
                     }
                     ncore += 1;
@@ -676,7 +677,8 @@ void print_electric_props(FILE                           *fp,
             }
             fprintf(fp, "\n");
             qrmsd = sqrt(qrmsd/ncore);
-            fprintf(fp, "q rmsd: %g (e) %s\n", qrmsd, (qrmsd > 5e-2) ? "XXX" : "");
+            fprintf(fp, "Charge RMSD compared to CM5: %g (e)%s\n",
+                    qrmsd, (qrmsd > 5e-2) ? " XXX" : "");
             n++;
         }
     }
