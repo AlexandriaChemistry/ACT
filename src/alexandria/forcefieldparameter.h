@@ -87,7 +87,11 @@ class ForceFieldParameter
     uncertainty_(uncertainty), originalUncertainty_(uncertainty),
     ntrain_(ntrain), originalNtrain_(ntrain),
     minimum_(minimum), maximum_(maximum), mutability_(mutability),
-    strict_(strict), nonNegative_(nonNegative) {}
+    strict_(strict), nonNegative_(nonNegative)
+    {
+        GMX_RELEASE_ASSERT(value_ >= minimum_ && value_ <= maximum_, 
+                           gmx::formatString("Value for force field parameter %g (%s) not within bounds [%g, %g]", value_, unit_.c_str(), minimum_, maximum_).c_str());
+    }
         
     //! \brief Return unit of parameter
     const std::string &unit() const { return unit_; }
