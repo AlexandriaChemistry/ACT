@@ -224,19 +224,15 @@ void Bayes::addParam(const std::string &name,
 void Bayes::changeParam(size_t j, real rand)
 {
     GMX_RELEASE_ASSERT(j < param_.size(), "Parameter out of range");
-    //real delta = (2*rand-1)*step()*fabs(param_[j]);
     real delta = (2*rand-1)*step()*(upperBound_[j]-lowerBound_[j]);
     param_[j] += delta;
-    if (boxConstraint())
+    if (param_[j] < lowerBound_[j])
     {
-        if (param_[j] < lowerBound_[j])
-        {
-            param_[j] = lowerBound_[j];
-        }
-        else if (param_[j] > upperBound_[j])
-        {
-            param_[j] = upperBound_[j];
-        }
+        param_[j] = lowerBound_[j];
+    }
+    else if (param_[j] > upperBound_[j])
+    {
+        param_[j] = upperBound_[j];
     }
 }
 
@@ -436,10 +432,16 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
             // Pick a random parameter to change
             int j              = int_uniform(gen);
             storeParam         = param_[j];
-            attemptedMoves_[j] = attemptedMoves_[j] + 1;
         
             // Change the picked parameter
             changeParam(j, real_uniform(gen));
+            // Test whether the parameter did in fact change, if not
+            // it is not meaningful to evaluate again.
+            if (param_[j] == storeParam)
+            {
+                continue;
+            }
+            attemptedMoves_[j] = attemptedMoves_[j] + 1;
             changed[j]         = true;
         
             // Update FF parameter data structure with 

@@ -70,8 +70,6 @@ class OptParam
         int                      nAdapt_         = 50;
         //! Output environment structure
         const gmx_output_env_t  *oenv_          = nullptr;
-        //! Use box constraints when optimizing
-        gmx_bool                 bBoxConstraint_ = false;
         //! Random number seed
         real                     seed_           = -1;
         //! Relative step when optimizing
@@ -157,12 +155,6 @@ class OptParam
         //! \brief Addapt the step size for perturbing the parameter
         void adapt_step(real factor) {step_ *= factor ;}
 
-        //! \brief Use box constraints or not
-        void setBoxConstraint(bool bBox) { bBoxConstraint_ = bBox; }
-
-        //! \brief Return whether or not bounds are used for parameters
-        bool boxConstraint() const { return bBoxConstraint_; }
-        
         //! \brief Return whether or not temperature weighting should be considered
         bool temperatureWeighting() const { return tempWeight_; }
         

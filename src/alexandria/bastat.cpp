@@ -266,7 +266,7 @@ static void lo_add_dih(FILE *fplog, const char *molname,
     }
     if (iType == InteractionType::IMPROPER_DIHEDRALS)
     {
-        while (angle > 176)
+        while (angle > 170)
         {
             angle -= 180;
         }
@@ -495,7 +495,8 @@ static void update_pd(FILE          *fp,
                 round_numbers(&av, &sig, 10);
                 Identifier bondId({i.a1, i.a2, i.a3}, CanSwap::Yes);
                 fs->addParameter(bondId, "angle",
-                                 ForceFieldParameter("degree", av, sig, N, av*factor, av/factor, Mutability::Bounded, false, true));
+                                 ForceFieldParameter("degree", av, sig, N, av*factor, 
+                                                     std::min(180.0, av/factor), Mutability::Bounded, false, true));
                 fs->addParameter(bondId, "kt",
                                  ForceFieldParameter("kJ/mol/rad2", kt, 0, 1, kt*factor, kt/factor, Mutability::Bounded, false, false));
                 if (fType == F_UREY_BRADLEY)
@@ -525,7 +526,7 @@ static void update_pd(FILE          *fp,
                 fs->addParameter(bondId, "a",
                                  ForceFieldParameter("", av, sig, N, av*myfactor, av/myfactor, Mutability::Bounded, false, true));
                 fs->addParameter(bondId, "klin", 
-                                 ForceFieldParameter("kJ/mol/nm2", klin, 0, 1, av*factor, av/factor, Mutability::Bounded, false, true));
+                                 ForceFieldParameter("kJ/mol/nm2", klin, 0, 1, klin*factor, klin/factor, Mutability::Bounded, false, true));
                 
                 fprintf(fp, "linear_angle-%s angle %g sigma %g N = %d%s\n",
                         bondId.id().c_str(), av, sig, N, (sig > angle_tol) ? " WARNING" : "");
@@ -583,9 +584,13 @@ static void update_pd(FILE          *fp,
                 gmx_stats_get_npoints(i.lsq, &N);
                 round_numbers(&av, &sig, 10);
                 Identifier bondId({i.a1, i.a2, i.a3, i.a4}, CanSwap::No);
-
+                if (fabs(av) > 4)
+                {
+                    fprintf(stderr, "Warning: large improper dihedral %g for %s\n",
+                            av, bondId.id().c_str());
+                }
                 fs->addParameter(bondId, "phi", 
-                                 ForceFieldParameter("degree", av, sig, N, av*factor, av/factor, Mutability::Bounded, false, true));
+                                 ForceFieldParameter("degree", 0, 0, N, 0, 0, Mutability::Fixed, false, false));
                 fs->addParameter(bondId, "kimp", 
                                  ForceFieldParameter("kJ/mol", kimp, 0, 1, kimp*factor, kimp/factor, Mutability::Bounded, false, true));
                 

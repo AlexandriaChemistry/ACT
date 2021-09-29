@@ -135,7 +135,6 @@ class OptACM : public MolGen, Bayes
         void optionsFinished(const std::string &outputFile)
         {
             MolGen::optionsFinished();
-            setBoxConstraint(bConstrain());
             outputFile_ = outputFile;
         }
 
