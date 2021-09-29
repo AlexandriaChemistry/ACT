@@ -81,7 +81,8 @@ class ForceFieldParameter
                         double             maximum,
                         Mutability         mutability,
                         bool               strict,
-                        bool               nonNegative)
+                        bool               nonNegative,
+                        bool               resetValue=false)
                          : 
     unit_(unit), value_(value), originalValue_ (value),
     uncertainty_(uncertainty), originalUncertainty_(uncertainty),
@@ -89,8 +90,26 @@ class ForceFieldParameter
     minimum_(minimum), maximum_(maximum), mutability_(mutability),
     strict_(strict), nonNegative_(nonNegative)
     {
-        GMX_RELEASE_ASSERT(value_ >= minimum_ && value_ <= maximum_, 
-                           gmx::formatString("Value for force field parameter %g (%s) not within bounds [%g, %g]", value_, unit_.c_str(), minimum_, maximum_).c_str());
+        if (resetValue)
+        {
+            if (value_ < minimum_)
+            {
+                fprintf(stderr, "Resetting value %g (%s) to minimum allowed %g\n",
+                        value_, unit_.c_str(), minimum_);
+                value_ = minimum_;
+            }
+            if (value_ > maximum_)
+            {
+                fprintf(stderr, "Resetting value %g (%s) to maximum allowed %g\n",
+                        value_, unit_.c_str(), maximum_);
+                value_ = maximum_;
+            }
+        }
+        else
+        {
+            GMX_RELEASE_ASSERT(value_ >= minimum_ && value_ <= maximum_, 
+                               gmx::formatString("Value for force field parameter %g (%s) not within bounds [%g, %g]", value_, unit_.c_str(), minimum_, maximum_).c_str());
+        }
     }
         
     //! \brief Return unit of parameter

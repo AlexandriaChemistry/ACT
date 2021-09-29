@@ -383,7 +383,8 @@ static void processAttr(FILE       *fp,
                                         ntrain,
                                         xbuf_atof(xbuf, xmlEntry::MINIMUM), xbuf_atof(xbuf, xmlEntry::MAXIMUM),
                                         mut, false,
-                                        nonNegative);
+                                        nonNegative,
+                                        true);
                 if (xmlEntry::PARAMETERLIST == parentEntry)
                 {
                     auto fs = pd->findForces(currentItype);
