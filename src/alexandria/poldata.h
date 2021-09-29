@@ -93,9 +93,6 @@ class Poldata
         //! Return whether Yang & Sharp is used
         bool yang() const;
         
-        //! Return whether we use a point charge for cores
-        bool corePointCharge() const { return false; }
-
         /*! \brief
          * Set relative dielectric constant
          *

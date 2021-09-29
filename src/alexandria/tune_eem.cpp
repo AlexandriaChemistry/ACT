@@ -92,7 +92,6 @@ class OptACM : public MolGen, Bayes
         bool       bFullTensor_                  = false;
         bool       bSameZeta_                    = true;
         bool       bRemoveMol_                   = true;
-        bool       bPointCore_                   = false;
         int        numberCalcDevCalled_          = 0;
         gmx::unique_cptr<FILE, my_fclose> fplog_ = nullptr;
         std::string outputFile_;
@@ -108,8 +107,6 @@ class OptACM : public MolGen, Bayes
         bool sameZeta() const { return bSameZeta_; }
 
         bool removeMol() const {return bRemoveMol_; }
-        
-        void set_pointCore(bool pointCore) {bPointCore_ =  pointCore;}
         
         void saveState();
 
@@ -833,8 +830,6 @@ int alex_tune_eem(int argc, char *argv[])
         print_memory_usage(opt.logFile());
     }
 
-    const char *tabfn = opt2fn_null("-table", NFILE, fnm);   
-    
     opt.Read(opt.logFile() ? opt.logFile() : (debug ? debug : nullptr),
              opt2fn("-f", NFILE, fnm),
              opt2fn_null("-d", NFILE, fnm),
@@ -842,11 +837,8 @@ int alex_tune_eem(int argc, char *argv[])
              gms,
              false,
              false,
-             tabfn);
+             opt2fn_null("-table", NFILE, fnm));
              
-    bool  pointCore = opt.poldata()->corePointCharge();
-    
-    opt.set_pointCore(pointCore);
     // init charge generation for compounds in the 
     // training set
     opt.initChargeGeneration(iMolSelect::Train);
@@ -858,27 +850,19 @@ int alex_tune_eem(int argc, char *argv[])
         opt.initChargeGeneration(iMolSelect::Ignore);
     }
 
-    bool bMinimum = false;
     if (MASTER(opt.commrec()))
     {
         if (bOptimize || bSensitivity)
         {
             opt.InitOpt(bRandom);
         }
-        bMinimum = opt.runMaster(oenv,
-                                 opt2fn("-conv", NFILE, fnm),
-                                 opt2fn("-epot", NFILE, fnm),
-                                 bOptimize,
-                                 bSensitivity,
-                                 bEvaluate_testset);
-    }
-    else if (bOptimize || bSensitivity)
-    {
-        opt.runSlave();
-    }
+        bool bMinimum = opt.runMaster(oenv,
+                                      opt2fn("-conv", NFILE, fnm),
+                                      opt2fn("-epot", NFILE, fnm),
+                                      bOptimize,
+                                      bSensitivity,
+                                      bEvaluate_testset);
    
-    if (MASTER(opt.commrec()))
-    {
         if (bMinimum || bForceOutput || !bOptimize)
         {
             bool bPolar = opt.poldata()->polarizable();
@@ -888,7 +872,7 @@ int alex_tune_eem(int argc, char *argv[])
                                              opt.poldata(),
                                              opt.mdlog(),
                                              opt.lot(),
-                                             tabfn,
+                                             opt2fn_null("-table", NFILE, fnm),
                                              opt.hwinfo(),
                                              opt.qcycle(),
                                              opt.qtol(),
@@ -918,6 +902,10 @@ int alex_tune_eem(int argc, char *argv[])
         {
             printf("No improved parameters found. Please try again with more iterations.\n");
         }
+    }
+    else if (bOptimize || bSensitivity)
+    {
+        opt.runSlave();
     }
     return 0;
 }
