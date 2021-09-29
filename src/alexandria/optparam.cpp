@@ -489,7 +489,7 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
                         }
                         else
                         {
-                            fprintf(fplog, "iter %10g. Found new minimum at 10%g\n",
+                            fprintf(fplog, "iter %10g. Found new minimum at %10g\n",
                                     xiter, currEval);
                         }
                     }

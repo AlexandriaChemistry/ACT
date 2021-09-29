@@ -105,7 +105,7 @@ class MolSelect
          * \param[out] index The index
          * \return true if found, false otherwise
          */    
-       bool index(const std::string &iupac, int *index) const;
+        bool index(const std::string &iupac, int *index) const;
         
         int count(iMolSelect ims) const
         {

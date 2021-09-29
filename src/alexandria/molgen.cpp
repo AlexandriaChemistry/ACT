@@ -615,9 +615,8 @@ void MolGen::Read(FILE            *fp,
     }
     if (nullptr != fp)
     {
-        fprintf(fp, "There are %d atom types in the input file %s:\n---\n",
+        fprintf(fp, "There are %d atom types in the input file %s.\n\n",
                 static_cast<int>(pd_.getNatypes()), pd_fn);
-        fprintf(fp, "---\n\n");
     }
     //  Now  we have read the poldata and spread it to processors
     fillIopt();

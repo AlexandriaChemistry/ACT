@@ -827,6 +827,9 @@ int alex_tune_eem(int argc, char *argv[])
         print_memory_usage(opt.logFile());
         print_header(opt.logFile(), pargs);
         gms.read(opt2fn_null("-sel", NFILE, fnm));
+        fprintf(opt.logFile(), "Found %d Train and %d Test compounds in %s\n\n",
+                gms.count(iMolSelect::Train), gms.count(iMolSelect::Test),
+                opt2fn("-sel", NFILE, fnm));
         print_memory_usage(opt.logFile());
     }
 
