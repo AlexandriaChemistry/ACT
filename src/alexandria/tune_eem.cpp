@@ -304,9 +304,9 @@ double OptACM::calcDeviation(bool       verbose,
                              iMolSelect ims)
 {
     auto cr = commrec();
-    if (PAR(cr))
+    if (MASTER(cr))
     {
-        if (MASTER(cr))
+        if (PAR(cr) && calcDev != CalcDev::Master)
         {
             for(int i = 1; i < cr->nnodes; i++)
             {
@@ -314,11 +314,11 @@ double OptACM::calcDeviation(bool       verbose,
                 gmx_send_int(cr, i, static_cast<int>(ims));
             }
         }
-        else
-        {
-            calcDev = static_cast<CalcDev>(gmx_recv_int(cr, 0));
-            ims     = static_cast<iMolSelect>(gmx_recv_int(cr, 0));
-        }
+    }
+    else
+    {
+        calcDev = static_cast<CalcDev>(gmx_recv_int(cr, 0));
+        ims     = static_cast<iMolSelect>(gmx_recv_int(cr, 0));
     }
     if (calcDev == CalcDev::Final)
     {
