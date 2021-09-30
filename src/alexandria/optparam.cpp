@@ -268,22 +268,22 @@ void Bayes::SensitivityAnalysis(FILE *fplog, iMolSelect ims)
     for (size_t i = 0; i < param_.size(); ++i)
     {
         Sensitivity s;
-        double p_0    = param_[i];
+        double pstore = param_[i];
+        double deltap = (upperBound_[i]-lowerBound_[i])/200;
+        double pmin   = std::max(param_[i]-deltap, lowerBound_[i]);
+        double pmax   = std::min(param_[i]+deltap, upperBound_[i]);
+        double p_0    = 0.5*(pmin+pmax);
         changed[i]    = true;
-        param_[i]     = 0.99*p_0;
+        param_[i]     = pmin;
         toPoldata(changed);
         s.add(param_[i], calcDeviation(false, CalcDev::Parallel, ims));
-        param_[i]     = 0.995*p_0;
-        toPoldata(changed);
-        s.add(param_[i], calcDeviation(false, CalcDev::Parallel, ims));
-        s.add(p_0, chi2_0);
-        param_[i]     = 1.005*p_0;
-        toPoldata(changed);
-        s.add(param_[i],  calcDeviation(false, CalcDev::Parallel, ims));
-        param_[i]     = 1.01*p_0;
-        toPoldata(changed);
-        s.add(param_[i],  calcDeviation(false, CalcDev::Parallel, ims));
         param_[i]     = p_0;
+        toPoldata(changed);
+        s.add(param_[i], calcDeviation(false, CalcDev::Parallel, ims));
+        param_[i]     = pmax;
+        toPoldata(changed);
+        s.add(param_[i],  calcDeviation(false, CalcDev::Parallel, ims));
+        param_[i]     = pstore;
         toPoldata(changed);
         changed[i]    = false;
         s.computeForceConstants(fplog);
