@@ -322,6 +322,11 @@ void MolGen::checkDataSufficiency(FILE *fp)
     {
         // We check data sufficiency only for the training set
         nmol = targetSize_.find(iMolSelect::Train)->second;
+        if (fp)
+        {
+            fprintf(fp, "Will check data sufficiency for %d training compounds.\n",
+                    static_cast<int>(nmol));
+        }
         /* First set the ntrain values for all forces
          * present that should be optimized to zero.
          */
@@ -493,6 +498,11 @@ void MolGen::checkDataSufficiency(FILE *fp)
                 removeMol.push_back(mol.getIupac());
             }
         }
+        if (fp)
+        {
+            fprintf(fp, "Found %d molecules without sufficient support, will remove them.\n",
+                    static_cast<int>(removeMol.size()));
+        }
         for(auto &rmol : removeMol)
         {
             auto moliter = std::find_if(mymol_.begin(), mymol_.end(),
@@ -582,7 +592,8 @@ void MolGen::Read(FILE            *fp,
                   const MolSelect &gms,
                   bool             bZPE,
                   bool             bDHform,
-                  const char      *tabfn)
+                  const char      *tabfn,
+                  bool             verbose)
 {
     int                              nwarn    = 0;
     std::map<immStatus, int>         imm_count;
@@ -624,6 +635,7 @@ void MolGen::Read(FILE            *fp,
     if (MASTER(cr_))
     {
         MolPropRead(fn, &mp);
+        fprintf(fp, "Read %d compounds from %s\n", static_cast<int>(mp.size()), fn);
         print_memory_usage(fp);
         for (auto mpi = mp.begin(); mpi < mp.end(); )
         {
@@ -663,14 +675,15 @@ void MolGen::Read(FILE            *fp,
 
     if (MASTER(cr_))
     {
-        printf("Generating molecules!\n");
+        printf("Trying to generate topologies for %d molecules!\n",
+               static_cast<int>(mp.size()));
         for (auto mpi = mp.begin(); mpi < mp.end(); ++mpi)
         {
             iMolSelect ims;
             if (gms.status(mpi->getIupac(), &ims))
             {
                 alexandria::MyMol mymol;
-                if (debug)
+                if (fp && debug)
                 {
                     fprintf(debug, "%s\n", mpi->getMolname().c_str());
                 }
@@ -685,9 +698,9 @@ void MolGen::Read(FILE            *fp,
                                              optimize(InteractionType::PROPER_DIHEDRALS),
                                              missingParameters::Error,
                                              tabfn);
-                if (immStatus::OK != imm && debug)
+                if (immStatus::OK != imm && verbose && fp)
                 {
-                    fprintf(debug, "Tried to generate topology for %s. Outcome: %s\n",
+                    fprintf(fp, "Tried to generate topology for %s. Outcome: %s\n",
                             mymol.getMolname().c_str(), immsg(imm));
                 }
                 if (immStatus::OK == imm)
@@ -707,9 +720,9 @@ void MolGen::Read(FILE            *fp,
                                                 lot_);
                     //(void) mymol.espRms(qType::Calc);
                 }
-                if (immStatus::OK != imm && debug)
+                if (immStatus::OK != imm && verbose && fp)
                 {
-                    fprintf(debug, "Tried to generate charges for %s. Outcome: %s\n",
+                    fprintf(fp, "Tried to generate charges for %s. Outcome: %s\n",
                             mymol.getMolname().c_str(), immsg(imm));
                 }
                 if (immStatus::OK == imm)
@@ -728,6 +741,11 @@ void MolGen::Read(FILE            *fp,
                     // mymol_ contains all molecules
                     mymol_.push_back(std::move(mymol));
                 }
+            }
+            else if (verbose && fp)
+            {
+                fprintf(fp, "Could not find %s in selection.\n",
+                        mpi->getIupac().c_str());
             }
         }
         print_memory_usage(fp);

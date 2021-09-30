@@ -434,7 +434,8 @@ class MolGen
                   const MolSelect &gms,
                   bool             bZPE,
                   bool             bDHform,
-                  const char      *tabfn);
+                  const char      *tabfn,
+                  bool             verbose);
 
 };
 

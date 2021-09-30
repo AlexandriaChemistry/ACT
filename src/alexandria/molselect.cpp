@@ -347,7 +347,8 @@ int alex_molselect(int argc, char *argv[])
              gms, 
              false, 
              false, 
-             nullptr);
+             nullptr,
+             false);
 
     printAtomtypeStatistics(fp, mgn.poldata(), mgn.mymols());
 

@@ -108,6 +108,8 @@ class OptACM : public MolGen, Bayes
 
         bool removeMol() const {return bRemoveMol_; }
         
+        bool verbose() { return Bayes::verbose(); }
+        
         void saveState();
 
         void add_pargs(std::vector<t_pargs> *pargs)
@@ -837,7 +839,8 @@ int alex_tune_eem(int argc, char *argv[])
              gms,
              false,
              false,
-             opt2fn_null("-table", NFILE, fnm));
+             opt2fn_null("-table", NFILE, fnm),
+             opt.verbose());
              
     // init charge generation for compounds in the 
     // training set
