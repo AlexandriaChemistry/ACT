@@ -286,7 +286,8 @@ class MolGen
         //! \brief Add options to the command line
         void addOptions(std::vector<t_pargs> *pargs, eTune etune);
 
-        //! \brief Process options after parsing
+        /*! \brief Process options after parsing
+         */
         void optionsFinished();
 
         //! \brief Return the poldata as const variable

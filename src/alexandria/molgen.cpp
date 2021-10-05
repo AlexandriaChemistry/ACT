@@ -498,7 +498,7 @@ void MolGen::checkDataSufficiency(FILE *fp)
                 removeMol.push_back(mol.getIupac());
             }
         }
-        if (fp)
+        if (fp && removeMol.size() > 0)
         {
             fprintf(fp, "Found %d molecules without sufficient support, will remove them.\n",
                     static_cast<int>(removeMol.size()));
@@ -675,8 +675,11 @@ void MolGen::Read(FILE            *fp,
 
     if (MASTER(cr_))
     {
-        printf("Trying to generate topologies for %d molecules!\n",
-               static_cast<int>(mp.size()));
+        if (fp)
+        {
+            fprintf(fp, "Trying to generate topologies for %d molecules!\n",
+                    static_cast<int>(mp.size()));
+        }
         for (auto mpi = mp.begin(); mpi < mp.end(); ++mpi)
         {
             iMolSelect ims;
