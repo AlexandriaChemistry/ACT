@@ -832,16 +832,22 @@ int alex_tune_eem(int argc, char *argv[])
         print_memory_usage(opt.logFile());
     }
 
-    opt.Read(opt.logFile() ? opt.logFile() : (debug ? debug : nullptr),
-             opt2fn("-f", NFILE, fnm),
-             opt2fn_null("-d", NFILE, fnm),
-             bZero,
-             gms,
-             false,
-             false,
-             opt2fn_null("-table", NFILE, fnm),
-             opt.verbose());
-             
+    if (0 == opt.Read(opt.logFile() ? opt.logFile() : (debug ? debug : nullptr),
+                      opt2fn("-f", NFILE, fnm),
+                      opt2fn_null("-d", NFILE, fnm),
+                      bZero,
+                      gms,
+                      false,
+                      false,
+                      opt2fn_null("-table", NFILE, fnm),
+                      opt.verbose()))
+    {
+        if (opt.logFile())
+        {
+            fprintf(opt.logFile(), "Training set is empty, check your input. Rerun with -v option or -debug 1.\n");
+        }
+        return 0;
+    }
     // init charge generation for compounds in the 
     // training set
     opt.initChargeGeneration(iMolSelect::Train);
@@ -852,7 +858,7 @@ int alex_tune_eem(int argc, char *argv[])
         opt.initChargeGeneration(iMolSelect::Test);
         opt.initChargeGeneration(iMolSelect::Ignore);
     }
-
+    
     if (MASTER(opt.commrec()))
     {
         if (bOptimize || bSensitivity)
@@ -865,7 +871,7 @@ int alex_tune_eem(int argc, char *argv[])
                                       bOptimize,
                                       bSensitivity,
                                       bEvaluate_testset);
-   
+        
         if (bMinimum || bForceOutput || !bOptimize)
         {
             bool bPolar = opt.poldata()->polarizable();

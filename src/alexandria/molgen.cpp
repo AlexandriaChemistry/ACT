@@ -318,6 +318,10 @@ void MolGen::fillIopt()
 void MolGen::checkDataSufficiency(FILE *fp)
 {
     size_t nmol = 0;
+    if (targetSize_.find(iMolSelect::Train) == targetSize_.end())
+    {
+        return;
+    }
     do
     {
         // We check data sufficiency only for the training set
@@ -585,15 +589,15 @@ void MolGen::countTargetSize()
     }
 }
 
-void MolGen::Read(FILE            *fp,
-                  const char      *fn,
-                  const char      *pd_fn,
-                  gmx_bool         bZero,
-                  const MolSelect &gms,
-                  bool             bZPE,
-                  bool             bDHform,
-                  const char      *tabfn,
-                  bool             verbose)
+size_t MolGen::Read(FILE            *fp,
+                    const char      *fn,
+                    const char      *pd_fn,
+                    gmx_bool         bZero,
+                    const MolSelect &gms,
+                    bool             bZPE,
+                    bool             bDHform,
+                    const char      *tabfn,
+                    bool             verbose)
 {
     int                              nwarn    = 0;
     std::map<immStatus, int>         imm_count;
@@ -701,49 +705,66 @@ void MolGen::Read(FILE            *fp,
                                              optimize(InteractionType::PROPER_DIHEDRALS),
                                              missingParameters::Error,
                                              tabfn);
-                if (immStatus::OK != imm && verbose && fp)
+                if (immStatus::OK != imm)
                 {
-                    fprintf(fp, "Tried to generate topology for %s. Outcome: %s\n",
-                            mymol.getMolname().c_str(), immsg(imm));
+                    if (verbose && fp)
+                    {
+                        fprintf(fp, "Tried to generate topology for %s. Outcome: %s\n",
+                                mymol.getMolname().c_str(), immsg(imm));
+                    }
+                    continue;
                 }
-                if (immStatus::OK == imm)
-                {
-                    mymol.symmetrizeCharges(&pd_, qsymm_, nullptr);
-                    mymol.initQgenResp(&pd_, method, basis, 0.0, maxESP_);
-                    std::vector<double> dummy;
-                    imm = mymol.GenerateCharges(&pd_,
-                                                mdlog_,
-                                                cr_,
-                                                tabfn,
-                                                hwinfo_,
-                                                qcycle_,
-                                                qtol_,
-                                                ChargeGenerationAlgorithm::NONE,
-                                                dummy,
-                                                lot_);
-                    //(void) mymol.espRms(qType::Calc);
-                }
-                if (immStatus::OK != imm && verbose && fp)
-                {
-                    fprintf(fp, "Tried to generate charges for %s. Outcome: %s\n",
-                            mymol.getMolname().c_str(), immsg(imm));
-                }
-                if (immStatus::OK == imm)
-                {
-                    imm = mymol.GenerateChargeGroups(ecgGroup, false);
-                }
-                if (immStatus::OK == imm)
-                {
-                    imm = mymol.getExpProps(bQM_, bZero, bZPE, bDHform,
-                                            method, basis, &pd_);
-                }
-                if (immStatus::OK == imm)
-                {
-                    mymol.set_datasetType(ims);
+                
+                mymol.symmetrizeCharges(&pd_, qsymm_, nullptr);
+                mymol.initQgenResp(&pd_, method, basis, 0.0, maxESP_);
+                std::vector<double> dummy;
+                imm = mymol.GenerateCharges(&pd_,
+                                            mdlog_,
+                                            cr_,
+                                            tabfn,
+                                            hwinfo_,
+                                            qcycle_,
+                                            qtol_,
+                                            ChargeGenerationAlgorithm::NONE,
+                                            dummy,
+                                            lot_);
 
-                    // mymol_ contains all molecules
-                    mymol_.push_back(std::move(mymol));
+                if (immStatus::OK != imm)
+                {
+                    if (verbose && fp)
+                    {
+                        fprintf(fp, "Tried to generate charges for %s. Outcome: %s\n",
+                                mymol.getMolname().c_str(), immsg(imm));
+                    }
+                    continue;
                 }
+                imm = mymol.GenerateChargeGroups(ecgGroup, false);
+                if (immStatus::OK != imm)
+                {
+                    if (verbose && fp)
+                    {
+                        fprintf(fp, "Tried to generate charge groups for %s. Outcome: %s\n",
+                                mymol.getMolname().c_str(), immsg(imm));
+                    }
+                    continue;
+                }
+                
+                imm = mymol.getExpProps(bQM_, bZero, bZPE, bDHform,
+                                        method, basis, &pd_);
+                if (immStatus::OK != imm)
+                {
+                    if (verbose && fp)
+                    {
+                        fprintf(fp, "Tried to extract experimental reference data for %s. Outcome: %s\n",
+                                mymol.getMolname().c_str(), immsg(imm));
+                    }
+                    continue;
+                }
+                
+                mymol.set_datasetType(ims);
+
+                // mymol_ contains all molecules
+                mymol_.push_back(std::move(mymol));
             }
             else if (verbose && fp)
             {
@@ -967,6 +988,7 @@ void MolGen::Read(FILE            *fp,
             }
         }
     }
+    return mymol_.size();
 }
 
 } // namespace alexandria

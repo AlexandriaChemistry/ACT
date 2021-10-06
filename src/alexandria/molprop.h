@@ -1488,7 +1488,7 @@ class MolProp
         const std::vector<Experiment> &experimentConst() const { return exper_; }
 
         //! Return mutable vector of experiments
-        std::vector<Experiment> &experiment() { return exper_; }
+        std::vector<Experiment> *experiment() { return &exper_; }
 
         //! Return end of experiment vector
         ExperimentConstIterator EndExperiment()  const { return exper_.end(); }
