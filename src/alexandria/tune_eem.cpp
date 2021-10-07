@@ -479,9 +479,9 @@ double OptACM::calcDeviation(bool       verbose,
                 dumpQX(logFile(), &mymol, "ESP");
                 qgr->updateAtomCharges(mymol.atoms());
                 qgr->calcPot(poldata()->getEpsilonR());
-                auto myRms =
-                    convertToGromacs(qgr->getRms(&rrms, &cosangle),
-                                     "Hartree/e");
+                real mae, mse;
+                auto rms = qgr->getStatistics(&rrms, &cosangle, &mae, &mse);
+                auto myRms = convertToGromacs(rms, "Hartree/e");
                 auto nEsp = qgr->nEsp();
                 (*targets).find(eRMS::ESP)->second.increase(nEsp, gmx::square(myRms)*nEsp);
                 if (debug)

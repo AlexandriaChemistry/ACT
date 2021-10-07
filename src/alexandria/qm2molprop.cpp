@@ -49,11 +49,12 @@
 //#include "gromacs/topology/atomprop.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/stringutil.h"
-#include "gromacs/utility/textreader.h"
+//#include "gromacs/utility/stringutil.h"
+//#include "gromacs/utility/textreader.h"
 //#include "gromacs/utility/real.h"
 
 #include "alex_modules.h"
+#include "atype_mapping.h"
 #include "babel_io.h"
 #include "molprop.h"
 #include "molprop_util.h"
@@ -61,58 +62,6 @@
 #include "poldata.h"
 #include "poldata_xml.h"
 #include "readpsi4.h"
-
-static void gaffToAlexandria(const std::string                  &filenm,
-                             std::map<std::string, std::string> *g2a)
-{
-    g2a->clear();
-    gmx::TextReader  ttt(filenm);
-    std::string line;
-    while (ttt.readLine(&line))
-    {
-        auto words = gmx::splitString(line);
-        if (words.size() == 2)
-        {
-            if (g2a->find(words[0]) == g2a->end())
-            {
-                g2a->insert(std::pair<std::string, std::string>(words[0], words[1]));
-            }
-            else
-            {
-                gmx_fatal(FARGS, "Duplicate mapping entries in %s for %s",
-                          filenm.c_str(), words[0].c_str());
-            }
-        }
-        else
-        {
-            gmx_fatal(FARGS, "Invalid line in %s: %s", filenm.c_str(), line.c_str());
-        }
-    }
-}
-
-static void renameAtomTypes(alexandria::MolProp                      *mp,
-                            const std::map<std::string, std::string> &g2a)
-{
-    auto expers = mp->experiment();
-    for(auto myexp = expers->begin(); myexp < expers->end(); ++myexp)
-    {
-        auto catoms = myexp->calcAtom();
-        for(auto catom = catoms->begin(); catom < catoms->end(); ++catom)
-        {
-            auto obt = catom->getObtype();
-            if (g2a.find(obt) == g2a.end())
-            {
-                gmx_fatal(FARGS, "obType %s cannot be mapped to alexandria", obt.c_str());
-            }
-            else
-            {
-                printf("Replacing %s by %s\n", obt.c_str(),
-                       g2a.find(obt)->second.c_str());
-                catom->setObtype(g2a.find(obt)->second);
-            }
-        }
-    }
-}
 
 int alex_qm2molprop(int argc, char *argv[])
 {

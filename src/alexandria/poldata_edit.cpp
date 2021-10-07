@@ -128,7 +128,7 @@ static void setMinMaxMut(FILE *fp,
         auto range = pp->maximum()-pp->minimum();
         if (std::fabs(pp->value() - pp->minimum()) < 0.01*range && range > 0)
         {
-            if (!pp->setMinimum(pp->minimum()-0.1*range))
+            if (!pp->setMinimum(pp->minimum()-0.2*range))
             {
                 pp->setMinimum(0.8*pp->minimum());
             }
@@ -140,7 +140,7 @@ static void setMinMaxMut(FILE *fp,
         }
         if (std::fabs(pp->value() - pp->maximum()) < 0.01*range && range > 0)
         {
-            pp->setMaximum(pp->maximum()+0.1*range);
+            pp->setMaximum(pp->maximum()+0.2*range);
             if (fp)
             {
                 fprintf(fp, "Maximum stretched to %g for %s\n",

@@ -47,6 +47,7 @@
 #include "gromacs/utility/smalloc.h"
 
 #include "alex_modules.h"
+#include "atype_mapping.h"
 #include "babel_io.h"
 #include "fill_inputrec.h"
 #include "molprop_util.h"
@@ -133,6 +134,7 @@ int alex_gentop(int argc, char *argv[])
         { efXVG, "-pc",       "pot-comp",      ffOPTWR },
         { efPDB, "-pdbdiff",  "pdbdiff",       ffOPTWR },
         { efXVG, "-plotESP",  "ESPcorr",       ffOPTWR },
+        { efDAT, "-map",      "mapping",       ffOPTRD },
         { efLOG, "-g",        "gentop_errors", ffWRITE }
     };
 
@@ -356,6 +358,15 @@ int alex_gentop(int argc, char *argv[])
                       qtot,
                       addHydrogens))
         {
+            std::map<std::string, std::string> g2a;
+            if (opt2bSet("-map", NFILE, fnm))
+            {
+                gaffToAlexandria(opt2fn("-map", NFILE, fnm), &g2a);
+                if (!g2a.empty())
+                {
+                    renameAtomTypes(&mp, g2a);
+                }
+            }
             mymol.Merge(&mp);
         }
         else
@@ -414,7 +425,7 @@ int alex_gentop(int argc, char *argv[])
     /* Generate output file for debugging if requested */
     if (immStatus::OK == imm)
     {
-        mymol.plotEspCorrelation(opt2fn_null("-plotESP", NFILE, fnm), oenv);
+        mymol.plotEspCorrelation(opt2fn_null("-plotESP", NFILE, fnm), oenv, cr);
     }
 
     if (immStatus::OK == imm)
@@ -429,7 +440,7 @@ int alex_gentop(int argc, char *argv[])
                            opt2fn_null("-his",      NFILE, fnm),
                            opt2fn_null("-diff",     NFILE, fnm),
                            opt2fn_null("-diffhist", NFILE, fnm),
-                           oenv);
+                           oenv, cr);
     }
 
     if (immStatus::OK == imm)

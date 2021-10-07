@@ -156,15 +156,15 @@ class QgenResp
          * \param[in] border  Distance between atoms and gird edge
          * \param[in] x       Atomic coordinates
          */
-        void makeGrid(real   spacing,
-                      real   border,
-                      rvec   x[]);
+        void makeGrid(real                              spacing, 
+                      real                              border,
+                      const gmx::HostVector<gmx::RVec> &x);
 
         void copyGrid(QgenResp &src);
 
-        void calcRms();
+        void calcStatistics();
 
-        real getRms(real *rrms, real *cosangle);
+        real getStatistics(real *rrms, real *cosangle, real *mse, real *mae);
 
         void plotLsq(const gmx_output_env_t *oenv,
                      const char             *ESPcorr);
@@ -247,6 +247,8 @@ class QgenResp
         double                    qshell_      = 0;
         double                    rms_         = 0;
         double                    rrms_        = 0;
+        double                    mse_         = 0;
+        double                    mae_         = 0;
         double                    cosangle_    = 0;
         dvec                      origin_      = { 0, 0, 0 };
         dvec                      space_       = { 0, 0, 0 };

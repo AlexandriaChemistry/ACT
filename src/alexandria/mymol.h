@@ -473,9 +473,11 @@ namespace alexandria
          * Alexandria potential.
          * \param[in] espcorr File name to plot to
          * \param[in] oenv    Gromacs output structure
+         * \param[in] cr      Gromacs communication record
          */
         void plotEspCorrelation(const char             *espcorr,
-                                const gmx_output_env_t *oenv);
+                                const gmx_output_env_t *oenv,
+                                t_commrec              *cr);
 
         /*! \brief
          * Collect the experimental properties
@@ -631,6 +633,7 @@ namespace alexandria
          * \param[in] difffn
          * \param[in] diffhistfn
          * \param[in] oenv
+         * \param[in] cr
          */
         void GenerateCube(const Poldata          *pd,
                           real                    spacing,
@@ -643,7 +646,8 @@ namespace alexandria
                           const char             *hisfn,
                           const char             *difffn,
                           const char             *diffhistfn,
-                          const gmx_output_env_t *oenv);
+                          const gmx_output_env_t *oenv,
+                          t_commrec              *cr);
 
         /*! \brief
          * Print the coordinates corresponding to topology after adding shell particles and/or vsites.

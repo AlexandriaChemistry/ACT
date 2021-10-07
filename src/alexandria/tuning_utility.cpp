@@ -512,8 +512,8 @@ void print_electric_props(FILE                           *fp,
                 {
                     continue;
                 }
-                real rms, rrms, cosesp;
-                rms = qp->qgenResp()->getRms(&rrms, &cosesp);
+                real rms, rrms, cosesp, mae, mse;
+                rms = qp->qgenResp()->getStatistics(&rrms, &cosesp, &mae, &mse);
                 rms = convertToGromacs(rms, "Hartree/e");
                 std::string warning;
                 if (rms > esp_toler || cosesp < 0.5)
@@ -760,18 +760,18 @@ void print_electric_props(FILE                           *fp,
                 qTypeName(qType::Calc).c_str(), qTypeName(qType::ESP).c_str());
         for (auto mol = mymol->begin(); mol < mymol->end(); ++mol)
         {
-            real rms, rrms, cosesp;
+            real rms, rrms, cosesp, mae, mse;
             auto qcalc = mol->qTypeProps(qType::Calc);
-            rms        = convertToGromacs(qcalc->qgenResp()->getRms(&rrms, &cosesp), "Hartree/e");
+            rms        = convertToGromacs(qcalc->qgenResp()->getStatistics(&rrms, &cosesp, &mae, &mse), "Hartree/e");
             if ((mol->eSupp_ != eSupport::No) && (rms > espMax))
             {
                 fprintf(fp, "%-40s  %12.3f", mol->getMolname().c_str(), rms);
                 auto qesp = mol->qTypeProps(qType::ESP);
                 if (qesp)
                 {
-                    real rr, ce;
+                    real rr, ce, mae, mse;
                     fprintf(fp, "  %12.3f",
-                            convertToGromacs(qesp->qgenResp()->getRms(&rr, &ce), "Hartree/e"));
+                            convertToGromacs(qesp->qgenResp()->getStatistics(&rr, &ce, &mae, &mse), "Hartree/e"));
                 }
                 else
                 {

@@ -1923,7 +1923,8 @@ void MyMol::GenerateCube(const Poldata          *pd,
                          const char             *hisfn,
                          const char             *difffn,
                          const char             *diffhistfn,
-                         const gmx_output_env_t *oenv)
+                         const gmx_output_env_t *oenv,
+                         t_commrec              *cr)
 {
     auto qt          = pd->findForcesConst(InteractionType::CHARGEDISTRIBUTION);
     auto iChargeType = name2ChargeType(qt.optionValue("chargetype"));
@@ -1931,17 +1932,25 @@ void MyMol::GenerateCube(const Poldata          *pd,
     if (potfn || hisfn || rhofn || difffn || pdbdifffn)
     {
         char     *gentop_version = (char *)"gentop v0.99b";
-
-        qProps_.find(qType::Calc)->second.setQ(atoms());
-        qProps_.find(qType::Calc)->second.setX(state_->x);
-        qProps_.find(qType::Calc)->second.qgenResp()->calcPot(pd->getEpsilonR());
-        qProps_.find(qType::Calc)->second.qgenResp()->potcomp(pcfn, atoms(),
-                                                              as_rvec_array(state_->x.data()), pdbdifffn, oenv);
+        auto qc = qProps_.find(qType::Calc);
+        GMX_RELEASE_ASSERT(qc != qProps_.end(), "Cannot find alexandria charge information");
+        qc->second.setQ(atoms());
+        qc->second.setX(state_->x);
+        // TODO Insert relax shells here?
+        //real rmsf;
+        //if (immStatus::OK != computeForces(nullptr, cr, &rmsf))
+        //{
+        //   return;
+        //}
+        qc->second.qgenResp()->calcPot(pd->getEpsilonR());
+        qc->second.qgenResp()->potcomp(pcfn, atoms(),
+                                       as_rvec_array(state_->x.data()),
+                                       pdbdifffn, oenv);
 
         /* This has to be done before the grid is f*cked up by
            writing a cube file */
-        QgenResp qCalc(qProps_.find(qType::Calc)->second.qgenResp());
-        QgenResp grref(qProps_.find(qType::Calc)->second.qgenResp());
+        QgenResp qCalc(qc->second.qgenResp());
+        QgenResp grref(qc->second.qgenResp());
 
         if (reffn)
         {
@@ -1951,7 +1960,7 @@ void MyMol::GenerateCube(const Poldata          *pd,
         }
         else
         {
-            qCalc.makeGrid(spacing, border, as_rvec_array(state_->x.data()));
+            qCalc.makeGrid(spacing, border, state_->x);
         }
         if (rhofn)
         {
@@ -2554,15 +2563,20 @@ const QtypeProps *MyMol::qTypeProps(qType qt) const
 }
 
 void MyMol::plotEspCorrelation(const char             *espcorr,
-                               const gmx_output_env_t *oenv)
+                               const gmx_output_env_t *oenv,
+                               t_commrec              *cr)
 {
     if (espcorr && oenv)
     {
         auto qgr   = qTypeProps(qType::Calc)->qgenResp();
         qgr->updateAtomCharges(atoms());
         qgr->updateAtomCoords(state_->x);
-        qgr->calcPot(1.0);
-        qgr->plotLsq(oenv, espcorr);
+        double rmsf = 0;
+        if (immStatus::OK == computeForces(nullptr, cr, &rmsf))
+        {
+            qgr->calcPot(1.0);
+            qgr->plotLsq(oenv, espcorr);
+        }
     }
 }
 

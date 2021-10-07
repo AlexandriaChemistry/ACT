@@ -64,8 +64,7 @@ void QgenResp::potcomp(const char             *potcomp,
                        const char             *pdbdiff,
                        const gmx_output_env_t *oenv)
 {
-    double  pp, exp, eem;
-    FILE   *fp;
+    FILE       *fp;
     std::string unit("Hartree/e");
 
     if (potcomp)
@@ -77,14 +76,14 @@ void QgenResp::potcomp(const char             *potcomp,
         for (size_t i = 0; (i < nEsp()); i++)
         {
             /* Conversion may or may not be in vain depending on unit */
-            exp = convertFromGromacs(ep_[i].v(), unit);
-            eem = convertFromGromacs(ep_[i].vCalc(), unit);
+            auto myexp = convertFromGromacs(ep_[i].v(), unit);
+            auto myeem = convertFromGromacs(ep_[i].vCalc(), unit);
             if (i == static_cast<size_t>(natoms()))
             {
                 fprintf(fp, "&\n");
                 fprintf(fp, "@type xy\n");
             }
-            fprintf(fp, "%10.5e  %10.5e\n", exp, eem);
+            fprintf(fp, "%10.5e  %10.5e\n", myexp, myeem);
         }
         fprintf(fp, "&\n");
         fclose(fp);
@@ -99,15 +98,32 @@ void QgenResp::potcomp(const char             *potcomp,
                     "ATOM", 1, *atoms->atomname[i], "MOL", 'A', i+1,
                     ' ', 10*x[i][XX], 10*x[i][YY], 10*x[i][ZZ], 0.0, 0.0);
         }
+        double ymin, ymax;
+        ymin = ymax = ep_[0].esp()[YY];
         for (size_t i = 0; (i < nEsp()); i++)
         {
-            exp = convertFromGromacs(ep_[i].v(), potUnit);
-            eem = convertFromGromacs(ep_[i].vCalc(), potUnit);
-            pp  = ep_[i].v()-ep_[i].vCalc();
             const gmx::RVec esp = ep_[i].esp();
             fprintf(fp, "%-6s%5u  %-4.4s%3.3s %c%4d%c   %8.3f%8.3f%8.3f%6.2f%6.2f\n",
-                    "HETATM", 1, "HE", "HE", 'B', static_cast<int>(i+1),
-                    ' ', 10*esp[XX], 10*esp[YY], 10*esp[ZZ], 0.0, pp);
+                    "HETATM", 1, "HE", "QM", 'B', static_cast<int>(i+1),
+                    ' ', 10*esp[XX], 10*esp[YY], 10*esp[ZZ], 0.0, ep_[i].v());
+            ymin = std::min(ymin, esp[YY]);
+            ymax = std::max(ymax, esp[YY]);
+        }
+        double dy = 1.2*(ymax-ymin);
+        for (size_t i = 0; (i < nEsp()); i++)
+        {
+            const gmx::RVec esp = ep_[i].esp();
+            fprintf(fp, "%-6s%5u  %-4.4s%3.3s %c%4d%c   %8.3f%8.3f%8.3f%6.2f%6.2f\n",
+                    "HETATM", 1, "HE", "AX", 'C', static_cast<int>(i+1),
+                    ' ', 10*esp[XX], 10*(esp[YY]-dy), 10*esp[ZZ], 0.0, ep_[i].vCalc());
+        }
+        for (size_t i = 0; (i < nEsp()); i++)
+        {
+            const gmx::RVec esp = ep_[i].esp();
+            fprintf(fp, "%-6s%5u  %-4.4s%3.3s %c%4d%c   %8.3f%8.3f%8.3f%6.2f%6.2f\n",
+                    "HETATM", 1, "HE", "DIF", 'D', static_cast<int>(i+1),
+                    ' ', 10*esp[XX], 10*(esp[YY]-2*dy), 10*esp[ZZ], 0.0, 
+                                         ep_[i].vCalc() - ep_[i].v());
         }
         fclose(fp);
     }
@@ -381,7 +397,9 @@ void QgenResp::readCube(const std::string &fn, bool bESPonly)
     }
 }
 
-void QgenResp::makeGrid(real spacing, real border, rvec x[])
+void QgenResp::makeGrid(real                              spacing, 
+                        real                              border,
+                        const gmx::HostVector<gmx::RVec> &x)
 {
     if (0 != nEsp())
     {
@@ -395,11 +413,11 @@ void QgenResp::makeGrid(real spacing, real border, rvec x[])
     /* Determine extent of compound */
     rvec xmin = {  100,  100,  100 };
     rvec xmax = { -100, -100, -100 };
+    x_ = x;
     for (int i = 0; (i < nAtom_); i++)
     {
         for(int m = 0; m < DIM; m++)
         {
-            x_[i][m] = x[i][m];
             xmin[m]  = std::min(xmin[m], x[i][m]);
             xmax[m]  = std::max(xmax[m], x[i][m]);
         }
