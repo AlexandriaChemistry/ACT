@@ -520,8 +520,8 @@ void print_electric_props(FILE                           *fp,
                 {
                     warning.assign(" EEE");
                 }
-                fprintf(fp, "ESP rms: %8.3f (kJ/mol e) CosAngle: %6.3f - %s%s\n",
-                        rms, cosesp, qTypeName(qi).c_str(), warning.c_str());   
+                fprintf(fp, "ESP rms: %8.3f (kJ/mol e) rrms: %8.3f CosAngle: %6.3f - %s%s\n",
+                        rms, rrms, cosesp, qTypeName(qi).c_str(), warning.c_str());   
                 if (mol->datasetType() == ims)
                 {
                     auto ep = qp->qgenResp()->espPoint();
