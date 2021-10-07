@@ -536,6 +536,7 @@ extern "C" double Nuclear_SS(double r, int i, double xi)
 #if HAVE_LIBCLN
     cl_R cr, cxi, cxj, cS;
 
+    i = std::min(i, SLATER_MAX);
     if (xi == 0)
     {
         if (r == 0)
