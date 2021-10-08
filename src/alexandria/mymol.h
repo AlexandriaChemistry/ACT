@@ -119,6 +119,8 @@ namespace alexandria
 
         //! Map of charge type dependent properties
         std::map<qType, QtypeProps>           qProps_;
+        //! Center of nuclear charge
+        rvec                      CenterOfCharge_ = { 0 };
         //! Experimental dipole
         double                    dip_exp_    = 0;
         //! Error in experimental dipole
@@ -274,6 +276,11 @@ namespace alexandria
         {
             dataset_type_ = dataset_type;
         }
+
+        /*! \brief
+         * \return the center of nuclear charge
+         */
+        const rvec &centerOfCharge() const { return CenterOfCharge_; }
 
         /*! \brief Return QtypeProps for a charge type
          * \param[in] qt The charge type, e.g. qType::CM5

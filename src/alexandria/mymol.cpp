@@ -780,10 +780,10 @@ immStatus MyMol::GenerateTopology(const Poldata     *pd,
             }
         }
         /* Center of charge */
-        svmul((1.0/atntot), coc, coc);
+        svmul((1.0/atntot), coc, CenterOfCharge_);
         for (auto &qp : qProps_)
         {
-            qp.second.setCenterOfCharge(coc);
+            qp.second.setCenterOfCharge(CenterOfCharge_);
         }
         
         if (pd->polarizable())
