@@ -737,6 +737,7 @@ void MolPropRead(const char *fn, std::vector<alexandria::MolProp> *mpt)
                     mpt, 
                     &bExperiment);
     xmlFreeDoc(doc);
+    print_memory_usage(stderr);
 }
 
 static void add_exper_properties(xmlNodePtr                    exp,

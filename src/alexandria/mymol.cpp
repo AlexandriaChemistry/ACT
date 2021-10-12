@@ -54,8 +54,8 @@
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
-#include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/shellfc.h"
+#include "gromacs/mdlib/vsite.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/mdtypes/forcerec.h"
@@ -689,6 +689,25 @@ immStatus MyMol::zetaToAtoms(const Poldata *pd,
     return immStatus::OK;
 }
 
+static void fill_atom(t_atom *atom,
+                      real m, real q, real mB, real qB, int atomnumber,
+                      int atomtype, int ept,
+                      real zetaA, real zetaB, int row, int resind)
+{
+    atom->m             = m;
+    atom->mB            = mB;
+    atom->q             = q;
+    atom->qB            = qB;
+    atom->atomnumber    = atomnumber;
+    atom->type          = atomtype;
+    atom->typeB         = atomtype;
+    atom->ptype         = ept;
+    atom->zetaA         = zetaA;
+    atom->zetaB         = zetaB;
+    atom->row           = row;
+    atom->resind        = resind;
+}
+                       
 immStatus MyMol::GenerateTopology(const Poldata     *pd,
                                   const std::string &method,
                                   const std::string &basis,
@@ -785,7 +804,7 @@ immStatus MyMol::GenerateTopology(const Poldata     *pd,
         {
             qp.second.setCenterOfCharge(CenterOfCharge_);
         }
-        
+        addBondVsites(pd, atoms);
         if (pd->polarizable())
         {
             addShells(pd, atoms);
@@ -828,6 +847,7 @@ immStatus MyMol::GenerateTopology(const Poldata     *pd,
         {
             UpdateIdef(pd, InteractionType::PROPER_DIHEDRALS);
         }
+        UpdateIdef(pd, InteractionType::VSITE2);
     }
     if (immStatus::OK != imm && debug)
     {
@@ -841,6 +861,69 @@ immStatus MyMol::GenerateTopology(const Poldata     *pd,
     return imm;
 }
 
+void MyMol::addBondVsites(const Poldata *pd,
+                          t_atoms       *atoms)
+{
+    int     atomNrOld = atoms->nr;
+    t_param p         = { { 0 } };
+    // First add virtual sites for bond shells if needed.
+    auto    vs2       = pd->findForcesConst(InteractionType::VSITE2);
+    auto    qt        = pd->findForcesConst(InteractionType::CHARGEDISTRIBUTION);
+    // TODO: add a flag to turn that on or off?
+    t_atom vsite_atom = { 0 };
+    for (auto b: bondsConst())
+    {
+        int ai = b.getAi()-1;
+        int aj = b.getAj()-1;
+        std::string aTypei(*atoms->atomtype[ai]);
+        std::string aTypej(*atoms->atomtype[aj]);
+        Identifier  bsId({ aTypei, aTypej }, b.getBondOrder(), CanSwap::No);
+        // Check whether a vsite is defined for this bond
+        std::string v2("v2");
+        if (vs2.parameterExists(bsId) && pd->hasParticleType(v2))
+        {
+            // Yes! We need to add a virtual site
+            p.a[0] = atoms->nr;
+            p.a[1] = ai;
+            p.a[2] = aj;
+            auto param = vs2.findParameterTypeConst(bsId, "v2_a");
+            p.c[0] = convertToGromacs(param.value(), param.unit());
+            add_param_to_plist(plist_, F_VSITE2, InteractionType::VSITE2, p);
+            // Now add the particle
+            add_t_atoms(atoms, 1, 0);
+            // Add exclusion for the vsite and its constituting atoms
+            srenew(excls_, atoms->nr);
+            excls_[atoms->nr-1].nr = 0;
+            //snew(excls_[atoms->nr-1].e, 2);
+            //excls_[atoms->nr-1].e[0] = ai;
+            //excls_[atoms->nr-1].e[1] = aj;
+        
+            auto ptype     = pd->findParticleType(v2);
+            auto m         = ptype->paramValue("mass");
+            auto q         = ptype->paramValue("charge");
+            auto vsid      = ptype->interactionTypeToIdentifier(InteractionType::POLARIZATION);
+            auto vstype    = pd->findParticleType(vsid.id());
+            auto vszetaid  = vstype->interactionTypeToIdentifier(InteractionType::CHARGEDISTRIBUTION);
+            auto vseep     = qt.findParametersConst(vszetaid);
+            // Now fill the newatom
+            auto zeta      = vseep["zeta"].value();
+            auto vsgpp     = add_atomtype(gromppAtomtype_, symtab_, &vsite_atom, ptype->id().id().c_str(), &p, 0, 0);
+            fill_atom(&atoms->atom[atoms->nr-1],
+                      m, q, m, q,
+                      ptype->atomnumber(),
+                      vsgpp, eptVSite,
+                      zeta, zeta, ptype->row(), 0);
+            atoms->atomname[atoms->nr-1] = put_symtab(symtab_, v2.c_str());
+            atoms->atomtype[atoms->nr-1] = put_symtab(symtab_, v2.c_str());
+            atoms->atomtypeB[atoms->nr-1] = put_symtab(symtab_, v2.c_str());
+        }
+    }
+    if (atoms->nr > atomNrOld)
+    {
+        fprintf(stderr, "Added %d bond vsite(s)\n", atoms->nr - atomNrOld);
+    }
+}
+
 void MyMol::addShells(const Poldata *pd,
                       t_atoms       *atoms)
 {
@@ -851,9 +934,9 @@ void MyMol::addShells(const Poldata *pd,
     t_atoms               *newatoms;
     t_excls               *newexcls;
     std::vector<gmx::RVec> newx;
-    t_param                p;
+    t_param                p = { { 0 } };
     std::vector<int>       shellRenumber;
-
+    
     /* Calculate the total number of Atom and Vsite particles and
      * generate the renumbering array.
      */
@@ -865,16 +948,20 @@ void MyMol::addShells(const Poldata *pd,
         inv_renum[shellRenumber[i]] = i;
         if (atype->hasInteractionType(InteractionType::POLARIZATION))
         {
+            // TODO: Update if particles cab have more than one shell
             nshell++;
         }
     }
+    fprintf(stderr, "Found %d shells to be added\n", nshell);
     int nParticles = atoms->nr+nshell;
     state_change_natoms(state_, nParticles);
-
+    
     /* Add Polarization to the plist. */
-    memset(&p, 0, sizeof(p));
-    auto qt = pd->findForcesConst(InteractionType::CHARGEDISTRIBUTION);
-    auto fs = pd->findForcesConst(InteractionType::POLARIZATION);
+    auto qt  = pd->findForcesConst(InteractionType::CHARGEDISTRIBUTION);
+    auto fs  = pd->findForcesConst(InteractionType::POLARIZATION);
+    
+    
+    // Atoms first
     for (int i = 0; i < atoms->nr; i++)
     {
         std::string atomtype(*atoms->atomtype[i]);
@@ -883,6 +970,7 @@ void MyMol::addShells(const Poldata *pd,
         {
             if (pd->hasParticleType(atomtype))
             {
+                // TODO: Allow adding multiple shells
                 auto fa = pd->findParticleType(atomtype);
                 if (fa->hasInteractionType(InteractionType::POLARIZATION))
                 {
@@ -893,6 +981,7 @@ void MyMol::addShells(const Poldata *pd,
                     {
                         GMX_THROW(gmx::InvalidInputError(gmx::formatString("Polarizability should be positive for %s", fa->id().id().c_str()).c_str()));
                     }
+                    // TODO Multiple shell support
                     p.a[0] = shellRenumber[i];
                     p.a[1] = shellRenumber[i]+1;
                     if (bHaveVSites_)
@@ -1179,6 +1268,7 @@ immStatus MyMol::computeForces(FILE *fplog, t_commrec *cr, double *rmsf)
         }
     }
     restoreCoordinates();
+    constructVsitesGlobal(*mtop_, state_->x);
     immStatus imm =  immStatus::OK;
     if (nullptr != shellfc_)
     {
@@ -1923,8 +2013,7 @@ void MyMol::GenerateCube(const Poldata          *pd,
                          const char             *hisfn,
                          const char             *difffn,
                          const char             *diffhistfn,
-                         const gmx_output_env_t *oenv,
-                         t_commrec              *cr)
+                         const gmx_output_env_t *oenv)
 {
     auto qt          = pd->findForcesConst(InteractionType::CHARGEDISTRIBUTION);
     auto iChargeType = name2ChargeType(qt.optionValue("chargetype"));
@@ -2225,6 +2314,13 @@ Identifier MyMol::getIdentifier(const Poldata                  *pd,
                                 int                             natoms,
                                 const int                      *iatoms)
 {
+    // A rather dirty hack.
+    // TODO: make it less dirty.
+    if (iType == InteractionType::VSITE2)
+    {
+        natoms -= 1;
+        iatoms += 1;
+    }
     std::vector<std::string> batoms;
     for (int j = 0; j < natoms; j++)
     {
@@ -2236,7 +2332,9 @@ Identifier MyMol::getIdentifier(const Poldata                  *pd,
         }
     }
     auto fs = pd->findForcesConst(iType);
-    if (iType == InteractionType::BONDS && natoms == 2)
+    if (natoms == 2 && 
+        (iType == InteractionType::BONDS ||
+         iType == InteractionType::VSITE2))
     {
         auto bb = std::make_pair(iatoms[0], iatoms[1]);
         auto bo = bondOrder_.find(bb);
@@ -2281,25 +2379,34 @@ void MyMol::UpdateIdef(const Poldata   *pd,
         auto ftype = fs.fType();
         // Small optimization. This assumes angles etc. use the same
         // types as bonds. For this reason there is some special
-        // treatment for polarization.
+        // treatment for polarization and vsites.
         std::vector<std::string> btype;
         auto myatoms = atomsConst();
         for(int j = 0; j < myatoms.nr; j++)
         {
-            auto atype = pd->findParticleType(*myatoms.atomtype[j]);
-            auto itype = iType;
-            if (itype != InteractionType::POLARIZATION)
+            if (iType == InteractionType::VSITE2)
             {
-                itype = InteractionType::BONDS;
+                btype.push_back(*myatoms.atomtype[j]);
             }
-            btype.push_back(atype->interactionTypeToIdentifier(itype).id());
+            else
+            {
+                auto atype = pd->findParticleType(*myatoms.atomtype[j]);
+                if (iType == InteractionType::POLARIZATION)
+                {
+                    btype.push_back(atype->interactionTypeToIdentifier(iType).id());
+                }
+                else
+                {
+                    btype.push_back(atype->interactionTypeToIdentifier(InteractionType::BONDS).id());
+                }
+            }
         }
         for (auto i = 0; i < ltop_->idef.il[ftype].nr; i += interaction_function[ftype].nratoms+1)
         {
-            auto  tp     = ltop_->idef.il[ftype].iatoms[i];
-            auto  bondId = getIdentifier(pd, iType, btype, 
-                                         interaction_function[ftype].nratoms,
-                                         &ltop_->idef.il[ftype].iatoms[i+1]);
+            auto tp     = ltop_->idef.il[ftype].iatoms[i];
+            auto bondId = getIdentifier(pd, iType, btype,
+                                        interaction_function[ftype].nratoms,
+                                        &ltop_->idef.il[ftype].iatoms[i+1]);
             
             switch (ftype)
             {
@@ -2470,6 +2577,13 @@ void MyMol::UpdateIdef(const Poldata   *pd,
                         mtop_->ffparams.iparams[tp].harmonic.krB     =
                         ltop_->idef.iparams[tp].harmonic.krA     =
                         ltop_->idef.iparams[tp].harmonic.krB =
+                        convertToGromacs(fp.value(), fp.unit());
+                }
+                break;
+            case F_VSITE2:
+                {
+                    auto fp = fs.findParameterTypeConst(bondId, "v2_a");
+                    mtop_->ffparams.iparams[tp].vsite.a         =
                         convertToGromacs(fp.value(), fp.unit());
                 }
                 break;

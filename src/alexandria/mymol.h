@@ -175,6 +175,14 @@ namespace alexandria
         void MakeSpecialInteractions(const Poldata *pd,
                                      t_atoms       *atoms,
                                      bool           bUseVsites);
+        /*! \brief
+         * Add vsites on bonds to hos bond shell particles
+         *
+         * \param[in] pd     Data structure containing atomic properties
+         * \paran[out] atoms Structure to modify with new particles.
+         */
+        void addBondVsites(const Poldata *pd,
+                           t_atoms       *atoms);
 
         /*! \brief
          * Add shell particles
@@ -640,7 +648,6 @@ namespace alexandria
          * \param[in] difffn
          * \param[in] diffhistfn
          * \param[in] oenv
-         * \param[in] cr
          */
         void GenerateCube(const Poldata          *pd,
                           real                    spacing,
@@ -653,8 +660,7 @@ namespace alexandria
                           const char             *hisfn,
                           const char             *difffn,
                           const char             *diffhistfn,
-                          const gmx_output_env_t *oenv,
-                          t_commrec              *cr);
+                          const gmx_output_env_t *oenv);
 
         /*! \brief
          * Print the coordinates corresponding to topology after adding shell particles and/or vsites.

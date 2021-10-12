@@ -86,14 +86,6 @@ QgenAcm::QgenAcm(const Poldata *pd,
             nonFixed_.push_back(i);
             nfToGromacs_.insert({ i, nonFixed_.size()-1 });
             q_.push_back(0.0);
-            // If this particle has a shell, it is assumed to be the next particle
-            // TODO: check the polarization array instead.
-            if (atype->hasInteractionType(InteractionType::POLARIZATION) &&
-                i < atoms->nr-1 &&
-                atoms->atom[i+1].ptype == eptShell)
-            {
-                myShell_.insert({ i, i+1 });
-            }
         }
         else
         {
@@ -102,6 +94,14 @@ QgenAcm::QgenAcm(const Poldata *pd,
             jaa_.push_back(0.0);
             chi0_.push_back(0.0);
             row_.push_back(0);
+        }
+        // If this particle has a shell, it is assumed to be the next particle
+        // TODO: check the polarization array instead.
+        if (atype->hasInteractionType(InteractionType::POLARIZATION) &&
+            i < atoms->nr-1 &&
+            atoms->atom[i+1].ptype == eptShell)
+        {
+            myShell_.insert({ i, i+1 });
         }
         auto qtype = atype->interactionTypeToIdentifier(InteractionType::CHARGEDISTRIBUTION);
         auto eqtModel = name2ChargeType(qt.optionValue("chargetype"));
@@ -752,15 +752,20 @@ int QgenAcm::solveSQE(FILE                    *fp,
         myq[ai] += pij[bij];
         myq[aj] -= pij[bij];
     }
+    double qfixed = 0;
+    for (size_t i = 0; i < fixed_.size(); i++)
+    {
+        qfixed += q_[fixed_[i]];
+    }
     for (size_t i = 0; i < nonFixed_.size(); i++)
     {
         auto nfi = nonFixed_[i];
-        myq[i] += qtotal_/nonFixed_.size();
-        if (nonFixed_.size() < static_cast<size_t>(natom_))
-        {
-            myq[i] -= q_[myShell_.find(nfi)->second];
-        }
-        q_[nfi] = myq[i];
+        //        myq[i] += qfixed/nonFixed_.size();
+        //if (nonFixed_.size() < static_cast<size_t>(natom_))
+        //{
+        //   myq[i] -= q_[myShell_.find(nfi)->second];
+        //}
+        q_[nfi] = myq[i] - qfixed/nonFixed_.size(); //myq[i];
     }
 
     double qtot    = 0;

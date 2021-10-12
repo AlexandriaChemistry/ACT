@@ -156,7 +156,7 @@ void QtypeProps::calcMoments()
         {
             for (int n = 0; n < DIM; n++)
             {
-                quadrupole_[m][n] += 0.5*q_[i]*(3.0*r[m]*r[n] - r2*delta(m, n))*NM2A*A2CM*CM2D*10;
+                quadrupole_[m][n] += q_[i]*(3.0*r[m]*r[n] - r2*delta(m, n))*NM2A*A2CM*CM2D*10;
             }
         }
     }

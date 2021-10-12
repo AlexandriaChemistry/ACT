@@ -36,6 +36,8 @@
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/gmxlib/network.h"
+#include "gromacs/hardware/detecthardware.h"
+#include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/inputrec.h"
@@ -44,6 +46,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/physicalnodecommunicator.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "alex_modules.h"
@@ -388,6 +391,10 @@ int alex_gentop(int argc, char *argv[])
                                  bAllowMissing ? missingParameters::Ignore : missingParameters::Error,
                                  tabfn);
 
+    auto pnc    = gmx::PhysicalNodeCommunicator(MPI_COMM_WORLD, 0);
+    auto hwinfo = gmx_detect_hardware(mdlog, pnc);
+    gmx_omp_nthreads_init(mdlog, cr, 1, 1, 1, 0, false, false);
+
     if (immStatus::OK == imm)
     {
         mymol.symmetrizeCharges(&pd, bQsym, symm_string);
@@ -415,7 +422,7 @@ int alex_gentop(int argc, char *argv[])
                                        mdlog,
                                        cr,
                                        tabfn,
-                                       nullptr,
+                                       hwinfo,
                                        qcycle,
                                        qtol,
                                        alg,
@@ -440,7 +447,7 @@ int alex_gentop(int argc, char *argv[])
                            opt2fn_null("-his",      NFILE, fnm),
                            opt2fn_null("-diff",     NFILE, fnm),
                            opt2fn_null("-diffhist", NFILE, fnm),
-                           oenv, cr);
+                           oenv);
     }
 
     if (immStatus::OK == imm)
