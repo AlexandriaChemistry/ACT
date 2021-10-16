@@ -820,7 +820,8 @@ int alex_bastat(int argc, char *argv[])
                 continue;
             }
             std::string mylot;
-            auto        imm = mmi.GenerateTopology(&pd,
+            auto        imm = mmi.GenerateTopology(fp,
+                                                   &pd,
                                                    method,
                                                    basis,
                                                    &mylot,

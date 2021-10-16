@@ -550,9 +550,8 @@ immStatus MyMol::GenerateAtoms(const Poldata     *pd,
         init_t_atoms(atoms, ci->NAtom(), false);
         snew(atoms->atomtype, ci->NAtom());
         snew(atoms->atomtypeB, ci->NAtom());
-        snew(atoms->resinfo, ci->NAtom()+1);
         int res0 = -1;
-        int nres =  0;
+        atoms->nres = 0;
         for (auto &cai : ci->calcAtomConst())
         {
             auto myunit = cai.getUnit();
@@ -561,7 +560,7 @@ immStatus MyMol::GenerateAtoms(const Poldata     *pd,
             if (resnr != res0)
             {
                 res0  = resnr;
-                nres += 1;
+                atoms->nres += 1;
             }
             state_->x[natom][XX] = convertToGromacs(xx, myunit);
             state_->x[natom][YY] = convertToGromacs(yy, myunit);
@@ -605,8 +604,7 @@ immStatus MyMol::GenerateAtoms(const Poldata     *pd,
                                                     &nb, 0,
                                                     atoms->atom[i].atomnumber);
         }
-        atoms->nr   = natom;
-        atoms->nres = nres;
+        GMX_RELEASE_ASSERT(atoms->nr == natom, "Inconsitency numbering atoms");
     }
     else
     {
@@ -708,7 +706,8 @@ static void fill_atom(t_atom *atom,
     atom->resind        = resind;
 }
                        
-immStatus MyMol::GenerateTopology(const Poldata     *pd,
+immStatus MyMol::GenerateTopology(FILE              *fp,
+                                  const Poldata     *pd,
                                   const std::string &method,
                                   const std::string &basis,
                                   std::string       *mylot,
@@ -804,10 +803,10 @@ immStatus MyMol::GenerateTopology(const Poldata     *pd,
         {
             qp.second.setCenterOfCharge(CenterOfCharge_);
         }
-        addBondVsites(pd, atoms);
+        addBondVsites(fp, pd, atoms);
         if (pd->polarizable())
         {
-            addShells(pd, atoms);
+            addShells(fp, pd, atoms);
         }
         char **molnameptr = put_symtab(symtab_, getMolname().c_str());
         // Generate mtop
@@ -861,7 +860,8 @@ immStatus MyMol::GenerateTopology(const Poldata     *pd,
     return imm;
 }
 
-void MyMol::addBondVsites(const Poldata *pd,
+void MyMol::addBondVsites(FILE          *fp,
+                          const Poldata *pd,
                           t_atoms       *atoms)
 {
     int     atomNrOld = atoms->nr;
@@ -907,24 +907,28 @@ void MyMol::addBondVsites(const Poldata *pd,
             auto vseep     = qt.findParametersConst(vszetaid);
             // Now fill the newatom
             auto zeta      = vseep["zeta"].value();
-            auto vsgpp     = add_atomtype(gromppAtomtype_, symtab_, &vsite_atom, ptype->id().id().c_str(), &p, 0, 0);
+            auto vsgpp     = add_atomtype(gromppAtomtype_, symtab_, &vsite_atom,
+                                          ptype->id().id().c_str(), &p, 0, 0);
             fill_atom(&atoms->atom[atoms->nr-1],
                       m, q, m, q,
                       ptype->atomnumber(),
                       vsgpp, eptVSite,
-                      zeta, zeta, ptype->row(), 0);
+                      zeta, zeta, ptype->row(), 
+                      atoms->atom[ai].resind);
             atoms->atomname[atoms->nr-1] = put_symtab(symtab_, v2.c_str());
             atoms->atomtype[atoms->nr-1] = put_symtab(symtab_, v2.c_str());
             atoms->atomtypeB[atoms->nr-1] = put_symtab(symtab_, v2.c_str());
         }
     }
-    if (atoms->nr > atomNrOld)
+    if (atoms->nr > atomNrOld && fp)
     {
-        fprintf(stderr, "Added %d bond vsite(s)\n", atoms->nr - atomNrOld);
+        fprintf(fp, "Added %d bond vsite(s) for %s\n",
+                atoms->nr - atomNrOld, getMolname().c_str());
     }
 }
 
-void MyMol::addShells(const Poldata *pd,
+void MyMol::addShells(FILE          *fp,
+                      const Poldata *pd,
                       t_atoms       *atoms)
 {
     int                    shell  = 0;
@@ -952,7 +956,10 @@ void MyMol::addShells(const Poldata *pd,
             nshell++;
         }
     }
-    fprintf(stderr, "Found %d shells to be added\n", nshell);
+    if (fp)
+    {
+        fprintf(fp, "Found %d shells to be added\n", nshell);
+    }
     int nParticles = atoms->nr+nshell;
     state_change_natoms(state_, nParticles);
     
@@ -1073,6 +1080,7 @@ void MyMol::addShells(const Poldata *pd,
         {
             std::string atomtype;
             // Shell sits next to the Atom or Vsite
+            // TODO make this more precise.
             auto j            = 1+shellRenumber[i];
             auto atomtypeName = get_atomtype_name(atoms->atom[i].type, gromppAtomtype_);
             auto fa           = pd->findParticleType(atomtypeName);
@@ -1086,7 +1094,7 @@ void MyMol::addShells(const Poldata *pd,
                 newatoms->atom[j].mB            = shelltype->mass();
             // Shell has no core
             newatoms->atom[j].atomnumber    = 0;
-            shell                           = add_atomtype(gromppAtomtype_, symtab_, &shell_atom, shellid.id().c_str(), &p, 0, 0);
+            shell                           = add_atomtype(gromppAtomtype_, symtab_, &shell_atom, shellid.id().c_str(), &p, 0, 1);
             newatoms->atom[j].type          = shell;
             newatoms->atom[j].typeB         = shell;
             newatoms->atomtype[j]           = put_symtab(symtab_, shellid.id().c_str());

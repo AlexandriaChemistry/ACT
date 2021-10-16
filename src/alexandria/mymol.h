@@ -178,19 +178,23 @@ namespace alexandria
         /*! \brief
          * Add vsites on bonds to hos bond shell particles
          *
-         * \param[in] pd     Data structure containing atomic properties
+         * \param[in]  fp    File to write (debug) information to
+         * \param[in]  pd    Data structure containing atomic properties
          * \paran[out] atoms Structure to modify with new particles.
          */
-        void addBondVsites(const Poldata *pd,
+        void addBondVsites(FILE          *fp,
+                           const Poldata *pd,
                            t_atoms       *atoms);
 
         /*! \brief
          * Add shell particles
          *
-         * \param[in] pd     Data structure containing atomic properties
+         * \param[in]  fp    File to write (debug) information to
+         * \param[in]  pd    Data structure containing atomic properties
          * \paran[out] atoms Structure to modify with new particles.
          */
-        void addShells(const Poldata *pd,
+        void addShells(FILE          *fp,
+                       const Poldata *pd,
                        t_atoms       *atoms);
 
         /*! \brief
@@ -368,6 +372,7 @@ namespace alexandria
         /*! \brief
          * It generates the atoms structure which will be used to print the topology file.
          *
+         * \param[in] fp          File to write (debug) information to
          * \param[in] pd          Data structure containing atomic properties
          * \param[in] method      Method used for QM calculation
          * \param[in] basis       Basis set used for QM calculation
@@ -377,7 +382,8 @@ namespace alexandria
          * \param[in] bAllowMissingParameters Generate dummy parameters if nothing found in force field file
          * \param[in] bDih        Add dihedrals to the topology structure
          */
-        immStatus GenerateTopology(const Poldata     *pd,
+        immStatus GenerateTopology(FILE              *fp,
+                                   const Poldata     *pd,
                                    const std::string &method,
                                    const std::string &basis,
                                    std::string       *mylot,

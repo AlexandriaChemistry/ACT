@@ -190,7 +190,7 @@ void MolGen::addOptions(std::vector<t_pargs> *pargs, eTune etune)
                 { "-watoms", FALSE, etREAL, {&watoms_},
                   "Weight for the atoms when fitting the charges to the electrostatic potential. The potential on atoms is usually two orders of magnitude larger than on other points (and negative). For point charges or single smeared charges use zero. For point+smeared charges 1 is recommended." },
                 { "-maxpot", FALSE, etINT, {&maxESP_},
-                  "Maximum percent of the electrostatic potential points that will be used to fit partial charges. Note that the input file may have a reduced amount of ESP points compared to the Gaussian output already so do not reduce the amount twice unless you know what you are doing." },
+                  "Maximum percent of the electrostatic potential points that will be used to fit partial charges. Note that the input file may have a reduced amount of ESP points compared to the Gaussian output already so do not reduce the amount twice unless you know what you are doing. Note that if you use a value less than 100, the ESP points are picked randomly and therefore the runs will not be reproducible." },
                 { "-fc_mu",    FALSE, etREAL, {target(iMolSelect::Train, eRMS::MU)->weightPtr()},
                   "Force constant in the penalty function for the magnitude of the dipole components." },
                 { "-fc_quad",  FALSE, etREAL, {target(iMolSelect::Train, eRMS::QUAD)->weightPtr()},
@@ -697,7 +697,8 @@ size_t MolGen::Read(FILE            *fp,
                 }
                 mymol.Merge(&(*mpi));
                 mymol.setInputrec(inputrec_);
-                imm = mymol.GenerateTopology(&pd_,
+                imm = mymol.GenerateTopology(fp,
+                                             &pd_,
                                              method,
                                              basis,
                                              nullptr,
@@ -911,7 +912,8 @@ size_t MolGen::Read(FILE            *fp,
             }
             mymol.setInputrec(inputrec_);
 
-            imm = mymol.GenerateTopology(&pd_,
+            imm = mymol.GenerateTopology(debug,
+                                         &pd_,
                                          method,
                                          basis,
                                          nullptr,

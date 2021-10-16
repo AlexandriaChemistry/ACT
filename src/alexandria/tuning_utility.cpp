@@ -710,7 +710,7 @@ void print_electric_props(FILE                           *fp,
             }
             fprintf(fp, "\n");
         }
-
+        
         write_q_histo(fp, qhisto, lsqt[ims.first], oenv, lsq_charge[ims.first], useOffset);
 
         print_corr(DipCorr, "Dipole Moment (Debye)", "Electronic", "Empirical", lsq_dip, oenv);

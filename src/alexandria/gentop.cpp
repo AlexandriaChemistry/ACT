@@ -381,7 +381,8 @@ int alex_gentop(int argc, char *argv[])
     fill_inputrec(inputrec);
     mymol.setInputrec(inputrec);
     std::string mylot;
-    imm = mymol.GenerateTopology(&pd,
+    imm = mymol.GenerateTopology(stdout,
+                                 &pd,
                                  method,
                                  basis,
                                  &mylot,

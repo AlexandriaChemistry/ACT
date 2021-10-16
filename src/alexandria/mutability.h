@@ -42,6 +42,7 @@ enum class Mutability
 {
     Fixed,
     Dependent,
+    ACM,
     Bounded,
     Free
 };

@@ -522,6 +522,7 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
                             default:
                                 gmx_fatal(FARGS, "Death Horror: %s, %d", __FILE__, __LINE__);
                         }
+                        shell[nsi].k = std::max(10000.0, shell[nsi].k);
                         shell[nsi].nnucl++;
                     }
                     ia += nra+1;

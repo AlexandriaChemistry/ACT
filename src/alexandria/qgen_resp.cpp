@@ -151,8 +151,8 @@ void QgenResp::setAtomInfo(const t_atoms                    *atoms,
             zeta_.push_back(0.0);
         }
         
-        mutable_.push_back(qparm.mutability() != Mutability::Fixed);
-        if (qparm.mutability() == Mutability::Fixed)
+        mutable_.push_back(qparm.mutability() == Mutability::ACM);
+        if (qparm.mutability() != Mutability::ACM)
         {
             nFixed_++;
             qshell_ += q_[i];
