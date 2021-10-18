@@ -952,7 +952,7 @@ void MyMol::addShells(FILE          *fp,
         inv_renum[shellRenumber[i]] = i;
         if (atype->hasInteractionType(InteractionType::POLARIZATION))
         {
-            // TODO: Update if particles cab have more than one shell
+            // TODO: Update if particles can have more than one shell
             nshell++;
         }
     }

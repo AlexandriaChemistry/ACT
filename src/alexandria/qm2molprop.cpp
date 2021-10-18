@@ -140,10 +140,7 @@ int alex_qm2molprop(int argc, char *argv[])
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
     std::map<std::string, std::string> g2a;
-    if (opt2bSet("-map", NFILE, fnm))
-    {
-        gaffToAlexandria(opt2fn("-map", NFILE, fnm), &g2a);
-    }
+    gaffToAlexandria("", &g2a);
     // Read Gaussian files
     if (opt2bSet("-g03", NFILE, fnm))
     {

@@ -35,6 +35,7 @@
 
 #include <map>
 
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textreader.h"
     
@@ -42,8 +43,13 @@ void gaffToAlexandria(const std::string                  &filenm,
                       std::map<std::string, std::string> *g2a)
 {
     g2a->clear();
-    gmx::TextReader  ttt(filenm);
-    std::string line;
+    std::string myfilenm(filenm);
+    if (myfilenm.empty())
+    {
+        myfilenm.assign(gmx::findLibraryFile("atomtype_mapping.dat", false, true));
+    }
+    gmx::TextReader  ttt(myfilenm);
+    std::string      line;
     while (ttt.readLine(&line))
     {
         auto words = gmx::splitString(line);
@@ -82,8 +88,11 @@ void renameAtomTypes(alexandria::MolProp                      *mp,
             }
             else
             {
-                printf("Replacing %s by %s\n", obt.c_str(),
-                       g2a.find(obt)->second.c_str());
+                if (debug)
+                {
+                    fprintf(debug, "Replacing %s by %s\n", obt.c_str(),
+                            g2a.find(obt)->second.c_str());
+                }
                 catom->setObtype(g2a.find(obt)->second);
             }
         }

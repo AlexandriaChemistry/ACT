@@ -137,7 +137,6 @@ int alex_gentop(int argc, char *argv[])
         { efXVG, "-pc",       "pot-comp",      ffOPTWR },
         { efPDB, "-pdbdiff",  "pdbdiff",       ffOPTWR },
         { efXVG, "-plotESP",  "ESPcorr",       ffOPTWR },
-        { efDAT, "-map",      "mapping",       ffOPTRD },
         { efLOG, "-g",        "gentop_errors", ffWRITE }
     };
 
@@ -362,13 +361,10 @@ int alex_gentop(int argc, char *argv[])
                       addHydrogens))
         {
             std::map<std::string, std::string> g2a;
-            if (opt2bSet("-map", NFILE, fnm))
+            gaffToAlexandria("", &g2a);
+            if (!g2a.empty())
             {
-                gaffToAlexandria(opt2fn("-map", NFILE, fnm), &g2a);
-                if (!g2a.empty())
-                {
-                    renameAtomTypes(&mp, g2a);
-                }
+                renameAtomTypes(&mp, g2a);
             }
             mymol.Merge(&mp);
         }
