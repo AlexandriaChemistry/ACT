@@ -1805,14 +1805,13 @@ void MyMol::PrintTopology(const char        *fn,
                           bool               bVerbose,
                           const Poldata     *pd,
                           t_commrec         *cr,
-                          double             efield,
                           const std::string &method,
                           const std::string &basis)
 {
     FILE  *fp   = gmx_ffopen(fn, "w");
     bool   bITP = (fn2ftp(fn) == efITP);
 
-    PrintTopology(fp, bVerbose, pd, bITP, cr, efield, method, basis);
+    PrintTopology(fp, bVerbose, pd, bITP, cr, method, basis);
 
     fclose(fp);
 }
@@ -1837,7 +1836,6 @@ void MyMol::PrintTopology(FILE                   *fp,
                           const Poldata          *pd,
                           bool                    bITP,
                           t_commrec              *cr,
-                          double                  efield,
                           const std::string      &method,
                           const std::string      &basis)
 {
@@ -1882,7 +1880,11 @@ void MyMol::PrintTopology(FILE                   *fp,
     snprintf(buf, sizeof(buf), "Charge Type  = %s\n",
              chargeTypeName(iChargeType).c_str());
     commercials.push_back(buf);
+    
     auto qcalc = qTypeProps(qType::Calc);
+    qcalc->setQ(atoms());
+    qcalc->setX(state_->x);
+    qcalc->calcMoments();
     snprintf(buf, sizeof(buf), "Alexandria Dipole Moment (Debye):\n"
              "; ( %.2f %6.2f %6.2f ) Total= %.2f\n",
              qcalc->mu()[XX], qcalc->mu()[YY], qcalc->mu()[ZZ],
@@ -1931,17 +1933,18 @@ void MyMol::PrintTopology(FILE                   *fp,
                qm_type, mylot.c_str());
     }
 
-    snprintf(buf, sizeof(buf), "Alexandria Isotropic Polarizability (Additive Law): %.2f +/- %.2f (A^3)\n", polarizability_, sig_pol_);
-    commercials.push_back(buf);
+    // snprintf(buf, sizeof(buf), "Alexandria Isotropic Polarizability (Additive Law): %.2f +/- %.2f (A^3)\n", polarizability_, sig_pol_);
+    // commercials.push_back(buf);
 
-    if (efield > 0 && nullptr != cr)
+    double efield = 0.1;
+    if (nullptr != cr)
     {
         auto imm = CalcPolarizability(efield, cr, debug);
         if (imm == immStatus::OK)
         {
             add_tensor(&commercials, "Alexandria Polarizability components (A^3)", alpha_calc_);
             
-            snprintf(buf, sizeof(buf), "Alexandria Isotropic Polarizability (Interactive): %.2f (A^3)\n", isoPol_calc_);
+            snprintf(buf, sizeof(buf), "Alexandria Isotropic Polarizability: %.2f (A^3)\n", isoPol_calc_);
             commercials.push_back(buf);
             
             snprintf(buf, sizeof(buf), "Alexandria Anisotropic Polarizability: %.2f (A^3)\n", anisoPol_calc_);

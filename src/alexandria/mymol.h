@@ -522,7 +522,7 @@ namespace alexandria
          *
          * \param[in] fn        A File pointer opened previously.
          * \param[in] iModel    The distrbution model of charge (e.x. point charge, gaussian, and slater models)
-         * \param[in] bVerbose  Verobse
+         * \param[in] bVerbose  Verbose output
          * \param[in] pd        Data structure containing atomic properties
          * \param[in] aps       Gromacs atom properties
          */
@@ -530,7 +530,6 @@ namespace alexandria
                            bool               bVerbose,
                            const Poldata     *pd,
                            t_commrec         *cr,
-                           double             efield,
                            const std::string &method,
                            const std::string &basis);
 
@@ -548,7 +547,6 @@ namespace alexandria
                            const Poldata           *pd,
                            bool                     bITP,
                            t_commrec               *cr,
-                           double                   efield,
                            const std::string       &method,
                            const std::string       &basis);
 

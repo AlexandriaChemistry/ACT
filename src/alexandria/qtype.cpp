@@ -154,18 +154,18 @@ void QtypeProps::calcMoments()
         r2   = iprod(r, r);
         for (int m = 0; m < DIM; m++)
         {
-            for (int n = 0; n < DIM; n++)
+            for (int n = m; n < DIM; n++)
             {
                 quadrupole_[m][n] += 0.5*q_[i]*(3.0*r[m]*r[n] - r2*delta(m, n))*NM2A*A2CM*CM2D*10;
             }
         }
-        // Compute trace divided by 3
-        double tr = trace(quadrupole_)/3.0;
-        // Subtract trace/3 to make the quadrupole traceless
-        for (int m = 0; m < DIM; m++)
-        {
-            quadrupole_[m][m] -= tr;
-        }
+    }
+    // Compute trace divided by 3
+    double tr = trace(quadrupole_)/3.0;
+    // Subtract trace/3 to make the quadrupole traceless
+    for (int m = 0; m < DIM; m++)
+    {
+        quadrupole_[m][m] -= tr;
     }
     dipole_ = norm(mu_);
 }

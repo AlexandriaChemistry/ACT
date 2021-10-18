@@ -151,7 +151,6 @@ int alex_gentop(int argc, char *argv[])
     static real                      watoms         = 0;
     static real                      spacing        = 0.01;
     static real                      border         = 0.2;
-    static real                      efield         = 0;
     static char                     *molnm          = (char *)"";
     static char                     *iupac          = (char *)"";
     static char                     *dbname         = (char *)"";
@@ -237,9 +236,7 @@ int alex_gentop(int argc, char *argv[])
         { "-nexcl",    FALSE, etINT, {&nexcl},
           "HIDDENNumber of exclusion" },
         { "-jobtype",  FALSE, etSTR, {&jobtype},
-          "The job type used in the Gaussian calculation: Opt, Polar, SP, and etc." },
-        { "-efield",  FALSE, etREAL, {&efield},
-          "The magnitude of the external electeric field to calculate polarizability tensor." },
+          "The job type used in the Gaussian calculation: Opt, Polar, SP, and etc." }
     };
 
     if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
@@ -460,7 +457,6 @@ int alex_gentop(int argc, char *argv[])
                             bVerbose,
                             &pd,
                             cr,
-                            efield,
                             method,
                             basis);
     }
