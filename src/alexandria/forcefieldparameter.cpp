@@ -72,6 +72,7 @@ void ForceFieldParameter::setValue(double value)
             value_ = newval;
         }
         break;
+    case Mutability::ACM:
     case Mutability::Dependent:
     case Mutability::Fixed:
         if (strict_)
