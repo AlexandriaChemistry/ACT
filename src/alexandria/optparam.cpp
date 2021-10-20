@@ -254,6 +254,10 @@ bool OptParam::anneal(int iter) const
 
 void Bayes::SensitivityAnalysis(FILE *fplog, iMolSelect ims)
 {
+    if (param_.size() == 0)
+    {
+        return;
+    }
     std::vector<bool> changed;
     changed.resize(param_.size(), true);
     toPoldata(changed);

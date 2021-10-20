@@ -60,7 +60,8 @@ std::map<InteractionType, NameDescr> eitNames = {
     { InteractionType::VSITE3OUT,          { "VSITE3OUT", "virtual sites with three contructing atoms, out of plane" } },
     { InteractionType::CHARGEDISTRIBUTION, { "CHARGEDISTRIBUTION", "charge distributions" } },
     { InteractionType::BONDCORRECTIONS,    { "BONDCORRECTIONS", "bond charge corrections" } },
-    { InteractionType::ELECTRONEGATIVITYEQUALIZATION, { "ELECTRONEGATIVITYEQUALIZATION", "electronegativity equalization" } }
+    { InteractionType::ELECTRONEGATIVITYEQUALIZATION, { "ELECTRONEGATIVITYEQUALIZATION", "electronegativity equalization" } },
+    { InteractionType::CHARGE, { "CHARGE", "charge" } }
 };
 
 const std::string &interactionTypeToString(InteractionType iType)
@@ -122,6 +123,8 @@ int interactionTypeToNatoms(InteractionType iType)
     case InteractionType::CONSTR:
     case InteractionType::BONDCORRECTIONS:
         return 2;
+    case InteractionType::CHARGE:
+        return 0;
     }
     return 0;
 }

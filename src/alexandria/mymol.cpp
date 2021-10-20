@@ -2036,12 +2036,6 @@ void MyMol::GenerateCube(const Poldata          *pd,
         GMX_RELEASE_ASSERT(qc != qProps_.end(), "Cannot find alexandria charge information");
         qc->second.setQ(atoms());
         qc->second.setX(state_->x);
-        // TODO Insert relax shells here?
-        //real rmsf;
-        //if (immStatus::OK != computeForces(nullptr, cr, &rmsf))
-        //{
-        //   return;
-        //}
         qc->second.qgenResp()->calcPot(pd->getEpsilonR());
         qc->second.qgenResp()->potcomp(pcfn, atoms(),
                                        as_rvec_array(state_->x.data()),

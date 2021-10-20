@@ -53,7 +53,9 @@ enum class InteractionType
     VSITE3OUT,
     CHARGEDISTRIBUTION,
     BONDCORRECTIONS,
-    ELECTRONEGATIVITYEQUALIZATION
+    ELECTRONEGATIVITYEQUALIZATION,
+    // Abusing this structure for something that is not an interaction type.
+    CHARGE
 };
 
 /*! \brief

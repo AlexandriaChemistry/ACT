@@ -337,8 +337,16 @@ double OptACM::calcDeviation(bool       verbose,
             size_t            n     = 0;
             for (auto &optIndex : optIndex_)
             {
-                auto p = poldata()->findForcesConst(optIndex.iType()).findParameterTypeConst(optIndex.id(), optIndex.type());
-
+                auto                iType = optIndex.iType();
+                ForceFieldParameter p;
+                if (iType == InteractionType::CHARGE)
+                {
+                    p = poldata()->findParticleType(optIndex.particleType())->parameterConst(optIndex.parameterType());
+                }
+                else if (poldata()->interactionPresent(iType))
+                {
+                    p = poldata()->findForcesConst(iType).findParameterTypeConst(optIndex.id(), optIndex.parameterType());
+                }
                 bound  += l2_regularizer(param[n++], p.minimum(), p.maximum(),
                                          optIndex.name(), verbose);
             }
@@ -569,12 +577,24 @@ void OptACM::InitOpt(bool bRandom)
 {
     for(auto &optIndex : optIndex_)
     {
-        auto param = poldata()->findForcesConst(optIndex.iType()).findParameterTypeConst(optIndex.id(), optIndex.type());
-        if (param.ntrain() >= mindata())
+        auto                iType = optIndex.iType();
+        ForceFieldParameter p;
+        if (iType == InteractionType::CHARGE)
+        {
+            if (poldata()->hasParticleType(optIndex.particleType()))
+            {
+                p = poldata()->findParticleType(optIndex.particleType())->parameterConst(optIndex.parameterType());
+            }
+        }
+        else if (poldata()->interactionPresent(iType))
+        {
+            p = poldata()->findForcesConst(iType).findParameterTypeConst(optIndex.id(), optIndex.parameterType());
+        }
+        if (p.ntrain() >= mindata())
         {
             Bayes::addParam(optIndex.name(),
-                            param.value(), param.minimum(), param.maximum(),
-                            param.ntrain(), bRandom);
+                            p.value(), p.minimum(), p.maximum(),
+                            p.ntrain(), bRandom);
         }
     }
 }
@@ -593,10 +613,22 @@ void OptACM::toPoldata(const std::vector<bool> &changed)
     {
         if (changed[n])
         {
-            auto p = poldata()->findForces(optIndex.iType())->findParameterType(optIndex.id(), optIndex.type());
-            
-            p->setValue(param[n]);
-            p->setUncertainty(psigma[n]);
+            auto                 iType = optIndex.iType();
+            ForceFieldParameter *p = nullptr;
+            if (iType != InteractionType::CHARGE)
+            {
+                p = poldata()->findForces(iType)->findParameterType(optIndex.id(), optIndex.parameterType());
+            }
+            else if (poldata()->hasParticleType(optIndex.particleType()))
+            {
+                p = poldata()->findParticleType(optIndex.particleType())->parameter(optIndex.parameterType());
+            }
+            if (p)
+            {
+                //GMX_RELEASE_ASSERT(p, gmx::formatString("Could not find parameter %s", optIndex.id().id().c_str()).c_str());
+                p->setValue(param[n]);
+                p->setUncertainty(psigma[n]);
+            }
         }
         n++;
     }
@@ -610,7 +642,7 @@ bool OptACM::runMaster(const gmx_output_env_t *oenv,
                        const char             *xvgepot,
                        bool                    optimize,
                        bool                    sensitivity,
-                       bool 		       bEvaluate_testset)
+                       bool 		           bEvaluate_testset)
 {
     bool bMinimum = false;
     GMX_RELEASE_ASSERT(MASTER(commrec()), "WTF");

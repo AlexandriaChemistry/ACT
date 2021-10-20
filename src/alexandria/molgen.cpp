@@ -301,6 +301,7 @@ void MolGen::sumChiSquared(bool parallel, iMolSelect ims)
             etot->increase(1.0, ft.second.chiSquaredWeighted());
         }
     }
+    // Weighting is already included.
     etot->setNumberOfDatapoints(1);
 }
 
@@ -339,14 +340,38 @@ void MolGen::checkDataSufficiency(FILE *fp)
         {
             if (io.second)
             {
-                ForceFieldParameterList *fplist = pd_.findForces(io.first);
-                for(auto &force : *(fplist->parameters()))
+                ForceFieldParameterList *fplist;
+                if (pd_.interactionPresent(io.first))
                 {
-                    for(auto &ff : force.second)
+                    // Loop over interactions
+                    fplist = pd_.findForces(io.first);
+                    for(auto &force : *(fplist->parameters()))
                     {
-                        if (ff.second.isMutable())
+                        for(auto &ff : force.second)
                         {
-                            ff.second.setNtrain(0);
+                            if (ff.second.isMutable())
+                            {
+                                ff.second.setNtrain(0);
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    GMX_RELEASE_ASSERT(io.first == InteractionType::CHARGE,
+                                       "Death Horror Programming Error.");
+                    // Loop over particles to find mutable charges
+                    auto pv = pd_.particleTypes();
+                    std::string ccc("charge");
+                    for (auto pt = pv->begin(); pt < pv->end(); ++pt )
+                    {
+                        if (pt->hasParameter(ccc))
+                        {
+                            auto p = pt->parameter(ccc);
+                            if (p->isMutable())
+                            {
+                                p->setNtrain(0);
+                            }
                         }
                     }
                 }
@@ -357,7 +382,8 @@ void MolGen::checkDataSufficiency(FILE *fp)
             InteractionType::VDW,
             InteractionType::POLARIZATION,
             InteractionType::CHARGEDISTRIBUTION,
-            InteractionType::ELECTRONEGATIVITYEQUALIZATION
+            InteractionType::ELECTRONEGATIVITYEQUALIZATION,
+            InteractionType::CHARGE
         };
         // Now loop over molecules and add interactions
         for(auto &mol : mymol_)
@@ -379,9 +405,9 @@ void MolGen::checkDataSufficiency(FILE *fp)
                     if (optimize(itype))
                     {
                         auto atype  = pd_.findParticleType(*myatoms.atomtype[i]);
-                        auto fplist = pd_.findForces(itype);
                         if (atype->hasInteractionType(itype))
                         {
+                            auto fplist = pd_.findForces(itype);
                             auto subId  = atype->interactionTypeToIdentifier(itype);
                             if (!subId.id().empty())
                             {
@@ -391,6 +417,18 @@ void MolGen::checkDataSufficiency(FILE *fp)
                                     {
                                         ff.second.incrementNtrain();
                                     }
+                                }
+                            }
+                        }
+                        else if (itype == InteractionType::CHARGE)
+                        {
+                            std::string ccc("charge");
+                            if (atype->hasParameter(ccc))
+                            {
+                                auto p = atype->parameter(ccc);
+                                if (p->isMutable())
+                                {
+                                    p->incrementNtrain();
                                 }
                             }
                         }
@@ -461,9 +499,9 @@ void MolGen::checkDataSufficiency(FILE *fp)
                 {
                     if (optimize(itype))
                     {
-                        auto fplist = pd_.findForces(itype);
                         if (atype->hasInteractionType(itype))
                         {
+                            auto fplist = pd_.findForces(itype);
                             auto ztype  = atype->interactionTypeToIdentifier(itype);
                             if (!ztype.id().empty())
                             {
@@ -484,6 +522,28 @@ void MolGen::checkDataSufficiency(FILE *fp)
                                         keep = false;
                                         break;
                                     }
+                                }
+                            }
+                        }
+                        else if (itype == InteractionType::CHARGE)
+                        {
+                            std::string ccc("charge");
+                            if (atype->hasParameter(ccc))
+                            {
+                                auto p = atype->parameter(ccc);
+                                if (p->isMutable() && p->ntrain() < mindata_)
+                                {
+                                    if (fp)
+                                    {
+                                        fprintf(fp, "No support for %s - %s in %s. Ntrain is %d, should be at least %d.\n",
+                                                ccc.c_str(),
+                                                interactionTypeToString(itype).c_str(),
+                                                mol.getMolname().c_str(),
+                                                p->ntrain(),
+                                                mindata_);
+                                    }
+                                    keep = false;
+                                    break;
                                 }
                             }
                         }
@@ -554,9 +614,23 @@ void MolGen::generateOptimizationIndex(FILE *fp)
             }
         }
     }
+    for(auto &pt : pd_.particleTypesConst())
+    {
+        for(auto &p : pt.parametersConst())
+        {
+            if (fit(p.first) && p.second.ntrain() > 0)
+            {
+                optIndex_.push_back(OptimizationIndex(pt.id().id(), p.first));
+            }
+        }
+    }
     if (fp)
     {
         fprintf(fp, "There are %zu variables to optimize.\n", optIndex_.size());
+        for(auto &i : optIndex_)
+        {
+            fprintf(fp, "Will optimize %s\n", i.name().c_str());
+        }
     }
 }
 

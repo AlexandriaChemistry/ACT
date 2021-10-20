@@ -109,6 +109,7 @@ bool Poldata::typeToInteractionType(const std::string &type,
 {
     if (type2Itype_.empty())
     {
+        type2Itype_.insert({"charge", InteractionType::CHARGE});
         for(const auto &fs : forcesConst())
         {
             auto iType = fs.first;
