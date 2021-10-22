@@ -767,21 +767,21 @@ int alex_bastat(int argc, char *argv[])
     }
 
     fp                 = gmx_ffopen(opt2fn("-g", NFILE, fnm), "w");
-    print_memory_usage(fp);
+    print_memory_usage(debug);
     time(&my_t);
     fprintf(fp, "# This file was created %s", ctime(&my_t));
     fprintf(fp, "# The Alexandria Chemistry Toolkit.\n#\n");
 
     auto selfile = opt2fn("-sel", NFILE, fnm);
     gms.read(selfile);
-    print_memory_usage(fp);
+    print_memory_usage(debug);
     printf("There are %d molecules in the selection file %s.\n",
            (gms.count(iMolSelect::Train) + gms.count(iMolSelect::Test)), selfile);
     fprintf(fp, "# There are %d molecules.\n#\n", (gms.count(iMolSelect::Train) + gms.count(iMolSelect::Test)));
 
     /* Read standard atom properties */
     aps = gmx_atomprop_init();
-    print_memory_usage(fp);
+    print_memory_usage(debug);
 
     /* Read PolData */
     try
@@ -789,7 +789,7 @@ int alex_bastat(int argc, char *argv[])
         readPoldata(opt2fn_null("-d", NFILE, fnm), &pd);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-    print_memory_usage(fp);
+    print_memory_usage(debug);
 
     // This a hack to prevent that no bonds will be found to shells.
     bool polar = pd.polarizable();
@@ -797,7 +797,7 @@ int alex_bastat(int argc, char *argv[])
 
     /* Read Molprops */
     auto nwarn = merge_xml(opt2fns("-f", NFILE, fnm), &mp, nullptr, nullptr, nullptr, aps, true);
-    print_memory_usage(fp);
+    print_memory_usage(debug);
 
     if (nwarn > maxwarn)
     {
@@ -997,7 +997,7 @@ int alex_bastat(int argc, char *argv[])
         }
     }
     sort_bonds(bonds);
-    print_memory_usage(fp);
+    print_memory_usage(debug);
     if (bHisto)
     {
         dump_histo(bonds, bspacing, aspacing, oenv);
@@ -1010,12 +1010,12 @@ int alex_bastat(int argc, char *argv[])
     {
         generate_bcc(&pd, hardness);
     }
-    print_memory_usage(fp);
+    print_memory_usage(debug);
     writePoldata(opt2fn("-o", NFILE, fnm), &pd, compress);
     printf("Extracted %zu bondtypes, %zu angletypes, %zu linear-angletypes, %zu dihedraltypes and %zu impropertypes.\n",
            bonds->bond.size(), bonds->angle.size(), bonds->linangle.size(),
            bonds->dih.size(), bonds->imp.size());
-    print_memory_usage(fp);
+    print_memory_usage(debug);
     gmx_ffclose(fp);
     return 0;
 }

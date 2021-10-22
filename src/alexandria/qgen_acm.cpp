@@ -127,7 +127,8 @@ QgenAcm::QgenAcm(const Poldata *pd,
     }
 }
 
-void QgenAcm::updateParameters(const Poldata *pd)
+void QgenAcm::updateParameters(const Poldata *pd,
+                               const t_atoms *atoms)
 {
     auto qt = pd->findForcesConst(InteractionType::CHARGEDISTRIBUTION);
     auto eqtModel = name2ChargeType(qt.optionValue("chargetype"));
@@ -158,6 +159,11 @@ void QgenAcm::updateParameters(const Poldata *pd)
             chi0_[i] = fs.findParameterTypeConst(acm_id_[i], "chi").value();
             jaa_[i]  = fs.findParameterTypeConst(acm_id_[i], "jaa").value();
         }
+    }
+    // Update fixed charges
+    for (auto &i : fixed_)
+    {
+        q_[i] = pd->findParticleType(*atoms->atomtype[i])->paramValue("charge");
     }
 }
 
@@ -810,7 +816,7 @@ eQgen QgenAcm::generateCharges(FILE                      *fp,
     int info = 0;
     if (eQgen::OK == eQGEN_)
     {
-        updateParameters(pd);
+        updateParameters(pd, atoms);
         updatePositions(x, atoms);
         calcJcc(pd->getEpsilonR(), pd->yang(), pd->rappe());
         if (pd->interactionPresent(InteractionType::BONDCORRECTIONS) &&

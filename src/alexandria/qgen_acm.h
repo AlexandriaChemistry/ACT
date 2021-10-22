@@ -129,9 +129,11 @@ class QgenAcm
          * This includes, chi, JAA, zeta. In case a split charge
          * equilibration algorithm is used also the bond charge
          * correction parameters will be updated.
-         * \param[in] pd  Force field database
+         * \param[in] pd    Force field database
+         * \param[in] atoms Atoms data structure
          */
-        void updateParameters(const Poldata *pd);
+    void updateParameters(const Poldata *pd,
+                          const t_atoms *atoms);
 
         double calcJ(rvec   xI, 
                      rvec   xJ,

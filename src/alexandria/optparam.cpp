@@ -425,7 +425,7 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
     std::uniform_int_distribution<>  int_uniform(0, nParam-1);
     std::uniform_real_distribution<> real_uniform(0, 1);
     
-    print_memory_usage(fplog);
+    print_memory_usage(debug);
     // Optmization loop
     double beta0            = 1/(BOLTZ*temperature());
     
@@ -445,8 +445,8 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
             {
                 continue;
             }
-            attemptedMoves_[j] = attemptedMoves_[j] + 1;
-            changed[j]         = true;
+            attemptedMoves_[j] += 1;
+            changed[j]          = true;
         
             // Update FF parameter data structure with 
             // the new value of parameter j
@@ -496,15 +496,13 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
                             fprintf(fplog, "iter %10g. Found new minimum at %10g\n",
                                     xiter, currEval);
                         }
+                        if (debug)
+                        {
+                            printParameters(debug);
+                        }
                     }
                     bestParam_ = param_;
                     minEval    = currEval;
-                    if (debug && false)
-                    {
-                        fprintf(debug, "iter %g. Found new minimum at %g\n",
-                                xiter, currEval);
-                        printParameters(debug);
-                    }
                     saveState();
                 }
                 prevEval = currEval;

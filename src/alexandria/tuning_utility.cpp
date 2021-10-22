@@ -599,8 +599,6 @@ void print_electric_props(FILE                           *fp,
             }
             fprintf(fp, "        x        y        z (pm)\n");
             auto x       = mol->x();
-            auto qrmsd   = 0.0;
-            int  ncore   = 0;
             auto myatoms = mol->atomsConst();
             int  i       = 0;
             for (int j = i = 0; j < myatoms.nr; j++)
@@ -608,35 +606,7 @@ void print_electric_props(FILE                           *fp,
                 if (myatoms.atom[j].ptype == eptAtom ||
                     myatoms.atom[j].ptype == eptNucleus)
                 {
-                    auto  atp = pd->findParticleType(*(myatoms.atomtype[j]));
-                    auto  k   = std::find_if(lsqt[ims].begin(), lsqt[ims].end(),
-                                             [atp](const ZetaTypeLsq &atlsq)
-                                             {
-                                                 return atp->id().id() == atlsq.name();
-                                             });
                     real qCalc = myatoms.atom[j].q;
-                    // TODO: only count in real shells
-                    real qCplusShell = qCalc;
-                    if (nullptr != mol->shellfc_ && 
-                        j < myatoms.nr-1 && 
-                        myatoms.atom[j+1].ptype == eptShell)
-                    {
-                        qCplusShell += myatoms.atom[j+1].q;
-                    }
-                    if (mol->datasetType() == ims)
-                    {
-                        if (qQM.find(qType::CM5) != qQM.end())
-                        {
-                            auto qcm5 = qQM.find(qType::CM5)->second[i];
-                            if (k != lsqt[ims].end())
-                            {
-                                gmx_stats_add_point(k->lsq_, qcm5, qCplusShell, 0, 0);
-                            }
-                            gmx_stats_add_point(lsq_charge[ims][qType::Calc], qcm5, qCplusShell, 0, 0);
-                            qrmsd += gmx::square(qcm5-qCplusShell);
-                        }
-                    }
-                    ncore += 1;
                     fprintf(fp, "%-2d%3d  %-5s  %8.4f",
                             myatoms.atom[j].atomnumber,
                             j+1,
@@ -677,9 +647,6 @@ void print_electric_props(FILE                           *fp,
                 }
             }
             fprintf(fp, "\n");
-            qrmsd = sqrt(qrmsd/ncore);
-            fprintf(fp, "Charge RMSD compared to CM5: %g (e)%s\n",
-                    qrmsd, (qrmsd > 5e-2) ? " XXX" : "");
             n++;
         }
     }

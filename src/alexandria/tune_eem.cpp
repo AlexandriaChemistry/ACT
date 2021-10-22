@@ -623,9 +623,9 @@ void OptACM::toPoldata(const std::vector<bool> &changed)
             {
                 p = poldata()->findParticleType(optIndex.particleType())->parameter(optIndex.parameterType());
             }
+            GMX_RELEASE_ASSERT(p, gmx::formatString("Could not find parameter %s", optIndex.id().id().c_str()).c_str());
             if (p)
             {
-                //GMX_RELEASE_ASSERT(p, gmx::formatString("Could not find parameter %s", optIndex.id().id().c_str()).c_str());
                 p->setValue(param[n]);
                 p->setUncertainty(psigma[n]);
             }
@@ -647,7 +647,7 @@ bool OptACM::runMaster(const gmx_output_env_t *oenv,
     bool bMinimum = false;
     GMX_RELEASE_ASSERT(MASTER(commrec()), "WTF");
     
-    print_memory_usage(logFile());
+    print_memory_usage(debug);
     std::vector<std::string> paramClass;
     for(const auto &fm : typesToFit())
     {
@@ -695,7 +695,7 @@ bool OptACM::runMaster(const gmx_output_env_t *oenv,
                     iMolSelectName(ims.first), chi2);
         }
     }
-    else
+    else if (optimize)
     {
         fprintf(logFile(), "Did not find a better parameter set\n");
     }
@@ -855,13 +855,13 @@ int alex_tune_eem(int argc, char *argv[])
     if (MASTER(opt.commrec()))
     {
         opt.openLogFile(opt2fn("-g", NFILE, fnm));
-        print_memory_usage(opt.logFile());
+        print_memory_usage(debug);
         print_header(opt.logFile(), pargs);
         gms.read(opt2fn_null("-sel", NFILE, fnm));
         fprintf(opt.logFile(), "Found %d Train and %d Test compounds in %s\n\n",
                 gms.count(iMolSelect::Train), gms.count(iMolSelect::Test),
                 opt2fn("-sel", NFILE, fnm));
-        print_memory_usage(opt.logFile());
+        print_memory_usage(debug);
     }
 
     if (0 == opt.Read(opt.logFile() ? opt.logFile() : (debug ? debug : nullptr),
@@ -937,7 +937,7 @@ int alex_tune_eem(int argc, char *argv[])
                                              opt.commrec(),
                                              efield,
                                              useOffset);
-            print_memory_usage(opt.logFile());
+            print_memory_usage(debug);
         }
         else if (!bMinimum)
         {

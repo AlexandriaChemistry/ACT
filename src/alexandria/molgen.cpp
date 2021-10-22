@@ -679,7 +679,7 @@ size_t MolGen::Read(FILE            *fp,
     immStatus                        imm      = immStatus::OK;
     std::vector<alexandria::MolProp> mp;
 
-    print_memory_usage(fp);
+    print_memory_usage(debug);
     atomprop_  = gmx_atomprop_init();
     /* Reading Force Field Data from gentop.dat */
     if (MASTER(cr_))
@@ -690,7 +690,7 @@ size_t MolGen::Read(FILE            *fp,
             alexandria::readPoldata(pd_fn, &pd_);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-        print_memory_usage(fp);
+        print_memory_usage(debug);
         if (pd_.getNexcl() != nexcl_ && nexcl_ != nexcl_orig_)
         {
             fprintf(stderr, "WARNING: Changing exclusion number from %d in force field file\n", pd_.getNexcl());
@@ -715,7 +715,7 @@ size_t MolGen::Read(FILE            *fp,
     {
         MolPropRead(fn, &mp);
         fprintf(fp, "Read %d compounds from %s\n", static_cast<int>(mp.size()), fn);
-        print_memory_usage(fp);
+        print_memory_usage(debug);
         for (auto mpi = mp.begin(); mpi < mp.end(); )
         {
             mpi->CheckConsistency();
@@ -741,7 +741,7 @@ size_t MolGen::Read(FILE            *fp,
                   {
                       return (mp1.NAtom() < mp2.NAtom());
                   });
-        print_memory_usage(fp);
+        print_memory_usage(debug);
     }
     /* Generate topology for Molecules and distribute them among the nodes */
     std::string      method, basis;
@@ -848,7 +848,7 @@ size_t MolGen::Read(FILE            *fp,
                         mpi->getIupac().c_str());
             }
         }
-        print_memory_usage(fp);
+        print_memory_usage(debug);
         countTargetSize();
         checkDataSufficiency(fp);
         generateOptimizationIndex(fp);
@@ -958,7 +958,7 @@ size_t MolGen::Read(FILE            *fp,
                 fprintf(fp, " compounds.\n");
             }
         }
-        print_memory_usage(fp);
+        print_memory_usage(debug);
     }
     else
     {

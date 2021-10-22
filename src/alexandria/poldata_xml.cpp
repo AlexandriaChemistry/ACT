@@ -382,7 +382,7 @@ static void processAttr(FILE       *fp,
                                         xbuf_atof(xbuf, xmlEntry::UNCERTAINTY),
                                         ntrain,
                                         xbuf_atof(xbuf, xmlEntry::MINIMUM), xbuf_atof(xbuf, xmlEntry::MAXIMUM),
-                                        mut, false,
+                                        mut, true,
                                         nonNegative,
                                         true);
                 if (xmlEntry::PARAMETERLIST == parentEntry)
