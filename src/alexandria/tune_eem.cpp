@@ -347,8 +347,12 @@ double OptACM::calcDeviation(bool       verbose,
                 {
                     p = poldata()->findForcesConst(iType).findParameterTypeConst(optIndex.id(), optIndex.parameterType());
                 }
-                bound  += l2_regularizer(param[n++], p.minimum(), p.maximum(),
-                                         optIndex.name(), verbose);
+                if (p.mutability() == Mutability::Bounded)
+                {
+                    bound  += l2_regularizer(param[n], p.minimum(), p.maximum(),
+                                             optIndex.name(), verbose);
+                }
+                n++;
             }
             (*targets).find(eRMS::BOUNDS)->second.increase(1, bound);
             GMX_RELEASE_ASSERT(n == param.size(), 
@@ -362,6 +366,7 @@ double OptACM::calcDeviation(bool       verbose,
         if (calcDev == CalcDev::Parallel)
         {
             poldata()->broadcast_eemprop(commrec());
+            poldata()->broadcast_particles(commrec());
         }
     }
     int nmolCalculated = 0;
@@ -593,7 +598,8 @@ void OptACM::InitOpt(bool bRandom)
         if (p.ntrain() >= mindata())
         {
             Bayes::addParam(optIndex.name(),
-                            p.value(), p.minimum(), p.maximum(),
+                            p.value(), p.mutability(),
+                            p.minimum(), p.maximum(),
                             p.ntrain(), bRandom);
         }
     }

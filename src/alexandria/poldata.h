@@ -401,6 +401,9 @@ class Poldata
         //! Spread eemprop from master to slave nodes
         void broadcast_eemprop(const t_commrec *cr);
         
+        //! Spread mutable particle properties from master to slave nodes
+        void broadcast_particles(const t_commrec *cr);
+        
         CommunicationStatus Send(const t_commrec *cr, int dest);
 
         CommunicationStatus Receive(const t_commrec *cr, int src);

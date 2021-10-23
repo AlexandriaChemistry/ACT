@@ -242,6 +242,7 @@ class Bayes : public OptParam
         parm_t        weightedTemperature_;
         mc_t          attemptedMoves_;
         mc_t          acceptedMoves_;
+        std::vector<Mutability> mutability_;
         param_name_t  paramNames_;
 
     public:
@@ -262,30 +263,35 @@ class Bayes : public OptParam
          * as specified.
          * \param[in] name    String describing the parameter
          * \param[in] val     The value
+         * \param[in] mut     Mutability
          * \param[in] lower   The new lower bound value
          * \param[in] upper   The new lower bound value
          * \param[in] ntrain  Number of copies in the training set
          * \param[in] bRandom Generate random initial value for parameters if true.
          */
         void addParam(const std::string &name,
-                      real val,
-                      real lower,
-                      real upper,
-                      int  ntrain,
-                      bool bRandom);
+                      real               val,
+                      Mutability         mut,
+                      real               lower,
+                      real               upper,
+                      int                ntrain,
+                      bool               bRandom);
         /*! \brief
          * Append random parameter within the bounds specified.
          * \param[in] name  String describing the parameter
+         * \param[in] mut     Mutability
          * \param[in] lower The new lower bound value
          * \param[in] upper The new lower bound value
          * \param[in] ntrain  Number of copies in the training set
          */
         void addRandomParam(const std::string &name,
+                            Mutability         mut,
                             real               lower,
                             real               upper,
                             int                ntrain)
         {
-            addParam(name, (lower+upper)*0.5, lower, upper, ntrain, true);
+            // TODO: Make this random for real
+            addParam(name, (lower+upper)*0.5, mut, lower, upper, ntrain, true);
         }
 
         /*! \brief

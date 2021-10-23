@@ -212,7 +212,7 @@ class ForceFieldParameter
     void setMutability(Mutability m) { mutability_ = m; }
     
     //! \brief Return whether this parameter is mutable at all
-    bool isMutable() const { return mutability_ == Mutability::Free || mutability_ == Mutability::Bounded; }
+    bool isMutable() const { return mutability_ != Mutability::Fixed && mutability_ != Mutability::ACM; }
     
     //! \brief Return whether or not to throw on value errors
     bool strict() const { return strict_; }

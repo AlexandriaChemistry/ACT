@@ -196,6 +196,7 @@ void Bayes::printParameters(FILE *fp) const
 
 void Bayes::addParam(const std::string &name,
                      real               val,
+                     Mutability         mut,
                      real               lower,
                      real               upper,
                      int                ntrain,
@@ -214,6 +215,7 @@ void Bayes::addParam(const std::string &name,
     
     initial_param_.push_back(val);
     param_.push_back(val);
+    mutability_.push_back(mut);
     ntrain_.push_back(ntrain);
     //    prevParam_.push_back(val);
     lowerBound_.push_back(lower);
@@ -226,13 +228,16 @@ void Bayes::changeParam(size_t j, real rand)
     GMX_RELEASE_ASSERT(j < param_.size(), "Parameter out of range");
     real delta = (2*rand-1)*step()*(upperBound_[j]-lowerBound_[j]);
     param_[j] += delta;
-    if (param_[j] < lowerBound_[j])
+    if (mutability_[j] == Mutability::Bounded)
     {
-        param_[j] = lowerBound_[j];
-    }
-    else if (param_[j] > upperBound_[j])
-    {
-        param_[j] = upperBound_[j];
+        if (param_[j] < lowerBound_[j])
+        {
+            param_[j] = lowerBound_[j];
+        }
+        else if (param_[j] > upperBound_[j])
+        {
+            param_[j] = upperBound_[j];
+        }
     }
 }
 
