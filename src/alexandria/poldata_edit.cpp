@@ -73,8 +73,8 @@ static void setMinMaxMut(FILE *fp,
     if (bSetMin)
     {
         pp->setMinimum(pmin);
-        pp->setValue(std::max(pmin, pp->value()));
         pp->setMaximum(std::max(pmin, pp->maximum()));
+        pp->setValue(std::max(pmin, pp->value()));
         if (fp)
         {
             fprintf(fp, "Minimum set to %g for %s\n", pmin, particleId.c_str());
@@ -169,7 +169,7 @@ static void modifyParticle(const std::string &paramType,
                 gmx::formatString("%s - %s",
                                   particle->id().id().c_str(),
                                   paramType.c_str());
-            setMinMaxMut(stdout, ff,
+            setMinMaxMut(debug, ff,
                          bSetMin, pmin, 
                          bSetVal, pval, bSetMax, pmax,
                          bSetMut, mutability, 
@@ -210,7 +210,7 @@ static void modifyInteraction(Poldata *pd,
                                               pId.id().c_str(),
                                               paramType.c_str(),
                                               interactionTypeToString(itype).c_str());
-                        setMinMaxMut(stdout, &pp.second,
+                        setMinMaxMut(debug, &pp.second,
                                      bSetMin, pmin, 
                                      bSetVal, pval, bSetMax, pmax,
                                      bSetMut, mutability, 

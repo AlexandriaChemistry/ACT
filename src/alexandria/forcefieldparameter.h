@@ -92,17 +92,20 @@ class ForceFieldParameter
     {
         if (resetValue)
         {
-            if (value_ < minimum_)
+            if (mutability_ == Mutability::Bounded)
             {
-                fprintf(stderr, "Resetting value %g (%s) to minimum allowed %g\n",
-                        value_, unit_.c_str(), minimum_);
-                value_ = minimum_;
-            }
-            if (value_ > maximum_)
-            {
-                fprintf(stderr, "Resetting value %g (%s) to maximum allowed %g\n",
-                        value_, unit_.c_str(), maximum_);
-                value_ = maximum_;
+                if (value_ < minimum_)
+                {
+                    fprintf(stderr, "Resetting value %g (%s) to minimum allowed %g\n",
+                            value_, unit_.c_str(), minimum_);
+                    value_ = minimum_;
+                }
+                if (value_ > maximum_)
+                {
+                    fprintf(stderr, "Resetting value %g (%s) to maximum allowed %g\n",
+                            value_, unit_.c_str(), maximum_);
+                    value_ = maximum_;
+                }
             }
         }
         else
