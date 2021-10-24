@@ -34,3 +34,7 @@ Let's say you have a four core machine and you want to install first time around
 
 ```./download+install.py -clone -ncore 4```
 
+In the best of worlds, the script will have created a directory under your home catalogue, with the name ```ACT-main```. In order to start using the software, run the following command (or add it to your ```.bash_profile``` or equivalent):
+
+```source $HOME/ACT-main/bin/ACTRC```
+
