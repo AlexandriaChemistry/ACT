@@ -52,6 +52,10 @@ double **alloc_matrix(int n, int m)
     double **ptr;
     int      i;
 
+    if (n <= 0 || m <= 0)
+    {
+        return nullptr;
+    }
     /* There's always time for more pointer arithmetic! */
     /* This is necessary in order to be able to work with LAPACK */
     snew(ptr, n);

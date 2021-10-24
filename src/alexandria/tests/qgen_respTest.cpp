@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2014-2020
+ * Copyright (C) 2014-2021
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -100,7 +100,8 @@ class RespTest : public gmx::test::CommandLineTestBase
             fill_inputrec(&inputrec);
             mp_.SetForceField("gaff");
             Poldata      *pd = getPoldata(qdist);
-            auto imm = mp_.GenerateTopology(pd, method,
+            auto imm = mp_.GenerateTopology(nullptr,
+                                            pd, method,
                                             basis, nullptr,
                                             false, false, false,
                                             missingParameters::Error, nullptr);

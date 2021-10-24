@@ -38,6 +38,7 @@
 
 #include "gromacs/math/units.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/utility/fatalerror.h"
 
 #include "communication.h"
 #include "gmx_simple_comm.h"
@@ -96,14 +97,20 @@ class ForceFieldParameter
             {
                 if (value_ < minimum_)
                 {
-                    fprintf(stderr, "Resetting value %g (%s) to minimum allowed %g\n",
-                            value_, unit_.c_str(), minimum_);
+                    if (debug)
+                    {
+                        fprintf(debug, "Resetting value %g (%s) to minimum allowed %g\n",
+                                value_, unit_.c_str(), minimum_);
+                    }
                     value_ = minimum_;
                 }
                 if (value_ > maximum_)
                 {
-                    fprintf(stderr, "Resetting value %g (%s) to maximum allowed %g\n",
-                            value_, unit_.c_str(), maximum_);
+                    if (debug)
+                    {
+                        fprintf(debug, "Resetting value %g (%s) to maximum allowed %g\n",
+                                value_, unit_.c_str(), maximum_);
+                    }
                     value_ = maximum_;
                 }
             }

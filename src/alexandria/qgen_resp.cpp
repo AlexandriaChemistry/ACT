@@ -452,6 +452,11 @@ void QgenResp::optimizeCharges(double epsilonr)
     int                   nrow     = nEsp() + 1 + fitQ_ - uniqueQ_;
     int                   factor   = nEsp()*50;
     int                   ncolumn  = fitQ_;
+    if (ncolumn == 0)
+    {
+        fprintf(stderr, "No charges to fit with RESP. Check your input.\n");
+        return;
+    }
     MatrixWrapper         lhs(ncolumn, nrow);
     std::vector<double>   rhs;
     double                scale_factor = 1.0/std::sqrt(epsilonr);

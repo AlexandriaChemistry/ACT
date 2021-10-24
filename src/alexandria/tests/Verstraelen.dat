@@ -19410,7 +19410,7 @@
       <parameter type="hardness" unit="eV/e" value="7.29" uncertainty="0" minimum="0" maximum="14.58" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="H#N4#1">
-      <parameter type="electronegativity" unit="eV" value="-2.14" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="electronegativity" unit="eV" value="-2.14" uncertainty="0" minimum="-3" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
       <parameter type="hardness" unit="eV/e" value="8.81" uncertainty="0" minimum="0" maximum="17.62" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="H#O2#1">
@@ -19522,7 +19522,7 @@
       <parameter type="hardness" unit="eV/e" value="15.53" uncertainty="0" minimum="0" maximum="31.06" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="N4#H#1">
-      <parameter type="electronegativity" unit="eV" value="2.14" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="electronegativity" unit="eV" value="2.14" uncertainty="0" minimum="-2" maximum="3" ntrain="0" mutability="Bounded" nonnegative="no"/>
       <parameter type="hardness" unit="eV/e" value="8.81" uncertainty="0" minimum="0" maximum="17.62" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="O1#C2#1">
@@ -19684,6 +19684,8 @@
       <parameter type="chi" unit="eV" value="4.47" uncertainty="0" minimum="3.576" maximum="5.5875" ntrain="1" mutability="Bounded" nonnegative="no"/>
       <parameter type="jaa" unit="eV/e" value="8.21" uncertainty="0" minimum="6.568" maximum="10.2625" ntrain="1" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
+  </interaction>
+  <interaction type="VSITE2" function="vsite2" canswap="false">
   </interaction>
   <symmetric_charges>
     <sym_charge central="C" attached="H" numattach="3"/>

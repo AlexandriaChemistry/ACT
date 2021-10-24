@@ -1471,7 +1471,7 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
             auto atype = *myatoms->atomtype[i];
             auto ptype = pd->findParticleType(atype);
             auto qff = ptype->parameterConst("charge");
-            if (qff.isMutable())
+            if (qff.mutability() == Mutability::ACM)
             {
                 allFixed = false;
             }
@@ -1508,6 +1508,7 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
                     return imm;
                 }
                 auto qcalc = qTypeProps(qType::Calc);
+                qcalc->setQ(myatoms);
                 qcalc->setX(state_->x);
             }
             
