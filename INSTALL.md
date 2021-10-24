@@ -38,3 +38,7 @@ In the best of worlds, the script will have created a directory under your home 
 
 ```source $HOME/ACT-main/bin/ACTRC```
 
+The you can run the ```alexandria``` executable using
+
+```alexandria -h```
+
