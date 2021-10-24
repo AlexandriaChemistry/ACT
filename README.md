@@ -1,7 +1,7 @@
 Alexandria Chemistry Toolkit
 ============================
 
-This code is based on the [http://www.gromacs.org](GROMACS) software package, however it adds
+This code is based on the [a GROMACS](http://www.gromacs.org) software package, however it adds
 about 40000 lines of code for force field development.
 
 Prerequisites
