@@ -25,5 +25,6 @@ https://github.com/dspoel/openbabel. The oficial OpenBabel can be found [here](h
 Install ACT on your computer
 ----------------------------
 The easiest way to get going is to fetch the [download+install.py](download+install.py) script to your working directory of choice. Then, start by executing
-  ./download+install.py -h
+
+```./download+install.py -h```
   
