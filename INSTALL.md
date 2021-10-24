@@ -20,6 +20,8 @@ https://github.com/dspoel/openbabel. The oficial OpenBabel can be found [here](h
 
 + The [LibXml2](http://xmlsoft.org) is needed for processing the [XML](https://en.wikipedia.org/wiki/XML) data files used by the ACT.
 
++ Optionally, the [doxygen](https://www.doxygen.nl/index.html) package can be used for generating documentation.
+
 + You will also need [Python])https://www.python.org), version 3, and a number of Python libraries.
 
 Install ACT on your computer
