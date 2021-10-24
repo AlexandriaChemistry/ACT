@@ -12,3 +12,4 @@ https://github.com/dspoel/openbabel. The oficial OpenBabel can be found [here](h
 
 + The [Class Library for Numbers](https://www.ginac.de/CLN/) is used in an optional part of the code and can be omitted.
 
++ The [cmake](https://cmake.org) tools are needed for compiling the code, along with an up-to-date C++ compiler supporting [C++14](https://en.wikipedia.org/wiki/C++14) at least.
