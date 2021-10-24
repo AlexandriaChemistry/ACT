@@ -3,12 +3,14 @@ Installing ACT
 The Alexandria Chemistry Toolkit (ACT) relies on a number of libraries. Even though we tried to keep it to a minimum,
 some more or less standard libraries are needed.
 
+Prerequisites
+-------------
 + A patched version of OpenBabel is needed that can be found at
 https://github.com/dspoel/openbabel. The oficial OpenBabel can be found [here](https://github.com/openbabel).
 
 + Some version of a library that supports the message passing interface (MPI) for parallel programming. A popular version is [Open MPI](https://open-mpi.org).
 
-+ The [SQLite](https://www.sqlite.org/index.html) database engine is need to process experimental data as well as quantum chemistry data from the Alexandria Library, available from [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1170597.svg)](https://doi.org/10.5281/zenodo.1170597).
++ The [SQLite](https://www.sqlite.org/index.html) database engine is needed to process experimental data as well as quantum chemistry data from the Alexandria Library, available from [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1170597.svg)](https://doi.org/10.5281/zenodo.1170597).
 
 + The [Class Library for Numbers](https://www.ginac.de/CLN/) is used in an optional part of the code and can be omitted.
 
@@ -20,3 +22,5 @@ https://github.com/dspoel/openbabel. The oficial OpenBabel can be found [here](h
 
 + You will also need [Python])https://www.python.org), version 3, and a number of Python libraries.
 
+Install ACT on your computer
+----------------------------
