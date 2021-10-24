@@ -1,7 +1,7 @@
 Installing ACT
 ==============
 The Alexandria Chemistry Toolkit (ACT) relies on a number of libraries. Even though we tried to keep it to a minimum,
-some more or less standard libraries are needed.
+some more or less standard libraries are needed. ACT should compile fine on any UNIX (including MacOs) or Linux machine (but no warranty!).
 
 Prerequisites
 -------------
@@ -25,6 +25,7 @@ https://github.com/dspoel/openbabel. The oficial OpenBabel can be found [here](h
 Install ACT on your computer
 ----------------------------
 The easiest way to get going is to fetch the [download+install.py](download+install.py) script to your working directory of choice. Then, start by executing
-
 ```./download+install.py -h```
-  
+Let's say you have a four core machine and you want to install first time around, then this command should do the trick:
+```./download+install.py -clone -ncore 4
+
