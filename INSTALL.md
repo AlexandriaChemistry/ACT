@@ -20,6 +20,8 @@ https://github.com/dspoel/openbabel. The oficial OpenBabel can be found [here](h
 
 + The [LibXml2](http://xmlsoft.org) is needed for processing the [XML](https://en.wikipedia.org/wiki/XML) data files used by the ACT.
 
++ Optionally, the [doxygen](https://www.doxygen.nl/index.html) package can be used for generating documentation.
+
 + You will also need [Python])https://www.python.org), version 3, and a number of Python libraries.
 
 Install ACT on your computer
@@ -31,4 +33,12 @@ The easiest way to get going is to fetch the [download+install.py](download+inst
 Let's say you have a four core machine and you want to install first time around, then this command should do the trick:
 
 ```./download+install.py -clone -ncore 4```
+
+In the best of worlds, the script will have created a directory under your home catalogue, with the name ```ACT-main```. In order to start using the software, run the following command (or add it to your ```.bash_profile``` or equivalent):
+
+```source $HOME/ACT-main/bin/ACTRC```
+
+The you can run the ```alexandria``` executable using
+
+```alexandria -h```
 
