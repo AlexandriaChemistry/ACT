@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import os, shutil, argparse
+import os, shutil, argparse, subprocess
 
 def parseArguments():
     parser = argparse.ArgumentParser()
@@ -44,18 +44,21 @@ if __name__ == '__main__':
     elif "SNIC_SITE" in os.environ:
         HOST = os.environ["SNIC_SITE"]
     else:
-        print("Don't know how to work on %s" % os.environ["HOST"] )
-        exit(1)
-    extra_dirs = []
-    ROOT = os.environ["HOME"]
-    DEST   = ( "%s/%s-%s/" % ( ROOT, swdir, args.branch ) )
+        result = subprocess.run(['hostname'], stdout=subprocess.PIPE)
+        HOST = result.stdout.decode('utf-8').strip().split(".")[0]
 
-    if HOST == "BirdMac":
-        LAPACK = "/usr/lib/liblapack.dylib"
-        BLAS   = "/usr/lib/libblas.dylib"
-        LBFLAGS = ( "-DGMX_BLAS_USER=%s -DGMX_LAPACK_USER=%s" % ( BLAS, LAPACK ) )
+    extra_dirs = []
+    HOMEDIR    = os.environ["HOME"]
+    DEST       = ( "%s/%s-%s/" % ( HOMEDIR, swdir, args.branch ) )
+    LBFLAGS    = ""
+    if HOST in [ "BirdMac", "blackbird" ]:
+        # MacOS machines, feel free to add your machine to the list
+        anaconda = ("%s/opt/miniconda3/lib" % HOMEDIR)
+        LAPACK   = ( "%s/liblapack.dylib" % anaconda)
+        BLAS     = ( "%s/libblas.dylib" % anaconda)
+        LBFLAGS  = ( "-DGMX_BLAS_USER=%s -DGMX_LAPACK_USER=%s" % ( BLAS, LAPACK ) )
     elif HOST.find("tetralith") >= 0:
-        ROOT   = ROOT + "/wd"
+        HOMEDIR   = HOMEDIR + "/wd"
         LAPACK = "/software/sse/easybuild/prefix/software/ScaLAPACK/2.0.2-gompi-2018a-OpenBLAS-0.2.20/lib/libscalapack.a" 
         BLAS   = "/software/sse/easybuild/prefix/software/OpenBLAS/0.2.20-GCC-6.4.0-2.28/lib/libopenblas.so.0"
         LBFLAGS = ( "-DGMX_BLAS_USER=%s -DGMX_LAPACK_USER=%s" % ( BLAS, LAPACK ) )
@@ -64,20 +67,24 @@ if __name__ == '__main__':
         for libs in [ "LIBXML2", "OPENBLAS" ]:
             if libs in os.environ:
                 extra_dirs.append(os.environ[libs])
-        LBFLAGS    = ""
+    else:
+        sys.exit("Don't know how to commpile on host %s" % HOST)
 
-    PPATH  = ( "%s/GG/openbabel-alexandria/install" % ROOT )
+    PPATH  = ( "%s/GG/openbabel-alexandria/install" % HOMEDIR )
     for ed in extra_dirs:
         PPATH = PPATH + ";" + ed
 
     CXX    = shutil.which("mpicxx")
     CC     = shutil.which("mpicc")
+    if (not CXX or len(CXX) == 0) or (not CC or len(CC) == 0):
+        sys.exit("Cannot find the MPI enabled mpicc and mpicxx compilers")
+
     gmxdouble = ""
-    if not args.single:
-        gmxdouble = "-DGMX_DOUBLE=ON"
-    FLAGS = ("-DMPIEXEC=/usr/bin/srun -DMPIEXEC_NUMPROC_FLAG='-n' -DGMX_X11=OFF -DGMX_LOAD_PLUGINS=OFF -DBUILD_SHARED_LIBS=OFF -DGMX_OPENMP=OFF -DGMX_MPI=ON -DGMX_GPU=OFF -DCMAKE_INSTALL_PREFIX=%s -DCMAKE_CXX_COMPILER=%s -DCMAKE_C_COMPILER=%s -DCMAKE_BUILD_TYPE=%s -DCMAKE_PREFIX_PATH='%s' -DGMX_BUILD_MANUAL=OFF -DGMX_COMPACT_DOXYGEN=ON -DREGRESSIONTEST_DOWNLOAD=OFF %s -DGMX_DEFAULT_SUFFIX=OFF -DGMX_LIBXML2=ON -DGMX_EXTERNAL_BLAS=ON -DGMX_EXTERNAL_LAPACK=ON %s" % ( DEST, CXX, CC, args.build, PPATH, gmxdouble, LBFLAGS ) )
+    FLAGS = ("-DMPIEXEC=/usr/bin/srun -DMPIEXEC_NUMPROC_FLAG='-n' -DGMX_X11=OFF -DGMX_LOAD_PLUGINS=OFF -DBUILD_SHARED_LIBS=OFF -DGMX_OPENMP=OFF -DGMX_MPI=ON -DGMX_GPU=OFF -DCMAKE_INSTALL_PREFIX=%s -DCMAKE_CXX_COMPILER=%s -DCMAKE_C_COMPILER=%s -DCMAKE_BUILD_TYPE=%s -DCMAKE_PREFIX_PATH='%s' -DGMX_BUILD_MANUAL=OFF -DGMX_COMPACT_DOXYGEN=ON -DREGRESSIONTEST_DOWNLOAD=OFF -DGMX_DEFAULT_SUFFIX=OFF -DGMX_LIBXML2=ON -DGMX_EXTERNAL_BLAS=ON -DGMX_EXTERNAL_LAPACK=ON %s" % ( DEST, CXX, CC, args.build, PPATH, LBFLAGS ) )
     if args.cln:
-        FLAGS += " -DGMX_CLN=ON")
+        FLAGS += " -DGMX_CLN=ON"
+    if not args.single:
+        FLAGS += " -DGMX_DOUBLE=ON"
 
     bdir = "build_" + args.build
     if not args.single:
