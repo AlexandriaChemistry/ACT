@@ -11,14 +11,15 @@ def parseArguments():
     parser.add_argument("-clone", "--clone", help="Clone git repository",     action="store_true")
     parser.add_argument("-ncores","--ncores", help="Number of cores for compiling", type=int, default=8)
     parser.add_argument("-bt", "--build", help="Build type for cmake. Typicall Release or Debug", type=str, default="Release")
-    parser.add_argument("-sngl", "--single", help="Single precision build", action="store_true")
+    parser.add_argument("-sngl", "--single", help="Single precision build (will not work well)", action="store_true")
+    parser.add_argument("-cln", "--cln", help="Use the Class Library for Numbers", action="store_true")
   
     args = parser.parse_args()
     return args
 
 if __name__ == '__main__':
     args = parseArguments()  
-    act = args.branch == "main" or args.branch == "david"
+    act  = args.branch == "main" or args.branch == "david"
     if act:
         if args.clone:
             os.system("git clone git@github.com:dspoel/ACT.git")
@@ -45,8 +46,9 @@ if __name__ == '__main__':
     else:
         print("Don't know how to work on %s" % os.environ["HOST"] )
         exit(1)
-    ROOT       = os.environ["HOME"]
     extra_dirs = []
+    ROOT = os.environ["HOME"]
+    DEST   = ( "%s/%s-%s/" % ( ROOT, swdir, args.branch ) )
 
     if HOST == "BirdMac":
         LAPACK = "/usr/lib/liblapack.dylib"
@@ -64,7 +66,6 @@ if __name__ == '__main__':
                 extra_dirs.append(os.environ[libs])
         LBFLAGS    = ""
 
-    DEST   = ( "%s/software-%s/" % ( ROOT, args.branch ) )
     PPATH  = ( "%s/GG/openbabel-alexandria/install" % ROOT )
     for ed in extra_dirs:
         PPATH = PPATH + ";" + ed
@@ -74,7 +75,9 @@ if __name__ == '__main__':
     gmxdouble = ""
     if not args.single:
         gmxdouble = "-DGMX_DOUBLE=ON"
-    FLAGS = ("-DGMX_CLN=ON -DMPIEXEC=/usr/bin/srun -DMPIEXEC_NUMPROC_FLAG='-n' -DGMX_X11=OFF -DGMX_LOAD_PLUGINS=OFF -DBUILD_SHARED_LIBS=OFF -DGMX_OPENMP=OFF -DGMX_MPI=ON -DGMX_GPU=OFF -DCMAKE_INSTALL_PREFIX=%s -DCMAKE_CXX_COMPILER=%s -DCMAKE_C_COMPILER=%s -DCMAKE_BUILD_TYPE=%s -DCMAKE_PREFIX_PATH='%s' -DGMX_BUILD_MANUAL=OFF -DGMX_COMPACT_DOXYGEN=ON -DREGRESSIONTEST_DOWNLOAD=OFF %s -DGMX_DEFAULT_SUFFIX=OFF -DGMX_LIBXML2=ON -DGMX_EXTERNAL_BLAS=ON -DGMX_EXTERNAL_LAPACK=ON %s" % ( DEST, CXX, CC, args.build, PPATH, gmxdouble, LBFLAGS ) )
+    FLAGS = ("-DMPIEXEC=/usr/bin/srun -DMPIEXEC_NUMPROC_FLAG='-n' -DGMX_X11=OFF -DGMX_LOAD_PLUGINS=OFF -DBUILD_SHARED_LIBS=OFF -DGMX_OPENMP=OFF -DGMX_MPI=ON -DGMX_GPU=OFF -DCMAKE_INSTALL_PREFIX=%s -DCMAKE_CXX_COMPILER=%s -DCMAKE_C_COMPILER=%s -DCMAKE_BUILD_TYPE=%s -DCMAKE_PREFIX_PATH='%s' -DGMX_BUILD_MANUAL=OFF -DGMX_COMPACT_DOXYGEN=ON -DREGRESSIONTEST_DOWNLOAD=OFF %s -DGMX_DEFAULT_SUFFIX=OFF -DGMX_LIBXML2=ON -DGMX_EXTERNAL_BLAS=ON -DGMX_EXTERNAL_LAPACK=ON %s" % ( DEST, CXX, CC, args.build, PPATH, gmxdouble, LBFLAGS ) )
+    if args.cln:
+        FLAGS += " -DGMX_CLN=ON")
 
     bdir = "build_" + args.build
     if not args.single:
