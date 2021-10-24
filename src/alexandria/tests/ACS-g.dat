@@ -21255,6 +21255,8 @@
       <parameter type="jaa" unit="eV/e" value="14" uncertainty="0" minimum="11.2" maximum="17.5" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
   </interaction>
+  <interaction type="VSITE2" function="vsite2" canswap="false">
+  </interaction>
   <symmetric_charges>
     <sym_charge central="C" attached="H" numattach="3"/>
     <sym_charge central="N" attached="H" numattach="3"/>

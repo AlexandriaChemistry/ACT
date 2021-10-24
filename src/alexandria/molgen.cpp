@@ -98,7 +98,6 @@ MolGen::MolGen()
     bDone_     = false;
     bGenVsite_ = false;
     qsymm_     = false;
-    constrain_ = false;
     bQM_       = false;
     watoms_    = 0;
     qtol_      = 1e-6;
@@ -173,8 +172,6 @@ void MolGen::addOptions(std::vector<t_pargs> *pargs, eTune etune)
           "Max number of tries for optimizing the charges." },
         { "-qsymm",  FALSE, etBOOL, {&qsymm_},
           "Symmetrize the charges on symmetric groups, e.g. CH3, NH2." },
-        { "-constrain",  FALSE, etBOOL, {&constrain_},
-          "Perform Box-Constraint optimization" },
         { "-genvsites", FALSE, etBOOL, {&bGenVsite_},
           "Generate virtual sites. Check and double check." },
         { "-fit", FALSE, etSTR, {&fitString_},
@@ -193,7 +190,7 @@ void MolGen::addOptions(std::vector<t_pargs> *pargs, eTune etune)
                 { "-watoms", FALSE, etREAL, {&watoms_},
                   "Weight for the atoms when fitting the charges to the electrostatic potential. The potential on atoms is usually two orders of magnitude larger than on other points (and negative). For point charges or single smeared charges use zero. For point+smeared charges 1 is recommended." },
                 { "-maxpot", FALSE, etINT, {&maxESP_},
-                  "Maximum percent of the electrostatic potential points that will be used to fit partial charges. Note that the input file may have a reduced amount of ESP points compared to the Gaussian output already so do not reduce the amount twice unless you know what you are doing." },
+                  "Maximum percent of the electrostatic potential points that will be used to fit partial charges. Note that the input file may have a reduced amount of ESP points compared to the Gaussian output already so do not reduce the amount twice unless you know what you are doing. Note that if you use a value less than 100, the ESP points are picked randomly and therefore the runs will not be reproducible." },
                 { "-fc_mu",    FALSE, etREAL, {target(iMolSelect::Train, eRMS::MU)->weightPtr()},
                   "Force constant in the penalty function for the magnitude of the dipole components." },
                 { "-fc_quad",  FALSE, etREAL, {target(iMolSelect::Train, eRMS::QUAD)->weightPtr()},
@@ -229,6 +226,7 @@ void MolGen::optionsFinished()
     gmx_omp_nthreads_init(mdlog_, cr_, 1, 1, 1, 0, false, false);
     auto pnc                    = gmx::PhysicalNodeCommunicator(MPI_COMM_WORLD, 0);
     hwinfo_                     = gmx_detect_hardware(mdlog_, pnc);
+    gmx_omp_nthreads_init(mdlog_, cr_, 1, 1, 1, 0, false, false);
     if (nullptr != fitString_)
     {
         for(const auto &toFit : gmx::splitString(fitString_))
@@ -303,6 +301,7 @@ void MolGen::sumChiSquared(bool parallel, iMolSelect ims)
             etot->increase(1.0, ft.second.chiSquaredWeighted());
         }
     }
+    // Weighting is already included.
     etot->setNumberOfDatapoints(1);
 }
 
@@ -321,10 +320,19 @@ void MolGen::fillIopt()
 void MolGen::checkDataSufficiency(FILE *fp)
 {
     size_t nmol = 0;
+    if (targetSize_.find(iMolSelect::Train) == targetSize_.end())
+    {
+        return;
+    }
     do
     {
         // We check data sufficiency only for the training set
         nmol = targetSize_.find(iMolSelect::Train)->second;
+        if (fp)
+        {
+            fprintf(fp, "Will check data sufficiency for %d training compounds.\n",
+                    static_cast<int>(nmol));
+        }
         /* First set the ntrain values for all forces
          * present that should be optimized to zero.
          */
@@ -332,14 +340,38 @@ void MolGen::checkDataSufficiency(FILE *fp)
         {
             if (io.second)
             {
-                ForceFieldParameterList *fplist = pd_.findForces(io.first);
-                for(auto &force : *(fplist->parameters()))
+                ForceFieldParameterList *fplist;
+                if (pd_.interactionPresent(io.first))
                 {
-                    for(auto &ff : force.second)
+                    // Loop over interactions
+                    fplist = pd_.findForces(io.first);
+                    for(auto &force : *(fplist->parameters()))
                     {
-                        if (ff.second.isMutable())
+                        for(auto &ff : force.second)
                         {
-                            ff.second.setNtrain(0);
+                            if (ff.second.isMutable())
+                            {
+                                ff.second.setNtrain(0);
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    GMX_RELEASE_ASSERT(io.first == InteractionType::CHARGE,
+                                       "Death Horror Programming Error.");
+                    // Loop over particles to find mutable charges
+                    auto pv = pd_.particleTypes();
+                    std::string ccc("charge");
+                    for (auto pt = pv->begin(); pt < pv->end(); ++pt )
+                    {
+                        if (pt->hasParameter(ccc))
+                        {
+                            auto p = pt->parameter(ccc);
+                            if (p->isMutable())
+                            {
+                                p->setNtrain(0);
+                            }
                         }
                     }
                 }
@@ -350,7 +382,8 @@ void MolGen::checkDataSufficiency(FILE *fp)
             InteractionType::VDW,
             InteractionType::POLARIZATION,
             InteractionType::CHARGEDISTRIBUTION,
-            InteractionType::ELECTRONEGATIVITYEQUALIZATION
+            InteractionType::ELECTRONEGATIVITYEQUALIZATION,
+            InteractionType::CHARGE
         };
         // Now loop over molecules and add interactions
         for(auto &mol : mymol_)
@@ -372,9 +405,9 @@ void MolGen::checkDataSufficiency(FILE *fp)
                     if (optimize(itype))
                     {
                         auto atype  = pd_.findParticleType(*myatoms.atomtype[i]);
-                        auto fplist = pd_.findForces(itype);
                         if (atype->hasInteractionType(itype))
                         {
+                            auto fplist = pd_.findForces(itype);
                             auto subId  = atype->interactionTypeToIdentifier(itype);
                             if (!subId.id().empty())
                             {
@@ -384,6 +417,18 @@ void MolGen::checkDataSufficiency(FILE *fp)
                                     {
                                         ff.second.incrementNtrain();
                                     }
+                                }
+                            }
+                        }
+                        else if (itype == InteractionType::CHARGE)
+                        {
+                            std::string ccc("charge");
+                            if (atype->hasParameter(ccc))
+                            {
+                                auto p = atype->parameter(ccc);
+                                if (p->isMutable())
+                                {
+                                    p->incrementNtrain();
                                 }
                             }
                         }
@@ -454,9 +499,9 @@ void MolGen::checkDataSufficiency(FILE *fp)
                 {
                     if (optimize(itype))
                     {
-                        auto fplist = pd_.findForces(itype);
                         if (atype->hasInteractionType(itype))
                         {
+                            auto fplist = pd_.findForces(itype);
                             auto ztype  = atype->interactionTypeToIdentifier(itype);
                             if (!ztype.id().empty())
                             {
@@ -480,6 +525,28 @@ void MolGen::checkDataSufficiency(FILE *fp)
                                 }
                             }
                         }
+                        else if (itype == InteractionType::CHARGE)
+                        {
+                            std::string ccc("charge");
+                            if (atype->hasParameter(ccc))
+                            {
+                                auto p = atype->parameter(ccc);
+                                if (p->isMutable() && p->ntrain() < mindata_)
+                                {
+                                    if (fp)
+                                    {
+                                        fprintf(fp, "No support for %s - %s in %s. Ntrain is %d, should be at least %d.\n",
+                                                ccc.c_str(),
+                                                interactionTypeToString(itype).c_str(),
+                                                mol.getMolname().c_str(),
+                                                p->ntrain(),
+                                                mindata_);
+                                    }
+                                    keep = false;
+                                    break;
+                                }
+                            }
+                        }
                     }
                     if (!keep)
                     {
@@ -495,6 +562,11 @@ void MolGen::checkDataSufficiency(FILE *fp)
             {
                 removeMol.push_back(mol.getIupac());
             }
+        }
+        if (fp && removeMol.size() > 0)
+        {
+            fprintf(fp, "Found %d molecules without sufficient support, will remove them.\n",
+                    static_cast<int>(removeMol.size()));
         }
         for(auto &rmol : removeMol)
         {
@@ -542,9 +614,23 @@ void MolGen::generateOptimizationIndex(FILE *fp)
             }
         }
     }
+    for(auto &pt : pd_.particleTypesConst())
+    {
+        for(auto &p : pt.parametersConst())
+        {
+            if (fit(p.first) && p.second.ntrain() > 0)
+            {
+                optIndex_.push_back(OptimizationIndex(pt.id().id(), p.first));
+            }
+        }
+    }
     if (fp)
     {
         fprintf(fp, "There are %zu variables to optimize.\n", optIndex_.size());
+        for(auto &i : optIndex_)
+        {
+            fprintf(fp, "Will optimize %s\n", i.name().c_str());
+        }
     }
 }
 
@@ -578,21 +664,22 @@ void MolGen::countTargetSize()
     }
 }
 
-void MolGen::Read(FILE            *fp,
-                  const char      *fn,
-                  const char      *pd_fn,
-                  gmx_bool         bZero,
-                  const MolSelect &gms,
-                  bool             bZPE,
-                  bool             bDHform,
-                  const char      *tabfn)
+size_t MolGen::Read(FILE            *fp,
+                    const char      *fn,
+                    const char      *pd_fn,
+                    gmx_bool         bZero,
+                    const MolSelect &gms,
+                    bool             bZPE,
+                    bool             bDHform,
+                    const char      *tabfn,
+                    bool             verbose)
 {
     int                              nwarn    = 0;
     std::map<immStatus, int>         imm_count;
     immStatus                        imm      = immStatus::OK;
     std::vector<alexandria::MolProp> mp;
 
-    print_memory_usage(fp);
+    print_memory_usage(debug);
     atomprop_  = gmx_atomprop_init();
     /* Reading Force Field Data from gentop.dat */
     if (MASTER(cr_))
@@ -603,7 +690,7 @@ void MolGen::Read(FILE            *fp,
             alexandria::readPoldata(pd_fn, &pd_);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-        print_memory_usage(fp);
+        print_memory_usage(debug);
         if (pd_.getNexcl() != nexcl_ && nexcl_ != nexcl_orig_)
         {
             fprintf(stderr, "WARNING: Changing exclusion number from %d in force field file\n", pd_.getNexcl());
@@ -618,9 +705,8 @@ void MolGen::Read(FILE            *fp,
     }
     if (nullptr != fp)
     {
-        fprintf(fp, "There are %d atom types in the input file %s:\n---\n",
+        fprintf(fp, "There are %d atom types in the input file %s.\n\n",
                 static_cast<int>(pd_.getNatypes()), pd_fn);
-        fprintf(fp, "---\n\n");
     }
     //  Now  we have read the poldata and spread it to processors
     fillIopt();
@@ -628,7 +714,8 @@ void MolGen::Read(FILE            *fp,
     if (MASTER(cr_))
     {
         MolPropRead(fn, &mp);
-        print_memory_usage(fp);
+        fprintf(fp, "Read %d compounds from %s\n", static_cast<int>(mp.size()), fn);
+        print_memory_usage(debug);
         for (auto mpi = mp.begin(); mpi < mp.end(); )
         {
             mpi->CheckConsistency();
@@ -654,7 +741,7 @@ void MolGen::Read(FILE            *fp,
                   {
                       return (mp1.NAtom() < mp2.NAtom());
                   });
-        print_memory_usage(fp);
+        print_memory_usage(debug);
     }
     /* Generate topology for Molecules and distribute them among the nodes */
     std::string      method, basis;
@@ -667,20 +754,25 @@ void MolGen::Read(FILE            *fp,
 
     if (MASTER(cr_))
     {
-        printf("Generating molecules!\n");
+        if (fp)
+        {
+            fprintf(fp, "Trying to generate topologies for %d molecules!\n",
+                    static_cast<int>(mp.size()));
+        }
         for (auto mpi = mp.begin(); mpi < mp.end(); ++mpi)
         {
             iMolSelect ims;
             if (gms.status(mpi->getIupac(), &ims))
             {
                 alexandria::MyMol mymol;
-                if (debug)
+                if (fp && debug)
                 {
                     fprintf(debug, "%s\n", mpi->getMolname().c_str());
                 }
                 mymol.Merge(&(*mpi));
                 mymol.setInputrec(inputrec_);
-                imm = mymol.GenerateTopology(&pd_,
+                imm = mymol.GenerateTopology(fp,
+                                             &pd_,
                                              method,
                                              basis,
                                              nullptr,
@@ -689,52 +781,74 @@ void MolGen::Read(FILE            *fp,
                                              optimize(InteractionType::PROPER_DIHEDRALS),
                                              missingParameters::Error,
                                              tabfn);
-                if (immStatus::OK != imm && debug)
+                if (immStatus::OK != imm)
                 {
-                    fprintf(debug, "Tried to generate topology for %s. Outcome: %s\n",
-                            mymol.getMolname().c_str(), immsg(imm));
+                    if (verbose && fp)
+                    {
+                        fprintf(fp, "Tried to generate topology for %s. Outcome: %s\n",
+                                mymol.getMolname().c_str(), immsg(imm));
+                    }
+                    continue;
                 }
-                if (immStatus::OK == imm)
-                {
-                    mymol.symmetrizeCharges(&pd_, qsymm_, nullptr);
-                    mymol.initQgenResp(&pd_, method, basis, 0.0, maxESP_);
-                    std::vector<double> dummy;
-                    imm = mymol.GenerateCharges(&pd_,
-                                                mdlog_,
-                                                cr_,
-                                                tabfn,
-                                                hwinfo_,
-                                                qcycle_,
-                                                qtol_,
-                                                ChargeGenerationAlgorithm::NONE,
-                                                dummy,
-                                                lot_);
-                    //(void) mymol.espRms(qType::Calc);
-                }
-                if (immStatus::OK != imm && debug)
-                {
-                    fprintf(debug, "Tried to generate charges for %s. Outcome: %s\n",
-                            mymol.getMolname().c_str(), immsg(imm));
-                }
-                if (immStatus::OK == imm)
-                {
-                    imm = mymol.GenerateChargeGroups(ecgGroup, false);
-                }
-                if (immStatus::OK == imm)
-                {
-                    imm = mymol.getExpProps(bQM_, bZero, bZPE, bDHform,
-                                            method, basis, &pd_);
-                }
-                if (immStatus::OK == imm)
-                {
-                    mymol.set_datasetType(ims);
+                
+                mymol.symmetrizeCharges(&pd_, qsymm_, nullptr);
+                mymol.initQgenResp(&pd_, method, basis, 0.0, maxESP_);
+                std::vector<double> dummy;
+                imm = mymol.GenerateCharges(&pd_,
+                                            mdlog_,
+                                            cr_,
+                                            tabfn,
+                                            hwinfo_,
+                                            qcycle_,
+                                            qtol_,
+                                            ChargeGenerationAlgorithm::NONE,
+                                            dummy,
+                                            lot_);
 
-                    // mymol_ contains all molecules
-                    mymol_.push_back(std::move(mymol));
+                if (immStatus::OK != imm)
+                {
+                    if (verbose && fp)
+                    {
+                        fprintf(fp, "Tried to generate charges for %s. Outcome: %s\n",
+                                mymol.getMolname().c_str(), immsg(imm));
+                    }
+                    continue;
                 }
+                imm = mymol.GenerateChargeGroups(ecgGroup, false);
+                if (immStatus::OK != imm)
+                {
+                    if (verbose && fp)
+                    {
+                        fprintf(fp, "Tried to generate charge groups for %s. Outcome: %s\n",
+                                mymol.getMolname().c_str(), immsg(imm));
+                    }
+                    continue;
+                }
+                
+                imm = mymol.getExpProps(bQM_, bZero, bZPE, bDHform,
+                                        method, basis, &pd_);
+                if (immStatus::OK != imm)
+                {
+                    if (verbose && fp)
+                    {
+                        fprintf(fp, "Tried to extract experimental reference data for %s. Outcome: %s\n",
+                                mymol.getMolname().c_str(), immsg(imm));
+                    }
+                    continue;
+                }
+                
+                mymol.set_datasetType(ims);
+
+                // mymol_ contains all molecules
+                mymol_.push_back(std::move(mymol));
+            }
+            else if (verbose && fp)
+            {
+                fprintf(fp, "Could not find %s in selection.\n",
+                        mpi->getIupac().c_str());
             }
         }
-        print_memory_usage(fp);
+        print_memory_usage(debug);
         countTargetSize();
         checkDataSufficiency(fp);
         generateOptimizationIndex(fp);
@@ -844,7 +958,7 @@ void MolGen::Read(FILE            *fp,
                 fprintf(fp, " compounds.\n");
             }
         }
-        print_memory_usage(fp);
+        print_memory_usage(debug);
     }
     else
     {
@@ -872,7 +986,8 @@ void MolGen::Read(FILE            *fp,
             }
             mymol.setInputrec(inputrec_);
 
-            imm = mymol.GenerateTopology(&pd_,
+            imm = mymol.GenerateTopology(debug,
+                                         &pd_,
                                          method,
                                          basis,
                                          nullptr,
@@ -950,6 +1065,7 @@ void MolGen::Read(FILE            *fp,
             }
         }
     }
+    return mymol_.size();
 }
 
 } // namespace alexandria

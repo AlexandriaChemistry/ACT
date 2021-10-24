@@ -93,9 +93,6 @@ class Poldata
         //! Return whether Yang & Sharp is used
         bool yang() const;
         
-        //! Return whether we use a point charge for cores
-        bool corePointCharge() const { return false; }
-
         /*! \brief
          * Set relative dielectric constant
          *
@@ -191,7 +188,18 @@ class Poldata
         return hasParticleType(id);
     }
         
-        ParticleTypeIterator findParticleType(Identifier id)
+        ParticleTypeIterator findParticleType(const Identifier &id)
+        {
+            auto atp = std::find_if(alexandria_.begin(), alexandria_.end(),
+                                    [id](ParticleType const &f)
+                                    { return (id == f.id()); });
+            if (atp == alexandria_.end())
+            {
+                GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such atom ype %s", id.id().c_str()).c_str()));
+            }
+            return atp;
+        }
+        ParticleTypeConstIterator findParticleType(const Identifier &id) const
         {
             auto atp = std::find_if(alexandria_.begin(), alexandria_.end(),
                                     [id](ParticleType const &f)
@@ -392,6 +400,9 @@ class Poldata
 
         //! Spread eemprop from master to slave nodes
         void broadcast_eemprop(const t_commrec *cr);
+        
+        //! Spread mutable particle properties from master to slave nodes
+        void broadcast_particles(const t_commrec *cr);
         
         CommunicationStatus Send(const t_commrec *cr, int dest);
 

@@ -522,6 +522,7 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
                             default:
                                 gmx_fatal(FARGS, "Death Horror: %s, %d", __FILE__, __LINE__);
                         }
+                        shell[nsi].k = std::max(10000.0, shell[nsi].k);
                         shell[nsi].nnucl++;
                     }
                     ia += nra+1;
@@ -579,7 +580,7 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
         {
             if (fplog)
             {
-                fprintf(fplog, "\nNOTE: there all shells that are connected to particles outside thier own charge group, will not predict shells positions during the run\n\n");
+                fprintf(fplog, "\nNOTE: there are shells that are connected to particles outside their own charge group, will not predict shells positions during the run\n\n");
             }
             /* Prediction improves performance, so we should implement either:
              * 1. communication for the atoms needed for prediction

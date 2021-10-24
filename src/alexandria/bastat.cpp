@@ -266,7 +266,7 @@ static void lo_add_dih(FILE *fplog, const char *molname,
     }
     if (iType == InteractionType::IMPROPER_DIHEDRALS)
     {
-        while (angle > 176)
+        while (angle > 170)
         {
             angle -= 180;
         }
@@ -495,7 +495,8 @@ static void update_pd(FILE          *fp,
                 round_numbers(&av, &sig, 10);
                 Identifier bondId({i.a1, i.a2, i.a3}, CanSwap::Yes);
                 fs->addParameter(bondId, "angle",
-                                 ForceFieldParameter("degree", av, sig, N, av*factor, av/factor, Mutability::Bounded, false, true));
+                                 ForceFieldParameter("degree", av, sig, N, av*factor, 
+                                                     std::min(180.0, av/factor), Mutability::Bounded, false, true));
                 fs->addParameter(bondId, "kt",
                                  ForceFieldParameter("kJ/mol/rad2", kt, 0, 1, kt*factor, kt/factor, Mutability::Bounded, false, false));
                 if (fType == F_UREY_BRADLEY)
@@ -525,7 +526,7 @@ static void update_pd(FILE          *fp,
                 fs->addParameter(bondId, "a",
                                  ForceFieldParameter("", av, sig, N, av*myfactor, av/myfactor, Mutability::Bounded, false, true));
                 fs->addParameter(bondId, "klin", 
-                                 ForceFieldParameter("kJ/mol/nm2", klin, 0, 1, av*factor, av/factor, Mutability::Bounded, false, true));
+                                 ForceFieldParameter("kJ/mol/nm2", klin, 0, 1, klin*factor, klin/factor, Mutability::Bounded, false, true));
                 
                 fprintf(fp, "linear_angle-%s angle %g sigma %g N = %d%s\n",
                         bondId.id().c_str(), av, sig, N, (sig > angle_tol) ? " WARNING" : "");
@@ -583,9 +584,13 @@ static void update_pd(FILE          *fp,
                 gmx_stats_get_npoints(i.lsq, &N);
                 round_numbers(&av, &sig, 10);
                 Identifier bondId({i.a1, i.a2, i.a3, i.a4}, CanSwap::No);
-
+                if (fabs(av) > 4)
+                {
+                    fprintf(stderr, "Warning: large improper dihedral %g for %s\n",
+                            av, bondId.id().c_str());
+                }
                 fs->addParameter(bondId, "phi", 
-                                 ForceFieldParameter("degree", av, sig, N, av*factor, av/factor, Mutability::Bounded, false, true));
+                                 ForceFieldParameter("degree", 0, 0, N, 0, 0, Mutability::Fixed, false, false));
                 fs->addParameter(bondId, "kimp", 
                                  ForceFieldParameter("kJ/mol", kimp, 0, 1, kimp*factor, kimp/factor, Mutability::Bounded, false, true));
                 
@@ -762,21 +767,21 @@ int alex_bastat(int argc, char *argv[])
     }
 
     fp                 = gmx_ffopen(opt2fn("-g", NFILE, fnm), "w");
-    print_memory_usage(fp);
+    print_memory_usage(debug);
     time(&my_t);
     fprintf(fp, "# This file was created %s", ctime(&my_t));
     fprintf(fp, "# The Alexandria Chemistry Toolkit.\n#\n");
 
     auto selfile = opt2fn("-sel", NFILE, fnm);
     gms.read(selfile);
-    print_memory_usage(fp);
+    print_memory_usage(debug);
     printf("There are %d molecules in the selection file %s.\n",
            (gms.count(iMolSelect::Train) + gms.count(iMolSelect::Test)), selfile);
     fprintf(fp, "# There are %d molecules.\n#\n", (gms.count(iMolSelect::Train) + gms.count(iMolSelect::Test)));
 
     /* Read standard atom properties */
     aps = gmx_atomprop_init();
-    print_memory_usage(fp);
+    print_memory_usage(debug);
 
     /* Read PolData */
     try
@@ -784,7 +789,7 @@ int alex_bastat(int argc, char *argv[])
         readPoldata(opt2fn_null("-d", NFILE, fnm), &pd);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-    print_memory_usage(fp);
+    print_memory_usage(debug);
 
     // This a hack to prevent that no bonds will be found to shells.
     bool polar = pd.polarizable();
@@ -792,7 +797,7 @@ int alex_bastat(int argc, char *argv[])
 
     /* Read Molprops */
     auto nwarn = merge_xml(opt2fns("-f", NFILE, fnm), &mp, nullptr, nullptr, nullptr, aps, true);
-    print_memory_usage(fp);
+    print_memory_usage(debug);
 
     if (nwarn > maxwarn)
     {
@@ -815,7 +820,8 @@ int alex_bastat(int argc, char *argv[])
                 continue;
             }
             std::string mylot;
-            auto        imm = mmi.GenerateTopology(&pd,
+            auto        imm = mmi.GenerateTopology(fp,
+                                                   &pd,
                                                    method,
                                                    basis,
                                                    &mylot,
@@ -991,7 +997,7 @@ int alex_bastat(int argc, char *argv[])
         }
     }
     sort_bonds(bonds);
-    print_memory_usage(fp);
+    print_memory_usage(debug);
     if (bHisto)
     {
         dump_histo(bonds, bspacing, aspacing, oenv);
@@ -1004,12 +1010,12 @@ int alex_bastat(int argc, char *argv[])
     {
         generate_bcc(&pd, hardness);
     }
-    print_memory_usage(fp);
+    print_memory_usage(debug);
     writePoldata(opt2fn("-o", NFILE, fnm), &pd, compress);
     printf("Extracted %zu bondtypes, %zu angletypes, %zu linear-angletypes, %zu dihedraltypes and %zu impropertypes.\n",
            bonds->bond.size(), bonds->angle.size(), bonds->linangle.size(),
            bonds->dih.size(), bonds->imp.size());
-    print_memory_usage(fp);
+    print_memory_usage(debug);
     gmx_ffclose(fp);
     return 0;
 }

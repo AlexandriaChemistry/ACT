@@ -47,6 +47,7 @@
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/compare.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/txtdump.h"
 
@@ -157,7 +158,9 @@ void init_t_atoms(t_atoms *atoms, int natoms, gmx_bool bPdbinfo)
     snew(atoms->atomname, natoms);
     atoms->atomtype  = nullptr;
     atoms->atomtypeB = nullptr;
-    snew(atoms->resinfo, natoms);
+    // Residue numbers typically start at 1 and this array will be
+    // indexed from 1.
+    snew(atoms->resinfo, natoms+1);
     snew(atoms->atom, natoms);
     atoms->haveMass    = FALSE;
     atoms->haveCharge  = FALSE;
@@ -245,7 +248,9 @@ void t_atoms_set_resinfo(t_atoms *atoms, int atom_ind, t_symtab *symtab,
 {
     t_resinfo *ri;
 
-    ri           = &atoms->resinfo[atoms->atom[atom_ind].resind];
+    int resind   = atoms->atom[atom_ind].resind;
+    GMX_RELEASE_ASSERT(resind >= 0 && resind <= atoms->nres, "Residue index out of range");
+    ri           = &atoms->resinfo[resind];
     ri->name     = put_symtab(symtab, resname);
     ri->rtp      = nullptr;
     ri->nr       = resnr;

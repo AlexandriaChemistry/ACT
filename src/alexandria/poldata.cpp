@@ -109,6 +109,7 @@ bool Poldata::typeToInteractionType(const std::string &type,
 {
     if (type2Itype_.empty())
     {
+        type2Itype_.insert({"charge", InteractionType::CHARGE});
         for(const auto &fs : forcesConst())
         {
             auto iType = fs.first;
@@ -471,6 +472,68 @@ CommunicationStatus Poldata::Receive(const t_commrec *cr, int src)
         }
     }
     return cs;
+}
+
+void Poldata::broadcast_particles(const t_commrec *cr)
+{
+    const int src = 0;
+
+    if (MASTER(cr))
+    {
+        for (auto dest = 1; dest < cr->nnodes; dest++)
+        {
+            auto cs = gmx_send_data(cr, dest);
+            if (CS_OK == cs)
+            {
+                if (nullptr != debug)
+                {
+                    fprintf(debug, "Going to update Poldata::particles on node %d\n", dest);
+                }
+                for(auto &ax : alexandria_)
+                {
+                    for(auto &p : ax.parametersConst())
+                    {
+                        auto mut = p.second.mutability();
+                        if (Mutability::Free    == mut ||
+                            Mutability::Bounded == mut)
+                        {
+                            gmx_send_int(cr, dest, 1);
+                            gmx_send_str(cr, dest, &ax.id().id());
+                            gmx_send_str(cr, dest, &p.first);
+                            gmx_send_double(cr, dest, p.second.value());
+                        }
+                    }
+                }
+                gmx_send_int(cr, dest, 0);
+            }
+            gmx_send_done(cr, dest);
+        }
+    }
+    else
+    {
+        auto cs = gmx_recv_data(cr, src);
+        if (CS_OK == cs)
+        {
+            /* Receive Particle info */
+            while (1 == gmx_recv_int(cr, src))
+            {
+                std::string axid, paramname;
+                double value;
+                gmx_recv_str(cr, src, &axid);
+                gmx_recv_str(cr, src, &paramname);
+                value = gmx_recv_double(cr, src);
+                findParticleType(axid)->parameter(paramname)->setValue(value);
+            }
+        }
+        else
+        {
+            if (nullptr != debug)
+            {
+                fprintf(debug, "Could not update eem properties on node %d\n", cr->nodeid);
+            }
+        }
+        gmx_recv_data(cr, src);
+    }   
 }
 
 void Poldata::broadcast_eemprop(const t_commrec *cr)

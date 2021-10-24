@@ -61,7 +61,8 @@ static void dump_molecules(const char *logfilename,
     {
         alexandria::MyMol mymol;
         mymol.Merge(&mp);
-        auto imm = mymol.GenerateTopology(&pd,
+        auto imm = mymol.GenerateTopology(fp,
+                                          &pd,
                                           method,
                                           basis,
                                           nullptr,

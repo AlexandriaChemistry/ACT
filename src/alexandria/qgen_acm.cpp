@@ -71,7 +71,7 @@ QgenAcm::QgenAcm(const Poldata *pd,
         auto atype = pd->findParticleType(*atoms->atomtype[i]);
         atomnr_.push_back(atype->atomnumber());
         auto qparam = atype->parameterConst("charge");
-        if (qparam.mutability() != Mutability::Fixed)
+        if (qparam.mutability() == Mutability::ACM)
         {
             auto acmtype = atype->interactionTypeToIdentifier(InteractionType::ELECTRONEGATIVITYEQUALIZATION);
             if (acmtype.id().empty())
@@ -86,14 +86,6 @@ QgenAcm::QgenAcm(const Poldata *pd,
             nonFixed_.push_back(i);
             nfToGromacs_.insert({ i, nonFixed_.size()-1 });
             q_.push_back(0.0);
-            // If this particle has a shell, it is assumed to be the next particle
-            // TODO: check the polarization array instead.
-            if (atype->hasInteractionType(InteractionType::POLARIZATION) &&
-                i < atoms->nr-1 &&
-                atoms->atom[i+1].ptype == eptShell)
-            {
-                myShell_.insert({ i, i+1 });
-            }
         }
         else
         {
@@ -102,6 +94,14 @@ QgenAcm::QgenAcm(const Poldata *pd,
             jaa_.push_back(0.0);
             chi0_.push_back(0.0);
             row_.push_back(0);
+        }
+        // If this particle has a shell, it is assumed to be the next particle
+        // TODO: check the polarization array instead.
+        if (atype->hasInteractionType(InteractionType::POLARIZATION) &&
+            i < atoms->nr-1 &&
+            atoms->atom[i+1].ptype == eptShell)
+        {
+            myShell_.insert({ i, i+1 });
         }
         auto qtype = atype->interactionTypeToIdentifier(InteractionType::CHARGEDISTRIBUTION);
         auto eqtModel = name2ChargeType(qt.optionValue("chargetype"));
@@ -127,7 +127,8 @@ QgenAcm::QgenAcm(const Poldata *pd,
     }
 }
 
-void QgenAcm::updateParameters(const Poldata *pd)
+void QgenAcm::updateParameters(const Poldata *pd,
+                               const t_atoms *atoms)
 {
     auto qt = pd->findForcesConst(InteractionType::CHARGEDISTRIBUTION);
     auto eqtModel = name2ChargeType(qt.optionValue("chargetype"));
@@ -158,6 +159,11 @@ void QgenAcm::updateParameters(const Poldata *pd)
             chi0_[i] = fs.findParameterTypeConst(acm_id_[i], "chi").value();
             jaa_[i]  = fs.findParameterTypeConst(acm_id_[i], "jaa").value();
         }
+    }
+    // Update fixed charges
+    for (auto &i : fixed_)
+    {
+        q_[i] = pd->findParticleType(*atoms->atomtype[i])->paramValue("charge");
     }
 }
 
@@ -752,15 +758,20 @@ int QgenAcm::solveSQE(FILE                    *fp,
         myq[ai] += pij[bij];
         myq[aj] -= pij[bij];
     }
+    double qfixed = 0;
+    for (size_t i = 0; i < fixed_.size(); i++)
+    {
+        qfixed += q_[fixed_[i]];
+    }
     for (size_t i = 0; i < nonFixed_.size(); i++)
     {
         auto nfi = nonFixed_[i];
-        myq[i] += qtotal_/nonFixed_.size();
-        if (nonFixed_.size() < static_cast<size_t>(natom_))
-        {
-            myq[i] -= q_[myShell_.find(nfi)->second];
-        }
-        q_[nfi] = myq[i];
+        //        myq[i] += qfixed/nonFixed_.size();
+        //if (nonFixed_.size() < static_cast<size_t>(natom_))
+        //{
+        //   myq[i] -= q_[myShell_.find(nfi)->second];
+        //}
+        q_[nfi] = myq[i] - qfixed/nonFixed_.size(); //myq[i];
     }
 
     double qtot    = 0;
@@ -805,7 +816,7 @@ eQgen QgenAcm::generateCharges(FILE                      *fp,
     int info = 0;
     if (eQgen::OK == eQGEN_)
     {
-        updateParameters(pd);
+        updateParameters(pd, atoms);
         updatePositions(x, atoms);
         calcJcc(pd->getEpsilonR(), pd->yang(), pd->rappe());
         if (pd->interactionPresent(InteractionType::BONDCORRECTIONS) &&

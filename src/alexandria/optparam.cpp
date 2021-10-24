@@ -196,6 +196,7 @@ void Bayes::printParameters(FILE *fp) const
 
 void Bayes::addParam(const std::string &name,
                      real               val,
+                     Mutability         mut,
                      real               lower,
                      real               upper,
                      int                ntrain,
@@ -214,6 +215,7 @@ void Bayes::addParam(const std::string &name,
     
     initial_param_.push_back(val);
     param_.push_back(val);
+    mutability_.push_back(mut);
     ntrain_.push_back(ntrain);
     //    prevParam_.push_back(val);
     lowerBound_.push_back(lower);
@@ -224,10 +226,9 @@ void Bayes::addParam(const std::string &name,
 void Bayes::changeParam(size_t j, real rand)
 {
     GMX_RELEASE_ASSERT(j < param_.size(), "Parameter out of range");
-    //real delta = (2*rand-1)*step()*fabs(param_[j]);
     real delta = (2*rand-1)*step()*(upperBound_[j]-lowerBound_[j]);
     param_[j] += delta;
-    if (boxConstraint())
+    if (mutability_[j] == Mutability::Bounded)
     {
         if (param_[j] < lowerBound_[j])
         {
@@ -258,6 +259,10 @@ bool OptParam::anneal(int iter) const
 
 void Bayes::SensitivityAnalysis(FILE *fplog, iMolSelect ims)
 {
+    if (param_.size() == 0)
+    {
+        return;
+    }
     std::vector<bool> changed;
     changed.resize(param_.size(), true);
     toPoldata(changed);
@@ -272,22 +277,22 @@ void Bayes::SensitivityAnalysis(FILE *fplog, iMolSelect ims)
     for (size_t i = 0; i < param_.size(); ++i)
     {
         Sensitivity s;
-        double p_0    = param_[i];
+        double pstore = param_[i];
+        double deltap = (upperBound_[i]-lowerBound_[i])/200;
+        double pmin   = std::max(param_[i]-deltap, lowerBound_[i]);
+        double pmax   = std::min(param_[i]+deltap, upperBound_[i]);
+        double p_0    = 0.5*(pmin+pmax);
         changed[i]    = true;
-        param_[i]     = 0.99*p_0;
+        param_[i]     = pmin;
         toPoldata(changed);
         s.add(param_[i], calcDeviation(false, CalcDev::Parallel, ims));
-        param_[i]     = 0.995*p_0;
-        toPoldata(changed);
-        s.add(param_[i], calcDeviation(false, CalcDev::Parallel, ims));
-        s.add(p_0, chi2_0);
-        param_[i]     = 1.005*p_0;
-        toPoldata(changed);
-        s.add(param_[i],  calcDeviation(false, CalcDev::Parallel, ims));
-        param_[i]     = 1.01*p_0;
-        toPoldata(changed);
-        s.add(param_[i],  calcDeviation(false, CalcDev::Parallel, ims));
         param_[i]     = p_0;
+        toPoldata(changed);
+        s.add(param_[i], calcDeviation(false, CalcDev::Parallel, ims));
+        param_[i]     = pmax;
+        toPoldata(changed);
+        s.add(param_[i],  calcDeviation(false, CalcDev::Parallel, ims));
+        param_[i]     = pstore;
         toPoldata(changed);
         changed[i]    = false;
         s.computeForceConstants(fplog);
@@ -425,7 +430,7 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
     std::uniform_int_distribution<>  int_uniform(0, nParam-1);
     std::uniform_real_distribution<> real_uniform(0, 1);
     
-    print_memory_usage(fplog);
+    print_memory_usage(debug);
     // Optmization loop
     double beta0            = 1/(BOLTZ*temperature());
     
@@ -436,11 +441,17 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
             // Pick a random parameter to change
             int j              = int_uniform(gen);
             storeParam         = param_[j];
-            attemptedMoves_[j] = attemptedMoves_[j] + 1;
         
             // Change the picked parameter
             changeParam(j, real_uniform(gen));
-            changed[j]         = true;
+            // Test whether the parameter did in fact change, if not
+            // it is not meaningful to evaluate again.
+            if (param_[j] == storeParam)
+            {
+                continue;
+            }
+            attemptedMoves_[j] += 1;
+            changed[j]          = true;
         
             // Update FF parameter data structure with 
             // the new value of parameter j
@@ -487,18 +498,16 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
                         }
                         else
                         {
-                            fprintf(fplog, "iter %10g. Found new minimum at 10%g\n",
+                            fprintf(fplog, "iter %10g. Found new minimum at %10g\n",
                                     xiter, currEval);
+                        }
+                        if (debug)
+                        {
+                            printParameters(debug);
                         }
                     }
                     bestParam_ = param_;
                     minEval    = currEval;
-                    if (debug && false)
-                    {
-                        fprintf(debug, "iter %g. Found new minimum at %g\n",
-                                xiter, currEval);
-                        printParameters(debug);
-                    }
                     saveState();
                 }
                 prevEval = currEval;

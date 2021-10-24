@@ -65,13 +65,14 @@ void ForceFieldParameter::setValue(double value)
             double newval = std::min(maximum_, std::max(minimum_, value));
             if (strict_)
             {
-                auto buf = gmx::formatString("Can not modify value outside its bounds of %g-%g. Setting it to %g.",
-                                             minimum_, maximum_, newval);
+                auto buf = gmx::formatString("Can not modify value outside its bounds of %g-%g. Setting it to %g %s",
+                                             minimum_, maximum_, newval, unit_.c_str());
                 GMX_THROW(gmx::InvalidInputError(buf));
             }
             value_ = newval;
         }
         break;
+    case Mutability::ACM:
     case Mutability::Dependent:
     case Mutability::Fixed:
         if (strict_)
@@ -98,7 +99,7 @@ void ForceFieldParameter::setUncertainty(double uncertainty)
 
 void ForceFieldParameter::setNtrain(int ntrain)
 { 
-    if (mutability_ == Mutability::Free || mutability_ == Mutability::Bounded)
+    if (mutability_ != Mutability::Fixed)
     {
         ntrain_ = ntrain;
     }
@@ -132,6 +133,7 @@ CommunicationStatus ForceFieldParameter::Send(const t_commrec *cr, int dest) con
     {
         gmx_send_str(cr, dest, &unit_);
         gmx_send_double(cr, dest, value_);
+        gmx_send_str(cr, dest, &mutabilityName(mutability_));
         gmx_send_double(cr, dest, originalValue_);
         gmx_send_double(cr, dest, uncertainty_);
         gmx_send_double(cr, dest, originalUncertainty_);
@@ -166,6 +168,14 @@ CommunicationStatus ForceFieldParameter::Receive(const t_commrec *cr, int src)
     {
         gmx_recv_str(cr, src, &unit_);
         value_               = gmx_recv_double(cr, src);
+        std::string mutstr;
+        gmx_recv_str(cr, src, &mutstr);
+        Mutability mut;
+        if (!nameToMutability(mutstr, &mut))
+        {
+            GMX_THROW(gmx::InternalError(gmx::formatString("Invalid mutability %s", mutstr.c_str()).c_str()));
+        }
+        mutability_          = mut;
         originalValue_       = gmx_recv_double(cr, src);
         uncertainty_         = gmx_recv_double(cr, src);
         originalUncertainty_ = gmx_recv_double(cr, src);

@@ -27,6 +27,7 @@
 
 set(ALEXANDRIA_SOURCES
            alex_modules.cpp
+           atype_mapping.cpp
            bastat.cpp
            categories.cpp
            chargemodel.cpp

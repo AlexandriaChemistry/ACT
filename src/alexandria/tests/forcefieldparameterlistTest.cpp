@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2020
+ * Copyright (C) 2020, 2021
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -112,6 +112,7 @@ class ForceFieldParameterListTest : public gmx::test::CommandLineTestBase
                                     }
                                     break;
                                 }
+                            case Mutability::ACM:
                             case Mutability::Dependent:
                             case Mutability::Fixed:
                                 {
@@ -181,7 +182,7 @@ TEST_F (ForceFieldParameterListTest, AddParameter) {
     ff.addParameter(Identifier({"c2"}, CanSwap::Yes), "gamma",
                     ForceFieldParameter("", 11.0, 0.25, 17, 8.0, 15.0, Mutability::Fixed, true, false) );
     ff.addParameter(Identifier({"h3"}, CanSwap::Yes), "epsilon", 
-                    ForceFieldParameter("kJ/mol", 0.2, 0.3, 24, 10.0, 18.0, Mutability::Fixed, false, true) );
+                    ForceFieldParameter("kJ/mol", 0.2, 0.3, 24, 0.1, 0.4, Mutability::Fixed, false, true) );
     runTest(&ff, false);
 }
 
@@ -192,9 +193,9 @@ TEST_F (ForceFieldParameterListTest, ModifyParameter) {
     ff.addParameter(Identifier({"c2"}, CanSwap::Yes), "gamma",
                     ForceFieldParameter("", 11.0, 0.25, 12, 8.0, 15.0, Mutability::Fixed, true, true));
     ff.addParameter(Identifier({"h3"}, CanSwap::Yes), "epsilon",
-                    ForceFieldParameter("kJ/mol", 0.2, 0.3, 1, 10.0, 18.0, Mutability::Bounded, false, false));
+                    ForceFieldParameter("kJ/mol", 0.2, 0.3, 1, 0.1, 0.4, Mutability::Bounded, false, false));
     ff.addParameter(Identifier({"c3"}, CanSwap::Yes), "epsilon",
-                    ForceFieldParameter("kJ/mol", 0.2, 0.3, 1, 10.0, 18.0, Mutability::Fixed, false, true));
+                    ForceFieldParameter("kJ/mol", 0.2, 0.3, 1, 0.1, 0.4, Mutability::Fixed, false, true));
     runTest(&ff, true);
 }
 

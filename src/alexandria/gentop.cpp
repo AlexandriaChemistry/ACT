@@ -36,6 +36,8 @@
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/gmxlib/network.h"
+#include "gromacs/hardware/detecthardware.h"
+#include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/inputrec.h"
@@ -44,9 +46,11 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/physicalnodecommunicator.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "alex_modules.h"
+#include "atype_mapping.h"
 #include "babel_io.h"
 #include "fill_inputrec.h"
 #include "molprop_util.h"
@@ -147,7 +151,6 @@ int alex_gentop(int argc, char *argv[])
     static real                      watoms         = 0;
     static real                      spacing        = 0.01;
     static real                      border         = 0.2;
-    static real                      efield         = 0;
     static char                     *molnm          = (char *)"";
     static char                     *iupac          = (char *)"";
     static char                     *dbname         = (char *)"";
@@ -233,9 +236,7 @@ int alex_gentop(int argc, char *argv[])
         { "-nexcl",    FALSE, etINT, {&nexcl},
           "HIDDENNumber of exclusion" },
         { "-jobtype",  FALSE, etSTR, {&jobtype},
-          "The job type used in the Gaussian calculation: Opt, Polar, SP, and etc." },
-        { "-efield",  FALSE, etREAL, {&efield},
-          "The magnitude of the external electeric field to calculate polarizability tensor." },
+          "The job type used in the Gaussian calculation: Opt, Polar, SP, and etc." }
     };
 
     if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
@@ -356,6 +357,12 @@ int alex_gentop(int argc, char *argv[])
                       qtot,
                       addHydrogens))
         {
+            std::map<std::string, std::string> g2a;
+            gaffToAlexandria("", &g2a);
+            if (!g2a.empty())
+            {
+                renameAtomTypes(&mp, g2a);
+            }
             mymol.Merge(&mp);
         }
         else
@@ -367,7 +374,8 @@ int alex_gentop(int argc, char *argv[])
     fill_inputrec(inputrec);
     mymol.setInputrec(inputrec);
     std::string mylot;
-    imm = mymol.GenerateTopology(&pd,
+    imm = mymol.GenerateTopology(stdout,
+                                 &pd,
                                  method,
                                  basis,
                                  &mylot,
@@ -376,6 +384,10 @@ int alex_gentop(int argc, char *argv[])
                                  bDihedral,
                                  bAllowMissing ? missingParameters::Ignore : missingParameters::Error,
                                  tabfn);
+
+    auto pnc    = gmx::PhysicalNodeCommunicator(MPI_COMM_WORLD, 0);
+    auto hwinfo = gmx_detect_hardware(mdlog, pnc);
+    gmx_omp_nthreads_init(mdlog, cr, 1, 1, 1, 0, false, false);
 
     if (immStatus::OK == imm)
     {
@@ -404,7 +416,7 @@ int alex_gentop(int argc, char *argv[])
                                        mdlog,
                                        cr,
                                        tabfn,
-                                       nullptr,
+                                       hwinfo,
                                        qcycle,
                                        qtol,
                                        alg,
@@ -414,7 +426,7 @@ int alex_gentop(int argc, char *argv[])
     /* Generate output file for debugging if requested */
     if (immStatus::OK == imm)
     {
-        mymol.plotEspCorrelation(opt2fn_null("-plotESP", NFILE, fnm), oenv);
+        mymol.plotEspCorrelation(opt2fn_null("-plotESP", NFILE, fnm), oenv, cr);
     }
 
     if (immStatus::OK == imm)
@@ -445,7 +457,6 @@ int alex_gentop(int argc, char *argv[])
                             bVerbose,
                             &pd,
                             cr,
-                            efield,
                             method,
                             basis);
     }

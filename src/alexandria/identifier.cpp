@@ -209,23 +209,13 @@ CommunicationStatus Identifier::Receive(const t_commrec *cr, int src)
 
 bool operator==(const Identifier &a, const Identifier &b)
 {
-    if (a.atoms().size() != b.atoms().size())
-    {
-        GMX_THROW(gmx::InternalError(gmx::formatString("Comparing identifiers of different type with %d resp. %d components", static_cast<int>(a.atoms().size()), static_cast<int>(b.atoms().size())).c_str()));
-    }
-    return (a.id() == b.id());
+    return (a.atoms().size() == b.atoms().size() &&
+            a.id() == b.id());
 }
 
 bool operator<(const Identifier &a, const Identifier &b)
 {
-    if (a == b)
-    {
-        return false;
-    }
-    else
-    {
-        return (a.id() < b.id());
-    }
+    return (!(a == b) && (a.id() < b.id()));
 }
 
 } // namespace alexandria

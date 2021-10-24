@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2014-2020
+ * Copyright (C) 2014-2021
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -138,7 +138,8 @@ class AcmTest : public gmx::test::CommandLineTestBase
 
             // Get poldata
             auto pd  = getPoldata(model);
-            auto imm = mp_.GenerateTopology(pd, method, basis, nullptr,
+            auto imm = mp_.GenerateTopology(nullptr,
+                                            pd, method, basis, nullptr,
                                             false, false, false,
                                             missingParameters::Error, nullptr);
             if (immStatus::OK != imm)
@@ -185,6 +186,7 @@ class AcmTest : public gmx::test::CommandLineTestBase
 
 };
 
+#ifdef OLDSTUFF
 TEST_F (AcmTest, BultinckLog)
 {
     std::vector<double> qcustom;
@@ -232,6 +234,7 @@ TEST_F (AcmTest, YangPDB)
     std::vector<double> qcustom;
     testAcm("Yang", einfPDB, "1-butanol", true, 0, qcustom);
 }
+#endif 
 
 TEST_F (AcmTest, AXpgLOG)
 {

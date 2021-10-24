@@ -171,8 +171,10 @@ using RmsFittingTarget       = typename std::map<eRMS, FittingTarget>;
 class OptimizationIndex
 {
  private:
+    //! The particle type. If empty, an interaction type is used.
+    std::string     particleType_;
     //! The interaction type
-    InteractionType iType_;
+    InteractionType iType_ = InteractionType::CHARGE;
     //! The name of the parameter matching poldata
     Identifier      parameterId_;
     //! The type of parameter, eg. sigma, epsilon
@@ -186,7 +188,15 @@ class OptimizationIndex
     OptimizationIndex(InteractionType    iType,
                       Identifier         parameterId,
                       const std::string &parameterType) :
-        iType_(iType),parameterId_(parameterId), parameterType_(parameterType) {}
+        iType_(iType), parameterId_(parameterId), parameterType_(parameterType) {}
+    
+    /*! \brief Constructor
+     * \param[in] pType         The particle type
+     * \param[in] parameterType The type
+     */
+    OptimizationIndex(const std::string  pType,
+                      const std::string &parameterType) :
+        particleType_(pType), parameterType_(parameterType) {}
     
     //! Return the interaction type
     InteractionType iType() const { return iType_; }
@@ -194,14 +204,27 @@ class OptimizationIndex
     //! Return the id
     Identifier id() const { return parameterId_; }
     
+    //! Return particle type
+    const std::string &particleType() const { return particleType_; }
+    
     //! Return the type
-    const std::string type() const { return parameterType_; }
+    const std::string &parameterType() const { return parameterType_; }
 
     //! Return a compound string representing the index
     std::string name() const
     {
-        return gmx::formatString("%s-%s", //interactionTypeToString(iType_).c_str(),
-                                 parameterId_.id().c_str(), parameterType_.c_str()); 
+        if (InteractionType::CHARGE == iType_)
+        {
+            return gmx::formatString("%s-%s",
+                                     particleType_.c_str(),
+                                     parameterType_.c_str());
+        }
+        else
+        {
+            return gmx::formatString("%s-%s",
+                                     parameterId_.id().c_str(),
+                                     parameterType_.c_str());
+        }
     }
     
     //! Return a compound string representing the atomindex
@@ -286,7 +309,8 @@ class MolGen
         //! \brief Add options to the command line
         void addOptions(std::vector<t_pargs> *pargs, eTune etune);
 
-        //! \brief Process options after parsing
+        /*! \brief Process options after parsing
+         */
         void optionsFinished();
 
         //! \brief Return the poldata as const variable
@@ -424,17 +448,27 @@ class MolGen
          */  
         void printChiSquared(FILE *fp, iMolSelect ims) const;
 
-        /*! \brief Read the molecular property data file to generate molecues.
-         * TODO: update comments
+        /*! \brief Read the molecular property data file to generate molecules.
+         * \param[in] fp      File pointer for printing information
+         * \param[in] fn      Filename for molecules
+         * \param[in] pd_fn   Filename for force field file
+         * \param[in] bZero   Use compounds with zero dipole
+         * \param[in] gms     The molecule selection
+         * \param[in] bZPE    Use Zero point energy
+         * \param[in] bDHform Use delta H formation
+         * \param[in] tabfn   Table function for gromacs
+         * \param[in] verbose Whether or not to print stuff
+         * \return number of molecules read and processed correctly
          */
-        void Read(FILE            *fp,
+        size_t Read(FILE            *fp,
                   const char      *fn,
                   const char      *pd_fn,
                   gmx_bool         bZero,
                   const MolSelect &gms,
                   bool             bZPE,
                   bool             bDHform,
-                  const char      *tabfn);
+                  const char      *tabfn,
+                  bool             verbose);
 
 };
 

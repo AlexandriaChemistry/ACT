@@ -57,54 +57,50 @@ TEST(IdentifierSimpleTest, BSmallerThanA) {
 TEST(IdentifierSimpleTest, CompareDifferentLength) {
     Identifier a({"C", "H"}, CanSwap::Yes);
     Identifier b({"C", "O", "H"}, CanSwap::Yes);
-    bool compare = false;
-    EXPECT_THROW((compare = b < a), gmx::InternalError);
-    // Code will not be reached in normal cases but the compiler
-    // warns about compare not being used otherwise.
-    printf("This should not happen. compare = %s\n",
-           compare ? "true" : "false");
+    bool compare = b < a;
+    EXPECT_FALSE(compare);
 }
 
 TEST(IdentifierSimpleTest, BSmallerThanASecondAtom) {
     Identifier a({"H", "P"}, CanSwap::No);
     Identifier b({"H", "C"}, CanSwap::No);
     bool compare = b < a;
-    EXPECT_TRUE((compare));
+    EXPECT_FALSE(compare);
 }
 
 TEST(IdentifierSimpleTest, BSmallerThanABondOrder) {
     Identifier a({"H", "C"}, 2, CanSwap::No);
     Identifier b({"H", "C"}, 1, CanSwap::No);
     bool compare = b < a;
-    EXPECT_TRUE((compare));
+    EXPECT_TRUE(compare);
 }
 
 TEST(IdentifierSimpleTest, NotASmallerThanB) {
     Identifier a({"P", "H"}, CanSwap::Yes);
     Identifier b({"C", "H"}, CanSwap::Yes);
     bool compare = a < b;
-    EXPECT_FALSE((compare));
+    EXPECT_FALSE(compare);
 }
 
 TEST(IdentifierSimpleTest, AEqualToB) {
     Identifier a({"P", "H"}, CanSwap::Yes);
     Identifier b({"P", "H"}, CanSwap::Yes);
     bool equal = !(a < b) && !(b < a);
-    EXPECT_TRUE((equal));
+    EXPECT_TRUE(equal);
 }
 
 TEST(IdentifierSimpleTest, SwappedAEqualToB) {
     Identifier a({"P", "H"}, CanSwap::Yes);
     Identifier b({"H", "P"}, CanSwap::Yes);
     bool equal = !(a < b) && !(b < a);
-    EXPECT_TRUE((equal));
+    EXPECT_TRUE(equal);
 }
 
 TEST(IdentifierSimpleTest, ANotEqualToB) {
     Identifier a({"P", "H"}, CanSwap::Yes);
     Identifier b({"C", "H"}, CanSwap::Yes);
     bool equal = !(a < b) && !(b < a);
-    EXPECT_FALSE((equal));
+    EXPECT_FALSE(equal);
 }
 
 TEST(IdentifierSimpleTest, BSmallerThanABondOrder1) {

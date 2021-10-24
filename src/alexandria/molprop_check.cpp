@@ -185,7 +185,8 @@ std::vector<alexandria::MolProp> mp;
         alexandria::MyMol mymol;
         mymol.Merge(&m);
         mymol.setInputrec(inputrec);
-        auto imm = mymol.GenerateTopology(&pd,
+        auto imm = mymol.GenerateTopology(mylog,
+                                          &pd,
                                           method,
                                           basis,
                                           nullptr,

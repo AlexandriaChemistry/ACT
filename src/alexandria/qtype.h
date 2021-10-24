@@ -110,7 +110,7 @@ class QtypeProps
     /*! \brief Store center of charge
      * \param[in] coc The center of charge
      */
-    void setCenterOfCharge(rvec coc) { copy_rvec(coc, coc_); }
+    void setCenterOfCharge(const rvec &coc) { copy_rvec(coc, coc_); }
     
     /*! \brief Compute electric moments and store them.
      */

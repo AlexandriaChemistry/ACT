@@ -66,7 +66,9 @@ QgenResp::QgenResp(const QgenResp *src)
     qtot_               = src->qtot_;                    
     qshell_             = src->qshell_;                  
     rms_                = src->rms_;                     
-    rrms_               = src->rrms_;                    
+    rrms_               = src->rrms_;
+    mse_                = src->mse_;
+    mae_                = src->mae_;                    
     cosangle_           = src->cosangle_;                
     for(int m = 0; m < DIM; m++)
     {
@@ -149,8 +151,8 @@ void QgenResp::setAtomInfo(const t_atoms                    *atoms,
             zeta_.push_back(0.0);
         }
         
-        mutable_.push_back(qparm.mutability() != Mutability::Fixed);
-        if (qparm.mutability() == Mutability::Fixed)
+        mutable_.push_back(qparm.mutability() == Mutability::ACM);
+        if (qparm.mutability() != Mutability::ACM)
         {
             nFixed_++;
             qshell_ += q_[i];
@@ -315,9 +317,11 @@ void QgenResp::regularizeCharges()
     }
 }
 
-void QgenResp::calcRms()
+void QgenResp::calcStatistics()
 {
     double pot2 = 0, sum2 = 0, ip = 0, calc2 = 0;
+    mae_ = 0;
+    mse_ = 0;
     for (size_t i = 0; (i < nEsp()); i++)
     {
         double vesp  = ep_[i].v();
@@ -328,10 +332,17 @@ void QgenResp::calcRms()
             fprintf(debug, "ESP %zu QM: %g FIT: %g DIFF: %g\n",
                     i, ep_[i].v(), ep_[i].vCalc(), diff);
         }
+        mae_  += std::fabs(diff);
+        mse_  += diff;
         sum2  += gmx::square(diff);
         pot2  += gmx::square(vesp);
         ip    += vesp*vcalc;
         calc2 += gmx::square(vcalc);
+    }
+    if (nEsp() > 0)
+    {
+        mae_ /= nEsp();
+        mse_ /= nEsp();
     }
     if (nEsp() > 0)
     {
@@ -353,11 +364,13 @@ void QgenResp::calcRms()
     }
 }
 
-real QgenResp::getRms(real *rrms, real *cosangle)
+real QgenResp::getStatistics(real *rrms, real *cosangle, real *mae, real *mse)
 {
-    calcRms();
+    calcStatistics();
     *rrms     = rrms_;
     *cosangle = cosangle_;
+    *mse      = mse_;
+    *mae      = mae_;
     return rms_;
 }
 
@@ -439,6 +452,11 @@ void QgenResp::optimizeCharges(double epsilonr)
     int                   nrow     = nEsp() + 1 + fitQ_ - uniqueQ_;
     int                   factor   = nEsp()*50;
     int                   ncolumn  = fitQ_;
+    if (ncolumn == 0)
+    {
+        fprintf(stderr, "No charges to fit with RESP. Check your input.\n");
+        return;
+    }
     MatrixWrapper         lhs(ncolumn, nrow);
     std::vector<double>   rhs;
     double                scale_factor = 1.0/std::sqrt(epsilonr);

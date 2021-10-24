@@ -38,6 +38,7 @@
 
 #include "gromacs/math/units.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/utility/fatalerror.h"
 
 #include "communication.h"
 #include "gmx_simple_comm.h"
@@ -81,13 +82,45 @@ class ForceFieldParameter
                         double             maximum,
                         Mutability         mutability,
                         bool               strict,
-                        bool               nonNegative)
+                        bool               nonNegative,
+                        bool               resetValue=false)
                          : 
     unit_(unit), value_(value), originalValue_ (value),
     uncertainty_(uncertainty), originalUncertainty_(uncertainty),
     ntrain_(ntrain), originalNtrain_(ntrain),
     minimum_(minimum), maximum_(maximum), mutability_(mutability),
-    strict_(strict), nonNegative_(nonNegative) {}
+    strict_(strict), nonNegative_(nonNegative)
+    {
+        if (resetValue)
+        {
+            if (mutability_ == Mutability::Bounded)
+            {
+                if (value_ < minimum_)
+                {
+                    if (debug)
+                    {
+                        fprintf(debug, "Resetting value %g (%s) to minimum allowed %g\n",
+                                value_, unit_.c_str(), minimum_);
+                    }
+                    value_ = minimum_;
+                }
+                if (value_ > maximum_)
+                {
+                    if (debug)
+                    {
+                        fprintf(debug, "Resetting value %g (%s) to maximum allowed %g\n",
+                                value_, unit_.c_str(), maximum_);
+                    }
+                    value_ = maximum_;
+                }
+            }
+        }
+        else
+        {
+            GMX_RELEASE_ASSERT(value_ >= minimum_ && value_ <= maximum_, 
+                               gmx::formatString("Value for force field parameter %g (%s) not within bounds [%g, %g]", value_, unit_.c_str(), minimum_, maximum_).c_str());
+        }
+    }
         
     //! \brief Return unit of parameter
     const std::string &unit() const { return unit_; }
@@ -189,7 +222,7 @@ class ForceFieldParameter
     void setMutability(Mutability m) { mutability_ = m; }
     
     //! \brief Return whether this parameter is mutable at all
-    bool isMutable() const { return mutability_ == Mutability::Free || mutability_ == Mutability::Bounded; }
+    bool isMutable() const { return mutability_ != Mutability::Fixed && mutability_ != Mutability::ACM; }
     
     //! \brief Return whether or not to throw on value errors
     bool strict() const { return strict_; }

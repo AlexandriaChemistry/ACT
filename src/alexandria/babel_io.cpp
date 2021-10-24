@@ -735,7 +735,7 @@ bool SetMolpropAtomTypesAndBonds(alexandria::MolProp *mmm)
     mol.BeginModify();
     mol.SetTotalCharge(mmm->totalCharge());
     mol.SetTotalSpinMultiplicity(mmm->getMultiplicity());
-    auto ei  = mmm->experiment().begin();
+    auto ei  = mmm->experiment()->begin();
     mol.ReserveAtoms(ei->NAtom());
     int  idx = 0;
     for (auto &ca : ei->calcAtomConst())

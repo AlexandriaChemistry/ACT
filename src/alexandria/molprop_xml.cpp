@@ -720,13 +720,13 @@ void MolPropRead(const char *fn, std::vector<alexandria::MolProp> *mpt)
     {
         fprintf(debug, "Opening %s\n", mpfile.c_str());
     }
-    print_memory_usage(stderr);
+    print_memory_usage(debug);
     if ((doc = xmlParseFile(mpfile.c_str())) == nullptr)
     {
         gmx_fatal(FARGS, "Failed reading XML file %s. Run a syntax checker such as nsgmls.",
                   mpfile.c_str());
     }
-    print_memory_usage(stderr);
+    print_memory_usage(debug);
     if (nullptr != debug)
     {
         fprintf(debug, "Reading library file %s\n", fn);
@@ -737,6 +737,7 @@ void MolPropRead(const char *fn, std::vector<alexandria::MolProp> *mpt)
                     mpt, 
                     &bExperiment);
     xmlFreeDoc(doc);
+    print_memory_usage(debug);
 }
 
 static void add_exper_properties(xmlNodePtr                    exp,

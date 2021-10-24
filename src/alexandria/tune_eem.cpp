@@ -92,7 +92,6 @@ class OptACM : public MolGen, Bayes
         bool       bFullTensor_                  = false;
         bool       bSameZeta_                    = true;
         bool       bRemoveMol_                   = true;
-        bool       bPointCore_                   = false;
         int        numberCalcDevCalled_          = 0;
         gmx::unique_cptr<FILE, my_fclose> fplog_ = nullptr;
         std::string outputFile_;
@@ -109,7 +108,7 @@ class OptACM : public MolGen, Bayes
 
         bool removeMol() const {return bRemoveMol_; }
         
-        void set_pointCore(bool pointCore) {bPointCore_ =  pointCore;}
+        bool verbose() { return Bayes::verbose(); }
         
         void saveState();
 
@@ -135,7 +134,6 @@ class OptACM : public MolGen, Bayes
         void optionsFinished(const std::string &outputFile)
         {
             MolGen::optionsFinished();
-            setBoxConstraint(bConstrain());
             outputFile_ = outputFile;
         }
 
@@ -308,9 +306,9 @@ double OptACM::calcDeviation(bool       verbose,
                              iMolSelect ims)
 {
     auto cr = commrec();
-    if (PAR(cr))
+    if (MASTER(cr))
     {
-        if (MASTER(cr))
+        if (PAR(cr) && calcDev != CalcDev::Master)
         {
             for(int i = 1; i < cr->nnodes; i++)
             {
@@ -318,11 +316,11 @@ double OptACM::calcDeviation(bool       verbose,
                 gmx_send_int(cr, i, static_cast<int>(ims));
             }
         }
-        else
-        {
-            calcDev = static_cast<CalcDev>(gmx_recv_int(cr, 0));
-            ims     = static_cast<iMolSelect>(gmx_recv_int(cr, 0));
-        }
+    }
+    else
+    {
+        calcDev = static_cast<CalcDev>(gmx_recv_int(cr, 0));
+        ims     = static_cast<iMolSelect>(gmx_recv_int(cr, 0));
     }
     if (calcDev == CalcDev::Final)
     {
@@ -339,10 +337,22 @@ double OptACM::calcDeviation(bool       verbose,
             size_t            n     = 0;
             for (auto &optIndex : optIndex_)
             {
-                auto p = poldata()->findForcesConst(optIndex.iType()).findParameterTypeConst(optIndex.id(), optIndex.type());
-
-                bound  += l2_regularizer(param[n++], p.minimum(), p.maximum(),
-                                         optIndex.name(), verbose);
+                auto                iType = optIndex.iType();
+                ForceFieldParameter p;
+                if (iType == InteractionType::CHARGE)
+                {
+                    p = poldata()->findParticleType(optIndex.particleType())->parameterConst(optIndex.parameterType());
+                }
+                else if (poldata()->interactionPresent(iType))
+                {
+                    p = poldata()->findForcesConst(iType).findParameterTypeConst(optIndex.id(), optIndex.parameterType());
+                }
+                if (p.mutability() == Mutability::Bounded)
+                {
+                    bound  += l2_regularizer(param[n], p.minimum(), p.maximum(),
+                                             optIndex.name(), verbose);
+                }
+                n++;
             }
             (*targets).find(eRMS::BOUNDS)->second.increase(1, bound);
             GMX_RELEASE_ASSERT(n == param.size(), 
@@ -356,6 +366,7 @@ double OptACM::calcDeviation(bool       verbose,
         if (calcDev == CalcDev::Parallel)
         {
             poldata()->broadcast_eemprop(commrec());
+            poldata()->broadcast_particles(commrec());
         }
     }
     int nmolCalculated = 0;
@@ -481,9 +492,9 @@ double OptACM::calcDeviation(bool       verbose,
                 dumpQX(logFile(), &mymol, "ESP");
                 qgr->updateAtomCharges(mymol.atoms());
                 qgr->calcPot(poldata()->getEpsilonR());
-                auto myRms =
-                    convertToGromacs(qgr->getRms(&rrms, &cosangle),
-                                     "Hartree/e");
+                real mae, mse;
+                auto rms = qgr->getStatistics(&rrms, &cosangle, &mae, &mse);
+                auto myRms = convertToGromacs(rms, "Hartree/e");
                 auto nEsp = qgr->nEsp();
                 (*targets).find(eRMS::ESP)->second.increase(nEsp, gmx::square(myRms)*nEsp);
                 if (debug)
@@ -571,12 +582,25 @@ void OptACM::InitOpt(bool bRandom)
 {
     for(auto &optIndex : optIndex_)
     {
-        auto param = poldata()->findForcesConst(optIndex.iType()).findParameterTypeConst(optIndex.id(), optIndex.type());
-        if (param.ntrain() >= mindata())
+        auto                iType = optIndex.iType();
+        ForceFieldParameter p;
+        if (iType == InteractionType::CHARGE)
+        {
+            if (poldata()->hasParticleType(optIndex.particleType()))
+            {
+                p = poldata()->findParticleType(optIndex.particleType())->parameterConst(optIndex.parameterType());
+            }
+        }
+        else if (poldata()->interactionPresent(iType))
+        {
+            p = poldata()->findForcesConst(iType).findParameterTypeConst(optIndex.id(), optIndex.parameterType());
+        }
+        if (p.ntrain() >= mindata())
         {
             Bayes::addParam(optIndex.name(),
-                            param.value(), param.minimum(), param.maximum(),
-                            param.ntrain(), bRandom);
+                            p.value(), p.mutability(),
+                            p.minimum(), p.maximum(),
+                            p.ntrain(), bRandom);
         }
     }
 }
@@ -595,10 +619,22 @@ void OptACM::toPoldata(const std::vector<bool> &changed)
     {
         if (changed[n])
         {
-            auto p = poldata()->findForces(optIndex.iType())->findParameterType(optIndex.id(), optIndex.type());
-            
-            p->setValue(param[n]);
-            p->setUncertainty(psigma[n]);
+            auto                 iType = optIndex.iType();
+            ForceFieldParameter *p = nullptr;
+            if (iType != InteractionType::CHARGE)
+            {
+                p = poldata()->findForces(iType)->findParameterType(optIndex.id(), optIndex.parameterType());
+            }
+            else if (poldata()->hasParticleType(optIndex.particleType()))
+            {
+                p = poldata()->findParticleType(optIndex.particleType())->parameter(optIndex.parameterType());
+            }
+            GMX_RELEASE_ASSERT(p, gmx::formatString("Could not find parameter %s", optIndex.id().id().c_str()).c_str());
+            if (p)
+            {
+                p->setValue(param[n]);
+                p->setUncertainty(psigma[n]);
+            }
         }
         n++;
     }
@@ -612,12 +648,12 @@ bool OptACM::runMaster(const gmx_output_env_t *oenv,
                        const char             *xvgepot,
                        bool                    optimize,
                        bool                    sensitivity,
-                       bool 		       bEvaluate_testset)
+                       bool 		           bEvaluate_testset)
 {
     bool bMinimum = false;
     GMX_RELEASE_ASSERT(MASTER(commrec()), "WTF");
     
-    print_memory_usage(logFile());
+    print_memory_usage(debug);
     std::vector<std::string> paramClass;
     for(const auto &fm : typesToFit())
     {
@@ -665,7 +701,7 @@ bool OptACM::runMaster(const gmx_output_env_t *oenv,
                     iMolSelectName(ims.first), chi2);
         }
     }
-    else
+    else if (optimize)
     {
         fprintf(logFile(), "Did not find a better parameter set\n");
     }
@@ -825,26 +861,31 @@ int alex_tune_eem(int argc, char *argv[])
     if (MASTER(opt.commrec()))
     {
         opt.openLogFile(opt2fn("-g", NFILE, fnm));
-        print_memory_usage(opt.logFile());
+        print_memory_usage(debug);
         print_header(opt.logFile(), pargs);
         gms.read(opt2fn_null("-sel", NFILE, fnm));
-        print_memory_usage(opt.logFile());
+        fprintf(opt.logFile(), "Found %d Train and %d Test compounds in %s\n\n",
+                gms.count(iMolSelect::Train), gms.count(iMolSelect::Test),
+                opt2fn("-sel", NFILE, fnm));
+        print_memory_usage(debug);
     }
 
-    const char *tabfn = opt2fn_null("-table", NFILE, fnm);   
-    
-    opt.Read(opt.logFile() ? opt.logFile() : (debug ? debug : nullptr),
-             opt2fn("-f", NFILE, fnm),
-             opt2fn_null("-d", NFILE, fnm),
-             bZero,
-             gms,
-             false,
-             false,
-             tabfn);
-             
-    bool  pointCore = opt.poldata()->corePointCharge();
-    
-    opt.set_pointCore(pointCore);
+    if (0 == opt.Read(opt.logFile() ? opt.logFile() : (debug ? debug : nullptr),
+                      opt2fn("-f", NFILE, fnm),
+                      opt2fn_null("-d", NFILE, fnm),
+                      bZero,
+                      gms,
+                      false,
+                      false,
+                      opt2fn_null("-table", NFILE, fnm),
+                      opt.verbose()))
+    {
+        if (opt.logFile())
+        {
+            fprintf(opt.logFile(), "Training set is empty, check your input. Rerun with -v option or -debug 1.\n");
+        }
+        return 0;
+    }
     // init charge generation for compounds in the 
     // training set
     opt.initChargeGeneration(iMolSelect::Train);
@@ -855,28 +896,20 @@ int alex_tune_eem(int argc, char *argv[])
         opt.initChargeGeneration(iMolSelect::Test);
         opt.initChargeGeneration(iMolSelect::Ignore);
     }
-
-    bool bMinimum = false;
+    
     if (MASTER(opt.commrec()))
     {
         if (bOptimize || bSensitivity)
         {
             opt.InitOpt(bRandom);
         }
-        bMinimum = opt.runMaster(oenv,
-                                 opt2fn("-conv", NFILE, fnm),
-                                 opt2fn("-epot", NFILE, fnm),
-                                 bOptimize,
-                                 bSensitivity,
-                                 bEvaluate_testset);
-    }
-    else if (bOptimize || bSensitivity)
-    {
-        opt.runSlave();
-    }
-   
-    if (MASTER(opt.commrec()))
-    {
+        bool bMinimum = opt.runMaster(oenv,
+                                      opt2fn("-conv", NFILE, fnm),
+                                      opt2fn("-epot", NFILE, fnm),
+                                      bOptimize,
+                                      bSensitivity,
+                                      bEvaluate_testset);
+        
         if (bMinimum || bForceOutput || !bOptimize)
         {
             bool bPolar = opt.poldata()->polarizable();
@@ -886,7 +919,7 @@ int alex_tune_eem(int argc, char *argv[])
                                              opt.poldata(),
                                              opt.mdlog(),
                                              opt.lot(),
-                                             tabfn,
+                                             opt2fn_null("-table", NFILE, fnm),
                                              opt.hwinfo(),
                                              opt.qcycle(),
                                              opt.qtol(),
@@ -910,12 +943,16 @@ int alex_tune_eem(int argc, char *argv[])
                                              opt.commrec(),
                                              efield,
                                              useOffset);
-            print_memory_usage(opt.logFile());
+            print_memory_usage(debug);
         }
         else if (!bMinimum)
         {
             printf("No improved parameters found. Please try again with more iterations.\n");
         }
+    }
+    else if (bOptimize || bSensitivity)
+    {
+        opt.runSlave();
     }
     return 0;
 }

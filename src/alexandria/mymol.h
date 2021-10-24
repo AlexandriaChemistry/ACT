@@ -119,6 +119,8 @@ namespace alexandria
 
         //! Map of charge type dependent properties
         std::map<qType, QtypeProps>           qProps_;
+        //! Center of nuclear charge
+        rvec                      CenterOfCharge_ = { 0 };
         //! Experimental dipole
         double                    dip_exp_    = 0;
         //! Error in experimental dipole
@@ -173,14 +175,26 @@ namespace alexandria
         void MakeSpecialInteractions(const Poldata *pd,
                                      t_atoms       *atoms,
                                      bool           bUseVsites);
+        /*! \brief
+         * Add vsites on bonds to hos bond shell particles
+         *
+         * \param[in]  fp    File to write (debug) information to
+         * \param[in]  pd    Data structure containing atomic properties
+         * \paran[out] atoms Structure to modify with new particles.
+         */
+        void addBondVsites(FILE          *fp,
+                           const Poldata *pd,
+                           t_atoms       *atoms);
 
         /*! \brief
          * Add shell particles
          *
-         * \param[in] pd     Data structure containing atomic properties
+         * \param[in]  fp    File to write (debug) information to
+         * \param[in]  pd    Data structure containing atomic properties
          * \paran[out] atoms Structure to modify with new particles.
          */
-        void addShells(const Poldata *pd,
+        void addShells(FILE          *fp,
+                       const Poldata *pd,
                        t_atoms       *atoms);
 
         /*! \brief
@@ -275,6 +289,11 @@ namespace alexandria
             dataset_type_ = dataset_type;
         }
 
+        /*! \brief
+         * \return the center of nuclear charge
+         */
+        const rvec &centerOfCharge() const { return CenterOfCharge_; }
+
         /*! \brief Return QtypeProps for a charge type
          * \param[in] qt The charge type, e.g. qType::CM5
          * \return the corresponding structure or nullptr 
@@ -353,6 +372,7 @@ namespace alexandria
         /*! \brief
          * It generates the atoms structure which will be used to print the topology file.
          *
+         * \param[in] fp          File to write (debug) information to
          * \param[in] pd          Data structure containing atomic properties
          * \param[in] method      Method used for QM calculation
          * \param[in] basis       Basis set used for QM calculation
@@ -362,7 +382,8 @@ namespace alexandria
          * \param[in] bAllowMissingParameters Generate dummy parameters if nothing found in force field file
          * \param[in] bDih        Add dihedrals to the topology structure
          */
-        immStatus GenerateTopology(const Poldata     *pd,
+        immStatus GenerateTopology(FILE              *fp,
+                                   const Poldata     *pd,
                                    const std::string &method,
                                    const std::string &basis,
                                    std::string       *mylot,
@@ -473,9 +494,11 @@ namespace alexandria
          * Alexandria potential.
          * \param[in] espcorr File name to plot to
          * \param[in] oenv    Gromacs output structure
+         * \param[in] cr      Gromacs communication record
          */
         void plotEspCorrelation(const char             *espcorr,
-                                const gmx_output_env_t *oenv);
+                                const gmx_output_env_t *oenv,
+                                t_commrec              *cr);
 
         /*! \brief
          * Collect the experimental properties
@@ -499,7 +522,7 @@ namespace alexandria
          *
          * \param[in] fn        A File pointer opened previously.
          * \param[in] iModel    The distrbution model of charge (e.x. point charge, gaussian, and slater models)
-         * \param[in] bVerbose  Verobse
+         * \param[in] bVerbose  Verbose output
          * \param[in] pd        Data structure containing atomic properties
          * \param[in] aps       Gromacs atom properties
          */
@@ -507,7 +530,6 @@ namespace alexandria
                            bool               bVerbose,
                            const Poldata     *pd,
                            t_commrec         *cr,
-                           double             efield,
                            const std::string &method,
                            const std::string &basis);
 
@@ -525,7 +547,6 @@ namespace alexandria
                            const Poldata           *pd,
                            bool                     bITP,
                            t_commrec               *cr,
-                           double                   efield,
                            const std::string       &method,
                            const std::string       &basis);
 

@@ -32,25 +32,29 @@
  
 #include "gmxpre.h"
 
-#include <ctype.h>
+//#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
+//#include <string.h>
+
+#include <map>
 
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/fileio/confio.h"
-#include "gromacs/math/units.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/pbcutil/pbc.h"
-#include "gromacs/topology/atomprop.h"
+//#include "gromacs/fileio/confio.h"
+//#include "gromacs/math/units.h"
+//#include "gromacs/math/vec.h"
+//#include "gromacs/mdtypes/md_enums.h"
+//#include "gromacs/pbcutil/pbc.h"
+//#include "gromacs/topology/atomprop.h"
 #include "gromacs/utility/arraysize.h"
-#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/real.h"
+//#include "gromacs/utility/stringutil.h"
+//#include "gromacs/utility/textreader.h"
+//#include "gromacs/utility/real.h"
 
 #include "alex_modules.h"
+#include "atype_mapping.h"
 #include "babel_io.h"
 #include "molprop.h"
 #include "molprop_util.h"
@@ -65,13 +69,24 @@ int alex_qm2molprop(int argc, char *argv[])
         {
          "qm2molprop reads a series of output files from either",
          "Gaussian ([TT]-g03[tt] option) or Psi4 ([TT]-psi4[tt] option),",
-         "collects useful information and saves it to molprop file."
+         "collects useful information and saves it to molprop file.[PAR]",
+         "The program can optionally map atom type names from an external",
+         "source to alexandria types. In the case supply a mapping file",
+         "with the [TT]-map[tt] option. The format of that file is:[PAR]",
+         "ha h[PAR]",
+         "cp c3[PAR]",
+         "os o3[PAR]",
+         "oh o3[PAR]",
+         "etc. where the first atom type maps onto the second atom type.",
+         "The first atom type must be unique and basic error checking is",
+         "performed."
     };
 
-    t_filenm                         fnm[] = {
+    t_filenm fnm[] = {
         { efLOG, "-g03",  "gauss",   ffOPTRDMULT },
         { efOUT, "-psi4", "psi4",    ffOPTRDMULT },
         { efDAT, "-d",    "gentop",  ffREAD },
+        { efDAT, "-map",  "mapping", ffOPTRD },
         { efDAT, "-o",    "molprop", ffWRITE }
     };
 #define NFILE sizeof(fnm)/sizeof(fnm[0])
@@ -85,7 +100,7 @@ int alex_qm2molprop(int argc, char *argv[])
     static char                     *conf       = (char *)"minimum";
     static gmx_bool                  bVerbose   = false;
     static gmx_bool                  compress   = false;
-    
+
     t_pargs                          pa[]       = {
         { "-v",      FALSE, etBOOL, {&bVerbose},
           "Generate verbose terminal output." },
@@ -124,6 +139,8 @@ int alex_qm2molprop(int argc, char *argv[])
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
+    std::map<std::string, std::string> g2a;
+    gaffToAlexandria("", &g2a);
     // Read Gaussian files
     if (opt2bSet("-g03", NFILE, fnm))
     {
@@ -145,6 +162,10 @@ int alex_qm2molprop(int argc, char *argv[])
                           false))
             {
                 nread += 1;
+                if (!g2a.empty())
+                {
+                    renameAtomTypes(&mmm, g2a);
+                }
                 mp.push_back(std::move(mmm));
             }
         }

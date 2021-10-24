@@ -512,16 +512,16 @@ void print_electric_props(FILE                           *fp,
                 {
                     continue;
                 }
-                real rms, rrms, cosesp;
-                rms = qp->qgenResp()->getRms(&rrms, &cosesp);
+                real rms, rrms, cosesp, mae, mse;
+                rms = qp->qgenResp()->getStatistics(&rrms, &cosesp, &mae, &mse);
                 rms = convertToGromacs(rms, "Hartree/e");
                 std::string warning;
                 if (rms > esp_toler || cosesp < 0.5)
                 {
                     warning.assign(" EEE");
                 }
-                fprintf(fp, "ESP rms: %8.3f (kJ/mol e) CosAngle: %6.3f - %s%s\n",
-                        rms, cosesp, qTypeName(qi).c_str(), warning.c_str());   
+                fprintf(fp, "ESP rms: %8.3f (kJ/mol e) rrms: %8.3f CosAngle: %6.3f - %s%s\n",
+                        rms, rrms, cosesp, qTypeName(qi).c_str(), warning.c_str());   
                 if (mol->datasetType() == ims)
                 {
                     auto ep = qp->qgenResp()->espPoint();
@@ -544,6 +544,7 @@ void print_electric_props(FILE                           *fp,
                     {
                         qprop->setX(mol->x());
                     }
+                    qprop->setCenterOfCharge(mol->centerOfCharge());
                     qprop->calcMoments();
                     print_dipole(fp, qt, qelec->mu(), qprop->mu(), dip_toler);
                     if (mol->datasetType() == ims)
@@ -598,8 +599,6 @@ void print_electric_props(FILE                           *fp,
             }
             fprintf(fp, "        x        y        z (pm)\n");
             auto x       = mol->x();
-            auto qrmsd   = 0.0;
-            int  ncore   = 0;
             auto myatoms = mol->atomsConst();
             int  i       = 0;
             for (int j = i = 0; j < myatoms.nr; j++)
@@ -607,35 +606,7 @@ void print_electric_props(FILE                           *fp,
                 if (myatoms.atom[j].ptype == eptAtom ||
                     myatoms.atom[j].ptype == eptNucleus)
                 {
-                    auto  atp = pd->findParticleType(*(myatoms.atomtype[j]));
-                    auto  k   = std::find_if(lsqt[ims].begin(), lsqt[ims].end(),
-                                             [atp](const ZetaTypeLsq &atlsq)
-                                             {
-                                                 return atp->id().id() == atlsq.name();
-                                             });
                     real qCalc = myatoms.atom[j].q;
-                    // TODO: only count in real shells
-                    real qCplusShell = qCalc;
-                    if (nullptr != mol->shellfc_ && 
-                        j < myatoms.nr-1 && 
-                        myatoms.atom[j+1].ptype == eptShell)
-                    {
-                        qCplusShell += myatoms.atom[j+1].q;
-                    }
-                    if (mol->datasetType() == ims)
-                    {
-                        if (qQM.find(qType::CM5) != qQM.end())
-                        {
-                            auto qcm5 = qQM.find(qType::CM5)->second[i];
-                            if (k != lsqt[ims].end())
-                            {
-                                gmx_stats_add_point(k->lsq_, qcm5, qCplusShell, 0, 0);
-                            }
-                            gmx_stats_add_point(lsq_charge[ims][qType::Calc], qcm5, qCplusShell, 0, 0);
-                            qrmsd += gmx::square(qcm5-qCplusShell);
-                        }
-                    }
-                    ncore += 1;
                     fprintf(fp, "%-2d%3d  %-5s  %8.4f",
                             myatoms.atom[j].atomnumber,
                             j+1,
@@ -676,9 +647,6 @@ void print_electric_props(FILE                           *fp,
                 }
             }
             fprintf(fp, "\n");
-            qrmsd = sqrt(qrmsd/ncore);
-            fprintf(fp, "Charge RMSD compared to CM5: %g (e)%s\n",
-                    qrmsd, (qrmsd > 5e-2) ? " XXX" : "");
             n++;
         }
     }
@@ -709,7 +677,7 @@ void print_electric_props(FILE                           *fp,
             }
             fprintf(fp, "\n");
         }
-
+        
         write_q_histo(fp, qhisto, lsqt[ims.first], oenv, lsq_charge[ims.first], useOffset);
 
         print_corr(DipCorr, "Dipole Moment (Debye)", "Electronic", "Empirical", lsq_dip, oenv);
@@ -760,18 +728,18 @@ void print_electric_props(FILE                           *fp,
                 qTypeName(qType::Calc).c_str(), qTypeName(qType::ESP).c_str());
         for (auto mol = mymol->begin(); mol < mymol->end(); ++mol)
         {
-            real rms, rrms, cosesp;
+            real rms, rrms, cosesp, mae, mse;
             auto qcalc = mol->qTypeProps(qType::Calc);
-            rms        = convertToGromacs(qcalc->qgenResp()->getRms(&rrms, &cosesp), "Hartree/e");
+            rms        = convertToGromacs(qcalc->qgenResp()->getStatistics(&rrms, &cosesp, &mae, &mse), "Hartree/e");
             if ((mol->eSupp_ != eSupport::No) && (rms > espMax))
             {
                 fprintf(fp, "%-40s  %12.3f", mol->getMolname().c_str(), rms);
                 auto qesp = mol->qTypeProps(qType::ESP);
                 if (qesp)
                 {
-                    real rr, ce;
+                    real rr, ce, mae, mse;
                     fprintf(fp, "  %12.3f",
-                            convertToGromacs(qesp->qgenResp()->getRms(&rr, &ce), "Hartree/e"));
+                            convertToGromacs(qesp->qgenResp()->getStatistics(&rr, &ce, &mae, &mse), "Hartree/e"));
                 }
                 else
                 {
