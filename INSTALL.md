@@ -17,3 +17,6 @@ https://github.com/dspoel/openbabel. The oficial OpenBabel can be found [here](h
 + For linear algebra operations we use [BLAS](http://www.netlib.org/blas/) and [LAPACK](http://www.netlib.org/lapack/).
 
 + The [LibXml2](http://xmlsoft.org) is needed for processing the [XML](https://en.wikipedia.org/wiki/XML) data files used by the ACT.
+
++ You will also need [Python])https://www.python.org), version 3, and a number of Python libraries.
+
