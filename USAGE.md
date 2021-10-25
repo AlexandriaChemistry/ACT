@@ -6,5 +6,7 @@ from [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1170597.svg)](https://d
 
 ```export AlexandriaLib=$HOME/AlexandriaLib```
 
-Then, head over to the examples directory.
+Then, copy the examples directory from the ACT over to a working directory, for instance if the ACT source is in your home catalogue:
+
+```cp -r $HOME/ACT/examples .; cd examples```
 
