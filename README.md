@@ -1,6 +1,9 @@
 Alexandria Chemistry Toolkit
 ============================
 
+This software allows for **global** optimization of force fields for molecular simulation. That means, that in principle a whole force field 
+can be derived at once by tuning parameters to reproduce both experimental data and results from quantum chemistry or density functional theory.
+
 This code is based on the [GROMACS](http://www.gromacs.org) software package, however it adds
 about 40000 lines of code for force field development. See [GROMACS.md](GROMACS.md) for the copyright message for this part of the code.
 
