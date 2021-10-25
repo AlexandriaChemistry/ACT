@@ -22,7 +22,7 @@ https://github.com/dspoel/openbabel. The oficial OpenBabel can be found [here](h
 
 + Optionally, the [doxygen](https://www.doxygen.nl/index.html) package can be used for generating documentation.
 
-+ You will also need [Python])https://www.python.org), version 3, and a number of Python libraries.
++ You will also need [Python](https://www.python.org), version 3, and a number of Python libraries.
 
 Install ACT on your computer
 ----------------------------
