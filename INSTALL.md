@@ -42,3 +42,17 @@ The you can run the ```alexandria``` executable using
 
 ```alexandria -h```
 
+Testing and developing the ACT
+------------------------------
+To start testing and developing, you first want to familiarize yourself with test set. If the ACT is in your home directory, you can
+
+```cd ACT/build_Release_DOUBLE```
+
+Then you can build the test set using
+
+```make tests```
+
+and run it using
+
+```make test```
+
