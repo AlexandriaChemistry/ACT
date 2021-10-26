@@ -35,3 +35,8 @@ Then, head over to the ```TUNE_EEM``` catalogue and run the example optimization
 ```./run_alcohol.py```
 
 the adventure has begun. Inspect the different ```.xvg``` output files using a graphing program, and the ```tune_eem.log``` file using a text viewer.
+
+Running optimizations using parallel processing
+-----------------------------------------------
+The optimization process is heavy in computer time. Therefore, it has been parallellized using the MPI library. Since this is q prerequisite for compiling the ACT, you likely have it installed if you got this far. To enable it, just add ```mpirun -np 2``` before the ```alexandria``` command in the example script. As far as we have tested, the code is quite efficient down to 4-5 molecules per core. In the above example there are 10 compounds in the training set, such that it is not worthwhile to use more than 2-3 cores, but do experiment with the number of cores.
+
