@@ -20,7 +20,7 @@ The parts that make up the logging system are shown below.
         owner -> target [label="owns"]
         logger -> target [label="references"]
         user -> builder [label="set logging targets"]
-        user -> logger [label="write with\nGMX_LOG()"]
+#        user -> logger [label="write with\nGMX_LOG()"]
     }
 \enddot
 

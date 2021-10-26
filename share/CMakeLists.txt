@@ -32,8 +32,6 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-#add_subdirectory(template)
-
 install(FILES 
     DESTINATION ${GMX_INSTALL_GMXDATADIR}
     COMPONENT data)

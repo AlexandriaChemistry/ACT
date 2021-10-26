@@ -2,8 +2,7 @@ PROJECT_NAME           = @CMAKE_PROJECT_NAME@
 @INCLUDE               = Doxyfile-version
 LAYOUT_FILE            = @CMAKE_CURRENT_SOURCE_DIR@/DoxygenLayout.xml
 INPUT                  = @CMAKE_CURRENT_SOURCE_DIR@ \
-                         @CMAKE_SOURCE_DIR@/src \
-                         @CMAKE_SOURCE_DIR@/share/template
+                         @CMAKE_SOURCE_DIR@/src
 FILE_PATTERNS          = *.c *.cpp *.h *.md
 # CUDA files could be included like this, but currently produce a lot of
 # warnings.
@@ -11,6 +10,8 @@ FILE_PATTERNS          = *.c *.cpp *.h *.md
 EXAMPLE_PATH           = @CMAKE_SOURCE_DIR@
 RECURSIVE              = YES
 EXCLUDE                = @CMAKE_SOURCE_DIR@/src/external \
+                         @CMAKE_SOURCE_DIR@/src/gromacs \
+                         @CMAKE_SOURCE_DIR@/src/testutils \
                          @CMAKE_SOURCE_DIR@/src/gromacs/linearalgebra/gmx_blas \
                          @CMAKE_SOURCE_DIR@/src/gromacs/linearalgebra/gmx_lapack \
                          @CMAKE_SOURCE_DIR@/src/gromacs/selection/parser.cpp \
@@ -34,7 +35,7 @@ STRIP_FROM_INC_PATH    = @CMAKE_SOURCE_DIR@/src
 INCLUDE_PATH           = @CMAKE_SOURCE_DIR@/src
 HAVE_DOT               = @DOXYGEN_DOT_FOUND@
 DOT_PATH               = @DOXYGEN_DOT_PATH@
-MSCGEN_PATH            = @DOXYGEN_MSCGEN_PATH@
+#MSCGEN_PATH            = @DOXYGEN_MSCGEN_PATH@
 DOTFILE_DIRS           = @DEPGRAPH_DIR@
 @DOXYGEN_EXTRA_SETTINGS@
 

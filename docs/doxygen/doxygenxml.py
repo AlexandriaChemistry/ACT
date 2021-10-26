@@ -392,8 +392,8 @@ class Member(Entity):
         elif isinstance(compound, File):
             self._files.add(compound)
         elif isinstance(compound, Group):
-            assert self._group is None
-            self._group = compound
+            if not self._group:
+                self._group = compound
         else:
             assert False
 

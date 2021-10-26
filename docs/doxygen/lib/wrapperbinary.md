@@ -1,7 +1,7 @@
 Wrapper binary implementation {#page_wrapperbinary}
 =============================
 
-This page mainly describes the implementation of the `gmx` wrapper binary.
+This page mainly describes the implementation of the `alexandria` wrapper binary that is an adapted copy off the `gmx` wrapper in GROMACS.
 Many of the details are not visible to most of the code, but this documentation
 is included as part of the library API documentation to make it easier to
 understand the overall implementation without reading extensive documentation.

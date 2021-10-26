@@ -1,4 +1,7 @@
 #
+# Main file for the Alexandria Chemistry Toolkit which is based
+# on a fork off of GROMACS.
+#
 # This file is part of the GROMACS molecular simulation package.
 #
 # Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
@@ -38,7 +41,7 @@ cmake_minimum_required(VERSION 3.4.3)
 # This needs to be set before project() in order to pick up toolchain files
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Platform)
 
-project(Gromacs)
+project(ACT)
 
 include(gmxManageCcache)
 
