@@ -49,43 +49,40 @@
 #include "stringutil.h"
 #include "xml_util.h"
 
-static const char *job_name[alexandria::JOB_NR] =
+std::map<alexandria::JobType, const char *> job_name =
 {
-    "Opt",
-    "Pop",
-    "POLAR",
-    "G2",
-    "G3",
-    "G4",
-    "CBSQB3",
-    "W1U",
-    "W1BD",
-    "SP",
-    "unknown"
+    { alexandria::JobType::OPT,    "Opt"    },
+    { alexandria::JobType::POP,    "Pop"    },
+    { alexandria::JobType::POLAR,  "POLAR"  },
+    { alexandria::JobType::G2,     "G2"     },
+    { alexandria::JobType::G3,     "G3"     },
+    { alexandria::JobType::G4,     "G4"     },
+    { alexandria::JobType::CBSQB3, "CBSQB3" },
+    { alexandria::JobType::W1U,    "W1U"    },
+    { alexandria::JobType::W1BD,   "W1BD"   },
+    { alexandria::JobType::SP,     "SP"     },
+    { alexandria::JobType::UNKNOWN,"unknown"}
 };
 
-const char *alexandria::jobType2string(alexandria::jobType jType)
+const char *alexandria::jobType2string(alexandria::JobType jType)
 
 {
-    if (jType < alexandria::JOB_NR)
-    {
-        return job_name[static_cast<int>(jType)];
-    }
-    return nullptr;
+    return job_name[jType];
 }
 
-alexandria::jobType alexandria::string2jobType(const std::string &str)
+alexandria::JobType alexandria::string2jobType(const std::string &str)
 {
-    int i;
-
-    for (i = 0; (i < alexandria::JOB_NR); i++)
+    for (const auto &s2j : job_name)
     {
-        if (str.compare(job_name[i]) == 0)
+        if (str.compare(s2j.second) == 0)
         {
-            return static_cast<alexandria::jobType>(i);
+            return s2j.first;
         }
     }
-    return alexandria::JOB_NR;
+    auto buf = gmx::formatString("Invalid job type %s", str.c_str());
+    GMX_THROW(gmx::InvalidInputError(buf.c_str()));
+    // To satisfy the compiler, but this will never happen.
+    return alexandria::JobType::UNKNOWN;
 }
 
 static bool NN(const std::string &s)

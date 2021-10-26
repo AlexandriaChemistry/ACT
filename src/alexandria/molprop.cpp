@@ -731,7 +731,7 @@ Experiment::Experiment(const std::string &program,
                        const std::string &reference,
                        const std::string &conformation,
                        const std::string &datafile,
-                       jobType            jtype)
+                       JobType            jtype)
     :
       dataSource_(dsTheory),
       reference_(reference),
@@ -1404,15 +1404,12 @@ int MolProp::Merge(const MolProp *src)
         else
         {
             auto jtype = ei.getJobtype();
-            if (jtype != JOB_NR)
-            {
-                Experiment ca(ei.getProgram(), ei.getMethod(),
-                              ei.getBasisset(), ei.getReference(),
-                              ei.getConformation(), ei.getDatafile(),
-                              jtype);
-                nwarn += ca.Merge(&ei);
-                AddExperiment(ca);
-            }
+            Experiment ca(ei.getProgram(), ei.getMethod(),
+                          ei.getBasisset(), ei.getReference(),
+                          ei.getConformation(), ei.getDatafile(),
+                          jtype);
+            nwarn += ca.Merge(&ei);
+            AddExperiment(ca);
         }
     }
     for (auto &mci : src->molecularCompositionConst())
@@ -1718,7 +1715,7 @@ bool MolProp::getOptHF(double *value)
 
     for (auto &ei : experimentConst())
     {
-        if (ei.getJobtype() == JOB_OPT)
+        if (ei.getJobtype() == JobType::OPT)
         {
             if (ei.getHF(value))
             {
@@ -1735,8 +1732,8 @@ int MolProp::NOptSP()
 
     for (auto &ei : experimentConst())
     {
-        if (ei.getJobtype() == JOB_OPT ||
-            ei.getJobtype() == JOB_SP)
+        if (ei.getJobtype() == JobType::OPT ||
+            ei.getJobtype() == JobType::SP)
         {
             n++;
         }

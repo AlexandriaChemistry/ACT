@@ -97,30 +97,33 @@ namespace alexandria
 /*! \brief
  * Enum describing the type of the QM job computed by the Gaussian software
  */
-enum jobType {
-    JOB_OPT       = 0,
-    JOB_POP       = 1,
-    JOB_POLAR     = 2,
-    JOB_G2        = 3,
-    JOB_G3        = 4,
-    JOB_G4        = 5,
-    JOB_CBSQB3    = 6,
-    JOB_W1U       = 7,
-    JOB_W1BD      = 8,
-    JOB_SP        = 9,
-    JOB_UNKNOWN   = 10,
-    JOB_NR        = 11,
+enum class JobType {
+    OPT       = 0,
+    POP       = 1,
+    POLAR     = 2,
+    G2        = 3,
+    G3        = 4,
+    G4        = 5,
+    CBSQB3    = 6,
+    W1U       = 7,
+    W1BD      = 8,
+    SP        = 9,
+    UNKNOWN   = 10
 };
 
 /*! \brief
  * Return string corresponding to the job type
+ * \param[in] jType the Job type
  */
-const char *jobType2string(alexandria::jobType jType);
+const char *jobType2string(JobType jType);
 
 /*! \brief
  * Strings describing the job type
+ * \param[in] str the String
+ * \return the JobType
+ * \throws if invalid string is passed
  */
-jobType string2jobType(const std::string &str);
+JobType string2jobType(const std::string &str);
 
 /*! \brief
  * Enum describing the source of the data
@@ -1093,7 +1096,7 @@ class Experiment
         Experiment(const std::string &reference,
                    const std::string &conformation) :
             dataSource_(dsExperiment), reference_(reference),
-            conformation_(conformation), jobtype_(JOB_UNKNOWN)
+            conformation_(conformation), jobtype_(JobType::UNKNOWN)
         {}
 
         //! Constructor initiating a Calculation
@@ -1103,7 +1106,7 @@ class Experiment
                    const std::string &reference,
                    const std::string &conformation,
                    const std::string &datafile,
-                   jobType            jtype);
+                   JobType            jtype);
 
         //! Return the type of data
         DataSource dataSource() const { return dataSource_; }
@@ -1151,7 +1154,7 @@ class Experiment
         const std::string &getReference() const { return reference_; }
 
         //! Return the type of calculation
-        const jobType &getJobtype() const { return jobtype_; }
+        const JobType &getJobtype() const { return jobtype_; }
 
         //! Add a CalcAtom object to the list of atoms
         void AddAtom(CalcAtom ca);
@@ -1247,7 +1250,7 @@ class Experiment
         std::string                          method_;
         std::string                          basisset_;
         std::string                          datafile_;
-        jobType                              jobtype_;
+        JobType                              jobtype_;
         std::vector<CalcAtom>                catom_;
         std::vector<ElectrostaticPotential>  potential_;
         std::vector<MolecularDipole>         dipole_;

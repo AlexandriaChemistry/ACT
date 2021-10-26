@@ -348,7 +348,7 @@ bool readBabel(const char          *g09,
     OpenBabel::OBFreeGrid     *esp;
     std::vector<alexandria::ElectrostaticPotential> espv;
 
-    alexandria::jobType         jobtype = alexandria::string2jobType(jobType);
+    alexandria::JobType         jobtype = alexandria::string2jobType(jobType);
     OpenBabel::OBConversion    *conv    = readBabel(g09, &mol, &inputformat);
     if (nullptr == conv)
     {

@@ -72,7 +72,7 @@ bool readPsi4(const std::string &datafile, MolProp *mp)
         gmx::TextReader       tr(datafile);
         std::string           program("psi4");
         std::string           method, basisset, reference, conformation;
-        jobType               jobtype = JOB_UNKNOWN;
+        JobType               jobtype = JobType::UNKNOWN;
         std::string           line;
         bool                  inputSection  = false;
         bool                  finalGeometry = false;
@@ -139,7 +139,7 @@ bool readPsi4(const std::string &datafile, MolProp *mp)
                 {
                     method = words[1];
                 }
-                jobtype = JOB_OPT;
+                jobtype = JobType::OPT;
                 conformation.assign("minimum");
             }
             else if (inputSection && line.find("energy") != std::string::npos)
@@ -149,7 +149,7 @@ bool readPsi4(const std::string &datafile, MolProp *mp)
                 {
                     method = words[1];
                 }
-                jobtype = JOB_SP;
+                jobtype = JobType::SP;
                 conformation.assign("excited");
             }
             else if (line.find("Final optimized geometry") != std::string::npos)
@@ -189,7 +189,7 @@ bool readPsi4(const std::string &datafile, MolProp *mp)
                     while (cont);
                 }
             }
-            else if (jobtype == JOB_SP &&
+            else if (jobtype == JobType::SP &&
                      line.find("Geometry (in Angstrom)") != std::string::npos &&
                      line.find("charge") != std::string::npos &&
                      line.find("multiplicity") != std::string::npos)
@@ -227,7 +227,7 @@ bool readPsi4(const std::string &datafile, MolProp *mp)
                     while (cont);
                 }
             }
-            else if (jobtype == JOB_SP &&
+            else if (jobtype == JobType::SP &&
                      line.find("Final double-hybrid DFT total energy") != std::string::npos)
             {
                 auto words = gmx::splitString(line);
@@ -237,7 +237,7 @@ bool readPsi4(const std::string &datafile, MolProp *mp)
                                               "Hartree");
                 }
             }
-            else if (jobtype == JOB_OPT &&
+            else if (jobtype == JobType::OPT &&
                      line.find("Final energy is") != std::string::npos)
             {
                 auto words = gmx::splitString(line);
@@ -247,7 +247,7 @@ bool readPsi4(const std::string &datafile, MolProp *mp)
                                               "Hartree");
                 }
             }
-            else if (jobtype == JOB_OPT &&
+            else if (jobtype == JobType::OPT &&
                      line.find("Dipole Moment: [D]") != std::string::npos)
             {
                 bool cont = tr.readLine(&line);

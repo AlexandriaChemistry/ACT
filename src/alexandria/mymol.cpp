@@ -1647,7 +1647,7 @@ bool MyMol::getOptimizedGeometry(rvec *x)
 
     for (auto &ei : experimentConst())
     {
-        if (JOB_OPT == ei.getJobtype())
+        if (JobType::OPT == ei.getJobtype())
         {
             const std::vector<gmx::RVec> &xxx = ei.getCoordinates();
             for (size_t i = 0; i < xxx.size(); i++)
