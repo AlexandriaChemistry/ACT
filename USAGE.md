@@ -26,12 +26,12 @@ Then, copy the examples directory from the ACT over to a working directory, for 
 
 ```cp -r $HOME/ACT/examples .; cd examples```
 
-In the ```examples``` catalogue you will find a force field file, ```ACS-pg.dat```, and three subdirectories. Feel free to explore the files and scripts, but to run the example, please take the following steps:
+In the ```examples``` catalogue you will find a force field file, ```ACS-pg.dat```, and three subdirectories. Feel free to explore the files and scripts, but to run the example, please take the following steps in the ```XML``` directory:
 
-```cd XML; ./extract_xml.py; make -j 8 alcohol.dat; cd ..```
+```./extract_xml.py; make -j 8 alcohol.dat```
 
 Then, head over to the ```TUNE_EEM``` catalogue and run the example optimization using:
 
-```cd TUNE_EEM; ./run_alcohol.py```
+```./run_alcohol.py```
 
 the adventure has begun. Inspect the different ```.xvg``` output files using a graphing program, and the ```tune_eem.log``` file using a text viewer.
