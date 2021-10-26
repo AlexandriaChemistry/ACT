@@ -2,6 +2,7 @@ Installing ACT
 ==============
 The Alexandria Chemistry Toolkit (ACT) relies on a number of libraries. Even though we tried to keep it to a minimum,
 some more or less standard libraries are needed. ACT should compile fine on any UNIX (including MacOs) or Linux machine (but no warranty!).
+Most of the libraries can be installed using [Anaconda](https://anaconda.org) or even [Miniconda](https://docs.conda.io/en/latest/miniconda.html) which has the advantage of running in user-space entirely, that is you do not super-user access to install it.
 
 Prerequisites
 -------------
@@ -20,7 +21,7 @@ https://github.com/dspoel/openbabel. The oficial OpenBabel can be found [here](h
 
 + The [LibXml2](http://xmlsoft.org) is needed for processing the [XML](https://en.wikipedia.org/wiki/XML) data files used by the ACT.
 
-+ Optionally, the [doxygen](https://www.doxygen.nl/index.html) package can be used for generating documentation.
++ Optionally, the [doxygen](https://www.doxygen.nl/index.html) package can be used for generating documentation. In that case you need the [Graphviz](https://www.graphviz.org) package as well.
 
 + You will also need [Python](https://www.python.org), version 3, and a number of Python libraries.
 
