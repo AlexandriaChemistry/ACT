@@ -4,19 +4,19 @@
   <Int Name="qtotSize">14</Int>
   <Sequence Name="qtotValuesEqdAlgorithm_EEM">
     <Int Name="Length">14</Int>
-    <Real>1.7412173915474878</Real>
-    <Real>-2</Real>
-    <Real>1.8690383750763715</Real>
-    <Real>-2</Real>
-    <Real>1.6775853122483917</Real>
-    <Real>-2</Real>
-    <Real>1.6775776364093193</Real>
-    <Real>-2</Real>
-    <Real>1.0122054962881837</Real>
-    <Real>-1</Real>
-    <Real>1.010121057430472</Real>
-    <Real>-1</Real>
-    <Real>1.0122547309998073</Real>
-    <Real>-1</Real>
+    <Real>-0.77455020280625642</Real>
+    <Real>-0.59999999999999998</Real>
+    <Real>0.71128399926315056</Real>
+    <Real>-0.59999999999999998</Real>
+    <Real>0.29021400122827179</Real>
+    <Real>-0.59999999999999998</Real>
+    <Real>0.29021527011667997</Real>
+    <Real>-0.59999999999999998</Real>
+    <Real>0.89612082582167352</Real>
+    <Real>-0.59999999999999998</Real>
+    <Real>0.89059885587974918</Real>
+    <Real>-0.59999999999999998</Real>
+    <Real>0.89611725049673141</Real>
+    <Real>-0.59999999999999998</Real>
   </Sequence>
 </ReferenceData>

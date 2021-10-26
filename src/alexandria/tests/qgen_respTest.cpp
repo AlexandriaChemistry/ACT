@@ -42,6 +42,7 @@
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/physicalnodecommunicator.h"
+#include "alexandria/atype_mapping.h"
 #include "alexandria/babel_io.h"
 #include "alexandria/fill_inputrec.h"
 #include "alexandria/mymol.h"
@@ -78,8 +79,16 @@ class RespTest : public gmx::test::CommandLineTestBase
 
             //Read input file for molprop
             auto dataName = gmx::test::TestFileManager::getInputFilePath("1-butanol-3-oep.log");
-            readBabel(dataName.c_str(), &molprop, molnm, iupac, conf, basis,
-                      maxpot, nsymm, jobtype, 0.0, false);
+            if (readBabel(dataName.c_str(), &molprop, molnm, iupac, conf, basis,
+                          maxpot, nsymm, jobtype, 0.0, false))
+            {
+                std::map<std::string, std::string> g2a;
+                gaffToAlexandria("", &g2a);
+                if (!g2a.empty())
+                {
+                    renameAtomTypes(&molprop, g2a);
+                }
+            }
             mp_.Merge(&molprop);
 
             auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 5e-2);
@@ -172,11 +181,6 @@ TEST_F (RespTest, AXgPolarValues)
     testResp("ESP-pg", false);
 }
 
-//TEST_F (RespTest, AXsPolarValues)
-//{
-//    testResp("ESP-ps", false);
-//}
-
 TEST_F (RespTest, AXpSymmetricCharges)
 {
     testResp("ESP-p", true);
@@ -187,7 +191,14 @@ TEST_F (RespTest, AXgSymmetricPolarCharges)
     testResp("ESP-pg", true);
 }
 
-//TEST_F (RespTest, AXsSymmetricPolarCharges)
-//{
-//    testResp("ESP-ps", true);
-//}
+#if HAVE_LIBCML
+TEST_F (RespTest, AXsPolarValues)
+{
+    testResp("ESP-ps", false);
+}
+
+TEST_F (RespTest, AXsSymmetricPolarCharges)
+{
+    testResp("ESP-ps", true);
+}
+#endif

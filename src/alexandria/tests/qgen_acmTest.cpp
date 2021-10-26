@@ -41,6 +41,7 @@
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/physicalnodecommunicator.h"
+#include "alexandria/atype_mapping.h"
 #include "alexandria/babel_io.h"
 #include "alexandria/fill_inputrec.h"
 #include "alexandria/mymol.h"
@@ -117,18 +118,25 @@ class AcmTest : public gmx::test::CommandLineTestBase
             }
             std::string dataName = gmx::test::TestFileManager::getInputFilePath(fileName);
 
-            readBabel(dataName.c_str(),
-                      &molprop,
-                      molname.c_str(),
-                      molname.c_str(),
-                      conf,
-                      basis.c_str(),
-                      maxpot,
-                      nsymm,
-                      jobtype,
-                      qtotal,
-                      false);
-
+            if (readBabel(dataName.c_str(),
+                          &molprop,
+                          molname.c_str(),
+                          molname.c_str(),
+                          conf,
+                          basis.c_str(),
+                          maxpot,
+                          nsymm,
+                          jobtype,
+                          qtotal,
+                          false))
+            {
+                std::map<std::string, std::string> g2a;
+                gaffToAlexandria("", &g2a);
+                if (!g2a.empty())
+                {
+                    renameAtomTypes(&molprop, g2a);
+                }
+            }
             mp_.Merge(&molprop);
             // Generate charges and topology
             t_inputrec      inputrecInstance;
@@ -293,13 +301,13 @@ TEST_F (AcmTest, AXgNoSymmPDB)
 TEST_F (AcmTest, AXgNegative)
 {
     std::vector<double> qcustom;
-    testAcm("ACM-g", einfLOG, "acetate-3-oep.log", false, -1, qcustom);
+    testAcm("ACM-g", einfLOG, "acetate", false, -1, qcustom);
 }
 
 TEST_F (AcmTest, AXpgNegative)
 {
     std::vector<double> qcustom;
-    testAcm("ACM-pg", einfLOG, "acetate-3-oep.log", true, -1, qcustom);
+    testAcm("ACM-pg", einfLOG, "acetate", true, -1, qcustom);
 }
 
 TEST_F (AcmTest, AXgPositive)
@@ -323,7 +331,7 @@ TEST_F (AcmTest, SQEgNeutral)
 TEST_F (AcmTest, SQEgNegative)
 {
     std::vector<double> qcustom;
-    testAcm("ACS-g", einfPDB, "acetate-3-oep.log", false, -1, qcustom);
+    testAcm("ACS-g", einfLOG, "acetate", false, -1, qcustom);
 }
 
 TEST_F (AcmTest, SQEgPositive)
@@ -341,7 +349,7 @@ TEST_F (AcmTest, SQEpgNeutral)
 TEST_F (AcmTest, SQEpgNegative)
 {
     std::vector<double> qcustom;
-    testAcm("ACS-pg", einfPDB, "acetate-3-oep.log", true, -1, qcustom);
+    testAcm("ACS-pg", einfLOG, "acetate", true, -1, qcustom);
 }
 
 TEST_F (AcmTest, SQEpgPositive)
@@ -361,7 +369,7 @@ TEST_F (AcmTest, CustomButanolPDB)
 TEST_F (AcmTest, CustomAcetatePDB)
 {
     std::vector<double> qcustom = { -0.18, 0.06, 0.06, 0.06, 0.1, -0.55, -0.55 };
-    testAcm("ACM-g", einfPDB, "acetate-3-oep.log", false, -1, qcustom);
+    testAcm("ACM-g", einfLOG, "acetate", false, -1, qcustom);
 }
 
 TEST_F (AcmTest, CustomGuanidiniumSDF)

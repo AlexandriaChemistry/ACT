@@ -956,9 +956,9 @@ void MyMol::addShells(FILE          *fp,
             nshell++;
         }
     }
-    if (fp)
+    if (debug)
     {
-        fprintf(fp, "Found %d shells to be added\n", nshell);
+        fprintf(debug, "Found %d shells to be added\n", nshell);
     }
     int nParticles = atoms->nr+nshell;
     state_change_natoms(state_, nParticles);
