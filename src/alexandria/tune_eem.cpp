@@ -791,7 +791,7 @@ int alex_tune_eem(int argc, char *argv[])
     bool                        bZero         = true;
     bool                        bOptimize     = true;
     bool                        bSensitivity  = true;
-    bool                        bForceOutput  = true;
+    bool                        bForceOutput  = false;
     bool                        useOffset     = false;
     bool                        bEvaluate_testset = false;    
 
@@ -914,6 +914,11 @@ int alex_tune_eem(int argc, char *argv[])
         {
             bool bPolar = opt.poldata()->polarizable();
             auto mymols = opt.mymols();
+            if (bForceOutput)
+            {
+                fprintf(opt.logFile(), "Output based on last step of MC simulation per your specification.\nThe force field output file %s is based on the last MC step as well.\n", opt2fn("-o", NFILE, fnm));
+                opt.saveState();
+            }
             alexandria::print_electric_props(opt.logFile(),
                                              &mymols,
                                              opt.poldata(),

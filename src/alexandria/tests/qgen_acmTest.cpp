@@ -138,7 +138,7 @@ class AcmTest : public gmx::test::CommandLineTestBase
 
             // Get poldata
             auto pd  = getPoldata(model);
-            auto imm = mp_.GenerateTopology(nullptr,
+            auto imm = mp_.GenerateTopology(stdout,
                                             pd, method, basis, nullptr,
                                             false, false, false,
                                             missingParameters::Error, nullptr);
@@ -293,13 +293,13 @@ TEST_F (AcmTest, AXgNoSymmPDB)
 TEST_F (AcmTest, AXgNegative)
 {
     std::vector<double> qcustom;
-    testAcm("ACM-g", einfPDB, "acetate-3-oep.log", false, -1, qcustom);
+    testAcm("ACM-g", einfLOG, "acetate-3-oep.log", false, -1, qcustom);
 }
 
 TEST_F (AcmTest, AXpgNegative)
 {
     std::vector<double> qcustom;
-    testAcm("ACM-pg", einfPDB, "acetate-3-oep.log", true, -1, qcustom);
+    testAcm("ACM-pg", einfLOG, "acetate-3-oep.log", true, -1, qcustom);
 }
 
 TEST_F (AcmTest, AXgPositive)

@@ -758,10 +758,10 @@ int QgenAcm::solveSQE(FILE                    *fp,
         myq[ai] += pij[bij];
         myq[aj] -= pij[bij];
     }
-    double qfixed = 0;
+    double qfixed = qtotal_;
     for (size_t i = 0; i < fixed_.size(); i++)
     {
-        qfixed += q_[fixed_[i]];
+        qfixed -= q_[fixed_[i]];
     }
     for (size_t i = 0; i < nonFixed_.size(); i++)
     {
@@ -771,7 +771,7 @@ int QgenAcm::solveSQE(FILE                    *fp,
         //{
         //   myq[i] -= q_[myShell_.find(nfi)->second];
         //}
-        q_[nfi] = myq[i] - qfixed/nonFixed_.size(); //myq[i];
+        q_[nfi] = myq[i] + qfixed/nonFixed_.size();
     }
 
     double qtot    = 0;

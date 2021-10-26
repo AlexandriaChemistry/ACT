@@ -3,9 +3,9 @@
 <ReferenceData>
   <String Name="element">H</String>
   <String Name="description">hydrogen on aliphatic C with 1 electron-withdrawal group</String>
-  <String Name="type">h1</String>
-  <String Name="poltype">h1_s</String>
-  <String Name="bondtype">h1_b</String>
-  <String Name="zetatype">h1_z</String>
+  <String Name="type">h</String>
+  <String Name="poltype"></String>
+  <String Name="bondtype">h_b</String>
+  <String Name="zetatype">h_z</String>
   <Real Name="refEnthalpy">222.232</Real>
 </ReferenceData>

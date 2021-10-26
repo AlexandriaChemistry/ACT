@@ -146,6 +146,7 @@ ChargeGenerationAlgorithm Poldata::chargeGenerationAlgorithm() const
 {
     if (interactionPresent(InteractionType::ELECTRONEGATIVITYEQUALIZATION))
     {
+        // TODO: Add check for number of interactions?
         if (interactionPresent(InteractionType::BONDCORRECTIONS))
         {
             return ChargeGenerationAlgorithm::SQE;

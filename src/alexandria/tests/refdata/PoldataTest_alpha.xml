@@ -3,10 +3,10 @@
 <ReferenceData>
   <Sequence Name="alpha">
     <Int Name="Length">5</Int>
-    <Real>0.432</Real>
-    <Real>1.417</Real>
-    <Real>0.41499999999999998</Real>
-    <Real>3.044</Real>
-    <Real>3.4409999999999998</Real>
+    <Real>0.29999999999999999</Real>
+    <Real>1.1000000000000001</Real>
+    <Real>0.69999999999999996</Real>
+    <Real>1.5</Real>
+    <Real>2.5</Real>
   </Sequence>
 </ReferenceData>

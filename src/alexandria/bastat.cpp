@@ -684,22 +684,22 @@ int alex_bastat(int argc, char *argv[])
 
     static int                       compress    = 0;
     static int                       maxwarn     = 0;
-    static real                      Dm          = 0;
-    static real                      kt          = 0;
-    static real                      kp          = 0;
-    static real                      kimp        = 0;
-    static real                      beta        = 0;
-    static real                      klin        = 0;
+    static real                      Dm          = 400;
+    static real                      kt          = 300;
+    static real                      kp          = 5;
+    static real                      kimp        = 1;
+    static real                      beta        = 20;
+    static real                      klin        = 150000;
     static real                      hardness    = 1;
-    static real                      kub         = 0;
+    static real                      kub         = 30000;
     static real                      bond_tol    = 5;
     static real                      angle_tol   = 5;
     static real                      factor      = 0.8;
     static char                     *lot         = (char *)"B3LYP/aug-cc-pVTZ";
     static gmx_bool                  bHisto      = false;
-    static gmx_bool                  bDih        = false;
+    static gmx_bool                  bDih        = true;
     static gmx_bool                  bBondOrder  = true;
-    static gmx_bool                  genBCC      = true;
+    static gmx_bool                  genBCC      = false;
     t_pargs                          pa[]        = {
         { "-lot",    FALSE, etSTR,  {&lot},
           "Use this method and level of theory when selecting coordinates and charges" },

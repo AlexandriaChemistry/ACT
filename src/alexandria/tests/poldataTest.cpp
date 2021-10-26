@@ -105,7 +105,7 @@ std::vector<std::string> PoldataTest::atomNames;
 std::string              PoldataTest::atomName;
 
 TEST_F (PoldataTest, getAtype){
-    auto aType = getPoldata("ACM-g")->findParticleType("h1");
+    auto aType = getPoldata("ACM-g")->findParticleType("h");
 
     checker_.checkString(aType->element(), "element");
     checker_.checkString(aType->description(), "description");
@@ -163,7 +163,7 @@ TEST_F (PoldataTest, Verstraelen)
 TEST_F (PoldataTest, chi)
 {
     std::vector<double>      chi0s;
-    std::string              atoms[]  = { "hp", "f", "p2", "br" };
+    std::string              atoms[]  = { "h", "f", "p2", "br" };
     std::vector<std::string> eqd = { "ACM-g", "ACM-pg" };
 
     for (auto &atom : atoms)
@@ -183,7 +183,7 @@ TEST_F (PoldataTest, chi)
 TEST_F (PoldataTest, alpha)
 {
     std::vector<double>      alphas;
-    std::string              atoms[]  = { "hp", "c2", "f", "p2", "br" };
+    std::string              atoms[]  = { "h", "c2", "f", "p2", "br" };
     std::vector<std::string> eqd = { "ACM-pg" };
 
     for (auto &atom : atoms)
@@ -203,8 +203,8 @@ TEST_F (PoldataTest, alpha)
 TEST_F (PoldataTest, row)
 {
     std::vector<int> rows;
-    std::string      atoms[]  = { "ha", "n", "s", "br" };
-    std::string      models[] = { "ESP-ps", "ACM-g", "Rappe" };
+    std::string      atoms[]  = { "h", "n2", "s2", "br" };
+    std::string      models[] = { "ACM-g", "ACM-pg" };
 
     for (auto &atom : atoms)
     {
@@ -222,8 +222,8 @@ TEST_F (PoldataTest, row)
 TEST_F (PoldataTest, zeta)
 {
     std::vector<double>      zetas;
-    std::string              atoms[]  = { "h1", "c3", "s4", "br" };
-    std::vector<std::string> eqd = { "ACM-pg", "ESP-ps" };
+    std::string              atoms[]  = { "h", "c3", "s2", "br" };
+    std::vector<std::string> eqd = { "ACM-pg" };
 
     for (auto &atom : atoms)
     {

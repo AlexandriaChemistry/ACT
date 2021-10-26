@@ -195,7 +195,7 @@ class Poldata
                                     { return (id == f.id()); });
             if (atp == alexandria_.end())
             {
-                GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such atom ype %s", id.id().c_str()).c_str()));
+                GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such atom type %s", id.id().c_str()).c_str()));
             }
             return atp;
         }

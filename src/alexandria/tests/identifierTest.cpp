@@ -64,7 +64,7 @@ TEST(IdentifierSimpleTest, CompareDifferentLength) {
 TEST(IdentifierSimpleTest, BSmallerThanASecondAtom) {
     Identifier a({"H", "P"}, CanSwap::No);
     Identifier b({"H", "C"}, CanSwap::No);
-    bool compare = b < a;
+    bool compare = a < b;
     EXPECT_FALSE(compare);
 }
 
