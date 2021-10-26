@@ -61,3 +61,5 @@ Development documentation
 To build the documentation of the classes used in the software, please go to the ```build_Release_DOUBLE``` directory inside ACT and issue the following command:
 
 ```make doxygen-full```
+
+and then open the file ```docs/html/doxygen/html-full/index.xhtml``` in a suitable web browser. [Firefox](https://www.mozilla.org/en-GB/firefox/new/) seems to work better than Safari.
