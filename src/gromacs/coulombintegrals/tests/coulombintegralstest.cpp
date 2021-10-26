@@ -43,6 +43,8 @@
 
 #include <math.h>
 
+#include <map>
+
 #include <gtest/gtest.h>
 
 #include "gromacs/coulombintegrals/coulombintegrals.h"
@@ -58,33 +60,15 @@ namespace gmx
 namespace
 {
 
-enum ChargeDistribution  {
-    ecdSlater,
-    ecdGaussian, 
-    ecdNR
+enum class ChargeDistribution {
+    Slater,
+    Gaussian
 };
 
-typedef struct {
-    ChargeDistribution cd;
-    const char        *name;
-} t_chargedistribution;
-
-t_chargedistribution chargedistributions[ecdNR] = {
-    { ecdSlater,   "Slater"},
-    { ecdGaussian, "Gaussian"}
+std::map<ChargeDistribution, const char *> cdist = {
+    { ChargeDistribution::Slater,   "Slater"},
+    { ChargeDistribution::Gaussian, "Gaussian"}
 };
-
-static const char *getChargeDistributionName(ChargeDistribution cd)
-{
-    for (auto i = 0; i < ecdNR; i++)
-    {
-        if (cd == chargedistributions[i].cd)
-        {
-            return chargedistributions[i].name;
-        }
-    }
-    return nullptr;
-}
 
 /*! \brief Utility to do the real testing
  *
@@ -112,13 +96,13 @@ void testCoulomb(ChargeDistribution          cd,
         
         switch (cd)
         {
-        case ecdGaussian:
+        case ChargeDistribution::Gaussian:
             coulomb.push_back(Coulomb_GG(r,  izeta, jzeta));
             force.push_back(-DCoulomb_GG(r,  izeta, jzeta));
             ncoulomb.push_back(Nuclear_GG(r, izeta));
             nforce.push_back(-DNuclear_GG(r, izeta));
             break;
-        case ecdSlater:
+        case ChargeDistribution::Slater:
             coulomb.push_back(Coulomb_SS(r,  irow, jrow, izeta, jzeta));
             force.push_back(-DCoulomb_SS(r,  irow, jrow, izeta, jzeta));
             ncoulomb.push_back(Nuclear_SS(r, irow, izeta));
@@ -128,9 +112,9 @@ void testCoulomb(ChargeDistribution          cd,
             break;
         }
     }
-    const char *name = getChargeDistributionName(cd);
+    const char *name = cdist[cd];
     char buf[256];
-    if (cd == ecdSlater)
+    if (cd == ChargeDistribution::Slater)
     {
         checker->checkInt64(irow, "irow");
         checker->checkInt64(jrow, "jrow");
@@ -169,7 +153,7 @@ class SlaterTest : public ::testing::TestWithParam<std::tuple<std::tuple<int, in
         }
         void runTest()
         {
-            testCoulomb(ecdSlater, irow_, jrow_, xi_, xj_, &checker_);
+            testCoulomb(ChargeDistribution::Slater, irow_, jrow_, xi_, xj_, &checker_);
         }
 };
 
@@ -191,7 +175,7 @@ class GaussianTest : public ::testing::TestWithParam<std::tuple<double, double> 
         }
         void runTest()
         {
-            testCoulomb(ecdGaussian, 0, 0, xi_, xj_, &checker_);
+            testCoulomb(ChargeDistribution::Gaussian, 0, 0, xi_, xj_, &checker_);
         }
 
 };
@@ -244,7 +228,9 @@ const std::vector<std::tuple<double, double> > &make_xi()
 };
 static const std::vector<std::tuple<double, double> > c_xi = make_xi();
 
+#if HAVE_LIBCLN
 INSTANTIATE_TEST_CASE_P(Xi, SlaterTest, ::testing::Combine(::testing::ValuesIn(c_rows), ::testing::ValuesIn(c_xi)));
+#endif
 
 INSTANTIATE_TEST_CASE_P(Xi, GaussianTest, ::testing::ValuesIn(c_xi));
 
@@ -269,7 +255,9 @@ const std::vector<std::tuple<double, double> > &make_xiInteger()
 };
 static const std::vector<std::tuple<double, double> > c_xiInteger = make_xiInteger();
 
+#if HAVE_LIBCLN
 INSTANTIATE_TEST_CASE_P(IntegerXi, SlaterTest, ::testing::Combine(::testing::ValuesIn(c_rows), ::testing::ValuesIn(c_xiInteger)));
+#endif
 
 } // namespace
 
