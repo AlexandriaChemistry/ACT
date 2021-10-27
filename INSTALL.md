@@ -57,6 +57,29 @@ and run it using
 
 ```make test```
 
+which should give the following output:
+```% make test                                                
+Running tests...
+Test project /Users/spoel/GG/ACT/build_Release_DOUBLE
+    Start 1: TestUtilsUnitTests
+1/4 Test #1: TestUtilsUnitTests ...............   Passed    0.14 sec
+    Start 2: TestUtilsMpiUnitTests
+2/4 Test #2: TestUtilsMpiUnitTests ............   Passed    0.38 sec
+    Start 3: CoulombIntegralsTest
+3/4 Test #3: CoulombIntegralsTest .............   Passed    0.12 sec
+    Start 4: AlexandriaTests
+4/4 Test #4: AlexandriaTests ..................   Passed    4.15 sec
+
+100% tests passed, 0 tests failed out of 4
+
+Label Time Summary:
+GTest       =   4.79 sec*proc (4 tests)
+MpiTest     =   0.38 sec*proc (1 test)
+UnitTest    =   4.79 sec*proc (4 tests)
+
+Total Test time (real) =   4.80 sec
+```
+
 Development documentation
 -------------------------
 To build the documentation of the classes used in the software, please go to the ```build_Release_DOUBLE``` directory inside ACT and issue the following command:
