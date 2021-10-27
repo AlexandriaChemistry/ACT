@@ -916,7 +916,7 @@ int alex_tune_eem(int argc, char *argv[])
             auto mymols = opt.mymols();
             if (bForceOutput)
             {
-                fprintf(opt.logFile(), "Output based on last step of MC simulation per your specification.\nThe force field output file %s is based on the last MC step as well.\n", opt2fn("-o", NFILE, fnm));
+                fprintf(opt.logFile(), "Output based on last step of MC simulation per your specification.\nUse the -noforce_output flag to prevent this.\nThe force field output file %s is based on the last MC step as well.\n", opt2fn("-o", NFILE, fnm));
                 opt.saveState();
             }
             alexandria::print_electric_props(opt.logFile(),
