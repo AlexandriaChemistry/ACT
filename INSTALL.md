@@ -60,7 +60,7 @@ and run it using
 which should give the following output:
 ```% make test                                                
 Running tests...
-Test project /Users/spoel/GG/ACT/build_Release_DOUBLE
+Test project /Users/XXX/GG/ACT/build_Release_DOUBLE
     Start 1: TestUtilsUnitTests
 1/4 Test #1: TestUtilsUnitTests ...............   Passed    0.14 sec
     Start 2: TestUtilsMpiUnitTests
