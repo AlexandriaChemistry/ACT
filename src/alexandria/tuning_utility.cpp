@@ -545,6 +545,7 @@ void print_electric_props(FILE                           *fp,
                         qprop->setX(mol->x());
                     }
                     qprop->setCenterOfCharge(mol->centerOfCharge());
+                    printf("%s\n", mol->getMolname().c_str());
                     qprop->calcMoments();
                     print_dipole(fp, qt, qelec->mu(), qprop->mu(), dip_toler);
                     if (mol->datasetType() == ims)

@@ -43,7 +43,7 @@ static const double CM2D = SPEED_OF_LIGHT*1.0e+24;  /* Coulomb meter to Debye */
 
 static inline double e2d(double a) {return a*ENM2DEBYE; }
 
-static inline int delta(int a, int b) { return ( a == b ) ? 1 : 0; }
+// static inline int delta(int a, int b) { return ( a == b ) ? 1 : 0; }
 
 namespace alexandria
 {
@@ -156,9 +156,14 @@ void QtypeProps::calcMoments()
         {
             for (int n = m; n < DIM; n++)
             {
-                quadrupole_[m][n] += 0.5*q_[i]*(3.0*r[m]*r[n] - r2*delta(m, n))*NM2A*A2CM*CM2D*10;
+                quadrupole_[m][n] += 0.5*q_[i]*(3.0*r[m]*r[n])*NM2A*A2CM*CM2D*10;
             }
         }
+    }
+    if (debug)
+    {
+        fprintf(debug, "Quadrupole: %7.3f %7.3f %7.3f\n", quadrupole_[XX][XX],
+                quadrupole_[YY][YY], quadrupole_[ZZ][ZZ]);
     }
     // Compute trace divided by 3
     double tr = trace(quadrupole_)/3.0;
@@ -166,6 +171,11 @@ void QtypeProps::calcMoments()
     for (int m = 0; m < DIM; m++)
     {
         quadrupole_[m][m] -= tr;
+    }
+    if (debug)
+    {
+        fprintf(debug, "Traceless:  %7.3f %7.3f %7.3f\n", quadrupole_[XX][XX],
+                quadrupole_[YY][YY], quadrupole_[ZZ][ZZ]);
     }
     dipole_ = norm(mu_);
 }

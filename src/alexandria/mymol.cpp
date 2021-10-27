@@ -806,7 +806,7 @@ immStatus MyMol::GenerateTopology(FILE              *fp,
         addBondVsites(fp, pd, atoms);
         if (pd->polarizable())
         {
-            addShells(fp, pd, atoms);
+            addShells(debug, pd, atoms);
         }
         char **molnameptr = put_symtab(symtab_, getMolname().c_str());
         // Generate mtop
@@ -956,9 +956,9 @@ void MyMol::addShells(FILE          *fp,
             nshell++;
         }
     }
-    if (debug)
+    if (fp)
     {
-        fprintf(debug, "Found %d shells to be added\n", nshell);
+        fprintf(fp, "Found %d shells to be added\n", nshell);
     }
     int nParticles = atoms->nr+nshell;
     state_change_natoms(state_, nParticles);
