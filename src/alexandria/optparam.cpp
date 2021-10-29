@@ -206,10 +206,7 @@ void Bayes::addParam(const std::string &name,
     {
         std::random_device               rd;
         std::mt19937                     gen(rd());  
-        real delta                       = std::abs((0.5*val));      
-        real a                           = val - delta;
-        real b                           = val + delta;       
-        std::uniform_real_distribution<> uniform(a, b);
+        std::uniform_real_distribution<> uniform(lower, upper);
         val                              = uniform(gen);        
     }
     

@@ -121,7 +121,7 @@ const std::map<std::string, ForceFieldParameter> &ForceFieldParameterList::findP
     
     if (params == parameters_.end())
     {
-        GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such identifier %s in const parameter list with %d entries for function '%s'",
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such identifier '%s' in const parameter list with %d entries for function '%s'",
                                                            identifier.id().c_str(),
                                                            static_cast<int>(parameters_.size()),
                                                            function_.c_str()).c_str()));

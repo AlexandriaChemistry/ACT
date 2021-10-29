@@ -662,10 +662,16 @@ immStatus MyMol::zetaToAtoms(const Poldata *pd,
         return immStatus::OK;
     }
     
+    auto iType = InteractionType::CHARGEDISTRIBUTION;
     for (auto i = 0; i < atoms->nr; i++)
     {
         auto atype = pd->findParticleType(*atoms->atomtype[i]);
-        auto ztype = atype->interactionTypeToIdentifier(InteractionType::CHARGEDISTRIBUTION);
+        auto ztype = atype->interactionTypeToIdentifier(iType);
+        GMX_RELEASE_ASSERT(qt.parameterExists(ztype), gmx::formatString("No such parameter '%s' for atom type %s in %s",
+                                                                        ztype.id().c_str(),
+                                                                        atype->id().id().c_str(),
+                                                                        interactionTypeToString(iType).c_str()).c_str());
+
         auto eep   = qt.findParametersConst(ztype);
         const char *zzz =  "zeta";
         if (eep.find(zzz) ==  eep.end())
