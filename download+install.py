@@ -64,10 +64,16 @@ if __name__ == '__main__':
         BLAS     = ( "%s/libblas.dylib" % anaconda)
         LBFLAGS  = ( "-DGMX_BLAS_USER=%s -DGMX_LAPACK_USER=%s" % ( BLAS, LAPACK ) )
         mpirun   = shutil.which("mpirun")
-    elif HOST.find("tetralith") >= 0:
+    elif HOST.find("nsc") >= 0:
         HOMEDIR   = HOMEDIR + "/wd"
         LAPACK = "/software/sse/easybuild/prefix/software/ScaLAPACK/2.0.2-gompi-2018a-OpenBLAS-0.2.20/lib/libscalapack.a" 
         BLAS   = "/software/sse/easybuild/prefix/software/OpenBLAS/0.2.20-GCC-6.4.0-2.28/lib/libopenblas.so.0"
+        LBFLAGS = ( "-DGMX_BLAS_USER=%s -DGMX_LAPACK_USER=%s" % ( BLAS, LAPACK ) )
+    elif HOST.find("hpc2n")>=0:
+        ROOT    = ROOT + "/wd"
+        LAPACK = "/usr/lib/lapack/liblapack.so.3"
+        LAPACK = "/hpc2n/eb/software/ScaLAPACK/2.1.0-gompi-2020b-bf/lib/libscalapack.so"
+        BLAS   = "/hpc2n/eb/software/OpenBLAS/0.3.12-GCC-10.2.0/lib/libopenblas.so"
         LBFLAGS = ( "-DGMX_BLAS_USER=%s -DGMX_LAPACK_USER=%s" % ( BLAS, LAPACK ) )
     elif HOST.find("csb") >= 0:
         extra_dirs = []
