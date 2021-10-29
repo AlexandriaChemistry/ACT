@@ -80,6 +80,25 @@ UnitTest    =   4.79 sec*proc (4 tests)
 Total Test time (real) =   4.80 sec
 ```
 
+You can also run an individual test, like this (with part of the output):
+```
+$ bin/alexandria-test 
+[==========] Running 84 tests from 15 test cases.
+[----------] Global test environment set-up.
+[----------] 10 tests from ForceFieldParameterTest
+[ RUN      ] ForceFieldParameterTest.FreeNotStrict
+[       OK ] ForceFieldParameterTest.FreeNotStrict (0 ms)
+<snip>
+[----------] 1 test from UnitsTestSimple
+[ RUN      ] UnitsTestSimple.WrongUnitThrows
+[       OK ] UnitsTestSimple.WrongUnitThrows (0 ms)
+[----------] 1 test from UnitsTestSimple (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 84 tests from 15 test cases ran. (12025 ms total)
+[  PASSED  ] 84 tests.
+```
+
 Development documentation
 -------------------------
 To build the documentation of the classes used in the software, please go to the ```build_Release_DOUBLE``` directory inside ACT and issue the following command:
