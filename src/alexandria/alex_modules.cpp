@@ -72,8 +72,8 @@ void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
                    "Optimize parameters of the EEM algorithm");
     registerModule(manager, &alex_bastat, "bastat",
                    "Deduce bond/angle/dihedral distributions from a set of strucures");
-    //  registerModule(manager, &alex_analyze, "analyze",
-    //             "Analyze molecular- or force field properties from a database and generate tables");
+    registerModule(manager, &alex_analyze, "analyze",
+                   "Analyze molecular- or force field properties from a database and generate tables");
     //    registerModule(manager, &alex_gen_table, "gen_table",
     //             "Generate tables for interaction functions used in mdrun");
     registerModule(manager, &alex_poldata_edit, "poldata_edit",

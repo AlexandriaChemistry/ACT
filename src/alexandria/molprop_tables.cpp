@@ -224,8 +224,10 @@ void alexandria_molprop_stats_table(FILE                 *fp,
         lsqtot[k] = gmx_stats_init();
         for (mpi = mp.begin(); (mpi < mp.end()); mpi++)
         {
-            if ((gms.status(mpi->getIupac()) == ims) &&
-                (mpi->HasComposition(alex)))
+            iMolSelect myIms;
+            if (gms.status(mpi->getIupac(), &myIms) &&
+                ims == myIms &&
+                mpi->HasComposition(alex))
             {
                 double exp_err, qm_err;
                 double Texp = -1;
@@ -389,8 +391,10 @@ void alexandria_molprop_composition_table(FILE                 *fp,
     nprint = 0;
     for (mpi = mp.begin(); (mpi < mp.end()); mpi++)
     {
-        if ((ims == gms.status(mpi->getIupac())) &&
-            (mpi->HasComposition(alex)))
+        iMolSelect myIms;
+        if (gms.status(mpi->getIupac(), &myIms) &&
+            myIms == ims &&
+            mpi->HasComposition(alex))
         {
             nprint++;
         }
@@ -404,11 +408,13 @@ void alexandria_molprop_composition_table(FILE                 *fp,
     iline = 0;
     for (mpi = mp.begin(); (mpi < mp.end()); mpi++)
     {
-        if ((ims == gms.status(mpi->getIupac())) &&
-            (mpi->HasComposition(alex)))
+        iMolSelect myIms;
+        if (gms.status(mpi->getIupac(), &myIms) &&
+            myIms == ims &&
+            mpi->HasComposition(alex))
         {
             char qbuf[32];
-            q = mpi->getCharge();
+            q = mpi->totalCharge();
             m = mpi->getMultiplicity();
             if ((q != 0) || (m != 1))
             {
@@ -441,10 +447,10 @@ void alexandria_molprop_composition_table(FILE                 *fp,
             {
                 AtomNumIterator ani;
 
-                for (ani = mci->BeginAtomNum(); (ani < mci->EndAtomNum()); ani++)
+                for (auto ani : mci->atomNumConst())
                 {
                     snprintf(buf, 256, " %d %s\t",
-                             ani->getNumber(), ani->getAtom().c_str());
+                             ani.getNumber(), ani.getAtom().c_str());
                     longbuf.append(buf);
                 }
             }
@@ -509,6 +515,7 @@ void alexandria_molprop_category_table(FILE            *fp,
     }
 }
 
+#ifdef IGNORE
 static void atomtype_tab_header(LongTable &lt)
 {
     char             longbuf[STRLEN];
@@ -550,9 +557,9 @@ static void alexandria_molprop_atomtype_polar_table(FILE                       *
      * do not need to have the same sets of types,
      * as we check for the type name.
      */
-    for (auto pType = pd->getPtypeBegin(); pType != pd->getPtypeEnd(); pType++)
+    for (auto pType : pd->particleTypesConst())
     {
-        if (pType->getPolarizability() > 0)
+        if (pType.getPolarizability() > 0)
         {
             int atomnumber;
             int nexp   = 0;
@@ -687,6 +694,7 @@ void alexandria_molprop_atomtype_table(FILE                       *fp,
         alexandria_molprop_atomtype_dip_table(fp, pd);
     }
 }
+#endif
 
 static void prop_header(LongTable     &lt,
                         const char    *property,
@@ -837,8 +845,10 @@ void alexandria_molprop_prop_table(FILE                 *fp,
 
     int nprint = std::count_if(mp.begin(), mp.end(),
                                [ims, alex, gms](const MolProp &mpi)
-                               { return ((ims == gms.status(mpi.getIupac())) &&
-                                         (mpi.HasComposition(alex))); });
+                               { iMolSelect myIms;
+                                   return (gms.status(mpi.getIupac(), &myIms) &&
+                                           ims == myIms &&
+                                           mpi.HasComposition(alex)); });
     if (nprint <= 0)
     {
         return;
@@ -849,58 +859,60 @@ void alexandria_molprop_prop_table(FILE                 *fp,
                 ims, bPrintConf, bPrintBasis, bPrintMultQ);
     for (auto &mpi : mp)
     {
-        if ((ims == gms.status(mpi.getIupac())) &&
-            (mpi.HasComposition(alex)))
+        iMolSelect myIms;
+        if (gms.status(mpi.getIupac(), &myIms) &&
+            ims == myIms &&
+            mpi.HasComposition(alex))
         {
             std::vector<ExpData>  ed;
             std::vector<CalcData> cd;
-            for (auto ei = mpi.BeginExperiment(); (ei < mpi.EndExperiment()); ei++)
+            for (auto ei : mpi.experimentConst())
             {
                 switch (mpo)
                 {
                     case MPO_DIPOLE:
-                        for (auto mdi = ei->BeginDipole(); (mdi < ei->EndDipole()); mdi++)
+                        for (auto mdi : ei.dipoleConst())
                         {
-                            if (mdi->getType().compare(exp_type) == 0)
+                            if (mdi.getType().compare(exp_type) == 0)
                             {
-                                ed.push_back(ExpData(mdi->getAver(),
-                                                     mdi->getError(),
-                                                     mdi->getTemperature(),
-                                                     ei->getReference(),
-                                                     ei->getConformation(),
-                                                     mdi->getType(),
-                                                     mdi->getUnit()));
+                                ed.push_back(ExpData(mdi.getAver(),
+                                                     mdi.getError(),
+                                                     mdi.getTemperature(),
+                                                     ei.getReference(),
+                                                     ei.getConformation(),
+                                                     mdi.getType(),
+                                                     mdi.getUnit()));
                             }
                         }
                         break;
                     case MPO_POLARIZABILITY:
-                        for (auto mdi = ei->BeginPolar(); (mdi < ei->EndPolar()); mdi++)
+                        for (auto mdi : ei.polarizabilityConst())
                         {
-                            if (mdi->getType().compare(exp_type) == 0)
+                            if (mdi.getType().compare(exp_type) == 0)
                             {
-                                ed.push_back(ExpData(mdi->getAverage(),
-                                                     mdi->getError(),
-                                                     mdi->getTemperature(),
-                                                     ei->getReference(),
-                                                     ei->getConformation(),
-                                                     mdi->getType(),
-                                                     mdi->getUnit()));
+                                ed.push_back(ExpData(mdi.getAverage(),
+                                                     mdi.getError(),
+                                                     mdi.getTemperature(),
+                                                     ei.getReference(),
+                                                     ei.getConformation(),
+                                                     mdi.getType(),
+                                                     mdi.getUnit()));
                             }
                         }
                         break;
                     case MPO_ENERGY:
                     case MPO_ENTROPY:
-                        for (mei = ei->BeginEnergy(); (mei < ei->EndEnergy()); mei++)
+                        for (auto mei : ei.molecularEnergyConst())
                         {
-                            if (mei->getType().compare(exp_type) == 0)
+                            if (mei.getType().compare(exp_type) == 0)
                             {
-                                ed.push_back(ExpData(mei->getValue(),
-                                                     mei->getError(),
-                                                     mei->getTemperature(),
-                                                     ei->getReference(),
-                                                     ei->getConformation(),
-                                                     mei->getType(),
-                                                     mei->getUnit()));
+                                ed.push_back(ExpData(mei.getValue(),
+                                                     mei.getError(),
+                                                     mei.getTemperature(),
+                                                     ei.getReference(),
+                                                     ei.getConformation(),
+                                                     mei.getType(),
+                                                     mei.getUnit()));
                             }
                         }
                         break;
@@ -948,7 +960,7 @@ void alexandria_molprop_prop_table(FILE                 *fp,
                             snprintf(mylbuf, sizeof(mylbuf), "%d. %-15s & %s & %d & %d",
                                      iprint, mpi.getIupac().c_str(),
                                      mpi.getTexFormula().c_str(),
-                                     mpi.getCharge(),
+                                     mpi.totalCharge(),
                                      mpi.getMultiplicity());
                         }
                         else

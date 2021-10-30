@@ -390,7 +390,7 @@ CommandLineModuleManager::Impl::processCommonOptions(
             if (moduleIter == modules_.end())
             {
                 std::string message =
-                    formatString("'%s' is not a GROMACS command.", moduleName);
+                    formatString("'%s' is not an ACT command.", moduleName);
                 GMX_THROW(InvalidInputError(message));
             }
             module = moduleIter->second.get();

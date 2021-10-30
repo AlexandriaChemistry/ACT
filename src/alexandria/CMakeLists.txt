@@ -27,6 +27,7 @@
 
 set(ALEXANDRIA_SOURCES
            alex_modules.cpp
+           analyze.cpp
            atype_mapping.cpp
            bastat.cpp
            categories.cpp
@@ -52,6 +53,7 @@ set(ALEXANDRIA_SOURCES
            molprop_check.cpp
            molprop_csv.cpp
            molprop_sqlite3.cpp
+           molprop_tables.cpp
            molprop_test.cpp
            molprop_util.cpp
            molprop_xml.cpp

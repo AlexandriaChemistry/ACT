@@ -161,10 +161,10 @@ static void write_corr_xvg(FILE                             *fplog,
                                     &exp_val,
                                     &exp_error,
                                     &Texp);
-            auto ims = gms.status(mpi.getIupac());
-            if ((ims == imsTrain) || (ims == imsTest))
+            iMolSelect ims;
+            if (gms.status(mpi.getIupac(), &ims) &&
+                ((ims == iMolSelect::Train) || (ims == iMolSelect::Test)))
             {
-
                 qm_val   = 0;
                 qm_error = 0;
                 bQM      = mpi.getProp(mpo,
@@ -254,12 +254,12 @@ static void alexandria_molprop_analyze(FILE                              *fplog,
     find_calculations(mp, mpo, fc_str, &qmc);
     for (auto &mpi : mp)
     {
-        for (auto ei = mpi.BeginExperiment(); ei < mpi.EndExperiment(); ++ei)
+        for (auto &ei : mpi.experimentConst())
         {
             T = -1;
-            if (ei->getVal(exp_type, mpo, &value, &error, &T, vec, quadrupole))
+            if (ei.getVal(exp_type, mpo, &value, &error, &T, vec, quadrupole))
             {
-                add_refc(rc, ei->getReference().c_str());
+                add_refc(rc, ei.getReference().c_str());
             }
         }
     }
@@ -285,26 +285,26 @@ static void alexandria_molprop_analyze(FILE                              *fplog,
                q->basis().c_str(), q->type().c_str());
     }
     printf("--------------------------------------------------\n");
-    makeCategoryList(cList, mp, gms, imsTrain);
+    makeCategoryList(cList, mp, gms, iMolSelect::Train);
     fp = gmx_ffopen(texfn, "w");
     if (bStatsTable)
     {
         alexandria_molprop_stats_table(fp, mpo, mp, qmc, exp_type,
-                                       outlier, cList, gms, imsTrain);
+                                       outlier, cList, gms, iMolSelect::Train);
         if (0)
         {
             alexandria::CategoryList cListTest;
-            makeCategoryList(cListTest, mp, gms, imsTest);
+            makeCategoryList(cListTest, mp, gms, iMolSelect::Test);
             alexandria_molprop_stats_table(fp, mpo, mp, qmc, exp_type,
-                                           outlier, cListTest, gms, imsTest);
+                                           outlier, cListTest, gms, iMolSelect::Test);
         }
     }
     if (bPropTable)
     {
         alexandria_molprop_prop_table(fp, mpo, rtoler, atoler, mp, qmc, exp_type, bPrintAll, bPrintBasis,
-                                      bPrintMultQ, gms, imsTrain);
+                                      bPrintMultQ, gms, iMolSelect::Train);
         alexandria_molprop_prop_table(fp, mpo, rtoler, atoler, mp, qmc, exp_type, bPrintAll, bPrintBasis,
-                                      bPrintMultQ, gms, imsTest);
+                                      bPrintMultQ, gms, iMolSelect::Test);
         if (nullptr != selout)
         {
             gp = fopen(selout, "w");
@@ -329,8 +329,8 @@ static void alexandria_molprop_analyze(FILE                              *fplog,
     }
     if (bCompositionTable)
     {
-        alexandria_molprop_composition_table(fp, mp, gms, imsTrain);
-        alexandria_molprop_composition_table(fp, mp, gms, imsTest);
+        alexandria_molprop_composition_table(fp, mp, gms, iMolSelect::Train);
+        alexandria_molprop_composition_table(fp, mp, gms, iMolSelect::Test);
     }
     fclose(fp);
     if (nullptr != categoryfn)
@@ -484,7 +484,7 @@ int alex_analyze(int argc, char *argv[])
     }
     try
     {
-        alexandria::readPoldata(opt2fn("-d", NFILE, fnm), pd, ap);
+        alexandria::readPoldata(opt2fn("-d", NFILE, fnm), &pd);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
