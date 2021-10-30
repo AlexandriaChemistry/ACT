@@ -211,20 +211,22 @@ class AtomNum
         /*! \brief
          * Sends this object over an MPI connection
          *
-         * \param[in] commrec   GROMACS data structure for MPI communication
-         * \param[in] dest      Destination processor
+         * \param[in] cr   GROMACS data structure for MPI communication
+         * \param[in] dest Destination processor
          * \return the CommunicationStatus of the operation
          */
-        CommunicationStatus Send(t_commrec *cr, int dest) const;
+        CommunicationStatus Send(t_commrec *cr,
+                                 int        dest) const;
 
         /*! \brief
          * Receives this object over an MPI connection
          *
-         * \param[in] commrec   GROMACS data structure for MPI communication
-         * \param[in] src       Source processor
+         * \param[in] cr  GROMACS data structure for MPI communication
+         * \param[in] src Source processor
          * \return the CommunicationStatus of the operation
          */
-        CommunicationStatus Receive(t_commrec *cr, int src);
+        CommunicationStatus Receive(t_commrec *cr,
+                                    int        src);
 };
 //! Iterates over a vector of AtomNum
 using  AtomNumIterator      = typename std::vector<AtomNum>::iterator;
@@ -341,20 +343,22 @@ class MolecularComposition
         /*! \brief
          * Sends this object over an MPI connection
          *
-         * \param[in] commrec   GROMACS data structure for MPI communication
-         * \param[in] dest      Destination processor
+         * \param[in] cr   GROMACS data structure for MPI communication
+         * \param[in] dest Destination processor
          * \return the CommunicationStatus of the operation
          */
-        CommunicationStatus Send(t_commrec *cr, int dest) const;
+        CommunicationStatus Send(t_commrec *cr,
+                                 int        dest) const;
 
         /*! \brief
          * Receives this object over an MPI connection
          *
-         * \param[in] commrec   GROMACS data structure for MPI communication
-         * \param[in] src       Source processor
+         * \param[in] cr  GROMACS data structure for MPI communication
+         * \param[in] src Source processor
          * \return the CommunicationStatus of the operation
          */
-        CommunicationStatus Receive(t_commrec *cr, int src);
+        CommunicationStatus Receive(t_commrec *cr,
+                                    int        src);
 };
 //! Iterates over MolecularComposition items
 using MolecularCompositionIterator      = typename std::vector<MolecularComposition>::iterator;
@@ -378,13 +382,13 @@ class GenericProperty
          */
         std::string unit_;
         /*! \brief
-         * Phase in which the property is measured or computed: e.x. Gas, Liquid, and Solid
-         */
-        ePhase      eP_;
-        /*! \brief
          * Temperature at which the property is measured or computed.
          */
         double      T_;
+        /*! \brief
+         * Phase in which the property is measured or computed: e.x. Gas, Liquid, and Solid
+         */
+        ePhase      eP_;
     public:
         //! Default constructor
         GenericProperty() { T_ = 0; eP_ = epNR; };
@@ -395,12 +399,14 @@ class GenericProperty
          * \param[in] type  Type of the property
          * \param[in] unit  Unit of the property
          * \param[in] T     Temperature
+         * \param[in] ep    The phase
          */
         GenericProperty(const std::string &type,
                         const std::string &unit,
                         double             T,
-                        ePhase             ep)
-        { SetType(type); SetUnit(unit); setTemperature(T); setPhase(ep); }
+                        ePhase             ep) : 
+            type_(type), unit_(unit), T_(T), eP_(ep)
+        {}
 
         /*! \brief
          * Return the property type
@@ -427,14 +433,14 @@ class GenericProperty
          *
          **\param[in] type  Type of property
          */
-        void SetType(const std::string &type);
+        void SetType(const std::string &type) { type_ = type; }
 
         /*! \brief
          * Set the unit of the property
          *
          **\param[in] unit Unit of the property
          */
-        void SetUnit(const std::string &unit);
+        void SetUnit(const std::string &unit) { unit_ = unit; }
 
         /*! \brief
          * Set the temperature of the property
@@ -453,8 +459,8 @@ class GenericProperty
         /*! \brief
          * Sends this object over an MPI connection
          *
-         * \param[in] commrec   GROMACS data structure for MPI communication
-         * \param[in] dest      Destination processor
+         * \param[in] cr   GROMACS data structure for MPI communication
+         * \param[in] dest Destination processor
          * \return the CommunicationStatus of the operation
          */
         CommunicationStatus Send(t_commrec *cr, int dest) const;
@@ -462,11 +468,12 @@ class GenericProperty
         /*! \brief
          * Receives this object over an MPI connection
          *
-         * \param[in] commrec   GROMACS data structure for MPI communication
-         * \param[in] src       Source processor
+         * \param[in] cr  GROMACS data structure for MPI communication
+         * \param[in] src Source processor
          * \return the CommunicationStatus of the operation
          */
-        CommunicationStatus Receive(t_commrec *cr, int src);
+        CommunicationStatus Receive(t_commrec *cr,
+                                    int        src);
 };
 
 /*! \brief
@@ -526,20 +533,22 @@ class MolecularQuadrupole : public GenericProperty
         /*! \brief
          * Sends this object over an MPI connection
          *
-         * \param[in] commrec   GROMACS data structure for MPI communication
-         * \param[in] dest      Destination processor
+         * \param[in] cr   GROMACS data structure for MPI communication
+         * \param[in] dest Destination processor
          * \return the CommunicationStatus of the operation
          */
-        CommunicationStatus Send(t_commrec *cr, int dest) const;
+        CommunicationStatus Send(t_commrec *cr,
+                                 int        dest) const;
 
         /*! \brief
          * Receives this object over an MPI connection
          *
-         * \param[in] commrec   GROMACS data structure for MPI communication
-         * \param[in] src       Source processor
+         * \param[in] cr  GROMACS data structure for MPI communication
+         * \param[in] src Source processor
          * \return the CommunicationStatus of the operation
          */
-        CommunicationStatus Receive(t_commrec *cr, int src);
+        CommunicationStatus Receive(t_commrec *cr,
+                                    int        src);
 };
 //! Iterates over MolecularQuadrupole items
 using MolecularQuadrupoleIterator      = typename std::vector<MolecularQuadrupole>::iterator;
@@ -615,20 +624,22 @@ class MolecularPolarizability : public GenericProperty
         /*! \brief
          * Sends this object over an MPI connection
          *
-         * \param[in] commrec   GROMACS data structure for MPI communication
-         * \param[in] dest      Destination processor
+         * \param[in] cr   GROMACS data structure for MPI communication
+         * \param[in] dest Destination processor
          * \return the CommunicationStatus of the operation
          */
-        CommunicationStatus Send(t_commrec *cr, int dest) const;
+        CommunicationStatus Send(t_commrec *cr,
+                                 int        dest) const;
 
         /*! \brief
          * Receives this object over an MPI connection
          *
-         * \param[in] commrec   GROMACS data structure for MPI communication
-         * \param[in] src       Source processor
+         * \param[in] cr  GROMACS data structure for MPI communication
+         * \param[in] src Source processor
          * \return the CommunicationStatus of the operation
          */
-        CommunicationStatus Receive(t_commrec *cr, int src);
+        CommunicationStatus Receive(t_commrec *cr,
+                                    int        src);
 };
 //! Iterates over MolecularPolarizability items
 using  MolecularPolarizabilityIterator      = typename std::vector<MolecularPolarizability>::iterator;
@@ -680,20 +691,22 @@ class MolecularEnergy : public GenericProperty
         /*! \brief
          * Sends this object over an MPI connection
          *
-         * \param[in] commrec   GROMACS data structure for MPI communication
-         * \param[in] dest      Destination processor
+         * \param[in] cr   GROMACS data structure for MPI communication
+         * \param[in] dest Destination processor
          * \return the CommunicationStatus of the operation
          */
-        CommunicationStatus Send(t_commrec *cr, int dest) const;
+        CommunicationStatus Send(t_commrec *cr,
+                                 int        dest) const;
 
         /*! \brief
          * Receives this object over an MPI connection
          *
-         * \param[in] commrec   GROMACS data structure for MPI communication
-         * \param[in] src       Source processor
+         * \param[in] cr  GROMACS data structure for MPI communication
+         * \param[in] src Source processor
          * \return the CommunicationStatus of the operation
          */
-        CommunicationStatus Receive(t_commrec *cr, int src);
+        CommunicationStatus Receive(t_commrec *cr,
+                                    int        src);
 };
 //! Iterates over MolecularEnergy items
 using  MolecularEnergyIterator      = typename std::vector<MolecularEnergy>::iterator;
@@ -748,17 +761,18 @@ class MolecularDipole : public GenericProperty
         /*! \brief
          * Sends this object over an MPI connection
          *
-         * \param[in] commrec   GROMACS data structure for MPI communication
-         * \param[in] dest      Destination processor
+         * \param[in] cr   GROMACS data structure for MPI communication
+         * \param[in] dest Destination processor
          * \return the CommunicationStatus of the operation
          */
-        CommunicationStatus Send(t_commrec *cr, int dest) const;
+        CommunicationStatus Send(t_commrec *cr,
+                                 int        dest) const;
 
         /*! \brief
          * Receives this object over an MPI connection
          *
-         * \param[in] commrec   GROMACS data structure for MPI communication
-         * \param[in] src       Source processor
+         * \param[in] cr  GROMACS data structure for MPI communication
+         * \param[in] src Source processor
          * \return the CommunicationStatus of the operation
          */
         CommunicationStatus Receive(t_commrec *cr, int src);
@@ -842,8 +856,8 @@ class ElectrostaticPotential
         /*! \brief
          * Sends this object over an MPI connection
          *
-         * \param[in] commrec   GROMACS data structure for MPI communication
-         * \param[in] dest      Destination processor
+         * \param[in] cr   GROMACS data structure for MPI communication
+         * \param[in] dest Destination processor
          * \return the CommunicationStatus of the operation
          */
         CommunicationStatus Send(t_commrec *cr, int dest) const;
@@ -851,8 +865,8 @@ class ElectrostaticPotential
         /*! \brief
          * Receives this object over an MPI connection
          *
-         * \param[in] commrec   GROMACS data structure for MPI communication
-         * \param[in] src       Source processor
+         * \param[in] cr  GROMACS data structure for MPI communication
+         * \param[in] src Source processor
          * \return the CommunicationStatus of the operation
          */
         CommunicationStatus Receive(t_commrec *cr, int src);
@@ -905,20 +919,22 @@ class Bond
         /*! \brief
          * Sends this object over an MPI connection
          *
-         * \param[in] commrec   GROMACS data structure for MPI communication
-         * \param[in] dest      Destination processor
+         * \param[in] cr   GROMACS data structure for MPI communication
+         * \param[in] dest Destination processor
          * \return the CommunicationStatus of the operation
          */
-        CommunicationStatus Send(t_commrec *cr, int dest) const;
+        CommunicationStatus Send(t_commrec *cr,
+                                 int        dest) const;
 
         /*! \brief
          * Receives this object over an MPI connection
          *
-         * \param[in] commrec   GROMACS data structure for MPI communication
-         * \param[in] src       Source processor
+         * \param[in] cr  GROMACS data structure for MPI communication
+         * \param[in] src Source processor
          * \return the CommunicationStatus of the operation
          */
-        CommunicationStatus Receive(t_commrec *cr, int src);
+        CommunicationStatus Receive(t_commrec *cr,
+                                    int        src);
 };
 //! Iterates over Bond items
 using BondIterator      = typename std::vector<Bond>::iterator;
@@ -1056,20 +1072,22 @@ class CalcAtom
         /*! \brief
          * Sends this object over an MPI connection
          *
-         * \param[in] commrec   GROMACS data structure for MPI communication
-         * \param[in] dest      Destination processor
+         * \param[in] cr   GROMACS data structure for MPI communication
+         * \param[in] dest Destination processor
          * \return the CommunicationStatus of the operation
          */
-        CommunicationStatus Send(t_commrec *cr, int dest) const;
+        CommunicationStatus Send(t_commrec *cr,
+                                 int        dest) const;
 
         /*! \brief
          * Receives this object over an MPI connection
          *
-         * \param[in] commrec   GROMACS data structure for MPI communication
-         * \param[in] src       Source processor
+         * \param[in] cr  GROMACS data structure for MPI communication
+         * \param[in] src Source processor
          * \return the CommunicationStatus of the operation
          */
-        CommunicationStatus Receive(t_commrec *cr, int src);
+        CommunicationStatus Receive(t_commrec *cr,
+                                    int        src);
 };
 //! Iterates over CalcAtom items
 using  CalcAtomIterator      = typename std::vector<CalcAtom>::iterator;
@@ -1227,20 +1245,22 @@ class Experiment
         /*! \brief
          * Sends this object over an MPI connection
          *
-         * \param[in] commrec   GROMACS data structure for MPI communication
-         * \param[in] dest      Destination processor
+         * \param[in] cr   GROMACS data structure for MPI communication
+         * \param[in] dest Destination processor
          * \return the CommunicationStatus of the operation
          */
-        CommunicationStatus Send(t_commrec *cr, int dest) const;
+        CommunicationStatus Send(t_commrec *cr,
+                                 int        dest) const;
 
         /*! \brief
          * Receives this object over an MPI connection
          *
-         * \param[in] commrec   GROMACS data structure for MPI communication
-         * \param[in] src       Source processor
+         * \param[in] cr  GROMACS data structure for MPI communication
+         * \param[in] src Source processor
          * \return the CommunicationStatus of the operation
          */
-        CommunicationStatus Receive(t_commrec *cr, int src);
+        CommunicationStatus Receive(t_commrec *cr,
+                                    int        src);
 
     private:
         DataSource                           dataSource_;
@@ -1544,20 +1564,22 @@ class MolProp
         /*! \brief
          * Sends this object over an MPI connection
          *
-         * \param[in] commrec   GROMACS data structure for MPI communication
-         * \param[in] dest      Destination processor
+         * \param[in] cr   GROMACS data structure for MPI communication
+         * \param[in] dest Destination processor
          * \return the CommunicationStatus of the operation
          */
-        CommunicationStatus Send(t_commrec *cr, int dest) const;
+        CommunicationStatus Send(t_commrec *cr,
+                                 int        dest) const;
 
         /*! \brief
          * Receives this object over an MPI connection
          *
-         * \param[in] commrec   GROMACS data structure for MPI communication
-         * \param[in] src       Source processor
+         * \param[in] cr  GROMACS data structure for MPI communication
+         * \param[in] src Source processor
          * \return the CommunicationStatus of the operation
          */
-        CommunicationStatus Receive(t_commrec *cr, int src);
+        CommunicationStatus Receive(t_commrec *cr,
+                                    int        src);
 };
 //! Iterates over MolProp items
 using  MolPropIterator      = typename std::vector<MolProp>::iterator;

@@ -55,11 +55,8 @@ namespace alexandria
  * \param[in] eprop The property of choice
  * \param[in] mp    Array of molecules
  * \param[in] qmc   QM calc statistics
- * \param[in] iQM
- * \param[in] lot   Level of theory in 'A/B' form
  * \param[in] exp_type The type of experimental property
  * \param[in] outlier  Outlier indicates a level (in units of sigma, one standard deviation). Calculations that deviate more than this level from the experiment are not taken into account when computing statistics. Moreover, the outliers are printed to the standard error. If outlier is 0, no action is taken.
- * \param[in] catmin Mininum number of molecules in a category for it to be printed
  * \param[in] cList Structure containing all categories and the number of molecules per category
  * \param[in] gms   Structure containing selections of which molecules to output
  * \param[in] ims   The actual selection of the right set

@@ -69,21 +69,20 @@ class CompositionSpec
         /*! \brief
          * Constructor
          *
-         * \param[in] ic The enum for this composition
-         * \param[in] name Name of the composition
-         * \param[in] reference Literature reference
-         * \param[in] abreviation Short notation
+         * \param[in] ic           The enum for this composition
+         * \param[in] name         Name of the composition
+         * \param[in] reference    Literature reference
+         * \param[in] abbreviation Short notation
          */
-        CompositionSpec(iComp ic, const char *name, const char *reference, const char *abbreviation)
-        {
-            ic_ = ic;
-            name_.assign(name); reference_.assign(reference); abbreviation_.assign(abbreviation);
-        }
-
-        //~CompositionSpec() {};
+        CompositionSpec(iComp       ic,
+                        const char *name,
+                        const char *reference,
+                        const char *abbreviation) :
+            ic_(ic), name_(name), reference_(reference), abbreviation_(abbreviation)
+        {}
 
         //! Return the iComp
-        iComp iC() { return ic_; }
+        iComp iC() const { return ic_; }
 
         //! Return the name
         const char *name() { return name_.c_str(); }

@@ -376,11 +376,12 @@ namespace alexandria
          * \param[in] pd          Data structure containing atomic properties
          * \param[in] method      Method used for QM calculation
          * \param[in] basis       Basis set used for QM calculation
-         * \param[in] nexcl       Number of Exclusions
+         * \param[out] mylot      Level of theory
          * \param[in] bUseVsites  Add virtual sites to the topology structure
          * \param[in] bPairs      Add pairs to the topology structure
-         * \param[in] bAllowMissingParameters Generate dummy parameters if nothing found in force field file
          * \param[in] bDih        Add dihedrals to the topology structure
+         * \param[in] missing     How to treat missing parameters
+         * \param[in] tabfn       Table function file for table potentials
          */
         immStatus GenerateTopology(FILE              *fp,
                                    const Poldata     *pd,
@@ -505,9 +506,10 @@ namespace alexandria
          *
          * \param[in] bQM      Allow QM results
          * \param[in] bZero    Allow zero dipoles
+         * \param[in] bZPE     Use zero point energies
          * \param[in] method   Method used for QM calculation
          * \param[in] basis    Basis set used for QM calculation
-         * \param[in] gap      Gaussian atom property
+         * \param[in] pd       Force field structure
          */
         immStatus getExpProps(gmx_bool           bQM,
                               gmx_bool           bZero,
@@ -521,10 +523,11 @@ namespace alexandria
          * Print the topology that was generated previously in GROMACS format.
          *
          * \param[in] fn        A File pointer opened previously.
-         * \param[in] iModel    The distrbution model of charge (e.x. point charge, gaussian, and slater models)
          * \param[in] bVerbose  Verbose output
          * \param[in] pd        Data structure containing atomic properties
-         * \param[in] aps       Gromacs atom properties
+         * \param[in] cr        Gromacs communication record
+         * \param[in] method    QC method
+         * \param[in] basis     QC basis set
          */
         void PrintTopology(const char        *fn,
                            bool               bVerbose,
@@ -537,10 +540,11 @@ namespace alexandria
          * Print the topology that was generated previously in GROMACS format.
          *
          * \param[in] fn        A File pointer opened previously.
-         * \param[in] iModel    The distrbution model of charge (e.x. point charge, gaussian, and slater models)
          * \param[in] bVerbose  Verbose
          * \param[in] pd        Data structure containing atomic properties
-         * \param[in] aps       Gromacs atom properties
+         * \param[in] bITP      Whether or not to write an itp file iso top file
+         * \param[in] method    QC method
+         * \param[in] basis     WC basis set
          */
         void PrintTopology(FILE                    *fp,
                            bool                     bVerbose,

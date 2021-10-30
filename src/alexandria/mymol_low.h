@@ -127,7 +127,7 @@ real calc_relposition(const Poldata     *pd,
  * \param[in]  pd      Poldata structure
  * \param[out] plist   The parameter vector
  * \param[in]  atoms   GROMACS atom structure
- * \param[in]  bAllowMissingParameters Boolean determining whether parameters can be missing
+ * \param[in]  missing Determining whether parameters can be missing
  * \param[in]  molname Molecule name
  * \param[out] errors  Error messages are appended to this vector.
  * \return Warning status

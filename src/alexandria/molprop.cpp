@@ -83,36 +83,6 @@ DataSource dataSourceFromName(const std::string &name)
     gmx_fatal(FARGS, "No data source corresponding to %s", name.c_str());
 }
 
-void GenericProperty::SetType(const std::string &type)
-{
-    if ((type_.size() == 0) && (type.size() > 0))
-    {
-        type_ = type;
-    }
-    else
-    {
-        if (type_.size() == 0)
-        {
-            fprintf(stderr, "Replacing GenericProperty type '%s' by '%s'\n", type_.c_str(), type.c_str());
-        }
-    }
-}
-
-void GenericProperty::SetUnit(const std::string &unit)
-{
-    if ((unit_.size() == 0) && (unit.size() > 0))
-    {
-        unit_ = unit;
-    }
-    else
-    {
-        if (unit_.size() == 0)
-        {
-            fprintf(stderr, "Replacing GenericProperty unit '%s' by '%s'\n", unit_.c_str(), unit.c_str());
-        }
-    }
-}
-
 CommunicationStatus GenericProperty::Send(t_commrec *cr, int dest) const
 {
     CommunicationStatus cs;

@@ -106,6 +106,9 @@ class MyForceProvider : public gmx::IForceProvider
         void calculateForces(const gmx::ForceProviderInput &forceProviderInput,
                              gmx::ForceProviderOutput      *forceProviderOutput) override;
 
+        /*! \brief Set the electric field
+         * \param[in] efield Vector of field values
+         */
         void setField(const std::vector<double> &efield);
 };
 

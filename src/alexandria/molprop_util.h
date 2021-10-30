@@ -160,7 +160,7 @@ void find_calculations(std::vector<alexandria::MolProp> &mp,
  * \param[inout]  mp        The vector of MolProp
  * \param[in]     mpsa      The algorithm used for sorting
  * \param[in]     apt       Database of atom properties
- * \param[in]     mgs       Optional structure containing selection criteria
+ * \param[in]     gms       Optional structure containing selection criteria
  * \ingroup module_alexandria
  */
 void MolPropSort(std::vector<MolProp> *mp,
