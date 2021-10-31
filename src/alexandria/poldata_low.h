@@ -49,24 +49,34 @@
 namespace alexandria
 {
 
-enum VsiteType
+enum class VsiteType
 {
-    evtLINEAR       = 0,
-    evtPLANAR       = 1,
-    evtRING_PLANAR  = 2,
-    evtIN_PLANE     = 3,
-    evtOUT_OF_PLANE = 4,
-    evtALL          = 5,
-    evtNR           = 6
+    //! Linear virtual site dependent on two atoms
+    LINEAR,
+    //! Planar virtual site dependent on three atoms
+    PLANAR,
+    //! Planar virtual site dependent on three atoms in a ring
+    RING_PLANAR,
+    //! Planar virtual site dependent on three atoms
+    IN_PLANE,
+    //! Out-of-plane virtual site dependent on three atoms
+    OUT_OF_PLANE,
+    //! All possible virtual sites
+    ALL         
 };
 
 /*! \brief
  * Convert virtual site type to string
+ * \param[in] vType The virtual site type
+ * \return VsiteType name
  */
 const char *vsiteType2string(VsiteType vType);
 
 /*! \brief
  * Convert string to virtual site type
+ * \param[in] string The string to convert
+ * \returns The vsite type
+ * \throws if the string is not recognized
  */
 VsiteType string2vsiteType(const char *string);
 

@@ -155,7 +155,7 @@ class GentopVsites
 {
     private:
         //! The type of vsites we are storing
-        unsigned int               gvt_;
+        VsiteType                  gvt_;
         //! The linear vsites
         std::vector<gv_linear>     linear_;
         //! The planar vsites
@@ -169,11 +169,14 @@ class GentopVsites
 
     public:
         //! Default constructor
-        GentopVsites(unsigned int gvt) { gvt_ = gvt; }
+        GentopVsites(VsiteType gvt) : gvt_(gvt) 
+        {}
 
-        unsigned int getVsitesType() { return gvt_; }
+        //! Return the VsiteType
+        VsiteType getVsitesType() const { return gvt_; }
 
-        bool bHaveVsites()
+        //! Return true of there are any virtual sites
+        bool bHaveVsites() const
         {
             return ((inplane_.size()  > 0) ||
                     (outplane_.size() > 0));

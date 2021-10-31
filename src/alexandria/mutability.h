@@ -40,10 +40,15 @@ namespace alexandria
 //! \brief Enum determining whether a parameter can be changed
 enum class Mutability
 {
+    //! Parameter that cannot be changed
     Fixed,
+    //! Parameter that is dependent on another parameter and should not be changed independently
     Dependent,
+    //! Parameter (charge) that should be changed by the Alexandria Charge Method algorithms only
     ACM,
+    //! Parameter that can be modified within bounds
     Bounded,
+    //! Parameter that can be modified without restrictions
     Free
 };
 

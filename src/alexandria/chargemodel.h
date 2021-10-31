@@ -49,7 +49,12 @@ namespace alexandria
  * \ingroup module_alexandria
  */
 enum class ChargeType {
-    Point, Gaussian, Slater
+    //! Point charges
+    Point,
+    //! Gaussian-distributed charges
+    Gaussian,
+    //! Slater-distributed charges
+    Slater
 };
 
 //! \brief Return the string corresping to ct

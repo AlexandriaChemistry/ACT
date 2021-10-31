@@ -611,7 +611,7 @@ void GentopVsites::gen_Vsites(const Poldata             *pd,
         if (vsite != pd->getVsiteEnd())
         {
             auto lengthUnit = pd->getVsite_length_unit();
-            if(vsite->type() == evtIN_PLANE)
+            if(vsite->type() == VsiteType::IN_PLANE)
             {
                 auto inplane = findInPlane(vsite->nvsite(), i);
                 if (inplane != inplaneEnd())
@@ -636,7 +636,7 @@ void GentopVsites::gen_Vsites(const Poldata             *pd,
                     }                                                
                 }
             }
-            else if (vsite->type() == evtOUT_OF_PLANE)
+            else if (vsite->type() == VsiteType::OUT_OF_PLANE)
             {
                 auto outplane = findOutPlane(vsite->nvsite(), i);
                 if (outplane != outplaneEnd())
@@ -913,7 +913,7 @@ void GentopVsites::generateSpecial(const Poldata              *pd,
         }
         fprintf(debug, " and %d impropers\n", (int)planar_.size());
     }
-    if ((gvt_ == evtLINEAR) || (gvt_ == evtALL))
+    if ((gvt_ == VsiteType::LINEAR) || (gvt_ == VsiteType::ALL))
     {
         /* If we use vsites (discouraged) each triplet of atoms in a linear arrangement
          * is described by
@@ -968,7 +968,7 @@ void GentopVsites::generateSpecial(const Poldata              *pd,
             }
         }
     }
-    if ((gvt_ == evtPLANAR) || (gvt_ == evtALL))
+    if ((gvt_ == VsiteType::PLANAR) || (gvt_ == VsiteType::ALL))
     {
         for (unsigned int i = 0; (i < planar_.size()); i++)
         {

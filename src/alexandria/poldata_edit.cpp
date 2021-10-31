@@ -344,7 +344,6 @@ static const std::set<InteractionType> &findInteractionMap(const std::string &an
         InteractionType::IMPROPER_DIHEDRALS };
     static std::set<InteractionType> other = {
         InteractionType::VDW,
-        InteractionType::LJ14,
         InteractionType::CONSTR,
         InteractionType::VSITE2,
         InteractionType::VSITE3FAD,

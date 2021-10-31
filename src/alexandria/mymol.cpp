@@ -145,7 +145,7 @@ void MyForceProvider::calculateForces(const gmx::ForceProviderInput &forceProvid
 }
 
 
-MyMol::MyMol() : gvt_(evtALL)
+MyMol::MyMol() : gvt_(VsiteType::ALL)
 
 {
     myforce_           = new MyForceProvider;
@@ -388,7 +388,7 @@ void MyMol::MakeSpecialInteractions(const Poldata *pd,
             {
                 std::vector<int> vAtoms;
                 auto             vsite = pd->findVsite(atype);
-                if (vsite->type() == evtIN_PLANE)
+                if (vsite->type() == VsiteType::IN_PLANE)
                 {
                     vAtoms.push_back(i);
                     findInPlaneAtoms(i, vAtoms);
@@ -400,7 +400,7 @@ void MyMol::MakeSpecialInteractions(const Poldata *pd,
                                         vAtoms[2], vAtoms[3]);
                     }
                 }
-                else if (vsite->type() == evtOUT_OF_PLANE)
+                else if (vsite->type() == VsiteType::OUT_OF_PLANE)
                 {
                     vAtoms.push_back(i);
                     findOutPlaneAtoms(i, vAtoms);
@@ -519,11 +519,6 @@ void MyMol::MakeAngles(t_atoms *atoms,
     if (bDihs)
     {
         cp_plist(plist, F_PDIHS, InteractionType::PROPER_DIHEDRALS, plist_);
-    }
-    if (bPairs)
-    {
-        /* Make 1-4 table */
-        cp_plist(plist, F_LJ14, InteractionType::LJ14, plist_);
     }
     for (auto i = 0; i < F_NRE; i++)
     {

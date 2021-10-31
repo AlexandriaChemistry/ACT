@@ -53,35 +53,30 @@
 namespace alexandria
 {
 
-static const char * evt_names[evtNR] = {
-    "linear",
-    "planar",
-    "ring_planar",
-    "in_plane",
-    "out_of_plane",
-    "all"
+static std::map<VsiteType, const char *> evt_names = {
+    { VsiteType::LINEAR, "linear" },
+    { VsiteType::PLANAR,"planar" },
+    { VsiteType::RING_PLANAR,"ring_planar" },
+    { VsiteType::IN_PLANE,"in_plane" },
+    { VsiteType::OUT_OF_PLANE,"out_of_plane" },
+    { VsiteType::ALL, "all" }
 };
 
 const char *vsiteType2string(VsiteType vType)
 {
-    if (vType < evtNR)
-    {
-        return evt_names[vType];
-    }
-    return nullptr;
+    return evt_names[vType];
 }
 
 VsiteType string2vsiteType(const char *string)
 {
-    int i;
-    for (i = 0; i < evtNR; i++)
+    for (auto &i : evt_names)
     {
-        if (gmx_strcasecmp(string, evt_names[i]) == 0)
+        if (gmx_strcasecmp(string, i.second) == 0)
         {
-            return static_cast<VsiteType>(i);
+            return i.first;
         }
     }
-    return evtNR;
+    GMX_THROW(gmx::InternalError(gmx::formatString("Invalid vsite type %s", string).c_str()));
 }
 
 Vsite::Vsite(const std::string &atype,

@@ -43,7 +43,12 @@
 namespace alexandria
 {
 
-enum class CanSwap { No, Yes };
+enum class CanSwap { 
+    //! The order of atoms in an interaction cannot be swapped
+    No, 
+    //! The order of atoms in an interaction can be swapped
+    Yes 
+};
 
 /*! \brief Convert string to CanSwap
  * \param[in] str The string

@@ -39,22 +39,36 @@ namespace alexandria
 //! Interaction type
 enum class InteractionType
 {
+    //! Chemical bonds
     BONDS,
+    //! Angles between two bonds
     ANGLES,
+    //! Atom triplets i,j,k that are in a linear conformation
     LINEAR_ANGLES,
+    //! Atom quadruplets i,j,k,l. The dihedral angle is the angle between planes made up by atoms i,j,k and j,k,l.
     PROPER_DIHEDRALS,
+    //! Out-of-plane dihedral angles.
     IMPROPER_DIHEDRALS,
+    //! Van der Waals interaction between atoms
     VDW,
-    LJ14,
+    //LJ14,
+    //! Polarization interaction between an atom (core) or a virtual site and its directly connected shell.
     POLARIZATION,
+    //! Constrained bonds, that are not allowed to fluctuate.
     CONSTR,
+    //! Virtual interaction sites along the bond between two atoms.
     VSITE2,
+    //! Virtual interaction sites determined by three atoms in a plane
     VSITE3FAD,
+    //! Virtual interaction sites determined by three atoms out of the plane
     VSITE3OUT,
+    //! Charge distribution parameters of particles
     CHARGEDISTRIBUTION,
+    //! Bond hardness needed to use the split charge equilibration algorithm
     BONDCORRECTIONS,
+    //! Correction to the electronegativity difference between two atoms connected by a bond
     ELECTRONEGATIVITYEQUALIZATION,
-    // Abusing this structure for something that is not an interaction type.
+    //! Abusing this structure for something that is a charge rathers than an interaction type.
     CHARGE
 };
 

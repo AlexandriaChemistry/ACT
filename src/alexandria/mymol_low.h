@@ -52,34 +52,74 @@
 namespace alexandria
 {
 
-enum class missingParameters { Error, Ignore, Generate }; 
+/*! \brief
+ * Class to determine how to treat missing parameters.
+ */
+enum class missingParameters 
+{ 
+    //! Will generate an error if a parameter is missing
+    Error,
+    //! Missing parameters will be ignored
+    Ignore, 
+    //! Missing parameters will be generated
+    Generate 
+}; 
 
+/*! \brief
+ * Class with error codes from mymol.
+ */
 enum class immStatus {
+    //! Unknown error, this should not happen
     Unknown,
+    //! No error, all OK.
     OK,
+    //! Zero dipole found in a molecule
     ZeroDip,
+    //! No Quadrupole present
     NoQuad,
+    //! The compound is charged
     Charged,
+    //! Cannot determine the atom types for one or more atoms
     AtomTypes,
+    //! Cannot determine the atom number for one or more atoms
     AtomNumber,
+    //! Problem converting data from the underlying molprop structure
     MolpropConv,
+    //! Incorrect or unknown bondorder
     BondOrder,
+    //! Initializing the Restrained Electrostatic Potential algorithm
     RespInit,
+    //! Problem generating charges
     ChargeGeneration,
+    //! Shell minimization did not converge
     ShellMinimization,
+    //! Requested level of theory missing
     LOT,
+    //! QM Inconsistency (ESP dipole does not match Electronic)
     QMInconsistency,
+    //! Compound not in training set
     Test,
+    //! No experimental data
     NoData,
+    //! Problem generating shells
     GenShells,
+    //! Problem generating bonds
     GenBonds,
+    //! Problem communicating MolProp between processors
     CommProblem,
+    //! Charge distribution width zeta is zero unexpectedly
     ZeroZeta,
+    //! The number of data is lower than mindata
     InsufficientDATA,
+    //! No dipole moment
     NoDipole,
+    //! Not a supported bond
     NotSupportedBond,
+    //! A not supported angle was found
     NotSupportedAngle,
+    //! A not supported LinearAngle was found
     NotSupportedLinearAngle,
+    //! A not supported Dihedral was found
     NotSupportedDihedral
 };
 
