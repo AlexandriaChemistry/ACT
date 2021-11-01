@@ -46,16 +46,20 @@ struct gpp_atomtype;
 
 namespace alexandria
 {
+
+//! Structure for linear virtual sites
 typedef struct {
     int nline; /* Must be 3 or 4 */
     int a[4];
 } gv_linear;
 
+//! Structure for planar virtual sites
 typedef struct {
     int a[4];
     int nb[4];
 } gv_planar;
 
+//! Structure for ring-planar virtual sites
 typedef struct {
     int natom;
     int a[6];
@@ -63,14 +67,13 @@ typedef struct {
 } gv_ringplanar;
 
 
-/*
-             ca                      o
-             |                       ||
-            bca           e.x.       c
-          /     \                  /   \
-      bbca1     bbca2             ch3   ch3
+/*! \brief Class for in-plane virtual sites
+ *            ca                      o
+ *            |                       ||
+ *           bca           e.x.       c
+ *         /     \                  /   \
+ *     bbca1     bbca2             ch3  ch3
  */
- 
 class gv_inplane
 {
     public:
@@ -110,14 +113,13 @@ using gv_inplaneIterator      = typename std::vector<gv_inplane>::iterator;
 using gv_inplaneConstIterator = typename std::vector<gv_inplane>::const_iterator;
  
 
-/*
-           ca                    o
-         /    \                /    \
-       ca1    ca2     e.x.    c      c
-         \ __ /               \\    //
-                               c __ c
+/*! \brief Class for out-of-plane virtual sites
+ *          ca                    o
+ *        /    \                /    \
+ *      ca1    ca2     e.x.    c      c
+ *        \ __ /               \\    //
+ *                              c __ c
  */
-
 class gv_outplane
 {
     public:

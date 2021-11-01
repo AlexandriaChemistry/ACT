@@ -51,15 +51,15 @@ namespace alexandria
 
 enum class VsiteType
 {
-    //! Linear virtual site dependent on two atoms
+    //! Linear virtual site (gv_linear) dependent on two atoms
     LINEAR,
-    //! Planar virtual site dependent on three atoms
+    //! Planar virtual site (gv_planar) dependent on three atoms
     PLANAR,
-    //! Planar virtual site dependent on three atoms in a ring
+    //! Planar virtual site (gv_ringplanar) dependent on three atoms in a ring
     RING_PLANAR,
-    //! Planar virtual site dependent on three atoms
+    //! Planar virtual site (gv_inplane) dependent on three atoms
     IN_PLANE,
-    //! Out-of-plane virtual site dependent on three atoms
+    //! Out-of-plane virtual site (gv_outplane) dependent on three atoms
     OUT_OF_PLANE,
     //! All possible virtual sites
     ALL         

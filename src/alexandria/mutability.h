@@ -37,18 +37,18 @@
 namespace alexandria
 {
 
-//! \brief Enum determining whether a parameter can be changed
+//! \brief Enum determining whether a ForceFieldParameter can be changed
 enum class Mutability
 {
-    //! Parameter that cannot be changed
+    //! ForceFieldParameter that cannot be changed
     Fixed,
-    //! Parameter that is dependent on another parameter and should not be changed independently
+    //! ForceFieldParameter that is dependent on another parameter and should not be changed independently
     Dependent,
-    //! Parameter (charge) that should be changed by the Alexandria Charge Method algorithms only
+    //! ForceFieldParameter (charge) that should be changed by the Alexandria Charge Method algorithms only
     ACM,
-    //! Parameter that can be modified within bounds
+    //! ForceFieldParameter that can be modified within bounds
     Bounded,
-    //! Parameter that can be modified without restrictions
+    //! ForceFieldParameter that can be modified without restrictions
     Free
 };
 
