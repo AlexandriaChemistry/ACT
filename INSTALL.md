@@ -106,3 +106,8 @@ To build the documentation of the classes used in the software, please go to the
 ```make doxygen-full```
 
 and then open the file ```docs/html/doxygen/html-full/index.xhtml``` in a suitable web browser. [Firefox](https://www.mozilla.org/en-GB/firefox/new/) seems to work better than Safari.
+
+What's next?
+------------
+For this aspect, please check the [TODO](TODO.md) page.
+
