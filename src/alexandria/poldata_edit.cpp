@@ -43,6 +43,7 @@
 #include "forcefieldparameter.h"
 #include "interactiontype.h"
 #include "mutability.h"
+#include "openmm_xml.h"
 #include "poldata.h"
 #include "poldata_xml.h"
 
@@ -660,6 +661,7 @@ int alex_poldata_edit(int argc, char*argv[])
     real         scale      = 1;
     gmx_bool     force      = false;
     gmx_bool     stretch    = false;
+    gmx_bool     openmm     = false;
     static char *missing    = (char *)"";
     static char *replace    = (char *)"";
     static char *implant    = (char *)"";
@@ -691,7 +693,9 @@ int alex_poldata_edit(int argc, char*argv[])
         { "-replace", FALSE, etSTR, {&replace},
           "Replace either the EEM, the BONDED or OTHER parameters in file one [TT]-f[ff] by those from file two [TT]-f2[tt] and store in another [TT]-o[tt]." },
         { "-implant", FALSE, etSTR, {&implant},
-          "Implant (write over) either the EEM, the BONDED or OTHER parameters in file one [TT]-f[ff] by those from file two [TT]-f2[tt] and store in another [TT]-o[tt]." }
+          "Implant (write over) either the EEM, the BONDED or OTHER parameters in file one [TT]-f[ff] by those from file two [TT]-f2[tt] and store in another [TT]-o[tt]." },
+        { "-openmm", FALSE, etBOOL, {&openmm},
+          "Write and OpenMM force field file rather than an Alexandria file." }
     };
     int                 npargs = asize(pa);
     int                 NFILE  = asize(fnm);
@@ -779,7 +783,14 @@ int alex_poldata_edit(int argc, char*argv[])
         }
         else
         {
-            writePoldata(opt2fn("-o", NFILE, fnm), &pd, 0);
+            if (openmm)
+            {
+                writeOpenMM(opt2fn("-o", NFILE, fnm), &pd, 0);
+            }
+            else
+            {
+                writePoldata(opt2fn("-o", NFILE, fnm), &pd, 0);
+            }
         }
     }
     return 0;

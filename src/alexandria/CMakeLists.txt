@@ -61,6 +61,7 @@ set(ALEXANDRIA_SOURCES
            mutability.cpp
            mymol.cpp
            mymol_low.cpp
+           openmm_xml.cpp
 	   optparam.cpp
            particletype.cpp
            phase.cpp
