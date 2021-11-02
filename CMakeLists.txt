@@ -513,7 +513,7 @@ if (GMX_ALEXANDRIA)
   else()
     set(HAVE_LIBCLN 0)
   endif()
-  
+
   find_package(sqlite3 REQUIRED)
   set(PKG_SQLITE3 "")
   if(SQLITE3_FOUND)
@@ -537,7 +537,7 @@ if (GMX_ALEXANDRIA)
   else(OPENBABEL3_FOUND)
     message(FATAL_ERROR "OpenBabel3 library not found.")
   endif(OPENBABEL3_FOUND)
-  
+
 endif (GMX_ALEXANDRIA)
 
 gmx_option_trivalue(
