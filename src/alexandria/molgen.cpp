@@ -698,7 +698,7 @@ size_t MolGen::Read(FILE            *fp,
             pd_.setNexcl(nexcl_);
         }
     }
-    /* Broadcasting Force Field Data from Master to Slave nodes */
+    /* Broadcasting Force Field Data from Master to Helper nodes */
     if (PAR(cr_))
     {
         pd_.broadcast(cr_);
@@ -854,7 +854,7 @@ size_t MolGen::Read(FILE            *fp,
         generateOptimizationIndex(fp);
         // Now distribute the molecules over processors.
         // Make sure the master has a bit less work to do
-        // than the slaves and that in particular train
+        // than the helpers and that in particular train
         // compounds are distributed equally otherwise. 
         for(auto &ts: targetSize_)
         {

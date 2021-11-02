@@ -221,9 +221,9 @@ class OptACM : public MolGen, Bayes
                        bool                    sensitivity,
 		       bool		       bEvaluate_testset);
         /*! \brief 
-         * For the slave nodes.
+         * For the helper nodes.
          */
-        void runSlave();
+        void runHelper();
     
 };
 
@@ -677,7 +677,7 @@ bool OptACM::runMaster(const gmx_output_env_t *oenv,
         // only on the training set
         Bayes::SensitivityAnalysis(logFile(), iMolSelect::Train);
     }
-    // Finalize the calculations on the slaves
+    // Finalize the calculations on the helpers
     GMX_RELEASE_ASSERT(calcDeviation(false, CalcDev::Final, iMolSelect::Train) < 0, "Result for final parallel calcDeviation should be less than zero");
 
     printMonteCarloStatistics(logFile());
@@ -708,7 +708,7 @@ bool OptACM::runMaster(const gmx_output_env_t *oenv,
     return bMinimum;
 }
 
-void OptACM::runSlave()
+void OptACM::runHelper()
 {
     // S L A V E   N O D E S
     // The second and third variable are set by the master, but
@@ -957,7 +957,7 @@ int alex_tune_eem(int argc, char *argv[])
     }
     else if (bOptimize || bSensitivity)
     {
-        opt.runSlave();
+        opt.runHelper();
     }
     return 0;
 }

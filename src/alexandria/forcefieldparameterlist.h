@@ -55,7 +55,7 @@ typedef std::map<const Identifier, ForceFieldParameterMap> ForceFieldParameterLi
 class ForceFieldParameterList
 {
  public:
-    //! Empty constructor for slave nodes
+    //! Empty constructor for helper nodes
     ForceFieldParameterList() {};
     /*! \brief Constructor
      *

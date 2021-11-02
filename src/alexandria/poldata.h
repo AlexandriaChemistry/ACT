@@ -395,13 +395,13 @@ class Poldata
         //! Turn polarizability on or off automatically
         void checkForPolarizability();
 
-        //! Spread from master to slave nodes
+        //! Spread from master to helper nodes
         void  broadcast(const t_commrec *cr);
 
-        //! Spread eemprop from master to slave nodes
+        //! Spread eemprop from master to helper nodes
         void broadcast_eemprop(const t_commrec *cr);
         
-        //! Spread mutable particle properties from master to slave nodes
+        //! Spread mutable particle properties from master to helper nodes
         void broadcast_particles(const t_commrec *cr);
         
         CommunicationStatus Send(const t_commrec *cr, int dest);

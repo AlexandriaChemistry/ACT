@@ -250,7 +250,7 @@ class Optimization : public MolGen, Bayes
 
         /*! \brief
          * Broadcast changes in Poldata to the
-         * slaves when in parallel.
+         * helpers when in parallel.
          */
         void broadcastPoldataUpdate();
 
@@ -958,7 +958,7 @@ bool Optimization::optRun(FILE                   *fplog,
     {
         if (PAR(commrec()))
         {
-            // Tell the slave nodes how many times they have
+            // Tell the helper nodes how many times they have
             // to run calcDeviation.
             int niter = 1+Bayes::numberObjectiveFunctionCalls();
             for (int dest = 1; dest < commrec()->nnodes; dest++)
