@@ -36,7 +36,12 @@ def name_of_data_log_file(molname: str, lot: str):
     datafile = ( "%s-3.dat" % molname )
     return datafile, logfile
   else:
-    return None, None
+    logfile = ( "%s/compounds/%s/%s-%s-oep.log.gz" % ( AlexandriaLib, molname, molname, lot ))
+    if os.path.exists(logfile):
+      datafile = ( "%s-3.dat" % molname )
+      return datafile, logfile
+
+  return None, None
 
 def get_alexandria():
   for name in ["alexandria", "alexandria_d", "alexandria_mpi", "alexandria_mpi_d"]:
