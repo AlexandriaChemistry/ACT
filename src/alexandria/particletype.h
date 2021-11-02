@@ -138,6 +138,11 @@ class ParticleType
     }
     
     /*! \brief Return all parameters
+     * \return Editable map of parameters
+     */
+    ForceFieldParameterMap *parameters() { return &parameterMap_; }
+
+    /*! \brief Return all parameters
      * \return Constant map of parameters
      */
     const ForceFieldParameterMap parametersConst() const { return parameterMap_; }
