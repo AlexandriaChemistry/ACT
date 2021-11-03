@@ -101,5 +101,5 @@ cd ..
 echo "Fetching and running download_install_mac.py..."
 wget https://jcodingstuff.github.io/docs/download_install_mac.py
 chmod 755 download_install_mac.py
-./download_install_mac.py -clone -cln
+./download_install_mac.py -clone -cln -b genetic_algorithm
 rm -f download_install_mac.py
