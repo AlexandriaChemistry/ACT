@@ -30,12 +30,13 @@ echo "Updating conda..."
 conda update conda -y
 
 # Create conda environment
-echo "Creating the conda environment if doesn't exist..."
+echo "Creating the conda environment..."
 conda create -n ACT python -y
 
 # Activate the environment
 echo "Activating the conda environment..."
-conda init ACT
+source /opt/anaconda3/etc/profile.d/conda.sh
+conda activate ACT
 
 # Install missing commands with conda
 if ! command -v wget
@@ -54,13 +55,14 @@ else
   echo "git requirement is satisfied..."
 fi
 
-if ! command -v clang || ! command -v clang++
-then
-  echo "Missing clang/clang++, installing..."
-  conda install -c conda-forge clang clangxx clang-tools -y
-else
-  echo "clang/clang++ requirement is satisfied..."
-fi
+# Clang gets installed automatically when mpi is installed
+# if ! command -v clang || ! command -v clang++
+# then
+#   echo "Missing clang/clang++, installing..."
+#   conda install -c conda-forge clang clangxx clang-tools -y
+# else
+#   echo "clang/clang++ requirement is satisfied..."
+# fi
 
 # Install ACT dependencies with conda
 echo "Installing ACT dependencies with conda..."
