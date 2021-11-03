@@ -35,7 +35,7 @@ conda create -n ACT python -y
 
 # Activate the environment
 echo "Activating the conda environment..."
-conda activate ACT
+conda init ACT
 
 # Install missing commands with conda
 if ! command -v wget
