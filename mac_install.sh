@@ -2,8 +2,19 @@
 
 # Installs all dependencies for ACT and then ACT itself
 # Should be executed from the home directory.
-# Pre-requisites: conda, wget, git, and clang.
+# Pre-requisites: conda
 # Anaconda should be located at /opt/anaconda3
+
+# Check if conda exists
+if ! [[ command -v conda ]]
+then
+  echo "Please install Anaconda3 under /opt"
+  echo "See https://www.anaconda.com/products/individual"
+  exit 1
+fi
+
+# cd to home directory
+cd ~
 
 # Create the <tools> directory
 echo "If <tools> directory does not exist, creating it..."
@@ -21,27 +32,50 @@ conda create -n ACT python -y
 echo "Activating the conda environment..."
 conda activate ACT
 
-# Install dependencies with conda
-echo "Installing dependencies with conda..."
-conda install -c anaconda cmake sqlite libxml2 graphviz gmp -y
+# Install missing commands with conda
+if ! [[ command -v wget ]]
+then
+  conda install -c anaconda wget -y
+fi
+
+if ! [[ command -v git ]]
+then
+  conda install -c anaconda git -y
+fi
+
+if [[ ! command -v clang ]] || [[ ! command -v clang++ ]]
+then
+  conda install -c conda-forge clang clangxx clang-tools -y
+fi
+
+# Install ACT dependencies with conda
+echo "Installing ACT dependencies with conda..."
+conda install -c anaconda cmake sqlite libxml2 cairo graphviz gmp -y
 conda install -c conda-forge openmpi openmpi-mpicc openmpi-mpixx eigen fftw liblapack libblas doxygen  -y
 
 # Install the patched OpenBabel locally under /Users/tools/openbabel-install
 echo "Installing patched OpenBabel..."
-git clone https://github.com/dspoel/openbabel
-mkdir openbabel-build
-cd openbabel-build
-cmake ../openbabel -DCMAKE_INSTALL_PREFIX=~/tools/openbabel-install
-make && make install
-cd ..
-rm -rf openbabel-build
+wget https://jcodingstuff.github.io/docs/build_openbabel_mac.py
+chmod 755 build_openbabel_mac.py
+./build_openbabel_mac
+rm -f build_openbabel_mac.py
+# git clone https://github.com/dspoel/openbabel
+# cd openbabel
+# git checkout alexandria
+# cd ..
+# mkdir openbabel-build
+# cd openbabel-build
+# cmake ../openbabel -DCMAKE_INSTALL_PREFIX=~/tools/openbabel-install
+# make && make install
+# cd ..
+# rm -rf openbabel-build
 
 # Install the Class Library for Numbers locally under
 echo "Installing Class Library for Numbers..."
 wget https://www.ginac.de/CLN/cln-1.3.6.tar.bz2
 tar -xf cln-1.3.6.tar.bz2
 cd cln-1.3.6
-./configure --prefix='$HOME/tools/cln-install...'
+./configure --prefix='$HOME/tools/cln-install'
 # make
 # make check
 # make install
@@ -52,5 +86,5 @@ cd ..
 echo "Fetching and running download_install_mac.py..."
 wget https://jcodingstuff.github.io/docs/download_install_mac.py
 chmod 755 download_install_mac.py
-python download_install_mac.py -clone -cln
+./download_install_mac.py -clone -cln
 rm -f download_install_mac.py
