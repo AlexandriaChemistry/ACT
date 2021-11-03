@@ -52,8 +52,8 @@ if __name__ == '__main__':
     else:
         HOST = sys.platform
 
-    extra_dirs = ['/Users/copernico/tools/openbabel-install', '/Users/copernico/tools/cln-install']
     HOMEDIR    = os.environ["HOME"]
+    extra_dirs = [HOMEDIR+'/tools/openbabel-install', HOMEDIR+'/tools/cln-install']
     DEST       = ( "%s/%s-%s/" % ( HOMEDIR, swdir, args.branch ) )
     LBFLAGS    = ""
     mpirun     = shutil.which("srun")
