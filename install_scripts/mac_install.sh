@@ -83,7 +83,7 @@ echo "Installing Class Library for Numbers..."
 wget https://www.ginac.de/CLN/cln-1.3.6.tar.bz2
 tar -xf cln-1.3.6.tar.bz2
 cd cln-1.3.6
-./configure --prefix='Users/${USERNAME}/tools/cln-install'
+./configure --prefix='/Users/${USERNAME}/tools/cln-install'
 # make
 # make check
 # make install
