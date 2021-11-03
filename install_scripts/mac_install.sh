@@ -30,7 +30,7 @@ echo "Updating conda..."
 conda update conda -y
 
 # Create conda environment
-echo "Creating the conda environment..."
+echo "Creating the conda environment if doesn't exist..."
 conda create -n ACT python -y
 
 # Activate the environment

@@ -53,7 +53,7 @@ if __name__ == '__main__':
         HOST = sys.platform
 
     HOMEDIR    = os.environ["HOME"]
-    extra_dirs = [HOMEDIR+'/tools/openbabel-install', HOMEDIR+'/tools/cln-install']
+    extra_dirs = [HOMEDIR+'/tools/cln-install']
     DEST       = ( "%s/%s-%s/" % ( HOMEDIR, swdir, args.branch ) )
     LBFLAGS    = ""
     mpirun     = shutil.which("srun")
@@ -84,7 +84,7 @@ if __name__ == '__main__':
     else:
         sys.exit("Don't know how to commpile on host %s" % HOST)
 
-    PPATH  = ( "%s/GG/openbabel-alexandria/install" % HOMEDIR )
+    PPATH  = ( "%s/tools/openbabel-install" % HOMEDIR )
     for ed in extra_dirs:
         PPATH = PPATH + ";" + ed
 
