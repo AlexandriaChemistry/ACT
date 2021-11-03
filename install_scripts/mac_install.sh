@@ -75,6 +75,7 @@ wget https://jcodingstuff.github.io/docs/build_openbabel_mac.py
 chmod 755 build_openbabel_mac.py
 ./build_openbabel_mac.py
 rm -f build_openbabel_mac.py
+rm -rf openbabel-build
 # git clone https://github.com/dspoel/openbabel
 # cd openbabel
 # git checkout alexandria
