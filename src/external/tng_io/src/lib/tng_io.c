@@ -12591,8 +12591,8 @@ static tng_function_status tng_gen_data_block_add
         data->block_id = id;
 
         {
-            int block_len = strlen(block_name);
-            data->block_name = (char *)malloc(block_len + 1);
+            int block_len = strlen(block_name)+1;
+            data->block_name = (char *)malloc(block_len);
             if(!data->block_name)
             {
                 fprintf(stderr, "TNG library: Cannot allocate memory. %s: %d\n",
