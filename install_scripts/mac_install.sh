@@ -42,18 +42,24 @@ if ! command -v wget
 then
   echo "Missing wget, installing..."
   conda install -c anaconda wget -y
+else
+  echo "wget requirement is satisfied..."
 fi
 
 if ! command -v git
 then
   echo "Missing git, installing..."
   conda install -c anaconda git -y
+else
+  echo "git requirement is satisfied..."
 fi
 
 if ! command -v clang || ! command -v clang++
 then
   echo "Missing clang/clang++, installing..."
   conda install -c conda-forge clang clangxx clang-tools -y
+else
+  echo "clang/clang++ requirement is satisfied..."
 fi
 
 # Install ACT dependencies with conda
@@ -82,12 +88,13 @@ rm -f build_openbabel_mac.py
 echo "Installing Class Library for Numbers..."
 wget https://www.ginac.de/CLN/cln-1.3.6.tar.bz2
 tar -xf cln-1.3.6.tar.bz2
+rm -f cln-1.3.6.tar.bz2
 cd cln-1.3.6
 ./configure --prefix='/Users/${USERNAME}/tools/cln-install'
-# make
-# make check
-# make install
-make && make install
+make
+make check
+make install
+# make && make install
 cd ..
 
 # Run the python script for cloning and installation of ACT
