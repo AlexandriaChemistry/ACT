@@ -6,12 +6,17 @@
 # Anaconda should be located at /opt/anaconda3
 
 # Check if conda exists
-if ! [[ command -v conda ]]
+if ! command -v conda
 then
   echo "Please install Anaconda3 under /opt"
   echo "See https://www.anaconda.com/products/individual"
   exit 1
+else
+  echo "conda is installed, continuing run..."
 fi
+
+# Get username
+USERNAME=$(whoami)
 
 # cd to home directory
 cd ~
@@ -33,18 +38,21 @@ echo "Activating the conda environment..."
 conda activate ACT
 
 # Install missing commands with conda
-if ! [[ command -v wget ]]
+if ! command -v wget
 then
+  echo "Missing wget, installing..."
   conda install -c anaconda wget -y
 fi
 
-if ! [[ command -v git ]]
+if ! command -v git
 then
+  echo "Missing git, installing..."
   conda install -c anaconda git -y
 fi
 
-if [[ ! command -v clang ]] || [[ ! command -v clang++ ]]
+if ! command -v clang || ! command -v clang++
 then
+  echo "Missing clang/clang++, installing..."
   conda install -c conda-forge clang clangxx clang-tools -y
 fi
 
@@ -57,7 +65,7 @@ conda install -c conda-forge openmpi openmpi-mpicc openmpi-mpixx eigen fftw libl
 echo "Installing patched OpenBabel..."
 wget https://jcodingstuff.github.io/docs/build_openbabel_mac.py
 chmod 755 build_openbabel_mac.py
-./build_openbabel_mac
+./build_openbabel_mac.py
 rm -f build_openbabel_mac.py
 # git clone https://github.com/dspoel/openbabel
 # cd openbabel
@@ -75,7 +83,7 @@ echo "Installing Class Library for Numbers..."
 wget https://www.ginac.de/CLN/cln-1.3.6.tar.bz2
 tar -xf cln-1.3.6.tar.bz2
 cd cln-1.3.6
-./configure --prefix='$HOME/tools/cln-install'
+./configure --prefix='Users/${USERNAME}/tools/cln-install'
 # make
 # make check
 # make install
