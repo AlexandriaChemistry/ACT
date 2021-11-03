@@ -167,4 +167,34 @@ void alexandria_eemprops_table(FILE           *fp,
     }
 }
 
+void alexandria_charge_table(FILE           *fp,
+                             const Poldata  *pd)
+{
+    LongTable   lt(fp, false, nullptr);
+    std::string qq("charge");
+    lt.setCaption(gmx::formatString("Parameters for %s. Average value(s) is/are given, with number of data points N and standard deviation $\\sigma$.", qq.c_str()).c_str());
+    lt.setLabel(qq.c_str());
+    lt.setColumns(4);
+    lt.addHeadLine("Particle type & q & $\\Delta$q & N");
+    lt.printHeader();
+    for (const auto &ptype : pd->particleTypesConst())
+    {
+        if (ptype.hasParameter(qq))
+        {
+            auto pp = ptype.parameterConst(qq);
+            if ((pp.mutability() == Mutability::Free ||
+                 pp.mutability() == Mutability::Bounded) &&
+                pp.ntrain() > 0)
+            {
+                auto line = gmx::formatString("%s & %.4f & %.4f & %d",
+                                              ptype.id().id().c_str(),
+                                              pp.value(), pp.uncertainty(),
+                                              pp.ntrain());
+                lt.printLine(line);
+            }
+        }
+    }
+    lt.printFooter();
+}
+
 } //namespace

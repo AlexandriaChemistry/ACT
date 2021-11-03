@@ -271,6 +271,7 @@ int alex_merge_pd(int argc, char *argv[])
     {
         FILE *tp = gmx_ffopen(opt2fn("-latex", NFILE, fnm), "w");
         alexandria_subtype_table(tp, &pdout);
+        alexandria_charge_table(tp, &pdout);
         alexandria_eemprops_table(tp, &pdout);
         gmx_ffclose(tp);
     }           
