@@ -163,7 +163,9 @@ def install_gmx(args, CXX, CC, HOST):
         print("install_gmx: FLAGS = %s" % FLAGS)
     os.chdir(bdir)
     # Clean up old CMake stuff
-    os.unlink("CMakeCache.txt")
+    cmc = "CMakeCache.txt"
+    if os.path.exists(cmc):
+        os.unlink(cmc)
     # Run cmake and make!
     os.system("cmake %s .. &> cmake.log" % FLAGS)
     os.system("make -j %d install tests &> make.log" % args.ncores)
