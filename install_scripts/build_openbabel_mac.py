@@ -17,6 +17,7 @@ if not os.path.exists(ob):
     os.chdir("..")
 
 do_build = True
+hack = True
 if os.path.exists(ob):
     if do_build:
         bdir = "openbabel-build"
@@ -28,16 +29,17 @@ if os.path.exists(ob):
         os.system("make -j 8 install >& make.log")
         os.chdir("..")
     oblib = "tools/openbabel-install/lib/openbabel"
-    if os.path.exists(oblib):
-        print('Hacking...')
-        os.chdir(oblib)
-        for obversion in glob.glob("*"):
-            os.chdir(obversion)
-            for lib in glob.glob("*.so"):
-                for rpath in [ "libz.1.dylib", "libcairo.2.dylib" ]:
-                    os.system("install_name_tool -change @rpath/%s %s/lib/%s %s" % ( rpath, SW, rpath, lib) )
-            os.chdir("..")
-    else:
-        print(f"Not hacking... Path not found: {oblib}")
+    if hack:
+        if os.path.exists(oblib):
+            print('Hacking...')
+            os.chdir(oblib)
+            for obversion in glob.glob("*"):
+                os.chdir(obversion)
+                for lib in glob.glob("*.so"):
+                    for rpath in [ "libz.1.dylib", "libcairo.2.dylib" ]:
+                        os.system("install_name_tool -change @rpath/%s %s/lib/%s %s" % ( rpath, SW, rpath, lib) )
+                os.chdir("..")
+        else:
+            print(f"Not hacking... Path not found: {oblib}")
 else:
     print("You started building from the wrong directory")
