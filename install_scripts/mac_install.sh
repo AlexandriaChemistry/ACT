@@ -28,7 +28,7 @@ conda update conda -y
 
 # Create conda environment
 echo "Creating the conda environment..."
-conda create -n ACT python -y
+conda create -n ACT python=3.9 -y
 
 # Activate the environment
 echo "Activating the conda environment..."
