@@ -65,53 +65,118 @@ static void merge_parameter(const std::vector<alexandria::Poldata> &pds,
     bool                     first = true;
     for (const auto &pd : pds)
     {
+        // Index for lsq vector
         int  j  = 0;
-        auto fs = pd.findForcesConst(iType);
-        for (const auto &fp : fs.parametersConst())
+        // Loop over forces
+        if (pd.interactionPresent(iType))
         {
-            for (const auto &pp : fp.second)
+            auto fs = pd.findForcesConst(iType);
+            for (const auto &fp : fs.parametersConst())
             {
-                if (parameter == pp.first)
+                for (const auto &pp : fp.second)
                 {
-                    if (first)
+                    if (parameter == pp.first)
                     {
-                        auto newlsq = gmx_stats_init();
-                        lsq.push_back(newlsq);
-                        ntrain.push_back(0);
+                        if (first)
+                        {
+                            auto newlsq = gmx_stats_init();
+                            lsq.push_back(newlsq);
+                            ntrain.push_back(0);
+                        }
+                        gmx_stats_add_point(lsq[j], 0, pp.second.value(), 0, 0);
+                        ntrain[j] += pp.second.ntrain();
+                        j++;
                     }
-                    gmx_stats_add_point(lsq[j], 0, pp.second.value(), 0, 0);
-                    ntrain[j] += pp.second.ntrain();
-                    j++;
+                }
+            }
+        }
+        else
+        {
+            // Loop over particles
+            for (const auto &pp : pd.particleTypesConst())
+            {
+                for(const auto &ppar : pp.parametersConst())
+                {
+                    if (parameter == ppar.first)
+                    {
+                        if (first)
+                        {
+                            auto newlsq = gmx_stats_init();
+                            lsq.push_back(newlsq);
+                            ntrain.push_back(0);
+                        }
+                        gmx_stats_add_point(lsq[j], 0, ppar.second.value(), 0, 0);
+                        ntrain[j] += ppar.second.ntrain();
+                        j++;
+                    }
                 }
             }
         }
         first = false;
     }
-    auto forces = pdout->findForces(iType);
-    auto param  = forces->parameters();
     int j = 0;
-    for (auto &fp : *param)
+    if (pdout->interactionPresent(iType))
     {
-        for (auto &pp : fp.second)
+        auto forces = pdout->findForces(iType);
+        auto param  = forces->parameters();
+        for (auto &fp : *param)
         {
-            if (parameter == pp.first)
+            for (auto &pp : fp.second)
             {
-                real average = 0;
-                real sigma   = 0;
-                int  N       = 0;
-                if ((estatsOK == gmx_stats_get_average(lsq[j], &average)) &&
-                    (estatsOK == gmx_stats_get_sigma(lsq[j], &sigma)) &&
-                    (estatsOK == gmx_stats_get_npoints(lsq[j], &N)))
+                if (parameter == pp.first)
                 {
-                    pp.second.setValue(average);
-                    pp.second.setUncertainty(sigma);
-                    pp.second.setNtrain(ntrain[j]/pds.size());
+                    if (pp.second.mutability() == alexandria::Mutability::Free ||
+                        pp.second.mutability() == alexandria::Mutability::Bounded)
+                    {
+                        real average = 0;
+                        real sigma   = 0;
+                        int  N       = 0;
+                        if ((estatsOK == gmx_stats_get_average(lsq[j], &average)) &&
+                            (estatsOK == gmx_stats_get_sigma(lsq[j], &sigma)) &&
+                            (estatsOK == gmx_stats_get_npoints(lsq[j], &N)))
+                        {
+                            pp.second.setValue(average);
+                            pp.second.setUncertainty(sigma);
+                            pp.second.setNtrain(ntrain[j]/pds.size());
+                        }
+                    }
+                    j++;
                 }
-                j++;
             }
         }
     }
-    
+    else
+    {
+        // Loop over particles
+        auto part = pdout->particleTypes();
+        for (auto pp = part->begin(); pp < part->end(); ++pp)
+        {
+            auto mypar = pp->parameters();
+            for(auto &ppar : *mypar)
+            {
+                if (parameter == ppar.first)
+                {
+                    if (ppar.second.mutability() == alexandria::Mutability::Free ||
+                        ppar.second.mutability() == alexandria::Mutability::Bounded)
+                    {
+                        real average = 0;
+                        real sigma   = 0;
+                        int  N       = 0;
+                        if ((estatsOK == gmx_stats_get_average(lsq[j], &average)) &&
+                            (estatsOK == gmx_stats_get_sigma(lsq[j], &sigma)) &&
+                            (estatsOK == gmx_stats_get_npoints(lsq[j], &N)))
+                        {
+                            ppar.second.setValue(average);
+                            ppar.second.setUncertainty(sigma);
+                            ppar.second.setNtrain(ntrain[j]/pds.size());
+                        }
+                    }
+                    j++;
+                }
+            }
+        }
+    }
+
     for (auto lll = lsq.begin(); lll < lsq.end(); lll++)
     {
          gmx_stats_free(*lll);
@@ -164,14 +229,12 @@ int alex_merge_pd(int argc, char *argv[])
     {
         return 0;
     }
-    std::string allParams("alpha chi jaa zeta hardness electronegativity");
+    std::string allParams("alpha chi jaa zeta hardness electronegativity charge");
     if (nullptr == mergeString)
     {
         mergeString = strdup(allParams.c_str());
     }
-    /*
-      Read all the gentop files.
-     */
+    /* Read all the gentop files. */
     auto filenames = opt2fns("-di", NFILE, fnm);
     if (filenames.size() < 2)
     {
@@ -185,10 +248,10 @@ int alex_merge_pd(int argc, char *argv[])
         pds.push_back(std::move(pd));
     }    
 
-    // Copy the first gentop file into pdout->
+    // Copy the first gentop file into pdout
     readPoldata(filenames[0].c_str(), &pdout);
     
-    // We now update different parts of pdout-> 
+    // We now update different parts of pdout
     for(const auto &type : gmx::splitString(mergeString))
     {
         alexandria::InteractionType itype;
@@ -208,6 +271,7 @@ int alex_merge_pd(int argc, char *argv[])
     {
         FILE *tp = gmx_ffopen(opt2fn("-latex", NFILE, fnm), "w");
         alexandria_subtype_table(tp, &pdout);
+        alexandria_charge_table(tp, &pdout);
         alexandria_eemprops_table(tp, &pdout);
         gmx_ffclose(tp);
     }           

@@ -46,6 +46,9 @@ namespace alexandria
  * \param[in]  pd   Force field data
  */
 
+    void alexandria_charge_table(FILE            *fp, 
+                                 const Poldata   *pd);  
+                               
     void alexandria_eemprops_table(FILE            *fp, 
                                    const Poldata   *pd);  
                                
