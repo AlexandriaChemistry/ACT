@@ -64,7 +64,7 @@ fi
 # Install ACT dependencies with conda
 echo "Installing ACT dependencies with conda..."
 conda install -c anaconda cmake perl sqlite libxml2 cairo graphviz gmp -y
-conda install -c conda-forge openmpi openmpi-mpicc openmpi-mpicxx eigen fftw liblapack libblas doxygen  -y
+conda install -c conda-forge openmpi openmpi-mpicc openmpi-mpicxx boost eigen fftw liblapack libblas doxygen  -y
 
 # Install the patched OpenBabel locally under /Users/tools/openbabel-install
 echo "Installing patched OpenBabel..."
