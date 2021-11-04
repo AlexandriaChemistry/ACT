@@ -138,9 +138,11 @@ def install_gmx(args, CXX, CC, HOST):
         LBFLAGS = ( "-DGMX_BLAS_USER=%s -DGMX_LAPACK_USER=%s" % ( BLAS, LAPACK ) )
     elif HOST.find("csb") >= 0:
         extra_dirs = []
-        for libs in [ "LIBXML2", "OPENBLAS" ]:
-            if libs in os.environ:
-                extra_dirs.append(os.environ[libs])
+        cinc = "CPLUS_INCLUDE_PATH"
+        if cinc in os.environ:
+            for inc in cinc.split(":"):
+                # Add the directory excluding the /include part
+                extra_dirs.append(inc[:-8])
     else:
         sys.exit("Don't know how to commpile on host %s" % HOST)
 
@@ -174,7 +176,7 @@ def install_gmx(args, CXX, CC, HOST):
     if not os.path.exists(alex):
         sys.exit("Could not build '%s', check cmake.log and make.log in %s" % ( alex, os.getcwd() ) )
     else:
-        print("Succesfully installed ACT in %s/bin. Please add to your PATH variable" % destination)
+        print("Succesfully installed ACT in %s/bin. Please add to your PATH variable" % args.destination)
     
     # Go back to where we came from
     os.chdir(pwd)
