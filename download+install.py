@@ -140,7 +140,7 @@ def install_gmx(args, CXX, CC, HOST):
         extra_dirs = []
         cinc = "CPLUS_INCLUDE_PATH"
         if cinc in os.environ:
-            for inc in cinc.split(":"):
+            for inc in os.environ[cinc].split(":"):
                 # Add the directory excluding the /include part
                 extra_dirs.append(inc[:-8])
     else:
@@ -205,7 +205,7 @@ def parseArguments():
         prefix = conda[:-10]
     else:
         prefix = ""
-    parser.add_argument("-prefix", "--prefix", help="Directory where libraries are installed. Default: "+prefix, type=str, default=prefix)
+    parser.add_argument("-prefix", "--prefix", help="Directory where libraries are installed, sometimes you may need to explicitly use -prefix ''. Default: "+prefix, type=str, default=prefix)
     
     args = parser.parse_args()
     return args
