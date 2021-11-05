@@ -279,9 +279,6 @@ set_target_properties(libgromacs PROPERTIES
                       VERSION ${LIBRARY_VERSION}
                       COMPILE_FLAGS "${OpenMP_C_FLAGS}")
 
-gmx_manage_lmfit()
-target_link_libraries(libgromacs PRIVATE lmfit)
-
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_CXX_COMPILER_VERSION MATCHES "^6\.0")
    target_compile_options(libgromacs PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Weverything ${IGNORED_CLANG_ALL_WARNINGS}>)
 endif()
