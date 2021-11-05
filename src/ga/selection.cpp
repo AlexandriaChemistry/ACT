@@ -6,7 +6,7 @@
 /*!
  * Select parents from the population with roulette wheel selection.
  *
- * @param parents parent indexes for each new individual. Shape: (2*popSize, gene size)
+ * @param parents parent indexes for each new pair of individuals
  * @param population the population
  * @param fitness fitness for the population.
  * @param popSize the number of individuals in the population. Assumed to be even.
@@ -19,9 +19,9 @@ void rouletteWheel(double parents[][], double population[][], double fitness[], 
     double sum = 0;
     for (i = 0; i < popSize; i++) sum += fitness[i];
     for (i = 0; i < popSize; i++) normalizedFitness[i] = fitness[i] / sum;
-    for (i = 0; i < popSize; i++) {
-        parents[2*i] = selectIndFromPropFitness(population, normalizedFitness, popSize)
-        parents[2*i+1] = selectIndFromPropFitness(population, normalizedFitness, popSize)
+    for (i = 0; i < popSize; i+=2) {
+        parents[i] = selectIndFromPropFitness(population, normalizedFitness, popSize)
+        parents[i+1] = selectIndFromPropFitness(population, normalizedFitness, popSize)
     }
 }
 
@@ -43,9 +43,9 @@ void boltzmann(double parents[][], double population[][], double fitness[], cons
     double sum = 0;
     for (i = 0; i < popSize; i++) sum += exp(fitness[i]/T);
     for (i = 0; i < popSize; i++) normalizedFitness[i] = exp(fitness[i]/T) / sum;
-    for (i = 0; i < popSize; i++) {
-        parents[2*i] = selectIndFromPropFitness(population, normalizedFitness, popSize)
-        parents[2*i+1] = selectIndFromPropFitness(population, normalizedFitness, popSize)
+    for (i = 0; i < popSize; i+=2) {
+        parents[i] = selectIndFromPropFitness(population, normalizedFitness, popSize)
+        parents[i+1] = selectIndFromPropFitness(population, normalizedFitness, popSize)
     }
 }
 

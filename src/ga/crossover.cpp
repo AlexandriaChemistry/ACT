@@ -2,10 +2,8 @@
 
 #include "crossover.h"
 
-std::tuple<double*, double*> singlePoint(double parent1[], double parent2[], const int length) {
+void singlePoint(double parent1[], double parent2[], double child1[], double child2[], const int length) {
     const int index = rand() % length;
-    double child1[length] = {};
-    double child2[length] = {};
     int i;
     for (i = 0; i < index; i++) {
         child1[i] = parent1[i];
@@ -15,5 +13,4 @@ std::tuple<double*, double*> singlePoint(double parent1[], double parent2[], con
         child1[i] = parent2[i];
         child2[i] = parent1[i];
     }
-    std::make_tuple(child1, child2);
 }
