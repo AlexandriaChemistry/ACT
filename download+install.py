@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import os, shutil, argparse, subprocess, sys, glob
+from subprocess import Popen, PIPE
 
 debug = True
 
@@ -40,7 +41,53 @@ def get_mpirun():
             return mpirun
     return None
 
-def install_openbabel(anonymous, clone, destination, prefix_path, build_type, CXX, CC, ncores, HOST):
+def get_prefix():
+    cpp  = "CMAKE_PREFIX_PATH"
+    cinc = "CPLUS_INCLUDE_PATH"
+    prefix = []
+    if cpp in os.environ:
+        prefix = os.environ[cpp].split(":")
+    elif cinc in os.environ:
+        for inc in os.environ[cinc].split(":"):
+            # Add the directory excluding the /include part
+            prefix.append(inc[:-8])
+    else:
+        conda = shutil.which("conda")
+        if conda and len(conda) > 10:
+            prefix = [ conda[:-10] ]
+    if len(prefix) == 0:
+        return ""
+    else:
+        pp = prefix[0]
+        for p in range(1, len(prefix)):
+            pp += ";" + prefix[p]
+        return pp
+    
+def find_lib(prefix, libname):
+    for pp in prefix.split(";"):
+        libtry = pp+"/"+libname
+        if os.path.exists(libtry):
+            return libtry
+    sys.exit("Cannot find %s" % libname)
+
+def run_command(command, flags):
+    cmdlist = [ shutil.which(command) ] + flags.split()
+    with Popen(cmdlist, stdout=PIPE, stderr=PIPE, stdin=PIPE) as p:
+        output, error = p.communicate()
+        with open(command+".out", "w") as outf:
+            for line in output.decode('utf-8').splitlines():
+                outf.write("%s\n" % line)
+        with open(command+".err", "w") as outf:
+            for line in error.decode('utf-8').splitlines():
+                outf.write("%s\n" % line)
+
+def check_for_openbabel(destination):
+    obabel = ("%s/bin/obabel" % destination)
+    if not os.path.exists(obabel):
+        sys.exit("Could not build %s, check cmake.log and make.log in %s" % ( obabel, os.getcwd() ) )
+    return True
+    
+def install_openbabel(anonymous, clone, destination, prefix, build_type, CXX, CC, ncores, HOST):
     # Get working directory
     pwd = os.getcwd()
     # Do we need to clone the repo?
@@ -62,18 +109,17 @@ def install_openbabel(anonymous, clone, destination, prefix_path, build_type, CX
         os.chdir(bdir)
         # Get the correct branch
         os.system("git checkout alexandria")
-        FLAGS = ( "-DBUILD_SHARED=ON -DCMAKE_PREFIX_PATH=%s -DRUN_SWIG=ON -DPYTHON_BINDINGS=ON -DOPTIMIZE_NATIVE=OFF -DWITH_COORDGEN=OFF  -DWITH_MAEPARSER=OFF -DCMAKE_CXX_COMPILER=%s -DCMAKE_C_COMPILER=%s -DCMAKE_BUILD_TYPE=%s -DCMAKE_INSTALL_PREFIX=%s" % ( prefix_path, CXX, CC, build_type, destination ))
+        FLAGS = ( "-DBUILD_SHARED=ON -DCMAKE_PREFIX_PATH=%s -DRUN_SWIG=ON -DPYTHON_BINDINGS=ON -DOPTIMIZE_NATIVE=OFF -DWITH_COORDGEN=OFF  -DWITH_MAEPARSER=OFF -DCMAKE_CXX_COMPILER=%s -DCMAKE_C_COMPILER=%s -DCMAKE_BUILD_TYPE=%s -DCMAKE_INSTALL_PREFIX=%s" % ( prefix, CXX, CC, build_type, destination ))
+        if debug:
+            print("install_openbabel cmake FLAGS: %s" % FLAGS)
         # Get rid of history, if any and run cmake and make
         if os.path.exists("CMakeCache.txt"):
             os.unlink("CMakeCache.txt")
-        os.system("cmake %s .. &> cmake.log" % FLAGS)
-        os.system("make -j %d install &> make.log" % ncores)
+        os.system("cmake %s .. 2>&1 cmake.log" % FLAGS)
+        os.system("make -j %d install 2>&1 make.log" % ncores)
         
         # Check the result
-        obabel = ("%s/bin/obabel" % destination)
-        if not os.path.exists(obabel):
-            sys.exit("Could not build %s, check cmake.log and make.log in %s" % ( obabel, os.getcwd() ) )
-        else:
+        if check_for_openbabel(destination):
             print("Succesfully installed OpenBabel in %s/bin. Please add to your PATH variable" % destination)
         # Some hacking for MacOS only
         if HOST == "darwin":
@@ -89,7 +135,7 @@ def install_openbabel(anonymous, clone, destination, prefix_path, build_type, CX
     # Go back to where we came from
     os.chdir(pwd)
 
-def install_gmx(args, CXX, CC, HOST):
+def install_gmx(args, CXX, CC, HOST, prefix):
     # Get working directory
     pwd = os.getcwd()
     act = args.branch == "main" or args.branch == "david"
@@ -124,8 +170,8 @@ def install_gmx(args, CXX, CC, HOST):
     mpirun     = get_mpirun()
     if HOST == "darwin":
         # MacOS machines
-        LAPACK   = ( "%s/lib/liblapack.dylib" % args.prefix)
-        BLAS     = ( "%s/lib/libblas.dylib" % args.prefix)
+        LAPACK   = find_lib(prefix, "liblapack.dylib")
+        BLAS     = find_lib(prefix, "libblas.dylib")
         LBFLAGS  = ( "-DGMX_BLAS_USER=%s -DGMX_LAPACK_USER=%s" % ( BLAS, LAPACK ) )
     elif HOST.find("nsc") >= 0:
         LAPACK = "/software/sse/easybuild/prefix/software/ScaLAPACK/2.0.2-gompi-2018a-OpenBLAS-0.2.20/lib/libscalapack.a" 
@@ -136,18 +182,11 @@ def install_gmx(args, CXX, CC, HOST):
         LAPACK = "/hpc2n/eb/software/ScaLAPACK/2.1.0-gompi-2020b-bf/lib/libscalapack.so"
         BLAS   = "/hpc2n/eb/software/OpenBLAS/0.3.12-GCC-10.2.0/lib/libopenblas.so"
         LBFLAGS = ( "-DGMX_BLAS_USER=%s -DGMX_LAPACK_USER=%s" % ( BLAS, LAPACK ) )
-    elif HOST.find("csb") >= 0:
-        extra_dirs = []
-        cinc = "CPLUS_INCLUDE_PATH"
-        if cinc in os.environ:
-            for inc in os.environ[cinc].split(":"):
-                # Add the directory excluding the /include part
-                extra_dirs.append(inc[:-8])
     else:
-        sys.exit("Don't know how to commpile on host %s" % HOST)
+        print("No specific knowledge on, how to commpile on host %s, trying anyway." % HOST)
 
     # The prefix path where to look for libraries
-    PPATH = args.prefix
+    PPATH = prefix
     for ed in [ args.destination ] + extra_dirs:
         PPATH = PPATH + ";" + ed
 
@@ -162,21 +201,23 @@ def install_gmx(args, CXX, CC, HOST):
         bdir = bdir + "_DOUBLE"
     os.makedirs(bdir, exist_ok=True)
     if debug:
-        print("install_gmx: FLAGS = %s" % FLAGS)
+        print("install_gmx cmake FLAGS: %s" % FLAGS)
     os.chdir(bdir)
     # Clean up old CMake stuff
     cmc = "CMakeCache.txt"
     if os.path.exists(cmc):
         os.unlink(cmc)
     # Run cmake and make!
-    os.system("cmake %s .. &> cmake.log" % FLAGS)
-    os.system("make -j %d install tests &> make.log" % args.ncores)
+#    os.system("cmake %s .." % FLAGS)
+    run_command("cmake", FLAGS + " ..")
+#    os.system("make -j %d install tests" % args.ncores)
+    run_command("make", (" -j %d install tests" % args.ncores))
     # Check the result
     alex = ("%s/bin/alexandria" % args.destination)
     if not os.path.exists(alex):
-        sys.exit("Could not build '%s', check cmake.log and make.log in %s" % ( alex, os.getcwd() ) )
+        sys.exit("Could not build '%s', check cmake.* and make.* in %s" % ( alex, os.getcwd() ) )
     else:
-        print("Succesfully installed ACT in %s/bin. Please add to your PATH variable" % args.destination)
+        print("Succesfully installed ACT in %s/bin. Please add this dir to your PATH variable" % args.destination)
     
     # Go back to where we came from
     os.chdir(pwd)
@@ -191,7 +232,7 @@ def parseArguments():
     parser.add_argument("-ncores","--ncores", help="Number of cores for compiling", type=int, default=8)
     parser.add_argument("-bt", "--build", help="Build type for cmake. Typically Release or Debug, but Profile and ASAN (Adress Sanitizer) are available as well.", type=str, default="Release")
     parser.add_argument("-single", "--single", help="Single precision build (will not work well)", action="store_true")
-    parser.add_argument("-cln", "--cln", help="Use the Class Library for Numbers", action="store_true")
+    parser.add_argument("-cln", "--cln", help="Use the Class Library for Numbers (optional)", action="store_true")
     parser.add_argument("-ob", "--openbabel", help="Install the correct openbabel version", action="store_true")
     home = "HOME"
     if home in os.environ:
@@ -200,12 +241,7 @@ def parseArguments():
         dest = "."
     dest += "/tools"
     parser.add_argument("-dest", "--destination", help="Where to install the software. Default: "+dest , type=str, default=dest)
-    conda = shutil.which("conda")
-    if conda and len(conda) > 10:
-        prefix = conda[:-10]
-    else:
-        prefix = ""
-    parser.add_argument("-prefix", "--prefix", help="Directory where libraries are installed, sometimes you may need to explicitly use -prefix ''. Default: "+prefix, type=str, default=prefix)
+    parser.add_argument("-prefix", "--prefix", help="Directory where libraries are installed, default autodetect", type=str, default=None)
     
     args = parser.parse_args()
     return args
@@ -215,9 +251,10 @@ if __name__ == '__main__':
     
     HOST    = get_host()
     CC, CXX = get_compilers(HOST)
-    SW      = args.prefix
+    SW      = get_prefix()
     if args.openbabel:
-        install_openbabel(args.anonymous, args.clone, args.destination, args.prefix,
+        install_openbabel(args.anonymous, args.clone, args.destination, SW,
                           args.build, CXX, CC, args.ncores, HOST)
-    
-    install_gmx(args, CXX, CC, HOST)
+    # First check whether our OB is installed where it should be
+    if check_for_openbabel(args.destination):
+        install_gmx(args, CXX, CC, HOST, SW)
