@@ -109,7 +109,7 @@ def install_openbabel(anonymous, clone, destination, prefix, build_type, CXX, CC
         os.chdir(bdir)
         # Get the correct branch
         os.system("git checkout alexandria")
-        FLAGS = ( "-DBUILD_SHARED=ON -DCMAKE_PREFIX_PATH=%s -DRUN_SWIG=ON -DPYTHON_BINDINGS=ON -DOPTIMIZE_NATIVE=OFF -DWITH_COORDGEN=OFF  -DWITH_MAEPARSER=OFF -DCMAKE_CXX_COMPILER=%s -DCMAKE_C_COMPILER=%s -DCMAKE_BUILD_TYPE=%s -DCMAKE_INSTALL_PREFIX=%s" % ( prefix, CXX, CC, build_type, destination ))
+        FLAGS = ( "-DBUILD_SHARED=ON -DBUILD_GUI=OFF -DCMAKE_PREFIX_PATH=%s -DRUN_SWIG=ON -DPYTHON_BINDINGS=ON -DOPTIMIZE_NATIVE=OFF -DWITH_COORDGEN=OFF  -DWITH_MAEPARSER=OFF -DCMAKE_CXX_COMPILER=%s -DCMAKE_C_COMPILER=%s -DCMAKE_BUILD_TYPE=%s -DCMAKE_INSTALL_PREFIX=%s" % ( prefix, CXX, CC, build_type, destination ))
         if debug:
             print("install_openbabel cmake FLAGS: %s" % FLAGS)
         # Get rid of history, if any and run cmake and make
@@ -177,8 +177,10 @@ def install_gmx(args, CXX, CC, HOST, prefix):
         LAPACK = "/software/sse/easybuild/prefix/software/ScaLAPACK/2.0.2-gompi-2018a-OpenBLAS-0.2.20/lib/libscalapack.a" 
         BLAS   = "/software/sse/easybuild/prefix/software/OpenBLAS/0.2.20-GCC-6.4.0-2.28/lib/libopenblas.so.0"
     elif HOST.find("hpc2n") >= 0:
-        LAPACK = "/hpc2n/eb/software/ScaLAPACK/2.1.0-gompi-2020b-bf/lib/libscalapack.so"
-        BLAS   = "/hpc2n/eb/software/OpenBLAS/0.3.12-GCC-10.2.0/lib/libopenblas.so"
+        LAPACK = find_lib(PPATH, "libscalapack.a")
+        BLAS   = find_lib(PPATH, "libopenblas.so")
+#        LAPACK = "/hpc2n/eb/software/ScaLAPACK/2.1.0-gompi-2020b-bf/lib/libscalapack.so"
+#        BLAS   = "/hpc2n/eb/software/OpenBLAS/0.3.12-GCC-10.2.0/lib/libopenblas.so"
     else:
         print("No specific knowledge on, how to commpile on host %s, trying anyway." % HOST)
         
