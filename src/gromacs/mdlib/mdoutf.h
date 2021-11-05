@@ -53,11 +53,6 @@ struct t_commrec;
 struct t_filenm;
 struct t_inputrec;
 
-namespace gmx
-{
-class IMDOutputProvider;
-}
-
 typedef struct gmx_mdoutf *gmx_mdoutf_t;
 
 /*! \brief Allocate and initialize object to manager trajectory writing output
@@ -70,7 +65,6 @@ gmx_mdoutf_t init_mdoutf(FILE                   *fplog,
                          const t_filenm          fnm[],
                          const MdrunOptions     &mdrunOptions,
                          const t_commrec        *cr,
-                         gmx::IMDOutputProvider *outputProvider,
                          const t_inputrec       *ir,
                          gmx_mtop_t             *mtop,
                          const gmx_output_env_t *oenv,
