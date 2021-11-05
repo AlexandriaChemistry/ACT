@@ -102,17 +102,22 @@ def check_for_openbabel(destination):
 def install_openbabel(anonymous, clone, destination, prefix, build_type, CXX, CC, ncores, HOST):
     # Get working directory
     pwd = os.getcwd()
-    # Do we need to clone the repo?
-    if clone:
-        if anonymous:
-            os.system("git clone https://github.com/dspoel/openbabel.git")
-        else:
-            os.system("git clone git@github.com:dspoel/openbabel.git")
-    # See if we succeeded, if so let's go
     swdir = "openbabel"
+    # Do we need to clone the repo?
     if not os.path.isdir(swdir):
-        sys.exit("No directory %s. You may want to use the '-clone_OB' flag" % swdir)
-    os.chdir(swdir)
+        if clone:
+            if anonymous:
+                os.system("git clone https://github.com/dspoel/openbabel.git")
+            else:
+                os.system("git clone git@github.com:dspoel/openbabel.git")
+        # See if we succeeded, if so let's go
+        if not os.path.isdir(swdir):
+            sys.exit("No directory %s. You may want to use the '-clone_OB' flag" % swdir)
+        os.chdir(swdir)
+    else:
+        print("Will not clone again since directory %s exists. Will git pull instead." % swdir)
+        os.chdir(swdir)
+        run_command("git", "pull")
     
     # To to start the build
     bdir = "build"
@@ -157,17 +162,26 @@ def conda_prefix_provided(prefix: str):
     else:
         return False
 
-def install_gmx(args, CXX, CC, HOST, prefix):
+def install_act(args, CXX, CC, HOST, prefix):
     # Get working directory
     pwd = os.getcwd()
     act = args.branch == "main" or args.branch == "david"
     if act:
-        if args.clone_ACT:
-            if args.anonymous:
-                os.system("git clone https://github.com/dspoel/ACT.git")
-            else:
-                os.system("git clone git@github.com:dspoel/ACT.git")
         swdir = "ACT"
+        
+        if args.clone_ACT:
+            if os.path.isdir(swdir):
+                print("Will not clone since directory %s exists. Will gitt pull instead")
+                os.chdir(swdir)
+                run_command("git", "pull")
+            else:
+                if args.anonymous:
+                    os.system("git clone https://github.com/dspoel/ACT.git")
+                else:
+                    os.system("git clone git@github.com:dspoel/ACT.git")
+                if not os.path.isdir(swdir):
+                    sys.exit("No directory %s. Maybe you want to use the -clone_ACT flag" % swdir)
+                os.chdir(swdir)
     else:
         os.makedirs(args.branch, exist_ok=True)
         os.chdir(args.branch)
@@ -177,11 +191,8 @@ def install_gmx(args, CXX, CC, HOST, prefix):
             else:
                 os.system("git clone git@gitlab.com:gromacs/gromacs.git")
         swdir = "gromacs"
+        os.chdir(swdir)
 
-    if not os.path.isdir(swdir):
-        print("No directory %s. Maybe you want to use the -clone_ACT flag" % swdir)
-        exit(1)
-    os.chdir(swdir)
     if ((act and args.branch != "main") or 
         (not act and args.branch != "master")):
         os.system("git checkout --track origin/%s -b %s" % ( args.branch, args.branch ) )
@@ -224,7 +235,7 @@ def install_gmx(args, CXX, CC, HOST, prefix):
         bdir = bdir + "_DOUBLE"
     os.makedirs(bdir, exist_ok=True)
     if debug:
-        print("install_gmx cmake FLAGS: %s" % FLAGS)
+        print("install_act cmake FLAGS: %s" % FLAGS)
     os.chdir(bdir)
     # Clean up old CMake stuff
     cmc = "CMakeCache.txt"
@@ -281,4 +292,4 @@ if __name__ == '__main__':
                           args.build, CXX, CC, args.ncores, HOST)
     # First check whether our OB is installed where it should be
     if check_for_openbabel(args.destination):
-        install_gmx(args, CXX, CC, HOST, SW)
+        install_act(args, CXX, CC, HOST, SW)

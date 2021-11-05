@@ -514,7 +514,7 @@ if (GMX_ALEXANDRIA)
     set(HAVE_LIBCLN 0)
   endif()
 
-  find_package(SQLITE3 REQUIRED)
+  find_package(sqlite3 REQUIRED)
   set(PKG_SQLITE3 "")
   if(SQLITE3_FOUND)
     include_directories(${SQLITE3_INCLUDE_DIR})
@@ -527,7 +527,7 @@ if (GMX_ALEXANDRIA)
 
   set(PKG_OPENBABEL3 "")
 #  find_package(OpenBabel3 REQUIRED)
-  find_package(OPENBABEL3 REQUIRED)
+  find_package(OpenBabel3 REQUIRED)
   include_directories(${OPENBABEL3_INCLUDE_DIR})
 
   if (OPENBABEL3_FOUND)
