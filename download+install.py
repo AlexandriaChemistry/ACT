@@ -65,7 +65,7 @@ def get_prefix():
     
 def find_lib(prefix, libname):
     for pp in prefix.split(";"):
-        libtry = pp+"/"+libname
+        libtry = pp+"/lib/"+libname
         if os.path.exists(libtry):
             return libtry
     sys.exit("Cannot find %s" % libname)
@@ -115,8 +115,8 @@ def install_openbabel(anonymous, clone, destination, prefix, build_type, CXX, CC
         # Get rid of history, if any and run cmake and make
         if os.path.exists("CMakeCache.txt"):
             os.unlink("CMakeCache.txt")
-        os.system("cmake %s .. 2>&1 cmake.log" % FLAGS)
-        os.system("make -j %d install 2>&1 make.log" % ncores)
+        run_command("cmake", FLAGS + " ..")
+        run_command("make", (" -j %d install" % ncores))
         
         # Check the result
         if check_for_openbabel(destination):
@@ -165,35 +165,32 @@ def install_gmx(args, CXX, CC, HOST, prefix):
         os.system("git checkout --track origin/%s -b %s" % ( args.branch, args.branch ) )
         os.system("git pull")
 
-    extra_dirs = []
-    LBFLAGS    = ""
-    mpirun     = get_mpirun()
+    # The prefix path where to look for libraries
+    PPATH  = prefix + ";" + args.destination
+    LAPACK = None
+    BLAS   = None
     if HOST == "darwin":
         # MacOS machines
-        LAPACK   = find_lib(prefix, "liblapack.dylib")
-        BLAS     = find_lib(prefix, "libblas.dylib")
-        LBFLAGS  = ( "-DGMX_BLAS_USER=%s -DGMX_LAPACK_USER=%s" % ( BLAS, LAPACK ) )
+        LAPACK   = find_lib(PPATH, "liblapack.dylib")
+        BLAS     = find_lib(PPATH, "libblas.dylib")
     elif HOST.find("nsc") >= 0:
         LAPACK = "/software/sse/easybuild/prefix/software/ScaLAPACK/2.0.2-gompi-2018a-OpenBLAS-0.2.20/lib/libscalapack.a" 
         BLAS   = "/software/sse/easybuild/prefix/software/OpenBLAS/0.2.20-GCC-6.4.0-2.28/lib/libopenblas.so.0"
-        LBFLAGS = ( "-DGMX_BLAS_USER=%s -DGMX_LAPACK_USER=%s" % ( BLAS, LAPACK ) )
     elif HOST.find("hpc2n") >= 0:
-#        LAPACK = "/usr/lib/lapack/liblapack.so.3"
         LAPACK = "/hpc2n/eb/software/ScaLAPACK/2.1.0-gompi-2020b-bf/lib/libscalapack.so"
         BLAS   = "/hpc2n/eb/software/OpenBLAS/0.3.12-GCC-10.2.0/lib/libopenblas.so"
-        LBFLAGS = ( "-DGMX_BLAS_USER=%s -DGMX_LAPACK_USER=%s" % ( BLAS, LAPACK ) )
     else:
         print("No specific knowledge on, how to commpile on host %s, trying anyway." % HOST)
-
-    # The prefix path where to look for libraries
-    PPATH = prefix
-    for ed in [ args.destination ] + extra_dirs:
-        PPATH = PPATH + ";" + ed
-
+        
     # Construct cmake flags
-    FLAGS = ("-DMPIEXEC=%s -DMPIEXEC_NUMPROC_FLAG='-n' -DGMX_X11=OFF -DGMX_LOAD_PLUGINS=OFF -DBUILD_SHARED_LIBS=OFF -DGMX_OPENMP=OFF -DGMX_MPI=ON -DGMX_GPU=OFF -DCMAKE_INSTALL_PREFIX=%s -DCMAKE_CXX_COMPILER=%s -DCMAKE_C_COMPILER=%s -DCMAKE_BUILD_TYPE=%s -DCMAKE_PREFIX_PATH='%s' -DGMX_BUILD_MANUAL=OFF -DGMX_COMPACT_DOXYGEN=ON -DREGRESSIONTEST_DOWNLOAD=OFF -DGMX_DEFAULT_SUFFIX=OFF -DGMX_LIBXML2=ON -DGMX_EXTERNAL_BLAS=ON -DGMX_EXTERNAL_LAPACK=ON %s" % ( mpirun, args.destination, CXX, CC, args.build, PPATH, LBFLAGS ) )
+    FLAGS = ("-DMPIEXEC=%s -DMPIEXEC_NUMPROC_FLAG='-n' -DGMX_X11=OFF -DGMX_LOAD_PLUGINS=OFF -DBUILD_SHARED_LIBS=OFF -DGMX_OPENMP=OFF -DGMX_MPI=ON -DGMX_GPU=OFF -DCMAKE_INSTALL_PREFIX=%s -DCMAKE_CXX_COMPILER=%s -DCMAKE_C_COMPILER=%s -DCMAKE_BUILD_TYPE=%s -DCMAKE_PREFIX_PATH='%s' -DGMX_BUILD_MANUAL=OFF -DGMX_COMPACT_DOXYGEN=ON -DREGRESSIONTEST_DOWNLOAD=OFF -DGMX_DEFAULT_SUFFIX=OFF -DGMX_LIBXML2=ON" % ( get_mpirun(), args.destination, CXX, CC, args.build, PPATH ) )
     if args.cln:
         FLAGS += " -DGMX_CLN=ON"
+    if LAPACK:
+        FLAGS += "  -DGMX_EXTERNAL_LAPACK=ON -DGMX_LAPACK_USER=" + LAPACK
+    if BLAS:
+        FLAGS += "  -DGMX_EXTERNAL_BLAS=ON -DGMX_BLAS_USER=" + BLAS
+
     # Make correct build directory
     bdir = "build_" + args.build
     if not args.single:
