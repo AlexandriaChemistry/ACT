@@ -772,16 +772,7 @@ endif()
 ##################################################
 include(gmxManageFFTLibraries)
 
-
 include(gmxManageLinearAlgebraLibraries)
-
-include(gmxManagePluginSupport)
-
-if (GMX_USE_PLUGINS)
-    if(NOT GMX_VMD_PLUGIN_PATH)
-        find_package(VMD)
-    endif()
-endif()
 
 # Link real-time library for POSIX timers. The check for clock_gettime
 # confirms the linkability of rt.
