@@ -16,6 +16,6 @@ find_library (SQLITE3_LIBRARIES sqlite3)
 # handle the QUIETLY and REQUIRED arguments and set SQLITE3_FOUND to TRUE if
 # all listed variables are TRUE
 include (FindPackageHandleStandardArgs)
-find_package_handle_standard_args (SQLITE3 DEFAULT_MSG SQLITE3_LIBRARIES SQLITE3_INCLUDE_DIR)
+find_package_handle_standard_args (sqlite3 DEFAULT_MSG SQLITE3_LIBRARIES SQLITE3_INCLUDE_DIR)
 
 mark_as_advanced (SQLITE3_LIBRARIES SQLITE3_INCLUDE_DIR)
