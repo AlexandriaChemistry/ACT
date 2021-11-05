@@ -104,7 +104,7 @@ def install_openbabel(anonymous, clone, destination, prefix, build_type, CXX, CC
     pwd = os.getcwd()
     swdir = "openbabel"
     # Do we need to clone the repo?
-    if os.path.isdir(swdir):
+    if not os.path.isdir(swdir):
         if clone:
             if anonymous:
                 os.system("git clone https://github.com/dspoel/openbabel.git")
@@ -162,7 +162,7 @@ def conda_prefix_provided(prefix: str):
     else:
         return False
 
-def install_gmx(args, CXX, CC, HOST, prefix):
+def install_act(args, CXX, CC, HOST, prefix):
     # Get working directory
     pwd = os.getcwd()
     act = args.branch == "main" or args.branch == "david"
@@ -235,7 +235,7 @@ def install_gmx(args, CXX, CC, HOST, prefix):
         bdir = bdir + "_DOUBLE"
     os.makedirs(bdir, exist_ok=True)
     if debug:
-        print("install_gmx cmake FLAGS: %s" % FLAGS)
+        print("install_act cmake FLAGS: %s" % FLAGS)
     os.chdir(bdir)
     # Clean up old CMake stuff
     cmc = "CMakeCache.txt"
@@ -292,4 +292,4 @@ if __name__ == '__main__':
                           args.build, CXX, CC, args.ncores, HOST)
     # First check whether our OB is installed where it should be
     if check_for_openbabel(args.destination):
-        install_gmx(args, CXX, CC, HOST, SW)
+        install_act(args, CXX, CC, HOST, SW)
