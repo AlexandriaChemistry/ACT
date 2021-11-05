@@ -36,7 +36,7 @@ def get_compilers(ostype: str):
 
 def get_mpirun():
     for mrun in [ "srun", "mpirun" ]:
-        mpirun = shutil.which("srun")
+        mpirun = shutil.which(mrun)
         if mpirun:
             return mpirun
     return None
