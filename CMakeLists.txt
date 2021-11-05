@@ -527,7 +527,7 @@ if (GMX_ALEXANDRIA)
 
   set(PKG_OPENBABEL3 "")
 #  find_package(OpenBabel3 REQUIRED)
-  find_package(OPENBABEL3 REQUIRED)
+  find_package(OpenBabel3 REQUIRED)
   include_directories(${OPENBABEL3_INCLUDE_DIR})
 
   if (OPENBABEL3_FOUND)
