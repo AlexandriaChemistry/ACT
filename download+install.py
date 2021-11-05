@@ -41,7 +41,7 @@ def get_mpirun():
             return mpirun
     return None
 
-def get_prefix():
+def get_prefix(myprefix):
     cpp  = "CMAKE_PREFIX_PATH"
     cinc = "CPLUS_INCLUDE_PATH"
     prefix = []
@@ -59,6 +59,8 @@ def get_prefix():
         return ""
     else:
         pp = prefix[0]
+        if myprefix and len(myprefix) > 0:
+            pp += ";" + myprefix
         for p in range(1, len(prefix)):
             pp += ";" + prefix[p]
         return pp
@@ -72,6 +74,12 @@ def find_lib(prefix, libname):
         if os.path.exists(libtry):
             print('Leaving find_lib...')
             return libtry
+    libpath = "LIBRARY_PATH"
+    if libpath in os.environ:
+        for pp in os.environ[libpath].split(":"):
+            libtry = pp+"/"+libname
+            if os.path.exists(libtry):
+                return libtry
     sys.exit("Cannot find %s" % libname)
 
 def run_command(command, flags):
@@ -194,14 +202,9 @@ def install_gmx(args, CXX, CC, HOST, prefix):
         # MacOS machines
         LAPACK   = find_lib(PPATH, "liblapack.dylib")
         BLAS     = find_lib(PPATH, "libblas.dylib")
-    elif HOST.find("nsc") >= 0:
-        LAPACK = "/software/sse/easybuild/prefix/software/ScaLAPACK/2.0.2-gompi-2018a-OpenBLAS-0.2.20/lib/libscalapack.a" 
-        BLAS   = "/software/sse/easybuild/prefix/software/OpenBLAS/0.2.20-GCC-6.4.0-2.28/lib/libopenblas.so.0"
-    elif HOST.find("hpc2n") >= 0:
+    elif HOST.find("nsc") >= 0 or HOST.find("hpc2n") >= 0:
         LAPACK = find_lib(PPATH, "libscalapack.a")
         BLAS   = find_lib(PPATH, "libopenblas.so")
-#        LAPACK = "/hpc2n/eb/software/ScaLAPACK/2.1.0-gompi-2020b-bf/lib/libscalapack.so"
-#        BLAS   = "/hpc2n/eb/software/OpenBLAS/0.3.12-GCC-10.2.0/lib/libopenblas.so"
     else:
         print("No specific knowledge on, how to commpile on host %s, trying anyway." % HOST)
         
@@ -272,7 +275,7 @@ if __name__ == '__main__':
     
     HOST    = get_host()
     CC, CXX = get_compilers(HOST)
-    SW      = get_prefix()
+    SW      = get_prefix(args.prefix)
     if args.openbabel or args.clone_OB:
         install_openbabel(args.anonymous, args.clone_OB, args.destination, SW,
                           args.build, CXX, CC, args.ncores, HOST)
