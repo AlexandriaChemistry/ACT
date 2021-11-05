@@ -17,7 +17,7 @@ def get_host():
 
 def get_compilers(ostype: str):
     '''Utility to return the C and C++ compiler respectively'''
-    if ostype=="darwin":
+    if "darwin" in ostype:
         CXX = shutil.which("clang++")
         CC  = shutil.which("clang")
     else:
@@ -64,9 +64,13 @@ def get_prefix():
         return pp
     
 def find_lib(prefix, libname):
+    print('Entering find_lib...')
+    print(f'prefix: {prefix}')
+    print(f'libname: {libname}')
     for pp in prefix.split(";"):
         libtry = pp+"/lib/"+libname
         if os.path.exists(libtry):
+            print('Leaving find_lib...')
             return libtry
     sys.exit("Cannot find %s" % libname)
 
@@ -99,7 +103,7 @@ def install_openbabel(anonymous, clone, destination, prefix, build_type, CXX, CC
     # See if we succeeded, if so let's go
     swdir = "openbabel"
     if not os.path.isdir(swdir):
-        sys.exit("No directory %s. You may want to use the 'clone' flag" % swdir)
+        sys.exit("No directory %s. You may want to use the '-clone_OB' flag" % swdir)
     os.chdir(swdir)
     
     # To to start the build
@@ -122,7 +126,7 @@ def install_openbabel(anonymous, clone, destination, prefix, build_type, CXX, CC
         if check_for_openbabel(destination):
             print("Succesfully installed OpenBabel in %s/bin. Please add to your PATH variable" % destination)
         # Some hacking for MacOS only
-        if HOST == "darwin":
+        if "darwin" in HOST:
             oblib = ( "%s/lib/openbabel" % destination )
             if os.path.exists(oblib):
                 os.chdir(oblib)
@@ -135,12 +139,22 @@ def install_openbabel(anonymous, clone, destination, prefix, build_type, CXX, CC
     # Go back to where we came from
     os.chdir(pwd)
 
+def conda_prefix_provided(prefix: str):
+    if prefix is not None:
+        for path in prefix.split(';'):
+            for ele in path.split('/'):
+                if ele in ['anaconda3', 'miniconda3']:
+                    return True
+        return False
+    else:
+        return False
+
 def install_gmx(args, CXX, CC, HOST, prefix):
     # Get working directory
     pwd = os.getcwd()
     act = args.branch == "main" or args.branch == "david"
     if act:
-        if args.clone:
+        if args.clone_ACT:
             if args.anonymous:
                 os.system("git clone https://github.com/dspoel/ACT.git")
             else:
@@ -149,7 +163,7 @@ def install_gmx(args, CXX, CC, HOST, prefix):
     else:
         os.makedirs(args.branch, exist_ok=True)
         os.chdir(args.branch)
-        if args.clone:
+        if args.clone_ACT:
             if args.anonymous:
                 os.system("git clone https://gitlab.com:/gromacs/gromacs.git")
             else:
@@ -157,7 +171,7 @@ def install_gmx(args, CXX, CC, HOST, prefix):
         swdir = "gromacs"
 
     if not os.path.isdir(swdir):
-        print("No directory %s. Maybe you want to use the -clone flag" % swdir)
+        print("No directory %s. Maybe you want to use the -clone_ACT flag" % swdir)
         exit(1)
     os.chdir(swdir)
     if ((act and args.branch != "main") or 
@@ -166,10 +180,17 @@ def install_gmx(args, CXX, CC, HOST, prefix):
         os.system("git pull")
 
     # The prefix path where to look for libraries
+    # Delete anaconda from prefix if provided by args
+    if conda_prefix_provided(args.prefix):
+        split_prefix = [ele for ele in prefix.split(';')
+                        if ('anaconda3' not in ele.split('/') and 'miniconda3' not in ele.split('/'))]
+        prefix = ';'.join(split_prefix)
+        prefix += f';{args.prefix}'
+    prefix = prefix.lstrip(';')
     PPATH  = prefix + ";" + args.destination
     LAPACK = None
     BLAS   = None
-    if HOST == "darwin":
+    if "darwin" in HOST:
         # MacOS machines
         LAPACK   = find_lib(PPATH, "liblapack.dylib")
         BLAS     = find_lib(PPATH, "libblas.dylib")
@@ -227,7 +248,8 @@ def parseArguments():
     parser.add_argument("-b", "--branch", help="Branch to clone from either ACT or GROMACS depending on branch name. Default is ACT with branch "+branch,             type=str, default=branch)
     parser.add_argument("-f", "--flags",  help="Additional compilation flags",type=str, default="")
     parser.add_argument("-anon", "--anonymous",  help="If you do not have an account at gitlab.com (gromacs) or github.com (ACT, OpenBabel) select this option.", action="store_true")
-    parser.add_argument("-clone", "--clone", help="Clone git repository",     action="store_true")
+    parser.add_argument("-clone_OB", "--clone_OB", help="Clone openbabel git repository", action="store_true")
+    parser.add_argument("-clone_ACT", "--clone_ACT", help="Clone ACT git repository", action="store_true")
     parser.add_argument("-ncores","--ncores", help="Number of cores for compiling", type=int, default=8)
     parser.add_argument("-bt", "--build", help="Build type for cmake. Typically Release or Debug, but Profile and ASAN (Adress Sanitizer) are available as well.", type=str, default="Release")
     parser.add_argument("-single", "--single", help="Single precision build (will not work well)", action="store_true")
@@ -251,8 +273,8 @@ if __name__ == '__main__':
     HOST    = get_host()
     CC, CXX = get_compilers(HOST)
     SW      = get_prefix()
-    if args.openbabel:
-        install_openbabel(args.anonymous, args.clone, args.destination, SW,
+    if args.openbabel or args.clone_OB:
+        install_openbabel(args.anonymous, args.clone_OB, args.destination, SW,
                           args.build, CXX, CC, args.ncores, HOST)
     # First check whether our OB is installed where it should be
     if check_for_openbabel(args.destination):
