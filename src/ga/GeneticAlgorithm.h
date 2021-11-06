@@ -8,6 +8,8 @@
 #include "ProbabilityComputer.h"
 #include "Selector.h"
 #include "Crossover.h"
+#include "Mutator.h"
+#include "Terminator.h"
 
 
 using ga_result = std::tuple<double** const, double* const, double* const, const double, const int>
@@ -28,12 +30,12 @@ class GeneticAlgorithm {
 
     // Object pointers
     Initializer initializer;
-    FitnessComputer ftComputer;
+    FitnessComputer fitComputer;
     ProbabilityComputer probComputer;
     Selector selector;
     Crossover crossover;
-    void (*mutate) (double* const);
-    bool (*terminate) (double** const, double* const, const int, const int);
+    Mutator mutator;
+    Terminator terminator;
 
 public:
 
@@ -41,12 +43,12 @@ public:
     GeneticAlgorithm(const int popSize,
                      const int chromosomeLength,
                      Initializer initializer,
-                     FitnessComputer ftComputer,
+                     FitnessComputer fitComputer,
                      ProbabilityComputer probComputer,
                      Selector selector,
                      Crossover crossover,
-                     void (*const mutate) (double* const),
-                     bool (*const terminate) (double** const, double* const, const int, const int));
+                     Mutator mutator,
+                     Terminator terminator);
 
     /*!
      * Evolve the initial population
