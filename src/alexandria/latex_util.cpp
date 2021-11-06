@@ -30,8 +30,9 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
  
- 
 #include "latex_util.h"
+
+#include "gromacs/fileio/gmxfio.h"
 
 namespace alexandria
 {
@@ -49,11 +50,22 @@ LongTable::LongTable(FILE *fp, bool bLandscape, const char *font)
 
 LongTable::LongTable(const char *fn, bool bLandscape)
 {
-    fp_         = fopen(fn, "w");
+    fp_         = gmx_fio_fopen(fn, "w");
     bLandscape_ = bLandscape;
+    openedFile_ = true;
     if (nullptr == fp_)
     {
         GMX_THROW(gmx::FileIOError("Could not open file"));
+    }
+}
+
+LongTable::~LongTable()
+{
+    if (openedFile_)
+    {
+        GMX_RELEASE_ASSERT(fp_, "Inconsistency. File should be open when writing tables.");
+        gmx_fio_fclose(fp_);
+        fp_ = nullptr;
     }
 }
 
@@ -132,28 +144,6 @@ void LongTable::printHLine()
 {
     fprintf(fp_, "\\hline\n");
 }
-
-ExpData::ExpData(double val, double err, 
-                 double temp, std::string ref, 
-                 std::string conf, std::string type, 
-                 std::string unit)
-    :
-        val_(val),
-        err_(err), 
-        temp_(temp), 
-        ref_(ref), 
-        conf_(conf), 
-        type_(type), 
-        unit_(unit)
-{};
-
-CalcData::CalcData(double val, double err, double temp, int found)
-    :
-        val_(val), 
-        err_(err), 
-        temp_(temp), 
-        found_(found)
-{};
 
 } //namespace
 
