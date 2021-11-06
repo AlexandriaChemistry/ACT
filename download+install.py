@@ -3,8 +3,6 @@
 import os, shutil, argparse, subprocess, sys, glob
 from subprocess import Popen, PIPE
 
-debug = True
-
 def get_host():
     '''Utility to get a string describing the build system'''
     if "HOST" in os.environ:
@@ -65,14 +63,16 @@ def get_prefix(myprefix):
             pp += ";" + prefix[p]
         return pp
     
-def find_lib(prefix, libname):
-    print('Entering find_lib...')
-    print(f'prefix: {prefix}')
-    print(f'libname: {libname}')
+def find_lib(prefix, libname, verbose):
+    if verbose:
+        print('Entering find_lib...')
+        print(f'prefix: {prefix}')
+        print(f'libname: {libname}')
     for pp in prefix.split(";"):
         libtry = pp+"/lib/"+libname
         if os.path.exists(libtry):
-            print('Leaving find_lib...')
+            if verbose:
+                print('Leaving find_lib...')
             return libtry
     libpath = "LIBRARY_PATH"
     if libpath in os.environ:
@@ -99,7 +99,7 @@ def check_for_openbabel(destination):
         sys.exit("Could not build %s, check cmake.log and make.log in %s" % ( obabel, os.getcwd() ) )
     return True
     
-def install_openbabel(anonymous, clone, destination, prefix, build_type, CXX, CC, ncores, HOST):
+def install_openbabel(anonymous, clone, destination, prefix, build_type, CXX, CC, ncores, HOST, verbose):
     # Get working directory
     pwd = os.getcwd()
     swdir = "openbabel"
@@ -127,7 +127,7 @@ def install_openbabel(anonymous, clone, destination, prefix, build_type, CXX, CC
         # Get the correct branch
         os.system("git checkout alexandria")
         FLAGS = ( "-DBUILD_SHARED=ON -DBUILD_GUI=OFF -DCMAKE_PREFIX_PATH=%s -DRUN_SWIG=ON -DPYTHON_BINDINGS=ON -DOPTIMIZE_NATIVE=OFF -DWITH_COORDGEN=OFF  -DWITH_MAEPARSER=OFF -DCMAKE_CXX_COMPILER=%s -DCMAKE_C_COMPILER=%s -DCMAKE_BUILD_TYPE=%s -DCMAKE_INSTALL_PREFIX=%s" % ( prefix, CXX, CC, build_type, destination ))
-        if debug:
+        if verbose:
             print("install_openbabel cmake FLAGS: %s" % FLAGS)
         # Get rid of history, if any and run cmake and make
         if os.path.exists("CMakeCache.txt"):
@@ -182,6 +182,8 @@ def install_act(args, CXX, CC, HOST, prefix):
                 if not os.path.isdir(swdir):
                     sys.exit("No directory %s. Maybe you want to use the -clone_ACT flag" % swdir)
                 os.chdir(swdir)
+        else:
+            os.chdir(swdir)
     else:
         os.makedirs(args.branch, exist_ok=True)
         os.chdir(args.branch)
@@ -211,11 +213,11 @@ def install_act(args, CXX, CC, HOST, prefix):
     BLAS   = None
     if "darwin" in HOST:
         # MacOS machines
-        LAPACK   = find_lib(PPATH, "liblapack.dylib")
-        BLAS     = find_lib(PPATH, "libblas.dylib")
+        LAPACK   = find_lib(PPATH, "liblapack.dylib", args.verbose)
+        BLAS     = find_lib(PPATH, "libblas.dylib", args.verbose)
     elif HOST.find("nsc") >= 0 or HOST.find("hpc2n") >= 0:
-        LAPACK = find_lib(PPATH, "libscalapack.a")
-        BLAS   = find_lib(PPATH, "libopenblas.so")
+        LAPACK = find_lib(PPATH, "libscalapack.a", args.verbose)
+        BLAS   = find_lib(PPATH, "libopenblas.so", args.verbose)
     else:
         print("No specific knowledge on, how to commpile on host %s, trying anyway." % HOST)
         
@@ -233,18 +235,18 @@ def install_act(args, CXX, CC, HOST, prefix):
     if not args.single:
         FLAGS += " -DGMX_DOUBLE=ON"
         bdir = bdir + "_DOUBLE"
+    if args.verbose:
+        print("Will create %s" % bdir)
     os.makedirs(bdir, exist_ok=True)
-    if debug:
-        print("install_act cmake FLAGS: %s" % FLAGS)
     os.chdir(bdir)
+    if args.verbose:
+        print("install_act cmake FLAGS: %s in directory %s" % ( FLAGS, os.getcwd() ) )
     # Clean up old CMake stuff
     cmc = "CMakeCache.txt"
     if os.path.exists(cmc):
         os.unlink(cmc)
     # Run cmake and make!
-#    os.system("cmake %s .." % FLAGS)
     run_command("cmake", FLAGS + " ..")
-#    os.system("make -j %d install tests" % args.ncores)
     run_command("make", (" -j %d install tests" % args.ncores))
     # Check the result
     alex = ("%s/bin/alexandria" % args.destination)
@@ -277,6 +279,7 @@ def parseArguments():
     dest += "/tools"
     parser.add_argument("-dest", "--destination", help="Where to install the software. Default: "+dest , type=str, default=dest)
     parser.add_argument("-prefix", "--prefix", help="Directory where libraries are installed, default autodetect", type=str, default=None)
+    parser.add_argument("-v", "--verbose", help="Print more stuff on the terminal", action="store_true")
     
     args = parser.parse_args()
     return args
@@ -289,7 +292,7 @@ if __name__ == '__main__':
     SW      = get_prefix(args.prefix)
     if args.openbabel or args.clone_OB:
         install_openbabel(args.anonymous, args.clone_OB, args.destination, SW,
-                          args.build, CXX, CC, args.ncores, HOST)
+                          args.build, CXX, CC, args.ncores, HOST, args.verbose)
     # First check whether our OB is installed where it should be
     if check_for_openbabel(args.destination):
         install_act(args, CXX, CC, HOST, SW)

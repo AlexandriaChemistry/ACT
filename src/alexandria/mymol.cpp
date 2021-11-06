@@ -322,8 +322,7 @@ bool MyMol::IsVsiteNeeded(std::string    atype,
  * Make Linear Angles, Improper Dihedrals, and Virtual Sites
  */
 void MyMol::MakeSpecialInteractions(const Poldata *pd,
-                                    t_atoms       *atoms,
-                                    bool           bUseVsites)
+                                    t_atoms       *atoms)
 {
     std::vector < std::vector < unsigned int>> bonds;
     std::vector<int> nbonds;
@@ -381,56 +380,53 @@ void MyMol::MakeSpecialInteractions(const Poldata *pd,
             gvt_.addPlanar(i, bonds[i][0], bonds[i][1], bonds[i][2],
                            &nbonds[0]);
         }
-        if (bUseVsites)
+        const auto atype(*atoms->atomtype[i]);
+        if (IsVsiteNeeded(atype, pd))
         {
-            const auto atype(*atoms->atomtype[i]);
-            if (IsVsiteNeeded(atype, pd))
+            std::vector<int> vAtoms;
+            auto             vsite = pd->findVsite(atype);
+            if (vsite->type() == VsiteType::IN_PLANE)
             {
-                std::vector<int> vAtoms;
-                auto             vsite = pd->findVsite(atype);
-                if (vsite->type() == VsiteType::IN_PLANE)
+                vAtoms.push_back(i);
+                findInPlaneAtoms(i, vAtoms);
+                if (vsite->ncontrolatoms() == static_cast<int>(vAtoms.size()))
                 {
-                    vAtoms.push_back(i);
-                    findInPlaneAtoms(i, vAtoms);
-                    if (vsite->ncontrolatoms() == static_cast<int>(vAtoms.size()))
-                    {
-                        gvt_.addInPlane(vsite->ncontrolatoms(),
-                                        vsite->nvsite(),
-                                        vAtoms[0], vAtoms[1],
-                                        vAtoms[2], vAtoms[3]);
-                    }
+                    gvt_.addInPlane(vsite->ncontrolatoms(),
+                                    vsite->nvsite(),
+                                    vAtoms[0], vAtoms[1],
+                                    vAtoms[2], vAtoms[3]);
                 }
-                else if (vsite->type() == VsiteType::OUT_OF_PLANE)
+            }
+            else if (vsite->type() == VsiteType::OUT_OF_PLANE)
+            {
+                vAtoms.push_back(i);
+                findOutPlaneAtoms(i, vAtoms);
+                if (vsite->ncontrolatoms() == static_cast<int>(vAtoms.size()))
                 {
-                    vAtoms.push_back(i);
-                    findOutPlaneAtoms(i, vAtoms);
-                    if (vsite->ncontrolatoms() == static_cast<int>(vAtoms.size()))
-                    {
-                        gvt_.addOutPlane(vsite->ncontrolatoms(),
-                                         vsite->nvsite(),
-                                         vAtoms[0], vAtoms[1], vAtoms[2]);
-                    }
+                    gvt_.addOutPlane(vsite->ncontrolatoms(),
+                                     vsite->nvsite(),
+                                     vAtoms[0], vAtoms[1], vAtoms[2]);
                 }
-                if (!bNeedVsites_)
-                {
-                    bNeedVsites_ = true;
-                }
+            }
+            if (!bNeedVsites_)
+            {
+                bNeedVsites_ = true;
             }
         }
     }
     auto anr = atoms->nr;
-    gvt_.generateSpecial(pd, bUseVsites, atoms,
+    gvt_.generateSpecial(pd, true, atoms,
                          &x, plist_, symtab_, gromppAtomtype_, &excls_, state_);
     bHaveVSites_ = (atoms->nr > anr);
 }
 
 /*
- * Make Harmonic Angles, Proper Dihedrals, and 14 Pairs.
+ * Make Harmonic Angles, Proper Dihedrals
  * This needs the bonds to be F_BONDS.
  */
 void MyMol::MakeAngles(t_atoms *atoms,
-                       bool     bPairs,
-                       bool     bDihs)
+                       bool     bDihs,
+                       int      nrexcl)
 {
     t_nextnb nnb;
     t_restp  rtp;
@@ -461,14 +457,14 @@ void MyMol::MakeAngles(t_atoms *atoms,
     }
     /* Make Harmonic Angles and Proper Dihedrals */
     snew(excls_, atoms->nr);
-    init_nnb(&nnb, atoms->nr, nexcl_ + 2);
+    init_nnb(&nnb, atoms->nr, nrexcl + 2);
     gen_nnb(&nnb, plist);
 
     print_nnb(&nnb, "NNB");
     rtp.bKeepAllGeneratedDihedrals    = bDihs;
     rtp.bRemoveDihedralIfWithImproper = bDihs;
-    rtp.bGenerateHH14Interactions     = bPairs;
-    rtp.nrexcl                        = nexcl_;
+    rtp.bGenerateHH14Interactions     = true;
+    rtp.nrexcl                        = nrexcl;
 
     gen_pad(&nnb, atoms, &rtp, plist, excls_, nullptr, false);
 
@@ -477,9 +473,9 @@ void MyMol::MakeAngles(t_atoms *atoms,
     if (debug)
     {
         fprintf(debug, "Will generate %d exclusions for %d atoms\n",
-                nexcl_, atoms->nr);
+                nrexcl, atoms->nr);
     }
-    generate_excl(nexcl_, atoms->nr, plist, &nnb, EXCL);
+    generate_excl(nrexcl, atoms->nr, plist, &nnb, EXCL);
     for (int i = 0; i < EXCL->nr; i++)
     {
         int ne = EXCL->index[i+1]-EXCL->index[i];
@@ -715,9 +711,6 @@ immStatus MyMol::GenerateTopology(FILE              *fp,
                                   const std::string &method,
                                   const std::string &basis,
                                   std::string       *mylot,
-                                  bool               bUseVsites,
-                                  bool               bPairs,
-                                  bool               bDih,
                                   missingParameters  missing,
                                   const char        *tabfn)
 {
@@ -728,7 +721,6 @@ immStatus MyMol::GenerateTopology(FILE              *fp,
     {
         fprintf(debug, "Generating topology for %s\n", getMolname().c_str());
     }
-    nexcl_ = pd->getNexcl();
     GenerateComposition();
     if (NAtom() <= 0)
     {
@@ -779,11 +771,18 @@ immStatus MyMol::GenerateTopology(FILE              *fp,
             }
         }
     }
+    // Check whether we have dihedrals in the force field.
+    bool bDih = false;
+    if (pd->interactionPresent(InteractionType::PROPER_DIHEDRALS))
+    {
+        bDih = !pd->findForcesConst(InteractionType::PROPER_DIHEDRALS).empty();
+    }
+    
     if (immStatus::OK == imm)
     {
-        MakeAngles(atoms, bPairs, bDih);
+        MakeAngles(atoms, bDih, pd->getNexcl());
 
-        MakeSpecialInteractions(pd, atoms, bUseVsites);
+        MakeSpecialInteractions(pd, atoms);
         imm = updatePlist(pd, &plist_, atoms, missing,
                           getMolname(), &error_messages_);
     }
@@ -1031,7 +1030,7 @@ void MyMol::addShells(FILE          *fp,
     if (plist_.end() != pw)
     {
         /* Exclude the vsites and the atoms from their own shell. */
-        if (nexcl_ >= 0)
+        if (pd->getNexcl() >= 0)
         {
             for (auto j = pw->beginParam(); (j < pw->endParam()); ++j)
             {
@@ -1978,7 +1977,7 @@ void MyMol::PrintTopology(FILE                   *fp,
 
     print_top_header(fp, pd, bHaveShells_, commercials, bITP);
     write_top(fp, printmol.name, atoms(), false,
-              plist_, excls_, gromppAtomtype_, cgnr_, nexcl_, pd);
+              plist_, excls_, gromppAtomtype_, cgnr_, pd);
     if (!bITP)
     {
         print_top_mols(fp, printmol.name, getForceField().c_str(), nullptr, 0, nullptr, 1, &printmol);
@@ -2009,11 +2008,6 @@ immStatus MyMol::GenerateChargeGroups(eChargeGroup ecg, bool bUsePDBcharge)
                                         &qtot, &mtot)) == nullptr)
     {
         return immStatus::ChargeGeneration;
-    }
-    if (ecg != ecgAtom)
-    {
-        //sort_on_charge_groups(cgnr_, atoms_,
-        //                    plist_, x_, excls_, ndxfn, nmol);
     }
     return immStatus::OK;
 }

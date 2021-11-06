@@ -1086,14 +1086,13 @@ void write_top(FILE                            *out,
                t_excls                          excls[],
                gpp_atomtype_t                   atype,
                int                             *cgnr,
-               int                              nrexcl,
                const Poldata                   *pd)
 {
     if (at && atype && cgnr)
     {
         fprintf(out, "[ %s ]\n", dir2str(d_moleculetype));
         fprintf(out, "; %-15s %5s\n", "Name", "nrexcl");
-        fprintf(out, "%-15s %5d\n\n", molname ? molname : "Protein", nrexcl);
+        fprintf(out, "%-15s %5d\n\n", molname ? molname : "Protein", pd->getNexcl());
         print_atoms(out, atype, at, cgnr, bRTPresname);
         for (auto &fs : pd->forcesConst())
         {

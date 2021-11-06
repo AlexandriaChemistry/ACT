@@ -94,19 +94,6 @@ void FittingTarget::print(FILE *fp) const
  
 MolGen::MolGen()
 {
-    cr_        = nullptr;
-    bDone_     = false;
-    bGenVsite_ = false;
-    qsymm_     = false;
-    bQM_       = false;
-    watoms_    = 0;
-    qtol_      = 1e-6;
-    qcycle_    = 500;
-    mindata_   = 3;
-    nexcl_     = 0;
-    nexcl_orig_= nexcl_;
-    maxESP_    = 100;
-    etune_     = etuneEEM;
     lot_       = "B3LYP/aug-cc-pVTZ";
     inputrec_  = new t_inputrec();
     fill_inputrec(inputrec_);
@@ -172,18 +159,14 @@ void MolGen::addOptions(std::vector<t_pargs> *pargs, eTune etune)
           "Max number of tries for optimizing the charges." },
         { "-qsymm",  FALSE, etBOOL, {&qsymm_},
           "Symmetrize the charges on symmetric groups, e.g. CH3, NH2." },
-        { "-genvsites", FALSE, etBOOL, {&bGenVsite_},
-          "Generate virtual sites. Check and double check." },
         { "-fit", FALSE, etSTR, {&fitString_},
           "Quoted list of parameters to fit,  e.g. 'alpha zeta'." },
-        { "-nexcl",  FALSE, etINT, {&nexcl_},
-          "[HIDDEN]Exclusion number." },
         { "-qm",     FALSE, etBOOL, {&bQM_},
           "[HIDDEN]Use only quantum chemistry results (from the levels of theory below) in order to fit the parameters. If not set, experimental values will be used as reference with optional quantum chemistry results, in case no experimental results are available" }
     };
     doAddOptions(pargs, asize(pa_general), pa_general);
     
-    if (etune == etuneEEM)
+    if (etune == eTune::EEM)
     {
         t_pargs pa_eem[] =
             {
@@ -206,7 +189,7 @@ void MolGen::addOptions(std::vector<t_pargs> *pargs, eTune etune)
             };
         doAddOptions(pargs, asize(pa_eem), pa_eem);
     }
-    else if (etune == etuneFC)
+    else if (etune == eTune::FC)
     {
         t_pargs pa_fc[] =
             {
@@ -240,8 +223,8 @@ void MolGen::optionsFinished()
     }
     if (debug)
     {
-        fprintf(debug, "optionsFinished: qtol = %g mindata = %d nexcl = %d qcycle = %d\n",
-                qtol_, mindata_, nexcl_, qcycle_);
+        fprintf(debug, "optionsFinished: qtol = %g mindata = %d qcycle = %d\n",
+                qtol_, mindata_, qcycle_);
     }
     // Copy the fitting weights from the training set to the other sets
     for(auto &ims : iMolSelectNames())
@@ -680,7 +663,6 @@ size_t MolGen::Read(FILE            *fp,
     std::vector<alexandria::MolProp> mp;
 
     print_memory_usage(debug);
-    atomprop_  = gmx_atomprop_init();
     /* Reading Force Field Data from gentop.dat */
     if (MASTER(cr_))
     {
@@ -691,12 +673,6 @@ size_t MolGen::Read(FILE            *fp,
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         print_memory_usage(debug);
-        if (pd_.getNexcl() != nexcl_ && nexcl_ != nexcl_orig_)
-        {
-            fprintf(stderr, "WARNING: Changing exclusion number from %d in force field file\n", pd_.getNexcl());
-            fprintf(stderr, "         to %d (command line), Please check your output carefully.\n", nexcl_);
-            pd_.setNexcl(nexcl_);
-        }
     }
     /* Broadcasting Force Field Data from Master to Helper nodes */
     if (PAR(cr_))
@@ -776,9 +752,6 @@ size_t MolGen::Read(FILE            *fp,
                                              method,
                                              basis,
                                              nullptr,
-                                             bGenVsite_,
-                                             false,
-                                             optimize(InteractionType::PROPER_DIHEDRALS),
                                              missingParameters::Error,
                                              tabfn);
                 if (immStatus::OK != imm)
@@ -991,12 +964,9 @@ size_t MolGen::Read(FILE            *fp,
                                          method,
                                          basis,
                                          nullptr,
-                                         bGenVsite_,
-                                         false,
-                                         optimize(InteractionType::PROPER_DIHEDRALS),
                                          missingParameters::Error,
                                          tabfn);
-
+            
             if (immStatus::OK == imm)
             {
                 std::vector<double> dummy;
