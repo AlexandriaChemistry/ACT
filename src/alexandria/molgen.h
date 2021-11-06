@@ -318,8 +318,6 @@ private:
     std::map<iMolSelect, size_t>    targetSize_;
     //! Whether or not to fit to QM data only (ignoring experimental data)
     gmx_bool                        bQM_        = false;
-    //! Whether or not to use virtual sites. TODO: move to poldata
-    gmx_bool                        bGenVsite_  = false;
     //! Whether or not to use charge symmetry
     gmx_bool                        qsymm_      = false;
     //! Force field data structure

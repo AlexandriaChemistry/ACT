@@ -161,8 +161,6 @@ int alex_gentop(int argc, char *argv[])
     static gmx_bool                  bQsym          = false;
     static gmx_bool                  bITP           = false;
     static gmx_bool                  bUsePDBcharge  = false;
-    static gmx_bool                  bGenVSites     = false;
-    static gmx_bool                  bDihedral      = false;
     static gmx_bool                  bVerbose       = false;
     static gmx_bool                  bAllowMissing  = false;
     static gmx_bool                  addHydrogens   = false;
@@ -182,8 +180,6 @@ int alex_gentop(int argc, char *argv[])
           "Read a molecule from the database rather than from a file" },
         { "-lot",    FALSE, etSTR,  {&lot},
           "Use this method and level of theory when selecting coordinates and charges" },
-        { "-dih",    FALSE, etBOOL, {&bDihedral},
-          "Add dihedrals to the topology" },
         { "-name",   FALSE, etSTR,  {&molnm},
           "Name of your molecule" },
         { "-iupac",   FALSE, etSTR,  {&iupac},
@@ -196,8 +192,6 @@ int alex_gentop(int argc, char *argv[])
           "Make a topology even if there are no force field parameters for all interactions" },
         { "-nsymm", FALSE, etINT, {&nsymm},
           "Symmetry number of the molecule can be supplied here if you know there is an error in the input file" },
-        { "-genvsites", FALSE, etBOOL, {&bGenVSites},
-          "Generate virtual sites. Check and double check." },
         { "-pdbq",  FALSE, etBOOL, {&bUsePDBcharge},
           "HIDDENUse the B-factor supplied in a pdb file for the atomic charges" },
         { "-spacing", FALSE, etREAL, {&spacing},
@@ -364,8 +358,6 @@ int alex_gentop(int argc, char *argv[])
                                  method,
                                  basis,
                                  &mylot,
-                                 bGenVSites,
-                                 bDihedral,
                                  bAllowMissing ? missingParameters::Ignore : missingParameters::Error,
                                  tabfn);
 

@@ -10502,6 +10502,12 @@
       <parameter type="c2" unit="kJ/mol" value="1" uncertainty="0" minimum="0.8" maximum="1.25" ntrain="1" mutability="Bounded" nonnegative="no"/>
       <parameter type="c3" unit="kJ/mol" value="1" uncertainty="0" minimum="0.8" maximum="1.25" ntrain="1" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
+    <parameterlist identifier="c3_b#c3_b#c3_b#h_b">
+      <parameter type="c0" unit="kJ/mol" value="1" uncertainty="0" minimum="0.8" maximum="1.25" ntrain="1" mutability="Bounded" nonnegative="no"/>
+      <parameter type="c1" unit="kJ/mol" value="1" uncertainty="0" minimum="0.8" maximum="1.25" ntrain="1" mutability="Bounded" nonnegative="no"/>
+      <parameter type="c2" unit="kJ/mol" value="1" uncertainty="0" minimum="0.8" maximum="1.25" ntrain="1" mutability="Bounded" nonnegative="no"/>
+      <parameter type="c3" unit="kJ/mol" value="1" uncertainty="0" minimum="0.8" maximum="1.25" ntrain="1" mutability="Bounded" nonnegative="no"/>
+    </parameterlist>
     <parameterlist identifier="c3_b#c3_b#c3_b#ha_b">
       <parameter type="c0" unit="kJ/mol" value="1" uncertainty="0" minimum="0.8" maximum="1.25" ntrain="1" mutability="Bounded" nonnegative="no"/>
       <parameter type="c1" unit="kJ/mol" value="1" uncertainty="0" minimum="0.8" maximum="1.25" ntrain="1" mutability="Bounded" nonnegative="no"/>
@@ -14186,6 +14192,12 @@
       <parameter type="c2" unit="kJ/mol" value="1" uncertainty="0" minimum="0.8" maximum="1.25" ntrain="1" mutability="Bounded" nonnegative="no"/>
       <parameter type="c3" unit="kJ/mol" value="1" uncertainty="0" minimum="0.8" maximum="1.25" ntrain="1" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
+    <parameterlist identifier="h_b#c3_b#c3_b#o3_b">
+      <parameter type="c0" unit="kJ/mol" value="1" uncertainty="0" minimum="0.8" maximum="1.25" ntrain="1" mutability="Bounded" nonnegative="no"/>
+      <parameter type="c1" unit="kJ/mol" value="1" uncertainty="0" minimum="0.8" maximum="1.25" ntrain="1" mutability="Bounded" nonnegative="no"/>
+      <parameter type="c2" unit="kJ/mol" value="1" uncertainty="0" minimum="0.8" maximum="1.25" ntrain="1" mutability="Bounded" nonnegative="no"/>
+      <parameter type="c3" unit="kJ/mol" value="1" uncertainty="0" minimum="0.8" maximum="1.25" ntrain="1" mutability="Bounded" nonnegative="no"/>
+    </parameterlist>
     <parameterlist identifier="h1_b#c3_b#c3_b#os_b">
       <parameter type="c0" unit="kJ/mol" value="1" uncertainty="0" minimum="0.8" maximum="1.25" ntrain="1" mutability="Bounded" nonnegative="no"/>
       <parameter type="c1" unit="kJ/mol" value="1" uncertainty="0" minimum="0.8" maximum="1.25" ntrain="1" mutability="Bounded" nonnegative="no"/>
@@ -14337,6 +14349,18 @@
       <parameter type="c3" unit="kJ/mol" value="1" uncertainty="0" minimum="0.8" maximum="1.25" ntrain="1" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="h1_b#c3_b#o3_b#h_b">
+      <parameter type="c0" unit="kJ/mol" value="1" uncertainty="0" minimum="0.8" maximum="1.25" ntrain="1" mutability="Bounded" nonnegative="no"/>
+      <parameter type="c1" unit="kJ/mol" value="1" uncertainty="0" minimum="0.8" maximum="1.25" ntrain="1" mutability="Bounded" nonnegative="no"/>
+      <parameter type="c2" unit="kJ/mol" value="1" uncertainty="0" minimum="0.8" maximum="1.25" ntrain="1" mutability="Bounded" nonnegative="no"/>
+      <parameter type="c3" unit="kJ/mol" value="1" uncertainty="0" minimum="0.8" maximum="1.25" ntrain="1" mutability="Bounded" nonnegative="no"/>
+    </parameterlist>
+    <parameterlist identifier="h_b#c3_b#o3_b#h_b">
+      <parameter type="c0" unit="kJ/mol" value="1" uncertainty="0" minimum="0.8" maximum="1.25" ntrain="1" mutability="Bounded" nonnegative="no"/>
+      <parameter type="c1" unit="kJ/mol" value="1" uncertainty="0" minimum="0.8" maximum="1.25" ntrain="1" mutability="Bounded" nonnegative="no"/>
+      <parameter type="c2" unit="kJ/mol" value="1" uncertainty="0" minimum="0.8" maximum="1.25" ntrain="1" mutability="Bounded" nonnegative="no"/>
+      <parameter type="c3" unit="kJ/mol" value="1" uncertainty="0" minimum="0.8" maximum="1.25" ntrain="1" mutability="Bounded" nonnegative="no"/>
+    </parameterlist>
+    <parameterlist identifier="h_b#c3_b#c3_b#h_b">
       <parameter type="c0" unit="kJ/mol" value="1" uncertainty="0" minimum="0.8" maximum="1.25" ntrain="1" mutability="Bounded" nonnegative="no"/>
       <parameter type="c1" unit="kJ/mol" value="1" uncertainty="0" minimum="0.8" maximum="1.25" ntrain="1" mutability="Bounded" nonnegative="no"/>
       <parameter type="c2" unit="kJ/mol" value="1" uncertainty="0" minimum="0.8" maximum="1.25" ntrain="1" mutability="Bounded" nonnegative="no"/>

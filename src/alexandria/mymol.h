@@ -169,11 +169,9 @@ namespace alexandria
          *
          * \param[in] pd         Poldata
          * \param[in] atoms      Atoms structure
-         * \param[in] bUseVsites Flag
          */
         void MakeSpecialInteractions(const Poldata *pd,
-                                     t_atoms       *atoms,
-                                     bool           bUseVsites);
+                                     t_atoms       *atoms);
         /*! \brief
          * Add vsites on bonds to hos bond shell particles
          *
@@ -376,8 +374,6 @@ namespace alexandria
          * \param[in] method      Method used for QM calculation
          * \param[in] basis       Basis set used for QM calculation
          * \param[out] mylot      Level of theory
-         * \param[in] bUseVsites  Add virtual sites to the topology structure
-         * \param[in] bDih        Add dihedrals to the topology structure
          * \param[in] missing     How to treat missing parameters
          * \param[in] tabfn       Table function file for table potentials
          */
@@ -386,8 +382,6 @@ namespace alexandria
                                    const std::string &method,
                                    const std::string &basis,
                                    std::string       *mylot,
-                                   bool               bUseVsites,
-                                   bool               bDih,
                                    missingParameters  missing,
                                    const char        *tabfn);
 

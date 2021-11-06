@@ -159,8 +159,6 @@ void MolGen::addOptions(std::vector<t_pargs> *pargs, eTune etune)
           "Max number of tries for optimizing the charges." },
         { "-qsymm",  FALSE, etBOOL, {&qsymm_},
           "Symmetrize the charges on symmetric groups, e.g. CH3, NH2." },
-        { "-genvsites", FALSE, etBOOL, {&bGenVsite_},
-          "Generate virtual sites. Check and double check." },
         { "-fit", FALSE, etSTR, {&fitString_},
           "Quoted list of parameters to fit,  e.g. 'alpha zeta'." },
         { "-qm",     FALSE, etBOOL, {&bQM_},
@@ -754,8 +752,6 @@ size_t MolGen::Read(FILE            *fp,
                                              method,
                                              basis,
                                              nullptr,
-                                             bGenVsite_,
-                                             optimize(InteractionType::PROPER_DIHEDRALS),
                                              missingParameters::Error,
                                              tabfn);
                 if (immStatus::OK != imm)
@@ -968,8 +964,6 @@ size_t MolGen::Read(FILE            *fp,
                                          method,
                                          basis,
                                          nullptr,
-                                         bGenVsite_,
-                                         optimize(InteractionType::PROPER_DIHEDRALS),
                                          missingParameters::Error,
                                          tabfn);
             

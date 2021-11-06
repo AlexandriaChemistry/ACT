@@ -190,8 +190,6 @@ std::vector<alexandria::MolProp> mp;
                                           method,
                                           basis,
                                           nullptr,
-                                          false,
-                                          false,
                                           missingParameters::Error,
                                           nullptr);
         if (immStatus::OK != imm)
