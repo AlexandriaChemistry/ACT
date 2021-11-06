@@ -16,12 +16,13 @@ class GeneticAlgorithm {
     // Vectors and matrices
     double** oldPop;
     double** newPop;
+    double** tmpPop;
     double* fitness;
     double* probability;
 
     // Function pointers
     void (*initialize) (double* const, const int);
-    void (*computeFitness) (double** const, double* const, const int);
+    void (*computeFitness) (double* const, double* const, const int);
     void (*computeProbability) (double* const, double* const, const int);
     double* const (*select) (double** const, double* const, const int);
     void (*crossover) (double* const, double* const, double* const, double* const);
@@ -32,7 +33,7 @@ public:
 
     /*!
      * Default constructor for the GeneticAlgorithm class
-     * @param popSize               the number of individuals in the population
+     * @param popSize               the number of individuals in the population. Assumed to be even
      * @param chromosomeLength      the number of genes in each individuals
      * @param initialize            pointer to a function which takes an individual (1) (and its length (2))
      *                              and initializes it
