@@ -1,24 +1,33 @@
 #include "GeneticAlgorithm.h"
+
+#include "Initializer.h"
+#include "FitnessComputer.h"
+#include "ProbabilityComputer.h"
+#include "Crossover.h"
+#include "Mutator.h"
+#include "Terminator.h"
+
 #include "helpers.h"
 
-GeneticAlgorithm::GeneticAlgorithm(const int popSize, const int chromosomeLength,
-                                   void (*const initialize)(double *const, const int),
-                                   void (*const computeFitness)(double *const, double *const, const int),
-                                   void (*const computeProbability)(double *const, double *const, const int),
-                                   double* const (*const select)(double **const, double *const, const int),
-                                   void (*const crossover)(double *const, double *const, double *const, double *const),
-                                   void (*const mutate)(double *const),
-                                   bool (*const terminate)(double **const, double *const, const int, const int)) {
+GeneticAlgorithm::GeneticAlgorithm(const int popSize,
+                                   const int chromosomeLength,
+                                   Initializer initializer,
+                                   FitnessComputer fitComputer,
+                                   ProbabilityComputer probComputer,
+                                   Selector selector,
+                                   Crossover crossover,
+                                   Mutator mutator,
+                                   Terminator terminator) {
 
     this->popSize = popSize;
     this->chromosomeLength = chromosomeLength;
-    this->initialize = initialize;
-    this->computeFitness = computeFitness;
-    this->computeProbability = computeProbability;
-    this->select = select;
+    this->initializer = initializer;
+    this->fitComputer = fitComputer;
+    this->probComputer = probComputer;
+    this->selector = selector;
     this->crossover = crossover;
-    this->mutate = mutate;
-    this->terminate = terminate;
+    this->mutator = mutator;
+    this->terminator = terminator;
 
     // Initialize the data structures
     this->oldPop = allocateMatrix(popSize, chromosomeLength);
@@ -44,11 +53,11 @@ const int GeneticAlgorithm::evolve(const double prCross, const double prMut) {
     int generation = 0;
 
     // Initialize the population
-    initialize(oldPop, popSize);
+    initializer.initialize(oldPop, popSize);
 
     // Compute fitness
     for (i = 0; i < popSize; i++) {
-        computeFitness(oldPop[i], &fitness[i], chromosomeLength);
+        fitComputer.compute(oldPop[i], &fitness[i], chromosomeLength);
     }
 
     // Iterate and create new generations
@@ -58,18 +67,18 @@ const int GeneticAlgorithm::evolve(const double prCross, const double prMut) {
         generation++;
 
         // Normalize the fitness into a probability
-        computeProbability(fitness, probability, popSize);
+        probComputer.compute(fitness, probability, popSize);
 
         // Generate new population
         for (i = 0; i < popSize; i+=2) {
 
             // Select parents
-            parent1 = select(oldPop, probability, popSize);
-            parent2 = select(oldPop, probability, popSize);
+            parent1 = selector.select(oldPop, probability, popSize);
+            parent2 = selector.select(oldPop, probability, popSize);
 
             // Do crossover
             if (rand01() <= prCross) {
-                crossover(parent1, parent2, newPop[i], newPop[i+1]);
+                crossover.offspring(parent1, parent2, newPop[i], newPop[i+1]);
             } else {
                 copyArrayValues(parent1, newPop[i], chromosomeLength);
                 copyArrayValues(parent2, newPop[i+1], chromosomeLength);
@@ -78,10 +87,10 @@ const int GeneticAlgorithm::evolve(const double prCross, const double prMut) {
             // Do mutation in each child, and compute fitness to avoid another traversal
             for (k = 0; k < 2; k++) {
                 for (j = 0; j < chromosomeLength; j++) {
-                    if (rand01() <= prMut) mutate(&newPop[i+k][j]);
+                    if (rand01() <= prMut) mutator.mutate(&newPop[i+k][j]);
                 }
                 // Compute fitness
-                computeFitness(newPop[i], &fitness[i], chromosomeLength);
+                fitComputer.compute(newPop[i], &fitness[i], chromosomeLength);
             }
 
             // Swap oldPop and newPop
@@ -91,6 +100,6 @@ const int GeneticAlgorithm::evolve(const double prCross, const double prMut) {
 
         }
 
-    } while(!terminate(oldPop, fitness, generation, popSize));
+    } while(!terminator.terminate(oldPop, fitness, generation, popSize));
 
 }
