@@ -1,4 +1,0 @@
-#ifndef ACT_CROSSOVER_H
-#define ACT_CROSSOVER_H
-
-#endif //ACT_CROSSOVER_H
