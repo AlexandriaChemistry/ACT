@@ -11,6 +11,12 @@
 #include "Mutator.h"
 #include "Terminator.h"
 
+#include "Initializer.h"
+#include "FitnessComputer.h"
+#include "ProbabilityComputer.h"
+#include "Selector.h"
+#include "Crossover.h"
+
 
 
 
@@ -27,12 +33,12 @@ class GeneticAlgorithm {
     double* fitness;
     double* probability;
 
-    // Function pointers
-    void (*initialize) (double* const, const int);
-    void (*computeFitness) (double* const, double* const, const int);
-    void (*computeProbability) (double* const, double* const, const int);
-    double* const (*select) (double** const, double* const, const int);
-    void (*crossover) (double* const, double* const, double* const, double* const);
+    // Object pointers
+    Initializer initializer;
+    FitnessComputer ftComputer;
+    ProbabilityComputer probComputer;
+    Selector selector;
+    Crossover crossover;
     void (*mutate) (double* const);
     bool (*terminate) (double** const, double* const, const int, const int);
 

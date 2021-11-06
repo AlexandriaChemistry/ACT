@@ -1,21 +1,28 @@
 #include "GeneticAlgorithm.h"
+
+#include "Initializer.h"
+#include "FitnessComputer.h"
+#include "ProbabilityComputer.h"
+#include "Crossover.h"
+
 #include "helpers.h"
 
-GeneticAlgorithm::GeneticAlgorithm(const int popSize, const int chromosomeLength,
-                                   void (*const initialize)(double *const, const int),
-                                   void (*const computeFitness)(double *const, double *const, const int),
-                                   void (*const computeProbability)(double *const, double *const, const int),
-                                   double* const (*const select)(double **const, double *const, const int),
-                                   void (*const crossover)(double *const, double *const, double *const, double *const),
+GeneticAlgorithm::GeneticAlgorithm(const int popSize,
+                                   const int chromosomeLength,
+                                   Initializer initializer,
+                                   FitnessComputer ftComputer,
+                                   ProbabilityComputer probComputer,
+                                   Selector selector,
+                                   Crossover crossover,
                                    void (*const mutate)(double *const),
                                    bool (*const terminate)(double **const, double *const, const int, const int)) {
 
     this->popSize = popSize;
     this->chromosomeLength = chromosomeLength;
-    this->initialize = initialize;
-    this->computeFitness = computeFitness;
-    this->computeProbability = computeProbability;
-    this->select = select;
+    this->initializer = initializer;
+    this->ftComputer = ftComputer;
+    this->probComputer = probComputer;
+    this->selector = selector;
     this->crossover = crossover;
     this->mutate = mutate;
     this->terminate = terminate;
@@ -48,7 +55,7 @@ const ga_result_t GeneticAlgorithm::evolve(const double prCross, const double pr
 
     // Compute fitness
     for (i = 0; i < popSize; i++) {
-        fitComputer.compute(oldPop[i], &fitness[i], chromosomeLength);
+        ftComputer.compute(oldPop[i], &fitness[i], chromosomeLength);
     }
 
     // Iterate and create new generations
