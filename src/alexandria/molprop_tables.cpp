@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020
+ * Copyright (C) 2014-2021
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -91,7 +91,6 @@ typedef struct {
     int         nexp;
     int         nqm;
 } t_sm_lsq;
-
 
 static void stats_header(LongTable         &lt,
                          MolPropObservable  mpo,

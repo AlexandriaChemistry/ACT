@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020 
+ * Copyright (C) 2014-2021
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -33,6 +33,7 @@
 #include "latex_util.h"
 
 #include "gromacs/fileio/gmxfio.h"
+#include "gromacs/utility/exceptions.h"
 
 namespace alexandria
 {
@@ -138,6 +139,24 @@ void LongTable::printLine(const std::string &line)
         myline += c;
     }
     fprintf(fp_, "%s\\\\\n", myline.c_str());
+}
+
+void LongTable::printColumns(const std::vector<std::string> &columns)
+{
+    std::string line;
+    for (const auto &c : columns)
+    {
+        if (line.empty())
+        {
+            line = c;
+        }
+        else
+        {
+            line += std::string(" & ");
+            line += c;
+        }
+    }
+    printLine(line);
 }
 
 void LongTable::printHLine()

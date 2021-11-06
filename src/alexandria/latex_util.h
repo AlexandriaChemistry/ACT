@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020 
+ * Copyright (C) 2014-2021
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -33,14 +33,16 @@
 #ifndef LATEX_UTIL_H
 #define LATEX_UTIL_H
 
-#include <math.h>
+//#include <math.h>
 #include <stdio.h>
-#include <stdlib.h>
+//#include <stdlib.h>
 #include <string.h>
 
-#include "categories.h"
-#include "molprop.h"
-#include "molprop_util.h"
+#include <string>
+#include <vector>
+//#include "categories.h"
+//#include "molprop.h"
+//#include "molprop_util.h"
 
 
 namespace alexandria
@@ -123,10 +125,17 @@ public:
     void printFooter();
     
     /*! \brief Print a line to the table
-     * \param[in] line The line to print, include column markers
+     * \param[in] line The line to print, include LaTeX column markers
      */
     void printLine(const std::string &line);
 
+    /*! \brief Print a line to the table based on columns
+     * The number of columns should be the same as what was defined
+     * using the setColumns function.
+     * \param[in] columns The column entries
+     */
+    void printColumns(const std::vector<std::string> &columns);
+    
     //! \brief Print a horizontal line to the table
     void printHLine();
 };

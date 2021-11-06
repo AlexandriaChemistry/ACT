@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020 
+ * Copyright (C) 2014-2021
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -33,28 +33,48 @@
 #ifndef POLDATA_TABLES_H
 #define POLDATA_TABLES_H
 
-#include "latex_util.h"
+#include <stdio.h>
+
+#include "poldata.h"
 
 namespace alexandria
 {
-                                       
-
- /*! \brief
- * Generates a LaTeX table containing the zeta values for gaussian and slater charge models
- *
- * \param[out] fp   File pointer to write to
- * \param[in]  pd   Force field data
- */
-
+    /*! \brief
+     * Generates a LaTeX table containing the zeta values 
+     * for gaussian and/or slater charge models
+     *
+     * \param[out] fp   File pointer to write to
+     * \param[in]  pd   Force field data
+     */
     void alexandria_charge_table(FILE            *fp, 
                                  const Poldata   *pd);  
                                
+    /*! \brief
+     * Generates a LaTeX table containing the chi and jaa values 
+     * for Alexandria Charge Models
+     *
+     * \param[out] fp   File pointer to write to
+     * \param[in]  pd   Force field data
+     */
     void alexandria_eemprops_table(FILE            *fp, 
                                    const Poldata   *pd);  
                                
+    /*! \brief
+     * Generates a LaTeX table containing the delta_chi and 
+     * bond hardness values for Alexandria Charge Models
+     *
+     * \param[out] fp   File pointer to write to
+     * \param[in]  pd   Force field data
+     */
     void alexandria_eemprops_corr(const Poldata  *pd,
                                   FILE           *fp);                             
-                               
+    /*! \brief
+     * Generates a LaTeX table containing the subtypes
+     * for particle types
+     *
+     * \param[out] fp   File pointer to write to
+     * \param[in]  pd   Force field data
+     */
     void alexandria_subtype_table(FILE           *fp,
                                   const Poldata  *pd);
              
