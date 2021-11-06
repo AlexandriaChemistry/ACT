@@ -163,8 +163,6 @@ void MolGen::addOptions(std::vector<t_pargs> *pargs, eTune etune)
           "Generate virtual sites. Check and double check." },
         { "-fit", FALSE, etSTR, {&fitString_},
           "Quoted list of parameters to fit,  e.g. 'alpha zeta'." },
-        { "-nexcl",  FALSE, etINT, {&nexcl_},
-          "[HIDDEN]Exclusion number." },
         { "-qm",     FALSE, etBOOL, {&bQM_},
           "[HIDDEN]Use only quantum chemistry results (from the levels of theory below) in order to fit the parameters. If not set, experimental values will be used as reference with optional quantum chemistry results, in case no experimental results are available" }
     };
@@ -227,8 +225,8 @@ void MolGen::optionsFinished()
     }
     if (debug)
     {
-        fprintf(debug, "optionsFinished: qtol = %g mindata = %d nexcl = %d qcycle = %d\n",
-                qtol_, mindata_, nexcl_, qcycle_);
+        fprintf(debug, "optionsFinished: qtol = %g mindata = %d qcycle = %d\n",
+                qtol_, mindata_, qcycle_);
     }
     // Copy the fitting weights from the training set to the other sets
     for(auto &ims : iMolSelectNames())
@@ -677,12 +675,6 @@ size_t MolGen::Read(FILE            *fp,
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         print_memory_usage(debug);
-        if (pd_.getNexcl() != nexcl_ && nexcl_ != nexcl_orig_)
-        {
-            fprintf(stderr, "WARNING: Changing exclusion number from %d in force field file\n", pd_.getNexcl());
-            fprintf(stderr, "         to %d (command line), Please check your output carefully.\n", nexcl_);
-            pd_.setNexcl(nexcl_);
-        }
     }
     /* Broadcasting Force Field Data from Master to Helper nodes */
     if (PAR(cr_))
@@ -763,7 +755,6 @@ size_t MolGen::Read(FILE            *fp,
                                              basis,
                                              nullptr,
                                              bGenVsite_,
-                                             false,
                                              optimize(InteractionType::PROPER_DIHEDRALS),
                                              missingParameters::Error,
                                              tabfn);
@@ -978,11 +969,10 @@ size_t MolGen::Read(FILE            *fp,
                                          basis,
                                          nullptr,
                                          bGenVsite_,
-                                         false,
                                          optimize(InteractionType::PROPER_DIHEDRALS),
                                          missingParameters::Error,
                                          tabfn);
-
+            
             if (immStatus::OK == imm)
             {
                 std::vector<double> dummy;

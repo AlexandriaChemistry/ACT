@@ -112,7 +112,7 @@ class RespTest : public gmx::test::CommandLineTestBase
             auto imm = mp_.GenerateTopology(nullptr,
                                             pd, method,
                                             basis, nullptr,
-                                            false, false, false,
+                                            false, false,
                                             missingParameters::Error, nullptr);
             if (immStatus::OK != imm)
             {

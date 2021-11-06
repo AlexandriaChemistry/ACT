@@ -826,7 +826,6 @@ int alex_bastat(int argc, char *argv[])
                                                    basis,
                                                    &mylot,
                                                    false,
-                                                   false,
                                                    bDih,
                                                    missingParameters::Generate,
                                                    nullptr);

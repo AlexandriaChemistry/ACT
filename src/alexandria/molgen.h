@@ -306,10 +306,6 @@ private:
     int                             mindata_    = 1;
     //! Percentage of ESP points to use
     int                             maxESP_     = 100;
-    //! Number of exclusions used in topology making
-    int                             nexcl_      = 0;
-    //! Number of exclusions used in topology making before changing it
-    int                             nexcl_orig_ = 0;
     //! Weighting factor for the ESP on the atoms
     real                            watoms_     = 0;
     //! Tolerance for iteratively determining charges

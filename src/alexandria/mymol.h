@@ -95,7 +95,6 @@ namespace alexandria
         /*! \brief
          * Gromacs structures
          */
-        int                              nexcl_          = 0;
         int                             *cgnr_           = nullptr;
         bool                             bHaveShells_    = false;
         bool                             bHaveVSites_    = false;
@@ -158,12 +157,12 @@ namespace alexandria
          * Generate angles, dihedrals, exclusions etc.
          *
          * \param[in] atoms  The atoms structure
-         * \param[in] bPairs Whether to generate pairs
          * \param[in] bDihs  Whether to generate dihedrals
+         * \param[in] nrexcl Number of exclusions for use in GROMACS code
          */
         void MakeAngles(t_atoms *atoms,
-                        bool     bPairs,
-                        bool     bDihs);
+                        bool     bDihs,
+                        int      nrexcl);
 
         /*! \brief
          * Generate virtual sites or linear angles
@@ -378,7 +377,6 @@ namespace alexandria
          * \param[in] basis       Basis set used for QM calculation
          * \param[out] mylot      Level of theory
          * \param[in] bUseVsites  Add virtual sites to the topology structure
-         * \param[in] bPairs      Add pairs to the topology structure
          * \param[in] bDih        Add dihedrals to the topology structure
          * \param[in] missing     How to treat missing parameters
          * \param[in] tabfn       Table function file for table potentials
@@ -389,7 +387,6 @@ namespace alexandria
                                    const std::string &basis,
                                    std::string       *mylot,
                                    bool               bUseVsites,
-                                   bool               bPairs,
                                    bool               bDih,
                                    missingParameters  missing,
                                    const char        *tabfn);

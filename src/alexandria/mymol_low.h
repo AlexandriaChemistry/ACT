@@ -228,7 +228,6 @@ void write_top(FILE                            *out,
                t_excls                          excls[],
                gpp_atomtype_t                   atype,
                int                             *cgnr,
-               int                              nrexcl,
                const Poldata                   *pd);
 
 void print_top_header(FILE                    *fp,

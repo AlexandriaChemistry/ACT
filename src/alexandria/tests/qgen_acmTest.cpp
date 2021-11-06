@@ -148,7 +148,7 @@ class AcmTest : public gmx::test::CommandLineTestBase
             auto pd  = getPoldata(model);
             auto imm = mp_.GenerateTopology(stdout,
                                             pd, method, basis, nullptr,
-                                            false, false, false,
+                                            false, false,
                                             missingParameters::Error, nullptr);
             if (immStatus::OK != imm)
             {

@@ -68,7 +68,6 @@ static void dump_molecules(const char *logfilename,
                                           nullptr,
                                           false,
                                           false,
-                                          false,
                                           missingParameters::Error,
                                           nullptr);
         if (immStatus::OK != imm)
