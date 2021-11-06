@@ -4,48 +4,50 @@
 #include "FitnessComputer.h"
 #include "ProbabilityComputer.h"
 #include "Crossover.h"
+#include "Mutator.h"
+#include "Terminator.h"
 
 #include "helpers.h"
 
 GeneticAlgorithm::GeneticAlgorithm(const int popSize,
                                    const int chromosomeLength,
                                    Initializer initializer,
-                                   FitnessComputer ftComputer,
+                                   FitnessComputer fitComputer,
                                    ProbabilityComputer probComputer,
                                    Selector selector,
                                    Crossover crossover,
-                                   void (*const mutate)(double *const),
-                                   bool (*const terminate)(double **const, double *const, const int, const int)) {
+                                   Mutator mutator,
+                                   Terminator terminator) {
 
     this->popSize = popSize;
     this->chromosomeLength = chromosomeLength;
     this->initializer = initializer;
-    this->ftComputer = ftComputer;
+    this->fitComputer = fitComputer;
     this->probComputer = probComputer;
     this->selector = selector;
     this->crossover = crossover;
-    this->mutate = mutate;
-    this->terminate = terminate;
+    this->mutator = mutator;
+    this->terminator = terminator;
 
     // Initialize the data structures
     this->oldPop = allocateMatrix(popSize, chromosomeLength);
     this->newPop = allocateMatrix(popSize, chromosomeLength);
-    this->fitness = vector(popSize);
-    this->probability = vector(popSize);
+    this->fitness = allocateArray(popSize);
+    this->probability = allocateArray(popSize);
 
 }
 
 
-const ga_result_t GeneticAlgorithm::evolve(const double prCross, const double prMut) {
+const int GeneticAlgorithm::evolve(const double prCross, const double prMut) {
 
     // Iteration variables
     int i, j, k;
 
     // Chromosomes
-    vector parent1;
-    vector parent2;
-//    vector child1;
-//    vector child2;
+    double* parent1;
+    double* parent2;
+    double* child1;
+    double* child2;
 
     // Generations
     int generation = 0;
@@ -55,7 +57,7 @@ const ga_result_t GeneticAlgorithm::evolve(const double prCross, const double pr
 
     // Compute fitness
     for (i = 0; i < popSize; i++) {
-        ftComputer.compute(oldPop[i], &fitness[i], chromosomeLength);
+        fitComputer.compute(oldPop[i], &fitness[i], chromosomeLength);
     }
 
     // Iterate and create new generations
@@ -99,15 +101,5 @@ const ga_result_t GeneticAlgorithm::evolve(const double prCross, const double pr
         }
 
     } while(!terminator.terminate(oldPop, fitness, generation, popSize));
-
-    vector bestIndividual = null;
-    double bestFitness = 0;
-    for (i = 0; i < popSize; i++) {
-        if (fitness[i] > bestFitness) {
-            bestFitness = fitness[i];
-            bestIndividual = oldPop[i];
-        }
-    }
-    return {oldPop, fitness, bestIndividual, bestFitness, generation};
 
 }
