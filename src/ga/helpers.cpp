@@ -19,15 +19,6 @@ matrix allocateMatrix(const int n, const int m) {
 
 
 /*!
- * Generate a random number in range [0,1). srand() must be called before this method is used.
- * @return a double in [0,1)
- */
-double rand01() {
-    return (double) rand() / RAND_MAX;
-}
-
-
-/*!
  * Copy values from one vector to another
  * @param arr1      vector to get the values from
  * @param arr2      vector to write the values to

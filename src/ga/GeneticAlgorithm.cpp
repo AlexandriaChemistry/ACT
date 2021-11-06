@@ -1,35 +1,24 @@
 #include "GeneticAlgorithm.h"
-
-#include "aliases.h"
-
-#include "Initializer.h"
-#include "FitnessComputer.h"
-#include "ProbabilityComputer.h"
-#include "Crossover.h"
-#include "Mutator.h"
-#include "Terminator.h"
-
 #include "helpers.h"
 
-GeneticAlgorithm::GeneticAlgorithm(const int popSize,
-                                   const int chromosomeLength,
-                                   Initializer initializer,
-                                   FitnessComputer fitComputer,
-                                   ProbabilityComputer probComputer,
-                                   Selector selector,
-                                   Crossover crossover,
-                                   Mutator mutator,
-                                   Terminator terminator) {
+GeneticAlgorithm::GeneticAlgorithm(const int popSize, const int chromosomeLength,
+                                   void (*const initialize)(double *const, const int),
+                                   void (*const computeFitness)(double *const, double *const, const int),
+                                   void (*const computeProbability)(double *const, double *const, const int),
+                                   double* const (*const select)(double **const, double *const, const int),
+                                   void (*const crossover)(double *const, double *const, double *const, double *const),
+                                   void (*const mutate)(double *const),
+                                   bool (*const terminate)(double **const, double *const, const int, const int)) {
 
     this->popSize = popSize;
     this->chromosomeLength = chromosomeLength;
-    this->initializer = initializer;
-    this->fitComputer = fitComputer;
-    this->probComputer = probComputer;
-    this->selector = selector;
+    this->initialize = initialize;
+    this->computeFitness = computeFitness;
+    this->computeProbability = computeProbability;
+    this->select = select;
     this->crossover = crossover;
-    this->mutator = mutator;
-    this->terminator = terminator;
+    this->mutate = mutate;
+    this->terminate = terminate;
 
     // Initialize the data structures
     this->oldPop = allocateMatrix(popSize, chromosomeLength);
