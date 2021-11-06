@@ -38,8 +38,18 @@ class GeneticAlgorithm {
     Terminator terminator;
 
 public:
-
-
+    /*!
+     * Create a new GeneticAlgorithm object
+     * @param popSize               size of the population
+     * @param chromosomeLength      length of each individual
+     * @param initializer           Initializer object
+     * @param fitComputer           FitnessComputer object
+     * @param probComputer          ProbabilityComputer object
+     * @param selector              Selector object
+     * @param crossover             Crossover object
+     * @param mutator               Mutator object
+     * @param terminator            Terminator object
+     */
     GeneticAlgorithm(const int popSize,
                      const int chromosomeLength,
                      Initializer initializer,
