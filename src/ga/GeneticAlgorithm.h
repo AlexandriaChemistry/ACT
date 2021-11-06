@@ -1,7 +1,7 @@
 #ifndef ACT_GENETICALGORITHM_H
 #define ACT_GENETICALGORITHM_H
 
-#include "aliases.h"
+#include <tuple>
 
 #include "Initializer.h"
 #include "FitnessComputer.h"
@@ -11,15 +11,8 @@
 #include "Mutator.h"
 #include "Terminator.h"
 
-#include "Initializer.h"
-#include "FitnessComputer.h"
-#include "ProbabilityComputer.h"
-#include "Selector.h"
-#include "Crossover.h"
-#include "Mutator.h"
-#include "Terminator.h"
 
-
+using ga_result = std::tuple<double** const, double* const, double* const, const double, const int>
 
 
 class GeneticAlgorithm {
@@ -46,23 +39,16 @@ class GeneticAlgorithm {
 
 public:
     /*!
-     * Default constructor for the GeneticAlgorithm class
-     * @param popSize               the number of individuals in the population. Assumed to be even
-     * @param chromosomeLength      the number of genes in each individuals
-     * @param initialize            pointer to a function which takes an individual (1) (and its length (2))
-     *                              and initializes it
-     * @param computeFitness        pointer to a function which takes an individual (1) (and its length(3)) and
-     *                              computes its fitness, writing the result using the given pointer (2)
-     * @param computeProbability    pointer to a function which takes the fitness array (1) (and its length (3)) and
-     *                              normalizes it writing to the probability array (2)
-     * @param select                pointer to a function which takes the population (1) (and its size (3)) and
-     *                              the probabilities (2); and returns a pointer to the selected individual
-     * @param crossover             pointer to a function which takes two parents (1, 2) and writes the resulting
-     *                              crossover to two children (3, 4)
-     * @param mutate                pointer to a function which takes a pointer to a gene and mutates it
-     * @param terminate             pointer to a function which takes the population (1) (and its size (4)), the
-     *                              fitness array (2), and the generation number (3); and decides whether the evolution
-     *                              is over
+     * Create a new GeneticAlgorithm object
+     * @param popSize               size of the population
+     * @param chromosomeLength      length of each individual
+     * @param initializer           Initializer object
+     * @param fitComputer           FitnessComputer object
+     * @param probComputer          ProbabilityComputer object
+     * @param selector              Selector object
+     * @param crossover             Crossover object
+     * @param mutator               Mutator object
+     * @param terminator            Terminator object
      */
     GeneticAlgorithm(const int popSize,
                      const int chromosomeLength,
@@ -81,7 +67,7 @@ public:
      * @return          a tuple containing the final population, the final fitness, the best individual, the fitness
      *                  of the best individual, and the number of generations
      */
-    const ga_result_t evolve(const double prCross, const double prMut);
+    const ga_result evolve(const double prCross, const double prMut);
 
 };
 
