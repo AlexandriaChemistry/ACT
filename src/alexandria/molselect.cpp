@@ -314,7 +314,7 @@ int alex_molselect(int argc, char *argv[])
     {
         pargs.push_back(pa[i]);
     }
-    mgn.addOptions(&pargs, etuneNone);
+    mgn.addOptions(&pargs, eTune::None);
     if (!parse_common_args(&argc, 
                            argv, 
                            PCA_CAN_VIEW, 

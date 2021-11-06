@@ -94,19 +94,6 @@ void FittingTarget::print(FILE *fp) const
  
 MolGen::MolGen()
 {
-    cr_        = nullptr;
-    bDone_     = false;
-    bGenVsite_ = false;
-    qsymm_     = false;
-    bQM_       = false;
-    watoms_    = 0;
-    qtol_      = 1e-6;
-    qcycle_    = 500;
-    mindata_   = 3;
-    nexcl_     = 0;
-    nexcl_orig_= nexcl_;
-    maxESP_    = 100;
-    etune_     = etuneEEM;
     lot_       = "B3LYP/aug-cc-pVTZ";
     inputrec_  = new t_inputrec();
     fill_inputrec(inputrec_);
@@ -183,7 +170,7 @@ void MolGen::addOptions(std::vector<t_pargs> *pargs, eTune etune)
     };
     doAddOptions(pargs, asize(pa_general), pa_general);
     
-    if (etune == etuneEEM)
+    if (etune == eTune::EEM)
     {
         t_pargs pa_eem[] =
             {
@@ -206,7 +193,7 @@ void MolGen::addOptions(std::vector<t_pargs> *pargs, eTune etune)
             };
         doAddOptions(pargs, asize(pa_eem), pa_eem);
     }
-    else if (etune == etuneFC)
+    else if (etune == eTune::FC)
     {
         t_pargs pa_fc[] =
             {
@@ -680,7 +667,6 @@ size_t MolGen::Read(FILE            *fp,
     std::vector<alexandria::MolProp> mp;
 
     print_memory_usage(debug);
-    atomprop_  = gmx_atomprop_init();
     /* Reading Force Field Data from gentop.dat */
     if (MASTER(cr_))
     {
