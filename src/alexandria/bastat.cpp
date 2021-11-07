@@ -697,7 +697,6 @@ int alex_bastat(int argc, char *argv[])
     static real                      factor      = 0.8;
     static char                     *lot         = (char *)"B3LYP/aug-cc-pVTZ";
     static gmx_bool                  bHisto      = false;
-    static gmx_bool                  bDih        = true;
     static gmx_bool                  bBondOrder  = true;
     static gmx_bool                  genBCC      = false;
     t_pargs                          pa[]        = {
@@ -723,8 +722,6 @@ int alex_bastat(int argc, char *argv[])
           "Tolerance for bond length" },
         { "-angle_tol",   FALSE, etREAL, {&angle_tol},
           "Tolerance for harmonic and linear angles" },
-        { "-dih",   FALSE, etBOOL, {&bDih},
-          "Generate proper dihedral terms" },
         { "-histo", FALSE, etBOOL, {&bHisto},
           "Print (hundreds of) xvg files containing histograms for bonds, angles and dihedrals" },
         { "-compress", FALSE, etBOOL, {&compress},
@@ -825,9 +822,6 @@ int alex_bastat(int argc, char *argv[])
                                                    method,
                                                    basis,
                                                    &mylot,
-                                                   false,
-                                                   false,
-                                                   bDih,
                                                    missingParameters::Generate,
                                                    nullptr);
             if (immStatus::OK != imm)

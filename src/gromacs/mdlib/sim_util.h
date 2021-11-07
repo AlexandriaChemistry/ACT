@@ -58,7 +58,9 @@ namespace gmx
 {
 class BoxDeformation;
 class Constraints;
+#ifdef IMD
 class IMDOutputProvider;
+#endif
 class MDLogger;
 }
 
@@ -143,24 +145,23 @@ void do_constrain_first(FILE *log, gmx::Constraints *constr,
                         t_state *state);
 
 void init_md(FILE *fplog,
-             const t_commrec *cr, gmx::IMDOutputProvider *outputProvider,
-             t_inputrec *ir, const gmx_output_env_t *oenv,
+             const t_commrec *cr,
+             t_inputrec *ir,
              const MdrunOptions &mdrunOptions,
              double *t, double *t0,
              t_state *globalState, double *lam0,
              t_nrnb *nrnb, gmx_mtop_t *mtop,
              gmx_update_t **upd,
              gmx::BoxDeformation *deform,
-             int nfile, const t_filenm fnm[],
+             int nfile,
              gmx_mdoutf_t *outf, t_mdebin **mdebin,
              tensor force_vir, tensor shake_vir,
              tensor total_vir, tensor pres,
              rvec mu_tot,
-             gmx_bool *bSimAnn, t_vcm **vcm,
-             gmx_wallcycle_t wcycle);
+             gmx_bool *bSimAnn, t_vcm **vcm);
 
 void init_rerun(FILE *fplog,
-                const t_commrec *cr, gmx::IMDOutputProvider *outputProvider,
+                const t_commrec *cr,
                 t_inputrec *ir, const gmx_output_env_t *oenv,
                 const MdrunOptions &mdrunOptions,
                 t_state *globalState, double *lam0,

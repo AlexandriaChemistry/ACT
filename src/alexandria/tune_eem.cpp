@@ -127,7 +127,7 @@ class OptACM : public MolGen, Bayes
             {
                 pargs->push_back(pa[i]);
             }
-            addOptions(pargs, etuneEEM);
+            addOptions(pargs, eTune::EEM);
             Bayes::add_pargs(pargs);
         }
 

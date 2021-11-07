@@ -253,7 +253,6 @@ class Poldata
 
         VsiteIterator findVsite(std::string  atype)
         {
-
             return std::find_if(vsite_.begin(), vsite_.end(),
                                 [atype](const Vsite &vs)
                                 {
@@ -263,7 +262,6 @@ class Poldata
 
         VsiteConstIterator findVsite(std::string atype) const
         {
-
             return std::find_if(vsite_.begin(), vsite_.end(),
                                 [atype](const Vsite &vs)
                                 {

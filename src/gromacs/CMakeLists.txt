@@ -127,7 +127,6 @@ add_subdirectory(essentialdynamics)
 add_subdirectory(pulling)
 add_subdirectory(awh)
 add_subdirectory(simd)
-add_subdirectory(imd)
 add_subdirectory(compat)
 add_subdirectory(gmxpreprocess)
 add_subdirectory(statistics)
@@ -278,9 +277,6 @@ set_target_properties(libgromacs PROPERTIES
                       SOVERSION ${LIBRARY_SOVERSION_MAJOR}
                       VERSION ${LIBRARY_VERSION}
                       COMPILE_FLAGS "${OpenMP_C_FLAGS}")
-
-gmx_manage_lmfit()
-target_link_libraries(libgromacs PRIVATE lmfit)
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_CXX_COMPILER_VERSION MATCHES "^6\.0")
    target_compile_options(libgromacs PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Weverything ${IGNORED_CLANG_ALL_WARNINGS}>)

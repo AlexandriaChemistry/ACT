@@ -145,7 +145,6 @@ int alex_gentop(int argc, char *argv[])
     static int                       maxpot         = 100;
     static int                       nsymm          = 0;
     static int                       qcycle         = 1000;
-    static int                       nexcl          = 2;
     static real                      qtol           = 1e-6;
     static real                      qtot           = 0;
     static real                      watoms         = 0;
@@ -161,11 +160,7 @@ int alex_gentop(int argc, char *argv[])
     static char                     *filename       = (char *)"";
     static gmx_bool                  bQsym          = false;
     static gmx_bool                  bITP           = false;
-    static gmx_bool                  bPairs         = false;
     static gmx_bool                  bUsePDBcharge  = false;
-    static gmx_bool                  bGenVSites     = false;
-    static gmx_bool                  bDihedral      = false;
-    static gmx_bool                  bH14           = true;
     static gmx_bool                  bVerbose       = false;
     static gmx_bool                  bAllowMissing  = false;
     static gmx_bool                  addHydrogens   = false;
@@ -185,12 +180,6 @@ int alex_gentop(int argc, char *argv[])
           "Read a molecule from the database rather than from a file" },
         { "-lot",    FALSE, etSTR,  {&lot},
           "Use this method and level of theory when selecting coordinates and charges" },
-        { "-dih",    FALSE, etBOOL, {&bDihedral},
-          "Add dihedrals to the topology" },
-        { "-H14",    FALSE, etBOOL, {&bH14},
-          "HIDDENUse 3rd neighbour interactions for hydrogen atoms" },
-        { "-pairs",  FALSE, etBOOL, {&bPairs},
-          "HIDDENOutput 1-4 interactions (pairs) in topology file. Check consistency of your option with the [TT]-nexcl[tt] flag." },
         { "-name",   FALSE, etSTR,  {&molnm},
           "Name of your molecule" },
         { "-iupac",   FALSE, etSTR,  {&iupac},
@@ -203,8 +192,6 @@ int alex_gentop(int argc, char *argv[])
           "Make a topology even if there are no force field parameters for all interactions" },
         { "-nsymm", FALSE, etINT, {&nsymm},
           "Symmetry number of the molecule can be supplied here if you know there is an error in the input file" },
-        { "-genvsites", FALSE, etBOOL, {&bGenVSites},
-          "Generate virtual sites. Check and double check." },
         { "-pdbq",  FALSE, etBOOL, {&bUsePDBcharge},
           "HIDDENUse the B-factor supplied in a pdb file for the atomic charges" },
         { "-spacing", FALSE, etREAL, {&spacing},
@@ -233,8 +220,6 @@ int alex_gentop(int argc, char *argv[])
           "Here a quoted string of custom charges can be provided such that a third party source can be used. It is then possible to generate multipoles and compare the ESP to a quantum chemistry result. The number of charges provided must match the number of particles (including shells if present in the force field used)." },
         { "-cgsort", FALSE, etSTR, {cgopt},
           "HIDDENOption for assembling charge groups: based on Atom (default, does not change the atom order), Group (e.g. CH3 groups are kept together), or Neutral sections (try to find groups that together are neutral). If the order of atoms is changed an index file is written in order to facilitate changing the order in old files." },
-        { "-nexcl",    FALSE, etINT, {&nexcl},
-          "HIDDENNumber of exclusion" },
         { "-jobtype",  FALSE, etSTR, {&jobtype},
           "The job type used in the Gaussian calculation: Opt, Polar, SP, and etc." }
     };
@@ -303,12 +288,6 @@ int alex_gentop(int argc, char *argv[])
                static_cast<int>(pd.getNatypes()));
     }
 
-    if (pd.getNexcl() != nexcl && opt2parg_bSet("-nexcl", asize(pa), pa))
-    {
-        fprintf(stderr, "WARNING: Changing exclusion number from %d in force field file\n", pd.getNexcl());
-        fprintf(stderr, "         to %d (command line), Please check your output carefully.\n", nexcl);
-        pd.setNexcl(nexcl);
-    }
     alexandria::MyMol                mymol;
     if (strlen(dbname) > 0)
     {
@@ -379,9 +358,6 @@ int alex_gentop(int argc, char *argv[])
                                  method,
                                  basis,
                                  &mylot,
-                                 bGenVSites,
-                                 bPairs,
-                                 bDihedral,
                                  bAllowMissing ? missingParameters::Ignore : missingParameters::Error,
                                  tabfn);
 

@@ -32,6 +32,6 @@ find_library(OPENBABEL3_LIBRARIES NAMES openbabel openbabel3
 # handle the QUIETLY and REQUIRED arguments and set OPENBABEL3_FOUND to TRUE if
 # all listed variables are TRUE
 include (FindPackageHandleStandardArgs)
-find_package_handle_standard_args (OPENBABEL3 DEFAULT_MSG OPENBABEL3_LIBRARIES OPENBABEL3_INCLUDE_DIR)
+find_package_handle_standard_args (OpenBabel3 DEFAULT_MSG OPENBABEL3_LIBRARIES OPENBABEL3_INCLUDE_DIR)
 
 mark_as_advanced (OPENBABEL3_LIBRARIES OPENBABEL3_INCLUDE_DIR)

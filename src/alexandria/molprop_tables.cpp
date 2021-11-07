@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020
+ * Copyright (C) 2014-2021
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -53,6 +53,36 @@
 namespace alexandria
 {
 
+class ExpData
+{
+    public:
+        double      val_, err_, temp_;
+        std::string ref_, conf_, type_, unit_;
+
+        ExpData(double val, double err, double temp, 
+                std::string ref, std::string conf, 
+                std::string type, std::string unit) :
+            val_(val),
+            err_(err), 
+            temp_(temp), 
+            ref_(ref), 
+            conf_(conf), 
+            type_(type), 
+            unit_(unit) {};
+};
+
+class CalcData
+{
+    public:
+        double val_, err_, temp_;
+        int    found_;
+        CalcData(double val, double err, double temp, int found) :
+            val_(val), 
+            err_(err), 
+            temp_(temp), 
+            found_(found) {};
+};
+
 typedef struct {
     char       *ptype;
     char       *miller;
@@ -61,7 +91,6 @@ typedef struct {
     int         nexp;
     int         nqm;
 } t_sm_lsq;
-
 
 static void stats_header(LongTable         &lt,
                          MolPropObservable  mpo,

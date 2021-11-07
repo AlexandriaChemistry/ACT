@@ -526,6 +526,7 @@ if (GMX_ALEXANDRIA)
   endif(SQLITE3_FOUND)
 
   set(PKG_OPENBABEL3 "")
+#  find_package(OpenBabel3 REQUIRED)
   find_package(OpenBabel3 REQUIRED)
   include_directories(${OPENBABEL3_INCLUDE_DIR})
 
@@ -612,8 +613,6 @@ if (GMX_X11)
 endif()
 
 include(gmxManageTNG)
-
-include(gmxManageLmfit)
 
 if(GMX_GPU)
     # now that we have detected the dependencies, do the second configure pass
@@ -772,16 +771,7 @@ endif()
 ##################################################
 include(gmxManageFFTLibraries)
 
-
 include(gmxManageLinearAlgebraLibraries)
-
-include(gmxManagePluginSupport)
-
-if (GMX_USE_PLUGINS)
-    if(NOT GMX_VMD_PLUGIN_PATH)
-        find_package(VMD)
-    endif()
-endif()
 
 # Link real-time library for POSIX timers. The check for clock_gettime
 # confirms the linkability of rt.

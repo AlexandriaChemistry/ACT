@@ -63,7 +63,7 @@
 #include "gromacs/gmxlib/chargegroup.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
-#include "gromacs/imd/imd.h"
+//#include "gromacs/imd/imd.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/forcerec.h"
@@ -3609,9 +3609,6 @@ void dd_partition_system(FILE                    *fplog,
         /* Update the local atom sets */
         dd->atomSets->setIndicesInDomainDecomposition(*(dd->ga2la));
     }
-
-    /* Update the local atoms to be communicated via the IMD protocol if bIMD is TRUE. */
-    dd_make_local_IMD_atoms(ir->bIMD, dd, ir->imd);
 
     add_dd_statistics(dd);
 

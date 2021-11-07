@@ -49,7 +49,6 @@
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/trajectory_writing.h"
 #include "gromacs/mdtypes/commrec.h"
-#include "gromacs/mdtypes/imdoutputprovider.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/state.h"
@@ -78,14 +77,12 @@ struct gmx_mdoutf {
     gmx_groups_t           *groups; /* for compressed position writing */
     gmx_wallcycle_t         wcycle;
     rvec                   *f_global;
-    gmx::IMDOutputProvider *outputProvider;
 };
 
 
 gmx_mdoutf_t init_mdoutf(FILE *fplog, int nfile, const t_filenm fnm[],
                          const MdrunOptions &mdrunOptions,
                          const t_commrec *cr,
-                         gmx::IMDOutputProvider *outputProvider,
                          const t_inputrec *ir, gmx_mtop_t *top_global,
                          const gmx_output_env_t *oenv, gmx_wallcycle_t wcycle)
 {
@@ -110,7 +107,6 @@ gmx_mdoutf_t init_mdoutf(FILE *fplog, int nfile, const t_filenm fnm[],
     of->x_compression_precision = static_cast<int>(ir->x_compression_precision);
     of->wcycle                  = wcycle;
     of->f_global                = nullptr;
-    of->outputProvider          = outputProvider;
 
     if (MASTER(cr))
     {
@@ -197,8 +193,6 @@ gmx_mdoutf_t init_mdoutf(FILE *fplog, int nfile, const t_filenm fnm[],
                 of->fp_dhdl = open_dhdl(opt2fn("-dhdl", nfile, fnm), ir, oenv);
             }
         }
-
-        outputProvider->initOutput(fplog, nfile, fnm, bAppendFiles, oenv);
 
         /* Set up atom counts so they can be passed to actual
            trajectory-writing routines later. Also, XTC writing needs
@@ -460,7 +454,6 @@ void done_mdoutf(gmx_mdoutf_t of)
     {
         gmx_fio_fclose(of->fp_dhdl);
     }
-    of->outputProvider->finishOutput();
     if (of->f_global != nullptr)
     {
         sfree(of->f_global);

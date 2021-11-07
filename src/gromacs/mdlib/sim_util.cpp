@@ -60,7 +60,9 @@
 #include "gromacs/gmxlib/nonbonded/nb_kernel.h"
 #include "gromacs/gmxlib/nonbonded/nonbonded.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
+#ifdef IMD
 #include "gromacs/imd/imd.h"
+#endif
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/listed-forces/disre.h"
 #include "gromacs/listed-forces/listed-forces.h"
@@ -876,10 +878,12 @@ computeSpecialForces(FILE                          *fplog,
     }
 
     /* Add forces from interactive molecular dynamics (IMD), if bIMD == TRUE. */
+#ifdef IMD
     if (inputrec->bIMD && computeForces)
     {
         IMD_apply_forces(inputrec->bIMD, inputrec->imd, cr, f, wcycle);
     }
+#endif
 }
 
 /*! \brief Launch the prepare_step and spread stages of PME GPU.
@@ -2922,20 +2926,19 @@ extern void initialize_lambdas(FILE *fplog, t_inputrec *ir, int *fep_state, gmx:
 
 
 void init_md(FILE *fplog,
-             const t_commrec *cr, gmx::IMDOutputProvider *outputProvider,
-             t_inputrec *ir, const gmx_output_env_t *oenv,
+             const t_commrec *cr, 
+             t_inputrec *ir, 
              const MdrunOptions &mdrunOptions,
              double *t, double *t0,
              t_state *globalState, double *lam0,
              t_nrnb *nrnb, gmx_mtop_t *mtop,
              gmx_update_t **upd,
              gmx::BoxDeformation *deform,
-             int nfile, const t_filenm fnm[],
+             int nfile, 
              gmx_mdoutf_t *outf, t_mdebin **mdebin,
              tensor force_vir, tensor shake_vir,
              tensor total_vir, tensor pres, rvec mu_tot,
-             gmx_bool *bSimAnn, t_vcm **vcm,
-             gmx_wallcycle_t wcycle)
+             gmx_bool *bSimAnn, t_vcm **vcm)
 {
     int  i;
 
@@ -3002,8 +3005,6 @@ void init_md(FILE *fplog,
 
     if (nfile != -1)
     {
-        *outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, ir, mtop, oenv, wcycle);
-
         *mdebin = init_mdebin(mdrunOptions.continuationOptions.appendFiles ? nullptr : mdoutf_get_fp_ene(*outf),
                               mtop, ir, mdoutf_get_fp_dhdl(*outf));
     }
@@ -3017,7 +3018,7 @@ void init_md(FILE *fplog,
 }
 
 void init_rerun(FILE *fplog,
-                const t_commrec *cr, gmx::IMDOutputProvider *outputProvider,
+                const t_commrec *cr, 
                 t_inputrec *ir, const gmx_output_env_t *oenv,
                 const MdrunOptions &mdrunOptions,
                 t_state *globalState, double *lam0,
@@ -3046,7 +3047,8 @@ void init_rerun(FILE *fplog,
 
     if (nfile != -1)
     {
-        *outf   = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, ir, mtop, oenv, wcycle);
+        *outf   = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr,
+                              ir, mtop, oenv, wcycle);
         *mdebin = init_mdebin(mdrunOptions.continuationOptions.appendFiles ? nullptr : mdoutf_get_fp_ene(*outf),
                               mtop, ir, mdoutf_get_fp_dhdl(*outf), true);
     }
