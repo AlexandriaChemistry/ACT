@@ -216,8 +216,8 @@ def install_act(args, CXX, CC, HOST, prefix):
         LAPACK   = find_lib(PPATH, "liblapack.dylib", args.verbose)
         BLAS     = find_lib(PPATH, "libblas.dylib", args.verbose)
     elif HOST.find("nsc") >= 0 or HOST.find("hpc2n") >= 0:
-        LAPACK = find_lib(PPATH, "libscalapack.a", args.verbose)
-        BLAS   = find_lib(PPATH, "libopenblas.so", args.verbose)
+        LAPACK = "" #find_lib(PPATH, "libscalapack.a", args.verbose)
+        BLAS   = "" #find_lib(PPATH, "libopenblas.so", args.verbose)
     else:
         print("No specific knowledge on, how to commpile on host %s, trying anyway." % HOST)
         
