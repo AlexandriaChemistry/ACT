@@ -203,8 +203,8 @@ def install_gmx(args, CXX, CC, HOST, prefix):
         LAPACK   = find_lib(PPATH, "liblapack.dylib")
         BLAS     = find_lib(PPATH, "libblas.dylib")
     elif HOST.find("nsc") >= 0 or HOST.find("hpc2n") >= 0:
-        LAPACK = find_lib(PPATH, "libscalapack.a")
-        BLAS   = find_lib(PPATH, "libopenblas.so")
+        LAPACK = "" #find_lib(PPATH, "libscalapack.a")
+        BLAS   = "" #find_lib(PPATH, "libopenblas.so")
     else:
         print("No specific knowledge on, how to commpile on host %s, trying anyway." % HOST)
         
