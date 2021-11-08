@@ -41,7 +41,7 @@
  * \author Aleksei Iupinov <a.yupinov@gmail.com>
  * \ingroup module_ewald
  */
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "gromacs/gpu_utils/gmxopencl.h"
 #include "gromacs/gpu_utils/ocl_compiler.h"

@@ -45,7 +45,7 @@
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_ewald
  */
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "ewald.h"
 

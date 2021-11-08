@@ -41,7 +41,7 @@
  * \ingroup module_hardware
  */
 
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "hardwaretopology.h"
 

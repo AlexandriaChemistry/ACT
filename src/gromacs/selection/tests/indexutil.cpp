@@ -42,7 +42,7 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "gromacs/selection/indexutil.h"
 

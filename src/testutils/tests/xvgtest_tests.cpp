@@ -39,7 +39,7 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  * \ingroup module_testutils
  */
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "testutils/xvgtest.h"
 

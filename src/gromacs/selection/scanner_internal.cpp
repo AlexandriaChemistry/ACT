@@ -51,7 +51,7 @@
  * \ingroup module_selection
  * \endcond
  */
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "scanner_internal.h"
 

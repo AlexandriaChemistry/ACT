@@ -37,7 +37,7 @@
  *
  *  \author Mark Abraham <mark.j.abraham@gmail.com>
  */
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "gpu_utils.h"
 

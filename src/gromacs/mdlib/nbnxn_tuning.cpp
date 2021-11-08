@@ -41,7 +41,7 @@
  * \ingroup __module_nb_verlet
  */
 
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "nbnxn_tuning.h"
 

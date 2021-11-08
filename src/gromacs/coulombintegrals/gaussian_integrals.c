@@ -34,7 +34,7 @@
  * Groningen Machine for Chemical Simulation
  */
 /* gaussian_integrals.c (c) 2010 Paul J. van Maaren and David van der Spoel */
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include <math.h>
 #include <stdio.h>

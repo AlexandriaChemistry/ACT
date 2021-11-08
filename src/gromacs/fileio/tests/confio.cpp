@@ -39,7 +39,7 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_fileio
  */
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "gromacs/fileio/confio.h"
 

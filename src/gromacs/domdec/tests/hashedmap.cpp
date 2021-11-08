@@ -39,7 +39,7 @@
  * \author berk Hess <hess@kth.se>
  * \ingroup module_domdec
  */
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "gromacs/domdec/hashedmap.h"
 

@@ -31,7 +31,7 @@
  */
  
  
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include <stdio.h>
 #include <stdlib.h>

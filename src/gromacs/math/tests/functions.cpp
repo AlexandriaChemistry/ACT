@@ -39,7 +39,7 @@
  * \author Erik Lindahl <erik.lindahl@gmail.com>
  * \ingroup module_math
  */
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "gromacs/math/functions.h"
 

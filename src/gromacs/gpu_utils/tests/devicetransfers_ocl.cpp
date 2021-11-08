@@ -38,7 +38,7 @@
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  */
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "gromacs/gpu_utils/gmxopencl.h"
 #include "gromacs/gpu_utils/gpu_utils.h"

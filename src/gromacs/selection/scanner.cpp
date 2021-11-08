@@ -1,7 +1,7 @@
 #line 2 "scanner.cpp"
 #line 50 "scanner.l"
 #if !defined _gmx_sel_yyIN_HEADER
-#include "gmxpre.h"
+#include "actpre.h"
 #endif
 
 // Required before flex definitions, since it includes <stdint.h>.

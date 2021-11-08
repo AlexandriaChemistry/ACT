@@ -83,7 +83,7 @@
  * \author David Hollman <dshollm@sandia.gov>
  * \author Christian Blau <cblau@gwdg.de>
  */
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "gromacs/mdspan/extents.h"
 

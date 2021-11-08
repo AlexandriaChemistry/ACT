@@ -41,7 +41,7 @@
  * \author Berk Hess <hess@kth.se>
  * \ingroup module_ewald
  */
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "pme-load-balancing.h"
 

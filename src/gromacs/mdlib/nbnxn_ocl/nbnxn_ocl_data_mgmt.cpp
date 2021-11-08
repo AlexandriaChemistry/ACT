@@ -40,7 +40,7 @@
  *  \author Teemu Virolainen <teemu@streamcomputing.eu>
  *  \author Szilárd Páll <pall.szilard@gmail.com>
  */
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include <assert.h>
 #include <stdarg.h>

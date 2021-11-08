@@ -38,7 +38,7 @@
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_taskassignment
  */
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "usergpuids.h"
 

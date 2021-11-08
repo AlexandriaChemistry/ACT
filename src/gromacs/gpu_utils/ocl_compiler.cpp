@@ -41,7 +41,7 @@
  *  \author Mark Abraham <mark.j.abraham@gmail.com>
  */
 
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "ocl_compiler.h"
 

@@ -32,8 +32,6 @@
 #ifndef CHARGEMODEL_H
 #define CHARGEMODEL_H
 
-#include "gmxpre.h"
-
 #include <map>
 #include <string>
 

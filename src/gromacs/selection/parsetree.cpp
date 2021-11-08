@@ -220,7 +220,7 @@
  * Each element has exactly two children (one for unary negation elements),
  * which are in the order given in the input.
  */
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "parsetree.h"
 

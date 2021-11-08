@@ -43,7 +43,7 @@
  * \ingroup module_awh
  */
 
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "correlationhistory.h"
 

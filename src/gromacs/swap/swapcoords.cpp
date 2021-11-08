@@ -39,7 +39,7 @@
  * \author Carsten Kutzner <ckutzne@gwdg.de>
  * \ingroup module_swap
  */
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "swapcoords.h"
 

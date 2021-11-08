@@ -33,7 +33,7 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "gmx_omp_nthreads.h"
 

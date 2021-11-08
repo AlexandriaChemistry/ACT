@@ -33,7 +33,7 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "gromacs/restraint/manager.h"
 

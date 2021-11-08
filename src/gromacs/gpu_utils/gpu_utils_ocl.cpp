@@ -40,7 +40,7 @@
  *  \author Teemu Virolainen <teemu@streamcomputing.eu>
  */
 
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "config.h"
 

@@ -41,7 +41,7 @@
  * \author Berk Hess <hess@kth.se>
  */
 
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "ga2la.h"
 

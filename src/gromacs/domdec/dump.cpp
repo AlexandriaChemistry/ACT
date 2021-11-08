@@ -41,7 +41,7 @@
  * \ingroup module_domdec
  */
 
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "dump.h"
 

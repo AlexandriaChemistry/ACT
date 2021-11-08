@@ -40,7 +40,7 @@
  * \ingroup module_taskassignment
  */
 
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "resourcedivision.h"
 

@@ -39,7 +39,7 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  * \ingroup module_applied_forces
  */
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "gromacs/applied-forces/electricfield.h"
 

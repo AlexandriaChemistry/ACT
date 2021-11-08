@@ -67,7 +67,7 @@
  * /Erik 001109
  */
 
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "pme.h"
 

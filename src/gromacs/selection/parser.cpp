@@ -71,7 +71,7 @@
  *
  * \ingroup module_selection
  */
-#include "gmxpre.h"
+#include "actpre.h"
 
 #line 77 "parser.cpp" /* yacc.c:316  */
 

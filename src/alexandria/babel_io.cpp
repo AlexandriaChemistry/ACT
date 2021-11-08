@@ -30,7 +30,7 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "babel_io.h"
 

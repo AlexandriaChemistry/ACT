@@ -38,7 +38,7 @@
  *
  * \author Aleksei Iupinov <a.yupinov@gmail.com>
  */
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include <vector>
 

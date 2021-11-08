@@ -37,7 +37,7 @@
  *
  *  \author Anca Hamuraru <anca@streamcomputing.eu>
  */
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "oclutils.h"
 

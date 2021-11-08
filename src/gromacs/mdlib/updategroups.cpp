@@ -40,7 +40,7 @@
  * \ingroup module_mdlib
  */
 
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "updategroups.h"
 

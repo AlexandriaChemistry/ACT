@@ -40,7 +40,7 @@
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_gmxpreprocess
  */
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "keyvaluetreemdpwriter.h"
 

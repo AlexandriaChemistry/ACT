@@ -33,7 +33,7 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /* slater_integrals.cpp (c) 2010 Paul J. van Maaren and David van der Spoel */
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include <stdio.h>
 

@@ -58,7 +58,7 @@
  *    -
  *
  */
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include <assert.h>
 #include <stdlib.h>

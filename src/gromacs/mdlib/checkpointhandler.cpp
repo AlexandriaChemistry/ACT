@@ -39,7 +39,7 @@
  * \author Pascal Merz <pascal.merz@colorado.edu>
  * \ingroup module_mdlib
  */
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "checkpointhandler.h"
 

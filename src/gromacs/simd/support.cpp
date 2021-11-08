@@ -42,7 +42,7 @@
  * \ingroup module_simd
  */
 
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "support.h"
 

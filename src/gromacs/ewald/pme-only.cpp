@@ -57,7 +57,7 @@
  * /Erik 001109
  */
 
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "config.h"
 
