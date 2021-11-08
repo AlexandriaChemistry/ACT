@@ -1,3 +1,5 @@
+#include <random>
+
 #include "GeneticAlgorithm.h"
 
 #include "aliases.h"
@@ -42,6 +44,11 @@ GeneticAlgorithm::GeneticAlgorithm(const int popSize,
 
 const ga_result_t GeneticAlgorithm::evolve(const double prCross, const double prMut) {
 
+    // Random number generation
+    std::random_device rd;  // Will be used to obtain a seed for the random number engine
+    std::mt19937 gen(rd()); // Standard mersenne_twister_engine seeded with rd()
+    std::uniform_real_distribution<> dis(0.0, 1.0);
+
     // Iteration variables
     int i, j, k;
 
@@ -79,17 +86,17 @@ const ga_result_t GeneticAlgorithm::evolve(const double prCross, const double pr
             parent2 = selector.select(oldPop, probability, popSize);
 
             // Do crossover
-            if (rand01() <= prCross) {
+            if (dis(gen) <= prCross) {
                 crossover.offspring(parent1, parent2, newPop[i], newPop[i+1]);
             } else {
-                copyArrayValues(parent1, newPop[i], chromosomeLength);
-                copyArrayValues(parent2, newPop[i+1], chromosomeLength);
+                copyVectorValues(parent1, newPop[i], chromosomeLength);
+                copyVectorValues(parent2, newPop[i+1], chromosomeLength);
             }
 
             // Do mutation in each child, and compute fitness to avoid another traversal
             for (k = 0; k < 2; k++) {
                 for (j = 0; j < chromosomeLength; j++) {
-                    if (rand01() <= prMut) mutator.mutate(&newPop[i+k][j]);
+                    if (dis(gen) <= prMut) mutator.mutate(&newPop[i+k][j]);
                 }
                 // Compute fitness
                 fitComputer.compute(newPop[i], &fitness[i], chromosomeLength);
