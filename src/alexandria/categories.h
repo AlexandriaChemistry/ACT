@@ -61,25 +61,40 @@ class CategoryListElement
         //! Molecules in this category
         std::vector<std::string> molecule_;
     public:
-        CategoryListElement(std::string cat, std::string molecule)
+        /*! \brief Constructor
+         * \param[in] cat      The category
+         * \param[in] molecule The molecule
+         */
+        CategoryListElement(const std::string &cat, const std::string &molecule)
+            : cat_(cat)
         {
-            cat_   = cat;
             addMolecule(molecule);
         }
+        /*! \brief Add a molecule to the list
+         * \param[in] molecule The molecule to add
+         */
+        void addMolecule(const std::string &molecule);
 
-        void addMolecule(std::string molecule);
-
+        //! \return the number of molecules
         int nMolecule() { return molecule_.size(); }
 
-        bool hasMolecule(std::string molecule);
+        /*! \brief Check whether molecule is present
+         * \param[in] molecule The molecule to look for
+         * \return true if found, false otherwise
+         */
+        bool hasMolecule(const std::string &molecule);
 
-        std::string getName() { return cat_; }
+        //! \return the name of the category
+        const std::string &getName() { return cat_; }
 
+        //! \brief Sort the molecules in this category
         void sortMolecules();
 
-        std::vector<std::string>::iterator beginMolecules() { return molecule_.begin(); }
+    //! \return The molecules
+    const std::vector<std::string> &molecules() const { return molecule_; }
+    //  std::vector<std::string>::iterator beginMolecules() { return molecule_.begin(); }
 
-        std::vector<std::string>::iterator endMolecules() { return molecule_.end(); }
+    //      std::vector<std::string>::iterator endMolecules() { return molecule_.end(); }
 };
 
 typedef std::vector<CategoryListElement>::iterator CategoryListElementIterator;
@@ -91,7 +106,8 @@ class CategoryList
     public:
         CategoryList() {};
 
-        void addCategory(std::string catname, std::string molecule);
+        void addCategory(const std::string &catname,
+                         const std::string &molecule);
 
         void sortCategories();
 
@@ -102,10 +118,10 @@ class CategoryList
         CategoryListElementIterator endCategories() { return catli_.end(); }
 };
 
-void makeCategoryList(CategoryList         &cList,
-                      std::vector<MolProp>  mp,
-                      const MolSelect      &gms,
-                      iMolSelect            ims);
+void makeCategoryList(CategoryList               &cList,
+                      const std::vector<MolProp> &mp,
+                      const MolSelect            &gms,
+                      iMolSelect                  ims);
 
 }
 

@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2014-2018
+ * Copyright (C) 2014-2018,2021
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -44,18 +44,25 @@
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
 
+//! Class to test a rotation algorithm
 class RotationTest : public gmx::test::CommandLineTestBase
 {
     protected:
+        //! Checking data structure
         gmx::test::TestReferenceChecker checker_;
 
-        //init set tolecrance
+        //! Init set tolecrance
         RotationTest () : checker_(this->rootChecker())
         {
             auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 5e-2);
             checker_.setDefaultTolerance(tolerance);
         }
 
+        /*! \brief Compute RMSD between tensors
+         * \param[in] a First tensor
+         * \param[in] b Second tensor
+         * \return the root mean square difference between tensor elements
+         */
         double RMSD(tensor a, tensor b)
         {
             double rmsd = 0;
@@ -70,6 +77,12 @@ class RotationTest : public gmx::test::CommandLineTestBase
             return rmsd;
         }
 
+        /*! \brief test the rotation algorithm
+         * This is done by rotating tensor p on tensor q and computing the
+         * RMSD after rotating.
+         * \param[in] p First tensor
+         * \param[in] q Second tensor
+         */
         void testRotation(tensor p, tensor q)
         {
             double rmsd;

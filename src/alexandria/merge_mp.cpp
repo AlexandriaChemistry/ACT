@@ -57,133 +57,6 @@
 #include "poldata_xml.h"
 #include "stringutil.h"
 
-typedef struct {
-    const char *iupac;
-    char       *prop;
-    char       *value;
-    char       *ref;
-} t_prop;
-
-static int tp_comp(const void *a, const void *b)
-{
-    t_prop *ta = (t_prop *)a;
-    t_prop *tb = (t_prop *)b;
-
-    return strcasecmp(ta->iupac, tb->iupac);
-}
-
-static void add_properties(const char *fn, std::vector<alexandria::MolProp> &mp,
-                           double temperature)
-{
-    alexandria::MolPropIterator mpi;
-    FILE                       *fp;
-    int    nprop                   = 0;
-    t_prop                     *tp = nullptr, key, *tpp;
-    char   buf[STRLEN];
-    int    nadd = 0;
-
-    if (nullptr != fn)
-    {
-        fp = gmx_ffopen(fn, "r");
-        while (!feof(fp))
-        {
-            fgets2(buf, STRLEN-1, fp);
-            std::vector<std::string> ptr = split(buf, '|');
-            if ((ptr.size() >= 3) &&
-                (ptr[0].length() > 0) && (ptr[1].length() > 0) &&
-                (ptr[2].length() > 0) && (ptr[3].length() > 0))
-            {
-                srenew(tp, ++nprop);
-                tp[nprop-1].iupac = strdup(ptr[0].c_str());
-                tp[nprop-1].prop  = strdup(ptr[1].c_str());
-                tp[nprop-1].value = strdup(ptr[2].c_str());
-                tp[nprop-1].ref   = strdup(ptr[3].c_str());
-            }
-        }
-        printf("Read in %d properties from %s.\n", nprop, fn);
-        qsort(tp, nprop, sizeof(tp[0]), tp_comp);
-        fclose(fp);
-        for (mpi = mp.begin(); (mpi < mp.end()); mpi++)
-        {
-            key.iupac = mpi->getIupac().c_str();
-            if (nullptr != key.iupac)
-            {
-                tpp = (t_prop *) bsearch(&key, tp, nprop, sizeof(tp[0]), tp_comp);
-                if (nullptr != tpp)
-                {
-                    alexandria::Experiment      ex(tpp->ref, (char *)"minimum");
-                    alexandria::MolecularEnergy me(tpp->prop,
-                                                   unit2string(eg2cKj_Mole),
-                                                   temperature,
-                                                   epGAS,
-                                                   my_atof(tpp->value, tpp->prop), 0);
-                    ex.AddEnergy(me);
-                    mpi->AddExperiment(ex);
-                    nadd++;
-                }
-            }
-        }
-        printf("Added properties for %d out of %d molecules.\n",
-               nadd, (int)mp.size());
-    }
-}
-
-static void add_charges(const char *fn, std::vector<alexandria::MolProp> &mp,
-                        double temperature)
-{
-    alexandria::MolPropIterator mpi;
-    FILE                       *fp;
-    int    nprop                   = 0;
-    t_prop                     *tp = nullptr, key, *tpp;
-    char   buf[STRLEN];
-    int    nadd = 0;
-
-    if (nullptr != fn)
-    {
-        fp = gmx_ffopen(fn, "r");
-        while (!feof(fp))
-        {
-            fgets2(buf, STRLEN-1, fp);
-            std::vector<std::string> ptr = split(buf, '|');
-            if ((ptr.size() >= 3) &&
-                (ptr[0].length() > 0) && (ptr[1].length() > 0) &&
-                (ptr[2].length() > 0) && (ptr[3].length() > 0))
-            {
-                srenew(tp, ++nprop);
-                tp[nprop-1].iupac = strdup(ptr[0].c_str());
-                tp[nprop-1].prop  = strdup(ptr[1].c_str());
-                tp[nprop-1].value = strdup(ptr[2].c_str());
-                tp[nprop-1].ref   = strdup(ptr[3].c_str());
-            }
-        }
-        printf("Read in %d charge sets from %s.\n", nprop, fn);
-        qsort(tp, nprop, sizeof(tp[0]), tp_comp);
-        fclose(fp);
-        for (mpi = mp.begin(); (mpi < mp.end()); mpi++)
-        {
-            key.iupac = mpi->getIupac().c_str();
-            if (nullptr != key.iupac)
-            {
-                tpp = (t_prop *) bsearch(&key, tp, nprop, sizeof(tp[0]), tp_comp);
-                if (nullptr != tpp)
-                {
-                    alexandria::Experiment      ex(tpp->ref, (char *)"minimum");
-                    alexandria::MolecularEnergy me(tpp->prop,
-                                                   unit2string(eg2cKj_Mole),
-                                                   temperature,
-                                                   epGAS,
-                                                   my_atof(tpp->value, tpp->prop), 0);
-                    ex.AddEnergy(me);
-                    mpi->AddExperiment(ex);
-                    nadd++;
-                }
-            }
-        }
-        printf("Added properties for %d out of %d molecules.\n",
-               nadd, (int)mp.size());
-    }
-}
-
 int alex_merge_mp(int argc, char *argv[])
 {
     static const char               *desc[] =
@@ -197,26 +70,21 @@ int alex_merge_mp(int argc, char *argv[])
         { efDAT, "-f",  "data",      ffOPTRDMULT },
         { efDAT, "-o",  "allmols",   ffWRITE },
         { efDAT, "-di", "gentop",    ffOPTRD },
-        { efDAT, "-db", "sqlite",    ffOPTRD },
-        { efDAT, "-x",  "extra",     ffOPTRD },
-        { efDAT, "-c",  "charges",   ffOPTRD }
+        { efDAT, "-db", "sqlite",    ffOPTRD }
     };
     int                              NFILE       = asize(fnm);
-    static const char               *sort[]      = { nullptr, "molname", "formula", "composition", nullptr };
     static int                       compress    = 1;
     static real                      temperature = 298.15;
     static int                       maxwarn     = 0;
     gmx_atomprop_t                   ap;
     t_pargs                          pa[]        =
     {
-        { "-sort",   FALSE, etENUM, {sort},
-          "Key to sort the final data file on." },
         { "-compress", FALSE, etBOOL, {&compress},
           "Compress output XML files" },
         { "-maxwarn", FALSE, etINT, {&maxwarn},
           "Will only write output if number of warnings is at most this." },
-        { "-temp", FALSE, etREAL, {&temperature},
-          "Temperature corresponding to the experimental data (options [TT]-x[tt] or [TT]-c[tt])" }
+        { "-temperature", FALSE, etREAL, {&temperature},
+          "Temperature for properties to extract from the SQLite database" }
     };
     std::vector<alexandria::MolProp> mp;
     alexandria::Poldata              pd;
@@ -241,10 +109,6 @@ int alex_merge_mp(int argc, char *argv[])
     if (nwarn <= maxwarn)
     {
         ReadSqlite3(opt2fn_null("-db", NFILE, fnm), mp, temperature);
-
-        add_properties(opt2fn_null("-x", NFILE, fnm), mp, temperature);
-
-        add_charges(opt2fn_null("-c", NFILE, fnm), mp, temperature);
 
         MolPropWrite(opt2fn("-o", NFILE, fnm), mp, compress);
     }

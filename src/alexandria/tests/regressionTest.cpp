@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2014-2018 
+ * Copyright (C) 2014-2018,2021
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -43,18 +43,25 @@
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
 
+//! Class to test the regression analysis code
 class RegressionTest : public gmx::test::CommandLineTestBase
 {
     protected:
+        //! Checking data structure
         gmx::test::TestReferenceChecker checker_;
 
-        //init set tolecrance
+        //! Init set tolecrance
         RegressionTest () : checker_(this->rootChecker())
         {
             auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 5e-2);
             checker_.setDefaultTolerance(tolerance);
         }
 
+        /*! \brief Do the actual test for solving A x = b
+         * \param[in] a A matrix
+         * \param[in] b Right-hand side
+         * \return error code from the solver.
+         */
         int testRegression(MatrixWrapper &a, std::vector<double> b)
         {
             std::vector<double> x(a.nColumn());
