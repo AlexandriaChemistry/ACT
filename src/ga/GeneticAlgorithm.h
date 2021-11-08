@@ -1,7 +1,7 @@
 #ifndef ACT_GENETICALGORITHM_H
 #define ACT_GENETICALGORITHM_H
 
-#include <tuple>
+#include "aliases.h"
 
 #include "Initializer.h"
 #include "FitnessComputer.h"
@@ -12,7 +12,6 @@
 #include "Terminator.h"
 
 
-using ga_result = std::tuple<double** const, double* const, double* const, const double, const int>
 
 
 class GeneticAlgorithm {
@@ -22,11 +21,11 @@ class GeneticAlgorithm {
     int chromosomeLength;
 
     // Vectors and matrices
-    double** oldPop;
-    double** newPop;
-    double** tmpPop;
-    double* fitness;
-    double* probability;
+    matrix oldPop;
+    matrix newPop;
+    matrix tmpPop;
+    vector fitness;
+    vector probability;
 
     // Object pointers
     Initializer initializer;
@@ -67,7 +66,7 @@ public:
      * @return          a tuple containing the final population, the final fitness, the best individual, the fitness
      *                  of the best individual, and the number of generations
      */
-    const ga_result evolve(const double prCross, const double prMut);
+    const ga_result_t evolve(const double prCross, const double prMut);
 
 };
 
