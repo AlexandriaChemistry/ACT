@@ -87,7 +87,8 @@ const ga_result_t GeneticAlgorithm::evolve(const double prCross, const double pr
 
             // Do crossover
             if (dis(gen) <= prCross) {
-                crossover.offspring(parent1, parent2, newPop[i], newPop[i+1]);
+                crossover.offspring(parent1, parent2, newPop[i], newPop[i+1],
+                                    chromosomeLength);
             } else {
                 copyVectorValues(parent1, newPop[i], chromosomeLength);
                 copyVectorValues(parent2, newPop[i+1], chromosomeLength);
