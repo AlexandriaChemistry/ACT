@@ -1,6 +1,8 @@
 #ifndef ACT_SELECTOR_H
 #define ACT_SELECTOR_H
 
+#include "aliases.h"
+
 /*!
  * Abstract class to select an individual from the population
  */
@@ -14,7 +16,7 @@ public:
      * @param popSize           size of the population
      * @return                  a pointer to the selected individual
      */
-    virtual double* const select(double** const population, double* const probabilities, const int popSize);
+    virtual vector const select(const matrix population, const vector probabilities, const int popSize);
 
 };
 
