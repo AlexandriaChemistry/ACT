@@ -1,6 +1,8 @@
 #ifndef ACT_FITNESSCOMPUTER_H
 #define ACT_FITNESSCOMPUTER_H
 
+#include "aliases.h"
+
 /*!
  * Abstract class for computing the fitness of an individual
  */
@@ -13,7 +15,7 @@ public:
      * @param ftPtr         pointer to where the fitness should be written
      * @param length        length of the chromosome
      */
-    virtual void compute(double* const individual, double* const ftPtr, const int length);
+    virtual void compute(const vector individual, double* const ftPtr, const int length);
 
 };
 
