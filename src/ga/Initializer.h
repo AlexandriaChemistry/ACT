@@ -1,6 +1,8 @@
 #ifndef ACT_INITIALIZER_H
 #define ACT_INITIALIZER_H
 
+#include "aliases.h"
+
 /*!
  * Abstract class for initializing individuals
  */
@@ -12,7 +14,7 @@ public:
      * @param individual    the individual to initialize
      * @param length        length of the chromosome
      */
-    virtual void initialize(double* const individual, const int length);
+    virtual void initialize(const vector individual, const int length);
 
 };
 

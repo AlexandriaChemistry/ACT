@@ -2,6 +2,8 @@
 
 #include "helpers.h"
 
+#include "aliases.h"
+
 
 /*!
  * Allocate memory for a matrix
@@ -9,35 +11,10 @@
  * @param m     number of columns
  * @return      pointer to the matrix
  */
-double** allocateMatrix(const int n, const int m) {
-    double** mat = (double**) malloc(n * sizeof(double*));
-    for (int i = 0; i < n; i++) {
-        mat[i] = (double*) malloc(m * sizeof(double));
-    }
+matrix allocateMatrix(const int n, const int m) {
+    matrix mat(n);
+    for (int i = 0; i < n; i++) mat[i] = vector(m)
     return mat;
-}
-
-
-/*!
- * Free memory occupied by a matrix
- * @param mat   the matrix
- * @param n     number of rows
- */
-void freeMatrix(double** const mat, const int n) {
-    for (int i = 0; i < n; i++) {
-        free(mat[i]);
-    }
-    free(mat);
-}
-
-
-/*!
- * Allocate memory for an array
- * @param n     length of the array
- * @return      pointer to the array
- */
-double* allocateArray(const int n) {
-    return arr = (double*) malloc(n * sizeof(double))
 }
 
 
@@ -51,12 +28,12 @@ double rand01() {
 
 
 /*!
- * Copy values from one array to another
- * @param arr1      array to get the values from
- * @param arr2      array to write the values to
- * @param length    length of the arrays
+ * Copy values from one vector to another
+ * @param arr1      vector to get the values from
+ * @param arr2      vector to write the values to
+ * @param length    length of the vectors
  */
-void copyArrayValues(double* const arr1, double* const arr2, const int length) {
+void copyArrayValues(const vector arr1, const vector arr2, const int length) {
     for (int i = 0; i < length; i++) {
         arr2[i] = arr1[i];
     }

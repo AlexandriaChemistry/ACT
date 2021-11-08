@@ -34,8 +34,8 @@ GeneticAlgorithm::GeneticAlgorithm(const int popSize,
     // Initialize the data structures
     this->oldPop = allocateMatrix(popSize, chromosomeLength);
     this->newPop = allocateMatrix(popSize, chromosomeLength);
-    this->fitness = allocateVector(popSize);
-    this->probability = allocateVector(popSize);
+    this->fitness = vector(popSize);
+    this->probability = vector(popSize);
 
 }
 
