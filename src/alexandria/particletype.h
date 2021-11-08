@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020 
+ * Copyright (C) 2014-2021
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -102,7 +102,7 @@ class ParticleType
     
     /*! \brief Get option value
      * 
-     * \param[in] key   Key
+     * \param[in] type   Key
      * \throws if option does not exist
      * \return value
      */
@@ -118,7 +118,7 @@ class ParticleType
     bool hasInteractionType(InteractionType itype) const;
     /*! \brief Get identifier corresponding to interactiontype
      * 
-     * \param[in] key itype
+     * \param[in] itype The interaction type to look for
      * \return value will be empty if option does not exist.
      */
     Identifier interactionTypeToIdentifier(InteractionType itype) const;

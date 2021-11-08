@@ -84,148 +84,182 @@ static void my_fclose(FILE *fp)
     }
 }
 
+/*! \brief The class that does all the optimization work.
+ * This class inherits the MolGen class that holds molecule data and
+ * properties, and the Bayes class, that does the Monte Carlo steps.
+ *
+ * The class can run as a Master process or as a Helper process.
+ */
 class OptACM : public MolGen, Bayes
 {
+    //! Abbreviation to make clear this is not a random vector
     using param_type = std::vector<double>;
 
-    private:
-        bool       bFullTensor_                  = false;
-        bool       bSameZeta_                    = true;
-        bool       bRemoveMol_                   = true;
-        int        numberCalcDevCalled_          = 0;
-        gmx::unique_cptr<FILE, my_fclose> fplog_ = nullptr;
-        std::string outputFile_;
+private:
+    //! Whether or not to use off-diagonal elements of the quadrupole for fitting
+    bool       bFullQuadrupole_              = false;
+    //! Whether or not to remove molecules that fail to converge in the shell minimization
+    bool       bRemoveMol_                   = true;
+    //! How many times has calcDeviation been called
+    int        numberCalcDevCalled_          = 0;
+    //! Pointer to log file 
+    gmx::unique_cptr<FILE, my_fclose> fplog_ = nullptr;
+    //! File name for the output force field file
+    std::string outputFile_;
 
-    public:
+public:
+    //! Constructor
+    OptACM() {}
+    
+    //! \return whether or not we use the full quadrupol 
+    bool fullQuadrupole() const { return bFullQuadrupole_; }
 
-        OptACM() {}
-
-        ~OptACM() {}
-
-        bool fullTensor() const { return bFullTensor_; }
-
-        bool sameZeta() const { return bSameZeta_; }
-
-        bool removeMol() const {return bRemoveMol_; }
+    //! \return whether or not we remove problematic compounds
+    bool removeMol() const {return bRemoveMol_; }
+    
+    //! \return whether or not we are in verbose mode
+    bool verbose() { return Bayes::verbose(); }
         
-        bool verbose() { return Bayes::verbose(); }
-        
-        void saveState();
+    //! \brief This function will store the current state of the force field
+    void saveState();
 
-        void add_pargs(std::vector<t_pargs> *pargs)
-        {
-            t_pargs pa[] =
+    /*! \brief Add our command line parameters to the array.
+     * This also calls the addOptions routine of the child class Bayes.
+     * \param[inout] pargs The vector of parameters
+     */
+    void add_pargs(std::vector<t_pargs> *pargs)
+    {
+        t_pargs pa[] =
             {
-                { "-fullTensor", FALSE, etBOOL, {&bFullTensor_},
+                { "-fullQuadrupole", FALSE, etBOOL, {&bFullQuadrupole_},
                   "Consider both diagonal and off-diagonal elements of the Q_Calc matrix for optimization" },
-                { "-samezeta", FALSE, etBOOL, {&bSameZeta_},
-                  "Use the same zeta for both the core and the shell of the Drude model." },
                 { "-removemol", FALSE, etBOOL, {&bRemoveMol_},
                   "Remove a molecule from training set if shell minimzation does not converge." },
             };
-            for (int i = 0; i < asize(pa); i++)
-            {
-                pargs->push_back(pa[i]);
-            }
-            addOptions(pargs, eTune::EEM);
-            Bayes::add_pargs(pargs);
+        for (int i = 0; i < asize(pa); i++)
+        {
+            pargs->push_back(pa[i]);
         }
+        addOptions(pargs, eTune::EEM);
+        Bayes::add_pargs(pargs);
+    }
 
-        void optionsFinished(const std::string &outputFile)
-        {
-            MolGen::optionsFinished();
-            outputFile_ = outputFile;
-        }
+    /*! \brief Routine to be called after processing options
+     * \param[in] outputFile The force field target file
+     */
+    void optionsFinished(const std::string &outputFile)
+    {
+        MolGen::optionsFinished();
+        outputFile_ = outputFile;
+    }
 
-        void openLogFile(const char *logfileName)
-        {
-            fplog_.reset(gmx_ffopen(logfileName, "w"));
-        }
+    /*! \brief Routine that opens a log file
+     * \param[in] logfileName The log file name to open
+     */
+    void openLogFile(const char *logfileName)
+    {
+        fplog_.reset(gmx_ffopen(logfileName, "w"));
+    }
         
-        FILE *logFile()
-        {
-            if (fplog_)
-            { 
-                return fplog_.get();
-            }
-            else
-            {
-                return nullptr;
-            }
+    //! \return a filepointer to the open logfile
+    FILE *logFile()
+    {
+        if (fplog_)
+        { 
+            return fplog_.get();
         }
+        else
+        {
+            return nullptr;
+        }
+    }
         
-        double l2_regularizer (double             x,
+    /*! \brief Initialize charge generation 
+     * \param[in] ims The data set to do the work for
+     */
+    void initChargeGeneration(iMolSelect ims);
+    
+    /*! \brief
+     *
+     * Fill parameter vector based on Poldata.
+     * \param[in] bRandom Generate random initial values for parameters if true
+     */
+    void InitOpt(bool bRandom);
+    
+    /*! \brief
+     * Copy the optimization parameters to the poldata structure
+     * \param[in] changed List over the parameters that have changed.
+     */
+    virtual void toPoldata(const std::vector<bool> &changed);
+    
+    /*! \brief
+     * Computes deviation from target
+     * \param[in] verbose Whether or not to prin a lot
+     * \param[in] calcDev The type of calculation to do
+     * \param[in] ims     The data set to do computations on
+     * \return the squayre deviation
+     */
+    virtual double calcDeviation(bool       verbose,
+                                 CalcDev    calcDev,
+                                 iMolSelect ims);
+    
+    /*! \brief Compute penalty for variables that are out of bounds
+     * \param[in] x       The actual value
+     * \param[in] min     The minimum allowed value
+     * \param[in] max     The maximum allowed value
+     * \param[in] label   String to print if verbose
+     * \param[in] verbose Whether or not to print deviations
+     * \return 0 when in bounds, square deviation from bounds otherwise.
+     */
+    double l2_regularizer (double             x,
+                           double             min,
+                           double             max,
+                           const std::string &label,
+                           bool               verbose);
+    
+    /*! \brief
+     * Do the actual optimization.
+     * \param[in] oenv        Output environment for managing xvg files etc.
+     * \param[in] xvgconv     Output file monitoring parameters
+     * \param[in] xvgepot     Output file monitoring penalty function
+     * \param[in] optimize    If true an optimization will be done
+     * \param[in] sensitivity If true, a sensitivity analysis will be done
+     * \param[in] bEvaluate_testset Whether or not to evaluate the test set
+     * \return true if better parameters were found.
+     */
+    bool runMaster(const gmx_output_env_t *oenv,
+                   const char             *xvgconv,
+                   const char             *xvgepot,
+                   bool                    optimize,
+                   bool                    sensitivity,
+                   bool	      	           bEvaluate_testset);
+    /*! \brief 
+     * For the helper nodes.
+     */
+    void runHelper();
+};
+
+double OptACM::l2_regularizer (double             x,
                                double             min,
                                double             max,
                                const std::string &label,
                                bool               verbose)
-        {
-            double p = 0;
-            if (x < min)
-            {
-                p = (0.5 * gmx::square(x-min));
-            }
-            else if (x > max)
-            {
-                p = (0.5 * gmx::square(x-max));
-            }
-            if (verbose && p != 0.0)
-            {
-                fprintf(logFile(), "Variable %s is %g, should be within %g and %g\n", label.c_str(), x, min, max);
-            }
-            return p;
-        }
-        
-        /*! \brief Initialize charge generation 
-         * \param[in] ims The data set to do the work for
-         */
-        void initChargeGeneration(iMolSelect ims);
-
-        /*! \brief
-         *
-         * Fill parameter vector based on Poldata.
-         * \param[in] bRandom Generate random initial values for parameters if true
-         */
-        void InitOpt(bool bRandom);
-
-        /*! \brief
-         * Copy the optimization parameters to the poldata structure
-         * \param[in] changed List over the parameters that have changed.
-         */
-        virtual void toPoldata(const std::vector<bool> &changed);
-
-        /*! \brief
-         * Computes deviation from target
-         * \param[in] verbose Whether or not to prin a lot
-         * \param[in] calcDev The type of calculation to do
-         * \param[in] ims     The data set to do computations on
-         * \return the squayre deviation
-         */
-        virtual double calcDeviation(bool       verbose,
-                                     CalcDev    calcDev,
-                                     iMolSelect ims);
-
-        /*! \brief
-         * Do the actual optimization.
-         * \param[in] oenv        Output environment for managing xvg files etc.
-         * \param[in] xvgconv     Output file monitoring parameters
-         * \param[in] xvgepot     Output file monitoring penalty function
-         * \param[in] optimize    If true an optimization will be done
-         * \param[in] sensitivity If true, a sensitivity analysis will be done
-         * \return true if better parameters were found.
-         */
-        bool runMaster(const gmx_output_env_t *oenv,
-                       const char             *xvgconv,
-                       const char             *xvgepot,
-                       bool                    optimize,
-                       bool                    sensitivity,
-		       bool		       bEvaluate_testset);
-        /*! \brief 
-         * For the helper nodes.
-         */
-        void runHelper();
-    
-};
+{
+    double p = 0;
+    if (x < min)
+    {
+        p = (0.5 * gmx::square(x-min));
+    }
+    else if (x > max)
+    {
+        p = (0.5 * gmx::square(x-max));
+    }
+    if (verbose && p != 0.0)
+    {
+        fprintf(logFile(), "Variable %s is %g, should be within %g and %g\n", label.c_str(), x, min, max);
+    }
+    return p;
+}
 
 void OptACM::saveState()
 {
@@ -536,7 +570,7 @@ double OptACM::calcDeviation(bool       verbose,
                 {
                     for (int nn = 0; nn < DIM; nn++)
                     {
-                        if (bFullTensor_ || mm == nn)
+                        if (bFullQuadrupole_ || mm == nn)
                         {
                             delta += gmx::square(qcalc->quad()[mm][nn] - qelec->quad()[mm][nn]);
                         }
@@ -548,7 +582,7 @@ double OptACM::calcDeviation(bool       verbose,
             {
                 double diff2 = 0;
                 mymol.CalcPolarizability(10, commrec(), nullptr);
-                if (bFullTensor_)
+                if (bFullQuadrupole_)
                 {
                     // It is already squared
                     diff2 = mymol.PolarizabilityTensorDeviation();
@@ -937,7 +971,7 @@ int alex_tune_eem(int argc, char *argv[])
                                              isopol_toler,
                                              oenv,
                                              bPolar,
-                                             opt.fullTensor(),
+                                             opt.fullQuadrupole(),
                                              opt.commrec(),
                                              efield,
                                              useOffset);

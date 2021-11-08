@@ -52,165 +52,168 @@
 
 class MolpropTest : public gmx::test::CommandLineTestBase
 {
-    protected:
-        std::vector<alexandria::MolProp>  mp_;
-        gmx_atomprop_t                    aps_;
+protected:
+    //! Vector of molecule properties
+    std::vector<alexandria::MolProp>  mp_;
+    //! Structure containing atom properties
+    gmx_atomprop_t                    aps_;
+    //! Constructor that does initialization and reads an input file
+    MolpropTest()
+    {
+        aps_  = gmx_atomprop_init();
+        
+        std::string mpFile = fileManager().getInputFilePath("molprop.dat");
+        MolPropRead(mpFile.c_str(), &mp_);
+    }
 
-        MolpropTest()
+    //! Static initiation, only run once every test.
+    static void SetUpTestCase()
+    {
+    }
+    
+    //! Do the actual testing
+    void testMolProp ()
+    {
+        int mol = 1;
+        gmx::test::TestReferenceChecker myCheck(this->rootChecker());
+        for (auto &mpi : mp_)
         {
-            aps_  = gmx_atomprop_init();
-
-            std::string mpFile = fileManager().getInputFilePath("molprop.dat");
-            MolPropRead(mpFile.c_str(), &mp_);
-        }
-
-        // Static initiation, only run once every test.
-        static void SetUpTestCase()
-        {
-        }
-
-        void testMolProp ()
-        {
-            int mol = 1;
-            gmx::test::TestReferenceChecker myCheck(this->rootChecker());
-            for (auto &mpi : mp_)
+            char mbuf[256];
+            snprintf(mbuf, sizeof(mbuf), "molecule %d name", mol);
+            myCheck.checkString(mpi.getMolname(), mbuf);
+            mpi.GenerateFormula(aps_);
+            snprintf(mbuf, sizeof(mbuf), "molecule %d formula", mol);
+            myCheck.checkString(mpi.formula(), mbuf);
+            snprintf(mbuf, sizeof(mbuf), "molecule %d number of bonds", mol);
+            myCheck.checkInteger(mpi.NBond(), mbuf);
+            int i = 1;
+            for (auto &bi : mpi.bondsConst())
             {
-                char mbuf[256];
-                snprintf(mbuf, sizeof(mbuf), "molecule %d name", mol);
-                myCheck.checkString(mpi.getMolname(), mbuf);
-                mpi.GenerateFormula(aps_);
-                snprintf(mbuf, sizeof(mbuf), "molecule %d formula", mol);
-                myCheck.checkString(mpi.formula(), mbuf);
-                snprintf(mbuf, sizeof(mbuf), "molecule %d number of bonds", mol);
-                myCheck.checkInteger(mpi.NBond(), mbuf);
-                int i = 1;
-                for (auto &bi : mpi.bondsConst())
-                {
-                    char buf[256];
-                    snprintf(buf, sizeof(buf), "atoms %d %d order %g", bi.getAi(), bi.getAj(), bi.getBondOrder());
-                    std::string bond("bond");
-                    char        ibuf[256];
-                    snprintf(ibuf, sizeof(ibuf), "molecule %d bond %d", mol, i++);
-                    myCheck.checkString(buf, ibuf);
-                }
+                char buf[256];
+                snprintf(buf, sizeof(buf), "atoms %d %d order %g", bi.getAi(), bi.getAj(), bi.getBondOrder());
+                std::string bond("bond");
+                char        ibuf[256];
+                snprintf(ibuf, sizeof(ibuf), "molecule %d bond %d", mol, i++);
+                myCheck.checkString(buf, ibuf);
+            }
                 mol++;
-            }
         }
-
-        void testExperiments ()
+    }
+    //! Test the content of alexandria::Experiment structures
+    void testExperiments ()
+    {
+        int mol = 1;
+        gmx::test::TestReferenceChecker myCheck(this->rootChecker());
+        for (auto &mpi : mp_)
         {
-            int mol = 1;
-            gmx::test::TestReferenceChecker myCheck(this->rootChecker());
-            for (auto &mpi : mp_)
+            char mbuf[512];
+            int  exp = 1;
+            snprintf(mbuf, sizeof(mbuf), "molecule %d number of experiments", mol);
+            myCheck.checkInteger(mpi.NExperiment(), mbuf);
+            for (auto &expi : mpi.experimentConst())
             {
-                char mbuf[512];
-                int  exp = 1;
-                snprintf(mbuf, sizeof(mbuf), "molecule %d number of experiments", mol);
-                myCheck.checkInteger(mpi.NExperiment(), mbuf);
-                for (auto &expi : mpi.experimentConst())
+                char cbuf[256];
+                snprintf(cbuf, sizeof(cbuf), "molecule %d exper %d", mol, exp);
+                int  nener = 1;
+                for (auto &ei : expi.molecularEnergyConst())
                 {
-                    char cbuf[256];
-                    snprintf(cbuf, sizeof(cbuf), "molecule %d exper %d", mol, exp);
-                    int  nener = 1;
-                    for (auto &ei : expi.molecularEnergyConst())
-                    {
-                        char ebuf[256];
-                        snprintf(mbuf, sizeof(mbuf), "%s energy %d", cbuf, nener++);
-                        snprintf(ebuf, sizeof(ebuf), "%s %g +/- %g %s",
-                                 ei.getType().c_str(),
-                                 ei.getValue(), ei.getError(),
-                                 ei.getUnit().c_str());
-                        myCheck.checkString(ebuf, mbuf);
-                    }
-                    exp++;
+                    char ebuf[256];
+                    snprintf(mbuf, sizeof(mbuf), "%s energy %d", cbuf, nener++);
+                    snprintf(ebuf, sizeof(ebuf), "%s %g +/- %g %s",
+                             ei.getType().c_str(),
+                             ei.getValue(), ei.getError(),
+                             ei.getUnit().c_str());
+                    myCheck.checkString(ebuf, mbuf);
                 }
-                mol++;
+                exp++;
             }
+            mol++;
         }
-
-        void testCalculations ()
+    }
+    //! Test the content of alexandria::Experiment structures containing calculations
+    void testCalculations ()
+    {
+        int mol = 1;
+        gmx::test::TestReferenceChecker myCheck(this->rootChecker());
+        for (auto &mpi : mp_)
         {
-            int mol = 1;
-            gmx::test::TestReferenceChecker myCheck(this->rootChecker());
-            for (auto &mpi : mp_)
+            char mbuf[512];
+            int  calc = 1;
+            snprintf(mbuf, sizeof(mbuf), "molecule %d number of calcs", mol);
+            myCheck.checkInteger(mpi.NExperiment(), mbuf);
+            for (auto &ci : mpi.experimentConst())
             {
-                char mbuf[512];
-                int  calc = 1;
-                snprintf(mbuf, sizeof(mbuf), "molecule %d number of calcs", mol);
-                myCheck.checkInteger(mpi.NExperiment(), mbuf);
-                for (auto &ci : mpi.experimentConst())
+                char cbuf[256];
+                snprintf(cbuf, sizeof(cbuf), "molecule %d cakc %d", mol, calc);
+                snprintf(mbuf, sizeof(mbuf), "%s program", cbuf);
+                myCheck.checkString(ci.getProgram(), mbuf);
+                snprintf(mbuf, sizeof(mbuf), "%s basisset", cbuf);
+                myCheck.checkString(ci.getBasisset(), mbuf);
+                snprintf(mbuf, sizeof(mbuf), "%s method", cbuf);
+                myCheck.checkString(ci.getMethod(), mbuf);
+                snprintf(mbuf, sizeof(mbuf), "%s number of polar", cbuf);
+                myCheck.checkInteger(ci.NPolar(), mbuf);
+                for (auto &poli : ci.polarizabilityConst())
                 {
-                    char cbuf[256];
-                    snprintf(cbuf, sizeof(cbuf), "molecule %d cakc %d", mol, calc);
-                    snprintf(mbuf, sizeof(mbuf), "%s program", cbuf);
-                    myCheck.checkString(ci.getProgram(), mbuf);
-                    snprintf(mbuf, sizeof(mbuf), "%s basisset", cbuf);
-                    myCheck.checkString(ci.getBasisset(), mbuf);
-                    snprintf(mbuf, sizeof(mbuf), "%s method", cbuf);
-                    myCheck.checkString(ci.getMethod(), mbuf);
-                    snprintf(mbuf, sizeof(mbuf), "%s number of polar", cbuf);
-                    myCheck.checkInteger(ci.NPolar(), mbuf);
-                    for (auto &poli : ci.polarizabilityConst())
-                    {
-                        snprintf(mbuf, sizeof(mbuf), "%s polar XX", cbuf);
-                        myCheck.checkDouble(poli.getXX(), mbuf);
-                        snprintf(mbuf, sizeof(mbuf), "%s polar YY", cbuf);
-                        myCheck.checkDouble(poli.getYY(), mbuf);
-                        snprintf(mbuf, sizeof(mbuf), "%s polar ZZ", cbuf);
-                        myCheck.checkDouble(poli.getZZ(), mbuf);
-                        snprintf(mbuf, sizeof(mbuf), "%s polar XY", cbuf);
-                        myCheck.checkDouble(poli.getXY(), mbuf);
-                        snprintf(mbuf, sizeof(mbuf), "%s polar XZ", cbuf);
-                        myCheck.checkDouble(poli.getXZ(), mbuf);
-                        snprintf(mbuf, sizeof(mbuf), "%s polar YZ", cbuf);
-                        myCheck.checkDouble(poli.getYZ(), mbuf);
-                    }
-
-                    for (auto &qi : ci.quadrupoleConst())
-                    {
-                        snprintf(mbuf, sizeof(mbuf), "%s quadrupole XX", cbuf);
-                        myCheck.checkDouble(qi.getXX(), mbuf);
-                        snprintf(mbuf, sizeof(mbuf), "%s quadrupole YY", cbuf);
-                        myCheck.checkDouble(qi.getYY(), mbuf);
-                        snprintf(mbuf, sizeof(mbuf), "%s quadrupole ZZ", cbuf);
-                        myCheck.checkDouble(qi.getZZ(), mbuf);
-                        snprintf(mbuf, sizeof(mbuf), "%s quadrupole XY", cbuf);
-                        myCheck.checkDouble(qi.getXY(), mbuf);
-                        snprintf(mbuf, sizeof(mbuf), "%s quadrupole XZ", cbuf);
-                        myCheck.checkDouble(qi.getXZ(), mbuf);
-                        snprintf(mbuf, sizeof(mbuf), "%s quadrupole YZ", cbuf);
-                        myCheck.checkDouble(qi.getYZ(), mbuf);
-                    }
-
-                    for (auto &dip : ci.dipoleConst())
-                    {
-                        snprintf(mbuf, sizeof(mbuf), "%s dipole X", cbuf);
-                        myCheck.checkDouble(dip.getX(), mbuf);
-                        snprintf(mbuf, sizeof(mbuf), "%s dipole Y", cbuf);
-                        myCheck.checkDouble(dip.getY(), mbuf);
-                        snprintf(mbuf, sizeof(mbuf), "%s dipole Z", cbuf);
-                        myCheck.checkDouble(dip.getZ(), mbuf);
-                    }
-
-                    int nener = 1;
-                    for (auto &ei : ci.molecularEnergyConst())
-                    {
-                        char ebuf[256];
-                        snprintf(mbuf, sizeof(mbuf), "%s energy %d", cbuf, nener++);
-                        snprintf(ebuf, sizeof(ebuf), "%s %g +/- %g %s",
-                                 ei.getType().c_str(),
-                                 ei.getValue(), ei.getError(),
-                                 ei.getUnit().c_str());
-                        myCheck.checkString(ebuf, mbuf);
-                    }
+                    snprintf(mbuf, sizeof(mbuf), "%s polar XX", cbuf);
+                    myCheck.checkDouble(poli.getXX(), mbuf);
+                    snprintf(mbuf, sizeof(mbuf), "%s polar YY", cbuf);
+                    myCheck.checkDouble(poli.getYY(), mbuf);
+                    snprintf(mbuf, sizeof(mbuf), "%s polar ZZ", cbuf);
+                    myCheck.checkDouble(poli.getZZ(), mbuf);
+                    snprintf(mbuf, sizeof(mbuf), "%s polar XY", cbuf);
+                    myCheck.checkDouble(poli.getXY(), mbuf);
+                    snprintf(mbuf, sizeof(mbuf), "%s polar XZ", cbuf);
+                    myCheck.checkDouble(poli.getXZ(), mbuf);
+                    snprintf(mbuf, sizeof(mbuf), "%s polar YZ", cbuf);
+                    myCheck.checkDouble(poli.getYZ(), mbuf);
+                }
+                
+                for (auto &qi : ci.quadrupoleConst())
+                {
+                    snprintf(mbuf, sizeof(mbuf), "%s quadrupole XX", cbuf);
+                    myCheck.checkDouble(qi.getXX(), mbuf);
+                    snprintf(mbuf, sizeof(mbuf), "%s quadrupole YY", cbuf);
+                    myCheck.checkDouble(qi.getYY(), mbuf);
+                    snprintf(mbuf, sizeof(mbuf), "%s quadrupole ZZ", cbuf);
+                    myCheck.checkDouble(qi.getZZ(), mbuf);
+                    snprintf(mbuf, sizeof(mbuf), "%s quadrupole XY", cbuf);
+                    myCheck.checkDouble(qi.getXY(), mbuf);
+                    snprintf(mbuf, sizeof(mbuf), "%s quadrupole XZ", cbuf);
+                    myCheck.checkDouble(qi.getXZ(), mbuf);
+                    snprintf(mbuf, sizeof(mbuf), "%s quadrupole YZ", cbuf);
+                    myCheck.checkDouble(qi.getYZ(), mbuf);
+                }
+                
+                for (auto &dip : ci.dipoleConst())
+                {
+                    snprintf(mbuf, sizeof(mbuf), "%s dipole X", cbuf);
+                    myCheck.checkDouble(dip.getX(), mbuf);
+                    snprintf(mbuf, sizeof(mbuf), "%s dipole Y", cbuf);
+                    myCheck.checkDouble(dip.getY(), mbuf);
+                    snprintf(mbuf, sizeof(mbuf), "%s dipole Z", cbuf);
+                    myCheck.checkDouble(dip.getZ(), mbuf);
+                }
+                
+                int nener = 1;
+                for (auto &ei : ci.molecularEnergyConst())
+                {
+                    char ebuf[256];
+                    snprintf(mbuf, sizeof(mbuf), "%s energy %d", cbuf, nener++);
+                    snprintf(ebuf, sizeof(ebuf), "%s %g +/- %g %s",
+                             ei.getType().c_str(),
+                             ei.getValue(), ei.getError(),
+                             ei.getUnit().c_str());
+                    myCheck.checkString(ebuf, mbuf);
                 }
             }
         }
-
-        static void TearDownTestCase()
-        {
-        }
-
+    }
+    //! Clean the test data.
+    static void TearDownTestCase()
+    {
+    }
+    
 };
 
 TEST_F (MolpropTest, NameFormulaBonds){

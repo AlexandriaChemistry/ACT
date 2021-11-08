@@ -120,13 +120,6 @@ double OptParam::computeBeta(int maxiter, int iter, int ncycle)
     return 1/(BOLTZ*temp);
 }
 
-
-double OptParam::adaptBeta(real mc_ratio)
-{
-    temperature_ *= (mc_ratio/mc_ratio_);
-    return 1/(BOLTZ*temperature_);
-}
-
 void Sensitivity::computeForceConstants(FILE *fp)
 {
     if (p_.size() >= 3)

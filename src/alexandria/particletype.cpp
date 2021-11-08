@@ -44,7 +44,8 @@
 namespace alexandria
 {
 
-std::map<std::string, InteractionType> stringToItype =
+//! Map to convert a std::string to an InteractionType
+static std::map<std::string, InteractionType> stringToItype =
     {
         { "acmtype",  InteractionType::ELECTRONEGATIVITYEQUALIZATION },
         { "zetatype", InteractionType::CHARGEDISTRIBUTION },
@@ -53,7 +54,8 @@ std::map<std::string, InteractionType> stringToItype =
         { "vdwtype",  InteractionType::VDW }
     };
     
-std::list<std::string> particleOptions = 
+//! List of potential options for a particle
+static std::list<std::string> particleOptions = 
     { "element", "atomnumber", "row" };
 
 const std::string &ParticleType::optionValue(const std::string &type) const

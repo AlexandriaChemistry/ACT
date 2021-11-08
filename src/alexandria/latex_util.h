@@ -77,7 +77,7 @@ public:
     LongTable(FILE *fp, bool bLandscape, const char *font);
     
     /*! Constructor with a file name
-     * \param[in] fb         The file name to write to
+     * \param[in] fn         The file name to write to
      * \param[in] bLandscape Whether or not to print in landscape orientation
      */
     LongTable(const char *fn, bool bLandscape);

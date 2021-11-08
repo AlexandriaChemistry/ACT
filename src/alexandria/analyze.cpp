@@ -66,18 +66,29 @@
 #include "poldata.h"
 #include "poldata_xml.h"
 
+/*! Class to count occurences of a string.
+ * We keep statistics over which literature reference is used how often.
+ */
 class RefCount
 {
-    private:
+private:
+        //! The actual count
         int         count_;
+        //! The reference string
         std::string ref_;
     public:
+        /*! \brief Constructor
+         * \param[in] ref The literature reference
+         */
         RefCount(const std::string ref) : count_(1), ref_(ref) {};
 
+        //! \return the actual count
         int count() const { return count_; }
 
+        //! \brief increment
         void increment() { count_++; }
 
+        //! \brief the reference
         const std::string ref() const { return ref_; }
 };
 

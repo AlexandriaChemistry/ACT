@@ -177,7 +177,7 @@ namespace alexandria
          *
          * \param[in]  fp    File to write (debug) information to
          * \param[in]  pd    Data structure containing atomic properties
-         * \paran[out] atoms Structure to modify with new particles.
+         * \param[out] atoms Structure to modify with new particles.
          */
         void addBondVsites(FILE          *fp,
                            const Poldata *pd,
@@ -188,7 +188,7 @@ namespace alexandria
          *
          * \param[in]  fp    File to write (debug) information to
          * \param[in]  pd    Data structure containing atomic properties
-         * \paran[out] atoms Structure to modify with new particles.
+         * \param[out] atoms Structure to modify with new particles.
          */
         void addShells(FILE          *fp,
                        const Poldata *pd,
@@ -498,6 +498,7 @@ namespace alexandria
          * \param[in] bQM      Allow QM results
          * \param[in] bZero    Allow zero dipoles
          * \param[in] bZPE     Use zero point energies
+         * \param[in] bDHform  Whether to use the enthalpy of formation
          * \param[in] method   Method used for QM calculation
          * \param[in] basis    Basis set used for QM calculation
          * \param[in] pd       Force field structure
@@ -513,7 +514,7 @@ namespace alexandria
         /*! \brief
          * Print the topology that was generated previously in GROMACS format.
          *
-         * \param[in] fn        A File pointer opened previously.
+         * \param[in] fn        File name to open
          * \param[in] bVerbose  Verbose output
          * \param[in] pd        Data structure containing atomic properties
          * \param[in] cr        Gromacs communication record
@@ -530,10 +531,11 @@ namespace alexandria
         /*! \brief
          * Print the topology that was generated previously in GROMACS format.
          *
-         * \param[in] fn        A File pointer opened previously.
+         * \param[in] fp        File pointer opened previously.
          * \param[in] bVerbose  Verbose
          * \param[in] pd        Data structure containing atomic properties
          * \param[in] bITP      Whether or not to write an itp file iso top file
+         * \param[in] cr        Gromacs communication record
          * \param[in] method    QC method
          * \param[in] basis     WC basis set
          */
@@ -572,12 +574,6 @@ namespace alexandria
         immStatus computeForces(FILE *fplog, t_commrec *cr, double *rmsf);
 
         /*! \brief
-         * Set the force field
-         *
-         * \param[in] ff   Force field
-         */
-
-        /*! \brief
          * Change the coordinate of the molecule based
          * on the coordinate of the conformation stored
          * in molprop experiment class.
@@ -602,8 +598,6 @@ namespace alexandria
          *
          * \param[in] pd           Data structure containing atomic properties
          * \param[in] iType        Interaction type
-         * \param[in] modifiedOnly Only update parameters that were modified.
-         *                         Experimental speed-up for tune_fc.
          */
         void UpdateIdef(const Poldata   *pd,
                         InteractionType  iType);
@@ -707,8 +701,8 @@ namespace alexandria
         /*! \brief
          * Sends this object over an MPI connection
          *
-         * \param[in] commrec   GROMACS data structure for MPI communication
-         * \param[in] dest      Destination processor
+         * \param[in] cr   GROMACS data structure for MPI communication
+         * \param[in] dest Destination processor
          * \return the CommunicationStatus of the operation
          */
         CommunicationStatus Send(t_commrec *cr, int dest) const;
@@ -716,8 +710,8 @@ namespace alexandria
         /*! \brief
          * Receives this object over an MPI connection
          *
-         * \param[in] commrec   GROMACS data structure for MPI communication
-         * \param[in] src       Source processor
+         * \param[in] cr  GROMACS data structure for MPI communication
+         * \param[in] src Source processor
          * \return the CommunicationStatus of the operation
          */
         CommunicationStatus Receive(t_commrec *cr, int src);

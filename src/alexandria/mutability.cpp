@@ -37,6 +37,7 @@
 namespace alexandria
 {
 
+//! Map to convert Mutability into std::string
 static std::map<Mutability, const std::string> mut2string =
     {
         { Mutability::Fixed,     "Fixed"     },
@@ -46,6 +47,7 @@ static std::map<Mutability, const std::string> mut2string =
         { Mutability::Free,      "Free"      }
     };
 
+//! Map to convert std::string to Mutability
 static std::map<const std::string, Mutability> string2mut;
     
 const std::string &mutabilityName(Mutability mutability)

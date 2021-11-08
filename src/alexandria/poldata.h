@@ -105,7 +105,7 @@ class Poldata
         void setNexcl(int nexcl) { nexcl_ = nexcl; }
 
         /*! \brief Add an atom type
-         * \param[in] atp The new atom type
+         * \param[in] ptp The new particle type
          * \throw if this particle type exists already
          */
         void  addParticleType(const ParticleType &ptp);

@@ -93,7 +93,7 @@ class QtypeProps
     QgenResp               *QgenResp_   = nullptr;
  public:
     /*! \brief Constructor
-     * \param[in] qType  My own identity
+     * \param[in] qtype  My own identity
      */
     QtypeProps(qType qtype) : qtype_(qtype)  {}
     
@@ -141,7 +141,7 @@ class QtypeProps
     const rvec &mu() const { return mu_; };
     
     /*! \brief Set dipole vector
-     * \param[in] The dipole vector
+     * \param[in] mu The dipole vector
      */
     void setMu(const rvec mu);
     
@@ -156,7 +156,7 @@ class QtypeProps
     const tensor &quad() const { return quadrupole_; };
 
     /*! \brief Set quadrupole tensor
-     * \param[in] The quadrupole tensor
+     * \param[in] quad The quadrupole tensor
      */
     void setQuadrupole(const tensor quad);
     

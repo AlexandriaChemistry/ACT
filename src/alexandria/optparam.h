@@ -64,10 +64,6 @@ class OptParam
     private:
         //! Maximum number of iterations
         int                      maxiter_       = 100;
-        //! Reference MC acceptance ratio
-        int                      mc_ratio_       = 30;
-        //! Adapt Temperature every nAdapt steps
-        int                      nAdapt_         = 50;
         //! Output environment structure
         const gmx_output_env_t  *oenv_          = nullptr;
         //! Random number seed
@@ -142,17 +138,9 @@ class OptParam
          */
         double computeBeta(int maxiter, int iter, int ncycle);
         
-        double adaptBeta(real ratio);
-
-        //! \brief Return nAdapt
-        int nAdapt () const { return nAdapt_; }
-
         //! \brief Return the step
         real step() const { return step_; }
         
-        //! \brief Addapt the step size for perturbing the parameter
-        void adapt_step(real factor) {step_ *= factor ;}
-
         //! \brief Return whether or not temperature weighting should be considered
         bool temperatureWeighting() const { return tempWeight_; }
         

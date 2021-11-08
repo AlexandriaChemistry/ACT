@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020 
+ * Copyright (C) 2014-2021
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -46,7 +46,7 @@ int get_option(const char **opts);
 /*! \brief
  * Split a string into substrings separated by a delimiter character
  * \param[in] s The string to be split
- * \parin[in] delim The delimiting character
+ * \param[in] delim The delimiting character
  * \param[in] elems A vector of substring elements
  * \returns The vector of substring elements (same as input elems)
  */
@@ -57,7 +57,7 @@ std::vector<std::string> split(const std::string        &s,
 /*! \brief
  * Split a string into substrings separated by a delimiter character
  * \param[in] s The string to be split
- * \parin[in] delim The delimiting character
+ * \param[in] delim The delimiting character
  * \returns A vector of substring elements
  */
 std::vector<std::string> split(const std::string &s,

@@ -94,16 +94,3 @@ provide back-ports or mappings to available standard library implementations
 as appropriate.
 */
 
-/*!
-\file share/template/template.cpp
-\brief Template code for writing analysis programs.
-
-See \ref page_analysistemplate for more information.
- */
-
-/*!
-\example template.cpp
-\brief Template code for writing analysis programs.
-
-See \ref page_analysistemplate for more information.
- */
