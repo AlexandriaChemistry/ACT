@@ -1,5 +1,7 @@
 #include "GeneticAlgorithm.h"
 
+#include "aliases.h"
+
 #include "Initializer.h"
 #include "FitnessComputer.h"
 #include "ProbabilityComputer.h"
@@ -32,22 +34,22 @@ GeneticAlgorithm::GeneticAlgorithm(const int popSize,
     // Initialize the data structures
     this->oldPop = allocateMatrix(popSize, chromosomeLength);
     this->newPop = allocateMatrix(popSize, chromosomeLength);
-    this->fitness = allocateArray(popSize);
-    this->probability = allocateArray(popSize);
+    this->fitness = allocateVector(popSize);
+    this->probability = allocateVector(popSize);
 
 }
 
 
-const int GeneticAlgorithm::evolve(const double prCross, const double prMut) {
+const ga_result_t GeneticAlgorithm::evolve(const double prCross, const double prMut) {
 
     // Iteration variables
     int i, j, k;
 
     // Chromosomes
-    double* parent1;
-    double* parent2;
-    double* child1;
-    double* child2;
+    vector parent1;
+    vector parent2;
+//    vector child1;
+//    vector child2;
 
     // Generations
     int generation = 0;
@@ -101,5 +103,15 @@ const int GeneticAlgorithm::evolve(const double prCross, const double prMut) {
         }
 
     } while(!terminator.terminate(oldPop, fitness, generation, popSize));
+
+    vector bestIndividual = null;
+    double bestFitness = 0;
+    for (i = 0; i < popSize; i++) {
+        if (fitness[i] > bestFitness) {
+            bestFitness = fitness[i];
+            bestIndividual = oldPop[i];
+        }
+    }
+    return {oldPop, fitness, bestIndividual, bestFitness, generation};
 
 }
