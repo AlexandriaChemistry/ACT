@@ -42,8 +42,23 @@
 
 namespace alexandria
 { 
-/*! \brief Enumerated type to differentiate the charge types */
-enum class qType { Calc, ESP, Mulliken, Hirshfeld, CM5, Elec };
+/*! \brief Enumerated type to differentiate the charge types 
+ * and properties derived from the charges.
+ */
+enum class qType { 
+    //! Alexandria Charge Model derived propert
+    Calc,
+    //! Electrostatic potential derived point charges
+    ESP,
+    //! Mulliken charges
+    Mulliken,
+    //! Hirshfeld charges
+    Hirshfeld,
+    //! CM5 charges
+    CM5,
+    //! Electronic properties straight from DFT or QC calcs
+    Elec
+};
 
 /*! \brief return string corresponding to charge type
  */
@@ -53,6 +68,11 @@ const std::string &qTypeName(qType qt);
  */
 const std::map<qType, std::string> &qTypes();
 
+/*! Class to hold electrostatic properties
+ * To compare the properties of different models we have this class
+ * to hold electrostatic moments and charges, and indeed a grid 
+ * structure to hold the electrostatic potential.
+ */
 class QtypeProps
 {
  private:
@@ -64,13 +84,12 @@ class QtypeProps
     //! Norm of the dipole
     double                 dipole_     = 0;
     //! The coordinates
-    //std::vector<gmx::RVec>
     gmx::HostVector<gmx::RVec> x_;
     //! Center of charge
     rvec                   coc_        = {0, 0, 0};
-    // Atomic charges
+    //! Atomic charges
     std::vector<double>    q_;
-    // Resp calculation structure
+    //! Resp calculation structure
     QgenResp               *QgenResp_   = nullptr;
  public:
     /*! \brief Constructor

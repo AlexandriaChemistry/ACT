@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020
+ * Copyright (C) 2014-2021
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -69,7 +69,7 @@ QgenAcm::QgenAcm(const Poldata *pd,
     for (int i = 0; i < atoms->nr; i++)
     {
         auto atype = pd->findParticleType(*atoms->atomtype[i]);
-        atomnr_.push_back(atype->atomnumber());
+        atomicNumber_.push_back(atype->atomnumber());
         auto qparam = atype->parameterConst("charge");
         if (qparam.mutability() == Mutability::ACM)
         {
@@ -200,7 +200,7 @@ static double Coulomb_PP(double r)
     return 1/r;
 }
 
-void QgenAcm::dump(FILE *fp, t_atoms *atoms)
+void QgenAcm::dump(FILE *fp, const t_atoms *atoms) const
 {
     if (fp && eQGEN_ == eQgen::OK)
     {
@@ -243,22 +243,16 @@ void QgenAcm::dump(FILE *fp, t_atoms *atoms)
     }
 }
 
-const char *QgenAcm::message() const
+const char *QgenAcm::status() const
 {
-    switch (eQGEN_)
-    {
-        case eQgen::OK:
-            return "Charge generation finished correctly";
-        case eQgen::NOTCONVERGED:
-            return "Charge generation did not converge.";
-        case eQgen::NOSUPPORT:
-            return "No charge generation support for (some of) the atomtypes.";
-        case eQgen::MATRIXSOLVER:
-            return "A problem occurred solving a matrix equation.";
-        case eQgen::ERROR:
-            return "Unknown error in charge generation";
-    }
-    return nullptr;
+    std::map<eQgen, const char *> stat = {
+        { eQgen::OK,           "Charge generation finished correctly" },
+        { eQgen::NOTCONVERGED, "Charge generation did not converge." },
+        { eQgen::NOSUPPORT,    "No charge generation support for (some of) the atomtypes." },
+        { eQgen::MATRIXSOLVER, "A problem occurred solving a matrix equation." },
+        { eQgen::ERROR,        "Unknown error in charge generation" }
+    };
+    return stat[eQGEN_];
 }
 
 double QgenAcm::calcSij(int i, int j)
@@ -267,19 +261,19 @@ double QgenAcm::calcSij(int i, int j)
     rvec   dx;
     int    l, m, tag;
 
-    if (atomnr_[i] == 0 || atomnr_[j] == 0)
+    if (atomicNumber_[i] == 0 || atomicNumber_[j] == 0)
     {
         GMX_THROW(gmx::InternalError(gmx::formatString("Cannot compute Sij for shells").c_str()));
     }
     rvec_sub(x_[i], x_[j], dx);
     dist = norm(dx);
-    if ((dist < 0.118) && (atomnr_[i] != 1) && (atomnr_[j] != 1))
+    if ((dist < 0.118) && (atomicNumber_[i] != 1) && (atomicNumber_[j] != 1))
     {
         Sij = Sij*1.64;
     }
-    else if ((dist < 0.122) && (atomnr_[i] != 1) && (atomnr_[j] != 1))
+    else if ((dist < 0.122) && (atomicNumber_[i] != 1) && (atomicNumber_[j] != 1))
     {
-        if ((atomnr_[i] != 8) && (atomnr_[j] != 8))
+        if ((atomicNumber_[i] != 8) && (atomicNumber_[j] != 8))
         {
             Sij = Sij*2.23;
         }
@@ -291,11 +285,11 @@ double QgenAcm::calcSij(int i, int j)
     else if (dist < 0.125)
     {
         tag = 0;
-        if ((atomnr_[i] == 6) && (atomnr_[j] == 8))
+        if ((atomicNumber_[i] == 6) && (atomicNumber_[j] == 8))
         {
             tag = i;
         }
-        else if ((atomnr_[i] == 8) && (atomnr_[j] == 6))
+        else if ((atomicNumber_[i] == 8) && (atomicNumber_[j] == 6))
         {
             tag = j;
         }
@@ -304,7 +298,7 @@ double QgenAcm::calcSij(int i, int j)
             printf("found CO\n");
             for (l = 0; (l < natom_); l++)
             {
-                if (atomnr_[l] == 1)
+                if (atomicNumber_[l] == 1)
                 {
                     printf("found H\n");
                     dism = 0.0;
@@ -324,14 +318,14 @@ double QgenAcm::calcSij(int i, int j)
             }
         }
     }
-    else if ((atomnr_[i] == 6) && (atomnr_[j] == 8))
+    else if ((atomicNumber_[i] == 6) && (atomicNumber_[j] == 8))
     {
         Sij = Sij*1.03;
     }
-    else if (((atomnr_[j] == 6) && (atomnr_[i] == 7) && (dist < 0.15)) ||
-             ((atomnr_[i] == 6) && (atomnr_[j] == 7) && (dist < 0.15)))
+    else if (((atomicNumber_[j] == 6) && (atomicNumber_[i] == 7) && (dist < 0.15)) ||
+             ((atomicNumber_[i] == 6) && (atomicNumber_[j] == 7) && (dist < 0.15)))
     {
-        if (atomnr_[i] == 6)
+        if (atomicNumber_[i] == 6)
         {
             tag = i;
         }
@@ -341,7 +335,7 @@ double QgenAcm::calcSij(int i, int j)
         }
         for (l = 0; (l < natom_); l++)
         {
-            if (atomnr_[l] == 8)
+            if (atomicNumber_[l] == 8)
             {
                 printf("found Oxy\n");
                 dism = 0.0;
@@ -432,7 +426,7 @@ void QgenAcm::calcJcc(double epsilonr,
             else
             {
                 auto j0 = jaa_[j];
-                if ((bYang || bRappe) && (atomnr_[i] == 1))
+                if ((bYang || bRappe) && (atomicNumber_[i] == 1))
                 {
                     auto zetaH = 1.0698;
                     j0 = (1+q_[i]/zetaH)*j0; /* Eqn. 21 in Rappe1991. */
@@ -525,10 +519,11 @@ void QgenAcm::copyChargesToAtoms(t_atoms *atoms)
     }
 }
 
-void QgenAcm::updatePositions(gmx::HostVector<gmx::RVec> x,
-                              t_atoms                   *atoms)
+void QgenAcm::updatePositions(gmx::HostVector<gmx::RVec> x)
 {
-    for (auto i = 0; i < atoms->nr; i++)
+    GMX_RELEASE_ASSERT(x.size() - x_.size() == 0,
+                       "Arrays not equally long. Help!");
+    for (auto i = 0; i < x.size(); i++)
     {
         copy_rvec(x[i], x_[i]);
     }
@@ -817,7 +812,7 @@ eQgen QgenAcm::generateCharges(FILE                      *fp,
     if (eQgen::OK == eQGEN_)
     {
         updateParameters(pd, atoms);
-        updatePositions(x, atoms);
+        updatePositions(x);
         calcJcc(pd->getEpsilonR(), pd->yang(), pd->rappe());
         if (pd->interactionPresent(InteractionType::BONDCORRECTIONS) &&
             pd->chargeGenerationAlgorithm() == ChargeGenerationAlgorithm::SQE)

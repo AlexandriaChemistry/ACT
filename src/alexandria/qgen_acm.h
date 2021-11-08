@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020 
+ * Copyright (C) 2014-2021
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -30,7 +30,6 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
  
- 
 #ifndef QGEN_ACM_H
 #define QGEN_ACM_H
 
@@ -44,26 +43,43 @@
 
 struct t_atoms;
 
+/*! \brief Charge generation status
+ */
 enum class eQgen {
+    //! Charge generation status
     OK,
+    //! Did not converge
     NOTCONVERGED,
+    //! No support for all atom types
     NOSUPPORT,
+    //! Problem solving the matrix equation
     MATRIXSOLVER,
+    //! Unknown error
     ERROR
 };
 
 namespace alexandria
 {
 
+/*! \brief Class governing charge generation
+ *
+ * The QgenACM supports two algorithms:
+ * Electronegativity equalization method (EEM)
+ * Split-charge equilibration (SQE)
+ * Which one of the two is used is decided by the
+ * presence of interaction of 
+ * InteractionType::BONDCORRECTIONS in the Poldata
+ * file and structure.
+ */
 class QgenAcm
 {
     public:
     
         /*! \brief Constructor
          * 
-         * \param in pd     Force field information
-         * \param in atoms  Atoms data
-         * \param in qtotal Total charge for the compound
+         * \param[in] pd     Force field information
+         * \param[in] atoms  Atoms data
+         * \param[in] qtotal Total charge for the compound
          */
         QgenAcm(const Poldata           *pd,
                 t_atoms                 *atoms,
@@ -71,41 +87,77 @@ class QgenAcm
 
         /*! \brief Routine that computes the charges
          * 
-         * \param in  fp      File for logging information
-         * \param in  molname Molecule name for output
-         * \param in  pd      Force field information
-         * \param out atoms   Atoms structure, charges will be updated in this
-         * \param in  x       Atomic coordinates    
-         * \param in  bonds   List of bonds in this compound
+         * \param[in]  fp      File for logging information
+         * \param[in]  molname Molecule name for output
+         * \param[in]  pd      Force field information
+         * \param[out] atoms   Atoms structure, charges will be updated in this
+         * \param[in]  x       Atomic coordinates    
+         * \param[in]  bonds   List of bonds in this compound
          */
-        eQgen generateCharges(FILE              *fp,
-                              const std::string &molname,
-                              const Poldata     *pd,
-                              t_atoms           *atoms,
-                              const gmx::HostVector<gmx::RVec> x,
-                              const std::vector<Bond> &bonds);
-                            
-        const char *message() const;
+        eQgen generateCharges(FILE                             *fp,
+                              const std::string                &molname,
+                              const Poldata                    *pd,
+                              t_atoms                          *atoms,
+                              const gmx::HostVector<gmx::RVec>  x,
+                              const std::vector<Bond>          &bonds);
+                          
+        /*! \brief Return a status message
+         * \return A string
+         */
+        const char *status() const;
         
-        int getRow(int atom);
-
+        /*! \brief Return the charge corresponding to the atom
+         * \param[in] atom index of the atom in the compound
+         * \return the charge
+         */
         double getQ(int atom);
-
-        void checkSupport(const Poldata *pd);
-
+        
+        /*! \brief Return the charge distribution width of the atom
+         * \param[in] atom index of the atom in the compound
+         * \return the charge distribution width
+         */
         double getZeta(int atom);
 
-        void dump(FILE *fp, t_atoms *atoms);
+        /*! \brief Return the row corresponding to the atom
+         * \param[in] atom index of the atom in the compound
+         * \return the corresponding row in the periodic table
+         */
+        int getRow(int atom);
+
 
     private:
+        /*! \brief Write debug information
+         * \param[in] fp The file pointer to write to
+         * \param[in] atoms Information about the atoms
+         */
+        void dump(FILE *fp, const t_atoms *atoms) const;
+
+        /*! \brief Check whether the compound has support in the force field
+         * \param[in] pd The force field data structure
+         */
+        void checkSupport(const Poldata *pd);
+
+        //! Status of the algorithm
         eQgen                            eQGEN_       = eQgen::OK;
+        //! Whether or not a warning has been issued
         gmx_bool                         bWarned_     = false;
+        //! Total charge of the compound
         double                           qtotal_      = 0;
+        //! Whether or not shells are present
         gmx_bool                         bHaveShell_  = false;
+        //! The charge type used in the force field
         ChargeType                       ChargeType_  = ChargeType::Point;
+        //! Number of particles in the compound
         int                              natom_       = 0;
-        std::vector<int>                 atomnr_;
-        std::vector<double>              chi0_, rhs_, jaa_;
+        //! Atomic number for each of the atoms
+        std::vector<int>                 atomicNumber_;
+        //! Parameters for EEM algorithm, chi is electronegativity
+        std::vector<double>              chi0_;
+        //! Parameters for EEM algorithm, jaa is atomic hardness
+        std::vector<double>              jaa_;
+        //! Right/hand side in the matrix equation
+        std::vector<double>              rhs_;
+        //! Atomic coordinates
         std::vector<gmx::RVec>           x_;
         // Store ids locally, first for chargedistristribution
         std::vector<Identifier>          qdist_id_;
@@ -119,8 +171,13 @@ class QgenAcm
         std::map<int, int>               nfToGromacs_;
         //! Mapping from nonFixed particles to shells
         std::map<int, int>               myShell_;
-        std::vector<int>                 row_;       
-        std::vector<double>              q_, zeta_, qsave_, zetasave_;
+        //! The row number for each of the atoms
+        std::vector<int>                 row_;
+        //! The atomic charges
+        std::vector<double>              q_;
+        //! The distribution widths
+        std::vector<double>              zeta_;
+        //! The Coulomb matrix
         std::vector<std::vector<double>> Jcc_;
 
         /*! \brief Re-read the EEM parameters from the FF
@@ -132,9 +189,19 @@ class QgenAcm
          * \param[in] pd    Force field database
          * \param[in] atoms Atoms data structure
          */
-    void updateParameters(const Poldata *pd,
-                          const t_atoms *atoms);
+        void updateParameters(const Poldata *pd,
+                              const t_atoms *atoms);
 
+        /*! \brief Compute Coulomb interaction
+         * \param[in] xI       Coordinates for atom I
+         * \param[in] xJ       Coordinates for atom J
+         * \param[in] zetaI    zeta for atom I
+         * \param[in] zetaJ    zeta for atom J
+         * \param[in] rowI     row for atom I
+         * \param[in] rowJ     row for atom J
+         * \param[in] epsilonr Relative dielectric constant
+         * \return the coulomb interaction
+         */
         double calcJ(rvec   xI, 
                      rvec   xJ,
                      double zetaI,
@@ -202,11 +269,22 @@ class QgenAcm
         int solveSQE(FILE                    *fp,
                      const Poldata           *pd,
                      const std::vector<Bond> &bonds);
-        
-        void updatePositions(gmx::HostVector<gmx::RVec> x, t_atoms *atoms);
 
+        /*! \brief update the positions
+         * \param[in] x The new coordinates
+         */        
+        void updatePositions(gmx::HostVector<gmx::RVec> x);
+
+        /*! \brief Compute shielding factor for some EEM algorithms
+         * \param[in] i Atom index
+         * \param[in] j Atom index
+         * \return Shielding factor
+         */
         double calcSij(int i, int j);
 
+        /*! \brief Compute the right/hand side of the matrix equation
+         * \param[in] epsilonr The relative dielectric constant
+         */
         void calcRhs(double epsilonr);
 };
 }

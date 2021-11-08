@@ -387,8 +387,8 @@ class Member(Entity):
             assert self._class is None
             self._class = compound
         elif isinstance(compound, Namespace):
-            assert self._namespace is None
-            self._namespace = compound
+            if not self._namespace:
+                self._namespace = compound
         elif isinstance(compound, File):
             self._files.add(compound)
         elif isinstance(compound, Group):
