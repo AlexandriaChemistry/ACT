@@ -3,6 +3,7 @@
 
 #include "aliases.h"
 
+
 /*!
  * Abstract class for computing the selection probability of each individual in the population
  */
@@ -16,6 +17,17 @@ public:
      * @param popSize   size of the population
      */
     virtual void compute(const vector fitness, const vector prob, const int popSize);
+
+};
+
+
+/*!
+ * Class for fitness-based probability computation
+ */
+class FitnessProbabilityComputer : public ProbabilityComputer {
+
+public:
+    void compute(const vector fitness, const vector prob, const int popSize);
 
 };
 
