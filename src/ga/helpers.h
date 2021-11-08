@@ -4,7 +4,6 @@
 #include "aliases.h"
 
 matrix allocateMatrix(const int n, const int m);
-double rand01();
-void copyArrayValues(double* const arr1, double* const arr2, const int length);
+void copyVectorValues(const vector arr1, const vector arr2, const int length);
 
 #endif //ACT_HELPERS_H
