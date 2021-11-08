@@ -70,11 +70,11 @@ def check_file(fileobj, tree, reporter):
         if fileobj.is_source_file():
             if includes:
                 firstinclude = includes[0].get_file()
-                if not firstinclude or firstinclude.get_name() != "gmxpre.h":
+                if not firstinclude or firstinclude.get_name() != "actpre.h":
                     reporter.code_issue(includes[0],
-                                        "does not include \"gmxpre.h\" first")
+                                        "does not include \"actpre.h\" first")
             else:
-                reporter.code_issue(fileobj, "does not include \"gmxpre.h\"")
+                reporter.code_issue(fileobj, "does not include \"actpre.h\"")
         used_define_files = fileobj.get_used_define_files()
         for define_file in tree.get_checked_define_files():
             includes_file = False

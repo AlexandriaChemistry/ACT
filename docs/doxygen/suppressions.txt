@@ -6,11 +6,11 @@ src/gromacs/version.h: warning: includes local file as <gromacs/version.h>
 # These are OK
 src/gromacs/linearalgebra/eigensolver.cpp: warning: should include "config.h"
 src/gromacs/linearalgebra/gmx_arpack.cpp: warning: should include "config.h"
-src/gromacs/linearalgebra/gmx_blas/*: warning: does not include "gmxpre.h" first
+src/gromacs/linearalgebra/gmx_blas/*: warning: does not include "actpre.h" first
 src/gromacs/linearalgebra/gmx_blas/*: warning: should include "config.h"
-src/gromacs/linearalgebra/gmx_lapack/*: warning: does not include "gmxpre.h" first
+src/gromacs/linearalgebra/gmx_lapack/*: warning: does not include "actpre.h" first
 src/gromacs/linearalgebra/gmx_lapack/*: warning: should include "config.h"
-src/gromacs/utility/baseversion-gen.cpp: warning: does not include "gmxpre.h" first
+src/gromacs/utility/baseversion-gen.cpp: warning: does not include "actpre.h" first
 
 # Exclude header files that are used for inlining code; the responsibility for
 # making the right #includes should be on the source file that uses these.
@@ -48,7 +48,7 @@ src/gromacs/tables/quadraticsplinetable.h: warning: includes "simd.h" unnecessar
 
 # These are specific to Folding@Home, and easiest to suppress here
 *: warning: includes non-local file as "corewrap.h"
-src/gmxpre.h: warning: includes non-local file as "swindirect.h"
+src/actpre.h: warning: includes non-local file as "swindirect.h"
 
 # New external API (see https://redmine.gromacs.org/issues/2586) has some unresolved
 # conflicts with previous definitions of public API, installed API, and other things

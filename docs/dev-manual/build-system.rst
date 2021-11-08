@@ -532,11 +532,11 @@ The build system uses a few different mechanisms to influence the compilation:
   :file:`config.h`
     Contains defines for conditional compilation within source files.
   :file:`gmxpre-config.h`
-    Included by :file:`gmxpre.h` as the first thing in every source file.
+    Included by :file:`actpre.h` as the first thing in every source file.
     Should only contain defines that are required before any other header for
     correct operation.  For example, defines that affect the behavior of system
     headers fall in this category.  See Doxygen documentation for
-    :file:`gmxpre.h`.
+    :file:`actpre.h`.
 
   All the above files get generated in :file:`src/`.
 
