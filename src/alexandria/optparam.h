@@ -82,8 +82,6 @@ class OptParam
         std::vector<double>      weightedTemperature_;
         //! Use annealing in the optimization. Value < 1 means annealing will happen
         real                     anneal_         = 1;
-        //! Use adaptive MCMC in the optimization
-        bool                     adaptive_       = false;
         //! Flag determining whether to be verbose printing
         bool                     verbose_        = false;
         //! Base name for parameter convergence file names
@@ -163,9 +161,6 @@ class OptParam
          */
         bool anneal (int iter) const;
         
-        // ! \brief Return whether or not call Adaptive MCMC
-        bool adaptive () const { return adaptive_; }
-
         //! \brief Return xvg file for convergence information
         const std::string &xvgConv() const { return xvgconv_; }
 
@@ -375,14 +370,6 @@ class Bayes : public OptParam
          */
         bool MCMC(FILE *fplog, bool evaluate_testset, double *chi2);
         
-        /*! \brief
-         * Run adaptive Markov chain Monte carlo (MCMC) simulation
-         * \param[in] fplog File pointer for logging info. May be nullptr.
-         * \param[out] chi2             The lowest chi-quared
-         * \return True if the energy decreased during the MCMC
-         */
-        bool Adaptive_MCMC(FILE *fplog, double *chi2);
-
         /*! \brief
          * Perform a sensitivity analysis by systematically changing
          * all parameters and re-evaluating the chi2.

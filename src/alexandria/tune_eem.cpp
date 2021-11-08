@@ -663,14 +663,7 @@ bool OptACM::runMaster(const gmx_output_env_t *oenv,
     {
         Bayes::setOutputFiles(xvgconv, paramClass, xvgepot, oenv);
         double chi2     = 0;
-        if (Bayes::adaptive())
-        {
-            bMinimum = Bayes::Adaptive_MCMC(logFile(), &chi2);
-        }
-        else
-        {
-            bMinimum = Bayes::MCMC(logFile(), bEvaluate_testset, &chi2);
-        }
+        bMinimum = Bayes::MCMC(logFile(), bEvaluate_testset, &chi2);
     }
     if (sensitivity)
     {
