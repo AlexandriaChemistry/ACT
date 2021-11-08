@@ -1,6 +1,8 @@
 #ifndef ACT_TERMINATOR_H
 #define ACT_TERMINATOR_H
 
+#include "aliases.h"
+
 /*!
  * Abstract class for termination conditions
  */
@@ -15,7 +17,7 @@ public:
      * @param popSize               size of the population
      * @return                      true if the evolution is complete, false otherwise
      */
-    virtual bool terminate(double** const population, double* const fitness, const int generationNumber,
+    virtual bool terminate(const matrix population, const vector fitness, const int generationNumber,
                            const int popSize);
 
 };
