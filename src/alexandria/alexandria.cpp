@@ -61,9 +61,11 @@ main(int argc, char *argv[])
             printf("\n     Welcome to the Alexandria Chemistry Toolkit\n\n");
             printf("              Copyright (c) 2014-2021\n\n");
             printf("Mohammad M. Ghahremanpour, Paul J. van Maaren and David van der Spoel\n\n");
-            printf("See http://folding.bmc.uu.se/ for details.\n\n");
+            printf("See https://github.com/dspoel/ACT for details.\n\n");
             printf("Alexandria Chemistry Toolkit is free software under the Gnu Public License v 2.\n");
             printf("Read more at http://www.gnu.org/licenses/gpl-2.0.html\n\n");
+            printf("Parts of ACT are under the Gnu Lesser Public License 2.1 as indicated\n");
+            printf("in the individual files.\n\n");
         }
         int rc = manager.run(argc, argv);
         gmx::finalizeForCommandLine();
