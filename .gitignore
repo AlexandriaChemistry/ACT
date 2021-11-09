@@ -28,7 +28,6 @@ Testing
 build_Release_DOUBLE
 cmake-build-debug
 
-
 # Examples
 examples/TUNE_EEM/*.xvg
 examples/TUNE_EEM/*.log
