@@ -17,6 +17,7 @@ GeneticAlgorithm::GeneticAlgorithm(const int popSize,
                                    const int chromosomeLength,
                                    Initializer initializer,
                                    FitnessComputer fitComputer,
+                                   Sorter sorter,
                                    ProbabilityComputer probComputer,
                                    Selector selector,
                                    Crossover crossover,
@@ -27,6 +28,7 @@ GeneticAlgorithm::GeneticAlgorithm(const int popSize,
     this->chromosomeLength = chromosomeLength;
     this->initializer = initializer;
     this->fitComputer = fitComputer;
+    this->sorter = sorter;
     this->probComputer = probComputer;
     this->selector = selector;
     this->crossover = crossover;
@@ -75,6 +77,9 @@ const ga_result_t GeneticAlgorithm::evolve(const double prCross, const double pr
         // Increase generation counter
         generation++;
 
+        // Sort individuals based on fitness
+        sorter.sort(oldPop, fitness, popSize);
+
         // Normalize the fitness into a probability
         probComputer.compute(fitness, probability, popSize);
 
@@ -90,8 +95,8 @@ const ga_result_t GeneticAlgorithm::evolve(const double prCross, const double pr
                 crossover.offspring(parent1, parent2, newPop[i], newPop[i+1],
                                     chromosomeLength);
             } else {
-                copyVectorValues(parent1, newPop[i], chromosomeLength);
-                copyVectorValues(parent2, newPop[i+1], chromosomeLength);
+                copyVectorValues(parent1, newPop[i], 0, chromosomeLength);
+                copyVectorValues(parent2, newPop[i+1], 0, chromosomeLength);
             }
 
             // Do mutation in each child, and compute fitness to avoid another traversal
