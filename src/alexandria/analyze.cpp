@@ -275,7 +275,7 @@ static void alexandria_molprop_analyze(FILE                              *fplog,
         }
     }
     printf("--------------------------------------------------\n");
-    printf("      Statistics for %s\n", mpo_name[mpo]);
+    printf("      Statistics for %s\n", mpo_name(mpo));
     ntot = 0;
     for (const auto &r : rc)
     {
@@ -284,7 +284,7 @@ static void alexandria_molprop_analyze(FILE                              *fplog,
         ntot += r.count();
     }
     printf("There are %d entries with experimental %s of type %s\n", ntot,
-           mpo_name[mpo], exp_type);
+           mpo_name(mpo), exp_type);
     if (0 == ntot)
     {
         printf("   did you forget to pass the -exp_type flag?\n");
@@ -477,22 +477,12 @@ int alex_analyze(int argc, char *argv[])
             }
         }
     }
-    mpo = MPO_NR;
+    mpo = MolPropObservable::DIPOLE;    
     if (opt2parg_bSet("-prop", npa, pa))
     {
-        for (i = 0; (i < MPO_NR); i++)
-        {
-            if (strcasecmp(prop[0], prop[i+1]) == 0)
-            {
-                mpo = (MolPropObservable) i;
-                break;
-            }
-        }
+        mpo = stringToMolPropObservable(prop[0]);
     }
-    if (mpo == MPO_NR)
-    {
-        mpo = MPO_DIPOLE;
-    }
+
     try
     {
         alexandria::readPoldata(opt2fn("-d", NFILE, fnm), &pd);

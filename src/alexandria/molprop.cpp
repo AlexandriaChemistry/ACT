@@ -34,6 +34,7 @@
 
 #include <cmath>
 
+#include <map>
 #include <string>
 #include <vector>
 
@@ -45,15 +46,49 @@
 #include "gmx_simple_comm.h"
 #include "units.h"
 
-const char *mpo_name[MPO_NR] =
+std::map<MolPropObservable, const char *> mpo_name_ =
 {
-    "potential", "dipole", "quadrupole", "polarizability", "energy", "entropy", "charge"
+    { MolPropObservable::POTENTIAL, "potential" }, 
+    { MolPropObservable::DIPOLE, "dipole" }, 
+    { MolPropObservable::QUADRUPOLE, "quadrupole" },
+    { MolPropObservable::POLARIZABILITY, "polarizability" }, 
+    { MolPropObservable::ENERGY, "energy" }, 
+    { MolPropObservable::ENTROPY, "entropy" },
+    { MolPropObservable::CHARGE, "charge" }
 };
 
-const char *mpo_unit[MPO_NR] =
+std::map<MolPropObservable, const char *> mpo_unit_ =
 {
-    "e/nm", "D", "B", "\\AA$^3$", "kJ/mol", "J/mol K"
+    { MolPropObservable::POTENTIAL, "e/nm" }, 
+    { MolPropObservable::DIPOLE, "D" }, 
+    { MolPropObservable::QUADRUPOLE, "B" },
+    { MolPropObservable::POLARIZABILITY, "\\AA$^3$" }, 
+    { MolPropObservable::ENERGY, "kJ/mol" }, 
+    { MolPropObservable::ENTROPY, "J/mol K" },
+    { MolPropObservable::CHARGE, "e" }
 };
+
+const char *mpo_name(MolPropObservable MPO)
+{
+    return mpo_name_[MPO];
+}
+
+const char *mpo_unit(MolPropObservable MPO)
+{
+    return mpo_unit_[MPO];
+}
+
+MolPropObservable stringToMolPropObservable(const std::string &str)
+{
+    for (const auto &mn : mpo_name_)
+    {
+        if (strcasecmp(mn.second, str.c_str()) == 0)
+        {
+            return mn.first;
+        }
+    }
+    GMX_THROW(gmx::InvalidInputError(gmx::formatString("Cannot find MolPropObservable %s", str.c_str()).c_str()));
+}
 
 namespace alexandria
 {
@@ -751,7 +786,7 @@ bool Experiment::getHF(double *value) const
     bool        done = false;
     tensor      quad;
 
-    if (getVal((char *)"HF", MPO_ENERGY, value, &error, &T, vec, quad))
+    if (getVal((char *)"HF", MolPropObservable::ENERGY, value, &error, &T, vec, quad))
     {
         done = true;
     }
@@ -880,8 +915,8 @@ bool Experiment::getVal(const std::string &type,
 
     switch (mpo)
     {
-        case MPO_ENERGY:
-        case MPO_ENTROPY:
+        case MolPropObservable::ENERGY:
+        case MolPropObservable::ENTROPY:
             for (auto &mei : molecularEnergyConst())
             {
                 if (((type.size() == 0) || (type.compare(mei.getType()) == 0)) &&
@@ -894,7 +929,7 @@ bool Experiment::getVal(const std::string &type,
                 }
             }
             break;
-        case MPO_DIPOLE:
+        case MolPropObservable::DIPOLE:
             for (auto &mdp : dipoleConst())
             {
                 if (((type.size() == 0) || (type.compare(mdp.getType()) == 0))  &&
@@ -910,7 +945,7 @@ bool Experiment::getVal(const std::string &type,
                 }
             }
             break;
-        case MPO_POLARIZABILITY:
+        case MolPropObservable::POLARIZABILITY:
         {
             for (auto &mdp : polarizabilityConst())
             {
@@ -935,7 +970,7 @@ bool Experiment::getVal(const std::string &type,
             }
         }
         break;
-        case MPO_QUADRUPOLE:
+        case MolPropObservable::QUADRUPOLE:
             for (auto &mqi : quadrupoleConst())
             {
                 if (((type.size() == 0) || (type.compare(mqi.getType()) == 0)) &&
@@ -958,7 +993,7 @@ bool Experiment::getVal(const std::string &type,
                 }
             }
             break;
-        case MPO_CHARGE:
+        case MolPropObservable::CHARGE:
         {
             int i = 0;
             for (auto &mai : calcAtomConst())
@@ -1751,10 +1786,10 @@ ExperimentIterator MolProp::getCalcPropType(const std::string &method,
             bool done = false;
             switch (mpo)
             {
-                case MPO_POTENTIAL:
+                case MolPropObservable::POTENTIAL:
                     done = ci->NPotential() > 0;
                     break;
-                case MPO_DIPOLE:
+                case MolPropObservable::DIPOLE:
                     for (auto &mdp : ci->dipoleConst())
                     {
                         done = ((nullptr == type) ||
@@ -1765,7 +1800,7 @@ ExperimentIterator MolProp::getCalcPropType(const std::string &method,
                         }
                     }
                     break;
-                case MPO_QUADRUPOLE:
+                case MolPropObservable::QUADRUPOLE:
                     for (auto &mdp : ci->quadrupoleConst())
                     {
                         done = ((nullptr == type) ||
@@ -1776,7 +1811,7 @@ ExperimentIterator MolProp::getCalcPropType(const std::string &method,
                         }
                     }
                     break;
-                case MPO_POLARIZABILITY:
+                case MolPropObservable::POLARIZABILITY:
                     for (auto &mdp : ci->polarizabilityConst())
                     {
                         done = ((nullptr == type) ||
@@ -1787,8 +1822,8 @@ ExperimentIterator MolProp::getCalcPropType(const std::string &method,
                         }
                     }
                     break;
-                case MPO_ENERGY:
-                case MPO_ENTROPY:
+                case MolPropObservable::ENERGY:
+                case MolPropObservable::ENTROPY:
                     for (auto &mdp : ci->molecularEnergyConst())
                     {
                         done = ((nullptr == type) ||

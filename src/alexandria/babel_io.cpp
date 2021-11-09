@@ -507,42 +507,42 @@ bool readBabel(const char          *g09,
                                     &ZPE))
         {
             alexandria::MolecularEnergy me1("DeltaHform",
-                                            mpo_unit[MPO_ENERGY],
+                                            mpo_unit(MolPropObservable::ENERGY),
                                             0,
                                             epGAS,
                                             alexandria::convertToGromacs(DeltaHf0, energyUnit),
                                             0);
             mpt->LastExperiment()->AddEnergy(me1);
             alexandria::MolecularEnergy me2("DeltaHform",
-                                            mpo_unit[MPO_ENERGY],
+                                            mpo_unit(MolPropObservable::ENERGY),
                                             temperature,
                                             epGAS,
                                             alexandria::convertToGromacs(DeltaHfT, energyUnit),
                                             0);
             mpt->LastExperiment()->AddEnergy(me2);
             alexandria::MolecularEnergy me3("DeltaGform",
-                                            mpo_unit[MPO_ENERGY],
+                                            mpo_unit(MolPropObservable::ENERGY),
                                             temperature,
                                             epGAS,
                                             alexandria::convertToGromacs(DeltaGfT, energyUnit),
                                             0);
             mpt->LastExperiment()->AddEnergy(me3);
             alexandria::MolecularEnergy me4("DeltaSform",
-                                            mpo_unit[MPO_ENTROPY],
+                                            mpo_unit(MolPropObservable::ENTROPY),
                                             temperature,
                                             epGAS,
                                             alexandria::convertToGromacs(DeltaSfT, entropyUnit),
                                             0);
             mpt->LastExperiment()->AddEnergy(me4);
             alexandria::MolecularEnergy me5("S0",
-                                            mpo_unit[MPO_ENTROPY],
+                                            mpo_unit(MolPropObservable::ENTROPY),
                                             temperature,
                                             epGAS,
                                             alexandria::convertToGromacs(S0T, entropyUnit),
                                             0);
             mpt->LastExperiment()->AddEnergy(me5);
             alexandria::MolecularEnergy me6("cp",
-                                            mpo_unit[MPO_ENTROPY],
+                                            mpo_unit(MolPropObservable::ENTROPY),
                                             temperature,
                                             epGAS,
                                             alexandria::convertToGromacs(CPT, entropyUnit),
@@ -552,7 +552,7 @@ bool readBabel(const char          *g09,
             for (int i = 0; (i < 3); i++)
             {
                 alexandria::MolecularEnergy mes(scomp[i],
-                                                mpo_unit[MPO_ENTROPY],
+                                                mpo_unit(MolPropObservable::ENTROPY),
                                                 temperature,
                                                 epGAS,
                                                 alexandria::convertToGromacs(Scomponents[i], entropyUnit),
@@ -560,7 +560,7 @@ bool readBabel(const char          *g09,
                 mpt->LastExperiment()->AddEnergy(mes);
             }
             alexandria::MolecularEnergy me7("ZPE",
-                                            mpo_unit[MPO_ENERGY],
+                                            mpo_unit(MolPropObservable::ENERGY),
                                             0,
                                             epGAS,
                                             alexandria::convertToGromacs(ZPE, energyUnit),
@@ -570,7 +570,7 @@ bool readBabel(const char          *g09,
     }
 
     // HF Eenergy
-    alexandria::MolecularEnergy mes("HF", mpo_unit[MPO_ENERGY], 0, epGAS, 
+    alexandria::MolecularEnergy mes("HF", mpo_unit(MolPropObservable::ENERGY), 0, epGAS, 
                                     alexandria::convertToGromacs(mol.GetEnergy(), energyUnit), 0);
     mpt->LastExperiment()->AddEnergy(mes);
 

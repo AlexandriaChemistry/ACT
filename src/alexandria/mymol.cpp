@@ -1898,7 +1898,7 @@ void MyMol::PrintTopology(FILE                   *fp,
     T = -1;
     const char *qm_type = "electronic";
     const char *qm_conf = "minimum";
-    if (getPropRef(MPO_DIPOLE, iqmQM, method, basis, qm_conf,
+    if (getPropRef(MolPropObservable::DIPOLE, iqmQM, method, basis, qm_conf,
                    qm_type, &value, &error,
                    &T, &myref, &mylot, vec, myQ))
     {
@@ -1922,7 +1922,7 @@ void MyMol::PrintTopology(FILE                   *fp,
                aquad);
 
     T = -1;
-    if (getPropRef(MPO_QUADRUPOLE, iqmQM, method, basis, qm_conf,
+    if (getPropRef(MolPropObservable::QUADRUPOLE, iqmQM, method, basis, qm_conf,
                    qm_type, &value, &error,
                    &T, &myref, &mylot, vec, myQ))
     {
@@ -1955,7 +1955,7 @@ void MyMol::PrintTopology(FILE                   *fp,
             commercials.push_back(buf);
 
             T = -1;
-            if (getPropRef(MPO_POLARIZABILITY, iqmQM, method, basis, "",
+            if (getPropRef(MolPropObservable::POLARIZABILITY, iqmQM, method, basis, "",
                                       (char *)"electronic", &isoPol_elec_, &error,
                                       &T, &myref, &mylot, vec, alpha_elec_))
             {
@@ -2195,7 +2195,7 @@ immStatus MyMol::getExpProps(gmx_bool           bQM,
         std::vector<real> q;
         q.resize(natom, 0.0);
         qType qi = i.first;
-        if (getPropRef(MPO_CHARGE, iqmQM,
+        if (getPropRef(MolPropObservable::CHARGE, iqmQM,
                        method, basis, "",
                        qTypeName(qi),
                        &value, &error, &T,
@@ -2216,7 +2216,7 @@ immStatus MyMol::getExpProps(gmx_bool           bQM,
     T = 298.15;
     immStatus imm = immStatus::OK;
     if (bDHform &&
-        getProp(MPO_ENERGY, (bQM ? iqmQM : iqmExp),
+        getProp(MolPropObservable::ENERGY, (bQM ? iqmQM : iqmExp),
                            method, basis, "",
                            (char *)"DeltaHform", &value, &error, &T))
     {
@@ -2234,7 +2234,7 @@ immStatus MyMol::getExpProps(gmx_bool           bQM,
         if (bZPE)
         {
 
-            if (getProp(MPO_ENERGY, iqmBoth,
+            if (getProp(MolPropObservable::ENERGY, iqmBoth,
                                    method, basis, "",
                                    (char *)"ZPE", &ZPE, &error, &T))
             {
@@ -2255,7 +2255,7 @@ immStatus MyMol::getExpProps(gmx_bool           bQM,
     if (imm == immStatus::OK)
     {
         T = -1;
-        if (getPropRef(MPO_DIPOLE, iqmQM,
+        if (getPropRef(MolPropObservable::DIPOLE, iqmQM,
                        method, basis, "",
                        (char *)"electronic",
                        &value, &error, &T, &myref, &mylot,
@@ -2290,7 +2290,7 @@ immStatus MyMol::getExpProps(gmx_bool           bQM,
     if (immStatus::OK == imm)
     {
         T = -1;
-        if (getPropRef(MPO_QUADRUPOLE, iqmQM,
+        if (getPropRef(MolPropObservable::QUADRUPOLE, iqmQM,
                        method, basis, "",
                        (char *)"electronic",
                        &value, &error, &T, &myref, &mylot,
@@ -2299,7 +2299,7 @@ immStatus MyMol::getExpProps(gmx_bool           bQM,
             qProps_.find(qType::Elec)->second.setQuadrupole(quadrupole);
         }
         T = -1;
-        if (getPropRef(MPO_POLARIZABILITY, iqmQM,
+        if (getPropRef(MolPropObservable::POLARIZABILITY, iqmQM,
                        method, basis, "",
                        (char *)"electronic",
                        &isoPol_elec_, &error, &T,
@@ -2633,7 +2633,7 @@ void MyMol::initQgenResp(const Poldata     *pd,
     std::uniform_real_distribution<> uniform(0.0, 1.0);
     double                           cutoff = 0.01*maxESP;
  
-    auto ci = getCalcPropType(method, basis, &mylot, MPO_POTENTIAL, nullptr);
+    auto ci = getCalcPropType(method, basis, &mylot, MolPropObservable::POTENTIAL, nullptr);
     if (ci != EndExperiment())
     {
         int iesp = 0;

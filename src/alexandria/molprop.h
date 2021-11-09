@@ -54,15 +54,21 @@
  * \inpublicapi
  * \ingroup module_alexandria
  */
-enum MolPropObservable {
-    MPO_POTENTIAL,
-    MPO_DIPOLE,
-    MPO_QUADRUPOLE,
-    MPO_POLARIZABILITY,
-    MPO_ENERGY,
-    MPO_ENTROPY,
-    MPO_CHARGE,
-    MPO_NR
+enum class MolPropObservable {
+    //! Electrostatic potential
+    POTENTIAL,
+    //! Dipole
+    DIPOLE,
+    //! Quadrupole
+    QUADRUPOLE,
+    //! Polarizability
+    POLARIZABILITY,
+    //! Energy
+    ENERGY,
+    //! Entropy
+    ENTROPY,
+    //! Charge
+    CHARGE
 };
 
 /*! \brief
@@ -75,15 +81,26 @@ enum iqmType {
     iqmExp, iqmBoth, iqmQM, iqmNR
 };
 
-/*! \breif
+/*! \brief
  * Strings describing the MolPropObservable enum elements
+ * \param[in] MPO The observable
+ * \retutn the string describing the unit
  */
-extern const char *mpo_name[MPO_NR];
+const char *mpo_name(MolPropObservable MPO);
 
 /*! \brief
  * Strings describing the MolPropObservable enum units
+ * \param[in] MPO The observable
+ * \retutn the string describing the unit
  */
-extern const char *mpo_unit[MPO_NR];
+const char *mpo_unit(MolPropObservable MPO);
+
+/*! \brief Deduct MolPropObservable from string
+ * \param[in] str The string to use
+ * \return the corresponding MolPropObservable
+ * \throws if there is no corresponding MolPropObservable
+ */
+MolPropObservable stringToMolPropObservable(const std::string &str);
 
 /*! \brief
  * Contains all classes related to alexandria force field tools

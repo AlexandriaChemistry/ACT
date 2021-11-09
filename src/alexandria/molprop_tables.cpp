@@ -106,11 +106,11 @@ static void stats_header(LongTable         &lt,
             // Caption
             char caption[STRLEN];
             snprintf(caption, sizeof(caption), "Performance of the different methods for predicting the molecular %s for molecules containing different chemical groups, given as the RMSD from experimental values (%s), and in brackets the number of molecules in this particular subset. {\\bf Data set: %s.} At the bottom the correlation coefficient R, the regression coefficient a and the intercept b are given as well as the normalized quality of the fit $\\chi^2$, the mean signed error (MSE) and the mean absolute error (MSA).",
-                     mpo_name[mpo], mpo_unit[mpo], iMolSelectName(ims));
+                     mpo_name(mpo), mpo_unit(mpo), iMolSelectName(ims));
             lt.setCaption(caption);
             // Label
             char label[STRLEN];
-            snprintf(label, sizeof(label), "%s_rmsd", mpo_name[mpo]);
+            snprintf(label, sizeof(label), "%s_rmsd", mpo_name(mpo));
             lt.setLabel(label);
         }
         else
@@ -573,7 +573,7 @@ static void alexandria_molprop_atomtype_polar_table(FILE                       *
     std::vector<MolProp>::iterator  mpi;
     double                          ahc, ahp, bos_pol;
     char                            longbuf[STRLEN];
-    MolPropObservable               mpo = MPO_POLARIZABILITY;
+    MolPropObservable               mpo = MolPropObservable::POLARIZABILITY;
     LongTable                       lt(fp, false, nullptr);
     CompositionSpecs                cs;
     const char                     *alexandria = cs.searchCS(iCalexandria)->name();
@@ -882,8 +882,8 @@ void alexandria_molprop_prop_table(FILE                 *fp,
     {
         return;
     }
-    bPrintConf = false; //(mpo == MPO_DIPOLE);
-    prop_header(lt, mpo_name[mpo], mpo_unit[mpo],
+    bPrintConf = false; //(mpo == MolPropObservable::DIPOLE);
+    prop_header(lt, mpo_name(mpo), mpo_unit(mpo),
                 rel_toler, abs_toler, qmc,
                 ims, bPrintConf, bPrintBasis, bPrintMultQ);
     for (auto &mpi : mp)
@@ -899,7 +899,7 @@ void alexandria_molprop_prop_table(FILE                 *fp,
             {
                 switch (mpo)
                 {
-                    case MPO_DIPOLE:
+                    case MolPropObservable::DIPOLE:
                         for (auto mdi : ei.dipoleConst())
                         {
                             if (mdi.getType().compare(exp_type) == 0)
@@ -914,7 +914,7 @@ void alexandria_molprop_prop_table(FILE                 *fp,
                             }
                         }
                         break;
-                    case MPO_POLARIZABILITY:
+                    case MolPropObservable::POLARIZABILITY:
                         for (auto mdi : ei.polarizabilityConst())
                         {
                             if (mdi.getType().compare(exp_type) == 0)
@@ -929,8 +929,8 @@ void alexandria_molprop_prop_table(FILE                 *fp,
                             }
                         }
                         break;
-                    case MPO_ENERGY:
-                    case MPO_ENTROPY:
+                    case MolPropObservable::ENERGY:
+                    case MolPropObservable::ENTROPY:
                         for (auto mei : ei.molecularEnergyConst())
                         {
                             if (mei.getType().compare(exp_type) == 0)
