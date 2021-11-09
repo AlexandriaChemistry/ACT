@@ -282,7 +282,7 @@ void OptACM::initChargeGeneration(iMolSelect ims)
         {
             // For fitting alpha we need a reference polarizability
             double ref_pol, error, T = 0;
-            if (mymol.getPropRef(MolPropObservable::POLARIZABILITY, iqmQM,
+            if (mymol.getPropRef(MolPropObservable::POLARIZABILITY, iqmType::QM,
                                  method, basis, "",
                                  (char *)"electronic",
                                  &ref_pol, &error, &T,

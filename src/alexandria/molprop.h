@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020
+ * Copyright (C) 2014-2021
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -78,7 +78,12 @@ enum class MolPropObservable {
  * \ingroup module_alexandria
  */
 enum iqmType {
-    iqmExp, iqmBoth, iqmQM, iqmNR
+    //! Experimental data only
+    Exp,
+    //! Both experimental and quantum-chemical
+    Both,
+    //! Quantum-chemistry only
+    QM
 };
 
 /*! \brief

@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020
+ * Copyright (C) 2014-2021
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -164,7 +164,7 @@ static void write_corr_xvg(FILE                             *fplog,
             exp_val   = 0;
             exp_error = 0;
             bExp      = mpi.getProp(mpo,
-                                    iqmExp,
+                                    iqmType::Exp,
                                     q->method(),
                                     q->basis(),
                                     "",
@@ -179,7 +179,7 @@ static void write_corr_xvg(FILE                             *fplog,
                 qm_val   = 0;
                 qm_error = 0;
                 bQM      = mpi.getProp(mpo,
-                                       iqmQM,
+                                       iqmType::QM,
                                        q->method(),
                                        q->basis(),
                                        "",
@@ -326,7 +326,7 @@ static void alexandria_molprop_analyze(FILE                              *fplog,
                 if ((nullptr != iupac) && (strlen(iupac) > 0))
                 {
                     std::string myref, mylot;
-                    if (mpi->getPropRef(mpo, iqmBoth,
+                    if (mpi->getPropRef(mpo, iqmType::Both,
                                         method, basis, "", "",
                                         &value, &error, &T, &myref, &mylot,
                                         vec, quadrupole))

@@ -135,7 +135,7 @@ static void gmx_molprop_csv(const char *fn,
         for (k = 0; (k < NEMP); k++)
         {
             std::string ref, mylot;
-            if (mpi->getPropRef(mpo[k], iqmExp,
+            if (mpi->getPropRef(mpo[k], iqmType::Exp,
                                 "", "", "", nullptr, &d, &err, &T,
                                 &ref, &mylot, vec,
                                 quadrupole))
@@ -148,7 +148,7 @@ static void gmx_molprop_csv(const char *fn,
             }
             for (auto j = qmc[k].beginCalc(); j < qmc[k].endCalc(); j++)
             {
-                if (mpi->getProp(mpo[k], iqmQM, j->method(), j->basis(),
+                if (mpi->getProp(mpo[k], iqmType::QM, j->method(), j->basis(),
                                  nullptr, j->type(), &T, &d, nullptr))
                 {
                     fprintf(fp, ",\"%.4f\"", d);

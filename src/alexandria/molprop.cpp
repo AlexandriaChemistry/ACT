@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020
+ * Copyright (C) 2014-2021
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -1648,7 +1648,7 @@ bool MolProp::getPropRef(MolPropObservable mpo, iqmType iQM,
     bool   done = false;
     double Told = *T;
 
-    if (iQM == iqmBoth)
+    if (iQM == iqmType::Both)
     {
         for (auto &ei : experimentConst())
         {
@@ -1666,7 +1666,7 @@ bool MolProp::getPropRef(MolPropObservable mpo, iqmType iQM,
             }
         }
     }
-    if (iQM == iqmExp)
+    if (iQM == iqmType::Exp)
     {
         for (auto &ei : experimentConst())
         {
@@ -1688,7 +1688,7 @@ bool MolProp::getPropRef(MolPropObservable mpo, iqmType iQM,
             }
         }
     }
-    else if (iQM == iqmQM)
+    else if (iQM == iqmType::QM)
     {
         for (auto &ci : experimentConst())
         {

@@ -192,13 +192,13 @@ void alexandria_molprop_stats_table(FILE                 *fp,
                     double exp_err = 0;
                     double Texp    = -1;
                     bool   bQM     = false;
-                    bool   bExp    = mpi.getProp(mpo, iqmExp, "", "", "",
+                    bool   bExp    = mpi.getProp(mpo, iqmType::Exp, "", "", "",
                                                  exp_type, &exp_val, &exp_err, &Texp);
                     if (bExp)
                     {
                         double qm_err = 0;
                         double Tqm    = -1;
-                        bQM    = mpi.getProp(mpo, iqmQM, q->method(), q->basis(), "",
+                        bQM    = mpi.getProp(mpo, iqmType::QM, q->method(), q->basis(), "",
                                              q->type(), &qm_val, &qm_err, &Tqm);
                         //printf("Texp %g Tqm %g bQM = %s\n", Texp, Tqm, bQM ? "true" : "false");
                         if (bQM)
@@ -260,10 +260,10 @@ void alexandria_molprop_stats_table(FILE                 *fp,
             {
                 double exp_err, qm_err;
                 double Texp = -1;
-                bool   bExp = mpi->getProp(mpo, iqmExp, "", "", "", exp_type,
+                bool   bExp = mpi->getProp(mpo, iqmType::Exp, "", "", "", exp_type,
                                            &exp_val, &exp_err, &Texp);
                 double Tqm  = Texp;
-                bool   bQM  = mpi->getProp(mpo, iqmQM, q->method(), q->basis(),
+                bool   bQM  = mpi->getProp(mpo, iqmType::QM, q->method(), q->basis(),
                                            "", q->type(),
                                            &qm_val, &qm_err, &Tqm);
                 if (bExp && bQM)
@@ -620,11 +620,11 @@ static void alexandria_molprop_atomtype_polar_table(FILE                       *
                         std::string method, basis;
                         splitLot(lot, &method, &basis);
                         double      val, T = -1;
-                        if (mpi.getProp(mpo, iqmExp, method, basis, "", exp_type, &val, nullptr, &T))
+                        if (mpi.getProp(mpo, iqmType::Exp, method, basis, "", exp_type, &val, nullptr, &T))
                         {
                             nexp++;
                         }
-                        else if (mpi.getProp(mpo, iqmQM, method, basis, "", (char *)"electronic", &val, nullptr, &T))
+                        else if (mpi.getProp(mpo, iqmType::QM, method, basis, "", (char *)"electronic", &val, nullptr, &T))
                         {
                             nqm++;
                         }
@@ -958,7 +958,7 @@ void alexandria_molprop_prop_table(FILE                 *fp,
                     std::string ref, mylot;
                     double      T = ed[nexp].temp_;
                     if ((q->type().compare(exp_type) == 0) &&
-                        mpi.getPropRef(mpo, iqmQM, q->method(), q->basis(), "",
+                        mpi.getPropRef(mpo, iqmType::QM, q->method(), q->basis(), "",
                                        q->type(), &calc_val, &calc_err, &T,
                                        &ref, &mylot, rvec, quadrupole))
                     {
