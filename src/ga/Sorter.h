@@ -35,7 +35,7 @@ public:
 /*!
  * Class for Merge-sort
  */
-class MergeSorter: public Sorter {
+class MergeSorter : public Sorter {
 
     double chromosomeLength;
     matrix tmpPop;

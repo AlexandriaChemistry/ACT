@@ -13,8 +13,6 @@
 #include "Terminator.h"
 
 
-
-
 class GeneticAlgorithm {
 
     // Scalars
