@@ -5,6 +5,7 @@
 
 #include "Initializer.h"
 #include "FitnessComputer.h"
+#include "Sorter.h"
 #include "ProbabilityComputer.h"
 #include "Selector.h"
 #include "Crossover.h"
@@ -30,6 +31,7 @@ class GeneticAlgorithm {
     // Object pointers
     Initializer initializer;
     FitnessComputer fitComputer;
+    Sorter sorter;
     ProbabilityComputer probComputer;
     Selector selector;
     Crossover crossover;
@@ -43,6 +45,7 @@ public:
      * @param chromosomeLength      length of each individual
      * @param initializer           Initializer object
      * @param fitComputer           FitnessComputer object
+     * @param sorter                Sorter object
      * @param probComputer          ProbabilityComputer object
      * @param selector              Selector object
      * @param crossover             Crossover object
@@ -53,6 +56,7 @@ public:
                      const int chromosomeLength,
                      Initializer initializer,
                      FitnessComputer fitComputer,
+                     Sorter sorter,
                      ProbabilityComputer probComputer,
                      Selector selector,
                      Crossover crossover,
