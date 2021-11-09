@@ -31,4 +31,50 @@ public:
 
 };
 
+
+/*!
+ * Class for Boltzmann temperature probability computation
+ */
+class BoltzmannProbabilityComputer : public ProbabilityComputer {
+
+    double temperature;
+    vector exponentials;
+
+public:
+    /*!
+     * Create a new BoltzmannProbabilityComputer object
+     * @param popSize           number of individuals in the population
+     * @param temperature       the temperature
+     */
+    BoltzmannProbabilityComputer(const int popSize, const double temperature);
+
+    void compute(const vector fitness, const vector prob, const int popSize);
+
+};
+
+
+/*!
+ * Class for Rank probability computation
+ */
+class RankProbabilityComputer : public ProbabilityComputer {
+
+    double sumOfRanks;
+
+public:
+    /*!
+     * Create a new RankProbabilityComputer object
+     * @param popSize       number of individuals in the population
+     */
+    RankProbabilityComputer(const int popSize);
+
+    /*!
+     * Here we assume that population and fitness are sorted in a descending manner
+     * @param fitness
+     * @param prob
+     * @param popSize
+     */
+    void compute(const vector fitness, const vector prob, const int popSize);
+
+};
+
 #endif //ACT_PROBABILITYCOMPUTER_H
