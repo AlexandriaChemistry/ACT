@@ -64,7 +64,7 @@ const ga_result_t GeneticAlgorithm::evolve(const double prCross, const double pr
     int generation = 0;
 
     // Initialize the population
-    initializer.initialize(oldPop, popSize);
+    for (vector ind : oldPop) initializer.initialize(ind, chromosomeLength);
 
     // Compute fitness
     for (i = 0; i < popSize; i++) {
@@ -81,7 +81,7 @@ const ga_result_t GeneticAlgorithm::evolve(const double prCross, const double pr
         sorter.sort(oldPop, fitness, popSize);
 
         // Normalize the fitness into a probability
-        probComputer.compute(fitness, probability, popSize);
+        probComputer.compute(fitness, probability, popSze);
 
         // Generate new population
         for (i = 0; i < popSize; i+=2) {
