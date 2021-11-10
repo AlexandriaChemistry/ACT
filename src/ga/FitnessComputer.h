@@ -17,7 +17,7 @@ public:
      */
     virtual void compute(const vector       individual,
                          double* const      ftPtr,
-                         const int          length);
+                         const int          length) {};
 
 };
 

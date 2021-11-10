@@ -38,7 +38,7 @@ public:
                            const vector     parent2,
                                  vector     child1,
                                  vector     child2,
-                           const int        length);
+                           const int        length) {};
     
     /*!
      * Return random index

@@ -14,7 +14,7 @@ public:
      * Mutate a gene
      * @param gene  pointer to the gene
      */
-    virtual void mutate(double* const gene);
+    virtual void mutate(double* const gene) {};
 
 };
 

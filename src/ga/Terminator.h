@@ -22,10 +22,15 @@ public:
                            const vector     fitness,
                            const int        generationNumber,
                            const int        popSize,
-                           const int        chromosomeLength);
+                           const int        chromosomeLength) { return true; };
 
 };
 
+
+/*!
+ * Toy terminator class which returns true when the sum of squared values in the vector is no larger than
+ * 0.01 * <chromosomeLength>
+ */
 class SimpleTerminator : public Terminator {
 
 public:
