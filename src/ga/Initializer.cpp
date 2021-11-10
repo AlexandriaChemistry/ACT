@@ -1,6 +1,7 @@
 #include "Initializer.h"
 
-SimpleInitializer::SimpleInitializer(const double min, const double max) {
+SimpleInitializer::SimpleInitializer(const double   min,
+                                     const double   max) {
     gen = std::mt19937(rd());
     dis = std::uniform_real_distribution<>(min, max);
 }

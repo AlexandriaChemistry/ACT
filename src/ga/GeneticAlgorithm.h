@@ -27,14 +27,14 @@ class GeneticAlgorithm {
     vector probability;
 
     // Object pointers
-    Initializer* initializer;
-    FitnessComputer* fitComputer;
-    Sorter* sorter;
-    ProbabilityComputer* probComputer;
-    Selector* selector;
-    Crossover* crossover;
-    Mutator* mutator;
-    Terminator* terminator;
+    Initializer*            initializer;
+    FitnessComputer*        fitComputer;
+    Sorter*                 sorter;
+    ProbabilityComputer*    probComputer;
+    Selector*               selector;
+    Crossover*              crossover;
+    Mutator*                mutator;
+    Terminator*             terminator;
 
 public:
     /*!
@@ -50,8 +50,8 @@ public:
      * @param mutator               Mutator object
      * @param terminator            Terminator object
      */
-    GeneticAlgorithm(const int              popSize,
-                     const int              chromosomeLength,
+    GeneticAlgorithm(const int               popSize,
+                     const int               chromosomeLength,
                      Initializer*            initializer,
                      FitnessComputer*        fitComputer,
                      Sorter*                 sorter,
