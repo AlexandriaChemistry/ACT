@@ -3,8 +3,8 @@
 
 int main(int argc, char const *argv[]) {
 	
-	const int popSize = 100;
-	const int chromLen = 10;
+	const int popSize = 10;
+	const int chromLen = 5;
 
 	Initializer init = SimpleInitializer(-10, 10);
 	FitnessComputer fit = SimpleFitnessComputer();
