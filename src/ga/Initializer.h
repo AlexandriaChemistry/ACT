@@ -14,7 +14,8 @@ public:
      * @param individual    the individual to initialize
      * @param length        length of the chromosome
      */
-    virtual void initialize(const vector individual, const int length);
+    virtual void initialize(const vector    individual,
+                            const int       length);
 
 };
 

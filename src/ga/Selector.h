@@ -18,7 +18,9 @@ public:
      * @param popSize           size of the population
      * @return                  the selected individual
      */
-    virtual const vector select(const matrix population, const vector probability, const int popSize);
+    virtual const vector select(const matrix    population,
+                                const vector    probability,
+                                const int       popSize);
 
 };
 
@@ -38,7 +40,9 @@ public:
       */
      RouletteSelector();
 
-     const vector select(const matrix population, const vector probability, const int popSize);
+     const vector select(const matrix   population,
+                         const vector   probability,
+                         const int      popSize);
  };
 
 

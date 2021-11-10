@@ -11,7 +11,8 @@
  * @param m     number of columns
  * @return      pointer to the matrix
  */
-matrix allocateMatrix(const int n, const int m) {
+matrix allocateMatrix(const int     n,
+                      const int     m) {
     matrix mat(n);
     for (int i = 0; i < n; i++) mat[i] = vector(m)
     return mat;
@@ -25,7 +26,10 @@ matrix allocateMatrix(const int n, const int m) {
  * @param left      left index (inclusive)
  * @param right     right index (exclusive)
  */
-void copyVectorValues(const vector arr1, const vector arr2, const int left, const int right) {
+void copyVectorValues(const vector  arr1,
+                      const vector  arr2,
+                      const int     left,
+                      const int     right) {
     for (int i = left; i < right; i++) {
         arr2[i] = arr1[i];
     }
@@ -41,7 +45,12 @@ void copyVectorValues(const vector arr1, const vector arr2, const int left, cons
  * @param j1        left index for the columns (inclusive)
  * @param j2        right index for the columns (exclusive)
  */
-void copyMatrixValues(const matrix mat1, const matrix mat2, const int i1, const int i2, const int j1, const int j2) {
+void copyMatrixValues(const matrix  mat1,
+                      const matrix  mat2,
+                      const int     i1,
+                      const int     i2,
+                      const int     j1,
+                      const int     j2) {
     int i, j;
     for (i = i1; i < i2; i++) {
         for (j = j1; j < j2; j++) {
