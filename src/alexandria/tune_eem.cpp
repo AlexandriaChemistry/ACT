@@ -194,10 +194,10 @@ public:
     
     /*! \brief
      * Computes deviation from target
-     * \param[in] verbose Whether or not to prin a lot
+     * \param[in] verbose Whether or not to print a lot
      * \param[in] calcDev The type of calculation to do
      * \param[in] ims     The data set to do computations on
-     * \return the squayre deviation
+     * \return the square deviation
      */
     virtual double calcDeviation(bool       verbose,
                                  CalcDev    calcDev,
