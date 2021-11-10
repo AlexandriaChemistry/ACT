@@ -8,5 +8,5 @@ PercentMutator::PercentMutator(const double frac) {
 
 
 void PercentMutator::mutate(double *const gene) {
-    (*gene) = dis(gen) * (*gene);
+    (*gene) *= dis(gen);
 }

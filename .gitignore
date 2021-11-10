@@ -28,6 +28,9 @@ Testing
 build_Release_DOUBLE
 cmake-build-debug
 
+# GA
+!src/ga/Makefile
+
 # Examples
 examples/TUNE_EEM/*.xvg
 examples/TUNE_EEM/*.log

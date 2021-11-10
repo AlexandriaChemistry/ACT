@@ -1,5 +1,7 @@
 #include "FitnessComputer.h"
 
+#include "aliases.h"
+
 void SimpleFitnessComputer::compute(const vector       individual,
 			                		double* const      ftPtr,
      			              		const int          length) {
