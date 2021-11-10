@@ -18,7 +18,7 @@ public:
      */
     virtual void sort(matrix        pop,
                       vector        fitness,
-                      const int     popSize);
+                      const int     popSize) {};
 
 };
 

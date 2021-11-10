@@ -18,7 +18,7 @@ public:
      */
     virtual void compute(const vector   fitness,
                                vector   prob,
-                         const int      popSize);
+                         const int      popSize) {};
 
 };
 

@@ -86,5 +86,5 @@ void printVector(const vector vec) {
     for (double value : vec) {
         printf("%f ", value);
     }
-    printf("]");
+    printf("]\n");
 }
