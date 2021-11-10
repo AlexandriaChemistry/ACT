@@ -42,7 +42,6 @@
 #include "gromacs/utility/fatalerror.h"
 
 #include "communication.h"
-#include "composition.h"
 #include "gmx_simple_comm.h"
 #include "units.h"
 
@@ -1226,16 +1225,6 @@ CommunicationStatus Experiment::Send(t_commrec *cr, int dest) const
     return cs;
 }
 
-int MolProp::NAtom()
-{
-    if (mol_comp_.size() > 0)
-    {
-        int nat = mol_comp_[0].CountAtoms();
-        return nat;
-    }
-    return 0;
-}
-
 void MolProp::AddBond(Bond b)
 {
     BondConstIterator bi;
@@ -1265,6 +1254,36 @@ void MolProp::CheckConsistency()
 {
 }
 
+void MolProp::generateComposition()
+{
+    for (const auto &ex : exper_)
+    {
+        // Assume that if an experiment has 1 atom, it has all of them
+        if (ex.NAtom() > 0)
+        {
+            composition_.clear();
+            bool bHasAtomTypes = true;
+            for(const auto &ca : ex.calcAtomConst())
+            {
+                auto elem = ca.getName().c_str();
+                auto cc   = composition_.find(elem);
+                if (cc == composition_.end())
+                {
+                    composition_.insert(std::pair<const char *, int>(elem, 1));
+                }
+                else
+                {
+                    cc->second += 1;
+                }
+                bHasAtomTypes = bHasAtomTypes && !ca.getObtype().empty();
+            }
+            // Update the MolProp internal variables
+            hasAllAtomTypes_ = bHasAtomTypes;
+            natom_           = ex.NAtom(); 
+        }
+    }
+}
+
 bool MolProp::SearchCategory(const std::string &catname) const
 {
     for (auto &i : category_)
@@ -1275,24 +1294,6 @@ bool MolProp::SearchCategory(const std::string &catname) const
         }
     }
     return false;
-}
-
-void MolProp::DeleteComposition(const std::string &compname)
-{
-    std::remove_if(mol_comp_.begin(), mol_comp_.end(),
-                   [compname](MolecularComposition mc)
-                   {
-                       return (compname.compare(mc.getCompName()) == 0);
-                   });
-}
-
-void MolProp::AddComposition(MolecularComposition mc)
-{
-    MolecularCompositionIterator mci = SearchMolecularComposition(mc.getCompName());
-    if (mci == mol_comp_.end())
-    {
-        mol_comp_.push_back(mc);
-    }
 }
 
 bool MolProp::BondExists(Bond b)
@@ -1417,36 +1418,7 @@ int MolProp::Merge(const MolProp *src)
             AddExperiment(ca);
         }
     }
-    for (auto &mci : src->molecularCompositionConst())
-    {
-        alexandria::MolecularComposition mc(mci.getCompName());
-
-        for (auto &ani : mci.atomNumConst())
-        {
-            AtomNum an(ani.getAtom(), ani.getNumber());
-            mc.AddAtom(an);
-        }
-        AddComposition(mc);
-    }
     return nwarn;
-}
-
-MolecularCompositionIterator MolProp::SearchMolecularComposition(const std::string &str)
-{
-    return std::find_if(mol_comp_.begin(), mol_comp_.end(),
-                        [str](MolecularComposition const &mc)
-                        {
-                            return (str.compare(mc.getCompName()) == 0);
-                        });
-}
-
-MolecularCompositionConstIterator MolProp::SearchMolecularComposition(const std::string &str) const
-{
-    return std::find_if(mol_comp_.begin(), mol_comp_.end(),
-                        [str](MolecularComposition const &mc)
-                        {
-                            return (str.compare(mc.getCompName()) == 0);
-                        });
 }
 
 void MolProp::Dump(FILE *fp) const
@@ -1475,55 +1447,6 @@ void MolProp::Dump(FILE *fp) const
     }
 }
 
-bool MolProp::GenerateComposition()
-{
-    ExperimentIterator   ci;
-    CalcAtomIterator     cai;
-    CompositionSpecs     cs;
-    MolecularComposition mci_alexandria(cs.searchCS(iCalexandria)->name());
-
-    // Why was this again?
-    mol_comp_.clear();
-
-    int natoms = 0;
-    for (auto &ci : experimentConst())
-    {
-        /* This assumes we have either all atoms or none.
-         * A consistency check could be
-         * to compare the number of atoms to the formula */
-        int nat = 0;
-        for (auto &cai : ci.calcAtomConst())
-        {
-            nat++;
-            AtomNum ans(cai.getObtype(), 1);
-            mci_alexandria.AddAtom(ans);
-        }
-        natoms = std::max(natoms, nat);
-        if (mci_alexandria.CountAtoms() > 0)
-        {
-            break;
-        }
-    }
-
-    if (natoms == mci_alexandria.CountAtoms())
-    {
-        AddComposition(mci_alexandria);
-        if (nullptr != debug)
-        {
-            fprintf(debug, "LO_COMP: ");
-            for (auto &ani : mci_alexandria.atomNumConst())
-            {
-                fprintf(debug, " %s:%d",
-                        ani.getAtom().c_str(), ani.getNumber());
-            }
-            fprintf(debug, "\n");
-            fflush(debug);
-        }
-        return true;
-    }
-    return false;
-}
-
 static void add_element_toformula_(const char *elem, int number, char *formula, char *texform)
 {
     if (number > 0)
@@ -1546,28 +1469,20 @@ bool MolProp::GenerateFormula(gmx_atomprop_t ap)
 {
     char             myform[1280], texform[2560];
     std::vector<int> ncomp;
-    alexandria::MolecularCompositionIterator mci;
 
     ncomp.resize(110, 0);
     myform[0]  = '\0';
     texform[0] = '\0';
-    mci        = SearchMolecularComposition("bosque");
-    if (mci != mol_comp_.end())
-    {
-        for (auto &ani : mci->atomNumConst())
+    for(const auto &cc : composition_)
+    { 
+        real value;
+        if (gmx_atomprop_query(ap, epropElement, "???", cc.first, &value))
         {
-            int         cnumber, an;
-            real        value;
-            std::string catom = ani.getAtom();
-            cnumber = ani.getNumber();
-            if (gmx_atomprop_query(ap, epropElement, "???", catom.c_str(), &value))
+            int an = std::lround(value);
+            range_check(an, 0, 110);
+            if (an > 0)
             {
-                an = std::lround(value);
-                range_check(an, 0, 110);
-                if (an > 0)
-                {
-                    ncomp[an] += cnumber;
-                }
+                ncomp[an] += cc.second;
             }
         }
     }
@@ -1603,16 +1518,6 @@ bool MolProp::GenerateFormula(gmx_atomprop_t ap)
 
     return (strlen(myform) > 0);
 }
-
-bool MolProp::HasComposition(const std::string &composition) const
-{
-    return std::find_if(mol_comp_.begin(), mol_comp_.end(),
-                        [composition](const MolecularComposition &mi)
-                        {
-                            return mi.getCompName().compare(composition) == 0;
-                        }) != mol_comp_.end();
-}
-
 
 bool bCheckTemperature(double Tref, double T)
 {
@@ -1893,7 +1798,6 @@ CommunicationStatus MolProp::Send(t_commrec *cr, int dest) const
         gmx_send_str(cr, dest, &cid_);
         gmx_send_str(cr, dest, &inchi_);
         gmx_send_int(cr, dest, bond_.size());
-        gmx_send_int(cr, dest, mol_comp_.size());
         gmx_send_int(cr, dest, category_.size());
         gmx_send_int(cr, dest, exper_.size());
 
@@ -1904,19 +1808,6 @@ CommunicationStatus MolProp::Send(t_commrec *cr, int dest) const
             if (CS_OK != cs)
             {
                 break;
-            }
-        }
-
-        /* Send Composition */
-        if (CS_OK == cs)
-        {
-            for (auto &mci : molecularCompositionConst())
-            {
-                cs = mci.Send(cr, dest);
-                if (CS_OK != cs)
-                {
-                    break;
-                }
             }
         }
 
@@ -1982,7 +1873,6 @@ CommunicationStatus MolProp::Receive(t_commrec *cr, int src)
         gmx_recv_str(cr, src, &cid_);
         gmx_recv_str(cr, src, &inchi_);
         Nbond     = gmx_recv_int(cr, src);
-        Nmol_comp = gmx_recv_int(cr, src);
         Ncategory = gmx_recv_int(cr, src);
         Nexper    = gmx_recv_int(cr, src);
 
@@ -1998,17 +1888,6 @@ CommunicationStatus MolProp::Receive(t_commrec *cr, int src)
             if (CS_OK == cs)
             {
                 AddBond(b);
-            }
-        }
-
-        //! Receive Compositions
-        for (int n = 0; (CS_OK == cs) && (n < Nmol_comp); n++)
-        {
-            MolecularComposition mc;
-            cs = mc.Receive(cr, src);
-            if (CS_OK == cs)
-            {
-                AddComposition(mc);
             }
         }
 

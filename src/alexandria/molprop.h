@@ -89,14 +89,14 @@ enum iqmType {
 /*! \brief
  * Strings describing the MolPropObservable enum elements
  * \param[in] MPO The observable
- * \retutn the string describing the unit
+ * \return the string describing the unit
  */
 const char *mpo_name(MolPropObservable MPO);
 
 /*! \brief
  * Strings describing the MolPropObservable enum units
  * \param[in] MPO The observable
- * \retutn the string describing the unit
+ * \return the string describing the unit
  */
 const char *mpo_unit(MolPropObservable MPO);
 
@@ -1314,17 +1314,23 @@ using  ExperimentConstIterator = typename std::vector<Experiment>::const_iterato
 class MolProp
 {
     private:
-        int                               index_;
-        double                            mass_;
-        int                               charge_, multiplicity_;
+        int                               index_ = -1;
+        double                            mass_ = 0.0;
+    int                               charge_ = 0;
+    int                               multiplicity_ = 0;
+    //! Total number of atoms in this compound
+    int                               natom_ = 0;
+    //! Whether or not all atoms have proper atom types
+    bool                              hasAllAtomTypes_ = false;
         std::string                       formula_, texform_, molname_, iupac_, cas_, cid_, inchi_;
         std::vector<std::string>          category_;
-        std::vector<MolecularComposition> mol_comp_;
+        //! Elemental composition of the compound
+        std::map<const char *,int>        composition_;
         std::vector<Experiment>           exper_;
         std::vector<Bond>                 bond_;
     public:
-        //! Construct a number MolProp object
-        MolProp() { index_ = -1; mass_ = 0; charge_ = 0; multiplicity_ = 0; }
+        //! Constructor for a MolProp object
+        MolProp() {}
 
         /*! \brief
          * Check the internal consistency of this object
@@ -1375,12 +1381,17 @@ class MolProp
         //! Set the formula
         void SetFormula(const std::string &formula) { formula_.assign(formula); }
 
-        //! Return the formula
+        //! \return the formula
         const std::string &formula() const { return formula_; }
 
-        //! Return the LaTeX formula
+        //! \return the LaTeX formula
         const std::string &getTexFormula() const;
 
+        //! \brief Generate the elemental composition
+        void generateComposition();
+        
+        //! \return The elemental composition
+        const std::map<const char *,int> &composition() const { return composition_; }
         /*! \brief
          * Generate the chemical formula for this molecule based on atoms
          * present in a calculation
@@ -1469,38 +1480,11 @@ class MolProp
         //! Return true if catname is an existing category
         bool SearchCategory(const std::string &catname) const;
 
-        //! Delete a composition type if present
-        void DeleteComposition(const std::string &compname);
+        //! Return number of atoms in the compound
+        int NAtom() const { return natom_; }
 
-        //! Add a composition entry
-        void AddComposition(MolecularComposition mc);
-
-        std::vector<MolecularComposition> &molecularComposition()
-        { return mol_comp_; }
-
-        const std::vector<MolecularComposition> &molecularCompositionConst() const
-        { return mol_comp_; }
-
-        //! Last Iterator over MolecularCompostion items
-        MolecularComposition *LastMolecularComposition()   { return &(mol_comp_.back()); }
-
-        //! Search for particular MolecularCompostion item or return EndMolecularComposition if not found
-        MolecularCompositionIterator SearchMolecularComposition(const std::string &str);
-
-        //! Search for particular MolecularCompostion item or return EndMolecularComposition if not found
-        MolecularCompositionConstIterator SearchMolecularComposition(const std::string &str) const;
-
-        //! Return end of vector
-        MolecularCompositionConstIterator EndMolecularComposition() const { return mol_comp_.end(); }
-    
-        //! Return number of atoms in the first composition if present, or 0 otherwise
-        int NAtom();
-
-        //! Routine to generate compositions based on calculation data
-        bool GenerateComposition();
-
-        //! Returns boolean stating whether a particular composition is present
-        bool HasComposition(const std::string &composition) const;
+        //! Returns boolean stating whether all atoms have valid atom types
+        bool hasAllAtomTypes() const { return hasAllAtomTypes_; }
 
         //! Add a Bond element
         void AddBond(Bond b);

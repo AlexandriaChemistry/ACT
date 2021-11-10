@@ -363,8 +363,6 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
     xmlNodePtr                   tc;
     char                         buf[100];
     alexandria::MolProp         *mpt;
-    alexandria::CalcAtomIterator atom_it;
-    gmx_bool                     bCompIt = false;
     std::vector<std::string>     xbuf;
     int                          node;
     std::string                  xxx;
@@ -576,25 +574,6 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                             }
                             break;
 
-                        case exmlCOMPOSITION:
-                            if (NN(xbuf[exmlCOMPNAME]))
-                            {
-                                alexandria::MolecularComposition mc(xbuf[exmlCOMPNAME]);
-                                mpt->AddComposition(mc);
-                                bCompIt = TRUE;
-                            }
-                            break;
-                        case exmlCATOM:
-                            if (NN(xbuf[exmlC_NAME]) && NN(xbuf[exmlC_NUMBER]) && bCompIt)
-                            {
-                                alexandria::AtomNum               an(xbuf[exmlC_NAME], atoi(xbuf[exmlC_NUMBER].c_str()));
-                                alexandria::MolecularComposition *l = mpt->LastMolecularComposition();
-                                if (nullptr != l)
-                                {
-                                    l->AddAtom(an);
-                                }
-                            }
-                            break;
                         case exmlATOM:
                             if ((nullptr != last) &&
                                 NN(xbuf[exmlNAME]) && NN(xbuf[exmlOBTYPE]) && NN(xbuf[exmlATOMID]))
@@ -925,17 +904,6 @@ static void add_xml_molprop(xmlNodePtr                 parent,
         add_xml_string(child, exml_names(exmlCATNAME), s);
     }
 
-    for (auto &mc : mp.molecularCompositionConst())
-    {
-        xmlNodePtr child = add_xml_child(ptr, exml_names(exmlCOMPOSITION));
-        add_xml_string(child, exml_names(exmlCOMPNAME), mc.getCompName());
-        for (auto &an : mc.atomNumConst())
-        {
-            xmlNodePtr grandchild = add_xml_child(child, exml_names(exmlCATOM));
-            add_xml_string(grandchild, exml_names(exmlC_NAME), an.getAtom());
-            add_xml_int(grandchild, exml_names(exmlC_NUMBER), an.getNumber());
-        }
-    }
 }
 
 void MolPropWrite(const char                             *fn,

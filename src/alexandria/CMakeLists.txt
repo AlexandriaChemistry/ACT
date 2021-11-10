@@ -29,11 +29,11 @@ set(ALEXANDRIA_SOURCES
            alex_modules.cpp
            analyze.cpp
            atype_mapping.cpp
+           babel_io.cpp
            bastat.cpp
            categories.cpp
            chargemodel.cpp
            communication.cpp
-           composition.cpp
            fill_inputrec.cpp
            forcefieldparameter.cpp
            forcefieldparameterlist.cpp
@@ -85,9 +85,8 @@ set(ALEXANDRIA_SOURCES
            tuning_utility.cpp          
            units.cpp
            xml_util.cpp
-           babel_io.cpp
-#           analyze.cpp
-#           molprop_tables.cpp
+           analyze.cpp
+           molprop_tables.cpp
 	)
 	
 #add_library(libalexandria ${ALEXANDRIA_SOURCES})	

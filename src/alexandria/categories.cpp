@@ -44,7 +44,6 @@
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/utility/futil.h"
 
-#include "composition.h"
 #include "molprop.h"
 #include "molprop_tables.h"
 #include "molprop_util.h"
@@ -83,7 +82,7 @@ void CategoryListElement::sortMolecules()
     std::sort(molecule_.begin(), molecule_.end(), CompareStrings);
 }
 
-bool CategoryListElement::hasMolecule(const std::string &molecule)
+bool CategoryListElement::hasMolecule(const std::string &molecule) const
 {
     return std::find(molecule_.begin(), molecule_.end(), molecule) != molecule_.end();
 }
@@ -91,17 +90,17 @@ bool CategoryListElement::hasMolecule(const std::string &molecule)
 void CategoryList::addCategory(const std::string &catname,
                                const std::string &molecule)
 {
-    CategoryListElementIterator i;
-
-    for (i = catli_.begin(); (i < catli_.end()); ++i)
+    bool foundCategory = false;
+    for (auto &i : catli_)
     {
-        if (i->getName().compare(catname) == 0)
+        if (i.getName().compare(catname) == 0)
         {
-            i->addMolecule(molecule);
+            i.addMolecule(molecule);
+            foundCategory = true;
             break;
         }
     }
-    if (i == catli_.end())
+    if (!foundCategory)
     {
         catli_.push_back(CategoryListElement(catname, molecule));
     }
@@ -109,36 +108,33 @@ void CategoryList::addCategory(const std::string &catname,
 
 void CategoryList::sortCategories()
 {
-    std::sort(beginCategories(), endCategories(), CompareCategoryListElements);
-    for (CategoryListElementIterator i = beginCategories(); (i < endCategories()); ++i)
+    std::sort(catli_.begin(), catli_.end(), CompareCategoryListElements);
+    for (auto &i : catli_)
     {
-        i->sortMolecules();
+        i.sortMolecules();
     }
 }
 
-void makeCategoryList(CategoryList               &cList,
+void makeCategoryList(CategoryList               *cList,
                       const std::vector<MolProp> &mp,
                       const MolSelect            &gms,
                       iMolSelect                  ims)
 {
-    alexandria::CompositionSpecs  cs;
-    const char                   *alex = cs.searchCS(alexandria::iCalexandria)->name();
-
-    for (auto &mpi : mp) //.begin(); (mpi < mp.end()); mpi++)
+    for (const auto &mpi : mp)
     {
         iMolSelect ims2;
         
         if (gms.status(mpi.getIupac(), &ims2) &&
             ims2 == ims &&
-            mpi.HasComposition(alex))
+            mpi.hasAllAtomTypes())
         {
             for (auto &si : mpi.categoryConst())
             {
-                cList.addCategory(si, mpi.getIupac());
+                cList->addCategory(si, mpi.getIupac());
             }
         }
     }
-    cList.sortCategories();
+    cList->sortCategories();
 }
 
 }

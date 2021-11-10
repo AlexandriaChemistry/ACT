@@ -721,7 +721,7 @@ immStatus MyMol::GenerateTopology(FILE              *fp,
     {
         fprintf(debug, "Generating topology for %s\n", getMolname().c_str());
     }
-    GenerateComposition();
+    generateComposition();
     if (NAtom() <= 0)
     {
         imm = immStatus::AtomTypes;

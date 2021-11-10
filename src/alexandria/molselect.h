@@ -29,8 +29,6 @@
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
- 
- 
 #ifndef MOLSELECT_H
 #define MOLSELECT_H
 
@@ -42,20 +40,34 @@
 #include "molprop.h"
 #include "poldata.h"
 
-enum class iMolSelect {
-    Train = 5,
-    Test = 6,
-    Ignore = 7
-};
-
-const char *iMolSelectName(iMolSelect ims);
-
-const std::map<iMolSelect, const char *> &iMolSelectNames();
-
-bool name2molselect(const std::string &name, iMolSelect *ims);
-
 namespace alexandria
 {
+
+//! Class to distinguish data sets
+enum class iMolSelect {
+    //! Training data set
+    Train,
+    //! Testing data set
+    Test,
+    //! Data set to ignore
+    Ignore
+};
+
+/*! \brief Return string corresponding to data set
+ * \param[in] ims The data set
+ * \return a string
+ */
+const char *iMolSelectName(iMolSelect ims);
+
+//! \return map of all names of data sets
+const std::map<iMolSelect, const char *> &iMolSelectNames();
+
+/*! \brief Look up data set name
+ * \param[in]  name The data set name
+ * \param[out] ims  The type of data set
+ * \return true if found, false otherwise
+ */
+bool name2molselect(const std::string &name, iMolSelect *ims);
 
 class IMolSelect 
 {
@@ -82,7 +94,7 @@ class IMolSelect
 class MolSelect
 {
     private:
-    
+        //! Vector of iMolSelect entries
         std::vector<IMolSelect> ims_;
 
     public:

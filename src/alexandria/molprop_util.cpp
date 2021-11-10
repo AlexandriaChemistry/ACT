@@ -41,7 +41,6 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/futil.h"
 
-#include "composition.h"
 #include "molprop_xml.h"
 
 namespace alexandria
@@ -59,6 +58,7 @@ void generate_index(std::vector<MolProp> *mp)
     }
 }
 
+#ifdef OLD
 void generate_composition(std::vector<MolProp> &mp)
 {
     int              nOK = 0;
@@ -86,6 +86,7 @@ void generate_composition(std::vector<MolProp> &mp)
                nOK, (int)mp.size());
     }
 }
+#endif
 
 void generate_formula(std::vector<MolProp> &mp,
                       gmx_atomprop_t        ap)
@@ -211,7 +212,7 @@ int merge_xml(gmx::ArrayRef<const std::string> filens,
             continue;
         }
         MolPropRead(fn.c_str(), &mp);
-        generate_composition(mp);
+        //generate_composition(mp);
         generate_formula(mp, ap);
         for (auto mpi : mp)
         {
@@ -274,21 +275,29 @@ static bool comp_mp_formula(alexandria::MolProp ma,
 
 gmx_atomprop_t my_aps;
 
+static int count_elements(std::map<const char *, int> comp, const char *elem)
+{
+    auto mm = comp.find(elem);
+    if (mm == comp.end())
+    {
+        return 0;
+    }
+    else
+    {
+        return mm->second;
+    }
+}
+
 static bool comp_mp_elem(alexandria::MolProp ma,
                          alexandria::MolProp mb)
 {
     int         i;
-    alexandria::MolecularCompositionConstIterator mcia, mcib;
-    std::string bosque("bosque"), C("C");
+    auto mcia = ma.composition();
+    auto mcib = mb.composition();
 
-    mcia = ma.SearchMolecularComposition(bosque);
-    mcib = mb.SearchMolecularComposition(bosque);
-
-    if ((mcia != ma.EndMolecularComposition()) &&
-        (mcib != mb.EndMolecularComposition()))
+    if (!mcia.empty() && !mcib.empty())
     {
-        int d = mcia->CountAtoms(C) - mcib->CountAtoms(C);
-
+        int d = count_elements(mcia, "C") - count_elements(mcib, "C");
         if (d < 0)
         {
             return true;
@@ -306,8 +315,7 @@ static bool comp_mp_elem(alexandria::MolProp ma,
                     const char *ee = gmx_atomprop_element(my_aps, i);
                     if (nullptr != ee)
                     {
-                        std::string elem(ee);
-                        d = mcia->CountAtoms(elem) - mcib->CountAtoms(elem);
+                        d = count_elements(mcia, ee) - count_elements(mcib, ee);
                         if (d == 0)
                         {
                             continue;

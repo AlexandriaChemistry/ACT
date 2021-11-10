@@ -57,7 +57,6 @@
 
 #include "alex_modules.h"
 #include "categories.h"
-#include "composition.h"
 #include "molprop.h"
 #include "molprop_tables.h"
 #include "molprop_util.h"
@@ -172,9 +171,9 @@ static void write_corr_xvg(FILE                             *fplog,
                                     &exp_val,
                                     &exp_error,
                                     &Texp);
-            iMolSelect ims;
+            alexandria::iMolSelect ims;
             if (gms.status(mpi.getIupac(), &ims) &&
-                ((ims == iMolSelect::Train) || (ims == iMolSelect::Test)))
+                ((ims == alexandria::iMolSelect::Train) || (ims == alexandria::iMolSelect::Test)))
             {
                 qm_val   = 0;
                 qm_error = 0;
@@ -243,7 +242,6 @@ static void alexandria_molprop_analyze(FILE                              *fplog,
                                        int                                catmin,
                                        const char                        *categoryfn,
                                        gmx_bool                           bPropTable,
-                                       gmx_bool                           bCompositionTable,
                                        gmx_bool                           bPrintBasis,
                                        gmx_bool                           bPrintMultQ,
                                        const char                        *texfn,
@@ -296,26 +294,26 @@ static void alexandria_molprop_analyze(FILE                              *fplog,
                q->basis().c_str(), q->type().c_str());
     }
     printf("--------------------------------------------------\n");
-    makeCategoryList(cList, mp, gms, iMolSelect::Train);
+    makeCategoryList(&cList, mp, gms, alexandria::iMolSelect::Train);
     fp = gmx_ffopen(texfn, "w");
     if (bStatsTable)
     {
         alexandria_molprop_stats_table(fp, mpo, mp, qmc, exp_type,
-                                       outlier, cList, gms, iMolSelect::Train);
+                                       outlier, cList, gms, alexandria::iMolSelect::Train);
         if (0)
         {
             alexandria::CategoryList cListTest;
-            makeCategoryList(cListTest, mp, gms, iMolSelect::Test);
+            makeCategoryList(&cListTest, mp, gms, alexandria::iMolSelect::Test);
             alexandria_molprop_stats_table(fp, mpo, mp, qmc, exp_type,
-                                           outlier, cListTest, gms, iMolSelect::Test);
+                                           outlier, cListTest, gms, alexandria::iMolSelect::Test);
         }
     }
     if (bPropTable)
     {
         alexandria_molprop_prop_table(fp, mpo, rtoler, atoler, mp, qmc, exp_type, bPrintAll, bPrintBasis,
-                                      bPrintMultQ, gms, iMolSelect::Train);
+                                      bPrintMultQ, gms, alexandria::iMolSelect::Train);
         alexandria_molprop_prop_table(fp, mpo, rtoler, atoler, mp, qmc, exp_type, bPrintAll, bPrintBasis,
-                                      bPrintMultQ, gms, iMolSelect::Test);
+                                      bPrintMultQ, gms, alexandria::iMolSelect::Test);
         if (nullptr != selout)
         {
             gp = fopen(selout, "w");
@@ -337,11 +335,6 @@ static void alexandria_molprop_analyze(FILE                              *fplog,
             }
             fclose(gp);
         }
-    }
-    if (bCompositionTable)
-    {
-        alexandria_molprop_composition_table(fp, mp, gms, iMolSelect::Train);
-        alexandria_molprop_composition_table(fp, mp, gms, iMolSelect::Test);
     }
     fclose(fp);
     if (nullptr != categoryfn)
@@ -400,7 +393,6 @@ int alex_analyze(int argc, char *argv[])
     static gmx_bool                  bPrintBasis       = true;
     static gmx_bool                  bPrintMultQ       = false;
     static gmx_bool                  bStatsTable       = true;
-    static gmx_bool                  bCompositionTable = false;
     static gmx_bool                  bPropTable        = true;
 
     static char                     *sort[]            = {nullptr, (char *)"molname", (char *)"formula", (char *)"composition", (char *)"selection", nullptr};
@@ -433,8 +425,6 @@ int alex_analyze(int argc, char *argv[])
           "Print the multiplicity and charge in the property table" },
         { "-calcpol", FALSE, etBOOL, {&bCalcPol},
           "Calculate polarizabilities based on empirical methods" },
-        { "-composition", FALSE, etBOOL, {&bCompositionTable},
-          "Print a table of composition of the molecules" },
         { "-proptable", FALSE, etBOOL, {&bPropTable},
           "Print a table of properties (slect which with the [TT]-prop[tt] flag)." },
         { "-statstable", FALSE, etBOOL, {&bStatsTable},
@@ -501,7 +491,7 @@ int alex_analyze(int argc, char *argv[])
     else if (mpname.size() > 0)
     {
         MolPropRead(mpname[0].c_str(), &mp);
-        generate_composition(mp);
+        //generate_composition(mp);
         generate_formula(mp, ap);
     }
     if (mpsa != MPSA_NR)
@@ -522,7 +512,6 @@ int alex_analyze(int argc, char *argv[])
                                catmin,
                                opt2fn_null("-cat", NFILE, fnm),
                                bPropTable,
-                               bCompositionTable,
                                bPrintBasis,
                                bPrintMultQ,
                                opt2fn("-t", NFILE, fnm),

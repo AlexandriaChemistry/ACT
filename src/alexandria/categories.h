@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020
+ * Copyright (C) 2014-2021
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -76,49 +76,62 @@ class CategoryListElement
         void addMolecule(const std::string &molecule);
 
         //! \return the number of molecules
-        int nMolecule() { return molecule_.size(); }
+        int nMolecule() const { return molecule_.size(); }
 
         /*! \brief Check whether molecule is present
          * \param[in] molecule The molecule to look for
          * \return true if found, false otherwise
          */
-        bool hasMolecule(const std::string &molecule);
+        bool hasMolecule(const std::string &molecule) const;
 
         //! \return the name of the category
-        const std::string &getName() { return cat_; }
+        const std::string &getName() const { return cat_; }
 
         //! \brief Sort the molecules in this category
         void sortMolecules();
 
-    //! \return The molecules
-    const std::vector<std::string> &molecules() const { return molecule_; }
-    //  std::vector<std::string>::iterator beginMolecules() { return molecule_.begin(); }
-
-    //      std::vector<std::string>::iterator endMolecules() { return molecule_.end(); }
+        //! \return The molecule names
+        const std::vector<std::string> &molecules() const { return molecule_; }
 };
 
-typedef std::vector<CategoryListElement>::iterator CategoryListElementIterator;
-
+/*! \brief List of compound categories and the compounds associated with that
+ */
 class CategoryList
 {
     private:
+        //! Vector of CategoryListElement items
         std::vector<CategoryListElement> catli_;
     public:
+        //! Constructor
         CategoryList() {};
 
+        /*! \brief Add one category and associated molecule
+         * \param[in] catname The category name
+         * \param[in] molecule The molecule name
+         */
         void addCategory(const std::string &catname,
                          const std::string &molecule);
 
+        //! Sort the categories alphabetically
         void sortCategories();
 
+        //! The number of categories
         int nCategories() { return catli_.size(); }
 
-        CategoryListElementIterator beginCategories() { return catli_.begin(); }
+        //! Non-mutable array of items
+        const std::vector<CategoryListElement> &elementsConst() const { return catli_; }
 
-        CategoryListElementIterator endCategories() { return catli_.end(); }
+        //! Mutable list of items
+         std::vector<CategoryListElement> *elements() { return &catli_; }
 };
 
-void makeCategoryList(CategoryList               &cList,
+/*! \brief Make the entire category list
+ * \param[out] cList The final list
+ * \param[in]  mp    The molecule properties
+ * \param[in]  gms   The selection structure
+ * \param[in]  ims   The data set selected
+ */
+void makeCategoryList(CategoryList               *cList,
                       const std::vector<MolProp> &mp,
                       const MolSelect            &gms,
                       iMolSelect                  ims);
