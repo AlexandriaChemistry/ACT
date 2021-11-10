@@ -15,8 +15,8 @@
 #include "helpers.h"
 
 
-GeneticAlgorithm::GeneticAlgorithm(const int                popSize,
-                                   const int                chromosomeLength,
+GeneticAlgorithm::GeneticAlgorithm(const int                 popSize,
+                                   const int                 chromosomeLength,
                                    Initializer*              initializer,
                                    FitnessComputer*          fitComputer,
                                    Sorter*                   sorter,
@@ -84,7 +84,7 @@ const ga_result_t GeneticAlgorithm::evolve(const double     prCross,
     if (verbose) {
         const int index = findMaximumIndex(fitness, popSize);
         printf("Best individual: ");
-        printVector(oldPop[index], chromosomeLength);
+        printVector(oldPop[index]);
         printf("Max fitness: %f", fitness[index]);
     }
 
@@ -138,7 +138,7 @@ const ga_result_t GeneticAlgorithm::evolve(const double     prCross,
             if (verbose) {
                 const int index = findMaximumIndex(fitness, popSize);
                 printf("Best individual: ");
-                printVector(oldPop[index], chromosomeLength);
+                printVector(oldPop[index]);
                 printf("Max fitness: %f", fitness[index]);
             }
 
