@@ -58,3 +58,19 @@ void copyMatrixValues(const matrix  mat1,
         }
     }
 }
+
+
+/*!
+ * Find index of the maximum value of a vector
+ * @param vec the list that we are finding the maximum of
+ * @param len the length of that list
+ * @return the index of the maximum element
+ */
+int findMaximumIndex(const vector   vec,
+                     const int      len) {
+    int maxIndex = 0;
+    for (int current = 0; current < len; current++)
+        if (vec[current] > vec[maxIndex])
+            maxIndex = i;
+    return maxIndex;
+}

@@ -15,12 +15,25 @@ public:
      * @param fitness               fitness of each individual
      * @param generationNumber      generation number
      * @param popSize               size of the population
+     * @param chromosomeLength      length of each individual
      * @return                      true if the evolution is complete, false otherwise
      */
     virtual bool terminate(const matrix     population,
                            const vector     fitness,
                            const int        generationNumber,
-                           const int        popSize);
+                           const int        popSize,
+                           const int        chromosomeLength);
+
+};
+
+class SimpleTerminator : public Terminator {
+
+public:
+    bool terminate(const matrix     population,
+                   const vector     fitness,
+                   const int        generationNumber,
+                   const int        popSize,
+                   const int        chromosomeLength);
 
 };
 

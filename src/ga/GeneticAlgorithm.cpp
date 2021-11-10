@@ -118,14 +118,8 @@ const ga_result_t GeneticAlgorithm::evolve(const double     prCross,
 
     } while(!terminator.terminate(oldPop, fitness, generation, popSize));
 
-    vector bestIndividual = null;
-    double bestFitness = 0;
-    for (i = 0; i < popSize; i++) {
-        if (fitness[i] > bestFitness) {
-            bestFitness = fitness[i];
-            bestIndividual = oldPop[i];
-        }
-    }
-    return {oldPop, fitness, bestIndividual, bestFitness, generation};
+    int bestFitIndex = findMaximumIndex(fitness, popSize);
+
+    return {oldPop, fitness, oldPop[bestFitIndex], fitness[bestFitIndex], generation};
 
 }
