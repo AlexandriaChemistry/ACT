@@ -70,7 +70,7 @@ public:
      *                  of the best individual, and the number of generations
      */
     const ga_result_t evolve(const double   prCross,
-                             const double   prMut
+                             const double   prMut,
                              const bool     verbose);
 
 

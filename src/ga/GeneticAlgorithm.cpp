@@ -47,7 +47,7 @@ GeneticAlgorithm::GeneticAlgorithm(const int                popSize,
 
 
 const ga_result_t GeneticAlgorithm::evolve(const double     prCross,
-                                           const double     prMut
+                                           const double     prMut,
                                            const bool       verbose) {
 
     if (verbose) printf("Starting evolution...\n");
