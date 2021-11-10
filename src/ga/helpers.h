@@ -21,4 +21,7 @@ void copyMatrixValues(const matrix  mat1,
 int findMaximumIndex(const vector   vec,
                      const int      len);
 
+void printVector(const vector   vec,
+                 const int      len);
+
 #endif //ACT_HELPERS_H
