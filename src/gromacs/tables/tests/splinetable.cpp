@@ -39,7 +39,7 @@
  * \author Erik Lindahl <erik.lindahl@gmail.com>
  * \ingroup module_tables
  */
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include <cmath>
 

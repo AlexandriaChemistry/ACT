@@ -35,7 +35,7 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /* TODO find out what this file should be called */
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "pme-grid.h"
 

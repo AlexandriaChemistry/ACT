@@ -43,7 +43,7 @@
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  */
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "gromacs/gmxpreprocess/readir.h"
 

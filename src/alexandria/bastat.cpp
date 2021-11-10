@@ -64,30 +64,60 @@
 #include "poldata_xml.h"
 #include "stringutil.h"
 
-typedef struct {
-    std::string      a1, a2;
+/*! \brief Base class for managing bonds, angles and dihedrals
+ */
+class Bondeds
+{
+public:
+    //! Atom 1
+    std::string      a1;
+    //! Atom 2
+    std::string      a2;
+    //! Histogram data
+    std::vector<int> histo;
+    //! LSQ fitting structure
+    gmx_stats_t      lsq;
+};
+
+/*! \brief Derived class for bonds
+ */
+class t_bond : public Bondeds
+{
+public:
+    //! The bond order
     double           order;
-    std::vector<int> histo;
-    gmx_stats_t      lsq;
-} t_bond;
+};
 
-typedef struct {
-    std::string      a1, a2, a3;
-    std::vector<int> histo;
-    gmx_stats_t      lsq;
-} t_angle;
+/*! \brief Derived class for angles
+ */
+class t_angle : public Bondeds
+{
+public:
+    //! The third atom
+    std::string      a3;
+};
 
-typedef struct {
-    std::string      a1, a2, a3, a4;
-    std::vector<int> histo;
-    gmx_stats_t      lsq;
-} t_dih;
+/*! \brief Derived class for dihedrals
+ */
+class t_dih : public t_angle
+{
+public:
+    //! The fourth atom
+    std::string      a4;
+};
 
+/*! \brief Container structure for bonds, angles and dihedrals
+ */
 typedef struct {
+    //! The bonds
     std::vector<t_bond>     bond;
+    //! The angles
     std::vector<t_angle>    angle;
+    //! The linear angles (theta 180 degrees)
     std::vector<t_angle> linangle;
+    //! The normal (proper) dihedrals
     std::vector<t_dih>      dih;
+    //! The improper (out-of-plane) dihedrals
     std::vector<t_dih>      imp;
 } t_bonds;
 

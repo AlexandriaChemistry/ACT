@@ -57,7 +57,7 @@
  */
 
 #ifndef GMX_CPUINFO_STANDALONE
-#    include "gmxpre.h"
+#    include "actpre.h"
 #endif
 
 #include "cpuinfo.h"

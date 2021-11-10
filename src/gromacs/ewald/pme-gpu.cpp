@@ -40,7 +40,7 @@
  * \ingroup module_ewald
  */
 
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "config.h"
 

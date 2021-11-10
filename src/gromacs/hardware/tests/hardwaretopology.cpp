@@ -39,7 +39,7 @@
  * \author Erik Lindahl <erik.lindahl@gmail.com>
  * \ingroup module_hardware
  */
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "gromacs/hardware/hardwaretopology.h"
 

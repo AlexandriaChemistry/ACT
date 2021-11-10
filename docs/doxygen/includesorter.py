@@ -70,7 +70,7 @@ class IncludeGroup(object):
         """Order include groups in the desired order."""
         return cmp(self._value, other._value)
 
-# gmxpre.h is always first
+# actpre.h is always first
 IncludeGroup.pre = IncludeGroup(0)
 # "main" include file for the source file is next
 IncludeGroup.main = IncludeGroup(1)
@@ -220,7 +220,7 @@ class GroupedSorter(object):
                 path = self._get_path(included_file, group, None)
             else:
                 path = include.get_included_path()
-        elif included_file.get_name() == 'gmxpre.h':
+        elif included_file.get_name() == 'actpre.h':
             group = IncludeGroup.pre
             path = self._get_path(included_file, group, None)
         elif included_file.get_name() == 'config.h':

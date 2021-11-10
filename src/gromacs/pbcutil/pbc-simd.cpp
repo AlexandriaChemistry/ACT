@@ -40,7 +40,7 @@
  *
  * \ingroup module_pbcutil
  */
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "pbc-simd.h"
 

@@ -34,7 +34,7 @@
  */
 
 
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "gromacs/coulombintegrals/slater_low.h"
 

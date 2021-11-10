@@ -41,7 +41,7 @@
  * \ingroup module_restraint
  */
 
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "manager.h"
 

@@ -38,7 +38,7 @@
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_compat
  */
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "gromacs/compat/pointers.h"
 

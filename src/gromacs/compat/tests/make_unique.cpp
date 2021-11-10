@@ -38,7 +38,7 @@
  * \author M. Eric Irrgang <ericirrgang@gmail.com>
  * \ingroup module_compat
  */
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "gromacs/compat/make_unique.h"
 

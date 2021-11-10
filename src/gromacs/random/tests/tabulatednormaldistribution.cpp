@@ -38,7 +38,7 @@
  * \author Erik Lindahl <erik.lindahl@gmail.com>
  * \ingroup module_random
  */
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "gromacs/random/tabulatednormaldistribution.h"
 

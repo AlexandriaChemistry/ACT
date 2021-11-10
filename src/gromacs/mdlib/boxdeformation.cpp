@@ -46,7 +46,7 @@
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_mdlib
  */
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "boxdeformation.h"
 

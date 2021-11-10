@@ -40,7 +40,7 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com> (C++ wrapper + errno handling)
  * \ingroup module_utility
  */
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "directoryenumerator.h"
 

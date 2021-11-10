@@ -41,7 +41,7 @@
  */
 
 #ifndef GMX_IDENTIFY_AVX512_FMA_UNITS_STANDALONE
-#include "gmxpre.h"
+#include "actpre.h"
 #endif
 
 #include "identifyavx512fmaunits.h"

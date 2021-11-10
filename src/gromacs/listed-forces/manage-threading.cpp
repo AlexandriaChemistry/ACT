@@ -41,7 +41,7 @@
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_listed-forces
  */
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "manage-threading.h"
 

@@ -50,7 +50,7 @@
  * \ingroup module_mdlib
  */
 
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "simulationsignal.h"
 

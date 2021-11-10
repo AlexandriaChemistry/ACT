@@ -52,6 +52,120 @@
 #include "poldata_xml.h"
 #include "units.h"
 
+typedef std::map<const std::string, int> stringCount;
+
+static void dump_molecule(FILE              *fp,
+                          const std::string &method,
+                          const std::string &basis,
+                          stringCount       *atomTypeCount,
+                          stringCount       *bccTypeCount,
+                          const Poldata     &pd,
+                          MolProp            mp,
+                          t_inputrec        *inputrec)
+{
+    alexandria::MyMol mymol;
+    mymol.Merge(&mp);
+    mymol.setInputrec(inputrec);
+    auto imm = mymol.GenerateTopology(fp,
+                                      &pd,
+                                      method,
+                                      basis,
+                                      nullptr,
+                                      missingParameters::Error,
+                                      nullptr);
+    if (immStatus::OK != imm)
+    {
+        fprintf(fp, "Failed to generate topology for %s. Outcome: %s\n",
+                mymol.getMolname().c_str(), immsg(imm));
+    }
+    else
+    {
+        fprintf(fp, "Molecule: %s Formula: %s q: %d Mult: %d\n", mymol.getMolname().c_str(),
+                mymol.formula().c_str(), mymol.totalCharge(), mymol.getMultiplicity());
+        // Atoms!
+        auto &atoms = mymol.atomsConst();
+        std::vector<Identifier> atomId;
+        auto ztype = InteractionType::CHARGEDISTRIBUTION;
+        for (int i = 0; i < atoms.nr; i++)
+        {
+            const char *atype = *atoms.atomtype[i];
+            fprintf(fp, "atom: %2d  %5s  %5s", i+1, *atoms.atomname[i], atype);
+            Identifier pid({ atype }, CanSwap::Yes);
+            atomId.push_back(pid);
+            if (pd.hasParticleType(pid))
+            {
+                auto pIter = pd.findParticleType(pid);
+                if (pIter->hasInteractionType(ztype))
+                {
+                    auto zid = pIter->interactionTypeToIdentifier(ztype);
+                    fprintf(fp, "  %s", zid.id().c_str());
+                    auto atypeMap = atomTypeCount->find(zid.id());
+                    if (atypeMap == atomTypeCount->end())
+                    {
+                        atomTypeCount->insert(std::pair<const std::string, int>(zid.id(), 1));
+                    }
+                    else
+                    {
+                        atypeMap->second += 1;
+                    }
+                }
+            }
+            fprintf(fp, "\n");
+        }
+        // Bonds!
+        auto bctype = InteractionType::BONDCORRECTIONS;
+        for (const auto &b : mp.bondsConst())
+        {
+            int ai = b.getAi()-1;
+            int aj = b.getAj()-1;
+            fprintf(fp, "bcc: %3d  %3d  %5g", ai+1, aj+1, b.getBondOrder());
+            if (pd.hasParticleType(atomId[ai]) && pd.hasParticleType(atomId[aj]))
+            {
+                auto pidI = pd.findParticleType(atomId[ai]);
+                auto pidJ = pd.findParticleType(atomId[aj]);
+                if (pidI->hasInteractionType(ztype) && pidJ->hasInteractionType(ztype))
+                {
+                    auto zidI = pidI->interactionTypeToIdentifier(ztype);
+                    auto zidJ = pidJ->interactionTypeToIdentifier(ztype);
+                    Identifier mybond({ zidI.id(), zidJ.id()}, b.getBondOrder(), CanSwap::No);
+                    auto btypeMap   = bccTypeCount->find(mybond.id());
+                    bool bondExists = false;
+                    auto fs         = pd.findForcesConst(bctype);
+                    if (fs.parameterExists(mybond))
+                    {
+                        fprintf(fp, "  %s", mybond.id().c_str());
+                        bondExists = true;
+                    }
+                    else
+                    {
+                        Identifier mybond2({ zidJ.id(), zidI.id()}, b.getBondOrder(), CanSwap::No);
+                        mybond = mybond2;
+                        btypeMap   = bccTypeCount->find(mybond.id());
+                        auto fs = pd.findForcesConst(bctype);
+                        if (fs.parameterExists(mybond))
+                        {
+                            fprintf(fp, "  %s", mybond.id().c_str());
+                            bondExists = true;
+                        }
+                    }
+                    if (bondExists)
+                    {
+                        if (btypeMap == bccTypeCount->end())
+                        {
+                            bccTypeCount->insert(std::pair<const std::string, int>(mybond.id(), 1));
+                        }
+                        else
+                        {
+                            btypeMap->second += 1;
+                        }
+                    }
+                }
+            }
+            fprintf(fp, "\n");
+        }
+    }
+}
+
 int alex_molprop_check(int argc, char*argv[])
 {
     static const char               *desc[] = {
@@ -96,6 +210,9 @@ std::vector<alexandria::MolProp> mp;
     splitLot(lot, &method, &basis);
     auto inputrec  = new t_inputrec();
     fill_inputrec(inputrec);
+
+    stringCount atomTypeCount;
+    stringCount bccTypeCount;
 
     FILE *mylog = gmx_fio_fopen(opt2fn("-g", NFILE, fnm), "w");
     fprintf(mylog, "Force field file %s\n", opt2fn("-d", NFILE, fnm));
@@ -182,25 +299,17 @@ std::vector<alexandria::MolProp> mp;
             }
         }
 
-        alexandria::MyMol mymol;
-        mymol.Merge(&m);
-        mymol.setInputrec(inputrec);
-        auto imm = mymol.GenerateTopology(mylog,
-                                          &pd,
-                                          method,
-                                          basis,
-                                          nullptr,
-                                          missingParameters::Error,
-                                          nullptr);
-        if (immStatus::OK != imm)
-        {
-            fprintf(mylog, "%s. Failed to generate topology: %s\n",
-                    mymol.getMolname().c_str(), immsg(imm));
-            for (const auto &error : mymol.errors())
-            {
-                fprintf(mylog, "Error: %s\n", error.c_str());
-            }
-        }
+        dump_molecule(mylog, method, basis, &atomTypeCount, &bccTypeCount, pd, m, inputrec);
     }
+    fprintf(mylog, "Statistics\n");
+    for(auto &atc : atomTypeCount)
+    {
+        fprintf(mylog, "atom: %-6s  %5d\n", atc.first.c_str(), atc.second);
+    }
+    for(auto &bcc : bccTypeCount)
+    {
+        fprintf(mylog, "bcc: %-12s  %5d\n", bcc.first.c_str(), bcc.second);
+    }
+    fclose(mylog);
     return 0;
 }

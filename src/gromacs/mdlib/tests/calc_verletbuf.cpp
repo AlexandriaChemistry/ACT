@@ -37,7 +37,7 @@
  *
  * \author Berk Hess <hess@kth.se>
  */
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "gromacs/mdlib/calc_verletbuf.h"
 

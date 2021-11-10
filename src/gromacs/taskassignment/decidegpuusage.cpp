@@ -39,7 +39,7 @@
  * \ingroup module_taskassignment
  */
 
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "decidegpuusage.h"
 

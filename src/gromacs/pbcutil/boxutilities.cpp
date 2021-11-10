@@ -38,7 +38,7 @@
  *
  * Utility functions for handling boxes.
  */
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "boxutilities.h"
 

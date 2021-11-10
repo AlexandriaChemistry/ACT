@@ -41,7 +41,7 @@
  * Utility functions for handling periodic boundary conditions.
  * Mainly used in analysis tools.
  */
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "pbc.h"
 

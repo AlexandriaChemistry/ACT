@@ -43,7 +43,7 @@
  * GMX_NBNXN_SIMD_2XNN, so that this file reduces to a stub
  * function definition when the kernel will never be called.
  */
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "gromacs/mdlib/nbnxn_simd.h"
 #include "gromacs/mdtypes/interaction_const.h"

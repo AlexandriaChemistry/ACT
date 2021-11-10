@@ -39,7 +39,7 @@
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  */
 
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "gromacs/gmxpreprocess/pdb2gmx.h"
 

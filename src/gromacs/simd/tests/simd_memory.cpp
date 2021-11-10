@@ -38,7 +38,7 @@
  * \author Roland Schulz<roland.schulz@intel.com>
  * \ingroup module_simd
  */
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include <numeric>
 #include <vector>

@@ -47,7 +47,7 @@
  * \ingroup module_mdrunutility
  */
 
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "handlerestart.h"
 

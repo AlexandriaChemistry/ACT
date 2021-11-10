@@ -39,7 +39,7 @@
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_testutils
  */
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "stdiohelper.h"
 

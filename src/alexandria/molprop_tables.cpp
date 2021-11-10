@@ -521,12 +521,12 @@ void alexandria_molprop_category_table(FILE            *fp,
             if ((nMol >= catmin) && (catmin > 1))
             {
                 int n = 0;
-                std::vector<std::string>::iterator j;
+                const std::vector<std::string> &mols = i->molecules();
                 snprintf(buf, sizeof(buf), "%s & %d &", i->getName().c_str(), nMol);
                 longbuf.append(buf);
-                for (j = i->beginMolecules(); (j < i->endMolecules()-1); ++j)
+                for (size_t j = 0; j < mols.size()-1; j++)
                 {
-                    snprintf(buf, sizeof(buf), "%s, ", j->c_str());
+                    snprintf(buf, sizeof(buf), "%s, ", mols[j].c_str());
                     longbuf.append(buf);
                     n++;
                     if (0 == (n % 50))
@@ -535,7 +535,7 @@ void alexandria_molprop_category_table(FILE            *fp,
                         longbuf.assign(" & &");
                     }
                 }
-                snprintf(buf, sizeof(buf), "%s", j->c_str());
+                snprintf(buf, sizeof(buf), "%s", mols.back().c_str());
                 longbuf.append(buf);
                 lt.printLine(longbuf);
             }

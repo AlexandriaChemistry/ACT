@@ -42,7 +42,7 @@
  * \ingroup module_domdec
  */
 
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include <cassert>
 #include <cinttypes>

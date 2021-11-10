@@ -38,7 +38,7 @@
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  */
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "atomsbuilder.h"
 

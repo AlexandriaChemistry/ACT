@@ -269,7 +269,7 @@
  * calculated.
  * Currently, no other processing is done.
  */
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "compiler.h"
 

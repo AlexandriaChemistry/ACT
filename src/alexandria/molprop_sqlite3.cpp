@@ -45,36 +45,55 @@
 #endif
 #include "molprop_sqlite3.h"
 
-
+/*! \brief class to handle synonyms of compound names
+ */ 
 class Synonym
 {
     private:
+        //! Molecule name
         std::string molname_;
+        //! Internation Union of Pure and Applied Chemistry name
         std::string iupac_;
     public:
+        /*! \brief Constructor
+         * \param[in] molname The molecule name
+         * \param[in] iupac   The iupac name
+         */
         Synonym(const std::string molname,
                 const std::string iupac) : molname_(molname), iupac_(iupac) {}
 
+        //! \return the iupac name
         const std::string &iupac() const { return iupac_; }
-
+        //! \return the molecule name
         const std::string &molname() const { return molname_; }
 };
 
+/*! \brief Class to detail with the compound classes a particular
+ * compound is part of. For instance, alkanes, amines.
+ */
 class Classes
 {
     private:
+        //! IUPAC name
         std::string              iupac_;
+        //! Vector of compound classes.
         std::vector<std::string> classes_;
     public:
+        /*! \brief Constructor
+         * \param[in] iupac The IUPAC name
+         */
         Classes(const std::string iupac) : iupac_(iupac) {}
 
+        /*! \brief Add a class to the list
+         * \param[in] klas The new class
+         */
         void addClass(const std::string &klas) { classes_.push_back(klas); }
 
+        //! \return the IUPAC name
         const std::string &iupac() const { return iupac_; }
 
-        const std::vector<std::string>::iterator classBegin() { return classes_.begin(); }
-
-        const std::vector<std::string>::iterator classEnd() { return classes_.end(); }
+        //! \return the list of classes
+        const std::vector<std::string> &classes() { return classes_; }
 };
 
 #ifdef HAVE_LIBSQLITE3
@@ -354,9 +373,9 @@ void ReadSqlite3(const char                       *sqlite_file,
                                                      { return c.iupac().compare(iupac) == 0; });
                     if (cptr != classes.end())
                     {
-                        for (auto c = cptr->classBegin(); c < cptr->classEnd(); ++c)
+                        for (auto &c : cptr->classes())
                         {
-                            mpi->AddCategory(*c);
+                            mpi->AddCategory(c);
                         }
                     }
                     if (strlen(cas) > 0)

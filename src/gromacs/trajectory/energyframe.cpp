@@ -40,7 +40,7 @@
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_mdrun_integration_tests
  */
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "energyframe.h"
 

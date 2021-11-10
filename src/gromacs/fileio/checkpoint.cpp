@@ -35,7 +35,7 @@
 
 /* The source code in this file should be thread-safe.
    Please keep it that way. */
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "checkpoint.h"
 

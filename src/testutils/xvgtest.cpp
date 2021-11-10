@@ -40,7 +40,7 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_testutils
  */
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "xvgtest.h"
 

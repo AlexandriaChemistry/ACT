@@ -43,19 +43,6 @@
 #include "molselect.h"
 #include "mymol.h"
 
-typedef struct {
-    int       n;
-    int       nopt;
-    int       nconst;
-    int       nopt_c;
-    int      *tot_count;
-    int      *count;
-    char    **name;
-    gmx_bool *bConst;
-} t_index_count;
-
-extern char *opt_index_count(t_index_count *ic);
-
 namespace alexandria
 {
 

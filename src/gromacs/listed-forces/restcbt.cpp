@@ -43,7 +43,7 @@
  *
  * \ingroup module_listed-forces
  */
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "restcbt.h"
 

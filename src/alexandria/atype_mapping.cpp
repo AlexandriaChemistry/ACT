@@ -29,7 +29,7 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "atype_mapping.h"
 

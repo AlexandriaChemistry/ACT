@@ -57,13 +57,17 @@
 
 #include "poldata_utils.h"
 
+/*! \brief Class to test the RESP algorithm
+ */
 class RespTest : public gmx::test::CommandLineTestBase
 {
     protected:
+        //! Checking data structure
         gmx::test::TestReferenceChecker checker_;
+        //! Alexandria molecular properties class
         alexandria::MyMol               mp_;
 
-        //init set tolecrance
+        //! Init set tolecrance
         RespTest () : checker_(this->rootChecker())
         {
             alexandria::MolProp     molprop;
@@ -95,11 +99,15 @@ class RespTest : public gmx::test::CommandLineTestBase
             checker_.setDefaultTolerance(tolerance);
         }
 
-        // Static initiation, only run once every test.
+        //! Static initiation, only run once every test.
         static void SetUpTestCase()
         {
         }
 
+        /*! \brief Actual testing routine
+         * \param[in] qdist The charge distribution type
+         * \param[in] qSymm Whether or not to use charge symmetry
+         */
         void testResp(const std::string &qdist, bool qSymm)
         {
             //Generate charges and topology
@@ -163,7 +171,8 @@ class RespTest : public gmx::test::CommandLineTestBase
             checker_.checkSequence(qtotValues.begin(),
                                    qtotValues.end(), buf);
         }
-
+        
+        //! Cleanup
         static void TearDownTestCase()
         {
         }

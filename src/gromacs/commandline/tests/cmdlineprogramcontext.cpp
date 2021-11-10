@@ -39,7 +39,7 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_commandline
  */
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "gromacs/commandline/cmdlineprogramcontext.h"
 

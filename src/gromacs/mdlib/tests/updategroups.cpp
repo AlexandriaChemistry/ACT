@@ -39,7 +39,7 @@
  * \author berk Hess <hess@kth.se>
  * \ingroup module_mdlib
  */
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "gromacs/mdlib/updategroups.h"
 

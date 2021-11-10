@@ -66,11 +66,11 @@ static bool CompareStrings(std::string ca, std::string cb)
     return (ca.compare(cb) < 0);
 }
 
-void CategoryListElement::addMolecule(std::string molecule)
+void CategoryListElement::addMolecule(const std::string &molecule)
 {
-    for (std::vector<std::string>::iterator i = beginMolecules(); (i < endMolecules()); ++i)
+    for (const auto &i : molecule_)
     {
-        if (i->compare(molecule) == 0)
+        if (i == molecule)
         {
             return;
         }
@@ -80,15 +80,16 @@ void CategoryListElement::addMolecule(std::string molecule)
 
 void CategoryListElement::sortMolecules()
 {
-    std::sort(beginMolecules(), endMolecules(), CompareStrings);
+    std::sort(molecule_.begin(), molecule_.end(), CompareStrings);
 }
 
-bool CategoryListElement::hasMolecule(std::string molecule)
+bool CategoryListElement::hasMolecule(const std::string &molecule)
 {
-    return std::find(beginMolecules(), endMolecules(), molecule) != endMolecules();
+    return std::find(molecule_.begin(), molecule_.end(), molecule) != molecule_.end();
 }
 
-void CategoryList::addCategory(std::string catname, std::string molecule)
+void CategoryList::addCategory(const std::string &catname,
+                               const std::string &molecule)
 {
     CategoryListElementIterator i;
 
@@ -115,25 +116,25 @@ void CategoryList::sortCategories()
     }
 }
 
-void makeCategoryList(CategoryList         &cList,
-                      std::vector<MolProp>  mp,
-                      const MolSelect      &gms,
-                      iMolSelect            ims)
+void makeCategoryList(CategoryList               &cList,
+                      const std::vector<MolProp> &mp,
+                      const MolSelect            &gms,
+                      iMolSelect                  ims)
 {
     alexandria::CompositionSpecs  cs;
     const char                   *alex = cs.searchCS(alexandria::iCalexandria)->name();
 
-    for (std::vector<alexandria::MolProp>::iterator mpi = mp.begin(); (mpi < mp.end()); mpi++)
+    for (auto &mpi : mp) //.begin(); (mpi < mp.end()); mpi++)
     {
         iMolSelect ims2;
         
-        if (gms.status(mpi->getIupac(), &ims2) &&
+        if (gms.status(mpi.getIupac(), &ims2) &&
             ims2 == ims &&
-            mpi->HasComposition(alex))
+            mpi.HasComposition(alex))
         {
-            for (auto &si : mpi->categoryConst())
+            for (auto &si : mpi.categoryConst())
             {
-                cList.addCategory(si, mpi->getIupac());
+                cList.addCategory(si, mpi.getIupac());
             }
         }
     }

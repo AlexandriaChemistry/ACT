@@ -40,7 +40,7 @@
  *
  * \ingroup module_utility
  */
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "binaryinformation.h"
 

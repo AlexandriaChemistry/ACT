@@ -36,7 +36,7 @@
  */
 /* This file is completely threadsafe - keep it that way! */
 
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "compare.h"
 

@@ -44,7 +44,7 @@
  * \ingroup module_utility
  */
 
-#include "gmxpre.h"
+#include "actpre.h"
 
 #include "gromacs/utility/gmxregex.h"
 
