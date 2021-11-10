@@ -18,11 +18,11 @@ using matrix = std::vector<vector>;
  * Result structure of genetic algorithm
  */
 typedef struct ga_result {
-    matrix pop;
-    vector fitness;
-    vector bestIndividual;
-    double bestFitness;
-    int generations;
+    matrix  pop;
+    vector  fitness;
+    vector  bestIndividual;
+    double  bestFitness;
+    int     generations;
 } ga_result_t;
 
 #endif //ACT_ALIASES_H

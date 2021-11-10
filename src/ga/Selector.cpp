@@ -13,7 +13,9 @@ RouletteSelector::RouletteSelector() {
 }
 
 
-const vector RouletteSelector::select(const matrix population, const vector probability, const int popSize) {
+const vector RouletteSelector::select(const matrix  population,
+                                      const vector  probability,
+                                      const int     popSize) {
 
     double num = dis(gen);
     int i = 0;

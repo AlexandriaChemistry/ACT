@@ -15,7 +15,9 @@ public:
      * @param ftPtr         pointer to where the fitness should be written
      * @param length        length of the chromosome
      */
-    virtual void compute(const vector individual, double* const ftPtr, const int length);
+    virtual void compute(const vector       individual,
+                         double* const      ftPtr,
+                         const int          length);
 
 };
 
