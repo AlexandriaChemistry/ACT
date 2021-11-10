@@ -11,7 +11,6 @@
  */
 class Crossover {
 
-private:
     std::random_device rd;  // Will be used to obtain a seed for the random number engine
     std::mt19937 gen; // Standard mersenne_twister_engine seeded with rd()
     std::uniform_int_distribution<> dis;
@@ -21,7 +20,8 @@ public:
      * Create a new crossover object.
      * @param chromosomeLength  length of the chromosome
      */
-    Crossover(const int chromosomeLength);
+    Crossover(const int chromosomeLength)
+    : gen(rd()), dis(std::uniform_int_distribution<>(1, chromosomeLength-2)) {}
 
     /*!
      * Perform crossover operation
@@ -51,7 +51,7 @@ public:
 class SinglePointCrossover : public Crossover {
 
 public:
-    SinglePointCrossover(const int chromosomeLength): Crossover(chromosomeLength) {};
+    SinglePointCrossover(const int chromosomeLength): Crossover(chromosomeLength) {}
     void offspring(const vector     parent1,
                    const vector     parent2,
                          vector     child1,

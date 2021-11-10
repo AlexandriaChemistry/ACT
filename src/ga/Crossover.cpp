@@ -5,13 +5,6 @@
 #include <algorithm>
 
 
-Crossover::Crossover(const int chromosomeLength) {
-    gen = std::mt19937(rd());
-    // Exclude first and last indices. Otherwise, there is no crossover.
-    dis = std::uniform_int_distribution<>(1, chromosomeLength - 2);
-}
-
-
 int Crossover::randIndex() {
     return dis(gen);
 }
