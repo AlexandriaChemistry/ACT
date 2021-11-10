@@ -6,7 +6,7 @@
 
 
 void FitnessProbabilityComputer::compute(const vector   fitness,
-                                         const vector   prob,
+                                               vector   prob,
                                          const int      popSize) {
     double total = 0;
     int i;
@@ -27,9 +27,10 @@ BoltzmannProbabilityComputer::BoltzmannProbabilityComputer(const int        popS
 
 
 void BoltzmannProbabilityComputer::compute(const vector     fitness,
-                                           const vector     prob,
+                                                 vector     prob,
                                            const int        popSize) {
     double total = 0;
+    int i;
     for (i = 0; i < popSize; i++) {
         exponentials[i] = exp(fitness[i] / temperature);
         total += exponentials[i];
@@ -46,7 +47,7 @@ RankProbabilityComputer::RankProbabilityComputer(const int popSize) {
 
 
 void RankProbabilityComputer::compute(const vector  fitness,
-                                      const vector  prob,
+                                            vector  prob,
                                       const int     popSize) {
     for (int i = 0; i < popSize; i++) {
         prob[i] = (popSize - i)/sumOfRanks;

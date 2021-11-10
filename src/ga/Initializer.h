@@ -16,7 +16,7 @@ public:
      * @param individual    the individual to initialize
      * @param length        length of the chromosome
      */
-    virtual void initialize(const vector    individual,
+    virtual void initialize(      vector    individual,
                             const int       length);
 };
 
@@ -36,7 +36,7 @@ public:
     SimpleInitializer(const double  min,
                       const double  max);
 
-    void initialize(const vector    individual,
+    void initialize(      vector    individual,
                     const int       length);
 
 };

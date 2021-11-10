@@ -15,7 +15,7 @@
 matrix allocateMatrix(const int     n,
                       const int     m) {
     matrix mat(n);
-    for (int i = 0; i < n; i++) mat[i] = vector(m)
+    for (int i = 0; i < n; i++) mat[i] = vector(m);
     return mat;
 }
 
@@ -28,7 +28,7 @@ matrix allocateMatrix(const int     n,
  * @param right     right index (exclusive)
  */
 void copyVectorValues(const vector  arr1,
-                      const vector  arr2,
+                            vector  arr2,
                       const int     left,
                       const int     right) {
     for (int i = left; i < right; i++) {
@@ -47,7 +47,7 @@ void copyVectorValues(const vector  arr1,
  * @param j2        right index for the columns (exclusive)
  */
 void copyMatrixValues(const matrix  mat1,
-                      const matrix  mat2,
+                            matrix  mat2,
                       const int     i1,
                       const int     i2,
                       const int     j1,
@@ -72,7 +72,7 @@ int findMaximumIndex(const vector   vec,
     int maxIndex = 0;
     for (int current = 0; current < len; current++)
         if (vec[current] > vec[maxIndex])
-            maxIndex = i;
+            maxIndex = current;
     return maxIndex;
 }
 
@@ -88,5 +88,5 @@ void printVector(const vector   vec,
     for (double value : vec) {
         printf("%f ", value);
     }
-    print("]");
+    printf("]");
 }

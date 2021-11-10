@@ -7,12 +7,12 @@ matrix allocateMatrix(const int     n,
                       const int     m);
 
 void copyVectorValues(const vector  arr1,
-                      const vector  arr2,
+                            vector  arr2,
                       const int     left,
                       const int     right);
 
 void copyMatrixValues(const matrix  mat1,
-                      const matrix  mat2,
+                            matrix  mat2,
                       const int     i1,
                       const int     i2,
                       const int     j1,

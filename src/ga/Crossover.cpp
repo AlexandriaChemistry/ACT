@@ -12,13 +12,18 @@ Crossover::Crossover(const int chromosomeLength) {
 }
 
 
+int Crossover::randIndex() {
+    return dis(gen);
+}
+
+
 void SinglePointCrossover::offspring(const vector   parent1,
                                      const vector   parent2,
-                                     const vector   child1,
-                                     const vector   child2,
+                                           vector   child1,
+                                           vector   child2,
                                      const int      length) {
 
-    const int index = dis(gen);
+    const int index = randIndex();
 
     int i;
     for (i = 0; i < index; i++) {
@@ -35,14 +40,14 @@ void SinglePointCrossover::offspring(const vector   parent1,
 
 void DoublePointCrossover::offspring(const vector   parent1,
                                      const vector   parent2,
-                                     const vector   child1,
-                                     const vector   child2,
+                                           vector   child1,
+                                           vector   child2,
                                      const int      length) {
 
-    const int tmp1 = dis(gen);
-    int tmp2 = dis(gen);
+    const int tmp1 = randIndex();
+    int tmp2 = randIndex();
     while (tmp1 == tmp2) {
-        tmp2 = dis(gen);
+        tmp2 = randIndex();
     }
     const int diff = std::abs(tmp1 - tmp2);
 

@@ -19,7 +19,7 @@ void MergeSorter::sort(matrix       pop,
                        const int    popSize) {
 
     copyVectorValues(fitness, tmpFitness, 0, popSize);
-    copyMatrixValues(pop, tmpPop, 0, popSize, chromosomeLength);
+    copyMatrixValues(pop, tmpPop, 0, popSize, 0, chromosomeLength);
     topDownSplitMerge(tmpPop, tmpFitness, 0, popSize, pop, fitness);
 
 }
@@ -37,7 +37,7 @@ void MergeSorter::topDownSplitMerge(matrix      popB,
     const int middle = (right + left)/2;
 
     topDownSplitMerge(popA, fitA, left, middle, popB, fitB);
-    topDownSplitMerge(popA, fitA, middle, end, popB, fitB);
+    topDownSplitMerge(popA, fitA, middle, right, popB, fitB);
 
     topDownMerge(popB, fitB, left, middle, right, popA, fitA);
 
@@ -60,11 +60,11 @@ void MergeSorter::topDownMerge(matrix       popA,
         // If left run head exists and is >= existing right run head.
         if (i < middle && (j >= right || fitA[i] >= fitA[j])) {
             fitB[k] = fitA[i];
-            copyVectorValues(fitA[i], fitB[k], 0, chromosomeLength);
+            copyVectorValues(popA[i], popB[k], 0, chromosomeLength);
             i++;
         } else {
             fitB[k] = fitA[j];
-            copyVectorValues(fitA[j], fitB[k], 0, chromosomeLength);
+            copyVectorValues(popA[j], popB[k], 0, chromosomeLength);
             j++;
         }
     }
