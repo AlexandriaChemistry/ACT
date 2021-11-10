@@ -1,6 +1,7 @@
-#include <random>
-
 #include "GeneticAlgorithm.h"
+
+#include <random>
+#include <stdio.h>
 
 #include "aliases.h"
 
@@ -12,6 +13,7 @@
 #include "Terminator.h"
 
 #include "helpers.h"
+
 
 GeneticAlgorithm::GeneticAlgorithm(const int                popSize,
                                    const int                chromosomeLength,
@@ -45,7 +47,10 @@ GeneticAlgorithm::GeneticAlgorithm(const int                popSize,
 
 
 const ga_result_t GeneticAlgorithm::evolve(const double     prCross,
-                                           const double     prMut) {
+                                           const double     prMut
+                                           const bool       verbose) {
+
+    if (verbose) printf("Starting evolution...\n");
 
     // Random number generation
     std::random_device rd;  // Will be used to obtain a seed for the random number engine
@@ -63,13 +68,24 @@ const ga_result_t GeneticAlgorithm::evolve(const double     prCross,
 
     // Generations
     int generation = 0;
+    if (verbose) printf("Generation: %i\n", generation);
 
     // Initialize the population
+    if (verbose) printf("Initializing individuals...\n");
     for (vector ind : oldPop) initializer.initialize(ind, chromosomeLength);
 
     // Compute fitness
+    if (verbose) printf("Computing initial fitness...\n");
     for (i = 0; i < popSize; i++) {
         fitComputer.compute(oldPop[i], &fitness[i], chromosomeLength);
+    }
+
+    // If verbose, print best individual
+    if (verbose) {
+        const int index = findMaximumIndex(fitness, popSize);
+        printf("Best individual: ");
+        printVector(oldPop[index]);
+        printf("Max fitness: %f", fitness[index]);
     }
 
     // Iterate and create new generations
@@ -77,14 +93,18 @@ const ga_result_t GeneticAlgorithm::evolve(const double     prCross,
 
         // Increase generation counter
         generation++;
+        if (verbose) printf("Generation: %i\n", generation);
 
         // Sort individuals based on fitness
+        if (verbose) printf("Sorting... (if needed)\n");
         sorter.sort(oldPop, fitness, popSize);
 
         // Normalize the fitness into a probability
+        if (verbose) printf("Computing probabilities...\n");
         probComputer.compute(fitness, probability, popSze);
 
         // Generate new population
+        if (verbose) printf("Generating new population...\n");
         for (i = 0; i < popSize; i+=2) {
 
             // Select parents
@@ -114,9 +134,21 @@ const ga_result_t GeneticAlgorithm::evolve(const double     prCross,
             oldPop = newPop;
             newPop = tmpPop;
 
+            // If verbose, print best individual
+            if (verbose) {
+                const int index = findMaximumIndex(fitness, popSize);
+                printf("Best individual: ");
+                printVector(oldPop[index]);
+                printf("Max fitness: %f", fitness[index]);
+            }
+
         }
 
+        if (verbose) printf("Checking termination conditions...\n");
+
     } while(!terminator.terminate(oldPop, fitness, generation, popSize));
+
+    if (verbose) printf("Evolution is done!\n");
 
     int bestFitIndex = findMaximumIndex(fitness, popSize);
 

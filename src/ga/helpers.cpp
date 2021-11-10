@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "helpers.h"
 
@@ -73,4 +74,19 @@ int findMaximumIndex(const vector   vec,
         if (vec[current] > vec[maxIndex])
             maxIndex = i;
     return maxIndex;
+}
+
+
+/*!
+ * Print a vector to console
+ * @param vec   the vector to print
+ * @param len   length of vector
+ */
+void printVector(const vector   vec,
+                 const int      len) {
+    printf("[ ");
+    for (double value : vec) {
+        printf("%f ", value);
+    }
+    print("]");
 }
