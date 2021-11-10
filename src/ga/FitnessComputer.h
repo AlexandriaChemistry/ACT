@@ -24,10 +24,16 @@ public:
 class SimpleFitnessComputer : public FitnessComputer {
 
 public:
-    bool compute(const vector       individual,
-                 double* const      ftPtr,
-                 const int          length);
+    double compute(const vector       individual,
+                   double* const      ftPtr,
+                   const int          length) {
+        double sum = 0;
 
+        for (int i = 0; i < length; i++)
+            sum += individual[i]*individual[i];
+
+        return 1 / sum;
+    }
 };
 
 #endif //ACT_FITNESSCOMPUTER_H
