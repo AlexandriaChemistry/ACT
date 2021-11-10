@@ -10,5 +10,5 @@ bool SimpleTerminator::terminate(const matrix   population,
                                  const int      popSize,
                                  const int      chromosomeLength) {
     double maximumFitness = fitness[findMaxIndex(fitness, popSize)];
-    return maximumFitness > 1 / (0.01 * chromosomeLength);
+    return maximumFitness >= 1 / (0.01 * chromosomeLength);
 }

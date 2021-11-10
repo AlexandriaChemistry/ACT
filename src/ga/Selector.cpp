@@ -7,7 +7,7 @@
 
 RouletteSelector::RouletteSelector() {
 
-    gen = std::mt19937(rd);
+    gen = std::mt19937(rd());
     dis = std::uniform_real_distribution<>(0.0, 1.0);
 
 }

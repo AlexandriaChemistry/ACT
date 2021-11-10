@@ -6,7 +6,7 @@
 
 
 Crossover::Crossover(const int chromosomeLength) {
-    gen = std::mt19937(rd);
+    gen = std::mt19937(rd());
     // Exclude first and last indices. Otherwise, there is no crossover.
     dis = std::uniform_int_distribution<>(1, chromosomeLength - 2);
 }
