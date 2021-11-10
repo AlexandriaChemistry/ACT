@@ -21,4 +21,13 @@ public:
 
 };
 
+class SimpleFitnessComputer : public FitnessComputer {
+
+public:
+    bool compute(const vector       individual,
+                 double* const      ftPtr,
+                 const int          length);
+
+};
+
 #endif //ACT_FITNESSCOMPUTER_H
