@@ -11,7 +11,7 @@ int main(int argc, char const *argv[]) {
 	Sorter sort = EmptySorter();
 	ProbabilityComputer procomp = FitnessProbabilityComputer();
 	Selector select = RouletteSelector();
-	Crossover singlepoint = SinglePointCrossover(chromLen);
+	SinglePointCrossover singlepoint(chromLen);
 	Mutator mutate = PercentMutator(0.2);
 	Terminator terminate = SimpleTerminator();
 
