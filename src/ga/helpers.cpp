@@ -80,10 +80,8 @@ int findMaximumIndex(const vector   vec,
 /*!
  * Print a vector to console
  * @param vec   the vector to print
- * @param len   length of vector
  */
-void printVector(const vector   vec,
-                 const int      len) {
+void printVector(const vector vec) {
     printf("[ ");
     for (double value : vec) {
         printf("%f ", value);
