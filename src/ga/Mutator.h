@@ -32,7 +32,9 @@ public:
      * Create a new PercentMutation object
      * @param frac  the fraction of change in [0, 1]
      */
-    PercentMutator(const double frac);
+    PercentMutator(const double frac):
+    gen(rd()), dis(std::uniform_real_distribution<>(1-frac, 1+frac)) {}
+
     void mutate(double* const gene);
 
 };
