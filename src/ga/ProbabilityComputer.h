@@ -17,7 +17,7 @@ public:
      * @param popSize   size of the population
      */
     virtual void compute(const vector   fitness,
-                         const vector   prob,
+                               vector   prob,
                          const int      popSize);
 
 };
@@ -30,7 +30,7 @@ class FitnessProbabilityComputer : public ProbabilityComputer {
 
 public:
     void compute(const vector   fitness,
-                 const vector   prob,
+                       vector   prob,
                  const int      popSize);
 
 };
@@ -54,7 +54,7 @@ public:
                                  const double   temperature);
 
     void compute(const vector   fitness,
-                 const vector   prob,
+                       vector   prob,
                  const int      popSize);
 
 };
@@ -81,7 +81,7 @@ public:
      * @param popSize
      */
     void compute(const vector   fitness,
-                 const vector   prob,
+                       vector   prob,
                  const int      popSize);
 
 };

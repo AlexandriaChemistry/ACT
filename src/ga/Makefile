@@ -6,7 +6,7 @@ LDFLAGS =
 
 RM = /bin/rm -f
 
-OBJS = Crossover.o Fitnesscomputer.o GeneticAlgorithm.o helpers.o Initializer.o Mutator.o ProbabilityComputer.o Selector.o Sorter.o Terminator.o test.o
+OBJS = Crossover.o FitnessComputer.o GeneticAlgorithm.o helpers.o Initializer.o Mutator.o ProbabilityComputer.o Selector.o Sorter.o Terminator.o test.o
 GEN_HFILES = Initializer.h FitnessComputer.h ProbabilityComputer.h Crossover.h Mutator.h Terminator.h
 EXEC = test
 

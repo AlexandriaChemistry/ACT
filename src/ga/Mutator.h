@@ -21,7 +21,7 @@ public:
  * Class for percentual gene mutation
  * Modifies a gene by a maximum of <frac*100>% of its value
  */
-class PercentMutator {
+class PercentMutator:public Mutator {
 
     std::random_device rd;  // Will be used to obtain a seed for the random number engine
     std::mt19937 gen; // Standard mersenne_twister_engine seeded with rd()

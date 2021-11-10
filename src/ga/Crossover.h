@@ -11,7 +11,7 @@
  */
 class Crossover {
 
-protected:
+private:
     std::random_device rd;  // Will be used to obtain a seed for the random number engine
     std::mt19937 gen; // Standard mersenne_twister_engine seeded with rd()
     std::uniform_int_distribution<> dis;
@@ -33,9 +33,14 @@ public:
      */
     virtual void offspring(const vector     parent1,
                            const vector     parent2,
-                           const vector     child1,
-                           const vector     child2,
+                                 vector     child1,
+                                 vector     child2,
                            const int        length);
+    
+    /*!
+     * Return random index
+     */ 
+    int randIndex();
 
 };
 
@@ -46,11 +51,11 @@ public:
 class SinglePointCrossover : public Crossover {
 
 public:
-    SinglePointCrossover(const int chromosomeLength): Crossover(chromosomeLength);
+    SinglePointCrossover(const int chromosomeLength): Crossover(chromosomeLength) {};
     void offspring(const vector     parent1,
                    const vector     parent2,
-                   const vector     child1,
-                   const vector     child2,
+                         vector     child1,
+                         vector     child2,
                    const int        length);
 
 };
@@ -62,11 +67,11 @@ public:
 class DoublePointCrossover : public Crossover {
 
 public:
-    DoublePointCrossover(const int chromosomeLength): Crossover(chromosomeLength);
+    DoublePointCrossover(const int chromosomeLength): Crossover(chromosomeLength) {};
     void offspring(const vector     parent1,
                    const vector     parent2,
-                   const vector     child1,
-                   const vector     child2,
+                         vector     child1,
+                         vector     child2,
                    const int        length);
 
 };

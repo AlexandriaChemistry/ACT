@@ -24,7 +24,7 @@ public:
 class SimpleFitnessComputer : public FitnessComputer {
 
 public:
-    double compute(const vector       individual,
+    void compute(const vector       individual,
                    double* const      ftPtr,
                    const int          length);
 };

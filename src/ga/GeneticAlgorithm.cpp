@@ -17,14 +17,14 @@
 
 GeneticAlgorithm::GeneticAlgorithm(const int                popSize,
                                    const int                chromosomeLength,
-                                   Initializer              initializer,
-                                   FitnessComputer          fitComputer,
-                                   Sorter                   sorter,
-                                   ProbabilityComputer      probComputer,
-                                   Selector                 selector,
-                                   Crossover                crossover,
-                                   Mutator                  mutator,
-                                   Terminator               terminator) {
+                                   Initializer*              initializer,
+                                   FitnessComputer*          fitComputer,
+                                   Sorter*                   sorter,
+                                   ProbabilityComputer*      probComputer,
+                                   Selector*                 selector,
+                                   Crossover*                crossover,
+                                   Mutator*                  mutator,
+                                   Terminator*               terminator) {
 
     this->popSize = popSize;
     this->chromosomeLength = chromosomeLength;
@@ -72,19 +72,19 @@ const ga_result_t GeneticAlgorithm::evolve(const double     prCross,
 
     // Initialize the population
     if (verbose) printf("Initializing individuals...\n");
-    for (vector ind : oldPop) initializer.initialize(ind, chromosomeLength);
+    for (vector ind : oldPop) (*initializer).initialize(ind, chromosomeLength);
 
     // Compute fitness
     if (verbose) printf("Computing initial fitness...\n");
     for (i = 0; i < popSize; i++) {
-        fitComputer.compute(oldPop[i], &fitness[i], chromosomeLength);
+        (*fitComputer).compute(oldPop[i], &fitness[i], chromosomeLength);
     }
 
     // If verbose, print best individual
     if (verbose) {
         const int index = findMaximumIndex(fitness, popSize);
         printf("Best individual: ");
-        printVector(oldPop[index]);
+        printVector(oldPop[index], chromosomeLength);
         printf("Max fitness: %f", fitness[index]);
     }
 
@@ -97,23 +97,23 @@ const ga_result_t GeneticAlgorithm::evolve(const double     prCross,
 
         // Sort individuals based on fitness
         if (verbose) printf("Sorting... (if needed)\n");
-        sorter.sort(oldPop, fitness, popSize);
+        (*sorter).sort(oldPop, fitness, popSize);
 
         // Normalize the fitness into a probability
         if (verbose) printf("Computing probabilities...\n");
-        probComputer.compute(fitness, probability, popSze);
+        (*probComputer).compute(fitness, probability, popSize);
 
         // Generate new population
         if (verbose) printf("Generating new population...\n");
         for (i = 0; i < popSize; i+=2) {
 
             // Select parents
-            parent1 = selector.select(oldPop, probability, popSize);
-            parent2 = selector.select(oldPop, probability, popSize);
+            parent1 = (*selector).select(oldPop, probability, popSize);
+            parent2 = (*selector).select(oldPop, probability, popSize);
 
             // Do crossover
             if (dis(gen) <= prCross) {
-                crossover.offspring(parent1, parent2, newPop[i], newPop[i+1],
+                (*crossover).offspring(parent1, parent2, newPop[i], newPop[i+1],
                                     chromosomeLength);
             } else {
                 copyVectorValues(parent1, newPop[i], 0, chromosomeLength);
@@ -123,10 +123,10 @@ const ga_result_t GeneticAlgorithm::evolve(const double     prCross,
             // Do mutation in each child, and compute fitness to avoid another traversal
             for (k = 0; k < 2; k++) {
                 for (j = 0; j < chromosomeLength; j++) {
-                    if (dis(gen) <= prMut) mutator.mutate(&newPop[i+k][j]);
+                    if (dis(gen) <= prMut) (*mutator).mutate(&newPop[i+k][j]);
                 }
                 // Compute fitness
-                fitComputer.compute(newPop[i], &fitness[i], chromosomeLength);
+                (*fitComputer).compute(newPop[i], &fitness[i], chromosomeLength);
             }
 
             // Swap oldPop and newPop
@@ -138,7 +138,7 @@ const ga_result_t GeneticAlgorithm::evolve(const double     prCross,
             if (verbose) {
                 const int index = findMaximumIndex(fitness, popSize);
                 printf("Best individual: ");
-                printVector(oldPop[index]);
+                printVector(oldPop[index], chromosomeLength);
                 printf("Max fitness: %f", fitness[index]);
             }
 
@@ -146,7 +146,7 @@ const ga_result_t GeneticAlgorithm::evolve(const double     prCross,
 
         if (verbose) printf("Checking termination conditions...\n");
 
-    } while(!terminator.terminate(oldPop, fitness, generation, popSize));
+    } while(!(*terminator).terminate(oldPop, fitness, generation, popSize, chromosomeLength));
 
     if (verbose) printf("Evolution is done!\n");
 
