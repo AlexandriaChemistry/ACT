@@ -17,8 +17,10 @@ public:
      * @param popSize               size of the population
      * @return                      true if the evolution is complete, false otherwise
      */
-    virtual bool terminate(const matrix population, const vector fitness, const int generationNumber,
-                           const int popSize);
+    virtual bool terminate(const matrix     population,
+                           const vector     fitness,
+                           const int        generationNumber,
+                           const int        popSize);
 
 };
 
