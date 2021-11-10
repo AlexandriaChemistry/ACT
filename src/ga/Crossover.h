@@ -31,8 +31,11 @@ public:
      * @param child2    the second child to write to
      * @param length    length of each individual
      */
-    virtual void offspring(const vector parent1, const vector parent2, const vector child1, const vector child2,
-                           const int length);
+    virtual void offspring(const vector     parent1,
+                           const vector     parent2,
+                           const vector     child1,
+                           const vector     child2,
+                           const int        length);
 
 };
 
@@ -44,8 +47,11 @@ class SinglePointCrossover : public Crossover {
 
 public:
     SinglePointCrossover(const int chromosomeLength): Crossover(chromosomeLength);
-    void offspring(const vector parent1, const vector parent2, const vector child1, const vector child2,
-                   const int length);
+    void offspring(const vector     parent1,
+                   const vector     parent2,
+                   const vector     child1,
+                   const vector     child2,
+                   const int        length);
 
 };
 
@@ -57,8 +63,11 @@ class DoublePointCrossover : public Crossover {
 
 public:
     DoublePointCrossover(const int chromosomeLength): Crossover(chromosomeLength);
-    void offspring(const vector parent1, const vector parent2, const vector child1, const vector child2,
-                   const int length);
+    void offspring(const vector     parent1,
+                   const vector     parent2,
+                   const vector     child1,
+                   const vector     child2,
+                   const int        length);
 
 };
 

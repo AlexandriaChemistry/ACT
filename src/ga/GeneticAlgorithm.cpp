@@ -13,16 +13,16 @@
 
 #include "helpers.h"
 
-GeneticAlgorithm::GeneticAlgorithm(const int popSize,
-                                   const int chromosomeLength,
-                                   Initializer initializer,
-                                   FitnessComputer fitComputer,
-                                   Sorter sorter,
-                                   ProbabilityComputer probComputer,
-                                   Selector selector,
-                                   Crossover crossover,
-                                   Mutator mutator,
-                                   Terminator terminator) {
+GeneticAlgorithm::GeneticAlgorithm(const int                popSize,
+                                   const int                chromosomeLength,
+                                   Initializer              initializer,
+                                   FitnessComputer          fitComputer,
+                                   Sorter                   sorter,
+                                   ProbabilityComputer      probComputer,
+                                   Selector                 selector,
+                                   Crossover                crossover,
+                                   Mutator                  mutator,
+                                   Terminator               terminator) {
 
     this->popSize = popSize;
     this->chromosomeLength = chromosomeLength;
@@ -44,7 +44,8 @@ GeneticAlgorithm::GeneticAlgorithm(const int popSize,
 }
 
 
-const ga_result_t GeneticAlgorithm::evolve(const double prCross, const double prMut) {
+const ga_result_t GeneticAlgorithm::evolve(const double     prCross,
+                                           const double     prMut) {
 
     // Random number generation
     std::random_device rd;  // Will be used to obtain a seed for the random number engine

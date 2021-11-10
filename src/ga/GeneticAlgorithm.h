@@ -50,16 +50,16 @@ public:
      * @param mutator               Mutator object
      * @param terminator            Terminator object
      */
-    GeneticAlgorithm(const int popSize,
-                     const int chromosomeLength,
-                     Initializer initializer,
-                     FitnessComputer fitComputer,
-                     Sorter sorter,
-                     ProbabilityComputer probComputer,
-                     Selector selector,
-                     Crossover crossover,
-                     Mutator mutator,
-                     Terminator terminator);
+    GeneticAlgorithm(const int              popSize,
+                     const int              chromosomeLength,
+                     Initializer            initializer,
+                     FitnessComputer        fitComputer,
+                     Sorter                 sorter,
+                     ProbabilityComputer    probComputer,
+                     Selector               selector,
+                     Crossover              crossover,
+                     Mutator                mutator,
+                     Terminator             terminator);
 
     /*!
      * Evolve the initial population
@@ -68,7 +68,8 @@ public:
      * @return          a tuple containing the final population, the final fitness, the best individual, the fitness
      *                  of the best individual, and the number of generations
      */
-    const ga_result_t evolve(const double prCross, const double prMut);
+    const ga_result_t evolve(const double   prCross,
+                             const double   prMut);
 
 };
 

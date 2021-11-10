@@ -16,7 +16,9 @@ public:
      * @param fitness               the fitness of each individual in the population
      * @param popSize               number of individuals in the population
      */
-    virtual void sort(matrix pop, vector fitness, const int popSize);
+    virtual void sort(matrix        pop,
+                      vector        fitness,
+                      const int     popSize);
 
 };
 
@@ -27,7 +29,9 @@ public:
 class EmptySorter : public Sorter {
 
 public:
-    void sort(matrix pop, vector fitness, const int popSize) {};
+    void sort(matrix        pop,
+              vector        fitness,
+              const int     popSize) {};
 
 };
 
@@ -47,9 +51,12 @@ public:
      * @param popSize               number of individuals in the population
      * @param chromosomeLength      the size of each individual
      */
-    MergeSorter(const int popSize, const int chromosomeLength);
+    MergeSorter(const int   popSize,
+                const int   chromosomeLength);
 
-    void sort(matrix pop, vector fitness, const int popSize);
+    void sort(matrix        pop,
+              vector        fitness,
+              const int     popSize);
 
     /*!
      * Split <fitA> into 2 runs, sort both runs into <fitB>, merge both runs from <fitB> into <fitA>
@@ -60,7 +67,12 @@ public:
      * @param popA      population A
      * @param fitA      fitness A
      */
-    void topDownSplitMerge(matrix popB, vector fitB, const int left, const int right, matrix popA, vector fitA);
+    void topDownSplitMerge(matrix       popB,
+                           vector       fitB,
+                           const int    left,
+                           const int    right,
+                           matrix       popA,
+                           vector       fitA);
 
     /*!
      * Left source half is A[left:middle-1].
@@ -74,8 +86,13 @@ public:
      * @param popB          population B
      * @param fitB          fitness B
      */
-    void topDownMerge(matrix popA, vector fitA, const int left, const int middle, const int right, matrix popB,
-                      vector fitB);
+    void topDownMerge(matrix        popA,
+                      vector        fitA,
+                      const int     left,
+                      const int     middle,
+                      const int     right,
+                      matrix        popB,
+                      vector        fitB);
 
 };
 

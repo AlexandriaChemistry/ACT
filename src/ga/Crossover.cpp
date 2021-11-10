@@ -12,8 +12,11 @@ Crossover::Crossover(const int chromosomeLength) {
 }
 
 
-void SinglePointCrossover::offspring(const vector parent1, const vector parent2, const vector child1,
-                                     const vector child2, const int length) {
+void SinglePointCrossover::offspring(const vector   parent1,
+                                     const vector   parent2,
+                                     const vector   child1,
+                                     const vector   child2,
+                                     const int      length) {
 
     const int index = dis(gen);
 
@@ -30,8 +33,11 @@ void SinglePointCrossover::offspring(const vector parent1, const vector parent2,
 }
 
 
-void DoublePointCrossover::offspring(const vector parent1, const vector parent2, const vector child1,
-                                     const vector child2, const int length) {
+void DoublePointCrossover::offspring(const vector   parent1,
+                                     const vector   parent2,
+                                     const vector   child1,
+                                     const vector   child2,
+                                     const int      length) {
 
     const int tmp1 = dis(gen);
     int tmp2 = dis(gen);
