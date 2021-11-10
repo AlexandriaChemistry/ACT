@@ -1,7 +1,7 @@
 CC = clang++
 LD = clang++
 
-CFLAGS = -g -Wall
+CFLAGS = -g -Wall -std=c++11
 LDFLAGS =
 
 RM = /bin/rm -f
