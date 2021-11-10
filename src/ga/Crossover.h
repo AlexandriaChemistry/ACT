@@ -2,6 +2,7 @@
 #define ACT_CROSSOVER_H
 
 #include <random>
+#include <time.h>
 
 #include "aliases.h"
 
@@ -13,7 +14,7 @@ class Crossover {
 
     std::random_device rd;  // Will be used to obtain a seed for the random number engine
     std::mt19937 gen; // Standard mersenne_twister_engine seeded with rd()
-    std::uniform_int_distribution<> dis;
+    std::uniform_int_distribution<int> dis;
 
 public:
     /*!
@@ -21,7 +22,9 @@ public:
      * @param chromosomeLength  length of the chromosome
      */
     Crossover(const int chromosomeLength)
-    : gen(rd()), dis(std::uniform_int_distribution<>(1, chromosomeLength-2)) {}
+    : gen(rd()), dis(std::uniform_int_distribution<>(1, chromosomeLength-2)) {
+        gen.seed(::time(NULL));
+    }
 
     /*!
      * Perform crossover operation

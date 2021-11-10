@@ -2,6 +2,7 @@
 #define ACT_MUTATOR_H
 
 #include <random>
+#include <time.h>
 
 /*!
  * Abstract class for gene mutation
@@ -25,7 +26,7 @@ class PercentMutator:public Mutator {
 
     std::random_device rd;  // Will be used to obtain a seed for the random number engine
     std::mt19937 gen; // Standard mersenne_twister_engine seeded with rd()
-    std::uniform_real_distribution<> dis;
+    std::uniform_real_distribution<double> dis;
 
 public:
     /*!
@@ -33,7 +34,9 @@ public:
      * @param frac  the fraction of change in [0, 1]
      */
     PercentMutator(const double frac):
-    gen(rd()), dis(std::uniform_real_distribution<>(1-frac, 1+frac)) {}
+    gen(rd()), dis(std::uniform_real_distribution<>(1-frac, 1+frac)) {
+        gen.seed(::time(NULL));
+    }
 
     void mutate(double* const gene);
 
