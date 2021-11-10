@@ -1,0 +1,52 @@
+CC = clang++
+LD = clang++
+
+CFLAGS = -g -Wall
+LDFLAGS =
+
+RM = /bin/rm -f
+
+OBJS = Crossover.o Fitnesscomputer.o GeneticAlgorithm.o helpers.o Initializer.o Mutator.o ProbabilityComputer.o Selector.o Sorter.o Terminator.o test.o
+GEN_HFILES = Initializer.h FitnessComputer.h ProbabilityComputer.h Crossover.h Mutator.h Terminator.h
+EXEC = test
+
+all: $(EXEC)
+
+$(EXEC): $(OBJS)
+	$(LD) -o $(EXEC) $(OBJS) $(LDFLAGS)
+
+Crossover.o: Crossover.cpp Crossover.h aliases.h
+	$(CC) $(CFLAGS) -c Crossover.cpp
+
+FitnessComputer.o: FitnessComputer.cpp FitnessComputer.h aliases.h
+	$(CC) $(CFLAGS) -c FitnessComputer.cpp
+
+GeneticAlgorithm.o: GeneticAlgorithm.cpp GeneticAlgorithm.h aliases.h helpers.h $(GEN_HFILES)
+	$(CC) $(CFLAGS) -c GeneticAlgorithm.cpp
+
+helpers.o: helpers.cpp helpers.h aliases.h
+	$(CC) $(CFLAGS) -c helpers.cpp
+
+Initializer.o: Initializer.cpp Initializer.h aliases.h
+	$(CC) $(CFLAGS) -c Initializer.cpp
+
+Mutator.o: Mutator.cpp Mutator.h
+	$(CC) $(CFLAGS) -c Mutator.cpp
+
+ProbabilityComputer.o: ProbabilityComputer.cpp ProbabilityComputer.h aliases.h
+	$(CC) $(CFLAGS) -c ProbabilityComputer.cpp
+
+Selector.o: Selector.cpp Selector.h aliases.h
+	$(CC) $(CFLAGS) -c Selector.cpp
+
+Sorter.o: Sorter.cpp Sorter.h aliases.h helpers.h
+	$(CC) $(CFLAGS) -c Sorter.cpp
+
+Terminator.o: Terminator.cpp Terminator.h aliases.h helpers.h
+	$(CC) $(CFLAGS) -c Terminator.cpp
+
+test.o: test.cpp aliases.h includes.h
+	$(CC) $(CFLAGS) -c test.cpp
+
+clean:
+	$(RM) $(EXEC) $(OBJS)
