@@ -29,6 +29,7 @@
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
+#include "actpre.h"
 
 #include <cctype>
 #include <cmath>
@@ -75,6 +76,46 @@
 namespace alexandria
 {
 
+/*! \defgroup tune_eem Schematic flowchart for tune_eem
+ *
+ * \dot
+digraph tune_eem {
+    compound = true;
+    splines=true;
+        node [shape=box,style=filled,color=pink] rif rm;
+        rif [label="Read input"];
+        rm  [label="Calc deviation"];
+      
+      subgraph cluster_3 {
+        label = "Helpers 1 ... N";
+        height=2;
+        node [shape=box,style=filled,color=yellow];
+        rh1  [label="Calc deviation"];
+      }
+    
+    { rank = same rm rh1 }
+    node [shape=box] [label="Start",color=cyan]; start;
+    node [shape=box] [label="Parse options",color=cyan]; parse;
+    node [shape=diamond] [label="Master node?",color=cyan]; is_master;
+    start -> parse -> is_master;
+    rif -> rm;
+    rm  -> rh1 [dir=both] [label="communication"];
+    node [shape=box] [ label="Write output",color=pink ]; ready;
+    node [shape=box][ label="Finished", color=cyan]; finished;
+    is_master -> rh1 [ label="no" ];
+    is_master -> rif [ label="yes" ];
+    rm -> ready [ label="done" ];
+    ready -> finished;
+    rh1 -> finished;
+}
+
+ * \enddot
+ */
+
+/*! \brief Wrapper for closing a file
+ * Will print a warning if something is wrong when closing.
+ * \param[in] fp The file pointer
+ */
 static void my_fclose(FILE *fp)
 {
     int myerrno = gmx_ffclose(fp);
@@ -309,6 +350,12 @@ void OptACM::initChargeGeneration(iMolSelect ims)
     }
 }
 
+/*! \brief Dump charges to a file
+ * Debugging routine
+ * \param[in] fp   The file pointer to print to
+ * \param[in] mol  The molecule to read from
+ * \param[in] info Additional debugging information
+ */
 static void dumpQX(FILE *fp, MyMol *mol, const std::string &info)
 {
     if (false && fp)
