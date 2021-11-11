@@ -55,7 +55,7 @@
  */
 //! \cond
 #ifdef HAVE_CONFIG_H
-#include "gmxpre-config.h"
+#include "actpre-config.h"
 #endif
 
 /* We use a few GNU functions for thread affinity and other low-level stuff.
