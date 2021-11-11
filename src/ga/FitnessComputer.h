@@ -12,21 +12,24 @@ public:
     /*!
      * Compute the fitness of an individual
      * @param individual    the individual
-     * @param ftPtr         pointer to where the fitness should be written
+     * @param fitness       the fitness vector
+     * @param indIndex      index of the individual in the population
      * @param length        length of the chromosome
      */
-    virtual void compute(const vector       individual,
-                         double* const      ftPtr,
-                         const int          length) {};
+    virtual void compute(const vector&       individual,
+                               vector&       fitness,
+                         const int           indIndex,
+                         const int           length) {};
 
 };
 
 class SimpleFitnessComputer : public FitnessComputer {
 
 public:
-    void compute(const vector         individual,
-                   double* const      ftPtr,
-                   const int          length);
+    void compute(const vector&       individual,
+                       vector&       fitness,
+                 const int           indIndex,
+                 const int           length);
 };
 
 #endif //ACT_FITNESSCOMPUTER_H

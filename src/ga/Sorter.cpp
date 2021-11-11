@@ -14,9 +14,9 @@ MergeSorter::MergeSorter(const int  popSize,
 }
 
 
-void MergeSorter::sort(matrix       pop,
-                       vector       fitness,
-                       const int    popSize) {
+void MergeSorter::sort(matrix&       pop,
+                       vector&       fitness,
+                       const int     popSize) {
 
     copyVectorValues(fitness, tmpFitness, 0, popSize);
     copyMatrixValues(pop, tmpPop, 0, popSize, 0, chromosomeLength);
@@ -25,12 +25,12 @@ void MergeSorter::sort(matrix       pop,
 }
 
 
-void MergeSorter::topDownSplitMerge(matrix      popB,
-                                    vector      fitB,
-                                    const int   left,
-                                    const int   right,
-                                    matrix      popA,
-                                    vector      fitA) {
+void MergeSorter::topDownSplitMerge(matrix&      popB,
+                                    vector&      fitB,
+                                    const int    left,
+                                    const int    right,
+                                    matrix&      popA,
+                                    vector&      fitA) {
 
     if (right - left <= 1) return;
 
@@ -44,13 +44,13 @@ void MergeSorter::topDownSplitMerge(matrix      popB,
 }
 
 
-void MergeSorter::topDownMerge(matrix       popA,
-                               vector       fitA,
-                               const int    left,
-                               const int    middle,
-                               const int    right,
-                               matrix       popB,
-                               vector       fitB) {
+void MergeSorter::topDownMerge(matrix&       popA,
+                               vector&       fitA,
+                               const int     left,
+                               const int     middle,
+                               const int     right,
+                               matrix&       popB,
+                               vector&       fitB) {
 
     int i = left;
     int j = middle;

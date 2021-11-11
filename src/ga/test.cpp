@@ -5,34 +5,38 @@
 
 int main(int argc, char const *argv[]) {
 	
-//	const int popSize = 10;
+	const int popSize = 10;
 	const int chromLen = 5;
 
 	SimpleInitializer init(-10.0, 10.0);
-//	FitnessComputer fit = SimpleFitnessComputer();
-//	Sorter sort = EmptySorter();
-//	ProbabilityComputer procomp = FitnessProbabilityComputer();
-//	Selector select = RouletteSelector();
-//	SinglePointCrossover singlepoint(chromLen);
-//	Mutator mutate = PercentMutator(0.2);
-//	Terminator terminate = SimpleTerminator();
-//
-//	GeneticAlgorithm ga = GeneticAlgorithm(popSize,
-//										   chromLen,
-//										   &init,
-//										   &fit,
-//										   &sort,
-//										   &procomp,
-//										   &select,
-//										   &singlepoint,
-//										   &mutate,
-//										   &terminate);
-//
-//	ga.evolve(0.5, 0.01, true);
+	SimpleFitnessComputer fit;
+	EmptySorter sort;
+	FitnessProbabilityComputer procomp;
+	RouletteSelector select;
+	SinglePointCrossover singlepoint(chromLen);
+    PercentMutator mutate(0.2);
+	SimpleTerminator terminate;
 
-    vector vec = vector(chromLen);
-    init.initialize(vec, chromLen);
-    printVector(vec);
+	GeneticAlgorithm ga = GeneticAlgorithm(popSize,
+										   chromLen,
+										   &init,
+										   &fit,
+										   &sort,
+										   &procomp,
+										   &select,
+										   &singlepoint,
+										   &mutate,
+										   &terminate);
+
+	ga.evolve(0.5, 0.01, true);
+
+//    vector vec = vector(chromLen);
+//    init.initialize(vec, chromLen);
+//    printVector(vec);
+//
+//    vector fitness = vector(5);
+//    fit.compute(vec, fitness, 1, chromLen);
+//    printVector(fitness);
 
 	return 0;
 }
