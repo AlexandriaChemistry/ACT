@@ -50,7 +50,7 @@ void RankProbabilityComputer::compute(const vector&  fitness,
                                             vector&  prob,
                                       const int      popSize) {
     for (int i = 0; i < popSize; i++) {
-        prob[i] = (popSize - i)/sumOfRanks;
+        prob[i] = (popSize - i) / sumOfRanks;
     }
 }
 
