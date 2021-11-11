@@ -16,9 +16,9 @@ public:
      * @param prob      structure to store the probabilities
      * @param popSize   size of the population
      */
-    virtual void compute(const vector   fitness,
-                               vector   prob,
-                         const int      popSize) {};
+    virtual void compute(const vector&   fitness,
+                               vector&   prob,
+                         const int       popSize) {};
 
 };
 
@@ -29,9 +29,9 @@ public:
 class FitnessProbabilityComputer : public ProbabilityComputer {
 
 public:
-    void compute(const vector   fitness,
-                       vector   prob,
-                 const int      popSize);
+    void compute(const vector&   fitness,
+                       vector&   prob,
+                 const int       popSize);
 
 };
 
@@ -53,9 +53,9 @@ public:
     BoltzmannProbabilityComputer(const int      popSize,
                                  const double   temperature);
 
-    void compute(const vector   fitness,
-                       vector   prob,
-                 const int      popSize);
+    void compute(const vector&   fitness,
+                       vector&   prob,
+                 const int       popSize);
 
 };
 
@@ -80,9 +80,9 @@ public:
      * @param prob
      * @param popSize
      */
-    void compute(const vector   fitness,
-                       vector   prob,
-                 const int      popSize);
+    void compute(const vector&   fitness,
+                       vector&   prob,
+                 const int       popSize);
 
 };
 
