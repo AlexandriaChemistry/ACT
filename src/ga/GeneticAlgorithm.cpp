@@ -132,6 +132,7 @@ const ga_result_t GeneticAlgorithm::evolve(const double     prCross,
 
         // Swap oldPop and newPop
         if (verbose) printf("Swapping oldPop and newPop...\n");
+
         tmpPop = oldPop;
         oldPop = newPop;
         newPop = tmpPop;

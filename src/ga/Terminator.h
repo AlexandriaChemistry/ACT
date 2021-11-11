@@ -29,11 +29,34 @@ public:
 
 /*!
  * Toy terminator class which returns true when the sum of squared values in the vector is no larger than
- * 0.01 * <chromosomeLength>
+ * tolerance * <chromosomeLength>
  */
 class SimpleTerminator : public Terminator {
 
+private:
+    double tolerance;
+
 public:
+    SimpleTerminator(const double     tolerance);
+    bool terminate(const matrix     population,
+                   const vector&    fitness,
+                   const int        generationNumber,
+                   const int        popSize,
+                   const int        chromosomeLength);
+
+};
+
+/*!
+ * Toy terminator class which returns true when the sum of squared values in the vector is no larger than
+ * tolerance * <chromosomeLength>
+ */
+class GenerationTerminator : public Terminator {
+
+private:
+    int maxGenerations;
+
+public:
+    GenerationTerminator(const int  maxGenerations);
     bool terminate(const matrix     population,
                    const vector&    fitness,
                    const int        generationNumber,

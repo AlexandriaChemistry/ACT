@@ -7,8 +7,10 @@
 
 int main(int argc, char const *argv[]) {
 	
-	const int popSize = 500;
+	const int popSize = 100;
 	const int chromLen = 10;
+	const int maxGenerations = 3;
+	// const double tolerance = 0.0001;
 
 	SimpleInitializer init(-10.0, 10.0);
 	SimpleFitnessComputer fit;
@@ -17,7 +19,8 @@ int main(int argc, char const *argv[]) {
 	RouletteSelector select;
 	SinglePointCrossover singlepoint(chromLen);
     PercentMutator mutate(0.2);
-	SimpleTerminator terminate;
+	// SimpleTerminator terminate(tolerance);
+	GenerationTerminator terminate(maxGenerations);
 
 	GeneticAlgorithm ga = GeneticAlgorithm(popSize,
 										   chromLen,
