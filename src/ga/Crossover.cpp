@@ -10,11 +10,11 @@ int Crossover::randIndex() {
 }
 
 
-void SinglePointCrossover::offspring(const vector   parent1,
-                                     const vector   parent2,
-                                           vector   child1,
-                                           vector   child2,
-                                     const int      length) {
+void SinglePointCrossover::offspring(const vector&   parent1,
+                                     const vector&   parent2,
+                                           vector&   child1,
+                                           vector&   child2,
+                                     const int       length) {
 
     const int index = randIndex();
 
@@ -31,11 +31,11 @@ void SinglePointCrossover::offspring(const vector   parent1,
 }
 
 
-void DoublePointCrossover::offspring(const vector   parent1,
-                                     const vector   parent2,
-                                           vector   child1,
-                                           vector   child2,
-                                     const int      length) {
+void DoublePointCrossover::offspring(const vector&   parent1,
+                                     const vector&   parent2,
+                                           vector&   child1,
+                                           vector&   child2,
+                                     const int       length) {
 
     const int tmp1 = randIndex();
     int tmp2 = randIndex();

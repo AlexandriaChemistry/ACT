@@ -1,6 +1,7 @@
 #include "Mutator.h"
 
 
-void PercentMutator::mutate(double *const gene) {
-    (*gene) *= dis(gen);
+void PercentMutator::mutate(      vector&   individual,
+                            const int       indGen) {
+    individual[indGen] *= dis(gen);
 }
