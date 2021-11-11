@@ -81,6 +81,12 @@ const ga_result_t GeneticAlgorithm::evolve(const double     prCross,
         printf("Best individual: ");
         printVector(oldPop[index]);
         printf("Max fitness: %f\n", fitness[index]);
+
+        printf("Population:\n");
+        printMatrix(oldPop);
+
+        printf("Fitness vector: ");
+        printVector(fitness);
     }
 
     // Iterate and create new generations
@@ -93,6 +99,12 @@ const ga_result_t GeneticAlgorithm::evolve(const double     prCross,
         // Sort individuals based on fitness
         if (verbose) printf("Sorting... (if needed)\n");
         (*sorter).sort(oldPop, fitness, popSize);
+        if (verbose) {
+            printf("Population after sorting:\n");
+            printMatrix(oldPop);
+            printf("Fitness vector after sorting: ");
+            printVector(fitness);
+        }
 
         // Normalize the fitness into a probability
         if (verbose) printf("Computing probabilities...\n");
@@ -143,6 +155,12 @@ const ga_result_t GeneticAlgorithm::evolve(const double     prCross,
             printf("Best individual: ");
             printVector(oldPop[index]);
             printf("Max fitness: %f\n", fitness[index]);
+
+            printf("Population:\n");
+            printMatrix(oldPop);
+
+            printf("Fitness vector: ");
+            printVector(fitness);
         }
 
         if (verbose) printf("Checking termination conditions...\n");
