@@ -8,7 +8,7 @@ int main(int argc, char const *argv[]) {
 //	const int popSize = 10;
 	const int chromLen = 5;
 
-	Initializer init = SimpleInitializer(-10.0, 10.0);
+	SimpleInitializer init(-10.0, 10.0);
 //	FitnessComputer fit = SimpleFitnessComputer();
 //	Sorter sort = EmptySorter();
 //	ProbabilityComputer procomp = FitnessProbabilityComputer();
