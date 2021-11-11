@@ -1,6 +1,8 @@
 #ifndef ACT_MUTATOR_H
 #define ACT_MUTATOR_H
 
+#include "aliases.h"
+
 #include <random>
 #include <time.h>
 
@@ -12,9 +14,11 @@ class Mutator {
 public:
     /*!
      * Mutate a gene
-     * @param gene  pointer to the gene
+     * @param individual    individual to mutate
+     * @param indGene       index of the gene to alter
      */
-    virtual void mutate(double* const gene) {};
+    virtual void mutate(      vector&   individual,
+                        const int       indGene) {};
 
 };
 
@@ -38,7 +42,8 @@ public:
         gen.seed(::time(NULL));
     }
 
-    void mutate(double* const gene);
+    void mutate(      vector&   individual,
+                const int       indGene);
 
 };
 

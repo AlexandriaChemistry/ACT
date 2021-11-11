@@ -122,7 +122,7 @@ const ga_result_t GeneticAlgorithm::evolve(const double     prCross,
             if (verbose) printf("Doing mutation...\n");
             for (k = 0; k < 2; k++) {
                 for (j = 0; j < chromosomeLength; j++) {
-                    if (dis(gen) <= prMut) (*mutator).mutate(&newPop[i+k][j]);
+                    if (dis(gen) <= prMut) (*mutator).mutate(newPop[i+k], j);
                 }
                 // Compute fitness
                 (*fitComputer).compute(newPop[i], fitness, i, chromosomeLength);
