@@ -34,7 +34,6 @@
 #ifndef PLISTWRAPPER_H
 #define PLISTWRAPPER_H
 
-//#include <algorithm>
 #include <vector>
 
 #include "gromacs/gmxpreprocess/grompp-impl.h"
@@ -44,12 +43,8 @@
 
 namespace alexandria
 {
-
+//! Shortcut for vector iterator
 using ParamIterator      = typename std::vector<t_param>::iterator;
-using ConstParamIterator = typename std::vector<t_param>::const_iterator;
-
-using BondOrderIterator      = typename std::vector<double>::iterator;
-using ConstBondOrderIterator = typename std::vector<double>::const_iterator;
 
 //! Cleaner version of plist array
 class PlistWrapper
@@ -78,18 +73,9 @@ class PlistWrapper
         //! Return  the parameter array for editing
         std::vector<t_param> *params() { return &p_; }
         
-        //! Loop over parameters
-        ConstParamIterator beginParam() const { return p_.begin(); }
-
-        //! Loop over parameters
-        ConstParamIterator endParam() const { return p_.end(); }
-
-        //! Loop over parameters
-        ParamIterator beginParam() { return p_.begin(); }
-
-        //! Loop over parameters
-        ParamIterator endParam() { return p_.end(); }
-
+        //! Return  the parameter array for reading only
+        const std::vector<t_param> &paramsConst() const { return p_; }
+        
         //! Remove one parameter from the array and return array for next
         ParamIterator eraseParam(ParamIterator p) { return p_.erase(p); }
 
@@ -108,18 +94,6 @@ class PlistWrapper
         //! Return bond order for bond j
         double bondOrder (int j) const {return bondOrder_[j];}
         
-        //! Loop over parameters
-        ConstBondOrderIterator beginBondOrder() const { return bondOrder_.begin(); }
-
-        //! Loop over parameters
-        ConstBondOrderIterator endBondOrder() const { return bondOrder_.end(); }
-
-        //! Loop over parameters
-        BondOrderIterator beginBondOrder() { return bondOrder_.begin(); }
-
-        //! Loop over parameters
-        BondOrderIterator endBondOrder() { return bondOrder_.end(); }
-    
     private:
         //! Function type
         int                  ftype_;

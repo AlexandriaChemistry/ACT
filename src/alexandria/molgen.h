@@ -214,6 +214,7 @@ public:
     }
 };
 
+//! Map from RMS type to FittingTarget structure
 using RmsFittingTarget       = typename std::map<eRMS, FittingTarget>;
 
 /*! \brief Convenience storage of parameters to optimize

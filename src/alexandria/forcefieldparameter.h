@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2020 
+ * Copyright (C) 2020,2021
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -277,6 +277,7 @@ class ForceFieldParameter
     size_t      index_               = 0;
 };
 
+//! Mapping from string to force field parameters
 typedef std::map<std::string, ForceFieldParameter> ForceFieldParameterMap;
 
 } // namespace alexandria

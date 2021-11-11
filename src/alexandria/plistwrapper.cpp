@@ -88,9 +88,11 @@ void delete_params(std::vector<PlistWrapper> &plist_,
         nra = interaction_function[ftype].nratoms;
         switch (nra)
         {
-            case 2:
+        case 2:
+            {
                 /* Remove bonds, if present */
-                for (auto j = pwi->beginParam(); (j < pwi->endParam()); ++j)
+                auto mypar = pwi->params();
+                for (auto j = mypar->begin(); j < mypar->end(); ++j)
                 {
                     if (((j->a[0] == alist[0]) &&
                          (j->a[1] == alist[1])) ||
@@ -106,10 +108,13 @@ void delete_params(std::vector<PlistWrapper> &plist_,
                         break;
                     }
                 }
-           break;
-            case 3:
+                break;
+            }
+        case 3:
+            {
                 /* Remove angle, if present */
-                for (auto j = pwi->beginParam(); (j < pwi->endParam()); ++j)
+                auto mypar = pwi->params();
+                for (auto j = mypar->begin(); (j < mypar->end()); ++j)
                 {
                     if (j->a[1] == alist[1])
                     {
@@ -128,10 +133,13 @@ void delete_params(std::vector<PlistWrapper> &plist_,
                         }
                     }
                 }
-	       break;
-            case 4:
+                break;
+            }
+        case 4:
+            {
                 /* Remove dihedral, if present. Allow wildcard in alist[3] (specified as -1) */
-                for (auto j = pwi->beginParam(); (j < pwi->endParam()); ++j)
+                auto mypar = pwi->params();
+                for (auto j = mypar->begin(); (j < mypar->end()); ++j)
                 {
                     if (((j->a[0] == alist[0]) &&
                          (j->a[1] == alist[1]) &&
@@ -155,10 +163,13 @@ void delete_params(std::vector<PlistWrapper> &plist_,
                         break;
                     }
                 }
-	       break;
-            default:
+                break;
+            }
+        default:
+            {
                 fprintf(stderr, "Don't know how to remove params from type %s\n",
                         interaction_function[ftype].name);
+            }
         }
     }
 }

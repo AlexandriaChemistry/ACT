@@ -1855,7 +1855,7 @@ CommunicationStatus MolProp::Send(t_commrec *cr, int dest) const
 CommunicationStatus MolProp::Receive(t_commrec *cr, int src)
 {
     CommunicationStatus cs;
-    int                 Nbond, Nmol_comp, Ncategory, Nexper;
+    int                 Nbond, Ncategory, Nexper;
 
     /* Generic stuff */
     cs = gmx_recv_data(cr, src);

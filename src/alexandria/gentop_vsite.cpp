@@ -527,7 +527,8 @@ static void set_linear_angle_params(const int                  atoms[],
         return;
     }
 
-    for (auto ang = pangle->beginParam(); ang < pangle->endParam(); ++ang)
+    auto mypar = pangle->params();
+    for (auto ang = mypar->begin(); ang < mypar->end(); ++ang)
     {
         if (((ang->a[0] == atoms[0]) && (ang->a[2] == atoms[2])) ||
             ((ang->a[2] == atoms[0]) && (ang->a[0] == atoms[2])))
@@ -717,12 +718,13 @@ void GentopVsites::gen_Vsites(const Poldata             *pd,
         if (plist.end() != pl1)
         {
             // Exclude vsite and nucleus from each other.
-            for (auto j = pl1->beginParam(); j < pl1->endParam(); ++j)
+            auto mypar = pl1->params();
+            for (auto j = mypar->begin(); j < mypar->end(); ++j)
             {
                 add_excl_pair(newexcls, j->a[0], j->a[1]);
             }
             // Make a copy of the exclusions of the nucleus for the vsite.
-            for (auto j = pl1->beginParam(); j < pl1->endParam(); ++j)
+            for (auto j = mypar->begin(); j < mypar->end(); ++j)
             {                
                 // We know that the nuclues is 1 as we added it to plist as such.
                 int  i0 = inv_renum[j->a[1]];
@@ -732,7 +734,7 @@ void GentopVsites::gen_Vsites(const Poldata             *pd,
                     add_excl_pair(newexcls, j->a[0], renum[(*excls)[i0].e[j0]]);
                 }
             }
-            for (auto j = pl1->beginParam(); j < pl1->endParam(); ++j)
+            for (auto j = mypar->begin(); j < mypar->end(); ++j)
             {
                 for (auto j0 = 0; j0 < newexcls[j->a[1]].nr; j0++)
                 {
@@ -744,11 +746,12 @@ void GentopVsites::gen_Vsites(const Poldata             *pd,
         auto pl2 = SearchPlist(plist, F_VSITE3FAD);
         if (plist.end() != pl2)
         {
-            for (auto j = pl2->beginParam(); j < pl2->endParam(); ++j)
+            auto mypar = pl2->params();
+            for (auto j = mypar->begin(); j < mypar->end(); ++j)
             {
                 add_excl_pair(newexcls, j->a[0], j->a[1]);
             }
-            for (auto j = pl2->beginParam(); j < pl2->endParam(); ++j)
+            for (auto j = mypar->begin(); j < mypar->end(); ++j)
             {
                 int  i0 = inv_renum[j->a[1]];
                 char buf[256];
@@ -762,7 +765,7 @@ void GentopVsites::gen_Vsites(const Poldata             *pd,
                     add_excl_pair(newexcls, j->a[0], renum[(*excls)[i0].e[j0]]);
                 }
             }
-            for (auto j = pl2->beginParam(); j < pl2->endParam(); ++j)
+            for (auto j = mypar->begin(); j < mypar->end(); ++j)
             {
                 for (auto j0 = 0; j0 < newexcls[j->a[1]].nr; j0++)
                 {
@@ -852,7 +855,8 @@ void GentopVsites::gen_Vsites(const Poldata             *pd,
         {
             if (pw->getFtype() != F_VSITE3FAD && pw->getFtype() != F_VSITE3OUT)
             {
-                for (auto j = pw->beginParam(); j < pw->endParam(); ++j)
+                auto mypar = pw->params();
+                for (auto j = mypar->begin(); j < mypar->end(); ++j)
                 {
                     for (int k = 0; k < NRAL(pw->getFtype()); k++)
                     {

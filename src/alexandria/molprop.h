@@ -250,8 +250,10 @@ class AtomNum
         CommunicationStatus Receive(t_commrec *cr,
                                     int        src);
 };
-//! Iterates over a vector of AtomNum
+
+//! Iterator over a vector of AtomNum
 using  AtomNumIterator      = typename std::vector<AtomNum>::iterator;
+//! Const iterator over a vector of AtomNum
 using  AtomNumConstIterator = typename std::vector<AtomNum>::const_iterator;
 
 /*! \brief
@@ -382,8 +384,9 @@ class MolecularComposition
         CommunicationStatus Receive(t_commrec *cr,
                                     int        src);
 };
-//! Iterates over MolecularComposition items
+//! Iterator over MolecularComposition items
 using MolecularCompositionIterator      = typename std::vector<MolecularComposition>::iterator;
+//! Const iterator over MolecularComposition items
 using MolecularCompositionConstIterator = typename std::vector<MolecularComposition>::const_iterator;
 
 /*! \brief
@@ -572,8 +575,11 @@ class MolecularQuadrupole : public GenericProperty
         CommunicationStatus Receive(t_commrec *cr,
                                     int        src);
 };
-//! Iterates over MolecularQuadrupole items
+
+//! Iterator over MolecularQuadrupole items
 using MolecularQuadrupoleIterator      = typename std::vector<MolecularQuadrupole>::iterator;
+
+//! Const iterator over MolecularQuadrupole items
 using MolecularQuadrupoleConstIterator = typename std::vector<MolecularQuadrupole>::const_iterator;
 
 /*! \brief
@@ -663,8 +669,11 @@ class MolecularPolarizability : public GenericProperty
         CommunicationStatus Receive(t_commrec *cr,
                                     int        src);
 };
-//! Iterates over MolecularPolarizability items
+
+//! Iterator over MolecularPolarizability items
 using  MolecularPolarizabilityIterator      = typename std::vector<MolecularPolarizability>::iterator;
+
+//! Const iterator over MolecularPolarizability items
 using  MolecularPolarizabilityConstIterator = typename std::vector<MolecularPolarizability>::const_iterator;
 
 /*! \brief
@@ -730,8 +739,11 @@ class MolecularEnergy : public GenericProperty
         CommunicationStatus Receive(t_commrec *cr,
                                     int        src);
 };
-//! Iterates over MolecularEnergy items
+
+//! Iterator over MolecularEnergy items
 using  MolecularEnergyIterator      = typename std::vector<MolecularEnergy>::iterator;
+
+//! Const iterator over MolecularEnergy items
 using  MolecularEnergyConstIterator = typename std::vector<MolecularEnergy>::const_iterator;
 
 /*! \brief
@@ -799,8 +811,11 @@ class MolecularDipole : public GenericProperty
          */
         CommunicationStatus Receive(t_commrec *cr, int src);
 };
-//! Iterates over a vector of MolecularDipole
+
+//! Iterator over a vector of MolecularDipole
 using MolecularDipoleIterator      = typename std::vector<MolecularDipole>::iterator;
+
+//! Const iterator over a vector of MolecularDipole
 using MolecularDipoleConstIterator = typename std::vector<MolecularDipole>::const_iterator;
 
 /*! \brief
@@ -893,8 +908,11 @@ class ElectrostaticPotential
          */
         CommunicationStatus Receive(t_commrec *cr, int src);
 };
-//! Iterates over ElectrostaticPotential items
+
+//! Iterator over ElectrostaticPotential items
 using ElectrostaticPotentialIterator      = typename std::vector<ElectrostaticPotential>::iterator;
+
+//! Const iterator over ElectrostaticPotential items
 using ElectrostaticPotentialConstIterator = typename std::vector<ElectrostaticPotential>::const_iterator;
 
 /*! \brief
@@ -958,8 +976,9 @@ class Bond
         CommunicationStatus Receive(t_commrec *cr,
                                     int        src);
 };
-//! Iterates over Bond items
+//! Iterator over Bond items
 using BondIterator      = typename std::vector<Bond>::iterator;
+//! Const iterator over Bond items
 using BondConstIterator = typename std::vector<Bond>::const_iterator;
 
 /*! \brief
@@ -1111,8 +1130,11 @@ class CalcAtom
         CommunicationStatus Receive(t_commrec *cr,
                                     int        src);
 };
-//! Iterates over CalcAtom items
+
+//! Iterator over CalcAtom items
 using  CalcAtomIterator      = typename std::vector<CalcAtom>::iterator;
+
+//! Const iterator over CalcAtom items
 using  CalcAtomConstIterator = typename std::vector<CalcAtom>::const_iterator;
 
 /*! \brief
@@ -1301,8 +1323,11 @@ class Experiment
         std::vector<MolecularPolarizability> polar_;
         std::vector<gmx::RVec>               coordinates_;
 };
-//! Iterates over Experiment items
+
+//! Iterator over Experiment items
 using  ExperimentIterator      = typename std::vector<Experiment>::iterator;
+
+//! Const iterateor over Experiment items
 using  ExperimentConstIterator = typename std::vector<Experiment>::const_iterator;
 
 /*! \brief
@@ -1587,8 +1612,11 @@ class MolProp
         CommunicationStatus Receive(t_commrec *cr,
                                     int        src);
 };
-//! Iterates over MolProp items
+
+//! Iterator over MolProp items
 using  MolPropIterator      = typename std::vector<MolProp>::iterator;
+
+//! Const iterator over MolProp items
 using  MolPropConstIterator = typename std::vector<MolProp>::const_iterator;
 
 /*! \brief Utility to compare temperatures

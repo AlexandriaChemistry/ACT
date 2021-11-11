@@ -438,16 +438,16 @@ void MyMol::MakeAngles(t_atoms *atoms,
         if (F_BONDS == pw.getFtype())
         {
             pr_alloc(pw.nParam(), &(plist[F_BONDS]));
-            auto i = 0;
-            for (auto pi = pw.beginParam(); (pi < pw.endParam()); ++pi)
+            auto i     = 0;
+            for (auto &pi : pw.paramsConst())
             {
                 for (auto j = 0; j < MAXATOMLIST; j++)
                 {
-                    plist[F_BONDS].param[i].a[j] = pi->a[j];
+                    plist[F_BONDS].param[i].a[j] = pi.a[j];
                 }
                 for (auto j = 0; j < MAXFORCEPARAM; j++)
                 {
-                    plist[F_BONDS].param[i].c[j] = pi->c[j];
+                    plist[F_BONDS].param[i].c[j] = pi.c[j];
                 }
                 i++;
             }
@@ -1032,28 +1032,28 @@ void MyMol::addShells(FILE          *fp,
         /* Exclude the vsites and the atoms from their own shell. */
         if (pd->getNexcl() >= 0)
         {
-            for (auto j = pw->beginParam(); (j < pw->endParam()); ++j)
+            for (auto &j : pw->paramsConst())
             {
-                add_excl_pair(newexcls, j->a[0], j->a[1]);
+                add_excl_pair(newexcls, j.a[0], j.a[1]);
             }
         }
 
         // Make a copy of the exclusions of the Atom or Vsite for the shell.
-        for (auto j = pw->beginParam(); (j < pw->endParam()); ++j)
+        for (auto &j : pw->paramsConst())
         {
             // We know that the Atom or Vsite is 0 as we added it to plist as such.
-            int  i0 = inv_renum[j->a[0]];
+            int  i0 = inv_renum[j.a[0]];
             for (auto j0 = 0; j0 < excls_[i0].nr; j0++)
             {
-                add_excl_pair(newexcls, j->a[0], shellRenumber[excls_[i0].e[j0]]);
-                add_excl_pair(newexcls, j->a[1], shellRenumber[excls_[i0].e[j0]]);
+                add_excl_pair(newexcls, j.a[0], shellRenumber[excls_[i0].e[j0]]);
+                add_excl_pair(newexcls, j.a[1], shellRenumber[excls_[i0].e[j0]]);
             }
         }
-        for (auto j = pw->beginParam(); j < pw->endParam(); ++j)
+        for (auto &j : pw->paramsConst())
         {
-            for (auto j0 = 0; j0 < newexcls[j->a[0]].nr; j0++)
+            for (auto j0 = 0; j0 < newexcls[j.a[0]].nr; j0++)
             {
-                add_excl_pair(newexcls, j->a[1], newexcls[j->a[0]].e[j0]);
+                add_excl_pair(newexcls, j.a[1], newexcls[j.a[0]].e[j0]);
             }
         }
     }
@@ -1154,7 +1154,8 @@ void MyMol::addShells(FILE          *fp,
     {
         if (i->getFtype() != F_POLARIZATION)
         {
-            for (auto j = i->beginParam(); j < i->endParam(); ++j)
+            auto mypar = i->params();
+            for (auto j = mypar->begin(); j < mypar->end(); ++j)
             {
                 for (int k = 0; k < NRAL(i->getFtype()); k++)
                 {
