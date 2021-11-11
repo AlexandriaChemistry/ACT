@@ -32,7 +32,7 @@ int main(int argc, char const *argv[]) {
 
 	ga_result_t result = ga.evolve(0.35, 0.01, false);
 
-    printf("\nEvolution took %i generations", result.generations);
+    printf("\nEvolution took %i generations\n", result.generations);
     printf("Best individual: ");
     printVector(result.bestIndividual);
     printf("Best fitness: %f\n\n", result.bestFitness);
