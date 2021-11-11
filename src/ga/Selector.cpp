@@ -10,7 +10,7 @@ const int RouletteSelector::select(const vector&  probability,
 
     double num = dis(gen);
     int i = 0;
-    while (num > 0) {
+    while (num > 0 and i < popSize) {
         num += probability[i];
         i++;
     }
