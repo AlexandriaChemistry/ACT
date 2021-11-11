@@ -27,10 +27,10 @@ matrix allocateMatrix(const int     n,
  * @param left      left index (inclusive)
  * @param right     right index (exclusive)
  */
-void copyVectorValues(const vector  arr1,
-                            vector  arr2,
-                      const int     left,
-                      const int     right) {
+void copyVectorValues(const vector&  arr1,
+                            vector&  arr2,
+                      const int      left,
+                      const int      right) {
     for (int i = left; i < right; i++) {
         arr2[i] = arr1[i];
     }
@@ -46,12 +46,12 @@ void copyVectorValues(const vector  arr1,
  * @param j1        left index for the columns (inclusive)
  * @param j2        right index for the columns (exclusive)
  */
-void copyMatrixValues(const matrix  mat1,
-                            matrix  mat2,
-                      const int     i1,
-                      const int     i2,
-                      const int     j1,
-                      const int     j2) {
+void copyMatrixValues(const matrix&  mat1,
+                            matrix&  mat2,
+                      const int      i1,
+                      const int      i2,
+                      const int      j1,
+                      const int      j2) {
     int i, j;
     for (i = i1; i < i2; i++) {
         for (j = j1; j < j2; j++) {
@@ -67,8 +67,8 @@ void copyMatrixValues(const matrix  mat1,
  * @param len the length of that list
  * @return the index of the maximum element
  */
-int findMaximumIndex(const vector   vec,
-                     const int      len) {
+int findMaximumIndex(const vector&   vec,
+                     const int       len) {
     int maxIndex = 0;
     for (int current = 0; current < len; current++)
         if (vec[current] > vec[maxIndex])
@@ -81,10 +81,21 @@ int findMaximumIndex(const vector   vec,
  * Print a vector to console
  * @param vec   the vector to print
  */
-void printVector(const vector vec) {
+void printVector(const vector&      vec) {
     printf("[ ");
     for (double value : vec) {
         printf("%f ", value);
     }
     printf("]\n");
+}
+
+
+/*!
+ * Print matrix to console
+ * @param mat   the matrix to print
+ */
+void printMatrix(const matrix&      mat) {
+    for (vector vec : mat) {
+        printVector(vec);
+    }
 }

@@ -4,6 +4,7 @@
 #include "aliases.h"
 
 #include <random>
+#include <time.h>
 
 /*!
  * Abstract class to select an individual from the population
@@ -13,14 +14,12 @@ class Selector {
 public:
     /*!
      * Select an individual from the population
-     * @param population        each row is an individual
      * @param probability       probability of each individual
      * @param popSize           size of the population
      * @return                  the selected individual
      */
-    virtual const vector select(const matrix    population,
-                                const vector    probability,
-                                const int       popSize) { return {}; };
+    virtual const int select(const vector&    probability,
+                             const int        popSize) { return 0; };
 
 };
 
@@ -32,17 +31,19 @@ public:
 
      std::random_device rd;  // Will be used to obtain a seed for the random number engine
      std::mt19937 gen;
-     std::uniform_real_distribution<> dis;
+     std::uniform_real_distribution<double> dis;
 
  public:
      /*!
       * Create a new instance of RouletteSelector
       */
-     RouletteSelector();
+     RouletteSelector()
+     : gen(rd()), dis(std::uniform_real_distribution<>(0.0, 1.0)) {
+         gen.seed(::time(NULL));
+     }
 
-     const vector select(const matrix   population,
-                         const vector   probability,
-                         const int      popSize);
+     const int select(const vector&   probability,
+                      const int       popSize);
  };
 
 
