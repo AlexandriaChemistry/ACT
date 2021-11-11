@@ -17,7 +17,7 @@ public:
      * @param individual    the individual to initialize
      * @param length        length of the chromosome
      */
-    virtual void initialize(      vector    individual,
+    virtual void initialize(      vector&   individual,
                             const int       length) {};
 };
 
@@ -40,7 +40,7 @@ public:
         gen.seed(::time(NULL));
     }
 
-    void initialize(      vector    individual,
+    void initialize(      vector&   individual,
                     const int       length);
 
 };
