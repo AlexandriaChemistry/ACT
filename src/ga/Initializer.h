@@ -3,6 +3,7 @@
 
 #include "aliases.h"
 
+#include <time.h>
 #import <random>
 
 /*!
@@ -34,7 +35,10 @@ public:
      * @param max   maximum value to give to a gene
      */
     SimpleInitializer(const double  min,
-                      const double  max);
+                      const double  max)
+    : gen(rd()), dis(std::uniform_real_distribution<>(min, max)) {
+        gen.seed(::time(NULL));
+    }
 
     void initialize(      vector    individual,
                     const int       length);

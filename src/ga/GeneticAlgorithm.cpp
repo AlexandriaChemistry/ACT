@@ -106,6 +106,7 @@ const ga_result_t GeneticAlgorithm::evolve(const double     prCross,
         // Generate new population
         if (verbose) printf("Generating new population...\n");
         for (i = 0; i < popSize; i+=2) {
+            if (verbose) printf("i = %i, %i", i, i+1);
 
             // Select parents
             parent1 = (*selector).select(oldPop, probability, popSize);
@@ -113,9 +114,11 @@ const ga_result_t GeneticAlgorithm::evolve(const double     prCross,
 
             // Do crossover
             if (dis(gen) <= prCross) {
+                printf("Doing crossover...");
                 (*crossover).offspring(parent1, parent2, newPop[i], newPop[i+1],
                                     chromosomeLength);
             } else {
+                printf("Omitting crossover...");
                 copyVectorValues(parent1, newPop[i], 0, chromosomeLength);
                 copyVectorValues(parent2, newPop[i+1], 0, chromosomeLength);
             }
