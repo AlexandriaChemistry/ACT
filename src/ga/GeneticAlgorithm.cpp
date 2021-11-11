@@ -109,11 +109,11 @@ const ga_result_t GeneticAlgorithm::evolve(const double     prCross,
 
             // Do crossover
             if (dis(gen) <= prCross) {
-                printf("Doing crossover...\n");
+                if (verbose) printf("Doing crossover...\n");
                 (*crossover).offspring(oldPop[parent1], oldPop[parent2], newPop[i],
                                        newPop[i+1], chromosomeLength);
             } else {
-                printf("Omitting crossover...\n");
+                if (verbose) printf("Omitting crossover...\n");
                 copyVectorValues(oldPop[parent1], newPop[i], 0, chromosomeLength);
                 copyVectorValues(oldPop[parent2], newPop[i+1], 0, chromosomeLength);
             }

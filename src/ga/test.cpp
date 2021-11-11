@@ -3,10 +3,12 @@
 
 #include "helpers.h"
 
+#include <stdio.h>
+
 int main(int argc, char const *argv[]) {
 	
-	const int popSize = 10;
-	const int chromLen = 5;
+	const int popSize = 500;
+	const int chromLen = 10;
 
 	SimpleInitializer init(-10.0, 10.0);
 	SimpleFitnessComputer fit;
@@ -28,7 +30,12 @@ int main(int argc, char const *argv[]) {
 										   &mutate,
 										   &terminate);
 
-	ga.evolve(0.5, 0.01, true);
+	ga_result_t result = ga.evolve(0.35, 0.01, false);
+
+    printf("\nEvolution took %i generations", result.generations);
+    printf("Best individual: ");
+    printVector(result.bestIndividual);
+    printf("Best fitness: %f\n\n", result.bestFitness);
 
 //    vector vec = vector(chromLen);
 //    init.initialize(vec, chromLen);
