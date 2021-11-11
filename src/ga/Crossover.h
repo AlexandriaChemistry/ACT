@@ -71,11 +71,11 @@ class DoublePointCrossover : public Crossover {
 
 public:
     DoublePointCrossover(const int chromosomeLength): Crossover(chromosomeLength) {};
-    void offspring(const vector     parent1,
-                   const vector     parent2,
-                         vector     child1,
-                         vector     child2,
-                   const int        length);
+    void offspring(const vector&     parent1,
+                   const vector&     parent2,
+                         vector&     child1,
+                         vector&     child2,
+                   const int         length);
 
 };
 
