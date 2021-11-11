@@ -5,7 +5,7 @@
 
 
 bool SimpleTerminator::terminate(const matrix   population,
-                                 const vector   fitness,
+                                 const vector&  fitness,
                                  const int      generationNumber,
                                  const int      popSize,
                                  const int      chromosomeLength) {

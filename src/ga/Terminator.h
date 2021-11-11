@@ -19,7 +19,7 @@ public:
      * @return                      true if the evolution is complete, false otherwise
      */
     virtual bool terminate(const matrix     population,
-                           const vector     fitness,
+                           const vector&    fitness,
                            const int        generationNumber,
                            const int        popSize,
                            const int        chromosomeLength) { return true; };
@@ -35,7 +35,7 @@ class SimpleTerminator : public Terminator {
 
 public:
     bool terminate(const matrix     population,
-                   const vector     fitness,
+                   const vector&    fitness,
                    const int        generationNumber,
                    const int        popSize,
                    const int        chromosomeLength);
