@@ -56,7 +56,6 @@ class t_state;
 
 namespace gmx
 {
-class Awh;
 class Constraints;
 }
 
@@ -166,8 +165,7 @@ void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
                 int64_t step, double time,
                 int mode,
                 t_mdebin *md, t_fcdata *fcd,
-                gmx_groups_t *groups, t_grpopts *opts,
-                gmx::Awh *awh);
+                gmx_groups_t *groups, t_grpopts *opts);
 
 
 

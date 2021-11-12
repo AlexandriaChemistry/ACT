@@ -1336,7 +1336,7 @@ immStatus MyMol::computeForces(FILE *fplog, t_commrec *cr, double *rmsf)
     }
     else
     {
-        do_force(fplog, cr, nullptr, inputrec_, nullptr, nullptr, 0,
+        do_force(fplog, cr, nullptr, inputrec_, nullptr, 0,
                  &nrnb_, wcycle_, ltop_,
                  &(mtop_->groups),
                  state_->box, state_->x.arrayRefWithPadding(), nullptr,

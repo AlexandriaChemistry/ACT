@@ -111,7 +111,7 @@ static const char *wcn[ewcNR] =
     "Wait PME GPU spread", "PME 3D-FFT", "PME solve", /* the strings for FFT/solve are repeated here for mixed mode counters */
     "Wait PME GPU gather", "Reduce GPU PME F",
     "Wait GPU NB nonloc.", "Wait GPU NB local", "NB X/F buffer ops.",
-    "Vsite spread", "COM pull force", "AWH",
+    "Vsite spread", "COM pull force",
     "Write traj.", "Update", "Constraints", "Comm. energies",
     "Enforced rotation", "Add rot. forces", "Position swapping", "IMD", "Test"
 };

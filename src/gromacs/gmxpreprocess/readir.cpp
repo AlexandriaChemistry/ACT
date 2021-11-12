@@ -46,7 +46,6 @@
 #include <algorithm>
 #include <string>
 
-#include "gromacs/awh/read-params.h"
 #include "gromacs/fileio/readinp.h"
 #include "gromacs/fileio/warninp.h"
 #include "gromacs/gmxlib/chargegroup.h"
@@ -2088,22 +2087,6 @@ void get_ir(const char *mdparin, const char *mdparout,
     {
         snew(ir->pull, 1);
         is->pull_grp = read_pullparams(&inp, ir->pull, wi);
-    }
-
-    /* AWH biasing
-       NOTE: needs COM pulling input */
-    printStringNewline(&inp, "AWH biasing");
-    ir->bDoAwh = (get_eeenum(&inp, "awh", yesno_names, wi) != 0);
-    if (ir->bDoAwh)
-    {
-        if (ir->bPull)
-        {
-            ir->awhParams = gmx::readAndCheckAwhParams(&inp, ir, wi);
-        }
-        else
-        {
-            gmx_fatal(FARGS, "AWH biasing is only compatible with COM pulling turned on");
-        }
     }
 
     /* Enforced rotation */

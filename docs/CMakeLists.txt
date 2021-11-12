@@ -218,7 +218,6 @@ if (SPHINX_FOUND)
         reference-manual/special.rst
         reference-manual/special/free-energy-implementation.rst
         reference-manual/special/pulling.rst
-        reference-manual/special/awh.rst
         reference-manual/special/enforced-rotation.rst
         reference-manual/special/electric-fields.rst
         reference-manual/special/comp-electrophys.rst
@@ -299,10 +298,6 @@ if (SPHINX_FOUND)
         reference-manual/functions/plots/vcrf.pdf
         reference-manual/functions/plots/vsite-4fdn.pdf
         # Special topics chapter
-        reference-manual/special/plots/awh-invN.pdf
-        reference-manual/special/plots/awh-pmfs.pdf
-        reference-manual/special/plots/awh-sampleweights.pdf
-        reference-manual/special/plots/awh-traj.pdf
         reference-manual/special/plots/compelsetup.pdf
         reference-manual/special/plots/dumaro.pdf
         reference-manual/special/plots/dumtypes.pdf
