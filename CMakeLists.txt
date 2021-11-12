@@ -282,8 +282,6 @@ mark_as_advanced(GMX_BROKEN_CALLOC)
 
 option(GMX_OPENMP "Enable OpenMP-based multithreading" ON)
 
-option(GMX_USE_TNG "Use the TNG library for trajectory I/O" ON)
-
 option(GMX_BUILD_MDRUN_ONLY "Build and install only the mdrun binary" OFF)
 
 option(GMX_CYCLE_SUBCOUNTERS "Enable cycle subcounters to get a more detailed cycle timings" OFF)
