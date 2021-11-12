@@ -1,4 +1,4 @@
-#define GEN_PRINTS 10000
+#define GEN_PRINTS 500
 
 #include "GeneticAlgorithm.h"
 
@@ -73,7 +73,7 @@ const ga_result_t GeneticAlgorithm::evolve(const double     prCross,
     }
 
     // Initialize the population
-    if (verbose >= 2) printf("Initializing individuals and compute initial fitness...\n");
+    if (verbose >= 2) printf("Initializing individuals and computing initial fitness...\n");
     for (i = 0; i < popSize; i++) {
         (*initializer).initialize(oldPop[i], chromosomeLength);
         (*fitComputer).compute(oldPop[i], fitness, i, chromosomeLength);
@@ -114,8 +114,12 @@ const ga_result_t GeneticAlgorithm::evolve(const double     prCross,
         }
 
         // Normalize the fitness into a probability
-        if (verbose >=2 ) printf("Computing probabilities...\n");
+        if (verbose >= 2) printf("Computing probabilities...\n");
         (*probComputer).compute(fitness, probability, popSize);
+        if (verbose >= 2) {
+            printf("Probabilities: ");
+            printVector(probability);
+        }
 
         // Generate new population
         if (verbose >= 2) printf("Generating new population...\n");
@@ -125,6 +129,7 @@ const ga_result_t GeneticAlgorithm::evolve(const double     prCross,
             // Select parents
             parent1 = (*selector).select(probability, popSize);
             parent2 = (*selector).select(probability, popSize);
+            if (verbose >= 3) printf("parent1: %i; parent2: %i\n", parent1, parent2);
 
             // Do crossover
             if (dis(gen) <= prCross) {
@@ -175,7 +180,7 @@ const ga_result_t GeneticAlgorithm::evolve(const double     prCross,
 
     } while(!(*terminator).terminate(oldPop, fitness, generation, popSize, chromosomeLength));
 
-    if (verbose >= 1) printf("Evolution is done!\n\n");
+    if (verbose >= 1) printf("\nEvolution is done!\n");
 
     int bestFitIndex = findMaximumIndex(fitness, popSize);
 

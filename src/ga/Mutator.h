@@ -47,4 +47,30 @@ public:
 
 };
 
+
+/*!
+ * Class for range gene mutation
+ * Modifies a gene by a maximum of <max> - <min>.
+ */
+class RangeMutator:public Mutator {
+
+    std::random_device                      rd;
+    std::mt19937                            gen;
+    std::uniform_real_distribution<double>  dis;
+
+public:
+    /*!
+     * Create a new RangeMutator object
+     * @param range  the range for maximum change
+     */
+    RangeMutator(const double range)
+    : gen(rd()), dis(std::uniform_real_distribution<>(-range, range)) {
+        gen.seed(::time(NULL));
+    }
+
+    void mutate(      vector&   individual,
+                const int       indGene);
+
+};
+
 #endif //ACT_MUTATOR_H

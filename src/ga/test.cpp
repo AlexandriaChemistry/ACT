@@ -7,13 +7,13 @@
 
 int main(int argc, char const *argv[]) {
 	
-	const int       popSize         = 100;
+	const int       popSize         = 200;
 	const int       chromLen        = 10;
-//	const int       maxGenerations  = 3;
+	const int       maxGenerations  = 5;
     const double    mutFrac         = 0.1;
-    const double    tolerance       = 0.01;
+    const double    tolerance       = 0.000001;
 
-	SimpleInitializer           init(-10.0, 10.0);
+	SimpleInitializer           init(-5.0, 5.0);
 	SimpleFitnessComputer       fit;
 //    EmptySorter                 sort;
 	MergeSorter                 sort(popSize, chromLen);
@@ -21,7 +21,8 @@ int main(int argc, char const *argv[]) {
 	RankProbabilityComputer     procomp(popSize);
 	RouletteSelector            select;
 	SinglePointCrossover        singlepoint(chromLen);
-    PercentMutator              mutate(mutFrac);
+//    PercentMutator              mutate(mutFrac);
+    RangeMutator                mutate(0.5);
     SimpleTerminator            terminate(tolerance);
 //	GenerationTerminator        terminate(maxGenerations);
 
