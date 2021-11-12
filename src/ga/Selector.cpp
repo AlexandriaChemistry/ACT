@@ -5,15 +5,17 @@
 #include <random>
 
 
-const int RouletteSelector::select(const vector&  probability,
-                                   const int      popSize) {
+namespace ga {
 
-    double num = dis(gen);
-    int i = 0;
-    while (num > 0 and i < popSize) {
-        num -= probability[i];
-        i++;
+    const int RouletteSelector::select(const vector&    probability,
+                                       const int        popSize) {
+        double num = dis(gen);
+        int i = 0;
+        while (num > 0 and i < popSize) {
+            num -= probability[i];
+            i++;
+        }
+        return i - 1;
     }
-    return i-1;
 
 }
