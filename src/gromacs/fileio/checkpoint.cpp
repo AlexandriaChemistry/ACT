@@ -67,14 +67,12 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/df_history.h"
-#include "gromacs/mdtypes/edsamhistory.h"
 #include "gromacs/mdtypes/energyhistory.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/observableshistory.h"
 #include "gromacs/mdtypes/pullhistory.h"
 #include "gromacs/mdtypes/state.h"
-#include "gromacs/mdtypes/swaphistory.h"
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/baseversion.h"
@@ -349,35 +347,6 @@ static void do_cpt_double_err(XDR *xd, const char *desc, double *f, FILE *list)
     if (list)
     {
         fprintf(list, "%s = %f\n", desc, *f);
-    }
-}
-
-static void do_cpt_real_err(XDR *xd, real *f)
-{
-#if GMX_DOUBLE
-    bool_t res = xdr_double(xd, f);
-#else
-    bool_t res = xdr_float(xd, f);
-#endif
-    if (res == 0)
-    {
-        cp_error();
-    }
-}
-
-static void do_cpt_n_rvecs_err(XDR *xd, const char *desc, int n, rvec f[], FILE *list)
-{
-    for (int i = 0; i < n; i++)
-    {
-        for (int j = 0; j < DIM; j++)
-        {
-            do_cpt_real_err(xd, &f[i][j]);
-        }
-    }
-
-    if (list)
-    {
-        pr_rvecs(list, 0, desc, f, n);
     }
 }
 
@@ -1217,146 +1186,6 @@ static int do_cpt_ekinstate(XDR *xd, int fflags, ekinstate_t *ekins,
     return ret;
 }
 
-
-static int do_cpt_swapstate(XDR *xd, gmx_bool bRead,
-                            int eSwapCoords, swaphistory_t *swapstate, FILE *list)
-{
-    int swap_cpt_version = 2;
-
-    if (eSwapCoords == eswapNO)
-    {
-        return 0;
-    }
-
-    swapstate->bFromCpt    = bRead;
-    swapstate->eSwapCoords = eSwapCoords;
-
-    do_cpt_int_err(xd, "swap checkpoint version", &swap_cpt_version, list);
-    if (bRead && swap_cpt_version < 2)
-    {
-        gmx_fatal(FARGS, "Cannot read checkpoint files that were written with old versions"
-                  "of the ion/water position swapping protocol.\n");
-    }
-
-    do_cpt_int_err(xd, "swap coupling steps", &swapstate->nAverage, list);
-
-    /* When reading, init_swapcoords has not been called yet,
-     * so we have to allocate memory first. */
-    do_cpt_int_err(xd, "number of ion types", &swapstate->nIonTypes, list);
-    if (bRead)
-    {
-        snew(swapstate->ionType, swapstate->nIonTypes);
-    }
-
-    for (int ic = 0; ic < eCompNR; ic++)
-    {
-        for (int ii = 0; ii < swapstate->nIonTypes; ii++)
-        {
-            swapstateIons_t *gs = &swapstate->ionType[ii];
-
-            if (bRead)
-            {
-                do_cpt_int_err(xd, "swap requested atoms", &gs->nMolReq[ic], list);
-            }
-            else
-            {
-                do_cpt_int_err(xd, "swap requested atoms p", gs->nMolReq_p[ic], list);
-            }
-
-            if (bRead)
-            {
-                do_cpt_int_err(xd, "swap influx net", &gs->inflow_net[ic], list);
-            }
-            else
-            {
-                do_cpt_int_err(xd, "swap influx net p", gs->inflow_net_p[ic], list);
-            }
-
-            if (bRead && (nullptr == gs->nMolPast[ic]) )
-            {
-                snew(gs->nMolPast[ic], swapstate->nAverage);
-            }
-
-            for (int j = 0; j < swapstate->nAverage; j++)
-            {
-                if (bRead)
-                {
-                    do_cpt_int_err(xd, "swap past atom counts", &gs->nMolPast[ic][j], list);
-                }
-                else
-                {
-                    do_cpt_int_err(xd, "swap past atom counts p", &gs->nMolPast_p[ic][j], list);
-                }
-            }
-        }
-    }
-
-    /* Ion flux per channel */
-    for (int ic = 0; ic < eChanNR; ic++)
-    {
-        for (int ii = 0; ii < swapstate->nIonTypes; ii++)
-        {
-            swapstateIons_t *gs = &swapstate->ionType[ii];
-
-            if (bRead)
-            {
-                do_cpt_int_err(xd, "channel flux A->B", &gs->fluxfromAtoB[ic], list);
-            }
-            else
-            {
-                do_cpt_int_err(xd, "channel flux A->B p", gs->fluxfromAtoB_p[ic], list);
-            }
-        }
-    }
-
-    /* Ion flux leakage */
-    if (bRead)
-    {
-        do_cpt_int_err(xd, "flux leakage", &swapstate->fluxleak, list);
-    }
-    else
-    {
-        do_cpt_int_err(xd, "flux leakage", swapstate->fluxleak_p, list);
-    }
-
-    /* Ion history */
-    for (int ii = 0; ii < swapstate->nIonTypes; ii++)
-    {
-        swapstateIons_t *gs = &swapstate->ionType[ii];
-
-        do_cpt_int_err(xd, "number of ions", &gs->nMol, list);
-
-        if (bRead)
-        {
-            snew(gs->channel_label, gs->nMol);
-            snew(gs->comp_from, gs->nMol);
-        }
-
-        do_cpt_u_chars(xd, "channel history", gs->nMol, gs->channel_label, list);
-        do_cpt_u_chars(xd, "domain history", gs->nMol, gs->comp_from, list);
-    }
-
-    /* Save the last known whole positions to checkpoint
-     * file to be able to also make multimeric channels whole in PBC */
-    do_cpt_int_err(xd, "Ch0 atoms", &swapstate->nat[eChan0], list);
-    do_cpt_int_err(xd, "Ch1 atoms", &swapstate->nat[eChan1], list);
-    if (bRead)
-    {
-        snew(swapstate->xc_old_whole[eChan0], swapstate->nat[eChan0]);
-        snew(swapstate->xc_old_whole[eChan1], swapstate->nat[eChan1]);
-        do_cpt_n_rvecs_err(xd, "Ch0 whole x", swapstate->nat[eChan0], swapstate->xc_old_whole[eChan0], list);
-        do_cpt_n_rvecs_err(xd, "Ch1 whole x", swapstate->nat[eChan1], swapstate->xc_old_whole[eChan1], list);
-    }
-    else
-    {
-        do_cpt_n_rvecs_err(xd, "Ch0 whole x", swapstate->nat[eChan0], *swapstate->xc_old_whole_p[eChan0], list);
-        do_cpt_n_rvecs_err(xd, "Ch1 whole x", swapstate->nat[eChan1], *swapstate->xc_old_whole_p[eChan1], list);
-    }
-
-    return 0;
-}
-
-
 static int do_cpt_enerhist(XDR *xd, gmx_bool bRead,
                            int fflags, energyhistory_t *enerhist,
                            FILE *list)
@@ -1643,67 +1472,6 @@ static int do_cpt_df_hist(XDR *xd, int fflags, int nlambda, df_history_t **dfhis
 }
 
 
-/* This function stores the last whole configuration of the reference and
- * average structure in the .cpt file
- */
-static int do_cpt_EDstate(XDR *xd, gmx_bool bRead,
-                          int nED, edsamhistory_t *EDstate, FILE *list)
-{
-    if (nED == 0)
-    {
-        return 0;
-    }
-
-    EDstate->bFromCpt     = bRead;
-    EDstate->nED          = nED;
-
-    /* When reading, init_edsam has not been called yet,
-     * so we have to allocate memory first. */
-    if (bRead)
-    {
-        snew(EDstate->nref, EDstate->nED);
-        snew(EDstate->old_sref, EDstate->nED);
-        snew(EDstate->nav, EDstate->nED);
-        snew(EDstate->old_sav, EDstate->nED);
-    }
-
-    /* Read/write the last whole conformation of SREF and SAV for each ED dataset (usually only one) */
-    for (int i = 0; i < EDstate->nED; i++)
-    {
-        char buf[STRLEN];
-
-        /* Reference structure SREF */
-        sprintf(buf, "ED%d # of atoms in reference structure", i+1);
-        do_cpt_int_err(xd, buf, &EDstate->nref[i], list);
-        sprintf(buf, "ED%d x_ref", i+1);
-        if (bRead)
-        {
-            snew(EDstate->old_sref[i], EDstate->nref[i]);
-            do_cpt_n_rvecs_err(xd, buf, EDstate->nref[i], EDstate->old_sref[i], list);
-        }
-        else
-        {
-            do_cpt_n_rvecs_err(xd, buf, EDstate->nref[i], EDstate->old_sref_p[i], list);
-        }
-
-        /* Average structure SAV */
-        sprintf(buf, "ED%d # of atoms in average structure", i+1);
-        do_cpt_int_err(xd, buf, &EDstate->nav[i], list);
-        sprintf(buf, "ED%d x_av", i+1);
-        if (bRead)
-        {
-            snew(EDstate->old_sav[i], EDstate->nav[i]);
-            do_cpt_n_rvecs_err(xd, buf, EDstate->nav[i], EDstate->old_sav[i], list);
-        }
-        else
-        {
-            do_cpt_n_rvecs_err(xd, buf, EDstate->nav[i], EDstate->old_sav_p[i], list);
-        }
-    }
-
-    return 0;
-}
-
 static int do_cpt_files(XDR *xd, gmx_bool bRead,
                         std::vector<gmx_file_position_t> *outputfiles,
                         FILE *list, int file_version)
@@ -1911,11 +1679,6 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
 
     int                      nlambda     = (state->dfhist ? state->dfhist->nlambda : 0);
 
-    edsamhistory_t          *edsamhist   = observablesHistory->edsamHistory.get();
-    int                      nED         = (edsamhist ? edsamhist->nED : 0);
-
-    swaphistory_t           *swaphist    = observablesHistory->swapHistory.get();
-    int                      eSwapCoords = (swaphist ? swaphist->eSwapCoords : eswapNO);
 
     CheckpointHeaderContents headerContents =
     {
@@ -1924,8 +1687,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
         {0}, npmenodes,
         state->natoms, state->ngtc, state->nnhpres,
         state->nhchainlength, nlambda, state->flags, flags_eks, flags_enh,
-        flagsPullHistory, flags_dfh,
-        nED, eSwapCoords
+        flagsPullHistory, flags_dfh
     };
     std::strcpy(headerContents.version, gmx_version());
     std::strcpy(headerContents.fprog, gmx::getProgramContext().fullBinaryPath());
@@ -1942,8 +1704,6 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
         (do_cpt_enerhist(gmx_fio_getxdr(fp), FALSE, flags_enh, enerhist, nullptr) < 0)  ||
         (doCptPullHist(gmx_fio_getxdr(fp), FALSE, flagsPullHistory, pullHist, StatePart::pullHistory, nullptr) < 0)  ||
         (do_cpt_df_hist(gmx_fio_getxdr(fp), flags_dfh, nlambda, &state->dfhist, nullptr) < 0)  ||
-        (do_cpt_EDstate(gmx_fio_getxdr(fp), FALSE, nED, edsamhist, nullptr) < 0)      ||
-        (do_cpt_swapstate(gmx_fio_getxdr(fp), FALSE, eSwapCoords, swaphist, nullptr) < 0) ||
         (do_cpt_files(gmx_fio_getxdr(fp), FALSE, &outputfiles, nullptr,
                       headerContents.file_version) < 0))
     {
@@ -2386,31 +2146,6 @@ static void read_checkpoint(const char *fn, t_fileio *logfio,
         cp_error();
     }
 
-    if (headerContents->nED > 0 && observablesHistory->edsamHistory == nullptr)
-    {
-        observablesHistory->edsamHistory = gmx::compat::make_unique<edsamhistory_t>(edsamhistory_t {});
-    }
-    ret = do_cpt_EDstate(gmx_fio_getxdr(fp), TRUE, headerContents->nED, observablesHistory->edsamHistory.get(), nullptr);
-    if (ret)
-    {
-        cp_error();
-    }
-
-    if (ret)
-    {
-        cp_error();
-    }
-
-    if (headerContents->eSwapCoords != eswapNO && observablesHistory->swapHistory == nullptr)
-    {
-        observablesHistory->swapHistory = gmx::compat::make_unique<swaphistory_t>(swaphistory_t {});
-    }
-    ret = do_cpt_swapstate(gmx_fio_getxdr(fp), TRUE, headerContents->eSwapCoords, observablesHistory->swapHistory.get(), nullptr);
-    if (ret)
-    {
-        cp_error();
-    }
-
     std::vector<gmx_file_position_t> outputfiles;
     ret = do_cpt_files(gmx_fio_getxdr(fp), TRUE, &outputfiles, nullptr, headerContents->file_version);
     if (ret)
@@ -2622,26 +2357,6 @@ static void read_checkpoint_data(t_fileio *fp, int *simulation_part,
     {
         cp_error();
     }
-
-    edsamhistory_t edsamhist = {};
-    ret = do_cpt_EDstate(gmx_fio_getxdr(fp), TRUE, headerContents.nED, &edsamhist, nullptr);
-    if (ret)
-    {
-        cp_error();
-    }
-
-    if (ret)
-    {
-        cp_error();
-    }
-
-    swaphistory_t swaphist = {};
-    ret = do_cpt_swapstate(gmx_fio_getxdr(fp), TRUE, headerContents.eSwapCoords, &swaphist, nullptr);
-    if (ret)
-    {
-        cp_error();
-    }
-
     ret = do_cpt_files(gmx_fio_getxdr(fp), TRUE,
                        outputfiles,
                        nullptr, headerContents.file_version);
@@ -2737,18 +2452,6 @@ void list_checkpoint(const char *fn, FILE *out)
     {
         ret = do_cpt_df_hist(gmx_fio_getxdr(fp),
                              headerContents.flags_dfh, headerContents.nlambda, &state.dfhist, out);
-    }
-
-    if (ret == 0)
-    {
-        edsamhistory_t edsamhist = {};
-        ret = do_cpt_EDstate(gmx_fio_getxdr(fp), TRUE, headerContents.nED, &edsamhist, out);
-    }
-
-    if (ret == 0)
-    {
-        swaphistory_t swaphist = {};
-        ret = do_cpt_swapstate(gmx_fio_getxdr(fp), TRUE, headerContents.eSwapCoords, &swaphist, out);
     }
 
     if (ret == 0)

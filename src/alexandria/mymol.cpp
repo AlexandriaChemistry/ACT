@@ -1344,7 +1344,6 @@ immStatus MyMol::computeForces(FILE *fplog, t_commrec *cr, double *rmsf)
                  enerd_, fcd_,
                  state_->lambda, nullptr,
                  fr_, vsite_->get(), mu_tot, t,
-                 nullptr,
                  force_flags,
                  DdOpenBalanceRegionBeforeForceComputation::no,
                  DdCloseBalanceRegionAfterForceComputation::no);

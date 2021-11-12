@@ -53,7 +53,6 @@
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
-#include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/pdbio.h"
@@ -149,8 +148,6 @@ class Constraints::Impl
         int                   warncount_lincs = 0;
         //! The number of warnings for SETTLE.
         int                   warncount_settle = 0;
-        //! The essential dynamics data.
-        gmx_edsam *           ed = nullptr;
 
         //! Thread-local virial contribution.
         tensor            *vir_r_m_dr_th = {nullptr};
@@ -671,11 +668,6 @@ Constraints::Impl::apply(bool                  bLog,
             set_pbc(&pbc, ir.ePBC, box);
             pull_constraint(ir.pull_work, &md, &pbc, cr, ir.delta_t, t, x, xprime, v, *vir);
         }
-        if (ed && delta_step > 0)
-        {
-            /* apply the essential dynamics constraints here */
-            do_edsam(&ir, step, cr, xprime, v, box, ed);
-        }
     }
     wallcycle_stop(wcycle, ewcCONSTR);
 
@@ -919,12 +911,6 @@ Constraints::Impl::setConstraints(const gmx_localtop_t &top,
         settle_set_constraints(settled,
                                &idef->il[F_SETTLE], md);
     }
-
-    /* Make a selection of the local atoms for essential dynamics */
-    if (ed && cr->dd)
-    {
-        dd_make_local_ed_indices(cr->dd, ed);
-    }
 }
 
 void
@@ -1123,11 +1109,6 @@ Constraints::Impl::Impl(const gmx_mtop_t     &mtop_p,
 Constraints::Impl::~Impl()
 {
     done_lincs(lincsd);
-}
-
-void Constraints::saveEdsamPointer(gmx_edsam * ed)
-{
-    impl_->ed = ed;
 }
 
 const ArrayRef<const t_blocka>

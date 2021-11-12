@@ -1152,7 +1152,7 @@ real relax_shell_flexcon(FILE                                     *fplog,
              state->box, state->x.arrayRefWithPadding(), &state->hist,
              forceWithPadding[Min], force_vir, md, enerd, fcd,
              state->lambda, graph,
-             fr, vsite, mu_tot, t, nullptr,
+             fr, vsite, mu_tot, t,
              (bDoNS ? GMX_FORCE_NS : 0) | shellfc_flags,
              ddOpenBalanceRegion, ddCloseBalanceRegion);
 
@@ -1262,7 +1262,7 @@ real relax_shell_flexcon(FILE                                     *fplog,
                  top, groups, state->box, posWithPadding[Try], &state->hist,
                  forceWithPadding[Try], force_vir,
                  md, enerd, fcd, state->lambda, graph,
-                 fr, vsite, mu_tot, t, nullptr,
+                 fr, vsite, mu_tot, t,
                  shellfc_flags,
                  ddOpenBalanceRegion, ddCloseBalanceRegion);
         sum_epot(&(enerd->grpp), enerd->term);

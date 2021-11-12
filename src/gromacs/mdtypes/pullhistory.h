@@ -50,6 +50,8 @@
 
 #include <vector>
 
+#include "gromacs/math/vectypes.h"
+
 //! \cond INTERNAL
 
 //! \brief Contains the sum of coordinate observables to enable calculation of the average of pull data.
