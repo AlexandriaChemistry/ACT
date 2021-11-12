@@ -51,7 +51,6 @@
 #include "gromacs/utility/textreader.h"
 
 #include "alex_modules.h"
-#include "composition.h"
 #include "molgen.h"
 #include "molprop.h"
 #include "molprop_xml.h"
@@ -59,6 +58,9 @@
 #include "poldata.h"
 #include "poldata_xml.h"
 #include "stringutil.h"
+
+namespace alexandria
+{
 
 std::map<iMolSelect, const char *> MolSelect_Names = {
     { iMolSelect::Train,   "Train"   },
@@ -89,76 +91,6 @@ bool name2molselect(const std::string &name, iMolSelect *ims)
     return false;
 }
 
-namespace alexandria
-{
-
-static void sample_molecules(FILE                           *log,
-                             FILE                           *fp,
-                             std::vector<alexandria::MyMol> &mols,
-                             alexandria::Poldata            *pd,
-                             int                             mindata,
-                             int                             maxatempt)
-{
-
-    int nmol      = 0;
-    int atempt    = 0;
-
-    CompositionSpecs                      cs;
-    std::random_device                    rd;
-    std::mt19937                          gen(rd());
-    std::uniform_int_distribution<>       int_uniform(0, mols.size()-1);
-    std::vector<alexandria::MyMol>        sample;
-
-    const char  *alexandria = cs.searchCS(alexandria::iCalexandria)->name();
-    for (const auto &atp : pd->particleTypesConst())
-    {
-        if (atp.element().compare("H") == 0)
-        {
-            nmol   = 0;
-            atempt = 0;
-            do
-            {               
-                auto  mol   = mols[int_uniform(gen)];
-                auto  mci   = mol.SearchMolecularComposition(alexandria);
-                if (mci != mol.EndMolecularComposition())
-                {
-                    for (auto &ani : mci->atomNumConst())
-                    {
-                        if (atp.id().id() == ani.getAtom())
-                        {
-                            if ((std::find(sample.begin(), sample.end(), mol) == sample.end()))
-                            {
-                                sample.push_back(mol);
-                                nmol++;
-                                break;
-                            }
-                        }
-                    }
-                }
-                atempt++;
-            }
-            while (nmol < mindata && atempt < maxatempt);
-            if (atempt >= maxatempt)
-            {
-                fprintf(log, "Picked only %d out of %d molecules required for %s atom type after %d attempts\n", 
-                        nmol, mindata, atp.id().id().c_str(), atempt);
-            }
-        }
-    }
-    
-    std::uniform_real_distribution<> real_uniform(0, 1);
-    for (const auto &mol : sample)
-    {
-        if (real_uniform(gen) >= 0.5)
-        {
-            fprintf(fp, "%s|Train\n", mol.getMolname().c_str());
-        }
-        else
-        {
-            fprintf(fp, "%s|Test\n", mol.getMolname().c_str());
-        }
-    }
-}
 
 void MolSelect::read(const char *fn)
 {
@@ -226,152 +158,5 @@ bool MolSelect::index(const std::string &iupac, int *index) const
     return true;
 }
 
-static void printAtomtypeStatistics(FILE                                 *fp,
-                                    const alexandria::Poldata            *pd,
-                                    const std::vector<alexandria::MyMol> &mymol)
-{
-    struct NN
-    {
-        std::string name;
-        int         count;
-    };
-    std::vector<NN> nn;
-    for (const auto &atype : pd->particleTypesConst())
-    {
-        struct NN n;
-        n.name   = atype.id().id();
-        n.count  = 0;
-        nn.push_back(n);
-    }
-    for (const auto &mol : mymol)
-    {
-        auto atype = mol.gromppAtomtype();
-        int ntypes = get_atomtype_ntypes(*atype);
-        for (int i = 0; i < ntypes; i++)
-        {
-            char *tp = get_atomtype_name(i, *atype);
-            for (auto &n : nn)
-            {
-                if (n.name.compare(tp) == 0)
-                {
-                    n.count += 1;
-                    break;
-                }
-            }
-        }
-    }
-    fprintf(fp, "Atomtype     Count\n");
-    for (const auto &n : nn)
-    {
-        fprintf(fp, "%-8s  %8d\n", n.name.c_str(), n.count);
-    }
 }
 
-}
-
-int alex_molselect(int argc, char *argv[])
-{
-    const char *desc[] = {
-        "molselect generates random samples from molprop database"
-    };
-
-    t_filenm    fnm[] =
-    {
-        { efDAT, "-f",    "allmols",   ffREAD },
-        { efDAT, "-d",    "gentop",    ffREAD },
-        { efDAT, "-o",    "selection", ffWRITE },
-        { efLOG, "-g",    "molselect", ffWRITE },
-        { efDAT, "-sel",  "molselect", ffREAD  },
-    };
-
-    const  int                  NFILE     = asize(fnm);
-
-    static int                  nsample   = 1;
-    static int                  maxatempt = 5000;
-    static char                *opt_elem  = nullptr;
-    static gmx_bool             bZero     = false;
-    
-    t_pargs                     pa[]      =
-    {
-        { "-nsample",   FALSE, etINT, {&nsample},
-          "Number of replicas." },
-        { "-zero_dipole",    FALSE, etBOOL, {&bZero},
-          "Take into account molecules with zero dipoles." },
-        { "-maxatempt", FALSE, etINT, {&maxatempt},
-          "Maximum number of atempts to sample mindata molecules per atom types." },
-        { "-opt_elem",  FALSE, etSTR, {&opt_elem},
-          "Space-separated list of atom types to select molecules. If this variable is not set, all elements will be used." }
-    };
-
-    gmx_output_env_t       *oenv;
-    alexandria::MolGen      mgn;
-    alexandria::MolSelect   gms;
-    time_t                  my_t;
-    FILE                   *fp;
-
-    std::vector<t_pargs>    pargs;
-    for (size_t i = 0; i < sizeof(pa)/sizeof(pa[0]); i++)
-    {
-        pargs.push_back(pa[i]);
-    }
-    mgn.addOptions(&pargs, eTune::None);
-    if (!parse_common_args(&argc, 
-                           argv, 
-                           PCA_CAN_VIEW, 
-                           NFILE, fnm,
-                           pargs.size(), 
-                           pargs.data(),
-                           asize(desc), 
-                           desc, 
-                           0, 
-                           nullptr, 
-                           &oenv))
-    {
-        return 0;
-    }
-    mgn.optionsFinished();
-
-    fp = gmx_ffopen(opt2fn("-g", NFILE, fnm), "w");
-
-    time(&my_t);
-    fprintf(fp, "# This file was created %s", ctime(&my_t));
-    fprintf(fp, "# alexandria is part of GROMACS:\n#\n");
-    fprintf(fp, "# %s\n#\n", gmx::bromacs().c_str());
-
-    gms.read(opt2fn_null("-sel", NFILE, fnm));
-
-    mgn.Read(fp ? fp : (debug ? debug : nullptr),
-             opt2fn("-f", NFILE, fnm),
-             opt2fn_null("-d", NFILE, fnm),
-             bZero,
-             gms, 
-             false, 
-             false, 
-             nullptr,
-             false);
-
-    printAtomtypeStatistics(fp, mgn.poldata(), mgn.mymols());
-
-    for (int i = 0; i < nsample; i++)
-    {
-        char  buf[STRLEN];
-        
-        sprintf(buf, "%s_%d.dat", fnm[2].fn, i);
-        
-        fprintf(fp, "Sample file: %s\n\n", buf);
-        
-        FILE *dat = gmx_ffopen(buf, "w");
-        
-        sample_molecules(fp,
-                         dat, 
-                         mgn.mymols(), 
-                         mgn.poldata(),
-                         mgn.mindata(), 
-                         maxatempt);
-        gmx_ffclose(dat);
-    }
-    gmx_ffclose(fp);
-    //done_filenms(NFILE, fnm);
-
-    return 0;
-}

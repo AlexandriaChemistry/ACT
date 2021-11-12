@@ -218,10 +218,10 @@ void symmetrize_charges(gmx_bool                   bQsym,
                     {
                         int              hsmin = -1;
                         std::vector<int> hs;
-                        for (auto j = bonds->beginParam(); j < bonds->endParam(); ++j)
+                        for (auto &j : bonds->paramsConst())
                         {
-                            auto ai = j->a[0];
-                            auto aj = j->a[1];
+                            auto ai = j.a[0];
+                            auto aj = j.a[1];
                             
                             if (ai == i && 
                                 symcharges->getAttached().compare(atoms->atom[aj].elem) == 0)
@@ -336,11 +336,10 @@ static int *generate_cg_group(t_atoms                               *atoms,
     auto bonds = SearchPlist(plist, F_BONDS);
     if (plist.end() != bonds)
     {
-        for (auto j = bonds->beginParam();
-             (j < bonds->endParam()); ++j)
+        for (auto &j : bonds->paramsConst())
         {
-            ai  = j->a[0];
-            aj  = j->a[1];
+            ai  = j.a[0];
+            aj  = j.a[1];
             bMV = FALSE;
             atn = atoms->atom[ai].atomnumber;
             for (k = 0; (k < nmv) && !bMV; k++)
@@ -377,11 +376,10 @@ static int *generate_cg_group(t_atoms                               *atoms,
     auto pols = SearchPlist(plist, F_POLARIZATION);
     if (plist.end() != pols)
     {
-        for (auto j = pols->beginParam();
-             (j < pols->endParam()); ++j)
+        for (auto &j : pols->paramsConst())
         {
-            ai       = j->a[0];
-            aj       = j->a[1];
+            ai       = j.a[0];
+            aj       = j.a[1];
             cgnr[aj] = cgnr[ai];
         }
         for (i = 0; (i < atoms->nr); i++)
@@ -542,7 +540,8 @@ void sort_on_charge_groups(int                                   *cgnr,
     }
     for (auto i = pw->begin(); i < pw->end(); ++i)
     {
-        for (auto j = i->beginParam(); j < i->endParam(); j++)
+        auto mypar = i->params();
+        for (auto j = mypar->begin(); j < mypar->end(); j++)
         {
             for (k = 0; (k < NRAL(i->getFtype())); k++)
             {

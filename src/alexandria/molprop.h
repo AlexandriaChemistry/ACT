@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020
+ * Copyright (C) 2014-2021
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -54,15 +54,21 @@
  * \inpublicapi
  * \ingroup module_alexandria
  */
-enum MolPropObservable {
-    MPO_POTENTIAL,
-    MPO_DIPOLE,
-    MPO_QUADRUPOLE,
-    MPO_POLARIZABILITY,
-    MPO_ENERGY,
-    MPO_ENTROPY,
-    MPO_CHARGE,
-    MPO_NR
+enum class MolPropObservable {
+    //! Electrostatic potential
+    POTENTIAL,
+    //! Dipole
+    DIPOLE,
+    //! Quadrupole
+    QUADRUPOLE,
+    //! Polarizability
+    POLARIZABILITY,
+    //! Energy
+    ENERGY,
+    //! Entropy
+    ENTROPY,
+    //! Charge
+    CHARGE
 };
 
 /*! \brief
@@ -72,18 +78,34 @@ enum MolPropObservable {
  * \ingroup module_alexandria
  */
 enum iqmType {
-    iqmExp, iqmBoth, iqmQM, iqmNR
+    //! Experimental data only
+    Exp,
+    //! Both experimental and quantum-chemical
+    Both,
+    //! Quantum-chemistry only
+    QM
 };
 
-/*! \breif
+/*! \brief
  * Strings describing the MolPropObservable enum elements
+ * \param[in] MPO The observable
+ * \return the string describing the unit
  */
-extern const char *mpo_name[MPO_NR];
+const char *mpo_name(MolPropObservable MPO);
 
 /*! \brief
  * Strings describing the MolPropObservable enum units
+ * \param[in] MPO The observable
+ * \return the string describing the unit
  */
-extern const char *mpo_unit[MPO_NR];
+const char *mpo_unit(MolPropObservable MPO);
+
+/*! \brief Deduct MolPropObservable from string
+ * \param[in] str The string to use
+ * \return the corresponding MolPropObservable
+ * \throws if there is no corresponding MolPropObservable
+ */
+MolPropObservable stringToMolPropObservable(const std::string &str);
 
 /*! \brief
  * Contains all classes related to alexandria force field tools
@@ -228,8 +250,10 @@ class AtomNum
         CommunicationStatus Receive(t_commrec *cr,
                                     int        src);
 };
-//! Iterates over a vector of AtomNum
+
+//! Iterator over a vector of AtomNum
 using  AtomNumIterator      = typename std::vector<AtomNum>::iterator;
+//! Const iterator over a vector of AtomNum
 using  AtomNumConstIterator = typename std::vector<AtomNum>::const_iterator;
 
 /*! \brief
@@ -360,8 +384,9 @@ class MolecularComposition
         CommunicationStatus Receive(t_commrec *cr,
                                     int        src);
 };
-//! Iterates over MolecularComposition items
+//! Iterator over MolecularComposition items
 using MolecularCompositionIterator      = typename std::vector<MolecularComposition>::iterator;
+//! Const iterator over MolecularComposition items
 using MolecularCompositionConstIterator = typename std::vector<MolecularComposition>::const_iterator;
 
 /*! \brief
@@ -550,8 +575,11 @@ class MolecularQuadrupole : public GenericProperty
         CommunicationStatus Receive(t_commrec *cr,
                                     int        src);
 };
-//! Iterates over MolecularQuadrupole items
+
+//! Iterator over MolecularQuadrupole items
 using MolecularQuadrupoleIterator      = typename std::vector<MolecularQuadrupole>::iterator;
+
+//! Const iterator over MolecularQuadrupole items
 using MolecularQuadrupoleConstIterator = typename std::vector<MolecularQuadrupole>::const_iterator;
 
 /*! \brief
@@ -641,8 +669,11 @@ class MolecularPolarizability : public GenericProperty
         CommunicationStatus Receive(t_commrec *cr,
                                     int        src);
 };
-//! Iterates over MolecularPolarizability items
+
+//! Iterator over MolecularPolarizability items
 using  MolecularPolarizabilityIterator      = typename std::vector<MolecularPolarizability>::iterator;
+
+//! Const iterator over MolecularPolarizability items
 using  MolecularPolarizabilityConstIterator = typename std::vector<MolecularPolarizability>::const_iterator;
 
 /*! \brief
@@ -708,8 +739,11 @@ class MolecularEnergy : public GenericProperty
         CommunicationStatus Receive(t_commrec *cr,
                                     int        src);
 };
-//! Iterates over MolecularEnergy items
+
+//! Iterator over MolecularEnergy items
 using  MolecularEnergyIterator      = typename std::vector<MolecularEnergy>::iterator;
+
+//! Const iterator over MolecularEnergy items
 using  MolecularEnergyConstIterator = typename std::vector<MolecularEnergy>::const_iterator;
 
 /*! \brief
@@ -777,8 +811,11 @@ class MolecularDipole : public GenericProperty
          */
         CommunicationStatus Receive(t_commrec *cr, int src);
 };
-//! Iterates over a vector of MolecularDipole
+
+//! Iterator over a vector of MolecularDipole
 using MolecularDipoleIterator      = typename std::vector<MolecularDipole>::iterator;
+
+//! Const iterator over a vector of MolecularDipole
 using MolecularDipoleConstIterator = typename std::vector<MolecularDipole>::const_iterator;
 
 /*! \brief
@@ -871,8 +908,11 @@ class ElectrostaticPotential
          */
         CommunicationStatus Receive(t_commrec *cr, int src);
 };
-//! Iterates over ElectrostaticPotential items
+
+//! Iterator over ElectrostaticPotential items
 using ElectrostaticPotentialIterator      = typename std::vector<ElectrostaticPotential>::iterator;
+
+//! Const iterator over ElectrostaticPotential items
 using ElectrostaticPotentialConstIterator = typename std::vector<ElectrostaticPotential>::const_iterator;
 
 /*! \brief
@@ -936,8 +976,9 @@ class Bond
         CommunicationStatus Receive(t_commrec *cr,
                                     int        src);
 };
-//! Iterates over Bond items
+//! Iterator over Bond items
 using BondIterator      = typename std::vector<Bond>::iterator;
+//! Const iterator over Bond items
 using BondConstIterator = typename std::vector<Bond>::const_iterator;
 
 /*! \brief
@@ -1089,8 +1130,11 @@ class CalcAtom
         CommunicationStatus Receive(t_commrec *cr,
                                     int        src);
 };
-//! Iterates over CalcAtom items
+
+//! Iterator over CalcAtom items
 using  CalcAtomIterator      = typename std::vector<CalcAtom>::iterator;
+
+//! Const iterator over CalcAtom items
 using  CalcAtomConstIterator = typename std::vector<CalcAtom>::const_iterator;
 
 /*! \brief
@@ -1279,8 +1323,11 @@ class Experiment
         std::vector<MolecularPolarizability> polar_;
         std::vector<gmx::RVec>               coordinates_;
 };
-//! Iterates over Experiment items
+
+//! Iterator over Experiment items
 using  ExperimentIterator      = typename std::vector<Experiment>::iterator;
+
+//! Const iterateor over Experiment items
 using  ExperimentConstIterator = typename std::vector<Experiment>::const_iterator;
 
 /*! \brief
@@ -1292,17 +1339,23 @@ using  ExperimentConstIterator = typename std::vector<Experiment>::const_iterato
 class MolProp
 {
     private:
-        int                               index_;
-        double                            mass_;
-        int                               charge_, multiplicity_;
+        int                               index_ = -1;
+        double                            mass_ = 0.0;
+    int                               charge_ = 0;
+    int                               multiplicity_ = 0;
+    //! Total number of atoms in this compound
+    int                               natom_ = 0;
+    //! Whether or not all atoms have proper atom types
+    bool                              hasAllAtomTypes_ = false;
         std::string                       formula_, texform_, molname_, iupac_, cas_, cid_, inchi_;
         std::vector<std::string>          category_;
-        std::vector<MolecularComposition> mol_comp_;
+        //! Elemental composition of the compound
+        std::map<const char *,int>        composition_;
         std::vector<Experiment>           exper_;
         std::vector<Bond>                 bond_;
     public:
-        //! Construct a number MolProp object
-        MolProp() { index_ = -1; mass_ = 0; charge_ = 0; multiplicity_ = 0; }
+        //! Constructor for a MolProp object
+        MolProp() {}
 
         /*! \brief
          * Check the internal consistency of this object
@@ -1353,12 +1406,17 @@ class MolProp
         //! Set the formula
         void SetFormula(const std::string &formula) { formula_.assign(formula); }
 
-        //! Return the formula
+        //! \return the formula
         const std::string &formula() const { return formula_; }
 
-        //! Return the LaTeX formula
+        //! \return the LaTeX formula
         const std::string &getTexFormula() const;
 
+        //! \brief Generate the elemental composition
+        void generateComposition();
+        
+        //! \return The elemental composition
+        const std::map<const char *,int> &composition() const { return composition_; }
         /*! \brief
          * Generate the chemical formula for this molecule based on atoms
          * present in a calculation
@@ -1447,38 +1505,11 @@ class MolProp
         //! Return true if catname is an existing category
         bool SearchCategory(const std::string &catname) const;
 
-        //! Delete a composition type if present
-        void DeleteComposition(const std::string &compname);
+        //! Return number of atoms in the compound
+        int NAtom() const { return natom_; }
 
-        //! Add a composition entry
-        void AddComposition(MolecularComposition mc);
-
-        std::vector<MolecularComposition> &molecularComposition()
-        { return mol_comp_; }
-
-        const std::vector<MolecularComposition> &molecularCompositionConst() const
-        { return mol_comp_; }
-
-        //! Last Iterator over MolecularCompostion items
-        MolecularComposition *LastMolecularComposition()   { return &(mol_comp_.back()); }
-
-        //! Search for particular MolecularCompostion item or return EndMolecularComposition if not found
-        MolecularCompositionIterator SearchMolecularComposition(const std::string &str);
-
-        //! Search for particular MolecularCompostion item or return EndMolecularComposition if not found
-        MolecularCompositionConstIterator SearchMolecularComposition(const std::string &str) const;
-
-        //! Return end of vector
-        MolecularCompositionConstIterator EndMolecularComposition() const { return mol_comp_.end(); }
-    
-        //! Return number of atoms in the first composition if present, or 0 otherwise
-        int NAtom();
-
-        //! Routine to generate compositions based on calculation data
-        bool GenerateComposition();
-
-        //! Returns boolean stating whether a particular composition is present
-        bool HasComposition(const std::string &composition) const;
+        //! Returns boolean stating whether all atoms have valid atom types
+        bool hasAllAtomTypes() const { return hasAllAtomTypes_; }
 
         //! Add a Bond element
         void AddBond(Bond b);
@@ -1581,8 +1612,11 @@ class MolProp
         CommunicationStatus Receive(t_commrec *cr,
                                     int        src);
 };
-//! Iterates over MolProp items
+
+//! Iterator over MolProp items
 using  MolPropIterator      = typename std::vector<MolProp>::iterator;
+
+//! Const iterator over MolProp items
 using  MolPropConstIterator = typename std::vector<MolProp>::const_iterator;
 
 /*! \brief Utility to compare temperatures

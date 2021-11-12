@@ -75,10 +75,17 @@ struct t_nrnb;
 namespace alexandria
 {
 
+    //! Determine on which core/processor this compound is supported
     enum class eSupport {
-        No, Local, Remote
-            };
+        //! Not supported at all
+        No,
+        //! SUpported on this core
+        Local,
+        //! Supported on another core
+        Remote
+    };
 
+    //! Forward declaration, full declaration is in mymol.cpp
     class MyForceProvider;
     /*! \brief
      * Contains molecular properties from a range of sources.

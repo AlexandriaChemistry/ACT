@@ -109,7 +109,9 @@ class gv_inplane
       int bbca2_;
 };
 
+//! Iterator over a vector of gv_inplane
 using gv_inplaneIterator      = typename std::vector<gv_inplane>::iterator;
+//! Const iterator over a vector of gv_inplane
 using gv_inplaneConstIterator = typename std::vector<gv_inplane>::const_iterator;
  
 
@@ -150,7 +152,9 @@ class gv_outplane
       int bca2_;
 };
 
+//! Iterator over vector of gv_outplane
 using gv_outplaneIterator      = typename std::vector<gv_outplane>::iterator;
+//! Const iterator over vector of gv_outplane
 using gv_outplaneConstIterator = typename std::vector<gv_outplane>::const_iterator;
 
 class GentopVsites
@@ -260,7 +264,7 @@ class GentopVsites
         
         void gen_Vsites(const Poldata             *pd,
                         t_atoms                   *atoms,
-                        std::vector<PlistWrapper> &plist,
+                        std::vector<PlistWrapper> *plist,
                         gpp_atomtype              *atype,
                         t_symtab                  *symtab,
                         t_excls                   **excls,
@@ -283,7 +287,7 @@ class GentopVsites
                              bool                       bUseVsites,
                              t_atoms                   *atoms,
                              rvec                     **x,
-                             std::vector<PlistWrapper> &plist,
+                             std::vector<PlistWrapper> *plist,
                              t_symtab                  *symtab,
                              gpp_atomtype              *atype,
                              t_excls                  **excls,

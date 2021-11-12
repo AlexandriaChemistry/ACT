@@ -48,25 +48,29 @@ namespace alexandria
 
 ConstPlistWrapperIterator SearchPlist(const std::vector<PlistWrapper> &plist, int ftype)
 {
-    return std::find_if(plist.begin(), plist.end(), [ftype](const PlistWrapper &p) 
+    return std::find_if(plist.begin(), plist.end(),
+                        [ftype](const PlistWrapper &p) 
                         { return p.getFtype() == ftype; });
 }
 
 ConstPlistWrapperIterator SearchPlist(const std::vector<PlistWrapper> &plist, InteractionType itype)
 {
-    return std::find_if(plist.begin(), plist.end(), [itype](const PlistWrapper &p) 
+    return std::find_if(plist.begin(), plist.end(), 
+                        [itype](const PlistWrapper &p) 
                         { return p.getItype() == itype; });
 }
 
 PlistWrapperIterator SearchPlist(std::vector<PlistWrapper> &plist, int ftype)
 {
-    return std::find_if(plist.begin(), plist.end(), [ftype](PlistWrapper &p) 
+    return std::find_if(plist.begin(), plist.end(),
+                        [ftype](PlistWrapper &p) 
                         { return p.getFtype() == ftype; });
 }
 
 PlistWrapperIterator SearchPlist(std::vector<PlistWrapper> &plist, InteractionType itype)
 {
-    return std::find_if(plist.begin(), plist.end(), [itype](PlistWrapper &p) 
+    return std::find_if(plist.begin(), plist.end(),
+                        [itype](PlistWrapper &p) 
                         { return p.getItype() == itype; });
 }
 
@@ -76,21 +80,23 @@ unsigned int CountPlist(const std::vector<PlistWrapper> &plist, int ftype)
                          { return p.getFtype() == ftype; });
 }
 
-void delete_params(std::vector<PlistWrapper> &plist_,
+void delete_params(std::vector<PlistWrapper> *plist_,
                    const int                  ftype,
                    const int                  alist[])
 {
     int  nra;
-    auto pwi = SearchPlist(plist_, ftype);
+    auto pwi = SearchPlist(*plist_, ftype);
 
-    if (plist_.end() != pwi)
+    if (plist_->end() != pwi)
     {
         nra = interaction_function[ftype].nratoms;
         switch (nra)
         {
-            case 2:
+        case 2:
+            {
                 /* Remove bonds, if present */
-                for (auto j = pwi->beginParam(); (j < pwi->endParam()); ++j)
+                auto mypar = pwi->params();
+                for (auto j = mypar->begin(); j < mypar->end(); ++j)
                 {
                     if (((j->a[0] == alist[0]) &&
                          (j->a[1] == alist[1])) ||
@@ -106,10 +112,13 @@ void delete_params(std::vector<PlistWrapper> &plist_,
                         break;
                     }
                 }
-           break;
-            case 3:
+                break;
+            }
+        case 3:
+            {
                 /* Remove angle, if present */
-                for (auto j = pwi->beginParam(); (j < pwi->endParam()); ++j)
+                auto mypar = pwi->params();
+                for (auto j = mypar->begin(); (j < mypar->end()); ++j)
                 {
                     if (j->a[1] == alist[1])
                     {
@@ -128,10 +137,13 @@ void delete_params(std::vector<PlistWrapper> &plist_,
                         }
                     }
                 }
-	       break;
-            case 4:
+                break;
+            }
+        case 4:
+            {
                 /* Remove dihedral, if present. Allow wildcard in alist[3] (specified as -1) */
-                for (auto j = pwi->beginParam(); (j < pwi->endParam()); ++j)
+                auto mypar = pwi->params();
+                for (auto j = mypar->begin(); (j < mypar->end()); ++j)
                 {
                     if (((j->a[0] == alist[0]) &&
                          (j->a[1] == alist[1]) &&
@@ -155,43 +167,46 @@ void delete_params(std::vector<PlistWrapper> &plist_,
                         break;
                     }
                 }
-	       break;
-            default:
+                break;
+            }
+        default:
+            {
                 fprintf(stderr, "Don't know how to remove params from type %s\n",
                         interaction_function[ftype].name);
+            }
         }
     }
 }
 
-void add_param_to_plist(std::vector<PlistWrapper> &plist,
+void add_param_to_plist(std::vector<PlistWrapper> *plist,
                         int                        ftype,
                         InteractionType            itype,
                         const t_param             &p)
 {
-    std::vector<PlistWrapper>::iterator pwi = SearchPlist(plist, ftype);
+    std::vector<PlistWrapper>::iterator pwi = SearchPlist(*plist, ftype);
 
-    if (plist.end() == pwi)
+    if (plist->end() == pwi)
     {
         PlistWrapper pw(itype, ftype);
-        plist.push_back(pw);
-        pwi = plist.end() - 1;
+        plist->push_back(pw);
+        pwi = plist->end() - 1;
     }
     pwi->addParam(p);
 }
 
-void add_param_to_plist(std::vector<PlistWrapper> &plist,
+void add_param_to_plist(std::vector<PlistWrapper> *plist,
                         int                        ftype,
                         InteractionType            itype,
                         const t_param             &p,
                         double                     bondOrder)
 {
-    std::vector<PlistWrapper>::iterator pwi = SearchPlist(plist, ftype);
+    std::vector<PlistWrapper>::iterator pwi = SearchPlist(*plist, ftype);
 
-    if (plist.end() == pwi)
+    if (plist->end() == pwi)
     {
         PlistWrapper pw(itype, ftype);
-        plist.push_back(pw);
-        pwi = plist.end() - 1;
+        plist->push_back(pw);
+        pwi = plist->end() - 1;
     }
     pwi->addParam(p);
     if (InteractionType::BONDS == itype)

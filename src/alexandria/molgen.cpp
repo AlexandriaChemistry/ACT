@@ -694,8 +694,9 @@ size_t MolGen::Read(FILE            *fp,
         print_memory_usage(debug);
         for (auto mpi = mp.begin(); mpi < mp.end(); )
         {
+            mpi->generateComposition();
             mpi->CheckConsistency();
-            if (!mpi->GenerateComposition())
+            if (!mpi->hasAllAtomTypes())
             {
                 /*
                  * Here we remove a compound if we cannot generate it's

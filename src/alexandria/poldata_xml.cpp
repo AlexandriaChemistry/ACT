@@ -78,6 +78,7 @@ const char *xmltypes[] = {
 };
 #define NXMLTYPES sizeof(xmltypes)/sizeof(xmltypes[0])
 
+//! The different entries to excpect in force field file
 enum class xmlEntry {
     GENTOP,
     REFERENCE,
@@ -88,11 +89,8 @@ enum class xmlEntry {
     VERSION,
     EPSILONR,
     DESC,
-    // AROMATIC,
     GEOMETRY,
     NUMBONDS,
-    //    VDWPARAMS,
-    // EREF,
     VANDERWAALS,
     INTERACTION,
     IDENTIFIER,
@@ -138,6 +136,7 @@ enum class xmlEntry {
     FUNCTION
 };
 
+//! Map from string used in XML file to xmlEntry enum
 std::map<const std::string, xmlEntry> xmlxxx =
 {
     { "gentop",                    xmlEntry::GENTOP           },

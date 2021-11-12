@@ -59,7 +59,7 @@ static void gmx_molprop_csv(const char *fn,
     rvec                        vec;
     tensor                      quadrupole;
 #define NEMP 3
-    MolPropObservable           mpo[NEMP]   = { MPO_DIPOLE, MPO_POLARIZABILITY, MPO_ENERGY  };
+    MolPropObservable           mpo[NEMP]   = { MolPropObservable::DIPOLE, MolPropObservable::POLARIZABILITY, MolPropObservable::ENERGY  };
     const char                 *ename[NEMP] = { "Dipole", "Polarizability", "Heat of formation" };
     alexandria::QmCount         qmc[NEMP];
 
@@ -69,7 +69,7 @@ static void gmx_molprop_csv(const char *fn,
     for (k = 0; (k < NEMP); k++)
     {
         printf("--------------------------------------------------\n");
-        printf("      Some statistics for %s\n", mpo_name[mpo[k]]);
+        printf("      Some statistics for %s\n", mpo_name(mpo[k]));
         for (auto q = qmc[k].beginCalc(); q < qmc[k].endCalc(); ++q)
         {
             printf("There are %d calculation results using %s type %s\n",
@@ -135,7 +135,7 @@ static void gmx_molprop_csv(const char *fn,
         for (k = 0; (k < NEMP); k++)
         {
             std::string ref, mylot;
-            if (mpi->getPropRef(mpo[k], iqmExp,
+            if (mpi->getPropRef(mpo[k], iqmType::Exp,
                                 "", "", "", nullptr, &d, &err, &T,
                                 &ref, &mylot, vec,
                                 quadrupole))
@@ -148,7 +148,7 @@ static void gmx_molprop_csv(const char *fn,
             }
             for (auto j = qmc[k].beginCalc(); j < qmc[k].endCalc(); j++)
             {
-                if (mpi->getProp(mpo[k], iqmQM, j->method(), j->basis(),
+                if (mpi->getProp(mpo[k], iqmType::QM, j->method(), j->basis(),
                                  nullptr, j->type(), &T, &d, nullptr))
                 {
                     fprintf(fp, ",\"%.4f\"", d);

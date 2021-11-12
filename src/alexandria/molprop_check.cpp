@@ -251,7 +251,7 @@ std::vector<alexandria::MolProp> mp;
             tensor Q;
             double value, error, T = 0;
             std::string type;
-            if (ci.getVal(type, MPO_DIPOLE, &value, &error,
+            if (ci.getVal(type, MolPropObservable::DIPOLE, &value, &error,
                           &T, mu, Q))
             {
                 name_mu nmu = { ci.getDatafile(), { mu[XX], mu[YY], mu[ZZ] } };

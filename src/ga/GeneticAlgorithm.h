@@ -65,13 +65,13 @@ public:
      * Evolve the initial population
      * @param prCross   the probability of crossover
      * @param prMut     the probability of mutation
-     * @param verbose   True if print cool stuff, False if silent
+     * @param verbose   The higher the value, the more debug prints
      * @return          a tuple containing the final population, the final fitness, the best individual, the fitness
      *                  of the best individual, and the number of generations
      */
     const ga_result_t evolve(const double   prCross,
                              const double   prMut,
-                             const bool     verbose);
+                             const int      verbose);
 
 
 };

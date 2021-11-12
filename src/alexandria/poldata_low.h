@@ -48,6 +48,7 @@
 namespace alexandria
 {
 
+//! Class to distguish virtual site types
 enum class VsiteType
 {
     //! Linear virtual site (gv_linear) dependent on two atoms

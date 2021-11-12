@@ -30,7 +30,6 @@ cmake-build-debug
 
 # GA
 !src/ga/Makefile
-src/ga/test.cpp
 src/ga/test
 
 # Examples

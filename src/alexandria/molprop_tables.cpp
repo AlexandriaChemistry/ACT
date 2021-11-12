@@ -47,7 +47,6 @@
 
 #include "alex_modules.h"
 #include "categories.h"
-#include "composition.h"
 #include "latex_util.h"
 
 namespace alexandria
@@ -106,11 +105,11 @@ static void stats_header(LongTable         &lt,
             // Caption
             char caption[STRLEN];
             snprintf(caption, sizeof(caption), "Performance of the different methods for predicting the molecular %s for molecules containing different chemical groups, given as the RMSD from experimental values (%s), and in brackets the number of molecules in this particular subset. {\\bf Data set: %s.} At the bottom the correlation coefficient R, the regression coefficient a and the intercept b are given as well as the normalized quality of the fit $\\chi^2$, the mean signed error (MSE) and the mean absolute error (MSA).",
-                     mpo_name[mpo], mpo_unit[mpo], iMolSelectName(ims));
+                     mpo_name(mpo), mpo_unit(mpo), iMolSelectName(ims));
             lt.setCaption(caption);
             // Label
             char label[STRLEN];
-            snprintf(label, sizeof(label), "%s_rmsd", mpo_name[mpo]);
+            snprintf(label, sizeof(label), "%s_rmsd", mpo_name(mpo));
             lt.setLabel(label);
         }
         else
@@ -163,8 +162,6 @@ void alexandria_molprop_stats_table(FILE                 *fp,
     gmx_stats_t                        lsq;
     std::vector<gmx_stats_t>           lsqtot;
     LongTable                          lt(fp, true, nullptr);
-    CompositionSpecs                   cs;
-    const char                        *alex = cs.searchCS(iCalexandria)->name();
 
     if (0 == cList.nCategories())
     {
@@ -174,31 +171,32 @@ void alexandria_molprop_stats_table(FILE                 *fp,
 
     stats_header(lt, mpo, qmc, ims);
 
-    for (auto i = cList.beginCategories(); (i < cList.endCategories()); ++i)
+    for (auto &i : cList.elementsConst())
     {
         std::string catbuf;
         int         nqmres  = 0;
         int         nexpres = 0;
-        snprintf(buf, sizeof(buf), "%s", i->getName().c_str());
+        std::string mybuf = i.getName();
+        snprintf(buf, sizeof(buf), "%s", mybuf.c_str());
         catbuf.append(buf);
         for (auto q = qmc.beginCalc(); q < qmc.endCalc(); ++q)
         {
             lsq = gmx_stats_init();
             for (auto &mpi : mp)
             {
-                if ((i->hasMolecule(mpi.getIupac())) &&
-                    (mpi.SearchCategory(i->getName()) == 1))
+                if ((i.hasMolecule(mpi.getIupac())) &&
+                    (mpi.SearchCategory(i.getName()) == 1))
                 {
                     double exp_err = 0;
                     double Texp    = -1;
                     bool   bQM     = false;
-                    bool   bExp    = mpi.getProp(mpo, iqmExp, "", "", "",
+                    bool   bExp    = mpi.getProp(mpo, iqmType::Exp, "", "", "",
                                                  exp_type, &exp_val, &exp_err, &Texp);
                     if (bExp)
                     {
                         double qm_err = 0;
                         double Tqm    = -1;
-                        bQM    = mpi.getProp(mpo, iqmQM, q->method(), q->basis(), "",
+                        bQM    = mpi.getProp(mpo, iqmType::QM, q->method(), q->basis(), "",
                                              q->type(), &qm_val, &qm_err, &Tqm);
                         //printf("Texp %g Tqm %g bQM = %s\n", Texp, Tqm, bQM ? "true" : "false");
                         if (bQM)
@@ -207,7 +205,7 @@ void alexandria_molprop_stats_table(FILE                 *fp,
                             {
                                 fprintf(debug, "%s %s - TAB4\n",
                                         mpi.getMolname().c_str(),
-                                        i->getName().c_str());
+                                        i.getName().c_str());
                             }
                             gmx_stats_add_point(lsq, exp_val, qm_val, exp_err, qm_err);
                             nexpres = 1;
@@ -256,14 +254,14 @@ void alexandria_molprop_stats_table(FILE                 *fp,
             iMolSelect myIms;
             if (gms.status(mpi->getIupac(), &myIms) &&
                 ims == myIms &&
-                mpi->HasComposition(alex))
+                mpi->hasAllAtomTypes())
             {
                 double exp_err, qm_err;
                 double Texp = -1;
-                bool   bExp = mpi->getProp(mpo, iqmExp, "", "", "", exp_type,
+                bool   bExp = mpi->getProp(mpo, iqmType::Exp, "", "", "", exp_type,
                                            &exp_val, &exp_err, &Texp);
                 double Tqm  = Texp;
-                bool   bQM  = mpi->getProp(mpo, iqmQM, q->method(), q->basis(),
+                bool   bQM  = mpi->getProp(mpo, iqmType::QM, q->method(), q->basis(),
                                            "", q->type(),
                                            &qm_val, &qm_err, &Tqm);
                 if (bExp && bQM)
@@ -391,6 +389,7 @@ void alexandria_molprop_stats_table(FILE                 *fp,
     }
 }
 
+#ifdef OLD
 static void composition_header(LongTable             &lt,
                                iMolSelect             ims)
 {
@@ -410,12 +409,10 @@ void alexandria_molprop_composition_table(FILE                 *fp,
                                           const MolSelect      &gms,
                                           iMolSelect            ims)
 {
-    std::vector<MolProp>::iterator             mpi;
-    MolecularCompositionIterator               mci;
-    int                                        q, m, iline, nprint;
-    LongTable                                  lt(fp, true, "small");
-    CompositionSpecs                           cs;
-    const char                                *alex = cs.searchCS(iCalexandria)->name();
+    std::vector<MolProp>::iterator mpi;
+    MolecularCompositionIterator   mci;
+    int                            q, m, iline, nprint;
+    LongTable                      lt(fp, true, "small");
 
     nprint = 0;
     for (mpi = mp.begin(); (mpi < mp.end()); mpi++)
@@ -423,7 +420,7 @@ void alexandria_molprop_composition_table(FILE                 *fp,
         iMolSelect myIms;
         if (gms.status(mpi->getIupac(), &myIms) &&
             myIms == ims &&
-            mpi->HasComposition(alex))
+            mpi->hasAtomTypes())
         {
             nprint++;
         }
@@ -488,7 +485,7 @@ void alexandria_molprop_composition_table(FILE                 *fp,
     }
     lt.printFooter();
 }
-
+#endif
 
 static void category_header(LongTable &lt)
 {
@@ -511,18 +508,17 @@ void alexandria_molprop_category_table(FILE            *fp,
     {
         LongTable lt(fp, true, "small");
         category_header(lt);
-        for (CategoryListElementIterator i = cList.beginCategories();
-             (i < cList.endCategories()); ++i)
+        for (const auto &i : cList.elementsConst())
         {
             std::string longbuf;
             char        buf[256];
-            int         nMol = i->nMolecule();
+            int         nMol = i.nMolecule();
 
             if ((nMol >= catmin) && (catmin > 1))
             {
                 int n = 0;
-                const std::vector<std::string> &mols = i->molecules();
-                snprintf(buf, sizeof(buf), "%s & %d &", i->getName().c_str(), nMol);
+                const std::vector<std::string> &mols = i.molecules();
+                snprintf(buf, sizeof(buf), "%s & %d &", i.getName().c_str(), nMol);
                 longbuf.append(buf);
                 for (size_t j = 0; j < mols.size()-1; j++)
                 {
@@ -573,7 +569,7 @@ static void alexandria_molprop_atomtype_polar_table(FILE                       *
     std::vector<MolProp>::iterator  mpi;
     double                          ahc, ahp, bos_pol;
     char                            longbuf[STRLEN];
-    MolPropObservable               mpo = MPO_POLARIZABILITY;
+    MolPropObservable               mpo = MolPropObservable::POLARIZABILITY;
     LongTable                       lt(fp, false, nullptr);
     CompositionSpecs                cs;
     const char                     *alexandria = cs.searchCS(iCalexandria)->name();
@@ -620,11 +616,11 @@ static void alexandria_molprop_atomtype_polar_table(FILE                       *
                         std::string method, basis;
                         splitLot(lot, &method, &basis);
                         double      val, T = -1;
-                        if (mpi.getProp(mpo, iqmExp, method, basis, "", exp_type, &val, nullptr, &T))
+                        if (mpi.getProp(mpo, iqmType::Exp, method, basis, "", exp_type, &val, nullptr, &T))
                         {
                             nexp++;
                         }
-                        else if (mpi.getProp(mpo, iqmQM, method, basis, "", (char *)"electronic", &val, nullptr, &T))
+                        else if (mpi.getProp(mpo, iqmType::QM, method, basis, "", (char *)"electronic", &val, nullptr, &T))
                         {
                             nqm++;
                         }
@@ -867,23 +863,21 @@ void alexandria_molprop_prop_table(FILE                 *fp,
     rvec                        rvec;
     tensor                      quadrupole;
     bool                        bPrintConf;
-    CompositionSpecs            cs;
-    const char                 *alex = cs.searchCS(iCalexandria)->name();
 
     LongTable                   lt(fp, true, "small");
 
     int nprint = std::count_if(mp.begin(), mp.end(),
-                               [ims, alex, gms](const MolProp &mpi)
+                               [ims, gms](const MolProp &mpi)
                                { iMolSelect myIms;
                                    return (gms.status(mpi.getIupac(), &myIms) &&
                                            ims == myIms &&
-                                           mpi.HasComposition(alex)); });
+                                           mpi.hasAllAtomTypes()); });
     if (nprint <= 0)
     {
         return;
     }
-    bPrintConf = false; //(mpo == MPO_DIPOLE);
-    prop_header(lt, mpo_name[mpo], mpo_unit[mpo],
+    bPrintConf = false; //(mpo == MolPropObservable::DIPOLE);
+    prop_header(lt, mpo_name(mpo), mpo_unit(mpo),
                 rel_toler, abs_toler, qmc,
                 ims, bPrintConf, bPrintBasis, bPrintMultQ);
     for (auto &mpi : mp)
@@ -891,7 +885,7 @@ void alexandria_molprop_prop_table(FILE                 *fp,
         iMolSelect myIms;
         if (gms.status(mpi.getIupac(), &myIms) &&
             ims == myIms &&
-            mpi.HasComposition(alex))
+            mpi.hasAllAtomTypes())
         {
             std::vector<ExpData>  ed;
             std::vector<CalcData> cd;
@@ -899,7 +893,7 @@ void alexandria_molprop_prop_table(FILE                 *fp,
             {
                 switch (mpo)
                 {
-                    case MPO_DIPOLE:
+                    case MolPropObservable::DIPOLE:
                         for (auto mdi : ei.dipoleConst())
                         {
                             if (mdi.getType().compare(exp_type) == 0)
@@ -914,7 +908,7 @@ void alexandria_molprop_prop_table(FILE                 *fp,
                             }
                         }
                         break;
-                    case MPO_POLARIZABILITY:
+                    case MolPropObservable::POLARIZABILITY:
                         for (auto mdi : ei.polarizabilityConst())
                         {
                             if (mdi.getType().compare(exp_type) == 0)
@@ -929,8 +923,8 @@ void alexandria_molprop_prop_table(FILE                 *fp,
                             }
                         }
                         break;
-                    case MPO_ENERGY:
-                    case MPO_ENTROPY:
+                    case MolPropObservable::ENERGY:
+                    case MolPropObservable::ENTROPY:
                         for (auto mei : ei.molecularEnergyConst())
                         {
                             if (mei.getType().compare(exp_type) == 0)
@@ -958,7 +952,7 @@ void alexandria_molprop_prop_table(FILE                 *fp,
                     std::string ref, mylot;
                     double      T = ed[nexp].temp_;
                     if ((q->type().compare(exp_type) == 0) &&
-                        mpi.getPropRef(mpo, iqmQM, q->method(), q->basis(), "",
+                        mpi.getPropRef(mpo, iqmType::QM, q->method(), q->basis(), "",
                                        q->type(), &calc_val, &calc_err, &T,
                                        &ref, &mylot, rvec, quadrupole))
                     {

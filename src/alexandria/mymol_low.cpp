@@ -338,7 +338,8 @@ immStatus updatePlist(const Poldata             *pd,
         pw->setFtype(fs.fType());
         auto nratoms = interaction_function[fs.fType()].nratoms;
         int bondOrder_index = 0;
-        for (auto pwi = pw->beginParam(); pwi < pw->endParam(); ++pwi)
+        auto mypar = pw->params();
+        for (auto pwi = mypar->begin(); pwi < mypar->end(); ++pwi)
         {
             std::vector<std::string> bondAtomType, reverseAtomType;
             bool bondNamesOK = true;
@@ -697,14 +698,14 @@ void plist_to_mtop(const std::vector<PlistWrapper> &plist,
         }
         //mtop_->moltype[0].ilist[ftype].iatoms.resize(nratot, {0});
         /* For generating pairs */
-        for (auto j = pw.beginParam(); (j < pw.endParam()); ++j)
+        for (auto &j : pw.paramsConst())
         {
             std::vector<real> c;
             c.resize(MAXFORCEPARAM, 0);
             if (ftype == F_LJ14)
             {
-                int ati = mtop_->moltype[0].atoms.atom[j->a[0]].type;
-                int atj = mtop_->moltype[0].atoms.atom[j->a[1]].type;
+                int ati = mtop_->moltype[0].atoms.atom[j.a[0]].type;
+                int atj = mtop_->moltype[0].atoms.atom[j.a[1]].type;
                 int tp  = ati*mtop_->ffparams.atnr+atj;
                 c[0] = c[nrfp]   = mtop_->ffparams.iparams[tp].lj.c6;
                 c[1] = c[nrfp+1] = mtop_->ffparams.iparams[tp].lj.c12;
@@ -713,7 +714,7 @@ void plist_to_mtop(const std::vector<PlistWrapper> &plist,
             {
                 for (int l = 0; (l < nrfp); l++)
                 {
-                    c[l] = j->c[l];
+                    c[l] = j.c[l];
                     if (NOTSET == c[l])
                     {
                         c[l] = 0;
@@ -726,7 +727,7 @@ void plist_to_mtop(const std::vector<PlistWrapper> &plist,
             mtop_->moltype[0].ilist[ftype].iatoms.push_back(type);
             for (int m = 0; m < interaction_function[ftype].nratoms; m++)
             {
-                mtop_->moltype[0].ilist[ftype].iatoms.push_back(j->a[m]);
+                mtop_->moltype[0].ilist[ftype].iatoms.push_back(j.a[m]);
             }
         }
     }
@@ -1062,16 +1063,16 @@ void print_bondeds(FILE                            *out,
     }
     fprintf(out, "   type  parameters\n");
     int subtype = get_subtype(d, print_ftype);
-    for (auto i = p->beginParam(); (i < p->endParam()); ++i)
+    for (auto &i : p->paramsConst())
     {
         for (int j = 0; (j < NRAL(print_ftype)); j++)
         {
-            fprintf(out, "  %5d", 1+i->a[j]);
+            fprintf(out, "  %5d", 1+i.a[j]);
         }
         fprintf(out, "  %5d", subtype);
         for (int j = 0; (j < NRFPA(print_ftype)); j++)
         {
-            fprintf(out, "  %10g", i->c[j]);
+            fprintf(out, "  %10g", i.c[j]);
         }
         fprintf(out, "\n");
     }

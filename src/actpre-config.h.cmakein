@@ -32,14 +32,14 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \libinternal \file
+/*! \internal \file
  * \brief
- * Configuration macros from the build system for gmxpre.h.
+ * Configuration macros from the build system for actpre.h.
  *
- * This header is an internal implementation detail of gmxpre.h, and should not
+ * This header is an internal implementation detail of actpre.h, and should not
  * be included from anywhere else.
  *
- * \see gmxpre.h
+ * \see actpre.h
  */
 
 /* Define to 1 to make fseeko visible on some hosts (e.g. glibc
@@ -62,7 +62,7 @@
 
 /* This is here for simplicity, since the layout for some thread-MPI structs
  * declared in headers depend on this being consistently defined.
- * But thread-MPI itself does not include gmxpre.h, so the same define is also
+ * But thread-MPI itself does not include actpre.h, so the same define is also
  * set in config.h (which gets included by thread-MPI, but only in the source
  * files). There are some other config.h defines that appear in thread-MPI
  * headers, but currently GROMACS does not use any code that would depend on

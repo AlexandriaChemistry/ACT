@@ -415,8 +415,8 @@ void MyMol::MakeSpecialInteractions(const Poldata *pd,
         }
     }
     auto anr = atoms->nr;
-    gvt_.generateSpecial(pd, true, atoms,
-                         &x, plist_, symtab_, gromppAtomtype_, &excls_, state_);
+    gvt_.generateSpecial(pd, true, atoms, &x, &plist_,
+                         symtab_, gromppAtomtype_, &excls_, state_);
     bHaveVSites_ = (atoms->nr > anr);
 }
 
@@ -438,16 +438,16 @@ void MyMol::MakeAngles(t_atoms *atoms,
         if (F_BONDS == pw.getFtype())
         {
             pr_alloc(pw.nParam(), &(plist[F_BONDS]));
-            auto i = 0;
-            for (auto pi = pw.beginParam(); (pi < pw.endParam()); ++pi)
+            auto i     = 0;
+            for (auto &pi : pw.paramsConst())
             {
                 for (auto j = 0; j < MAXATOMLIST; j++)
                 {
-                    plist[F_BONDS].param[i].a[j] = pi->a[j];
+                    plist[F_BONDS].param[i].a[j] = pi.a[j];
                 }
                 for (auto j = 0; j < MAXFORCEPARAM; j++)
                 {
-                    plist[F_BONDS].param[i].c[j] = pi->c[j];
+                    plist[F_BONDS].param[i].c[j] = pi.c[j];
                 }
                 i++;
             }
@@ -721,7 +721,7 @@ immStatus MyMol::GenerateTopology(FILE              *fp,
     {
         fprintf(debug, "Generating topology for %s\n", getMolname().c_str());
     }
-    GenerateComposition();
+    generateComposition();
     if (NAtom() <= 0)
     {
         imm = immStatus::AtomTypes;
@@ -762,7 +762,8 @@ immStatus MyMol::GenerateTopology(FILE              *fp,
                 // We add the parameter with zero parameters, they will be
                 // set further down. However it is important to set the
                 // bondorder.
-                add_param_to_plist(plist_, ftb, InteractionType::BONDS, b, bi.getBondOrder());
+                add_param_to_plist(&plist_, ftb, InteractionType::BONDS,
+                                   b, bi.getBondOrder());
             }
             auto pw = SearchPlist(plist_, ftb);
             if (plist_.end() == pw || pw->nParam() == 0)
@@ -891,7 +892,7 @@ void MyMol::addBondVsites(FILE          *fp,
             p.a[2] = aj;
             auto param = vs2.findParameterTypeConst(bsId, "v2_a");
             p.c[0] = convertToGromacs(param.value(), param.unit());
-            add_param_to_plist(plist_, F_VSITE2, InteractionType::VSITE2, p);
+            add_param_to_plist(&plist_, F_VSITE2, InteractionType::VSITE2, p);
             // Now add the particle
             add_t_atoms(atoms, 1, 0);
             // Add exclusion for the vsite and its constituting atoms
@@ -1003,7 +1004,8 @@ void MyMol::addShells(FILE          *fp,
                         }
                     }
                     p.c[0] = pol;
-                    add_param_to_plist(plist_, F_POLARIZATION, InteractionType::POLARIZATION, p);
+                    add_param_to_plist(&plist_, F_POLARIZATION,
+                                       InteractionType::POLARIZATION, p);
                 }
             }
             else
@@ -1032,28 +1034,28 @@ void MyMol::addShells(FILE          *fp,
         /* Exclude the vsites and the atoms from their own shell. */
         if (pd->getNexcl() >= 0)
         {
-            for (auto j = pw->beginParam(); (j < pw->endParam()); ++j)
+            for (auto &j : pw->paramsConst())
             {
-                add_excl_pair(newexcls, j->a[0], j->a[1]);
+                add_excl_pair(newexcls, j.a[0], j.a[1]);
             }
         }
 
         // Make a copy of the exclusions of the Atom or Vsite for the shell.
-        for (auto j = pw->beginParam(); (j < pw->endParam()); ++j)
+        for (auto &j : pw->paramsConst())
         {
             // We know that the Atom or Vsite is 0 as we added it to plist as such.
-            int  i0 = inv_renum[j->a[0]];
+            int  i0 = inv_renum[j.a[0]];
             for (auto j0 = 0; j0 < excls_[i0].nr; j0++)
             {
-                add_excl_pair(newexcls, j->a[0], shellRenumber[excls_[i0].e[j0]]);
-                add_excl_pair(newexcls, j->a[1], shellRenumber[excls_[i0].e[j0]]);
+                add_excl_pair(newexcls, j.a[0], shellRenumber[excls_[i0].e[j0]]);
+                add_excl_pair(newexcls, j.a[1], shellRenumber[excls_[i0].e[j0]]);
             }
         }
-        for (auto j = pw->beginParam(); j < pw->endParam(); ++j)
+        for (auto &j : pw->paramsConst())
         {
-            for (auto j0 = 0; j0 < newexcls[j->a[0]].nr; j0++)
+            for (auto j0 = 0; j0 < newexcls[j.a[0]].nr; j0++)
             {
-                add_excl_pair(newexcls, j->a[1], newexcls[j->a[0]].e[j0]);
+                add_excl_pair(newexcls, j.a[1], newexcls[j.a[0]].e[j0]);
             }
         }
     }
@@ -1154,7 +1156,8 @@ void MyMol::addShells(FILE          *fp,
     {
         if (i->getFtype() != F_POLARIZATION)
         {
-            for (auto j = i->beginParam(); j < i->endParam(); ++j)
+            auto mypar = i->params();
+            for (auto j = mypar->begin(); j < mypar->end(); ++j)
             {
                 for (int k = 0; k < NRAL(i->getFtype()); k++)
                 {
@@ -1898,7 +1901,7 @@ void MyMol::PrintTopology(FILE                   *fp,
     T = -1;
     const char *qm_type = "electronic";
     const char *qm_conf = "minimum";
-    if (getPropRef(MPO_DIPOLE, iqmQM, method, basis, qm_conf,
+    if (getPropRef(MolPropObservable::DIPOLE, iqmType::QM, method, basis, qm_conf,
                    qm_type, &value, &error,
                    &T, &myref, &mylot, vec, myQ))
     {
@@ -1922,7 +1925,7 @@ void MyMol::PrintTopology(FILE                   *fp,
                aquad);
 
     T = -1;
-    if (getPropRef(MPO_QUADRUPOLE, iqmQM, method, basis, qm_conf,
+    if (getPropRef(MolPropObservable::QUADRUPOLE, iqmType::QM, method, basis, qm_conf,
                    qm_type, &value, &error,
                    &T, &myref, &mylot, vec, myQ))
     {
@@ -1955,7 +1958,7 @@ void MyMol::PrintTopology(FILE                   *fp,
             commercials.push_back(buf);
 
             T = -1;
-            if (getPropRef(MPO_POLARIZABILITY, iqmQM, method, basis, "",
+            if (getPropRef(MolPropObservable::POLARIZABILITY, iqmType::QM, method, basis, "",
                                       (char *)"electronic", &isoPol_elec_, &error,
                                       &T, &myref, &mylot, vec, alpha_elec_))
             {
@@ -2195,7 +2198,7 @@ immStatus MyMol::getExpProps(gmx_bool           bQM,
         std::vector<real> q;
         q.resize(natom, 0.0);
         qType qi = i.first;
-        if (getPropRef(MPO_CHARGE, iqmQM,
+        if (getPropRef(MolPropObservable::CHARGE, iqmType::QM,
                        method, basis, "",
                        qTypeName(qi),
                        &value, &error, &T,
@@ -2216,7 +2219,7 @@ immStatus MyMol::getExpProps(gmx_bool           bQM,
     T = 298.15;
     immStatus imm = immStatus::OK;
     if (bDHform &&
-        getProp(MPO_ENERGY, (bQM ? iqmQM : iqmExp),
+        getProp(MolPropObservable::ENERGY, (bQM ? iqmType::QM : iqmType::Exp),
                            method, basis, "",
                            (char *)"DeltaHform", &value, &error, &T))
     {
@@ -2234,7 +2237,7 @@ immStatus MyMol::getExpProps(gmx_bool           bQM,
         if (bZPE)
         {
 
-            if (getProp(MPO_ENERGY, iqmBoth,
+            if (getProp(MolPropObservable::ENERGY, iqmType::Both,
                                    method, basis, "",
                                    (char *)"ZPE", &ZPE, &error, &T))
             {
@@ -2255,7 +2258,7 @@ immStatus MyMol::getExpProps(gmx_bool           bQM,
     if (imm == immStatus::OK)
     {
         T = -1;
-        if (getPropRef(MPO_DIPOLE, iqmQM,
+        if (getPropRef(MolPropObservable::DIPOLE, iqmType::QM,
                        method, basis, "",
                        (char *)"electronic",
                        &value, &error, &T, &myref, &mylot,
@@ -2290,7 +2293,7 @@ immStatus MyMol::getExpProps(gmx_bool           bQM,
     if (immStatus::OK == imm)
     {
         T = -1;
-        if (getPropRef(MPO_QUADRUPOLE, iqmQM,
+        if (getPropRef(MolPropObservable::QUADRUPOLE, iqmType::QM,
                        method, basis, "",
                        (char *)"electronic",
                        &value, &error, &T, &myref, &mylot,
@@ -2299,7 +2302,7 @@ immStatus MyMol::getExpProps(gmx_bool           bQM,
             qProps_.find(qType::Elec)->second.setQuadrupole(quadrupole);
         }
         T = -1;
-        if (getPropRef(MPO_POLARIZABILITY, iqmQM,
+        if (getPropRef(MolPropObservable::POLARIZABILITY, iqmType::QM,
                        method, basis, "",
                        (char *)"electronic",
                        &isoPol_elec_, &error, &T,
@@ -2633,7 +2636,7 @@ void MyMol::initQgenResp(const Poldata     *pd,
     std::uniform_real_distribution<> uniform(0.0, 1.0);
     double                           cutoff = 0.01*maxESP;
  
-    auto ci = getCalcPropType(method, basis, &mylot, MPO_POTENTIAL, nullptr);
+    auto ci = getCalcPropType(method, basis, &mylot, MolPropObservable::POTENTIAL, nullptr);
     if (ci != EndExperiment())
     {
         int iesp = 0;

@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020
+ * Copyright (C) 2014-2021
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -34,6 +34,7 @@
 
 #include <cmath>
 
+#include <map>
 #include <string>
 #include <vector>
 
@@ -41,19 +42,52 @@
 #include "gromacs/utility/fatalerror.h"
 
 #include "communication.h"
-#include "composition.h"
 #include "gmx_simple_comm.h"
 #include "units.h"
 
-const char *mpo_name[MPO_NR] =
+std::map<MolPropObservable, const char *> mpo_name_ =
 {
-    "potential", "dipole", "quadrupole", "polarizability", "energy", "entropy", "charge"
+    { MolPropObservable::POTENTIAL, "potential" }, 
+    { MolPropObservable::DIPOLE, "dipole" }, 
+    { MolPropObservable::QUADRUPOLE, "quadrupole" },
+    { MolPropObservable::POLARIZABILITY, "polarizability" }, 
+    { MolPropObservable::ENERGY, "energy" }, 
+    { MolPropObservable::ENTROPY, "entropy" },
+    { MolPropObservable::CHARGE, "charge" }
 };
 
-const char *mpo_unit[MPO_NR] =
+std::map<MolPropObservable, const char *> mpo_unit_ =
 {
-    "e/nm", "D", "B", "\\AA$^3$", "kJ/mol", "J/mol K"
+    { MolPropObservable::POTENTIAL, "e/nm" }, 
+    { MolPropObservable::DIPOLE, "D" }, 
+    { MolPropObservable::QUADRUPOLE, "B" },
+    { MolPropObservable::POLARIZABILITY, "\\AA$^3$" }, 
+    { MolPropObservable::ENERGY, "kJ/mol" }, 
+    { MolPropObservable::ENTROPY, "J/mol K" },
+    { MolPropObservable::CHARGE, "e" }
 };
+
+const char *mpo_name(MolPropObservable MPO)
+{
+    return mpo_name_[MPO];
+}
+
+const char *mpo_unit(MolPropObservable MPO)
+{
+    return mpo_unit_[MPO];
+}
+
+MolPropObservable stringToMolPropObservable(const std::string &str)
+{
+    for (const auto &mn : mpo_name_)
+    {
+        if (strcasecmp(mn.second, str.c_str()) == 0)
+        {
+            return mn.first;
+        }
+    }
+    GMX_THROW(gmx::InvalidInputError(gmx::formatString("Cannot find MolPropObservable %s", str.c_str()).c_str()));
+}
 
 namespace alexandria
 {
@@ -751,7 +785,7 @@ bool Experiment::getHF(double *value) const
     bool        done = false;
     tensor      quad;
 
-    if (getVal((char *)"HF", MPO_ENERGY, value, &error, &T, vec, quad))
+    if (getVal((char *)"HF", MolPropObservable::ENERGY, value, &error, &T, vec, quad))
     {
         done = true;
     }
@@ -880,8 +914,8 @@ bool Experiment::getVal(const std::string &type,
 
     switch (mpo)
     {
-        case MPO_ENERGY:
-        case MPO_ENTROPY:
+        case MolPropObservable::ENERGY:
+        case MolPropObservable::ENTROPY:
             for (auto &mei : molecularEnergyConst())
             {
                 if (((type.size() == 0) || (type.compare(mei.getType()) == 0)) &&
@@ -894,7 +928,7 @@ bool Experiment::getVal(const std::string &type,
                 }
             }
             break;
-        case MPO_DIPOLE:
+        case MolPropObservable::DIPOLE:
             for (auto &mdp : dipoleConst())
             {
                 if (((type.size() == 0) || (type.compare(mdp.getType()) == 0))  &&
@@ -910,7 +944,7 @@ bool Experiment::getVal(const std::string &type,
                 }
             }
             break;
-        case MPO_POLARIZABILITY:
+        case MolPropObservable::POLARIZABILITY:
         {
             for (auto &mdp : polarizabilityConst())
             {
@@ -935,7 +969,7 @@ bool Experiment::getVal(const std::string &type,
             }
         }
         break;
-        case MPO_QUADRUPOLE:
+        case MolPropObservable::QUADRUPOLE:
             for (auto &mqi : quadrupoleConst())
             {
                 if (((type.size() == 0) || (type.compare(mqi.getType()) == 0)) &&
@@ -958,7 +992,7 @@ bool Experiment::getVal(const std::string &type,
                 }
             }
             break;
-        case MPO_CHARGE:
+        case MolPropObservable::CHARGE:
         {
             int i = 0;
             for (auto &mai : calcAtomConst())
@@ -1191,16 +1225,6 @@ CommunicationStatus Experiment::Send(t_commrec *cr, int dest) const
     return cs;
 }
 
-int MolProp::NAtom()
-{
-    if (mol_comp_.size() > 0)
-    {
-        int nat = mol_comp_[0].CountAtoms();
-        return nat;
-    }
-    return 0;
-}
-
 void MolProp::AddBond(Bond b)
 {
     BondConstIterator bi;
@@ -1230,6 +1254,36 @@ void MolProp::CheckConsistency()
 {
 }
 
+void MolProp::generateComposition()
+{
+    for (const auto &ex : exper_)
+    {
+        // Assume that if an experiment has 1 atom, it has all of them
+        if (ex.NAtom() > 0)
+        {
+            composition_.clear();
+            bool bHasAtomTypes = true;
+            for(const auto &ca : ex.calcAtomConst())
+            {
+                auto elem = ca.getName().c_str();
+                auto cc   = composition_.find(elem);
+                if (cc == composition_.end())
+                {
+                    composition_.insert(std::pair<const char *, int>(elem, 1));
+                }
+                else
+                {
+                    cc->second += 1;
+                }
+                bHasAtomTypes = bHasAtomTypes && !ca.getObtype().empty();
+            }
+            // Update the MolProp internal variables
+            hasAllAtomTypes_ = bHasAtomTypes;
+            natom_           = ex.NAtom(); 
+        }
+    }
+}
+
 bool MolProp::SearchCategory(const std::string &catname) const
 {
     for (auto &i : category_)
@@ -1240,24 +1294,6 @@ bool MolProp::SearchCategory(const std::string &catname) const
         }
     }
     return false;
-}
-
-void MolProp::DeleteComposition(const std::string &compname)
-{
-    std::remove_if(mol_comp_.begin(), mol_comp_.end(),
-                   [compname](MolecularComposition mc)
-                   {
-                       return (compname.compare(mc.getCompName()) == 0);
-                   });
-}
-
-void MolProp::AddComposition(MolecularComposition mc)
-{
-    MolecularCompositionIterator mci = SearchMolecularComposition(mc.getCompName());
-    if (mci == mol_comp_.end())
-    {
-        mol_comp_.push_back(mc);
-    }
 }
 
 bool MolProp::BondExists(Bond b)
@@ -1382,36 +1418,7 @@ int MolProp::Merge(const MolProp *src)
             AddExperiment(ca);
         }
     }
-    for (auto &mci : src->molecularCompositionConst())
-    {
-        alexandria::MolecularComposition mc(mci.getCompName());
-
-        for (auto &ani : mci.atomNumConst())
-        {
-            AtomNum an(ani.getAtom(), ani.getNumber());
-            mc.AddAtom(an);
-        }
-        AddComposition(mc);
-    }
     return nwarn;
-}
-
-MolecularCompositionIterator MolProp::SearchMolecularComposition(const std::string &str)
-{
-    return std::find_if(mol_comp_.begin(), mol_comp_.end(),
-                        [str](MolecularComposition const &mc)
-                        {
-                            return (str.compare(mc.getCompName()) == 0);
-                        });
-}
-
-MolecularCompositionConstIterator MolProp::SearchMolecularComposition(const std::string &str) const
-{
-    return std::find_if(mol_comp_.begin(), mol_comp_.end(),
-                        [str](MolecularComposition const &mc)
-                        {
-                            return (str.compare(mc.getCompName()) == 0);
-                        });
 }
 
 void MolProp::Dump(FILE *fp) const
@@ -1440,55 +1447,6 @@ void MolProp::Dump(FILE *fp) const
     }
 }
 
-bool MolProp::GenerateComposition()
-{
-    ExperimentIterator   ci;
-    CalcAtomIterator     cai;
-    CompositionSpecs     cs;
-    MolecularComposition mci_alexandria(cs.searchCS(iCalexandria)->name());
-
-    // Why was this again?
-    mol_comp_.clear();
-
-    int natoms = 0;
-    for (auto &ci : experimentConst())
-    {
-        /* This assumes we have either all atoms or none.
-         * A consistency check could be
-         * to compare the number of atoms to the formula */
-        int nat = 0;
-        for (auto &cai : ci.calcAtomConst())
-        {
-            nat++;
-            AtomNum ans(cai.getObtype(), 1);
-            mci_alexandria.AddAtom(ans);
-        }
-        natoms = std::max(natoms, nat);
-        if (mci_alexandria.CountAtoms() > 0)
-        {
-            break;
-        }
-    }
-
-    if (natoms == mci_alexandria.CountAtoms())
-    {
-        AddComposition(mci_alexandria);
-        if (nullptr != debug)
-        {
-            fprintf(debug, "LO_COMP: ");
-            for (auto &ani : mci_alexandria.atomNumConst())
-            {
-                fprintf(debug, " %s:%d",
-                        ani.getAtom().c_str(), ani.getNumber());
-            }
-            fprintf(debug, "\n");
-            fflush(debug);
-        }
-        return true;
-    }
-    return false;
-}
-
 static void add_element_toformula_(const char *elem, int number, char *formula, char *texform)
 {
     if (number > 0)
@@ -1511,28 +1469,20 @@ bool MolProp::GenerateFormula(gmx_atomprop_t ap)
 {
     char             myform[1280], texform[2560];
     std::vector<int> ncomp;
-    alexandria::MolecularCompositionIterator mci;
 
     ncomp.resize(110, 0);
     myform[0]  = '\0';
     texform[0] = '\0';
-    mci        = SearchMolecularComposition("bosque");
-    if (mci != mol_comp_.end())
-    {
-        for (auto &ani : mci->atomNumConst())
+    for(const auto &cc : composition_)
+    { 
+        real value;
+        if (gmx_atomprop_query(ap, epropElement, "???", cc.first, &value))
         {
-            int         cnumber, an;
-            real        value;
-            std::string catom = ani.getAtom();
-            cnumber = ani.getNumber();
-            if (gmx_atomprop_query(ap, epropElement, "???", catom.c_str(), &value))
+            int an = std::lround(value);
+            range_check(an, 0, 110);
+            if (an > 0)
             {
-                an = std::lround(value);
-                range_check(an, 0, 110);
-                if (an > 0)
-                {
-                    ncomp[an] += cnumber;
-                }
+                ncomp[an] += cc.second;
             }
         }
     }
@@ -1569,16 +1519,6 @@ bool MolProp::GenerateFormula(gmx_atomprop_t ap)
     return (strlen(myform) > 0);
 }
 
-bool MolProp::HasComposition(const std::string &composition) const
-{
-    return std::find_if(mol_comp_.begin(), mol_comp_.end(),
-                        [composition](const MolecularComposition &mi)
-                        {
-                            return mi.getCompName().compare(composition) == 0;
-                        }) != mol_comp_.end();
-}
-
-
 bool bCheckTemperature(double Tref, double T)
 {
     return (Tref < 0) || (fabs(T - Tref) < 0.05);
@@ -1613,7 +1553,7 @@ bool MolProp::getPropRef(MolPropObservable mpo, iqmType iQM,
     bool   done = false;
     double Told = *T;
 
-    if (iQM == iqmBoth)
+    if (iQM == iqmType::Both)
     {
         for (auto &ei : experimentConst())
         {
@@ -1631,7 +1571,7 @@ bool MolProp::getPropRef(MolPropObservable mpo, iqmType iQM,
             }
         }
     }
-    if (iQM == iqmExp)
+    if (iQM == iqmType::Exp)
     {
         for (auto &ei : experimentConst())
         {
@@ -1653,7 +1593,7 @@ bool MolProp::getPropRef(MolPropObservable mpo, iqmType iQM,
             }
         }
     }
-    else if (iQM == iqmQM)
+    else if (iQM == iqmType::QM)
     {
         for (auto &ci : experimentConst())
         {
@@ -1751,10 +1691,10 @@ ExperimentIterator MolProp::getCalcPropType(const std::string &method,
             bool done = false;
             switch (mpo)
             {
-                case MPO_POTENTIAL:
+                case MolPropObservable::POTENTIAL:
                     done = ci->NPotential() > 0;
                     break;
-                case MPO_DIPOLE:
+                case MolPropObservable::DIPOLE:
                     for (auto &mdp : ci->dipoleConst())
                     {
                         done = ((nullptr == type) ||
@@ -1765,7 +1705,7 @@ ExperimentIterator MolProp::getCalcPropType(const std::string &method,
                         }
                     }
                     break;
-                case MPO_QUADRUPOLE:
+                case MolPropObservable::QUADRUPOLE:
                     for (auto &mdp : ci->quadrupoleConst())
                     {
                         done = ((nullptr == type) ||
@@ -1776,7 +1716,7 @@ ExperimentIterator MolProp::getCalcPropType(const std::string &method,
                         }
                     }
                     break;
-                case MPO_POLARIZABILITY:
+                case MolPropObservable::POLARIZABILITY:
                     for (auto &mdp : ci->polarizabilityConst())
                     {
                         done = ((nullptr == type) ||
@@ -1787,8 +1727,8 @@ ExperimentIterator MolProp::getCalcPropType(const std::string &method,
                         }
                     }
                     break;
-                case MPO_ENERGY:
-                case MPO_ENTROPY:
+                case MolPropObservable::ENERGY:
+                case MolPropObservable::ENTROPY:
                     for (auto &mdp : ci->molecularEnergyConst())
                     {
                         done = ((nullptr == type) ||
@@ -1858,7 +1798,6 @@ CommunicationStatus MolProp::Send(t_commrec *cr, int dest) const
         gmx_send_str(cr, dest, &cid_);
         gmx_send_str(cr, dest, &inchi_);
         gmx_send_int(cr, dest, bond_.size());
-        gmx_send_int(cr, dest, mol_comp_.size());
         gmx_send_int(cr, dest, category_.size());
         gmx_send_int(cr, dest, exper_.size());
 
@@ -1869,19 +1808,6 @@ CommunicationStatus MolProp::Send(t_commrec *cr, int dest) const
             if (CS_OK != cs)
             {
                 break;
-            }
-        }
-
-        /* Send Composition */
-        if (CS_OK == cs)
-        {
-            for (auto &mci : molecularCompositionConst())
-            {
-                cs = mci.Send(cr, dest);
-                if (CS_OK != cs)
-                {
-                    break;
-                }
             }
         }
 
@@ -1929,7 +1855,7 @@ CommunicationStatus MolProp::Send(t_commrec *cr, int dest) const
 CommunicationStatus MolProp::Receive(t_commrec *cr, int src)
 {
     CommunicationStatus cs;
-    int                 Nbond, Nmol_comp, Ncategory, Nexper;
+    int                 Nbond, Ncategory, Nexper;
 
     /* Generic stuff */
     cs = gmx_recv_data(cr, src);
@@ -1947,7 +1873,6 @@ CommunicationStatus MolProp::Receive(t_commrec *cr, int src)
         gmx_recv_str(cr, src, &cid_);
         gmx_recv_str(cr, src, &inchi_);
         Nbond     = gmx_recv_int(cr, src);
-        Nmol_comp = gmx_recv_int(cr, src);
         Ncategory = gmx_recv_int(cr, src);
         Nexper    = gmx_recv_int(cr, src);
 
@@ -1963,17 +1888,6 @@ CommunicationStatus MolProp::Receive(t_commrec *cr, int src)
             if (CS_OK == cs)
             {
                 AddBond(b);
-            }
-        }
-
-        //! Receive Compositions
-        for (int n = 0; (CS_OK == cs) && (n < Nmol_comp); n++)
-        {
-            MolecularComposition mc;
-            cs = mc.Receive(cr, src);
-            if (CS_OK == cs)
-            {
-                AddComposition(mc);
             }
         }
 

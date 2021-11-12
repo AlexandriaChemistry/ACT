@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020 
+ * Copyright (C) 2014-2021
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -50,7 +50,15 @@
 namespace alexandria
 {
 
-enum class CalcDev { Parallel = 1, Master = 2, Final = 3 };
+//! How to perform the calculation of deviations (chi-squared)
+enum class CalcDev { 
+    //! Do it in parallel
+    Parallel = 1,
+    //! Do it on the master only
+    Master = 2,
+    //! Do the final one only (typically on the master)
+    Final = 3
+};
 
 /*! \brief
  * Does Bayesian Monte Carlo (BMC) simulation to find the best paramater set,
