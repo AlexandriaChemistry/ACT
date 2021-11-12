@@ -116,26 +116,20 @@ public:
               const int      popSize);
 
     /*!
-     * Split <fitA> into 2 runs, sort both runs into <fitB>, merge both runs from <fitB> into <fitA>
-     * @param popB      population B
-     * @param fitB      fitness B
-     * @param left      left index (inclusive)
-     * @param right     right index (exclusive)
-     * @param popA      population A
-     * @param fitA      fitness A
+     * Split <fitness> into 2 parts, one left of the pivot element and one to the right of it, and sort both.
+     * @param fitness   the population vector
+     * @param low       the left-most point of the part of the population vector in this recursion
+     * @param high      the right-most point of the part of the population vector in this recursion
      */
     void quickSort(vector&       fitness,
                    const int     low,
                    const int     high);
 
     /*!
-     * Split <fitA> into 2 runs, sort both runs into <fitB>, merge both runs from <fitB> into <fitA>
-     * @param popB      population B
-     * @param fitB      fitness B
-     * @param left      left index (inclusive)
-     * @param right     right index (exclusive)
-     * @param popA      population A
-     * @param fitA      fitness A
+     * Find the pivot element and sort everything by comparing with it.
+     * @param fitness   the population vector
+     * @param low       the left-most point of the part of the population vector in this recursion
+     * @param high      the right-most point of the part of the population vector in this recursion
      */
     int partition(vector&       fitness,
                   const int     low,
