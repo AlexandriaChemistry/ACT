@@ -7,9 +7,9 @@
 MergeSorter::MergeSorter(const int  popSize,
                          const int  chromosomeLength) {
 
-    tmpFitness = vector(popSize);
-    tmpPop = allocateMatrix(popSize, chromosomeLength);
-    this->chromosomeLength = chromosomeLength;
+    tmpFitness              = vector(popSize);
+    tmpPop                  = allocateMatrix(popSize, chromosomeLength);
+    this->chromosomeLength  = chromosomeLength;
 
 }
 

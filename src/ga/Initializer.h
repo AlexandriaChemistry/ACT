@@ -24,9 +24,9 @@ public:
 class SimpleInitializer : public Initializer {
 
     // Random number generation
-    std::random_device rd;  // Will be used to obtain a seed for the random number engine
-    std::mt19937 gen; // Standard mersenne_twister_engine seeded with rd()
-    std::uniform_real_distribution<double> dis;
+    std::random_device                      rd;
+    std::mt19937                            gen;
+    std::uniform_real_distribution<double>  dis;
 
 public:
     /*!

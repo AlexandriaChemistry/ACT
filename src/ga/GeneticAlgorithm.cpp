@@ -55,9 +55,9 @@ const ga_result_t GeneticAlgorithm::evolve(const double     prCross,
     if (verbose >= 1) printf("\nStarting evolution...\n");
 
     // Random number generation
-    std::random_device rd;  // Will be used to obtain a seed for the random number engine
-    std::mt19937 gen(rd()); // Standard mersenne_twister_engine seeded with rd()
-    std::uniform_real_distribution<> dis(0.0, 1.0);
+    std::random_device                      rd;  // Will be used to obtain a seed for the random number engine
+    std::mt19937                            gen(rd()); // Standard mersenne_twister_engine seeded with rd()
+    std::uniform_real_distribution<double>  dis(0.0, 1.0);
 
     // Iteration variables
     int i, j, k;
