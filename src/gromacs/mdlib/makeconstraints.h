@@ -49,7 +49,6 @@
 #include "gromacs/compat/make_unique.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdtypes/inputrec.h"
-#include "gromacs/pulling/pull.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/mtop_util.h"
 
@@ -103,11 +102,7 @@ std::unique_ptr<Constraints> makeConstraints(const gmx_mtop_t &mtop,
     int numConstraints = (gmx_mtop_ftype_count(mtop, F_CONSTR) +
                           gmx_mtop_ftype_count(mtop, F_CONSTRNC));
     int numSettles = gmx_mtop_ftype_count(mtop, F_SETTLE);
-    GMX_RELEASE_ASSERT(!ir.bPull || ir.pull_work != nullptr,
-                       "When COM pulling is active, it must be initialized before constraints are initialized");
-    bool doPullingWithConstraints = ir.bPull && pull_have_constraint(ir.pull_work);
-    if (numConstraints + numSettles == 0 &&
-        !doPullingWithConstraints && !doEssentialDynamics)
+    if (numConstraints + numSettles)
     {
         // No work, so don't make a Constraints object.
         return nullptr;

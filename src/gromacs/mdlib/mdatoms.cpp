@@ -59,45 +59,6 @@
 
 #define ALMOST_ZERO 1e-30
 
-static real getAtomRow(int atomnumber)
-{
-    if (atomnumber == 1 || atomnumber == 2)
-    {
-        return 1;
-    }
-    else if (atomnumber >= 3 && atomnumber <= 10)
-    {
-        return 2;
-    }
-    else if (atomnumber >= 11 && atomnumber <= 18)
-    {
-        return 3;
-    }
-    else if (atomnumber >= 19 && atomnumber <= 36)
-    {
-        return 4;
-    }
-    else if (atomnumber >= 37 && atomnumber <= 54)
-    {
-        return 5;
-    }
-    else if (atomnumber >= 55 && atomnumber <= 86)
-    {
-        return 6;
-    }
-    else if (atomnumber >= 87 && atomnumber <= 118)
-    {
-        return 7;
-    }
-    else
-    {
-        return 0;
-        //gmx_fatal(FARGS, "Atom number does not exist in periodic table %d.\n", atomnumber);
-    }
-}
-
-//t_mdatoms *init_mdatoms(FILE *fp, const gmx_mtop_t *mtop, gmx_bool bFreeEnergy)
-
 namespace gmx
 {
 

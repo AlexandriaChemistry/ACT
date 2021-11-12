@@ -55,7 +55,6 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/mdtypes/pull-params.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/boxutilities.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -100,27 +99,17 @@ static const char *tpx_tag = TPX_TAG_RELEASE;
  * according to the value of file_version.
  */
 enum tpxv {
-    tpxv_ComputationalElectrophysiology = 96,                /**< support for ion/water position swaps (computational electrophysiology) */
     tpxv_Use64BitRandomSeed,                                 /**< change ld_seed from int to int64_t */
     tpxv_RestrictedBendingAndCombinedAngleTorsionPotentials, /**< potentials for supporting coarse-grained force fields */
     tpxv_InteractiveMolecularDynamics,                       /**< interactive molecular dynamics (IMD) */
     tpxv_RemoveObsoleteParameters1,                          /**< remove optimize_fft, dihre_fc, nstcheckpoint */
-    tpxv_PullCoordTypeGeom,                                  /**< add pull type and geometry per group and flat-bottom */
-    tpxv_PullGeomDirRel,                                     /**< add pull geometry direction-relative */
     tpxv_IntermolecularBondeds,                              /**< permit inter-molecular bonded interactions in the topology */
-    tpxv_CompElWithSwapLayerOffset,                          /**< added parameters for improved CompEl setups */
-    tpxv_CompElPolyatomicIonsAndMultipleIonTypes,            /**< CompEl now can handle polyatomic ions and more than two types of ions */
     tpxv_RemoveAdress,                                       /**< removed support for AdResS */
-    tpxv_PullCoordNGroup,                                    /**< add ngroup to pull coord */
     tpxv_RemoveTwinRange,                                    /**< removed support for twin-range interactions */
-    tpxv_ReplacePullPrintCOM12,                              /**< Replaced print-com-1, 2 with pull-print-com */
-    tpxv_PullExternalPotential,                              /**< Added pull type external potential */
     tpxv_GenericParamsForElectricField,                      /**< Introduced KeyValueTree and moved electric field parameters */
     tpxv_AcceleratedWeightHistogram,                         /**< sampling with accelerated weight histogram method (AWH) */
     tpxv_RemoveImplicitSolvation,                            /**< removed support for implicit solvation */
-    tpxv_PullPrevStepCOMAsReference,                         /**< Enabled using the COM of the pull group of the last frame as reference for PBC */
     tpxv_MimicQMMM,                                          /**< Inroduced support for MiMiC QM/MM interface */
-    tpxv_PullAverage,                                        /**< Added possibility to output average pull force and position */
     tpxv_Count                                               /**< the total number of tpxv versions */
 };
 
@@ -208,159 +197,6 @@ static const t_ftupd ftupd[] = {
 /* Needed for backward compatibility */
 #define MAXNODES 256
 
-/**************************************************************
- *
- * Now the higer level routines that do io of the structures and arrays
- *
- **************************************************************/
-static void do_pullgrp_tpx_pre95(t_fileio     *fio,
-                                 t_pull_group *pgrp,
-                                 t_pull_coord *pcrd,
-                                 gmx_bool      bRead)
-{
-    rvec tmp;
-
-    gmx_fio_do_int(fio, pgrp->nat);
-    if (bRead)
-    {
-        snew(pgrp->ind, pgrp->nat);
-    }
-    gmx_fio_ndo_int(fio, pgrp->ind, pgrp->nat);
-    gmx_fio_do_int(fio, pgrp->nweight);
-    if (bRead)
-    {
-        snew(pgrp->weight, pgrp->nweight);
-    }
-    gmx_fio_ndo_real(fio, pgrp->weight, pgrp->nweight);
-    gmx_fio_do_int(fio, pgrp->pbcatom);
-    gmx_fio_do_rvec(fio, pcrd->vec);
-    clear_rvec(pcrd->origin);
-    gmx_fio_do_rvec(fio, tmp);
-    pcrd->init = tmp[0];
-    gmx_fio_do_real(fio, pcrd->rate);
-    gmx_fio_do_real(fio, pcrd->k);
-    gmx_fio_do_real(fio, pcrd->kB);
-}
-
-static void do_pull_group(t_fileio *fio, t_pull_group *pgrp, gmx_bool bRead)
-{
-    gmx_fio_do_int(fio, pgrp->nat);
-    if (bRead)
-    {
-        snew(pgrp->ind, pgrp->nat);
-    }
-    gmx_fio_ndo_int(fio, pgrp->ind, pgrp->nat);
-    gmx_fio_do_int(fio, pgrp->nweight);
-    if (bRead)
-    {
-        snew(pgrp->weight, pgrp->nweight);
-    }
-    gmx_fio_ndo_real(fio, pgrp->weight, pgrp->nweight);
-    gmx_fio_do_int(fio, pgrp->pbcatom);
-}
-
-static void do_pull_coord(t_fileio *fio, t_pull_coord *pcrd,
-                          gmx_bool bRead, int file_version,
-                          int ePullOld, int eGeomOld, ivec dimOld)
-{
-    if (file_version >= tpxv_PullCoordNGroup)
-    {
-        gmx_fio_do_int(fio,  pcrd->eType);
-        if (file_version >= tpxv_PullExternalPotential)
-        {
-            if (pcrd->eType == epullEXTERNAL)
-            {
-                if (bRead)
-                {
-                    char buf[STRLEN];
-
-                    gmx_fio_do_string(fio, buf);
-                    pcrd->externalPotentialProvider = gmx_strdup(buf);
-                }
-                else
-                {
-                    gmx_fio_do_string(fio, pcrd->externalPotentialProvider);
-                }
-            }
-            else
-            {
-                pcrd->externalPotentialProvider = nullptr;
-            }
-        }
-        else
-        {
-            if (bRead)
-            {
-                pcrd->externalPotentialProvider = nullptr;
-            }
-        }
-        /* Note that we try to support adding new geometries without
-         * changing the tpx version. This requires checks when printing the
-         * geometry string and a check and fatal_error in init_pull.
-         */
-        gmx_fio_do_int(fio,  pcrd->eGeom);
-        gmx_fio_do_int(fio,  pcrd->ngroup);
-        if (pcrd->ngroup <= c_pullCoordNgroupMax)
-        {
-            gmx_fio_ndo_int(fio, pcrd->group, pcrd->ngroup);
-        }
-        else
-        {
-            /* More groups in file than supported, this must be a new geometry
-             * that is not supported by our current code. Since we will not
-             * use the groups for this coord (checks in the pull and WHAM code
-             * ensure this), we can ignore the groups and set ngroup=0.
-             */
-            int *dum;
-            snew(dum, pcrd->ngroup);
-            gmx_fio_ndo_int(fio, dum, pcrd->ngroup);
-            sfree(dum);
-
-            pcrd->ngroup = 0;
-        }
-        gmx_fio_do_ivec(fio, pcrd->dim);
-    }
-    else
-    {
-        pcrd->ngroup = 2;
-        gmx_fio_do_int(fio, pcrd->group[0]);
-        gmx_fio_do_int(fio, pcrd->group[1]);
-        if (file_version >= tpxv_PullCoordTypeGeom)
-        {
-            pcrd->ngroup = (pcrd->eGeom == epullgDIRRELATIVE ? 4 : 2);
-            gmx_fio_do_int(fio,  pcrd->eType);
-            gmx_fio_do_int(fio,  pcrd->eGeom);
-            if (pcrd->ngroup == 4)
-            {
-                gmx_fio_do_int(fio, pcrd->group[2]);
-                gmx_fio_do_int(fio, pcrd->group[3]);
-            }
-            gmx_fio_do_ivec(fio, pcrd->dim);
-        }
-        else
-        {
-            pcrd->eType = ePullOld;
-            pcrd->eGeom = eGeomOld;
-            copy_ivec(dimOld, pcrd->dim);
-        }
-    }
-    gmx_fio_do_rvec(fio, pcrd->origin);
-    gmx_fio_do_rvec(fio, pcrd->vec);
-    if (file_version >= tpxv_PullCoordTypeGeom)
-    {
-        gmx_fio_do_gmx_bool(fio, pcrd->bStart);
-    }
-    else
-    {
-        /* This parameter is only printed, but not actually used by mdrun */
-        pcrd->bStart = FALSE;
-    }
-    gmx_fio_do_real(fio, pcrd->init);
-    gmx_fio_do_real(fio, pcrd->rate);
-    gmx_fio_do_real(fio, pcrd->k);
-    gmx_fio_do_real(fio, pcrd->kB);
-}
-
 static void do_expandedvals(t_fileio *fio, t_expanded *expand, t_lambda *fepvals, gmx_bool bRead, int file_version)
 {
     int      n_lambda = fepvals->n_lambda;
@@ -422,16 +258,6 @@ static void do_simtempvals(t_fileio *fio, t_simtemp *simtemp, int n_lambda, gmx_
             gmx_fio_ndo_real(fio, simtemp->temperatures, n_lambda);
         }
     }
-}
-
-static void do_imd(t_fileio *fio, t_IMD *imd, gmx_bool bRead)
-{
-    gmx_fio_do_int(fio, imd->nat);
-    if (bRead)
-    {
-        snew(imd->ind, imd->nat);
-    }
-    gmx_fio_ndo_int(fio, imd->ind, imd->nat);
 }
 
 static void do_fepvals(t_fileio *fio, t_lambda *fepvals, gmx_bool bRead, int file_version)
@@ -635,292 +461,6 @@ static void do_fepvals(t_fileio *fio, t_lambda *fepvals, gmx_bool bRead, int fil
         fepvals->lambda_start_n = 0;
         fepvals->lambda_stop_n  = fepvals->n_lambda;
     }
-}
-
-static void do_pull(t_fileio *fio, pull_params_t *pull, gmx_bool bRead,
-                    int file_version, int ePullOld)
-{
-    int  eGeomOld = -1;
-    ivec dimOld;
-    int  g;
-
-    if (file_version >= 95)
-    {
-        gmx_fio_do_int(fio, pull->ngroup);
-    }
-    gmx_fio_do_int(fio, pull->ncoord);
-    if (file_version < 95)
-    {
-        pull->ngroup = pull->ncoord + 1;
-    }
-    if (file_version < tpxv_PullCoordTypeGeom)
-    {
-        real dum;
-
-        gmx_fio_do_int(fio, eGeomOld);
-        gmx_fio_do_ivec(fio, dimOld);
-        /* The inner cylinder radius, now removed */
-        gmx_fio_do_real(fio, dum);
-    }
-    gmx_fio_do_real(fio, pull->cylinder_r);
-    gmx_fio_do_real(fio, pull->constr_tol);
-    if (file_version >= 95)
-    {
-        gmx_fio_do_gmx_bool(fio, pull->bPrintCOM);
-        /* With file_version < 95 this value is set below */
-    }
-    if (file_version >= tpxv_ReplacePullPrintCOM12)
-    {
-        gmx_fio_do_gmx_bool(fio, pull->bPrintRefValue);
-        gmx_fio_do_gmx_bool(fio, pull->bPrintComp);
-    }
-    else if (file_version >= tpxv_PullCoordTypeGeom)
-    {
-        int idum;
-        gmx_fio_do_int(fio, idum); /* used to be bPrintCOM2 */
-        gmx_fio_do_gmx_bool(fio, pull->bPrintRefValue);
-        gmx_fio_do_gmx_bool(fio, pull->bPrintComp);
-    }
-    else
-    {
-        pull->bPrintRefValue = FALSE;
-        pull->bPrintComp     = TRUE;
-    }
-    gmx_fio_do_int(fio, pull->nstxout);
-    gmx_fio_do_int(fio, pull->nstfout);
-    if (file_version >= tpxv_PullPrevStepCOMAsReference)
-    {
-        gmx_fio_do_gmx_bool(fio, pull->bSetPbcRefToPrevStepCOM);
-    }
-    else
-    {
-        pull->bSetPbcRefToPrevStepCOM = FALSE;
-    }
-    if (bRead)
-    {
-        snew(pull->group, pull->ngroup);
-        snew(pull->coord, pull->ncoord);
-    }
-    if (file_version < 95)
-    {
-        /* epullgPOS for position pulling, before epullgDIRPBC was removed */
-        if (eGeomOld == epullgDIRPBC)
-        {
-            gmx_fatal(FARGS, "pull-geometry=position is no longer supported");
-        }
-        if (eGeomOld > epullgDIRPBC)
-        {
-            eGeomOld -= 1;
-        }
-
-        for (g = 0; g < pull->ngroup; g++)
-        {
-            /* We read and ignore a pull coordinate for group 0 */
-            do_pullgrp_tpx_pre95(fio, &pull->group[g], &pull->coord[std::max(g-1, 0)],
-                                 bRead);
-            if (g > 0)
-            {
-                pull->coord[g-1].group[0] = 0;
-                pull->coord[g-1].group[1] = g;
-            }
-        }
-
-        pull->bPrintCOM = (pull->group[0].nat > 0);
-    }
-    else
-    {
-        for (g = 0; g < pull->ngroup; g++)
-        {
-            do_pull_group(fio, &pull->group[g], bRead);
-        }
-        for (g = 0; g < pull->ncoord; g++)
-        {
-            do_pull_coord(fio, &pull->coord[g],
-                          bRead, file_version, ePullOld, eGeomOld, dimOld);
-        }
-    }
-    if (file_version >= tpxv_PullAverage)
-    {
-        gmx_bool v;
-
-        v                  = pull->bXOutAverage;
-        gmx_fio_do_gmx_bool(fio, v);
-        pull->bXOutAverage = v;
-        v                  = pull->bFOutAverage;
-        gmx_fio_do_gmx_bool(fio, v);
-        pull->bFOutAverage = v;
-    }
-}
-
-
-static void do_rotgrp(t_fileio *fio, t_rotgrp *rotg, gmx_bool bRead)
-{
-    gmx_fio_do_int(fio, rotg->eType);
-    gmx_fio_do_int(fio, rotg->bMassW);
-    gmx_fio_do_int(fio, rotg->nat);
-    if (bRead)
-    {
-        snew(rotg->ind, rotg->nat);
-    }
-    gmx_fio_ndo_int(fio, rotg->ind, rotg->nat);
-    if (bRead)
-    {
-        snew(rotg->x_ref, rotg->nat);
-    }
-    gmx_fio_ndo_rvec(fio, rotg->x_ref, rotg->nat);
-    gmx_fio_do_rvec(fio, rotg->inputVec);
-    gmx_fio_do_rvec(fio, rotg->pivot);
-    gmx_fio_do_real(fio, rotg->rate);
-    gmx_fio_do_real(fio, rotg->k);
-    gmx_fio_do_real(fio, rotg->slab_dist);
-    gmx_fio_do_real(fio, rotg->min_gaussian);
-    gmx_fio_do_real(fio, rotg->eps);
-    gmx_fio_do_int(fio, rotg->eFittype);
-    gmx_fio_do_int(fio, rotg->PotAngle_nstep);
-    gmx_fio_do_real(fio, rotg->PotAngle_step);
-}
-
-static void do_rot(t_fileio *fio, t_rot *rot, gmx_bool bRead)
-{
-    int g;
-
-    gmx_fio_do_int(fio, rot->ngrp);
-    gmx_fio_do_int(fio, rot->nstrout);
-    gmx_fio_do_int(fio, rot->nstsout);
-    if (bRead)
-    {
-        snew(rot->grp, rot->ngrp);
-    }
-    for (g = 0; g < rot->ngrp; g++)
-    {
-        do_rotgrp(fio, &rot->grp[g], bRead);
-    }
-}
-
-
-static void do_swapgroup(t_fileio *fio, t_swapGroup *g, gmx_bool bRead)
-{
-
-    /* Name of the group or molecule */
-    if (bRead)
-    {
-        char buf[STRLEN];
-
-        gmx_fio_do_string(fio, buf);
-        g->molname = gmx_strdup(buf);
-    }
-    else
-    {
-        gmx_fio_do_string(fio, g->molname);
-    }
-
-    /* Number of atoms in the group */
-    gmx_fio_do_int(fio, g->nat);
-
-    /* The group's atom indices */
-    if (bRead)
-    {
-        snew(g->ind, g->nat);
-    }
-    gmx_fio_ndo_int(fio, g->ind, g->nat);
-
-    /* Requested counts for compartments A and B */
-    gmx_fio_ndo_int(fio, g->nmolReq, eCompNR);
-}
-
-static void do_swapcoords_tpx(t_fileio *fio, t_swapcoords *swap, gmx_bool bRead, int file_version)
-{
-    /* Enums for better readability of the code */
-    enum {
-        eCompA = 0, eCompB
-    };
-    enum {
-        eChannel0 = 0, eChannel1
-    };
-
-
-    if (file_version >= tpxv_CompElPolyatomicIonsAndMultipleIonTypes)
-    {
-        /* The total number of swap groups is the sum of the fixed groups
-         * (split0, split1, solvent), and the user-defined groups (2+ types of ions)
-         */
-        gmx_fio_do_int(fio, swap->ngrp);
-        if (bRead)
-        {
-            snew(swap->grp, swap->ngrp);
-        }
-        for (int ig = 0; ig < swap->ngrp; ig++)
-        {
-            do_swapgroup(fio, &swap->grp[ig], bRead);
-        }
-        gmx_fio_do_gmx_bool(fio, swap->massw_split[eChannel0]);
-        gmx_fio_do_gmx_bool(fio, swap->massw_split[eChannel1]);
-        gmx_fio_do_int(fio, swap->nstswap);
-        gmx_fio_do_int(fio, swap->nAverage);
-        gmx_fio_do_real(fio, swap->threshold);
-        gmx_fio_do_real(fio, swap->cyl0r);
-        gmx_fio_do_real(fio, swap->cyl0u);
-        gmx_fio_do_real(fio, swap->cyl0l);
-        gmx_fio_do_real(fio, swap->cyl1r);
-        gmx_fio_do_real(fio, swap->cyl1u);
-        gmx_fio_do_real(fio, swap->cyl1l);
-    }
-    else
-    {
-        /*** Support reading older CompEl .tpr files ***/
-
-        /* In the original CompEl .tpr files, we always have 5 groups: */
-        swap->ngrp = 5;
-        snew(swap->grp, swap->ngrp);
-
-        swap->grp[eGrpSplit0 ].molname = gmx_strdup("split0" );  // group 0: split0
-        swap->grp[eGrpSplit1 ].molname = gmx_strdup("split1" );  // group 1: split1
-        swap->grp[eGrpSolvent].molname = gmx_strdup("solvent");  // group 2: solvent
-        swap->grp[3          ].molname = gmx_strdup("anions" );  // group 3: anions
-        swap->grp[4          ].molname = gmx_strdup("cations");  // group 4: cations
-
-        gmx_fio_do_int(fio, swap->grp[3].nat);
-        gmx_fio_do_int(fio, swap->grp[eGrpSolvent].nat);
-        gmx_fio_do_int(fio, swap->grp[eGrpSplit0].nat);
-        gmx_fio_do_gmx_bool(fio, swap->massw_split[eChannel0]);
-        gmx_fio_do_int(fio, swap->grp[eGrpSplit1].nat);
-        gmx_fio_do_gmx_bool(fio, swap->massw_split[eChannel1]);
-        gmx_fio_do_int(fio, swap->nstswap);
-        gmx_fio_do_int(fio, swap->nAverage);
-        gmx_fio_do_real(fio, swap->threshold);
-        gmx_fio_do_real(fio, swap->cyl0r);
-        gmx_fio_do_real(fio, swap->cyl0u);
-        gmx_fio_do_real(fio, swap->cyl0l);
-        gmx_fio_do_real(fio, swap->cyl1r);
-        gmx_fio_do_real(fio, swap->cyl1u);
-        gmx_fio_do_real(fio, swap->cyl1l);
-
-        // The order[] array keeps compatibility with older .tpr files
-        // by reading in the groups in the classic order
-        {
-            const int order[4] = {3, eGrpSolvent, eGrpSplit0, eGrpSplit1 };
-
-            for (int ig = 0; ig < 4; ig++)
-            {
-                int g = order[ig];
-                snew(swap->grp[g].ind, swap->grp[g].nat);
-                gmx_fio_ndo_int(fio, swap->grp[g].ind, swap->grp[g].nat);
-            }
-        }
-
-        for (int j = eCompA; j <= eCompB; j++)
-        {
-            gmx_fio_do_int(fio, swap->grp[3].nmolReq[j]); // group 3 = anions
-            gmx_fio_do_int(fio, swap->grp[4].nmolReq[j]); // group 4 = cations
-        }
-    }                                                     /* End support reading older CompEl .tpr files */
-
-    if (file_version >= tpxv_CompElWithSwapLayerOffset)
-    {
-        gmx_fio_do_real(fio, swap->bulkOffset[eCompA]);
-        gmx_fio_do_real(fio, swap->bulkOffset[eCompB]);
-    }
-
 }
 
 static void do_legacy_efield(t_fileio *fio, gmx::KeyValueTreeObjectBuilder *root)
@@ -1380,68 +920,6 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
         ir->bAdress = FALSE;
     }
 
-    /* pull stuff */
-    {
-        int ePullOld = 0;
-
-        if (file_version >= tpxv_PullCoordTypeGeom)
-        {
-            gmx_fio_do_gmx_bool(fio, ir->bPull);
-        }
-        else
-        {
-            gmx_fio_do_int(fio, ePullOld);
-            ir->bPull = (ePullOld > 0);
-            /* We removed the first ePull=ePullNo for the enum */
-            ePullOld -= 1;
-        }
-        if (ir->bPull)
-        {
-            if (bRead)
-            {
-                snew(ir->pull, 1);
-            }
-            do_pull(fio, ir->pull, bRead, file_version, ePullOld);
-        }
-    }
-
-    /* Enforced rotation */
-    if (file_version >= 74)
-    {
-        gmx_fio_do_gmx_bool(fio, ir->bRot);
-        if (ir->bRot)
-        {
-            if (bRead)
-            {
-                snew(ir->rot, 1);
-            }
-            do_rot(fio, ir->rot, bRead);
-        }
-    }
-    else
-    {
-        ir->bRot = FALSE;
-    }
-
-    /* Interactive molecular dynamics */
-    if (file_version >= tpxv_InteractiveMolecularDynamics)
-    {
-        gmx_fio_do_gmx_bool(fio, ir->bIMD);
-        if (ir->bIMD)
-        {
-            if (bRead)
-            {
-                snew(ir->imd, 1);
-            }
-            do_imd(fio, ir->imd, bRead);
-        }
-    }
-    else
-    {
-        /* We don't support IMD sessions for old .tpr files */
-        ir->bIMD = FALSE;
-    }
-
     /* grpopts stuff */
     gmx_fio_do_int(fio, ir->opts.ngtc);
     if (file_version >= 69)
@@ -1516,20 +994,6 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     if (file_version < tpxv_GenericParamsForElectricField)
     {
         do_legacy_efield(fio, &paramsObj);
-    }
-
-    /* Swap ions */
-    if (file_version >= tpxv_ComputationalElectrophysiology)
-    {
-        gmx_fio_do_int(fio, ir->eSwapCoords);
-        if (ir->eSwapCoords != eswapNO)
-        {
-            if (bRead)
-            {
-                snew(ir->swap, 1);
-            }
-            do_swapcoords_tpx(fio, ir->swap, bRead, file_version);
-        }
     }
 
     /* QMMM stuff */

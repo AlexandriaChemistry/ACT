@@ -59,7 +59,6 @@
 #include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/mdtypes/pull-params.h"
 #include "gromacs/options/options.h"
 #include "gromacs/options/treesupport.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -104,8 +103,6 @@ typedef struct t_inputrec_strings
          imd_grp[STRLEN];
     char   fep_lambda[efptNR][STRLEN];
     char   lambda_weights[STRLEN];
-    char **pull_grp;
-    char **rot_grp;
     char   anneal[STRLEN], anneal_npoints[STRLEN],
            anneal_time[STRLEN], anneal_temp[STRLEN];
     char   QMmethod[STRLEN], QMbasis[STRLEN], QMcharge[STRLEN], QMmult[STRLEN],
@@ -1829,7 +1826,6 @@ void get_ir(const char *mdparin, const char *mdparout,
     replace_inp_entry(inp, "adress_do_hybridpairs", nullptr);
     replace_inp_entry(inp, "rlistlong", nullptr);
     replace_inp_entry(inp, "nstcalclr", nullptr);
-    replace_inp_entry(inp, "pull-print-com2", nullptr);
     replace_inp_entry(inp, "gb-algorithm", nullptr);
     replace_inp_entry(inp, "nstgbradii", nullptr);
     replace_inp_entry(inp, "rgbradii", nullptr);
@@ -1849,7 +1845,6 @@ void get_ir(const char *mdparin, const char *mdparout,
     replace_inp_entry(inp, "nstxtcout", "nstxout-compressed");
     replace_inp_entry(inp, "xtc-grps", "compressed-x-grps");
     replace_inp_entry(inp, "xtc-precision", "compressed-x-precision");
-    replace_inp_entry(inp, "pull-print-com1", "pull-print-com");
 
     printStringNewline(&inp, "VARIOUS PREPROCESSING OPTIONS");
     printStringNoNewline(&inp, "Preprocessor information: use cpp syntax.");
@@ -2080,35 +2075,6 @@ void get_ir(const char *mdparin, const char *mdparout,
     setStringEntry(&inp, "wall-density",  is->wall_density,  nullptr);
     ir->wall_ewald_zfac = get_ereal(&inp, "wall-ewald-zfac", 3, wi);
 
-    /* COM pulling */
-    printStringNewline(&inp, "COM PULLING");
-    ir->bPull = (get_eeenum(&inp, "pull", yesno_names, wi) != 0);
-    if (ir->bPull)
-    {
-        snew(ir->pull, 1);
-        is->pull_grp = read_pullparams(&inp, ir->pull, wi);
-    }
-
-    /* Enforced rotation */
-    printStringNewline(&inp, "ENFORCED ROTATION");
-    printStringNoNewline(&inp, "Enforced rotation: No or Yes");
-    ir->bRot = (get_eeenum(&inp, "rotation", yesno_names, wi) != 0);
-    if (ir->bRot)
-    {
-        snew(ir->rot, 1);
-        is->rot_grp = read_rotparams(&inp, ir->rot, wi);
-    }
-
-    /* Interactive MD */
-    ir->bIMD = FALSE;
-    printStringNewline(&inp, "Group to display and/or manipulate in interactive MD session");
-    setStringEntry(&inp, "IMD-group", is->imd_grp, nullptr);
-    if (is->imd_grp[0] != '\0')
-    {
-        snew(ir->imd, 1);
-        ir->bIMD = TRUE;
-    }
-
     /* Refinement */
     printStringNewline(&inp, "NMR refinement stuff");
     printStringNoNewline(&inp, "Distance restraints type: No, Simple or Ensemble");
@@ -2207,85 +2173,6 @@ void get_ir(const char *mdparin, const char *mdparout,
         mdModules->adjustInputrecBasedOnModules(ir);
         errorHandler.setBackMapping(result.backMapping());
         mdModules->assignOptionsToModules(*ir->params, &errorHandler);
-    }
-
-    /* Ion/water position swapping ("computational electrophysiology") */
-    printStringNewline(&inp, "Ion/water position swapping for computational electrophysiology setups");
-    printStringNoNewline(&inp, "Swap positions along direction: no, X, Y, Z");
-    ir->eSwapCoords = get_eeenum(&inp, "swapcoords", eSwapTypes_names, wi);
-    if (ir->eSwapCoords != eswapNO)
-    {
-        char buf[STRLEN];
-        int  nIonTypes;
-
-
-        snew(ir->swap, 1);
-        printStringNoNewline(&inp, "Swap attempt frequency");
-        ir->swap->nstswap = get_eint(&inp, "swap-frequency", 1, wi);
-        printStringNoNewline(&inp, "Number of ion types to be controlled");
-        nIonTypes = get_eint(&inp, "iontypes", 1, wi);
-        if (nIonTypes < 1)
-        {
-            warning_error(wi, "You need to provide at least one ion type for position exchanges.");
-        }
-        ir->swap->ngrp = nIonTypes + eSwapFixedGrpNR;
-        snew(ir->swap->grp, ir->swap->ngrp);
-        for (i = 0; i < ir->swap->ngrp; i++)
-        {
-            snew(ir->swap->grp[i].molname, STRLEN);
-        }
-        printStringNoNewline(&inp, "Two index groups that contain the compartment-partitioning atoms");
-        setStringEntry(&inp, "split-group0", ir->swap->grp[eGrpSplit0].molname, nullptr);
-        setStringEntry(&inp, "split-group1", ir->swap->grp[eGrpSplit1].molname, nullptr);
-        printStringNoNewline(&inp, "Use center of mass of split groups (yes/no), otherwise center of geometry is used");
-        ir->swap->massw_split[0] = (get_eeenum(&inp, "massw-split0", yesno_names, wi) != 0);
-        ir->swap->massw_split[1] = (get_eeenum(&inp, "massw-split1", yesno_names, wi) != 0);
-
-        printStringNoNewline(&inp, "Name of solvent molecules");
-        setStringEntry(&inp, "solvent-group", ir->swap->grp[eGrpSolvent].molname, nullptr);
-
-        printStringNoNewline(&inp, "Split cylinder: radius, upper and lower extension (nm) (this will define the channels)");
-        printStringNoNewline(&inp, "Note that the split cylinder settings do not have an influence on the swapping protocol,");
-        printStringNoNewline(&inp, "however, if correctly defined, the permeation events are recorded per channel");
-        ir->swap->cyl0r = get_ereal(&inp, "cyl0-r", 2.0, wi);
-        ir->swap->cyl0u = get_ereal(&inp, "cyl0-up", 1.0, wi);
-        ir->swap->cyl0l = get_ereal(&inp, "cyl0-down", 1.0, wi);
-        ir->swap->cyl1r = get_ereal(&inp, "cyl1-r", 2.0, wi);
-        ir->swap->cyl1u = get_ereal(&inp, "cyl1-up", 1.0, wi);
-        ir->swap->cyl1l = get_ereal(&inp, "cyl1-down", 1.0, wi);
-
-        printStringNoNewline(&inp, "Average the number of ions per compartment over these many swap attempt steps");
-        ir->swap->nAverage = get_eint(&inp, "coupl-steps", 10, wi);
-
-        printStringNoNewline(&inp, "Names of the ion types that can be exchanged with solvent molecules,");
-        printStringNoNewline(&inp, "and the requested number of ions of this type in compartments A and B");
-        printStringNoNewline(&inp, "-1 means fix the numbers as found in step 0");
-        for (i = 0; i < nIonTypes; i++)
-        {
-            int ig = eSwapFixedGrpNR + i;
-
-            sprintf(buf, "iontype%d-name", i);
-            setStringEntry(&inp, buf, ir->swap->grp[ig].molname, nullptr);
-            sprintf(buf, "iontype%d-in-A", i);
-            ir->swap->grp[ig].nmolReq[0] = get_eint(&inp, buf, -1, wi);
-            sprintf(buf, "iontype%d-in-B", i);
-            ir->swap->grp[ig].nmolReq[1] = get_eint(&inp, buf, -1, wi);
-        }
-
-        printStringNoNewline(&inp, "By default (i.e. bulk offset = 0.0), ion/water exchanges happen between layers");
-        printStringNoNewline(&inp, "at maximum distance (= bulk concentration) to the split group layers. However,");
-        printStringNoNewline(&inp, "an offset b (-1.0 < b < +1.0) can be specified to offset the bulk layer from the middle at 0.0");
-        printStringNoNewline(&inp, "towards one of the compartment-partitioning layers (at +/- 1.0).");
-        ir->swap->bulkOffset[0] = get_ereal(&inp, "bulk-offsetA", 0.0, wi);
-        ir->swap->bulkOffset[1] = get_ereal(&inp, "bulk-offsetB", 0.0, wi);
-        if (!(ir->swap->bulkOffset[0] > -1.0 && ir->swap->bulkOffset[0] < 1.0)
-            || !(ir->swap->bulkOffset[1] > -1.0 && ir->swap->bulkOffset[1] < 1.0) )
-        {
-            warning_error(wi, "Bulk layer offsets must be > -1.0 and < 1.0 !");
-        }
-
-        printStringNoNewline(&inp, "Start to swap ions if threshold difference to requested count is reached");
-        ir->swap->threshold = get_ereal(&inp, "threshold", 1.0, wi);
     }
 
     /* AdResS is no longer supported, but we need grompp to be able to
@@ -2544,23 +2431,6 @@ void get_ir(const char *mdparin, const char *mdparout,
         }
     }
 
-    /* Ion/water position swapping checks */
-    if (ir->eSwapCoords != eswapNO)
-    {
-        if (ir->swap->nstswap < 1)
-        {
-            warning_error(wi, "swap_frequency must be 1 or larger when ion swapping is requested");
-        }
-        if (ir->swap->nAverage < 1)
-        {
-            warning_error(wi, "coupl_steps must be 1 or larger.\n");
-        }
-        if (ir->swap->threshold < 1.0)
-        {
-            warning_error(wi, "Ion count threshold must be at least 1.\n");
-        }
-    }
-
     sfree(dumstr[0]);
     sfree(dumstr[1]);
 }
@@ -2743,7 +2613,6 @@ static bool do_numbering(int natoms, gmx_groups_t *groups,
 static void calc_nrdf(const gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
 {
     t_grpopts              *opts;
-    pull_params_t          *pull;
     int                     natoms, ai, aj, i, j, d, g, imin, jmin;
     int                    *nrdf2, *na_vcm, na_tot;
     double                 *nrdf_tc, *nrdf_vcm, nrdf_uc, *nrdf_vcm_sub;
@@ -2878,51 +2747,6 @@ static void calc_nrdf(const gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
                 i  += 4;
             }
             as += molt.atoms.nr;
-        }
-    }
-
-    if (ir->bPull)
-    {
-        /* Correct nrdf for the COM constraints.
-         * We correct using the TC and VCM group of the first atom
-         * in the reference and pull group. If atoms in one pull group
-         * belong to different TC or VCM groups it is anyhow difficult
-         * to determine the optimal nrdf assignment.
-         */
-        pull = ir->pull;
-
-        for (i = 0; i < pull->ncoord; i++)
-        {
-            if (pull->coord[i].eType != epullCONSTRAINT)
-            {
-                continue;
-            }
-
-            imin = 1;
-
-            for (j = 0; j < 2; j++)
-            {
-                const t_pull_group *pgrp;
-
-                pgrp = &pull->group[pull->coord[i].group[j]];
-
-                if (pgrp->nat > 0)
-                {
-                    /* Subtract 1/2 dof from each group */
-                    ai = pgrp->ind[0];
-                    nrdf_tc [getGroupType(groups, egcTC, ai)]  -= 0.5*imin;
-                    nrdf_vcm[getGroupType(groups, egcVCM, ai)] -= 0.5*imin;
-                    if (nrdf_tc[getGroupType(groups, egcTC, ai)] < 0)
-                    {
-                        gmx_fatal(FARGS, "Center of mass pulling constraints caused the number of degrees of freedom for temperature coupling group %s to be negative", gnames[groups.grps[egcTC].nm_ind[getGroupType(groups, egcTC, ai)]]);
-                    }
-                }
-                else
-                {
-                    /* We need to subtract the whole DOF from group j=1 */
-                    imin += 1;
-                }
-            }
         }
     }
 
@@ -3065,68 +2889,6 @@ static bool do_egp_flag(t_inputrec *ir, gmx_groups_t *groups,
     }
 
     return bSet;
-}
-
-
-static void make_swap_groups(
-        t_swapcoords  *swap,
-        t_blocka      *grps,
-        char         **gnames)
-{
-    int          ig = -1, i = 0, gind;
-    t_swapGroup *swapg;
-
-
-    /* Just a quick check here, more thorough checks are in mdrun */
-    if (strcmp(swap->grp[eGrpSplit0].molname, swap->grp[eGrpSplit1].molname) == 0)
-    {
-        gmx_fatal(FARGS, "The split groups can not both be '%s'.", swap->grp[eGrpSplit0].molname);
-    }
-
-    /* Get the index atoms of the split0, split1, solvent, and swap groups */
-    for (ig = 0; ig < swap->ngrp; ig++)
-    {
-        swapg      = &swap->grp[ig];
-        gind       = search_string(swap->grp[ig].molname, grps->nr, gnames);
-        swapg->nat = grps->index[gind+1] - grps->index[gind];
-
-        if (swapg->nat > 0)
-        {
-            fprintf(stderr, "%s group '%s' contains %d atoms.\n",
-                    ig < 3 ? eSwapFixedGrp_names[ig] : "Swap",
-                    swap->grp[ig].molname, swapg->nat);
-            snew(swapg->ind, swapg->nat);
-            for (i = 0; i < swapg->nat; i++)
-            {
-                swapg->ind[i] = grps->a[grps->index[gind]+i];
-            }
-        }
-        else
-        {
-            gmx_fatal(FARGS, "Swap group %s does not contain any atoms.", swap->grp[ig].molname);
-        }
-    }
-}
-
-
-static void make_IMD_group(t_IMD *IMDgroup, char *IMDgname, t_blocka *grps, char **gnames)
-{
-    int      ig, i;
-
-
-    ig            = search_string(IMDgname, grps->nr, gnames);
-    IMDgroup->nat = grps->index[ig+1] - grps->index[ig];
-
-    if (IMDgroup->nat > 0)
-    {
-        fprintf(stderr, "Group '%s' with %d atoms can be activated for interactive molecular dynamics (IMD).\n",
-                IMDgname, IMDgroup->nat);
-        snew(IMDgroup->ind, IMDgroup->nat);
-        for (i = 0; i < IMDgroup->nat; i++)
-        {
-            IMDgroup->ind[i] = grps->a[grps->index[ig]+i];
-        }
-    }
 }
 
 void do_index(const char* mdparin, const char *ndx,
@@ -3449,29 +3211,6 @@ void do_index(const char* mdparin, const char *ndx,
                 }
             }
         }
-    }
-
-    if (ir->bPull)
-    {
-        make_pull_groups(ir->pull, is->pull_grp, grps, gnames);
-
-        make_pull_coords(ir->pull);
-    }
-
-    if (ir->bRot)
-    {
-        make_rotation_groups(ir->rot, is->rot_grp, grps, gnames);
-    }
-
-    if (ir->eSwapCoords != eswapNO)
-    {
-        make_swap_groups(ir->swap, grps, gnames);
-    }
-
-    /* Make indices for IMD session */
-    if (ir->bIMD)
-    {
-        make_IMD_group(ir->imd, is->imd_grp, grps, gnames);
     }
 
     auto accelerations          = gmx::splitString(is->acc);
@@ -3931,7 +3670,7 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
                   warninp_t wi)
 {
     char                      err_buf[STRLEN];
-    int                       i, m, c, nmol;
+    int                       i, m, nmol;
     bool                      bCharge, bAcc;
     real                     *mgrp, mt;
     rvec                      acc;
@@ -4165,49 +3904,6 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
         !gmx_within_tol(sys->ffparams.reppow, 12.0, 10*GMX_DOUBLE_EPS))
     {
         gmx_fatal(FARGS, "Soft-core interactions are only supported with VdW repulsion power 12");
-    }
-
-    if (ir->bPull)
-    {
-        bool bWarned;
-
-        bWarned = FALSE;
-        for (i = 0; i < ir->pull->ncoord && !bWarned; i++)
-        {
-            if (ir->pull->coord[i].group[0] == 0 ||
-                ir->pull->coord[i].group[1] == 0)
-            {
-                absolute_reference(ir, sys, FALSE, AbsRef);
-                for (m = 0; m < DIM; m++)
-                {
-                    if (ir->pull->coord[i].dim[m] && !AbsRef[m])
-                    {
-                        warning(wi, "You are using an absolute reference for pulling, but the rest of the system does not have an absolute reference. This will lead to artifacts.");
-                        bWarned = TRUE;
-                        break;
-                    }
-                }
-            }
-        }
-
-        for (i = 0; i < 3; i++)
-        {
-            for (m = 0; m <= i; m++)
-            {
-                if ((ir->epc != epcNO && ir->compress[i][m] != 0) ||
-                    ir->deform[i][m] != 0)
-                {
-                    for (c = 0; c < ir->pull->ncoord; c++)
-                    {
-                        if (ir->pull->coord[c].eGeom == epullgDIRPBC &&
-                            ir->pull->coord[c].vec[m] != 0)
-                        {
-                            gmx_fatal(FARGS, "Can not have dynamic box while using pull geometry '%s' (dim %c)", EPULLGEOM(ir->pull->coord[c].eGeom), 'x'+m);
-                        }
-                    }
-                }
-            }
-        }
     }
 
     check_disre(sys);

@@ -63,7 +63,6 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "gromacs/pulling/pull.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/trajectory/energyframe.h"
 #include "gromacs/utility/arraysize.h"
@@ -274,11 +273,6 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
         else if (i == F_CONNBONDS)
         {
             md->bEner[i] = FALSE;
-        }
-        else if (i == F_COM_PULL)
-        {
-            md->bEner[i] = ((ir->bPull && pull_have_potential(ir->pull_work)) ||
-                            ir->bRot);
         }
         else if (i == F_ECONSERVED)
         {

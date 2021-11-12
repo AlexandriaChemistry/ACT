@@ -43,7 +43,6 @@
 
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/mdtypes/pull-params.h"
 #include "gromacs/topology/topology.h"
 
 static int div_nsteps(int nsteps, int nst)
@@ -144,11 +143,6 @@ double compute_io(const t_inputrec *ir, int natoms, const gmx_groups_t *groups,
                     sizeof(int)*ir->fepvals->dh_hist_size*ndh;
             }
         }
-    }
-    if (ir->pull != nullptr)
-    {
-        cio += div_nsteps(nsteps, ir->pull->nstxout)*20; /* roughly 20 chars per line */
-        cio += div_nsteps(nsteps, ir->pull->nstfout)*20; /* roughly 20 chars per line */
     }
 
     return cio*nrepl/(1024*1024);

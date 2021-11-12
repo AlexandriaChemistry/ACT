@@ -80,7 +80,6 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/nblist.h"
 #include "gromacs/mdtypes/state.h"
-#include "gromacs/pulling/pull.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
@@ -3596,12 +3595,6 @@ void dd_partition_system(FILE                    *fplog,
                                 mdatoms->sqrt_c6A, mdatoms->sqrt_c6B,
                                 mdatoms->sigmaA, mdatoms->sigmaB,
                                 dd_pme_maxshift_x(dd), dd_pme_maxshift_y(dd));
-    }
-
-    if (ir->bPull)
-    {
-        /* Update the local pull groups */
-        dd_make_local_pull_groups(cr, ir->pull_work);
     }
 
     if (dd->atomSets != nullptr)

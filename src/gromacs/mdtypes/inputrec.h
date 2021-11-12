@@ -49,13 +49,6 @@
 #define EGP_EXCL  (1<<0)
 #define EGP_TABLE (1<<1)
 
-struct gmx_enfrot;
-struct gmx_enfrotgrp;
-struct pull_params_t;
-struct pull_t;
-struct t_gmx_IMD;
-typedef struct t_swap *gmx_swapcoords_t;
-
 namespace gmx
 {
 class KeyValueTreeObject;
@@ -266,68 +259,6 @@ struct t_rotgrp
     real             eps;
 };
 
-struct t_rot
-{
-    //! Number of rotation groups
-    int                   ngrp;
-    //! Output frequency for main rotation outfile
-    int                   nstrout;
-    //! Output frequency for per-slab data
-    int                   nstsout;
-    //! Groups to rotate
-    t_rotgrp             *grp;
-};
-
-struct t_IMD
-{
-    //! Number of interactive atoms
-    int              nat;
-    //! The global indices of the interactive atoms
-    int             *ind;
-    //! Stores non-inputrec IMD data
-    t_gmx_IMD       *setup;
-};
-
-struct t_swapGroup
-{
-    //! Name of the swap group, e.g. NA, CL, SOL
-    char            *molname;
-    //! Number of atoms in this group
-    int              nat;
-    //! The global ion group atoms numbers
-    int             *ind;
-    //! Requested number of molecules of this type per compartment
-    int              nmolReq[eCompNR];
-};
-
-struct t_swapcoords
-{
-    //! Period between when a swap is attempted
-    int      nstswap;
-    //! Use mass-weighted positions in split group
-    gmx_bool massw_split[2];
-    /*! \brief Split cylinders defined by radius, upper and lower
-     * extension. The split cylinders define the channels and are
-     * each anchored in the center of the split group */
-    /**@{*/
-    real cyl0r, cyl1r;
-    real cyl0u, cyl1u;
-    real cyl0l, cyl1l;
-    /**@}*/
-    //! Coupling constant (number of swap attempt steps)
-    int                      nAverage;
-    //! Ion counts may deviate from the requested values by +-threshold before a swap is done
-    real                     threshold;
-    //! Offset of the swap layer (='bulk') with respect to the compartment-defining layers
-    real                     bulkOffset[eCompNR];
-    //! Number of groups to be controlled
-    int                      ngrp;
-    //! All swap groups, including split and solvent
-    t_swapGroup             *grp;
-    //! Swap private data accessible in swapcoords.cpp
-    gmx_swapcoords_t         si_priv;
-};
-
 struct t_inputrec // NOLINT (clang-analyzer-optin.performance.Padding)
 {
     t_inputrec();
@@ -530,31 +461,6 @@ struct t_inputrec // NOLINT (clang-analyzer-optin.performance.Padding)
     //! Scaling factor for the box for Ewald
     real                        wall_ewald_zfac;
 
-    /* COM pulling data */
-    //! Do we do COM pulling?
-    gmx_bool       bPull;
-    //! The data for center of mass pulling
-    pull_params_t *pull;
-    // TODO: Remove this by converting pull into a ForceProvider
-    //! The COM pull force calculation data structure
-    pull_t *pull_work;
-
-    /* Enforced rotation data */
-    //! Whether to calculate enforced rotation potential(s)
-    gmx_bool               bRot;
-    //! The data for enforced rotation potentials
-    t_rot                 *rot;
-
-    //! Whether to do ion/water position exchanges (CompEL)
-    int                           eSwapCoords;
-    //! Swap data structure.
-    t_swapcoords                 *swap;
-
-    //! Whether to do an interactive MD session
-    gmx_bool               bIMD;
-    //! Interactive molecular dynamics
-    t_IMD                 *imd;
-
     //! Acceleration for viscosity calculation
     real   cos_accel;
     //! Triclinic deformation velocities (nm/ps)
@@ -639,9 +545,6 @@ void pr_inputrec(FILE *fp, int indent, const char *title, const t_inputrec *ir,
                  gmx_bool bMDPformat);
 
 void cmp_inputrec(FILE *fp, const t_inputrec *ir1, const t_inputrec *ir2, real ftol, real abstol);
-
-void comp_pull_AB(FILE *fp, pull_params_t *pull, real ftol, real abstol);
-
 
 gmx_bool inputrecDeform(const t_inputrec *ir);
 

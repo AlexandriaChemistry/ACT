@@ -47,7 +47,6 @@
 #include "gromacs/math/veccompare.h"
 #include "gromacs/math/vecdump.h"
 #include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/mdtypes/pull-params.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/compare.h"
 #include "gromacs/utility/cstringutil.h"
@@ -268,28 +267,6 @@ gmx_bool ir_vdw_might_be_zero_at_cutoff(const t_inputrec *ir)
     return (ir_vdw_is_zero_at_cutoff(ir) || ir->vdwtype == evdwUSER);
 }
 
-static void done_pull_group(t_pull_group *pgrp)
-{
-    if (pgrp->nat > 0)
-    {
-        sfree(pgrp->ind);
-        sfree(pgrp->weight);
-    }
-}
-
-static void done_pull_params(pull_params_t *pull)
-{
-    int i;
-
-    for (i = 0; i < pull->ngroup+1; i++)
-    {
-        done_pull_group(pull->group);
-    }
-
-    sfree(pull->group);
-    sfree(pull->coord);
-}
-
 static void done_lambdas(t_lambda *fep)
 {
     if (fep->n_lambda > 0)
@@ -329,11 +306,6 @@ void done_inputrec(t_inputrec *ir)
     sfree(ir->expandedvals);
     sfree(ir->simtempvals);
 
-    if (ir->pull)
-    {
-        done_pull_params(ir->pull);
-        sfree(ir->pull);
-    }
     delete ir->params;
 }
 
@@ -482,45 +454,6 @@ static void pr_matrix(FILE *fp, int indent, const char *title, const rvec *m,
 #define PR(t, s) pr_real(fp, indent, t, s)
 #define PD(t, s) pr_double(fp, indent, t, s)
 
-static void pr_pull_group(FILE *fp, int indent, int g, const t_pull_group *pgrp)
-{
-    pr_indent(fp, indent);
-    fprintf(fp, "pull-group %d:\n", g);
-    indent += 2;
-    pr_ivec_block(fp, indent, "atom", pgrp->ind, pgrp->nat, TRUE);
-    pr_rvec(fp, indent, "weight", pgrp->weight, pgrp->nweight, TRUE);
-    PI("pbcatom", pgrp->pbcatom);
-}
-
-static void pr_pull_coord(FILE *fp, int indent, int c, const t_pull_coord *pcrd)
-{
-    int g;
-
-    pr_indent(fp, indent);
-    fprintf(fp, "pull-coord %d:\n", c);
-    PS("type", EPULLTYPE(pcrd->eType));
-    if (pcrd->eType == epullEXTERNAL)
-    {
-        PS("potential-provider", pcrd->externalPotentialProvider);
-    }
-    PS("geometry", EPULLGEOM(pcrd->eGeom));
-    for (g = 0; g < pcrd->ngroup; g++)
-    {
-        char buf[10];
-
-        sprintf(buf, "group[%d]", g);
-        PI(buf, pcrd->group[g]);
-    }
-    pr_ivec(fp, indent, "dim", pcrd->dim, DIM, TRUE);
-    pr_rvec(fp, indent, "origin", pcrd->origin, DIM, TRUE);
-    pr_rvec(fp, indent, "vec", pcrd->vec, DIM, TRUE);
-    PS("start", EBOOL(pcrd->bStart));
-    PR("init", pcrd->init);
-    PR("rate", pcrd->rate);
-    PR("k", pcrd->k);
-    PR("kB", pcrd->kB);
-}
-
 static void pr_simtempvals(FILE *fp, int indent, const t_simtemp *simtemp, int n_lambda)
 {
     PS("simulated-tempering-scaling", ESIMTEMP(simtemp->eSimTempScale));
@@ -629,130 +562,6 @@ static void pr_fepvals(FILE *fp, int indent, const t_lambda *fep, gmx_bool bMDPf
     PS("separate-dhdl-file", SEPDHDLFILETYPE(fep->separate_dhdl_file));
     PS("dhdl-derivatives", DHDLDERIVATIVESTYPE(fep->dhdl_derivatives));
 };
-
-static void pr_pull(FILE *fp, int indent, const pull_params_t *pull)
-{
-    int g;
-
-    PR("pull-cylinder-r", pull->cylinder_r);
-    PR("pull-constr-tol", pull->constr_tol);
-    PS("pull-print-COM", EBOOL(pull->bPrintCOM));
-    PS("pull-print-ref-value", EBOOL(pull->bPrintRefValue));
-    PS("pull-print-components", EBOOL(pull->bPrintComp));
-    PI("pull-nstxout", pull->nstxout);
-    PI("pull-nstfout", pull->nstfout);
-    PS("pull-pbc-ref-prev-step-com", EBOOL(pull->bSetPbcRefToPrevStepCOM));
-    PS("pull-xout-average", EBOOL(pull->bXOutAverage));
-    PS("pull-fout-average", EBOOL(pull->bFOutAverage));
-    PI("pull-ngroups", pull->ngroup);
-    for (g = 0; g < pull->ngroup; g++)
-    {
-        pr_pull_group(fp, indent, g, &pull->group[g]);
-    }
-    PI("pull-ncoords", pull->ncoord);
-    for (g = 0; g < pull->ncoord; g++)
-    {
-        pr_pull_coord(fp, indent, g, &pull->coord[g]);
-    }
-}
-
-static void pr_rotgrp(FILE *fp, int indent, int g, const t_rotgrp *rotg)
-{
-    pr_indent(fp, indent);
-    fprintf(fp, "rot-group %d:\n", g);
-    indent += 2;
-    PS("rot-type", EROTGEOM(rotg->eType));
-    PS("rot-massw", EBOOL(rotg->bMassW));
-    pr_ivec_block(fp, indent, "atom", rotg->ind, rotg->nat, TRUE);
-    pr_rvecs(fp, indent, "x-ref", rotg->x_ref, rotg->nat);
-    pr_rvec(fp, indent, "rot-vec", rotg->inputVec, DIM, TRUE);
-    pr_rvec(fp, indent, "rot-pivot", rotg->pivot, DIM, TRUE);
-    PR("rot-rate", rotg->rate);
-    PR("rot-k", rotg->k);
-    PR("rot-slab-dist", rotg->slab_dist);
-    PR("rot-min-gauss", rotg->min_gaussian);
-    PR("rot-eps", rotg->eps);
-    PS("rot-fit-method", EROTFIT(rotg->eFittype));
-    PI("rot-potfit-nstep", rotg->PotAngle_nstep);
-    PR("rot-potfit-step", rotg->PotAngle_step);
-}
-
-static void pr_rot(FILE *fp, int indent, const t_rot *rot)
-{
-    int g;
-
-    PI("rot-nstrout", rot->nstrout);
-    PI("rot-nstsout", rot->nstsout);
-    PI("rot-ngroups", rot->ngrp);
-    for (g = 0; g < rot->ngrp; g++)
-    {
-        pr_rotgrp(fp, indent, g, &rot->grp[g]);
-    }
-}
-
-
-static void pr_swap(FILE *fp, int indent, const t_swapcoords *swap)
-{
-    char str[STRLEN];
-
-    /* Enums for better readability of the code */
-    enum {
-        eCompA = 0, eCompB
-    };
-
-
-    PI("swap-frequency", swap->nstswap);
-
-    /* The split groups that define the compartments */
-    for (int j = 0; j < 2; j++)
-    {
-        snprintf(str, STRLEN, "massw_split%d", j);
-        PS(str, EBOOL(swap->massw_split[j]));
-        snprintf(str, STRLEN, "split atoms group %d", j);
-        pr_ivec_block(fp, indent, str, swap->grp[j].ind, swap->grp[j].nat, TRUE);
-    }
-
-    /* The solvent group */
-    snprintf(str, STRLEN, "solvent group %s", swap->grp[eGrpSolvent].molname);
-    pr_ivec_block(fp, indent, str, swap->grp[eGrpSolvent].ind, swap->grp[eGrpSolvent].nat, TRUE);
-
-    /* Now print the indices for all the ion groups: */
-    for (int ig = eSwapFixedGrpNR; ig < swap->ngrp; ig++)
-    {
-        snprintf(str, STRLEN, "ion group %s", swap->grp[ig].molname);
-        pr_ivec_block(fp, indent, str, swap->grp[ig].ind, swap->grp[ig].nat, TRUE);
-    }
-
-    PR("cyl0-r", swap->cyl0r);
-    PR("cyl0-up", swap->cyl0u);
-    PR("cyl0-down", swap->cyl0l);
-    PR("cyl1-r", swap->cyl1r);
-    PR("cyl1-up", swap->cyl1u);
-    PR("cyl1-down", swap->cyl1l);
-    PI("coupl-steps", swap->nAverage);
-
-    /* Print the requested ion counts for both compartments */
-    for (int ic = eCompA; ic <= eCompB; ic++)
-    {
-        for (int ig = eSwapFixedGrpNR; ig < swap->ngrp; ig++)
-        {
-            snprintf(str, STRLEN, "%s-in-%c", swap->grp[ig].molname, 'A'+ic);
-            PI(str, swap->grp[ig].nmolReq[ic]);
-        }
-    }
-
-    PR("threshold", swap->threshold);
-    PR("bulk-offsetA", swap->bulkOffset[eCompA]);
-    PR("bulk-offsetB", swap->bulkOffset[eCompB]);
-}
-
-
-static void pr_imd(FILE *fp, int indent, const t_IMD *imd)
-{
-    PI("IMD-atoms", imd->nat);
-    pr_ivec_block(fp, indent, "atom", imd->ind, imd->nat, TRUE);
-}
-
 
 void pr_inputrec(FILE *fp, int indent, const char *title, const t_inputrec *ir,
                  gmx_bool bMDPformat)
@@ -907,27 +716,6 @@ void pr_inputrec(FILE *fp, int indent, const char *title, const t_inputrec *ir,
         PR("wall-density[1]", ir->wall_density[1]);
         PR("wall-ewald-zfac", ir->wall_ewald_zfac);
 
-        /* COM PULLING */
-        PS("pull", EBOOL(ir->bPull));
-        if (ir->bPull)
-        {
-            pr_pull(fp, indent, ir->pull);
-        }
-
-        /* ENFORCED ROTATION */
-        PS("rotation", EBOOL(ir->bRot));
-        if (ir->bRot)
-        {
-            pr_rot(fp, indent, ir->rot);
-        }
-
-        /* INTERACTIVE MD */
-        PS("interactiveMD", EBOOL(ir->bIMD));
-        if (ir->bIMD)
-        {
-            pr_imd(fp, indent, ir->imd);
-        }
-
         /* NMR refinement stuff */
         PS("disre", EDISRETYPE(ir->eDisre));
         PS("disre-weighting", EDISREWEIGHTING(ir->eDisreWeighting));
@@ -960,13 +748,6 @@ void pr_inputrec(FILE *fp, int indent, const char *title, const t_inputrec *ir,
         if (ir->bSimTemp)
         {
             pr_simtempvals(fp, indent, ir->simtempvals, ir->fepvals->n_lambda);
-        }
-
-        /* ION/WATER SWAPPING FOR COMPUTATIONAL ELECTROPHYSIOLOGY */
-        PS("swapcoords", ESWAPTYPE(ir->eSwapCoords));
-        if (ir->eSwapCoords != eswapNO)
-        {
-            pr_swap(fp, indent, ir->swap);
         }
 
         /* USER-DEFINED THINGIES */
@@ -1042,11 +823,6 @@ static void cmp_grpopts(FILE *fp, const t_grpopts *opt1, const t_grpopts *opt2, 
     {
         cmp_ivec(fp, "inputrec->grpopts.nFreeze", i, opt1->nFreeze[i], opt2->nFreeze[i]);
     }
-}
-
-static void cmp_pull(FILE *fp)
-{
-    fprintf(fp, "WARNING: Both files use COM pulling, but comparing of the pull struct is not implemented (yet). The pull parameters could be the same or different.\n");
 }
 
 static void cmp_simtempvals(FILE *fp, const t_simtemp *simtemp1, const t_simtemp *simtemp2, int n_lambda, real ftol, real abstol)
@@ -1217,12 +993,6 @@ void cmp_inputrec(FILE *fp, const t_inputrec *ir1, const t_inputrec *ir2, real f
     cmp_real(fp, "inputrec->wall_density[1]", -1, ir1->wall_density[1], ir2->wall_density[1], ftol, abstol);
     cmp_real(fp, "inputrec->wall_ewald_zfac", -1, ir1->wall_ewald_zfac, ir2->wall_ewald_zfac, ftol, abstol);
 
-    cmp_bool(fp, "inputrec->bPull", -1, ir1->bPull, ir2->bPull);
-    if (ir1->bPull && ir2->bPull)
-    {
-        cmp_pull(fp);
-    }
-
     cmp_int(fp, "inputrec->eDisre", -1, ir1->eDisre, ir2->eDisre);
     cmp_real(fp, "inputrec->dr_fc", -1, ir1->dr_fc, ir2->dr_fc, ftol, abstol);
     cmp_int(fp, "inputrec->eDisreWeighting", -1, ir1->eDisreWeighting, ir2->eDisreWeighting);
@@ -1261,17 +1031,6 @@ void cmp_inputrec(FILE *fp, const t_inputrec *ir1, const t_inputrec *ir2, real f
     cmp_grpopts(fp, &(ir1->opts), &(ir2->opts), ftol, abstol);
     gmx::TextWriter writer(fp);
     gmx::compareKeyValueTrees(&writer, *ir1->params, *ir2->params, ftol, abstol);
-}
-
-void comp_pull_AB(FILE *fp, pull_params_t *pull, real ftol, real abstol)
-{
-    int i;
-
-    for (i = 0; i < pull->ncoord; i++)
-    {
-        fprintf(fp, "comparing pull coord %d\n", i);
-        cmp_real(fp, "pull-coord->k", -1, pull->coord[i].k, pull->coord[i].kB, ftol, abstol);
-    }
 }
 
 gmx_bool inputrecDeform(const t_inputrec *ir)
