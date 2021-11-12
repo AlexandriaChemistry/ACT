@@ -26,3 +26,9 @@ CMakeLists.txt.user
 /VersionInfo*.cmake
 Testing
 build_Release_DOUBLE
+
+
+# Examples
+examples/TUNE_EEM/*.xvg
+examples/TUNE_EEM/*.log
+examples/TUNE_EEM/viewxvg.py
