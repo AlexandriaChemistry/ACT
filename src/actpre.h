@@ -32,9 +32,9 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \libinternal \file
+/*! internal \file
  * \brief
- * Prerequisite header file for \Gromacs build.
+ * Prerequisite header file for \Act build.
  *
  * This header should be included as the first header in all source files, but
  * not in header files.  It is intended to contain definitions that must appear

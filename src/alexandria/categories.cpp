@@ -54,12 +54,22 @@
 namespace alexandria
 {
 
+/*! \brief Compare two CategoryListElements for sorting
+ * \param[in] ca First
+ * \param[in] cb Second
+ * \return whether first is less than second
+ */
 static bool CompareCategoryListElements(CategoryListElement ca,
                                         CategoryListElement cb)
 {
     return (ca.getName().compare(cb.getName()) < 0);
 }
 
+/*! \brief Compare two strings for sorting
+ * \param[in] ca First
+ * \param[in] cb Second
+ * \return whether first is less than second
+ */
 static bool CompareStrings(std::string ca, std::string cb)
 {
     return (ca.compare(cb) < 0);

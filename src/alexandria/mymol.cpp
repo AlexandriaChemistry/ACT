@@ -415,8 +415,8 @@ void MyMol::MakeSpecialInteractions(const Poldata *pd,
         }
     }
     auto anr = atoms->nr;
-    gvt_.generateSpecial(pd, true, atoms,
-                         &x, plist_, symtab_, gromppAtomtype_, &excls_, state_);
+    gvt_.generateSpecial(pd, true, atoms, &x, &plist_,
+                         symtab_, gromppAtomtype_, &excls_, state_);
     bHaveVSites_ = (atoms->nr > anr);
 }
 
@@ -762,7 +762,8 @@ immStatus MyMol::GenerateTopology(FILE              *fp,
                 // We add the parameter with zero parameters, they will be
                 // set further down. However it is important to set the
                 // bondorder.
-                add_param_to_plist(plist_, ftb, InteractionType::BONDS, b, bi.getBondOrder());
+                add_param_to_plist(&plist_, ftb, InteractionType::BONDS,
+                                   b, bi.getBondOrder());
             }
             auto pw = SearchPlist(plist_, ftb);
             if (plist_.end() == pw || pw->nParam() == 0)
@@ -891,7 +892,7 @@ void MyMol::addBondVsites(FILE          *fp,
             p.a[2] = aj;
             auto param = vs2.findParameterTypeConst(bsId, "v2_a");
             p.c[0] = convertToGromacs(param.value(), param.unit());
-            add_param_to_plist(plist_, F_VSITE2, InteractionType::VSITE2, p);
+            add_param_to_plist(&plist_, F_VSITE2, InteractionType::VSITE2, p);
             // Now add the particle
             add_t_atoms(atoms, 1, 0);
             // Add exclusion for the vsite and its constituting atoms
@@ -1003,7 +1004,8 @@ void MyMol::addShells(FILE          *fp,
                         }
                     }
                     p.c[0] = pol;
-                    add_param_to_plist(plist_, F_POLARIZATION, InteractionType::POLARIZATION, p);
+                    add_param_to_plist(&plist_, F_POLARIZATION,
+                                       InteractionType::POLARIZATION, p);
                 }
             }
             else

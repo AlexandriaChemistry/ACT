@@ -264,7 +264,7 @@ class GentopVsites
         
         void gen_Vsites(const Poldata             *pd,
                         t_atoms                   *atoms,
-                        std::vector<PlistWrapper> &plist,
+                        std::vector<PlistWrapper> *plist,
                         gpp_atomtype              *atype,
                         t_symtab                  *symtab,
                         t_excls                   **excls,
@@ -287,7 +287,7 @@ class GentopVsites
                              bool                       bUseVsites,
                              t_atoms                   *atoms,
                              rvec                     **x,
-                             std::vector<PlistWrapper> &plist,
+                             std::vector<PlistWrapper> *plist,
                              t_symtab                  *symtab,
                              gpp_atomtype              *atype,
                              t_excls                  **excls,

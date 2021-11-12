@@ -120,17 +120,17 @@ ConstPlistWrapperIterator SearchPlist(const std::vector<PlistWrapper> &plist, in
 
  unsigned int CountPlist(const std::vector<PlistWrapper> &plist, int ftype);
 
-void delete_params(std::vector<PlistWrapper> &plist_,
+void delete_params(std::vector<PlistWrapper> *plist_,
                    const int                  ftype,
                    const int                  alist[]);
                    
 
-void add_param_to_plist(std::vector<PlistWrapper> &plist,
+void add_param_to_plist(std::vector<PlistWrapper> *plist,
                         int                        ftype,
                         InteractionType            itype,
                         const t_param             &p);
                         
-void add_param_to_plist(std::vector<PlistWrapper> &plist,
+void add_param_to_plist(std::vector<PlistWrapper> *plist,
                         int                        ftype,
                         InteractionType            itype,
                         const t_param             &p,

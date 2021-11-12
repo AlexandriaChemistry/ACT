@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020 
+ * Copyright (C) 2014-2021
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -46,6 +46,7 @@
 namespace alexandria
 {
 
+//! Different components of the chi-squared used in fitting
 enum class eRMS { 
     //! Parameters going out of bound
     BOUNDS,
@@ -160,7 +161,8 @@ public:
      */
     void print(FILE *fp) const;
 };
-  
+
+//! Which part of the force field to optimize  
 enum class eTune {
     //! Tuning the electrostatic equalization method and friends
     EEM,

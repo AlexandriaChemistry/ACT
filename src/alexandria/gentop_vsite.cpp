@@ -292,8 +292,17 @@ void GentopVsites::addRingPlanar(int natom, int aa[], int nbonds[])
     }
 }
 
+/*! \brief Calculate the parameters for linear virtual sites
+ * Linear vsites have two control atoms
+ * \param[in]    atoms  The atoms structure
+ * \param[out]   plist  The parameter list structure
+ * \param[inout] x      Coordinate array, may be extended to make space for vsites
+ * \param[in]    gvl    List of linear virtual sites
+ * \param[in]    symtab GROMACS symbol table
+ * \param[in]    atype  GROMACS atom type structure
+ */
 static void calc_vsite2parm(t_atoms                   *atoms,
-                            std::vector<PlistWrapper> &plist,
+                            std::vector<PlistWrapper> *plist,
                             rvec                      **x,
                             gv_linear                 *gvl,
                             t_symtab                  *symtab,
@@ -513,15 +522,19 @@ void GentopVsites::mergeLinear(bool bGenVsites)
     */
 }
 
+/*! \brief Set the parameters for linear angles
+ * \param[in]  atoms Atoms structure
+ * \param[out] plist The parameter list
+ */
 static void set_linear_angle_params(const int                  atoms[],
-                                    std::vector<PlistWrapper> &plist)
+                                    std::vector<PlistWrapper> *plist)
 {
     t_param pp;
     bool    found = false;
 
-    auto    pangle = SearchPlist(plist, InteractionType::ANGLES);
+    auto    pangle = SearchPlist(*plist, InteractionType::ANGLES);
 
-    if (plist.end() == pangle)
+    if (plist->end() == pangle)
     {
         fprintf(stderr, "Cannot find either the angles in the plist to set the linear angle params.\n");
         return;
@@ -554,7 +567,7 @@ static void set_linear_angle_params(const int                  atoms[],
 
 void GentopVsites::gen_Vsites(const Poldata             *pd,
                               t_atoms                   *atoms,
-                              std::vector<PlistWrapper> &plist,
+                              std::vector<PlistWrapper> *plist,
                               gpp_atomtype              *atype,
                               t_symtab                  *symtab,
                               t_excls                   **excls,
@@ -714,8 +727,8 @@ void GentopVsites::gen_Vsites(const Poldata             *pd,
         snew(newexcls, newatoms->nr);
         
         /* Add exclusion for F_VSITE3OUT virtual type */
-        auto pl1 = SearchPlist(plist, F_VSITE3OUT);
-        if (plist.end() != pl1)
+        auto pl1 = SearchPlist(*plist, F_VSITE3OUT);
+        if (plist->end() != pl1)
         {
             // Exclude vsite and nucleus from each other.
             auto mypar = pl1->params();
@@ -743,8 +756,8 @@ void GentopVsites::gen_Vsites(const Poldata             *pd,
             }
         }
         /* Add exclusion for F_VSITE3FAD virtual type */
-        auto pl2 = SearchPlist(plist, F_VSITE3FAD);
-        if (plist.end() != pl2)
+        auto pl2 = SearchPlist(*plist, F_VSITE3FAD);
+        if (plist->end() != pl2)
         {
             auto mypar = pl2->params();
             for (auto j = mypar->begin(); j < mypar->end(); ++j)
@@ -851,7 +864,7 @@ void GentopVsites::gen_Vsites(const Poldata             *pd,
         (*excls) = newexcls;
                 
         /*Now renumber atoms in all other plist interaction types */
-        for (auto pw = plist.begin(); pw < plist.end(); ++pw)
+        for (auto pw = plist->begin(); pw < plist->end(); ++pw)
         {
             if (pw->getFtype() != F_VSITE3FAD && pw->getFtype() != F_VSITE3OUT)
             {
@@ -879,7 +892,7 @@ void GentopVsites::generateSpecial(const Poldata              *pd,
                                    bool                        bUseVsites,
                                    t_atoms                    *atoms,
                                    rvec                      **x,
-                                   std::vector<PlistWrapper>  &plist,
+                                   std::vector<PlistWrapper>  *plist,
                                    t_symtab                   *symtab,
                                    gpp_atomtype_t              atype,
                                    t_excls                   **excls,
