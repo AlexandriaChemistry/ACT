@@ -76,12 +76,6 @@ Output Control
         use long float format when printing
         decimal values.
 
-``GMX_COMPELDUMP``
-        Applies for computational electrophysiology setups
-        only (see reference manual). The initial structure gets dumped to
-        :ref:`pdb` file, which allows to check whether multimeric channels have
-        the correct PBC representation.
-
 ``GMX_TRAJECTORY_IO_VERBOSITY``
         Defaults to 1, which prints frame count e.g. when reading trajectory
         files. Set to 0 for quiet operation.
