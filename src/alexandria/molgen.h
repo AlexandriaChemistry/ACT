@@ -322,7 +322,7 @@ private:
     gmx_hw_info_t                  *hwinfo_     = nullptr;
     //! String for command line to harvest the options to fit
     char                            *fitString_ = nullptr;
-    //! Map to determine whether or not to  fit a parameter type
+    //! Map to determine whether or not to fit a parameter type
     std::map<std::string, bool>     fit_;
     //! GROMACS structure containing optional MD modules, used for electric fields
     gmx::MDModules                  mdModules_;

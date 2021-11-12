@@ -752,7 +752,8 @@ bool OptACM::runMaster(const gmx_output_env_t *oenv,
         Bayes::SensitivityAnalysis(logFile(), iMolSelect::Train);
     }
     // Finalize the calculations on the helpers
-    GMX_RELEASE_ASSERT(calcDeviation(false, CalcDev::Final, iMolSelect::Train) < 0, "Result for final parallel calcDeviation should be less than zero");
+    GMX_RELEASE_ASSERT(calcDeviation(false, CalcDev::Final, iMolSelect::Train) < 0,
+                       "Result for final parallel calcDeviation should be less than zero");
 
     printMonteCarloStatistics(logFile());
     if (bMinimum)
@@ -787,7 +788,7 @@ void OptACM::runHelper()
     // S L A V E   N O D E S
     // The second and third variable are set by the master, but
     // we have to pass something.
-    // If the result is less than zero, we are done.
+    // If the result is less than zero (-1), we are done.
     while (calcDeviation(false, CalcDev::Parallel, iMolSelect::Train) >= 0)
     {
         ;
