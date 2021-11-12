@@ -721,7 +721,6 @@ The performance counters are:
 * Non-bonded position/force buffer operations
 * Virtual site spread
 * COM pull force
-* AWH (accelerated weight histogram method)
 * Write trajectory
 * Update
 * Constraints

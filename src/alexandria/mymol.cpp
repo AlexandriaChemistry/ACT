@@ -1336,7 +1336,7 @@ immStatus MyMol::computeForces(FILE *fplog, t_commrec *cr, double *rmsf)
     }
     else
     {
-        do_force(fplog, cr, nullptr, inputrec_, nullptr, nullptr, 0,
+        do_force(fplog, cr, nullptr, inputrec_, nullptr, 0,
                  &nrnb_, wcycle_, ltop_,
                  &(mtop_->groups),
                  state_->box, state_->x.arrayRefWithPadding(), nullptr,
@@ -1344,7 +1344,6 @@ immStatus MyMol::computeForces(FILE *fplog, t_commrec *cr, double *rmsf)
                  enerd_, fcd_,
                  state_->lambda, nullptr,
                  fr_, vsite_->get(), mu_tot, t,
-                 nullptr,
                  force_flags,
                  DdOpenBalanceRegionBeforeForceComputation::no,
                  DdCloseBalanceRegionAfterForceComputation::no);

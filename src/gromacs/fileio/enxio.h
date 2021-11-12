@@ -83,8 +83,6 @@ enum {
     enxDHHIST, /* BAR histogram                                              */
     enxDH,     /* BAR raw delta H data                                       */
 
-    enxAWH,    /* AWH data */
-
     enxNR      /* Total number of extra blocks in the current code,
                 * note that the enxio code can read files written by
                 * future code which contain more blocks.

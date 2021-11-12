@@ -65,18 +65,14 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vecdump.h"
 #include "gromacs/math/vectypes.h"
-#include "gromacs/mdtypes/awh-correlation-history.h"
-#include "gromacs/mdtypes/awh-history.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/df_history.h"
-#include "gromacs/mdtypes/edsamhistory.h"
 #include "gromacs/mdtypes/energyhistory.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/observableshistory.h"
 #include "gromacs/mdtypes/pullhistory.h"
 #include "gromacs/mdtypes/state.h"
-#include "gromacs/mdtypes/swaphistory.h"
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/baseversion.h"
@@ -210,33 +206,6 @@ static const char *edfh_names[edfhNR] =
     "accumulated_plus", "accumulated_minus", "accumulated_plus_2",  "accumulated_minus_2", "Tij", "Tij_empirical"
 };
 
-/* AWH biasing history variables */
-enum {
-    eawhhIN_INITIAL,
-    eawhhEQUILIBRATEHISTOGRAM,
-    eawhhHISTSIZE,
-    eawhhNPOINTS,
-    eawhhCOORDPOINT, eawhhUMBRELLAGRIDPOINT,
-    eawhhUPDATELIST,
-    eawhhLOGSCALEDSAMPLEWEIGHT,
-    eawhhNUMUPDATES,
-    eawhhFORCECORRELATIONGRID,
-    eawhhNR
-};
-
-static const char *eawhh_names[eawhhNR] =
-{
-    "awh_in_initial",
-    "awh_equilibrateHistogram",
-    "awh_histsize",
-    "awh_npoints",
-    "awh_coordpoint", "awh_umbrellaGridpoint",
-    "awh_updatelist",
-    "awh_logScaledSampleWeight",
-    "awh_numupdates",
-    "awh_forceCorrelationGrid"
-};
-
 enum {
     epullsPREVSTEPCOM,
     epullsNR
@@ -264,7 +233,6 @@ enum class StatePart
     kineticEnergy,      //!< Kinetic energy, needed for T/P-coupling state
     energyHistory,      //!< Energy observable statistics
     freeEnergyHistory,  //!< Free-energy state and observable statistics
-    accWeightHistogram, //!< Accelerated weight histogram method state
     pullState,          //!< COM of previous step.
     pullHistory         //!< Pull history statistics (sums since last written output)
 };
@@ -278,7 +246,6 @@ static const char *entryName(StatePart part, int ecpt)
         case StatePart::kineticEnergy:      return eeks_names[ecpt];
         case StatePart::energyHistory:      return eenh_names[ecpt];
         case StatePart::freeEnergyHistory:  return edfh_names[ecpt];
-        case StatePart::accWeightHistogram: return eawhh_names[ecpt];
         case StatePart::pullState:          return epull_prev_step_com_names[ecpt];
         case StatePart::pullHistory:        return ePullhNames[ecpt];
     }
@@ -357,18 +324,6 @@ static void do_cpt_int_err(XDR *xd, const char *desc, int *i, FILE *list)
     }
 }
 
-static void do_cpt_bool_err(XDR *xd, const char *desc, bool *b, FILE *list)
-{
-    int i   = static_cast<int>(*b);
-
-    if (do_cpt_int(xd, desc, &i, list) < 0)
-    {
-        cp_error();
-    }
-
-    *b = (i != 0);
-}
-
 static void do_cpt_step_err(XDR *xd, const char *desc, int64_t *i, FILE *list)
 {
     char   buf[STEPSTRSIZE];
@@ -392,35 +347,6 @@ static void do_cpt_double_err(XDR *xd, const char *desc, double *f, FILE *list)
     if (list)
     {
         fprintf(list, "%s = %f\n", desc, *f);
-    }
-}
-
-static void do_cpt_real_err(XDR *xd, real *f)
-{
-#if GMX_DOUBLE
-    bool_t res = xdr_double(xd, f);
-#else
-    bool_t res = xdr_float(xd, f);
-#endif
-    if (res == 0)
-    {
-        cp_error();
-    }
-}
-
-static void do_cpt_n_rvecs_err(XDR *xd, const char *desc, int n, rvec f[], FILE *list)
-{
-    for (int i = 0; i < n; i++)
-    {
-        for (int j = 0; j < DIM; j++)
-        {
-            do_cpt_real_err(xd, &f[i][j]);
-        }
-    }
-
-    if (list)
-    {
-        pr_rvecs(list, 0, desc, f, n);
     }
 }
 
@@ -983,7 +909,6 @@ struct CheckpointHeaderContents
     int         flags_enh;
     int         flagsPullHistory;
     int         flags_dfh;
-    int         flags_awhh;
     int         nED;
     int         eSwapCoords;
 };
@@ -1140,15 +1065,6 @@ static void do_cpt_header(XDR *xd, gmx_bool bRead, FILE *list,
         contents->eSwapCoords = eswapNO;
     }
 
-    if (contents->file_version >= 17)
-    {
-        do_cpt_int_err(xd, "AWH history flags", &contents->flags_awhh, list);
-    }
-    else
-    {
-        contents->flags_awhh = 0;
-    }
-
     if (contents->file_version >= 18)
     {
         do_cpt_int_err(xd, "pull history flags", &contents->flagsPullHistory, list);
@@ -1269,146 +1185,6 @@ static int do_cpt_ekinstate(XDR *xd, int fflags, ekinstate_t *ekins,
 
     return ret;
 }
-
-
-static int do_cpt_swapstate(XDR *xd, gmx_bool bRead,
-                            int eSwapCoords, swaphistory_t *swapstate, FILE *list)
-{
-    int swap_cpt_version = 2;
-
-    if (eSwapCoords == eswapNO)
-    {
-        return 0;
-    }
-
-    swapstate->bFromCpt    = bRead;
-    swapstate->eSwapCoords = eSwapCoords;
-
-    do_cpt_int_err(xd, "swap checkpoint version", &swap_cpt_version, list);
-    if (bRead && swap_cpt_version < 2)
-    {
-        gmx_fatal(FARGS, "Cannot read checkpoint files that were written with old versions"
-                  "of the ion/water position swapping protocol.\n");
-    }
-
-    do_cpt_int_err(xd, "swap coupling steps", &swapstate->nAverage, list);
-
-    /* When reading, init_swapcoords has not been called yet,
-     * so we have to allocate memory first. */
-    do_cpt_int_err(xd, "number of ion types", &swapstate->nIonTypes, list);
-    if (bRead)
-    {
-        snew(swapstate->ionType, swapstate->nIonTypes);
-    }
-
-    for (int ic = 0; ic < eCompNR; ic++)
-    {
-        for (int ii = 0; ii < swapstate->nIonTypes; ii++)
-        {
-            swapstateIons_t *gs = &swapstate->ionType[ii];
-
-            if (bRead)
-            {
-                do_cpt_int_err(xd, "swap requested atoms", &gs->nMolReq[ic], list);
-            }
-            else
-            {
-                do_cpt_int_err(xd, "swap requested atoms p", gs->nMolReq_p[ic], list);
-            }
-
-            if (bRead)
-            {
-                do_cpt_int_err(xd, "swap influx net", &gs->inflow_net[ic], list);
-            }
-            else
-            {
-                do_cpt_int_err(xd, "swap influx net p", gs->inflow_net_p[ic], list);
-            }
-
-            if (bRead && (nullptr == gs->nMolPast[ic]) )
-            {
-                snew(gs->nMolPast[ic], swapstate->nAverage);
-            }
-
-            for (int j = 0; j < swapstate->nAverage; j++)
-            {
-                if (bRead)
-                {
-                    do_cpt_int_err(xd, "swap past atom counts", &gs->nMolPast[ic][j], list);
-                }
-                else
-                {
-                    do_cpt_int_err(xd, "swap past atom counts p", &gs->nMolPast_p[ic][j], list);
-                }
-            }
-        }
-    }
-
-    /* Ion flux per channel */
-    for (int ic = 0; ic < eChanNR; ic++)
-    {
-        for (int ii = 0; ii < swapstate->nIonTypes; ii++)
-        {
-            swapstateIons_t *gs = &swapstate->ionType[ii];
-
-            if (bRead)
-            {
-                do_cpt_int_err(xd, "channel flux A->B", &gs->fluxfromAtoB[ic], list);
-            }
-            else
-            {
-                do_cpt_int_err(xd, "channel flux A->B p", gs->fluxfromAtoB_p[ic], list);
-            }
-        }
-    }
-
-    /* Ion flux leakage */
-    if (bRead)
-    {
-        do_cpt_int_err(xd, "flux leakage", &swapstate->fluxleak, list);
-    }
-    else
-    {
-        do_cpt_int_err(xd, "flux leakage", swapstate->fluxleak_p, list);
-    }
-
-    /* Ion history */
-    for (int ii = 0; ii < swapstate->nIonTypes; ii++)
-    {
-        swapstateIons_t *gs = &swapstate->ionType[ii];
-
-        do_cpt_int_err(xd, "number of ions", &gs->nMol, list);
-
-        if (bRead)
-        {
-            snew(gs->channel_label, gs->nMol);
-            snew(gs->comp_from, gs->nMol);
-        }
-
-        do_cpt_u_chars(xd, "channel history", gs->nMol, gs->channel_label, list);
-        do_cpt_u_chars(xd, "domain history", gs->nMol, gs->comp_from, list);
-    }
-
-    /* Save the last known whole positions to checkpoint
-     * file to be able to also make multimeric channels whole in PBC */
-    do_cpt_int_err(xd, "Ch0 atoms", &swapstate->nat[eChan0], list);
-    do_cpt_int_err(xd, "Ch1 atoms", &swapstate->nat[eChan1], list);
-    if (bRead)
-    {
-        snew(swapstate->xc_old_whole[eChan0], swapstate->nat[eChan0]);
-        snew(swapstate->xc_old_whole[eChan1], swapstate->nat[eChan1]);
-        do_cpt_n_rvecs_err(xd, "Ch0 whole x", swapstate->nat[eChan0], swapstate->xc_old_whole[eChan0], list);
-        do_cpt_n_rvecs_err(xd, "Ch1 whole x", swapstate->nat[eChan1], swapstate->xc_old_whole[eChan1], list);
-    }
-    else
-    {
-        do_cpt_n_rvecs_err(xd, "Ch0 whole x", swapstate->nat[eChan0], *swapstate->xc_old_whole_p[eChan0], list);
-        do_cpt_n_rvecs_err(xd, "Ch1 whole x", swapstate->nat[eChan1], *swapstate->xc_old_whole_p[eChan1], list);
-    }
-
-    return 0;
-}
-
 
 static int do_cpt_enerhist(XDR *xd, gmx_bool bRead,
                            int fflags, energyhistory_t *enerhist,
@@ -1696,226 +1472,6 @@ static int do_cpt_df_hist(XDR *xd, int fflags, int nlambda, df_history_t **dfhis
 }
 
 
-/* This function stores the last whole configuration of the reference and
- * average structure in the .cpt file
- */
-static int do_cpt_EDstate(XDR *xd, gmx_bool bRead,
-                          int nED, edsamhistory_t *EDstate, FILE *list)
-{
-    if (nED == 0)
-    {
-        return 0;
-    }
-
-    EDstate->bFromCpt     = bRead;
-    EDstate->nED          = nED;
-
-    /* When reading, init_edsam has not been called yet,
-     * so we have to allocate memory first. */
-    if (bRead)
-    {
-        snew(EDstate->nref, EDstate->nED);
-        snew(EDstate->old_sref, EDstate->nED);
-        snew(EDstate->nav, EDstate->nED);
-        snew(EDstate->old_sav, EDstate->nED);
-    }
-
-    /* Read/write the last whole conformation of SREF and SAV for each ED dataset (usually only one) */
-    for (int i = 0; i < EDstate->nED; i++)
-    {
-        char buf[STRLEN];
-
-        /* Reference structure SREF */
-        sprintf(buf, "ED%d # of atoms in reference structure", i+1);
-        do_cpt_int_err(xd, buf, &EDstate->nref[i], list);
-        sprintf(buf, "ED%d x_ref", i+1);
-        if (bRead)
-        {
-            snew(EDstate->old_sref[i], EDstate->nref[i]);
-            do_cpt_n_rvecs_err(xd, buf, EDstate->nref[i], EDstate->old_sref[i], list);
-        }
-        else
-        {
-            do_cpt_n_rvecs_err(xd, buf, EDstate->nref[i], EDstate->old_sref_p[i], list);
-        }
-
-        /* Average structure SAV */
-        sprintf(buf, "ED%d # of atoms in average structure", i+1);
-        do_cpt_int_err(xd, buf, &EDstate->nav[i], list);
-        sprintf(buf, "ED%d x_av", i+1);
-        if (bRead)
-        {
-            snew(EDstate->old_sav[i], EDstate->nav[i]);
-            do_cpt_n_rvecs_err(xd, buf, EDstate->nav[i], EDstate->old_sav[i], list);
-        }
-        else
-        {
-            do_cpt_n_rvecs_err(xd, buf, EDstate->nav[i], EDstate->old_sav_p[i], list);
-        }
-    }
-
-    return 0;
-}
-
-static int do_cpt_correlation_grid(XDR *xd, gmx_bool bRead, gmx_unused int fflags,
-                                   gmx::CorrelationGridHistory *corrGrid,
-                                   FILE *list, int eawhh)
-{
-    int ret = 0;
-
-    do_cpt_int_err(xd, eawhh_names[eawhh], &(corrGrid->numCorrelationTensors), list);
-    do_cpt_int_err(xd, eawhh_names[eawhh], &(corrGrid->tensorSize), list);
-    do_cpt_int_err(xd, eawhh_names[eawhh], &(corrGrid->blockDataListSize), list);
-
-    if (bRead)
-    {
-        initCorrelationGridHistory(corrGrid, corrGrid->numCorrelationTensors, corrGrid->tensorSize, corrGrid->blockDataListSize);
-    }
-
-    for (gmx::CorrelationBlockDataHistory &blockData : corrGrid->blockDataBuffer)
-    {
-        do_cpt_double_err(xd, eawhh_names[eawhh], &(blockData.blockSumWeight), list);
-        do_cpt_double_err(xd, eawhh_names[eawhh], &(blockData.blockSumSquareWeight), list);
-        do_cpt_double_err(xd, eawhh_names[eawhh], &(blockData.blockSumWeightX), list);
-        do_cpt_double_err(xd, eawhh_names[eawhh], &(blockData.blockSumWeightY), list);
-        do_cpt_double_err(xd, eawhh_names[eawhh], &(blockData.sumOverBlocksSquareBlockWeight), list);
-        do_cpt_double_err(xd, eawhh_names[eawhh], &(blockData.sumOverBlocksBlockSquareWeight), list);
-        do_cpt_double_err(xd, eawhh_names[eawhh], &(blockData.sumOverBlocksBlockWeightBlockWeightX), list);
-        do_cpt_double_err(xd, eawhh_names[eawhh], &(blockData.sumOverBlocksBlockWeightBlockWeightY), list);
-        do_cpt_double_err(xd, eawhh_names[eawhh], &(blockData.blockLength), list);
-        do_cpt_int_err(xd, eawhh_names[eawhh], &(blockData.previousBlockIndex), list);
-        do_cpt_double_err(xd, eawhh_names[eawhh], &(blockData.correlationIntegral), list);
-    }
-
-    return ret;
-}
-
-static int do_cpt_awh_bias(XDR *xd, gmx_bool bRead,
-                           int fflags, gmx::AwhBiasHistory *biasHistory,
-                           FILE *list)
-{
-    int                       ret   = 0;
-
-    gmx::AwhBiasStateHistory *state = &biasHistory->state;
-    for (int i = 0; (i < eawhhNR && ret == 0); i++)
-    {
-        if (fflags & (1<<i))
-        {
-            switch (i)
-            {
-                case eawhhIN_INITIAL:
-                    do_cpt_bool_err(xd, eawhh_names[i], &state->in_initial, list); break;
-                case eawhhEQUILIBRATEHISTOGRAM:
-                    do_cpt_bool_err(xd, eawhh_names[i], &state->equilibrateHistogram, list); break;
-                case eawhhHISTSIZE:
-                    do_cpt_double_err(xd, eawhh_names[i], &state->histSize, list); break;
-                case eawhhNPOINTS:
-                {
-                    int numPoints;
-                    if (!bRead)
-                    {
-                        numPoints = biasHistory->pointState.size();
-                    }
-                    do_cpt_int_err(xd, eawhh_names[i], &numPoints, list);
-                    if (bRead)
-                    {
-                        biasHistory->pointState.resize(numPoints);
-                    }
-                }
-                break;
-                case eawhhCOORDPOINT:
-                    for (auto &psh : biasHistory->pointState)
-                    {
-                        do_cpt_double_err(xd, eawhh_names[i], &psh.target, list);
-                        do_cpt_double_err(xd, eawhh_names[i], &psh.free_energy, list);
-                        do_cpt_double_err(xd, eawhh_names[i], &psh.bias, list);
-                        do_cpt_double_err(xd, eawhh_names[i], &psh.weightsum_iteration, list);
-                        do_cpt_double_err(xd, eawhh_names[i], &psh.weightsum_covering, list);
-                        do_cpt_double_err(xd, eawhh_names[i], &psh.weightsum_tot, list);
-                        do_cpt_double_err(xd, eawhh_names[i], &psh.weightsum_ref, list);
-                        do_cpt_step_err(xd, eawhh_names[i], &psh.last_update_index, list);
-                        do_cpt_double_err(xd, eawhh_names[i], &psh.log_pmfsum, list);
-                        do_cpt_double_err(xd, eawhh_names[i], &psh.visits_iteration, list);
-                        do_cpt_double_err(xd, eawhh_names[i], &psh.visits_tot, list);
-                    }
-                    break;
-                case eawhhUMBRELLAGRIDPOINT:
-                    do_cpt_int_err(xd, eawhh_names[i], &(state->umbrellaGridpoint), list); break;
-                case eawhhUPDATELIST:
-                    do_cpt_int_err(xd, eawhh_names[i], &(state->origin_index_updatelist), list);
-                    do_cpt_int_err(xd, eawhh_names[i], &(state->end_index_updatelist), list);
-                    break;
-                case eawhhLOGSCALEDSAMPLEWEIGHT:
-                    do_cpt_double_err(xd, eawhh_names[i], &(state->logScaledSampleWeight), list);
-                    do_cpt_double_err(xd, eawhh_names[i], &(state->maxLogScaledSampleWeight), list);
-                    break;
-                case eawhhNUMUPDATES:
-                    do_cpt_step_err(xd, eawhh_names[i], &(state->numUpdates), list);
-                    break;
-                case eawhhFORCECORRELATIONGRID:
-                    ret = do_cpt_correlation_grid(xd, bRead, fflags, &biasHistory->forceCorrelationGrid, list, i);
-                    break;
-                default:
-                    gmx_fatal(FARGS, "Unknown awh history entry %d\n", i);
-            }
-        }
-    }
-
-    return ret;
-}
-
-static int do_cpt_awh(XDR *xd, gmx_bool bRead,
-                      int fflags, gmx::AwhHistory *awhHistory,
-                      FILE *list)
-{
-    int ret = 0;
-
-    if (fflags != 0)
-    {
-        std::shared_ptr<gmx::AwhHistory> awhHistoryLocal;
-
-        if (awhHistory == nullptr)
-        {
-            GMX_RELEASE_ASSERT(bRead, "do_cpt_awh should not be called for writing without an AwhHistory");
-
-            awhHistoryLocal = std::make_shared<gmx::AwhHistory>();
-            awhHistory      = awhHistoryLocal.get();
-        }
-
-        /* To be able to read and write the AWH data several parameters determining the layout of the AWH structs need to be known
-           (nbias, npoints, etc.). The best thing (?) would be to have these passed to this function. When writing to a checkpoint
-           these parameters are available in awh_history (after calling init_awh_history). When reading from a checkpoint though, there
-           is no initialized awh_history (it is initialized and set in this function). The AWH parameters have not always been read
-           at the time when this function is called for reading so I don't know how to pass them as input. Here, this is solved by
-           when writing a checkpoint, also storing parameters needed for future reading of the checkpoint.
-
-           Another issue is that some variables that AWH checkpoints don't have a registered enum and string (e.g. nbias below).
-           One difficulty is the multilevel structure of the data which would need to be represented somehow. */
-
-        int numBias;
-        if (!bRead)
-        {
-            numBias = awhHistory->bias.size();
-        }
-        do_cpt_int_err(xd, "awh_nbias", &numBias, list);
-
-        if (bRead)
-        {
-            awhHistory->bias.resize(numBias);
-        }
-        for (auto &bias : awhHistory->bias)
-        {
-            ret = do_cpt_awh_bias(xd, bRead, fflags, &bias, list);
-            if (ret)
-            {
-                return ret;
-            }
-        }
-        do_cpt_double_err(xd, "awh_potential_offset", &awhHistory->potentialOffset, list);
-    }
-    return ret;
-}
-
 static int do_cpt_files(XDR *xd, gmx_bool bRead,
                         std::vector<gmx_file_position_t> *outputfiles,
                         FILE *list, int file_version)
@@ -2116,21 +1672,6 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
         flags_dfh = 0;
     }
 
-    int flags_awhh = 0;
-    if (state->awhHistory != nullptr && !state->awhHistory->bias.empty())
-    {
-        flags_awhh |= ( (1 << eawhhIN_INITIAL) |
-                        (1 << eawhhEQUILIBRATEHISTOGRAM) |
-                        (1 << eawhhHISTSIZE) |
-                        (1 << eawhhNPOINTS) |
-                        (1 << eawhhCOORDPOINT) |
-                        (1 << eawhhUMBRELLAGRIDPOINT) |
-                        (1 << eawhhUPDATELIST) |
-                        (1 << eawhhLOGSCALEDSAMPLEWEIGHT) |
-                        (1 << eawhhNUMUPDATES) |
-                        (1 << eawhhFORCECORRELATIONGRID));
-    }
-
     /* We can check many more things now (CPU, acceleration, etc), but
      * it is highly unlikely to have two separate builds with exactly
      * the same version, user, time, and build host!
@@ -2138,11 +1679,6 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
 
     int                      nlambda     = (state->dfhist ? state->dfhist->nlambda : 0);
 
-    edsamhistory_t          *edsamhist   = observablesHistory->edsamHistory.get();
-    int                      nED         = (edsamhist ? edsamhist->nED : 0);
-
-    swaphistory_t           *swaphist    = observablesHistory->swapHistory.get();
-    int                      eSwapCoords = (swaphist ? swaphist->eSwapCoords : eswapNO);
 
     CheckpointHeaderContents headerContents =
     {
@@ -2151,8 +1687,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
         {0}, npmenodes,
         state->natoms, state->ngtc, state->nnhpres,
         state->nhchainlength, nlambda, state->flags, flags_eks, flags_enh,
-        flagsPullHistory, flags_dfh, flags_awhh,
-        nED, eSwapCoords
+        flagsPullHistory, flags_dfh
     };
     std::strcpy(headerContents.version, gmx_version());
     std::strcpy(headerContents.fprog, gmx::getProgramContext().fullBinaryPath());
@@ -2169,9 +1704,6 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
         (do_cpt_enerhist(gmx_fio_getxdr(fp), FALSE, flags_enh, enerhist, nullptr) < 0)  ||
         (doCptPullHist(gmx_fio_getxdr(fp), FALSE, flagsPullHistory, pullHist, StatePart::pullHistory, nullptr) < 0)  ||
         (do_cpt_df_hist(gmx_fio_getxdr(fp), flags_dfh, nlambda, &state->dfhist, nullptr) < 0)  ||
-        (do_cpt_EDstate(gmx_fio_getxdr(fp), FALSE, nED, edsamhist, nullptr) < 0)      ||
-        (do_cpt_awh(gmx_fio_getxdr(fp), FALSE, flags_awhh, state->awhHistory.get(), nullptr) < 0) ||
-        (do_cpt_swapstate(gmx_fio_getxdr(fp), FALSE, eSwapCoords, swaphist, nullptr) < 0) ||
         (do_cpt_files(gmx_fio_getxdr(fp), FALSE, &outputfiles, nullptr,
                       headerContents.file_version) < 0))
     {
@@ -2614,37 +2146,6 @@ static void read_checkpoint(const char *fn, t_fileio *logfio,
         cp_error();
     }
 
-    if (headerContents->nED > 0 && observablesHistory->edsamHistory == nullptr)
-    {
-        observablesHistory->edsamHistory = gmx::compat::make_unique<edsamhistory_t>(edsamhistory_t {});
-    }
-    ret = do_cpt_EDstate(gmx_fio_getxdr(fp), TRUE, headerContents->nED, observablesHistory->edsamHistory.get(), nullptr);
-    if (ret)
-    {
-        cp_error();
-    }
-
-    if (headerContents->flags_awhh != 0 && state->awhHistory == nullptr)
-    {
-        state->awhHistory = std::make_shared<gmx::AwhHistory>();
-    }
-    ret = do_cpt_awh(gmx_fio_getxdr(fp), TRUE,
-                     headerContents->flags_awhh, state->awhHistory.get(), nullptr);
-    if (ret)
-    {
-        cp_error();
-    }
-
-    if (headerContents->eSwapCoords != eswapNO && observablesHistory->swapHistory == nullptr)
-    {
-        observablesHistory->swapHistory = gmx::compat::make_unique<swaphistory_t>(swaphistory_t {});
-    }
-    ret = do_cpt_swapstate(gmx_fio_getxdr(fp), TRUE, headerContents->eSwapCoords, observablesHistory->swapHistory.get(), nullptr);
-    if (ret)
-    {
-        cp_error();
-    }
-
     std::vector<gmx_file_position_t> outputfiles;
     ret = do_cpt_files(gmx_fio_getxdr(fp), TRUE, &outputfiles, nullptr, headerContents->file_version);
     if (ret)
@@ -2856,28 +2357,6 @@ static void read_checkpoint_data(t_fileio *fp, int *simulation_part,
     {
         cp_error();
     }
-
-    edsamhistory_t edsamhist = {};
-    ret = do_cpt_EDstate(gmx_fio_getxdr(fp), TRUE, headerContents.nED, &edsamhist, nullptr);
-    if (ret)
-    {
-        cp_error();
-    }
-
-    ret = do_cpt_awh(gmx_fio_getxdr(fp), TRUE,
-                     headerContents.flags_awhh, state->awhHistory.get(), nullptr);
-    if (ret)
-    {
-        cp_error();
-    }
-
-    swaphistory_t swaphist = {};
-    ret = do_cpt_swapstate(gmx_fio_getxdr(fp), TRUE, headerContents.eSwapCoords, &swaphist, nullptr);
-    if (ret)
-    {
-        cp_error();
-    }
-
     ret = do_cpt_files(gmx_fio_getxdr(fp), TRUE,
                        outputfiles,
                        nullptr, headerContents.file_version);
@@ -2973,24 +2452,6 @@ void list_checkpoint(const char *fn, FILE *out)
     {
         ret = do_cpt_df_hist(gmx_fio_getxdr(fp),
                              headerContents.flags_dfh, headerContents.nlambda, &state.dfhist, out);
-    }
-
-    if (ret == 0)
-    {
-        edsamhistory_t edsamhist = {};
-        ret = do_cpt_EDstate(gmx_fio_getxdr(fp), TRUE, headerContents.nED, &edsamhist, out);
-    }
-
-    if (ret == 0)
-    {
-        ret = do_cpt_awh(gmx_fio_getxdr(fp), TRUE,
-                         headerContents.flags_awhh, state.awhHistory.get(), out);
-    }
-
-    if (ret == 0)
-    {
-        swaphistory_t swaphist = {};
-        ret = do_cpt_swapstate(gmx_fio_getxdr(fp), TRUE, headerContents.eSwapCoords, &swaphist, out);
     }
 
     if (ret == 0)

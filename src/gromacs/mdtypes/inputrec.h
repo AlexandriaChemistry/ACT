@@ -58,8 +58,6 @@ typedef struct t_swap *gmx_swapcoords_t;
 
 namespace gmx
 {
-class Awh;
-struct AwhParams;
 class KeyValueTreeObject;
 }
 
@@ -540,12 +538,6 @@ struct t_inputrec // NOLINT (clang-analyzer-optin.performance.Padding)
     // TODO: Remove this by converting pull into a ForceProvider
     //! The COM pull force calculation data structure
     pull_t *pull_work;
-
-    /* AWH bias data */
-    //! Whether to use AWH biasing for PMF calculations
-    gmx_bool        bDoAwh;
-    //! AWH biasing parameters
-    gmx::AwhParams *awhParams;
 
     /* Enforced rotation data */
     //! Whether to calculate enforced rotation potential(s)

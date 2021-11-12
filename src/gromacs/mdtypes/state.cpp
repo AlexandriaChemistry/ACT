@@ -46,12 +46,10 @@
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/veccompare.h"
-#include "gromacs/mdtypes/awh-history.h"
 #include "gromacs/mdtypes/df_history.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/pull-params.h"
-#include "gromacs/mdtypes/swaphistory.h"
 #include "gromacs/pbcutil/boxutilities.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/compare.h"
@@ -237,7 +235,6 @@ t_state::t_state() : natoms(0),
                      ekinstate(),
                      hist(),
                      dfhist(nullptr),
-                     awhHistory(nullptr),
                      ddp_count(0),
                      ddp_count_cg_gl(0)
 

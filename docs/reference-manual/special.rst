@@ -11,7 +11,6 @@ the use of |Gromacs| for specific scientific problems.
 
    special/free-energy-implementation
    special/pulling
-   special/awh
    special/enforced-rotation
    special/electric-fields
    special/comp-electrophys

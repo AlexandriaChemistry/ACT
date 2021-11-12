@@ -47,11 +47,9 @@
 
 #include <array>
 
-#include "gromacs/awh/awh.h"
 #include "gromacs/domdec/dlbtiming.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/domdec/partition.h"
-#include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/gmxlib/chargegroup.h"
 #include "gromacs/gmxlib/network.h"
@@ -785,10 +783,8 @@ static void checkPotentialEnergyValidity(int64_t               step,
  * global communication at the end, so global barriers within the MD loop
  * are as close together as possible.
  *
- * \param[in]     fplog            The log file
  * \param[in]     cr               The communication record
  * \param[in]     inputrec         The input record
- * \param[in]     awh              The Awh module (nullptr if none in use).
  * \param[in]     enforcedRotation Enforced rotation module.
  * \param[in]     step             The current MD step
  * \param[in]     t                The current time
@@ -801,17 +797,14 @@ static void checkPotentialEnergyValidity(int64_t               step,
  * \param[in]     forceFlags       Flags that tell whether we should compute forces/energies/virial
  * \param[in,out] forceWithVirial  Force and virial buffers
  * \param[in,out] enerd            Energy buffer
- * \param[in,out] ed               Essential dynamics pointer
  * \param[in]     bNS              Tells if we did neighbor searching this step, used for ED sampling
  *
  * \todo Remove bNS, which is used incorrectly.
  * \todo Convert all other algorithms called here to ForceProviders.
  */
 static void
-computeSpecialForces(FILE                          *fplog,
-                     const t_commrec               *cr,
+computeSpecialForces(const t_commrec               *cr,
                      const t_inputrec              *inputrec,
-                     gmx::Awh                      *awh,
                      gmx_enfrot                    *enforcedRotation,
                      int64_t                        step,
                      double                         t,
@@ -823,9 +816,7 @@ computeSpecialForces(FILE                          *fplog,
                      real                          *lambda,
                      int                            forceFlags,
                      gmx::ForceWithVirial          *forceWithVirial,
-                     gmx_enerdata_t                *enerd,
-                     gmx_edsam                     *ed,
-                     gmx_bool                       bNS)
+                     gmx_enerdata_t                *enerd)
 {
     const bool computeForces = (forceFlags & GMX_FORCE_FORCES) != 0;
 
@@ -847,14 +838,6 @@ computeSpecialForces(FILE                          *fplog,
                                forceWithVirial,
                                mdatoms, enerd, lambda, t,
                                wcycle);
-
-        if (awh)
-        {
-            enerd->term[F_COM_PULL] +=
-                awh->applyBiasForcesAndUpdateBias(inputrec->ePBC, *mdatoms, box,
-                                                  forceWithVirial,
-                                                  t, step, wcycle, fplog);
-        }
     }
 
     rvec *f = as_rvec_array(forceWithVirial->force_.data());
@@ -865,16 +848,6 @@ computeSpecialForces(FILE                          *fplog,
         wallcycle_start(wcycle, ewcROTadd);
         enerd->term[F_COM_PULL] += add_rot_forces(enforcedRotation, f, cr, step, t);
         wallcycle_stop(wcycle, ewcROTadd);
-    }
-
-    if (ed)
-    {
-        /* Note that since init_edsam() is called after the initialization
-         * of forcerec, edsam doesn't request the noVirSum force buffer.
-         * Thus if no other algorithm (e.g. PME) requires it, the forces
-         * here will contribute to the virial.
-         */
-        do_flood(cr, inputrec, as_rvec_array(x.data()), f, ed, box, step, bNS);
     }
 
     /* Add forces from interactive molecular dynamics (IMD), if bIMD == TRUE. */
@@ -1041,7 +1014,6 @@ static void do_force_cutsVERLET(FILE *fplog,
                                 const t_commrec *cr,
                                 const gmx_multisim_t *ms,
                                 const t_inputrec *inputrec,
-                                gmx::Awh *awh,
                                 gmx_enfrot *enforcedRotation,
                                 int64_t step,
                                 t_nrnb *nrnb,
@@ -1061,7 +1033,6 @@ static void do_force_cutsVERLET(FILE *fplog,
                                 const gmx_vsite_t *vsite,
                                 rvec mu_tot,
                                 double t,
-                                gmx_edsam *ed,
                                 int flags,
                                 DdOpenBalanceRegionBeforeForceComputation ddOpenBalanceRegion,
                                 DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion)
@@ -1573,11 +1544,10 @@ static void do_force_cutsVERLET(FILE *fplog,
 
     wallcycle_stop(wcycle, ewcFORCE);
 
-    computeSpecialForces(fplog, cr, inputrec, awh, enforcedRotation,
+    computeSpecialForces(cr, inputrec, enforcedRotation,
                          step, t, wcycle,
                          fr->forceProviders, box, x.unpaddedArrayRef(), mdatoms, lambda,
-                         flags, &forceWithVirial, enerd,
-                         ed, bNS);
+                         flags, &forceWithVirial, enerd);
 
     if (bUseOrEmulGPU)
     {
@@ -1782,7 +1752,6 @@ static void do_force_cutsGROUP(FILE *fplog,
                                const t_commrec *cr,
                                const gmx_multisim_t *ms,
                                const t_inputrec *inputrec,
-                               gmx::Awh *awh,
                                gmx_enfrot *enforcedRotation,
                                int64_t step,
                                t_nrnb *nrnb,
@@ -1802,7 +1771,6 @@ static void do_force_cutsGROUP(FILE *fplog,
                                const gmx_vsite_t *vsite,
                                rvec mu_tot,
                                double t,
-                               gmx_edsam *ed,
                                int flags,
                                DdOpenBalanceRegionBeforeForceComputation ddOpenBalanceRegion,
                                DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion)
@@ -2041,11 +2009,10 @@ static void do_force_cutsGROUP(FILE *fplog,
         }
     }
 
-    computeSpecialForces(fplog, cr, inputrec, awh, enforcedRotation,
+    computeSpecialForces(cr, inputrec, enforcedRotation,
                          step, t, wcycle,
                          fr->forceProviders, box, x.unpaddedArrayRef(), mdatoms, lambda,
-                         flags, &forceWithVirial, enerd,
-                         ed, bNS);
+                         flags, &forceWithVirial, enerd);
 
     if (bDoForces)
     {
@@ -2117,7 +2084,6 @@ void do_force(FILE                                     *fplog,
               const t_commrec                          *cr,
               const gmx_multisim_t                     *ms,
               const t_inputrec                         *inputrec,
-              gmx::Awh                                 *awh,
               gmx_enfrot                               *enforcedRotation,
               int64_t                                   step,
               t_nrnb                                   *nrnb,
@@ -2138,7 +2104,6 @@ void do_force(FILE                                     *fplog,
               const gmx_vsite_t                        *vsite,
               rvec                                      mu_tot,
               double                                    t,
-              gmx_edsam                                *ed,
               int                                       flags,
               DdOpenBalanceRegionBeforeForceComputation ddOpenBalanceRegion,
               DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion)
@@ -2153,7 +2118,7 @@ void do_force(FILE                                     *fplog,
     {
         case ecutsVERLET:
             do_force_cutsVERLET(fplog, cr, ms, inputrec,
-                                awh, enforcedRotation, step, nrnb, wcycle,
+                                enforcedRotation, step, nrnb, wcycle,
                                 top,
                                 groups,
                                 box, x, hist,
@@ -2163,14 +2128,14 @@ void do_force(FILE                                     *fplog,
                                 lambda.data(), graph,
                                 fr, fr->ic,
                                 vsite, mu_tot,
-                                t, ed,
+                                t,
                                 flags,
                                 ddOpenBalanceRegion,
                                 ddCloseBalanceRegion);
             break;
         case ecutsGROUP:
             do_force_cutsGROUP(fplog, cr, ms, inputrec,
-                               awh, enforcedRotation, step, nrnb, wcycle,
+                               enforcedRotation, step, nrnb, wcycle,
                                top,
                                groups,
                                box, x, hist,
@@ -2179,8 +2144,7 @@ void do_force(FILE                                     *fplog,
                                enerd, fcd,
                                lambda.data(), graph,
                                fr, vsite, mu_tot,
-                               t, ed,
-                               flags,
+                               t, flags,
                                ddOpenBalanceRegion,
                                ddCloseBalanceRegion);
             break;
