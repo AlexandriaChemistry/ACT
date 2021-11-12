@@ -96,4 +96,51 @@ public:
 
 };
 
+
+/*!
+ * Class for Quick-sort
+ */
+class QuickSorter : public Sorter {
+
+    double chromosomeLength;
+    matrix tmpPop;
+    vector tmpFitness;
+
+public:
+    QuickSorter(const int   popSize,
+                const int   chromosomeLength);
+
+
+    void sort(matrix&        pop,
+              vector&        fitness,
+              const int      popSize);
+
+    /*!
+     * Split <fitA> into 2 runs, sort both runs into <fitB>, merge both runs from <fitB> into <fitA>
+     * @param popB      population B
+     * @param fitB      fitness B
+     * @param left      left index (inclusive)
+     * @param right     right index (exclusive)
+     * @param popA      population A
+     * @param fitA      fitness A
+     */
+    void quickSort(vector&       fitness,
+                   const int     low,
+                   const int     high);
+
+    /*!
+     * Split <fitA> into 2 runs, sort both runs into <fitB>, merge both runs from <fitB> into <fitA>
+     * @param popB      population B
+     * @param fitB      fitness B
+     * @param left      left index (inclusive)
+     * @param right     right index (exclusive)
+     * @param popA      population A
+     * @param fitA      fitness A
+     */
+    int partition(vector&       fitness,
+                  const int     low,
+                  const int     high);
+};
+
+
 #endif //ACT_SORTER_H
