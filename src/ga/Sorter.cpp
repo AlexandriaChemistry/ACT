@@ -13,7 +13,6 @@ MergeSorter::MergeSorter(const int  popSize,
 
 }
 
-
 void MergeSorter::sort(matrix&       pop,
                        vector&       fitness,
                        const int     popSize) {
@@ -70,3 +69,54 @@ void MergeSorter::topDownMerge(matrix&       popA,
     }
 
 }
+
+QuickSorter::QuickSorter(const int  popSize,
+                         const int  chromosomeLength) {
+
+    tmpFitness = vector(popSize);
+    tmpPop = allocateMatrix(popSize, chromosomeLength);
+    this->chromosomeLength = chromosomeLength;
+
+}
+
+void QuickSorter::sort(matrix&       pop,
+                       vector&       fitness,
+                       const int     popSize) {
+    int low = 0;
+    int high = popSize;
+    quickSort(fitness, low, high);
+}
+
+void QuickSorter::quickSort(vector&       fitness,
+               const int     low,
+               const int     high) {
+    if (low >= 0 && high >= 0 && low < high) {
+        int p = partition(fitness, low, high);
+        quickSort(fitness, low, p - 1);
+        quickSort(fitness, p + 1, high);
+    }
+}
+
+int QuickSorter::partition(vector&        fitness,
+              const int      low,
+              const int      high) {
+    double pivot = fitness[high];
+    int candidate = low - 1;
+    double temp;
+
+    for (int check = low; check < high; check++) {
+        if (fitness[check] <= pivot) {
+            candidate = candidate + 1;
+            temp = fitness[candidate];
+            fitness[candidate] = fitness[check];
+            fitness[check] = temp;
+        }
+    }
+
+    return candidate;
+}
+
+
+
+
+
