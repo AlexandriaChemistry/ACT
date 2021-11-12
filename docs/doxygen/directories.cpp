@@ -25,7 +25,7 @@ Doxygen documentation file for directories in the source tree.
 \brief Source code for building the `libgromacs` library.
  */
 
-/*! \libinternal
+/*!
 \dir src/gromacs/coulombintegrals
 \brief \ref libinternal
 
