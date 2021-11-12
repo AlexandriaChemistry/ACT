@@ -60,8 +60,7 @@ typedef struct gmx_mdoutf *gmx_mdoutf_t;
  * Returns a pointer to a data structure with all output file pointers
  * and names required by mdrun.
  */
-gmx_mdoutf_t init_mdoutf(FILE                   *fplog,
-                         int                     nfile,
+gmx_mdoutf_t init_mdoutf(int                     nfile,
                          const t_filenm          fnm[],
                          const MdrunOptions     &mdrunOptions,
                          const t_commrec        *cr,
@@ -78,13 +77,6 @@ FILE *mdoutf_get_fp_dhdl(gmx_mdoutf_t of);
 
 /*! \brief Getter for wallcycle timer */
 gmx_wallcycle_t mdoutf_get_wcycle(gmx_mdoutf_t of);
-
-/*! \brief Close TNG files if they are open.
- *
- * This also measures the time it takes to close the TNG
- * files.
- */
-void mdoutf_tng_close(gmx_mdoutf_t of);
 
 /*! \brief Close all open output files and free the of pointer */
 void done_mdoutf(gmx_mdoutf_t of);
@@ -104,26 +96,6 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, const t_commrec *cr,
                                       t_state *state_local, t_state *state_global,
                                       ObservablesHistory *observablesHistory,
                                       gmx::ArrayRef<gmx::RVec> f_local);
-
-/*! \brief Get the output interval of box size of uncompressed TNG output.
- * Returns 0 if no uncompressed TNG file is open.
- */
-int mdoutf_get_tng_box_output_interval(gmx_mdoutf_t of);
-
-/*! \brief Get the output interval of lambda of uncompressed TNG output.
- * Returns 0 if no uncompressed TNG file is open.
- */
-int mdoutf_get_tng_lambda_output_interval(gmx_mdoutf_t of);
-
-/*! \brief Get the output interval of box size of compressed TNG output.
- * Returns 0 if no compressed TNG file is open.
- */
-int mdoutf_get_tng_compressed_box_output_interval(gmx_mdoutf_t of);
-
-/*! \brief Get the output interval of lambda of compressed TNG output.
- * Returns 0 if no compressed TNG file is open.
- */
-int mdoutf_get_tng_compressed_lambda_output_interval(gmx_mdoutf_t of);
 
 #define MDOF_X                 (1<<0)
 #define MDOF_V                 (1<<1)

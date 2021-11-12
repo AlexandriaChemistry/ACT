@@ -45,7 +45,7 @@
 
 enum
 {
-    eftASC, eftXDR, eftTNG, eftGEN, eftNR
+    eftASC, eftXDR, eftGEN, eftNR
 };
 
 /* To support multiple file types with one general (eg TRX) we have
@@ -53,29 +53,21 @@ enum
  */
 static const int trxs[] =
 {
-    efXTC, efTRR, efCPT,
-    efGRO, efG96, efPDB, efTNG
+    efTRR, efCPT,
+    efGRO, efG96, efPDB
 };
 #define NTRXS asize(trxs)
 
-static const int trcompressed[] =
-{
-    efXTC,
-    efTNG
-};
-#define NTRCOMPRESSED asize(trcompressed)
-
 static const int tros[] =
 {
-    efXTC, efTRR,
-    efGRO, efG96, efPDB, efTNG
+    efTRR,
+    efGRO, efG96, efPDB
 };
 #define NTROS asize(tros)
 
 static const int trns[] =
 {
-    efTRR, efCPT,
-    efTNG
+    efTRR, efCPT
 };
 #define NTRNS asize(trns)
 
@@ -117,12 +109,6 @@ static const t_deffile deffile[efNR] =
     { eftGEN, ".???", "traj", nullptr,
       "Full precision trajectory", NTRNS, trns },
     { eftXDR, ".trr", "traj", nullptr, "Trajectory in portable xdr format" },
-    { eftGEN, ".???", "traj_comp", nullptr,
-      "Compressed trajectory (tng format or portable xdr format)", NTRCOMPRESSED, trcompressed},
-    { eftXDR, ".xtc", "traj", nullptr,
-      "Compressed trajectory (portable xdr format): xtc" },
-    { eftTNG, ".tng", "traj", nullptr,
-      "Trajectory file (tng format)" },
     { eftXDR, ".edr", "ener",   nullptr, "Energy file"},
     { eftGEN, ".???", "conf", "-c", "Structure file", NSTXS, stxs },
     { eftGEN, ".???", "out", "-o", "Structure file", NSTOS, stos },

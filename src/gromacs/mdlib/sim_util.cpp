@@ -2932,7 +2932,7 @@ void init_rerun(FILE *fplog,
 
     if (nfile != -1)
     {
-        *outf   = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr,
+        *outf   = init_mdoutf(nfile, fnm, mdrunOptions, cr,
                               ir, mtop, oenv, wcycle);
         *mdebin = init_mdebin(mdrunOptions.continuationOptions.appendFiles ? nullptr : mdoutf_get_fp_ene(*outf),
                               mtop, ir, mdoutf_get_fp_dhdl(*outf), true);

@@ -1902,8 +1902,6 @@ void get_ir(const char *mdparin, const char *mdparout,
     ir->nstcalcenergy = get_eint(&inp, "nstcalcenergy", 100, wi);
     ir->nstenergy     = get_eint(&inp, "nstenergy",  1000, wi);
     printStringNoNewline(&inp, "Output frequency and precision for .xtc file");
-    ir->nstxout_compressed      = get_eint(&inp, "nstxout-compressed",  0, wi);
-    ir->x_compression_precision = get_ereal(&inp, "compressed-x-precision", 1000.0, wi);
     printStringNoNewline(&inp, "This selects the subset of atoms for the compressed");
     printStringNoNewline(&inp, "trajectory file. You can select multiple groups. By");
     printStringNoNewline(&inp, "default, all atoms will be written.");

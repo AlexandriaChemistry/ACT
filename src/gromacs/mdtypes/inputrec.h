@@ -298,14 +298,10 @@ struct t_inputrec // NOLINT (clang-analyzer-optin.performance.Padding)
     int                         nstfout;
     //! Number of steps after which energies printed
     int                         nstenergy;
-    //! Number of steps after which compressed trj (.xtc,.tng) is output
-    int                         nstxout_compressed;
     //! Initial time (ps)
     double                      init_t;
     //! Time step (ps)
     double                      delta_t;
-    //! Precision of x in compressed trajectory file
-    real                        x_compression_precision;
     //! Requested fourier_spacing, when nk? not set
     real                        fourier_spacing;
     //! Number of k vectors in x dimension for fourier methods for long range electrost.

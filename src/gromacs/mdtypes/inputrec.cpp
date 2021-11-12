@@ -609,8 +609,6 @@ void pr_inputrec(FILE *fp, int indent, const char *title, const t_inputrec *ir,
         PI("nstlog", ir->nstlog);
         PI("nstcalcenergy", ir->nstcalcenergy);
         PI("nstenergy", ir->nstenergy);
-        PI("nstxout-compressed", ir->nstxout_compressed);
-        PR("compressed-x-precision", ir->x_compression_precision);
 
         /* Neighborsearching parameters */
         PS("cutoff-scheme", ECUTSCHEME(ir->cutoff_scheme));
@@ -929,10 +927,8 @@ void cmp_inputrec(FILE *fp, const t_inputrec *ir1, const t_inputrec *ir2, real f
     cmp_int(fp, "inputrec->nstfout", -1, ir1->nstfout, ir2->nstfout);
     cmp_int(fp, "inputrec->nstcalcenergy", -1, ir1->nstcalcenergy, ir2->nstcalcenergy);
     cmp_int(fp, "inputrec->nstenergy", -1, ir1->nstenergy, ir2->nstenergy);
-    cmp_int(fp, "inputrec->nstxout_compressed", -1, ir1->nstxout_compressed, ir2->nstxout_compressed);
     cmp_double(fp, "inputrec->init_t", -1, ir1->init_t, ir2->init_t, ftol, abstol);
     cmp_double(fp, "inputrec->delta_t", -1, ir1->delta_t, ir2->delta_t, ftol, abstol);
-    cmp_real(fp, "inputrec->x_compression_precision", -1, ir1->x_compression_precision, ir2->x_compression_precision, ftol, abstol);
     cmp_real(fp, "inputrec->fourierspacing", -1, ir1->fourier_spacing, ir2->fourier_spacing, ftol, abstol);
     cmp_int(fp, "inputrec->nkx", -1, ir1->nkx, ir2->nkx);
     cmp_int(fp, "inputrec->nky", -1, ir1->nky, ir2->nky);
