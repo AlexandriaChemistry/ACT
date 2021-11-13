@@ -54,7 +54,6 @@
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/timecontrol.h"
-#include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trrio.h"
 #include "gromacs/fileio/xdrf.h"
 #include "gromacs/math/vec.h"
@@ -906,17 +905,7 @@ void rewind_trj(t_trxstatus *status)
 
 /***** T O P O L O G Y   S T U F F ******/
 
-t_topology *read_top(const char *fn, int *ePBC)
+t_topology *read_top(gmx_unused const char *fn, gmx_unused int *ePBC)
 {
-    int         epbc, natoms;
-    t_topology *top;
-
-    snew(top, 1);
-    epbc = read_tpx_top(fn, nullptr, nullptr, &natoms, nullptr, nullptr, top);
-    if (ePBC)
-    {
-        *ePBC = epbc;
-    }
-
-    return top;
+    return nullptr;
 }

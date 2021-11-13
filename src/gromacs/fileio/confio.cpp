@@ -47,7 +47,6 @@
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/groio.h"
 #include "gromacs/fileio/pdbio.h"
-#include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/atoms.h"
@@ -237,66 +236,6 @@ static void get_stx_coordnum(const char *infile, int *natoms)
     }
 }
 
-// TODO molecule index handling is suspected of being broken here
-static void tpx_make_chain_identifiers(t_atoms *atoms, t_block *mols)
-{
-    /* We always assign a new chain number, but save the chain id characters
-     * for larger molecules.
-     */
-    const int chainMinAtoms = 15;
-
-    int       chainnum = 0;
-    char      chainid  = 'A';
-    bool      outOfIds = false;
-    for (int m = 0; m < mols->nr; m++)
-    {
-        int a0 = mols->index[m];
-        int a1 = mols->index[m+1];
-        int c;
-        if (a1 - a0 >= chainMinAtoms && !outOfIds)
-        {
-            /* Set the chain id for the output */
-            c = chainid;
-            /* Here we allow for the max possible 2*26+10=62 chain ids */
-            if (chainid == 'Z')
-            {
-                chainid = 'a';
-            }
-            else if (chainid == 'z')
-            {
-                chainid = '0';
-            }
-            else if (chainid == '9')
-            {
-                outOfIds = true;
-            }
-            else
-            {
-                chainid++;
-            }
-        }
-        else
-        {
-            c = ' ';
-        }
-        for (int a = a0; a < a1; a++)
-        {
-            atoms->resinfo[atoms->atom[a].resind].chainnum = chainnum;
-            atoms->resinfo[atoms->atom[a].resind].chainid  = c;
-        }
-        chainnum++;
-    }
-
-    /* Blank out the chain id if there was only one chain */
-    if (chainid == 'B')
-    {
-        for (int r = 0; r < atoms->nres; r++)
-        {
-            atoms->resinfo[r].chainid = ' ';
-        }
-    }
-}
-
 static void read_stx_conf(const char *infile,
                           t_symtab *symtab, char **name, t_atoms *atoms,
                           rvec x[], rvec *v, int *ePBC, matrix box)
@@ -393,41 +332,17 @@ void readConfAndTopology(const char *infile,
         *ePBC = -1;
     }
 
-    *haveTopology = fn2bTPX(infile);
-    if (*haveTopology)
-    {
-        t_tpxheader header;
-        read_tpxheader(infile, &header, TRUE);
-        if (x)
-        {
-            snew(*x, header.natoms);
-        }
-        if (v)
-        {
-            snew(*v, header.natoms);
-        }
-        int natoms;
-        int ePBC_tmp
-            = read_tpx(infile, nullptr, box, &natoms,
-                       (x == nullptr) ? nullptr : *x, (v == nullptr) ? nullptr : *v, mtop);
-        if (ePBC != nullptr)
-        {
-            *ePBC = ePBC_tmp;
-        }
-    }
-    else
-    {
-        t_symtab   symtab;
-        char      *name;
-        t_atoms    atoms;
-
-        open_symtab(&symtab);
-
-        readConfAndAtoms(infile, &symtab, &name, &atoms, ePBC, x, v, box);
-
-        convertAtomsToMtop(&symtab, put_symtab(&symtab, name), &atoms, mtop);
-        sfree(name);
-    }
+    *haveTopology = false;
+    t_symtab   symtab;
+    char      *name;
+    t_atoms    atoms;
+    
+    open_symtab(&symtab);
+    
+    readConfAndAtoms(infile, &symtab, &name, &atoms, ePBC, x, v, box);
+    
+    convertAtomsToMtop(&symtab, put_symtab(&symtab, name), &atoms, mtop);
+    sfree(name);
 }
 
 gmx_bool read_tps_conf(const char *infile, t_topology *top, int *ePBC,
@@ -439,8 +354,6 @@ gmx_bool read_tps_conf(const char *infile, t_topology *top, int *ePBC,
     readConfAndTopology(infile, &haveTopology, &mtop, ePBC, x, v, box);
 
     *top = gmx_mtop_t_to_t_topology(&mtop, true);
-
-    tpx_make_chain_identifiers(&top->atoms, &top->mols);
 
     if (requireMasses && !top->atoms.haveMass)
     {
