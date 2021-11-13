@@ -40,53 +40,7 @@
 
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"
-#include "gromacs/gmxpreprocess/hackblock.h"
 #include "gromacs/gmxpreprocess/toputil.h"
-
-/* this *MUST* correspond to array in pdb2top.c */
-enum {
-    ehisA, ehisB, ehisH, ehis1, ehisNR
-};
-extern const char *hh[ehisNR];
-
-typedef struct {
-    int   res1, res2;
-    char *a1, *a2;
-} t_ssbond;
-
-void choose_ff(const char *ffsel,
-               char *forcefield, int ff_maxlen,
-               char *ffdir, int ffdir_maxlen);
-/* Find force fields in the current and libdirs and choose an ff.
- * If ffsel!=NULL: search for ffsel.
- * If ffsel==NULL: interactive selection.
- */
-
-void choose_watermodel(const char *wmsel, const char *ffdir,
-                       char **watermodel);
-/* Choose, possibly interactively, which water model to include,
- * based on the wmsel command line option choice and watermodels.dat
- * in ffdir.
- */
-
-void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
-                        int nrtp, t_restp rtp[],
-                        int nres, t_resinfo *resinfo,
-                        int nterpairs,
-                        t_hackblock **ntdb, t_hackblock **ctdb,
-                        const int *rn, const int *rc,
-                        bool bAllowMissing);
-/* Get the database entries for the nres residues in resinfo
- * and store them in restp and hb.
- */
-
-void match_atomnames_with_rtp(t_restp restp[], t_hackblock hb[],
-                              t_atoms *pdba, rvec *x,
-                              bool bVerbose);
-/* Check if atom in pdba need to be deleted of renamed due to tdb or hdb.
- * If renaming involves atoms added wrt to the rtp database,
- * add these atoms to restp.
- */
 
 void print_top_comment(FILE       *out,
                        const char *filename,
@@ -109,22 +63,5 @@ void write_top(FILE *out, const char *pr, const char *molname,
                int bts[], t_params plist[], t_excls excls[],
                gpp_atomtype_t atype, int *cgnr, int nrexcl);
 /* NOTE: nrexcl is not the size of *excl! */
-
-void pdb2top(FILE *top_file, const char *posre_fn, const char *molname,
-             t_atoms *atoms, rvec **x,
-             gpp_atomtype_t atype, struct t_symtab *tab,
-             int nrtp, t_restp rtp[],
-             t_restp *restp, t_hackblock *hb,
-             bool bAllowMissing,
-             bool bVsites, bool bVsiteAromatics,
-             const char *ffdir,
-             real mHmult,
-             int nssbonds, t_ssbond ssbonds[],
-             real long_bond_dist, real short_bond_dist,
-             bool bDeuterate, bool bChargeGroups, bool bCmap,
-             bool bRenumRes, bool bRTPresname);
-/* Create a topology ! */
-
-void print_sums(t_atoms *atoms, bool bSystem);
 
 #endif

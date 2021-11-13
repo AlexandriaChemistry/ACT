@@ -66,10 +66,6 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
-#if GMX_USE_PLUGINS
-#include "gromacs/fileio/vmdio.h"
-#endif
-
 /* defines for frame counter output */
 #define SKIP1   10
 #define SKIP2  100
@@ -88,9 +84,6 @@ struct t_trxstatus
     double                  DT, BOX[3];
     gmx_bool                bReadBox;
     char                   *persistent_line; /* Persistent line for reading g96 trajectories */
-#if GMX_USE_PLUGINS
-    gmx_vmdplugin_t        *vmdplugin;
-#endif
 };
 
 /* utility functions */
@@ -504,9 +497,6 @@ void close_trx(t_trxstatus *status)
         gmx_fio_close(status->fio);
     }
     sfree(status->persistent_line);
-#if GMX_USE_PLUGINS
-    sfree(status->vmdplugin);
-#endif
     /* The memory in status->xframe is lost here,
      * but the read_first_x/read_next_x functions are deprecated anyhow.
      * read_first_frame/read_next_frame and close_trx should be used.
@@ -701,13 +691,9 @@ bool read_next_frame(const gmx_output_env_t *oenv, t_trxstatus *status, t_trxfra
                 bRet = gro_next_x_or_v(gmx_fio_getfp(status->fio), fr);
                 break;
             default:
-#if GMX_USE_PLUGINS
-                bRet = read_next_vmd_frame(status->vmdplugin, fr);
-#else
                 gmx_fatal(FARGS, "DEATH HORROR in read_next_frame ftp=%s,status=%s",
                           ftp2ext(gmx_fio_getftp(status->fio)),
                           gmx_fio_getname(status->fio));
-#endif
         }
         status->tf = fr->time;
 
@@ -812,21 +798,7 @@ bool read_first_frame(const gmx_output_env_t *oenv, t_trxstatus **status,
             bFirst = FALSE;
             break;
         default:
-#if GMX_USE_PLUGINS
-            fprintf(stderr, "The file format of %s is not a known trajectory format to GROMACS.\n"
-                    "Please make sure that the file is a trajectory!\n"
-                    "GROMACS will now assume it to be a trajectory and will try to open it using the VMD plug-ins.\n"
-                    "This will only work in case the VMD plugins are found and it is a trajectory format supported by VMD.\n", fn);
-            gmx_fio_fp_close(fio); /*only close the file without removing FIO entry*/
-            if (!read_first_vmd_frame(fn, &(*status)->vmdplugin, fr))
-            {
-                gmx_fatal(FARGS, "Not supported in read_first_frame: %s", fn);
-            }
-#else
-            gmx_fatal(FARGS, "Not supported in read_first_frame: %s. Please make sure that the file is a trajectory.\n"
-                      "GROMACS is not compiled with plug-in support. Thus it cannot read non-GROMACS trajectory formats using the VMD plug-ins.\n"
-                      "Please compile with plug-in support if you want to read non-GROMACS trajectory formats.\n", fn);
-#endif
+            gmx_fatal(FARGS, "Not supported in read_first_frame: %s. Please make sure that the file is a trajectory.\n", fn);
     }
     (*status)->tf = fr->time;
 

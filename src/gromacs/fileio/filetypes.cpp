@@ -72,12 +72,12 @@ static const int trns[] =
 #define NTRNS asize(trns)
 
 static const int stos[] =
-{ efGRO, efG96, efPDB, efBRK, efENT, efESP };
+{ efGRO, efG96, efPDB, efBRK, efENT };
 #define NSTOS asize(stos)
 
 static const int stxs[] =
 {
-    efGRO, efG96, efPDB, efBRK, efENT, efESP
+    efGRO, efG96, efPDB, efBRK, efENT
 };
 #define NSTXS asize(stxs)
 
@@ -115,8 +115,6 @@ static const t_deffile deffile[efNR] =
     { eftASC, ".pdb", "eiwit",  "-f", "Protein data bank file"},
     { eftASC, ".brk", "eiwit",  "-f", "Brookhaven data bank file"},
     { eftASC, ".ent", "eiwit", "-f", "Entry in the protein date bank" },
-    { eftASC, ".esp", "conf", "-f", "Coordinate file in Espresso format" },
-    { eftASC, ".pqr", "state",  "-o", "Coordinate file for MEAD"},
     { eftASC, ".log", "run",    "-l", "Log file"},
     { eftASC, ".xvg", "graph",  "-o", "xvgr/xmgr file"},
     { eftASC, ".out", "hello",  "-o", "Generic output file"},

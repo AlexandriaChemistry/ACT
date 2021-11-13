@@ -41,7 +41,6 @@
 #include <cstdio>
 #include <cstring>
 
-#include "gromacs/fileio/espio.h"
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/g96io.h"
 #include "gromacs/fileio/gmxfio.h"
@@ -98,14 +97,8 @@ void write_sto_conf_indexed(const char *outfile, const char *title,
         case efPDB:
         case efBRK:
         case efENT:
-        case efPQR:
             out = gmx_fio_fopen(outfile, "w");
-            write_pdbfile_indexed(out, title, atoms, x, ePBC, box, ' ', -1, nindex, index, nullptr, TRUE, ftp == efPQR);
-            gmx_fio_fclose(out);
-            break;
-        case efESP:
-            out = gmx_fio_fopen(outfile, "w");
-            write_espresso_conf_indexed(out, title, atoms, nindex, index, x, v, box);
+            write_pdbfile_indexed(out, title, atoms, x, ePBC, box, ' ', -1, nindex, index, nullptr, TRUE, false);
             gmx_fio_fclose(out);
             break;
         default:
@@ -149,11 +142,6 @@ void write_sto_conf(const char *outfile, const char *title, const t_atoms *atoms
         case efENT:
             out = gmx_fio_fopen(outfile, "w");
             write_pdbfile(out, title, atoms, x, ePBC, box, ' ', -1, nullptr, TRUE);
-            gmx_fio_fclose(out);
-            break;
-        case efESP:
-            out = gmx_fio_fopen(outfile, "w");
-            write_espresso_conf_indexed(out, title, atoms, atoms->nr, nullptr, x, v, box);
             gmx_fio_fclose(out);
             break;
         default:
@@ -223,9 +211,6 @@ static void get_stx_coordnum(const char *infile, int *natoms)
             get_pdb_coordnum(in, natoms);
             gmx_fio_fclose(in);
             break;
-        case efESP:
-            *natoms = get_espresso_coordnum(infile);
-            break;
         default:
             gmx_fatal(FARGS, "File type %s not supported in get_stx_coordnum",
                       ftp2ext(ftp));
@@ -276,9 +261,6 @@ static void read_stx_conf(const char *infile,
         case efBRK:
         case efENT:
             gmx_pdb_read_conf(infile, symtab, name, atoms, x, ePBC, box);
-            break;
-        case efESP:
-            gmx_espresso_read_conf(infile, symtab, name, atoms, x, v, box);
             break;
         default:
             gmx_incons("Not supported in read_stx_conf");
