@@ -115,7 +115,6 @@ static const t_deffile deffile[efNR] =
     { eftASC, ".pdb", "eiwit",  "-f", "Protein data bank file"},
     { eftASC, ".brk", "eiwit",  "-f", "Brookhaven data bank file"},
     { eftASC, ".ent", "eiwit", "-f", "Entry in the protein date bank" },
-    { eftASC, ".pqr", "state",  "-o", "Coordinate file for MEAD"},
     { eftASC, ".log", "run",    "-l", "Log file"},
     { eftASC, ".xvg", "graph",  "-o", "xvgr/xmgr file"},
     { eftASC, ".out", "hello",  "-o", "Generic output file"},
