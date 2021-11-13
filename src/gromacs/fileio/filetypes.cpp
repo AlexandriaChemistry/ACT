@@ -139,7 +139,6 @@ static const t_deffile deffile[efNR] =
     { eftASC, ".mat", "ss",     nullptr, "Matrix Data file"},
     { eftASC, ".m2p", "ps",     nullptr, "Input file for mat2ps"},
     { eftXDR, ".mtx", "hessian", "-m", "Hessian matrix"},
-    { eftASC, ".edi", "sam",    nullptr, "ED sampling input"},
     { eftASC, ".cub", "pot",  nullptr, "Gaussian cube file" },
     { eftASC, ".xpm", "root", nullptr, "X PixMap compatible matrix file" },
     { eftASC, "", "rundir", nullptr, "Run directory" }

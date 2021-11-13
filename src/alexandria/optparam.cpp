@@ -375,9 +375,9 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
     
     // Now parameter output file.
     fpe = xvgropen(xvgEpot().c_str(), 
-                   "Parameter energy", 
-                   "iteration",
-                   "\\f{12}c\\S2\\f{4}", 
+                   "Chi squared", 
+                   "Iteration",
+                   "Unknown units", 
                    oenv());
     if (bEvaluate_testset)
     {

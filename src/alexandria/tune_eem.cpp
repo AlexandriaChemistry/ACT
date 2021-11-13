@@ -78,37 +78,49 @@ namespace alexandria
 
 /*! \defgroup tune_eem Schematic flowchart for tune_eem
  *
+ * This diagram shows how the program is parallellized.
+ * Boxes in cyan run on all nodes, pink on the master node
+ * and yellow on the helper nodes.
  * \dot
 digraph tune_eem {
     compound = true;
     splines=true;
-        node [shape=box,style=filled,color=pink] rif rm;
-        rif [label="Read input"];
-        rm  [label="Calc deviation"];
+    node [shape=box,style=filled,color=pink] rif rm;
+    rif [label="Read initial force field\nand molecules for train and test set"];
+    mcmc [ label="Monte Carlo\nWrite chi-square and parameters"];
       
-      subgraph cluster_3 {
-        label = "Helpers 1 ... N";
-        height=2;
+    subgraph cluster_3 {
+        label = "Helpers 0 ... N-1";
+        rm  [label="Calc deviation 0"];
         node [shape=box,style=filled,color=yellow];
-        rh1  [label="Calc deviation"];
-      }
+        rh1 -> rh2 -> rh3  [style=invisible,rankdir=TB,dir=none];
+        rh1  [label="Calc deviation 1"];
+        rh2  [label="Calc deviation 2"];
+        rh3  [label="Calc deviation N-1"];
+        rm -> rh2 [style=invisible,rankdir=LR,dir=none,rank=same];
+    }
     
-    { rank = same rm rh1 }
     node [shape=box] [label="Start",color=cyan]; start;
-    node [shape=box] [label="Parse options",color=cyan]; parse;
+    node [shape=box] [label="Parse command-line options",color=cyan]; parse;
     node [shape=diamond] [label="Master node?",color=cyan]; is_master;
     start -> parse -> is_master;
-    rif -> rm;
+    rif -> mcmc;
+    mcmc -> rm [dir=both];
     rm  -> rh1 [dir=both] [label="communication"];
-    node [shape=box] [ label="Write output",color=pink ]; ready;
-    node [shape=box][ label="Finished", color=cyan]; finished;
+    rm  -> rh2 [dir=both] [label="communication"];
+    rm  -> rh3 [dir=both] [label="communication"];
+    node [shape=box] [ label="Write optimized force field\nand statistics",color=pink ]; ready;
+    node [shape=box][ label="Finish", color=cyan]; finished;
     is_master -> rh1 [ label="no" ];
+    is_master -> rh2 [ label="no" ];
+    is_master -> rh3 [ label="no" ];
     is_master -> rif [ label="yes" ];
-    rm -> ready [ label="done" ];
+    mcmc -> ready [ label="done" ];
     ready -> finished;
     rh1 -> finished;
+    rh2 -> finished;
+    rh3 -> finished;
 }
-
  * \enddot
  */
 
