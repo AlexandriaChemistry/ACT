@@ -44,7 +44,7 @@ enum GromacsFileType {
     efMDP,
     efTRX, efTRO, efTRN, efTRR,
     efEDR,
-    efSTX, efSTO, efGRO, efG96, efPDB, efBRK, efENT, efPQR,
+    efSTX, efSTO, efGRO, efG96, efPDB, efBRK, efENT,
     efLOG, efXVG, efOUT,
     efNDX,
     efTOP, efITP,
