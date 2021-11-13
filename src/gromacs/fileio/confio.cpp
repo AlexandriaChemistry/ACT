@@ -108,8 +108,6 @@ void write_sto_conf_indexed(const char *outfile, const char *title,
             write_espresso_conf_indexed(out, title, atoms, nindex, index, x, v, box);
             gmx_fio_fclose(out);
             break;
-        case efTPR:
-            gmx_fatal(FARGS, "Sorry, can not write a topology to %s", outfile);
         default:
             gmx_incons("Not supported in write_sto_conf_indexed");
     }
@@ -158,8 +156,6 @@ void write_sto_conf(const char *outfile, const char *title, const t_atoms *atoms
             write_espresso_conf_indexed(out, title, atoms, atoms->nr, nullptr, x, v, box);
             gmx_fio_fclose(out);
             break;
-        case efTPR:
-            gmx_fatal(FARGS, "Sorry, can not write a topology to %s", outfile);
         default:
             gmx_incons("Not supported in write_sto_conf");
     }

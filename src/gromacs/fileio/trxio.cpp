@@ -44,7 +44,6 @@
 #include <cmath>
 #include <cstring>
 
-#include "gromacs/fileio/checkpoint.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/g96io.h"
@@ -687,9 +686,6 @@ bool read_next_frame(const gmx_output_env_t *oenv, t_trxstatus *status, t_trxfra
             case efTRR:
                 bRet = gmx_next_frame(status, fr);
                 break;
-            case efCPT:
-                /* Checkpoint files can not contain mulitple frames */
-                break;
             case efG96:
             {
                 t_symtab *symtab = nullptr;
@@ -776,10 +772,6 @@ bool read_first_frame(const gmx_output_env_t *oenv, t_trxstatus **status,
     switch (ftp)
     {
         case efTRR:
-            break;
-        case efCPT:
-            read_checkpoint_trxframe(fio, fr);
-            bFirst = FALSE;
             break;
         case efG96:
         {

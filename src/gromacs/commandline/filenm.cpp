@@ -246,7 +246,7 @@ int add_suffix_to_output_names(t_filenm *fnm, int nfile, const char *suffix)
 {
     for (int i = 0; i < nfile; i++)
     {
-        if (is_output(&fnm[i]) && fnm[i].ftp != efCPT)
+        if (is_output(&fnm[i]))
         {
             /* We never use multiple _outputs_, but we might as well check
                for it, just in case... */

@@ -54,11 +54,11 @@
 #include <cstring>
 
 #include "gromacs/commandline/filenm.h"
-#include "gromacs/fileio/checkpoint.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -123,10 +123,7 @@ read_checkpoint_data(const char *filename, int *simulation_part,
         else
         {
             std::vector<gmx_file_position_t> outputfiles;
-            read_checkpoint_simulation_part_and_filenames(fp,
-                                                          simulation_part,
-                                                          &outputfiles);
-
+            GMX_THROW(gmx::InternalError("This code should not be reached from ACT"));
             if (bTryToAppendFiles)
             {
                 std::size_t nexist = 0;

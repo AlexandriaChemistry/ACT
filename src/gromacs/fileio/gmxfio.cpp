@@ -590,7 +590,7 @@ std::vector<gmx_file_position_t> gmx_fio_get_output_file_positions()
     {
         /* Skip the checkpoint files themselves, since they could be open when
            we call this routine... */
-        if (!cur->bRead && cur->iFTP != efCPT)
+        if (!cur->bRead)
         {
             outputfiles.emplace_back();
 

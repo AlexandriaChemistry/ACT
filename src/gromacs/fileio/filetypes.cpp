@@ -53,7 +53,7 @@ enum
  */
 static const int trxs[] =
 {
-    efTRR, efCPT,
+    efTRR,
     efGRO, efG96, efPDB
 };
 #define NTRXS asize(trxs)
@@ -67,7 +67,7 @@ static const int tros[] =
 
 static const int trns[] =
 {
-    efTRR, efCPT
+    efTRR,
 };
 #define NTRNS asize(trns)
 
@@ -77,14 +77,12 @@ static const int stos[] =
 
 static const int stxs[] =
 {
-    efGRO, efG96, efPDB, efBRK, efENT, efESP,
-    efTPR
+    efGRO, efG96, efPDB, efBRK, efENT, efESP
 };
 #define NSTXS asize(stxs)
 
 static const int tpss[] =
 {
-    efTPR,
     efGRO, efG96, efPDB, efBRK, efENT
 };
 #define NTPSS asize(tpss)
@@ -119,7 +117,6 @@ static const t_deffile deffile[efNR] =
     { eftASC, ".ent", "eiwit", "-f", "Entry in the protein date bank" },
     { eftASC, ".esp", "conf", "-f", "Coordinate file in Espresso format" },
     { eftASC, ".pqr", "state",  "-o", "Coordinate file for MEAD"},
-    { eftXDR, ".cpt", "state",  "-cp", "Checkpoint file"},
     { eftASC, ".log", "run",    "-l", "Log file"},
     { eftASC, ".xvg", "graph",  "-o", "xvgr/xmgr file"},
     { eftASC, ".out", "hello",  "-o", "Generic output file"},
@@ -127,7 +124,6 @@ static const t_deffile deffile[efNR] =
     { eftASC, ".top", "topol",  "-p", "Topology file"},
     { eftASC, ".itp", "topinc", nullptr, "Include file for topology"},
     { eftGEN, ".???", "topol", "-s", "Structure+mass(db)", NTPSS, tpss },
-    { eftXDR, ".tpr", "topol",  "-s", "Portable xdr run input file"},
     { eftASC, ".tex", "doc",    "-o", "LaTeX file"},
     { eftASC, ".dat", "nnnice", nullptr, "Generic data file"},
     { eftASC, ".map", "ss", nullptr, "File that maps matrix data to colors" },
