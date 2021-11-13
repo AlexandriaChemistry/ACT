@@ -11,7 +11,6 @@ namespace ga {
 
         tmpFitness              = vector(popSize);
         tmpPop                  = allocateMatrix(popSize, chromosomeLength);
-        this->chromosomeLength  = chromosomeLength;
 
     }
 
@@ -20,8 +19,8 @@ namespace ga {
                                  vector&    fitness,
                            const int        popSize) {
 
-        copyVectorValues(fitness, tmpFitness, 0, popSize);
-        copyMatrixValues(pop, tmpPop, 0, popSize, 0, chromosomeLength);
+        tmpFitness = fitness;
+        tmpPop = pop;
         topDownSplitMerge(tmpPop, tmpFitness, 0, popSize, pop, fitness);
 
     }
@@ -62,11 +61,11 @@ namespace ga {
             // If left run head exists and is >= existing right run head.
             if (i < middle && (j >= right || fitA[i] >= fitA[j])) {
                 fitB[k] = fitA[i];
-                copyVectorValues(popA[i], popB[k], 0, chromosomeLength);
+                popB[k] = popA[i];
                 i++;
             } else {
                 fitB[k] = fitA[j];
-                copyVectorValues(popA[j], popB[k], 0, chromosomeLength);
+                popB[k] = popA[j];
                 j++;
             }
         }

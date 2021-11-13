@@ -43,7 +43,6 @@ namespace ga {
      */
     class MergeSorter : public Sorter {
 
-        double chromosomeLength;
         matrix tmpPop;
         vector tmpFitness;
 

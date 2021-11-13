@@ -140,8 +140,8 @@ namespace ga {
                                            newPop[i + 1], chromosomeLength);
                 } else {
                     if (verbose >= 3) printf("Omitting crossover...\n");
-                    copyVectorValues(oldPop[parent1], newPop[i], 0, chromosomeLength);
-                    copyVectorValues(oldPop[parent2], newPop[i + 1], 0, chromosomeLength);
+                    newPop[i] = oldPop[parent1];
+                    newPop[i+1] = oldPop[parent2];
                 }
 
                 // Do mutation in each child, and compute fitness to avoid another traversal
