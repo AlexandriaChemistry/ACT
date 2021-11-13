@@ -195,9 +195,6 @@
 /* Compile with plugin support */
 #cmakedefine01 GMX_USE_PLUGINS
 
-/* Fallback path for VMD plug-ins */
-#define GMX_VMD_PLUGIN_PATH "@GMX_VMD_PLUGIN_PATH@"
-
 /* Define when pthreads are used */
 #cmakedefine THREAD_PTHREADS
 
