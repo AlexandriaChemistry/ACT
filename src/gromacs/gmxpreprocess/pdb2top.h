@@ -64,6 +64,4 @@ void write_top(FILE *out, const char *pr, const char *molname,
                gpp_atomtype_t atype, int *cgnr, int nrexcl);
 /* NOTE: nrexcl is not the size of *excl! */
 
-void print_sums(t_atoms *atoms, bool bSystem);
-
 #endif
