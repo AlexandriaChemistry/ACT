@@ -140,8 +140,8 @@ do_md_trajectory_writing(FILE                    *fplog,
                 update_energyhistory(observablesHistory->energyHistory.get(), mdebin);
             }
         }
-        mdoutf_write_to_trajectory_files(fplog, cr, outf, mdof_flags, top_global,
-                                         step, t, state, state_global, observablesHistory, f);
+        mdoutf_write_to_trajectory_files(cr, outf, mdof_flags, top_global,
+                                         step, t, state, state_global, f);
         if (bLastStep && step_rel == ir->nsteps &&
             bDoConfOut && MASTER(cr) &&
             !bRerunMD)

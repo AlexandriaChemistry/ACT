@@ -50,12 +50,12 @@
 
 static const int   can_view_ftp[] = {
     0,
-    efEPS,           efXVG,          efPDB
+    efXVG,          efPDB
 };
 #define NVIEW asize(can_view_ftp)
 static const char* view_program[] = {
-    nullptr,
-    "ghostview",    nullptr,           "xterm -e rasmol"
+    nullptr, 
+    nullptr,           "xterm -e rasmol"
 };
 
 static int can_view(int ftp)

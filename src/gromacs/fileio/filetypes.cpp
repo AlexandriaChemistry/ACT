@@ -126,10 +126,6 @@ static const t_deffile deffile[efNR] =
     { eftGEN, ".???", "topol", "-s", "Structure+mass(db)", NTPSS, tpss },
     { eftASC, ".tex", "doc",    "-o", "LaTeX file"},
     { eftASC, ".dat", "nnnice", nullptr, "Generic data file"},
-    { eftASC, ".map", "ss", nullptr, "File that maps matrix data to colors" },
-    { eftASC, ".eps", "plot", nullptr, "Encapsulated PostScript (tm) file" },
-    { eftASC, ".mat", "ss",     nullptr, "Matrix Data file"},
-    { eftASC, ".m2p", "ps",     nullptr, "Input file for mat2ps"},
     { eftXDR, ".mtx", "hessian", "-m", "Hessian matrix"},
     { eftASC, ".cub", "pot",  nullptr, "Gaussian cube file" },
     { eftASC, "", "rundir", nullptr, "Run directory" }

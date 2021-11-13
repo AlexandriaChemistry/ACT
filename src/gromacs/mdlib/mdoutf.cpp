@@ -186,13 +186,12 @@ gmx_wallcycle_t mdoutf_get_wcycle(gmx_mdoutf_t of)
     return of->wcycle;
 }
 
-void mdoutf_write_to_trajectory_files(FILE *fplog, const t_commrec *cr,
+void mdoutf_write_to_trajectory_files(const t_commrec *cr,
                                       gmx_mdoutf_t of,
                                       int mdof_flags,
                                       gmx_mtop_t *top_global,
                                       int64_t step, double t,
                                       t_state *state_local, t_state *state_global,
-                                      ObservablesHistory *observablesHistory,
                                       gmx::ArrayRef<gmx::RVec> f_local)
 {
     rvec *f_global;

@@ -51,7 +51,6 @@ enum GromacsFileType {
     efTPS,
     efTEX,
     efDAT,
-    efMAP, efEPS, efMAT, efM2P,
     efMTX,
     efCUB,
     efRND,
