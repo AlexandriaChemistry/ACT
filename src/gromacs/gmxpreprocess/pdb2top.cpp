@@ -51,7 +51,6 @@
 #include "gromacs/gmxpreprocess/add_par.h"
 #include "gromacs/gmxpreprocess/fflibutil.h"
 #include "gromacs/gmxpreprocess/gen_ad.h"
-#include "gromacs/gmxpreprocess/gen_vsite.h"
 #include "gromacs/gmxpreprocess/gpp_nextnb.h"
 #include "gromacs/gmxpreprocess/h_db.h"
 #include "gromacs/gmxpreprocess/notset.h"
