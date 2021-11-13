@@ -50,12 +50,11 @@ enum GromacsFileType {
     efNDX,
     efTOP, efITP,
     efTPS, efTPR,
-    efTEX, efRTP, efATP, efHDB,
-    efDAT, efDLG,
+    efTEX,
+    efDAT,
     efMAP, efEPS, efMAT, efM2P,
     efMTX,
     efCUB,
-    efXPM,
     efRND,
     efNR
 };
