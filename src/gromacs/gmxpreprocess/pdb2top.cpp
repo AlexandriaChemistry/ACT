@@ -58,7 +58,6 @@
 #include "gromacs/gmxpreprocess/pgutil.h"
 #include "gromacs/gmxpreprocess/resall.h"
 #include "gromacs/gmxpreprocess/topdirs.h"
-#include "gromacs/gmxpreprocess/topio.h"
 #include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
