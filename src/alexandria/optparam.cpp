@@ -454,7 +454,7 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
             // Accept any downhill move       
             bool accept = (deltaEval < 0);
         
-            // For a uphill move apply the Metropolis Criteria
+            // For an uphill move apply the Metropolis Criteria
             // to decide whether to accept or reject the new parameter
             if (!accept)
             {
