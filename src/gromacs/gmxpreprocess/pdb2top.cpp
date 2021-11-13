@@ -48,11 +48,9 @@
 #include <vector>
 
 #include "gromacs/fileio/pdbio.h"
-#include "gromacs/gmxpreprocess/add_par.h"
 #include "gromacs/gmxpreprocess/fflibutil.h"
 #include "gromacs/gmxpreprocess/gen_ad.h"
 #include "gromacs/gmxpreprocess/gpp_nextnb.h"
-#include "gromacs/gmxpreprocess/h_db.h"
 #include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/gmxpreprocess/pgutil.h"
 #include "gromacs/gmxpreprocess/resall.h"
