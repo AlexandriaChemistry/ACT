@@ -39,6 +39,7 @@
 #define GMX_GMXPREPROCESS_ADD_PAR_H
 
 #include "gromacs/gmxpreprocess/grompp-impl.h"
+#include "gromacs/gmxpreprocess/hackblock.h"
 #include "gromacs/gmxpreprocess/pdb2top.h"
 #include "gromacs/utility/real.h"
 
