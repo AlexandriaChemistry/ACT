@@ -38,7 +38,6 @@
 
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/fileio/confio.h"
-#include "gromacs/fileio/tngio.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/mdoutf.h"
 #include "gromacs/mdlib/mdrun.h"
@@ -94,29 +93,9 @@ do_md_trajectory_writing(FILE                    *fplog,
     {
         mdof_flags |= MDOF_F;
     }
-    if (do_per_step(step, ir->nstxout_compressed))
-    {
-        mdof_flags |= MDOF_X_COMPRESSED;
-    }
     if (bCPT)
     {
         mdof_flags |= MDOF_CPT;
-    }
-    if (do_per_step(step, mdoutf_get_tng_box_output_interval(outf)))
-    {
-        mdof_flags |= MDOF_BOX;
-    }
-    if (do_per_step(step, mdoutf_get_tng_lambda_output_interval(outf)))
-    {
-        mdof_flags |= MDOF_LAMBDA;
-    }
-    if (do_per_step(step, mdoutf_get_tng_compressed_box_output_interval(outf)))
-    {
-        mdof_flags |= MDOF_BOX_COMPRESSED;
-    }
-    if (do_per_step(step, mdoutf_get_tng_compressed_lambda_output_interval(outf)))
-    {
-        mdof_flags |= MDOF_LAMBDA_COMPRESSED;
     }
 
 #if GMX_FAHCORE

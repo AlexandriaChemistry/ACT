@@ -55,8 +55,6 @@ class MDModules;
 struct gmx_groups_t;
 struct gmx_mtop_t;
 struct gmx_output_env_t;
-struct pull_params_t;
-struct pull_t;
 struct t_grpopts;
 struct t_inpfile;
 struct t_inputrec;
@@ -135,30 +133,6 @@ void do_index(const char* mdparin,
               t_inputrec *ir,
               warninp_t   wi);
 /* Read the index file and assign grp numbers to atoms.
- */
-
-/* Routines In readpull.c */
-
-char **read_pullparams(std::vector<t_inpfile> *inp,
-                       pull_params_t          *pull,
-                       warninp_t               wi);
-/* Reads the pull parameters, returns a list of the pull group names */
-
-void make_pull_groups(pull_params_t *pull,
-                      char **pgnames,
-                      const t_blocka *grps, char **gnames);
-/* Process the pull group parameters after reading the index groups */
-
-void make_pull_coords(pull_params_t *pull);
-/* Process the pull coordinates after reading the pull groups */
-
-pull_t *set_pull_init(t_inputrec *ir, const gmx_mtop_t *mtop,
-                      rvec *x, matrix box, real lambda,
-                      warninp_t wi);
-/* Prints the initial pull group distances in x.
- * If requested, adds the current distance to the initial reference location.
- * Returns the pull_t pull work struct. This should be passed to finish_pull()
- * after all modules have registered their external potentials, if present.
  */
 
 char **read_rotparams(std::vector<t_inpfile> *inp, t_rot *rot, warninp_t wi);

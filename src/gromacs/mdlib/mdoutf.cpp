@@ -41,9 +41,7 @@
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/fileio/checkpoint.h"
 #include "gromacs/fileio/gmxfio.h"
-#include "gromacs/fileio/tngio.h"
 #include "gromacs/fileio/trrio.h"
-#include "gromacs/fileio/xtcio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/mdrun.h"
@@ -60,10 +58,6 @@
 
 struct gmx_mdoutf {
     t_fileio               *fp_trn;
-    t_fileio               *fp_xtc;
-    gmx_tng_trajectory_t    tng;
-    gmx_tng_trajectory_t    tng_low_prec;
-    int                     x_compression_precision; /* only used by XTC output */
     ener_file_t             fp_ene;
     const char             *fn_cpt;
     gmx_bool                bKeepAndNumCPT;
@@ -80,7 +74,7 @@ struct gmx_mdoutf {
 };
 
 
-gmx_mdoutf_t init_mdoutf(FILE *fplog, int nfile, const t_filenm fnm[],
+gmx_mdoutf_t init_mdoutf(int nfile, const t_filenm fnm[],
                          const MdrunOptions &mdrunOptions,
                          const t_commrec *cr,
                          const t_inputrec *ir, gmx_mtop_t *top_global,
@@ -88,23 +82,19 @@ gmx_mdoutf_t init_mdoutf(FILE *fplog, int nfile, const t_filenm fnm[],
 {
     gmx_mdoutf_t   of;
     const char    *appendMode = "a+", *writeMode = "w+", *filemode;
-    gmx_bool       bAppendFiles, bCiteTng = FALSE;
+    gmx_bool       bAppendFiles;
     int            i;
 
     snew(of, 1);
 
     of->fp_trn       = nullptr;
     of->fp_ene       = nullptr;
-    of->fp_xtc       = nullptr;
-    of->tng          = nullptr;
-    of->tng_low_prec = nullptr;
     of->fp_dhdl      = nullptr;
 
     of->eIntegrator             = ir->eI;
     of->bExpanded               = ir->bExpanded;
     of->elamstats               = ir->expandedvals->elamstats;
     of->simulation_part         = ir->simulation_part;
-    of->x_compression_precision = static_cast<int>(ir->x_compression_precision);
     of->wcycle                  = wcycle;
     of->f_global                = nullptr;
 
@@ -116,28 +106,6 @@ gmx_mdoutf_t init_mdoutf(FILE *fplog, int nfile, const t_filenm fnm[],
 
         filemode = bAppendFiles ? appendMode : writeMode;
 
-        if (EI_DYNAMICS(ir->eI) &&
-            ir->nstxout_compressed > 0)
-        {
-            const char *filename;
-            filename = ftp2fn(efCOMPRESSED, nfile, fnm);
-            switch (fn2ftp(filename))
-            {
-                case efXTC:
-                    of->fp_xtc                  = open_xtc(filename, filemode);
-                    break;
-                case efTNG:
-                    gmx_tng_open(filename, filemode[0], &of->tng_low_prec);
-                    if (filemode[0] == 'w')
-                    {
-                        gmx_tng_prepare_low_prec_writing(of->tng_low_prec, top_global, ir);
-                    }
-                    bCiteTng = TRUE;
-                    break;
-                default:
-                    gmx_incons("Invalid reduced precision file format");
-            }
-        }
         if ((EI_DYNAMICS(ir->eI) || EI_ENERGY_MINIMIZATION(ir->eI)) &&
             (!GMX_FAHCORE &&
              !(EI_DYNAMICS(ir->eI) &&
@@ -156,19 +124,10 @@ gmx_mdoutf_t init_mdoutf(FILE *fplog, int nfile, const t_filenm fnm[],
                     /* If there is no uncompressed coordinate output and
                        there is compressed TNG output write forces
                        and/or velocities to the TNG file instead. */
-                    if (ir->nstxout != 0 || ir->nstxout_compressed == 0 ||
-                        !of->tng_low_prec)
+                    if (ir->nstxout != 0)
                     {
                         of->fp_trn = gmx_trr_open(filename, filemode);
                     }
-                    break;
-                case efTNG:
-                    gmx_tng_open(filename, filemode[0], &of->tng);
-                    if (filemode[0] == 'w')
-                    {
-                        gmx_tng_prepare_md_writing(of->tng, top_global, ir);
-                    }
-                    bCiteTng = TRUE;
                     break;
                 default:
                     gmx_incons("Invalid full precision file format");
@@ -213,11 +172,6 @@ gmx_mdoutf_t init_mdoutf(FILE *fplog, int nfile, const t_filenm fnm[],
         {
             snew(of->f_global, top_global->natoms);
         }
-    }
-
-    if (bCiteTng)
-    {
-        please_cite(fplog, "Lundborg2014");
     }
 
     return of;
@@ -286,8 +240,6 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, const t_commrec *cr,
     {
         if (mdof_flags & MDOF_CPT)
         {
-            fflush_tng(of->tng);
-            fflush_tng(of->tng_low_prec);
             ivec one_ivec = { 1, 1, 1 };
             write_checkpoint(of->fn_cpt, of->bKeepAndNumCPT,
                              fplog, cr,
@@ -314,125 +266,7 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, const t_commrec *cr,
                     gmx_file("Cannot write trajectory; maybe you are out of disk space?");
                 }
             }
-
-            /* If a TNG file is open for uncompressed coordinate output also write
-               velocities and forces to it. */
-            else if (of->tng)
-            {
-                gmx_fwrite_tng(of->tng, FALSE, step, t, state_local->lambda[efptFEP],
-                               state_local->box,
-                               top_global->natoms,
-                               x, v, f);
-            }
-            /* If only a TNG file is open for compressed coordinate output (no uncompressed
-               coordinate output) also write forces and velocities to it. */
-            else if (of->tng_low_prec)
-            {
-                gmx_fwrite_tng(of->tng_low_prec, FALSE, step, t, state_local->lambda[efptFEP],
-                               state_local->box,
-                               top_global->natoms,
-                               x, v, f);
-            }
         }
-        if (mdof_flags & MDOF_X_COMPRESSED)
-        {
-            rvec *xxtc = nullptr;
-
-            if (of->natoms_x_compressed == of->natoms_global)
-            {
-                /* We are writing the positions of all of the atoms to
-                   the compressed output */
-                xxtc = state_global->x.rvec_array();
-            }
-            else
-            {
-                /* We are writing the positions of only a subset of
-                   the atoms to the compressed output, so we have to
-                   make a copy of the subset of coordinates. */
-                int i, j;
-
-                snew(xxtc, of->natoms_x_compressed);
-                auto x = makeArrayRef(state_global->x);
-                for (i = 0, j = 0; (i < of->natoms_global); i++)
-                {
-                    if (getGroupType(*of->groups, egcCompressedX, i) == 0)
-                    {
-                        copy_rvec(x[i], xxtc[j++]);
-                    }
-                }
-            }
-            if (write_xtc(of->fp_xtc, of->natoms_x_compressed, step, t,
-                          state_local->box, xxtc, of->x_compression_precision) == 0)
-            {
-                gmx_fatal(FARGS,
-                          "XTC error. This indicates you are out of disk space, or a "
-                          "simulation with major instabilities resulting in coordinates "
-                          "that are NaN or too large to be represented in the XTC format.\n");
-            }
-            gmx_fwrite_tng(of->tng_low_prec,
-                           TRUE,
-                           step,
-                           t,
-                           state_local->lambda[efptFEP],
-                           state_local->box,
-                           of->natoms_x_compressed,
-                           xxtc,
-                           nullptr,
-                           nullptr);
-            if (of->natoms_x_compressed != of->natoms_global)
-            {
-                sfree(xxtc);
-            }
-        }
-        if (mdof_flags & (MDOF_BOX | MDOF_LAMBDA) && !(mdof_flags & (MDOF_X | MDOF_V | MDOF_F)) )
-        {
-            if (of->tng)
-            {
-                real  lambda = -1;
-                rvec *box    = nullptr;
-                if (mdof_flags & MDOF_BOX)
-                {
-                    box = state_local->box;
-                }
-                if (mdof_flags & MDOF_LAMBDA)
-                {
-                    lambda = state_local->lambda[efptFEP];
-                }
-                gmx_fwrite_tng(of->tng, FALSE, step, t, lambda,
-                               box, top_global->natoms,
-                               nullptr, nullptr, nullptr);
-            }
-        }
-        if (mdof_flags & (MDOF_BOX_COMPRESSED | MDOF_LAMBDA_COMPRESSED) && !(mdof_flags & (MDOF_X_COMPRESSED)) )
-        {
-            if (of->tng_low_prec)
-            {
-                real  lambda = -1;
-                rvec *box    = nullptr;
-                if (mdof_flags & MDOF_BOX_COMPRESSED)
-                {
-                    box = state_local->box;
-                }
-                if (mdof_flags & MDOF_LAMBDA_COMPRESSED)
-                {
-                    lambda = state_local->lambda[efptFEP];
-                }
-                gmx_fwrite_tng(of->tng_low_prec, FALSE, step, t, lambda,
-                               box, top_global->natoms,
-                               nullptr, nullptr, nullptr);
-            }
-        }
-    }
-}
-
-void mdoutf_tng_close(gmx_mdoutf_t of)
-{
-    if (of->tng || of->tng_low_prec)
-    {
-        wallcycle_start(of->wcycle, ewcTRAJ);
-        gmx_tng_close(&of->tng);
-        gmx_tng_close(&of->tng_low_prec);
-        wallcycle_stop(of->wcycle, ewcTRAJ);
     }
 }
 
@@ -441,10 +275,6 @@ void done_mdoutf(gmx_mdoutf_t of)
     if (of->fp_ene != nullptr)
     {
         close_enx(of->fp_ene);
-    }
-    if (of->fp_xtc)
-    {
-        close_xtc(of->fp_xtc);
     }
     if (of->fp_trn)
     {
@@ -459,44 +289,6 @@ void done_mdoutf(gmx_mdoutf_t of)
         sfree(of->f_global);
     }
 
-    gmx_tng_close(&of->tng);
-    gmx_tng_close(&of->tng_low_prec);
-
     sfree(of);
 }
 
-int mdoutf_get_tng_box_output_interval(gmx_mdoutf_t of)
-{
-    if (of->tng)
-    {
-        return gmx_tng_get_box_output_interval(of->tng);
-    }
-    return 0;
-}
-
-int mdoutf_get_tng_lambda_output_interval(gmx_mdoutf_t of)
-{
-    if (of->tng)
-    {
-        return gmx_tng_get_lambda_output_interval(of->tng);
-    }
-    return 0;
-}
-
-int mdoutf_get_tng_compressed_box_output_interval(gmx_mdoutf_t of)
-{
-    if (of->tng_low_prec)
-    {
-        return gmx_tng_get_box_output_interval(of->tng_low_prec);
-    }
-    return 0;
-}
-
-int mdoutf_get_tng_compressed_lambda_output_interval(gmx_mdoutf_t of)
-{
-    if (of->tng_low_prec)
-    {
-        return gmx_tng_get_lambda_output_interval(of->tng_low_prec);
-    }
-    return 0;
-}

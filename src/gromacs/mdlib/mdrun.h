@@ -94,8 +94,6 @@ struct ImdOptions
     gmx_bool wait = FALSE;
     //! If true, allow termination of the simulation from IMD client
     gmx_bool terminatable = FALSE;
-    //! If true, allow COM pulling in the simulation from IMD client
-    gmx_bool pull = FALSE;
 };
 
 //! \internal \brief Collection of all options of mdrun that are not processed separately

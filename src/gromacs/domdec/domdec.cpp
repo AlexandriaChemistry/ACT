@@ -74,7 +74,6 @@
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "gromacs/pulling/pull.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/idef.h"

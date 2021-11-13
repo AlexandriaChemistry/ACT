@@ -95,8 +95,6 @@
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "gromacs/pulling/pull.h"
-#include "gromacs/pulling/pull_rotation.h"
 #include "gromacs/timing/cyclecounter.h"
 #include "gromacs/timing/gpu_timing.h"
 #include "gromacs/timing/wallcycle.h"
@@ -256,32 +254,6 @@ static void calc_virial(int start, int homenr, const rvec x[], const rvec f[],
     {
         pr_rvecs(debug, 0, "vir_part", vir_part, DIM);
     }
-}
-
-static void pull_potential_wrapper(const t_commrec *cr,
-                                   const t_inputrec *ir,
-                                   const matrix box, gmx::ArrayRef<const gmx::RVec> x,
-                                   gmx::ForceWithVirial *force,
-                                   const t_mdatoms *mdatoms,
-                                   gmx_enerdata_t *enerd,
-                                   const real *lambda,
-                                   double t,
-                                   gmx_wallcycle_t wcycle)
-{
-    t_pbc  pbc;
-    real   dvdl;
-
-    /* Calculate the center of mass forces, this requires communication,
-     * which is why pull_potential is called close to other communication.
-     */
-    wallcycle_start(wcycle, ewcPULLPOT);
-    set_pbc(&pbc, ir->ePBC, box);
-    dvdl                     = 0;
-    enerd->term[F_COM_PULL] +=
-        pull_potential(ir->pull_work, mdatoms, &pbc,
-                       cr, t, lambda[efptRESTRAINT], as_rvec_array(x.data()), force, &dvdl);
-    enerd->dvdl_lin[efptRESTRAINT] += dvdl;
-    wallcycle_stop(wcycle, ewcPULLPOT);
 }
 
 static void pme_receive_force_ener(const t_commrec      *cr,
@@ -804,16 +776,11 @@ static void checkPotentialEnergyValidity(int64_t               step,
  */
 static void
 computeSpecialForces(const t_commrec               *cr,
-                     const t_inputrec              *inputrec,
-                     gmx_enfrot                    *enforcedRotation,
-                     int64_t                        step,
                      double                         t,
-                     gmx_wallcycle_t                wcycle,
                      ForceProviders                *forceProviders,
                      matrix                         box,
                      gmx::ArrayRef<const gmx::RVec> x,
                      const t_mdatoms               *mdatoms,
-                     real                          *lambda,
                      int                            forceFlags,
                      gmx::ForceWithVirial          *forceWithVirial,
                      gmx_enerdata_t                *enerd)
@@ -832,26 +799,9 @@ computeSpecialForces(const t_commrec               *cr,
         forceProviders->calculateForces(forceProviderInput, &forceProviderOutput);
     }
 
-    if (inputrec->bPull && pull_have_potential(inputrec->pull_work))
-    {
-        pull_potential_wrapper(cr, inputrec, box, x,
-                               forceWithVirial,
-                               mdatoms, enerd, lambda, t,
-                               wcycle);
-    }
-
-    rvec *f = as_rvec_array(forceWithVirial->force_.data());
-
-    /* Add the forces from enforced rotation potentials (if any) */
-    if (inputrec->bRot)
-    {
-        wallcycle_start(wcycle, ewcROTadd);
-        enerd->term[F_COM_PULL] += add_rot_forces(enforcedRotation, f, cr, step, t);
-        wallcycle_stop(wcycle, ewcROTadd);
-    }
-
     /* Add forces from interactive molecular dynamics (IMD), if bIMD == TRUE. */
 #ifdef IMD
+    rvec *f = as_rvec_array(forceWithVirial->force_.data());
     if (inputrec->bIMD && computeForces)
     {
         IMD_apply_forces(inputrec->bIMD, inputrec->imd, cr, f, wcycle);
@@ -1014,7 +964,6 @@ static void do_force_cutsVERLET(FILE *fplog,
                                 const t_commrec *cr,
                                 const gmx_multisim_t *ms,
                                 const t_inputrec *inputrec,
-                                gmx_enfrot *enforcedRotation,
                                 int64_t step,
                                 t_nrnb *nrnb,
                                 gmx_wallcycle_t wcycle,
@@ -1407,13 +1356,6 @@ static void do_force_cutsVERLET(FILE *fplog,
         dd_force_flop_start(cr->dd, nrnb);
     }
 
-    if (inputrec->bRot)
-    {
-        wallcycle_start(wcycle, ewcROT);
-        do_rotation(cr, enforcedRotation, box, as_rvec_array(x.unpaddedArrayRef().data()), t, step, bNS);
-        wallcycle_stop(wcycle, ewcROT);
-    }
-
     /* Temporary solution until all routines take PaddedRVecVector */
     rvec *const f = as_rvec_array(force.unpaddedArrayRef().data());
 
@@ -1446,11 +1388,6 @@ static void do_force_cutsVERLET(FILE *fplog,
 
     /* forceWithVirial uses the local atom range only */
     gmx::ForceWithVirial forceWithVirial(forceRef, (flags & GMX_FORCE_VIRIAL) != 0);
-
-    if (inputrec->bPull && pull_have_constraint(inputrec->pull_work))
-    {
-        clear_pull_forces(inputrec->pull_work);
-    }
 
     /* We calculate the non-bonded forces, when done on the CPU, here.
      * We do this before calling do_force_lowlevel, because in that
@@ -1544,9 +1481,8 @@ static void do_force_cutsVERLET(FILE *fplog,
 
     wallcycle_stop(wcycle, ewcFORCE);
 
-    computeSpecialForces(cr, inputrec, enforcedRotation,
-                         step, t, wcycle,
-                         fr->forceProviders, box, x.unpaddedArrayRef(), mdatoms, lambda,
+    computeSpecialForces(cr, t,
+                         fr->forceProviders, box, x.unpaddedArrayRef(), mdatoms, 
                          flags, &forceWithVirial, enerd);
 
     if (bUseOrEmulGPU)
@@ -1752,7 +1688,6 @@ static void do_force_cutsGROUP(FILE *fplog,
                                const t_commrec *cr,
                                const gmx_multisim_t *ms,
                                const t_inputrec *inputrec,
-                               gmx_enfrot *enforcedRotation,
                                int64_t step,
                                t_nrnb *nrnb,
                                gmx_wallcycle_t wcycle,
@@ -1941,13 +1876,6 @@ static void do_force_cutsGROUP(FILE *fplog,
         dd_force_flop_start(cr->dd, nrnb);
     }
 
-    if (inputrec->bRot)
-    {
-        wallcycle_start(wcycle, ewcROT);
-        do_rotation(cr, enforcedRotation, box, as_rvec_array(x.unpaddedArrayRef().data()), t, step, bNS);
-        wallcycle_stop(wcycle, ewcROT);
-    }
-
     /* Temporary solution until all routines take PaddedRVecVector */
     rvec *f = as_rvec_array(force.unpaddedArrayRef().data());
 
@@ -1977,11 +1905,6 @@ static void do_force_cutsGROUP(FILE *fplog,
     /* forceWithVirial might need the full force atom range */
     gmx::ForceWithVirial forceWithVirial(forceRef, (flags & GMX_FORCE_VIRIAL) != 0);
 
-    if (inputrec->bPull && pull_have_constraint(inputrec->pull_work))
-    {
-        clear_pull_forces(inputrec->pull_work);
-    }
-
     /* update QMMMrec, if necessary */
     if (fr->bQMMM)
     {
@@ -2009,9 +1932,8 @@ static void do_force_cutsGROUP(FILE *fplog,
         }
     }
 
-    computeSpecialForces(cr, inputrec, enforcedRotation,
-                         step, t, wcycle,
-                         fr->forceProviders, box, x.unpaddedArrayRef(), mdatoms, lambda,
+    computeSpecialForces(cr, t,
+                         fr->forceProviders, box, x.unpaddedArrayRef(), mdatoms, 
                          flags, &forceWithVirial, enerd);
 
     if (bDoForces)
@@ -2084,7 +2006,6 @@ void do_force(FILE                                     *fplog,
               const t_commrec                          *cr,
               const gmx_multisim_t                     *ms,
               const t_inputrec                         *inputrec,
-              gmx_enfrot                               *enforcedRotation,
               int64_t                                   step,
               t_nrnb                                   *nrnb,
               gmx_wallcycle_t                           wcycle,
@@ -2118,7 +2039,7 @@ void do_force(FILE                                     *fplog,
     {
         case ecutsVERLET:
             do_force_cutsVERLET(fplog, cr, ms, inputrec,
-                                enforcedRotation, step, nrnb, wcycle,
+                                step, nrnb, wcycle,
                                 top,
                                 groups,
                                 box, x, hist,
@@ -2135,7 +2056,7 @@ void do_force(FILE                                     *fplog,
             break;
         case ecutsGROUP:
             do_force_cutsGROUP(fplog, cr, ms, inputrec,
-                               enforcedRotation, step, nrnb, wcycle,
+                               step, nrnb, wcycle,
                                top,
                                groups,
                                box, x, hist,
@@ -3011,7 +2932,7 @@ void init_rerun(FILE *fplog,
 
     if (nfile != -1)
     {
-        *outf   = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr,
+        *outf   = init_mdoutf(nfile, fnm, mdrunOptions, cr,
                               ir, mtop, oenv, wcycle);
         *mdebin = init_mdebin(mdrunOptions.continuationOptions.appendFiles ? nullptr : mdoutf_get_fp_ene(*outf),
                               mtop, ir, mdoutf_get_fp_dhdl(*outf), true);

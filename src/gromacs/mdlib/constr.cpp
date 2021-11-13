@@ -70,7 +70,6 @@
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "gromacs/pulling/pull.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/mtop_lookup.h"
@@ -347,7 +346,7 @@ Constraints::Impl::apply(bool                  bLog,
     int         start, homenr;
     tensor      vir_r_m_dr;
     real        scaled_delta_t;
-    real        invdt, vir_fac = 0, t;
+    real        invdt, vir_fac = 0;
     int         nsettle;
     t_pbc       pbc, *pbc_null;
     char        buf[22];
@@ -653,22 +652,6 @@ Constraints::Impl::apply(bool                  bLog,
         dump_confs(log, step, mtop, start, homenr, cr, x, xprime, box);
     }
 
-    if (econq == ConstraintVariable::Positions)
-    {
-        if (ir.bPull && pull_have_constraint(ir.pull_work))
-        {
-            if (EI_DYNAMICS(ir.eI))
-            {
-                t = ir.init_t + (step + delta_step)*ir.delta_t;
-            }
-            else
-            {
-                t = ir.init_t;
-            }
-            set_pbc(&pbc, ir.ePBC, box);
-            pull_constraint(ir.pull_work, &md, &pbc, cr, ir.delta_t, t, x, xprime, v, *vir);
-        }
-    }
     wallcycle_stop(wcycle, ewcCONSTR);
 
     if (v != nullptr && md.cFREEZE)

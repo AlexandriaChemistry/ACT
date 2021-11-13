@@ -56,7 +56,6 @@
 #include <memory>
 
 class energyhistory_t;
-class PullHistory;
 
 /*! \libinternal \brief Observables history, for writing/reading to/from checkpoint file
  */
@@ -64,9 +63,6 @@ struct ObservablesHistory
 {
     //! History for energy observables, used for output only
     std::unique_ptr<energyhistory_t> energyHistory;
-
-    //! History for pulling observables, used for output only
-    std::unique_ptr<PullHistory> pullHistory;
 
     ObservablesHistory();
 

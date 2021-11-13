@@ -191,31 +191,6 @@ const char *ewt_names[ewtNR+1] = {
     "9-3", "10-4", "table", "12-6", nullptr
 };
 
-const char *epull_names[epullNR+1] = {
-    "umbrella", "constraint", "constant-force", "flat-bottom", "flat-bottom-high", "external-potential", nullptr
-};
-
-const char *epullg_names[epullgNR+1] = {
-    "distance", "direction", "cylinder", "direction-periodic", "direction-relative", "angle", "dihedral", "angle-axis", nullptr
-};
-
-const char *erotg_names[erotgNR+1] = {
-    "iso", "iso-pf", "pm", "pm-pf", "rm", "rm-pf", "rm2", "rm2-pf", "flex", "flex-t", "flex2", "flex2-t", nullptr
-};
-
-const char *erotg_fitnames[erotgFitNR+1] = {
-    "rmsd", "norm", "potential", nullptr
-};
-
-const char *eSwapTypes_names[eSwapTypesNR+1] = {
-    "no", "X", "Y", "Z", nullptr
-};
-
-const char *eSwapFixedGrp_names[eSwapFixedGrpNR+1] = {
-    "Split0", "Split1", "Solvent", nullptr
-};
-
-
 const char *eQMmethod_names[eQMmethodNR+1] = {
     "AM1", "PM3", "RHF",
     "UHF", "DFT", "B3LYP", "MP2", "CASSCF", "B3LYPLAN",

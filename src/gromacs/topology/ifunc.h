@@ -194,7 +194,6 @@ enum
     F_VSITE4FD,
     F_VSITE4FDN,
     F_VSITEN,
-    F_COM_PULL,
     F_EQM,
     F_EPOT,
     F_EKIN,
