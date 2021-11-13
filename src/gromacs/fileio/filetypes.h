@@ -42,21 +42,17 @@
 /* this enum should correspond to the array deffile in filetypes.cpp */
 enum GromacsFileType {
     efMDP,
-    efTRX, efTRO, efTRN, efTRR, efCOMPRESSED,
+    efTRX, efTRO, efTRN, efTRR,
     efEDR,
     efSTX, efSTO, efGRO, efG96, efPDB, efBRK, efENT, efESP, efPQR,
-    efCPT,
     efLOG, efXVG, efOUT,
     efNDX,
     efTOP, efITP,
-    efTPS, efTPR,
-    efTEX, efRTP, efATP, efHDB,
-    efDAT, efDLG,
-    efMAP, efEPS, efMAT, efM2P,
+    efTPS,
+    efTEX,
+    efDAT,
     efMTX,
-    efEDI,
     efCUB,
-    efXPM,
     efRND,
     efNR
 };

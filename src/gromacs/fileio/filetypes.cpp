@@ -53,7 +53,7 @@ enum
  */
 static const int trxs[] =
 {
-    efTRR, efCPT,
+    efTRR,
     efGRO, efG96, efPDB
 };
 #define NTRXS asize(trxs)
@@ -67,7 +67,7 @@ static const int tros[] =
 
 static const int trns[] =
 {
-    efTRR, efCPT
+    efTRR,
 };
 #define NTRNS asize(trns)
 
@@ -77,14 +77,12 @@ static const int stos[] =
 
 static const int stxs[] =
 {
-    efGRO, efG96, efPDB, efBRK, efENT, efESP,
-    efTPR
+    efGRO, efG96, efPDB, efBRK, efENT, efESP
 };
 #define NSTXS asize(stxs)
 
 static const int tpss[] =
 {
-    efTPR,
     efGRO, efG96, efPDB, efBRK, efENT
 };
 #define NTPSS asize(tpss)
@@ -119,7 +117,6 @@ static const t_deffile deffile[efNR] =
     { eftASC, ".ent", "eiwit", "-f", "Entry in the protein date bank" },
     { eftASC, ".esp", "conf", "-f", "Coordinate file in Espresso format" },
     { eftASC, ".pqr", "state",  "-o", "Coordinate file for MEAD"},
-    { eftXDR, ".cpt", "state",  "-cp", "Checkpoint file"},
     { eftASC, ".log", "run",    "-l", "Log file"},
     { eftASC, ".xvg", "graph",  "-o", "xvgr/xmgr file"},
     { eftASC, ".out", "hello",  "-o", "Generic output file"},
@@ -127,21 +124,10 @@ static const t_deffile deffile[efNR] =
     { eftASC, ".top", "topol",  "-p", "Topology file"},
     { eftASC, ".itp", "topinc", nullptr, "Include file for topology"},
     { eftGEN, ".???", "topol", "-s", "Structure+mass(db)", NTPSS, tpss },
-    { eftXDR, ".tpr", "topol",  "-s", "Portable xdr run input file"},
     { eftASC, ".tex", "doc",    "-o", "LaTeX file"},
-    { eftASC, ".rtp", "residue", nullptr, "Residue Type file used by pdb2gmx" },
-    { eftASC, ".atp", "atomtp", nullptr, "Atomtype file used by pdb2gmx" },
-    { eftASC, ".hdb", "polar",  nullptr, "Hydrogen data base"},
     { eftASC, ".dat", "nnnice", nullptr, "Generic data file"},
-    { eftASC, ".dlg", "user",   nullptr, "Dialog Box data for ngmx"},
-    { eftASC, ".map", "ss", nullptr, "File that maps matrix data to colors" },
-    { eftASC, ".eps", "plot", nullptr, "Encapsulated PostScript (tm) file" },
-    { eftASC, ".mat", "ss",     nullptr, "Matrix Data file"},
-    { eftASC, ".m2p", "ps",     nullptr, "Input file for mat2ps"},
     { eftXDR, ".mtx", "hessian", "-m", "Hessian matrix"},
-    { eftASC, ".edi", "sam",    nullptr, "ED sampling input"},
     { eftASC, ".cub", "pot",  nullptr, "Gaussian cube file" },
-    { eftASC, ".xpm", "root", nullptr, "X PixMap compatible matrix file" },
     { eftASC, "", "rundir", nullptr, "Run directory" }
 };
 

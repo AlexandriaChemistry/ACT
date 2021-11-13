@@ -88,13 +88,12 @@ void done_mdoutf(gmx_mdoutf_t of);
  * the master node only when necessary. Without domain decomposition
  * only data from state_local is used and state_global is ignored.
  */
-void mdoutf_write_to_trajectory_files(FILE *fplog, const t_commrec *cr,
+void mdoutf_write_to_trajectory_files(const t_commrec *cr,
                                       gmx_mdoutf_t of,
                                       int mdof_flags,
                                       gmx_mtop_t *top_global,
                                       int64_t step, double t,
                                       t_state *state_local, t_state *state_global,
-                                      ObservablesHistory *observablesHistory,
                                       gmx::ArrayRef<gmx::RVec> f_local);
 
 #define MDOF_X                 (1<<0)

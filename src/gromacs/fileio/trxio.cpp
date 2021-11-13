@@ -44,7 +44,6 @@
 #include <cmath>
 #include <cstring>
 
-#include "gromacs/fileio/checkpoint.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/g96io.h"
@@ -54,7 +53,6 @@
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/timecontrol.h"
-#include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trrio.h"
 #include "gromacs/fileio/xdrf.h"
 #include "gromacs/math/vec.h"
@@ -688,9 +686,6 @@ bool read_next_frame(const gmx_output_env_t *oenv, t_trxstatus *status, t_trxfra
             case efTRR:
                 bRet = gmx_next_frame(status, fr);
                 break;
-            case efCPT:
-                /* Checkpoint files can not contain mulitple frames */
-                break;
             case efG96:
             {
                 t_symtab *symtab = nullptr;
@@ -777,10 +772,6 @@ bool read_first_frame(const gmx_output_env_t *oenv, t_trxstatus **status,
     switch (ftp)
     {
         case efTRR:
-            break;
-        case efCPT:
-            read_checkpoint_trxframe(fio, fr);
-            bFirst = FALSE;
             break;
         case efG96:
         {
@@ -906,17 +897,7 @@ void rewind_trj(t_trxstatus *status)
 
 /***** T O P O L O G Y   S T U F F ******/
 
-t_topology *read_top(const char *fn, int *ePBC)
+t_topology *read_top(gmx_unused const char *fn, gmx_unused int *ePBC)
 {
-    int         epbc, natoms;
-    t_topology *top;
-
-    snew(top, 1);
-    epbc = read_tpx_top(fn, nullptr, nullptr, &natoms, nullptr, nullptr, top);
-    if (ePBC)
-    {
-        *ePBC = epbc;
-    }
-
-    return top;
+    return nullptr;
 }

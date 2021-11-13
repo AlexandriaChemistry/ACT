@@ -39,7 +39,6 @@
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/domdec/collect.h"
 #include "gromacs/domdec/domdec_struct.h"
-#include "gromacs/fileio/checkpoint.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/trrio.h"
 #include "gromacs/fileio/xvgr.h"
@@ -59,8 +58,6 @@
 struct gmx_mdoutf {
     t_fileio               *fp_trn;
     ener_file_t             fp_ene;
-    const char             *fn_cpt;
-    gmx_bool                bKeepAndNumCPT;
     int                     eIntegrator;
     gmx_bool                bExpanded;
     int                     elamstats;
@@ -102,8 +99,6 @@ gmx_mdoutf_t init_mdoutf(int nfile, const t_filenm fnm[],
     {
         bAppendFiles = mdrunOptions.continuationOptions.appendFiles;
 
-        of->bKeepAndNumCPT = mdrunOptions.checkpointOptions.keepAndNumberCheckpointFiles;
-
         filemode = bAppendFiles ? appendMode : writeMode;
 
         if ((EI_DYNAMICS(ir->eI) || EI_ENERGY_MINIMIZATION(ir->eI)) &&
@@ -137,7 +132,6 @@ gmx_mdoutf_t init_mdoutf(int nfile, const t_filenm fnm[],
         {
             of->fp_ene = open_enx(ftp2fn(efEDR, nfile, fnm), filemode);
         }
-        of->fn_cpt = opt2fn("-cpo", nfile, fnm);
 
         if ((ir->efep != efepNO || ir->bSimTemp) && ir->fepvals->nstdhdl > 0 &&
             (ir->fepvals->separate_dhdl_file == esepdhdlfileYES ) &&
@@ -192,24 +186,18 @@ gmx_wallcycle_t mdoutf_get_wcycle(gmx_mdoutf_t of)
     return of->wcycle;
 }
 
-void mdoutf_write_to_trajectory_files(FILE *fplog, const t_commrec *cr,
+void mdoutf_write_to_trajectory_files(const t_commrec *cr,
                                       gmx_mdoutf_t of,
                                       int mdof_flags,
                                       gmx_mtop_t *top_global,
                                       int64_t step, double t,
                                       t_state *state_local, t_state *state_global,
-                                      ObservablesHistory *observablesHistory,
                                       gmx::ArrayRef<gmx::RVec> f_local)
 {
     rvec *f_global;
 
     if (DOMAINDECOMP(cr))
     {
-        if (mdof_flags & MDOF_CPT)
-        {
-            dd_collect_state(cr->dd, state_local, state_global);
-        }
-        else
         {
             if (mdof_flags & (MDOF_X | MDOF_X_COMPRESSED))
             {
@@ -238,18 +226,6 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, const t_commrec *cr,
 
     if (MASTER(cr))
     {
-        if (mdof_flags & MDOF_CPT)
-        {
-            ivec one_ivec = { 1, 1, 1 };
-            write_checkpoint(of->fn_cpt, of->bKeepAndNumCPT,
-                             fplog, cr,
-                             DOMAINDECOMP(cr) ? cr->dd->nc : one_ivec,
-                             DOMAINDECOMP(cr) ? cr->dd->nnodes : cr->nnodes,
-                             of->eIntegrator, of->simulation_part,
-                             of->bExpanded, of->elamstats, step, t,
-                             state_global, observablesHistory);
-        }
-
         if (mdof_flags & (MDOF_X | MDOF_V | MDOF_F))
         {
             const rvec *x = (mdof_flags & MDOF_X) ? state_global->x.rvec_array() : nullptr;
