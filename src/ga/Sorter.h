@@ -103,7 +103,6 @@ public:
 class QuickSorter : public Sorter {
 
     double chromosomeLength;
-    matrix tmpPop;
     vector tmpFitness;
 
 public:
@@ -116,22 +115,26 @@ public:
               const int      popSize);
 
     /*!
-     * Split <fitness> into 2 parts, one left of the pivot element and one to the right of it, and sort both.
-     * @param fitness   the population vector
-     * @param low       the left-most point of the part of the population vector in this recursion
-     * @param high      the right-most point of the part of the population vector in this recursion
+     * Split <fitness> into 2 runs, one left of the pivot element and one to the right of it, and sort both.
+     * @param pop       the population matrix 
+     * @param fitness   the fitness vector
+     * @param low       the left-most point of the part of the fitness vector in this recursion
+     * @param high      the right-most point of the part of the fitness vector in this recursion
      */
-    void quickSort(vector&       fitness,
+    void quickSort(matrix&       pop,
+                   vector&       fitness,
                    const int     low,
                    const int     high);
 
     /*!
      * Find the pivot element and sort everything by comparing with it.
-     * @param fitness   the population vector
-     * @param low       the left-most point of the part of the population vector in this recursion
-     * @param high      the right-most point of the part of the population vector in this recursion
+     * @param pop       the population matrix 
+     * @param fitness   the fitness vector
+     * @param low       the left-most point of the part of the fitness vector in this recursion
+     * @param high      the right-most point of the part of the fitness vector in this recursion
      */
-    int partition(vector&       fitness,
+    int partition(matrix&       pop,
+                  vector&       fitness,
                   const int     low,
                   const int     high);
 };

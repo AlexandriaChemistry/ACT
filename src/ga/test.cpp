@@ -7,8 +7,8 @@
 
 int main(int argc, char const *argv[]) {
 	
-	const int       popSize         = 200;
-	const int       chromLen        = 10;
+	const int       popSize         = 10;
+	const int       chromLen        = 4;
 	const int       maxGenerations  = 5;
     const double    mutFrac         = 0.1;
     const double    tolerance       = 0.000001;
@@ -16,15 +16,16 @@ int main(int argc, char const *argv[]) {
 	SimpleInitializer           init(-5.0, 5.0);
 	SimpleFitnessComputer       fit;
 //    EmptySorter                 sort;
-	MergeSorter                 sort(popSize, chromLen);
+	// MergeSorter                 sort(popSize, chromLen);
+	QuickSorter                 sort(popSize, chromLen);
 //    FitnessProbabilityComputer  procomp;
 	RankProbabilityComputer     procomp(popSize);
 	RouletteSelector            select;
 	SinglePointCrossover        singlepoint(chromLen);
 //    PercentMutator              mutate(mutFrac);
     RangeMutator                mutate(0.5);
-    SimpleTerminator            terminate(tolerance);
-//	GenerationTerminator        terminate(maxGenerations);
+    // SimpleTerminator            terminate(tolerance);
+	GenerationTerminator        terminate(maxGenerations);
 
 	GeneticAlgorithm ga = GeneticAlgorithm(popSize,
 										   chromLen,
@@ -37,7 +38,7 @@ int main(int argc, char const *argv[]) {
 										   &mutate,
 										   &terminate);
 
-	const ga_result_t result = ga.evolve(0.35, 0.01, 1);
+	const ga_result_t result = ga.evolve(0.35, 0.01, 3);
 
     printf("\nEvolution took %i generations\n", result.generations);
     printf("Best individual: ");

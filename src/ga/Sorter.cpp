@@ -34,7 +34,7 @@ void MergeSorter::topDownSplitMerge(matrix&      popB,
 
     if (right - left <= 1) return;
 
-    const int middle = (right + left)/2;
+    const int middle = (right + left) / 2;
 
     topDownSplitMerge(popA, fitA, left, middle, popB, fitB);
     topDownSplitMerge(popA, fitA, middle, right, popB, fitB);
@@ -71,41 +71,52 @@ void MergeSorter::topDownMerge(matrix&       popA,
 
 }
 
+QuickSorter::QuickSorter(const int  popSize,
+                         const int  chromosomeLength) {
+
+    tmpFitness              = vector(popSize);
+    this->chromosomeLength  = chromosomeLength;
+
+}
 
 void QuickSorter::sort(matrix&       pop,
                        vector&       fitness,
                        const int     popSize) {
     int low = 0;
-    int high = popSize;
-    quickSort(fitness, low, high);
+    int high = popSize - 1;
+    quickSort(pop, fitness, low, high);
 }
 
-void QuickSorter::quickSort(vector&       fitness,
+void QuickSorter::quickSort(matrix&       pop,
+                            vector&       fitness,
                             const int     low,
                             const int     high) {
-    if (low >= 0 && high >= 0 && low < high) {
-        int p = partition(fitness, low, high);
-        quickSort(fitness, low, p - 1);
-        quickSort(fitness, p + 1, high);
+    if (low >= 0 && high > 0 && low < high) {
+        int p = partition(pop, fitness, low, high);
+        quickSort(pop, fitness, low, p - 1);
+        quickSort(pop, fitness, p + 1, high);
     }
 }
 
-int QuickSorter::partition(vector&        fitness,
-                           const int      low,
-                           const int      high) {
+int QuickSorter::partition(matrix&       pop,
+                           vector&       fitness,
+                           const int     low,
+                           const int     high) {
     double pivot = fitness[high];
     int candidate = low - 1;
     double temp;
 
-    for (int check = low; check < high; check++) {
+    for (int check = low; check <= high; check++) {
         if (fitness[check] <= pivot) {
             candidate = candidate + 1;
+            copyVectorValues(pop[candidate], tmpFitness, 0, chromosomeLength);
             temp = fitness[candidate];
+            copyVectorValues(pop[check], pop[candidate], 0, chromosomeLength);
             fitness[candidate] = fitness[check];
+            copyVectorValues(tmpFitness, pop[check], 0, chromosomeLength);
             fitness[check] = temp;
         }
     }
 
     return candidate;
 }
-
