@@ -45,15 +45,19 @@ namespace ga {
 
         matrix tmpPop;
         vector tmpFitness;
+        bool descending;
 
     public:
         /*!
          * Create a new MergeSorter object
          * @param popSize               number of individuals in the population
          * @param chromosomeLength      the size of each individual
+         * @param descending            true if sorting in descending order (using fitness),
+         *                              false otherwise (using chi2)
          */
-        MergeSorter(const int popSize,
-                    const int chromosomeLength);
+        MergeSorter(const int   popSize,
+                    const int   chromosomeLength,
+                    const bool  descending);
 
         void sort(      matrix& pop,
                         vector& fitness,

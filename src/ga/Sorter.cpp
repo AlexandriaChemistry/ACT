@@ -6,11 +6,13 @@
 
 namespace ga {
 
-    MergeSorter::MergeSorter(const int popSize,
-                             const int chromosomeLength) {
+    MergeSorter::MergeSorter(const int  popSize,
+                             const int  chromosomeLength,
+                             const bool descending) {
 
         tmpFitness              = vector(popSize);
         tmpPop                  = allocateMatrix(popSize, chromosomeLength);
+        this->descending        = descending;
 
     }
 
@@ -56,10 +58,8 @@ namespace ga {
         int i = left;
         int j = middle;
 
-        // While there are elements in the left or right runs...
         for (int k = left; k < right; k++) {
-            // If left run head exists and is >= existing right run head.
-            if (i < middle && (j >= right || fitA[i] >= fitA[j])) {
+            if ( i < middle && ( j >= right || ( descending == ( fitA[i] >= fitA[j] ) ) ) ) {
                 fitB[k] = fitA[i];
                 popB[k] = popA[i];
                 i++;

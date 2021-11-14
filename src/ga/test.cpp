@@ -18,7 +18,7 @@ int main(int argc, char const *argv[]) {
 	SimpleInitializer           init(-10.0, 10.0);
 	SimpleFitnessComputer       fit;
 //    EmptySorter                 sort;
-	MergeSorter                 sort(popSize, chromLen);
+	MergeSorter                 sort(popSize, chromLen, true);
 //    FitnessProbabilityComputer  procomp;
 	RankProbabilityComputer     procomp(popSize);
 	RouletteSelector            select;
