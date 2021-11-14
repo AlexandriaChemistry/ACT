@@ -1218,7 +1218,7 @@ immStatus MyMol::GenerateGromacs(const gmx::MDLogger       &mdlog,
     wcycle_    = wallcycle_init(debug, 0, cr);
 
     MDatoms_  = new std::unique_ptr<gmx::MDAtoms>(new gmx::MDAtoms());
-    *MDatoms_ = gmx::makeMDAtoms(nullptr, *mtop_, *inputrec_, false);
+    *MDatoms_ = gmx::makeMDAtoms(nullptr, *mtop_, *inputrec_);
     atoms2md(mtop_, inputrec_, -1, nullptr, atomsConst().nr, MDatoms_->get());
     auto mdatoms = MDatoms_->get()->mdatoms();
     f_.resizeWithPadding(state_->natoms);

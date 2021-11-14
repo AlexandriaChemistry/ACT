@@ -38,7 +38,6 @@
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
-#include "gromacs/ewald/pme.h"
 #include "gromacs/listed-forces/manage-threading.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/mdatoms.h"
@@ -146,13 +145,6 @@ void mdAlgorithmsSetupAtomData(const t_commrec   *cr,
                            fr->natoms_force,
                            fr->gpuBondedLists != nullptr,
                            top->idef);
-
-    gmx_pme_reinit_atoms(fr->pmedata, numHomeAtoms, mdatoms->chargeA);
-    /* This handles the PP+PME rank case where fr->pmedata is valid.
-     * For PME-only ranks, gmx_pmeonly() has its own call to gmx_pme_reinit_atoms().
-     * TODO: this only handles the GPU logic so far, should handle CPU as well.
-     * TODO: this also does not account for TPI.
-     */
 
     if (constr)
     {
