@@ -54,7 +54,6 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vecdump.h"
 #include "gromacs/mdlib/nsgrid.h"
-#include "gromacs/mdlib/qmmm.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/group.h"
@@ -290,16 +289,6 @@ void init_neighbor_list(FILE *log, t_forcerec *fr, int homenr)
                         maxsr, GMX_NBKERNEL_VDW_NONE, eintmodNONE, ielec, ielecmod, GMX_NBLIST_GEOMETRY_PARTICLE_PARTICLE, GMX_NBLIST_INTERACTION_FREE_ENERGY, bElecAndVdwSwitchDiffers);
         }
     }
-    /* QMMM MM list */
-    if (fr->bQMMM && fr->qr->QMMMscheme != eQMMMschemeoniom)
-    {
-        if (nullptr == fr->QMMMlist)
-        {
-            snew(fr->QMMMlist, 1);
-        }
-        init_nblist(log, fr->QMMMlist,
-                    maxsr, 0, 0, ielec, ielecmod, GMX_NBLIST_GEOMETRY_PARTICLE_PARTICLE, GMX_NBLIST_INTERACTION_STANDARD, bElecAndVdwSwitchDiffers);
-    }
 
     if (log != nullptr)
     {
@@ -324,12 +313,6 @@ static void reset_nblist(t_nblist *nl)
 static void reset_neighbor_lists(t_forcerec *fr)
 {
     int n, i;
-
-    if (fr->bQMMM && fr->qr->QMMMscheme != eQMMMschemeoniom)
-    {
-        /* only reset the short-range nblist */
-        reset_nblist(fr->QMMMlist);
-    }
 
     for (n = 0; n < fr->nnblists; n++)
     {
@@ -444,14 +427,9 @@ static inline void close_nblist(t_nblist *nlist)
     }
 }
 
-static inline void close_neighbor_lists(t_forcerec *fr, gmx_bool bMakeQMMMnblist)
+static inline void close_neighbor_lists(t_forcerec *fr)
 {
     int n, i;
-
-    if (bMakeQMMMnblist)
-    {
-        close_nblist(fr->QMMMlist);
-    }
 
     for (n = 0; n < fr->nnblists; n++)
     {
@@ -1053,70 +1031,6 @@ put_in_list_at(const gmx_bool              bHaveVdW[],
 }
 
 static void
-put_in_list_qmmm(const gmx_bool gmx_unused        bHaveVdW[],
-                 int                              ngid,
-                 const t_mdatoms                  * /* md */,
-                 int                              icg,
-                 int                              jgid,
-                 int                              nj,
-                 const int                        jjcg[],
-                 const int                        index[],
-                 const t_excl                     bExcl[],
-                 int                              shift,
-                 t_forcerec                *      fr,
-                 gmx_bool  gmx_unused             bDoVdW,
-                 gmx_bool  gmx_unused             bDoCoul,
-                 int       gmx_unused             solvent_opt)
-{
-    t_nblist  *   coul;
-    int           i, j, jcg, igid, gid;
-    int           jj, jj0, jj1, i_atom;
-    int           i0, nicg;
-    gmx_bool      bNotEx;
-
-    /* Get atom range */
-    i0     = index[icg];
-    nicg   = index[icg+1]-i0;
-
-    /* Get the i charge group info */
-    igid   = GET_CGINFO_GID(fr->cginfo[icg]);
-
-    coul = fr->QMMMlist;
-
-    /* Loop over atoms in the ith charge group */
-    for (i = 0; i < nicg; i++)
-    {
-        i_atom = i0+i;
-        gid    = GID(igid, jgid, ngid);
-        /* Create new i_atom for each energy group */
-        new_i_nblist(coul, i_atom, shift, gid);
-
-        /* Loop over the j charge groups */
-        for (j = 0; j < nj; j++)
-        {
-            jcg = jjcg[j];
-
-            /* Charge groups cannot have QM and MM atoms simultaneously */
-            if (jcg != icg)
-            {
-                jj0 = index[jcg];
-                jj1 = index[jcg+1];
-                /* Finally loop over the atoms in the j-charge group */
-                for (jj = jj0; jj < jj1; jj++)
-                {
-                    bNotEx = NOTEXCL(bExcl, i, jj);
-                    if (bNotEx)
-                    {
-                        add_j_to_nblist(coul, jj);
-                    }
-                }
-            }
-        }
-        close_i_nblist(coul);
-    }
-}
-
-static void
 put_in_list_cg(const gmx_bool  gmx_unused       bHaveVdW[],
                int                              ngid,
                const t_mdatoms                  * /* md */,
@@ -1566,7 +1480,7 @@ static int ns_simple_core(t_forcerec      *fr,
         /* setexcl(nri,i_atoms,excl,FALSE,bexcl); */
         setexcl(cgs->index[icg], cgs->index[icg+1], excl, FALSE, bexcl);
     }
-    close_neighbor_lists(fr, FALSE);
+    close_neighbor_lists(fr);
 
     return nsearch;
 }
@@ -1715,8 +1629,7 @@ static int nsgrid_core(const t_commrec *cr,
                        const gmx_bool  *bExcludeAlleg,
                        const t_mdatoms *md,
                        put_in_list_t   *put_in_list,
-                       gmx_bool         bHaveVdW[],
-                       gmx_bool         bMakeQMMMnblist)
+                       gmx_bool         bHaveVdW[])
 {
     gmx_ns_t      *ns;
     int          **nl_sr;
@@ -1845,54 +1758,33 @@ static int nsgrid_core(const t_commrec *cr,
 
         i0   = cgs->index[icg];
 
-        if (bMakeQMMMnblist)
+        /* make a normal neighbourlist */
+        
+        if (bDomDec)
         {
-            /* Skip this charge group if it is not a QM atom while making a
-             * QM/MM neighbourlist
-             */
-            if (!md->bQM[i0])
-            {
-                continue; /* MM particle, go to next particle */
-            }
-
-            /* Compute the number of charge groups that fall within the control
-             * of this one (icg)
-             */
-            naaj    = calc_naaj(icg, cgsnr);
-            jcg0    = icg;
-            jcg1    = icg + naaj;
-            max_jcg = cgsnr;
+            /* Get the j charge-group and dd cell shift ranges */
+            dd_get_ns_ranges(cr->dd, icg, &jcg0, &jcg1, sh0, sh1);
+            max_jcg = 0;
         }
         else
         {
-            /* make a normal neighbourlist */
-
-            if (bDomDec)
+            /* Compute the number of charge groups that fall within the control
+             * of this one (icg)
+             */
+            naaj = calc_naaj(icg, cgsnr);
+            jcg0 = icg;
+            jcg1 = icg + naaj;
+            
+            if (fr->n_tpi)
             {
-                /* Get the j charge-group and dd cell shift ranges */
-                dd_get_ns_ranges(cr->dd, icg, &jcg0, &jcg1, sh0, sh1);
-                max_jcg = 0;
+                /* The i-particle is awlways the test particle,
+                 * so we want all j-particles
+                 */
+                max_jcg = cgsnr - 1;
             }
             else
             {
-                /* Compute the number of charge groups that fall within the control
-                 * of this one (icg)
-                 */
-                naaj = calc_naaj(icg, cgsnr);
-                jcg0 = icg;
-                jcg1 = icg + naaj;
-
-                if (fr->n_tpi)
-                {
-                    /* The i-particle is awlways the test particle,
-                     * so we want all j-particles
-                     */
-                    max_jcg = cgsnr - 1;
-                }
-                else
-                {
-                    max_jcg  = jcg1 - cgsnr;
-                }
+                max_jcg  = jcg1 - cgsnr;
             }
         }
 
@@ -2063,7 +1955,7 @@ static int nsgrid_core(const t_commrec *cr,
      */
 
     /* Close neighbourlists */
-    close_neighbor_lists(fr, bMakeQMMMnblist);
+    close_neighbor_lists(fr);
 
     return nns;
 }
@@ -2339,25 +2231,7 @@ int search_neighbours(FILE               *log,
         grid    = ns->grid;
         nsearch = nsgrid_core(cr, fr, box, ngid, top,
                               grid, ns->bexcl, ns->bExcludeAlleg,
-                              md, put_in_list, ns->bHaveVdW,
-                              FALSE);
-
-        /* neighbour searching withouth QMMM! QM atoms have zero charge in
-         * the classical calculation. The charge-charge interaction
-         * between QM and MM atoms is handled in the QMMM core calculation
-         * (see QMMM.c). The VDW however, we'd like to compute classically
-         * and the QM MM atom pairs have just been put in the
-         * corresponding neighbourlists. in case of QMMM we still need to
-         * fill a special QMMM neighbourlist that contains all neighbours
-         * of the QM atoms. If bQMMM is true, this list will now be made:
-         */
-        if (fr->bQMMM && fr->qr->QMMMscheme != eQMMMschemeoniom)
-        {
-            nsearch += nsgrid_core(cr, fr, box, ngid, top,
-                                   grid, ns->bexcl, ns->bExcludeAlleg,
-                                   md, put_in_list_qmmm, ns->bHaveVdW,
-                                   TRUE);
-        }
+                              md, put_in_list, ns->bHaveVdW);
     }
     else
     {

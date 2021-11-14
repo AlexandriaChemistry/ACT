@@ -47,7 +47,6 @@
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
-#include "gromacs/mdlib/qmmm.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/mtop_lookup.h"
@@ -97,7 +96,6 @@ MDAtoms::~MDAtoms()
     sfree(mdatoms_->bPerturbed);
     sfree(mdatoms_->cU1);
     sfree(mdatoms_->cU2);
-    sfree(mdatoms_->bQM);
 }
 
 void MDAtoms::resize(int newSize)
@@ -317,11 +315,6 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
         {
             srenew(md->cU2, md->nalloc);
         }
-
-        if (ir->bQMMM)
-        {
-            srenew(md->bQM, md->nalloc);
-        }
     }
 
     int molb = 0;
@@ -499,19 +492,6 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
             if (md->cU2)
             {
                 md->cU2[i]        = groups.grpnr[egcUser2][ag];
-            }
-
-            if (ir->bQMMM)
-            {
-                if (groups.grpnr[egcQMMM] == nullptr ||
-                    groups.grpnr[egcQMMM][ag] < groups.grps[egcQMMM].nr-1)
-                {
-                    md->bQM[i]      = TRUE;
-                }
-                else
-                {
-                    md->bQM[i]      = FALSE;
-                }
             }
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;

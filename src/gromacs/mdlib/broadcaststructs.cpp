@@ -400,34 +400,6 @@ static void bc_grpopts(const t_commrec *cr, t_grpopts *g)
             nblock_bc(cr, n, g->anneal_temp[i]);
         }
     }
-
-    /* QMMM stuff, see inputrec */
-    block_bc(cr, g->ngQM);
-    snew_bc(cr, g->QMmethod, g->ngQM);
-    snew_bc(cr, g->QMbasis, g->ngQM);
-    snew_bc(cr, g->QMcharge, g->ngQM);
-    snew_bc(cr, g->QMmult, g->ngQM);
-    snew_bc(cr, g->bSH, g->ngQM);
-    snew_bc(cr, g->CASorbitals, g->ngQM);
-    snew_bc(cr, g->CASelectrons, g->ngQM);
-    snew_bc(cr, g->SAon, g->ngQM);
-    snew_bc(cr, g->SAoff, g->ngQM);
-    snew_bc(cr, g->SAsteps, g->ngQM);
-
-    if (g->ngQM)
-    {
-        nblock_bc(cr, g->ngQM, g->QMmethod);
-        nblock_bc(cr, g->ngQM, g->QMbasis);
-        nblock_bc(cr, g->ngQM, g->QMcharge);
-        nblock_bc(cr, g->ngQM, g->QMmult);
-        nblock_bc(cr, g->ngQM, g->bSH);
-        nblock_bc(cr, g->ngQM, g->CASorbitals);
-        nblock_bc(cr, g->ngQM, g->CASelectrons);
-        nblock_bc(cr, g->ngQM, g->SAon);
-        nblock_bc(cr, g->ngQM, g->SAoff);
-        nblock_bc(cr, g->ngQM, g->SAsteps);
-        /* end of QMMM stuff */
-    }
 }
 
 static void bc_fepvals(const t_commrec *cr, t_lambda *fep)

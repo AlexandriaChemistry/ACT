@@ -79,7 +79,6 @@
 #include "gromacs/mdlib/nbnxn_tuning.h"
 #include "gromacs/mdlib/nbnxn_util.h"
 #include "gromacs/mdlib/ns.h"
-#include "gromacs/mdlib/qmmm.h"
 #include "gromacs/mdlib/rf_util.h"
 #include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdlib/wall.h"
@@ -2996,27 +2995,6 @@ void init_forcerec(FILE                             *fp,
         if (debug)
         {
             fprintf(debug, "No fcdata or table file name passed, can not read table, can not do bonded interactions\n");
-        }
-    }
-
-    // QM/MM initialization if requested
-    fr->bQMMM = ir->bQMMM;
-    if (fr->bQMMM)
-    {
-        // Initialize QM/MM if supported
-        if (GMX_QMMM)
-        {
-            GMX_LOG(mdlog.info).asParagraph().
-                appendText("Large parts of the QM/MM support is deprecated, and may be removed in a future "
-                           "version. Please get in touch with the developers if you find the support useful, "
-                           "as help is needed if the functionality is to continue to be available.");
-            fr->qr = mk_QMMMrec();
-            init_QMMMrec(cr, mtop, ir, fr);
-        }
-        else
-        {
-            gmx_incons("QM/MM was requested, but is only available when GROMACS "
-                       "is configured with QM/MM support");
         }
     }
 

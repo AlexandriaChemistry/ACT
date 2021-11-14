@@ -99,16 +99,11 @@ typedef struct t_inputrec_strings
          acc[STRLEN], accgrps[STRLEN], freeze[STRLEN], frdim[STRLEN],
          energy[STRLEN], user1[STRLEN], user2[STRLEN], vcm[STRLEN], x_compressed_groups[STRLEN],
          couple_moltype[STRLEN], orirefitgrp[STRLEN], egptable[STRLEN], egpexcl[STRLEN],
-         wall_atomtype[STRLEN], wall_density[STRLEN], deform[STRLEN], QMMM[STRLEN],
-         imd_grp[STRLEN];
+         wall_atomtype[STRLEN], wall_density[STRLEN], deform[STRLEN], imd_grp[STRLEN];
     char   fep_lambda[efptNR][STRLEN];
     char   lambda_weights[STRLEN];
     char   anneal[STRLEN], anneal_npoints[STRLEN],
            anneal_time[STRLEN], anneal_temp[STRLEN];
-    char   QMmethod[STRLEN], QMbasis[STRLEN], QMcharge[STRLEN], QMmult[STRLEN],
-           bSH[STRLEN], CASorbitals[STRLEN], CASelectrons[STRLEN], SAon[STRLEN],
-           SAoff[STRLEN], SAsteps[STRLEN];
-
 } gmx_inputrec_strings;
 
 static gmx_inputrec_strings *is = nullptr;
@@ -1325,20 +1320,6 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         warning_error(wi, warn_buf);
     }
 
-    if (ir->bQMMM)
-    {
-        if (ir->cutoff_scheme != ecutsGROUP)
-        {
-            warning_error(wi, "QMMM is currently only supported with cutoff-scheme=group");
-        }
-        if (!EI_DYNAMICS(ir->eI))
-        {
-            char buf[STRLEN];
-            sprintf(buf, "QMMM is only supported with dynamics, not with integrator %s", ei_names[ir->eI]);
-            warning_error(wi, buf);
-        }
-    }
-
     if (ir->bAdress)
     {
         gmx_fatal(FARGS, "AdResS simulations are no longer supported");
@@ -1541,17 +1522,6 @@ static void do_simtemp_params(t_inputrec *ir)
 
     snew(ir->simtempvals->temperatures, ir->fepvals->n_lambda);
     GetSimTemps(ir->fepvals->n_lambda, ir->simtempvals, ir->fepvals->all_lambda[efptTEMPERATURE]);
-}
-
-static void
-convertYesNos(warninp_t /*wi*/, gmx::ArrayRef<const std::string> inputs, const char * /*name*/, gmx_bool *outputs)
-{
-    int i = 0;
-    for (const auto &input : inputs)
-    {
-        outputs[i] = (gmx_strncasecmp(input.c_str(), "Y", 1) == 0);
-        ++i;
-    }
 }
 
 template <typename T> void
@@ -1992,32 +1962,6 @@ void get_ir(const char *mdparin, const char *mdparout,
     printStringNoNewline(&inp, "Scaling of reference coordinates, No, All or COM");
     ir->refcoord_scaling = get_eeenum(&inp, "refcoord-scaling", erefscaling_names, wi);
 
-    /* QMMM */
-    printStringNewline(&inp, "OPTIONS FOR QMMM calculations");
-    ir->bQMMM = (get_eeenum(&inp, "QMMM", yesno_names, wi) != 0);
-    printStringNoNewline(&inp, "Groups treated Quantum Mechanically");
-    setStringEntry(&inp, "QMMM-grps",  is->QMMM,          nullptr);
-    printStringNoNewline(&inp, "QM method");
-    setStringEntry(&inp, "QMmethod",     is->QMmethod, nullptr);
-    printStringNoNewline(&inp, "QMMM scheme");
-    ir->QMMMscheme = get_eeenum(&inp, "QMMMscheme",    eQMMMscheme_names, wi);
-    printStringNoNewline(&inp, "QM basisset");
-    setStringEntry(&inp, "QMbasis",      is->QMbasis, nullptr);
-    printStringNoNewline(&inp, "QM charge");
-    setStringEntry(&inp, "QMcharge",    is->QMcharge, nullptr);
-    printStringNoNewline(&inp, "QM multiplicity");
-    setStringEntry(&inp, "QMmult",      is->QMmult, nullptr);
-    printStringNoNewline(&inp, "Surface Hopping");
-    setStringEntry(&inp, "SH",          is->bSH, nullptr);
-    printStringNoNewline(&inp, "CAS space options");
-    setStringEntry(&inp, "CASorbitals",      is->CASorbitals,   nullptr);
-    setStringEntry(&inp, "CASelectrons",     is->CASelectrons,  nullptr);
-    setStringEntry(&inp, "SAon", is->SAon, nullptr);
-    setStringEntry(&inp, "SAoff", is->SAoff, nullptr);
-    setStringEntry(&inp, "SAsteps", is->SAsteps, nullptr);
-    printStringNoNewline(&inp, "Scale factor for MM charges");
-    ir->scalefactor = get_ereal(&inp, "MMChargeScaleFactor", 1.0, wi);
-
     /* Simulated annealing */
     printStringNewline(&inp, "SIMULATED ANNEALING");
     printStringNoNewline(&inp, "Type of annealing for each temperature group (no/single/periodic)");
@@ -2432,22 +2376,6 @@ void get_ir(const char *mdparin, const char *mdparout,
     sfree(dumstr[0]);
     sfree(dumstr[1]);
 }
-
-static int search_QMstring(const char *s, int ng, const char *gn[])
-{
-    /* same as normal search_string, but this one searches QM strings */
-    int i;
-
-    for (i = 0; (i < ng); i++)
-    {
-        if (gmx_strcasecmp(s, gn[i]) == 0)
-        {
-            return i;
-        }
-    }
-
-    gmx_fatal(FARGS, "this QM method or basisset (%s) is not implemented\n!", s);
-} /* search_QMstring */
 
 /* We would like gn to be const as well, but C doesn't allow this */
 /* TODO this is utility functionality (search for the index of a
@@ -3293,82 +3221,6 @@ void do_index(const char* mdparin, const char *ndx,
     auto orirefFitGroupNames = gmx::splitString(is->orirefitgrp);
     do_numbering(natoms, groups, orirefFitGroupNames, grps, gnames, egcORFIT,
                  restnm, egrptpALL_GENREST, bVerbose, wi);
-
-    /* QMMM input processing */
-    auto qmGroupNames = gmx::splitString(is->QMMM);
-    auto qmMethods    = gmx::splitString(is->QMmethod);
-    auto qmBasisSets  = gmx::splitString(is->QMbasis);
-    if (ir->eI != eiMimic)
-    {
-        if (qmMethods.size() != qmGroupNames.size() ||
-            qmBasisSets.size() != qmGroupNames.size())
-        {
-            gmx_fatal(FARGS, "Invalid QMMM input: %zu groups %zu basissets"
-                      " and %zu methods\n", qmGroupNames.size(),
-                      qmBasisSets.size(), qmMethods.size());
-        }
-        /* group rest, if any, is always MM! */
-        do_numbering(natoms, groups, qmGroupNames, grps, gnames, egcQMMM,
-                     restnm, egrptpALL_GENREST, bVerbose, wi);
-        nr            = qmGroupNames.size(); /*atoms->grps[egcQMMM].nr;*/
-        ir->opts.ngQM = qmGroupNames.size();
-        snew(ir->opts.QMmethod, nr);
-        snew(ir->opts.QMbasis, nr);
-        for (i = 0; i < nr; i++)
-        {
-            /* input consists of strings: RHF CASSCF PM3 .. These need to be
-             * converted to the corresponding enum in names.c
-             */
-            ir->opts.QMmethod[i] = search_QMstring(qmMethods[i].c_str(),
-                                                   eQMmethodNR,
-                                                   eQMmethod_names);
-            ir->opts.QMbasis[i] = search_QMstring(qmBasisSets[i].c_str(),
-                                                  eQMbasisNR,
-                                                  eQMbasis_names);
-
-        }
-        auto qmMultiplicities = gmx::splitString(is->QMmult);
-        auto qmCharges        = gmx::splitString(is->QMcharge);
-        auto qmbSH            = gmx::splitString(is->bSH);
-        snew(ir->opts.QMmult, nr);
-        snew(ir->opts.QMcharge, nr);
-        snew(ir->opts.bSH, nr);
-        convertInts(wi, qmMultiplicities, "QMmult", ir->opts.QMmult);
-        convertInts(wi, qmCharges, "QMcharge", ir->opts.QMcharge);
-        convertYesNos(wi, qmbSH, "bSH", ir->opts.bSH);
-
-        auto CASelectrons = gmx::splitString(is->CASelectrons);
-        auto CASorbitals  = gmx::splitString(is->CASorbitals);
-        snew(ir->opts.CASelectrons, nr);
-        snew(ir->opts.CASorbitals, nr);
-        convertInts(wi, CASelectrons, "CASelectrons", ir->opts.CASelectrons);
-        convertInts(wi, CASorbitals, "CASOrbitals", ir->opts.CASorbitals);
-
-        auto SAon    = gmx::splitString(is->SAon);
-        auto SAoff   = gmx::splitString(is->SAoff);
-        auto SAsteps = gmx::splitString(is->SAsteps);
-        snew(ir->opts.SAon, nr);
-        snew(ir->opts.SAoff, nr);
-        snew(ir->opts.SAsteps, nr);
-        convertInts(wi, SAon, "SAon", ir->opts.SAon);
-        convertInts(wi, SAoff, "SAoff", ir->opts.SAoff);
-        convertInts(wi, SAsteps, "SAsteps", ir->opts.SAsteps);
-    }
-    else
-    {
-        /* MiMiC */
-        if (qmGroupNames.size() > 1)
-        {
-            gmx_fatal(FARGS, "Currently, having more than one QM group in MiMiC is not supported");
-        }
-        /* group rest, if any, is always MM! */
-        do_numbering(natoms, groups, qmGroupNames, grps, gnames, egcQMMM,
-                     restnm, egrptpALL_GENREST, bVerbose, wi);
-
-        ir->opts.ngQM = qmGroupNames.size();
-    }
-
-    /* end of QMMM input */
 
     if (bVerbose)
     {
