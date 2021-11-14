@@ -60,7 +60,6 @@
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/ns.h"
 #include "gromacs/mdlib/rf_util.h"
-#include "gromacs/mdlib/wall.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forceoutput.h"
@@ -188,15 +187,6 @@ void do_force_lowlevel(t_forcerec           *fr,
         t0 = MPI_Wtime();
     }
 #endif
-
-    if (ir->nwall)
-    {
-        /* foreign lambda component for walls */
-        real dvdl_walls = do_walls(*ir, *fr, box, *md, x,
-                                   forceWithVirial, lambda[efptVDW],
-                                   enerd->grpp.ener[egLJSR], nrnb);
-        enerd->dvdl_lin[efptVDW] += dvdl_walls;
-    }
 
     /* We only do non-bonded calculation with group scheme here, the verlet
      * calls are done from do_force_cutsVERLET(). */

@@ -420,18 +420,6 @@ struct t_inputrec // NOLINT (clang-analyzer-optin.performance.Padding)
     real                        bd_fric;
     //! Random seed for SD and BD
     int64_t                     ld_seed;
-    //! The number of walls
-    int                         nwall;
-    //! The type of walls
-    int                         wall_type;
-    //! The potentail is linear for r<=wall_r_linpot
-    real                        wall_r_linpot;
-    //! The atom type for walls
-    int                         wall_atomtype[2];
-    //! Number density for walls
-    real                        wall_density[2];
-    //! Scaling factor for the box for Ewald
-    real                        wall_ewald_zfac;
 
     //! Acceleration for viscosity calculation
     real   cos_accel;
@@ -535,9 +523,6 @@ gmx_bool inputrecNptTrotter(const t_inputrec *ir);
 gmx_bool inputrecNvtTrotter(const t_inputrec *ir);
 
 gmx_bool inputrecNphTrotter(const t_inputrec *ir);
-
-/*! \brief Return true if the simulation is 2D periodic with two walls. */
-bool     inputrecPbcXY2Walls(const t_inputrec *ir);
 
 /*! \brief Returns true for MD integator with T and/or P-coupling that supports
  * calculating the conserved energy quantity.

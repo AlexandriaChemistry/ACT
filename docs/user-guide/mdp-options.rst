@@ -386,36 +386,6 @@ Output control
    requires global communication between all processes which can
    become a bottleneck at high parallelization.
 
-.. mdp:: nstenergy
-
-   (1000) [steps]
-   number of steps that elapse between writing energies to energy file,
-   the last energies are always written, should be a multiple of
-   :mdp:`nstcalcenergy`. Note that the exact sums and fluctuations
-   over all MD steps modulo :mdp:`nstcalcenergy` are stored in the
-   energy file, so :ref:`gmx energy` can report exact energy averages
-   and fluctuations also when :mdp:`nstenergy` > 1
-
-.. mdp:: nstxout-compressed
-
-   (0) [steps]
-   number of steps that elapse between writing position coordinates
-   using lossy compression (:ref:`xtc` file)
-
-.. mdp:: compressed-x-precision
-
-   (1000) [real]
-   precision with which to write to the compressed trajectory file
-
-.. mdp:: compressed-x-grps
-
-   group(s) to write to the compressed trajectory file, by default the
-   whole system is written (if :mdp:`nstxout-compressed` > 0)
-
-.. mdp:: energygrps
-
-   group(s) for which to write to write short-ranged non-bonded
-   potential energies to the energy file (not supported on GPUs)
 
 
 Neighbor searching
@@ -511,11 +481,11 @@ Neighbor searching
    .. mdp-value:: xy
 
       Use periodic boundary conditions in x and y directions
-      only. This works only with :mdp-value:`ns-type=grid` and can be used
-      in combination with walls_. Without walls or with only one wall
+      only. This works only with :mdp-value:`ns-type=grid`. 
+      Without walls 
       the system size is infinite in the z direction. Therefore
       pressure coupling or Ewald summation methods can not be
-      used. These disadvantages do not apply when two walls are used.
+      used.
 
 .. mdp:: periodic-molecules
 
@@ -1473,77 +1443,6 @@ Energy group exclusions
    calculations with ``mdrun -rerun`` and for excluding interactions
    within frozen groups.
 
-
-Walls
-^^^^^
-
-.. mdp:: nwall
-
-   (0)
-   When set to 1 there is a wall at ``z=0``, when set to 2 there is
-   also a wall at ``z=z-box``. Walls can only be used with :mdp:`pbc`
-   ``=xy``. When set to 2, pressure coupling and Ewald summation can be
-   used (it is usually best to use semiisotropic pressure coupling
-   with the ``x/y`` compressibility set to 0, as otherwise the surface
-   area will change). Walls interact wit the rest of the system
-   through an optional :mdp:`wall-atomtype`. Energy groups ``wall0``
-   and ``wall1`` (for :mdp:`nwall` =2) are added automatically to
-   monitor the interaction of energy groups with each wall. The center
-   of mass motion removal will be turned off in the ``z``-direction.
-
-.. mdp:: wall-atomtype
-
-   the atom type name in the force field for each wall. By (for
-   example) defining a special wall atom type in the topology with its
-   own combination rules, this allows for independent tuning of the
-   interaction of each atomtype with the walls.
-
-.. mdp:: wall-type
-
-   .. mdp-value:: 9-3
-
-      LJ integrated over the volume behind the wall: 9-3 potential
-
-   .. mdp-value:: 10-4
-
-      LJ integrated over the wall surface: 10-4 potential
-
-   .. mdp-value:: 12-6
-
-      direct LJ potential with the ``z`` distance from the wall
-
-.. mdp:: table
-
-   user defined potentials indexed with the ``z`` distance from the
-   wall, the tables are read analogously to the
-   :mdp:`energygrp-table` option, where the first name is for a
-   "normal" energy group and the second name is ``wall0`` or
-   ``wall1``, only the dispersion and repulsion columns are used
-
-.. mdp:: wall-r-linpot
-
-   (-1) [nm]
-   Below this distance from the wall the potential is continued
-   linearly and thus the force is constant. Setting this option to a
-   postive value is especially useful for equilibration when some
-   atoms are beyond a wall. When the value is <=0 (<0 for
-   :mdp:`wall-type` =table), a fatal error is generated when atoms
-   are beyond a wall.
-
-.. mdp:: wall-density
-
-   [nm\ :sup:`-3`] / [nm\ :sup:`-2`]
-   the number density of the atoms for each wall for wall types 9-3
-   and 10-4
-
-.. mdp:: wall-ewald-zfac
-
-   (3)
-   The scaling factor for the third box vector for Ewald summation
-   only, the minimum is 2. Ewald summation can only be used with
-   :mdp:`nwall` =2, where one should use :mdp:`ewald-geometry`
-   ``=3dc``. The empty layer in the box serves to decrease the
-   unphysical Coulomb interaction between periodic images.
 
 
 NMR refinement

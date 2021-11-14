@@ -304,7 +304,7 @@ void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_input
          * Use the box from last timestep since we already called update().
          */
 
-        enerd->term[F_PRES] = calc_pres(fr->ePBC, ir->nwall, box, ekind->ekin, total_vir, pres);
+        enerd->term[F_PRES] = calc_pres(fr->ePBC, 0, box, ekind->ekin, total_vir, pres);
 
         /* Calculate long range corrections to pressure and energy */
         /* this adds to enerd->term[F_PRES] and enerd->term[F_ETOT],

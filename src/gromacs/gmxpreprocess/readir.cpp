@@ -99,7 +99,7 @@ typedef struct t_inputrec_strings
          acc[STRLEN], accgrps[STRLEN], freeze[STRLEN], frdim[STRLEN],
          energy[STRLEN], user1[STRLEN], user2[STRLEN], vcm[STRLEN], x_compressed_groups[STRLEN],
          couple_moltype[STRLEN], orirefitgrp[STRLEN], egptable[STRLEN], egpexcl[STRLEN],
-         wall_atomtype[STRLEN], wall_density[STRLEN], deform[STRLEN], imd_grp[STRLEN];
+         deform[STRLEN], imd_grp[STRLEN];
     char   fep_lambda[efptNR][STRLEN];
     char   lambda_weights[STRLEN];
     char   anneal[STRLEN], anneal_npoints[STRLEN],
@@ -309,7 +309,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         /* Normal Verlet type neighbor-list, currently only limited feature support */
         if (inputrec2nboundeddim(ir) < 3)
         {
-            warning_error(wi, "With Verlet lists only full pbc or pbc=xy with walls is supported");
+            warning_error(wi, "With Verlet lists only full pbc is supported");
         }
 
         // We don't (yet) have general Verlet kernels for rcoulomb!=rvdw
@@ -822,12 +822,8 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         }
     }
 
-    /* PBC/WALLS */
-    sprintf(err_buf, "walls only work with pbc=%s", epbc_names[epbcXY]);
-    CHECK(ir->nwall && ir->ePBC != epbcXY);
-
     /* VACUUM STUFF */
-    if (ir->ePBC != epbcXYZ && ir->nwall != 2)
+    if (ir->ePBC != epbcXYZ)
     {
         if (ir->ePBC == epbcNONE)
         {
@@ -1188,18 +1184,6 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         }
     }
 
-    if (ir->nwall == 2 && EEL_FULL(ir->coulombtype))
-    {
-        if (ir->ewald_geometry == eewg3D)
-        {
-            sprintf(warn_buf, "With pbc=%s you should use ewald-geometry=%s",
-                    epbc_names[ir->ePBC], eewg_names[eewg3DC]);
-            warning(wi, warn_buf);
-        }
-        /* This check avoids extra pbc coding for exclusion corrections */
-        sprintf(err_buf, "wall-ewald-zfac should be >= 2");
-        CHECK(ir->wall_ewald_zfac < 2);
-    }
     if ((ir->ewald_geometry == eewg3DC) && (ir->ePBC != epbcXY) &&
         EEL_FULL(ir->coulombtype))
     {
@@ -1589,71 +1573,6 @@ convertRvecs(warninp_t wi, gmx::ArrayRef<const std::string> inputs, const char *
     }
 }
 
-static void do_wall_params(t_inputrec *ir,
-                           char *wall_atomtype, char *wall_density,
-                           t_gromppopts *opts,
-                           warninp_t wi)
-{
-    opts->wall_atomtype[0] = nullptr;
-    opts->wall_atomtype[1] = nullptr;
-
-    ir->wall_atomtype[0] = -1;
-    ir->wall_atomtype[1] = -1;
-    ir->wall_density[0]  = 0;
-    ir->wall_density[1]  = 0;
-
-    if (ir->nwall > 0)
-    {
-        auto wallAtomTypes = gmx::splitString(wall_atomtype);
-        if (wallAtomTypes.size() != size_t(ir->nwall))
-        {
-            gmx_fatal(FARGS, "Expected %d elements for wall_atomtype, found %zu",
-                      ir->nwall, wallAtomTypes.size());
-        }
-        for (int i = 0; i < ir->nwall; i++)
-        {
-            opts->wall_atomtype[i] = gmx_strdup(wallAtomTypes[i].c_str());
-        }
-
-        if (ir->wall_type == ewt93 || ir->wall_type == ewt104)
-        {
-            auto wallDensity = gmx::splitString(wall_density);
-            if (wallDensity.size() != size_t(ir->nwall))
-            {
-                gmx_fatal(FARGS, "Expected %d elements for wall-density, found %zu", ir->nwall, wallDensity.size());
-            }
-            convertReals(wi, wallDensity, "wall-density", ir->wall_density);
-            for (int i = 0; i < ir->nwall; i++)
-            {
-                if (ir->wall_density[i] <= 0)
-                {
-                    gmx_fatal(FARGS, "wall-density[%d] = %f\n", i, ir->wall_density[i]);
-                }
-            }
-        }
-    }
-}
-
-static void add_wall_energrps(gmx_groups_t *groups, int nwall, t_symtab *symtab)
-{
-    int     i;
-    t_grps *grps;
-    char    str[STRLEN];
-
-    if (nwall > 0)
-    {
-        srenew(groups->grpname, groups->ngrpname+nwall);
-        grps = &(groups->grps[egcENER]);
-        srenew(grps->nm_ind, grps->nr+nwall);
-        for (i = 0; i < nwall; i++)
-        {
-            sprintf(str, "wall%d", i);
-            groups->grpname[groups->ngrpname] = put_symtab(symtab, str);
-            grps->nm_ind[grps->nr++]          = groups->ngrpname++;
-        }
-    }
-}
-
 static void read_expandedparams(std::vector<t_inpfile> *inp,
                                 t_expanded *expand, warninp_t wi)
 {
@@ -2007,16 +1926,6 @@ void get_ir(const char *mdparin, const char *mdparout,
     printStringNoNewline(&inp, "Pairs of energy groups for which all non-bonded interactions are excluded");
     setStringEntry(&inp, "energygrp-excl", is->egpexcl,     nullptr);
 
-    /* Walls */
-    printStringNewline(&inp, "WALLS");
-    printStringNoNewline(&inp, "Number of walls, type, atom types, densities and box-z scale factor for Ewald");
-    ir->nwall         = get_eint(&inp, "nwall", 0, wi);
-    ir->wall_type     = get_eeenum(&inp, "wall-type",   ewt_names, wi);
-    ir->wall_r_linpot = get_ereal(&inp, "wall-r-linpot", -1, wi);
-    setStringEntry(&inp, "wall-atomtype", is->wall_atomtype, nullptr);
-    setStringEntry(&inp, "wall-density",  is->wall_density,  nullptr);
-    ir->wall_ewald_zfac = get_ereal(&inp, "wall-ewald-zfac", 3, wi);
-
     /* Refinement */
     printStringNewline(&inp, "NMR refinement stuff");
     printStringNoNewline(&inp, "Distance restraints type: No, Simple or Ensemble");
@@ -2306,10 +2215,6 @@ void get_ir(const char *mdparin, const char *mdparout,
     {
         ir->fepvals->n_lambda = 0;
     }
-
-    /* WALL PARAMETERS */
-
-    do_wall_params(ir, is->wall_atomtype, is->wall_density, opts, wi);
 
     /* ORIENTATION RESTRAINT PARAMETERS */
 
@@ -3193,7 +3098,6 @@ void do_index(const char* mdparin, const char *ndx,
     auto energyGroupNames = gmx::splitString(is->energy);
     do_numbering(natoms, groups, energyGroupNames, grps, gnames, egcENER,
                  restnm, egrptpALL_GENREST, bVerbose, wi);
-    add_wall_energrps(groups, ir->nwall, symtab);
     ir->opts.ngener = groups->grps[egcENER].nr;
     auto vcmGroupNames = gmx::splitString(is->vcm);
     bRest           =
