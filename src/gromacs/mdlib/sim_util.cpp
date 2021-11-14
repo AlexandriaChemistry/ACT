@@ -83,7 +83,6 @@
 #include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
 #include "gromacs/mdlib/nbnxn_grid.h"
 #include "gromacs/mdlib/nbnxn_search.h"
-#include "gromacs/mdlib/qmmm.h"
 #include "gromacs/mdlib/update.h"
 #include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_gpu_ref.h"
 #include "gromacs/mdtypes/commrec.h"
@@ -1466,12 +1465,6 @@ static void do_force_cutsVERLET(FILE *fplog,
         }
     }
 
-    /* update QMMMrec, if necessary */
-    if (fr->bQMMM)
-    {
-        update_QMMMrec(cr, fr, as_rvec_array(x.unpaddedArrayRef().data()), mdatoms, box);
-    }
-
     /* Compute the bonded and non-bonded energies and optionally forces */
     do_force_lowlevel(fr, inputrec, &(top->idef),
                       cr, ms, nrnb, wcycle, mdatoms,
@@ -1904,12 +1897,6 @@ static void do_force_cutsGROUP(FILE *fplog,
 
     /* forceWithVirial might need the full force atom range */
     gmx::ForceWithVirial forceWithVirial(forceRef, (flags & GMX_FORCE_VIRIAL) != 0);
-
-    /* update QMMMrec, if necessary */
-    if (fr->bQMMM)
-    {
-        update_QMMMrec(cr, fr, as_rvec_array(x.unpaddedArrayRef().data()), mdatoms, box);
-    }
 
     /* Compute the bonded and non-bonded energies and optionally forces */
     do_force_lowlevel(fr, inputrec, &(top->idef),

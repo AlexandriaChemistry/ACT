@@ -59,7 +59,6 @@
 #include "gromacs/mdlib/forcerec-threading.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/ns.h"
-#include "gromacs/mdlib/qmmm.h"
 #include "gromacs/mdlib/rf_util.h"
 #include "gromacs/mdlib/wall.h"
 #include "gromacs/mdtypes/commrec.h"
@@ -179,14 +178,6 @@ void do_force_lowlevel(t_forcerec           *fr,
         dvdl_nb[i]  = 0;
         dvdl_dum[i] = 0;
     }
-
-    /* do QMMM first if requested */
-    if (fr->bQMMM)
-    {
-        enerd->term[F_EQM] = calculate_QMMM(cr, forceForUseWithShiftForces, fr);
-    }
-
-    /* Call the short range functions all in one go. */
 
 #if GMX_MPI
     /*#define TAKETIME ((cr->npmenodes) && (fr->timesteps < 12))*/
