@@ -56,7 +56,6 @@
 
 struct gmx_mdoutf {
     t_fileio               *fp_trn;
-    ener_file_t             fp_ene;
     int                     eIntegrator;
     gmx_bool                bExpanded;
     int                     elamstats;
@@ -83,7 +82,6 @@ gmx_mdoutf_t init_mdoutf(int nfile, const t_filenm fnm[],
     snew(of, 1);
 
     of->fp_trn       = nullptr;
-    of->fp_ene       = nullptr;
 
     of->eIntegrator             = ir->eI;
     of->bExpanded               = ir->bExpanded;
@@ -125,10 +123,6 @@ gmx_mdoutf_t init_mdoutf(int nfile, const t_filenm fnm[],
                     gmx_incons("Invalid full precision file format");
             }
         }
-        if (EI_DYNAMICS(ir->eI) || EI_ENERGY_MINIMIZATION(ir->eI))
-        {
-            of->fp_ene = open_enx(ftp2fn(efEDR, nfile, fnm), filemode);
-        }
 
         /* Set up atom counts so they can be passed to actual
            trajectory-writing routines later. Also, XTC writing needs
@@ -152,11 +146,6 @@ gmx_mdoutf_t init_mdoutf(int nfile, const t_filenm fnm[],
     }
 
     return of;
-}
-
-ener_file_t mdoutf_get_fp_ene(gmx_mdoutf_t of)
-{
-    return of->fp_ene;
 }
 
 gmx_wallcycle_t mdoutf_get_wcycle(gmx_mdoutf_t of)
@@ -226,10 +215,6 @@ void mdoutf_write_to_trajectory_files(const t_commrec *cr,
 
 void done_mdoutf(gmx_mdoutf_t of)
 {
-    if (of->fp_ene != nullptr)
-    {
-        close_enx(of->fp_ene);
-    }
     if (of->fp_trn)
     {
         gmx_trr_close(of->fp_trn);

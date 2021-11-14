@@ -37,7 +37,6 @@
 #ifndef GMX_MDLIB_SIM_UTIL_H
 #define GMX_MDLIB_SIM_UTIL_H
 
-#include "gromacs/fileio/enxio.h"
 #include "gromacs/mdlib/mdoutf.h"
 #include "gromacs/mdlib/vcm.h"
 #include "gromacs/timing/wallcycle.h"
@@ -154,8 +153,6 @@ void init_md(FILE *fplog,
              t_nrnb *nrnb, gmx_mtop_t *mtop,
              gmx_update_t **upd,
              gmx::BoxDeformation *deform,
-             int nfile,
-             gmx_mdoutf_t *outf,
              tensor force_vir, tensor shake_vir,
              tensor total_vir, tensor pres,
              rvec mu_tot,

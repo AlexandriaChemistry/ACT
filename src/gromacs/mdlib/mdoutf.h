@@ -37,7 +37,6 @@
 
 #include <stdio.h>
 
-#include "gromacs/fileio/enxio.h"
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/timing/wallcycle.h"
@@ -49,6 +48,7 @@ struct gmx_mtop_t;
 struct gmx_output_env_t;
 struct MdrunOptions;
 struct ObservablesHistory;
+class t_state;
 struct t_commrec;
 struct t_filenm;
 struct t_inputrec;
@@ -68,9 +68,6 @@ gmx_mdoutf_t init_mdoutf(int                     nfile,
                          gmx_mtop_t             *mtop,
                          const gmx_output_env_t *oenv,
                          gmx_wallcycle_t         wcycle);
-
-/*! \brief Getter for file pointer */
-ener_file_t mdoutf_get_fp_ene(gmx_mdoutf_t of);
 
 /*! \brief Getter for wallcycle timer */
 gmx_wallcycle_t mdoutf_get_wcycle(gmx_mdoutf_t of);

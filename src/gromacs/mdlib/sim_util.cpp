@@ -2807,8 +2807,6 @@ void init_md(FILE *fplog,
              t_nrnb *nrnb, gmx_mtop_t *mtop,
              gmx_update_t **upd,
              gmx::BoxDeformation *deform,
-             int nfile, 
-             gmx_mdoutf_t *outf,
              tensor force_vir, tensor shake_vir,
              tensor total_vir, tensor pres, rvec mu_tot,
              gmx_bool *bSimAnn, t_vcm **vcm)
