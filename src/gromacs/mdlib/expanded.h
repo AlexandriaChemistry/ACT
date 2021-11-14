@@ -41,6 +41,7 @@
 #include "gromacs/utility/basedefinitions.h"
 
 struct df_history_t;
+struct gmx_ekindata_t;
 struct gmx_enerdata_t;
 struct t_expanded;
 struct t_extmass;

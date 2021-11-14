@@ -44,7 +44,6 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/mdrun.h"
-#include "gromacs/mdlib/trajectory_writing.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -62,7 +61,6 @@ struct gmx_mdoutf {
     gmx_bool                bExpanded;
     int                     elamstats;
     int                     simulation_part;
-    FILE                   *fp_dhdl;
     int                     natoms_global;
     int                     natoms_x_compressed;
     gmx_groups_t           *groups; /* for compressed position writing */
@@ -75,7 +73,7 @@ gmx_mdoutf_t init_mdoutf(int nfile, const t_filenm fnm[],
                          const MdrunOptions &mdrunOptions,
                          const t_commrec *cr,
                          const t_inputrec *ir, gmx_mtop_t *top_global,
-                         const gmx_output_env_t *oenv, gmx_wallcycle_t wcycle)
+                         gmx_unused const gmx_output_env_t *oenv, gmx_wallcycle_t wcycle)
 {
     gmx_mdoutf_t   of;
     const char    *appendMode = "a+", *writeMode = "w+", *filemode;
@@ -86,7 +84,6 @@ gmx_mdoutf_t init_mdoutf(int nfile, const t_filenm fnm[],
 
     of->fp_trn       = nullptr;
     of->fp_ene       = nullptr;
-    of->fp_dhdl      = nullptr;
 
     of->eIntegrator             = ir->eI;
     of->bExpanded               = ir->bExpanded;
@@ -133,20 +130,6 @@ gmx_mdoutf_t init_mdoutf(int nfile, const t_filenm fnm[],
             of->fp_ene = open_enx(ftp2fn(efEDR, nfile, fnm), filemode);
         }
 
-        if ((ir->efep != efepNO || ir->bSimTemp) && ir->fepvals->nstdhdl > 0 &&
-            (ir->fepvals->separate_dhdl_file == esepdhdlfileYES ) &&
-            EI_DYNAMICS(ir->eI))
-        {
-            if (bAppendFiles)
-            {
-                of->fp_dhdl = gmx_fio_fopen(opt2fn("-dhdl", nfile, fnm), filemode);
-            }
-            else
-            {
-                of->fp_dhdl = open_dhdl(opt2fn("-dhdl", nfile, fnm), ir, oenv);
-            }
-        }
-
         /* Set up atom counts so they can be passed to actual
            trajectory-writing routines later. Also, XTC writing needs
            to know what (and how many) atoms might be in the XTC
@@ -174,11 +157,6 @@ gmx_mdoutf_t init_mdoutf(int nfile, const t_filenm fnm[],
 ener_file_t mdoutf_get_fp_ene(gmx_mdoutf_t of)
 {
     return of->fp_ene;
-}
-
-FILE *mdoutf_get_fp_dhdl(gmx_mdoutf_t of)
-{
-    return of->fp_dhdl;
 }
 
 gmx_wallcycle_t mdoutf_get_wcycle(gmx_mdoutf_t of)
@@ -255,10 +233,6 @@ void done_mdoutf(gmx_mdoutf_t of)
     if (of->fp_trn)
     {
         gmx_trr_close(of->fp_trn);
-    }
-    if (of->fp_dhdl != nullptr)
-    {
-        gmx_fio_fclose(of->fp_dhdl);
     }
     if (of->f_global != nullptr)
     {
