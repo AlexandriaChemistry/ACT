@@ -118,9 +118,6 @@ void ewald_LRcorrection(int numAtomsLocal,
     gmx_bool    bNeedLongRangeCorrection;
 
     GMX_ASSERT(ir, "Invalid inputrec pointer");
-    matrix          scaledBox;
-    EwaldBoxZScaler boxScaler(*ir);
-    boxScaler.scaleBox(box, scaledBox);
 
     /* This routine can be made faster by using tables instead of analytical interactions
      * However, that requires a thorough verification that they are correct in all cases.
@@ -156,7 +153,7 @@ void ewald_LRcorrection(int numAtomsLocal,
     }
     dipole_coeff = 0;
 
-    real boxVolume = scaledBox[XX][XX]*scaledBox[YY][YY]*scaledBox[ZZ][ZZ];
+    real boxVolume = box[XX][XX]*box[YY][YY]*box[ZZ][ZZ];
     switch (ewald_geometry)
     {
         case eewg3D:

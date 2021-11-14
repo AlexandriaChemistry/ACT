@@ -665,18 +665,6 @@ void pr_inputrec(FILE *fp, int indent, const char *title, const t_inputrec *ir,
         PI("lincs-iter", ir->nLincsIter);
         PR("lincs-warnangle", ir->LincsWarnAngle);
 
-        /* Walls */
-        PI("nwall", ir->nwall);
-        PS("wall-type", EWALLTYPE(ir->wall_type));
-        PR("wall-r-linpot", ir->wall_r_linpot);
-        /* wall-atomtype */
-        PI("wall-atomtype[0]", ir->wall_atomtype[0]);
-        PI("wall-atomtype[1]", ir->wall_atomtype[1]);
-        /* wall-density */
-        PR("wall-density[0]", ir->wall_density[0]);
-        PR("wall-density[1]", ir->wall_density[1]);
-        PR("wall-ewald-zfac", ir->wall_ewald_zfac);
-
         /* NMR refinement stuff */
         PS("disre", EDISRETYPE(ir->eDisre));
         PS("disre-weighting", EDISREWEIGHTING(ir->eDisreWeighting));
@@ -944,13 +932,6 @@ void cmp_inputrec(FILE *fp, const t_inputrec *ir1, const t_inputrec *ir2, real f
     {
         cmp_expandedvals(fp, ir1->expandedvals, ir2->expandedvals, std::min(ir1->fepvals->n_lambda, ir2->fepvals->n_lambda), ftol, abstol);
     }
-    cmp_int(fp, "inputrec->nwall", -1, ir1->nwall, ir2->nwall);
-    cmp_int(fp, "inputrec->wall_type", -1, ir1->wall_type, ir2->wall_type);
-    cmp_int(fp, "inputrec->wall_atomtype[0]", -1, ir1->wall_atomtype[0], ir2->wall_atomtype[0]);
-    cmp_int(fp, "inputrec->wall_atomtype[1]", -1, ir1->wall_atomtype[1], ir2->wall_atomtype[1]);
-    cmp_real(fp, "inputrec->wall_density[0]", -1, ir1->wall_density[0], ir2->wall_density[0], ftol, abstol);
-    cmp_real(fp, "inputrec->wall_density[1]", -1, ir1->wall_density[1], ir2->wall_density[1], ftol, abstol);
-    cmp_real(fp, "inputrec->wall_ewald_zfac", -1, ir1->wall_ewald_zfac, ir2->wall_ewald_zfac, ftol, abstol);
 
     cmp_int(fp, "inputrec->eDisre", -1, ir1->eDisre, ir2->eDisre);
     cmp_real(fp, "inputrec->dr_fc", -1, ir1->dr_fc, ir2->dr_fc, ftol, abstol);
@@ -1038,11 +1019,6 @@ gmx_bool inputrecNphTrotter(const t_inputrec *ir)
              (ir->epc == epcMTTK) && (ir->etc != etcNOSEHOOVER) );
 }
 
-bool inputrecPbcXY2Walls(const t_inputrec *ir)
-{
-    return (ir->ePBC == epbcXY && ir->nwall == 2);
-}
-
 bool integratorHasConservedEnergyQuantity(const t_inputrec *ir)
 {
     if (!EI_MD(ir->eI))
@@ -1073,14 +1049,7 @@ bool integratorHasReferenceTemperature(const t_inputrec *ir)
 
 int inputrec2nboundeddim(const t_inputrec *ir)
 {
-    if (inputrecPbcXY2Walls(ir))
-    {
-        return 3;
-    }
-    else
-    {
-        return ePBC2npbcdim(ir->ePBC);
-    }
+    return ePBC2npbcdim(ir->ePBC);
 }
 
 int ndof_com(const t_inputrec *ir)
@@ -1094,7 +1063,7 @@ int ndof_com(const t_inputrec *ir)
             n = 3;
             break;
         case epbcXY:
-            n = (ir->nwall == 0 ? 3 : 2);
+            n = 3;
             break;
         case epbcSCREW:
             n = 1;

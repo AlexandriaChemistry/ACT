@@ -776,11 +776,6 @@ gmx_pme_t *gmx_pme_init(const t_commrec         *cr,
     /* Always constant LJ coefficients */
     pme->ljpme_combination_rule = ir->ljpme_combination_rule;
 
-    // The box requires scaling with nwalls = 2, we store that condition as well
-    // as the scaling factor
-    delete pme->boxScaler;
-    pme->boxScaler = new EwaldBoxZScaler(*ir);
-
     /* If we violate restrictions, generate a fatal error here */
     gmx_pme_check_restrictions(pme->pme_order,
                                pme->nkx, pme->nky, pme->nkz,
@@ -1180,10 +1175,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
         atc->f = f;
     }
 
-    matrix scaledBox;
-    pme->boxScaler->scaleBox(box, scaledBox);
-
-    gmx::invertBoxMatrix(scaledBox, pme->recipbox);
+    gmx::invertBoxMatrix(box, pme->recipbox);
     bFirst = TRUE;
 
     /* For simplicity, we construct the splines for all particles if
@@ -1334,7 +1326,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                     {
                         loop_count =
                             solve_pme_yzx(pme, cfftgrid,
-                                          scaledBox[XX][XX]*scaledBox[YY][YY]*scaledBox[ZZ][ZZ],
+                                          box[XX][XX]*box[YY][YY]*box[ZZ][ZZ],
                                           bCalcEnerVir,
                                           pme->nthread, thread);
                     }
@@ -1342,7 +1334,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                     {
                         loop_count =
                             solve_pme_lj_yzx(pme, &cfftgrid, FALSE,
-                                             scaledBox[XX][XX]*scaledBox[YY][YY]*scaledBox[ZZ][ZZ],
+                                             box[XX][XX]*box[YY][YY]*box[ZZ][ZZ],
                                              bCalcEnerVir,
                                              pme->nthread, thread);
                     }
@@ -1602,7 +1594,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
 
                         loop_count =
                             solve_pme_lj_yzx(pme, &pme->cfftgrid[2], TRUE,
-                                             scaledBox[XX][XX]*scaledBox[YY][YY]*scaledBox[ZZ][ZZ],
+                                             box[XX][XX]*box[YY][YY]*box[ZZ][ZZ],
                                              bCalcEnerVir,
                                              pme->nthread, thread);
                         if (thread == 0)
@@ -1804,8 +1796,6 @@ void gmx_pme_destroy(gmx_pme_t *pme)
     {
         return;
     }
-
-    delete pme->boxScaler;
 
     sfree(pme->nnx);
     sfree(pme->nny);

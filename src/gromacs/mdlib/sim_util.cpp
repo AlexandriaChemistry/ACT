@@ -86,6 +86,7 @@
 #include "gromacs/mdlib/update.h"
 #include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_gpu_ref.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/mdtypes/iforceprovider.h"
 #include "gromacs/mdtypes/inputrec.h"
@@ -2806,8 +2807,6 @@ void init_md(FILE *fplog,
              t_nrnb *nrnb, gmx_mtop_t *mtop,
              gmx_update_t **upd,
              gmx::BoxDeformation *deform,
-             int nfile, 
-             gmx_mdoutf_t *outf, t_mdebin **mdebin,
              tensor force_vir, tensor shake_vir,
              tensor total_vir, tensor pres, rvec mu_tot,
              gmx_bool *bSimAnn, t_vcm **vcm)
@@ -2875,12 +2874,6 @@ void init_md(FILE *fplog,
     }
     init_nrnb(nrnb);
 
-    if (nfile != -1)
-    {
-        *mdebin = init_mdebin(mdrunOptions.continuationOptions.appendFiles ? nullptr : mdoutf_get_fp_ene(*outf),
-                              mtop, ir, mdoutf_get_fp_dhdl(*outf));
-    }
-
     /* Initiate variables */
     clear_mat(force_vir);
     clear_mat(shake_vir);
@@ -2896,7 +2889,7 @@ void init_rerun(FILE *fplog,
                 t_state *globalState, double *lam0,
                 t_nrnb *nrnb, gmx_mtop_t *mtop,
                 int nfile, const t_filenm fnm[],
-                gmx_mdoutf_t *outf, t_mdebin **mdebin,
+                gmx_mdoutf_t *outf,
                 gmx_wallcycle_t wcycle)
 {
     /* Initialize lambda variables */
@@ -2921,7 +2914,5 @@ void init_rerun(FILE *fplog,
     {
         *outf   = init_mdoutf(nfile, fnm, mdrunOptions, cr,
                               ir, mtop, oenv, wcycle);
-        *mdebin = init_mdebin(mdrunOptions.continuationOptions.appendFiles ? nullptr : mdoutf_get_fp_ene(*outf),
-                              mtop, ir, mdoutf_get_fp_dhdl(*outf), true);
     }
 }

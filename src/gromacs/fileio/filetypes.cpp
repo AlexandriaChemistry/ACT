@@ -107,7 +107,6 @@ static const t_deffile deffile[efNR] =
     { eftGEN, ".???", "traj", nullptr,
       "Full precision trajectory", NTRNS, trns },
     { eftXDR, ".trr", "traj", nullptr, "Trajectory in portable xdr format" },
-    { eftXDR, ".edr", "ener",   nullptr, "Energy file"},
     { eftGEN, ".???", "conf", "-c", "Structure file", NSTXS, stxs },
     { eftGEN, ".???", "out", "-o", "Structure file", NSTOS, stos },
     { eftASC, ".gro", "conf", "-c", "Coordinate file in Gromos-87 format" },

@@ -165,15 +165,10 @@ real do_ewald(const t_inputrec *ir,
         }
     }
 
-    /* Scale box with Ewald wall factor */
-    matrix          scaledBox;
-    EwaldBoxZScaler boxScaler(*ir);
-    boxScaler.scaleBox(box, scaledBox);
-
     rvec boxDiag;
     for (int i = 0; (i < DIM); i++)
     {
-        boxDiag[i] = scaledBox[i][i];
+        boxDiag[i] = box[i][i];
     }
 
     /* 1/(Vol*e0) */

@@ -81,7 +81,6 @@
 #include "gromacs/mdlib/ns.h"
 #include "gromacs/mdlib/rf_util.h"
 #include "gromacs/mdlib/sim_util.h"
-#include "gromacs/mdlib/wall.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/fcdata.h"
 #include "gromacs/mdtypes/group.h"
@@ -2238,7 +2237,7 @@ static void init_nb_verlet(const gmx::MDLogger     &mdlog,
 
     snew(nbv->nbat, 1);
     int mimimumNumEnergyGroupNonbonded = ir->opts.ngener;
-    if (ir->opts.ngener - ir->nwall == 1)
+    if (ir->opts.ngener == 1)
     {
         /* We have only one non-wall energy group, we do not need energy group
          * support in the non-bondeds kernels, since all non-bonded energy
@@ -2759,8 +2758,7 @@ void init_forcerec(FILE                             *fp,
         (EEL_FULL(ic->eeltype) || EVDW_PME(ic->vdwtype) ||
          fr->forceProviders->hasForceProvider() ||
          gmx_mtop_ftype_count(mtop, F_POSRES) > 0 ||
-         gmx_mtop_ftype_count(mtop, F_FBPOSRES) > 0 ||
-         ir->nwall > 0);
+         gmx_mtop_ftype_count(mtop, F_FBPOSRES) > 0);
 
     if (fr->haveDirectVirialContributions)
     {
@@ -2853,7 +2851,7 @@ void init_forcerec(FILE                             *fp,
     needGroupSchemeTables = (ir->cutoff_scheme == ecutsGROUP &&
                              (fr->bcoultab || fr->bvdwtab));
 
-    negp_pp   = ir->opts.ngener - ir->nwall;
+    negp_pp   = ir->opts.ngener;
     negptable = 0;
     if (!needGroupSchemeTables)
     {
@@ -2963,13 +2961,6 @@ void init_forcerec(FILE                             *fp,
     {
         fr->pairsTable = make_tables(fp, ic, tabpfn, rtab,
                                      GMX_MAKETABLES_14ONLY);
-    }
-
-    /* Wall stuff */
-    fr->nwall = ir->nwall;
-    if (ir->nwall && ir->wall_type == ewtTABLE)
-    {
-        make_wall_tables(fp, ir, tabfn, &mtop->groups, fr);
     }
 
     if (fcd && !tabbfnm.empty())
