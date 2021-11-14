@@ -156,9 +156,7 @@ void do_force_lowlevel(t_forcerec   *fr,
                        real         *lambda,
                        const t_graph *graph,
                        const t_blocka *excl,
-                       rvec         mu_tot[2],
-                       int          flags,
-                       float        *cycles_pme);
+                       int          flags);
 /* Call all the force routines */
 
 #endif

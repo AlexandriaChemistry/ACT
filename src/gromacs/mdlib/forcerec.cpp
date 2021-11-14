@@ -51,8 +51,6 @@
 #include "gromacs/compat/make_unique.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
-#include "gromacs/ewald/ewald.h"
-#include "gromacs/ewald/ewald-utils.h"
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nonbonded/nonbonded.h"
@@ -1802,13 +1800,6 @@ static void initCoulombEwaldParameters(FILE *fp, const t_inputrec *ir,
         }
     }
 
-    ic->ewaldcoeff_q = calc_ewaldcoeff_q(ir->rcoulomb, ir->ewald_rtol);
-    if (fp)
-    {
-        fprintf(fp, "Using a Gaussian width (1/beta) of %g nm for Ewald\n",
-                1/ic->ewaldcoeff_q);
-    }
-
     if (ic->coulomb_modifier == eintmodPOTSHIFT)
     {
         GMX_RELEASE_ASSERT(ic->rcoulomb != 0, "Cutoff radius cannot be zero");
@@ -1817,38 +1808,6 @@ static void initCoulombEwaldParameters(FILE *fp, const t_inputrec *ir,
     else
     {
         ic->sh_ewald = 0;
-    }
-}
-
-/*! \brief Print Van der Waals Ewald citations and set ewald coefficients */
-static void initVdwEwaldParameters(FILE *fp, const t_inputrec *ir,
-                                   interaction_const_t *ic)
-{
-    if (!EVDW_PME(ir->vdwtype))
-    {
-        return;
-    }
-
-    if (fp)
-    {
-        fprintf(fp, "Will do PME sum in reciprocal space for LJ dispersion interactions.\n");
-        please_cite(fp, "Essmann95a");
-    }
-    ic->ewaldcoeff_lj = calc_ewaldcoeff_lj(ir->rvdw, ir->ewald_rtol_lj);
-    if (fp)
-    {
-        fprintf(fp, "Using a Gaussian width (1/beta) of %g nm for LJ Ewald\n",
-                1/ic->ewaldcoeff_lj);
-    }
-
-    if (ic->vdw_modifier == eintmodPOTSHIFT)
-    {
-        real crc2       = gmx::square(ic->ewaldcoeff_lj*ic->rvdw);
-        ic->sh_lj_ewald = (std::exp(-crc2)*(1 + crc2 + 0.5*crc2*crc2) - 1)/gmx::power6(ic->rvdw);
-    }
-    else
-    {
-        ic->sh_lj_ewald = 0;
     }
 }
 
@@ -2015,8 +1974,6 @@ init_interaction_const(FILE                       *fp,
     {
         ic->buckinghamBMax = calcBuckinghamBMax(fp, mtop);
     }
-
-    initVdwEwaldParameters(fp, ir, ic);
 
     clear_force_switch_constants(&ic->dispersion_shift);
     clear_force_switch_constants(&ic->repulsion_shift);
@@ -2575,12 +2532,6 @@ void init_forcerec(FILE                             *fp,
     init_interaction_const_tables(fp, fr->ic, ir->rlist + ir->tabext);
 
     const interaction_const_t *ic = fr->ic;
-
-    /* TODO: Replace this Ewald table or move it into interaction_const_t */
-    if (ir->coulombtype == eelEWALD)
-    {
-        init_ewald_tab(&(fr->ewald_table), ir, fp);
-    }
 
     /* Electrostatics: Translate from interaction-setting-in-mdp-file to kernel interaction format */
     switch (ic->eeltype)

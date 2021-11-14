@@ -45,8 +45,6 @@
 #include "resethandler.h"
 
 #include "gromacs/domdec/domdec.h"
-#include "gromacs/ewald/pme.h"
-#include "gromacs/ewald/pme-load-balancing.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
@@ -127,8 +125,6 @@ bool ResetHandler::resetCountersImpl(
         const t_commrec            *cr,
         nonbonded_verlet_t         *nbv,
         t_nrnb                     *nrnb,
-        const gmx_pme_t            *pme,
-        const pme_load_balancing_t *pme_loadbal,
         gmx_wallcycle_t             wcycle,
         gmx_walltime_accounting_t   walltime_accounting)
 {
@@ -136,23 +132,6 @@ bool ResetHandler::resetCountersImpl(
     if (static_cast<ResetSignal>(signal_.set) == ResetSignal::doResetCounters ||
         step_rel == wcycle_get_reset_counters(wcycle))
     {
-        if (pme_loadbal_is_active(pme_loadbal))
-        {
-            /* Do not permit counter reset while PME load
-             * balancing is active. The only purpose for resetting
-             * counters is to measure reliable performance data,
-             * and that can't be done before balancing
-             * completes.
-             *
-             * TODO consider fixing this by delaying the reset
-             * until after load balancing completes,
-             * e.g. https://gerrit.gromacs.org/#/c/4964/2 */
-            gmx_fatal(FARGS, "PME tuning was still active when attempting to "
-                      "reset mdrun counters at step %" PRId64 ". Try "
-                      "resetting counters later in the run, e.g. with gmx "
-                      "mdrun -resetstep.", step);
-        }
-
         char sbuf[STEPSTRSIZE];
 
         /* Reset all the counters related to performance over the run */
@@ -165,12 +144,7 @@ bool ResetHandler::resetCountersImpl(
             nbnxn_gpu_reset_timings(nbv);
         }
 
-        if (pme_gpu_task_enabled(pme))
-        {
-            pme_gpu_reset_timings(pme);
-        }
-
-        if (use_GPU(nbv) || pme_gpu_task_enabled(pme))
+        if (use_GPU(nbv))
         {
             resetGpuProfiler();
         }
@@ -187,11 +161,6 @@ bool ResetHandler::resetCountersImpl(
         print_date_and_time(fplog, cr->nodeid, "Restarted time", gmx_gettime());
 
         wcycle_set_reset_counters(wcycle, -1);
-        if (!thisRankHasDuty(cr, DUTY_PME))
-        {
-            /* Tell our PME node to reset its counters */
-            gmx_pme_send_resetcounters(cr, step);
-        }
         /* Reset can only happen once, so clear the triggering flag. */
         signal_.set = static_cast<signed char>(ResetSignal::noSignal);
         /* We have done a reset, so the finish will be valid. */

@@ -43,7 +43,6 @@
 #include <memory>
 
 #include "gromacs/compat/make_unique.h"
-#include "gromacs/ewald/pme.h"
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
@@ -111,15 +110,9 @@ void MDAtoms::reserve(int newCapacity)
 }
 
 std::unique_ptr<MDAtoms>
-makeMDAtoms(FILE *fp, const gmx_mtop_t &mtop, const t_inputrec &ir,
-            const bool rankHasPmeGpuTask)
+makeMDAtoms(FILE *fp, const gmx_mtop_t &mtop, const t_inputrec &ir)
 {
     auto       mdAtoms = compat::make_unique<MDAtoms>();
-    // GPU transfers may want to use a suitable pinning mode.
-    if (rankHasPmeGpuTask)
-    {
-        changePinningPolicy(&mdAtoms->chargeA_, pme_get_pinning_policy());
-    }
     t_mdatoms *md;
     snew(md, 1);
     mdAtoms->mdatoms_.reset(md);

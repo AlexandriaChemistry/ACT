@@ -41,7 +41,6 @@
 
 #include <algorithm>
 
-#include "gromacs/ewald/ewald-utils.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
@@ -983,20 +982,6 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
                 gmx_incons("Unimplemented VdW modifier");
         }
     }
-    else if (EVDW_PME(ir->vdwtype))
-    {
-        real b     = calc_ewaldcoeff_lj(ir->rvdw, ir->ewald_rtol_lj);
-        real r     = ir->rvdw;
-        real br    = b*r;
-        real br2   = br*br;
-        real br4   = br2*br2;
-        real br6   = br4*br2;
-        // -dV/dr of g(br)*r^-6 [where g(x) = exp(-x^2)(1+x^2+x^4/2),
-        // see LJ-PME equations in manual] and r^-reppow
-        ljDisp.md1 = -std::exp(-br2)*(br6 + 3.0*br4 + 6.0*br2 + 6.0)*std::pow(r, -7.0);
-        ljRep.md1  = repPow*pow(r, -(repPow + 1));
-        // The contribution of the higher derivatives is negligible
-    }
     else
     {
         gmx_fatal(FARGS, "Energy drift calculation is only implemented for plain cut-off Lennard-Jones interactions");
@@ -1035,16 +1020,6 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
             elec.md1 = elfac*(1.0/gmx::square(ir->rcoulomb) - 2*k_rf*ir->rcoulomb);
         }
         elec.d2      = elfac*(2.0/gmx::power3(ir->rcoulomb) + 2*k_rf);
-    }
-    else if (EEL_PME(ir->coulombtype) || ir->coulombtype == eelEWALD)
-    {
-        real b, rc, br;
-
-        b        = calc_ewaldcoeff_q(ir->rcoulomb, ir->ewald_rtol);
-        rc       = ir->rcoulomb;
-        br       = b*rc;
-        elec.md1 = elfac*(b*std::exp(-br*br)*M_2_SQRTPI/rc + std::erfc(br)/(rc*rc));
-        elec.d2  = elfac/(rc*rc)*(2*b*(1 + br*br)*std::exp(-br*br)*M_2_SQRTPI + 2*std::erfc(br)/rc);
     }
     else
     {

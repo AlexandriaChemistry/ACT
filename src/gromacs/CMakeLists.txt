@@ -101,8 +101,6 @@ add_subdirectory(commandline)
 # The next directory is part of ACT, not GROMACS
 add_subdirectory(coulombintegrals)
 add_subdirectory(domdec)
-add_subdirectory(ewald)
-add_subdirectory(fft)
 add_subdirectory(gpu_utils)
 add_subdirectory(hardware)
 add_subdirectory(linearalgebra)
