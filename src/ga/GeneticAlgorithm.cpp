@@ -2,6 +2,7 @@
 
 #include "GeneticAlgorithm.h"
 
+#include <cassert>
 #include <random>
 #include <stdio.h>
 
@@ -29,6 +30,9 @@ namespace ga {
                                              Crossover*             crossover,
                                              Mutator*               mutator,
                                              Terminator*            terminator) {
+
+        // Make sure that there is an even number of individuals in the population
+        assert(popSize % 2 == 0);
 
         this->popSize           = popSize;
         this->chromosomeLength  = chromosomeLength;
