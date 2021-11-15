@@ -1218,7 +1218,7 @@ immStatus MyMol::GenerateGromacs(const gmx::MDLogger       &mdlog,
     wcycle_    = wallcycle_init(debug, 0, cr);
 
     MDatoms_  = new std::unique_ptr<gmx::MDAtoms>(new gmx::MDAtoms());
-    *MDatoms_ = gmx::makeMDAtoms(nullptr, *mtop_, *inputrec_, false);
+    *MDatoms_ = gmx::makeMDAtoms(nullptr, *mtop_, *inputrec_);
     atoms2md(mtop_, inputrec_, -1, nullptr, atomsConst().nr, MDatoms_->get());
     auto mdatoms = MDatoms_->get()->mdatoms();
     f_.resizeWithPadding(state_->natoms);
@@ -1298,7 +1298,7 @@ immStatus MyMol::computeForces(FILE *fplog, t_commrec *cr, double *rmsf)
         try
         {
             force2 = relax_shell_flexcon(nullptr, cr, nullptr, false,
-                                         nullptr, 0, inputrec_,
+                                         0, inputrec_,
                                          true, force_flags, ltop_, nullptr,
                                          enerd_, fcd_, state_,
                                          f_.arrayRefWithPadding(), force_vir, mdatoms,
@@ -1336,7 +1336,7 @@ immStatus MyMol::computeForces(FILE *fplog, t_commrec *cr, double *rmsf)
     }
     else
     {
-        do_force(fplog, cr, nullptr, inputrec_, nullptr, nullptr, 0,
+        do_force(fplog, cr, nullptr, inputrec_, 0,
                  &nrnb_, wcycle_, ltop_,
                  &(mtop_->groups),
                  state_->box, state_->x.arrayRefWithPadding(), nullptr,
@@ -1344,7 +1344,6 @@ immStatus MyMol::computeForces(FILE *fplog, t_commrec *cr, double *rmsf)
                  enerd_, fcd_,
                  state_->lambda, nullptr,
                  fr_, vsite_->get(), mu_tot, t,
-                 nullptr,
                  force_flags,
                  DdOpenBalanceRegionBeforeForceComputation::no,
                  DdCloseBalanceRegionAfterForceComputation::no);

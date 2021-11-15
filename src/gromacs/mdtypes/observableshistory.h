@@ -56,9 +56,6 @@
 #include <memory>
 
 class energyhistory_t;
-class PullHistory;
-struct edsamhistory_t;
-struct swaphistory_t;
 
 /*! \libinternal \brief Observables history, for writing/reading to/from checkpoint file
  */
@@ -66,15 +63,6 @@ struct ObservablesHistory
 {
     //! History for energy observables, used for output only
     std::unique_ptr<energyhistory_t> energyHistory;
-
-    //! History for pulling observables, used for output only
-    std::unique_ptr<PullHistory> pullHistory;
-
-    //! Essential dynamics and flooding history
-    std::unique_ptr<edsamhistory_t> edsamHistory;
-
-    //! Ion/water position swapping history
-    std::unique_ptr<swaphistory_t> swapHistory;
 
     ObservablesHistory();
 

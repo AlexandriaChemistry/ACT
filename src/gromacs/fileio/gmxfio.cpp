@@ -106,12 +106,12 @@ static int gmx_fio_int_flush(t_fileio* fio)
 
 /* lock the mutex associated with this fio. This needs to be done for every
    type of access to the fio's elements. */
-void gmx_fio_lock(t_fileio *fio)
+void gmx_fio_lock(gmx_unused t_fileio *fio)
 {
     //    tMPI_Lock_lock(&(fio->mtx));
 }
 /* unlock the mutex associated with this fio.  */
-void gmx_fio_unlock(t_fileio *fio)
+void gmx_fio_unlock(gmx_unused t_fileio *fio)
 {
     //    tMPI_Lock_unlock(&(fio->mtx));
 }
@@ -311,10 +311,6 @@ t_fileio *gmx_fio_open(const char *fn, const char *mode)
     fio->xdr   = nullptr;
     if (fn)
     {
-        if (fn2ftp(fn) == efTNG)
-        {
-            gmx_incons("gmx_fio_open may not be used to open TNG files");
-        }
         fio->iFTP   = fn2ftp(fn);
         fio->fn     = gmx_strdup(fn);
 
@@ -594,7 +590,7 @@ std::vector<gmx_file_position_t> gmx_fio_get_output_file_positions()
     {
         /* Skip the checkpoint files themselves, since they could be open when
            we call this routine... */
-        if (!cur->bRead && cur->iFTP != efCPT)
+        if (!cur->bRead)
         {
             outputfiles.emplace_back();
 
@@ -785,13 +781,3 @@ gmx_bool gmx_fio_getread(t_fileio* fio)
     return ret;
 }
 
-int xtc_seek_time(t_fileio *fio, real time, int natoms, gmx_bool bSeekForwardOnly)
-{
-    int ret;
-
-    gmx_fio_lock(fio);
-    ret = xdr_xtc_seek_time(time, fio->fp, fio->xdr, natoms, bSeekForwardOnly);
-    gmx_fio_unlock(fio);
-
-    return ret;
-}

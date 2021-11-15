@@ -45,7 +45,6 @@
 #include "gromacs/timing/wallcycle.h"
 
 struct gmx_enerdata_t;
-struct gmx_enfrot;
 struct gmx_groups_t;
 struct gmx_multisim_t;
 struct gmx_shellfc_t;
@@ -78,7 +77,6 @@ real relax_shell_flexcon(FILE                                     *log,
                          const t_commrec                          *cr,
                          const gmx_multisim_t                     *ms,
                          gmx_bool                                  bVerbose,
-                         gmx_enfrot                               *enforcedRotation,
                          int64_t                                   mdstep,
                          const t_inputrec                         *inputrec,
                          gmx_bool                                  bDoNS,

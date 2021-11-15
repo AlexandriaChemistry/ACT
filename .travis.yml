@@ -7,14 +7,20 @@ before_install:
 
 env:
   matrix:
-    - GMX_DOUBLE=OFF GMX_MPI=OFF
-    - GMX_DOUBLE=OFF GMX_MPI=ON
-    - GMX_DOUBLE=ON  GMX_MPI=OFF
     - GMX_DOUBLE=ON  GMX_MPI=ON
 
 script: 
-  - mkdir build && pushd build && cmake -DGMX_DOUBLE=$GMX_DOUBLE -DGMX_MPI=$GMX_MPI .. && make -j4
+  - mkdir build && pushd build && cmake -DGMX_DOUBLE=ON -DGMX_MPI=ON -DGMX_X11=OFF -DBUILD_SHARED_LIBS=OFF -DGMX_OPENMP=OFF  -DGMX_DEFAULT_SUFFIX=OFF -DGMX_LIBXML2=ON -DGMX_COMPACT_DOXYGEN=ON  .. && make -j4
 
 compiler:
   - clang
   - gcc
+
+after_success:
+  # Generate the docs only if master, the travis_build_docs is true and we can use secure variables
+  - >-
+    if [[ "$TRAVIS_BRANCH" = "main" && -n "$TRAVIS_BUILD_DOCS" && "$TRAVIS_PULL_REQUEST" = "false" ]] ; then
+      cd $PROJECT_DIR_ABS
+      source .ci/setup-ssh.sh || travis_terminate 1
+      .ci/generateDocumentation.sh || travis_terminate 1
+    fi

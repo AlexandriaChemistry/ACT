@@ -207,39 +207,10 @@ option(GMX_COOL_QUOTES "Enable GROMACS cool quotes" ON)
 mark_as_advanced(GMX_COOL_QUOTES)
 gmx_add_cache_dependency(GMX_COOL_QUOTES BOOL "NOT GMX_FAHCORE" OFF)
 
-option(GMX_USE_OPENCL "Enable OpenCL acceleration" OFF)
-
-# Decide on GPU settings based on user-settings and GPU/CUDA
-# detection. VS2017 requires CUDA 9.0, for the other arch/compilers
-# rest we require CUDA 7.0 or later (including for clang-CUDA).
-if(MSVC)
-    set(REQUIRED_CUDA_VERSION 9.0)
-else()
-    set(REQUIRED_CUDA_VERSION 7.0)
-endif()
-set(REQUIRED_CUDA_COMPUTE_CAPABILITY 3.0)
-
-# OpenCL required version: 1.2 or newer
-set(REQUIRED_OPENCL_MIN_VERSION 1.2)
-
-if(NOT GMX_USE_OPENCL)
-    # CUDA detection is done only if GMX_USE_OPENCL is OFF.
-    include(gmxManageGPU)
-    set(GMX_USE_CUDA ${GMX_GPU})
-    if(GMX_GPU)
-        set(GMX_GPU_ACCELERATION_FRAMEWORK "GMX_GPU_CUDA")
-    else()
-        set(GMX_GPU_ACCELERATION_FRAMEWORK "GMX_GPU_NONE")
-    endif()
-else()
-    #Now the OpenCL path (for both AMD and NVIDIA)
-    if(GMX_GPU)
-        include(gmxManageOpenCL)
-        set(GMX_GPU_ACCELERATION_FRAMEWORK "GMX_GPU_OPENCL")
-    else()
-        message(FATAL_ERROR "OpenCL requested but GPU option is not enabled (try -DGMX_GPU=on) ")
-    endif()
-endif()
+set(GMX_USE_OPENCL OFF)
+set(GMX_GPU_ACCELERATION_FRAMEWORK "GMX_GPU_NONE")
+set(GMX_GPU "GMX_GPU_NONE")
+set(GMX_USE_CUDA OFF)
 
 gmx_option_multichoice(
     GMX_SIMD
@@ -281,8 +252,6 @@ option(GMX_BROKEN_CALLOC "Work around broken calloc()" OFF)
 mark_as_advanced(GMX_BROKEN_CALLOC)
 
 option(GMX_OPENMP "Enable OpenMP-based multithreading" ON)
-
-option(GMX_USE_TNG "Use the TNG library for trajectory I/O" ON)
 
 option(GMX_BUILD_MDRUN_ONLY "Build and install only the mdrun binary" OFF)
 
@@ -614,15 +583,6 @@ endif()
 
 include(gmxManageTNG)
 
-if(GMX_GPU)
-    # now that we have detected the dependencies, do the second configure pass
-    gmx_gpu_setup()
-    if (GMX_CLANG_CUDA)
-        list(APPEND GMX_EXTRA_LIBRARIES ${GMX_CUDA_CLANG_LINK_LIBS})
-        link_directories("${GMX_CUDA_CLANG_LINK_DIRS}")
-    endif()
-endif()
-
 if(CYGWIN)
     set(GMX_CYGWIN 1)
 endif()
@@ -934,13 +894,6 @@ if (BUILD_TESTING)
 endif()
 
 gmx_cpack_write_config()
-
-# Issue a warning if NVIDIA GPUs were detected, but CUDA was not found.
-# Don't bother the user after the first configure pass.
-if ((CUDA_NOTFOUND_AUTO AND GMX_DETECT_GPU_AVAILABLE) AND NOT GMX_GPU_DETECTION_DONE)
-    message(WARNING "${CUDA_NOTFOUND_MESSAGE}")
-endif()
-set(GMX_GPU_DETECTION_DONE TRUE CACHE INTERNAL "Whether GPU detection has already been done")
 
 #######################
 ## uninstall target

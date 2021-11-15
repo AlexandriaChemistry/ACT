@@ -155,8 +155,6 @@ class ResetHandler final
             const t_commrec            *cr,
             nonbonded_verlet_t         *nbv,
             t_nrnb                     *nrnb,
-            const gmx_pme_t            *pme,
-            const pme_load_balancing_t *pme_loadbal,
             gmx_wallcycle              *wcycle,
             gmx_walltime_accounting    *walltime_accounting)
         {
@@ -164,7 +162,7 @@ class ResetHandler final
             {
                 if (resetCountersImpl(
                             step, step_rel, mdlog, fplog,
-                            cr, nbv, nrnb, pme, pme_loadbal,
+                            cr, nbv, nrnb,
                             wcycle, walltime_accounting))
                 {
                     // need to reset the counters only once
@@ -187,8 +185,6 @@ class ResetHandler final
             const t_commrec            *cr,
             nonbonded_verlet_t         *nbv,
             t_nrnb                     *nrnb,
-            const gmx_pme_t            *pme,
-            const pme_load_balancing_t *pme_loadbal,
             gmx_wallcycle              *wcycle,
             gmx_walltime_accounting    *walltime_accounting);
 

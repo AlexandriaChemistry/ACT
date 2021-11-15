@@ -91,14 +91,12 @@ class MDAtoms
         void reserve(int newCapacity);
         //! Builder function.
         friend std::unique_ptr<MDAtoms>
-        makeMDAtoms(FILE *fp, const gmx_mtop_t &mtop, const t_inputrec &ir,
-                    bool rankHasPmeGpuTask);
+        makeMDAtoms(FILE *fp, const gmx_mtop_t &mtop, const t_inputrec &ir);
 };
 
 //! Builder function for MdAtomsWrapper.
 std::unique_ptr<MDAtoms>
-makeMDAtoms(FILE *fp, const gmx_mtop_t &mtop, const t_inputrec &ir,
-            bool useGpuForPme);
+makeMDAtoms(FILE *fp, const gmx_mtop_t &mtop, const t_inputrec &ir);
 
 }  // namespace gmx
 

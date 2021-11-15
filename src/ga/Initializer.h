@@ -6,43 +6,49 @@
 #include <time.h>
 #import <random>
 
-/*!
- * Abstract class for initializing individuals
- */
-class Initializer {
 
-public:
+namespace ga {
+
     /*!
-     * Initialize an individual
-     * @param individual    the individual to initialize
-     * @param length        length of the chromosome
+     * Abstract class for initializing individuals
      */
-    virtual void initialize(      vector&   individual,
-                            const int       length) {};
-};
+    class Initializer {
 
-class SimpleInitializer : public Initializer {
+    public:
+        /*!
+         * Initialize an individual
+         * @param individual    the individual to initialize
+         * @param length        length of the chromosome
+         */
+        virtual void initialize(      vector&   individual,
+                                const int       length) {};
+    };
 
-    // Random number generation
-    std::random_device                      rd;
-    std::mt19937                            gen;
-    std::uniform_real_distribution<double>  dis;
 
-public:
-    /*!
-     * Create a new SimpleInitializer object
-     * @param min   minimum value to give to a gene
-     * @param max   maximum value to give to a gene
-     */
-    SimpleInitializer(const double  min,
-                      const double  max)
-    : gen(rd()), dis(std::uniform_real_distribution<>(min, max)) {
-        gen.seed(::time(NULL));
-    }
+    class SimpleInitializer : public Initializer {
 
-    void initialize(      vector&   individual,
-                    const int       length);
+        // Random number generation
+        std::random_device                      rd;
+        std::mt19937                            gen;
+        std::uniform_real_distribution<double>  dis;
 
-};
+    public:
+        /*!
+         * Create a new SimpleInitializer object
+         * @param min   minimum value to give to a gene
+         * @param max   maximum value to give to a gene
+         */
+        SimpleInitializer(const double min,
+                          const double max)
+        : gen(rd()), dis(std::uniform_real_distribution<>(min, max)) {
+            gen.seed(::time(NULL));
+        }
+
+        void initialize(      vector&   individual,
+                        const int       length);
+
+    };
+
+}
 
 #endif //ACT_INITIALIZER_H

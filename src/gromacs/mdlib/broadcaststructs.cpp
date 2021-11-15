@@ -46,11 +46,9 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/tgroup.h"
-#include "gromacs/mdtypes/awh-params.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/mdtypes/pull-params.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/symtab.h"
@@ -60,31 +58,6 @@
 #include "gromacs/utility/keyvaluetree.h"
 #include "gromacs/utility/keyvaluetreeserializer.h"
 #include "gromacs/utility/smalloc.h"
-
-static void bc_cstring(const t_commrec *cr, char **s)
-{
-    int size = 0;
-
-    if (MASTER(cr) && *s != nullptr)
-    {
-        /* Size of the char buffer is string length + 1 for '\0' */
-        size = strlen(*s) + 1;
-    }
-    block_bc(cr, size);
-    if (size > 0)
-    {
-        if (!MASTER(cr))
-        {
-            srenew(*s, size);
-        }
-        nblock_bc(cr, size, *s);
-    }
-    else if (!MASTER(cr) && *s != nullptr)
-    {
-        sfree(*s);
-        *s = nullptr;
-    }
-}
 
 static void bc_string(const t_commrec *cr, t_symtab *symtab, char ***s)
 {
@@ -427,125 +400,6 @@ static void bc_grpopts(const t_commrec *cr, t_grpopts *g)
             nblock_bc(cr, n, g->anneal_temp[i]);
         }
     }
-
-    /* QMMM stuff, see inputrec */
-    block_bc(cr, g->ngQM);
-    snew_bc(cr, g->QMmethod, g->ngQM);
-    snew_bc(cr, g->QMbasis, g->ngQM);
-    snew_bc(cr, g->QMcharge, g->ngQM);
-    snew_bc(cr, g->QMmult, g->ngQM);
-    snew_bc(cr, g->bSH, g->ngQM);
-    snew_bc(cr, g->CASorbitals, g->ngQM);
-    snew_bc(cr, g->CASelectrons, g->ngQM);
-    snew_bc(cr, g->SAon, g->ngQM);
-    snew_bc(cr, g->SAoff, g->ngQM);
-    snew_bc(cr, g->SAsteps, g->ngQM);
-
-    if (g->ngQM)
-    {
-        nblock_bc(cr, g->ngQM, g->QMmethod);
-        nblock_bc(cr, g->ngQM, g->QMbasis);
-        nblock_bc(cr, g->ngQM, g->QMcharge);
-        nblock_bc(cr, g->ngQM, g->QMmult);
-        nblock_bc(cr, g->ngQM, g->bSH);
-        nblock_bc(cr, g->ngQM, g->CASorbitals);
-        nblock_bc(cr, g->ngQM, g->CASelectrons);
-        nblock_bc(cr, g->ngQM, g->SAon);
-        nblock_bc(cr, g->ngQM, g->SAoff);
-        nblock_bc(cr, g->ngQM, g->SAsteps);
-        /* end of QMMM stuff */
-    }
-}
-
-static void bc_awhBias(const t_commrec *cr, gmx::AwhBiasParams *awhBiasParams)
-{
-    block_bc(cr, *awhBiasParams);
-
-    snew_bc(cr, awhBiasParams->dimParams, awhBiasParams->ndim);
-    nblock_bc(cr, awhBiasParams->ndim, awhBiasParams->dimParams);
-}
-
-static void bc_awh(const t_commrec *cr, gmx::AwhParams *awhParams)
-{
-    int k;
-
-    block_bc(cr, *awhParams);
-    snew_bc(cr, awhParams->awhBiasParams, awhParams->numBias);
-    for (k = 0; k < awhParams->numBias; k++)
-    {
-        bc_awhBias(cr, &awhParams->awhBiasParams[k]);
-    }
-}
-
-static void bc_pull_group(const t_commrec *cr, t_pull_group *pgrp)
-{
-    block_bc(cr, *pgrp);
-    if (pgrp->nat > 0)
-    {
-        snew_bc(cr, pgrp->ind, pgrp->nat);
-        nblock_bc(cr, pgrp->nat, pgrp->ind);
-    }
-    if (pgrp->nweight > 0)
-    {
-        snew_bc(cr, pgrp->weight, pgrp->nweight);
-        nblock_bc(cr, pgrp->nweight, pgrp->weight);
-    }
-}
-
-static void bc_pull(const t_commrec *cr, pull_params_t *pull)
-{
-    int g;
-
-    block_bc(cr, *pull);
-    snew_bc(cr, pull->group, pull->ngroup);
-    for (g = 0; g < pull->ngroup; g++)
-    {
-        bc_pull_group(cr, &pull->group[g]);
-    }
-    snew_bc(cr, pull->coord, pull->ncoord);
-    nblock_bc(cr, pull->ncoord, pull->coord);
-    for (int c = 0; c < pull->ncoord; c++)
-    {
-        if (!MASTER(cr))
-        {
-            pull->coord[c].externalPotentialProvider = nullptr;
-        }
-        if (pull->coord[c].eType == epullEXTERNAL)
-        {
-            bc_cstring(cr, &pull->coord[c].externalPotentialProvider);
-        }
-    }
-}
-
-static void bc_rotgrp(const t_commrec *cr, t_rotgrp *rotg)
-{
-    block_bc(cr, *rotg);
-    if (rotg->nat > 0)
-    {
-        snew_bc(cr, rotg->ind, rotg->nat);
-        nblock_bc(cr, rotg->nat, rotg->ind);
-        snew_bc(cr, rotg->x_ref, rotg->nat);
-        nblock_bc(cr, rotg->nat, rotg->x_ref);
-    }
-}
-
-static void bc_rot(const t_commrec *cr, t_rot *rot)
-{
-    int g;
-
-    block_bc(cr, *rot);
-    snew_bc(cr, rot->grp, rot->ngrp);
-    for (g = 0; g < rot->ngrp; g++)
-    {
-        bc_rotgrp(cr, &rot->grp[g]);
-    }
-}
-
-static void bc_imd(const t_commrec *cr, t_IMD *imd)
-{
-    block_bc(cr, *imd);
-    snew_bc(cr, imd->ind, imd->nat);
-    nblock_bc(cr, imd->nat, imd->ind);
 }
 
 static void bc_fepvals(const t_commrec *cr, t_lambda *fep)
@@ -630,33 +484,6 @@ static void bc_simtempvals(const t_commrec *cr, t_simtemp *simtemp, int n_lambda
     }
 }
 
-
-static void bc_swapions(const t_commrec *cr, t_swapcoords *swap)
-{
-    block_bc(cr, *swap);
-
-    /* Broadcast atom indices for split groups, solvent group, and for all user-defined swap groups */
-    snew_bc(cr, swap->grp, swap->ngrp);
-    for (int i = 0; i < swap->ngrp; i++)
-    {
-        t_swapGroup *g = &swap->grp[i];
-
-        block_bc(cr, *g);
-        snew_bc(cr, g->ind, g->nat);
-        nblock_bc(cr, g->nat, g->ind);
-
-        int len = 0;
-        if (MASTER(cr))
-        {
-            len = strlen(g->molname);
-        }
-        block_bc(cr, len);
-        snew_bc(cr, g->molname, len);
-        nblock_bc(cr, len, g->molname);
-    }
-}
-
-
 static void bc_inputrec(const t_commrec *cr, t_inputrec *inputrec)
 {
     // Note that this overwrites pointers in inputrec, so all pointer fields
@@ -705,32 +532,6 @@ static void bc_inputrec(const t_commrec *cr, t_inputrec *inputrec)
     if (inputrec->bSimTemp)
     {
         bc_simtempvals(cr, inputrec->simtempvals, inputrec->fepvals->n_lambda);
-    }
-    if (inputrec->bPull)
-    {
-        snew_bc(cr, inputrec->pull, 1);
-        bc_pull(cr, inputrec->pull);
-    }
-    if (inputrec->bDoAwh)
-    {
-        snew_bc(cr, inputrec->awhParams, 1);
-        bc_awh(cr, inputrec->awhParams);
-    }
-
-    if (inputrec->bRot)
-    {
-        snew_bc(cr, inputrec->rot, 1);
-        bc_rot(cr, inputrec->rot);
-    }
-    if (inputrec->bIMD)
-    {
-        snew_bc(cr, inputrec->imd, 1);
-        bc_imd(cr, inputrec->imd);
-    }
-    if (inputrec->eSwapCoords != eswapNO)
-    {
-        snew_bc(cr, inputrec->swap, 1);
-        bc_swapions(cr, inputrec->swap);
     }
 }
 

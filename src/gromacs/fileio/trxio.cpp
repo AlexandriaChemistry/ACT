@@ -44,7 +44,6 @@
 #include <cmath>
 #include <cstring>
 
-#include "gromacs/fileio/checkpoint.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/g96io.h"
@@ -54,11 +53,8 @@
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/timecontrol.h"
-#include "gromacs/fileio/tngio.h"
-#include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trrio.h"
 #include "gromacs/fileio/xdrf.h"
-#include "gromacs/fileio/xtcio.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/atoms.h"
@@ -69,10 +65,6 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
-
-#if GMX_USE_PLUGINS
-#include "gromacs/fileio/vmdio.h"
-#endif
 
 /* defines for frame counter output */
 #define SKIP1   10
@@ -88,14 +80,10 @@ struct t_trxstatus
     real                    tf;               /* internal frame time              */
     t_trxframe             *xframe;
     t_fileio               *fio;
-    gmx_tng_trajectory_t    tng;
     int                     natoms;
     double                  DT, BOX[3];
     gmx_bool                bReadBox;
     char                   *persistent_line; /* Persistent line for reading g96 trajectories */
-#if GMX_USE_PLUGINS
-    gmx_vmdplugin_t        *vmdplugin;
-#endif
 };
 
 /* utility functions */
@@ -167,7 +155,6 @@ static void status_init(t_trxstatus *status)
     status->t0              = 0;
     status->tf              = 0;
     status->persistent_line = nullptr;
-    status->tng             = nullptr;
 }
 
 
@@ -239,38 +226,10 @@ t_fileio *trx_get_fileio(t_trxstatus *status)
     return status->fio;
 }
 
-float trx_get_time_of_final_frame(t_trxstatus *status)
+float trx_get_time_of_final_frame(gmx_unused t_trxstatus *status)
 {
-    t_fileio *stfio    = trx_get_fileio(status);
-    int       filetype = gmx_fio_getftp(stfio);
-    gmx_bool  bOK;
-    float     lasttime = -1;
-
-    if (filetype == efXTC)
-    {
-        lasttime =
-            xdr_xtc_get_last_frame_time(gmx_fio_getfp(stfio),
-                                        gmx_fio_getxdr(stfio),
-                                        status->natoms, &bOK);
-        if (!bOK)
-        {
-            gmx_fatal(FARGS, "Error reading last frame. Maybe seek not supported." );
-        }
-    }
-    else if (filetype == efTNG)
-    {
-        gmx_tng_trajectory_t tng = status->tng;
-        if (!tng)
-        {
-            gmx_fatal(FARGS, "Error opening TNG file.");
-        }
-        lasttime = gmx_tng_get_time_of_final_frame(tng);
-    }
-    else
-    {
-        gmx_incons("Only supported for TNG and XTC");
-    }
-    return lasttime;
+    gmx_incons("Only supported for TNG and XTC");
+    return 0.0;
 }
 
 void clear_trxframe(t_trxframe *fr, gmx_bool bFirst)
@@ -328,11 +287,7 @@ int write_trxframe_indexed(t_trxstatus *status, const t_trxframe *fr, int nind,
         prec = 1000.0;
     }
 
-    if (status->tng)
-    {
-        ftp = efTNG;
-    }
-    else if (status->fio)
+    if (status->fio)
     {
         ftp = gmx_fio_getftp(status->fio);
     }
@@ -344,7 +299,6 @@ int write_trxframe_indexed(t_trxstatus *status, const t_trxframe *fr, int nind,
     switch (ftp)
     {
         case efTRR:
-        case efTNG:
             break;
         default:
             if (!fr->bX)
@@ -358,7 +312,6 @@ int write_trxframe_indexed(t_trxstatus *status, const t_trxframe *fr, int nind,
     switch (ftp)
     {
         case efTRR:
-        case efTNG:
             if (fr->bV)
             {
                 snew(vout, nind);
@@ -384,28 +337,12 @@ int write_trxframe_indexed(t_trxstatus *status, const t_trxframe *fr, int nind,
                 }
             }
             break;
-        case efXTC:
-            if (fr->bX)
-            {
-                snew(xout, nind);
-                for (i = 0; i < nind; i++)
-                {
-                    copy_rvec(fr->x[ind[i]], xout[i]);
-                }
-            }
-            break;
         default:
             break;
     }
 
     switch (ftp)
     {
-        case efTNG:
-            gmx_write_tng_from_trxframe(status->tng, fr, nind);
-            break;
-        case efXTC:
-            write_xtc(status->fio, nind, fr->step, fr->time, fr->box, xout, prec);
-            break;
         case efTRR:
             gmx_trr_write_frame(status->fio, nframes_read(status),
                                 fr->time, fr->step, fr->box, nind, xout, vout, fout);
@@ -443,7 +380,6 @@ int write_trxframe_indexed(t_trxstatus *status, const t_trxframe *fr, int nind,
     switch (ftp)
     {
         case efTRR:
-        case efTNG:
             if (vout)
             {
                 sfree(vout);
@@ -454,79 +390,11 @@ int write_trxframe_indexed(t_trxstatus *status, const t_trxframe *fr, int nind,
             }
             sfree(xout);
             break;
-        case efXTC:
-            sfree(xout);
-            break;
         default:
             break;
     }
 
     return 0;
-}
-
-t_trxstatus *
-trjtools_gmx_prepare_tng_writing(const char              *filename,
-                                 char                     filemode,
-                                 t_trxstatus             *in,
-                                 const char              *infile,
-                                 const int                natoms,
-                                 const gmx_mtop_t        *mtop,
-                                 gmx::ArrayRef<const int> index,
-                                 const char              *index_group_name)
-{
-    if (filemode != 'w' && filemode != 'a')
-    {
-        gmx_incons("Sorry, can only prepare for TNG output.");
-    }
-    t_trxstatus *out;
-    snew(out, 1);
-    status_init(out);
-
-    if (in != nullptr)
-    {
-        gmx_prepare_tng_writing(filename,
-                                filemode,
-                                &in->tng,
-                                &out->tng,
-                                natoms,
-                                mtop,
-                                index,
-                                index_group_name);
-    }
-    else if ((infile) && (efTNG == fn2ftp(infile)))
-    {
-        gmx_tng_trajectory_t tng_in;
-        gmx_tng_open(infile, 'r', &tng_in);
-
-        gmx_prepare_tng_writing(filename,
-                                filemode,
-                                &tng_in,
-                                &out->tng,
-                                natoms,
-                                mtop,
-                                index,
-                                index_group_name);
-    }
-    else
-    {
-        // we start from a file that is not a tng file or have been unable to load the
-        // input file, so we need to populate the fields independently of it
-        gmx_prepare_tng_writing(filename,
-                                filemode,
-                                nullptr,
-                                &out->tng,
-                                natoms,
-                                mtop,
-                                index,
-                                index_group_name);
-    }
-    return out;
-}
-
-void write_tng_frame(t_trxstatus *status,
-                     t_trxframe  *frame)
-{
-    gmx_write_tng_from_trxframe(status->tng, frame, -1);
 }
 
 int write_trxframe(t_trxstatus *status, t_trxframe *fr, gmx_conect gc)
@@ -541,14 +409,6 @@ int write_trxframe(t_trxstatus *status, t_trxframe *fr, gmx_conect gc)
     else
     {
         prec = 1000.0;
-    }
-
-    if (status->tng)
-    {
-        gmx_tng_set_compression_precision(status->tng, prec);
-        write_tng_frame(status, fr);
-
-        return 0;
     }
 
     switch (gmx_fio_getftp(status->fio))
@@ -566,9 +426,6 @@ int write_trxframe(t_trxstatus *status, t_trxframe *fr, gmx_conect gc)
 
     switch (gmx_fio_getftp(status->fio))
     {
-        case efXTC:
-            write_xtc(status->fio, fr->natoms, fr->step, fr->time, fr->box, fr->x, prec);
-            break;
         case efTRR:
             gmx_trr_write_frame(status->fio, fr->step, fr->time, fr->lambda, fr->box, fr->natoms,
                                 fr->bX ? fr->x : nullptr, fr->bV ? fr->v : nullptr, fr->bF ? fr->f : nullptr);
@@ -635,15 +492,11 @@ void close_trx(t_trxstatus *status)
     {
         return;
     }
-    gmx_tng_close(&status->tng);
     if (status->fio)
     {
         gmx_fio_close(status->fio);
     }
     sfree(status->persistent_line);
-#if GMX_USE_PLUGINS
-    sfree(status->vmdplugin);
-#endif
     /* The memory in status->xframe is lost here,
      * but the read_first_x/read_next_x functions are deprecated anyhow.
      * read_first_frame/read_next_frame and close_trx should be used.
@@ -807,7 +660,7 @@ bool read_next_frame(const gmx_output_env_t *oenv, t_trxstatus *status, t_trxfra
 {
     real     pt;
     int      ct;
-    gmx_bool bOK, bMissingData = FALSE, bSkip = FALSE;
+    gmx_bool bMissingData = FALSE, bSkip = FALSE;
     bool     bRet = false;
     int      ftp;
 
@@ -817,22 +670,11 @@ bool read_next_frame(const gmx_output_env_t *oenv, t_trxstatus *status, t_trxfra
     {
         clear_trxframe(fr, FALSE);
 
-        if (status->tng)
-        {
-            /* Special treatment for TNG files */
-            ftp = efTNG;
-        }
-        else
-        {
-            ftp = gmx_fio_getftp(status->fio);
-        }
+        ftp = gmx_fio_getftp(status->fio);
         switch (ftp)
         {
             case efTRR:
                 bRet = gmx_next_frame(status, fr);
-                break;
-            case efCPT:
-                /* Checkpoint files can not contain mulitple frames */
                 break;
             case efG96:
             {
@@ -842,33 +684,6 @@ bool read_next_frame(const gmx_output_env_t *oenv, t_trxstatus *status, t_trxfra
                 bRet = (fr->natoms > 0);
                 break;
             }
-            case efXTC:
-                if (bTimeSet(TBEGIN) && (status->tf < rTimeValue(TBEGIN)))
-                {
-                    if (xtc_seek_time(status->fio, rTimeValue(TBEGIN), fr->natoms, TRUE))
-                    {
-                        gmx_fatal(FARGS, "Specified frame (time %f) doesn't exist or file corrupt/inconsistent.",
-                                  rTimeValue(TBEGIN));
-                    }
-                    initcount(status);
-                }
-                bRet = (read_next_xtc(status->fio, fr->natoms, &fr->step, &fr->time, fr->box,
-                                      fr->x, &fr->prec, &bOK) != 0);
-                fr->bPrec = (bRet && fr->prec > 0);
-                fr->bStep = bRet;
-                fr->bTime = bRet;
-                fr->bX    = bRet;
-                fr->bBox  = bRet;
-                if (!bOK)
-                {
-                    /* Actually the header could also be not ok,
-                       but from bOK from read_next_xtc this can't be distinguished */
-                    fr->not_ok = DATA_NOT_OK;
-                }
-                break;
-            case efTNG:
-                bRet = gmx_read_next_tng_frame(status->tng, fr, nullptr, 0);
-                break;
             case efPDB:
                 bRet = pdb_next_x(status, gmx_fio_getfp(status->fio), fr);
                 break;
@@ -876,13 +691,9 @@ bool read_next_frame(const gmx_output_env_t *oenv, t_trxstatus *status, t_trxfra
                 bRet = gro_next_x_or_v(gmx_fio_getfp(status->fio), fr);
                 break;
             default:
-#if GMX_USE_PLUGINS
-                bRet = read_next_vmd_frame(status->vmdplugin, fr);
-#else
                 gmx_fatal(FARGS, "DEATH HORROR in read_next_frame ftp=%s,status=%s",
                           ftp2ext(gmx_fio_getftp(status->fio)),
                           gmx_fio_getname(status->fio));
-#endif
         }
         status->tf = fr->time;
 
@@ -930,7 +741,7 @@ bool read_first_frame(const gmx_output_env_t *oenv, t_trxstatus **status,
                       const char *fn, t_trxframe *fr, int flags)
 {
     t_fileio      *fio = nullptr;
-    gmx_bool       bFirst, bOK;
+    gmx_bool       bFirst;
     int            ftp   = fn2ftp(fn);
 
     clear_trxframe(fr, TRUE);
@@ -943,22 +754,10 @@ bool read_first_frame(const gmx_output_env_t *oenv, t_trxstatus **status,
     initcount(*status);
     (*status)->flags = flags;
 
-    if (efTNG == ftp)
-    {
-        /* Special treatment for TNG files */
-        gmx_tng_open(fn, 'r', &(*status)->tng);
-    }
-    else
-    {
-        fio = (*status)->fio = gmx_fio_open(fn, "r");
-    }
+    fio = (*status)->fio = gmx_fio_open(fn, "r");
     switch (ftp)
     {
         case efTRR:
-            break;
-        case efCPT:
-            read_checkpoint_trxframe(fio, fr);
-            bFirst = FALSE;
             break;
         case efG96:
         {
@@ -983,43 +782,6 @@ bool read_first_frame(const gmx_output_env_t *oenv, t_trxstatus **status,
             (*status)->fio = gmx_fio_open(fn, "r");
             break;
         }
-        case efXTC:
-            if (read_first_xtc(fio, &fr->natoms, &fr->step, &fr->time, fr->box, &fr->x,
-                               &fr->prec, &bOK) == 0)
-            {
-                GMX_RELEASE_ASSERT(!bOK, "Inconsistent results - OK status from read_first_xtc, but 0 atom coords read");
-                fr->not_ok = DATA_NOT_OK;
-            }
-            if (fr->not_ok)
-            {
-                fr->natoms = 0;
-                printincomp(*status, fr);
-            }
-            else
-            {
-                fr->bPrec = (fr->prec > 0);
-                fr->bStep = TRUE;
-                fr->bTime = TRUE;
-                fr->bX    = TRUE;
-                fr->bBox  = TRUE;
-                printcount(*status, oenv, fr->time, FALSE);
-            }
-            bFirst = FALSE;
-            break;
-        case efTNG:
-            fr->step = -1;
-            if (!gmx_read_next_tng_frame((*status)->tng, fr, nullptr, 0))
-            {
-                fr->not_ok = DATA_NOT_OK;
-                fr->natoms = 0;
-                printincomp(*status, fr);
-            }
-            else
-            {
-                printcount(*status, oenv, fr->time, FALSE);
-            }
-            bFirst = FALSE;
-            break;
         case efPDB:
             pdb_first_x(*status, gmx_fio_getfp(fio), fr);
             if (fr->natoms)
@@ -1036,21 +798,7 @@ bool read_first_frame(const gmx_output_env_t *oenv, t_trxstatus **status,
             bFirst = FALSE;
             break;
         default:
-#if GMX_USE_PLUGINS
-            fprintf(stderr, "The file format of %s is not a known trajectory format to GROMACS.\n"
-                    "Please make sure that the file is a trajectory!\n"
-                    "GROMACS will now assume it to be a trajectory and will try to open it using the VMD plug-ins.\n"
-                    "This will only work in case the VMD plugins are found and it is a trajectory format supported by VMD.\n", fn);
-            gmx_fio_fp_close(fio); /*only close the file without removing FIO entry*/
-            if (!read_first_vmd_frame(fn, &(*status)->vmdplugin, fr))
-            {
-                gmx_fatal(FARGS, "Not supported in read_first_frame: %s", fn);
-            }
-#else
-            gmx_fatal(FARGS, "Not supported in read_first_frame: %s. Please make sure that the file is a trajectory.\n"
-                      "GROMACS is not compiled with plug-in support. Thus it cannot read non-GROMACS trajectory formats using the VMD plug-ins.\n"
-                      "Please compile with plug-in support if you want to read non-GROMACS trajectory formats.\n", fn);
-#endif
+            gmx_fatal(FARGS, "Not supported in read_first_frame: %s. Please make sure that the file is a trajectory.\n", fn);
     }
     (*status)->tf = fr->time;
 
@@ -1121,17 +869,7 @@ void rewind_trj(t_trxstatus *status)
 
 /***** T O P O L O G Y   S T U F F ******/
 
-t_topology *read_top(const char *fn, int *ePBC)
+t_topology *read_top(gmx_unused const char *fn, gmx_unused int *ePBC)
 {
-    int         epbc, natoms;
-    t_topology *top;
-
-    snew(top, 1);
-    epbc = read_tpx_top(fn, nullptr, nullptr, &natoms, nullptr, nullptr, top);
-    if (ePBC)
-    {
-        *ePBC = epbc;
-    }
-
-    return top;
+    return nullptr;
 }

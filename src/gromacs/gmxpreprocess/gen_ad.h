@@ -39,7 +39,7 @@
 #define GMX_GMXPREPROCESS_GEN_AD_H
 
 #include "gromacs/gmxpreprocess/gpp_nextnb.h"
-#include "gromacs/gmxpreprocess/resall.h"
+#include "gromacs/gmxpreprocess/hackblock.h"
 #include "gromacs/gmxpreprocess/toputil.h"
 
 void generate_excls(t_nextnb *nnb, int nrexcl, t_excls excls[]);

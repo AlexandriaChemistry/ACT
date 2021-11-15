@@ -375,9 +375,9 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
     
     // Now parameter output file.
     fpe = xvgropen(xvgEpot().c_str(), 
-                   "Parameter energy", 
-                   "iteration",
-                   "\\f{12}c\\S2\\f{4}", 
+                   "Chi squared", 
+                   "Iteration",
+                   "Unknown units", 
                    oenv());
     if (bEvaluate_testset)
     {
@@ -454,7 +454,7 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
             // Accept any downhill move       
             bool accept = (deltaEval < 0);
         
-            // For a uphill move apply the Metropolis Criteria
+            // For an uphill move apply the Metropolis Criteria
             // to decide whether to accept or reject the new parameter
             if (!accept)
             {

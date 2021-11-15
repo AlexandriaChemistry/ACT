@@ -720,16 +720,11 @@ The performance counters are:
 * Reduce PME GPU Force
 * Non-bonded position/force buffer operations
 * Virtual site spread
-* COM pull force
-* AWH (accelerated weight histogram method)
 * Write trajectory
 * Update
 * Constraints
 * Communication of energies
-* Enforced rotation
-* Add rotational forces
 * Position swapping
-* Interactive MD
 
 As performance data is collected for every run, they are essential to assessing
 and tuning the performance of :ref:`gmx mdrun` performance. Therefore, they benefit

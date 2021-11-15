@@ -5,6 +5,8 @@
 
 #include <stdio.h>
 
+using namespace ga;
+
 int main(int argc, char const *argv[]) {
 	
 	const int       popSize         = 10;
@@ -13,7 +15,7 @@ int main(int argc, char const *argv[]) {
     const double    mutFrac         = 0.1;
     const double    tolerance       = 0.000001;
 
-	SimpleInitializer           init(-5.0, 5.0);
+	SimpleInitializer           init(-10.0, 10.0);
 	SimpleFitnessComputer       fit;
 //    EmptySorter                 sort;
 	// MergeSorter                 sort(popSize, chromLen);

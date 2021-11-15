@@ -109,9 +109,6 @@ force. Each method has its limitations, which are listed below.
 -  **pull code:** between the centers of mass of molecules or groups of
    molecules.
 
--  **AWH code:** currently acts on coordinates provided by the pull
-   code.
-
 -  **free-energy code with harmonic bonds or constraints:** between
    single atoms.
 

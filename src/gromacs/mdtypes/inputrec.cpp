@@ -46,9 +46,7 @@
 
 #include "gromacs/math/veccompare.h"
 #include "gromacs/math/vecdump.h"
-#include "gromacs/mdtypes/awh-params.h"
 #include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/mdtypes/pull-params.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/compare.h"
 #include "gromacs/utility/cstringutil.h"
@@ -269,28 +267,6 @@ gmx_bool ir_vdw_might_be_zero_at_cutoff(const t_inputrec *ir)
     return (ir_vdw_is_zero_at_cutoff(ir) || ir->vdwtype == evdwUSER);
 }
 
-static void done_pull_group(t_pull_group *pgrp)
-{
-    if (pgrp->nat > 0)
-    {
-        sfree(pgrp->ind);
-        sfree(pgrp->weight);
-    }
-}
-
-static void done_pull_params(pull_params_t *pull)
-{
-    int i;
-
-    for (i = 0; i < pull->ngroup+1; i++)
-    {
-        done_pull_group(pull->group);
-    }
-
-    sfree(pull->group);
-    sfree(pull->coord);
-}
-
 static void done_lambdas(t_lambda *fep)
 {
     if (fep->n_lambda > 0)
@@ -314,48 +290,13 @@ void done_inputrec(t_inputrec *ir)
     sfree(ir->opts.tau_t);
     sfree(ir->opts.acc);
     sfree(ir->opts.nFreeze);
-    sfree(ir->opts.QMmethod);
-    sfree(ir->opts.QMbasis);
-    sfree(ir->opts.QMcharge);
-    sfree(ir->opts.QMmult);
-    sfree(ir->opts.bSH);
-    sfree(ir->opts.CASorbitals);
-    sfree(ir->opts.CASelectrons);
-    sfree(ir->opts.SAon);
-    sfree(ir->opts.SAoff);
-    sfree(ir->opts.SAsteps);
     sfree(ir->opts.egp_flags);
     done_lambdas(ir->fepvals);
     sfree(ir->fepvals);
     sfree(ir->expandedvals);
     sfree(ir->simtempvals);
 
-    if (ir->pull)
-    {
-        done_pull_params(ir->pull);
-        sfree(ir->pull);
-    }
     delete ir->params;
-}
-
-static void pr_qm_opts(FILE *fp, int indent, const char *title, const t_grpopts *opts)
-{
-    fprintf(fp, "%s:\n", title);
-
-    pr_int(fp, indent, "ngQM", opts->ngQM);
-    if (opts->ngQM > 0)
-    {
-        pr_ivec(fp, indent, "QMmethod", opts->QMmethod, opts->ngQM, FALSE);
-        pr_ivec(fp, indent, "QMbasis", opts->QMbasis, opts->ngQM, FALSE);
-        pr_ivec(fp, indent, "QMcharge", opts->QMcharge, opts->ngQM, FALSE);
-        pr_ivec(fp, indent, "QMmult", opts->QMmult, opts->ngQM, FALSE);
-        pr_bvec(fp, indent, "SH", opts->bSH, opts->ngQM, FALSE);
-        pr_ivec(fp, indent, "CASorbitals", opts->CASorbitals, opts->ngQM, FALSE);
-        pr_ivec(fp, indent, "CASelectrons", opts->CASelectrons, opts->ngQM, FALSE);
-        pr_rvec(fp, indent, "SAon", opts->SAon, opts->ngQM, FALSE);
-        pr_rvec(fp, indent, "SAoff", opts->SAoff, opts->ngQM, FALSE);
-        pr_ivec(fp, indent, "SAsteps", opts->SAsteps, opts->ngQM, FALSE);
-    }
 }
 
 static void pr_grp_opts(FILE *out, int indent, const char *title, const t_grpopts *opts,
@@ -483,45 +424,6 @@ static void pr_matrix(FILE *fp, int indent, const char *title, const rvec *m,
 #define PR(t, s) pr_real(fp, indent, t, s)
 #define PD(t, s) pr_double(fp, indent, t, s)
 
-static void pr_pull_group(FILE *fp, int indent, int g, const t_pull_group *pgrp)
-{
-    pr_indent(fp, indent);
-    fprintf(fp, "pull-group %d:\n", g);
-    indent += 2;
-    pr_ivec_block(fp, indent, "atom", pgrp->ind, pgrp->nat, TRUE);
-    pr_rvec(fp, indent, "weight", pgrp->weight, pgrp->nweight, TRUE);
-    PI("pbcatom", pgrp->pbcatom);
-}
-
-static void pr_pull_coord(FILE *fp, int indent, int c, const t_pull_coord *pcrd)
-{
-    int g;
-
-    pr_indent(fp, indent);
-    fprintf(fp, "pull-coord %d:\n", c);
-    PS("type", EPULLTYPE(pcrd->eType));
-    if (pcrd->eType == epullEXTERNAL)
-    {
-        PS("potential-provider", pcrd->externalPotentialProvider);
-    }
-    PS("geometry", EPULLGEOM(pcrd->eGeom));
-    for (g = 0; g < pcrd->ngroup; g++)
-    {
-        char buf[10];
-
-        sprintf(buf, "group[%d]", g);
-        PI(buf, pcrd->group[g]);
-    }
-    pr_ivec(fp, indent, "dim", pcrd->dim, DIM, TRUE);
-    pr_rvec(fp, indent, "origin", pcrd->origin, DIM, TRUE);
-    pr_rvec(fp, indent, "vec", pcrd->vec, DIM, TRUE);
-    PS("start", EBOOL(pcrd->bStart));
-    PR("init", pcrd->init);
-    PR("rate", pcrd->rate);
-    PR("k", pcrd->k);
-    PR("kB", pcrd->kB);
-}
-
 static void pr_simtempvals(FILE *fp, int indent, const t_simtemp *simtemp, int n_lambda)
 {
     PS("simulated-tempering-scaling", ESIMTEMP(simtemp->eSimTempScale));
@@ -631,195 +533,6 @@ static void pr_fepvals(FILE *fp, int indent, const t_lambda *fep, gmx_bool bMDPf
     PS("dhdl-derivatives", DHDLDERIVATIVESTYPE(fep->dhdl_derivatives));
 };
 
-static void pr_pull(FILE *fp, int indent, const pull_params_t *pull)
-{
-    int g;
-
-    PR("pull-cylinder-r", pull->cylinder_r);
-    PR("pull-constr-tol", pull->constr_tol);
-    PS("pull-print-COM", EBOOL(pull->bPrintCOM));
-    PS("pull-print-ref-value", EBOOL(pull->bPrintRefValue));
-    PS("pull-print-components", EBOOL(pull->bPrintComp));
-    PI("pull-nstxout", pull->nstxout);
-    PI("pull-nstfout", pull->nstfout);
-    PS("pull-pbc-ref-prev-step-com", EBOOL(pull->bSetPbcRefToPrevStepCOM));
-    PS("pull-xout-average", EBOOL(pull->bXOutAverage));
-    PS("pull-fout-average", EBOOL(pull->bFOutAverage));
-    PI("pull-ngroups", pull->ngroup);
-    for (g = 0; g < pull->ngroup; g++)
-    {
-        pr_pull_group(fp, indent, g, &pull->group[g]);
-    }
-    PI("pull-ncoords", pull->ncoord);
-    for (g = 0; g < pull->ncoord; g++)
-    {
-        pr_pull_coord(fp, indent, g, &pull->coord[g]);
-    }
-}
-
-static void pr_awh_bias_dim(FILE *fp, int indent, gmx::AwhDimParams *awhDimParams, const char *prefix)
-{
-    pr_indent(fp, indent);
-    indent++;
-    fprintf(fp,  "%s:\n", prefix);
-    PS("coord-provider", EAWHCOORDPROVIDER(awhDimParams->eCoordProvider));
-    PI("coord-index", awhDimParams->coordIndex + 1);
-    PR("start", awhDimParams->origin);
-    PR("end", awhDimParams->end);
-    PR("period", awhDimParams->period);
-    PR("force-constant", awhDimParams->forceConstant);
-    PR("diffusion", awhDimParams->diffusion);
-    PR("start", awhDimParams->origin);
-    PR("end", awhDimParams->end);
-    PR("cover-diameter", awhDimParams->coverDiameter);
-}
-
-static void pr_awh_bias(FILE *fp, int indent, gmx::AwhBiasParams *awhBiasParams, const char *prefix)
-{
-    char opt[STRLEN];
-
-    sprintf(opt, "%s-error-init", prefix);
-    PR(opt, awhBiasParams->errorInitial);
-    sprintf(opt, "%s-growth", prefix);
-    PS(opt, EAWHGROWTH(awhBiasParams->eGrowth));
-    sprintf(opt, "%s-target", prefix);
-    PS(opt, EAWHTARGET(awhBiasParams->eTarget));
-    sprintf(opt, "%s-target-beta-scalng", prefix);
-    PR(opt, awhBiasParams->targetBetaScaling);
-    sprintf(opt, "%s-target-cutoff", prefix);
-    PR(opt, awhBiasParams->targetCutoff);
-    sprintf(opt, "%s-user-data", prefix);
-    PS(opt, EBOOL(awhBiasParams->bUserData));
-    sprintf(opt, "%s-share-group", prefix);
-    PI(opt, awhBiasParams->shareGroup);
-    sprintf(opt, "%s-equilibrate-histogram", prefix);
-    PS(opt, EBOOL(awhBiasParams->equilibrateHistogram));
-    sprintf(opt, "%s-ndim", prefix);
-    PI(opt, awhBiasParams->ndim);
-
-    for (int d = 0; d < awhBiasParams->ndim; d++)
-    {
-        char prefixdim[STRLEN];
-        sprintf(prefixdim, "%s-dim%d", prefix, d + 1);
-        pr_awh_bias_dim(fp, indent, &awhBiasParams->dimParams[d], prefixdim);
-    }
-}
-
-static void pr_awh(FILE *fp, int indent, gmx::AwhParams *awhParams)
-{
-    PS("awh-potential", EAWHPOTENTIAL(awhParams->ePotential));
-    PI("awh-seed", awhParams->seed);
-    PI("awh-nstout", awhParams->nstOut);
-    PI("awh-nstsample", awhParams->nstSampleCoord);
-    PI("awh-nsamples-update", awhParams->numSamplesUpdateFreeEnergy);
-    PS("awh-share-bias-multisim", EBOOL(awhParams->shareBiasMultisim));
-    PI("awh-nbias", awhParams->numBias);
-
-    for (int k = 0; k < awhParams->numBias; k++)
-    {
-        auto prefix = gmx::formatString("awh%d", k + 1);
-        pr_awh_bias(fp, indent, &awhParams->awhBiasParams[k], prefix.c_str());
-    }
-}
-
-static void pr_rotgrp(FILE *fp, int indent, int g, const t_rotgrp *rotg)
-{
-    pr_indent(fp, indent);
-    fprintf(fp, "rot-group %d:\n", g);
-    indent += 2;
-    PS("rot-type", EROTGEOM(rotg->eType));
-    PS("rot-massw", EBOOL(rotg->bMassW));
-    pr_ivec_block(fp, indent, "atom", rotg->ind, rotg->nat, TRUE);
-    pr_rvecs(fp, indent, "x-ref", rotg->x_ref, rotg->nat);
-    pr_rvec(fp, indent, "rot-vec", rotg->inputVec, DIM, TRUE);
-    pr_rvec(fp, indent, "rot-pivot", rotg->pivot, DIM, TRUE);
-    PR("rot-rate", rotg->rate);
-    PR("rot-k", rotg->k);
-    PR("rot-slab-dist", rotg->slab_dist);
-    PR("rot-min-gauss", rotg->min_gaussian);
-    PR("rot-eps", rotg->eps);
-    PS("rot-fit-method", EROTFIT(rotg->eFittype));
-    PI("rot-potfit-nstep", rotg->PotAngle_nstep);
-    PR("rot-potfit-step", rotg->PotAngle_step);
-}
-
-static void pr_rot(FILE *fp, int indent, const t_rot *rot)
-{
-    int g;
-
-    PI("rot-nstrout", rot->nstrout);
-    PI("rot-nstsout", rot->nstsout);
-    PI("rot-ngroups", rot->ngrp);
-    for (g = 0; g < rot->ngrp; g++)
-    {
-        pr_rotgrp(fp, indent, g, &rot->grp[g]);
-    }
-}
-
-
-static void pr_swap(FILE *fp, int indent, const t_swapcoords *swap)
-{
-    char str[STRLEN];
-
-    /* Enums for better readability of the code */
-    enum {
-        eCompA = 0, eCompB
-    };
-
-
-    PI("swap-frequency", swap->nstswap);
-
-    /* The split groups that define the compartments */
-    for (int j = 0; j < 2; j++)
-    {
-        snprintf(str, STRLEN, "massw_split%d", j);
-        PS(str, EBOOL(swap->massw_split[j]));
-        snprintf(str, STRLEN, "split atoms group %d", j);
-        pr_ivec_block(fp, indent, str, swap->grp[j].ind, swap->grp[j].nat, TRUE);
-    }
-
-    /* The solvent group */
-    snprintf(str, STRLEN, "solvent group %s", swap->grp[eGrpSolvent].molname);
-    pr_ivec_block(fp, indent, str, swap->grp[eGrpSolvent].ind, swap->grp[eGrpSolvent].nat, TRUE);
-
-    /* Now print the indices for all the ion groups: */
-    for (int ig = eSwapFixedGrpNR; ig < swap->ngrp; ig++)
-    {
-        snprintf(str, STRLEN, "ion group %s", swap->grp[ig].molname);
-        pr_ivec_block(fp, indent, str, swap->grp[ig].ind, swap->grp[ig].nat, TRUE);
-    }
-
-    PR("cyl0-r", swap->cyl0r);
-    PR("cyl0-up", swap->cyl0u);
-    PR("cyl0-down", swap->cyl0l);
-    PR("cyl1-r", swap->cyl1r);
-    PR("cyl1-up", swap->cyl1u);
-    PR("cyl1-down", swap->cyl1l);
-    PI("coupl-steps", swap->nAverage);
-
-    /* Print the requested ion counts for both compartments */
-    for (int ic = eCompA; ic <= eCompB; ic++)
-    {
-        for (int ig = eSwapFixedGrpNR; ig < swap->ngrp; ig++)
-        {
-            snprintf(str, STRLEN, "%s-in-%c", swap->grp[ig].molname, 'A'+ic);
-            PI(str, swap->grp[ig].nmolReq[ic]);
-        }
-    }
-
-    PR("threshold", swap->threshold);
-    PR("bulk-offsetA", swap->bulkOffset[eCompA]);
-    PR("bulk-offsetB", swap->bulkOffset[eCompB]);
-}
-
-
-static void pr_imd(FILE *fp, int indent, const t_IMD *imd)
-{
-    PI("IMD-atoms", imd->nat);
-    pr_ivec_block(fp, indent, "atom", imd->ind, imd->nat, TRUE);
-}
-
-
 void pr_inputrec(FILE *fp, int indent, const char *title, const t_inputrec *ir,
                  gmx_bool bMDPformat)
 {
@@ -866,8 +579,6 @@ void pr_inputrec(FILE *fp, int indent, const char *title, const t_inputrec *ir,
         PI("nstlog", ir->nstlog);
         PI("nstcalcenergy", ir->nstcalcenergy);
         PI("nstenergy", ir->nstenergy);
-        PI("nstxout-compressed", ir->nstxout_compressed);
-        PR("compressed-x-precision", ir->x_compression_precision);
 
         /* Neighborsearching parameters */
         PS("cutoff-scheme", ECUTSCHEME(ir->cutoff_scheme));
@@ -944,13 +655,6 @@ void pr_inputrec(FILE *fp, int indent, const char *title, const t_inputrec *ir,
             pr_rvec(fp, indent, "posres-comB", ir->posres_comB, DIM, TRUE);
         }
 
-        /* QMMM */
-        PS("QMMM", EBOOL(ir->bQMMM));
-        PI("QMconstraints", ir->QMconstraints);
-        PI("QMMMscheme", ir->QMMMscheme);
-        PR("MMChargeScaleFactor", ir->scalefactor);
-        pr_qm_opts(fp, indent, "qm-opts", &(ir->opts));
-
         /* CONSTRAINT OPTIONS */
         PS("constraint-algorithm", ECONSTRTYPE(ir->eConstrAlg));
         PS("continuation", EBOOL(ir->bContinuation));
@@ -960,46 +664,6 @@ void pr_inputrec(FILE *fp, int indent, const char *title, const t_inputrec *ir,
         PI("lincs-order", ir->nProjOrder);
         PI("lincs-iter", ir->nLincsIter);
         PR("lincs-warnangle", ir->LincsWarnAngle);
-
-        /* Walls */
-        PI("nwall", ir->nwall);
-        PS("wall-type", EWALLTYPE(ir->wall_type));
-        PR("wall-r-linpot", ir->wall_r_linpot);
-        /* wall-atomtype */
-        PI("wall-atomtype[0]", ir->wall_atomtype[0]);
-        PI("wall-atomtype[1]", ir->wall_atomtype[1]);
-        /* wall-density */
-        PR("wall-density[0]", ir->wall_density[0]);
-        PR("wall-density[1]", ir->wall_density[1]);
-        PR("wall-ewald-zfac", ir->wall_ewald_zfac);
-
-        /* COM PULLING */
-        PS("pull", EBOOL(ir->bPull));
-        if (ir->bPull)
-        {
-            pr_pull(fp, indent, ir->pull);
-        }
-
-        /* AWH BIASING */
-        PS("awh", EBOOL(ir->bDoAwh));
-        if (ir->bDoAwh)
-        {
-            pr_awh(fp, indent, ir->awhParams);
-        }
-
-        /* ENFORCED ROTATION */
-        PS("rotation", EBOOL(ir->bRot));
-        if (ir->bRot)
-        {
-            pr_rot(fp, indent, ir->rot);
-        }
-
-        /* INTERACTIVE MD */
-        PS("interactiveMD", EBOOL(ir->bIMD));
-        if (ir->bIMD)
-        {
-            pr_imd(fp, indent, ir->imd);
-        }
 
         /* NMR refinement stuff */
         PS("disre", EDISRETYPE(ir->eDisre));
@@ -1033,13 +697,6 @@ void pr_inputrec(FILE *fp, int indent, const char *title, const t_inputrec *ir,
         if (ir->bSimTemp)
         {
             pr_simtempvals(fp, indent, ir->simtempvals, ir->fepvals->n_lambda);
-        }
-
-        /* ION/WATER SWAPPING FOR COMPUTATIONAL ELECTROPHYSIOLOGY */
-        PS("swapcoords", ESWAPTYPE(ir->eSwapCoords));
-        if (ir->eSwapCoords != eswapNO)
-        {
-            pr_swap(fp, indent, ir->swap);
         }
 
         /* USER-DEFINED THINGIES */
@@ -1114,61 +771,6 @@ static void cmp_grpopts(FILE *fp, const t_grpopts *opt1, const t_grpopts *opt2, 
     for (i = 0; (i < std::min(opt1->ngfrz, opt2->ngfrz)); i++)
     {
         cmp_ivec(fp, "inputrec->grpopts.nFreeze", i, opt1->nFreeze[i], opt2->nFreeze[i]);
-    }
-}
-
-static void cmp_pull(FILE *fp)
-{
-    fprintf(fp, "WARNING: Both files use COM pulling, but comparing of the pull struct is not implemented (yet). The pull parameters could be the same or different.\n");
-}
-
-static void cmp_awhDimParams(FILE *fp, const gmx::AwhDimParams *dimp1, const gmx::AwhDimParams *dimp2, int dimIndex, real ftol, real abstol)
-{
-    /* Note that we have double index here, but the compare functions only
-     * support one index, so here we only print the dim index and not the bias.
-     */
-    cmp_int(fp, "inputrec.awhParams->bias?->dim->coord_index", dimIndex, dimp1->coordIndex, dimp2->coordIndex);
-    cmp_double(fp, "inputrec->awhParams->bias?->dim->period", dimIndex, dimp1->period, dimp2->period, ftol, abstol);
-    cmp_double(fp, "inputrec->awhParams->bias?->dim->diffusion", dimIndex, dimp1->diffusion, dimp2->diffusion, ftol, abstol);
-    cmp_double(fp, "inputrec->awhParams->bias?->dim->origin", dimIndex, dimp1->origin, dimp2->origin, ftol, abstol);
-    cmp_double(fp, "inputrec->awhParams->bias?->dim->end", dimIndex, dimp1->end, dimp2->end, ftol, abstol);
-    cmp_double(fp, "inputrec->awhParams->bias?->dim->coord_value_init", dimIndex, dimp1->coordValueInit, dimp2->coordValueInit, ftol, abstol);
-    cmp_double(fp, "inputrec->awhParams->bias?->dim->coverDiameter", dimIndex, dimp1->coverDiameter, dimp2->coverDiameter, ftol, abstol);
-}
-
-static void cmp_awhBiasParams(FILE *fp, const gmx::AwhBiasParams *bias1, const gmx::AwhBiasParams *bias2, int biasIndex, real ftol, real abstol)
-{
-    cmp_int(fp, "inputrec->awhParams->ndim", biasIndex, bias1->ndim, bias2->ndim);
-    cmp_int(fp, "inputrec->awhParams->biaseTarget", biasIndex, bias1->eTarget, bias2->eTarget);
-    cmp_double(fp, "inputrec->awhParams->biastargetBetaScaling", biasIndex, bias1->targetBetaScaling, bias2->targetBetaScaling, ftol, abstol);
-    cmp_double(fp, "inputrec->awhParams->biastargetCutoff", biasIndex, bias1->targetCutoff, bias2->targetCutoff, ftol, abstol);
-    cmp_int(fp, "inputrec->awhParams->biaseGrowth", biasIndex, bias1->eGrowth, bias2->eGrowth);
-    cmp_bool(fp, "inputrec->awhParams->biasbUserData", biasIndex, bias1->bUserData != 0, bias2->bUserData != 0);
-    cmp_double(fp, "inputrec->awhParams->biaserror_initial", biasIndex, bias1->errorInitial, bias2->errorInitial, ftol, abstol);
-    cmp_int(fp, "inputrec->awhParams->biasShareGroup", biasIndex, bias1->shareGroup, bias2->shareGroup);
-
-    for (int dim = 0; dim < std::min(bias1->ndim, bias2->ndim); dim++)
-    {
-        cmp_awhDimParams(fp, &bias1->dimParams[dim], &bias2->dimParams[dim], dim, ftol, abstol);
-    }
-}
-
-static void cmp_awhParams(FILE *fp, const gmx::AwhParams *awh1, const gmx::AwhParams *awh2, real ftol, real abstol)
-{
-    cmp_int(fp, "inputrec->awhParams->nbias", -1, awh1->numBias, awh2->numBias);
-    cmp_int64(fp, "inputrec->awhParams->seed", awh1->seed, awh2->seed);
-    cmp_int(fp, "inputrec->awhParams->nstout", -1, awh1->nstOut, awh2->nstOut);
-    cmp_int(fp, "inputrec->awhParams->nstsample_coord", -1, awh1->nstSampleCoord, awh2->nstSampleCoord);
-    cmp_int(fp, "inputrec->awhParams->nsamples_update_free_energy", -1, awh1->numSamplesUpdateFreeEnergy, awh2->numSamplesUpdateFreeEnergy);
-    cmp_int(fp, "inputrec->awhParams->ePotential", -1, awh1->ePotential, awh2->ePotential);
-    cmp_bool(fp, "inputrec->awhParams->shareBiasMultisim", -1, awh1->shareBiasMultisim, awh2->shareBiasMultisim);
-
-    if (awh1->numBias == awh2->numBias)
-    {
-        for (int bias = 0; bias < awh1->numBias; bias++)
-        {
-            cmp_awhBiasParams(fp, &awh1->awhBiasParams[bias], &awh2->awhBiasParams[bias], bias, ftol, abstol);
-        }
     }
 }
 
@@ -1276,10 +878,8 @@ void cmp_inputrec(FILE *fp, const t_inputrec *ir1, const t_inputrec *ir2, real f
     cmp_int(fp, "inputrec->nstfout", -1, ir1->nstfout, ir2->nstfout);
     cmp_int(fp, "inputrec->nstcalcenergy", -1, ir1->nstcalcenergy, ir2->nstcalcenergy);
     cmp_int(fp, "inputrec->nstenergy", -1, ir1->nstenergy, ir2->nstenergy);
-    cmp_int(fp, "inputrec->nstxout_compressed", -1, ir1->nstxout_compressed, ir2->nstxout_compressed);
     cmp_double(fp, "inputrec->init_t", -1, ir1->init_t, ir2->init_t, ftol, abstol);
     cmp_double(fp, "inputrec->delta_t", -1, ir1->delta_t, ir2->delta_t, ftol, abstol);
-    cmp_real(fp, "inputrec->x_compression_precision", -1, ir1->x_compression_precision, ir2->x_compression_precision, ftol, abstol);
     cmp_real(fp, "inputrec->fourierspacing", -1, ir1->fourier_spacing, ir2->fourier_spacing, ftol, abstol);
     cmp_int(fp, "inputrec->nkx", -1, ir1->nkx, ir2->nkx);
     cmp_int(fp, "inputrec->nky", -1, ir1->nky, ir2->nky);
@@ -1332,25 +932,6 @@ void cmp_inputrec(FILE *fp, const t_inputrec *ir1, const t_inputrec *ir2, real f
     {
         cmp_expandedvals(fp, ir1->expandedvals, ir2->expandedvals, std::min(ir1->fepvals->n_lambda, ir2->fepvals->n_lambda), ftol, abstol);
     }
-    cmp_int(fp, "inputrec->nwall", -1, ir1->nwall, ir2->nwall);
-    cmp_int(fp, "inputrec->wall_type", -1, ir1->wall_type, ir2->wall_type);
-    cmp_int(fp, "inputrec->wall_atomtype[0]", -1, ir1->wall_atomtype[0], ir2->wall_atomtype[0]);
-    cmp_int(fp, "inputrec->wall_atomtype[1]", -1, ir1->wall_atomtype[1], ir2->wall_atomtype[1]);
-    cmp_real(fp, "inputrec->wall_density[0]", -1, ir1->wall_density[0], ir2->wall_density[0], ftol, abstol);
-    cmp_real(fp, "inputrec->wall_density[1]", -1, ir1->wall_density[1], ir2->wall_density[1], ftol, abstol);
-    cmp_real(fp, "inputrec->wall_ewald_zfac", -1, ir1->wall_ewald_zfac, ir2->wall_ewald_zfac, ftol, abstol);
-
-    cmp_bool(fp, "inputrec->bPull", -1, ir1->bPull, ir2->bPull);
-    if (ir1->bPull && ir2->bPull)
-    {
-        cmp_pull(fp);
-    }
-
-    cmp_bool(fp, "inputrec->bDoAwh", -1, ir1->bDoAwh, ir2->bDoAwh);
-    if (ir1->bDoAwh && ir2->bDoAwh)
-    {
-        cmp_awhParams(fp, ir1->awhParams, ir2->awhParams, ftol, abstol);
-    }
 
     cmp_int(fp, "inputrec->eDisre", -1, ir1->eDisre, ir2->eDisre);
     cmp_real(fp, "inputrec->dr_fc", -1, ir1->dr_fc, ir2->dr_fc, ftol, abstol);
@@ -1390,17 +971,6 @@ void cmp_inputrec(FILE *fp, const t_inputrec *ir1, const t_inputrec *ir2, real f
     cmp_grpopts(fp, &(ir1->opts), &(ir2->opts), ftol, abstol);
     gmx::TextWriter writer(fp);
     gmx::compareKeyValueTrees(&writer, *ir1->params, *ir2->params, ftol, abstol);
-}
-
-void comp_pull_AB(FILE *fp, pull_params_t *pull, real ftol, real abstol)
-{
-    int i;
-
-    for (i = 0; i < pull->ncoord; i++)
-    {
-        fprintf(fp, "comparing pull coord %d\n", i);
-        cmp_real(fp, "pull-coord->k", -1, pull->coord[i].k, pull->coord[i].kB, ftol, abstol);
-    }
 }
 
 gmx_bool inputrecDeform(const t_inputrec *ir)
@@ -1449,11 +1019,6 @@ gmx_bool inputrecNphTrotter(const t_inputrec *ir)
              (ir->epc == epcMTTK) && (ir->etc != etcNOSEHOOVER) );
 }
 
-bool inputrecPbcXY2Walls(const t_inputrec *ir)
-{
-    return (ir->ePBC == epbcXY && ir->nwall == 2);
-}
-
 bool integratorHasConservedEnergyQuantity(const t_inputrec *ir)
 {
     if (!EI_MD(ir->eI))
@@ -1484,14 +1049,7 @@ bool integratorHasReferenceTemperature(const t_inputrec *ir)
 
 int inputrec2nboundeddim(const t_inputrec *ir)
 {
-    if (inputrecPbcXY2Walls(ir))
-    {
-        return 3;
-    }
-    else
-    {
-        return ePBC2npbcdim(ir->ePBC);
-    }
+    return ePBC2npbcdim(ir->ePBC);
 }
 
 int ndof_com(const t_inputrec *ir)
@@ -1505,7 +1063,7 @@ int ndof_com(const t_inputrec *ir)
             n = 3;
             break;
         case epbcXY:
-            n = (ir->nwall == 0 ? 3 : 2);
+            n = 3;
             break;
         case epbcSCREW:
             n = 1;

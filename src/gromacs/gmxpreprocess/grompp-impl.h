@@ -118,8 +118,11 @@ typedef struct {
     int   nr;
 } t_mols;
 
+/*! Returns true when x is integer
+ * \param[in] x A double precision value
+ * \return whether x is an integer
+ */
 bool is_int(double x);
-/* Returns TRUE when x is integer */
 
 /* Must correspond to strings in topdirs.c */
 typedef enum {

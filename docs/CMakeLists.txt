@@ -200,7 +200,6 @@ if (SPHINX_FOUND)
         reference-manual/algorithms/normal-mode-analysis.rst
         reference-manual/algorithms/free-energy-calculations.rst
         reference-manual/algorithms/replica-exchange.rst
-        reference-manual/algorithms/essential-dynamics.rst
         reference-manual/algorithms/expanded-ensemble.rst
         reference-manual/algorithms/parallelization-domain-decomp.rst
         # Interaction functions and force fields chapter
@@ -217,11 +216,7 @@ if (SPHINX_FOUND)
         # Special topics chapter
         reference-manual/special.rst
         reference-manual/special/free-energy-implementation.rst
-        reference-manual/special/pulling.rst
-        reference-manual/special/awh.rst
-        reference-manual/special/enforced-rotation.rst
         reference-manual/special/electric-fields.rst
-        reference-manual/special/comp-electrophys.rst
         reference-manual/special/free-energy-pmf.rst
         reference-manual/special/remove-fast-dgf.rst
         reference-manual/special/viscosity-calculation.rst
@@ -299,10 +294,6 @@ if (SPHINX_FOUND)
         reference-manual/functions/plots/vcrf.pdf
         reference-manual/functions/plots/vsite-4fdn.pdf
         # Special topics chapter
-        reference-manual/special/plots/awh-invN.pdf
-        reference-manual/special/plots/awh-pmfs.pdf
-        reference-manual/special/plots/awh-sampleweights.pdf
-        reference-manual/special/plots/awh-traj.pdf
         reference-manual/special/plots/compelsetup.pdf
         reference-manual/special/plots/dumaro.pdf
         reference-manual/special/plots/dumtypes.pdf

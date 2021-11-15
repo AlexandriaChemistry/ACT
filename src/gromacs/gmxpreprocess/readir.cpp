@@ -46,7 +46,6 @@
 #include <algorithm>
 #include <string>
 
-#include "gromacs/awh/read-params.h"
 #include "gromacs/fileio/readinp.h"
 #include "gromacs/fileio/warninp.h"
 #include "gromacs/gmxlib/chargegroup.h"
@@ -60,7 +59,6 @@
 #include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/mdtypes/pull-params.h"
 #include "gromacs/options/options.h"
 #include "gromacs/options/treesupport.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -101,18 +99,11 @@ typedef struct t_inputrec_strings
          acc[STRLEN], accgrps[STRLEN], freeze[STRLEN], frdim[STRLEN],
          energy[STRLEN], user1[STRLEN], user2[STRLEN], vcm[STRLEN], x_compressed_groups[STRLEN],
          couple_moltype[STRLEN], orirefitgrp[STRLEN], egptable[STRLEN], egpexcl[STRLEN],
-         wall_atomtype[STRLEN], wall_density[STRLEN], deform[STRLEN], QMMM[STRLEN],
-         imd_grp[STRLEN];
+         deform[STRLEN], imd_grp[STRLEN];
     char   fep_lambda[efptNR][STRLEN];
     char   lambda_weights[STRLEN];
-    char **pull_grp;
-    char **rot_grp;
     char   anneal[STRLEN], anneal_npoints[STRLEN],
            anneal_time[STRLEN], anneal_temp[STRLEN];
-    char   QMmethod[STRLEN], QMbasis[STRLEN], QMcharge[STRLEN], QMmult[STRLEN],
-           bSH[STRLEN], CASorbitals[STRLEN], CASelectrons[STRLEN], SAon[STRLEN],
-           SAoff[STRLEN], SAsteps[STRLEN];
-
 } gmx_inputrec_strings;
 
 static gmx_inputrec_strings *is = nullptr;
@@ -318,7 +309,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         /* Normal Verlet type neighbor-list, currently only limited feature support */
         if (inputrec2nboundeddim(ir) < 3)
         {
-            warning_error(wi, "With Verlet lists only full pbc or pbc=xy with walls is supported");
+            warning_error(wi, "With Verlet lists only full pbc is supported");
         }
 
         // We don't (yet) have general Verlet kernels for rcoulomb!=rvdw
@@ -831,12 +822,8 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         }
     }
 
-    /* PBC/WALLS */
-    sprintf(err_buf, "walls only work with pbc=%s", epbc_names[epbcXY]);
-    CHECK(ir->nwall && ir->ePBC != epbcXY);
-
     /* VACUUM STUFF */
-    if (ir->ePBC != epbcXYZ && ir->nwall != 2)
+    if (ir->ePBC != epbcXYZ)
     {
         if (ir->ePBC == epbcNONE)
         {
@@ -1197,18 +1184,6 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         }
     }
 
-    if (ir->nwall == 2 && EEL_FULL(ir->coulombtype))
-    {
-        if (ir->ewald_geometry == eewg3D)
-        {
-            sprintf(warn_buf, "With pbc=%s you should use ewald-geometry=%s",
-                    epbc_names[ir->ePBC], eewg_names[eewg3DC]);
-            warning(wi, warn_buf);
-        }
-        /* This check avoids extra pbc coding for exclusion corrections */
-        sprintf(err_buf, "wall-ewald-zfac should be >= 2");
-        CHECK(ir->wall_ewald_zfac < 2);
-    }
     if ((ir->ewald_geometry == eewg3DC) && (ir->ePBC != epbcXY) &&
         EEL_FULL(ir->coulombtype))
     {
@@ -1327,20 +1302,6 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         sprintf(warn_buf, "Invalid option %s for coulombtype",
                 eel_names[ir->coulombtype]);
         warning_error(wi, warn_buf);
-    }
-
-    if (ir->bQMMM)
-    {
-        if (ir->cutoff_scheme != ecutsGROUP)
-        {
-            warning_error(wi, "QMMM is currently only supported with cutoff-scheme=group");
-        }
-        if (!EI_DYNAMICS(ir->eI))
-        {
-            char buf[STRLEN];
-            sprintf(buf, "QMMM is only supported with dynamics, not with integrator %s", ei_names[ir->eI]);
-            warning_error(wi, buf);
-        }
     }
 
     if (ir->bAdress)
@@ -1547,17 +1508,6 @@ static void do_simtemp_params(t_inputrec *ir)
     GetSimTemps(ir->fepvals->n_lambda, ir->simtempvals, ir->fepvals->all_lambda[efptTEMPERATURE]);
 }
 
-static void
-convertYesNos(warninp_t /*wi*/, gmx::ArrayRef<const std::string> inputs, const char * /*name*/, gmx_bool *outputs)
-{
-    int i = 0;
-    for (const auto &input : inputs)
-    {
-        outputs[i] = (gmx_strncasecmp(input.c_str(), "Y", 1) == 0);
-        ++i;
-    }
-}
-
 template <typename T> void
 convertInts(warninp_t wi, gmx::ArrayRef<const std::string> inputs, const char *name, T *outputs)
 {
@@ -1619,71 +1569,6 @@ convertRvecs(warninp_t wi, gmx::ArrayRef<const std::string> inputs, const char *
         {
             d = 0;
             ++i;
-        }
-    }
-}
-
-static void do_wall_params(t_inputrec *ir,
-                           char *wall_atomtype, char *wall_density,
-                           t_gromppopts *opts,
-                           warninp_t wi)
-{
-    opts->wall_atomtype[0] = nullptr;
-    opts->wall_atomtype[1] = nullptr;
-
-    ir->wall_atomtype[0] = -1;
-    ir->wall_atomtype[1] = -1;
-    ir->wall_density[0]  = 0;
-    ir->wall_density[1]  = 0;
-
-    if (ir->nwall > 0)
-    {
-        auto wallAtomTypes = gmx::splitString(wall_atomtype);
-        if (wallAtomTypes.size() != size_t(ir->nwall))
-        {
-            gmx_fatal(FARGS, "Expected %d elements for wall_atomtype, found %zu",
-                      ir->nwall, wallAtomTypes.size());
-        }
-        for (int i = 0; i < ir->nwall; i++)
-        {
-            opts->wall_atomtype[i] = gmx_strdup(wallAtomTypes[i].c_str());
-        }
-
-        if (ir->wall_type == ewt93 || ir->wall_type == ewt104)
-        {
-            auto wallDensity = gmx::splitString(wall_density);
-            if (wallDensity.size() != size_t(ir->nwall))
-            {
-                gmx_fatal(FARGS, "Expected %d elements for wall-density, found %zu", ir->nwall, wallDensity.size());
-            }
-            convertReals(wi, wallDensity, "wall-density", ir->wall_density);
-            for (int i = 0; i < ir->nwall; i++)
-            {
-                if (ir->wall_density[i] <= 0)
-                {
-                    gmx_fatal(FARGS, "wall-density[%d] = %f\n", i, ir->wall_density[i]);
-                }
-            }
-        }
-    }
-}
-
-static void add_wall_energrps(gmx_groups_t *groups, int nwall, t_symtab *symtab)
-{
-    int     i;
-    t_grps *grps;
-    char    str[STRLEN];
-
-    if (nwall > 0)
-    {
-        srenew(groups->grpname, groups->ngrpname+nwall);
-        grps = &(groups->grps[egcENER]);
-        srenew(grps->nm_ind, grps->nr+nwall);
-        for (i = 0; i < nwall; i++)
-        {
-            sprintf(str, "wall%d", i);
-            groups->grpname[groups->ngrpname] = put_symtab(symtab, str);
-            grps->nm_ind[grps->nr++]          = groups->ngrpname++;
         }
     }
 }
@@ -1830,7 +1715,6 @@ void get_ir(const char *mdparin, const char *mdparout,
     replace_inp_entry(inp, "adress_do_hybridpairs", nullptr);
     replace_inp_entry(inp, "rlistlong", nullptr);
     replace_inp_entry(inp, "nstcalclr", nullptr);
-    replace_inp_entry(inp, "pull-print-com2", nullptr);
     replace_inp_entry(inp, "gb-algorithm", nullptr);
     replace_inp_entry(inp, "nstgbradii", nullptr);
     replace_inp_entry(inp, "rgbradii", nullptr);
@@ -1850,7 +1734,6 @@ void get_ir(const char *mdparin, const char *mdparout,
     replace_inp_entry(inp, "nstxtcout", "nstxout-compressed");
     replace_inp_entry(inp, "xtc-grps", "compressed-x-grps");
     replace_inp_entry(inp, "xtc-precision", "compressed-x-precision");
-    replace_inp_entry(inp, "pull-print-com1", "pull-print-com");
 
     printStringNewline(&inp, "VARIOUS PREPROCESSING OPTIONS");
     printStringNoNewline(&inp, "Preprocessor information: use cpp syntax.");
@@ -1908,8 +1791,6 @@ void get_ir(const char *mdparin, const char *mdparout,
     ir->nstcalcenergy = get_eint(&inp, "nstcalcenergy", 100, wi);
     ir->nstenergy     = get_eint(&inp, "nstenergy",  1000, wi);
     printStringNoNewline(&inp, "Output frequency and precision for .xtc file");
-    ir->nstxout_compressed      = get_eint(&inp, "nstxout-compressed",  0, wi);
-    ir->x_compression_precision = get_ereal(&inp, "compressed-x-precision", 1000.0, wi);
     printStringNoNewline(&inp, "This selects the subset of atoms for the compressed");
     printStringNoNewline(&inp, "trajectory file. You can select multiple groups. By");
     printStringNoNewline(&inp, "default, all atoms will be written.");
@@ -2000,32 +1881,6 @@ void get_ir(const char *mdparin, const char *mdparout,
     printStringNoNewline(&inp, "Scaling of reference coordinates, No, All or COM");
     ir->refcoord_scaling = get_eeenum(&inp, "refcoord-scaling", erefscaling_names, wi);
 
-    /* QMMM */
-    printStringNewline(&inp, "OPTIONS FOR QMMM calculations");
-    ir->bQMMM = (get_eeenum(&inp, "QMMM", yesno_names, wi) != 0);
-    printStringNoNewline(&inp, "Groups treated Quantum Mechanically");
-    setStringEntry(&inp, "QMMM-grps",  is->QMMM,          nullptr);
-    printStringNoNewline(&inp, "QM method");
-    setStringEntry(&inp, "QMmethod",     is->QMmethod, nullptr);
-    printStringNoNewline(&inp, "QMMM scheme");
-    ir->QMMMscheme = get_eeenum(&inp, "QMMMscheme",    eQMMMscheme_names, wi);
-    printStringNoNewline(&inp, "QM basisset");
-    setStringEntry(&inp, "QMbasis",      is->QMbasis, nullptr);
-    printStringNoNewline(&inp, "QM charge");
-    setStringEntry(&inp, "QMcharge",    is->QMcharge, nullptr);
-    printStringNoNewline(&inp, "QM multiplicity");
-    setStringEntry(&inp, "QMmult",      is->QMmult, nullptr);
-    printStringNoNewline(&inp, "Surface Hopping");
-    setStringEntry(&inp, "SH",          is->bSH, nullptr);
-    printStringNoNewline(&inp, "CAS space options");
-    setStringEntry(&inp, "CASorbitals",      is->CASorbitals,   nullptr);
-    setStringEntry(&inp, "CASelectrons",     is->CASelectrons,  nullptr);
-    setStringEntry(&inp, "SAon", is->SAon, nullptr);
-    setStringEntry(&inp, "SAoff", is->SAoff, nullptr);
-    setStringEntry(&inp, "SAsteps", is->SAsteps, nullptr);
-    printStringNoNewline(&inp, "Scale factor for MM charges");
-    ir->scalefactor = get_ereal(&inp, "MMChargeScaleFactor", 1.0, wi);
-
     /* Simulated annealing */
     printStringNewline(&inp, "SIMULATED ANNEALING");
     printStringNoNewline(&inp, "Type of annealing for each temperature group (no/single/periodic)");
@@ -2070,61 +1925,6 @@ void get_ir(const char *mdparin, const char *mdparout,
     printStringNewline(&inp, "ENERGY GROUP EXCLUSIONS");
     printStringNoNewline(&inp, "Pairs of energy groups for which all non-bonded interactions are excluded");
     setStringEntry(&inp, "energygrp-excl", is->egpexcl,     nullptr);
-
-    /* Walls */
-    printStringNewline(&inp, "WALLS");
-    printStringNoNewline(&inp, "Number of walls, type, atom types, densities and box-z scale factor for Ewald");
-    ir->nwall         = get_eint(&inp, "nwall", 0, wi);
-    ir->wall_type     = get_eeenum(&inp, "wall-type",   ewt_names, wi);
-    ir->wall_r_linpot = get_ereal(&inp, "wall-r-linpot", -1, wi);
-    setStringEntry(&inp, "wall-atomtype", is->wall_atomtype, nullptr);
-    setStringEntry(&inp, "wall-density",  is->wall_density,  nullptr);
-    ir->wall_ewald_zfac = get_ereal(&inp, "wall-ewald-zfac", 3, wi);
-
-    /* COM pulling */
-    printStringNewline(&inp, "COM PULLING");
-    ir->bPull = (get_eeenum(&inp, "pull", yesno_names, wi) != 0);
-    if (ir->bPull)
-    {
-        snew(ir->pull, 1);
-        is->pull_grp = read_pullparams(&inp, ir->pull, wi);
-    }
-
-    /* AWH biasing
-       NOTE: needs COM pulling input */
-    printStringNewline(&inp, "AWH biasing");
-    ir->bDoAwh = (get_eeenum(&inp, "awh", yesno_names, wi) != 0);
-    if (ir->bDoAwh)
-    {
-        if (ir->bPull)
-        {
-            ir->awhParams = gmx::readAndCheckAwhParams(&inp, ir, wi);
-        }
-        else
-        {
-            gmx_fatal(FARGS, "AWH biasing is only compatible with COM pulling turned on");
-        }
-    }
-
-    /* Enforced rotation */
-    printStringNewline(&inp, "ENFORCED ROTATION");
-    printStringNoNewline(&inp, "Enforced rotation: No or Yes");
-    ir->bRot = (get_eeenum(&inp, "rotation", yesno_names, wi) != 0);
-    if (ir->bRot)
-    {
-        snew(ir->rot, 1);
-        is->rot_grp = read_rotparams(&inp, ir->rot, wi);
-    }
-
-    /* Interactive MD */
-    ir->bIMD = FALSE;
-    printStringNewline(&inp, "Group to display and/or manipulate in interactive MD session");
-    setStringEntry(&inp, "IMD-group", is->imd_grp, nullptr);
-    if (is->imd_grp[0] != '\0')
-    {
-        snew(ir->imd, 1);
-        ir->bIMD = TRUE;
-    }
 
     /* Refinement */
     printStringNewline(&inp, "NMR refinement stuff");
@@ -2224,85 +2024,6 @@ void get_ir(const char *mdparin, const char *mdparout,
         mdModules->adjustInputrecBasedOnModules(ir);
         errorHandler.setBackMapping(result.backMapping());
         mdModules->assignOptionsToModules(*ir->params, &errorHandler);
-    }
-
-    /* Ion/water position swapping ("computational electrophysiology") */
-    printStringNewline(&inp, "Ion/water position swapping for computational electrophysiology setups");
-    printStringNoNewline(&inp, "Swap positions along direction: no, X, Y, Z");
-    ir->eSwapCoords = get_eeenum(&inp, "swapcoords", eSwapTypes_names, wi);
-    if (ir->eSwapCoords != eswapNO)
-    {
-        char buf[STRLEN];
-        int  nIonTypes;
-
-
-        snew(ir->swap, 1);
-        printStringNoNewline(&inp, "Swap attempt frequency");
-        ir->swap->nstswap = get_eint(&inp, "swap-frequency", 1, wi);
-        printStringNoNewline(&inp, "Number of ion types to be controlled");
-        nIonTypes = get_eint(&inp, "iontypes", 1, wi);
-        if (nIonTypes < 1)
-        {
-            warning_error(wi, "You need to provide at least one ion type for position exchanges.");
-        }
-        ir->swap->ngrp = nIonTypes + eSwapFixedGrpNR;
-        snew(ir->swap->grp, ir->swap->ngrp);
-        for (i = 0; i < ir->swap->ngrp; i++)
-        {
-            snew(ir->swap->grp[i].molname, STRLEN);
-        }
-        printStringNoNewline(&inp, "Two index groups that contain the compartment-partitioning atoms");
-        setStringEntry(&inp, "split-group0", ir->swap->grp[eGrpSplit0].molname, nullptr);
-        setStringEntry(&inp, "split-group1", ir->swap->grp[eGrpSplit1].molname, nullptr);
-        printStringNoNewline(&inp, "Use center of mass of split groups (yes/no), otherwise center of geometry is used");
-        ir->swap->massw_split[0] = (get_eeenum(&inp, "massw-split0", yesno_names, wi) != 0);
-        ir->swap->massw_split[1] = (get_eeenum(&inp, "massw-split1", yesno_names, wi) != 0);
-
-        printStringNoNewline(&inp, "Name of solvent molecules");
-        setStringEntry(&inp, "solvent-group", ir->swap->grp[eGrpSolvent].molname, nullptr);
-
-        printStringNoNewline(&inp, "Split cylinder: radius, upper and lower extension (nm) (this will define the channels)");
-        printStringNoNewline(&inp, "Note that the split cylinder settings do not have an influence on the swapping protocol,");
-        printStringNoNewline(&inp, "however, if correctly defined, the permeation events are recorded per channel");
-        ir->swap->cyl0r = get_ereal(&inp, "cyl0-r", 2.0, wi);
-        ir->swap->cyl0u = get_ereal(&inp, "cyl0-up", 1.0, wi);
-        ir->swap->cyl0l = get_ereal(&inp, "cyl0-down", 1.0, wi);
-        ir->swap->cyl1r = get_ereal(&inp, "cyl1-r", 2.0, wi);
-        ir->swap->cyl1u = get_ereal(&inp, "cyl1-up", 1.0, wi);
-        ir->swap->cyl1l = get_ereal(&inp, "cyl1-down", 1.0, wi);
-
-        printStringNoNewline(&inp, "Average the number of ions per compartment over these many swap attempt steps");
-        ir->swap->nAverage = get_eint(&inp, "coupl-steps", 10, wi);
-
-        printStringNoNewline(&inp, "Names of the ion types that can be exchanged with solvent molecules,");
-        printStringNoNewline(&inp, "and the requested number of ions of this type in compartments A and B");
-        printStringNoNewline(&inp, "-1 means fix the numbers as found in step 0");
-        for (i = 0; i < nIonTypes; i++)
-        {
-            int ig = eSwapFixedGrpNR + i;
-
-            sprintf(buf, "iontype%d-name", i);
-            setStringEntry(&inp, buf, ir->swap->grp[ig].molname, nullptr);
-            sprintf(buf, "iontype%d-in-A", i);
-            ir->swap->grp[ig].nmolReq[0] = get_eint(&inp, buf, -1, wi);
-            sprintf(buf, "iontype%d-in-B", i);
-            ir->swap->grp[ig].nmolReq[1] = get_eint(&inp, buf, -1, wi);
-        }
-
-        printStringNoNewline(&inp, "By default (i.e. bulk offset = 0.0), ion/water exchanges happen between layers");
-        printStringNoNewline(&inp, "at maximum distance (= bulk concentration) to the split group layers. However,");
-        printStringNoNewline(&inp, "an offset b (-1.0 < b < +1.0) can be specified to offset the bulk layer from the middle at 0.0");
-        printStringNoNewline(&inp, "towards one of the compartment-partitioning layers (at +/- 1.0).");
-        ir->swap->bulkOffset[0] = get_ereal(&inp, "bulk-offsetA", 0.0, wi);
-        ir->swap->bulkOffset[1] = get_ereal(&inp, "bulk-offsetB", 0.0, wi);
-        if (!(ir->swap->bulkOffset[0] > -1.0 && ir->swap->bulkOffset[0] < 1.0)
-            || !(ir->swap->bulkOffset[1] > -1.0 && ir->swap->bulkOffset[1] < 1.0) )
-        {
-            warning_error(wi, "Bulk layer offsets must be > -1.0 and < 1.0 !");
-        }
-
-        printStringNoNewline(&inp, "Start to swap ions if threshold difference to requested count is reached");
-        ir->swap->threshold = get_ereal(&inp, "threshold", 1.0, wi);
     }
 
     /* AdResS is no longer supported, but we need grompp to be able to
@@ -2495,10 +2216,6 @@ void get_ir(const char *mdparin, const char *mdparout,
         ir->fepvals->n_lambda = 0;
     }
 
-    /* WALL PARAMETERS */
-
-    do_wall_params(ir, is->wall_atomtype, is->wall_density, opts, wi);
-
     /* ORIENTATION RESTRAINT PARAMETERS */
 
     if (opts->bOrire && gmx::splitString(is->orirefitgrp).size() != 1)
@@ -2561,42 +2278,9 @@ void get_ir(const char *mdparin, const char *mdparout,
         }
     }
 
-    /* Ion/water position swapping checks */
-    if (ir->eSwapCoords != eswapNO)
-    {
-        if (ir->swap->nstswap < 1)
-        {
-            warning_error(wi, "swap_frequency must be 1 or larger when ion swapping is requested");
-        }
-        if (ir->swap->nAverage < 1)
-        {
-            warning_error(wi, "coupl_steps must be 1 or larger.\n");
-        }
-        if (ir->swap->threshold < 1.0)
-        {
-            warning_error(wi, "Ion count threshold must be at least 1.\n");
-        }
-    }
-
     sfree(dumstr[0]);
     sfree(dumstr[1]);
 }
-
-static int search_QMstring(const char *s, int ng, const char *gn[])
-{
-    /* same as normal search_string, but this one searches QM strings */
-    int i;
-
-    for (i = 0; (i < ng); i++)
-    {
-        if (gmx_strcasecmp(s, gn[i]) == 0)
-        {
-            return i;
-        }
-    }
-
-    gmx_fatal(FARGS, "this QM method or basisset (%s) is not implemented\n!", s);
-} /* search_QMstring */
 
 /* We would like gn to be const as well, but C doesn't allow this */
 /* TODO this is utility functionality (search for the index of a
@@ -2760,7 +2444,6 @@ static bool do_numbering(int natoms, gmx_groups_t *groups,
 static void calc_nrdf(const gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
 {
     t_grpopts              *opts;
-    pull_params_t          *pull;
     int                     natoms, ai, aj, i, j, d, g, imin, jmin;
     int                    *nrdf2, *na_vcm, na_tot;
     double                 *nrdf_tc, *nrdf_vcm, nrdf_uc, *nrdf_vcm_sub;
@@ -2895,51 +2578,6 @@ static void calc_nrdf(const gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
                 i  += 4;
             }
             as += molt.atoms.nr;
-        }
-    }
-
-    if (ir->bPull)
-    {
-        /* Correct nrdf for the COM constraints.
-         * We correct using the TC and VCM group of the first atom
-         * in the reference and pull group. If atoms in one pull group
-         * belong to different TC or VCM groups it is anyhow difficult
-         * to determine the optimal nrdf assignment.
-         */
-        pull = ir->pull;
-
-        for (i = 0; i < pull->ncoord; i++)
-        {
-            if (pull->coord[i].eType != epullCONSTRAINT)
-            {
-                continue;
-            }
-
-            imin = 1;
-
-            for (j = 0; j < 2; j++)
-            {
-                const t_pull_group *pgrp;
-
-                pgrp = &pull->group[pull->coord[i].group[j]];
-
-                if (pgrp->nat > 0)
-                {
-                    /* Subtract 1/2 dof from each group */
-                    ai = pgrp->ind[0];
-                    nrdf_tc [getGroupType(groups, egcTC, ai)]  -= 0.5*imin;
-                    nrdf_vcm[getGroupType(groups, egcVCM, ai)] -= 0.5*imin;
-                    if (nrdf_tc[getGroupType(groups, egcTC, ai)] < 0)
-                    {
-                        gmx_fatal(FARGS, "Center of mass pulling constraints caused the number of degrees of freedom for temperature coupling group %s to be negative", gnames[groups.grps[egcTC].nm_ind[getGroupType(groups, egcTC, ai)]]);
-                    }
-                }
-                else
-                {
-                    /* We need to subtract the whole DOF from group j=1 */
-                    imin += 1;
-                }
-            }
         }
     }
 
@@ -3082,68 +2720,6 @@ static bool do_egp_flag(t_inputrec *ir, gmx_groups_t *groups,
     }
 
     return bSet;
-}
-
-
-static void make_swap_groups(
-        t_swapcoords  *swap,
-        t_blocka      *grps,
-        char         **gnames)
-{
-    int          ig = -1, i = 0, gind;
-    t_swapGroup *swapg;
-
-
-    /* Just a quick check here, more thorough checks are in mdrun */
-    if (strcmp(swap->grp[eGrpSplit0].molname, swap->grp[eGrpSplit1].molname) == 0)
-    {
-        gmx_fatal(FARGS, "The split groups can not both be '%s'.", swap->grp[eGrpSplit0].molname);
-    }
-
-    /* Get the index atoms of the split0, split1, solvent, and swap groups */
-    for (ig = 0; ig < swap->ngrp; ig++)
-    {
-        swapg      = &swap->grp[ig];
-        gind       = search_string(swap->grp[ig].molname, grps->nr, gnames);
-        swapg->nat = grps->index[gind+1] - grps->index[gind];
-
-        if (swapg->nat > 0)
-        {
-            fprintf(stderr, "%s group '%s' contains %d atoms.\n",
-                    ig < 3 ? eSwapFixedGrp_names[ig] : "Swap",
-                    swap->grp[ig].molname, swapg->nat);
-            snew(swapg->ind, swapg->nat);
-            for (i = 0; i < swapg->nat; i++)
-            {
-                swapg->ind[i] = grps->a[grps->index[gind]+i];
-            }
-        }
-        else
-        {
-            gmx_fatal(FARGS, "Swap group %s does not contain any atoms.", swap->grp[ig].molname);
-        }
-    }
-}
-
-
-static void make_IMD_group(t_IMD *IMDgroup, char *IMDgname, t_blocka *grps, char **gnames)
-{
-    int      ig, i;
-
-
-    ig            = search_string(IMDgname, grps->nr, gnames);
-    IMDgroup->nat = grps->index[ig+1] - grps->index[ig];
-
-    if (IMDgroup->nat > 0)
-    {
-        fprintf(stderr, "Group '%s' with %d atoms can be activated for interactive molecular dynamics (IMD).\n",
-                IMDgname, IMDgroup->nat);
-        snew(IMDgroup->ind, IMDgroup->nat);
-        for (i = 0; i < IMDgroup->nat; i++)
-        {
-            IMDgroup->ind[i] = grps->a[grps->index[ig]+i];
-        }
-    }
 }
 
 void do_index(const char* mdparin, const char *ndx,
@@ -3468,29 +3044,6 @@ void do_index(const char* mdparin, const char *ndx,
         }
     }
 
-    if (ir->bPull)
-    {
-        make_pull_groups(ir->pull, is->pull_grp, grps, gnames);
-
-        make_pull_coords(ir->pull);
-    }
-
-    if (ir->bRot)
-    {
-        make_rotation_groups(ir->rot, is->rot_grp, grps, gnames);
-    }
-
-    if (ir->eSwapCoords != eswapNO)
-    {
-        make_swap_groups(ir->swap, grps, gnames);
-    }
-
-    /* Make indices for IMD session */
-    if (ir->bIMD)
-    {
-        make_IMD_group(ir->imd, is->imd_grp, grps, gnames);
-    }
-
     auto accelerations          = gmx::splitString(is->acc);
     auto accelerationGroupNames = gmx::splitString(is->accgrps);
     if (accelerationGroupNames.size() * DIM != accelerations.size())
@@ -3545,7 +3098,6 @@ void do_index(const char* mdparin, const char *ndx,
     auto energyGroupNames = gmx::splitString(is->energy);
     do_numbering(natoms, groups, energyGroupNames, grps, gnames, egcENER,
                  restnm, egrptpALL_GENREST, bVerbose, wi);
-    add_wall_energrps(groups, ir->nwall, symtab);
     ir->opts.ngener = groups->grps[egcENER].nr;
     auto vcmGroupNames = gmx::splitString(is->vcm);
     bRest           =
@@ -3573,82 +3125,6 @@ void do_index(const char* mdparin, const char *ndx,
     auto orirefFitGroupNames = gmx::splitString(is->orirefitgrp);
     do_numbering(natoms, groups, orirefFitGroupNames, grps, gnames, egcORFIT,
                  restnm, egrptpALL_GENREST, bVerbose, wi);
-
-    /* QMMM input processing */
-    auto qmGroupNames = gmx::splitString(is->QMMM);
-    auto qmMethods    = gmx::splitString(is->QMmethod);
-    auto qmBasisSets  = gmx::splitString(is->QMbasis);
-    if (ir->eI != eiMimic)
-    {
-        if (qmMethods.size() != qmGroupNames.size() ||
-            qmBasisSets.size() != qmGroupNames.size())
-        {
-            gmx_fatal(FARGS, "Invalid QMMM input: %zu groups %zu basissets"
-                      " and %zu methods\n", qmGroupNames.size(),
-                      qmBasisSets.size(), qmMethods.size());
-        }
-        /* group rest, if any, is always MM! */
-        do_numbering(natoms, groups, qmGroupNames, grps, gnames, egcQMMM,
-                     restnm, egrptpALL_GENREST, bVerbose, wi);
-        nr            = qmGroupNames.size(); /*atoms->grps[egcQMMM].nr;*/
-        ir->opts.ngQM = qmGroupNames.size();
-        snew(ir->opts.QMmethod, nr);
-        snew(ir->opts.QMbasis, nr);
-        for (i = 0; i < nr; i++)
-        {
-            /* input consists of strings: RHF CASSCF PM3 .. These need to be
-             * converted to the corresponding enum in names.c
-             */
-            ir->opts.QMmethod[i] = search_QMstring(qmMethods[i].c_str(),
-                                                   eQMmethodNR,
-                                                   eQMmethod_names);
-            ir->opts.QMbasis[i] = search_QMstring(qmBasisSets[i].c_str(),
-                                                  eQMbasisNR,
-                                                  eQMbasis_names);
-
-        }
-        auto qmMultiplicities = gmx::splitString(is->QMmult);
-        auto qmCharges        = gmx::splitString(is->QMcharge);
-        auto qmbSH            = gmx::splitString(is->bSH);
-        snew(ir->opts.QMmult, nr);
-        snew(ir->opts.QMcharge, nr);
-        snew(ir->opts.bSH, nr);
-        convertInts(wi, qmMultiplicities, "QMmult", ir->opts.QMmult);
-        convertInts(wi, qmCharges, "QMcharge", ir->opts.QMcharge);
-        convertYesNos(wi, qmbSH, "bSH", ir->opts.bSH);
-
-        auto CASelectrons = gmx::splitString(is->CASelectrons);
-        auto CASorbitals  = gmx::splitString(is->CASorbitals);
-        snew(ir->opts.CASelectrons, nr);
-        snew(ir->opts.CASorbitals, nr);
-        convertInts(wi, CASelectrons, "CASelectrons", ir->opts.CASelectrons);
-        convertInts(wi, CASorbitals, "CASOrbitals", ir->opts.CASorbitals);
-
-        auto SAon    = gmx::splitString(is->SAon);
-        auto SAoff   = gmx::splitString(is->SAoff);
-        auto SAsteps = gmx::splitString(is->SAsteps);
-        snew(ir->opts.SAon, nr);
-        snew(ir->opts.SAoff, nr);
-        snew(ir->opts.SAsteps, nr);
-        convertInts(wi, SAon, "SAon", ir->opts.SAon);
-        convertInts(wi, SAoff, "SAoff", ir->opts.SAoff);
-        convertInts(wi, SAsteps, "SAsteps", ir->opts.SAsteps);
-    }
-    else
-    {
-        /* MiMiC */
-        if (qmGroupNames.size() > 1)
-        {
-            gmx_fatal(FARGS, "Currently, having more than one QM group in MiMiC is not supported");
-        }
-        /* group rest, if any, is always MM! */
-        do_numbering(natoms, groups, qmGroupNames, grps, gnames, egcQMMM,
-                     restnm, egrptpALL_GENREST, bVerbose, wi);
-
-        ir->opts.ngQM = qmGroupNames.size();
-    }
-
-    /* end of QMMM input */
 
     if (bVerbose)
     {
@@ -3948,7 +3424,7 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
                   warninp_t wi)
 {
     char                      err_buf[STRLEN];
-    int                       i, m, c, nmol;
+    int                       i, m, nmol;
     bool                      bCharge, bAcc;
     real                     *mgrp, mt;
     rvec                      acc;
@@ -4182,49 +3658,6 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
         !gmx_within_tol(sys->ffparams.reppow, 12.0, 10*GMX_DOUBLE_EPS))
     {
         gmx_fatal(FARGS, "Soft-core interactions are only supported with VdW repulsion power 12");
-    }
-
-    if (ir->bPull)
-    {
-        bool bWarned;
-
-        bWarned = FALSE;
-        for (i = 0; i < ir->pull->ncoord && !bWarned; i++)
-        {
-            if (ir->pull->coord[i].group[0] == 0 ||
-                ir->pull->coord[i].group[1] == 0)
-            {
-                absolute_reference(ir, sys, FALSE, AbsRef);
-                for (m = 0; m < DIM; m++)
-                {
-                    if (ir->pull->coord[i].dim[m] && !AbsRef[m])
-                    {
-                        warning(wi, "You are using an absolute reference for pulling, but the rest of the system does not have an absolute reference. This will lead to artifacts.");
-                        bWarned = TRUE;
-                        break;
-                    }
-                }
-            }
-        }
-
-        for (i = 0; i < 3; i++)
-        {
-            for (m = 0; m <= i; m++)
-            {
-                if ((ir->epc != epcNO && ir->compress[i][m] != 0) ||
-                    ir->deform[i][m] != 0)
-                {
-                    for (c = 0; c < ir->pull->ncoord; c++)
-                    {
-                        if (ir->pull->coord[c].eGeom == epullgDIRPBC &&
-                            ir->pull->coord[c].vec[m] != 0)
-                        {
-                            gmx_fatal(FARGS, "Can not have dynamic box while using pull geometry '%s' (dim %c)", EPULLGEOM(ir->pull->coord[c].eGeom), 'x'+m);
-                        }
-                    }
-                }
-            }
-        }
     }
 
     check_disre(sys);

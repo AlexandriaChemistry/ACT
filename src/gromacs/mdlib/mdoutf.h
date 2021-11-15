@@ -37,7 +37,6 @@
 
 #include <stdio.h>
 
-#include "gromacs/fileio/enxio.h"
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/timing/wallcycle.h"
@@ -49,6 +48,7 @@ struct gmx_mtop_t;
 struct gmx_output_env_t;
 struct MdrunOptions;
 struct ObservablesHistory;
+class t_state;
 struct t_commrec;
 struct t_filenm;
 struct t_inputrec;
@@ -60,8 +60,7 @@ typedef struct gmx_mdoutf *gmx_mdoutf_t;
  * Returns a pointer to a data structure with all output file pointers
  * and names required by mdrun.
  */
-gmx_mdoutf_t init_mdoutf(FILE                   *fplog,
-                         int                     nfile,
+gmx_mdoutf_t init_mdoutf(int                     nfile,
                          const t_filenm          fnm[],
                          const MdrunOptions     &mdrunOptions,
                          const t_commrec        *cr,
@@ -70,21 +69,8 @@ gmx_mdoutf_t init_mdoutf(FILE                   *fplog,
                          const gmx_output_env_t *oenv,
                          gmx_wallcycle_t         wcycle);
 
-/*! \brief Getter for file pointer */
-ener_file_t mdoutf_get_fp_ene(gmx_mdoutf_t of);
-
-/*! \brief Getter for file pointer */
-FILE *mdoutf_get_fp_dhdl(gmx_mdoutf_t of);
-
 /*! \brief Getter for wallcycle timer */
 gmx_wallcycle_t mdoutf_get_wcycle(gmx_mdoutf_t of);
-
-/*! \brief Close TNG files if they are open.
- *
- * This also measures the time it takes to close the TNG
- * files.
- */
-void mdoutf_tng_close(gmx_mdoutf_t of);
 
 /*! \brief Close all open output files and free the of pointer */
 void done_mdoutf(gmx_mdoutf_t of);
@@ -96,34 +82,13 @@ void done_mdoutf(gmx_mdoutf_t of);
  * the master node only when necessary. Without domain decomposition
  * only data from state_local is used and state_global is ignored.
  */
-void mdoutf_write_to_trajectory_files(FILE *fplog, const t_commrec *cr,
+void mdoutf_write_to_trajectory_files(const t_commrec *cr,
                                       gmx_mdoutf_t of,
                                       int mdof_flags,
                                       gmx_mtop_t *top_global,
                                       int64_t step, double t,
                                       t_state *state_local, t_state *state_global,
-                                      ObservablesHistory *observablesHistory,
                                       gmx::ArrayRef<gmx::RVec> f_local);
-
-/*! \brief Get the output interval of box size of uncompressed TNG output.
- * Returns 0 if no uncompressed TNG file is open.
- */
-int mdoutf_get_tng_box_output_interval(gmx_mdoutf_t of);
-
-/*! \brief Get the output interval of lambda of uncompressed TNG output.
- * Returns 0 if no uncompressed TNG file is open.
- */
-int mdoutf_get_tng_lambda_output_interval(gmx_mdoutf_t of);
-
-/*! \brief Get the output interval of box size of compressed TNG output.
- * Returns 0 if no compressed TNG file is open.
- */
-int mdoutf_get_tng_compressed_box_output_interval(gmx_mdoutf_t of);
-
-/*! \brief Get the output interval of lambda of compressed TNG output.
- * Returns 0 if no compressed TNG file is open.
- */
-int mdoutf_get_tng_compressed_lambda_output_interval(gmx_mdoutf_t of);
 
 #define MDOF_X                 (1<<0)
 #define MDOF_V                 (1<<1)

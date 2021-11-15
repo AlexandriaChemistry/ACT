@@ -56,7 +56,6 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 
-struct gmx_edsam;
 struct gmx_localtop_t;
 struct gmx_moltype_t;
 struct gmx_mtop_t;
@@ -173,8 +172,6 @@ class Constraints
                    rvec                 *v,
                    tensor               *vir,
                    ConstraintVariable    econq);
-        //! Links the essentialdynamics and constraint code.
-        void saveEdsamPointer(gmx_edsam *ed);
         //! Getter for use by domain decomposition.
         const ArrayRef<const t_blocka> atom2constraints_moltype() const;
         //! Getter for use by domain decomposition.

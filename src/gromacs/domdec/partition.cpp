@@ -59,11 +59,9 @@
 #include "gromacs/domdec/domdec_network.h"
 #include "gromacs/domdec/ga2la.h"
 #include "gromacs/domdec/localatomsetmanager.h"
-#include "gromacs/ewald/pme.h"
 #include "gromacs/gmxlib/chargegroup.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
-//#include "gromacs/imd/imd.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/forcerec.h"
@@ -80,7 +78,6 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/nblist.h"
 #include "gromacs/mdtypes/state.h"
-#include "gromacs/pulling/pull.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
@@ -3584,25 +3581,6 @@ void dd_partition_system(FILE                    *fplog,
     /* Update atom data for mdatoms and several algorithms */
     mdAlgorithmsSetupAtomData(cr, ir, top_global, top_local, fr,
                               nullptr, mdAtoms, constr, vsite, nullptr);
-
-    auto mdatoms = mdAtoms->mdatoms();
-    if (!thisRankHasDuty(cr, DUTY_PME))
-    {
-        /* Send the charges and/or c6/sigmas to our PME only node */
-        gmx_pme_send_parameters(cr,
-                                fr->ic,
-                                mdatoms->nChargePerturbed != 0, mdatoms->nTypePerturbed != 0,
-                                mdatoms->chargeA, mdatoms->chargeB,
-                                mdatoms->sqrt_c6A, mdatoms->sqrt_c6B,
-                                mdatoms->sigmaA, mdatoms->sigmaB,
-                                dd_pme_maxshift_x(dd), dd_pme_maxshift_y(dd));
-    }
-
-    if (ir->bPull)
-    {
-        /* Update the local pull groups */
-        dd_make_local_pull_groups(cr, ir->pull_work);
-    }
 
     if (dd->atomSets != nullptr)
     {

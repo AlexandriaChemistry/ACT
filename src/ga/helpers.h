@@ -3,26 +3,31 @@
 
 #include "aliases.h"
 
-matrix allocateMatrix(const int     n,
-                      const int     m);
 
-void copyVectorValues(const vector&  arr1,
-                            vector&  arr2,
-                      const int      left,
-                      const int      right);
+namespace ga {
 
-void copyMatrixValues(const matrix&  mat1,
-                            matrix&  mat2,
-                      const int      i1,
-                      const int      i2,
-                      const int      j1,
-                      const int      j2);
+    matrix allocateMatrix(const int n,
+                          const int m);
 
-int findMaximumIndex(const vector&   vec,
-                     const int       len);
+    void copyVectorValues(const vector& arr1,
+                                vector& arr2,
+                          const int     left,
+                          const int     right);
 
-void printVector(const vector&       vec);
+    void copyMatrixValues(const matrix& mat1,
+                                matrix& mat2,
+                          const int     i1,
+                          const int     i2,
+                          const int     j1,
+                          const int     j2);
 
-void printMatrix(const matrix&       mat);
+    int findMaximumIndex(const vector&  vec,
+                         const int      len);
+
+    void printVector(const vector& vec);
+
+    void printMatrix(const matrix& mat);
+
+}
 
 #endif //ACT_HELPERS_H

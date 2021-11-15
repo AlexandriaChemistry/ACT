@@ -2,7 +2,8 @@ PROJECT_NAME           = @CMAKE_PROJECT_NAME@
 @INCLUDE               = Doxyfile-version
 LAYOUT_FILE            = @CMAKE_CURRENT_SOURCE_DIR@/DoxygenLayout.xml
 INPUT                  = @CMAKE_CURRENT_SOURCE_DIR@ \
-                         @CMAKE_SOURCE_DIR@/src
+                         @CMAKE_SOURCE_DIR@/src \
+                         @CMAKE_SOURCE_DIR@/share/template
 FILE_PATTERNS          = *.c *.cpp *.h *.md
 # CUDA files could be included like this, but currently produce a lot of
 # warnings.
@@ -10,14 +11,45 @@ FILE_PATTERNS          = *.c *.cpp *.h *.md
 EXAMPLE_PATH           = @CMAKE_SOURCE_DIR@
 RECURSIVE              = YES
 EXCLUDE                = @CMAKE_SOURCE_DIR@/src/external \
-                         @CMAKE_SOURCE_DIR@/src/gromacs \
                          @CMAKE_SOURCE_DIR@/src/testutils \
-                         @CMAKE_SOURCE_DIR@/src/gromacs/linearalgebra/gmx_blas \
-                         @CMAKE_SOURCE_DIR@/src/gromacs/linearalgebra/gmx_lapack \
-                         @CMAKE_SOURCE_DIR@/src/gromacs/selection/parser.cpp \
-                         @CMAKE_SOURCE_DIR@/src/gromacs/selection/parser.h \
-                         @CMAKE_SOURCE_DIR@/src/gromacs/selection/scanner.cpp \
+                         @CMAKE_SOURCE_DIR@/src/gromacs/applied-forces/ \
+                         @CMAKE_SOURCE_DIR@/src/gromacs/commandline/ \
+                         @CMAKE_SOURCE_DIR@/src/gromacs/compat/ \
+                         @CMAKE_SOURCE_DIR@/src/gromacs/domdec/ \
+                         @CMAKE_SOURCE_DIR@/src/gromacs/ewald/ \
+                         @CMAKE_SOURCE_DIR@/src/gromacs/fft/ \
+                         @CMAKE_SOURCE_DIR@/src/gromacs/fileio/ \
+                         @CMAKE_SOURCE_DIR@/src/gromacs/gmxlib/ \
+                         @CMAKE_SOURCE_DIR@/src/gromacs/gmxpreprocess/ \
+                         @CMAKE_SOURCE_DIR@/src/gromacs/gpu_utils/ \
+                         @CMAKE_SOURCE_DIR@/src/gromacs/hardware/ \
+                         @CMAKE_SOURCE_DIR@/src/gromacs/listed-forces/ \
+                         @CMAKE_SOURCE_DIR@/src/gromacs/math/ \
+                         @CMAKE_SOURCE_DIR@/src/gromacs/mdlib/ \
+                         @CMAKE_SOURCE_DIR@/src/gromacs/mdrunutility/ \
+                         @CMAKE_SOURCE_DIR@/src/gromacs/mdspan/ \
+                         @CMAKE_SOURCE_DIR@/src/gromacs/mdtypes/ \
+                         @CMAKE_SOURCE_DIR@/src/gromacs/onlinehelp/ \
+                         @CMAKE_SOURCE_DIR@/src/gromacs/options/ \
+                         @CMAKE_SOURCE_DIR@/src/gromacs/pbcutil/ \
+                         @CMAKE_SOURCE_DIR@/src/gromacs/random/ \
+                         @CMAKE_SOURCE_DIR@/src/gromacs/selection/ \
+                         @CMAKE_SOURCE_DIR@/src/gromacs/simd/ \
+                         @CMAKE_SOURCE_DIR@/src/gromacs/statistics/ \
+                         @CMAKE_SOURCE_DIR@/src/gromacs/tables/ \
+                         @CMAKE_SOURCE_DIR@/src/gromacs/taskassignment/ \
+                         @CMAKE_SOURCE_DIR@/src/gromacs/timing/ \
+                         @CMAKE_SOURCE_DIR@/src/gromacs/topology/ \
+                         @CMAKE_SOURCE_DIR@/src/gromacs/trajectory/ \
+                         @CMAKE_SOURCE_DIR@/src/gromacs/utility/ \
+                         @CMAKE_SOURCE_DIR@/src/gromacs/linearalgebra/ \
                          @CMAKE_SOURCE_DIR@/src/api \
+                         @CMAKE_SOURCE_DIR@/src/gromacs/commandline.h \
+                         @CMAKE_SOURCE_DIR@/src/gromacs/options.h \
+                         @CMAKE_SOURCE_DIR@/src/gromacs/selection.h \
+                         @CMAKE_SOURCE_DIR@/src/gromacs/onlinehelp-doc.h \
+                         @CMAKE_SOURCE_DIR@/src/gromacs/random.h \
+                         @CMAKE_SOURCE_DIR@/src/gromacs/utility.h \
                          @NB_KERNEL_DIRS_TO_IGNORE_IN_DOXYGEN@
 EXCLUDE_PATTERNS       = @CMAKE_SOURCE_DIR@/src/gromacs/simd/impl_x86* \
                          @CMAKE_SOURCE_DIR@/src/gromacs/simd/impl_intel* \
@@ -35,7 +67,7 @@ STRIP_FROM_INC_PATH    = @CMAKE_SOURCE_DIR@/src
 INCLUDE_PATH           = @CMAKE_SOURCE_DIR@/src
 HAVE_DOT               = @DOXYGEN_DOT_FOUND@
 DOT_PATH               = @DOXYGEN_DOT_PATH@
-#MSCGEN_PATH            = @DOXYGEN_MSCGEN_PATH@
+MSCGEN_PATH            = @DOXYGEN_MSCGEN_PATH@
 DOTFILE_DIRS           = @DEPGRAPH_DIR@
 @DOXYGEN_EXTRA_SETTINGS@
 

@@ -43,7 +43,6 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
 
-struct gmx_edsam;
 struct gmx_enerdata_t;
 struct gmx_enfrot;
 struct gmx_groups_t;
@@ -66,7 +65,6 @@ struct t_nrnb;
 
 namespace gmx
 {
-class Awh;
 class ForceWithVirial;
 class MDLogger;
 }
@@ -93,8 +91,6 @@ void do_force(FILE                                     *log,
               const t_commrec                          *cr,
               const gmx_multisim_t                     *ms,
               const t_inputrec                         *inputrec,
-              gmx::Awh                                 *awh,
-              gmx_enfrot                               *enforcedRotation,
               int64_t                                   step,
               t_nrnb                                   *nrnb,
               gmx_wallcycle                            *wcycle,
@@ -117,7 +113,6 @@ void do_force(FILE                                     *log,
               const gmx_vsite_t                        *vsite,
               rvec                                      mu_tot,
               double                                    t,
-              gmx_edsam                                *ed,
               int                                       flags,
               DdOpenBalanceRegionBeforeForceComputation ddOpenBalanceRegion,
               DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion);
@@ -161,9 +156,7 @@ void do_force_lowlevel(t_forcerec   *fr,
                        real         *lambda,
                        const t_graph *graph,
                        const t_blocka *excl,
-                       rvec         mu_tot[2],
-                       int          flags,
-                       float        *cycles_pme);
+                       int          flags);
 /* Call all the force routines */
 
 #endif

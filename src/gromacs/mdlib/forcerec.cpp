@@ -51,8 +51,6 @@
 #include "gromacs/compat/make_unique.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
-#include "gromacs/ewald/ewald.h"
-#include "gromacs/ewald/ewald-utils.h"
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nonbonded/nonbonded.h"
@@ -79,10 +77,8 @@
 #include "gromacs/mdlib/nbnxn_tuning.h"
 #include "gromacs/mdlib/nbnxn_util.h"
 #include "gromacs/mdlib/ns.h"
-#include "gromacs/mdlib/qmmm.h"
 #include "gromacs/mdlib/rf_util.h"
 #include "gromacs/mdlib/sim_util.h"
-#include "gromacs/mdlib/wall.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/fcdata.h"
 #include "gromacs/mdtypes/group.h"
@@ -1804,13 +1800,6 @@ static void initCoulombEwaldParameters(FILE *fp, const t_inputrec *ir,
         }
     }
 
-    ic->ewaldcoeff_q = calc_ewaldcoeff_q(ir->rcoulomb, ir->ewald_rtol);
-    if (fp)
-    {
-        fprintf(fp, "Using a Gaussian width (1/beta) of %g nm for Ewald\n",
-                1/ic->ewaldcoeff_q);
-    }
-
     if (ic->coulomb_modifier == eintmodPOTSHIFT)
     {
         GMX_RELEASE_ASSERT(ic->rcoulomb != 0, "Cutoff radius cannot be zero");
@@ -1819,38 +1808,6 @@ static void initCoulombEwaldParameters(FILE *fp, const t_inputrec *ir,
     else
     {
         ic->sh_ewald = 0;
-    }
-}
-
-/*! \brief Print Van der Waals Ewald citations and set ewald coefficients */
-static void initVdwEwaldParameters(FILE *fp, const t_inputrec *ir,
-                                   interaction_const_t *ic)
-{
-    if (!EVDW_PME(ir->vdwtype))
-    {
-        return;
-    }
-
-    if (fp)
-    {
-        fprintf(fp, "Will do PME sum in reciprocal space for LJ dispersion interactions.\n");
-        please_cite(fp, "Essmann95a");
-    }
-    ic->ewaldcoeff_lj = calc_ewaldcoeff_lj(ir->rvdw, ir->ewald_rtol_lj);
-    if (fp)
-    {
-        fprintf(fp, "Using a Gaussian width (1/beta) of %g nm for LJ Ewald\n",
-                1/ic->ewaldcoeff_lj);
-    }
-
-    if (ic->vdw_modifier == eintmodPOTSHIFT)
-    {
-        real crc2       = gmx::square(ic->ewaldcoeff_lj*ic->rvdw);
-        ic->sh_lj_ewald = (std::exp(-crc2)*(1 + crc2 + 0.5*crc2*crc2) - 1)/gmx::power6(ic->rvdw);
-    }
-    else
-    {
-        ic->sh_lj_ewald = 0;
     }
 }
 
@@ -2017,8 +1974,6 @@ init_interaction_const(FILE                       *fp,
     {
         ic->buckinghamBMax = calcBuckinghamBMax(fp, mtop);
     }
-
-    initVdwEwaldParameters(fp, ir, ic);
 
     clear_force_switch_constants(&ic->dispersion_shift);
     clear_force_switch_constants(&ic->repulsion_shift);
@@ -2239,7 +2194,7 @@ static void init_nb_verlet(const gmx::MDLogger     &mdlog,
 
     snew(nbv->nbat, 1);
     int mimimumNumEnergyGroupNonbonded = ir->opts.ngener;
-    if (ir->opts.ngener - ir->nwall == 1)
+    if (ir->opts.ngener == 1)
     {
         /* We have only one non-wall energy group, we do not need energy group
          * support in the non-bondeds kernels, since all non-bonded energy
@@ -2578,12 +2533,6 @@ void init_forcerec(FILE                             *fp,
 
     const interaction_const_t *ic = fr->ic;
 
-    /* TODO: Replace this Ewald table or move it into interaction_const_t */
-    if (ir->coulombtype == eelEWALD)
-    {
-        init_ewald_tab(&(fr->ewald_table), ir, fp);
-    }
-
     /* Electrostatics: Translate from interaction-setting-in-mdp-file to kernel interaction format */
     switch (ic->eeltype)
     {
@@ -2760,11 +2709,7 @@ void init_forcerec(FILE                             *fp,
         (EEL_FULL(ic->eeltype) || EVDW_PME(ic->vdwtype) ||
          fr->forceProviders->hasForceProvider() ||
          gmx_mtop_ftype_count(mtop, F_POSRES) > 0 ||
-         gmx_mtop_ftype_count(mtop, F_FBPOSRES) > 0 ||
-         ir->nwall > 0 ||
-         ir->bPull ||
-         ir->bRot ||
-         ir->bIMD);
+         gmx_mtop_ftype_count(mtop, F_FBPOSRES) > 0);
 
     if (fr->haveDirectVirialContributions)
     {
@@ -2857,7 +2802,7 @@ void init_forcerec(FILE                             *fp,
     needGroupSchemeTables = (ir->cutoff_scheme == ecutsGROUP &&
                              (fr->bcoultab || fr->bvdwtab));
 
-    negp_pp   = ir->opts.ngener - ir->nwall;
+    negp_pp   = ir->opts.ngener;
     negptable = 0;
     if (!needGroupSchemeTables)
     {
@@ -2969,13 +2914,6 @@ void init_forcerec(FILE                             *fp,
                                      GMX_MAKETABLES_14ONLY);
     }
 
-    /* Wall stuff */
-    fr->nwall = ir->nwall;
-    if (ir->nwall && ir->wall_type == ewtTABLE)
-    {
-        make_wall_tables(fp, ir, tabfn, &mtop->groups, fr);
-    }
-
     if (fcd && !tabbfnm.empty())
     {
         // Need to catch std::bad_alloc
@@ -2999,27 +2937,6 @@ void init_forcerec(FILE                             *fp,
         if (debug)
         {
             fprintf(debug, "No fcdata or table file name passed, can not read table, can not do bonded interactions\n");
-        }
-    }
-
-    // QM/MM initialization if requested
-    fr->bQMMM = ir->bQMMM;
-    if (fr->bQMMM)
-    {
-        // Initialize QM/MM if supported
-        if (GMX_QMMM)
-        {
-            GMX_LOG(mdlog.info).asParagraph().
-                appendText("Large parts of the QM/MM support is deprecated, and may be removed in a future "
-                           "version. Please get in touch with the developers if you find the support useful, "
-                           "as help is needed if the functionality is to continue to be available.");
-            fr->qr = mk_QMMMrec();
-            init_QMMMrec(cr, mtop, ir, fr);
-        }
-        else
-        {
-            gmx_incons("QM/MM was requested, but is only available when GROMACS "
-                       "is configured with QM/MM support");
         }
     }
 

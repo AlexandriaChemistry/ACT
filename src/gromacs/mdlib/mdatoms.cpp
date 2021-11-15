@@ -43,11 +43,9 @@
 #include <memory>
 
 #include "gromacs/compat/make_unique.h"
-#include "gromacs/ewald/pme.h"
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
-#include "gromacs/mdlib/qmmm.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/mtop_lookup.h"
@@ -58,45 +56,6 @@
 #include "gromacs/utility/smalloc.h"
 
 #define ALMOST_ZERO 1e-30
-
-static real getAtomRow(int atomnumber)
-{
-    if (atomnumber == 1 || atomnumber == 2)
-    {
-        return 1;
-    }
-    else if (atomnumber >= 3 && atomnumber <= 10)
-    {
-        return 2;
-    }
-    else if (atomnumber >= 11 && atomnumber <= 18)
-    {
-        return 3;
-    }
-    else if (atomnumber >= 19 && atomnumber <= 36)
-    {
-        return 4;
-    }
-    else if (atomnumber >= 37 && atomnumber <= 54)
-    {
-        return 5;
-    }
-    else if (atomnumber >= 55 && atomnumber <= 86)
-    {
-        return 6;
-    }
-    else if (atomnumber >= 87 && atomnumber <= 118)
-    {
-        return 7;
-    }
-    else
-    {
-        return 0;
-        //gmx_fatal(FARGS, "Atom number does not exist in periodic table %d.\n", atomnumber);
-    }
-}
-
-//t_mdatoms *init_mdatoms(FILE *fp, const gmx_mtop_t *mtop, gmx_bool bFreeEnergy)
 
 namespace gmx
 {
@@ -136,7 +95,6 @@ MDAtoms::~MDAtoms()
     sfree(mdatoms_->bPerturbed);
     sfree(mdatoms_->cU1);
     sfree(mdatoms_->cU2);
-    sfree(mdatoms_->bQM);
 }
 
 void MDAtoms::resize(int newSize)
@@ -152,15 +110,9 @@ void MDAtoms::reserve(int newCapacity)
 }
 
 std::unique_ptr<MDAtoms>
-makeMDAtoms(FILE *fp, const gmx_mtop_t &mtop, const t_inputrec &ir,
-            const bool rankHasPmeGpuTask)
+makeMDAtoms(FILE *fp, const gmx_mtop_t &mtop, const t_inputrec &ir)
 {
     auto       mdAtoms = compat::make_unique<MDAtoms>();
-    // GPU transfers may want to use a suitable pinning mode.
-    if (rankHasPmeGpuTask)
-    {
-        changePinningPolicy(&mdAtoms->chargeA_, pme_get_pinning_policy());
-    }
     t_mdatoms *md;
     snew(md, 1);
     mdAtoms->mdatoms_.reset(md);
@@ -356,11 +308,6 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
         {
             srenew(md->cU2, md->nalloc);
         }
-
-        if (ir->bQMMM)
-        {
-            srenew(md->bQM, md->nalloc);
-        }
     }
 
     int molb = 0;
@@ -538,19 +485,6 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
             if (md->cU2)
             {
                 md->cU2[i]        = groups.grpnr[egcUser2][ag];
-            }
-
-            if (ir->bQMMM)
-            {
-                if (groups.grpnr[egcQMMM] == nullptr ||
-                    groups.grpnr[egcQMMM][ag] < groups.grps[egcQMMM].nr-1)
-                {
-                    md->bQM[i]      = TRUE;
-                }
-                else
-                {
-                    md->bQM[i]      = FALSE;
-                }
             }
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
