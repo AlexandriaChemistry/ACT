@@ -149,6 +149,8 @@ enum class xmlEntryOpenMM {
     HARMONICANGLEFORCE,
     ANGLE_CLASS,
     ANGLE_VALUE,
+    AMOEBA_UB_FORCE,
+    UREY_BRADLEY_FORCE,
     CUSTOMBONDFORCE,
     ENERGY,
     GLOBALPARAMETER,
@@ -156,6 +158,8 @@ enum class xmlEntryOpenMM {
     PERBONDPARAMETER, 
     CUSTOMANGLEFORCE,
     PERANGLEPARAMETER,
+    RBTORSIONFORCE,
+    PERIODICTORSIONFORCE,
     CUSTOMTORSIONFORCE,
     PERTORSIONPARAMETER,
     PROPER,
@@ -205,6 +209,8 @@ std::map<const std::string, xmlEntryOpenMM> xmlyyyOpenMM =
     { "HarmonicAngleForce",        xmlEntryOpenMM::HARMONICANGLEFORCE },
     { "Angle",                     xmlEntryOpenMM::ANGLE_CLASS        },
     { "angle",                     xmlEntryOpenMM::ANGLE_VALUE        },
+    { "AmoebaUreyBradleyForce",    xmlEntryOpenMM::AMOEBA_UB_FORCE    },
+    { "UreyBradley",               xmlEntryOpenMM::UREY_BRADLEY_FORCE },
     { "CustomBondForce",           xmlEntryOpenMM::CUSTOMBONDFORCE    },
     { "energy",                    xmlEntryOpenMM::ENERGY             },
     { "GlobalParameter",           xmlEntryOpenMM::GLOBALPARAMETER    },
@@ -212,6 +218,8 @@ std::map<const std::string, xmlEntryOpenMM> xmlyyyOpenMM =
     { "PerBondParameter",          xmlEntryOpenMM::PERBONDPARAMETER   },   
     { "CustomAngleForce",          xmlEntryOpenMM::CUSTOMANGLEFORCE   },
     { "PerAngleParameter",         xmlEntryOpenMM::PERANGLEPARAMETER  },
+    { "RBTorsionForce",            xmlEntryOpenMM::RBTORSIONFORCE     },
+    { "PeriodicTorsionForce",      xmlEntryOpenMM::PERIODICTORSIONFORCE },
     { "CustomTorsionForce",        xmlEntryOpenMM::CUSTOMTORSIONFORCE },
     { "PerTorsionParameter",       xmlEntryOpenMM::PERTORSIONPARAMETER },
     { "Proper",                    xmlEntryOpenMM::PROPER             },
@@ -452,7 +460,7 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd)
             }
             auto grandchild1 = add_xml_child(child3, exml_names(xmlEntryOpenMM::PERBONDPARAMETER));
             add_xml_char(grandchild1, exml_names(xmlEntryOpenMM::NAME),exml_names(xmlEntryOpenMM::BONDORDER));
-            
+
             for (auto &params : fs.second.parametersConst())
             {
                 
@@ -476,6 +484,60 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd)
         }
 
         if (strcmp(interactionTypeToString(fs.first).c_str(), "ANGLES") == 0)
+        {
+            auto child4 = add_xml_child(parent, exml_names(xmlEntryOpenMM::HARMONICANGLEFORCE));
+
+            for (auto &params : fs.second.parametersConst())
+            {
+
+                auto grandchild2 = add_xml_child(child4, exml_names(xmlEntryOpenMM::ANGLE_CLASS));
+                std::string s = params.first.id().c_str();
+                std::string delimiter = "#";
+                std::string type_1 = s.substr(0, s.find(delimiter));
+                s.erase(0, s.find(delimiter) + delimiter.length());
+                std::string type_2 = s.substr(0, s.find(delimiter));
+                s.erase(0, s.find(delimiter) + delimiter.length());
+                std::string type_3 = s;
+                add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::TYPE1), type_1.c_str());
+                add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::TYPE2), type_2.c_str());
+                add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::TYPE3), type_3.c_str());
+                for (const auto &param : params.second)
+                {
+                    addSpecParameter(grandchild2, param.first, param.second, "angle"); 
+                    addSpecParameter(grandchild2, param.first, param.second, "kt"); 
+                    //add_xml_double(grandchild2, param.first.c_str(), param.second.value());
+                }
+            }    
+        }
+
+        if (strcmp(interactionTypeToString(fs.first).c_str(), "ANGLES") == 0)
+        {
+            auto child4 = add_xml_child(parent, exml_names(xmlEntryOpenMM::AMOEBA_UB_FORCE));
+
+            for (auto &params : fs.second.parametersConst())
+            {
+
+                auto grandchild2 = add_xml_child(child4, exml_names(xmlEntryOpenMM::UREY_BRADLEY_FORCE));
+                std::string s = params.first.id().c_str();
+                std::string delimiter = "#";
+                std::string type_1 = s.substr(0, s.find(delimiter));
+                s.erase(0, s.find(delimiter) + delimiter.length());
+                std::string type_2 = s.substr(0, s.find(delimiter));
+                s.erase(0, s.find(delimiter) + delimiter.length());
+                std::string type_3 = s;
+                add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::TYPE1), type_1.c_str());
+                add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::TYPE2), type_2.c_str());
+                add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::TYPE3), type_3.c_str());
+                for (const auto &param : params.second)
+                {
+                    addSpecParameter(grandchild2, param.first, param.second, "kub"); 
+                    addSpecParameter(grandchild2, param.first, param.second, "r13"); 
+                    //add_xml_double(grandchild2, param.first.c_str(), param.second.value());
+                }
+            }    
+        }
+
+        if (strcmp(interactionTypeToString(fs.first).c_str(), "LINEAR_ANGLES") == 0) 
         {
             auto child4 = add_xml_child(parent, exml_names(xmlEntryOpenMM::CUSTOMANGLEFORCE));
             
@@ -512,27 +574,13 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd)
                 {
                     add_xml_double(grandchild2, param.first.c_str(), param.second.value());
                 }
-            }    
+            }
         }
         
 
         if (strcmp(interactionTypeToString(fs.first).c_str(), "PROPER_DIHEDRALS") == 0)
         {
-            auto child6 = add_xml_child(parent, exml_names(xmlEntryOpenMM::CUSTOMTORSIONFORCE));
-            int i=0;
-            for (auto &params : fs.second.parametersConst())
-            {            
-                for (const auto &param : params.second)
-                {
-                    auto grandchild1 = add_xml_child(child6, exml_names(xmlEntryOpenMM::PERTORSIONPARAMETER));
-                    add_xml_char(grandchild1, exml_names(xmlEntryOpenMM::NAME), param.first.c_str());
-                } 
-                i++;
-                if (i == 1) 
-                    {
-                    break;
-                    }
-            }
+            auto child6 = add_xml_child(parent, exml_names(xmlEntryOpenMM::RBTORSIONFORCE));
 
             for (auto &params : fs.second.parametersConst())
             {
@@ -557,6 +605,76 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd)
                 }
             }    
         }
+
+        if (strcmp(interactionTypeToString(fs.first).c_str(), "IMPROPER_DIHEDRALS") == 0)
+        {
+            auto child6 = add_xml_child(parent, exml_names(xmlEntryOpenMM::PERIODICTORSIONFORCE));
+
+            for (auto &params : fs.second.parametersConst())
+            {
+               
+                auto grandchild2 = add_xml_child(child6, exml_names(xmlEntryOpenMM::IMPROPER));
+                std::string s = params.first.id().c_str();
+                std::string delimiter = "#";
+                std::string type_1 = s.substr(0, s.find(delimiter));
+                s.erase(0, s.find(delimiter) + delimiter.length());
+                std::string type_2 = s.substr(0, s.find(delimiter));
+                s.erase(0, s.find(delimiter) + delimiter.length());
+                std::string type_3 = s.substr(0, s.find(delimiter));
+                s.erase(0, s.find(delimiter) + delimiter.length());
+                std::string type_4 = s;
+                add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::TYPE1), type_1.c_str());
+                add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::TYPE2), type_2.c_str());
+                add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::TYPE3), type_3.c_str());
+                add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::TYPE4), type_4.c_str());
+                for (const auto &param : params.second)
+                {
+                    add_xml_double(grandchild2, param.first.c_str(), param.second.value());
+                }
+            }    
+        }
+
+        //if (strcmp(interactionTypeToString(fs.first).c_str(), "IMPROPER_DIHEDRALS") == 0)
+        //{
+        //    auto child6 = add_xml_child(parent, exml_names(xmlEntryOpenMM::CUSTOMTORSIONFORCE));
+        //    int i=0;
+        //    for (auto &params : fs.second.parametersConst())
+        //    {            
+        //        for (const auto &param : params.second)
+        //        {
+        //            auto grandchild1 = add_xml_child(child6, exml_names(xmlEntryOpenMM::PERTORSIONPARAMETER));
+        //            add_xml_char(grandchild1, exml_names(xmlEntryOpenMM::NAME), param.first.c_str());
+        //        } 
+        //        i++;
+        //        if (i == 1) 
+        //            {
+        //            break;
+        //            }
+        //    }
+
+        //    for (auto &params : fs.second.parametersConst())
+        //    {
+               
+        //        auto grandchild2 = add_xml_child(child6, exml_names(xmlEntryOpenMM::IMPROPER));
+        //        std::string s = params.first.id().c_str();
+        //        std::string delimiter = "#";
+        //        std::string type_1 = s.substr(0, s.find(delimiter));
+        //        s.erase(0, s.find(delimiter) + delimiter.length());
+        //        std::string type_2 = s.substr(0, s.find(delimiter));
+        //        s.erase(0, s.find(delimiter) + delimiter.length());
+        //        std::string type_3 = s.substr(0, s.find(delimiter));
+        //        s.erase(0, s.find(delimiter) + delimiter.length());
+        //        std::string type_4 = s;
+        //        add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::TYPE1), type_1.c_str());
+        //        add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::TYPE2), type_2.c_str());
+        //        add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::TYPE3), type_3.c_str());
+        //        add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::TYPE4), type_4.c_str());
+        //        for (const auto &param : params.second)
+        //        {
+        //            add_xml_double(grandchild2, param.first.c_str(), param.second.value());
+        //        }
+        //    }    
+        //}
         
         if (strcmp(interactionTypeToString(fs.first).c_str(), "VANDERWAALS") == 0)
         {
