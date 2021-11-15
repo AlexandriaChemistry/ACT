@@ -378,6 +378,90 @@ class Bayes : public OptParam
          * \return True if the energy decreased during the MCMC
          */
         bool MCMC(FILE *fplog, bool evaluate_testset, double *chi2);
+
+        /*!
+         * Assign a class (by index) to each parameter
+         * @param paramClassIndex   for each parameter, will have index of the class it belongs to
+         * @param pClass            class types
+         */
+        void assignParamClasses(std::vector<int>&           paramClassIndex,
+                                std::vector<std::string>&   pClass);
+
+        /*!
+         * Open parameter convergence surveillance files
+         * @param pClass            different classes of parameters
+         * @param fpc               vector to append pointers to parameter convergence files
+         * @param paramClassIndex   for each parameter, to which class (by index) it belongs
+         */
+        void openParamSurveillanceFiles(const std::vector<std::string>&  pClass,
+                                              std::vector<FILE*>&        fpc,
+                                              std::vector<int>&          paramClassIndex);
+
+        /*!
+         * Open a chi2 surveillance file
+         * @param bEvaluate_testset     whether the test set will be evaluated
+         * @return                      a pointer to the opened file
+         */
+        FILE* openChi2SurveillanceFile(const bool bEvaluate_testset);
+
+        /*!
+         * Close chi2 and parameter convergence files
+         * @param fpc   vector of pointers to parameter convergence files
+         * @param fpe   pointer to chi2 convergence file
+         */
+        void closeConvergenceFiles(std::vector<FILE*>& fpc,
+                                   FILE*               fpe);
+
+
+        /*!
+         * Print new minimum to log file and, if necessary, print params to debug file
+         * @param fplog                 pointer to log file
+         * @param bEvaluate_testset     true if test set is evaluated, false otherwise
+         * @param xiter                 fractional iteration. E.g, if we are halfway through iteration 3 it is 3.5
+         * @param currEval              current chi2 in training set
+         * @param currEval_testset      current chi2 in test set
+         */
+        void fprintNewMinimum(      FILE*   fplog,
+                              const bool    bEvaluate_testset,
+                              const double  xiter,
+                              const double  currEval,
+                              const double  currEval_testset);
+
+        /*!
+         * Print parameter values to their respective surveillance files
+         * @param fpc                   pointer to each parameter surveillance file
+         * @param paramClassIndex       class index of each parameter
+         * @param xiter                 fractional iteration (e.g. 3.5, 2.89, ...)
+         */
+        void fprintParameterStep(      std::vector<FILE*>&   fpc,
+                                 const std::vector<int>&     paramClassIndex,
+                                 const double                xiter);
+
+        /*!
+         * Write chi2 value to surveillance file
+         * @param bEvaluate_testset     true if test set is evaluated, false otherwise
+         * @param fpe                   pointer to chi2 surveillance file
+         * @param xiter                 fractional iteration (3.6, 3.89, ...)
+         * @param prevEval              chi2 fro training set
+         * @param prevEval_testset      chi2 for test set
+         */
+        void fprintChi2Step(const bool      bEvaluate_testset,
+                                  FILE*     fpe,
+                            const double    xiter,
+                            const double    prevEval,
+                            const double    prevEval_testset);
+
+        /*!
+         * Compute mean (pmean_) and standard deviation (psigma_) for each parameter
+         * @param nParam        number of parameters in the system
+         * @param sum           over <nsum> iterations, the sum of each parameter
+         * @param nsum          number of iterations to compute statistics over
+         * @param sum_of_sq     over <nsum> iterations, the sum of each parameter squared
+         */
+        void computeMeanSigma(const int     nParam,
+                              const parm_t& sum,
+                              const int     nsum,
+                              const parm_t& sum_of_sq);
         
         /*! \brief
          * Perform a sensitivity analysis by systematically changing
