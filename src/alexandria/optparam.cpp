@@ -428,27 +428,13 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
 
             // Fractional iteration taking into account the inner loop with <pp> over <nParam>
             double xiter = iter + (1.0*pp)/nParam;
-            if (accept)
+            if (accept)  // If the change is accepted
             {
                 if (currEval < minEval)  // If wa better chi2 was found
                 {
-                    if (fplog)  // If pointer to log file exists, write information about new minimum
-                    {
-                        if (bEvaluate_testset)
-                        {
-                            fprintf(fplog, "iter %10g. Found new minimum at %10g. Corresponding energy on the test set: %g\n",
-                                    xiter, currEval, currEval_testset);
-                        }
-                        else
-                        {
-                            fprintf(fplog, "iter %10g. Found new minimum at %10g\n",
-                                    xiter, currEval);
-                        }
-                        if (debug)
-                        {
-                            printParameters(debug);
-                        }
-                    }
+                    // If pointer to log file exists, write information about new minimum
+                    if (fplog) fprintNewMinimum(fplog, bEvaluate_testset, xiter, currEval, currEval_testset);
+
                     bestParam_ = param_;
                     minEval    = currEval;
                     saveState();
@@ -460,45 +446,18 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
                 }
                 acceptedMoves_[j] += 1;
             }
-            else
+            else  // If the change is not accepted
             {
-                param_[j] = storeParam;
+                param_[j] = storeParam;  // Set the old value of the parameter back
                 // poldata needs to change back as well!
                 toPoldata(changed);
             }
             changed[j] = false;  // Set changed[j] back to false for upcoming iterations
 
-            for(auto fp: fpc)  // Write iteration number to each parameter convergence surveillance file
-            {
-                fprintf(fp, "%8f", xiter);
-            }
-            for (size_t k = 0; k < param_.size(); k++)  // Write value of each parameter to its respective surveillance file
-            {
-                fprintf(fpc[paramClassIndex[k]], "  %10g", param_[k]);
-            }
-            for(auto fp: fpc)  // If verbose = True, flush the file to be able to add new data to surveillance plots
-            {
-                fprintf(fp, "\n");
-                if (verbose())
-                {
-                    fflush(fp);
-                }
-            }
-            if (nullptr != fpe)  // If the chi2 surveillance file exists, write progress
-            {
-                if (bEvaluate_testset)
-                {
-                    fprintf(fpe, "%8f  %10g  %10g\n", xiter, prevEval, prevEval_testset);
-                }
-                else
-                {
-                    fprintf(fpe, "%8f  %10g\n", xiter, prevEval);
-                }
-                if (verbose())
-                {
-                    fflush(fpe);
-                }
-            }
+            fprintParameterStep(fpc, paramClassIndex, xiter);
+            // If the chi2 surveillance file exists, write progress
+            if (nullptr != fpe) fprintChi2Step(bEvaluate_testset, fpe, xiter, prevEval, prevEval_testset);
+
             // For the second half of the optimization, collect data to find the mean and standard deviation of each parameter
             if (iter >= maxIter()/2)
             {
@@ -626,6 +585,73 @@ void Bayes::closeConvergenceFiles(std::vector<FILE*>& fpc,
     {
         xvgrclose(fpe);
     }
+}
+
+void Bayes::fprintNewMinimum(      FILE*   fplog,
+                             const bool    bEvaluate_testset,
+                             const double  xiter,
+                             const double  currEval,
+                             const double  currEval_testset) {
+
+    if (bEvaluate_testset)
+    {
+        fprintf(fplog, "iter %10g. Found new minimum at %10g. Corresponding energy on the test set: %g\n",
+                xiter, currEval, currEval_testset);
+    }
+    else
+    {
+        fprintf(fplog, "iter %10g. Found new minimum at %10g\n",
+                xiter, currEval);
+    }
+    if (debug)
+    {
+        printParameters(debug);
+    }
+
+}
+
+void Bayes::fprintParameterStep(      std::vector<FILE*>&   fpc,
+                                const std::vector<int>&     paramClassIndex,
+                                const double                xiter) {
+
+    for(auto fp: fpc)  // Write iteration number to each parameter convergence surveillance file
+    {
+        fprintf(fp, "%8f", xiter);
+    }
+    for (size_t k = 0; k < param_.size(); k++)  // Write value of each parameter to its respective surveillance file
+    {
+        fprintf(fpc[paramClassIndex[k]], "  %10g", param_[k]);
+    }
+    for(auto fp: fpc)  // If verbose = True, flush the file to be able to add new data to surveillance plots
+    {
+        fprintf(fp, "\n");
+        if (verbose())
+        {
+            fflush(fp);
+        }
+    }
+
+}
+
+void Bayes::fprintChi2Step(const bool   bEvaluate_testset,
+                                 FILE*  fpe,
+                           const double xiter,
+                           const double prevEval,
+                           const double prevEval_testset) {
+
+    if (bEvaluate_testset)
+    {
+        fprintf(fpe, "%8f  %10g  %10g\n", xiter, prevEval, prevEval_testset);
+    }
+    else
+    {
+        fprintf(fpe, "%8f  %10g\n", xiter, prevEval);
+    }
+    if (verbose())
+    {
+        fflush(fpe);
+    }
+
 }
 
 void Bayes::printMonteCarloStatistics(FILE *fp)

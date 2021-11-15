@@ -412,6 +412,45 @@ class Bayes : public OptParam
         void closeConvergenceFiles(std::vector<FILE*>& fpc,
                                    FILE*               fpe);
 
+
+        /*!
+         * Print new minimum to log file and, if necessary, print params to debug file
+         * @param fplog                 pointer to log file
+         * @param bEvaluate_testset     true if test set is evaluated, false otherwise
+         * @param xiter                 fractional iteration. E.g, if we are halfway through iteration 3 it is 3.5
+         * @param currEval              current chi2 in training set
+         * @param currEval_testset      current chi2 in test set
+         */
+        void fprintNewMinimum(      FILE*   fplog,
+                              const bool    bEvaluate_testset,
+                              const double  xiter,
+                              const double  currEval,
+                              const double  currEval_testset);
+
+        /*!
+         * Print parameter values to their respective surveillance files
+         * @param fpc                   pointer to each parameter surveillance file
+         * @param paramClassIndex       class index of each parameter
+         * @param xiter                 fractional iteration (e.g. 3.5, 2.89, ...)
+         */
+        void fprintParameterStep(      std::vector<FILE*>&   fpc,
+                                 const std::vector<int>&     paramClassIndex,
+                                 const double                xiter);
+
+        /*!
+         * Write chi2 value to surveillance file
+         * @param bEvaluate_testset     true if test set is evaluated, false otherwise
+         * @param fpe                   pointer to chi2 surveillance file
+         * @param xiter                 fractional iteration (3.6, 3.89, ...)
+         * @param prevEval              chi2 fro training set
+         * @param prevEval_testset      chi2 for test set
+         */
+        void fprintChi2Step(const bool      bEvaluate_testset,
+                                  FILE*     fpe,
+                            const double    xiter,
+                            const double    prevEval,
+                            const double    prevEval_testset);
+
         /*!
          * Compute mean (pmean_) and standard deviation (psigma_) for each parameter
          * @param nParam        number of parameters in the system
