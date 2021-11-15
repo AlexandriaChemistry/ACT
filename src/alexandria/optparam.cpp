@@ -305,15 +305,14 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
     //! Pointer to chi2 surveillance file
     FILE                            *fpe             = nullptr;
     
-    if (xvgConv().empty() || xvgEpot().empty())
-    {
+    if (xvgConv().empty() || xvgEpot().empty()) {
         gmx_fatal(FARGS, "You forgot to call setOutputFiles. Back to the drawing board.");
     }
-    if (param_.empty())
-    {
+    if (param_.empty()) {
         fprintf(stderr, "No parameters to optimize.\n");
         return 0;
     }
+
     // Allocate memory for parameter class index.
     // Set to -1 to indicate not set, and to crash the program
     // in case of bugs.
@@ -325,14 +324,7 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
 
     // Compute temperature weights if relevant, otherwise the numbers are all 1.0
     weightedTemperature_.resize(paramNames_.size(), 1.0);
-    if (temperatureWeighting())
-    {
-        for(size_t j = 0; j < paramNames_.size(); j++)
-        {
-	    GMX_RELEASE_ASSERT(ntrain_[j] > 0, "ntrain should be > 0 for all parameters");
-	    weightedTemperature_[j] = std::sqrt(1.0/ntrain_[j]);
-        }
-    }
+    if (temperatureWeighting()) computeWeightedTemperature();
     
     fpe = openChi2SurveillanceFile(bEvaluate_testset);
 
@@ -353,8 +345,7 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
     minEval  = prevEval;
     *chi2    = prevEval;
 
-    if (bEvaluate_testset)
-    {
+    if (bEvaluate_testset) {
         // test set
         prevEval_testset = calcDeviation(true, CalcDev::Parallel, iMolSelect::Test);
     }
@@ -366,15 +357,16 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
     std::uniform_real_distribution<> real_uniform(0, 1);
     
     print_memory_usage(debug);
-    // Optimization loop
+
     double beta0 = 1/(BOLTZ*temperature());
-    
+
+    // Optimization loop
     for (int iter = 0; iter < maxIter(); iter++)
     { 
         for (int pp = 0; pp < nParam; pp++)
         {      
             // Pick a random parameter to change
-            int paramIndex = int_uniform(gen);
+            const int paramIndex = int_uniform(gen);
 
             // Do the step!
             stepMCMC(paramIndex, gen, real_uniform, changed, &prevEval, &prevEval_testset,
@@ -394,18 +386,28 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
             }
         }
     }
+
     // OPTIMIZATION IS COMPLETE!
+
     computeMeanSigma(nParam, sum, nsum, sum_of_sq);
 
     closeConvergenceFiles(fpc, fpe);
 
     bool bMinimum = false;  // Assume no better minimum was found
-    if (minEval < *chi2)  // If better minimum was found, update the value in <*chi2> and return true
+    if (minEval < (*chi2))  // If better minimum was found, update the value in <*chi2> and return true
     {
-        *chi2 = minEval;
+        (*chi2) = minEval;
         bMinimum = true;
     }
     return bMinimum;
+}
+
+void Bayes::computeWeightedTemperature() {
+    for(size_t j = 0; j < paramNames_.size(); j++) {
+        GMX_RELEASE_ASSERT(ntrain_[j] > 0, "ntrain should be > 0 for all parameters");
+        // TODO: Maybe a fast inverse square root here?
+        weightedTemperature_[j] = std::sqrt(1.0/ntrain_[j]);
+    }
 }
 
 void Bayes::stepMCMC(const int                                  paramIndex,
@@ -441,8 +443,8 @@ void Bayes::stepMCMC(const int                                  paramIndex,
     toPoldata(changed);
 
     // Evaluate the energy on training set
-    const double currEval        = calcDeviation(false, CalcDev::Parallel, iMolSelect::Train);
-    const double deltaEval       = currEval - (*prevEval);
+    const double currEval = calcDeviation(false, CalcDev::Parallel, iMolSelect::Train);
+    const double deltaEval = currEval - (*prevEval);
 
     // Evaluate the energy on the test set only on whole steps!
     double currEval_testset;

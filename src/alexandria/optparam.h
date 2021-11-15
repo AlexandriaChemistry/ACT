@@ -380,6 +380,11 @@ class Bayes : public OptParam
         bool MCMC(FILE *fplog, bool evaluate_testset, double *chi2);
 
         /*!
+         * Compute weighted temperature for each parameter
+         */
+        void computeWeightedTemperature();
+
+        /*!
         * Take a step of MCMC by attempting to alter a parameter
         * @param paramIndex        index of the parameter to alter
         * @param gen               pointer to random number generator
