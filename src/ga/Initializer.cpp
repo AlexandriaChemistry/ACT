@@ -12,13 +12,4 @@ namespace ga {
         }
     }
 
-    void ACTRandomInitializer::initialize(      vector&     individual,
-                                          const int         length) {
-
-        for (int i = 0; i < length; i++) {
-            individual[i] = (ub[i] - lb[i]) * dis(gen) + lb[i];
-        }
-
-    }
-
 }
