@@ -378,6 +378,51 @@ class Bayes : public OptParam
          * \return True if the energy decreased during the MCMC
          */
         bool MCMC(FILE *fplog, bool evaluate_testset, double *chi2);
+
+        /*!
+         * Assign a class (by index) to each parameter
+         * @param paramClassIndex   for each parameter, will have index of the class it belongs to
+         * @param pClass            class types
+         */
+        void assignParamClasses(std::vector<int>&           paramClassIndex,
+                                std::vector<std::string>&   pClass);
+
+        /*!
+         * Open parameter convergence surveillance files
+         * @param pClass            different classes of parameters
+         * @param fpc               vector to append pointers to parameter convergence files
+         * @param paramClassIndex   for each parameter, to which class (by index) it belongs
+         */
+        void openParamSurveillanceFiles(const std::vector<std::string>&  pClass,
+                                              std::vector<FILE*>&        fpc,
+                                              std::vector<int>&          paramClassIndex);
+
+        /*!
+         * Open a chi2 surveillance file
+         * @param bEvaluate_testset     whether the test set will be evaluated
+         * @return                      a pointer to the opened file
+         */
+        FILE* openChi2SurveillanceFile(const bool bEvaluate_testset);
+
+        /*!
+         * Close chi2 and parameter convergence files
+         * @param fpc   vector of pointers to parameter convergence files
+         * @param fpe   pointer to chi2 convergence file
+         */
+        void closeConvergenceFiles(std::vector<FILE*>& fpc,
+                                   FILE*               fpe);
+
+        /*!
+         * Compute mean (pmean_) and standard deviation (psigma_) for each parameter
+         * @param nParam        number of parameters in the system
+         * @param sum           over <nsum> iterations, the sum of each parameter
+         * @param nsum          number of iterations to compute statistics over
+         * @param sum_of_sq     over <nsum> iterations, the sum of each parameter squared
+         */
+        void computeMeanSigma(const int     nParam,
+                              const parm_t& sum,
+                              const int     nsum,
+                              const parm_t& sum_of_sq);
         
         /*! \brief
          * Perform a sensitivity analysis by systematically changing

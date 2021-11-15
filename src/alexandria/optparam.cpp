@@ -293,6 +293,7 @@ void Bayes::SensitivityAnalysis(FILE *fplog, iMolSelect ims)
 
 bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
 {
+    //! Temporally storage for a parameter value
     double                           storeParam;
     int                              nsum             = 0;
     int                              nParam           = 0; 
@@ -325,48 +326,10 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
     // in case of bugs.
     paramClassIndex.resize(paramNames_.size(), -1);
     std::vector<std::string> pClass = paramClass();
-    for(size_t i = 0; i < pClass.size(); i++)
-    {
-        for (size_t j = 0; j < paramNames_.size(); j++)
-        {
-            if (paramNames_[j].find(pClass[i]) != std::string::npos)
-            {
-                paramClassIndex[j] = i;
-            }
-        }
-    } 
-    // Now check for "unclassified parameters"
-    bool restClass = false;
-    for(size_t i = 0; i < paramClassIndex.size(); i++)
-    {
-        if (paramClassIndex[i] == -1)
-        {
-            if (!restClass)
-            {
-                pClass.push_back("Other");
-                restClass = true;
-            }
-            paramClassIndex[i] = pClass.size()-1;
-        }
-    }
-    for(size_t i = 0; i < pClass.size(); i++)
-    {
-        std::string fileName = pClass[i] + "-" + xvgConv();
-        fpc.push_back(xvgropen(fileName.c_str(), 
-                               "Parameter convergence",
-                               "iteration", 
-                               "", 
-                               oenv()));
-        std::vector<const char*> paramNames;
-        for (size_t j = 0; j < paramNames_.size(); j++)
-        {
-            if (paramClassIndex[j] == static_cast<int>(i))
-            {
-                paramNames.push_back(paramNames_[j].c_str());
-            }
-        }
-        xvgr_legend(fpc[i], paramNames.size(), paramNames.data(), oenv());   
-    }
+    assignParamClasses(paramClassIndex, pClass);
+
+    openParamSurveillanceFiles(pClass, fpc, paramClassIndex);
+
     // Compute temperature weights if relevant, otherwise the numbers are all 1.0
     weightedTemperature_.resize(paramNames_.size(), 1.0);
     if (temperatureWeighting())
@@ -378,19 +341,9 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
         }
     }
     
-    // Now parameter output file.
-    fpe = xvgropen(xvgEpot().c_str(), 
-                   "Chi squared", 
-                   "Iteration",
-                   "Unknown units", 
-                   oenv());
-    if (bEvaluate_testset)
-    {
-        std::vector<std::string> legend;
-        legend.push_back(iMolSelectName(iMolSelect::Train));
-        legend.push_back(iMolSelectName(iMolSelect::Test));
-        xvgrLegend(fpe, legend, oenv());
-    }
+    fpe = openChi2SurveillanceFile(bEvaluate_testset);
+
+    // Initialize data structures
     nParam = param_.size();
     sum.resize(nParam, 0);
     sum_of_sq.resize(nParam, 0);
@@ -546,7 +499,7 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
                     fflush(fpe);
                 }
             }
-            // For the second half of the optimization, collect data to find the mean and "standard deviation" of each parameter
+            // For the second half of the optimization, collect data to find the mean and standard deviation of each parameter
             if (iter >= maxIter()/2)
             {
                 for (auto k = 0; k < nParam; k++)
@@ -559,7 +512,97 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
         }
     }
     // OPTIMIZATION IS COMPLETE!
-    if (nsum > 0)  // Compute mean and "standard deviation"
+    computeMeanSigma(nParam, sum, nsum, sum_of_sq);
+
+    closeConvergenceFiles(fpc, fpe);
+
+    bool bMinimum = false;  // Assume no better minimum was found
+    if (minEval < *chi2)  // If better minimum was found, update the value in <*chi2> and return true
+    {
+        *chi2 = minEval;
+        bMinimum = true;
+    }
+    return bMinimum;
+}
+
+void Bayes::assignParamClasses(std::vector<int>&         paramClassIndex,
+                               std::vector<std::string>& pClass) {
+
+    for(size_t i = 0; i < pClass.size(); i++)
+    {
+        for (size_t j = 0; j < paramNames_.size(); j++)
+        {
+            if (paramNames_[j].find(pClass[i]) != std::string::npos)
+            {
+                paramClassIndex[j] = i;
+            }
+        }
+    }
+
+    // Now check for params which were not assigned a class and give them class "Other"
+    bool restClass = false;
+    for(size_t i = 0; i < paramClassIndex.size(); i++)
+    {
+        if (paramClassIndex[i] == -1)
+        {
+            if (!restClass)  // If <i> is the first parameter without a class
+            {
+                // Append "Other" to the list of classes
+                pClass.push_back("Other");
+                restClass = true;
+            }
+            // Give class "Other" to parameter <i>
+            paramClassIndex[i] = pClass.size()-1;
+        }
+    }
+
+}
+
+void Bayes::openParamSurveillanceFiles(const std::vector<std::string>&  pClass,
+                                             std::vector<FILE*>&        fpc,
+                                             std::vector<int>&          paramClassIndex) {
+    for(size_t i = 0; i < pClass.size(); i++)
+    {
+        std::string fileName = pClass[i] + "-" + xvgConv();
+        fpc.push_back(xvgropen(fileName.c_str(),
+                               "Parameter convergence",
+                               "iteration",
+                               "",
+                               oenv()));
+        std::vector<const char*> paramNames;
+        for (size_t j = 0; j < paramNames_.size(); j++)
+        {
+            if (paramClassIndex[j] == static_cast<int>(i))
+            {
+                paramNames.push_back(paramNames_[j].c_str());
+            }
+        }
+        xvgr_legend(fpc[i], paramNames.size(), paramNames.data(), oenv());
+    }
+}
+
+FILE* Bayes::openChi2SurveillanceFile(const bool bEvaluate_testset) {
+    FILE* fpe = xvgropen(xvgEpot().c_str(),
+                         "Chi squared",
+                         "Iteration",
+                         "Unknown units",
+                         oenv());
+    if (bEvaluate_testset)
+    {
+        std::vector<std::string> legend;
+        legend.push_back(iMolSelectName(iMolSelect::Train));
+        legend.push_back(iMolSelectName(iMolSelect::Test));
+        xvgrLegend(fpe, legend, oenv());
+    }
+    return fpe;
+}
+
+void Bayes::computeMeanSigma(const int     nParam,
+                             const parm_t& sum,
+                             const int     nsum,
+                             const parm_t& sum_of_sq) {
+
+    if (nsum > 0)  // Compute mean and standard deviation
     {
         double ps2 = 0.0;
         for (auto k = 0; k < nParam; k++)
@@ -570,6 +613,11 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
             psigma_[k]    = sqrt(ps2);
         }
     }
+
+}
+
+void Bayes::closeConvergenceFiles(std::vector<FILE*>& fpc,
+                                  FILE*               fpe) {
     for(auto fp: fpc)  // Close all parameter convergence surveillance files
     {
         xvgrclose(fp);
@@ -578,13 +626,6 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
     {
         xvgrclose(fpe);
     }
-    bool bMinimum = false;  // Assume no better minimum was found
-    if (minEval < *chi2)  // If better minimum was found, update the value in <*chi2> and return true
-    {
-        *chi2 = minEval;
-        bMinimum = true;
-    }
-    return bMinimum;
 }
 
 void Bayes::printMonteCarloStatistics(FILE *fp)
