@@ -293,18 +293,11 @@ void Bayes::SensitivityAnalysis(FILE *fplog, iMolSelect ims)
 
 bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
 {
-    //! Temporally storage for a parameter value
-    double                           storeParam;
     int                              nsum             = 0;
-    int                              nParam           = 0; 
-    double                           currEval         = 0;
+    int                              nParam           = 0;
     double                           minEval          = 0;
     double                           prevEval         = 0;
-    double                           deltaEval        = 0;
-    double                           currEval_testset = 0;
     double                           prevEval_testset = 0;
-    double                           randProbability  = 0;
-    double                           mcProbability    = 0; 
     parm_t                           sum, sum_of_sq;
     //! Pointers to parameter convergence surveillance files
     std::vector<FILE *>              fpc;
@@ -373,89 +366,23 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
     std::uniform_real_distribution<> real_uniform(0, 1);
     
     print_memory_usage(debug);
-    // Optmization loop
-    double beta0            = 1/(BOLTZ*temperature());
+    // Optimization loop
+    double beta0 = 1/(BOLTZ*temperature());
     
     for (int iter = 0; iter < maxIter(); iter++)
     { 
         for (int pp = 0; pp < nParam; pp++)
         {      
             // Pick a random parameter to change
-            int j              = int_uniform(gen);
-            storeParam         = param_[j];
-        
-            // Change the picked parameter
-            double randNumber = real_uniform(gen);
-            while (randNumber != 0.0) randNumber = real_uniform(gen);
-            changeParam(j, randNumber);
+            int paramIndex = int_uniform(gen);
 
-            attemptedMoves_[j] += 1;
-            changed[j]          = true;
-        
-            // Update FF parameter data structure with 
-            // the new value of parameter j
-            toPoldata(changed);
+            // Do the step!
+            stepMCMC(paramIndex, gen, real_uniform, changed, &prevEval, &prevEval_testset,
+                     bEvaluate_testset, pp, iter, &beta0, nParam, &minEval, fplog, fpc, fpe,
+                     paramClassIndex);
 
-            // Evaluate the energy on training set
-            currEval        = calcDeviation(false, CalcDev::Parallel, iMolSelect::Train);
-            deltaEval       = currEval-prevEval;
-
-            // Evaluate the energy on the test set only on whole steps!
-            if (bEvaluate_testset && pp == 0) // TODO: when calling stepMCMC, make sure to pass that as bEvaluateTest
-            {
-                currEval_testset = calcDeviation(false, CalcDev::Parallel, iMolSelect::Test);
-            }
-        
-            // Accept any downhill move       
-            bool accept = (deltaEval < 0);
-        
-            // For an uphill move apply the Metropolis Criteria
-            // to decide whether to accept or reject the new parameter
-            if (!accept)
-            {
-                // Only anneal if the simulation reached a certain number of steps
-                if (anneal(iter))
-                {
-                    beta0 = computeBeta(iter);
-                }
-                randProbability = real_uniform(gen);
-                mcProbability   = exp(-(beta0/weightedTemperature_[j])*deltaEval);
-                accept          = (mcProbability > randProbability);
-            }
-
-            // Fractional iteration taking into account the inner loop with <pp> over <nParam>
-            double xiter = iter + (1.0*pp)/nParam;
-            if (accept)  // If the change is accepted
-            {
-                if (currEval < minEval)  // If wa better chi2 was found
-                {
-                    // If pointer to log file exists, write information about new minimum
-                    if (fplog) fprintNewMinimum(fplog, bEvaluate_testset, xiter, currEval, currEval_testset);
-
-                    bestParam_ = param_;
-                    minEval    = currEval;
-                    saveState();
-                }
-                prevEval = currEval;
-                if (bEvaluate_testset)
-                {
-                    prevEval_testset = currEval_testset;
-                }
-                acceptedMoves_[j] += 1;
-            }
-            else  // If the change is not accepted
-            {
-                param_[j] = storeParam;  // Set the old value of the parameter back
-                // poldata needs to change back as well!
-                toPoldata(changed);
-            }
-            changed[j] = false;  // Set changed[j] back to false for upcoming iterations
-
-            fprintParameterStep(fpc, paramClassIndex, xiter);
-            // If the chi2 surveillance file exists, write progress
-            if (nullptr != fpe) fprintChi2Step(bEvaluate_testset, fpe, xiter, prevEval, prevEval_testset);
-
-            // For the second half of the optimization, collect data to find the mean and standard deviation of each parameter
+            // For the second half of the optimization, collect data to find the mean and standard deviation of each
+            // parameter
             if (iter >= maxIter()/2)
             {
                 for (auto k = 0; k < nParam; k++)
@@ -481,28 +408,30 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
     return bMinimum;
 }
 
-/*!
- * Take a step of MCMC by attempting to alter a parameter
- * @param paramIndex        index of the parameter to alter
- * @param randValue         a random value in range [0, 1]
- * @param changed           a reference to a vector which has true for parameters that change and false otherwise
- * @param prevEval          pointer to a double storage with the previous chi2 for training set
- * @param bEvaluate_testset true if evaluation should be done on test set, false otherwise
- * @return                  true if the procedure was successful, false if <changeParam> did not alter the value of the
- *                          parameter
- */
-bool Bayes::stepMCMC(const int paramIndex,
-                     const double randValue,
-                     std::vector<bool>& changed,
-                     double* prevEval,
-                     const bool bEvaluate_testset,
-                     const int pp) {
+void Bayes::stepMCMC(const int                                  paramIndex,
+                           std::mt19937&                        gen,
+                           std::uniform_real_distribution<>&    real_uniform,
+                           std::vector<bool>&                   changed,
+                           double*                              prevEval,
+                           double*                              prevEval_testset,
+                     const bool                                 bEvaluate_testset,
+                     const int                                  pp,
+                     const int                                  iter,
+                           double*                              beta0,
+                     const int                                  nParam,
+                           double*                              minEval,
+                           FILE*                                fplog,
+                           std::vector<FILE*>&                  fpc,
+                           FILE*                                fpe,
+                           std::vector<int>&                    paramClassIndex) {
 
     // Store the original value of the parameter
     const double storeParam = param_[paramIndex];
 
     // Change the parameter
-    changeParam(paramIndex, randValue);
+    double rndNumber = real_uniform(gen);
+    while (rndNumber == 0.5) rndNumber = real_uniform(gen);
+    changeParam(paramIndex, rndNumber);
 
     attemptedMoves_[j] += 1;
     changed[j]          = true;
@@ -517,11 +446,46 @@ bool Bayes::stepMCMC(const int paramIndex,
 
     // Evaluate the energy on the test set only on whole steps!
     double currEval_testset;
-    if (bEvaluate_testset) {
+    if (bEvaluate_testset && pp == 0) {
         currEval_testset = calcDeviation(false, CalcDev::Parallel, iMolSelect::Test);
     }
 
-    // TODO: from line 409 onwards
+    // Accept any downhill move
+    bool accept = (deltaEval < 0);
+
+    // For an uphill move apply the Metropolis Criteria
+    // to decide whether to accept or reject the new parameter
+    if (!accept) {
+        // Only anneal if the simulation reached a certain number of steps
+        if (anneal(iter)) (*beta0) = computeBeta(iter);
+        const double randProbability = real_uniform(gen);
+        const double mcProbability   = exp(-((*beta0)/weightedTemperature_[j])*deltaEval);
+        accept = (mcProbability > randProbability);
+    }
+
+    // Fractional iteration taking into account the inner loop with <pp> over <nParam>
+    const double xiter = iter + (1.0*pp)/nParam;
+    if (accept) {  // If the parameter change is accepted
+        if (currEval < (*minEval)) {
+            // If pointer to log file exists, write information about new minimum
+            if (fplog) fprintNewMinimum(fplog, bEvaluate_testset, xiter, currEval, currEval_testset);
+            bestParam_ = param_;
+            (*minEval) = currEval;
+            saveState();
+        }
+        (*prevEval) = currEval;
+        if (bEvaluate_testset) (*prevEval_testset) = currEval_testset;
+        acceptedMoves_[j] += 1;
+    } else {  // If the parameter change is not accepted
+        param_[j] = storeParam;  // Set the old value of the parameter back
+        // poldata needs to change back as well!
+        toPoldata(changed);
+    }
+    changed[j] = false;  // Set changed[j] back to false for upcoming iterations
+
+    fprintParameterStep(fpc, paramClassIndex, xiter);
+    // If the chi2 surveillance file exists, write progress
+    if (fpe != nullptr) fprintChi2Step(bEvaluate_testset, fpe, xiter, prevEval, prevEval_testset);
 
 }
 

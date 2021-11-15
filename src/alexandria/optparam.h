@@ -380,6 +380,42 @@ class Bayes : public OptParam
         bool MCMC(FILE *fplog, bool evaluate_testset, double *chi2);
 
         /*!
+        * Take a step of MCMC by attempting to alter a parameter
+        * @param paramIndex        index of the parameter to alter
+        * @param gen               pointer to random number generator
+        * @param real_uniform      pointer to random number distribution
+        * @param changed           a reference to a vector which has true for parameters that change and false otherwise
+        * @param prevEval          pointer to a double storage with the previous chi2 for training set
+        * @param prevEval_testset  a pointer to a double storage with the previous chi2 for test set
+        * @param bEvaluate_testset true if evaluation should be done on test set, false otherwise
+        * @param pp                index of inner loop over number of parameters
+        * @param iter              current iteration number
+        * @param beta0             pointer to beta for annealing
+        * @param nParam            number of parameters in the model
+        * @param minEval           pointer to the minimum chi2 found so far for the training set
+        * @param fplog             pointer to log file. May be nullptr
+        * @param fpc               pointers to parameter surveillance files
+        * @param fpe               pointer to chi2 surveillance file
+        * @param paramClassIndex   class (by index) of each parameter in the model
+        */
+        void stepMCMC(const int                                 paramIndex,
+                            std::mt19937&                       gen,
+                            std::uniform_real_distribution<>&   real_uniform,
+                            std::vector<bool>&                  changed,
+                            double*                             prevEval,
+                            double*                             prevEval_testset,
+                      const bool                                bEvaluate_testset,
+                      const int                                 pp,
+                      const int                                 iter,
+                            double*                             beta0,
+                      const int                                 nParam,
+                            double*                             minEval,
+                            FILE*                               fplog,
+                            std::vector<FILE*>&                 fpc,
+                            FILE*                               fpe,
+                            std::vector<int>&                   paramClassIndex);
+
+        /*!
          * Assign a class (by index) to each parameter
          * @param paramClassIndex   for each parameter, will have index of the class it belongs to
          * @param pClass            class types
