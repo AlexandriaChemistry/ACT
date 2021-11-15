@@ -13,9 +13,9 @@ namespace ga {
 
     void SinglePointCrossover::offspring(const vector &parent1,
                                          const vector &parent2,
-                                         vector &child1,
-                                         vector &child2,
-                                         const int length) {
+                                               vector &child1,
+                                               vector &child2,
+                                         const int     length) {
 
         const int index = randIndex();
 
@@ -34,9 +34,9 @@ namespace ga {
 
     void DoublePointCrossover::offspring(const vector &parent1,
                                          const vector &parent2,
-                                         vector &child1,
-                                         vector &child2,
-                                         const int length) {
+                                               vector &child1,
+                                               vector &child2,
+                                         const int     length) {
 
         const int tmp1 = randIndex();
         int tmp2 = randIndex();
@@ -60,6 +60,29 @@ namespace ga {
             child1[i] = parent1[i];
             child2[i] = parent2[i];
         }
+
+    }
+
+
+    void NPointCrossover::offspring(const vector &parent1,
+                                    const vector &parent2,
+                                          vector &child1,
+                                          vector &child2,
+                                    const int     length) {
+        crossoverIndices = vector(numberOfCrossovers);
+        int toggle = 1;
+
+        while (toggle == 1) {
+          toggle = 0;
+          for (int checkIndex = 0; checkIndex < numberOfCrossovers; checkIndex++)
+            for (int compIndex = 0; compIndex < numberOfCrossovers; compIndex++)
+              if (crossoverIndices[checkIndex] == crossoverIndices[compIndex]) {
+                crossoverIndices[checkIndex] = randIndex();
+                toggle = 1;
+              }
+        }
+
+        // To do: Actually do the crossover.
 
     }
 

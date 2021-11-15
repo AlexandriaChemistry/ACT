@@ -100,26 +100,25 @@ namespace ga {
         }
     }
 
-int QuickSorter::partition(matrix&       pop,
-                           vector&       fitness,
-                           const int     low,
-                           const int     high) {
-    double pivot = fitness[high];
-    int candidate = low - 1;
-    double temp;
+    int QuickSorter::partition(matrix&       pop,
+                               vector&       fitness,
+                               const int     low,
+                               const int     high) {
+        double pivot = fitness[high];
+        int candidate = low - 1;
+        double temp;
 
-    for (int check = low; check <= high; check++) {
-        if (fitness[check] <= pivot) {
-            candidate = candidate + 1;
-            tmpFitness = pop[candidate];
-            temp = fitness[candidate];
-            pop[candidate] = pop[check];
-            fitness[candidate] = fitness[check];
-            pop[check] = tmpFitness;
-            fitness[check] = temp;
+        for (int check = low; check <= high; check++) {
+            if (fitness[check] <= pivot) {
+                candidate = candidate + 1;
+                tmpFitness = pop[candidate];
+                temp = fitness[candidate];
+                pop[candidate] = pop[check];
+                fitness[candidate] = fitness[check];
+                pop[check] = tmpFitness;
+                fitness[check] = temp;
+            }
         }
-
         return candidate;
     }
-
 }

@@ -37,9 +37,9 @@ namespace ga {
          */
         virtual void offspring(const vector &parent1,
                                const vector &parent2,
-                               vector &child1,
-                               vector &child2,
-                               const int length) {};
+                                     vector &child1,
+                                     vector &child2,
+                               const int     length) {};
 
         /*!
          * Return random index
@@ -59,9 +59,9 @@ namespace ga {
 
         void offspring(const vector &parent1,
                        const vector &parent2,
-                       vector &child1,
-                       vector &child2,
-                       const int length);
+                             vector &child1,
+                             vector &child2,
+                       const int     length);
 
     };
 
@@ -76,9 +76,31 @@ namespace ga {
 
         void offspring(const vector &parent1,
                        const vector &parent2,
-                       vector &child1,
-                       vector &child2,
-                       const int length);
+                             vector &child1,
+                             vector &child2,
+                       const int     length);
+
+    };
+
+
+    /*!
+     * Class for n-point crossover operation.
+     */
+    class NPointCrossover : public Crossover {
+    private:
+        int numberOfCrossovers;
+        vector crossoverIndices;
+
+    public:
+        NPointCrossover(const int chromosomeLength, const int numberOfCrossovers) : Crossover(chromosomeLength) {
+          this->numberOfCrossovers = numberOfCrossovers;
+        };
+
+        void offspring(const vector &parent1,
+                       const vector &parent2,
+                             vector &child1,
+                             vector &child2,
+                       const int     length);
 
     };
 

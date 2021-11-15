@@ -126,7 +126,8 @@ namespace ga {
          * @param low       the left-most point of the part of the population vector in this recursion
          * @param high      the right-most point of the part of the population vector in this recursion
          */
-        void quickSort(      vector&    fitness,
+        void quickSort(      matrix&    pop,
+                             vector&    fitness,
                        const int        low,
                        const int        high);
 
@@ -136,7 +137,8 @@ namespace ga {
          * @param low       the left-most point of the part of the population vector in this recursion
          * @param high      the right-most point of the part of the population vector in this recursion
          */
-        int partition(      vector& fitness,
+        int partition(      matrix& pop,
+                            vector& fitness,
                       const int     low,
                       const int     high);
     };
