@@ -385,13 +385,10 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
             storeParam         = param_[j];
         
             // Change the picked parameter
-            changeParam(j, real_uniform(gen));
-            // Test whether the parameter did in fact change, if not
-            // it is not meaningful to evaluate again.
-            if (param_[j] == storeParam)
-            {
-                continue;
-            }
+            double randNumber = real_uniform(gen);
+            while (randNumber != 0.0) randNumber = real_uniform(gen);
+            changeParam(j, randNumber);
+
             attemptedMoves_[j] += 1;
             changed[j]          = true;
         
@@ -401,10 +398,10 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
 
             // Evaluate the energy on training set
             currEval        = calcDeviation(false, CalcDev::Parallel, iMolSelect::Train);
-            deltaEval       = currEval-prevEval; 
+            deltaEval       = currEval-prevEval;
 
             // Evaluate the energy on the test set only on whole steps!
-            if (bEvaluate_testset && pp == 0)
+            if (bEvaluate_testset && pp == 0) // TODO: when calling stepMCMC, make sure to pass that as bEvaluateTest
             {
                 currEval_testset = calcDeviation(false, CalcDev::Parallel, iMolSelect::Test);
             }
@@ -482,6 +479,50 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
         bMinimum = true;
     }
     return bMinimum;
+}
+
+/*!
+ * Take a step of MCMC by attempting to alter a parameter
+ * @param paramIndex        index of the parameter to alter
+ * @param randValue         a random value in range [0, 1]
+ * @param changed           a reference to a vector which has true for parameters that change and false otherwise
+ * @param prevEval          pointer to a double storage with the previous chi2 for training set
+ * @param bEvaluate_testset true if evaluation should be done on test set, false otherwise
+ * @return                  true if the procedure was successful, false if <changeParam> did not alter the value of the
+ *                          parameter
+ */
+bool Bayes::stepMCMC(const int paramIndex,
+                     const double randValue,
+                     std::vector<bool>& changed,
+                     double* prevEval,
+                     const bool bEvaluate_testset,
+                     const int pp) {
+
+    // Store the original value of the parameter
+    const double storeParam = param_[paramIndex];
+
+    // Change the parameter
+    changeParam(paramIndex, randValue);
+
+    attemptedMoves_[j] += 1;
+    changed[j]          = true;
+
+    // Update FF parameter data structure with
+    // the new value of parameter j
+    toPoldata(changed);
+
+    // Evaluate the energy on training set
+    const double currEval        = calcDeviation(false, CalcDev::Parallel, iMolSelect::Train);
+    const double deltaEval       = currEval - (*prevEval);
+
+    // Evaluate the energy on the test set only on whole steps!
+    double currEval_testset;
+    if (bEvaluate_testset) {
+        currEval_testset = calcDeviation(false, CalcDev::Parallel, iMolSelect::Test);
+    }
+
+    // TODO: from line 409 onwards
+
 }
 
 void Bayes::assignParamClasses(std::vector<int>&         paramClassIndex,
