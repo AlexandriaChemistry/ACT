@@ -25,9 +25,11 @@ namespace ga {
     };
 
 
+    /*!
+     * Toy initializer. Initializes values randomly in range [min, max]
+     */
     class SimpleInitializer : public Initializer {
 
-        // Random number generation
         std::random_device                      rd;
         std::mt19937                            gen;
         std::uniform_real_distribution<double>  dis;
@@ -42,6 +44,36 @@ namespace ga {
                           const double max)
         : gen(rd()), dis(std::uniform_real_distribution<>(min, max)) {
             gen.seed(::time(NULL));
+        }
+
+        void initialize(      vector&   individual,
+                        const int       length);
+
+    };
+
+
+    /*!
+     * Initializes parameters randomly between their lower and upper bound
+     */
+    class ACTRandomInitializer : public Initializer {
+
+        std::random_device                      rd;
+        std::mt19937                            gen;
+        std::uniform_real_distribution<double>  dis;
+
+        vector lb, ub;
+
+    public:
+        /*!
+         * Create a new ACMRandomInitializer instance
+         * @param lb    lower bound for each parameter
+         * @param ub    upper bound for each parameter
+         */
+        ACMRandomInitializer(const vector& lb, const vector& ub)
+        : gen(rd()), dis(std::uniform_real_distribution<>(0.0, 1.0)) {
+            gen.seed(::time(NULL));
+            this->lb = lb;
+            this->ub = ub;
         }
 
         void initialize(      vector&   individual,

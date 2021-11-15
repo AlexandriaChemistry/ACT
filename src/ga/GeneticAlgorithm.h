@@ -40,7 +40,7 @@ namespace ga {
 
     public:
         /*!
-         * Create a new GeneticAlgorithm object
+         * DEFAULT CONSTRUCTOR: Create a new GeneticAlgorithm object
          * @param popSize               size of the population
          * @param chromosomeLength      length of each individual
          * @param initializer           Initializer object

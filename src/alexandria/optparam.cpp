@@ -54,6 +54,9 @@
 #include "memory_check.h"
 #include "regression.h"
 
+#include "ga/Initializer.h"
+
+
 namespace alexandria
 {
 
@@ -302,8 +305,10 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
     double                           randProbability  = 0;
     double                           mcProbability    = 0; 
     parm_t                           sum, sum_of_sq;
+    //! Pointers to parameter convergence surveillance files
     std::vector<FILE *>              fpc;
     std::vector<int>                 paramClassIndex;
+    //! Pointer to chi2 surveillance file
     FILE                            *fpe             = nullptr;
     
     if (xvgConv().empty() || xvgEpot().empty())
@@ -467,13 +472,14 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
                 mcProbability   = exp(-(beta0/weightedTemperature_[j])*deltaEval);
                 accept          = (mcProbability > randProbability);
             }
-            
+
+            // Fractional iteration taking into account the inner loop with <pp> over <nParam>
             double xiter = iter + (1.0*pp)/nParam;
             if (accept)
             {
-                if (currEval < minEval)
+                if (currEval < minEval)  // If wa better chi2 was found
                 {
-                    if (fplog)
+                    if (fplog)  // If pointer to log file exists, write information about new minimum
                     {
                         if (bEvaluate_testset)
                         {
@@ -507,17 +513,17 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
                 // poldata needs to change back as well!
                 toPoldata(changed);
             }
-            changed[j] = false;
+            changed[j] = false;  // Set changed[j] back to false for upcoming iterations
 
-            for(auto fp: fpc)
+            for(auto fp: fpc)  // Write iteration number to each parameter convergence surveillance file
             {
                 fprintf(fp, "%8f", xiter);
             }
-            for (size_t k = 0; k < param_.size(); k++)
+            for (size_t k = 0; k < param_.size(); k++)  // Write value of each parameter to its respective surveillance file
             {
                 fprintf(fpc[paramClassIndex[k]], "  %10g", param_[k]);
             }
-            for(auto fp: fpc)
+            for(auto fp: fpc)  // If verbose = True, flush the file to be able to add new data to surveillance plots
             {
                 fprintf(fp, "\n");
                 if (verbose())
@@ -525,7 +531,7 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
                     fflush(fp);
                 }
             }
-            if (nullptr != fpe)
+            if (nullptr != fpe)  // If the chi2 surveillance file exists, write progress
             {
                 if (bEvaluate_testset)
                 {
@@ -540,6 +546,7 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
                     fflush(fpe);
                 }
             }
+            // For the second half of the optimization, collect data to find the mean and "standard deviation" of each parameter
             if (iter >= maxIter()/2)
             {
                 for (auto k = 0; k < nParam; k++)
@@ -551,7 +558,8 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
             }
         }
     }
-    if (nsum > 0)
+    // OPTIMIZATION IS COMPLETE!
+    if (nsum > 0)  // Compute mean and "standard deviation"
     {
         double ps2 = 0.0;
         for (auto k = 0; k < nParam; k++)
@@ -562,16 +570,16 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
             psigma_[k]    = sqrt(ps2);
         }
     }
-    for(auto fp: fpc)
+    for(auto fp: fpc)  // Close all parameter convergence surveillance files
     {
         xvgrclose(fp);
     }
-    if (nullptr != fpe)
+    if (nullptr != fpe)  // Close chi2 surveillance file
     {
         xvgrclose(fpe);
     }
-    bool bMinimum = false;
-    if (minEval < *chi2)
+    bool bMinimum = false;  // Assume no better minimum was found
+    if (minEval < *chi2)  // If better minimum was found, update the value in <*chi2> and return true
     {
         *chi2 = minEval;
         bMinimum = true;
@@ -605,5 +613,6 @@ void Bayes::printMonteCarloStatistics(FILE *fp)
         }
     }
 }
+
 
 }

@@ -46,6 +46,7 @@
 #include "gromacs/utility/real.h"
 
 #include "molselect.h"
+#include "tune_eem.h"
 
 namespace alexandria
 {
@@ -316,6 +317,18 @@ class Bayes : public OptParam
         const parm_t &getParam() const { return param_; }
 
         /*! \brief
+         * Returns the current vector of lower bounds
+         * @return the current vector of lower bounds
+         */
+        const parm_t &getLowerBound() const { return lowerBound_; }
+
+        /*! \brief
+         * Returns the current vector of upper bounds
+         * @return the current vector of upper bounds
+         */
+        const parm_t &getUpperBound() const { return upperBound_; }
+
+        /*! \brief
          * Returns the number of training points per parameter
          */
         const std::vector<int> &getNtrain() const { return ntrain_; }
@@ -361,7 +374,7 @@ class Bayes : public OptParam
          *                              May be nullptr.
          * \param[in]  evaluate_testset If true, evaluate the energy on 
          *                              the test set.
-         * \param[out] chi2             The lowest chi-quared
+         * \param[out] chi2             pointer to chi2 in runMaster, at the end it will be the minimum
          * \return True if the energy decreased during the MCMC
          */
         bool MCMC(FILE *fplog, bool evaluate_testset, double *chi2);
