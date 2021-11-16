@@ -343,7 +343,7 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
     // training set
     prevEval = calcDeviation(true, CalcDev::Parallel, iMolSelect::Train);
     minEval  = prevEval;
-    *chi2    = prevEval;
+    (*chi2)  = prevEval;
 
     if (bEvaluate_testset) {
         // test set
@@ -487,7 +487,7 @@ void Bayes::stepMCMC(const int                                  paramIndex,
 
     fprintParameterStep(fpc, paramClassIndex, xiter);
     // If the chi2 surveillance file exists, write progress
-    if (fpe != nullptr) fprintChi2Step(bEvaluate_testset, fpe, xiter, prevEval, prevEval_testset);
+    if (fpe != nullptr) fprintChi2Step(bEvaluate_testset, fpe, xiter, *prevEval, *prevEval_testset);
 
 }
 
