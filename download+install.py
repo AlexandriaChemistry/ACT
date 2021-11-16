@@ -165,7 +165,7 @@ def conda_prefix_provided(prefix: str):
 def install_act(args, CXX, CC, HOST, prefix):
     # Get working directory
     pwd = os.getcwd()
-    act = args.branch == "main" or args.branch == "david"
+    act = args.branch in ["main", "david", "genetic_algorithm"]
     if act:
         swdir = "ACT"
         
