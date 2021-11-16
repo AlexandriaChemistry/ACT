@@ -36,3 +36,5 @@ src/ga/test
 examples/TUNE_EEM/*.xvg
 examples/TUNE_EEM/*.log
 examples/TUNE_EEM/viewxvg.py
+examples/TUNE_EEM/#*
+examples/TUNE_EEM/*.dat

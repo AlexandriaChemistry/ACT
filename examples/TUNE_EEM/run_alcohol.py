@@ -7,4 +7,4 @@ sel    = "../SELECTIONS/alcohol.dat"
 gentop = "../ACS-pg.dat"
 xml    = "../XML/alcohol.dat"
 
-os.system("mpirun -np 2 alexandria tune_eem -v -d %s -sel %s -f %s -fit 'alpha zeta' -maxiter 500 -temp 10" % ( gentop, sel, xml ))
+os.system("mpirun -np 2 alexandria tune_eem -v -fc_mu 1  -d %s -sel %s -f %s -fit 'alpha zeta' -maxiter 500 -temp 200" % ( gentop, sel, xml ))

@@ -447,7 +447,7 @@ void Bayes::stepMCMC(const int                                  paramIndex,
     const double deltaEval = currEval - (*prevEval);
 
     // Evaluate the energy on the test set only on whole steps!
-    double currEval_testset;
+    double currEval_testset = (*prevEval_testset);
     if (bEvaluate_testset && pp == 0) {
         currEval_testset = calcDeviation(false, CalcDev::Parallel, iMolSelect::Test);
     }
@@ -645,7 +645,7 @@ void Bayes::fprintChi2Step(const bool   bEvaluate_testset,
                            const double xiter,
                            const double prevEval,
                            const double prevEval_testset) {
-
+    
     if (bEvaluate_testset)
     {
         fprintf(fpe, "%8f  %10g  %10g\n", xiter, prevEval, prevEval_testset);
