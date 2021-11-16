@@ -73,19 +73,17 @@ namespace ga {
     }
 
 
-    QuickSorter::QuickSorter(const int  popSize,
-                             const int  chromosomeLength) {
+    QuickSorter::QuickSorter(const int popSize) {
 
-        tmpFitness              = vector(popSize);
-        this->chromosomeLength  = chromosomeLength;
+        tmpFitness = vector(popSize);
 
     }
 
     void QuickSorter::sort(matrix&       pop,
                            vector&       fitness,
                            const int     popSize) {
-        int low = 0;
-        int high = popSize - 1;
+        const int low = 0;
+        const int high = popSize - 1;
         quickSort(pop, fitness, low, high);
     }
 
@@ -94,7 +92,7 @@ namespace ga {
                                 const int     low,
                                 const int     high) {
         if (low >= 0 && high > 0 && low < high) {
-            int p = partition(pop, fitness, low, high);
+            const int p = partition(pop, fitness, low, high);
             quickSort(pop, fitness, low, p - 1);
             quickSort(pop, fitness, p + 1, high);
         }
@@ -104,13 +102,13 @@ namespace ga {
                                vector&       fitness,
                                const int     low,
                                const int     high) {
-        double pivot = fitness[high];
+        const double pivot = fitness[high];
         int candidate = low - 1;
         double temp;
 
         for (int check = low; check <= high; check++) {
-            if (fitness[check] <= pivot) {
-                candidate = candidate + 1;
+            if (fitness[check] >= pivot) {
+                candidate += 1;
                 tmpFitness = pop[candidate];
                 temp = fitness[candidate];
                 pop[candidate] = pop[check];

@@ -19,14 +19,14 @@ int main(int argc, char const *argv[]) {
 	SimpleFitnessComputer       fit;
 //    EmptySorter                 sort;
 	// MergeSorter                 sort(popSize, chromLen);
-	QuickSorter                 sort(popSize, chromLen);
+	QuickSorter                 sort(popSize);
 //    FitnessProbabilityComputer  procomp;
 	RankProbabilityComputer     procomp(popSize);
 	RouletteSelector            select;
 	SinglePointCrossover        singlepoint(chromLen);
-//    PercentMutator              mutate(mutFrac);
+//  PercentMutator              mutate(mutFrac);
     RangeMutator                mutate(0.5);
-    // SimpleTerminator            terminate(tolerance);
+//    SimpleTerminator            terminate(tolerance);
 	GenerationTerminator        terminate(maxGenerations);
 
 	GeneticAlgorithm ga = GeneticAlgorithm(popSize,

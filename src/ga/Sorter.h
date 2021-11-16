@@ -107,13 +107,10 @@ namespace ga {
      */
     class QuickSorter : public Sorter {
 
-        double chromosomeLength;
-        matrix tmpPop;
         vector tmpFitness;
 
     public:
-        QuickSorter(const int popSize,
-                    const int chromosomeLength);
+        QuickSorter(const int popSize);
 
 
         void sort(      matrix& pop,
