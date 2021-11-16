@@ -54,8 +54,6 @@
 #include "memory_check.h"
 #include "regression.h"
 
-#include "ga/Initializer.h"
-
 
 namespace alexandria
 {
