@@ -23,7 +23,7 @@ namespace ga {
          * @param chromosomeLength  length of the chromosome
          */
         Crossover(const int chromosomeLength)
-        : gen(rd()), dis(std::uniform_int_distribution<>(1, chromosomeLength - 2)) {
+        : gen(rd()), dis(std::uniform_int_distribution<>(1, chromosomeLength - 1)) {
             gen.seed(::time(NULL));
         }
 
