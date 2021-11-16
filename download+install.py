@@ -199,6 +199,9 @@ def install_act(args, CXX, CC, HOST, prefix):
         (not act and args.branch != "master")):
         os.system("git checkout --track origin/%s -b %s" % ( args.branch, args.branch ) )
         os.system("git pull")
+    elif act and args.branch == 'genetic_algorithm':
+        os.system(f'git checkout {args.branch}')
+        os.system('git pull')
 
     # The prefix path where to look for libraries
     # Delete anaconda from prefix if provided by args
