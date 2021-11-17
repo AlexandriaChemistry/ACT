@@ -477,18 +477,30 @@ static int getCombinationRule(const ForceFieldParameterList &vdw)
     return i;
 }
 
+static void getSigmaEpsilon(const ForceFieldParameterList &fa,
+                            const std::string             &ai,
+                            double                        *sigma,
+                            double                        *epsilon)
+{
+    Identifier idI({ai}, CanSwap::Yes); 
+    *sigma   = 0;
+    *epsilon = 0;
+    if (fa.parameterExists(idI))
+    {
+        *sigma   = fa.findParameterTypeConst(idI, "sigma").value();
+        *epsilon = fa.findParameterTypeConst(idI, "epsilon").value();
+    }
+}
+
 static void getLjParams(const ForceFieldParameterList &fa,
                         const std::string             &ai,
                         const std::string             &aj,
                         double                        *c6,
                         double                        *cn)
 {
-    Identifier idI({ai}, CanSwap::Yes); 
-    Identifier idJ({aj}, CanSwap::Yes); 
-    auto sigmaI   = fa.findParameterTypeConst(idI, "sigma").value();
-    auto sigmaJ   = fa.findParameterTypeConst(idJ, "sigma").value();
-    auto epsilonI = fa.findParameterTypeConst(idI, "epsilon").value();
-    auto epsilonJ = fa.findParameterTypeConst(idJ, "epsilon").value();
+    double sigmaI, sigmaJ, epsilonI, epsilonJ;
+    getSigmaEpsilon(fa, ai, &sigmaI, &epsilonI);
+    getSigmaEpsilon(fa, aj, &sigmaJ, &epsilonJ);
 
     auto comb     = getCombinationRule(fa);     
     switch (comb)
@@ -523,6 +535,24 @@ static void getLjParams(const ForceFieldParameterList &fa,
     }
 }
 
+static void getSigmaEpsilonGamma(const ForceFieldParameterList &fa,
+                                 const std::string             &ai,
+                                 double                        *sigma,
+                                 double                        *epsilon,
+                                 double                        *gamma)
+{
+    Identifier idI({ai}, CanSwap::Yes); 
+    *sigma   = 0;
+    *epsilon = 0;
+    *gamma   = 0;
+    if (fa.parameterExists(idI))
+    {
+        *sigma   = fa.findParameterTypeConst(idI, "sigma").value();
+        *epsilon = fa.findParameterTypeConst(idI, "epsilon").value();
+        *gamma   = fa.findParameterTypeConst(idI, "gamma").value();
+    }
+}
+
 static void getBhamParams(const ForceFieldParameterList &fa,
                           const std::string             &ai,
                           const std::string             &aj,
@@ -530,14 +560,9 @@ static void getBhamParams(const ForceFieldParameterList &fa,
                           double                        *b,
                           double                        *c)
 {
-    Identifier idI({ai}, CanSwap::Yes);
-    Identifier idJ({aj}, CanSwap::Yes);
-    auto sigmaI   = fa.findParameterTypeConst(idI, "sigma").value();
-    auto sigmaJ   = fa.findParameterTypeConst(idJ, "sigma").value();
-    auto epsilonI = fa.findParameterTypeConst(idI, "epsilon").value();
-    auto epsilonJ = fa.findParameterTypeConst(idJ, "epsilon").value();
-    auto gammaI   = fa.findParameterTypeConst(idI, "gamma").value();
-    auto gammaJ   = fa.findParameterTypeConst(idJ, "gamma").value();
+    double sigmaI, sigmaJ, epsilonI, epsilonJ, gammaI, gammaJ;
+    getSigmaEpsilonGamma(fa, ai, &sigmaI, &epsilonI, &gammaI);
+    getSigmaEpsilonGamma(fa, aj, &sigmaJ, &epsilonJ, &gammaJ);
 
     auto comb     = getCombinationRule(fa);
     switch (comb)
@@ -596,6 +621,9 @@ void nonbondedFromPdToMtop(gmx_mtop_t    *mtop,
     for (int i = 0; i < atoms->nr; i++)
     {
         auto itype = atoms->atom[i].type;
+        GMX_ASSERT(itype >= 0 && itype < ntype, 
+                   gmx::formatString("Atom type %d for %s out of range [0, %d]",
+                                     itype, *atoms->atomname[i], ntype).c_str());
         auto iname = *atoms->atomtype[i];
         if (mytypes[itype].name.empty())
         {
@@ -779,7 +807,11 @@ gmx_mtop_t *do_init_mtop(const Poldata                   *pd,
         }
         if (!found)
         {
-            ntype++;
+            //ntype++;
+            //What if the types are not correct? Need to check.
+            // For instance if the atom types are 0 2 3 there will be 3
+            // different types but the arrays can not be indexed with a 3.
+            ntype = std::max(ntype, itp+1);
         }
     }
 

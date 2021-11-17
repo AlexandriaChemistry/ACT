@@ -1090,6 +1090,11 @@ void MyMol::addShells(FILE          *fp,
             auto atomtypeName = get_atomtype_name(atoms->atom[i].type, gromppAtomtype_);
             auto fa           = pd->findParticleType(atomtypeName);
             auto shellid      = fa->interactionTypeToIdentifier(InteractionType::POLARIZATION);
+            if (shellid.id().empty())
+            {
+                // This particle has no shell.
+                continue;
+            }
             auto shelltype    = pd->findParticleType(shellid.id());
             auto shellzetaid  = shelltype->interactionTypeToIdentifier(InteractionType::CHARGEDISTRIBUTION);
             auto shelleep     = qt.findParametersConst(shellzetaid);
