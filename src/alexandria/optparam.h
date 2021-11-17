@@ -46,7 +46,6 @@
 #include "gromacs/utility/real.h"
 
 #include "molselect.h"
-#include "tune_eem.h"
 
 namespace alexandria
 {
@@ -524,7 +523,7 @@ class Bayes : public OptParam
          * @param psigma    standard deviation of each parameter
          */
         virtual void toPoldata(const std::vector<double> &param,
-                               const std::vector<double> &psigma);
+                                     std::vector<double> &psigma) = 0;
 
         /*! \brief
          * Compute the chi2 from the target function

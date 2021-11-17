@@ -1,5 +1,5 @@
-#ifndef ACT_TUNE_EEM_H
-#define ACT_TUNE_EEM_H
+#ifndef ALEXANDRIA_TUNE_EEM_H
+#define ALEXANDRIA_TUNE_EEM_H
 
 #include <cstdio>
 
@@ -16,7 +16,9 @@
 #include "molgen.h"
 #include "optparam.h"
 
-namespace alexandria {
+
+namespace alexandria
+{
 
 /*! \brief Wrapper for closing a file
  * Will print a warning if something is wrong when closing.
@@ -106,7 +108,7 @@ public:
      * @param psigma    standard deviation of each parameter
      */
     virtual void toPoldata(const std::vector<double> &param,
-                           const std::vector<double> &psigma);
+                                 std::vector<double> &psigma);
 
     /*! \brief
      * Computes deviation from target
@@ -159,4 +161,4 @@ public:
 }
 
 
-#endif //ACT_TUNE_EEM_H
+#endif //ALEXANDRIA_TUNE_EEM_H

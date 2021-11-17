@@ -130,7 +130,7 @@ digraph tune_eem {
 
 void my_fclose(FILE *fp)
 {
-    int myerrno = gmx_ffclose(fp);
+    const int myerrno = gmx_ffclose(fp);
     if (myerrno != 0)
     {
         fprintf(stderr, "Error %d closing file\n", myerrno);
@@ -614,7 +614,7 @@ void OptACM::toPoldata(const std::vector<bool> &changed)
 }
 
 void OptACM::toPoldata(const std::vector<double> &param,
-                       const std::vector<double> &psigma)
+                             std::vector<double> &psigma)
 {
     size_t n = 0;
     if (psigma.empty())
@@ -642,9 +642,9 @@ void OptACM::toPoldata(const std::vector<double> &param,
         }
         n++;
     }
-    GMX_RELEASE_ASSERT(n == changed.size(),
+    GMX_RELEASE_ASSERT(n == param.size(),
                        gmx::formatString("n = %zu changed.size() = %zu",
-                                         n, changed.size()).c_str());
+                                         n, param.size()).c_str());
 }
 
 bool OptACM::runMaster(const gmx_output_env_t *oenv,
