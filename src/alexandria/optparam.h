@@ -501,7 +501,7 @@ class Bayes : public OptParam
         void computeMeanSigma(const int     nParam,
                               const parm_t& sum,
                               const int     nsum,
-                              const parm_t& sum_of_sq);
+                                    parm_t& sum_of_sq);
         
         /*! \brief
          * Perform a sensitivity analysis by systematically changing

@@ -433,8 +433,8 @@ void Bayes::stepMCMC(const int                                  paramIndex,
     while (rndNumber == 0.5) rndNumber = real_uniform(gen);
     changeParam(paramIndex, rndNumber);
 
-    attemptedMoves_[j] += 1;
-    changed[j]          = true;
+    attemptedMoves_[paramIndex] += 1;
+    changed[paramIndex]          = true;
 
     // Update FF parameter data structure with
     // the new value of parameter j
@@ -459,7 +459,7 @@ void Bayes::stepMCMC(const int                                  paramIndex,
         // Only anneal if the simulation reached a certain number of steps
         if (anneal(iter)) (*beta0) = computeBeta(iter);
         const double randProbability = real_uniform(gen);
-        const double mcProbability   = exp(-((*beta0)/weightedTemperature_[j])*deltaEval);
+        const double mcProbability   = exp(-((*beta0)/weightedTemperature_[paramIndex])*deltaEval);
         accept = (mcProbability > randProbability);
     }
 
@@ -475,13 +475,13 @@ void Bayes::stepMCMC(const int                                  paramIndex,
         }
         (*prevEval) = currEval;
         if (bEvaluate_testset) (*prevEval_testset) = currEval_testset;
-        acceptedMoves_[j] += 1;
+        acceptedMoves_[paramIndex] += 1;
     } else {  // If the parameter change is not accepted
-        param_[j] = storeParam;  // Set the old value of the parameter back
+        param_[paramIndex] = storeParam;  // Set the old value of the parameter back
         // poldata needs to change back as well!
         toPoldata(changed);
     }
-    changed[j] = false;  // Set changed[j] back to false for upcoming iterations
+    changed[paramIndex] = false;  // Set changed[j] back to false for upcoming iterations
 
     fprintParameterStep(fpc, paramClassIndex, xiter);
     // If the chi2 surveillance file exists, write progress
@@ -564,7 +564,7 @@ FILE* Bayes::openChi2SurveillanceFile(const bool bEvaluate_testset) {
 void Bayes::computeMeanSigma(const int     nParam,
                              const parm_t& sum,
                              const int     nsum,
-                             const parm_t& sum_of_sq) {
+                                   parm_t& sum_of_sq) {
 
     if (nsum > 0)  // Compute mean and standard deviation
     {
