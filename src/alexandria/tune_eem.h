@@ -1,45 +1,28 @@
 #ifndef ACT_TUNE_EEM_H
 #define ACT_TUNE_EEM_H
 
-#include "molgen.h"
-#include "optparam.h"
+#include <cstdio>
+
+#include <vector>
 
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/commandline/viewit.h"
-#include "gromacs/fileio/gmxfio.h"
-#include "gromacs/fileio/pdbio.h"
-#include "gromacs/fileio/xvgr.h"
-#include "gromacs/hardware/detecthardware.h"
-#include "gromacs/listed-forces/bonded.h"
-#include "gromacs/math/vecdump.h"
 #include "gromacs/mdlib/force.h"
-#include "gromacs/mdlib/mdatoms.h"
-#include "gromacs/mdlib/shellfc.h"
 #include "gromacs/mdtypes/commrec.h"
-#include "gromacs/statistics/statistics.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/futil.h"
-#include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/unique_cptr.h"
 
-#include "alex_modules.h"
-#include "gentop_core.h"
-#include "gmx_simple_comm.h"
-#include "memory_check.h"
 #include "molgen.h"
-#include "molprop_util.h"
-#include "mymol_low.h"
 #include "optparam.h"
-#include "poldata.h"
-#include "poldata_tables.h"
-#include "poldata_xml.h"
-#include "tuning_utility.h"
-#include "units.h"
 
 namespace alexandria {
+
+/*! \brief Wrapper for closing a file
+ * Will print a warning if something is wrong when closing.
+ * \param[in] fp The file pointer
+ */
+void my_fclose(FILE *fp);
 
 /*! \brief The class that does all the optimization work.
  * This class inherits the MolGen class that holds molecule data and
@@ -47,7 +30,8 @@ namespace alexandria {
  *
  * The class can run as a Master process or as a Helper process.
  */
-class OptACM : public MolGen, Bayes {
+class OptACM : public MolGen, public Bayes
+{
     //! Abbreviation to make clear this is not a random vector
     using param_type = std::vector<double>;
 

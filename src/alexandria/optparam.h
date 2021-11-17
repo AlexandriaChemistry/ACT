@@ -46,7 +46,6 @@
 #include "gromacs/utility/real.h"
 
 #include "molselect.h"
-#include "tune_eem.h"
 
 namespace alexandria
 {

@@ -29,9 +29,9 @@
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include "tune_eem.h"
-
 #include "actpre.h"
+
+#include "tune_eem.h"
 
 #include <cctype>
 #include <cmath>
@@ -126,11 +126,7 @@ digraph tune_eem {
  * \enddot
  */
 
-/*! \brief Wrapper for closing a file
- * Will print a warning if something is wrong when closing.
- * \param[in] fp The file pointer
- */
-static void my_fclose(FILE *fp)
+void my_fclose(FILE *fp)
 {
     int myerrno = gmx_ffclose(fp);
     if (myerrno != 0)
