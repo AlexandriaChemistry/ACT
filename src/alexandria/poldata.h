@@ -347,7 +347,7 @@ class Poldata
 
         const ForceFieldParameterList &findForcesConst(InteractionType iType) const
         {
-            const auto force = forces_.find(iType);
+            const auto &force = forces_.find(iType);
             if (force == forces_.end())
             {
                 GMX_THROW(gmx::InternalError(gmx::formatString("No such interaction type %s (there are %d interaction types)",
