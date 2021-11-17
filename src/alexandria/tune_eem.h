@@ -1,45 +1,28 @@
 #ifndef ACT_TUNE_EEM_H
 #define ACT_TUNE_EEM_H
 
-#include "molgen.h"
-#include "optparam.h"
+#include <cstdio>
+
+#include <vector>
 
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/commandline/viewit.h"
-#include "gromacs/fileio/gmxfio.h"
-#include "gromacs/fileio/pdbio.h"
-#include "gromacs/fileio/xvgr.h"
-#include "gromacs/hardware/detecthardware.h"
-#include "gromacs/listed-forces/bonded.h"
-#include "gromacs/math/vecdump.h"
 #include "gromacs/mdlib/force.h"
-#include "gromacs/mdlib/mdatoms.h"
-#include "gromacs/mdlib/shellfc.h"
 #include "gromacs/mdtypes/commrec.h"
-#include "gromacs/statistics/statistics.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/futil.h"
-#include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/unique_cptr.h"
 
-#include "alex_modules.h"
-#include "gentop_core.h"
-#include "gmx_simple_comm.h"
-#include "memory_check.h"
 #include "molgen.h"
-#include "molprop_util.h"
-#include "mymol_low.h"
 #include "optparam.h"
-#include "poldata.h"
-#include "poldata_tables.h"
-#include "poldata_xml.h"
-#include "tuning_utility.h"
-#include "units.h"
 
 namespace alexandria {
+
+/*! \brief Wrapper for closing a file
+ * Will print a warning if something is wrong when closing.
+ * \param[in] fp The file pointer
+ */
+void my_fclose(FILE *fp);
 
 /*! \brief The class that does all the optimization work.
  * This class inherits the MolGen class that holds molecule data and
@@ -47,7 +30,8 @@ namespace alexandria {
  *
  * The class can run as a Master process or as a Helper process.
  */
-class OptACM : public MolGen, Bayes {
+class OptACM : public MolGen, public Bayes
+{
     //! Abbreviation to make clear this is not a random vector
     using param_type = std::vector<double>;
 
@@ -83,44 +67,20 @@ public:
      * This also calls the addOptions routine of the child class Bayes.
      * \param[inout] pargs The vector of parameters
      */
-    void add_pargs(std::vector <t_pargs> *pargs) {
-        t_pargs pa[] =
-                {
-                        {"-fullQuadrupole", FALSE, etBOOL, {&bFullQuadrupole_},
-                                "Consider both diagonal and off-diagonal elements of the Q_Calc matrix for optimization"},
-                        {"-removemol",      FALSE, etBOOL, {&bRemoveMol_},
-                                "Remove a molecule from training set if shell minimzation does not converge."},
-                };
-        for (int i = 0; i < asize(pa); i++) {
-            pargs->push_back(pa[i]);
-        }
-        addOptions(pargs, eTune::EEM);
-        Bayes::add_pargs(pargs);
-    }
+    void add_pargs(std::vector<t_pargs> *pargs);
 
     /*! \brief Routine to be called after processing options
      * \param[in] outputFile The force field target file
      */
-    void optionsFinished(const std::string &outputFile) {
-        MolGen::optionsFinished();
-        outputFile_ = outputFile;
-    }
+    void optionsFinished(const std::string &outputFile);
 
     /*! \brief Routine that opens a log file
      * \param[in] logfileName The log file name to open
      */
-    void openLogFile(const char *logfileName) {
-        fplog_.reset(gmx_ffopen(logfileName, "w"));
-    }
+    void openLogFile(const char *logfileName);
 
-    //! \return a filepointer to the open logfile
-    FILE *logFile() {
-        if (fplog_) {
-            return fplog_.get();
-        } else {
-            return nullptr;
-        }
-    }
+    //! \return a file pointer to the open logfile
+    FILE *logFile();
 
     /*! \brief Initialize charge generation
      * \param[in] ims The data set to do the work for

@@ -163,7 +163,7 @@ void Sensitivity::print(FILE *fp, const std::string &label)
         {
             double p_min = -b_/(2.0*a_);
             double chi2_min = a_*p_min*p_min + b_*p_min + c_;
-            fprintf(fp, "    pmin %g chi2min %g (estimate based on parabola)\n", 
+            fprintf(fp, "    pmin %g chi2min %g (estimate based on parabola)\n",
                     p_min, chi2_min);
         }
     }
@@ -193,11 +193,11 @@ void Bayes::addParam(const std::string &name,
     if (bRandom)
     {
         std::random_device               rd;
-        std::mt19937                     gen(rd());  
+        std::mt19937                     gen(rd());
         std::uniform_real_distribution<> uniform(lower, upper);
-        val                              = uniform(gen);        
+        val                              = uniform(gen);
     }
-    
+
     initial_param_.push_back(val);
     param_.push_back(val);
     mutability_.push_back(mut);
@@ -239,7 +239,7 @@ bool OptParam::anneal(int iter) const
     else
     {
         return iter >= anneal_ * maxiter_;
-    }   
+    }
 }
 
 void Bayes::SensitivityAnalysis(FILE *fplog, iMolSelect ims)
@@ -302,7 +302,7 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
     std::vector<int>                 paramClassIndex;
     //! Pointer to chi2 surveillance file
     FILE                            *fpe             = nullptr;
-    
+
     if (xvgConv().empty() || xvgEpot().empty()) {
         gmx_fatal(FARGS, "You forgot to call setOutputFiles. Back to the drawing board.");
     }
@@ -323,7 +323,7 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
     // Compute temperature weights if relevant, otherwise the numbers are all 1.0
     weightedTemperature_.resize(paramNames_.size(), 1.0);
     if (temperatureWeighting()) computeWeightedTemperature();
-    
+
     fpe = openChi2SurveillanceFile(bEvaluate_testset);
 
     // Initialize data structures
@@ -348,21 +348,21 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
         prevEval_testset = calcDeviation(true, CalcDev::Parallel, iMolSelect::Test);
     }
 
-    // Random number 
+    // Random number
     std::random_device               rd;
     std::mt19937                     gen(rd());
     std::uniform_int_distribution<>  int_uniform(0, nParam-1);
     std::uniform_real_distribution<> real_uniform(0, 1);
-    
+
     print_memory_usage(debug);
 
     double beta0 = 1/(BOLTZ*temperature());
 
     // Optimization loop
     for (int iter = 0; iter < maxIter(); iter++)
-    { 
+    {
         for (int pp = 0; pp < nParam; pp++)
-        {      
+        {
             // Pick a random parameter to change
             const int paramIndex = int_uniform(gen);
 
@@ -433,8 +433,8 @@ void Bayes::stepMCMC(const int                                  paramIndex,
     while (rndNumber == 0.5) rndNumber = real_uniform(gen);
     changeParam(paramIndex, rndNumber);
 
-    attemptedMoves_[j] += 1;
-    changed[j]          = true;
+    attemptedMoves_[paramIndex] += 1;
+    changed[paramIndex]          = true;
 
     // Update FF parameter data structure with
     // the new value of parameter j
@@ -459,7 +459,7 @@ void Bayes::stepMCMC(const int                                  paramIndex,
         // Only anneal if the simulation reached a certain number of steps
         if (anneal(iter)) (*beta0) = computeBeta(iter);
         const double randProbability = real_uniform(gen);
-        const double mcProbability   = exp(-((*beta0)/weightedTemperature_[j])*deltaEval);
+        const double mcProbability   = exp(-((*beta0)/weightedTemperature_[paramIndex])*deltaEval);
         accept = (mcProbability > randProbability);
     }
 
@@ -475,13 +475,13 @@ void Bayes::stepMCMC(const int                                  paramIndex,
         }
         (*prevEval) = currEval;
         if (bEvaluate_testset) (*prevEval_testset) = currEval_testset;
-        acceptedMoves_[j] += 1;
+        acceptedMoves_[paramIndex] += 1;
     } else {  // If the parameter change is not accepted
-        param_[j] = storeParam;  // Set the old value of the parameter back
+        param_[paramIndex] = storeParam;  // Set the old value of the parameter back
         // poldata needs to change back as well!
         toPoldata(changed);
     }
-    changed[j] = false;  // Set changed[j] back to false for upcoming iterations
+    changed[paramIndex] = false;  // Set changed[j] back to false for upcoming iterations
 
     fprintParameterStep(fpc, paramClassIndex, xiter);
     // If the chi2 surveillance file exists, write progress
@@ -564,7 +564,7 @@ FILE* Bayes::openChi2SurveillanceFile(const bool bEvaluate_testset) {
 void Bayes::computeMeanSigma(const int     nParam,
                              const parm_t& sum,
                              const int     nsum,
-                             const parm_t& sum_of_sq) {
+                                   parm_t& sum_of_sq) {
 
     if (nsum > 0)  // Compute mean and standard deviation
     {
@@ -643,7 +643,7 @@ void Bayes::fprintChi2Step(const bool   bEvaluate_testset,
                            const double xiter,
                            const double prevEval,
                            const double prevEval_testset) {
-    
+
     if (bEvaluate_testset)
     {
         fprintf(fpe, "%8f  %10g  %10g\n", xiter, prevEval, prevEval_testset);

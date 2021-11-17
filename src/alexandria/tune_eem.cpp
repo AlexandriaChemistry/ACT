@@ -33,6 +33,8 @@
 
 #include "actpre.h"
 
+#include "tune_eem.h"
+
 #include <cctype>
 #include <cmath>
 #include <cstdio>
@@ -126,11 +128,7 @@ digraph tune_eem {
  * \enddot
  */
 
-/*! \brief Wrapper for closing a file
- * Will print a warning if something is wrong when closing.
- * \param[in] fp The file pointer
- */
-static void my_fclose(FILE *fp)
+void my_fclose(FILE *fp)
 {
     int myerrno = gmx_ffclose(fp);
     if (myerrno != 0)
@@ -164,6 +162,38 @@ double OptACM::l2_regularizer (double             x,
 void OptACM::saveState()
 {
     writePoldata(outputFile_, poldata(), false);
+}
+
+void OptACM::add_pargs(std::vector<t_pargs> *pargs) {
+    t_pargs pa[] =
+            {
+                    {"-fullQuadrupole", FALSE, etBOOL, {&bFullQuadrupole_},
+                            "Consider both diagonal and off-diagonal elements of the Q_Calc matrix for optimization"},
+                    {"-removemol",      FALSE, etBOOL, {&bRemoveMol_},
+                            "Remove a molecule from training set if shell minimzation does not converge."},
+            };
+    for (int i = 0; i < asize(pa); i++) {
+        pargs->push_back(pa[i]);
+    }
+    addOptions(pargs, eTune::EEM);
+    Bayes::add_pargs(pargs);
+}
+
+void OptACM::optionsFinished(const std::string &outputFile) {
+    MolGen::optionsFinished();
+    outputFile_ = outputFile;
+}
+
+void OptACM::openLogFile(const char *logfileName) {
+    fplog_.reset(gmx_ffopen(logfileName, "w"));
+}
+
+FILE *OptACM::logFile() {
+    if (fplog_) {
+        return fplog_.get();
+    } else {
+        return nullptr;
+    }
 }
 
 void OptACM::initChargeGeneration(iMolSelect ims)
