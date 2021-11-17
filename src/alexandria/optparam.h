@@ -353,10 +353,19 @@ class Bayes : public OptParam
         const param_name_t &getParamNames() const { return paramNames_; };
 
         /*! \brief
-         * Print the paramters to a file
+         * Print the parameters to a file
          * \param[in] fp File pointer to open file
          */
         void printParameters(FILE *fp) const;
+
+        /*! \brief
+         * Print given parameters to a file
+         * \param[in] fp        File pointer to open file
+         * \param[in] param     vector of parameters to print
+         */
+        void printParameters(      FILE    *fp,
+                             const parm_t  &param) const;
+
         /*! \brief
          * Return the vector of number of attempted moves for each parameter
          */
@@ -522,8 +531,14 @@ class Bayes : public OptParam
          * @param param     vector of parameters
          * @param psigma    standard deviation of each parameter
          */
-        virtual void toPoldata(const std::vector<double> &param,
-                                     std::vector<double> &psigma) = 0;
+        virtual void toPoldata(const parm_t &param,
+                                     parm_t &psigma) = 0;
+
+        /*! \brief
+         * Copy the optimization parameters (with unknown uncertainty, puts 0.0) to the poldata structure
+         * @param param     vector of parameters
+         */
+        virtual void toPoldata(const parm_t &param) = 0;
 
         /*! \brief
          * Compute the chi2 from the target function

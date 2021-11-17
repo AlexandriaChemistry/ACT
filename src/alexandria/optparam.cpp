@@ -182,6 +182,19 @@ void Bayes::printParameters(FILE *fp) const
     fprintf(fp, "\n");
 }
 
+void Bayes::printParameters(      FILE     *fp,
+                            const parm_t   &param) const {
+    if (nullptr == fp)
+    {
+        return;
+    }
+    for(size_t i = 0; i < param.size(); i++)
+    {
+        fprintf(fp, "  %s  %e,", paramNames_[i].c_str(), param[i]);
+    }
+    fprintf(fp, "\n");
+}
+
 void Bayes::addParam(const std::string &name,
                      real               val,
                      Mutability         mut,
