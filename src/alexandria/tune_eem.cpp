@@ -162,6 +162,38 @@ void OptACM::saveState()
     writePoldata(outputFile_, poldata(), false);
 }
 
+void OptACM::add_pargs(std::vector<t_pargs> *pargs) {
+    t_pargs pa[] =
+            {
+                    {"-fullQuadrupole", FALSE, etBOOL, {&bFullQuadrupole_},
+                            "Consider both diagonal and off-diagonal elements of the Q_Calc matrix for optimization"},
+                    {"-removemol",      FALSE, etBOOL, {&bRemoveMol_},
+                            "Remove a molecule from training set if shell minimzation does not converge."},
+            };
+    for (int i = 0; i < asize(pa); i++) {
+        pargs->push_back(pa[i]);
+    }
+    addOptions(pargs, eTune::EEM);
+    Bayes::add_pargs(pargs);
+}
+
+void OptACM::optionsFinished(const std::string &outputFile) {
+    MolGen::optionsFinished();
+    outputFile_ = outputFile;
+}
+
+void OptACM::openLogFile(const char *logfileName) {
+    fplog_.reset(gmx_ffopen(logfileName, "w"));
+}
+
+FILE *OptACM::logFile() {
+    if (fplog_) {
+        return fplog_.get();
+    } else {
+        return nullptr;
+    }
+}
+
 void OptACM::initChargeGeneration(iMolSelect ims)
 {
     std::string method, basis, conf, type, myref, mylot;

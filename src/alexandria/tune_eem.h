@@ -67,44 +67,20 @@ public:
      * This also calls the addOptions routine of the child class Bayes.
      * \param[inout] pargs The vector of parameters
      */
-    void add_pargs(std::vector <t_pargs> *pargs) {
-        t_pargs pa[] =
-                {
-                        {"-fullQuadrupole", FALSE, etBOOL, {&bFullQuadrupole_},
-                                "Consider both diagonal and off-diagonal elements of the Q_Calc matrix for optimization"},
-                        {"-removemol",      FALSE, etBOOL, {&bRemoveMol_},
-                                "Remove a molecule from training set if shell minimzation does not converge."},
-                };
-        for (int i = 0; i < asize(pa); i++) {
-            pargs->push_back(pa[i]);
-        }
-        addOptions(pargs, eTune::EEM);
-        Bayes::add_pargs(pargs);
-    }
+    void add_pargs(std::vector<t_pargs> *pargs);
 
     /*! \brief Routine to be called after processing options
      * \param[in] outputFile The force field target file
      */
-    void optionsFinished(const std::string &outputFile) {
-        MolGen::optionsFinished();
-        outputFile_ = outputFile;
-    }
+    void optionsFinished(const std::string &outputFile);
 
     /*! \brief Routine that opens a log file
      * \param[in] logfileName The log file name to open
      */
-    void openLogFile(const char *logfileName) {
-        fplog_.reset(gmx_ffopen(logfileName, "w"));
-    }
+    void openLogFile(const char *logfileName);
 
-    //! \return a filepointer to the open logfile
-    FILE *logFile() {
-        if (fplog_) {
-            return fplog_.get();
-        } else {
-            return nullptr;
-        }
-    }
+    //! \return a file pointer to the open logfile
+    FILE *logFile();
 
     /*! \brief Initialize charge generation
      * \param[in] ims The data set to do the work for
