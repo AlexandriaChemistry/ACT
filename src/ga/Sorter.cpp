@@ -73,9 +73,10 @@ namespace ga {
     }
 
 
-    QuickSorter::QuickSorter(const int popSize) {
+    QuickSorter::QuickSorter(const int popSize, const bool descending) {
 
         tmpFitness = vector(popSize);
+        this->descending = descending;
 
     }
 
@@ -91,7 +92,7 @@ namespace ga {
                                 vector&       fitness,
                                 const int     low,
                                 const int     high) {
-        if (low >= 0 && high > 0 && low < high) {
+        if (low >= 0 && high >= 0 && low < high) {
             const int p = partition(pop, fitness, low, high);
             quickSort(pop, fitness, low, p - 1);
             quickSort(pop, fitness, p + 1, high);

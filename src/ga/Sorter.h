@@ -11,6 +11,9 @@ namespace ga {
      */
     class Sorter {
 
+    protected:
+        bool descending = true;
+
     public:
         /*!
          * Sort individuals (in place) based on fitness
@@ -45,7 +48,6 @@ namespace ga {
 
         matrix tmpPop;
         vector tmpFitness;
-        bool descending;
 
     public:
         /*!
@@ -110,7 +112,7 @@ namespace ga {
         vector tmpFitness;
 
     public:
-        QuickSorter(const int popSize);
+        QuickSorter(const int popSize, const bool descending);
 
 
         void sort(      matrix& pop,

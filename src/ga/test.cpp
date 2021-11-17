@@ -9,7 +9,7 @@ using namespace ga;
 
 int main(int argc, char const *argv[]) {
 
-	const int       popSize         = 10;
+	const int       popSize         = 4;
 	const int       chromLen        = 4;
 	const int       maxGenerations  = 5;
     const double    mutFrac         = 0.1;
@@ -18,8 +18,8 @@ int main(int argc, char const *argv[]) {
 	SimpleInitializer           init(-10.0, 10.0);
 	SimpleFitnessComputer       fit;
 //    EmptySorter                 sort;
-	// MergeSorter                 sort(popSize, chromLen);
-	QuickSorter                 sort(popSize);
+//    MergeSorter                 sort(popSize, chromLen, false);
+	QuickSorter                 sort(popSize, true);
 //    FitnessProbabilityComputer  procomp;
 	RankProbabilityComputer     procomp(popSize);
 	RouletteSelector            select;
