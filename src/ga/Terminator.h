@@ -4,12 +4,14 @@
 #include "aliases.h"
 
 
-namespace ga {
+namespace ga
+{
 
     /*!
      * Abstract class for termination conditions
      */
-    class Terminator {
+    class Terminator
+    {
 
     public:
         /*!
@@ -25,7 +27,7 @@ namespace ga {
                                const vector&    fitness,
                                const int        generationNumber,
                                const int        popSize,
-                               const int        chromosomeLength) { return true; };
+                               const int        chromosomeLength) { return true; }
 
     };
 
@@ -34,7 +36,8 @@ namespace ga {
      * Toy terminator class which returns true when the sum of squared values in the vector is no larger than
      * tolerance * <chromosomeLength>
      */
-    class SimpleTerminator : public Terminator {
+    class SimpleTerminator : public Terminator
+    {
 
         double tolerance;
 
@@ -53,7 +56,8 @@ namespace ga {
      * Toy terminator class which returns true when the sum of squared values in the vector is no larger than
      * tolerance * <chromosomeLength>
      */
-    class GenerationTerminator : public Terminator {
+    class GenerationTerminator : public Terminator
+    {
 
         int maxGenerations;
 

@@ -4,12 +4,14 @@
 #include "aliases.h"
 
 
-namespace ga {
+namespace ga
+{
 
     /*!
      * Abstract class for sorting the population based on fitness
      */
-    class Sorter {
+    class Sorter
+    {
 
     protected:
         bool descending = true;
@@ -31,7 +33,8 @@ namespace ga {
     /*!
      * Sorter which does nothing.
      */
-    class EmptySorter : public Sorter {
+    class EmptySorter : public Sorter
+    {
 
     public:
         void sort(      matrix& pop,
@@ -44,7 +47,8 @@ namespace ga {
     /*!
      * Class for Merge-sort
      */
-    class MergeSorter : public Sorter {
+    class MergeSorter : public Sorter
+    {
 
         matrix tmpPop;
         vector tmpFitness;
@@ -107,7 +111,8 @@ namespace ga {
     /*!
      * Class for Quick-sort
      */
-    class QuickSorter : public Sorter {
+    class QuickSorter : public Sorter
+    {
 
         vector tmpFitness;
 

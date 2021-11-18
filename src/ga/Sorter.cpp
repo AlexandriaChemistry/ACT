@@ -4,11 +4,13 @@
 #include "helpers.h"
 
 
-namespace ga {
+namespace ga
+{
 
     MergeSorter::MergeSorter(const int  popSize,
                              const int  chromosomeLength,
-                             const bool descending) {
+                             const bool descending)
+    {
 
         tmpFitness              = vector(popSize);
         tmpPop                  = allocateMatrix(popSize, chromosomeLength);
@@ -19,7 +21,8 @@ namespace ga {
 
     void MergeSorter::sort(      matrix&    pop,
                                  vector&    fitness,
-                           const int        popSize) {
+                           const int        popSize)
+    {
 
         tmpFitness = fitness;
         tmpPop = pop;
@@ -33,7 +36,8 @@ namespace ga {
                                         const int       left,
                                         const int       right,
                                               matrix&   popA,
-                                              vector&   fitA) {
+                                              vector&   fitA)
+    {
 
         if (right - left <= 1) return;
 
@@ -53,17 +57,22 @@ namespace ga {
                                    const int        middle,
                                    const int        right,
                                          matrix&    popB,
-                                         vector&    fitB) {
+                                         vector&    fitB)
+    {
 
         int i = left;
         int j = middle;
 
-        for (int k = left; k < right; k++) {
-            if ( i < middle && ( j >= right || ( descending == ( fitA[i] >= fitA[j] ) ) ) ) {
+        for (int k = left; k < right; k++)
+        {
+            if ( i < middle && ( j >= right || ( descending == ( fitA[i] >= fitA[j] ) ) ) )
+            {
                 fitB[k] = fitA[i];
                 popB[k] = popA[i];
                 i++;
-            } else {
+            }
+            else
+            {
                 fitB[k] = fitA[j];
                 popB[k] = popA[j];
                 j++;
@@ -73,7 +82,8 @@ namespace ga {
     }
 
 
-    QuickSorter::QuickSorter(const int popSize, const bool descending) {
+    QuickSorter::QuickSorter(const int popSize, const bool descending)
+    {
 
         tmpFitness = vector(popSize);
         this->descending = descending;
@@ -82,7 +92,8 @@ namespace ga {
 
     void QuickSorter::sort(matrix&       pop,
                            vector&       fitness,
-                           const int     popSize) {
+                           const int     popSize)
+    {
         const int low = 0;
         const int high = popSize - 1;
         quickSort(pop, fitness, low, high);
@@ -91,8 +102,10 @@ namespace ga {
     void QuickSorter::quickSort(matrix&       pop,
                                 vector&       fitness,
                                 const int     low,
-                                const int     high) {
-        if (low >= 0 && high >= 0 && low < high) {
+                                const int     high)
+    {
+        if (low >= 0 && high >= 0 && low < high)
+        {
             const int p = partition(pop, fitness, low, high);
             quickSort(pop, fitness, low, p - 1);
             quickSort(pop, fitness, p + 1, high);
@@ -102,13 +115,16 @@ namespace ga {
     int QuickSorter::partition(matrix&       pop,
                                vector&       fitness,
                                const int     low,
-                               const int     high) {
+                               const int     high)
+    {
         const double pivot = fitness[high];
         int candidate = low - 1;
         double temp;
 
-        for (int check = low; check <= high; check++) {
-            if (fitness[check] >= pivot) {
+        for (int check = low; check <= high; check++)
+        {
+            if (fitness[check] >= pivot)
+            {
                 candidate += 1;
                 tmpFitness = pop[candidate];
                 temp = fitness[candidate];

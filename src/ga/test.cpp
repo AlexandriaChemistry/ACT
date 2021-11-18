@@ -7,7 +7,8 @@
 
 using namespace ga;
 
-int main(int argc, char const *argv[]) {
+int main(int argc, char const *argv[])
+{
 
 	const int       popSize         = 200;
 	const int       chromLen        = 10;

@@ -6,7 +6,8 @@
 #include "aliases.h"
 
 
-namespace ga {
+namespace ga
+{
 
     /*!
      * Allocate memory for a matrix
@@ -15,7 +16,8 @@ namespace ga {
      * @return      pointer to the matrix
      */
     matrix allocateMatrix(const int n,
-                          const int m) {
+                          const int m)
+    {
         matrix mat(n);
         for (int i = 0; i < n; i++) mat[i] = vector(m);
         return mat;
@@ -32,8 +34,10 @@ namespace ga {
     void copyVectorValues(const vector& arr1,
                                 vector& arr2,
                           const int     left,
-                          const int     right) {
-        for (int i = left; i < right; i++) {
+                          const int     right)
+    {
+        for (int i = left; i < right; i++)
+        {
             arr2[i] = arr1[i];
         }
     }
@@ -53,10 +57,13 @@ namespace ga {
                           const int     i1,
                           const int     i2,
                           const int     j1,
-                          const int     j2) {
+                          const int     j2)
+    {
         int i, j;
-        for (i = i1; i < i2; i++) {
-            for (j = j1; j < j2; j++) {
+        for (i = i1; i < i2; i++)
+        {
+            for (j = j1; j < j2; j++)
+            {
                 mat2[i][j] = mat1[i][j];
             }
         }
@@ -70,7 +77,8 @@ namespace ga {
      * @return the index of the maximum element
      */
     int findMaximumIndex(const vector&  vec,
-                         const int      len) {
+                         const int      len)
+    {
         int maxIndex = 0;
         for (int current = 0; current < len; current++)
             if (vec[current] > vec[maxIndex])
@@ -83,9 +91,11 @@ namespace ga {
      * Print a vector to console
      * @param vec   the vector to print
      */
-    void printVector(const vector& vec) {
+    void printVector(const vector& vec)
+    {
         printf("[ ");
-        for (double value: vec) {
+        for (double value: vec)
+        {
             printf("%f ", value);
         }
         printf("]\n");
@@ -96,8 +106,10 @@ namespace ga {
      * Print matrix to console
      * @param mat   the matrix to print
      */
-    void printMatrix(const matrix& mat) {
-        for (vector vec: mat) {
+    void printMatrix(const matrix& mat)
+    {
+        for (vector vec: mat)
+        {
             printVector(vec);
         }
     }

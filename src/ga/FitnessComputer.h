@@ -4,12 +4,14 @@
 #include "aliases.h"
 
 
-namespace ga {
+namespace ga
+{
 
     /*!
      * Abstract class for computing the fitness of an individual
      */
-    class FitnessComputer {
+    class FitnessComputer
+    {
 
     public:
         /*!
@@ -30,7 +32,8 @@ namespace ga {
     /*!
      * Fitness computer that gives higher fitness to individuals close to the 0 vector.
      */
-    class SimpleFitnessComputer : public FitnessComputer {
+    class SimpleFitnessComputer : public FitnessComputer
+    {
 
     public:
         void compute(const vector&  individual,

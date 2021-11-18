@@ -4,7 +4,8 @@
 #include "aliases.h"
 
 
-namespace ga {
+namespace ga
+{
 
     matrix allocateMatrix(const int n,
                           const int m);

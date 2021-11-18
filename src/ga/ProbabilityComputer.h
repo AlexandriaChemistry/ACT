@@ -4,12 +4,14 @@
 #include "aliases.h"
 
 
-namespace ga {
+namespace ga
+{
 
     /*!
      * Abstract class for computing the selection probability of each individual in the population
      */
-    class ProbabilityComputer {
+    class ProbabilityComputer
+    {
 
     public:
         /*!
@@ -28,7 +30,8 @@ namespace ga {
     /*!
      * Class for fitness-based probability computation
      */
-    class FitnessProbabilityComputer : public ProbabilityComputer {
+    class FitnessProbabilityComputer : public ProbabilityComputer
+    {
 
     public:
         void compute(const vector&  fitness,
@@ -41,7 +44,8 @@ namespace ga {
     /*!
      * Class for Boltzmann temperature probability computation
      */
-    class BoltzmannProbabilityComputer : public ProbabilityComputer {
+    class BoltzmannProbabilityComputer : public ProbabilityComputer
+    {
 
         double temperature;
         vector exponentials;
@@ -57,7 +61,7 @@ namespace ga {
 
         void compute(const vector&  fitness,
                            vector&  prob,
-                     const int  popSize);
+                     const int      popSize);
 
     };
 
@@ -65,7 +69,8 @@ namespace ga {
     /*!
      * Class for Rank probability computation
      */
-    class RankProbabilityComputer : public ProbabilityComputer {
+    class RankProbabilityComputer : public ProbabilityComputer
+    {
 
         double sumOfRanks;
 

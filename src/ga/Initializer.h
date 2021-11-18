@@ -7,12 +7,14 @@
 #import <random>
 
 
-namespace ga {
+namespace ga
+{
 
     /*!
      * Abstract class for initializing individuals
      */
-    class Initializer {
+    class Initializer
+    {
 
     public:
         /*!
@@ -42,7 +44,8 @@ namespace ga {
          */
         SimpleInitializer(const double min,
                           const double max)
-        : gen(rd()), dis(std::uniform_real_distribution<>(min, max)) {
+        : gen(rd()), dis(std::uniform_real_distribution<>(min, max))
+        {
             gen.seed(::time(NULL));
         }
 

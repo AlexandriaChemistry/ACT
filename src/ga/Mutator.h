@@ -7,12 +7,14 @@
 #include <time.h>
 
 
-namespace ga {
+namespace ga
+{
 
     /*!
      * Abstract class for gene mutation
      */
-    class Mutator {
+    class Mutator
+    {
 
     public:
         /*!
@@ -29,7 +31,8 @@ namespace ga {
      * Class for percentual gene mutation
      * Modifies a gene by a maximum of <frac*100>% of its value
      */
-    class PercentMutator : public Mutator {
+    class PercentMutator : public Mutator
+    {
 
         std::random_device                      rd;
         std::mt19937                            gen;
@@ -41,7 +44,8 @@ namespace ga {
          * @param frac  the fraction of change in [0, 1]
          */
         PercentMutator(const double frac)
-        : gen(rd()), dis(std::uniform_real_distribution<>(1 - frac, 1 + frac)) {
+        : gen(rd()), dis(std::uniform_real_distribution<>(1 - frac, 1 + frac))
+        {
             gen.seed(::time(NULL));
         }
 
@@ -55,7 +59,8 @@ namespace ga {
      * Class for range gene mutation
      * Modifies a gene by a maximum of <max> - <min>.
      */
-    class RangeMutator : public Mutator {
+    class RangeMutator : public Mutator
+    {
 
         std::random_device                      rd;
         std::mt19937                            gen;
@@ -67,7 +72,8 @@ namespace ga {
          * @param range  the range for maximum change
          */
         RangeMutator(const double range)
-        : gen(rd()), dis(std::uniform_real_distribution<>(-range, range)) {
+        : gen(rd()), dis(std::uniform_real_distribution<>(-range, range))
+        {
             gen.seed(::time(NULL));
         }
 

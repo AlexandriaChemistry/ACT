@@ -13,9 +13,11 @@
 #include "Terminator.h"
 
 
-namespace ga {
+namespace ga
+{
 
-    class GeneticAlgorithm {
+    class GeneticAlgorithm
+    {
 
         // Scalars
         int popSize;

@@ -6,12 +6,14 @@
 
 #include "aliases.h"
 
-namespace ga {
+namespace ga
+{
 
     /*!
      * Abstract class to perform crossover
      */
-    class Crossover {
+    class Crossover
+    {
 
         std::random_device                  rd;
         std::mt19937                        gen;
@@ -23,7 +25,8 @@ namespace ga {
          * @param chromosomeLength  length of the chromosome
          */
         Crossover(const int chromosomeLength)
-        : gen(rd()), dis(std::uniform_int_distribution<>(1, chromosomeLength - 1)) {
+        : gen(rd()), dis(std::uniform_int_distribution<>(1, chromosomeLength - 1))
+        {
             gen.seed(::time(NULL));
         }
 
@@ -52,7 +55,8 @@ namespace ga {
     /*!
      * Class for single-point crossover operation.
      */
-    class SinglePointCrossover : public Crossover {
+    class SinglePointCrossover : public Crossover
+    {
 
     public:
         SinglePointCrossover(const int chromosomeLength) : Crossover(chromosomeLength) {}
@@ -69,7 +73,8 @@ namespace ga {
     /*!
      * Class for double-point crossover operation.
      */
-    class DoublePointCrossover : public Crossover {
+    class DoublePointCrossover : public Crossover
+    {
 
     public:
         DoublePointCrossover(const int chromosomeLength) : Crossover(chromosomeLength) {};
@@ -86,7 +91,8 @@ namespace ga {
     /*!
      * Class for n-point crossover operation.
      */
-    class NPointCrossover : public Crossover {
+    class NPointCrossover : public Crossover
+    {
     private:
         int numberOfCrossovers;
         vector crossoverIndices;

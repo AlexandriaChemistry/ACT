@@ -14,12 +14,14 @@ using vector = std::vector<double>;
  */
 using matrix = std::vector<vector>;
 
-namespace ga {
+namespace ga
+{
 
     /*!
      * Result structure of genetic algorithm
      */
-    typedef struct ga_result {
+    typedef struct ga_result
+    {
         matrix  pop;
         vector  fitness;
         vector  bestIndividual;

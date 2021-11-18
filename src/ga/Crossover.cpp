@@ -4,9 +4,11 @@
 #include <cmath>
 #include <algorithm>
 
-namespace ga {
+namespace ga
+{
 
-    int Crossover::randIndex() {
+    int Crossover::randIndex()
+    {
         return dis(gen);
     }
 
@@ -15,16 +17,19 @@ namespace ga {
                                          const vector &parent2,
                                                vector &child1,
                                                vector &child2,
-                                         const int     length) {
+                                         const int     length)
+    {
 
         const int index = randIndex();
 
         int i;
-        for (i = 0; i < index; i++) {
+        for (i = 0; i < index; i++)
+        {
             child1[i] = parent1[i];
             child2[i] = parent2[i];
         }
-        for (i = index; i < length; i++) {
+        for (i = index; i < length; i++)
+        {
             child1[i] = parent2[i];
             child2[i] = parent1[i];
         }
@@ -36,11 +41,13 @@ namespace ga {
                                          const vector &parent2,
                                                vector &child1,
                                                vector &child2,
-                                         const int     length) {
+                                         const int     length)
+    {
 
         const int tmp1 = randIndex();
         int tmp2 = randIndex();
-        while (tmp1 == tmp2) {
+        while (tmp1 == tmp2)
+        {
             tmp2 = randIndex();
         }
         const int diff = std::abs(tmp1 - tmp2);
@@ -48,15 +55,18 @@ namespace ga {
         const int index1 = std::min(tmp1, tmp2);
 
         int i;
-        for (i = 0; i < index1; i++) {
+        for (i = 0; i < index1; i++)
+        {
             child1[i] = parent1[i];
             child2[i] = parent2[i];
         }
-        for (i = index1; i < index1 + diff; i++) {
+        for (i = index1; i < index1 + diff; i++)
+        {
             child1[i] = parent2[i];
             child2[i] = parent1[i];
         }
-        for (i = index1 + diff; i < length; i++) {
+        for (i = index1 + diff; i < length; i++)
+        {
             child1[i] = parent1[i];
             child2[i] = parent2[i];
         }
@@ -68,11 +78,13 @@ namespace ga {
                                     const vector &parent2,
                                           vector &child1,
                                           vector &child2,
-                                    const int     length) {
+                                    const int     length)
+    {
         crossoverIndices = vector(numberOfCrossovers);
         int toggle = 1;
 
-        while (toggle == 1) {
+        while (toggle == 1)
+        {
           toggle = 0;
           for (int checkIndex = 0; checkIndex < numberOfCrossovers; checkIndex++)
             for (int compIndex = 0; compIndex < numberOfCrossovers; compIndex++)

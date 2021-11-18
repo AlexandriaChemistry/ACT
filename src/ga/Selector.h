@@ -7,12 +7,14 @@
 #include <time.h>
 
 
-namespace ga {
+namespace ga
+{
 
     /*!
      * Abstract class to select an individual from the population
      */
-    class Selector {
+    class Selector
+    {
 
     public:
         /*!
@@ -22,7 +24,7 @@ namespace ga {
          * @return                  the selected individual
          */
         virtual const int select(const vector&  probability,
-                                 const int      popSize) { return 0; };
+                                 const int      popSize) { return 0; }
 
     };
 
@@ -30,7 +32,8 @@ namespace ga {
 /*!
  * Class for roulette-based selection
  */
-    class RouletteSelector : public Selector {
+    class RouletteSelector : public Selector
+    {
 
         std::random_device                      rd;
         std::mt19937                            gen;
@@ -41,7 +44,8 @@ namespace ga {
          * Create a new instance of RouletteSelector
          */
         RouletteSelector()
-        : gen(rd()), dis(std::uniform_real_distribution<>(0.0, 1.0)) {
+        : gen(rd()), dis(std::uniform_real_distribution<>(0.0, 1.0))
+        {
             gen.seed(::time(NULL));
         }
 

@@ -18,7 +18,8 @@
 #include "helpers.h"
 
 
-namespace ga {
+namespace ga
+{
 
     GeneticAlgorithm::GeneticAlgorithm(const int                    popSize,
                                        const int                    chromosomeLength,
@@ -29,7 +30,8 @@ namespace ga {
                                              Selector*              selector,
                                              Crossover*             crossover,
                                              Mutator*               mutator,
-                                             Terminator*            terminator) {
+                                             Terminator*            terminator)
+    {
 
         // Make sure that there is an even number of individuals in the population
         assert(popSize % 2 == 0);
@@ -56,7 +58,8 @@ namespace ga {
 
     const ga_result_t GeneticAlgorithm::evolve(const double     prCross,
                                                const double     prMut,
-                                               const int        verbose) {
+                                               const int        verbose)
+    {
 
         if (verbose >= 1) printf("\nStarting evolution...\n");
 
@@ -74,25 +77,29 @@ namespace ga {
 
         // Generations
         int generation = 0;
-        if (verbose >= 2 or (verbose >= 1 and generation % GEN_PRINTS == 0)) {
+        if (verbose >= 2 or (verbose >= 1 and generation % GEN_PRINTS == 0))
+        {
             printf("\nGeneration: %i\n", generation);
         }
 
         // Initialize the population
         if (verbose >= 2) printf("Initializing individuals and computing initial fitness...\n");
-        for (i = 0; i < popSize; i++) {
+        for (i = 0; i < popSize; i++)
+        {
             (*initializer).initialize(oldPop[i], chromosomeLength);
             (*fitComputer).compute(oldPop[i], fitness, i, chromosomeLength);
         }
 
         // If verbose, print best individual
-        if (verbose >= 1) {
+        if (verbose >= 1)
+        {
             const int index = findMaximumIndex(fitness, popSize);
             printf("Best individual: ");
             printVector(oldPop[index]);
             printf("Max fitness: %f\n", fitness[index]);
         }
-        if (verbose >= 2) {
+        if (verbose >= 2)
+        {
             printf("Population:\n");
             printMatrix(oldPop);
 
@@ -101,18 +108,21 @@ namespace ga {
         }
 
         // Iterate and create new generations
-        do {
+        do
+        {
 
             // Increase generation counter
             generation++;
-            if (verbose >= 2 or (verbose >= 1 and generation % GEN_PRINTS == 0)) {
+            if (verbose >= 2 or (verbose >= 1 and generation % GEN_PRINTS == 0))
+            {
                 printf("\nGeneration: %i\n", generation);
             }
 
             // Sort individuals based on fitness
             if (verbose >= 2) printf("Sorting... (if needed)\n");
             (*sorter).sort(oldPop, fitness, popSize);
-            if (verbose >= 2) {
+            if (verbose >= 2)
+            {
                 printf("Population after sorting:\n");
                 printMatrix(oldPop);
                 printf("Fitness vector after sorting: ");
@@ -122,14 +132,16 @@ namespace ga {
             // Normalize the fitness into a probability
             if (verbose >= 2) printf("Computing probabilities...\n");
             (*probComputer).compute(fitness, probability, popSize);
-            if (verbose >= 2) {
+            if (verbose >= 2)
+            {
                 printf("Probabilities: ");
                 printVector(probability);
             }
 
             // Generate new population
             if (verbose >= 2) printf("Generating new population...\n");
-            for (i = 0; i < popSize; i += 2) {
+            for (i = 0; i < popSize; i += 2)
+            {
                 if (verbose >= 3) printf("i = %i, %i\n", i, i + 1);
 
                 // Select parents
@@ -138,11 +150,14 @@ namespace ga {
                 if (verbose >= 3) printf("parent1: %i; parent2: %i\n", parent1, parent2);
 
                 // Do crossover
-                if (dis(gen) <= prCross) {
+                if (dis(gen) <= prCross)
+                {
                     if (verbose >= 3) printf("Doing crossover...\n");
                     (*crossover).offspring(oldPop[parent1], oldPop[parent2], newPop[i],
                                            newPop[i + 1], chromosomeLength);
-                } else {
+                }
+                else
+                {
                     if (verbose >= 3) printf("Omitting crossover...\n");
                     newPop[i] = oldPop[parent1];
                     newPop[i+1] = oldPop[parent2];
@@ -150,8 +165,10 @@ namespace ga {
 
                 // Do mutation in each child, and compute fitness to avoid another traversal
                 if (verbose >= 3) printf("Doing mutation...\n");
-                for (k = 0; k < 2; k++) {
-                    for (j = 0; j < chromosomeLength; j++) {
+                for (k = 0; k < 2; k++)
+                {
+                    for (j = 0; j < chromosomeLength; j++)
+                    {
                         if (dis(gen) <= prMut) (*mutator).mutate(newPop[i + k], j);
                     }
                     // Compute fitness
@@ -168,13 +185,15 @@ namespace ga {
             newPop = tmpPop;
 
             // If verbose, print best individual
-            if (verbose >= 2 or (verbose >= 1 and generation % GEN_PRINTS == 0)) {
+            if (verbose >= 2 or (verbose >= 1 and generation % GEN_PRINTS == 0))
+            {
                 const int index = findMaximumIndex(fitness, popSize);
                 printf("Best individual: ");
                 printVector(oldPop[index]);
                 printf("Max fitness: %f\n", fitness[index]);
             }
-            if (verbose >= 2) {
+            if (verbose >= 2)
+            {
                 printf("Population:\n");
                 printMatrix(oldPop);
 
