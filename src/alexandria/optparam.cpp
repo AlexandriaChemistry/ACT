@@ -400,7 +400,8 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
     return bMinimum;
 }
 
-void Bayes::computeWeightedTemperature() {
+void Bayes::computeWeightedTemperature()
+{
     for(size_t j = 0; j < paramNames_.size(); j++) {
         GMX_RELEASE_ASSERT(ntrain_[j] > 0, "ntrain should be > 0 for all parameters");
         // TODO: Maybe a fast inverse square root here?
@@ -423,7 +424,8 @@ void Bayes::stepMCMC(const int                                  paramIndex,
                            FILE*                                fplog,
                            std::vector<FILE*>&                  fpc,
                            FILE*                                fpe,
-                           std::vector<int>&                    paramClassIndex) {
+                           std::vector<int>&                    paramClassIndex)
+{
 
     // Store the original value of the parameter
     const double storeParam = param_[paramIndex];
@@ -490,7 +492,8 @@ void Bayes::stepMCMC(const int                                  paramIndex,
 }
 
 void Bayes::assignParamClasses(std::vector<int>&         paramClassIndex,
-                               std::vector<std::string>& pClass) {
+                               std::vector<std::string>& pClass)
+{
 
     for(size_t i = 0; i < pClass.size(); i++)
     {
@@ -524,7 +527,8 @@ void Bayes::assignParamClasses(std::vector<int>&         paramClassIndex,
 
 void Bayes::openParamSurveillanceFiles(const std::vector<std::string>&  pClass,
                                              std::vector<FILE*>&        fpc,
-                                             std::vector<int>&          paramClassIndex) {
+                                             std::vector<int>&          paramClassIndex)
+{
     for(size_t i = 0; i < pClass.size(); i++)
     {
         std::string fileName = pClass[i] + "-" + xvgConv();
@@ -545,7 +549,8 @@ void Bayes::openParamSurveillanceFiles(const std::vector<std::string>&  pClass,
     }
 }
 
-FILE* Bayes::openChi2SurveillanceFile(const bool bEvaluate_testset) {
+FILE* Bayes::openChi2SurveillanceFile(const bool bEvaluate_testset)
+{
     FILE* fpe = xvgropen(xvgEpot().c_str(),
                          "Chi squared",
                          "Iteration",
@@ -564,7 +569,8 @@ FILE* Bayes::openChi2SurveillanceFile(const bool bEvaluate_testset) {
 void Bayes::computeMeanSigma(const int     nParam,
                              const parm_t& sum,
                              const int     nsum,
-                                   parm_t& sum_of_sq) {
+                                   parm_t& sum_of_sq)
+{
 
     if (nsum > 0)  // Compute mean and standard deviation
     {
@@ -581,7 +587,8 @@ void Bayes::computeMeanSigma(const int     nParam,
 }
 
 void Bayes::closeConvergenceFiles(std::vector<FILE*>& fpc,
-                                  FILE*               fpe) {
+                                  FILE*               fpe)
+{
     for(auto fp: fpc)  // Close all parameter convergence surveillance files
     {
         xvgrclose(fp);
@@ -596,7 +603,8 @@ void Bayes::fprintNewMinimum(      FILE*   fplog,
                              const bool    bEvaluate_testset,
                              const double  xiter,
                              const double  currEval,
-                             const double  currEval_testset) {
+                             const double  currEval_testset)
+{
 
     if (bEvaluate_testset)
     {
@@ -617,7 +625,8 @@ void Bayes::fprintNewMinimum(      FILE*   fplog,
 
 void Bayes::fprintParameterStep(      std::vector<FILE*>&   fpc,
                                 const std::vector<int>&     paramClassIndex,
-                                const double                xiter) {
+                                const double                xiter)
+{
 
     for(auto fp: fpc)  // Write iteration number to each parameter convergence surveillance file
     {
@@ -642,7 +651,8 @@ void Bayes::fprintChi2Step(const bool   bEvaluate_testset,
                                  FILE*  fpe,
                            const double xiter,
                            const double prevEval,
-                           const double prevEval_testset) {
+                           const double prevEval_testset)
+{
 
     if (bEvaluate_testset)
     {
