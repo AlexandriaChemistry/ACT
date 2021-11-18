@@ -303,10 +303,12 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
     //! Pointer to chi2 surveillance file
     FILE                            *fpe             = nullptr;
 
-    if (xvgConv().empty() || xvgEpot().empty()) {
+    if (xvgConv().empty() || xvgEpot().empty())
+    {
         gmx_fatal(FARGS, "You forgot to call setOutputFiles. Back to the drawing board.");
     }
-    if (param_.empty()) {
+    if (param_.empty())
+    {
         fprintf(stderr, "No parameters to optimize.\n");
         return 0;
     }
@@ -343,7 +345,8 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
     minEval  = prevEval;
     (*chi2)  = prevEval;
 
-    if (bEvaluate_testset) {
+    if (bEvaluate_testset)
+    {
         // test set
         prevEval_testset = calcDeviation(true, CalcDev::Parallel, iMolSelect::Test);
     }
@@ -402,7 +405,8 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
 
 void Bayes::computeWeightedTemperature()
 {
-    for(size_t j = 0; j < paramNames_.size(); j++) {
+    for(size_t j = 0; j < paramNames_.size(); j++)
+    {
         GMX_RELEASE_ASSERT(ntrain_[j] > 0, "ntrain should be > 0 for all parameters");
         // TODO: Maybe a fast inverse square root here?
         weightedTemperature_[j] = std::sqrt(1.0/ntrain_[j]);
@@ -448,7 +452,8 @@ void Bayes::stepMCMC(const int                                  paramIndex,
 
     // Evaluate the energy on the test set only on whole steps!
     double currEval_testset = (*prevEval_testset);
-    if (bEvaluate_testset && pp == 0) {
+    if (bEvaluate_testset && pp == 0)
+    {
         currEval_testset = calcDeviation(false, CalcDev::Parallel, iMolSelect::Test);
     }
 
@@ -457,7 +462,8 @@ void Bayes::stepMCMC(const int                                  paramIndex,
 
     // For an uphill move apply the Metropolis Criteria
     // to decide whether to accept or reject the new parameter
-    if (!accept) {
+    if (!accept)
+    {
         // Only anneal if the simulation reached a certain number of steps
         if (anneal(iter)) (*beta0) = computeBeta(iter);
         const double randProbability = real_uniform(gen);
@@ -467,8 +473,10 @@ void Bayes::stepMCMC(const int                                  paramIndex,
 
     // Fractional iteration taking into account the inner loop with <pp> over <nParam>
     const double xiter = iter + (1.0*pp)/nParam;
-    if (accept) {  // If the parameter change is accepted
-        if (currEval < (*minEval)) {
+    if (accept)
+    {  // If the parameter change is accepted
+        if (currEval < (*minEval))
+        {
             // If pointer to log file exists, write information about new minimum
             if (fplog) fprintNewMinimum(fplog, bEvaluate_testset, xiter, currEval, currEval_testset);
             bestParam_ = param_;
@@ -478,7 +486,9 @@ void Bayes::stepMCMC(const int                                  paramIndex,
         (*prevEval) = currEval;
         if (bEvaluate_testset) (*prevEval_testset) = currEval_testset;
         acceptedMoves_[paramIndex] += 1;
-    } else {  // If the parameter change is not accepted
+    }
+    else
+    {  // If the parameter change is not accepted
         param_[paramIndex] = storeParam;  // Set the old value of the parameter back
         // poldata needs to change back as well!
         toPoldata(changed);
