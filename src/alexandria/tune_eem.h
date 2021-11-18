@@ -103,20 +103,6 @@ public:
     virtual void toPoldata(const std::vector<bool> &changed);
 
     /*! \brief
-     * Copy the optimization parameters to the poldata structure
-     * @param param     vector of parameters
-     * @param psigma    standard deviation of each parameter
-     */
-    virtual void toPoldata(const std::vector<double> &param,
-                                 std::vector<double> &psigma);
-
-    /*! \brief
-     * Copy the optimization parameters (with unknown standard deviation) to the poldata structure
-     * @param param     vector of parameters
-     */
-    virtual void toPoldata(const std::vector<double> &param);
-
-    /*! \brief
      * Computes deviation from target
      * \param[in] verbose Whether or not to print a lot
      * \param[in] calcDev The type of calculation to do

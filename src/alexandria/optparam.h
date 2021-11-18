@@ -527,20 +527,6 @@ class Bayes : public OptParam
         virtual void toPoldata(const std::vector<bool> &changed) = 0;
 
         /*! \brief
-         * Copy the optimization parameters to the poldata structure
-         * @param param     vector of parameters
-         * @param psigma    standard deviation of each parameter
-         */
-        virtual void toPoldata(const parm_t &param,
-                                     parm_t &psigma) = 0;
-
-        /*! \brief
-         * Copy the optimization parameters (with unknown uncertainty, puts 0.0) to the poldata structure
-         * @param param     vector of parameters
-         */
-        virtual void toPoldata(const parm_t &param) = 0;
-
-        /*! \brief
          * Compute the chi2 from the target function
          * \param[in] verbose Whether or not to print stuff
          * \param[in] calcDev How to compute the deviation for all compounds

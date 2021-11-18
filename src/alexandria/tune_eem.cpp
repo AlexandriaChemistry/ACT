@@ -613,68 +613,6 @@ void OptACM::toPoldata(const std::vector<bool> &changed)
                                          n, changed.size()).c_str());
 }
 
-void OptACM::toPoldata(const std::vector<double> &param,
-                             std::vector<double> &psigma)
-{
-    size_t n = 0;
-    if (psigma.empty())
-    {
-        psigma.resize(param.size(), 0);
-    }
-    Bayes::printParameters(debug, param);
-    for (const auto &optIndex : optIndex_)
-    {
-        auto                 iType = optIndex.iType();
-        ForceFieldParameter *p     = nullptr;
-        if (iType != InteractionType::CHARGE)
-        {
-            p = poldata()->findForces(iType)->findParameterType(optIndex.id(), optIndex.parameterType());
-        }
-        else if (poldata()->hasParticleType(optIndex.particleType()))
-        {
-            p = poldata()->findParticleType(optIndex.particleType())->parameter(optIndex.parameterType());
-        }
-        GMX_RELEASE_ASSERT(p, gmx::formatString("Could not find parameter %s", optIndex.id().id().c_str()).c_str());
-        if (p)
-        {
-            p->setValue(param[n]);
-            p->setUncertainty(psigma[n]);
-        }
-        n++;
-    }
-    GMX_RELEASE_ASSERT(n == param.size(),
-                       gmx::formatString("n = %zu changed.size() = %zu",
-                                         n, param.size()).c_str());
-}
-
-void OptACM::toPoldata(const std::vector<double> &param) {
-    size_t n = 0;
-    Bayes::printParameters(debug, param);
-    for (const auto &optIndex : optIndex_)
-    {
-        auto                 iType = optIndex.iType();
-        ForceFieldParameter *p     = nullptr;
-        if (iType != InteractionType::CHARGE)
-        {
-            p = poldata()->findForces(iType)->findParameterType(optIndex.id(), optIndex.parameterType());
-        }
-        else if (poldata()->hasParticleType(optIndex.particleType()))
-        {
-            p = poldata()->findParticleType(optIndex.particleType())->parameter(optIndex.parameterType());
-        }
-        GMX_RELEASE_ASSERT(p, gmx::formatString("Could not find parameter %s", optIndex.id().id().c_str()).c_str());
-        if (p)
-        {
-            p->setValue(param[n]);
-            p->setUncertainty(0.0);  // Fills in 0 for uncertainty
-        }
-        n++;
-    }
-    GMX_RELEASE_ASSERT(n == param.size(),
-                       gmx::formatString("n = %zu changed.size() = %zu",
-                                         n, param.size()).c_str());
-}
-
 bool OptACM::runMaster(const gmx_output_env_t *oenv,
                        const char             *xvgconv,
                        const char             *xvgepot,
