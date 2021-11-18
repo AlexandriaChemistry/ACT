@@ -98,8 +98,6 @@ add_subdirectory(mdlib)
 add_subdirectory(applied-forces)
 add_subdirectory(listed-forces)
 add_subdirectory(commandline)
-# The next directory is part of ACT, not GROMACS
-add_subdirectory(coulombintegrals)
 add_subdirectory(domdec)
 add_subdirectory(gpu_utils)
 add_subdirectory(hardware)
