@@ -27,6 +27,8 @@ CMakeLists.txt.user
 Testing
 build_Release_DOUBLE
 
+# GA
+src/ga/test
 
 # Examples
 examples/TUNE_EEM/*.xvg
