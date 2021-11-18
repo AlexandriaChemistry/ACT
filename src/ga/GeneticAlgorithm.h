@@ -22,7 +22,7 @@ namespace ga
         // Scalars
         int popSize;
         int chromosomeLength;
-        //! We will move the <elites> best individuals to the next generation
+        //! We will move the <nElites> best individuals to the next generation
         int nElites;
 
         // Vectors and matrices
