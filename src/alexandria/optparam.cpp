@@ -337,8 +337,13 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
     attemptedMoves_.resize(nParam, 0);
     acceptedMoves_.resize(nParam, 0);
     std::vector<bool> changed;
-    changed.resize(nParam, false);
+    // Initialize to true to make sure the parameters are 
+    // all spread around the processors.
+    changed.resize(nParam, true);
     toPoldata(changed);
+    // Now set them back to false, further spreading is done
+    // one parameter at a time.
+    std::fill(changed.begin(), changed.end(), false);
 
     // training set
     prevEval = calcDeviation(true, CalcDev::Parallel, iMolSelect::Train);
