@@ -14,6 +14,7 @@ int main(int argc, char const *argv[])
 	const int       chromLen        = 10;
 //	const int       maxGenerations  = 5;
 //    const double    mutFrac         = 0.1;
+    const int       nElites         = 10;
     const double    tolerance       = 0.000001;
 
 	SimpleInitializer           init(-10.0, 10.0);
@@ -32,6 +33,7 @@ int main(int argc, char const *argv[])
 
 	GeneticAlgorithm ga = GeneticAlgorithm(popSize,
 										   chromLen,
+                                           nElites,
 										   &init,
 										   &fit,
 										   &sort,

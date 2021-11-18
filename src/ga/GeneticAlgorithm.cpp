@@ -23,6 +23,7 @@ namespace ga
 
     GeneticAlgorithm::GeneticAlgorithm(const int                    popSize,
                                        const int                    chromosomeLength,
+                                       const int                    nElites,
                                              Initializer*           initializer,
                                              FitnessComputer*       fitComputer,
                                              Sorter*                sorter,
@@ -33,11 +34,14 @@ namespace ga
                                              Terminator*            terminator)
     {
 
-        // Make sure that there is an even number of individuals in the population
-        assert(popSize % 2 == 0);
+        // TODO: Make sure that there is an even number of individuals in the population
+        // TODO: Make sure nElites is even
+        // TODO: Make sure an actual sorter is given when nElites > 0
+        // TODO: Make sure an actual sorter is given when using RankProbabilityComputer
 
         this->popSize           = popSize;
         this->chromosomeLength  = chromosomeLength;
+        this->nElites           = nElites;
         this->initializer       = initializer;
         this->fitComputer       = fitComputer;
         this->sorter            = sorter;
@@ -82,7 +86,7 @@ namespace ga
             printf("\nGeneration: %i\n", generation);
         }
 
-        // Initialize the population
+        // Initialize the population and compute fitness
         if (verbose >= 2) printf("Initializing individuals and computing initial fitness...\n");
         for (i = 0; i < popSize; i++)
         {
@@ -138,9 +142,13 @@ namespace ga
                 printVector(probability);
             }
 
-            // Generate new population
-            if (verbose >= 2) printf("Generating new population...\n");
-            for (i = 0; i < popSize; i += 2)
+            // Move the <nElites> best individuals into the new population (assuming population is sorted)
+            if (verbose >= 2) printf("Moving the %i best individual(s) into the new population...\n", nElites);
+            for (i = 0; i < nElites; i++) newPop[i] = oldPop[i];
+
+            // Generate new population after the elitism
+            if (verbose >= 2) printf("Generating the rest of the new population...\n");
+            for (i = nElites; i < popSize; i += 2)
             {
                 if (verbose >= 3) printf("i = %i, %i\n", i, i + 1);
 
@@ -154,7 +162,7 @@ namespace ga
                 {
                     if (verbose >= 3) printf("Doing crossover...\n");
                     (*crossover).offspring(oldPop[parent1], oldPop[parent2], newPop[i],
-                                           newPop[i + 1], chromosomeLength);
+                                           newPop[i+1], chromosomeLength);
                 }
                 else
                 {
@@ -163,7 +171,7 @@ namespace ga
                     newPop[i+1] = oldPop[parent2];
                 }
 
-                // Do mutation in each child, and compute fitness to avoid another traversal
+                // Do mutation in each child
                 if (verbose >= 3) printf("Doing mutation...\n");
                 for (k = 0; k < 2; k++)
                 {
@@ -171,18 +179,21 @@ namespace ga
                     {
                         if (dis(gen) <= prMut) (*mutator).mutate(newPop[i + k], j);
                     }
-                    // Compute fitness
-                    (*fitComputer).compute(newPop[i], fitness, i, chromosomeLength);
                 }
 
             }
 
             // Swap oldPop and newPop
             if (verbose >= 2) printf("Swapping oldPop and newPop...\n");
-
             tmpPop = oldPop;
             oldPop = newPop;
             newPop = tmpPop;
+
+            // Compute fitness
+            for (i = 0; i < popSize; i++) {
+                // Compute fitness
+                (*fitComputer).compute(oldPop[i], fitness, i, chromosomeLength);
+            }
 
             // If verbose, print best individual
             if (verbose >= 2 or (verbose >= 1 and generation % GEN_PRINTS == 0))
