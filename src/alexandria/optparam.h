@@ -359,14 +359,6 @@ class Bayes : public OptParam
         void printParameters(FILE *fp) const;
 
         /*! \brief
-         * Print given parameters to a file
-         * \param[in] fp        File pointer to open file
-         * \param[in] param     vector of parameters to print
-         */
-        void printParameters(      FILE    *fp,
-                             const parm_t  &param) const;
-
-        /*! \brief
          * Return the vector of number of attempted moves for each parameter
          */
         const mc_t &getAttemptedMoves() const {return attemptedMoves_;};
