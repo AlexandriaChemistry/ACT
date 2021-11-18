@@ -444,7 +444,7 @@ int alex_gentop(int argc, char *argv[])
 
     if (openmm)
         {
-            writeOpenMM(opt2fn("-o", NFILE, fnm), &pd, 0);
+            writeOpenMM(opt2fn("-o", NFILE, fnm), &pd, &mymol, 0);
         }
 
     else
