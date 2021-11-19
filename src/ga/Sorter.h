@@ -70,7 +70,7 @@ namespace ga
                   const int     popSize);
 
         /*!
-         * Split <fitA> into 2 runs, sort both runs into <fitB>, merge both runs from <fitB> into <fitA>
+         * Split "fitA" into 2 runs, sort both runs into "fitB", merge both runs from "fitB" into "fitA"
          * @param popB      population B
          * @param fitB      fitness B
          * @param left      left index (inclusive)
@@ -125,7 +125,7 @@ namespace ga
                   const int     popSize);
 
         /*!
-         * Split <fitness> into 2 parts, one left of the pivot element and one to the right of it, and sort both.
+         * Split "fitness" into 2 parts, one left of the pivot element and one to the right of it, and sort both.
          * @param fitness   the population vector
          * @param low       the left-most point of the part of the population vector in this recursion
          * @param high      the right-most point of the part of the population vector in this recursion

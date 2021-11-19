@@ -34,7 +34,7 @@ namespace ga
 
     /*!
      * Toy terminator class which returns true when the sum of squared values in the vector is no larger than
-     * tolerance * <chromosomeLength>
+     * "tolerance" * "chromosomeLength"
      */
     class SimpleTerminator : public Terminator
     {
@@ -53,8 +53,7 @@ namespace ga
     };
 
     /*!
-     * Toy terminator class which returns true when the sum of squared values in the vector is no larger than
-     * tolerance * <chromosomeLength>
+     * Terminator which stops evolution after "maxGenerations"
      */
     class GenerationTerminator : public Terminator
     {

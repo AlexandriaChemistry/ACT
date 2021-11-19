@@ -29,7 +29,7 @@ namespace ga
 
     /*!
      * Class for percentual gene mutation
-     * Modifies a gene by a maximum of <frac*100>% of its value
+     * Modifies a gene by a maximum of ("frac"*100)% of its value
      */
     class PercentMutator : public Mutator
     {
@@ -57,7 +57,7 @@ namespace ga
 
     /*!
      * Class for range gene mutation
-     * Modifies a gene by a maximum of <max> - <min>.
+     * Modifies a gene by a maximum of "max" - "min".
      */
     class RangeMutator : public Mutator
     {
