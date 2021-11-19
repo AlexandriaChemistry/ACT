@@ -22,7 +22,7 @@ namespace ga
         // Scalars
         int popSize;
         int chromosomeLength;
-        //! We will move the <nElites> best individuals to the next generation
+        //! We will move the "nElites" best individuals to the next generation
         int nElites;
 
         // Vectors and matrices
@@ -47,7 +47,7 @@ namespace ga
          * DEFAULT CONSTRUCTOR: Create a new GeneticAlgorithm object
          * @param popSize               size of the population
          * @param chromosomeLength      length of each individual
-         * @param nElites                the amount of best individuals to move unchanged to the next generation
+         * @param nElites               the amount of best individuals to move unchanged to the next generation
          * @param initializer           Initializer object
          * @param fitComputer           FitnessComputer object
          * @param sorter                Sorter object

@@ -142,7 +142,7 @@ namespace ga
                 printVector(probability);
             }
 
-            // Move the <nElites> best individuals into the new population (assuming population is sorted)
+            // Move the "nElites" best individuals into the new population (assuming population is sorted)
             if (verbose >= 2) printf("Moving the %i best individual(s) into the new population...\n", nElites);
             for (i = 0; i < nElites; i++) newPop[i] = oldPop[i];
 
