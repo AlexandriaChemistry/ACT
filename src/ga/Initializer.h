@@ -28,7 +28,7 @@ namespace ga
 
 
     /*!
-     * Toy initializer. Initializes values randomly in range [min, max]
+     * Toy initializer. Initializes values randomly in range [\p min, \p max]
      */
     class SimpleInitializer : public Initializer {
 

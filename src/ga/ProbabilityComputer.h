@@ -101,7 +101,11 @@ namespace ga
         RankProbabilityComputer(const int popSize);
 
         /*!
-         * Here we assume that population and fitness are sorted in a descending manner.
+         * Here we assume that population and fitness are sorted in a descending manner.<br>
+         * Compute the probability of each individual in the population
+         * @param fitness   the fitness of each individual
+         * @param prob      structure to store the probability for each individual
+         * @param popSize   number of individuals in the population
          */
         void compute(const vector&  fitness,
                            vector&  prob,

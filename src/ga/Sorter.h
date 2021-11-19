@@ -14,6 +14,7 @@ namespace ga
     {
 
     protected:
+        //! Whether to sort in descending order of fitness
         bool descending = true;
 
     public:
@@ -31,7 +32,7 @@ namespace ga
 
 
     /*!
-     * Sorter which does nothing.
+     * Sorter which does nothing. Will be used when sorting is not required.
      */
     class EmptySorter : public Sorter
     {
@@ -50,27 +51,13 @@ namespace ga
     class MergeSorter : public Sorter
     {
 
+        //! Temporal storage for a population
         matrix tmpPop;
+        //! Temporal vector for fitness
         vector tmpFitness;
 
-    public:
         /*!
-         * Create a new MergeSorter object
-         * @param popSize               number of individuals in the population
-         * @param chromosomeLength      the size of each individual
-         * @param descending            true if sorting in descending order (using fitness),
-         *                              false otherwise (using chi2)
-         */
-        MergeSorter(const int   popSize,
-                    const int   chromosomeLength,
-                    const bool  descending);
-
-        void sort(      matrix& pop,
-                        vector& fitness,
-                  const int     popSize);
-
-        /*!
-         * Split "fitA" into 2 runs, sort both runs into "fitB", merge both runs from "fitB" into "fitA"
+         * Split \p fitA into 2 runs, sort both runs into \p fitB, merge both runs from \p fitB into \p fitA
          * @param popB      population B
          * @param fitB      fitness B
          * @param left      left index (inclusive)
@@ -80,8 +67,8 @@ namespace ga
          */
         void topDownSplitMerge(      matrix&    popB,
                                      vector&    fitB,
-                               const int        left,
-                               const int        right,
+                                     const int        left,
+                                     const int        right,
                                      matrix&    popA,
                                      vector&    fitA);
 
@@ -99,11 +86,27 @@ namespace ga
          */
         void topDownMerge(      matrix& popA,
                                 vector& fitA,
-                          const int     left,
-                          const int     middle,
-                          const int     right,
+                                const int     left,
+                                const int     middle,
+                                const int     right,
                                 matrix& popB,
                                 vector& fitB);
+
+    public:
+        /*!
+         * Create a new MergeSorter object
+         * @param popSize               number of individuals in the population
+         * @param chromosomeLength      the size of each individual
+         * @param descending            true if sorting in descending order (using fitness),
+         *                              false otherwise (using chi2)
+         */
+        MergeSorter(const int   popSize,
+                    const int   chromosomeLength,
+                    const bool  descending);
+
+        void sort(      matrix& pop,
+                        vector& fitness,
+                  const int     popSize);
 
     };
 
@@ -114,26 +117,19 @@ namespace ga
     class QuickSorter : public Sorter
     {
 
+        //! Temporal storage for fitness
         vector tmpFitness;
 
-    public:
-        QuickSorter(const int popSize, const bool descending);
-
-
-        void sort(      matrix& pop,
-                        vector& fitness,
-                  const int     popSize);
-
         /*!
-         * Split "fitness" into 2 parts, one left of the pivot element and one to the right of it, and sort both.
+         * Split \p fitness into 2 parts, one left of the pivot element and one to the right of it, and sort both.
          * @param fitness   the population vector
          * @param low       the left-most point of the part of the population vector in this recursion
          * @param high      the right-most point of the part of the population vector in this recursion
          */
         void quickSort(      matrix&    pop,
                              vector&    fitness,
-                       const int        low,
-                       const int        high);
+                             const int        low,
+                             const int        high);
 
         /*!
          * Find the pivot element and sort everything by comparing with it.
@@ -143,8 +139,24 @@ namespace ga
          */
         int partition(      matrix& pop,
                             vector& fitness,
-                      const int     low,
-                      const int     high);
+                            const int     low,
+                            const int     high);
+
+    public:
+        /*!
+         * Create a new QuickSorter
+         * @param popSize       amount of individuals in the population
+         * @param descending    true if sorting in descending order (using fitness),
+         *                      false otherwise (using chi2)
+         */
+        QuickSorter(const int   popSize,
+                    const bool  descending);
+
+
+        void sort(      matrix& pop,
+                        vector& fitness,
+                  const int     popSize);
+
     };
 
 }

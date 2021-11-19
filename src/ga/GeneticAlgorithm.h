@@ -59,7 +59,7 @@ namespace ga
 
     public:
         /*!
-         * DEFAULT CONSTRUCTOR: Create a new GeneticAlgorithm object
+         * Create a new GeneticAlgorithm object
          * @param popSize               size of the population
          * @param chromosomeLength      length of each individual
          * @param nElites               the amount of best individuals to move unchanged to the next generation

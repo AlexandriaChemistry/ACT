@@ -36,6 +36,18 @@ namespace ga
     {
 
     public:
+        /*!
+         * Compute the fitness of the \f$i\f$-th individual according to the formula
+         * \f[
+         *      f_i = \frac{ 1 }{ \sum \limits_{ j=1 }^{ m } { x_j }^2 },
+         * \f]
+         * where \f$x_j\f$ is the \f$j\f$-th gene of the \f$i\f$-th individual.
+         *
+         * @param individual    the individual
+         * @param fitness       the fitness vector
+         * @param indIndex      index of the individual in the population
+         * @param length        length of the chromosome
+         */
         void compute(const vector&  individual,
                            vector&  fitness,
                      const int      indIndex,

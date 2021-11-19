@@ -18,7 +18,7 @@ namespace ga
 
     public:
         /*!
-         * Mutate a gene
+         * Mutate a gene (in place)
          * @param individual    individual to mutate
          * @param indGene       index of the gene to alter
          */
@@ -29,7 +29,7 @@ namespace ga
 
     /*!
      * Class for percentual gene mutation
-     * Modifies a gene by a maximum of ("frac"*100)% of its value
+     * Modifies a gene by a maximum of (\p frac*100)% of its value
      */
     class PercentMutator : public Mutator
     {
@@ -49,6 +49,11 @@ namespace ga
             gen.seed(::time(NULL));
         }
 
+        /*!
+         * Mutate a gene (in place) by multiplying it by a random number in \f$[1-frac, 1+frac]\f$
+         * @param individual    individual to mutate
+         * @param indGene       index of the gene to alter
+         */
         void mutate(      vector&   individual,
                     const int       indGene);
 
@@ -57,7 +62,7 @@ namespace ga
 
     /*!
      * Class for range gene mutation
-     * Modifies a gene by a maximum of "max" - "min".
+     * Modifies a gene by a maximum of 2 * \p range.
      */
     class RangeMutator : public Mutator
     {
@@ -77,6 +82,11 @@ namespace ga
             gen.seed(::time(NULL));
         }
 
+        /*!
+         * Mutate a gene (in place) by generating a random number in \f$[-range, range]\f$ and adding it to the gene.
+         * @param individual    individual to mutate
+         * @param indGene       index of the gene to alter
+         */
         void mutate(      vector&   individual,
                     const int       indGene);
 

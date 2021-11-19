@@ -45,7 +45,7 @@ namespace ga
                                const int     length) {};
 
         /*!
-         * Return random index
+         * Return a random gene index
          */
         int randIndex();
 
@@ -59,6 +59,10 @@ namespace ga
     {
 
     public:
+        /*!
+         * Create a new SinglePointCrossover object
+         * @param chromosomeLength  amount of genes in each individual
+         */
         SinglePointCrossover(const int chromosomeLength) : Crossover(chromosomeLength) {}
 
         void offspring(const vector &parent1,
@@ -77,6 +81,10 @@ namespace ga
     {
 
     public:
+        /*!
+         * Create a new DoublePointCrossover object
+         * @param chromosomeLength  amount of genes in each individual
+         */
         DoublePointCrossover(const int chromosomeLength) : Crossover(chromosomeLength) {};
 
         void offspring(const vector &parent1,
@@ -93,6 +101,7 @@ namespace ga
      */
     class NPointCrossover : public Crossover
     {
+
     private:
         int numberOfCrossovers;
         vector crossoverIndices;
