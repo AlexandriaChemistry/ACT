@@ -47,6 +47,7 @@
 
 #include <gtest/gtest.h>
 
+#include "alexandria/chargemodel.h"
 #include "alexandria/coulombintegrals/coulombintegrals.h"
 #include "alexandria/coulombintegrals/gaussian_integrals.h"
 #include "alexandria/coulombintegrals/slater_integrals.h"
@@ -62,30 +63,20 @@ namespace gmx
 namespace
 {
 
-enum class ChargeDistribution {
-    Slater,
-    Gaussian
-};
-
-std::map<ChargeDistribution, const char *> cdist = {
-    { ChargeDistribution::Slater,   "Slater"},
-    { ChargeDistribution::Gaussian, "Gaussian"}
-};
-
 /*! \brief Utility to do the real testing
  *
- * \param[in] cd    Charge distribution
+ * \param[in] cd    Charge distribution type
  * \param[in] irow  Row number for atom i
  * \param[in] jrow  Row number for atom j
  * \param[in] xi    Distribution width atom i (may be 0)
  * \param[in] xj    Distribution width atom j (may be 0)
  * \param[in] checker The checker data structure
  */
-void testCoulomb(ChargeDistribution          cd,
-                 int                         irow,
-                 int                         jrow,
-                 double                      izeta,
-                 double                      jzeta,
+void testCoulomb(alexandria::ChargeType           cd,
+                 int                              irow,
+                 int                              jrow,
+                 double                           izeta,
+                 double                           jzeta,
                  gmx::test::TestReferenceChecker *checker)
 {
     std::vector<double> coulomb;
@@ -98,13 +89,13 @@ void testCoulomb(ChargeDistribution          cd,
         
         switch (cd)
         {
-        case ChargeDistribution::Gaussian:
+        case alexandria::ChargeType::Gaussian:
             coulomb.push_back(Coulomb_GG(r,  izeta, jzeta));
             force.push_back(-DCoulomb_GG(r,  izeta, jzeta));
             ncoulomb.push_back(Nuclear_GG(r, izeta));
             nforce.push_back(-DNuclear_GG(r, izeta));
             break;
-        case ChargeDistribution::Slater:
+        case alexandria::ChargeType::Slater:
             coulomb.push_back(Coulomb_SS(r,  irow, jrow, izeta, jzeta));
             force.push_back(-DCoulomb_SS(r,  irow, jrow, izeta, jzeta));
             ncoulomb.push_back(Nuclear_SS(r, irow, izeta));
@@ -114,9 +105,9 @@ void testCoulomb(ChargeDistribution          cd,
             break;
         }
     }
-    const char *name = cdist[cd];
+    auto name = alexandria::chargeTypeName(cd).c_str();
     char buf[256];
-    if (cd == ChargeDistribution::Slater)
+    if (cd == alexandria::ChargeType::Slater)
     {
         checker->checkInt64(irow, "irow");
         checker->checkInt64(jrow, "jrow");
@@ -155,7 +146,7 @@ class SlaterTest : public ::testing::TestWithParam<std::tuple<std::tuple<int, in
         }
         void runTest()
         {
-            testCoulomb(ChargeDistribution::Slater, irow_, jrow_, xi_, xj_, &checker_);
+            testCoulomb(alexandria::ChargeType::Slater, irow_, jrow_, xi_, xj_, &checker_);
         }
 };
 
@@ -177,7 +168,7 @@ class GaussianTest : public ::testing::TestWithParam<std::tuple<double, double> 
         }
         void runTest()
         {
-            testCoulomb(ChargeDistribution::Gaussian, 0, 0, xi_, xj_, &checker_);
+            testCoulomb(alexandria::ChargeType::Gaussian, 0, 0, xi_, xj_, &checker_);
         }
 
 };
