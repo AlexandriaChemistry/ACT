@@ -16,30 +16,45 @@
 namespace ga
 {
 
+    /*!
+     * Class which encapsulates a genetic algorithm
+     */
     class GeneticAlgorithm
     {
 
-        // Scalars
+        //! Amount of individuals in the population
         int popSize;
+        //! Amount of genes in each individual
         int chromosomeLength;
-        //! We will move the "nElites" best individuals to the next generation
+        //! Amount of top individuals to be propagated, unchanged, to the next generation
         int nElites;
 
-        // Vectors and matrices
+        //! Old population
         matrix oldPop;
+        //! New population, which emerges from the old population
         matrix newPop;
+        //! Temporal storage to swap "oldPop" and "newPop" after each generation
         matrix tmpPop;
+        //! Fitness score for each individual
         vector fitness;
+        //! Probability of selection for each individual
         vector probability;
 
-        // Object pointers
+        //! Initializes each individual in the population
         Initializer*            initializer;
+        //! Computes fitness for each individual in the population
         FitnessComputer*        fitComputer;
+        //! Sorts the individuals based on their fitness
         Sorter*                 sorter;
+        //! Computes the probability of selection of each individual
         ProbabilityComputer*    probComputer;
+        //! Selects an individual from the population based on its probability
         Selector*               selector;
+        //! Grabs 2 individuals and crosses their genes to generate 2 new individuals
         Crossover*              crossover;
+        //! Mutates the genes of the individuals
         Mutator*                mutator;
+        //! Checks if the evolution should continue or be terminated
         Terminator*             terminator;
 
     public:

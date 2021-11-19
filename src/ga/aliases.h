@@ -18,14 +18,19 @@ namespace ga
 {
 
     /*!
-     * Result structure of genetic algorithm
+     * Result of the evolution done by the genetic algorithm
      */
     typedef struct ga_result
     {
+        //! Collection of individuals, each being a vector
         matrix  pop;
+        //! Fitness score for each individual in the population
         vector  fitness;
+        //! Individual with the best fitness
         vector  bestIndividual;
+        //! Best fitness
         double  bestFitness;
+        //! Amount of generations
         int     generations;
     } ga_result_t;
 
