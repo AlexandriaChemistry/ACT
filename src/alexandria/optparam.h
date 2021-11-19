@@ -495,9 +495,9 @@ class Bayes : public OptParam
         /*!
          * Compute mean (pmean_) and standard deviation (psigma_) for each parameter
          * @param nParam        number of parameters in the system
-         * @param sum           over <nsum> iterations, the sum of each parameter
+         * @param sum           over "nsum" iterations, the sum of each parameter
          * @param nsum          number of iterations to compute statistics over
-         * @param sum_of_sq     over <nsum> iterations, the sum of each parameter squared
+         * @param sum_of_sq     over "nsum" iterations, the sum of each parameter squared
          */
         void computeMeanSigma(const int     nParam,
                               const parm_t& sum,
