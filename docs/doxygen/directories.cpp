@@ -21,25 +21,6 @@ Doxygen documentation file for directories in the source tree.
  */
 
 /*!
-\dir src/gromacs
-\brief Source code for building the `libgromacs` library.
- */
-
-/*!
-\dir src/gromacs/coulombintegrals
-\brief \ref libinternal
-
-\ingroup group_alexandria
- */
-
-/*! \libinternal
-\dir src/gromacs/coulombintegrals/tests
-\brief \ref libinternal
-
-\ingroup group_alexandria
- */
-
-/*!
 \libinternal
 \dir src/alexandria
 \brief Source code for ACT
@@ -48,9 +29,4 @@ Doxygen documentation file for directories in the source tree.
 \libinternal
 \dir src/alexandria/tests
 \brief Test source code for ACT
- */
-
-/*!
-\dir share
-\brief Directory that contains installed data files.
  */

@@ -33,4 +33,4 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 gmx_add_unit_test(CoulombIntegralsTest coulombIntegrals-test
-                  coulombintegralstest.cpp ${COULOMBINTEGRALS_SOURCES})
+                  coulombintegralstest.cpp ${COULOMBINTEGRALS_SOURCES} ../../chargemodel.cpp)

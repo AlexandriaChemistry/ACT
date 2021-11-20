@@ -41,7 +41,6 @@ EXCLUDE                = @CMAKE_SOURCE_DIR@/src/external \
                          @CMAKE_SOURCE_DIR@/src/gromacs/timing/ \
                          @CMAKE_SOURCE_DIR@/src/gromacs/topology/ \
                          @CMAKE_SOURCE_DIR@/src/gromacs/trajectory/ \
-                         @CMAKE_SOURCE_DIR@/src/gromacs/utility/ \
                          @CMAKE_SOURCE_DIR@/src/gromacs/linearalgebra/ \
                          @CMAKE_SOURCE_DIR@/src/api \
                          @CMAKE_SOURCE_DIR@/src/gromacs/commandline.h \
@@ -67,7 +66,7 @@ STRIP_FROM_INC_PATH    = @CMAKE_SOURCE_DIR@/src
 INCLUDE_PATH           = @CMAKE_SOURCE_DIR@/src
 HAVE_DOT               = @DOXYGEN_DOT_FOUND@
 DOT_PATH               = @DOXYGEN_DOT_PATH@
-MSCGEN_PATH            = @DOXYGEN_MSCGEN_PATH@
+#MSCGEN_PATH            = @DOXYGEN_MSCGEN_PATH@
 DOTFILE_DIRS           = @DEPGRAPH_DIR@
 @DOXYGEN_EXTRA_SETTINGS@
 
