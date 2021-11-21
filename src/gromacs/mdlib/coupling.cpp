@@ -48,7 +48,6 @@
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vecdump.h"
-#include "gromacs/mdlib/expanded.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdlib/update.h"
@@ -973,8 +972,7 @@ void trotter_update(const t_inputrec *ir, int64_t step, gmx_ekindata_t *ekind,
     sfree(scalefac);
 }
 
-
-extern void init_npt_masses(const t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool bInit)
+static void init_npt_masses(const t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool bInit)
 {
     int              n, i, j, d, ngtc, nh;
     const t_grpopts *opts;
