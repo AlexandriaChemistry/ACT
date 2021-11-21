@@ -225,18 +225,9 @@ void global_stat(const gmx_global_stat *gs,
         ifv = add_binr(rb, DIM*DIM, fvir[0]);
     }
 
-    gmx::ArrayRef<real> rmsdData;
     if (bEner)
     {
         ie  = add_binr(rb, nener, copyenerd);
-        if (constr)
-        {
-            rmsdData = constr->rmsdData();
-            if (!rmsdData.empty())
-            {
-                irmsd = add_binr(rb, 2, rmsdData.data());
-            }
-        }
         if (!inputrecNeedMutot(inputrec))
         {
             imu = add_binr(rb, DIM, mu_tot);
@@ -329,10 +320,6 @@ void global_stat(const gmx_global_stat *gs,
     if (bEner)
     {
         extract_binr(rb, ie, nener, copyenerd);
-        if (!rmsdData.empty())
-        {
-            extract_binr(rb, irmsd, rmsdData);
-        }
         if (!inputrecNeedMutot(inputrec))
         {
             extract_binr(rb, imu, DIM, mu_tot);

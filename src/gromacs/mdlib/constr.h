@@ -92,39 +92,21 @@ enum class ConstraintVariable : int
  * \brief Handles constraints */
 class Constraints
 {
-    private:
-        /*! \brief Constructor
-         *
-         * Private to enforce use of makeConstraints() factory
-         * function. */
-        Constraints(const gmx_mtop_t     &mtop,
-                    const t_inputrec     &ir,
-                    FILE                 *log,
-                    const t_mdatoms      &md,
-                    const t_commrec      *cr,
-                    const gmx_multisim_t &ms,
-                    t_nrnb               *nrnb,
-                    gmx_wallcycle        *wcycle,
-                    bool                  pbcHandlingRequired,
-                    int                   numConstraints,
-                    int                   numSettles);
     public:
         /*! \brief This member type helps implement a factory
          * function, because its objects can access the private
          * constructor. */
         struct CreationHelper;
 
-        ~Constraints();
-
         /*! \brief Returns the total number of flexible constraints in the system. */
-        int numFlexibleConstraints() const;
+        int numFlexibleConstraints() const { return 0; }
 
         /*! \brief Set up all the local constraints for the domain.
          *
          * \todo Make this a callback that is called automatically
          * once a new domain has been made. */
         void setConstraints(const gmx_localtop_t &top,
-                            const t_mdatoms      &md);
+                            const t_mdatoms      &md) {}
 
         /*! \brief Applies constraints to coordinates.
          *
@@ -171,28 +153,17 @@ class Constraints
                    real                 *dvdlambda,
                    rvec                 *v,
                    tensor               *vir,
-                   ConstraintVariable    econq);
-        //! Getter for use by domain decomposition.
-        const ArrayRef<const t_blocka> atom2constraints_moltype() const;
-        //! Getter for use by domain decomposition.
-        ArrayRef < const std::vector < int>> atom2settle_moltype() const;
+                   ConstraintVariable    econq) {}
 
-        /*! \brief Return the data for reduction for determining
-         * constraint RMS relative deviations, or an empty ArrayRef
-         * when not supported for any active constraints. */
-        ArrayRef<real> rmsdData() const;
         /*! \brief Return the RMSD of the constraints when available. */
-        real rmsd() const;
+        real rmsd() const { return 0; } 
 
-    private:
-        //! Implementation type.
-        class Impl;
-        //! Implementation object.
-        PrivateImplPointer<Impl> impl_;
 };
 
 /*! \brief Generate a fatal error because of too many LINCS/SETTLE warnings. */
-[[ noreturn ]] void too_many_constraint_warnings(int eConstrAlg, int warncount);
+static void too_many_constraint_warnings(int eConstrAlg, int warncount)
+{
+}
 
 /*! \brief Returns whether constraint with parameter \p iparamsIndex is a flexible constraint */
 static inline bool isConstraintFlexible(const t_iparams *iparams,
@@ -232,9 +203,9 @@ flexibleConstraintTreatment(bool haveDynamicsIntegrator);
  * \param[in]  flexibleConstraintTreatment  The flexible constraint treatment, see enum above
  * \returns a block struct with all constraints for each atom
  */
-t_blocka make_at2con(const gmx_moltype_t            &moltype,
+static t_blocka *make_at2con(const gmx_moltype_t            &moltype,
                      gmx::ArrayRef<const t_iparams>  iparams,
-                     FlexibleConstraintTreatment     flexibleConstraintTreatment);
+                             FlexibleConstraintTreatment     flexibleConstraintTreatment) { return nullptr; }
 
 /*! \brief Returns a block struct to go from atoms to constraints
  *
@@ -248,17 +219,19 @@ t_blocka make_at2con(const gmx_moltype_t            &moltype,
  * \param[in]  flexibleConstraintTreatment  The flexible constraint treatment, see enum above
  * \returns a block struct with all constraints for each atom
  */
-t_blocka make_at2con(int                          numAtoms,
-                     const t_ilist               *ilist,
-                     const t_iparams             *iparams,
-                     FlexibleConstraintTreatment  flexibleConstraintTreatment);
+static t_blocka *make_at2con(int                          numAtoms,
+                      const t_ilist               *ilist,
+                      const t_iparams             *iparams,
+                      FlexibleConstraintTreatment  flexibleConstraintTreatment)
+{ return nullptr; }
 
 /*! \brief Returns an array of atom to constraints lists for the moltypes */
-const t_blocka *atom2constraints_moltype(const Constraints *constr);
+static t_blocka *atom2constraints_moltype(const Constraints *constr)
+{ return nullptr; }
 
 //! Return the number of flexible constraints in the \c ilist and \c iparams.
-int countFlexibleConstraints(const t_ilist   *ilist,
-                             const t_iparams *iparams);
+static int countFlexibleConstraints(const t_ilist   *ilist,
+                             const t_iparams *iparams) { return 0; }
 
 /*! \brief Returns the constraint iatoms for a constraint number con
  * which comes from a list where F_CONSTR and F_CONSTRNC constraints
@@ -279,10 +252,10 @@ constr_iatomptr(gmx::ArrayRef<const int> iatom_constr,
 };
 
 /*! \brief Returns whether there are inter charge group constraints */
-bool inter_charge_group_constraints(const gmx_mtop_t &mtop);
+static bool inter_charge_group_constraints(const gmx_mtop_t &mtop) { return false; }
 
 /*! \brief Returns whether there are inter charge group settles */
-bool inter_charge_group_settles(const gmx_mtop_t &mtop);
+static bool inter_charge_group_settles(const gmx_mtop_t &mtop) { return false; }
 
 }  // namespace gmx
 

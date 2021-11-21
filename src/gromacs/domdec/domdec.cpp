@@ -64,8 +64,6 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/calc_verletbuf.h"
-#include "gromacs/mdlib/constr.h"
-#include "gromacs/mdlib/constraintrange.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/updategroups.h"
 #include "gromacs/mdlib/vsite.h"
@@ -2195,16 +2193,8 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
         comm->bInterCGMultiBody = FALSE;
     }
 
-    if (comm->useUpdateGroups)
-    {
-        dd->splitConstraints = false;
-        dd->splitSettles     = false;
-    }
-    else
-    {
-        dd->splitConstraints = gmx::inter_charge_group_constraints(*mtop);
-        dd->splitSettles     = gmx::inter_charge_group_settles(*mtop);
-    }
+    dd->splitConstraints = false;
+    dd->splitSettles     = false;
 
     if (ir->rlist == 0)
     {
@@ -2323,29 +2313,6 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
     }
 
     real rconstr = 0;
-    if (dd->splitConstraints && options.constraintCommunicationRange <= 0)
-    {
-        /* There is a cell size limit due to the constraints (P-LINCS) */
-        rconstr = gmx::constr_r_max(mdlog, mtop, ir);
-        GMX_LOG(mdlog.info).appendTextFormatted(
-                "Estimated maximum distance required for P-LINCS: %.3f nm",
-                rconstr);
-        if (rconstr > comm->cellsize_limit)
-        {
-            GMX_LOG(mdlog.info).appendText("This distance will limit the DD cell size, you can override this with -rcon");
-        }
-    }
-    else if (options.constraintCommunicationRange > 0)
-    {
-        /* Here we do not check for dd->splitConstraints.
-         * because one can also set a cell size limit for virtual sites only
-         * and at this point we don't know yet if there are intercg v-sites.
-         */
-        GMX_LOG(mdlog.info).appendTextFormatted(
-                "User supplied maximum distance required for P-LINCS: %.3f nm",
-                options.constraintCommunicationRange);
-        rconstr = options.constraintCommunicationRange;
-    }
     comm->cellsize_limit = std::max(comm->cellsize_limit, rconstr);
 
     comm->cgs_gl = gmx_mtop_global_cgs(mtop);

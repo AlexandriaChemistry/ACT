@@ -448,7 +448,6 @@ int dd_make_local_constraints(gmx_domdec_t *dd, int at_start,
     {
         // TODO Perhaps gmx_domdec_constraints_t should keep a valid constr?
         GMX_RELEASE_ASSERT(constr != nullptr, "Must have valid constraints object");
-        at2con_mt = constr->atom2constraints_moltype();
         ireq      = &dc->requestedGlobalAtomIndices[0];
         ireq->clear();
     }
@@ -461,106 +460,6 @@ int dd_make_local_constraints(gmx_domdec_t *dd, int at_start,
 
     gmx::ArrayRef < const std::vector < int>> at2settle_mt;
     /* When settle works inside charge groups, we assigned them already */
-    if (dd->splitSettles)
-    {
-        // TODO Perhaps gmx_domdec_constraints_t should keep a valid constr?
-        GMX_RELEASE_ASSERT(constr != nullptr, "Must have valid constraints object");
-        at2settle_mt  = constr->atom2settle_moltype();
-        ils_local->nr = 0;
-    }
-
-    if (at2settle_mt.empty())
-    {
-        atoms_to_constraints(dd, mtop, cginfo, at2con_mt, nrec,
-                             ilc_local, ireq);
-    }
-    else
-    {
-        int t0_set;
-        int thread;
-
-        /* Do the constraints, if present, on the first thread.
-         * Do the settles on all other threads.
-         */
-        t0_set = ((!at2con_mt.empty() && dc->nthread > 1) ? 1 : 0);
-
-#pragma omp parallel for num_threads(dc->nthread) schedule(static)
-        for (thread = 0; thread < dc->nthread; thread++)
-        {
-            try
-            {
-                if (!at2con_mt.empty() && thread == 0)
-                {
-                    atoms_to_constraints(dd, mtop, cginfo, at2con_mt, nrec,
-                                         ilc_local, ireq);
-                }
-
-                if (thread >= t0_set)
-                {
-                    int        cg0, cg1;
-                    t_ilist   *ilst;
-
-                    /* Distribute the settle check+assignments over
-                     * dc->nthread or dc->nthread-1 threads.
-                     */
-                    cg0 = (dd->ncg_home*(thread-t0_set  ))/(dc->nthread-t0_set);
-                    cg1 = (dd->ncg_home*(thread-t0_set+1))/(dc->nthread-t0_set);
-
-                    if (thread == t0_set)
-                    {
-                        ilst = ils_local;
-                    }
-                    else
-                    {
-                        ilst = &dc->ils[thread];
-                    }
-                    ilst->nr = 0;
-
-                    std::vector<int> &ireqt = dc->requestedGlobalAtomIndices[thread];
-                    if (thread > 0)
-                    {
-                        ireqt.clear();
-                    }
-
-                    atoms_to_settles(dd, mtop, cginfo, at2settle_mt,
-                                     cg0, cg1,
-                                     ilst, &ireqt);
-                }
-            }
-            GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-        }
-
-        /* Combine the generate settles and requested indices */
-        for (thread = 1; thread < dc->nthread; thread++)
-        {
-            t_ilist   *ilst;
-            int        ia;
-
-            if (thread > t0_set)
-            {
-                ilst = &dc->ils[thread];
-                if (ils_local->nr + ilst->nr > ils_local->nalloc)
-                {
-                    ils_local->nalloc = over_alloc_large(ils_local->nr + ilst->nr);
-                    srenew(ils_local->iatoms, ils_local->nalloc);
-                }
-                for (ia = 0; ia < ilst->nr; ia++)
-                {
-                    ils_local->iatoms[ils_local->nr+ia] = ilst->iatoms[ia];
-                }
-                ils_local->nr += ilst->nr;
-            }
-
-            const std::vector<int> &ireqt = dc->requestedGlobalAtomIndices[thread];
-            ireq->insert(ireq->end(), ireqt.begin(), ireqt.end());
-        }
-
-        if (debug)
-        {
-            fprintf(debug, "Settles: total %3d\n", ils_local->nr/4);
-        }
-    }
-
     if (dd->constraint_comm)
     {
         int nral1;
