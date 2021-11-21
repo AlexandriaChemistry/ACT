@@ -46,9 +46,6 @@
 #include <algorithm>
 #include <array>
 
-#include "gromacs/domdec/dlbtiming.h"
-#include "gromacs/domdec/domdec.h"
-#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/gmxlib/chargegroup.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/functions.h"
@@ -592,21 +589,12 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
     return shfc;
 }
 
-void make_local_shells(const t_commrec *cr,
-                       const t_mdatoms *md,
+void make_local_shells(const t_mdatoms *md,
                        gmx_shellfc_t   *shfc)
 {
     t_shell      *shell;
     int           a0, a1, *ind, nshell, i;
-    gmx_domdec_t *dd = nullptr;
 
-    if (DOMAINDECOMP(cr))
-    {
-        dd = cr->dd;
-        a0 = 0;
-        a1 = dd_numHomeAtoms(*dd);
-    }
-    else
     {
         /* Single node: we need all shells, just copy the pointer */
         shfc->nshell = shfc->nshell_gl;
@@ -628,11 +616,6 @@ void make_local_shells(const t_commrec *cr,
                 shfc->shell_nalloc = over_alloc_dd(nshell+1);
                 srenew(shell, shfc->shell_nalloc);
             }
-            if (dd)
-            {
-                shell[nshell] = shfc->shell_gl[ind[dd->globalAtomIndices[i]]];
-            }
-            else
             {
                 shell[nshell] = shfc->shell_gl[ind[i]];
             }
@@ -887,9 +870,7 @@ real relax_shell_flexcon(FILE                                     *fplog,
                          t_forcerec                               *fr,
                          double                                    t,
                          rvec                                      mu_tot,
-                         const gmx_vsite_t                        *vsite,
-                         DdOpenBalanceRegionBeforeForceComputation ddOpenBalanceRegion,
-                         DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion)
+                         const gmx_vsite_t                        *vsite)
 {
     int           nshell;
     t_shell      *shell;
@@ -899,7 +880,7 @@ real relax_shell_flexcon(FILE                                     *fplog,
     real          ftol;
     char          sbuf[22];
     gmx_bool      bCont, bInit, bConverged;
-    int           nat, dd_ac0, dd_ac1 = 0, i;
+    int           nat, i;
     int           homenr = md->homenr, end = homenr, cg0, cg1;
     int           nflexcon, number_steps, d, Min = 0, count = 0;
 #define  Try (1-Min)             /* At start Try = 1 */
@@ -914,19 +895,7 @@ real relax_shell_flexcon(FILE                                     *fplog,
 
     idef = &top->idef;
 
-    if (DOMAINDECOMP(cr))
-    {
-        nat = dd_natoms_vsite(cr->dd);
-        if (nflexcon > 0)
-        {
-            dd_get_constraint_range(cr->dd, &dd_ac0, &dd_ac1);
-            nat = std::max(nat, dd_ac1);
-        }
-    }
-    else
-    {
-        nat = state->natoms;
-    }
+    nat = state->natoms;
 
     for (i = 0; (i < 2); i++)
     {
@@ -947,7 +916,7 @@ real relax_shell_flexcon(FILE                                     *fplog,
         force[i]            = forceWithPadding[i].paddedArrayRef();
     }
 
-    if (bDoNS && inputrec->ePBC != epbcNONE && !DOMAINDECOMP(cr))
+    if (bDoNS && inputrec->ePBC != epbcNONE)
     {
         /* This is the only time where the coordinates are used
          * before do_force is called, which normally puts all
@@ -1006,8 +975,7 @@ real relax_shell_flexcon(FILE                                     *fplog,
              forceWithPadding[Min], force_vir, md, enerd, fcd,
              state->lambda, graph,
              fr, vsite, mu_tot, t,
-             (bDoNS ? GMX_FORCE_NS : 0) | shellfc_flags,
-             ddOpenBalanceRegion, ddCloseBalanceRegion);
+             (bDoNS ? GMX_FORCE_NS : 0) | shellfc_flags);
 
     sf_dir = 0;
     sum_epot(&(enerd->grpp), enerd->term);
@@ -1067,7 +1035,7 @@ real relax_shell_flexcon(FILE                                     *fplog,
             construct_vsites(vsite, as_rvec_array(pos[Min].data()),
                              inputrec->delta_t, state->v.rvec_array(),
                              idef->iparams, idef->il,
-                             fr->ePBC, fr->bMolPBC, cr, state->box);
+                             fr->ePBC, fr->bMolPBC, state->box);
         }
 
         /* New positions, Steepest descent */
@@ -1091,8 +1059,7 @@ real relax_shell_flexcon(FILE                                     *fplog,
                  forceWithPadding[Try], force_vir,
                  md, enerd, fcd, state->lambda, graph,
                  fr, vsite, mu_tot, t,
-                 shellfc_flags,
-                 ddOpenBalanceRegion, ddCloseBalanceRegion);
+                 shellfc_flags);
         sum_epot(&(enerd->grpp), enerd->term);
         if (gmx_debug_at)
         {

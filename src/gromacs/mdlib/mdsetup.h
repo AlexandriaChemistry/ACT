@@ -57,7 +57,6 @@ class MDAtoms;
  * This routine sets the atom data for the (locally available) atoms.
  * This is called at the start of serial runs and during domain decomposition.
  *
- * \param[in]     cr         Communication record
  * \param[in]     ir         Input parameter record
  * \param[in]     top_global The global topology
  * \param[in,out] top        The local topology
@@ -67,8 +66,7 @@ class MDAtoms;
  * \param[in,out] vsite      The virtual site data, can be NULL
  * \param[in,out] shellfc    The shell/flexible-constraint data, can be NULL
  */
-void mdAlgorithmsSetupAtomData(const t_commrec   *cr,
-                               const t_inputrec  *ir,
+void mdAlgorithmsSetupAtomData(const t_inputrec  *ir,
                                const gmx_mtop_t  *top_global,
                                gmx_localtop_t    *top,
                                t_forcerec        *fr,

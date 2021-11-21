@@ -47,9 +47,6 @@
 
 #include <array>
 
-#include "gromacs/domdec/dlbtiming.h"
-#include "gromacs/domdec/domdec_struct.h"
-#include "gromacs/domdec/partition.h"
 #include "gromacs/gmxlib/chargegroup.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
@@ -259,8 +256,7 @@ static void print_large_forces(FILE            *fp,
     }
 }
 
-static void post_process_forces(const t_commrec           *cr,
-                                int64_t                    step,
+static void post_process_forces(int64_t                    step,
                                 t_nrnb                    *nrnb,
                                 gmx_wallcycle_t            wcycle,
                                 const gmx_localtop_t      *top,
@@ -289,7 +285,7 @@ static void post_process_forces(const t_commrec           *cr,
             spread_vsite_f(vsite, x, fDirectVir, nullptr,
                            (flags & GMX_FORCE_VIRIAL) != 0, virial,
                            nrnb,
-                           &top->idef, fr->ePBC, fr->bMolPBC, graph, box, cr, wcycle);
+                           &top->idef, fr->ePBC, fr->bMolPBC, graph, box, wcycle);
             forceWithVirial->addVirialContribution(virial);
         }
 
@@ -478,15 +474,6 @@ computeSpecialForces(const t_commrec               *cr,
         /* Collect forces from modules */
         forceProviders->calculateForces(forceProviderInput, &forceProviderOutput);
     }
-
-    /* Add forces from interactive molecular dynamics (IMD), if bIMD == TRUE. */
-#ifdef IMD
-    rvec *f = as_rvec_array(forceWithVirial->force_.data());
-    if (inputrec->bIMD && computeForces)
-    {
-        IMD_apply_forces(inputrec->bIMD, inputrec->imd, cr, f, wcycle);
-    }
-#endif
 }
 
 static void do_force_cutsGROUP(FILE *fplog,
@@ -511,8 +498,7 @@ static void do_force_cutsGROUP(FILE *fplog,
                                const gmx_vsite_t *vsite,
                                rvec mu_tot,
                                double t,
-                               int flags,
-                               DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion)
+                               int flags)
 {
     int        cg0, cg1, i, j;
     double     mu[2*DIM];
@@ -525,11 +511,6 @@ static void do_force_cutsGROUP(FILE *fplog,
     clear_mat(vir_force);
 
     cg0 = 0;
-    if (DOMAINDECOMP(cr))
-    {
-        cg1 = cr->dd->globalAtomGroupIndices.size();
-    }
-    else
     {
         cg1 = top->cgs.nr;
     }
@@ -542,7 +523,7 @@ static void do_force_cutsGROUP(FILE *fplog,
     bNS            = ((flags & GMX_FORCE_NS) != 0) && (!fr->bAllvsAll);
     /* Should we perform the long-range nonbonded evaluation inside the neighborsearching? */
     bFillGrid      = (bNS && bStateChanged);
-    bCalcCGCM      = (bFillGrid && !DOMAINDECOMP(cr));
+    bCalcCGCM      = bFillGrid;
     bDoForces      = ((flags & GMX_FORCE_FORCES) != 0);
 
     if (bStateChanged)
@@ -600,7 +581,6 @@ static void do_force_cutsGROUP(FILE *fplog,
             if (PAR(cr))
             {
                 gmx_sumd(2*DIM, mu, cr);
-                ddReopenBalanceRegionCpu(cr->dd);
             }
             for (i = 0; i < 2; i++)
             {
@@ -641,15 +621,9 @@ static void do_force_cutsGROUP(FILE *fplog,
         /* Do the actual neighbour searching */
         ns(fplog, fr, box,
            groups, top, mdatoms,
-           cr, nrnb, bFillGrid);
+           nrnb, bFillGrid);
 
         wallcycle_stop(wcycle, ewcNS);
-    }
-
-    if (DOMAINDECOMP(cr))
-    {
-        wallcycle_start(wcycle, ewcPPDURINGPME);
-        dd_force_flop_start(cr->dd, nrnb);
     }
 
     /* Temporary solution until all routines take PaddedRVecVector */
@@ -690,16 +664,6 @@ static void do_force_cutsGROUP(FILE *fplog,
 
     wallcycle_stop(wcycle, ewcFORCE);
 
-    if (DOMAINDECOMP(cr))
-    {
-        dd_force_flop_stop(cr->dd, nrnb);
-
-        if (ddCloseBalanceRegion == DdCloseBalanceRegionAfterForceComputation::yes)
-        {
-            ddCloseBalanceRegionCpu(cr->dd);
-        }
-    }
-
     computeSpecialForces(cr, t,
                          fr->forceProviders, box, x.unpaddedArrayRef(), mdatoms, 
                          flags, &forceWithVirial, enerd);
@@ -712,7 +676,7 @@ static void do_force_cutsGROUP(FILE *fplog,
         if (vsite && !(fr->haveDirectVirialContributions && !(flags & GMX_FORCE_VIRIAL)))
         {
             spread_vsite_f(vsite, as_rvec_array(x.unpaddedArrayRef().data()), f, fr->fshift, FALSE, nullptr, nrnb,
-                           &top->idef, fr->ePBC, fr->bMolPBC, graph, box, cr, wcycle);
+                           &top->idef, fr->ePBC, fr->bMolPBC, graph, box, wcycle);
         }
 
         if (flags & GMX_FORCE_VIRIAL)
@@ -725,7 +689,7 @@ static void do_force_cutsGROUP(FILE *fplog,
 
     if (bDoForces)
     {
-        post_process_forces(cr, step, nrnb, wcycle,
+        post_process_forces(step, nrnb, wcycle,
                             top, box, as_rvec_array(x.unpaddedArrayRef().data()), f, &forceWithVirial,
                             vir_force, mdatoms, graph, fr, vsite,
                             flags);
@@ -767,9 +731,8 @@ void do_force(FILE                                     *fplog,
               const gmx_vsite_t                        *vsite,
               rvec                                      mu_tot,
               double                                    t,
-              int                                       flags,
-              DdOpenBalanceRegionBeforeForceComputation ddOpenBalanceRegion,
-              DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion)
+              int                                       flags)
+              
 {
     /* modify force flag if not doing nonbonded */
     if (!fr->bNonbonded)
@@ -790,22 +753,10 @@ void do_force(FILE                                     *fplog,
                                enerd, fcd,
                                lambda.data(), graph,
                                fr, vsite, mu_tot,
-                               t, flags,
-                               ddCloseBalanceRegion);
+                               t, flags);
             break;
         default:
             gmx_incons("Invalid cut-off scheme passed!");
-    }
-
-    /* In case we don't have constraints and are using GPUs, the next balancing
-     * region starts here.
-     * Some "special" work at the end of do_force_cuts?, such as vsite spread,
-     * virial calculation and COM pulling, is not thus not included in
-     * the balance timing, which is ok as most tasks do communication.
-     */
-    if (ddOpenBalanceRegion == DdOpenBalanceRegionBeforeForceComputation::yes)
-    {
-        ddOpenBalanceRegionCpu(cr->dd, DdAllowBalanceRegionReopen::no);
     }
 }
 
@@ -1312,11 +1263,6 @@ void finish_run(FILE *fplog, const gmx::MDLogger &mdlog, const t_commrec *cr,
     if (cr->nnodes > 1)
     {
         sfree(nrnb_tot);
-    }
-
-    if (thisRankHasDuty(cr, DUTY_PP) && DOMAINDECOMP(cr))
-    {
-        print_dd_statistics(cr, inputrec, fplog);
     }
 
     /* TODO Move the responsibility for any scaling by thread counts

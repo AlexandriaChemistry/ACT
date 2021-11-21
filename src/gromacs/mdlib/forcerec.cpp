@@ -49,8 +49,6 @@
 
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/compat/make_unique.h"
-#include "gromacs/domdec/domdec.h"
-#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nonbonded/nonbonded.h"
@@ -2102,7 +2100,6 @@ void init_forcerec(FILE                             *fp,
     }
     else
     {
-        if (!DOMAINDECOMP(cr))
         {
             gmx_bool bSHAKE;
 
@@ -2153,10 +2150,6 @@ void init_forcerec(FILE                             *fp,
                     gmx_fatal(FARGS, "SHAKE is not properly supported with intermolecular interactions. For short simulations where linked molecules remain in the same periodic image, the environment variable GMX_USE_GRAPH can be used to override this check.\n");
                 }
             }
-        }
-        else
-        {
-            fr->bMolPBC = dd_bonded_molpbc(cr->dd, fr->ePBC);
         }
     }
 
@@ -2359,7 +2352,7 @@ void init_forcerec(FILE                             *fp,
     }
 
     if (fr->cutoff_scheme == ecutsGROUP &&
-        ncg_mtop(mtop) > fr->cg_nalloc && !DOMAINDECOMP(cr))
+        ncg_mtop(mtop) > fr->cg_nalloc)
     {
         /* Count the total number of charge groups */
         fr->cg_nalloc = ncg_mtop(mtop);
@@ -2586,20 +2579,9 @@ void init_forcerec(FILE                             *fp,
     fr->cginfo_mb = init_cginfo_mb(fp, mtop, fr, bNoSolvOpt,
                                    &bFEP_NonBonded,
                                    &fr->bExcl_IntraCGAll_InterCGNone);
-    if (DOMAINDECOMP(cr))
-    {
-        fr->cginfo = nullptr;
-    }
-    else
-    {
-        fr->cginfo = cginfo_expand(mtop->molblock.size(), fr->cginfo_mb);
-    }
-
-    if (!DOMAINDECOMP(cr))
-    {
-        forcerec_set_ranges(fr, ncg_mtop(mtop), ncg_mtop(mtop),
-                            mtop->natoms, mtop->natoms, mtop->natoms);
-    }
+    fr->cginfo = cginfo_expand(mtop->molblock.size(), fr->cginfo_mb);
+    forcerec_set_ranges(fr, ncg_mtop(mtop), ncg_mtop(mtop),
+                        mtop->natoms, mtop->natoms, mtop->natoms);
 
     fr->print_force = print_force;
 
@@ -2611,7 +2593,7 @@ void init_forcerec(FILE                             *fp,
 
     /* Initialize neighbor search */
     snew(fr->ns, 1);
-    init_ns(fp, cr, fr->ns, fr, mtop);
+    init_ns(fp, fr->ns, fr, mtop);
 
     if (thisRankHasDuty(cr, DUTY_PP))
     {

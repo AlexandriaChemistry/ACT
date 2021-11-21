@@ -44,7 +44,6 @@
 
 #include "resethandler.h"
 
-#include "gromacs/domdec/domdec.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/mdlib/sim_util.h"
@@ -139,10 +138,6 @@ bool ResetHandler::resetCountersImpl(
 
         wallcycle_stop(wcycle, ewcRUN);
         wallcycle_reset_all(wcycle);
-        if (DOMAINDECOMP(cr))
-        {
-            reset_dd_statistics_counters(cr->dd);
-        }
         init_nrnb(nrnb);
         wallcycle_start(wcycle, ewcRUN);
         walltime_accounting_reset_time(walltime_accounting, step);

@@ -39,7 +39,6 @@
 
 #include <cstdio>
 
-#include "gromacs/domdec/dlbtiming.h"
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/timing/wallcycle.h"
@@ -63,8 +62,7 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
                                   bool usingDomainDecomposition);
 
 /* Get the local shell with domain decomposition */
-void make_local_shells(const t_commrec *cr,
-                       const t_mdatoms *md,
+void make_local_shells(const t_mdatoms *md,
                        gmx_shellfc_t   *shfc);
 
 /* Optimize shell positions */
@@ -91,9 +89,7 @@ real relax_shell_flexcon(FILE                                     *log,
                          t_forcerec                               *fr,
                          double                                    t,
                          rvec                                      mu_tot,
-                         const gmx_vsite_t                        *vsite,
-                         DdOpenBalanceRegionBeforeForceComputation ddOpenBalanceRegion,
-                         DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion);
+                         const gmx_vsite_t                        *vsite);
 
 /* Print some final output */
 void done_shellfc(FILE *fplog, gmx_shellfc_t *shellfc, int64_t numSteps);

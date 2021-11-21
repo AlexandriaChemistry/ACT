@@ -44,8 +44,6 @@
 #include <cmath>
 #include <cstring>
 
-#include "gromacs/domdec/domdec.h"
-#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gmxlib/nonbonded/nonbonded.h"
@@ -78,7 +76,6 @@ void ns(FILE               *fp,
         const gmx_groups_t *groups,
         gmx_localtop_t     *top,
         const t_mdatoms    *md,
-        const t_commrec    *cr,
         t_nrnb             *nrnb,
         gmx_bool            bFillGrid)
 {
@@ -90,7 +87,7 @@ void ns(FILE               *fp,
         init_neighbor_list(fp, fr, md->homenr);
     }
 
-    nsearch = search_neighbours(fp, fr, box, top, groups, cr, nrnb, md,
+    nsearch = search_neighbours(fp, fr, box, top, groups, nrnb, md,
                                 bFillGrid);
     if (debug)
     {
@@ -104,7 +101,7 @@ void ns(FILE               *fp,
      */
     if (fr->ns->dump_nl > 0)
     {
-        dump_nblist(fp, cr, fr, fr->ns->dump_nl);
+        dump_nblist(fp, fr, fr->ns->dump_nl);
     }
 }
 
@@ -259,16 +256,14 @@ void do_force_lowlevel(t_forcerec           *fr,
         /* Since all atoms are in the rectangular or triclinic unit-cell,
          * only single box vector shifts (2 in x) are required.
          */
-        set_pbc_dd(&pbc, fr->ePBC, DOMAINDECOMP(cr) ? cr->dd->nc : nullptr,
-                   TRUE, box);
+        set_pbc_dd(&pbc, fr->ePBC, nullptr, TRUE, box);
     }
 
     do_force_listed(wcycle, box, ir->fepvals, cr, ms,
                     idef, x, hist,
                     forceForUseWithShiftForces, forceWithVirial,
                     fr, &pbc, graph, enerd, nrnb, lambda, md, fcd,
-                    DOMAINDECOMP(cr) ? cr->dd->globalAtomIndices.data() : nullptr,
-                    flags);
+                    nullptr, flags);
 
 
     /* Do long-range electrostatics and/or LJ-PME, including related short-range
@@ -283,7 +278,7 @@ void do_force_lowlevel(t_forcerec           *fr,
         {
             real dvdl_rf_excl      = 0;
             enerd->term[F_RF_EXCL] =
-                RF_excl_correction(fr, graph, md, excl, DOMAINDECOMP(cr),
+                RF_excl_correction(fr, graph, md, excl, false,
                                    x, forceForUseWithShiftForces,
                                    fr->fshift, &pbc, lambda[efptCOUL], &dvdl_rf_excl);
 

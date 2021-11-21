@@ -36,8 +36,6 @@
 
 #include "mdsetup.h"
 
-#include "gromacs/domdec/domdec.h"
-#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/listed-forces/manage-threading.h"
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/shellfc.h"
@@ -58,8 +56,7 @@
  * for initialization and atom-data setup.
  */
 
-void mdAlgorithmsSetupAtomData(const t_commrec   *cr,
-                               const t_inputrec  *ir,
+void mdAlgorithmsSetupAtomData(const t_inputrec  *ir,
                                const gmx_mtop_t  *top_global,
                                gmx_localtop_t    *top,
                                t_forcerec        *fr,
@@ -68,18 +65,9 @@ void mdAlgorithmsSetupAtomData(const t_commrec   *cr,
                                gmx_vsite_t       *vsite,
                                gmx_shellfc_t     *shellfc)
 {
-    bool  usingDomDec = DOMAINDECOMP(cr);
-
     int   numAtomIndex, numHomeAtoms;
     int  *atomIndex;
 
-    if (usingDomDec)
-    {
-        numAtomIndex = dd_natoms_mdatoms(cr->dd);
-        atomIndex    = cr->dd->globalAtomIndices.data();
-        numHomeAtoms = dd_numHomeAtoms(*cr->dd);
-    }
-    else
     {
         numAtomIndex = -1;
         atomIndex    = nullptr;
@@ -88,11 +76,6 @@ void mdAlgorithmsSetupAtomData(const t_commrec   *cr,
     atoms2md(top_global, ir, numAtomIndex, atomIndex, numHomeAtoms, mdAtoms);
 
     auto mdatoms = mdAtoms->mdatoms();
-    if (usingDomDec)
-    {
-        dd_sort_local_top(cr->dd, mdatoms, top);
-    }
-    else
     {
         /* Currently gmx_generate_local_top allocates and returns a pointer.
          * We should implement a more elegant solution.
@@ -106,37 +89,22 @@ void mdAlgorithmsSetupAtomData(const t_commrec   *cr,
 
     if (vsite)
     {
-        if (usingDomDec)
-        {
-            /* The vsites were already assigned by the domdec topology code.
-             * We only need to do the thread division here.
-             */
-            split_vsites_over_threads(top->idef.il, top->idef.iparams,
-                                      mdatoms, vsite);
-        }
-        else
-        {
-            set_vsite_top(vsite, top, mdatoms);
-        }
+        set_vsite_top(vsite, top, mdatoms);
     }
 
-    if (!usingDomDec && ir->ePBC != epbcNONE && !fr->bMolPBC)
+    if (ir->ePBC != epbcNONE && !fr->bMolPBC)
     {
         GMX_ASSERT(graph != nullptr, "We use a graph with PBC (no periodic mols) and without DD");
 
         *graph = mk_graph(nullptr, &(top->idef), 0, top_global->natoms, FALSE, FALSE);
     }
-    else if (graph != nullptr)
-    {
-        *graph = nullptr;
-    }
 
     /* Note that with DD only flexible constraints, not shells, are supported
      * and these don't require setup in make_local_shells().
      */
-    if (!usingDomDec && shellfc)
+    if (shellfc)
     {
-        make_local_shells(cr, mdatoms, shellfc);
+        make_local_shells(mdatoms, shellfc);
     }
 
     setup_bonded_threading(fr->bondedThreading,

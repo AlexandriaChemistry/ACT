@@ -1228,7 +1228,7 @@ immStatus MyMol::GenerateGromacs(const gmx::MDLogger       &mdlog,
 
     if (nullptr != shellfc_)
     {
-        make_local_shells(cr, mdatoms, shellfc_);
+        make_local_shells(mdatoms, shellfc_);
     }
     if (ChargeType::Slater != ieqt)
     {
@@ -1307,9 +1307,7 @@ immStatus MyMol::computeForces(FILE *fplog, t_commrec *cr, double *rmsf)
                                          f_.arrayRefWithPadding(), force_vir, mdatoms,
                                          &nrnb_, wcycle_, nullptr,
                                          &(mtop_->groups), shellfc_,
-                                         fr_, t, mu_tot, vsite_->get(),
-                                         DdOpenBalanceRegionBeforeForceComputation::no,
-                                         DdCloseBalanceRegionAfterForceComputation::no);
+                                         fr_, t, mu_tot, vsite_->get());
         }
         catch (gmx::SimulationInstabilityError &ex)
         {
@@ -1347,9 +1345,7 @@ immStatus MyMol::computeForces(FILE *fplog, t_commrec *cr, double *rmsf)
                  enerd_, fcd_,
                  state_->lambda, nullptr,
                  fr_, vsite_->get(), mu_tot, t,
-                 force_flags,
-                 DdOpenBalanceRegionBeforeForceComputation::no,
-                 DdCloseBalanceRegionAfterForceComputation::no);
+                 force_flags);
         *rmsf = 0;
     }
     return imm;

@@ -39,8 +39,6 @@
 #include <cstdio>
 #include <cstring>
 
-#include "gromacs/domdec/domdec.h"
-#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
@@ -243,11 +241,6 @@ void global_stat(const gmx_global_stat *gs,
         }
     }
 
-    if (checkNumberOfBondedInteractions)
-    {
-        nb  = cr->dd->nbonded_local;
-        inb = add_bind(rb, 1, &nb);
-    }
     if (nsig > 0)
     {
         isig = add_binr(rb, nsig, sig);
