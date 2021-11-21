@@ -38,7 +38,6 @@
 #define GMX_MDLIB_FORCEREC_H
 
 #include "gromacs/mdlib/force_flags.h"
-#include "gromacs/mdlib/tgroup.h"
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/timing/wallcycle.h"

@@ -175,10 +175,6 @@ static void print_cg_move(FILE *fplog,
     {
         mesg += "The charge group starting at atom";
     }
-    else if (comm->useUpdateGroups)
-    {
-        mesg += "The update group starting at atom";
-    }
     else
     {
         mesg += "Atom";
@@ -484,116 +480,6 @@ struct PbcAndFlag
     int       moveFlag;
 };
 
-/* Determine to which domains update groups in the range \p groupBegin, \p groupEnd should go.
- *
- * Returns in the move array where the groups should go.
- * Also updates the COGs and coordinates for jumps over periodic boundaries.
- */
-static void calcGroupMove(FILE *fplog, int64_t step,
-                          gmx_domdec_t *dd,
-                          t_state *state,
-                          const ivec tric_dir, matrix tcm,
-                          const rvec cell_x0, const rvec cell_x1,
-                          const MoveLimits &moveLimits,
-                          int groupBegin, int groupEnd,
-                          gmx::ArrayRef<PbcAndFlag> pbcAndFlags)
-{
-    GMX_RELEASE_ASSERT(!dd->bScrewPBC, "Screw PBC is not supported here");
-
-    const int             npbcdim         = dd->npbcdim;
-
-    gmx::UpdateGroupsCog *updateGroupsCog = dd->comm->updateGroupsCog.get();
-
-    for (int g = groupBegin; g < groupEnd; g++)
-    {
-
-        gmx::RVec &cog    = updateGroupsCog->cog(g);
-        gmx::RVec  cogOld = cog;
-
-        ivec       dev = { 0 };
-        /* Do pbc and check DD cell boundary crossings */
-        for (int d = DIM - 1; d >= 0; d--)
-        {
-            if (dd->nc[d] > 1)
-            {
-                /* Determine the location of this COG in lattice coordinates */
-                real pos_d = cog[d];
-                if (tric_dir[d])
-                {
-                    for (int d2 = d + 1; d2 < DIM; d2++)
-                    {
-                        pos_d += cog[d2]*tcm[d2][d];
-                    }
-                }
-                /* Put the COG in the triclinic unit-cell */
-                if (pos_d >= cell_x1[d])
-                {
-                    if (pos_d >= moveLimits.upper[d])
-                    {
-                        cg_move_error(fplog, dd, step, g, d, 1,
-                                      true, moveLimits.distance[d],
-                                      cogOld, cog, pos_d);
-                    }
-                    dev[d] = 1;
-                    if (dd->ci[d] == dd->nc[d] - 1)
-                    {
-                        rvec_dec(cog, state->box[d]);
-                    }
-                }
-                else if (pos_d < cell_x0[d])
-                {
-                    if (pos_d < moveLimits.lower[d])
-                    {
-                        cg_move_error(fplog, dd, step, g, d, -1,
-                                      true, moveLimits.distance[d],
-                                      cogOld, cog, pos_d);
-                    }
-                    dev[d] = -1;
-                    if (dd->ci[d] == 0)
-                    {
-                        rvec_inc(cog, state->box[d]);
-                    }
-                }
-            }
-            else if (d < npbcdim)
-            {
-                /* Put the COG in the rectangular unit-cell */
-                while (cog[d] >= state->box[d][d])
-                {
-                    rvec_dec(cog, state->box[d]);
-                }
-                while (cog[d] < 0)
-                {
-                    rvec_inc(cog, state->box[d]);
-                }
-            }
-        }
-
-        /* Store the PBC and move flag, so we can later apply them to the atoms */
-        PbcAndFlag &pbcAndFlag = pbcAndFlags[g];
-
-        rvec_sub(cog, cogOld, pbcAndFlag.pbcShift);
-        pbcAndFlag.moveFlag = computeMoveFlag(*dd, dev);
-    }
-}
-
-static void
-applyPbcAndSetMoveFlags(const gmx::UpdateGroupsCog      &updateGroupsCog,
-                        gmx::ArrayRef<const PbcAndFlag>  pbcAndFlags,
-                        int                              atomBegin,
-                        int                              atomEnd,
-                        gmx::ArrayRef<gmx::RVec>         atomCoords,
-                        gmx::ArrayRef<int>               move)
-{
-    for (int a = atomBegin; a < atomEnd; a++)
-    {
-        const PbcAndFlag &pbcAndFlag = pbcAndFlags[updateGroupsCog.cogIndex(a)];
-        rvec_inc(atomCoords[a], pbcAndFlag.pbcShift);
-        /* Temporarily store the flag in move */
-        move[a] = pbcAndFlag.moveFlag;
-    }
-}
-
 void dd_redistribute_cg(FILE *fplog, int64_t step,
                         gmx_domdec_t *dd, ivec tric_dir,
                         t_state *state,
@@ -670,7 +556,7 @@ void dd_redistribute_cg(FILE *fplog, int64_t step,
     /* Compute the center of geometry for all home charge groups
      * and put them in the box and determine where they should go.
      */
-    std::vector<PbcAndFlag>  pbcAndFlags(comm->useUpdateGroups ? comm->updateGroupsCog->numCogs() : 0);
+    std::vector<PbcAndFlag>  pbcAndFlags(0);
 
 #pragma omp parallel num_threads(nthread)
     {
@@ -678,25 +564,6 @@ void dd_redistribute_cg(FILE *fplog, int64_t step,
         {
             const int thread = gmx_omp_get_thread_num();
 
-            if (comm->useUpdateGroups)
-            {
-                const auto &updateGroupsCog = *comm->updateGroupsCog;
-                const int   numGroups       = updateGroupsCog.numCogs();
-                calcGroupMove(fplog, step, dd, state, tric_dir, tcm,
-                              cell_x0, cell_x1, moveLimits,
-                              ( thread   *numGroups)/nthread,
-                              ((thread+1)*numGroups)/nthread,
-                              pbcAndFlags);
-                /* We need a barrier as atoms below can be in a COG of a different thread */
-#pragma omp barrier
-                const int numHomeAtoms = comm->atomRanges.numHomeAtoms();
-                applyPbcAndSetMoveFlags(updateGroupsCog, pbcAndFlags,
-                                        ( thread   *numHomeAtoms)/nthread,
-                                        ((thread+1)*numHomeAtoms)/nthread,
-                                        state->x,
-                                        move);
-            }
-            else
             {
                 /* Here we handle single atoms or charge groups */
                 calc_cg_move(fplog, step, dd, state, tric_dir, tcm,

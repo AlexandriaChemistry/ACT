@@ -65,7 +65,6 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/calc_verletbuf.h"
 #include "gromacs/mdlib/mdrun.h"
-#include "gromacs/mdlib/updategroups.h"
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
@@ -2051,84 +2050,6 @@ static gmx_domdec_comm_t *init_dd_comm()
     return comm;
 }
 
-/* Returns whether mtop contains constraints and/or vsites */
-static bool systemHasConstraintsOrVsites(const gmx_mtop_t &mtop)
-{
-    auto ilistLoop = gmx_mtop_ilistloop_init(mtop);
-    int  nmol;
-    while (const InteractionLists *ilists = gmx_mtop_ilistloop_next(ilistLoop, &nmol))
-    {
-        if (!extractILists(*ilists, IF_CONSTRAINT | IF_VSITE).empty())
-        {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-static void setupUpdateGroups(const gmx::MDLogger &mdlog,
-                              const gmx_mtop_t    &mtop,
-                              const t_inputrec    &inputrec,
-                              real                 cutoffMargin,
-                              int                  numMpiRanksTotal,
-                              gmx_domdec_comm_t   *comm)
-{
-    /* When we have constraints and/or vsites, it is beneficial to use
-     * update groups (when possible) to allow independent update of groups.
-     */
-    if (!systemHasConstraintsOrVsites(mtop))
-    {
-        /* No constraints or vsites, atoms can be updated independently */
-        return;
-    }
-
-    comm->updateGroupingPerMoleculetype = gmx::makeUpdateGroups(mtop);
-    comm->useUpdateGroups               =
-        (!comm->updateGroupingPerMoleculetype.empty() &&
-         getenv("GMX_NO_UPDATEGROUPS") == nullptr);
-
-    if (comm->useUpdateGroups)
-    {
-        int numUpdateGroups = 0;
-        for (const auto &molblock : mtop.molblock)
-        {
-            numUpdateGroups += molblock.nmol*comm->updateGroupingPerMoleculetype[molblock.type].numBlocks();
-        }
-
-        /* Note: We would like to use dd->nnodes for the atom count estimate,
-         *       but that is not yet available here. But this anyhow only
-         *       affect performance up to the second dd_partition_system call.
-         */
-        int homeAtomCountEstimate =  mtop.natoms/numMpiRanksTotal;
-        comm->updateGroupsCog =
-            gmx::compat::make_unique<gmx::UpdateGroupsCog>(mtop,
-                                                           comm->updateGroupingPerMoleculetype,
-                                                           maxReferenceTemperature(inputrec),
-                                                           homeAtomCountEstimate);
-
-        /* To use update groups, the large domain-to-domain cutoff distance
-         * should be compatible with the box size.
-         */
-        comm->useUpdateGroups = (atomToAtomIntoDomainToDomainCutoff(*comm, 0) < cutoffMargin);
-
-        if (comm->useUpdateGroups)
-        {
-            GMX_LOG(mdlog.info).appendTextFormatted(
-                    "Using update groups, nr %d, average size %.1f atoms, max. radius %.3f nm\n",
-                    numUpdateGroups,
-                    mtop.natoms/static_cast<double>(numUpdateGroups),
-                    comm->updateGroupsCog->maxUpdateGroupRadius());
-        }
-        else
-        {
-            GMX_LOG(mdlog.info).appendTextFormatted("The combination of rlist and box size prohibits the use of update groups\n");
-            comm->updateGroupingPerMoleculetype.clear();
-            comm->updateGroupsCog.reset(nullptr);
-        }
-    }
-}
-
 /*! \brief Set the cell size and interaction limits, as well as the DD grid */
 static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
                                    t_commrec *cr, gmx_domdec_t *dd,
@@ -2175,11 +2096,6 @@ static void set_dd_limits_and_grid(const gmx::MDLogger &mdlog,
 
     /* We need to decide on update groups early, as this affects communication distances */
     comm->useUpdateGroups = false;
-    if (ir->cutoff_scheme == ecutsVERLET)
-    {
-        real cutoffMargin = std::sqrt(max_cutoff2(ir->ePBC, box)) - ir->rlist;
-        setupUpdateGroups(mdlog, *mtop, *ir, cutoffMargin, cr->nnodes, comm);
-    }
 
     comm->bInterCGBondeds = ((ncg_mtop(mtop) > gmx_mtop_num_molecules(*mtop)) ||
                              mtop->bIntermolecularInteractions);

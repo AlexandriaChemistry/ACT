@@ -132,32 +132,4 @@ void calc_dispcorr(const t_inputrec *ir, const t_forcerec *fr,
 
 void initialize_lambdas(FILE *fplog, t_inputrec *ir, int *fep_state, gmx::ArrayRef<real> lambda, double *lam0);
 
-void init_md(FILE *fplog,
-             const t_commrec *cr,
-             t_inputrec *ir,
-             const MdrunOptions &mdrunOptions,
-             double *t, double *t0,
-             t_state *globalState, double *lam0,
-             t_nrnb *nrnb,
-             gmx_update_t **upd,
-             gmx::BoxDeformation *deform,
-             tensor force_vir, tensor shake_vir,
-             tensor total_vir, tensor pres,
-             rvec mu_tot,
-             gmx_bool *bSimAnn);
-
-void init_rerun(FILE *fplog,
-                const t_commrec *cr,
-                t_inputrec *ir, const gmx_output_env_t *oenv,
-                const MdrunOptions &mdrunOptions,
-                t_state *globalState, double *lam0,
-                t_nrnb *nrnb, gmx_mtop_t *mtop,
-                int nfile, const t_filenm fnm[],
-                gmx_mdoutf_t *outf,
-                gmx_wallcycle_t wcycle);
-
-/* Routine in sim_util.c */
-
-gmx_bool use_GPU(const nonbonded_verlet_t *nbv);
-
 #endif

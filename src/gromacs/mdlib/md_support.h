@@ -123,7 +123,7 @@ int multisim_min(const gmx_multisim_t *ms, int nmin, int n);
 void compute_globals(gmx_global_stat *gstat, t_commrec *cr, t_inputrec *ir,
                      t_forcerec *fr, gmx_ekindata_t *ekind,
                      t_state *state, t_mdatoms *mdatoms,
-                     t_nrnb *nrnb, gmx_wallcycle_t wcycle,
+                     gmx_wallcycle_t wcycle,
                      gmx_enerdata_t *enerd, tensor force_vir, tensor shake_vir, tensor total_vir,
                      tensor pres, rvec mu_tot,
                      gmx::SimulationSignaller *signalCoordinator,

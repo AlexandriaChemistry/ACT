@@ -51,8 +51,6 @@
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdlib/simulationsignal.h"
-#include "gromacs/mdlib/tgroup.h"
-#include "gromacs/mdlib/update.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/df_history.h"
 #include "gromacs/mdtypes/enerdata.h"
@@ -154,7 +152,7 @@ int multisim_min(const gmx_multisim_t *ms, int nmin, int n)
 void compute_globals(gmx_global_stat *gstat, t_commrec *cr, t_inputrec *ir,
                      t_forcerec *fr, gmx_ekindata_t *ekind,
                      t_state *state, t_mdatoms *mdatoms,
-                     t_nrnb *nrnb, gmx_wallcycle_t wcycle,
+                     gmx_wallcycle_t wcycle,
                      gmx_enerdata_t *enerd, tensor force_vir, tensor shake_vir, tensor total_vir,
                      tensor pres, rvec mu_tot, 
                      gmx::SimulationSignaller *signalCoordinator,
@@ -166,7 +164,7 @@ void compute_globals(gmx_global_stat *gstat, t_commrec *cr, t_inputrec *ir,
     gmx_bool bStopCM, bGStat,
              bReadEkin, bEkinAveVel, bScaleEkin, bConstrain;
     gmx_bool bCheckNumberOfBondedInteractions;
-    real     prescorr, enercorr, dvdlcorr, dvdl_ekin;
+    real     prescorr, enercorr, dvdlcorr;
 
     /* translate CGLO flags to gmx_booleans */
     bStopCM                          = ((flags & CGLO_STOPCM) != 0);
@@ -188,22 +186,6 @@ void compute_globals(gmx_global_stat *gstat, t_commrec *cr, t_inputrec *ir,
        sums ekinh_old in leapfrog (or if we are calculating ekinh_old) for other reasons */
 
     /* ########## Kinetic energy  ############## */
-
-    if (bTemp)
-    {
-        /* Non-equilibrium MD: this is parallellized, but only does communication
-         * when there really is NEMD.
-         */
-
-        if (PAR(cr) && (ekind->bNEMD))
-        {
-            accumulate_u(cr, &(ir->opts), ekind);
-        }
-        if (!bReadEkin)
-        {
-            calc_ke_part(state, &(ir->opts), mdatoms, ekind, nrnb, bEkinAveVel);
-        }
-    }
 
     /* Calculate center of mass velocity if necessary, also parallellized */
     if (bTemp || bStopCM || bPres || bEner || bConstrain || bCheckNumberOfBondedInteractions)
@@ -249,9 +231,8 @@ void compute_globals(gmx_global_stat *gstat, t_commrec *cr, t_inputrec *ir,
            bEkinAveVel: If TRUE, we simply multiply ekin by ekinscale to get a full step kinetic energy.
            If FALSE, we average ekinh_old and ekinh*ekinscale_nhc to get an averaged half step kinetic energy.
          */
-        enerd->term[F_TEMP] = sum_ekin(&(ir->opts), ekind, &dvdl_ekin,
-                                       bEkinAveVel, bScaleEkin);
-        enerd->dvdl_lin[efptMASS] = static_cast<double>(dvdl_ekin);
+        enerd->term[F_TEMP] = 0;
+        enerd->dvdl_lin[efptMASS] = 0;
 
         enerd->term[F_EKIN] = trace(ekind->ekin);
     }
@@ -281,7 +262,7 @@ void compute_globals(gmx_global_stat *gstat, t_commrec *cr, t_inputrec *ir,
          * Use the box from last timestep since we already called update().
          */
 
-        enerd->term[F_PRES] = calc_pres(fr->ePBC, 0, box, ekind->ekin, total_vir, pres);
+        enerd->term[F_PRES] = 0;
 
         /* Calculate long range corrections to pressure and energy */
         /* this adds to enerd->term[F_PRES] and enerd->term[F_ETOT],
@@ -589,7 +570,6 @@ void set_state_entries(t_state *state, const t_inputrec *ir)
     }
 
     init_gtc_state(state, state->ngtc, state->nnhpres, ir->opts.nhchainlength); /* allocate the space for nose-hoover chains */
-    init_ekinstate(&state->ekinstate, ir);
 
     if (ir->bExpanded)
     {

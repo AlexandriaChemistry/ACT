@@ -47,7 +47,6 @@
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
-#include "gromacs/mdlib/updategroupscog.h"
 #include "gromacs/timing/cyclecounter.h"
 #include "gromacs/topology/block.h"
 
@@ -413,8 +412,6 @@ struct gmx_domdec_comm_t // NOLINT (clang-analyzer-optin.performance.Padding)
     bool                                  useUpdateGroups;
     //!  Update atom grouping for each molecule type
     std::vector<gmx::RangePartitioning>   updateGroupingPerMoleculetype;
-    //! Centers of mass of local update groups
-    std::unique_ptr<gmx::UpdateGroupsCog> updateGroupsCog;
 
     /* Are there charge groups? */
     gmx_bool bCGs;                /**< True when there are charge groups */

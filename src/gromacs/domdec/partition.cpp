@@ -3274,12 +3274,6 @@ void dd_partition_system(FILE                    *fplog,
         write_dd_grid_pdb("dd_grid", step, dd, state_local->box, &ddbox);
     }
 
-    if (comm->useUpdateGroups)
-    {
-        comm->updateGroupsCog->addCogs(gmx::arrayRefFromArray(dd->globalAtomGroupIndices.data(), dd->ncg_home),
-                                       state_local->x);
-    }
-
     /* Check if we should sort the charge groups */
     const bool bSortCG = (bMasterState || bRedist);
 
@@ -3301,12 +3295,6 @@ void dd_partition_system(FILE                    *fplog,
                            nrnb, &ncg_moved);
 
         GMX_RELEASE_ASSERT(bSortCG, "Sorting is required after redistribution");
-
-        if (comm->useUpdateGroups)
-        {
-            comm->updateGroupsCog->addCogs(gmx::arrayRefFromArray(dd->globalAtomGroupIndices.data(), dd->ncg_home),
-                                           state_local->x);
-        }
 
         wallcycle_sub_stop(wcycle, ewcsDD_REDIST);
     }
@@ -3391,14 +3379,6 @@ void dd_partition_system(FILE                    *fplog,
         ncgindex_set = 0;
 
         wallcycle_sub_stop(wcycle, ewcsDD_GRID);
-    }
-
-    if (comm->useUpdateGroups)
-    {
-        /* The update groups cog's are invalid after sorting
-         * and need to be cleared before the next partitioning anyhow.
-         */
-        comm->updateGroupsCog->clear();
     }
 
     wallcycle_sub_start(wcycle, ewcsDD_SETUPCOMM);

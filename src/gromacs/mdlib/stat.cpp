@@ -48,7 +48,6 @@
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/rbin.h"
 #include "gromacs/mdlib/sim_util.h"
-#include "gromacs/mdlib/tgroup.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/group.h"
