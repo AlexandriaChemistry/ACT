@@ -64,7 +64,6 @@ class t_state;
 
 namespace gmx
 {
-class Constraints;
 class MDAtoms;
 class MDLogger;
 } // namespace
@@ -101,7 +100,6 @@ void dd_partition_system(FILE                    *fplog,
                          gmx_localtop_t          *top_local,
                          t_forcerec              *fr,
                          gmx_vsite_t             *vsite,
-                         gmx::Constraints        *constr,
                          t_nrnb                  *nrnb,
                          gmx_wallcycle           *wcycle,
                          gmx_bool                 bVerbose);

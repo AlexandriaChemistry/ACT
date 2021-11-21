@@ -44,7 +44,6 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/md_support.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/rbin.h"
@@ -138,7 +137,7 @@ void global_stat(const gmx_global_stat *gs,
                  const t_commrec *cr, gmx_enerdata_t *enerd,
                  tensor fvir, tensor svir, rvec mu_tot,
                  const t_inputrec *inputrec,
-                 gmx_ekindata_t *ekind, const gmx::Constraints *constr,
+                 gmx_ekindata_t *ekind,
                  t_vcm *vcm,
                  int nsig, real *sig,
                  int *totalNumberOfBondedInteractions,
@@ -147,7 +146,7 @@ void global_stat(const gmx_global_stat *gs,
 {
     t_bin     *rb;
     int       *itc0, *itc1;
-    int        ie    = 0, ifv = 0, isv = 0, irmsd = 0, imu = 0;
+    int        ie    = 0, ifv = 0, isv = 0, imu = 0;
     int        idedl = 0, idedlo = 0, idvdll = 0, idvdlnl = 0, iepl = 0, icm = 0, imass = 0, ica = 0, inb = 0;
     int        isig  = -1;
     int        icj   = -1, ici = -1, icx = -1;

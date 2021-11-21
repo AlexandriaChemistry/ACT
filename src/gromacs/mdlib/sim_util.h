@@ -57,10 +57,6 @@ struct t_nrnb;
 namespace gmx
 {
 class BoxDeformation;
-class Constraints;
-#ifdef IMD
-class IMDOutputProvider;
-#endif
 class MDLogger;
 }
 
@@ -95,7 +91,7 @@ void global_stat(const gmx_global_stat *gs,
                  tensor fvir, tensor svir, rvec mu_tot,
                  const t_inputrec *inputrec,
                  gmx_ekindata_t *ekind,
-                 const gmx::Constraints *constr, t_vcm *vcm,
+                 t_vcm *vcm,
                  int nsig, real *sig,
                  int *totalNumberOfBondedInteractions,
                  gmx_bool bSumEkinhOld, int flags);
@@ -138,10 +134,6 @@ void calc_dispcorr(const t_inputrec *ir, const t_forcerec *fr,
                    real *prescorr, real *enercorr, real *dvdlcorr);
 
 void initialize_lambdas(FILE *fplog, t_inputrec *ir, int *fep_state, gmx::ArrayRef<real> lambda, double *lam0);
-
-void do_constrain_first(FILE *log, gmx::Constraints *constr,
-                        const t_inputrec *inputrec, const t_mdatoms *md,
-                        t_state *state);
 
 void init_md(FILE *fplog,
              const t_commrec *cr,

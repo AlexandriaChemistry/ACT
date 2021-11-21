@@ -55,7 +55,6 @@
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vecdump.h"
-#include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/mdrun.h"
@@ -110,10 +109,6 @@ struct gmx_shellfc_t {
     /* Flexible constraint working data */
     rvec        *acc_dir;                /* Acceleration direction for flexcon        */
     rvec        *x_old;                  /* Old coordinates for flexcon               */
-    int          flex_nalloc;            /* The allocation size of acc_dir and x_old  */
-    rvec        *adir_xnold;             /* Work space for init_adir                  */
-    rvec        *adir_xnew;              /* Work space for init_adir                  */
-    int          adir_nalloc;            /* Work space for init_adir                  */
     std::int64_t numForceEvaluations;    /* Total number of force evaluations         */
     int          numConvergedIterations; /* Total number of iterations that converged */
 };
@@ -701,19 +696,6 @@ static void do_1pos3(rvec xnew, const rvec xold, const rvec f, const rvec step)
     xnew[ZZ] = zo+dz;
 }
 
-static void directional_sd(gmx::ArrayRef<const gmx::RVec> xold,
-                           gmx::ArrayRef<gmx::RVec> xnew,
-                           const rvec acc_dir[], int homenr, real step)
-{
-    const rvec *xo = as_rvec_array(xold.data());
-    rvec       *xn = as_rvec_array(xnew.data());
-
-    for (int i = 0; i < homenr; i++)
-    {
-        do_1pos(xn[i], xo[i], acc_dir[i], step);
-    }
-}
-
 static void shell_pos_sd(gmx::ArrayRef<const gmx::RVec> xcur,
                          gmx::ArrayRef<gmx::RVec> xnew,
                          gmx::ArrayRef<const gmx::RVec> f,
@@ -899,95 +881,6 @@ static void dump_shells(FILE *fp, gmx::ArrayRef<gmx::RVec> x, gmx::ArrayRef<gmx:
     }
 }
 
-static void init_adir(gmx_shellfc_t            *shfc,
-                      gmx::Constraints         *constr,
-                      const t_inputrec         *ir,
-                      const t_commrec          *cr,
-                      int                       dd_ac1,
-                      int64_t                   step,
-                      const t_mdatoms          *md,
-                      int                       end,
-                      rvec                     *x_old,
-                      rvec                     *x_init,
-                      rvec                     *x,
-                      rvec                     *f,
-                      rvec                     *acc_dir,
-                      matrix                    box,
-                      gmx::ArrayRef<const real> lambda,
-                      real                     *dvdlambda)
-{
-    rvec           *xnold, *xnew;
-    double          dt, w_dt;
-    int             n, d;
-    unsigned short *ptype;
-
-    if (DOMAINDECOMP(cr))
-    {
-        n = dd_ac1;
-    }
-    else
-    {
-        n = end;
-    }
-    if (n > shfc->adir_nalloc)
-    {
-        shfc->adir_nalloc = over_alloc_dd(n);
-        srenew(shfc->adir_xnold, shfc->adir_nalloc);
-        srenew(shfc->adir_xnew, shfc->adir_nalloc);
-    }
-    xnold = shfc->adir_xnold;
-    xnew  = shfc->adir_xnew;
-
-    ptype = md->ptype;
-
-    dt = ir->delta_t;
-
-    /* Does NOT work with freeze or acceleration groups (yet) */
-    for (n = 0; n < end; n++)
-    {
-        w_dt = md->invmass[n]*dt;
-
-        for (d = 0; d < DIM; d++)
-        {
-            if ((ptype[n] != eptVSite) && (ptype[n] != eptShell))
-            {
-                xnold[n][d] = x[n][d] - (x_init[n][d] - x_old[n][d]);
-                xnew[n][d]  = 2*x[n][d] - x_old[n][d] + f[n][d]*w_dt*dt;
-            }
-            else
-            {
-                xnold[n][d] = x[n][d];
-                xnew[n][d]  = x[n][d];
-            }
-        }
-    }
-    constr->apply(FALSE, FALSE, step, 0, 1.0,
-                  x, xnold, nullptr, box,
-                  lambda[efptBONDED], &(dvdlambda[efptBONDED]),
-                  nullptr, nullptr, gmx::ConstraintVariable::Positions);
-    constr->apply(FALSE, FALSE, step, 0, 1.0,
-                  x, xnew, nullptr, box,
-                  lambda[efptBONDED], &(dvdlambda[efptBONDED]),
-                  nullptr, nullptr, gmx::ConstraintVariable::Positions);
-
-    for (n = 0; n < end; n++)
-    {
-        for (d = 0; d < DIM; d++)
-        {
-            xnew[n][d] =
-                -(2*x[n][d]-xnold[n][d]-xnew[n][d])/gmx::square(dt)
-                - f[n][d]*md->invmass[n];
-        }
-        clear_rvec(acc_dir[n]);
-    }
-
-    /* Project the acceleration on the old bond directions */
-    constr->apply(FALSE, FALSE, step, 0, 1.0,
-                  x_old, xnew, acc_dir, box,
-                  lambda[efptBONDED], &(dvdlambda[efptBONDED]),
-                  nullptr, nullptr, gmx::ConstraintVariable::Deriv_FlexCon);
-}
-
 real relax_shell_flexcon(FILE                                     *fplog,
                          const t_commrec                          *cr,
                          const gmx_multisim_t                     *ms,
@@ -997,7 +890,6 @@ real relax_shell_flexcon(FILE                                     *fplog,
                          gmx_bool                                  bDoNS,
                          int                                       force_flags,
                          gmx_localtop_t                           *top,
-                         gmx::Constraints                         *constr,
                          gmx_enerdata_t                           *enerd,
                          t_fcdata                                 *fcd,
                          t_state                                  *state,
@@ -1019,10 +911,9 @@ real relax_shell_flexcon(FILE                                     *fplog,
     int           nshell;
     t_shell      *shell;
     const t_idef *idef;
-    rvec         *acc_dir = nullptr, *x_old = nullptr;
     real          Epot[2], df[2];
     real          sf_dir, invdt;
-    real          ftol, dum = 0;
+    real          ftol;
     char          sbuf[22];
     gmx_bool      bCont, bInit, bConverged;
     int           nat, dd_ac0, dd_ac1 = 0, i;
@@ -1104,27 +995,6 @@ real relax_shell_flexcon(FILE                                     *fplog,
         shift_self(graph, state->box, state->x.rvec_array());
     }
 
-    if (nflexcon)
-    {
-        if (nat > shfc->flex_nalloc)
-        {
-            shfc->flex_nalloc = over_alloc_dd(nat);
-            srenew(shfc->acc_dir, shfc->flex_nalloc);
-            srenew(shfc->x_old, shfc->flex_nalloc);
-        }
-        acc_dir = shfc->acc_dir;
-        x_old   = shfc->x_old;
-        auto x = makeArrayRef(state->x);
-        auto v = makeArrayRef(state->v);
-        for (i = 0; i < homenr; i++)
-        {
-            for (d = 0; d < DIM; d++)
-            {
-                shfc->x_old[i][d] =
-                    x[i][d] - v[i][d]*inputrec->delta_t;
-            }
-        }
-    }
 
     /* Do a prediction of the shell positions, when appropriate.
      * Without velocities (EM, NM, BD) we only do initial prediction.
@@ -1157,19 +1027,6 @@ real relax_shell_flexcon(FILE                                     *fplog,
              ddOpenBalanceRegion, ddCloseBalanceRegion);
 
     sf_dir = 0;
-    if (nflexcon)
-    {
-        init_adir(shfc,
-                  constr, inputrec, cr, dd_ac1, mdstep, md, end,
-                  shfc->x_old, state->x.rvec_array(), state->x.rvec_array(), as_rvec_array(force[Min].data()),
-                  shfc->acc_dir,
-                  state->box, state->lambda, &dum);
-
-        for (i = 0; i < end; i++)
-        {
-            sf_dir += md->massT[i]*norm2(shfc->acc_dir[i]);
-        }
-    }
     sum_epot(&(enerd->grpp), enerd->term);
     Epot[Min] = enerd->term[F_EPOT];
 
@@ -1230,18 +1087,6 @@ real relax_shell_flexcon(FILE                                     *fplog,
                              fr->ePBC, fr->bMolPBC, cr, state->box);
         }
 
-        if (nflexcon)
-        {
-            init_adir(shfc,
-                      constr, inputrec, cr, dd_ac1, mdstep, md, end,
-                      x_old, state->x.rvec_array(),
-                      as_rvec_array(pos[Min].data()),
-                      as_rvec_array(force[Min].data()), acc_dir,
-                      state->box, state->lambda, &dum);
-
-            directional_sd(pos[Min], pos[Try], acc_dir, end, fr->fc_stepsize);
-        }
-
         /* New positions, Steepest descent */
         shell_pos_sd(pos[Min], pos[Try], force[Min], nshell, shell, count);
 
@@ -1272,20 +1117,6 @@ real relax_shell_flexcon(FILE                                     *fplog,
             pr_rvecs(debug, 0, "RELAX: force[Try]", as_rvec_array(force[Try].data()), homenr);
         }
         sf_dir = 0;
-        if (nflexcon)
-        {
-            init_adir(shfc,
-                      constr, inputrec, cr, dd_ac1, mdstep, md, end,
-                      x_old, state->x.rvec_array(),
-                      as_rvec_array(pos[Try].data()),
-                      as_rvec_array(force[Try].data()),
-                      acc_dir, state->box, state->lambda, &dum);
-
-            for (i = 0; i < end; i++)
-            {
-                sf_dir += md->massT[i]*norm2(acc_dir[i]);
-            }
-        }
 
         Epot[Try] = enerd->term[F_EPOT];
 

@@ -62,7 +62,6 @@ struct gmx_update_t;
 namespace gmx
 {
 class BoxDeformation;
-class Constraints;
 }
 
 /* Initialize the stochastic dynamics struct */
@@ -129,22 +128,19 @@ void update_coords(int64_t                              step,
                    const matrix                         M,
                    gmx_update_t                        *upd,
                    int                                  bUpdatePart,
-                   const t_commrec                     *cr, /* these shouldn't be here -- need to think about it */
-                   const gmx::Constraints              *constr);
+                   const t_commrec                     *cr); /* these shouldn't be here -- need to think about it */
 
 /* Return TRUE if OK, FALSE in case of Shake Error */
 
 extern gmx_bool update_randomize_velocities(const t_inputrec *ir, int64_t step, const t_commrec *cr,
                                             const t_mdatoms *md,
                                             gmx::ArrayRef<gmx::RVec> v,
-                                            const gmx_update_t *upd,
-                                            const gmx::Constraints *constr);
+                                            const gmx_update_t *upd);
 
 void constrain_velocities(int64_t                        step,
                           real                          *dvdlambda, /* the contribution to be added to the bonded interactions */
                           t_state                       *state,
                           tensor                         vir_part,
-                          gmx::Constraints              *constr,
                           gmx_bool                       bCalcVir,
                           bool                           do_log,
                           bool                           do_ene);
@@ -154,7 +150,6 @@ void constrain_coordinates(int64_t                        step,
                            t_state                       *state,
                            tensor                         vir_part,
                            gmx_update_t                  *upd,
-                           gmx::Constraints              *constr,
                            gmx_bool                       bCalcVir,
                            bool                           do_log,
                            bool                           do_ene);
@@ -168,7 +163,6 @@ void update_sd_second_half(int64_t                        step,
                            t_nrnb                        *nrnb,
                            gmx_wallcycle_t                wcycle,
                            gmx_update_t                  *upd,
-                           gmx::Constraints              *constr,
                            bool                           do_log,
                            bool                           do_ene);
 
@@ -178,8 +172,7 @@ void finish_update(const t_inputrec              *inputrec,
                    const t_graph                 *graph,
                    t_nrnb                        *nrnb,
                    gmx_wallcycle_t                wcycle,
-                   gmx_update_t                  *upd,
-                   const gmx::Constraints        *constr);
+                   gmx_update_t                  *upd);
 
 /* Return TRUE if OK, FALSE in case of Shake Error */
 

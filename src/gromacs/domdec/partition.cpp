@@ -94,7 +94,6 @@
 #include "box.h"
 #include "cellsizes.h"
 #include "distribute.h"
-#include "domdec_constraints.h"
 #include "domdec_internal.h"
 #include "domdec_vsite.h"
 #include "dump.h"
@@ -700,11 +699,6 @@ static void clearDDStateIndices(gmx_domdec_t *dd,
     }
 
     dd_clear_local_vsite_indices(dd);
-
-    if (dd->constraints)
-    {
-        dd_clear_local_constraint_indices(dd);
-    }
 }
 
 bool check_grid_jump(int64_t             step,
@@ -2996,7 +2990,6 @@ void dd_partition_system(FILE                    *fplog,
                          gmx_localtop_t          *top_local,
                          t_forcerec              *fr,
                          gmx_vsite_t             *vsite,
-                         gmx::Constraints        *constr,
                          t_nrnb                  *nrnb,
                          gmx_wallcycle           *wcycle,
                          gmx_bool                 bVerbose)
@@ -3519,13 +3512,6 @@ void dd_partition_system(FILE                    *fplog,
                 }
                 break;
             case DDAtomRanges::Type::Constraints:
-                if (dd->splitConstraints || dd->splitSettles)
-                {
-                    /* Only for inter-cg constraints we need special code */
-                    n = dd_make_local_constraints(dd, n, top_global, fr->cginfo,
-                                                  constr, ir->nProjOrder,
-                                                  top_local->idef.il);
-                }
                 break;
             default:
                 gmx_incons("Unknown special atom type setup");
@@ -3580,7 +3566,7 @@ void dd_partition_system(FILE                    *fplog,
 
     /* Update atom data for mdatoms and several algorithms */
     mdAlgorithmsSetupAtomData(cr, ir, top_global, top_local, fr,
-                              nullptr, mdAtoms, constr, vsite, nullptr);
+                              nullptr, mdAtoms, vsite, nullptr);
 
     if (dd->atomSets != nullptr)
     {

@@ -56,7 +56,6 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vecdump.h"
 #include "gromacs/mdlib/boxdeformation.h"
-#include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/sim_util.h"
@@ -1449,41 +1448,11 @@ void constrain_velocities(int64_t                        step,
                           real                          *dvdlambda, /* the contribution to be added to the bonded interactions */
                           t_state                       *state,
                           tensor                         vir_part,
-                          gmx::Constraints              *constr,
                           gmx_bool                       bCalcVir,
                           bool                           do_log,
                           bool                           do_ene)
 {
-    if (!constr)
-    {
-        return;
-    }
-
-    /*
-     *  Steps (7C, 8C)
-     *  APPLY CONSTRAINTS:
-     *  BLOCK SHAKE
-     */
-
-    {
-        tensor vir_con;
-
-        /* clear out constraints before applying */
-        clear_mat(vir_part);
-
-        /* Constrain the coordinates upd->xp */
-        constr->apply(do_log, do_ene,
-                      step, 1, 1.0,
-                      state->x.rvec_array(), state->v.rvec_array(), state->v.rvec_array(),
-                      state->box,
-                      state->lambda[efptBONDED], dvdlambda,
-                      nullptr, bCalcVir ? &vir_con : nullptr, ConstraintVariable::Velocities);
-
-        if (bCalcVir)
-        {
-            m_add(vir_part, vir_con, vir_part);
-        }
-    }
+    return;
 }
 
 void constrain_coordinates(int64_t                        step,
@@ -1491,35 +1460,11 @@ void constrain_coordinates(int64_t                        step,
                            t_state                       *state,
                            tensor                         vir_part,
                            gmx_update_t                  *upd,
-                           gmx::Constraints              *constr,
                            gmx_bool                       bCalcVir,
                            bool                           do_log,
                            bool                           do_ene)
 {
-    if (!constr)
-    {
-        return;
-    }
-
-    {
-        tensor vir_con;
-
-        /* clear out constraints before applying */
-        clear_mat(vir_part);
-
-        /* Constrain the coordinates upd->xp */
-        constr->apply(do_log, do_ene,
-                      step, 1, 1.0,
-                      state->x.rvec_array(), upd->xp.rvec_array(), nullptr,
-                      state->box,
-                      state->lambda[efptBONDED], dvdlambda,
-                      as_rvec_array(state->v.data()), bCalcVir ? &vir_con : nullptr, ConstraintVariable::Positions);
-
-        if (bCalcVir)
-        {
-            m_add(vir_part, vir_con, vir_part);
-        }
-    }
+    return;
 }
 
 void
@@ -1532,64 +1477,10 @@ update_sd_second_half(int64_t                        step,
                       t_nrnb                        *nrnb,
                       gmx_wallcycle_t                wcycle,
                       gmx_update_t                  *upd,
-                      gmx::Constraints              *constr,
                       bool                           do_log,
                       bool                           do_ene)
 {
-    if (!constr)
-    {
-        return;
-    }
-    if (inputrec->eI == eiSD1)
-    {
-        int nth, th;
-        int homenr = md->homenr;
-
-        /* Cast delta_t from double to real to make the integrators faster.
-         * The only reason for having delta_t double is to get accurate values
-         * for t=delta_t*step when step is larger than float precision.
-         * For integration dt the accuracy of real suffices, since with
-         * integral += dt*integrand the increment is nearly always (much) smaller
-         * than the integral (and the integrand has real precision).
-         */
-        real dt     = inputrec->delta_t;
-
-        wallcycle_start(wcycle, ewcUPDATE);
-
-        nth = gmx_omp_nthreads_get(emntUpdate);
-
-#pragma omp parallel for num_threads(nth) schedule(static)
-        for (th = 0; th < nth; th++)
-        {
-            try
-            {
-                int start_th, end_th;
-                getThreadAtomRange(nth, th, homenr, &start_th, &end_th);
-
-                doSDUpdateGeneral<SDUpdate::FrictionAndNoiseOnly>
-                    (upd->sd,
-                    start_th, end_th, dt,
-                    inputrec->opts.acc, inputrec->opts.nFreeze,
-                    md->invmass, md->ptype,
-                    md->cFREEZE, nullptr, md->cTC,
-                    state->x.rvec_array(), upd->xp.rvec_array(),
-                    state->v.rvec_array(), nullptr,
-                    step, inputrec->ld_seed,
-                    DOMAINDECOMP(cr) ? cr->dd->globalAtomIndices.data() : nullptr);
-            }
-            GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-        }
-        inc_nrnb(nrnb, eNR_UPDATE, homenr);
-        wallcycle_stop(wcycle, ewcUPDATE);
-
-        /* Constrain the coordinates upd->xp for half a time step */
-        constr->apply(do_log, do_ene,
-                      step, 1, 0.5,
-                      state->x.rvec_array(), upd->xp.rvec_array(), nullptr,
-                      state->box,
-                      state->lambda[efptBONDED], dvdlambda,
-                      as_rvec_array(state->v.data()), nullptr, ConstraintVariable::Positions);
-    }
+    return;
 }
 
 void finish_update(const t_inputrec              *inputrec,  /* input record and box stuff	*/
@@ -1598,8 +1489,7 @@ void finish_update(const t_inputrec              *inputrec,  /* input record and
                    const t_graph                 *graph,
                    t_nrnb                        *nrnb,
                    gmx_wallcycle_t                wcycle,
-                   gmx_update_t                  *upd,
-                   const gmx::Constraints        *constr)
+                   gmx_update_t                  *upd)
 {
     int homenr = md->homenr;
 
@@ -1610,44 +1500,6 @@ void finish_update(const t_inputrec              *inputrec,  /* input record and
      * then copy the results back. */
     {
         wallcycle_start_nocount(wcycle, ewcUPDATE);
-
-        if (md->cFREEZE != nullptr && constr != nullptr)
-        {
-            /* If we have atoms that are frozen along some, but not all
-             * dimensions, then any constraints will have moved them also along
-             * the frozen dimensions. To freeze such degrees of freedom
-             * we copy them back here to later copy them forward. It would
-             * be more elegant and slightly more efficient to copies zero
-             * times instead of twice, but the graph case below prevents this.
-             */
-            const ivec *nFreeze                     = inputrec->opts.nFreeze;
-            bool        partialFreezeAndConstraints = false;
-            for (int g = 0; g < inputrec->opts.ngfrz; g++)
-            {
-                int numFreezeDim = nFreeze[g][XX] + nFreeze[g][YY] + nFreeze[g][ZZ];
-                if (numFreezeDim > 0 && numFreezeDim < 3)
-                {
-                    partialFreezeAndConstraints = true;
-                }
-            }
-            if (partialFreezeAndConstraints)
-            {
-                auto xp = makeArrayRef(upd->xp).subArray(0, homenr);
-                auto x  = makeConstArrayRef(state->x).subArray(0, homenr);
-                for (int i = 0; i < homenr; i++)
-                {
-                    int g = md->cFREEZE[i];
-
-                    for (int d = 0; d < DIM; d++)
-                    {
-                        if (nFreeze[g][d])
-                        {
-                            xp[i][d] = x[i][d];
-                        }
-                    }
-                }
-            }
-        }
 
         if (graph && (graph->nnodes > 0))
         {
@@ -1789,10 +1641,9 @@ void update_coords(int64_t                             step,
                    const matrix                        M,
                    gmx_update_t                       *upd,
                    int                                 UpdatePart,
-                   const t_commrec                    *cr, /* these shouldn't be here -- need to think about it */
-                   const gmx::Constraints             *constr)
+                   const t_commrec                    *cr) /* these shouldn't be here -- need to think about it */
 {
-    gmx_bool bDoConstr = (nullptr != constr);
+    gmx_bool bDoConstr = false;
 
     /* Running the velocity half does nothing except for velocity verlet */
     if ((UpdatePart == etrtVELOCITY1 || UpdatePart == etrtVELOCITY2) &&
@@ -1917,22 +1768,10 @@ void update_coords(int64_t                             step,
 extern gmx_bool update_randomize_velocities(const t_inputrec *ir, int64_t step, const t_commrec *cr,
                                             const t_mdatoms *md,
                                             gmx::ArrayRef<gmx::RVec> v,
-                                            const gmx_update_t *upd,
-                                            const gmx::Constraints *constr)
+                                            const gmx_update_t *upd)
 {
 
     real rate = (ir->delta_t)/ir->opts.tau_t[0];
-
-    if (ir->etc == etcANDERSEN && constr != nullptr)
-    {
-        /* Currently, Andersen thermostat does not support constrained
-           systems. Functionality exists in the andersen_tcoupl
-           function in GROMACS 4.5.7 to allow this combination. That
-           code could be ported to the current random-number
-           generation approach, but has not yet been done because of
-           lack of time and resources. */
-        gmx_fatal(FARGS, "Normal Andersen is currently not supported with constraints, use massive Andersen instead");
-    }
 
     /* proceed with andersen if 1) it's fixed probability per
        particle andersen or 2) it's massive andersen and it's tau_t/dt */

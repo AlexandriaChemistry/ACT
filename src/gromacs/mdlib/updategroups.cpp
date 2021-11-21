@@ -50,7 +50,6 @@
 
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
-#include "gromacs/mdlib/constr.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/idef.h"
@@ -64,20 +63,6 @@ namespace gmx
 static bool hasFlexibleConstraints(const gmx_moltype_t            &moltype,
                                    gmx::ArrayRef<const t_iparams>  iparams)
 {
-    for (auto &ilist : extractILists(moltype.ilist, IF_CONSTRAINT))
-    {
-        if (ilist.functionType != F_SETTLE)
-        {
-            for (size_t i = 0; i < ilist.iatoms.size(); i += ilistStride(ilist))
-            {
-                if (isConstraintFlexible(iparams.data(), ilist.iatoms[i]))
-                {
-                    return true;
-                }
-            }
-        }
-    }
-
     return false;
 }
 

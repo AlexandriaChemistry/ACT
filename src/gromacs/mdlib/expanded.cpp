@@ -53,7 +53,6 @@
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/calcmu.h"
-#include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/update.h"
 #include "gromacs/mdtypes/enerdata.h"

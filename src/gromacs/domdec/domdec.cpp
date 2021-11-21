@@ -97,7 +97,6 @@
 #include "box.h"
 #include "cellsizes.h"
 #include "distribute.h"
-#include "domdec_constraints.h"
 #include "domdec_internal.h"
 #include "domdec_vsite.h"
 #include "redistribute.h"

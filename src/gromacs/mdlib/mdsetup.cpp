@@ -39,7 +39,6 @@
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/listed-forces/manage-threading.h"
-#include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/shellfc.h"
 #include "gromacs/mdlib/vsite.h"
@@ -66,7 +65,6 @@ void mdAlgorithmsSetupAtomData(const t_commrec   *cr,
                                t_forcerec        *fr,
                                t_graph          **graph,
                                gmx::MDAtoms      *mdAtoms,
-                               gmx::Constraints  *constr,
                                gmx_vsite_t       *vsite,
                                gmx_shellfc_t     *shellfc)
 {
@@ -146,8 +144,4 @@ void mdAlgorithmsSetupAtomData(const t_commrec   *cr,
                            fr->gpuBondedLists != nullptr,
                            top->idef);
 
-    if (constr)
-    {
-        constr->setConstraints(*top, *mdatoms);
-    }
 }

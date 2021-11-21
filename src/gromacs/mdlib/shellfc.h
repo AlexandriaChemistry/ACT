@@ -55,11 +55,6 @@ struct t_graph;
 struct t_inputrec;
 class t_state;
 
-namespace gmx
-{
-class Constraints;
-}
-
 /* Initialization function, also predicts the initial shell postions.
  */
 gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
@@ -82,7 +77,6 @@ real relax_shell_flexcon(FILE                                     *log,
                          gmx_bool                                  bDoNS,
                          int                                       force_flags,
                          gmx_localtop_t                           *top,
-                         gmx::Constraints                         *constr,
                          gmx_enerdata_t                           *enerd,
                          t_fcdata                                 *fcd,
                          t_state                                  *state,

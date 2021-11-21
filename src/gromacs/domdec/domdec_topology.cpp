@@ -83,7 +83,6 @@
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textwriter.h"
 
-#include "domdec_constraints.h"
 #include "domdec_internal.h"
 #include "domdec_vsite.h"
 #include "dump.h"
@@ -822,10 +821,6 @@ void dd_make_reverse_top(FILE *fplog,
         init_domdec_vsites(dd, vsite->n_intercg_vsite);
     }
 
-    if (dd->splitConstraints || dd->splitSettles)
-    {
-        init_domdec_constraints(dd, mtop);
-    }
     if (fplog)
     {
         fprintf(fplog, "\n");

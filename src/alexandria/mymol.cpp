@@ -1304,7 +1304,7 @@ immStatus MyMol::computeForces(FILE *fplog, t_commrec *cr, double *rmsf)
         {
             force2 = relax_shell_flexcon(nullptr, cr, nullptr, false,
                                          0, inputrec_,
-                                         true, force_flags, ltop_, nullptr,
+                                         true, force_flags, ltop_,
                                          enerd_, fcd_, state_,
                                          f_.arrayRefWithPadding(), force_vir, mdatoms,
                                          &nrnb_, wcycle_, nullptr,
