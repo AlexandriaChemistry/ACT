@@ -79,7 +79,6 @@
 #include "gromacs/mdlib/nbnxn_grid.h"
 #include "gromacs/mdlib/nbnxn_search.h"
 #include "gromacs/mdlib/update.h"
-#include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_gpu_ref.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forceoutput.h"
@@ -110,8 +109,6 @@
 #include "gromacs/utility/sysinfo.h"
 
 #include "nbnxn_gpu.h"
-#include "nbnxn_kernels/nbnxn_kernel_cpu.h"
-#include "nbnxn_kernels/nbnxn_kernel_prune.h"
 
 // TODO: this environment variable allows us to verify before release
 // that on less common architectures the total cost of polling is not larger than
@@ -214,21 +211,6 @@ static void sum_forces(rvec f[], gmx::ArrayRef<const gmx::RVec> forceToAdd)
     {
         rvec_inc(f[i], forceToAdd[i]);
     }
-}
-
-static void pme_gpu_reduce_outputs(gmx_wallcycle_t                 wcycle,
-                                   gmx::ForceWithVirial           *forceWithVirial,
-                                   gmx::ArrayRef<const gmx::RVec>  pmeForces,
-                                   gmx_enerdata_t                 *enerd,
-                                   const tensor                    vir_Q,
-                                   real                            Vlr_q)
-{
-    wallcycle_start(wcycle, ewcPME_GPU_F_REDUCTION);
-    GMX_ASSERT(forceWithVirial, "Invalid force pointer");
-    forceWithVirial->addVirialContribution(vir_Q);
-    enerd->term[F_COUL_RECIP] += Vlr_q;
-    sum_forces(as_rvec_array(forceWithVirial->force_.data()), pmeForces);
-    wallcycle_stop(wcycle, ewcPME_GPU_F_REDUCTION);
 }
 
 static void calc_virial(int start, int homenr, const rvec x[], const rvec f[],
@@ -339,140 +321,6 @@ static void post_process_forces(const t_commrec           *cr,
     if (fr->print_force >= 0)
     {
         print_large_forces(stderr, mdatoms, cr, step, fr->print_force, x, f);
-    }
-}
-
-static void do_nb_verlet(const t_forcerec *fr,
-                         const interaction_const_t *ic,
-                         gmx_enerdata_t *enerd,
-                         int flags, int ilocality,
-                         int clearF,
-                         int64_t step,
-                         t_nrnb *nrnb,
-                         gmx_wallcycle_t wcycle)
-{
-    if (!(flags & GMX_FORCE_NONBONDED))
-    {
-        /* skip non-bonded calculation */
-        return;
-    }
-
-    nonbonded_verlet_t       *nbv  = fr->nbv;
-    nonbonded_verlet_group_t *nbvg = &nbv->grp[ilocality];
-
-    /* GPU kernel launch overhead is already timed separately */
-    if (fr->cutoff_scheme != ecutsVERLET)
-    {
-        gmx_incons("Invalid cut-off scheme passed!");
-    }
-
-    bool bUsingGpuKernels = (nbvg->kernel_type == nbnxnk8x8x8_GPU);
-
-    if (!bUsingGpuKernels)
-    {
-        /* When dynamic pair-list  pruning is requested, we need to prune
-         * at nstlistPrune steps.
-         */
-        if (nbv->listParams->useDynamicPruning &&
-            (step - nbvg->nbl_lists.outerListCreationStep) % nbv->listParams->nstlistPrune == 0)
-        {
-            /* Prune the pair-list beyond fr->ic->rlistPrune using
-             * the current coordinates of the atoms.
-             */
-            wallcycle_sub_start(wcycle, ewcsNONBONDED_PRUNING);
-            nbnxn_kernel_cpu_prune(nbvg, nbv->nbat, fr->shift_vec, nbv->listParams->rlistInner);
-            wallcycle_sub_stop(wcycle, ewcsNONBONDED_PRUNING);
-        }
-
-        wallcycle_sub_start(wcycle, ewcsNONBONDED);
-    }
-
-    switch (nbvg->kernel_type)
-    {
-        case nbnxnk4x4_PlainC:
-        case nbnxnk4xN_SIMD_4xN:
-        case nbnxnk4xN_SIMD_2xNN:
-            nbnxn_kernel_cpu(nbvg,
-                             nbv->nbat,
-                             ic,
-                             fr->shift_vec,
-                             flags,
-                             clearF,
-                             fr->fshift[0],
-                             enerd->grpp.ener[egCOULSR],
-                             fr->bBHAM ?
-                             enerd->grpp.ener[egBHAMSR] :
-                             enerd->grpp.ener[egLJSR]);
-            break;
-
-        case nbnxnk8x8x8_GPU:
-            nbnxn_gpu_launch_kernel(nbv->gpu_nbv, nbv->nbat, flags, ilocality);
-            break;
-
-        case nbnxnk8x8x8_PlainC:
-            nbnxn_kernel_gpu_ref(nbvg->nbl_lists.nbl[0],
-                                 nbv->nbat, ic,
-                                 fr->shift_vec,
-                                 flags,
-                                 clearF,
-                                 nbv->nbat->out[0].f,
-                                 fr->fshift[0],
-                                 enerd->grpp.ener[egCOULSR],
-                                 fr->bBHAM ?
-                                 enerd->grpp.ener[egBHAMSR] :
-                                 enerd->grpp.ener[egLJSR]);
-            break;
-
-        default:
-            GMX_RELEASE_ASSERT(false, "Invalid nonbonded kernel type passed!");
-
-    }
-    if (!bUsingGpuKernels)
-    {
-        wallcycle_sub_stop(wcycle, ewcsNONBONDED);
-    }
-
-    int enr_nbnxn_kernel_ljc, enr_nbnxn_kernel_lj;
-    if (EEL_RF(ic->eeltype) || ic->eeltype == eelCUT)
-    {
-        enr_nbnxn_kernel_ljc = eNR_NBNXN_LJ_RF;
-    }
-    else if ((!bUsingGpuKernels && nbvg->ewald_excl == ewaldexclAnalytical) ||
-             (bUsingGpuKernels && nbnxn_gpu_is_kernel_ewald_analytical(nbv->gpu_nbv)))
-    {
-        enr_nbnxn_kernel_ljc = eNR_NBNXN_LJ_EWALD;
-    }
-    else
-    {
-        enr_nbnxn_kernel_ljc = eNR_NBNXN_LJ_TAB;
-    }
-    enr_nbnxn_kernel_lj = eNR_NBNXN_LJ;
-    if (flags & GMX_FORCE_ENERGY)
-    {
-        /* In eNR_??? the nbnxn F+E kernels are always the F kernel + 1 */
-        enr_nbnxn_kernel_ljc += 1;
-        enr_nbnxn_kernel_lj  += 1;
-    }
-
-    inc_nrnb(nrnb, enr_nbnxn_kernel_ljc,
-             nbvg->nbl_lists.natpair_ljq);
-    inc_nrnb(nrnb, enr_nbnxn_kernel_lj,
-             nbvg->nbl_lists.natpair_lj);
-    /* The Coulomb-only kernels are offset -eNR_NBNXN_LJ_RF+eNR_NBNXN_RF */
-    inc_nrnb(nrnb, enr_nbnxn_kernel_ljc-eNR_NBNXN_LJ_RF+eNR_NBNXN_RF,
-             nbvg->nbl_lists.natpair_q);
-
-    if (ic->vdw_modifier == eintmodFORCESWITCH)
-    {
-        /* We add up the switch cost separately */
-        inc_nrnb(nrnb, eNR_NBNXN_ADD_LJ_FSW+((flags & GMX_FORCE_ENERGY) ? 1 : 0),
-                 nbvg->nbl_lists.natpair_ljq + nbvg->nbl_lists.natpair_lj);
-    }
-    if (ic->vdw_modifier == eintmodPOTSWITCH)
-    {
-        /* We add up the switch cost separately */
-        inc_nrnb(nrnb, eNR_NBNXN_ADD_LJ_PSW+((flags & GMX_FORCE_ENERGY) ? 1 : 0),
-                 nbvg->nbl_lists.natpair_ljq + nbvg->nbl_lists.natpair_lj);
     }
 }
 
@@ -767,42 +615,6 @@ computeSpecialForces(const t_commrec               *cr,
 #endif
 }
 
-/*! \brief
- *  Launch the dynamic rolling pruning GPU task.
- *
- *  We currently alternate local/non-local list pruning in odd-even steps
- *  (only pruning every second step without DD).
- *
- * \param[in]     cr               The communication record
- * \param[in]     nbv              Nonbonded verlet structure
- * \param[in]     inputrec         The input record
- * \param[in]     step             The current MD step
- */
-static inline void launchGpuRollingPruning(const t_commrec          *cr,
-                                           const nonbonded_verlet_t *nbv,
-                                           const t_inputrec         *inputrec,
-                                           const int64_t             step)
-{
-    /* We should not launch the rolling pruning kernel at a search
-     * step or just before search steps, since that's useless.
-     * Without domain decomposition we prune at even steps.
-     * With domain decomposition we alternate local and non-local
-     * pruning at even and odd steps.
-     */
-    int  numRollingParts     = nbv->listParams->numRollingParts;
-    GMX_ASSERT(numRollingParts == nbv->listParams->nstlistPrune/2, "Since we alternate local/non-local at even/odd steps, we need numRollingParts<=nstlistPrune/2 for correctness and == for efficiency");
-    int  stepWithCurrentList = step - nbv->grp[eintLocal].nbl_lists.outerListCreationStep;
-    bool stepIsEven          = ((stepWithCurrentList & 1) == 0);
-    if (stepWithCurrentList > 0 &&
-        stepWithCurrentList < inputrec->nstlist - 1 &&
-        (stepIsEven || DOMAINDECOMP(cr)))
-    {
-        nbnxn_gpu_launch_kernel_pruneonly(nbv->gpu_nbv,
-                                          stepIsEven ? eintLocal : eintNonlocal,
-                                          numRollingParts);
-    }
-}
-
 static void do_force_cutsVERLET(FILE *fplog,
                                 const t_commrec *cr,
                                 const gmx_multisim_t *ms,
@@ -821,7 +633,6 @@ static void do_force_cutsVERLET(FILE *fplog,
                                 real *lambda,
                                 t_graph *graph,
                                 t_forcerec *fr,
-                                interaction_const_t *ic,
                                 const gmx_vsite_t *vsite,
                                 rvec mu_tot,
                                 double t,
@@ -969,25 +780,6 @@ static void do_force_cutsVERLET(FILE *fplog,
         wallcycle_stop(wcycle, ewcNS);
     }
 
-    const bool haveGpuBondedWork = (bUseGPU && bonded_gpu_have_interactions(fr->gpuBondedLists));
-
-    /* initialize the GPU atom data and copy shift vector */
-    if (bUseGPU)
-    {
-        wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU);
-        wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_NONBONDED);
-
-        if (bNS)
-        {
-            nbnxn_gpu_init_atomdata(nbv->gpu_nbv, nbv->nbat);
-        }
-
-        nbnxn_gpu_upload_shiftvec(nbv->gpu_nbv, nbv->nbat);
-
-        wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
-        wallcycle_stop(wcycle, ewcLAUNCH_GPU);
-    }
-
     /* do local pair search */
     if (bNS)
     {
@@ -1021,31 +813,6 @@ static void do_force_cutsVERLET(FILE *fplog,
     {
         nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs.get(), eatLocal, FALSE, as_rvec_array(x.unpaddedArrayRef().data()),
                                         nbv->nbat, wcycle);
-    }
-
-    if (bUseGPU)
-    {
-        if (DOMAINDECOMP(cr))
-        {
-            ddOpenBalanceRegionGpu(cr->dd);
-        }
-
-        wallcycle_start(wcycle, ewcLAUNCH_GPU);
-        wallcycle_sub_start(wcycle, ewcsLAUNCH_GPU_NONBONDED);
-        /* launch local nonbonded work on GPU */
-        do_nb_verlet(fr, ic, enerd, flags, eintLocal, enbvClearFNo,
-                     step, nrnb, wcycle);
-        wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
-
-        if (haveGpuBondedWork && !DOMAINDECOMP(cr))
-        {
-            do_bonded_gpu(fr, flags,
-                          nbnxn_gpu_get_xq(nbv->gpu_nbv), box,
-                          nbnxn_gpu_get_f(nbv->gpu_nbv),
-                          nbnxn_gpu_get_fshift(nbv->gpu_nbv));
-
-        }
-        wallcycle_stop(wcycle, ewcLAUNCH_GPU);
     }
 
     /* Communicate coordinates and sum dipole if necessary +
@@ -1089,41 +856,6 @@ static void do_force_cutsVERLET(FILE *fplog,
                                             nbv->nbat, wcycle);
         }
 
-        if (bUseGPU)
-        {
-            wallcycle_start(wcycle, ewcLAUNCH_GPU);
-            wallcycle_sub_start(wcycle, ewcsLAUNCH_GPU_NONBONDED);
-            /* launch non-local nonbonded tasks on GPU */
-            do_nb_verlet(fr, ic, enerd, flags, eintNonlocal, enbvClearFNo,
-                         step, nrnb, wcycle);
-            wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
-
-            if (haveGpuBondedWork)
-            {
-                do_bonded_gpu(fr, flags,
-                              nbnxn_gpu_get_xq(nbv->gpu_nbv), box,
-                              nbnxn_gpu_get_f(nbv->gpu_nbv),
-                              nbnxn_gpu_get_fshift(nbv->gpu_nbv));
-            }
-
-            wallcycle_stop(wcycle, ewcLAUNCH_GPU);
-        }
-    }
-
-    if (bUseGPU)
-    {
-        /* launch D2H copy-back F */
-        wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU);
-        wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_NONBONDED);
-        if (DOMAINDECOMP(cr))
-        {
-            nbnxn_gpu_launch_cpyback(nbv->gpu_nbv, nbv->nbat,
-                                     flags, eatNonlocal, haveGpuBondedWork);
-        }
-        nbnxn_gpu_launch_cpyback(nbv->gpu_nbv, nbv->nbat,
-                                 flags, eatLocal, haveGpuBondedWork);
-        wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
-        wallcycle_stop(wcycle, ewcLAUNCH_GPU);
     }
 
     if (bStateChanged && inputrecNeedMutot(inputrec))
@@ -1207,12 +939,6 @@ static void do_force_cutsVERLET(FILE *fplog,
      * decomposition load balancing.
      */
 
-    if (!bUseOrEmulGPU)
-    {
-        do_nb_verlet(fr, ic, enerd, flags, eintLocal, enbvClearFYes,
-                     step, nrnb, wcycle);
-    }
-
     if (fr->efep != efepNO)
     {
         /* Calculate the local and non-local free energy interactions here.
@@ -1236,46 +962,6 @@ static void do_force_cutsVERLET(FILE *fplog,
         }
     }
 
-    if (!bUseOrEmulGPU)
-    {
-        int aloc;
-
-        if (DOMAINDECOMP(cr))
-        {
-            do_nb_verlet(fr, ic, enerd, flags, eintNonlocal, enbvClearFNo,
-                         step, nrnb, wcycle);
-        }
-
-        if (!bUseOrEmulGPU)
-        {
-            aloc = eintLocal;
-        }
-        else
-        {
-            aloc = eintNonlocal;
-        }
-
-        /* Add all the non-bonded force to the normal force array.
-         * This can be split into a local and a non-local part when overlapping
-         * communication with calculation with domain decomposition.
-         */
-        wallcycle_stop(wcycle, ewcFORCE);
-
-        nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs.get(), eatAll, nbv->nbat, f, wcycle);
-
-        wallcycle_start_nocount(wcycle, ewcFORCE);
-
-        /* if there are multiple fshift output buffers reduce them */
-        if ((flags & GMX_FORCE_VIRIAL) &&
-            nbv->grp[aloc].nbl_lists.nnbl > 1)
-        {
-            /* This is not in a subcounter because it takes a
-               negligible and constant-sized amount of time */
-            nbnxn_atomdata_add_nbat_fshift_to_fshift(nbv->nbat,
-                                                     fr->fshift);
-        }
-    }
-
     /* Compute the bonded and non-bonded energies and optionally forces */
     do_force_lowlevel(fr, inputrec, &(top->idef),
                       cr, ms, nrnb, wcycle, mdatoms,
@@ -1288,38 +974,6 @@ static void do_force_cutsVERLET(FILE *fplog,
     computeSpecialForces(cr, t,
                          fr->forceProviders, box, x.unpaddedArrayRef(), mdatoms, 
                          flags, &forceWithVirial, enerd);
-
-    if (bUseOrEmulGPU)
-    {
-        /* wait for non-local forces (or calculate in emulation mode) */
-        if (DOMAINDECOMP(cr))
-        {
-            if (bUseGPU)
-            {
-                wallcycle_start(wcycle, ewcWAIT_GPU_NB_NL);
-                nbnxn_gpu_wait_finish_task(nbv->gpu_nbv,
-                                           flags, eatNonlocal,
-                                           haveGpuBondedWork,
-                                           enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
-                                           fr->fshift);
-                cycles_wait_gpu += wallcycle_stop(wcycle, ewcWAIT_GPU_NB_NL);
-            }
-            else
-            {
-                wallcycle_start_nocount(wcycle, ewcFORCE);
-                do_nb_verlet(fr, ic, enerd, flags, eintNonlocal, enbvClearFYes,
-                             step, nrnb, wcycle);
-                wallcycle_stop(wcycle, ewcFORCE);
-            }
-
-            /* skip the reduction if there was no non-local work to do */
-            if (nbv->grp[eintNonlocal].nbl_lists.nbl[0]->nsci > 0)
-            {
-                nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs.get(), eatNonlocal,
-                                               nbv->nbat, f, wcycle);
-            }
-        }
-    }
 
     if (DOMAINDECOMP(cr))
     {
@@ -1336,17 +990,6 @@ static void do_force_cutsVERLET(FILE *fplog,
         {
             dd_move_f(cr->dd, force.unpaddedArrayRef(), fr->fshift, wcycle);
         }
-    }
-
-    if (fr->nbv->emulateGpu == EmulateGpuNonbonded::Yes)
-    {
-        // NOTE: emulation kernel is not included in the balancing region,
-        // but emulation mode does not target performance anyway
-        wallcycle_start_nocount(wcycle, ewcFORCE);
-        do_nb_verlet(fr, ic, enerd, flags, eintLocal,
-                     DOMAINDECOMP(cr) ? enbvClearFNo : enbvClearFYes,
-                     step, nrnb, wcycle);
-        wallcycle_stop(wcycle, ewcFORCE);
     }
 
     if (DOMAINDECOMP(cr))
@@ -1724,7 +1367,7 @@ void do_force(FILE                                     *fplog,
                                 mdatoms,
                                 enerd, fcd,
                                 lambda.data(), graph,
-                                fr, fr->ic,
+                                fr,
                                 vsite, mu_tot,
                                 t,
                                 flags,
