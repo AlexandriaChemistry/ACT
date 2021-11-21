@@ -38,7 +38,6 @@
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/gmxlib/nrnb.h"
-#include "gromacs/hardware/detecthardware.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
@@ -208,7 +207,6 @@ void MolGen::optionsFinished()
     mdlog_                      = gmx::MDLogger {};
     gmx_omp_nthreads_init(mdlog_, cr_, 1, 1, 1, 0, false, false);
     auto pnc                    = gmx::PhysicalNodeCommunicator(MPI_COMM_WORLD, 0);
-    hwinfo_                     = gmx_detect_hardware(mdlog_, pnc);
     gmx_omp_nthreads_init(mdlog_, cr_, 1, 1, 1, 0, false, false);
     if (nullptr != fitString_)
     {
@@ -772,7 +770,6 @@ size_t MolGen::Read(FILE            *fp,
                                             mdlog_,
                                             cr_,
                                             tabfn,
-                                            hwinfo_,
                                             qcycle_,
                                             qtol_,
                                             ChargeGenerationAlgorithm::NONE,
@@ -977,7 +974,6 @@ size_t MolGen::Read(FILE            *fp,
                                             mdlog_,
                                             cr_,
                                             tabfn,
-                                            hwinfo_,
                                             qcycle_,
                                             qtol_,
                                             ChargeGenerationAlgorithm::NONE,

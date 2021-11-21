@@ -124,7 +124,6 @@ void finish_run(FILE *log, const gmx::MDLogger &mdlog, const t_commrec *cr,
                 const t_inputrec *inputrec,
                 t_nrnb nrnb[], gmx_wallcycle_t wcycle,
                 gmx_walltime_accounting_t walltime_accounting,
-                nonbonded_verlet_t *nbv,
                 gmx_bool bWriteStat);
 
 void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr);

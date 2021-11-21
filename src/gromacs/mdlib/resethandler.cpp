@@ -47,7 +47,6 @@
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
-#include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
 #include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/timing/walltime_accounting.h"
@@ -123,7 +122,6 @@ bool ResetHandler::resetCountersImpl(
         const MDLogger             &mdlog,
         FILE                       *fplog,
         const t_commrec            *cr,
-        nonbonded_verlet_t         *nbv,
         t_nrnb                     *nrnb,
         gmx_wallcycle_t             wcycle,
         gmx_walltime_accounting_t   walltime_accounting)
@@ -138,16 +136,6 @@ bool ResetHandler::resetCountersImpl(
         GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
                 "step %s: resetting all time and cycle counters",
                 gmx_step_str(step, sbuf));
-
-        if (use_GPU(nbv))
-        {
-            nbnxn_gpu_reset_timings(nbv);
-        }
-
-        if (use_GPU(nbv))
-        {
-            resetGpuProfiler();
-        }
 
         wallcycle_stop(wcycle, ewcRUN);
         wallcycle_reset_all(wcycle);

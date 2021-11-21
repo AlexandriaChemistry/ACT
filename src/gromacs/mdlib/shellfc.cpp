@@ -660,24 +660,6 @@ void make_local_shells(const t_commrec *cr,
     shfc->shell  = shell;
 }
 
-static void do_1pos(rvec xnew, const rvec xold, const rvec f, real step)
-{
-    real xo, yo, zo;
-    real dx, dy, dz;
-
-    xo = xold[XX];
-    yo = xold[YY];
-    zo = xold[ZZ];
-
-    dx = f[XX]*step;
-    dy = f[YY]*step;
-    dz = f[ZZ]*step;
-
-    xnew[XX] = xo+dx;
-    xnew[YY] = yo+dy;
-    xnew[ZZ] = zo+dz;
-}
-
 static void do_1pos3(rvec xnew, const rvec xold, const rvec f, const rvec step)
 {
     real xo, yo, zo;

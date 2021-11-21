@@ -45,7 +45,6 @@
 #include "gromacs/gmxpreprocess/gen_ad.h"
 #include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/gmxpreprocess/topdirs.h"
-#include "gromacs/hardware/hw_info.h"
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/listed-forces/manage-threading.h"
 #include "gromacs/math/vec.h"
@@ -1190,7 +1189,6 @@ double MyMol::bondOrder(int ai, int aj) const
 immStatus MyMol::GenerateGromacs(const gmx::MDLogger       &mdlog,
                                  t_commrec                 *cr,
                                  const char                *tabfn,
-                                 gmx_hw_info_t             *hwinfo,
                                  ChargeType                 ieqt)
 {
     if (gromacsGenerated_)
@@ -1216,7 +1214,7 @@ immStatus MyMol::GenerateGromacs(const gmx::MDLogger       &mdlog,
 
     gmx::ArrayRef<const std::string>  tabbfnm;
     init_forcerec(nullptr, mdlog, fr_, nullptr, inputrec_, mtop_, cr,
-                  state_->box, tabfn, tabfn, tabbfnm, *hwinfo, nullptr, false, true, -1);
+                  state_->box, tabfn, tabfn, tabbfnm, false, true, -1);
     gmx_omp_nthreads_set(emntBonded, 1);
     init_bonded_threading(nullptr, 1, &fr_->bondedThreading);
     setup_bonded_threading(fr_->bondedThreading, atomsConst().nr, false, ltop_->idef);
@@ -1447,7 +1445,6 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
                                  const gmx::MDLogger       &mdlog,
                                  t_commrec                 *cr,
                                  const char                *tabfn,
-                                 gmx_hw_info_t             *hwinfo,
                                  int                        maxiter,
                                  real                       tolerance,
                                  ChargeGenerationAlgorithm  algorithm,
@@ -1460,7 +1457,7 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
     auto      qt          = pd->findForcesConst(InteractionType::CHARGEDISTRIBUTION);
     auto      iChargeType = name2ChargeType(qt.optionValue("chargetype"));
 
-    GenerateGromacs(mdlog, cr, tabfn, hwinfo, iChargeType);
+    GenerateGromacs(mdlog, cr, tabfn, iChargeType);
     if (backupCoordinates_.size() == 0)
     {
         backupCoordinates();

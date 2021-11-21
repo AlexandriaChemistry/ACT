@@ -68,14 +68,6 @@
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/md_support.h"
 #include "gromacs/mdlib/nb_verlet.h"
-#include "gromacs/mdlib/nbnxn_atomdata.h"
-#include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
-#include "gromacs/mdlib/nbnxn_grid.h"
-#include "gromacs/mdlib/nbnxn_internal.h"
-#include "gromacs/mdlib/nbnxn_search.h"
-#include "gromacs/mdlib/nbnxn_simd.h"
-#include "gromacs/mdlib/nbnxn_tuning.h"
-#include "gromacs/mdlib/nbnxn_util.h"
 #include "gromacs/mdlib/ns.h"
 #include "gromacs/mdlib/rf_util.h"
 #include "gromacs/mdlib/sim_util.h"
@@ -100,8 +92,6 @@
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strconvert.h"
-
-#include "nbnxn_gpu_jit_support.h"
 
 t_forcerec *mk_forcerec()
 {
@@ -1553,123 +1543,11 @@ gmx_bool can_use_allvsall(const t_inputrec *ir, gmx_bool bPrintNote, const t_com
 }
 
 
-gmx_bool nbnxn_simd_supported(const gmx::MDLogger &mdlog,
-                              const t_inputrec    *ir)
+gmx_bool nbnxn_simd_supported(gmx_unused const gmx::MDLogger &mdlog,
+                              gmx_unused const t_inputrec    *ir)
 {
-    if (ir->vdwtype == evdwPME && ir->ljpme_combination_rule == eljpmeLB)
-    {
-        /* LJ PME with LB combination rule does 7 mesh operations.
-         * This so slow that we don't compile SIMD non-bonded kernels
-         * for that. */
-        GMX_LOG(mdlog.warning).asParagraph().appendText("LJ-PME with Lorentz-Berthelot is not supported with SIMD kernels, falling back to plain C kernels");
-        return FALSE;
-    }
-
-    return TRUE;
+    return FALSE;
 }
-
-
-static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused    *ir,
-                                  int                            *kernel_type,
-                                  int                            *ewald_excl,
-                                  const gmx_hw_info_t gmx_unused &hardwareInfo)
-{
-    *kernel_type = nbnxnk4x4_PlainC;
-    *ewald_excl  = ewaldexclTable;
-
-#if GMX_SIMD
-    {
-#ifdef GMX_NBNXN_SIMD_4XN
-        *kernel_type = nbnxnk4xN_SIMD_4xN;
-#endif
-#ifdef GMX_NBNXN_SIMD_2XNN
-        *kernel_type = nbnxnk4xN_SIMD_2xNN;
-#endif
-
-#if defined GMX_NBNXN_SIMD_2XNN && defined GMX_NBNXN_SIMD_4XN
-        /* We need to choose if we want 2x(N+N) or 4xN kernels.
-         * This is based on the SIMD acceleration choice and CPU information
-         * detected at runtime.
-         *
-         * 4xN calculates more (zero) interactions, but has less pair-search
-         * work and much better kernel instruction scheduling.
-         *
-         * Up till now we have only seen that on Intel Sandy/Ivy Bridge,
-         * which doesn't have FMA, both the analytical and tabulated Ewald
-         * kernels have similar pair rates for 4x8 and 2x(4+4), so we choose
-         * 2x(4+4) because it results in significantly fewer pairs.
-         * For RF, the raw pair rate of the 4x8 kernel is higher than 2x(4+4),
-         * 10% with HT, 50% without HT. As we currently don't detect the actual
-         * use of HT, use 4x8 to avoid a potential performance hit.
-         * On Intel Haswell 4x8 is always faster.
-         */
-        *kernel_type = nbnxnk4xN_SIMD_4xN;
-
-#if !GMX_SIMD_HAVE_FMA
-        if (EEL_PME_EWALD(ir->coulombtype) ||
-            EVDW_PME(ir->vdwtype))
-        {
-            /* We have Ewald kernels without FMA (Intel Sandy/Ivy Bridge).
-             * There are enough instructions to make 2x(4+4) efficient.
-             */
-            *kernel_type = nbnxnk4xN_SIMD_2xNN;
-        }
-#endif
-        if (hardwareInfo.haveAmdZenCpu)
-        {
-            /* One 256-bit FMA per cycle makes 2xNN faster */
-            *kernel_type = nbnxnk4xN_SIMD_2xNN;
-        }
-#endif  /* GMX_NBNXN_SIMD_2XNN && GMX_NBNXN_SIMD_4XN */
-
-
-        if (getenv("GMX_NBNXN_SIMD_4XN") != nullptr)
-        {
-#ifdef GMX_NBNXN_SIMD_4XN
-            *kernel_type = nbnxnk4xN_SIMD_4xN;
-#else
-            gmx_fatal(FARGS, "SIMD 4xN kernels requested, but GROMACS has been compiled without support for these kernels");
-#endif
-        }
-        if (getenv("GMX_NBNXN_SIMD_2XNN") != nullptr)
-        {
-#ifdef GMX_NBNXN_SIMD_2XNN
-            *kernel_type = nbnxnk4xN_SIMD_2xNN;
-#else
-            gmx_fatal(FARGS, "SIMD 2x(N+N) kernels requested, but GROMACS has been compiled without support for these kernels");
-#endif
-        }
-
-        /* Analytical Ewald exclusion correction is only an option in
-         * the SIMD kernel.
-         * Since table lookup's don't parallelize with SIMD, analytical
-         * will probably always be faster for a SIMD width of 8 or more.
-         * With FMA analytical is sometimes faster for a width if 4 as well.
-         * In single precision, this is faster on Bulldozer.
-         */
-#if GMX_SIMD_REAL_WIDTH >= 8 || \
-        (GMX_SIMD_REAL_WIDTH >= 4 && GMX_SIMD_HAVE_FMA && !GMX_DOUBLE)
-        /* On AMD Zen, tabulated Ewald kernels are faster on all 4 combinations
-         * of single or double precision and 128 or 256-bit AVX2.
-         */
-        if (!hardwareInfo.haveAmdZenCpu)
-        {
-            *ewald_excl = ewaldexclAnalytical;
-        }
-#endif
-        if (getenv("GMX_NBNXN_EWALD_TABLE") != nullptr)
-        {
-            *ewald_excl = ewaldexclTable;
-        }
-        if (getenv("GMX_NBNXN_EWALD_ANALYTICAL") != nullptr)
-        {
-            *ewald_excl = ewaldexclAnalytical;
-        }
-
-    }
-#endif // GMX_SIMD
-}
-
 
 const char *lookup_nbnxn_kernel_name(int kernel_type)
 {
@@ -1699,67 +1577,6 @@ const char *lookup_nbnxn_kernel_name(int kernel_type)
     }
     return returnvalue;
 };
-
-static void pick_nbnxn_kernel(const gmx::MDLogger &mdlog,
-                              gmx_bool             use_simd_kernels,
-                              const gmx_hw_info_t &hardwareInfo,
-                              gmx_bool             bUseGPU,
-                              EmulateGpuNonbonded  emulateGpu,
-                              const t_inputrec    *ir,
-                              int                 *kernel_type,
-                              int                 *ewald_excl,
-                              gmx_bool             bDoNonbonded)
-{
-    assert(kernel_type);
-
-    *kernel_type = nbnxnkNotSet;
-    *ewald_excl  = ewaldexclTable;
-
-    if (emulateGpu == EmulateGpuNonbonded::Yes)
-    {
-        *kernel_type = nbnxnk8x8x8_PlainC;
-
-        if (bDoNonbonded)
-        {
-            GMX_LOG(mdlog.warning).asParagraph().appendText("Emulating a GPU run on the CPU (slow)");
-        }
-    }
-    else if (bUseGPU)
-    {
-        *kernel_type = nbnxnk8x8x8_GPU;
-    }
-
-    if (*kernel_type == nbnxnkNotSet)
-    {
-        if (use_simd_kernels &&
-            nbnxn_simd_supported(mdlog, ir))
-        {
-            pick_nbnxn_kernel_cpu(ir, kernel_type, ewald_excl, hardwareInfo);
-        }
-        else
-        {
-            *kernel_type = nbnxnk4x4_PlainC;
-        }
-    }
-
-    if (bDoNonbonded)
-    {
-        GMX_LOG(mdlog.info).asParagraph().appendTextFormatted(
-                "Using %s %dx%d nonbonded short-range kernels",
-                lookup_nbnxn_kernel_name(*kernel_type),
-                nbnxn_kernel_to_cluster_i_size(*kernel_type),
-                nbnxn_kernel_to_cluster_j_size(*kernel_type));
-
-        if (nbnxnk4x4_PlainC == *kernel_type ||
-            nbnxnk8x8x8_PlainC == *kernel_type)
-        {
-            GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
-                    "WARNING: Using the slow %s kernels. This should\n"
-                    "not happen during routine usage on supported platforms.",
-                    lookup_nbnxn_kernel_name(*kernel_type));
-        }
-    }
-}
 
 /*! \brief Print Coulomb Ewald citations and set ewald coefficients */
 static void initCoulombEwaldParameters(FILE *fp, const t_inputrec *ir,
@@ -1812,21 +1629,15 @@ static void initCoulombEwaldParameters(FILE *fp, const t_inputrec *ir,
 }
 
 gmx_bool uses_simple_tables(int                 cutoff_scheme,
-                            nonbonded_verlet_t *nbv,
-                            int                 group)
+                            gmx_unused nonbonded_verlet_t *nbv,
+                            gmx_unused int                 group)
 {
     gmx_bool bUsesSimpleTables = TRUE;
-    int      grp_index;
 
     switch (cutoff_scheme)
     {
         case ecutsGROUP:
             bUsesSimpleTables = TRUE;
-            break;
-        case ecutsVERLET:
-            assert(nullptr != nbv);
-            grp_index         = (group < 0) ? 0 : (nbv->ngrp - 1);
-            bUsesSimpleTables = nbnxn_kernel_pairlist_simple(nbv->grp[grp_index].kernel_type);
             break;
         default:
             gmx_incons("unimplemented");
@@ -1844,14 +1655,7 @@ static void init_ewald_f_table(interaction_const_t *ic,
      */
     ic->tabq_scale = ewald_spline3_table_scale(ic);
 
-    if (ic->cutoff_scheme == ecutsVERLET)
-    {
-        maxr = ic->rcoulomb;
-    }
-    else
-    {
-        maxr = std::max(ic->rcoulomb, rtab);
-    }
+    maxr = std::max(ic->rcoulomb, rtab);
     ic->tabq_size  = static_cast<int>(maxr*ic->tabq_scale) + 2;
 
     sfree_aligned(ic->tabq_coul_FDV0);
@@ -2095,166 +1899,6 @@ done_interaction_const(interaction_const_t *interaction_const)
     sfree(interaction_const);
 }
 
-static void init_nb_verlet(const gmx::MDLogger     &mdlog,
-                           nonbonded_verlet_t     **nb_verlet,
-                           gmx_bool                 bFEP_NonBonded,
-                           const t_inputrec        *ir,
-                           const t_forcerec        *fr,
-                           const t_commrec         *cr,
-                           const gmx_hw_info_t     &hardwareInfo,
-                           const gmx_device_info_t *deviceInfo,
-                           const gmx_mtop_t        *mtop,
-                           matrix                   box)
-{
-    nonbonded_verlet_t *nbv;
-    char               *env;
-
-    nbnxn_alloc_t      *nb_alloc;
-    nbnxn_free_t       *nb_free;
-
-    nbv = new nonbonded_verlet_t();
-
-    nbv->emulateGpu = ((getenv("GMX_EMULATE_GPU") != nullptr) ? EmulateGpuNonbonded::Yes : EmulateGpuNonbonded::No);
-    nbv->bUseGPU    = deviceInfo != nullptr;
-
-    GMX_RELEASE_ASSERT(!(nbv->emulateGpu == EmulateGpuNonbonded::Yes && nbv->bUseGPU), "When GPU emulation is active, there cannot be a GPU assignment");
-
-    nbv->nbs             = nullptr;
-    nbv->min_ci_balanced = 0;
-
-    nbv->ngrp = (DOMAINDECOMP(cr) ? 2 : 1);
-    for (int i = 0; i < nbv->ngrp; i++)
-    {
-        nbv->grp[i].nbl_lists.nnbl = 0;
-        nbv->grp[i].kernel_type    = nbnxnkNotSet;
-
-        if (i == 0) /* local */
-        {
-            pick_nbnxn_kernel(mdlog, fr->use_simd_kernels, hardwareInfo,
-                              nbv->bUseGPU, nbv->emulateGpu, ir,
-                              &nbv->grp[i].kernel_type,
-                              &nbv->grp[i].ewald_excl,
-                              fr->bNonbonded);
-        }
-        else /* non-local */
-        {
-            /* Use the same kernel for local and non-local interactions */
-            nbv->grp[i].kernel_type = nbv->grp[0].kernel_type;
-            nbv->grp[i].ewald_excl  = nbv->grp[0].ewald_excl;
-        }
-    }
-
-    nbv->listParams = gmx::compat::make_unique<NbnxnListParameters>(ir->rlist);
-    setupDynamicPairlistPruning(mdlog, ir, mtop, box, nbv->grp[0].kernel_type, fr->ic,
-                                nbv->listParams.get());
-
-    nbv->nbs = gmx::compat::make_unique<nbnxn_search>(DOMAINDECOMP(cr) ? &cr->dd->nc : nullptr,
-                                                      DOMAINDECOMP(cr) ? domdec_zones(cr->dd) : nullptr,
-                                                      bFEP_NonBonded,
-                                                      gmx_omp_nthreads_get(emntPairsearch));
-
-    gpu_set_host_malloc_and_free(nbv->grp[0].kernel_type == nbnxnk8x8x8_GPU,
-                                 &nb_alloc, &nb_free);
-
-    for (int i = 0; i < nbv->ngrp; i++)
-    {
-        nbnxn_init_pairlist_set(&nbv->grp[i].nbl_lists,
-                                nbnxn_kernel_pairlist_simple(nbv->grp[i].kernel_type),
-                                /* 8x8x8 "non-simple" lists are ATM always combined */
-                                !nbnxn_kernel_pairlist_simple(nbv->grp[i].kernel_type),
-                                nb_alloc, nb_free);
-    }
-
-    int      enbnxninitcombrule;
-    if (fr->ic->vdwtype == evdwCUT &&
-        (fr->ic->vdw_modifier == eintmodNONE ||
-         fr->ic->vdw_modifier == eintmodPOTSHIFT) &&
-        getenv("GMX_NO_LJ_COMB_RULE") == nullptr)
-    {
-        /* Plain LJ cut-off: we can optimize with combination rules */
-        enbnxninitcombrule = enbnxninitcombruleDETECT;
-    }
-    else if (fr->ic->vdwtype == evdwPME)
-    {
-        /* LJ-PME: we need to use a combination rule for the grid */
-        if (fr->ljpme_combination_rule == eljpmeGEOM)
-        {
-            enbnxninitcombrule = enbnxninitcombruleGEOM;
-        }
-        else
-        {
-            enbnxninitcombrule = enbnxninitcombruleLB;
-        }
-    }
-    else
-    {
-        /* We use a full combination matrix: no rule required */
-        enbnxninitcombrule = enbnxninitcombruleNONE;
-    }
-
-    snew(nbv->nbat, 1);
-    int mimimumNumEnergyGroupNonbonded = ir->opts.ngener;
-    if (ir->opts.ngener == 1)
-    {
-        /* We have only one non-wall energy group, we do not need energy group
-         * support in the non-bondeds kernels, since all non-bonded energy
-         * contributions go to the first element of the energy group matrix.
-         */
-        mimimumNumEnergyGroupNonbonded = 1;
-    }
-    bool bSimpleList = nbnxn_kernel_pairlist_simple(nbv->grp[0].kernel_type);
-    nbnxn_atomdata_init(mdlog,
-                        nbv->nbat,
-                        nbv->grp[0].kernel_type,
-                        enbnxninitcombrule,
-                        fr->ntype, fr->nbfp,
-                        mimimumNumEnergyGroupNonbonded,
-                        bSimpleList ? gmx_omp_nthreads_get(emntNonbonded) : 1,
-                        nb_alloc, nb_free);
-
-    if (nbv->bUseGPU)
-    {
-        /* init the NxN GPU data; the last argument tells whether we'll have
-         * both local and non-local NB calculation on GPU */
-        nbnxn_gpu_init(&nbv->gpu_nbv,
-                       deviceInfo,
-                       fr->ic,
-                       nbv->listParams.get(),
-                       nbv->nbat,
-                       cr->nodeid,
-                       (nbv->ngrp > 1));
-
-        if ((env = getenv("GMX_NB_MIN_CI")) != nullptr)
-        {
-            char *end;
-
-            nbv->min_ci_balanced = strtol(env, &end, 10);
-            if (!end || (*end != 0) || nbv->min_ci_balanced < 0)
-            {
-                gmx_fatal(FARGS, "Invalid value passed in GMX_NB_MIN_CI=%s, non-negative integer required", env);
-            }
-
-            if (debug)
-            {
-                fprintf(debug, "Neighbor-list balancing parameter: %d (passed as env. var.)\n",
-                        nbv->min_ci_balanced);
-            }
-        }
-        else
-        {
-            nbv->min_ci_balanced = nbnxn_gpu_min_ci_balanced(nbv->gpu_nbv);
-            if (debug)
-            {
-                fprintf(debug, "Neighbor-list balancing parameter: %d (auto-adjusted to the number of GPU multi-processors)\n",
-                        nbv->min_ci_balanced);
-            }
-        }
-
-    }
-
-    *nb_verlet = nbv;
-}
-
 gmx_bool usingGpu(nonbonded_verlet_t *nbv)
 {
     return nbv != nullptr && nbv->bUseGPU;
@@ -2271,8 +1915,6 @@ void init_forcerec(FILE                             *fp,
                    const char                       *tabfn,
                    const char                       *tabpfn,
                    gmx::ArrayRef<const std::string>  tabbfnm,
-                   const gmx_hw_info_t              &hardwareInfo,
-                   const gmx_device_info_t          *deviceInfo,
                    const bool                        useGpuForBonded,
                    gmx_bool                          bNoSolvOpt,
                    real                              print_force)
@@ -2988,33 +2630,6 @@ void init_forcerec(FILE                             *fp,
     fr->nthread_ewc = gmx_omp_nthreads_get(emntBonded);
     snew(fr->ewc_t, fr->nthread_ewc);
 
-    if (fr->cutoff_scheme == ecutsVERLET)
-    {
-        // We checked the cut-offs in grompp, but double-check here.
-        // We have PME+LJcutoff kernels for rcoulomb>rvdw.
-        if (EEL_PME_EWALD(ir->coulombtype) && ir->vdwtype == eelCUT)
-        {
-            GMX_RELEASE_ASSERT(ir->rcoulomb >= ir->rvdw, "With Verlet lists and PME we should have rcoulomb>=rvdw");
-        }
-        else
-        {
-            GMX_RELEASE_ASSERT(ir->rcoulomb == ir->rvdw, "With Verlet lists and no PME rcoulomb and rvdw should be identical");
-        }
-
-        init_nb_verlet(mdlog, &fr->nbv, bFEP_NonBonded, ir, fr,
-                       cr, hardwareInfo, deviceInfo,
-                       mtop, box);
-
-        if (useGpuForBonded)
-        {
-            init_gpu_bonded(fr->gpuBondedLists,
-                            mtop->ffparams,
-                            DOMAINDECOMP(cr) ?
-                            nbnxn_gpu_get_command_stream(fr->nbv->gpu_nbv, eintNonlocal) :
-                            nbnxn_gpu_get_command_stream(fr->nbv->gpu_nbv, eintLocal));
-        }
-    }
-
     if (fp != nullptr)
     {
         /* Here we switch from using mdlog, which prints the newline before
@@ -3038,25 +2653,11 @@ void init_forcerec(FILE                             *fp,
  * \todo Remove physical node barrier from this function after making sure
  * that it's not needed anymore (with a shared GPU run).
  */
-void free_gpu_resources(t_forcerec                          *fr,
+void free_gpu_resources(gmx_unused t_forcerec                          *fr,
                         const gmx::PhysicalNodeCommunicator &physicalNodeCommunicator)
 {
-    bool isPPrankUsingGPU = (fr != nullptr) && (fr->nbv != nullptr) && fr->nbv->bUseGPU;
-
     /* stop the GPU profiler (only CUDA) */
     stopGpuProfiler();
-
-    if (isPPrankUsingGPU)
-    {
-        /* free nbnxn data in GPU memory */
-        nbnxn_gpu_free(fr->nbv->gpu_nbv);
-
-        if (fr->gpuBondedLists)
-        {
-            delete fr->gpuBondedLists;
-            fr->gpuBondedLists = nullptr;
-        }
-    }
 
     /* With tMPI we need to wait for all ranks to finish deallocation before
      * destroying the CUDA context in free_gpu() as some tMPI ranks may be sharing

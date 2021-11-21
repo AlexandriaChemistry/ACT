@@ -69,7 +69,6 @@
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/mdsetup.h"
 #include "gromacs/mdlib/nb_verlet.h"
-#include "gromacs/mdlib/nbnxn_grid.h"
 #include "gromacs/mdlib/nsgrid.h"
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/mdtypes/commrec.h"
@@ -2766,27 +2765,6 @@ static void dd_sort_order(const gmx_domdec_t *dd,
     }
 }
 
-//! Returns the sorting order for atoms based on the nbnxn grid order in sort
-static void dd_sort_order_nbnxn(const t_forcerec          *fr,
-                                std::vector<gmx_cgsort_t> *sort)
-{
-    gmx::ArrayRef<const int> atomOrder = nbnxn_get_atomorder(fr->nbv->nbs.get());
-
-    /* Using push_back() instead of this resize results in much slower code */
-    sort->resize(atomOrder.size());
-    gmx::ArrayRef<gmx_cgsort_t> buffer    = *sort;
-    size_t                      numSorted = 0;
-    for (int i : atomOrder)
-    {
-        if (i >= 0)
-        {
-            /* The values of nsc and ind_gl are not used in this case */
-            buffer[numSorted++].ind = i;
-        }
-    }
-    sort->resize(numSorted);
-}
-
 //! Returns the sorting state for DD.
 static void dd_sort_state(gmx_domdec_t *dd, rvec *cgcm, t_forcerec *fr, t_state *state,
                           int ncg_home_old)
@@ -2797,9 +2775,6 @@ static void dd_sort_state(gmx_domdec_t *dd, rvec *cgcm, t_forcerec *fr, t_state 
     {
         case ecutsGROUP:
             dd_sort_order(dd, fr, ncg_home_old, sort);
-            break;
-        case ecutsVERLET:
-            dd_sort_order_nbnxn(fr, &sort->sorted);
             break;
         default:
             gmx_incons("unimplemented");
@@ -2871,20 +2846,12 @@ static void dd_sort_state(gmx_domdec_t *dd, rvec *cgcm, t_forcerec *fr, t_state 
     /* Set the home atom number */
     dd->comm->atomRanges.setEnd(DDAtomRanges::Type::Home, dd->atomGrouping().fullRange().end());
 
-    if (fr->cutoff_scheme == ecutsVERLET)
+    /* Copy the sorted ns cell indices back to the ns grid struct */
+    for (gmx::index i = 0; i < cgsort.size(); i++)
     {
-        /* The atoms are now exactly in grid order, update the grid order */
-        nbnxn_set_atomorder(fr->nbv->nbs.get());
+        fr->ns->grid->cell_index[i] = cgsort[i].nsc;
     }
-    else
-    {
-        /* Copy the sorted ns cell indices back to the ns grid struct */
-        for (gmx::index i = 0; i < cgsort.size(); i++)
-        {
-            fr->ns->grid->cell_index[i] = cgsort[i].nsc;
-        }
-        fr->ns->grid->nr = cgsort.size();
-    }
+    fr->ns->grid->nr = cgsort.size();
 }
 
 //! Accumulates load statistics.
@@ -3363,9 +3330,6 @@ void dd_partition_system(FILE                    *fplog,
                        state_local->box, cell_ns_x0, cell_ns_x1,
                        fr->rlist, grid_density);
             break;
-        case ecutsVERLET:
-            nbnxn_get_ncells(fr->nbv->nbs.get(), &ncells_old[XX], &ncells_old[YY]);
-            break;
         default:
             gmx_incons("unimplemented");
     }
@@ -3389,24 +3353,6 @@ void dd_partition_system(FILE                    *fplog,
 
         switch (fr->cutoff_scheme)
         {
-            case ecutsVERLET:
-                set_zones_size(dd, state_local->box, &ddbox, 0, 1, ncg_moved);
-
-                nbnxn_put_on_grid(fr->nbv->nbs.get(), fr->ePBC, state_local->box,
-                                  0,
-                                  comm->zones.size[0].bb_x0,
-                                  comm->zones.size[0].bb_x1,
-                                  comm->updateGroupsCog.get(),
-                                  0, dd->ncg_home,
-                                  comm->zones.dens_zone0,
-                                  fr->cginfo,
-                                  state_local->x,
-                                  ncg_moved, bRedist ? comm->movedBuffer.data() : nullptr,
-                                  fr->nbv->grp[eintLocal].kernel_type,
-                                  fr->nbv->nbat);
-
-                nbnxn_get_ncells(fr->nbv->nbs.get(), &ncells_new[XX], &ncells_new[YY]);
-                break;
             case ecutsGROUP:
                 fill_grid(&comm->zones, fr->ns->grid, dd->ncg_home,
                           0, dd->ncg_home, fr->cg_cm);

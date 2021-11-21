@@ -36,7 +36,6 @@
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/gmxlib/network.h"
-#include "gromacs/hardware/detecthardware.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/enerdata.h"
@@ -367,7 +366,6 @@ int alex_gentop(int argc, char *argv[])
                                  tabfn);
 
     auto pnc    = gmx::PhysicalNodeCommunicator(MPI_COMM_WORLD, 0);
-    auto hwinfo = gmx_detect_hardware(mdlog, pnc);
     gmx_omp_nthreads_init(mdlog, cr, 1, 1, 1, 0, false, false);
 
     if (immStatus::OK == imm)
@@ -397,7 +395,6 @@ int alex_gentop(int argc, char *argv[])
                                        mdlog,
                                        cr,
                                        tabfn,
-                                       hwinfo,
                                        qcycle,
                                        qtol,
                                        alg,
