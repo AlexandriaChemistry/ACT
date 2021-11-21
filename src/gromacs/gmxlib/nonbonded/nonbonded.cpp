@@ -67,14 +67,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-/* Different default (c) and SIMD instructions interaction-specific kernels */
-#if !GMX_CLANG_ANALYZER
-#include "gromacs/gmxlib/nonbonded/nb_kernel_c/nb_kernel_c.h"
-#endif
-
-//static tMPI_Thread_mutex_t nonbonded_setup_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
 static gmx_bool            nonbonded_setup_done  = FALSE;
-
 
 void
 gmx_nonbonded_setup(gmx_unused t_forcerec *   fr,
