@@ -38,7 +38,6 @@
 #define GMX_MDLIB_SIM_UTIL_H
 
 #include "gromacs/mdlib/mdoutf.h"
-#include "gromacs/mdlib/vcm.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/utility/arrayref.h"
@@ -91,7 +90,6 @@ void global_stat(const gmx_global_stat *gs,
                  tensor fvir, tensor svir, rvec mu_tot,
                  const t_inputrec *inputrec,
                  gmx_ekindata_t *ekind,
-                 t_vcm *vcm,
                  int nsig, real *sig,
                  int *totalNumberOfBondedInteractions,
                  gmx_bool bSumEkinhOld, int flags);
@@ -140,13 +138,13 @@ void init_md(FILE *fplog,
              const MdrunOptions &mdrunOptions,
              double *t, double *t0,
              t_state *globalState, double *lam0,
-             t_nrnb *nrnb, gmx_mtop_t *mtop,
+             t_nrnb *nrnb,
              gmx_update_t **upd,
              gmx::BoxDeformation *deform,
              tensor force_vir, tensor shake_vir,
              tensor total_vir, tensor pres,
              rvec mu_tot,
-             gmx_bool *bSimAnn, t_vcm **vcm);
+             gmx_bool *bSimAnn);
 
 void init_rerun(FILE *fplog,
                 const t_commrec *cr,

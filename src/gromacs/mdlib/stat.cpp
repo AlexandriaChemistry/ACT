@@ -49,7 +49,6 @@
 #include "gromacs/mdlib/rbin.h"
 #include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdlib/tgroup.h"
-#include "gromacs/mdlib/vcm.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/group.h"
@@ -138,7 +137,6 @@ void global_stat(const gmx_global_stat *gs,
                  tensor fvir, tensor svir, rvec mu_tot,
                  const t_inputrec *inputrec,
                  gmx_ekindata_t *ekind,
-                 t_vcm *vcm,
                  int nsig, real *sig,
                  int *totalNumberOfBondedInteractions,
                  gmx_bool bSumEkinhOld, int flags)
@@ -147,9 +145,8 @@ void global_stat(const gmx_global_stat *gs,
     t_bin     *rb;
     int       *itc0, *itc1;
     int        ie    = 0, ifv = 0, isv = 0, imu = 0;
-    int        idedl = 0, idedlo = 0, idvdll = 0, idvdlnl = 0, iepl = 0, icm = 0, imass = 0, ica = 0, inb = 0;
+    int        idedl = 0, idedlo = 0, idvdll = 0, idvdlnl = 0, iepl = 0, ica = 0, inb = 0;
     int        isig  = -1;
-    int        icj   = -1, ici = -1, icx = -1;
     int        inn[egNR];
     real       copyenerd[F_NRE];
     int        nener, j;
@@ -247,18 +244,6 @@ void global_stat(const gmx_global_stat *gs,
         }
     }
 
-    if (vcm)
-    {
-        icm   = add_binr(rb, DIM*vcm->nr, vcm->group_p[0]);
-        imass = add_binr(rb, vcm->nr, vcm->group_mass);
-        if (vcm->mode == ecmANGULAR)
-        {
-            icj   = add_binr(rb, DIM*vcm->nr, vcm->group_j[0]);
-            icx   = add_binr(rb, DIM*vcm->nr, vcm->group_x[0]);
-            ici   = add_binr(rb, DIM*DIM*vcm->nr, vcm->group_i[0][0]);
-        }
-    }
-
     if (checkNumberOfBondedInteractions)
     {
         nb  = cr->dd->nbonded_local;
@@ -339,18 +324,6 @@ void global_stat(const gmx_global_stat *gs,
         }
 
         filter_enerdterm(copyenerd, FALSE, enerd->term, bTemp, bPres, bEner);
-    }
-
-    if (vcm)
-    {
-        extract_binr(rb, icm, DIM*vcm->nr, vcm->group_p[0]);
-        extract_binr(rb, imass, vcm->nr, vcm->group_mass);
-        if (vcm->mode == ecmANGULAR)
-        {
-            extract_binr(rb, icj, DIM*vcm->nr, vcm->group_j[0]);
-            extract_binr(rb, icx, DIM*vcm->nr, vcm->group_x[0]);
-            extract_binr(rb, ici, DIM*DIM*vcm->nr, vcm->group_i[0][0]);
-        }
     }
 
     if (checkNumberOfBondedInteractions)
