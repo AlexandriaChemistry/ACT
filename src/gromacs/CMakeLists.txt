@@ -34,10 +34,6 @@
 
 set(LIBGROMACS_SOURCES)
 
-if (GMX_CLANG_CUDA)
-#    include(gmxClangCudaUtils)
-endif()
-
 set_property(GLOBAL PROPERTY GMX_LIBGROMACS_SOURCES)
 set_property(GLOBAL PROPERTY GMX_LIBGROMACS_GPU_IMPL_SOURCES)
 set_property(GLOBAL PROPERTY GMX_INSTALLED_HEADERS)
@@ -68,12 +64,6 @@ endfunction ()
 
 function (gmx_add_libgromacs_sources)
     _gmx_add_files_to_property(GMX_LIBGROMACS_SOURCES ${ARGN})
-endfunction ()
-
-# TODO Reconsider this, as the CUDA driver API is probably a simpler
-# approach, at least for the build system. See Redmine #2530
-function (gmx_compile_cpp_as_cuda)
-    _gmx_add_files_to_property(GMX_LIBGROMACS_GPU_IMPL_SOURCES ${ARGN})
 endfunction ()
 
 function (gmx_install_headers)
@@ -143,67 +133,7 @@ list(APPEND LIBGROMACS_SOURCES ${GENERATED_VERSION_FILE}
      $<TARGET_OBJECTS:libgromacs_external>
      $<TARGET_OBJECTS:libgromacs_generated>)
 
-# Mark some shared GPU implementation files to compile with CUDA if needed
-if (GMX_USE_CUDA)
-    get_property(LIBGROMACS_GPU_IMPL_SOURCES GLOBAL PROPERTY GMX_LIBGROMACS_GPU_IMPL_SOURCES)
-    set_source_files_properties(${LIBGROMACS_GPU_IMPL_SOURCES} PROPERTIES CUDA_SOURCE_PROPERTY_FORMAT OBJ)
-endif()
-
-# set up CUDA compilation with clang
-if (GMX_CLANG_CUDA)
-    foreach (_file ${LIBGROMACS_SOURCES})
-        get_filename_component(_ext ${_file} EXT)
-        get_source_file_property(_cuda_source_format ${_file} CUDA_SOURCE_PROPERTY_FORMAT)
-        if ("${_ext}" STREQUAL ".cu" OR _cuda_source_format)
-            gmx_compile_cuda_file_with_clang(${_file})
-        endif()
-    endforeach()
-endif()
-
-if (GMX_USE_CUDA)
-    # Work around FindCUDA that prevents using target_link_libraries()
-    # with keywords otherwise...
-    set(CUDA_LIBRARIES PRIVATE ${CUDA_LIBRARIES})
-    if (NOT GMX_CLANG_CUDA)
-        cuda_add_library(libgromacs ${LIBGROMACS_SOURCES})
-    else()
-        add_library(libgromacs ${LIBGROMACS_SOURCES})
-    endif()
-    target_link_libraries(libgromacs PRIVATE ${CUDA_CUFFT_LIBRARIES})
-else()
-    add_library(libgromacs ${LIBGROMACS_SOURCES})
-endif()
-
-if (GMX_USE_OPENCL)
-    option(GMX_EXTERNAL_CLFFT "True if an external clFFT is required to be used" FALSE)
-    mark_as_advanced(GMX_EXTERNAL_CLFFT)
-
-    # Default to using clFFT found on the system
-    # switch to quiet at the second run.
-    if (DEFINED clFFT_LIBRARY)
-        set (clFFT_FIND_QUIETLY TRUE)
-    endif()
-    find_package(clFFT)
-    if (NOT clFFT_FOUND)
-        if (GMX_EXTERNAL_CLFFT)
-            message(FATAL_ERROR "Did not find required external clFFT library, consider setting clFFT_ROOT_DIR")
-        endif()
-
-        # Fall back on the internal version
-        set (_clFFT_dir ../external/clFFT/src)
-        add_subdirectory(${_clFFT_dir} clFFT-build)
-        target_sources(libgromacs PRIVATE
-            $<TARGET_OBJECTS:clFFT>
-        )
-        target_include_directories(libgromacs SYSTEM PRIVATE ${_clFFT_dir}/include)
-        # Use the magic variable for how to link any library needed for
-        # dlopen, etc.  which is -ldl where needed, and empty otherwise
-        # (e.g. Windows, BSD, Mac).
-        target_link_libraries(libgromacs PRIVATE "${CMAKE_DL_LIBS}")
-    else()
-        target_link_libraries(libgromacs PRIVATE clFFT)
-    endif()
-endif()
+add_library(libgromacs ${LIBGROMACS_SOURCES})
 
 # Recent versions of gcc and clang give warnings on scanner.cpp, which
 # is a generated source file. These are awkward to suppress inline, so
@@ -322,72 +252,3 @@ if (NOT GMX_BUILD_MDRUN_ONLY)
     include(InstallLibInfo.cmake)
 endif()
 
-# Technically, the user could want to do this for an OpenCL build
-# using the CUDA runtime, but currently there's no reason to want to
-# do that.
-if (INSTALL_CUDART_LIB) #can be set manual by user
-    if (GMX_USE_CUDA)
-        foreach(CUDA_LIB ${CUDA_LIBRARIES})
-            string(REGEX MATCH "cudart" IS_CUDART ${CUDA_LIB})
-            if(IS_CUDART) #libcuda should not be installed
-                #install also name-links (linker uses those)
-                file(GLOB CUDA_LIBS ${CUDA_LIB}*)
-                install(FILES ${CUDA_LIBS} DESTINATION
-                    ${CMAKE_INSTALL_LIBDIR} COMPONENT libraries)
-            endif()
-        endforeach()
-    else()
-        message(WARNING "INSTALL_CUDART_LIB only makes sense when configuring for CUDA support")
-    endif()
-endif()
-
-if(GMX_USE_OPENCL)
-    # Install the utility headers
-    file(GLOB OPENCL_INSTALLED_FILES
-        gpu_utils/vectype_ops.clh
-        gpu_utils/device_utils.clh
-        )
-    install(FILES ${OPENCL_INSTALLED_FILES}
-        DESTINATION ${GMX_INSTALL_OCLDIR}/gromacs/gpu_utils
-        COMPONENT libraries)
-    file(GLOB OPENCL_INSTALLED_FILES
-        pbcutil/ishift.h
-        )
-    install(FILES ${OPENCL_INSTALLED_FILES}
-        DESTINATION ${GMX_INSTALL_OCLDIR}/gromacs/pbcutil
-        COMPONENT libraries)
-
-    # Install the NB source and headers
-    file(GLOB OPENCL_INSTALLED_FILES
-        mdlib/nbnxn_consts.h
-        )
-    install(FILES ${OPENCL_INSTALLED_FILES}
-        DESTINATION ${GMX_INSTALL_OCLDIR}/gromacs/mdlib
-        COMPONENT libraries)
-    file(GLOB OPENCL_INSTALLED_FILES
-        mdlib/nbnxn_ocl/nbnxn_ocl_kernels.cl
-        mdlib/nbnxn_ocl/nbnxn_ocl_kernel.clh
-        mdlib/nbnxn_ocl/nbnxn_ocl_kernel_pruneonly.clh
-        mdlib/nbnxn_ocl/nbnxn_ocl_kernels.clh
-        mdlib/nbnxn_ocl/nbnxn_ocl_kernels_fastgen.clh
-        mdlib/nbnxn_ocl/nbnxn_ocl_kernels_fastgen_add_twincut.clh
-        mdlib/nbnxn_ocl/nbnxn_ocl_kernel_utils.clh
-        mdlib/nbnxn_ocl/nbnxn_ocl_consts.h
-        )
-    install(FILES ${OPENCL_INSTALLED_FILES}
-        DESTINATION ${GMX_INSTALL_OCLDIR}/gromacs/mdlib/nbnxn_ocl
-        COMPONENT libraries)
-
-    # Install the PME source and headers
-    file(GLOB OPENCL_INSTALLED_FILES
-        ewald/pme-spread.clh
-        ewald/pme-solve.clh
-        ewald/pme-gather.clh
-        ewald/pme-gpu-utils.clh
-        ewald/pme-program.cl
-        ewald/pme-gpu-types.h
-        )
-    install(FILES ${OPENCL_INSTALLED_FILES}
-        DESTINATION ${GMX_INSTALL_OCLDIR}/gromacs/ewald
-        COMPONENT libraries)
-endif()
