@@ -43,8 +43,6 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/mdlib/nbnxn_consts.h"
-#include "gromacs/mdlib/nbnxn_search.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -467,7 +465,7 @@ static void pp_verlet_load(const gmx_mtop_t *mtop, const t_inputrec *ir,
 #else
     j_cluster_size = 4;
 #endif
-    r_eff = ir->rlist + nbnxn_get_rlist_effective_inc(j_cluster_size, mtop->natoms/det(box));
+    r_eff = ir->rlist;
 
     /* The average number of pairs per atom */
     nppa  = 0.5*4/3*M_PI*r_eff*r_eff*r_eff*mtop->natoms/det(box);

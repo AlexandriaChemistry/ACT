@@ -44,8 +44,6 @@
 
 #include <algorithm>
 
-#include "gromacs/domdec/domdec.h"
-#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gmxlib/nonbonded/nonbonded.h"
@@ -1619,8 +1617,7 @@ static void init_nsgrid_lists(t_forcerec *fr, int ngid, gmx_ns_t *ns)
     }
 }
 
-static int nsgrid_core(const t_commrec *cr,
-                       t_forcerec      *fr,
+static int nsgrid_core(t_forcerec      *fr,
                        matrix           box,
                        int              ngid,
                        gmx_localtop_t  *top,
@@ -1634,7 +1631,6 @@ static int nsgrid_core(const t_commrec *cr,
     gmx_ns_t      *ns;
     int          **nl_sr;
     int           *nsr;
-    gmx_domdec_t  *dd;
     const t_block *cgs    = &(top->cgs);
     int           *cginfo = fr->cginfo;
     /* int *i_atoms,*cgsindex=cgs->index; */
@@ -1660,15 +1656,10 @@ static int nsgrid_core(const t_commrec *cr,
 
     ns = fr->ns;
 
-    bDomDec = DOMAINDECOMP(cr);
-    dd      = cr->dd;
+    bDomDec = false;
 
-    bTriclinicX = ((YY < grid->npbcdim &&
-                    (!bDomDec || dd->nc[YY] == 1) && box[YY][XX] != 0) ||
-                   (ZZ < grid->npbcdim &&
-                    (!bDomDec || dd->nc[ZZ] == 1) && box[ZZ][XX] != 0));
-    bTriclinicY =  (ZZ < grid->npbcdim &&
-                    (!bDomDec || dd->nc[ZZ] == 1) && box[ZZ][YY] != 0);
+    bTriclinicX = false;
+    bTriclinicY = false; 
 
     cgsnr    = cgs->nr;
 
@@ -1728,7 +1719,7 @@ static int nsgrid_core(const t_commrec *cr,
         /* Check if we need periodicity shifts.
          * Without PBC or with domain decomposition we don't need them.
          */
-        if (d >= ePBC2npbcdim(fr->ePBC) || (bDomDec && dd->nc[d] > 1))
+        if (d >= ePBC2npbcdim(fr->ePBC))
         {
             shp[d] = 0;
         }
@@ -1759,14 +1750,6 @@ static int nsgrid_core(const t_commrec *cr,
         i0   = cgs->index[icg];
 
         /* make a normal neighbourlist */
-        
-        if (bDomDec)
-        {
-            /* Get the j charge-group and dd cell shift ranges */
-            dd_get_ns_ranges(cr->dd, icg, &jcg0, &jcg1, sh0, sh1);
-            max_jcg = 0;
-        }
-        else
         {
             /* Compute the number of charge groups that fall within the control
              * of this one (icg)
@@ -1975,7 +1958,7 @@ static void ns_realloc_natoms(gmx_ns_t *ns, int natoms)
     }
 }
 
-void init_ns(FILE *fplog, const t_commrec *cr,
+void init_ns(FILE *fplog, 
              gmx_ns_t *ns, t_forcerec *fr,
              const gmx_mtop_t *mtop)
 {
@@ -2063,10 +2046,7 @@ void init_ns(FILE *fplog, const t_commrec *cr,
 
     ns->nra_alloc = 0;
     ns->bexcl     = nullptr;
-    if (!DOMAINDECOMP(cr))
-    {
-        ns_realloc_natoms(ns, mtop->natoms);
-    }
+    ns_realloc_natoms(ns, mtop->natoms);
 
     ns->nblist_initialized = FALSE;
 
@@ -2110,7 +2090,6 @@ int search_neighbours(FILE               *log,
                       matrix              box,
                       gmx_localtop_t     *top,
                       const gmx_groups_t *groups,
-                      const t_commrec    *cr,
                       t_nrnb             *nrnb,
                       const t_mdatoms    *md,
                       gmx_bool            bFillGrid)
@@ -2154,11 +2133,6 @@ int search_neighbours(FILE               *log,
         }
     }
 
-    if (DOMAINDECOMP(cr))
-    {
-        ns_realloc_natoms(ns, cgs->index[cgs->nr]);
-    }
-
     /* Reset the neighbourlists */
     reset_neighbor_lists(fr);
 
@@ -2166,32 +2140,19 @@ int search_neighbours(FILE               *log,
     {
 
         grid = ns->grid;
-        if (DOMAINDECOMP(cr))
-        {
-            dd_zones = domdec_zones(cr->dd);
-        }
-        else
         {
             dd_zones = nullptr;
 
-            get_nsgrid_boundaries(grid->nboundeddim, box, nullptr, nullptr, nullptr, nullptr,
+            get_nsgrid_boundaries(grid->nboundeddim, box, nullptr, nullptr,
                                   cgs->nr, fr->cg_cm, grid_x0, grid_x1, &grid_dens);
 
-            grid_first(log, grid, nullptr, nullptr, box, grid_x0, grid_x1,
+            grid_first(log, grid, grid_x0, grid_x1,
                        fr->rlist, grid_dens);
         }
 
         start = 0;
         end   = cgs->nr;
 
-        if (DOMAINDECOMP(cr))
-        {
-            end = cgs->nr;
-            fill_grid(dd_zones, grid, end, -1, end, fr->cg_cm);
-            grid->icg0 = 0;
-            grid->icg1 = dd_zones->izone[dd_zones->nizone-1].cg1;
-        }
-        else
         {
             fill_grid(nullptr, grid, cgs->nr, fr->cg0, fr->hcg, fr->cg_cm);
             grid->icg0 = fr->cg0;
@@ -2229,7 +2190,7 @@ int search_neighbours(FILE               *log,
     if (bGrid)
     {
         grid    = ns->grid;
-        nsearch = nsgrid_core(cr, fr, box, ngid, top,
+        nsearch = nsgrid_core(fr, box, ngid, top,
                               grid, ns->bexcl, ns->bExcludeAlleg,
                               md, put_in_list, ns->bHaveVdW);
     }

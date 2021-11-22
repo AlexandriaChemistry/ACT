@@ -39,7 +39,6 @@
 
 #include <cstdio>
 
-#include "gromacs/domdec/dlbtiming.h"
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/timing/wallcycle.h"
@@ -55,11 +54,6 @@ struct t_graph;
 struct t_inputrec;
 class t_state;
 
-namespace gmx
-{
-class Constraints;
-}
-
 /* Initialization function, also predicts the initial shell postions.
  */
 gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
@@ -68,8 +62,7 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
                                   bool usingDomainDecomposition);
 
 /* Get the local shell with domain decomposition */
-void make_local_shells(const t_commrec *cr,
-                       const t_mdatoms *md,
+void make_local_shells(const t_mdatoms *md,
                        gmx_shellfc_t   *shfc);
 
 /* Optimize shell positions */
@@ -82,7 +75,6 @@ real relax_shell_flexcon(FILE                                     *log,
                          gmx_bool                                  bDoNS,
                          int                                       force_flags,
                          gmx_localtop_t                           *top,
-                         gmx::Constraints                         *constr,
                          gmx_enerdata_t                           *enerd,
                          t_fcdata                                 *fcd,
                          t_state                                  *state,
@@ -97,9 +89,7 @@ real relax_shell_flexcon(FILE                                     *log,
                          t_forcerec                               *fr,
                          double                                    t,
                          rvec                                      mu_tot,
-                         const gmx_vsite_t                        *vsite,
-                         DdOpenBalanceRegionBeforeForceComputation ddOpenBalanceRegion,
-                         DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion);
+                         const gmx_vsite_t                        *vsite);
 
 /* Print some final output */
 void done_shellfc(FILE *fplog, gmx_shellfc_t *shellfc, int64_t numSteps);

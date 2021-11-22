@@ -36,7 +36,6 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/gmxlib/network.h"
-#include "gromacs/hardware/detecthardware.h"
 #include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/logger.h"
@@ -159,7 +158,6 @@ class AcmTest : public gmx::test::CommandLineTestBase
             t_commrec     *cr       = init_commrec();
             auto           pnc      = gmx::PhysicalNodeCommunicator(MPI_COMM_WORLD, 0);
             gmx::MDLogger  mdlog {};
-            auto           hwinfo   = gmx_detect_hardware(mdlog, pnc);
             int            qcycle   = 100;
             real           qtol     = 1e-6;
             std::string    lot(method);
@@ -171,7 +169,7 @@ class AcmTest : public gmx::test::CommandLineTestBase
             }
             mp_.symmetrizeCharges(pd, qSymm, nullptr);
             mp_.GenerateCharges(pd, mdlog, cr, nullptr, 
-                                hwinfo, qcycle, qtol, 
+                                qcycle, qtol, 
                                 alg, qcustom, lot);
                                 
             std::vector<double> qtotValues;

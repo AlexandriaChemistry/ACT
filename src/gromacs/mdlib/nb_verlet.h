@@ -100,9 +100,6 @@
 
 #include <memory>
 
-#include "gromacs/mdlib/nbnxn_gpu_types.h"
-#include "gromacs/mdlib/nbnxn_pairlist.h"
-
 //! Help pass GPU-emulation parameters with type safety.
 enum class EmulateGpuNonbonded : bool
 {
@@ -177,7 +174,6 @@ enum {
 /*! \libinternal
  *  \brief Non-bonded interaction group data structure. */
 typedef struct nonbonded_verlet_group_t {
-    nbnxn_pairlist_set_t  nbl_lists;   /**< pair list(s)                       */
     int                   kernel_type; /**< non-bonded kernel - see enum above */
     int                   ewald_excl;  /**< Ewald exclusion - see enum above   */
 } nonbonded_verlet_group_t;
@@ -185,15 +181,11 @@ typedef struct nonbonded_verlet_group_t {
 /*! \libinternal
  *  \brief Top-level non-bonded data structure for the Verlet-type cut-off scheme. */
 typedef struct nonbonded_verlet_t {
-    std::unique_ptr<NbnxnListParameters> listParams;      /**< Parameters for the search and list pruning setup */
-    std::unique_ptr<nbnxn_search>        nbs;             /**< n vs n atom pair searching data       */
     int                                  ngrp;            /**< number of interaction groups          */
     nonbonded_verlet_group_t             grp[2];          /**< local and non-local interaction group */
-    nbnxn_atomdata_t                    *nbat;            /**< atom data                             */
 
     gmx_bool                             bUseGPU;         /**< TRUE when non-bonded interactions are computed on a physical GPU */
     EmulateGpuNonbonded                  emulateGpu;      /**< true when non-bonded interactions are computed on the CPU using GPU-style pair lists */
-    gmx_nbnxn_gpu_t                     *gpu_nbv;         /**< pointer to GPU nb verlet data     */
     int                                  min_ci_balanced; /**< pair list balancing parameter
                                                                used for the 8x8x8 GPU kernels    */
 } nonbonded_verlet_t;

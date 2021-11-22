@@ -50,8 +50,6 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/simd/simd.h"
 
-struct gmx_domdec_t;
-
 /*! \brief Set the SIMD PBC data from a normal t_pbc struct.
  *
  * \param pbc        Type of periodic boundary,

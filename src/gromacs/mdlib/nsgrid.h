@@ -42,9 +42,6 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
 
-struct gmx_domdec_t;
-struct gmx_domdec_zones_t;
-struct gmx_ddbox_t;
 struct t_forcerec;
 struct t_grid;
 
@@ -103,8 +100,6 @@ t_grid *init_grid(FILE *fplog, t_forcerec *fr);
 void done_grid(t_grid *grid);
 
 void get_nsgrid_boundaries(int nboundeddim, matrix box,
-                           struct gmx_domdec_t *dd,
-                           gmx_ddbox_t *ddbox,
                            rvec *gr0, rvec *gr1,
                            int ncg, rvec *cgcm,
                            rvec grid_x0, rvec grid_x1,
@@ -120,7 +115,7 @@ void get_nsgrid_boundaries(int nboundeddim, matrix box,
  */
 
 void grid_first(FILE *log, t_grid *grid,
-                struct gmx_domdec_t *dd, const gmx_ddbox_t *ddbox, matrix box, rvec izones_x0, rvec izones_x1,
+                rvec izones_x0, rvec izones_x1,
                 real rlong, real grid_density);
 
 void fill_grid(struct gmx_domdec_zones_t *dd_zones,

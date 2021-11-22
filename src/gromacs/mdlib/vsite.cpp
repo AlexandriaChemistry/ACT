@@ -44,8 +44,6 @@
 #include <vector>
 
 #include "gromacs/compat/make_unique.h"
-#include "gromacs/domdec/domdec.h"
-#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/functions.h"
@@ -625,11 +623,10 @@ void construct_vsites(const gmx_vsite_t *vsite,
                       real dt, rvec *v,
                       const t_iparams ip[], const t_ilist ilist[],
                       int ePBC, gmx_bool bMolPBC,
-                      const t_commrec *cr,
                       const matrix box)
 {
-    const bool useDomdec = (vsite != nullptr && vsite->useDomdec);
-    GMX_ASSERT(!useDomdec || (cr != nullptr && DOMAINDECOMP(cr)), "When vsites are set up with domain decomposition, we need a valid commrec");
+    const bool useDomdec = false;
+    GMX_ASSERT(!useDomdec, "When vsites are set up with domain decomposition, we need a valid commrec");
     // TODO: Remove this assertion when we remove charge groups
     GMX_ASSERT(vsite != nullptr || ePBC == epbcNONE, "Without a vsite struct we can not do PBC (in case we have charge groups)");
 
@@ -648,18 +645,11 @@ void construct_vsites(const gmx_vsite_t *vsite,
          */
         ivec null_ivec;
         clear_ivec(null_ivec);
-        pbc_null = set_pbc_dd(&pbc, ePBC,
-                              useDomdec ? cr->dd->nc : null_ivec,
-                              FALSE, box);
+        pbc_null = set_pbc_dd(&pbc, ePBC, null_ivec, FALSE, box);
     }
     else
     {
         pbc_null = nullptr;
-    }
-
-    if (useDomdec)
-    {
-        dd_move_x_vsites(cr->dd, box, x);
     }
 
     if (vsite == nullptr || vsite->nthreads == 1)
@@ -780,7 +770,7 @@ void constructVsitesGlobal(const gmx_mtop_t         &mtop,
                 construct_vsites(nullptr, as_rvec_array(x.data()) + atomOffset,
                                  0.0, nullptr,
                                  mtop.ffparams.iparams.data(), ilist,
-                                 epbcNONE, TRUE, nullptr, nullptr);
+                                 epbcNONE, TRUE, nullptr);
                 atomOffset += molt.atoms.nr;
             }
         }
@@ -1619,11 +1609,10 @@ void spread_vsite_f(const gmx_vsite_t *vsite,
                     gmx_bool VirCorr, matrix vir,
                     t_nrnb *nrnb, const t_idef *idef,
                     int ePBC, gmx_bool bMolPBC, const t_graph *g, const matrix box,
-                    const t_commrec *cr, gmx_wallcycle *wcycle)
+                    gmx_wallcycle *wcycle)
 {
     wallcycle_start(wcycle, ewcVSITESPREAD);
-    const bool useDomdec = vsite->useDomdec;
-    GMX_ASSERT(!useDomdec || (cr != nullptr && DOMAINDECOMP(cr)), "When vsites are set up with domain decomposition, we need a valid commrec");
+    const bool useDomdec = false;
 
     t_pbc pbc, *pbc_null;
 
@@ -1633,16 +1622,11 @@ void spread_vsite_f(const gmx_vsite_t *vsite,
         /* This is wasting some CPU time as we now do this multiple times
          * per MD step.
          */
-        pbc_null = set_pbc_dd(&pbc, ePBC, useDomdec ? cr->dd->nc : nullptr, FALSE, box);
+        pbc_null = set_pbc_dd(&pbc, ePBC, nullptr, FALSE, box);
     }
     else
     {
         pbc_null = nullptr;
-    }
-
-    if (useDomdec)
-    {
-        dd_clear_f_vsites(cr->dd, f);
     }
 
     if (vsite->nthreads == 1)
@@ -1807,11 +1791,6 @@ void spread_vsite_f(const gmx_vsite_t *vsite,
                 }
             }
         }
-    }
-
-    if (useDomdec)
-    {
-        dd_move_f_vsites(cr->dd, f, fshift);
     }
 
     inc_nrnb(nrnb, eNR_VSITE2,   vsite_count(idef->il, F_VSITE2));
@@ -2044,32 +2023,6 @@ initVsite(const gmx_mtop_t &mtop,
     vsite->n_intercg_vsite   = count_intercg_vsites(&mtop);
 
     vsite->bHaveChargeGroups = (ncg_mtop(&mtop) < mtop.natoms);
-
-    vsite->useDomdec         = (DOMAINDECOMP(cr) && cr->dd->nnodes > 1);
-
-    /* If we don't have charge groups, the vsite follows its own pbc.
-     *
-     * With charge groups, each vsite needs to follow the pbc of the charge
-     * group. Thus we need to keep track of PBC. Here we assume that without
-     * domain decomposition all molecules are whole (which will not be
-     * the case with periodic molecules).
-     */
-    if (vsite->bHaveChargeGroups &&
-        vsite->n_intercg_vsite > 0 &&
-        DOMAINDECOMP(cr))
-    {
-        vsite->vsite_pbc_molt.resize(mtop.moltype.size());
-        for (size_t mt = 0; mt < mtop.moltype.size(); mt++)
-        {
-            const gmx_moltype_t &molt = mtop.moltype[mt];
-            vsite->vsite_pbc_molt[mt] = get_vsite_pbc(mtop.ffparams.iparams.data(),
-                                                      molt.ilist.data(),
-                                                      molt.atoms.atom, nullptr,
-                                                      molt.cgs);
-        }
-
-        vsite->vsite_pbc_loc = gmx::compat::make_unique<VsitePbc>();
-    }
 
     vsite->nthreads = gmx_omp_nthreads_get(emntVSITE);
 
@@ -2344,7 +2297,7 @@ void split_vsites_over_threads(const t_ilist   *ilist,
      * uniformly in each domain along the major dimension, usually x,
      * it will also perform well.
      */
-    if (!vsite->useDomdec)
+    if (true)
     {
         vsite_atom_range = -1;
         for (int ftype = c_ftypeVsiteStart; ftype < c_ftypeVsiteEnd; ftype++)
@@ -2386,18 +2339,6 @@ void split_vsites_over_threads(const t_ilist   *ilist,
         }
         vsite_atom_range++;
         natperthread     = (vsite_atom_range + vsite->nthreads - 1)/vsite->nthreads;
-    }
-    else
-    {
-        /* Any local or not local atom could be involved in virtual sites.
-         * But since we usually have very few non-local virtual sites
-         * (only non-local vsites that depend on local vsites),
-         * we distribute the local atom range equally over the threads.
-         * When assigning vsites to threads, we should take care that the last
-         * threads also covers the non-local range.
-         */
-        vsite_atom_range = mdatoms->nr;
-        natperthread     = (mdatoms->homenr + vsite->nthreads - 1)/vsite->nthreads;
     }
 
     if (debug)

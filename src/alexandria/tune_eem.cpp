@@ -47,7 +47,6 @@
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/xvgr.h"
-#include "gromacs/hardware/detecthardware.h"
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/math/vecdump.h"
 #include "gromacs/mdlib/force.h"
@@ -889,7 +888,6 @@ int alex_tune_eem(int argc, char *argv[])
                                              opt.mdlog(),
                                              opt.lot(),
                                              opt2fn_null("-table", NFILE, fnm),
-                                             opt.hwinfo(),
                                              opt.qcycle(),
                                              opt.qtol(),
                                              opt2fn("-qhisto",    NFILE, fnm),

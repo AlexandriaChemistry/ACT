@@ -436,7 +436,6 @@ namespace alexandria
          * \param[in] fplog                          Logger
          * \param[in] cr      Communication parameters
          * \param[in] tabfn   Table function
-         * \param[in] hwinfo  Gromacs structure with hardware info
          * \param[in] qcycle  Number of cycles for computing charges
          * \param[in] qtol    Convergence of charges tolerance
          * \param[in] algorithm The algorithm for determining charges,
@@ -448,7 +447,6 @@ namespace alexandria
                                   const gmx::MDLogger       &fplog,
                                   t_commrec                 *cr,
                                   const char                *tabfn,
-                                  gmx_hw_info_t             *hwinfo,
                                   int                        qcycle,
                                   real                       qtol,
                                   ChargeGenerationAlgorithm  algorithm,
@@ -630,7 +628,6 @@ namespace alexandria
         immStatus GenerateGromacs(const gmx::MDLogger      &mdlog,
                                   t_commrec                *cr,
                                   const char               *tabfn,
-                                  gmx_hw_info_t            *hwinfo,
                                   ChargeType               iType);
 
         /*! \brief
