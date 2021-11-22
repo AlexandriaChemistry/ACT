@@ -738,24 +738,26 @@ int alex_tune_eem(int argc, char *argv[])
         { efXVG, "-epot",      "param-epot",    ffWRITE }
     };
 
-    const int       NFILE               = asize(fnm);
+    const int           NFILE               = asize(fnm);
 
-    int             reinit              = 0;
-    real            esp_toler           = 30;
-    real            dip_toler           = 0.5;
-    real            quad_toler          = 5;
-    real            alpha_toler         = 3;
-    real            isopol_toler        = 2;
-    real            efield              = 10;
-    bool            bRandom             = false;
-    bool            bcompress           = false;
-    bool            bZero               = true;
-    bool            bOptimize           = true;
-    bool            bSensitivity        = true;
-    bool            bForceOutput        = false;
-    bool            useOffset           = false;
-    bool            bEvaluate_testset   = false;
-    static char    *optimizer           = (char *)"MCMC";
+    int                 reinit              = 0;
+    real                esp_toler           = 30;
+    real                dip_toler           = 0.5;
+    real                quad_toler          = 5;
+    real                alpha_toler         = 3;
+    real                isopol_toler        = 2;
+    real                efield              = 10;
+    bool                bRandom             = false;
+    bool                bcompress           = false;
+    bool                bZero               = true;
+    bool                bOptimize           = true;
+    bool                bSensitivity        = true;
+    bool                bForceOutput        = false;
+    bool                useOffset           = false;
+    bool                bEvaluate_testset   = false;
+    // First non-NULL value indicates the default value
+    // After argument parsing, first element in the array will point to the selected enum value, so optimizer[0]
+    static const char  *optimizer[]         = {nullptr, "MCMC", "GA", "HYBRID", nullptr};
 
     t_pargs                     pa[]         = {
         { "-reinit", FALSE, etINT, {&reinit},
@@ -788,8 +790,8 @@ int alex_tune_eem(int argc, char *argv[])
           "Write output even if no new minimum is found" },
         { "-evaluate_testset", FALSE, etBOOL, {&bEvaluate_testset},
           "Evaluate the MCMC energy on the test set." },
-        { "-optimizer", FALSE, etSTR, {&optimizer},
-          "Optimizer to use: MCMC, GA, HYBRID"}
+        { "-optimizer", FALSE, etENUM, {optimizer},
+          "Optimizer to use: MCMC, GA, or HYBRID"}
     };
 
     gmx_output_env_t           *oenv;
