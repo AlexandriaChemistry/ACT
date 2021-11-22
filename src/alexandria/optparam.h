@@ -4,8 +4,8 @@
  * Copyright (C) 2014-2021
  *
  * Developers:
- *             Mohammad Mehdi Ghahremanpour, 
- *             Paul J. van Maaren, 
+ *             Mohammad Mehdi Ghahremanpour,
+ *             Paul J. van Maaren,
  *             David van der Spoel (Project leader)
  *
  * This program is free software; you can redistribute it and/or
@@ -20,10 +20,10 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301, USA.
  */
- 
+
 /*! \internal \brief
  * Implements part of the alexandria program.
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
@@ -51,7 +51,7 @@ namespace alexandria
 {
 
 //! How to perform the calculation of deviations (chi-squared)
-enum class CalcDev { 
+enum class CalcDev {
     //! Do it in parallel
     Parallel = 1,
     //! Do it on the master only
@@ -61,7 +61,7 @@ enum class CalcDev {
 };
 
 /*! \brief
- * Does Bayesian Monte Carlo (BMC) simulation to find the best paramater set,
+ * Does Bayesian Monte Carlo (BMC) simulation to find the best parameter set,
  * which has the lowest chi-squared.
  *
  * \inpublicapi
@@ -93,7 +93,7 @@ class OptParam
         //! File name for parameter energy (chi2)
         std::string              xvgepot_;
         //! Parameter classes for printing
-        std::vector<std::string> paramClass_;     
+        std::vector<std::string> paramClass_;
     public:
         /*! \brief Add command line arguments
          *
@@ -101,7 +101,7 @@ class OptParam
          */
         void add_pargs(std::vector<t_pargs> *pargs);
 
-        /*! \brief Set the output file names. 
+        /*! \brief Set the output file names.
          *
          * The parameter values are split over
          * a number of files in order to make it easier to visualize the
@@ -120,6 +120,7 @@ class OptParam
 
         //! Return the class of parameters registered
         const std::vector<std::string> &paramClass() { return paramClass_; }
+
         //! \brief Return Max # iterations
         int maxIter() const { return maxiter_; }
 
@@ -127,15 +128,15 @@ class OptParam
         bool verbose() const { return verbose_; }
         
         //! \brief Return temperature
-        real temperature () const { return temperature_; }
-        
+        real temperature() const { return temperature_; }
+
         /*! \brief Compute and return the Boltzmann factor
          *
          * \param[in] iter  The iteration number
          * \return The Boltzmann factor
          */
         double computeBeta(int iter);
-        
+
         /*! \brief Compute and return the Boltzmann factor
          * it applies periodic annealing
          *
@@ -145,18 +146,18 @@ class OptParam
          * \return The Boltzmann factor
          */
         double computeBeta(int maxiter, int iter, int ncycle);
-        
+
         //! \brief Return the step
         real step() const { return step_; }
-        
+
         //! \brief Return whether or not temperature weighting should be considered
         bool temperatureWeighting() const { return tempWeight_; }
-        
+
         /*! \brief Return whether or not to do simulated annealing
          * \param iter The iteration number
          */
         bool anneal (int iter) const;
-        
+
         //! \brief Return xvg file for convergence information
         const std::string &xvgConv() const { return xvgconv_; }
 
@@ -165,7 +166,7 @@ class OptParam
 
         //! \brief Return output environment
         const gmx_output_env_t *oenv() const { return oenv_; }
-        
+
         /*! \brief Save the current state
          * Must be overridden by child class.
          */
@@ -184,8 +185,8 @@ private:
 public:
     //! \brief Constructor
     Sensitivity() {}
-    
-    /*! \brief 
+
+    /*! \brief
      * Add a point
      * \param[in] p    The parameter value
      * \param[in] chi2 The chi-squared value
@@ -200,12 +201,12 @@ public:
      * \param[in] fp File pointer for debugging output
      */
     void computeForceConstants(FILE *fp);
-    
+
     //! Return the constants after computation
     double a() const { return a_; }
     double b() const { return b_; }
     double c() const { return c_; }
-    
+
     /*! \brief Print output
      * \param[in] fp    File pointer for output
      * \param[in] label Label for identifying the parameter
@@ -309,7 +310,7 @@ class Bayes : public OptParam
          * Returns the current vector of parameters.
          */
         const parm_t &getInitialParam() const { return initial_param_; }
-        
+
         /*! \brief
          * Returns the current vector of parameters.
          */
@@ -348,7 +349,7 @@ class Bayes : public OptParam
         const parm_t &getPsigma() const { return psigma_; };
 
         /*! \brief
-         * Return the vector of parameter names. 
+         * Return the vector of parameter names.
          */
         const param_name_t &getParamNames() const { return paramNames_; };
 
@@ -361,7 +362,7 @@ class Bayes : public OptParam
          * Return the vector of number of attempted moves for each parameter
          */
         const mc_t &getAttemptedMoves() const {return attemptedMoves_;};
-        
+
         /*! \brief
          * Return the vector of number of accepted moves for each parameter
          */
@@ -369,9 +370,9 @@ class Bayes : public OptParam
 
         /*! \brief
          * Run the Markov chain Monte carlo (MCMC) simulation
-         * \param[in]  fplog            File pointer for logging info. 
+         * \param[in]  fplog            File pointer for logging info.
          *                              May be nullptr.
-         * \param[in]  evaluate_testset If true, evaluate the energy on 
+         * \param[in]  evaluate_testset If true, evaluate the energy on
          *                              the test set.
          * \param[out] chi2             pointer to chi2 in runMaster, at the end it will be the minimum
          * \return True if the energy decreased during the MCMC
@@ -502,7 +503,7 @@ class Bayes : public OptParam
                               const parm_t& sum,
                               const int     nsum,
                                     parm_t& sum_of_sq);
-        
+
         /*! \brief
          * Perform a sensitivity analysis by systematically changing
          * all parameters and re-evaluating the chi2.
@@ -528,7 +529,7 @@ class Bayes : public OptParam
                                      CalcDev    calcDev,
                                      iMolSelect ims) = 0;
 
-        /*! Return number of planned function calls 
+        /*! Return number of planned function calls
          * Return the number of calls to the objective function
          * that will be made by the Bayes::MCMC
          */
