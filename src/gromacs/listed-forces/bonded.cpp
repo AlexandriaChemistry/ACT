@@ -64,9 +64,6 @@
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/pbc-simd.h"
-#include "gromacs/simd/simd.h"
-#include "gromacs/simd/simd_math.h"
-#include "gromacs/simd/vector_operations.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/real.h"
@@ -629,13 +626,13 @@ real anharm_polarize(int nbonds,
     return vtot;
 }
 
-real hyper_polarize(int nbonds,
-                    const t_iatom forceatoms[], const t_iparams forceparams[],
-                    const rvec x[], rvec4 f[], rvec fshift[],
-                    const t_pbc *pbc, const t_graph *g,
-                    real gmx_unused lambda, real gmx_unused *dvdlambda,
-                    const t_mdatoms *md, t_fcdata gmx_unused *fcd,
-                    int gmx_unused *global_atom_index)
+static real hyper_polarize(int nbonds,
+                           const t_iatom forceatoms[], const t_iparams forceparams[],
+                           const rvec x[], rvec4 f[], rvec fshift[],
+                           const t_pbc *pbc, const t_graph *g,
+                           real gmx_unused lambda, real gmx_unused *dvdlambda,
+                           const t_mdatoms *md, t_fcdata gmx_unused *fcd,
+                           int gmx_unused *global_atom_index)
 {
     int  i;
     real vtot = 0.0;

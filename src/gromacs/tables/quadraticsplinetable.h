@@ -61,7 +61,6 @@
 #include <initializer_list>
 #include <vector>
 
-#include "gromacs/simd/simd.h"
 #include "gromacs/tables/tableinput.h"
 #include "gromacs/utility/alignedallocator.h"
 #include "gromacs/utility/classhelpers.h"
