@@ -740,23 +740,24 @@ int alex_tune_eem(int argc, char *argv[])
         { efXVG, "-epot",      "param-epot",    ffWRITE }
     };
 
-    const int                   NFILE         = asize(fnm);
+    const int       NFILE               = asize(fnm);
 
-    int                         reinit        = 0;
-    real                        esp_toler     = 30;
-    real                        dip_toler     = 0.5;
-    real                        quad_toler    = 5;
-    real                        alpha_toler   = 3;
-    real                        isopol_toler  = 2;
-    real                        efield        = 10;
-    bool                        bRandom       = false;
-    bool                        bcompress     = false;
-    bool                        bZero         = true;
-    bool                        bOptimize     = true;
-    bool                        bSensitivity  = true;
-    bool                        bForceOutput  = false;
-    bool                        useOffset     = false;
-    bool                        bEvaluate_testset = false;    
+    int             reinit              = 0;
+    real            esp_toler           = 30;
+    real            dip_toler           = 0.5;
+    real            quad_toler          = 5;
+    real            alpha_toler         = 3;
+    real            isopol_toler        = 2;
+    real            efield              = 10;
+    bool            bRandom             = false;
+    bool            bcompress           = false;
+    bool            bZero               = true;
+    bool            bOptimize           = true;
+    bool            bSensitivity        = true;
+    bool            bForceOutput        = false;
+    bool            useOffset           = false;
+    bool            bEvaluate_testset   = false;
+    static char    *optimizer           = (char *)"MCMC";
 
     t_pargs                     pa[]         = {
         { "-reinit", FALSE, etINT, {&reinit},
@@ -780,7 +781,7 @@ int alex_tune_eem(int argc, char *argv[])
         { "-compress", FALSE, etBOOL, {&bcompress},
           "Compress output XML file" },
         { "-efield",  FALSE, etREAL, {&efield},
-          "The magnitude of the external electeric field to calculate polarizability tensor." },
+          "The magnitude of the external electric field to calculate polarizability tensor." },
         { "-optimize",     FALSE, etBOOL, {&bOptimize},
           "Do parameter optimization when true, or a single calculation otherwise." },
         { "-sensitivity",  FALSE, etBOOL, {&bSensitivity},
@@ -788,8 +789,9 @@ int alex_tune_eem(int argc, char *argv[])
         { "-force_output", FALSE, etBOOL, {&bForceOutput},
           "Write output even if no new minimum is found" },
         { "-evaluate_testset", FALSE, etBOOL, {&bEvaluate_testset},
-          "Evaluate the MCMC energy on the test set." }
-
+          "Evaluate the MCMC energy on the test set." },
+        { "-optimizer", FALSE, etSTR, {&optimizer},
+          "Optimizer to use: MCMC, GA, HYBRID"}
     };
 
     gmx_output_env_t           *oenv;

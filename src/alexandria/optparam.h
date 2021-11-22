@@ -61,7 +61,7 @@ enum class CalcDev {
 };
 
 /*! \brief
- * Does Bayesian Monte Carlo (BMC) simulation to find the best paramater set,
+ * Does Bayesian Monte Carlo (BMC) simulation to find the best parameter set,
  * which has the lowest chi-squared.
  *
  * \inpublicapi
@@ -120,6 +120,7 @@ class OptParam
 
         //! Return the class of parameters registered
         const std::vector<std::string> &paramClass() { return paramClass_; }
+
         //! \brief Return Max # iterations
         int maxIter() const { return maxiter_; }
 
@@ -127,7 +128,7 @@ class OptParam
         bool verbose() const { return verbose_; }
 
         //! \brief Return temperature
-        real temperature () const { return temperature_; }
+        real temperature() const { return temperature_; }
 
         /*! \brief Compute and return the Boltzmann factor
          *

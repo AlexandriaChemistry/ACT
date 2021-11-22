@@ -806,6 +806,8 @@ void print_header(FILE                       *fp,
             value = gmx::formatString("%g", *p.u.r);
             break;
         case etSTR:
+            value = *p.u.c;
+            break;
         case etENUM:
             value = gmx::formatString("%s", *p.u.c);
             break;
