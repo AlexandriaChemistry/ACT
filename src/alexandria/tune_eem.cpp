@@ -759,7 +759,7 @@ int alex_tune_eem(int argc, char *argv[])
 
     t_pargs                     pa[]         = {
         { "-reinit", FALSE, etINT, {&reinit},
-          "After this many iterations the search vectors are randomized again. A vlue of 0 means this is never done at all." },
+          "After this many iterations the search vectors are randomized again. A value of 0 means this is never done at all." },
         { "-random", FALSE, etBOOL, {&bRandom},
           "Generate completely random starting parameters within the limits set by the options. This will be done at the very first step and before each subsequent run." },
         { "-zero", FALSE, etBOOL, {&bZero},
