@@ -48,7 +48,6 @@
 #include "config.h"
 
 #include "gromacs/pbcutil/pbc.h"
-#include "gromacs/simd/simd.h"
 
 /*! \brief Set the SIMD PBC data from a normal t_pbc struct.
  *

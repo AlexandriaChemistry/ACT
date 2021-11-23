@@ -46,7 +46,6 @@
 
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "gromacs/simd/simd.h"
 
 using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
 
