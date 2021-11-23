@@ -793,7 +793,7 @@ int alex_tune_eem(int argc, char *argv[])
         { "-evaluate_testset", FALSE, etBOOL, {&bEvaluate_testset},
           "Evaluate the MCMC energy on the test set." },
         { "-optimizer", FALSE, etENUM, {optimizer},
-          "Optimizer to use: MCMC, GA, or HYBRID"}
+          "Optimization method"}
     };
 
     gmx_output_env_t           *oenv;
