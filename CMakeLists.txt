@@ -582,8 +582,6 @@ if (GMX_X11)
     include_directories(SYSTEM ${X11_INCLUDE_DIR})
 endif()
 
-include(gmxManageTNG)
-
 if(CYGWIN)
     set(GMX_CYGWIN 1)
 endif()

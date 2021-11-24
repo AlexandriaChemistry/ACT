@@ -174,8 +174,6 @@ if(SIMD_AVX_512_CXX_SUPPORTED AND NOT ("${GMX_SIMD_ACTIVE}" STREQUAL "AVX_512_KN
     set_source_files_properties(hardware/identifyavx512fmaunits.cpp PROPERTIES COMPILE_FLAGS "${SIMD_AVX_512_CXX_FLAGS} ${CXX_NO_UNUSED_OPTION_WARNING_FLAGS}")
 endif()
 
-#gmx_setup_tng_for_libgromacs()
-
 target_link_libraries(libactgromacs
                       PRIVATE
                       ${EXTRAE_LIBRARIES}
