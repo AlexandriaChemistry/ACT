@@ -47,26 +47,6 @@ gmx_add_libgromacs_sources(
     treesupport.cpp
     )
 
-gmx_install_headers(
-#    abstractoption.h
-#    abstractsection.h
-#    basicoptions.h
-#    filenameoption.h
-#    filenameoptionmanager.h
-#    ioptionsbehavior.h
-#    ioptionscontainer.h
-#    ioptionscontainerwithsections.h
-#    isectionstorage.h
-#    ivaluestore.h
-#    optionfiletype.h
-#    optionflags.h
-#    options.h
-#    optionsection.h
-#    repeatingsection.h
-#    timeunitmanager.h
-#    valuestore.h
-    )
-
 if (BUILD_TESTING)
 #    add_subdirectory(tests)
 endif()
