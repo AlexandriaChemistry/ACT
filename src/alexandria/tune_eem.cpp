@@ -91,7 +91,7 @@ digraph tune_eem {
     node [shape=box,style=filled,color=pink] rif rm;
     rif [label="Read initial force field\nand molecules for train and test set"];
     mcmc [ label="Monte Carlo\nWrite chi-square and parameters"];
-      
+
     subgraph cluster_3 {
         label = "Helpers 0 ... N-1";
         rm  [label="Calc deviation 0"];
@@ -102,7 +102,7 @@ digraph tune_eem {
         rh3  [label="Calc deviation N-1"];
         rm -> rh2 [style=invisible,rankdir=LR,dir=none,rank=same];
     }
-    
+
     node [shape=box] [label="Start",color=cyan]; start;
     node [shape=box] [label="Parse command-line options",color=cyan]; parse;
     node [shape=diamond] [label="Master node?",color=cyan]; is_master;
@@ -232,7 +232,7 @@ void OptACM::initChargeGeneration(iMolSelect ims)
         }
         if (mymol.eSupp_ != eSupport::No)
         {
-            mymol.QgenAcm_ = new QgenAcm(poldata(), mymol.atoms(), 
+            mymol.QgenAcm_ = new QgenAcm(poldata(), mymol.atoms(),
                                          mymol.totalCharge());
         }
     }
@@ -324,7 +324,7 @@ double OptACM::calcDeviation(bool       verbose,
                 n++;
             }
             (*targets).find(eRMS::BOUNDS)->second.increase(1, bound);
-            GMX_RELEASE_ASSERT(n == param.size(), 
+            GMX_RELEASE_ASSERT(n == param.size(),
                                gmx::formatString("Death horror error. n=%zu param.size()=%zu", n, param.size()).c_str());
         }
     }
@@ -366,7 +366,7 @@ double OptACM::calcDeviation(bool       verbose,
                 mymol.eSupp_ = eSupport::No;
                 continue;
             }
-            
+
             if ((*targets).find(eRMS::CHARGE)->second.weight() > 0 ||
                 (*targets).find(eRMS::CM5)->second.weight() > 0)
             {
@@ -397,8 +397,8 @@ double OptACM::calcDeviation(bool       verbose,
                     double qj  = myatoms.atom[j].q;
                     double qjj = qj;
                     // TODO: only count in real shells
-                    if (nullptr != mymol.shellfc_ && 
-                        j < myatoms.nr-1 && 
+                    if (nullptr != mymol.shellfc_ &&
+                        j < myatoms.nr-1 &&
                         myatoms.atom[j+1].ptype == eptShell)
                     {
                         qjj += myatoms.atom[j+1].q;
@@ -500,7 +500,7 @@ double OptACM::calcDeviation(bool       verbose,
             }
             if ((*targets).find(eRMS::QUAD)->second.weight() > 0)
             {
-                double delta    = 0; 
+                double delta    = 0;
                 for (int mm = 0; mm < DIM; mm++)
                 {
                     for (int nn = 0; nn < DIM; nn++)
@@ -621,7 +621,7 @@ bool OptACM::runMaster(const gmx_output_env_t *oenv,
 {
     bool bMinimum = false;
     GMX_RELEASE_ASSERT(MASTER(commrec()), "WTF");
-    
+
     print_memory_usage(debug);
     std::vector<std::string> paramClass;
     for(const auto &fm : typesToFit())
@@ -808,24 +808,24 @@ int alex_tune_eem(int argc, char *argv[])
     alexandria::OptACM opt;
     opt.add_pargs(&pargs);
 
-    if (!parse_common_args(&argc, 
-                           argv, 
-                           PCA_CAN_VIEW, 
-                           NFILE, 
+    if (!parse_common_args(&argc,
+                           argv,
+                           PCA_CAN_VIEW,
+                           NFILE,
                            fnm,
-                           pargs.size(), 
+                           pargs.size(),
                            pargs.data(),
-                           asize(desc), 
-                           desc, 
-                           0, 
-                           nullptr, 
+                           asize(desc),
+                           desc,
+                           0,
+                           nullptr,
                            &oenv))
     {
         return 0;
     }
-    
+
     opt.optionsFinished(opt2fn("-o", NFILE, fnm));
-    
+
     if (MASTER(opt.commrec()))
     {
         opt.openLogFile(opt2fn("-g", NFILE, fnm));
@@ -854,7 +854,7 @@ int alex_tune_eem(int argc, char *argv[])
         }
         return 0;
     }
-    // init charge generation for compounds in the 
+    // init charge generation for compounds in the
     // training set
     opt.initChargeGeneration(iMolSelect::Train);
     if (bEvaluate_testset)
@@ -864,7 +864,7 @@ int alex_tune_eem(int argc, char *argv[])
         opt.initChargeGeneration(iMolSelect::Test);
         opt.initChargeGeneration(iMolSelect::Ignore);
     }
-    
+
     if (MASTER(opt.commrec()))
     {
         if (bOptimize || bSensitivity)
@@ -877,7 +877,7 @@ int alex_tune_eem(int argc, char *argv[])
                                       bOptimize,
                                       bSensitivity,
                                       bEvaluate_testset);
-        
+
         if (bMinimum || bForceOutput || !bOptimize)
         {
             bool bPolar = opt.poldata()->polarizable();

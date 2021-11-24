@@ -318,9 +318,9 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
     // in case of bugs.
     paramClassIndex.resize(paramNames_.size(), -1);
     std::vector<std::string> pClass = paramClass();
-    assignParamClasses(paramClassIndex, pClass);
+    assignParamClasses(&paramClassIndex, &pClass);
 
-    openParamSurveillanceFiles(pClass, fpc, paramClassIndex);
+    openParamSurveillanceFiles(pClass, &fpc, paramClassIndex);
 
     // Compute temperature weights if relevant, otherwise the numbers are all 1.0
     weightedTemperature_.resize(paramNames_.size(), 1.0);
@@ -375,7 +375,7 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
             const int paramIndex = int_uniform(gen);
 
             // Do the step!
-            stepMCMC(paramIndex, gen, real_uniform, changed, &prevEval, &prevEval_testset,
+            stepMCMC(paramIndex, gen, real_uniform, &changed, &prevEval, &prevEval_testset,
                      bEvaluate_testset, pp, iter, &beta0, nParam, &minEval, fplog, fpc, fpe,
                      paramClassIndex);
 
@@ -395,7 +395,7 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
 
     // OPTIMIZATION IS COMPLETE!
 
-    computeMeanSigma(nParam, sum, nsum, sum_of_sq);
+    computeMeanSigma(nParam, sum, nsum, &sum_of_sq);
 
     closeConvergenceFiles(fpc, fpe);
 
@@ -419,21 +419,21 @@ void Bayes::computeWeightedTemperature()
 }
 
 void Bayes::stepMCMC(const int                                  paramIndex,
-                           std::mt19937&                        gen,
-                           std::uniform_real_distribution<>&    real_uniform,
-                           std::vector<bool>&                   changed,
-                           double*                              prevEval,
-                           double*                              prevEval_testset,
+                           std::mt19937                        &gen,
+                           std::uniform_real_distribution<>    &real_uniform,
+                           std::vector<bool>                   *changed,
+                           double                              *prevEval,
+                           double                              *prevEval_testset,
                      const bool                                 bEvaluate_testset,
                      const int                                  pp,
                      const int                                  iter,
-                           double*                              beta0,
+                           double                              *beta0,
                      const int                                  nParam,
-                           double*                              minEval,
-                           FILE*                                fplog,
-                           std::vector<FILE*>&                  fpc,
-                           FILE*                                fpe,
-                           std::vector<int>&                    paramClassIndex)
+                           double                              *minEval,
+                           FILE                                *fplog,
+                     const std::vector<FILE*>                  &fpc,
+                           FILE                                *fpe,
+                     const std::vector<int>                    &paramClassIndex)
 {
 
     // Store the original value of the parameter
@@ -445,11 +445,11 @@ void Bayes::stepMCMC(const int                                  paramIndex,
     changeParam(paramIndex, rndNumber);
 
     attemptedMoves_[paramIndex] += 1;
-    changed[paramIndex]          = true;
+    (*changed)[paramIndex]       = true;
 
     // Update FF parameter data structure with
     // the new value of parameter j
-    toPoldata(changed);
+    toPoldata(*changed);
 
     // Evaluate the energy on training set
     const double currEval = calcDeviation(false, CalcDev::Parallel, iMolSelect::Train);
@@ -496,9 +496,9 @@ void Bayes::stepMCMC(const int                                  paramIndex,
     {  // If the parameter change is not accepted
         param_[paramIndex] = storeParam;  // Set the old value of the parameter back
         // poldata needs to change back as well!
-        toPoldata(changed);
+        toPoldata(*changed);
     }
-    changed[paramIndex] = false;  // Set changed[j] back to false for upcoming iterations
+    (*changed)[paramIndex] = false;  // Set changed[j] back to false for upcoming iterations
 
     fprintParameterStep(fpc, paramClassIndex, xiter);
     // If the chi2 surveillance file exists, write progress
@@ -506,52 +506,52 @@ void Bayes::stepMCMC(const int                                  paramIndex,
 
 }
 
-void Bayes::assignParamClasses(std::vector<int>&         paramClassIndex,
-                               std::vector<std::string>& pClass)
+void Bayes::assignParamClasses(std::vector<int>          *paramClassIndex,
+                               std::vector<std::string>  *pClass)
 {
 
-    for(size_t i = 0; i < pClass.size(); i++)
+    for (size_t i = 0; i < pClass->size(); i++)
     {
         for (size_t j = 0; j < paramNames_.size(); j++)
         {
-            if (paramNames_[j].find(pClass[i]) != std::string::npos)
+            if (paramNames_[j].find((*pClass)[i]) != std::string::npos)
             {
-                paramClassIndex[j] = i;
+                (*paramClassIndex)[j] = i;
             }
         }
     }
 
     // Now check for params which were not assigned a class and give them class "Other"
     bool restClass = false;
-    for(size_t i = 0; i < paramClassIndex.size(); i++)
+    for (size_t i = 0; i < (*paramClassIndex).size(); i++)
     {
-        if (paramClassIndex[i] == -1)
+        if ((*paramClassIndex)[i] == -1)
         {
             if (!restClass)  // If <i> is the first parameter without a class
             {
                 // Append "Other" to the list of classes
-                pClass.push_back("Other");
+                pClass->push_back("Other");
                 restClass = true;
             }
             // Give class "Other" to parameter <i>
-            paramClassIndex[i] = pClass.size()-1;
+            (*paramClassIndex)[i] = pClass->size() - 1;
         }
     }
 
 }
 
-void Bayes::openParamSurveillanceFiles(const std::vector<std::string>&  pClass,
-                                             std::vector<FILE*>&        fpc,
-                                             std::vector<int>&          paramClassIndex)
+void Bayes::openParamSurveillanceFiles(const std::vector<std::string>  &pClass,
+                                             std::vector<FILE*>        *fpc,
+                                       const std::vector<int>          &paramClassIndex)
 {
     for(size_t i = 0; i < pClass.size(); i++)
     {
         std::string fileName = pClass[i] + "-" + xvgConv();
-        fpc.push_back(xvgropen(fileName.c_str(),
-                               "Parameter convergence",
-                               "iteration",
-                               "",
-                               oenv()));
+        fpc->push_back(xvgropen(fileName.c_str(),
+                                "Parameter convergence",
+                                "iteration",
+                                "",
+                                oenv()));
         std::vector<const char*> paramNames;
         for (size_t j = 0; j < paramNames_.size(); j++)
         {
@@ -560,7 +560,7 @@ void Bayes::openParamSurveillanceFiles(const std::vector<std::string>&  pClass,
                 paramNames.push_back(paramNames_[j].c_str());
             }
         }
-        xvgr_legend(fpc[i], paramNames.size(), paramNames.data(), oenv());
+        xvgr_legend((*fpc)[i], paramNames.size(), paramNames.data(), oenv());
     }
 }
 
@@ -582,9 +582,9 @@ FILE* Bayes::openChi2SurveillanceFile(const bool bEvaluate_testset)
 }
 
 void Bayes::computeMeanSigma(const int     nParam,
-                             const parm_t& sum,
+                             const parm_t &sum,
                              const int     nsum,
-                                   parm_t& sum_of_sq)
+                                   parm_t *sum_of_sq)
 {
 
     if (nsum > 0)  // Compute mean and standard deviation
@@ -592,17 +592,17 @@ void Bayes::computeMeanSigma(const int     nParam,
         double ps2 = 0.0;
         for (auto k = 0; k < nParam; k++)
         {
-            pmean_[k]     = (sum[k]/nsum);
-            sum_of_sq[k] /= nsum;
-            ps2           = std::max(0.0, sum_of_sq[k]-gmx::square(pmean_[k]));
-            psigma_[k]    = sqrt(ps2);
+            pmean_[k]        = (sum[k]/nsum);
+            (*sum_of_sq)[k] /= nsum;
+            ps2              = std::max(0.0, (*sum_of_sq)[k]-gmx::square(pmean_[k]));
+            psigma_[k]       = sqrt(ps2);
         }
     }
 
 }
 
-void Bayes::closeConvergenceFiles(std::vector<FILE*>& fpc,
-                                  FILE*               fpe)
+void Bayes::closeConvergenceFiles(const std::vector<FILE*> &fpc,
+                                        FILE               *fpe)
 {
     for(auto fp: fpc)  // Close all parameter convergence surveillance files
     {
@@ -614,7 +614,7 @@ void Bayes::closeConvergenceFiles(std::vector<FILE*>& fpc,
     }
 }
 
-void Bayes::fprintNewMinimum(      FILE*   fplog,
+void Bayes::fprintNewMinimum(      FILE   *fplog,
                              const bool    bEvaluate_testset,
                              const double  xiter,
                              const double  currEval,
@@ -638,8 +638,8 @@ void Bayes::fprintNewMinimum(      FILE*   fplog,
 
 }
 
-void Bayes::fprintParameterStep(      std::vector<FILE*>&   fpc,
-                                const std::vector<int>&     paramClassIndex,
+void Bayes::fprintParameterStep(const std::vector<FILE*>   &fpc,
+                                const std::vector<int>     &paramClassIndex,
                                 const double                xiter)
 {
 
@@ -663,7 +663,7 @@ void Bayes::fprintParameterStep(      std::vector<FILE*>&   fpc,
 }
 
 void Bayes::fprintChi2Step(const bool   bEvaluate_testset,
-                                 FILE*  fpe,
+                                 FILE  *fpe,
                            const double xiter,
                            const double prevEval,
                            const double prevEval_testset)
