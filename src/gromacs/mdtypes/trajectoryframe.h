@@ -39,16 +39,10 @@
  * Do not try to use a pointer when its gmx_bool is FALSE, as memory might
  * not be allocated.
  */
-#ifndef GMX_TRAJECTORY_TRX_H
-#define GMX_TRAJECTORY_TRX_H
-
-#include <cstdio>
-
-#include <array>
+#ifndef GMX_MDTYPES_TRAJECTORYFRAME_H
+#define GMX_MDTYPES_TRAJECTORYFRAME_H
 
 #include "gromacs/math/vectypes.h"
-#include "gromacs/utility/arrayref.h"
-#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
 struct t_atoms;
@@ -83,68 +77,5 @@ typedef struct t_trxframe      // NOLINT (clang-analyzer-optin.performance.Paddi
     gmx_bool        bIndex;
     int            *index;     /* atom indices of contained coordinates */
 } t_trxframe;
-
-void comp_frame(FILE *fp, t_trxframe *fr1, t_trxframe *fr2,
-                gmx_bool bRMSD, real ftol, real abstol);
-
-void done_frame(t_trxframe *frame);
-
-namespace gmx
-{
-
-/*!\brief A 3x3 matrix data type useful for simulation boxes
- *
- * \todo Implement a full replacement for C-style real[DIM][DIM] */
-using BoxMatrix = std::array <std::array<real, DIM>, DIM>;
-
-/*! \internal
- * \brief Contains a valid trajectory frame.
- *
- * Valid frames have a step and time, but need not have any particular
- * other fields.
- *
- * \todo Eventually t_trxframe should be replaced by a class such as
- * this. Currently we need to introduce BoxMatrix so that we can have
- * a normal C++ getter that returns the contents of a box matrix,
- * since you cannot use a real[DIM][DIM] as a function return type.
- *
- * \todo Consider a std::optional work-alike type for expressing that
- * a field may or may not have content. */
-class TrajectoryFrame
-{
-    public:
-        /*! \brief Constructor
-         *
-         * \throws APIError If \c frame lacks either step or time.
-         */
-        explicit TrajectoryFrame(const t_trxframe &frame);
-        /*! \brief Return a string that helps users identify this frame, containing time and step number.
-         *
-         * \throws std::bad_alloc  when out of memory */
-        std::string frameName() const;
-        //! Step number read from the trajectory file frame.
-        std::int64_t step() const;
-        //! Time read from the trajectory file frame.
-        double time() const;
-        //! The PBC characteristics of the box.
-        int pbc() const;
-        //! Get a view of position coordinates of the frame (which could be empty).
-        ArrayRef<const RVec> x() const;
-        //! Get a view of velocity coordinates of the frame (which could be empty).
-        ArrayRef<const RVec> v() const;
-        //! Get a view of force coordinates of the frame (which could be empty).
-        ArrayRef<const RVec> f() const;
-        //! Return whether the frame has a box.
-        bool hasBox() const;
-        //! Return a handle to the frame's box, which is all zero if the frame has no box.
-        const BoxMatrix &box() const;
-    private:
-        //! Handle to trajectory data
-        const t_trxframe &frame_;
-        //! Box matrix data from the frame_.
-        BoxMatrix         box_;
-};
-
-} // namespace gmx
 
 #endif
