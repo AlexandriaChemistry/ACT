@@ -20,14 +20,14 @@ Finding shared libraries
 
 If |Gromacs| is built with dynamic linking, the first part of making the
 binaries relocatable is to make it possible for the executable to find
-``libgromacs``, no matter how it is executed.  On platforms that support
+``libactgromacs``, no matter how it is executed.  On platforms that support
 a relative RPATH, this is used to make the |Gromacs| executables find the
-``libgromacs`` from the same installation prefix.  This makes the executables
+``libactgromacs`` from the same installation prefix.  This makes the executables
 fully relocatable when it comes to linking, as long as the relative folder
 structure between the executables and the library is kept the same.
 
 If the RPATH mechanism does not work, ``GMXRC`` also adds the absolute path to
-the ``libgromacs`` installed with it to ``LD_LIBRARY_PATH``.  On platforms that
+the ``libactgromacs`` installed with it to ``LD_LIBRARY_PATH``.  On platforms that
 support this, this makes the linker search for the library here, but it is less
 robust, e.g., when mixing calls to different versions of |Gromacs|.  Note that
 ``GMXRC`` is currently not relocatable, but hardcodes the absolute path.
@@ -82,7 +82,7 @@ There are several considerations here:
   installation tree ``share/gromacs/top/``; the latter is customizable during
   CMake configuration).
 * In addition to |Gromacs| executables, programs that link against
-  ``libgromacs`` need to be able to find the data files if they call certain
+  ``libactgromacs`` need to be able to find the data files if they call certain
   functions in the library.  In this case, the executable may not be in the
   same directory where |Gromacs| is.  In case of static linking, no part of the
   code is actually loaded from the |Gromacs| installation prefix, which makes
@@ -133,7 +133,7 @@ implementation, which works like this:
 
 The above logic to find the installation prefix is in
 ``src/gromacs/commandline/cmdlineprogramcontext.cpp``.  Note that code that
-links to ``libgromacs`` can provide an alternative implementation for
+links to ``libactgromacs`` can provide an alternative implementation for
 ``gmx::IProgramContext`` for locating the data files, and is then fully
 responsible of the above considerations.
 
@@ -158,10 +158,10 @@ Known issues
 * If the searching for the installation prefix is not successful, hard-coded
   absolute guesses are used, and one of those returned.  These guesses include
   the absolute path in ``CMAKE_INSTALL_PREFIX`` used during compilation of
-  ``libgromacs``, which will be incorrect after relocation.
+  ``libactgromacs``, which will be incorrect after relocation.
 * The search for the installation prefix is based on the locating the
   executable.  This does not work for programs that link against
-  ``libgromacs``, but are not installed in the same prefix.  For such cases,
+  ``libactgromacs``, but are not installed in the same prefix.  For such cases,
   the hard-coded guesses will be used, so the search will not find the correct
   data files after relocation.  The calling code can, however, programmatically
   provide the |Gromacs| installation prefix, but ideally this would work

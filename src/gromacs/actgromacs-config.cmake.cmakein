@@ -40,9 +40,9 @@ get_filename_component(_gmx_root_dir "${_gmx_root_dir}" PATH)
 # Find the exported targets (file name depends on whether shared or static
 # libraries were built to allow both to coexist in the same prefix), and
 # import them.
-set(_gmx_import_file ${_gmx_cmake_dir}/libgromacs.cmake)
+set(_gmx_import_file ${_gmx_cmake_dir}/libactgromacs.cmake)
 if (GROMACS_PREFER_STATIC OR NOT EXISTS ${_gmx_import_file})
-    set(_gmx_import_file_static ${_gmx_cmake_dir}/libgromacs_static.cmake)
+    set(_gmx_import_file_static ${_gmx_cmake_dir}/libactgromacs_static.cmake)
     if (EXISTS ${_gmx_import_file_static})
         set(_gmx_import_file ${_gmx_import_file_static})
     endif()
@@ -51,13 +51,13 @@ endif()
 if (NOT EXISTS ${_gmx_import_file})
     message(FATAL_ERROR
         "The GROMACS installation at ${_gmx_root_dir} does not contain "
-        "libgromacs.cmake or libgromacs_static.cmake to define the imported "
+        "libactgromacs.cmake or libactgromacs_static.cmake to define the imported "
         "targets.")
 endif()
 include(${_gmx_import_file})
 unset(_gmx_import_file)
 
-get_target_property(_libs libgromacs INTERFACE_LINK_LIBRARIES)
+get_target_property(_libs libactgromacs INTERFACE_LINK_LIBRARIES)
 if (_libs MATCHES "tng_io::tng_io")
     include(CMakeFindDependencyMacro)
     find_dependency(TNG_IO)
@@ -73,7 +73,7 @@ foreach (_dir ${_include_dirs})
         list(APPEND GROMACS_INCLUDE_DIRS ${_gmx_root_dir}/${_dir})
     endif()
 endforeach()
-set(GROMACS_LIBRARIES libgromacs @GMX_STDLIB_LIBRARIES@)
+set(GROMACS_LIBRARIES libactgromacs @GMX_STDLIB_LIBRARIES@)
 set(GROMACS_DEFINITIONS @INSTALLED_HEADER_DEFINITIONS@)
 set(GROMACS_IS_DOUBLE @GMX_DOUBLE@)
 if (DEFINED GROMACS_SUFFIX AND NOT "${GROMACS_SUFFIX}" STREQUAL "@GMX_LIBS_SUFFIX@")
