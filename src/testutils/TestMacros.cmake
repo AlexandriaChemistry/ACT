@@ -75,7 +75,7 @@ function (gmx_add_gtest_executable EXENAME)
         add_executable(${EXENAME} ${UNITTEST_TARGET_OPTIONS}
             ${_source_files} ${TESTUTILS_DIR}/unittest_main.cpp)
         target_link_libraries(${EXENAME}
-            ${TESTUTILS_LIBS} libgromacs ${GMOCK_LIBRARIES}
+            ${TESTUTILS_LIBS} libactgromacs ${GMOCK_LIBRARIES}
             ${GMX_COMMON_LIBRARIES} ${GMX_EXE_LINKER_FLAGS} ${GMX_STDLIB_LIBRARIES})
         set_property(TARGET ${EXENAME}
             APPEND PROPERTY COMPILE_FLAGS "${GMOCK_COMPILE_FLAGS}")

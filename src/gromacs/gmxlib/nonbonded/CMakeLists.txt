@@ -40,5 +40,5 @@ endif()
 
 # These sources will be used in the parent directory's CMakeLists.txt
 set(NONBONDED_KERNEL_SOURCES ${NONBONDED_C_SOURCES})
-target_sources(libgromacs_generated PRIVATE ${NONBONDED_KERNEL_SOURCES})
+target_sources(libactgromacs_generated PRIVATE ${NONBONDED_KERNEL_SOURCES})
 set(NONBONDED_SOURCES "${NONBONDED_SOURCES}" PARENT_SCOPE)

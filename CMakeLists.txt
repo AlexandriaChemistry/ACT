@@ -107,11 +107,11 @@ set(INSTALLED_HEADER_DEFINITIONS "")
 # These variables collect libraries that GROMACS requires for
 # linking. They should be appended to with list(APPEND ${name}
 # new-library) calls. They are:
-#  - Libraries that are required for libgromacs (only)
+#  - Libraries that are required for libactgromacs (only)
 set(GMX_EXTRA_LIBRARIES "")
 #  - Libraries that are required for all code in the repository
 set(GMX_COMMON_LIBRARIES "")
-#  - Libraries that all code linked against libgromacs needs
+#  - Libraries that all code linked against libactgromacs needs
 #    (i.e., something that is exposed in installed headers).
 set(GMX_PUBLIC_LIBRARIES "")
 
@@ -453,7 +453,7 @@ gmx_test_libxml2(HAVE_LIBXML2)
 option(GMX_LIBXML2 "Use libxml2 to parse xml files (currently has no effect)" ${HAVE_LIBXML2})
 set(PKG_LIBXML2 "")
 mark_as_advanced(GMX_LIBXML2)
-# Don't actually do anything, since libxml2 is currently not used by libgromacs
+# Crash if not found.
 if(GMX_LIBXML2 AND NOT HAVE_LIBXML2)
     message(FATAL_ERROR "libxml2 not found. Set GMX_LIBXML2=OFF to compile without XML support")
 endif()
@@ -614,7 +614,7 @@ gmx_add_cache_dependency(GMX_BUILD_UNITTESTS BOOL BUILD_TESTING OFF)
 
 add_definitions( -DHAVE_CONFIG_H )
 include_directories(BEFORE ${CMAKE_SOURCE_DIR}/src)
-# TODO required at high level because both libgromacs and progs/mdrun
+# TODO required at high level because both libactgromacs and progs/mdrun
 # require it, both for thread-MPI and its atomics and mutexes.
 include_directories(BEFORE SYSTEM ${CMAKE_SOURCE_DIR}/src/external/thread_mpi/include)
 # Required for config.h, maybe should only be set in src/CMakeLists.txt

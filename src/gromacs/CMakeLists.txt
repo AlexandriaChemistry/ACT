@@ -39,16 +39,16 @@ set_property(GLOBAL PROPERTY GMX_LIBGROMACS_GPU_IMPL_SOURCES)
 set_property(GLOBAL PROPERTY GMX_INSTALLED_HEADERS)
 set_property(GLOBAL PROPERTY GMX_AVX_512_SOURCE)
 
-add_library(libgromacs_external OBJECT "")
+add_library(libactgromacs_external OBJECT "")
 if(CMAKE_COMPILER_IS_GNUCXX)
     # Keep quiet about e.g. linearalgebra module
-    target_compile_options(libgromacs_external PRIVATE ${CXXFLAGS_NO_STRINGOP_TRUNCATION})
+    target_compile_options(libactgromacs_external PRIVATE ${CXXFLAGS_NO_STRINGOP_TRUNCATION})
 endif()
 
-add_library(libgromacs_generated OBJECT "")
+add_library(libactgromacs_generated OBJECT "")
 if (BUILD_SHARED_LIBS)
-    set_target_properties(libgromacs_external PROPERTIES POSITION_INDEPENDENT_CODE true)
-    set_target_properties(libgromacs_generated PROPERTIES POSITION_INDEPENDENT_CODE true)
+    set_target_properties(libactgromacs_external PROPERTIES POSITION_INDEPENDENT_CODE true)
+    set_target_properties(libactgromacs_generated PROPERTIES POSITION_INDEPENDENT_CODE true)
 endif()
 
 function (_gmx_add_files_to_property PROPERTY)
@@ -89,7 +89,6 @@ add_subdirectory(applied-forces)
 add_subdirectory(listed-forces)
 add_subdirectory(commandline)
 add_subdirectory(gpu_utils)
-#add_subdirectory(hardware)
 add_subdirectory(linearalgebra)
 add_subdirectory(math)
 add_subdirectory(mdrunutility)
@@ -104,7 +103,6 @@ add_subdirectory(topology)
 add_subdirectory(trajectory)
 add_subdirectory(utility)
 add_subdirectory(fileio)
-#add_subdirectory(simd)
 add_subdirectory(compat)
 add_subdirectory(gmxpreprocess)
 add_subdirectory(statistics)
@@ -128,10 +126,10 @@ gmx_configure_version_file(
         GMX_SOURCE_DOI
     )
 list(APPEND LIBGROMACS_SOURCES ${GENERATED_VERSION_FILE}
-     $<TARGET_OBJECTS:libgromacs_external>
-     $<TARGET_OBJECTS:libgromacs_generated>)
+     $<TARGET_OBJECTS:libactgromacs_external>
+     $<TARGET_OBJECTS:libactgromacs_generated>)
 
-add_library(libgromacs ${LIBGROMACS_SOURCES})
+add_library(libactgromacs ${LIBGROMACS_SOURCES})
 
 # Recent versions of gcc and clang give warnings on scanner.cpp, which
 # is a generated source file. These are awkward to suppress inline, so
@@ -147,10 +145,10 @@ if (NOT MSVC)
     check_cxx_compiler_flag(-wd1419 HAS_DECL_IN_SOURCE)
 endif()
 if (HAS_NO_UNUSED)
-    target_compile_options(libgromacs_generated PRIVATE "-Wno-unused;-Wno-unused-parameter")
+    target_compile_options(libactgromacs_generated PRIVATE "-Wno-unused;-Wno-unused-parameter")
 endif()
 if (HAS_NO_MISSING_DECL)
-    target_compile_options(libgromacs_generated PRIVATE "-Wno-missing-declarations")
+    target_compile_options(libactgromacs_generated PRIVATE "-Wno-missing-declarations")
 endif()
 # TODO The group scheme kernels don't use proper function prototype
 # declarations, and clang warns about such use, which we suppress
@@ -160,13 +158,13 @@ endif()
 # -Wno-missing-prototypes here and above when the group scheme is
 # removed.
 if (HAS_NO_MISSING_PROTO AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-    target_compile_options(libgromacs_generated PRIVATE "-Wno-missing-prototypes")
+    target_compile_options(libactgromacs_generated PRIVATE "-Wno-missing-prototypes")
 endif()
 if (HAS_NO_MSVC_UNUSED)
-    target_compile_options(libgromacs_generated PRIVATE "/wd4101")
+    target_compile_options(libactgromacs_generated PRIVATE "/wd4101")
 endif()
 if (HAS_DECL_IN_SOURCE)
-    target_compile_options(libgromacs_generated PRIVATE "-wd1419")
+    target_compile_options(libactgromacs_generated PRIVATE "-wd1419")
 endif()
 
 if(SIMD_AVX_512_CXX_SUPPORTED AND NOT ("${GMX_SIMD_ACTIVE}" STREQUAL "AVX_512_KNL"))
@@ -176,9 +174,9 @@ if(SIMD_AVX_512_CXX_SUPPORTED AND NOT ("${GMX_SIMD_ACTIVE}" STREQUAL "AVX_512_KN
     set_source_files_properties(hardware/identifyavx512fmaunits.cpp PROPERTIES COMPILE_FLAGS "${SIMD_AVX_512_CXX_FLAGS} ${CXX_NO_UNUSED_OPTION_WARNING_FLAGS}")
 endif()
 
-gmx_setup_tng_for_libgromacs()
+#gmx_setup_tng_for_libgromacs()
 
-target_link_libraries(libgromacs
+target_link_libraries(libactgromacs
                       PRIVATE
                       ${EXTRAE_LIBRARIES}
                       ${GMX_EXTRA_LIBRARIES}
@@ -190,17 +188,17 @@ target_link_libraries(libgromacs
                       PUBLIC
                       ${GMX_PUBLIC_LIBRARIES}
                       )
-set_target_properties(libgromacs PROPERTIES
-                      OUTPUT_NAME "gromacs${GMX_LIBS_SUFFIX}"
+set_target_properties(libactgromacs PROPERTIES
+                      OUTPUT_NAME "actgromacs${GMX_LIBS_SUFFIX}"
                       SOVERSION ${LIBRARY_SOVERSION_MAJOR}
                       VERSION ${LIBRARY_VERSION}
                       COMPILE_FLAGS "${OpenMP_C_FLAGS}")
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_CXX_COMPILER_VERSION MATCHES "^6\.0")
-   target_compile_options(libgromacs PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Weverything ${IGNORED_CLANG_ALL_WARNINGS}>)
+   target_compile_options(libactgromacs PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Weverything ${IGNORED_CLANG_ALL_WARNINGS}>)
 endif()
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-   target_compile_options(libgromacs PRIVATE $<$<COMPILE_LANGUAGE:CXX>:/analyze /analyze:stacksize 70000
+   target_compile_options(libactgromacs PRIVATE $<$<COMPILE_LANGUAGE:CXX>:/analyze /analyze:stacksize 70000
      #Control flow warnings are disabled because the commond line output is insufficient. There is no tool
      #to convert the xml report to e.g. HTML and even in Visual Studio the viewer doesn't work with cmake support.
      /wd6001  #unitialized memory
@@ -229,7 +227,7 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 endif()
 
 if (GMX_CLANG_TIDY)
-   set_target_properties(libgromacs PROPERTIES CXX_CLANG_TIDY
+   set_target_properties(libactgromacs PROPERTIES CXX_CLANG_TIDY
        "${CLANG_TIDY_EXE};-warnings-as-errors=*")
 endif()
 
@@ -238,8 +236,8 @@ gmx_write_installed_header_list()
 # Only install the library in mdrun-only mode if it is actually necessary
 # for the binary
 if (NOT GMX_BUILD_MDRUN_ONLY OR BUILD_SHARED_LIBS)
-    install(TARGETS libgromacs
-            EXPORT libgromacs
+    install(TARGETS libactgromacs
+            EXPORT libactgromacs
             LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
             RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
             ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}

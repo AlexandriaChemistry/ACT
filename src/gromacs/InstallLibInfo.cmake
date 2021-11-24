@@ -48,11 +48,11 @@ function (do_pkgconfig)
     endif()
     set(PKG_CFLAGS "${PKG_CFLAGS} ${OpenMP_C_FLAGS} ${GMX_CXX11_FLAGS} ${GMX_STDLIB_CXX_FLAGS}")
 
-    configure_file(libgromacs.pc.cmakein
-                   libgromacs.pc @ONLY)
-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libgromacs.pc
+    configure_file(libactgromacs.pc.cmakein
+                   libactgromacs.pc @ONLY)
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libactgromacs.pc
             DESTINATION ${GMX_INSTALL_PKGCONFIGDIR}
-            RENAME "libgromacs${GMX_LIBS_SUFFIX}.pc"
+            RENAME "libactgromacs${GMX_LIBS_SUFFIX}.pc"
             COMPONENT development)
 endfunction()
 
@@ -64,31 +64,31 @@ function (do_cmake_config)
 
     # Install import definitions that take care of the library locations and
     # library dependencies.
-    set(EXPORT_FILE_NAME libgromacs.cmake)
+    set(EXPORT_FILE_NAME libactgromacs.cmake)
     if (NOT BUILD_SHARED_LIBS)
-        set(EXPORT_FILE_NAME libgromacs_static.cmake)
+        set(EXPORT_FILE_NAME libactgromacs_static.cmake)
     endif()
-    install(EXPORT libgromacs
+    install(EXPORT libactgromacs
             FILE ${EXPORT_FILE_NAME}
             DESTINATION ${GMX_INSTALL_CMAKEPKGDIR}
             COMPONENT libraries)
 
     get_filename_component(GROMACS_CXX_COMPILER ${CMAKE_CXX_COMPILER} REALPATH)
-    configure_file(gromacs-config.cmake.cmakein
-                   gromacs-config.cmake @ONLY)
-    configure_file(gromacs-config-version.cmake.cmakein
-                   gromacs-config-version.cmake @ONLY)
+    configure_file(actgromacs-config.cmake.cmakein
+                   actgromacs-config.cmake @ONLY)
+    configure_file(actgromacs-config-version.cmake.cmakein
+                   actgromacs-config-version.cmake @ONLY)
     # The configuration files are also installed with the suffix, even though
     # the directory already contains the suffix. This allows simple
     # find_package(GROMACS NAMES gromacs_d) to find them, without also
     # specifying CONFIGS.
-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/gromacs-config.cmake
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/actgromacs-config.cmake
             DESTINATION ${GMX_INSTALL_CMAKEPKGDIR}
-            RENAME "gromacs${GMX_LIBS_SUFFIX}-config.cmake"
+            RENAME "actgromacs${GMX_LIBS_SUFFIX}-config.cmake"
             COMPONENT development)
-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/gromacs-config-version.cmake
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/actgromacs-config-version.cmake
             DESTINATION ${GMX_INSTALL_CMAKEPKGDIR}
-            RENAME "gromacs${GMX_LIBS_SUFFIX}-config-version.cmake"
+            RENAME "actgromacs${GMX_LIBS_SUFFIX}-config-version.cmake"
             COMPONENT development)
 endfunction()
 
