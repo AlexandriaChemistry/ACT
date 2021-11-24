@@ -17,11 +17,11 @@ namespace ga
         /*!
          * Compute the probability of each individual in the population
          * @param fitness   the fitness of each individual
-         * @param prob      structure to store the probability for each individual
+         * @param prob      pointer to structure to store the probability for each individual
          * @param popSize   number of individuals in the population
          */
-        virtual void compute(const vector&  fitness,
-                                   vector&  prob,
+        virtual void compute(const vector  &fitness,
+                                   vector  *prob,
                              const int      popSize) {};
 
     };
@@ -39,8 +39,8 @@ namespace ga
     {
 
     public:
-        void compute(const vector&  fitness,
-                           vector&  prob,
+        void compute(const vector  &fitness,
+                           vector  *prob,
                      const int      popSize);
 
     };
@@ -72,8 +72,8 @@ namespace ga
         BoltzmannProbabilityComputer(const int      popSize,
                                      const double   temperature);
 
-        void compute(const vector&  fitness,
-                           vector&  prob,
+        void compute(const vector  &fitness,
+                           vector  *prob,
                      const int      popSize);
 
     };
@@ -104,11 +104,11 @@ namespace ga
          * Here we assume that population and fitness are sorted in a descending manner.<br>
          * Compute the probability of each individual in the population
          * @param fitness   the fitness of each individual
-         * @param prob      structure to store the probability for each individual
+         * @param prob      pointer to structure to store the probability for each individual
          * @param popSize   number of individuals in the population
          */
-        void compute(const vector&  fitness,
-                           vector&  prob,
+        void compute(const vector  &fitness,
+                           vector  *prob,
                      const int      popSize);
 
     };

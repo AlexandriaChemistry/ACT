@@ -19,10 +19,10 @@ namespace ga
     public:
         /*!
          * Initialize an individual
-         * @param individual    the individual to initialize
+         * @param individual    pointer to the individual to initialize
          * @param length        length of the chromosome
          */
-        virtual void initialize(      vector&   individual,
+        virtual void initialize(      vector   *individual,
                                 const int       length) {};
     };
 
@@ -49,7 +49,7 @@ namespace ga
             gen.seed(::time(NULL));
         }
 
-        void initialize(      vector&   individual,
+        void initialize(      vector   *individual,
                         const int       length);
 
     };

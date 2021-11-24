@@ -8,8 +8,8 @@
 namespace ga
 {
 
-    void FitnessProbabilityComputer::compute(const vector&  fitness,
-                                                   vector&  prob,
+    void FitnessProbabilityComputer::compute(const vector  &fitness,
+                                                   vector  *prob,
                                              const int      popSize)
     {
         double total = 0;
@@ -20,7 +20,7 @@ namespace ga
         }
         for (i = 0; i < popSize; i++)
         {
-            prob[i] = fitness[i] / total;
+            (*prob)[i] = fitness[i] / total;
         }
     }
 
@@ -33,8 +33,8 @@ namespace ga
     }
 
 
-    void BoltzmannProbabilityComputer::compute(const vector&    fitness,
-                                                     vector&    prob,
+    void BoltzmannProbabilityComputer::compute(const vector    &fitness,
+                                                     vector    *prob,
                                                const int        popSize)
     {
         double total = 0;
@@ -46,7 +46,7 @@ namespace ga
         }
         for (i = 0; i < popSize; i++)
         {
-            prob[i] = exponentials[i] / total;
+            (*prob)[i] = exponentials[i] / total;
         }
     }
 
@@ -57,13 +57,13 @@ namespace ga
     }
 
 
-    void RankProbabilityComputer::compute(const vector& fitness,
-                                                vector& prob,
+    void RankProbabilityComputer::compute(const vector &fitness,
+                                                vector *prob,
                                           const int     popSize)
     {
         for (int i = 0; i < popSize; i++)
         {
-            prob[i] = (popSize - i) / sumOfRanks;
+            (*prob)[i] = (popSize - i) / sumOfRanks;
         }
     }
 

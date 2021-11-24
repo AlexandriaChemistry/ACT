@@ -19,8 +19,8 @@ namespace ga
     }
 
 
-    bool SimpleTerminator::terminate(const matrix&  population,
-                                     const vector&  fitness,
+    bool SimpleTerminator::terminate(const matrix  &population,
+                                     const vector  &fitness,
                                      const int      generationNumber,
                                      const int      popSize,
                                      const int      chromosomeLength)
@@ -30,8 +30,8 @@ namespace ga
     }
 
 
-    bool GenerationTerminator::terminate(const matrix&  population,
-                                         const vector&  fitness,
+    bool GenerationTerminator::terminate(const matrix  &population,
+                                         const vector  &fitness,
                                          const int      generationNumber,
                                          const int      popSize,
                                          const int      chromosomeLength)

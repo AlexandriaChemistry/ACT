@@ -23,8 +23,8 @@ namespace ga
          * @param chromosomeLength      length of each individual
          * @return                      true if the evolution is complete, false otherwise
          */
-        virtual bool terminate(const matrix&    population,
-                               const vector&    fitness,
+        virtual bool terminate(const matrix    &population,
+                               const vector    &fitness,
                                const int        generationNumber,
                                const int        popSize,
                                const int        chromosomeLength) { return true; }
@@ -62,8 +62,8 @@ namespace ga
          * @param chromosomeLength      length of each individual
          * @return                      true if the evolution is complete, false otherwise
          */
-        bool terminate(const matrix&    population,
-                       const vector&    fitness,
+        bool terminate(const matrix    &population,
+                       const vector    &fitness,
                        const int        generationNumber,
                        const int        popSize,
                        const int        chromosomeLength);
@@ -94,8 +94,8 @@ namespace ga
          * @param chromosomeLength      length of each individual
          * @return                      true if the evolution is complete, false otherwise
          */
-        bool terminate(const matrix&    population,
-                       const vector&    fitness,
+        bool terminate(const matrix    &population,
+                       const vector    &fitness,
                        const int        generationNumber,
                        const int        popSize,
                        const int        chromosomeLength);

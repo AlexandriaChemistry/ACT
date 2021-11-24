@@ -41,21 +41,21 @@ namespace ga
         vector probability;
 
         //! Initializes each individual in the population
-        Initializer*            initializer;
+        Initializer            *initializer;
         //! Computes fitness for each individual in the population
-        FitnessComputer*        fitComputer;
+        FitnessComputer        *fitComputer;
         //! Sorts the individuals based on their fitness
-        Sorter*                 sorter;
+        Sorter                 *sorter;
         //! Computes the probability of selection of each individual
-        ProbabilityComputer*    probComputer;
+        ProbabilityComputer    *probComputer;
         //! Selects an individual from the population based on its probability
-        Selector*               selector;
+        Selector               *selector;
         //! Grabs 2 individuals and crosses their genes to generate 2 new individuals
-        Crossover*              crossover;
+        Crossover              *crossover;
         //! Mutates the genes of the individuals
-        Mutator*                mutator;
+        Mutator                *mutator;
         //! Checks if the evolution should continue or be terminated
-        Terminator*             terminator;
+        Terminator             *terminator;
 
     public:
         /*!
@@ -75,14 +75,14 @@ namespace ga
         GeneticAlgorithm(const int                  popSize,
                          const int                  chromosomeLength,
                          const int                  nElites,
-                               Initializer*         initializer,
-                               FitnessComputer*     fitComputer,
-                               Sorter*              sorter,
-                               ProbabilityComputer* probComputer,
-                               Selector*            selector,
-                               Crossover*           crossover,
-                               Mutator*             mutator,
-                               Terminator*          terminator);
+                               Initializer         *initializer,
+                               FitnessComputer     *fitComputer,
+                               Sorter              *sorter,
+                               ProbabilityComputer *probComputer,
+                               Selector            *selector,
+                               Crossover           *crossover,
+                               Mutator             *mutator,
+                               Terminator          *terminator);
 
         /*!
          * Evolve the initial population

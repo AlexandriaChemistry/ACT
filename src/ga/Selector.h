@@ -23,7 +23,7 @@ namespace ga
          * @param popSize           size of the population
          * @return                  the selected individual
          */
-        virtual const int select(const vector&  probability,
+        virtual const int select(const vector  &probability,
                                  const int      popSize) { return 0; }
 
     };
@@ -49,7 +49,7 @@ namespace ga
             gen.seed(::time(NULL));
         }
 
-        const int select(const vector&  probability,
+        const int select(const vector  &probability,
                          const int      popSize);
     };
 

@@ -40,8 +40,8 @@ namespace ga
          */
         virtual void offspring(const vector &parent1,
                                const vector &parent2,
-                                     vector &child1,
-                                     vector &child2,
+                                     vector *child1,
+                                     vector *child2,
                                const int     length) {};
 
         /*!
@@ -67,8 +67,8 @@ namespace ga
 
         void offspring(const vector &parent1,
                        const vector &parent2,
-                             vector &child1,
-                             vector &child2,
+                             vector *child1,
+                             vector *child2,
                        const int     length);
 
     };
@@ -89,8 +89,8 @@ namespace ga
 
         void offspring(const vector &parent1,
                        const vector &parent2,
-                             vector &child1,
-                             vector &child2,
+                             vector *child1,
+                             vector *child2,
                        const int     length);
 
     };
@@ -113,8 +113,8 @@ namespace ga
 
         void offspring(const vector &parent1,
                        const vector &parent2,
-                             vector &child1,
-                             vector &child2,
+                             vector *child1,
+                             vector *child2,
                        const int     length);
 
     };

@@ -19,10 +19,10 @@ namespace ga
     public:
         /*!
          * Mutate a gene (in place)
-         * @param individual    individual to mutate
+         * @param individual    pointer to the individual to mutate
          * @param indGene       index of the gene to alter
          */
-        virtual void mutate(      vector&   individual,
+        virtual void mutate(      vector   *individual,
                             const int       indGene) {};
 
     };
@@ -51,10 +51,10 @@ namespace ga
 
         /*!
          * Mutate a gene (in place) by multiplying it by a random number in \f$[1-frac, 1+frac]\f$
-         * @param individual    individual to mutate
+         * @param individual    pointer to individual to mutate
          * @param indGene       index of the gene to alter
          */
-        void mutate(      vector&   individual,
+        void mutate(      vector   *individual,
                     const int       indGene);
 
     };
@@ -84,10 +84,10 @@ namespace ga
 
         /*!
          * Mutate a gene (in place) by generating a random number in \f$[-range, range]\f$ and adding it to the gene.
-         * @param individual    individual to mutate
+         * @param individual    pointer to individual to mutate
          * @param indGene       index of the gene to alter
          */
-        void mutate(      vector&   individual,
+        void mutate(      vector   *individual,
                     const int       indGene);
 
     };

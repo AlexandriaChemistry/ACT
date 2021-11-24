@@ -17,12 +17,12 @@ namespace ga
         /*!
          * Compute the fitness of an individual
          * @param individual    the individual
-         * @param fitness       the fitness vector
+         * @param fitness       pointer to the fitness vector
          * @param indIndex      index of the individual in the population
          * @param length        length of the chromosome
          */
-        virtual void compute(const vector&  individual,
-                                   vector&  fitness,
+        virtual void compute(const vector  &individual,
+                                   vector  *fitness,
                              const int      indIndex,
                              const int      length) {};
 
@@ -44,12 +44,12 @@ namespace ga
          * where \f$x_j\f$ is the \f$j\f$-th gene of the \f$i\f$-th individual.
          *
          * @param individual    the individual
-         * @param fitness       the fitness vector
+         * @param fitness       pointer to the fitness vector
          * @param indIndex      index of the individual in the population
          * @param length        length of the chromosome
          */
-        void compute(const vector&  individual,
-                           vector&  fitness,
+        void compute(const vector  &individual,
+                           vector  *fitness,
                      const int      indIndex,
                      const int      length);
     };

@@ -19,24 +19,24 @@ namespace ga
     }
 
 
-    void MergeSorter::sort(      matrix&    pop,
-                                 vector&    fitness,
+    void MergeSorter::sort(      matrix    *pop,
+                                 vector    *fitness,
                            const int        popSize)
     {
 
-        tmpFitness = fitness;
-        tmpPop = pop;
-        topDownSplitMerge(tmpPop, tmpFitness, 0, popSize, pop, fitness);
+        tmpFitness = (*fitness);
+        tmpPop = (*pop);
+        topDownSplitMerge(&tmpPop, &tmpFitness, 0, popSize, pop, fitness);
 
     }
 
 
-    void MergeSorter::topDownSplitMerge(      matrix&   popB,
-                                              vector&   fitB,
+    void MergeSorter::topDownSplitMerge(      matrix   *popB,
+                                              vector   *fitB,
                                         const int       left,
                                         const int       right,
-                                              matrix&   popA,
-                                              vector&   fitA)
+                                              matrix   *popA,
+                                              vector   *fitA)
     {
 
         if (right - left <= 1) return;
@@ -51,13 +51,13 @@ namespace ga
     }
 
 
-    void MergeSorter::topDownMerge(      matrix&    popA,
-                                         vector&    fitA,
+    void MergeSorter::topDownMerge(      matrix    *popA,
+                                         vector    *fitA,
                                    const int        left,
                                    const int        middle,
                                    const int        right,
-                                         matrix&    popB,
-                                         vector&    fitB)
+                                         matrix    *popB,
+                                         vector    *fitB)
     {
 
         int i = left;
@@ -65,16 +65,16 @@ namespace ga
 
         for (int k = left; k < right; k++)
         {
-            if ( i < middle && ( j >= right || ( descending == ( fitA[i] >= fitA[j] ) ) ) )
+            if ( i < middle && ( j >= right || ( descending == ( (*fitA)[i] >= (*fitA)[j] ) ) ) )
             {
-                fitB[k] = fitA[i];
-                popB[k] = popA[i];
+                (*fitB)[k] = (*fitA)[i];
+                (*popB)[k] = (*popA)[i];
                 i++;
             }
             else
             {
-                fitB[k] = fitA[j];
-                popB[k] = popA[j];
+                (*fitB)[k] = (*fitA)[j];
+                (*popB)[k] = (*popA)[j];
                 j++;
             }
         }
@@ -82,7 +82,8 @@ namespace ga
     }
 
 
-    QuickSorter::QuickSorter(const int popSize, const bool descending)
+    QuickSorter::QuickSorter(const int  popSize,
+                             const bool descending)
     {
 
         tmpFitness = vector(popSize);
@@ -90,19 +91,19 @@ namespace ga
 
     }
 
-    void QuickSorter::sort(matrix&       pop,
-                           vector&       fitness,
-                           const int     popSize)
+    void QuickSorter::sort(      matrix    *pop,
+                                 vector    *fitness,
+                           const int        popSize)
     {
         const int low = 0;
         const int high = popSize - 1;
         quickSort(pop, fitness, low, high);
     }
 
-    void QuickSorter::quickSort(matrix&       pop,
-                                vector&       fitness,
-                                const int     low,
-                                const int     high)
+    void QuickSorter::quickSort(      matrix   *pop,
+                                      vector   *fitness,
+                                const int       low,
+                                const int       high)
     {
         if (low >= 0 && high >= 0 && low < high)
         {
@@ -112,26 +113,26 @@ namespace ga
         }
     }
 
-    int QuickSorter::partition(matrix&       pop,
-                               vector&       fitness,
-                               const int     low,
-                               const int     high)
+    int QuickSorter::partition(      matrix    *pop,
+                                     vector    *fitness,
+                               const int        low,
+                               const int        high)
     {
-        const double pivot = fitness[high];
+        const double pivot = (*fitness)[high];
         int candidate = low - 1;
         double temp;
 
         for (int check = low; check <= high; check++)
         {
-            if (fitness[check] >= pivot)
+            if ( (*fitness)[check] >= pivot )
             {
                 candidate += 1;
-                tmpFitness = pop[candidate];
-                temp = fitness[candidate];
-                pop[candidate] = pop[check];
-                fitness[candidate] = fitness[check];
-                pop[check] = tmpFitness;
-                fitness[check] = temp;
+                tmpFitness = (*pop)[candidate];
+                temp = (*fitness)[candidate];
+                (*pop)[candidate] = (*pop)[check];
+                (*fitness)[candidate] = (*fitness)[check];
+                (*pop)[check] = tmpFitness;
+                (*fitness)[check] = temp;
             }
         }
         return candidate;

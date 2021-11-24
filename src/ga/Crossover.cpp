@@ -15,8 +15,8 @@ namespace ga
 
     void SinglePointCrossover::offspring(const vector &parent1,
                                          const vector &parent2,
-                                               vector &child1,
-                                               vector &child2,
+                                               vector *child1,
+                                               vector *child2,
                                          const int     length)
     {
 
@@ -25,13 +25,13 @@ namespace ga
         int i;
         for (i = 0; i < index; i++)
         {
-            child1[i] = parent1[i];
-            child2[i] = parent2[i];
+            (*child1)[i] = parent1[i];
+            (*child2)[i] = parent2[i];
         }
         for (i = index; i < length; i++)
         {
-            child1[i] = parent2[i];
-            child2[i] = parent1[i];
+            (*child1)[i] = parent2[i];
+            (*child2)[i] = parent1[i];
         }
 
     }
@@ -39,8 +39,8 @@ namespace ga
 
     void DoublePointCrossover::offspring(const vector &parent1,
                                          const vector &parent2,
-                                               vector &child1,
-                                               vector &child2,
+                                               vector *child1,
+                                               vector *child2,
                                          const int     length)
     {
 
@@ -57,18 +57,18 @@ namespace ga
         int i;
         for (i = 0; i < index1; i++)
         {
-            child1[i] = parent1[i];
-            child2[i] = parent2[i];
+            (*child1)[i] = parent1[i];
+            (*child2)[i] = parent2[i];
         }
         for (i = index1; i < index1 + diff; i++)
         {
-            child1[i] = parent2[i];
-            child2[i] = parent1[i];
+            (*child1)[i] = parent2[i];
+            (*child2)[i] = parent1[i];
         }
         for (i = index1 + diff; i < length; i++)
         {
-            child1[i] = parent1[i];
-            child2[i] = parent2[i];
+            (*child1)[i] = parent1[i];
+            (*child2)[i] = parent2[i];
         }
 
     }
@@ -76,8 +76,8 @@ namespace ga
 
     void NPointCrossover::offspring(const vector &parent1,
                                     const vector &parent2,
-                                          vector &child1,
-                                          vector &child2,
+                                          vector *child1,
+                                          vector *child2,
                                     const int     length)
     {
         crossoverIndices = vector(numberOfCrossovers);

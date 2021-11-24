@@ -10,24 +10,24 @@ namespace ga
     matrix allocateMatrix(const int n,
                           const int m);
 
-    void copyVectorValues(const vector& arr1,
-                                vector& arr2,
+    void copyVectorValues(const vector &arr1,
+                                vector *arr2,
                           const int     left,
                           const int     right);
 
-    void copyMatrixValues(const matrix& mat1,
-                                matrix& mat2,
+    void copyMatrixValues(const matrix &mat1,
+                                matrix *mat2,
                           const int     i1,
                           const int     i2,
                           const int     j1,
                           const int     j2);
 
-    int findMaximumIndex(const vector&  vec,
+    int findMaximumIndex(const vector  &vec,
                          const int      len);
 
-    void printVector(const vector& vec);
+    void printVector(const vector &vec);
 
-    void printMatrix(const matrix& mat);
+    void printMatrix(const matrix &mat);
 
 }
 

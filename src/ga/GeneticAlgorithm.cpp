@@ -24,14 +24,14 @@ namespace ga
     GeneticAlgorithm::GeneticAlgorithm(const int                    popSize,
                                        const int                    chromosomeLength,
                                        const int                    nElites,
-                                             Initializer*           initializer,
-                                             FitnessComputer*       fitComputer,
-                                             Sorter*                sorter,
-                                             ProbabilityComputer*   probComputer,
-                                             Selector*              selector,
-                                             Crossover*             crossover,
-                                             Mutator*               mutator,
-                                             Terminator*            terminator)
+                                             Initializer           *initializer,
+                                             FitnessComputer       *fitComputer,
+                                             Sorter                *sorter,
+                                             ProbabilityComputer   *probComputer,
+                                             Selector              *selector,
+                                             Crossover             *crossover,
+                                             Mutator               *mutator,
+                                             Terminator            *terminator)
     {
 
         // TODO: Make sure that there is an even number of individuals in the population
@@ -90,8 +90,8 @@ namespace ga
         if (verbose >= 2) printf("Initializing individuals and computing initial fitness...\n");
         for (i = 0; i < popSize; i++)
         {
-            (*initializer).initialize(oldPop[i], chromosomeLength);
-            (*fitComputer).compute(oldPop[i], fitness, i, chromosomeLength);
+            (*initializer).initialize(&(oldPop[i]), chromosomeLength);
+            (*fitComputer).compute(oldPop[i], &fitness, i, chromosomeLength);
         }
 
         // If verbose, print best individual
@@ -124,7 +124,7 @@ namespace ga
 
             // Sort individuals based on fitness
             if (verbose >= 2) printf("Sorting... (if needed)\n");
-            (*sorter).sort(oldPop, fitness, popSize);
+            (*sorter).sort(&oldPop, &fitness, popSize);
             if (verbose >= 2)
             {
                 printf("Population after sorting:\n");
@@ -135,14 +135,14 @@ namespace ga
 
             // Normalize the fitness into a probability
             if (verbose >= 2) printf("Computing probabilities...\n");
-            (*probComputer).compute(fitness, probability, popSize);
+            (*probComputer).compute(fitness, &probability, popSize);
             if (verbose >= 2)
             {
                 printf("Probabilities: ");
                 printVector(probability);
             }
 
-            // Move the "nElites" best individuals into the new population (assuming population is sorted)
+            // Move the "nElites" best individuals (unchanged) into the new population (assuming population is sorted)
             if (verbose >= 2) printf("Moving the %i best individual(s) into the new population...\n", nElites);
             for (i = 0; i < nElites; i++) newPop[i] = oldPop[i];
 
@@ -161,8 +161,8 @@ namespace ga
                 if (dis(gen) <= prCross)
                 {
                     if (verbose >= 3) printf("Doing crossover...\n");
-                    (*crossover).offspring(oldPop[parent1], oldPop[parent2], newPop[i],
-                                           newPop[i+1], chromosomeLength);
+                    (*crossover).offspring(oldPop[parent1], oldPop[parent2], &(newPop[i]),
+                                           &(newPop[i+1]), chromosomeLength);
                 }
                 else
                 {
@@ -177,7 +177,7 @@ namespace ga
                 {
                     for (j = 0; j < chromosomeLength; j++)
                     {
-                        if (dis(gen) <= prMut) (*mutator).mutate(newPop[i + k], j);
+                        if (dis(gen) <= prMut) (*mutator).mutate(&(newPop[i + k]), j);
                     }
                 }
 
@@ -192,7 +192,7 @@ namespace ga
             // Compute fitness
             for (i = 0; i < popSize; i++) {
                 // Compute fitness
-                (*fitComputer).compute(oldPop[i], fitness, i, chromosomeLength);
+                (*fitComputer).compute(oldPop[i], &fitness, i, chromosomeLength);
             }
 
             // If verbose, print best individual
