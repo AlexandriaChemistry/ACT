@@ -43,7 +43,7 @@ pushed to a redmine thread. Large changes should be suggested early in the devel
 cycle for each release so we avoid being hit by last-minute compiler bugs just before
 a release.
 
-* Use namespaces. Everything in ``libgromacs`` should be in a ``gmx``
+* Use namespaces. Everything in ``libactgromacs`` should be in a ``gmx``
   namespace. Don't use using in headers except possibly for aliasing
   some commonly-used names, and avoid file-level blanket ``using
   namespace gmx`` and similar. If only a small number of ``gmx``

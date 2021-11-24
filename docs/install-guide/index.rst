@@ -879,7 +879,7 @@ CMakeLists.txt.
     The name of the directory can be changed using ``CMAKE_INSTALL_LIBDIR`` CMake
     variable.
 ``lib/pkgconfig/``
-    Information about the installed ``libgromacs`` library for ``pkg-config`` is
+    Information about the installed ``libactgromacs`` library for ``pkg-config`` is
     installed here.  The ``lib/`` part adapts to the installation location of the
     libraries.  The installed files contain the installation prefix as absolute
     paths.
@@ -891,7 +891,7 @@ CMakeLists.txt.
     ``GMX_INSTALL_DATASUBDIR`` Using these CMake variables is the preferred
     way of changing the installation path for
     ``share/gromacs/top/``, since the path to this directory is built into
-    ``libgromacs`` as well as some scripts, both as a relative and as an absolute
+    ``libactgromacs`` as well as some scripts, both as a relative and as an absolute
     path (the latter as a fallback if everything else fails).
 ``share/man/``
     Installed man pages go here.
@@ -927,7 +927,7 @@ Building only mdrun
 
 This is now supported with the ``cmake`` option
 ``-DGMX_BUILD_MDRUN_ONLY=ON``, which will build a different version of
-``libgromacs`` and the ``mdrun`` program.
+``libactgromacs`` and the ``mdrun`` program.
 Naturally, now ``make install`` installs only those
 products. By default, mdrun-only builds will default to static linking
 against |Gromacs| libraries, because this is generally a good idea for

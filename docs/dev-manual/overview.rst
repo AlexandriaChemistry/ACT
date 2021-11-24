@@ -48,7 +48,7 @@ The build system is described in detail in :doc:`build-system`.
 With default options, the green and white components are built as part of the
 default target.  If ``GMX_BUILD_MDRUN_ONLY`` is ``ON``, then the blue and white
 components are built instead; :file:`libgromacs_mdrun` is built from a subset
-of the code used for :file:`libgromacs`.
+of the code used for :file:`libactgromacs`.
 The gray parts are for testing, and are by default only built as part of the
 ``tests`` target, but if ``GMX_DEVELOPER_BUILD`` is ``ON``, then these are
 included in the default build target.
@@ -71,8 +71,8 @@ See :doc:`testutils` for details of the testing side.
    }
    subgraph {
      rank = same
-     libgromacs [
-       label="libgromacs\nsrc/gromacs/", group=gmx, fillcolor="0.33 0.3 1"
+     libactgromacs [
+       label="libactgromacs\nsrc/gromacs/", group=gmx, fillcolor="0.33 0.3 1"
      ]
      libgromacs_mdrun [
        label="libgromacs_mdrun\nsrc/gromacs/", group=mdrun, fillcolor="0.66 0.3 1"
@@ -106,21 +106,21 @@ See :doc:`testutils` for details of the testing side.
      template -> mdrun [ style=invis, constraint=no ]
    }
 
-   libgromacs -> externals
+   libactgromacs -> externals
    libgromacs_mdrun -> externals
-   mdrun_objlib -> libgromacs
-   gmx -> libgromacs
+   mdrun_objlib -> libactgromacs
+   gmx -> libactgromacs
    gmx -> mdrun_objlib
    mdrun -> libgromacs_mdrun
    mdrun -> mdrun_objlib
    testutils -> externals
    testutils -> gtest
-   testutils -> libgromacs
+   testutils -> libactgromacs
    tests -> gtest
-   tests -> libgromacs
+   tests -> libactgromacs
    tests -> mdrun_objlib
    tests -> testutils
-   template -> libgromacs
+   template -> libactgromacs
 
    template -> mdrun_objlib [ style=invis ]
    mdrun_objlib -> externals [ style=invis ]
@@ -131,7 +131,7 @@ included at the root level.  All actual code is in subdirectories:
 
 :file:`src/gromacs/`
   The code under this directory is built into a single library,
-  :file:`libgromacs`.  Installed headers are also located in this hierarchy.
+  :file:`libactgromacs`.  Installed headers are also located in this hierarchy.
   This is the main part of the code, and is organized into further subdirectories
   as *modules*.  See below for details.
 :file:`src/programs/`
@@ -151,14 +151,14 @@ included at the root level.  All actual code is in subdirectories:
 :file:`src/external/`
   Contains bundled source code for various libraries and
   components that |Gromacs| uses internally.  All the code from these
-  directories are built using our custom build rules into :file:`libgromacs`,
+  directories are built using our custom build rules into :file:`libactgromacs`,
   or in some cases into the test binaries.  Some CMake options change which
   parts of this code are included in the build.
   See :doc:`build-system` for some explanation about how the code in this
   directory is used.
 :file:`src/external/build-fftw/`
   This folder contains the build system code for
-  downloading and building FFTW to be included into :file:`libgromacs`.
+  downloading and building FFTW to be included into :file:`libactgromacs`.
 
 When compiling, the include search path is set to :file:`src/`.
 Some directories from under :file:`src/external/` may also be included,
@@ -167,7 +167,7 @@ depending on the compilation options.
 Organization under :file:`src/gromacs/`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The :file:`libgromacs` library is built from code under :file:`src/gromacs/`.
+The :file:`libactgromacs` library is built from code under :file:`src/gromacs/`.
 Again, the top-level directory contains build and installation rules for the
 library, and :dfn:`public API convenience headers`.  These convenience headers
 provide the main installed headers that other code can use.  They do not

@@ -471,7 +471,7 @@ class GraphBuilder(object):
         """Create module dependency graph."""
         nodes = []
         modulenodes = dict()
-        libgromacsnode = Node('libgromacs', 'libgromacs')
+        libgromacsnode = Node('libactgromacs', 'libactgromacs')
         nodes.append(libgromacsnode)
         for moduleobj in self._tree.get_modules():
             node = self._create_module_node(moduleobj)
