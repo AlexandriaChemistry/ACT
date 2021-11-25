@@ -40,18 +40,6 @@ list(REMOVE_ITEM SELECTION_SOURCES ${LIBGROMACS_SOURCES_GENERATED})
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${SELECTION_SOURCES} PARENT_SCOPE)
 target_sources(libactgromacs_generated PRIVATE ${LIBGROMACS_SOURCES_GENERATED})
 
-gmx_install_headers(
-#    nbsearch.h
-#    indexutil.h
-#    position.h
-#    selection.h
-#    selectioncollection.h
-#    selectionenums.h
-#    selectionoption.h
-#    selectionoptionbehavior.h
-#    selectionoptionmanager.h
-    )
-
 if (BUILD_TESTING)
 #    add_subdirectory(tests)
 endif()

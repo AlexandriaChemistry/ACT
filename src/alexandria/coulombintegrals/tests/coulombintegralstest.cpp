@@ -68,8 +68,8 @@ namespace
  * \param[in] cd    Charge distribution type
  * \param[in] irow  Row number for atom i
  * \param[in] jrow  Row number for atom j
- * \param[in] xi    Distribution width atom i (may be 0)
- * \param[in] xj    Distribution width atom j (may be 0)
+ * \param[in] izeta Distribution width atom i (may be 0)
+ * \param[in] jzeta Distribution width atom j (may be 0)
  * \param[in] checker The checker data structure
  */
 void testCoulomb(alexandria::ChargeType           cd,
@@ -198,6 +198,8 @@ const std::vector<std::tuple<int, int> > &make_rows()
     }
     return vt;
 };
+
+//! Instantiate the combination of Slater row-row interactions to test
 static const std::vector<std::tuple<int, int> > c_rows = make_rows();
 
 //! xi and xj for tests
@@ -219,6 +221,8 @@ const std::vector<std::tuple<double, double> > &make_xi()
     }
     return vt;
 };
+
+//! Instantiate the combination of Slater widths to test
 static const std::vector<std::tuple<double, double> > c_xi = make_xi();
 
 #if HAVE_LIBCLN
@@ -246,6 +250,8 @@ const std::vector<std::tuple<double, double> > &make_xiInteger()
     }
     return vt;
 };
+
+//! Instantiate xi and xj pair values
 static const std::vector<std::tuple<double, double> > c_xiInteger = make_xiInteger();
 
 #if HAVE_LIBCLN

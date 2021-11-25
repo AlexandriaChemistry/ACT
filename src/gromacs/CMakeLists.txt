@@ -36,7 +36,6 @@ set(LIBGROMACS_SOURCES)
 
 set_property(GLOBAL PROPERTY GMX_LIBGROMACS_SOURCES)
 set_property(GLOBAL PROPERTY GMX_LIBGROMACS_GPU_IMPL_SOURCES)
-set_property(GLOBAL PROPERTY GMX_INSTALLED_HEADERS)
 set_property(GLOBAL PROPERTY GMX_AVX_512_SOURCE)
 
 add_library(libactgromacs_external OBJECT "")
@@ -65,23 +64,6 @@ endfunction ()
 function (gmx_add_libgromacs_sources)
     _gmx_add_files_to_property(GMX_LIBGROMACS_SOURCES ${ARGN})
 endfunction ()
-
-function (gmx_install_headers)
-    if (NOT GMX_BUILD_MDRUN_ONLY)
-        file(RELATIVE_PATH _dest ${PROJECT_SOURCE_DIR}/src ${CMAKE_CURRENT_LIST_DIR})
-        install(FILES       ${ARGN}
-                DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${_dest}"
-                COMPONENT   development)
-    endif()
-    #_gmx_add_files_to_property(GMX_INSTALLED_HEADERS ${ARGN})
-endfunction ()
-
-function (gmx_write_installed_header_list)
-    get_property(_list GLOBAL PROPERTY GMX_INSTALLED_HEADERS)
-    string(REPLACE ";" "\n" _list "${_list}")
-    # TODO: Make this only update the file timestamp if the contents actually change.
-    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/installed-headers.txt "${_list}")
-endfunction()
 
 add_subdirectory(gmxlib)
 add_subdirectory(mdlib)
@@ -227,8 +209,6 @@ if (GMX_CLANG_TIDY)
    set_target_properties(libactgromacs PROPERTIES CXX_CLANG_TIDY
        "${CLANG_TIDY_EXE};-warnings-as-errors=*")
 endif()
-
-gmx_write_installed_header_list()
 
 # Only install the library in mdrun-only mode if it is actually necessary
 # for the binary

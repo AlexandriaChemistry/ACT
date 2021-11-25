@@ -41,7 +41,6 @@
 #include <string>
 #include <vector>
 
-#include "gromacs/random.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/xvgr.h"
