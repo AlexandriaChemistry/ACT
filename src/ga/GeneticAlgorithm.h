@@ -96,6 +96,17 @@ namespace ga
                                  const double   prMut,
                                  const int      verbose);
 
+        /*!
+         * Set a new value for \p nElites
+         * @param nElites   the new value
+         */
+        void setnElites(const int nElites) { this->nElites = nElites; }
+
+        /*!
+         * Get the value of \p nElites
+         * @return  the value of \p nElites
+         */
+        int getnElites() { return nElites; }
 
     };
 

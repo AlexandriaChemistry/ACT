@@ -11,9 +11,9 @@ using namespace ga;
 int main(int argc, char const *argv[])
 {
 
-    if (argc != 6)
+    if (argc != 7)
     {
-        printf("\nUsage: \\test <nElites> <popSize> <chromLen> <tolerance> <verbose>\n\n");
+        printf("\nUsage: \\test <nElites> <popSize> <chromLen> <tolerance> <verbose> <nrep>\n\n");
         return -1;
     }
 
@@ -24,6 +24,7 @@ int main(int argc, char const *argv[])
     const int       nElites         = atoi(argv[1]);
     const double    tolerance       = atof(argv[4]);
     const int       verbose         = atoi(argv[5]);
+    const int       nrep            = atoi(argv[6]);
 
 	SimpleInitializer           init(-10.0, 10.0);
 	SimpleFitnessComputer       fit;
@@ -51,12 +52,35 @@ int main(int argc, char const *argv[])
 										   &mutate,
 										   &terminate);
 
-	const ga_result_t result = ga.evolve(0.35, 0.01, verbose);
+    vector gensNoElite(nrep);
+    vector gensElite(nrep);
 
-    printf("\nEvolution took %i generations\n", result.generations);
-    printf("Best individual: ");
-    printVector(result.bestIndividual);
-    printf("Best fitness: %f\n\n", result.bestFitness);
+    // Without elitism
+    ga.setnElites(0);
+    for (int i = 0; i < nrep; i++) {
+        const ga_result_t result = ga.evolve(0.35, 0.01, 0);
+        gensNoElite[i] = result.generations;
+    }
+
+    // With elitism
+    ga.setnElites(nElites);
+    for (int i = 0; i < nrep; i++) {
+        const ga_result_t result = ga.evolve(0.35, 0.01, 0);
+        gensElite[i] = result.generations;
+    }
+
+    const double avgNoElite = vectorMEAN(gensNoElite, nrep);
+    const double avgElite = vectorMEAN(gensElite, nrep);
+    const double stdNoElite = vectorSTD(gensNoElite, avgNoElite, nrep);
+    const double stdElite = vectorSTD(gensElite, avgElite, nrep);
+
+    printf("\nWithout elitism: %f +- %f\n", avgNoElite, stdNoElite);
+    printf("\nWith %i elitism: %f +- %f\n\n", nElites, avgElite, stdElite);
+
+//    printf("\nEvolution took %i generations\n", result.generations);
+//    printf("Best individual: ");
+//    printVector(result.bestIndividual);
+//    printf("Best fitness: %f\n\n", result.bestFitness);
 
 	return 0;
 }

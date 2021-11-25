@@ -29,6 +29,15 @@ namespace ga
 
     void printMatrix(const matrix &mat);
 
+    double sumVector(const vector &vec);
+
+    double vectorMEAN(const vector &vec,
+                      const int     length);
+
+    double vectorSTD(const vector  &vec,
+                     const double   mean,
+                     const int      length);
+
 }
 
 #endif //ACT_HELPERS_H

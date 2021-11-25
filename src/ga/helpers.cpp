@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <cmath>
 
 #include "helpers.h"
 
@@ -106,6 +107,49 @@ namespace ga
     void printMatrix(const matrix &mat)
     {
         for (vector vec: mat) printVector(vec);
+    }
+
+
+    /*!
+     * Sum all entries in a vector
+     * @param vec   the vector
+     * @return      the sum
+     */
+    double sumVector(const vector &vec)
+    {
+        double sum = 0;
+        for (double ele : vec) sum += ele;
+        return sum;
+    }
+
+
+    /*!
+     * Compute the mean value in a vector
+     * @param vec       the vector
+     * @param length    length of the vector
+     * @return          the mean
+     */
+    double vectorMEAN(const vector &vec,
+                      const int     length)
+    {
+        return sumVector(vec) / length;
+    }
+
+
+    /*!
+     * Compute the standard deviation
+     * @param vec    the vector of values
+     * @param mean   the mean value
+     * @param length the size of the vector
+     * @return       the standard deviation
+     */
+    double vectorSTD(const vector  &vec,
+                     const double   mean,
+                     const int      length)
+    {
+        double sum = 0;
+        for (double ele : vec) sum += (ele - mean)*(ele - mean);
+        return sqrt(sum / length);
     }
 
 }
