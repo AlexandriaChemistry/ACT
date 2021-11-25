@@ -279,7 +279,7 @@ double OptACM::calcDeviation(bool       verbose,
     {
         if (PAR(cr) && calcDev != CalcDev::Master)
         {
-            for(int i = 1; i < cr->nnodes; i++)
+            for (int i = 1; i < cr->nnodes; i++)
             {
                 gmx_send_int(cr, i, static_cast<int>(calcDev));
                 gmx_send_int(cr, i, static_cast<int>(ims));
