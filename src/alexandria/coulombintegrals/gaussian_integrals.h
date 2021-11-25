@@ -42,14 +42,14 @@
  * \param[in] r  Distance
  * \param[in] xi Distribution width for atom i (1/distance unit)
  * \param[in] xj Distribution width for atom j (1/distance unit)
- * \return The interaction energy (1/4\pi\epsilon_0 is not included).
+ * \return The interaction energy (1/4 pi epsilon_0 is not included).
  */
 double Coulomb_GG(double r, double xi, double xj);
 
 /*! \brief Compute interaction between Point charge and Gaussian distributed charge
  * \param[in] r  Distance
  * \param[in] xi Distribution width for atom i (1/distance unit)
- * \return The interaction energy (1/4\pi\epsilon_0 is not included).
+ * \return The interaction energy (1/4 pi epsilon_0 is not included).
  */
 double Nuclear_GG(double r, double xi);
 
@@ -57,14 +57,14 @@ double Nuclear_GG(double r, double xi);
  * \param[in] r  Distance
  * \param[in] xi Distribution width for atom i (1/distance unit)
  * \param[in] xj Distribution width for atom j (1/distance unit)
- * \return The force (1/4\pi\epsilon_0 is not included).
+ * \return The force (1/4 pi epsilon_0 is not included).
  */
 double DCoulomb_GG(double r, double xi, double xj);
 
 /*! \brief Compute Coulomb force between Point charge and Gaussian distributed charge
  * \param[in] r  Distance
  * \param[in] xi Distribution width for atom i (1/distance unit)
- * \return The force (1/4\pi\epsilon_0 is not included).
+ * \return The force (1/4 pi epsilon_0 is not included).
  */
 double DNuclear_GG(double r, double xi);
 

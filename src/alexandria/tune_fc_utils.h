@@ -60,7 +60,7 @@ class ParameterNames
     public:
 
     //! Empty constructor
-        ParameterNames () {}
+    ParameterNames () {}
 
     /*! \brief Constructor with initiation
      *
@@ -68,7 +68,6 @@ class ParameterNames
      * \param[in] ftype    The GROMACS function type
      * \param[in] params   String with all the parameters
      * \param[in] index    Integer identifier
-     * \param[in] bondorder The bond order in case this is a bond.
      */
         ParameterNames(int                        ncopies,
                        int                        ftype,
@@ -78,7 +77,7 @@ class ParameterNames
               ftype_(ftype),
               params_(params),
               poldataIndex_(index)
-        { }
+        {}
 
         void inc() { ncopies_++; }
 

@@ -44,7 +44,7 @@
  * energy is the largest contribution to the molecular energy.
  * \param[in]    fplog         File pointer to write to
  * \param[inout] pd            The force field to update
- * \param[in]    mymol         The molecules
+ * \param[in]    molset        The molecules
  * \param[in]    nDissociation The number of dissociation energies to compute
  */
 void getDissociationEnergy(FILE                     *fplog,
