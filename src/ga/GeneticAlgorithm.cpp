@@ -2,8 +2,6 @@
 
 #include "GeneticAlgorithm.h"
 
-#include <cassert>
-#include <random>
 #include <stdio.h>
 
 #include "aliases.h"

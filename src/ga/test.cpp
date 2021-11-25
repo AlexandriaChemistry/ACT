@@ -4,18 +4,26 @@
 #include "helpers.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 
 using namespace ga;
 
 int main(int argc, char const *argv[])
 {
 
-	const int       popSize         = 200;
-	const int       chromLen        = 10;
+    if (argc != 6)
+    {
+        printf("\nUsage: \\test <nElites> <popSize> <chromLen> <tolerance> <verbose>\n\n");
+        return -1;
+    }
+
+	const int       popSize         = atoi(argv[2]);
+	const int       chromLen        = atoi(argv[3]);
 //	const int       maxGenerations  = 5;
 //    const double    mutFrac         = 0.1;
-    const int       nElites         = 10;
-    const double    tolerance       = 0.000001;
+    const int       nElites         = atoi(argv[1]);
+    const double    tolerance       = atof(argv[4]);
+    const int       verbose         = atoi(argv[5]);
 
 	SimpleInitializer           init(-10.0, 10.0);
 	SimpleFitnessComputer       fit;
@@ -43,7 +51,7 @@ int main(int argc, char const *argv[])
 										   &mutate,
 										   &terminate);
 
-	const ga_result_t result = ga.evolve(0.35, 0.01, 1);
+	const ga_result_t result = ga.evolve(0.35, 0.01, verbose);
 
     printf("\nEvolution took %i generations\n", result.generations);
     printf("Best individual: ");
