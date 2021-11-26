@@ -169,7 +169,7 @@ void OptACM::add_pargs(std::vector<t_pargs> *pargs) {
                     {"-fullQuadrupole", FALSE, etBOOL, {&bFullQuadrupole_},
                             "Consider both diagonal and off-diagonal elements of the Q_Calc matrix for optimization"},
                     {"-removemol",      FALSE, etBOOL, {&bRemoveMol_},
-                            "Remove a molecule from training set if shell minimzation does not converge."},
+                            "Remove a molecule from training set if shell minimization does not converge."},
             };
     for (int i = 0; i < asize(pa); i++) {
         pargs->push_back(pa[i]);
