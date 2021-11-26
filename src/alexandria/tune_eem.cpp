@@ -81,7 +81,7 @@ namespace alexandria
 
 /*! \defgroup tune_eem Schematic flowchart for tune_eem
  *
- * This diagram shows how the program is parallellized.
+ * This diagram shows how the program is parallelized.
  * Boxes in cyan run on all nodes, pink on the master node
  * and yellow on the helper nodes.
  * \dot
