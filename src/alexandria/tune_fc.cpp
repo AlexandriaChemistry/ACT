@@ -58,7 +58,6 @@
 
 #include "alex_modules.h"
 #include "communication.h"
-#include "dissociation_energy.h"
 #include "gentop_core.h"
 #include "gmx_simple_comm.h"
 #include "molgen.h"
@@ -70,7 +69,6 @@
 #include "optparam.h"
 #include "poldata.h"
 #include "poldata_xml.h"
-#include "regression.h"
 #include "tuning_utility.h"
 #include "tune_fc_utils.h"
 
@@ -144,7 +142,6 @@ class Optimization : public MolGen, Bayes
     private:
         std::map<InteractionType, ForceConstants> ForceConstants_;
         std::vector<PoldataUpdate>                poldataUpdates_;
-        bool                        bDissoc_          = true;
         real                        w_dhf_            = 1;
         const char                 *lot_              = nullptr;
         // Map from molid to MolEnergy
@@ -329,8 +326,6 @@ void Optimization::add_pargs(std::vector<t_pargs> *pargs)
 {
     t_pargs pa[] =
     {
-        { "-dissoc",  FALSE, etBOOL, {&bDissoc_},
-          "Derive dissociation energy from the enthalpy of formation. If not chosen, the dissociation energy will be read from the gentop.dat file." },
         { "-weight_dhf", FALSE, etREAL, {&w_dhf_},
           "Fitting weight of the minimum energy structure, representing the enthalpy of formation relative to high energy structures." }
     };
@@ -544,23 +539,6 @@ void Optimization::InitOpt(FILE *fplog, bool bRandom)
             fc.makeReverseIndex();
             fc.dump(fplog);
             ForceConstants_.insert({fs.first, std::move(fc)});
-        }
-    }
-    if (bDissoc_)
-    {
-        if (ForceConstants_[InteractionType::BONDS].nbad() <= molset().size())
-        {
-            getDissociationEnergy(fplog, poldata(), molset(),
-                                  ForceConstants_[InteractionType::BONDS].nbad());
-        }
-        else
-        {
-            printf("\n"
-                   "WARNING: %zu molecule(s) is (are) not enough to calculate dissociation\n"
-                   "         energy for %zu bond type(s) using linear regression. Default\n"
-                   "         values from gentop.dat will be used as the initial guess.\n"
-                   "         Recomendation is to add more molecules having the same bond types.\n\n",
-                   molset().size(), ForceConstants_[InteractionType::BONDS].nbad());
         }
     }
     

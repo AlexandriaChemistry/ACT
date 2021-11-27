@@ -2157,7 +2157,7 @@ void MyMol::calcEspRms(const Poldata *pd)
     done_atom(&myatoms);
 }
 
-immStatus MyMol::getExpProps(gmx_bool           bQM,
+immStatus MyMol::getExpProps(iqmType            iqm,
                              gmx_bool           bZero,
                              gmx_bool           bZPE,
                              gmx_bool           bDHform,
@@ -2215,39 +2215,43 @@ immStatus MyMol::getExpProps(gmx_bool           bQM,
     }
     T = 298.15;
     immStatus imm = immStatus::OK;
-    if (bDHform &&
-        getProp(MolPropObservable::ENERGY, (bQM ? iqmType::QM : iqmType::Exp),
-                           method, basis, "",
-                           (char *)"DeltaHform", &value, &error, &T))
-    {
-        Hform_ = value;
-        Emol_  = value;
-        for (ia = 0; ia < myatoms.nr; ia++)
+    if (bDHform)
+    { 
+        if (getProp(MolPropObservable::ENERGY, iqm, method, basis, "",
+                    (char *)"DeltaHform", &value, &error, &T))
         {
-            if (myatoms.atom[ia].ptype == eptAtom ||
-                myatoms.atom[ia].ptype == eptNucleus)
+            Hform_ = value;
+            Emol_  = value;
+            for (ia = 0; ia < myatoms.nr; ia++)
             {
-                auto atype = pd->findParticleType(*myatoms.atomtype[ia]);
-                Emol_ -= atype->refEnthalpy();
+                if (myatoms.atom[ia].ptype == eptAtom ||
+                    myatoms.atom[ia].ptype == eptNucleus)
+                {
+                    auto atype = pd->findParticleType(*myatoms.atomtype[ia]);
+                    Emol_ -= atype->refEnthalpy();
+                }
             }
-        }
-        if (bZPE)
-        {
-
-            if (getProp(MolPropObservable::ENERGY, iqmType::Both,
-                                   method, basis, "",
-                                   (char *)"ZPE", &ZPE, &error, &T))
+            if (bZPE)
             {
-                Emol_ -= ZPE;
+                if (getProp(MolPropObservable::ENERGY, iqmType::Both,
+                            method, basis, "",
+                            (char *)"ZPE", &ZPE, &error, &T))
+                {
+                    Emol_ -= ZPE;
+                }
+                else
+                {
+                    fprintf(stderr, "No zero-point energy for molecule %s.\n",
+                            getMolname().c_str());
+                    imm = immStatus::NoData;
+                }
             }
-            else
+            if (ia < myatoms.nr)
             {
-                fprintf(stderr, "No zero-point energy for molecule %s.\n",
-                        getMolname().c_str());
                 imm = immStatus::NoData;
             }
         }
-        if (ia < myatoms.nr)
+        else
         {
             imm = immStatus::NoData;
         }

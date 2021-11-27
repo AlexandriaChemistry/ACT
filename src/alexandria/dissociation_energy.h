@@ -33,6 +33,9 @@
 #ifndef DISSOCIATION_ENERGY_H
 #define DISSOCIATION_ENERGY_H
 
+#include "mymol.h"
+#include "poldata.h"
+
 /*! \brief Compute the dissociation energies for all the bonds.
  *
  * Given all the bonds and the enthalpies of formation of all
@@ -42,14 +45,20 @@
  * the atoms). This is a crude approximation since all other energy
  * terms in the force field are ignored, however the dissociation
  * energy is the largest contribution to the molecular energy.
- * \param[in]    fplog         File pointer to write to
- * \param[inout] pd            The force field to update
- * \param[in]    molset        The molecules
- * \param[in]    nDissociation The number of dissociation energies to compute
+ * 
+ * As a side effect, the molecular energy will be computed.
+ * \param[in]    fplog   File pointer to write to
+ * \param[inout] pd      The force field to update
+ * \param[inout] molset  The molecules
+ * \param[in]    csvFile Will dump the matrix and right hand side to a csv file
+ * \param[in]    method  QM method
+ * \param[in]    basis   QM basis set
  */
 void getDissociationEnergy(FILE                     *fplog,
                            Poldata                  *pd,
-                           const std::vector<MyMol> &molset,
-                           int                       nDissociation);
+                           std::vector<MyMol>       *molset,
+                           const char               *csvFile,
+                           const std::string        &method,
+                           const std::string        &basis);
 
 #endif
