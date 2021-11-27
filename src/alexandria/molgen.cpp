@@ -726,7 +726,7 @@ size_t MolGen::Read(FILE            *fp,
     {
         nLocal.insert(std::pair<iMolSelect, int>(ims.first, 0));
     }
-
+    iqmType iqm = bQM_ ? iqmType::QM : iqmType::Exp;
     if (MASTER(cr_))
     {
         if (fp)
@@ -796,16 +796,15 @@ size_t MolGen::Read(FILE            *fp,
                     continue;
                 }
                 
-                imm = mymol.getExpProps(bQM_, bZero, bZPE, bDHform,
+                imm = mymol.getExpProps(iqm, bZero, bZPE, bDHform,
                                         method, basis, &pd_);
                 if (immStatus::OK != imm)
                 {
                     if (verbose && fp)
                     {
-                        fprintf(fp, "Tried to extract experimental reference data for %s. Outcome: %s\n",
+                        fprintf(fp, "Warning: Tried to extract experimental reference data for %s. Outcome: %s\n",
                                 mymol.getMolname().c_str(), immsg(imm));
                     }
-                    continue;
                 }
                 
                 mymol.set_datasetType(ims);
@@ -986,7 +985,7 @@ size_t MolGen::Read(FILE            *fp,
             }
             if (immStatus::OK == imm)
             {
-                imm = mymol.getExpProps(bQM_, bZero, bZPE, bDHform,
+                imm = mymol.getExpProps(iqm, bZero, bZPE, bDHform,
                                         method, basis, &pd_);
             }
             mymol.eSupp_ = eSupport::Local;

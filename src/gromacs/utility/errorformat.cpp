@@ -115,8 +115,8 @@ void printFatalErrorMessageLine(FILE *fp, const char *text, int indent)
 void printFatalErrorFooter(FILE *fp)
 {
     std::fprintf(fp, "\n");
-    std::fprintf(fp, "For more information and tips for troubleshooting, please check the GROMACS\n"
-                 "website at http://www.gromacs.org/Documentation/Errors");
+    std::fprintf(fp, "For more information and tips for troubleshooting, please check\n"
+                 "the ACT website at http://github.com/dspoel/ACT/wiki");
     std::fprintf(fp, "\n-------------------------------------------------------\n");
 }
 

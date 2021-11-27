@@ -500,7 +500,7 @@ namespace alexandria
         /*! \brief
          * Collect the experimental properties
          *
-         * \param[in] bQM      Allow QM results
+         * \param[in] iqm      Determine whether to allow exp or QM results or both
          * \param[in] bZero    Allow zero dipoles
          * \param[in] bZPE     Use zero point energies
          * \param[in] bDHform  Whether to use the enthalpy of formation
@@ -508,7 +508,7 @@ namespace alexandria
          * \param[in] basis    Basis set used for QM calculation
          * \param[in] pd       Force field structure
          */
-        immStatus getExpProps(gmx_bool           bQM,
+        immStatus getExpProps(iqmType            iqm,
                               gmx_bool           bZero,
                               gmx_bool           bZPE,
                               gmx_bool           bDHform,

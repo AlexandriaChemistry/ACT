@@ -205,9 +205,13 @@ class ForceConstants
         CommunicationStatus Receive(t_commrec *cr, int src);
 
     private:
+    //! GROMASCS function type
         int                                  ftype_;
+    //! ACT interaction type
         InteractionType                      itype_;
+    //! Whether this parameter is to be optimized (changed)
         bool                                 bOpt_;
+    //! Map from 
         std::map<Identifier, ParameterNames> bn_;
         std::vector<int>                     reverseIndex_;
 };

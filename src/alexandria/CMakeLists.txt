@@ -34,7 +34,7 @@ set(ALEXANDRIA_SOURCES
            categories.cpp
            chargemodel.cpp
            communication.cpp
-           dissociation_energy.h
+           dissociation_energy.cpp
            fill_inputrec.cpp
            forcefieldparameter.cpp
            forcefieldparameterlist.cpp
