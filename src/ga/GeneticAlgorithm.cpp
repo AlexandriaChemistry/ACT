@@ -71,7 +71,7 @@ namespace ga
         std::uniform_real_distribution<double> dis(0.0, 1.0);
 
         // Iteration variables
-        int i, j, k;
+        int i, k;
 
         // Indices for parents
         int parent1;
