@@ -19,7 +19,7 @@ namespace ga
         std::mt19937                        gen;
         std::uniform_int_distribution<int>  dis;
 
-    public:
+    protected:
         /*!
          * Create a new crossover object.
          * @param chromosomeLength  length of the chromosome
@@ -29,6 +29,14 @@ namespace ga
         {
             gen.seed(::time(NULL));
         }
+
+        /*!
+         * Pick a random gene index
+         * @returns     an integer representing an index
+         */
+        int randIndex();
+
+    public:
 
         /*!
          * Perform crossover operation
@@ -43,11 +51,6 @@ namespace ga
                                      vector *child1,
                                      vector *child2,
                                const int     length) {};
-
-        /*!
-         * Return a random gene index
-         */
-        int randIndex();
 
     };
 
