@@ -10,7 +10,7 @@ namespace ga
     {
         for (int i = 0; i < chromosomeLength; i++)
         {
-            if (randNum()) (*individual)[i] *= dis(gen);
+            if (randNum() <= prMut) (*individual)[i] *= dis(gen);
         }
     }
 
@@ -21,7 +21,7 @@ namespace ga
     {
         for (int i = 0; i < chromosomeLength; i++)
         {
-            if (randNum()) (*individual)[i] += dis(gen);
+            if (randNum() <= prMut) (*individual)[i] += dis(gen);
         }
     }
 

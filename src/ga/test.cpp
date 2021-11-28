@@ -58,14 +58,14 @@ int main(int argc, char const *argv[])
     // Without elitism
     ga.setnElites(0);
     for (int i = 0; i < nrep; i++) {
-        const ga_result_t result = ga.evolve(0.35, 0.01, 0);
+        const ga_result_t result = ga.evolve(0.35, 0.01, verbose);
         gensNoElite[i] = result.generations;
     }
 
     // With elitism
     ga.setnElites(nElites);
     for (int i = 0; i < nrep; i++) {
-        const ga_result_t result = ga.evolve(0.35, 0.01, 0);
+        const ga_result_t result = ga.evolve(0.35, 0.01, verbose);
         gensElite[i] = result.generations;
     }
 
