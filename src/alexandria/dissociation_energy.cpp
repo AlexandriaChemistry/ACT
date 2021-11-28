@@ -100,7 +100,7 @@ void getDissociationEnergy(FILE                     *fplog,
                            const std::string        &method,
                            const std::string        &basis)
 {
-    iqmType iqm = iqmType::Both;
+    iqmType iqm = iqmType::Exp;
     std::map<Identifier, int> bondIdToIndex;
     int nColumn = 0;
     int nRow    = 0;

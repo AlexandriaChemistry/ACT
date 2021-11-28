@@ -916,16 +916,17 @@ int alex_bastat(int argc, char *argv[])
         "bastat read a series of molecules and extracts average geometries from",
         "those. First atomtypes are determined and then bond-lengths, bond-angles",
         "and dihedral angles are extracted. The results are stored in a gentop.dat file.[PAR]"
-        "The program can also generate realistic dissociation energies from"
+        "The program can also generate (quite) realistic dissociation energies from"
         "experimental data when the [TT]-dissoc[tt] optionis given." 
     };
 
     t_filenm                         fnm[] = {
-        { efDAT, "-f",   "allmols",    ffRDMULT },
-        { efDAT, "-d",   "gentop",     ffOPTRD },
-        { efDAT, "-o",   "bastat",     ffWRITE },
-        { efDAT, "-sel", "molselect",  ffREAD },
-        { efLOG, "-g",   "bastat",     ffWRITE }
+        { efDAT, "-f",   "allmols",      ffRDMULT },
+        { efDAT, "-d",   "gentop",       ffOPTRD },
+        { efDAT, "-o",   "bastat",       ffWRITE },
+        { efDAT, "-sel", "molselect",    ffREAD },
+        { efLOG, "-g",   "bastat",       ffWRITE },
+        { efCSV, "-de",  "dissociation", ffOPTWR }
     };
 
     const int                        NFILE       = asize(fnm);
@@ -1067,7 +1068,8 @@ int alex_bastat(int argc, char *argv[])
     print_memory_usage(debug);
     if (bDissoc)
     {
-        getDissociationEnergy(fp, &pd, &mymols, "bastat.csv", method, basis);
+        getDissociationEnergy(fp, &pd, &mymols,
+                              opt2fn_null("-de",  NFILE, fnm), method, basis);
     }
     writePoldata(opt2fn("-o", NFILE, fnm), &pd, compress);
     printf("Extracted %zu bondtypes, %zu angletypes, %zu linear-angletypes, %zu dihedraltypes and %zu impropertypes.\n",
