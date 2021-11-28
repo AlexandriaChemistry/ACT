@@ -5,16 +5,24 @@ namespace ga
 {
 
     void PercentMutator::mutate(      vector   *individual,
-                                const int       indGene)
+                                const int       chromosomeLength,
+                                const double    prMut)
     {
-        (*individual)[indGene] *= dis(gen);
+        for (int i = 0; i < chromosomeLength; i++)
+        {
+            if (randNum()) (*individual)[i] *= dis(gen);
+        }
     }
 
 
-    void RangeMutator::mutate(      vector *individual,
-                              const int     indGene)
+    void RangeMutator::mutate(      vector   *individual,
+                              const int       chromosomeLength,
+                              const double    prMut)
     {
-        (*individual)[indGene] += dis(gen);
+        for (int i = 0; i < chromosomeLength; i++)
+        {
+            if (randNum()) (*individual)[i] += dis(gen);
+        }
     }
 
 }

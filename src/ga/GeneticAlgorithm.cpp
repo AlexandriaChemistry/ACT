@@ -173,10 +173,7 @@ namespace ga
                 if (verbose >= 3) printf("Doing mutation...\n");
                 for (k = 0; k < 2; k++)
                 {
-                    for (j = 0; j < chromosomeLength; j++)
-                    {
-                        if (dis(gen) <= prMut) (*mutator).mutate(&(newPop[i + k]), j);
-                    }
+                    (*mutator).mutate(&(newPop[i + k]), chromosomeLength, prMut);
                 }
 
             }
