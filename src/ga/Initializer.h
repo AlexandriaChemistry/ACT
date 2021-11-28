@@ -4,7 +4,7 @@
 #include "aliases.h"
 
 #include <time.h>
-#import <random>
+#include <random>
 
 
 namespace ga
