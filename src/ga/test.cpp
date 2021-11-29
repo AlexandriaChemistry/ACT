@@ -11,9 +11,9 @@ using namespace ga;
 int main(int argc, char const *argv[])
 {
 
-    if (argc != 7)
+    if (argc != 8)
     {
-        printf("\nUsage: \\test <nElites> <popSize> <chromLen> <tolerance> <verbose> <nrep>\n\n");
+        printf("\nUsage: \\test <nElites> <popSize> <chromLen> <tolerance> <verbose> <nrep> <ncrossovers>\n\n");
         return -1;
     }
 
@@ -25,16 +25,18 @@ int main(int argc, char const *argv[])
     const double    tolerance       = atof(argv[4]);
     const int       verbose         = atoi(argv[5]);
     const int       nrep            = atoi(argv[6]);
+    const int       ncrossovers     = atoi(argv[7]);
 
 	SimpleInitializer           init(-10.0, 10.0);
 	SimpleFitnessComputer       fit;
 //    EmptySorter                 sort;
 //    MergeSorter                 sort(popSize, chromLen, false);
-	QuickSorter                 sort(popSize, true);
+	QuickSorter                 sort(popSize, false);
 //    FitnessProbabilityComputer  procomp;
 	RankProbabilityComputer     procomp(popSize);
 	RouletteSelector            select;
-	SinglePointCrossover        singlepoint(chromLen);
+	NPointCrossover             npoint(chromLen, ncrossovers);
+	// SinglePointCrossover        singlepoint(chromLen);
 //  PercentMutator              mutate(mutFrac);
     RangeMutator                mutate(0.5);
     SimpleTerminator            terminate(tolerance);

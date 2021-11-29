@@ -139,11 +139,22 @@ namespace ga
          * @param low       the left-most point of the part of the population vector in this recursion
          * @param high      the right-most point of the part of the population vector in this recursion
          */
-        int partition(      matrix     *pop,
-                            vector     *fitness,
-                      const int         low,
-                      const int         high);
+        int ascendingPartition(      matrix     *pop,
+                                     vector     *fitness,
+                               const int         low,
+                               const int         high);
 
+         /*!
+          * Find the pivot element and sort everything by comparing with it.
+          * @param pop       pointer to the population
+          * @param fitness   pointer to the fitness vector
+          * @param low       the left-most point of the part of the population vector in this recursion
+          * @param high      the right-most point of the part of the population vector in this recursion
+          */
+         int descendingPartition(      matrix     *pop,
+                                       vector     *fitness,
+                                 const int         low,
+                                 const int         high);
     public:
         /*!
          * Create a new QuickSorter
