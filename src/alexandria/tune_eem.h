@@ -50,7 +50,7 @@ private:
     std::string outputFile_;
 
     /*!
-     * \brief Handle bonds (calcDeviation) in MASTER node before calculating the rest of the deviation
+     * \brief Handle out of bounds variables (calcDeviation) in MASTER node before calculating the rest of the deviation
      * @param targets   pointer to a map between the components of chi-squared and the fitting targets
      * @param verbose   whether we are in verbose mode
      */
