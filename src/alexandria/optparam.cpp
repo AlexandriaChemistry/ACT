@@ -66,7 +66,7 @@ void OptParam::add_pargs(std::vector<t_pargs> *pargs)
         { "-temp",    FALSE, etREAL, {&temperature_},
           "'Temperature' for the Monte Carlo simulation" },
         { "-tweight", FALSE, etBOOL, {&tempWeight_},
-          "Weight the temperature in the MC/MC algorithm according to the square root of the number of data points. This is in order to get a lower probability ofaccepting a step in the wrong direction for parameters of which there are few copies." },
+          "Weight the temperature in the MC/MC algorithm according to the square root of the number of data points. This is in order to get a lower probability of accepting a step in the wrong direction for parameters of which there are few copies." },
         { "-anneal", FALSE, etREAL, {&anneal_},
           "Use annealing in Monte Carlo simulation, starting from this fraction of the simulation. Value should be between 0 and 1." },
         { "-seed",   FALSE, etINT,  {&seed_},

@@ -87,21 +87,22 @@ namespace ga {
         quickSort(pop, fitness, low, high);
     }
 
+
     void QuickSorter::quickSort(matrix&       pop,
                                 vector&       fitness,
                                 const int     low,
                                 const int     high) {
         if (low >= 0 && high > 0 && low < high) {
-            const int p = partition(pop, fitness, low, high);
+            const int p = descendingPartition(pop, fitness, low, high);
             quickSort(pop, fitness, low, p - 1);
             quickSort(pop, fitness, p + 1, high);
         }
     }
 
-    int QuickSorter::partition(matrix&       pop,
-                               vector&       fitness,
-                               const int     low,
-                               const int     high) {
+    int QuickSorter::ascendingPartition(      matrix& pop,
+                                              vector& fitness,
+                                        const int     low,
+                                        const int     high) {
         const double pivot = fitness[high];
         int candidate = low - 1;
         double temp;
@@ -119,4 +120,27 @@ namespace ga {
         }
         return candidate;
     }
+
+    int QuickSorter::descendingPartition(     matrix& pop,
+                                              vector& fitness,
+                                        const int     low,
+                                        const int     high) {
+        const double pivot = fitness[high];
+        int candidate = low - 1;
+        double temp;
+
+        for (int check = low; check <= high; check++) {
+            if (fitness[check] >= pivot) {
+                candidate += 1;
+                tmpFitness = pop[candidate];
+                temp = fitness[candidate];
+                pop[candidate] = pop[check];
+                fitness[candidate] = fitness[check];
+                pop[check] = tmpFitness;
+                fitness[check] = temp;
+            }
+        }
+        return candidate;
+    }
+
 }

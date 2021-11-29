@@ -45,7 +45,6 @@ namespace ga {
          * Return random index
          */
         int randIndex();
-
     };
 
 
@@ -103,7 +102,6 @@ namespace ga {
                        const int     length);
 
     };
-
 }
 
 #endif //ACT_CROSSOVER_H

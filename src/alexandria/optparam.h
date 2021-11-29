@@ -140,7 +140,7 @@ class OptParam
         /*! \brief Compute and return the Boltzmann factor
          * it applies periodic annealing
          *
-         * \param[in] maxiter The maximum number of itearion
+         * \param[in] maxiter The maximum number of iteration
          * \param[in] iter    The iteration number
          * \param[in] ncycle  The multiplicity of the cosine function
          * \return The Boltzmann factor
@@ -242,7 +242,7 @@ class Bayes : public OptParam
         Bayes() {}
 
         /*! \brief
-         * Change parameter j based on a random unmber
+         * Change parameter j based on a random number
          * obtained from a uniform distribution.
          */
         void changeParam(size_t j, real rand);
@@ -271,7 +271,7 @@ class Bayes : public OptParam
         /*! \brief
          * Append random parameter within the bounds specified.
          * \param[in] name  String describing the parameter
-         * \param[in] mut     Mutability
+         * \param[in] mut   Mutability
          * \param[in] lower The new lower bound value
          * \param[in] upper The new lower bound value
          * \param[in] ntrain  Number of copies in the training set
