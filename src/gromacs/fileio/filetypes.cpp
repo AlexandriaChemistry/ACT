@@ -126,7 +126,8 @@ static const t_deffile deffile[efNR] =
     { eftXDR, ".mtx", "hessian", "-m", "Hessian matrix"},
     { eftASC, ".cub", "pot",  nullptr, "Gaussian cube file" },
     { eftASC, "", "rundir", nullptr, "Run directory" },
-    { eftASC, ".xml", "data", nullptr, "Generic XML data file" } 
+    { eftASC, ".xml", "data", nullptr, "Generic XML data file" },
+    { eftASC, ".csv", "data", nullptr, "Comma-separated-values file" } 
 };
 
 const char *ftp2ext(int ftp)
