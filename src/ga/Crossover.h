@@ -56,7 +56,7 @@ namespace ga
 
 
     /*!
-     * Class for single-point crossover operation.
+     * Class for the single-point crossover operation.
      */
     class SinglePointCrossover : public Crossover
     {
@@ -78,7 +78,7 @@ namespace ga
 
 
     /*!
-     * Class for double-point crossover operation.
+     * Class for the double-point crossover operation.
      */
     class DoublePointCrossover : public Crossover
     {
@@ -100,7 +100,7 @@ namespace ga
 
 
     /*!
-     * Class for n-point crossover operation.
+     * Class for the n-point crossover operation.
      */
     class NPointCrossover : public Crossover
     {
@@ -110,6 +110,11 @@ namespace ga
         vector crossoverIndices;
 
     public:
+        /*!
+         * Create a new NPointCrossover object
+         * @param chromosomeLength  amount of genes in each individual
+         * @param numberOfCrossovers  the number of places the genes swap
+         */
         NPointCrossover(const int chromosomeLength, const int numberOfCrossovers) : Crossover(chromosomeLength) {
           this->numberOfCrossovers = numberOfCrossovers;
         };

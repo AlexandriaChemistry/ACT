@@ -133,7 +133,7 @@ namespace ga
                        const int        high);
 
         /*!
-         * Find the pivot element and sort everything by comparing with it.
+         * Find the pivot element and sort everything by comparing with it in an ascending order.
          * @param pop       pointer to the population
          * @param fitness   pointer to the fitness vector
          * @param low       the left-most point of the part of the population vector in this recursion
@@ -145,7 +145,7 @@ namespace ga
                                const int         high);
 
          /*!
-          * Find the pivot element and sort everything by comparing with it.
+          * Find the pivot element and sort everything by comparing with it in a descending order.
           * @param pop       pointer to the population
           * @param fitness   pointer to the fitness vector
           * @param low       the left-most point of the part of the population vector in this recursion
