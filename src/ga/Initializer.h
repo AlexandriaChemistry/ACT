@@ -4,29 +4,31 @@
 #include "aliases.h"
 
 #include <time.h>
-#import <random>
+#include <random>
 
 
-namespace ga {
+namespace ga
+{
 
     /*!
      * Abstract class for initializing individuals
      */
-    class Initializer {
+    class Initializer
+    {
 
     public:
         /*!
          * Initialize an individual
-         * @param individual    the individual to initialize
+         * @param individual    pointer to the individual to initialize
          * @param length        length of the chromosome
          */
-        virtual void initialize(      vector&   individual,
+        virtual void initialize(      vector   *individual,
                                 const int       length) {};
     };
 
 
     /*!
-     * Toy initializer. Initializes values randomly in range [min, max]
+     * Toy initializer. Initializes values randomly in range [\p min, \p max]
      */
     class SimpleInitializer : public Initializer {
 
@@ -42,11 +44,12 @@ namespace ga {
          */
         SimpleInitializer(const double min,
                           const double max)
-        : gen(rd()), dis(std::uniform_real_distribution<>(min, max)) {
+        : gen(rd()), dis(std::uniform_real_distribution<>(min, max))
+        {
             gen.seed(::time(NULL));
         }
 
-        void initialize(      vector&   individual,
+        void initialize(      vector   *individual,
                         const int       length);
 
     };

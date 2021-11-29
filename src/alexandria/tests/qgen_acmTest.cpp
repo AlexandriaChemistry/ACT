@@ -36,7 +36,6 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/gmxlib/network.h"
-#include "gromacs/hardware/detecthardware.h"
 #include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/logger.h"
@@ -62,14 +61,15 @@ namespace alexandria
 namespace
 {
 
-enum informat{
-    einfLOG = 0,
-    einfPDB = 1,
-    einfSDF = 2,
-    einfZIP = 3,
-    einfNR
+//! Simple enum to distinguish file formats
+enum class inputFormat {
+    LOG,
+    PDB,
+    SDF,
+    ZIP
 };
 
+//! Class to test the Alexandria Charge Model
 class AcmTest : public gmx::test::CommandLineTestBase
 {
     protected:
@@ -88,7 +88,7 @@ class AcmTest : public gmx::test::CommandLineTestBase
         {
         }
 
-        void testAcm(const std::string &model, informat inputformat, 
+        void testAcm(const std::string &model, inputFormat inputformat, 
                      const std::string &molname, bool qSymm,
                      double qtotal,
                      const std::vector<double> &qcustom)
@@ -102,17 +102,17 @@ class AcmTest : public gmx::test::CommandLineTestBase
             std::string           fileName(molname);
             alexandria::MolProp   molprop;
             
-            if (inputformat == einfLOG)
+            if (inputformat == inputFormat::LOG)
             {
                 fileName.append("-3-oep.log");
                 method.assign("B3LYP");
                 basis.assign("GEN");
             }
-            else if (inputformat == einfPDB)
+            else if (inputformat == inputFormat::PDB)
             {
                 fileName.append(".pdb");
             }
-            else if (inputformat == einfSDF)
+            else if (inputformat == inputFormat::SDF)
             {
                 fileName.append(".sdf");
             }
@@ -159,7 +159,6 @@ class AcmTest : public gmx::test::CommandLineTestBase
             t_commrec     *cr       = init_commrec();
             auto           pnc      = gmx::PhysicalNodeCommunicator(MPI_COMM_WORLD, 0);
             gmx::MDLogger  mdlog {};
-            auto           hwinfo   = gmx_detect_hardware(mdlog, pnc);
             int            qcycle   = 100;
             real           qtol     = 1e-6;
             std::string    lot(method);
@@ -171,7 +170,7 @@ class AcmTest : public gmx::test::CommandLineTestBase
             }
             mp_.symmetrizeCharges(pd, qSymm, nullptr);
             mp_.GenerateCharges(pd, mdlog, cr, nullptr, 
-                                hwinfo, qcycle, qtol, 
+                                qcycle, qtol, 
                                 alg, qcustom, lot);
                                 
             std::vector<double> qtotValues;
@@ -197,164 +196,164 @@ class AcmTest : public gmx::test::CommandLineTestBase
 TEST_F (AcmTest, BultinckLog)
 {
     std::vector<double> qcustom;
-    testAcm("Bultinck", einfLOG, "1-butanol", true, 0, qcustom);
+    testAcm("Bultinck", inputFormat::LOG, "1-butanol", true, 0, qcustom);
 }
 
 TEST_F (AcmTest, BultinckPDB)
 {
     std::vector<double> qcustom;
-    testAcm("Bultinck", einfPDB, "1-butanol", true, 0, qcustom);
+    testAcm("Bultinck", inputFormat::PDB, "1-butanol", true, 0, qcustom);
 }
 
 TEST_F (AcmTest, VerstraelenLog)
 {
     std::vector<double> qcustom;
-    testAcm("Verstraelen", einfLOG, "1-butanol", true, 0, qcustom);
+    testAcm("Verstraelen", inputFormat::LOG, "1-butanol", true, 0, qcustom);
 }
 
 TEST_F (AcmTest, VerstraelenPDB)
 {
     std::vector<double> qcustom;
-    testAcm("Verstraelen", einfPDB, "1-butanol", true, 0, qcustom);
+    testAcm("Verstraelen", inputFormat::PDB, "1-butanol", true, 0, qcustom);
 }
 
 TEST_F (AcmTest, RappeLog)
 {
     std::vector<double> qcustom;
-    testAcm("Rappe", einfLOG, "1-butanol", true, 0, qcustom);
+    testAcm("Rappe", inputFormat::LOG, "1-butanol", true, 0, qcustom);
 }
 
 TEST_F (AcmTest, RappePDB)
 {
     std::vector<double> qcustom;
-    testAcm("Rappe", einfPDB, "1-butanol", true, 0, qcustom);
+    testAcm("Rappe", inputFormat::PDB, "1-butanol", true, 0, qcustom);
 }
 
 TEST_F (AcmTest, YangLog)
 {
     std::vector<double> qcustom;
-    testAcm("Yang", einfLOG, "1-butanol", true, 0, qcustom);
+    testAcm("Yang", inputFormat::LOG, "1-butanol", true, 0, qcustom);
 }
 
 TEST_F (AcmTest, YangPDB)
 {
     std::vector<double> qcustom;
-    testAcm("Yang", einfPDB, "1-butanol", true, 0, qcustom);
+    testAcm("Yang", inputFormat::PDB, "1-butanol", true, 0, qcustom);
 }
 #endif 
 
 TEST_F (AcmTest, AXpgLOG)
 {
     std::vector<double> qcustom;
-    testAcm("ACM-pg", einfLOG, "1-butanol", true, 0, qcustom);
+    testAcm("ACM-pg", inputFormat::LOG, "1-butanol", true, 0, qcustom);
 }
 
 TEST_F (AcmTest, AXpgZIP)
 {
     std::vector<double> qcustom;
-    testAcm("ACM-pg", einfZIP, "trimethylphosphate3-esp.log.gz", true, 0, qcustom);
+    testAcm("ACM-pg", inputFormat::ZIP, "trimethylphosphate3-esp.log.gz", true, 0, qcustom);
 }
 
 TEST_F (AcmTest, AXpgPDB)
 {
     std::vector<double> qcustom;
-    testAcm("ACM-pg", einfPDB, "1-butanol", true, 0, qcustom);
+    testAcm("ACM-pg", inputFormat::PDB, "1-butanol", true, 0, qcustom);
 }
 
 TEST_F (AcmTest, AXpgNoSymmLOG)
 {
     std::vector<double> qcustom;
-    testAcm("ACM-pg", einfLOG, "1-butanol", false, 0, qcustom);
+    testAcm("ACM-pg", inputFormat::LOG, "1-butanol", false, 0, qcustom);
 }
 
 TEST_F (AcmTest, AXpgNoSymmPDB)
 {
     std::vector<double> qcustom;
-    testAcm("ACM-pg", einfPDB, "1-butanol", false, 0, qcustom);
+    testAcm("ACM-pg", inputFormat::PDB, "1-butanol", false, 0, qcustom);
 }
 
 TEST_F (AcmTest, AXgLOG)
 {
     std::vector<double> qcustom;
-    testAcm("ACM-g", einfLOG, "1-butanol", true, 0, qcustom);
+    testAcm("ACM-g", inputFormat::LOG, "1-butanol", true, 0, qcustom);
 }
 
 TEST_F (AcmTest, AXgPDB)
 {
     std::vector<double> qcustom;
-    testAcm("ACM-g", einfPDB, "1-butanol", true, 0, qcustom);
+    testAcm("ACM-g", inputFormat::PDB, "1-butanol", true, 0, qcustom);
 }
 
 TEST_F (AcmTest, AXgNoSymmLOG)
 {
     std::vector<double> qcustom;
-    testAcm("ACM-g", einfLOG, "1-butanol", false, 0, qcustom);
+    testAcm("ACM-g", inputFormat::LOG, "1-butanol", false, 0, qcustom);
 }
 
 TEST_F (AcmTest, AXgNoSymmPDB)
 {
     std::vector<double> qcustom;
-    testAcm("ACM-g", einfPDB, "1-butanol", false, 0, qcustom);
+    testAcm("ACM-g", inputFormat::PDB, "1-butanol", false, 0, qcustom);
 }
 
 TEST_F (AcmTest, AXgNegative)
 {
     std::vector<double> qcustom;
-    testAcm("ACM-g", einfLOG, "acetate", false, -1, qcustom);
+    testAcm("ACM-g", inputFormat::LOG, "acetate", false, -1, qcustom);
 }
 
 TEST_F (AcmTest, AXpgNegative)
 {
     std::vector<double> qcustom;
-    testAcm("ACM-pg", einfLOG, "acetate", true, -1, qcustom);
+    testAcm("ACM-pg", inputFormat::LOG, "acetate", true, -1, qcustom);
 }
 
 TEST_F (AcmTest, AXgPositive)
 {
     std::vector<double> qcustom;
-    testAcm("ACM-g", einfSDF, "guanidinium", false, 1, qcustom);
+    testAcm("ACM-g", inputFormat::SDF, "guanidinium", false, 1, qcustom);
 }
 
 TEST_F (AcmTest, AXpgPositive)
 {
     std::vector<double> qcustom;
-    testAcm("ACM-pg", einfSDF, "guanidinium", true, 1, qcustom);
+    testAcm("ACM-pg", inputFormat::SDF, "guanidinium", true, 1, qcustom);
 }
 
 TEST_F (AcmTest, SQEgNeutral)
 {
     std::vector<double> qcustom;
-    testAcm("ACS-g", einfPDB, "1-butanol", false, 0, qcustom);
+    testAcm("ACS-g", inputFormat::PDB, "1-butanol", false, 0, qcustom);
 }
 
 TEST_F (AcmTest, SQEgNegative)
 {
     std::vector<double> qcustom;
-    testAcm("ACS-g", einfLOG, "acetate", false, -1, qcustom);
+    testAcm("ACS-g", inputFormat::LOG, "acetate", false, -1, qcustom);
 }
 
 TEST_F (AcmTest, SQEgPositive)
 {
     std::vector<double> qcustom;
-    testAcm("ACS-g", einfSDF, "guanidinium", false, 1, qcustom);
+    testAcm("ACS-g", inputFormat::SDF, "guanidinium", false, 1, qcustom);
 }
 #ifdef LATER
 TEST_F (AcmTest, SQEpgNeutral)
 {
     std::vector<double> qcustom;
-    testAcm("ACS-pg", einfPDB, "1-butanol", false, 0, qcustom);
+    testAcm("ACS-pg", inputFormat::PDB, "1-butanol", false, 0, qcustom);
 }
 
 TEST_F (AcmTest, SQEpgNegative)
 {
     std::vector<double> qcustom;
-    testAcm("ACS-pg", einfLOG, "acetate", true, -1, qcustom);
+    testAcm("ACS-pg", inputFormat::LOG, "acetate", true, -1, qcustom);
 }
 
 TEST_F (AcmTest, SQEpgPositive)
 {
     std::vector<double> qcustom;
-    testAcm("ACS-pg", einfSDF, "guanidinium", true, 1, qcustom);
+    testAcm("ACS-pg", inputFormat::SDF, "guanidinium", true, 1, qcustom);
 }
 #endif
 }
@@ -362,19 +361,19 @@ TEST_F (AcmTest, SQEpgPositive)
 TEST_F (AcmTest, CustomButanolPDB)
 {
     std::vector<double> qcustom = { -0.18, 0.06, 0.06, 0.06, -0.12, 0.06, 0.06,  -0.12, 0.06, 0.06, -0.12, 0.06, 0.06, -0.4, 0.4};
-    testAcm("ACM-g", einfPDB, "1-butanol", false, 0, qcustom);
+    testAcm("ACM-g", inputFormat::PDB, "1-butanol", false, 0, qcustom);
 }
 
 TEST_F (AcmTest, CustomAcetatePDB)
 {
     std::vector<double> qcustom = { -0.18, 0.06, 0.06, 0.06, 0.1, -0.55, -0.55 };
-    testAcm("ACM-g", einfLOG, "acetate", false, -1, qcustom);
+    testAcm("ACM-g", inputFormat::LOG, "acetate", false, -1, qcustom);
 }
 
 TEST_F (AcmTest, CustomGuanidiniumSDF)
 {
     std::vector<double> qcustom = { -0.4, -0.4, -0.4, 0.1, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3 };
-    testAcm("ACM-g", einfSDF, "guanidinium", false, 1, qcustom);
+    testAcm("ACM-g", inputFormat::SDF, "guanidinium", false, 1, qcustom);
 }
 
 }

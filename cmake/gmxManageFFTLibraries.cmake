@@ -77,7 +77,7 @@ if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
 
         add_subdirectory(src/external/build-fftw)
         include_directories(BEFORE ${${FFTW}_INCLUDE_DIRS})
-        # libgmxfftw is always built static, so libgromacs does not
+        # libgmxfftw is always built static, so libactgromacs does not
         # have a dependency on anything, so PKG_FFT should be empty
         set(PKG_FFT "")
         set(FFT_STATUS_MESSAGE "Using external FFT library - FFTW3 build managed by GROMACS")

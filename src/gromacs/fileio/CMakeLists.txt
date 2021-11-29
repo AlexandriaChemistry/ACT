@@ -36,24 +36,6 @@ file(GLOB FILEIO_SOURCES *.cpp)
 
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${FILEIO_SOURCES} PARENT_SCOPE)
 
-gmx_install_headers(
-#    confio.h
-#    enxio.h
-#    filetypes.h
-#    gmxfio.h
-#    matio.h
-#    mtxio.h
-#    oenv.h
-#    pdbio.h
-#    rgb.h
-#    tpxio.h
-#    trrio.h
-#    trxio.h
-#    xdr_datatype.h
-#    xtcio.h
-#    xvgr.h
-    )
-
 if (BUILD_TESTING)
 #     add_subdirectory(tests)
 endif()

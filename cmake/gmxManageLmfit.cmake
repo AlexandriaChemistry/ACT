@@ -45,7 +45,7 @@ gmx_option_multichoice(GMX_USE_LMFIT
     INTERNAL EXTERNAL NONE)
 mark_as_advanced(GMX_USE_LMFIT)
 
-# Make a fully functional lmfit library target that libgromacs can
+# Make a fully functional lmfit library target that libactgromacs can
 # depend on regardless of how the user directed lmfit support and/or
 # linking to work.
 function(gmx_manage_lmfit)
@@ -59,17 +59,17 @@ function(gmx_manage_lmfit)
         set_target_properties(lmfit_objlib PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
         # Create an INTERFACE (ie. fake) library for lmfit, that
-        # libgromacs can depend on. The generator expression for the
+        # libactgromacs can depend on. The generator expression for the
         # target_sources expands to nothing when cmake builds the
-        # export for libgromacs, so that it understands that we don't
+        # export for libactgromacs, so that it understands that we don't
         # install anything for this library - using plain source files
         # would not convey the right information.
         add_library(lmfit INTERFACE)
         target_sources(lmfit INTERFACE $<TARGET_OBJECTS:lmfit_objlib>)
         target_include_directories(lmfit INTERFACE $<BUILD_INTERFACE:${BUNDLED_LMFIT_DIR}>)
-        # Add the lmfit interface library to the libgromacs Export name, even though
+        # Add the lmfit interface library to the libactgromacs Export name, even though
         # we will not be installing any content.
-        install(TARGETS lmfit EXPORT libgromacs)
+        install(TARGETS lmfit EXPORT libactgromacs)
 
         set(HAVE_LMFIT_VALUE TRUE)
     elseif(GMX_USE_LMFIT STREQUAL "EXTERNAL")
@@ -84,9 +84,9 @@ function(gmx_manage_lmfit)
         # Create a dummy link target so the calling code doesn't need to know
         # whether lmfit support is being compiled.
         add_library(lmfit INTERFACE)
-        # Add the lmfit interface library to the libgromacs Export name, even though
+        # Add the lmfit interface library to the libactgromacs Export name, even though
         # we will not be installing any content.
-        install(TARGETS lmfit EXPORT libgromacs)
+        install(TARGETS lmfit EXPORT libactgromacs)
 
         set(HAVE_LMFIT_VALUE FALSE)
     endif()

@@ -4,33 +4,38 @@
 #include "aliases.h"
 
 
-namespace ga {
+namespace ga
+{
 
-    SimpleTerminator::SimpleTerminator(const double tolerance) {
+    SimpleTerminator::SimpleTerminator(const double tolerance)
+    {
         this->tolerance = tolerance;
     }
 
 
-    GenerationTerminator::GenerationTerminator(const int maxGenerations) {
+    GenerationTerminator::GenerationTerminator(const int maxGenerations)
+    {
         this->maxGenerations = maxGenerations;
     }
 
 
-    bool SimpleTerminator::terminate(const matrix&  population,
-                                     const vector&  fitness,
+    bool SimpleTerminator::terminate(const matrix  &population,
+                                     const vector  &fitness,
                                      const int      generationNumber,
                                      const int      popSize,
-                                     const int      chromosomeLength) {
+                                     const int      chromosomeLength)
+    {
         double maximumFitness = fitness[findMaximumIndex(fitness, popSize)];
         return maximumFitness >= 1 / (tolerance * chromosomeLength);
     }
 
 
-    bool GenerationTerminator::terminate(const matrix&  population,
-                                         const vector&  fitness,
+    bool GenerationTerminator::terminate(const matrix  &population,
+                                         const vector  &fitness,
                                          const int      generationNumber,
                                          const int      popSize,
-                                         const int      chromosomeLength) {
+                                         const int      chromosomeLength)
+    {
         return generationNumber >= maxGenerations;
     }
 

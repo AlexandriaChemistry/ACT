@@ -7,30 +7,33 @@
 #include <time.h>
 
 
-namespace ga {
+namespace ga
+{
 
     /*!
-     * Abstract class to select an individual from the population
+     * Abstract class to select an individual from the population based on its selection probability
      */
-    class Selector {
+    class Selector
+    {
 
     public:
         /*!
          * Select an individual from the population
-         * @param probability       probability of each individual
+         * @param probability       selection probability of each individual
          * @param popSize           size of the population
          * @return                  the selected individual
          */
-        virtual const int select(const vector&  probability,
-                                 const int      popSize) { return 0; };
+        virtual const int select(const vector  &probability,
+                                 const int      popSize) { return 0; }
 
     };
 
 
 /*!
- * Class for roulette-based selection
+ * Class for roulette-based selection. Uses cumulative probability to perform selection.
  */
-    class RouletteSelector : public Selector {
+    class RouletteSelector : public Selector
+    {
 
         std::random_device                      rd;
         std::mt19937                            gen;
@@ -38,14 +41,15 @@ namespace ga {
 
     public:
         /*!
-         * Create a new instance of RouletteSelector
+         * Create a new instance of RouletteSelector.
          */
         RouletteSelector()
-        : gen(rd()), dis(std::uniform_real_distribution<>(0.0, 1.0)) {
+        : gen(rd()), dis(std::uniform_real_distribution<>(0.0, 1.0))
+        {
             gen.seed(::time(NULL));
         }
 
-        const int select(const vector&  probability,
+        const int select(const vector  &probability,
                          const int      popSize);
     };
 

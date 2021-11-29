@@ -38,7 +38,6 @@
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/gmxlib/nrnb.h"
-#include "gromacs/hardware/detecthardware.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
@@ -208,7 +207,6 @@ void MolGen::optionsFinished()
     mdlog_                      = gmx::MDLogger {};
     gmx_omp_nthreads_init(mdlog_, cr_, 1, 1, 1, 0, false, false);
     auto pnc                    = gmx::PhysicalNodeCommunicator(MPI_COMM_WORLD, 0);
-    hwinfo_                     = gmx_detect_hardware(mdlog_, pnc);
     gmx_omp_nthreads_init(mdlog_, cr_, 1, 1, 1, 0, false, false);
     if (nullptr != fitString_)
     {
@@ -728,7 +726,7 @@ size_t MolGen::Read(FILE            *fp,
     {
         nLocal.insert(std::pair<iMolSelect, int>(ims.first, 0));
     }
-
+    iqmType iqm = bQM_ ? iqmType::QM : iqmType::Exp;
     if (MASTER(cr_))
     {
         if (fp)
@@ -772,7 +770,6 @@ size_t MolGen::Read(FILE            *fp,
                                             mdlog_,
                                             cr_,
                                             tabfn,
-                                            hwinfo_,
                                             qcycle_,
                                             qtol_,
                                             ChargeGenerationAlgorithm::NONE,
@@ -799,16 +796,15 @@ size_t MolGen::Read(FILE            *fp,
                     continue;
                 }
                 
-                imm = mymol.getExpProps(bQM_, bZero, bZPE, bDHform,
+                imm = mymol.getExpProps(iqm, bZero, bZPE, bDHform,
                                         method, basis, &pd_);
                 if (immStatus::OK != imm)
                 {
                     if (verbose && fp)
                     {
-                        fprintf(fp, "Tried to extract experimental reference data for %s. Outcome: %s\n",
+                        fprintf(fp, "Warning: Tried to extract experimental reference data for %s. Outcome: %s\n",
                                 mymol.getMolname().c_str(), immsg(imm));
                     }
-                    continue;
                 }
                 
                 mymol.set_datasetType(ims);
@@ -977,7 +973,6 @@ size_t MolGen::Read(FILE            *fp,
                                             mdlog_,
                                             cr_,
                                             tabfn,
-                                            hwinfo_,
                                             qcycle_,
                                             qtol_,
                                             ChargeGenerationAlgorithm::NONE,
@@ -990,7 +985,7 @@ size_t MolGen::Read(FILE            *fp,
             }
             if (immStatus::OK == imm)
             {
-                imm = mymol.getExpProps(bQM_, bZero, bZPE, bDHform,
+                imm = mymol.getExpProps(iqm, bZero, bZPE, bDHform,
                                         method, basis, &pd_);
             }
             mymol.eSupp_ = eSupport::Local;

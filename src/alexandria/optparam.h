@@ -46,7 +46,6 @@
 #include "gromacs/utility/real.h"
 
 #include "molselect.h"
-#include "tune_eem.h"
 
 namespace alexandria
 {
@@ -62,7 +61,7 @@ enum class CalcDev {
 };
 
 /*! \brief
- * Does Bayesian Monte Carlo (BMC) simulation to find the best paramater set,
+ * Does Bayesian Monte Carlo (BMC) simulation to find the best parameter set,
  * which has the lowest chi-squared.
  *
  * \inpublicapi
@@ -121,6 +120,7 @@ class OptParam
 
         //! Return the class of parameters registered
         const std::vector<std::string> &paramClass() { return paramClass_; }
+
         //! \brief Return Max # iterations
         int maxIter() const { return maxiter_; }
 
@@ -128,7 +128,7 @@ class OptParam
         bool verbose() const { return verbose_; }
 
         //! \brief Return temperature
-        real temperature () const { return temperature_; }
+        real temperature() const { return temperature_; }
 
         /*! \brief Compute and return the Boltzmann factor
          *
@@ -354,10 +354,11 @@ class Bayes : public OptParam
         const param_name_t &getParamNames() const { return paramNames_; };
 
         /*! \brief
-         * Print the paramters to a file
+         * Print the parameters to a file
          * \param[in] fp File pointer to open file
          */
         void printParameters(FILE *fp) const;
+
         /*! \brief
          * Return the vector of number of attempted moves for each parameter
          */
@@ -404,29 +405,29 @@ class Bayes : public OptParam
         * @param paramClassIndex   class (by index) of each parameter in the model
         */
         void stepMCMC(const int                                 paramIndex,
-                            std::mt19937&                       gen,
-                            std::uniform_real_distribution<>&   real_uniform,
-                            std::vector<bool>&                  changed,
-                            double*                             prevEval,
-                            double*                             prevEval_testset,
+                            std::mt19937                       &gen,
+                            std::uniform_real_distribution<>   &real_uniform,
+                            std::vector<bool>                  *changed,
+                            double                             *prevEval,
+                            double                             *prevEval_testset,
                       const bool                                bEvaluate_testset,
                       const int                                 pp,
                       const int                                 iter,
-                            double*                             beta0,
+                            double                             *beta0,
                       const int                                 nParam,
-                            double*                             minEval,
-                            FILE*                               fplog,
-                            std::vector<FILE*>&                 fpc,
-                            FILE*                               fpe,
-                            std::vector<int>&                   paramClassIndex);
+                            double                             *minEval,
+                            FILE                               *fplog,
+                      const std::vector<FILE*>                 &fpc,
+                            FILE                               *fpe,
+                      const std::vector<int>                   &paramClassIndex);
 
         /*!
          * Assign a class (by index) to each parameter
          * @param paramClassIndex   for each parameter, will have index of the class it belongs to
          * @param pClass            class types
          */
-        void assignParamClasses(std::vector<int>&           paramClassIndex,
-                                std::vector<std::string>&   pClass);
+        void assignParamClasses(std::vector<int>           *paramClassIndex,
+                                std::vector<std::string>   *pClass);
 
         /*!
          * Open parameter convergence surveillance files
@@ -434,9 +435,9 @@ class Bayes : public OptParam
          * @param fpc               vector to append pointers to parameter convergence files
          * @param paramClassIndex   for each parameter, to which class (by index) it belongs
          */
-        void openParamSurveillanceFiles(const std::vector<std::string>&  pClass,
-                                              std::vector<FILE*>&        fpc,
-                                              std::vector<int>&          paramClassIndex);
+        void openParamSurveillanceFiles(const std::vector<std::string>  &pClass,
+                                              std::vector<FILE*>        *fpc,
+                                        const std::vector<int>          &paramClassIndex);
 
         /*!
          * Open a chi2 surveillance file
@@ -450,8 +451,8 @@ class Bayes : public OptParam
          * @param fpc   vector of pointers to parameter convergence files
          * @param fpe   pointer to chi2 convergence file
          */
-        void closeConvergenceFiles(std::vector<FILE*>& fpc,
-                                   FILE*               fpe);
+        void closeConvergenceFiles(const std::vector<FILE*> &fpc,
+                                         FILE               *fpe);
 
 
         /*!
@@ -462,7 +463,7 @@ class Bayes : public OptParam
          * @param currEval              current chi2 in training set
          * @param currEval_testset      current chi2 in test set
          */
-        void fprintNewMinimum(      FILE*   fplog,
+        void fprintNewMinimum(      FILE   *fplog,
                               const bool    bEvaluate_testset,
                               const double  xiter,
                               const double  currEval,
@@ -474,8 +475,8 @@ class Bayes : public OptParam
          * @param paramClassIndex       class index of each parameter
          * @param xiter                 fractional iteration (e.g. 3.5, 2.89, ...)
          */
-        void fprintParameterStep(      std::vector<FILE*>&   fpc,
-                                 const std::vector<int>&     paramClassIndex,
+        void fprintParameterStep(const std::vector<FILE*>   &fpc,
+                                 const std::vector<int>     &paramClassIndex,
                                  const double                xiter);
 
         /*!
@@ -487,7 +488,7 @@ class Bayes : public OptParam
          * @param prevEval_testset      chi2 for test set
          */
         void fprintChi2Step(const bool      bEvaluate_testset,
-                                  FILE*     fpe,
+                                  FILE     *fpe,
                             const double    xiter,
                             const double    prevEval,
                             const double    prevEval_testset);
@@ -495,14 +496,14 @@ class Bayes : public OptParam
         /*!
          * Compute mean (pmean_) and standard deviation (psigma_) for each parameter
          * @param nParam        number of parameters in the system
-         * @param sum           over <nsum> iterations, the sum of each parameter
+         * @param sum           over "nsum" iterations, the sum of each parameter
          * @param nsum          number of iterations to compute statistics over
-         * @param sum_of_sq     over <nsum> iterations, the sum of each parameter squared
+         * @param sum_of_sq     over "nsum" iterations, the sum of each parameter squared
          */
         void computeMeanSigma(const int     nParam,
-                              const parm_t& sum,
+                              const parm_t &sum,
                               const int     nsum,
-                                    parm_t& sum_of_sq);
+                                    parm_t *sum_of_sq);
 
         /*! \brief
          * Perform a sensitivity analysis by systematically changing
@@ -517,14 +518,6 @@ class Bayes : public OptParam
          * \param[in] changed List over the parameters that have changed.
          */
         virtual void toPoldata(const std::vector<bool> &changed) = 0;
-
-        /*! \brief
-         * Copy the optimization parameters to the poldata structure
-         * @param param     vector of parameters
-         * @param psigma    standard deviation of each parameter
-         */
-        virtual void toPoldata(const std::vector<double> &param,
-                               const std::vector<double> &psigma);
 
         /*! \brief
          * Compute the chi2 from the target function

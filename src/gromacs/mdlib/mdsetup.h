@@ -47,7 +47,6 @@ struct t_inputrec;
 
 namespace gmx
 {
-class Constraints;
 class MDAtoms;
 }
 
@@ -58,25 +57,21 @@ class MDAtoms;
  * This routine sets the atom data for the (locally available) atoms.
  * This is called at the start of serial runs and during domain decomposition.
  *
- * \param[in]     cr         Communication record
  * \param[in]     ir         Input parameter record
  * \param[in]     top_global The global topology
  * \param[in,out] top        The local topology
  * \param[in,out] fr         The force calculation parameter/data record
  * \param[out]    graph      The molecular graph, can be NULL
  * \param[out]    mdAtoms    The MD atom data
- * \param[in,out] constr     The constraints handler, can be NULL
  * \param[in,out] vsite      The virtual site data, can be NULL
  * \param[in,out] shellfc    The shell/flexible-constraint data, can be NULL
  */
-void mdAlgorithmsSetupAtomData(const t_commrec   *cr,
-                               const t_inputrec  *ir,
+void mdAlgorithmsSetupAtomData(const t_inputrec  *ir,
                                const gmx_mtop_t  *top_global,
                                gmx_localtop_t    *top,
                                t_forcerec        *fr,
                                t_graph          **graph,
                                gmx::MDAtoms      *mdAtoms,
-                               gmx::Constraints  *constr,
                                gmx_vsite_t       *vsite,
                                gmx_shellfc_t     *shellfc);
 

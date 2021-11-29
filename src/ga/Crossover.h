@@ -6,26 +6,37 @@
 
 #include "aliases.h"
 
-namespace ga {
+namespace ga
+{
 
     /*!
      * Abstract class to perform crossover
      */
-    class Crossover {
+    class Crossover
+    {
 
         std::random_device                  rd;
         std::mt19937                        gen;
         std::uniform_int_distribution<int>  dis;
 
-    public:
+    protected:
         /*!
          * Create a new crossover object.
          * @param chromosomeLength  length of the chromosome
          */
         Crossover(const int chromosomeLength)
-        : gen(rd()), dis(std::uniform_int_distribution<>(1, chromosomeLength - 1)) {
+        : gen(rd()), dis(std::uniform_int_distribution<>(1, chromosomeLength - 1))
+        {
             gen.seed(::time(NULL));
         }
+
+        /*!
+         * Pick a random gene index
+         * @returns     an integer representing an index
+         */
+        int randIndex();
+
+    public:
 
         /*!
          * Perform crossover operation
@@ -37,29 +48,30 @@ namespace ga {
          */
         virtual void offspring(const vector &parent1,
                                const vector &parent2,
-                                     vector &child1,
-                                     vector &child2,
+                                     vector *child1,
+                                     vector *child2,
                                const int     length) {};
 
-        /*!
-         * Return random index
-         */
-        int randIndex();
     };
 
 
     /*!
      * Class for single-point crossover operation.
      */
-    class SinglePointCrossover : public Crossover {
+    class SinglePointCrossover : public Crossover
+    {
 
     public:
+        /*!
+         * Create a new SinglePointCrossover object
+         * @param chromosomeLength  amount of genes in each individual
+         */
         SinglePointCrossover(const int chromosomeLength) : Crossover(chromosomeLength) {}
 
         void offspring(const vector &parent1,
                        const vector &parent2,
-                             vector &child1,
-                             vector &child2,
+                             vector *child1,
+                             vector *child2,
                        const int     length);
 
     };
@@ -68,15 +80,20 @@ namespace ga {
     /*!
      * Class for double-point crossover operation.
      */
-    class DoublePointCrossover : public Crossover {
+    class DoublePointCrossover : public Crossover
+    {
 
     public:
+        /*!
+         * Create a new DoublePointCrossover object
+         * @param chromosomeLength  amount of genes in each individual
+         */
         DoublePointCrossover(const int chromosomeLength) : Crossover(chromosomeLength) {};
 
         void offspring(const vector &parent1,
                        const vector &parent2,
-                             vector &child1,
-                             vector &child2,
+                             vector *child1,
+                             vector *child2,
                        const int     length);
 
     };
@@ -85,7 +102,9 @@ namespace ga {
     /*!
      * Class for n-point crossover operation.
      */
-    class NPointCrossover : public Crossover {
+    class NPointCrossover : public Crossover
+    {
+
     private:
         int numberOfCrossovers;
         vector crossoverIndices;
@@ -97,8 +116,8 @@ namespace ga {
 
         void offspring(const vector &parent1,
                        const vector &parent2,
-                             vector &child1,
-                             vector &child2,
+                             vector *child1,
+                             vector *child2,
                        const int     length);
 
     };

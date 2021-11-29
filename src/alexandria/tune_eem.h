@@ -1,5 +1,5 @@
-#ifndef ACT_TUNE_EEM_H
-#define ACT_TUNE_EEM_H
+#ifndef ALEXANDRIA_TUNE_EEM_H
+#define ALEXANDRIA_TUNE_EEM_H
 
 #include <cstdio>
 
@@ -16,7 +16,9 @@
 #include "molgen.h"
 #include "optparam.h"
 
-namespace alexandria {
+
+namespace alexandria
+{
 
 /*! \brief Wrapper for closing a file
  * Will print a warning if something is wrong when closing.
@@ -46,6 +48,60 @@ private:
     gmx::unique_cptr<FILE, my_fclose> fplog_ = nullptr;
     //! File name for the output force field file
     std::string outputFile_;
+
+    /*!
+     * \brief Handle bonds (calcDeviation) in MASTER node before calculating the rest of the deviation
+     * @param targets   pointer to a map between the components of chi-squared and the fitting targets
+     * @param verbose   whether we are in verbose mode
+     */
+    void handleBoundsCD(      std::map<eRMS, FittingTarget>    *targets,
+                        const double                            verbose);
+
+    /*!
+     * \brief Handle (CM5) charge (calcDeviation)
+     * @param targets   pointer to a map between the components of chi-squared and the fitting targets
+     * @param mymol     the molecule
+     */
+    void handleChargeCM5CD(std::map<eRMS, FittingTarget> *targets,
+                           MyMol                          mymol);
+
+    /*!
+     * \brief Handle electrostatic potential (calcDeviation)
+     * @param targets   pointer to a map between the components of chi-squared and the fitting targets
+     * @param mymol     the molecule
+     */
+    void handleEspCD(std::map<eRMS, FittingTarget>   *targets,
+                     MyMol                            mymol);
+
+    /*!
+     * \brief Handle molecular dipole (calcDeviation)
+     * @param targets   pointer to a map between the components of chi-squared and the fitting targets
+     * @param mymol     the molecule
+     * @param qelec     pointer to Elec properties
+     * @param qcalc     pointer to calc properties
+     */
+    void handleMuCD(std::map<eRMS, FittingTarget>  *targets,
+                    MyMol                           mymol,
+                    QtypeProps                     *qelec,
+                    QtypeProps                     *qcalc);
+
+    /*!
+     * \brief Handle molecular quadrupole (calcDeviation)
+     * @param targets pointer to a map between the components of chi-squared and the fitting targets
+     * @param qelec     pointer to Elec properties
+     * @param qcalc     pointer to calc properties
+     */
+    void handleQuadCD(std::map<eRMS, FittingTarget>    *targets,
+                      QtypeProps                       *qelec,
+                      QtypeProps                       *qcalc);
+
+    /*!
+     * \brief Handle polarizability component (calcDeviation)
+     * @param targets   pointer to a map between the components of chi-squared and the fitting targets
+     * @param mymol     the molecule
+     */
+    void handlePolarCD(std::map<eRMS, FittingTarget>   *targets,
+                       MyMol                            mymol);
 
 public:
     //! Constructor
@@ -101,14 +157,6 @@ public:
     virtual void toPoldata(const std::vector<bool> &changed);
 
     /*! \brief
-     * Copy the optimization parameters to the poldata structure
-     * @param param     vector of parameters
-     * @param psigma    standard deviation of each parameter
-     */
-    virtual void toPoldata(const std::vector<double> &param,
-                           const std::vector<double> &psigma);
-
-    /*! \brief
      * Computes deviation from target
      * \param[in] verbose Whether or not to print a lot
      * \param[in] calcDev The type of calculation to do
@@ -159,4 +207,4 @@ public:
 }
 
 
-#endif //ACT_TUNE_EEM_H
+#endif //ALEXANDRIA_TUNE_EEM_H

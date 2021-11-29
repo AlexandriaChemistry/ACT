@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020
+ * Copyright (C) 2014-2021
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -38,7 +38,6 @@
 
 #include <map>
 
-#include "gromacs/coulombintegrals/coulombintegrals.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/math/vec.h"
@@ -51,6 +50,7 @@
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/textreader.h"
 
+#include "coulombintegrals/coulombintegrals.h"
 #include "poldata.h"
 #include "regression.h"
 #include "units.h"

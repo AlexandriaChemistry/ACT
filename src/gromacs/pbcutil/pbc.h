@@ -44,8 +44,6 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-struct gmx_domdec_t;
-
 enum {
     epbcXYZ, epbcNONE, epbcXY, epbcSCREW, epbcNR
 };

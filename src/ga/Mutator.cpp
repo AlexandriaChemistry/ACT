@@ -1,17 +1,28 @@
 #include "Mutator.h"
 
 
-namespace ga {
+namespace ga
+{
 
-    void PercentMutator::mutate(      vector&   individual,
-                                const int       indGene) {
-        individual[indGene] *= dis(gen);
+    void PercentMutator::mutate(      vector   *individual,
+                                const int       chromosomeLength,
+                                const double    prMut)
+    {
+        for (int i = 0; i < chromosomeLength; i++)
+        {
+            if (randNum() <= prMut) (*individual)[i] *= dis(gen);
+        }
     }
 
 
-    void RangeMutator::mutate(      vector& individual,
-                              const int     indGene) {
-        individual[indGene] += dis(gen);
+    void RangeMutator::mutate(      vector   *individual,
+                              const int       chromosomeLength,
+                              const double    prMut)
+    {
+        for (int i = 0; i < chromosomeLength; i++)
+        {
+            if (randNum() <= prMut) (*individual)[i] += dis(gen);
+        }
     }
 
 }

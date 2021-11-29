@@ -37,8 +37,6 @@
 #include "mdoutf.h"
 
 #include "gromacs/commandline/filenm.h"
-#include "gromacs/domdec/collect.h"
-#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/trrio.h"
 #include "gromacs/fileio/xvgr.h"
@@ -138,11 +136,6 @@ gmx_mdoutf_t init_mdoutf(int nfile, const t_filenm fnm[],
                 of->natoms_x_compressed++;
             }
         }
-
-        if (ir->nstfout && DOMAINDECOMP(cr))
-        {
-            snew(of->f_global, top_global->natoms);
-        }
     }
 
     return of;
@@ -163,27 +156,6 @@ void mdoutf_write_to_trajectory_files(const t_commrec *cr,
 {
     rvec *f_global;
 
-    if (DOMAINDECOMP(cr))
-    {
-        {
-            if (mdof_flags & (MDOF_X | MDOF_X_COMPRESSED))
-            {
-                gmx::ArrayRef<gmx::RVec> globalXRef = MASTER(cr) ? makeArrayRef(state_global->x) : gmx::EmptyArrayRef();
-                dd_collect_vec(cr->dd, state_local, makeArrayRef(state_local->x), globalXRef);
-            }
-            if (mdof_flags & MDOF_V)
-            {
-                gmx::ArrayRef<gmx::RVec> globalVRef = MASTER(cr) ? makeArrayRef(state_global->v) : gmx::EmptyArrayRef();
-                dd_collect_vec(cr->dd, state_local, makeArrayRef(state_local->v), globalVRef);
-            }
-        }
-        f_global = of->f_global;
-        if (mdof_flags & MDOF_F)
-        {
-            dd_collect_vec(cr->dd, state_local, f_local, gmx::arrayRefFromArray(reinterpret_cast<gmx::RVec *>(f_global), f_local.size()));
-        }
-    }
-    else
     {
         /* We have the whole state locally: copy the local state pointer */
         state_global = state_local;

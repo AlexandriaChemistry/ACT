@@ -34,7 +34,7 @@
  */
 /*! internal \file
  * \brief
- * Prerequisite header file for \Act build.
+ * Prerequisite header file for ACT build.
  *
  * This header should be included as the first header in all source files, but
  * not in header files.  It is intended to contain definitions that must appear
@@ -85,9 +85,4 @@
 #define __STDC_LIMIT_MACROS
 #define __STDC_FORMAT_MACROS
 
-#if GMX_FAHCORE
-#define FULLINDIRECT 1
-#define USE_FAH_XDR  1
-#include "swindirect.h"
-#endif
 //! \endcond

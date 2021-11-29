@@ -47,9 +47,7 @@
 #include "thread_mpi/threads.h"
 
 #include "gromacs/gmxlib/nrnb.h"
-#include "gromacs/gmxlib/nonbonded/nb_free_energy.h"
 #include "gromacs/gmxlib/nonbonded/nb_generic.h"
-#include "gromacs/gmxlib/nonbonded/nb_generic_cg.h"
 #include "gromacs/gmxlib/nonbonded/nb_kernel.h"
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/math/utilities.h"
@@ -69,87 +67,16 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-/* Different default (c) and SIMD instructions interaction-specific kernels */
-#if !GMX_CLANG_ANALYZER
-#include "gromacs/gmxlib/nonbonded/nb_kernel_c/nb_kernel_c.h"
-#endif
-
-#if GMX_SIMD_X86_SSE2 && !GMX_DOUBLE
-#    include "gromacs/gmxlib/nonbonded/nb_kernel_sse2_single/nb_kernel_sse2_single.h"
-#endif
-#if GMX_SIMD_X86_SSE4_1 && !GMX_DOUBLE
-#    include "gromacs/gmxlib/nonbonded/nb_kernel_sse4_1_single/nb_kernel_sse4_1_single.h"
-#endif
-#if GMX_SIMD_X86_AVX_128_FMA && !GMX_DOUBLE
-#    include "gromacs/gmxlib/nonbonded/nb_kernel_avx_128_fma_single/nb_kernel_avx_128_fma_single.h"
-#endif
-#if (GMX_SIMD_X86_AVX_256 || GMX_SIMD_X86_AVX2_256) && !GMX_DOUBLE
-#    include "gromacs/gmxlib/nonbonded/nb_kernel_avx_256_single/nb_kernel_avx_256_single.h"
-#endif
-#if GMX_SIMD_X86_SSE2 && GMX_DOUBLE
-#    include "gromacs/gmxlib/nonbonded/nb_kernel_sse2_double/nb_kernel_sse2_double.h"
-#endif
-#if GMX_SIMD_X86_SSE4_1 && GMX_DOUBLE
-#    include "gromacs/gmxlib/nonbonded/nb_kernel_sse4_1_double/nb_kernel_sse4_1_double.h"
-#endif
-#if GMX_SIMD_X86_AVX_128_FMA && GMX_DOUBLE
-#    include "gromacs/gmxlib/nonbonded/nb_kernel_avx_128_fma_double/nb_kernel_avx_128_fma_double.h"
-#endif
-#if (GMX_SIMD_X86_AVX_256 || GMX_SIMD_X86_AVX2_256) && GMX_DOUBLE
-#    include "gromacs/gmxlib/nonbonded/nb_kernel_avx_256_double/nb_kernel_avx_256_double.h"
-#endif
-
-//static tMPI_Thread_mutex_t nonbonded_setup_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
 static gmx_bool            nonbonded_setup_done  = FALSE;
 
-
 void
-gmx_nonbonded_setup(t_forcerec *   fr,
-                    gmx_bool       bGenericKernelOnly)
+gmx_nonbonded_setup(gmx_unused t_forcerec *   fr,
+                    gmx_unused gmx_bool       bGenericKernelOnly)
 {
     //    tMPI_Thread_mutex_lock(&nonbonded_setup_mutex);
     /* Here we are guaranteed only one thread made it. */
     if (!nonbonded_setup_done)
     {
-        if (!bGenericKernelOnly)
-        {
-            /* Add the generic kernels to the structure stored statically in nb_kernel.c */
-#if !GMX_CLANG_ANALYZER
-            nb_kernel_list_add_kernels(kernellist_c, kernellist_c_size);
-#endif
-
-            if (!(fr != nullptr && !fr->use_simd_kernels))
-            {
-                /* Add interaction-specific kernels for different architectures */
-                /* Single precision */
-#if GMX_SIMD_X86_SSE2 && !GMX_DOUBLE
-                nb_kernel_list_add_kernels(kernellist_sse2_single, kernellist_sse2_single_size);
-#endif
-#if GMX_SIMD_X86_SSE4_1 && !GMX_DOUBLE
-                nb_kernel_list_add_kernels(kernellist_sse4_1_single, kernellist_sse4_1_single_size);
-#endif
-#if GMX_SIMD_X86_AVX_128_FMA && !GMX_DOUBLE
-                nb_kernel_list_add_kernels(kernellist_avx_128_fma_single, kernellist_avx_128_fma_single_size);
-#endif
-#if (GMX_SIMD_X86_AVX_256 || GMX_SIMD_X86_AVX2_256) && !GMX_DOUBLE
-                nb_kernel_list_add_kernels(kernellist_avx_256_single, kernellist_avx_256_single_size);
-#endif
-                /* Double precision */
-#if GMX_SIMD_X86_SSE2 && GMX_DOUBLE
-                nb_kernel_list_add_kernels(kernellist_sse2_double, kernellist_sse2_double_size);
-#endif
-#if GMX_SIMD_X86_SSE4_1 && GMX_DOUBLE
-                nb_kernel_list_add_kernels(kernellist_sse4_1_double, kernellist_sse4_1_double_size);
-#endif
-#if GMX_SIMD_X86_AVX_128_FMA && GMX_DOUBLE
-                nb_kernel_list_add_kernels(kernellist_avx_128_fma_double, kernellist_avx_128_fma_double_size);
-#endif
-#if (GMX_SIMD_X86_AVX_256 || GMX_SIMD_X86_AVX2_256) && GMX_DOUBLE
-                nb_kernel_list_add_kernels(kernellist_avx_256_double, kernellist_avx_256_double_size);
-#endif
-                ; /* empty statement to avoid a completely empty block */
-            }
-        }
         /* Create a hash for faster lookups */
         nb_kernel_list_hash_init();
 
@@ -177,38 +104,6 @@ gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl, gmx_bool bElecAndVdwS
     }
     arch_and_padding[] =
     {
-        /* Single precision */
-#if (GMX_SIMD_X86_AVX_256 || GMX_SIMD_X86_AVX2_256) && !GMX_DOUBLE
-        { "avx_256_single", 8 },
-#endif
-#if GMX_SIMD_X86_AVX_128_FMA && !GMX_DOUBLE
-        { "avx_128_fma_single", 4 },
-#endif
-#if GMX_SIMD_X86_SSE4_1 && !GMX_DOUBLE
-        { "sse4_1_single", 4 },
-#endif
-#if GMX_SIMD_X86_SSE2 && !GMX_DOUBLE
-        { "sse2_single", 4 },
-#endif
-        /* Double precision */
-#if (GMX_SIMD_X86_AVX_256 || GMX_SIMD_X86_AVX2_256) && GMX_DOUBLE
-        { "avx_256_double", 4 },
-#endif
-#if GMX_SIMD_X86_AVX_128_FMA && GMX_DOUBLE
-        /* Sic. Double precision 2-way SIMD does not require neighbor list padding,
-         * since the kernels execute a loop unrolled a factor 2, followed by
-         * a possible single odd-element epilogue.
-         */
-        { "avx_128_fma_double", 1 },
-#endif
-#if GMX_SIMD_X86_SSE2 && GMX_DOUBLE
-        /* No padding - see comment above */
-        { "sse2_double", 1 },
-#endif
-#if GMX_SIMD_X86_SSE4_1 && GMX_DOUBLE
-        /* No padding - see comment above */
-        { "sse4_1_double", 1 },
-#endif
         { "c", 1 },
     };
     int              narch = asize(arch_and_padding);
@@ -235,76 +130,61 @@ gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl, gmx_bool bElecAndVdwS
     vdw_mod  = eintmod_names[nl->ivdwmod];
     geom     = gmx_nblist_geometry_names[nl->igeometry];
 
-    if (nl->type == GMX_NBLIST_INTERACTION_FREE_ENERGY)
+    /* Try to find a specific kernel first */
+    
+    for (i = 0; i < narch && nl->kernelptr_vf == nullptr; i++)
     {
-        nl->kernelptr_vf       = reinterpret_cast<void *>(gmx_nb_free_energy_kernel);
-        nl->kernelptr_f        = reinterpret_cast<void *>(gmx_nb_free_energy_kernel);
-        nl->simd_padding_width = 1;
+        nl->kernelptr_vf       = reinterpret_cast<void *>(nb_kernel_list_findkernel(log, arch_and_padding[i].arch, elec, elec_mod, vdw, vdw_mod, geom, other, "PotentialAndForce"));
+        nl->simd_padding_width = arch_and_padding[i].simd_padding_width;
     }
-    else if (!gmx_strcasecmp_min(geom, "CG-CG"))
+    for (i = 0; i < narch && nl->kernelptr_f == nullptr; i++)
     {
-        nl->kernelptr_vf       = reinterpret_cast<void *>(gmx_nb_generic_cg_kernel);
-        nl->kernelptr_f        = reinterpret_cast<void *>(gmx_nb_generic_cg_kernel);
-        nl->simd_padding_width = 1;
-    }
-    else
-    {
-        /* Try to find a specific kernel first */
-
-        for (i = 0; i < narch && nl->kernelptr_vf == nullptr; i++)
+        nl->kernelptr_f        = reinterpret_cast<void *>(nb_kernel_list_findkernel(log, arch_and_padding[i].arch, elec, elec_mod, vdw, vdw_mod, geom, other, "Force"));
+        nl->simd_padding_width = arch_and_padding[i].simd_padding_width;
+        
+        /* If there is not force-only optimized kernel, is there a potential & force one? */
+        if (nl->kernelptr_f == nullptr)
         {
-            nl->kernelptr_vf       = reinterpret_cast<void *>(nb_kernel_list_findkernel(log, arch_and_padding[i].arch, elec, elec_mod, vdw, vdw_mod, geom, other, "PotentialAndForce"));
+            nl->kernelptr_f        = reinterpret_cast<void *>(nb_kernel_list_findkernel(nullptr, arch_and_padding[i].arch, elec, elec_mod, vdw, vdw_mod, geom, other, "PotentialAndForce"));
             nl->simd_padding_width = arch_and_padding[i].simd_padding_width;
         }
-        for (i = 0; i < narch && nl->kernelptr_f == nullptr; i++)
+    }
+    
+    /* For now, the accelerated kernels cannot handle the combination of switch functions for both
+     * electrostatics and VdW that use different switch radius or switch cutoff distances
+     * (both of them enter in the switch function calculation). This would require
+     * us to evaluate two completely separate switch functions for every interaction.
+     * Instead, we disable such kernels by setting the pointer to NULL.
+     * This will cause the generic kernel (which can handle it) to be called instead.
+     *
+     * Note that we typically already enable tabulated coulomb interactions for this case,
+     * so this is mostly a safe-guard to make sure we call the generic kernel if the
+     * tables are disabled.
+     */
+    if ((nl->ielec != GMX_NBKERNEL_ELEC_NONE) && (nl->ielecmod == eintmodPOTSWITCH) &&
+        (nl->ivdw  != GMX_NBKERNEL_VDW_NONE)  && (nl->ivdwmod  == eintmodPOTSWITCH) &&
+        bElecAndVdwSwitchDiffers)
+    {
+        nl->kernelptr_vf = nullptr;
+        nl->kernelptr_f  = nullptr;
+    }
+    
+    /* Give up, pick a generic one instead.
+     * We only do this for particle-particle kernels; by leaving the water-optimized kernel
+     * pointers to NULL, the water optimization will automatically be disabled for this interaction.
+     */
+    if (nl->kernelptr_vf == nullptr && !gmx_strcasecmp_min(geom, "Particle-Particle"))
+    {
+        nl->kernelptr_vf       = reinterpret_cast<void *>(gmx_nb_generic_kernel);
+        nl->kernelptr_f        = reinterpret_cast<void *>(gmx_nb_generic_kernel);
+        nl->simd_padding_width = 1;
+        if (debug)
         {
-            nl->kernelptr_f        = reinterpret_cast<void *>(nb_kernel_list_findkernel(log, arch_and_padding[i].arch, elec, elec_mod, vdw, vdw_mod, geom, other, "Force"));
-            nl->simd_padding_width = arch_and_padding[i].simd_padding_width;
-
-            /* If there is not force-only optimized kernel, is there a potential & force one? */
-            if (nl->kernelptr_f == nullptr)
-            {
-                nl->kernelptr_f        = reinterpret_cast<void *>(nb_kernel_list_findkernel(nullptr, arch_and_padding[i].arch, elec, elec_mod, vdw, vdw_mod, geom, other, "PotentialAndForce"));
-                nl->simd_padding_width = arch_and_padding[i].simd_padding_width;
-            }
-        }
-
-        /* For now, the accelerated kernels cannot handle the combination of switch functions for both
-         * electrostatics and VdW that use different switch radius or switch cutoff distances
-         * (both of them enter in the switch function calculation). This would require
-         * us to evaluate two completely separate switch functions for every interaction.
-         * Instead, we disable such kernels by setting the pointer to NULL.
-         * This will cause the generic kernel (which can handle it) to be called instead.
-         *
-         * Note that we typically already enable tabulated coulomb interactions for this case,
-         * so this is mostly a safe-guard to make sure we call the generic kernel if the
-         * tables are disabled.
-         */
-        if ((nl->ielec != GMX_NBKERNEL_ELEC_NONE) && (nl->ielecmod == eintmodPOTSWITCH) &&
-            (nl->ivdw  != GMX_NBKERNEL_VDW_NONE)  && (nl->ivdwmod  == eintmodPOTSWITCH) &&
-            bElecAndVdwSwitchDiffers)
-        {
-            nl->kernelptr_vf = nullptr;
-            nl->kernelptr_f  = nullptr;
-        }
-
-        /* Give up, pick a generic one instead.
-         * We only do this for particle-particle kernels; by leaving the water-optimized kernel
-         * pointers to NULL, the water optimization will automatically be disabled for this interaction.
-         */
-        if (nl->kernelptr_vf == nullptr && !gmx_strcasecmp_min(geom, "Particle-Particle"))
-        {
-            nl->kernelptr_vf       = reinterpret_cast<void *>(gmx_nb_generic_kernel);
-            nl->kernelptr_f        = reinterpret_cast<void *>(gmx_nb_generic_kernel);
-            nl->simd_padding_width = 1;
-            if (debug)
-            {
-                fprintf(debug,
-                        "WARNING - Slow generic NB kernel used for neighborlist with\n"
-                        "    Elec: '%s', Modifier: '%s'\n"
-                        "    Vdw:  '%s', Modifier: '%s'\n",
-                        elec, elec_mod, vdw, vdw_mod);
-            }
+            fprintf(debug,
+                    "WARNING - Slow generic NB kernel used for neighborlist with\n"
+                    "    Elec: '%s', Modifier: '%s'\n"
+                    "    Vdw:  '%s', Modifier: '%s'\n",
+                    elec, elec_mod, vdw, vdw_mod);
         }
     }
 }

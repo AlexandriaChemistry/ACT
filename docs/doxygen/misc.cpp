@@ -27,15 +27,6 @@ library.
 Modules with generic utility functions.
 */
 
-/*!
-\defgroup group_analysismodules Analysis Modules
-\brief
-Modules used in analysis tools.
-
-A separate page describes the responsibilities of these modules:
-\ref page_analysisframework
-*/
-
 /*! \libinternal
 \defgroup group_mdrun Modules for simulation functionality
 \brief

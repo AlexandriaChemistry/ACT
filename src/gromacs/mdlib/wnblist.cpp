@@ -42,8 +42,6 @@
 
 #include <algorithm>
 
-#include "gromacs/domdec/domdec.h"
-#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/mdlib/ns.h"
@@ -55,11 +53,9 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
-static void write_nblist(FILE *out, gmx_domdec_t *dd, t_nblist *nblist, int nDNL)
+static void write_nblist(FILE *out, t_nblist *nblist, int nDNL)
 {
-    int                 i, nii, ii, j, zi, zj0, zj1, aj, zj, nj;
-    int                 ca1[DD_MAXZONE], np[DD_MAXZONE];
-    gmx_domdec_zones_t *dd_zones;
+    int i, nii, ii, j,  nj;
 
     if (nblist->nri > 0)
     {
@@ -69,45 +65,6 @@ static void write_nblist(FILE *out, gmx_domdec_t *dd, t_nblist *nblist, int nDNL
                 gmx_nblist_interaction_names[nblist->type],
                 gmx_nblist_geometry_names[nblist->igeometry]);
         fprintf(out, "nri: %d  npair: %d\n", nblist->nri, nblist->nrj);
-        if (dd)
-        {
-            dd_zones = domdec_zones(dd);
-
-            for (zi = 0; zi < dd_zones->n; zi++)
-            {
-                ca1[zi] = dd->atomGrouping().block(dd_zones->cg_range[zi + 1]).begin();
-            }
-            i = 0;
-            for (zi = 0; zi < dd_zones->nizone && zi < dd_zones->n; zi++)
-            {
-                zj0 = dd_zones->izone[zi].j0;
-                zj1 = dd_zones->izone[zi].j1;
-                for (zj = zj0; zj < zj1; zj++)
-                {
-                    np[zj] = 0;
-                }
-                while (i < nblist->nri && nblist->iinr[i] < ca1[zi])
-                {
-                    for (j = nblist->jindex[i]; (j < nblist->jindex[i+1]); j++)
-                    {
-                        aj = nblist->jjnr[j];
-                        zj = zj0;
-                        while (aj >= ca1[zj])
-                        {
-                            zj++;
-                        }
-                        np[zj]++;
-                    }
-                    i++;
-                }
-                fprintf(out, "DD zone %d:", zi);
-                for (zj = zj0; zj < zj1; zj++)
-                {
-                    fprintf(out, " %d %d", zj, np[zj]);
-                }
-                fprintf(out, "\n");
-            }
-        }
         if (nDNL >= 2)
         {
             for (i = 0; i < nblist->nri; i++)
@@ -119,15 +76,15 @@ static void write_nblist(FILE *out, gmx_domdec_t *dd, t_nblist *nblist, int nDNL
                 }
                 nj = nblist->jindex[i+1] - nblist->jindex[i];
                 fprintf(out, "i: %d shift: %d gid: %d nj: %d\n",
-                        ddglatnr(dd, nblist->iinr[i]),
+                        nblist->iinr[i],
                         nblist->shift[i], nblist->gid[i], nj);
                 for (ii = 0; ii < nii; ii++)
                 {
                     for (j = nblist->jindex[i]; (j < nblist->jindex[i+1]); j++)
                     {
                         fprintf(out, "  i: %5d  j: %5d\n",
-                                ddglatnr(dd, nblist->iinr[i]+ii),
-                                ddglatnr(dd, nblist->jjnr[j]));
+                                nblist->iinr[i]+ii,
+                                nblist->jjnr[j]);
                     }
                 }
             }
@@ -138,7 +95,7 @@ static void write_nblist(FILE *out, gmx_domdec_t *dd, t_nblist *nblist, int nDNL
 
 
 
-void dump_nblist(FILE *out, const t_commrec *cr, t_forcerec *fr, int nDNL)
+void dump_nblist(FILE *out, t_forcerec *fr, int nDNL)
 {
     int  n, i;
 
@@ -148,7 +105,7 @@ void dump_nblist(FILE *out, const t_commrec *cr, t_forcerec *fr, int nDNL)
     {
         for (i = 0; (i < eNL_NR); i++)
         {
-            write_nblist(out, cr->dd, &fr->nblists[n].nlist_sr[i], nDNL);
+            write_nblist(out, &fr->nblists[n].nlist_sr[i], nDNL);
         }
     }
 

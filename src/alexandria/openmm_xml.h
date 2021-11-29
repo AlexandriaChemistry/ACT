@@ -34,6 +34,7 @@
 #define OPENMM_XML_H
 
 #include "poldata.h"
+#include "mymol.h"
 
 namespace alexandria
 {
@@ -45,6 +46,7 @@ namespace alexandria
      */
     void writeOpenMM(const std::string &fileName,
                      const Poldata     *pd,
+                     const MyMol       *mymol,
                      bool compress = true);
 
 } // namespace alexandria

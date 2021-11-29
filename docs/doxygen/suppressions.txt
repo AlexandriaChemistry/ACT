@@ -1,5 +1,3 @@
-# The script is currently a bit too eager
-share/template/template.cpp: error: source file documentation appears outside full documentation
 # The parser in the script is not clever enough
 src/gromacs/version.h: warning: includes local file as <gromacs/version.h>
 

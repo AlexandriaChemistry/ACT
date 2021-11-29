@@ -67,7 +67,6 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "gromacs/simd/simd.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/exceptions.h"
@@ -505,7 +504,7 @@ calc_one_bond(int thread,
            extended to support calling from multiple threads. */
         do_pairs(ftype, nbn, iatoms+nb0, idef->iparams, x, f, fshift,
                  pbc, g, lambda, dvdl, md, fr,
-                 computeForcesOnly, grpp, global_atom_index);
+                 grpp, global_atom_index);
         v = 0;
     }
 

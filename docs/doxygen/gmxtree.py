@@ -1077,6 +1077,4 @@ class GromacsTree(object):
     def get_checked_define_files(self):
         """Get list of files that contain #define macros whose usage needs to
         be checked."""
-        return (self._files['src/config.h'],
-                self._files['src/gromacs/simd/simd.h'],
-                self._files['src/gromacs/mdlib/nbnxn_simd.h'])
+        return [self._files['src/config.h']]

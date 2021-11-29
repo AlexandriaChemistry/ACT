@@ -45,8 +45,6 @@
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/real.h"
 
-struct gmx_domdec_t;
-
 typedef struct {
     /* these buffers are used as destination buffers if MPI_IN_PLACE isn't
        supported.*/
@@ -109,9 +107,6 @@ struct t_commrec {
 
     gmx_nodecomm_t nc;
 
-    /* For domain decomposition */
-    gmx_domdec_t *dd;
-
     /* The duties of this node, see the DUTY_ defines above.
      * This should be read through thisRankHasDuty() or getThisRankDuties().
      */
@@ -161,15 +156,6 @@ inline bool thisRankHasDuty(const t_commrec *cr, int duty)
 
 //! The node id for the master
 #define MASTERRANK(cr)     (0)
-
-/*! \brief Do we use domain decomposition
- *
- * Note that even with particle decomposition removed, the use of
- * non-DD parallelization in TPI, NM and multi-simulations means that
- * PAR(cr) and DOMAINDECOMP(cr) are not universally synonymous. In
- * particular, DOMAINDECOMP(cr) == true indicates that there is more
- * than one domain, not just that the dd algorithm is active. */
-#define DOMAINDECOMP(cr)   (((cr)->dd != NULL) && PAR(cr))
 
 //! Are we doing multiple independent simulations?
 static bool inline isMultiSim(const gmx_multisim_t *ms)

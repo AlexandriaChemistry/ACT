@@ -5,13 +5,16 @@
 #include <random>
 
 
-namespace ga {
+namespace ga
+{
 
-    const int RouletteSelector::select(const vector&    probability,
-                                       const int        popSize) {
+    const int RouletteSelector::select(const vector    &probability,
+                                       const int        popSize)
+    {
         double num = dis(gen);
         int i = 0;
-        while (num > 0 and i < popSize) {
+        while (num > 0 and i < popSize)
+        {
             num -= probability[i];
             i++;
         }

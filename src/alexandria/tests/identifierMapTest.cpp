@@ -47,6 +47,7 @@ namespace alexandria
 namespace
 {
 
+//! Shortcut for mapping identifier to a number.
 typedef std::map<const Identifier, int> idmap;
 
 class IdentifierMapTest : public gmx::test::CommandLineTestBase
