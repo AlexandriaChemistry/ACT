@@ -227,7 +227,7 @@ static void addShell(xmlNodePtr         parent,
     }
 }
 
-static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd)
+static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mymol)
 {
     std::string  geometry, name,
         acentral, attached, tau_unit, ahp_unit,
@@ -691,7 +691,7 @@ void writeOpenMM(const std::string &fileName,
     myroot->prev = (xmlNodePtr) dtd;
 
     /* Add molecule definitions */
-    addXmlPoldata(myroot, pd);
+    addXmlPoldata(myroot, pd, mymol);
 
     xmlSetDocCompressMode(doc, compress ? 1 : 0);
     xmlIndentTreeOutput = 1;
