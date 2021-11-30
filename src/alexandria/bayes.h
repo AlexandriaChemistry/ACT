@@ -30,8 +30,8 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#ifndef ALEXANDRIA_OPTPARAM_H
-#define ALEXANDRIA_OPTPARAM_H
+#ifndef ALEXANDRIA_BAYES_H
+#define ALEXANDRIA_BAYES_H
 
 #include <functional>
 #include <random>
@@ -60,12 +60,9 @@ enum class CalcDev {
     Final = 3
 };
 
-/*! \brief
- * Does Bayesian Monte Carlo (BMC) simulation to find the best parameter set,
- * which has the lowest chi-squared.
- *
- * \inpublicapi
- * \ingroup module_alexandria
+
+/*!
+ * Handles optimization parameters for Markov Chain Monte-Carlo method
  */
 class OptParam
 {
@@ -214,6 +211,13 @@ public:
     void print(FILE *fp, const std::string &label);
 };
 
+/*! \brief
+ * Does Bayesian Monte Carlo (BMC) simulation to find the best parameter set,
+ * which has the lowest chi-squared.
+ *
+ * \inpublicapi
+ * \ingroup module_alexandria
+ */
 class Bayes : public OptParam
 {
     using func_t       = std::function<double (double v[])>;

@@ -1,7 +1,7 @@
 #include "Sorter.h"
 
 #include "aliases.h"
-#include "helpers.h"
+#include "ga_helpers.h"
 
 
 namespace ga

@@ -66,7 +66,7 @@
 #include "molprop_xml.h"
 #include "molselect.h"
 #include "mymol.h"
-#include "optparam.h"
+#include "bayes.h"
 #include "poldata.h"
 #include "poldata_xml.h"
 #include "tuning_utility.h"

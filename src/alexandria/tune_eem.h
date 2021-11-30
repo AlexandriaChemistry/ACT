@@ -14,7 +14,7 @@
 #include "gromacs/utility/unique_cptr.h"
 
 #include "molgen.h"
-#include "optparam.h"
+#include "bayes.h"
 
 
 namespace alexandria

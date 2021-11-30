@@ -1,7 +1,7 @@
 #include "aliases.h"
 #include "includes.h"
 
-#include "helpers.h"
+#include "ga_helpers.h"
 
 #include <stdio.h>
 #include <stdlib.h>

@@ -30,7 +30,7 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "optparam.h"
+#include "bayes.h"
 
 #include <assert.h>
 #include <stdio.h>

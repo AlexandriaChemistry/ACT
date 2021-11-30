@@ -63,7 +63,7 @@ set(ALEXANDRIA_SOURCES
            mymol.cpp
            mymol_low.cpp
            openmm_xml.cpp
-	   optparam.cpp
+		   bayes.cpp
            particletype.cpp
            phase.cpp
            plistwrapper.cpp

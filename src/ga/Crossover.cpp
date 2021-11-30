@@ -1,6 +1,6 @@
 #include "Crossover.h"
 
-#include "helpers.h"
+#include "ga_helpers.h"
 #include <random>
 #include <cmath>
 #include <algorithm>

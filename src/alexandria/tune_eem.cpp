@@ -70,7 +70,7 @@
 #include "molgen.h"
 #include "molprop_util.h"
 #include "mymol_low.h"
-#include "optparam.h"
+#include "bayes.h"
 #include "poldata.h"
 #include "poldata_tables.h"
 #include "poldata_xml.h"

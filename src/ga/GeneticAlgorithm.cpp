@@ -13,7 +13,7 @@
 #include "Mutator.h"
 #include "Terminator.h"
 
-#include "helpers.h"
+#include "ga_helpers.h"
 
 
 namespace ga

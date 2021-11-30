@@ -21,10 +21,10 @@ Crossover.o: Crossover.cpp Crossover.h aliases.h
 FitnessComputer.o: FitnessComputer.cpp FitnessComputer.h aliases.h
 	$(CC) $(CFLAGS) -c FitnessComputer.cpp
 
-GeneticAlgorithm.o: GeneticAlgorithm.cpp GeneticAlgorithm.h aliases.h helpers.h $(GEN_HFILES)
+GeneticAlgorithm.o: GeneticAlgorithm.cpp GeneticAlgorithm.h aliases.h ga_helpers.h $(GEN_HFILES)
 	$(CC) $(CFLAGS) -c GeneticAlgorithm.cpp
 
-helpers.o: helpers.cpp helpers.h aliases.h
+helpers.o: ga_helpers.cpp ga_helpers.h aliases.h
 	$(CC) $(CFLAGS) -c helpers.cpp
 
 Initializer.o: Initializer.cpp Initializer.h aliases.h
@@ -39,10 +39,10 @@ ProbabilityComputer.o: ProbabilityComputer.cpp ProbabilityComputer.h aliases.h
 Selector.o: Selector.cpp Selector.h aliases.h
 	$(CC) $(CFLAGS) -c Selector.cpp
 
-Sorter.o: Sorter.cpp Sorter.h aliases.h helpers.h
+Sorter.o: Sorter.cpp Sorter.h aliases.h ga_helpers.h
 	$(CC) $(CFLAGS) -c Sorter.cpp
 
-Terminator.o: Terminator.cpp Terminator.h aliases.h helpers.h
+Terminator.o: Terminator.cpp Terminator.h aliases.h ga_helpers.h
 	$(CC) $(CFLAGS) -c Terminator.cpp
 
 test.o: test.cpp aliases.h includes.h

@@ -1,6 +1,6 @@
 #include "Terminator.h"
 
-#include "helpers.h"
+#include "ga_helpers.h"
 #include "aliases.h"
 
 
