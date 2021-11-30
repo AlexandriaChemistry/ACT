@@ -287,8 +287,7 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
             {
                 addShell(grandchild, opt.first, opt.second, "poltype");
             }
-        }
-
+        }   
     }
 
 
