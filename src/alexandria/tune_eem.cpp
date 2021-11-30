@@ -921,7 +921,7 @@ int alex_tune_eem(int argc, char *argv[])
         if (bMinimum || bForceOutput || !bOptimize)
         {
             bool bPolar = opt.poldata()->polarizable();
-            auto mymols = opt.mymols();
+            std::vector<MyMol> mymols = opt.mymols();
             if (bForceOutput)
             {
                 fprintf(opt.logFile(), "Output based on last step of MC simulation per your specification.\nUse the -noforce_output flag to prevent this.\nThe force field output file %s is based on the last MC step as well.\n", opt2fn("-o", NFILE, fnm));
