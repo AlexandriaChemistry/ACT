@@ -47,6 +47,7 @@
 #include "forcefieldparameterlist.h"
 #include "poldata.h"
 #include "poldata_low.h"
+#include "molprop_util.h"
 #include "mymol.h"
 #include "xml_util.h"
 
@@ -227,7 +228,7 @@ static void addShell(xmlNodePtr         parent,
     }
 }
 
-static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd)
+static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mymol)
 {
     std::string  geometry, name,
         acentral, attached, tau_unit, ahp_unit,
@@ -288,8 +289,14 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd)
                 addShell(grandchild, opt.first, opt.second, "poltype");
             }
         }
-
     }
+
+
+    if (mymol->getMolname().size() > 0)
+    {
+        auto grandchild = add_xml_child(child2, exml_names(xmlEntryOpenMM::RESIDUE));
+        add_xml_char(grandchild, exml_names(xmlEntryOpenMM::NAME), mymol->getMolname().c_str());
+    } 
 
 
     for (auto &fs : pd->forcesConst())
@@ -691,7 +698,7 @@ void writeOpenMM(const std::string &fileName,
     myroot->prev = (xmlNodePtr) dtd;
 
     /* Add molecule definitions */
-    addXmlPoldata(myroot, pd);
+    addXmlPoldata(myroot, pd, mymol);
 
     xmlSetDocCompressMode(doc, compress ? 1 : 0);
     xmlIndentTreeOutput = 1;
