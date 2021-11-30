@@ -60,7 +60,7 @@ class ParameterNames
     public:
 
     //! Empty constructor
-        ParameterNames () {}
+    ParameterNames () {}
 
     /*! \brief Constructor with initiation
      *
@@ -68,7 +68,6 @@ class ParameterNames
      * \param[in] ftype    The GROMACS function type
      * \param[in] params   String with all the parameters
      * \param[in] index    Integer identifier
-     * \param[in] bondorder The bond order in case this is a bond.
      */
         ParameterNames(int                        ncopies,
                        int                        ftype,
@@ -78,7 +77,7 @@ class ParameterNames
               ftype_(ftype),
               params_(params),
               poldataIndex_(index)
-        { }
+        {}
 
         void inc() { ncopies_++; }
 
@@ -206,9 +205,13 @@ class ForceConstants
         CommunicationStatus Receive(t_commrec *cr, int src);
 
     private:
+    //! GROMASCS function type
         int                                  ftype_;
+    //! ACT interaction type
         InteractionType                      itype_;
+    //! Whether this parameter is to be optimized (changed)
         bool                                 bOpt_;
+    //! Map from 
         std::map<Identifier, ParameterNames> bn_;
         std::vector<int>                     reverseIndex_;
 };

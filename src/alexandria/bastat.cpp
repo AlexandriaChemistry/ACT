@@ -58,6 +58,7 @@
 #include "gromacs/utility/real.h"
 
 #include "alex_modules.h"
+#include "dissociation_energy.h"
 #include "memory_check.h"
 #include "molprop_util.h"
 #include "mymol.h"
@@ -694,144 +695,25 @@ static void generate_bcc(Poldata *pd,
     printf("Have generated %zu entries for BCC\n", bcc->parameters()->size());
 }
 
-int alex_bastat(int argc, char *argv[])
+static t_bonds *extractGeometries(FILE                 *fp,
+                                  std::vector<MolProp> *mp,
+                                  std::vector<MyMol>   *mymols,
+                                  Poldata              *pd,
+                                  const MolSelect      &gms,
+                                  const std::string    &method,
+                                  const std::string    &basis,
+                                  gmx_bool              bBondOrder,
+                                  double                bspacing,
+                                  double                aspacing,
+                                  double                laspacing,
+                                  double                dspacing)
 {
-    static const char               *desc[] = {
-        "bastat read a series of molecules and extracts average geometries from",
-        "those. First atomtypes are determined and then bond-lengths, bond-angles",
-        "and dihedral angles are extracted. The results are stored in a gentop.dat file."
-    };
-
-    t_filenm                         fnm[] = {
-        { efDAT, "-f",   "allmols",    ffRDMULT },
-        { efDAT, "-d",   "gentop",     ffOPTRD },
-        { efDAT, "-o",   "bastat",     ffWRITE },
-        { efDAT, "-sel", "molselect",  ffREAD },
-        { efLOG, "-g",   "bastat",     ffWRITE }
-    };
-
-    const int                        NFILE       = asize(fnm);
-
-    static int                       compress    = 0;
-    static int                       maxwarn     = 0;
-    static real                      Dm          = 400;
-    static real                      kt          = 300;
-    static real                      kp          = 5;
-    static real                      kimp        = 1;
-    static real                      beta        = 20;
-    static real                      klin        = 150000;
-    static real                      hardness    = 1;
-    static real                      kub         = 30000;
-    static real                      bond_tol    = 5;
-    static real                      angle_tol   = 5;
-    static real                      factor      = 0.8;
-    static char                     *lot         = (char *)"B3LYP/aug-cc-pVTZ";
-    static gmx_bool                  bHisto      = false;
-    static gmx_bool                  bBondOrder  = true;
-    static gmx_bool                  genBCC      = false;
-    t_pargs                          pa[]        = {
-        { "-lot",    FALSE, etSTR,  {&lot},
-          "Use this method and level of theory when selecting coordinates and charges" },
-        { "-maxwarn", FALSE, etINT, {&maxwarn},
-          "Will only write output if number of warnings is at most this." },
-        { "-Dm",    FALSE, etREAL, {&Dm},
-          "Dissociation energy (kJ/mol)" },
-        { "-beta",    FALSE, etREAL, {&beta},
-          "Steepness of the Morse potential (1/nm)" },
-        { "-kt",    FALSE, etREAL, {&kt},
-          "Angle force constant (kJ/mol/rad^2)" },
-        { "-klin",  FALSE, etREAL, {&klin},
-          "Linear angle force constant (kJ/mol/nm^2)" },
-        { "-kp",    FALSE, etREAL, {&kp},
-          "Dihedral angle force constant (kJ/mol/rad^2)" },
-        { "-kimp",    FALSE, etREAL, {&kimp},
-          "Improper dihedral angle force constant (kJ/mol/rad^2)" },
-        { "-kub",   FALSE, etREAL, {&kub},
-          "Urey_Bradley force constant" },
-        { "-bond_tol",   FALSE, etREAL, {&bond_tol},
-          "Tolerance for bond length" },
-        { "-angle_tol",   FALSE, etREAL, {&angle_tol},
-          "Tolerance for harmonic and linear angles" },
-        { "-histo", FALSE, etBOOL, {&bHisto},
-          "Print (hundreds of) xvg files containing histograms for bonds, angles and dihedrals" },
-        { "-compress", FALSE, etBOOL, {&compress},
-          "Compress output XML file" },
-        { "-bondorder", FALSE, etBOOL, {&bBondOrder},
-          "Make separate bonds for different bond orders" },
-        { "-genBCC", FALSE, etBOOL, {&genBCC},
-          "Re-generate bond charge corrections based on the list of bonds" },
-        { "-hardness", FALSE, etREAL, {&hardness},
-          "Default bond hardness when generating bond charge corrections based on the list of bonds" },
-        { "-factor", FALSE, etBOOL, {&factor},
-          "Scale factor to set minimum and maximum values of parameters" }
-    };
-
-    FILE                            *fp;
-    time_t                           my_t;
-    t_bonds                         *bonds = new(t_bonds);
-    rvec                             dx, dx2, r_ij, r_kj, r_kl, mm, nn;
-    t_pbc                            pbc;
-    int                              t1, t2, t3;
-    matrix                           box;
-    double                           bspacing  = 1;   /* pm */
-    double                           aspacing  = 0.5; /* degree */
-    double                           laspacing = 0.000001; /* relative number for linear angles */
-    double                           dspacing  = 1;   /* degree */
-    gmx_output_env_t                *oenv      = nullptr;
-    Poldata                          pd;
-    gmx_atomprop_t                   aps;
-    MolSelect                        gms;
-    std::vector<alexandria::MolProp> mp;
-    std::string                      cai, caj, cak, cal;
-    std::string                      method, basis;
-    splitLot(lot, &method, &basis);
-    
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW, NFILE, fnm,
-                           asize(pa), pa, asize(desc), desc,
-                           0, nullptr, &oenv))
-    {
-        return 0;
-    }
-
-    fp                 = gmx_ffopen(opt2fn("-g", NFILE, fnm), "w");
-    print_memory_usage(debug);
-    time(&my_t);
-    fprintf(fp, "# This file was created %s", ctime(&my_t));
-    fprintf(fp, "# The Alexandria Chemistry Toolkit.\n#\n");
-
-    auto selfile = opt2fn("-sel", NFILE, fnm);
-    gms.read(selfile);
-    print_memory_usage(debug);
-    printf("There are %d molecules in the selection file %s.\n",
-           (gms.count(iMolSelect::Train) + gms.count(iMolSelect::Test)), selfile);
-    fprintf(fp, "# There are %d molecules.\n#\n", (gms.count(iMolSelect::Train) + gms.count(iMolSelect::Test)));
-
-    /* Read standard atom properties */
-    aps = gmx_atomprop_init();
-    print_memory_usage(debug);
-
-    /* Read PolData */
-    try
-    {
-        readPoldata(opt2fn_null("-d", NFILE, fnm), &pd);
-    }
-    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-    print_memory_usage(debug);
-
-    // This a hack to prevent that no bonds will be found to shells.
-    bool polar = pd.polarizable();
-    pd.setPolarizable(false);
-
-    /* Read Molprops */
-    auto nwarn = merge_xml(opt2fns("-f", NFILE, fnm), &mp, nullptr, nullptr, nullptr, aps, true);
-    print_memory_usage(debug);
-
-    if (nwarn > maxwarn)
-    {
-        printf("Too many warnings (%d). Terminating.\n", nwarn);
-        return 0;
-    }
-    for (auto mpi = mp.begin(); mpi < mp.end(); mpi++)
+    rvec     dx2, r_ij, r_kj, r_kl, mm, nn;
+    t_pbc    pbc;
+    int      t1, t2, t3;
+    matrix   box;
+    t_bonds *bonds = new(t_bonds);
+    for (auto mpi = mp->begin(); mpi < mp->end(); mpi++)
     {
         iMolSelect imol;
         if (gms.status(mpi->getIupac(), &imol) && 
@@ -848,7 +730,7 @@ int alex_bastat(int argc, char *argv[])
             }
             std::string mylot;
             auto        imm = mmi.GenerateTopology(fp,
-                                                   &pd,
+                                                   pd,
                                                    method,
                                                    basis,
                                                    &mylot,
@@ -870,7 +752,7 @@ int alex_bastat(int argc, char *argv[])
             for (i = 0; i < myatoms.nr; i++)
             {
                 std::string btpi;
-                if (!pd.atypeToBtype(*myatoms.atomtype[i], &btpi))
+                if (!pd->atypeToBtype(*myatoms.atomtype[i], &btpi))
                 {
                     if (nullptr != debug)
                     {
@@ -890,10 +772,12 @@ int alex_bastat(int argc, char *argv[])
                 continue;
             }
             auto x        = mmi.x();
-            for (auto &fs : pd.forcesConst())
+            for (auto &fs : pd->forcesConst())
             {
-                auto iType    = fs.first;
-                auto funcType = fs.second.fType();
+                auto        iType    = fs.first;
+                auto        funcType = fs.second.fType();
+                std::string cai, caj, cak, cal;
+                rvec        dx;
                 switch (iType)
                 {
                 case InteractionType::BONDS:
@@ -904,8 +788,8 @@ int alex_bastat(int argc, char *argv[])
                             auto ai = mmi.ltop_->idef.il[funcType].iatoms[j+1];
                             auto aj = mmi.ltop_->idef.il[funcType].iatoms[j+2];
                             rvec_sub(x[ai], x[aj], dx);
-                            if (pd.atypeToBtype(*myatoms.atomtype[ai], &cai) &&
-                                pd.atypeToBtype(*myatoms.atomtype[aj], &caj))
+                            if (pd->atypeToBtype(*myatoms.atomtype[ai], &cai) &&
+                                pd->atypeToBtype(*myatoms.atomtype[aj], &caj))
                             {
                                 for (auto &bi : mmi.bondsConst())
                                 {
@@ -956,9 +840,9 @@ int alex_bastat(int argc, char *argv[])
                                 refValue = norm(dx2)/(norm(dx)+norm(dx2));
                                 spacing  = laspacing;
                             }
-                            if (pd.atypeToBtype(*myatoms.atomtype[ai], &cai) &&
-                                pd.atypeToBtype(*myatoms.atomtype[aj], &caj) &&
-                                pd.atypeToBtype(*myatoms.atomtype[ak], &cak))
+                            if (pd->atypeToBtype(*myatoms.atomtype[ai], &cai) &&
+                                pd->atypeToBtype(*myatoms.atomtype[aj], &caj) &&
+                                pd->atypeToBtype(*myatoms.atomtype[ak], &cak))
                             {
                                 add_angle(fp, mmi.getMolname().c_str(), bonds,
                                           cai, caj, cak, refValue, spacing,
@@ -992,10 +876,10 @@ int alex_bastat(int argc, char *argv[])
                             angle    = RAD2DEG*dih_angle(x[ai], x[aj], x[ak], x[al],
                                                          &pbc, r_ij, r_kj, r_kl, mm, nn,
                                                          &t1, &t2, &t3);
-                            if (pd.atypeToBtype(*myatoms.atomtype[ai], &cai) &&
-                                pd.atypeToBtype(*myatoms.atomtype[aj], &caj) &&
-                                pd.atypeToBtype(*myatoms.atomtype[ak], &cak) &&
-                                pd.atypeToBtype(*myatoms.atomtype[al], &cal))
+                            if (pd->atypeToBtype(*myatoms.atomtype[ai], &cai) &&
+                                pd->atypeToBtype(*myatoms.atomtype[aj], &caj) &&
+                                pd->atypeToBtype(*myatoms.atomtype[ak], &cak) &&
+                                pd->atypeToBtype(*myatoms.atomtype[al], &cal))
                             {
                                 add_dih(fp, mmi.getMolname().c_str(), bonds,
                                         cai, caj, cak, cal, angle, dspacing, iType);
@@ -1018,9 +902,156 @@ int alex_bastat(int argc, char *argv[])
                 clear_mat(box);
                 set_pbc(&pbc, epbcNONE, box);
             }
+            mymols->push_back(mmi);
         }
     }
     sort_bonds(bonds);
+    
+    return bonds;
+}
+
+int alex_bastat(int argc, char *argv[])
+{
+    static const char               *desc[] = {
+        "bastat read a series of molecules and extracts average geometries from",
+        "those. First atomtypes are determined and then bond-lengths, bond-angles",
+        "and dihedral angles are extracted. The results are stored in a gentop.dat file.[PAR]"
+        "The program can also generate (quite) realistic dissociation energies from"
+        "experimental data when the [TT]-dissoc[tt] optionis given." 
+    };
+
+    t_filenm                         fnm[] = {
+        { efDAT, "-f",   "allmols",      ffRDMULT },
+        { efDAT, "-d",   "gentop",       ffOPTRD },
+        { efDAT, "-o",   "bastat",       ffWRITE },
+        { efDAT, "-sel", "molselect",    ffREAD },
+        { efLOG, "-g",   "bastat",       ffWRITE },
+        { efCSV, "-de",  "dissociation", ffOPTWR }
+    };
+
+    const int                        NFILE       = asize(fnm);
+
+    static int                       compress    = 0;
+    static int                       maxwarn     = 0;
+    static real                      Dm          = 400;
+    static real                      kt          = 300;
+    static real                      kp          = 5;
+    static real                      kimp        = 1;
+    static real                      beta        = 20;
+    static real                      klin        = 150000;
+    static real                      hardness    = 1;
+    static real                      kub         = 30000;
+    static real                      bond_tol    = 5;
+    static real                      angle_tol   = 5;
+    static real                      factor      = 0.8;
+    static char                     *lot         = (char *)"B3LYP/aug-cc-pVTZ";
+    static gmx_bool                  bHisto      = false;
+    static gmx_bool                  bBondOrder  = true;
+    static gmx_bool                  genBCC      = false;
+    static gmx_bool                  bDissoc     = false;
+    t_pargs                          pa[]        = {
+        { "-lot",    FALSE, etSTR,  {&lot},
+          "Use this method and level of theory when selecting coordinates and charges" },
+        { "-maxwarn", FALSE, etINT, {&maxwarn},
+          "Will only write output if number of warnings is at most this." },
+        { "-dissoc",  FALSE, etBOOL, {&bDissoc},
+          "Derive dissociation energy from the enthalpy of formation. If not chosen, the dissociation energy will be read from the gentop.dat file." },
+        { "-Dm",    FALSE, etREAL, {&Dm},
+          "Dissociation energy (kJ/mol). Ignore if the [TT]-dissoc[tt] option is used." },
+        { "-beta",    FALSE, etREAL, {&beta},
+          "Steepness of the Morse potential (1/nm)" },
+        { "-kt",    FALSE, etREAL, {&kt},
+          "Angle force constant (kJ/mol/rad^2)" },
+        { "-klin",  FALSE, etREAL, {&klin},
+          "Linear angle force constant (kJ/mol/nm^2)" },
+        { "-kp",    FALSE, etREAL, {&kp},
+          "Dihedral angle force constant (kJ/mol/rad^2)" },
+        { "-kimp",    FALSE, etREAL, {&kimp},
+          "Improper dihedral angle force constant (kJ/mol/rad^2)" },
+        { "-kub",   FALSE, etREAL, {&kub},
+          "Urey_Bradley force constant" },
+        { "-bond_tol",   FALSE, etREAL, {&bond_tol},
+          "Tolerance for bond length" },
+        { "-angle_tol",   FALSE, etREAL, {&angle_tol},
+          "Tolerance for harmonic and linear angles" },
+        { "-histo", FALSE, etBOOL, {&bHisto},
+          "Print (hundreds of) xvg files containing histograms for bonds, angles and dihedrals" },
+        { "-compress", FALSE, etBOOL, {&compress},
+          "Compress output XML file" },
+        { "-bondorder", FALSE, etBOOL, {&bBondOrder},
+          "Make separate bonds for different bond orders" },
+        { "-genBCC", FALSE, etBOOL, {&genBCC},
+          "Re-generate bond charge corrections based on the list of bonds" },
+        { "-hardness", FALSE, etREAL, {&hardness},
+          "Default bond hardness when generating bond charge corrections based on the list of bonds" },
+        { "-factor", FALSE, etBOOL, {&factor},
+          "Scale factor to set minimum and maximum values of parameters" }
+    };
+
+    FILE                            *fp;
+    time_t                           my_t;
+    double                           bspacing  = 1;   /* pm */
+    double                           aspacing  = 0.5; /* degree */
+    double                           laspacing = 0.000001; /* relative number for linear angles */
+    double                           dspacing  = 1;   /* degree */
+    gmx_output_env_t                *oenv      = nullptr;
+    Poldata                          pd;
+    gmx_atomprop_t                   aps;
+    MolSelect                        gms;
+    std::vector<alexandria::MolProp> mp;
+    std::string                      method, basis;
+    splitLot(lot, &method, &basis);
+    
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW, NFILE, fnm,
+                           asize(pa), pa, asize(desc), desc,
+                           0, nullptr, &oenv))
+    {
+        return 0;
+    }
+
+    fp                 = gmx_ffopen(opt2fn("-g", NFILE, fnm), "w");
+    print_memory_usage(debug);
+    time(&my_t);
+    fprintf(fp, "# This file was created %s", ctime(&my_t));
+    fprintf(fp, "# The Alexandria Chemistry Toolkit.\n#\n");
+
+    auto selfile = opt2fn("-sel", NFILE, fnm);
+    gms.read(selfile);
+    print_memory_usage(debug);
+    printf("There are %d molecules in the selection file %s.\n",
+           (gms.count(iMolSelect::Train) + gms.count(iMolSelect::Test)), selfile);
+    fprintf(fp, "# There are %d molecules.\n#\n", (gms.count(iMolSelect::Train) + gms.count(iMolSelect::Test)));
+
+    /* Read standard atom properties */
+    aps = gmx_atomprop_init();
+    print_memory_usage(debug);
+
+    /* Read PolData */
+    try
+    {
+        readPoldata(opt2fn_null("-d", NFILE, fnm), &pd);
+    }
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+    print_memory_usage(debug);
+
+    // This a hack to prevent that no bonds will be found to shells.
+    bool polar = pd.polarizable();
+    pd.setPolarizable(false);
+
+    /* Read Molprops */
+    auto nwarn = merge_xml(opt2fns("-f", NFILE, fnm), &mp, nullptr, nullptr, nullptr, aps, true);
+    print_memory_usage(debug);
+
+    if (nwarn > maxwarn)
+    {
+        printf("Too many warnings (%d). Terminating.\n", nwarn);
+        return 0;
+    }
+    std::vector<MyMol> mymols;
+    auto bonds = extractGeometries(fp, &mp, &mymols, &pd, gms,
+                                   method, basis, bBondOrder,
+                                   bspacing, aspacing, laspacing, dspacing);
+    
     print_memory_usage(debug);
     if (bHisto)
     {
@@ -1035,6 +1066,11 @@ int alex_bastat(int argc, char *argv[])
         generate_bcc(&pd, hardness);
     }
     print_memory_usage(debug);
+    if (bDissoc)
+    {
+        getDissociationEnergy(fp, &pd, &mymols,
+                              opt2fn_null("-de",  NFILE, fnm), method, basis);
+    }
     writePoldata(opt2fn("-o", NFILE, fnm), &pd, compress);
     printf("Extracted %zu bondtypes, %zu angletypes, %zu linear-angletypes, %zu dihedraltypes and %zu impropertypes.\n",
            bonds->bond.size(), bonds->angle.size(), bonds->linangle.size(),

@@ -35,12 +35,6 @@
 file(GLOB PBCUTIL_SOURCES *.cpp)
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${PBCUTIL_SOURCES} PARENT_SCOPE)
 
-gmx_install_headers(
-#    ishift.h
-#    pbc.h
-#    rmpbc.h
-    )
-
 if (BUILD_TESTING)
 #    add_subdirectory(tests)
 endif()

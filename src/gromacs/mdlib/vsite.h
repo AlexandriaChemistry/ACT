@@ -81,7 +81,6 @@ struct gmx_vsite_t
     int                       nthreads;                  /* Number of threads used for vsites       */
     std::vector < std::unique_ptr < VsiteThread>> tData; /* Thread local vsites and work structs    */
     std::vector<int>          taskIndex;                 /* Work array                              */
-    bool                      useDomdec;                 /* Tells whether we use domain decomposition with more than 1 DD rank */
 };
 
 /*! \brief Create positions of vsite atoms based for the local system
@@ -94,7 +93,6 @@ struct gmx_vsite_t
  * \param[in]     ilist    The interaction list
  * \param[in]     ePBC     The type of periodic boundary conditions
  * \param[in]     bMolPBC  When true, molecules are broken over PBC
- * \param[in]     cr       The communication record
  * \param[in]     box      The box
  */
 void construct_vsites(const gmx_vsite_t *vsite,
@@ -102,7 +100,6 @@ void construct_vsites(const gmx_vsite_t *vsite,
                       real dt, rvec v[],
                       const t_iparams ip[], const t_ilist ilist[],
                       int ePBC, gmx_bool bMolPBC,
-                      const t_commrec *cr,
                       const matrix box);
 
 /*! \brief Create positions of vsite atoms for the whole system assuming all molecules are wholex
@@ -119,7 +116,7 @@ void spread_vsite_f(const gmx_vsite_t *vsite,
                     gmx_bool VirCorr, matrix vir,
                     t_nrnb *nrnb, const t_idef *idef,
                     int ePBC, gmx_bool bMolPBC, const t_graph *g, const matrix box,
-                    const t_commrec *cr, gmx_wallcycle *wcycle);
+                    gmx_wallcycle *wcycle);
 /* Spread the force operating on the vsite atoms on the surrounding atoms.
  * If fshift!=NULL also update the shift forces.
  * If VirCorr=TRUE add the virial correction for non-linear vsite constructs

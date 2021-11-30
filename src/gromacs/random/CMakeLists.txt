@@ -35,17 +35,6 @@
 file(GLOB RANDOM_SOURCES *.cpp)
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${RANDOM_SOURCES} PARENT_SCOPE)
 
-gmx_install_headers(
-#    exponentialdistribution.h
-#    gammadistribution.h
-#    normaldistribution.h
-#    seed.h
-#    tabulatednormaldistribution.h
-#    threefry.h
-#    uniformintdistribution.h
-#    uniformrealdistribution.h
-    )
-
 if (BUILD_TESTING)
 #    add_subdirectory(tests)
 endif()

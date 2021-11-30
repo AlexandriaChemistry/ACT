@@ -37,7 +37,7 @@
 #ifndef GMX_MDLIB_MD_SUPPORT_H
 #define GMX_MDLIB_MD_SUPPORT_H
 
-#include "gromacs/mdlib/vcm.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/timing/wallcycle.h"
 
 struct gmx_ekindata_t;
@@ -48,7 +48,9 @@ struct gmx_signalling_t;
 struct t_extmass;
 struct t_forcerec;
 struct t_grpopts;
+struct t_inputrec;
 struct t_lambda;
+struct t_mdatoms;
 struct t_nrnb;
 class t_state;
 struct t_trxframe;
@@ -118,12 +120,12 @@ void setCurrentLambdasLocal(int64_t step, const t_lambda *fepvals,
 int multisim_min(const gmx_multisim_t *ms, int nmin, int n);
 /* Set an appropriate value for n across the whole multi-simulation */
 
-void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_inputrec *ir,
+void compute_globals(gmx_global_stat *gstat, t_commrec *cr, t_inputrec *ir,
                      t_forcerec *fr, gmx_ekindata_t *ekind,
                      t_state *state, t_mdatoms *mdatoms,
-                     t_nrnb *nrnb, t_vcm *vcm, gmx_wallcycle_t wcycle,
+                     gmx_wallcycle_t wcycle,
                      gmx_enerdata_t *enerd, tensor force_vir, tensor shake_vir, tensor total_vir,
-                     tensor pres, rvec mu_tot, gmx::Constraints *constr,
+                     tensor pres, rvec mu_tot,
                      gmx::SimulationSignaller *signalCoordinator,
                      matrix box, int *totalNumberOfBondedInteractions,
                      gmx_bool *bSumEkinhOld, int flags);

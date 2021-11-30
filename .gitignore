@@ -27,8 +27,16 @@ CMakeLists.txt.user
 Testing
 build_Release_DOUBLE
 
+# GA
+src/ga/test
 
 # Examples
 examples/TUNE_EEM/*.xvg
 examples/TUNE_EEM/*.log
 examples/TUNE_EEM/viewxvg.py
+examples/TUNE_EEM/#*
+examples/TUNE_EEM/*.dat
+examples/TUNE_EEM/run_alcohol_v2.py
+
+# VS Code
+.vscode

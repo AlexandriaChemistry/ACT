@@ -2,8 +2,7 @@ PROJECT_NAME           = @CMAKE_PROJECT_NAME@
 @INCLUDE               = Doxyfile-version
 LAYOUT_FILE            = @CMAKE_CURRENT_SOURCE_DIR@/DoxygenLayout.xml
 INPUT                  = @CMAKE_CURRENT_SOURCE_DIR@ \
-                         @CMAKE_SOURCE_DIR@/src \
-                         @CMAKE_SOURCE_DIR@/share/template
+                         @CMAKE_SOURCE_DIR@/src
 FILE_PATTERNS          = *.c *.cpp *.h *.md
 # CUDA files could be included like this, but currently produce a lot of
 # warnings.
@@ -41,15 +40,9 @@ EXCLUDE                = @CMAKE_SOURCE_DIR@/src/external \
                          @CMAKE_SOURCE_DIR@/src/gromacs/timing/ \
                          @CMAKE_SOURCE_DIR@/src/gromacs/topology/ \
                          @CMAKE_SOURCE_DIR@/src/gromacs/trajectory/ \
-                         @CMAKE_SOURCE_DIR@/src/gromacs/utility/ \
                          @CMAKE_SOURCE_DIR@/src/gromacs/linearalgebra/ \
                          @CMAKE_SOURCE_DIR@/src/api \
-                         @CMAKE_SOURCE_DIR@/src/gromacs/commandline.h \
-                         @CMAKE_SOURCE_DIR@/src/gromacs/options.h \
-                         @CMAKE_SOURCE_DIR@/src/gromacs/selection.h \
-                         @CMAKE_SOURCE_DIR@/src/gromacs/onlinehelp-doc.h \
-                         @CMAKE_SOURCE_DIR@/src/gromacs/random.h \
-                         @CMAKE_SOURCE_DIR@/src/gromacs/utility.h \
+                         @CMAKE_SOURCE_DIR@/src/gromacs/utility \
                          @NB_KERNEL_DIRS_TO_IGNORE_IN_DOXYGEN@
 EXCLUDE_PATTERNS       = @CMAKE_SOURCE_DIR@/src/gromacs/simd/impl_x86* \
                          @CMAKE_SOURCE_DIR@/src/gromacs/simd/impl_intel* \
@@ -67,7 +60,7 @@ STRIP_FROM_INC_PATH    = @CMAKE_SOURCE_DIR@/src
 INCLUDE_PATH           = @CMAKE_SOURCE_DIR@/src
 HAVE_DOT               = @DOXYGEN_DOT_FOUND@
 DOT_PATH               = @DOXYGEN_DOT_PATH@
-MSCGEN_PATH            = @DOXYGEN_MSCGEN_PATH@
+#MSCGEN_PATH            = @DOXYGEN_MSCGEN_PATH@
 DOTFILE_DIRS           = @DEPGRAPH_DIR@
 @DOXYGEN_EXTRA_SETTINGS@
 

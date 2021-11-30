@@ -74,7 +74,7 @@ const char *gmx_version_git_full_hash();
 const char *gmx_version_git_central_base_hash();
 
 /*! \brief
- * Defined if ``libgromacs`` has been compiled in double precision.
+ * Defined if ``libactgromacs`` has been compiled in double precision.
  *
  * Allows detecting the compiled precision of the library through checking the
  * presence of the symbol, e.g., from autoconf or other types of build systems.
@@ -83,7 +83,7 @@ const char *gmx_version_git_central_base_hash();
  */
 void gmx_is_double_precision();
 /*! \brief
- * Defined if ``libgromacs`` has been compiled in single/mixed precision.
+ * Defined if ``libactgromacs`` has been compiled in single/mixed precision.
  *
  * Allows detecting the compiled precision of the library through checking the
  * presence of the symbol, e.g., from autoconf or other types of build systems.

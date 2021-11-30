@@ -32,11 +32,7 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-gmx_add_libgromacs_sources(
-    handlerestart.cpp
-    mdmodules.cpp
-    threadaffinity.cpp
-    )
+gmx_add_libgromacs_sources(mdmodules.cpp)
 
 if (BUILD_TESTING)
 #    add_subdirectory(tests)

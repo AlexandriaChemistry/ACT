@@ -364,10 +364,7 @@ void calc_disres_R_6(const t_commrec *cr,
     }
 
     /* NOTE: Rt_6 and Rtav_6 are stored consecutively in memory */
-    if (cr && DOMAINDECOMP(cr))
-    {
-        gmx_sum(2*dd->nres, dd->Rt_6, cr);
-    }
+    gmx_sum(2*dd->nres, dd->Rt_6, cr);
 
     if (fcd->disres.nsystems > 1)
     {
@@ -382,11 +379,6 @@ void calc_disres_R_6(const t_commrec *cr,
 
         GMX_ASSERT(cr != nullptr && ms != nullptr, "We need multisim with nsystems>1");
         gmx_sum_sim(2*dd->nres, dd->Rt_6, ms);
-
-        if (DOMAINDECOMP(cr))
-        {
-            gmx_bcast(2*dd->nres, dd->Rt_6, cr);
-        }
     }
 
     /* Store the base forceatoms pointer, so we can re-calculate the pair

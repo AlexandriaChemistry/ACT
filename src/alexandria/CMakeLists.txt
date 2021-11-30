@@ -34,6 +34,7 @@ set(ALEXANDRIA_SOURCES
            categories.cpp
            chargemodel.cpp
            communication.cpp
+           dissociation_energy.cpp
            fill_inputrec.cpp
            forcefieldparameter.cpp
            forcefieldparameterlist.cpp
@@ -89,19 +90,14 @@ set(ALEXANDRIA_SOURCES
            molprop_tables.cpp
 	)
 	
-#add_library(libalexandria ${ALEXANDRIA_SOURCES})	
-#target_link_libraries(libalexandria libgromacs ${GMX_EXTRA_LIBRARIES})
+add_subdirectory(coulombintegrals)
 
 add_library(alexandria_objlib OBJECT ${ALEXANDRIA_SOURCES})
 
-#set_target_properties(alexandria_objlib PROPERTIES
-#                      OUTPUT_NAME "alexandria${GMX_LIBS_SUFFIX}"
-#                      COMPILE_FLAGS "${OpenMP_C_FLAGS}")
-
 add_executable(alexandria alexandria.cpp
-         $<TARGET_OBJECTS:alexandria_objlib>
-         )
-target_link_libraries(alexandria libgromacs ${GMX_EXTRA_LIBRARIES} ${XML_LIBRARIES}
+         $<TARGET_OBJECTS:alexandria_objlib>)
+
+target_link_libraries(alexandria libactgromacs ${GMX_EXTRA_LIBRARIES} ${XML_LIBRARIES}
          ${GMX_EXE_LINKER_FLAGS})
 set(BINARY_NAME "alexandria${GMX_BINARY_SUFFIX}")
 set_target_properties(alexandria PROPERTIES 

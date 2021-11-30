@@ -411,7 +411,6 @@ void print_electric_props(FILE                           *fp,
                           const gmx::MDLogger            &fplog,
                           const char                     *lot,
                           const char                     *tabfn,
-                          gmx_hw_info_t                  *hwinfo,
                           int                             qcycle,
                           real                            qtol,
                           const char                     *qhisto,
@@ -495,7 +494,7 @@ void print_electric_props(FILE                           *fp,
 
             // Recalculate the atomic charges using the optmized parameters.
             std::vector<double> dummy;
-            mol->GenerateCharges(pd, fplog, cr, tabfn, hwinfo, qcycle, qtol,
+            mol->GenerateCharges(pd, fplog, cr, tabfn, qcycle, qtol,
                                  ChargeGenerationAlgorithm::NONE, dummy, lot);
 
             // Now compute all the ESP RMSDs.
@@ -807,6 +806,8 @@ void print_header(FILE                       *fp,
             value = gmx::formatString("%g", *p.u.r);
             break;
         case etSTR:
+            value = *p.u.c;
+            break;
         case etENUM:
             value = gmx::formatString("%s", *p.u.c);
             break;

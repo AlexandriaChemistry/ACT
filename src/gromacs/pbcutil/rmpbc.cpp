@@ -44,11 +44,11 @@
 #include <algorithm>
 
 #include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/trajectoryframe.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/idef.h"
-#include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"

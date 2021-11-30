@@ -69,53 +69,8 @@
 #include "optparam.h"
 #include "poldata.h"
 #include "poldata_xml.h"
-#include "regression.h"
 #include "tuning_utility.h"
 #include "tune_fc_utils.h"
-
-/*! \brief Write a csv file containing molecule names and bond energy
- *
- * Writes the whole bond energy matrix.
- */
-static void dump_csv(const std::vector<std::string>        &ctest,
-                     const std::vector<alexandria::MyMol>  &mm,
-                     const std::vector<int>                &ntest,
-                     const std::vector<double>             &Edissoc,
-                     const MatrixWrapper                   &a,
-                     const double                           x[])
-{
-    FILE *csv = gmx_ffopen("tune_fc.csv", "w");
-    fprintf(csv, ",");
-    for (auto j : ctest)
-    {
-        fprintf(csv, "%s,", j.c_str());
-    }
-    fprintf(csv, "\n");
-    int i = 0;
-    for (auto &mymol : mm)
-    {
-        fprintf(csv, "%s,", mymol.getMolname().c_str());
-        for (size_t j = 0; (j < ctest.size()); j++)
-        {
-            fprintf(csv, "%g,", a.get(j, i));
-        }
-        fprintf(csv, "%.3f\n", x[i]);
-        i++;
-    }
-    fprintf(csv, "Total,");
-    for (auto j : ntest)
-    {
-        fprintf(csv, "%d,", j);
-    }
-    fprintf(csv, "\n");
-    fprintf(csv, "Edissoc,");
-    for (auto j : Edissoc)
-    {
-        fprintf(csv, "%.3f,", j);
-    }
-    fprintf(csv, "\n");
-    fclose(csv);
-}
 
 namespace alexandria
 {
@@ -187,7 +142,6 @@ class Optimization : public MolGen, Bayes
     private:
         std::map<InteractionType, ForceConstants> ForceConstants_;
         std::vector<PoldataUpdate>                poldataUpdates_;
-        bool                        bDissoc_          = true;
         real                        w_dhf_            = 1;
         const char                 *lot_              = nullptr;
         // Map from molid to MolEnergy
@@ -253,19 +207,6 @@ class Optimization : public MolGen, Bayes
          * helpers when in parallel.
          */
         void broadcastPoldataUpdate();
-
-        /*! \brief
-         *
-         * Compute the dissociation energies for all the bonds.
-         * Given all the bonds and the enthalpies of formation of all
-         * molecules, we can approximate the dissociation enthalpy (D0 in the
-         * Morse potential by least squares fitting the D0 to reproduce the
-         * molecular energy (Delta H formation of molecule - Delta H formation of
-         * the atoms). This is a crude approximation since all other energy
-         * terms in the force field are ignored, however the dissociation
-         * energy is the largest contribution to the molecular energy.
-         */
-        void getDissociationEnergy(FILE *fplog);
 
         /*! \brief
          * Initialize the optimization algorithm.
@@ -385,8 +326,6 @@ void Optimization::add_pargs(std::vector<t_pargs> *pargs)
 {
     t_pargs pa[] =
     {
-        { "-dissoc",  FALSE, etBOOL, {&bDissoc_},
-          "Derive dissociation energy from the enthalpy of formation. If not chosen, the dissociation energy will be read from the gentop.dat file." },
         { "-weight_dhf", FALSE, etREAL, {&w_dhf_},
           "Fitting weight of the minimum energy structure, representing the enthalpy of formation relative to high energy structures." }
     };
@@ -589,109 +528,6 @@ void Optimization::toPoldata(const std::vector<bool> &changed)
     GMX_RELEASE_ASSERT(n == param.size(), "Number of parameters set should be equal to the length of the parameter array");
 }
 
-void Optimization::getDissociationEnergy(FILE *fplog)
-{
-    std::vector<double>         rhs;
-    std::vector<int>            ntest;
-    std::vector<std::string>    ctest;
-
-    int nD   = ForceConstants_[InteractionType::BONDS].nbad();
-    int nMol = molset().size();
-
-    if ((0 == nD) || (0 == nMol))
-    {
-        gmx_fatal(FARGS, "Number of variables is %d and number of molecules is %d",
-                  nD, nMol);
-    }
-
-    MatrixWrapper a(nD, nMol);
-    MatrixWrapper a_copy(nD, nMol);
-    ntest.resize(nD, 0);
-    ctest.resize(nD);
-
-    fprintf(fplog, "There are %d different bondtypes to optimize the heat of formation\n", nD);
-    fprintf(fplog, "There are %d (experimental) reference heat of formation.\n", nMol);
-
-    auto fs  = poldata()->findForces(InteractionType::BONDS);
-    auto j   = 0;
-
-    for (auto &mymol :  molset())
-    {
-        auto myatoms = mymol.atoms();
-        for (auto &b : mymol.bondsConst())
-        {
-            const char *atypeI = *myatoms->atomtype[b.getAi()];
-            const char *atypeJ = *myatoms->atomtype[b.getAj()];
-            std::string btypeI, btypeJ;
-            if (poldata()->atypeToBtype(atypeI, &btypeI) &&
-                poldata()->atypeToBtype(atypeJ, &btypeJ))
-            {
-                Identifier bondId({btypeI, btypeJ}, b.getBondOrder(), CanSwap::Yes);
-                auto f   = fs->findParameterTypeConst(bondId, "Dm");
-                auto gt  = f.index();
-                auto gti = ForceConstants_[InteractionType::BONDS].reverseIndex(gt);
-                a.set(gti, j, a.get(gti, j) + 1);
-                a_copy.set(gti, j, a.get(gti, j));
-                ntest[gti]++;
-                if (ctest[gti].empty())
-                {
-                    ctest[gti].assign(bondId.id());
-                }
-            }
-            else
-            {
-                gmx_fatal(FARGS, "No parameters for bond in the force field, atoms %s-%s mol %s",
-                          atypeI, atypeJ,
-                          mymol.getIupac().c_str());
-            }
-        }
-        rhs.push_back(-mymol.Emol_);
-    }
-
-    char buf[STRLEN];
-    snprintf(buf, sizeof(buf), "Inconsistency in number of energies nMol %d != #rhs %zu", nMol, rhs.size());
-    GMX_RELEASE_ASSERT(static_cast<int>(rhs.size()) == nMol, buf);
-
-    auto nzero = std::count_if(ntest.begin(), ntest.end(), [](const int n)
-                               {
-                                   return n == 0;
-                               });
-
-    GMX_RELEASE_ASSERT(nzero == 0, "Inconsistency in the number of bonds in poldata and ForceConstants_");
-
-    std::vector<double> Edissoc(nD);
-    a.solve(rhs, &Edissoc);
-    if (debug)
-    {
-        dump_csv(ctest,  molset(), ntest, Edissoc, a_copy, rhs.data());
-    }
-    for (size_t i = 0; i < ctest.size(); i++)
-    {
-        if (fplog)
-        {
-            fprintf(fplog, "Optimized dissociation energy for %8s with %4d copies to %g\n",
-                    ctest[i].c_str(), ntest[i], Edissoc[i]);
-        }
-    }
-
-    int i = 0;
-    for (auto &b : ForceConstants_[InteractionType::BONDS].bondNames())
-    {
-        auto fs = poldata()->findForces(InteractionType::BONDS);
-        for(auto &fp : *(fs->findParameters(b.first)))
-        {
-            if (fp.second.mutability() == Mutability::Free ||
-                fp.second.mutability() == Mutability::Bounded)
-            {
-                if (fp.first == "De")
-                {
-                    fp.second.setValue(std::max(100.0, Edissoc[i++]));
-                }
-            }
-        }
-    }
-}
-
 void Optimization::InitOpt(FILE *fplog, bool bRandom)
 {
     for (auto fs : poldata()->forcesConst())
@@ -703,22 +539,6 @@ void Optimization::InitOpt(FILE *fplog, bool bRandom)
             fc.makeReverseIndex();
             fc.dump(fplog);
             ForceConstants_.insert({fs.first, std::move(fc)});
-        }
-    }
-    if (bDissoc_)
-    {
-        if (ForceConstants_[InteractionType::BONDS].nbad() <= molset().size())
-        {
-            getDissociationEnergy(fplog);
-        }
-        else
-        {
-            printf("\n"
-                   "WARNING: %zu molecule(s) is (are) not enough to calculate dissociation\n"
-                   "         energy for %zu bond type(s) using linear regression. Default\n"
-                   "         values from gentop.dat will be used as the initial guess.\n"
-                   "         Recomendation is to add more molecules having the same bond types.\n\n",
-                   molset().size(), ForceConstants_[InteractionType::BONDS].nbad());
         }
     }
     

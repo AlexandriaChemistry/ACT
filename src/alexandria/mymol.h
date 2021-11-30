@@ -436,7 +436,6 @@ namespace alexandria
          * \param[in] fplog                          Logger
          * \param[in] cr      Communication parameters
          * \param[in] tabfn   Table function
-         * \param[in] hwinfo  Gromacs structure with hardware info
          * \param[in] qcycle  Number of cycles for computing charges
          * \param[in] qtol    Convergence of charges tolerance
          * \param[in] algorithm The algorithm for determining charges,
@@ -448,7 +447,6 @@ namespace alexandria
                                   const gmx::MDLogger       &fplog,
                                   t_commrec                 *cr,
                                   const char                *tabfn,
-                                  gmx_hw_info_t             *hwinfo,
                                   int                        qcycle,
                                   real                       qtol,
                                   ChargeGenerationAlgorithm  algorithm,
@@ -502,7 +500,7 @@ namespace alexandria
         /*! \brief
          * Collect the experimental properties
          *
-         * \param[in] bQM      Allow QM results
+         * \param[in] iqm      Determine whether to allow exp or QM results or both
          * \param[in] bZero    Allow zero dipoles
          * \param[in] bZPE     Use zero point energies
          * \param[in] bDHform  Whether to use the enthalpy of formation
@@ -510,7 +508,7 @@ namespace alexandria
          * \param[in] basis    Basis set used for QM calculation
          * \param[in] pd       Force field structure
          */
-        immStatus getExpProps(gmx_bool           bQM,
+        immStatus getExpProps(iqmType            iqm,
                               gmx_bool           bZero,
                               gmx_bool           bZPE,
                               gmx_bool           bDHform,
@@ -630,7 +628,6 @@ namespace alexandria
         immStatus GenerateGromacs(const gmx::MDLogger      &mdlog,
                                   t_commrec                *cr,
                                   const char               *tabfn,
-                                  gmx_hw_info_t            *hwinfo,
                                   ChargeType               iType);
 
         /*! \brief

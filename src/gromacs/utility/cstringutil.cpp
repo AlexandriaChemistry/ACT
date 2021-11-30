@@ -513,43 +513,6 @@ str_to_int64_t(const char *str, char **endptr)
 #endif
 }
 
-char *gmx_strsep(char **stringp, const char *delim)
-{
-    char *ret;
-    int   len = strlen(delim);
-    int   i, j = 0;
-    int   found = 0;
-
-    if (!*stringp)
-    {
-        return NULL;
-    }
-    ret = *stringp;
-    do
-    {
-        if ( (*stringp)[j] == '\0')
-        {
-            found    = 1;
-            *stringp = NULL;
-            break;
-        }
-        for (i = 0; i < len; i++)
-        {
-            if ( (*stringp)[j] == delim[i])
-            {
-                (*stringp)[j] = '\0';
-                *stringp      = *stringp+j+1;
-                found         = 1;
-                break;
-            }
-        }
-        j++;
-    }
-    while (!found);
-
-    return ret;
-}
-
 char *gmx_step_str(int64_t i, char *buf)
 {
     sprintf(buf, "%" PRId64, i);

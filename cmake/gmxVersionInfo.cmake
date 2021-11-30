@@ -211,7 +211,7 @@ set(GMX_VERSION_SUFFIX "")
 # linked to this library (i.e. it is not a patch number). See the
 # above descriptions of LIBRARY_SOVERSION_* for policy for changes
 # here. The important thing is to minimize the chance of third-party
-# code being able to dynamically link with a version of libgromacs
+# code being able to dynamically link with a version of libactgromacs
 # that might not work.
 set(LIBRARY_SOVERSION_MAJOR 5)
 set(LIBRARY_SOVERSION_MINOR 0)

@@ -40,7 +40,7 @@
 
 #include <cmath>
 
-#include "gromacs/coulombintegrals/coulombintegrals.h"
+#include "alexandria/coulombintegrals/coulombintegrals.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gmxlib/nonbonded/nb_kernel.h"
 #include "gromacs/gmxlib/nonbonded/nonbonded.h"

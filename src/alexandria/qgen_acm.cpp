@@ -34,7 +34,6 @@
 
 #include <cctype>
 
-#include "gromacs/coulombintegrals/coulombintegrals.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/linearalgebra/matrix.h"
 #include "gromacs/listed-forces/bonded.h"
@@ -43,10 +42,10 @@
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/atoms.h"
 
+#include "coulombintegrals/coulombintegrals.h"
 #include "molprop.h"
 #include "poldata.h"
 #include "regression.h"
-
 
 namespace alexandria
 {

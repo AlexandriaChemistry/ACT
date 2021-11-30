@@ -36,7 +36,6 @@
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/gmxlib/network.h"
-#include "gromacs/hardware/detecthardware.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/enerdata.h"
@@ -111,7 +110,10 @@ int alex_gentop(int argc, char *argv[])
         "Verstraelen: Verstraelen et al. (J. Chem. Phys. 131, 044127, 2009)[PAR]",
         "The corresponding data files can be found in the library directory",
         "in subdirectory alexandria.ff. Check chapter 5 of the manual for more",
-        "information about file formats.[PAR]"
+        "information about file formats.[PAR]",
+        "When the [TT]-openmm[tt] flag is passed, an XML file will be created",
+        "that can be used to run a simulation of the system using the OpenMM",
+        "software."
     };
     const char                      *bugs[] = {
         "No force constants for impropers are generated"
@@ -122,7 +124,7 @@ int alex_gentop(int argc, char *argv[])
 
     t_filenm                         fnm[] = {
         { efTOP, "-p",        "out",           ffOPTWR },
-        { efDAT, "-o",        "out",           ffOPTWR },
+        { efXML, "-openmm",   "out",           ffOPTWR },
         { efITP, "-oi",       "out",           ffOPTWR },
         { efSTO, "-c",        "out",           ffWRITE },
         { efNDX, "-n",        "renum",         ffOPTWR },
@@ -166,7 +168,6 @@ int alex_gentop(int argc, char *argv[])
     static gmx_bool                  bVerbose       = false;
     static gmx_bool                  bAllowMissing  = false;
     static gmx_bool                  addHydrogens   = false;
-    gmx_bool                         openmm     = false;
 
     static const char               *ff[]           = {nullptr, "ACM-g", "ACM-pg", "ACM-s", "ACM-ps", "ESP-p", "ESP-pp", "ESP-pg", "ESP-ps", "Yang", "Bultinck", "Rappe", "Verstraelen", nullptr};
     static const char               *cgopt[]        = {nullptr, "Atom", "Group", "Neutral", nullptr};
@@ -224,9 +225,7 @@ int alex_gentop(int argc, char *argv[])
         { "-cgsort", FALSE, etSTR, {cgopt},
           "HIDDENOption for assembling charge groups: based on Atom (default, does not change the atom order), Group (e.g. CH3 groups are kept together), or Neutral sections (try to find groups that together are neutral). If the order of atoms is changed an index file is written in order to facilitate changing the order in old files." },
         { "-jobtype",  FALSE, etSTR, {&jobtype},
-          "The job type used in the Gaussian calculation: Opt, Polar, SP, and etc." },
-        { "-openmm", FALSE, etBOOL, {&openmm},
-          "Write and OpenMM force field file rather than an Alexandria file." }  
+          "The job type used in the Gaussian calculation: Opt, Polar, SP, and etc." }
     };
 
     if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
@@ -367,7 +366,6 @@ int alex_gentop(int argc, char *argv[])
                                  tabfn);
 
     auto pnc    = gmx::PhysicalNodeCommunicator(MPI_COMM_WORLD, 0);
-    auto hwinfo = gmx_detect_hardware(mdlog, pnc);
     gmx_omp_nthreads_init(mdlog, cr, 1, 1, 1, 0, false, false);
 
     if (immStatus::OK == imm)
@@ -397,7 +395,6 @@ int alex_gentop(int argc, char *argv[])
                                        mdlog,
                                        cr,
                                        tabfn,
-                                       hwinfo,
                                        qcycle,
                                        qtol,
                                        alg,
@@ -432,21 +429,22 @@ int alex_gentop(int argc, char *argv[])
 
     if (immStatus::OK == imm && mymol.errors().size() == 0)
     {
-        splitLot(mylot.c_str(), &method, &basis);
-        mymol.PrintConformation(opt2fn("-c", NFILE, fnm));
-        mymol.PrintTopology(bITP ? ftp2fn(efITP, NFILE, fnm) : ftp2fn(efTOP, NFILE, fnm),
-                            bVerbose,
-                            &pd,
-                            cr,
-                            method,
-                            basis);
-    }
-
-    if (openmm)
+        if (opt2bSet("-openmm", NFILE, fnm))
         {
-            writeOpenMM(opt2fn("-o", NFILE, fnm), &pd, &mymol, 0);
+            writeOpenMM(opt2fn("-openmm", NFILE, fnm), &pd, &mymol, 0);
         }
-
+        else
+        {
+            splitLot(mylot.c_str(), &method, &basis);
+            mymol.PrintConformation(opt2fn("-c", NFILE, fnm));
+            mymol.PrintTopology(bITP ? ftp2fn(efITP, NFILE, fnm) : ftp2fn(efTOP, NFILE, fnm),
+                                bVerbose,
+                                &pd,
+                                cr,
+                                method,
+                                basis);
+        }
+    }
     else
     {
         auto fn = opt2fn("-g", NFILE, fnm);

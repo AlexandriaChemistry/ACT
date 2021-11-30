@@ -45,10 +45,4 @@ endif()
 set(LINEARALGEBRA_SOURCES
     ${LINEARALGEBRA_SOURCES} ${BLAS_SOURCES} ${LAPACK_SOURCES})
 
-target_sources(libgromacs_external PRIVATE ${LINEARALGEBRA_SOURCES})
-
-gmx_install_headers(
-#    eigensolver.h
-#    matrix.h
-#    sparsematrix.h
-    )
+target_sources(libactgromacs_external PRIVATE ${LINEARALGEBRA_SOURCES})

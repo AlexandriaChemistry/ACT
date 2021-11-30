@@ -55,7 +55,7 @@
  * \brief This file contains declarations of high-level functions used
  * by mdrun to compute energies and forces for listed interactions.
  *
- * Clients of libgromacs that want to evaluate listed interactions
+ * Clients of libactgromacs that want to evaluate listed interactions
  * should call functions declared here.
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>

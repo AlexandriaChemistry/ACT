@@ -51,6 +51,7 @@
 #include <vector>
 
 #include "gromacs/compat/make_unique.h"
+#include "gromacs/mdtypes/trajectoryframe.h"
 #include "gromacs/onlinehelp/helpmanager.h"
 #include "gromacs/onlinehelp/helpwritercontext.h"
 #include "gromacs/options/basicoptions.h"
@@ -59,7 +60,6 @@
 #include "gromacs/selection/selhelp.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
-#include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/filestream.h"
 #include "gromacs/utility/gmxassert.h"

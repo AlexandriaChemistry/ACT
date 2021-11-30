@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020
+ * Copyright (C) 2014-2021
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -168,17 +168,18 @@ const ParameterNames &ForceConstants::bondNamesConst(const Identifier &identifie
 void ForceConstants::analyzeIdef(const std::vector<MyMol> &mm,
                                  const Poldata            *pd)
 {
+    gmx_fatal(FARGS, "Code is broken");
     if (!bOpt_)
     {
         return;
     }
     for (auto &mymol : mm)
     {
-        GMX_THROW(gmx::InternalError("Use UpdateIdef"));
         bool bondsFound = true;
         for (int i = 0; (i < mymol.ltop_->idef.il[ftype_].nr) && bondsFound;
              i += interaction_function[ftype_].nratoms+1)
         {
+            std::vector<int>         aindex;
             std::vector<std::string> atoms;
             auto myatoms = mymol.atomsConst();
             // Loop starts from 1 because the first value is the function type
@@ -186,6 +187,7 @@ void ForceConstants::analyzeIdef(const std::vector<MyMol> &mm,
             {
                 std::string aa;
                 int         ai = mymol.ltop_->idef.il[ftype_].iatoms[i+j];
+                aindex.push_back(ai+1);
                 if (!pd->atypeToBtype(*myatoms.atomtype[ai], &aa))
                 {
                     bondsFound = false;
@@ -197,25 +199,49 @@ void ForceConstants::analyzeIdef(const std::vector<MyMol> &mm,
             }
             auto fs = pd->findForcesConst(itype_);
             // TODO: Take bond order into account.
-            Identifier bondId(atoms, CanSwap::Yes);
-            if (bondsFound && fs.parameterExists(bondId))
+            std::vector<double> bondOrders;
+            for(size_t ai = 0; ai < aindex.size()-1; ai++)
+            {
+                for(const auto &b : mymol.bondsConst())
+                {
+                    if ((b.getAi() == aindex[ai] && b.getAj() == aindex[ai+1]) ||
+                        (b.getAi() == aindex[ai+1] && b.getAj() == aindex[ai]))
+                    {
+                        bondOrders.push_back(b.getBondOrder());
+                        break;
+                    }
+                }
+            }
+            GMX_RELEASE_ASSERT(aindex.size() == bondOrders.size()+1, "Could not find all bond orders. Duh.");
+            Identifier *bondId;
+            if (InteractionType::BONDS == itype_ && 2 == aindex.size())
+            {
+                bondId = new Identifier(atoms, bondOrders[0], CanSwap::Yes);
+            }
+            else
+            {
+                bondId = new Identifier(atoms, CanSwap::Yes);
+            }
+            if (bondsFound && fs.parameterExists(*bondId))
             {
                 std::vector<double> params;
-                for(const auto &f : fs.findParametersConst(bondId))
+                auto ffpMap = fs.findParametersConst(*bondId);
+                for(const auto &f : ffpMap)
                 {
                     params.push_back(f.second.value());
                 }
-                auto c = bn_.find(bondId);
+                auto c = bn_.find(*bondId);
                 if (c != bn_.end())
                 {
                     c->second.inc();
                 }
                 else
                 {
-                    ParameterNames bn(1, ftype_, params, 0);
-                    addForceConstant(bondId, std::move(bn));
+                    //   ParameterNames bn(1, ftype_, params, ffpMap.second.index());
+                    //addForceConstant(*bondId, std::move(bn));
                 }
             }
+            delete bondId;
         }
     }
 }

@@ -74,7 +74,6 @@
 struct gmx_pme_t;
 struct gmx_wallcycle;
 struct gmx_walltime_accounting;
-struct nonbonded_verlet_t;
 struct pme_load_balancing_t;
 struct t_nrnb;
 
@@ -153,7 +152,6 @@ class ResetHandler final
             const MDLogger             &mdlog,
             FILE                       *fplog,
             const t_commrec            *cr,
-            nonbonded_verlet_t         *nbv,
             t_nrnb                     *nrnb,
             gmx_wallcycle              *wcycle,
             gmx_walltime_accounting    *walltime_accounting)
@@ -162,7 +160,7 @@ class ResetHandler final
             {
                 if (resetCountersImpl(
                             step, step_rel, mdlog, fplog,
-                            cr, nbv, nrnb,
+                            cr, nrnb,
                             wcycle, walltime_accounting))
                 {
                     // need to reset the counters only once
@@ -183,7 +181,6 @@ class ResetHandler final
             const MDLogger             &mdlog,
             FILE                       *fplog,
             const t_commrec            *cr,
-            nonbonded_verlet_t         *nbv,
             t_nrnb                     *nrnb,
             gmx_wallcycle              *wcycle,
             gmx_walltime_accounting    *walltime_accounting);

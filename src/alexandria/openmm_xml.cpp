@@ -54,7 +54,7 @@ namespace alexandria
 {
 
 /*! \brief The different entry types that can be found
- * \TODO Comment each element
+ * TODO: Comment each element
  */
 
 enum class xmlEntryOpenMM {
