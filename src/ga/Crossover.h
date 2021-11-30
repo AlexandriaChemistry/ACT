@@ -50,7 +50,7 @@ namespace ga
                                const vector &parent2,
                                      vector *child1,
                                      vector *child2,
-                               const int     length) {};
+                               const int     length) = 0;
 
     };
 

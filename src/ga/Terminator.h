@@ -27,7 +27,7 @@ namespace ga
                                const vector    &fitness,
                                const int        generationNumber,
                                const int        popSize,
-                               const int        chromosomeLength) { return true; }
+                               const int        chromosomeLength) = 0;
 
     };
 

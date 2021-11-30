@@ -26,7 +26,7 @@ namespace ga
          */
         virtual void sort(      matrix *pop,
                                 vector *fitness,
-                          const int     popSize) {};
+                          const int     popSize) = 0;
 
     };
 

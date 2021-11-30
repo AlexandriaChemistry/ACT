@@ -46,7 +46,7 @@ namespace ga
          */
         virtual void mutate(      vector   *individual,
                             const int       chromosomeLength,
-                            const double    prMut) {};
+                            const double    prMut) = 0;
 
     };
 

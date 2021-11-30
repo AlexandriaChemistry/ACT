@@ -6,7 +6,7 @@ LDFLAGS =
 
 RM = /bin/rm -f
 
-OBJS = Crossover.o FitnessComputer.o GeneticAlgorithm.o helpers.o Initializer.o Mutator.o ProbabilityComputer.o Selector.o Sorter.o Terminator.o test.o
+OBJS = Crossover.o FitnessComputer.o GeneticAlgorithm.o ga_helpers.o Initializer.o Mutator.o ProbabilityComputer.o Selector.o Sorter.o Terminator.o test.o
 GEN_HFILES = Initializer.h FitnessComputer.h ProbabilityComputer.h Crossover.h Mutator.h Terminator.h
 EXEC = test
 
@@ -24,8 +24,8 @@ FitnessComputer.o: FitnessComputer.cpp FitnessComputer.h aliases.h
 GeneticAlgorithm.o: GeneticAlgorithm.cpp GeneticAlgorithm.h aliases.h ga_helpers.h $(GEN_HFILES)
 	$(CC) $(CFLAGS) -c GeneticAlgorithm.cpp
 
-helpers.o: ga_helpers.cpp ga_helpers.h aliases.h
-	$(CC) $(CFLAGS) -c helpers.cpp
+ga_helpers.o: ga_helpers.cpp ga_helpers.h aliases.h
+	$(CC) $(CFLAGS) -c ga_helpers.cpp
 
 Initializer.o: Initializer.cpp Initializer.h aliases.h
 	$(CC) $(CFLAGS) -c Initializer.cpp

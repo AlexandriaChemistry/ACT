@@ -8,8 +8,8 @@
 namespace ga
 {
 
-    const int RouletteSelector::select(const vector    &probability,
-                                       const int        popSize)
+    int RouletteSelector::select(const vector    &probability,
+                                 const int        popSize)
     {
         double num = dis(gen);
         int i = 0;

@@ -23,7 +23,7 @@ namespace ga
          * @param length        length of the chromosome
          */
         virtual void initialize(      vector   *individual,
-                                const int       length) {};
+                                const int       length) = 0;
     };
 
 

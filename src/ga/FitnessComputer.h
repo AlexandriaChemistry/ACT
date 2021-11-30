@@ -24,7 +24,7 @@ namespace ga
         virtual void compute(const vector  &individual,
                                    vector  *fitness,
                              const int      indIndex,
-                             const int      length) {};
+                             const int      length) = 0;
 
     };
 

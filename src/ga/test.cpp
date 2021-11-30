@@ -30,8 +30,8 @@ int main(int argc, char const *argv[])
 	SimpleInitializer           init(-10.0, 10.0);
 	SimpleFitnessComputer       fit;
 //    EmptySorter                 sort;
-//    MergeSorter                 sort(popSize, chromLen, false);
-	QuickSorter                 sort(popSize, false);
+//    MergeSorter                 sort(popSize, chromLen, true);
+	QuickSorter                 sort(popSize, true);
 //    FitnessProbabilityComputer  procomp;
 	RankProbabilityComputer     procomp(popSize);
 	RouletteSelector            select;

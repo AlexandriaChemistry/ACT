@@ -3,6 +3,7 @@
 #include "ga_helpers.h"
 #include <random>
 #include <cmath>
+#include <cassert>
 #include <algorithm>
 
 namespace ga
@@ -79,7 +80,7 @@ namespace ga
                                           vector *child2,
                                     const int     length) {
 
-        assert(numberOfCrossovers < length);
+        assert(numberOfCrossovers < length);  // TODO: we should put this somewhere else and give feedback to user
 
         int index;
         int crossover;
