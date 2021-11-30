@@ -64,7 +64,7 @@ enum class CalcDev {
 /*!
  * Handles optimization parameters for Markov Chain Monte-Carlo method
  */
-class OptParam
+class BayesParamHandler
 {
     private:
         //! Maximum number of iterations
@@ -218,7 +218,7 @@ public:
  * \inpublicapi
  * \ingroup module_alexandria
  */
-class Bayes : public OptParam
+class Bayes : public BayesParamHandler
 {
     using func_t       = std::function<double (double v[])>;
     using parm_t       = std::vector<double>;

@@ -57,7 +57,7 @@
 namespace alexandria
 {
 
-void OptParam::add_pargs(std::vector<t_pargs> *pargs)
+void BayesParamHandler::add_pargs(std::vector<t_pargs> *pargs)
 {
     t_pargs pa[] = {
         { "-maxiter", FALSE, etINT, {&maxiter_},
@@ -81,10 +81,10 @@ void OptParam::add_pargs(std::vector<t_pargs> *pargs)
     }
 }
 
-void OptParam::setOutputFiles(const char                     *xvgconv,
-                              const std::vector<std::string> &paramClass,
-                              const char                     *xvgepot,
-                              const gmx_output_env_t         *oenv)
+void BayesParamHandler::setOutputFiles(const char                     *xvgconv,
+                                       const std::vector<std::string> &paramClass,
+                                       const char                     *xvgepot,
+                                       const gmx_output_env_t         *oenv)
 {
     xvgconv_.assign(xvgconv);
     paramClass_ = paramClass;
@@ -92,7 +92,7 @@ void OptParam::setOutputFiles(const char                     *xvgconv,
     oenv_       = oenv;
 }
 
-double OptParam::computeBeta(int iter)
+double BayesParamHandler::computeBeta(int iter)
 {
     double temp = temperature_;
     if (iter >= maxiter_)
@@ -106,7 +106,7 @@ double OptParam::computeBeta(int iter)
     return 1/(BOLTZ*temp);
 }
 
-double OptParam::computeBeta(int maxiter, int iter, int ncycle)
+double BayesParamHandler::computeBeta(int maxiter, int iter, int ncycle)
 {
     double temp = temperature_;
     if (iter >= maxiter_)
@@ -118,6 +118,22 @@ double OptParam::computeBeta(int maxiter, int iter, int ncycle)
         temp = (0.5*temperature_)*((exp(-iter/(0.2*(maxiter+1)))) * (1.1 + cos((ncycle*M_PI*iter)/(maxiter+1))));
     }
     return 1/(BOLTZ*temp);
+}
+
+bool BayesParamHandler::anneal(int iter) const
+{
+    if (anneal_ >= 1)
+    {
+        return false;
+    }
+    else if (anneal_ <= 0)
+    {
+        return true;
+    }
+    else
+    {
+        return iter >= anneal_ * maxiter_;
+    }
 }
 
 void Sensitivity::computeForceConstants(FILE *fp)
@@ -222,22 +238,6 @@ void Bayes::changeParam(size_t j, real rand)
         {
             param_[j] = upperBound_[j];
         }
-    }
-}
-
-bool OptParam::anneal(int iter) const
-{
-    if (anneal_ >= 1)
-    {
-        return false;
-    }
-    else if (anneal_ <= 0)
-    {
-        return true;
-    }
-    else
-    {
-        return iter >= anneal_ * maxiter_;
     }
 }
 
