@@ -296,6 +296,31 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
     {
         auto grandchild = add_xml_child(child2, exml_names(xmlEntryOpenMM::RESIDUE));
         add_xml_char(grandchild, exml_names(xmlEntryOpenMM::NAME), mymol->getMolname().c_str());
+        //auto myatoms =  mymol -> atoms();
+        
+        for (auto i = 0; i < mymol -> atomsConst().nr; i++)
+          
+        {
+           auto baby = add_xml_child(grandchild, exml_names(xmlEntryOpenMM::ATOM_RES));
+ 
+           //add_xml_char(baby, exml_names(xmlEntryOpenMM::NAME), myatoms.atomtype[i].c_str());
+           //add_xml_char(baby, exml_names(xmlEntryOpenMM::NAME), *myatoms->atomtype[i]); 
+           add_xml_int(baby, exml_names(xmlEntryOpenMM::NAME), i);          
+        }    
+
+        for (auto &bi : mymol->bondsConst())
+        {
+            //t_param b;
+            //memset(&b, 0, sizeof(b));
+            //b.a[0] = bi.getAi() - 1;
+            //b.a[1] = bi.getAj() - 1;
+            auto baby = add_xml_child(grandchild, exml_names(xmlEntryOpenMM::BOND_RES));
+            add_xml_int(baby, exml_names(xmlEntryOpenMM::ATOMNAME1_RES), bi.getAi() - 1);
+            add_xml_int(baby, exml_names(xmlEntryOpenMM::ATOMNAME2_RES), bi.getAj() - 1);
+            //add_xml_char(baby, exml_names(xmlEntryOpenMM::ATOMNAME1_RES), *atoms->atomtype[b.a[0]].c_str());
+            //add_xml_char(baby, exml_names(xmlEntryOpenMM::ATOMNAME1_RES), *atoms->atomtype[b.a[1]].c_str());
+            
+        }    
     } 
 
 
