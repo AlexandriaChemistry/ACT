@@ -54,7 +54,7 @@ def main() -> None:
         print(f"{'Provided AlexandriaLib:': <27} {args.alib_path : <35}")
         print(f"{'Provided destination:': <27} {args.destination : <35}")
 
-    # Check if environmental variable AlexandriaLib or the provided destination exists
+    # Check if environmental variable AlexandriaLib or the provided Library path exist
     env_var = 'AlexandriaLib'
     if args.alib_path:
         if not os.path.exists(args.alib_path):
@@ -76,7 +76,8 @@ def main() -> None:
         msg += f' {alib_path}'
         print(msg)
 
-    # Check if path defined by environmental variable exists.
+    # Check if path to the Library exists (will exist if provided by the user
+    # and made it this far).
     # If it exists, move to it. Otherwise, halt!
     if not os.path.exists(alib_path):
         msg: str = f'\nThe path {alib_path} does not exist!'
