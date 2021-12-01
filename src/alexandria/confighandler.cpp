@@ -2,6 +2,8 @@
 
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/math/units.h"
+#include "gromacs/utility/gmxassert.h"
+
 
 namespace alexandria
 {
@@ -15,7 +17,7 @@ void BayesConfigHandler::add_pargs(std::vector<t_pargs> *pargs)
         { "-temp",    FALSE, etREAL, {&temperature_},
           "'Temperature' for the Monte Carlo simulation. Default 5." },
         { "-tweight", FALSE, etBOOL, {&tempWeight_},
-          "Weight the temperature in the MC/MC algorithm according to the square root of the number of data points. This is in order to get a lower probability of accepting a step in the wrong direction for parameters of which there are few copies." },
+          "Weight the temperature in the MC/MC algorithm according to the square root of the number of data points. This is in order to get a lower probability of accepting a step in the wrong direction for parameters of which there are few copies. Default false." },
         { "-anneal", FALSE, etREAL, {&anneal_},
           "Use annealing in Monte Carlo simulation, starting from this fraction of the simulation. Value should be between 0 and 1. Default 1." },
         { "-seed",   FALSE, etINT,  {&seed_},
@@ -29,6 +31,18 @@ void BayesConfigHandler::add_pargs(std::vector<t_pargs> *pargs)
     {
         pargs->push_back(pa[i]);
     }
+}
+
+void BayesConfigHandler::check_pargs()
+{
+    // maxiter_
+    GMX_RELEASE_ASSERT(maxiter_ < 0, "-maxiter must be nonnegative.");
+    // step_
+    GMX_RELEASE_ASSERT(step_ < 0, "-step must be nonnegative.");
+    // temperature_
+    GMX_RELEASE_ASSERT(temperature_ < 0, "-temp must be nonnegative.");
+    // anneal_
+    GMX_RELEASE_ASSERT(anneal_ < 0 || anneal_ > 1, "-anneal must be in range [0, 1].");
 }
 
 void BayesConfigHandler::setOutputFiles(const char                     *xvgconv,
