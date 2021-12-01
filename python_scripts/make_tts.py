@@ -28,6 +28,8 @@ def parse_arguments() -> ap.Namespace:
                         help='Directory where the Alexandria Library is located. Default: $AlexandriaLib')
     parser.add_argument('-dest', '--destination', type=str, default='',
                         help='Directory to store the set. Default: $AlexandriaLib/traintestsets/')
+    parser.add_argument('-alpha', '--alphabetical', action='store_true',
+                        help='Sort compounds alphabetically in the output file')              
     parser.add_argument('-v', '--verbose', action='store_true',
                         help='Print information in console')
 
@@ -127,11 +129,19 @@ def main() -> None:
     ttset: list = [f'{compounds[i]}|Train\n' for i in range(args.ntrain)]
     ttset += [f'{compounds[i]}|Test\n' for i in range(args.ntrain, n_train_and_test)]
 
+    # Sort alphabetically if needed
+    if args.alphabetical:
+        if args.verbose:
+            msg: str = '\nSorting compounds alphabetically...'
+            print(msg)
+        ttset.sort(key=lambda name: name.split('|')[0])
+        
+
     # Get desination path to write and move into it
     ttsets_def_path: str = 'traintestsets'
     if args.destination:
         if not os.path.exists(args.destination):
-            msg: str = f'\nThe destinationpath {args.destination} does not exist!'
+            msg: str = f'\nThe destination path {args.destination} does not exist!'
             sys.exit(msg)
         if not os.path.isdir(args.destination):
             msg: str = f'\nThe destination path {args.destination} is not a directory!'
