@@ -1,5 +1,5 @@
-#ifndef ALEXANDRIA_PARAMHANDLER_H
-#define ALEXANDRIA_PARAMHANDLER_H
+#ifndef ALEXANDRIA_CONFIGHANDLER_H
+#define ALEXANDRIA_CONFIGHANDLER_H
 
 #include <vector>
 
@@ -9,11 +9,11 @@ namespace alexandria
 {
 
 /*!
- * Abstract class to handle parameters for methods.
+ * Abstract class to handle configuration for methods.
  * It adds its command-line arguments to a given parameter vector
  * and later checks its validity.
  */
-class ParamHandler
+class ConfigHandler
 {
 
 public:
