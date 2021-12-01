@@ -39,9 +39,9 @@ namespace ga
     {
 
     public:
-        void compute(const vector  &fitness,
-                           vector  *prob,
-                     const int      popSize);
+        virtual void compute(const vector  &fitness,
+                                   vector  *prob,
+                             const int      popSize);
 
     };
 
@@ -72,9 +72,9 @@ namespace ga
         BoltzmannProbabilityComputer(const int      popSize,
                                      const double   temperature);
 
-        void compute(const vector  &fitness,
-                           vector  *prob,
-                     const int      popSize);
+        virtual void compute(const vector  &fitness,
+                                   vector  *prob,
+                             const int      popSize);
 
     };
 
@@ -107,9 +107,9 @@ namespace ga
          * @param prob      pointer to structure to store the probability for each individual
          * @param popSize   number of individuals in the population
          */
-        void compute(const vector  &fitness,
-                           vector  *prob,
-                     const int      popSize);
+        virtual void compute(const vector  &fitness,
+                                   vector  *prob,
+                             const int      popSize);
 
     };
 
