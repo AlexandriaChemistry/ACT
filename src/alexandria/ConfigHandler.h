@@ -32,6 +32,27 @@ public:
 
 };
 
+class GAConfigHandler
+{
+
+private:
+    int popSize_ = 8;
+
+public:
+
+    /*!
+     * \brief Add command-line arguments to a vector
+     * @param pargs     pointer to arguments vector
+     */
+    virtual void add_pargs(std::vector<t_pargs> *pargs);
+
+    /*!
+     * \brief Check the validity of the provided arguments
+     * Throw an exception if an invalid combination of arguments is encountered
+     */
+    virtual void check_pargs();
+};
+
 }
 
 #endif //ALEXANDRIA_PARAMHANDLER_H
