@@ -49,8 +49,8 @@ namespace ga
             gen.seed(::time(NULL));
         }
 
-        void initialize(      vector   *individual,
-                        const int       length);
+        virtual void initialize(      vector   *individual,
+                                const int       length);
 
     };
 

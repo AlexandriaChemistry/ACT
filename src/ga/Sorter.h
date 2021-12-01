@@ -38,9 +38,9 @@ namespace ga
     {
 
     public:
-        void sort(      matrix *pop,
-                        vector *fitness,
-                  const int     popSize) {};
+        virtual void sort(      matrix *pop,
+                                vector *fitness,
+                          const int     popSize) {};
 
     };
 
@@ -104,9 +104,9 @@ namespace ga
                     const int   chromosomeLength,
                     const bool  descending);
 
-        void sort(      matrix *pop,
-                        vector *fitness,
-                  const int     popSize);
+        virtual void sort(      matrix *pop,
+                                vector *fitness,
+                          const int     popSize);
 
     };
 
@@ -166,9 +166,9 @@ namespace ga
                     const bool  descending);
 
 
-        void sort(      matrix *pop,
-                        vector *fitness,
-                  const int     popSize);
+        virtual void sort(      matrix *pop,
+                                vector *fitness,
+                          const int     popSize);
 
     };
 

@@ -45,7 +45,7 @@ Sorter.o: Sorter.cpp Sorter.h aliases.h ga_helpers.h
 Terminator.o: Terminator.cpp Terminator.h aliases.h ga_helpers.h
 	$(CC) $(CFLAGS) -c Terminator.cpp
 
-test.o: test.cpp aliases.h includes.h
+test.o: test.cpp aliases.h ga_includes.h
 	$(CC) $(CFLAGS) -c test.cpp
 
 clean:

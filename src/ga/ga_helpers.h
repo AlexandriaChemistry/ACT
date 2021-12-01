@@ -1,5 +1,5 @@
-#ifndef ACT_HELPERS_H
-#define ACT_HELPERS_H
+#ifndef ACT_GA_HELPERS_H
+#define ACT_GA_HELPERS_H
 
 #include "aliases.h"
 
@@ -40,4 +40,4 @@ namespace ga
 
 }
 
-#endif //ACT_HELPERS_H
+#endif //ACT_GA_HELPERS_H
