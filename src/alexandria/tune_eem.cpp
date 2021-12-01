@@ -878,6 +878,7 @@ int alex_tune_eem(int argc, char *argv[])
         print_memory_usage(debug);
     }
 
+    // MolGen read being called here!
     if (0 == opt.Read(opt.logFile() ? opt.logFile() : (debug ? debug : nullptr),
                       opt2fn("-f", NFILE, fnm),
                       opt2fn_null("-d", NFILE, fnm),

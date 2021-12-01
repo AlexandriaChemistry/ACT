@@ -57,7 +57,7 @@
 namespace alexandria
 {
 
-void BayesParamHandler::add_pargs(std::vector<t_pargs> *pargs)
+void BayesConfigHandler::add_pargs(std::vector<t_pargs> *pargs)
 {
     t_pargs pa[] = {
         { "-maxiter", FALSE, etINT, {&maxiter_},
@@ -81,7 +81,7 @@ void BayesParamHandler::add_pargs(std::vector<t_pargs> *pargs)
     }
 }
 
-void BayesParamHandler::setOutputFiles(const char                     *xvgconv,
+void BayesConfigHandler::setOutputFiles(const char                     *xvgconv,
                                        const std::vector<std::string> &paramClass,
                                        const char                     *xvgepot,
                                        const gmx_output_env_t         *oenv)
@@ -92,7 +92,7 @@ void BayesParamHandler::setOutputFiles(const char                     *xvgconv,
     oenv_       = oenv;
 }
 
-double BayesParamHandler::computeBeta(int iter)
+double BayesConfigHandler::computeBeta(int iter)
 {
     double temp = temperature_;
     if (iter >= maxiter_)
@@ -106,7 +106,7 @@ double BayesParamHandler::computeBeta(int iter)
     return 1/(BOLTZ*temp);
 }
 
-double BayesParamHandler::computeBeta(int maxiter, int iter, int ncycle)
+double BayesConfigHandler::computeBeta(int maxiter, int iter, int ncycle)
 {
     double temp = temperature_;
     if (iter >= maxiter_)
@@ -120,7 +120,7 @@ double BayesParamHandler::computeBeta(int maxiter, int iter, int ncycle)
     return 1/(BOLTZ*temp);
 }
 
-bool BayesParamHandler::anneal(int iter) const
+bool BayesConfigHandler::anneal(int iter) const
 {
     if (anneal_ >= 1)
     {
