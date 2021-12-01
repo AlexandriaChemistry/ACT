@@ -86,11 +86,17 @@ private:
     std::vector<std::string> paramClass_;
 
 public:
-    /*! \brief Add command line arguments
-    *
-    * \param[in] pargs Vector of pargs
-    */
-    void add_pargs(std::vector<t_pargs> *pargs);
+    /*!
+     * \brief Add command-line arguments to a vector
+     * @param pargs     pointer to arguments vector
+     */
+    virtual void add_pargs(std::vector<t_pargs> *pargs);
+
+    /*!
+     * \brief Check the validity of the provided arguments
+     * Throw an exception if an invalid combination of arguments is encountered
+     */
+    virtual void check_pargs();
 
     /*! \brief Set the output file names.
     *

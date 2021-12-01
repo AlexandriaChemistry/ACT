@@ -46,6 +46,7 @@
 #include "gromacs/utility/real.h"
 
 #include "molselect.h"
+#include "confighandler.h"
 
 namespace alexandria
 {
