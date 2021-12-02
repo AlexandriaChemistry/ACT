@@ -109,7 +109,7 @@ public:
  * \inpublicapi
  * \ingroup module_alexandria
  */
-class Bayes : public BayesConfigHandler
+class Bayes
 {
     using func_t       = std::function<double (double v[])>;
     using parm_t       = std::vector<double>;
@@ -117,20 +117,23 @@ class Bayes : public BayesConfigHandler
     using param_name_t = std::vector<std::string>;
 
     private:
-        func_t        func_;
-        parm_t        initial_param_;
-        parm_t        param_;
-        std::vector<int> ntrain_;
-        parm_t        psigma_;
-        parm_t        pmean_;
-        parm_t        lowerBound_;
-        parm_t        upperBound_;
-        parm_t        bestParam_;
-        parm_t        weightedTemperature_;
-        mc_t          attemptedMoves_;
-        mc_t          acceptedMoves_;
+        func_t                  func_;
+        parm_t                  initial_param_;
+        parm_t                  param_;
+        std::vector<int>        ntrain_;
+        parm_t                  psigma_;
+        parm_t                  pmean_;
+        parm_t                  lowerBound_;
+        parm_t                  upperBound_;
+        parm_t                  bestParam_;
+        parm_t                  weightedTemperature_;
+        mc_t                    attemptedMoves_;
+        mc_t                    acceptedMoves_;
         std::vector<Mutability> mutability_;
-        param_name_t  paramNames_;
+        param_name_t            paramNames_;
+
+        //! Optimization options manager
+        BayesConfigHandler      bch_;
 
     public:
 
@@ -201,6 +204,7 @@ class Bayes : public BayesConfigHandler
                                "Incorrect size of input parameters");
             param_ = param;
         }
+        
         /*! \brief
          * Returns the current vector of parameters.
          */
@@ -263,6 +267,11 @@ class Bayes : public BayesConfigHandler
          * Return the vector of number of accepted moves for each parameter
          */
         const mc_t &getAcceptedMoves() const {return acceptedMoves_;};
+
+        /*! \brief
+         * Return a pointer to the Bayes config handler
+         */
+        BayesConfigHandler *getConfigHandler() {return &bch_;}
 
         /*! \brief
          * Run the Markov chain Monte carlo (MCMC) simulation
@@ -431,13 +440,18 @@ class Bayes : public BayesConfigHandler
          */
         size_t numberObjectiveFunctionCalls() const
         {
-            return 1+maxIter()*nParam();
+            return 1+bch_.maxIter()*nParam();
         }
         /* \brief
          * Print the MC statistics to a file.
          * \param[in] fp File pointer to print to
          */
         void printMonteCarloStatistics(FILE *fp);
+
+        /*! \brief Save the current state
+        * Must be overridden by child class.
+        */
+        virtual void saveState() = 0;
 };
 
 }

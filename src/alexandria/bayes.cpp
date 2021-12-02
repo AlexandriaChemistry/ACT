@@ -147,7 +147,7 @@ void Bayes::addParam(const std::string &name,
 void Bayes::changeParam(size_t j, real rand)
 {
     GMX_RELEASE_ASSERT(j < param_.size(), "Parameter out of range");
-    real delta = (2*rand-1)*step()*(upperBound_[j]-lowerBound_[j]);
+    real delta = (2*rand-1)*bch_.step()*(upperBound_[j]-lowerBound_[j]);
     param_[j] += delta;
     if (mutability_[j] == Mutability::Bounded)
     {
@@ -223,7 +223,7 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
     //! Pointer to chi2 surveillance file
     FILE                            *fpe             = nullptr;
 
-    if (xvgConv().empty() || xvgEpot().empty())
+    if (bch_.xvgConv().empty() || bch_.xvgEpot().empty())
     {
         gmx_fatal(FARGS, "You forgot to call setOutputFiles. Back to the drawing board.");
     }
@@ -237,14 +237,14 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
     // Set to -1 to indicate not set, and to crash the program
     // in case of bugs.
     paramClassIndex.resize(paramNames_.size(), -1);
-    std::vector<std::string> pClass = paramClass();
+    std::vector<std::string> pClass = bch_.paramClass();
     assignParamClasses(&paramClassIndex, &pClass);
 
     openParamSurveillanceFiles(pClass, &fpc, paramClassIndex);
 
     // Compute temperature weights if relevant, otherwise the numbers are all 1.0
     weightedTemperature_.resize(paramNames_.size(), 1.0);
-    if (temperatureWeighting()) computeWeightedTemperature();
+    if (bch_.temperatureWeighting()) computeWeightedTemperature();
 
     fpe = openChi2SurveillanceFile(bEvaluate_testset);
 
@@ -284,10 +284,10 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
 
     print_memory_usage(debug);
 
-    double beta0 = 1/(BOLTZ*temperature());
+    double beta0 = 1/(BOLTZ*bch_.temperature());
 
     // Optimization loop
-    for (int iter = 0; iter < maxIter(); iter++)
+    for (int iter = 0; iter < bch_.maxIter(); iter++)
     {
         for (int pp = 0; pp < nParam; pp++)
         {
@@ -301,7 +301,7 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
 
             // For the second half of the optimization, collect data to find the mean and standard deviation of each
             // parameter
-            if (iter >= maxIter()/2)
+            if (iter >= bch_.maxIter()/2)
             {
                 for (auto k = 0; k < nParam; k++)
                 {
@@ -390,7 +390,7 @@ void Bayes::stepMCMC(const int                                  paramIndex,
     if (!accept)
     {
         // Only anneal if the simulation reached a certain number of steps
-        if (anneal(iter)) (*beta0) = computeBeta(iter);
+        if (bch_.anneal(iter)) (*beta0) = bch_.computeBeta(iter);
         const double randProbability = real_uniform(gen);
         const double mcProbability   = exp(-((*beta0)/weightedTemperature_[paramIndex])*deltaEval);
         accept = (mcProbability > randProbability);
@@ -466,12 +466,12 @@ void Bayes::openParamSurveillanceFiles(const std::vector<std::string>  &pClass,
 {
     for(size_t i = 0; i < pClass.size(); i++)
     {
-        std::string fileName = pClass[i] + "-" + xvgConv();
+        std::string fileName = pClass[i] + "-" + bch_.xvgConv();
         fpc->push_back(xvgropen(fileName.c_str(),
                                 "Parameter convergence",
                                 "iteration",
                                 "",
-                                oenv()));
+                                bch_.oenv()));
         std::vector<const char*> paramNames;
         for (size_t j = 0; j < paramNames_.size(); j++)
         {
@@ -480,23 +480,23 @@ void Bayes::openParamSurveillanceFiles(const std::vector<std::string>  &pClass,
                 paramNames.push_back(paramNames_[j].c_str());
             }
         }
-        xvgr_legend((*fpc)[i], paramNames.size(), paramNames.data(), oenv());
+        xvgr_legend((*fpc)[i], paramNames.size(), paramNames.data(), bch_.oenv());
     }
 }
 
 FILE* Bayes::openChi2SurveillanceFile(const bool bEvaluate_testset)
 {
-    FILE* fpe = xvgropen(xvgEpot().c_str(),
+    FILE* fpe = xvgropen(bch_.xvgEpot().c_str(),
                          "Chi squared",
                          "Iteration",
                          "Unknown units",
-                         oenv());
+                         bch_.oenv());
     if (bEvaluate_testset)
     {
         std::vector<std::string> legend;
         legend.push_back(iMolSelectName(iMolSelect::Train));
         legend.push_back(iMolSelectName(iMolSelect::Test));
-        xvgrLegend(fpe, legend, oenv());
+        xvgrLegend(fpe, legend, bch_.oenv());
     }
     return fpe;
 }
@@ -524,7 +524,7 @@ void Bayes::computeMeanSigma(const int     nParam,
 void Bayes::closeConvergenceFiles(const std::vector<FILE*> &fpc,
                                         FILE               *fpe)
 {
-    for(auto fp: fpc)  // Close all parameter convergence surveillance files
+    for(FILE *fp: fpc)  // Close all parameter convergence surveillance files
     {
         xvgrclose(fp);
     }
@@ -563,7 +563,7 @@ void Bayes::fprintParameterStep(const std::vector<FILE*>   &fpc,
                                 const double                xiter)
 {
 
-    for(auto fp: fpc)  // Write iteration number to each parameter convergence surveillance file
+    for(FILE *fp: fpc)  // Write iteration number to each parameter convergence surveillance file
     {
         fprintf(fp, "%8f", xiter);
     }
@@ -571,10 +571,10 @@ void Bayes::fprintParameterStep(const std::vector<FILE*>   &fpc,
     {
         fprintf(fpc[paramClassIndex[k]], "  %10g", param_[k]);
     }
-    for(auto fp: fpc)  // If verbose = True, flush the file to be able to add new data to surveillance plots
+    for(FILE *fp: fpc)  // If verbose = True, flush the file to be able to add new data to surveillance plots
     {
         fprintf(fp, "\n");
-        if (verbose())
+        if (bch_.verbose())
         {
             fflush(fp);
         }
@@ -597,7 +597,7 @@ void Bayes::fprintChi2Step(const bool   bEvaluate_testset,
     {
         fprintf(fpe, "%8f  %10g\n", xiter, prevEval);
     }
-    if (verbose())
+    if (bch_.verbose())
     {
         fflush(fpe);
     }

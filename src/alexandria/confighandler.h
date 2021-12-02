@@ -76,7 +76,7 @@ private:
     std::vector<double>      weightedTemperature_;
     //! Use annealing in the optimization. Value < 1 means annealing will happen
     real                     anneal_         = 1;
-    //! Flag determining whether to be verbose printing
+    //! Flag determining whether to be verbose printing TODO: This has to be made a global flag!
     bool                     verbose_        = false;
     //! Base name for parameter convergence file names
     std::string              xvgconv_;
@@ -163,11 +163,6 @@ public:
 
     //! \brief Return output environment
     const gmx_output_env_t *oenv() const { return oenv_; }
-
-    /*! \brief Save the current state
-    * Must be overridden by child class.
-    */
-    virtual void saveState() = 0;
 };
 
 }

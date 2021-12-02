@@ -176,7 +176,7 @@ void OptACM::add_pargs(std::vector<t_pargs> *pargs) {
         pargs->push_back(pa[i]);
     }
     addOptions(pargs, eTune::EEM);
-    Bayes::add_pargs(pargs);
+    getConfigHandler()->add_pargs(pargs);
 }
 
 void OptACM::optionsFinished(const std::string &outputFile) {
@@ -202,7 +202,7 @@ void OptACM::initChargeGeneration(iMolSelect ims)
     splitLot(lot(), &method, &basis);
     tensor           polar      = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
     rvec             vec;
-    for (auto &mymol : mymols())
+    for (MyMol &mymol : mymols())
     {
         if (mymol.datasetType() != ims)
         {
@@ -670,7 +670,7 @@ bool OptACM::runMaster(const gmx_output_env_t *oenv,
     }
     if (optimize)
     {
-        Bayes::setOutputFiles(xvgconv, paramClass, xvgepot, oenv);
+        getConfigHandler()->setOutputFiles(xvgconv, paramClass, xvgepot, oenv);
         double chi2     = 0;
         bMinimum = Bayes::MCMC(logFile(), bEvaluate_testset, &chi2);
     }
@@ -863,6 +863,8 @@ int alex_tune_eem(int argc, char *argv[])
     {
         return 0;
     }
+
+    // TODO: Check validity of arguments with check_pargs() in ConfigHandler(s)
 
     opt.optionsFinished(opt2fn("-o", NFILE, fnm));
 
