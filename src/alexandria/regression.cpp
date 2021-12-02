@@ -41,6 +41,7 @@
 #include "gromacs/linearalgebra/matrix.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/stringutil.h"
 
 extern "C"
 {
@@ -57,10 +58,20 @@ void dgesvd_(const char* jobu, const char* jobvt, int* m, int* n, double* a,
 
 }
 
-static int multi_regression2(int nrow, double y[], int ncol,
-                             double **a, double x[])
+/*! \brief Linear regression with many columns
+ *
+ * \param[in]  rhs  The right hand side of the equation
+ * \param[in]  a    The matrix
+ * \param[out] x    The solution of the problem
+ * \return 0 if all is fine, the problematic row number otherwise
+ */
+static int multi_regression2(std::vector<double> *rhs,
+                             double              **a, 
+                             std::vector<double> *x)
 {
     /* Query and allocate the optimal workspace */
+    int                 nrow  = rhs->size();
+    int                 ncol  = x->size();
     int                 lwork = -1;
     int                 lda   = std::max(1, nrow);
     int                 ldb   = std::max(1, std::max(nrow, ncol));
@@ -81,28 +92,29 @@ static int multi_regression2(int nrow, double y[], int ncol,
     bool             bDgelsd = true;
     if (bDgelsd)
     {
-        dgelsd_ (&nrow, &ncol, &nrhs, a[0], &lda, y, &ldb, s.data(),
+        dgelsd_ (&nrow, &ncol, &nrhs, a[0], &lda, rhs->data(), &ldb, s.data(),
                  &rcond, &rank, &wkopt, &lwork,
                  iwork.data(), &info );
     }
     else
     {
-        dgels_ ("No transpose", &nrow, &ncol, &nrhs, a[0], &lda, y, &ldb,
+        dgels_ ("No transpose", &nrow, &ncol, &nrhs, a[0], &lda, rhs->data(), &ldb,
                 &wkopt, &lwork, &info );
     }
     lwork = (int)wkopt;
     std::vector<double> work;
     work.resize(lwork);
+    GMX_RELEASE_ASSERT(rhs->size() - nrow == 0, gmx::formatString("rhs.size = %ld nrow = %d", rhs->size(), nrow).c_str());
     /* Solve the equations A*X = B */
     if (bDgelsd)
     {
-        dgelsd_ (&nrow, &ncol, &nrhs, a[0], &lda, y, &ldb, s.data(),
+        dgelsd_ (&nrow, &ncol, &nrhs, a[0], &lda, rhs->data(), &ldb, s.data(),
                  &rcond, &rank, work.data(), &lwork,
                  iwork.data(), &info );
     }
     else
     {
-        dgels_ ("No transpose", &nrow, &ncol, &nrhs, a[0], &lda, y, &ldb,
+        dgels_ ("No transpose", &nrow, &ncol, &nrhs, a[0], &lda, rhs->data(), &ldb,
                 work.data(), &lwork, &info );
     }
     /* Check for convergence */
@@ -112,9 +124,11 @@ static int multi_regression2(int nrow, double y[], int ncol,
     }
     else
     {
+        GMX_RELEASE_ASSERT(x->size() - ncol == 0, 
+                           gmx::formatString("x has the wrong size (%zu) instead of %d", x->size(), ncol).c_str());
         for (int i = 0; i < ncol; i++)
         {
-            x[i] = y[i];
+            (*x)[i] = (*rhs)[i];
         }
     }
     return info;
@@ -238,9 +252,7 @@ void kabsch_rotation(tensor P, tensor Q, tensor rotated_P)
 
 MatrixWrapper::MatrixWrapper(int ncolumn, int nrow)
 {
-    ncolumn_ = ncolumn;
-    nrow_    = nrow;
-    a_       = alloc_matrix(ncolumn_, nrow_);
+    a_       = alloc_matrix(ncolumn, nrow);
 }
 
 MatrixWrapper::~MatrixWrapper()
@@ -248,15 +260,7 @@ MatrixWrapper::~MatrixWrapper()
     free_matrix(a_);
 }
 
-void MatrixWrapper::setRow(int row, const double value[])
-{
-    for (int i = 0; i < ncolumn_; i++)
-    {
-        set(i, row, value[i]);
-    }
-}
-
 int MatrixWrapper::solve(std::vector<double> rhs, std::vector<double> *solution)
 {
-    return multi_regression2(nrow_, rhs.data(), ncolumn_, a_, solution->data());
+    return multi_regression2(&rhs, a_, solution);
 }

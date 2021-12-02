@@ -933,6 +933,7 @@ int alex_bastat(int argc, char *argv[])
 
     static int                       compress    = 0;
     static int                       maxwarn     = 0;
+    static int                       nBootStrap  = 0;
     static real                      Dm          = 400;
     static real                      kt          = 300;
     static real                      kp          = 5;
@@ -956,6 +957,8 @@ int alex_bastat(int argc, char *argv[])
           "Will only write output if number of warnings is at most this." },
         { "-dissoc",  FALSE, etBOOL, {&bDissoc},
           "Derive dissociation energy from the enthalpy of formation. If not chosen, the dissociation energy will be read from the gentop.dat file." },
+        { "-bootstrap", FALSE, etINT, {&nBootStrap},
+          "Use bootstrap analysis for determining the uncertainty in the dissocation energy. If the value is less than 2 no bootstrapping will be done." },
         { "-Dm",    FALSE, etREAL, {&Dm},
           "Dissociation energy (kJ/mol). Ignore if the [TT]-dissoc[tt] option is used." },
         { "-beta",    FALSE, etREAL, {&beta},
@@ -1069,7 +1072,8 @@ int alex_bastat(int argc, char *argv[])
     if (bDissoc)
     {
         getDissociationEnergy(fp, &pd, &mymols,
-                              opt2fn_null("-de",  NFILE, fnm), method, basis);
+                              opt2fn_null("-de",  NFILE, fnm), 
+                              method, basis, nBootStrap);
     }
     writePoldata(opt2fn("-o", NFILE, fnm), &pd, compress);
     printf("Extracted %zu bondtypes, %zu angletypes, %zu linear-angletypes, %zu dihedraltypes and %zu impropertypes.\n",
