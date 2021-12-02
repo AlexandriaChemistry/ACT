@@ -341,7 +341,7 @@ void getDissociationEnergy(FILE               *fplog,
     for(iter = 0; iter < nBootStrap && nBStries < maxBootStrap; )
     {
         std::map<Identifier, int> nnn;
-        if (calcDissoc(fplog, pd, *molset, true, hasExpData, &edissoc_bootstrap, &gen,
+        if (calcDissoc(nullptr, pd, *molset, true, hasExpData, &edissoc_bootstrap, &gen,
                        uniform, csvFile, &nnn))
         {
             iter++;
@@ -394,7 +394,9 @@ void getDissociationEnergy(FILE               *fplog,
         if (fp->mutability() == Mutability::Free ||
             fp->mutability() == Mutability::Bounded)
         {
-            fp->setValue(std::max(100.0, average));
+            fp->setMinimum(average-2*error);
+            fp->setMaximum(average+2*error);
+            fp->setValue(average);
             fp->setUncertainty(error);
             fp->setNtrain(ntr);
         }
