@@ -34,58 +34,76 @@
 
 #include <cstdio>
 
+#include <random>
+
+#include "gromacs/statistics/statistics.h"
 #include "gromacs/utility/futil.h"
 
+#include "poldata.h"
 #include "regression.h"
 #include "tune_fc_utils.h"
+
+namespace alexandria
+{
     
 /*! \brief Write a csv file containing molecule names and bond energy
  *
  * Writes the whole bond energy matrix.
+ * \param[in] csvFile             Filename for csv file for debugging, may be a nullptr
+ * \param[in] used                Gives a key, the index in molecule vector of those compounds that
+ *                                are used, and the value is the number of times it is used
+ *                                in the bootstrap.
+ * \param[in] bondIdToIndex       Maps the bond identifiers to the column in the matrix
+ * \param[in] mm                  The molecules
+ * \param[in] a                   The matrix
+ * \param[in] edissoc             Vector of bond energies
+ * \param[in] ntrain              Data structure for counting the amount of test data per bond
  */
-static void dump_csv(const char                            *csvFile,
-                     const std::map<Identifier, int>       &bondIdToIndex,
-                     const std::vector<alexandria::MyMol>  &mm,
-                     const std::vector<int>                &ntest,
-                     const std::vector<double>             &Edissoc,
-                     const MatrixWrapper                   &a,
-                     const double                           x[])
+static void dump_csv(const char                      *csvFile,
+                     const std::map<int, int>        &used,
+                     const std::map<Identifier, int> &bondIdToIndex,
+                     const std::vector<MyMol>        &mm,
+                     const MatrixWrapper             &a,
+                     const std::vector<double>       &edissoc,
+                     const std::map<Identifier, int> *ntrain)
 {
-    std::vector<const char*> b2i;
-    b2i.resize(bondIdToIndex.size(), nullptr);
+    std::map<int, Identifier> indexToBondId;
     for (auto &j : bondIdToIndex)
     {
-        b2i[j.second] = j.first.id().c_str();
+        indexToBondId.insert(std::pair<int, Identifier>(j.second, j.first));
     }
     FILE *csv = gmx_ffopen(csvFile, "w");
     fprintf(csv, ",");
-    for (auto &j : b2i)
+    for (auto &j : indexToBondId)
     {
-        fprintf(csv, "%s,", j);
+        fprintf(csv, "%s,", j.second.id().c_str());
     }
     fprintf(csv, "Emol,DeltaHf\n");
-    int i = 0;
-    for (auto &mymol : mm)
+    int row = 0;
+    for (const auto &j : used)
     {
-        if (mymol.Hform_ != 0)
+        auto mymol = &(mm[j.first]);
+        fprintf(csv, "%s,", mymol->getMolname().c_str());
+        for (size_t i = 0; i < edissoc.size(); i++)
         {
-            fprintf(csv, "%s,", mymol.getMolname().c_str());
-            for (size_t j = 0; (j < bondIdToIndex.size()); j++)
-            {
-                fprintf(csv, "%g,", a.get(j, i));
-            }
-            fprintf(csv, "%.3f,%.3f\n", x[i], mymol.Hform_);
-            i++;
+            fprintf(csv, "%g,", a.get(i, row));
         }
+        fprintf(csv, "%.3f,%.3f\n", -mymol->Emol_*j.second, mymol->Hform_*j.second);
+        row++;
     }
-    fprintf(csv, "Total,");
-    for (auto j : ntest)
+    if (ntrain)
     {
-        fprintf(csv, "%d,", j);
+        fprintf(csv, "Total,");
+        for (auto &j : indexToBondId)
+        {
+            auto nt = ntrain->find(j.second);
+            GMX_RELEASE_ASSERT(ntrain->end() != nt, gmx::formatString("Cannot find %s in training counter", j.second.id().c_str()).c_str());
+            fprintf(csv, "%d,", nt->second);
+        }
+        fprintf(csv, "\n");
     }
-    fprintf(csv, "\n");
     fprintf(csv, "Edissoc,");
-    for (auto j : Edissoc)
+    for (auto &j : edissoc)
     {
         fprintf(csv, "%.3f,", j);
     }
@@ -93,137 +111,303 @@ static void dump_csv(const char                            *csvFile,
     fclose(csv);
 }
 
-void getDissociationEnergy(FILE                     *fplog,
-                           Poldata                  *pd,
-                           std::vector<MyMol>       *molset,
-                           const char               *csvFile,
-                           const std::string        &method,
-                           const std::string        &basis)
+/*! \brief Calculate the dissociation energies once
+ * \param[in] fplog               File pointer for logging information
+ * \param[in] pd                  The input force field
+ * \param[in] molset              The molecules
+ * \param[in] pickRandomMolecules Whether or not to pick random molecules or just everything
+ * \param[in] hasExpData          Vector of indices pointing to those molecules for which 
+ *                                there is data 
+ * \param[inout] edissoc          Map from the bond identifier to a statistics container
+ * \param[in] gen                 Random number generator. Must be a pointer, otherwise the 
+ *                                internal data structure is not updated and the code will
+ *                                repeat the same random sequence for each invocation
+ * \param[in] uniform             Uniform distribution between 0 and 1
+ * \param[in] csvFile             Filename for csv file for debugging, may be a nullptr
+ * \param[in] ntrain              Data structure for counting the amount of test data per bond
+ * \return true if successful.
+ */
+static bool calcDissoc(FILE                              *fplog,
+                       const Poldata                     *pd,
+                       const std::vector<MyMol>          &molset,
+                       bool                               pickRandomMolecules,
+                       const std::vector<int>            &hasExpData,
+                       std::map<Identifier, gmx_stats_t> *edissoc,
+                       std::mt19937                      *gen,  
+                       std::uniform_real_distribution<>   uniform,
+                       const char                        *csvFile,
+                       std::map<Identifier, int>         *ntrain)
 {
-    iqmType iqm = iqmType::Exp;
+    // Determine which molecules to use
+    std::map<int, int>  used;
+    size_t              nExpData = hasExpData.size();
+    for (size_t i = 0; i < nExpData; i++)
+    {
+        // By default, copy the input array
+        int mytry = hasExpData[i];
+        if (pickRandomMolecules)
+        {
+            // Pick nMol random compounds from the set for which we have exp data
+            mytry = hasExpData[int(nExpData*uniform(*gen)) % nExpData];
+        }
+        if (used.find(mytry) == used.end())
+        {
+            used.insert(std::pair<int, int>(mytry, 1));
+        }
+        else
+        {
+            used.find(mytry)->second += 1;
+        }
+    }
+    // Total number of compounds in the matrix is equalt to the number of rows
+    int nRow = used.size();
+    
+    // Now time to find out which bonds are present in this subset of compounds
     std::map<Identifier, int> bondIdToIndex;
-    int nColumn = 0;
-    int nRow    = 0;
-    // Loop over molecules to count number of dissociation energies first
-    for (auto mymol = molset->begin(); mymol < molset->end(); ++mymol)
+    int                       nColumn = 0;
+    for (const auto &uu : used)
     {
-        if (immStatus::OK == mymol->getExpProps(iqm, true, false, true,
-                                                method, basis, pd))
+        auto mymol   = &(molset[uu.first]);
+        auto myatoms = mymol->atomsConst();
+        for (auto &b : mymol->bondsConst())
         {
-            auto myatoms = mymol->atomsConst();
-            for (auto &b : mymol->bondsConst())
+            auto atypeI = *myatoms.atomtype[b.getAi()-1];
+            auto atypeJ = *myatoms.atomtype[b.getAj()-1];
+            std::string btypeI, btypeJ;
+            if (pd->atypeToBtype(atypeI, &btypeI) &&
+                pd->atypeToBtype(atypeJ, &btypeJ))
             {
-                auto atypeI = *myatoms.atomtype[b.getAi()-1];
-                auto atypeJ = *myatoms.atomtype[b.getAj()-1];
-                std::string btypeI, btypeJ;
-                if (pd->atypeToBtype(atypeI, &btypeI) &&
-                    pd->atypeToBtype(atypeJ, &btypeJ))
+                Identifier bondId({btypeI, btypeJ}, b.getBondOrder(), CanSwap::Yes);
+                if (bondIdToIndex.find(bondId) == bondIdToIndex.end())
                 {
-                    Identifier bondId({btypeI, btypeJ}, b.getBondOrder(), CanSwap::Yes);
-                    if (bondIdToIndex.find(bondId) == bondIdToIndex.end())
-                    {
-                        bondIdToIndex.insert(std::pair<Identifier, int>(bondId, nColumn++));
-                    }
-                }
-                else
-                {
-                    gmx_fatal(FARGS, "No parameters for bond in the force field, atoms %s-%s mol %s",
-                              atypeI, atypeJ,
-                              mymol->getIupac().c_str());
+                    bondIdToIndex.insert(std::pair<Identifier, int>(bondId, nColumn++));
                 }
             }
-            nRow += 1;
-        }
-    }
-    // Now fill the matrix
-    std::vector<double> rhs;
-    std::vector<int>    ntest;
-    int                 row  = 0;
-
-    if ((0 == nColumn) || (0 == nRow))
-    {
-        gmx_fatal(FARGS, "Number of dissociation energies is %d and number of molecules is %d",
-                  nColumn, nRow);
-    }
-
-    MatrixWrapper a(nColumn, nRow);
-    MatrixWrapper a_copy(nColumn, nRow);
-    ntest.resize(nColumn, 0);
-
-    fprintf(fplog, "There are %d different bondtypes to optimize the heat of formation\n", nColumn);
-    fprintf(fplog, "There are %d (experimental) reference heat of formation.\n", nRow);
-
-    for (auto mymol = molset->begin(); mymol < molset->end(); ++mymol)
-    {
-        if (immStatus::OK == mymol->getExpProps(iqm, true, false, true,
-                                                method, basis, pd))
-        {
-            auto myatoms = mymol->atomsConst();
-            for (auto &b : mymol->bondsConst())
+            else
             {
-                const char *atypeI = *myatoms.atomtype[b.getAi()-1];
-                const char *atypeJ = *myatoms.atomtype[b.getAj()-1];
-                std::string btypeI, btypeJ;
-                if (pd->atypeToBtype(atypeI, &btypeI) &&
-                    pd->atypeToBtype(atypeJ, &btypeJ))
-                {
-                    Identifier bondId({btypeI, btypeJ}, b.getBondOrder(), CanSwap::Yes);
-                    int column = bondIdToIndex[bondId];
-                    
-                    a.set(column, row, a.get(column, row) + 1);
-                    a_copy.set(column, row, a.get(column, row));
-                    ntest[column]++;
-                }
+                gmx_fatal(FARGS, "No parameters for bond in the force field, atoms %s-%s mol %s",
+                          atypeI, atypeJ,
+                          mymol->getIupac().c_str());
             }
-            rhs.push_back(-mymol->Emol_);
-            row += 1;
         }
     }
-
-    std::string buf = gmx::formatString("Inconsistency in number of energies nRow %d != #rhs %zu", nRow, rhs.size());
-    GMX_RELEASE_ASSERT(static_cast<int>(rhs.size()) == nRow, buf.c_str());
-
-    auto nzero = std::count_if(ntest.begin(), ntest.end(), [](const int n)
-                               {
-                                   return n == 0;
-                               });
-
-    GMX_RELEASE_ASSERT(nzero == 0, "Inconsistency in the number of bonds in poldata and ForceConstants_");
-
-    std::vector<double> Edissoc(nColumn);
-    a.solve(rhs, &Edissoc);
-    if (csvFile)
+    if (fplog)
     {
-        dump_csv(csvFile, bondIdToIndex,  *molset, ntest, Edissoc, a_copy, rhs.data());
+        fprintf(fplog, "There are %d different bondtypes and %d reference datapoints to optimize the heats of formation\n", nColumn,  nRow);
     }
-    for (auto &bi : bondIdToIndex)
+    if (nColumn > nRow)
     {
         if (fplog)
         {
-            fprintf(fplog, "Optimized dissociation energy for %8s with %4d copies to %g\n",
-                    bi.first.id().c_str(), ntest[bi.second], Edissoc[bi.second]);
+            fprintf(fplog, "Not enough data. Try again.\n");
         }
+        return false;
+    }
+    // Now we can allocate our matrices and the right-hand-side
+    MatrixWrapper       a(nColumn, nRow);
+    MatrixWrapper       a_copy(nColumn, nRow);
+    std::vector<double> rhs;
+    int                 row = 0;
+
+    // Now it is time to fill the matrices
+    for (const auto &uu : used)
+    {
+        auto mymol = &(molset[uu.first]);
+        auto myatoms = mymol->atomsConst();
+        for (auto &b : mymol->bondsConst())
+        {
+            const char *atypeI = *myatoms.atomtype[b.getAi()-1];
+            const char *atypeJ = *myatoms.atomtype[b.getAj()-1];
+            std::string btypeI, btypeJ;
+            if (pd->atypeToBtype(atypeI, &btypeI) &&
+                pd->atypeToBtype(atypeJ, &btypeJ))
+            {
+                Identifier bondId({btypeI, btypeJ}, b.getBondOrder(), CanSwap::Yes);
+                int column = bondIdToIndex[bondId];
+                GMX_RELEASE_ASSERT(column < nColumn && column >= 0, gmx::formatString("Column %d should be within 0..%d", column, nColumn).c_str());
+                GMX_RELEASE_ASSERT(row < nRow && row >= 0, gmx::formatString("Row %d should be within 0..%d", row, nRow).c_str());
+                a.set(column, row, a.get(column, row) + uu.second);
+                a_copy.set(column, row, a.get(column, row));
+                if (ntrain)
+                {
+                    auto nnn = ntrain->find(bondId);
+                    if (ntrain->end() == nnn)
+                    {
+                        ntrain->insert(std::pair<Identifier, int>(bondId, 0));
+                        nnn = ntrain->find(bondId);
+                    }
+                    nnn->second += uu.second;
+                }
+            }
+        }
+        rhs.push_back(-mymol->Emol_ * uu.second);
+        row += 1;
     }
 
+    // Let's try and solve the equation.
+    std::vector<double> Edissoc(nColumn, 0.0);
+    if (0 == a.solve(rhs, &Edissoc))
+    {
+        // Check for large numbers:
+        bool bLargeNumbers = false;
+        for(auto &E : Edissoc)
+        {
+            if (fabs(E) > 1000)
+            {
+                bLargeNumbers = true;
+            }
+        }
+        if (bLargeNumbers)
+        {
+            if (csvFile)
+            {
+                dump_csv(csvFile, used, bondIdToIndex, molset,
+                         a_copy, Edissoc, ntrain);
+            }
+            return false;
+        }
+        
+        // Copy to the output map.
+        for (const auto &b : bondIdToIndex)
+        {
+            auto ed = edissoc->find(b.first);
+            if (edissoc->end() == ed)
+            {
+                // New bond type!
+                edissoc->insert(std::pair<Identifier, gmx_stats_t>(b.first, std::move(gmx_stats_init())));
+            }
+            auto gs     = edissoc->find(b.first)->second;
+            int  N;
+            auto estats = gmx_stats_get_npoints(gs, &N);
+            GMX_RELEASE_ASSERT(estats == estatsOK, gmx_stats_message(estats));
+            gmx_stats_add_point(gs, N, Edissoc[b.second], 0, 0);
+            if (fplog && fabs(Edissoc[b.second]) > 1000)
+            {
+                fprintf(fplog, "Adding energy %g for %s\n", Edissoc[b.second],
+                        b.first.id().c_str());
+            }
+        }
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+                           
+void getDissociationEnergy(FILE               *fplog,
+                           Poldata            *pd,
+                           std::vector<MyMol> *molset,
+                           const char         *csvFile,
+                           const std::string  &method,
+                           const std::string  &basis,
+                           int                 nBootStrap)
+{
+    std::random_device               rd;
+    std::mt19937                     gen(rd());  
+    std::uniform_real_distribution<> uniform(0.0, 1.0);
+    iqmType                          iqm = iqmType::Exp;
+    std::map<Identifier, int>        bondIdToIndex;
+    std::vector<int>                 hasExpData;
+    
+    // Loop over molecules to find the ones with experimental DeltaHform
+    for (size_t i = 0; i < molset->size(); i++)
+    {
+        auto mymol = &((*molset)[i]);
+        if (immStatus::OK == mymol->getExpProps(iqm, true, false, true,
+                                                method, basis, pd))
+        {
+            hasExpData.push_back(i);
+        }
+    }
+    if (hasExpData.size() < 2)
+    {
+        fprintf(fplog, "Not enough molecules with experimental data to determine dissocation energy.\n");
+        return;
+    }
+    // Call the low level routine once to get optimal values and to
+    // establish all the entries in the edissoc map.
+    std::map<Identifier, gmx_stats_t> edissoc;
+    std::map<Identifier, int>         ntrain;
+    if (!calcDissoc(fplog, pd, *molset, false, hasExpData, &edissoc, &gen, uniform, csvFile, &ntrain))
+    {
+        gmx_fatal(FARGS, "Cannot solve the matrix equations for determining the dissociation energies");
+    }
+    // Now run the bootstrapping
+    std::map<Identifier, gmx_stats_t> edissoc_bootstrap;
+    int maxBootStrap = 2*nBootStrap;
+    int nBStries = 0;
+    int iter;
+    for(iter = 0; iter < nBootStrap && nBStries < maxBootStrap; )
+    {
+        std::map<Identifier, int> nnn;
+        if (calcDissoc(fplog, pd, *molset, true, hasExpData, &edissoc_bootstrap, &gen,
+                       uniform, csvFile, &nnn))
+        {
+            iter++;
+        }
+        nBStries++;
+    }
+    if (nBStries == maxBootStrap)
+    {
+        fprintf(fplog, "Maximum number of tries %d for running bootstraps reached.\n", maxBootStrap);
+    }
+    
+    if (fplog)
+    {
+        fprintf(fplog, "Optimized dissociation energy based on %4d bootstraps.\n", iter);
+        fprintf(fplog, "%-14s  %6s  %10s  %10s\n", "Bond", "N", "Edissoc", "Std.Dev.");
+    }
+    // Finally copy the new dissociation energies to the force field.
     auto iBonds = InteractionType::BONDS;
     GMX_RELEASE_ASSERT(pd->interactionPresent(iBonds), "No bonds in force field file");
     auto fs  = pd->findForces(InteractionType::BONDS);
-    for (auto &b : bondIdToIndex)
+    for (auto &bi : edissoc)
     {
-        auto fp = fs->findParameterType(b.first, "Dm");
+        double average, error = 0;
+        int    N              = 1;
+        auto estats = gmx_stats_get_average(bi.second, &average);
+        GMX_RELEASE_ASSERT(estatsOK == estats, gmx_stats_message(estats));
+        if (nBootStrap > 0)
+        {
+            auto ed = edissoc_bootstrap.find(bi.first);
+            // We have to check whether this particular bond exists.
+            // If there are few bootstraps, a rare bond may not be there.
+            if (edissoc_bootstrap.end() != ed)
+            {
+                estats = gmx_stats_get_sigma(edissoc_bootstrap[bi.first], &error);
+                GMX_RELEASE_ASSERT(estatsOK == estats, gmx_stats_message(estats));
+                estats = gmx_stats_get_npoints(edissoc_bootstrap[bi.first], &N);
+                GMX_RELEASE_ASSERT(estatsOK == estats, gmx_stats_message(estats));
+            }
+        }
+        // Fetch the parameter from the force field
+        auto fp = fs->findParameterType(bi.first, "Dm");
+        int ntr = ntrain.find(bi.first)->second;
+        // Print to the log file    
+        if (fplog)
+        {
+            fprintf(fplog, "%-14s  %6d  %10.1f  %10.1f\n", 
+                    bi.first.id().c_str(), ntr, average, error);
+        }
+        // Now add the new parameter to the force field
         if (fp->mutability() == Mutability::Free ||
             fp->mutability() == Mutability::Bounded)
         {
-            fp->setValue(std::max(100.0, Edissoc[b.second]));
+            fp->setValue(std::max(100.0, average));
+            fp->setUncertainty(error);
+            fp->setNtrain(ntr);
         }
         else
         {
             if (fplog)
             {
                 fprintf(fplog, "Dissociation energy for %s estimated to be %g, but the parameter is not mutable.\n",
-                        b.first.id().c_str(), Edissoc[b.second]);
+                        bi.first.id().c_str(), average);
             }
         }
     }
+    // TODO free the gmx_stats_t
 }
 
+} // namespace alexandria

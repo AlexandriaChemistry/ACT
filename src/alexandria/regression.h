@@ -51,12 +51,6 @@ class MatrixWrapper
         //! \brief Destructor in charge of freeing memory
         ~MatrixWrapper();
 
-        //!\brief Return number of columns
-        int nColumn() const { return ncolumn_; }
-
-        //!\brief Return number of rows
-        int nRow() const { return nrow_; }
-
         /*! \brief Set a value in the matrix
          *
          * \param[in] col    The column
@@ -67,13 +61,6 @@ class MatrixWrapper
         {
             a_[col][row] = value;
         }
-
-        /*! \brief Set a row of values in the matrix
-         *
-         * \param[in] row    The row number
-         * \param[in] value  The values. Array should be ncolumn long.
-         */
-        void setRow(int row, const double value[]);
 
         /*! \brief Get a value from the matrix
          *
@@ -88,16 +75,12 @@ class MatrixWrapper
 
         /*! \brief Solve a matrix equation A solution = rhs
          *
-         * \param[in] rhs  Vector of right hand side values
+         * \param[in]  rhs      Vector of right hand side values.
          * \param[out] solution Pointer to vector of solution
          * \return 0 if ok, non-zero if not.
          */
         int solve(std::vector<double> rhs, std::vector<double> *solution);
     private:
-        // Number of rows
-        int      nrow_;
-        // Number of columns
-        int      ncolumn_;
         // The internal data structure
         double **a_;
 };
