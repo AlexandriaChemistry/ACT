@@ -13,7 +13,7 @@ int main(int argc, char const *argv[])
 
     if (argc != 8)
     {
-        printf("\nUsage: \\test <nElites> <popSize> <chromLen> <tolerance> <verbose> <nrep> <ncrossovers>\n\n");
+        printf("\nUsage: ./test <nElites> <popSize> <chromLen> <tolerance> <verbose> <nrep> <ncrossovers>\n\n");
         return -1;
     }
 
