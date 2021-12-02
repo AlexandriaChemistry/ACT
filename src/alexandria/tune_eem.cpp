@@ -176,7 +176,7 @@ void OptACM::add_pargs(std::vector<t_pargs> *pargs) {
         pargs->push_back(pa[i]);
     }
     addOptions(pargs, eTune::EEM);
-    getConfigHandler()->add_pargs(pargs);
+    configHandlerPtr()->add_pargs(pargs);
 }
 
 void OptACM::optionsFinished(const std::string &outputFile) {
@@ -670,7 +670,7 @@ bool OptACM::runMaster(const gmx_output_env_t *oenv,
     }
     if (optimize)
     {
-        getConfigHandler()->setOutputFiles(xvgconv, paramClass, xvgepot, oenv);
+        configHandlerPtr()->setOutputFiles(xvgconv, paramClass, xvgepot, oenv);
         double chi2     = 0;
         bMinimum = Bayes::MCMC(logFile(), bEvaluate_testset, &chi2);
     }

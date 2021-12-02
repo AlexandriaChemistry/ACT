@@ -271,7 +271,7 @@ class Bayes
         /*! \brief
          * Return a pointer to the Bayes config handler
          */
-        BayesConfigHandler *getConfigHandler() {return &bch_;}
+        BayesConfigHandler *configHandlerPtr() {return &bch_;}
 
         /*! \brief
          * Run the Markov chain Monte carlo (MCMC) simulation

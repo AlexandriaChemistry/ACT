@@ -114,7 +114,7 @@ public:
     bool removeMol() const { return bRemoveMol_; }
 
     //! \return whether or not we are in verbose mode
-    bool verbose() { return getConfigHandler()->verbose(); }
+    bool verbose() { return configHandlerPtr()->verbose(); }
 
     //! \brief This function will store the current state of the force field
     void saveState();
