@@ -106,7 +106,8 @@ public:
 };
 
 /*!
- * ChargeCM5DevComputer that computes the deviation from the CM5 charge
+ * DevComputer that computes the deviation of the (CM5) charge
+ * -> eRMS::CHARGE & eRMS::CM5
  */
 class ChargeCM5DevComputer : public DevComputer
 {
@@ -131,7 +132,7 @@ public:
 };
 
 /*!
- * EspDevComputer that computes the deviation from the electrostatic potential
+ * DevComputer that computes the deviation of the electrostatic potential -> eRMS::ESP
  */
 class EspDevComputer : public DevComputer
 {
@@ -165,7 +166,7 @@ public:
 };
 
 /*!
- * PolarDevComputer that computes the deviation of the polarizability components
+ * DevComputer that computes the deviation of the polarizability components -> eRMS::POLAR
  */
 class PolarDevComputer : public DevComputer
 {
@@ -196,7 +197,7 @@ public:
 }
 
 /*!
- * QuadDevComputer that computes the molecular quadrupole
+ * DevComputer that computes the deviation of the molecular quadrupole -> eRMS::QUAD
  */
 class QuadDevComputer : public DevComputer
 {
@@ -227,7 +228,7 @@ public:
 }
 
 /*!
- * MuDevComputer the computes the molecular dipole
+ * DevComputer the computes the deviation of the molecular dipole -> eRMS::MU
  */
 class MuDevComputer : public DevComputer
 {
