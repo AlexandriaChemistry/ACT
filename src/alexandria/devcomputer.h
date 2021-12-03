@@ -103,8 +103,7 @@ public:
                                const std::vector<double>               &param,
                                      t_commrec                         *commrec);
 
-}
-
+};
 
 }
 
