@@ -353,18 +353,9 @@ double OptACM::calcDeviation(bool       verbose,
             {
                 handleEspCD(targets, mymol);
             }
-            // These two things need to be present, if not the code will crash
-            // TODO: What happens with this little interlude when we bring in
-            // the for loop?
-            QtypeProps *qelec = mymol.qTypeProps(qType::Elec);
-            QtypeProps *qcalc = mymol.qTypeProps(qType::Calc);
-            if ((*targets).find(eRMS::MU)->second.weight() > 0 ||
-                (*targets).find(eRMS::QUAD)->second.weight() > 0)
-            {
-                qcalc->setQ(mymol.atoms());
-                qcalc->setX(mymol.x());
-                qcalc->calcMoments();
-            }
+            
+            computeDiQuad(targets, &mymol);
+
             if ((*targets).find(eRMS::MU)->second.weight() > 0)
             {
                 handleMuCD(targets, mymol, qelec, qcalc);
@@ -390,6 +381,25 @@ double OptACM::calcDeviation(bool       verbose,
     }
     numberCalcDevCalled_ += 1;
     return (*targets).find(eRMS::TOT)->second.chiSquared();
+}
+
+void OptACM::computeDiQuad(std::map<eRMS, FittingTarget> *targets,
+                           MyMol                         *mymol)
+{
+
+    // These two things need to be present, if not the code will crash
+    // TODO: What happens with this little interlude when we bring in
+    // the for loop?
+    QtypeProps *qelec = mymol.qTypeProps(qType::Elec);
+    QtypeProps *qcalc = mymol.qTypeProps(qType::Calc);
+    if ((*targets).find(eRMS::MU)->second.weight() > 0 ||
+        (*targets).find(eRMS::QUAD)->second.weight() > 0)
+    {
+        qcalc->setQ(mymol.atoms());
+        qcalc->setX(mymol.x());
+        qcalc->calcMoments();
+    }
+    
 }
 
 void OptACM::handleBoundsCD(      std::map<eRMS, FittingTarget>    *targets,
@@ -870,8 +880,9 @@ int alex_tune_eem(int argc, char *argv[])
     // TODO: Check validity of arguments with check_pargs() in ConfigHandler(s)
     opt.configHandlerPtr()->check_pargs();
 
-
     opt.optionsFinished(opt2fn("-o", NFILE, fnm));
+
+    // TODO: Fill the devComputers_ vector!
 
     if (MASTER(opt.commrec()))
     {

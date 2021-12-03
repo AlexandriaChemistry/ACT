@@ -60,6 +60,13 @@ private:
     //! Vector of DevComputers for the different components of chi-squared
     std::vector<DevComputer> devComputers;
 
+    /*! \brief Compute dipole and quadrupole moments (if needed), for a given molecule
+     * @param targets   pointer to a map between the components of chi-squared and the fitting targets
+     * @param mymol     the molecule
+     */
+    void computeDiQuad(std::map<eRMS, FittingTarget> *targets,
+                       MyMol                         *mymol);
+
     /*!
      * \brief Handle out of bounds variables (calcDeviation) in MASTER node before calculating the rest of the deviation
      * @param targets   pointer to a map between the components of chi-squared and the fitting targets
