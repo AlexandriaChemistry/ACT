@@ -26,6 +26,14 @@ namespace alexandria
  */
 void my_fclose(FILE *fp);
 
+/*! \brief Dump charges to a file
+ * Debugging routine
+ * \param[in] fp   The file pointer to print to
+ * \param[in] mol  The molecule to read from
+ * \param[in] info Additional debugging information
+ */
+static void dumpQX(FILE *fp, MyMol *mol, const std::string &info);
+
 /*! \brief The class that does all the optimization work.
  * This class inherits the MolGen class that holds molecule data and
  * properties, and the Bayes class, that does the Monte Carlo steps.
@@ -114,7 +122,7 @@ public:
     bool removeMol() const { return bRemoveMol_; }
 
     //! \return whether or not we are in verbose mode
-    bool verbose() { return Bayes::verbose(); }
+    bool verbose() { return configHandlerPtr()->verbose(); }
 
     //! \brief This function will store the current state of the force field
     void saveState();

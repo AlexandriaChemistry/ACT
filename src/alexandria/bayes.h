@@ -46,6 +46,7 @@
 #include "gromacs/utility/real.h"
 
 #include "molselect.h"
+#include "confighandler.h"
 
 namespace alexandria
 {
@@ -58,116 +59,6 @@ enum class CalcDev {
     Master = 2,
     //! Do the final one only (typically on the master)
     Final = 3
-};
-
-
-/*!
- * Handles optimization parameters for Markov Chain Monte-Carlo method
- */
-class BayesConfigHandler
-{
-    private:
-        //! Maximum number of iterations
-        int                      maxiter_       = 100;
-        //! Output environment structure
-        const gmx_output_env_t  *oenv_          = nullptr;
-        //! Random number seed
-        real                     seed_           = -1;
-        //! Relative step when optimizing
-        real                     step_           = 0.02;
-        //! Temperature in chi2 units
-        real                     temperature_    = 5;
-        //! Weight temperature after number of training points
-        bool                     tempWeight_     = false;
-        //! Weighted temperatures
-        std::vector<double>      weightedTemperature_;
-        //! Use annealing in the optimization. Value < 1 means annealing will happen
-        real                     anneal_         = 1;
-        //! Flag determining whether to be verbose printing
-        bool                     verbose_        = false;
-        //! Base name for parameter convergence file names
-        std::string              xvgconv_;
-        //! File name for parameter energy (chi2)
-        std::string              xvgepot_;
-        //! Parameter classes for printing
-        std::vector<std::string> paramClass_;
-    public:
-        /*! \brief Add command line arguments
-         *
-         * \param[in] pargs Vector of pargs
-         */
-        void add_pargs(std::vector<t_pargs> *pargs);
-
-        /*! \brief Set the output file names.
-         *
-         * The parameter values are split over
-         * a number of files in order to make it easier to visualize the
-         * results. The parameter classes should therefore match the
-         * parameter names. E.g. a class could be alpha, another zeta.
-         *
-         * \param[in] xvgconv    The parameter convergence base name
-         * \param[in] paramClass The parameter classes (e.g. zeta, alpha)
-         * \param[in] xvgepot    The filename to print the chi2 value
-         * \param[in] oenv       GROMACS utility structure
-         */
-        void setOutputFiles(const char                     *xvgconv,
-                            const std::vector<std::string> &paramClass,
-                            const char                     *xvgepot,
-                            const gmx_output_env_t         *oenv);
-
-        //! Return the class of parameters registered
-        const std::vector<std::string> &paramClass() { return paramClass_; }
-
-        //! \brief Return Max # iterations
-        int maxIter() const { return maxiter_; }
-
-        //! \brief Return verbosity
-        bool verbose() const { return verbose_; }
-
-        //! \brief Return temperature
-        real temperature() const { return temperature_; }
-
-        /*! \brief Compute and return the Boltzmann factor
-         *
-         * \param[in] iter  The iteration number
-         * \return The Boltzmann factor
-         */
-        double computeBeta(int iter);
-
-        /*! \brief Compute and return the Boltzmann factor
-         * it applies periodic annealing
-         *
-         * \param[in] maxiter The maximum number of iteration
-         * \param[in] iter    The iteration number
-         * \param[in] ncycle  The multiplicity of the cosine function
-         * \return The Boltzmann factor
-         */
-        double computeBeta(int maxiter, int iter, int ncycle);
-
-        //! \brief Return the step
-        real step() const { return step_; }
-
-        //! \brief Return whether or not temperature weighting should be considered
-        bool temperatureWeighting() const { return tempWeight_; }
-
-        /*! \brief Return whether or not to do simulated annealing
-         * \param iter The iteration number
-         */
-        bool anneal (int iter) const;
-
-        //! \brief Return xvg file for convergence information
-        const std::string &xvgConv() const { return xvgconv_; }
-
-        //! \brief Return xvg file for epot information
-        const std::string &xvgEpot() const { return xvgepot_; }
-
-        //! \brief Return output environment
-        const gmx_output_env_t *oenv() const { return oenv_; }
-
-        /*! \brief Save the current state
-         * Must be overridden by child class.
-         */
-        virtual void saveState() = 0;
 };
 
 class Sensitivity
@@ -218,7 +109,7 @@ public:
  * \inpublicapi
  * \ingroup module_alexandria
  */
-class Bayes : public BayesConfigHandler
+class Bayes
 {
     using func_t       = std::function<double (double v[])>;
     using parm_t       = std::vector<double>;
@@ -226,20 +117,23 @@ class Bayes : public BayesConfigHandler
     using param_name_t = std::vector<std::string>;
 
     private:
-        func_t        func_;
-        parm_t        initial_param_;
-        parm_t        param_;
-        std::vector<int> ntrain_;
-        parm_t        psigma_;
-        parm_t        pmean_;
-        parm_t        lowerBound_;
-        parm_t        upperBound_;
-        parm_t        bestParam_;
-        parm_t        weightedTemperature_;
-        mc_t          attemptedMoves_;
-        mc_t          acceptedMoves_;
+        func_t                  func_;
+        parm_t                  initial_param_;
+        parm_t                  param_;
+        std::vector<int>        ntrain_;
+        parm_t                  psigma_;
+        parm_t                  pmean_;
+        parm_t                  lowerBound_;
+        parm_t                  upperBound_;
+        parm_t                  bestParam_;
+        parm_t                  weightedTemperature_;
+        mc_t                    attemptedMoves_;
+        mc_t                    acceptedMoves_;
         std::vector<Mutability> mutability_;
-        param_name_t  paramNames_;
+        param_name_t            paramNames_;
+
+        //! Optimization options manager
+        BayesConfigHandler      bch_;
 
     public:
 
@@ -310,6 +204,7 @@ class Bayes : public BayesConfigHandler
                                "Incorrect size of input parameters");
             param_ = param;
         }
+        
         /*! \brief
          * Returns the current vector of parameters.
          */
@@ -372,6 +267,11 @@ class Bayes : public BayesConfigHandler
          * Return the vector of number of accepted moves for each parameter
          */
         const mc_t &getAcceptedMoves() const {return acceptedMoves_;};
+
+        /*! \brief
+         * Return a pointer to the Bayes config handler
+         */
+        BayesConfigHandler *configHandlerPtr() {return &bch_;}
 
         /*! \brief
          * Run the Markov chain Monte carlo (MCMC) simulation
@@ -540,13 +440,18 @@ class Bayes : public BayesConfigHandler
          */
         size_t numberObjectiveFunctionCalls() const
         {
-            return 1+maxIter()*nParam();
+            return 1+bch_.maxIter()*nParam();
         }
         /* \brief
          * Print the MC statistics to a file.
          * \param[in] fp File pointer to print to
          */
         void printMonteCarloStatistics(FILE *fp);
+
+        /*! \brief Save the current state
+        * Must be overridden by child class.
+        */
+        virtual void saveState() = 0;
 };
 
 }

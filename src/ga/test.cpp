@@ -17,15 +17,26 @@ int main(int argc, char const *argv[])
         return -1;
     }
 
-	const int       popSize         = atoi(argv[2]);
+	const int       popSize         = atoi(argv[2]); // This
 	const int       chromLen        = atoi(argv[3]);
 //	const int       maxGenerations  = 5;
 //    const double    mutFrac         = 0.1;
-    const int       nElites         = atoi(argv[1]);
+    const int       nElites         = atoi(argv[1]); // This
     const double    tolerance       = atof(argv[4]);
     const int       verbose         = atoi(argv[5]);
     const int       nrep            = atoi(argv[6]);
-    const int       ncrossovers     = atoi(argv[7]);
+    const int       ncrossovers     = atoi(argv[7]); // This
+
+    // Print given configuration
+    printf("\nRun configuration:\n");
+    printf("  - popSize: %i\n", popSize);
+    printf("  - chromLen: %i\n", chromLen);
+    printf("  - nElites: %i\n", nElites);
+    printf("  - tolerance: %lf\n", tolerance);
+    printf("  - verbose: %i\n", verbose);
+    printf("  - nrep: %i\n", nrep);
+    printf("  - ncrossovers: %i\n", ncrossovers);
+
 
     // Print given configuration
     printf("\nRun configuration:\n");
