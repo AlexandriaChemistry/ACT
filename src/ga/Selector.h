@@ -49,8 +49,8 @@ namespace ga
             gen.seed(::time(NULL));
         }
 
-        int select(const vector  &probability,
-                   const int      popSize);
+        virtual int select(const vector  &probability,
+                           const int      popSize);
     };
 
 }

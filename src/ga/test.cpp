@@ -1,5 +1,5 @@
 #include "aliases.h"
-#include "includes.h"
+#include "ga_includes.h"
 
 #include "ga_helpers.h"
 
@@ -13,7 +13,7 @@ int main(int argc, char const *argv[])
 
     if (argc != 8)
     {
-        printf("\nUsage: \\test <nElites> <popSize> <chromLen> <tolerance> <verbose> <nrep> <ncrossovers>\n\n");
+        printf("\nUsage: ./test <nElites> <popSize> <chromLen> <tolerance> <verbose> <nrep> <ncrossovers>\n\n");
         return -1;
     }
 
@@ -26,6 +26,17 @@ int main(int argc, char const *argv[])
     const int       verbose         = atoi(argv[5]);
     const int       nrep            = atoi(argv[6]);
     const int       ncrossovers     = atoi(argv[7]); // This
+
+    // Print given configuration
+    printf("\nRun configuration:\n");
+    printf("  - popSize: %i\n", popSize);
+    printf("  - chromLen: %i\n", chromLen);
+    printf("  - nElites: %i\n", nElites);
+    printf("  - tolerance: %lf\n", tolerance);
+    printf("  - verbose: %i\n", verbose);
+    printf("  - nrep: %i\n", nrep);
+    printf("  - ncrossovers: %i\n", ncrossovers);
+
 
 	SimpleInitializer           init(-10.0, 10.0);
 	SimpleFitnessComputer       fit;
@@ -54,30 +65,17 @@ int main(int argc, char const *argv[])
 										   &mutate,
 										   &terminate);
 
-    vector gensNoElite(nrep);
-    vector gensElite(nrep);
+    vector gens(nrep);
 
-    // Without elitism
-    ga.setnElites(0);
     for (int i = 0; i < nrep; i++) {
         const ga_result_t result = ga.evolve(0.35, 0.01, verbose);
-        gensNoElite[i] = result.generations;
+        gens[i] = result.generations;
     }
 
-    // With elitism
-    ga.setnElites(nElites);
-    for (int i = 0; i < nrep; i++) {
-        const ga_result_t result = ga.evolve(0.35, 0.01, verbose);
-        gensElite[i] = result.generations;
-    }
+    const double avg = vectorMEAN(gens, nrep);
+    const double std = vectorSTD(gens, avg, nrep);
 
-    const double avgNoElite = vectorMEAN(gensNoElite, nrep);
-    const double avgElite = vectorMEAN(gensElite, nrep);
-    const double stdNoElite = vectorSTD(gensNoElite, avgNoElite, nrep);
-    const double stdElite = vectorSTD(gensElite, avgElite, nrep);
-
-    printf("\nWithout elitism: %f +- %f\n", avgNoElite, stdNoElite);
-    printf("\nWith %i elitism: %f +- %f\n\n", nElites, avgElite, stdElite);
+    printf("\nGenerations required: %f +- %f\n\n", avg, std);
 
 //    printf("\nEvolution took %i generations\n", result.generations);
 //    printf("Best individual: ");

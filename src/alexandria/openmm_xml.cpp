@@ -42,6 +42,8 @@
 
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/topology/topology.h"
+
 
 #include "forcefieldparameter.h"
 #include "forcefieldparameterlist.h"
@@ -50,6 +52,7 @@
 #include "molprop_util.h"
 #include "mymol.h"
 #include "xml_util.h"
+
 
 namespace alexandria
 {
@@ -69,6 +72,7 @@ enum class xmlEntryOpenMM {
     RESIDUES,
     RESIDUE,
     ATOM_RES,
+    CHARGE_RES,
     TYPE_RES,
     BOND_RES,
     BONDORDER,
@@ -129,6 +133,7 @@ std::map<const std::string, xmlEntryOpenMM> xmlyyyOpenMM =
     { "Residues",                  xmlEntryOpenMM::RESIDUES         },
     { "Residue",                   xmlEntryOpenMM::RESIDUE          },
     { "Atom",                      xmlEntryOpenMM::ATOM_RES         },
+    { "charge",                    xmlEntryOpenMM::CHARGE_RES       },
     { "type",                      xmlEntryOpenMM::TYPE_RES         },
     { "Bond",                      xmlEntryOpenMM::BOND_RES         },
     { "bondorder",                 xmlEntryOpenMM::BONDORDER        },
@@ -291,36 +296,48 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
         }   
     }
 
-
     if (mymol->getMolname().size() > 0)
     {
         auto grandchild = add_xml_child(child2, exml_names(xmlEntryOpenMM::RESIDUE));
         add_xml_char(grandchild, exml_names(xmlEntryOpenMM::NAME), mymol->getMolname().c_str());
-        //auto myatoms =  mymol -> atoms();
         
-        for (auto i = 0; i < mymol -> atomsConst().nr; i++)
-          
+        auto myatoms =  mymol -> atomsConst();
+        for (auto i = 0; i < myatoms.nr; i++)
         {
-           auto baby = add_xml_child(grandchild, exml_names(xmlEntryOpenMM::ATOM_RES));
- 
-           //add_xml_char(baby, exml_names(xmlEntryOpenMM::NAME), myatoms.atomtype[i].c_str());
-           //add_xml_char(baby, exml_names(xmlEntryOpenMM::NAME), *myatoms->atomtype[i]); 
-           add_xml_int(baby, exml_names(xmlEntryOpenMM::NAME), i);          
+            std::string name_ai;
+            name_ai += *(myatoms.atomtype[i]);
+            name_ai += '_';
+            name_ai += std::to_string(i);
+
+            auto baby = add_xml_child(grandchild, exml_names(xmlEntryOpenMM::ATOM_RES));
+            add_xml_char(baby, exml_names(xmlEntryOpenMM::NAME), name_ai.c_str()); 
+            add_xml_char(baby, exml_names(xmlEntryOpenMM::TYPE_RES), *(myatoms.atomtype[i])); 
+            add_xml_double(baby, exml_names(xmlEntryOpenMM::CHARGE_RES), myatoms.atom[i].q);
         }    
 
-        for (auto &bi : mymol->bondsConst())
+        auto fs = pd->findForcesConst(InteractionType::BONDS);
+        auto ftype = fs.fType();
+
+        for (auto i = 0; i < mymol->ltop_->idef.il[ftype].nr;
+            i += interaction_function[ftype].nratoms+1)
         {
-            //t_param b;
-            //memset(&b, 0, sizeof(b));
-            //b.a[0] = bi.getAi() - 1;
-            //b.a[1] = bi.getAj() - 1;
-            auto baby = add_xml_child(grandchild, exml_names(xmlEntryOpenMM::BOND_RES));
-            add_xml_int(baby, exml_names(xmlEntryOpenMM::ATOMNAME1_RES), bi.getAi() - 1);
-            add_xml_int(baby, exml_names(xmlEntryOpenMM::ATOMNAME2_RES), bi.getAj() - 1);
-            //add_xml_char(baby, exml_names(xmlEntryOpenMM::ATOMNAME1_RES), *atoms->atomtype[b.a[0]].c_str());
-            //add_xml_char(baby, exml_names(xmlEntryOpenMM::ATOMNAME1_RES), *atoms->atomtype[b.a[1]].c_str());
+            int ai = mymol->ltop_->idef.il[ftype].iatoms[i+1];
+            int aj = mymol->ltop_->idef.il[ftype].iatoms[i+2];
             
-        }    
+            std::string name_ai;
+            name_ai += *(myatoms.atomtype[ai]);
+            name_ai += '_';
+            name_ai += std::to_string(ai);
+
+            std::string name_aj;
+            name_aj += *(myatoms.atomtype[aj]);
+            name_aj += '_';
+            name_aj += std::to_string(aj);
+
+            auto baby = add_xml_child(grandchild, exml_names(xmlEntryOpenMM::BOND_RES));
+            add_xml_char(baby, exml_names(xmlEntryOpenMM::ATOMNAME1_RES), name_ai.c_str());
+            add_xml_char(baby, exml_names(xmlEntryOpenMM::ATOMNAME2_RES), name_aj.c_str());  
+        }   
     } 
 
 
@@ -520,47 +537,6 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
             }    
         }
 
-        //if (strcmp(interactionTypeToString(fs.first).c_str(), "IMPROPER_DIHEDRALS") == 0)
-        //{
-        //    auto child6 = add_xml_child(parent, exml_names(xmlEntryOpenMM::CUSTOMTORSIONFORCE));
-        //    int i=0;
-        //    for (auto &params : fs.second.parametersConst())
-        //    {            
-        //        for (const auto &param : params.second)
-        //        {
-        //            auto grandchild1 = add_xml_child(child6, exml_names(xmlEntryOpenMM::PERTORSIONPARAMETER));
-        //            add_xml_char(grandchild1, exml_names(xmlEntryOpenMM::NAME), param.first.c_str());
-        //        } 
-        //        i++;
-        //        if (i == 1) 
-        //            {
-        //            break;
-        //            }
-        //    }
-
-        //    for (auto &params : fs.second.parametersConst())
-        //    {
-               
-        //        auto grandchild2 = add_xml_child(child6, exml_names(xmlEntryOpenMM::IMPROPER));
-        //        std::string s = params.first.id().c_str();
-        //        std::string delimiter = "#";
-        //        std::string type_1 = s.substr(0, s.find(delimiter));
-        //        s.erase(0, s.find(delimiter) + delimiter.length());
-        //        std::string type_2 = s.substr(0, s.find(delimiter));
-        //        s.erase(0, s.find(delimiter) + delimiter.length());
-        //        std::string type_3 = s.substr(0, s.find(delimiter));
-        //        s.erase(0, s.find(delimiter) + delimiter.length());
-        //        std::string type_4 = s;
-        //        add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::TYPE1), type_1.c_str());
-        //        add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::TYPE2), type_2.c_str());
-        //        add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::TYPE3), type_3.c_str());
-        //        add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::TYPE4), type_4.c_str());
-        //        for (const auto &param : params.second)
-        //        {
-        //            add_xml_double(grandchild2, param.first.c_str(), param.second.value());
-        //        }
-        //    }    
-        //}
         
         if (strcmp(interactionTypeToString(fs.first).c_str(), "VANDERWAALS") == 0)
         {
@@ -593,7 +569,7 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
 
                     for(const auto &opt: aType.optionsConst())
                     {
-                        if (strcmp(opt.first.c_str(), "vdwtype") == 0) // Will there be a vdwtype? If not have to look through interaction type="VANDERWAALS" and search for atype
+                        if (strcmp(opt.first.c_str(), "vdwtype") == 0) 
                         {
                             for (auto &params : fs.second.parametersConst())
                             {
@@ -618,7 +594,7 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
                                         {
                                             if (strcmp(opt.second.c_str(), params.first.id().c_str()) == 0)
                                             {
-                                                add_xml_double(grandchild2, param.first.c_str(), param.second.value());    
+                                                add_xml_double(grandchild2, param.first.c_str(), param.second.value()); 
                                             }    
                                         }
                                             
@@ -627,11 +603,12 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
                             }
                         }       
                     }
-
-                    for(const auto &param : aType.parametersConst())
-                    {
-                        addSpecParameter(grandchild2, param.first, param.second, "charge"); 
-                    }       
+                    // adding charge in nonbonded here; currently charge is set to zero
+                    //for(const auto &param : aType.parametersConst())
+                    //{
+                    //    addSpecParameter(grandchild2, param.first, param.second, "charge");     
+                    //} 
+                    add_xml_int(grandchild2, "charge", 0);       
             }
         }      
 

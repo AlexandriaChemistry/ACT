@@ -78,9 +78,9 @@ namespace ga
          * @param chromosomeLength  number of genes in an individual
          * @param prMut             probability of mutating a gene
          */
-        void mutate(      vector   *individual,
-                    const int       chromosomeLength,
-                    const double    prMut);
+        virtual void mutate(      vector   *individual,
+                            const int       chromosomeLength,
+                            const double    prMut);
 
     };
 
@@ -113,9 +113,9 @@ namespace ga
          * @param chromosomeLength  number of genes in an individual
          * @param prMut             probability of mutating a gene
          */
-        void mutate(      vector   *individual,
-                    const int       chromosomeLength,
-                    const double    prMut);
+        virtual void mutate(      vector   *individual,
+                            const int       chromosomeLength,
+                            const double    prMut);
 
     };
 

@@ -1,5 +1,5 @@
-#ifndef ACT_INCLUDES_H
-#define ACT_INCLUDES_H
+#ifndef ACT_GA_INCLUDES_H
+#define ACT_GA_INCLUDES_H
 
 #include "GeneticAlgorithm.h"
 #include "Crossover.h"
@@ -11,4 +11,4 @@
 #include "Mutator.h"
 #include "Terminator.h"
 
-#endif //ACT_INCLUDES_H
+#endif //ACT_GA_INCLUDES_H

@@ -80,7 +80,7 @@ private:
     std::vector<double>      weightedTemperature_;
     //! Use annealing in the optimization. Value < 1 means annealing will happen
     real                     anneal_         = 1;
-    //! Flag determining whether to be verbose printing
+    //! Flag determining whether to be verbose printing TODO: This has to be made a global flag!
     bool                     verbose_        = false;
     //! Base name for parameter convergence file names
     std::string              xvgconv_;
@@ -90,11 +90,17 @@ private:
     std::vector<std::string> paramClass_;
 
 public:
-    /*! \brief Add command line arguments
-    *
-    * \param[in] pargs Vector of pargs
-    */
-    void add_pargs(std::vector<t_pargs> *pargs);
+    /*!
+     * \brief Add command-line arguments to a vector
+     * @param pargs     pointer to arguments vector
+     */
+    virtual void add_pargs(std::vector<t_pargs> *pargs);
+
+    /*!
+     * \brief Check the validity of the provided arguments
+     * Throw an exception if an invalid combination of arguments is encountered
+     */
+    virtual void check_pargs();
 
     /*! \brief Set the output file names.
     *
@@ -161,11 +167,6 @@ public:
 
     //! \brief Return output environment
     const gmx_output_env_t *oenv() const { return oenv_; }
-
-    /*! \brief Save the current state
-    * Must be overridden by child class.
-    */
-    virtual void saveState() = 0;
 };
 
 }

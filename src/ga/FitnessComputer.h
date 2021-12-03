@@ -48,10 +48,10 @@ namespace ga
          * @param indIndex      index of the individual in the population
          * @param length        length of the chromosome
          */
-        void compute(const vector  &individual,
-                           vector  *fitness,
-                     const int      indIndex,
-                     const int      length);
+        virtual void compute(const vector  &individual,
+                                   vector  *fitness,
+                             const int      indIndex,
+                             const int      length);
     };
 
 }

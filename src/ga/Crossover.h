@@ -68,11 +68,11 @@ namespace ga
          */
         SinglePointCrossover(const int chromosomeLength) : Crossover(chromosomeLength) {}
 
-        void offspring(const vector &parent1,
-                       const vector &parent2,
-                             vector *child1,
-                             vector *child2,
-                       const int     length);
+        virtual void offspring(const vector &parent1,
+                               const vector &parent2,
+                                     vector *child1,
+                                     vector *child2,
+                               const int     length);
 
     };
 
@@ -90,11 +90,11 @@ namespace ga
          */
         DoublePointCrossover(const int chromosomeLength) : Crossover(chromosomeLength) {};
 
-        void offspring(const vector &parent1,
-                       const vector &parent2,
-                             vector *child1,
-                             vector *child2,
-                       const int     length);
+        virtual void offspring(const vector &parent1,
+                               const vector &parent2,
+                                     vector *child1,
+                                     vector *child2,
+                               const int     length);
 
     };
 
@@ -119,11 +119,11 @@ namespace ga
           this->numberOfCrossovers = numberOfCrossovers;
         };
 
-        void offspring(const vector &parent1,
-                       const vector &parent2,
-                             vector *child1,
-                             vector *child2,
-                       const int     length);
+        virtual void offspring(const vector &parent1,
+                               const vector &parent2,
+                                     vector *child1,
+                                     vector *child2,
+                               const int     length);
 
     };
 }
