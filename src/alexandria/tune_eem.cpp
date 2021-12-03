@@ -355,6 +355,8 @@ double OptACM::calcDeviation(bool       verbose,
             }
             
             computeDiQuad(targets, &mymol);
+            QtypeProps *qelec = mymol.qTypeProps(qType::Elec);
+            QtypeProps *qcalc = mymol.qTypeProps(qType::Calc);
 
             if ((*targets).find(eRMS::MU)->second.weight() > 0)
             {
@@ -390,13 +392,13 @@ void OptACM::computeDiQuad(std::map<eRMS, FittingTarget> *targets,
     // These two things need to be present, if not the code will crash
     // TODO: What happens with this little interlude when we bring in
     // the for loop?
-    QtypeProps *qelec = mymol.qTypeProps(qType::Elec);
-    QtypeProps *qcalc = mymol.qTypeProps(qType::Calc);
+    // QtypeProps *qelec = mymol->qTypeProps(qType::Elec);
+    QtypeProps *qcalc = mymol->qTypeProps(qType::Calc);
     if ((*targets).find(eRMS::MU)->second.weight() > 0 ||
         (*targets).find(eRMS::QUAD)->second.weight() > 0)
     {
-        qcalc->setQ(mymol.atoms());
-        qcalc->setX(mymol.x());
+        qcalc->setQ(mymol->atoms());
+        qcalc->setX(mymol->x());
         qcalc->calcMoments();
     }
     
