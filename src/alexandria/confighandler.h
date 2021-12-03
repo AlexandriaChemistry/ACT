@@ -32,11 +32,15 @@ public:
 
 };
 
-class GAConfigHandler
+class GAConfigHandler : public ConfigHandler
 {
 
 private:
     int popSize_ = 8;
+    int nElites_ = 2;
+    int ncrossovers_ = 2;
+    // One for sorting QuckSort or MergeSort, one for the optimizer, one for the probability computing
+    // Rank computing, Bolzmann, and fitness probability computing
 
 public:
 
@@ -58,7 +62,7 @@ public:
  */
 class BayesConfigHandler : public ConfigHandler
 {
-    
+
 private:
     //! Maximum number of iterations
     int                      maxiter_       = 100;
