@@ -865,6 +865,8 @@ int alex_tune_eem(int argc, char *argv[])
     }
 
     // TODO: Check validity of arguments with check_pargs() in ConfigHandler(s)
+    opt.configHandlerPtr()->check_pargs();
+
 
     opt.optionsFinished(opt2fn("-o", NFILE, fnm));
 
