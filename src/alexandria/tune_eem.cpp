@@ -239,12 +239,6 @@ void OptACM::initChargeGeneration(iMolSelect ims)
     }
 }
 
-/*! \brief Dump charges to a file
- * Debugging routine
- * \param[in] fp   The file pointer to print to
- * \param[in] mol  The molecule to read from
- * \param[in] info Additional debugging information
- */
 static void dumpQX(FILE *fp, MyMol *mol, const std::string &info)
 {
     if (false && fp)
