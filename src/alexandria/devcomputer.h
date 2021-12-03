@@ -128,6 +128,6 @@ public:
 
 }
 
-}
+} // namespace alexandria
 
 #endif //ALEXANDRIA_DEVCOMPUTER_H
