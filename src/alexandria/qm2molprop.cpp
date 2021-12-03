@@ -149,6 +149,7 @@ int alex_qm2molprop(int argc, char *argv[])
         for (auto &i : gfns)
         {
             alexandria::MolProp mmm;
+            double qtot = 0;
             if (readBabel(i.c_str(), 
                           &mmm, 
                           molnm, 
@@ -158,7 +159,7 @@ int alex_qm2molprop(int argc, char *argv[])
                           maxpot, 
                           nsymm, 
                           jobtype,
-                          0.0,
+                          &qtot,
                           false))
             {
                 nread += 1;
@@ -166,6 +167,7 @@ int alex_qm2molprop(int argc, char *argv[])
                 {
                     renameAtomTypes(&mmm, g2a);
                 }
+                mmm.SetTotalCharge(qtot);
                 mp.push_back(std::move(mmm));
             }
         }

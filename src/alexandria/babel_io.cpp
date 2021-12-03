@@ -322,7 +322,7 @@ bool readBabel(const char          *g09,
                int                  maxPotential,
                int                  nsymm,
                const char          *jobType,
-               double               qtot,
+               double              *qtot,
                bool                 addHydrogen)
 {
     std::string                formula;
@@ -446,23 +446,10 @@ bool readBabel(const char          *g09,
     mpt->SetMass(mol.GetMolWt());
     mpt->SetMultiplicity(mol.GetTotalSpinMultiplicity());
     mpt->SetFormula(mol.GetFormula());
-
-    if (inputformat == einfGaussian)
-    {
-        mpt->SetTotalCharge(mol.GetTotalCharge());
-        if (debug)
-        {
-            fprintf(debug, "The total charge of the molecule (%0.2f) is taken from %s\n", qtot, g09);
-        }
-    }
-    else
-    {
-        mpt->SetTotalCharge(qtot);
-        if (debug)
-        {
-            fprintf(debug, "The total charge of the molecule (%0.2f) is assigned from the gentop command line\n", qtot);
-        }
-    }
+    // We don't just set this here, since the user may override the value
+    // However, it seems that OB does not extract this correctly from
+    // the input, unless it is a Gaussian log file.
+    *qtot = mol.GetTotalCharge();
 
     if (nullptr != molnm)
     {

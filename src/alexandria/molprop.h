@@ -1342,7 +1342,7 @@ class MolProp
         int                               index_ = -1;
         double                            mass_ = 0.0;
     int                               charge_ = 0;
-    int                               multiplicity_ = 0;
+    int                               multiplicity_ = 1;
     //! Total number of atoms in this compound
     int                               natom_ = 0;
     //! Whether or not all atoms have proper atom types

@@ -61,7 +61,8 @@ class MatrixWrapper
         {
             a_[col][row] = value;
         }
-
+        //! Return the number of columns
+        int nColumn() const { return ncol_; }
         /*! \brief Get a value from the matrix
          *
          * \param[in] col    The column
@@ -83,6 +84,8 @@ class MatrixWrapper
     private:
         // The internal data structure
         double **a_;
+        // The number of columns
+        int      ncol_;
 };
 
 void kabsch_rotation(tensor p, tensor q, tensor rotated_p);

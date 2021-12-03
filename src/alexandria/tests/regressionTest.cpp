@@ -87,7 +87,10 @@ TEST_F (RegressionTest, Solve_A_x_is_B_2)
     MatrixWrapper a(NCOL, NROW);
     for (int i = 0; i < NROW; i++)
     {
-        a.setRow(i, aa[i]);
+        for (int j = 0; j < NCOL; j++)
+        {
+            a.set(j, i, aa[i][j]);
+        }
     }
     std::vector<double> b({ 3, 4, 5 });
 
@@ -111,7 +114,10 @@ TEST_F (RegressionTest, Solve_A_x_is_B_3)
     MatrixWrapper a(NCOL, NROW);
     for (int i = 0; i < NROW; i++)
     {
-        a.setRow(i, aa[i]);
+        for (int j = 0; j <NCOL; j++)
+        {
+            a.set(j, i, aa[i][j]);
+        }
     }
     std::vector<double> b({ 6, 2, 2, 4 });
     // Answer should be ( 2, 1 )
@@ -132,7 +138,10 @@ TEST_F (RegressionTest, Solve_A_x_is_B_4)
     MatrixWrapper a(NCOL, NROW);
     for (int i = 0; i < NROW; i++)
     {
-        a.setRow(i, aa[i]);
+        for (int j = 0; j <NCOL; j++)
+        {
+            a.set(j, i, aa[i][j]);
+        }
     }
     std::vector<double> b({ 6, 4 });
     // Answer should be ( 2 )
@@ -153,7 +162,10 @@ TEST_F (RegressionTest, Solve_A_x_is_B_5)
     MatrixWrapper a(NCOL, NROW);
     for (int i = 0; i < NROW; i++)
     {
-        a.setRow(i, aa[i]);
+        for (int j = 0; j <NCOL; j++)
+        {
+            a.set(j, i, aa[i][j]);
+        }
     }
     std::vector<double> b({ 5, -5 });
     // Answer should be ( 1.6666, -2.5)
@@ -175,7 +187,10 @@ TEST_F (RegressionTest, Solve_A_x_is_B_6)
     MatrixWrapper a(NCOL, NROW);
     for (int i = 0; i < NROW; i++)
     {
-        a.setRow(i, aa[i]);
+        for (int j = 0; j <NCOL; j++)
+        {
+            a.set(j, i, aa[i][j]);
+        }
     }
     std::vector<double> b({ 1, 2, 5 });
     // Answer should be ( 1, 2 )
@@ -197,7 +212,10 @@ TEST_F (RegressionTest, Fail_A_x_is_B)
     MatrixWrapper a(NCOL, NROW);
     for (int i = 0; i < NROW; i++)
     {
-        a.setRow(i, aa[i]);
+        for (int j = 0; j <NCOL; j++)
+        {
+            a.set(j, i, aa[i][j]);
+        }
     }
     std::vector<double> b({ 1, -1, 1 });
     // Answer should be ( 1, 2 )

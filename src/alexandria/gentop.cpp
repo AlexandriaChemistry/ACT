@@ -209,7 +209,7 @@ int alex_gentop(int argc, char *argv[])
         { "-qtol",   FALSE, etREAL, {&qtol},
           "Tolerance for assigning charge generation algorithm" },
         { "-qtot",   FALSE, etREAL, {&qtot},
-          "Total charge of the molecule. If the input file is a Gaussian log file, qtot will be taken from the log file." },
+          "Total charge of the molecule. This will be taken from the input file by default, but that is reliable only if the input is a Gaussian log file." },
         { "-qqm",    FALSE, etSTR,  {&qqm},
           "Use a method from quantum mechanics that needs to be present in the input file. Either ESP, Hirshfeld, CM5 or Mulliken may be available." },
         { "-addh",   FALSE, etBOOL, {&addHydrogens},
@@ -328,6 +328,7 @@ int alex_gentop(int argc, char *argv[])
             molnm = (char *)"MOL";
         }
         alexandria::MolProp  mp;
+        double qtot_babel = 0;
         if (readBabel(filename,
                       &mp,
                       molnm,
@@ -337,7 +338,7 @@ int alex_gentop(int argc, char *argv[])
                       maxpot,
                       nsymm,
                       jobtype,
-                      qtot,
+                      &qtot_babel,
                       addHydrogens))
         {
             std::map<std::string, std::string> g2a;
@@ -346,8 +347,13 @@ int alex_gentop(int argc, char *argv[])
             {
                 renameAtomTypes(&mp, g2a);
             }
+            if (!opt2parg_bSet("-qtot", asize(pa), pa))
+            {
+                qtot = qtot_babel;
+            }
+            mp.SetTotalCharge(qtot);
             mymol.Merge(&mp);
-        }
+       }
         else
         {
             gmx_fatal(FARGS, "No input file has been specified.");
@@ -365,7 +371,6 @@ int alex_gentop(int argc, char *argv[])
                                  bAllowMissing ? missingParameters::Ignore : missingParameters::Error,
                                  tabfn);
 
-    auto pnc    = gmx::PhysicalNodeCommunicator(MPI_COMM_WORLD, 0);
     gmx_omp_nthreads_init(mdlog, cr, 1, 1, 1, 0, false, false);
 
     if (immStatus::OK == imm)

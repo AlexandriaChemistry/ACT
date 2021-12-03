@@ -252,7 +252,8 @@ void kabsch_rotation(tensor P, tensor Q, tensor rotated_P)
 
 MatrixWrapper::MatrixWrapper(int ncolumn, int nrow)
 {
-    a_       = alloc_matrix(ncolumn, nrow);
+    a_    = alloc_matrix(ncolumn, nrow);
+    ncol_ = ncolumn;
 }
 
 MatrixWrapper::~MatrixWrapper()

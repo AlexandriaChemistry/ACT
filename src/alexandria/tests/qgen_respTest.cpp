@@ -82,8 +82,9 @@ class RespTest : public gmx::test::CommandLineTestBase
 
             //Read input file for molprop
             auto dataName = gmx::test::TestFileManager::getInputFilePath("1-butanol-3-oep.log");
+            double qtot;
             if (readBabel(dataName.c_str(), &molprop, molnm, iupac, conf, basis,
-                          maxpot, nsymm, jobtype, 0.0, false))
+                          maxpot, nsymm, jobtype, &qtot, false))
             {
                 std::map<std::string, std::string> g2a;
                 gaffToAlexandria("", &g2a);
@@ -92,6 +93,14 @@ class RespTest : public gmx::test::CommandLineTestBase
                     renameAtomTypes(&molprop, g2a);
                 }
             }
+            else
+            {
+                fprintf(stderr, "Could not read file %s using OpenBabel\n",
+                        dataName.c_str());
+                return;
+            }
+            EXPECT_TRUE(qtot == 0.0);
+            molprop.SetTotalCharge(qtot);
             mp_.Merge(&molprop);
 
             auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 5e-2);
