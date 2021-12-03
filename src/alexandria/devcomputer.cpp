@@ -1,9 +1,6 @@
 #include "devcomputer.h"
 
 #include "units.h"
-#include "tune_eem.h"
-// TODO: This is to have dumpQX, maybe we should move it to another file to avoid circular imports?
-
 
 namespace alexandria
 {
@@ -183,11 +180,12 @@ void EspDevComputer::calcDeviation(      MyMol                             *mymo
     {
         qgr->updateAtomCoords(mymol->x());
     }
-    if (fit("zeta"))
+    if (fit_)
     {
         qgr->updateZeta(mymol->atoms(), poldata);
     }
-    dumpQX(logFile(), mymol, "ESP");
+    // TODO: fix dumpQX() location somewhere nice!
+    // dumpQX(logfile_, mymol, "ESP");
     qgr->updateAtomCharges(mymol->atoms());
     qgr->calcPot(poldata->getEpsilonR());
     real mae, mse;
