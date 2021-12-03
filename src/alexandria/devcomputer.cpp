@@ -45,7 +45,7 @@ void BoundsDevComputer::calcDeviation(      MyMol                             *m
 {
     double bound = 0;
     size_t n     = 0;
-    for (auto &optIndex : optIndex_)
+    for (auto &optIndex : *optIndex_)
     {
         InteractionType iType = optIndex.iType();
         ForceFieldParameter p;
