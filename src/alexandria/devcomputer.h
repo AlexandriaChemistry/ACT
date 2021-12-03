@@ -150,7 +150,7 @@ public:
      */
     EspDevComputer(      FILE *logfile,
                    const bool  verbose,
-                   const bool   fit)
+                   const bool  fit)
     : DevComputer(logfile, verbose)
     {
         fit_ = fit;
