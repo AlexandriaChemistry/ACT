@@ -265,6 +265,13 @@ static void dumpQX(FILE *fp, MyMol *mol, const std::string &info)
     }
 }
 
+void OptACM::fillDevComputers()
+{
+
+    
+
+}
+
 double OptACM::calcDeviation(bool       verbose,
                              CalcDev    calcDev,
                              iMolSelect ims)

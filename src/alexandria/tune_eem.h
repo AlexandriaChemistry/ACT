@@ -15,6 +15,7 @@
 
 #include "molgen.h"
 #include "bayes.h"
+#include "devcomputer.h"
 
 
 namespace alexandria
@@ -56,6 +57,8 @@ private:
     gmx::unique_cptr<FILE, my_fclose> fplog_ = nullptr;
     //! File name for the output force field file
     std::string outputFile_;
+    //! Vector of DevComputers for the different components of chi-squared
+    std::vector<DevComputer> devComputers;
 
     /*!
      * \brief Handle out of bounds variables (calcDeviation) in MASTER node before calculating the rest of the deviation
@@ -163,6 +166,9 @@ public:
      * \param[in] changed List over the parameters that have changed.
      */
     virtual void toPoldata(const std::vector<bool> &changed);
+
+    //! \brief Fill the devComputers vector according to the needs of the user
+    void fillDevComputers();
 
     /*! \brief
      * Computes deviation from target
