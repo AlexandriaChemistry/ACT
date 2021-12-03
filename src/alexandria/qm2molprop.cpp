@@ -85,6 +85,7 @@ int alex_qm2molprop(int argc, char *argv[])
     t_filenm fnm[] = {
         { efLOG, "-g03",  "gauss",   ffOPTRDMULT },
         { efOUT, "-psi4", "psi4",    ffOPTRDMULT },
+        { efSDF, "-sdf",  "mol",     ffOPTRDMULT },
         { efDAT, "-d",    "gentop",  ffREAD },
         { efDAT, "-map",  "mapping", ffOPTRD },
         { efDAT, "-o",    "molprop", ffWRITE }
@@ -142,9 +143,17 @@ int alex_qm2molprop(int argc, char *argv[])
     std::map<std::string, std::string> g2a;
     gaffToAlexandria("", &g2a);
     // Read Gaussian files
-    if (opt2bSet("-g03", NFILE, fnm))
+    if (opt2bSet("-g03", NFILE, fnm) || opt2bSet("-sdf", NFILE, fnm))
     {
-        gmx::ArrayRef<const std::string> gfns = ftp2fns(efLOG, NFILE, fnm);    
+        gmx::ArrayRef<const std::string> gfns;
+        if (opt2bSet("-g03", NFILE, fnm))
+        {
+            gfns = ftp2fns(efLOG, NFILE, fnm);
+        }
+        else
+        {
+            gfns = ftp2fns(efSDF, NFILE, fnm);
+        }
         int nread = 0;
         for (auto &i : gfns)
         {
