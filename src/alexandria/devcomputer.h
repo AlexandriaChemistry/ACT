@@ -105,6 +105,29 @@ public:
 
 };
 
+
+class ChargeCM5DevComputer : public DevComputer
+{
+
+public:
+
+    /*! \brief Create a new DevComputer
+     * @param logfile   pointer to log file
+     * @param verbose   whether we are in verbose mode
+     */
+    ChargeCM5DevComputer(      FILE *logfile,
+                         const bool  verbose)
+    : DevComputer(logfile, verbose)
+    {}
+
+    virtual void calcDeviation(      MyMol                             *mymol,
+                                     std::map<eRMS, FittingTarget>     *targets,
+                                     Poldata                           *poldata,
+                               const std::vector<double>               &param,
+                                     t_commrec                         *commrec);
+
+}
+
 }
 
 #endif //ALEXANDRIA_DEVCOMPUTER_H

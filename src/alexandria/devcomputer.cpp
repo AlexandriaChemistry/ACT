@@ -3,6 +3,9 @@
 namespace alexandria
 {
 
+    /* * * * * * * * * * * * * * * * * * * * * *
+    * BEGIN: BoundsDevComputer                 *
+    * * * * * * * * * * * * * * * * * * * * * */
 
     double BoundsDevComputer::l2_regularizer(      double          x,
                                                    double          min,
@@ -56,8 +59,19 @@ namespace alexandria
         }
         (*targets).find(eRMS::BOUNDS)->second.increase(1, bound);
         GMX_RELEASE_ASSERT(n == param.size(),
-                            gmx::formatString("Death horror error. n=%zu param.size()=%zu", n, param.size()).c_str());
+                           gmx::formatString("Death horror error. n=%zu param.size()=%zu", n, param.size()).c_str());
     }
 
+    /* * * * * * * * * * * * * * * * * * * * * *
+    * END: BoundsDevComputer                   *
+    * * * * * * * * * * * * * * * * * * * * * */
+
+    /* * * * * * * * * * * * * * * * * * * * * *
+    * BEGIN: ChargeCM5DevComputer              *
+    * * * * * * * * * * * * * * * * * * * * * */
+
+    /* * * * * * * * * * * * * * * * * * * * * *
+    * END: ChargeCM5DevComputer                *
+    * * * * * * * * * * * * * * * * * * * * * */
 
 }
