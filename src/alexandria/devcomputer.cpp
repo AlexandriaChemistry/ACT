@@ -276,10 +276,10 @@ void QuadDevComputer::calcDeviation(      MyMol                             *mym
 * * * * * * * * * * * * * * * * * * * * * */
 
 void MuDevComputer::calcDeviation(      MyMol                             *mymol,
-                                          std::map<eRMS, FittingTarget>     *targets,
-                                          Poldata                           *poldata,
-                                    const std::vector<double>               &param,
-                                          t_commrec                         *commrec)
+                                        std::map<eRMS, FittingTarget>     *targets,
+                                        Poldata                           *poldata,
+                                  const std::vector<double>               &param,
+                                        t_commrec                         *commrec)
 {
     QtypeProps *qelec = mymol->qTypeProps(qType::Elec);
     QtypeProps *qcalc = mymol->qTypeProps(qType::Calc);

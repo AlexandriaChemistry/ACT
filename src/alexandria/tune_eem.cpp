@@ -268,7 +268,7 @@ static void dumpQX(FILE *fp, MyMol *mol, const std::string &info)
 void OptACM::fillDevComputers()
 {
 
-    
+    // TODO: everything!
 
 }
 
@@ -299,6 +299,7 @@ double OptACM::calcDeviation(bool       verbose,
     }
     resetChiSquared(ims);
     std::map<eRMS, FittingTarget> *targets = fittingTargets(ims);
+    // Why is commrec() recalled?
     if (MASTER(commrec()))
     {
         if ((*targets).find(eRMS::BOUNDS)->second.weight() > 0)
@@ -354,6 +355,8 @@ double OptACM::calcDeviation(bool       verbose,
                 handleEspCD(targets, mymol);
             }
             // These two things need to be present, if not the code will crash
+            // TODO: What happens with this little interlude when we bring in
+            // the for loop?
             QtypeProps *qelec = mymol.qTypeProps(qType::Elec);
             QtypeProps *qcalc = mymol.qTypeProps(qType::Calc);
             if ((*targets).find(eRMS::MU)->second.weight() > 0 ||
