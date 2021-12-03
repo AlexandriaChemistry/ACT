@@ -105,7 +105,9 @@ public:
 
 };
 
-
+/*!
+ * ChargeCM5DevComputer that computes the deviation from the CM5 charge
+ */
 class ChargeCM5DevComputer : public DevComputer
 {
 
@@ -128,7 +130,9 @@ public:
 
 };
 
-
+/*!
+ * EspDevComputer that computes the deviation from the electrostatic potential
+ */
 class EspDevComputer : public DevComputer
 {
 
@@ -160,6 +164,9 @@ public:
 
 };
 
+/* 
+ * PolarDevComputer that computes the deviation of the polarizability components
+ */
 class PolarDevComputer : public DevComputer
 {
 private:
@@ -173,12 +180,74 @@ public:
      * @param verbose           whether we are in verbose mode
      * @param bFullQuadrupole   whether or not to use off-diagonal elements of the quadrupole for fitting
      */
-    PolarDevComputer(      FILE  *logfile,
-                      const bool verbose,
-                            bool bFullQuadrupole)
+    PolarDevComputer(    FILE  *logfile,
+                     const bool verbose,
+                     const bool bFullQuadrupole)
     : DevComputer(logfile, verbose)
     {
         bFullQuadrupole_ = bFullQuadrupole;
+    }
+
+    virtual void calcDeviation(      MyMol                             *mymol,
+                                     std::map<eRMS, FittingTarget>     *targets,
+                                     Poldata                           *poldata,
+                               const std::vector<double>               &param,
+                                     t_commrec                         *commrec);
+}
+
+/* 
+ * QuadDevComputer that computes the molecular quadrupole
+ */
+class QuadDevComputer : public DevComputer
+{
+private:
+    //! Whether or not to use off-diagonal elements of the quadrupole for fitting
+    bool bFullQuadrupole_;
+
+public:
+
+    /*! \brief Create a new QuadDevComputer
+     * @param logfile           pointer to log file
+     * @param verbose           whether we are in verbose mode
+     * @param bFullQuadrupole   whether or not to use off-diagonal elements of the quadrupole for fitting
+     */
+    QuadDevComputer(      FILE *logfile,
+                    const bool  verbose,
+                    const bool  bFullQuadrupole)
+    : DevComputer(logfile, verbose)
+    {
+        bFullQuadrupole_ = bFullQuadrupole;
+    }
+
+    virtual void calcDeviation(      MyMol                             *mymol,
+                                     std::map<eRMS, FittingTarget>     *targets,
+                                     Poldata                           *poldata,
+                               const std::vector<double>               &param,
+                                     t_commrec                         *commrec);
+}
+
+/*!
+ * MuDevComputer the computes the molecular dipole
+ */
+class MuDevComputer : public DevComputer
+{
+private:
+    //! Are we using QM only?
+    bool bQM_;
+
+public:
+
+    /*! \brief Create a new QuadDevComputer
+     * @param logfile   pointer to log file
+     * @param verbose   whether we are in verbose mode
+     * @param bQM       are we using QM only?
+     */
+    MuDevComputer(      FILE *logfile,
+                  const bool  verbose,
+                  const bool  bQM)
+    : DevComputer(logfile, verbose)
+    {
+        bQM_ = bQM;
     }
 
     virtual void calcDeviation(      MyMol                             *mymol,

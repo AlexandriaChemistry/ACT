@@ -245,6 +245,28 @@ void PolarDevComputer::calcDeviation(      MyMol                             *my
 * BEGIN: QuadDevComputer                   *
 * * * * * * * * * * * * * * * * * * * * * */
 
+void QuadDevComputer::calcDeviation(      MyMol                             *mymol,
+                                          std::map<eRMS, FittingTarget>     *targets,
+                                          Poldata                           *poldata,
+                                    const std::vector<double>               &param,
+                                          t_commrec                         *commrec)
+{
+    QtypeProps *qelec = mymol->qTypeProps(qType::Elec);
+    QtypeProps *qcalc = mymol->qTypeProps(qType::Calc);
+    double delta = 0;
+    for (int mm = 0; mm < DIM; mm++)
+    {
+        for (int nn = 0; nn < DIM; nn++)
+        {
+            if (bFullQuadrupole_ || mm == nn)
+            {
+                delta += gmx::square(qcalc->quad()[mm][nn] - qelec->quad()[mm][nn]);
+            }
+        }
+    }
+    (*targets).find(eRMS::QUAD)->second.increase(1, delta);
+}
+
 /* * * * * * * * * * * * * * * * * * * * * *
 * END: QuadDevComputer                     *
 * * * * * * * * * * * * * * * * * * * * * */
@@ -252,6 +274,28 @@ void PolarDevComputer::calcDeviation(      MyMol                             *my
 /* * * * * * * * * * * * * * * * * * * * * *
 * BEGIN: MuDevComputer                     *
 * * * * * * * * * * * * * * * * * * * * * */
+
+void MuDevComputer::calcDeviation(      MyMol                             *mymol,
+                                          std::map<eRMS, FittingTarget>     *targets,
+                                          Poldata                           *poldata,
+                                    const std::vector<double>               &param,
+                                          t_commrec                         *commrec)
+{
+    QtypeProps *qelec = mymol->qTypeProps(qType::Elec);
+    QtypeProps *qcalc = mymol->qTypeProps(qType::Calc);
+    real delta = 0;
+    if (bQM_)
+    {
+        rvec dmu;
+        rvec_sub(qcalc->mu(), qelec->mu(), dmu);
+        delta = iprod(dmu, dmu);
+    }
+    else
+    {
+        delta = gmx::square(qcalc->dipole() - mymol->dipExper());
+    }
+    (*targets).find(eRMS::MU)->second.increase(1, delta);
+}
 
 /* * * * * * * * * * * * * * * * * * * * * *
 * END: MuDevComputer                       *
