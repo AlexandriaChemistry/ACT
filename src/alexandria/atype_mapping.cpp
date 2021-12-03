@@ -72,7 +72,7 @@ void gaffToAlexandria(const std::string                  &filenm,
     }
 }
 
-void renameAtomTypes(alexandria::MolProp                      *mp,
+bool renameAtomTypes(alexandria::MolProp                      *mp,
                      const std::map<std::string, std::string> &g2a)
 {
     auto expers = mp->experiment();
@@ -84,7 +84,8 @@ void renameAtomTypes(alexandria::MolProp                      *mp,
             auto obt = catom->getObtype();
             if (g2a.find(obt) == g2a.end())
             {
-                gmx_fatal(FARGS, "obType %s cannot be mapped to alexandria", obt.c_str());
+                fprintf(stderr, "obType %s cannot be mapped to alexandria", obt.c_str());
+                return false;
             }
             else
             {
@@ -97,5 +98,6 @@ void renameAtomTypes(alexandria::MolProp                      *mp,
             }
         }
     }
+    return true;
 }
 

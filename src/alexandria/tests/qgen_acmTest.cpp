@@ -137,7 +137,7 @@ class AcmTest : public gmx::test::CommandLineTestBase
                 gaffToAlexandria("", &g2a);
                 if (!g2a.empty())
                 {
-                    renameAtomTypes(&molprop, g2a);
+                    EXPECT_TRUE(renameAtomTypes(&molprop, g2a));
                 }
             }
             else

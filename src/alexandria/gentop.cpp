@@ -343,16 +343,20 @@ int alex_gentop(int argc, char *argv[])
         {
             std::map<std::string, std::string> g2a;
             gaffToAlexandria("", &g2a);
+            bool mappingOK = true;
             if (!g2a.empty())
             {
-                renameAtomTypes(&mp, g2a);
+                mappingOK = renameAtomTypes(&mp, g2a);
             }
-            if (!opt2parg_bSet("-qtot", asize(pa), pa))
+            if (mappingOK)
             {
-                qtot = qtot_babel;
+                if (!opt2parg_bSet("-qtot", asize(pa), pa))
+                {
+                    qtot = qtot_babel;
+                }
+                mp.SetTotalCharge(qtot);
+                mymol.Merge(&mp);
             }
-            mp.SetTotalCharge(qtot);
-            mymol.Merge(&mp);
        }
         else
         {
