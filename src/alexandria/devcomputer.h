@@ -164,7 +164,7 @@ public:
 
 };
 
-/* 
+/*!
  * PolarDevComputer that computes the deviation of the polarizability components
  */
 class PolarDevComputer : public DevComputer
@@ -195,7 +195,7 @@ public:
                                      t_commrec                         *commrec);
 }
 
-/* 
+/*!
  * QuadDevComputer that computes the molecular quadrupole
  */
 class QuadDevComputer : public DevComputer
