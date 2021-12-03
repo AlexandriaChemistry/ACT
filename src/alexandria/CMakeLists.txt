@@ -33,9 +33,10 @@ set(ALEXANDRIA_SOURCES
            bastat.cpp
            bayes.cpp
            categories.cpp
-           confighandler.cpp
            chargemodel.cpp
            communication.cpp
+           confighandler.cpp
+           devcomputer.cpp
            dissociation_energy.cpp
            fill_inputrec.cpp
            forcefieldparameter.cpp

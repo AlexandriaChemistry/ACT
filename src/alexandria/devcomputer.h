@@ -1,0 +1,13 @@
+#ifndef ALEXANDRIA_DEVCOMPUTER_H
+#define ALEXANDRIA_DEVCOMPUTER_H
+
+namespace alexandria
+{
+
+
+
+
+
+}
+
+#endif //ALEXANDRIA_DEVCOMPUTER_H
