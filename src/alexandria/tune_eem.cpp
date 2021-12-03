@@ -299,8 +299,7 @@ double OptACM::calcDeviation(bool       verbose,
     }
     resetChiSquared(ims);
     std::map<eRMS, FittingTarget> *targets = fittingTargets(ims);
-    // Why is commrec() recalled?
-    if (MASTER(commrec()))
+    if (MASTER(cr))
     {
         if ((*targets).find(eRMS::BOUNDS)->second.weight() > 0)
         {
@@ -308,12 +307,12 @@ double OptACM::calcDeviation(bool       verbose,
         }
     }
 
-    if (PAR(commrec()))
+    if (PAR(cr))
     {
         if (calcDev == CalcDev::Parallel)
         {
-            poldata()->broadcast_eemprop(commrec());
-            poldata()->broadcast_particles(commrec());
+            poldata()->broadcast_eemprop(cr);
+            poldata()->broadcast_particles(cr);
         }
     }
     int nmolCalculated = 0;
@@ -335,7 +334,7 @@ double OptACM::calcDeviation(bool       verbose,
             // Update the electronegativity parameters
             mymol.zetaToAtoms(poldata(), mymol.atoms());
             // Run charge generation including shell minimization
-            immStatus imm = mymol.GenerateAcmCharges(poldata(), commrec(),
+            immStatus imm = mymol.GenerateAcmCharges(poldata(), cr,
                                                      qcycle(), qtol());
 
             // Check whether we have to disable this compound
