@@ -82,7 +82,7 @@ void ChargeCM5DevComputer::calcDeviation(      MyMol                            
                                          const std::vector<double>               &param,
                                                t_commrec                         *commrec)
 {
-    
+
     double qtot = 0;
     int i = 0;
     const t_atoms myatoms = mymol->atomsConst();
@@ -206,6 +206,55 @@ void EspDevComputer::calcDeviation(      MyMol                             *mymo
 
 /* * * * * * * * * * * * * * * * * * * * * *
 * END: EspDevComputer                      *
+* * * * * * * * * * * * * * * * * * * * * */
+
+
+/* * * * * * * * * * * * * * * * * * * * * *
+* BEGIN: PolarDevComputer                  *
+* * * * * * * * * * * * * * * * * * * * * */
+
+void PolarDevComputer::calcDeviation(      MyMol                             *mymol,
+                                           std::map<eRMS, FittingTarget>     *targets,
+                                           Poldata                           *poldata,
+                                     const std::vector<double>               &param,
+                                           t_commrec                         *commrec)
+{
+    double diff2 = 0;
+    mymol->CalcPolarizability(10, commrec, nullptr);
+    if (bFullQuadrupole_)
+    {
+        // It is already squared
+        diff2 = mymol->PolarizabilityTensorDeviation();
+    }
+    else
+    {
+        diff2 = gmx::square(mymol->PolarizabilityDeviation());
+    }
+    if (false && logfile_)
+    {
+        fprintf(logfile_, "DIFF %s %g\n", mymol->getMolname().c_str(), diff2);
+    }
+    (*targets).find(eRMS::Polar)->second.increase(1, diff2);
+}
+
+/* * * * * * * * * * * * * * * * * * * * * *
+* END: PolarDevComputer                    *
+* * * * * * * * * * * * * * * * * * * * * */
+
+/* * * * * * * * * * * * * * * * * * * * * *
+* BEGIN: QuadDevComputer                   *
+* * * * * * * * * * * * * * * * * * * * * */
+
+/* * * * * * * * * * * * * * * * * * * * * *
+* END: QuadDevComputer                     *
+* * * * * * * * * * * * * * * * * * * * * */
+
+/* * * * * * * * * * * * * * * * * * * * * *
+* BEGIN: MuDevComputer                     *
+* * * * * * * * * * * * * * * * * * * * * */
+
+/* * * * * * * * * * * * * * * * * * * * * *
+* END: MuDevComputer                       *
 * * * * * * * * * * * * * * * * * * * * * */
 
 
