@@ -2,6 +2,7 @@
 #define ALEXANDRIA_DEVCOMPUTER_H
 
 #include <cstdio>
+#include <string>
 #include <map>
 #include <vector>
 
@@ -56,6 +57,53 @@ public:
                                      t_commrec                         *commrec) = 0;
 
 };
+
+
+/*!
+ * DevComputer that penalizes parameters out of bounds -> eRMS::BOUNDS
+ */
+class BoundsDevComputer : public DevComputer
+{
+
+private:
+
+    //! Information about each force field parameter
+    std::vector<OptimizationIndex> *optIndex_;
+
+    /*! \brief Compute penalty for variables that are out of bounds
+     * \param[in] x       The actual value
+     * \param[in] min     The minimum allowed value
+     * \param[in] max     The maximum allowed value
+     * \param[in] label   String to print if verbose
+     * \return 0 when in bounds, square deviation from bounds otherwise.
+     */
+    double l2_regularizer(      double          x,
+                                double          min,
+                                double          max,
+                          const std::string    &label);
+
+public:
+
+    /*! \brief Create a new BoundsDevComputer
+     * @param logfile   pointer to log file
+     * @param verbose   whether we are in verbose mode
+     * @param optIndex  pointer to vector containing information about each force field parameter
+     */
+    BoundsDevComputer(      FILE                           *logfile,
+                      const bool                            verbose,
+                            std::vector<OptimizationIndex> *optIndex)
+    : DevComputer(logfile, verbose)
+    {
+        optIndex_ = optIndex;
+    }
+
+    virtual void calcDeviation(      MyMol                             *mymol,
+                                     std::map<eRMS, FittingTarget>     *targets,
+                                     Poldata                           *poldata,
+                               const std::vector<double>               &param,
+                                     t_commrec                         *commrec);
+
+}
 
 
 }
