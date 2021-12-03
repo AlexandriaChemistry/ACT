@@ -126,7 +126,39 @@ public:
                                const std::vector<double>               &param,
                                      t_commrec                         *commrec);
 
-}
+};
+
+
+class EspDevComputer : public DevComputer
+{
+
+private:
+
+    //! Whether we fit zeta parameters
+    bool fit_;
+
+public:
+
+    /*! \brief Create a new DevComputer
+     * @param logfile   pointer to log file
+     * @param verbose   whether we are in verbose mode
+     * @param fit       whether we fit zeta parameters
+     */
+    EspDevComputer(      FILE *logfile,
+                   const bool  verbose,
+                   const bool   fit)
+    : DevComputer(logfile, verbose)
+    {
+        fit_ = fit;
+    }
+
+    virtual void calcDeviation(      MyMol                             *mymol,
+                                     std::map<eRMS, FittingTarget>     *targets,
+                                     Poldata                           *poldata,
+                               const std::vector<double>               &param,
+                                     t_commrec                         *commrec);
+
+};
 
 } // namespace alexandria
 

@@ -1,5 +1,10 @@
 #include "devcomputer.h"
 
+#include "units.h"
+#include "tune_eem.h"
+// TODO: This is to have dumpQX, maybe we should move it to another file to avoid circular imports?
+
+
 namespace alexandria
 {
 
@@ -158,6 +163,49 @@ void ChargeCM5DevComputer::calcDeviation(      MyMol                            
 
 /* * * * * * * * * * * * * * * * * * * * * *
 * END: ChargeCM5DevComputer                *
+* * * * * * * * * * * * * * * * * * * * * */
+
+/* * * * * * * * * * * * * * * * * * * * * *
+* BEGIN: EspDevComputer                    *
+* * * * * * * * * * * * * * * * * * * * * */
+
+void EspDevComputer::calcDeviation(      MyMol                             *mymol,
+                                         std::map<eRMS, FittingTarget>     *targets,
+                                         Poldata                           *poldata,
+                                   const std::vector<double>               &param,
+                                         t_commrec                         *commrec)
+{
+
+    real rrms     = 0;
+    real cosangle = 0;
+    QgenResp *qgr = mymol->qTypeProps(qType::Calc)->qgenResp();
+    if (nullptr != mymol->shellfc_)
+    {
+        qgr->updateAtomCoords(mymol->x());
+    }
+    if (fit("zeta"))
+    {
+        qgr->updateZeta(mymol->atoms(), poldata);
+    }
+    dumpQX(logFile(), mymol, "ESP");
+    qgr->updateAtomCharges(mymol->atoms());
+    qgr->calcPot(poldata->getEpsilonR());
+    real mae, mse;
+    real rms = qgr->getStatistics(&rrms, &cosangle, &mae, &mse);
+    double myRms = convertToGromacs(rms, "Hartree/e");
+    size_t nEsp = qgr->nEsp();
+    (*targets).find(eRMS::ESP)->second.increase(nEsp, gmx::square(myRms)*nEsp);
+    if (debug)
+    {
+        fprintf(debug, "%s ESPrms = %g cosangle = %g\n",
+                mymol->getMolname().c_str(),
+                myRms, cosangle);
+    }
+
+}
+
+/* * * * * * * * * * * * * * * * * * * * * *
+* END: EspDevComputer                      *
 * * * * * * * * * * * * * * * * * * * * * */
 
 
