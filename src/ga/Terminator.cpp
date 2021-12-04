@@ -7,36 +7,41 @@
 namespace ga
 {
 
-    SimpleTerminator::SimpleTerminator(const double tolerance)
-    {
-        this->tolerance = tolerance;
-    }
 
+/* * * * * * * * * * * * * * * * * * * * * *
+* BEGIN: SimpleTerminator                  *
+* * * * * * * * * * * * * * * * * * * * * */
 
-    GenerationTerminator::GenerationTerminator(const int maxGenerations)
-    {
-        this->maxGenerations = maxGenerations;
-    }
+bool SimpleTerminator::terminate(const matrix  &population,
+                                 const vector  &fitness,
+                                 const int      generationNumber,
+                                 const int      popSize,
+                                 const int      chromosomeLength)
+{
+    double maximumFitness = fitness[findMaximumIndex(fitness, popSize)];
+    return maximumFitness >= 1 / (tolerance * chromosomeLength);
+}
 
+/* * * * * * * * * * * * * * * * * * * * * *
+* END: SimpleTerminator                    *
+* * * * * * * * * * * * * * * * * * * * * */
 
-    bool SimpleTerminator::terminate(const matrix  &population,
+/* * * * * * * * * * * * * * * * * * * * * *
+* BEGIN: GenerationTerminator              *
+* * * * * * * * * * * * * * * * * * * * * */
+
+bool GenerationTerminator::terminate(const matrix  &population,
                                      const vector  &fitness,
                                      const int      generationNumber,
                                      const int      popSize,
                                      const int      chromosomeLength)
-    {
-        double maximumFitness = fitness[findMaximumIndex(fitness, popSize)];
-        return maximumFitness >= 1 / (tolerance * chromosomeLength);
-    }
-
-
-    bool GenerationTerminator::terminate(const matrix  &population,
-                                         const vector  &fitness,
-                                         const int      generationNumber,
-                                         const int      popSize,
-                                         const int      chromosomeLength)
-    {
-        return generationNumber >= maxGenerations;
-    }
-
+{
+    return generationNumber >= maxGenerations;
 }
+
+/* * * * * * * * * * * * * * * * * * * * * *
+* END: GenerationTerminator                *
+* * * * * * * * * * * * * * * * * * * * * */
+
+
+} //namespace ga

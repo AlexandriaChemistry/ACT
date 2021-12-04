@@ -6,7 +6,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+
 using namespace ga;
+
 
 int main(int argc, char const *argv[])
 {
