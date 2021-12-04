@@ -616,7 +616,8 @@ immStatus MyMol::GenerateAtoms(const Poldata     *pd,
 immStatus MyMol::checkAtoms(const Poldata *pd,
                             const t_atoms *atoms)
 {
-    auto nmissing = 0;
+    int nmissing        = 0;
+    int atomnumberTotal = 0;
     for (auto i = 0; i < atoms->nr; i++)
     {
         const auto atype(*atoms->atomtype[i]);
@@ -627,10 +628,20 @@ immStatus MyMol::checkAtoms(const Poldata *pd,
                    getMolname().c_str());
             nmissing++;
         }
+        else
+        {
+            atomnumberTotal += pd->findParticleType(atype)->atomnumber();
+        }
     }
     if (nmissing > 0)
     {
         return immStatus::AtomTypes;
+    }
+    // Check multiplicity
+    int multOk = atomnumberTotal + getMultiplicity() + totalCharge();
+    if (multOk % 2 == 0)
+    {
+        return immStatus::Multiplicity;
     }
     return immStatus::OK;
 }
@@ -850,6 +861,10 @@ immStatus MyMol::GenerateTopology(FILE              *fp,
             UpdateIdef(pd, InteractionType::PROPER_DIHEDRALS);
         }
         UpdateIdef(pd, InteractionType::VSITE2);
+    }
+    if (immStatus::OK == imm)
+    {
+        imm = checkAtoms(pd, atoms);
     }
     if (immStatus::OK != imm && debug)
     {

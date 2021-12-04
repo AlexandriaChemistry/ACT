@@ -83,6 +83,8 @@ enum class immStatus {
     AtomTypes,
     //! Cannot determine the atom number for one or more atoms
     AtomNumber,
+    //! Incorrect multiplicity
+    Multiplicity,
     //! Problem converting data from the underlying molprop structure
     MolpropConv,
     //! Incorrect or unknown bondorder
