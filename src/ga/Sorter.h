@@ -54,6 +54,7 @@ class EmptySorter : public Sorter
 {
 
 public:
+
       virtual void sort(      matrix *pop,
                               vector *fitness,
                         const int     popSize) {};
@@ -68,6 +69,7 @@ class MergeSorter : public Sorter
 {
 
 private:
+
       //! Temporal storage for a population
       matrix tmpPop;
       //! Temporal vector for fitness
@@ -110,6 +112,7 @@ private:
                               vector     *fitB);
 
 public:
+
       /*!
        * Create a new MergeSorter object
        * @param popSize               number of individuals in the population
@@ -140,6 +143,7 @@ class QuickSorter : public Sorter
 {
 
 private:
+
       //! Temporal storage for fitness
       vector tmpFitness;
 
@@ -178,7 +182,9 @@ private:
                                     vector     *fitness,
                               const int         low,
                               const int         high);
+
 public:
+
       /*!
        * Create a new QuickSorter
        * @param popSize       amount of individuals in the population

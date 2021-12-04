@@ -1,6 +1,7 @@
 #ifndef ALEXANDRIA_DEVCOMPUTER_H
 #define ALEXANDRIA_DEVCOMPUTER_H
 
+
 #include <cstdio>
 #include <string>
 #include <map>
@@ -176,7 +177,9 @@ public:
  */
 class PolarDevComputer : public DevComputer
 {
+
 private:
+
     //! Whether or not to use off-diagonal elements of the quadrupole for fitting
     bool bFullQuadrupole_;
 
@@ -200,6 +203,7 @@ public:
                                      Poldata                           *poldata,
                                const std::vector<double>               &param,
                                      t_commrec                         *commrec);
+
 };
 
 /*!
@@ -207,7 +211,9 @@ public:
  */
 class QuadDevComputer : public DevComputer
 {
+
 private:
+
     //! Whether or not to use off-diagonal elements of the quadrupole for fitting
     bool bFullQuadrupole_;
 
@@ -231,6 +237,7 @@ public:
                                      Poldata                           *poldata,
                                const std::vector<double>               &param,
                                      t_commrec                         *commrec);
+
 };
 
 /*!
@@ -238,6 +245,7 @@ public:
  */
 class MuDevComputer : public DevComputer
 {
+
 private:
     //! Are we using QM only?
     bool bQM_;
@@ -262,8 +270,11 @@ public:
                                      Poldata                           *poldata,
                                const std::vector<double>               &param,
                                      t_commrec                         *commrec);
+
 };
 
+
 } // namespace alexandria
+
 
 #endif //ALEXANDRIA_DEVCOMPUTER_H

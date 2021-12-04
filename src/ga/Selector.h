@@ -19,6 +19,7 @@ class Selector
 {
 
 public:
+
     /*!
      * Select an individual from the population
      * @param probability       selection probability of each individual
@@ -38,11 +39,13 @@ class RouletteSelector : public Selector
 {
 
 private:
+
     std::random_device                      rd;
     std::mt19937                            gen;
     std::uniform_real_distribution<double>  dis;
 
 public:
+
     /*!
      * Create a new instance of RouletteSelector.
      */

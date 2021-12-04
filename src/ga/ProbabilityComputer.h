@@ -16,6 +16,7 @@ class ProbabilityComputer
 {
 
 public:
+
     /*!
      * Compute the probability of each individual in the population
      * @param fitness   the fitness of each individual
@@ -41,6 +42,7 @@ class FitnessProbabilityComputer : public ProbabilityComputer
 {
 
 public:
+
     virtual void compute(const vector  &fitness,
                                vector  *prob,
                          const int      popSize);
@@ -61,12 +63,14 @@ class BoltzmannProbabilityComputer : public ProbabilityComputer
 {
 
 private:
+
     //! The temperature parameter
     double temperature;
     //! Stores e^fitness for each individual
     vector exponentials;
 
 public:
+
     /*!
      * Create a new BoltzmannProbabilityComputer object
      * @param popSize           number of individuals in the population
@@ -98,10 +102,12 @@ class RankProbabilityComputer : public ProbabilityComputer
 {
 
 private:
+
     //! Stores the sum of ranks. E.g., if there are 10 individuals, the sum of ranks is 1 + 2  + 3 + ... + 9 + 10
     double sumOfRanks;
 
 public:
+
     /*!
      * Create a new RankProbabilityComputer object
      * @param popSize   number of individuals in the population

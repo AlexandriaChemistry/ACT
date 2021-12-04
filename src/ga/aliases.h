@@ -5,11 +5,13 @@
 #include <tuple>
 #include <vector>
 
+
 //! Regular 1D array of double precision floating point numbers
 using vector = std::vector<double>;
 
 //! 2D matrix of double precision floating point numbers
 using matrix = std::vector<vector>;
+
 
 namespace ga
 {

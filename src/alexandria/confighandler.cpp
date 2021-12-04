@@ -8,6 +8,7 @@
 namespace alexandria
 {
 
+
 /* * * * * * * * * * * * * * * * * * * * * *
 * BEGIN: BayesConfigHandler                *
 * * * * * * * * * * * * * * * * * * * * * */
@@ -143,4 +144,4 @@ void GAConfigHandler::add_pargs(std::vector<t_pargs> *pargs)
 * END: GAConfigHandler                     *
 * * * * * * * * * * * * * * * * * * * * * */
 
-}
+} //namespace alexandria

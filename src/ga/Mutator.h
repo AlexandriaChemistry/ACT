@@ -19,11 +19,13 @@ class Mutator
 {
 
 private:
+
     std::random_device                      rd_base;
     std::mt19937                            gen_base;
     std::uniform_real_distribution<double>  dis_base;
 
 protected:
+
     /*!
      * Constructor which initializes the random number generator
      */
@@ -61,11 +63,13 @@ class PercentMutator : public Mutator
 {
 
 private:
+
     std::random_device                      rd;
     std::mt19937                            gen;
     std::uniform_real_distribution<double>  dis;
 
 public:
+
     /*!
      * Create a new PercentMutation object
      * @param frac  the fraction of change in [0, 1]
@@ -97,11 +101,13 @@ class RangeMutator : public Mutator
 {
 
 private:
+
     std::random_device                      rd;
     std::mt19937                            gen;
     std::uniform_real_distribution<double>  dis;
 
 public:
+
     /*!
      * Create a new RangeMutator object
      * @param range  the range for maximum change

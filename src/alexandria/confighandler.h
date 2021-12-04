@@ -1,12 +1,15 @@
 #ifndef ALEXANDRIA_CONFIGHANDLER_H
 #define ALEXANDRIA_CONFIGHANDLER_H
 
+
 #include <vector>
 
 #include "gromacs/commandline/pargs.h"
 
+
 namespace alexandria
 {
+
 
 /*!
  * Abstract class to handle configuration for methods.
@@ -184,8 +187,11 @@ public:
 
     //! \brief Return output environment
     const gmx_output_env_t *oenv() const { return oenv_; }
+    
 };
 
-}
+
+} //namespace alexandria
+
 
 #endif //ALEXANDRIA_PARAMHANDLER_H

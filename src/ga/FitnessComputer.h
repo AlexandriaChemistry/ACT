@@ -16,6 +16,7 @@ class FitnessComputer
 {
 
 public:
+
     /*!
      * Compute the fitness of an individual
      * @param individual    the individual
@@ -38,6 +39,7 @@ class SimpleFitnessComputer : public FitnessComputer
 {
 
 public:
+
     /*!
      * Compute the fitness of the \f$i\f$-th individual according to the formula
      * \f[

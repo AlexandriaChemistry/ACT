@@ -16,6 +16,7 @@ class Terminator
 {
 
 public:
+
     /*!
      * Check whether the evolution should be terminated
      * @param population            each row is an individual
@@ -41,9 +42,11 @@ class SimpleTerminator : public Terminator
 {
 
 private:
+
     double tolerance;
 
 public:
+
     /*!
      * Create a new SimpleTerminator object
      * @param tolerance     the tolerance value
@@ -83,9 +86,11 @@ class GenerationTerminator : public Terminator
 {
 
 private:
+
     int maxGenerations;
 
 public:
+
     /*!
      * Create a new GenerationTerminator object
      * @param maxGenerations    the maximum amount of generations

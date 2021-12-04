@@ -19,11 +19,13 @@ class Crossover
 {
 
 private:
+
     std::random_device                  rd;
     std::mt19937                        gen;
     std::uniform_int_distribution<int>  dis;
 
 protected:
+
     /*!
      * Create a new crossover object.
      * @param chromosomeLength  length of the chromosome
@@ -66,6 +68,7 @@ class SinglePointCrossover : public Crossover
 {
 
 public:
+
     /*!
      * Create a new SinglePointCrossover object
      * @param chromosomeLength  amount of genes in each individual
@@ -89,6 +92,7 @@ class DoublePointCrossover : public Crossover
 {
 
 public:
+
     /*!
      * Create a new DoublePointCrossover object
      * @param chromosomeLength  amount of genes in each individual
@@ -112,10 +116,12 @@ class NPointCrossover : public Crossover
 {
 
 private:
+
     int numberOfCrossovers;
     vector crossoverIndices;
 
 public:
+
     /*!
      * Create a new NPointCrossover object
      * @param chromosomeLength       amount of genes in each individual

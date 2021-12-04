@@ -19,6 +19,7 @@ class Initializer
 {
 
 public:
+
     /*!
         * Initialize an individual
         * @param individual    pointer to the individual to initialize
@@ -35,11 +36,14 @@ public:
 class SimpleInitializer : public Initializer
 {
 
+private:
+
     std::random_device                      rd;
     std::mt19937                            gen;
     std::uniform_real_distribution<double>  dis;
 
 public:
+
     /*!
      * Create a new SimpleInitializer object
      * @param min   minimum value to give to a gene

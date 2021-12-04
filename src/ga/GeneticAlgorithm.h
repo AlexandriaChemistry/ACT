@@ -24,6 +24,8 @@ namespace ga
 class GeneticAlgorithm
 {
 
+private:
+
     //! Amount of individuals in the population
     int popSize;
     //! Amount of genes in each individual
@@ -60,6 +62,7 @@ class GeneticAlgorithm
     Terminator             *terminator;
 
 public:
+
     /*!
      * Create a new GeneticAlgorithm object
      * @param popSize               size of the population
