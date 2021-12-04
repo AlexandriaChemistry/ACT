@@ -602,7 +602,7 @@ void OptACM::handlePolarCD(std::map<eRMS, FittingTarget>   *targets,
     (*targets).find(eRMS::Polar)->second.increase(1, diff2);
 }
 
-void OptACM::InitOpt(bool bRandom)
+void OptACM::initOpt(bool bRandom)
 {
     for(auto &optIndex : optIndex_)
     {
@@ -924,7 +924,7 @@ int alex_tune_eem(int argc, char *argv[])
     {
         if (bOptimize || bSensitivity)
         {
-            opt.InitOpt(bRandom);
+            opt.initOpt(bRandom);
         }
         bool bMinimum = opt.runMaster(oenv,
                                       opt2fn("-conv", NFILE, fnm),

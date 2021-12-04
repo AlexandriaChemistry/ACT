@@ -166,7 +166,7 @@ public:
      * Fill parameter vector based on Poldata.
      * \param[in] bRandom Generate random initial values for parameters if true
      */
-    void InitOpt(bool bRandom);
+    void initOpt(bool bRandom);
 
     /*! \brief
      * Copy the optimization parameters to the poldata structure
