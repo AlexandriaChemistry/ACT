@@ -302,8 +302,8 @@ private:
     real                            qtol_       = 1e-6;
     //! Max number of iterations for determining charges
     int                             qcycle_     = 500;
-    //! Map with the fitting targets for each data set
-    std::map<iMolSelect, RmsFittingTarget> targets_;
+    //! Map with the fitting targets for each data set. RmsFittingTarget is itself a map from eRMS to FittingTarget.
+    std::map<iMolSelect, RmsFittingTarget> targets_;  // TODO: this should go into the ACMIndividual class?
     //! Map that holds the number of compounds in each data set
     std::map<iMolSelect, size_t>    targetSize_;
     //! Whether or not to fit to QM data only (ignoring experimental data)
@@ -311,7 +311,7 @@ private:
     //! Whether or not to use charge symmetry
     gmx_bool                        qsymm_      = false;
     //! Force field data structure
-    Poldata                         pd_;
+    Poldata                         pd_;  // TODO: this should go into the ACMIndividual class?
     //! GROMACS communication data structure
     t_commrec                      *cr_         = nullptr;
     //! GROMACS logger structure
@@ -330,12 +330,14 @@ private:
     std::vector<alexandria::MyMol>  mymol_;
     //! Level of theory used from QM
     const char                     *lot_        = nullptr;
+    
     /*! \brief Check that we have enough data 
      * Check that we have enough data for all parameters to optimize
      * in this molecule.
      * \param[in] fp File to print logging information to. May be nullptr.
      */
     void checkDataSufficiency(FILE *fp);
+    
     /*! \brief Generate optIndex
      * \param[in] fp File to print logging information to. May be nullptr.
      */
@@ -360,7 +362,9 @@ private:
     std::map<InteractionType, bool> iOpt_;
     
 public:
+    //! Information for each parameter
     std::vector<OptimizationIndex>  optIndex_;
+    
     /*! \brief 
      * Constructor of MolGen class.
      */ 
@@ -409,6 +413,7 @@ public:
             return ts->second; 
         }
     }
+    
     //! Return the mdlogger structure
     const gmx::MDLogger &mdlog()  const {return mdlog_; }
 
@@ -421,10 +426,10 @@ public:
         return fit_.find(type) != fit_.end(); 
     }
     
-    //! Return all the type to  fit
+    //! Return all the parameter types to fit
     std::map<std::string, bool> typesToFit() const { return fit_; }
         
-    //! Tell  the user whether this interaction type needs optimization
+    //! Tell the user whether this interaction type needs optimization
     bool optimize(InteractionType itype) const
     {
         return iOpt_.find(itype) !=  iOpt_.end(); 
