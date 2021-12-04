@@ -7,15 +7,17 @@
 namespace ga
 {
 
+    /* * * * * * * * * * * * * * * * * * * * * *
+    * BEGIN: MergeSorter                       *
+    * * * * * * * * * * * * * * * * * * * * * */
+
     MergeSorter::MergeSorter(const int  popSize,
                              const int  chromosomeLength,
                              const bool descending)
+    : Sorter(descending)
     {
-
         tmpFitness              = vector(popSize);
         tmpPop                  = allocateMatrix(popSize, chromosomeLength);
-        this->descending        = descending;
-
     }
 
 
@@ -81,14 +83,19 @@ namespace ga
 
     }
 
+    /* * * * * * * * * * * * * * * * * * * * * *
+    * END: MergeSorter                         *
+    * * * * * * * * * * * * * * * * * * * * * */
+
+    /* * * * * * * * * * * * * * * * * * * * * *
+    * BEGIN: QuickSorter                       *
+    * * * * * * * * * * * * * * * * * * * * * */
 
     QuickSorter::QuickSorter(const int  popSize,
                              const bool descending)
+    : Sorter(descending)
     {
-
         tmpFitness = vector(popSize);
-        this->descending = descending;
-
     }
 
     void QuickSorter::sort(      matrix    *pop,
@@ -168,5 +175,9 @@ namespace ga
         }
         return candidate;
     }
+
+    /* * * * * * * * * * * * * * * * * * * * * *
+    * END: QuickSorter                         *
+    * * * * * * * * * * * * * * * * * * * * * */
 
 }

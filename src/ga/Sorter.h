@@ -14,10 +14,24 @@ namespace ga
     {
 
     protected:
-        //! Whether to sort in descending order of fitness (default true)
-        bool descending = true;
+
+        //! Whether to sort in descending order of fitness (default false)
+        bool descending = false;
+
+        //! Default constructor
+        Sorter() {}
+
+        /*!
+         * Create a new Sorter
+         * @param descending whether to sort in descending order of fitness
+         */
+        Sorter(const bool descending)
+        {
+              this->descending = descending;
+        }
 
     public:
+
         /*!
          * Sort individuals (in place) based on fitness
          * @param pop                   pointer to the population. Each row is an individual.
