@@ -203,18 +203,21 @@ namespace alexandria
 
         /*! \brief
          * Check whether atom types exist in the force field
+         * also check whether the multiplicity is correct.
          *
          * \param[in] pd    The force field structure
          * \param[in] atoms The structure to check
+         * \return status code.
          */
         immStatus checkAtoms(const Poldata *pd,
                              const t_atoms *atoms);
 
         /*! \brief
-         * Return true if atom type neesd to have virtual site.
+         * Return true if atom type needs to have virtual site.
          *
          * \param[in] atype  Atom type
          * \param[in] pd     Data structure containing atomic properties
+         * \return true if vsite is needed
          */
         bool IsVsiteNeeded(std::string        atype,
                            const Poldata     *pd);

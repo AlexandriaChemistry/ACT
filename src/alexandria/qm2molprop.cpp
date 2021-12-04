@@ -32,26 +32,15 @@
  
 #include "actpre.h"
 
-//#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
-//#include <string.h>
 
 #include <map>
 
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
-//#include "gromacs/fileio/confio.h"
-//#include "gromacs/math/units.h"
-//#include "gromacs/math/vec.h"
-//#include "gromacs/mdtypes/md_enums.h"
-//#include "gromacs/pbcutil/pbc.h"
-//#include "gromacs/topology/atomprop.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/exceptions.h"
-//#include "gromacs/utility/stringutil.h"
-//#include "gromacs/utility/textreader.h"
-//#include "gromacs/utility/real.h"
 
 #include "alex_modules.h"
 #include "atype_mapping.h"
@@ -85,6 +74,7 @@ int alex_qm2molprop(int argc, char *argv[])
     t_filenm fnm[] = {
         { efLOG, "-g03",  "gauss",   ffOPTRDMULT },
         { efOUT, "-psi4", "psi4",    ffOPTRDMULT },
+        { efSDF, "-sdf",  "mol",     ffOPTRDMULT },
         { efDAT, "-d",    "gentop",  ffREAD },
         { efDAT, "-map",  "mapping", ffOPTRD },
         { efDAT, "-o",    "molprop", ffWRITE }
@@ -141,14 +131,28 @@ int alex_qm2molprop(int argc, char *argv[])
 
     std::map<std::string, std::string> g2a;
     gaffToAlexandria("", &g2a);
-    // Read Gaussian files
-    if (opt2bSet("-g03", NFILE, fnm))
+    if (g2a.empty())
     {
-        gmx::ArrayRef<const std::string> gfns = ftp2fns(efLOG, NFILE, fnm);    
+        fprintf(stderr, "Don't know how to map GAFF atomtypes to Alexandria\n");
+        return 0;
+    }
+    // Read Gaussian files
+    if (opt2bSet("-g03", NFILE, fnm) || opt2bSet("-sdf", NFILE, fnm))
+    {
+        gmx::ArrayRef<const std::string> gfns;
+        if (opt2bSet("-g03", NFILE, fnm))
+        {
+            gfns = ftp2fns(efLOG, NFILE, fnm);
+        }
+        else
+        {
+            gfns = ftp2fns(efSDF, NFILE, fnm);
+        }
         int nread = 0;
         for (auto &i : gfns)
         {
             alexandria::MolProp mmm;
+            double qtot = 0;
             if (readBabel(i.c_str(), 
                           &mmm, 
                           molnm, 
@@ -158,15 +162,15 @@ int alex_qm2molprop(int argc, char *argv[])
                           maxpot, 
                           nsymm, 
                           jobtype,
-                          0.0,
+                          &qtot,
                           false))
             {
                 nread += 1;
-                if (!g2a.empty())
+                if (renameAtomTypes(&mmm, g2a))
                 {
-                    renameAtomTypes(&mmm, g2a);
+                    mmm.SetTotalCharge(qtot);
+                    mp.push_back(std::move(mmm));
                 }
-                mp.push_back(std::move(mmm));
             }
         }
         printf("Read %d molprops from %d Gaussian files.\n", 

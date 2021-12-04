@@ -97,7 +97,7 @@ class BabelFiles
  * \param[in]  nsymm       Symmetry number for this molecule. If zero it will be detected from
  *                         the input.
  * \param[in]  jobtype     Calculation type for reading QM output
- * \param[in]  qtot        Total charge
+ * \param[out] qtot        Total charge as deduced by OB from the input
  * \param[in]  addHydrogen If true, hydrogens will be added
  * \returns true if everything succeeded, false otherwise
  * \ingroup module_alexandria
@@ -111,7 +111,7 @@ bool readBabel(const char          *g98,
                int                  maxpot,
                int                  nsymm,
                const char          *jobtype,
-               double               qtot,
+               double              *qtot,
                bool                 addHydrogen);
 
 /*! \brief Add atomtype to a Molprop object

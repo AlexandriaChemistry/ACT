@@ -49,8 +49,9 @@ void gaffToAlexandria(const std::string                  &filenm,
  * Rename atoms in molprop structure according to the table
  * \param[inout] mp  The molecule properties
  * \param[in]    g2a The mapping table
+ * \return true if successful, false otherwise.
  */
-void renameAtomTypes(alexandria::MolProp                      *mp,
+bool renameAtomTypes(alexandria::MolProp                      *mp,
                      const std::map<std::string, std::string> &g2a);
 
 #endif

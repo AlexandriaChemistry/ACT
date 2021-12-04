@@ -101,12 +101,14 @@ class AcmTest : public gmx::test::CommandLineTestBase
             std::string           basis;
             std::string           fileName(molname);
             alexandria::MolProp   molprop;
+            bool                  trustObCharge = false;
             
             if (inputformat == inputFormat::LOG)
             {
                 fileName.append("-3-oep.log");
                 method.assign("B3LYP");
                 basis.assign("GEN");
+                trustObCharge = true;
             }
             else if (inputformat == inputFormat::PDB)
             {
@@ -118,6 +120,7 @@ class AcmTest : public gmx::test::CommandLineTestBase
             }
             std::string dataName = gmx::test::TestFileManager::getInputFilePath(fileName);
 
+            double qtot_babel;
             if (readBabel(dataName.c_str(),
                           &molprop,
                           molname.c_str(),
@@ -127,16 +130,27 @@ class AcmTest : public gmx::test::CommandLineTestBase
                           maxpot,
                           nsymm,
                           jobtype,
-                          qtotal,
+                          &qtot_babel,
                           false))
             {
                 std::map<std::string, std::string> g2a;
                 gaffToAlexandria("", &g2a);
                 if (!g2a.empty())
                 {
-                    renameAtomTypes(&molprop, g2a);
+                    EXPECT_TRUE(renameAtomTypes(&molprop, g2a));
                 }
             }
+            else
+            {
+                fprintf(stderr, "Error reading file %s using OpenBabel.\n",
+                        dataName.c_str());
+                return;
+            }
+            if (trustObCharge)
+            {
+                EXPECT_TRUE(qtotal == qtot_babel);
+            }
+            molprop.SetTotalCharge(qtotal);
             mp_.Merge(&molprop);
             // Generate charges and topology
             t_inputrec      inputrecInstance;

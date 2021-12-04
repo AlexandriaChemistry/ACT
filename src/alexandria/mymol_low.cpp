@@ -71,6 +71,7 @@ std::map<immStatus, const char *> immMessages = {
     { immStatus::AtomTypes,                "Atom type problem" },
     { immStatus::AtomNumber,               "Atom number problem" },
     { immStatus::MolpropConv,              "Converting from molprop" },
+    { immStatus::Multiplicity,             "Number of electrons does not match the multiplicity. Is the total charge correct?" },
     { immStatus::BondOrder,                "Determining bond order" },
     { immStatus::RespInit,                 "RESP Initialization" },
     { immStatus::ChargeGeneration,         "Charge generation" },

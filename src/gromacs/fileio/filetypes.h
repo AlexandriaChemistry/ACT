@@ -55,6 +55,7 @@ enum GromacsFileType {
     efRND,
     efXML,
     efCSV,
+    efSDF,
     efNR
 };
 
