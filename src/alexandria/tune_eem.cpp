@@ -812,10 +812,6 @@ int alex_tune_eem(int argc, char *argv[])
     bool                bForceOutput        = false;
     bool                useOffset           = false;
     bool                bEvaluate_testset   = false;
-    // First non-NULL value indicates the default value
-    // After argument parsing, first element in the array will point to the selected enum value, so optimizer[0] or
-    // *optimizer
-    static const char  *optimizer[]         = {nullptr, "MCMC", "GA", "HYBRID", nullptr};
 
     t_pargs                     pa[]         = {
         { "-reinit", FALSE, etINT, {&reinit},
@@ -847,9 +843,7 @@ int alex_tune_eem(int argc, char *argv[])
         { "-force_output", FALSE, etBOOL, {&bForceOutput},
           "Write output even if no new minimum is found" },
         { "-evaluate_testset", FALSE, etBOOL, {&bEvaluate_testset},
-          "Evaluate the MCMC energy on the test set." },
-        { "-optimizer", FALSE, etENUM, {optimizer},
-          "Optimization method" }
+          "Evaluate the MCMC energy on the test set." }
     };
 
     gmx_output_env_t           *oenv;

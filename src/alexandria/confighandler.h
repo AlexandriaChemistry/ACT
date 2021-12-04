@@ -36,11 +36,25 @@ class GAConfigHandler : public ConfigHandler
 {
 
 private:
+
+    // First non-NULL value indicates the default value
+    // After argument parsing, first element in the array will point to the selected enum value, so optimizer_[0]
+    // Static means the variable will be shared among objects (only 1 place in memory)
+    //! Optimizer to use
+    static const char *optimizer_[] = {nullptr, "MCMC", "GA", "HYBRID", nullptr};
+    //! Population size
     int popSize_ = 8;
-    int nElites_ = 2;
-    int ncrossovers_ = 2;
-    // One for sorting QuckSort or MergeSort, one for the optimizer, one for the probability computing
-    // Rank computing, Bolzmann, and fitness probability computing
+    //! Amount of elites in the population
+    int nElites_ = 0;
+    //! Order of crossover operator
+    int nCrossovers_ = 1;
+    //! Sorter algorithm
+    static const char *sorter_[] = {nullptr, "QUICK", "MERGE", "NONE", nullptr};
+    //! Probability computing algorithm
+    static const char *probComputer_[] = {nullptr, "RANK", "FITNESS", "BOLTZMANN", nullptr};
+    //! Boltzmann probability temperature. TODO: This temperature should be lowered over time.
+    real boltzTemp_ = 1;
+    // TODO: Termination options???
 
 public:
 
@@ -55,6 +69,9 @@ public:
      * Throw an exception if an invalid combination of arguments is encountered
      */
     virtual void check_pargs();
+
+    // TODO: Getters!
+
 };
 
 /*!
