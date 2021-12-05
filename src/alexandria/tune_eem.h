@@ -58,7 +58,7 @@ private:
     //! File name for the output force field file
     std::string outputFile_;
     //! Vector of DevComputers for the different components of chi-squared
-    std::vector<DevComputer> devComputers;
+    std::vector<DevComputer*> devComputers_;
 
     /*! \brief Compute dipole and quadrupole moments (if needed), for a given molecule
      * @param targets   pointer to a map between the components of chi-squared and the fitting targets
@@ -66,60 +66,6 @@ private:
      */
     void computeDiQuad(std::map<eRMS, FittingTarget> *targets,
                        MyMol                         *mymol);
-
-    /*!
-     * \brief Handle out of bounds variables (calcDeviation) in MASTER node before calculating the rest of the deviation
-     * @param targets   pointer to a map between the components of chi-squared and the fitting targets
-     * @param verbose   whether we are in verbose mode
-     */
-    void handleBoundsCD(      std::map<eRMS, FittingTarget>    *targets,
-                        const double                            verbose);
-
-    /*!
-     * \brief Handle (CM5) charge (calcDeviation)
-     * @param targets   pointer to a map between the components of chi-squared and the fitting targets
-     * @param mymol     the molecule
-     */
-    void handleChargeCM5CD(std::map<eRMS, FittingTarget> *targets,
-                           MyMol                          mymol);
-
-    /*!
-     * \brief Handle electrostatic potential (calcDeviation)
-     * @param targets   pointer to a map between the components of chi-squared and the fitting targets
-     * @param mymol     the molecule
-     */
-    void handleEspCD(std::map<eRMS, FittingTarget>   *targets,
-                     MyMol                            mymol);
-
-    /*!
-     * \brief Handle molecular dipole (calcDeviation)
-     * @param targets   pointer to a map between the components of chi-squared and the fitting targets
-     * @param mymol     the molecule
-     * @param qelec     pointer to Elec properties
-     * @param qcalc     pointer to calc properties
-     */
-    void handleMuCD(std::map<eRMS, FittingTarget>  *targets,
-                    MyMol                           mymol,
-                    QtypeProps                     *qelec,
-                    QtypeProps                     *qcalc);
-
-    /*!
-     * \brief Handle molecular quadrupole (calcDeviation)
-     * @param targets pointer to a map between the components of chi-squared and the fitting targets
-     * @param qelec     pointer to Elec properties
-     * @param qcalc     pointer to calc properties
-     */
-    void handleQuadCD(std::map<eRMS, FittingTarget>    *targets,
-                      QtypeProps                       *qelec,
-                      QtypeProps                       *qcalc);
-
-    /*!
-     * \brief Handle polarizability component (calcDeviation)
-     * @param targets   pointer to a map between the components of chi-squared and the fitting targets
-     * @param mymol     the molecule
-     */
-    void handlePolarCD(std::map<eRMS, FittingTarget>   *targets,
-                       MyMol                            mymol);
 
 public:
     //! Constructor
