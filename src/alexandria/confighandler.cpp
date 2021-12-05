@@ -129,7 +129,11 @@ void GAConfigHandler::add_pargs(std::vector<t_pargs> *pargs)
         { "-probComputer", FALSE, etENUM, {probComputer_},
           "Probability computation algorithm" },
         { "-boltzTemp", FALSE, etREAL, {&boltzTemp_},
-          "Initial temperature for Boltzmann probability computing." }
+          "Initial temperature for Boltzmann probability computing." },
+        { "-prCross", FALSE, etREAL, {&prCross_},
+          "Probability of crossover." },
+        { "-prMut", FALSE, etREAL, {&prMut_},
+          "Probability of mutation" }
     };
     for (int i = 0; i < asize(pa); i++)
     {

@@ -35,6 +35,9 @@ public:
 
 };
 
+/*!
+ * Handles optimization parameters for Genetic Algorithm
+ */
 class GAConfigHandler : public ConfigHandler
 {
 
@@ -46,7 +49,7 @@ private:
     //! Optimizer to use
     static const char *optimizer_[] = {nullptr, "MCMC", "GA", "HYBRID", nullptr};
     //! Population size
-    int popSize_ = 8;
+    int popSize_ = 1;
     //! Amount of elites in the population
     int nElites_ = 0;
     //! Order of crossover operator
@@ -58,6 +61,10 @@ private:
     //! Boltzmann probability temperature. TODO: This temperature should be lowered over time.
     real boltzTemp_ = 1;
     // TODO: Termination options???
+    //! Probability of crossover
+    real prCross_ = 0.35;
+    //! Probability of mutation
+    real prMut_ = 0.01;
 
 public:
 
