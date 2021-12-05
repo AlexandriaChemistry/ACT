@@ -137,28 +137,6 @@ void my_fclose(FILE *fp)
     }
 }
 
-double OptACM::l2_regularizer (double             x,
-                               double             min,
-                               double             max,
-                               const std::string &label,
-                               bool               verbose)
-{
-    double p = 0;
-    if (x < min)
-    {
-        p = (0.5 * gmx::square(x-min));
-    }
-    else if (x > max)
-    {
-        p = (0.5 * gmx::square(x-max));
-    }
-    if (verbose && p != 0.0)
-    {
-        fprintf(logFile(), "Variable %s is %g, should be within %g and %g\n", label.c_str(), x, min, max);
-    }
-    return p;
-}
-
 void OptACM::saveState()
 {
     writePoldata(outputFile_, poldata(), false);
@@ -239,39 +217,14 @@ void OptACM::initChargeGeneration(iMolSelect ims)
     }
 }
 
-static void dumpQX(FILE *fp, MyMol *mol, const std::string &info)
-{
-    if (false && fp)
-    {
-        std::string label = mol->getMolname() + "-" + info;
-        fprintf(fp, "%s q:", label.c_str());
-        t_mdatoms *md = mol->getMdatoms();
-        auto myatoms = mol->atomsConst();
-        for (int i = 0; i < myatoms.nr; i++)
-        {
-            fprintf(fp, " %g (%g)", myatoms.atom[i].q,
-                    md->chargeA[i]);
-        }
-        fprintf(fp, "\n");
-        fprintf(fp, "%s alpha", label.c_str());
-        int ft = F_POLARIZATION;
-        for(int i = 0; i < mol->ltop_->idef.il[ft].nr; i += interaction_function[ft].nratoms+1)
-        {
-            auto tp = mol->ltop_->idef.il[ft].iatoms[i];
-            fprintf(fp, " %g", mol->ltop_->idef.iparams[tp].polarize.alpha);
-        }
-        fprintf(fp, "\n");
-        pr_rvecs(fp, 0, label.c_str(), mol->x().rvec_array(), myatoms.nr);
-    }
-}
-
 void OptACM::fillDevComputers()
 {
     FILE *lf = logFile();
     bool verb = verbose();
 
     if (target(iMolSelect::Train, eRMS::BOUNDS)->weight() > 0)
-        devComputers_.push_back(new BoundsDevComputer(lf, verb, &optIndex_));
+        bdc_ = new BoundsDevComputer(lf, verb, &optIndex_);
+    
     if (target(iMolSelect::Train, eRMS::CHARGE)->weight() > 0 ||
         target(iMolSelect::Train, eRMS::CM5)->weight() > 0)
         devComputers_.push_back(new ChargeCM5DevComputer(lf, verb));
@@ -315,9 +268,9 @@ double OptACM::calcDeviation(bool       verbose,
     std::map<eRMS, FittingTarget> *targets = fittingTargets(ims);
     if (MASTER(cr))
     {
-        if ((*targets).find(eRMS::BOUNDS)->second.weight() > 0)
+        if (bdc_ != nullptr)
         {
-            handleBoundsCD(targets, verbose);
+            bdc_->calcDeviation(nullptr, targets, poldata(), getParam(), cr);
         }
     }
 
@@ -357,6 +310,7 @@ double OptACM::calcDeviation(bool       verbose,
                 mymol.eSupp_ = eSupport::No;
                 continue;
             }
+            
             computeDiQuad(targets, &mymol);
             
             for (DevComputer *mydev : devComputers_)
@@ -671,7 +625,7 @@ int alex_tune_eem(int argc, char *argv[])
 
     opt.optionsFinished(opt2fn("-o", NFILE, fnm));
 
-    // TODO: Fill the devComputers_ vector!
+    opt.fillDevComputers();
 
     if (MASTER(opt.commrec()))
     {

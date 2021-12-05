@@ -27,14 +27,6 @@ namespace alexandria
  */
 void my_fclose(FILE *fp);
 
-/*! \brief Dump charges to a file
- * Debugging routine
- * \param[in] fp   The file pointer to print to
- * \param[in] mol  The molecule to read from
- * \param[in] info Additional debugging information
- */
-static void dumpQX(FILE *fp, MyMol *mol, const std::string &info);
-
 /*! \brief The class that does all the optimization work.
  * This class inherits the MolGen class that holds molecule data and
  * properties, and the Bayes class, that does the Monte Carlo steps.
@@ -57,7 +49,9 @@ private:
     gmx::unique_cptr<FILE, my_fclose> fplog_ = nullptr;
     //! File name for the output force field file
     std::string outputFile_;
-    //! Vector of DevComputers for the different components of chi-squared
+    //! BoundsDevComputer, if required by the user
+    BoundsDevComputer *bdc_ = nullptr;
+    //! Vector of non-bound DevComputers for the different components of chi-squared
     std::vector<DevComputer*> devComputers_;
 
     /*! \brief Compute dipole and quadrupole moments (if needed), for a given molecule
@@ -133,20 +127,6 @@ public:
     virtual double calcDeviation(bool verbose,
                                  CalcDev calcDev,
                                  iMolSelect ims);
-
-    /*! \brief Compute penalty for variables that are out of bounds
-     * \param[in] x       The actual value
-     * \param[in] min     The minimum allowed value
-     * \param[in] max     The maximum allowed value
-     * \param[in] label   String to print if verbose
-     * \param[in] verbose Whether or not to print deviations
-     * \return 0 when in bounds, square deviation from bounds otherwise.
-     */
-    double l2_regularizer(double x,
-                          double min,
-                          double max,
-                          const std::string &label,
-                          bool verbose);
 
     /*! \brief
      * Do the actual optimization.

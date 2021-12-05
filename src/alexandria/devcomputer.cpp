@@ -184,8 +184,7 @@ void EspDevComputer::calcDeviation(      MyMol                             *mymo
     {
         qgr->updateZeta(mymol->atoms(), poldata);
     }
-    // TODO: fix dumpQX() location somewhere nice!
-    // dumpQX(logfile_, mymol, "ESP");
+    dumpQX(logfile_, mymol, "ESP");
     qgr->updateAtomCharges(mymol->atoms());
     qgr->calcPot(poldata->getEpsilonR());
     real mae, mse;

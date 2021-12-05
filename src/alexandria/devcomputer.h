@@ -8,6 +8,8 @@
 #include <vector>
 
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/math/vecdump.h"
+#include "gromacs/topology/topology.h"
 
 #include "mymol.h"
 #include "molgen.h"
@@ -148,6 +150,38 @@ private:
 
     //! Whether we fit zeta parameters
     bool fit_;
+
+    /*! \brief Dump charges to a file
+     * Debugging routine
+     * \param[in] fp   The file pointer to print to
+     * \param[in] mol  The molecule to read from
+     * \param[in] info Additional debugging information
+     */
+    static void dumpQX(FILE *fp, MyMol *mol, const std::string &info)
+    {
+        if (false && fp)
+        {
+            std::string label = mol->getMolname() + "-" + info;
+            fprintf(fp, "%s q:", label.c_str());
+            t_mdatoms *md = mol->getMdatoms();
+            auto myatoms = mol->atomsConst();
+            for (int i = 0; i < myatoms.nr; i++)
+            {
+                fprintf(fp, " %g (%g)", myatoms.atom[i].q,
+                        md->chargeA[i]);
+            }
+            fprintf(fp, "\n");
+            fprintf(fp, "%s alpha", label.c_str());
+            int ft = F_POLARIZATION;
+            for(int i = 0; i < mol->ltop_->idef.il[ft].nr; i += interaction_function[ft].nratoms+1)
+            {
+                auto tp = mol->ltop_->idef.il[ft].iatoms[i];
+                fprintf(fp, " %g", mol->ltop_->idef.iparams[tp].polarize.alpha);
+            }
+            fprintf(fp, "\n");
+            pr_rvecs(fp, 0, label.c_str(), mol->x().rvec_array(), myatoms.nr);
+        }
+    }
 
 public:
 

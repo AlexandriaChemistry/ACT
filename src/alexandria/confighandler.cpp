@@ -142,7 +142,10 @@ void GAConfigHandler::add_pargs(std::vector<t_pargs> *pargs)
 
 }
 
-// TODO: Check pargs!
+void GAConfigHandler::check_pargs()
+{
+  // TODO: Check pargs!
+}
 
 /* * * * * * * * * * * * * * * * * * * * * *
 * END: GAConfigHandler                     *
