@@ -291,7 +291,9 @@ class OptimizationIndex
  */
 class MolGen
 {
+
 private:
+
     //! Minimum number of data points to consider a parameter
     int                             mindata_    = 1;
     //! Percentage of ESP points to use
@@ -306,6 +308,8 @@ private:
     std::map<iMolSelect, RmsFittingTarget> targets_;  // TODO: this should go into the ACMIndividual class?
     //! Map that holds the number of compounds in each data set
     std::map<iMolSelect, size_t>    targetSize_;
+    //! Tell us whether this interaction type needs optimizing
+    std::map<InteractionType, bool> iOpt_;
     //! Whether or not to fit to QM data only (ignoring experimental data)
     gmx_bool                        bQM_        = false;
     //! Whether or not to use charge symmetry
@@ -358,10 +362,9 @@ private:
     
     //! \brief Fill the  iOpt_ map
     void fillIopt();
-    //! Tell us whether this interaction type needs optimizing
-    std::map<InteractionType, bool> iOpt_;
     
 public:
+
     //! Information for each parameter
     std::vector<OptimizationIndex>  optIndex_;
     
@@ -555,6 +558,6 @@ public:
 
 };
 
-}
+} //namespace alexandria
 
-#endif
+#endif //MOLGEN_H

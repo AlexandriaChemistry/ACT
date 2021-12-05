@@ -117,6 +117,7 @@ class Bayes
     using param_name_t = std::vector<std::string>;
 
     private:
+        //! THIS IS NOT BEING USED!
         func_t                  func_;
         parm_t                  initial_param_;
         parm_t                  param_;
@@ -442,6 +443,7 @@ class Bayes
         {
             return 1+bch_.maxIter()*nParam();
         }
+        
         /* \brief
          * Print the MC statistics to a file.
          * \param[in] fp File pointer to print to
