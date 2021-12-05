@@ -4,25 +4,42 @@
 namespace ga
 {
 
-    void PercentMutator::mutate(      vector   *individual,
-                                const int       chromosomeLength,
-                                const double    prMut)
+
+/* * * * * * * * * * * * * * * * * * * * * *
+* BEGIN: PercentMutator                    *
+* * * * * * * * * * * * * * * * * * * * * */
+
+void PercentMutator::mutate(      vector   *individual,
+                            const int       chromosomeLength,
+                            const double    prMut)
+{
+    for (int i = 0; i < chromosomeLength; i++)
     {
-        for (int i = 0; i < chromosomeLength; i++)
-        {
-            if (randNum() <= prMut) (*individual)[i] *= dis(gen);
-        }
+        if (randNum() <= prMut) (*individual)[i] *= dis(gen);
     }
-
-
-    void RangeMutator::mutate(      vector   *individual,
-                              const int       chromosomeLength,
-                              const double    prMut)
-    {
-        for (int i = 0; i < chromosomeLength; i++)
-        {
-            if (randNum() <= prMut) (*individual)[i] += dis(gen);
-        }
-    }
-
 }
+
+/* * * * * * * * * * * * * * * * * * * * * *
+* END: PercentMutator                      *
+* * * * * * * * * * * * * * * * * * * * * */
+
+/* * * * * * * * * * * * * * * * * * * * * *
+* BEGIN: RangeMutator                      *
+* * * * * * * * * * * * * * * * * * * * * */
+
+void RangeMutator::mutate(      vector   *individual,
+                          const int       chromosomeLength,
+                          const double    prMut)
+{
+    for (int i = 0; i < chromosomeLength; i++)
+    {
+        if (randNum() <= prMut) (*individual)[i] += dis(gen);
+    }
+}
+
+/* * * * * * * * * * * * * * * * * * * * * *
+* END: RangeMutator                        *
+* * * * * * * * * * * * * * * * * * * * * */
+
+
+} //namespace ga

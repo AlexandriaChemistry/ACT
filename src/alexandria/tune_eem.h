@@ -15,6 +15,7 @@
 
 #include "molgen.h"
 #include "bayes.h"
+#include "devcomputer.h"
 
 
 namespace alexandria
@@ -25,14 +26,6 @@ namespace alexandria
  * \param[in] fp The file pointer
  */
 void my_fclose(FILE *fp);
-
-/*! \brief Dump charges to a file
- * Debugging routine
- * \param[in] fp   The file pointer to print to
- * \param[in] mol  The molecule to read from
- * \param[in] info Additional debugging information
- */
-static void dumpQX(FILE *fp, MyMol *mol, const std::string &info);
 
 /*! \brief The class that does all the optimization work.
  * This class inherits the MolGen class that holds molecule data and
@@ -56,60 +49,17 @@ private:
     gmx::unique_cptr<FILE, my_fclose> fplog_ = nullptr;
     //! File name for the output force field file
     std::string outputFile_;
+    //! BoundsDevComputer, if required by the user
+    BoundsDevComputer *bdc_ = nullptr;
+    //! Vector of non-bound DevComputers for the different components of chi-squared
+    std::vector<DevComputer*> devComputers_;
 
-    /*!
-     * \brief Handle out of bounds variables (calcDeviation) in MASTER node before calculating the rest of the deviation
-     * @param targets   pointer to a map between the components of chi-squared and the fitting targets
-     * @param verbose   whether we are in verbose mode
-     */
-    void handleBoundsCD(      std::map<eRMS, FittingTarget>    *targets,
-                        const double                            verbose);
-
-    /*!
-     * \brief Handle (CM5) charge (calcDeviation)
+    /*! \brief Compute dipole and quadrupole moments (if needed), for a given molecule
      * @param targets   pointer to a map between the components of chi-squared and the fitting targets
      * @param mymol     the molecule
      */
-    void handleChargeCM5CD(std::map<eRMS, FittingTarget> *targets,
-                           MyMol                          mymol);
-
-    /*!
-     * \brief Handle electrostatic potential (calcDeviation)
-     * @param targets   pointer to a map between the components of chi-squared and the fitting targets
-     * @param mymol     the molecule
-     */
-    void handleEspCD(std::map<eRMS, FittingTarget>   *targets,
-                     MyMol                            mymol);
-
-    /*!
-     * \brief Handle molecular dipole (calcDeviation)
-     * @param targets   pointer to a map between the components of chi-squared and the fitting targets
-     * @param mymol     the molecule
-     * @param qelec     pointer to Elec properties
-     * @param qcalc     pointer to calc properties
-     */
-    void handleMuCD(std::map<eRMS, FittingTarget>  *targets,
-                    MyMol                           mymol,
-                    QtypeProps                     *qelec,
-                    QtypeProps                     *qcalc);
-
-    /*!
-     * \brief Handle molecular quadrupole (calcDeviation)
-     * @param targets pointer to a map between the components of chi-squared and the fitting targets
-     * @param qelec     pointer to Elec properties
-     * @param qcalc     pointer to calc properties
-     */
-    void handleQuadCD(std::map<eRMS, FittingTarget>    *targets,
-                      QtypeProps                       *qelec,
-                      QtypeProps                       *qcalc);
-
-    /*!
-     * \brief Handle polarizability component (calcDeviation)
-     * @param targets   pointer to a map between the components of chi-squared and the fitting targets
-     * @param mymol     the molecule
-     */
-    void handlePolarCD(std::map<eRMS, FittingTarget>   *targets,
-                       MyMol                            mymol);
+    void computeDiQuad(std::map<eRMS, FittingTarget> *targets,
+                       MyMol                         *mymol);
 
 public:
     //! Constructor
@@ -156,13 +106,16 @@ public:
      * Fill parameter vector based on Poldata.
      * \param[in] bRandom Generate random initial values for parameters if true
      */
-    void InitOpt(bool bRandom);
+    void initOpt(bool bRandom);
 
     /*! \brief
      * Copy the optimization parameters to the poldata structure
      * \param[in] changed List over the parameters that have changed.
      */
     virtual void toPoldata(const std::vector<bool> &changed);
+
+    //! \brief Fill the devComputers vector according to the needs of the user
+    void fillDevComputers();
 
     /*! \brief
      * Computes deviation from target
@@ -174,20 +127,6 @@ public:
     virtual double calcDeviation(bool verbose,
                                  CalcDev calcDev,
                                  iMolSelect ims);
-
-    /*! \brief Compute penalty for variables that are out of bounds
-     * \param[in] x       The actual value
-     * \param[in] min     The minimum allowed value
-     * \param[in] max     The maximum allowed value
-     * \param[in] label   String to print if verbose
-     * \param[in] verbose Whether or not to print deviations
-     * \return 0 when in bounds, square deviation from bounds otherwise.
-     */
-    double l2_regularizer(double x,
-                          double min,
-                          double max,
-                          const std::string &label,
-                          bool verbose);
 
     /*! \brief
      * Do the actual optimization.

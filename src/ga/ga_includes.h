@@ -1,6 +1,7 @@
 #ifndef ACT_GA_INCLUDES_H
 #define ACT_GA_INCLUDES_H
 
+
 #include "GeneticAlgorithm.h"
 #include "Crossover.h"
 #include "FitnessComputer.h"
@@ -10,5 +11,6 @@
 #include "Sorter.h"
 #include "Mutator.h"
 #include "Terminator.h"
+
 
 #endif //ACT_GA_INCLUDES_H

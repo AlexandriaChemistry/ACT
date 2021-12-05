@@ -137,28 +137,6 @@ void my_fclose(FILE *fp)
     }
 }
 
-double OptACM::l2_regularizer (double             x,
-                               double             min,
-                               double             max,
-                               const std::string &label,
-                               bool               verbose)
-{
-    double p = 0;
-    if (x < min)
-    {
-        p = (0.5 * gmx::square(x-min));
-    }
-    else if (x > max)
-    {
-        p = (0.5 * gmx::square(x-max));
-    }
-    if (verbose && p != 0.0)
-    {
-        fprintf(logFile(), "Variable %s is %g, should be within %g and %g\n", label.c_str(), x, min, max);
-    }
-    return p;
-}
-
 void OptACM::saveState()
 {
     writePoldata(outputFile_, poldata(), false);
@@ -239,30 +217,26 @@ void OptACM::initChargeGeneration(iMolSelect ims)
     }
 }
 
-static void dumpQX(FILE *fp, MyMol *mol, const std::string &info)
+void OptACM::fillDevComputers()
 {
-    if (false && fp)
-    {
-        std::string label = mol->getMolname() + "-" + info;
-        fprintf(fp, "%s q:", label.c_str());
-        t_mdatoms *md = mol->getMdatoms();
-        auto myatoms = mol->atomsConst();
-        for (int i = 0; i < myatoms.nr; i++)
-        {
-            fprintf(fp, " %g (%g)", myatoms.atom[i].q,
-                    md->chargeA[i]);
-        }
-        fprintf(fp, "\n");
-        fprintf(fp, "%s alpha", label.c_str());
-        int ft = F_POLARIZATION;
-        for(int i = 0; i < mol->ltop_->idef.il[ft].nr; i += interaction_function[ft].nratoms+1)
-        {
-            auto tp = mol->ltop_->idef.il[ft].iatoms[i];
-            fprintf(fp, " %g", mol->ltop_->idef.iparams[tp].polarize.alpha);
-        }
-        fprintf(fp, "\n");
-        pr_rvecs(fp, 0, label.c_str(), mol->x().rvec_array(), myatoms.nr);
-    }
+    FILE *lf = logFile();
+    bool verb = verbose();
+
+    if (target(iMolSelect::Train, eRMS::BOUNDS)->weight() > 0)
+        bdc_ = new BoundsDevComputer(lf, verb, &optIndex_);
+    
+    if (target(iMolSelect::Train, eRMS::CHARGE)->weight() > 0 ||
+        target(iMolSelect::Train, eRMS::CM5)->weight() > 0)
+        devComputers_.push_back(new ChargeCM5DevComputer(lf, verb));
+    if (target(iMolSelect::Train, eRMS::ESP)->weight() > 0)
+        devComputers_.push_back(new EspDevComputer(lf, verb, fit("zeta")));
+    if (target(iMolSelect::Train, eRMS::Polar)->weight() > 0)
+        devComputers_.push_back(new PolarDevComputer(lf, verb, bFullQuadrupole_));
+    if (target(iMolSelect::Train, eRMS::QUAD)->weight() > 0)
+        devComputers_.push_back(new QuadDevComputer(lf, verb, bFullQuadrupole_));
+    if (target(iMolSelect::Train, eRMS::MU)->weight() > 0)
+        devComputers_.push_back(new MuDevComputer(lf, verb, bQM()));
+
 }
 
 double OptACM::calcDeviation(bool       verbose,
@@ -292,20 +266,20 @@ double OptACM::calcDeviation(bool       verbose,
     }
     resetChiSquared(ims);
     std::map<eRMS, FittingTarget> *targets = fittingTargets(ims);
-    if (MASTER(commrec()))
+    if (MASTER(cr))
     {
-        if ((*targets).find(eRMS::BOUNDS)->second.weight() > 0)
+        if (bdc_ != nullptr)
         {
-            handleBoundsCD(targets, verbose);
+            bdc_->calcDeviation(nullptr, targets, poldata(), getParam(), cr);
         }
     }
 
-    if (PAR(commrec()))
+    if (PAR(cr))
     {
         if (calcDev == CalcDev::Parallel)
         {
-            poldata()->broadcast_eemprop(commrec());
-            poldata()->broadcast_particles(commrec());
+            poldata()->broadcast_eemprop(cr);
+            poldata()->broadcast_particles(cr);
         }
     }
     int nmolCalculated = 0;
@@ -327,7 +301,7 @@ double OptACM::calcDeviation(bool       verbose,
             // Update the electronegativity parameters
             mymol.zetaToAtoms(poldata(), mymol.atoms());
             // Run charge generation including shell minimization
-            immStatus imm = mymol.GenerateAcmCharges(poldata(), commrec(),
+            immStatus imm = mymol.GenerateAcmCharges(poldata(), cr,
                                                      qcycle(), qtol());
 
             // Check whether we have to disable this compound
@@ -336,38 +310,11 @@ double OptACM::calcDeviation(bool       verbose,
                 mymol.eSupp_ = eSupport::No;
                 continue;
             }
-
-            if ((*targets).find(eRMS::CHARGE)->second.weight() > 0 ||
-                (*targets).find(eRMS::CM5)->second.weight() > 0)
-            {
-                handleChargeCM5CD(targets, mymol);
-            }
-            if ((*targets).find(eRMS::ESP)->second.weight() > 0)
-            {
-                handleEspCD(targets, mymol);
-            }
-            // These two things need to be present, if not the code will crash
-            QtypeProps *qelec = mymol.qTypeProps(qType::Elec);
-            QtypeProps *qcalc = mymol.qTypeProps(qType::Calc);
-            if ((*targets).find(eRMS::MU)->second.weight() > 0 ||
-                (*targets).find(eRMS::QUAD)->second.weight() > 0)
-            {
-                qcalc->setQ(mymol.atoms());
-                qcalc->setX(mymol.x());
-                qcalc->calcMoments();
-            }
-            if ((*targets).find(eRMS::MU)->second.weight() > 0)
-            {
-                handleMuCD(targets, mymol, qelec, qcalc);
-            }
-            if ((*targets).find(eRMS::QUAD)->second.weight() > 0)
-            {
-                handleQuadCD(targets, qelec, qcalc);
-            }
-            if ((*targets).find(eRMS::Polar)->second.weight() > 0)
-            {
-                handlePolarCD(targets, mymol);
-            }
+            
+            computeDiQuad(targets, &mymol);
+            
+            for (DevComputer *mydev : devComputers_)
+                mydev->calcDeviation(&mymol, targets, poldata(), getParam(), cr);
         }
     }
     if (debug)
@@ -383,205 +330,26 @@ double OptACM::calcDeviation(bool       verbose,
     return (*targets).find(eRMS::TOT)->second.chiSquared();
 }
 
-void OptACM::handleBoundsCD(      std::map<eRMS, FittingTarget>    *targets,
-                            const double                            verbose)
+void OptACM::computeDiQuad(std::map<eRMS, FittingTarget> *targets,
+                           MyMol                         *mymol)
 {
-    const param_type &param = Bayes::getParam();
-    double            bound = 0;
-    size_t            n     = 0;
-    for (auto &optIndex : optIndex_)
+
+    // These two things need to be present, if not the code will crash
+    // TODO: What happens with this little interlude when we bring in
+    // the for loop?
+    // QtypeProps *qelec = mymol->qTypeProps(qType::Elec);
+    QtypeProps *qcalc = mymol->qTypeProps(qType::Calc);
+    if ((*targets).find(eRMS::MU)->second.weight() > 0 ||
+        (*targets).find(eRMS::QUAD)->second.weight() > 0)
     {
-        InteractionType iType = optIndex.iType();
-        ForceFieldParameter p;
-        if (iType == InteractionType::CHARGE)
-        {
-            p = poldata()->findParticleType(optIndex.particleType())->parameterConst(optIndex.parameterType());
-        }
-        else if (poldata()->interactionPresent(iType))
-        {
-            p = poldata()->findForcesConst(iType).findParameterTypeConst(optIndex.id(), optIndex.parameterType());
-        }
-        if (p.mutability() == Mutability::Bounded)
-        {
-            bound  += l2_regularizer(param[n], p.minimum(), p.maximum(),
-                                     optIndex.name(), verbose);
-        }
-        n++;
+        qcalc->setQ(mymol->atoms());
+        qcalc->setX(mymol->x());
+        qcalc->calcMoments();
     }
-    (*targets).find(eRMS::BOUNDS)->second.increase(1, bound);
-    GMX_RELEASE_ASSERT(n == param.size(),
-                        gmx::formatString("Death horror error. n=%zu param.size()=%zu", n, param.size()).c_str());
+    
 }
 
-void OptACM::handleChargeCM5CD(std::map<eRMS, FittingTarget> *targets,
-                               MyMol                          mymol)
-{
-    double qtot = 0;
-    int i = 0;
-    const t_atoms myatoms = mymol.atomsConst();
-    std::vector<double> qcm5;
-    QtypeProps *qp = mymol.qTypeProps(qType::CM5);
-    if (qp)
-    {
-        qcm5 = qp->charge();
-        if (debug)
-        {
-            for (int j = 0; j < myatoms.nr; j++)
-            {
-                fprintf(debug, "Charge %d. CM5 = %g ACM = %g\n", j, qcm5[j], myatoms.atom[j].q);
-            }
-        }
-    }
-    // Iterate over the atoms
-    for (int j = 0; j < myatoms.nr; j++)
-    {
-        if (myatoms.atom[j].ptype == eptShell)
-        {
-            continue;
-        }
-        ParticleTypeIterator atype = poldata()->findParticleType(*myatoms.atomtype[j]);
-        const ForceFieldParameter qparm = atype->parameterConst("charge");
-        double qj  = myatoms.atom[j].q;
-        double qjj = qj;
-        // TODO: only count in real shells
-        if (nullptr != mymol.shellfc_ &&
-            j < myatoms.nr-1 &&
-            myatoms.atom[j+1].ptype == eptShell)
-        {
-            qjj += myatoms.atom[j+1].q;
-        }
-        qtot += qjj;
-        switch (qparm.mutability())
-        {
-        case Mutability::Fixed:
-            if (qparm.value() != qj)
-            {
-                GMX_THROW(gmx::InternalError(gmx::formatString("Fixed charge for atom %s in %s was changed from %g to %g",
-                                                                *myatoms.atomname[j], mymol.getMolname().c_str(), qparm.value(), qj).c_str()));
-            }
-            break;
-        case Mutability::Bounded:
-            {
-                if ((*targets).find(eRMS::CHARGE)->second.weight() > 0)
-                {
-                    real dq = 0;
-                    if (qj < qparm.minimum())
-                    {
-                        dq = qparm.minimum() - qj;
-                    }
-                    else if (qj > qparm.maximum())
-                    {
-                        dq = qj - qparm.maximum();
-                    }
-                    (*targets).find(eRMS::CHARGE)->second.increase(1, dq*dq);
-                }
-            }
-            break;
-        default:
-            break;
-        }
-        if (qp &&
-            qparm.mutability() != Mutability::Fixed &&
-            (*targets).find(eRMS::CM5)->second.weight() > 0)
-        {
-            // TODO: Add charge of shell!
-            real dq2 = gmx::square(qjj - qcm5[i]);
-            (*targets).find(eRMS::CM5)->second.increase(1, dq2);
-        }
-        i += 1;
-    }
-    (*targets).find(eRMS::CHARGE)->second.increase(1, gmx::square(qtot - mymol.totalCharge()));
-}
-
-void OptACM::handleEspCD(std::map<eRMS, FittingTarget>   *targets,
-                         MyMol                            mymol)
-{
-    real rrms     = 0;
-    real cosangle = 0;
-    QgenResp *qgr = mymol.qTypeProps(qType::Calc)->qgenResp();
-    if (nullptr != mymol.shellfc_)
-    {
-        qgr->updateAtomCoords(mymol.x());
-    }
-    if (fit("zeta"))
-    {
-        qgr->updateZeta(mymol.atoms(), poldata());
-    }
-    dumpQX(logFile(), &mymol, "ESP");
-    qgr->updateAtomCharges(mymol.atoms());
-    qgr->calcPot(poldata()->getEpsilonR());
-    real mae, mse;
-    real rms = qgr->getStatistics(&rrms, &cosangle, &mae, &mse);
-    double myRms = convertToGromacs(rms, "Hartree/e");
-    size_t nEsp = qgr->nEsp();
-    (*targets).find(eRMS::ESP)->second.increase(nEsp, gmx::square(myRms)*nEsp);
-    if (debug)
-    {
-        fprintf(debug, "%s ESPrms = %g cosangle = %g\n",
-                mymol.getMolname().c_str(),
-                myRms, cosangle);
-    }
-}
-
-void OptACM::handleMuCD(std::map<eRMS, FittingTarget>  *targets,
-                        MyMol                           mymol,
-                        QtypeProps                     *qelec,
-                        QtypeProps                     *qcalc)
-{
-    real delta = 0;
-    if (bQM())
-    {
-        rvec dmu;
-        rvec_sub(qcalc->mu(), qelec->mu(), dmu);
-        delta = iprod(dmu, dmu);
-    }
-    else
-    {
-        delta = gmx::square(qcalc->dipole() - mymol.dipExper());
-    }
-    (*targets).find(eRMS::MU)->second.increase(1, delta);
-}
-
-void OptACM::handleQuadCD(std::map<eRMS, FittingTarget>    *targets,
-                          QtypeProps                       *qelec,
-                          QtypeProps                       *qcalc)
-{
-    double delta    = 0;
-    for (int mm = 0; mm < DIM; mm++)
-    {
-        for (int nn = 0; nn < DIM; nn++)
-        {
-            if (bFullQuadrupole_ || mm == nn)
-            {
-                delta += gmx::square(qcalc->quad()[mm][nn] - qelec->quad()[mm][nn]);
-            }
-        }
-    }
-    (*targets).find(eRMS::QUAD)->second.increase(1, delta);
-}
-
-void OptACM::handlePolarCD(std::map<eRMS, FittingTarget>   *targets,
-                           MyMol                            mymol)
-{
-    double diff2 = 0;
-    mymol.CalcPolarizability(10, commrec(), nullptr);
-    if (bFullQuadrupole_)
-    {
-        // It is already squared
-        diff2 = mymol.PolarizabilityTensorDeviation();
-    }
-    else
-    {
-        diff2 = gmx::square(mymol.PolarizabilityDeviation());
-    }
-    if (false && logFile())
-    {
-        fprintf(logFile(), "DIFF %s %g\n", mymol.getMolname().c_str(), diff2);
-    }
-    (*targets).find(eRMS::Polar)->second.increase(1, diff2);
-}
-
-void OptACM::InitOpt(bool bRandom)
+void OptACM::initOpt(bool bRandom)
 {
     for(auto &optIndex : optIndex_)
     {
@@ -791,10 +559,6 @@ int alex_tune_eem(int argc, char *argv[])
     bool                bForceOutput        = false;
     bool                useOffset           = false;
     bool                bEvaluate_testset   = false;
-    // First non-NULL value indicates the default value
-    // After argument parsing, first element in the array will point to the selected enum value, so optimizer[0] or
-    // *optimizer
-    static const char  *optimizer[]         = {nullptr, "MCMC", "GA", "HYBRID", nullptr};
 
     t_pargs                     pa[]         = {
         { "-reinit", FALSE, etINT, {&reinit},
@@ -826,9 +590,7 @@ int alex_tune_eem(int argc, char *argv[])
         { "-force_output", FALSE, etBOOL, {&bForceOutput},
           "Write output even if no new minimum is found" },
         { "-evaluate_testset", FALSE, etBOOL, {&bEvaluate_testset},
-          "Evaluate the MCMC energy on the test set." },
-        { "-optimizer", FALSE, etENUM, {optimizer},
-          "Optimization method" }
+          "Evaluate the MCMC energy on the test set." }
     };
 
     gmx_output_env_t           *oenv;
@@ -861,8 +623,9 @@ int alex_tune_eem(int argc, char *argv[])
     // TODO: Check validity of arguments with check_pargs() in ConfigHandler(s)
     opt.configHandlerPtr()->check_pargs();
 
-
     opt.optionsFinished(opt2fn("-o", NFILE, fnm));
+
+    opt.fillDevComputers();
 
     if (MASTER(opt.commrec()))
     {
@@ -908,7 +671,7 @@ int alex_tune_eem(int argc, char *argv[])
     {
         if (bOptimize || bSensitivity)
         {
-            opt.InitOpt(bRandom);
+            opt.initOpt(bRandom);
         }
         bool bMinimum = opt.runMaster(oenv,
                                       opt2fn("-conv", NFILE, fnm),

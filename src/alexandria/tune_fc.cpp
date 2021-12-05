@@ -212,7 +212,7 @@ class Optimization : public MolGen, Bayes
          * Initialize the optimization algorithm.
          * \param[in] fplog Log file for dumping information.
          */
-        void InitOpt(FILE *fplog, bool bRandom);
+        void initOpt(FILE *fplog, bool bRandom);
 
         /*! \brief
          * Do the actual optimization.
@@ -528,7 +528,7 @@ void Optimization::toPoldata(const std::vector<bool> &changed)
     GMX_RELEASE_ASSERT(n == param.size(), "Number of parameters set should be equal to the length of the parameter array");
 }
 
-void Optimization::InitOpt(FILE *fplog, bool bRandom)
+void Optimization::initOpt(FILE *fplog, bool bRandom)
 {
     for (auto fs : poldata()->forcesConst())
     {
@@ -1181,7 +1181,7 @@ int alex_tune_fc(int argc, char *argv[])
 
     if (MASTER(opt.commrec()))
     {
-        opt.InitOpt(fplog, bRandom);
+        opt.initOpt(fplog, bRandom);
         opt.printMolecules(fplog, false, false);
 
 	if (bEvaluate_testset && opt.nTestset() == 0)

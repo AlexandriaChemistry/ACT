@@ -9,6 +9,10 @@ namespace alexandria
 {
 
 
+/* * * * * * * * * * * * * * * * * * * * * *
+* BEGIN: BayesConfigHandler                *
+* * * * * * * * * * * * * * * * * * * * * */
+
 void BayesConfigHandler::add_pargs(std::vector<t_pargs> *pargs)
 {
     t_pargs pa[] = {
@@ -100,5 +104,51 @@ bool BayesConfigHandler::anneal(int iter) const
     }
 }
 
+/* * * * * * * * * * * * * * * * * * * * * *
+* END: BayesConfigHandler                  *
+* * * * * * * * * * * * * * * * * * * * * */
+
+/* * * * * * * * * * * * * * * * * * * * * *
+* BEGIN: GAConfigHandler                   *
+* * * * * * * * * * * * * * * * * * * * * */
+
+void GAConfigHandler::add_pargs(std::vector<t_pargs> *pargs)
+{
+
+    t_pargs pa[] = {
+        // { "-optimizer", FALSE, etENUM, {optimizer_},
+        //   "Optimization method" },
+        { "-popSize", FALSE, etINT, {&popSize_},
+          "Population size." },
+        { "-nElites", FALSE, etINT, {&nElites_},
+          "Amount of top individuals to be moved, unchanged, to the next generation." },
+        { "-nCrossovers_", FALSE, etINT, {&nCrossovers_},
+          "Order of the crossover operator. That is, amount of crossover points." },
+        // { "-sorter", FALSE, etENUM, {sorter_},
+        //   "Sorter algorithm to rank population based on fitness" },
+        // { "-probComputer", FALSE, etENUM, {probComputer_},
+        //   "Probability computation algorithm" },
+        { "-boltzTemp", FALSE, etREAL, {&boltzTemp_},
+          "Initial temperature for Boltzmann probability computing." },
+        { "-prCross", FALSE, etREAL, {&prCross_},
+          "Probability of crossover." },
+        { "-prMut", FALSE, etREAL, {&prMut_},
+          "Probability of mutation" }
+    };
+    for (int i = 0; i < asize(pa); i++)
+    {
+        pargs->push_back(pa[i]);
+    }
 
 }
+
+void GAConfigHandler::check_pargs()
+{
+  // TODO: Check pargs!
+}
+
+/* * * * * * * * * * * * * * * * * * * * * *
+* END: GAConfigHandler                     *
+* * * * * * * * * * * * * * * * * * * * * */
+
+} //namespace alexandria
