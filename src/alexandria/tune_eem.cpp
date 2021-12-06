@@ -178,8 +178,8 @@ void OptACM::initChargeGeneration(iMolSelect ims)
 {
     std::string method, basis, conf, type, myref, mylot;
     splitLot(lot(), &method, &basis);
-    tensor           polar      = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
-    rvec             vec;
+    tensor              polar      = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+    std::vector<double> vec;
     for (MyMol &mymol : mymols())
     {
         if (mymol.datasetType() != ims)
@@ -194,7 +194,7 @@ void OptACM::initChargeGeneration(iMolSelect ims)
                                  method, basis, "",
                                  (char *)"electronic",
                                  &ref_pol, &error, &T,
-                                 &myref, &mylot, vec, polar))
+                                 &myref, &mylot, &vec, polar))
             {
                 mymol.SetElectronicPolarizability(ref_pol);
             }
@@ -224,7 +224,7 @@ void OptACM::fillDevComputers()
 
     if (target(iMolSelect::Train, eRMS::BOUNDS)->weight() > 0)
         bdc_ = new BoundsDevComputer(lf, verb, &optIndex_);
-    
+
     if (target(iMolSelect::Train, eRMS::CHARGE)->weight() > 0 ||
         target(iMolSelect::Train, eRMS::CM5)->weight() > 0)
         devComputers_.push_back(new ChargeCM5DevComputer(lf, verb));
@@ -310,9 +310,9 @@ double OptACM::calcDeviation(bool       verbose,
                 mymol.eSupp_ = eSupport::No;
                 continue;
             }
-            
+
             computeDiQuad(targets, &mymol);
-            
+
             for (DevComputer *mydev : devComputers_)
                 mydev->calcDeviation(&mymol, targets, poldata(), getParam(), cr);
         }
@@ -346,7 +346,7 @@ void OptACM::computeDiQuad(std::map<eRMS, FittingTarget> *targets,
         qcalc->setX(mymol->x());
         qcalc->calcMoments();
     }
-    
+
 }
 
 void OptACM::initOpt(bool bRandom)

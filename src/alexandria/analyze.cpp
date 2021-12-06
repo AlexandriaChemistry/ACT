@@ -253,7 +253,7 @@ static void alexandria_molprop_analyze(FILE                              *fplog,
     int                       ntot;
     FILE                     *fp, *gp;
     double                    T, value, error;
-    rvec                      vec;
+    std::vector<double>       vec;
     tensor                    quadrupole;
     const char               *iupac;
     alexandria::QmCount       qmc;
@@ -266,7 +266,7 @@ static void alexandria_molprop_analyze(FILE                              *fplog,
         for (auto &ei : mpi.experimentConst())
         {
             T = -1;
-            if (ei.getVal(exp_type, mpo, &value, &error, &T, vec, quadrupole))
+            if (ei.getVal(exp_type, mpo, &value, &error, &T, &vec, quadrupole))
             {
                 add_refc(rc, ei.getReference().c_str());
             }
@@ -327,7 +327,7 @@ static void alexandria_molprop_analyze(FILE                              *fplog,
                     if (mpi->getPropRef(mpo, iqmType::Both,
                                         method, basis, "", "",
                                         &value, &error, &T, &myref, &mylot,
-                                        vec, quadrupole))
+                                        &vec, quadrupole))
                     {
                         fprintf(gp, "%s|Train\n", iupac);
                     }

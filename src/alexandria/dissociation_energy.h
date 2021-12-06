@@ -62,14 +62,15 @@ namespace alexandria
  * \param[in]    method  QM method
  * \param[in]    basis   QM basis set
  * \param[in]    nBootStrap Number of times a bootstrap is repeated
+ * \return Root mean square deviation from experimental data
  */
-void getDissociationEnergy(FILE                     *fplog,
-                           Poldata                  *pd,
-                           std::vector<MyMol>       *molset,
-                           const char               *csvFile,
-                           const std::string        &method,
-                           const std::string        &basis,
-                           int                       nBootStrap);
+double getDissociationEnergy(FILE                     *fplog,
+                             Poldata                  *pd,
+                             std::vector<MyMol>       *molset,
+                             const char               *csvFile,
+                             const std::string        &method,
+                             const std::string        &basis,
+                             int                       nBootStrap);
 
 }
 

@@ -125,6 +125,7 @@ static void dump_csv(const char                      *csvFile,
  * \param[in] uniform             Uniform distribution between 0 and 1
  * \param[in] csvFile             Filename for csv file for debugging, may be a nullptr
  * \param[in] ntrain              Data structure for counting the amount of test data per bond
+ * \param[out] rmsd               Root mean square deviation, if not nullptr
  * \return true if successful.
  */
 static bool calcDissoc(FILE                              *fplog,
@@ -136,7 +137,8 @@ static bool calcDissoc(FILE                              *fplog,
                        std::mt19937                      *gen,  
                        std::uniform_real_distribution<>   uniform,
                        const char                        *csvFile,
-                       std::map<Identifier, int>         *ntrain)
+                       std::map<Identifier, int>         *ntrain,
+                       double                            *rmsd)
 {
     // Determine which molecules to use
     std::map<int, int>  used;
@@ -266,7 +268,21 @@ static bool calcDissoc(FILE                              *fplog,
             }
             return false;
         }
-        
+        // Compute rmsd
+        if (rmsd)
+        {
+            double msd = 0;
+            for(int i = 0; i < nRow; i++)
+            {
+                double result = 0;
+                for(int j = 0; j < nColumn; j++)
+                {
+                    result += a_copy.get(j, i)*Edissoc[j];
+                }
+                msd += gmx::square(result-rhs[i]);
+            }
+            *rmsd = std::sqrt(msd/nRow);
+        }
         // Copy to the output map.
         for (const auto &b : bondIdToIndex)
         {
@@ -295,13 +311,13 @@ static bool calcDissoc(FILE                              *fplog,
     }
 }
                            
-void getDissociationEnergy(FILE               *fplog,
-                           Poldata            *pd,
-                           std::vector<MyMol> *molset,
-                           const char         *csvFile,
-                           const std::string  &method,
-                           const std::string  &basis,
-                           int                 nBootStrap)
+double getDissociationEnergy(FILE               *fplog,
+                             Poldata            *pd,
+                             std::vector<MyMol> *molset,
+                             const char         *csvFile,
+                             const std::string  &method,
+                             const std::string  &basis,
+                             int                 nBootStrap)
 {
     std::random_device               rd;
     std::mt19937                     gen(rd());  
@@ -323,13 +339,14 @@ void getDissociationEnergy(FILE               *fplog,
     if (hasExpData.size() < 2)
     {
         fprintf(fplog, "Not enough molecules with experimental data to determine dissocation energy.\n");
-        return;
+        return -1;
     }
     // Call the low level routine once to get optimal values and to
     // establish all the entries in the edissoc map.
     std::map<Identifier, gmx_stats_t> edissoc;
     std::map<Identifier, int>         ntrain;
-    if (!calcDissoc(fplog, pd, *molset, false, hasExpData, &edissoc, &gen, uniform, csvFile, &ntrain))
+    double                            rmsd = 0;
+    if (!calcDissoc(fplog, pd, *molset, false, hasExpData, &edissoc, &gen, uniform, csvFile, &ntrain, &rmsd))
     {
         gmx_fatal(FARGS, "Cannot solve the matrix equations for determining the dissociation energies");
     }
@@ -342,7 +359,7 @@ void getDissociationEnergy(FILE               *fplog,
     {
         std::map<Identifier, int> nnn;
         if (calcDissoc(nullptr, pd, *molset, true, hasExpData, &edissoc_bootstrap, &gen,
-                       uniform, csvFile, &nnn))
+                       uniform, csvFile, &nnn, nullptr))
         {
             iter++;
         }
@@ -410,6 +427,7 @@ void getDissociationEnergy(FILE               *fplog,
         }
     }
     // TODO free the gmx_stats_t
+    return rmsd;
 }
 
 } // namespace alexandria

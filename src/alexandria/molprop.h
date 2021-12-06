@@ -68,7 +68,9 @@ enum class MolPropObservable {
     //! Entropy
     ENTROPY,
     //! Charge
-    CHARGE
+    CHARGE,
+    //! Coordinates
+    COORDINATES
 };
 
 /*! \brief
@@ -1270,13 +1272,13 @@ class Experiment
          * \param[out] quadrupole The quadrupole tensor
          * \return true on success
          */
-        bool getVal(const std::string &type,
-                    MolPropObservable  mpo,
-                    double            *value,
-                    double            *error,
-                    double            *T,
-                    rvec               vec,
-                    tensor             quadrupole) const;
+        bool getVal(const std::string   &type,
+                    MolPropObservable    mpo,
+                    double              *value,
+                    double              *error,
+                    double              *T,
+                    std::vector<double> *vec,
+                    tensor               quadrupole) const;
 
         /*! \brief
          * Return the HF energy of the molecule
@@ -1468,6 +1470,7 @@ class MolProp
         const std::string &getInchi() const { return inchi_; }
 
         //! Convenience function
+        //! TODO document and clean up
         bool getPropRef(MolPropObservable mpo, iqmType iQM,
                         const std::string &method,
                         const std::string &basis,
@@ -1475,9 +1478,10 @@ class MolProp
                         const std::string &type,
                         double *value, double *error, double *T,
                         std::string *ref, std::string *mylot,
-                        rvec vec, tensor quadrupole);
+                        std::vector<double> *vec, tensor quadrupole);
 
         //! And another one
+        //! TODO document and clean up
         bool getProp(MolPropObservable mpo, iqmType iQM,
                      const std::string &method,
                      const std::string &basis,
@@ -1559,20 +1563,6 @@ class MolProp
                 return nullptr;
             }
         }
-
-        /*! \brief Return a calculation iterator
-         *
-         * Return iterator corresponding to the level of theory
-         * as determined by method and basis or EndExperiment in
-         * case it is not found. If either method or basis are empty
-         * any calculation may be taken.
-         * \param[in]  method  The QM method
-         * \param[in]  basis   The QM basis set
-         * \param[out] mylot   The level of theory found
-         */
-        ExperimentIterator getCalc(const std::string &method,
-                                   const std::string &basis,
-                                   std::string       *mylot);
 
         /*! \brief Return a calculation iterator
          *
