@@ -200,8 +200,8 @@ void OptACM::initChargeGeneration(iMolSelect ims)
 {
     std::string method, basis, conf, type, myref, mylot;
     splitLot(lot(), &method, &basis);
-    tensor           polar      = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
-    rvec             vec;
+    tensor              polar      = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+    std::vector<double> vec;
     for (auto &mymol : mymols())
     {
         if (mymol.datasetType() != ims)
@@ -216,7 +216,7 @@ void OptACM::initChargeGeneration(iMolSelect ims)
                                  method, basis, "",
                                  (char *)"electronic",
                                  &ref_pol, &error, &T,
-                                 &myref, &mylot, vec, polar))
+                                 &myref, &mylot, &vec, polar))
             {
                 mymol.SetElectronicPolarizability(ref_pol);
             }

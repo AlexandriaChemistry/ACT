@@ -495,11 +495,11 @@ void find_calculations(std::vector<alexandria::MolProp> &mp,
                                                              ci.getBasisset(),
                                                              *ti) > 0))
                 {
-                    double T, value, error;
-                    rvec   vec;
-                    tensor quadrupole;
+                    double              T, value, error;
+                    std::vector<double> vec;
+                    tensor              quadrupole;
                     if (ci.getVal(ti->c_str(), mpo, &value, &error, &T,
-                                   vec, quadrupole))
+                                  &vec, quadrupole))
                     {
                         qmc->addCalc(ci.getMethod(),
                                      ci.getBasisset(),

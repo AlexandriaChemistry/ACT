@@ -146,19 +146,23 @@ namespace alexandria
         //! Restored backed up coordinates
         void restoreCoordinates();
         /*! \brief
-         * Generate Atoms based on quantum calculation with specified level of theory
-         *
+         * Generate Atoms based on quantum calculation with specified level of theory.
+         * If the requested level of theory is not present, another
+         * level can be tried if the strict flag is false.
          * \param[in]  pd     Force field data
          * \param[out] atoms  The structure to update
          * \param[in]  method Method used for QM calculations
          * \param[in]  basis  Basis set used for QM calculations
          * \param[out] mylot  Level of theory used
+         * \param[in]  strict Whether or not to only allow the requested LOT
+         * \return The staus
          */
         immStatus GenerateAtoms(const Poldata     *pd,
                                 t_atoms           *atoms,
                                 const std::string &method,
                                 const std::string &basis,
-                                std::string       *mylot);
+                                std::string       *mylot,
+                                bool               strict);
 
         /*! \brief
          * Generate angles, dihedrals, exclusions etc.
@@ -379,13 +383,15 @@ namespace alexandria
         /*! \brief
          * It generates the atoms structure which will be used to print the topology file.
          *
-         * \param[in] fp          File to write (debug) information to
-         * \param[in] pd          Data structure containing atomic properties
-         * \param[in] method      Method used for QM calculation
-         * \param[in] basis       Basis set used for QM calculation
-         * \param[out] mylot      Level of theory
-         * \param[in] missing     How to treat missing parameters
-         * \param[in] tabfn       Table function file for table potentials
+         * \param[in]  fp      File to write (debug) information to
+         * \param[in]  pd      Data structure containing atomic properties
+         * \param[in]  method  Method used for QM calculation
+         * \param[in]  basis   Basis set used for QM calculation
+         * \param[out] mylot   Level of theory
+         * \param[in]  missing How to treat missing parameters
+         * \param[in]  tabfn   Table function file for table potentials
+         * \param[in]  strict  Whether or not to only allow the requested LOT
+         * \return status
          */
         immStatus GenerateTopology(FILE              *fp,
                                    const Poldata     *pd,
@@ -393,7 +399,8 @@ namespace alexandria
                                    const std::string &basis,
                                    std::string       *mylot,
                                    missingParameters  missing,
-                                   const char        *tabfn);
+                                   const char        *tabfn,
+                                   bool               strict=true);
 
         /*! \brief
          *  Computes isotropic polarizability at the presence of external
