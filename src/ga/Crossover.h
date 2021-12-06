@@ -1,5 +1,5 @@
-#ifndef ACT_CROSSOVER_H
-#define ACT_CROSSOVER_H
+#ifndef GA_CROSSOVER_H
+#define GA_CROSSOVER_H
 
 
 #include <random>
@@ -146,4 +146,4 @@ public:
 } //namespace ga
 
 
-#endif //ACT_CROSSOVER_H
+#endif //GA_CROSSOVER_H

@@ -1,5 +1,5 @@
-#ifndef ACT_GENETICALGORITHM_H
-#define ACT_GENETICALGORITHM_H
+#ifndef GA_GENETICALGORITHM_H
+#define GA_GENETICALGORITHM_H
 
 
 #include "aliases.h"
@@ -119,4 +119,4 @@ public:
 } //namespace ga
 
 
-#endif //ACT_GENETICALGORITHM_H
+#endif //GA_GENETICALGORITHM_H

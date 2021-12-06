@@ -1,5 +1,5 @@
-#ifndef ACT_GA_INCLUDES_H
-#define ACT_GA_INCLUDES_H
+#ifndef GA_INCLUDES_H
+#define GA_INCLUDES_H
 
 
 #include "GeneticAlgorithm.h"
@@ -13,4 +13,4 @@
 #include "Terminator.h"
 
 
-#endif //ACT_GA_INCLUDES_H
+#endif //GA_INCLUDES_H

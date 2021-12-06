@@ -1,5 +1,5 @@
-#ifndef ACT_FITNESSCOMPUTER_H
-#define ACT_FITNESSCOMPUTER_H
+#ifndef GA_FITNESSCOMPUTER_H
+#define GA_FITNESSCOMPUTER_H
 
 
 #include "aliases.h"
@@ -62,4 +62,4 @@ public:
 } //namespace ga
 
 
-#endif //ACT_FITNESSCOMPUTER_H
+#endif //GA_FITNESSCOMPUTER_H

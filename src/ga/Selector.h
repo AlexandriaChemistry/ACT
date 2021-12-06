@@ -1,5 +1,5 @@
-#ifndef ACT_SELECTOR_H
-#define ACT_SELECTOR_H
+#ifndef GA_SELECTOR_H
+#define GA_SELECTOR_H
 
 
 #include "aliases.h"
@@ -63,4 +63,4 @@ public:
 } //namespace ga
 
 
-#endif //ACT_SELECTOR_H
+#endif //GA_SELECTOR_H

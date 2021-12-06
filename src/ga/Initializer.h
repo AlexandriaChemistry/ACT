@@ -1,5 +1,5 @@
-#ifndef ACT_INITIALIZER_H
-#define ACT_INITIALIZER_H
+#ifndef GA_INITIALIZER_H
+#define GA_INITIALIZER_H
 
 
 #include "aliases.h"
@@ -65,4 +65,4 @@ public:
 } //namespace ga
 
 
-#endif //ACT_INITIALIZER_H
+#endif //GA_INITIALIZER_H

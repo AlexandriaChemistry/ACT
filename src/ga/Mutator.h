@@ -1,5 +1,5 @@
-#ifndef ACT_MUTATOR_H
-#define ACT_MUTATOR_H
+#ifndef GA_MUTATOR_H
+#define GA_MUTATOR_H
 
 
 #include "aliases.h"
@@ -134,4 +134,4 @@ public:
 } //namespace ga
 
 
-#endif //ACT_MUTATOR_H
+#endif //GA_MUTATOR_H

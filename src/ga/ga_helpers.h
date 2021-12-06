@@ -1,5 +1,5 @@
-#ifndef ACT_GA_HELPERS_H
-#define ACT_GA_HELPERS_H
+#ifndef GA_HELPERS_H
+#define GA_HELPERS_H
 
 
 #include "aliases.h"
@@ -98,4 +98,4 @@ double vectorSTD(const vector  &vec,
 } //namespace ga
 
 
-#endif //ACT_GA_HELPERS_H
+#endif //GA_HELPERS_H

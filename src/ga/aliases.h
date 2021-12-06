@@ -1,5 +1,5 @@
-#ifndef ACT_ALIASES_H
-#define ACT_ALIASES_H
+#ifndef GA_ALIASES_H
+#define GA_ALIASES_H
 
 
 #include <tuple>
@@ -38,4 +38,4 @@ typedef struct ga_result
 } //namespace ga
 
 
-#endif //ACT_ALIASES_H
+#endif //GA_ALIASES_H
