@@ -199,7 +199,7 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
     // in case of bugs.
     paramClassIndex.resize(paramNames_.size(), -1);
     std::vector<std::string> pClass = bch_.paramClass();
-    assignParamClasses(&paramClassIndex, &pClass);
+    assignParamClassIndex(&paramClassIndex, &pClass);
 
     openParamSurveillanceFiles(pClass, &fpc, paramClassIndex);
 
@@ -384,40 +384,6 @@ void Bayes::stepMCMC(const int                                  paramIndex,
     fprintParameterStep(fpc, paramClassIndex, xiter);
     // If the chi2 surveillance file exists, write progress
     if (fpe != nullptr) fprintChi2Step(bEvaluate_testset, fpe, xiter, *prevEval, *prevEval_testset);
-
-}
-
-void Bayes::assignParamClasses(std::vector<int>          *paramClassIndex,
-                               std::vector<std::string>  *pClass)
-{
-
-    for (size_t i = 0; i < pClass->size(); i++)
-    {
-        for (size_t j = 0; j < paramNames_.size(); j++)
-        {
-            if (paramNames_[j].find((*pClass)[i]) != std::string::npos)
-            {
-                (*paramClassIndex)[j] = i;
-            }
-        }
-    }
-
-    // Now check for params which were not assigned a class and give them class "Other"
-    bool restClass = false;
-    for (size_t i = 0; i < (*paramClassIndex).size(); i++)
-    {
-        if ((*paramClassIndex)[i] == -1)
-        {
-            if (!restClass)  // If <i> is the first parameter without a class
-            {
-                // Append "Other" to the list of classes
-                pClass->push_back("Other");
-                restClass = true;
-            }
-            // Give class "Other" to parameter <i>
-            (*paramClassIndex)[i] = pClass->size() - 1;
-        }
-    }
 
 }
 

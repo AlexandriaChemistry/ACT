@@ -338,11 +338,6 @@ private:
      */
     void checkDataSufficiency(FILE *fp);
     
-    /*! \brief Generate optIndex
-     * \param[in] fp File to print logging information to. May be nullptr.
-     */
-    void generateOptimizationIndex(FILE *fp);
-    
     //! Compute amount of compounds in each group
     void countTargetSize();
     

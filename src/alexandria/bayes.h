@@ -155,11 +155,6 @@ class Bayes
         bool MCMC(FILE *fplog, bool evaluate_testset, double *chi2);
 
         /*!
-         * Compute weighted temperature for each parameter
-         */
-        void computeWeightedTemperature();
-
-        /*!
         * Take a step of MCMC by attempting to alter a parameter
         * @param paramIndex        index of the parameter to alter
         * @param gen               pointer to random number generator
@@ -194,14 +189,6 @@ class Bayes
                       const std::vector<FILE*>                 &fpc,
                             FILE                               *fpe,
                       const std::vector<int>                   &paramClassIndex);
-
-        /*!
-         * Assign a class (by index) to each parameter
-         * @param paramClassIndex   for each parameter, will have index of the class it belongs to
-         * @param pClass            class types
-         */
-        void assignParamClasses(std::vector<int>           *paramClassIndex,
-                                std::vector<std::string>   *pClass);
 
         /*!
          * Print new minimum to log file and, if necessary, print params to debug file

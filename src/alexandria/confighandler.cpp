@@ -49,17 +49,6 @@ void BayesConfigHandler::check_pargs()
     GMX_RELEASE_ASSERT(anneal_ >= 0 && anneal_ <= 1, "-anneal must be in range [0, 1].");
 }
 
-void BayesConfigHandler::setOutputFiles(const char                     *xvgconv,
-                                       const std::vector<std::string> &paramClass,
-                                       const char                     *xvgepot,
-                                       const gmx_output_env_t         *oenv)
-{
-    xvgconv_.assign(xvgconv);
-    paramClass_ = paramClass;
-    xvgepot_.assign(xvgepot);
-    oenv_       = oenv;
-}
-
 double BayesConfigHandler::computeBeta(int iter)
 {
     double temp = temperature_;

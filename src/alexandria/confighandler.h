@@ -117,26 +117,6 @@ public:
      */
     virtual void check_pargs();
 
-    /*! \brief Set the output file names.
-    *
-    * The parameter values are split over
-    * a number of files in order to make it easier to visualize the
-    * results. The parameter classes should therefore match the
-    * parameter names. E.g. a class could be alpha, another zeta.
-    *
-    * \param[in] xvgconv    The parameter convergence base name
-    * \param[in] paramClass The parameter classes (e.g. zeta, alpha)
-    * \param[in] xvgepot    The filename to print the chi2 value
-    * \param[in] oenv       GROMACS utility structure
-    */
-    void setOutputFiles(const char                     *xvgconv,
-                        const std::vector<std::string> &paramClass,
-                        const char                     *xvgepot,
-                        const gmx_output_env_t         *oenv);
-
-    //! Return the class of parameters registered
-    const std::vector<std::string> &paramClass() { return paramClass_; }
-
     //! \brief Return Max # iterations
     int maxIter() const { return maxiter_; }
 
@@ -170,9 +150,6 @@ public:
     * \param iter The iteration number
     */
     bool anneal (int iter) const;
-
-    //! \brief Return output environment
-    const gmx_output_env_t *oenv() const { return oenv_; }
     
 };
 

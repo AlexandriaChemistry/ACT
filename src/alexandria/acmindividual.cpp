@@ -32,7 +32,7 @@ void ACMIndividual::openParamConvFiles(const gmx_output_env_t *oenv)
         //         paramNames.push_back(paramNames_[j].c_str());
         //     }
         // }
-        xvgr_legend(fpc_[i], paramNames.size(), sii_->paramNames().data(), oenv);
+        xvgr_legend(fpc_[i], sii_->paramNames().size(), sii_->paramNames().data(), oenv);
     }
 }
 

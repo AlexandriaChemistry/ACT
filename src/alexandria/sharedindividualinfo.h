@@ -4,6 +4,10 @@
 
 #include <vector>
 #include <string>
+#include <map>
+
+#include "mutability.h"
+#include "molgen.h"
 
 
 namespace alexandria
@@ -15,6 +19,10 @@ class SharedIndividualInfo
 
 private:
 
+    //! Base Poldata from which to make copies
+    Poldata pd_;  // TODO: initialize this!
+    //! Base targets_ from which to make copies
+    std::map<iMolSelect, std::map<eRMS, FittingTarget>> targets_;  // TODO: initialize this
     //! Training steps per parameter
     std::vector<int> ntrain_;
     //! Lower bound per parameter
@@ -43,7 +51,81 @@ private:
 public:
 
     /* * * * * * * * * * * * * * * * * * * * * *
-    * BEGIN: Getters and setters stuff         *
+    * BEGIN: Weighted temperature stuff        *
+    * * * * * * * * * * * * * * * * * * * * * */
+
+    /*!
+     * Compute weighted temperature for each parameter
+     */
+    void computeWeightedTemperature();
+
+    /* * * * * * * * * * * * * * * * * * * * * *
+    * END: Weighted temperature stuff          *
+    * * * * * * * * * * * * * * * * * * * * * */
+
+    /* * * * * * * * * * * * * * * * * * * * * *
+    * BEGIN: OptimizationIndex stuff           *
+    * * * * * * * * * * * * * * * * * * * * * */
+
+    /*! \brief Generate \p optIndex_
+     * \param[in] fp File to print logging information to. May be nullptr.
+     */
+    void generateOptimizationIndex(FILE    *fp,
+                                   MolGen  *mg);
+
+    /* * * * * * * * * * * * * * * * * * * * * *
+    * END: OptimizationIndex stuff             *
+    * * * * * * * * * * * * * * * * * * * * * */
+
+    /* * * * * * * * * * * * * * * * * * * * * *
+    * BEGIN: Vector stuff                      *
+    * * * * * * * * * * * * * * * * * * * * * */
+
+    //! Fills \p ntrain_ \p lowerBound_ \p upperBound_ \p mutability_ and \p paramNames_
+    void fillVectors();
+
+    /* * * * * * * * * * * * * * * * * * * * * *
+    * END: Vector stuff                      *
+    * * * * * * * * * * * * * * * * * * * * * */
+
+    /* * * * * * * * * * * * * * * * * * * * * *
+    * BEGIN: ParamClassIndex stuff             *
+    * * * * * * * * * * * * * * * * * * * * * */
+
+    /*!
+     * Assign a class (by index) to each parameter
+     */
+    void assignParamClassIndex();
+
+    /* * * * * * * * * * * * * * * * * * * * * *
+    * END: ParamClassIndex stuff               *
+    * * * * * * * * * * * * * * * * * * * * * */
+
+    /* * * * * * * * * * * * * * * * * * * * * *
+    * BEGIN: File stuff                        *
+    * * * * * * * * * * * * * * * * * * * * * */
+
+    /*! \brief Set the output file names.
+    *
+    * The parameter values are split over
+    * a number of files in order to make it easier to visualize the
+    * results. The parameter classes should therefore match the
+    * parameter names. E.g. a class could be alpha, another zeta.
+    *
+    * \param[in] xvgconv    The parameter convergence base name
+    * \param[in] paramClass The parameter classes (e.g. zeta, alpha)
+    * \param[in] xvgepot    The base filename to print the chi2 value
+    */
+    void setOutputFiles(const char                     *xvgconv,
+                        const std::vector<std::string> &paramClass,
+                        const char                     *xvgepot);
+
+    /* * * * * * * * * * * * * * * * * * * * * *
+    * END: File stuff                          *
+    * * * * * * * * * * * * * * * * * * * * * */
+
+    /* * * * * * * * * * * * * * * * * * * * * *
+    * BEGIN: Getters and setters               *
     * * * * * * * * * * * * * * * * * * * * * */
 
     //! \brief Get a constant \p optIndex_ reference
@@ -84,8 +166,11 @@ public:
     //! \brief Get a constant \p outputFile_ reference
     const std::string &outputFile() const { return outputFile_; }
 
+    //! \brief Get a constant \p weightedTemperature_ reference
+    const std::vector<double> &weightedTemperature() const { return weightedTemperature_; }
+
     /* * * * * * * * * * * * * * * * * * * * * *
-    * END: Getters and setters stuff           *
+    * END: Getters and setters                 *
     * * * * * * * * * * * * * * * * * * * * * */
 
 };

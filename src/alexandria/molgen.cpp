@@ -506,47 +506,6 @@ void MolGen::checkDataSufficiency(FILE *fp)
     }
 }
 
-void MolGen::generateOptimizationIndex(FILE *fp)
-{
-    for(auto &fs : pd_.forcesConst())
-    {
-        if (optimize(fs.first))
-        {
-            for(auto &fpl : fs.second.parametersConst())
-            {
-                for(auto &param : fpl.second)
-                {
-                    if (fit(param.first))
-                    {
-                        if (param.second.isMutable() && param.second.ntrain() >= mindata_)
-                        {
-                            optIndex_.push_back(OptimizationIndex(fs.first, fpl.first, param.first));
-                        }
-                    }
-                }
-            }
-        }
-    }
-    for(auto &pt : pd_.particleTypesConst())
-    {
-        for(auto &p : pt.parametersConst())
-        {
-            if (fit(p.first) && p.second.ntrain() > 0)
-            {
-                optIndex_.push_back(OptimizationIndex(pt.id().id(), p.first));
-            }
-        }
-    }
-    if (fp)
-    {
-        fprintf(fp, "There are %zu variables to optimize.\n", optIndex_.size());
-        for(auto &i : optIndex_)
-        {
-            fprintf(fp, "Will optimize %s\n", i.name().c_str());
-        }
-    }
-}
-
 static void incrementImmCount(std::map<immStatus, int> *map, immStatus imm)
 {
     if (map->find(imm) == map->end())

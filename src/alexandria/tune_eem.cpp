@@ -257,7 +257,7 @@ bool OptACM::runMaster(const gmx_output_env_t *oenv,
     }
     if (optimize)
     {
-        configHandlerPtr()->setOutputFiles(xvgconv, paramClass, xvgepot, oenv);
+        configHandlerPtr()->setOutputFiles(xvgconv, paramClass, xvgepot);
         double chi2     = 0;
         bMinimum = Bayes::MCMC(logFile(), bEvaluate_testset, &chi2);
     }
