@@ -58,7 +58,14 @@ class Poldata
 {
     public:
 
+        //! Default constructor
         Poldata() {};
+
+        /*!
+         * Copy constructor
+         * \param[in] pd    the reference Poldata object
+         */
+        Poldata(const Poldata pd&);
 
         /*! \brief
          * Set the file name gentop.dat
@@ -408,6 +415,7 @@ class Poldata
 
         //! \brief Check internal consistency of data structures
         void checkConsistency(FILE *fplog) const;
+    
     private:
         std::map<std::string, InteractionType> type2Itype_;
         std::string                           filename_;
@@ -430,6 +438,7 @@ class Poldata
         {
             return (pointer - &(vector[0]));
         }
+
 };
 
 }
