@@ -46,12 +46,6 @@ protected:
 
 public:
 
-    virtual ~DevComputer()
-    {
-        free(logfile_);
-        logfile_ = NULL;
-    }
-
     /*! \brief Computes a component of the chi-squared deviation and place it into the appropriate FittingTarget
      * @param mymol     pointer to the molecule to compute the deviation for
      * @param targets   map between different components of chi-squared and their fitting targets
