@@ -18,14 +18,14 @@ private:
     FILE *logfile_;
 
     //! \brief A pointer to the BoundsDevComputer.
-    BoundsDecComputer* bdc_;
+    BoundsDevsComputer *bdc_;
 
     //! \brief A vector of devComputers.
-    vector<DevComputer> devComputers_;
+    vector<DevComputer*> devComputers_;
 
-    /*! \brief Computes the dipole and quadropole for a given molecule.
-     * @param[in] targets   Computates the dipole and quadropole for a given molecule.
-     * @param[in] mymol     A pointer to the molecule.
+    /*! \brief Compute dipole and quadrupole moments (if needed), for a given molecule
+     * @param targets   pointer to a map between the components of chi-squared and the fitting targets
+     * @param mymol     the molecule
      */
     void computeDiQuad(std::map<eRMS, FittingTarget> *targets,
                        MyMol                         *mymol);
@@ -41,16 +41,16 @@ public:
     virtual void compute(Individual *individual);
 
     /*! \brief Computes deviation from target
-     * \param[in] individual    The pointer to the individual to initialize
-     * \param[in] calcDev       The type of calculation to do
-     * \param[in] ims           The data set to do computations on
+     * \param[in] verbose Whether or not to print a lot
+     * \param[in] calcDev The type of calculation to do
+     * \param[in] ims     The data set to do computations on
      * \return the square deviation
      */
     double calcDeviation(Individual   *individual,
                          CalcDev      calcDev,
                          iMolSelect   ims);
 
-    //! \brief Fill the devComputers vector according to the needs of the user.
+    //! \brief Fill the devComputers vector according to the needs of the user
     void fillDevComputers();
 };
 
