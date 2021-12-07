@@ -63,7 +63,7 @@ public:
     * BEGIN: Adding parameters                 *
     * * * * * * * * * * * * * * * * * * * * * */
 
-    void addParam(const real val) { param_.push_back(val); }
+    void addParam(const real val) { initialParam_.push_back(val); param_.push_back(val); }
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * END: Adding parameters                   *
@@ -298,37 +298,37 @@ public:
     /*! \brief
      * Returns the current vector of parameters.
      */
-    const std::vector<double> &getInitialParam() const { return initial_param_; }
+    const std::vector<double> &onitialParam() const { return initialParam_; }
 
     /*! \brief
      * Returns the current vector of parameters.
      */
-    const std::vector<double> &getParam() const { return param_; }
+    const std::vector<double> &param() const { return param_; }
 
     /*! \brief
      * Returns the vector of best found value for each parameter.
      */
-    const std::vector<double> &getBestParam() const { return bestParam_; }
+    const std::vector<double> &bestParam() const { return bestParam_; }
 
     /*! \brief
      * Returns the vector of mean value calculated for each parameter.
      */
-    const std::vector<double> &getPmean() const { return pmean_; }
+    const std::vector<double> &pMean() const { return pmean_; }
 
     /*! \brief
      * Returns the vector of standard deviation calculated for each parameter.
      */
-    const std::vector<double> &getPsigma() const { return psigma_; };
+    const std::vector<double> &pSigma() const { return psigma_; }
 
     /*! \brief
      * Return the vector of number of attempted moves for each parameter
      */
-    const std::vector<int> &getAttemptedMoves() const {return attemptedMoves_;};
+    const std::vector<int> &attemptedMoves() const {return attemptedMoves_;}
 
     /*! \brief
      * Return the vector of number of accepted moves for each parameter
      */
-    const std::vector<int> &getAcceptedMoves() const {return acceptedMoves_;};
+    const std::vector<int> &acceptedMoves() const {return acceptedMoves_;}
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * END: Getters and Setters                 *

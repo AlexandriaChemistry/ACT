@@ -77,8 +77,34 @@ void SharedIndividualInfo::generateOptimizationIndex(FILE      *fp,
 * BEGIN: Vector stuff                      *
 * * * * * * * * * * * * * * * * * * * * * */
 
-void SharedIndividualInfo::fillVectors()
+void SharedIndividualInfo::fillVectors(const int mindata)
 {
+
+    for(auto &optIndex : optIndex_)
+    {
+        auto                iType = optIndex.iType();
+        ForceFieldParameter p;
+        if (iType == InteractionType::CHARGE)
+        {
+            if (pd_->hasParticleType(optIndex.particleType()))
+            {
+                p = pd_->findParticleType(optIndex.particleType())->parameterConst(optIndex.parameterType());
+            }
+        }
+        else if (pd_->interactionPresent(iType))
+        {
+            p = pd_->findForcesConst(iType).findParameterTypeConst(optIndex.id(), optIndex.parameterType());
+        }
+        if (p.ntrain() >= mindata)
+        {
+            paramNames_.push_back(optIndex_.name())
+            mutability_.push_back(p.mutability())
+            lowerBound_.push_back(p.minimum())
+            upperBound_.push_back(p.maximum())
+            ntrain_.push_back(p.ntrain())
+        }
+    }
+
     for (auto &optIndex : optIndex_)
     {
         paramNames_.push_back(optIndex.name());

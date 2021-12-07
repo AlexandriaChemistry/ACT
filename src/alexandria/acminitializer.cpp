@@ -41,11 +41,6 @@ void ACMInitializer::initialize(ga::Individual *individual)
             {
                 tmpInd->addParam(p.value());
             }
-            // FIXME: This information has been moved to the individual.
-            // Bayes::addParam(optIndex.name(),
-            //                 p.value(), p.mutability(),
-            //                 p.minimum(), p.maximum(),
-            //                 p.ntrain(), bRandom);
         }
     }
 }

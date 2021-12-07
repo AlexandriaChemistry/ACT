@@ -81,8 +81,10 @@ public:
     * BEGIN: Vector stuff                      *
     * * * * * * * * * * * * * * * * * * * * * */
 
-    //! Fills \p ntrain_ \p lowerBound_ \p upperBound_ \p mutability_ and \p paramNames_
-    void fillVectors();
+    /*! Fills \p ntrain_ \p lowerBound_ \p upperBound_ \p mutability_ and \p paramNames_
+     * @param mindata   mininum number of datapoints to consider a parameter
+     */
+    void fillVectors(const int mindata);
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * END: Vector stuff                      *
