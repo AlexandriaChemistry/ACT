@@ -18,8 +18,7 @@ namespace alexandria
 {
 
 
-class ACMIndividual
-// FIXME: : public ga::Individual
+class ACMIndividual : public ga::Individual
 {
 
 private:
