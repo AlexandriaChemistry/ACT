@@ -447,23 +447,6 @@ void Bayes::assignParamClasses(std::vector<int>          *paramClassIndex,
 
 }
 
-FILE* Bayes::openChi2SurveillanceFile(const bool bEvaluate_testset)
-{
-    FILE* fpe = xvgropen(bch_.xvgEpot().c_str(),
-                         "Chi squared",
-                         "Iteration",
-                         "Unknown units",
-                         bch_.oenv());
-    if (bEvaluate_testset)
-    {
-        std::vector<std::string> legend;
-        legend.push_back(iMolSelectName(iMolSelect::Train));
-        legend.push_back(iMolSelectName(iMolSelect::Test));
-        xvgrLegend(fpe, legend, bch_.oenv());
-    }
-    return fpe;
-}
-
 void Bayes::computeMeanSigma(const int     nParam,
                              const parm_t &sum,
                              const int     nsum,
@@ -482,19 +465,6 @@ void Bayes::computeMeanSigma(const int     nParam,
         }
     }
 
-}
-
-void Bayes::closeConvergenceFiles(const std::vector<FILE*> &fpc,
-                                        FILE               *fpe)
-{
-    for(FILE *fp: fpc)  // Close all parameter convergence surveillance files
-    {
-        xvgrclose(fp);
-    }
-    if (nullptr != fpe)  // Close chi2 surveillance file
-    {
-        xvgrclose(fpe);
-    }
 }
 
 void Bayes::fprintNewMinimum(      FILE   *fplog,

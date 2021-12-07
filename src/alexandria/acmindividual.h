@@ -60,13 +60,35 @@ private:
 public:
 
     /* * * * * * * * * * * * * * * * * * * * * *
+    * BEGIN: Adding parameters                 *
+    * * * * * * * * * * * * * * * * * * * * * */
+
+    void addParam(const real val) { param_.push_back(val); }
+
+    /* * * * * * * * * * * * * * * * * * * * * *
+    * END: Adding parameters                   *
+    * * * * * * * * * * * * * * * * * * * * * */
+
+    /* * * * * * * * * * * * * * * * * * * * * *
     * BEGIN: File stuff                        *
     * * * * * * * * * * * * * * * * * * * * * */
 
     /*!
      * Open parameter convergence surveillance files
      */
-    void openParamConvFiles();
+    void openParamConvFiles(const gmx_output_env_t *oenv);
+
+    /*!
+     * Open a chi2 surveillance file
+     * @param bEvaluate_testset     whether the test set will be evaluated
+     */
+    void openChi2ConvFile(const gmx_output_env_t    *oenv,
+                          const bool                 bEvaluate_testset);
+    
+    /*!
+     * Close chi2 and parameter convergence files
+     */
+    void closeConvFiles();
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * END: File stuff                          *

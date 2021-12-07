@@ -12,17 +12,17 @@ namespace alexandria
 * BEGIN: File stuff                        *
 * * * * * * * * * * * * * * * * * * * * * */
 
-void ACMIndividual::openParamConvFiles()
+void ACMIndividual::openParamConvFiles(const gmx_output_env_t *oenv)
 {
     const std::vector<std::string> pClass = sii_->paramClass();
     for (size_t i = 0; i < pClass.size(); i++)
     {
-        std::string fileName = pClass[i] + "-" + bch_.xvgConv();
+        std::string fileName = "ind" + std::to_string(id_) + "-" + pClass[i] + "-" + sii_->xvgConv();
         fpc->push_back(xvgropen(fileName.c_str(),
                                 "Parameter convergence",
                                 "iteration",
                                 "",
-                                bch_.oenv()));
+                                oenv));
         // TODO: move commented lines below to SharedIndividualInfo
         // std::vector<const char*> paramNames;
         // for (size_t j = 0; j < paramNames_.size(); j++)
@@ -32,7 +32,37 @@ void ACMIndividual::openParamConvFiles()
         //         paramNames.push_back(paramNames_[j].c_str());
         //     }
         // }
-        xvgr_legend(fpc_[i], paramNames.size(), sii_->paramNames().data(), bch_.oenv());
+        xvgr_legend(fpc_[i], paramNames.size(), sii_->paramNames().data(), oenv);
+    }
+}
+
+void ACMIndividual::openChi2ConvFile(const gmx_output_env_t    *oenv,
+                                     const bool                 bEvaluate_testset)
+{
+    std::string fileName = "ind" + std::to_string(id_) + "-" + sii_->xvgEpot();
+    fpe_ = xvgropen(fileName.c_str(),
+                    "Chi squared",
+                    "Iteration",
+                    "Unknown units",
+                    oenv);
+    if (bEvaluate_testset)
+    {
+        std::vector<std::string> legend;
+        legend.push_back(iMolSelectName(iMolSelect::Train));
+        legend.push_back(iMolSelectName(iMolSelect::Test));
+        xvgrLegend(fpe_, legend, oenv);
+    }
+}
+
+void ACMIndividual::closeConvFiles()
+{
+    for(FILE *fp: fpc_)  // Close all parameter convergence surveillance files
+    {
+        xvgrclose(fp);
+    }
+    if (fpe_ != nullptr)  // Close chi2 surveillance file
+    {
+        xvgrclose(fpe_);
     }
 }
 

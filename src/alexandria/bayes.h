@@ -164,6 +164,7 @@ class Bayes
                       real               upper,
                       int                ntrain,
                       bool               bRandom);
+        
         /*! \brief
          * Append random parameter within the bounds specified.
          * \param[in] name  String describing the parameter
@@ -268,22 +269,6 @@ class Bayes
          */
         void assignParamClasses(std::vector<int>           *paramClassIndex,
                                 std::vector<std::string>   *pClass);
-
-        /*!
-         * Open a chi2 surveillance file
-         * @param bEvaluate_testset     whether the test set will be evaluated
-         * @return                      a pointer to the opened file
-         */
-        FILE* openChi2SurveillanceFile(const bool bEvaluate_testset);
-
-        /*!
-         * Close chi2 and parameter convergence files
-         * @param fpc   vector of pointers to parameter convergence files
-         * @param fpe   pointer to chi2 convergence file
-         */
-        void closeConvergenceFiles(const std::vector<FILE*> &fpc,
-                                         FILE               *fpe);
-
 
         /*!
          * Print new minimum to log file and, if necessary, print params to debug file
