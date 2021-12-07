@@ -163,14 +163,49 @@ static void print_stats(FILE        *fp,
     }
 }
 
-static void print_lsq_set(FILE *fp, gmx_stats_t lsq)
+static void print_lsq_sets(FILE *fp, const std::vector<gmx_stats_t> &lsq)
 {
-    real   x, y;
+    if (0 == lsq.size())
+    {
+        return;
+    }
+    std::vector<std::vector<double> > x, y;
+    size_t              N = 0;
+    x.resize(lsq.size());
+    y.resize(lsq.size());
+    bool bOK = true;
+    do
+    {
+        for (size_t s = 0; s < lsq.size() && bOK; s++)
+        {
+            real xx, yy;
+            auto es = gmx_stats_get_point(lsq[s], &xx, &yy, nullptr, nullptr, 0);
+            if (es == estatsOK)
+            {
+                x[s].push_back(xx);
+                y[s].push_back(yy);
+            }
+            else
+            {
+                bOK = false;
+            }
+        }
+        if (bOK)
+        {
+            N += 1;
+        }
+    } while (bOK);
+    
     
     fprintf(fp, "@type xy\n");
-    while (gmx_stats_get_point(lsq, &x, &y, nullptr, nullptr, 0) == estatsOK)
+    for(size_t i = 0; i < N; i++)
     {
-        fprintf(fp, "%10g  %10g\n", x, y);
+        fprintf(fp, "%10g", x[0][i]);
+        for(size_t j = 0; j < lsq.size(); j++)
+        {
+            fprintf(fp, "  %10g", y[j][i]);
+        }
+        fprintf(fp, "\n");
     }
     fprintf(fp, "&\n");
 }
@@ -340,8 +375,8 @@ static void print_corr(const char                         *outfile,
                        const std::map<iMolSelect, std::map<qType, gmx_stats_t> > &stats,
                        const gmx_output_env_t             *oenv)
 {
-    FILE *muc = xvgropen(outfile, title, xaxis, yaxis, oenv);
     std::vector<std::string> eprnm;
+    std::vector<gmx_stats_t> lsq;
     for (auto &ims : iMolSelectNames())
     {
         auto qs = stats.find(ims.first);
@@ -349,11 +384,19 @@ static void print_corr(const char                         *outfile,
         {
             for (auto &i : qs->second)
             {
-                eprnm.push_back(gmx::formatString("%s-%s", qTypeName(i.first).c_str(), ims.second)); 
+                int N;
+                if (estatsOK == gmx_stats_get_npoints(i.second, &N) && N > 0)
+                {
+                    eprnm.push_back(gmx::formatString("%s-%s", qTypeName(i.first).c_str(), ims.second));
+                    lsq.push_back(i.second);
+                }
             }
         }
     }
+    FILE *muc = xvgropen(outfile, title, xaxis, yaxis, oenv);
     xvgr_symbolize(muc, eprnm, oenv);
+    print_lsq_sets(muc, lsq);
+    /*
     for (auto &ims : iMolSelectNames())
     {
         auto qs = stats.find(ims.first);
@@ -361,10 +404,14 @@ static void print_corr(const char                         *outfile,
         {
             for (auto &i : qs->second)
             {
-                print_lsq_set(muc, i.second);
+                int N;
+                if (estatsOK == gmx_stats_get_npoints(i.second, &N) && N > 0)
+                {
+                    print_lsq_set(muc, i.second);
+                }
             }
         }
-    }
+        }*/
     fclose(muc);
 }
 
@@ -580,7 +627,6 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
                         qprop->setX(mol->x());
                     }
                     qprop->setCenterOfCharge(mol->centerOfCharge());
-                    printf("%s\n", mol->getMolname().c_str());
                     qprop->calcMoments();
                     print_dipole(fp, qt, qelec->mu(), qprop->mu(), dip_toler_);
                     if (mol->datasetType() == ims)
@@ -713,30 +759,29 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
             }
             fprintf(fp, "\n");
         }
-        
-        write_q_histo(fp, opt2fn("-qhisto", filenm.size(), filenm.data()),
-                      lsqt[ims.first], oenv, lsq_charge[ims.first], useOffset_);
-
-        print_corr(opt2fn("-dipcorr", filenm.size(), filenm.data()),
-                   "Dipole Moment (Debye)", "Electronic", "Empirical", lsq_dip, oenv);
-        print_corr(opt2fn("-mucorr", filenm.size(), filenm.data()),
-                   "Dipoles (Debye)", "Electronic", "Empirical", lsq_mu, oenv);
-        print_corr(opt2fn("-thetacorr", filenm.size(), filenm.data()),
-                   "Quadrupoles (Buckingham)", "Electronic", "Empirical", lsq_quad, oenv);
-        print_corr(opt2fn("-espcorr", filenm.size(), filenm.data()),
-                   "Electrostatic Potential (Hartree/e)", "Electronic", "Calc", lsq_esp, oenv);
-        print_corr(opt2fn("-qcorr", filenm.size(), filenm.data()),
-                   "Atomic Partial Charge", "q (e)", "a.u.", lsq_charge, oenv);
-
-        if (bPolar)
-        {
-            print_corr(opt2fn("-alphacorr", filenm.size(), filenm.data()),
-                       "Pricipal Components of Polarizability Tensor (A\\S3\\N)", "Electronic", "Calc", lsq_alpha, oenv);
-            print_corr(opt2fn("-isopol", filenm.size(), filenm.data()),
-                       "Isotropic Polarizability (A\\S3\\N)", "Electronic", "Calc", lsq_isoPol, oenv);
-            print_corr(opt2fn("-anisopol", filenm.size(), filenm.data()),
-                       "Anisotropic Polarizability (A\\S3\\N)", "Electronic", "Calc", lsq_anisoPol, oenv);
-        }
+    }
+    write_q_histo(fp, opt2fn("-qhisto", filenm.size(), filenm.data()),
+                  lsqt[iMolSelect::Train], oenv, lsq_charge[iMolSelect::Train], useOffset_);
+    
+    print_corr(opt2fn("-dipcorr", filenm.size(), filenm.data()),
+               "Dipole Moment (Debye)", "Electronic", "Empirical", lsq_dip, oenv);
+    print_corr(opt2fn("-mucorr", filenm.size(), filenm.data()),
+               "Dipole components (Debye)", "Electronic", "Empirical", lsq_mu, oenv);
+    print_corr(opt2fn("-thetacorr", filenm.size(), filenm.data()),
+               "Quadrupole components (Buckingham)", "Electronic", "Empirical", lsq_quad, oenv);
+    print_corr(opt2fn("-espcorr", filenm.size(), filenm.data()),
+               "Electrostatic Potential (Hartree/e)", "Electronic", "Calc", lsq_esp, oenv);
+    print_corr(opt2fn("-qcorr", filenm.size(), filenm.data()),
+               "Atomic Partial Charge", "q (e)", "a.u.", lsq_charge, oenv);
+    
+    if (bPolar)
+    {
+        print_corr(opt2fn("-alphacorr", filenm.size(), filenm.data()),
+                   "Pricipal Components of Polarizability Tensor (A\\S3\\N)", "Electronic", "Calc", lsq_alpha, oenv);
+        print_corr(opt2fn("-isopol", filenm.size(), filenm.data()),
+                   "Isotropic Polarizability (A\\S3\\N)", "Electronic", "Calc", lsq_isoPol, oenv);
+        print_corr(opt2fn("-anisopol", filenm.size(), filenm.data()),
+                   "Anisotropic Polarizability (A\\S3\\N)", "Electronic", "Calc", lsq_anisoPol, oenv);
     }
     // List outliers based on the deviation in the total dipole moment
     real sigma;
