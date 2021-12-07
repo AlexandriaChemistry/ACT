@@ -98,7 +98,9 @@ public:
     /*! \brief Copy constructor
      * \param[in] ft    the reference fitting target
      */
-    FittingTarget(const FittingTarget &ft) : erms_(ft.erms()), ims_(ft.ims()) {}
+    FittingTarget(const FittingTarget &ft)
+    : erms_(ft.erms()), ims_(ft.ims()), weight_(ft.weight()),
+      numberOfDatapoints_(ft.numberOfDatapoints()), chiSquared_(ft.chiSquared()) {}
   
     //! \return the eRMS component covered by this FittingTarget
     eRMS erms() const { return erms_; }
