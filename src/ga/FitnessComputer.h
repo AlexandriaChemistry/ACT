@@ -1,7 +1,7 @@
 #ifndef GA_FITNESSCOMPUTER_H
 #define GA_FITNESSCOMPUTER_H
 
-
+#include "Individual.h"
 #include "aliases.h"
 
 
@@ -19,15 +19,9 @@ public:
 
     /*!
      * Compute the fitness of an individual
-     * @param individual    the individual
-     * @param fitness       pointer to the fitness vector
-     * @param indIndex      index of the individual in the population
-     * @param length        length of the chromosome
+     * @param individual the individual
      */
-    virtual void compute(const vector  &individual,
-                                vector  *fitness,
-                            const int      indIndex,
-                            const int      length) = 0;
+    virtual void compute(Individual *individual) = 0;
 
 };
 

@@ -3,6 +3,7 @@
 
 
 #include "aliases.h"
+#include "Individual.h"
 
 #include <time.h>
 #include <random>
@@ -23,10 +24,8 @@ public:
     /*!
         * Initialize an individual
         * @param individual    pointer to the individual to initialize
-        * @param length        length of the chromosome
         */
-    virtual void initialize(      vector   *individual,
-                            const int       length) = 0;
+    virtual void initialize(Individual *individual) = 0;
 };
 
 
@@ -56,8 +55,7 @@ public:
         gen.seed(::time(NULL));
     }
 
-    virtual void initialize(      vector   *individual,
-                            const int       length);
+    virtual void initialize(Individual  *individual);
 
 };
 

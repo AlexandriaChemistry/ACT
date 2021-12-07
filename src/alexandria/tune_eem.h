@@ -54,13 +54,6 @@ private:
     //! Vector of non-bound DevComputers for the different components of chi-squared
     std::vector<DevComputer*> devComputers_;
 
-    /*! \brief Compute dipole and quadrupole moments (if needed), for a given molecule
-     * @param targets   pointer to a map between the components of chi-squared and the fitting targets
-     * @param mymol     the molecule
-     */
-    void computeDiQuad(std::map<eRMS, FittingTarget> *targets,
-                       MyMol                         *mymol);
-
 public:
     //! Constructor
     OptACM() {}
@@ -113,20 +106,6 @@ public:
      * \param[in] changed List over the parameters that have changed.
      */
     virtual void toPoldata(const std::vector<bool> &changed);
-
-    //! \brief Fill the devComputers vector according to the needs of the user
-    void fillDevComputers();
-
-    /*! \brief
-     * Computes deviation from target
-     * \param[in] verbose Whether or not to print a lot
-     * \param[in] calcDev The type of calculation to do
-     * \param[in] ims     The data set to do computations on
-     * \return the square deviation
-     */
-    virtual double calcDeviation(bool verbose,
-                                 CalcDev calcDev,
-                                 iMolSelect ims);
 
     /*! \brief
      * Do the actual optimization.
