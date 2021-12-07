@@ -6,13 +6,13 @@ namespace ga
 {
 
 
-    //! Abstract individual for genetic algorithms!
-    class Individual
-    {
+//! Abstract individual for genetic algorithms!
+class Individual
+{
 
-        // NOTHING! (for now...)
+    // NOTHING! (for now...)
 
-    }
+}
 
 
 } //namespace ga
