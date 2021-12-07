@@ -626,8 +626,7 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                                 alexandria::DataSource ds = alexandria::dataSourceFromName(xbuf[exmlDATASOURCE]);
 
                                 if (ds == alexandria::dsTheory &&
-                                    NN(xbuf[exmlPROGRAM]) && NN(xbuf[exmlMETHOD]) &&
-                                    NN(xbuf[exmlBASISSET]) && NN(xbuf[exmlREFERENCE]) &&
+                                    NN(xbuf[exmlPROGRAM]) && NN(xbuf[exmlREFERENCE]) &&
                                     NN(xbuf[exmlCONFORMATION]) && NN(xbuf[exmlDATAFILE]) &&
                                     NN(xbuf[exmlJOBTYPE]))
                                 {

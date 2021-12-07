@@ -56,7 +56,7 @@ static void gmx_molprop_csv(const char *fn,
     FILE                       *fp;
     int                         k, ll;
     double                      T, d, err;
-    rvec                        vec;
+    std::vector<double>         vec;
     tensor                      quadrupole;
 #define NEMP 3
     MolPropObservable           mpo[NEMP]   = { MolPropObservable::DIPOLE, MolPropObservable::POLARIZABILITY, MolPropObservable::ENERGY  };
@@ -137,7 +137,7 @@ static void gmx_molprop_csv(const char *fn,
             std::string ref, mylot;
             if (mpi->getPropRef(mpo[k], iqmType::Exp,
                                 "", "", "", nullptr, &d, &err, &T,
-                                &ref, &mylot, vec,
+                                &ref, &mylot, &vec,
                                 quadrupole))
             {
                 fprintf(fp, ",\"%.4f\",\"%s\"", d, ref.c_str());

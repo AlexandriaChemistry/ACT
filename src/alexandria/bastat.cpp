@@ -706,7 +706,8 @@ static t_bonds *extractGeometries(FILE                 *fp,
                                   double                bspacing,
                                   double                aspacing,
                                   double                laspacing,
-                                  double                dspacing)
+                                  double                dspacing,
+                                  bool                  strict)
 {
     rvec     dx2, r_ij, r_kj, r_kl, mm, nn;
     t_pbc    pbc;
@@ -724,7 +725,7 @@ static t_bonds *extractGeometries(FILE                 *fp,
             mmi.Merge(&(*mpi));
             if (mmi.getMolname().size() == 0)
             {
-                printf("Empty molname for molecule with formula %s\n",
+                fprintf(fp, "Empty molname for molecule with formula %s\n",
                        mmi.formula().c_str());
                 continue;
             }
@@ -735,7 +736,8 @@ static t_bonds *extractGeometries(FILE                 *fp,
                                                    basis,
                                                    &mylot,
                                                    missingParameters::Generate,
-                                                   nullptr);
+                                                   nullptr,
+                                                   strict);
             if (immStatus::OK != imm)
             {
                 if (nullptr != debug)
@@ -950,9 +952,12 @@ int alex_bastat(int argc, char *argv[])
     static gmx_bool                  bBondOrder  = true;
     static gmx_bool                  genBCC      = false;
     static gmx_bool                  bDissoc     = false;
+    static gmx_bool                  strict      = true;
     t_pargs                          pa[]        = {
         { "-lot",    FALSE, etSTR,  {&lot},
           "Use this method and level of theory when selecting coordinates and charges" },
+        { "-strict", FALSE, etBOOL, {&strict},
+          "Whether or not to be pedantic about the level of theory" },
         { "-maxwarn", FALSE, etINT, {&maxwarn},
           "Will only write output if number of warnings is at most this." },
         { "-dissoc",  FALSE, etBOOL, {&bDissoc},
@@ -1053,7 +1058,8 @@ int alex_bastat(int argc, char *argv[])
     std::vector<MyMol> mymols;
     auto bonds = extractGeometries(fp, &mp, &mymols, &pd, gms,
                                    method, basis, bBondOrder,
-                                   bspacing, aspacing, laspacing, dspacing);
+                                   bspacing, aspacing, laspacing, dspacing,
+                                   strict);
     
     print_memory_usage(debug);
     if (bHisto)
@@ -1071,9 +1077,10 @@ int alex_bastat(int argc, char *argv[])
     print_memory_usage(debug);
     if (bDissoc)
     {
-        getDissociationEnergy(fp, &pd, &mymols,
-                              opt2fn_null("-de",  NFILE, fnm), 
-                              method, basis, nBootStrap);
+        double rmsd = getDissociationEnergy(fp, &pd, &mymols,
+                                            opt2fn_null("-de",  NFILE, fnm), 
+                                            method, basis, nBootStrap);
+        fprintf(fp, "Root mean square deviation %.1f kJ/mol\n", rmsd);
     }
     writePoldata(opt2fn("-o", NFILE, fnm), &pd, compress);
     printf("Extracted %zu bondtypes, %zu angletypes, %zu linear-angletypes, %zu dihedraltypes and %zu impropertypes.\n",

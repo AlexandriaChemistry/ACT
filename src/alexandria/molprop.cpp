@@ -781,11 +781,11 @@ bool Experiment::getHF(double *value) const
 {
     double      T    = -1;
     double      error;
-    rvec        vec;
     bool        done = false;
     tensor      quad;
 
-    if (getVal((char *)"HF", MolPropObservable::ENERGY, value, &error, &T, vec, quad))
+    if (getVal((char *)"HF", MolPropObservable::ENERGY, value, &error, &T,
+               nullptr, quad))
     {
         done = true;
     }
@@ -900,13 +900,13 @@ void Experiment::AddAtom(CalcAtom ca)
     }
 }
 
-bool Experiment::getVal(const std::string &type,
-                        MolPropObservable  mpo,
-                        double            *value,
-                        double            *error,
-                        double            *T,
-                        rvec               vec,
-                        tensor             quad_polar) const
+bool Experiment::getVal(const std::string   &type,
+                        MolPropObservable    mpo,
+                        double              *value,
+                        double              *error,
+                        double              *T,
+                        std::vector<double> *vec,
+                        tensor               quad_polar) const
 {
     bool   done = false;
     double x, y, z;
@@ -935,9 +935,10 @@ bool Experiment::getVal(const std::string &type,
                     bCheckTemperature(Told, mdp.getTemperature()))
                 {
                     mdp.get(&x, &y, &z, value, error);
-                    vec[XX] = x;
-                    vec[YY] = y;
-                    vec[ZZ] = z;
+                    vec->resize(DIM, 0.0);
+                    (*vec)[XX] = x;
+                    (*vec)[YY] = y;
+                    (*vec)[ZZ] = z;
                     *T      = mdp.getTemperature();
                     done    = true;
                     break;
@@ -994,12 +995,13 @@ bool Experiment::getVal(const std::string &type,
             break;
         case MolPropObservable::CHARGE:
         {
+            vec->resize(NAtom(), 0.0);
             int i = 0;
             for (auto &mai : calcAtomConst())
             {
                 if (mai.hasCharge(type))
                 {
-                    vec[i] = mai.charge(type);
+                    (*vec)[i] = mai.charge(type);
                     i++;
                 }
             }
@@ -1548,7 +1550,7 @@ bool MolProp::getPropRef(MolPropObservable mpo, iqmType iQM,
                          const std::string &type,
                          double *value, double *error, double *T,
                          std::string *ref, std::string *mylot,
-                         rvec vec, tensor quad_polar)
+                         std::vector<double> *vec, tensor quad_polar)
 {
     bool   done = false;
     double Told = *T;
@@ -1658,15 +1660,15 @@ bool MolProp::getProp(MolPropObservable mpo, iqmType iQM,
                       const std::string &type,
                       double *value, double *error, double *T)
 {
-    double      myerror;
-    rvec        vec;
-    tensor      quad;
-    bool        bReturn;
-    std::string myref, mylot;
+    double              myerror;
+    std::vector<double> vec;
+    tensor              quad;
+    bool                bReturn;
+    std::string         myref, mylot;
 
     bReturn = getPropRef(mpo, iQM, method, basis,
                          conf, type, value, &myerror, T,
-                         &myref, &mylot, vec, quad);
+                         &myref, &mylot, &vec, quad);
     if (nullptr != error)
     {
         *error = myerror;
@@ -1739,7 +1741,10 @@ ExperimentIterator MolProp::getCalcPropType(const std::string &method,
                         }
                     }
                     break;
-                default:
+                case MolPropObservable::COORDINATES:
+                    done = NAtom() > 0;
+                    break;
+                case MolPropObservable::CHARGE:
                     break;
             }
             if (done)
@@ -1750,26 +1755,6 @@ ExperimentIterator MolProp::getCalcPropType(const std::string &method,
                 }
                 break;
             }
-        }
-    }
-    return ci;
-}
-
-ExperimentIterator MolProp::getCalc(const std::string &method,
-                                    const std::string &basis,
-                                    std::string       *mylot)
-{
-    ExperimentIterator ci;
-    for (ci = exper_.begin(); (ci < exper_.end()); ++ci)
-    {
-        if ((method.size() == 0 || strcasecmp(method.c_str(), ci->getMethod().c_str()) == 0) &&
-            (basis.size() == 0  || strcasecmp(basis.c_str(), ci->getBasisset().c_str()) == 0))
-        {
-            if (nullptr != mylot)
-            {
-                mylot->assign(ci->getMethod() + "/" + ci->getBasisset());
-            }
-            break;
         }
     }
     return ci;

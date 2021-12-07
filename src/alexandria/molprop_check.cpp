@@ -72,7 +72,8 @@ static void dump_molecule(FILE              *fp,
                                       basis,
                                       nullptr,
                                       missingParameters::Error,
-                                      nullptr);
+                                      nullptr,
+                                      false);
     if (immStatus::OK != imm)
     {
         fprintf(fp, "Failed to generate topology for %s. Outcome: %s\n",
@@ -247,12 +248,12 @@ std::vector<alexandria::MolProp> mp;
                         ci.getDatafile().c_str(),
                         nC, nH);
             }
-            rvec   mu;
-            tensor Q;
-            double value, error, T = 0;
-            std::string type;
+            std::vector<double> mu;
+            tensor              Q;
+            double              value, error, T = 0;
+            std::string         type;
             if (ci.getVal(type, MolPropObservable::DIPOLE, &value, &error,
-                          &T, mu, Q))
+                          &T, &mu, Q))
             {
                 name_mu nmu = { ci.getDatafile(), { mu[XX], mu[YY], mu[ZZ] } };
                 mus.push_back(nmu);
