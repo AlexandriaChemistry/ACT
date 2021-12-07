@@ -74,9 +74,6 @@ public:
     //! \return whether or not we are in verbose mode
     bool verbose() { return configHandlerPtr()->verbose(); }
 
-    //! \brief This function will store the current state of the force field
-    void saveState();
-
     /*! \brief Add our command line parameters to the array.
      * This also calls the addOptions routine of the child class Bayes.
      * \param[inout] pargs The vector of parameters
@@ -107,12 +104,6 @@ public:
      * \param[in] bRandom Generate random initial values for parameters if true
      */
     void initOpt(bool bRandom);
-
-    /*! \brief
-     * Copy the optimization parameters to the poldata structure
-     * \param[in] changed List over the parameters that have changed.
-     */
-    virtual void toPoldata(const std::vector<bool> &changed);
 
     //! \brief Fill the devComputers vector according to the needs of the user
     void fillDevComputers();

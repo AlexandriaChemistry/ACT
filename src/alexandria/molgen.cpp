@@ -118,21 +118,6 @@ MolGen::~MolGen()
     }
 }
 
-FittingTarget *MolGen::target(iMolSelect ims, eRMS rms)
-{
-    auto itarget = targets_.find(ims);
-    if (itarget == targets_.end())
-    {
-        return nullptr;
-    }
-    auto ift = itarget->second.find(rms);
-    if (ift == itarget->second.end())
-    {
-        return nullptr;
-    }
-    return &ift->second;
-}
-
 void MolGen::addOptions(std::vector<t_pargs> *pargs, eTune etune)
 {
     t_pargs pa_general[] =

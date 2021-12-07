@@ -12,7 +12,7 @@ class Individual
 
     // NOTHING! (for now...)
 
-}
+};
 
 
 } //namespace ga

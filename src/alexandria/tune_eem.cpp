@@ -137,11 +137,6 @@ void my_fclose(FILE *fp)
     }
 }
 
-void OptACM::saveState()
-{
-    writePoldata(outputFile_, poldata(), false);
-}
-
 void OptACM::add_pargs(std::vector<t_pargs> *pargs) {
     t_pargs pa[] =
             {

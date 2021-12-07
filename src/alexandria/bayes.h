@@ -146,9 +146,6 @@ class Bayes
          */
         void changeParam(size_t j, real rand);
 
-        //! \brief Return the number of parameters
-        size_t nParam() const { return param_.size(); }
-
         /*! \brief
          * Append parameter and set it to value. Add bounds
          * as specified.
@@ -183,27 +180,6 @@ class Bayes
         {
             // TODO: Make this random for real
             addParam(name, (lower+upper)*0.5, mut, lower, upper, ntrain, true);
-        }
-
-        /*! \brief
-         * Set parameter j to a new value
-         * \param[j]   Index
-         * \param[val] The new value
-         */
-        void setParam(size_t j, real val)
-        {
-            GMX_RELEASE_ASSERT(j < param_.size(), "Parameter out of range");
-            param_[j] = val;
-        }
-
-        /*! \brief
-         * Set all parameters to the array passed
-         */
-        void setParam(parm_t param)
-        {
-            GMX_RELEASE_ASSERT(param.size() == param_.size() || param_.empty(),
-                               "Incorrect size of input parameters");
-            param_ = param;
         }
         
         /*! \brief
@@ -419,12 +395,6 @@ class Bayes
         void SensitivityAnalysis(FILE *fplog, iMolSelect ims);
 
         /*! \brief
-         * Copy the optimization parameters to the poldata structure
-         * \param[in] changed List over the parameters that have changed.
-         */
-        virtual void toPoldata(const std::vector<bool> &changed) = 0;
-
-        /*! \brief
          * Compute the chi2 from the target function
          * \param[in] verbose Whether or not to print stuff
          * \param[in] calcDev How to compute the deviation for all compounds
@@ -450,10 +420,6 @@ class Bayes
          */
         void printMonteCarloStatistics(FILE *fp);
 
-        /*! \brief Save the current state
-        * Must be overridden by child class.
-        */
-        virtual void saveState() = 0;
 };
 
 }
