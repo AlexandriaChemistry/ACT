@@ -34,11 +34,11 @@ double BoundsDevComputer::l2_regularizer(      double          x,
 }
 
 
-void BoundsDevComputer::calcDeviation(      MyMol                             *mymol,
-                                            std::map<eRMS, FittingTarget>     *targets,
+void BoundsDevComputer::calcDeviation(gmx_unused MyMol                             *mymol,
+                                      gmx_unused std::map<eRMS, FittingTarget>     *targets,
                                             Poldata                           *poldata,
                                       const std::vector<double>               &param,
-                                            t_commrec                         *commrec)
+                                      gmx_unused      t_commrec                         *commrec)
 {
     double bound = 0;
     size_t n     = 0;
@@ -76,8 +76,8 @@ void BoundsDevComputer::calcDeviation(      MyMol                             *m
 void ChargeCM5DevComputer::calcDeviation(      MyMol                             *mymol,
                                                std::map<eRMS, FittingTarget>     *targets,
                                                Poldata                           *poldata,
-                                         const std::vector<double>               &param,
-                                               t_commrec                         *commrec)
+                                         gmx_unused const std::vector<double>               &param,
+                                         gmx_unused      t_commrec                         *commrec)
 {
 
     double qtot = 0;
@@ -169,8 +169,8 @@ void ChargeCM5DevComputer::calcDeviation(      MyMol                            
 void EspDevComputer::calcDeviation(      MyMol                             *mymol,
                                          std::map<eRMS, FittingTarget>     *targets,
                                          Poldata                           *poldata,
-                                   const std::vector<double>               &param,
-                                         t_commrec                         *commrec)
+                                   gmx_unused const std::vector<double>               &param,
+                                         gmx_unused t_commrec                         *commrec)
 {
 
     real rrms     = 0;
@@ -212,8 +212,8 @@ void EspDevComputer::calcDeviation(      MyMol                             *mymo
 
 void PolarDevComputer::calcDeviation(      MyMol                             *mymol,
                                            std::map<eRMS, FittingTarget>     *targets,
-                                           Poldata                           *poldata,
-                                     const std::vector<double>               &param,
+                                           gmx_unused Poldata                           *poldata,
+                                     gmx_unused const std::vector<double>               &param,
                                            t_commrec                         *commrec)
 {
     double diff2 = 0;
@@ -244,9 +244,9 @@ void PolarDevComputer::calcDeviation(      MyMol                             *my
 
 void QuadDevComputer::calcDeviation(      MyMol                             *mymol,
                                           std::map<eRMS, FittingTarget>     *targets,
-                                          Poldata                           *poldata,
-                                    const std::vector<double>               &param,
-                                          t_commrec                         *commrec)
+                                          gmx_unused Poldata                           *poldata,
+                                    gmx_unused const std::vector<double>               &param,
+                                    gmx_unused     t_commrec                         *commrec)
 {
     QtypeProps *qelec = mymol->qTypeProps(qType::Elec);
     QtypeProps *qcalc = mymol->qTypeProps(qType::Calc);
@@ -274,9 +274,9 @@ void QuadDevComputer::calcDeviation(      MyMol                             *mym
 
 void MuDevComputer::calcDeviation(      MyMol                             *mymol,
                                         std::map<eRMS, FittingTarget>     *targets,
-                                        Poldata                           *poldata,
-                                  const std::vector<double>               &param,
-                                        t_commrec                         *commrec)
+                                        gmx_unused Poldata                           *poldata,
+                                  gmx_unused const std::vector<double>               &param,
+                                        gmx_unused t_commrec                         *commrec)
 {
     QtypeProps *qelec = mymol->qTypeProps(qType::Elec);
     QtypeProps *qcalc = mymol->qTypeProps(qType::Calc);
@@ -296,6 +296,24 @@ void MuDevComputer::calcDeviation(      MyMol                             *mymol
 
 /* * * * * * * * * * * * * * * * * * * * * *
 * END: MuDevComputer                       *
+* * * * * * * * * * * * * * * * * * * * * */
+
+/* * * * * * * * * * * * * * * * * * * * * *
+* BEGIN: EnergyDevComputer                 *
+* * * * * * * * * * * * * * * * * * * * * */
+
+void EnergyDevComputer::calcDeviation(      MyMol                             *mymol,
+                                            std::map<eRMS, FittingTarget>     *targets,
+                                            gmx_unused Poldata                           *poldata,
+                                      const gmx_unused std::vector<double>               &param,
+                                            gmx_unused t_commrec                         *commrec)
+{
+    real delta = gmx::square(mymol->potentialEnergy() - mymol->Emol_);
+    (*targets).find(eRMS::EPOT)->second.increase(1, delta);
+}
+
+/* * * * * * * * * * * * * * * * * * * * * *
+* END: EnergyDevComputer                       *
 * * * * * * * * * * * * * * * * * * * * * */
 
 

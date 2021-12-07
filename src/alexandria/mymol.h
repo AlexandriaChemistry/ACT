@@ -346,6 +346,12 @@ namespace alexandria
          */
         const gmx::HostVector<gmx::RVec> &x() const { return state_->x; }
 
+        //! \return the potential energy of this molecule
+        real potentialEnergy() const;
+
+        //! \return a GROMACS style array with energy terms
+        const real *energyTerms() const;
+        
         /*! \brief
          * \return mdatoms structure
          */
