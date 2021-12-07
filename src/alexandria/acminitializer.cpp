@@ -15,8 +15,8 @@ namespace alexandria
 void ACMInitializer::initialize(ga::Individual **individual)
 {
     nCreated_++;
-    (*individual) = new ACMIndividual(nCreated_, sii_, outputFile_);
-    ACMIndividual *tmpInd = static_cast<ACMIndividual*>(*individual);
+    ACMIndividual *tmpInd = new ACMIndividual(nCreated_, sii_, outputFile_);
+    (*individual) = tmpInd;
     Poldata* pd = sii_->poldata();
     for(auto &optIndex : sii_->optIndex())
     {

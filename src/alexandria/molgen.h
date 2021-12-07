@@ -94,7 +94,15 @@ public:
      * \param[in] ims The data set used
      */
     FittingTarget(eRMS e, iMolSelect ims) : erms_(e), ims_(ims) {};
+
+    /*! \brief Copy constructor
+     * \param[in] ft    the reference fitting target
+     */
+    FittingTarget(const FittingTarget &ft) : erms_(ft.erms()), ims_(ft.ims()) {}
   
+    //! \return the eRMS component covered by this FittingTarget
+    eRMS erms() const { return erms_; }
+
     /*! \brief Set the weight factor
      * \param[in] w The new weighting factor
      */
