@@ -93,8 +93,6 @@ class BayesConfigHandler : public ConfigHandler
 private:
     //! Maximum number of iterations
     int                      maxiter_       = 100;
-    //! Output environment structure
-    const gmx_output_env_t  *oenv_          = nullptr;
     //! Random number seed
     real                     seed_           = -1;
     //! Relative step when optimizing
@@ -105,8 +103,6 @@ private:
     bool                     tempWeight_     = false;
     //! Use annealing in the optimization. Value < 1 means annealing will happen
     real                     anneal_         = 1;
-    //! Flag determining whether to be verbose printing TODO: This has to be made a global flag!
-    bool                     verbose_        = false;
 
 public:
     /*!

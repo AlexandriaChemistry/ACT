@@ -34,7 +34,7 @@ private:
     //! Class-index for each parameter
     std::vector<std::string> paramClassIndex_;
     //! Base name for parameter convergence files
-    std::string xgvconv_;
+    std::string xvgconv_;
     //! Base name for Chi2 convergence file
     std::string xvgepot_;
     //! Base name for Force field output file
@@ -55,11 +55,34 @@ public:
     //! \brief Get a constant \p paramClass_ reference
     const std::vector<std::string> &paramClass() const { return paramClass_; }
 
+    /*! \brief
+     * Returns the current vector of lower bounds
+     * @return the current vector of lower bounds
+     */
+    const std::vector<double> &lowerBound() const { return lowerBound_; }
+
+    /*! \brief
+     * Returns the current vector of upper bounds
+     * @return the current vector of upper bounds
+     */
+    const std::vector<double> &upperBound() const { return upperBound_; }
+
+    /*! \brief
+     * Returns the number of training points per parameter
+     */
+    const std::vector<int> &nTrain() const { return ntrain_; }
+
+    //! \brief Get a constant \p mutability_ reference
+    const std::vector<Mutability> &mutability() const { return mutability_; }
+
     //! \brief Return xvg file for convergence information
     const std::string &xvgConv() const { return xvgconv_; }
 
     //! \brief Return xvg file for epot information
     const std::string &xvgEpot() const { return xvgepot_; }
+
+    //! \brief Get a constant \p outputFile_ reference
+    const std::string &outputFile() const { return outputFile_; }
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * END: Getters and setters stuff           *

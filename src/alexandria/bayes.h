@@ -133,9 +133,6 @@ class Bayes
         std::vector<Mutability> mutability_;
         param_name_t            paramNames_;
 
-        //! Optimization options manager
-        BayesConfigHandler      bch_;
-
     public:
 
         Bayes() {}
@@ -145,70 +142,6 @@ class Bayes
          * obtained from a uniform distribution.
          */
         void changeParam(size_t j, real rand);
-
-        /*! \brief
-         * Append parameter and set it to value. Add bounds
-         * as specified.
-         * \param[in] name    String describing the parameter
-         * \param[in] val     The value
-         * \param[in] mut     Mutability
-         * \param[in] lower   The new lower bound value
-         * \param[in] upper   The new lower bound value
-         * \param[in] ntrain  Number of copies in the training set
-         * \param[in] bRandom Generate random initial value for parameters if true.
-         */
-        void addParam(const std::string &name,
-                      real               val,
-                      Mutability         mut,
-                      real               lower,
-                      real               upper,
-                      int                ntrain,
-                      bool               bRandom);
-        
-        /*! \brief
-         * Append random parameter within the bounds specified.
-         * \param[in] name  String describing the parameter
-         * \param[in] mut   Mutability
-         * \param[in] lower The new lower bound value
-         * \param[in] upper The new lower bound value
-         * \param[in] ntrain  Number of copies in the training set
-         */
-        void addRandomParam(const std::string &name,
-                            Mutability         mut,
-                            real               lower,
-                            real               upper,
-                            int                ntrain)
-        {
-            // TODO: Make this random for real
-            addParam(name, (lower+upper)*0.5, mut, lower, upper, ntrain, true);
-        }
-
-        /*! \brief
-         * Returns the current vector of lower bounds
-         * @return the current vector of lower bounds
-         */
-        const parm_t &getLowerBound() const { return lowerBound_; }
-
-        /*! \brief
-         * Returns the current vector of upper bounds
-         * @return the current vector of upper bounds
-         */
-        const parm_t &getUpperBound() const { return upperBound_; }
-
-        /*! \brief
-         * Returns the number of training points per parameter
-         */
-        const std::vector<int> &getNtrain() const { return ntrain_; }
-
-        /*! \brief
-         * Return the vector of parameter names.
-         */
-        const param_name_t &getParamNames() const { return paramNames_; };
-
-        /*! \brief
-         * Return a pointer to the Bayes config handler
-         */
-        BayesConfigHandler *configHandlerPtr() {return &bch_;}
 
         /*! \brief
          * Run the Markov chain Monte carlo (MCMC) simulation
@@ -327,17 +260,6 @@ class Bayes
          * \param[in] ims   Data set to perform sensitivity analysis on
          */
         void SensitivityAnalysis(FILE *fplog, iMolSelect ims);
-
-        /*! \brief
-         * Compute the chi2 from the target function
-         * \param[in] verbose Whether or not to print stuff
-         * \param[in] calcDev How to compute the deviation for all compounds
-         * \param[in] ims     The data set to evaluate the energy upon.
-         * \return the square deviation or -1 when done.
-         */
-        virtual double calcDeviation(bool       verbose,
-                                     CalcDev    calcDev,
-                                     iMolSelect ims) = 0;
 
         /*! Return number of planned function calls
          * Return the number of calls to the objective function

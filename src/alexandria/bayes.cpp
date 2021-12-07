@@ -105,32 +105,6 @@ void Sensitivity::print(FILE *fp, const std::string &label)
     }
 }
 
-void Bayes::addParam(const std::string &name,
-                     real               val,
-                     Mutability         mut,
-                     real               lower,
-                     real               upper,
-                     int                ntrain,
-                     bool               bRandom)
-{
-    if (bRandom)
-    {
-        std::random_device               rd;
-        std::mt19937                     gen(rd());
-        std::uniform_real_distribution<> uniform(lower, upper);
-        val                              = uniform(gen);
-    }
-
-    initial_param_.push_back(val);
-    param_.push_back(val);
-    mutability_.push_back(mut);
-    ntrain_.push_back(ntrain);
-    //    prevParam_.push_back(val);
-    lowerBound_.push_back(lower);
-    upperBound_.push_back(upper);
-    paramNames_.push_back(name);
-}
-
 void Bayes::changeParam(size_t j, real rand)
 {
     GMX_RELEASE_ASSERT(j < param_.size(), "Parameter out of range");
