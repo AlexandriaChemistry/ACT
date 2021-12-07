@@ -30,7 +30,7 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "optparam.h"
+#include "bayes.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -56,69 +56,6 @@
 
 namespace alexandria
 {
-
-void OptParam::add_pargs(std::vector<t_pargs> *pargs)
-{
-    t_pargs pa[] = {
-        { "-maxiter", FALSE, etINT, {&maxiter_},
-          "Max number of iterations for optimization" },
-        { "-temp",    FALSE, etREAL, {&temperature_},
-          "'Temperature' for the Monte Carlo simulation" },
-        { "-tweight", FALSE, etBOOL, {&tempWeight_},
-          "Weight the temperature in the MC/MC algorithm according to the square root of the number of data points. This is in order to get a lower probability ofaccepting a step in the wrong direction for parameters of which there are few copies." },
-        { "-anneal", FALSE, etREAL, {&anneal_},
-          "Use annealing in Monte Carlo simulation, starting from this fraction of the simulation. Value should be between 0 and 1." },
-        { "-seed",   FALSE, etINT,  {&seed_},
-          "Random number seed. If zero, a seed will be generated." },
-        { "-step",  FALSE, etREAL, {&step_},
-          "Step size for the parameter optimization. Is used as fraction of the available range per parameter which depends on the parameter type." },
-        { "-v",     FALSE, etBOOL, {&verbose_},
-          "Flush output immediately rather than letting the OS buffer it. Don't use for production simulations." }
-    };
-    for (int i = 0; i < asize(pa); i++)
-    {
-        pargs->push_back(pa[i]);
-    }
-}
-
-void OptParam::setOutputFiles(const char                     *xvgconv,
-                              const std::vector<std::string> &paramClass,
-                              const char                     *xvgepot,
-                              const gmx_output_env_t         *oenv)
-{
-    xvgconv_.assign(xvgconv);
-    paramClass_ = paramClass;
-    xvgepot_.assign(xvgepot);
-    oenv_       = oenv;
-}
-
-double OptParam::computeBeta(int iter)
-{
-    double temp = temperature_;
-    if (iter >= maxiter_)
-    {
-        temp = 1e-6;
-    }
-    else
-    {
-        temp = temperature_*(1.0 - iter/(maxiter_ + 1.0));
-    }
-    return 1/(BOLTZ*temp);
-}
-
-double OptParam::computeBeta(int maxiter, int iter, int ncycle)
-{
-    double temp = temperature_;
-    if (iter >= maxiter_)
-    {
-        temp = 1e-6;
-    }
-    else
-    {
-        temp = (0.5*temperature_)*((exp(-iter/(0.2*(maxiter+1)))) * (1.1 + cos((ncycle*M_PI*iter)/(maxiter+1))));
-    }
-    return 1/(BOLTZ*temp);
-}
 
 void Sensitivity::computeForceConstants(FILE *fp)
 {
@@ -162,7 +99,7 @@ void Sensitivity::print(FILE *fp, const std::string &label)
         {
             double p_min = -b_/(2.0*a_);
             double chi2_min = a_*p_min*p_min + b_*p_min + c_;
-            fprintf(fp, "    pmin %g chi2min %g (estimate based on parabola)\n", 
+            fprintf(fp, "    pmin %g chi2min %g (estimate based on parabola)\n",
                     p_min, chi2_min);
         }
     }
@@ -192,11 +129,11 @@ void Bayes::addParam(const std::string &name,
     if (bRandom)
     {
         std::random_device               rd;
-        std::mt19937                     gen(rd());  
+        std::mt19937                     gen(rd());
         std::uniform_real_distribution<> uniform(lower, upper);
-        val                              = uniform(gen);        
+        val                              = uniform(gen);
     }
-    
+
     initial_param_.push_back(val);
     param_.push_back(val);
     mutability_.push_back(mut);
@@ -210,7 +147,7 @@ void Bayes::addParam(const std::string &name,
 void Bayes::changeParam(size_t j, real rand)
 {
     GMX_RELEASE_ASSERT(j < param_.size(), "Parameter out of range");
-    real delta = (2*rand-1)*step()*(upperBound_[j]-lowerBound_[j]);
+    real delta = (2*rand-1)*bch_.step()*(upperBound_[j]-lowerBound_[j]);
     param_[j] += delta;
     if (mutability_[j] == Mutability::Bounded)
     {
@@ -223,22 +160,6 @@ void Bayes::changeParam(size_t j, real rand)
             param_[j] = upperBound_[j];
         }
     }
-}
-
-bool OptParam::anneal(int iter) const
-{
-    if (anneal_ >= 1)
-    {
-        return false;
-    }
-    else if (anneal_ <= 0)
-    {
-        return true;
-    }
-    else
-    {
-        return iter >= anneal_ * maxiter_;
-    }   
 }
 
 void Bayes::SensitivityAnalysis(FILE *fplog, iMolSelect ims)
@@ -301,8 +222,8 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
     std::vector<int>                 paramClassIndex;
     //! Pointer to chi2 surveillance file
     FILE                            *fpe             = nullptr;
-    
-    if (xvgConv().empty() || xvgEpot().empty())
+
+    if (bch_.xvgConv().empty() || bch_.xvgEpot().empty())
     {
         gmx_fatal(FARGS, "You forgot to call setOutputFiles. Back to the drawing board.");
     }
@@ -316,15 +237,15 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
     // Set to -1 to indicate not set, and to crash the program
     // in case of bugs.
     paramClassIndex.resize(paramNames_.size(), -1);
-    std::vector<std::string> pClass = paramClass();
+    std::vector<std::string> pClass = bch_.paramClass();
     assignParamClasses(&paramClassIndex, &pClass);
 
     openParamSurveillanceFiles(pClass, &fpc, paramClassIndex);
 
     // Compute temperature weights if relevant, otherwise the numbers are all 1.0
     weightedTemperature_.resize(paramNames_.size(), 1.0);
-    if (temperatureWeighting()) computeWeightedTemperature();
-    
+    if (bch_.temperatureWeighting()) computeWeightedTemperature();
+
     fpe = openChi2SurveillanceFile(bEvaluate_testset);
 
     // Initialize data structures
@@ -355,21 +276,21 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
         prevEval_testset = calcDeviation(true, CalcDev::Parallel, iMolSelect::Test);
     }
 
-    // Random number 
+    // Random number
     std::random_device               rd;
     std::mt19937                     gen(rd());
     std::uniform_int_distribution<>  int_uniform(0, nParam-1);
     std::uniform_real_distribution<> real_uniform(0, 1);
-    
+
     print_memory_usage(debug);
 
-    double beta0 = 1/(BOLTZ*temperature());
+    double beta0 = 1/(BOLTZ*bch_.temperature());
 
     // Optimization loop
-    for (int iter = 0; iter < maxIter(); iter++)
-    { 
+    for (int iter = 0; iter < bch_.maxIter(); iter++)
+    {
         for (int pp = 0; pp < nParam; pp++)
-        {      
+        {
             // Pick a random parameter to change
             const int paramIndex = int_uniform(gen);
 
@@ -380,7 +301,7 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
 
             // For the second half of the optimization, collect data to find the mean and standard deviation of each
             // parameter
-            if (iter >= maxIter()/2)
+            if (iter >= bch_.maxIter()/2)
             {
                 for (auto k = 0; k < nParam; k++)
                 {
@@ -469,7 +390,7 @@ void Bayes::stepMCMC(const int                                  paramIndex,
     if (!accept)
     {
         // Only anneal if the simulation reached a certain number of steps
-        if (anneal(iter)) (*beta0) = computeBeta(iter);
+        if (bch_.anneal(iter)) (*beta0) = bch_.computeBeta(iter);
         const double randProbability = real_uniform(gen);
         const double mcProbability   = exp(-((*beta0)/weightedTemperature_[paramIndex])*deltaEval);
         accept = (mcProbability > randProbability);
@@ -545,12 +466,12 @@ void Bayes::openParamSurveillanceFiles(const std::vector<std::string>  &pClass,
 {
     for(size_t i = 0; i < pClass.size(); i++)
     {
-        std::string fileName = pClass[i] + "-" + xvgConv();
+        std::string fileName = pClass[i] + "-" + bch_.xvgConv();
         fpc->push_back(xvgropen(fileName.c_str(),
                                 "Parameter convergence",
                                 "iteration",
                                 "",
-                                oenv()));
+                                bch_.oenv()));
         std::vector<const char*> paramNames;
         for (size_t j = 0; j < paramNames_.size(); j++)
         {
@@ -559,23 +480,23 @@ void Bayes::openParamSurveillanceFiles(const std::vector<std::string>  &pClass,
                 paramNames.push_back(paramNames_[j].c_str());
             }
         }
-        xvgr_legend((*fpc)[i], paramNames.size(), paramNames.data(), oenv());
+        xvgr_legend((*fpc)[i], paramNames.size(), paramNames.data(), bch_.oenv());
     }
 }
 
 FILE* Bayes::openChi2SurveillanceFile(const bool bEvaluate_testset)
 {
-    FILE* fpe = xvgropen(xvgEpot().c_str(),
+    FILE* fpe = xvgropen(bch_.xvgEpot().c_str(),
                          "Chi squared",
                          "Iteration",
                          "Unknown units",
-                         oenv());
+                         bch_.oenv());
     if (bEvaluate_testset)
     {
         std::vector<std::string> legend;
         legend.push_back(iMolSelectName(iMolSelect::Train));
         legend.push_back(iMolSelectName(iMolSelect::Test));
-        xvgrLegend(fpe, legend, oenv());
+        xvgrLegend(fpe, legend, bch_.oenv());
     }
     return fpe;
 }
@@ -603,7 +524,7 @@ void Bayes::computeMeanSigma(const int     nParam,
 void Bayes::closeConvergenceFiles(const std::vector<FILE*> &fpc,
                                         FILE               *fpe)
 {
-    for(auto fp: fpc)  // Close all parameter convergence surveillance files
+    for(FILE *fp: fpc)  // Close all parameter convergence surveillance files
     {
         xvgrclose(fp);
     }
@@ -642,7 +563,7 @@ void Bayes::fprintParameterStep(const std::vector<FILE*>   &fpc,
                                 const double                xiter)
 {
 
-    for(auto fp: fpc)  // Write iteration number to each parameter convergence surveillance file
+    for(FILE *fp: fpc)  // Write iteration number to each parameter convergence surveillance file
     {
         fprintf(fp, "%8f", xiter);
     }
@@ -650,10 +571,10 @@ void Bayes::fprintParameterStep(const std::vector<FILE*>   &fpc,
     {
         fprintf(fpc[paramClassIndex[k]], "  %10g", param_[k]);
     }
-    for(auto fp: fpc)  // If verbose = True, flush the file to be able to add new data to surveillance plots
+    for(FILE *fp: fpc)  // If verbose = True, flush the file to be able to add new data to surveillance plots
     {
         fprintf(fp, "\n");
-        if (verbose())
+        if (bch_.verbose())
         {
             fflush(fp);
         }
@@ -676,7 +597,7 @@ void Bayes::fprintChi2Step(const bool   bEvaluate_testset,
     {
         fprintf(fpe, "%8f  %10g\n", xiter, prevEval);
     }
-    if (verbose())
+    if (bch_.verbose())
     {
         fflush(fpe);
     }

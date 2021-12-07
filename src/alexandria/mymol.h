@@ -79,7 +79,7 @@ namespace alexandria
     enum class eSupport {
         //! Not supported at all
         No,
-        //! SUpported on this core
+        //! Supported on this core
         Local,
         //! Supported on another core
         Remote

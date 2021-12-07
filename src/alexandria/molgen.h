@@ -291,7 +291,9 @@ class OptimizationIndex
  */
 class MolGen
 {
+
 private:
+
     //! Minimum number of data points to consider a parameter
     int                             mindata_    = 1;
     //! Percentage of ESP points to use
@@ -302,16 +304,18 @@ private:
     real                            qtol_       = 1e-6;
     //! Max number of iterations for determining charges
     int                             qcycle_     = 500;
-    //! Map with the fitting targets for each data set
-    std::map<iMolSelect, RmsFittingTarget> targets_;
+    //! Map with the fitting targets for each data set. RmsFittingTarget is itself a map from eRMS to FittingTarget.
+    std::map<iMolSelect, RmsFittingTarget> targets_;  // TODO: this should go into the ACMIndividual class?
     //! Map that holds the number of compounds in each data set
     std::map<iMolSelect, size_t>    targetSize_;
+    //! Tell us whether this interaction type needs optimizing
+    std::map<InteractionType, bool> iOpt_;
     //! Whether or not to fit to QM data only (ignoring experimental data)
     gmx_bool                        bQM_        = false;
     //! Whether or not to use charge symmetry
     gmx_bool                        qsymm_      = false;
     //! Force field data structure
-    Poldata                         pd_;
+    Poldata                         pd_;  // TODO: this should go into the ACMIndividual class?
     //! GROMACS communication data structure
     t_commrec                      *cr_         = nullptr;
     //! GROMACS logger structure
@@ -322,7 +326,7 @@ private:
     gmx_hw_info_t                  *hwinfo_     = nullptr;
     //! String for command line to harvest the options to fit
     char                            *fitString_ = nullptr;
-    //! Map to determine whether or not to  fit a parameter type
+    //! Map to determine whether or not to fit a parameter type
     std::map<std::string, bool>     fit_;
     //! GROMACS structure containing optional MD modules, used for electric fields
     gmx::MDModules                  mdModules_;
@@ -330,12 +334,14 @@ private:
     std::vector<alexandria::MyMol>  mymol_;
     //! Level of theory used from QM
     const char                     *lot_        = nullptr;
+    
     /*! \brief Check that we have enough data 
      * Check that we have enough data for all parameters to optimize
      * in this molecule.
      * \param[in] fp File to print logging information to. May be nullptr.
      */
     void checkDataSufficiency(FILE *fp);
+    
     /*! \brief Generate optIndex
      * \param[in] fp File to print logging information to. May be nullptr.
      */
@@ -356,11 +362,12 @@ private:
     
     //! \brief Fill the  iOpt_ map
     void fillIopt();
-    //! Tell us whether this interaction type needs optimizing
-    std::map<InteractionType, bool> iOpt_;
     
 public:
+
+    //! Information for each parameter
     std::vector<OptimizationIndex>  optIndex_;
+    
     /*! \brief 
      * Constructor of MolGen class.
      */ 
@@ -409,6 +416,7 @@ public:
             return ts->second; 
         }
     }
+    
     //! Return the mdlogger structure
     const gmx::MDLogger &mdlog()  const {return mdlog_; }
 
@@ -421,10 +429,10 @@ public:
         return fit_.find(type) != fit_.end(); 
     }
     
-    //! Return all the type to  fit
+    //! Return all the parameter types to fit
     std::map<std::string, bool> typesToFit() const { return fit_; }
         
-    //! Tell  the user whether this interaction type needs optimization
+    //! Tell the user whether this interaction type needs optimization
     bool optimize(InteractionType itype) const
     {
         return iOpt_.find(itype) !=  iOpt_.end(); 
@@ -550,6 +558,6 @@ public:
 
 };
 
-}
+} //namespace alexandria
 
-#endif
+#endif //MOLGEN_H

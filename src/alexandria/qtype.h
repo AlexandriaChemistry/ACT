@@ -46,7 +46,7 @@ namespace alexandria
  * and properties derived from the charges.
  */
 enum class qType { 
-    //! Alexandria Charge Model derived propert
+    //! Alexandria Charge Model derived property
     Calc,
     //! Electrostatic potential derived point charges
     ESP,
@@ -64,7 +64,7 @@ enum class qType {
  */
 const std::string &qTypeName(qType qt);
 
-/*! \brief Return a complete mape of qTypes and their names
+/*! \brief Return a complete map of qTypes and their names
  */
 const std::map<qType, std::string> &qTypes();
 
