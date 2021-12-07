@@ -65,7 +65,8 @@ class Poldata
          * Copy constructor
          * \param[in] pd    the reference Poldata object
          */
-        Poldata(const Poldata pd&);
+        Poldata(const Poldata pd&)
+        : {};  // TODO: do it!
 
         /*! \brief
          * Set the file name gentop.dat

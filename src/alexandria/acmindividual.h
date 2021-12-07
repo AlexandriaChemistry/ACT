@@ -76,19 +76,7 @@ public:
         acceptedMoves_.resize(nParams, 0);
         bestParam_.resize(nParams, 0.0);
 
-        // Deep-copy targets_ from sii_
-        // for (auto const& imsMapPair : sii_->targets())
-        // {
-        //     const iMolSelect ims = imsMapPair.first;
-        //     std::map<eRMS, FittingTarget> eRMSTargetMap;
-        //     for (auto const& eRMSTargetPair : imsMapPair.second)
-        //     {
-        //         const eRMS erms = eRMSTargetPair.first;
-        //         const FittingTarget tmpTarget = eRMSTargetPair.second;
-        //         eRMSTargetMap.insert(std::pair<eRMS, FittingTarget>(erms, tmpTarget));
-        //     }
-        //     targets_.insert(std::pair<eRMS, std::map<eRMS, FittingTarget>>(ims, eRMSTargetMap));
-        // }
+        // Copy targets_ from sii_
         targets_ = sii->targets();  // This should make a deep copy if the copy constructors are well made
 
         // TODO: copy poldata from sii_

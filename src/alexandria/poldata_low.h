@@ -86,6 +86,15 @@ class Vsite
 
         Vsite () {};
 
+        /*!
+         * Copy constructor
+         * \param[in] other     reference Vsite object
+         */
+        Vsite(const Vsite &other)
+        : atype_(other.atype()), type_(other.type()), number_(other.nvsite()),
+          distance_(other.distance()), angle_(other.angle()),
+          ncontrolatoms_(other.ncontrolatoms()) {}
+
         Vsite(const std::string &atype,
               const std::string &type,
               int                number,
@@ -256,6 +265,14 @@ class Symcharges
     public:
 
         Symcharges () {}
+
+        /*!
+         * Copy constructor
+         * \param[in] other reference Symcharges object
+         */
+        Symcharges(const Symcharges &other)
+        : central_(other.getCentral()), attached_(other.getAttached()),
+          numattach_(other.getNumattach()) {}
 
         Symcharges(const std::string &central,
                    const std::string &attached,

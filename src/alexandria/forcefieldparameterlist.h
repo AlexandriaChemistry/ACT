@@ -57,6 +57,16 @@ class ForceFieldParameterList
  public:
     //! Empty constructor for helper nodes
     ForceFieldParameterList() {};
+    
+    /*!
+     * Copy constructor
+     * \param[in] other     reference ForceFieldParameter object
+     */
+    ForceFieldParameterList(const ForceFieldParameterList &other)
+    : function_(other.function()), canSwap_(other.canSwap()), fType_(other.fType()),
+      options_(other.option()), parameters_(other.parametersConst()),
+      counter_(other.counter()) {}
+
     /*! \brief Constructor
      *
      * \param[in] function The function for which parameters are stored. This may be an empty variable.
@@ -218,6 +228,9 @@ class ForceFieldParameterList
      * \param[in] src Processor id to receive the data from
      */
     CommunicationStatus Receive(const t_commrec *cr, int src);
+
+    //! \return \p counter_ as a constant value
+    const size_t counter() const { return counter_ };
 
  private:
     //! The function type string

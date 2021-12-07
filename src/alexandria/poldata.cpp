@@ -50,11 +50,6 @@
 namespace alexandria
 {
 
-Poldata::Poldata(const Poldata &pd)
-{
-    // TODO: Everything!
-}
-
 void Poldata::setFilename(const std::string &fn2)
 {
     GMX_RELEASE_ASSERT((fn2.size() > 0),
