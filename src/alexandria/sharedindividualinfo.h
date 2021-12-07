@@ -56,8 +56,10 @@ public:
 
     /*!
      * Compute weighted temperature for each parameter
+     * If weighting is not required, it will just be a vector of 1s
+     * @param tempWeight    whether weighting is required
      */
-    void computeWeightedTemperature();
+    void computeWeightedTemperature(const bool tempWeight);
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * END: Weighted temperature stuff          *

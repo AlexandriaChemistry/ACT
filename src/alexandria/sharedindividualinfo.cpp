@@ -9,13 +9,20 @@ namespace alexandria
 * BEGIN: Weighted temperature stuff        *
 * * * * * * * * * * * * * * * * * * * * * */
 
-void SharedIndividualInfo::computeWeightedTemperature()
+void SharedIndividualInfo::computeWeightedTemperature(const bool tempWeight)
 {
-    for (size_t j = 0; j < paramNames_.size(); j++)
+    if (tempWeight)
     {
-        GMX_RELEASE_ASSERT(ntrain_[j] > 0, "ntrain should be > 0 for all parameters");
-        // TODO: Maybe a fast inverse square root here?
-        weightedTemperature_[j] = std::sqrt(1.0/ntrain_[j]);
+        for (size_t j = 0; j < paramNames_.size(); j++)
+        {
+            GMX_RELEASE_ASSERT(ntrain_[j] > 0, "ntrain should be > 0 for all parameters");
+            // TODO: Maybe a fast inverse square root here?
+            weightedTemperature_.push_back(std::sqrt(1.0/ntrain_[j]));
+        }
+    }
+    else
+    {  
+        weightedTemperature_.resize(paramNames_.size(), 1.0);
     }
 }
 
