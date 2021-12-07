@@ -286,7 +286,7 @@ private:
 
 public:
 
-    /*! \brief Create a new QuadDevComputer
+    /*! \brief Create a new MuComputer
      * @param logfile   pointer to log file
      * @param verbose   whether we are in verbose mode
      * @param bQM       are we using QM only?
@@ -297,6 +297,32 @@ public:
     : DevComputer(logfile, verbose)
     {
         bQM_ = bQM;
+    }
+
+    virtual void calcDeviation(      MyMol                             *mymol,
+                                     std::map<eRMS, FittingTarget>     *targets,
+                                     Poldata                           *poldata,
+                               const std::vector<double>               &param,
+                                     t_commrec                         *commrec);
+
+};
+
+/*!
+ * DevComputer the computes the deviation of the molecular energy -> eRMS::EPOT
+ */
+class EnergyDevComputer : public DevComputer
+{
+
+public:
+
+    /*! \brief Create a new EnergyDevComputer
+     * @param logfile   pointer to log file
+     * @param verbose   whether we are in verbose mode
+     */
+    EnergyDevComputer(      FILE *logfile,
+                      const bool  verbose)
+    : DevComputer(logfile, verbose)
+    {
     }
 
     virtual void calcDeviation(      MyMol                             *mymol,

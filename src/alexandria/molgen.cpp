@@ -143,6 +143,8 @@ void MolGen::addOptions(std::vector<t_pargs> *pargs, eTune etune)
           "Use this method and level of theory when selecting coordinates and charges. Multiple levels can be specified which will be used in the order given, e.g.  B3LYP/aug-cc-pVTZ:HF/6-311G**" },
         { "-fc_bound",    FALSE, etREAL, {target(iMolSelect::Train, eRMS::BOUNDS)->weightPtr()},
           "Force constant in the penalty function for going outside the borders given with the fitting options (see below)." },
+        { "-fc_epot",    FALSE, etREAL, {target(iMolSelect::Train, eRMS::EPOT)->weightPtr()},
+          "Force constant in the penalty function for the potential energy of the compound." },
         { "-qtol",   FALSE, etREAL, {&qtol_},
           "Tolerance for assigning charge generation algorithm." },
         { "-qcycle", FALSE, etINT, {&qcycle_},

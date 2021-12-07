@@ -236,6 +236,8 @@ void OptACM::fillDevComputers()
         devComputers_.push_back(new QuadDevComputer(lf, verb, bFullQuadrupole_));
     if (target(iMolSelect::Train, eRMS::MU)->weight() > 0)
         devComputers_.push_back(new MuDevComputer(lf, verb, bQM()));
+    if (target(iMolSelect::Train, eRMS::EPOT)->weight() > 0)
+        devComputers_.push_back(new EnergyDevComputer(lf, verb));
 
 }
 

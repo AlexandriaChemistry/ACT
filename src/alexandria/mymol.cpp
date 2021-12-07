@@ -1268,6 +1268,11 @@ immStatus MyMol::GenerateGromacs(const gmx::MDLogger       &mdlog,
     return immStatus::OK;
 }
 
+real MyMol::potentialEnergy() const 
+{
+    return enerd_->term[F_EPOT];
+}
+
 immStatus MyMol::computeForces(FILE *fplog, t_commrec *cr, double *rmsf)
 {
     auto mdatoms = MDatoms_->get()->mdatoms();
