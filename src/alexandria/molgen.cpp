@@ -218,50 +218,6 @@ void MolGen::optionsFinished()
     }
 }
 
-void MolGen::printChiSquared(FILE *fp, iMolSelect ims) const
-{
-    if (nullptr != fp && MASTER(commrec()))
-    {
-        fprintf(fp, "\nComponents of fitting function for %s set\n",
-                iMolSelectName(ims));
-        for (const auto &ft : fittingTargetsConst(ims))
-        {
-            ft.second.print(fp);
-        }
-        fflush(fp);
-    }
-}
-
-void MolGen::sumChiSquared(bool parallel, iMolSelect ims)
-{
-    // Now sum over processors
-    if (PAR(commrec()) && parallel)
-    {
-        auto target = targets_.find(ims);
-        for( auto &ft : target->second )
-        {
-            auto chi2 = ft.second.chiSquared();
-            gmx_sum(1, &chi2, commrec());
-            ft.second.setChiSquared(chi2);
-            auto ndp = ft.second.numberOfDatapoints();
-            gmx_sumi(1, &ndp, commrec());
-            ft.second.setNumberOfDatapoints(ndp);
-        }
-    }
-    auto etot = target(ims, eRMS::TOT);
-    GMX_RELEASE_ASSERT(etot != nullptr, "Cannot find etot");
-    etot->reset();
-    for (const auto &ft : fittingTargetsConst(ims) )
-    {
-        if (ft.first != eRMS::TOT)
-        { 
-            etot->increase(1.0, ft.second.chiSquaredWeighted());
-        }
-    }
-    // Weighting is already included.
-    etot->setNumberOfDatapoints(1);
-}
-
 void MolGen::fillIopt()
 {
     for(const auto &fit : fit_)

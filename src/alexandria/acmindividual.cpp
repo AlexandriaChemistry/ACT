@@ -2,9 +2,95 @@
 
 #include "poldata_xml.h"
 
+#include "gromacs/fileio/xvgr.h"
+
 
 namespace alexandria
 {
+
+/* * * * * * * * * * * * * * * * * * * * * *
+* BEGIN: File stuff                        *
+* * * * * * * * * * * * * * * * * * * * * */
+
+void ACMIndividual::openParamConvFiles()
+{
+    const std::vector<std::string> pClass = sii_->paramClass();
+    for (size_t i = 0; i < pClass.size(); i++)
+    {
+        std::string fileName = pClass[i] + "-" + bch_.xvgConv();
+        fpc->push_back(xvgropen(fileName.c_str(),
+                                "Parameter convergence",
+                                "iteration",
+                                "",
+                                bch_.oenv()));
+        // TODO: move commented lines below to SharedIndividualInfo
+        // std::vector<const char*> paramNames;
+        // for (size_t j = 0; j < paramNames_.size(); j++)
+        // {
+        //     if (paramClassIndex[j] == static_cast<int>(i))
+        //     {
+        //         paramNames.push_back(paramNames_[j].c_str());
+        //     }
+        // }
+        xvgr_legend(fpc_[i], paramNames.size(), sii_->paramNames().data(), bch_.oenv());
+    }
+}
+
+/* * * * * * * * * * * * * * * * * * * * * *
+* END: File stuff                          *
+* * * * * * * * * * * * * * * * * * * * * */
+
+/* * * * * * * * * * * * * * * * * * * * * *
+* BEGIN: Chi2 stuff                        *
+* * * * * * * * * * * * * * * * * * * * * */
+
+void ACMIndividual::sumChiSquared(t_commrec *cr, bool parallel, iMolSelect ims)
+{
+    // Now sum over processors
+    if (PAR(cr) && parallel)
+    {
+        auto target = targets_.find(ims);
+        for (auto &ft : target->second)
+        {
+            auto chi2 = ft.second.chiSquared();
+            gmx_sum(1, &chi2, cr);
+            ft.second.setChiSquared(chi2);
+            auto ndp = ft.second.numberOfDatapoints();
+            gmx_sumi(1, &ndp, cr);
+            ft.second.setNumberOfDatapoints(ndp);
+        }
+    }
+    auto etot = target(ims, eRMS::TOT);
+    GMX_RELEASE_ASSERT(etot != nullptr, "Cannot find etot");
+    etot->reset();
+    for (const auto &ft : fittingTargetsConst(ims))
+    {
+        if (ft.first != eRMS::TOT)
+        { 
+            etot->increase(1.0, ft.second.chiSquaredWeighted());
+        }
+    }
+    // Weighting is already included.
+    etot->setNumberOfDatapoints(1);
+}
+
+void ACMIndividual::printChiSquared(t_commrec *cr, FILE *fp, iMolSelect ims) const
+{
+    if (nullptr != fp && MASTER(cr))
+    {
+        fprintf(fp, "\nComponents of fitting function for %s set\n",
+                iMolSelectName(ims));
+        for (const auto &ft : fittingTargetsConst(ims))
+        {
+            ft.second.print(fp);
+        }
+        fflush(fp);
+    }
+}
+
+/* * * * * * * * * * * * * * * * * * * * * *
+* END: Chi2 stuff                          *
+* * * * * * * * * * * * * * * * * * * * * */
 
 /* * * * * * * * * * * * * * * * * * * * * *
 * BEGIN: Output stuff                      *
@@ -13,6 +99,19 @@ namespace alexandria
 void ACMIndividual::saveState()
 {
     writePoldata(outputFile_, pd_, false);
+}
+
+void ACMIndividual::printParameters(FILE *fp) const
+{
+    if (nullptr == fp)
+    {
+        return;
+    }
+    for(size_t i = 0; i < param_.size(); i++)
+    {
+        fprintf(fp, "  %s  %e,", sii_->paramNames()[i].c_str(), param_[i]);
+    }
+    fprintf(fp, "\n");
 }
 
 /* * * * * * * * * * * * * * * * * * * * * *

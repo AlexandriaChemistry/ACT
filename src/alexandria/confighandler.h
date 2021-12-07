@@ -103,18 +103,10 @@ private:
     real                     temperature_    = 5;
     //! Weight temperature after number of training points
     bool                     tempWeight_     = false;
-    //! Weighted temperatures
-    std::vector<double>      weightedTemperature_;
     //! Use annealing in the optimization. Value < 1 means annealing will happen
     real                     anneal_         = 1;
     //! Flag determining whether to be verbose printing TODO: This has to be made a global flag!
     bool                     verbose_        = false;
-    //! Base name for parameter convergence file names
-    std::string              xvgconv_;
-    //! File name for parameter energy (chi2)
-    std::string              xvgepot_;
-    //! Parameter classes for printing
-    std::vector<std::string> paramClass_;
 
 public:
     /*!
@@ -152,9 +144,6 @@ public:
     //! \brief Return Max # iterations
     int maxIter() const { return maxiter_; }
 
-    //! \brief Return verbosity
-    bool verbose() const { return verbose_; }
-
     //! \brief Return temperature
     real temperature() const { return temperature_; }
 
@@ -185,12 +174,6 @@ public:
     * \param iter The iteration number
     */
     bool anneal (int iter) const;
-
-    //! \brief Return xvg file for convergence information
-    const std::string &xvgConv() const { return xvgconv_; }
-
-    //! \brief Return xvg file for epot information
-    const std::string &xvgEpot() const { return xvgepot_; }
 
     //! \brief Return output environment
     const gmx_output_env_t *oenv() const { return oenv_; }

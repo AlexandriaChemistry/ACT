@@ -181,16 +181,6 @@ class Bayes
             // TODO: Make this random for real
             addParam(name, (lower+upper)*0.5, mut, lower, upper, ntrain, true);
         }
-        
-        /*! \brief
-         * Returns the current vector of parameters.
-         */
-        const parm_t &getInitialParam() const { return initial_param_; }
-
-        /*! \brief
-         * Returns the current vector of parameters.
-         */
-        const parm_t &getParam() const { return param_; }
 
         /*! \brief
          * Returns the current vector of lower bounds
@@ -210,40 +200,9 @@ class Bayes
         const std::vector<int> &getNtrain() const { return ntrain_; }
 
         /*! \brief
-         * Returns the vector of best found value for each parameter.
-         */
-        const parm_t &getBestParam() const { return bestParam_; }
-
-        /*! \brief
-         * Returns the vector of mean value calculated for each parameter.
-         */
-        const parm_t &getPmean() const { return pmean_; }
-
-        /*! \brief
-         * Returns the vector of standard deviation calculated for each parameter.
-         */
-        const parm_t &getPsigma() const { return psigma_; };
-
-        /*! \brief
          * Return the vector of parameter names.
          */
         const param_name_t &getParamNames() const { return paramNames_; };
-
-        /*! \brief
-         * Print the parameters to a file
-         * \param[in] fp File pointer to open file
-         */
-        void printParameters(FILE *fp) const;
-
-        /*! \brief
-         * Return the vector of number of attempted moves for each parameter
-         */
-        const mc_t &getAttemptedMoves() const {return attemptedMoves_;};
-
-        /*! \brief
-         * Return the vector of number of accepted moves for each parameter
-         */
-        const mc_t &getAcceptedMoves() const {return acceptedMoves_;};
 
         /*! \brief
          * Return a pointer to the Bayes config handler
@@ -309,16 +268,6 @@ class Bayes
          */
         void assignParamClasses(std::vector<int>           *paramClassIndex,
                                 std::vector<std::string>   *pClass);
-
-        /*!
-         * Open parameter convergence surveillance files
-         * @param pClass            different classes of parameters
-         * @param fpc               vector to append pointers to parameter convergence files
-         * @param paramClassIndex   for each parameter, to which class (by index) it belongs
-         */
-        void openParamSurveillanceFiles(const std::vector<std::string>  &pClass,
-                                              std::vector<FILE*>        *fpc,
-                                        const std::vector<int>          &paramClassIndex);
 
         /*!
          * Open a chi2 surveillance file

@@ -217,7 +217,7 @@ public:
 };
 
 //! Map from RMS type to FittingTarget structure
-using RmsFittingTarget       = typename std::map<eRMS, FittingTarget>;
+// using RmsFittingTarget       = typename std::map<eRMS, FittingTarget>;
 
 /*! \brief Convenience storage of parameters to optimize
  */
@@ -463,35 +463,6 @@ public:
 
     //! \brief Return level of theory
     const char *lot() const { return lot_; }
-	
-    /*! \brief Set the chiSquared to zero.
-     * \param[in] ims The selection to reset
-     */
-    void resetChiSquared(iMolSelect ims)
-    {
-        auto fts = fittingTargets(ims);
-        if (fts != nullptr)
-        {
-            for (auto &ft : *fts)
-            {
-                ft.second.reset();
-                }
-            }
-        }
-
-    /*! \brief 
-     * Sum over the energies of the cores if desired.
-     * Also multiplies the terms by the weighting factors.
-     * \param[in] parallel Whether or not to sum in parallel
-     * \param[in] ims      The selection to sum
-     */
-    void sumChiSquared(bool parallel, iMolSelect ims);
-    
-    /*! \brief Print the chiSquared components.
-     * \param[in] fp  File pointer to print to, may be nullptr
-     * \param[in] ims The selection to print
-     */  
-    void printChiSquared(FILE *fp, iMolSelect ims) const;
     
     /*! \brief Read the molecular property data file to generate molecules.
      * \param[in] fp      File pointer for printing information

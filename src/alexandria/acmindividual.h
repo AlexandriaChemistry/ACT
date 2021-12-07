@@ -18,7 +18,8 @@ namespace alexandria
 {
 
 
-class ACMIndividual : public ga::Individual
+class ACMIndividual
+// FIXME: : public ga::Individual
 {
 
 private:
@@ -26,7 +27,7 @@ private:
     //! ID of the individual
     int id_;
     //! Pointer to shared individual information
-    SharedIndividualInfo sii_;
+    SharedIndividualInfo *sii_;
     //! Fitness for training dataset
     double fitnessTrain_;
     //! Fitness for test set
@@ -59,11 +60,68 @@ private:
 public:
 
     /* * * * * * * * * * * * * * * * * * * * * *
+    * BEGIN: File stuff                        *
+    * * * * * * * * * * * * * * * * * * * * * */
+
+    /*!
+     * Open parameter convergence surveillance files
+     */
+    void openParamConvFiles();
+
+    /* * * * * * * * * * * * * * * * * * * * * *
+    * END: File stuff                          *
+    * * * * * * * * * * * * * * * * * * * * * */
+
+    /* * * * * * * * * * * * * * * * * * * * * *
+    * BEGIN: Chi2 stuff                        *
+    * * * * * * * * * * * * * * * * * * * * * */
+
+    /*! \brief Set the chiSquared to zero.
+     * \param[in] ims The selection to reset
+     */
+    void resetChiSquared(iMolSelect ims)
+    {
+        auto fts = fittingTargets(ims);
+        if (fts != nullptr)
+        {
+            for (auto &ft : *fts)
+            {
+                ft.second.reset();
+            }
+        }
+    }
+
+    /*! \brief 
+     * Sum over the energies of the cores if desired.
+     * Also multiplies the terms by the weighting factors.
+     * \param[in] cr        Pointer to communication record
+     * \param[in] parallel  Whether or not to sum in parallel
+     * \param[in] ims       The selection to sum
+     */
+    void sumChiSquared(t_commrec *cr, bool parallel, iMolSelect ims);
+
+    /*! \brief Print the chiSquared components.
+     * \param[in] fp  File pointer to print to, may be nullptr
+     * \param[in] ims The selection to print
+     */  
+    void printChiSquared(t_commrec *cr, FILE *fp, iMolSelect ims) const;
+
+    /* * * * * * * * * * * * * * * * * * * * * *
+    * END: Chi2 stuff                          *
+    * * * * * * * * * * * * * * * * * * * * * */
+
+    /* * * * * * * * * * * * * * * * * * * * * *
     * BEGIN: Output stuff                      *
     * * * * * * * * * * * * * * * * * * * * * */
 
     //! \brief Save the current state of the Force field
     void saveState();
+
+    /*! \brief
+     * Print the parameters to a file
+     * \param[in] fp File pointer to open file
+     */
+    void printParameters(FILE *fp) const;
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * END: Output stuff                        *
@@ -214,6 +272,41 @@ public:
                            "Incorrect size of input parameters");
         param_ = param;
     }
+
+    /*! \brief
+     * Returns the current vector of parameters.
+     */
+    const std::vector<double> &getInitialParam() const { return initial_param_; }
+
+    /*! \brief
+     * Returns the current vector of parameters.
+     */
+    const std::vector<double> &getParam() const { return param_; }
+
+    /*! \brief
+     * Returns the vector of best found value for each parameter.
+     */
+    const std::vector<double> &getBestParam() const { return bestParam_; }
+
+    /*! \brief
+     * Returns the vector of mean value calculated for each parameter.
+     */
+    const std::vector<double> &getPmean() const { return pmean_; }
+
+    /*! \brief
+     * Returns the vector of standard deviation calculated for each parameter.
+     */
+    const std::vector<double> &getPsigma() const { return psigma_; };
+
+    /*! \brief
+     * Return the vector of number of attempted moves for each parameter
+     */
+    const std::vector<int> &getAttemptedMoves() const {return attemptedMoves_;};
+
+    /*! \brief
+     * Return the vector of number of accepted moves for each parameter
+     */
+    const std::vector<int> &getAcceptedMoves() const {return acceptedMoves_;};
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * END: Getters and Setters                 *
