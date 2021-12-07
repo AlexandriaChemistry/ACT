@@ -1,6 +1,9 @@
 #ifndef ALEXANDRIA_ACMFITNESSCOMPUTER_H
 #define ALEXANDRIA_ACMFITNESSCOMPUTER_H
 
+
+#include <vector>
+
 #include "devcomputer.h"
 #include "aliases.h"
 
@@ -18,10 +21,10 @@ private:
     FILE *logfile_;
 
     //! \brief A pointer to the BoundsDevComputer.
-    BoundsDevsComputer *bdc_;
+    BoundsDevComputer *bdc_;
 
     //! \brief A vector of devComputers.
-    vector<DevComputer*> devComputers_;
+    std::vector<DevComputer*> devComputers_;
 
     /*! \brief Compute dipole and quadrupole moments (if needed), for a given molecule
      * @param targets   pointer to a map between the components of chi-squared and the fitting targets
@@ -51,7 +54,7 @@ public:
                          iMolSelect   ims);
 
     //! \brief Fill the devComputers vector according to the needs of the user
-    void fillDevComputers();
+    void fillDevComputers();  // TODO: maybe call this in the constructor?
 };
 
 
