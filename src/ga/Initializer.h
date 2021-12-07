@@ -22,42 +22,42 @@ class Initializer
 public:
 
     /*!
-        * Initialize an individual
-        * @param individual    pointer to the individual to initialize
-        */
-    virtual void initialize(Individual *individual) = 0;
+     * Initialize an individual
+     * @param individual    pointer to pointer to the individual to initialize
+     */
+    virtual void initialize(Individual **individual) = 0;
 };
 
 
 /*!
  * Toy initializer. Initializes values randomly in range [\p min, \p max]
  */
-class SimpleInitializer : public Initializer
-{
+// class SimpleInitializer : public Initializer
+// {
 
-private:
+// private:
 
-    std::random_device                      rd;
-    std::mt19937                            gen;
-    std::uniform_real_distribution<double>  dis;
+//     std::random_device                      rd;
+//     std::mt19937                            gen;
+//     std::uniform_real_distribution<double>  dis;
 
-public:
+// public:
 
-    /*!
-     * Create a new SimpleInitializer object
-     * @param min   minimum value to give to a gene
-     * @param max   maximum value to give to a gene
-     */
-    SimpleInitializer(const double min,
-                      const double max)
-    : gen(rd()), dis(std::uniform_real_distribution<>(min, max))
-    {
-        gen.seed(::time(NULL));
-    }
+//     /*!
+//      * Create a new SimpleInitializer object
+//      * @param min   minimum value to give to a gene
+//      * @param max   maximum value to give to a gene
+//      */
+//     SimpleInitializer(const double min,
+//                       const double max)
+//     : gen(rd()), dis(std::uniform_real_distribution<>(min, max))
+//     {
+//         gen.seed(::time(NULL));
+//     }
 
-    virtual void initialize(Individual  *individual);
+//     virtual void initialize(Individual  *individual);
 
-};
+// };
 
 
 } //namespace ga

@@ -58,6 +58,27 @@ private:
 
 public:
 
+    ACMIndividual(const int                     id,
+                        SharedIndividualInfo   *sii,
+                  const std::string            &outputFile)
+    : ga::Individual()
+    {
+        id_ = id;
+        sii_ = sii;
+        outputFile_ = "ind" + std::to_string(id_) + "-" + outputFile;
+
+        // Initialize vectors for statistics and bestParam_.
+        // initialParam_ and param_ will be initialized later
+        size_t nParams = sii_->paramNames().size();
+        pmean_.resize(nParams, 0.0);
+        psigma_.resize(nParams, 0.0);
+        attemptedMoves_.resize(nParams, 0);
+        acceptedMoves_.resize(nParams, 0);
+        bestParam_.resize(nParams, 0.0);
+
+        // TODO: copy targets and poldata from sii_
+    }
+
     /* * * * * * * * * * * * * * * * * * * * * *
     * BEGIN: Adding parameters                 *
     * * * * * * * * * * * * * * * * * * * * * */

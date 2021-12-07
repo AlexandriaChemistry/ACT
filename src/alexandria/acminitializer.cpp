@@ -1,8 +1,8 @@
 #include "acminitializer.h"
-#include "acmindividual.h"
-#include "tune_eem.h"
 
 #include "ga/Individual.h"
+#include "acmindividual.h"
+
 
 namespace alexandria
 {
@@ -12,10 +12,12 @@ namespace alexandria
 * BEGIN: ACMInitializer                *
 * * * * * * * * * * * * * * * * * * * */
 
-void ACMInitializer::initialize(ga::Individual *individual)
+void ACMInitializer::initialize(ga::Individual **individual)
 {
-    ACMIndividual *tmpInd = static_cast<ACMIndividual*>(individual);
-    Poldata* pd = tmpInd->poldata();
+    nCreated_++;
+    (*individual) = new ACMIndividual(nCreated_, sii_, outputFile_);
+    ACMIndividual *tmpInd = static_cast<ACMIndividual*>(*individual);
+    Poldata* pd = sii_->poldata();
     for(auto &optIndex : sii_->optIndex())
     {
         auto                iType = optIndex.iType();

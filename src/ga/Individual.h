@@ -1,4 +1,4 @@
-#ifdef GA_INDIVIDUAL_H
+#ifndef GA_INDIVIDUAL_H
 #define GA_INDIVIDUAL_H
 
 
@@ -10,7 +10,10 @@ namespace ga
 class Individual
 {
 
-    // NOTHING! (for now...)
+public:
+
+    //! Default constructor
+    Individual() {}
 
 };
 

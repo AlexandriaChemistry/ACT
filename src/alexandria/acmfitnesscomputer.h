@@ -46,7 +46,7 @@ public:
      * \param[in] ims     The data set to do computations on
      * \return the square deviation
      */
-    double calcDeviation(Individual   *individual,
+    double calcDeviation(Individual  *individual,
                          CalcDev      calcDev,
                          iMolSelect   ims);
 
