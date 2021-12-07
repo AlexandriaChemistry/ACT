@@ -45,46 +45,69 @@
 #include "mymol.h"
 #include "poldata.h"
 
+/*! \brief Utility function to merge command line arguments
+ * \param[inout] pargs The complete list of arguments
+ * \param[in]    npa   The nmber of new elements
+ * \param[in]    pa    The new elements
+ */
+void doAddOptions(std::vector<t_pargs> *pargs, size_t npa, t_pargs pa[]);
+
 namespace alexandria
 {
 
-void print_electric_props(FILE                           *fp,
-                          std::vector<alexandria::MyMol> *mymol,
-                          const Poldata                  *pd,
-                          const gmx::MDLogger            &fplog,
-                          const char                     *lot,
-                          const char                     *tabfn,
-                          int                             qcycle,
-                          real                            qtol,
-                          const char                     *qhisto,
-                          const char                     *dipcorr,
-                          const char                     *mucorr,
-                          const char                     *Qcorr,
-                          const char                     *espcorr,
-                          const char                     *alphacorr,
-                          const char                     *isopolCorr,
-                          const char                     *anisopolCorr,
-                          const char                     *qCorr,
-                          real                            esp_toler,
-                          real                            dip_toler,
-                          real                            quad_toler,
-                          real                            alpha_toler,
-                          real                            isopol_toler,
-                          const gmx_output_env_t         *oenv,
-                          bool                            bPolar,
-                          bool                            bfullTensor,
-                          t_commrec                      *cr,
-                          real                            efield,
-                          bool                            useOffset);
-
-/*! \brief Print header and command line arguments
- *
- * \param[in] fp    File pointer, if nullptr the function returns 
- *                  without doing anything
- * \param[in] pargs The command line arguments
- */
-void print_header(FILE                       *fp, 
-                  const std::vector<t_pargs> &pargs);
+    /*! \brief Class to managa output from force field tuning
+     */
+    class TuneForceFieldPrinter
+    {
+    private:
+        //! Tolerance (kJ/mol e) for marking ESP as an outlier in the log file
+        real esp_toler_           = 30;
+        //! Tolerance (Debye) for marking dipole as an outlier in the log file
+        real dip_toler_           = 0.5;
+        //! Tolerance (Buckingham) for marking quadrupole as an outlier in the log file
+        real quad_toler_          = 5;
+        //! Tolerance (A^3) for marking diagonal elements of the polarizability tensor as an outlier in the log file
+        real alpha_toler_         = 3;
+        //! Tolerance (A^3) for marking isotropic polarizability as an outlier in the log file
+        real isopol_toler_        = 2;
+        //! Fit regression analysis of results to y = ax+b instead of y = ax
+        bool useOffset_           = false;
+        
+    public:
+        TuneForceFieldPrinter() {}
+    
+        /*! \brief Add my options to the list of command line arguments
+         * \param[out] pargs The vector to add to
+         */
+        void addOptions(std::vector<t_pargs> *pargs);
+        
+        /*! \brief Add my files to the list of command line arguments
+         * \param[out] pargs The vector to add to
+         */
+        void addFileOptions(std::vector<t_filenm> *filenm);
+    
+        void print(FILE                           *fp,
+                   std::vector<alexandria::MyMol> *mymol,
+                   const Poldata                  *pd,
+                   const gmx::MDLogger            &fplog,
+                   const char                     *lot,
+                   int                             qcycle,
+                   real                            qtol,
+                   const gmx_output_env_t         *oenv,
+                   bool                            bfullTensor,
+                   t_commrec                      *cr,
+                   real                            efield,
+                   const std::vector<t_filenm>    &filenm);
+    };
+    
+    /*! \brief Print header and command line arguments
+     *
+     * \param[in] fp    File pointer, if nullptr the function returns 
+     *                  without doing anything
+     * \param[in] pargs The command line arguments
+     */
+    void print_header(FILE                       *fp, 
+                      const std::vector<t_pargs> &pargs);
 
 } // namespace alexandria
 
