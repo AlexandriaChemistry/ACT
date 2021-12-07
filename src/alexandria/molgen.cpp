@@ -788,8 +788,8 @@ size_t MolGen::Read(FILE            *fp,
                     }
                     continue;
                 }
-                
-                imm = mymol.getExpProps(iqm, bZero, bZPE, bDHform,
+                // TODO Check for G4 as well
+                imm = mymol.getExpProps(iqmType::Exp, bZero, bZPE, bDHform,
                                         method, basis, &pd_);
                 if (immStatus::OK != imm)
                 {

@@ -634,7 +634,7 @@ int alex_tune_eem(int argc, char *argv[])
                       bZero,
                       gms,
                       false,
-                      false,
+                      true,
                       opt2fn_null("-table", filenms.size(), filenms.data()),
                       opt.verbose()))
     {

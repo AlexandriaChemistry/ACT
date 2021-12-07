@@ -2189,6 +2189,11 @@ void MyMol::calcEspRms(const Poldata *pd)
     done_atom(&myatoms);
 }
 
+const real *MyMol::energyTerms() const
+{
+    return enerd_->term;
+}
+        
 immStatus MyMol::getExpProps(iqmType            iqm,
                              gmx_bool           bZero,
                              gmx_bool           bZPE,

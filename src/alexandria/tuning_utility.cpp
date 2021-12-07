@@ -488,6 +488,7 @@ void TuneForceFieldPrinter::addFileOptions(std::vector<t_filenm> *filenm)
             { efXVG, "-qhisto",    "q_histo",       ffWRITE },
             { efXVG, "-dipcorr",   "dip_corr",      ffWRITE },
             { efXVG, "-mucorr",    "mu_corr",       ffWRITE },
+            { efXVG, "-epotcorr",  "epot_corr",     ffWRITE },
             { efXVG, "-thetacorr", "theta_corr",    ffWRITE },
             { efXVG, "-espcorr",   "esp_corr",      ffWRITE },
             { efXVG, "-alphacorr", "alpha_corr",    ffWRITE },
@@ -518,12 +519,12 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
     int  n = 0;
 
     std::map<iMolSelect, qtStats>                   lsq_mu, lsq_dip, lsq_quad, lsq_esp, 
-        lsq_alpha, lsq_isoPol, lsq_anisoPol, lsq_charge;
+        lsq_alpha, lsq_isoPol, lsq_anisoPol, lsq_charge, lsq_epot;
     std::map<iMolSelect, std::vector<ZetaTypeLsq> > lsqt;
 
     for(auto &ims : iMolSelectNames())
     {
-        qtStats qesp, qquad, qdip, qmu;
+        qtStats qesp, qquad, qdip, qmu, qepot;
         for (auto &i : qTypes())
         {
             //TODO Add checks for existence
@@ -531,11 +532,13 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
             qquad.insert(std::pair<qType, gmx_stats_t>(i.first, gmx_stats_init()));
             qdip.insert(std::pair<qType, gmx_stats_t>(i.first, gmx_stats_init()));
             qmu.insert(std::pair<qType, gmx_stats_t>(i.first, gmx_stats_init()));
+            qepot.insert(std::pair<qType, gmx_stats_t>(i.first, gmx_stats_init()));
         }
         lsq_esp.insert(std::pair<iMolSelect, qtStats>(ims.first, std::move(qesp)));
         lsq_quad.insert(std::pair<iMolSelect, qtStats>(ims.first, std::move(qquad)));
         lsq_dip.insert(std::pair<iMolSelect, qtStats>(ims.first, std::move(qdip)));
         lsq_mu.insert(std::pair<iMolSelect, qtStats>(ims.first, std::move(qmu)));
+        lsq_epot.insert(std::pair<iMolSelect, qtStats>(ims.first, std::move(qepot)));
         
         lsq_alpha.insert(std::pair<iMolSelect, qtStats>(ims.first, {{ qType::Calc, gmx_stats_init() }}));
         lsq_isoPol.insert(std::pair<iMolSelect, qtStats>(ims.first, {{ qType::Calc, gmx_stats_init() }}));
@@ -564,6 +567,21 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
     
     bool bPolar = pd->polarizable();
     
+    // Extract terms to print for the enery ters
+    std::vector<int> ePlot = { F_EPOT, F_COUL_SR };
+    {
+        std::vector<InteractionType> includeTerms = { InteractionType::BONDS, InteractionType::ANGLES,
+            InteractionType::LINEAR_ANGLES, InteractionType::PROPER_DIHEDRALS,
+            InteractionType::IMPROPER_DIHEDRALS, InteractionType::VDW,
+            InteractionType::POLARIZATION };
+        for (const auto &ii : includeTerms)
+        {
+            if (pd->interactionPresent(ii))
+            {
+                ePlot.push_back(pd->findForcesConst(ii).fType());
+            }
+        }
+    }
     for (auto mol = mymol->begin(); mol < mymol->end(); ++mol)
     {
         if (mol->eSupp_ != eSupport::No)
@@ -579,7 +597,14 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
             std::vector<double> dummy;
             mol->GenerateCharges(pd, fplog, cr, nullptr, qcycle, qtol,
                                  ChargeGenerationAlgorithm::NONE, dummy, lot);
-
+            // Energy
+            gmx_stats_add_point(lsq_epot[ims][qType::Calc], mol->Emol_, mol->potentialEnergy(), 0, 0);
+            fprintf(fp, "Reference potential energy %.2f\n", mol->Emol_);
+            auto terms = mol->energyTerms();
+            for(auto &ep : ePlot)
+            {
+                fprintf(fp, "%-20s  %.2f\n", interaction_function[ep].name, terms[ep]);
+            }
             // Now compute all the ESP RMSDs.
             mol->calcEspRms(pd);
             for (auto &i : qTypes())
@@ -767,6 +792,8 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
                "Dipole Moment (Debye)", "Electronic", "Empirical", lsq_dip, oenv);
     print_corr(opt2fn("-mucorr", filenm.size(), filenm.data()),
                "Dipole components (Debye)", "Electronic", "Empirical", lsq_mu, oenv);
+    print_corr(opt2fn("-epotcorr", filenm.size(), filenm.data()),
+               "Potential energy (kJ/mol)", "Reference", "Empirical", lsq_epot, oenv);
     print_corr(opt2fn("-thetacorr", filenm.size(), filenm.data()),
                "Quadrupole components (Buckingham)", "Electronic", "Empirical", lsq_quad, oenv);
     print_corr(opt2fn("-espcorr", filenm.size(), filenm.data()),

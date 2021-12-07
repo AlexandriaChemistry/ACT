@@ -349,6 +349,9 @@ namespace alexandria
         //! \return the potential energy of this molecule
         real potentialEnergy() const;
 
+        //! \return a GROMACS style array with energy terms
+        const real *energyTerms() const;
+        
         /*! \brief
          * \return mdatoms structure
          */

@@ -313,7 +313,7 @@ void EnergyDevComputer::calcDeviation(      MyMol                             *m
 }
 
 /* * * * * * * * * * * * * * * * * * * * * *
-* END: MuDevComputer                       *
+* END: EnergyDevComputer                       *
 * * * * * * * * * * * * * * * * * * * * * */
 
 
