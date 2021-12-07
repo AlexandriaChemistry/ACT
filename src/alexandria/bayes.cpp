@@ -105,45 +105,6 @@ void Sensitivity::print(FILE *fp, const std::string &label)
     }
 }
 
-void Bayes::printParameters(FILE *fp) const
-{
-    if (nullptr == fp)
-    {
-        return;
-    }
-    for(size_t i = 0; i < param_.size(); i++)
-    {
-        fprintf(fp, "  %s  %e,", paramNames_[i].c_str(), param_[i]);
-    }
-    fprintf(fp, "\n");
-}
-
-void Bayes::addParam(const std::string &name,
-                     real               val,
-                     Mutability         mut,
-                     real               lower,
-                     real               upper,
-                     int                ntrain,
-                     bool               bRandom)
-{
-    if (bRandom)
-    {
-        std::random_device               rd;
-        std::mt19937                     gen(rd());
-        std::uniform_real_distribution<> uniform(lower, upper);
-        val                              = uniform(gen);
-    }
-
-    initial_param_.push_back(val);
-    param_.push_back(val);
-    mutability_.push_back(mut);
-    ntrain_.push_back(ntrain);
-    //    prevParam_.push_back(val);
-    lowerBound_.push_back(lower);
-    upperBound_.push_back(upper);
-    paramNames_.push_back(name);
-}
-
 void Bayes::changeParam(size_t j, real rand)
 {
     GMX_RELEASE_ASSERT(j < param_.size(), "Parameter out of range");
@@ -460,47 +421,6 @@ void Bayes::assignParamClasses(std::vector<int>          *paramClassIndex,
 
 }
 
-void Bayes::openParamSurveillanceFiles(const std::vector<std::string>  &pClass,
-                                             std::vector<FILE*>        *fpc,
-                                       const std::vector<int>          &paramClassIndex)
-{
-    for(size_t i = 0; i < pClass.size(); i++)
-    {
-        std::string fileName = pClass[i] + "-" + bch_.xvgConv();
-        fpc->push_back(xvgropen(fileName.c_str(),
-                                "Parameter convergence",
-                                "iteration",
-                                "",
-                                bch_.oenv()));
-        std::vector<const char*> paramNames;
-        for (size_t j = 0; j < paramNames_.size(); j++)
-        {
-            if (paramClassIndex[j] == static_cast<int>(i))
-            {
-                paramNames.push_back(paramNames_[j].c_str());
-            }
-        }
-        xvgr_legend((*fpc)[i], paramNames.size(), paramNames.data(), bch_.oenv());
-    }
-}
-
-FILE* Bayes::openChi2SurveillanceFile(const bool bEvaluate_testset)
-{
-    FILE* fpe = xvgropen(bch_.xvgEpot().c_str(),
-                         "Chi squared",
-                         "Iteration",
-                         "Unknown units",
-                         bch_.oenv());
-    if (bEvaluate_testset)
-    {
-        std::vector<std::string> legend;
-        legend.push_back(iMolSelectName(iMolSelect::Train));
-        legend.push_back(iMolSelectName(iMolSelect::Test));
-        xvgrLegend(fpe, legend, bch_.oenv());
-    }
-    return fpe;
-}
-
 void Bayes::computeMeanSigma(const int     nParam,
                              const parm_t &sum,
                              const int     nsum,
@@ -519,19 +439,6 @@ void Bayes::computeMeanSigma(const int     nParam,
         }
     }
 
-}
-
-void Bayes::closeConvergenceFiles(const std::vector<FILE*> &fpc,
-                                        FILE               *fpe)
-{
-    for(FILE *fp: fpc)  // Close all parameter convergence surveillance files
-    {
-        xvgrclose(fp);
-    }
-    if (nullptr != fpe)  // Close chi2 surveillance file
-    {
-        xvgrclose(fpe);
-    }
 }
 
 void Bayes::fprintNewMinimum(      FILE   *fplog,

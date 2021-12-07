@@ -133,9 +133,6 @@ class Bayes
         std::vector<Mutability> mutability_;
         param_name_t            paramNames_;
 
-        //! Optimization options manager
-        BayesConfigHandler      bch_;
-
     public:
 
         Bayes() {}
@@ -145,134 +142,6 @@ class Bayes
          * obtained from a uniform distribution.
          */
         void changeParam(size_t j, real rand);
-
-        //! \brief Return the number of parameters
-        size_t nParam() const { return param_.size(); }
-
-        /*! \brief
-         * Append parameter and set it to value. Add bounds
-         * as specified.
-         * \param[in] name    String describing the parameter
-         * \param[in] val     The value
-         * \param[in] mut     Mutability
-         * \param[in] lower   The new lower bound value
-         * \param[in] upper   The new lower bound value
-         * \param[in] ntrain  Number of copies in the training set
-         * \param[in] bRandom Generate random initial value for parameters if true.
-         */
-        void addParam(const std::string &name,
-                      real               val,
-                      Mutability         mut,
-                      real               lower,
-                      real               upper,
-                      int                ntrain,
-                      bool               bRandom);
-        /*! \brief
-         * Append random parameter within the bounds specified.
-         * \param[in] name  String describing the parameter
-         * \param[in] mut   Mutability
-         * \param[in] lower The new lower bound value
-         * \param[in] upper The new lower bound value
-         * \param[in] ntrain  Number of copies in the training set
-         */
-        void addRandomParam(const std::string &name,
-                            Mutability         mut,
-                            real               lower,
-                            real               upper,
-                            int                ntrain)
-        {
-            // TODO: Make this random for real
-            addParam(name, (lower+upper)*0.5, mut, lower, upper, ntrain, true);
-        }
-
-        /*! \brief
-         * Set parameter j to a new value
-         * \param[j]   Index
-         * \param[val] The new value
-         */
-        void setParam(size_t j, real val)
-        {
-            GMX_RELEASE_ASSERT(j < param_.size(), "Parameter out of range");
-            param_[j] = val;
-        }
-
-        /*! \brief
-         * Set all parameters to the array passed
-         */
-        void setParam(parm_t param)
-        {
-            GMX_RELEASE_ASSERT(param.size() == param_.size() || param_.empty(),
-                               "Incorrect size of input parameters");
-            param_ = param;
-        }
-        
-        /*! \brief
-         * Returns the current vector of parameters.
-         */
-        const parm_t &getInitialParam() const { return initial_param_; }
-
-        /*! \brief
-         * Returns the current vector of parameters.
-         */
-        const parm_t &getParam() const { return param_; }
-
-        /*! \brief
-         * Returns the current vector of lower bounds
-         * @return the current vector of lower bounds
-         */
-        const parm_t &getLowerBound() const { return lowerBound_; }
-
-        /*! \brief
-         * Returns the current vector of upper bounds
-         * @return the current vector of upper bounds
-         */
-        const parm_t &getUpperBound() const { return upperBound_; }
-
-        /*! \brief
-         * Returns the number of training points per parameter
-         */
-        const std::vector<int> &getNtrain() const { return ntrain_; }
-
-        /*! \brief
-         * Returns the vector of best found value for each parameter.
-         */
-        const parm_t &getBestParam() const { return bestParam_; }
-
-        /*! \brief
-         * Returns the vector of mean value calculated for each parameter.
-         */
-        const parm_t &getPmean() const { return pmean_; }
-
-        /*! \brief
-         * Returns the vector of standard deviation calculated for each parameter.
-         */
-        const parm_t &getPsigma() const { return psigma_; };
-
-        /*! \brief
-         * Return the vector of parameter names.
-         */
-        const param_name_t &getParamNames() const { return paramNames_; };
-
-        /*! \brief
-         * Print the parameters to a file
-         * \param[in] fp File pointer to open file
-         */
-        void printParameters(FILE *fp) const;
-
-        /*! \brief
-         * Return the vector of number of attempted moves for each parameter
-         */
-        const mc_t &getAttemptedMoves() const {return attemptedMoves_;};
-
-        /*! \brief
-         * Return the vector of number of accepted moves for each parameter
-         */
-        const mc_t &getAcceptedMoves() const {return acceptedMoves_;};
-
-        /*! \brief
-         * Return a pointer to the Bayes config handler
-         */
-        BayesConfigHandler *configHandlerPtr() {return &bch_;}
 
         /*! \brief
          * Run the Markov chain Monte carlo (MCMC) simulation
@@ -335,32 +204,6 @@ class Bayes
                                 std::vector<std::string>   *pClass);
 
         /*!
-         * Open parameter convergence surveillance files
-         * @param pClass            different classes of parameters
-         * @param fpc               vector to append pointers to parameter convergence files
-         * @param paramClassIndex   for each parameter, to which class (by index) it belongs
-         */
-        void openParamSurveillanceFiles(const std::vector<std::string>  &pClass,
-                                              std::vector<FILE*>        *fpc,
-                                        const std::vector<int>          &paramClassIndex);
-
-        /*!
-         * Open a chi2 surveillance file
-         * @param bEvaluate_testset     whether the test set will be evaluated
-         * @return                      a pointer to the opened file
-         */
-        FILE* openChi2SurveillanceFile(const bool bEvaluate_testset);
-
-        /*!
-         * Close chi2 and parameter convergence files
-         * @param fpc   vector of pointers to parameter convergence files
-         * @param fpe   pointer to chi2 convergence file
-         */
-        void closeConvergenceFiles(const std::vector<FILE*> &fpc,
-                                         FILE               *fpe);
-
-
-        /*!
          * Print new minimum to log file and, if necessary, print params to debug file
          * @param fplog                 pointer to log file
          * @param bEvaluate_testset     true if test set is evaluated, false otherwise
@@ -418,23 +261,6 @@ class Bayes
          */
         void SensitivityAnalysis(FILE *fplog, iMolSelect ims);
 
-        /*! \brief
-         * Copy the optimization parameters to the poldata structure
-         * \param[in] changed List over the parameters that have changed.
-         */
-        virtual void toPoldata(const std::vector<bool> &changed) = 0;
-
-        /*! \brief
-         * Compute the chi2 from the target function
-         * \param[in] verbose Whether or not to print stuff
-         * \param[in] calcDev How to compute the deviation for all compounds
-         * \param[in] ims     The data set to evaluate the energy upon.
-         * \return the square deviation or -1 when done.
-         */
-        virtual double calcDeviation(bool       verbose,
-                                     CalcDev    calcDev,
-                                     iMolSelect ims) = 0;
-
         /*! Return number of planned function calls
          * Return the number of calls to the objective function
          * that will be made by the Bayes::MCMC
@@ -450,10 +276,6 @@ class Bayes
          */
         void printMonteCarloStatistics(FILE *fp);
 
-        /*! \brief Save the current state
-        * Must be overridden by child class.
-        */
-        virtual void saveState() = 0;
 };
 
 }

@@ -217,7 +217,7 @@ public:
 };
 
 //! Map from RMS type to FittingTarget structure
-using RmsFittingTarget       = typename std::map<eRMS, FittingTarget>;
+// using RmsFittingTarget       = typename std::map<eRMS, FittingTarget>;
 
 /*! \brief Convenience storage of parameters to optimize
  */
@@ -304,8 +304,6 @@ private:
     real                            qtol_       = 1e-6;
     //! Max number of iterations for determining charges
     int                             qcycle_     = 500;
-    //! Map with the fitting targets for each data set. RmsFittingTarget is itself a map from eRMS to FittingTarget.
-    std::map<iMolSelect, RmsFittingTarget> targets_;  // TODO: this should go into the ACMIndividual class?
     //! Map that holds the number of compounds in each data set
     std::map<iMolSelect, size_t>    targetSize_;
     //! Tell us whether this interaction type needs optimizing
@@ -314,8 +312,6 @@ private:
     gmx_bool                        bQM_        = false;
     //! Whether or not to use charge symmetry
     gmx_bool                        qsymm_      = false;
-    //! Force field data structure
-    Poldata                         pd_;  // TODO: this should go into the ACMIndividual class?
     //! GROMACS communication data structure
     t_commrec                      *cr_         = nullptr;
     //! GROMACS logger structure
@@ -387,12 +383,6 @@ public:
     /*! \brief Process options after parsing
      */
     void optionsFinished();
-    
-    //! \brief Return the poldata as const variable
-    const Poldata *poldata() const { return &pd_; }
-    
-    //! \brief Return the poldata
-    Poldata *poldata() { return &pd_; }
 
     //! \brief Return the const vector of molecules
     const std::vector<MyMol> &mymols() const { return mymol_; }
@@ -473,66 +463,6 @@ public:
 
     //! \brief Return level of theory
     const char *lot() const { return lot_; }
-
-    /*! \brief Return the fitting targets for editing
-     * \param[in] ims The selection to return
-     * \return The map of fittingtargets or nullptr
-     */
-    std::map<eRMS, FittingTarget> *fittingTargets(iMolSelect ims)
-    {
-        auto tt = targets_.find(ims);
-        if (targets_.end() == tt)
-        {
-            return nullptr;
-        }
-        else
-        {
-            return &tt->second;
-        }
-    }
-        
-    const std::map<eRMS, FittingTarget> &fittingTargetsConst(iMolSelect ims) const
-    {
-        auto tt = targets_.find(ims);
-        GMX_RELEASE_ASSERT(targets_.end() != tt, gmx::formatString("Cannot find selection %s", iMolSelectName(ims)).c_str());
-        return tt->second;
-    }
-        
-    /*! \brief return appropriate fitting target
-     * \param[in] ims The selection
-     * \param[in] rms The contributor to the chi squared
-     * \return FittingTarget class or nullptr if not found
-     */
-    FittingTarget *target(iMolSelect ims, eRMS rms);
-	
-    /*! \brief Set the chiSquared to zero.
-     * \param[in] ims The selection to reset
-     */
-    void resetChiSquared(iMolSelect ims)
-    {
-        auto fts = fittingTargets(ims);
-        if (fts != nullptr)
-        {
-            for (auto &ft : *fts)
-            {
-                ft.second.reset();
-                }
-            }
-        }
-
-    /*! \brief 
-     * Sum over the energies of the cores if desired.
-     * Also multiplies the terms by the weighting factors.
-     * \param[in] parallel Whether or not to sum in parallel
-     * \param[in] ims      The selection to sum
-     */
-    void sumChiSquared(bool parallel, iMolSelect ims);
-    
-    /*! \brief Print the chiSquared components.
-     * \param[in] fp  File pointer to print to, may be nullptr
-     * \param[in] ims The selection to print
-     */  
-    void printChiSquared(FILE *fp, iMolSelect ims) const;
     
     /*! \brief Read the molecular property data file to generate molecules.
      * \param[in] fp      File pointer for printing information
