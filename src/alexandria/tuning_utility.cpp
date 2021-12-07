@@ -45,6 +45,14 @@
 #include "qtype.h"
 #include "units.h"
 
+void doAddOptions(std::vector<t_pargs> *pargs, size_t npa, t_pargs pa[])
+{
+    for (size_t i = 0; i < npa; i++)
+    {
+        pargs->push_back(pa[i]);
+    }
+}
+
 namespace alexandria
 {
 
@@ -103,6 +111,7 @@ public:
         return true;
     }
 };
+
 
 static void print_stats(FILE        *fp,
                         const char  *prop,
@@ -405,34 +414,59 @@ static void write_q_histo(FILE                            *fplog,
     fprintf(fplog, "\n");
 }
 
-void print_electric_props(FILE                           *fp,
-                          std::vector<alexandria::MyMol> *mymol,
-                          const Poldata                  *pd,
-                          const gmx::MDLogger            &fplog,
-                          const char                     *lot,
-                          const char                     *tabfn,
-                          int                             qcycle,
-                          real                            qtol,
-                          const char                     *qhisto,
-                          const char                     *DipCorr,
-                          const char                     *MuCorr,
-                          const char                     *Qcorr,
-                          const char                     *EspCorr,
-                          const char                     *alphaCorr,
-                          const char                     *isopolCorr,
-                          const char                     *anisopolCorr,
-                          const char                     *qCorr,
-                          real                            esp_toler,
-                          real                            dip_toler,
-                          real                            quad_toler,
-                          real                            alpha_toler,
-                          real                            isopol_toler,
-                          const gmx_output_env_t         *oenv,
-                          bool                            bPolar,
-                          bool                            bfullTensor,
-                          t_commrec                      *cr,
-                          real                            efield,
-                          bool                            useOffset)
+void TuneForceFieldPrinter::addOptions(std::vector<t_pargs> *pargs)
+{
+    t_pargs pa[] =
+    {
+        { "-esp_toler", FALSE, etREAL, {&esp_toler_},
+          "Tolerance (kJ/mol e) for marking ESP as an outlier in the log file" },
+        { "-dip_toler", FALSE, etREAL, {&dip_toler_},
+          "Tolerance (Debye) for marking dipole as an outlier in the log file" },
+        { "-quad_toler", FALSE, etREAL, {&quad_toler_},
+          "Tolerance (Buckingham) for marking quadrupole as an outlier in the log file" },
+        { "-alpha_toler", FALSE, etREAL, {&alpha_toler_},
+          "Tolerance (A^3) for marking diagonal elements of the polarizability tensor as an outlier in the log file" },
+        { "-isopol_toler", FALSE, etREAL, {&isopol_toler_},
+          "Tolerance (A^3) for marking isotropic polarizability as an outlier in the log file" },
+        { "-use_offset", FALSE, etBOOL,{&useOffset_},
+          "Fit regression analysis of results to y = ax+b instead of y = ax" }
+    };
+    doAddOptions(pargs, sizeof(pa)/sizeof(pa[0]), pa);
+}
+
+void TuneForceFieldPrinter::addFileOptions(std::vector<t_filenm> *filenm)
+{
+    t_filenm fnm[] =
+        {
+            { efXVG, "-qhisto",    "q_histo",       ffWRITE },
+            { efXVG, "-dipcorr",   "dip_corr",      ffWRITE },
+            { efXVG, "-mucorr",    "mu_corr",       ffWRITE },
+            { efXVG, "-thetacorr", "theta_corr",    ffWRITE },
+            { efXVG, "-espcorr",   "esp_corr",      ffWRITE },
+            { efXVG, "-alphacorr", "alpha_corr",    ffWRITE },
+            { efXVG, "-qcorr",     "q_corr",        ffWRITE },
+            { efXVG, "-isopol",    "isopol_corr",   ffWRITE },
+            { efXVG, "-anisopol",  "anisopol_corr", ffWRITE }
+        };
+    int nfm = sizeof(fnm)/sizeof(fnm[0]);
+    for(int i = 0; i < nfm; i++)
+    {
+        filenm->push_back(fnm[i]);
+    }
+}
+
+void TuneForceFieldPrinter::print(FILE                           *fp,
+                                  std::vector<alexandria::MyMol> *mymol,
+                                  const Poldata                  *pd,
+                                  const gmx::MDLogger            &fplog,
+                                  const char                     *lot,
+                                  int                             qcycle,
+                                  real                            qtol,
+                                  const gmx_output_env_t         *oenv,
+                                  bool                            bfullTensor,
+                                  t_commrec                      *cr,
+                                  real                            efield,
+                                  const std::vector<t_filenm>    &filenm)
 {
     int  n = 0;
 
@@ -480,7 +514,9 @@ void print_electric_props(FILE                           *fp,
             }
         }
     }
-
+    
+    bool bPolar = pd->polarizable();
+    
     for (auto mol = mymol->begin(); mol < mymol->end(); ++mol)
     {
         if (mol->eSupp_ != eSupport::No)
@@ -494,7 +530,7 @@ void print_electric_props(FILE                           *fp,
 
             // Recalculate the atomic charges using the optmized parameters.
             std::vector<double> dummy;
-            mol->GenerateCharges(pd, fplog, cr, tabfn, qcycle, qtol,
+            mol->GenerateCharges(pd, fplog, cr, nullptr, qcycle, qtol,
                                  ChargeGenerationAlgorithm::NONE, dummy, lot);
 
             // Now compute all the ESP RMSDs.
@@ -515,7 +551,7 @@ void print_electric_props(FILE                           *fp,
                 rms = qp->qgenResp()->getStatistics(&rrms, &cosesp, &mae, &mse);
                 rms = convertToGromacs(rms, "Hartree/e");
                 std::string warning;
-                if (rms > esp_toler || cosesp < 0.5)
+                if (rms > esp_toler_ || cosesp < 0.5)
                 {
                     warning.assign(" EEE");
                 }
@@ -532,7 +568,7 @@ void print_electric_props(FILE                           *fp,
             }
             // Dipoles
             auto qelec = mol->qTypeProps(qType::Elec);
-            print_dipole(fp, qType::Elec, qelec->mu(), qelec->mu(), dip_toler);
+            print_dipole(fp, qType::Elec, qelec->mu(), qelec->mu(), dip_toler_);
             for (auto &j : qTypes())
             {
                 qType qt = j.first;
@@ -546,7 +582,7 @@ void print_electric_props(FILE                           *fp,
                     qprop->setCenterOfCharge(mol->centerOfCharge());
                     printf("%s\n", mol->getMolname().c_str());
                     qprop->calcMoments();
-                    print_dipole(fp, qt, qelec->mu(), qprop->mu(), dip_toler);
+                    print_dipole(fp, qt, qelec->mu(), qprop->mu(), dip_toler_);
                     if (mol->datasetType() == ims)
                     {
                         gmx_stats_add_point(lsq_dip[ims][qt], qelec->dipole(), qprop->dipole(), 0, 0);
@@ -559,14 +595,14 @@ void print_electric_props(FILE                           *fp,
             }
 
             // Quadrupoles
-            analyse_quadrapole(fp, mol, quad_toler, lsq_quad[ims], bfullTensor);
+            analyse_quadrapole(fp, mol, quad_toler_, lsq_quad[ims], bfullTensor);
             
             // Polarizability
             if (bPolar)
             {
                 mol->CalcPolarizability(efield, cr, nullptr);
-                print_polarizability(fp, mol, qTypeName(qType::Elec), alpha_toler, isopol_toler);
-                print_polarizability(fp, mol, qTypeName(qType::Calc), alpha_toler, isopol_toler);
+                print_polarizability(fp, mol, qTypeName(qType::Elec), alpha_toler_, isopol_toler_);
+                print_polarizability(fp, mol, qTypeName(qType::Calc), alpha_toler_, isopol_toler_);
                 gmx_stats_add_point(lsq_isoPol[ims][qType::Calc], mol->ElectronicPolarizability(),
                                     mol->CalculatedPolarizability(),       0, 0);
                 gmx_stats_add_point(lsq_anisoPol[ims][qType::Calc], mol->anisoPol_elec_, mol->anisoPol_calc_, 0, 0);
@@ -664,33 +700,42 @@ void print_electric_props(FILE                           *fp,
                 continue;
             }
             const char *name = qTypeName(qt).c_str();
-            print_stats(fp, "ESP  (kJ/mol e)", lsq_esp[ims.first][qt],  header, "Electronic", name, useOffset);
+            print_stats(fp, "ESP  (kJ/mol e)", lsq_esp[ims.first][qt],  header, "Electronic", name, useOffset_);
             header = false;
-            print_stats(fp, "Dipoles",         lsq_mu[ims.first][qt],   header, "Electronic", name, useOffset);
-            print_stats(fp, "Dipole Moment",   lsq_dip[ims.first][qt],  header, "Electronic", name, useOffset);
-            print_stats(fp, "Quadrupoles",     lsq_quad[ims.first][qt], header, "Electronic", name, useOffset);
+            print_stats(fp, "Dipoles",         lsq_mu[ims.first][qt],   header, "Electronic", name, useOffset_);
+            print_stats(fp, "Dipole Moment",   lsq_dip[ims.first][qt],  header, "Electronic", name, useOffset_);
+            print_stats(fp, "Quadrupoles",     lsq_quad[ims.first][qt], header, "Electronic", name, useOffset_);
             if (bPolar && qt == qType::Calc)
             {
-                print_stats(fp, "Polariz. components (A^3)",  lsq_alpha[ims.first][qType::Calc],    header, "Electronic", name, useOffset);
-                print_stats(fp, "Isotropic Polariz. (A^3)",   lsq_isoPol[ims.first][qType::Calc],   header, "Electronic", name, useOffset);
-                print_stats(fp, "Anisotropic Polariz. (A^3)", lsq_anisoPol[ims.first][qType::Calc], header, "Electronic", name, useOffset);
+                print_stats(fp, "Polariz. components (A^3)",  lsq_alpha[ims.first][qType::Calc],    header, "Electronic", name, useOffset_);
+                print_stats(fp, "Isotropic Polariz. (A^3)",   lsq_isoPol[ims.first][qType::Calc],   header, "Electronic", name, useOffset_);
+                print_stats(fp, "Anisotropic Polariz. (A^3)", lsq_anisoPol[ims.first][qType::Calc], header, "Electronic", name, useOffset_);
             }
             fprintf(fp, "\n");
         }
         
-        write_q_histo(fp, qhisto, lsqt[ims.first], oenv, lsq_charge[ims.first], useOffset);
+        write_q_histo(fp, opt2fn("-qhisto", filenm.size(), filenm.data()),
+                      lsqt[ims.first], oenv, lsq_charge[ims.first], useOffset_);
 
-        print_corr(DipCorr, "Dipole Moment (Debye)", "Electronic", "Empirical", lsq_dip, oenv);
-        print_corr(MuCorr, "Dipoles (Debye)", "Electronic", "Empirical", lsq_mu, oenv);
-        print_corr(Qcorr, "Quadrupoles (Buckingham)", "Electronic", "Empirical", lsq_quad, oenv);
-        print_corr(EspCorr, "Electrostatic Potential (Hartree/e)", "Electronic", "Calc", lsq_esp, oenv);
-        print_corr(qCorr, "Atomic Partial Charge", "q (e)", "a.u.", lsq_charge, oenv);
+        print_corr(opt2fn("-dipcorr", filenm.size(), filenm.data()),
+                   "Dipole Moment (Debye)", "Electronic", "Empirical", lsq_dip, oenv);
+        print_corr(opt2fn("-mucorr", filenm.size(), filenm.data()),
+                   "Dipoles (Debye)", "Electronic", "Empirical", lsq_mu, oenv);
+        print_corr(opt2fn("-thetacorr", filenm.size(), filenm.data()),
+                   "Quadrupoles (Buckingham)", "Electronic", "Empirical", lsq_quad, oenv);
+        print_corr(opt2fn("-espcorr", filenm.size(), filenm.data()),
+                   "Electrostatic Potential (Hartree/e)", "Electronic", "Calc", lsq_esp, oenv);
+        print_corr(opt2fn("-qcorr", filenm.size(), filenm.data()),
+                   "Atomic Partial Charge", "q (e)", "a.u.", lsq_charge, oenv);
 
         if (bPolar)
         {
-            print_corr(alphaCorr, "Pricipal Components of Polarizability Tensor (A\\S3\\N)", "Electronic", "Calc", lsq_alpha, oenv);
-            print_corr(isopolCorr, "Isotropic Polarizability (A\\S3\\N)", "Electronic", "Calc", lsq_isoPol, oenv);
-            print_corr(anisopolCorr, "Anisotropic Polarizability (A\\S3\\N)", "Electronic", "Calc", lsq_anisoPol, oenv);
+            print_corr(opt2fn("-alphacorr", filenm.size(), filenm.data()),
+                       "Pricipal Components of Polarizability Tensor (A\\S3\\N)", "Electronic", "Calc", lsq_alpha, oenv);
+            print_corr(opt2fn("-isopol", filenm.size(), filenm.data()),
+                       "Isotropic Polarizability (A\\S3\\N)", "Electronic", "Calc", lsq_isoPol, oenv);
+            print_corr(opt2fn("-anisopol", filenm.size(), filenm.data()),
+                       "Anisotropic Polarizability (A\\S3\\N)", "Electronic", "Calc", lsq_anisoPol, oenv);
         }
     }
     // List outliers based on the deviation in the total dipole moment

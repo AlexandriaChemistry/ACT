@@ -55,8 +55,7 @@
 #include "molprop_util.h"
 #include "molprop_xml.h"
 #include "poldata_xml.h"
-
-#define STRLEN 256
+#include "tuning_utility.h"
 
 namespace alexandria
 {
@@ -132,14 +131,6 @@ FittingTarget *MolGen::target(iMolSelect ims, eRMS rms)
         return nullptr;
     }
     return &ift->second;
-}
-
-static void doAddOptions(std::vector<t_pargs> *pargs, size_t npa, t_pargs pa[])
-{
-    for (size_t i = 0; i < npa; i++)
-    {
-        pargs->push_back(pa[i]);
-    }
 }
 
 void MolGen::addOptions(std::vector<t_pargs> *pargs, eTune etune)

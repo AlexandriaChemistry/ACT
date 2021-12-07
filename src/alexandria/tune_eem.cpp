@@ -475,7 +475,7 @@ bool OptACM::runMaster(const gmx_output_env_t *oenv,
 
 void OptACM::runHelper()
 {
-    // S L A V E   N O D E S
+    // H E L P E R   N O D E S
     // The second and third variable are set by the master, but
     // we have to pass something.
     // If the result is less than zero (-1), we are done.
@@ -529,27 +529,11 @@ int alex_tune_eem(int argc, char *argv[])
         { efDAT, "-sel",       "molselect",     ffREAD  },
         { efXVG, "-table",     "table",         ffOPTRD },
         { efLOG, "-g",         "tune_eem",      ffWRITE },
-        { efXVG, "-qhisto",    "q_histo",       ffWRITE },
-        { efXVG, "-dipcorr",   "dip_corr",      ffWRITE },
-        { efXVG, "-mucorr",    "mu_corr",       ffWRITE },
-        { efXVG, "-thetacorr", "theta_corr",    ffWRITE },
-        { efXVG, "-espcorr",   "esp_corr",      ffWRITE },
-        { efXVG, "-alphacorr", "alpha_corr",    ffWRITE },
-        { efXVG, "-qcorr",     "q_corr",        ffWRITE },
-        { efXVG, "-isopol",    "isopol_corr",   ffWRITE },
-        { efXVG, "-anisopol",  "anisopol_corr", ffWRITE },
         { efXVG, "-conv",      "param-conv",    ffWRITE },
         { efXVG, "-epot",      "param-epot",    ffWRITE }
     };
-
     const int           NFILE               = asize(fnm);
 
-    int                 reinit              = 0;
-    real                esp_toler           = 30;
-    real                dip_toler           = 0.5;
-    real                quad_toler          = 5;
-    real                alpha_toler         = 3;
-    real                isopol_toler        = 2;
     real                efield              = 10;
     bool                bRandom             = false;
     bool                bcompress           = false;
@@ -557,28 +541,13 @@ int alex_tune_eem(int argc, char *argv[])
     bool                bOptimize           = true;
     bool                bSensitivity        = true;
     bool                bForceOutput        = false;
-    bool                useOffset           = false;
     bool                bEvaluate_testset   = false;
 
     t_pargs                     pa[]         = {
-        { "-reinit", FALSE, etINT, {&reinit},
-          "After this many iterations the search vectors are randomized again. A value of 0 means this is never done at all." },
         { "-random", FALSE, etBOOL, {&bRandom},
           "Generate completely random starting parameters within the limits set by the options. This will be done at the very first step and before each subsequent run." },
         { "-zero", FALSE, etBOOL, {&bZero},
           "Use molecules with zero dipole in the fit as well" },
-        { "-esp_toler", FALSE, etREAL, {&esp_toler},
-          "Tolerance (kJ/mol e) for marking ESP as an outlier in the log file" },
-        { "-dip_toler", FALSE, etREAL, {&dip_toler},
-          "Tolerance (Debye) for marking dipole as an outlier in the log file" },
-        { "-quad_toler", FALSE, etREAL, {&quad_toler},
-          "Tolerance (Buckingham) for marking quadrupole as an outlier in the log file" },
-        { "-alpha_toler", FALSE, etREAL, {&alpha_toler},
-          "Tolerance (A^3) for marking diagonal elements of the polarizability tensor as an outlier in the log file" },
-        { "-isopol_toler", FALSE, etREAL, {&isopol_toler},
-          "Tolerance (A^3) for marking isotropic polarizability as an outlier in the log file" },
-        { "-use_offset", FALSE, etBOOL,{&useOffset},
-          "Fit regression analysis of results to y = ax+b instead of y = ax" },
         { "-compress", FALSE, etBOOL, {&bcompress},
           "Compress output XML file" },
         { "-efield",  FALSE, etREAL, {&efield},
@@ -595,6 +564,7 @@ int alex_tune_eem(int argc, char *argv[])
 
     gmx_output_env_t           *oenv;
     MolSelect                   gms;
+    TuneForceFieldPrinter       printer;
 
     std::vector<t_pargs>        pargs;
     for (int i = 0; i < asize(pa); i++)
@@ -603,12 +573,20 @@ int alex_tune_eem(int argc, char *argv[])
     }
     alexandria::OptACM opt;
     opt.add_pargs(&pargs);
+    printer.addOptions(&pargs);
+
+    std::vector<t_filenm>       filenms;
+    for(int i = 0; i < asize(fnm); i++)
+    {
+        filenms.push_back(fnm[i]);
+    }
+    printer.addFileOptions(&filenms);
 
     if (!parse_common_args(&argc,
                            argv,
                            PCA_CAN_VIEW,
-                           NFILE,
-                           fnm,
+                           filenms.size(),
+                           filenms.data(),
                            pargs.size(),
                            pargs.data(),
                            asize(desc),
@@ -682,41 +660,23 @@ int alex_tune_eem(int argc, char *argv[])
 
         if (bMinimum || bForceOutput || !bOptimize)
         {
-            bool bPolar = opt.poldata()->polarizable();
-            std::vector<MyMol> mymols = opt.mymols();
             if (bForceOutput)
             {
                 fprintf(opt.logFile(), "Output based on last step of MC simulation per your specification.\nUse the -noforce_output flag to prevent this.\nThe force field output file %s is based on the last MC step as well.\n", opt2fn("-o", NFILE, fnm));
                 opt.saveState();
             }
-            alexandria::print_electric_props(opt.logFile(),
-                                             &mymols,
-                                             opt.poldata(),
-                                             opt.mdlog(),
-                                             opt.lot(),
-                                             opt2fn_null("-table", NFILE, fnm),
-                                             opt.qcycle(),
-                                             opt.qtol(),
-                                             opt2fn("-qhisto",    NFILE, fnm),
-                                             opt2fn("-dipcorr",   NFILE, fnm),
-                                             opt2fn("-mucorr",    NFILE, fnm),
-                                             opt2fn("-thetacorr", NFILE, fnm),
-                                             opt2fn("-espcorr",   NFILE, fnm),
-                                             opt2fn("-alphacorr", NFILE, fnm),
-                                             opt2fn("-isopol",    NFILE, fnm),
-                                             opt2fn("-anisopol",  NFILE, fnm),
-                                             opt2fn("-qcorr",     NFILE, fnm),
-                                             esp_toler,
-                                             dip_toler,
-                                             quad_toler,
-                                             alpha_toler,
-                                             isopol_toler,
-                                             oenv,
-                                             bPolar,
-                                             opt.fullQuadrupole(),
-                                             opt.commrec(),
-                                             efield,
-                                             useOffset);
+            printer.print(opt.logFile(),
+                          &(opt.mymols()),
+                          opt.poldata(),
+                          opt.mdlog(),
+                          opt.lot(),
+                          opt.qcycle(),
+                          opt.qtol(),
+                          oenv,
+                          opt.fullQuadrupole(),
+                          opt.commrec(),
+                          efield,
+                          filenms);
             print_memory_usage(debug);
         }
         else if (!bMinimum)
