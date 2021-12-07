@@ -300,6 +300,11 @@ double OptACM::calcDeviation(bool       verbose,
             {
                 mymol.UpdateIdef(poldata(), InteractionType::POLARIZATION);
             }
+            // TODO do this systematically
+            if (fit("Dm"))
+            {
+                mymol.UpdateIdef(poldata(), InteractionType::BONDS);
+            }
             // Update the electronegativity parameters
             mymol.zetaToAtoms(poldata(), mymol.atoms());
             // Run charge generation including shell minimization
@@ -524,18 +529,6 @@ int alex_tune_eem(int argc, char *argv[])
         "([TT]-f[tt] option). Missing molecules will be ignored."
     };
 
-    t_filenm                    fnm[] = {
-        { efDAT, "-f",         "allmols",       ffREAD  },
-        { efDAT, "-d",         "gentop",        ffOPTRD },
-        { efDAT, "-o",         "tune_eem",      ffWRITE },
-        { efDAT, "-sel",       "molselect",     ffREAD  },
-        { efXVG, "-table",     "table",         ffOPTRD },
-        { efLOG, "-g",         "tune_eem",      ffWRITE },
-        { efXVG, "-conv",      "param-conv",    ffWRITE },
-        { efXVG, "-epot",      "param-epot",    ffWRITE }
-    };
-    const int           NFILE               = asize(fnm);
-
     real                efield              = 10;
     bool                bRandom             = false;
     bool                bcompress           = false;
@@ -545,42 +538,57 @@ int alex_tune_eem(int argc, char *argv[])
     bool                bForceOutput        = false;
     bool                bEvaluate_testset   = false;
 
-    t_pargs                     pa[]         = {
-        { "-random", FALSE, etBOOL, {&bRandom},
-          "Generate completely random starting parameters within the limits set by the options. This will be done at the very first step and before each subsequent run." },
-        { "-zero", FALSE, etBOOL, {&bZero},
-          "Use molecules with zero dipole in the fit as well" },
-        { "-compress", FALSE, etBOOL, {&bcompress},
-          "Compress output XML file" },
-        { "-efield",  FALSE, etREAL, {&efield},
-          "The magnitude of the external electric field to calculate polarizability tensor." },
-        { "-optimize",     FALSE, etBOOL, {&bOptimize},
-          "Do parameter optimization when true, or a single calculation otherwise." },
-        { "-sensitivity",  FALSE, etBOOL, {&bSensitivity},
-          "Do a sensitivity analysis." },
-        { "-force_output", FALSE, etBOOL, {&bForceOutput},
-          "Write output even if no new minimum is found" },
-        { "-evaluate_testset", FALSE, etBOOL, {&bEvaluate_testset},
-          "Evaluate the MCMC energy on the test set." }
-    };
 
     gmx_output_env_t           *oenv;
     MolSelect                   gms;
     TuneForceFieldPrinter       printer;
 
     std::vector<t_pargs>        pargs;
-    for (int i = 0; i < asize(pa); i++)
     {
-        pargs.push_back(pa[i]);
+        t_pargs                     pa[]         = {
+            { "-random", FALSE, etBOOL, {&bRandom},
+              "Generate completely random starting parameters within the limits set by the options. This will be done at the very first step and before each subsequent run." },
+            { "-zero", FALSE, etBOOL, {&bZero},
+              "Use molecules with zero dipole in the fit as well" },
+            { "-compress", FALSE, etBOOL, {&bcompress},
+              "Compress output XML file" },
+            { "-efield",  FALSE, etREAL, {&efield},
+              "The magnitude of the external electric field to calculate polarizability tensor." },
+            { "-optimize",     FALSE, etBOOL, {&bOptimize},
+              "Do parameter optimization when true, or a single calculation otherwise." },
+            { "-sensitivity",  FALSE, etBOOL, {&bSensitivity},
+              "Do a sensitivity analysis." },
+            { "-force_output", FALSE, etBOOL, {&bForceOutput},
+              "Write output even if no new minimum is found" },
+            { "-evaluate_testset", FALSE, etBOOL, {&bEvaluate_testset},
+              "Evaluate the MCMC energy on the test set." }
+        };
+
+        for (int i = 0; i < asize(pa); i++)
+        {
+            pargs.push_back(pa[i]);
+        }
     }
     alexandria::OptACM opt;
     opt.add_pargs(&pargs);
     printer.addOptions(&pargs);
 
     std::vector<t_filenm>       filenms;
-    for(int i = 0; i < asize(fnm); i++)
     {
-        filenms.push_back(fnm[i]);
+        t_filenm                    fnm[] = {
+        { efDAT, "-f",         "allmols",       ffREAD  },
+        { efDAT, "-d",         "gentop",        ffOPTRD },
+        { efDAT, "-o",         "tune_eem",      ffWRITE },
+        { efDAT, "-sel",       "molselect",     ffREAD  },
+        { efXVG, "-table",     "table",         ffOPTRD },
+        { efLOG, "-g",         "tune_eem",      ffWRITE },
+        { efXVG, "-conv",      "param-conv",    ffWRITE },
+        { efXVG, "-epot",      "param-epot",    ffWRITE }
+        };
+        for(int i = 0; i < asize(fnm); i++)
+        {
+            filenms.push_back(fnm[i]);
+        }
     }
     printer.addFileOptions(&filenms);
 
@@ -603,31 +611,31 @@ int alex_tune_eem(int argc, char *argv[])
     // TODO: Check validity of arguments with check_pargs() in ConfigHandler(s)
     opt.configHandlerPtr()->check_pargs();
 
-    opt.optionsFinished(opt2fn("-o", NFILE, fnm));
+    opt.optionsFinished(opt2fn("-o", filenms.size(), filenms.data()));
 
     opt.fillDevComputers();
 
     if (MASTER(opt.commrec()))
     {
-        opt.openLogFile(opt2fn("-g", NFILE, fnm));
+        opt.openLogFile(opt2fn("-g", filenms.size(), filenms.data()));
         print_memory_usage(debug);
         print_header(opt.logFile(), pargs);
-        gms.read(opt2fn_null("-sel", NFILE, fnm));
+        gms.read(opt2fn_null("-sel", filenms.size(), filenms.data()));
         fprintf(opt.logFile(), "Found %d Train and %d Test compounds in %s\n\n",
                 gms.count(iMolSelect::Train), gms.count(iMolSelect::Test),
-                opt2fn("-sel", NFILE, fnm));
+                opt2fn("-sel", filenms.size(), filenms.data()));
         print_memory_usage(debug);
     }
 
     // MolGen read being called here!
     if (0 == opt.Read(opt.logFile() ? opt.logFile() : (debug ? debug : nullptr),
-                      opt2fn("-f", NFILE, fnm),
-                      opt2fn_null("-d", NFILE, fnm),
+                      opt2fn("-f", filenms.size(), filenms.data()),
+                      opt2fn_null("-d", filenms.size(), filenms.data()),
                       bZero,
                       gms,
                       false,
                       false,
-                      opt2fn_null("-table", NFILE, fnm),
+                      opt2fn_null("-table", filenms.size(), filenms.data()),
                       opt.verbose()))
     {
         if (opt.logFile())
@@ -654,8 +662,8 @@ int alex_tune_eem(int argc, char *argv[])
             opt.initOpt(bRandom);
         }
         bool bMinimum = opt.runMaster(oenv,
-                                      opt2fn("-conv", NFILE, fnm),
-                                      opt2fn("-epot", NFILE, fnm),
+                                      opt2fn("-conv", filenms.size(), filenms.data()),
+                                      opt2fn("-epot", filenms.size(), filenms.data()),
                                       bOptimize,
                                       bSensitivity,
                                       bEvaluate_testset);
@@ -664,7 +672,7 @@ int alex_tune_eem(int argc, char *argv[])
         {
             if (bForceOutput)
             {
-                fprintf(opt.logFile(), "Output based on last step of MC simulation per your specification.\nUse the -noforce_output flag to prevent this.\nThe force field output file %s is based on the last MC step as well.\n", opt2fn("-o", NFILE, fnm));
+                fprintf(opt.logFile(), "Output based on last step of MC simulation per your specification.\nUse the -noforce_output flag to prevent this.\nThe force field output file %s is based on the last MC step as well.\n", opt2fn("-o", filenms.size(), filenms.data()));
                 opt.saveState();
             }
             printer.print(opt.logFile(),
