@@ -174,8 +174,7 @@ public:
     const std::vector<double> &weightedTemperature() const { return weightedTemperature_; }
 
     //! \brief Get a constant \p targets_ reference
-    const std::map<iMolSelect, std::map<eRMS, FittingTarget>> &targets() { return targets_; }
-
+    const std::map<iMolSelect, std::map<eRMS, FittingTarget>> &targets() const { return targets_; }
     /* * * * * * * * * * * * * * * * * * * * * *
     * END: Getters and setters                 *
     * * * * * * * * * * * * * * * * * * * * * */
