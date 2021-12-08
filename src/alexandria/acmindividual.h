@@ -27,10 +27,6 @@ private:
     int id_;
     //! Pointer to shared individual information
     SharedIndividualInfo *sii_;
-    //! Fitness for training dataset
-    double fitnessTrain_;
-    //! Fitness for test set
-    double fitnessTest_;
     //! Fitting targets for each dataset and eRMS
     std::map<iMolSelect, std::map<eRMS, FittingTarget>> targets_;
     //! Force field data structure
@@ -253,42 +249,6 @@ public:
      * @returns the id
      */
     int id() const { return id_; }
-
-    /*!
-     * Get the fitness of the individual in training set
-     * @returns the fitness
-     */
-    double fitnessTrain() const { return fitnessTrain_; }
-
-    /*!
-     * Get a pointer to \p fitnessTrain_
-     * @returns the pointer
-     */
-    double *fitnessTrainPtr() { return &fitnessTrain_; }
-
-    /*!
-     * Set the fitness of the individual in training set
-     * @param fitnessTrain the fitness
-     */
-    void setFitnessTrain(const double fitnessTrain) { fitnessTrain_ = fitnessTrain; }
-
-    /*!
-     * Get the fitness of the individual in test set
-     * @returns the fitness
-     */
-    double fitnessTest() const { return fitnessTest_; }
-
-    /*!
-     * Get a pointer to \p fitnessTest_
-     * @returns the pointer
-     */
-    double *fitnessTestPtr() { return &fitnessTest_; }
-
-    /*!
-     * Set the fitness of the individual in test set
-     * @param fitnessTest the fitness
-     */
-    void setFitnessTest(const double fitnessTest) { fitnessTest_ = fitnessTest; }
 
     //! \brief Return the poldata as pointe to const variable
     const Poldata *poldata() const { return &pd_; }
