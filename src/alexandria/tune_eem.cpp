@@ -332,52 +332,6 @@ double OptACM::calcDeviation(bool       verbose,
     return (*targets).find(eRMS::TOT)->second.chiSquared();
 }
 
-void OptACM::computeDiQuad(std::map<eRMS, FittingTarget> *targets,
-                           MyMol                         *mymol)
-{
-
-    // These two things need to be present, if not the code will crash
-    // TODO: What happens with this little interlude when we bring in
-    // the for loop?
-    // QtypeProps *qelec = mymol->qTypeProps(qType::Elec);
-    QtypeProps *qcalc = mymol->qTypeProps(qType::Calc);
-    if ((*targets).find(eRMS::MU)->second.weight() > 0 ||
-        (*targets).find(eRMS::QUAD)->second.weight() > 0)
-    {
-        qcalc->setQ(mymol->atoms());
-        qcalc->setX(mymol->x());
-        qcalc->calcMoments();
-    }
-
-}
-
-void OptACM::initOpt(bool bRandom)
-{
-    for(auto &optIndex : optIndex_)
-    {
-        auto                iType = optIndex.iType();
-        ForceFieldParameter p;
-        if (iType == InteractionType::CHARGE)
-        {
-            if (poldata()->hasParticleType(optIndex.particleType()))
-            {
-                p = poldata()->findParticleType(optIndex.particleType())->parameterConst(optIndex.parameterType());
-            }
-        }
-        else if (poldata()->interactionPresent(iType))
-        {
-            p = poldata()->findForcesConst(iType).findParameterTypeConst(optIndex.id(), optIndex.parameterType());
-        }
-        if (p.ntrain() >= mindata())
-        {
-            Bayes::addParam(optIndex.name(),
-                            p.value(), p.mutability(),
-                            p.minimum(), p.maximum(),
-                            p.ntrain(), bRandom);
-        }
-    }
-}
-
 bool OptACM::runMaster(const gmx_output_env_t *oenv,
                        const char             *xvgconv,
                        const char             *xvgepot,
