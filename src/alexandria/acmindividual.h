@@ -65,12 +65,12 @@ public:
 
         // Initialize vectors for statistics and bestParam_.
         // initialParam_ and param_ will be initialized later
-        size_t nParams = sii_->paramNames().size();
-        pmean_.resize(nParams, 0.0);
-        psigma_.resize(nParams, 0.0);
-        attemptedMoves_.resize(nParams, 0);
-        acceptedMoves_.resize(nParams, 0);
-        bestParam_.resize(nParams, 0.0);
+        size_t nParam = sii_->nParam();
+        pmean_.resize(nParam, 0.0);
+        psigma_.resize(nParam, 0.0);
+        attemptedMoves_.resize(nParam, 0);
+        acceptedMoves_.resize(nParam, 0);
+        bestParam_.resize(nParam, 0.0);
 
         // Copy targets_ from sii_
         targets_ = sii_->targets();  // This should make a deep copy if the copy constructors are well made
@@ -301,25 +301,43 @@ public:
      */
     const std::vector<double> &bestParam() const { return bestParam_; }
 
+    /*!
+     * Set a new best parameter vector
+     * \param[in] param the new best parameter vector
+     */
+    void setBestParam(const std::vector<double> &param) { bestParam_ = param; }
+
     /*! \brief
      * Returns the vector of mean value calculated for each parameter.
      */
     const std::vector<double> &pMean() const { return pmean_; }
+
+    //! \return a pointer to \p pmean_
+    std::vector<double> *pMeanPtr() { return &pmean_; }
 
     /*! \brief
      * Returns the vector of standard deviation calculated for each parameter.
      */
     const std::vector<double> &pSigma() const { return psigma_; }
 
+    //! \return a pointer to \p psigma_
+    std::vector<double> *pSigmaPtr() { return &psigma_; }
+
     /*! \brief
      * Return the vector of number of attempted moves for each parameter
      */
-    const std::vector<int> &attemptedMoves() const {return attemptedMoves_;}
+    const std::vector<int> &attemptedMoves() const { return attemptedMoves_; }
+
+    //! \return a pointer to \p attemptedMoves_
+    std::vector<int> *attemptedMovesPtr() { return &attemptedMoves_; }
 
     /*! \brief
      * Return the vector of number of accepted moves for each parameter
      */
-    const std::vector<int> &acceptedMoves() const {return acceptedMoves_;}
+    const std::vector<int> &acceptedMoves() const { return acceptedMoves_; }
+
+    //! \return a pointer to \p acceptedMoves_
+    std::vector<int> *acceptedMovesPtr() { return &acceptedMoves_; }
 
     //! \return a constant \p fpc_ reference
     const std::vector<FILE*> &fpc() const { return fpc_; }

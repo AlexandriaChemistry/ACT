@@ -16,6 +16,7 @@ class MCMCMutator : public ga::Mutator
 {
 
 private:
+
     //! Pointer to BayesConfigHandler
     BayesConfigHandler *bch_;
     //! Pointer to ACMFitnessComputer
@@ -26,6 +27,10 @@ private:
     FILE *logfile_;
     //! Whether we are in verbose mode
     bool verbose_;
+
+    std::random_device                      rd;
+    std::mt19937                            gen;
+    std::uniform_int_distribution<size_t>   dis;
 
     /*! \brief
      * Change parameter \p j in an individual based on a random number
@@ -59,7 +64,7 @@ private:
                              const double           xiter);                                          
 
     /*!
-     * Write chi2 value to surveillance file
+     * Write chi2 value to surveillance file, if it exists
      * @param ind                   pointer to individual
      * @param bEvaluate_testset     true if test set is evaluated, false otherwise
      * @param xiter                 fractional iteration (3.6, 3.89, ...)
@@ -72,7 +77,96 @@ private:
                         const double            prevEval,
                         const double            prevEval_testset);
 
+    //! \return a random index of the parameter vector
+    size_t randIndex() { return dis(gen); }
+
+    /*!
+     * Compute mean (pmean_) and standard deviation (psigma_) for each parameter
+     * @param pmean         pointer to \p pmean_ vector in the individual
+     * @param psigma        pointer to \p psigma_ vector in the individual
+     * @param nParam        number of parameters in the system
+     * @param sum           over "nsum" iterations, the sum of each parameter
+     * @param nsum          number of iterations to compute statistics over
+     * @param sum_of_sq     over "nsum" iterations, the sum of each parameter squared
+     */
+    void computeMeanSigma(      std::vector<double>    *pmean,
+                                std::vector<double>    *psigma,
+                          const size_t                  nParam,
+                          const std::vector<double>    &sum,
+                          const int                     nsum,
+                                std::vector<double>    *sum_of_sq);
+
+    /*!
+     * Take a step of MCMC by attempting to alter a parameter
+     * @param ind               pointer to individual
+     * @param param             pointer to parameter vector of the individual
+     * @param changed           a reference to a vector which has true for parameters that change and false otherwise
+     * @param prevEval          pointer to a double storage with the previous chi2 for training set
+     * @param prevEval_testset  a pointer to a double storage with the previous chi2 for test set
+     * @param bEvaluate_testset true if evaluation should be done on test set, false otherwise
+     * @param pp                index of inner loop over number of parameters
+     * @param iter              current iteration number
+     * @param beta0             pointer to beta for annealing
+     * @param nParam            number of parameters in the model
+     * @param minEval           pointer to the minimum chi2 found so far for the training set
+     * @param paramClassIndex   class (by index) of each parameter in the model
+     */
+    void stepMCMC(      ACMIndividual          *ind,
+                        std::vector<double>    *param,
+                        std::vector<bool>      *changed,
+                        double                 *prevEval,
+                        double                 *prevEval_testset,
+                  const bool                    evaluate_testset,
+                  const size_t                  pp,
+                  const int                     iter,
+                        double                 *beta0,
+                  const size_t                  nParam,
+                        double                 *minEval,
+                  const std::vector<int>       &paramClassIndex);
+
 public:
+
+    /*!
+     * Constructor of MCMCMutator
+     * @param logfile   pointer to log file (may be nullptr)
+     * @param verbose   whether we are in verbose mode or not
+     * @param bch       pointer to BayesConfigHandler object
+     * @param fitComp   pointer to ACMFitnessComputer object
+     * @param sii       pointer to SharedIndividualInfo object
+     * @param nParam    size of the parameter vector
+     */
+    MCMCMutator(      FILE*                     logfile,
+                const bool                      verbose,
+                      BayesConfigHandler       *bch,
+                      ACMFitnessComputer       *fitComp,
+                      SharedIndividualInfo     *sii,
+                const size_t                    nParam)
+    : Mutator(), gen(rd()), dis(std::uniform_int_distribution<>(0, nParam-1))
+    {
+        gen.seed(::time(NULL));
+
+        logfile_ = logfile;
+        verbose_ = verbose;
+        bch_     = bch;
+        fitComp_ = fitComp;
+        sii_     = sii;
+    };
+
+    /*!
+     * Mutate an individual's genes (in place)
+     * @param individual        pointer to the individual to mutate
+     * @param prMut             probability of mutating a gene
+     */
+    virtual void mutate(      Individual   *individual,
+                        const double        prMut);
+
+    /*! \brief
+     * Run the Markov chain Monte carlo (MCMC) simulation
+     * \param[in]  ind              pointer to the individual
+     * \param[in]  evaluate_testset If true, evaluate the energy on
+     *                              the test set.
+     */
+    bool MCMC(ACMIndividual *ind, const bool evaluate_testset);
 
     /*! \brief
      * Return the number of calls to the objective function

@@ -6,6 +6,7 @@
 
 #include "devcomputer.h"
 #include "aliases.h"
+#include "acmindividual.h"
 
 
 namespace alexandria
@@ -41,7 +42,7 @@ public:
     /*! \brief Compute the desired entities.
      * @param[in] individual    The pointer to the individual to compute for
      */
-    virtual void compute(Individual *individual);
+    virtual void compute(ga::Individual *individual);
 
     /*! \brief Computes deviation from target
      * \param[in] individual    pointer to individual
@@ -50,10 +51,10 @@ public:
      * \param[in] ims           The data set to do computations on
      * \return the square deviation
      */
-    double calcDeviation(      Individual  *individual,
-                         const bool         verbose,
-                               CalcDev      calcDev,
-                               iMolSelect   ims);
+    double calcDeviation(      ACMIndividual   *individual,
+                         const bool             verbose,
+                               CalcDev          calcDev,
+                               iMolSelect       ims);
 
     //! \brief Fill the devComputers vector according to the needs of the user
     void fillDevComputers();  // TODO: maybe call this in the constructor?

@@ -1,11 +1,216 @@
 #include "mcmcmutator.h"
 
 #include "bayes.h"
+#include "memory_check.h"
 
 
 namespace alexandria
 {
 
+
+void MCMCMutator::mutate(      Individual   *individual,
+                        const double        prMut)
+{
+    // TODO: implement this!
+}
+
+bool MCMCMutator::MCMC(      ACMIndividual *ind,
+                       const bool           evaluate_testset)
+{
+
+    int nsum = 0;
+    const size_t nParam = ind->nParam();
+    double minEval = 0;
+    double prevEval = 0;
+    double prevEval_testset = 0;
+
+    std::vector<double> sum, sum_of_sq;
+    sum.resize(nParam, 0);
+    sum_of_sq.resize(nParam, 0);
+
+    std::vector<bool> changed;
+    // Initialize to true to make sure the parameters are 
+    // all spread around the processors.
+    changed.resize(nParam, true);
+    ind->toPoldata(changed);
+    // Now set them back to false, further spreading is done
+    // one parameter at a time.
+    std::fill(changed.begin(), changed.end(), false);
+
+    const std::vector<double> fpc = ind->fpc();
+    FILE *fpe = ind->fpe();
+    const std::vector<int> paramClassIndex = sii_->paramClassIndex();
+    std::vector<double> *param = ind->paramPtr();
+    
+    if (sii_->xvgConv().empty() || sii_->xvgEpot().empty())
+    {
+        gmx_fatal(FARGS, "You forgot to call setOutputFiles. Back to the drawing board.");
+    }
+    if (param->empty())
+    {
+        fprintf(stderr, "No parameters to optimize.\n");
+        return 0;
+    }
+
+    // Gather initial chi2 evaluations for training and test sets
+    prevEval = fitComp_->calcDeviation(ind, true, CalcDev::Parallel, iMolSelect::Train);  // This does not fill the fitness attribute in individual!
+    minEval = prevEval;
+    ind->setFitnessTrain(prevEval);
+    if (evaluate_testset)
+    {
+        prevEval_testset = fitComp_->calcDeviation(ind, true, CalcDev::Parallel, iMolSelect::Test);
+        ind->setFitnessTest(prevEval_testset);
+    }
+
+    print_memory_usage(debug);
+
+    double beta0 = 1 / (BOLTZ * bch_->temperature());
+
+    // Optimization loop
+    for (int iter = 0; iter < bch_->maxIter(); iter++)
+    {
+        for (size_t pp = 0; pp < nParam; pp++)
+        {
+            // Do the step!
+            stepMCMC(ind, param, &changed, &prevEval, &prevEval_testset,
+                     evaluate_testset, pp, iter, &beta0, nParam, &minEval, paramClassIndex);
+
+            // For the second half of the optimization, collect data to find the mean and standard deviation of each
+            // parameter
+            if (iter >= bch_->maxIter()/2)
+            {
+                for (size_t k = 0; k < nParam; k++)
+                {
+                    sum[k]       += (*param)[k];
+                    sum_of_sq[k] += gmx::square((*param)[k]);
+                }
+                nsum++;
+            }
+        }
+    }
+
+    // OPTIMIZATION IS COMPLETE
+
+    computeMeanSigma(ind->pMeanPtr(), ind->pSigmaPtr(), nParam, sum, nsum, &sum_of_sq);
+
+    bool bMinimum = false; // Assume no better minimum was found
+    if (minEval < ind->fitnessTrain())  // If better minimum was found, update the value in <*chi2> and return true
+    {
+        ind->setFitnessTrain(minEval);
+        bMinimum = true;
+    }
+    return bMinimum;
+
+}
+
+void MCMCMutator::stepMCMC(      ACMIndividual          *ind,
+                                 std::vector<double>    *param,
+                                 std::vector<bool>      *changed,
+                                 double                 *prevEval,
+                                 double                 *prevEval_testset,
+                           const bool                    evaluate_testset,
+                           const size_t                  pp,
+                           const int                     iter,
+                                 double                 *beta0,
+                           const size_t                  nParam,
+                                 double                 *minEval,
+                           const std::vector<int>       &paramClassIndex)
+{
+
+    // Get pointers for attempted and accepted moves
+    std::vector<int> *attemptedMoves = ind->attemptedMovesPtr();
+    std::vector<int> *acceptedMoves  = ind->acceptedMovesPtr();
+
+    // Pick a random parameter index
+    const size_t paramIndex = randIndex();
+
+    // Store the original value of the parameter
+    const double storeParam = (*param)[paramIndex];
+
+    // Change the parameter
+    changeParam(ind, paramIndex);
+
+    (*attemptedMoves)[paramIndex] += 1;
+    (*changed)[paramIndex]         = true;
+
+    // Update FF parameter data structure with
+    // the new value of parameter j
+    ind->toPoldata(*changed);
+
+    // Evaluate the energy on training set
+    const double currEval = fitComp_->calcDeviation(ind, false, CalcDev::Parallel, iMolSelect::Train);
+    const double deltaEval = currEval - (*prevEval);
+    // Evaluate the energy on the test set only on whole steps!
+    double currEval_testset = (*prevEval_testset);
+    if (evaluate_testset && pp == 0)
+    {
+        currEval_testset = fitComp_->calcDeviation(ind, false, CalcDev::Parallel, iMolSelect::Test);
+    }
+
+    // Accept any downhill move
+    bool accept = (deltaEval < 0);
+
+    // For an uphill move apply the Metropolis Criteria
+    // to decide whether to accept or reject the new parameter
+    if (!accept)
+    {
+        // Only anneal if the simulation reached a certain number of steps
+        if (bch_->anneal(iter)) (*beta0) = bch_->computeBeta(iter);
+        const double randProbability = randNum();
+        const double mcProbability   = exp( - ( (*beta0) / (sii_->weightedTemperature())[paramIndex] ) * deltaEval );
+        accept = (mcProbability > randProbability);
+    }
+
+    // Fractional iteration taking into account the inner loop with <pp> over <nParam>
+    const double xiter = iter + (1.0*pp)/nParam;
+    if (accept)
+    {  // If the parameter change is accepted
+        if (currEval < (*minEval))
+        {
+            // If pointer to log file exists, write information about new minimum
+            if (logfile_) fprintNewMinimum(ind, bEvaluate_testset, xiter, currEval, currEval_testset);
+            ind->setBestParam(*param);
+            (*minEval) = currEval;
+            ind->saveState();
+        }
+        (*prevEval) = currEval;
+        if (evaluate_testset)
+        {
+            (*prevEval_testset) = currEval_testset;
+            ind->setFitnessTest(currEval_testset);
+        }
+        (*acceptedMoves)[paramIndex] += 1;
+    }
+    else
+    {  // If the parameter change is not accepted
+        (*param)[paramIndex] = storeParam;  // Set the old value of the parameter back
+        // poldata needs to change back as well!
+        toPoldata(*changed);
+    }
+    (*changed)[paramIndex] = false;  // Set changed[j] back to false for upcoming iterations
+
+    fprintParameterStep(ind, xiter);
+    fprintChi2Step(ind, evaluate_testset, xiter, *prevEval, *prevEval_testset);
+
+}                  
+
+void MCMCMutator::computeMeanSigma(      std::vector<double>    *pmean,
+                                         std::vector<double>    *psigma,
+                                   const size_t                  nParam,
+                                   const std::vector<double>    &sum,
+                                   const int                     nsum,
+                                         std::vector<double>    *sum_of_sq)
+{
+    if (nsum <= 0) return;
+    double ps2 = 0.0;
+    for (size_t k = 0; k < nParam; k++)
+    {
+        (*pmean)[k]        = (sum[k]/nsum);
+        (*sum_of_sq)[k]   /= nsum;
+        ps2                = std::max(0.0, (*sum_of_sq)[k]-gmx::square((*pmean)[k]));
+        (*psigma)[k]       = sqrt(ps2);
+    }
+}                                         
 
 void MCMCMutator::changeParam(ACMIndividual *ind,
                               size_t         j)
@@ -13,7 +218,9 @@ void MCMCMutator::changeParam(ACMIndividual *ind,
     std::vector<double> *param = ind->paramPtr();
     
     GMX_RELEASE_ASSERT(j < param->size(), "Parameter out of range");
-    real delta = (2*randNum()-1) * bch_->step() * (sii_->upperBound()[j] - sii_->lowerBound()[j]);
+    double rnd = randNum();
+    while (rnd == 0.5) rnd = randNum();  // Make sure the parameter changes!
+    real delta = (2*rnd-1) * bch_->step() * (sii_->upperBound()[j] - sii_->lowerBound()[j]);
     (*param)[j] += delta;
     if (sii_->mutability()[j] == Mutability::Bounded)
     {
@@ -124,6 +331,9 @@ void MCMCMutator::fprintChi2Step(      ACMIndividual    *ind,
                                  const double            prevEval_testset)
 {
     auto fpe = ind->fpe();
+
+    if (fpe == nullptr) return;  // If fpe is a null pointer, return
+
     if (bEvaluate_testset)
     {
         fprintf(fpe, "%8f  %10g  %10g\n", xiter, prevEval, prevEval_testset);
