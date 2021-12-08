@@ -23,7 +23,7 @@ double ACMFitnessComputer::calcDeviation(Individual   *individual,
 }
 
 void computeDiQuad(std::map<eRMS, FittingTarget> *targets,
-                    MyMol                         *mymol)
+                   MyMol                         *mymol)
 {
     QtypeProps *qcalc = mymol->qTypeProps(qType::Calc);
     if ((*targets).find(eRMS::MU)->second.weight() > 0 ||

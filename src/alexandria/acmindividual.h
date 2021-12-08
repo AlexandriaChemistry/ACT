@@ -77,9 +77,10 @@ public:
         bestParam_.resize(nParams, 0.0);
 
         // Copy targets_ from sii_
-        targets_ = sii->targets();  // This should make a deep copy if the copy constructors are well made
+        targets_ = sii_->targets();  // This should make a deep copy if the copy constructors are well made
 
-        // TODO: copy poldata from sii_
+        // Copy poldata from sii_
+        pd_ = sii_->poldataConst();
         
     }
 
@@ -289,10 +290,13 @@ public:
      */
     void setFitnessTest(const double fitnessTest) { fitnessTest_ = fitnessTest; }
 
-    //! \brief Return the poldata as const variable
+    //! \brief Return the poldata as pointe to const variable
     const Poldata *poldata() const { return &pd_; }
+
+    //! \brief Return the poldata as const reference
+    const Poldata &poldataConst() const { return pd_; }
     
-    //! \brief Return the poldata
+    //! \brief Return pointer to the poldata
     Poldata *poldata() { return &pd_; }
 
     //! \brief Return the number of parameters

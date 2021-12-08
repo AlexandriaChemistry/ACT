@@ -175,6 +175,19 @@ public:
 
     //! \brief Get a constant \p targets_ reference
     const std::map<iMolSelect, std::map<eRMS, FittingTarget>> &targets() const { return targets_; }
+
+    //! \return pointer to \p targets_
+    std::map<iMolSelect, std::map<eRMS, FittingTarget>> *targetsPtr() { return &targets_; }
+    
+    //! \brief Return the poldata as pointer to const variable
+    const Poldata *poldata() const { return &pd_; }
+
+    //! \brief Return the poldata as const reference
+    const Poldata &poldataConst() const { return pd_; }
+    
+    //! \brief Return pointer to the poldata
+    Poldata *poldata() { return &pd_; }
+
     /* * * * * * * * * * * * * * * * * * * * * *
     * END: Getters and setters                 *
     * * * * * * * * * * * * * * * * * * * * * */
