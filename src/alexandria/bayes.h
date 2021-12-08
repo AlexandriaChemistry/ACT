@@ -138,12 +138,6 @@ class Bayes
         Bayes() {}
 
         /*! \brief
-         * Change parameter j based on a random number
-         * obtained from a uniform distribution.
-         */
-        void changeParam(size_t j, real rand);
-
-        /*! \brief
          * Run the Markov chain Monte carlo (MCMC) simulation
          * \param[in]  fplog            File pointer for logging info.
          *                              May be nullptr.
@@ -247,21 +241,6 @@ class Bayes
          * \param[in] ims   Data set to perform sensitivity analysis on
          */
         void SensitivityAnalysis(FILE *fplog, iMolSelect ims);
-
-        /*! Return number of planned function calls
-         * Return the number of calls to the objective function
-         * that will be made by the Bayes::MCMC
-         */
-        size_t numberObjectiveFunctionCalls() const
-        {
-            return 1+bch_.maxIter()*nParam();
-        }
-        
-        /* \brief
-         * Print the MC statistics to a file.
-         * \param[in] fp File pointer to print to
-         */
-        void printMonteCarloStatistics(FILE *fp);
 
 };
 

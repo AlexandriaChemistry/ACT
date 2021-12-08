@@ -105,24 +105,6 @@ void Sensitivity::print(FILE *fp, const std::string &label)
     }
 }
 
-void Bayes::changeParam(size_t j, real rand)
-{
-    GMX_RELEASE_ASSERT(j < param_.size(), "Parameter out of range");
-    real delta = (2*rand-1)*bch_.step()*(upperBound_[j]-lowerBound_[j]);
-    param_[j] += delta;
-    if (mutability_[j] == Mutability::Bounded)
-    {
-        if (param_[j] < lowerBound_[j])
-        {
-            param_[j] = lowerBound_[j];
-        }
-        else if (param_[j] > upperBound_[j])
-        {
-            param_[j] = upperBound_[j];
-        }
-    }
-}
-
 void Bayes::SensitivityAnalysis(FILE *fplog, iMolSelect ims)
 {
     if (param_.size() == 0)
@@ -475,33 +457,6 @@ void Bayes::fprintChi2Step(const bool   bEvaluate_testset,
         fflush(fpe);
     }
 
-}
-
-void Bayes::printMonteCarloStatistics(FILE *fp)
-{
-    if (!fp)
-    {
-        return;
-    }
-    fprintf(fp, "\nMonte Carlo statistics of parameters after optimization\n");
-    fprintf(fp, "#best %zu #mean %zu #sigma %zu #param %zu\n",
-            bestParam_.size(), pmean_.size(), psigma_.size(), paramNames_.size());
-    if (bestParam_.size() == nParam())
-    {
-        fprintf(fp, "Parameter                     Ncopies Initial   Best    Mean    Sigma Attempt  Acceptance  T-Weight\n");
-        for (size_t k = 0; k < Bayes::nParam(); k++)
-        {
-            double acceptance_ratio = 0;
-            if (attemptedMoves_[k] > 0)
-            {
-                acceptance_ratio = 100*(double(acceptedMoves_[k])/attemptedMoves_[k]);
-            }
-            fprintf(fp, "%-30s  %5d  %6.3f  %6.3f  %6.3f  %6.3f    %4d %5.1f%%  %10.5f\n",
-                    paramNames_[k].c_str(), ntrain_[k],
-                    initial_param_[k], bestParam_[k], pmean_[k], psigma_[k],
-                    attemptedMoves_[k], acceptance_ratio, weightedTemperature_[k]);
-        }
-    }
 }
 
 

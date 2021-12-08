@@ -286,12 +286,15 @@ public:
     /*! \brief
      * Returns the current vector of parameters.
      */
-    const std::vector<double> &onitialParam() const { return initialParam_; }
+    const std::vector<double> &initialParam() const { return initialParam_; }
 
     /*! \brief
      * Returns the current vector of parameters.
      */
     const std::vector<double> &param() const { return param_; }
+
+    //! \return pointer to \p param_
+    std::vector<double> *paramPtr() { return &param; }
 
     /*! \brief
      * Returns the vector of best found value for each parameter.

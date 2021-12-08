@@ -138,6 +138,9 @@ public:
     //! \brief Get a constant \p paramNames_ reference
     const std::vector<std::string> &paramNames() const { return paramNames_; }
 
+    //! \brief Return the number of parameters
+    size_t nParam() const { return paramNames_.size(); }
+
     //! \brief Get a constant \p paramClass_ reference
     const std::vector<std::string> &paramClass() const { return paramClass_; }
 
