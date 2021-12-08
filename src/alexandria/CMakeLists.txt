@@ -31,9 +31,12 @@ set(ALEXANDRIA_SOURCES
            atype_mapping.cpp
            babel_io.cpp
            bastat.cpp
+           bayes.cpp
            categories.cpp
            chargemodel.cpp
            communication.cpp
+           confighandler.cpp
+           devcomputer.cpp
            dissociation_energy.cpp
            fill_inputrec.cpp
            forcefieldparameter.cpp
@@ -63,7 +66,6 @@ set(ALEXANDRIA_SOURCES
            mymol.cpp
            mymol_low.cpp
            openmm_xml.cpp
-	   optparam.cpp
            particletype.cpp
            phase.cpp
            plistwrapper.cpp

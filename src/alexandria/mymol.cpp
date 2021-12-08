@@ -528,13 +528,24 @@ immStatus MyMol::GenerateAtoms(const Poldata     *pd,
                                t_atoms           *atoms,
                                const std::string &method,
                                const std::string &basis,
-                               std::string       *mylot)
+                               std::string       *mylot,
+                               bool               strict=true)
 {
     double              xx, yy, zz;
     int                 natom = 0;
     immStatus           imm   = immStatus::OK;
 
-    auto ci     = getCalc(method, basis, mylot);
+    auto ci = getCalcPropType(method, basis, mylot, 
+                              MolPropObservable::COORDINATES, nullptr);
+    if (ci == EndExperiment() && !strict)
+    {
+        if (debug)
+        {
+            fprintf(debug, "Trying to find calculation without known method/basisset for %s\n", getMolname().c_str());
+        }
+        ci = getCalcPropType("", "", mylot, 
+                             MolPropObservable::COORDINATES, nullptr);
+    }
     if (ci < EndExperiment())
     {
         t_param nb;
@@ -722,7 +733,8 @@ immStatus MyMol::GenerateTopology(FILE              *fp,
                                   const std::string &basis,
                                   std::string       *mylot,
                                   missingParameters  missing,
-                                  const char        *tabfn)
+                                  const char        *tabfn,
+                                  bool               strict)
 {
     immStatus   imm = immStatus::OK;
     std::string btype1, btype2;
@@ -741,7 +753,7 @@ immStatus MyMol::GenerateTopology(FILE              *fp,
     {
         snew(atoms, 1);
         state_change_natoms(state_, NAtom());
-        imm = GenerateAtoms(pd, atoms, method, basis, mylot);
+        imm = GenerateAtoms(pd, atoms, method, basis, mylot, strict);
     }
     if (immStatus::OK == imm)
     {
@@ -1254,6 +1266,11 @@ immStatus MyMol::GenerateGromacs(const gmx::MDLogger       &mdlog,
     }
     gromacsGenerated_ = true;
     return immStatus::OK;
+}
+
+real MyMol::potentialEnergy() const 
+{
+    return enerd_->term[F_EPOT];
 }
 
 immStatus MyMol::computeForces(FILE *fplog, t_commrec *cr, double *rmsf)
@@ -1861,7 +1878,7 @@ void MyMol::PrintTopology(FILE                   *fp,
     char                     buf[256];
     t_mols                   printmol;
     std::vector<std::string> commercials;
-    rvec                     vec;
+    std::vector<double>      vec;
     tensor                   myQ;
     double                   value = 0, error = 0, T = -1;
     std::string              myref;
@@ -1915,9 +1932,9 @@ void MyMol::PrintTopology(FILE                   *fp,
     const char *qm_conf = "minimum";
     if (getPropRef(MolPropObservable::DIPOLE, iqmType::QM, method, basis, qm_conf,
                    qm_type, &value, &error,
-                   &T, &myref, &mylot, vec, myQ))
+                   &T, &myref, &mylot, &vec, myQ))
     {
-        qProps_.find(qType::Elec)->second.setMu(vec);
+        qProps_.find(qType::Elec)->second.setMu(vec.data());
         snprintf(buf, sizeof(buf), "%s Dipole Moment (Debye):\n"
                  "; ( %.2f %6.2f %6.2f ) Total= %.2f\n",
                  mylot.c_str(),
@@ -1939,7 +1956,7 @@ void MyMol::PrintTopology(FILE                   *fp,
     T = -1;
     if (getPropRef(MolPropObservable::QUADRUPOLE, iqmType::QM, method, basis, qm_conf,
                    qm_type, &value, &error,
-                   &T, &myref, &mylot, vec, myQ))
+                   &T, &myref, &mylot, &vec, myQ))
     {
         qProps_.find(qType::Elec)->second.setQuadrupole(myQ);
         // TODO rotate_tensor(Q_qm_[qType::Elec], Q_qm_[qType::Calc]);
@@ -1971,8 +1988,8 @@ void MyMol::PrintTopology(FILE                   *fp,
 
             T = -1;
             if (getPropRef(MolPropObservable::POLARIZABILITY, iqmType::QM, method, basis, "",
-                                      (char *)"electronic", &isoPol_elec_, &error,
-                                      &T, &myref, &mylot, vec, alpha_elec_))
+                           (char *)"electronic", &isoPol_elec_, &error,
+                           &T, &myref, &mylot, &vec, alpha_elec_))
             {
                 CalcAnisoPolarizability(alpha_elec_, &anisoPol_elec_);
                 snprintf(buf, sizeof(buf), "%s + Polarizability components (A^3)", mylot.c_str());
@@ -2172,6 +2189,11 @@ void MyMol::calcEspRms(const Poldata *pd)
     done_atom(&myatoms);
 }
 
+const real *MyMol::energyTerms() const
+{
+    return enerd_->term;
+}
+        
 immStatus MyMol::getExpProps(iqmType            iqm,
                              gmx_bool           bZero,
                              gmx_bool           bZPE,
@@ -2180,18 +2202,18 @@ immStatus MyMol::getExpProps(iqmType            iqm,
                              const std::string &basis,
                              const Poldata     *pd)
 {
-    int          ia    = 0;
-    int          natom = 0;
-    unsigned int nwarn = 0;
-    double       value = 0;
-    double       ZPE   = 0;
-    double       error = 0;
-    double       T     = -1;
-    rvec         vec   = { 0 };
-    tensor       quadrupole = {{ 0 }};
-    tensor       polar      = {{ 0 }};
-    std::string  myref;
-    std::string  mylot;
+    int                 ia    = 0;
+    int                 natom = 0;
+    unsigned int        nwarn = 0;
+    double              value = 0;
+    double              ZPE   = 0;
+    double              error = 0;
+    double              T     = -1;
+    std::vector<double> vec;
+    tensor              quadrupole = {{ 0 }};
+    tensor              polar      = {{ 0 }};
+    std::string         myref;
+    std::string         mylot;
 
     auto myatoms = atomsConst();
     gmx::HostVector<gmx::RVec> xatom(myatoms.nr);
@@ -2207,14 +2229,14 @@ immStatus MyMol::getExpProps(iqmType            iqm,
     xatom.resizeWithPadding(natom);
     for(auto &i : qTypes())
     {
-        std::vector<real> q;
+        std::vector<double> q;
         q.resize(natom, 0.0);
         qType qi = i.first;
         if (getPropRef(MolPropObservable::CHARGE, iqmType::QM,
                        method, basis, "",
                        qTypeName(qi),
                        &value, &error, &T,
-                       &myref, &mylot, q.data(), quadrupole))
+                       &myref, &mylot, &q, quadrupole))
         {
             auto qp = qProps_.find(qi);
             if (qp == qProps_.end())
@@ -2278,11 +2300,11 @@ immStatus MyMol::getExpProps(iqmType            iqm,
                        method, basis, "",
                        (char *)"electronic",
                        &value, &error, &T, &myref, &mylot,
-                       vec, quadrupole))
+                       &vec, quadrupole))
         {
             dip_exp_  = value;
             dip_err_  = error;
-            qProps_.find(qType::Elec)->second.setMu(vec);
+            qProps_.find(qType::Elec)->second.setMu(vec.data());
             
             if (error <= 0)
             {
@@ -2313,7 +2335,7 @@ immStatus MyMol::getExpProps(iqmType            iqm,
                        method, basis, "",
                        (char *)"electronic",
                        &value, &error, &T, &myref, &mylot,
-                       vec, quadrupole))
+                       nullptr, quadrupole))
         {
             qProps_.find(qType::Elec)->second.setQuadrupole(quadrupole);
         }
@@ -2322,7 +2344,7 @@ immStatus MyMol::getExpProps(iqmType            iqm,
                        method, basis, "",
                        (char *)"electronic",
                        &isoPol_elec_, &error, &T,
-                       &myref, &mylot, vec, polar))
+                       &myref, &mylot, &vec, polar))
         {
             copy_mat(polar, alpha_elec_);
             CalcAnisoPolarizability(alpha_elec_, &anisoPol_elec_);

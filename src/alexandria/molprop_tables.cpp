@@ -860,7 +860,7 @@ void alexandria_molprop_prop_table(FILE                 *fp,
 #define BLEN 1024
     char                        mylbuf[BLEN], vbuf[BLEN-32];
     double                      calc_val, calc_err, vc;
-    rvec                        rvec;
+    std::vector<double>         vec;
     tensor                      quadrupole;
     bool                        bPrintConf;
 
@@ -954,7 +954,7 @@ void alexandria_molprop_prop_table(FILE                 *fp,
                     if ((q->type().compare(exp_type) == 0) &&
                         mpi.getPropRef(mpo, iqmType::QM, q->method(), q->basis(), "",
                                        q->type(), &calc_val, &calc_err, &T,
-                                       &ref, &mylot, rvec, quadrupole))
+                                       &ref, &mylot, &vec, quadrupole))
                     {
                         cd.push_back(CalcData(calc_val, calc_err, T, 1));
                         nqm++;
