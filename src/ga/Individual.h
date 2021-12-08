@@ -13,9 +13,9 @@ class Individual
 protected:
 
     //! Fitness for training set
-    double fitnessTrain_ = 0;
+    double fitnessTrain_ = 0.0;
     //! Fitness for test set
-    double fitnessTest_ = 0;
+    double fitnessTest_ = 0.0;
 
     //! Default constructor
     Individual() {}
