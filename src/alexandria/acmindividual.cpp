@@ -128,7 +128,7 @@ void ACMIndividual::printChiSquared(t_commrec *cr, FILE *fp, iMolSelect ims) con
 
 void ACMIndividual::saveState()
 {
-    writePoldata(outputFile_, pd_, false);
+    writePoldata(outputFile_, &pd_, false);
 }
 
 void ACMIndividual::printParameters(FILE *fp) const

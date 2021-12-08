@@ -112,10 +112,6 @@ void SharedIndividualInfo::fillVectors(const int mindata)
         }
     }
 
-    for (auto &optIndex : optIndex_)
-    {
-        paramNames_.push_back(optIndex.name());
-    }
 }
 
 /* * * * * * * * * * * * * * * * * * * * * *
@@ -128,6 +124,9 @@ void SharedIndividualInfo::fillVectors(const int mindata)
 
 void SharedIndividualInfo::assignParamClassIndex()
 {
+
+    paramClassIndex_.resize(paramNames_.size(), -1);
+
     for (size_t i = 0; i < paramClass_.size(); i++)
     {
         for (size_t j = 0; j < paramNames_.size(); j++)

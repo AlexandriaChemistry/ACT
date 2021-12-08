@@ -66,5 +66,53 @@ void MCMCMutator::printMonteCarloStatistics(ACMIndividual  *ind,
     }
 }
 
+void MCMCMutator::fprintNewMinimum(      ACMIndividual *ind,
+                                   const bool           bEvaluate_testset,
+                                   const double         xiter,
+                                   const double         currEval,
+                                   const double         currEval_testset)
+{
+    if (bEvaluate_testset)
+    {
+        fprintf(logfile_, "iter %10g. Found new minimum at %10g. Corresponding energy on the test set: %g\n",
+                xiter, currEval, currEval_testset);
+    }
+    else
+    {
+        fprintf(logfile_, "iter %10g. Found new minimum at %10g\n",
+                xiter, currEval);
+    }
+    if (debug)
+    {
+        ind->printParameters(debug);
+    }
+}             
+
+void MCMCMutator::fprintParameterStep(      ACMIndividual   *ind,
+                                      const double           xiter)
+{
+
+    const auto fpc = ind->fpc();
+    const auto param = ind->param();
+    const auto paramClassIndex = sii_->paramClassIndex();
+
+    for(FILE *fp: fpc)  // Write iteration number to each parameter convergence surveillance file
+    {
+        fprintf(fp, "%8f", xiter);
+    }
+    for (size_t k = 0; k < param.size(); k++)  // Write value of each parameter to its respective surveillance file
+    {
+        fprintf(fpc[paramClassIndex[k]], "  %10g", param[k]);
+    }
+    for(FILE *fp: fpc)  // If verbose = True, flush the file to be able to add new data to surveillance plots
+    {
+        fprintf(fp, "\n");
+        if (verbose_)
+        {
+            fflush(fp);
+        }
+    }
+
+}                             
 
 }

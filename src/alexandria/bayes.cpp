@@ -271,16 +271,6 @@ bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
     return bMinimum;
 }
 
-void Bayes::computeWeightedTemperature()
-{
-    for(size_t j = 0; j < paramNames_.size(); j++)
-    {
-        GMX_RELEASE_ASSERT(ntrain_[j] > 0, "ntrain should be > 0 for all parameters");
-        // TODO: Maybe a fast inverse square root here?
-        weightedTemperature_[j] = std::sqrt(1.0/ntrain_[j]);
-    }
-}
-
 void Bayes::stepMCMC(const int                                  paramIndex,
                            std::mt19937                        &gen,
                            std::uniform_real_distribution<>    &real_uniform,
@@ -384,54 +374,6 @@ void Bayes::computeMeanSigma(const int     nParam,
             (*sum_of_sq)[k] /= nsum;
             ps2              = std::max(0.0, (*sum_of_sq)[k]-gmx::square(pmean_[k]));
             psigma_[k]       = sqrt(ps2);
-        }
-    }
-
-}
-
-void Bayes::fprintNewMinimum(      FILE   *fplog,
-                             const bool    bEvaluate_testset,
-                             const double  xiter,
-                             const double  currEval,
-                             const double  currEval_testset)
-{
-
-    if (bEvaluate_testset)
-    {
-        fprintf(fplog, "iter %10g. Found new minimum at %10g. Corresponding energy on the test set: %g\n",
-                xiter, currEval, currEval_testset);
-    }
-    else
-    {
-        fprintf(fplog, "iter %10g. Found new minimum at %10g\n",
-                xiter, currEval);
-    }
-    if (debug)
-    {
-        printParameters(debug);
-    }
-
-}
-
-void Bayes::fprintParameterStep(const std::vector<FILE*>   &fpc,
-                                const std::vector<int>     &paramClassIndex,
-                                const double                xiter)
-{
-
-    for(FILE *fp: fpc)  // Write iteration number to each parameter convergence surveillance file
-    {
-        fprintf(fp, "%8f", xiter);
-    }
-    for (size_t k = 0; k < param_.size(); k++)  // Write value of each parameter to its respective surveillance file
-    {
-        fprintf(fpc[paramClassIndex[k]], "  %10g", param_[k]);
-    }
-    for(FILE *fp: fpc)  // If verbose = True, flush the file to be able to add new data to surveillance plots
-    {
-        fprintf(fp, "\n");
-        if (bch_.verbose())
-        {
-            fflush(fp);
         }
     }
 

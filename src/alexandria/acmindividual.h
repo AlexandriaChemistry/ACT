@@ -321,6 +321,9 @@ public:
      */
     const std::vector<int> &acceptedMoves() const {return acceptedMoves_;}
 
+    //! \return a constant \p fpc_ reference
+    const std::vector<FILE*> &fpc() const { return fpc_; }
+
     /* * * * * * * * * * * * * * * * * * * * * *
     * END: Getters and Setters                 *
     * * * * * * * * * * * * * * * * * * * * * */

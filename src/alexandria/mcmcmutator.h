@@ -24,6 +24,8 @@ private:
     SharedIndividualInfo *sii_;
     //! Pointer to log file (may be nullptr)
     FILE *logfile_;
+    //! Whether we are in verbose mode
+    bool verbose_;
 
     /*! \brief
      * Change parameter \p j in an individual based on a random number
@@ -33,6 +35,28 @@ private:
      */
     void changeParam(ACMIndividual *ind,
                      size_t         j);
+
+    /*!
+     * Print new minimum to log file and, if necessary, print params to debug file
+     * @param ind                   pointer to individual
+     * @param bEvaluate_testset     true if test set is evaluated, false otherwise
+     * @param xiter                 fractional iteration. E.g, if we are halfway through iteration 3 it is 3.5
+     * @param currEval              current chi2 in training set
+     * @param currEval_testset      current chi2 in test set
+     */
+    void fprintNewMinimum(      ACMIndividual  *ind,
+                          const bool            bEvaluate_testset,
+                          const double          xiter,
+                          const double          currEval,
+                          const double          currEval_testset);     
+
+    /*!
+     * Print parameter values to their respective surveillance files
+     * @param ind   pointer to the individual
+     * @param xiter fractional iteration (e.g. 3.5, 2.89, ...)
+     */
+    void fprintParameterStep(      ACMIndividual   *ind,
+                             const double           xiter);                                          
 
 public:
 

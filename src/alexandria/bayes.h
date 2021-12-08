@@ -185,30 +185,6 @@ class Bayes
                       const std::vector<int>                   &paramClassIndex);
 
         /*!
-         * Print new minimum to log file and, if necessary, print params to debug file
-         * @param fplog                 pointer to log file
-         * @param bEvaluate_testset     true if test set is evaluated, false otherwise
-         * @param xiter                 fractional iteration. E.g, if we are halfway through iteration 3 it is 3.5
-         * @param currEval              current chi2 in training set
-         * @param currEval_testset      current chi2 in test set
-         */
-        void fprintNewMinimum(      FILE   *fplog,
-                              const bool    bEvaluate_testset,
-                              const double  xiter,
-                              const double  currEval,
-                              const double  currEval_testset);
-
-        /*!
-         * Print parameter values to their respective surveillance files
-         * @param fpc                   pointer to each parameter surveillance file
-         * @param paramClassIndex       class index of each parameter
-         * @param xiter                 fractional iteration (e.g. 3.5, 2.89, ...)
-         */
-        void fprintParameterStep(const std::vector<FILE*>   &fpc,
-                                 const std::vector<int>     &paramClassIndex,
-                                 const double                xiter);
-
-        /*!
          * Write chi2 value to surveillance file
          * @param bEvaluate_testset     true if test set is evaluated, false otherwise
          * @param fpe                   pointer to chi2 surveillance file
