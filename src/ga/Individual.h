@@ -20,6 +20,12 @@ protected:
     //! Default constructor
     Individual() {}
 
+
+    /*!
+     * Property constructor
+     * \param[in] fitnessTrain  the fitness for training set
+     * \param[in] fitnessTest  the fitness for test set
+     */
     Individual(const double fitnessTrain,
                const double fitnessTest)
     : fitnessTrain_(fitnessTrain), fitnessTest_(fitnessTest) {}
