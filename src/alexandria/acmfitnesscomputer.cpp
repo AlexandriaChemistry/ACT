@@ -15,9 +15,10 @@ void ACMFitnessComputer::compute(Individual *individual)
     // TODO: Implement this function.
 }
 
-double ACMFitnessComputer::calcDeviation(Individual   *individual,
-                                         CalcDev      calcDev,
-                                         iMolSelect   ims)
+double ACMFitnessComputer::calcDeviation(      Individual  *individual,
+                                         const bool         verbose,
+                                               CalcDev      calcDev,
+                                               iMolSelect   ims)
 {
     // TODO: Implement this function.
 }

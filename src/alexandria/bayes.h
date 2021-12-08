@@ -196,14 +196,6 @@ class Bayes
                               const int     nsum,
                                     parm_t *sum_of_sq);
 
-        /*! \brief
-         * Perform a sensitivity analysis by systematically changing
-         * all parameters and re-evaluating the chi2.
-         * \param[in] fplog    File pointer to print to
-         * \param[in] ims   Data set to perform sensitivity analysis on
-         */
-        void SensitivityAnalysis(FILE *fplog, iMolSelect ims);
-
 };
 
 }

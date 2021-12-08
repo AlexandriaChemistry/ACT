@@ -44,14 +44,16 @@ public:
     virtual void compute(Individual *individual);
 
     /*! \brief Computes deviation from target
-     * \param[in] verbose Whether or not to print a lot
-     * \param[in] calcDev The type of calculation to do
-     * \param[in] ims     The data set to do computations on
+     * \param[in] individual    pointer to individual
+     * \param[in] verbose       Whether or not to print a lot
+     * \param[in] calcDev       The type of calculation to do
+     * \param[in] ims           The data set to do computations on
      * \return the square deviation
      */
-    double calcDeviation(Individual  *individual,
-                         CalcDev      calcDev,
-                         iMolSelect   ims);
+    double calcDeviation(      Individual  *individual,
+                         const bool         verbose,
+                               CalcDev      calcDev,
+                               iMolSelect   ims);
 
     //! \brief Fill the devComputers vector according to the needs of the user
     void fillDevComputers();  // TODO: maybe call this in the constructor?

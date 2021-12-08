@@ -91,6 +91,15 @@ public:
     void printMonteCarloStatistics(ACMIndividual   *ind,
                                    FILE            *fp);
 
+    /*! \brief
+     * Perform a sensitivity analysis by systematically changing
+     * all parameters and re-evaluating the chi2.
+     * \param[in] ind   pointer to individual
+     * \param[in] ims   Data set to perform sensitivity analysis on
+     */
+    void sensitivityAnalysis(ACMIndividual  *ind,
+                             iMolSelect      ims);
+
 };
 
 

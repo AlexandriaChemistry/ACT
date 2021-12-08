@@ -294,7 +294,7 @@ public:
     const std::vector<double> &param() const { return param_; }
 
     //! \return pointer to \p param_
-    std::vector<double> *paramPtr() { return &param; }
+    std::vector<double> *paramPtr() { return &param_; }
 
     /*! \brief
      * Returns the vector of best found value for each parameter.

@@ -92,13 +92,6 @@ public:
     void initChargeGeneration(iMolSelect ims);
 
     /*! \brief
-     *
-     * Fill parameter vector based on Poldata.
-     * \param[in] bRandom Generate random initial values for parameters if true
-     */
-    void initOpt(bool bRandom);
-
-    /*! \brief
      * Do the actual optimization.
      * \param[in] oenv        Output environment for managing xvg files etc.
      * \param[in] xvgconv     Output file monitoring parameters

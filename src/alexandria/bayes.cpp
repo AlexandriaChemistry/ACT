@@ -105,53 +105,6 @@ void Sensitivity::print(FILE *fp, const std::string &label)
     }
 }
 
-void Bayes::SensitivityAnalysis(FILE *fplog, iMolSelect ims)
-{
-    if (param_.size() == 0)
-    {
-        return;
-    }
-    std::vector<bool> changed;
-    changed.resize(param_.size(), true);
-    toPoldata(changed);
-    std::fill(changed.begin(), changed.end(), false);
-    double chi2_0 = calcDeviation(false, CalcDev::Parallel, ims);
-    if (fplog)
-    {
-        fprintf(fplog, "\nStarting sensitivity analysis. chi2_0 = %g nParam = %d\n",
-                chi2_0, static_cast<int>(param_.size()));
-        fflush(fplog);
-    }
-    for (size_t i = 0; i < param_.size(); ++i)
-    {
-        Sensitivity s;
-        double pstore = param_[i];
-        double deltap = (upperBound_[i]-lowerBound_[i])/200;
-        double pmin   = std::max(param_[i]-deltap, lowerBound_[i]);
-        double pmax   = std::min(param_[i]+deltap, upperBound_[i]);
-        double p_0    = 0.5*(pmin+pmax);
-        changed[i]    = true;
-        param_[i]     = pmin;
-        toPoldata(changed);
-        s.add(param_[i], calcDeviation(false, CalcDev::Parallel, ims));
-        param_[i]     = p_0;
-        toPoldata(changed);
-        s.add(param_[i], calcDeviation(false, CalcDev::Parallel, ims));
-        param_[i]     = pmax;
-        toPoldata(changed);
-        s.add(param_[i],  calcDeviation(false, CalcDev::Parallel, ims));
-        param_[i]     = pstore;
-        toPoldata(changed);
-        changed[i]    = false;
-        s.computeForceConstants(fplog);
-        s.print(fplog, paramNames_[i]);
-    }
-    if (fplog)
-    {
-        fprintf(fplog, "Sensitivity analysis done.\n");
-    }
-}
-
 bool Bayes::MCMC(FILE *fplog, bool bEvaluate_testset, double *chi2)
 {
     int                              nsum             = 0;
@@ -375,28 +328,6 @@ void Bayes::computeMeanSigma(const int     nParam,
             ps2              = std::max(0.0, (*sum_of_sq)[k]-gmx::square(pmean_[k]));
             psigma_[k]       = sqrt(ps2);
         }
-    }
-
-}
-
-void Bayes::fprintChi2Step(const bool   bEvaluate_testset,
-                                 FILE  *fpe,
-                           const double xiter,
-                           const double prevEval,
-                           const double prevEval_testset)
-{
-
-    if (bEvaluate_testset)
-    {
-        fprintf(fpe, "%8f  %10g  %10g\n", xiter, prevEval, prevEval_testset);
-    }
-    else
-    {
-        fprintf(fpe, "%8f  %10g\n", xiter, prevEval);
-    }
-    if (bch_.verbose())
-    {
-        fflush(fpe);
     }
 
 }

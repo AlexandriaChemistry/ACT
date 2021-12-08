@@ -1,5 +1,7 @@
 #include "mcmcmutator.h"
 
+#include "bayes.h"
+
 
 namespace alexandria
 {
@@ -136,5 +138,60 @@ void MCMCMutator::fprintChi2Step(      ACMIndividual    *ind,
     }
 }                    
 
+void MCMCMutator::sensitivityAnalysis(ACMIndividual  *ind,
+                                      iMolSelect      ims)
+{
+    
+    std::vector<double> *param_ = ind->paramPtr();
+    const auto upperBound = sii_->upperBound();
+    const auto lowerBound = sii_->lowerBound();
+    const auto paramNames = sii_->paramNames();
 
-}
+    if (param_->size() == 0)
+    {
+        return;
+    }
+    std::vector<bool> changed;
+    changed.resize(param_->size(), true);
+    ind->toPoldata(changed);
+    std::fill(changed.begin(), changed.end(), false);
+    double chi2_0 = fitComp_->calcDeviation(ind, CalcDev::Parallel, ims);
+    if (logfile_)
+    {
+        fprintf(logfile_, "\nStarting sensitivity analysis. chi2_0 = %g nParam = %d\n",
+                chi2_0, static_cast<int>(param_->size()));
+        fflush(logfile_);
+    }
+    for (size_t i = 0; i < param_->size(); ++i)
+    {
+        Sensitivity s;
+        double pstore = (*param_)[i];
+        double deltap = (upperBound[i]-lowerBound[i])/200;
+        double pmin   = std::max((*param_)[i]-deltap, lowerBound[i]);
+        double pmax   = std::min((*param_)[i]+deltap, upperBound[i]);
+        double p_0    = 0.5*(pmin+pmax);
+        changed[i]    = true;
+        (*param_)[i]     = pmin;
+        ind->toPoldata(changed);
+        s.add((*param_)[i], fitComp_->calcDeviation(ind, false, CalcDev::Parallel, ims));
+        (*param_)[i]     = p_0;
+        ind->toPoldata(changed);
+        s.add((*param_)[i], fitComp_->calcDeviation(ind, false, CalcDev::Parallel, ims));
+        (*param_)[i]     = pmax;
+        ind->toPoldata(changed);
+        s.add((*param_)[i],  fitComp_->calcDeviation(ind, false, CalcDev::Parallel, ims));
+        (*param_)[i]     = pstore;
+        ind->toPoldata(changed);
+        changed[i]    = false;
+        s.computeForceConstants(logfile_);
+        s.print(logfile_, paramNames[i]);
+    }
+    if (logfile_)
+    {
+        fprintf(logfile_, "Sensitivity analysis done.\n");
+    }
+
+}                                      
+
+
+} //namespace alexandria
