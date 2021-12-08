@@ -58,6 +58,20 @@ private:
     void fprintParameterStep(      ACMIndividual   *ind,
                              const double           xiter);                                          
 
+    /*!
+     * Write chi2 value to surveillance file
+     * @param ind                   pointer to individual
+     * @param bEvaluate_testset     true if test set is evaluated, false otherwise
+     * @param xiter                 fractional iteration (3.6, 3.89, ...)
+     * @param prevEval              chi2 fro training set
+     * @param prevEval_testset      chi2 for test set
+     */
+    void fprintChi2Step(      ACMIndividual    *ind,
+                        const bool              bEvaluate_testset,
+                        const double            xiter,
+                        const double            prevEval,
+                        const double            prevEval_testset);
+
 public:
 
     /*! \brief

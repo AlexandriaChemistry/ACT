@@ -324,6 +324,9 @@ public:
     //! \return a constant \p fpc_ reference
     const std::vector<FILE*> &fpc() const { return fpc_; }
 
+    //! \return a \p fpe_ file for Chi2
+    FILE *fpe() { return fpe_; }
+
     /* * * * * * * * * * * * * * * * * * * * * *
     * END: Getters and Setters                 *
     * * * * * * * * * * * * * * * * * * * * * */

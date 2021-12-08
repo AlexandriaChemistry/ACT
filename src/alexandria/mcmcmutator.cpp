@@ -115,4 +115,26 @@ void MCMCMutator::fprintParameterStep(      ACMIndividual   *ind,
 
 }                             
 
+void MCMCMutator::fprintChi2Step(      ACMIndividual    *ind,
+                                 const bool              bEvaluate_testset,
+                                 const double            xiter,
+                                 const double            prevEval,
+                                 const double            prevEval_testset)
+{
+    auto fpe = ind->fpe();
+    if (bEvaluate_testset)
+    {
+        fprintf(fpe, "%8f  %10g  %10g\n", xiter, prevEval, prevEval_testset);
+    }
+    else
+    {
+        fprintf(fpe, "%8f  %10g\n", xiter, prevEval);
+    }
+    if (verbose_)
+    {
+        fflush(fpe);
+    }
+}                    
+
+
 }
