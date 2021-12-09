@@ -60,6 +60,16 @@ namespace alexandria
 
 /*! \brief The different entry types that can be found
  * TODO: Comment each element
+ * xmlEntryOpenMM defines the keys that are in the xmlyyyOpenMM map
+ * xmlyyyOpenMM is the map listing value and key used for the OpenMM xml file
+ * exml_names returns string value upon calling function and submitting the key 
+ * addSpecParameter adds specific parameter for an atomtype upon submitting a string value, here also conversion 
+ *       of strings and units are done so that it is suitable for OpenMM, e.g. angles have to be in radians
+ * addSpecOption adds specific option for an atomtype 
+ * addShell adds shell particle for a specific core atomtype
+ * addXmlPoldata creates the xml tree ForceField, it consists of Atomtypes, Residues, HarmonicBondForce, HarmonicAngleForce, CustomNonBondedForce, NonBondedForce and DrudeForce
+ * !!! The order of the parameters is in certain forces (e.g. CustomNonBondedForce) very important; reordering might break the force field in OpenMM!!!
+ * writeOpenMM
  */
 
 enum class xmlEntryOpenMM {
@@ -396,7 +406,7 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
 
     for (auto &fs : pd->forcesConst())
     {
-        // This part has to be added again in order to implement Morse potential;
+        // This part has to be added again in order to add the Morse potential;
         // It is unclear how to link the bondorder information to the paramter assignment that happens via atomtypes
         //if (strcmp(interactionTypeToString(fs.first).c_str(), "BONDS") == 0)
         //{
