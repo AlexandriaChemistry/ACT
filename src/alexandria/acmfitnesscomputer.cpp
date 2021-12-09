@@ -1,5 +1,6 @@
 #include "acmfitnesscomputer.h"
-#include "aliases.h"
+
+#include "bayes.h"
 
 
 namespace alexandria
@@ -10,17 +11,120 @@ namespace alexandria
 * BEGIN: ACMFitnessComputer            *
 * * * * * * * * * * * * * * * * * * * */
 
-void ACMFitnessComputer::compute(ga::Individual *individual)
+void ACMFitnessComputer::compute(ga::Individual *ind)
 {
     // TODO: Implement this function.
 }
 
-double ACMFitnessComputer::calcDeviation(      ACMIndividual   *individual,
+double ACMFitnessComputer::calcDeviation(      ACMIndividual   *ind,
+                                               t_commrec       *cr,
                                          const bool             verbose,
                                                CalcDev          calcDev,
                                                iMolSelect       ims)
 {
-    // TODO: Implement this function.
+
+    // Send / receive parameters
+    if (MASTER(cr))
+    {
+        if (PAR(cr) && calcDev != CalcDev::Master)
+        {
+            for (int i = 1; i < cr->nnodes; i++)
+            {
+                gmx_send_int(cr, i, static_cast<int>(calcDev));
+                gmx_send_int(cr, i, static_cast<int>(ims));
+            }
+        }
+    }
+    else
+    {
+        calcDev = static_cast<CalcDev>(gmx_recv_int(cr, 0));
+        ims     = static_cast<iMolSelect>(gmx_recv_int(cr, 0));
+    }
+
+    // If final call, return -1
+    if (calcDev == CalcDev::Final) return -1;
+
+    // Reset the chi2 in FittingTargets of individual
+    ind->resetChiSquared();
+
+    // Gather fitting targets from the individual
+    std::map<eRMS, FittingTarget> *targets = ind->fittingTargets(ims);
+
+    // If MASTER, penalize out of bounds
+    if (MASTER(cr))
+    {
+        if (bdc_ != nullptr)
+        {
+            bdc_->calcDeviation(nullptr, targets, ind->poldata(), ind->param(), cr);
+        }
+    }
+
+    // If we are running in parallel, spread/receive Poldata properties
+    if (PAR(cr))
+    {
+        if (calcDev == CalcDev::Parallel)
+        {
+            ind->poldata()->broadcast_eemprop(cr);
+            ind->poldata()->broadcast_particles(cr);
+        }
+    }
+
+    // Loop over molecules
+    int nmolCalculated = 0;
+    for (MyMol &mymol : mg_->mymols())
+    {
+        if (ims != mymol.datasetType())
+        {
+            continue;
+        }
+        if ((mymol.eSupp_ == eSupport::Local) ||
+            (calcDev == CalcDev::Master && mymol.eSupp_ == eSupport::Remote))
+        {
+            nmolCalculated += 1;
+            // Update the polarizabilities only once before the loop
+            if (mg_->fit("alpha"))
+            {
+                mymol.UpdateIdef(ind->poldata(), InteractionType::POLARIZATION);
+            }
+            // TODO: do this systematically
+            if (mg_->fit("Dm"))
+            {
+                mymol.UpdateIdef(ind->poldata(), InteractionType::BONDS);
+            }
+            // Update the electronegativity parameters
+            mymol.zetaToAtoms(ind->poldata(), mymol.atoms());
+            // Run charge generation including shell minimization
+            immStatus imm = mymol.GenerateAcmCharges(ind->poldata(), cr,
+                                                     mg_->qcycle(), mg_->qtol());
+
+            // Check whether we have to disable this compound
+            if (immStatus::OK != imm && removeMol_)
+            {
+                mymol.eSupp_ = eSupport::No;
+                continue;
+            }
+
+            computeDiQuad(targets, &mymol);
+
+            for (DevComputer *mydev : devComputers_)
+                mydev->calcDeviation(&mymol, targets, ind->poldata(), ind->param(), cr);
+        }
+        ind->sumChiSquared(cr, calcDev == CalcDev::Parallel, ims);
+    }
+
+    if (debug)
+    {
+        ind->printParameters(debug);
+    }
+
+    if (verbose_ && logfile_)
+    {
+        ind->printChiSquared(cr, logfile_, ims);  // Will only be done by MASTER
+    }
+
+    numberCalcDevCalled_ += 1;
+    return (*targets).find(eRMS::TOT)->second.chiSquared();
+
 }
 
 void computeDiQuad(std::map<eRMS, FittingTarget> *targets,
@@ -38,25 +142,25 @@ void computeDiQuad(std::map<eRMS, FittingTarget> *targets,
 
 void ACFMFitnessComputer::fillDevComputers()
 {
-    FILE *lf = logFile();
-    bool verb = verbose();
+    // FILE *lf = logFile();
+    // bool verb = verbose();
 
-    if (target(iMolSelect::Train, eRMS::BOUNDS)->weight() > 0)
-        bdc_ = new BoundsDevComputer(lf, verb, &optIndex_);
+    // if (target(iMolSelect::Train, eRMS::BOUNDS)->weight() > 0)
+    //     bdc_ = new BoundsDevComputer(lf, verb, &optIndex_);
 
-    if (target(iMolSelect::Train, eRMS::CHARGE)->weight() > 0 ||
-        target(iMolSelect::Train, eRMS::CM5)->weight() > 0)
-        devComputers_.push_back(new ChargeCM5DevComputer(lf, verb));
-    if (target(iMolSelect::Train, eRMS::ESP)->weight() > 0)
-        devComputers_.push_back(new EspDevComputer(lf, verb, fit("zeta")));
-    if (target(iMolSelect::Train, eRMS::Polar)->weight() > 0)
-        devComputers_.push_back(new PolarDevComputer(lf, verb, bFullQuadrupole_));
-    if (target(iMolSelect::Train, eRMS::QUAD)->weight() > 0)
-        devComputers_.push_back(new QuadDevComputer(lf, verb, bFullQuadrupole_));
-    if (target(iMolSelect::Train, eRMS::MU)->weight() > 0)
-        devComputers_.push_back(new MuDevComputer(lf, verb, bQM()));
-    if (target(iMolSelect::Train, eRMS::EPOT)->weight() > 0)
-        devComputers_.push_back(new EnergyDevComputer(lf, verb));
+    // if (target(iMolSelect::Train, eRMS::CHARGE)->weight() > 0 ||
+    //     target(iMolSelect::Train, eRMS::CM5)->weight() > 0)
+    //     devComputers_.push_back(new ChargeCM5DevComputer(lf, verb));
+    // if (target(iMolSelect::Train, eRMS::ESP)->weight() > 0)
+    //     devComputers_.push_back(new EspDevComputer(lf, verb, fit("zeta")));
+    // if (target(iMolSelect::Train, eRMS::Polar)->weight() > 0)
+    //     devComputers_.push_back(new PolarDevComputer(lf, verb, bFullQuadrupole_));
+    // if (target(iMolSelect::Train, eRMS::QUAD)->weight() > 0)
+    //     devComputers_.push_back(new QuadDevComputer(lf, verb, bFullQuadrupole_));
+    // if (target(iMolSelect::Train, eRMS::MU)->weight() > 0)
+    //     devComputers_.push_back(new MuDevComputer(lf, verb, bQM()));
+    // if (target(iMolSelect::Train, eRMS::EPOT)->weight() > 0)
+    //     devComputers_.push_back(new EnergyDevComputer(lf, verb));
 }
 
 

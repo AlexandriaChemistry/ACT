@@ -63,6 +63,9 @@ private:
 
 public:
 
+    //! Default constructor
+    GeneticAlgorithm() {}
+
     /*!
      * Create a new GeneticAlgorithm object
      * @param popSize               size of the population

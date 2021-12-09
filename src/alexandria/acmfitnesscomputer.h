@@ -27,6 +27,21 @@ private:
     //! \brief A vector of devComputers.
     std::vector<DevComputer*> devComputers_;
 
+    //! \brief SharedIndividualInfo pointer
+    SharedIndividualInfo *sii_;
+
+    //! \brief MolGen pointer
+    MolGen *mg_;
+
+    //! \brief Whether or not to remove molecules that fail to converge in the shell minimization
+    bool removeMol_;
+
+    //! \brief Whether we are in verbose mode or not
+    bool verbose_;
+
+    //! \brief Amount of times calcDeviation() has been called
+    int numberCalcDevCalled_ = 0;
+
     /*! \brief Compute dipole and quadrupole moments (if needed), for a given molecule
      * @param targets   pointer to a map between the components of chi-squared and the fitting targets
      * @param mymol     the molecule
@@ -40,18 +55,20 @@ public:
     bool verbose_;
 
     /*! \brief Compute the desired entities.
-     * @param[in] individual    The pointer to the individual to compute for
+     * @param[in] ind    The pointer to the individual to compute for
      */
-    virtual void compute(ga::Individual *individual);
+    virtual void compute(ga::Individual *ind);
 
     /*! \brief Computes deviation from target
-     * \param[in] individual    pointer to individual
+     * \param[in] ind    pointer to individual
      * \param[in] verbose       Whether or not to print a lot
+     * \param[in] cr            communication record
      * \param[in] calcDev       The type of calculation to do
      * \param[in] ims           The data set to do computations on
      * \return the square deviation
      */
-    double calcDeviation(      ACMIndividual   *individual,
+    double calcDeviation(      ACMIndividual   *ind,
+                               t_commrec       *cr,
                          const bool             verbose,
                                CalcDev          calcDev,
                                iMolSelect       ims);
