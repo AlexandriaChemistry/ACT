@@ -364,8 +364,10 @@ private:
      * Check that we have enough data for all parameters to optimize
      * in this molecule.
      * \param[in] fp File to print logging information to. May be nullptr.
+     * \param[in] pd Pointer to poldata object
      */
-    void checkDataSufficiency(FILE *fp);
+    void checkDataSufficiency(FILE     *fp,
+                              Poldata  *pd);
     
     //! Compute amount of compounds in each group
     void countTargetSize();
@@ -395,11 +397,6 @@ public:
      * \param[in] cr communication record
      */ 
     MolGen(t_commrec *cr);
-    
-    /*! \brief 
-     * Deconstructor of MolGen class.
-     */
-    ~MolGen();
     
     /*! \brief Add options to the command line
      * \param[in] pargs   Vector of command line arguments

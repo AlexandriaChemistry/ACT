@@ -180,7 +180,8 @@ void MolGen::fillIopt(Poldata *pd) // This is called in the read method, the fil
     }
 }
 
-void MolGen::checkDataSufficiency(FILE *fp) // Called in read method
+void MolGen::checkDataSufficiency(FILE     *fp,
+                                  Poldata  *pd) // Called in read method
 {
     size_t nmol = 0;
     if (targetSize_.find(iMolSelect::Train) == targetSize_.end())
@@ -204,10 +205,10 @@ void MolGen::checkDataSufficiency(FILE *fp) // Called in read method
             if (io.second)
             {
                 ForceFieldParameterList *fplist;
-                if (pd_.interactionPresent(io.first))
+                if (pd->interactionPresent(io.first))
                 {
                     // Loop over interactions
-                    fplist = pd_.findForces(io.first);
+                    fplist = pd->findForces(io.first);
                     for(auto &force : *(fplist->parameters()))
                     {
                         for(auto &ff : force.second)
@@ -224,7 +225,7 @@ void MolGen::checkDataSufficiency(FILE *fp) // Called in read method
                     GMX_RELEASE_ASSERT(io.first == InteractionType::CHARGE,
                                        "Death Horror Programming Error.");
                     // Loop over particles to find mutable charges
-                    auto pv = pd_.particleTypes();
+                    auto pv = pd->particleTypes();
                     std::string ccc("charge");
                     for (auto pt = pv->begin(); pt < pv->end(); ++pt )
                     {
@@ -267,10 +268,10 @@ void MolGen::checkDataSufficiency(FILE *fp) // Called in read method
                 {
                     if (optimize(itype))
                     {
-                        auto atype  = pd_.findParticleType(*myatoms.atomtype[i]);
+                        auto atype  = pd->findParticleType(*myatoms.atomtype[i]);
                         if (atype->hasInteractionType(itype))
                         {
-                            auto fplist = pd_.findForces(itype);
+                            auto fplist = pd->findForces(itype);
                             auto subId  = atype->interactionTypeToIdentifier(itype);
                             if (!subId.id().empty())
                             {
@@ -300,7 +301,7 @@ void MolGen::checkDataSufficiency(FILE *fp) // Called in read method
             }
             // Now check bonds and bondcorrections
             auto btype = InteractionType::BONDS;
-            auto bonds = pd_.findForces(btype);
+            auto bonds = pd->findForces(btype);
             for(int i = 0; i < mol.ltop_->idef.il[bonds->fType()].nr;
                 i+= interaction_function[bonds->fType()].nratoms+1)
             {
@@ -310,8 +311,8 @@ void MolGen::checkDataSufficiency(FILE *fp) // Called in read method
                 auto bo     = mol.bondOrder(ai, aj);
                 if (optimize(btype))
                 {
-                    auto iPType = pd_.findParticleType(*myatoms.atomtype[ai])->interactionTypeToIdentifier(btype).id();
-                    auto jPType = pd_.findParticleType(*myatoms.atomtype[aj])->interactionTypeToIdentifier(btype).id();
+                    auto iPType = pd->findParticleType(*myatoms.atomtype[ai])->interactionTypeToIdentifier(btype).id();
+                    auto jPType = pd->findParticleType(*myatoms.atomtype[aj])->interactionTypeToIdentifier(btype).id();
                     auto bondId = Identifier({iPType, jPType}, bo, bonds->canSwap());
                     for(auto &ff : *(bonds->findParameters(bondId)))
                     {
@@ -322,12 +323,12 @@ void MolGen::checkDataSufficiency(FILE *fp) // Called in read method
                     }
                 }
                 auto bcctype = InteractionType::BONDCORRECTIONS;
-                if (optimize(bcctype) && pd_.interactionPresent(bcctype))
+                if (optimize(bcctype) && pd->interactionPresent(bcctype))
                 {
                     auto ztype  = InteractionType::ELECTRONEGATIVITYEQUALIZATION;
-                    auto iPType = pd_.findParticleType(*myatoms.atomtype[ai])->interactionTypeToIdentifier(ztype).id();
-                    auto jPType = pd_.findParticleType(*myatoms.atomtype[aj])->interactionTypeToIdentifier(ztype).id();
-                    auto bcc   = pd_.findForces(bcctype);
+                    auto iPType = pd->findParticleType(*myatoms.atomtype[ai])->interactionTypeToIdentifier(ztype).id();
+                    auto jPType = pd->findParticleType(*myatoms.atomtype[aj])->interactionTypeToIdentifier(ztype).id();
+                    auto bcc   = pd->findForces(bcctype);
                     auto bccId = Identifier({iPType, jPType}, bo, bcc->canSwap());
                     if (!bcc->parameterExists(bccId))
                     {
@@ -357,14 +358,14 @@ void MolGen::checkDataSufficiency(FILE *fp) // Called in read method
             auto myatoms = mol.atomsConst();
             for(int i = 0; i < myatoms.nr; i++)
             {
-                auto atype = pd_.findParticleType(*myatoms.atomtype[i]);
+                auto atype = pd->findParticleType(*myatoms.atomtype[i]);
                 for(auto &itype : atomicItypes)
                 {
                     if (optimize(itype))
                     {
                         if (atype->hasInteractionType(itype))
                         {
-                            auto fplist = pd_.findForces(itype);
+                            auto fplist = pd->findForces(itype);
                             auto ztype  = atype->interactionTypeToIdentifier(itype);
                             if (!ztype.id().empty())
                             {
@@ -504,7 +505,7 @@ size_t MolGen::Read(FILE            *fp,
     print_memory_usage(debug);
 
     //  Now  we have read the poldata and spread it to processors
-    fillIopt();
+    fillIopt(pd);
     /* Reading Molecules from allmols.dat */
     if (MASTER(cr_))
     {
@@ -568,7 +569,7 @@ size_t MolGen::Read(FILE            *fp,
                 mymol.Merge(&(*mpi));
                 mymol.setInputrec(inputrec_);
                 imm = mymol.GenerateTopology(fp,
-                                             &pd_,
+                                             pd,
                                              method,
                                              basis,
                                              nullptr,
@@ -584,10 +585,10 @@ size_t MolGen::Read(FILE            *fp,
                     continue;
                 }
                 
-                mymol.symmetrizeCharges(&pd_, qsymm_, nullptr);
-                mymol.initQgenResp(&pd_, method, basis, 0.0, maxESP_);
+                mymol.symmetrizeCharges(pd, qsymm_, nullptr);
+                mymol.initQgenResp(pd, method, basis, 0.0, maxESP_);
                 std::vector<double> dummy;
-                imm = mymol.GenerateCharges(&pd_,
+                imm = mymol.GenerateCharges(pd,
                                             mdlog_,
                                             cr_,
                                             tabfn,
@@ -618,7 +619,7 @@ size_t MolGen::Read(FILE            *fp,
                 }
                 // TODO Check for G4 as well
                 imm = mymol.getExpProps(iqmType::Exp, bZero, bZPE, bDHform,
-                                        method, basis, &pd_);
+                                        method, basis, pd);
                 if (immStatus::OK != imm)
                 {
                     if (verbose && fp)
@@ -641,7 +642,7 @@ size_t MolGen::Read(FILE            *fp,
         }
         print_memory_usage(debug);
         countTargetSize();
-        checkDataSufficiency(fp);
+        checkDataSufficiency(fp, pd);
         // Now distribute the molecules over processors.
         // Make sure the master has a bit less work to do
         // than the helpers and that in particular train
@@ -777,7 +778,7 @@ size_t MolGen::Read(FILE            *fp,
             mymol.setInputrec(inputrec_);
 
             imm = mymol.GenerateTopology(debug,
-                                         &pd_,
+                                         pd,
                                          method,
                                          basis,
                                          nullptr,
@@ -787,9 +788,9 @@ size_t MolGen::Read(FILE            *fp,
             if (immStatus::OK == imm)
             {
                 std::vector<double> dummy;
-                mymol.symmetrizeCharges(&pd_, qsymm_, nullptr);
-                mymol.initQgenResp(&pd_, method, basis, 0.0, maxESP_);
-                imm = mymol.GenerateCharges(&pd_,
+                mymol.symmetrizeCharges(pd, qsymm_, nullptr);
+                mymol.initQgenResp(pd, method, basis, 0.0, maxESP_);
+                imm = mymol.GenerateCharges(pd,
                                             mdlog_,
                                             cr_,
                                             tabfn,
@@ -806,7 +807,7 @@ size_t MolGen::Read(FILE            *fp,
             if (immStatus::OK == imm)
             {
                 imm = mymol.getExpProps(iqm, bZero, bZPE, bDHform,
-                                        method, basis, &pd_);
+                                        method, basis, pd);
             }
             mymol.eSupp_ = eSupport::Local;
             incrementImmCount(&imm_count, imm);
