@@ -52,6 +52,13 @@ private:
 
 public:
 
+    /*!
+     * Constructor
+     * \param[in] cr The communications record
+     */
+    SharedIndividualInfo(t_commrec *cr)
+    : cr_(cr) {}
+
     /* * * * * * * * * * * * * * * * * * * * * *
     * BEGIN: Poldata stuff                     *
     * * * * * * * * * * * * * * * * * * * * * */
@@ -218,6 +225,9 @@ public:
 
     //! \brief Get a constant \p optIndex_ reference
     const std::vector<OptimizationIndex> &optIndex() const { return optIndex_; }
+
+    //! \brief Get a pointer to \p optIndex_
+    std::vector<OptimizationIndex> *optIndexPtr() { return &optIndex_; }
     
     //! \brief Get a constant \p paramNames_ reference
     const std::vector<std::string> &paramNames() const { return paramNames_; }

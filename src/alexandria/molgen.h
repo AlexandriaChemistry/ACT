@@ -388,10 +388,10 @@ private:
     void fillIopt(Poldata *pd);
     
 public:
-
-    //! Information for each parameter
-    std::vector<OptimizationIndex>  optIndex_;
     
+    //! Default constructor
+    MolGen() {}
+
     /*! \brief 
      * Constructor of MolGen class.
      * \param[in] cr communication record

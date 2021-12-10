@@ -18,27 +18,24 @@ class ACMFitnessComputer : public ga::FitnessComputer
 
 private: 
 
+    //! Communications record
+    t_commrec *cr_;
     //! \brief The filepointer to the log file.
     FILE *logfile_;
-
     //! \brief A pointer to the BoundsDevComputer.
     BoundsDevComputer *bdc_;
-
     //! \brief A vector of devComputers.
     std::vector<DevComputer*> devComputers_;
-
     //! \brief SharedIndividualInfo pointer
     SharedIndividualInfo *sii_;
-
     //! \brief MolGen pointer
     MolGen *mg_;
-
     //! \brief Whether or not to remove molecules that fail to converge in the shell minimization
     bool removeMol_;
-
     //! \brief Whether we are in verbose mode or not
     bool verbose_;
-
+    //! Whether we consider both diagonal and off-diagonal elements of the Q_Calc matrix for optimization
+    bool fullQuadrupole_;
     //! \brief Amount of times calcDeviation() has been called
     int numberCalcDevCalled_ = 0;
 
@@ -49,10 +46,32 @@ private:
     void computeDiQuad(std::map<eRMS, FittingTarget> *targets,
                        MyMol                         *mymol);
 
+    //! \brief Fill the devComputers vector according to the needs of the user
+    void fillDevComputers();
+
 public:
 
-    //! \brief The flag which determines the amount of explaining text for the output.
-    bool verbose_;
+    /*!
+     * Constructor
+     * \param[in] cr                communcations record
+     * \param[in] logfile           pointer to logfile
+     * \param[in] sii               pointer to SharedIndividualInfo
+     * \param[in] mg                pointer to molgen
+     * \param[in] removeMol         Whether or not to remove molecules that fail to converge in the shell minimization
+     * \param[in] verbose           Whether we consider both diagonal and off-diagonal elements of the Q_Calc matrix for optimization
+     * \param[in] fullQuadrupole    Whether we consider both diagonal and off-diagonal elements of the Q_Calc matrix for optimization
+     */
+    ACMFitnessComputer(      t_commrec             *cr,
+                             FILE                  *logfile,
+                             SharedIndividualInfo  *sii,
+                             MolGen                *mg,
+                       const bool                   removeMol,
+                       const bool                   verbose,
+                       const bool                   fullQuadrupole)
+    : cr_(cr), logfile_(logfile), sii_(sii), mg_(mg), removeMol_(removeMol), verbose_(verbose), fullQuadrupole_(fullQuadrupole)
+    {
+        fillDevComputers();
+    }
 
     /*! \brief Compute the desired entities.
      * @param[in] ind    The pointer to the individual to compute for
@@ -61,20 +80,16 @@ public:
 
     /*! \brief Computes deviation from target
      * \param[in] ind    pointer to individual
-     * \param[in] verbose       Whether or not to print a lot
-     * \param[in] cr            communication record
+     * \param[in] verbose       Whether or not to print a lot (for when this gets called from outside the compute() routine)
      * \param[in] calcDev       The type of calculation to do
      * \param[in] ims           The data set to do computations on
      * \return the square deviation
      */
     double calcDeviation(      ACMIndividual   *ind,
-                               t_commrec       *cr,
                          const bool             verbose,
                                CalcDev          calcDev,
                                iMolSelect       ims);
 
-    //! \brief Fill the devComputers vector according to the needs of the user
-    void fillDevComputers();  // TODO: maybe call this in the constructor?
 };
 
 

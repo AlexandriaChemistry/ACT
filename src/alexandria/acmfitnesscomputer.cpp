@@ -17,28 +17,27 @@ void ACMFitnessComputer::compute(ga::Individual *ind)
 }
 
 double ACMFitnessComputer::calcDeviation(      ACMIndividual   *ind,
-                                               t_commrec       *cr,
                                          const bool             verbose,
                                                CalcDev          calcDev,
                                                iMolSelect       ims)
 {
 
     // Send / receive parameters
-    if (MASTER(cr))
+    if (MASTER(cr_))
     {
-        if (PAR(cr) && calcDev != CalcDev::Master)
+        if (PAR(cr_) && calcDev != CalcDev::Master)
         {
-            for (int i = 1; i < cr->nnodes; i++)
+            for (int i = 1; i < cr_->nnodes; i++)
             {
-                gmx_send_int(cr, i, static_cast<int>(calcDev));
-                gmx_send_int(cr, i, static_cast<int>(ims));
+                gmx_send_int(cr_, i, static_cast<int>(calcDev));
+                gmx_send_int(cr_, i, static_cast<int>(ims));
             }
         }
     }
     else
     {
-        calcDev = static_cast<CalcDev>(gmx_recv_int(cr, 0));
-        ims     = static_cast<iMolSelect>(gmx_recv_int(cr, 0));
+        calcDev = static_cast<CalcDev>(gmx_recv_int(cr_, 0));
+        ims     = static_cast<iMolSelect>(gmx_recv_int(cr_, 0));
     }
 
     // If final call, return -1
@@ -51,21 +50,21 @@ double ACMFitnessComputer::calcDeviation(      ACMIndividual   *ind,
     std::map<eRMS, FittingTarget> *targets = ind->fittingTargets(ims);
 
     // If MASTER, penalize out of bounds
-    if (MASTER(cr))
+    if (MASTER(cr_))
     {
         if (bdc_ != nullptr)
         {
-            bdc_->calcDeviation(nullptr, targets, ind->poldata(), ind->param(), cr);
+            bdc_->calcDeviation(nullptr, targets, ind->poldata(), ind->param(), cr_);
         }
     }
 
     // If we are running in parallel, spread/receive Poldata properties
-    if (PAR(cr))
+    if (PAR(cr_))
     {
         if (calcDev == CalcDev::Parallel)
         {
-            ind->poldata()->broadcast_eemprop(cr);
-            ind->poldata()->broadcast_particles(cr);
+            ind->poldata()->broadcast_eemprop(cr_);
+            ind->poldata()->broadcast_particles(cr_);
         }
     }
 
@@ -94,7 +93,7 @@ double ACMFitnessComputer::calcDeviation(      ACMIndividual   *ind,
             // Update the electronegativity parameters
             mymol.zetaToAtoms(ind->poldata(), mymol.atoms());
             // Run charge generation including shell minimization
-            immStatus imm = mymol.GenerateAcmCharges(ind->poldata(), cr,
+            immStatus imm = mymol.GenerateAcmCharges(ind->poldata(), cr_,
                                                      mg_->qcycle(), mg_->qtol());
 
             // Check whether we have to disable this compound
@@ -107,9 +106,9 @@ double ACMFitnessComputer::calcDeviation(      ACMIndividual   *ind,
             computeDiQuad(targets, &mymol);
 
             for (DevComputer *mydev : devComputers_)
-                mydev->calcDeviation(&mymol, targets, ind->poldata(), ind->param(), cr);
+                mydev->calcDeviation(&mymol, targets, ind->poldata(), ind->param(), cr_);
         }
-        ind->sumChiSquared(cr, calcDev == CalcDev::Parallel, ims);
+        ind->sumChiSquared(cr_, calcDev == CalcDev::Parallel, ims);
     }
 
     if (debug)
@@ -119,7 +118,7 @@ double ACMFitnessComputer::calcDeviation(      ACMIndividual   *ind,
 
     if (verbose_ && logfile_)
     {
-        ind->printChiSquared(cr, logfile_, ims);  // Will only be done by MASTER
+        ind->printChiSquared(cr_, logfile_, ims);  // Will only be done by MASTER
     }
 
     numberCalcDevCalled_ += 1;
@@ -140,27 +139,24 @@ void computeDiQuad(std::map<eRMS, FittingTarget> *targets,
     }
 }
 
-void ACFMFitnessComputer::fillDevComputers()
+void ACMFitnessComputer::fillDevComputers()
 {
-    // FILE *lf = logFile();
-    // bool verb = verbose();
+    if (sii_->target(iMolSelect::Train, eRMS::BOUNDS)->weight() > 0)
+        bdc_ = new BoundsDevComputer(logfile_, verbose_, sii_->optIndexPtr());
 
-    // if (target(iMolSelect::Train, eRMS::BOUNDS)->weight() > 0)
-    //     bdc_ = new BoundsDevComputer(lf, verb, &optIndex_);
-
-    // if (target(iMolSelect::Train, eRMS::CHARGE)->weight() > 0 ||
-    //     target(iMolSelect::Train, eRMS::CM5)->weight() > 0)
-    //     devComputers_.push_back(new ChargeCM5DevComputer(lf, verb));
-    // if (target(iMolSelect::Train, eRMS::ESP)->weight() > 0)
-    //     devComputers_.push_back(new EspDevComputer(lf, verb, fit("zeta")));
-    // if (target(iMolSelect::Train, eRMS::Polar)->weight() > 0)
-    //     devComputers_.push_back(new PolarDevComputer(lf, verb, bFullQuadrupole_));
-    // if (target(iMolSelect::Train, eRMS::QUAD)->weight() > 0)
-    //     devComputers_.push_back(new QuadDevComputer(lf, verb, bFullQuadrupole_));
-    // if (target(iMolSelect::Train, eRMS::MU)->weight() > 0)
-    //     devComputers_.push_back(new MuDevComputer(lf, verb, bQM()));
-    // if (target(iMolSelect::Train, eRMS::EPOT)->weight() > 0)
-    //     devComputers_.push_back(new EnergyDevComputer(lf, verb));
+    if (sii_->target(iMolSelect::Train, eRMS::CHARGE)->weight() > 0 ||
+        sii_->target(iMolSelect::Train, eRMS::CM5)->weight() > 0)
+        devComputers_.push_back(new ChargeCM5DevComputer(logfile_, verbose_));
+    if (sii_->target(iMolSelect::Train, eRMS::ESP)->weight() > 0)
+        devComputers_.push_back(new EspDevComputer(logfile_, verbose_, mg_->fit("zeta")));
+    if (sii_->target(iMolSelect::Train, eRMS::Polar)->weight() > 0)
+        devComputers_.push_back(new PolarDevComputer(logfile_, verbose_, fullQuadrupole_));
+    if (sii_->target(iMolSelect::Train, eRMS::QUAD)->weight() > 0)
+        devComputers_.push_back(new QuadDevComputer(logfile_, verbose_, fullQuadrupole_));
+    if (sii_->target(iMolSelect::Train, eRMS::MU)->weight() > 0)
+        devComputers_.push_back(new MuDevComputer(logfile_, verbose_, mg_->bQM()));
+    if (sii_->target(iMolSelect::Train, eRMS::EPOT)->weight() > 0)
+        devComputers_.push_back(new EnergyDevComputer(logfile_, verbose_));
 }
 
 

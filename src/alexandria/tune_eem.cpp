@@ -144,16 +144,25 @@ void OptACM::add_pargs(std::vector<t_pargs> *pargs) {
                             "Consider both diagonal and off-diagonal elements of the Q_Calc matrix for optimization"},
                     {"-removemol",      FALSE, etBOOL, {&bRemoveMol_},
                             "Remove a molecule from training set if shell minimization does not converge."},
+                    {"-verbose",        FALSE, etBOOL, {&verbose_},
+                            "Print a lot of information."},
+                    { "-randomInit", FALSE, etBOOL, {&randomInit_},
+                            "Generate completely random starting parameters within the limits set by the options. This will be done at the very first step and before each subsequent run." }
             };
     for (int i = 0; i < asize(pa); i++) {
         pargs->push_back(pa[i]);
     }
-    addOptions(pargs, eTune::EEM);
-    configHandlerPtr()->add_pargs(pargs);
+    mg_.addOptions(pargs, eTune::EEM, sii_.fittingTargets(iMolSelect::Train));
+    bch_.add_pargs(pargs);
+}
+
+void OptACM::check_pargs()
+{
+    bch_.check_pargs();
 }
 
 void OptACM::optionsFinished(const std::string &outputFile) {
-    MolGen::optionsFinished();
+    mg_.optionsFinished();
     outputFile_ = outputFile;
 }
 
@@ -172,16 +181,16 @@ FILE *OptACM::logFile() {
 void OptACM::initChargeGeneration(iMolSelect ims)
 {
     std::string method, basis, conf, type, myref, mylot;
-    splitLot(lot(), &method, &basis);
+    splitLot(mg_.lot(), &method, &basis);
     tensor              polar      = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
     std::vector<double> vec;
-    for (MyMol &mymol : mymols())
+    for (MyMol &mymol : mg_.mymols())
     {
         if (mymol.datasetType() != ims)
         {
             continue;
         }
-        if (fit("alpha"))
+        if (mg_.fit("alpha"))
         {
             // For fitting alpha we need a reference polarizability
             double ref_pol, error, T = 0;
@@ -206,7 +215,7 @@ void OptACM::initChargeGeneration(iMolSelect ims)
         }
         if (mymol.eSupp_ != eSupport::No)
         {
-            mymol.QgenAcm_ = new QgenAcm(poldata(), mymol.atoms(),
+            mymol.QgenAcm_ = new QgenAcm(sii_.poldata(), mymol.atoms(),
                                          mymol.totalCharge());
         }
     }
@@ -321,7 +330,6 @@ int alex_tune_eem(int argc, char *argv[])
     };
 
     real                efield              = 10;
-    bool                bRandom             = false;
     bool                bcompress           = false;
     bool                bZero               = true;
     bool                bOptimize           = true;
@@ -337,8 +345,6 @@ int alex_tune_eem(int argc, char *argv[])
     std::vector<t_pargs>        pargs;
     {
         t_pargs                     pa[]         = {
-            { "-random", FALSE, etBOOL, {&bRandom},
-              "Generate completely random starting parameters within the limits set by the options. This will be done at the very first step and before each subsequent run." },
             { "-zero", FALSE, etBOOL, {&bZero},
               "Use molecules with zero dipole in the fit as well" },
             { "-compress", FALSE, etBOOL, {&bcompress},
@@ -361,7 +367,6 @@ int alex_tune_eem(int argc, char *argv[])
         }
     }
     alexandria::OptACM opt; // TODO: create SharedIndividualInfo and MolGen in constructor!
-    // TODO: add all arguments from different components
     opt.add_pargs(&pargs);
     printer.addOptions(&pargs);
 
@@ -400,16 +405,14 @@ int alex_tune_eem(int argc, char *argv[])
         return 0;
     }
 
-    // TODO: Check validity of arguments with check_pargs() in ConfigHandler(s)
-    opt.configHandlerPtr()->check_pargs();
+    // Check validity of arguments with check_pargs() in ConfigHandler(s)
+    opt.check_pargs();
 
-    // TODO: finishing MolGen stuff
-    opt.optionsFinished(opt2fn("-o", filenms.size(), filenms.data()));
+    // finishing MolGen stuff
+    opt.optionsFinished(opt2fn("-o", filenms.size(), filenms.data()));  // Calls optionsFinished() for MolGen instance
 
-    // TODO: Do stuff with SharedIndividualInfo, like propagating the weights to other datasets and so on
-
-    // TODO: create other components
-    opt.fillDevComputers();
+    // Propagate weights from training set to other sets
+    opt.sii()->propagateWeightFittingTargets();
 
     if (MASTER(opt.commrec()))
     {
@@ -423,18 +426,23 @@ int alex_tune_eem(int argc, char *argv[])
         print_memory_usage(debug);
     }
 
-    // TODO: Read poldata in SharedIndividualInfo
+    // Figure out a logfile to pass down :)
+    FILE *fp = opt.logFile() ? opt.logFile() : (debug ? debug : nullptr);
+
+    // Read poldata in SharedIndividualInfo sii_
+    opt.sii()->fillPoldata(fp,
+                           opt2fn_null("-d", filenms.size(), filenms.data()));
 
     // TODO: MolGen read being called here!
-    if (0 == opt.Read(opt.logFile() ? opt.logFile() : (debug ? debug : nullptr),
-                      opt2fn("-f", filenms.size(), filenms.data()),
-                      opt2fn_null("-d", filenms.size(), filenms.data()),  // TODO: this is the argument for the poldata file
-                      bZero,
-                      gms,
-                      false,
-                      true,
-                      opt2fn_null("-table", filenms.size(), filenms.data()),
-                      opt.verbose()))
+    if (0 == opt.mg()->Read(fp,
+                            opt2fn("-f", filenms.size(), filenms.data()),
+                            opt.sii()->poldata(),
+                            bZero,
+                            gms,
+                            false,
+                            true,
+                            opt2fn_null("-table", filenms.size(), filenms.data()),
+                            opt.verbose()))
     {
         if (opt.logFile())
         {
@@ -443,7 +451,17 @@ int alex_tune_eem(int argc, char *argv[])
         return 0;
     }
 
-    // TODO: call SharedIndividualInfo::generateOptimizationIndex()
+    // TODO: call SharedIndividualInfo::generateOptimizationIndex() and fill in some vectors
+    opt.sii_.generateOptimizationIndex(fp, opt.mg());
+    opt.sii_.fillVectors(opt.mg()->mindata());
+
+    // Create ACMFitnessComputer and fill the DevComputers
+    opt.initFitComp();
+
+    // Create the ACMInitializer
+    opt.initInitializer();
+
+    // TODO: create the MCMCMutator
 
     // init charge generation for compounds in the
     // training set
