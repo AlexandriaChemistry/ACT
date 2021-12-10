@@ -50,12 +50,12 @@ void SharedIndividualInfo::fillFittingTargets()
     for (const auto &ims : iMolSelectNames()) 
     {
         std::map<eRMS, FittingTarget> ft;
-        for ( auto &rms : ermsNames )
+        for ( auto &rms : geteRMSNames() )
         {
             FittingTarget    fft(rms.first, ims.first);
             ft.insert(std::pair<eRMS, FittingTarget>(rms.first, std::move(fft)));
         }
-        targets_.insert(std::pair<iMolSelect, RmsFittingTarget>(ims.first, std::move(ft)));
+        targets_.insert(std::pair<iMolSelect, std::map<eRMS, FittingTarget>>(ims.first, std::move(ft)));
         auto etot = target(ims.first, eRMS::TOT);
         GMX_RELEASE_ASSERT(etot != nullptr, "Could not find etot");
         etot->setWeight(1);
@@ -71,7 +71,7 @@ void SharedIndividualInfo::propagateWeightFittingTargets()
             auto ft = fittingTargets(ims.first);
             if (ft != nullptr)
             {
-                for(auto &rms : ermsNames)
+                for(auto &rms : geteRMSNames())
                 {
                     auto w = target(iMolSelect::Train, rms.first)->weight();
                     target(ims.first, rms.first)->setWeight(w);

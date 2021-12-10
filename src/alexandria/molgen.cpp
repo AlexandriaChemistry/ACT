@@ -61,6 +61,25 @@
 namespace alexandria
 {	    
 
+    std::map<eRMS, const char *> ermsNames = 
+    {
+     { eRMS::BOUNDS, "BOUNDS" },
+     { eRMS::MU,     "MU" },
+     { eRMS::QUAD,   "QUAD" },
+     { eRMS::CHARGE, "CHARGE" },
+     { eRMS::CM5,    "CM5" },
+     { eRMS::ESP,    "ESP" },
+     { eRMS::EPOT,   "EPOT" },
+     { eRMS::Force2, "Force2" },
+     { eRMS::Polar,  "Polar" },
+     { eRMS::TOT,    "TOT" }
+    };
+
+const std::map<eRMS, const char *> &geteRMSNames()
+{
+    return ermsNames;
+}
+
 const char *rmsName(eRMS e)
 {
   return ermsNames[e];

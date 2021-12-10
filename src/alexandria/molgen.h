@@ -70,19 +70,8 @@ enum class eRMS {
     TOT
 };
 
-    std::map<eRMS, const char *> ermsNames = 
-    {
-     { eRMS::BOUNDS, "BOUNDS" },
-     { eRMS::MU,     "MU" },
-     { eRMS::QUAD,   "QUAD" },
-     { eRMS::CHARGE, "CHARGE" },
-     { eRMS::CM5,    "CM5" },
-     { eRMS::ESP,    "ESP" },
-     { eRMS::EPOT,   "EPOT" },
-     { eRMS::Force2, "Force2" },
-     { eRMS::Polar,  "Polar" },
-     { eRMS::TOT,    "TOT" }
-    };
+//! \return map from each eRMS to its string name
+const std::map<eRMS, const char *> &geteRMSNames();
 
 //! \brief Return string corresponding to eRMS
 const char *rmsName(eRMS e);

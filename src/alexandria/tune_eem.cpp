@@ -229,46 +229,47 @@ bool OptACM::runMaster(const gmx_output_env_t *oenv,
                        bool 		           bEvaluate_testset)
 {
     bool bMinimum = false;
-    GMX_RELEASE_ASSERT(MASTER(commrec()), "WTF");
+    GMX_RELEASE_ASSERT(MASTER(cr_), "WTF");
 
     print_memory_usage(debug);
     std::vector<std::string> paramClass;
-    for(const auto &fm : typesToFit())
+    for(const auto &fm : mg_.typesToFit())
     {
         paramClass.push_back(fm.first);
     }
     if (optimize)
     {
-        configHandlerPtr()->setOutputFiles(xvgconv, paramClass, xvgepot);
-        double chi2     = 0;
-        bMinimum = Bayes::MCMC(logFile(), bEvaluate_testset, &chi2);
+        sii_.setOutputFiles(xvgconv, paramClass, xvgepot);
+        sii_.assignParamClassIndex();
+        sii_.computeWeightedTemperature(bch_.temperatureWeighting()); // FIXME: we could move this just after fillVectors()
+        bMinimum = mutator_->MCMC(ind_, bEvaluate_testset);
     }
     if (sensitivity)
     {
         // only on the training set
-        Bayes::SensitivityAnalysis(logFile(), iMolSelect::Train);
+        mutator_->sensitivityAnalysis(ind_, iMolSelect::Train);
     }
     // Finalize the calculations on the helpers
-    GMX_RELEASE_ASSERT(calcDeviation(false, CalcDev::Final, iMolSelect::Train) < 0,
+    GMX_RELEASE_ASSERT(fitComp_->calcDeviation(ind_, false, CalcDev::Final, iMolSelect::Train) < 0,
                        "Result for final parallel calcDeviation should be less than zero");
 
-    printMonteCarloStatistics(logFile());
+    mutator_->printMonteCarloStatistics(ind_, logFile());
     if (bMinimum)
     {
-        auto best = Bayes::getBestParam();
+        auto best = ind_->bestParam();
         if (best.empty())
         {
             GMX_THROW(gmx::InternalError("Minimum found but not best parameters"));
         }
         // Restore best parameter set
-        Bayes::setParam(best);
+        ind_->setParam(best);
         // Copy it to Poldata
         std::vector<bool> changed;
         changed.resize(best.size(), true);
-        toPoldata(changed);
+        ind_->toPoldata(changed);
         for (const auto &ims : iMolSelectNames())
         {
-            double chi2 = calcDeviation(true, CalcDev::Master, ims.first);
+            double chi2 = fitComp_->calcDeviation(ind_, true, CalcDev::Master, ims.first);
             fprintf(logFile(), "Minimum chi2 for %s %g\n",
                     iMolSelectName(ims.first), chi2);
         }
