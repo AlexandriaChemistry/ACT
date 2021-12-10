@@ -2,7 +2,6 @@
 #define GA_INITIALIZER_H
 
 
-#include "aliases.h"
 #include "Individual.h"
 
 #include <time.h>

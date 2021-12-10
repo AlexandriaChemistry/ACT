@@ -5,8 +5,8 @@
 #include <vector>
 
 #include "devcomputer.h"
-#include "aliases.h"
 #include "acmindividual.h"
+#include "ga/FitnessComputer.h"
 
 
 namespace alexandria

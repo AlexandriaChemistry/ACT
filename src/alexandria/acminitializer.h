@@ -2,7 +2,6 @@
 #define ALEXANDRIA_ACMINITIALIZER_H
 
 
-#include "aliases.h"
 #include "ga/Initializer.h"
 #include "sharedindividualinfo.h"
 
@@ -40,7 +39,7 @@ public:
                          SharedIndividualInfo   *sii,
                    const bool                    randInit,
                    const std::string            &outputFile)
-    : gen(rd()), dis(std::uniform_real_distribution<>(0.0, 1.0))
+    : gen(rd()), dis(std::uniform_real_distribution<double>(0.0, 1.0))
     {
         mindata_  = mindata;
         sii_      = sii;

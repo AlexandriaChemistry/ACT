@@ -141,7 +141,7 @@ public:
                       ACMFitnessComputer       *fitComp,
                       SharedIndividualInfo     *sii,
                 const size_t                    nParam)
-    : Mutator(), gen(rd()), dis(std::uniform_int_distribution<>(0, nParam-1))
+    : Mutator(), gen(rd()), dis(std::uniform_int_distribution<size_t>(0, nParam-1))
     {
         gen.seed(::time(NULL));
 
@@ -157,8 +157,8 @@ public:
      * @param individual        pointer to the individual to mutate
      * @param prMut             probability of mutating a gene
      */
-    virtual void mutate(      Individual   *individual,
-                        const double        prMut);
+    virtual void mutate(      ga::Individual   *individual,
+                        const double            prMut);
 
     /*! \brief
      * Run the Markov chain Monte carlo (MCMC) simulation

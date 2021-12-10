@@ -64,8 +64,17 @@ class ForceFieldParameterList
      */
     ForceFieldParameterList(const ForceFieldParameterList &other)
     : function_(other.function()), canSwap_(other.canSwap()), fType_(other.fType()),
-      options_(other.option()), parameters_(other.parametersConst()),
-      counter_(other.counter()) {}
+      parameters_(other.parametersConst()), counter_(other.counter())
+    {
+        // FIXME: Manually copy options since copy constructor for that kind of map is removed
+        std::map<const std::string, const std::string>::const_iterator it;
+        for (it = other.option().begin(); it != other.option().end(); it++)
+        {
+            std::string left(it->first);
+            std::string right(it->second);
+            addOption(left, right);
+        }
+    }
 
     /*! \brief Constructor
      *
@@ -229,8 +238,8 @@ class ForceFieldParameterList
      */
     CommunicationStatus Receive(const t_commrec *cr, int src);
 
-    //! \return \p counter_ as a constant value
-    const size_t counter() const { return counter_ };
+    //! \return The counter \p counter_ for index
+    size_t counter() const { return counter_; };
 
  private:
     //! The function type string

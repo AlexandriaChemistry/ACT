@@ -65,9 +65,9 @@ class Poldata
          * Copy constructor
          * \param[in] other    the reference Poldata object
          */
-        Poldata(const Poldata other&)
+        Poldata(const Poldata &other)
         : type2Itype_(other.type2Itype()), filename_(other.filename()),
-          alexandria_(other.particleTypesConst()), vsite_(other.getVsite()),
+          alexandria_(other.particleTypesConst()), vsite_(other.getVsiteConst()),
           alexandriaVersion_(other.getVersion()),
           vsite_angle_unit_(other.getVsite_angle_unit()),
           vsite_length_unit_(other.getVsite_length_unit()),
@@ -163,8 +163,9 @@ class Poldata
             vsite_length_unit_ = length_unit;
         }
 
-        // FIXME: Shouldn't this be const?
-        std::vector<Vsite> &getVsite() {return vsite_; }
+        std::vector<Vsite> &getVsite() { return vsite_; }
+
+        const std::vector<Vsite> &getVsiteConst() const { return vsite_; }
 
         int getNexcl() const { return nexcl_; }
 
@@ -397,7 +398,7 @@ class Poldata
 
         SymchargesIterator getSymchargesEnd() { return symcharges_.end(); }
 
-        SymchargesConstIterator getSymchargesBegin() const { return symcharges_.begin(); }]
+        SymchargesConstIterator getSymchargesBegin() const { return symcharges_.begin(); }
 
         SymchargesConstIterator getSymchargesEnd() const { return symcharges_.end(); }
 

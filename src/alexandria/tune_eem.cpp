@@ -145,7 +145,7 @@ void OptACM::add_pargs(std::vector<t_pargs> *pargs) {
                     {"-removemol",      FALSE, etBOOL, {&bRemoveMol_},
                             "Remove a molecule from training set if shell minimization does not converge."},
                     {"-verbose",        FALSE, etBOOL, {&verbose_},
-                            "Print a lot of information."},
+                        "Flush output immediately rather than letting the OS buffer it. Don't use for production simulations."},
                     { "-randomInit", FALSE, etBOOL, {&randomInit_},
                             "Generate completely random starting parameters within the limits set by the options. This will be done at the very first step and before each subsequent run." }
             };
@@ -242,7 +242,10 @@ bool OptACM::runMaster(const gmx_output_env_t *oenv,
         sii_.setOutputFiles(xvgconv, paramClass, xvgepot);
         sii_.assignParamClassIndex();
         sii_.computeWeightedTemperature(bch_.temperatureWeighting()); // FIXME: we could move this just after fillVectors()
+        ind_->openChi2ConvFile(oenv, bEvaluate_testset);
+        ind_->openParamConvFiles(oenv);
         bMinimum = mutator_->MCMC(ind_, bEvaluate_testset);
+        ind_->closeConvFiles();
     }
     if (sensitivity)
     {
@@ -453,14 +456,14 @@ int alex_tune_eem(int argc, char *argv[])
     }
 
     // SharedIndividualInfo things
-    opt.sii_.generateOptimizationIndex(fp, opt.mg());
-    opt.sii_.fillVectors(opt.mg()->mindata());
+    opt.sii()->generateOptimizationIndex(fp, opt.mg());
+    opt.sii()->fillVectors(opt.mg()->mindata());
 
     // Create ACMFitnessComputer and fill the DevComputers
     opt.initFitComp();
 
     // Create the ACMInitializer
-    opt.initInitiaizer();
+    opt.initInitializer();
 
     // Create and initialize the individual
     opt.initIndividual();

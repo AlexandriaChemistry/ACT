@@ -4,7 +4,6 @@
 #include <random>
 #include <time.h>
 
-#include "aliases.h"
 #include "Individual.h"
 
 
@@ -30,7 +29,7 @@ protected:
      * Constructor which initializes the random number generator
      */
     Mutator()
-    : gen_base(rd_base()), dis_base(std::uniform_real_distribution<>(0.0, 1.0))
+    : gen_base(rd_base()), dis_base(std::uniform_real_distribution<double>(0.0, 1.0))
     {
         gen_base.seed(::time(NULL));
     };

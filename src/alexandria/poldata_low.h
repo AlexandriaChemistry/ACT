@@ -268,6 +268,7 @@ class Symcharges
 
         /*!
          * Copy constructor
+         * FIXME:
          * \param[in] other reference Symcharges object
          */
         Symcharges(const Symcharges &other)

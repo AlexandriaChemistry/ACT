@@ -8,8 +8,8 @@ namespace alexandria
 {
 
 
-void MCMCMutator::mutate(      Individual   *individual,
-                        const double        prMut)
+void MCMCMutator::mutate(      ga::Individual  *individual,
+                        const double            prMut)
 {
     // TODO: implement this!
 }

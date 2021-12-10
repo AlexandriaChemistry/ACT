@@ -2,7 +2,6 @@
 #define GA_FITNESSCOMPUTER_H
 
 #include "Individual.h"
-#include "aliases.h"
 
 
 namespace ga

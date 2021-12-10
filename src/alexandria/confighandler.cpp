@@ -27,9 +27,7 @@ void BayesConfigHandler::add_pargs(std::vector<t_pargs> *pargs)
         { "-seed",   FALSE, etINT,  {&seed_},
           "Random number seed. If zero, a seed will be generated." },
         { "-step",  FALSE, etREAL, {&step_},
-          "Step size for the parameter optimization. Is used as fraction of the available range per parameter which depends on the parameter type." },
-        { "-v",     FALSE, etBOOL, {&verbose_},
-          "Flush output immediately rather than letting the OS buffer it. Don't use for production simulations." }
+          "Step size for the parameter optimization. Is used as fraction of the available range per parameter which depends on the parameter type." }
     };
     for (int i = 0; i < asize(pa); i++)
     {

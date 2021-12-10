@@ -65,7 +65,9 @@ private:
     ACMFitnessComputer *fitComp_;
     //! Pointer to ACMInitializer since it will be initialized later
     ACMInitializer *initializer_;
-    //! Pointer to ACMIndividual since it will be initialized later
+    //! Pointer to the Base class individual
+    ga::Individual *baseInd_;
+    //! Pointer to ACMIndividual which will be casted from \p baseInd_
     ACMIndividual *ind_;
     //! Pointer to MCMCMutator
     MCMCMutator *mutator_;
@@ -144,16 +146,17 @@ public:
         initializer_ = new ACMInitializer(mg_.mindata(), &sii_, randomInit_, outputFile_);
     }
 
-    //! \brief initialize the ACMIndividual
+    //! \brief initialize the Individual \p baseInd_ and ACMIndividual \p ind_
     void initIndividual()
     {
-        initializer_->initialize(&ind_);
+        initializer_->initialize(&baseInd_);
+        ind_ = static_cast<ACMIndividual*>(baseInd_);
     }
 
     //! \brief Initialize the MCMCMutator
     void initMutator()
     {
-        mutator_ = new MCMCMutator(logFile(), verbose_, &bch_, &fitComp_, &sii_, sii_.nParam());
+        mutator_ = new MCMCMutator(logFile(), verbose_, &bch_, fitComp_, &sii_, sii_.nParam());
     }
 
     /* * * * * * * * * * * * * * * * * * * * * *
@@ -165,7 +168,7 @@ public:
     * * * * * * * * * * * * * * * * * * * * * */
 
     //! \return whether we initialize the FF parameters randomly or not
-    bool randomInit() const { return random_; }
+    bool randomInit() const { return randomInit_; }
 
     //! \return whether or not we use the full quadrupol
     bool fullQuadrupole() const { return bFullQuadrupole_; }
