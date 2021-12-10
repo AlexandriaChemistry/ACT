@@ -60,22 +60,15 @@ class ForceFieldParameterList
     
     /*!
      * Copy constructor
-     * FIXME:
+     * FIXME: cannot copy the options map
      * \param[in] other     reference ForceFieldParameter object
      */
     ForceFieldParameterList(const ForceFieldParameterList &other)
     : function_(other.function()), canSwap_(other.canSwap()), fType_(other.fType()),
-      parameters_(other.parametersConst()), counter_(other.counter())
+      options_(other.option()), parameters_(other.parametersConst()),
+      counter_(other.counter())
     {
-        // Manually copy options since copy constructor for that kind of map is removed
-        // Doesn't work
-        std::map<const std::string, const std::string>::const_iterator it;
-        for (it = other.option().begin(); it != other.option().end(); it++)
-        {
-            std::string left(it->first);
-            std::string right(it->second);
-            addOption(left, right);
-        }
+        ;
     }
 
     /*! \brief Constructor
