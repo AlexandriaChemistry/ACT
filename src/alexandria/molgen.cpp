@@ -168,12 +168,12 @@ void MolGen::optionsFinished()
     }
 }
 
-void MolGen::fillIopt() // This is called in the read method, the filled structure is used for the optimize() method
+void MolGen::fillIopt(Poldata *pd) // This is called in the read method, the filled structure is used for the optimize() method
 {
     for(const auto &fit : fit_)
     {
         InteractionType itype;
-        if (poldata()->typeToInteractionType(fit.first, &itype))
+        if (pd->typeToInteractionType(fit.first, &itype))
         {
             iOpt_.insert({ itype, true });
         }

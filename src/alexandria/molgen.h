@@ -380,8 +380,10 @@ private:
         return 0;
     }
     
-    //! \brief Fill the  iOpt_ map
-    void fillIopt();
+    /*! \brief Fill the  iOpt_ map
+     * \param[in] pd Pointer to poldata
+     */
+    void fillIopt(Poldata *pd);
     
 public:
 
