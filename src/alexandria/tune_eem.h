@@ -53,10 +53,22 @@ private:
     BoundsDevComputer *bdc_ = nullptr;
     //! Vector of non-bound DevComputers for the different components of chi-squared
     std::vector<DevComputer*> devComputers_;
+    //! GROMACS communication data structure
+    t_commrec *cr_ = nullptr;
 
 public:
     //! Constructor
-    OptACM() {}
+    OptACM()
+    {
+        cr_ = init_commrec();
+        // TODO: Do a lot of stuff
+    }
+
+    //! Destructor
+    ~OptACM()
+    {
+        if (cr_) done_commrec(cr_);
+    }
 
     //! \return whether or not we use the full quadrupol
     bool fullQuadrupole() const { return bFullQuadrupole_; }

@@ -19,6 +19,8 @@ class SharedIndividualInfo
 
 private:
 
+    //! Communication record
+    t_commrec *cr_;
     //! Base Poldata from which to make copies
     Poldata pd_;  // TODO: initialize this!
     //! Base targets_ from which to make copies
@@ -51,6 +53,87 @@ private:
 public:
 
     /* * * * * * * * * * * * * * * * * * * * * *
+    * BEGIN: Poldata stuff                     *
+    * * * * * * * * * * * * * * * * * * * * * */
+
+    /*!
+     * \brief Fill the Poldata attribute from a file
+     * \param[in] fp        File pointer for printing information
+     * \param[in] pd_fn     name of the gentop file
+     */
+    void fillPoldata(      FILE *fp,
+                     const char *pd_fn);
+
+    /* * * * * * * * * * * * * * * * * * * * * *
+    * END: Poldata stuff                       *
+    * * * * * * * * * * * * * * * * * * * * * */
+
+    /* * * * * * * * * * * * * * * * * * * * * *
+    * BEGIN: FittingTarget stuff               *
+    * * * * * * * * * * * * * * * * * * * * * */
+
+    //! \brief Fills the \p targets_ map
+    void fillFittingTargets();
+
+    //! \brief Propage weights from training set to other sets
+    void propagateWeightFittingTargets();
+
+    // FIXME: How can we avoid having to decleare the query functions both in SharedIndividualInfo
+    // and in Individual, we put them around the FittingTarget class?
+
+    /*! \brief Return the fitting targets for editing
+     * \param[in] ims The selection to return
+     * \return The map of fittingtargets or nullptr
+     */
+    std::map<eRMS, FittingTarget> *fittingTargets(iMolSelect ims)
+    {
+        auto tt = targets_.find(ims);
+        if (targets_.end() == tt)
+        {
+            return nullptr;
+        }
+        else
+        {
+            return &tt->second;
+        }
+    }
+
+    /*! \brief Return the fitting targets as constant
+     * \param[in] ims The selection to return
+     * \return The map of fittingtargets or nullptr
+     */
+    const std::map<eRMS, FittingTarget> &fittingTargetsConst(iMolSelect ims) const
+    {
+        auto tt = targets_.find(ims);
+        GMX_RELEASE_ASSERT(targets_.end() != tt, gmx::formatString("Cannot find selection %s", iMolSelectName(ims)).c_str());
+        return tt->second;
+    }
+
+    /*! \brief return appropriate fitting target
+     * \param[in] ims The selection
+     * \param[in] rms The contributor to the chi squared
+     * \return FittingTarget class or nullptr if not found
+     */
+    FittingTarget *target(iMolSelect ims, eRMS rms)
+    {
+        auto itarget = targets_.find(ims);
+        if (itarget == targets_.end())
+        {
+            return nullptr;
+        }
+        auto ift = itarget->second.find(rms);
+        if (ift == itarget->second.end())
+        {
+            return nullptr;
+        }
+        return &ift->second;
+    }
+
+    /* * * * * * * * * * * * * * * * * * * * * *
+    * END: FittingTarget stuff                 *
+    * * * * * * * * * * * * * * * * * * * * * */
+
+    /* * * * * * * * * * * * * * * * * * * * * *
     * BEGIN: Weighted temperature stuff        *
     * * * * * * * * * * * * * * * * * * * * * */
 
@@ -71,9 +154,10 @@ public:
 
     /*! \brief Generate \p optIndex_
      * \param[in] fp File to print logging information to. May be nullptr.
+     * \param[in] mg MolGen pointer
      */
-    void generateOptimizationIndex(FILE    *fp,
-                                   MolGen  *mg);
+    void generateOptimizationIndex(FILE   *fp,
+                                   MolGen *mg);
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * END: OptimizationIndex stuff             *

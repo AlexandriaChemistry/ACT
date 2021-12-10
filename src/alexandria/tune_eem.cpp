@@ -360,7 +360,8 @@ int alex_tune_eem(int argc, char *argv[])
             pargs.push_back(pa[i]);
         }
     }
-    alexandria::OptACM opt;
+    alexandria::OptACM opt; // TODO: create SharedIndividualInfo and MolGen in constructor!
+    // TODO: add all arguments from different components
     opt.add_pargs(&pargs);
     printer.addOptions(&pargs);
 
@@ -402,8 +403,12 @@ int alex_tune_eem(int argc, char *argv[])
     // TODO: Check validity of arguments with check_pargs() in ConfigHandler(s)
     opt.configHandlerPtr()->check_pargs();
 
+    // TODO: finishing MolGen stuff
     opt.optionsFinished(opt2fn("-o", filenms.size(), filenms.data()));
 
+    // TODO: Do stuff with SharedIndividualInfo, like propagating the weights to other datasets and so on
+
+    // TODO: create other components
     opt.fillDevComputers();
 
     if (MASTER(opt.commrec()))
@@ -418,10 +423,12 @@ int alex_tune_eem(int argc, char *argv[])
         print_memory_usage(debug);
     }
 
-    // MolGen read being called here!
+    // TODO: Read poldata in SharedIndividualInfo
+
+    // TODO: MolGen read being called here!
     if (0 == opt.Read(opt.logFile() ? opt.logFile() : (debug ? debug : nullptr),
                       opt2fn("-f", filenms.size(), filenms.data()),
-                      opt2fn_null("-d", filenms.size(), filenms.data()),
+                      opt2fn_null("-d", filenms.size(), filenms.data()),  // TODO: this is the argument for the poldata file
                       bZero,
                       gms,
                       false,
@@ -435,6 +442,9 @@ int alex_tune_eem(int argc, char *argv[])
         }
         return 0;
     }
+
+    // TODO: call SharedIndividualInfo::generateOptimizationIndex()
+
     // init charge generation for compounds in the
     // training set
     opt.initChargeGeneration(iMolSelect::Train);

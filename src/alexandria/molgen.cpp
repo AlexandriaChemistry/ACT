@@ -57,22 +57,9 @@
 #include "poldata_xml.h"
 #include "tuning_utility.h"
 
-namespace alexandria
-{
 
-  std::map<eRMS, const char *> ermsNames = 
-    {
-     { eRMS::BOUNDS, "BOUNDS" },
-     { eRMS::MU,     "MU" },
-     { eRMS::QUAD,   "QUAD" },
-     { eRMS::CHARGE, "CHARGE" },
-     { eRMS::CM5,    "CM5" },
-     { eRMS::ESP,    "ESP" },
-     { eRMS::EPOT,   "EPOT" },
-     { eRMS::Force2, "Force2" },
-     { eRMS::Polar,  "Polar" },
-     { eRMS::TOT,    "TOT" }
-    };					    
+namespace alexandria
+{	    
 
 const char *rmsName(eRMS e)
 {
@@ -90,35 +77,15 @@ void FittingTarget::print(FILE *fp) const
     }
 }
  
-MolGen::MolGen()
+MolGen::MolGen(t_commrec *cr)
 {
+    cr_ = cr;
     lot_       = "B3LYP/aug-cc-pVTZ";
     inputrec_  = new t_inputrec();
     fill_inputrec(inputrec_);
-    for (const auto &ims : iMolSelectNames()) 
-    {
-        RmsFittingTarget ft;
-        for ( auto &rms : ermsNames )
-        {
-            FittingTarget    fft(rms.first, ims.first);
-            ft.insert(std::pair<eRMS, FittingTarget>(rms.first, std::move(fft)));
-        }
-        targets_.insert(std::pair<iMolSelect, RmsFittingTarget>(ims.first, std::move(ft)));
-        auto etot = target(ims.first, eRMS::TOT);
-        GMX_RELEASE_ASSERT(etot != nullptr, "Could not find etot");
-        etot->setWeight(1);
-    }
 }
 
-MolGen::~MolGen()
-{
-    if (cr_)
-    {
-        done_commrec(cr_);
-    }
-}
-
-void MolGen::addOptions(std::vector<t_pargs> *pargs, eTune etune)
+void MolGen::addOptions(std::vector<t_pargs> *pargs, eTune etune, std::map<eRMS, FittingTarget> *targets)
 {
     t_pargs pa_general[] =
     {
@@ -126,9 +93,9 @@ void MolGen::addOptions(std::vector<t_pargs> *pargs, eTune etune)
           "Minimum number of data points to optimize force field parameters" },
         { "-lot",    FALSE, etSTR,  {&lot_},
           "Use this method and level of theory when selecting coordinates and charges. Multiple levels can be specified which will be used in the order given, e.g.  B3LYP/aug-cc-pVTZ:HF/6-311G**" },
-        { "-fc_bound",    FALSE, etREAL, {target(iMolSelect::Train, eRMS::BOUNDS)->weightPtr()},
+        { "-fc_bound",    FALSE, etREAL, {targets->find(eRMS::BOUNDS)->second.weightPtr()},
           "Force constant in the penalty function for going outside the borders given with the fitting options (see below)." },
-        { "-fc_epot",    FALSE, etREAL, {target(iMolSelect::Train, eRMS::EPOT)->weightPtr()},
+        { "-fc_epot",    FALSE, etREAL, {targets->find(eRMS::EPOT)->second.weightPtr()},
           "Force constant in the penalty function for the potential energy of the compound." },
         { "-qtol",   FALSE, etREAL, {&qtol_},
           "Tolerance for assigning charge generation algorithm." },
@@ -151,17 +118,17 @@ void MolGen::addOptions(std::vector<t_pargs> *pargs, eTune etune)
                   "Weight for the atoms when fitting the charges to the electrostatic potential. The potential on atoms is usually two orders of magnitude larger than on other points (and negative). For point charges or single smeared charges use zero. For point+smeared charges 1 is recommended." },
                 { "-maxpot", FALSE, etINT, {&maxESP_},
                   "Maximum percent of the electrostatic potential points that will be used to fit partial charges. Note that the input file may have a reduced amount of ESP points compared to the Gaussian output already so do not reduce the amount twice unless you know what you are doing. Note that if you use a value less than 100, the ESP points are picked randomly and therefore the runs will not be reproducible." },
-                { "-fc_mu",    FALSE, etREAL, {target(iMolSelect::Train, eRMS::MU)->weightPtr()},
+                { "-fc_mu",    FALSE, etREAL, {targets->find(eRMS::MU)->second.weightPtr()},
                   "Force constant in the penalty function for the magnitude of the dipole components." },
-                { "-fc_quad",  FALSE, etREAL, {target(iMolSelect::Train, eRMS::QUAD)->weightPtr()},
+                { "-fc_quad",  FALSE, etREAL, {targets->find(eRMS::QUAD)->second.weightPtr()},
                   "Force constant in the penalty function for the magnitude of the quadrupole components." },
-                { "-fc_esp",   FALSE, etREAL, {target(iMolSelect::Train, eRMS::ESP)->weightPtr()},
+                { "-fc_esp",   FALSE, etREAL, {targets->find(eRMS::ESP)->second.weightPtr()},
                   "Force constant in the penalty function for the magnitude of the electrostatic potential." },
-                { "-fc_charge",  FALSE, etREAL, {target(iMolSelect::Train, eRMS::CHARGE)->weightPtr()},
+                { "-fc_charge",  FALSE, etREAL, {targets->find(eRMS::CHARGE)->second.weightPtr()},
                   "Force constant in the penalty function for 'unchemical' charges, i.e. negative hydrogens, and positive oxygens." },
-                { "-fc_cm5",  FALSE, etREAL, {target(iMolSelect::Train, eRMS::CM5)->weightPtr()},
+                { "-fc_cm5",  FALSE, etREAL, {targets->find(eRMS::CM5)->second.weightPtr()},
                   "Force constant in the penalty function for deviation from CM5 charges." },
-                { "-fc_polar",  FALSE, etREAL, {target(iMolSelect::Train, eRMS::Polar)->weightPtr()},
+                { "-fc_polar",  FALSE, etREAL, {targets->find(eRMS::Polar)->second.weightPtr()},
                   "Force constant in the penalty function for polarizability." }
             };
         doAddOptions(pargs, asize(pa_eem), pa_eem);
@@ -170,9 +137,7 @@ void MolGen::addOptions(std::vector<t_pargs> *pargs, eTune etune)
     {
         t_pargs pa_fc[] =
             {
-                { "-fc_epot",  FALSE, etREAL, {target(iMolSelect::Train, eRMS::EPOT)->weightPtr()},
-                  "Force constant in the penalty function for the magnitude of the potential energy." },
-                { "-fc_force",  FALSE, etREAL, {target(iMolSelect::Train, eRMS::Force2)->weightPtr()},
+                { "-fc_force",  FALSE, etREAL, {targets->find(eRMS::Force2)->second.weightPtr()},
                   "Force constant in the penalty function for the magnitude of the force." }
             };
         doAddOptions(pargs, asize(pa_fc), pa_fc);
@@ -181,7 +146,6 @@ void MolGen::addOptions(std::vector<t_pargs> *pargs, eTune etune)
 
 void MolGen::optionsFinished()
 {
-    cr_                         = init_commrec();
     mdlog_                      = gmx::MDLogger {};
     gmx_omp_nthreads_init(mdlog_, cr_, 1, 1, 1, 0, false, false);
     auto pnc                    = gmx::PhysicalNodeCommunicator(MPI_COMM_WORLD, 0);
@@ -202,25 +166,9 @@ void MolGen::optionsFinished()
         fprintf(debug, "optionsFinished: qtol = %g mindata = %d qcycle = %d\n",
                 qtol_, mindata_, qcycle_);
     }
-    // Copy the fitting weights from the training set to the other sets
-    for(auto &ims : iMolSelectNames())
-    {
-        if (ims.first != iMolSelect::Train)
-        {
-            auto ft = fittingTargets(ims.first);
-            if (ft != nullptr)
-            {
-                for(auto &rms : ermsNames)
-                {
-                    auto w = target(iMolSelect::Train, rms.first)->weight();
-                    target(ims.first, rms.first)->setWeight(w);
-                }
-            }
-        }
-    }
 }
 
-void MolGen::fillIopt()
+void MolGen::fillIopt() // This is called in the read method, the filled structure is used for the optimize() method
 {
     for(const auto &fit : fit_)
     {
@@ -232,7 +180,7 @@ void MolGen::fillIopt()
     }
 }
 
-void MolGen::checkDataSufficiency(FILE *fp)
+void MolGen::checkDataSufficiency(FILE *fp) // Called in read method
 {
     size_t nmol = 0;
     if (targetSize_.find(iMolSelect::Train) == targetSize_.end())
@@ -508,7 +456,7 @@ void MolGen::checkDataSufficiency(FILE *fp)
     }
 }
 
-static void incrementImmCount(std::map<immStatus, int> *map, immStatus imm)
+static void incrementImmCount(std::map<immStatus, int> *map, immStatus imm) // Called in read method
 {
     if (map->find(imm) == map->end())
     {
@@ -520,7 +468,7 @@ static void incrementImmCount(std::map<immStatus, int> *map, immStatus imm)
     }
 }
 
-void MolGen::countTargetSize()
+void MolGen::countTargetSize() // Called in read method
 {
     targetSize_.clear();
     for(auto &m : mymol_)
@@ -540,7 +488,7 @@ void MolGen::countTargetSize()
 
 size_t MolGen::Read(FILE            *fp,
                     const char      *fn,
-                    const char      *pd_fn,
+                    Poldata         *pd,
                     gmx_bool         bZero,
                     const MolSelect &gms,
                     bool             bZPE,
@@ -554,27 +502,7 @@ size_t MolGen::Read(FILE            *fp,
     std::vector<alexandria::MolProp> mp;
 
     print_memory_usage(debug);
-    /* Reading Force Field Data from gentop.dat */
-    if (MASTER(cr_))
-    {
-        GMX_RELEASE_ASSERT(nullptr != pd_fn, "Give me a poldata file name");
-        try
-        {
-            alexandria::readPoldata(pd_fn, &pd_);
-        }
-        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-        print_memory_usage(debug);
-    }
-    /* Broadcasting Force Field Data from Master to Helper nodes */
-    if (PAR(cr_))
-    {
-        pd_.broadcast(cr_);
-    }
-    if (nullptr != fp)
-    {
-        fprintf(fp, "There are %d atom types in the input file %s.\n\n",
-                static_cast<int>(pd_.getNatypes()), pd_fn);
-    }
+
     //  Now  we have read the poldata and spread it to processors
     fillIopt();
     /* Reading Molecules from allmols.dat */
@@ -714,7 +642,6 @@ size_t MolGen::Read(FILE            *fp,
         print_memory_usage(debug);
         countTargetSize();
         checkDataSufficiency(fp);
-        generateOptimizationIndex(fp);
         // Now distribute the molecules over processors.
         // Make sure the master has a bit less work to do
         // than the helpers and that in particular train

@@ -70,6 +70,20 @@ enum class eRMS {
     TOT
 };
 
+    std::map<eRMS, const char *> ermsNames = 
+    {
+     { eRMS::BOUNDS, "BOUNDS" },
+     { eRMS::MU,     "MU" },
+     { eRMS::QUAD,   "QUAD" },
+     { eRMS::CHARGE, "CHARGE" },
+     { eRMS::CM5,    "CM5" },
+     { eRMS::ESP,    "ESP" },
+     { eRMS::EPOT,   "EPOT" },
+     { eRMS::Force2, "Force2" },
+     { eRMS::Polar,  "Polar" },
+     { eRMS::TOT,    "TOT" }
+    };
+
 //! \brief Return string corresponding to eRMS
 const char *rmsName(eRMS e);
 
@@ -77,7 +91,9 @@ const char *rmsName(eRMS e);
  */
 class FittingTarget 
 {
+
 private:
+
     //! The actual term stored here
     eRMS       erms_;
     //! The data set used
@@ -88,7 +104,9 @@ private:
     int        numberOfDatapoints_ = 0;
     //! The unweighted chi squared for this property
     real       chiSquared_         = 0;
+
 public:
+
     /*! \brief Constructor
      * \param[in] e   The fitting target
      * \param[in] ims The data set used
@@ -170,6 +188,7 @@ public:
      * \param[in] fp   File pointer, print only if non null
      */
     void print(FILE *fp) const;
+    
 };
 
 //! Which part of the force field to optimize  
@@ -304,6 +323,8 @@ class MolGen
 
 private:
 
+    //! Communication record
+    t_commrec *cr_;
     //! Minimum number of data points to consider a parameter
     int                             mindata_    = 1;
     //! Percentage of ESP points to use
@@ -322,8 +343,6 @@ private:
     gmx_bool                        bQM_        = false;
     //! Whether or not to use charge symmetry
     gmx_bool                        qsymm_      = false;
-    //! GROMACS communication data structure
-    t_commrec                      *cr_         = nullptr;
     //! GROMACS logger structure
     gmx::MDLogger                   mdlog_;
     //! GROMACS MD parameter structure
@@ -371,8 +390,9 @@ public:
     
     /*! \brief 
      * Constructor of MolGen class.
+     * \param[in] cr communication record
      */ 
-    MolGen();
+    MolGen(t_commrec *cr);
     
     /*! \brief 
      * Deconstructor of MolGen class.
@@ -380,10 +400,11 @@ public:
     ~MolGen();
     
     /*! \brief Add options to the command line
-     * \param[in] pargs Vector of command line arguments
-     * \param[in] etune The type of optimization being run
+     * \param[in] pargs   Vector of command line arguments
+     * \param[in] etune   The type of optimization being run
+     * \param[in] targets pointer to targets map for train dataset. Comes from sharedIndividualInfo
      */
-    void addOptions(std::vector<t_pargs> *pargs, eTune etune);
+    void addOptions(std::vector<t_pargs> *pargs, eTune etune, std::map<eRMS, FittingTarget> *targets);
     
     /*! \brief Process options after parsing
      */
@@ -472,7 +493,7 @@ public:
     /*! \brief Read the molecular property data file to generate molecules.
      * \param[in] fp      File pointer for printing information
      * \param[in] fn      Filename for molecules
-     * \param[in] pd_fn   Filename for force field file
+     * \param[in] pd      Pointer to Poldata object
      * \param[in] bZero   Use compounds with zero dipole
      * \param[in] gms     The molecule selection
      * \param[in] bZPE    Use Zero point energy
@@ -483,7 +504,7 @@ public:
      */
     size_t Read(FILE            *fp,
                 const char      *fn,
-                const char      *pd_fn,
+                Poldata         *pd,
                 gmx_bool         bZero,
                 const MolSelect &gms,
                 bool             bZPE,

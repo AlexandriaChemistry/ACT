@@ -1,9 +1,89 @@
 #include "sharedindividualinfo.h"
 
+#include "poldata_xml.h"
+#include "memory_check.h"
+
 
 namespace alexandria
 {
 
+
+/* * * * * * * * * * * * * * * * * * * * * *
+* BEGIN: Poldata stuff                     *
+* * * * * * * * * * * * * * * * * * * * * */
+
+void SharedIndividualInfo::fillPoldata(      FILE *fp,
+                                       const char *pd_fn)
+{
+    if (MASTER(cr_))
+    {
+        GMX_RELEASE_ASSERT(nullptr != pd_fn, "Give me a poldata file name");
+        try
+        {
+            alexandria::readPoldata(pd_fn, &pd_);
+        }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+        print_memory_usage(debug);
+    }
+    /* Broadcasting Force Field Data from Master to Helper nodes */
+    if (PAR(cr_))
+    {
+        pd_.broadcast(cr_);
+    }
+    if (nullptr != fp)
+    {
+        fprintf(fp, "There are %d atom types in the input file %s.\n\n",
+                static_cast<int>(pd_.getNatypes()), pd_fn);
+    }
+}
+
+/* * * * * * * * * * * * * * * * * * * * * *
+* END: Poldata stuff                       *
+* * * * * * * * * * * * * * * * * * * * * */
+
+/* * * * * * * * * * * * * * * * * * * * * *
+* BEGIN: FittingTarget stuff               *
+* * * * * * * * * * * * * * * * * * * * * */
+
+void SharedIndividualInfo::fillFittingTargets()
+{
+    for (const auto &ims : iMolSelectNames()) 
+    {
+        std::map<eRMS, FittingTarget> ft;
+        for ( auto &rms : ermsNames )
+        {
+            FittingTarget    fft(rms.first, ims.first);
+            ft.insert(std::pair<eRMS, FittingTarget>(rms.first, std::move(fft)));
+        }
+        targets_.insert(std::pair<iMolSelect, RmsFittingTarget>(ims.first, std::move(ft)));
+        auto etot = target(ims.first, eRMS::TOT);
+        GMX_RELEASE_ASSERT(etot != nullptr, "Could not find etot");
+        etot->setWeight(1);
+    }
+}
+
+void SharedIndividualInfo::propagateWeightFittingTargets()
+{
+    for(auto &ims : iMolSelectNames())
+    {
+        if (ims.first != iMolSelect::Train)
+        {
+            auto ft = fittingTargets(ims.first);
+            if (ft != nullptr)
+            {
+                for(auto &rms : ermsNames)
+                {
+                    auto w = target(iMolSelect::Train, rms.first)->weight();
+                    target(ims.first, rms.first)->setWeight(w);
+                }
+            }
+        }
+    }
+}
+
+/* * * * * * * * * * * * * * * * * * * * * *
+* END: FittingTarget stuff                 *
+* * * * * * * * * * * * * * * * * * * * * */
 
 /* * * * * * * * * * * * * * * * * * * * * *
 * BEGIN: Weighted temperature stuff        *
@@ -34,8 +114,8 @@ void SharedIndividualInfo::computeWeightedTemperature(const bool tempWeight)
 * BEGIN: OptimizationIndex stuff           *
 * * * * * * * * * * * * * * * * * * * * * */
 
-void SharedIndividualInfo::generateOptimizationIndex(FILE      *fp,
-                                                     MolGen    *mg)
+void SharedIndividualInfo::generateOptimizationIndex(FILE   *fp,
+                                                     MolGen *mg)
 {
     for(auto &fs : pd_.forcesConst())
     {
