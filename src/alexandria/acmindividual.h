@@ -73,7 +73,8 @@ public:
         bestParam_.resize(nParam, 0.0);
 
         // Copy targets_ from sii_
-        targets_ = sii_->targets();  // This should make a deep copy if the copy constructors are well made
+        targets_ = sii_->targets();  // This should make a deep copy if
+                                     // the copy constructors are well made
 
         // Copy poldata from sii_
         pd_ = sii_->poldataConst();

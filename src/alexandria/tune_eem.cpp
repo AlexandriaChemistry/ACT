@@ -286,7 +286,7 @@ void OptACM::runHelper()
     // The second and third variable are set by the master, but
     // we have to pass something.
     // If the result is less than zero (-1), we are done.
-    while (calcDeviation(false, CalcDev::Parallel, iMolSelect::Train) >= 0)
+    while (fitComp_->calcDeviation(ind_, false, CalcDev::Parallel, iMolSelect::Train) >= 0)
     {
         ;
     }
@@ -451,7 +451,7 @@ int alex_tune_eem(int argc, char *argv[])
         return 0;
     }
 
-    // TODO: call SharedIndividualInfo::generateOptimizationIndex() and fill in some vectors
+    // SharedIndividualInfo things
     opt.sii_.generateOptimizationIndex(fp, opt.mg());
     opt.sii_.fillVectors(opt.mg()->mindata());
 
@@ -459,9 +459,10 @@ int alex_tune_eem(int argc, char *argv[])
     opt.initFitComp();
 
     // Create the ACMInitializer
-    opt.initInitializer();
+    opt.initInitiaizer();
 
-    // TODO: create the MCMCMutator
+    // Create and initialize the individual
+    opt.initIndividual();
 
     // init charge generation for compounds in the
     // training set
@@ -476,10 +477,17 @@ int alex_tune_eem(int argc, char *argv[])
 
     if (MASTER(opt.commrec()))
     {
-        if (bOptimize || bSensitivity)
-        {
-            opt.initOpt(bRandom);
-        }
+        // FIXME: Individual has been initialized above, should we check for
+        // bOptimize or bSensitivity still?
+        //
+        // if (bOptimize || bSensitivity)
+        // {
+        //     opt.initOpt(bRandom);
+        // }
+
+        // Initialize the MCMCMutator
+        opt.initMutator();
+
         bool bMinimum = opt.runMaster(oenv,
                                       opt2fn("-conv", filenms.size(), filenms.data()),
                                       opt2fn("-epot", filenms.size(), filenms.data()),
@@ -492,15 +500,16 @@ int alex_tune_eem(int argc, char *argv[])
             if (bForceOutput)
             {
                 fprintf(opt.logFile(), "Output based on last step of MC simulation per your specification.\nUse the -noforce_output flag to prevent this.\nThe force field output file %s is based on the last MC step as well.\n", opt2fn("-o", filenms.size(), filenms.data()));
-                opt.saveState();
+                opt.ind()->saveState();
             }
+            MolGen *tmpMg = opt.mg();
             printer.print(opt.logFile(),
-                          &(opt.mymols()),
-                          opt.poldata(),
-                          opt.mdlog(),
-                          opt.lot(),
-                          opt.qcycle(),
-                          opt.qtol(),
+                          &(tmpMg->mymols()),
+                          opt.ind()->poldata(),
+                          tmpMg->mdlog(),
+                          tmpMg->lot(),
+                          tmpMg->qcycle(),
+                          tmpMg->qtol(),
                           oenv,
                           opt.fullQuadrupole(),
                           opt.commrec(),

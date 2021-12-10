@@ -18,6 +18,7 @@
 #include "sharedindividualinfo.h"
 #include "acmfitnesscomputer.h"
 #include "acminitializer.h"
+#include "mcmcmutator.h"
 
 
 namespace alexandria
@@ -64,6 +65,10 @@ private:
     ACMFitnessComputer *fitComp_;
     //! Pointer to ACMInitializer since it will be initialized later
     ACMInitializer *initializer_;
+    //! Pointer to ACMIndividual since it will be initialized later
+    ACMIndividual *ind_;
+    //! Pointer to MCMCMutator
+    MCMCMutator *mutator_;
 
 public:
     //! Constructor
@@ -139,6 +144,18 @@ public:
         initializer_ = new ACMInitializer(mg_.mindata(), &sii_, randomInit_, outputFile_);
     }
 
+    //! \brief initialize the ACMIndividual
+    void initIndividual()
+    {
+        initializer_->initialize(&ind_);
+    }
+
+    //! \brief Initialize the MCMCMutator
+    void initMutator()
+    {
+        mutator_ = new MCMCMutator(logFile(), verbose_, &bch_, &fitComp_, &sii_, sii_.nParam());
+    }
+
     /* * * * * * * * * * * * * * * * * * * * * *
     * END: Initializing stuff                  *
     * * * * * * * * * * * * * * * * * * * * * */
@@ -173,6 +190,9 @@ public:
 
     //! \brief Get the ACMFitnessComputer \p fitComp_ pointer
     ACMFitnessComputer *fitComp() { return fitComp_; }
+
+    //! \brief Get the ACMIndividual \p ind_ pointer
+    ACMIndividual *ind() { return ind_; }
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * END: Getters and setters                 *

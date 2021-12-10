@@ -166,7 +166,8 @@ public:
      * \param[in]  evaluate_testset If true, evaluate the energy on
      *                              the test set.
      */
-    bool MCMC(ACMIndividual *ind, const bool evaluate_testset);
+    bool MCMC(      ACMIndividual  *ind,
+              const bool            evaluate_testset);
 
     /*! \brief
      * Return the number of calls to the objective function
