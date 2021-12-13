@@ -290,9 +290,9 @@ class Symcharges
         CommunicationStatus Receive(const t_commrec *cr, int src);
 
     private:
-        const std::string central_;
-        const std::string attached_;
-        int               numattach_;
+        std::string central_;
+        std::string attached_;
+        int         numattach_;
 };
 
 using SymchargesIterator      = typename std::vector<Symcharges>::iterator;

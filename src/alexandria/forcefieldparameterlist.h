@@ -44,7 +44,7 @@ namespace alexandria
 {
 
 //! \brief Shortcut for recurring declaration
-typedef std::map<const Identifier, ForceFieldParameterMap> ForceFieldParameterListMap;
+typedef std::map<Identifier, ForceFieldParameterMap> ForceFieldParameterListMap;
 
 /*! \brief Class to hold the parameters for an interaction type
  *
@@ -66,10 +66,7 @@ class ForceFieldParameterList
     ForceFieldParameterList(const ForceFieldParameterList &other)
     : function_(other.function()), canSwap_(other.canSwap()), fType_(other.fType()),
       options_(other.option()), parameters_(other.parametersConst()),
-      counter_(other.counter())
-    {
-        ;
-    }
+      counter_(other.counter()) {}
 
     /*! \brief Constructor
      *
@@ -129,7 +126,7 @@ class ForceFieldParameterList
     }
 
     //! Return the options map
-    const std::map<const std::string, const std::string> &option() const { return options_; }
+    const std::map<std::string, std::string> &option() const { return options_; }
 
     //! Return the parameters map as a const variable
     const ForceFieldParameterListMap &parametersConst() const { return parameters_; };
@@ -247,7 +244,7 @@ class ForceFieldParameterList
     unsigned int fType_;
 
     //! Map structure for the options associated with the parameter list
-    std::map<const std::string, const std::string> options_;
+    std::map<std::string, std::string> options_;
         
     //! Map of parameters 
     ForceFieldParameterListMap parameters_;

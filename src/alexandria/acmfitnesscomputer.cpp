@@ -1,7 +1,5 @@
 #include "acmfitnesscomputer.h"
 
-#include "bayes.h"
-
 
 namespace alexandria
 {
@@ -43,8 +41,8 @@ double ACMFitnessComputer::calcDeviation(      ACMIndividual   *ind,
     // If final call, return -1
     if (calcDev == CalcDev::Final) return -1;
 
-    // Reset the chi2 in FittingTargets of individual
-    ind->resetChiSquared();
+    // Reset the chi2 in FittingTargets of individual for the given dataset in ims
+    ind->resetChiSquared(ims);
 
     // Gather fitting targets from the individual
     std::map<eRMS, FittingTarget> *targets = ind->fittingTargets(ims);
@@ -126,8 +124,8 @@ double ACMFitnessComputer::calcDeviation(      ACMIndividual   *ind,
 
 }
 
-void computeDiQuad(std::map<eRMS, FittingTarget> *targets,
-                   MyMol                         *mymol)
+void ACMFitnessComputer::computeDiQuad(std::map<eRMS, FittingTarget> *targets,
+                                       MyMol                         *mymol)
 {
     QtypeProps *qcalc = mymol->qTypeProps(qType::Calc);
     if ((*targets).find(eRMS::MU)->second.weight() > 0 ||

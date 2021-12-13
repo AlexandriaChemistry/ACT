@@ -18,21 +18,21 @@ void ACMIndividual::openParamConvFiles(const gmx_output_env_t *oenv)
     for (size_t i = 0; i < pClass.size(); i++)
     {
         std::string fileName = "ind" + std::to_string(id_) + "-" + pClass[i] + "-" + sii_->xvgConv();
-        fpc->push_back(xvgropen(fileName.c_str(),
+        fpc_.push_back(xvgropen(fileName.c_str(),
                                 "Parameter convergence",
                                 "iteration",
                                 "",
                                 oenv));
-        // TODO: move commented lines below to SharedIndividualInfo
-        // std::vector<const char*> paramNames;
-        // for (size_t j = 0; j < paramNames_.size(); j++)
-        // {
-        //     if (paramClassIndex[j] == static_cast<int>(i))
-        //     {
-        //         paramNames.push_back(paramNames_[j].c_str());
-        //     }
-        // }
-        xvgr_legend(fpc_[i], sii_->paramNames().size(), sii_->paramNames().data(), oenv);
+
+        std::vector<const char*> tmpParamNames;
+        for (size_t j = 0; j < sii_->paramNames().size(); j++)
+        {
+            if ( (sii_->paramClassIndex())[j] == static_cast<int>(i) )
+            {
+                tmpParamNames.push_back( (sii_->paramNames())[j].c_str() );
+            }
+        }
+        xvgr_legend(fpc_[i], tmpParamNames.size(), tmpParamNames.data(), oenv);
     }
 }
 
@@ -161,7 +161,7 @@ void ACMIndividual::toPoldata(const std::vector<bool> &changed)
         psigma_.resize(param_.size(), 0);
     }
     printParameters(debug);
-    for (const auto &optIndex : sii_.optIndex())
+    for (const auto &optIndex : sii_->optIndex())
     {
         if (changed[n])
         {
@@ -169,11 +169,11 @@ void ACMIndividual::toPoldata(const std::vector<bool> &changed)
             ForceFieldParameter *p = nullptr;
             if (iType != InteractionType::CHARGE)
             {
-                p = pd_->findForces(iType)->findParameterType(optIndex.id(), optIndex.parameterType());
+                p = pd_.findForces(iType)->findParameterType(optIndex.id(), optIndex.parameterType());
             }
-            else if (pd_->hasParticleType(optIndex.particleType()))
+            else if (pd_.hasParticleType(optIndex.particleType()))
             {
-                p = pd_->findParticleType(optIndex.particleType())->parameter(optIndex.parameterType());
+                p = pd_.findParticleType(optIndex.particleType())->parameter(optIndex.parameterType());
             }
             GMX_RELEASE_ASSERT(p, gmx::formatString("Could not find parameter %s", optIndex.id().id().c_str()).c_str());
             if (p)

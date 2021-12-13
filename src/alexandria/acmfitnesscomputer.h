@@ -7,6 +7,7 @@
 #include "devcomputer.h"
 #include "acmindividual.h"
 #include "ga/FitnessComputer.h"
+#include "bayes.h"
 
 
 namespace alexandria

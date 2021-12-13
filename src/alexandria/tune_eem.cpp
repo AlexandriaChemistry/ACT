@@ -144,7 +144,7 @@ void OptACM::add_pargs(std::vector<t_pargs> *pargs) {
                             "Consider both diagonal and off-diagonal elements of the Q_Calc matrix for optimization"},
                     {"-removemol",      FALSE, etBOOL, {&bRemoveMol_},
                             "Remove a molecule from training set if shell minimization does not converge."},
-                    {"-verbose",        FALSE, etBOOL, {&verbose_},
+                    {"-v",              FALSE, etBOOL, {&verbose_},
                         "Flush output immediately rather than letting the OS buffer it. Don't use for production simulations."},
                     { "-randomInit", FALSE, etBOOL, {&randomInit_},
                             "Generate completely random starting parameters within the limits set by the options. This will be done at the very first step and before each subsequent run." }

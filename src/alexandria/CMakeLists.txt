@@ -26,6 +26,9 @@
 #
 
 set(ALEXANDRIA_SOURCES
+           acmfitnesscomputer.cpp
+           acmindividual.cpp
+           acminitializer.cpp
            alex_modules.cpp
            analyze.cpp
            atype_mapping.cpp
@@ -49,6 +52,7 @@ set(ALEXANDRIA_SOURCES
            identifier.cpp
            interactiontype.cpp
            latex_util.cpp
+           mcmcmutator.cpp
            memory_check.cpp
            merge_mp.cpp
            merge_pd.cpp
@@ -81,6 +85,7 @@ set(ALEXANDRIA_SOURCES
            qtype.cpp
            readpsi4.cpp
            regression.cpp
+           sharedindividualinfo.cpp
            stringutil.cpp
            tune_eem.cpp
 #           tune_fc.cpp

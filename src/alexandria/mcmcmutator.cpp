@@ -37,7 +37,7 @@ bool MCMCMutator::MCMC(      ACMIndividual *ind,
     // one parameter at a time.
     std::fill(changed.begin(), changed.end(), false);
 
-    const std::vector<double> fpc = ind->fpc();
+    const std::vector<FILE*> fpc = ind->fpc();
     FILE *fpe = ind->fpe();
     const std::vector<int> paramClassIndex = sii_->paramClassIndex();
     std::vector<double> *param = ind->paramPtr();
@@ -168,7 +168,7 @@ void MCMCMutator::stepMCMC(      ACMIndividual          *ind,
         if (currEval < (*minEval))
         {
             // If pointer to log file exists, write information about new minimum
-            if (logfile_) fprintNewMinimum(ind, bEvaluate_testset, xiter, currEval, currEval_testset);
+            if (logfile_) fprintNewMinimum(ind, evaluate_testset, xiter, currEval, currEval_testset);
             ind->setBestParam(*param);
             (*minEval) = currEval;
             ind->saveState();
@@ -185,7 +185,7 @@ void MCMCMutator::stepMCMC(      ACMIndividual          *ind,
     {  // If the parameter change is not accepted
         (*param)[paramIndex] = storeParam;  // Set the old value of the parameter back
         // poldata needs to change back as well!
-        toPoldata(*changed);
+        ind->toPoldata(*changed);
     }
     (*changed)[paramIndex] = false;  // Set changed[j] back to false for upcoming iterations
 
@@ -230,7 +230,7 @@ void MCMCMutator::changeParam(ACMIndividual *ind,
         }
         else if ((*param)[j] > sii_->upperBound()[j])
         {
-            (*param)[j] = uii_->upperBound()[j];
+            (*param)[j] = sii_->upperBound()[j];
         }
     }
 }
@@ -365,7 +365,7 @@ void MCMCMutator::sensitivityAnalysis(ACMIndividual  *ind,
     changed.resize(param_->size(), true);
     ind->toPoldata(changed);
     std::fill(changed.begin(), changed.end(), false);
-    double chi2_0 = fitComp_->calcDeviation(ind, CalcDev::Parallel, ims);
+    double chi2_0 = fitComp_->calcDeviation(ind, false, CalcDev::Parallel, ims);
     if (logfile_)
     {
         fprintf(logfile_, "\nStarting sensitivity analysis. chi2_0 = %g nParam = %d\n",

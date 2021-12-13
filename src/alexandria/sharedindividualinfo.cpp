@@ -140,7 +140,7 @@ void SharedIndividualInfo::generateOptimizationIndex(FILE   *fp,
     {
         for(auto &p : pt.parametersConst())
         {
-            if (fit(p.first) && p.second.ntrain() > 0)
+            if (mg->fit(p.first) && p.second.ntrain() > 0)
             {
                 optIndex_.push_back(OptimizationIndex(pt.id().id(), p.first));
             }
@@ -173,22 +173,22 @@ void SharedIndividualInfo::fillVectors(const int mindata)
         ForceFieldParameter p;
         if (iType == InteractionType::CHARGE)
         {
-            if (pd_->hasParticleType(optIndex.particleType()))
+            if (pd_.hasParticleType(optIndex.particleType()))
             {
-                p = pd_->findParticleType(optIndex.particleType())->parameterConst(optIndex.parameterType());
+                p = pd_.findParticleType(optIndex.particleType())->parameterConst(optIndex.parameterType());
             }
         }
-        else if (pd_->interactionPresent(iType))
+        else if (pd_.interactionPresent(iType))
         {
-            p = pd_->findForcesConst(iType).findParameterTypeConst(optIndex.id(), optIndex.parameterType());
+            p = pd_.findForcesConst(iType).findParameterTypeConst(optIndex.id(), optIndex.parameterType());
         }
         if (p.ntrain() >= mindata)
         {
-            paramNames_.push_back(optIndex_.name())
-            mutability_.push_back(p.mutability())
-            lowerBound_.push_back(p.minimum())
-            upperBound_.push_back(p.maximum())
-            ntrain_.push_back(p.ntrain())
+            paramNames_.push_back(optIndex.name());
+            mutability_.push_back(p.mutability());
+            lowerBound_.push_back(p.minimum());
+            upperBound_.push_back(p.maximum());
+            ntrain_.push_back(p.ntrain());
         }
     }
 
@@ -227,7 +227,7 @@ void SharedIndividualInfo::assignParamClassIndex()
             if (!restClass)  // If <i> is the first parameter without a class
             {
                 // Append "Other" to the list of classes
-                paramClass_->push_back("Other");
+                paramClass_.push_back("Other");
                 restClass = true;
             }
             // Give class "Other" to parameter <i>
