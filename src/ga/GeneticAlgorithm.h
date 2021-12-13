@@ -27,39 +27,43 @@ class GeneticAlgorithm
 private:
 
     //! Amount of individuals in the population
-    int popSize;
-    //! Amount of genes in each individual
-    int chromosomeLength;
+    int popSize_;
+    //! Amount of genes in each individual. FIXME: won't be needed since GA object does not operate within individuals
+    int chromosomeLength_;
     //! Amount of top individuals to be propagated, unchanged, to the next generation
-    int nElites;
+    int nElites_;
 
+    // FIXME: swap to a vector of individual pointers, and decide whether probability
+    // lies within the individual or outside of it (in a vector)
     //! Old population
-    matrix oldPop;
+    matrix oldPop_;
     //! New population, which emerges from the old population
-    matrix newPop;
+    matrix newPop_;
     //! Temporal storage to swap "oldPop" and "newPop" after each generation
-    matrix tmpPop;
+    matrix tmpPop_;
     //! Fitness score for each individual
-    vector fitness;
+    vector fitness_;
     //! Probability of selection for each individual
-    vector probability;
+    vector probability_;
 
     //! Initializes each individual in the population
-    Initializer            *initializer;
+    Initializer            *initializer_;
     //! Computes fitness for each individual in the population
-    FitnessComputer        *fitComputer;
+    FitnessComputer        *fitComputer_;
     //! Sorts the individuals based on their fitness
-    Sorter                 *sorter;
+    Sorter                 *sorter_;
     //! Computes the probability of selection of each individual
-    ProbabilityComputer    *probComputer;
+    ProbabilityComputer    *probComputer_;
     //! Selects an individual from the population based on its probability
-    Selector               *selector;
+    Selector               *selector_;
     //! Grabs 2 individuals and crosses their genes to generate 2 new individuals
-    Crossover              *crossover;
+    Crossover              *crossover_;
     //! Mutates the genes of the individuals
-    Mutator                *mutator;
+    Mutator                *mutator_;
     //! Checks if the evolution should continue or be terminated
-    Terminator             *terminator;
+    Terminator             *terminator_;
+
+    // FIXME: BayesConfigHandler and GAConfigHandler
 
 public:
 
@@ -93,6 +97,9 @@ public:
                            Terminator          *terminator);
 
     /*!
+     * FIXME: take parameters out since they will be in the config handlers
+     * FIXME: maybe take the return out and make attributes in the GA class
+     * FIXME: Make special case for when popSize is 1 or pure MCMC is requested
      * Evolve the initial population
      * @param prCross   the probability of crossover
      * @param prMut     the probability of mutation
@@ -108,13 +115,13 @@ public:
      * Set a new value for \p nElites
      * @param nElites   the new value
      */
-    void setnElites(const int nElites) { this->nElites = nElites; }
+    void setnElites(const int nElites) { nElites_ = nElites; }
 
     /*!
      * Get the value of \p nElites
      * @return  the value of \p nElites
      */
-    int getnElites() { return nElites; }
+    int getnElites() const { return nElites_; }
 
 };
 

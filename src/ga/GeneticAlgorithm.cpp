@@ -33,28 +33,23 @@ GeneticAlgorithm::GeneticAlgorithm(const int                    popSize,
                                          Terminator            *terminator)
 {
 
-    // TODO: Make sure that there is an even number of individuals in the population
-    // TODO: Make sure nElites is even
-    // TODO: Make sure an actual sorter is given when nElites > 0
-    // TODO: Make sure an actual sorter is given when using RankProbabilityComputer
-
-    this->popSize           = popSize;
-    this->chromosomeLength  = chromosomeLength;
-    this->nElites           = nElites;
-    this->initializer       = initializer;
-    this->fitComputer       = fitComputer;
-    this->sorter            = sorter;
-    this->probComputer      = probComputer;
-    this->selector          = selector;
-    this->crossover         = crossover;
-    this->mutator           = mutator;
-    this->terminator        = terminator;
+    popSize_           = popSize;
+    chromosomeLength_  = chromosomeLength;
+    nElites_           = nElites;
+    initializer_       = initializer;
+    fitComputer_       = fitComputer;
+    sorter_            = sorter;
+    probComputer_      = probComputer;
+    selector_          = selector;
+    crossover_         = crossover;
+    mutator_           = mutator;
+    terminator_        = terminator;
 
     // Initialize the data structures
-    oldPop      = allocateMatrix(popSize, chromosomeLength);
-    newPop      = allocateMatrix(popSize, chromosomeLength);
-    fitness     = vector(popSize);
-    probability = vector(popSize);
+    oldPop_      = allocateMatrix(popSize, chromosomeLength);
+    newPop_      = allocateMatrix(popSize, chromosomeLength);
+    fitness_     = vector(popSize);
+    probability_ = vector(popSize);
 
 }
 
@@ -87,27 +82,27 @@ const ga_result_t GeneticAlgorithm::evolve(const double     prCross,
 
     // Initialize the population and compute fitness
     if (verbose >= 2) printf("Initializing individuals and computing initial fitness...\n");
-    for (i = 0; i < popSize; i++)
+    for (i = 0; i < popSize_; i++)
     {
-        (*initializer).initialize(&(oldPop[i]), chromosomeLength);
-        (*fitComputer).compute(oldPop[i], &fitness, i, chromosomeLength);
+        initializer_->initialize(&(oldPop_[i]), chromosomeLength_);
+        fitComputer_->compute(oldPop_[i], &fitness_, i, chromosomeLength_);
     }
 
     // If verbose, print best individual
     if (verbose >= 1)
     {
-        const int index = findMaximumIndex(fitness, popSize);
+        const int index = findMaximumIndex(fitness_, popSize_);
         printf("Best individual: ");
-        printVector(oldPop[index]);
-        printf("Max fitness: %f\n", fitness[index]);
+        printVector(oldPop_[index]);
+        printf("Max fitness: %f\n", fitness_[index]);
     }
     if (verbose >= 2)
     {
         printf("Population:\n");
-        printMatrix(oldPop);
+        printMatrix(oldPop_);
 
         printf("Fitness vector: ");
-        printVector(fitness);
+        printVector(fitness_);
     }
 
     // Iterate and create new generations
@@ -123,100 +118,100 @@ const ga_result_t GeneticAlgorithm::evolve(const double     prCross,
 
         // Sort individuals based on fitness
         if (verbose >= 2) printf("Sorting... (if needed)\n");
-        (*sorter).sort(&oldPop, &fitness, popSize);
+        sorter_->sort(&oldPop_, &fitness_, popSize_);
         if (verbose >= 2)
         {
             printf("Population after sorting:\n");
-            printMatrix(oldPop);
+            printMatrix(oldPop_);
             printf("Fitness vector after sorting: ");
-            printVector(fitness);
+            printVector(fitness_);
         }
 
         // Normalize the fitness into a probability
         if (verbose >= 2) printf("Computing probabilities...\n");
-        (*probComputer).compute(fitness, &probability, popSize);
+        probComputer_->compute(fitness_, &probability_, popSize_);
         if (verbose >= 2)
         {
             printf("Probabilities: ");
-            printVector(probability);
+            printVector(probability_);
         }
 
         // Move the "nElites" best individuals (unchanged) into the new population (assuming population is sorted)
-        if (verbose >= 2) printf("Moving the %i best individual(s) into the new population...\n", nElites);
-        for (i = 0; i < nElites; i++) newPop[i] = oldPop[i];
+        if (verbose >= 2) printf("Moving the %i best individual(s) into the new population...\n", nElites_);
+        for (i = 0; i < nElites_; i++) newPop_[i] = oldPop_[i];
 
         // Generate new population after the elitism
         if (verbose >= 2) printf("Generating the rest of the new population...\n");
-        for (i = nElites; i < popSize; i += 2)
+        for (i = nElites_; i < popSize_; i += 2)
         {
             if (verbose >= 3) printf("i = %i, %i\n", i, i + 1);
 
             // Select parents
-            parent1 = (*selector).select(probability, popSize);
-            parent2 = (*selector).select(probability, popSize);
+            parent1 = selector_->select(probability_, popSize_);
+            parent2 = selector_->select(probability_, popSize_);
             if (verbose >= 3) printf("parent1: %i; parent2: %i\n", parent1, parent2);
 
             // Do crossover
             if (dis(gen) <= prCross)
             {
                 if (verbose >= 3) printf("Doing crossover...\n");
-                (*crossover).offspring(oldPop[parent1], oldPop[parent2], &(newPop[i]),
-                                        &(newPop[i+1]), chromosomeLength);
+                crossover_->offspring(oldPop_[parent1], oldPop_[parent2], &(newPop_[i]),
+                                      &(newPop_[i+1]), chromosomeLength_);
             }
             else
             {
                 if (verbose >= 3) printf("Omitting crossover...\n");
-                newPop[i] = oldPop[parent1];
-                newPop[i+1] = oldPop[parent2];
+                newPop_[i] = oldPop_[parent1];
+                newPop_[i+1] = oldPop_[parent2];
             }
 
             // Do mutation in each child
             if (verbose >= 3) printf("Doing mutation...\n");
             for (k = 0; k < 2; k++)
             {
-                (*mutator).mutate(&(newPop[i + k]), chromosomeLength, prMut);
+                mutator_->mutate(&(newPop_[i + k]), prMut);
             }
 
         }
 
         // Swap oldPop and newPop
         if (verbose >= 2) printf("Swapping oldPop and newPop...\n");
-        tmpPop = oldPop;
-        oldPop = newPop;
-        newPop = tmpPop;
+        tmpPop_ = oldPop_;
+        oldPop_ = newPop_;
+        newPop_ = tmpPop_;
 
         // Compute fitness
-        for (i = 0; i < popSize; i++) {
+        for (i = 0; i < popSize_; i++) {
             // Compute fitness
-            (*fitComputer).compute(oldPop[i], &fitness, i, chromosomeLength);
+            fitComputer_->compute(oldPop_[i]);
         }
 
         // If verbose, print best individual
         if (verbose >= 2 or (verbose >= 1 and generation % GEN_PRINTS == 0))
         {
-            const int index = findMaximumIndex(fitness, popSize);
+            const int index = findMaximumIndex(fitness_, popSize_);
             printf("Best individual: ");
-            printVector(oldPop[index]);
-            printf("Max fitness: %f\n", fitness[index]);
+            printVector(oldPop_[index]);
+            printf("Max fitness: %f\n", fitness_[index]);
         }
         if (verbose >= 2)
         {
             printf("Population:\n");
-            printMatrix(oldPop);
+            printMatrix(oldPop_);
 
             printf("Fitness vector: ");
-            printVector(fitness);
+            printVector(fitness_);
         }
 
         if (verbose >= 2) printf("Checking termination conditions...\n");
 
-    } while (!(*terminator).terminate(oldPop, fitness, generation, popSize, chromosomeLength));
+    } while (!terminator_->terminate(oldPop_, fitness_, generation, popSize_, chromosomeLength_));
 
     if (verbose >= 1) printf("\nEvolution is done!\n");
 
-    int bestFitIndex = findMaximumIndex(fitness, popSize);
+    int bestFitIndex = findMaximumIndex(fitness_, popSize_);
 
-    return {oldPop, fitness, oldPop[bestFitIndex], fitness[bestFitIndex], generation};
+    return {oldPop_, fitness_, oldPop_[bestFitIndex], fitness_[bestFitIndex], generation};
 
 }
 

@@ -24,7 +24,7 @@ protected:
     //! Fitness for test set
     double fitnessTest_ = 0.0;
 
-    //! Default constructor
+    //! Default constructor FIXME: maybe we have to make it public
     Individual() {}
 
     /*!
