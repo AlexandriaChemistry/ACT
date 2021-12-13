@@ -71,39 +71,33 @@ class Identifier
      */
     Identifier() {}
     
-    /*! \brief Simple constructor
-     * \param[in] atoms   Vector containing atom/bond names
-     * \param[in] canSwap Can the order of the atoms be swapped
-     */
-    Identifier(const std::vector<std::string> &atoms,
-               CanSwap                         canSwap);
-
-    /*! \brief Simple constructor
+    /*! \brief Constructor
+     * Will extract atoms and bondorders from the id string. If the string
+     * is incorrect the program will be terminated with a message.
      * \param[in] iType   The interaction type for this identifier
-     * \param[in] id      String containing atom/bond names
+     * \param[in] id      String containing atom/bond names and bond orders
      * \param[in] canSwap Can the order of the atoms be swapped
      */
     Identifier(InteractionType    iType,
                const std::string &id,
                CanSwap            canSwap);
 
-    /*! \brief Simple constructor
+    /*! \brief Constructor
      * \param[in] atoms     Vector containing atom/bond names
      * \param[in] bondorder The bond order in case of bonds
      * \param[in] canSwap   Can the order of the atoms be swapped
      */
     Identifier(const std::vector<std::string> &atoms,
-               double                          bondorder,
+               const std::vector<double>      &bondorders,
                CanSwap                         canSwap);
+
+    /*! \brief Constructor for a single atom
+     * \param[in] atom  Atom name
+     */
+    Identifier(const std::string &atom);
 
     //! \brief Return standard identifier string
     const std::string &id() const { return id_; }
-    
-    //! \brief Return swapped identifier string
-    //const std::string &swappedId() const { return swappedId_; }
-
-    //! \brief Return the bond order
-    double bondOrder() const { return bondOrder_; }
     
     /*! \brief Comparison operator
      *
@@ -124,7 +118,10 @@ class Identifier
     friend bool operator==(const Identifier &a, const Identifier &b);
 
     //! \brief Return the atoms
-    const std::vector<std::string> atoms() const { return atoms_; }
+    const std::vector<std::string> &atoms() const { return atoms_; }
+    
+    //! \brief Return the bond orders
+    const std::vector<double> &bondOrders() const { return bondOrders_; }
     
     /*! \brief Send the contents to another processor
      * \param[in] cr   Communication data structure
@@ -140,15 +137,19 @@ class Identifier
 
  private:
     //! The id in short of these parameter
-    std::string id_;
+    std::string              id_;
     //! The swapped id
-    std::string swappedId_;
-    //! The bond order
-    double      bondOrder_ = 0;
+    std::string              swappedId_;
+    //! The bond orders
+    std::vector<double>      bondOrders_;
     //! The atoms
-    std::vector<std::string> atoms_ = {};
+    std::vector<std::string> atoms_;
     //! Correct the order of atoms
     void orderAtoms();
+    /*! Create the swapped version of the id if needed
+     * \param[in] canSwap What we are allowed to do in this case
+     */
+    void createSwapped(CanSwap canSwap);
 };    
 
 } // namespace alexandria

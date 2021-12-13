@@ -423,7 +423,7 @@ void MolGen::checkDataSufficiency(FILE *fp)
                 {
                     auto iPType = pd_.findParticleType(*myatoms.atomtype[ai])->interactionTypeToIdentifier(btype).id();
                     auto jPType = pd_.findParticleType(*myatoms.atomtype[aj])->interactionTypeToIdentifier(btype).id();
-                    auto bondId = Identifier({iPType, jPType}, bo, bonds->canSwap());
+                    auto bondId = Identifier({iPType, jPType}, { bo }, bonds->canSwap());
                     for(auto &ff : *(bonds->findParameters(bondId)))
                     {
                         if (ff.second.isMutable())
@@ -439,10 +439,10 @@ void MolGen::checkDataSufficiency(FILE *fp)
                     auto iPType = pd_.findParticleType(*myatoms.atomtype[ai])->interactionTypeToIdentifier(ztype).id();
                     auto jPType = pd_.findParticleType(*myatoms.atomtype[aj])->interactionTypeToIdentifier(ztype).id();
                     auto bcc   = pd_.findForces(bcctype);
-                    auto bccId = Identifier({iPType, jPType}, bo, bcc->canSwap());
+                    auto bccId = Identifier({iPType, jPType}, { bo }, bcc->canSwap());
                     if (!bcc->parameterExists(bccId))
                     {
-                        bccId = Identifier({jPType, iPType}, bo, bcc->canSwap());
+                        bccId = Identifier({jPType, iPType}, { bo }, bcc->canSwap());
                         if (!bcc->parameterExists(bccId))
                         {
                             GMX_THROW(gmx::InternalError("Unknown bondcorrection"));
@@ -453,6 +453,45 @@ void MolGen::checkDataSufficiency(FILE *fp)
                         if (ff.second.isMutable())
                         {
                             ff.second.incrementNtrain();
+                        }
+                    }
+                }
+            }
+            // Now angles and dihedrals
+            std::vector<InteractionType> atypes = {
+                InteractionType::ANGLES, InteractionType::LINEAR_ANGLES,
+                InteractionType::PROPER_DIHEDRALS, 
+                InteractionType::IMPROPER_DIHEDRALS
+            };
+            for (const auto &atype : atypes)
+            {
+                if (optimize(atype))
+                {
+                    auto angles = pd_.findForces(atype);
+                    for(int i = 0; i < mol.ltop_->idef.il[angles->fType()].nr;
+                        i+= interaction_function[angles->fType()].nratoms+1)
+                    {
+                        // Skip type, which is the first entry in iatoms
+                        std::vector<std::string> aa;
+                        std::vector<double>      bondOrders;
+                        int                      ajprev = 0;
+                        for (int j = 1; j < interaction_function[angles->fType()].nratoms+1; j++)
+                        {
+                            int aj = mol.ltop_->idef.il[angles->fType()].iatoms[i+j];
+                            aa.push_back(pd_.findParticleType(*myatoms.atomtype[aj])->interactionTypeToIdentifier(atype).id());
+                            if (j > 1)
+                            {
+                                bondOrders.push_back(mol.bondToBondOrder(ajprev+1, aj+1));
+                            }
+                            ajprev = aj;
+                        }
+                        Identifier aId(aa, bondOrders, angles->canSwap());
+                        for(auto &ff : *(angles->findParameters(aId)))
+                        {
+                            if (ff.second.isMutable())
+                            {
+                                ff.second.incrementNtrain();
+                            }
                         }
                     }
                 }

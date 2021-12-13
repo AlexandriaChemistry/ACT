@@ -214,14 +214,7 @@ void ForceConstants::analyzeIdef(const std::vector<MyMol> &mm,
             }
             GMX_RELEASE_ASSERT(aindex.size() == bondOrders.size()+1, "Could not find all bond orders. Duh.");
             Identifier *bondId;
-            if (InteractionType::BONDS == itype_ && 2 == aindex.size())
-            {
-                bondId = new Identifier(atoms, bondOrders[0], CanSwap::Yes);
-            }
-            else
-            {
-                bondId = new Identifier(atoms, CanSwap::Yes);
-            }
+            bondId = new Identifier(atoms, bondOrders, CanSwap::Yes);
             if (bondsFound && fs.parameterExists(*bondId))
             {
                 std::vector<double> params;
