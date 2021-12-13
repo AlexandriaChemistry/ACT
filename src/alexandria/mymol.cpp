@@ -979,7 +979,7 @@ void MyMol::addShells(FILE          *fp,
     {
         auto atype                  = pd->findParticleType(*atoms->atomtype[i]);
         shellRenumber[i]            = i + nshell;
-        inv_renum[shellRenumber[i]] = i;
+        originalAtomIndex_.insert(std::pair<int, int>(shellRenumber[i], i));
         if (atype->hasInteractionType(InteractionType::POLARIZATION))
         {
             // TODO: Update if particles can have more than one shell
@@ -1070,7 +1070,7 @@ void MyMol::addShells(FILE          *fp,
         for (auto &j : pw->paramsConst())
         {
             // We know that the Atom or Vsite is 0 as we added it to plist as such.
-            int  i0 = inv_renum[j.a[0]];
+            int  i0 = originalAtomIndex_[j.a[0]];
             for (auto j0 = 0; j0 < excls_[i0].nr; j0++)
             {
                 add_excl_pair(newexcls, j.a[0], shellRenumber[excls_[i0].e[j0]]);
@@ -2372,14 +2372,29 @@ Identifier MyMol::getIdentifier(const Poldata                  *pd,
     {
         // Some atom types can be empty, e.g. polarizability of shells
         // since this a property of the atom.
-        if (!btype[iatoms[j]].empty())
+        if (btype[iatoms[j]].empty())
         {
-            batoms.push_back(btype[iatoms[j]]);
+            continue;
         }
+        batoms.push_back(btype[iatoms[j]]);
+        
         // TODO check atom numbers
-        if (j > 1)
+        // TODO take into account impropers with different bond orders
+        if (j > 0)
         {
-            bondOrders.push_back(bondToBondOrder(iatoms[j], iatoms[j-1]));
+            int  ai  = iatoms[j-1];
+            auto aii = originalAtomIndex_.find(ai);
+            int  aj  = iatoms[j];
+            auto ajj = originalAtomIndex_.find(aj);
+            if (aii != originalAtomIndex_.end())
+            {
+                ai = aii->second;
+            }
+            if (ajj != originalAtomIndex_.end())
+            {
+                aj = ajj->second;
+            }
+            bondOrders.push_back(bondToBondOrder(ai, aj));
         }
     }
     auto fs = pd->findForcesConst(iType);
