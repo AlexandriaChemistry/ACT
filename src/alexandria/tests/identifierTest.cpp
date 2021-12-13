@@ -44,7 +44,7 @@ namespace
 {
 
 TEST(IdentifierSimpleTest, ConstructorOne) {
-    EXPECT_THROW(Identifier id({"C", "H"}, { 1 }, CanSwap::Yes), gmx::InvalidInputError);
+    EXPECT_THROW(Identifier id({"C", "H"}, { 1, 2 }, CanSwap::Yes), gmx::InvalidInputError);
 }
 
 TEST(IdentifierSimpleTest, BSmallerThanA) {
@@ -71,8 +71,9 @@ TEST(IdentifierSimpleTest, BSmallerThanASecondAtom) {
 TEST(IdentifierSimpleTest, BSmallerThanABondOrder) {
     Identifier a({"H", "C"}, { 2 }, CanSwap::No);
     Identifier b({"H", "C"}, { 1 }, CanSwap::No);
+    // Since bond order is ignored this should yield false
     bool compare = b < a;
-    EXPECT_TRUE(compare);
+    EXPECT_FALSE(compare);
 }
 
 TEST(IdentifierSimpleTest, NotASmallerThanB) {

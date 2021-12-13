@@ -152,10 +152,14 @@ Identifier::Identifier(InteractionType    iType,
     int  natoms = interactionTypeToNatoms(iType);
     // For natoms atoms we should have natoms-1 bond orders
     // which means 2*natoms - 1 items in ids
-    GMX_RELEASE_ASSERT(static_cast<int>(atoms_.size()) == natoms,
-                       gmx::formatString("Expected %d atoms but found %d. Id = %s", natoms, static_cast<int>(atoms_.size()), id.c_str()).c_str());
-    GMX_RELEASE_ASSERT(static_cast<int>(bondOrders_.size()) == natoms-1,
-                       gmx::formatString("Expected %d bondOrders but found %d. Id = %s", natoms-1, static_cast<int>(bondOrders_.size()), id.c_str()).c_str());
+    if (static_cast<int>(atoms_.size()) != natoms)
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("Expected %d atoms but found %d. Id = %s", natoms, static_cast<int>(atoms_.size()), id.c_str()).c_str()));
+    }
+    if (static_cast<int>(bondOrders_.size()) != natoms-1)
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("Expected %d bondOrders but found %d. Id = %s", natoms-1, static_cast<int>(bondOrders_.size()), id.c_str()).c_str()));
+    }
     createSwapped(canSwap);
     orderAtoms();
 }
@@ -166,8 +170,7 @@ Identifier::Identifier(const std::vector<std::string> &atoms,
 {
     if (bondOrders.size()+1 != atoms.size())
     {
-        GMX_RELEASE_ASSERT(bondOrders.size()+1 == atoms.size(), 
-                           gmx::formatString("Expecting %d bond orders for %d atoms, but got %d", static_cast<int>(atoms.size()-1), static_cast<int>(atoms.size()), static_cast<int>(bondOrders.size())).c_str());
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("Expecting %d bond orders for %d atoms, but got %d", static_cast<int>(atoms.size()-1), static_cast<int>(atoms.size()), static_cast<int>(bondOrders.size())).c_str()));
     }
     id_ = atoms[0];
     for(size_t i = 1; i < atoms.size(); i++)

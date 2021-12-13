@@ -53,6 +53,8 @@ enum class CanSwap {
 /*! \brief Convert string to CanSwap
  * \param[in] str The string
  * \return  the enum value
+ * \throws a gmx::InvalidInputError in case of an unknown string
+ * TODO: return a boolean instead of crashing
  */
 CanSwap stringToCanSwap(const std::string &str);
 
@@ -77,6 +79,7 @@ class Identifier
      * \param[in] iType   The interaction type for this identifier
      * \param[in] id      String containing atom/bond names and bond orders
      * \param[in] canSwap Can the order of the atoms be swapped
+     * \throws with a gmx::InvalidInputError if the input is not consistent
      */
     Identifier(InteractionType    iType,
                const std::string &id,
