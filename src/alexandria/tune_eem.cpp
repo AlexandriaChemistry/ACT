@@ -412,7 +412,7 @@ int alex_tune_eem(int argc, char *argv[])
     // Check validity of arguments with check_pargs() in ConfigHandler(s)
     opt.check_pargs();
 
-    // finishing MolGen stuff
+    // finishing MolGen stuff and setting output file for FF in OptACM
     opt.optionsFinished(opt2fn("-o", filenms.size(), filenms.data()));  // Calls optionsFinished() for MolGen instance
 
     // Propagate weights from training set to other sets
