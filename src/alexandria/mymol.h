@@ -115,6 +115,8 @@ namespace alexandria
         std::unique_ptr<gmx::MDModules> *mdModules_      = nullptr;
         MyForceProvider                 *myforce_        = nullptr;
         GentopVsites                     gvt_;
+        //! This points to the atom indices before shells were added
+        std::map<int, int>               originalAtomIndex_;
         std::string                      forcefield_;
         double                           isoPol_elec_      = 0;
         double                           isoPol_calc_      = 0;
