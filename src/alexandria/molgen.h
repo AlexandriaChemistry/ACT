@@ -462,12 +462,6 @@ public:
 
     //! \brief Return minimum amount of data needed
     int mindata() const { return mindata_; }
-
-    //! \brief Return const communication record
-    const t_commrec *commrec() const { return cr_; }
-    
-    //! \brief Return non-const communication record
-    t_commrec *commrec() { return cr_; }
   
     //! \return the GROMACS hardware information structure      
     gmx_hw_info_t *hwinfo() {return hwinfo_;}

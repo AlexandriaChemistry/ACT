@@ -176,6 +176,9 @@ public:
     //! \return whether or not we are in verbose mode
     bool verbose() const { return verbose_; }
 
+    //! \brief Get the constant communications record \p cr_ constant pointer
+    const t_commrec *commrec() const { return cr_; }
+
     //! \brief Get the communications record \p cr_ pointer
     t_commrec *commrec() { return cr_; }
 

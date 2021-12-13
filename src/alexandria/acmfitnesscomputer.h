@@ -80,7 +80,7 @@ public:
     virtual void compute(ga::Individual *ind);
 
     /*! \brief Computes deviation from target
-     * \param[in] ind    pointer to individual
+     * \param[in] ind           pointer to individual
      * \param[in] verbose       Whether or not to print a lot (for when this gets called from outside the compute() routine)
      * \param[in] calcDev       The type of calculation to do
      * \param[in] ims           The data set to do computations on
