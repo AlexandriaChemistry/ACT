@@ -332,7 +332,7 @@ void MolGen::checkDataSufficiency(FILE     *fp,
                 {
                     auto iPType = pd->findParticleType(*myatoms.atomtype[ai])->interactionTypeToIdentifier(btype).id();
                     auto jPType = pd->findParticleType(*myatoms.atomtype[aj])->interactionTypeToIdentifier(btype).id();
-                    auto bondId = Identifier({iPType, jPType}, bo, bonds->canSwap());
+                    auto bondId = Identifier({iPType, jPType}, { bo }, bonds->canSwap());
                     for(auto &ff : *(bonds->findParameters(bondId)))
                     {
                         if (ff.second.isMutable())
@@ -376,7 +376,7 @@ void MolGen::checkDataSufficiency(FILE     *fp,
             {
                 if (optimize(atype))
                 {
-                    auto angles = pd_.findForces(atype);
+                    auto angles = pd->findForces(atype);
                     for(int i = 0; i < mol.ltop_->idef.il[angles->fType()].nr;
                         i+= interaction_function[angles->fType()].nratoms+1)
                     {
@@ -387,7 +387,7 @@ void MolGen::checkDataSufficiency(FILE     *fp,
                         for (int j = 1; j < interaction_function[angles->fType()].nratoms+1; j++)
                         {
                             int aj = mol.ltop_->idef.il[angles->fType()].iatoms[i+j];
-                            aa.push_back(pd_.findParticleType(*myatoms.atomtype[aj])->interactionTypeToIdentifier(atype).id());
+                            aa.push_back(pd->findParticleType(*myatoms.atomtype[aj])->interactionTypeToIdentifier(atype).id());
                             if (j > 1)
                             {
                                 bondOrders.push_back(mol.bondToBondOrder(ajprev+1, aj+1));

@@ -79,7 +79,7 @@ class Identifier
      */
     Identifier(const Identifier &other)
     : id_(other.id()), swappedId_(other.swappedId()),
-      bondOrder_(other.bondOrder()), atoms_(other.atoms()) {}
+      bondOrders_(other.bondOrders()), atoms_(other.atoms()) {}
 
     /*! \brief Simple constructor
      * \param[in] atoms   Vector containing atom/bond names
@@ -121,7 +121,7 @@ class Identifier
     const std::string &swappedId() const { return swappedId_; }
 
     //! \brief Return the bond orders
-    const std::vector<double> &bondOrder() const { return bondOrders_; }
+    const std::vector<double> &bondOrders() const { return bondOrders_; }
 
     /*! \brief Comparison operator
      *
@@ -144,9 +144,6 @@ class Identifier
     //! \brief Return the atoms
     const std::vector<std::string> &atoms() const { return atoms_; }
 
-    //! \brief Return the bond orders
-    const std::vector<double> &bondOrders() const { return bondOrders_; }
-
     /*! \brief Send the contents to another processor
      * \param[in] cr   Communication data structure
      * \param[in] dest Processor id to send the data to
@@ -160,6 +157,7 @@ class Identifier
     CommunicationStatus Receive(const t_commrec *cr, int src);
 
  private:
+
     //! The id in short of these parameter
     std::string              id_;
     //! The swapped id
@@ -168,8 +166,10 @@ class Identifier
     std::vector<double>      bondOrders_;
     //! The atoms
     std::vector<std::string> atoms_;
+
     //! Correct the order of atoms
     void orderAtoms();
+
     /*! Create the swapped version of the id if needed
      * \param[in] canSwap What we are allowed to do in this case
      */
