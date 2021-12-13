@@ -241,15 +241,14 @@ class BondVsites:
     self.bs = get_csv_rows(filenm, 4)
     
   def print_vsites(self, outf):
-    sys.exit("Please fix the identifiers generated here.")
     outf.write("  <interaction type=\"VSITE2\" function=\"vsite2\" canswap=\"false\">\n")
     for bs in self.bs:
-      myid = ("%s#%s#%s" % ( bs[0], bs[1], bs[2]) )
+      myid = ("%s~%s~%s" % ( bs[0], bs[1], bs[2]) )
       param_header(outf, myid)
       print_one(outf, "v2_a", "", bs[3], bs[3], "Fixed", True)
       param_footer(outf)
       if bs[0] != bs[1]:
-        myid = ("%s#%s#%s" % ( bs[1], bs[0], bs[2]) )
+        myid = ("%s~%s~%s" % ( bs[1], bs[0], bs[2]) )
         param_header(outf, myid)
         aa = str(1.0-float(bs[3]))
         print_one(outf, "v2_a", "", aa, aa, "Fixed", True)

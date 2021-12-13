@@ -1235,13 +1235,20 @@ bool Bond::operator==(const Bond &other) const
 
 double MolProp::bondToBondOrder(int ai, int aj) const
 {
-    ai += 1;
-    aj += 1;
     Bond   mybond(ai, aj, 1.0);
     auto   bb = std::find(bond_.begin(), bond_.end(), mybond);
     if (bb != bond_.end())
     {
         return bb->getBondOrder();
+    }
+    else
+    {
+        Bond   mybond(aj, ai, 1.0);
+        auto   bb = std::find(bond_.begin(), bond_.end(), mybond);
+        if (bb != bond_.end())
+        {
+            return bb->getBondOrder();
+        }
     }
     printf("Looking for %d-%d\n", ai, aj);
     for(auto &b : bond_)
