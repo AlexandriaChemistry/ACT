@@ -48,12 +48,10 @@ public:
     }
 
     /*!
-        * Initialize an individual
-        * @param individual pointer to pointer to the individual to initialize
-        */
+     * Initialize an individual
+     * @param individual pointer to pointer to the individual to initialize
+     */
     virtual void initialize(ga::Individual **individual);
-
-
 
 };
 

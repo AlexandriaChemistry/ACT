@@ -135,7 +135,7 @@ public:
      * @param sii       pointer to SharedIndividualInfo object
      * @param nParam    size of the parameter vector
      */
-    MCMCMutator(      FILE*                     logfile,
+    MCMCMutator(      FILE                     *logfile,
                 const bool                      verbose,
                       BayesConfigHandler       *bch,
                       ACMFitnessComputer       *fitComp,
