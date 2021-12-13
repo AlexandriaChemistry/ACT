@@ -25,7 +25,7 @@ private:
     SharedIndividualInfo *sii_;
     //! Pointer to log file (may be nullptr)
     FILE *logfile_;
-    //! Whether we are in verbose mode
+    //! Flush output immediately rather than letting the OS buffer it. Don't use for production simulations.
     bool verbose_;
 
     std::random_device                      rd;
@@ -129,7 +129,7 @@ public:
     /*!
      * Constructor of MCMCMutator
      * @param logfile   pointer to log file (may be nullptr)
-     * @param verbose   whether we are in verbose mode or not
+     * @param verbose   Flush output immediately rather than letting the OS buffer it. Don't use for production simulations.
      * @param bch       pointer to BayesConfigHandler object
      * @param fitComp   pointer to ACMFitnessComputer object
      * @param sii       pointer to SharedIndividualInfo object

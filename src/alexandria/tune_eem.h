@@ -44,7 +44,7 @@ private:
     bool bFullQuadrupole_ = false;
     //! Whether or not to remove molecules that fail to converge in the shell minimization
     bool bRemoveMol_ = true;
-    //! Whether we are in verbose mode
+    //! Flush output immediately rather than letting the OS buffer it. Don't use for production simulations.
     bool verbose_ = false;
     /*! Generate completely random starting parameters within the limits set by the options.
         This will be done at the very first step and before each subsequent run. */

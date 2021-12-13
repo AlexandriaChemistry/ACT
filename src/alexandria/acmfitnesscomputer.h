@@ -33,7 +33,7 @@ private:
     MolGen *mg_;
     //! \brief Whether or not to remove molecules that fail to converge in the shell minimization
     bool removeMol_;
-    //! \brief Whether we are in verbose mode or not
+    //! \brief Flush output immediately rather than letting the OS buffer it. Don't use for production simulations.
     bool verbose_;
     //! Whether we consider both diagonal and off-diagonal elements of the Q_Calc matrix for optimization
     bool fullQuadrupole_;
@@ -59,7 +59,7 @@ public:
      * \param[in] sii               pointer to SharedIndividualInfo
      * \param[in] mg                pointer to molgen
      * \param[in] removeMol         Whether or not to remove molecules that fail to converge in the shell minimization
-     * \param[in] verbose           Whether we consider both diagonal and off-diagonal elements of the Q_Calc matrix for optimization
+     * \param[in] verbose           Flush output immediately rather than letting the OS buffer it. Don't use for production simulations.
      * \param[in] fullQuadrupole    Whether we consider both diagonal and off-diagonal elements of the Q_Calc matrix for optimization
      */
     ACMFitnessComputer(      t_commrec             *cr,
