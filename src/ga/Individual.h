@@ -20,7 +20,6 @@ protected:
     //! Default constructor
     Individual() {}
 
-
     /*!
      * Property constructor
      * \param[in] fitnessTrain  the fitness for training set

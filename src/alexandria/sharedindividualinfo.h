@@ -42,7 +42,7 @@ private:
     //! Classes in the system
     std::vector<std::string> paramClass_;
     //! Class-index for each parameter
-    std::vector<int> paramClassIndex_;
+    std::vector<int> paramClassIndex_;  // FIXME: shouldn't this be a vector of size_t
     //! Base name for parameter convergence files
     std::string xvgconv_;
     //! Base name for Chi2 convergence file
