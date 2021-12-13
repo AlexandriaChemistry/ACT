@@ -370,7 +370,7 @@ int alex_tune_eem(int argc, char *argv[])
             pargs.push_back(pa[i]);
         }
     }
-    alexandria::OptACM opt; // TODO: create SharedIndividualInfo and MolGen in constructor!
+    alexandria::OptACM opt;
     opt.add_pargs(&pargs);
     printer.addOptions(&pargs);
 

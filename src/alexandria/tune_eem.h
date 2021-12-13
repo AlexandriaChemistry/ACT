@@ -75,10 +75,7 @@ private:
 public:
     //! Constructor
     OptACM()
-    : cr_(init_commrec()), mg_(cr_), sii_(cr_)
-    {
-        sii_.fillFittingTargets();
-    }
+    : cr_(init_commrec()), mg_(cr_), sii_(cr_) {}
 
     //! Destructor
     ~OptACM()

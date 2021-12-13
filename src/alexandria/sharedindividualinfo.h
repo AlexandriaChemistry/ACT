@@ -22,9 +22,9 @@ private:
     //! Communication record
     t_commrec *cr_;
     //! Base Poldata from which to make copies
-    Poldata pd_;  // TODO: initialize this!
+    Poldata pd_;
     //! Base targets_ from which to make copies
-    std::map<iMolSelect, std::map<eRMS, FittingTarget>> targets_;  // TODO: initialize this
+    std::map<iMolSelect, std::map<eRMS, FittingTarget>> targets_;
     //! Training steps per parameter
     std::vector<int> ntrain_;
     //! Lower bound per parameter
@@ -50,6 +50,9 @@ private:
     //! Base name for Force field output file
     std::string outputFile_;
 
+    //! \brief Fills the \p targets_ map
+    void fillFittingTargets();
+
 public:
 
     /*!
@@ -57,7 +60,10 @@ public:
      * \param[in] cr The communications record
      */
     SharedIndividualInfo(t_commrec *cr)
-    : cr_(cr) {}
+    : cr_(cr)
+    {
+        fillFittingTargets();
+    }
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * BEGIN: Poldata stuff                     *
@@ -78,9 +84,6 @@ public:
     /* * * * * * * * * * * * * * * * * * * * * *
     * BEGIN: FittingTarget stuff               *
     * * * * * * * * * * * * * * * * * * * * * */
-
-    //! \brief Fills the \p targets_ map
-    void fillFittingTargets();
 
     //! \brief Propage weights from training set to other sets
     void propagateWeightFittingTargets();
