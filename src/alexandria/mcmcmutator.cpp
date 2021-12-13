@@ -1,3 +1,10 @@
+/*! \internal \brief
+ * Implements part of the alexandria program.
+ * \author Julian Ramon Marrades Furquet <julianramon.marradesfurquet.8049@student.uu.se>
+ * \author Oskar Tegby <oskar.tegby@it.uu.se>
+ */
+
+
 #include "mcmcmutator.h"
 
 #include "bayes.h"

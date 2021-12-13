@@ -1,3 +1,11 @@
+/*! \internal \brief
+ * Implements part of the alexandria program.
+ * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
+ * \author David van der Spoel <david.vanderspoel@icm.uu.se>
+ * \author Julian Ramon Marrades Furquet <julianramon.marradesfurquet.8049@student.uu.se>
+ */
+
+
 #include "sharedindividualinfo.h"
 
 #include "poldata_xml.h"
