@@ -119,7 +119,7 @@ Identifier ParticleType::interactionTypeToIdentifier(InteractionType itype) cons
     {
         if (s2i.second == itype && hasOption(s2i.first))
         {
-            return Identifier({optionValue(s2i.first)}, CanSwap::No);
+            return Identifier(optionValue(s2i.first));
         }
     }
     // GMX_THROW(gmx::InvalidInputError(gmx::formatString("Interaction type %s not present in particle %s", interactionTypeToString(itypeOrig).c_str(), id_.id().c_str()).c_str()));

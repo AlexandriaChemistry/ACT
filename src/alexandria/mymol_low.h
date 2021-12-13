@@ -150,16 +150,14 @@ void cp_plist(t_params                   plist[],
               InteractionType            itype,
               std::vector<PlistWrapper> &plist_);
 
-real calc_r13(const Poldata     *pd,
-              const std::string &aai,
-              const std::string &aaj,
-              const std::string &aak,
-              const real         angle);
+real calc_r13(const Poldata                  *pd,
+              const std::vector<std::string> &atoms,
+              const std::vector<double>      &bondOrders,
+              const real                      angle);
 
-real calc_relposition(const Poldata     *pd,
-                      const std::string  aai,
-                      const std::string  aaj,
-                      const std::string  aak);
+real calc_relposition(const Poldata                  *pd,
+                      const std::vector<std::string> &atoms,
+                      const std::vector<double>      &bondOrders);
 
 /*! \brief Update GROMACS force field parameters
  *

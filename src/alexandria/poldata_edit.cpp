@@ -304,7 +304,7 @@ static void modifyPoldata(Poldata *pd,
                         const size_t nBondorder   = std::extent<decltype(bondorders)>::value;
                         for(size_t bb = 0; bb < nBondorder; bb++)
                         {
-                            auto qId = Identifier({q1id, q2id}, bondorders[bb], CanSwap::No);
+                            auto qId = Identifier({q1id, q2id}, { bondorders[bb] }, CanSwap::No);
                             modifyInteraction(pd, itype, paramType, qId,
                                               bSetMin, pmin,
                                               bSetVal, pval,

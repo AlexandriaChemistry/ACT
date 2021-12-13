@@ -85,7 +85,7 @@ class PoldataTest : public gmx::test::CommandLineTestBase
             std::string          atype("U");
             std::string          elem("U");
             std::string          desc("temporary test atom");
-            Identifier   atpId({"U"}, CanSwap::No);
+            Identifier   atpId("U");
             ParticleType atp(atpId, desc, eptAtom);
             atp.setOption("poltype", "p_U");
             atp.setOption("zetatype", "z_U");

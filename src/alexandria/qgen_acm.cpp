@@ -606,7 +606,7 @@ void QgenAcm::getBccParams(const Poldata *pd,
     auto fs       = pd->findForcesConst(itype);
     bool swapped = false;
     Identifier bccId({acm_id_[nonFixed_[ai]].id(), 
-            acm_id_[nonFixed_[aj]].id()}, bondorder, fs.canSwap());
+            acm_id_[nonFixed_[aj]].id()}, { bondorder }, fs.canSwap());
     if (!fs.parameterExists(bccId))
     {
         if (CanSwap::Yes == fs.canSwap())
@@ -617,7 +617,7 @@ void QgenAcm::getBccParams(const Poldata *pd,
         {
             bccId   = Identifier({acm_id_[nonFixed_[aj]].id(),
                     acm_id_[nonFixed_[ai]].id()},
-                bondorder, fs.canSwap());
+                { bondorder }, fs.canSwap());
             swapped = true;
         }
     }

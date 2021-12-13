@@ -27,6 +27,7 @@
 
 set(ALEXANDRIA_SOURCES
            alex_modules.cpp
+           allbondeds.cpp
            analyze.cpp
            atype_mapping.cpp
            babel_io.cpp

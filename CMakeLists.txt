@@ -810,7 +810,7 @@ endif()
 # Use GNUInstallDirs to set paths on multiarch systems.
 include(GNUInstallDirs)
 
-set(GMX_INSTALL_DATASUBDIR "gromacs" CACHE STRING "Subdirectory for GROMACS data under CMAKE_INSTALL_DATADIR")
+set(GMX_INSTALL_DATASUBDIR "act" CACHE STRING "Subdirectory for ACT data under CMAKE_INSTALL_DATADIR")
 mark_as_advanced(GMX_INSTALL_DATASUBDIR)
 
 # Internal convenience so we do not have to join two path segments in the code

@@ -429,7 +429,7 @@ static void processAttr(FILE       *fp,
             {
                 GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such particle type %s", xbufString(xmlEntry::TYPE).c_str()).c_str()));
             }
-            myIdentifier = Identifier({xbufString(xmlEntry::IDENTIFIER)}, CanSwap::No);
+            myIdentifier = Identifier(xbufString(xmlEntry::IDENTIFIER));
             pd->addParticleType(ParticleType(myIdentifier,
                                              xbufString(xmlEntry::DESC), ept));
             parentEntry = elem;

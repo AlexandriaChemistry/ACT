@@ -958,6 +958,11 @@ class Bond
         //! Update the bondorder
         void setBondOrder(double bondorder) { bondorder_ = bondorder; }
 
+        /*! \brief Return whether two Bonds are the same
+         * \param[in] other The other bond
+         * \return true if they are the same
+         */
+        bool operator==(const Bond &other) const;
         /*! \brief
          * Sends this object over an MPI connection
          *
@@ -1530,6 +1535,12 @@ class MolProp
         //! Return pointer to the whole bond array for editing
         std::vector<Bond> *bonds() { return &bond_; }
         
+        /*! Get the bond order for a bond
+         * \param[in] ai The first atom number from 1 to N
+         * \param[in] aj The second atom number from 1 to N
+         * \return the bond order or 0 if not found
+         */
+        double bondToBondOrder(int ai, int aj) const;
         //! Add an experiment
         void AddExperiment(Experiment myexp) { exper_.push_back(myexp); }
 

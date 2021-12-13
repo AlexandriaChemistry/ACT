@@ -178,7 +178,7 @@ static bool calcDissoc(FILE                              *fplog,
             if (pd->atypeToBtype(atypeI, &btypeI) &&
                 pd->atypeToBtype(atypeJ, &btypeJ))
             {
-                Identifier bondId({btypeI, btypeJ}, b.getBondOrder(), CanSwap::Yes);
+                Identifier bondId({btypeI, btypeJ}, { b.getBondOrder() }, CanSwap::Yes);
                 if (bondIdToIndex.find(bondId) == bondIdToIndex.end())
                 {
                     bondIdToIndex.insert(std::pair<Identifier, int>(bondId, nColumn++));
@@ -223,7 +223,7 @@ static bool calcDissoc(FILE                              *fplog,
             if (pd->atypeToBtype(atypeI, &btypeI) &&
                 pd->atypeToBtype(atypeJ, &btypeJ))
             {
-                Identifier bondId({btypeI, btypeJ}, b.getBondOrder(), CanSwap::Yes);
+                Identifier bondId({btypeI, btypeJ}, { b.getBondOrder() }, CanSwap::Yes);
                 int column = bondIdToIndex[bondId];
                 GMX_RELEASE_ASSERT(column < nColumn && column >= 0, gmx::formatString("Column %d should be within 0..%d", column, nColumn).c_str());
                 GMX_RELEASE_ASSERT(row < nRow && row >= 0, gmx::formatString("Row %d should be within 0..%d", row, nRow).c_str());
