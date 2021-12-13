@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2020
+ * Copyright (C) 2021
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -28,18 +28,20 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include <gtest/gtest.h>
-
-#include "alexandria/identifier.h"
-
-#include <cstdio>
+#include <math.h>
 
 #include <map>
+
+#include <gtest/gtest.h>
+
+#include "alexandria/allbondeds.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
+
+#include "poldata_utils.h"
 
 namespace alexandria
 {
@@ -47,15 +49,14 @@ namespace alexandria
 namespace
 {
 
-//! Shortcut for mapping identifier to a number.
-typedef std::map<const Identifier, int> idmap;
-
-class IdentifierMapTest : public gmx::test::CommandLineTestBase
+class AllBondedsTest : public gmx::test::CommandLineTestBase
 {
     protected:
         gmx::test::TestReferenceChecker checker_;
+        static std::vector<std::string> atomNames;
+        static std::string              atomName;
 
-        IdentifierMapTest () : checker_(this->rootChecker())
+        AllBondedsTest () : checker_(this->rootChecker())
         {
             auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 5e-2);
             checker_.setDefaultTolerance(tolerance);
@@ -64,55 +65,48 @@ class IdentifierMapTest : public gmx::test::CommandLineTestBase
         // Static initiation, only run once every test.
         static void SetUpTestCase()
         {
+            //Poldata *mypd     = getPoldata("ACM-g");
         }
 
+        void runOBstats(const std::vector<double> &xx)
+        {
+            Identifier atom("h");
+            OneBonded ob(atom);
+            for(const auto &x : xx)
+            {
+                ob.addPoint(x);
+            }
+            real average, sigma;
+            int  N;
+            int  ok = ob.getAverageSigmaN(&average, &sigma, &N);
+            if (estatsOK == ok)
+            {
+                checker_.checkReal(average, "average");
+                checker_.checkReal(sigma, "sigma");
+                checker_.checkInteger(N, "N");
+            }
+            else
+            {
+                checker_.checkString(gmx_stats_message(ok), "Error");
+            }
+            
+        }
         static void TearDownTestCase()
         {
         }
 
-        void runTest(const idmap &idmap)
-        {
-            for (const auto &id : idmap)
-            {
-                auto mapfind = idmap.find(id.first);
-                if (mapfind == idmap.end())
-                {
-                    fprintf(stderr, "Could not find %s in map. Shame on you.\n", id.first.id().c_str());
-                }
-                else
-                {
-                    checker_.checkInteger(mapfind->second, id.first.id().c_str());
-                }
-            }
-        }
-
 };
 
-TEST_F(IdentifierMapTest, FindInMap) {
-    Identifier PH2({"P", "H"}, { 2 }, CanSwap::Yes);
-    Identifier BP2({"B", "P"}, { 2 }, CanSwap::Yes);
-    Identifier HC1({"H", "C"}, { 1 }, CanSwap::Yes);
-    Identifier NC1({"N", "C"}, { 1 }, CanSwap::Yes);
-    Identifier NC2({"N", "C"}, { 2 }, CanSwap::Yes);
-    Identifier NO2({"N", "O"}, { 2 }, CanSwap::No);
-    Identifier OC2({"O", "C"}, { 2 }, CanSwap::Yes);
-    Identifier CO1({"O", "C"}, { 1 }, CanSwap::Yes);
-    Identifier HO1({"H", "O"}, { 1 }, CanSwap::Yes);
-    std::map<const Identifier, int> idmap = {
-        { PH2, 1 },
-        { BP2, 2 },
-        { HC1, 3 },
-        { NC2, 4 },
-        { CO1, 5 },
-        { HO1, 6 },
-        { OC2, 7 },
-        { NC1, 8 },
-        { NO2, 9 }
-    };
-    runTest(idmap);
+TEST_F (AllBondedsTest, OneBondedStats){
+    std::vector<double> xx = { 103, 104, 105, 106.5, 107, 109, 106, 104, 107 };
+    runOBstats(xx);
 }
 
-
+TEST_F (AllBondedsTest, OneBondedStatsEmpty){
+    std::vector<double> xx;
+    runOBstats(xx);
 }
 
 }
+
+} // namespace

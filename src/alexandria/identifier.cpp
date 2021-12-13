@@ -36,6 +36,7 @@
 #include <vector>
 
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "communication.h"
@@ -68,32 +69,29 @@ const std::string &canSwapToString(CanSwap canSwap)
     return cs2string[canSwap];
 }
 
-static const char *IdDelimeter = "#";
+/*! To distinguish bond orders in identifiers
+ * These are the SMARTS Bond Primitives defined here
+ * https://www.daylight.com/dayhtml/doc/theory/theory.smarts.html
+ * 1.5 refers to aromatic bonds but also resonant systems, such
+ * as a carboxylate.
+ */
+static std::map<double, char> BondOrderDelimeter =
+    { { 1, '~' }, { 1.5, ':' }, { 2, '=' }, { 3, '#' } };
 
-Identifier::Identifier(const std::vector<std::string> &atoms,
-                       CanSwap                         canSwap)
+/*! Reverse map of the above.
+ * Will be created on first use
+ */
+static std::map<char, double> ReverseBondOrderDelimeter;
+
+static void createReverseBondOrderDelimeter()
 {
-    for(size_t k = 0; k < atoms.size(); k++)
+    if (ReverseBondOrderDelimeter.empty())
     {
-        id_.append(atoms[k]);
-        if (k < atoms.size()-1)
+        for (auto &bod : BondOrderDelimeter)
         {
-            id_.append(IdDelimeter);
+            ReverseBondOrderDelimeter.insert(std::pair<char, double>(bod.second, bod.first));
         }
     }
-    if (canSwap == CanSwap::Yes)
-    {
-        for(size_t k = 0; k < atoms.size(); k++)
-        {
-            swappedId_.append(atoms[atoms.size()-k-1]);
-            if (k < atoms.size()-1)
-            {
-                swappedId_.append(IdDelimeter);
-            }
-        }
-    }
-    orderAtoms();
-    atoms_ = atoms;
 }
 
 void Identifier::orderAtoms()
@@ -106,75 +104,91 @@ void Identifier::orderAtoms()
     }
 }
 
+
+void Identifier::createSwapped(CanSwap canSwap)
+{
+    if (canSwap == CanSwap::Yes)
+    {
+        swappedId_ = atoms_[atoms_.size()-1];
+        for(size_t i = atoms_.size()-1; i > 0; i--)
+        {
+            swappedId_ += BondOrderDelimeter[bondOrders_[i-1]];
+            swappedId_ += atoms_[i-1];
+        }
+    }
+}
+
+Identifier::Identifier(const std::string &atom)
+{
+    atoms_.push_back(atom);
+    id_ = atom;
+}
+
 Identifier::Identifier(InteractionType    iType,
                        const std::string &id,
                        CanSwap            canSwap)
 {
-    id_        = id;
-    auto ids   = split(id, IdDelimeter[0]);
-    auto idEnd = ids.end();
-    if (iType == InteractionType::BONDS ||
-        iType == InteractionType::BONDCORRECTIONS)
+    if (debug)
     {
-        idEnd--;
-        bondOrder_ = atof(ids[ids.size()-1].c_str());
+        fprintf(debug, "Trying to create %s identifier from '%s'\n", interactionTypeToString(iType).c_str(), id.c_str());
     }
-    else
+    id_       = id;
+    createReverseBondOrderDelimeter();
+    size_t c0 = 0;
+    for (size_t c = 0; c < id.size(); c++)
     {
-        bondOrder_ = 0;
-    }
-    atoms_.clear();
-    for (auto i = ids.begin(); i < idEnd; ++i)
-    {
-        atoms_.push_back(*i);
-    }
-    if (canSwap == CanSwap::Yes)
-    {
-        if (iType == InteractionType::BONDS ||
-            iType == InteractionType::BONDCORRECTIONS)
+        auto ptr = ReverseBondOrderDelimeter.find(id[c]);
+        if (ptr != ReverseBondOrderDelimeter.end())
         {
-            swappedId_ = gmx::formatString("%s%s%s%s%g", ids[1].c_str(), IdDelimeter,
-                                           ids[0].c_str(), IdDelimeter, bondOrder_);
-        }
-        else
-        {
-            swappedId_.clear();
-            for(auto i = ids.rbegin(); i < ids.rend(); ++i)
-            {
-                swappedId_.append(*i);
-                if (i < ids.rend()-1)
-                {
-                    swappedId_.append(IdDelimeter);
-                }
-            }
+            atoms_.push_back(id.substr(c0,c-c0));
+            bondOrders_.push_back(ptr->second);
+            c0 = c+1;
         }
     }
+    if (c0 < id.size())
+    {
+        atoms_.push_back(id.substr(c0, id.size()-c0));
+    }
+    int  natoms = interactionTypeToNatoms(iType);
+    // For natoms atoms we should have natoms-1 bond orders
+    // which means 2*natoms - 1 items in ids
+    if (static_cast<int>(atoms_.size()) != natoms)
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("Expected %d atoms but found %d. Id = %s", natoms, static_cast<int>(atoms_.size()), id.c_str()).c_str()));
+    }
+    if (static_cast<int>(bondOrders_.size()) != natoms-1)
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("Expected %d bondOrders but found %d. Id = %s", natoms-1, static_cast<int>(bondOrders_.size()), id.c_str()).c_str()));
+    }
+    createSwapped(canSwap);
     orderAtoms();
 }
 
 Identifier::Identifier(const std::vector<std::string> &atoms,
-                       double                          bondOrder,
+                       const std::vector<double>      &bondOrders,
                        CanSwap                         canSwap)
 {
-    GMX_RELEASE_ASSERT(atoms.size() == 2,
-                       "Bonds should have two atoms exactly");
-    id_.assign(gmx::formatString("%s%s%s%s%g",
-                                 atoms[0].c_str(), IdDelimeter,
-                                 atoms[1].c_str(), IdDelimeter,
-                                 bondOrder));
-    if (canSwap == CanSwap::Yes)
+    if (bondOrders.size()+1 != atoms.size())
     {
-        swappedId_.assign(gmx::formatString("%s%s%s%s%g",
-                                            atoms[1].c_str(), IdDelimeter,
-                                            atoms[0].c_str(), IdDelimeter,
-                                            bondOrder));
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("Expecting %d bond orders for %d atoms, but got %d", static_cast<int>(atoms.size()-1), static_cast<int>(atoms.size()), static_cast<int>(bondOrders.size())).c_str()));
     }
-    atoms_     = atoms;
-    if (bondOrder < 1 || bondOrder > 3)
+    id_ = atoms[0];
+    for(size_t i = 1; i < atoms.size(); i++)
     {
-        GMX_THROW(gmx::InvalidInputError(gmx::formatString("Bond order should be 1, 2 or 3, not %g", bondOrder).c_str()));
+        if (BondOrderDelimeter.find(bondOrders[i-1]) == BondOrderDelimeter.end())
+        {
+            gmx_fatal(FARGS, "Don't understand a bond order of %g", bondOrders[i-1]);
+        }
+        id_ += BondOrderDelimeter[bondOrders[i-1]];
+        id_ += atoms[i];
     }
-    bondOrder_ = bondOrder;
+    if (id_ == "c2_b~c3_b~c2_b")
+    {
+        printf("Created identifier '%s'\n", id_.c_str());
+    }
+    atoms_      = atoms;
+    bondOrders_ = bondOrders;
+    createSwapped(canSwap);
     orderAtoms();
 }
 
@@ -182,11 +196,15 @@ CommunicationStatus Identifier::Send(const t_commrec *cr, int dest) const
 {
     gmx_send_str(cr, dest, &id_);
     gmx_send_str(cr, dest, &swappedId_);
-    gmx_send_double(cr, dest, bondOrder_);
     gmx_send_int(cr, dest, static_cast<int>(atoms_.size()));
     for(auto &a : atoms_)
     {
         gmx_send_str(cr, dest, &a);
+    }
+    gmx_send_int(cr, dest, static_cast<int>(bondOrders_.size()));
+    for(auto &b : bondOrders_)
+    {
+        gmx_send_double(cr, dest, b);
     }
     return CS_OK;
 }
@@ -195,7 +213,6 @@ CommunicationStatus Identifier::Receive(const t_commrec *cr, int src)
 {
     gmx_recv_str(cr, src, &id_);
     gmx_recv_str(cr, src, &swappedId_);
-    bondOrder_ = gmx_recv_double(cr, src);
     int natoms = gmx_recv_int(cr, src);
     atoms_.clear();
     for(int i = 0; i < natoms; i++)
@@ -204,18 +221,23 @@ CommunicationStatus Identifier::Receive(const t_commrec *cr, int src)
         gmx_recv_str(cr, src, &a);
         atoms_.push_back(a);
     }
+    int nbo = gmx_recv_int(cr, src);
+    bondOrders_.clear();
+    for(int i = 0; i < nbo; i++)
+    {
+        bondOrders_.push_back(gmx_recv_double(cr, src));
+    }
     return CS_OK;
 }
 
 bool operator==(const Identifier &a, const Identifier &b)
 {
-    return (a.atoms().size() == b.atoms().size() &&
-            a.id() == b.id());
+    return (a.id() == b.id());
 }
 
 bool operator<(const Identifier &a, const Identifier &b)
 {
-    return (!(a == b) && (a.id() < b.id()));
+    return (a.id() < b.id());
 }
 
 } // namespace alexandria

@@ -376,7 +376,7 @@ void MyMol::MakeSpecialInteractions(const Poldata *pd,
                         *atoms->atomtype[bonds[i][2]],
                         getMolname().c_str());
             }
-            gvt_.addPlanar(i, bonds[i][0], bonds[i][1], bonds[i][2],
+            gvt_.addPlanar(bonds[i][0], i, bonds[i][1], bonds[i][2],
                            &nbonds[0]);
         }
         const auto atype(*atoms->atomtype[i]);
@@ -778,7 +778,7 @@ immStatus MyMol::GenerateTopology(FILE              *fp,
                 b.a[1] = bi.getAj() - 1;
                 pd->atypeToBtype(*atoms->atomtype[b.a[0]], &btype1);
                 pd->atypeToBtype(*atoms->atomtype[b.a[1]], &btype2);
-                Identifier bondId({btype1, btype2}, bi.getBondOrder(), CanSwap::Yes);
+                Identifier bondId({btype1, btype2}, { bi.getBondOrder() }, CanSwap::Yes);
                 // Store the bond order for later usage.
                 bondOrder_.insert({std::make_pair(b.a[0],b.a[1]), bi.getBondOrder()});
                 // We add the parameter with zero parameters, they will be
@@ -907,7 +907,7 @@ void MyMol::addBondVsites(FILE          *fp,
         int aj = b.getAj()-1;
         std::string aTypei(*atoms->atomtype[ai]);
         std::string aTypej(*atoms->atomtype[aj]);
-        Identifier  bsId({ aTypei, aTypej }, b.getBondOrder(), CanSwap::No);
+        Identifier  bsId({ aTypei, aTypej }, { b.getBondOrder() }, CanSwap::No);
         // Check whether a vsite is defined for this bond
         std::string v2("v2");
         if (vs2.parameterExists(bsId) && pd->hasParticleType(v2))
@@ -2367,6 +2367,7 @@ Identifier MyMol::getIdentifier(const Poldata                  *pd,
         iatoms += 1;
     }
     std::vector<std::string> batoms;
+    std::vector<double>      bondOrders;
     for (int j = 0; j < natoms; j++)
     {
         // Some atom types can be empty, e.g. polarizability of shells
@@ -2374,6 +2375,11 @@ Identifier MyMol::getIdentifier(const Poldata                  *pd,
         if (!btype[iatoms[j]].empty())
         {
             batoms.push_back(btype[iatoms[j]]);
+        }
+        // TODO check atom numbers
+        if (j > 1)
+        {
+            bondOrders.push_back(bondToBondOrder(iatoms[j], iatoms[j-1]));
         }
     }
     auto fs = pd->findForcesConst(iType);
@@ -2390,7 +2396,7 @@ Identifier MyMol::getIdentifier(const Poldata                  *pd,
         }
         if (bo != bondOrder_.end())
         {
-            return Identifier(batoms, bo->second, fs.canSwap());
+            return Identifier(batoms, { bo->second }, fs.canSwap());
         }
         else
         {
@@ -2399,7 +2405,7 @@ Identifier MyMol::getIdentifier(const Poldata                  *pd,
                                                                btype[iatoms[1]].c_str()).c_str()));
         }
     }
-    return Identifier(batoms, fs.canSwap());
+    return Identifier(batoms, bondOrders, fs.canSwap());
 }
 
 void MyMol::UpdateIdef(const Poldata   *pd,

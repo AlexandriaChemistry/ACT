@@ -126,20 +126,15 @@ class Poldata
          */
         void  addParticleType(const ParticleType &ptp);
         /*! \brief
-         *  Add the polarizability types
+         *  Add a virtual site type
          *
-         **\param[in] ptype           The name specifying the polarizability type in Alexandria FF
-         **\param[in] miller          Miller polarizability type
-         **\param[in] bosque          Bosque polarizability type
-         **\param[in] polarizability  The calulated value of polarizability
-         **\param[in] sigPol          The uncertainty of the calculated polarizability
+         * \param[in] atype           The name specifying the vsite type
+         * \param[in] type            Unknown
+         * \param[in] number
+         * \param[in] distance
+         * \param[in] angle
+         * \param[in] ncontrolatoms
          */
-        void  addPtype(const std::string &ptype,
-                       const std::string &miller,
-                       const std::string &bosque,
-                       double             polarizability,
-                       double             sigPol);
-
         void  addVsite(const std::string &atype,
                        const std::string &type,
                        int                number,
@@ -176,7 +171,18 @@ class Poldata
          */
         double getEpsilonR() const { return gtEpsilonR_; }
 
-        std::string  getGeometry(std::string gtBrule);
+        /*! \brief Compute dependent parameters
+         *
+         * The force field may contain a number of parameters
+         * that depend on othe parameters. For instance, the
+         * distance r_{ik} in an angle triplet r_{ijk} depends
+         * on the distances r_{ij} and r_{kj} as well as the 
+         * angle between the vectors. Those dependent properties
+         * are computed here in order to get the highest accuracy
+         * in the numbers. This is important when computing energies
+         * based on these distances.
+         */
+        void calcDependent();
 
         /*! \brief
          * Return the element name corresponding to the zeta type
@@ -202,7 +208,7 @@ class Poldata
      */
     bool hasParticleType(const std::string &ptype) const
     {
-        Identifier id({ptype}, CanSwap::No);
+        Identifier id(ptype);
         return hasParticleType(id);
     }
         
@@ -236,7 +242,7 @@ class Poldata
          */
         ParticleTypeIterator findParticleType(const std::string &atype)
         {
-            Identifier id({atype}, CanSwap::No);
+            Identifier id(atype);
             return findParticleType(id);
         }
 
@@ -247,7 +253,7 @@ class Poldata
          */
         ParticleTypeConstIterator findParticleType(const std::string &atype) const
         {
-            Identifier id({atype}, CanSwap::No);
+            Identifier id(atype);
             return std::find_if(alexandria_.begin(), alexandria_.end(),
                                 [id](ParticleType const &f)
                                 { return (id == f.id()); });
@@ -322,7 +328,7 @@ class Poldata
          * \return BCC identifier
          * \throws if something wrong
          */
-        const Identifier atomtypesToZetaIdentifier(const std::vector<std::string> atoms) const;
+    //const Identifier atomtypesToZetaIdentifier(const std::vector<std::string> atoms) const;
 
         /*! \brief
          * Add a new force list. The routine checks for duplicate itypes

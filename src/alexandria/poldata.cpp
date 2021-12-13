@@ -294,21 +294,6 @@ void Poldata::addSymcharges(const std::string &central,
     }
 }
 
-const Identifier Poldata::atomtypesToZetaIdentifier(const std::vector<std::string> atoms) const
-{
-    std::vector<std::string> ztypes;
-    for (auto &a : atoms)
-    {
-        std::string ztype;
-        if (!atypeToZtype(a, &ztype))
-        {
-            GMX_THROW(gmx::InternalError(gmx::formatString("Cannot find zeta type for %s", a.c_str()).c_str()));
-        }
-        ztypes.push_back(ztype);
-    }
-    return Identifier(ztypes, CanSwap::No);
-}
-
 CommunicationStatus Poldata::Send(const t_commrec *cr, int dest)
 {
     CommunicationStatus cs;
@@ -707,6 +692,38 @@ void Poldata::checkConsistency(FILE *fp) const
     if (nerror > 0)
     {
         GMX_THROW(gmx::InternalError(gmx::formatString("Poldata inconsistency. Use the -debug 1 flag to find out more").c_str()));
+    }
+}
+
+void Poldata::calcDependent()
+{
+    auto btype = InteractionType::BONDS;
+    std::vector<InteractionType> atypes = { InteractionType::LINEAR_ANGLES,
+        InteractionType::ANGLES };
+    GMX_RELEASE_ASSERT(interactionPresent(btype), "No bond information present");
+    auto ffpbonds = findForcesConst(btype);
+    for(auto &atype : atypes)
+    {
+        if (!interactionPresent(atype))
+        {
+            continue;
+        }
+        auto ffpl = findForces(atype)->parameters();
+        for (auto &fp : *ffpl)
+        {
+            for (auto &param : fp.second)
+            {                               
+                if (param.second.mutability() == Mutability::Dependent &&
+                    param.first == "r13")
+                {
+                    const std::vector<std::string> &atoms = fp.first.atoms();
+                    const std::vector<double>       bo    = fp.first.bondOrders();
+                    Identifier b1({atoms[0], atoms[1]}, { bo[0] }, CanSwap::Yes);
+                    Identifier b2({atoms[1], atoms[2]}, { bo[1] }, CanSwap::Yes);
+                        
+                }
+            }
+        }
     }
 }
 

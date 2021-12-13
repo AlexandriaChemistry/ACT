@@ -279,38 +279,36 @@ void cp_plist(t_params                   plist[],
     }
 }
 
-real calc_r13(const Poldata     *pd,
-              const std::string &aai,
-              const std::string &aaj,
-              const std::string &aak,
-              const real         angle)
+real calc_r13(const Poldata                  *pd,
+              const std::vector<std::string> &atoms,
+              const std::vector<double>      &bondOrders,
+              const real                      angle)
 {
     double r12 = 0, r23 = 0, r13 = 0;
 
-    Identifier aij ({aai, aaj}, CanSwap::Yes);
-    Identifier ajk ({aaj, aak}, CanSwap::Yes);
+    Identifier aij ({atoms[0], atoms[1] }, { bondOrders[0] }, CanSwap::Yes);
+    Identifier akj ({atoms[2], atoms[1] }, { bondOrders[1] }, CanSwap::Yes);
 
     std::string type("bondlength");
     auto bij = pd->findForcesConst(InteractionType::BONDS).findParameterTypeConst(aij, type);
-    auto bjk = pd->findForcesConst(InteractionType::BONDS).findParameterTypeConst(ajk, type);
+    auto bkj = pd->findForcesConst(InteractionType::BONDS).findParameterTypeConst(akj, type);
 
     r12 = convertToGromacs(bij.value(), bij.unit());
-    r23 = convertToGromacs(bjk.value(), bjk.unit());
+    r23 = convertToGromacs(bkj.value(), bkj.unit());
 
     r13 = std::sqrt((r12*r12) + (r23*r23) - (2*r12*r23*std::cos(DEG2RAD*angle)));
 
     return r13;
 }
 
-real calc_relposition(const Poldata     *pd,
-                      const std::string  aai,
-                      const std::string  aaj,
-                      const std::string  aak)
+real calc_relposition(const Poldata                  *pd,
+                      const std::vector<std::string> &atoms,
+                      const std::vector<double>      &bondOrders)
 {
     double b0 = 0, b1 = 0, relative_position = 0;
 
-    Identifier aij({aai, aaj}, CanSwap::Yes);
-    Identifier ajk({aaj, aak}, CanSwap::Yes);
+    Identifier aij({atoms[0], atoms[1]}, { bondOrders[0] }, CanSwap::Yes);
+    Identifier ajk({atoms[1], atoms[2]}, { bondOrders[1] }, CanSwap::Yes);
 
     std::string type("bondlength");
     auto bij = pd->findForcesConst(InteractionType::BONDS).findParameterTypeConst(aij, type);
@@ -324,6 +322,21 @@ real calc_relposition(const Poldata     *pd,
     return relative_position;
 }
 
+static double PlistToBondOrder(const std::vector<PlistWrapper>::iterator bonds,
+                               int ai, int aj)
+{
+    auto param = bonds->paramsConst();
+    for(size_t i = 0; i < param.size(); i++)
+    {
+        if ((param[i].a[0] == ai && param[i].a[1] == aj) ||
+            (param[i].a[0] == aj && param[i].a[1] == ai))
+        {
+            return bonds->bondOrder(i);
+        }
+    }
+    return 0;
+}
+
 immStatus updatePlist(const Poldata             *pd,
                       std::vector<PlistWrapper> *plist,
                       const t_atoms             *atoms,
@@ -331,6 +344,16 @@ immStatus updatePlist(const Poldata             *pd,
                       const std::string         &molname,
                       std::vector<std::string>  *errors)
 {
+    auto mybonds = plist->end();
+    for (auto pw = plist->begin(); pw < plist->end(); ++pw)
+    {
+        if (pw->getItype() == InteractionType::BONDS)
+        {
+            mybonds = pw;
+            break;
+        }
+    }
+    GMX_RELEASE_ASSERT(mybonds != plist->end(), "Cannot find bonds in plistwrapper");
     for (auto pw = plist->begin(); pw < plist->end(); ++pw)
     {
         auto iType   = pw->getItype();
@@ -338,14 +361,14 @@ immStatus updatePlist(const Poldata             *pd,
         auto canSwap = fs.canSwap();
         pw->setFtype(fs.fType());
         auto nratoms = interaction_function[fs.fType()].nratoms;
-        int bondOrder_index = 0;
-        auto mypar = pw->params();
+        auto mypar   = pw->params();
         for (auto pwi = mypar->begin(); pwi < mypar->end(); ++pwi)
         {
             std::vector<std::string> bondAtomType, reverseAtomType;
             bool bondNamesOK = true;
             // Store last atom type in case something goes wrong
-            std::string lastAtype;
+            std::string         lastAtype;
+            std::vector<double> bondOrders, reverseBO;
             for(int i = 0; i < nratoms && bondNamesOK; i++)
             {
                 std::string tmp;
@@ -360,91 +383,94 @@ immStatus updatePlist(const Poldata             *pd,
                 // for H-C#N is not the same as N#C-H.
                 reverseAtomType.insert(reverseAtomType.begin(), 1, tmp); 
             }
-            if (bondNamesOK)
+            if (!bondNamesOK)
             {
-                Identifier bondId;
-                if (InteractionType::BONDS == iType)
+                errors->push_back(gmx::formatString("Unsupported atom type: %s!\n", lastAtype.c_str()));
+                return immStatus::AtomTypes;
+            }
+            Identifier       bondId;
+            std::vector<int> aa;
+            if (fs.fType() == F_IDIHS)
+            {
+                bondOrders.push_back(PlistToBondOrder(mybonds, pwi->a[0], pwi->a[1]));
+                bondOrders.push_back(PlistToBondOrder(mybonds, pwi->a[1], pwi->a[2]));
+                bondOrders.push_back(PlistToBondOrder(mybonds, pwi->a[1], pwi->a[3]));
+                bondId = Identifier(bondAtomType, bondOrders, canSwap);
+                // Note that the atoms are not in the same order for
+                // computing the forces as in the identifier.
+                if (fs.parameterExists(bondId))
                 {
-                    bondId = Identifier(bondAtomType,
-                                        pw->bondOrder(bondOrder_index++),
-                                        canSwap);
+                    aa = { pwi->a[0], pwi->a[2], pwi->a[1], pwi->a[3] };
                 }
                 else
                 {
-                    bondId = Identifier(bondAtomType, canSwap);
+                    bondId = Identifier({ bondAtomType[3], bondAtomType[2], bondAtomType[1], bondAtomType[0] },
+                                        { bondOrders[2], bondOrders[1], bondOrders[0] },
+                                        canSwap);
+                    aa = { pwi->a[3], pwi->a[1], pwi->a[2], pwi->a[0] };
                 }
-                int n = 0;
+            }
+            else
+            {
+                reverseBO.resize(nratoms-1);
+                bondOrders.clear();
+                for(int i = 1; i < nratoms && bondNamesOK; i++)
+                {
+                    double bbb = PlistToBondOrder(mybonds, pwi->a[i-1], pwi->a[i]);
+                    bondOrders.push_back(bbb);
+                    reverseBO[nratoms-1-i] = bbb;
+                }
+            
+                bondId = Identifier(bondAtomType, bondOrders, canSwap);
                 if (!fs.parameterExists(bondId))
                 {
-                    std::vector<int> aa;
-                    if (fs.fType() == F_IDIHS)
+                    bondId = Identifier(reverseAtomType, reverseBO, canSwap);
+                    // Swap the plist wrapper as well
+                    for (int i = 0; i < nratoms; i++)
                     {
-                        bondId = Identifier({ bondAtomType[0], bondAtomType[2], bondAtomType[1], bondAtomType[3] }, canSwap);
-                
-                        if (fs.parameterExists(bondId))
-                        {
-                            aa = { pwi->a[0], pwi->a[2], pwi->a[1], pwi->a[3] };
-                        }
-                        else
-                        {
-                            bondId = Identifier({ bondAtomType[3], bondAtomType[1], bondAtomType[2], bondAtomType[0] }, canSwap);
-                            aa = { pwi->a[3], pwi->a[1], pwi->a[2], pwi->a[0] };
-                        }
-                    }
-                    else
-                    {
-                        bondId = Identifier(reverseAtomType, canSwap);
-                        // Swap the plist wrapper as well
-                        for (int i = 0; i < nratoms; i++)
-                        {
-                            aa.push_back(pwi->a[nratoms-1-i]);
-                        }
+                        aa.push_back(pwi->a[nratoms-1-i]);
                     }
                     for (int i = 0; i < nratoms; i++)
                     {
                         pwi->a[i] = aa[i];
                     }
                 }
-                if (fs.parameterExists(bondId))
+            }
+            if (fs.parameterExists(bondId))
+            {
+                int n = 0;
+                for(const auto &fp : fs.findParametersConst(bondId))
                 {
-                    for(const auto &fp : fs.findParametersConst(bondId))
-                    {
-                        pwi->c[n++] = convertToGromacs(fp.second.value(), fp.second.unit());
-                    }
-                }
-                else if (missing == missingParameters::Error)
-                {
-                    std::string atomnum = gmx::formatString("%d %d",
-                                                            1+pwi->a[0],
-                                                            1+pwi->a[1]);
-                    for(int i = 2; i < nratoms; i++)
-                    {
-                        atomnum += gmx::formatString(" %d", 1+pwi->a[i]);
-                    }
-                    errors->push_back(gmx::formatString("Could not find bond/angle/dihedral information for %s in %s - ftype %s. Atom numbers %s",
-                                                        bondId.id().c_str(), molname.c_str(), interaction_function[fs.fType()].longname, atomnum.c_str()).c_str());
-                    if (iType == InteractionType::BONDS)
-                    {
-                        return immStatus::NotSupportedBond;
-                    }
-                    else if (iType ==  InteractionType::ANGLES)
-                    {
-                        return immStatus::NotSupportedAngle;
-                    }
-                    else if (iType ==  InteractionType::LINEAR_ANGLES)
-                    {
-                        return immStatus::NotSupportedLinearAngle;
-                    }
-                    else
-                    {
-                        return immStatus::NotSupportedDihedral;
-                    }
+                    pwi->c[n++] = convertToGromacs(fp.second.value(), fp.second.unit());
                 }
             }
-            else
+            else if (missing == missingParameters::Error)
             {
-                errors->push_back(gmx::formatString("Unsupported atom type: %s!\n", lastAtype.c_str()));
-                return immStatus::AtomTypes;
+                std::string atomnum = gmx::formatString("%d %d",
+                                                        1+pwi->a[0],
+                                                        1+pwi->a[1]);
+                for(int i = 2; i < nratoms; i++)
+                {
+                    atomnum += gmx::formatString(" %d", 1+pwi->a[i]);
+                }
+                errors->push_back(gmx::formatString("Could not find bond/angle/dihedral information for %s in %s - ftype %s. Atom numbers %s",
+                                                    bondId.id().c_str(), molname.c_str(), interaction_function[fs.fType()].longname, atomnum.c_str()).c_str());
+                if (iType == InteractionType::BONDS)
+                {
+                    return immStatus::NotSupportedBond;
+                }
+                else if (iType ==  InteractionType::ANGLES)
+                {
+                    return immStatus::NotSupportedAngle;
+                }
+                else if (iType ==  InteractionType::LINEAR_ANGLES)
+                {
+                    return immStatus::NotSupportedLinearAngle;
+                }
+                else
+                {
+                    return immStatus::NotSupportedDihedral;
+                }
             }
         }
     }
@@ -483,7 +509,7 @@ static void getSigmaEpsilon(const ForceFieldParameterList &fa,
                             double                        *sigma,
                             double                        *epsilon)
 {
-    Identifier idI({ai}, CanSwap::Yes); 
+    Identifier idI(ai);
     *sigma   = 0;
     *epsilon = 0;
     if (fa.parameterExists(idI))
@@ -542,7 +568,7 @@ static void getSigmaEpsilonGamma(const ForceFieldParameterList &fa,
                                  double                        *epsilon,
                                  double                        *gamma)
 {
-    Identifier idI({ai}, CanSwap::Yes); 
+    Identifier idI(ai);
     *sigma   = 0;
     *epsilon = 0;
     *gamma   = 0;

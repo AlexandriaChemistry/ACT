@@ -1227,6 +1227,29 @@ CommunicationStatus Experiment::Send(t_commrec *cr, int dest) const
     return cs;
 }
 
+bool Bond::operator==(const Bond &other) const
+{
+    return ((ai_ == other.getAi() && aj_ == other.getAj()) ||
+            (aj_ == other.getAi() && ai_ == other.getAj()));
+}
+
+double MolProp::bondToBondOrder(int ai, int aj) const
+{
+    Bond   mybond(ai, aj, 1.0);
+    auto   bb = std::find(bond_.begin(), bond_.end(), mybond);
+    if (bb != bond_.end())
+    {
+        return bb->getBondOrder();
+    }
+    printf("Looking for %d-%d\n", ai, aj);
+    for(auto &b : bond_)
+    {
+        printf("Have %d-%d\n", b.getAi(), b.getAj());
+    }
+    gmx_fatal(FARGS, "Sorry...");
+    return 0.0;
+}
+
 void MolProp::AddBond(Bond b)
 {
     BondConstIterator bi;

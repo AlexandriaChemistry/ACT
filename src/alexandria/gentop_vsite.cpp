@@ -663,9 +663,10 @@ void GentopVsites::gen_Vsites(const Poldata             *pd,
                         aijk     = 
                         aijl     = DEG2RAD*vsite->angle(); // Must be in RAD here.
                         
-                        Identifier angleId({k, j, l}, CanSwap::No);
-                        Identifier bondId1({j, k}, CanSwap::No);
-                        Identifier bondId2({j, l}, CanSwap::No);
+                        // TODO Check the bond orders
+                        Identifier angleId({k, j, l}, { 1.0, 1.0 }, CanSwap::No);
+                        Identifier bondId1({j, k}, { 1.0 }, CanSwap::No);
+                        Identifier bondId2({j, l}, { 1.0 }, CanSwap::No);
                         
                         auto fpAkjl = pd->findForcesConst(InteractionType::ANGLES).findParameterTypeConst(angleId, "angle");
                         auto fpBjk  = pd->findForcesConst(InteractionType::BONDS).findParameterTypeConst(bondId1, "bond");

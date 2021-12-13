@@ -91,7 +91,7 @@ static void dump_molecule(FILE              *fp,
         {
             const char *atype = *atoms.atomtype[i];
             fprintf(fp, "atom: %2d  %5s  %5s", i+1, *atoms.atomname[i], atype);
-            Identifier pid({ atype }, CanSwap::Yes);
+            Identifier pid(atype);
             atomId.push_back(pid);
             if (pd.hasParticleType(pid))
             {
@@ -128,7 +128,7 @@ static void dump_molecule(FILE              *fp,
                 {
                     auto zidI = pidI->interactionTypeToIdentifier(ztype);
                     auto zidJ = pidJ->interactionTypeToIdentifier(ztype);
-                    Identifier mybond({ zidI.id(), zidJ.id()}, b.getBondOrder(), CanSwap::No);
+                    Identifier mybond({ zidI.id(), zidJ.id()}, { b.getBondOrder() }, CanSwap::No);
                     auto btypeMap   = bccTypeCount->find(mybond.id());
                     bool bondExists = false;
                     auto fs         = pd.findForcesConst(bctype);
@@ -139,7 +139,7 @@ static void dump_molecule(FILE              *fp,
                     }
                     else
                     {
-                        Identifier mybond2({ zidJ.id(), zidI.id()}, b.getBondOrder(), CanSwap::No);
+                        Identifier mybond2({ zidJ.id(), zidI.id()}, { b.getBondOrder() }, CanSwap::No);
                         mybond = mybond2;
                         btypeMap   = bccTypeCount->find(mybond.id());
                         auto fs = pd.findForcesConst(bctype);

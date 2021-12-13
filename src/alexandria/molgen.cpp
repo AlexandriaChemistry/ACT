@@ -59,9 +59,9 @@
 
 
 namespace alexandria
-{	    
+{
 
-    std::map<eRMS, const char *> ermsNames = 
+    std::map<eRMS, const char *> ermsNames =
     {
      { eRMS::BOUNDS, "BOUNDS" },
      { eRMS::MU,     "MU" },
@@ -95,7 +95,7 @@ void FittingTarget::print(FILE *fp) const
               iMolSelectName(ims_));
     }
 }
- 
+
 MolGen::MolGen(t_commrec *cr)
 {
     cr_ = cr;
@@ -128,7 +128,7 @@ void MolGen::addOptions(std::vector<t_pargs> *pargs, eTune etune, std::map<eRMS,
           "[HIDDEN]Use only quantum chemistry results (from the levels of theory below) in order to fit the parameters. If not set, experimental values will be used as reference with optional quantum chemistry results, in case no experimental results are available" }
     };
     doAddOptions(pargs, asize(pa_general), pa_general);
-    
+
     if (etune == eTune::EEM)
     {
         t_pargs pa_eem[] =
@@ -272,7 +272,7 @@ void MolGen::checkDataSufficiency(FILE     *fp,
         for(auto &mol : mymol_)
         {
             // We can only consider molecules in the training set here
-            // since it is only for those that we will update the 
+            // since it is only for those that we will update the
             // parameters. That means that if there is no support in the
             // training set for a compound, we can not compute charges
             // or other parameters for the Test or Ignore set either.
@@ -348,10 +348,10 @@ void MolGen::checkDataSufficiency(FILE     *fp,
                     auto iPType = pd->findParticleType(*myatoms.atomtype[ai])->interactionTypeToIdentifier(ztype).id();
                     auto jPType = pd->findParticleType(*myatoms.atomtype[aj])->interactionTypeToIdentifier(ztype).id();
                     auto bcc   = pd->findForces(bcctype);
-                    auto bccId = Identifier({iPType, jPType}, bo, bcc->canSwap());
+                    auto bccId = Identifier({iPType, jPType}, { bo }, bcc->canSwap());
                     if (!bcc->parameterExists(bccId))
                     {
-                        bccId = Identifier({jPType, iPType}, bo, bcc->canSwap());
+                        bccId = Identifier({jPType, iPType}, { bo }, bcc->canSwap());
                         if (!bcc->parameterExists(bccId))
                         {
                             GMX_THROW(gmx::InternalError("Unknown bondcorrection"));
@@ -362,6 +362,45 @@ void MolGen::checkDataSufficiency(FILE     *fp,
                         if (ff.second.isMutable())
                         {
                             ff.second.incrementNtrain();
+                        }
+                    }
+                }
+            }
+            // Now angles and dihedrals
+            std::vector<InteractionType> atypes = {
+                InteractionType::ANGLES, InteractionType::LINEAR_ANGLES,
+                InteractionType::PROPER_DIHEDRALS,
+                InteractionType::IMPROPER_DIHEDRALS
+            };
+            for (const auto &atype : atypes)
+            {
+                if (optimize(atype))
+                {
+                    auto angles = pd_.findForces(atype);
+                    for(int i = 0; i < mol.ltop_->idef.il[angles->fType()].nr;
+                        i+= interaction_function[angles->fType()].nratoms+1)
+                    {
+                        // Skip type, which is the first entry in iatoms
+                        std::vector<std::string> aa;
+                        std::vector<double>      bondOrders;
+                        int                      ajprev = 0;
+                        for (int j = 1; j < interaction_function[angles->fType()].nratoms+1; j++)
+                        {
+                            int aj = mol.ltop_->idef.il[angles->fType()].iatoms[i+j];
+                            aa.push_back(pd_.findParticleType(*myatoms.atomtype[aj])->interactionTypeToIdentifier(atype).id());
+                            if (j > 1)
+                            {
+                                bondOrders.push_back(mol.bondToBondOrder(ajprev+1, aj+1));
+                            }
+                            ajprev = aj;
+                        }
+                        Identifier aId(aa, bondOrders, angles->canSwap());
+                        for(auto &ff : *(angles->findParameters(aId)))
+                        {
+                            if (ff.second.isMutable())
+                            {
+                                ff.second.incrementNtrain();
+                            }
                         }
                     }
                 }
@@ -603,7 +642,7 @@ size_t MolGen::Read(FILE            *fp,
                     }
                     continue;
                 }
-                
+
                 mymol.symmetrizeCharges(pd, qsymm_, nullptr);
                 mymol.initQgenResp(pd, method, basis, 0.0, maxESP_);
                 std::vector<double> dummy;
@@ -647,7 +686,7 @@ size_t MolGen::Read(FILE            *fp,
                                 mymol.getMolname().c_str(), immsg(imm));
                     }
                 }
-                
+
                 mymol.set_datasetType(ims);
 
                 // mymol_ contains all molecules
@@ -665,7 +704,7 @@ size_t MolGen::Read(FILE            *fp,
         // Now distribute the molecules over processors.
         // Make sure the master has a bit less work to do
         // than the helpers and that in particular train
-        // compounds are distributed equally otherwise. 
+        // compounds are distributed equally otherwise.
         for(auto &ts: targetSize_)
         {
             std::vector<int> ntsNode;
@@ -716,7 +755,7 @@ size_t MolGen::Read(FILE            *fp,
                     {
                         imm = static_cast<immStatus>(gmx_recv_int(cr_, dest));
                     }
-                    
+
                     if (imm != immStatus::OK)
                     {
                         fprintf(stderr, "Molecule %s was not accepted on node %d - error %s\n",
@@ -803,7 +842,7 @@ size_t MolGen::Read(FILE            *fp,
                                          nullptr,
                                          missingParameters::Error,
                                          tabfn);
-            
+
             if (immStatus::OK == imm)
             {
                 std::vector<double> dummy;
@@ -833,7 +872,7 @@ size_t MolGen::Read(FILE            *fp,
             if (immStatus::OK == imm)
             {
                 mymol_.push_back(std::move(mymol));
-                
+
                 nLocal.find(mymol.datasetType())->second += 1;
                 if (nullptr != debug)
                 {

@@ -30,6 +30,7 @@ set(ALEXANDRIA_SOURCES
            acmindividual.cpp
            acminitializer.cpp
            alex_modules.cpp
+           allbondeds.cpp
            analyze.cpp
            atype_mapping.cpp
            babel_io.cpp

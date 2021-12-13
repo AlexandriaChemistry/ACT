@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Real Name="average">105.72222222222223</Real>
+  <Real Name="sigma">1.7812466157640638</Real>
+  <Int Name="N">9</Int>
+</ReferenceData>
