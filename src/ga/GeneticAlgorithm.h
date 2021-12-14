@@ -2,7 +2,7 @@
 #define GA_GENETICALGORITHM_H
 
 
-#include "aliases.h"
+// #include "aliases.h"
 
 #include "Initializer.h"
 #include "FitnessComputer.h"
@@ -12,6 +12,9 @@
 #include "Crossover.h"
 #include "Mutator.h"
 #include "Terminator.h"
+
+#include "alexandria/confighandler.h"
+#include "alexandria/sharedindividualinfo.h"
 
 
 namespace ga
@@ -26,25 +29,21 @@ class GeneticAlgorithm
 
 private:
 
-    //! Amount of individuals in the population
-    int popSize_;
-    //! Amount of genes in each individual. FIXME: won't be needed since GA object does not operate within individuals
-    int chromosomeLength_;
-    //! Amount of top individuals to be propagated, unchanged, to the next generation
-    int nElites_;
+    //! BayesConfigHandler pointer
+    alexandria::BayesConfigHandler *bch_;
+    //! GAConfigHandler pointer
+    alexandria::GAConfigHandler *gach_;
 
     // FIXME: swap to a vector of individual pointers, and decide whether probability
     // lies within the individual or outside of it (in a vector)
     //! Old population
-    matrix oldPop_;
+    std::vector<Individual*> oldPop_;
     //! New population, which emerges from the old population
-    matrix newPop_;
+    std::vector<Individual*> newPop_;
     //! Temporal storage to swap "oldPop" and "newPop" after each generation
-    matrix tmpPop_;
-    //! Fitness score for each individual
-    vector fitness_;
+    std::vector<Individual*> tmpPop_;
     //! Probability of selection for each individual
-    vector probability_;
+    std::vector<double> probability_;
 
     //! Initializes each individual in the population
     Initializer            *initializer_;
@@ -63,65 +62,25 @@ private:
     //! Checks if the evolution should continue or be terminated
     Terminator             *terminator_;
 
-    // FIXME: BayesConfigHandler and GAConfigHandler
-
 public:
 
     //! Default constructor
     GeneticAlgorithm() {}
 
     /*!
-     * Create a new GeneticAlgorithm object
-     * @param popSize               size of the population
-     * @param chromosomeLength      length of each individual
-     * @param nElites               the amount of best individuals to move unchanged to the next generation
-     * @param initializer           Initializer object
-     * @param fitComputer           FitnessComputer object
-     * @param sorter                Sorter object
-     * @param probComputer          ProbabilityComputer object
-     * @param selector              Selector object
-     * @param crossover             Crossover object
-     * @param mutator               Mutator object
-     * @param terminator            Terminator object
+     * Constructor
      */
-    GeneticAlgorithm(const int                  popSize,
-                     const int                  chromosomeLength,
-                     const int                  nElites,
-                           Initializer         *initializer,
-                           FitnessComputer     *fitComputer,
-                           Sorter              *sorter,
-                           ProbabilityComputer *probComputer,
-                           Selector            *selector,
-                           Crossover           *crossover,
-                           Mutator             *mutator,
-                           Terminator          *terminator);
+    GeneticAlgorithm(const int mindata_,
+                     alexandria::SharedIndividualInfo *sii,
+                     const bool randInit_,
+                     const std::string) {}
 
     /*!
-     * FIXME: take parameters out since they will be in the config handlers
-     * FIXME: maybe take the return out and make attributes in the GA class
-     * FIXME: Make special case for when popSize is 1 or pure MCMC is requested
      * Evolve the initial population
-     * @param prCross   the probability of crossover
-     * @param prMut     the probability of mutation
-     * @param verbose   The higher the value, the more debug prints
      * @return          a tuple containing the final population, the final fitness, the best individual, the fitness
      *                  of the best individual, and the number of generations
      */
-    const ga_result_t evolve(const double   prCross,
-                             const double   prMut,
-                             const int      verbose);
-
-    /*!
-     * Set a new value for \p nElites
-     * @param nElites   the new value
-     */
-    void setnElites(const int nElites) { nElites_ = nElites; }
-
-    /*!
-     * Get the value of \p nElites
-     * @return  the value of \p nElites
-     */
-    int getnElites() const { return nElites_; }
+    const ga_result_t evolve();
 
 };
 

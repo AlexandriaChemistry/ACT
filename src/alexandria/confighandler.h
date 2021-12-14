@@ -56,7 +56,7 @@ private:
     // After argument parsing, first element in the array will point to the selected enum value, so optimizer_[0]
     // Static means the variable will be shared among objects (only 1 place in memory)
     //! Optimizer to use
-    // static const char *optimizer_[] = {nullptr, "MCMC", "GA", "HYBRID", nullptr};
+    const char *optimizer_[] = {nullptr, "MCMC", "GA", "HYBRID", nullptr};
     //! Population size
     int popSize_ = 1;
     //! Amount of elites in the population
@@ -64,9 +64,9 @@ private:
     //! Order of crossover operator
     int nCrossovers_ = 1;
     //! Sorter algorithm
-    // static const char *sorter_[] = {nullptr, "QUICK", "MERGE", "NONE", nullptr};
+    const char *sorter_[] = {nullptr, "QUICK", "MERGE", "NONE", nullptr};
     //! Probability computing algorithm
-    // static const char *probComputer_[] = {nullptr, "RANK", "FITNESS", "BOLTZMANN", nullptr};
+    const char *probComputer_[] = {nullptr, "RANK", "FITNESS", "BOLTZMANN", nullptr};
     //! Boltzmann probability temperature. TODO: This temperature should be lowered over time.
     real boltzTemp_ = 1;
     // TODO: Termination options???
