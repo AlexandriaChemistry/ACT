@@ -107,6 +107,9 @@ public:
     //! \return the probability of mutation
     double prMut() const { return prMut_; }
 
+    //! \return to initialize an individual randomly
+    double randomInit() const { return randomInit_; }
+
     /* * * * * * * * * * * * * * * * * * * * * *
     * END: Getters and setters                 *
     * * * * * * * * * * * * * * * * * * * * * */

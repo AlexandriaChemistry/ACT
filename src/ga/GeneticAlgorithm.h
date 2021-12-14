@@ -16,6 +16,7 @@
 #include "alexandria/confighandler.h"
 #include "alexandria/sharedindividualinfo.h"
 #include "alexandria/acmfitnesscomputer.h"
+#include "alexandria/acminitializer.h"
 
 
 namespace ga
@@ -34,6 +35,8 @@ private:
     alexandria::BayesConfigHandler *bch_;
     //! GAConfigHandler pointer
     alexandria::GAConfigHandler *gach_;
+    //! Communcations record
+    t_commrec *cr_;
 
     //! Logfile for logging info
     FILE *logfile_;
@@ -76,15 +79,25 @@ public:
     GeneticAlgorithm() {}
 
     /*!
-     * Constructor
+     * Constructor for ACT
      */
-    GeneticAlgorithm(       FILE                                *logFile,
-                     const  bool                                 verbose,
+    GeneticAlgorithm(const  bool                                 verbose,
+                     const  bool                                 removeMol,
+                     const  bool                                 fullQuadrupole,
+                            t_commrec                           *cr,
+                            MolGen                              *mg,
+                            FILE                                *logFile,
+                            gmx_output_env_t                    *oenv,
                             alexandria::BayesConfigHandler      *bch,
                             alexandria::SharedIndividualInfo    *sii,
-                     const  int                                  mindata)
+                            alexandria::GAConfigHandler         *gach,
+                     const  std::string                         &outputFile)
+    : bch_(bch), gach_(gach), cr_(cr), logfile_(logFile), oenv_(oenv),
+      probability_(gach->popSize()), oldPop_(gach->popSize()), newPop_(gach->popSize())
     {
-        mutator_ = new MCMCMutator()
+        initializer_ = new alexandria::ACMInitializer(mg->mindata(), sii, gach->randomInit(), outputFile);
+        fitComputer_ = new alexandria::ACMFitnessComputer(cr, logFile, sii, mg, removeMol, verbose, fullQuadrupole);
+        mutator_ = new alexandria::MCMCMutator(logFile, verbose, bch, fitComputer, sii, sii.nParam());
     }
 
     //! \brief Evolve the initial population
