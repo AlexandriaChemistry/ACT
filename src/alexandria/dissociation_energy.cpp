@@ -384,7 +384,15 @@ double getDissociationEnergy(FILE               *fplog,
         double average, error = 0;
         int    N              = 1;
         auto estats = bi.second.get_average(&average);
-        GMX_RELEASE_ASSERT(eStats::OK == estats, gmx_stats_message(estats));
+        if (eStats::OK != estats)
+        {
+            if (fplog)
+            {
+                fprintf(fplog, "%s: %s\n", bi.first.id().c_str(), 
+                        gmx_stats_message(estats));
+            }
+            continue;
+        }
         if (nBootStrap > 0)
         {
             auto ed = edissoc_bootstrap.find(bi.first);

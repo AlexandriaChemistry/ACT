@@ -2368,23 +2368,19 @@ Identifier MyMol::getIdentifier(const Poldata                  *pd,
     }
     std::vector<std::string> batoms;
     std::vector<double>      bondOrders;
-    for (int j = 0; j < natoms; j++)
+    if (InteractionType::IMPROPER_DIHEDRALS == iType)
     {
-        // Some atom types can be empty, e.g. polarizability of shells
-        // since this a property of the atom.
-        if (btype[iatoms[j]].empty())
+        for (int j = 0; j < natoms; j++)
         {
-            continue;
+            batoms.push_back(btype[iatoms[j]]);
         }
-        batoms.push_back(btype[iatoms[j]]);
-        
-        // TODO check atom numbers
-        // TODO take into account impropers with different bond orders
-        if (j > 0)
+        std::vector<std::pair<int, int>> index = 
+            { { 0, 1 }, { 1, 2 }, { 1, 3 }};
+        for (const auto &p : index)
         {
-            int  ai  = iatoms[j-1];
+            int  ai  = iatoms[p.first];
             auto aii = originalAtomIndex_.find(ai);
-            int  aj  = iatoms[j];
+            int  aj  = iatoms[p.second];
             auto ajj = originalAtomIndex_.find(aj);
             if (aii != originalAtomIndex_.end())
             {
@@ -2394,7 +2390,38 @@ Identifier MyMol::getIdentifier(const Poldata                  *pd,
             {
                 aj = ajj->second;
             }
-            bondOrders.push_back(bondToBondOrder(ai, aj));
+            bondOrders.push_back(bondToBondOrder(ai+1, aj+1));
+        }    
+    }
+    else
+    {
+        for (int j = 0; j < natoms; j++)
+        {
+            // Some atom types can be empty, e.g. polarizability of shells
+            // since this a property of the atom.
+            if (btype[iatoms[j]].empty())
+            {
+                continue;
+            }
+            batoms.push_back(btype[iatoms[j]]);
+            
+            // TODO check atom numbers
+            if (j > 0)
+            {
+                int  ai  = iatoms[j-1];
+                auto aii = originalAtomIndex_.find(ai);
+                int  aj  = iatoms[j];
+                auto ajj = originalAtomIndex_.find(aj);
+                if (aii != originalAtomIndex_.end())
+                {
+                    ai = aii->second;
+                }
+                if (ajj != originalAtomIndex_.end())
+                {
+                    aj = ajj->second;
+                }
+                bondOrders.push_back(bondToBondOrder(ai+1, aj+1));
+            }
         }
     }
     auto fs = pd->findForcesConst(iType);
