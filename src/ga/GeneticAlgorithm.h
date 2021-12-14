@@ -52,6 +52,9 @@ private:
     std::vector<Individual*> tmpPop_;
     //! Probability of selection for each individual
     std::vector<double> probability_;
+    //! The best individual
+    Individual* bestInd_;
+
 
     //! Initializes each individual in the population
     Initializer            *initializer_;
