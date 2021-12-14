@@ -15,6 +15,7 @@
 
 #include "alexandria/confighandler.h"
 #include "alexandria/sharedindividualinfo.h"
+#include "alexandria/acmfitnesscomputer.h"
 
 
 namespace ga
@@ -70,10 +71,14 @@ public:
     /*!
      * Constructor
      */
-    GeneticAlgorithm(const int mindata_,
-                     alexandria::SharedIndividualInfo *sii,
-                     const bool randInit_,
-                     const std::string) {}
+    GeneticAlgorithm(       FILE                                *logFile,
+                     const  bool                                 verbose,
+                            alexandria::BayesConfigHandler      *bch,
+                            alexandria::SharedIndividualInfo    *sii,
+                     const  int                                  mindata)
+    {
+        mutator_ = new MCMCMutator()
+    }
 
     /*!
      * Evolve the initial population
