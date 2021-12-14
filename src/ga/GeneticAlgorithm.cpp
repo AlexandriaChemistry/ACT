@@ -4,8 +4,6 @@
 
 #include <stdio.h>
 
-#include "aliases.h"
-
 #include "Initializer.h"
 #include "FitnessComputer.h"
 #include "ProbabilityComputer.h"
@@ -20,43 +18,14 @@ namespace ga
 {
 
 
-GeneticAlgorithm::GeneticAlgorithm(const int                    popSize,
-                                   const int                    chromosomeLength,
-                                   const int                    nElites,
-                                         Initializer           *initializer,
-                                         FitnessComputer       *fitComputer,
-                                         Sorter                *sorter,
-                                         ProbabilityComputer   *probComputer,
-                                         Selector              *selector,
-                                         Crossover             *crossover,
-                                         Mutator               *mutator,
-                                         Terminator            *terminator)
+void GeneticAlgorithm::MCMCevolve()
 {
-
-    popSize_           = popSize;
-    chromosomeLength_  = chromosomeLength;
-    nElites_           = nElites;
-    initializer_       = initializer;
-    fitComputer_       = fitComputer;
-    sorter_            = sorter;
-    probComputer_      = probComputer;
-    selector_          = selector;
-    crossover_         = crossover;
-    mutator_           = mutator;
-    terminator_        = terminator;
-
-    // Initialize the data structures
-    oldPop_      = allocateMatrix(popSize, chromosomeLength);
-    newPop_      = allocateMatrix(popSize, chromosomeLength);
-    fitness_     = vector(popSize);
-    probability_ = vector(popSize);
-
+    // Initialize population/s
+    // Evolve each individual
+    // Collect results
 }
 
-
-const ga_result_t GeneticAlgorithm::evolve(const double     prCross,
-                                           const double     prMut,
-                                           const int        verbose)
+void GeneticAlgorithm::evolve()
 {
 
     if (verbose >= 1) printf("\nStarting evolution...\n");
