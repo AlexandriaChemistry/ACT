@@ -460,6 +460,7 @@ int alex_tune_eem(int argc, char *argv[])
     opt.sii()->generateOptimizationIndex(fp, opt.mg());
     opt.sii()->fillVectors(opt.mg()->mindata());
 
+    // Start TODO: Substitute this by GA.
     // Create ACMFitnessComputer and fill the DevComputers
     opt.initFitComp();
 
@@ -468,6 +469,7 @@ int alex_tune_eem(int argc, char *argv[])
 
     // Create and initialize the individual
     opt.initIndividual();
+    // End TODO:
 
     // init charge generation for compounds in the
     // training set
@@ -490,7 +492,7 @@ int alex_tune_eem(int argc, char *argv[])
         //     opt.initOpt(bRandom);
         // }
 
-        // Initialize the MCMCMutator
+        // TODO: Is in the GA class. Initialize the MCMCMutator
         opt.initMutator();
 
         bool bMinimum = opt.runMaster(oenv,

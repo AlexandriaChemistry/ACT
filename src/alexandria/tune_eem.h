@@ -69,6 +69,8 @@ private:
     BayesConfigHandler bch_;
     //! SharedIndividualInfo instance
     SharedIndividualInfo sii_;
+
+    // Start TODO: Substitute this to a pointer to the genetic algorithm setting.
     //! Pointer to ACMFitnessComputer since it will be initialized later
     ACMFitnessComputer *fitComp_;
     //! Pointer to ACMInitializer since it will be initialized later
@@ -79,6 +81,7 @@ private:
     ACMIndividual *ind_;
     //! Pointer to MCMCMutator
     MCMCMutator *mutator_;
+    // End TODO:
 
 public:
     //! Constructor
