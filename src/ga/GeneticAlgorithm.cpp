@@ -13,16 +13,47 @@
 
 #include "ga_helpers.h"
 
+#include "alexandria/acmindividual.h"
+#include "alexandria/mcmcmutator.h"
+
 
 namespace ga
 {
 
 
-void GeneticAlgorithm::MCMCevolve()
+void GeneticAlgorithm::evolveMCMC()
 {
+
+    // Simplify syntax
+    using alexandria::ACMIndividual;
+    using alexandria::MCMCMutator;
+
     // Initialize population/s
+    for (int i = 0; i < gach_->popSize(); i++)
+    {
+        initializer_->initialize(&(oldPop_[i]));
+    }
+
+    // Cast each individual to ACMIndividual for easier evolution
+    std::vector<ACMIndividual*> acmPop;
+    for (Individual *ind : oldPop_) acmPop.push_back(static_cast<ACMIndividual*>(ind));
+
+    // Open files of each individual
+    for (ACMIndividual *ind : acmPop)
+    {
+        ind->openParamConvFiles(oenv_);
+        ind->openChi2ConvFile(oenv_, bch_->evaluateTestset());
+    }
+
     // Evolve each individual
-    // Collect results
+    MCMCMutator *acmMut = static_cast<MCMCMutator*>(mutator_);
+    for (ACMIndividual *ind : acmPop) acmMut->MCMC(ind, bch_->evaluateTestset());
+
+    // TODO: Collect results into the best individual
+
+    // Close files of each individual
+    for (ACMIndividual *ind : acmPop) ind->closeConvFiles();
+
 }
 
 void GeneticAlgorithm::evolve()

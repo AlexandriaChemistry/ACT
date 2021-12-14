@@ -37,6 +37,9 @@ private:
     //! Logfile for logging info
     FILE *logfile_;
 
+    //! Output environment (GROMACS)
+    gmx_output_env_t *oenv_;
+
     //! Old population
     std::vector<Individual*> oldPop_;
     //! New population, which emerges from the old population
@@ -64,7 +67,7 @@ private:
     Terminator             *terminator_;
 
     //! Pure MCMC evaluation
-    MCMCevolve();
+    evolveMCMC();
 
 public:
 

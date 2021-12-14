@@ -36,7 +36,9 @@ void BayesConfigHandler::add_pargs(std::vector<t_pargs> *pargs)
         { "-seed",   FALSE, etINT,  {&seed_},
           "Random number seed. If zero, a seed will be generated." },
         { "-step",  FALSE, etREAL, {&step_},
-          "Step size for the parameter optimization. Is used as fraction of the available range per parameter which depends on the parameter type." }
+          "Step size for the parameter optimization. Is used as fraction of the available range per parameter which depends on the parameter type." },
+        { "-bEvaluate_testset", FALSE, etBOOL, {&evaluate_testset_},
+          "Evaluate the MCMC energy on the test set." }
     };
     for (int i = 0; i < asize(pa); i++)
     {
@@ -118,6 +120,8 @@ void GAConfigHandler::add_pargs(std::vector<t_pargs> *pargs)
           "Population size." },
         { "-nElites", FALSE, etINT, {&nElites_},
           "Amount of top individuals to be moved, unchanged, to the next generation." },
+        { "-randomInit", FALSE, etBOOL, {&randomInit_},
+          "Initialize the individuals randomly, within the given bounds." },  
         { "-nCrossovers_", FALSE, etINT, {&nCrossovers_},
           "Order of the crossover operator. That is, amount of crossover points." },
         // { "-sorter", FALSE, etENUM, {sorter_},
