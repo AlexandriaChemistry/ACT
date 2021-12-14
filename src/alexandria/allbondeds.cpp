@@ -46,13 +46,13 @@ namespace alexandria
 
 void OneBonded::addPoint(double x)
 {
-    int N;
-    int ok = gmx_stats_get_npoints(lsq_, &N);
-    if (estatsOK == ok)
+    int    N;
+    eStats ok = lsq_.get_npoints(&N);
+    if (eStats::OK == ok)
     {
-        ok = gmx_stats_add_point(lsq_, N, x, 0, 0);
+        ok = lsq_.add_point(N, x, 0, 0);
     }
-    if (estatsOK != ok)
+    if (eStats::OK != ok)
     {
         fprintf(stderr, "Problem adding a point %s\n", gmx_stats_message(ok));
     }
@@ -63,22 +63,21 @@ void OneBonded::writeHistogram(const char             *fn_prefix,
                                const gmx_output_env_t *oenv,
                                double                  binwidth)
 {
-    int   nbins      = 0;
-    int   normalized = 0;
-    real *x          = nullptr;
-    real *y          = nullptr;
-    int   estats     = gmx_stats_make_histogram(lsq_, binwidth, &nbins,
-                                                ehistoY, normalized,
-                                                &x, &y);
-    if (estatsOK != estats)
+    int     nbins      = 0;
+    int     normalized = 0;
+    std::vector<double> x, y;
+    eStats  estats     = lsq_.make_histogram(binwidth, &nbins,
+                                                  eHisto::Y, normalized,
+                                                  &x, &y);
+    if (eStats::OK != estats)
     {
-        fprintf(stderr, "Could not make a histogram for %s\n",
-                id_.id().c_str());
+        fprintf(stderr, "Could not make a histogram for %s because of %s\n",
+                id_.id().c_str(), gmx_stats_message(estats));
         return;
     }
     int    Nsample;
-    estats = gmx_stats_get_npoints(lsq_, &Nsample);
-    if (estatsOK != estats)
+    estats = lsq_.get_npoints(&Nsample);
+    if (eStats::OK != estats)
     {
         fprintf(stderr, "Could not get number of samples for %s\n",
                 id_.id().c_str());
@@ -95,23 +94,21 @@ void OneBonded::writeHistogram(const char             *fn_prefix,
         fprintf(fp, "%g  %g\n", x[j], y[j]);
     }
     xvgrclose(fp);
-    sfree(x);
-    sfree(y);
 }
     
-int OneBonded::getAverageSigmaN(real *average,
-                                real *sigma,
-                                int  *N)
+eStats OneBonded::getAverageSigmaN(real *average,
+                                   real *sigma,
+                                   int  *N)
 {
     // TODO add error check
-    int ok = gmx_stats_get_average(lsq_, average);
-    if (estatsOK == ok)
+    eStats ok = lsq_.get_average(average);
+    if (eStats::OK == ok)
     {
-        ok = gmx_stats_get_sigma(lsq_, sigma);
+        ok = lsq_.get_sigma(sigma);
     }
-    if (estatsOK == ok)
+    if (eStats::OK == ok)
     {
-        gmx_stats_get_npoints(lsq_, N);
+        lsq_.get_npoints(N);
     }
     return ok;
 }

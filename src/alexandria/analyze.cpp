@@ -137,12 +137,13 @@ static void write_corr_xvg(FILE                             *fplog,
     bool         bQM       = false;
 
     FILE        *fp;
-    gmx_stats_t  lsq[qmc.nCalc()];
+    std::vector<gmx_stats> lsq;
+    
+    lsq.resize(qmc.nCalc());
 
     fp  = xvgropen(fn, "", "Exper.", "Calc. - Exper.", oenv);
     for (auto q = qmc.beginCalc(); q < qmc.endCalc(); ++q, ++i)
     {
-        lsq[i] = gmx_stats_init();
         fprintf(fp, "@s%d legend \"%s/%s-%s\"\n", i,
                 q->method().c_str(),
                 q->basis().c_str(),
@@ -188,7 +189,7 @@ static void write_corr_xvg(FILE                             *fplog,
                                        &Tqm);
                 if (bExp && bQM)
                 {
-                    gmx_stats_add_point(lsq[i], exp_val, qm_val, 0, 0);
+                    lsq[i].add_point(exp_val, qm_val, 0, 0);
                     fprintf(fp, "%8.3f  %8.3f  %8.3f\n", exp_val, qm_val-exp_val, qm_error);
                     diff = fabs(qm_val-exp_val);
                     if (((atoler > 0) && (diff >= atoler)) || (atoler == 0 && exp_val != 0 && (fabs(diff/exp_val) > rtoler)))
@@ -217,13 +218,12 @@ static void write_corr_xvg(FILE                             *fplog,
     i = 0;
     for (auto q = qmc.beginCalc(); q < qmc.endCalc(); ++q, ++i)
     {
-        gmx_stats_get_npoints(lsq[i], &n);
-        gmx_stats_get_ab(lsq[i], elsqWEIGHT_NONE, &a, &b, &da, &db, &chi2, &Rfit);
-        gmx_stats_get_rmsd(lsq[i],    &rmsd);
-        gmx_stats_get_mse_mae(lsq[i], &mse, &mae);
+        lsq[i].get_npoints(&n);
+        lsq[i].get_ab(elsqWEIGHT_NONE, &a, &b, &da, &db, &chi2, &Rfit);
+        lsq[i].get_rmsd(&rmsd);
+        lsq[i].get_mse_mae(&mse, &mae);
         fprintf(fplog, "%-12s %5d %6.3f(%.2f) %6.3f(%.2f) %7.2f %8.2f %8.2f %8.2f\n",
                 q->method().c_str(), n, a, da, b, db, Rfit*100, rmsd, mse, mae);
-        gmx_stats_free(lsq[i]);
     }
     fclose(fp);
     do_view(oenv, fn, nullptr);

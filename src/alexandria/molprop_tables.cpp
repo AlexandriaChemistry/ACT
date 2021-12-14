@@ -86,7 +86,7 @@ typedef struct {
     char       *ptype;
     char       *miller;
     char       *bosque;
-    gmx_stats_t lsq;
+    gmx_stats   lsq;
     int         nexp;
     int         nqm;
 } t_sm_lsq;
@@ -159,8 +159,8 @@ void alexandria_molprop_stats_table(FILE                 *fp,
     double                             exp_val, qm_val;
     real                               rms, R, a, da, b, db, chi2;
     char                               buf[256];
-    gmx_stats_t                        lsq;
-    std::vector<gmx_stats_t>           lsqtot;
+    gmx_stats                          lsq;
+    std::vector<gmx_stats>             lsqtot;
     LongTable                          lt(fp, true, nullptr);
 
     if (0 == cList.nCategories())
@@ -181,7 +181,6 @@ void alexandria_molprop_stats_table(FILE                 *fp,
         catbuf.append(buf);
         for (auto q = qmc.beginCalc(); q < qmc.endCalc(); ++q)
         {
-            lsq = gmx_stats_init();
             for (auto &mpi : mp)
             {
                 if ((i.hasMolecule(mpi.getIupac())) &&
@@ -207,7 +206,7 @@ void alexandria_molprop_stats_table(FILE                 *fp,
                                         mpi.getMolname().c_str(),
                                         i.getName().c_str());
                             }
-                            gmx_stats_add_point(lsq, exp_val, qm_val, exp_err, qm_err);
+                            lsq.add_point(exp_val, qm_val, exp_err, qm_err);
                             nexpres = 1;
                         }
                     }
@@ -221,10 +220,10 @@ void alexandria_molprop_stats_table(FILE                 *fp,
             }
             if (outlier > 0)
             {
-                gmx_stats_remove_outliers(lsq, outlier);
+                lsq.remove_outliers(outlier);
             }
-            if ((gmx_stats_get_rmsd(lsq, &rms) == estatsOK) &&
-                (gmx_stats_get_npoints(lsq, &N) == estatsOK))
+            if ((lsq.get_rmsd(&rms) == eStats::OK) &&
+                (lsq.get_npoints(&N) == eStats::OK))
             {
                 snprintf(buf, sizeof(buf)-1, "& %8.1f(%d)", rms, N);
                 catbuf.append(buf);
@@ -234,8 +233,6 @@ void alexandria_molprop_stats_table(FILE                 *fp,
             {
                 catbuf.append("& -");
             }
-
-            gmx_stats_free(lsq);
         }
         if ((nqmres > 0) && (nexpres > 0))
         {
@@ -248,7 +245,6 @@ void alexandria_molprop_stats_table(FILE                 *fp,
     int k = 0;
     for (auto q = qmc.beginCalc(); q < qmc.endCalc(); ++q, ++k)
     {
-        lsqtot[k] = gmx_stats_init();
         for (mpi = mp.begin(); (mpi < mp.end()); mpi++)
         {
             iMolSelect myIms;
@@ -266,12 +262,12 @@ void alexandria_molprop_stats_table(FILE                 *fp,
                                            &qm_val, &qm_err, &Tqm);
                 if (bExp && bQM)
                 {
-                    gmx_stats_add_point(lsqtot[k], exp_val, qm_val, exp_err, qm_err);
+                    lsqtot[k].add_point(exp_val, qm_val, exp_err, qm_err);
                 }
             }
         }
-        if ((gmx_stats_get_rmsd(lsqtot[k], &rms) == estatsOK) &&
-            (gmx_stats_get_npoints(lsqtot[k], &N) == estatsOK))
+        if ((lsqtot[k].get_rmsd(&rms) == eStats::OK) &&
+            (lsqtot[k].get_npoints(&N) == eStats::OK))
 
         {
             snprintf(buf, sizeof(buf),  "& %8.1f(%d)", rms, N);
@@ -288,8 +284,8 @@ void alexandria_molprop_stats_table(FILE                 *fp,
     catbuf.assign("a");
     for (auto &k : lsqtot)
     {
-        if (gmx_stats_get_ab(k, elsqWEIGHT_NONE, &a, &b, &da, &db, &chi2, &R) ==
-            estatsOK)
+        if (k.get_ab(elsqWEIGHT_NONE, &a, &b, &da, &db, &chi2, &R) ==
+            eStats::OK)
         {
             snprintf(buf, sizeof(buf), "& %8.2f(%4.2f)", a, da);
             catbuf.append(buf);
@@ -304,8 +300,8 @@ void alexandria_molprop_stats_table(FILE                 *fp,
     catbuf.assign("b");
     for (auto &k : lsqtot)
     {
-        if (gmx_stats_get_ab(k, elsqWEIGHT_NONE, &a, &b, &da, &db, &chi2, &R) ==
-            estatsOK)
+        if (k.get_ab(elsqWEIGHT_NONE, &a, &b, &da, &db, &chi2, &R) ==
+            eStats::OK)
         {
             snprintf(buf, sizeof(buf), "& %8.2f(%4.2f)", b, db);
             catbuf.append(buf);
@@ -320,7 +316,7 @@ void alexandria_molprop_stats_table(FILE                 *fp,
     catbuf.assign("R$^2$ (\\%)");
     for (auto &k : lsqtot)
     {
-        if (gmx_stats_get_corr_coeff(k, &R) == estatsOK)
+        if (k.get_corr_coeff(&R) == eStats::OK)
         {
             snprintf(buf, sizeof(buf), "& %8.2f", 100*R*R);
             catbuf.append(buf);
@@ -335,8 +331,8 @@ void alexandria_molprop_stats_table(FILE                 *fp,
     catbuf.assign("$\\chi^2$");
     for (auto &k : lsqtot)
     {
-        if (gmx_stats_get_ab(k, elsqWEIGHT_NONE, &a, &b, &da, &db, &chi2, &R) ==
-            estatsOK)
+        if (k.get_ab(elsqWEIGHT_NONE, &a, &b, &da, &db, &chi2, &R) ==
+            eStats::OK)
         {
             snprintf(buf, sizeof(buf), "& %8.2f", chi2);
             catbuf.append(buf);
@@ -352,8 +348,8 @@ void alexandria_molprop_stats_table(FILE                 *fp,
     for (auto &k : lsqtot)
     {
         real mse;
-        if (gmx_stats_get_mse_mae(k, &mse, nullptr) ==
-            estatsOK)
+        if (k.get_mse_mae(&mse, nullptr) ==
+            eStats::OK)
         {
             snprintf(buf, sizeof(buf), "& %8.2f", mse);
             catbuf.append(buf);
@@ -369,8 +365,8 @@ void alexandria_molprop_stats_table(FILE                 *fp,
     for (auto &k : lsqtot)
     {
         real mae;
-        if (gmx_stats_get_mse_mae(k, nullptr, &mae) ==
-            estatsOK)
+        if (k.get_mse_mae(nullptr, &mae) ==
+            eStats::OK)
         {
             snprintf(buf, sizeof(buf), "& %8.2f", mae);
             catbuf.append(buf);
@@ -382,11 +378,6 @@ void alexandria_molprop_stats_table(FILE                 *fp,
     }
     lt.printLine(catbuf);
     lt.printFooter();
-
-    for (auto &k : lsqtot)
-    {
-        gmx_stats_free(k);
-    }
 }
 
 #ifdef OLD
