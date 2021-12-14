@@ -51,17 +51,14 @@ namespace alexandria
     {
     private:
         //! Atoms and bondorder
-        Identifier       id_;
+        Identifier id_;
         //! LSQ fitting structure
-        gmx_stats_t      lsq_;
+        gmx_stats  lsq_;
     public:
         /*! Constructor
          * \param[in] id The identifier
          */
-        OneBonded(const Identifier id) : id_(id)
-        {
-            lsq_ = gmx_stats_init();
-        }
+        OneBonded(const Identifier id) : id_(id) {}
     
         //! Return my id
         const Identifier &id() const { return id_; }
@@ -88,9 +85,9 @@ namespace alexandria
          * \param[out] N       The number of data points
          * \return status from statistics library
          */
-        int getAverageSigmaN(real *average,
-                             real *sigma,
-                             int  *N);
+        eStats getAverageSigmaN(real *average,
+                                real *sigma,
+                                int  *N);
     };
 
     /*! Class to analyze structures and derive geometric statistics

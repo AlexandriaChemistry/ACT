@@ -76,10 +76,10 @@ class AllBondedsTest : public gmx::test::CommandLineTestBase
             {
                 ob.addPoint(x);
             }
-            real average, sigma;
-            int  N;
-            int  ok = ob.getAverageSigmaN(&average, &sigma, &N);
-            if (estatsOK == ok)
+            real   average, sigma;
+            int    N;
+            eStats ok = ob.getAverageSigmaN(&average, &sigma, &N);
+            if (eStats::OK == ok)
             {
                 checker_.checkReal(average, "average");
                 checker_.checkReal(sigma, "sigma");

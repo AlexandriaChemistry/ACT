@@ -132,7 +132,7 @@ static bool calcDissoc(FILE                              *fplog,
                        const std::vector<MyMol>          &molset,
                        bool                               pickRandomMolecules,
                        const std::vector<int>            &hasExpData,
-                       std::map<Identifier, gmx_stats_t> *edissoc,
+                       std::map<Identifier, gmx_stats>   *edissoc,
                        std::mt19937                      *gen,  
                        std::uniform_real_distribution<>   uniform,
                        const char                        *csvFile,
@@ -289,13 +289,14 @@ static bool calcDissoc(FILE                              *fplog,
             if (edissoc->end() == ed)
             {
                 // New bond type!
-                edissoc->insert(std::pair<Identifier, gmx_stats_t>(b.first, std::move(gmx_stats_init())));
+                gmx_stats gs;
+                edissoc->insert(std::pair<Identifier, gmx_stats>(b.first, std::move(gs)));
             }
             auto gs     = edissoc->find(b.first)->second;
             int  N;
-            auto estats = gmx_stats_get_npoints(gs, &N);
-            GMX_RELEASE_ASSERT(estats == estatsOK, gmx_stats_message(estats));
-            gmx_stats_add_point(gs, N, Edissoc[b.second], 0, 0);
+            auto estats = gs.get_npoints(&N);
+            GMX_RELEASE_ASSERT(estats == eStats::OK, gmx_stats_message(estats));
+            gs.add_point(N, Edissoc[b.second], 0, 0);
             if (fplog && fabs(Edissoc[b.second]) > 1000)
             {
                 fprintf(fplog, "Adding energy %g for %s\n", Edissoc[b.second],
@@ -342,15 +343,15 @@ double getDissociationEnergy(FILE               *fplog,
     }
     // Call the low level routine once to get optimal values and to
     // establish all the entries in the edissoc map.
-    std::map<Identifier, gmx_stats_t> edissoc;
-    std::map<Identifier, int>         ntrain;
-    double                            rmsd = 0;
+    std::map<Identifier, gmx_stats> edissoc;
+    std::map<Identifier, int>       ntrain;
+    double                          rmsd = 0;
     if (!calcDissoc(fplog, pd, *molset, false, hasExpData, &edissoc, &gen, uniform, csvFile, &ntrain, &rmsd))
     {
         gmx_fatal(FARGS, "Cannot solve the matrix equations for determining the dissociation energies");
     }
     // Now run the bootstrapping
-    std::map<Identifier, gmx_stats_t> edissoc_bootstrap;
+    std::map<Identifier, gmx_stats> edissoc_bootstrap;
     int maxBootStrap = 2*nBootStrap;
     int nBStries = 0;
     int iter;
@@ -382,8 +383,8 @@ double getDissociationEnergy(FILE               *fplog,
     {
         double average, error = 0;
         int    N              = 1;
-        auto estats = gmx_stats_get_average(bi.second, &average);
-        GMX_RELEASE_ASSERT(estatsOK == estats, gmx_stats_message(estats));
+        auto estats = bi.second.get_average(&average);
+        GMX_RELEASE_ASSERT(eStats::OK == estats, gmx_stats_message(estats));
         if (nBootStrap > 0)
         {
             auto ed = edissoc_bootstrap.find(bi.first);
@@ -391,10 +392,10 @@ double getDissociationEnergy(FILE               *fplog,
             // If there are few bootstraps, a rare bond may not be there.
             if (edissoc_bootstrap.end() != ed)
             {
-                estats = gmx_stats_get_sigma(edissoc_bootstrap[bi.first], &error);
-                GMX_RELEASE_ASSERT(estatsOK == estats, gmx_stats_message(estats));
-                estats = gmx_stats_get_npoints(edissoc_bootstrap[bi.first], &N);
-                GMX_RELEASE_ASSERT(estatsOK == estats, gmx_stats_message(estats));
+                estats = edissoc_bootstrap[bi.first].get_sigma(&error);
+                GMX_RELEASE_ASSERT(eStats::OK == estats, gmx_stats_message(estats));
+                estats = edissoc_bootstrap[bi.first].get_npoints(&N);
+                GMX_RELEASE_ASSERT(eStats::OK == estats, gmx_stats_message(estats));
             }
         }
         // Fetch the parameter from the force field
