@@ -35,8 +35,12 @@ private:
     //! GAConfigHandler pointer
     alexandria::GAConfigHandler *gach_;
 
-    // FIXME: swap to a vector of individual pointers, and decide whether probability
-    // lies within the individual or outside of it (in a vector)
+    //! Logfile for logging info
+    FILE *logfile_;
+
+    //! Output environment (GROMACS)
+    gmx_output_env_t *oenv_;
+
     //! Old population
     std::vector<Individual*> oldPop_;
     //! New population, which emerges from the old population
@@ -63,6 +67,9 @@ private:
     //! Checks if the evolution should continue or be terminated
     Terminator             *terminator_;
 
+    //! Pure MCMC evaluation
+    evolveMCMC();
+
 public:
 
     //! Default constructor
@@ -80,12 +87,8 @@ public:
         mutator_ = new MCMCMutator()
     }
 
-    /*!
-     * Evolve the initial population
-     * @return          a tuple containing the final population, the final fitness, the best individual, the fitness
-     *                  of the best individual, and the number of generations
-     */
-    const ga_result_t evolve();
+    //! \brief Evolve the initial population
+    void evolve();
 
 };
 

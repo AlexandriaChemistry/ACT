@@ -4,8 +4,6 @@
 
 #include <stdio.h>
 
-#include "aliases.h"
-
 #include "Initializer.h"
 #include "FitnessComputer.h"
 #include "ProbabilityComputer.h"
@@ -15,48 +13,50 @@
 
 #include "ga_helpers.h"
 
+#include "alexandria/acmindividual.h"
+#include "alexandria/mcmcmutator.h"
+
 
 namespace ga
 {
 
 
-GeneticAlgorithm::GeneticAlgorithm(const int                    popSize,
-                                   const int                    chromosomeLength,
-                                   const int                    nElites,
-                                         Initializer           *initializer,
-                                         FitnessComputer       *fitComputer,
-                                         Sorter                *sorter,
-                                         ProbabilityComputer   *probComputer,
-                                         Selector              *selector,
-                                         Crossover             *crossover,
-                                         Mutator               *mutator,
-                                         Terminator            *terminator)
+void GeneticAlgorithm::evolveMCMC()
 {
 
-    popSize_           = popSize;
-    chromosomeLength_  = chromosomeLength;
-    nElites_           = nElites;
-    initializer_       = initializer;
-    fitComputer_       = fitComputer;
-    sorter_            = sorter;
-    probComputer_      = probComputer;
-    selector_          = selector;
-    crossover_         = crossover;
-    mutator_           = mutator;
-    terminator_        = terminator;
+    // Simplify syntax
+    using alexandria::ACMIndividual;
+    using alexandria::MCMCMutator;
 
-    // Initialize the data structures
-    oldPop_      = allocateMatrix(popSize, chromosomeLength);
-    newPop_      = allocateMatrix(popSize, chromosomeLength);
-    fitness_     = vector(popSize);
-    probability_ = vector(popSize);
+    // Initialize population/s
+    for (int i = 0; i < gach_->popSize(); i++)
+    {
+        initializer_->initialize(&(oldPop_[i]));
+    }
+
+    // Cast each individual to ACMIndividual for easier evolution
+    std::vector<ACMIndividual*> acmPop;
+    for (Individual *ind : oldPop_) acmPop.push_back(static_cast<ACMIndividual*>(ind));
+
+    // Open files of each individual
+    for (ACMIndividual *ind : acmPop)
+    {
+        ind->openParamConvFiles(oenv_);
+        ind->openChi2ConvFile(oenv_, bch_->evaluateTestset());
+    }
+
+    // Evolve each individual
+    MCMCMutator *acmMut = static_cast<MCMCMutator*>(mutator_);
+    for (ACMIndividual *ind : acmPop) acmMut->MCMC(ind, bch_->evaluateTestset());
+
+    // TODO: Collect results into the best individual
+
+    // Close files of each individual
+    for (ACMIndividual *ind : acmPop) ind->closeConvFiles();
 
 }
 
-
-const ga_result_t GeneticAlgorithm::evolve(const double     prCross,
-                                           const double     prMut,
-                                           const int        verbose)
+void GeneticAlgorithm::evolve()
 {
 
     if (verbose >= 1) printf("\nStarting evolution...\n");

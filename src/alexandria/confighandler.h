@@ -56,17 +56,19 @@ private:
     // After argument parsing, first element in the array will point to the selected enum value, so optimizer_[0]
     // Static means the variable will be shared among objects (only 1 place in memory)
     //! Optimizer to use
-    const char *optimizer_[] = {nullptr, "MCMC", "GA", "HYBRID", nullptr};
+    // const char *optimizer_[] = {nullptr, "MCMC", "GA", "HYBRID", nullptr};
     //! Population size
     int popSize_ = 1;
     //! Amount of elites in the population
     int nElites_ = 0;
+    //! Whether to initialize the individuals randomly
+    bool randomInit_ = true;
     //! Order of crossover operator
     int nCrossovers_ = 1;
     //! Sorter algorithm
-    const char *sorter_[] = {nullptr, "QUICK", "MERGE", "NONE", nullptr};
+    // const char *sorter_[] = {nullptr, "QUICK", "MERGE", "NONE", nullptr};
     //! Probability computing algorithm
-    const char *probComputer_[] = {nullptr, "RANK", "FITNESS", "BOLTZMANN", nullptr};
+    // const char *probComputer_[] = {nullptr, "RANK", "FITNESS", "BOLTZMANN", nullptr};
     //! Boltzmann probability temperature. TODO: This temperature should be lowered over time.
     real boltzTemp_ = 1;
     // TODO: Termination options???
@@ -89,7 +91,25 @@ public:
      */
     virtual void check_pargs();
 
-    // TODO: Getters!
+    /* * * * * * * * * * * * * * * * * * * * * *
+    * BEGIN: Getters and setters               *
+    * * * * * * * * * * * * * * * * * * * * * */
+
+    //! \return the size of the population
+    int popSize() const { return popSize_; }
+
+    //! \return the amount of top individuals that pass, unchanged, to the next generation
+    int nElites() const { return nElites_; }
+
+    //! \return the probability of crossover
+    double prCross() const { return prCross_; }
+
+    //! \return the probability of mutation
+    double prMut() const { return prMut_; }
+
+    /* * * * * * * * * * * * * * * * * * * * * *
+    * END: Getters and setters                 *
+    * * * * * * * * * * * * * * * * * * * * * */
 
 };
 
@@ -101,17 +121,19 @@ class BayesConfigHandler : public ConfigHandler
 
 private:
     //! Maximum number of iterations
-    int                      maxiter_       = 100;
+    int   maxiter_           = 100;
     //! Random number seed
-    real                     seed_           = -1;
+    real  seed_              = -1;
     //! Relative step when optimizing
-    real                     step_           = 0.02;
+    real  step_              = 0.02;
     //! Temperature in chi2 units
-    real                     temperature_    = 5;
+    real  temperature_       = 5;
     //! Weight temperature after number of training points
-    bool                     tempWeight_     = false;
+    bool  tempWeight_        = false;
     //! Use annealing in the optimization. Value < 1 means annealing will happen
-    real                     anneal_         = 1;
+    real  anneal_            = 1;
+    //! Evaluate on test set during the MCMC run
+    bool  evaluate_testset_  = false;
 
 public:
     /*!
@@ -159,6 +181,9 @@ public:
     * \param iter The iteration number
     */
     bool anneal (int iter) const;
+
+    //! \return whether test set should be evaluated during the MCMC run
+    bool evaluateTestset() const { return evaluate_testset_; }
     
 };
 
