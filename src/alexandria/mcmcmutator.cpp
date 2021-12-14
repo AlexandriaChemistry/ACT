@@ -46,7 +46,7 @@ bool MCMCMutator::MCMC(      ACMIndividual *ind,
 
     const std::vector<FILE*> fpc = ind->fpc();
     FILE *fpe = ind->fpe();
-    const std::vector<int> paramClassIndex = sii_->paramClassIndex();
+    const auto paramClassIndex = sii_->paramClassIndex();
     std::vector<double> *param = ind->paramPtr();
     
     if (sii_->xvgConv().empty() || sii_->xvgEpot().empty())
@@ -121,7 +121,7 @@ void MCMCMutator::stepMCMC(      ACMIndividual          *ind,
                                  double                 *beta0,
                            const size_t                  nParam,
                                  double                 *minEval,
-                           const std::vector<int>       &paramClassIndex)
+                           const std::vector<size_t>    &paramClassIndex)
 {
 
     // Get pointers for attempted and accepted moves

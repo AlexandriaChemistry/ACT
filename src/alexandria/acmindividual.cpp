@@ -36,7 +36,7 @@ void ACMIndividual::openParamConvFiles(const gmx_output_env_t *oenv)
         std::vector<const char*> tmpParamNames;
         for (size_t j = 0; j < sii_->paramNames().size(); j++)
         {
-            if ( (sii_->paramClassIndex())[j] == static_cast<int>(i) )
+            if ( (sii_->paramClassIndex())[j] == i )
             {
                 tmpParamNames.push_back( (sii_->paramNames())[j].c_str() );
             }

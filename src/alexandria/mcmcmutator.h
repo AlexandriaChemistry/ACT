@@ -129,7 +129,7 @@ private:
                         double                 *beta0,
                   const size_t                  nParam,
                         double                 *minEval,
-                  const std::vector<int>       &paramClassIndex);
+                  const std::vector<size_t>    &paramClassIndex);
 
 public:
 

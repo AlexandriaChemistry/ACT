@@ -50,7 +50,7 @@ private:
     //! Classes in the system
     std::vector<std::string> paramClass_;
     //! Class-index for each parameter
-    std::vector<int> paramClassIndex_;  // FIXME: shouldn't this be a vector of size_t
+    std::vector<size_t> paramClassIndex_;
     //! Base name for parameter convergence files
     std::string xvgconv_;
     //! Base name for Chi2 convergence file
@@ -250,7 +250,7 @@ public:
     const std::vector<std::string> &paramClass() const { return paramClass_; }
 
     //! \brief Get a constant \p paramClassIndex_ reference
-    const std::vector<int> &paramClassIndex() const { return paramClassIndex_; }
+    const std::vector<size_t> &paramClassIndex() const { return paramClassIndex_; }
 
     /*! \brief
      * Returns the current vector of lower bounds
