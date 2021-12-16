@@ -506,6 +506,8 @@ int alex_tune_eem(int argc, char *argv[])
         {
             if (bForceOutput)
             {
+                // FIXME: this is not true! The best parameters are fed back to params_ (and to pd_) at the end
+                // of runMaster if a better parameter set was found. So no, the final step will not be the output
                 fprintf(opt.logFile(), "Output based on last step of MC simulation per your specification.\nUse the -noforce_output flag to prevent this.\nThe force field output file %s is based on the last MC step as well.\n", opt2fn("-o", filenms.size(), filenms.data()));
                 opt.ind()->saveState();
             }
