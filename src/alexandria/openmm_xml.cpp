@@ -482,6 +482,7 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
 
 
         if (strcmp(interactionTypeToString(fs.first).c_str(), "ANGLES") == 0)
+
         {
             auto child4 = add_xml_child(parent, exml_names(xmlEntryOpenMM::HARMONICANGLEFORCE));
 
