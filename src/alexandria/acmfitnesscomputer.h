@@ -33,7 +33,7 @@ private:
     //! \brief The filepointer to the log file.
     FILE *logfile_;
     //! \brief A pointer to the BoundsDevComputer.
-    BoundsDevComputer *bdc_;
+    BoundsDevComputer *bdc_ = nullptr;
     //! \brief A vector of devComputers.
     std::vector<DevComputer*> devComputers_;
     //! \brief SharedIndividualInfo pointer
