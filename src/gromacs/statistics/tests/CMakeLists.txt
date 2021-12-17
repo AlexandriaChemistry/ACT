@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014,2015, by the GROMACS development team, led by
+# Copyright (c) 2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,11 +32,12 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-file(GLOB STATISTICS_SOURCES *.cpp)
+set(testname "StatisticsTests")
+set(exename "statistics-test")
 
-set(LIBGROMACS_SOURCES
-    ${LIBGROMACS_SOURCES} ${STATISTICS_SOURCES} PARENT_SCOPE)
-
-if (BUILD_TESTING)
-    add_subdirectory(tests)
-endif()
+gmx_add_unit_test(
+    ${testname}
+    ${exename}
+    # files with code for tests
+    statisticsTest.cpp
+    )

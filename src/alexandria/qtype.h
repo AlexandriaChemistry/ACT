@@ -56,6 +56,8 @@ enum class qType {
     Hirshfeld,
     //! CM5 charges
     CM5,
+    //! Gasteiger charges
+    Gasteiger,
     //! Electronic properties straight from DFT or QC calcs
     Elec
 };

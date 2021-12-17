@@ -87,8 +87,14 @@ static void dump_csv(const char                      *csvFile,
         {
             fprintf(csv, "%g,", a.get(i, row));
         }
-        double emol = mymol->energy(MolPropObservable::EMOL);
-        double hform = mymol->energy(MolPropObservable::DHFORM);
+        double emol;
+        GMX_RELEASE_ASSERT(mymol->energy(MolPropObservable::EMOL, &emol),
+                           gmx::formatString("No molecular energy for %s",
+                                             mymol->getMolname().c_str()).c_str());
+        double hform;
+        GMX_RELEASE_ASSERT(mymol->energy(MolPropObservable::DHFORM, &hform),
+                           gmx::formatString("No DeltaHform for %s",
+                                             mymol->getMolname().c_str()).c_str());     
         fprintf(csv, "%.3f,%.3f\n", -emol*j.second, hform*j.second);
         row++;
     }
@@ -243,7 +249,11 @@ static bool calcDissoc(FILE                              *fplog,
                 }
             }
         }
-        rhs.push_back(-mymol->energy(MolPropObservable::EMOL) * uu.second);
+        double emol;
+        GMX_RELEASE_ASSERT(mymol->energy(MolPropObservable::EMOL, &emol),
+                           gmx::formatString("No molecular energy for %s",
+                                             mymol->getMolname().c_str()).c_str());
+        rhs.push_back(-emol * uu.second);
         row += 1;
     }
 
@@ -332,10 +342,14 @@ double getDissociationEnergy(FILE               *fplog,
     for (size_t i = 0; i < molset->size(); i++)
     {
         auto mymol = &((*molset)[i]);
-        if (immStatus::OK == mymol->getExpProps(myprops, true, false, true,
+        if (immStatus::OK == mymol->getExpProps(myprops, true,
                                                 method, basis, pd))
         {
-            hasExpData.push_back(i);
+            double emol;
+            if (mymol->energy(MolPropObservable::EMOL, &emol))
+            {
+                hasExpData.push_back(i);
+            }
         }
     }
     if (hasExpData.size() < 2)

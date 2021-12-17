@@ -347,7 +347,7 @@ int gentop(int argc, char *argv[])
                 mp.SetTotalCharge(qtot);
                 mymol.Merge(&mp);
             }
-       }
+        }
         else
         {
             gmx_fatal(FARGS, "No input file has been specified.");
@@ -356,12 +356,10 @@ int gentop(int argc, char *argv[])
     mymol.SetForceField(ff[0]);
     fill_inputrec(inputrec);
     mymol.setInputrec(inputrec);
-    std::string mylot;
     imm = mymol.GenerateTopology(stdout,
                                  &pd,
                                  method,
                                  basis,
-                                 &mylot,
                                  bAllowMissing ? missingParameters::Ignore : missingParameters::Error,
                                  tabfn);
 
@@ -398,7 +396,7 @@ int gentop(int argc, char *argv[])
                                        qtol,
                                        alg,
                                        myq,
-                                       mylot);
+                                       lot);
     }
     /* Generate output file for debugging if requested */
     if (immStatus::OK == imm)
@@ -434,7 +432,6 @@ int gentop(int argc, char *argv[])
         }
         else
         {
-            splitLot(mylot.c_str(), &method, &basis);
             mymol.PrintConformation(opt2fn("-c", NFILE, fnm));
             mymol.PrintTopology(bITP ? ftp2fn(efITP, NFILE, fnm) : ftp2fn(efTOP, NFILE, fnm),
                                 bVerbose,

@@ -50,17 +50,18 @@ std::map<MolPropObservable, const char *> mpo_name_ =
     { MolPropObservable::DIPOLE, "dipole" }, 
     { MolPropObservable::QUADRUPOLE, "quadrupole" },
     { MolPropObservable::POLARIZABILITY, "polarizability" }, 
-    { MolPropObservable::HF, "hf" }, 
-    { MolPropObservable::DHFORM, "dhform" }, 
-    { MolPropObservable::DGFORM, "dgform" },
-    { MolPropObservable::DSFORM, "dsform" },
-    { MolPropObservable::ZPE, "zpe" }, 
+    { MolPropObservable::HF, "HF" }, 
+    { MolPropObservable::DHFORM, "DeltaHform" }, 
+    { MolPropObservable::DGFORM, "DeltaGform" },
+    { MolPropObservable::DSFORM, "DeltaSform" },
+    { MolPropObservable::ZPE, "ZPE" }, 
     { MolPropObservable::EMOL, "emol" }, 
     { MolPropObservable::ENTROPY, "S0" },
     { MolPropObservable::STRANS, "Strans" },
     { MolPropObservable::SROT, "Srot" },
     { MolPropObservable::SVIB, "Svib" },
-    { MolPropObservable::CP, "Cp" },
+    { MolPropObservable::CP, "cp" },
+    { MolPropObservable::CV, "cv" },
     { MolPropObservable::CHARGE, "charge" }
 };
 
@@ -81,6 +82,7 @@ std::map<MolPropObservable, const char *> mpo_unit_ =
     { MolPropObservable::SROT, "J/mol K" },
     { MolPropObservable::SVIB, "J/mol K" },
     { MolPropObservable::CP, "J/mol K" },
+    { MolPropObservable::CV, "J/mol K" },
     { MolPropObservable::CHARGE, "e" }
 };
 
@@ -94,16 +96,17 @@ const char *mpo_unit(MolPropObservable MPO)
     return mpo_unit_[MPO];
 }
 
-MolPropObservable stringToMolPropObservable(const std::string &str)
+bool stringToMolPropObservable(const std::string &str, MolPropObservable *mpo)
 {
     for (const auto &mn : mpo_name_)
     {
         if (strcasecmp(mn.second, str.c_str()) == 0)
         {
-            return mn.first;
+            *mpo = mn.first;
+            return true;
         }
     }
-    GMX_THROW(gmx::InvalidInputError(gmx::formatString("Cannot find MolPropObservable %s", str.c_str()).c_str()));
+    return false;
 }
 
 CommunicationStatus GenericProperty::Send(t_commrec *cr, int dest) const
@@ -135,7 +138,10 @@ CommunicationStatus GenericProperty::Receive(t_commrec *cr, int src)
     {
         std::string type;
         gmx_recv_str(cr, src, &type);
-        mpo_ = stringToMolPropObservable(type);
+        if (!stringToMolPropObservable(type, &mpo_))
+        {
+            gmx_fatal(FARGS, "Unknown observable %s", type.c_str());
+        }
         T_   = gmx_recv_double(cr, src);
         eP_  = (ePhase) gmx_recv_int(cr, src);
     }
@@ -275,7 +281,20 @@ CommunicationStatus MolecularPolarizability::Send(t_commrec *cr, int dest) const
     CommunicationStatus cs;
 
     cs = GenericProperty::Send(cr, dest);
-    cs = MolecularQuadrupole::Send(cr, dest);
+    if (CS_OK == cs)
+    {
+        cs = gmx_send_data(cr, dest);
+    }
+    if (CS_OK == cs)
+    {
+        for(int m = 0; m < DIM; m++)
+        {
+            for(int n = 0; n < DIM; n++)
+            {
+                gmx_send_double(cr, dest, alpha_[m][n]);
+            }
+        }
+    }
     if (CS_OK == cs)
     {
         cs = gmx_send_data(cr, dest);
@@ -287,7 +306,7 @@ CommunicationStatus MolecularPolarizability::Send(t_commrec *cr, int dest) const
     }
     else if (nullptr != debug)
     {
-        fprintf(debug, "Trying to send MolecularQuadrupole, status %s\n", cs_name(cs));
+        fprintf(debug, "Trying to send Polarizability, status %s\n", cs_name(cs));
         fflush(debug);
     }
     return cs;
@@ -298,7 +317,20 @@ CommunicationStatus MolecularPolarizability::Receive(t_commrec *cr, int src)
     CommunicationStatus cs;
 
     cs = GenericProperty::Receive(cr, src);
-    cs = MolecularQuadrupole::Receive(cr, src);
+    if (CS_OK == cs)
+    {
+        cs = gmx_recv_data(cr, src);
+    }
+    if (CS_OK == cs)
+    {
+        for(int m = 0; m < DIM; m++)
+        {
+            for(int n = 0; n < DIM; n++)
+            {
+                alpha_[m][n] = gmx_recv_double(cr, src);
+            }
+        }
+    }
     if (CS_OK == cs)
     {
         cs = gmx_recv_data(cr, src);
@@ -310,7 +342,7 @@ CommunicationStatus MolecularPolarizability::Receive(t_commrec *cr, int src)
     }
     else if (nullptr != debug)
     {
-        fprintf(debug, "Trying to received MolecularPolarizability, status %s\n", cs_name(cs));
+        fprintf(debug, "Trying to received Polarizability, status %s\n", cs_name(cs));
         fflush(debug);
     }
     return cs;

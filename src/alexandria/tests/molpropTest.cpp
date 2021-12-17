@@ -100,7 +100,7 @@ protected:
                 snprintf(ibuf, sizeof(ibuf), "molecule %d bond %d", mol, i++);
                 myCheck.checkString(buf, ibuf);
             }
-                mol++;
+            mol++;
         }
     }
 
@@ -112,81 +112,93 @@ protected:
         for (auto &mpi : mp_)
         {
             char mbuf[512];
-            int  calc = 1;
-            snprintf(mbuf, sizeof(mbuf), "molecule %d number of calcs", mol);
+            int  calc  = 1;
+            int  nener = 1;
+            snprintf(mbuf, sizeof(mbuf), "molecule %d, %s, number of calcs",
+                     mol++, mpi.getMolname().c_str());
             myCheck.checkInteger(mpi.NExperiment(), mbuf);
             for (auto &ci : mpi.experimentConst())
             {
                 char cbuf[256];
-                snprintf(cbuf, sizeof(cbuf), "molecule %d cakc %d", mol, calc);
-                snprintf(mbuf, sizeof(mbuf), "%s program", cbuf);
-                myCheck.checkString(ci.getProgram(), mbuf);
-                snprintf(mbuf, sizeof(mbuf), "%s basisset", cbuf);
-                myCheck.checkString(ci.getBasisset(), mbuf);
-                snprintf(mbuf, sizeof(mbuf), "%s method", cbuf);
-                myCheck.checkString(ci.getMethod(), mbuf);
+                snprintf(cbuf, sizeof(cbuf), "%s calc %d %s",
+                         mpi.getMolname().c_str(), calc++,
+                         dataSourceName(ci.dataSource()));
+                if (ci.dataSource() == dsTheory)
+                {
+                    snprintf(mbuf, sizeof(mbuf), "%s program", cbuf);
+                    myCheck.checkString(ci.getProgram(), mbuf);
+                    snprintf(mbuf, sizeof(mbuf), "%s basisset", cbuf);
+                    myCheck.checkString(ci.getBasisset(), mbuf);
+                    snprintf(mbuf, sizeof(mbuf), "%s method", cbuf);
+                    myCheck.checkString(ci.getMethod(), mbuf);
+                }
                 for (auto &propi : ci.propertyConst())
                 {
                     for(auto gp : propi.second)
                     {
+                        std::map<const char *,std::pair<int, int> > t_elem = {
+                            { "XX", { XX, XX } },
+                            { "YY", { YY, YY } },
+                            { "ZZ", { ZZ, ZZ } },
+                            { "XY", { XX, YY } },
+                            { "XZ", { XX, ZZ } },
+                            { "YZ", { YY, ZZ } } 
+                        }; 
+                        const char *mpostr = mpo_name(propi.first);
                         switch(propi.first)
                         {
                         case alexandria::MolPropObservable::POLARIZABILITY:
                             {
+                                myCheck.checkDouble(gp->getValue(),
+                                                    gmx::formatString("%s %s %s average", mpostr, gp->getType(), cbuf).c_str());
+                                myCheck.checkDouble(gp->getError(),
+                                                    gmx::formatString("%s %s %s error", mpostr, gp->getType(), cbuf).c_str());
                                 auto pp = gp->getTensor();
-                                snprintf(mbuf, sizeof(mbuf), "%s polar XX", cbuf);
-                                myCheck.checkDouble(pp[XX][XX], mbuf);
-                                snprintf(mbuf, sizeof(mbuf), "%s polar YY", cbuf);
-                                myCheck.checkDouble(pp[YY][YY], mbuf);
-                                snprintf(mbuf, sizeof(mbuf), "%s polar ZZ", cbuf);
-                                myCheck.checkDouble(pp[ZZ][ZZ], mbuf);
-                                snprintf(mbuf, sizeof(mbuf), "%s polar XY", cbuf);
-                                myCheck.checkDouble(pp[XX][YY], mbuf);
-                                snprintf(mbuf, sizeof(mbuf), "%s polar XZ", cbuf);
-                                myCheck.checkDouble(pp[XX][ZZ], mbuf);
-                                snprintf(mbuf, sizeof(mbuf), "%s polar YZ", cbuf);
-                                myCheck.checkDouble(pp[YY][ZZ], mbuf);
+                                for(auto &t : t_elem)
+                                {
+                                    myCheck.checkDouble(pp[t.second.first][t.second.second],
+                                                        gmx::formatString("%s %s %s %s", mpostr, gp->getType(), cbuf, t.first).c_str());
+                                }
                             }
                             break;
                         case MolPropObservable::QUADRUPOLE:
                             {
                                 auto vv = gp->getTensor();
-                                snprintf(mbuf, sizeof(mbuf), "%s quadrupole XX", cbuf);
-                                myCheck.checkDouble(vv[XX][XX], mbuf);
-                                snprintf(mbuf, sizeof(mbuf), "%s quadrupole YY", cbuf);
-                                myCheck.checkDouble(vv[YY][YY], mbuf);
-                                snprintf(mbuf, sizeof(mbuf), "%s quadrupole ZZ", cbuf);
-                                myCheck.checkDouble(vv[ZZ][ZZ], mbuf);
-                                snprintf(mbuf, sizeof(mbuf), "%s quadrupole XY", cbuf);
-                                myCheck.checkDouble(vv[XX][YY], mbuf);
-                                snprintf(mbuf, sizeof(mbuf), "%s quadrupole XZ", cbuf);
-                                myCheck.checkDouble(vv[XX][ZZ], mbuf);
-                                snprintf(mbuf, sizeof(mbuf), "%s quadrupole YZ", cbuf);
-                                myCheck.checkDouble(vv[YY][ZZ], mbuf);
+                                for(auto &t : t_elem)
+                                {
+                                    myCheck.checkDouble(vv[t.second.first][t.second.second],
+                                                        gmx::formatString("%s %s %s %s", mpostr, gp->getType(), cbuf, t.first).c_str());
+                                }
                             }
                             break;
                         case MolPropObservable::DIPOLE:
                             {
+                                std::map<const char *,int> v_elem = {
+                                    { "X", XX }, { "Y", YY }, { "Z", ZZ }
+                                };
+                                myCheck.checkDouble(gp->getValue(),
+                                                    gmx::formatString("%s %s %s average", mpostr, gp->getType(), cbuf).c_str());
+                                myCheck.checkDouble(gp->getError(),
+                                                    gmx::formatString("%s %s %s error", mpostr, gp->getType(), cbuf).c_str());
                                 auto mu = gp->getVector();
-                                snprintf(mbuf, sizeof(mbuf), "%s dipole X", cbuf);
-                                myCheck.checkDouble(mu[XX], mbuf);
-                                snprintf(mbuf, sizeof(mbuf), "%s dipole Y", cbuf);
-                                myCheck.checkDouble(mu[YY], mbuf);
-                                snprintf(mbuf, sizeof(mbuf), "%s dipole Z", cbuf);
-                                myCheck.checkDouble(mu[ZZ], mbuf);
+                                for(auto &v : v_elem)
+                                {
+                                    myCheck.checkDouble(mu[v.second],
+                                                        gmx::formatString("%s %s %s %s", mpostr, gp->getType(), cbuf, v.first).c_str());
+                                }
                             }
                             break;
                         default:
                             {
-                                int nener = 1;
-                                char ebuf[256];
-                                snprintf(mbuf, sizeof(mbuf), "%s energy %d", cbuf, nener++);
-                                snprintf(ebuf, sizeof(ebuf), "%s %g +/- %g %s",
-                                         gp->getType(),
-                                         gp->getValue(),
-                                         gp->getError(),
-                                         gp->getUnit());
-                                myCheck.checkString(ebuf, mbuf);
+                                myCheck.checkDouble(gp->getValue(),
+                                                    gmx::formatString("%s %s %s %s %d value",
+                                                                      mpostr, gp->getType(), gp->getUnit(),
+                                                                      cbuf, nener).c_str());
+                                myCheck.checkDouble(gp->getError(),
+                                                    gmx::formatString("%s %s %s %s %d error",
+                                                                      mpostr, gp->getType(), gp->getUnit(),
+                                                                      cbuf, nener).c_str());
+                                nener += 1;
                             }
                             break;
                         }

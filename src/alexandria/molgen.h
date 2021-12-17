@@ -540,8 +540,6 @@ public:
      * \param[in] pd_fn   Filename for force field file
      * \param[in] bZero   Use compounds with zero dipole
      * \param[in] gms     The molecule selection
-     * \param[in] bZPE    Use Zero point energy
-     * \param[in] bDHform Use delta H formation
      * \param[in] tabfn   Table function for gromacs
      * \param[in] verbose Whether or not to print stuff
      * \return number of molecules read and processed correctly
@@ -551,8 +549,6 @@ public:
                 const char      *pd_fn,
                 gmx_bool         bZero,
                 const MolSelect &gms,
-                bool             bZPE,
-                bool             bDHform,
                 const char      *tabfn,
                 bool             verbose);
 

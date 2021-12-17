@@ -308,7 +308,11 @@ void EnergyDevComputer::calcDeviation(      MyMol                             *m
                                       const gmx_unused std::vector<double>               &param,
                                             gmx_unused t_commrec                         *commrec)
 {
-    real delta = gmx::square(mymol->potentialEnergy() - mymol->energy(MolPropObservable::EMOL));
+    double emol;
+    GMX_RELEASE_ASSERT(mymol->energy(MolPropObservable::EMOL, &emol),
+                       gmx::formatString("No molecular energy for %s", mymol->getMolname().c_str()).c_str());
+    
+    real delta = gmx::square(mymol->potentialEnergy() - emol);
     (*targets).find(eRMS::EPOT)->second.increase(1, delta);
 }
 

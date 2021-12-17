@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020
+ * Copyright (C) 2014-2021
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -75,16 +75,18 @@ const char *jobType2string(JobType jType)
 
 JobType string2jobType(const std::string &str)
 {
-    for (const auto &s2j : job_name)
+    if (!str.empty())
     {
-        if (str.compare(s2j.second) == 0)
+        for (const auto &s2j : job_name)
         {
-            return s2j.first;
+            if (str.compare(s2j.second) == 0)
+            {
+                return s2j.first;
+            }
         }
+        auto buf = gmx::formatString("Invalid job type %s", str.c_str());
+        GMX_THROW(gmx::InvalidInputError(buf.c_str()));
     }
-    auto buf = gmx::formatString("Invalid job type %s", str.c_str());
-    GMX_THROW(gmx::InvalidInputError(buf.c_str()));
-    // To satisfy the compiler, but this will never happen.
     return JobType::UNKNOWN;
 }
 
@@ -394,6 +396,8 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
         {
             mpt = nullptr;
         }
+        std::string qm_type("electronic");
+        std::string exp_type("experiment");
         switch (tree->type)
         {
             case XML_TEXT_NODE:
@@ -483,7 +487,13 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                                 ((NN(xbuf[exmlAVERAGE]) && NN(xbuf[exmlERROR])) ||
                                  (NN(xbuf[exmlXX]) && NN(xbuf[exmlYY]) && NN(xbuf[exmlZZ]))))
                             {
-                                auto mdp = new MolecularPolarizability(xbuf_atof(xbuf, exmlTEMPERATURE),
+                                std::string mytype(qm_type);
+                                if (last->dataSource() == dsExperiment)
+                                {
+                                    mytype = exp_type;
+                                }
+                                auto mdp = new MolecularPolarizability(mytype,
+                                                                       xbuf_atof(xbuf, exmlTEMPERATURE),
                                                                        xbuf_atof(xbuf, exmlXX),
                                                                        xbuf_atof(xbuf, exmlYY),
                                                                        xbuf_atof(xbuf, exmlZZ),
@@ -519,7 +529,13 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                                 NN(xbuf[exmlAVERAGE]) && NN(xbuf[exmlERROR]) &&
                                 NN(xbuf[exmlTEMPERATURE]))
                             {
-                                auto mdp = new MolecularDipole(xbuf_atof(xbuf, exmlTEMPERATURE),
+                                std::string mytype(qm_type);
+                                if (last->dataSource() == dsExperiment)
+                                {
+                                    mytype = exp_type;
+                                }
+                                auto mdp = new MolecularDipole(mytype,
+                                                               xbuf_atof(xbuf, exmlTEMPERATURE),
                                                                xbuf_atof(xbuf, exmlX),
                                                                xbuf_atof(xbuf, exmlY),
                                                                xbuf_atof(xbuf, exmlZ),
@@ -536,7 +552,13 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                                 NN(xbuf[exmlXX]) && NN(xbuf[exmlYY]) && NN(xbuf[exmlZZ]) &&
                                 NN(xbuf[exmlXY]) && NN(xbuf[exmlXZ]) && NN(xbuf[exmlYZ]))
                             {
-                                auto mq = new MolecularQuadrupole(xbuf_atof(xbuf, exmlTEMPERATURE),
+                                std::string mytype(qm_type);
+                                if (last->dataSource() == dsExperiment)
+                                {
+                                    mytype = exp_type;
+                                }
+                                auto mq = new MolecularQuadrupole(mytype,
+                                                                  xbuf_atof(xbuf, exmlTEMPERATURE),
                                                                   xbuf_atof(xbuf, exmlXX),
                                                                   xbuf_atof(xbuf, exmlYY),
                                                                   xbuf_atof(xbuf, exmlZZ),
@@ -563,13 +585,25 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                                 NN(xbuf[exmlENERGY]) && NN(xbuf[exmlTEMPERATURE]) &&
                                 NN(xbuf[exmlPHASE]))
                             {
-                                auto mpo = stringToMolPropObservable(xbuf[exmlTYPE]);
-                                auto me  = new MolecularEnergy(mpo,
-                                                               xbuf_atof(xbuf, exmlTEMPERATURE),
-                                                               string2phase(xbuf[exmlPHASE]),
-                                                               xbuf_atof(xbuf, exmlENERGY),
-                                                               xbuf_atof(xbuf, exmlERROR));
-                                last->addProperty(mpo, me);
+                                MolPropObservable mpo;
+                                if (stringToMolPropObservable(xbuf[exmlTYPE], &mpo))
+                                {
+                                    std::string mytype(qm_type);
+                                    if (last->dataSource() == dsExperiment)
+                                    {
+                                        mytype = exp_type;
+                                    }
+                                    auto me  = new MolecularEnergy(mpo, mytype,
+                                                                   xbuf_atof(xbuf, exmlTEMPERATURE),
+                                                                   string2phase(xbuf[exmlPHASE]),
+                                                                   xbuf_atof(xbuf, exmlENERGY),
+                                                                   xbuf_atof(xbuf, exmlERROR));
+                                    last->addProperty(mpo, me);
+                                }
+                                else
+                                {
+                                    fprintf(stderr, "Ignoring unknown property %s\n", xbuf[exmlTYPE].c_str());
+                                }
                             }
                             break;
 
@@ -626,13 +660,12 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
 
                                 if (ds == dsTheory &&
                                     NN(xbuf[exmlPROGRAM]) && NN(xbuf[exmlREFERENCE]) &&
-                                    NN(xbuf[exmlCONFORMATION]) && NN(xbuf[exmlDATAFILE]) &&
-                                    NN(xbuf[exmlJOBTYPE]))
+                                    NN(xbuf[exmlCONFORMATION]) && NN(xbuf[exmlDATAFILE]))
                                 {
                                     Experiment mycalc(xbuf[exmlPROGRAM], xbuf[exmlMETHOD],
-                                                                  xbuf[exmlBASISSET], xbuf[exmlREFERENCE],
-                                                                  xbuf[exmlCONFORMATION], xbuf[exmlDATAFILE],
-                                                                  string2jobType(xbuf[exmlJOBTYPE]));
+                                                      xbuf[exmlBASISSET], xbuf[exmlREFERENCE],
+                                                      xbuf[exmlCONFORMATION], xbuf[exmlDATAFILE],
+                                                      string2jobType(xbuf[exmlJOBTYPE]));
                                     mpt->AddExperiment(mycalc);
                                 }
                                 else if (ds == dsExperiment)
@@ -641,7 +674,7 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                                     {
                                         const char            *unknown = "unknown";
                                         Experiment myexp(xbuf[exmlREFERENCE],
-                                                                     NN(xbuf[exmlCONFORMATION]) ? xbuf[exmlCONFORMATION] : unknown);
+                                                         NN(xbuf[exmlCONFORMATION]) ? xbuf[exmlCONFORMATION] : unknown);
                                         mpt->AddExperiment(myexp);
                                     }
                                     else
@@ -724,8 +757,6 @@ static void add_exper_properties(xmlNodePtr                    exp,
         auto mpo = props.first;
         for (auto &prop : props.second)
         {
-            double average = prop->getValue();
-            double error   = prop->getError();
             switch(mpo)
             {
             case MolPropObservable::HF:
@@ -737,9 +768,12 @@ static void add_exper_properties(xmlNodePtr                    exp,
             case MolPropObservable::SROT:
             case MolPropObservable::SVIB:
             case MolPropObservable::CP:
+            case MolPropObservable::CV:
             case MolPropObservable::ZPE:
             case MolPropObservable::EMOL:
                 {
+                    double average = prop->getValue();
+                    double error   = prop->getError();
                     child = add_xml_child_val(exp, exml_names(exmlENERGY), gmx_dtoa(average).c_str());
                     add_xml_string(child, exml_names(exmlTYPE), mpo_name(mpo));
                     add_xml_string(child, exml_names(exmlUNIT), mpo_unit(mpo));
@@ -751,6 +785,8 @@ static void add_exper_properties(xmlNodePtr                    exp,
                 }
             case MolPropObservable::DIPOLE:
                 {
+                    double average = prop->getValue();
+                    double error   = prop->getError();
                     auto dp = prop->getVector();
                     
                     child = add_xml_child(exp, exml_names(exmlDIPOLE));

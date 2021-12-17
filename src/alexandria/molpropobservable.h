@@ -80,6 +80,8 @@ enum class MolPropObservable {
     SVIB,
     //! Heat capacity at constant pressure
     CP,
+    //! Heat capacity at constant volume
+    CV,
     //! Zero point energy
     ZPE,
     //! Molecular energy
@@ -120,11 +122,11 @@ const char *mpo_name(MolPropObservable MPO);
 const char *mpo_unit(MolPropObservable MPO);
 
 /*! \brief Deduct MolPropObservable from string
- * \param[in] str The string to use
- * \return the corresponding MolPropObservable
- * \throws if there is no corresponding MolPropObservable
+ * \param[in]   str The string to use
+ * \param[[out] mpo The corresponding MolPropObservable
+ * \return false if there is no corresponding MolPropObservable, true if there is
  */
-MolPropObservable stringToMolPropObservable(const std::string &str);
+bool stringToMolPropObservable(const std::string &str, MolPropObservable *mpo);
 
 #define crash() GMX_THROW(gmx::InternalError("This should not be called"))
 
@@ -141,6 +143,8 @@ private:
      * The type of property
      */
     MolPropObservable mpo_;
+    //! Subtype of this property
+    std::string type_;
     /*! \brief
      * Temperature at which the property is measured or computed.
      */
@@ -151,7 +155,7 @@ private:
     ePhase      eP_;
 public:
     //! Default constructor
-    GenericProperty() { T_ = 0; eP_ = epNR; };
+    GenericProperty() { T_ = 0; eP_ = ePhase::GAS; };
     
     /*! \brief
      * Creates a new GenericProperty object.
@@ -160,16 +164,17 @@ public:
      * \param[in] T   Temperature
      * \param[in] ep  The phase
      */
-    GenericProperty(MolPropObservable mpo,
+    GenericProperty(MolPropObservable  mpo,
+                    const std::string &type,
                     double             T,
                     ePhase             ep) : 
-            mpo_(mpo), T_(T), eP_(ep)
+        mpo_(mpo), type_(type), T_(T), eP_(ep)
     {}
 
     /*! \brief
      * Return the property type
      */
-    const char *getType() const { return mpo_name(mpo_); }
+    const char *getType() const { return type_.c_str(); }
     
     /*! \brief
      * Return the unit of the property
@@ -254,10 +259,11 @@ public:
     MolecularQuadrupole() {}
     
     //! Constructor initiating all elements of the quadrupole tensor
-    MolecularQuadrupole(double T,
+    MolecularQuadrupole(const std::string &type,
+                        double T,
                         double xx, double yy, double zz,
                         double xy, double xz, double yz) :
-        GenericProperty(MolPropObservable::QUADRUPOLE, T, epGAS)
+        GenericProperty(MolPropObservable::QUADRUPOLE, type, T, ePhase::GAS)
     { Set(xx, yy, zz, xy, xz, yz); };
     
     //! Set all the elements of the qudrupole tensor
@@ -310,24 +316,39 @@ public:
  * \inpublicapi
  * \ingroup module_alexandria
  */
-class MolecularPolarizability : public MolecularQuadrupole
+class MolecularPolarizability : public GenericProperty
 {
 private:
     double average_, error_;
+    //! The polarizability tensor
+    tensor alpha_ = {{ 0 }};
 public:
     //! Default constructor
     MolecularPolarizability() {}
     
     //! Constructor initiating all elements of the quadrupole tensor
-    MolecularPolarizability(double T,
+    MolecularPolarizability(const std::string &type,
+                            double T,
                             double xx, double yy, double zz,
                             double xy, double xz, double yz,
-                            double average, double error)
-        : MolecularQuadrupole(T, xx, yy, zz, xy, xz, yz)
+                            double average, double error) :
+        GenericProperty(MolPropObservable::POLARIZABILITY,  type, T, ePhase::GAS)
     { 
+        Set(xx, yy, zz, xy, xz, yz);
         average_ = average;
         error_   = error;
-    }
+    };
+    
+    //! Set all the elements of the polarizablity tensor
+    void Set(double xx, double yy, double zz, double xy, double xz, double yz)
+    { 
+        alpha_[XX][XX] = xx;
+        alpha_[YY][YY] = yy;
+        alpha_[ZZ][ZZ] = zz;
+        alpha_[XX][YY] = xy;
+        alpha_[XX][ZZ] = xz; 
+        alpha_[YY][ZZ] = yz;
+    };
     
     double getValue() const;
     
@@ -337,7 +358,7 @@ public:
 
     const tensor &getTensor() const
     {
-        return MolecularQuadrupole::getTensor();
+        return alpha_;
     }
     /*! \brief
      * Sends this object over an MPI connection
@@ -381,11 +402,12 @@ public:
 
     //! Constructor storing all properties related to this energy term
     MolecularEnergy(MolPropObservable mpo,
+                    const std::string &type,
                     double T,
                     ePhase ep,
                     double average,
                     double error)
-        : GenericProperty(mpo, T, ep)
+        : GenericProperty(mpo, type, T, ep)
     { 
         Set(average, error);
     };
@@ -443,9 +465,10 @@ public:
     MolecularDipole() {}
     
     //! Constructor storing all properties related to this dipole
-    MolecularDipole(double T,
+    MolecularDipole(const std::string &type,
+                    double T,
                     double x, double y, double z, double aver, double error)
-        : GenericProperty(MolPropObservable::DIPOLE, T, epGAS)
+        : GenericProperty(MolPropObservable::DIPOLE, type, T, ePhase::GAS)
     { Set(x, y, z, aver, error); }
 
     //! Set all properties related to this dipole

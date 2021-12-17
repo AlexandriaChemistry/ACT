@@ -528,7 +528,6 @@ immStatus MyMol::GenerateAtoms(const Poldata     *pd,
                                t_atoms           *atoms,
                                const std::string &method,
                                const std::string &basis,
-                               std::string       *mylot,
                                bool               strict=true)
 {
     double              xx, yy, zz;
@@ -729,7 +728,6 @@ immStatus MyMol::GenerateTopology(FILE              *fp,
                                   const Poldata     *pd,
                                   const std::string &method,
                                   const std::string &basis,
-                                  std::string       *mylot,
                                   missingParameters  missing,
                                   const char        *tabfn,
                                   bool               strict)
@@ -751,7 +749,7 @@ immStatus MyMol::GenerateTopology(FILE              *fp,
     {
         snew(atoms, 1);
         state_change_natoms(state_, NAtom());
-        imm = GenerateAtoms(pd, atoms, method, basis, mylot, strict);
+        imm = GenerateAtoms(pd, atoms, method, basis, strict);
     }
     if (immStatus::OK == imm)
     {
@@ -2197,8 +2195,6 @@ const real *MyMol::energyTerms() const
         
 immStatus MyMol::getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
                              gmx_bool                                    bZero,
-                             gmx_bool                                    bZPE,
-                             gmx_bool                                    bDHform,
                              const std::string                          &method,
                              const std::string                          &basis,
                              const Poldata                              *pd)
@@ -2207,8 +2203,6 @@ immStatus MyMol::getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
     int                 natom = 0;
     unsigned int        nwarn = 0;
     std::vector<double> vec;
-    tensor              quadrupole = {{ 0 }};
-    tensor              polar      = {{ 0 }};
     std::string         myref;
     std::string         mylot;
     immStatus           imm        = immStatus::OK;
@@ -2268,7 +2262,6 @@ immStatus MyMol::getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
         case MolPropObservable::ZPE:
             {
                 double    T   = 298.15;
-                immStatus imm = immStatus::OK;
                 auto gp = findProperty(mpo, miq.second, T, method, basis, "");
                 if (gp)
                 {
@@ -2309,7 +2302,6 @@ immStatus MyMol::getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
         case MolPropObservable::QUADRUPOLE:
             {
                 double T = -1;
-                double value, error;
                 auto gp = findProperty(mpo, miq.second, T, method, basis, "");
                 if (gp)
                 {

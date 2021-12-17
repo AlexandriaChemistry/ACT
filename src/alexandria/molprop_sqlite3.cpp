@@ -317,8 +317,12 @@ void ReadSqlite3(const char           *sqlite_file,
                         {
                             iqm = iqmType::QM;
                         }
-                        auto mpo = stringToMolPropObservable(prop);
-                        if ((iqm == iqmType::Exp && preferred) ||
+                        MolPropObservable mpo;
+                        if (!stringToMolPropObservable(prop, &mpo))
+                        {
+                            fprintf(stderr, "Unknown property %s\n", prop);
+                        }
+                        else if ((iqm == iqmType::Exp && preferred) ||
                             (iqm == iqmType::QM))
                         {
                             if (iqm == iqmType::Exp)
@@ -326,18 +330,20 @@ void ReadSqlite3(const char           *sqlite_file,
                                 nexp_prop++;
                             }
                             alexandria::Experiment exper("unknown", "minimum");
+                            std::string exp_type("experiment");
                             GenericProperty *gp;
                             switch (mpo)
                             {
                             case MolPropObservable::POLARIZABILITY:
                                 {
-                                    gp = new MolecularPolarizability(temperature, 0, 0, 0, 0, 0, 0,
+                                    gp = new MolecularPolarizability(exp_type, 
+                                                                     temperature, 0, 0, 0, 0, 0, 0,
                                                                      value, error);
                                     break;
                                 }
                             case MolPropObservable::DIPOLE:
                                 {
-                                    gp = new MolecularDipole(temperature, 0, 0, 0, value, error);
+                                    gp = new MolecularDipole(exp_type, temperature, 0, 0, 0, value, error);
                                     break;
                                 }
                             case MolPropObservable::DGFORM:
@@ -347,8 +353,10 @@ void ReadSqlite3(const char           *sqlite_file,
                             case MolPropObservable::STRANS:
                             case MolPropObservable::SROT:
                             case MolPropObservable::SVIB:
+                            case MolPropObservable::CP:
+                            case MolPropObservable::CV:
                                 {
-                                    gp = new MolecularEnergy(mpo, temperature, epGAS, value, error);
+                                    gp = new MolecularEnergy(mpo, exp_type, temperature, ePhase::GAS, value, error);
                                     break;
                                 }
                             default:

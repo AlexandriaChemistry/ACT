@@ -458,7 +458,10 @@ int analyze(int argc, char *argv[])
     mpo = MolPropObservable::DIPOLE;    
     if (opt2parg_bSet("-prop", npa, pa))
     {
-        mpo = stringToMolPropObservable(prop[0]);
+        if (!stringToMolPropObservable(prop[0], &mpo))
+        {
+            gmx_fatal(FARGS, "No such observable %s\n", prop[0]);
+        }
     }
 
     try

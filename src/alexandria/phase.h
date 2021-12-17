@@ -35,8 +35,20 @@
  
 #include <string>
     
+namespace alexandria
+{
+
 //! Enum to describe the phase corresponding to a property
-enum ePhase { epGAS, epLIQUID, epSOLID, epPLASMA, epNR };
+enum class ePhase {
+    //! The gas phase
+    GAS,
+    //! The liquid pahse
+    LIQUID,
+    //! The solid phase
+    SOLID,
+    //! Plasma!
+    PLASMA
+};
 
 /*! \brief
  * Yield string corresponding to phase
@@ -44,7 +56,7 @@ enum ePhase { epGAS, epLIQUID, epSOLID, epPLASMA, epNR };
  * \param[in] ep The phase enum
  * \return string corresponding to phase
  */
-std::string phase2string(ePhase ep);
+const std::string &phase2string(ePhase ep);
 
 /*! \brief
  * Yield phase corresponding to string
@@ -52,6 +64,8 @@ std::string phase2string(ePhase ep);
  * \param[in] phase String corresponding to phase
  * \return The phase enum
  */
-ePhase string2phase(std::string phase);
+ePhase string2phase(const std::string &phase);
+
+} // namespace alexandria
 
 #endif

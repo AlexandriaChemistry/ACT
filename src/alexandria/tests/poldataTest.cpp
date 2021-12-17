@@ -141,25 +141,6 @@ TEST_F(PoldataTest, addAtype){
     }
 }
 
-TEST_F (PoldataTest, Verstraelen)
-{
-    auto pd  = getPoldata("Verstraelen");
-    auto bcs = pd->findForcesConst(InteractionType::BONDCORRECTIONS);
-    std::vector<std::string> name;
-    std::vector<double>      hardness;
-    std::vector<double>      electronegativity;
-    for ( auto bc : bcs.parametersConst() )
-    {
-        name.push_back(bc.first.id());
-        hardness.push_back(bcs.findParameterTypeConst(bc.first, "hardness").value());
-        electronegativity.push_back(bcs.findParameterTypeConst(bc.first, "electronegativity").value());
-    }
-    checker_.checkSequence(name.begin(), name.end(), "name");
-    checker_.checkSequence(hardness.begin(), hardness.end(), "hardness");
-    checker_.checkSequence(electronegativity.begin(), electronegativity.end(),
-                           "electronegativity");
-}
-
 TEST_F (PoldataTest, chi)
 {
     std::vector<double>      chi0s;
@@ -238,21 +219,6 @@ TEST_F (PoldataTest, zeta)
         }
     }
     checker_.checkSequence(zetas.begin(), zetas.end(), "zeta");
-}
-
-TEST_F (PoldataTest, chargeType)
-{
-    std::vector<std::string> eqd = { "ESP-pp", "ESP-pg", "ESP-ps" };
-
-    std::vector<std::string> forces;
-    for (auto &model : eqd)
-    {
-        auto pd = getPoldata(model);
-        auto qt = pd->findForcesConst(InteractionType::CHARGEDISTRIBUTION);
-        auto ct = name2ChargeType(qt.optionValue("chargetype"));
-        forces.push_back(chargeTypeName(ct));
-    }
-    checker_.checkSequence(forces.begin(), forces.end(), "chargeType");
 }
 
 }

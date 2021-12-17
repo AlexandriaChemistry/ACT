@@ -84,11 +84,11 @@ enum class eHisto {
 class gmx_stats
 {
 private:
-    double  aa, a, b, sigma_a, sigma_b, aver, sigma_aver, error;
-    double  rmsd, Rdata, Rfit, Rfitaa, chi2, mse, mae;
-    std::vector<double> x, y, dx, dy;
-    bool    computed;
-    size_t  np_c;
+    double  aa_, a_, b_, sigma_a_, sigma_b_, aver_, sigma_aver_, error_;
+    double  rmsd_, Rdata_, Rfit_, Rfitaa_, chi2_, chi2aa_, mse_, mae_;
+    std::vector<double> x_, y_, dx_, dy_;
+    bool    computed_;
+    size_t  np_c_;
 
     eStats compute(int weight);
     
@@ -141,8 +141,8 @@ public:
     eStats add_points(int n, real *x, real *y,
                       real *dx, real *dy);
 
-    const std::vector<double> getX() const { return x; }
-    const std::vector<double> getY() const { return y; }
+    const std::vector<double> getX() const { return x_; }
+    const std::vector<double> getY() const { return y_; }
     /*! \brief
      * Delivers data points from the statistics.
      *
@@ -216,7 +216,7 @@ public:
      * Get the number of points.
      * \return the number
      */
-    size_t get_npoints() const { return x.size(); };
+    size_t get_npoints() const { return x_.size(); };
     
     /*! \brief
      * Computes and returns the average value.
@@ -277,11 +277,10 @@ public:
      * therefore one of these should be zero, but not the other. If *nbins = 0
      * the number of bins will be returned in this variable. ehisto should be one of
      * ehistoX or ehistoY. If
-     * normalized not equal to zero, the integral of the histogram will be
+     * normalized, the integral of the histogram will be
      * normalized to one. The output is in two arrays, *x and *y, to which
      * you should pass a pointer. Memory for the arrays will be allocated
      * as needed. Function returns one of the eStats codes.
-     * \param[in]  stats The data structure
      * \param[in] binwidth For the histogram
      * \param[in] nbins    Number of bins
      * \param[in] ehisto   Type (see enum above)
@@ -291,7 +290,7 @@ public:
      * \return error code
      */
     eStats make_histogram(real binwidth, int *nbins,
-                          eHisto ehisto, int normalized,
+                          eHisto ehisto, bool normalized,
                           std::vector<double> *x,
                           std::vector<double> *y);
 };

@@ -1,0 +1,49 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="Number of points">11</Int>
+  <String Name="Histogram">All well in STATS land</String>
+  <Int Name="nbins">18</Int>
+  <Sequence Name="x-histo">
+    <Int Name="Length">18</Int>
+    <Real>3.5</Real>
+    <Real>4.5</Real>
+    <Real>5.5</Real>
+    <Real>6.5</Real>
+    <Real>7.5</Real>
+    <Real>8.5</Real>
+    <Real>9.5</Real>
+    <Real>10.5</Real>
+    <Real>11.5</Real>
+    <Real>12.5</Real>
+    <Real>13.5</Real>
+    <Real>14.5</Real>
+    <Real>15.5</Real>
+    <Real>16.5</Real>
+    <Real>17.5</Real>
+    <Real>18.5</Real>
+    <Real>19.5</Real>
+    <Real>20.5</Real>
+  </Sequence>
+  <Sequence Name="y-histo">
+    <Int Name="Length">18</Int>
+    <Real>1</Real>
+    <Real>1</Real>
+    <Real>1</Real>
+    <Real>1</Real>
+    <Real>0</Real>
+    <Real>1</Real>
+    <Real>1</Real>
+    <Real>0</Real>
+    <Real>1</Real>
+    <Real>1</Real>
+    <Real>1</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>1</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>1</Real>
+  </Sequence>
+</ReferenceData>

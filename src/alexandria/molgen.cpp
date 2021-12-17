@@ -682,8 +682,6 @@ size_t MolGen::Read(FILE            *fp,
                     const char      *pd_fn,
                     gmx_bool         bZero,
                     const MolSelect &gms,
-                    bool             bZPE,
-                    bool             bDHform,
                     const char      *tabfn,
                     bool             verbose)
 {
@@ -788,7 +786,6 @@ size_t MolGen::Read(FILE            *fp,
                                              &pd_,
                                              method,
                                              basis,
-                                             nullptr,
                                              missingParameters::Error,
                                              tabfn);
                 if (immStatus::OK != imm)
@@ -834,7 +831,7 @@ size_t MolGen::Read(FILE            *fp,
                     continue;
                 }
                 // TODO Check for G4 as well
-                imm = mymol.getExpProps(iqmMap, bZero, bZPE, bDHform,
+                imm = mymol.getExpProps(iqmMap, bZero,
                                         method, basis, &pd_);
                 if (immStatus::OK != imm)
                 {
@@ -998,7 +995,6 @@ size_t MolGen::Read(FILE            *fp,
                                          &pd_,
                                          method,
                                          basis,
-                                         nullptr,
                                          missingParameters::Error,
                                          tabfn);
             
@@ -1023,7 +1019,7 @@ size_t MolGen::Read(FILE            *fp,
             }
             if (immStatus::OK == imm)
             {
-                imm = mymol.getExpProps(iqmMap, bZero, bZPE, bDHform,
+                imm = mymol.getExpProps(iqmMap, bZero,
                                         method, basis, &pd_);
             }
             mymol.eSupp_ = eSupport::Local;
@@ -1035,10 +1031,16 @@ size_t MolGen::Read(FILE            *fp,
                 nLocal.find(mymol.datasetType())->second += 1;
                 if (nullptr != debug)
                 {
+                    double emol;
+                    GMX_RELEASE_ASSERT(mymol.energy(MolPropObservable::EMOL, &emol),
+                                       gmx::formatString("No molecular energy for %s",
+                                                         mymol.getMolname().c_str()).c_str());
+                    double hform;
+                    GMX_RELEASE_ASSERT(mymol.energy(MolPropObservable::DHFORM, &hform),
+                                       gmx::formatString("No DeltaHform for %s",
+                                                         mymol.getMolname().c_str()).c_str());     
                     fprintf(debug, "Added molecule %s. Hform = %g Emol = %g\n",
-                            mymol.getMolname().c_str(),
-                            mymol.energy(MolPropObservable::DHFORM),
-                            mymol.energy(MolPropObservable::EMOL));
+                            mymol.getMolname().c_str(), hform, emol);
                 }
             }
             gmx_send_int(cr_, 0, static_cast<int>(imm));

@@ -1,0 +1,89 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="Number of points">11</Int>
+  <String Name="Histogram">All well in STATS land</String>
+  <Int Name="nbins">38</Int>
+  <Sequence Name="x-histo">
+    <Int Name="Length">38</Int>
+    <Real>13.5</Real>
+    <Real>14.5</Real>
+    <Real>15.5</Real>
+    <Real>16.5</Real>
+    <Real>17.5</Real>
+    <Real>18.5</Real>
+    <Real>19.5</Real>
+    <Real>20.5</Real>
+    <Real>21.5</Real>
+    <Real>22.5</Real>
+    <Real>23.5</Real>
+    <Real>24.5</Real>
+    <Real>25.5</Real>
+    <Real>26.5</Real>
+    <Real>27.5</Real>
+    <Real>28.5</Real>
+    <Real>29.5</Real>
+    <Real>30.5</Real>
+    <Real>31.5</Real>
+    <Real>32.5</Real>
+    <Real>33.5</Real>
+    <Real>34.5</Real>
+    <Real>35.5</Real>
+    <Real>36.5</Real>
+    <Real>37.5</Real>
+    <Real>38.5</Real>
+    <Real>39.5</Real>
+    <Real>40.5</Real>
+    <Real>41.5</Real>
+    <Real>42.5</Real>
+    <Real>43.5</Real>
+    <Real>44.5</Real>
+    <Real>45.5</Real>
+    <Real>46.5</Real>
+    <Real>47.5</Real>
+    <Real>48.5</Real>
+    <Real>49.5</Real>
+    <Real>50.5</Real>
+  </Sequence>
+  <Sequence Name="y-histo">
+    <Int Name="Length">38</Int>
+    <Real>0.090909090909090912</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0.090909090909090912</Real>
+    <Real>0</Real>
+    <Real>0.090909090909090912</Real>
+    <Real>0.090909090909090912</Real>
+    <Real>0</Real>
+    <Real>0.090909090909090912</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0.090909090909090912</Real>
+    <Real>0.090909090909090912</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0.090909090909090912</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0.090909090909090912</Real>
+    <Real>0</Real>
+    <Real>0.090909090909090912</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0.090909090909090912</Real>
+  </Sequence>
+</ReferenceData>

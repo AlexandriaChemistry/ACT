@@ -628,8 +628,6 @@ int tune_eem(int argc, char *argv[])
                       opt2fn_null("-d", filenms.size(), filenms.data()),
                       bZero,
                       gms,
-                      false,
-                      true,
                       opt2fn_null("-table", filenms.size(), filenms.data()),
                       opt.verbose()))
     {

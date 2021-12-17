@@ -329,9 +329,9 @@ bool readBabel(const char          *g09,
     std::string                attr;
     std::string                value;
     einformat                  inputformat = einfNotGaussian;
-    const char                *reference   = "Ghahremanpour2016a";
+    const char                *reference   = "Ghahremanpour2022a";
     const char                *mymol       = "AMM";
-    const char                *myprogram   = "Alexandria-2018";
+    const char                *myprogram   = "ACT2022";
     const char                *mybasis     = "";
 
 
@@ -472,6 +472,7 @@ bool readBabel(const char          *g09,
     // Units for conversion
     std::string energyUnit("kcal/mol");
     std::string entropyUnit("cal/mol K");
+    std::string qm_type("electronic");
 
     // Thermochemistry
     if (inputformat == einfGaussian)
@@ -495,37 +496,37 @@ bool readBabel(const char          *g09,
         {
             {
                 auto mpo = MolPropObservable::DHFORM;
-                auto me  = new alexandria::MolecularEnergy(mpo, 0, epGAS,
+                auto me  = new alexandria::MolecularEnergy(mpo, qm_type, 0, ePhase::GAS,
                                                            alexandria::convertToGromacs(DeltaHf0, energyUnit), 0);
                 mpt->LastExperiment()->addProperty(mpo, me);
             }
             {
                 auto mpo = MolPropObservable::DHFORM;
-                auto me  = new alexandria::MolecularEnergy(mpo, temperature, epGAS,
+                auto me  = new alexandria::MolecularEnergy(mpo, qm_type, temperature, ePhase::GAS,
                                                            alexandria::convertToGromacs(DeltaHfT, energyUnit), 0);
                 mpt->LastExperiment()->addProperty(mpo, me);
             }
             {
                 auto mpo = MolPropObservable::DGFORM;
-                auto me  = new alexandria::MolecularEnergy(mpo, temperature, epGAS,
+                auto me  = new alexandria::MolecularEnergy(mpo, qm_type, temperature, ePhase::GAS,
                                                            alexandria::convertToGromacs(DeltaGfT, energyUnit), 0);
                 mpt->LastExperiment()->addProperty(mpo, me);
             }
             {
                 auto mpo = MolPropObservable::DSFORM;
-                auto me  = new alexandria::MolecularEnergy(mpo, temperature, epGAS,
+                auto me  = new alexandria::MolecularEnergy(mpo, qm_type, temperature, ePhase::GAS,
                                                            alexandria::convertToGromacs(DeltaSfT, entropyUnit), 0);
                 mpt->LastExperiment()->addProperty(mpo, me);
             }
             {
                 auto mpo = MolPropObservable::ENTROPY;
-                auto me  = new alexandria::MolecularEnergy(mpo, temperature, epGAS,
+                auto me  = new alexandria::MolecularEnergy(mpo, qm_type, temperature, ePhase::GAS,
                                                            alexandria::convertToGromacs(S0T, entropyUnit), 0);
                 mpt->LastExperiment()->addProperty(mpo, me);
             }
             {
                 auto mpo = MolPropObservable::CP;
-                auto me  = new alexandria::MolecularEnergy(mpo, temperature, epGAS,
+                auto me  = new alexandria::MolecularEnergy(mpo, qm_type, temperature, ePhase::GAS,
                                                            alexandria::convertToGromacs(CPT, entropyUnit), 0);
                 mpt->LastExperiment()->addProperty(mpo, me);
             }
@@ -536,13 +537,13 @@ bool readBabel(const char          *g09,
             };
             for (size_t i = 0; (i < mpos.size()); i++)
             {
-                auto me = new alexandria::MolecularEnergy(mpos[i], temperature, epGAS,
+                auto me = new alexandria::MolecularEnergy(mpos[i], qm_type, temperature, ePhase::GAS,
                                                           alexandria::convertToGromacs(Scomponents[i], entropyUnit), 0);
                 mpt->LastExperiment()->addProperty(mpos[i], me);
             }
             {
                 auto mpo = MolPropObservable::ZPE;
-                auto me  = new alexandria::MolecularEnergy(mpo, 0, epGAS,
+                auto me  = new alexandria::MolecularEnergy(mpo, qm_type, 0, ePhase::GAS,
                                                            alexandria::convertToGromacs(ZPE, energyUnit), 0);
                 mpt->LastExperiment()->addProperty(mpo, me);
             }
@@ -552,7 +553,7 @@ bool readBabel(const char          *g09,
     // HF Eenergy
     { 
         auto mpo = MolPropObservable::HF;
-        auto me  = new alexandria::MolecularEnergy(mpo, 0, epGAS, 
+        auto me  = new alexandria::MolecularEnergy(mpo, qm_type, 0, ePhase::GAS, 
                                                    alexandria::convertToGromacs(mol.GetEnergy(), energyUnit), 0);
         mpt->LastExperiment()->addProperty(mpo, me);
     }
@@ -637,7 +638,8 @@ bool readBabel(const char          *g09,
     if (nullptr != dipole)
     {
         OpenBabel::vector3            v3 = dipole->GetData();
-        auto dp = new alexandria::MolecularDipole(0.0,
+        auto dp = new alexandria::MolecularDipole(qm_type,
+                                                  0.0,
                                                   v3.GetX(),
                                                   v3.GetY(),
                                                   v3.GetZ(),
@@ -653,7 +655,7 @@ bool readBabel(const char          *g09,
         OpenBabel::matrix3x3            m3 = quadrupole->GetData();
         double                          mm[9];
         m3.GetArray(mm);
-        auto mq = new alexandria::MolecularQuadrupole(0.0, mm[0], mm[4], mm[8],
+        auto mq = new alexandria::MolecularQuadrupole(qm_type, 0.0, mm[0], mm[4], mm[8],
                                                       mm[1], mm[2], mm[5]);
         mpt->LastExperiment()->addProperty(MolPropObservable::QUADRUPOLE, mq);
     }
@@ -673,7 +675,7 @@ bool readBabel(const char          *g09,
         }
         alpha = (mm[0]+mm[4]+mm[8])/3.0;
 
-        auto mdp = new alexandria::MolecularPolarizability(0.0, mm[0], mm[4], mm[8],
+        auto mdp = new alexandria::MolecularPolarizability(qm_type, 0.0, mm[0], mm[4], mm[8],
                                                            mm[1], mm[2], mm[5], alpha, 0);
         mpt->LastExperiment()->addProperty(MolPropObservable::POLARIZABILITY, mdp);
     }

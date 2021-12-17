@@ -182,10 +182,6 @@ Identifier::Identifier(const std::vector<std::string> &atoms,
         id_ += BondOrderDelimeter[bondOrders[i-1]];
         id_ += atoms[i];
     }
-    if (id_ == "c2_b~c3_b~c2_b")
-    {
-        printf("Created identifier '%s'\n", id_.c_str());
-    }
     atoms_      = atoms;
     bondOrders_ = bondOrders;
     createSwapped(canSwap);

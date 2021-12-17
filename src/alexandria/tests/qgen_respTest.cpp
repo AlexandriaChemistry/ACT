@@ -92,6 +92,10 @@ class RespTest : public gmx::test::CommandLineTestBase
                 {
                     EXPECT_TRUE(renameAtomTypes(&molprop, g2a));
                 }
+                else
+                {
+                    GMX_THROW(gmx::InternalError("Cannot find atomtype mapping file"));
+                }
             }
             else
             {
@@ -123,11 +127,9 @@ class RespTest : public gmx::test::CommandLineTestBase
             std::string   basis("Gen");
             t_inputrec    inputrec;
             fill_inputrec(&inputrec);
-            mp_.SetForceField("gaff");
+            mp_.SetForceField("alexandria");
             Poldata      *pd = getPoldata(qdist);
-            auto imm = mp_.GenerateTopology(nullptr,
-                                            pd, method,
-                                            basis, nullptr,
+            auto imm = mp_.GenerateTopology(nullptr, pd, method, basis,
                                             missingParameters::Error, nullptr);
             if (immStatus::OK != imm)
             {
@@ -165,7 +167,7 @@ class RespTest : public gmx::test::CommandLineTestBase
             mp_.GenerateCharges(pd, mdlog, cr,
                                 tabFile.empty() ? nullptr : tabFile.c_str(),
                                 qcycle, qtol, 
-                                ChargeGenerationAlgorithm::NONE, qcustom, lot);
+                                ChargeGenerationAlgorithm::ESP, qcustom, lot);
 
             std::vector<double> qtotValues;
             for (int atom = 0; atom < mp_.mtop_->moltype[0].atoms.nr; atom++)
@@ -206,14 +208,3 @@ TEST_F (RespTest, AXgSymmetricPolarCharges)
     testResp("ESP-pg", true);
 }
 
-#if HAVE_LIBCML
-TEST_F (RespTest, AXsPolarValues)
-{
-    testResp("ESP-ps", false);
-}
-
-TEST_F (RespTest, AXsSymmetricPolarCharges)
-{
-    testResp("ESP-ps", true);
-}
-#endif

@@ -269,14 +269,14 @@ bool readPsi4(const std::string &datafile, MolProp *mp)
         {
             e.AddAtom(myatom);
         }
-        
-        auto me = new MolecularEnergy(MolPropObservable::HF, 
-                                      0, epGAS, energy, 0.0);
+        std::string qm_type("electronic");
+        auto me = new MolecularEnergy(MolPropObservable::HF, qm_type,
+                                      0, ePhase::GAS, energy, 0.0);
         e.addProperty(MolPropObservable::HF, me);
         double dip = norm(mu);
         if (dip > 0)
         {
-            auto dp = new MolecularDipole(0, mu[XX], mu[YY], mu[ZZ], dip, 0);
+            auto dp = new MolecularDipole(qm_type, 0, mu[XX], mu[YY], mu[ZZ], dip, 0);
             e.addProperty(MolPropObservable::DIPOLE, dp);
         }
         mp->AddExperiment(std::move(e));

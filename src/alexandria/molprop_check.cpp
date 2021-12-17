@@ -63,7 +63,7 @@ static void dump_molecule(FILE              *fp,
                           stringCount       *atomTypeCount,
                           stringCount       *bccTypeCount,
                           const Poldata     &pd,
-                          MolProp            mp,
+                          const MolProp     &mp,
                           t_inputrec        *inputrec)
 {
     alexandria::MyMol mymol;
@@ -73,7 +73,6 @@ static void dump_molecule(FILE              *fp,
                                       &pd,
                                       method,
                                       basis,
-                                      nullptr,
                                       missingParameters::Error,
                                       nullptr,
                                       false);
@@ -84,8 +83,16 @@ static void dump_molecule(FILE              *fp,
     }
     else
     {
+        std::map<MolPropObservable, iqmType> iqm = {
+            { MolPropObservable::DIPOLE, iqmType::Both },
+            { MolPropObservable::QUADRUPOLE, iqmType::Both },
+            { MolPropObservable::POLARIZABILITY, iqmType::Both },
+        };
+       
         fprintf(fp, "Molecule: %s Formula: %s q: %d Mult: %d\n", mymol.getMolname().c_str(),
                 mymol.formula().c_str(), mymol.totalCharge(), mymol.getMultiplicity());
+        mymol.getExpProps(iqm, true, "", "", &pd);
+        mymol.Dump(fp);
         // Atoms!
         auto &atoms = mymol.atomsConst();
         std::vector<Identifier> atomId;

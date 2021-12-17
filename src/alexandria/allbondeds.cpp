@@ -64,8 +64,7 @@ void OneBonded::writeHistogram(const char             *fn_prefix,
     int     normalized = 0;
     std::vector<double> x, y;
     eStats  estats     = lsq_.make_histogram(binwidth, &nbins,
-                                                  eHisto::Y, normalized,
-                                                  &x, &y);
+                                             eHisto::Y, normalized, &x, &y);
     if (eStats::OK != estats)
     {
         fprintf(stderr, "Could not make a histogram for %s because of %s\n",
@@ -450,15 +449,13 @@ void AllBondeds::extractGeometries(FILE                       *fp,
                         mmi.formula().c_str());
                 continue;
             }
-            std::string mylot;
-            auto        imm = mmi.GenerateTopology(fp,
-                                                   &pd,
-                                                   method,
-                                                   basis,
-                                                   &mylot,
-                                                   missingParameters::Generate,
-                                                   nullptr,
-                                                   strict);
+            auto imm = mmi.GenerateTopology(fp,
+                                            &pd,
+                                            method,
+                                            basis,
+                                            missingParameters::Generate,
+                                            nullptr,
+                                            strict);
             if (immStatus::OK != imm)
             {
                 if (nullptr != debug)

@@ -155,7 +155,6 @@ namespace alexandria
          * \param[out] atoms  The structure to update
          * \param[in]  method Method used for QM calculations
          * \param[in]  basis  Basis set used for QM calculations
-         * \param[out] mylot  Level of theory used
          * \param[in]  strict Whether or not to only allow the requested LOT
          * \return The staus
          */
@@ -163,7 +162,6 @@ namespace alexandria
                                 t_atoms           *atoms,
                                 const std::string &method,
                                 const std::string &basis,
-                                std::string       *mylot,
                                 bool               strict);
 
         /*! \brief
@@ -301,17 +299,18 @@ namespace alexandria
         }
 
         /*! Return an energy component
-         * Will crash of not present
-         * \param[in] mpo The particular term that is requested
-         * \return the energy
+         * \param[in]  mpo  The particular term that is requested
+         * \param[out] ener The value found
+         * \return whether or not the energy is found
          */
-        double energy(MolPropObservable mpo) const 
+        bool energy(MolPropObservable mpo, double *ener) const 
         {
             if (energy_.find(mpo) == energy_.end())
             {
-                GMX_THROW(gmx::InvalidInputError(gmx::formatString("Cannot find energy term %s in molecule %s", mpo_name(mpo), getMolname().c_str()).c_str()));
+                return false;
             }
-            return energy_.find(mpo)->second;
+            *ener = energy_.find(mpo)->second;
+            return true;
         }
         /*! \brief
          * \return the center of nuclear charge
@@ -406,7 +405,6 @@ namespace alexandria
          * \param[in]  pd      Data structure containing atomic properties
          * \param[in]  method  Method used for QM calculation
          * \param[in]  basis   Basis set used for QM calculation
-         * \param[out] mylot   Level of theory
          * \param[in]  missing How to treat missing parameters
          * \param[in]  tabfn   Table function file for table potentials
          * \param[in]  strict  Whether or not to only allow the requested LOT
@@ -416,7 +414,6 @@ namespace alexandria
                                    const Poldata     *pd,
                                    const std::string &method,
                                    const std::string &basis,
-                                   std::string       *mylot,
                                    missingParameters  missing,
                                    const char        *tabfn,
                                    bool               strict=true);
@@ -531,8 +528,6 @@ namespace alexandria
          *
          * \param[in] iqm      Determine whether to allow exp or QM results or both for each property
          * \param[in] bZero    Allow zero dipoles
-         * \param[in] bZPE     Use zero point energies
-         * \param[in] bDHform  Whether to use the enthalpy of formation
          * \param[in] method   Method used for QM calculation
          * \param[in] basis    Basis set used for QM calculation
          * \param[in] pd       Force field structure
@@ -540,8 +535,6 @@ namespace alexandria
         immStatus getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
                              
                               gmx_bool           bZero,
-                              gmx_bool           bZPE,
-                              gmx_bool           bDHform,
                               const std::string &method,
                               const std::string &basis,
                               const Poldata     *pd);

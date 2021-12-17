@@ -97,6 +97,17 @@ void Experiment::Dump(FILE *fp) const
                         cai.getAtomid(), x, y, z);
             }
         }
+        for(const auto &p : property_)
+        {
+            fprintf(fp, "Property %s\n", mpo_name(p.first));
+            for (const auto &gp : p.second)
+            {
+                fprintf(fp, "Type: %s Unit: %s T: %g K Phase: %s\n",
+                        gp->getType(), gp->getUnit(),
+                        gp->getTemperature(),
+                        phase2string(gp->getPhase()).c_str());
+            }
+        }
     }
 }
 
@@ -114,7 +125,7 @@ int Experiment::Merge(const Experiment *src)
 {
     int nwarn = 0;
 
-    for (auto &prop : property_)
+    for (auto &prop : src->property_)
     {
         auto mpo = prop.first;
         for (auto &gp : prop.second)
@@ -235,9 +246,13 @@ CommunicationStatus Experiment::Receive(t_commrec *cr, int src)
         //! Receive Properties
         for (int i = 0; i < nmpo; i++)
         {
-            std::string mpo_str;
+            MolPropObservable mpo;
+            std::string       mpo_str;
             gmx_recv_str(cr, src, &mpo_str);
-            auto mpo = stringToMolPropObservable(mpo_str);
+            if (!stringToMolPropObservable(mpo_str, &mpo))
+            {
+                gmx_fatal(FARGS, "Unknown observable %s", mpo_str.c_str());
+            }
             int  ngp = gmx_recv_int(cr, src);
             for (int n = 0; n < ngp; n++)
             {
@@ -268,6 +283,7 @@ CommunicationStatus Experiment::Receive(t_commrec *cr, int src)
                 case MolPropObservable::SROT:
                 case MolPropObservable::SVIB:
                 case MolPropObservable::CP:
+                case MolPropObservable::CV:
                 case MolPropObservable::ZPE:
                 case MolPropObservable::EMOL:
                     {
