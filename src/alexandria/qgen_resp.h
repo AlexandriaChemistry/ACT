@@ -43,9 +43,7 @@
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/topology/atomprop.h"
 
-#include "molprop.h"
 #include "poldata.h"
-//#include "qgen_resp_atom.h"
 
 struct gmx_output_env_t;
 struct t_atoms;

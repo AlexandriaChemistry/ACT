@@ -33,21 +33,25 @@
 #ifndef GMX_ALEXMODULES_H
 #define GMX_ALEXMODULES_H
 
-int alex_gentop(int argc, char *argv[]);
-int alex_tune_fc(int argc, char *argv[]);
-int alex_tune_eem(int argc, char *argv[]);
-int alex_poldata_edit(int argc, char *argv[]);
-int alex_qm2molprop(int argc, char *argv[]);
-int alex_bastat(int argc, char *argv[]);
-int alex_analyze(int argc, char *argv[]);
-int alex_gen_table(int argc, char *argv[]);
-int alex_merge_mp(int argc, char *argv[]);
-int alex_merge_pd(int argc, char *argv[]);
-int alex_mp2csv(int argc, char *argv[]);
-int alex_molprop_test(int argc, char *argv[]);
-int alex_molprop_check(int argc, char *argv[]);
-int alex_tune_zeta(int argc, char *argv[]);
-int alex_molselect(int argc, char *argv[]);
+namespace alexandria
+{
+
+int gentop(int argc, char *argv[]);
+//int tune_fc(int argc, char *argv[]);
+int tune_eem(int argc, char *argv[]);
+int poldata_edit(int argc, char *argv[]);
+int qm2molprop(int argc, char *argv[]);
+int bastat(int argc, char *argv[]);
+int analyze(int argc, char *argv[]);
+//int gen_table(int argc, char *argv[]);
+int merge_mp(int argc, char *argv[]);
+int merge_pd(int argc, char *argv[]);
+int mp2csv(int argc, char *argv[]);
+int molprop_test(int argc, char *argv[]);
+int molprop_check(int argc, char *argv[]);
+//int tune_zeta(int argc, char *argv[]);
+//int molselect(int argc, char *argv[]);
+}
 
 namespace gmx
 {

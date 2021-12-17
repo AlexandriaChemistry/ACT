@@ -260,12 +260,10 @@ namespace alexandria
                                  int                             natoms,
                                  const int                      *iatoms);
 
+        // Energy terms for this compounds
+        std::map<MolPropObservable, double> energy_;
     public:
         double                         chieq_         = 0;
-        // Enthalpy of formation (experimental) for this compound
-        double                         Hform_         = 0;
-        // Target molecule energy for this compound
-        double                         Emol_          = 0;
         double                         anisoPol_elec_ = 0;
         double                         anisoPol_calc_ = 0;
         double                         mpad_          = 0; //molecular polarizability anisotropy difference (mpad)
@@ -302,6 +300,19 @@ namespace alexandria
             dataset_type_ = dataset_type;
         }
 
+        /*! Return an energy component
+         * Will crash of not present
+         * \param[in] mpo The particular term that is requested
+         * \return the energy
+         */
+        double energy(MolPropObservable mpo) const 
+        {
+            if (energy_.find(mpo) == energy_.end())
+            {
+                GMX_THROW(gmx::InvalidInputError(gmx::formatString("Cannot find energy term %s in molecule %s", mpo_name(mpo), getMolname().c_str()).c_str()));
+            }
+            return energy_.find(mpo)->second;
+        }
         /*! \brief
          * \return the center of nuclear charge
          */
@@ -518,7 +529,7 @@ namespace alexandria
         /*! \brief
          * Collect the experimental properties
          *
-         * \param[in] iqm      Determine whether to allow exp or QM results or both
+         * \param[in] iqm      Determine whether to allow exp or QM results or both for each property
          * \param[in] bZero    Allow zero dipoles
          * \param[in] bZPE     Use zero point energies
          * \param[in] bDHform  Whether to use the enthalpy of formation
@@ -526,7 +537,8 @@ namespace alexandria
          * \param[in] basis    Basis set used for QM calculation
          * \param[in] pd       Force field structure
          */
-        immStatus getExpProps(iqmType            iqm,
+        immStatus getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
+                             
                               gmx_bool           bZero,
                               gmx_bool           bZPE,
                               gmx_bool           bDHform,

@@ -178,7 +178,6 @@ void OptACM::initChargeGeneration(iMolSelect ims)
 {
     std::string method, basis, conf, type, myref, mylot;
     splitLot(lot(), &method, &basis);
-    tensor              polar      = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
     std::vector<double> vec;
     for (MyMol &mymol : mymols())
     {
@@ -189,14 +188,12 @@ void OptACM::initChargeGeneration(iMolSelect ims)
         if (fit("alpha"))
         {
             // For fitting alpha we need a reference polarizability
-            double ref_pol, error, T = 0;
-            if (mymol.getPropRef(MolPropObservable::POLARIZABILITY, iqmType::QM,
-                                 method, basis, "",
-                                 (char *)"electronic",
-                                 &ref_pol, &error, &T,
-                                 &myref, &mylot, &vec, polar))
+            double T = 0;
+            auto gp = mymol.findProperty(MolPropObservable::POLARIZABILITY, iqmType::QM, T,
+                                         method, basis, "");
+            if (gp)
             {
-                mymol.SetElectronicPolarizability(ref_pol);
+                mymol.SetElectronicPolarizability(gp->getValue());
             }
             else
             {
@@ -493,9 +490,7 @@ void OptACM::runHelper()
 
 }
 
-} // namespace alexandria
-
-int alex_tune_eem(int argc, char *argv[])
+int tune_eem(int argc, char *argv[])
 {
     static const char          *desc[] = {
         "tune_eem read a series of molecules and corresponding experimental",
@@ -700,3 +695,6 @@ int alex_tune_eem(int argc, char *argv[])
     }
     return 0;
 }
+
+} // namespace alexandria
+

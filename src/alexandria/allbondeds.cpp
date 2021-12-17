@@ -46,12 +46,9 @@ namespace alexandria
 
 void OneBonded::addPoint(double x)
 {
-    int    N;
-    eStats ok = lsq_.get_npoints(&N);
-    if (eStats::OK == ok)
-    {
-        ok = lsq_.add_point(N, x, 0, 0);
-    }
+    auto N  = lsq_.get_npoints();
+    auto ok = lsq_.add_point(N, x, 0, 0);
+    
     if (eStats::OK != ok)
     {
         fprintf(stderr, "Problem adding a point %s\n", gmx_stats_message(ok));
@@ -75,17 +72,10 @@ void OneBonded::writeHistogram(const char             *fn_prefix,
                 id_.id().c_str(), gmx_stats_message(estats));
         return;
     }
-    int    Nsample;
-    estats = lsq_.get_npoints(&Nsample);
-    if (eStats::OK != estats)
-    {
-        fprintf(stderr, "Could not get number of samples for %s\n",
-                id_.id().c_str());
-        return;
-    }
+    auto Nsample = lsq_.get_npoints();
     
     std::string  title = gmx::formatString("%s N = %d", id_.id().c_str(),
-                                           Nsample);
+                                           static_cast<int>(Nsample));
     std::string  fn    = gmx::formatString("%s_%s.xvg", fn_prefix, id_.id().c_str());
     FILE        *fp    = xvgropen(fn.c_str(), title.c_str(),
                                   xaxis, "N", oenv);
@@ -96,11 +86,10 @@ void OneBonded::writeHistogram(const char             *fn_prefix,
     xvgrclose(fp);
 }
     
-eStats OneBonded::getAverageSigmaN(real *average,
-                                   real *sigma,
-                                   int  *N)
+eStats OneBonded::getAverageSigmaN(real   *average,
+                                   real   *sigma,
+                                   size_t *N)
 {
-    // TODO add error check
     eStats ok = lsq_.get_average(average);
     if (eStats::OK == ok)
     {
@@ -108,7 +97,7 @@ eStats OneBonded::getAverageSigmaN(real *average,
     }
     if (eStats::OK == ok)
     {
-        lsq_.get_npoints(N);
+        *N = lsq_.get_npoints();
     }
     return ok;
 }
@@ -322,8 +311,8 @@ void AllBondeds::updatePoldata(FILE             *fp,
         
         for (auto &i : bb.second)
         {
-            int  N;
-            real av, sig;
+            size_t N;
+            real   av, sig;
             i.getAverageSigmaN(&av, &sig, &N);
             auto bondId = i.id();
             switch (iType)
@@ -340,7 +329,7 @@ void AllBondeds::updatePoldata(FILE             *fp,
                                      ForceFieldParameter("1/nm", beta_, 0, 1, beta_*factor_, beta_/factor_, Mutability::Bounded, false, true));
                     
                     fprintf(fp, "bond-%s len %g sigma %g (pm) N = %d%s\n",
-                            i.id().id().c_str(), av, sig, N, (sig > bond_tol_) ? " WARNING" : "");
+                            i.id().id().c_str(), av, sig, static_cast<int>(N), (sig > bond_tol_) ? " WARNING" : "");
                     
                 }
                 break;
@@ -361,7 +350,7 @@ void AllBondeds::updatePoldata(FILE             *fp,
                     }
                     
                     fprintf(fp, "angle-%s angle %g sigma %g (deg) N = %d%s\n",
-                            bondId.id().c_str(), av, sig, N, (sig > angle_tol_) ? " WARNING" : "");
+                            bondId.id().c_str(), av, sig, static_cast<int>(N), (sig > angle_tol_) ? " WARNING" : "");
                 }
                 break;
             case InteractionType::LINEAR_ANGLES:
@@ -375,7 +364,7 @@ void AllBondeds::updatePoldata(FILE             *fp,
                                      ForceFieldParameter("kJ/mol/nm2", klin_, 0, 1, klin_*factor_, klin_/factor_, Mutability::Bounded, false, true));
                     
                     fprintf(fp, "linear_angle-%s angle %g sigma %g N = %d%s\n",
-                            bondId.id().c_str(), av, sig, N, (sig > angle_tol_) ? " WARNING" : "");
+                            bondId.id().c_str(), av, sig, static_cast<int>(N), (sig > angle_tol_) ? " WARNING" : "");
                 }
                 break;
             case InteractionType::PROPER_DIHEDRALS:

@@ -52,13 +52,6 @@ static int gmx_dnint(double x)
     return gmx::roundToInt(x);
 }
 
-eStats gmx_stats::get_npoints(int *N) const
-{
-    *N = x.size();
-
-    return eStats::OK;
-}
-
 eStats gmx_stats::add_point_ydy(double y, double dy)
 {
     return add_point(x.size(), y, 0, dy);
@@ -162,7 +155,7 @@ eStats gmx_stats::compute(int weight)
         sy   = sy_nw = 0;
         wtot = 0;
         d2   = 0;
-        double mae = 0, mse = 0;
+        mae  = 0, mse = 0;
         for (int i = 0; (i < N); i++)
         {
             double dd = y[i]-x[i];

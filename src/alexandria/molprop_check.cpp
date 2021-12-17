@@ -52,6 +52,9 @@
 #include "poldata_xml.h"
 #include "units.h"
 
+namespace alexandria
+{
+
 typedef std::map<const std::string, int> stringCount;
 
 static void dump_molecule(FILE              *fp,
@@ -167,7 +170,7 @@ static void dump_molecule(FILE              *fp,
     }
 }
 
-int alex_molprop_check(int argc, char*argv[])
+int molprop_check(int argc, char*argv[])
 {
     static const char               *desc[] = {
         "molprop_check checks calculations for missing hydrogens",
@@ -248,16 +251,15 @@ std::vector<alexandria::MolProp> mp;
                         ci.getDatafile().c_str(),
                         nC, nH);
             }
-            std::vector<double> mu;
-            tensor              Q;
-            double              value, error, T = 0;
-            std::string         type;
-            if (ci.getVal(type, MolPropObservable::DIPOLE, &value, &error,
-                          &T, &mu, Q))
+            double T = 0;
+            auto gp = m.findProperty(MolPropObservable::DIPOLE, iqmType::QM, T, "", "", "");
+            if (gp)
             {
+                std::vector<double> mu = gp->getVector();
                 name_mu nmu = { ci.getDatafile(), { mu[XX], mu[YY], mu[ZZ] } };
                 mus.push_back(nmu);
             }
+        
             auto Xcalc = ci.getCoordinates();
             auto Esp   = ci.electrostaticPotentialConst();
             if (Esp.size() >= Xcalc.size() && Xcalc.size() > 1)
@@ -314,3 +316,5 @@ std::vector<alexandria::MolProp> mp;
     fclose(mylog);
     return 0;
 }
+
+} // namespace alexandria

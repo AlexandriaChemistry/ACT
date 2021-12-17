@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020 
+ * Copyright (C) 2014-2021
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -30,6 +30,8 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
  
+#ifndef PHASE_H
+#define PHASE_H
  
 #include <string>
     
@@ -52,3 +54,4 @@ std::string phase2string(ePhase ep);
  */
 ePhase string2phase(std::string phase);
 
+#endif

@@ -437,10 +437,10 @@ void QmCount::addCalc(const std::string &method,
     }
 }
 
-void find_calculations(std::vector<alexandria::MolProp> &mp,
-                       MolPropObservable                 mpo,
-                       const char                       *fc_str,
-                       QmCount                          *qmc)
+void find_calculations(const std::vector<alexandria::MolProp> &mp,
+                       MolPropObservable                       mpo,
+                       const char                             *fc_str,
+                       QmCount                                *qmc)
 {
     std::vector<std::string> types;
 
@@ -489,6 +489,7 @@ void find_calculations(std::vector<alexandria::MolProp> &mp,
             {
                 continue;
             }
+#ifdef OLD
             for (auto ti = types.begin(); (ti < types.end()); ti++)
             {
                 if ((nullptr == fc_str) || (qmc->qmCalcCount(ci.getMethod(),
@@ -507,6 +508,7 @@ void find_calculations(std::vector<alexandria::MolProp> &mp,
                     }
                 }
             }
+#endif
         }
     }
     for (auto q = qmc->beginCalc(); q < qmc->endCalc(); ++q)

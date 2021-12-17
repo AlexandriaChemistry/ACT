@@ -58,12 +58,16 @@
 #include "alex_modules.h"
 #include "categories.h"
 #include "molprop.h"
+#include "molpropobservable.h"
 #include "molprop_tables.h"
 #include "molprop_util.h"
 #include "molprop_xml.h"
 #include "molselect.h"
 #include "poldata.h"
 #include "poldata_xml.h"
+
+namespace alexandria
+{
 
 /*! Class to count occurences of a string.
  * We keep statistics over which literature reference is used how often.
@@ -91,17 +95,17 @@ private:
         const std::string ref() const { return ref_; }
 };
 
-static void add_refc(std::vector<RefCount> &rc, std::string ref)
+static void add_refc(std::vector<RefCount> *rc, std::string ref)
 {
-    for (auto &r : rc)
+    for (auto r = rc->begin(); r < rc->end(); ++r)
     {
-        if (r.ref().compare(ref) == 0)
+        if (r->ref().compare(ref) == 0)
         {
-            r.increment();
+            r->increment();
             return;
         }
     }
-    rc.push_back(RefCount(ref));
+    rc->push_back(RefCount(ref));
 }
 
 static void write_corr_xvg(FILE                             *fplog,
@@ -112,11 +116,10 @@ static void write_corr_xvg(FILE                             *fplog,
                            real                              rtoler,
                            real                              atoler,
                            const gmx_output_env_t           *oenv,
-                           const alexandria::MolSelect      &gms,
-                           char                             *exp_type)
+                           const alexandria::MolSelect      &gms)
 {
     int          i         = 0;
-    int          n         = 0;
+    size_t       n         = 0;
     real         a         = 0;
     real         da        = 0;
     real         b         = 0;
@@ -161,32 +164,30 @@ static void write_corr_xvg(FILE                             *fplog,
         fprintf(fp, "@type xydy\n");
         for (auto &mpi : mp)
         {
-            exp_val   = 0;
-            exp_error = 0;
-            bExp      = mpi.getProp(mpo,
-                                    iqmType::Exp,
-                                    q->method(),
-                                    q->basis(),
-                                    "",
-                                    exp_type,
-                                    &exp_val,
-                                    &exp_error,
-                                    &Texp);
+            bExp      = false;
+            {
+                auto gp = mpi.findProperty(mpo, iqmType::Exp, Texp, q->method(), q->basis(), "");
+                if (gp)
+                {
+                    exp_val   = gp->getValue();
+                    exp_error = gp->getError();
+                    bExp      = true;
+                }
+            }
+            bQM = false;
+            {
+                auto gp = mpi.findProperty(mpo, iqmType::QM, Tqm, q->method(), q->basis(), "");
+                if (gp)
+                {
+                    qm_val   = gp->getValue();
+                    qm_error = gp->getError();
+                    bQM      = true;
+                }
+            }
             alexandria::iMolSelect ims;
             if (gms.status(mpi.getIupac(), &ims) &&
                 ((ims == alexandria::iMolSelect::Train) || (ims == alexandria::iMolSelect::Test)))
             {
-                qm_val   = 0;
-                qm_error = 0;
-                bQM      = mpi.getProp(mpo,
-                                       iqmType::QM,
-                                       q->method(),
-                                       q->basis(),
-                                       "",
-                                       q->type().c_str(),
-                                       &qm_val,
-                                       &qm_error,
-                                       &Tqm);
                 if (bExp && bQM)
                 {
                     lsq[i].add_point(exp_val, qm_val, 0, 0);
@@ -212,18 +213,18 @@ static void write_corr_xvg(FILE                             *fplog,
         }
     }
 
-    fprintf(fplog, "Fitting %s data to y = ax + b\n", exp_type);
+    fprintf(fplog, "Fitting data to y = ax + b\n");
     fprintf(fplog, "%-12s %5s %13s %13s %8s %8s %8s %8s\n", "Method", "N", "a", "b", "R(%)", "RMSD", "MSE", "MAE");
     fprintf(fplog, "-----------------------------------------------------------------------------\n");
     i = 0;
     for (auto q = qmc.beginCalc(); q < qmc.endCalc(); ++q, ++i)
     {
-        lsq[i].get_npoints(&n);
+        n = lsq[i].get_npoints();
         lsq[i].get_ab(elsqWEIGHT_NONE, &a, &b, &da, &db, &chi2, &Rfit);
         lsq[i].get_rmsd(&rmsd);
         lsq[i].get_mse_mae(&mse, &mae);
         fprintf(fplog, "%-12s %5d %6.3f(%.2f) %6.3f(%.2f) %7.2f %8.2f %8.2f %8.2f\n",
-                q->method().c_str(), n, a, da, b, db, Rfit*100, rmsd, mse, mae);
+                q->method().c_str(), static_cast<int>(n), a, da, b, db, Rfit*100, rmsd, mse, mae);
     }
     fclose(fp);
     do_view(oenv, fn, nullptr);
@@ -232,7 +233,6 @@ static void write_corr_xvg(FILE                             *fplog,
 static void alexandria_molprop_analyze(FILE                              *fplog,
                                        std::vector<alexandria::MolProp>  &mp,
                                        MolPropObservable                  mpo,
-                                       char                              *exp_type,
                                        real                               rtoler,
                                        real                               atoler,
                                        real                               outlier,
@@ -252,9 +252,8 @@ static void alexandria_molprop_analyze(FILE                              *fplog,
 {
     int                       ntot;
     FILE                     *fp, *gp;
-    double                    T, value, error;
+    double                    T = -1;
     std::vector<double>       vec;
-    tensor                    quadrupole;
     const char               *iupac;
     alexandria::QmCount       qmc;
     alexandria::CategoryList  cList;
@@ -263,13 +262,9 @@ static void alexandria_molprop_analyze(FILE                              *fplog,
     find_calculations(mp, mpo, fc_str, &qmc);
     for (auto &mpi : mp)
     {
-        for (auto &ei : mpi.experimentConst())
+        for(auto &ei : mpi.experimentConst())
         {
-            T = -1;
-            if (ei.getVal(exp_type, mpo, &value, &error, &T, &vec, quadrupole))
-            {
-                add_refc(rc, ei.getReference().c_str());
-            }
+            add_refc(&rc, ei.getReference().c_str());
         }
     }
     printf("--------------------------------------------------\n");
@@ -281,8 +276,8 @@ static void alexandria_molprop_analyze(FILE                              *fplog,
                r.count(), r.ref().c_str());
         ntot += r.count();
     }
-    printf("There are %d entries with experimental %s of type %s\n", ntot,
-           mpo_name(mpo), exp_type);
+    printf("There are %d entries with experimental %s\n", ntot,
+           mpo_name(mpo));
     if (0 == ntot)
     {
         printf("   did you forget to pass the -exp_type flag?\n");
@@ -298,21 +293,21 @@ static void alexandria_molprop_analyze(FILE                              *fplog,
     fp = gmx_ffopen(texfn, "w");
     if (bStatsTable)
     {
-        alexandria_molprop_stats_table(fp, mpo, mp, qmc, exp_type,
+        alexandria_molprop_stats_table(fp, mpo, mp, qmc,
                                        outlier, cList, gms, alexandria::iMolSelect::Train);
         if (0)
         {
             alexandria::CategoryList cListTest;
             makeCategoryList(&cListTest, mp, gms, alexandria::iMolSelect::Test);
-            alexandria_molprop_stats_table(fp, mpo, mp, qmc, exp_type,
+            alexandria_molprop_stats_table(fp, mpo, mp, qmc,
                                            outlier, cListTest, gms, alexandria::iMolSelect::Test);
         }
     }
     if (bPropTable)
     {
-        alexandria_molprop_prop_table(fp, mpo, rtoler, atoler, mp, qmc, exp_type, bPrintAll, bPrintBasis,
+        alexandria_molprop_prop_table(fp, mpo, rtoler, atoler, mp, qmc, bPrintAll, bPrintBasis,
                                       bPrintMultQ, gms, alexandria::iMolSelect::Train);
-        alexandria_molprop_prop_table(fp, mpo, rtoler, atoler, mp, qmc, exp_type, bPrintAll, bPrintBasis,
+        alexandria_molprop_prop_table(fp, mpo, rtoler, atoler, mp, qmc, bPrintAll, bPrintBasis,
                                       bPrintMultQ, gms, alexandria::iMolSelect::Test);
         if (nullptr != selout)
         {
@@ -321,16 +316,12 @@ static void alexandria_molprop_analyze(FILE                              *fplog,
             for (auto mpi = mp.begin(); mpi < mp.end(); mpi++)
             {
                 iupac = mpi->getIupac().c_str();
-                if ((nullptr != iupac) && (strlen(iupac) > 0))
+                GMX_RELEASE_ASSERT((nullptr != iupac) && (strlen(iupac) > 0), "Empty IUPAC");
+                
+                if (mpi->findProperty(mpo, iqmType::Both, T,
+                                      method, basis, ""))
                 {
-                    std::string myref, mylot;
-                    if (mpi->getPropRef(mpo, iqmType::Both,
-                                        method, basis, "", "",
-                                        &value, &error, &T, &myref, &mylot,
-                                        &vec, quadrupole))
-                    {
-                        fprintf(gp, "%s|Train\n", iupac);
-                    }
+                    fprintf(gp, "%s|Train\n", iupac);
                 }
             }
             fclose(gp);
@@ -345,12 +336,12 @@ static void alexandria_molprop_analyze(FILE                              *fplog,
     }
     if (nullptr != xvgfn)
     {
-        write_corr_xvg(fplog, xvgfn, mp, mpo, qmc, rtoler, atoler, oenv, gms, exp_type);
+        write_corr_xvg(fplog, xvgfn, mp, mpo, qmc, rtoler, atoler, oenv, gms);
     }
 }
 
 
-int alex_analyze(int argc, char *argv[])
+int analyze(int argc, char *argv[])
 {
     static const char               *desc[] = {
         "analyze reads a molecule database",
@@ -382,7 +373,6 @@ int alex_analyze(int argc, char *argv[])
     static int                       catmin            = 1;
     static int                       maxwarn           = 0;
     static char                     *fc_str            = (char *)"";
-    static char                     *exp_type          = (char *)"";
     static char                     *lot               = (char *)"B3LYP/aug-cc-pVTZ";
     static real                      rtoler            = 0.15;
     static real                      atoler            = 0;
@@ -430,9 +420,7 @@ int alex_analyze(int argc, char *argv[])
         { "-statstable", FALSE, etBOOL, {&bStatsTable},
           "Print a table of statistics per category" },
         { "-fc_str", FALSE, etSTR, {&fc_str},
-          "Selection of the stuff you want in the tables, given as a single string with spaces like: method1/basis1/type1:method2/basis2/type2 (you may have to put quotes around the whole thing in order to prevent the shell from interpreting it)." },
-        { "-exp_type", FALSE, etSTR, {&exp_type},
-          "The experimental property type that all the stuff above has to be compared to." }
+          "Selection of the stuff you want in the tables, given as a single string with spaces like: method1/basis1/type1:method2/basis2/type2 (you may have to put quotes around the whole thing in order to prevent the shell from interpreting it)." }
     };
 
     FILE                            *fplog;
@@ -502,7 +490,6 @@ int alex_analyze(int argc, char *argv[])
     alexandria_molprop_analyze(fplog,
                                mp,
                                mpo,
-                               exp_type,
                                rtoler,
                                atoler,
                                outlier,
@@ -523,3 +510,5 @@ int alex_analyze(int argc, char *argv[])
 
     return 0;
 }
+
+} // namespace alexandria

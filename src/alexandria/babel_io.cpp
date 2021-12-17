@@ -493,73 +493,69 @@ bool readBabel(const char          *g09,
                                     Scomponents,
                                     &ZPE))
         {
-            alexandria::MolecularEnergy me1("DeltaHform",
-                                            mpo_unit(MolPropObservable::ENERGY),
-                                            0,
-                                            epGAS,
-                                            alexandria::convertToGromacs(DeltaHf0, energyUnit),
-                                            0);
-            mpt->LastExperiment()->AddEnergy(me1);
-            alexandria::MolecularEnergy me2("DeltaHform",
-                                            mpo_unit(MolPropObservable::ENERGY),
-                                            temperature,
-                                            epGAS,
-                                            alexandria::convertToGromacs(DeltaHfT, energyUnit),
-                                            0);
-            mpt->LastExperiment()->AddEnergy(me2);
-            alexandria::MolecularEnergy me3("DeltaGform",
-                                            mpo_unit(MolPropObservable::ENERGY),
-                                            temperature,
-                                            epGAS,
-                                            alexandria::convertToGromacs(DeltaGfT, energyUnit),
-                                            0);
-            mpt->LastExperiment()->AddEnergy(me3);
-            alexandria::MolecularEnergy me4("DeltaSform",
-                                            mpo_unit(MolPropObservable::ENTROPY),
-                                            temperature,
-                                            epGAS,
-                                            alexandria::convertToGromacs(DeltaSfT, entropyUnit),
-                                            0);
-            mpt->LastExperiment()->AddEnergy(me4);
-            alexandria::MolecularEnergy me5("S0",
-                                            mpo_unit(MolPropObservable::ENTROPY),
-                                            temperature,
-                                            epGAS,
-                                            alexandria::convertToGromacs(S0T, entropyUnit),
-                                            0);
-            mpt->LastExperiment()->AddEnergy(me5);
-            alexandria::MolecularEnergy me6("cp",
-                                            mpo_unit(MolPropObservable::ENTROPY),
-                                            temperature,
-                                            epGAS,
-                                            alexandria::convertToGromacs(CPT, entropyUnit),
-                                            0);
-            mpt->LastExperiment()->AddEnergy(me6);
-            const char *scomp[3] = { "Strans", "Srot", "Svib" };
-            for (int i = 0; (i < 3); i++)
             {
-                alexandria::MolecularEnergy mes(scomp[i],
-                                                mpo_unit(MolPropObservable::ENTROPY),
-                                                temperature,
-                                                epGAS,
-                                                alexandria::convertToGromacs(Scomponents[i], entropyUnit),
-                                                0);
-                mpt->LastExperiment()->AddEnergy(mes);
+                auto mpo = MolPropObservable::DHFORM;
+                auto me  = new alexandria::MolecularEnergy(mpo, 0, epGAS,
+                                                           alexandria::convertToGromacs(DeltaHf0, energyUnit), 0);
+                mpt->LastExperiment()->addProperty(mpo, me);
             }
-            alexandria::MolecularEnergy me7("ZPE",
-                                            mpo_unit(MolPropObservable::ENERGY),
-                                            0,
-                                            epGAS,
-                                            alexandria::convertToGromacs(ZPE, energyUnit),
-                                            0);
-            mpt->LastExperiment()->AddEnergy(me7);
+            {
+                auto mpo = MolPropObservable::DHFORM;
+                auto me  = new alexandria::MolecularEnergy(mpo, temperature, epGAS,
+                                                           alexandria::convertToGromacs(DeltaHfT, energyUnit), 0);
+                mpt->LastExperiment()->addProperty(mpo, me);
+            }
+            {
+                auto mpo = MolPropObservable::DGFORM;
+                auto me  = new alexandria::MolecularEnergy(mpo, temperature, epGAS,
+                                                           alexandria::convertToGromacs(DeltaGfT, energyUnit), 0);
+                mpt->LastExperiment()->addProperty(mpo, me);
+            }
+            {
+                auto mpo = MolPropObservable::DSFORM;
+                auto me  = new alexandria::MolecularEnergy(mpo, temperature, epGAS,
+                                                           alexandria::convertToGromacs(DeltaSfT, entropyUnit), 0);
+                mpt->LastExperiment()->addProperty(mpo, me);
+            }
+            {
+                auto mpo = MolPropObservable::ENTROPY;
+                auto me  = new alexandria::MolecularEnergy(mpo, temperature, epGAS,
+                                                           alexandria::convertToGromacs(S0T, entropyUnit), 0);
+                mpt->LastExperiment()->addProperty(mpo, me);
+            }
+            {
+                auto mpo = MolPropObservable::CP;
+                auto me  = new alexandria::MolecularEnergy(mpo, temperature, epGAS,
+                                                           alexandria::convertToGromacs(CPT, entropyUnit), 0);
+                mpt->LastExperiment()->addProperty(mpo, me);
+            }
+            std::vector<MolPropObservable> mpos = { 
+                MolPropObservable::STRANS, 
+                MolPropObservable::SROT,
+                MolPropObservable::SVIB
+            };
+            for (size_t i = 0; (i < mpos.size()); i++)
+            {
+                auto me = new alexandria::MolecularEnergy(mpos[i], temperature, epGAS,
+                                                          alexandria::convertToGromacs(Scomponents[i], entropyUnit), 0);
+                mpt->LastExperiment()->addProperty(mpos[i], me);
+            }
+            {
+                auto mpo = MolPropObservable::ZPE;
+                auto me  = new alexandria::MolecularEnergy(mpo, 0, epGAS,
+                                                           alexandria::convertToGromacs(ZPE, energyUnit), 0);
+                mpt->LastExperiment()->addProperty(mpo, me);
+            }
         }
     }
 
     // HF Eenergy
-    alexandria::MolecularEnergy mes("HF", mpo_unit(MolPropObservable::ENERGY), 0, epGAS, 
-                                    alexandria::convertToGromacs(mol.GetEnergy(), energyUnit), 0);
-    mpt->LastExperiment()->AddEnergy(mes);
+    { 
+        auto mpo = MolPropObservable::HF;
+        auto me  = new alexandria::MolecularEnergy(mpo, 0, epGAS, 
+                                                   alexandria::convertToGromacs(mol.GetEnergy(), energyUnit), 0);
+        mpt->LastExperiment()->addProperty(mpo, me);
+    }
 
     if (addHydrogen)
     {
@@ -610,7 +606,7 @@ bool readBabel(const char          *g09,
                             OBpc = (OpenBabel::OBPcharge *) mol.GetData(qstr.c_str());
                             if (OBpc && !OBpc->GetPartialCharge().empty())
                             {
-                                ca.AddCharge(cs.second,
+                                ca.AddCharge(stringToQtype(cs.second),
                                              OBpc->GetPartialCharge()[atom->GetIdx()-1]);
                             }
                             else
@@ -641,17 +637,15 @@ bool readBabel(const char          *g09,
     if (nullptr != dipole)
     {
         OpenBabel::vector3            v3 = dipole->GetData();
-        alexandria::MolecularDipole   dp("electronic",
-                                         "Debye",
-                                         0.0,
-                                         v3.GetX(),
-                                         v3.GetY(),
-                                         v3.GetZ(),
-                                         v3.length(),
-                                         0.0);
-        mpt->LastExperiment()->AddDipole(dp);
+        auto dp = new alexandria::MolecularDipole(0.0,
+                                                  v3.GetX(),
+                                                  v3.GetY(),
+                                                  v3.GetZ(),
+                                                  v3.length(),
+                                                  0.0);
+        mpt->LastExperiment()->addProperty(MolPropObservable::DIPOLE, dp);
     }
-
+    
     // Quadrupole
     quadrupole = (OpenBabel::OBMatrixData *) mol.GetData("Traceless Quadrupole Moment");
     if (nullptr != quadrupole)
@@ -659,12 +653,9 @@ bool readBabel(const char          *g09,
         OpenBabel::matrix3x3            m3 = quadrupole->GetData();
         double                          mm[9];
         m3.GetArray(mm);
-        alexandria::MolecularQuadrupole mq("electronic",
-                                           "Buckingham",
-                                           0.0,
-                                           mm[0], mm[4], mm[8],
-                                           mm[1], mm[2], mm[5]);
-        mpt->LastExperiment()->AddQuadrupole(mq);
+        auto mq = new alexandria::MolecularQuadrupole(0.0, mm[0], mm[4], mm[8],
+                                                      mm[1], mm[2], mm[5]);
+        mpt->LastExperiment()->addProperty(MolPropObservable::QUADRUPOLE, mq);
     }
 
     // Polarizability
@@ -682,13 +673,9 @@ bool readBabel(const char          *g09,
         }
         alpha = (mm[0]+mm[4]+mm[8])/3.0;
 
-        alexandria::MolecularPolarizability mdp("electronic",
-                                                "Angstrom3",
-                                                0.0,
-                                                mm[0], mm[4], mm[8],
-                                                mm[1], mm[2], mm[5],
-                                                alpha, 0);
-        mpt->LastExperiment()->AddPolar(mdp);
+        auto mdp = new alexandria::MolecularPolarizability(0.0, mm[0], mm[4], mm[8],
+                                                           mm[1], mm[2], mm[5], alpha, 0);
+        mpt->LastExperiment()->addProperty(MolPropObservable::POLARIZABILITY, mdp);
     }
 
     // Electrostatic potential

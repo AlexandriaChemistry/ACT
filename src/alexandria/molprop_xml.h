@@ -36,6 +36,9 @@
 
 #include "molprop.h"
 
+namespace alexandria
+{
+
 /*! \brief
  * Write a vector of molprops to an XML file
  *
@@ -50,9 +53,9 @@
  * \param[in] bCompress  Determines whether zlib compression is used when writing
  * \ingroup module_alexandria
  */
-void MolPropWrite(const char                             *fn,
-                  const std::vector<alexandria::MolProp> &mpt,
-                  gmx_bool                                bCompress);
+void MolPropWrite(const char                 *fn,
+                  const std::vector<MolProp> &mpt,
+                  gmx_bool                    bCompress);
 
 /*! \brief
  * Reads a vector of molprops from an XML file
@@ -67,7 +70,8 @@ void MolPropWrite(const char                             *fn,
  * \param[out] mpt        The vector of MolProp
  * \ingroup module_alexandria
  */
-void MolPropRead(const char                       *fn,
-                 std::vector<alexandria::MolProp> *mpt);
+void MolPropRead(const char           *fn,
+                 std::vector<MolProp> *mpt);
 
+} // namespace alexandria
 #endif

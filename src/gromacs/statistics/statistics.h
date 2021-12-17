@@ -214,11 +214,9 @@ public:
 
     /*! \brief
      * Get the number of points.
-     * \param[in]  stats The data structure
-     * \param[out] N     number of data points
-     * \return error code
+     * \return the number
      */
-    eStats get_npoints(int *N) const;
+    size_t get_npoints() const { return x.size(); };
     
     /*! \brief
      * Computes and returns the average value.

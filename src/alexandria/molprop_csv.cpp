@@ -48,25 +48,26 @@
 #include "molprop_xml.h"
 #include "poldata_xml.h"
 
-static void gmx_molprop_csv(const char *fn,
-                            std::vector<alexandria::MolProp> mp,
-                            const char *dip_str, const char *pol_str, const char *ener_str)
+namespace alexandria
 {
-    alexandria::MolPropIterator mpi;
-    FILE                       *fp;
-    int                         k, ll;
-    double                      T, d, err;
-    std::vector<double>         vec;
-    tensor                      quadrupole;
+
+static void gmx_molprop_csv(const char                 *fn,
+                            const std::vector<MolProp> &mp,
+                            const char                 *dip_str,
+                            const char                 *pol_str,
+                            const char                 *ener_str)
+{
+    MolPropConstIterator  mpi;
+    FILE                 *fp;
+    double                T = 0.0;
 #define NEMP 3
-    MolPropObservable           mpo[NEMP]   = { MolPropObservable::DIPOLE, MolPropObservable::POLARIZABILITY, MolPropObservable::ENERGY  };
-    const char                 *ename[NEMP] = { "Dipole", "Polarizability", "Heat of formation" };
-    alexandria::QmCount         qmc[NEMP];
+    MolPropObservable mpo[NEMP]   = { MolPropObservable::DIPOLE, MolPropObservable::POLARIZABILITY, MolPropObservable::DHFORM  };
+    QmCount           qmc[NEMP];
 
     find_calculations(mp, mpo[0], dip_str, &qmc[0]);
     find_calculations(mp, mpo[1], pol_str, &qmc[1]);
     find_calculations(mp, mpo[2], ener_str, &qmc[2]);
-    for (k = 0; (k < NEMP); k++)
+    for (int k = 0; (k < NEMP); k++)
     {
         printf("--------------------------------------------------\n");
         printf("      Some statistics for %s\n", mpo_name(mpo[k]));
@@ -81,18 +82,18 @@ static void gmx_molprop_csv(const char *fn,
     fp = gmx_ffopen(fn, "w");
     fprintf(fp, "\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"",
             "Molecule", "Formula", "InChi", "Charge", "Multiplicity", "Mass");
-    for (k = 0; (k < NEMP); k++)
+    for (int k = 0; (k < NEMP); k++)
     {
         for (size_t j = 0; (j < qmc[k].nCalc()+2); j++)
         {
-            fprintf(fp, ",\"%s\"", ename[k]);
+            fprintf(fp, ",\"%s\"", mpo_name(mpo[k]));
         }
     }
     fprintf(fp, "\n");
-    for (ll = 0; (ll < NEMP); ll++)
+    for (int ll = 0; (ll < NEMP); ll++)
     {
         fprintf(fp, "\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"", "", "", "", "", "", "");
-        for (k = 0; (k < 3); k++)
+        for (int k = 0; (k < 3); k++)
         {
             if (ll == 0)
             {
@@ -132,30 +133,19 @@ static void gmx_molprop_csv(const char *fn,
                 mpi->totalCharge(),
                 mpi->getMultiplicity(),
                 mpi->getMass());
-        for (k = 0; (k < NEMP); k++)
+        for (int k = 0; (k < NEMP); k++)
         {
-            std::string ref, mylot;
-            if (mpi->getPropRef(mpo[k], iqmType::Exp,
-                                "", "", "", nullptr, &d, &err, &T,
-                                &ref, &mylot, &vec,
-                                quadrupole))
+            std::vector<iqmType> iqms = { iqmType::Exp, iqmType::QM };
+            for (auto &iqm : iqms)
             {
-                fprintf(fp, ",\"%.4f\",\"%s\"", d, ref.c_str());
-            }
-            else
-            {
-                fprintf(fp, ",\"\",\"\"");
-            }
-            for (auto j = qmc[k].beginCalc(); j < qmc[k].endCalc(); j++)
-            {
-                if (mpi->getProp(mpo[k], iqmType::QM, j->method(), j->basis(),
-                                 nullptr, j->type(), &T, &d, nullptr))
+                auto gp = mpi->findProperty(mpo[k], iqm, T, "", "", "");
+                if (gp)
                 {
-                    fprintf(fp, ",\"%.4f\"", d);
+                    fprintf(fp, ",\"%.4f\",\"FIXME\"", gp->getValue());
                 }
                 else
                 {
-                    fprintf(fp, ",\"\"");
+                    fprintf(fp, ",\"\",\"\"");
                 }
             }
         }
@@ -164,7 +154,7 @@ static void gmx_molprop_csv(const char *fn,
     fclose(fp);
 }
 
-int alex_mp2csv(int argc, char*argv[])
+int mp2csv(int argc, char*argv[])
 {
     static const char               *desc[] = {
         "mp2csv converts a molprop database into a spreadsheet"
@@ -215,3 +205,5 @@ int alex_mp2csv(int argc, char*argv[])
 
     return 0;
 }
+
+} // namespace alexandria

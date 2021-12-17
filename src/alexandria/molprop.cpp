@@ -42,52 +42,9 @@
 #include "gromacs/utility/fatalerror.h"
 
 #include "communication.h"
+#include "composition.h"
 #include "gmx_simple_comm.h"
 #include "units.h"
-
-std::map<MolPropObservable, const char *> mpo_name_ =
-{
-    { MolPropObservable::POTENTIAL, "potential" }, 
-    { MolPropObservable::DIPOLE, "dipole" }, 
-    { MolPropObservable::QUADRUPOLE, "quadrupole" },
-    { MolPropObservable::POLARIZABILITY, "polarizability" }, 
-    { MolPropObservable::ENERGY, "energy" }, 
-    { MolPropObservable::ENTROPY, "entropy" },
-    { MolPropObservable::CHARGE, "charge" }
-};
-
-std::map<MolPropObservable, const char *> mpo_unit_ =
-{
-    { MolPropObservable::POTENTIAL, "e/nm" }, 
-    { MolPropObservable::DIPOLE, "D" }, 
-    { MolPropObservable::QUADRUPOLE, "B" },
-    { MolPropObservable::POLARIZABILITY, "\\AA$^3$" }, 
-    { MolPropObservable::ENERGY, "kJ/mol" }, 
-    { MolPropObservable::ENTROPY, "J/mol K" },
-    { MolPropObservable::CHARGE, "e" }
-};
-
-const char *mpo_name(MolPropObservable MPO)
-{
-    return mpo_name_[MPO];
-}
-
-const char *mpo_unit(MolPropObservable MPO)
-{
-    return mpo_unit_[MPO];
-}
-
-MolPropObservable stringToMolPropObservable(const std::string &str)
-{
-    for (const auto &mn : mpo_name_)
-    {
-        if (strcasecmp(mn.second, str.c_str()) == 0)
-        {
-            return mn.first;
-        }
-    }
-    GMX_THROW(gmx::InvalidInputError(gmx::formatString("Cannot find MolPropObservable %s", str.c_str()).c_str()));
-}
 
 namespace alexandria
 {
@@ -117,137 +74,7 @@ DataSource dataSourceFromName(const std::string &name)
     gmx_fatal(FARGS, "No data source corresponding to %s", name.c_str());
 }
 
-CommunicationStatus GenericProperty::Send(t_commrec *cr, int dest) const
-{
-    CommunicationStatus cs;
 
-    cs = gmx_send_data(cr, dest);
-    if (CS_OK == cs)
-    {
-        gmx_send_str(cr, dest, &type_);
-        gmx_send_str(cr, dest, &unit_);
-        gmx_send_double(cr, dest, T_);
-        gmx_send_int(cr, dest, (int) eP_);
-    }
-    else if (nullptr != debug)
-    {
-        fprintf(debug, "Trying to send GenericProperty, status %s\n", cs_name(cs));
-        fflush(debug);
-    }
-    return cs;
-}
-
-CommunicationStatus GenericProperty::Receive(t_commrec *cr, int src)
-{
-    CommunicationStatus cs;
-
-    cs = gmx_recv_data(cr, src);
-    if (CS_OK == cs)
-    {
-        gmx_recv_str(cr, src, &type_);
-        gmx_recv_str(cr, src, &unit_);
-        T_  = gmx_recv_double(cr, src);
-        eP_ = (ePhase) gmx_recv_int(cr, src);
-    }
-    else if (nullptr != debug)
-    {
-        fprintf(debug, "Trying to receive GenericProperty, status %s\n", cs_name(cs));
-        fflush(debug);
-    }
-    return cs;
-}
-
-void CalcAtom::SetUnit(const std::string &unit)
-{
-    if ((unit_.size() == 0) && (unit.size() > 0))
-    {
-        unit_ = unit;
-    }
-    else
-    {
-        if (unit_.size() == 0)
-        {
-            fprintf(stderr, "Replacing CalcAtom unit '%s' by '%s'\n", unit_.c_str(), unit.c_str());
-        }
-    }
-}
-
-bool CalcAtom::Equal(CalcAtom ca)
-{
-    return !((name_.compare(ca.getName()) != 0) ||
-             (obType_.compare(ca.getObtype()) != 0) ||
-             (x_ != ca.getX()) ||
-             (y_ != ca.getY()) ||
-             (z_ != ca.getZ()) ||
-             (atomID_ != ca.getAtomid()));
-}
-
-CommunicationStatus CalcAtom::Receive(t_commrec *cr, int src)
-{
-    CommunicationStatus cs;
-    int                 Ncharge;
-
-    cs = gmx_recv_data(cr, src);
-    if (CS_OK == cs)
-    {
-        gmx_recv_str(cr, src, &name_);
-        gmx_recv_str(cr, src, &obType_);
-        gmx_recv_str(cr, src, &residueName_);
-        residueNumber_ = gmx_recv_int(cr, src);
-        atomID_ = gmx_recv_int(cr, src);
-        gmx_recv_str(cr, src, &unit_);
-        x_      = gmx_recv_double(cr, src);
-        y_      = gmx_recv_double(cr, src);
-        z_      = gmx_recv_double(cr, src);
-        Ncharge = gmx_recv_int(cr, src);
-
-        for (int n = 0; (CS_OK == cs) && (n < Ncharge); n++)
-        {
-            std::string type;
-            gmx_recv_str(cr, src, &type);
-            double q = gmx_recv_double(cr, src);
-            AddCharge(type, q);
-        }
-    }
-    if (nullptr != debug)
-    {
-        fprintf(debug, "Received CalcAtom, status %s\n", cs_name(cs));
-        fflush(debug);
-    }
-    return cs;
-}
-
-CommunicationStatus CalcAtom::Send(t_commrec *cr, int dest) const
-{
-    CommunicationStatus  cs;
-
-    cs = gmx_send_data(cr, dest);
-    if (CS_OK == cs)
-    {
-        gmx_send_str(cr, dest, &name_);
-        gmx_send_str(cr, dest, &obType_);
-        gmx_send_str(cr, dest, &residueName_);
-        gmx_send_int(cr, dest, residueNumber_);
-        gmx_send_int(cr, dest, atomID_);
-        gmx_send_str(cr, dest, &unit_);
-        gmx_send_double(cr, dest, x_);
-        gmx_send_double(cr, dest, y_);
-        gmx_send_double(cr, dest, z_);
-        gmx_send_int(cr, dest, q_.size());
-
-        for (const auto &qi : q_)
-        {
-            gmx_send_str(cr, dest, &qi.first);
-            gmx_send_double(cr, dest, qi.second);
-        }
-    }
-    if (nullptr != debug)
-    {
-        fprintf(debug, "Sent CalcAtom, status %s\n", cs_name(cs));
-        fflush(debug);
-    }
-    return cs;
-}
 
 CommunicationStatus Bond::Send(t_commrec *cr, int dest) const
 {
@@ -282,946 +109,6 @@ CommunicationStatus Bond::Receive(t_commrec *cr, int src)
     else if (nullptr != debug)
     {
         fprintf(debug, "Trying to receive Bond, status %s\n", cs_name(cs));
-        fflush(debug);
-    }
-    return cs;
-}
-
-CommunicationStatus AtomNum::Send(t_commrec *cr, int dest) const
-{
-    CommunicationStatus cs;
-
-    cs = gmx_send_data(cr, dest);
-    if (CS_OK == cs)
-    {
-        gmx_send_str(cr, dest, &catom_);
-        gmx_send_int(cr, dest, cnumber_);
-        if (nullptr != debug)
-        {
-            fprintf(debug, "Sent AtomNum %s %d, status %s\n",
-                    catom_.c_str(), cnumber_, cs_name(cs));
-            fflush(debug);
-        }
-    }
-    return cs;
-}
-
-CommunicationStatus AtomNum::Receive(t_commrec *cr, int src)
-{
-    CommunicationStatus cs;
-
-    cs = gmx_recv_data(cr, src);
-    if (CS_OK == cs)
-    {
-        gmx_recv_str(cr, src, &catom_);
-        cnumber_ = gmx_recv_int(cr, src);
-        if (nullptr != debug)
-        {
-            fprintf(debug, "Received AtomNum %s %d, status %s\n",
-                    catom_.c_str(), cnumber_, cs_name(cs));
-            fflush(debug);
-        }
-    }
-    return cs;
-}
-
-void MolecularComposition::AddAtom(AtomNum an)
-{
-    AtomNumIterator mci = searchAtom(an.getAtom());
-    if (mci == atomnum_.end())
-    {
-        atomnum_.push_back(an);
-    }
-    else
-    {
-        mci->SetNumber(mci->getNumber()+an.getNumber());
-    }
-}
-
-void MolecularComposition::DeleteAtom(const std::string &catom)
-{
-    AtomNumIterator ani;
-
-    if ((ani = searchAtom(catom)) != atomnum_.end())
-    {
-        atomnum_.erase(ani);
-    }
-}
-
-AtomNumConstIterator MolecularComposition::searchAtomConst(const std::string &an) const
-{
-    for (auto ani = atomnum_.begin(); ani < atomnum_.end(); ++ani)
-    {
-        if (an.compare(ani->getAtom()) == 0)
-        {
-            return ani;
-        }
-    }
-    return atomnum_.end();
-}
-
-AtomNumIterator MolecularComposition::searchAtom(const std::string &an)
-{
-    for (auto ani = atomnum_.begin(); ani < atomnum_.end(); ++ani)
-    {
-        if (an.compare(ani->getAtom()) == 0)
-        {
-            return ani;
-        }
-    }
-    return atomnum_.end();
-}
-
-void MolecularComposition::ReplaceAtom(const std::string &oldatom,
-                                       const std::string &newatom)
-{
-
-    for (auto &i : atomnum_)
-    {
-        if (oldatom.compare(i.getAtom()) == 0)
-        {
-            i.SetAtom(newatom);
-            break;
-        }
-    }
-}
-
-int MolecularComposition::CountAtoms(const std::string &atom) const
-{
-    for (auto &i : atomnum_)
-    {
-        if (atom.compare(i.getAtom()) == 0)
-        {
-            return i.getNumber();
-        }
-    }
-    return 0;
-}
-
-int MolecularComposition::CountAtoms() const
-{
-    int             nat = 0;
-
-    for (auto &i : atomnum_)
-    {
-        nat += i.getNumber();
-    }
-    return nat;
-}
-
-CommunicationStatus MolecularComposition::Send(t_commrec *cr, int dest) const
-{
-    CommunicationStatus cs = gmx_send_data(cr, dest);
-    if (CS_OK == cs)
-    {
-        gmx_send_int(cr, dest, atomnum_.size());
-        gmx_send_str(cr, dest, &compname_);
-        for (auto &ani : atomnum_)
-        {
-            cs = ani.Send(cr, dest);
-            if (CS_OK != cs)
-            {
-                break;
-            }
-        }
-        if (nullptr != debug)
-        {
-            fprintf(debug, "Sent MolecularComposition %s, status %s\n",
-                    compname_.c_str(), cs_name(cs));
-            fflush(debug);
-        }
-    }
-    return cs;
-}
-
-CommunicationStatus MolecularComposition::Receive(t_commrec *cr, int src)
-{
-    int                 Natomnum;
-    CommunicationStatus cs = gmx_recv_data(cr, src);
-    if (CS_OK == cs)
-    {
-        Natomnum = gmx_recv_int(cr, src);
-        gmx_recv_str(cr, src, &compname_);
-        CommunicationStatus cs2;
-        for (int n = 0; n < Natomnum; n++)
-        {
-            AtomNum an;
-            cs2 = an.Receive(cr, src);
-            if (CS_OK == cs2)
-            {
-                AddAtom(an);
-            }
-        }
-        if (nullptr != debug)
-        {
-            fprintf(debug, "Received MolecularComposition %s, status %s\n",
-                    compname_.c_str(), cs_name(cs));
-            fflush(debug);
-        }
-    }
-    return cs;
-}
-
-CommunicationStatus ElectrostaticPotential::Receive(t_commrec *cr, int src)
-{
-    CommunicationStatus cs;
-
-    cs = gmx_recv_data(cr, src);
-    if (CS_OK == cs)
-    {
-        gmx_recv_str(cr, src, &xyzUnit_);
-        gmx_recv_str(cr, src, &vUnit_);
-        espID_ = gmx_recv_int(cr, src);
-        x_     = gmx_recv_double(cr, src);
-        y_     = gmx_recv_double(cr, src);
-        z_     = gmx_recv_double(cr, src);
-        V_     = gmx_recv_double(cr, src);
-    }
-    else if (nullptr != debug)
-    {
-        fprintf(debug, "Trying to receive ElectrostaticPotential, status %s\n", cs_name(cs));
-        fflush(debug);
-    }
-    return cs;
-}
-
-CommunicationStatus ElectrostaticPotential::Send(t_commrec *cr, int dest) const
-{
-    CommunicationStatus cs;
-
-    cs = gmx_send_data(cr, dest);
-    if (CS_OK == cs)
-    {
-        gmx_send_str(cr, dest, &xyzUnit_);
-        gmx_send_str(cr, dest, &vUnit_);
-        gmx_send_int(cr, dest, espID_);
-        gmx_send_double(cr, dest, x_);
-        gmx_send_double(cr, dest, y_);
-        gmx_send_double(cr, dest, z_);
-        gmx_send_double(cr, dest, V_);
-    }
-    else if (nullptr != debug)
-    {
-        fprintf(debug, "Trying to send ElectrostaticPotential, status %s\n", cs_name(cs));
-        fflush(debug);
-    }
-    return cs;
-}
-
-CommunicationStatus MolecularDipole::Send(t_commrec *cr, int dest) const
-{
-    CommunicationStatus cs;
-
-    cs = GenericProperty::Send(cr, dest);
-    if (CS_OK == cs)
-    {
-        cs = gmx_send_data(cr, dest);
-    }
-    if (CS_OK == cs)
-    {
-        gmx_send_double(cr, dest, _x);
-        gmx_send_double(cr, dest, _y);
-        gmx_send_double(cr, dest, _z);
-        gmx_send_double(cr, dest, _aver);
-        gmx_send_double(cr, dest, error_);
-    }
-    else if (nullptr != debug)
-    {
-        fprintf(debug, "Trying to send MolecularDipole, status %s\n", cs_name(cs));
-        fflush(debug);
-    }
-    return cs;
-}
-
-CommunicationStatus MolecularDipole::Receive(t_commrec *cr, int src)
-{
-    CommunicationStatus cs;
-
-    cs = GenericProperty::Receive(cr, src);
-    if (CS_OK == cs)
-    {
-        cs = gmx_recv_data(cr, src);
-    }
-    if (CS_OK == cs)
-    {
-        _x     = gmx_recv_double(cr, src);
-        _y     = gmx_recv_double(cr, src);
-        _z     = gmx_recv_double(cr, src);
-        _aver  = gmx_recv_double(cr, src);
-        error_ = gmx_recv_double(cr, src);
-    }
-    else if (nullptr != debug)
-    {
-        fprintf(debug, "Trying to receive MolecularDipole, status %s\n", cs_name(cs));
-        fflush(debug);
-    }
-    return cs;
-}
-
-CommunicationStatus MolecularQuadrupole::Send(t_commrec *cr, int dest) const
-{
-    CommunicationStatus cs;
-
-    cs = GenericProperty::Send(cr, dest);
-    if (CS_OK == cs)
-    {
-        cs = gmx_send_data(cr, dest);
-    }
-    if (CS_OK == cs)
-    {
-        gmx_send_double(cr, dest, xx_);
-        gmx_send_double(cr, dest, yy_);
-        gmx_send_double(cr, dest, zz_);
-        gmx_send_double(cr, dest, xy_);
-        gmx_send_double(cr, dest, xz_);
-        gmx_send_double(cr, dest, yz_);
-    }
-    else if (nullptr != debug)
-    {
-        fprintf(debug, "Trying to send MolecularQuadrupole, status %s\n", cs_name(cs));
-        fflush(debug);
-    }
-    return cs;
-}
-
-CommunicationStatus MolecularQuadrupole::Receive(t_commrec *cr, int src)
-{
-    CommunicationStatus cs;
-
-    cs = GenericProperty::Receive(cr, src);
-    if (CS_OK == cs)
-    {
-        cs = gmx_recv_data(cr, src);
-    }
-    if (CS_OK == cs)
-    {
-        xx_    = gmx_recv_double(cr, src);
-        yy_    = gmx_recv_double(cr, src);
-        zz_    = gmx_recv_double(cr, src);
-        xy_    = gmx_recv_double(cr, src);
-        xz_    = gmx_recv_double(cr, src);
-        yz_    = gmx_recv_double(cr, src);
-    }
-    else if (nullptr != debug)
-    {
-        fprintf(debug, "Trying to received MolecularQuadrupole, status %s\n", cs_name(cs));
-        fflush(debug);
-    }
-    return cs;
-}
-
-void MolecularPolarizability::Set(double xx, double yy, double zz,
-                                  double xy, double xz, double yz,
-                                  double average, double error)
-{
-    xx_      = xx; yy_ = yy; zz_ = zz;
-    xy_      = xy; xz_ = xz; yz_ = yz;
-    average_ = average; error_ = error;
-    if (average_ == 0)
-    {
-        // Compute average as the 1/3 the trace of the diagonal
-        average_ = (xx_ + yy_ + zz_)/3.0;
-    }
-    else if ((xx_ == 0) && (yy_ == 0) && (zz_ == 0))
-    {
-        // Estimate tensor as the 1/3 the trace of the diagonal
-        xx_ = yy_ = zz_ = average_;
-    }
-}
-
-CommunicationStatus MolecularPolarizability::Send(t_commrec *cr, int dest) const
-{
-    CommunicationStatus cs;
-
-    cs = GenericProperty::Send(cr, dest);
-    if (CS_OK == cs)
-    {
-        cs = gmx_send_data(cr, dest);
-    }
-    if (CS_OK == cs)
-    {
-        gmx_send_double(cr, dest, xx_);
-        gmx_send_double(cr, dest, yy_);
-        gmx_send_double(cr, dest, zz_);
-        gmx_send_double(cr, dest, xy_);
-        gmx_send_double(cr, dest, xz_);
-        gmx_send_double(cr, dest, yz_);
-        gmx_send_double(cr, dest, average_);
-        gmx_send_double(cr, dest, error_);
-    }
-    else if (nullptr != debug)
-    {
-        fprintf(debug, "Trying to send MolecularQuadrupole, status %s\n", cs_name(cs));
-        fflush(debug);
-    }
-    return cs;
-}
-
-CommunicationStatus MolecularPolarizability::Receive(t_commrec *cr, int src)
-{
-    CommunicationStatus cs;
-
-    cs = GenericProperty::Receive(cr, src);
-    if (CS_OK == cs)
-    {
-        cs = gmx_recv_data(cr, src);
-    }
-    if (CS_OK == cs)
-    {
-        xx_      = gmx_recv_double(cr, src);
-        yy_      = gmx_recv_double(cr, src);
-        zz_      = gmx_recv_double(cr, src);
-        xy_      = gmx_recv_double(cr, src);
-        xz_      = gmx_recv_double(cr, src);
-        yz_      = gmx_recv_double(cr, src);
-        average_ = gmx_recv_double(cr, src);
-        error_   = gmx_recv_double(cr, src);
-    }
-    else if (nullptr != debug)
-    {
-        fprintf(debug, "Trying to received MolecularQuadrupole, status %s\n", cs_name(cs));
-        fflush(debug);
-    }
-    return cs;
-}
-
-CommunicationStatus MolecularEnergy::Receive(t_commrec *cr, int src)
-{
-    CommunicationStatus cs;
-
-    cs = GenericProperty::Receive(cr, src);
-    if (CS_OK == cs)
-    {
-        cs = gmx_recv_data(cr, src);
-    }
-    if (CS_OK == cs)
-    {
-        _value = gmx_recv_double(cr, src);
-        error_ = gmx_recv_double(cr, src);
-    }
-    else if (nullptr != debug)
-    {
-        fprintf(debug, "Trying to receive MolecularEnergy, status %s\n", cs_name(cs));
-        fflush(debug);
-    }
-    return cs;
-}
-
-CommunicationStatus MolecularEnergy::Send(t_commrec *cr, int dest) const
-{
-    CommunicationStatus cs;
-
-    cs = GenericProperty::Send(cr, dest);
-    if (CS_OK == cs)
-    {
-        cs = gmx_send_data(cr, dest);
-    }
-    if (CS_OK == cs)
-    {
-        gmx_send_double(cr, dest, _value);
-        gmx_send_double(cr, dest, error_);
-    }
-    else if (nullptr != debug)
-    {
-        fprintf(debug, "Trying to send MolecularEnergy, status %s\n", cs_name(cs));
-        fflush(debug);
-    }
-    return cs;
-}
-
-Experiment::Experiment(const std::string &program,
-                       const std::string &method,
-                       const std::string &basisset,
-                       const std::string &reference,
-                       const std::string &conformation,
-                       const std::string &datafile,
-                       JobType            jtype)
-    :
-      dataSource_(dsTheory),
-      reference_(reference),
-      conformation_(conformation),
-      program_(program),
-      method_(method),
-      basisset_(basisset),
-      datafile_(datafile),
-      jobtype_(jtype)
-
-{}
-
-void Experiment::Dump(FILE *fp) const
-{
-    if (nullptr != fp)
-    {
-        fprintf(fp, "Experiment %s %d polar %d dipole\n",
-                dataSourceName(dataSource()), NPolar(), NDipole());
-        if (dsExperiment == dataSource())
-        {
-            fprintf(fp, "reference    = %s\n", reference_.c_str());
-            fprintf(fp, "conformation = %s\n", conformation_.c_str());
-        }
-        else
-        {
-            fprintf(fp, "program    = %s\n", program_.c_str());
-            fprintf(fp, "method     = %s\n", method_.c_str());
-            fprintf(fp, "basisset   = %s\n", basisset_.c_str());
-            fprintf(fp, "datafile   = %s\n", datafile_.c_str());
-            for (auto &cai : calcAtomConst())
-            {
-                double   x, y, z;
-                cai.getCoords(&x, &y, &z);
-                fprintf(fp, "%-3s  %-3s  %3d  %10.3f  %10.3f  %10.3f\n",
-                        cai.getName().c_str(), cai.getObtype().c_str(),
-                        cai.getAtomid(), x, y, z);
-            }
-        }
-    }
-}
-
-bool Experiment::getHF(double *value) const
-{
-    double      T    = -1;
-    double      error;
-    bool        done = false;
-    tensor      quad;
-
-    if (getVal((char *)"HF", MolPropObservable::ENERGY, value, &error, &T,
-               nullptr, quad))
-    {
-        done = true;
-    }
-    return done;
-}
-
-int Experiment::Merge(const Experiment *src)
-{
-    int nwarn = 0;
-
-    for (auto &mei : src->molecularEnergyConst())
-    {
-        alexandria::MolecularEnergy me(mei.getType(),
-                                       mei.getUnit(),
-                                       mei.getTemperature(),
-                                       mei.getPhase(),
-                                       mei.getValue(),
-                                       mei.getError());
-        AddEnergy(me);
-    }
-
-    for (auto &dpi : src->dipoleConst())
-    {
-        alexandria::MolecularDipole dp(dpi.getType(),
-                                       dpi.getUnit(),
-                                       dpi.getTemperature(),
-                                       dpi.getX(), dpi.getY(), dpi.getZ(),
-                                       dpi.getAver(), dpi.getError());
-        AddDipole(dp);
-    }
-
-    for (auto &mpi : src->polarizabilityConst())
-    {
-        alexandria::MolecularPolarizability mp(mpi.getType(),
-                                               mpi.getUnit(),
-                                               mpi.getTemperature(),
-                                               mpi.getXX(), mpi.getYY(), mpi.getZZ(),
-                                               mpi.getXY(), mpi.getXZ(), mpi.getYZ(),
-                                               mpi.getAverage(), mpi.getError());
-        AddPolar(mp);
-    }
-
-    for (auto &mqi : src->quadrupoleConst())
-    {
-        alexandria::MolecularQuadrupole mq(mqi.getType(), mqi.getUnit(),
-                                           mqi.getTemperature(),
-                                           mqi.getXX(), mqi.getYY(), mqi.getZZ(),
-                                           mqi.getXY(), mqi.getXZ(), mqi.getYZ());
-        AddQuadrupole(mq);
-    }
-
-    for (auto &cai : src->calcAtomConst())
-    {
-        double   x, y, z;
-        CalcAtom caa(cai.getName(), cai.getObtype(), cai.getAtomid());
-
-        cai.getCoords(&x, &y, &z);
-        caa.SetCoords(x, y, z);
-        caa.SetUnit(cai.getUnit());
-        caa.SetResidue(cai.ResidueName(), cai.ResidueNumber());
-        for (const auto &aci : cai.chargesConst())
-        {
-            caa.AddCharge(aci.first, aci.second);
-        }
-        AddAtom(caa);
-    }
-
-    for (auto &mep : src->electrostaticPotentialConst())
-    {
-        alexandria::ElectrostaticPotential ep(mep.getXYZunit(), mep.getVunit(),
-                                              mep.getEspid(),
-                                              mep.getX(), mep.getY(),
-                                              mep.getZ(), mep.getV());
-        AddPotential(ep);
-    }
-
-    return nwarn;
-}
-
-CalcAtomIterator Experiment::searchAtom(CalcAtom ca)
-{
-    CalcAtomIterator cai;
-    for (auto cai = catom_.begin(); (cai < catom_.end()); ++cai)
-    {
-        if (cai->Equal(ca))
-        {
-            return cai;
-        }
-    }
-    return catom_.end();
-}
-
-void Experiment::AddAtom(CalcAtom ca)
-{
-    CalcAtomIterator cai = searchAtom(ca);
-
-    if (cai == catom_.end())
-    {
-        gmx::RVec x;
-        auto      unit = ca.getUnit();
-        x[XX]          = convertToGromacs(ca.getX(), unit);
-        x[YY]          = convertToGromacs(ca.getY(), unit);
-        x[ZZ]          = convertToGromacs(ca.getZ(), unit);
-        coordinates_.push_back(x);
-        catom_.push_back(ca);
-    }
-    else
-    {
-        printf("Trying to add identical atom %s (%s) twice. N = %d\n",
-               ca.getName().c_str(), ca.getObtype().c_str(),
-               (int)catom_.size());
-    }
-}
-
-bool Experiment::getVal(const std::string   &type,
-                        MolPropObservable    mpo,
-                        double              *value,
-                        double              *error,
-                        double              *T,
-                        std::vector<double> *vec,
-                        tensor               quad_polar) const
-{
-    bool   done = false;
-    double x, y, z;
-    double Told = *T;
-
-    switch (mpo)
-    {
-        case MolPropObservable::ENERGY:
-        case MolPropObservable::ENTROPY:
-            for (auto &mei : molecularEnergyConst())
-            {
-                if (((type.size() == 0) || (type.compare(mei.getType()) == 0)) &&
-                    bCheckTemperature(Told, mei.getTemperature()))
-                {
-                    mei.get(value, error);
-                    *T   = mei.getTemperature();
-                    done = true;
-                    break;
-                }
-            }
-            break;
-        case MolPropObservable::DIPOLE:
-            for (auto &mdp : dipoleConst())
-            {
-                if (((type.size() == 0) || (type.compare(mdp.getType()) == 0))  &&
-                    bCheckTemperature(Told, mdp.getTemperature()))
-                {
-                    mdp.get(&x, &y, &z, value, error);
-                    vec->resize(DIM, 0.0);
-                    (*vec)[XX] = x;
-                    (*vec)[YY] = y;
-                    (*vec)[ZZ] = z;
-                    *T      = mdp.getTemperature();
-                    done    = true;
-                    break;
-                }
-            }
-            break;
-        case MolPropObservable::POLARIZABILITY:
-        {
-            for (auto &mdp : polarizabilityConst())
-            {
-                if (((type.size() == 0) || (type.compare(mdp.getType()) == 0)) &&
-                    bCheckTemperature(Told, mdp.getTemperature()))
-                {
-                    double xx, yy, zz, xy, xz, yz;
-                    mdp.get(&xx, &yy, &zz, &xy, &xz, &yz, value, error);
-                    quad_polar[XX][XX] = xx;
-                    quad_polar[XX][YY] = xy;
-                    quad_polar[XX][ZZ] = xz;
-                    quad_polar[YY][XX] = 0;
-                    quad_polar[YY][YY] = yy;
-                    quad_polar[YY][ZZ] = yz;
-                    quad_polar[ZZ][XX] = 0;
-                    quad_polar[ZZ][YY] = 0;
-                    quad_polar[ZZ][ZZ] = zz;
-                    *T                 = mdp.getTemperature();
-                    done               = true;
-                    break;
-                }
-            }
-        }
-        break;
-        case MolPropObservable::QUADRUPOLE:
-            for (auto &mqi : quadrupoleConst())
-            {
-                if (((type.size() == 0) || (type.compare(mqi.getType()) == 0)) &&
-                    bCheckTemperature(Told, mqi.getTemperature()))
-                {
-                    double xx, yy, zz, xy, xz, yz;
-                    mqi.get(&xx, &yy, &zz, &xy, &xz, &yz);
-                    quad_polar[XX][XX] = xx;
-                    quad_polar[XX][YY] = xy;
-                    quad_polar[XX][ZZ] = xz;
-                    quad_polar[YY][XX] = 0;
-                    quad_polar[YY][YY] = yy;
-                    quad_polar[YY][ZZ] = yz;
-                    quad_polar[ZZ][XX] = 0;
-                    quad_polar[ZZ][YY] = 0;
-                    quad_polar[ZZ][ZZ] = zz;
-                    *T                 = mqi.getTemperature();
-                    done               = true;
-                    break;
-                }
-            }
-            break;
-        case MolPropObservable::CHARGE:
-        {
-            vec->resize(NAtom(), 0.0);
-            int i = 0;
-            for (auto &mai : calcAtomConst())
-            {
-                if (mai.hasCharge(type))
-                {
-                    (*vec)[i] = mai.charge(type);
-                    i++;
-                }
-            }
-            if (i == NAtom())
-            {
-                done = true;
-            }
-        }
-        break;
-    default:
-        break;
-    }
-    return done;
-}
-
-CommunicationStatus Experiment::Receive(t_commrec *cr, int src)
-{
-    CalcAtomIterator               cai;
-    CommunicationStatus            cs;
-    ElectrostaticPotentialIterator epi;
-    std::string                    jobtype;
-    int                            Npolar, Ndipole, Nenergy, Npotential, Natom, Nquadrupole;
-
-    cs = gmx_recv_data(cr, src);
-    if (CS_OK == cs)
-    {
-        dataSource_ = static_cast<DataSource>(gmx_recv_int(cr, src));
-        gmx_recv_str(cr, src, &reference_);
-        gmx_recv_str(cr, src, &conformation_);
-        gmx_recv_str(cr, src, &program_);
-        gmx_recv_str(cr, src, &method_);
-        gmx_recv_str(cr, src, &basisset_);
-        gmx_recv_str(cr, src, &datafile_);
-        gmx_recv_str(cr, src, &jobtype);
-        jobtype_    = string2jobType(jobtype);
-        Npolar      = gmx_recv_int(cr, src);
-        Ndipole     = gmx_recv_int(cr, src);
-        Nquadrupole = gmx_recv_int(cr, src);
-        Nenergy     = gmx_recv_int(cr, src);
-        Npotential  = gmx_recv_int(cr, src);
-        Natom       = gmx_recv_int(cr, src);
-
-        //! Receive Polarizabilities
-        for (int n = 0; (CS_OK == cs) && (n < Npolar); n++)
-        {
-            MolecularPolarizability mp;
-            cs = mp.Receive(cr, src);
-            if (CS_OK == cs)
-            {
-                AddPolar(mp);
-            }
-        }
-
-        //! Receive Dipoles
-        for (int n = 0; (CS_OK == cs) && (n < Ndipole); n++)
-        {
-            MolecularDipole md;
-            cs = md.Receive(cr, src);
-            if (CS_OK == cs)
-            {
-                AddDipole(md);
-            }
-        }
-
-        //! Receive Quadrupoles
-        for (int n = 0; (CS_OK == cs) && (n < Nquadrupole); n++)
-        {
-            MolecularQuadrupole mq;
-            cs = mq.Receive(cr, src);
-            if (CS_OK == cs)
-            {
-                AddQuadrupole(mq);
-            }
-        }
-
-        //! Receive Energies
-        for (int n = 0; (CS_OK == cs) && (n < Nenergy); n++)
-        {
-            MolecularEnergy me;
-            cs = me.Receive(cr, src);
-            if  (CS_OK == cs)
-            {
-                AddEnergy(me);
-            }
-        }
-
-        //! Receive Potentials
-        for (int n = 0; (CS_OK == cs) && (n < Npotential); n++)
-        {
-            ElectrostaticPotential ep;
-            cs = ep.Receive(cr, src);
-            if (CS_OK == cs)
-            {
-                AddPotential(ep);
-            }
-        }
-
-        //! Receive Atoms
-        for (int n = 0; (CS_OK == cs) && (n < Natom); n++)
-        {
-            CalcAtom ca;
-            cs = ca.Receive(cr, src);
-            if (CS_OK == cs)
-            {
-                AddAtom(ca);
-            }
-        }
-    }
-
-    if ((CS_OK != cs) && (nullptr != debug))
-    {
-        fprintf(debug, "Trying to receive Experiment, status %s\n", cs_name(cs));
-        fflush(debug);
-    }
-    return cs;
-}
-
-CommunicationStatus Experiment::Send(t_commrec *cr, int dest) const
-{
-    CommunicationStatus cs;
-    std::string         jobtype;
-
-    cs = gmx_send_data(cr, dest);
-    if (CS_OK == cs)
-    {
-        gmx_send_int(cr, dest, static_cast<int>(dataSource_));
-        gmx_send_str(cr, dest, &reference_);
-        gmx_send_str(cr, dest, &conformation_);
-        gmx_send_str(cr, dest, &program_);
-        gmx_send_str(cr, dest, &method_);
-        gmx_send_str(cr, dest, &basisset_);
-        gmx_send_str(cr, dest, &datafile_);
-        jobtype.assign(jobType2string(jobtype_));
-        gmx_send_str(cr, dest, &jobtype);
-        gmx_send_int(cr, dest, polar_.size());
-        gmx_send_int(cr, dest, dipole_.size());
-        gmx_send_int(cr, dest, quadrupole_.size());
-        gmx_send_int(cr, dest, energy_.size());
-        gmx_send_int(cr, dest, potential_.size());
-        gmx_send_int(cr, dest, catom_.size());
-
-        //! Send Polarizabilities
-        for (auto &dpi : polarizabilityConst())
-        {
-            cs = dpi.Send(cr, dest);
-            if (CS_OK != cs)
-            {
-                break;
-            }
-        }
-
-        //! Send Dipoles
-        if (CS_OK == cs)
-        {
-            for (auto &dpi : dipoleConst())
-            {
-                cs = dpi.Send(cr, dest);
-                if (CS_OK != cs)
-                {
-                    break;
-                }
-            }
-        }
-
-        //! Send Quadrupoles
-        if (CS_OK == cs)
-        {
-            for (auto &dqi : quadrupoleConst())
-            {
-                cs = dqi.Send(cr, dest);
-                if (CS_OK != cs)
-                {
-                    break;
-                }
-            }
-        }
-        
-        //! Send Energies
-        if (CS_OK == cs)
-        {
-            for (auto &mei : molecularEnergyConst())
-            {
-                cs = mei.Send(cr, dest);
-                if (CS_OK != cs)
-                {
-                    break;
-                }
-            }
-        }
-
-        //! Send Potentials
-        if (CS_OK == cs)
-        {
-            for (auto &epi : electrostaticPotentialConst())
-            {
-                cs = epi.Send(cr, dest);
-                if (CS_OK != cs)
-                {
-                    break;
-                }
-            }
-        }
-
-        //! Send Atoms
-        if (CS_OK == cs)
-        {
-            for (auto &cai : calcAtomConst())
-            {
-                cs = cai.Send(cr, dest);
-                if (CS_OK != cs)
-                {
-                    break;
-                }
-            }
-        }
-    }
-
-    if ((CS_OK != cs) && (nullptr != debug))
-    {
-        fprintf(debug, "Trying to send Experiment, status %s\n", cs_name(cs));
         fflush(debug);
     }
     return cs;
@@ -1575,11 +462,66 @@ static bool stringEqual(const std::string &a, const std::string &b)
     return true;
 }
 
+const Experiment *MolProp::findExperimentConst(const std::string &method,
+                                               const std::string &basis,
+                                               const std::string &conformation) const
+{
+    for(auto ei = exper_.begin(); ei < exper_.end(); ++ei)
+    {
+        if (((conformation.size() == 0)   || stringEqual(ei->getConformation(), conformation)) &&
+            stringEqual(ei->getMethod(), method) &&
+            stringEqual(ei->getBasisset(), basis))
+        {
+            return &(*ei);
+        }
+    }
+    return nullptr;
+}
+
+const GenericProperty *MolProp::findProperty(MolPropObservable  mpo, 
+                                             iqmType            iQM,
+                                             double             T,
+                                             const std::string &method,
+                                             const std::string &basis,
+                                             const std::string &conf) const
+{
+    for(auto ei = exper_.begin(); ei < exper_.end(); ++ei)
+    {
+        if (ei->hasProperty(mpo))
+        {
+            for (const auto &pp : ei->propertyConst(mpo))
+            { 
+                if (bCheckTemperature(pp->getTemperature(), T))
+                {
+                    if ((ei->dataSource() == dsExperiment) &&
+                        (iqmType::Exp == iQM || iqmType::Both == iQM))
+                    {
+                        // For an experiment it is sufficient if the temperature and
+                        // the mpo are correct
+                        return pp;
+                    }
+                    else if ((ei->dataSource() == dsTheory) &&
+                             (iqmType::QM == iQM || iqmType::Both == iQM))
+                    {
+                        if (((conf.size() == 0)   || stringEqual(ei->getConformation(), conf)) &&
+                            ((method.size() == 0) || stringEqual(ei->getMethod(), method)) &&
+                            ((basis.size() == 0)  || stringEqual(ei->getBasisset(), basis)))
+                        {
+                            return pp;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return nullptr;
+}
+
+#ifdef OLD
 bool MolProp::getPropRef(MolPropObservable mpo, iqmType iQM,
                          const std::string &method,
                          const std::string &basis,
                          const std::string &conf,
-                         const std::string &type,
                          double *value, double *error, double *T,
                          std::string *ref, std::string *mylot,
                          std::vector<double> *vec, tensor quad_polar)
@@ -1594,7 +536,7 @@ bool MolProp::getPropRef(MolPropObservable mpo, iqmType iQM,
             if ((conf.size() == 0) ||
                 stringEqual(ei.getConformation(), conf))
             {
-                if (ei.getVal(type, mpo, value, error, T, vec, quad_polar) &&
+                if (ei.getVal(mpo, value, error, T, vec, quad_polar) &&
                     bCheckTemperature(Told, *T))
                 {
                     ref->assign(ei.getReference());
@@ -1652,20 +594,19 @@ bool MolProp::getPropRef(MolPropObservable mpo, iqmType iQM,
     }
     return done;
 }
-
+#endif
 bool MolProp::getOptHF(double *value)
 {
     bool done = false;
 
-    for (auto &ei : experimentConst())
+    std::string empty;
+    
+    auto gp = findProperty(MolPropObservable::HF, iqmType::QM, 0.0,
+                           empty, empty, empty);
+    if (gp)
     {
-        if (ei.getJobtype() == JobType::OPT)
-        {
-            if (ei.getHF(value))
-            {
-                done = true;
-            }
-        }
+        *value = gp->getValue();
+        done = true;
     }
     return done;
 }
@@ -1685,6 +626,7 @@ int MolProp::NOptSP()
     return n;
 }
 
+#ifdef OLD
 bool MolProp::getProp(MolPropObservable mpo, iqmType iQM,
                       const std::string &method,
                       const std::string &basis,
@@ -1707,8 +649,9 @@ bool MolProp::getProp(MolPropObservable mpo, iqmType iQM,
     }
     return bReturn;
 }
+#endif
 
-
+#ifdef OLD
 ExperimentIterator MolProp::getCalcPropType(const std::string &method,
                                             const std::string &basis,
                                             std::string       *mylot,
@@ -1761,12 +704,11 @@ ExperimentIterator MolProp::getCalcPropType(const std::string &method,
                         }
                     }
                     break;
-                case MolPropObservable::ENERGY:
+                case MolPropObservable::DHFORM:
                 case MolPropObservable::ENTROPY:
                     for (auto &mdp : ci->molecularEnergyConst())
                     {
-                        done = ((nullptr == type) ||
-                                (strcasecmp(type, mdp.getType().c_str()) == 0));
+                        done = mdp.mpo() == mpo;
                         if (done)
                         {
                             break;
@@ -1776,7 +718,7 @@ ExperimentIterator MolProp::getCalcPropType(const std::string &method,
                 case MolPropObservable::COORDINATES:
                     done = NAtom() > 0;
                     break;
-                case MolPropObservable::CHARGE:
+            default:
                     break;
             }
             if (done)
@@ -1791,7 +733,7 @@ ExperimentIterator MolProp::getCalcPropType(const std::string &method,
     }
     return ci;
 }
-
+#endif
 CommunicationStatus MolProp::Send(t_commrec *cr, int dest) const
 {
     CommunicationStatus                cs;

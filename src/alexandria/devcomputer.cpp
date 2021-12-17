@@ -308,7 +308,7 @@ void EnergyDevComputer::calcDeviation(      MyMol                             *m
                                       const gmx_unused std::vector<double>               &param,
                                             gmx_unused t_commrec                         *commrec)
 {
-    real delta = gmx::square(mymol->potentialEnergy() - mymol->Emol_);
+    real delta = gmx::square(mymol->potentialEnergy() - mymol->energy(MolPropObservable::EMOL));
     (*targets).find(eRMS::EPOT)->second.increase(1, delta);
 }
 

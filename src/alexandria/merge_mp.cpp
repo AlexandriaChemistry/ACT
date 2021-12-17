@@ -57,7 +57,10 @@
 #include "poldata_xml.h"
 #include "stringutil.h"
 
-int alex_merge_mp(int argc, char *argv[])
+namespace alexandria
+{
+
+int merge_mp(int argc, char *argv[])
 {
     static const char               *desc[] =
     {
@@ -86,9 +89,9 @@ int alex_merge_mp(int argc, char *argv[])
         { "-temperature", FALSE, etREAL, {&temperature},
           "Temperature for properties to extract from the SQLite database" }
     };
-    std::vector<alexandria::MolProp> mp;
-    alexandria::Poldata              pd;
-    gmx_output_env_t                *oenv;
+    std::vector<MolProp>  mp;
+    Poldata               pd;
+    gmx_output_env_t     *oenv;
 
     if (!parse_common_args(&argc, argv, PCA_NOEXIT_ON_ARGS, NFILE, fnm,
                            asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
@@ -108,7 +111,7 @@ int alex_merge_mp(int argc, char *argv[])
 
     if (nwarn <= maxwarn)
     {
-        ReadSqlite3(opt2fn_null("-db", NFILE, fnm), mp, temperature);
+        ReadSqlite3(opt2fn_null("-db", NFILE, fnm), &mp, temperature);
 
         MolPropWrite(opt2fn("-o", NFILE, fnm), mp, compress);
     }
@@ -118,3 +121,5 @@ int alex_merge_mp(int argc, char *argv[])
     }
     return 0;
 }
+
+} // namespace alexandria

@@ -758,7 +758,13 @@ size_t MolGen::Read(FILE            *fp,
     {
         nLocal.insert(std::pair<iMolSelect, int>(ims.first, 0));
     }
-    iqmType iqm = bQM_ ? iqmType::QM : iqmType::Exp;
+    std::map<MolPropObservable, iqmType> iqmMap = 
+        {
+            { MolPropObservable::DHFORM,         iqmType::Exp },
+            { MolPropObservable::DIPOLE,         iqmType::QM  },
+            { MolPropObservable::QUADRUPOLE,     iqmType::QM  },
+            { MolPropObservable::POLARIZABILITY, iqmType::QM  },
+        };
     if (MASTER(cr_))
     {
         if (fp)
@@ -828,7 +834,7 @@ size_t MolGen::Read(FILE            *fp,
                     continue;
                 }
                 // TODO Check for G4 as well
-                imm = mymol.getExpProps(iqmType::Exp, bZero, bZPE, bDHform,
+                imm = mymol.getExpProps(iqmMap, bZero, bZPE, bDHform,
                                         method, basis, &pd_);
                 if (immStatus::OK != imm)
                 {
@@ -1017,7 +1023,7 @@ size_t MolGen::Read(FILE            *fp,
             }
             if (immStatus::OK == imm)
             {
-                imm = mymol.getExpProps(iqm, bZero, bZPE, bDHform,
+                imm = mymol.getExpProps(iqmMap, bZero, bZPE, bDHform,
                                         method, basis, &pd_);
             }
             mymol.eSupp_ = eSupport::Local;
@@ -1031,7 +1037,8 @@ size_t MolGen::Read(FILE            *fp,
                 {
                     fprintf(debug, "Added molecule %s. Hform = %g Emol = %g\n",
                             mymol.getMolname().c_str(),
-                            mymol.Hform_, mymol.Emol_);
+                            mymol.energy(MolPropObservable::DHFORM),
+                            mymol.energy(MolPropObservable::EMOL));
                 }
             }
             gmx_send_int(cr_, 0, static_cast<int>(imm));

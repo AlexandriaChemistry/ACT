@@ -87,7 +87,9 @@ static void dump_csv(const char                      *csvFile,
         {
             fprintf(csv, "%g,", a.get(i, row));
         }
-        fprintf(csv, "%.3f,%.3f\n", -mymol->Emol_*j.second, mymol->Hform_*j.second);
+        double emol = mymol->energy(MolPropObservable::EMOL);
+        double hform = mymol->energy(MolPropObservable::DHFORM);
+        fprintf(csv, "%.3f,%.3f\n", -emol*j.second, hform*j.second);
         row++;
     }
     if (ntrain)
@@ -241,7 +243,7 @@ static bool calcDissoc(FILE                              *fplog,
                 }
             }
         }
-        rhs.push_back(-mymol->Emol_ * uu.second);
+        rhs.push_back(-mymol->energy(MolPropObservable::EMOL) * uu.second);
         row += 1;
     }
 
@@ -292,10 +294,8 @@ static bool calcDissoc(FILE                              *fplog,
                 gmx_stats gs;
                 edissoc->insert(std::pair<Identifier, gmx_stats>(b.first, std::move(gs)));
             }
-            auto gs     = edissoc->find(b.first)->second;
-            int  N;
-            auto estats = gs.get_npoints(&N);
-            GMX_RELEASE_ASSERT(estats == eStats::OK, gmx_stats_message(estats));
+            auto   gs = edissoc->find(b.first)->second;
+            size_t N  = gs.get_npoints();
             gs.add_point(N, Edissoc[b.second], 0, 0);
             if (fplog && fabs(Edissoc[b.second]) > 1000)
             {
@@ -322,15 +322,17 @@ double getDissociationEnergy(FILE               *fplog,
     std::random_device               rd;
     std::mt19937                     gen(rd());  
     std::uniform_real_distribution<> uniform(0.0, 1.0);
-    iqmType                          iqm = iqmType::Exp;
     std::map<Identifier, int>        bondIdToIndex;
     std::vector<int>                 hasExpData;
-    
+    std::map<MolPropObservable, iqmType> myprops = 
+        {
+            { MolPropObservable::DHFORM, iqmType::Both }
+        };
     // Loop over molecules to find the ones with experimental DeltaHform
     for (size_t i = 0; i < molset->size(); i++)
     {
         auto mymol = &((*molset)[i]);
-        if (immStatus::OK == mymol->getExpProps(iqm, true, false, true,
+        if (immStatus::OK == mymol->getExpProps(myprops, true, false, true,
                                                 method, basis, pd))
         {
             hasExpData.push_back(i);
@@ -382,7 +384,7 @@ double getDissociationEnergy(FILE               *fplog,
     for (auto &bi : edissoc)
     {
         double average, error = 0;
-        int    N              = 1;
+        size_t N              = 1;
         auto estats = bi.second.get_average(&average);
         if (eStats::OK != estats)
         {
@@ -402,7 +404,7 @@ double getDissociationEnergy(FILE               *fplog,
             {
                 estats = edissoc_bootstrap[bi.first].get_sigma(&error);
                 GMX_RELEASE_ASSERT(eStats::OK == estats, gmx_stats_message(estats));
-                estats = edissoc_bootstrap[bi.first].get_npoints(&N);
+                N = edissoc_bootstrap[bi.first].get_npoints();
                 GMX_RELEASE_ASSERT(eStats::OK == estats, gmx_stats_message(estats));
             }
         }

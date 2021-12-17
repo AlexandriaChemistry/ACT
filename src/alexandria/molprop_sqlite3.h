@@ -36,8 +36,18 @@
 
 #include "molprop.h"
 
-void ReadSqlite3(const char                       *sqlite_file,
-                 std::vector<alexandria::MolProp> &mp,
-                 double                            ref_temperature);
+namespace alexandria
+{
+
+    /*! \brief Read an sqlite database to extract values
+     * \param[in]  sqlite_file     The file name
+     * \param[out] mp              Molecular properties
+     * \param[in]  ref_temperature The T to select properties at
+     */
+void ReadSqlite3(const char           *sqlite_file,
+                 std::vector<MolProp> *mp,
+                 double                ref_temperature);
+
+} // namespace alexandria
 
 #endif
