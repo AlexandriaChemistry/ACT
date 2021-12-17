@@ -333,6 +333,22 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
         //}
     }
 
+    auto myatoms =  mymol -> atomsConst();
+    for (auto i = 0; i < myatoms.nr; i++)
+    {
+        std::string name_ai;
+        name_ai += *(myatoms.atomtype[i]);
+        name_ai += '_';
+        name_ai += std::to_string(i);
+
+        auto baby = add_xml_child(child, exml_names(xmlEntryOpenMM::TYPE));
+        add_xml_char(baby, exml_names(xmlEntryOpenMM::NAME), name_ai.c_str()); 
+        add_xml_char(baby, exml_names(xmlEntryOpenMM::CLASS), *(myatoms.atomtype[i]));
+        //add_xml_char(baby, exml_names(xmlEntryOpenMM::ELEMENT), *(myatoms.xxx)); add element for ATOMS  not shells
+        //add_xml_double(baby, exml_names(xmlEntryOpenMM::MASS), *(myatoms.xxx)); add mass-0.1 for ATOMS  and mass 0.1 for shells
+        
+    }
+
     auto child2 = add_xml_child(parent, exml_names(xmlEntryOpenMM::RESIDUES));
 
 
