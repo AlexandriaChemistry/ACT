@@ -536,30 +536,45 @@ public:
     ElectrostaticPotential(const std::string &xyz_unit,
                            const std::string &V_unit,
                            int espid, double x, double y, double z, double V)
-    { Set(xyz_unit, V_unit, espid, x, y, z, V); };
+    { set(xyz_unit, V_unit, espid, x, y, z, V); };
     
-    //! Constructor that set the units of coordinates and potential, the ESP id, the coordinates and the potential itself
-    ElectrostaticPotential(const char *xyz_unit, const char *V_unit,
-                           int espid, double x, double y, double z, double V)
-    { Set(xyz_unit, V_unit, espid, x, y, z, V); };
-    
-    //! Set the units of coordinates and potential, the ESP id, the coordinates and the potential itself
-    void Set(const std::string &xyz_unit,
+    /*! Fill the contents of the ESP
+     * Set the units of coordinates and potential, the ESP id,
+     * the coordinates and the potential itself.
+     * \param[in] xyz_unit Unit for coordinates
+     * \param[in] V_unit   Unit for the potential
+     * \param[in] espid    Unique id
+     * \param[in] x        X coordinate
+     * \param[in] y        Y coordinate
+     * \param[in] z        Z coordinate
+     * \param[in] V        Potential
+     */
+    void set(const std::string &xyz_unit,
              const std::string &V_unit,
-             int espid, double x, double y, double z, double V)
-    { xyzUnit_ = xyz_unit; vUnit_ = V_unit; espID_ = espid; x_ = x; y_ = y; z_ = z; V_ = V; };
+             int                espid, 
+             double             x,
+             double             y,
+             double             z,
+             double             V);
 
-    //! Set the units of coordinates and potential, the ESP id, the coordinates and the potential itself
-    void Set(const char *xyz_unit, const char *V_unit, int espid, double x, double y, double z, double V)
-    {
-        std::string x_(xyz_unit), V_(V_unit); Set(x_, V_, espid, x, y, z, V);
-    }
-    
-    //! Return the units of coordinates and potential, the ESP id, the coordinates and the potential itself
-    void get(char **xyz_unit, char **V_unit, int *espid, double *x, double *y, double *z, double *V) const
-    {
-        *xyz_unit = strdup(xyzUnit_.c_str()); *V_unit = strdup(vUnit_.c_str()); *espid = espID_; *x = x_; *y = y_; *z = z_; *V = V_;
-    };
+    /*! \brief Return ESP data
+     * Return the units of coordinates and potential, the ESP id,
+     * the coordinates and the potential itself.
+     * \param[out] xyz_unit Unit for coordinates
+     * \param[out] V_unit   Unit for the potential
+     * \param[out] espid    Unique id
+     * \param[out] x        X coordinate
+     * \param[out] y        Y coordinate
+     * \param[out] z        Z coordinate
+     * \param[out] V        Potential
+     */
+    void get(std::string *xyz_unit,
+             std::string *V_unit,
+             int         *espid,
+             double      *x,
+             double      *y,
+             double      *z,
+             double *V) const;
     
     //! Return the unit of the coordinates
     const std::string &getXYZunit() const { return xyzUnit_; }

@@ -438,5 +438,38 @@ CommunicationStatus ElectrostaticPotential::Send(t_commrec *cr, int dest) const
     return cs;
 }
 
+void ElectrostaticPotential::set(const std::string &xyz_unit,
+                                 const std::string &V_unit,
+                                 int                espid, 
+                                 double             x,
+                                 double             y,
+                                 double             z,
+                                 double             V)
+{ 
+    xyzUnit_ = xyz_unit;
+    vUnit_ = V_unit;
+    espID_ = espid;
+    x_ = x;
+    y_ = y;
+    z_ = z;
+    V_ = V; 
+}
+
+void ElectrostaticPotential::get(std::string *xyz_unit,
+                                 std::string *V_unit,
+                                 int         *espid,
+                                 double      *x,
+                                 double      *y,
+                                 double      *z,
+                                 double *V) const
+{
+    xyz_unit->assign(xyzUnit_);
+    V_unit->assign(vUnit_);
+    *espid = espID_;
+    *x = x_;
+    *y = y_;
+    *z = z_;
+    *V = V_;
+}
 
 } // namespace alexandria

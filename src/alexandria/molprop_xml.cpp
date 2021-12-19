@@ -848,15 +848,15 @@ static void add_calc_properties(xmlNodePtr                    exp,
 {
     for (auto &ep : calc.electrostaticPotentialConst())
     {
-        char  *x_unit, *v_unit;
-        double x, y, z, V;
-        int    espid;
+        std::string x_unit, v_unit;
+        double      x, y, z, V;
+        int         espid;
 
         ep.get(&x_unit, &v_unit, &espid, &x, &y, &z, &V);
 
         xmlNodePtr child = add_xml_child(exp, exml_names(exmlPOTENTIAL));
-        add_xml_char(child, exml_names(exmlX_UNIT), x_unit);
-        add_xml_char(child, exml_names(exmlV_UNIT), v_unit);
+        add_xml_char(child, exml_names(exmlX_UNIT), x_unit.c_str());
+        add_xml_char(child, exml_names(exmlV_UNIT), v_unit.c_str());
         add_xml_int(child, exml_names(exmlESPID), espid);
         if ((x != 0) || (y != 0) || (z != 0) || (V != 0))
         {
@@ -865,8 +865,6 @@ static void add_calc_properties(xmlNodePtr                    exp,
             add_xml_child_val(child, exml_names(exmlZ), gmx::formatString("%g", z).c_str());
             add_xml_child_val(child, exml_names(exmlV), gmx::formatString("%g", V).c_str());
         }
-        free(x_unit);
-        free(v_unit);
     }
 }
 
