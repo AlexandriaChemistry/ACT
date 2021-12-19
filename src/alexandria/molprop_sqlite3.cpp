@@ -233,7 +233,7 @@ void ReadSqlite3(const char           *sqlite_file,
     sqlite3                    *db   = nullptr;
     sqlite3_stmt               *stmt = nullptr;
     char sql_str[1024];
-    const char                 *cas, *csid, *prop, *unit, *source;
+    const char                 *cas, *csid, *prop;//, *unit, *source;
     double                      value, error, temperature;
     int                         cidx, rc, nbind, nexp_prop, theory, preferred;
     std::vector<Synonym>        synonyms;
@@ -302,13 +302,13 @@ void ReadSqlite3(const char           *sqlite_file,
                     cas            = (char *)sqlite3_column_text(stmt, cidx++);
                     csid           = (char *)sqlite3_column_text(stmt, cidx++);
                     prop           = (char *)sqlite3_column_text(stmt, cidx++);
-                    unit           = (char *)sqlite3_column_text(stmt, cidx++);
+                    //unit           = (char *)sqlite3_column_text(stmt, cidx++);
                     temperature    = sqlite3_column_double(stmt, cidx++);
                     value          = sqlite3_column_double(stmt, cidx++);
                     error          = sqlite3_column_double(stmt, cidx++);
                     preferred      = sqlite3_column_int(stmt, cidx++);
                     theory         = sqlite3_column_int(stmt, cidx++);
-                    source         = (char *)sqlite3_column_text(stmt, cidx++);
+                    //source         = (char *)sqlite3_column_text(stmt, cidx++);
                     
                     if (fabs(ref_temperature-temperature) < 0.1)
                     {

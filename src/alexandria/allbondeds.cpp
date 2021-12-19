@@ -319,7 +319,8 @@ void AllBondeds::updatePoldata(FILE             *fp,
             case InteractionType::BONDS:
                 {
                     // Note that the order of parameters is important!
-                    round_numbers(&av, &sig, 10); // Rounding the numbers to 1/10 pm and 1/10 degree
+                    // Rounding the numbers to 1/10 pm and 1/10 degree
+                    round_numbers(&av, &sig, 10); 
                     fs->addParameter(bondId, "bondlength",
                                      ForceFieldParameter("pm", av, sig, N, av*factor_, av/factor_, Mutability::Bounded, false, true));
                     fs->addParameter(bondId, "Dm",

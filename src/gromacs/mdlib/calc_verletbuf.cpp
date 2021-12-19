@@ -109,7 +109,7 @@ VerletbufListSetup verletbufGetListSetup(gmx_unused int nbnxnKernelType)
     /* Note that the current buffer estimation code only handles clusters
      * of size 1, 2 or 4, so for 4x8 or 8x8 we use the estimate for 4x4.
      */
-    VerletbufListSetup listSetup;
+    VerletbufListSetup listSetup = { 0 };
 
     return listSetup;
 }

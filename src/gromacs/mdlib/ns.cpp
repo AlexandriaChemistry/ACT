@@ -1651,12 +1651,10 @@ static int nsgrid_core(t_forcerec      *fr,
     rvec          *cgcm, grid_offset;
     real           r2, rs2, XI, YI, ZI, tmp1, tmp2;
     int           *i_egp_flags;
-    gmx_bool       bDomDec, bTriclinicX, bTriclinicY;
+    gmx_bool       bTriclinicX, bTriclinicY;
     ivec           ncpddc;
 
     ns = fr->ns;
-
-    bDomDec = false;
 
     bTriclinicX = false;
     bTriclinicY = false; 
@@ -2103,7 +2101,6 @@ int search_neighbours(FILE               *log,
     int                 start, end;
     gmx_ns_t           *ns;
     t_grid             *grid;
-    gmx_domdec_zones_t *dd_zones;
     put_in_list_t      *put_in_list;
 
     ns = fr->ns;
@@ -2141,8 +2138,6 @@ int search_neighbours(FILE               *log,
 
         grid = ns->grid;
         {
-            dd_zones = nullptr;
-
             get_nsgrid_boundaries(grid->nboundeddim, box, nullptr, nullptr,
                                   cgs->nr, fr->cg_cm, grid_x0, grid_x1, &grid_dens);
 

@@ -398,7 +398,6 @@ double getDissociationEnergy(FILE               *fplog,
     for (auto &bi : edissoc)
     {
         double average, error = 0;
-        size_t N              = 1;
         auto estats = bi.second.get_average(&average);
         if (eStats::OK != estats)
         {
@@ -417,8 +416,6 @@ double getDissociationEnergy(FILE               *fplog,
             if (edissoc_bootstrap.end() != ed)
             {
                 estats = edissoc_bootstrap[bi.first].get_sigma(&error);
-                GMX_RELEASE_ASSERT(eStats::OK == estats, gmx_stats_message(estats));
-                N = edissoc_bootstrap[bi.first].get_npoints();
                 GMX_RELEASE_ASSERT(eStats::OK == estats, gmx_stats_message(estats));
             }
         }

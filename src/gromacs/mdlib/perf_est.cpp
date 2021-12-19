@@ -404,7 +404,6 @@ static void pp_verlet_load(const gmx_mtop_t *mtop, const t_inputrec *ir,
     real           r_eff;
     double         c_qlj, c_q, c_lj;
     double         nppa;
-    int            j_cluster_size;
     /* Conversion factor for reference vs SIMD kernel performance.
      * The factor is about right for SSE2/4, but should be 2 higher for AVX256.
      */
@@ -460,11 +459,6 @@ static void pp_verlet_load(const gmx_mtop_t *mtop, const t_inputrec *ir,
      * This choice should match the one of pick_nbnxn_kernel_cpu().
      * TODO: Make this function use pick_nbnxn_kernel_cpu().
      */
-#if GMX_SIMD_HAVE_REAL && ((GMX_SIMD_REAL_WIDTH == 8 && defined GMX_SIMD_HAVE_FMA) || GMX_SIMD_REAL_WIDTH > 8)
-    j_cluster_size = 8;
-#else
-    j_cluster_size = 4;
-#endif
     r_eff = ir->rlist;
 
     /* The average number of pairs per atom */
