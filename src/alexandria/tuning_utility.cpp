@@ -124,11 +124,24 @@ static void print_stats(FILE        *fp,
                     "Property", "N", "a", "b", "R(%)", "RMSD", "MSE", "MAE", "Model");
             fprintf(fp, "------------------------------------------------------------------------------------------------\n");
         }
-        lsq->get_ab(elsqWEIGHT_NONE, &a, &b, &da, &db, &chi2, &Rfit);
-        lsq->get_rmsd(&rmsd);
-        lsq->get_mse_mae(&mse, &mae);
-        fprintf(fp, "%-26s %6d %6.3f(%5.3f) %6.3f(%5.3f) %7.2f %8.4f %8.4f %8.4f %10s\n",
-                prop, n, a, da, b, db, Rfit*100, rmsd, mse, mae, yaxis);
+        eStats ok = lsq->get_ab(elsqWEIGHT_NONE, &a, &b, &da, &db, &chi2, &Rfit);
+        if (eStats::OK == ok)
+        {
+            ok = lsq->get_rmsd(&rmsd);
+        }
+        if (eStats::OK == ok)
+        {
+            ok = lsq->get_mse_mae(&mse, &mae);
+        }
+        if (eStats::OK == ok)
+        {
+            fprintf(fp, "%-26s %6d %6.3f(%5.3f) %6.3f(%5.3f) %7.2f %8.4f %8.4f %8.4f %10s\n",
+                    prop, n, a, da, b, db, Rfit*100, rmsd, mse, mae, yaxis);
+        }
+        else
+        {
+            fprintf(fp, "Statistics problem for %s: %s\n", prop, gmx_stats_message(ok));
+        }
     }
     else
     {
@@ -139,11 +152,24 @@ static void print_stats(FILE        *fp,
                     "Property", "N", "a", "R(%)", "RMSD", "MSE", "MAE", "Model");
             fprintf(fp, "----------------------------------------------------------------------------------------------\n");
         }
-        lsq->get_a(elsqWEIGHT_NONE, &a, &da, &chi2, &Rfit);
-        lsq->get_rmsd(&rmsd);
-        lsq->get_mse_mae(&mse, &mae);
-        fprintf(fp, "%-26s %6d %6.3f(%5.3f) %7.2f %8.4f %8.4f %8.4f %10s\n",
-                prop, n, a, da, Rfit*100, rmsd, mse, mae, yaxis);
+        eStats ok = lsq->get_a(elsqWEIGHT_NONE, &a, &da, &chi2, &Rfit);
+        if (eStats::OK == ok)
+        {
+            ok = lsq->get_rmsd(&rmsd);
+        }
+        if (eStats::OK == ok)
+        {
+            ok = lsq->get_mse_mae(&mse, &mae);
+        }
+        if (eStats::OK == ok)
+        {
+            fprintf(fp, "%-26s %6d %6.3f(%5.3f) %7.2f %8.4f %8.4f %8.4f %10s\n",
+                    prop, n, a, da, Rfit*100, rmsd, mse, mae, yaxis);
+        }
+        else
+        {
+            fprintf(fp, "Statistics problem for %s: %s\n", prop, gmx_stats_message(ok));
+        }
     }
 }
 
@@ -499,13 +525,13 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
             gmx_stats gesp;
             qesp.insert(std::pair<qType, gmx_stats>(i.first, std::move(gesp)));
             gmx_stats gquad;
-            qquad.insert(std::pair<qType, gmx_stats>(i.first, gquad));
+            qquad.insert(std::pair<qType, gmx_stats>(i.first, std::move(gquad)));
             gmx_stats gdip;
-            qdip.insert(std::pair<qType, gmx_stats>(i.first, gdip));
+            qdip.insert(std::pair<qType, gmx_stats>(i.first, std::move(gdip)));
             gmx_stats gmu;
-            qmu.insert(std::pair<qType, gmx_stats>(i.first, gmu));
+            qmu.insert(std::pair<qType, gmx_stats>(i.first, std::move(gmu)));
             gmx_stats gepot;
-            qepot.insert(std::pair<qType, gmx_stats>(i.first, gepot));
+            qepot.insert(std::pair<qType, gmx_stats>(i.first, std::move(gepot)));
         }
         lsq_esp.insert(std::pair<iMolSelect, qtStats>(ims.first, std::move(qesp)));
         lsq_quad.insert(std::pair<iMolSelect, qtStats>(ims.first, std::move(qquad)));

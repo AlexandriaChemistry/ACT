@@ -491,7 +491,7 @@ const GenericProperty *MolProp::findProperty(MolPropObservable  mpo,
         {
             for (const auto &pp : ei->propertyConst(mpo))
             { 
-                if (bCheckTemperature(pp->getTemperature(), T))
+                if (bCheckTemperature(T, pp->getTemperature()))
                 {
                     if ((ei->dataSource() == dsExperiment) &&
                         (iqmType::Exp == iQM || iqmType::Both == iQM))
