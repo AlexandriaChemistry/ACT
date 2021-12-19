@@ -84,11 +84,28 @@ enum class eHisto {
 class gmx_stats
 {
 private:
-    double  aa_, a_, b_, sigma_a_, sigma_b_, aver_, sigma_aver_, error_;
-    double  rmsd_, Rdata_, Rfit_, Rfitaa_, chi2_, chi2aa_, mse_, mae_;
-    std::vector<double> x_, y_, dx_, dy_;
-    bool    computed_;
-    size_t  np_c_;
+    std::vector<double> x_;
+    std::vector<double> y_;
+    std::vector<double> dx_;
+    std::vector<double> dy_;
+    double              aa_         = 0;
+    double              a_          = 0;
+    double              b_          = 0;
+    double              sigma_a_    = 0;
+    double              sigma_b_    = 0;
+    double              aver_       = 0;
+    double              sigma_aver_ = 0;
+    double              error_      = 0;
+    double              rmsd_       = 0;
+    double              Rdata_      = 0;
+    double              Rfit_       = 0;
+    double              Rfitaa_     = 0;
+    double              chi2_       = 0;
+    double              chi2aa_     = 0;
+    double              mse_        = 0;
+    double              mae_        = 0;
+    bool                computed_   = false;
+    size_t              np_c_       = 0;
 
     eStats compute(int weight);
     
