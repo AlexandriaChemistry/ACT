@@ -110,6 +110,12 @@ class AcmTest : public gmx::test::CommandLineTestBase
                 basis.assign("GEN");
                 trustObCharge = true;
             }
+            else if (inputformat == inputFormat::ZIP)
+            {
+                method.assign("B3LYP");
+                basis.assign("GEN");
+                trustObCharge = true;
+            }
             else if (inputformat == inputFormat::PDB)
             {
                 fileName.append(".pdb");
@@ -160,8 +166,7 @@ class AcmTest : public gmx::test::CommandLineTestBase
 
             // Get poldata
             auto pd  = getPoldata(model);
-            auto imm = mp_.GenerateTopology(stdout,
-                                            pd, method, basis, nullptr,
+            auto imm = mp_.GenerateTopology(stdout, pd, method, basis,
                                             missingParameters::Error, nullptr);
             if (immStatus::OK != imm)
             {

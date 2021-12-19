@@ -54,6 +54,7 @@ static std::map<qType, std::string> qTypeNames = {
     { qType::Hirshfeld, "Hirshfeld"  },
     { qType::CM5,       "CM5"        },
     { qType::Calc,      "Alexandria" },
+    { qType::Gasteiger, "Gasteiger"  },
     { qType::Elec,      "Electronic" }
 };
 
@@ -65,6 +66,20 @@ const std::string &qTypeName(qType qt)
 const std::map<qType, std::string> &qTypes()
 {
     return qTypeNames;
+}
+
+qType stringToQtype(const std::string &type)
+{
+    for (const auto &qn : qTypeNames)
+    {
+        if (qn.second.compare(type) == 0)
+        {
+            return qn.first;
+        }
+    }
+    GMX_THROW(gmx::InvalidInputError(gmx::formatString("Unknown charge type %s", type.c_str()).c_str()));
+    // To make the compiler happy
+    return qType::ESP;
 }
 
 void QtypeProps::setX(const gmx::HostVector<gmx::RVec> &x)

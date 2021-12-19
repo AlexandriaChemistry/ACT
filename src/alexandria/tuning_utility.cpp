@@ -93,12 +93,7 @@ public:
 
     bool empty() const
     { 
-        int N; 
-        if (lsq_.get_npoints(&N) == eStats::OK)
-        {
-            return N == 0;
-        }
-        return true;
+        return 0 == lsq_.get_npoints();
     }
 };
 
@@ -114,9 +109,8 @@ static void print_stats(FILE        *fp,
     real a    = 0, da  = 0, b    = 0, db   = 0;
     real mse  = 0, mae = 0, chi2 = 0, rmsd = 0;
     real Rfit = 0;
-    int  n;
+    int  n    = lsq->get_npoints();
     // TODO add error checking for lsq
-    lsq->get_npoints(&n);
     if (n == 0)
     {
         return;
@@ -130,11 +124,24 @@ static void print_stats(FILE        *fp,
                     "Property", "N", "a", "b", "R(%)", "RMSD", "MSE", "MAE", "Model");
             fprintf(fp, "------------------------------------------------------------------------------------------------\n");
         }
-        lsq->get_ab(elsqWEIGHT_NONE, &a, &b, &da, &db, &chi2, &Rfit);
-        lsq->get_rmsd(&rmsd);
-        lsq->get_mse_mae(&mse, &mae);
-        fprintf(fp, "%-26s %6d %6.3f(%5.3f) %6.3f(%5.3f) %7.2f %8.4f %8.4f %8.4f %10s\n",
-                prop, n, a, da, b, db, Rfit*100, rmsd, mse, mae, yaxis);
+        eStats ok = lsq->get_ab(elsqWEIGHT_NONE, &a, &b, &da, &db, &chi2, &Rfit);
+        if (eStats::OK == ok)
+        {
+            ok = lsq->get_rmsd(&rmsd);
+        }
+        if (eStats::OK == ok)
+        {
+            ok = lsq->get_mse_mae(&mse, &mae);
+        }
+        if (eStats::OK == ok)
+        {
+            fprintf(fp, "%-26s %6d %6.3f(%5.3f) %6.3f(%5.3f) %7.2f %8.4f %8.4f %8.4f %10s\n",
+                    prop, n, a, da, b, db, Rfit*100, rmsd, mse, mae, yaxis);
+        }
+        else
+        {
+            fprintf(fp, "Statistics problem for %s: %s\n", prop, gmx_stats_message(ok));
+        }
     }
     else
     {
@@ -145,11 +152,24 @@ static void print_stats(FILE        *fp,
                     "Property", "N", "a", "R(%)", "RMSD", "MSE", "MAE", "Model");
             fprintf(fp, "----------------------------------------------------------------------------------------------\n");
         }
-        lsq->get_a(elsqWEIGHT_NONE, &a, &da, &chi2, &Rfit);
-        lsq->get_rmsd(&rmsd);
-        lsq->get_mse_mae(&mse, &mae);
-        fprintf(fp, "%-26s %6d %6.3f(%5.3f) %7.2f %8.4f %8.4f %8.4f %10s\n",
-                prop, n, a, da, Rfit*100, rmsd, mse, mae, yaxis);
+        eStats ok = lsq->get_a(elsqWEIGHT_NONE, &a, &da, &chi2, &Rfit);
+        if (eStats::OK == ok)
+        {
+            ok = lsq->get_rmsd(&rmsd);
+        }
+        if (eStats::OK == ok)
+        {
+            ok = lsq->get_mse_mae(&mse, &mae);
+        }
+        if (eStats::OK == ok)
+        {
+            fprintf(fp, "%-26s %6d %6.3f(%5.3f) %7.2f %8.4f %8.4f %8.4f %10s\n",
+                    prop, n, a, da, Rfit*100, rmsd, mse, mae, yaxis);
+        }
+        else
+        {
+            fprintf(fp, "Statistics problem for %s: %s\n", prop, gmx_stats_message(ok));
+        }
     }
 }
 
@@ -160,31 +180,21 @@ static void print_lsq_sets(FILE *fp, const std::vector<gmx_stats> &lsq)
         return;
     }
     std::vector<std::vector<double> > x, y;
-    size_t              N = 0;
     x.resize(lsq.size());
     y.resize(lsq.size());
-    bool bOK = true;
-    do
+    for (size_t s = 0; s < lsq.size(); s++)
     {
-        for (size_t s = 0; s < lsq.size() && bOK; s++)
+        auto xx = lsq[s].getX();
+        auto yy = lsq[s].getY();
+        for (size_t k=0; k < xx.size(); k++)
         {
-            auto xx = lsq[s].getX();
-            auto yy = lsq[s].getY();
-            for (size_t k=0; k < xx.size(); k++)
-            {
                 x[s].push_back(xx[k]);
                 y[s].push_back(yy[k]);
-            }
         }
-        if (bOK)
-        {
-            N += 1;
-        }
-    } while (bOK);
-    
+    }
     
     fprintf(fp, "@type xy\n");
-    for(size_t i = 0; i < N; i++)
+    for(size_t i = 0; i < lsq.size(); i++)
     {
         fprintf(fp, "%10g", x[0][i]);
         for(size_t j = 0; j < lsq.size(); j++)
@@ -370,8 +380,8 @@ static void print_corr(const char                         *outfile,
         {
             for (auto &i : qs->second)
             {
-                int N;
-                if (eStats::OK == i.second.get_npoints(&N) && N > 0)
+                int N = i.second.get_npoints();
+                if (N > 0)
                 {
                     eprnm.push_back(gmx::formatString("%s-%s", qTypeName(i.first).c_str(), ims.second));
                     lsq.push_back(i.second);
@@ -515,13 +525,13 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
             gmx_stats gesp;
             qesp.insert(std::pair<qType, gmx_stats>(i.first, std::move(gesp)));
             gmx_stats gquad;
-            qquad.insert(std::pair<qType, gmx_stats>(i.first, gquad));
+            qquad.insert(std::pair<qType, gmx_stats>(i.first, std::move(gquad)));
             gmx_stats gdip;
-            qdip.insert(std::pair<qType, gmx_stats>(i.first, gdip));
+            qdip.insert(std::pair<qType, gmx_stats>(i.first, std::move(gdip)));
             gmx_stats gmu;
-            qmu.insert(std::pair<qType, gmx_stats>(i.first, gmu));
+            qmu.insert(std::pair<qType, gmx_stats>(i.first, std::move(gmu)));
             gmx_stats gepot;
-            qepot.insert(std::pair<qType, gmx_stats>(i.first, gepot));
+            qepot.insert(std::pair<qType, gmx_stats>(i.first, std::move(gepot)));
         }
         lsq_esp.insert(std::pair<iMolSelect, qtStats>(ims.first, std::move(qesp)));
         lsq_quad.insert(std::pair<iMolSelect, qtStats>(ims.first, std::move(qquad)));
@@ -591,8 +601,13 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
             mol->GenerateCharges(pd, fplog, cr, nullptr, qcycle, qtol,
                                  ChargeGenerationAlgorithm::NONE, dummy, lot);
             // Energy
-            lsq_epot[ims][qType::Calc].add_point(mol->Emol_, mol->potentialEnergy(), 0, 0);
-            fprintf(fp, "Reference potential energy %.2f\n", mol->Emol_);
+            double T = 0;
+            auto gp = mol->findProperty(MolPropObservable::EMOL, iqmType::QM, T, "", "", "");
+            if (gp)
+            {
+                lsq_epot[ims][qType::Calc].add_point(gp->getValue(), mol->potentialEnergy(), 0, 0);
+                fprintf(fp, "Reference potential energy %.2f\n", gp->getValue());
+            }
             auto terms = mol->energyTerms();
             for(auto &ep : ePlot)
             {

@@ -30,6 +30,9 @@ set(ALEXANDRIA_SOURCES
            acmindividual.cpp
            acminitializer.cpp
            alex_modules.cpp
+      	   molpropobservable.cpp
+           experiment.cpp
+      	   molprop.cpp
            allbondeds.cpp
            analyze.cpp
            atype_mapping.cpp
@@ -39,6 +42,7 @@ set(ALEXANDRIA_SOURCES
            categories.cpp
            chargemodel.cpp
            communication.cpp
+           composition.cpp
            confighandler.cpp
            devcomputer.cpp
            dissociation_energy.cpp
@@ -58,7 +62,6 @@ set(ALEXANDRIA_SOURCES
            merge_mp.cpp
            merge_pd.cpp
            molgen.cpp
-      	   molprop.cpp
            molprop_check.cpp
            molprop_csv.cpp
            molprop_sqlite3.cpp

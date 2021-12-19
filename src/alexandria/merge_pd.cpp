@@ -55,6 +55,9 @@
 #include "poldata_tables.h"
 #include "poldata_xml.h"
 
+namespace alexandria
+{
+
 static void merge_parameter(const std::vector<alexandria::Poldata> &pds,
                             alexandria::InteractionType             iType,
                             const std::string                      &parameter,
@@ -128,12 +131,10 @@ static void merge_parameter(const std::vector<alexandria::Poldata> &pds,
                     if (pp.second.mutability() == alexandria::Mutability::Free ||
                         pp.second.mutability() == alexandria::Mutability::Bounded)
                     {
-                        real average = 0;
-                        real sigma   = 0;
-                        int  N       = 0;
+                        real   average = 0;
+                        real   sigma   = 0;
                         if ((eStats::OK == lsq[j].get_average(&average)) &&
-                            (eStats::OK == lsq[j].get_sigma(&sigma)) &&
-                            (eStats::OK == lsq[j].get_npoints(&N)))
+                            (eStats::OK == lsq[j].get_sigma(&sigma)))
                         {
                             pp.second.setValue(average);
                             pp.second.setUncertainty(sigma);
@@ -161,10 +162,8 @@ static void merge_parameter(const std::vector<alexandria::Poldata> &pds,
                     {
                         real average = 0;
                         real sigma   = 0;
-                        int  N       = 0;
                         if ((eStats::OK == lsq[j].get_average(&average)) &&
-                            (eStats::OK == lsq[j].get_sigma(&sigma)) &&
-                            (eStats::OK == lsq[j].get_npoints(&N)))
+                            (eStats::OK == lsq[j].get_sigma(&sigma)))
                         {
                             ppar.second.setValue(average);
                             ppar.second.setUncertainty(sigma);
@@ -178,7 +177,7 @@ static void merge_parameter(const std::vector<alexandria::Poldata> &pds,
     }
 }
 
-int alex_merge_pd(int argc, char *argv[])
+int merge_pd(int argc, char *argv[])
 {
     const char *desc[] =
     {
@@ -274,3 +273,4 @@ int alex_merge_pd(int argc, char *argv[])
     return 0;
 }
 
+} // namespace alexandria

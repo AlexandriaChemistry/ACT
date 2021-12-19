@@ -182,8 +182,7 @@ FILE *OptACM::logFile() {
 void OptACM::initChargeGeneration(iMolSelect ims)
 {
     std::string method, basis, conf, type, myref, mylot;
-    splitLot(mg_.lot(), &method, &basis);
-    tensor              polar      = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+    splitLot(lot(), &method, &basis);
     std::vector<double> vec;
     for (MyMol &mymol : mg_.mymols())
     {
@@ -194,14 +193,12 @@ void OptACM::initChargeGeneration(iMolSelect ims)
         if (mg_.fit("alpha"))
         {
             // For fitting alpha we need a reference polarizability
-            double ref_pol, error, T = 0;
-            if (mymol.getPropRef(MolPropObservable::POLARIZABILITY, iqmType::QM,
-                                 method, basis, "",
-                                 (char *)"electronic",
-                                 &ref_pol, &error, &T,
-                                 &myref, &mylot, &vec, polar))
+            double T = 0;
+            auto gp = mymol.findProperty(MolPropObservable::POLARIZABILITY, iqmType::QM, T,
+                                         method, basis, "");
+            if (gp)
             {
-                mymol.SetElectronicPolarizability(ref_pol);
+                mymol.SetElectronicPolarizability(gp->getValue());
             }
             else
             {
@@ -298,9 +295,7 @@ void OptACM::runHelper()
 
 }
 
-} // namespace alexandria
-
-int alex_tune_eem(int argc, char *argv[])
+int tune_eem(int argc, char *argv[])
 {
     static const char          *desc[] = {
         "tune_eem read a series of molecules and corresponding experimental",
@@ -438,14 +433,12 @@ int alex_tune_eem(int argc, char *argv[])
     opt.sii()->fillPoldata(fp,
                            opt2fn_null("-d", filenms.size(), filenms.data()));
 
-    // TODO: MolGen read being called here!
+    // MolGen read being called here!
     if (0 == opt.mg()->Read(fp,
                             opt2fn("-f", filenms.size(), filenms.data()),
                             opt.sii()->poldata(),
                             bZero,
                             gms,
-                            false,
-                            true,
                             opt2fn_null("-table", filenms.size(), filenms.data()),
                             opt.verbose()))
     {
@@ -537,3 +530,5 @@ int alex_tune_eem(int argc, char *argv[])
     }
     return 0;
 }
+
+} // namespace alexandria

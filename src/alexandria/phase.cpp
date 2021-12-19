@@ -29,27 +29,46 @@
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
- 
- 
+
 #include "phase.h"
 
-static const char *phases[epNR] = { "gas", "liquid", "solid", "plasma" };
-    
-std::string phase2string(ePhase ep)
-{
-    return phases[ep];
-}
+#include <map>
 
-ePhase string2phase(std::string phase)
+#include "gromacs/utility/exceptions.h"
+
+namespace alexandria
 {
-    for(int i = 0; (i<epNR); i++)
+
+static std::map<const std::string, ePhase> stringToPhase = 
     {
-        if (0 == phase.compare(phases[i]))
+        { "gas",    ePhase::GAS },
+        { "liquid", ePhase::LIQUID }, 
+        { "solid",  ePhase::SOLID },
+        { "plasma", ePhase::PLASMA }
+    };
+    
+const std::string &phase2string(ePhase ep)
+{
+    for(auto &i : stringToPhase)
+    {
+        if (i.second == ep)
         {
-            return (ePhase) i;
+            return i.first;
         }
     }
-    return epNR;
+    GMX_THROW(gmx::InvalidInputError("Invalid phase"));
+    return stringToPhase.begin()->first;
 }
 
+ePhase string2phase(const std::string &phase)
+{
+    auto ss = stringToPhase.find(phase);
+    if (ss != stringToPhase.end())
+    {
+        return ss->second;
+    }
+    GMX_THROW(gmx::InvalidInputError("Invalid phase"));
+    return ePhase::GAS;
+}
 
+} // namespace alexandria

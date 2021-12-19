@@ -55,7 +55,6 @@ namespace alexandria
  * \param[in] eprop The property of choice
  * \param[in] mp    Array of molecules
  * \param[in] qmc   QM calc statistics
- * \param[in] exp_type The type of experimental property
  * \param[in] outlier  Outlier indicates a level (in units of sigma, one standard deviation). Calculations that deviate more than this level from the experiment are not taken into account when computing statistics. Moreover, the outliers are printed to the standard error. If outlier is 0, no action is taken.
  * \param[in] cList Structure containing all categories and the number of molecules per category
  * \param[in] gms   Structure containing selections of which molecules to output
@@ -67,7 +66,6 @@ void alexandria_molprop_stats_table(FILE                 *fp,
                                     MolPropObservable     eprop,
                                     std::vector<MolProp> &mp,
                                     const QmCount        &qmc,
-                                    char                 *exp_type,
                                     double                outlier,
                                     CategoryList          cList,
                                     const MolSelect      &gms,
@@ -109,7 +107,6 @@ void alexandria_molprop_category_table(FILE                    *fp,
  * \param[in] abs_toler If non-zero, takes prevalence over rel_toler, and indicates the absolute tolerance for this property for designating as an outlier
  * \param[in] mp    Array of molecules
  * \param[in] qmc   Statistics of quantum calculations
- * \param[in] exp_type Which type of this property should we print?
  * \param[in] bPrintAll If set print also properties of molecules for which no experimental data is available
  * \param[in] bPrintBasis Print the basis set in the table header
  * \param[in] bPrintMultQ Print the multiplicity and total charge of the molecule
@@ -125,7 +122,6 @@ void alexandria_molprop_prop_table(FILE                             *fp,
                                    real                              abs_toler,
                                    std::vector<alexandria::MolProp> &mp,
                                    const QmCount                    &qmc,
-                                   const char                       *exp_type,
                                    bool                              bPrintAll,
                                    bool                              bPrintBasis,
                                    bool                              bPrintMultQ,
@@ -140,7 +136,6 @@ void alexandria_molprop_prop_table(FILE                             *fp,
  * \param[in] pd    Force field data
  * \param[in] mp    Array of molecules
  * \param[in] lot   Level of theory in 'A/B' format
- * \param[in] exp_type The type of experimental property
  * \todo More explanation text
  * \ingroup module_alexandria
  */
@@ -148,8 +143,7 @@ void alexandria_molprop_atomtype_table(FILE                       *fp,
                                        bool                        bPolar,
                                        const std::vector<Poldata> &pd,
                                        const std::vector<MolProp> &mp,
-                                       const char                 *lot,
-                                       const char                 *exp_type);
+                                       const char                 *lot);
 
 } // namespace alexandria
 

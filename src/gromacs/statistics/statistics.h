@@ -84,11 +84,28 @@ enum class eHisto {
 class gmx_stats
 {
 private:
-    double  aa, a, b, sigma_a, sigma_b, aver, sigma_aver, error;
-    double  rmsd, Rdata, Rfit, Rfitaa, chi2, mse, mae;
-    std::vector<double> x, y, dx, dy;
-    bool    computed;
-    size_t  np_c;
+    std::vector<double> x_;
+    std::vector<double> y_;
+    std::vector<double> dx_;
+    std::vector<double> dy_;
+    double              aa_         = 0;
+    double              a_          = 0;
+    double              b_          = 0;
+    double              sigma_a_    = 0;
+    double              sigma_b_    = 0;
+    double              aver_       = 0;
+    double              sigma_aver_ = 0;
+    double              error_      = 0;
+    double              rmsd_       = 0;
+    double              Rdata_      = 0;
+    double              Rfit_       = 0;
+    double              Rfitaa_     = 0;
+    double              chi2_       = 0;
+    double              chi2aa_     = 0;
+    double              mse_        = 0;
+    double              mae_        = 0;
+    bool                computed_   = false;
+    size_t              np_c_       = 0;
 
     eStats compute(int weight);
     
@@ -141,8 +158,8 @@ public:
     eStats add_points(int n, real *x, real *y,
                       real *dx, real *dy);
 
-    const std::vector<double> getX() const { return x; }
-    const std::vector<double> getY() const { return y; }
+    const std::vector<double> getX() const { return x_; }
+    const std::vector<double> getY() const { return y_; }
     /*! \brief
      * Delivers data points from the statistics.
      *
@@ -214,11 +231,9 @@ public:
 
     /*! \brief
      * Get the number of points.
-     * \param[in]  stats The data structure
-     * \param[out] N     number of data points
-     * \return error code
+     * \return the number
      */
-    eStats get_npoints(int *N) const;
+    size_t get_npoints() const { return x_.size(); };
     
     /*! \brief
      * Computes and returns the average value.
@@ -279,11 +294,10 @@ public:
      * therefore one of these should be zero, but not the other. If *nbins = 0
      * the number of bins will be returned in this variable. ehisto should be one of
      * ehistoX or ehistoY. If
-     * normalized not equal to zero, the integral of the histogram will be
+     * normalized, the integral of the histogram will be
      * normalized to one. The output is in two arrays, *x and *y, to which
      * you should pass a pointer. Memory for the arrays will be allocated
      * as needed. Function returns one of the eStats codes.
-     * \param[in]  stats The data structure
      * \param[in] binwidth For the histogram
      * \param[in] nbins    Number of bins
      * \param[in] ehisto   Type (see enum above)
@@ -293,7 +307,7 @@ public:
      * \return error code
      */
     eStats make_histogram(real binwidth, int *nbins,
-                          eHisto ehisto, int normalized,
+                          eHisto ehisto, bool normalized,
                           std::vector<double> *x,
                           std::vector<double> *y);
 };

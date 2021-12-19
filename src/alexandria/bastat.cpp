@@ -67,6 +67,9 @@
 #include "stringutil.h"
 #include "tuning_utility.h"
 
+namespace alexandria
+{
+
 static void generate_bcc(Poldata *pd,
                          double   hardness)
 {
@@ -127,7 +130,7 @@ static void generate_bcc(Poldata *pd,
     printf("Have generated %zu entries for BCC\n", bcc->parameters()->size());
 }
 
-int alex_bastat(int argc, char *argv[])
+int bastat(int argc, char *argv[])
 {
     static const char               *desc[] = {
         "bastat read a series of molecules and extracts average geometries from",
@@ -266,3 +269,5 @@ int alex_bastat(int argc, char *argv[])
     gmx_ffclose(fp);
     return 0;
 }
+
+} // namespace alexandria

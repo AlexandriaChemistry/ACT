@@ -146,10 +146,10 @@ int merge_xml(gmx::ArrayRef<const std::string>  infiles,
               bool bForceMerge);
 
 /* Check the available molprops to see what kind of calculations are stored in there */
-void find_calculations(std::vector<alexandria::MolProp> &mp,
-                       MolPropObservable                 mpo,
-                       const char                       *fc_str,
-                       QmCount                          *qmc);
+void find_calculations(const std::vector<alexandria::MolProp> &mp,
+                       MolPropObservable                       mpo,
+                       const char                             *fc_str,
+                       QmCount                                *qmc);
 
 /*! \brief
  * Sorts a vector of molprops

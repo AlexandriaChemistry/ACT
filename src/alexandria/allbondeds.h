@@ -85,9 +85,9 @@ namespace alexandria
          * \param[out] N       The number of data points
          * \return status from statistics library
          */
-        eStats getAverageSigmaN(real *average,
-                                real *sigma,
-                                int  *N);
+        eStats getAverageSigmaN(real   *average,
+                                real   *sigma,
+                                size_t *N);
     };
 
     /*! Class to analyze structures and derive geometric statistics

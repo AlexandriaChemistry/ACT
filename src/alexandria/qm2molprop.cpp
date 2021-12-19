@@ -52,7 +52,10 @@
 #include "poldata_xml.h"
 #include "readpsi4.h"
 
-int alex_qm2molprop(int argc, char *argv[])
+namespace alexandria
+{
+
+int qm2molprop(int argc, char *argv[])
 {
     static const char               *desc[] = 
         {
@@ -206,3 +209,5 @@ int alex_qm2molprop(int argc, char *argv[])
 
     return 0;
 }
+
+} // namespace alexandria

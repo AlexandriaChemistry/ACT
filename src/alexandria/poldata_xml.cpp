@@ -137,7 +137,7 @@ enum class xmlEntry {
 };
 
 //! Map from string used in XML file to xmlEntry enum
-std::map<const std::string, xmlEntry> xmlxxx =
+std::map<const std::string, xmlEntry> xml_pd =
 {
     { "gentop",                    xmlEntry::GENTOP           },
     { "reference",                 xmlEntry::REFERENCE        },
@@ -190,20 +190,20 @@ std::map<const std::string, xmlEntry> xmlxxx =
     { "angle",                     xmlEntry::ANGLE            }
 };
 
-std::map<xmlEntry, const std::string> rmap = {};
+std::map<xmlEntry, const std::string> rmap_pd = {};
 
 typedef std::map<xmlEntry, std::string> xmlBuffer;
 
 static const char *exml_names(xmlEntry xml)
 {
-    if (rmap.empty())
+    if (rmap_pd.empty())
     {
-        for (auto &iter : xmlxxx)
+        for (auto &iter : xml_pd)
         {
-            rmap.insert({iter.second, iter.first});
+            rmap_pd.insert({iter.second, iter.first});
         }
     }
-    return rmap[xml].c_str();
+    return rmap_pd[xml].c_str();
 }
 
 static bool NNlow(xmlBuffer *xbuf, xmlEntry xml, bool obligatory)
@@ -280,8 +280,8 @@ static void processAttr(FILE       *fp,
         attrname.assign((char *)attr->name);
         attrval.assign((char *)attr->children->content);
 
-        auto iter = xmlxxx.find(attrname);
-        if (iter != xmlxxx.end())
+        auto iter = xml_pd.find(attrname);
+        if (iter != xml_pd.end())
         {
             xbuf->insert({iter->second, attrval});
 
@@ -461,7 +461,7 @@ static void processAttr(FILE       *fp,
         if (nullptr != debug)
         {
             fprintf(debug, "Unknown combination of attributes:\n");
-            for (const auto &i : xmlxxx)
+            for (const auto &i : xml_pd)
             {
                 xmlEntry ix = i.second;
                 if (xbuf->find(ix) != xbuf->end() &&
@@ -505,8 +505,8 @@ static void processTree(FILE          *fp,
                 sp(indent, buf, 99);
                 fprintf(fp, "%sElement node name %s\n", buf, (char *)tree->name);
             }
-            auto iter = xmlxxx.find((const char *)tree->name);
-            if (iter != xmlxxx.end())
+            auto iter = xml_pd.find((const char *)tree->name);
+            if (iter != xml_pd.end())
             {
                 auto elem = iter->second;
                 if (elem != xmlEntry::GENTOP)
@@ -530,7 +530,7 @@ void readPoldata(const std::string &fileName,
     xmlDocPtr   doc;
     std::string fn, fn2;
 
-    rmap.clear();
+    rmap_pd.clear();
     fn = fileName;
     if (fn.empty())
     {
@@ -700,7 +700,7 @@ void writePoldata(const std::string &fileName,
     xmlNodePtr  myroot;
     xmlChar    *libdtdname, *dtdname, *gmx;
 
-    rmap.clear();
+    rmap_pd.clear();
     gmx        = (xmlChar *) "gentop";
     dtdname    = (xmlChar *) "gentop.dtd";
     libdtdname = dtdname;

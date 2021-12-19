@@ -71,7 +71,10 @@ static void print_errors(const char                     *fn,
     fclose(fp);
 }
 
-int alex_gentop(int argc, char *argv[])
+namespace alexandria
+{
+
+int gentop(int argc, char *argv[])
 {
     static const char               *desc[] = {
         "gentop generates a topology from molecular coordinates",
@@ -98,16 +101,6 @@ int alex_gentop(int argc, char *argv[])
         "ACM-s  : Alexandria Charge Model with Slater charges, and[BR]",
         "ACM-pg : Alexandria Charge Model with Polarizable Gaussian charges.[PAR]",
         "ACM-ps : Alexandria Charge Model with Polarizable Slater charges.[PAR]",
-        "A few other choices are available for historical reasons and for",
-        "development:[PAR]",
-        "ESP-p  : ElectroStatic Potential with point charges[PAR]",
-        "ESP-pp : ESP with with polarizable point charges[PAR]",
-        "ESP-pg : ESP with with polarizable Gaussian-distributed charges[PAR]",
-        "ESP-ps : ESP with with polarizable Slater-distributed charges[PAR]",
-        "Rappe  : Rappe and Goddard (J Phys Chem 95 (1991) 3358)[PAR]",
-        "Yang   : Yang & Sharp (J Chem Theory Comput 2 (2006), 1152)[PAR]",
-        "Bultinck: Bultinck et al. (J Phys Chem A 106 (2002) 7887)[PAR]",
-        "Verstraelen: Verstraelen et al. (J. Chem. Phys. 131, 044127, 2009)[PAR]",
         "The corresponding data files can be found in the library directory",
         "in subdirectory alexandria.ff. Check chapter 5 of the manual for more",
         "information about file formats.[PAR]",
@@ -115,12 +108,9 @@ int alex_gentop(int argc, char *argv[])
         "that can be used to run a simulation of the system using the OpenMM",
         "software."
     };
-    const char                      *bugs[] = {
-        "No force constants for impropers are generated"
-    };
-    gmx_output_env_t                *oenv;
-    gmx_atomprop_t                   aps;
-    immStatus                        imm;
+    gmx_output_env_t *oenv;
+    gmx_atomprop_t    aps;
+    immStatus         imm;
 
     t_filenm                         fnm[] = {
         { efTOP, "-p",        "out",           ffOPTWR },
@@ -169,7 +159,7 @@ int alex_gentop(int argc, char *argv[])
     static gmx_bool                  bAllowMissing  = false;
     static gmx_bool                  addHydrogens   = false;
 
-    static const char               *ff[]           = {nullptr, "ACM-g", "ACM-pg", "ACM-s", "ACM-ps", "ESP-p", "ESP-pp", "ESP-pg", "ESP-ps", "Yang", "Bultinck", "Rappe", "Verstraelen", nullptr};
+    static const char               *ff[]           = {nullptr, "ACM-g", "ACM-pg", "ACM-s", "ACM-ps", "Verstraelen", nullptr};
     static const char               *cgopt[]        = {nullptr, "Atom", "Group", "Neutral", nullptr};
     static const char               *lot            = nullptr;
     static const char               *qcustom        = nullptr;
@@ -229,18 +219,18 @@ int alex_gentop(int argc, char *argv[])
     };
 
     if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
-                           asize(desc), desc, asize(bugs), bugs, &oenv))
+                           asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
 
-    alexandria::Poldata       pd;
-    t_inputrec               *inputrec = new t_inputrec();
-    t_commrec                *cr       = init_commrec();
-    const char               *tabfn    = opt2fn_null("-table", NFILE, fnm);
-    eChargeGroup              ecg      = (eChargeGroup) get_option(cgopt);
-    gmx::MDLogger             mdlog {};
-    std::string               method, basis;
+    Poldata        pd;
+    t_inputrec    *inputrec = new t_inputrec();
+    t_commrec     *cr       = init_commrec();
+    const char    *tabfn    = opt2fn_null("-table", NFILE, fnm);
+    eChargeGroup   ecg      = (eChargeGroup) get_option(cgopt);
+    gmx::MDLogger  mdlog {};
+    std::string    method, basis;
     splitLot(lot, &method, &basis);
 
     /* Check the options */
@@ -273,7 +263,7 @@ int alex_gentop(int argc, char *argv[])
     }
     try
     {
-        alexandria::readPoldata(gentop_fnm, &pd);
+        readPoldata(gentop_fnm, &pd);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     
@@ -292,7 +282,7 @@ int alex_gentop(int argc, char *argv[])
                static_cast<int>(pd.getNatypes()));
     }
 
-    alexandria::MyMol                mymol;
+    MyMol                mymol;
     if (strlen(dbname) > 0)
     {
         const char *molpropDatabase = opt2fn_null("-mpdb", NFILE, fnm);
@@ -305,8 +295,8 @@ int alex_gentop(int argc, char *argv[])
             printf("Looking up %s in molecule database %s.\n",
                    dbname, molpropDatabase);
         }
-        alexandria::MolPropIterator      mpi;
-        std::vector<alexandria::MolProp> mps;
+        MolPropIterator      mpi;
+        std::vector<MolProp> mps;
         MolPropRead(molpropDatabase, &mps);
         for (mpi = mps.begin(); (mpi < mps.end()); mpi++)
         {
@@ -327,7 +317,7 @@ int alex_gentop(int argc, char *argv[])
         {
             molnm = (char *)"MOL";
         }
-        alexandria::MolProp  mp;
+        MolProp  mp;
         double qtot_babel = 0;
         if (readBabel(filename,
                       &mp,
@@ -357,7 +347,7 @@ int alex_gentop(int argc, char *argv[])
                 mp.SetTotalCharge(qtot);
                 mymol.Merge(&mp);
             }
-       }
+        }
         else
         {
             gmx_fatal(FARGS, "No input file has been specified.");
@@ -366,12 +356,10 @@ int alex_gentop(int argc, char *argv[])
     mymol.SetForceField(ff[0]);
     fill_inputrec(inputrec);
     mymol.setInputrec(inputrec);
-    std::string mylot;
     imm = mymol.GenerateTopology(stdout,
                                  &pd,
                                  method,
                                  basis,
-                                 &mylot,
                                  bAllowMissing ? missingParameters::Ignore : missingParameters::Error,
                                  tabfn);
 
@@ -408,7 +396,7 @@ int alex_gentop(int argc, char *argv[])
                                        qtol,
                                        alg,
                                        myq,
-                                       mylot);
+                                       lot);
     }
     /* Generate output file for debugging if requested */
     if (immStatus::OK == imm)
@@ -444,7 +432,6 @@ int alex_gentop(int argc, char *argv[])
         }
         else
         {
-            splitLot(mylot.c_str(), &method, &basis);
             mymol.PrintConformation(opt2fn("-c", NFILE, fnm));
             mymol.PrintTopology(bITP ? ftp2fn(efITP, NFILE, fnm) : ftp2fn(efTOP, NFILE, fnm),
                                 bVerbose,
@@ -462,3 +449,5 @@ int alex_gentop(int argc, char *argv[])
     }
     return 0;
 }
+
+} // namespace alexandria

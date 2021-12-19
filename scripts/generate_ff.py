@@ -78,9 +78,10 @@ class AtomTypes:
     for rr in range(1,len(rows)):
       row = rows[rr]
       key = row[0]
-      if key[:-2] != "_s" or polarizable:
-        if key in self.atp:
-          sys.exit("Duplicate atomtype %s in %s" % ( key, filename ))
+      if not polarizable and (key[:-2] == "_s" or row[1] == 'X'):
+        sys.exit("Atomtypes file contains shells. Please select another one.")
+      if key in self.atp:
+        sys.exit("Duplicate atomtype %s in %s" % ( key, filename ))
       self.atp[key] = {}
       self.atp[key]["index"] = n
       for kk in range(1,len(row)):
@@ -175,6 +176,7 @@ class ForceField:
         found = True
         print("chargetype  = {}".format(self.chargetype))
         print("vanderwaals = {}".format(self.vanderwaals))
+        print("polarizable = {}".format(self.polarizable))
     if not found:
       print("Unsupported force field %s" % qdist)
       exit(1)
