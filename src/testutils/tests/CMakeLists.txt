@@ -38,5 +38,5 @@ gmx_add_unit_test(TestUtilsUnitTests testutils-test
                   testasserts_tests.cpp
                   xvgtest_tests.cpp)
 
-gmx_add_mpi_unit_test(TestUtilsMpiUnitTests testutils-mpi-test 2
-                      mpitest.cpp)
+#gmx_add_mpi_unit_test(TestUtilsMpiUnitTests testutils-mpi-test 2
+#                      mpitest.cpp)

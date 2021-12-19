@@ -310,8 +310,8 @@ void AllBondeds::updatePoldata(FILE             *fp,
         
         for (auto &i : bb.second)
         {
-            size_t N;
-            real   av, sig;
+            size_t N = 0;
+            real   av = 0, sig = 0;
             i.getAverageSigmaN(&av, &sig, &N);
             auto bondId = i.id();
             switch (iType)
