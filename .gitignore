@@ -25,6 +25,7 @@ _build
 CMakeLists.txt.user
 /VersionInfo*.cmake
 Testing
+build_Debug_DOUBLE
 build_Release_DOUBLE
 cmake-build-debug
 
