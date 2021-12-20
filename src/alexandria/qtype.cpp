@@ -156,7 +156,6 @@ void QtypeProps::calcMoments()
     GMX_RELEASE_ASSERT(x_.size() > 0, gmx::formatString("No coordinates for %s", qTypeName(qtype_).c_str()).c_str());
     // distance of atoms to center of charge
     rvec   r; 
-    real   r2;
     clear_mat(quadrupole_);
     clear_rvec(mu_);
     for (size_t i = 0; i < q_.size(); i++)
@@ -166,7 +165,6 @@ void QtypeProps::calcMoments()
         {
             mu_[m] += e2d(r[m]*q_[i]);
         }
-        r2   = iprod(r, r);
         for (int m = 0; m < DIM; m++)
         {
             for (int n = m; n < DIM; n++)

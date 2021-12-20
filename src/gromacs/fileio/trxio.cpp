@@ -276,16 +276,6 @@ int write_trxframe_indexed(t_trxstatus *status, const t_trxframe *fr, int nind,
     char  title[STRLEN];
     rvec *xout = nullptr, *vout = nullptr, *fout = nullptr;
     int   i, ftp = -1;
-    real  prec;
-
-    if (fr->bPrec)
-    {
-        prec = fr->prec;
-    }
-    else
-    {
-        prec = 1000.0;
-    }
 
     if (status->fio)
     {
@@ -400,16 +390,6 @@ int write_trxframe_indexed(t_trxstatus *status, const t_trxframe *fr, int nind,
 int write_trxframe(t_trxstatus *status, t_trxframe *fr, gmx_conect gc)
 {
     char title[STRLEN];
-    real prec;
-
-    if (fr->bPrec)
-    {
-        prec = fr->prec;
-    }
-    else
-    {
-        prec = 1000.0;
-    }
 
     switch (gmx_fio_getftp(status->fio))
     {

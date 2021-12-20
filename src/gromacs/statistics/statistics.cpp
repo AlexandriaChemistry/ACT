@@ -261,6 +261,7 @@ eStats gmx_stats::compute(int weight)
             sigma_a_ = std::sqrt(chi2_/((N-2)*dx2));
             sigma_b_ = sigma_a_*std::sqrt(xx);
             Rfit_    = std::abs(ssxy)/std::sqrt(ssxx*ssyy);
+            // TODO check which equation we should use here.
             Rfitaa_  = Rfit_; //aa*std::sqrt(dx2/dy2);
         }
         else

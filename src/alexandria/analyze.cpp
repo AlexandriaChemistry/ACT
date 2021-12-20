@@ -130,7 +130,6 @@ static void write_corr_xvg(FILE                             *fplog,
     real         rmsd      = 0;
     real         Rfit      = 0;
     double       exp_val   = 0;
-    double       exp_error = 0;
     double       qm_val    = 0;
     double       qm_error  = 0;
     double       diff      = 0;
@@ -170,7 +169,6 @@ static void write_corr_xvg(FILE                             *fplog,
                 if (gp)
                 {
                     exp_val   = gp->getValue();
-                    exp_error = gp->getError();
                     bExp      = true;
                 }
             }
