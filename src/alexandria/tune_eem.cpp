@@ -160,6 +160,7 @@ void OptACM::add_pargs(std::vector<t_pargs> *pargs) {
 void OptACM::check_pargs()
 {
     bch_.check_pargs();
+    gach_.check_pargs();
 }
 
 void OptACM::optionsFinished(const std::string &outputFile) {

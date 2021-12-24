@@ -9,6 +9,8 @@
 
 #include "confighandler.h"
 
+#include <string.h>
+
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/math/units.h"
 #include "gromacs/utility/gmxassert.h"
@@ -114,8 +116,8 @@ void GAConfigHandler::add_pargs(std::vector<t_pargs> *pargs)
 {
 
     t_pargs pa[] = {
-        // { "-optimizer", FALSE, etENUM, {optimizer_},
-        //   "Optimization method" },
+        { "-optimizer", FALSE, etENUM, {optimizer_},
+          "Optimization method" },
         { "-popSize", FALSE, etINT, {&popSize_},
           "Population size." },
         { "-nElites", FALSE, etINT, {&nElites_},
@@ -124,10 +126,10 @@ void GAConfigHandler::add_pargs(std::vector<t_pargs> *pargs)
           "Initialize the individuals randomly, within the given bounds." },  
         { "-nCrossovers_", FALSE, etINT, {&nCrossovers_},
           "Order of the crossover operator. That is, amount of crossover points." },
-        // { "-sorter", FALSE, etENUM, {sorter_},
-        //   "Sorter algorithm to rank population based on fitness" },
-        // { "-probComputer", FALSE, etENUM, {probComputer_},
-        //   "Probability computation algorithm" },
+        { "-sorter", FALSE, etENUM, {sorter_},
+          "Sorter algorithm to rank population based on fitness" },
+        { "-probComputer", FALSE, etENUM, {probComputer_},
+          "Probability computation algorithm" },
         { "-boltzTemp", FALSE, etREAL, {&boltzTemp_},
           "Initial temperature for Boltzmann probability computing." },
         { "-prCross", FALSE, etREAL, {&prCross_},
@@ -144,7 +146,27 @@ void GAConfigHandler::add_pargs(std::vector<t_pargs> *pargs)
 
 void GAConfigHandler::check_pargs()
 {
-  // TODO: Check pargs!
+  
+  GMX_RELEASE_ASSERT(popSize_ > 0, "-popSize must be positive.");
+  
+  if (popSize_ % 2 != 0)  // If popSize is odd
+  {
+    GMX_RELEASE_ASSERT(strcmp(optimizer_[0], "MCMC") == 0, "With odd population sizes, only the MCMC optimizer will do.");
+  }
+
+  GMX_RELEASE_ASSERT(nElites_ > 0 && nElites_ % 2 == 0, "-nElites must be positive and even.");
+
+  if (strcmp(probComputer_[0], "RANK") == 0)  // If rank-based probability is requested
+  {
+    GMX_RELEASE_ASSERT(strcmp(sorter_[0], "NONE") != 0, "You must choose a sorter if you want rank-based probability computing.");
+  }
+
+  GMX_RELEASE_ASSERT(boltzTemp_ >= 0, "-boltzTemp must be nonnegative.");
+
+  GMX_RELEASE_ASSERT(prCross_ >= 0 && prCross_ <= 1, "-prCross must be in [0,1].");
+
+  GMX_RELEASE_ASSERT(prMut_ >= 0 && prMut_ <= 1, "-prMut must be in [0,1].");
+
 }
 
 /* * * * * * * * * * * * * * * * * * * * * *

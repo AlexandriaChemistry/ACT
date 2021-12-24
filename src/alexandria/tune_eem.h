@@ -67,6 +67,8 @@ private:
     MolGen mg_;
     //! BayesConfigHandler instance
     BayesConfigHandler bch_;
+    //! GAConfigHandler instance
+    GAConfigHandler gach_;
     //! SharedIndividualInfo instance
     SharedIndividualInfo sii_;
 
