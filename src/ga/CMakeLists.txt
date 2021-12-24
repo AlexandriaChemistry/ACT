@@ -27,8 +27,9 @@
 
 set(GA_SOURCES
            FitnessComputer.cpp
-           Mutator.cpp
+           GeneticAlgorithm.cpp
            Initializer.cpp
+           Mutator.cpp
 	)
 
 #if (BUILD_TESTING)

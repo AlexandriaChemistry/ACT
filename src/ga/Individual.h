@@ -23,6 +23,8 @@ protected:
     double fitnessTrain_ = 0.0;
     //! Fitness for test set
     double fitnessTest_ = 0.0;
+    //! Probability of selection
+    double probability_ = 0.0;
 
     //! Default constructor FIXME: maybe we have to make it public
     Individual() {}
@@ -30,11 +32,13 @@ protected:
     /*!
      * Property constructor
      * \param[in] fitnessTrain  the fitness for training set
-     * \param[in] fitnessTest  the fitness for test set
+     * \param[in] fitnessTest   the fitness for test set
+     * \param[in] probability   the probability of selection
      */
     Individual(const double fitnessTrain,
-               const double fitnessTest)
-    : fitnessTrain_(fitnessTrain), fitnessTest_(fitnessTest) {}
+               const double fitnessTest,
+               const double probability)
+    : fitnessTrain_(fitnessTrain), fitnessTest_(fitnessTest), probability_(probability) {}
 
 public:
 
@@ -77,6 +81,24 @@ public:
      * @param fitnessTest the fitness
      */
     void setFitnessTest(const double fitnessTest) { fitnessTest_ = fitnessTest; }
+
+    /*!
+     * Get the selection probability of the individual
+     * @returns the selection probability
+     */
+    double probability() const { return probability_; }
+
+    /*!
+     * Get a pointer to \p probability_
+     * @returns the pointer
+     */
+    double *probabilityPtr() { return &probability_; }
+
+    /*!
+     * Set the selection probability
+     * @param probability the selection probability
+     */
+    void setProbability(const double probability) { probability_ = probability; }
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * END: Getters and Setters                 *

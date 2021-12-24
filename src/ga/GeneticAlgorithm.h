@@ -6,17 +6,18 @@
 
 #include "Initializer.h"
 #include "FitnessComputer.h"
-#include "Sorter.h"
-#include "ProbabilityComputer.h"
-#include "Selector.h"
-#include "Crossover.h"
+// #include "Sorter.h"
+// #include "ProbabilityComputer.h"
+// #include "Selector.h"
+// #include "Crossover.h"
 #include "Mutator.h"
-#include "Terminator.h"
+// #include "Terminator.h"
 
 #include "alexandria/confighandler.h"
 #include "alexandria/sharedindividualinfo.h"
 #include "alexandria/acmfitnesscomputer.h"
 #include "alexandria/acminitializer.h"
+#include "alexandria/mcmcmutator.h"
 
 
 namespace ga
@@ -50,8 +51,6 @@ private:
     std::vector<Individual*> newPop_;
     //! Temporal storage to swap "oldPop" and "newPop" after each generation
     std::vector<Individual*> tmpPop_;
-    //! Probability of selection for each individual
-    std::vector<double> probability_;
     //! The best individual
     Individual* bestInd_;
 
@@ -61,20 +60,20 @@ private:
     //! Computes fitness for each individual in the population
     FitnessComputer        *fitComputer_;
     //! Sorts the individuals based on their fitness
-    Sorter                 *sorter_;
+    // Sorter                 *sorter_;
     //! Computes the probability of selection of each individual
-    ProbabilityComputer    *probComputer_;
+    // ProbabilityComputer    *probComputer_;
     //! Selects an individual from the population based on its probability
-    Selector               *selector_;
+    // Selector               *selector_;
     //! Grabs 2 individuals and crosses their genes to generate 2 new individuals
-    Crossover              *crossover_;
+    // Crossover              *crossover_;
     //! Mutates the genes of the individuals
     Mutator                *mutator_;
     //! Checks if the evolution should continue or be terminated
-    Terminator             *terminator_;
+    // Terminator             *terminator_;
 
     //! Pure MCMC evaluation
-    evolveMCMC();
+    void evolveMCMC();
 
 public:
 
@@ -96,15 +95,39 @@ public:
                             alexandria::GAConfigHandler         *gach,
                      const  std::string                         &outputFile)
     : bch_(bch), gach_(gach), cr_(cr), logfile_(logFile), oenv_(oenv),
-      probability_(gach->popSize()), oldPop_(gach->popSize()), newPop_(gach->popSize())
+      oldPop_(gach->popSize()), newPop_(gach->popSize())
     {
         initializer_ = new alexandria::ACMInitializer(mg->mindata(), sii, gach->randomInit(), outputFile);
-        fitComputer_ = new alexandria::ACMFitnessComputer(cr, logFile, sii, mg, removeMol, verbose, fullQuadrupole);
-        mutator_ = new alexandria::MCMCMutator(logFile, verbose, bch, fitComputer, sii, sii.nParam());
+        ACMFitnessComputer* tmpACMFitComp = new alexandria::ACMFitnessComputer(cr, logFile, sii, mg, removeMol, verbose, fullQuadrupole);
+        fitComputer_ = tmpACMFitComp;
+        mutator_ = new alexandria::MCMCMutator(logFile, verbose, bch, tmpACMFitComp, sii, sii->nParam());
     }
 
     //! \brief Evolve the initial population
     void evolve();
+
+    /* * * * * * * * * * * * * * * * * * * * * *
+    * BEGIN: Getters and Setters               *
+    * * * * * * * * * * * * * * * * * * * * * */
+
+    //! \return the best individual
+    Individual *bestInd() { return bestInd_; }
+
+    //! \return the mutator
+    Mutator *mutator() { return mutator_; }
+
+    //! \return the fitness computer
+    FitnessComputer *fitComputer() { return fitComputer_; }
+
+    //! \return a constant reference to \p oldPop_
+    const std::vector<Individual*> &oldPop() const { return oldPop_; }
+
+    //! \return a pointer to \p oldPop_
+    std::vector<Individual*> *oldPopPtr() { return &oldPop_; }
+
+    /* * * * * * * * * * * * * * * * * * * * * *
+    * END: Getters and Setters                 *
+    * * * * * * * * * * * * * * * * * * * * * */
 
 };
 

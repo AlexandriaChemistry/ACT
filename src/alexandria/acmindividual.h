@@ -63,6 +63,18 @@ private:
 
 public:
 
+    /*!
+     * Copy constructor
+     * \param[in] other the ACMIndividual reference instance
+     */
+    ACMIndividual(const ACMIndividual &other)
+    : ga::Individual(other.fitnessTrain(), other.fitnessTest(), other.probability()), id_(other.id()),
+      sii_(other.siiConst()), targets_(other.targets()), pd_(other.poldataConst()),
+      initialParam_(other.initialParam()), param_(other.param()), bestParam_(other.bestParam()),
+      pmean_(other.pMean()), psigma_(other.pSigma()), attemptedMoves_(other.attemptedMoves()),
+      acceptedMoves_(other.acceptedMoves()), fpc_(other.fpc()), fpe_(other.fpeConst()),
+      outputFile_(other.outputFile()) {}
+
     ACMIndividual(const int                     id,
                         SharedIndividualInfo   *sii,
                   const std::string            &outputFile)
@@ -260,6 +272,28 @@ public:
      */
     int id() const { return id_; }
 
+    /*!
+     * \brief Set a new value for \p id_
+     * Also adjust \p outputFile
+     * \param[in] id the new ID
+     */
+    void setId(const int id)
+    {
+        id_ = id;
+        const size_t firstIndex = outputFile_.find("-");  // We need to discard the existing indX- part
+        const size_t strLength = outputFile_.size();
+        outputFile_ = "ind" + std::to_string(id_) + "-" + outputFile_.substr(firstIndex, strLength - firstIndex);
+    }
+
+    //! \return a pointer to the SharedIndividualInfo instance
+    SharedIndividualInfo *sii() { return sii_; }
+
+    //! \return a pointer to the SharedIndividualInfo instance (for const objects)
+    SharedIndividualInfo *siiConst() const { return sii_; }
+
+    //! \brief Get a constant \p targets_ reference
+    const std::map<iMolSelect, std::map<eRMS, FittingTarget>> &targets() const { return targets_; }
+
     //! \brief Return the poldata as pointe to const variable
     const Poldata *poldata() const { return &pd_; }
 
@@ -272,8 +306,7 @@ public:
     //! \brief Return the number of parameters
     size_t nParam() const { return param_.size(); }
 
-    /*! \brief
-     * Set parameter j to a new value
+    /*! \brief Set parameter j to a new value
      * \param[j]   Index
      * \param[val] The new value
      */
@@ -283,9 +316,7 @@ public:
         param_[j] = val;
     }
 
-    /*! \brief
-     * Set all parameters to the array passed
-     */
+    //! \brief Set all parameters to the array passed
     void setParam(std::vector<double> param)
     {
         GMX_RELEASE_ASSERT(param.size() == param_.size() || param_.empty(),
@@ -293,22 +324,16 @@ public:
         param_ = param;
     }
 
-    /*! \brief
-     * Returns the current vector of parameters.
-     */
+    //! \brief Returns the current vector of parameters.
     const std::vector<double> &initialParam() const { return initialParam_; }
 
-    /*! \brief
-     * Returns the current vector of parameters.
-     */
+    //! \brief Returns the current vector of parameters.
     const std::vector<double> &param() const { return param_; }
 
     //! \return pointer to \p param_
     std::vector<double> *paramPtr() { return &param_; }
 
-    /*! \brief
-     * Returns the vector of best found value for each parameter.
-     */
+    //! \brief Returns the vector of best found value for each parameter.
     const std::vector<double> &bestParam() const { return bestParam_; }
 
     /*!
@@ -333,9 +358,7 @@ public:
     //! \return a pointer to \p psigma_
     std::vector<double> *pSigmaPtr() { return &psigma_; }
 
-    /*! \brief
-     * Return the vector of number of attempted moves for each parameter
-     */
+    //! \brief Return the vector of number of attempted moves for each parameter
     const std::vector<int> &attemptedMoves() const { return attemptedMoves_; }
 
     //! \return a pointer to \p attemptedMoves_
@@ -354,6 +377,12 @@ public:
 
     //! \return a \p fpe_ file for Chi2
     FILE *fpe() { return fpe_; }
+
+    //! \return a \p fpe_ file for Chi2 (for constant objects)
+    FILE *fpeConst() const { return fpe_; }
+
+    //! \return a constant reference to \p outputFile_
+    const std::string &outputFile() const { return outputFile_; }
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * END: Getters and Setters                 *

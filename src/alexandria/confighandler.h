@@ -95,6 +95,9 @@ public:
     * BEGIN: Getters and setters               *
     * * * * * * * * * * * * * * * * * * * * * */
 
+    //! \return the optimizer
+    const char *optimizer() { return optimizer_[0]; }
+
     //! \return the size of the population
     int popSize() const { return popSize_; }
 

@@ -155,6 +155,7 @@ void OptACM::add_pargs(std::vector<t_pargs> *pargs) {
     }
     mg_.addOptions(pargs, eTune::EEM, sii_.fittingTargets(iMolSelect::Train));
     bch_.add_pargs(pargs);
+    gach_.add_pargs(pargs);
 }
 
 void OptACM::check_pargs()
@@ -220,14 +221,12 @@ void OptACM::initChargeGeneration(iMolSelect ims)
     }
 }
 
-bool OptACM::runMaster(const gmx_output_env_t *oenv,
-                       const char             *xvgconv,
+bool OptACM::runMaster(const char             *xvgconv,
                        const char             *xvgepot,
                        bool                    optimize,
-                       bool                    sensitivity,
-                       bool 		           bEvaluate_testset)
+                       bool                    sensitivity)
 {
-    bool bMinimum = false;
+    bool bMinimum = true;  // FIXME: what do we do with this???
     GMX_RELEASE_ASSERT(MASTER(cr_), "WTF");
 
     print_memory_usage(debug);
@@ -240,11 +239,9 @@ bool OptACM::runMaster(const gmx_output_env_t *oenv,
     {
         sii_.setOutputFiles(xvgconv, paramClass, xvgepot);
         sii_.assignParamClassIndex();
-        sii_.computeWeightedTemperature(bch_.temperatureWeighting()); // FIXME: we could move this just after fillVectors()
-        ind_->openChi2ConvFile(oenv, bEvaluate_testset);
-        ind_->openParamConvFiles(oenv);
-        bMinimum = mutator_->MCMC(ind_, bEvaluate_testset);
-        ind_->closeConvFiles();
+        sii_.computeWeightedTemperature(bch_.temperatureWeighting());
+        // bMinimum = mutator_->MCMC(ind_, bEvaluate_testset);
+        ga_->evolve();
     }
     if (sensitivity)
     {
@@ -255,23 +252,30 @@ bool OptACM::runMaster(const gmx_output_env_t *oenv,
     GMX_RELEASE_ASSERT(fitComp_->calcDeviation(ind_, false, CalcDev::Final, iMolSelect::Train) < 0,
                        "Result for final parallel calcDeviation should be less than zero");
 
-    mutator_->printMonteCarloStatistics(ind_, logFile());
+    for (ga::Individual *finalInd : ga_->oldPop())
+    {
+        mutator_->printMonteCarloStatistics(static_cast<ACMIndividual*>(finalInd), logFile());
+    }
+
+    bestInd_ = static_cast<ACMIndividual*>(ga_->bestInd());
+    bestInd_->setId(0);  // ID 0 corresponds to the best individual
+
     if (bMinimum)
     {
-        auto best = ind_->bestParam();
+        auto best = bestInd_->bestParam();
         if (best.empty())
         {
             GMX_THROW(gmx::InternalError("Minimum found but not best parameters"));
         }
         // Restore best parameter set
-        ind_->setParam(best);
+        bestInd_->setParam(best);
         // Copy it to Poldata
         std::vector<bool> changed;
         changed.resize(best.size(), true);
-        ind_->toPoldata(changed);
+        bestInd_->toPoldata(changed);
         for (const auto &ims : iMolSelectNames())
         {
-            double chi2 = fitComp_->calcDeviation(ind_, true, CalcDev::Master, ims.first);
+            double chi2 = fitComp_->calcDeviation(bestInd_, true, CalcDev::Master, ims.first);
             fprintf(logFile(), "Minimum chi2 for %s %g\n",
                     iMolSelectName(ims.first), chi2);
         }
@@ -406,6 +410,9 @@ int tune_eem(int argc, char *argv[])
         return 0;
     }
 
+    // Set output environment in the optimization driver
+    opt.setOenv(oenv);
+
     // Check validity of arguments with check_pargs() in ConfigHandler(s)
     opt.check_pargs();
 
@@ -454,17 +461,6 @@ int tune_eem(int argc, char *argv[])
     opt.sii()->generateOptimizationIndex(fp, opt.mg());
     opt.sii()->fillVectors(opt.mg()->mindata());
 
-    // Start TODO: Substitute this by GA.
-    // Create ACMFitnessComputer and fill the DevComputers
-    opt.initFitComp();
-
-    // Create the ACMInitializer
-    opt.initInitializer();
-
-    // Create and initialize the individual
-    opt.initIndividual();
-    // End TODO:
-
     // init charge generation for compounds in the
     // training set
     opt.initChargeGeneration(iMolSelect::Train);
@@ -476,6 +472,15 @@ int tune_eem(int argc, char *argv[])
         opt.initChargeGeneration(iMolSelect::Ignore);
     }
 
+    // Create ACMFitnessComputer and fill the DevComputers
+    opt.initFitComp();
+    // Create the ACMInitializer
+    opt.initInitializer();
+    // Create and initialize the individual
+    opt.initIndividual();
+    // Create and initialize the mutator
+    opt.initMutator();
+
     if (MASTER(opt.commrec()))
     {
         // FIXME: Individual has been initialized above, should we check for
@@ -486,29 +491,27 @@ int tune_eem(int argc, char *argv[])
         //     opt.initOpt(bRandom);
         // }
 
-        // TODO: Is in the GA class. Initialize the MCMCMutator
-        opt.initMutator();
+        opt.initGA();
 
-        bool bMinimum = opt.runMaster(oenv,
-                                      opt2fn("-conv", filenms.size(), filenms.data()),
+        bool bMinimum = opt.runMaster(opt2fn("-conv", filenms.size(), filenms.data()),
                                       opt2fn("-epot", filenms.size(), filenms.data()),
                                       bOptimize,
-                                      bSensitivity,
-                                      bEvaluate_testset);
+                                      bSensitivity);
 
         if (bMinimum || bForceOutput || !bOptimize)
         {
+            ACMIndividual *bestInd = opt.bestInd();
             if (bForceOutput)
             {
                 // FIXME: this is not true! The best parameters are fed back to params_ (and to pd_) at the end
                 // of runMaster if a better parameter set was found. So no, the final step will not be the output
                 fprintf(opt.logFile(), "Output based on last step of MC simulation per your specification.\nUse the -noforce_output flag to prevent this.\nThe force field output file %s is based on the last MC step as well.\n", opt2fn("-o", filenms.size(), filenms.data()));
-                opt.ind()->saveState();
+                bestInd->saveState();
             }
             MolGen *tmpMg = opt.mg();
             printer.print(opt.logFile(),
                           &(tmpMg->mymols()),
-                          opt.ind()->poldata(),
+                          bestInd->poldata(),
                           tmpMg->mdlog(),
                           tmpMg->lot(),
                           tmpMg->qcycle(),
@@ -527,7 +530,9 @@ int tune_eem(int argc, char *argv[])
     }
     else if (bOptimize || bSensitivity)
     {
+
         opt.runHelper();
+        
     }
     return 0;
 }

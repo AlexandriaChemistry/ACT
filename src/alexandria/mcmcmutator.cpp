@@ -261,7 +261,8 @@ void MCMCMutator::printMonteCarloStatistics(ACMIndividual  *ind,
     const auto initialParam = ind->initialParam();
     const auto weightedTemperature = sii_->weightedTemperature();
 
-    fprintf(fp, "\nMonte Carlo statistics of parameters after optimization\n");
+    fprintf(fp, "\nIndividual %i\n", ind->id());
+    fprintf(fp, "Monte Carlo statistics of parameters after optimization\n");
     fprintf(fp, "#best %zu #mean %zu #sigma %zu #param %zu\n",
             bestParam.size(), pmean.size(), psigma.size(), paramNames.size());
     if (bestParam.size() == ind->nParam())
