@@ -182,7 +182,7 @@ FILE *OptACM::logFile() {
 void OptACM::initChargeGeneration(iMolSelect ims)
 {
     std::string method, basis, conf, type, myref, mylot;
-    splitLot(lot(), &method, &basis);
+    splitLot(mg_.lot(), &method, &basis);
     std::vector<double> vec;
     for (MyMol &mymol : mg_.mymols())
     {
