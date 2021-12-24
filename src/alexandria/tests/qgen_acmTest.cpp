@@ -110,6 +110,12 @@ class AcmTest : public gmx::test::CommandLineTestBase
                 basis.assign("GEN");
                 trustObCharge = true;
             }
+            else if (inputformat == inputFormat::ZIP)
+            {
+                method.assign("B3LYP");
+                basis.assign("GEN");
+                trustObCharge = true;
+            }
             else if (inputformat == inputFormat::PDB)
             {
                 fileName.append(".pdb");
@@ -160,8 +166,7 @@ class AcmTest : public gmx::test::CommandLineTestBase
 
             // Get poldata
             auto pd  = getPoldata(model);
-            auto imm = mp_.GenerateTopology(stdout,
-                                            pd, method, basis, nullptr,
+            auto imm = mp_.GenerateTopology(stdout, pd, method, basis,
                                             missingParameters::Error, nullptr);
             if (immStatus::OK != imm)
             {
@@ -205,56 +210,6 @@ class AcmTest : public gmx::test::CommandLineTestBase
         }
 
 };
-
-#ifdef OLDSTUFF
-TEST_F (AcmTest, BultinckLog)
-{
-    std::vector<double> qcustom;
-    testAcm("Bultinck", inputFormat::LOG, "1-butanol", true, 0, qcustom);
-}
-
-TEST_F (AcmTest, BultinckPDB)
-{
-    std::vector<double> qcustom;
-    testAcm("Bultinck", inputFormat::PDB, "1-butanol", true, 0, qcustom);
-}
-
-TEST_F (AcmTest, VerstraelenLog)
-{
-    std::vector<double> qcustom;
-    testAcm("Verstraelen", inputFormat::LOG, "1-butanol", true, 0, qcustom);
-}
-
-TEST_F (AcmTest, VerstraelenPDB)
-{
-    std::vector<double> qcustom;
-    testAcm("Verstraelen", inputFormat::PDB, "1-butanol", true, 0, qcustom);
-}
-
-TEST_F (AcmTest, RappeLog)
-{
-    std::vector<double> qcustom;
-    testAcm("Rappe", inputFormat::LOG, "1-butanol", true, 0, qcustom);
-}
-
-TEST_F (AcmTest, RappePDB)
-{
-    std::vector<double> qcustom;
-    testAcm("Rappe", inputFormat::PDB, "1-butanol", true, 0, qcustom);
-}
-
-TEST_F (AcmTest, YangLog)
-{
-    std::vector<double> qcustom;
-    testAcm("Yang", inputFormat::LOG, "1-butanol", true, 0, qcustom);
-}
-
-TEST_F (AcmTest, YangPDB)
-{
-    std::vector<double> qcustom;
-    testAcm("Yang", inputFormat::PDB, "1-butanol", true, 0, qcustom);
-}
-#endif 
 
 TEST_F (AcmTest, AXpgLOG)
 {

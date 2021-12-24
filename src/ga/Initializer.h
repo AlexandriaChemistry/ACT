@@ -1,8 +1,15 @@
-#ifndef ACT_INITIALIZER_H
-#define ACT_INITIALIZER_H
+/*! \internal \brief
+ * Implements part of the alexandria program.
+ * \author Julian Ramon Marrades Furquet <julianramon.marradesfurquet.8049@student.uu.se>
+ * \author Oskar Tegby <oskar.tegby@it.uu.se>
+ */
 
 
-#include "aliases.h"
+#ifndef GA_INITIALIZER_H
+#define GA_INITIALIZER_H
+
+
+#include "Individual.h"
 
 #include <time.h>
 #include <random>
@@ -21,48 +28,45 @@ class Initializer
 public:
 
     /*!
-        * Initialize an individual
-        * @param individual    pointer to the individual to initialize
-        * @param length        length of the chromosome
-        */
-    virtual void initialize(      vector   *individual,
-                            const int       length) = 0;
+     * Initialize an individual
+     * @param individual    pointer to pointer to the individual to initialize
+     */
+    virtual void initialize(Individual **individual) = 0;
 };
 
 
 /*!
  * Toy initializer. Initializes values randomly in range [\p min, \p max]
  */
-class SimpleInitializer : public Initializer
-{
+// class SimpleInitializer : public Initializer
+// {
 
-private:
+// private:
 
-    std::random_device                      rd;
-    std::mt19937                            gen;
-    std::uniform_real_distribution<double>  dis;
+//     std::random_device                      rd;
+//     std::mt19937                            gen;
+//     std::uniform_real_distribution<double>  dis;
 
-public:
+// public:
 
-    /*!
-     * Create a new SimpleInitializer object
-     * @param min   minimum value to give to a gene
-     * @param max   maximum value to give to a gene
-     */
-    SimpleInitializer(const double min,
-                      const double max)
-    : gen(rd()), dis(std::uniform_real_distribution<>(min, max))
-    {
-        gen.seed(::time(NULL));
-    }
+//     /*!
+//      * Create a new SimpleInitializer object
+//      * @param min   minimum value to give to a gene
+//      * @param max   maximum value to give to a gene
+//      */
+//     SimpleInitializer(const double min,
+//                       const double max)
+//     : gen(rd()), dis(std::uniform_real_distribution<>(min, max))
+//     {
+//         gen.seed(::time(NULL));
+//     }
 
-    virtual void initialize(      vector   *individual,
-                            const int       length);
+//     virtual void initialize(Individual  *individual);
 
-};
+// };
 
 
 } //namespace ga
 
 
-#endif //ACT_INITIALIZER_H
+#endif //GA_INITIALIZER_H

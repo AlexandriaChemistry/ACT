@@ -623,9 +623,7 @@ static void compare_pd(Poldata *pd1,
     }
 }
 
-} // namespace
-
-int alex_poldata_edit(int argc, char*argv[])
+int poldata_edit(int argc, char*argv[])
 {
     static const char               *desc[] = {
         "poldata_edit reads a poldata (force field) file and can do ",
@@ -785,4 +783,6 @@ int alex_poldata_edit(int argc, char*argv[])
     }
     return 0;
 }
+
+} // namespace alexandria
 

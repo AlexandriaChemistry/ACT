@@ -139,13 +139,9 @@ void QgenResp::writeDiffCube(QgenResp               *src,
     FILE       *fp;
     int         i, m, ix, iy, iz;
     real        pp, r, rmin;
-    gmx_stats_t gst = nullptr, ppcorr = nullptr;
+    gmx_stats   gst, ppcorr;
 
-    if (0 != histFn.size())
-    {
-        gst    = gmx_stats_init();
-        ppcorr = gmx_stats_init();
-    }
+    bool        histo = (0 != histFn.size());
     std::string lengthUnit("Bohr");
     std::string potUnit("Hartree/e");
     if (0 != cubeFn.size())
@@ -180,11 +176,10 @@ void QgenResp::writeDiffCube(QgenResp               *src,
             {
                 for (iz = 0; iz < nxyz_[ZZ]; iz++, m++)
                 {
-                    if (src->nEsp() > 0 && nullptr != ppcorr)
+                    if (src->nEsp() > 0 && histo)
                     {
-                        gmx_stats_add_point(ppcorr,
-                                            convertFromGromacs(src->ep_[m].v(), potUnit),
-                                            convertFromGromacs(ep_[m].vCalc(), potUnit), 0, 0);
+                        ppcorr.add_point(convertFromGromacs(src->ep_[m].v(), potUnit),
+                                         convertFromGromacs(ep_[m].vCalc(), potUnit), 0, 0);
                     }
                     pp = ep_[m].vCalc();
                     if (!src->ep_.empty())
@@ -204,7 +199,7 @@ void QgenResp::writeDiffCube(QgenResp               *src,
                     {
                         fprintf(fp, "\n");
                     }
-                    if (nullptr != gst)
+                    if (histo)
                     {
                         rmin = 1000;
                         /* Add point to histogram! */
@@ -218,7 +213,7 @@ void QgenResp::writeDiffCube(QgenResp               *src,
                                 rmin = r;
                             }
                         }
-                        gmx_stats_add_point(gst, rmin, pp, 0, 0);
+                        gst.add_point(rmin, pp, 0, 0);
                     }
                 }
                 if ((iz % 6) != 0)
@@ -229,29 +224,26 @@ void QgenResp::writeDiffCube(QgenResp               *src,
         }
         fclose(fp);
     }
-    if (nullptr != gst)
+    if (histo)
     {
         int   nb = 0;
-        real *x  = nullptr, *y = nullptr;
+        std::vector<double> x, y;
 
         fp = xvgropen(histFn.c_str(), "Absolute deviation from QM", "Distance (nm)",
                       "Potential", oenv);
-        gmx_stats_dump_xy(gst, fp);
+        gst.dump_xy(fp);
         if (0)
         {
-            gmx_stats_make_histogram(gst, 0.01, &nb, ehistoX, 0, &x, &y);
-            gmx_stats_free(gst);
+            gst.make_histogram(0.01, &nb, eHisto::X, 0, &x, &y);
             for (i = 0; (i < nb); i++)
             {
                 fprintf(fp, "%10g  %10g\n", x[i], y[i]);
             }
-            free(x);
-            free(y);
         }
         fclose(fp);
         fp = xvgropen("diff-pot.xvg", "Correlation between QM and Calc", "Pot (QM)",
                       "Pot (Calc)", oenv);
-        gmx_stats_dump_xy(ppcorr, fp);
+        ppcorr.dump_xy(fp);
         fclose(fp);
     }
 }

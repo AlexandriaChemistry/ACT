@@ -1,3 +1,12 @@
+/*! \internal \brief
+ * Implements part of the alexandria program.
+ * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
+ * \author David van der Spoel <david.vanderspoel@icm.uu.se>
+ * \author Julian Ramon Marrades Furquet <julianramon.marradesfurquet.8049@student.uu.se>
+ * \author Oskar Tegby <oskar.tegby@it.uu.se>
+ */
+
+
 #ifndef ALEXANDRIA_DEVCOMPUTER_H
 #define ALEXANDRIA_DEVCOMPUTER_H
 
@@ -30,12 +39,12 @@ protected:
 
     //! Pointer to log file
     FILE *logfile_;
-    //! Whether we are in verbose mode
+    //! Flush output immediately rather than letting the OS buffer it. Don't use for production simulations.
     bool verbose_;
 
     /*! \brief Create a new DevComputer
      * @param logfile   pointer to log file
-     * @param verbose   whether we are in verbose mode
+     * @param verbose   Flush output immediately rather than letting the OS buffer it. Don't use for production simulations.
      */
     DevComputer(      FILE *logfile,
                 const bool  verbose)
@@ -45,12 +54,6 @@ protected:
     }
 
 public:
-
-    virtual ~DevComputer()
-    {
-        free(logfile_);
-        logfile_ = NULL;
-    }
 
     /*! \brief Computes a component of the chi-squared deviation and place it into the appropriate FittingTarget
      * @param mymol     pointer to the molecule to compute the deviation for

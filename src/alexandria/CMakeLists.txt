@@ -26,7 +26,13 @@
 #
 
 set(ALEXANDRIA_SOURCES
+           acmfitnesscomputer.cpp
+           acmindividual.cpp
+           acminitializer.cpp
            alex_modules.cpp
+      	   molpropobservable.cpp
+           experiment.cpp
+      	   molprop.cpp
            allbondeds.cpp
            analyze.cpp
            atype_mapping.cpp
@@ -36,6 +42,7 @@ set(ALEXANDRIA_SOURCES
            categories.cpp
            chargemodel.cpp
            communication.cpp
+           composition.cpp
            confighandler.cpp
            devcomputer.cpp
            dissociation_energy.cpp
@@ -50,11 +57,11 @@ set(ALEXANDRIA_SOURCES
            identifier.cpp
            interactiontype.cpp
            latex_util.cpp
+           mcmcmutator.cpp
            memory_check.cpp
            merge_mp.cpp
            merge_pd.cpp
            molgen.cpp
-      	   molprop.cpp
            molprop_check.cpp
            molprop_csv.cpp
            molprop_sqlite3.cpp
@@ -82,10 +89,11 @@ set(ALEXANDRIA_SOURCES
            qtype.cpp
            readpsi4.cpp
            regression.cpp
+           sharedindividualinfo.cpp
            stringutil.cpp
            tune_eem.cpp
 #           tune_fc.cpp
-           tune_fc_utils.cpp
+#           tune_fc_utils.cpp
            tuning_utility.cpp          
            units.cpp
            xml_util.cpp

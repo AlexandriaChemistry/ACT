@@ -55,14 +55,17 @@
 #include "poldata_tables.h"
 #include "poldata_xml.h"
 
+namespace alexandria
+{
+
 static void merge_parameter(const std::vector<alexandria::Poldata> &pds,
                             alexandria::InteractionType             iType,
                             const std::string                      &parameter,
                             alexandria::Poldata                    *pdout)
 {  
-    std::vector<gmx_stats_t> lsq;
-    std::vector<int>         ntrain;
-    bool                     first = true;
+    std::vector<gmx_stats> lsq;
+    std::vector<int>       ntrain;
+    bool                   first = true;
     for (const auto &pd : pds)
     {
         // Index for lsq vector
@@ -79,11 +82,11 @@ static void merge_parameter(const std::vector<alexandria::Poldata> &pds,
                     {
                         if (first)
                         {
-                            auto newlsq = gmx_stats_init();
+                            gmx_stats newlsq;
                             lsq.push_back(newlsq);
                             ntrain.push_back(0);
                         }
-                        gmx_stats_add_point(lsq[j], 0, pp.second.value(), 0, 0);
+                        lsq[j].add_point(0, pp.second.value(), 0, 0);
                         ntrain[j] += pp.second.ntrain();
                         j++;
                     }
@@ -101,11 +104,11 @@ static void merge_parameter(const std::vector<alexandria::Poldata> &pds,
                     {
                         if (first)
                         {
-                            auto newlsq = gmx_stats_init();
+                            gmx_stats newlsq;
                             lsq.push_back(newlsq);
                             ntrain.push_back(0);
                         }
-                        gmx_stats_add_point(lsq[j], 0, ppar.second.value(), 0, 0);
+                        lsq[j].add_point(0, ppar.second.value(), 0, 0);
                         ntrain[j] += ppar.second.ntrain();
                         j++;
                     }
@@ -128,12 +131,10 @@ static void merge_parameter(const std::vector<alexandria::Poldata> &pds,
                     if (pp.second.mutability() == alexandria::Mutability::Free ||
                         pp.second.mutability() == alexandria::Mutability::Bounded)
                     {
-                        real average = 0;
-                        real sigma   = 0;
-                        int  N       = 0;
-                        if ((estatsOK == gmx_stats_get_average(lsq[j], &average)) &&
-                            (estatsOK == gmx_stats_get_sigma(lsq[j], &sigma)) &&
-                            (estatsOK == gmx_stats_get_npoints(lsq[j], &N)))
+                        real   average = 0;
+                        real   sigma   = 0;
+                        if ((eStats::OK == lsq[j].get_average(&average)) &&
+                            (eStats::OK == lsq[j].get_sigma(&sigma)))
                         {
                             pp.second.setValue(average);
                             pp.second.setUncertainty(sigma);
@@ -161,10 +162,8 @@ static void merge_parameter(const std::vector<alexandria::Poldata> &pds,
                     {
                         real average = 0;
                         real sigma   = 0;
-                        int  N       = 0;
-                        if ((estatsOK == gmx_stats_get_average(lsq[j], &average)) &&
-                            (estatsOK == gmx_stats_get_sigma(lsq[j], &sigma)) &&
-                            (estatsOK == gmx_stats_get_npoints(lsq[j], &N)))
+                        if ((eStats::OK == lsq[j].get_average(&average)) &&
+                            (eStats::OK == lsq[j].get_sigma(&sigma)))
                         {
                             ppar.second.setValue(average);
                             ppar.second.setUncertainty(sigma);
@@ -176,14 +175,9 @@ static void merge_parameter(const std::vector<alexandria::Poldata> &pds,
             }
         }
     }
-
-    for (auto lll = lsq.begin(); lll < lsq.end(); lll++)
-    {
-         gmx_stats_free(*lll);
-    }
 }
 
-int alex_merge_pd(int argc, char *argv[])
+int merge_pd(int argc, char *argv[])
 {
     const char *desc[] =
     {
@@ -279,3 +273,4 @@ int alex_merge_pd(int argc, char *argv[])
     return 0;
 }
 
+} // namespace alexandria

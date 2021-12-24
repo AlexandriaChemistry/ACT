@@ -1,5 +1,5 @@
-#ifndef ACT_SORTER_H
-#define ACT_SORTER_H
+#ifndef GA_SORTER_H
+#define GA_SORTER_H
 
 
 #include "aliases.h"
@@ -209,4 +209,4 @@ public:
 } //namespace ga
 
 
-#endif //ACT_SORTER_H
+#endif //GA_SORTER_H

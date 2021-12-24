@@ -56,18 +56,16 @@ void doAddOptions(std::vector<t_pargs> *pargs, size_t npa, t_pargs pa[])
 namespace alexandria
 {
 
-using qtStats = std::map<qType, gmx_stats_t>;
+using qtStats = std::map<qType, gmx_stats>;
 
 class ZetaTypeLsq {
 private:
     std::string ztype_;
 public:
-    gmx_stats_t lsq_ = nullptr;
+    gmx_stats lsq_;
     
-    ZetaTypeLsq(const std::string &ztype) : ztype_(ztype)
-    {
-        lsq_ = gmx_stats_init();
-    }
+    ZetaTypeLsq(const std::string &ztype) : ztype_(ztype) {}
+    
     ZetaTypeLsq(const ZetaTypeLsq &zlsq)
     {
         lsq_   = zlsq.lsq_;
@@ -90,32 +88,19 @@ public:
         zt->lsq_ = zlsq.lsq_;
         return *zt;
     }
-    ~ZetaTypeLsq()
-    {
-        if (nullptr != lsq_)
-        {
-            //            gmx_stats_free(lsq_);
-        }
-        lsq_ = nullptr;
-    }
         
     const std::string &name() const { return ztype_; }
 
     bool empty() const
     { 
-        int N; 
-        if (gmx_stats_get_npoints(lsq_, &N) == estatsOK)
-        {
-            return N == 0;
-        }
-        return true;
+        return 0 == lsq_.get_npoints();
     }
 };
 
 
 static void print_stats(FILE        *fp,
                         const char  *prop,
-                        gmx_stats_t  lsq,
+                        gmx_stats   *lsq,
                         bool         bHeader,
                         const char  *xaxis,
                         const char  *yaxis,
@@ -124,9 +109,8 @@ static void print_stats(FILE        *fp,
     real a    = 0, da  = 0, b    = 0, db   = 0;
     real mse  = 0, mae = 0, chi2 = 0, rmsd = 0;
     real Rfit = 0;
-    int  n;
-
-    gmx_stats_get_npoints(lsq, &n);
+    int  n    = lsq->get_npoints();
+    // TODO add error checking for lsq
     if (n == 0)
     {
         return;
@@ -140,11 +124,24 @@ static void print_stats(FILE        *fp,
                     "Property", "N", "a", "b", "R(%)", "RMSD", "MSE", "MAE", "Model");
             fprintf(fp, "------------------------------------------------------------------------------------------------\n");
         }
-        gmx_stats_get_ab(lsq, elsqWEIGHT_NONE, &a, &b, &da, &db, &chi2, &Rfit);
-        gmx_stats_get_rmsd(lsq,    &rmsd);
-        gmx_stats_get_mse_mae(lsq, &mse, &mae);
-        fprintf(fp, "%-26s %6d %6.3f(%5.3f) %6.3f(%5.3f) %7.2f %8.4f %8.4f %8.4f %10s\n",
-                prop, n, a, da, b, db, Rfit*100, rmsd, mse, mae, yaxis);
+        eStats ok = lsq->get_ab(elsqWEIGHT_NONE, &a, &b, &da, &db, &chi2, &Rfit);
+        if (eStats::OK == ok)
+        {
+            ok = lsq->get_rmsd(&rmsd);
+        }
+        if (eStats::OK == ok)
+        {
+            ok = lsq->get_mse_mae(&mse, &mae);
+        }
+        if (eStats::OK == ok)
+        {
+            fprintf(fp, "%-26s %6d %6.3f(%5.3f) %6.3f(%5.3f) %7.2f %8.4f %8.4f %8.4f %10s\n",
+                    prop, n, a, da, b, db, Rfit*100, rmsd, mse, mae, yaxis);
+        }
+        else
+        {
+            fprintf(fp, "Statistics problem for %s: %s\n", prop, gmx_stats_message(ok));
+        }
     }
     else
     {
@@ -155,50 +152,49 @@ static void print_stats(FILE        *fp,
                     "Property", "N", "a", "R(%)", "RMSD", "MSE", "MAE", "Model");
             fprintf(fp, "----------------------------------------------------------------------------------------------\n");
         }
-        gmx_stats_get_a(lsq, elsqWEIGHT_NONE, &a, &da, &chi2, &Rfit);
-        gmx_stats_get_rmsd(lsq,    &rmsd);
-        gmx_stats_get_mse_mae(lsq, &mse, &mae);
-        fprintf(fp, "%-26s %6d %6.3f(%5.3f) %7.2f %8.4f %8.4f %8.4f %10s\n",
-                prop, n, a, da, Rfit*100, rmsd, mse, mae, yaxis);
+        eStats ok = lsq->get_a(elsqWEIGHT_NONE, &a, &da, &chi2, &Rfit);
+        if (eStats::OK == ok)
+        {
+            ok = lsq->get_rmsd(&rmsd);
+        }
+        if (eStats::OK == ok)
+        {
+            ok = lsq->get_mse_mae(&mse, &mae);
+        }
+        if (eStats::OK == ok)
+        {
+            fprintf(fp, "%-26s %6d %6.3f(%5.3f) %7.2f %8.4f %8.4f %8.4f %10s\n",
+                    prop, n, a, da, Rfit*100, rmsd, mse, mae, yaxis);
+        }
+        else
+        {
+            fprintf(fp, "Statistics problem for %s: %s\n", prop, gmx_stats_message(ok));
+        }
     }
 }
 
-static void print_lsq_sets(FILE *fp, const std::vector<gmx_stats_t> &lsq)
+static void print_lsq_sets(FILE *fp, const std::vector<gmx_stats> &lsq)
 {
     if (0 == lsq.size())
     {
         return;
     }
     std::vector<std::vector<double> > x, y;
-    size_t              N = 0;
     x.resize(lsq.size());
     y.resize(lsq.size());
-    bool bOK = true;
-    do
+    for (size_t s = 0; s < lsq.size(); s++)
     {
-        for (size_t s = 0; s < lsq.size() && bOK; s++)
+        auto xx = lsq[s].getX();
+        auto yy = lsq[s].getY();
+        for (size_t k=0; k < xx.size(); k++)
         {
-            real xx, yy;
-            auto es = gmx_stats_get_point(lsq[s], &xx, &yy, nullptr, nullptr, 0);
-            if (es == estatsOK)
-            {
-                x[s].push_back(xx);
-                y[s].push_back(yy);
-            }
-            else
-            {
-                bOK = false;
-            }
+                x[s].push_back(xx[k]);
+                y[s].push_back(yy[k]);
         }
-        if (bOK)
-        {
-            N += 1;
-        }
-    } while (bOK);
-    
+    }
     
     fprintf(fp, "@type xy\n");
-    for(size_t i = 0; i < N; i++)
+    for(size_t i = 0; i < lsq.size(); i++)
     {
         fprintf(fp, "%10g", x[0][i]);
         for(size_t j = 0; j < lsq.size(); j++)
@@ -284,7 +280,7 @@ static void print_polarizability(FILE              *fp,
 static void analyse_quadrapole(FILE                                           *fp,
                                const std::vector<alexandria::MyMol>::iterator &mol,
                                real                                            q_toler,
-                               std::map<qType, gmx_stats_t>                    lsq_quad,
+                               std::map<qType, gmx_stats>                      lsq_quad,
                                bool                                            bFullTensor)
 {
     auto qelec = mol->qTypeProps(qType::Elec);
@@ -329,7 +325,7 @@ static void analyse_quadrapole(FILE                                           *f
                 {
                     if (bFullTensor || (mm == nn))
                     {
-                        gmx_stats_add_point(lsq_quad[qt], qelec->quad()[mm][nn], qcalc->quad()[mm][nn], 0, 0);
+                        lsq_quad[qt].add_point(qelec->quad()[mm][nn], qcalc->quad()[mm][nn], 0, 0);
                     }
                 }
             }
@@ -372,11 +368,11 @@ static void print_corr(const char                         *outfile,
                        const char                         *title,
                        const char                         *xaxis,
                        const char                         *yaxis, 
-                       const std::map<iMolSelect, std::map<qType, gmx_stats_t> > &stats,
+                       std::map<iMolSelect, std::map<qType, gmx_stats> > &stats,
                        const gmx_output_env_t             *oenv)
 {
     std::vector<std::string> eprnm;
-    std::vector<gmx_stats_t> lsq;
+    std::vector<gmx_stats>   lsq;
     for (auto &ims : iMolSelectNames())
     {
         auto qs = stats.find(ims.first);
@@ -384,8 +380,8 @@ static void print_corr(const char                         *outfile,
         {
             for (auto &i : qs->second)
             {
-                int N;
-                if (estatsOK == gmx_stats_get_npoints(i.second, &N) && N > 0)
+                int N = i.second.get_npoints();
+                if (N > 0)
                 {
                     eprnm.push_back(gmx::formatString("%s-%s", qTypeName(i.first).c_str(), ims.second));
                     lsq.push_back(i.second);
@@ -405,7 +401,7 @@ static void print_corr(const char                         *outfile,
             for (auto &i : qs->second)
             {
                 int N;
-                if (estatsOK == gmx_stats_get_npoints(i.second, &N) && N > 0)
+                if (eStats::OK == gmx_stats_get_npoints(i.second, &N) && N > 0)
                 {
                     print_lsq_set(muc, i.second);
                 }
@@ -415,12 +411,12 @@ static void print_corr(const char                         *outfile,
     fclose(muc);
 }
 
-static void write_q_histo(FILE                            *fplog,
-                          const char                      *qhisto,
-                          const std::vector<ZetaTypeLsq>  &lsqt,
-                          const gmx_output_env_t          *oenv,
-                          const qtStats                    lsq_charge,
-                          bool                             useOffset)
+static void write_q_histo(FILE                      *fplog,
+                          const char                *qhisto,
+                          std::vector<ZetaTypeLsq>  &lsqt,
+                          const gmx_output_env_t    *oenv,
+                          qtStats                   *lsq_charge,
+                          bool                       useOffset)
 {
     std::vector<std::string> types;
     for (auto i = lsqt.begin(); i < lsqt.end(); ++i)
@@ -431,10 +427,10 @@ static void write_q_histo(FILE                            *fplog,
     xvgrLegend(hh, types, oenv);
     
     auto model = qTypeName(qType::Calc);
-    auto gs = lsq_charge.find(qType::Calc);
-    if (gs != lsq_charge.end())
+    auto gs    = lsq_charge->find(qType::Calc);
+    if (gs != lsq_charge->end())
     {
-        print_stats(fplog, "All Partial Charges (e)", gs->second, true,
+        print_stats(fplog, "All Partial Charges (e)", &gs->second, true,
                     qTypeName(qType::CM5).c_str(), model.c_str(), useOffset);
     }
     for (auto &q : lsqt)
@@ -442,8 +438,8 @@ static void write_q_histo(FILE                            *fplog,
         if (!q.empty())
         {
             int  nbins = 20;
-            real *x, *y;
-            if (gmx_stats_make_histogram(q.lsq_, 0, &nbins, ehistoY, 1, &x, &y) == estatsOK)
+            std::vector<double> x, y;
+            if (q.lsq_.make_histogram(0, &nbins, eHisto::Y, 1, &x, &y) == eStats::OK)
             {
                 fprintf(hh, "@type xy\n");
                 for (int i = 0; i < nbins; i++)
@@ -451,9 +447,7 @@ static void write_q_histo(FILE                            *fplog,
                     fprintf(hh, "%10g  %10g\n", x[i], y[i]);
                 }
                 fprintf(hh, "&\n");
-                print_stats(fplog, q.name().c_str(),  q.lsq_, false,  "CM5", model.c_str(), useOffset);
-                sfree(x);
-                sfree(y);
+                print_stats(fplog, q.name().c_str(),  &q.lsq_, false,  "CM5", model.c_str(), useOffset);
             }
         }
     }
@@ -528,11 +522,16 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
         for (auto &i : qTypes())
         {
             //TODO Add checks for existence
-            qesp.insert(std::pair<qType, gmx_stats_t>(i.first, gmx_stats_init()));
-            qquad.insert(std::pair<qType, gmx_stats_t>(i.first, gmx_stats_init()));
-            qdip.insert(std::pair<qType, gmx_stats_t>(i.first, gmx_stats_init()));
-            qmu.insert(std::pair<qType, gmx_stats_t>(i.first, gmx_stats_init()));
-            qepot.insert(std::pair<qType, gmx_stats_t>(i.first, gmx_stats_init()));
+            gmx_stats gesp;
+            qesp.insert(std::pair<qType, gmx_stats>(i.first, std::move(gesp)));
+            gmx_stats gquad;
+            qquad.insert(std::pair<qType, gmx_stats>(i.first, std::move(gquad)));
+            gmx_stats gdip;
+            qdip.insert(std::pair<qType, gmx_stats>(i.first, std::move(gdip)));
+            gmx_stats gmu;
+            qmu.insert(std::pair<qType, gmx_stats>(i.first, std::move(gmu)));
+            gmx_stats gepot;
+            qepot.insert(std::pair<qType, gmx_stats>(i.first, std::move(gepot)));
         }
         lsq_esp.insert(std::pair<iMolSelect, qtStats>(ims.first, std::move(qesp)));
         lsq_quad.insert(std::pair<iMolSelect, qtStats>(ims.first, std::move(qquad)));
@@ -540,10 +539,14 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
         lsq_mu.insert(std::pair<iMolSelect, qtStats>(ims.first, std::move(qmu)));
         lsq_epot.insert(std::pair<iMolSelect, qtStats>(ims.first, std::move(qepot)));
         
-        lsq_alpha.insert(std::pair<iMolSelect, qtStats>(ims.first, {{ qType::Calc, gmx_stats_init() }}));
-        lsq_isoPol.insert(std::pair<iMolSelect, qtStats>(ims.first, {{ qType::Calc, gmx_stats_init() }}));
-        lsq_anisoPol.insert(std::pair<iMolSelect, qtStats>(ims.first, {{ qType::Calc, gmx_stats_init() }}));
-        lsq_charge.insert(std::pair<iMolSelect, qtStats>(ims.first, {{ qType::Calc, gmx_stats_init() }}));
+        gmx_stats galpha;
+        lsq_alpha.insert(std::pair<iMolSelect, qtStats>(ims.first, {{ qType::Calc, galpha }}));
+        gmx_stats giso;
+        lsq_isoPol.insert(std::pair<iMolSelect, qtStats>(ims.first, {{ qType::Calc, giso }}));
+        gmx_stats ganiso;
+        lsq_anisoPol.insert(std::pair<iMolSelect, qtStats>(ims.first, {{ qType::Calc, ganiso }}));
+        gmx_stats gcharge;
+        lsq_charge.insert(std::pair<iMolSelect, qtStats>(ims.first, {{ qType::Calc, gcharge }}));
     
         for (auto ai : pd->particleTypesConst())
         {
@@ -598,8 +601,13 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
             mol->GenerateCharges(pd, fplog, cr, nullptr, qcycle, qtol,
                                  ChargeGenerationAlgorithm::NONE, dummy, lot);
             // Energy
-            gmx_stats_add_point(lsq_epot[ims][qType::Calc], mol->Emol_, mol->potentialEnergy(), 0, 0);
-            fprintf(fp, "Reference potential energy %.2f\n", mol->Emol_);
+            double T = 0;
+            auto gp = mol->findProperty(MolPropObservable::EMOL, iqmType::QM, T, "", "", "");
+            if (gp)
+            {
+                lsq_epot[ims][qType::Calc].add_point(gp->getValue(), mol->potentialEnergy(), 0, 0);
+                fprintf(fp, "Reference potential energy %.2f\n", gp->getValue());
+            }
             auto terms = mol->energyTerms();
             for(auto &ep : ePlot)
             {
@@ -634,7 +642,7 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
                     auto ep = qp->qgenResp()->espPoint();
                     for (size_t j = 0; j < ep.size(); j++)
                     {
-                        gmx_stats_add_point(lsq_esp[ims][qi], ep[j].v(), ep[j].vCalc(), 0, 0);
+                        lsq_esp[ims][qi].add_point(ep[j].v(), ep[j].vCalc(), 0, 0);
                     }
                 }
             }
@@ -656,10 +664,10 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
                     print_dipole(fp, qt, qelec->mu(), qprop->mu(), dip_toler_);
                     if (mol->datasetType() == ims)
                     {
-                        gmx_stats_add_point(lsq_dip[ims][qt], qelec->dipole(), qprop->dipole(), 0, 0);
+                        lsq_dip[ims][qt].add_point(qelec->dipole(), qprop->dipole(), 0, 0);
                         for(int mm = 0; mm < DIM; mm++)
                         {
-                            gmx_stats_add_point(lsq_mu[ims][qt], qelec->mu()[mm], qprop->mu()[mm], 0, 0);
+                            lsq_mu[ims][qt].add_point(qelec->mu()[mm], qprop->mu()[mm], 0, 0);
                         }
                     }
                 }
@@ -674,12 +682,12 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
                 mol->CalcPolarizability(efield, cr, nullptr);
                 print_polarizability(fp, mol, qTypeName(qType::Elec), alpha_toler_, isopol_toler_);
                 print_polarizability(fp, mol, qTypeName(qType::Calc), alpha_toler_, isopol_toler_);
-                gmx_stats_add_point(lsq_isoPol[ims][qType::Calc], mol->ElectronicPolarizability(),
-                                    mol->CalculatedPolarizability(),       0, 0);
-                gmx_stats_add_point(lsq_anisoPol[ims][qType::Calc], mol->anisoPol_elec_, mol->anisoPol_calc_, 0, 0);
+                lsq_isoPol[ims][qType::Calc].add_point(mol->ElectronicPolarizability(),
+                                                       mol->CalculatedPolarizability(),       0, 0);
+                lsq_anisoPol[ims][qType::Calc].add_point(mol->anisoPol_elec_, mol->anisoPol_calc_, 0, 0);
                 for (int mm = 0; mm < DIM; mm++)
                 {
-                    gmx_stats_add_point(lsq_alpha[ims][qType::Calc], mol->alpha_elec_[mm][mm], mol->alpha_calc_[mm][mm], 0, 0);
+                    lsq_alpha[ims][qType::Calc].add_point(mol->alpha_elec_[mm][mm], mol->alpha_calc_[mm][mm], 0, 0);
                 }
             }
 
@@ -771,22 +779,22 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
                 continue;
             }
             const char *name = qTypeName(qt).c_str();
-            print_stats(fp, "ESP  (kJ/mol e)", lsq_esp[ims.first][qt],  header, "Electronic", name, useOffset_);
+            print_stats(fp, "ESP  (kJ/mol e)", &lsq_esp[ims.first][qt],  header, "Electronic", name, useOffset_);
             header = false;
-            print_stats(fp, "Dipoles",         lsq_mu[ims.first][qt],   header, "Electronic", name, useOffset_);
-            print_stats(fp, "Dipole Moment",   lsq_dip[ims.first][qt],  header, "Electronic", name, useOffset_);
-            print_stats(fp, "Quadrupoles",     lsq_quad[ims.first][qt], header, "Electronic", name, useOffset_);
+            print_stats(fp, "Dipoles",         &lsq_mu[ims.first][qt],   header, "Electronic", name, useOffset_);
+            print_stats(fp, "Dipole Moment",   &lsq_dip[ims.first][qt],  header, "Electronic", name, useOffset_);
+            print_stats(fp, "Quadrupoles",     &lsq_quad[ims.first][qt], header, "Electronic", name, useOffset_);
             if (bPolar && qt == qType::Calc)
             {
-                print_stats(fp, "Polariz. components (A^3)",  lsq_alpha[ims.first][qType::Calc],    header, "Electronic", name, useOffset_);
-                print_stats(fp, "Isotropic Polariz. (A^3)",   lsq_isoPol[ims.first][qType::Calc],   header, "Electronic", name, useOffset_);
-                print_stats(fp, "Anisotropic Polariz. (A^3)", lsq_anisoPol[ims.first][qType::Calc], header, "Electronic", name, useOffset_);
+                print_stats(fp, "Polariz. components (A^3)",  &lsq_alpha[ims.first][qType::Calc],    header, "Electronic", name, useOffset_);
+                print_stats(fp, "Isotropic Polariz. (A^3)",   &lsq_isoPol[ims.first][qType::Calc],   header, "Electronic", name, useOffset_);
+                print_stats(fp, "Anisotropic Polariz. (A^3)", &lsq_anisoPol[ims.first][qType::Calc], header, "Electronic", name, useOffset_);
             }
             fprintf(fp, "\n");
         }
     }
     write_q_histo(fp, opt2fn("-qhisto", filenm.size(), filenm.data()),
-                  lsqt[iMolSelect::Train], oenv, lsq_charge[iMolSelect::Train], useOffset_);
+                  lsqt[iMolSelect::Train], oenv, &(lsq_charge[iMolSelect::Train]), useOffset_);
     
     print_corr(opt2fn("-dipcorr", filenm.size(), filenm.data()),
                "Dipole Moment (Debye)", "Electronic", "Empirical", lsq_dip, oenv);
@@ -812,7 +820,7 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
     }
     // List outliers based on the deviation in the total dipole moment
     real sigma;
-    if (estatsOK == gmx_stats_get_rmsd(lsq_dip[iMolSelect::Train][qType::Calc], &sigma))
+    if (eStats::OK == lsq_dip[iMolSelect::Train][qType::Calc].get_rmsd(&sigma))
     {
         fprintf(fp, "Overview of dipole moment outliers (> %.3f off)\n", 2*sigma);
         fprintf(fp, "----------------------------------\n");
@@ -834,7 +842,7 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
         }
     }
     real espAver;
-    if (estatsOK == gmx_stats_get_rmsd(lsq_esp[iMolSelect::Train][qType::Calc], &espAver))
+    if (eStats::OK == lsq_esp[iMolSelect::Train][qType::Calc].get_rmsd(&espAver))
     {
         int nout = 0;
         double espMax = 1.5*espAver;
@@ -874,24 +882,6 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
         {
             printf("No outliers! Well done.\n");
         }
-    }
-    
-    // Free allocated memory
-    for(auto &ims : iMolSelectNames())
-    {
-        auto j = ims.first;
-        for (auto &i : qTypes())
-        {
-            auto qi = i.first;
-            gmx_stats_free(lsq_quad[j][qi]);
-            gmx_stats_free(lsq_mu[j][qi]);
-            gmx_stats_free(lsq_dip[j][qi]);
-            gmx_stats_free(lsq_esp[j][qi]);
-        }
-        gmx_stats_free(lsq_alpha[j][qType::Calc]);
-        gmx_stats_free(lsq_isoPol[j][qType::Calc]);
-        gmx_stats_free(lsq_anisoPol[j][qType::Calc]);
-        gmx_stats_free(lsq_charge[j][qType::Calc]);
     }
 }
 

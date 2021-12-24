@@ -1,3 +1,12 @@
+/*! \internal \brief
+ * Implements part of the alexandria program.
+ * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
+ * \author David van der Spoel <david.vanderspoel@icm.uu.se>
+ * \author Oskar Tegby <oskar.tegby@it.uu.se>
+ * \author Julian Ramon Marrades Furquet <julianramon.marradesfurquet.8049@student.uu.se>
+ */
+
+
 #ifndef ALEXANDRIA_CONFIGHANDLER_H
 #define ALEXANDRIA_CONFIGHANDLER_H
 
@@ -47,17 +56,19 @@ private:
     // After argument parsing, first element in the array will point to the selected enum value, so optimizer_[0]
     // Static means the variable will be shared among objects (only 1 place in memory)
     //! Optimizer to use
-    // static const char *optimizer_[] = {nullptr, "MCMC", "GA", "HYBRID", nullptr};
+    // const char *optimizer_[] = {nullptr, "MCMC", "GA", "HYBRID", nullptr};
     //! Population size
     int popSize_ = 1;
     //! Amount of elites in the population
     int nElites_ = 0;
+    //! Whether to initialize the individuals randomly
+    bool randomInit_ = true;
     //! Order of crossover operator
     int nCrossovers_ = 1;
     //! Sorter algorithm
-    // static const char *sorter_[] = {nullptr, "QUICK", "MERGE", "NONE", nullptr};
+    // const char *sorter_[] = {nullptr, "QUICK", "MERGE", "NONE", nullptr};
     //! Probability computing algorithm
-    // static const char *probComputer_[] = {nullptr, "RANK", "FITNESS", "BOLTZMANN", nullptr};
+    // const char *probComputer_[] = {nullptr, "RANK", "FITNESS", "BOLTZMANN", nullptr};
     //! Boltzmann probability temperature. TODO: This temperature should be lowered over time.
     real boltzTemp_ = 1;
     // TODO: Termination options???
@@ -80,7 +91,28 @@ public:
      */
     virtual void check_pargs();
 
-    // TODO: Getters!
+    /* * * * * * * * * * * * * * * * * * * * * *
+    * BEGIN: Getters and setters               *
+    * * * * * * * * * * * * * * * * * * * * * */
+
+    //! \return the size of the population
+    int popSize() const { return popSize_; }
+
+    //! \return the amount of top individuals that pass, unchanged, to the next generation
+    int nElites() const { return nElites_; }
+
+    //! \return the probability of crossover
+    double prCross() const { return prCross_; }
+
+    //! \return the probability of mutation
+    double prMut() const { return prMut_; }
+
+    //! \return to initialize an individual randomly
+    double randomInit() const { return randomInit_; }
+
+    /* * * * * * * * * * * * * * * * * * * * * *
+    * END: Getters and setters                 *
+    * * * * * * * * * * * * * * * * * * * * * */
 
 };
 
@@ -92,29 +124,19 @@ class BayesConfigHandler : public ConfigHandler
 
 private:
     //! Maximum number of iterations
-    int                      maxiter_       = 100;
-    //! Output environment structure
-    const gmx_output_env_t  *oenv_          = nullptr;
+    int   maxiter_           = 100;
     //! Random number seed
-    real                     seed_           = -1;
+    real  seed_              = -1;
     //! Relative step when optimizing
-    real                     step_           = 0.02;
+    real  step_              = 0.02;
     //! Temperature in chi2 units
-    real                     temperature_    = 5;
+    real  temperature_       = 5;
     //! Weight temperature after number of training points
-    bool                     tempWeight_     = false;
-    //! Weighted temperatures
-    std::vector<double>      weightedTemperature_;
+    bool  tempWeight_        = false;
     //! Use annealing in the optimization. Value < 1 means annealing will happen
-    real                     anneal_         = 1;
-    //! Flag determining whether to be verbose printing TODO: This has to be made a global flag!
-    bool                     verbose_        = false;
-    //! Base name for parameter convergence file names
-    std::string              xvgconv_;
-    //! File name for parameter energy (chi2)
-    std::string              xvgepot_;
-    //! Parameter classes for printing
-    std::vector<std::string> paramClass_;
+    real  anneal_            = 1;
+    //! Evaluate on test set during the MCMC run
+    bool  evaluate_testset_  = false;
 
 public:
     /*!
@@ -129,31 +151,8 @@ public:
      */
     virtual void check_pargs();
 
-    /*! \brief Set the output file names.
-    *
-    * The parameter values are split over
-    * a number of files in order to make it easier to visualize the
-    * results. The parameter classes should therefore match the
-    * parameter names. E.g. a class could be alpha, another zeta.
-    *
-    * \param[in] xvgconv    The parameter convergence base name
-    * \param[in] paramClass The parameter classes (e.g. zeta, alpha)
-    * \param[in] xvgepot    The filename to print the chi2 value
-    * \param[in] oenv       GROMACS utility structure
-    */
-    void setOutputFiles(const char                     *xvgconv,
-                        const std::vector<std::string> &paramClass,
-                        const char                     *xvgepot,
-                        const gmx_output_env_t         *oenv);
-
-    //! Return the class of parameters registered
-    const std::vector<std::string> &paramClass() { return paramClass_; }
-
     //! \brief Return Max # iterations
     int maxIter() const { return maxiter_; }
-
-    //! \brief Return verbosity
-    bool verbose() const { return verbose_; }
 
     //! \brief Return temperature
     real temperature() const { return temperature_; }
@@ -186,14 +185,8 @@ public:
     */
     bool anneal (int iter) const;
 
-    //! \brief Return xvg file for convergence information
-    const std::string &xvgConv() const { return xvgconv_; }
-
-    //! \brief Return xvg file for epot information
-    const std::string &xvgEpot() const { return xvgepot_; }
-
-    //! \brief Return output environment
-    const gmx_output_env_t *oenv() const { return oenv_; }
+    //! \return whether test set should be evaluated during the MCMC run
+    bool evaluateTestset() const { return evaluate_testset_; }
     
 };
 

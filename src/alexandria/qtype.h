@@ -56,6 +56,8 @@ enum class qType {
     Hirshfeld,
     //! CM5 charges
     CM5,
+    //! Gasteiger charges
+    Gasteiger,
     //! Electronic properties straight from DFT or QC calcs
     Elec
 };
@@ -63,6 +65,13 @@ enum class qType {
 /*! \brief return string corresponding to charge type
  */
 const std::string &qTypeName(qType qt);
+
+/*! \brief convert string to qtype
+ * \param[in] type The string
+ * \return a qType.
+ * \throws if not found
+ */
+qType stringToQtype(const std::string &type);
 
 /*! \brief Return a complete map of qTypes and their names
  */

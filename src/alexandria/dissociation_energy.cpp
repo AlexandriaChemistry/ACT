@@ -87,7 +87,15 @@ static void dump_csv(const char                      *csvFile,
         {
             fprintf(csv, "%g,", a.get(i, row));
         }
-        fprintf(csv, "%.3f,%.3f\n", -mymol->Emol_*j.second, mymol->Hform_*j.second);
+        double emol;
+        GMX_RELEASE_ASSERT(mymol->energy(MolPropObservable::EMOL, &emol),
+                           gmx::formatString("No molecular energy for %s",
+                                             mymol->getMolname().c_str()).c_str());
+        double hform;
+        GMX_RELEASE_ASSERT(mymol->energy(MolPropObservable::DHFORM, &hform),
+                           gmx::formatString("No DeltaHform for %s",
+                                             mymol->getMolname().c_str()).c_str());     
+        fprintf(csv, "%.3f,%.3f\n", -emol*j.second, hform*j.second);
         row++;
     }
     if (ntrain)
@@ -132,7 +140,7 @@ static bool calcDissoc(FILE                              *fplog,
                        const std::vector<MyMol>          &molset,
                        bool                               pickRandomMolecules,
                        const std::vector<int>            &hasExpData,
-                       std::map<Identifier, gmx_stats_t> *edissoc,
+                       std::map<Identifier, gmx_stats>   *edissoc,
                        std::mt19937                      *gen,  
                        std::uniform_real_distribution<>   uniform,
                        const char                        *csvFile,
@@ -241,7 +249,11 @@ static bool calcDissoc(FILE                              *fplog,
                 }
             }
         }
-        rhs.push_back(-mymol->Emol_ * uu.second);
+        double emol;
+        GMX_RELEASE_ASSERT(mymol->energy(MolPropObservable::EMOL, &emol),
+                           gmx::formatString("No molecular energy for %s",
+                                             mymol->getMolname().c_str()).c_str());
+        rhs.push_back(-emol * uu.second);
         row += 1;
     }
 
@@ -289,13 +301,12 @@ static bool calcDissoc(FILE                              *fplog,
             if (edissoc->end() == ed)
             {
                 // New bond type!
-                edissoc->insert(std::pair<Identifier, gmx_stats_t>(b.first, std::move(gmx_stats_init())));
+                gmx_stats gs;
+                edissoc->insert(std::pair<Identifier, gmx_stats>(b.first, std::move(gs)));
             }
-            auto gs     = edissoc->find(b.first)->second;
-            int  N;
-            auto estats = gmx_stats_get_npoints(gs, &N);
-            GMX_RELEASE_ASSERT(estats == estatsOK, gmx_stats_message(estats));
-            gmx_stats_add_point(gs, N, Edissoc[b.second], 0, 0);
+            auto  &gs = edissoc->find(b.first)->second;
+            size_t N  = gs.get_npoints();
+            gs.add_point(N, Edissoc[b.second], 0, 0);
             if (fplog && fabs(Edissoc[b.second]) > 1000)
             {
                 fprintf(fplog, "Adding energy %g for %s\n", Edissoc[b.second],
@@ -321,18 +332,25 @@ double getDissociationEnergy(FILE               *fplog,
     std::random_device               rd;
     std::mt19937                     gen(rd());  
     std::uniform_real_distribution<> uniform(0.0, 1.0);
-    iqmType                          iqm = iqmType::Exp;
     std::map<Identifier, int>        bondIdToIndex;
     std::vector<int>                 hasExpData;
-    
+    std::map<MolPropObservable, iqmType> myprops = 
+        {
+            { MolPropObservable::DHFORM, iqmType::Both },
+            { MolPropObservable::EMOL, iqmType::Both }
+        };
     // Loop over molecules to find the ones with experimental DeltaHform
     for (size_t i = 0; i < molset->size(); i++)
     {
         auto mymol = &((*molset)[i]);
-        if (immStatus::OK == mymol->getExpProps(iqm, true, false, true,
+        if (immStatus::OK == mymol->getExpProps(myprops, true,
                                                 method, basis, pd))
         {
-            hasExpData.push_back(i);
+            double emol;
+            if (mymol->energy(MolPropObservable::EMOL, &emol))
+            {
+                hasExpData.push_back(i);
+            }
         }
     }
     if (hasExpData.size() < 2)
@@ -342,22 +360,23 @@ double getDissociationEnergy(FILE               *fplog,
     }
     // Call the low level routine once to get optimal values and to
     // establish all the entries in the edissoc map.
-    std::map<Identifier, gmx_stats_t> edissoc;
-    std::map<Identifier, int>         ntrain;
-    double                            rmsd = 0;
+    std::map<Identifier, gmx_stats> edissoc;
+    std::map<Identifier, int>       ntrain;
+    double                          rmsd = 0;
     if (!calcDissoc(fplog, pd, *molset, false, hasExpData, &edissoc, &gen, uniform, csvFile, &ntrain, &rmsd))
     {
         gmx_fatal(FARGS, "Cannot solve the matrix equations for determining the dissociation energies");
     }
     // Now run the bootstrapping
-    std::map<Identifier, gmx_stats_t> edissoc_bootstrap;
+    std::map<Identifier, gmx_stats> edissoc_bootstrap;
     int maxBootStrap = 2*nBootStrap;
     int nBStries = 0;
     int iter;
     for(iter = 0; iter < nBootStrap && nBStries < maxBootStrap; )
     {
         std::map<Identifier, int> nnn;
-        if (calcDissoc(nullptr, pd, *molset, true, hasExpData, &edissoc_bootstrap, &gen,
+        if (calcDissoc(nullptr, pd, *molset, true, hasExpData,
+                       &edissoc_bootstrap, &gen,
                        uniform, csvFile, &nnn, nullptr))
         {
             iter++;
@@ -381,9 +400,16 @@ double getDissociationEnergy(FILE               *fplog,
     for (auto &bi : edissoc)
     {
         double average, error = 0;
-        int    N              = 1;
-        auto estats = gmx_stats_get_average(bi.second, &average);
-        GMX_RELEASE_ASSERT(estatsOK == estats, gmx_stats_message(estats));
+        auto estats = bi.second.get_average(&average);
+        if (eStats::OK != estats)
+        {
+            if (fplog)
+            {
+                fprintf(fplog, "%s: %s\n", bi.first.id().c_str(), 
+                        gmx_stats_message(estats));
+            }
+            continue;
+        }
         if (nBootStrap > 0)
         {
             auto ed = edissoc_bootstrap.find(bi.first);
@@ -391,10 +417,8 @@ double getDissociationEnergy(FILE               *fplog,
             // If there are few bootstraps, a rare bond may not be there.
             if (edissoc_bootstrap.end() != ed)
             {
-                estats = gmx_stats_get_sigma(edissoc_bootstrap[bi.first], &error);
-                GMX_RELEASE_ASSERT(estatsOK == estats, gmx_stats_message(estats));
-                estats = gmx_stats_get_npoints(edissoc_bootstrap[bi.first], &N);
-                GMX_RELEASE_ASSERT(estatsOK == estats, gmx_stats_message(estats));
+                estats = edissoc_bootstrap[bi.first].get_sigma(&error);
+                GMX_RELEASE_ASSERT(eStats::OK == estats, gmx_stats_message(estats));
             }
         }
         // Fetch the parameter from the force field

@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Real Name="a">-0.40935334872979107</Real>
+  <Real Name="b">32.147228637413384</Real>
+  <Real Name="da">0.18829441440021855</Real>
+  <Real Name="db">2.1204507916859674</Real>
+  <Real Name="chi2">9.1350282954294144</Real>
+  <Real Name="Rfit">0.18529634669777253</Real>
+  <Real Name="R">0.18529634669777253</Real>
+  <Real Name="rmsd">22.855275897779848</Real>
+  <Real Name="mean absolute error">18.181818181818183</Real>
+  <Real Name="mean signed error">18.181818181818183</Real>
+</ReferenceData>

@@ -86,6 +86,15 @@ class Vsite
 
         Vsite () {};
 
+        /*!
+         * Copy constructor
+         * \param[in] other     reference Vsite object
+         */
+        Vsite(const Vsite &other)
+        : atype_(other.atype()), type_(other.type()), number_(other.nvsite()),
+          distance_(other.distance()), angle_(other.angle()),
+          ncontrolatoms_(other.ncontrolatoms()) {}
+
         Vsite(const std::string &atype,
               const std::string &type,
               int                number,
@@ -257,6 +266,15 @@ class Symcharges
 
         Symcharges () {}
 
+        /*!
+         * Copy constructor
+         * FIXME: cannot copy the const strings
+         * \param[in] other reference Symcharges object
+         */
+        Symcharges(const Symcharges &other)
+        : central_(other.getCentral()), attached_(other.getAttached()),
+          numattach_(other.getNumattach()) {}
+
         Symcharges(const std::string &central,
                    const std::string &attached,
                    int                numattach);
@@ -272,9 +290,9 @@ class Symcharges
         CommunicationStatus Receive(const t_commrec *cr, int src);
 
     private:
-        const std::string central_;
-        const std::string attached_;
-        int               numattach_;
+        std::string central_;
+        std::string attached_;
+        int         numattach_;
 };
 
 using SymchargesIterator      = typename std::vector<Symcharges>::iterator;

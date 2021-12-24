@@ -43,7 +43,11 @@
 #ifdef HAVE_LIBSQLITE3
 #include <sqlite3.h>
 #endif
+#include "molpropobservable.h"
 #include "molprop_sqlite3.h"
+
+namespace alexandria
+{
 
 /*! \brief class to handle synonyms of compound names
  */ 
@@ -219,9 +223,9 @@ static void getClasses(sqlite3              *db,
                   sqlite3_finalize(stmt2));
 }
 
-void ReadSqlite3(const char                       *sqlite_file,
-                 std::vector<alexandria::MolProp> &mp,
-                 double                            ref_temperature)
+void ReadSqlite3(const char           *sqlite_file,
+                 std::vector<MolProp> *mp,
+                 double                ref_temperature)
 {
 #ifdef HAVE_LIBSQLITE3
     std::string                 cas2, csid2;
@@ -229,7 +233,7 @@ void ReadSqlite3(const char                       *sqlite_file,
     sqlite3                    *db   = nullptr;
     sqlite3_stmt               *stmt = nullptr;
     char sql_str[1024];
-    const char                 *cas, *csid, *prop, *unit, *source;
+    const char                 *cas, *csid, *prop;//, *unit, *source;
     double                      value, error, temperature;
     int                         cidx, rc, nbind, nexp_prop, theory, preferred;
     std::vector<Synonym>        synonyms;
@@ -247,10 +251,10 @@ void ReadSqlite3(const char                       *sqlite_file,
     printf("Opened SQLite3 database %s\n", sqlite_file);
 
     // First get the synonyms out.
-    getSynonyms(db, synonyms, mp.size());
+    getSynonyms(db, synonyms, mp->size());
 
     // Now get the classes out.
-    getClasses(db, classes, mp.size());
+    getClasses(db, classes, mp->size());
 
     /* Now present a query statement */
     nexp_prop = 0;
@@ -264,7 +268,7 @@ void ReadSqlite3(const char                       *sqlite_file,
         nbind = sqlite3_bind_parameter_count(stmt);
         fprintf(debug, "%d binding parameter(s) in the statement\n%s\n", nbind, sql_str);
     }
-    for (auto mpi = mp.begin(); (mpi < mp.end()); mpi++)
+    for (auto mpi = mp->begin(); (mpi < mp->end()); mpi++)
     {
         const std::string molname = mpi->getMolname();
         auto              keyptr  = std::find_if(synonyms.begin(), synonyms.end(),
@@ -298,73 +302,68 @@ void ReadSqlite3(const char                       *sqlite_file,
                     cas            = (char *)sqlite3_column_text(stmt, cidx++);
                     csid           = (char *)sqlite3_column_text(stmt, cidx++);
                     prop           = (char *)sqlite3_column_text(stmt, cidx++);
-                    unit           = (char *)sqlite3_column_text(stmt, cidx++);
+                    //unit           = (char *)sqlite3_column_text(stmt, cidx++);
                     temperature    = sqlite3_column_double(stmt, cidx++);
                     value          = sqlite3_column_double(stmt, cidx++);
                     error          = sqlite3_column_double(stmt, cidx++);
                     preferred      = sqlite3_column_int(stmt, cidx++);
                     theory         = sqlite3_column_int(stmt, cidx++);
-                    source         = (char *)sqlite3_column_text(stmt, cidx++);
+                    //source         = (char *)sqlite3_column_text(stmt, cidx++);
                     
                     if (fabs(ref_temperature-temperature) < 0.1)
                     {
-                        bool bExp = (0 == theory);
-                        if (bExp)
+                        iqmType iqm = iqmType::Exp;
+                        if (0 == theory)
                         {
-                            if (preferred)
+                            iqm = iqmType::QM;
+                        }
+                        MolPropObservable mpo;
+                        if (!stringToMolPropObservable(prop, &mpo))
+                        {
+                            fprintf(stderr, "Unknown property %s\n", prop);
+                        }
+                        else if ((iqm == iqmType::Exp && preferred) ||
+                            (iqm == iqmType::QM))
+                        {
+                            if (iqm == iqmType::Exp)
                             {
                                 nexp_prop++;
-                                alexandria::Experiment exper("unknown", "minimum");
-                                if (strcasecmp(prop, "Polarizability") == 0)
-                                {
-                                    exper.AddPolar(alexandria::MolecularPolarizability(prop, unit, temperature, 0, 0, 0, 0, 0, 0, value, 0));
-                                    
-                                }
-                                else if (strcasecmp(prop, "dipole") == 0)
-                                {
-                                    exper.AddDipole(alexandria::MolecularDipole(prop, unit, temperature, 0, 0, 0, value, error));
-                                }
-                                else if ((strcasecmp(prop, "DeltaHform") == 0) ||
-                                         (strcasecmp(prop, "DeltaGform") == 0) ||
-                                         (strcasecmp(prop, "DeltaSform") == 0) ||
-                                         (strcasecmp(prop, "S0") == 0) ||
-                                         (strcasecmp(prop, "cp") == 0) ||
-                                         (strcasecmp(prop, "cv") == 0))
-                                {
-                                    exper.AddEnergy(alexandria::MolecularEnergy(prop, unit, temperature, epGAS, value, error));
-                                }
-                                mpi->AddExperiment(exper);
                             }
-                        }
-                        else
-                        {
-                            alexandria::Experiment calc("gentop", 
-                                                        source,
-                                                        "-", 
-                                                        "unknown", 
-                                                        "minimum",
-                                                        "unknown", 
-                                                        alexandria::JobType::UNKNOWN);
-                            if (strcasecmp(prop, "Polarizability") == 0)
+                            alexandria::Experiment exper("unknown", "minimum");
+                            std::string exp_type("experiment");
+                            GenericProperty *gp;
+                            switch (mpo)
                             {
-                                alexandria::MolecularPolarizability mp(prop, unit, temperature, 0, 0, 0, 0, 0, 0, value, 0);
-                                calc.AddPolar(mp);
+                            case MolPropObservable::POLARIZABILITY:
+                                {
+                                    gp = new MolecularPolarizability(exp_type, 
+                                                                     temperature, 0, 0, 0, 0, 0, 0,
+                                                                     value, error);
+                                    break;
+                                }
+                            case MolPropObservable::DIPOLE:
+                                {
+                                    gp = new MolecularDipole(exp_type, temperature, 0, 0, 0, value, error);
+                                    break;
+                                }
+                            case MolPropObservable::DGFORM:
+                            case MolPropObservable::DHFORM:
+                            case MolPropObservable::DSFORM:
+                            case MolPropObservable::ENTROPY:
+                            case MolPropObservable::STRANS:
+                            case MolPropObservable::SROT:
+                            case MolPropObservable::SVIB:
+                            case MolPropObservable::CP:
+                            case MolPropObservable::CV:
+                                {
+                                    gp = new MolecularEnergy(mpo, exp_type, temperature, ePhase::GAS, value, error);
+                                    break;
+                                }
+                            default:
+                                gmx_fatal(FARGS, "Unsupported property %s", prop);
                             }
-                            else if (strcasecmp(prop, "dipole") == 0)
-                            {
-                                calc.AddDipole(alexandria::MolecularDipole(prop, unit, temperature, 0, 0, 0, value, error));
-                            }
-                            else if ((strcasecmp(prop, "DeltaHform") == 0) ||
-                                     (strcasecmp(prop, "DeltaGform") == 0) ||
-                                     (strcasecmp(prop, "DeltaSform") == 0) ||
-                                     (strcasecmp(prop, "S0") == 0) ||
-                                     (strcasecmp(prop, "cp") == 0) ||
-                                     (strcasecmp(prop, "cv") == 0))
-                                
-                            {
-                                calc.AddEnergy(alexandria::MolecularEnergy(prop, unit, temperature, epGAS, value, error));
-                            }
-                            mpi->AddExperiment(calc);
+                            exper.addProperty(mpo, gp);
+                            mpi->AddExperiment(exper);
                         }
                     }
                     const char *iupac = keyptr->iupac().c_str();
@@ -423,3 +422,5 @@ void ReadSqlite3(const char                       *sqlite_file,
     fprintf(stderr, "Please rebuild gromacs with cmake flag -DGMX_SQLITE3=ON set.\n");
 #endif
 }
+
+} // namespace alexandria

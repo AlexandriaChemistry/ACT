@@ -1,11 +1,11 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2020 
+ * Copyright (C) 2020
  *
  * Developers:
- *             Mohammad Mehdi Ghahremanpour, 
- *             Paul J. van Maaren, 
+ *             Mohammad Mehdi Ghahremanpour,
+ *             Paul J. van Maaren,
  *             David van der Spoel (Project leader)
  *
  * This program is free software; you can redistribute it and/or
@@ -20,10 +20,10 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301, USA.
  */
- 
+
 /*! \internal \brief
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
@@ -43,11 +43,11 @@
 namespace alexandria
 {
 
-enum class CanSwap { 
+enum class CanSwap {
     //! The order of atoms in an interaction cannot be swapped
-    No, 
+    No,
     //! The order of atoms in an interaction can be swapped
-    Yes 
+    Yes
 };
 
 /*! \brief Convert string to CanSwap
@@ -72,7 +72,22 @@ class Identifier
     /*! \brief Empty constructor
      */
     Identifier() {}
-    
+
+    /*!
+     * Copy constructor
+     * \param[in] other   reference Identifier object
+     */
+    Identifier(const Identifier &other)
+    : id_(other.id()), swappedId_(other.swappedId()),
+      bondOrders_(other.bondOrders()), atoms_(other.atoms()) {}
+
+    /*! \brief Simple constructor
+     * \param[in] atoms   Vector containing atom/bond names
+     * \param[in] canSwap Can the order of the atoms be swapped
+     */
+    Identifier(const std::vector<std::string> &atoms,
+               CanSwap                         canSwap);
+
     /*! \brief Constructor
      * Will extract atoms and bondorders from the id string. If the string
      * is incorrect the program will be terminated with a message.
@@ -101,7 +116,13 @@ class Identifier
 
     //! \brief Return standard identifier string
     const std::string &id() const { return id_; }
-    
+
+    //! \brief Return swapped identifier string
+    const std::string &swappedId() const { return swappedId_; }
+
+    //! \brief Return the bond orders
+    const std::vector<double> &bondOrders() const { return bondOrders_; }
+
     /*! \brief Comparison operator
      *
      * Either both identifiers are swappable or neither.
@@ -110,7 +131,7 @@ class Identifier
      * \return Whether a < b
      */
     friend bool operator<(const Identifier &a, const Identifier &b);
-    
+
     /*! \brief Comparison operator
      *
      * Either both identifiers are swappable or neither.
@@ -122,10 +143,7 @@ class Identifier
 
     //! \brief Return the atoms
     const std::vector<std::string> &atoms() const { return atoms_; }
-    
-    //! \brief Return the bond orders
-    const std::vector<double> &bondOrders() const { return bondOrders_; }
-    
+
     /*! \brief Send the contents to another processor
      * \param[in] cr   Communication data structure
      * \param[in] dest Processor id to send the data to
@@ -139,6 +157,7 @@ class Identifier
     CommunicationStatus Receive(const t_commrec *cr, int src);
 
  private:
+
     //! The id in short of these parameter
     std::string              id_;
     //! The swapped id
@@ -147,13 +166,15 @@ class Identifier
     std::vector<double>      bondOrders_;
     //! The atoms
     std::vector<std::string> atoms_;
+
     //! Correct the order of atoms
     void orderAtoms();
+
     /*! Create the swapped version of the id if needed
      * \param[in] canSwap What we are allowed to do in this case
      */
     void createSwapped(CanSwap canSwap);
-};    
+};
 
 } // namespace alexandria
 

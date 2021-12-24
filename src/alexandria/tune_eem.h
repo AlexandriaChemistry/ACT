@@ -1,3 +1,11 @@
+/*! \internal \brief
+ * Implements part of the alexandria program.
+ * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
+ * \author David van der Spoel <david.vanderspoel@icm.uu.se>
+ * \author Julian Ramon Marrades Furquet <julianramon.marradesfurquet.8049@student.uu.se>
+ */
+
+
 #ifndef ALEXANDRIA_TUNE_EEM_H
 #define ALEXANDRIA_TUNE_EEM_H
 
@@ -15,7 +23,10 @@
 
 #include "molgen.h"
 #include "bayes.h"
-#include "devcomputer.h"
+#include "sharedindividualinfo.h"
+#include "acmfitnesscomputer.h"
+#include "acminitializer.h"
+#include "mcmcmutator.h"
 
 
 namespace alexandria
@@ -27,61 +38,65 @@ namespace alexandria
  */
 void my_fclose(FILE *fp);
 
-/*! \brief The class that does all the optimization work.
+/*! \brief FIXME: The class that does all the optimization work.
  * This class inherits the MolGen class that holds molecule data and
  * properties, and the Bayes class, that does the Monte Carlo steps.
  *
  * The class can run as a Master process or as a Helper process.
  */
-class OptACM : public MolGen, public Bayes
+class OptACM : public ConfigHandler
 {
-    //! Abbreviation to make clear this is not a random vector
-    using param_type = std::vector<double>;
 
 private:
     //! Whether or not to use off-diagonal elements of the quadrupole for fitting
     bool bFullQuadrupole_ = false;
     //! Whether or not to remove molecules that fail to converge in the shell minimization
     bool bRemoveMol_ = true;
-    //! How many times has calcDeviation been called
-    int numberCalcDevCalled_ = 0;
+    //! Flush output immediately rather than letting the OS buffer it. Don't use for production simulations.
+    bool verbose_ = false;
+    /*! Generate completely random starting parameters within the limits set by the options.
+        This will be done at the very first step and before each subsequent run. */
+    bool randomInit_ = false;
     //! Pointer to log file
     gmx::unique_cptr<FILE, my_fclose> fplog_ = nullptr;
     //! File name for the output force field file
     std::string outputFile_;
-    //! BoundsDevComputer, if required by the user
-    BoundsDevComputer *bdc_ = nullptr;
-    //! Vector of non-bound DevComputers for the different components of chi-squared
-    std::vector<DevComputer*> devComputers_;
+    //! GROMACS communication data structure
+    t_commrec *cr_ = nullptr;
+    //! MolGen instance
+    MolGen mg_;
+    //! BayesConfigHandler instance
+    BayesConfigHandler bch_;
+    //! SharedIndividualInfo instance
+    SharedIndividualInfo sii_;
 
-    /*! \brief Compute dipole and quadrupole moments (if needed), for a given molecule
-     * @param targets   pointer to a map between the components of chi-squared and the fitting targets
-     * @param mymol     the molecule
-     */
-    void computeDiQuad(std::map<eRMS, FittingTarget> *targets,
-                       MyMol                         *mymol);
+    // Start TODO: Substitute this to a pointer to the genetic algorithm setting.
+    //! Pointer to ACMFitnessComputer since it will be initialized later
+    ACMFitnessComputer *fitComp_;
+    //! Pointer to ACMInitializer since it will be initialized later
+    ACMInitializer *initializer_;
+    //! Pointer to the Base class individual
+    ga::Individual *baseInd_;
+    //! Pointer to ACMIndividual which will be casted from \p baseInd_
+    ACMIndividual *ind_;
+    //! Pointer to MCMCMutator
+    MCMCMutator *mutator_;
+    // End TODO:
 
 public:
     //! Constructor
-    OptACM() {}
+    OptACM()
+    : cr_(init_commrec()), mg_(cr_), sii_(cr_) {}
 
-    //! \return whether or not we use the full quadrupol
-    bool fullQuadrupole() const { return bFullQuadrupole_; }
+    //! Destructor
+    ~OptACM()
+    {
+        if (cr_) done_commrec(cr_);
+    }
 
-    //! \return whether or not we remove problematic compounds
-    bool removeMol() const { return bRemoveMol_; }
+    virtual void add_pargs(std::vector<t_pargs> *pargs);
 
-    //! \return whether or not we are in verbose mode
-    bool verbose() { return configHandlerPtr()->verbose(); }
-
-    //! \brief This function will store the current state of the force field
-    void saveState();
-
-    /*! \brief Add our command line parameters to the array.
-     * This also calls the addOptions routine of the child class Bayes.
-     * \param[inout] pargs The vector of parameters
-     */
-    void add_pargs(std::vector<t_pargs> *pargs);
+    virtual void check_pargs();
 
     /*! \brief Routine to be called after processing options
      * \param[in] outputFile The force field target file
@@ -100,33 +115,6 @@ public:
      * \param[in] ims The data set to do the work for
      */
     void initChargeGeneration(iMolSelect ims);
-
-    /*! \brief
-     *
-     * Fill parameter vector based on Poldata.
-     * \param[in] bRandom Generate random initial values for parameters if true
-     */
-    void initOpt(bool bRandom);
-
-    /*! \brief
-     * Copy the optimization parameters to the poldata structure
-     * \param[in] changed List over the parameters that have changed.
-     */
-    virtual void toPoldata(const std::vector<bool> &changed);
-
-    //! \brief Fill the devComputers vector according to the needs of the user
-    void fillDevComputers();
-
-    /*! \brief
-     * Computes deviation from target
-     * \param[in] verbose Whether or not to print a lot
-     * \param[in] calcDev The type of calculation to do
-     * \param[in] ims     The data set to do computations on
-     * \return the square deviation
-     */
-    virtual double calcDeviation(bool verbose,
-                                 CalcDev calcDev,
-                                 iMolSelect ims);
 
     /*! \brief
      * Do the actual optimization.
@@ -149,6 +137,81 @@ public:
      * For the helper nodes.
      */
     void runHelper();
+
+    /* * * * * * * * * * * * * * * * * * * * * *
+    * BEGIN: Initializing stuff                *
+    * * * * * * * * * * * * * * * * * * * * * */
+
+    //! \brief Initialize the ACMFitnessComputer
+    void initFitComp()
+    {
+        fitComp_ = new ACMFitnessComputer(cr_, logFile(), &sii_, &mg_, bRemoveMol_, verbose_, bFullQuadrupole_);
+    }
+
+    //! \brief Initialize the ACMInitializer
+    void initInitializer()
+    {
+        initializer_ = new ACMInitializer(mg_.mindata(), &sii_, randomInit_, outputFile_);
+    }
+
+    //! \brief initialize the Individual \p baseInd_ and ACMIndividual \p ind_
+    void initIndividual()
+    {
+        initializer_->initialize(&baseInd_);
+        ind_ = static_cast<ACMIndividual*>(baseInd_);
+    }
+
+    //! \brief Initialize the MCMCMutator
+    void initMutator()
+    {
+        mutator_ = new MCMCMutator(logFile(), verbose_, &bch_, fitComp_, &sii_, sii_.nParam());
+    }
+
+    /* * * * * * * * * * * * * * * * * * * * * *
+    * END: Initializing stuff                  *
+    * * * * * * * * * * * * * * * * * * * * * */
+
+    /* * * * * * * * * * * * * * * * * * * * * *
+    * BEGIN: Getters and setters               *
+    * * * * * * * * * * * * * * * * * * * * * */
+
+    //! \return whether we initialize the FF parameters randomly or not
+    bool randomInit() const { return randomInit_; }
+
+    //! \return whether or not we use the full quadrupol
+    bool fullQuadrupole() const { return bFullQuadrupole_; }
+
+    //! \return whether or not we remove problematic compounds
+    bool removeMol() const { return bRemoveMol_; }
+
+    //! \return whether or not we are in verbose mode
+    bool verbose() const { return verbose_; }
+
+    //! \brief Get the constant communications record \p cr_ constant pointer
+    const t_commrec *commrec() const { return cr_; }
+
+    //! \brief Get the communications record \p cr_ pointer
+    t_commrec *commrec() { return cr_; }
+
+    //! \brief Get the MolGen \p mg_ pointer
+    MolGen *mg() { return &mg_; }
+
+    //! \brief Get the BayesConfigHandler \p bch_ pointer
+    BayesConfigHandler *bch() { return &bch_; }
+
+    //! \brief Get the SharedIndividualInfo \p sii_ pointer
+    SharedIndividualInfo *sii() { return &sii_; }
+
+    //! \brief Get the ACMFitnessComputer \p fitComp_ pointer
+    ACMFitnessComputer *fitComp() { return fitComp_; }
+
+    //! \brief Get the ACMIndividual \p ind_ pointer
+    ACMIndividual *ind() { return ind_; }
+
+    /* * * * * * * * * * * * * * * * * * * * * *
+    * END: Getters and setters                 *
+    * * * * * * * * * * * * * * * * * * * * * */
+
 };
 
 }

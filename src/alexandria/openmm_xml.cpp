@@ -195,7 +195,6 @@ std::map<const std::string, xmlEntryOpenMM> xmlyyyOpenMM =
     { "Particle",                  xmlEntryOpenMM::PARTICLE                } 
 };
     
-
 std::map<xmlEntryOpenMM, const std::string> rmapyyyOpenMM = {};
 
 typedef std::map<xmlEntryOpenMM, std::string> xmlBufferOpenMM;
@@ -212,6 +211,8 @@ static const char *exml_names(xmlEntryOpenMM xmlOpenMM)
     return rmapyyyOpenMM[xmlOpenMM].c_str();
 }
 
+std::vector<xmlEntryOpenMM> class_vec = {xmlEntryOpenMM::CLASS1, xmlEntryOpenMM::CLASS2, xmlEntryOpenMM::CLASS3, xmlEntryOpenMM::CLASS4};
+std::vector<xmlEntryOpenMM> type_vec  = {xmlEntryOpenMM::TYPE1, xmlEntryOpenMM::TYPE2, xmlEntryOpenMM::TYPE3, xmlEntryOpenMM::TYPE4}; 
 
 static void addSpecParameter(xmlNodePtr parent, const std::string &type,
                          const ForceFieldParameter &param, const std::string &specparam)
@@ -319,17 +320,42 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
             add_xml_double(grandchild, "mass", 0.1);;
   
         }
+    }
+
+    auto myatoms =  mymol -> atomsConst();
+    for (auto i = 0; i < myatoms.nr; i++)
+    {
+        std::string name_ai;
+        name_ai += *(myatoms.atomtype[i]);
+        name_ai += '_';
+        name_ai += std::to_string(i);
+
+        auto baby = add_xml_child(child, exml_names(xmlEntryOpenMM::TYPE));
+        add_xml_char(baby, exml_names(xmlEntryOpenMM::NAME), name_ai.c_str()); 
+        add_xml_char(baby, exml_names(xmlEntryOpenMM::CLASS), *(myatoms.atomtype[i]));
         
-
-
-        //for(const auto &opt: aType.optionsConst())
-        //{
-        //    addOption(grandchild, opt.first, opt.second);
-        //}
-        //for(const auto &param : aType.parametersConst())
-        //{
-        //    addParameter(grandchild, param.first, param.second);
-        //}
+        for (const auto &aType : pd->particleTypesConst())
+        {
+            if (strcmp(aType.id().id().c_str(), *(myatoms.atomtype[i])) == 0) 
+            {
+                if (strcmp( ptype_str[aType.gmxParticleType()], "Atom") == 0) 
+                {
+                    for(const auto &opt: aType.optionsConst())
+                    {
+                        addSpecOption(baby, opt.first, opt.second, "element");
+                    } 
+                    for(const auto &param : aType.parametersConst())
+                    {
+                        addSpecParameter(baby, param.first, param.second, "mass");
+                    }   
+                }
+                if (strcmp( ptype_str[aType.gmxParticleType()], "Shell") == 0)
+                {
+                    add_xml_double(baby, "mass", 0.1);;
+  
+                }   
+            }  
+        }
     }
 
     auto child2 = add_xml_child(parent, exml_names(xmlEntryOpenMM::RESIDUES));
@@ -433,18 +459,18 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
         //    {
                 
         //        auto grandchild2 = add_xml_child(child3, exml_names(xmlEntryOpenMM::BOND_RES));
-        //        std::string s = params.first.id().c_str();
-        //        std::string delimiter = "#";
-        //        std::string type_1 = s.substr(0, s.find(delimiter));
-        //        type_1.resize(type_1.size() - 2);
-        //        s.erase(0, s.find(delimiter) + delimiter.length());
-        //        std::string type_2 = s.substr(0, s.find(delimiter));
-        //        type_2.resize(type_2.size() - 2);
-        //        s.erase(0, s.find(delimiter) + delimiter.length());
-        //        std::string bondorder = s;
-        //        add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::CLASS1), type_1.c_str());
-        //        add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::CLASS2), type_2.c_str());
-        //        add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::BONDORDER), s.c_str());
+        //        int i = 0;
+        //        for (auto &a:params.first.atoms())
+        //        {
+        //            add_xml_char(grandchild2, exml_names(class_vec[i]), a.c_str());
+        //            i++;
+        //        } 
+
+        //        for (auto &b:params.first.bondOrders())
+        //        {
+        //            add_xml_double(grandchild2, exml_names(xmlEntryOpenMM::BONDORDER), b);
+        //        }
+        //        
         //        for (const auto &param : params.second)
         //        {
         //            add_xml_double(grandchild2, param.first.c_str(), param.second.value());
@@ -458,18 +484,15 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
             auto child3 = add_xml_child(parent, exml_names(xmlEntryOpenMM::HARMONICBONDFORCE));  
             for (auto &params : fs.second.parametersConst())
             {
-                auto grandchild2 = add_xml_child(child3, exml_names(xmlEntryOpenMM::BOND_RES)); 
-                std::string s = params.first.id().c_str();
-                std::string delimiter = "#";
-                std::string type_1 = s.substr(0, s.find(delimiter));
-                type_1.resize(type_1.size() - 2);
-                s.erase(0, s.find(delimiter) + delimiter.length());
-                std::string type_2 = s.substr(0, s.find(delimiter));
-                type_2.resize(type_2.size() - 2);
-                s.erase(0, s.find(delimiter) + delimiter.length());
-                std::string bondorder = s;
-                add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::CLASS1), type_1.c_str());
-                add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::CLASS2), type_2.c_str());
+                auto grandchild2 = add_xml_child(child3, exml_names(xmlEntryOpenMM::BOND_RES));
+                
+                int i = 0;
+                for (auto &a:params.first.atoms())
+                {
+                    add_xml_char(grandchild2, exml_names(class_vec[i]), a.c_str());
+                    i++;
+                } 
+
                 for (const auto &param : params.second)
                 {
                     addSpecParameter(grandchild2, param.first, param.second, "bondlength");
@@ -482,6 +505,7 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
 
 
         if (strcmp(interactionTypeToString(fs.first).c_str(), "ANGLES") == 0)
+
         {
             auto child4 = add_xml_child(parent, exml_names(xmlEntryOpenMM::HARMONICANGLEFORCE));
 
@@ -489,19 +513,14 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
             {
 
                 auto grandchild2 = add_xml_child(child4, exml_names(xmlEntryOpenMM::ANGLE_CLASS));
-                std::string s = params.first.id().c_str();
-                std::string delimiter = "#";
-                std::string type_1 = s.substr(0, s.find(delimiter));
-                type_1.resize(type_1.size() - 2);
-                s.erase(0, s.find(delimiter) + delimiter.length());
-                std::string type_2 = s.substr(0, s.find(delimiter));
-                type_2.resize(type_2.size() - 2);
-                s.erase(0, s.find(delimiter) + delimiter.length());
-                std::string type_3 = s;
-                type_3.resize(type_3.size() - 2);
-                add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::CLASS1), type_1.c_str());
-                add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::CLASS2), type_2.c_str());
-                add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::CLASS3), type_3.c_str());
+                
+                int i=0;
+                for (auto &a:params.first.atoms())
+                {
+                    add_xml_char(grandchild2, exml_names(class_vec[i]), a.c_str());
+                    i++;
+                } 
+
                 for (const auto &param : params.second)
                 {
                     addSpecParameter(grandchild2, param.first, param.second, "angle"); 
@@ -519,19 +538,14 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
             {
 
                 auto grandchild2 = add_xml_child(child4, exml_names(xmlEntryOpenMM::UREY_BRADLEY_FORCE));
-                std::string s = params.first.id().c_str();
-                std::string delimiter = "#";
-                std::string type_1 = s.substr(0, s.find(delimiter));
-                type_1.resize(type_1.size() - 2);
-                s.erase(0, s.find(delimiter) + delimiter.length());
-                std::string type_2 = s.substr(0, s.find(delimiter));
-                type_2.resize(type_2.size() - 2);
-                s.erase(0, s.find(delimiter) + delimiter.length());
-                std::string type_3 = s;
-                type_3.resize(type_3.size() - 2);
-                add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::CLASS1), type_1.c_str());
-                add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::CLASS2), type_2.c_str());
-                add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::CLASS3), type_3.c_str());
+                 
+                int i = 0;
+                for (auto &a:params.first.atoms())
+                {
+                    add_xml_char(grandchild2, exml_names(class_vec[i]), a.c_str());
+                    i++;
+                } 
+
                 for (const auto &param : params.second)
                 {
                     addSpecParameter(grandchild2, param.first, param.second, "kub"); 
@@ -564,19 +578,13 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
         //    {
 
         //        auto grandchild2 = add_xml_child(child4, exml_names(xmlEntryOpenMM::ANGLE_CLASS));
-        //        std::string s = params.first.id().c_str();
-        //        std::string delimiter = "#";
-        //        std::string type_1 = s.substr(0, s.find(delimiter));
-        //        type_1.resize(type_1.size() - 2);
-        //        s.erase(0, s.find(delimiter) + delimiter.length());
-        //        std::string type_2 = s.substr(0, s.find(delimiter));
-        //        type_2.resize(type_2.size() - 2);
-        //        s.erase(0, s.find(delimiter) + delimiter.length());
-        //        std::string type_3 = s;
-        //        type_3.resize(type_3.size() - 2);
-        //        add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::CLASS1), type_1.c_str());
-        //        add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::CLASS2), type_2.c_str());
-        //        add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::CLASS3), type_3.c_str());
+        //        int i = 0;
+        //        for (auto &a:params.first.atoms())
+        //        {
+        //            add_xml_char(grandchild2, exml_names(class_vec[i]), a.c_str());
+        //            i++;
+        //        }
+
         //        for (const auto &param : params.second)
         //        {
         //            add_xml_double(grandchild2, param.first.c_str(), param.second.value());
@@ -593,23 +601,14 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
             {
                
                 auto grandchild2 = add_xml_child(child6, exml_names(xmlEntryOpenMM::PROPER));
-                std::string s = params.first.id().c_str();
-                std::string delimiter = "#";
-                std::string type_1 = s.substr(0, s.find(delimiter));
-                type_1.resize(type_1.size() - 2);
-                s.erase(0, s.find(delimiter) + delimiter.length());
-                std::string type_2 = s.substr(0, s.find(delimiter));
-                type_2.resize(type_2.size() - 2);
-                s.erase(0, s.find(delimiter) + delimiter.length());
-                std::string type_3 = s.substr(0, s.find(delimiter));
-                type_3.resize(type_3.size() - 2);
-                s.erase(0, s.find(delimiter) + delimiter.length());
-                std::string type_4 = s;
-                type_4.resize(type_4.size() - 2);
-                add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::CLASS1), type_1.c_str());
-                add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::CLASS2), type_2.c_str());
-                add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::CLASS3), type_3.c_str());
-                add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::CLASS4), type_4.c_str());
+                // need to implement class1 - class4
+                int i=0;
+                for (auto &a:params.first.atoms())
+                {
+                    add_xml_char(grandchild2, exml_names(class_vec[i]), a.c_str());
+                    i++;
+                } 
+
                 for (const auto &param : params.second)
                 {
                     add_xml_double(grandchild2, param.first.c_str(), param.second.value());
@@ -629,23 +628,14 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
             {
                
                 auto grandchild2 = add_xml_child(child6, exml_names(xmlEntryOpenMM::IMPROPER));
-                std::string s = params.first.id().c_str();
-                std::string delimiter = "#";
-                std::string type_1 = s.substr(0, s.find(delimiter));
-                type_1.resize(type_1.size() - 2);
-                s.erase(0, s.find(delimiter) + delimiter.length());
-                std::string type_2 = s.substr(0, s.find(delimiter));
-                type_2.resize(type_2.size() - 2);
-                s.erase(0, s.find(delimiter) + delimiter.length());
-                std::string type_3 = s.substr(0, s.find(delimiter));
-                type_3.resize(type_3.size() - 2);
-                s.erase(0, s.find(delimiter) + delimiter.length());
-                std::string type_4 = s;
-                type_4.resize(type_4.size() - 2);
-                add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::CLASS1), type_1.c_str());
-                add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::CLASS2), type_2.c_str());
-                add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::CLASS3), type_3.c_str());
-                add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::CLASS4), type_4.c_str());
+                // need to implement class1 - class4
+                int i=0;
+                for (auto &a:params.first.atoms())
+                {
+                    add_xml_char(grandchild2, exml_names(class_vec[i]), a.c_str());
+                    i++;
+                } 
+
                 for (const auto &param : params.second)
                 {
                     add_xml_double(grandchild2, param.first.c_str(), param.second.value());
@@ -678,6 +668,7 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
             //        }
             //}
  
+            // !!!   This order is important !!! Do not change the order of these parameters, otherwise the force field is not working !!!
             auto grandchild2 = add_xml_child(child5, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
             add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::NAME), "sigma");
             auto grandchild3 = add_xml_child(child5, exml_names(xmlEntryOpenMM::PERPARTICLEPARAMETER));
@@ -768,6 +759,89 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
 
                     //add_xml_int(grandchild2, "charge", 0);       
             }
+            // add customnonbonded (WBH vdW + pg coulomb) for compound
+            auto myatoms =  mymol -> atomsConst();
+            for (auto i = 0; i < myatoms.nr; i++)
+            {
+                std::string name_ai;
+                name_ai += *(myatoms.atomtype[i]);
+                name_ai += '_';
+                name_ai += std::to_string(i);
+                
+                auto grandchild3 = add_xml_child(child5, exml_names(xmlEntryOpenMM::ATOM_RES));
+                add_xml_char(grandchild3, exml_names(xmlEntryOpenMM::TYPE_RES), name_ai.c_str());  
+                
+                for (const auto &aType : pd->particleTypesConst())
+                {
+                    if (strcmp(aType.id().id().c_str(), *(myatoms.atomtype[i])) == 0) 
+                    {
+                        if (strcmp( ptype_str[aType.gmxParticleType()], "Atom") == 0) 
+                        {
+                            add_xml_double(grandchild3, "vdW", 1.0); 
+
+  
+                        }
+                        if (strcmp( ptype_str[aType.gmxParticleType()], "Shell") == 0)
+                        {
+                            add_xml_double(grandchild3, "vdW", 0.0);
+  
+                        }   
+                      
+                
+                        for(const auto &opt: aType.optionsConst())
+                        { 
+                            if (strcmp(opt.first.c_str(), "vdwtype") == 0) 
+                            {
+                                for (auto &params : fs.second.parametersConst())
+                                {
+                                    for (const auto &param : params.second)
+                                    {
+                                        if (strcmp(opt.second.c_str(), params.first.id().c_str()) == 0)
+                                        {    
+                                            if (strcmp( ptype_str[aType.gmxParticleType()], "Atom") == 0) 
+                                            {
+                                                add_xml_double(grandchild3, param.first.c_str(), param.second.value());
+                                            }
+                                            if (strcmp( ptype_str[aType.gmxParticleType()], "Shell") == 0) 
+                                            {
+                                                if (strcmp(param.first.c_str(), "gamma") == 0)
+                                                {
+                                                   add_xml_double(grandchild3, param.first.c_str(), 7.0); 
+                                                }
+                                                else 
+                                                {
+                                                    add_xml_double(grandchild3, param.first.c_str(), 1.0); 
+                                                }
+                                            
+                                            }
+                                        } 
+                                    }        
+                                }
+                            }
+                            if (strcmp(opt.first.c_str(), "zetatype") == 0)
+                            {
+                                for (auto &fs : pd->forcesConst())
+                                {
+                                    if (strcmp(interactionTypeToString(fs.first).c_str(), "CHARGEDISTRIBUTION") == 0)
+                                    {
+                                        for (auto &params : fs.second.parametersConst())
+                                        {
+                                            for (const auto &param : params.second)
+                                            {
+                                                if (strcmp(opt.second.c_str(), params.first.id().c_str()) == 0)
+                                                {
+                                                    add_xml_double(grandchild3, exml_names(xmlEntryOpenMM::CHARGE_RES), myatoms.atom[i].q); 
+                                                    add_xml_double(grandchild3, "beta", param.second.value()); 
+                                                }    
+                                            }  
+                                        }    
+                                    } 
+                                }
+                            }
+                        }        
+                    } 
+                } 
+            }        
         }      
 
         // This part is added to implement PME and LJPME, i.e. long-range interactions are approx. by point charge and 12-6 Lennard-Jones
@@ -799,10 +873,44 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
 
                     }
 
+            } 
+            // adding nonbonded (LJ + point coulomb) for compound
+            auto myatoms =  mymol -> atomsConst();
+            for (auto i = 0; i < myatoms.nr; i++)
+            {
+                std::string name_ai;
+                name_ai += *(myatoms.atomtype[i]);
+                name_ai += '_';
+                name_ai += std::to_string(i);
+
+                auto baby = add_xml_child(child5, exml_names(xmlEntryOpenMM::ATOM_RES));
+                add_xml_char(baby, exml_names(xmlEntryOpenMM::TYPE_RES), name_ai.c_str()); 
+                for (const auto &aType : pd->particleTypesConst())
+                {
+                    if (strcmp(aType.id().id().c_str(), *(myatoms.atomtype[i])) == 0) 
+                    {
+
+                        add_xml_double(baby, exml_names(xmlEntryOpenMM::CHARGE_RES), myatoms.atom[i].q);
+                        if (strcmp( ptype_str[aType.gmxParticleType()], "Atom") == 0) 
+                        {
+                            add_xml_double(baby, "sigma", 0.3);  
+                            add_xml_double(baby, "epsilon", 0.05);  
+                        }
+                        if (strcmp( ptype_str[aType.gmxParticleType()], "Shell") == 0) 
+                        {
+                            add_xml_double(baby, "sigma", 0.3);  
+                            add_xml_double(baby, "epsilon", 0.0);  
+                        }
+                           
+
+                    }      
+                    
+                }        
+                
             }       
         }
 
-        // Shell particle has to be type1, core particle has to be type2;
+        // !!! Shell particle has to be type1, core particle has to be type2 !!!
         // 
         if (strcmp(interactionTypeToString(fs.first).c_str(), "POLARIZATION") == 0)
         {
@@ -851,7 +959,10 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
                     }
                     add_xml_double(grandchild2, "thole", 0);
                 } 
-            }       
+            }
+        // TO DO:
+        // Add drude force for compound here    
+
         }
     }
   

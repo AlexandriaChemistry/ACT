@@ -52,6 +52,9 @@
 #include "poldata_xml.h"
 #include "units.h"
 
+namespace alexandria
+{
+
 typedef std::map<const std::string, int> stringCount;
 
 static void dump_molecule(FILE              *fp,
@@ -60,7 +63,7 @@ static void dump_molecule(FILE              *fp,
                           stringCount       *atomTypeCount,
                           stringCount       *bccTypeCount,
                           const Poldata     &pd,
-                          MolProp            mp,
+                          const MolProp     &mp,
                           t_inputrec        *inputrec)
 {
     alexandria::MyMol mymol;
@@ -70,7 +73,6 @@ static void dump_molecule(FILE              *fp,
                                       &pd,
                                       method,
                                       basis,
-                                      nullptr,
                                       missingParameters::Error,
                                       nullptr,
                                       false);
@@ -81,8 +83,16 @@ static void dump_molecule(FILE              *fp,
     }
     else
     {
+        std::map<MolPropObservable, iqmType> iqm = {
+            { MolPropObservable::DIPOLE, iqmType::Both },
+            { MolPropObservable::QUADRUPOLE, iqmType::Both },
+            { MolPropObservable::POLARIZABILITY, iqmType::Both },
+        };
+       
         fprintf(fp, "Molecule: %s Formula: %s q: %d Mult: %d\n", mymol.getMolname().c_str(),
                 mymol.formula().c_str(), mymol.totalCharge(), mymol.getMultiplicity());
+        mymol.getExpProps(iqm, true, "", "", &pd);
+        mymol.Dump(fp);
         // Atoms!
         auto &atoms = mymol.atomsConst();
         std::vector<Identifier> atomId;
@@ -167,7 +177,7 @@ static void dump_molecule(FILE              *fp,
     }
 }
 
-int alex_molprop_check(int argc, char*argv[])
+int molprop_check(int argc, char*argv[])
 {
     static const char               *desc[] = {
         "molprop_check checks calculations for missing hydrogens",
@@ -248,16 +258,15 @@ std::vector<alexandria::MolProp> mp;
                         ci.getDatafile().c_str(),
                         nC, nH);
             }
-            std::vector<double> mu;
-            tensor              Q;
-            double              value, error, T = 0;
-            std::string         type;
-            if (ci.getVal(type, MolPropObservable::DIPOLE, &value, &error,
-                          &T, &mu, Q))
+            double T = 0;
+            auto gp = m.findProperty(MolPropObservable::DIPOLE, iqmType::QM, T, "", "", "");
+            if (gp)
             {
+                std::vector<double> mu = gp->getVector();
                 name_mu nmu = { ci.getDatafile(), { mu[XX], mu[YY], mu[ZZ] } };
                 mus.push_back(nmu);
             }
+        
             auto Xcalc = ci.getCoordinates();
             auto Esp   = ci.electrostaticPotentialConst();
             if (Esp.size() >= Xcalc.size() && Xcalc.size() > 1)
@@ -314,3 +323,5 @@ std::vector<alexandria::MolProp> mp;
     fclose(mylog);
     return 0;
 }
+
+} // namespace alexandria

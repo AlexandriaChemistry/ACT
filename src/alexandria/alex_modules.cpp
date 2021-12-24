@@ -64,33 +64,33 @@ static void registerModule(gmx::CommandLineModuleManager                *manager
 void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
 {
     // Modules from this directory
-    registerModule(manager, &alex_gentop, "gentop",
+    registerModule(manager, &alexandria::gentop, "gentop",
                    "Generate a molecular topology and coordinates based on structure files or quantum chemistry output from Gaussian.");
-    //registerModule(manager, &alex_tune_fc, "tune_fc",
+    //registerModule(manager, &alexandria::tune_fc, "tune_fc",
     //              "Optimize force field parameters");
-    registerModule(manager, &alex_tune_eem, "tune_eem",
+    registerModule(manager, &alexandria::tune_eem, "tune_eem",
                    "Optimize parameters of the Alexandria Charge Model algorithms.");
-    registerModule(manager, &alex_bastat, "bastat",
+    registerModule(manager, &alexandria::bastat, "bastat",
                    "Deduce bond/angle/dihedral distributions from a set of strucures and create a new force field file.");
-    registerModule(manager, &alex_analyze, "analyze",
+    registerModule(manager, &alexandria::analyze, "analyze",
                    "Analyze molecular- or force field properties from a database and generate publication quality tables in LaTeX.");
-    //    registerModule(manager, &alex_gen_table, "gen_table",
+    //    registerModule(manager, &alexandria::gen_table, "gen_table",
     //             "Generate tables for interaction functions used in mdrun");
-    registerModule(manager, &alex_poldata_edit, "poldata_edit",
+    registerModule(manager, &alexandria::poldata_edit, "poldata_edit",
                    "Manipulate force field files in various ways and test whether reading and writing works.");
-    registerModule(manager, &alex_molprop_test, "molprop_test",
+    registerModule(manager, &alexandria::molprop_test, "molprop_test",
                    "Test reading and writing the molecular property file.");
-    registerModule(manager, &alex_molprop_check, "molprop_check",
+    registerModule(manager, &alexandria::molprop_check, "molprop_check",
                    "Check the molecular property file for missing hydrogens and for whether it is possible to generate topologies for all compounds.");
-    registerModule(manager, &alex_qm2molprop, "qm2molprop",
+    registerModule(manager, &alexandria::qm2molprop, "qm2molprop",
                    "Convert a Gaussian or Psi4 output to a molecular property file.");
-    registerModule(manager, &alex_mp2csv, "mp2csv",
+    registerModule(manager, &alexandria::mp2csv, "mp2csv",
                    "Utility to dump a molecular property file to a spreadsheet.");
-    registerModule(manager, &alex_merge_mp, "merge_mp",
+    registerModule(manager, &alexandria::merge_mp, "merge_mp",
                    "Utility to merge a number of molecular property files and a SQLite database.");
-    registerModule(manager, &alex_merge_pd, "merge_pd",
+    registerModule(manager, &alexandria::merge_pd, "merge_pd",
                    "Utility to merge a number of gentop files and write a new file with average parameters. Can also write a LaTeX table.");
-    //registerModule(manager, &alex_molselect, "molselect",
+    //registerModule(manager, &alexandria::molselect, "molselect",
     //             "Utility to generate random samples from molprop database");
 
     {

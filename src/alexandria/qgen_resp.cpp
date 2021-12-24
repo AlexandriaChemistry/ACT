@@ -213,31 +213,27 @@ void QgenResp::writeHisto(const std::string      &fn,
                           const gmx_output_env_t *oenv)
 {
     FILE       *fp;
-    gmx_stats_t gs;
-    real       *x, *y;
+    gmx_stats   gs;
+    std::vector<double> x, y;
     int         nbin = 100;
 
     if (0 == fn.size())
     {
         return;
     }
-    gs = gmx_stats_init();
     for (size_t i = 0; (i < nEsp()); i++)
     {
-        gmx_stats_add_point(gs, i, convertFromGromacs(ep_[i].vCalc(), "Hartree/e"), 0, 0);
+        gs.add_point(i, convertFromGromacs(ep_[i].vCalc(), "Hartree/e"), 0, 0);
     }
 
-    gmx_stats_make_histogram(gs, 0, &nbin, ehistoY, 1, &x, &y);
+    gs.make_histogram(0, &nbin, eHisto::Y, 1, &x, &y);
 
     fp = xvgropen(fn.c_str(), title.c_str(), "Pot (1/a.u.)", "()", oenv);
     for (int i = 0; (i < nbin); i++)
     {
         fprintf(fp, "%10g  %10g\n", x[i], y[i]);
     }
-    free(x);
-    free(y);
     fclose(fp);
-    gmx_stats_free(gs);
 }
 
 void QgenResp::copyGrid(QgenResp &src)
@@ -270,26 +266,24 @@ void QgenResp::plotLsq(const gmx_output_env_t *oenv,
 {
     real        x, y;
     const char *leg = "Alexandria";
-    gmx_stats_t lsq = gmx_stats_init();
+    gmx_stats   lsq;
     std::string potUnit("Hartree/e");
     for (size_t i = 0; i < nEsp(); i++)
     {
-        gmx_stats_add_point(lsq,
-                            convertFromGromacs(ep_[i].v(), potUnit),
-                            convertFromGromacs(ep_[i].vCalc(), potUnit),
-                            0, 0);
+        lsq.add_point(convertFromGromacs(ep_[i].v(), potUnit),
+                      convertFromGromacs(ep_[i].vCalc(), potUnit),
+                      0, 0);
     }
     FILE *fp = xvgropen(ESPcorr, "Electrostatic Potential (Hartree/e)", "QM", "Calc", oenv);
     xvgr_legend(fp, 1, &leg, oenv);
     xvgr_line_props(fp, 0, elNone, ecBlack, oenv);
     fprintf(fp, "@ s%d symbol %d\n", 0, 1);
     fprintf(fp, "@type xy\n");
-    while (gmx_stats_get_point(lsq, &x, &y, nullptr, nullptr, 0) == estatsOK)
+    while (lsq.get_point(&x, &y, nullptr, nullptr, 0) == eStats::OK)
     {
         fprintf(fp, "%10g  %10g\n", x, y);
     }
     fprintf(fp, "&\n");
-    gmx_stats_free(lsq);
 }
 
 void QgenResp::regularizeCharges()

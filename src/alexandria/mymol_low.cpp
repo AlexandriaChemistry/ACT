@@ -353,7 +353,10 @@ immStatus updatePlist(const Poldata             *pd,
             break;
         }
     }
-    GMX_RELEASE_ASSERT(mybonds != plist->end(), "Cannot find bonds in plistwrapper");
+    if (mybonds == plist->end())
+    {
+        return immStatus::OK;
+    }
     for (auto pw = plist->begin(); pw < plist->end(); ++pw)
     {
         auto iType   = pw->getItype();

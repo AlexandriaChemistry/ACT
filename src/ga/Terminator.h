@@ -1,5 +1,5 @@
-#ifndef ACT_TERMINATOR_H
-#define ACT_TERMINATOR_H
+#ifndef GA_TERMINATOR_H
+#define GA_TERMINATOR_H
 
 
 #include "aliases.h"
@@ -121,4 +121,4 @@ public:
 } //namespace ga
 
 
-#endif //ACT_TERMINATOR_H
+#endif //GA_TERMINATOR_H

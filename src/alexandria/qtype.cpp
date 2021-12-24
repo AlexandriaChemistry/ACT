@@ -54,6 +54,7 @@ static std::map<qType, std::string> qTypeNames = {
     { qType::Hirshfeld, "Hirshfeld"  },
     { qType::CM5,       "CM5"        },
     { qType::Calc,      "Alexandria" },
+    { qType::Gasteiger, "Gasteiger"  },
     { qType::Elec,      "Electronic" }
 };
 
@@ -65,6 +66,20 @@ const std::string &qTypeName(qType qt)
 const std::map<qType, std::string> &qTypes()
 {
     return qTypeNames;
+}
+
+qType stringToQtype(const std::string &type)
+{
+    for (const auto &qn : qTypeNames)
+    {
+        if (qn.second.compare(type) == 0)
+        {
+            return qn.first;
+        }
+    }
+    GMX_THROW(gmx::InvalidInputError(gmx::formatString("Unknown charge type %s", type.c_str()).c_str()));
+    // To make the compiler happy
+    return qType::ESP;
 }
 
 void QtypeProps::setX(const gmx::HostVector<gmx::RVec> &x)
@@ -141,7 +156,6 @@ void QtypeProps::calcMoments()
     GMX_RELEASE_ASSERT(x_.size() > 0, gmx::formatString("No coordinates for %s", qTypeName(qtype_).c_str()).c_str());
     // distance of atoms to center of charge
     rvec   r; 
-    real   r2;
     clear_mat(quadrupole_);
     clear_rvec(mu_);
     for (size_t i = 0; i < q_.size(); i++)
@@ -151,7 +165,6 @@ void QtypeProps::calcMoments()
         {
             mu_[m] += e2d(r[m]*q_[i]);
         }
-        r2   = iprod(r, r);
         for (int m = 0; m < DIM; m++)
         {
             for (int n = m; n < DIM; n++)

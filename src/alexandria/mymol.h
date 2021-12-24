@@ -155,7 +155,6 @@ namespace alexandria
          * \param[out] atoms  The structure to update
          * \param[in]  method Method used for QM calculations
          * \param[in]  basis  Basis set used for QM calculations
-         * \param[out] mylot  Level of theory used
          * \param[in]  strict Whether or not to only allow the requested LOT
          * \return The staus
          */
@@ -163,7 +162,6 @@ namespace alexandria
                                 t_atoms           *atoms,
                                 const std::string &method,
                                 const std::string &basis,
-                                std::string       *mylot,
                                 bool               strict);
 
         /*! \brief
@@ -260,12 +258,10 @@ namespace alexandria
                                  int                             natoms,
                                  const int                      *iatoms);
 
+        // Energy terms for this compounds
+        std::map<MolPropObservable, double> energy_;
     public:
         double                         chieq_         = 0;
-        // Enthalpy of formation (experimental) for this compound
-        double                         Hform_         = 0;
-        // Target molecule energy for this compound
-        double                         Emol_          = 0;
         double                         anisoPol_elec_ = 0;
         double                         anisoPol_calc_ = 0;
         double                         mpad_          = 0; //molecular polarizability anisotropy difference (mpad)
@@ -302,6 +298,20 @@ namespace alexandria
             dataset_type_ = dataset_type;
         }
 
+        /*! Return an energy component
+         * \param[in]  mpo  The particular term that is requested
+         * \param[out] ener The value found
+         * \return whether or not the energy is found
+         */
+        bool energy(MolPropObservable mpo, double *ener) const 
+        {
+            if (energy_.find(mpo) == energy_.end())
+            {
+                return false;
+            }
+            *ener = energy_.find(mpo)->second;
+            return true;
+        }
         /*! \brief
          * \return the center of nuclear charge
          */
@@ -395,7 +405,6 @@ namespace alexandria
          * \param[in]  pd      Data structure containing atomic properties
          * \param[in]  method  Method used for QM calculation
          * \param[in]  basis   Basis set used for QM calculation
-         * \param[out] mylot   Level of theory
          * \param[in]  missing How to treat missing parameters
          * \param[in]  tabfn   Table function file for table potentials
          * \param[in]  strict  Whether or not to only allow the requested LOT
@@ -405,7 +414,6 @@ namespace alexandria
                                    const Poldata     *pd,
                                    const std::string &method,
                                    const std::string &basis,
-                                   std::string       *mylot,
                                    missingParameters  missing,
                                    const char        *tabfn,
                                    bool               strict=true);
@@ -518,18 +526,15 @@ namespace alexandria
         /*! \brief
          * Collect the experimental properties
          *
-         * \param[in] iqm      Determine whether to allow exp or QM results or both
+         * \param[in] iqm      Determine whether to allow exp or QM results or both for each property
          * \param[in] bZero    Allow zero dipoles
-         * \param[in] bZPE     Use zero point energies
-         * \param[in] bDHform  Whether to use the enthalpy of formation
          * \param[in] method   Method used for QM calculation
          * \param[in] basis    Basis set used for QM calculation
          * \param[in] pd       Force field structure
          */
-        immStatus getExpProps(iqmType            iqm,
+        immStatus getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
+                             
                               gmx_bool           bZero,
-                              gmx_bool           bZPE,
-                              gmx_bool           bDHform,
                               const std::string &method,
                               const std::string &basis,
                               const Poldata     *pd);

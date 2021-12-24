@@ -1,8 +1,8 @@
-#ifndef ACT_GENETICALGORITHM_H
-#define ACT_GENETICALGORITHM_H
+#ifndef GA_GENETICALGORITHM_H
+#define GA_GENETICALGORITHM_H
 
 
-#include "aliases.h"
+// #include "aliases.h"
 
 #include "Initializer.h"
 #include "FitnessComputer.h"
@@ -12,6 +12,11 @@
 #include "Crossover.h"
 #include "Mutator.h"
 #include "Terminator.h"
+
+#include "alexandria/confighandler.h"
+#include "alexandria/sharedindividualinfo.h"
+#include "alexandria/acmfitnesscomputer.h"
+#include "alexandria/acminitializer.h"
 
 
 namespace ga
@@ -26,92 +31,80 @@ class GeneticAlgorithm
 
 private:
 
-    //! Amount of individuals in the population
-    int popSize;
-    //! Amount of genes in each individual
-    int chromosomeLength;
-    //! Amount of top individuals to be propagated, unchanged, to the next generation
-    int nElites;
+    //! BayesConfigHandler pointer
+    alexandria::BayesConfigHandler *bch_;
+    //! GAConfigHandler pointer
+    alexandria::GAConfigHandler *gach_;
+    //! Communcations record
+    t_commrec *cr_;
+
+    //! Logfile for logging info
+    FILE *logfile_;
+
+    //! Output environment (GROMACS)
+    gmx_output_env_t *oenv_;
 
     //! Old population
-    matrix oldPop;
+    std::vector<Individual*> oldPop_;
     //! New population, which emerges from the old population
-    matrix newPop;
+    std::vector<Individual*> newPop_;
     //! Temporal storage to swap "oldPop" and "newPop" after each generation
-    matrix tmpPop;
-    //! Fitness score for each individual
-    vector fitness;
+    std::vector<Individual*> tmpPop_;
     //! Probability of selection for each individual
-    vector probability;
+    std::vector<double> probability_;
+    //! The best individual
+    Individual* bestInd_;
+
 
     //! Initializes each individual in the population
-    Initializer            *initializer;
+    Initializer            *initializer_;
     //! Computes fitness for each individual in the population
-    FitnessComputer        *fitComputer;
+    FitnessComputer        *fitComputer_;
     //! Sorts the individuals based on their fitness
-    Sorter                 *sorter;
+    Sorter                 *sorter_;
     //! Computes the probability of selection of each individual
-    ProbabilityComputer    *probComputer;
+    ProbabilityComputer    *probComputer_;
     //! Selects an individual from the population based on its probability
-    Selector               *selector;
+    Selector               *selector_;
     //! Grabs 2 individuals and crosses their genes to generate 2 new individuals
-    Crossover              *crossover;
+    Crossover              *crossover_;
     //! Mutates the genes of the individuals
-    Mutator                *mutator;
+    Mutator                *mutator_;
     //! Checks if the evolution should continue or be terminated
-    Terminator             *terminator;
+    Terminator             *terminator_;
+
+    //! Pure MCMC evaluation
+    evolveMCMC();
 
 public:
 
-    /*!
-     * Create a new GeneticAlgorithm object
-     * @param popSize               size of the population
-     * @param chromosomeLength      length of each individual
-     * @param nElites               the amount of best individuals to move unchanged to the next generation
-     * @param initializer           Initializer object
-     * @param fitComputer           FitnessComputer object
-     * @param sorter                Sorter object
-     * @param probComputer          ProbabilityComputer object
-     * @param selector              Selector object
-     * @param crossover             Crossover object
-     * @param mutator               Mutator object
-     * @param terminator            Terminator object
-     */
-    GeneticAlgorithm(const int                  popSize,
-                     const int                  chromosomeLength,
-                     const int                  nElites,
-                           Initializer         *initializer,
-                           FitnessComputer     *fitComputer,
-                           Sorter              *sorter,
-                           ProbabilityComputer *probComputer,
-                           Selector            *selector,
-                           Crossover           *crossover,
-                           Mutator             *mutator,
-                           Terminator          *terminator);
+    //! Default constructor
+    GeneticAlgorithm() {}
 
     /*!
-     * Evolve the initial population
-     * @param prCross   the probability of crossover
-     * @param prMut     the probability of mutation
-     * @param verbose   The higher the value, the more debug prints
-     * @return          a tuple containing the final population, the final fitness, the best individual, the fitness
-     *                  of the best individual, and the number of generations
+     * Constructor for ACT
      */
-    const ga_result_t evolve(const double   prCross,
-                             const double   prMut,
-                             const int      verbose);
+    GeneticAlgorithm(const  bool                                 verbose,
+                     const  bool                                 removeMol,
+                     const  bool                                 fullQuadrupole,
+                            t_commrec                           *cr,
+                            MolGen                              *mg,
+                            FILE                                *logFile,
+                            gmx_output_env_t                    *oenv,
+                            alexandria::BayesConfigHandler      *bch,
+                            alexandria::SharedIndividualInfo    *sii,
+                            alexandria::GAConfigHandler         *gach,
+                     const  std::string                         &outputFile)
+    : bch_(bch), gach_(gach), cr_(cr), logfile_(logFile), oenv_(oenv),
+      probability_(gach->popSize()), oldPop_(gach->popSize()), newPop_(gach->popSize())
+    {
+        initializer_ = new alexandria::ACMInitializer(mg->mindata(), sii, gach->randomInit(), outputFile);
+        fitComputer_ = new alexandria::ACMFitnessComputer(cr, logFile, sii, mg, removeMol, verbose, fullQuadrupole);
+        mutator_ = new alexandria::MCMCMutator(logFile, verbose, bch, fitComputer, sii, sii.nParam());
+    }
 
-    /*!
-     * Set a new value for \p nElites
-     * @param nElites   the new value
-     */
-    void setnElites(const int nElites) { this->nElites = nElites; }
-
-    /*!
-     * Get the value of \p nElites
-     * @return  the value of \p nElites
-     */
-    int getnElites() { return nElites; }
+    //! \brief Evolve the initial population
+    void evolve();
 
 };
 
@@ -119,4 +112,4 @@ public:
 } //namespace ga
 
 
-#endif //ACT_GENETICALGORITHM_H
+#endif //GA_GENETICALGORITHM_H

@@ -1,5 +1,5 @@
-#ifndef ACT_PROBABILITYCOMPUTER_H
-#define ACT_PROBABILITYCOMPUTER_H
+#ifndef GA_PROBABILITYCOMPUTER_H
+#define GA_PROBABILITYCOMPUTER_H
 
 
 #include "aliases.h"
@@ -134,4 +134,4 @@ public:
 } //namespace ga
 
 
-#endif //ACT_PROBABILITYCOMPUTER_H
+#endif //GA_PROBABILITYCOMPUTER_H

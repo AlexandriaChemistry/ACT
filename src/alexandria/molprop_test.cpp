@@ -41,7 +41,10 @@
 #include "mymol.h"
 #include "poldata_xml.h"
 
-int alex_molprop_test(int argc, char*argv[])
+namespace alexandria
+{
+
+int molprop_test(int argc, char*argv[])
 {
     static const char               *desc[] = {
         "molprop_test reads a molprop file and writes a new one."
@@ -66,3 +69,5 @@ int alex_molprop_test(int argc, char*argv[])
 
     return 0;
 }
+
+} // namespace alexandria

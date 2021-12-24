@@ -1,3 +1,12 @@
+/*! \internal \brief
+ * Implements part of the alexandria program.
+ * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
+ * \author David van der Spoel <david.vanderspoel@icm.uu.se>
+ * \author Oskar Tegby <oskar.tegby@it.uu.se>
+ * \author Julian Ramon Marrades Furquet <julianramon.marradesfurquet.8049@student.uu.se>
+ */
+
+
 #include "confighandler.h"
 
 #include "gromacs/utility/arraysize.h"
@@ -28,8 +37,8 @@ void BayesConfigHandler::add_pargs(std::vector<t_pargs> *pargs)
           "Random number seed. If zero, a seed will be generated." },
         { "-step",  FALSE, etREAL, {&step_},
           "Step size for the parameter optimization. Is used as fraction of the available range per parameter which depends on the parameter type." },
-        { "-v",     FALSE, etBOOL, {&verbose_},
-          "Flush output immediately rather than letting the OS buffer it. Don't use for production simulations." }
+        { "-bEvaluate_testset", FALSE, etBOOL, {&evaluate_testset_},
+          "Evaluate the MCMC energy on the test set." }
     };
     for (int i = 0; i < asize(pa); i++)
     {
@@ -47,17 +56,6 @@ void BayesConfigHandler::check_pargs()
     GMX_RELEASE_ASSERT(temperature_ >= 0, "-temp must be nonnegative.");
     // anneal_
     GMX_RELEASE_ASSERT(anneal_ >= 0 && anneal_ <= 1, "-anneal must be in range [0, 1].");
-}
-
-void BayesConfigHandler::setOutputFiles(const char                     *xvgconv,
-                                       const std::vector<std::string> &paramClass,
-                                       const char                     *xvgepot,
-                                       const gmx_output_env_t         *oenv)
-{
-    xvgconv_.assign(xvgconv);
-    paramClass_ = paramClass;
-    xvgepot_.assign(xvgepot);
-    oenv_       = oenv;
 }
 
 double BayesConfigHandler::computeBeta(int iter)
@@ -122,6 +120,8 @@ void GAConfigHandler::add_pargs(std::vector<t_pargs> *pargs)
           "Population size." },
         { "-nElites", FALSE, etINT, {&nElites_},
           "Amount of top individuals to be moved, unchanged, to the next generation." },
+        { "-randomInit", FALSE, etBOOL, {&randomInit_},
+          "Initialize the individuals randomly, within the given bounds." },  
         { "-nCrossovers_", FALSE, etINT, {&nCrossovers_},
           "Order of the crossover operator. That is, amount of crossover points." },
         // { "-sorter", FALSE, etENUM, {sorter_},

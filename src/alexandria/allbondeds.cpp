@@ -46,13 +46,10 @@ namespace alexandria
 
 void OneBonded::addPoint(double x)
 {
-    int N;
-    int ok = gmx_stats_get_npoints(lsq_, &N);
-    if (estatsOK == ok)
-    {
-        ok = gmx_stats_add_point(lsq_, N, x, 0, 0);
-    }
-    if (estatsOK != ok)
+    auto N  = lsq_.get_npoints();
+    auto ok = lsq_.add_point(N, x, 0, 0);
+    
+    if (eStats::OK != ok)
     {
         fprintf(stderr, "Problem adding a point %s\n", gmx_stats_message(ok));
     }
@@ -63,30 +60,21 @@ void OneBonded::writeHistogram(const char             *fn_prefix,
                                const gmx_output_env_t *oenv,
                                double                  binwidth)
 {
-    int   nbins      = 0;
-    int   normalized = 0;
-    real *x          = nullptr;
-    real *y          = nullptr;
-    int   estats     = gmx_stats_make_histogram(lsq_, binwidth, &nbins,
-                                                ehistoY, normalized,
-                                                &x, &y);
-    if (estatsOK != estats)
+    int     nbins      = 0;
+    int     normalized = 0;
+    std::vector<double> x, y;
+    eStats  estats     = lsq_.make_histogram(binwidth, &nbins,
+                                             eHisto::Y, normalized, &x, &y);
+    if (eStats::OK != estats)
     {
-        fprintf(stderr, "Could not make a histogram for %s\n",
-                id_.id().c_str());
+        fprintf(stderr, "Could not make a histogram for %s because of %s\n",
+                id_.id().c_str(), gmx_stats_message(estats));
         return;
     }
-    int    Nsample;
-    estats = gmx_stats_get_npoints(lsq_, &Nsample);
-    if (estatsOK != estats)
-    {
-        fprintf(stderr, "Could not get number of samples for %s\n",
-                id_.id().c_str());
-        return;
-    }
+    auto Nsample = lsq_.get_npoints();
     
     std::string  title = gmx::formatString("%s N = %d", id_.id().c_str(),
-                                           Nsample);
+                                           static_cast<int>(Nsample));
     std::string  fn    = gmx::formatString("%s_%s.xvg", fn_prefix, id_.id().c_str());
     FILE        *fp    = xvgropen(fn.c_str(), title.c_str(),
                                   xaxis, "N", oenv);
@@ -95,23 +83,20 @@ void OneBonded::writeHistogram(const char             *fn_prefix,
         fprintf(fp, "%g  %g\n", x[j], y[j]);
     }
     xvgrclose(fp);
-    sfree(x);
-    sfree(y);
 }
     
-int OneBonded::getAverageSigmaN(real *average,
-                                real *sigma,
-                                int  *N)
+eStats OneBonded::getAverageSigmaN(real   *average,
+                                   real   *sigma,
+                                   size_t *N)
 {
-    // TODO add error check
-    int ok = gmx_stats_get_average(lsq_, average);
-    if (estatsOK == ok)
+    eStats ok = lsq_.get_average(average);
+    if (eStats::OK == ok)
     {
-        ok = gmx_stats_get_sigma(lsq_, sigma);
+        ok = lsq_.get_sigma(sigma);
     }
-    if (estatsOK == ok)
+    if (eStats::OK == ok)
     {
-        gmx_stats_get_npoints(lsq_, N);
+        *N = lsq_.get_npoints();
     }
     return ok;
 }
@@ -325,8 +310,8 @@ void AllBondeds::updatePoldata(FILE             *fp,
         
         for (auto &i : bb.second)
         {
-            int  N;
-            real av, sig;
+            size_t N = 0;
+            real   av = 0, sig = 0;
             i.getAverageSigmaN(&av, &sig, &N);
             auto bondId = i.id();
             switch (iType)
@@ -334,7 +319,8 @@ void AllBondeds::updatePoldata(FILE             *fp,
             case InteractionType::BONDS:
                 {
                     // Note that the order of parameters is important!
-                    round_numbers(&av, &sig, 10); // Rounding the numbers to 1/10 pm and 1/10 degree
+                    // Rounding the numbers to 1/10 pm and 1/10 degree
+                    round_numbers(&av, &sig, 10); 
                     fs->addParameter(bondId, "bondlength",
                                      ForceFieldParameter("pm", av, sig, N, av*factor_, av/factor_, Mutability::Bounded, false, true));
                     fs->addParameter(bondId, "Dm",
@@ -343,7 +329,7 @@ void AllBondeds::updatePoldata(FILE             *fp,
                                      ForceFieldParameter("1/nm", beta_, 0, 1, beta_*factor_, beta_/factor_, Mutability::Bounded, false, true));
                     
                     fprintf(fp, "bond-%s len %g sigma %g (pm) N = %d%s\n",
-                            i.id().id().c_str(), av, sig, N, (sig > bond_tol_) ? " WARNING" : "");
+                            i.id().id().c_str(), av, sig, static_cast<int>(N), (sig > bond_tol_) ? " WARNING" : "");
                     
                 }
                 break;
@@ -364,7 +350,7 @@ void AllBondeds::updatePoldata(FILE             *fp,
                     }
                     
                     fprintf(fp, "angle-%s angle %g sigma %g (deg) N = %d%s\n",
-                            bondId.id().c_str(), av, sig, N, (sig > angle_tol_) ? " WARNING" : "");
+                            bondId.id().c_str(), av, sig, static_cast<int>(N), (sig > angle_tol_) ? " WARNING" : "");
                 }
                 break;
             case InteractionType::LINEAR_ANGLES:
@@ -378,7 +364,7 @@ void AllBondeds::updatePoldata(FILE             *fp,
                                      ForceFieldParameter("kJ/mol/nm2", klin_, 0, 1, klin_*factor_, klin_/factor_, Mutability::Bounded, false, true));
                     
                     fprintf(fp, "linear_angle-%s angle %g sigma %g N = %d%s\n",
-                            bondId.id().c_str(), av, sig, N, (sig > angle_tol_) ? " WARNING" : "");
+                            bondId.id().c_str(), av, sig, static_cast<int>(N), (sig > angle_tol_) ? " WARNING" : "");
                 }
                 break;
             case InteractionType::PROPER_DIHEDRALS:
@@ -464,15 +450,13 @@ void AllBondeds::extractGeometries(FILE                       *fp,
                         mmi.formula().c_str());
                 continue;
             }
-            std::string mylot;
-            auto        imm = mmi.GenerateTopology(fp,
-                                                   &pd,
-                                                   method,
-                                                   basis,
-                                                   &mylot,
-                                                   missingParameters::Generate,
-                                                   nullptr,
-                                                   strict);
+            auto imm = mmi.GenerateTopology(fp,
+                                            &pd,
+                                            method,
+                                            basis,
+                                            missingParameters::Generate,
+                                            nullptr,
+                                            strict);
             if (immStatus::OK != imm)
             {
                 if (nullptr != debug)
