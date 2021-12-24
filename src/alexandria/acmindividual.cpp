@@ -21,6 +21,11 @@ namespace alexandria
 * BEGIN: File stuff                        *
 * * * * * * * * * * * * * * * * * * * * * */
 
+void ACMIndividual::printHeader(FILE *fp)
+{
+    fprintf(fp, "\nIndividual %i\n", id_);
+}
+
 void ACMIndividual::openParamConvFiles(const gmx_output_env_t *oenv)
 {
     const std::vector<std::string> pClass = sii_->paramClass();

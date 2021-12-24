@@ -261,7 +261,7 @@ void MCMCMutator::printMonteCarloStatistics(ACMIndividual  *ind,
     const auto initialParam = ind->initialParam();
     const auto weightedTemperature = sii_->weightedTemperature();
 
-    fprintf(fp, "\nIndividual %i\n", ind->id());
+    ind->printHeader(fp);
     fprintf(fp, "Monte Carlo statistics of parameters after optimization\n");
     fprintf(fp, "#best %zu #mean %zu #sigma %zu #param %zu\n",
             bestParam.size(), pmean.size(), psigma.size(), paramNames.size());
@@ -289,6 +289,7 @@ void MCMCMutator::fprintNewMinimum(      ACMIndividual *ind,
                                    const double         currEval,
                                    const double         currEval_testset)
 {
+    ind->printHeader(logfile_);
     if (bEvaluate_testset)
     {
         fprintf(logfile_, "iter %10g. Found new minimum at %10g. Corresponding energy on the test set: %g\n",
@@ -301,6 +302,7 @@ void MCMCMutator::fprintNewMinimum(      ACMIndividual *ind,
     }
     if (debug)
     {
+        ind->printHeader(debug);
         ind->printParameters(debug);
     }
 }             

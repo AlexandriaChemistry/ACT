@@ -117,6 +117,13 @@ public:
     * * * * * * * * * * * * * * * * * * * * * */
 
     /*!
+     * \brief Print individual header to a file
+     * For individual with ID X, the header is: \nIndividual X\n
+     * \param[in] fp the file to print to
+     */
+    void printHeader(FILE *fp);
+
+    /*!
      * Open parameter convergence surveillance files
      */
     void openParamConvFiles(const gmx_output_env_t *oenv);
