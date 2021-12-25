@@ -22,7 +22,11 @@ void ACMFitnessComputer::compute(ga::Individual *ind,
                                  ga::Target      trgtFit)
 {
     const iMolSelect ims = trgtFit == ga::Target::Train ? iMolSelect::Train : iMolSelect::Test;
-    const double fitness = calcDeviation(static_cast<ACMIndividual*>(ind), false, CalcDev::Parallel, ims);
+    ACMIndividual *tmpInd = static_cast<ACMIndividual*>(ind);
+    std::vector<bool> changed;
+    changed.resize(tmpInd->nParam(), true);
+    tmpInd->toPoldata(changed);
+    const double fitness = calcDeviation(tmpInd, false, CalcDev::Parallel, ims);
     if (ims == iMolSelect::Train) ind->setFitnessTrain(fitness);
     else ind->setFitnessTest(fitness);
 }
