@@ -34,7 +34,7 @@ public:
                    const double                 percent)
     : ga::Mutator(), sii_(sii), percent_(percent) {}                
 
-    virtual void mutate(      ga::Individual   *individual,
+    virtual void mutate(      ga::Individual   *ind,
                         const double            prMut);
 
 };

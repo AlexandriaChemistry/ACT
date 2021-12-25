@@ -15,10 +15,104 @@ namespace alexandria
 {
 
 
-void MCMCMutator::mutate(      ga::Individual  *individual,
-                        const double            prMut)
+void MCMCMutator::mutate(                 ga::Individual   *ind,
+                         gmx_unused const double            prMut)
 {
-    // TODO: implement this!
+    
+    ACMIndividual *tmpInd = static_cast<ACMIndividual*>(ind);
+
+    double prevEval = 0;
+
+    const size_t nParam = tmpInd->nParam();
+
+    std::vector<bool> changed;
+    // Initialize to true to make sure the parameters are 
+    // all spread around the processors.
+    changed.resize(nParam, true);
+    tmpInd->toPoldata(changed);
+    // Now set them back to false, further spreading is done
+    // one parameter at a time.
+    std::fill(changed.begin(), changed.end(), false);
+
+    const std::vector<FILE*> fpc = tmpInd->fpc();
+    FILE *fpe = tmpInd->fpe();
+    const auto paramClassIndex = sii_->paramClassIndex();
+    std::vector<double> *param = tmpInd->paramPtr();
+
+    prevEval = fitComp_->calcDeviation(tmpInd, false, CalcDev::Parallel, iMolSelect::Train);
+
+    print_memory_usage(debug);
+
+    double beta0 = 1 / (BOLTZ * bch_->temperature());
+
+    // Optimization loop
+    for (int iter = 0; iter < bch_->maxIter(); iter++)
+    {
+        for (size_t pp = 0; pp < nParam; pp++)
+        {
+            // Do the step!
+            stepMutation(tmpInd, param, &changed, &prevEval, pp, iter, &beta0, nParam, paramClassIndex);
+        }
+    }
+
+}
+
+void MCMCMutator::stepMutation(      ACMIndividual          *ind,
+                                     std::vector<double>    *param,
+                                     std::vector<bool>      *changed,
+                                     double                 *prevEval,
+                               const size_t                  pp,
+                               const int                     iter,
+                                     double                 *beta0,
+                               const size_t                  nParam,
+                               const std::vector<size_t>    &paramClassIndex)
+{
+
+    // Pick a random parameter index
+    const size_t paramIndex = randIndex();
+
+    // Store the original value of the parameter
+    const double storeParam = (*param)[paramIndex];
+
+    // Change the parameter
+    changeParam(ind, paramIndex);
+    (*changed)[paramIndex] = true;
+    ind->toPoldata(*changed);
+
+    // Evaluate energy
+    const double currEval = fitComp_->calcDeviation(ind, false, CalcDev::Parallel, iMolSelect::Train);
+    const double deltaEval = currEval - (*prevEval);
+
+    // Accept any downhill move
+    bool accept = (deltaEval < 0);
+    // For an uphill move apply the Metropolis Criteria
+    // to decide whether to accept or reject the new parameter
+    if (!accept)
+    {
+        // Only anneal if the simulation reached a certain number of steps
+        if (bch_->anneal(iter)) (*beta0) = bch_->computeBeta(iter);
+        const double randProbability = randNum();
+        const double mcProbability   = exp( - ( (*beta0) / (sii_->weightedTemperature())[paramIndex] ) * deltaEval );
+        accept = (mcProbability > randProbability);
+    }
+
+    // Fractional iteration taking into account the inner loop with <pp> over <nParam>
+    const double xiter = iter + (1.0*pp)/nParam;
+    if (accept)
+    {  // If the parameter change is accepted
+        (*prevEval) = currEval;
+    }
+    else
+    {  // If the parameter change is not accepted
+        (*param)[paramIndex] = storeParam;  // Set the old value of the parameter back
+        // poldata needs to change back as well!
+        ind->toPoldata(*changed);
+    }
+    (*changed)[paramIndex] = false;  // Set changed[j] back to false for upcoming iterations
+
+    fprintParameterStep(ind, xiter);
+    fprintChi2Step(ind, false, xiter, *prevEval, 0);
+
 }
 
 bool MCMCMutator::MCMC(      ACMIndividual *ind,

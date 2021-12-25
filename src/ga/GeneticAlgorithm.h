@@ -11,7 +11,7 @@
 #include "Selector.h"
 #include "Crossover.h"
 #include "Mutator.h"
-// #include "Terminator.h"
+#include "Terminator.h"
 
 #include "alexandria/confighandler.h"
 #include "alexandria/sharedindividualinfo.h"
@@ -72,7 +72,7 @@ private:
     //! Mutates the genes of the individuals
     Mutator                *mutator_;
     //! Checks if the evolution should continue or be terminated
-    // Terminator             *terminator_;
+    Terminator             *terminator_;
 
 
     // FIXME: Something could be done about generalizing the evolution. We could make all Individuals
@@ -121,6 +121,8 @@ public:
     : bch_(bch), gach_(gach), cr_(cr), logfile_(logFile), oenv_(oenv),
       oldPop_(gach->popSize()), newPop_(gach->popSize())
     {
+
+        // TODO: Create a surveillance file for GA where every row is the fitness vector of the current population
 
         // Initializer
         initializer_ = new alexandria::ACMInitializer(mg->mindata(), sii, gach->randomInit(), outputFile);
@@ -179,6 +181,9 @@ public:
             GMX_RELEASE_ASSERT(gach->nCrossovers() < sii->nParam(),
                                gmx::formatString("The order of the crossover operator should be smaller than the amount of parameters. You chose -nCrossovers %i, but there are %lu parameters. Please adjust -nCrossovers.", gach->nCrossovers(), sii->nParam()).c_str());
             crossover_ = new NPointCrossover(sii->nParam(), gach->nCrossovers());
+
+            // Terminator
+            terminator_ = new GenerationTerminator(gach->maxGenerations());
 
         }
 

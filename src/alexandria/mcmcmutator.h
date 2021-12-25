@@ -131,6 +131,28 @@ private:
                         double                 *minEval,
                   const std::vector<size_t>    &paramClassIndex);
 
+    /*!
+     * Perform a mutation step
+     * @param ind               pointer to individual
+     * @param param             pointer to parameter vector of the individual
+     * @param changed           a reference to a vector which has true for parameters that change and false otherwise
+     * @param prevEval          pointer to a double storage with the previous chi2 for training set
+     * @param pp                index of inner loop over number of parameters
+     * @param iter              current iteration number
+     * @param beta0             pointer to beta for annealing
+     * @param nParam            number of parameters in the model
+     * @param paramClassIndex   class (by index) of each parameter in the model
+     */
+    void stepMutation(      ACMIndividual          *ind,
+                            std::vector<double>    *param,
+                            std::vector<bool>      *changed,
+                            double                 *prevEval,
+                      const size_t                  pp,
+                      const int                     iter,
+                            double                 *beta0,
+                      const size_t                  nParam,
+                      const std::vector<size_t>    &paramClassIndex);
+
 public:
 
     /*!
@@ -160,9 +182,9 @@ public:
     };
 
     /*!
-     * Mutate an individual's genes (in place)
-     * @param individual        pointer to the individual to mutate
-     * @param prMut             probability of mutating a gene
+     * Mutate an individual's genes (in place). Only used when combined with GA.
+     * @param ind       pointer to the individual to mutate
+     * @param prMut     probability of mutating a gene
      */
     virtual void mutate(      ga::Individual   *individual,
                         const double            prMut);

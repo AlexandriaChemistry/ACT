@@ -124,7 +124,7 @@ void GAConfigHandler::add_pargs(std::vector<t_pargs> *pargs)
           "Amount of top individuals to be moved, unchanged, to the next generation." },
         { "-randomInit", FALSE, etBOOL, {&randomInit_},
           "Initialize the individuals randomly, within the given bounds." },  
-        { "-nCrossovers_", FALSE, etINT, {&nCrossovers_},
+        { "-nCrossovers", FALSE, etINT, {&nCrossovers_},
           "Order of the crossover operator. That is, amount of crossover points." },
         { "-sorter", FALSE, etENUM, {sorter_},
           "Sorter algorithm to rank population based on fitness" },
@@ -137,7 +137,9 @@ void GAConfigHandler::add_pargs(std::vector<t_pargs> *pargs)
         { "-prMut", FALSE, etREAL, {&prMut_},
           "Probability of mutation" },
         { "-percent", FALSE, etREAL, {&percent_},
-          "When GA optimizer is selected, -percent denotes the maximum allowed change in a parameter as a fraction of its allowed range." }
+          "When GA optimizer is selected, -percent denotes the maximum allowed change in a parameter as a fraction of its allowed range." },
+        { "-maxGenerations", FALSE, etINT, {&maxGenerations_},
+          "Generation limit for Genetic Algorithm." }
     };
     for (int i = 0; i < asize(pa); i++)
     {
@@ -176,6 +178,8 @@ void GAConfigHandler::check_pargs()
   GMX_RELEASE_ASSERT(prMut_ >= 0 && prMut_ <= 1, "-prMut must be in [0,1].");
 
   GMX_RELEASE_ASSERT(percent_ >= 0 && percent_ <= 1, "-percent must be in [0,1].");
+
+  GMX_RELEASE_ASSERT(maxGenerations_ > 0, "-maxGenerations must be positive.");
 
 }
 

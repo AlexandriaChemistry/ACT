@@ -55,7 +55,7 @@ public:
      * @param individual        pointer to the individual to mutate
      * @param prMut             probability of mutating a gene
      */
-    virtual void mutate(      Individual   *individual,
+    virtual void mutate(      Individual   *ind,
                         const double        prMut) = 0;
 
 };

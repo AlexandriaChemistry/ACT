@@ -72,13 +72,16 @@ private:
     const char *probComputer_[5] = {nullptr, "RANK", "FITNESS", "BOLTZMANN", nullptr};
     //! Boltzmann probability temperature. TODO: This temperature should be lowered over time.
     real boltzTemp_ = 1;
-    // TODO: Termination options???
     //! Probability of crossover
     real prCross_ = 0.35;
     //! Probability of mutation
     real prMut_ = 0.01;
     //! For PercentMutator: Maximum allowed change in a parameter as a fraction of its allowed range
     real percent_ = 0.1;
+
+    // TODO: Improve termination criteria
+    //! Generation limit in Genetic Algorithm
+    int maxGenerations_ = 10;
 
 public:
 
@@ -130,6 +133,9 @@ public:
 
     //! \return For PercentMutator: Maximum allowed change in a parameter as a fraction of its allowed range
     real percent() const { return percent_; }
+
+    //! \return the generation limit
+    int maxGenerations() const { return maxGenerations_; }
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * END: Getters and setters                 *

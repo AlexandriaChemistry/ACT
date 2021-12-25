@@ -26,6 +26,7 @@
 #
 
 set(GA_SOURCES
+           Crossover.cpp
            FitnessComputer.cpp
            GeneticAlgorithm.cpp
            Initializer.cpp
@@ -33,6 +34,7 @@ set(GA_SOURCES
            ProbabilityComputer.cpp
            Selector.cpp
            Sorter.cpp
+           Terminator.cpp
 	)
 
 #if (BUILD_TESTING)
