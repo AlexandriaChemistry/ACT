@@ -46,6 +46,7 @@ public:
 
 /*!
  * Handles optimization parameters for Genetic Algorithm
+ * FIXME: Should this be under the ga directory???
  */
 class GAConfigHandler : public ConfigHandler
 {
@@ -111,6 +112,9 @@ public:
 
     //! \return the order of the crossover operator
     int nCrossovers() const { return nCrossovers_; }
+
+    //! \return the sorter
+    const char *sorter() const { return sorter_[0]; }
 
     //! \return the probability computer
     const char *probComputer() const { return probComputer_[0]; }

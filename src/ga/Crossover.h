@@ -4,8 +4,9 @@
 
 #include <random>
 #include <time.h>
+#include <vector>
 
-#include "aliases.h"
+#include "Individual.h"
 
 
 namespace ga
@@ -20,9 +21,9 @@ class Crossover
 
 private:
 
-    std::random_device                  rd;
-    std::mt19937                        gen;
-    std::uniform_int_distribution<int>  dis;
+    std::random_device                     rd_base;
+    std::mt19937                           gen_base;
+    std::uniform_int_distribution<size_t>  dis_base;
 
 protected:
 
@@ -30,17 +31,17 @@ protected:
      * Create a new crossover object.
      * @param chromosomeLength  length of the chromosome
      */
-    Crossover(const int chromosomeLength)
-    : gen(rd()), dis(std::uniform_int_distribution<>(1, chromosomeLength - 1))
+    Crossover(const size_t chromosomeLength)
+    : gen_base(rd_base()), dis_base(std::uniform_int_distribution<size_t>(1, chromosomeLength - 1))
     {
-        gen.seed(::time(NULL));
+        gen_base.seed(::time(NULL));
     }
 
     /*!
      * Pick a random gene index
      * @returns     an integer representing an index
      */
-    int randIndex();
+    size_t randIndex() { return dis_base(gen_base); }
 
 public:
 
@@ -52,93 +53,10 @@ public:
      * @param child2    the second child to write to
      * @param length    length of each individual
      */
-    virtual void offspring(const vector &parent1,
-                           const vector &parent2,
-                                 vector *child1,
-                                 vector *child2,
-                           const int     length) = 0;
-
-};
-
-
-/*!
- * Class for the single-point crossover operation.
- */
-class SinglePointCrossover : public Crossover
-{
-
-public:
-
-    /*!
-     * Create a new SinglePointCrossover object
-     * @param chromosomeLength  amount of genes in each individual
-     */
-    SinglePointCrossover(const int chromosomeLength)
-    : Crossover(chromosomeLength) {}
-
-    virtual void offspring(const vector &parent1,
-                           const vector &parent2,
-                                 vector *child1,
-                                 vector *child2,
-                           const int     length);
-
-};
-
-
-/*!
- * Class for the double-point crossover operation.
- */
-class DoublePointCrossover : public Crossover
-{
-
-public:
-
-    /*!
-     * Create a new DoublePointCrossover object
-     * @param chromosomeLength  amount of genes in each individual
-     */
-    DoublePointCrossover(const int chromosomeLength)
-    : Crossover(chromosomeLength) {};
-
-    virtual void offspring(const vector &parent1,
-                           const vector &parent2,
-                                 vector *child1,
-                                 vector *child2,
-                           const int     length);
-
-};
-
-
-/*!
- * Class for the n-point crossover operation.
- */
-class NPointCrossover : public Crossover
-{
-
-private:
-
-    int numberOfCrossovers;
-    vector crossoverIndices;
-
-public:
-
-    /*!
-     * Create a new NPointCrossover object
-     * @param chromosomeLength       amount of genes in each individual
-     * @param numberOfCrossovers     the number of places the genes swap
-     */
-    NPointCrossover(const int chromosomeLength,
-                    const int numberOfCrossovers)
-    : Crossover(chromosomeLength)
-    {
-        this->numberOfCrossovers = numberOfCrossovers;
-    };
-
-    virtual void offspring(const vector &parent1,
-                           const vector &parent2,
-                                 vector *child1,
-                                 vector *child2,
-                           const int     length);
+    virtual void offspring(Individual  *parent1,
+                           Individual  *parent2,
+                           Individual  *child1,
+                           Individual  *child2) = 0;
 
 };
 

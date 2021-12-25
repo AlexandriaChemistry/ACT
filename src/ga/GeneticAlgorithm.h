@@ -6,7 +6,7 @@
 
 #include "Initializer.h"
 #include "FitnessComputer.h"
-// #include "Sorter.h"
+#include "Sorter.h"
 #include "ProbabilityComputer.h"
 #include "Selector.h"
 // #include "Crossover.h"
@@ -61,7 +61,7 @@ private:
     //! Computes fitness for each individual in the population
     FitnessComputer        *fitComputer_;
     //! Sorts the individuals based on their fitness
-    // Sorter                 *sorter_;
+    Sorter                 *sorter_;
     //! Computes the probability of selection of each individual
     ProbabilityComputer    *probComputer_;
     //! Selects an individual from the population based on its probability
@@ -119,6 +119,20 @@ public:
         // If GA or HYBRID have been selected as optimizers, intialize the rest of the elements
         if (strcmp(gach->optimizer(), "MCMC") != 0)
         {
+
+            // Sorter
+            if (strcmp(gach->sorter(), "QUICK") == 0)
+            {
+                sorter_ = new QuickSorter(gach->popSize(), false);
+            }
+            else if (strcmp(gach->sorter(), "MERGE") == 0)
+            {
+                sorter_ = new MergeSorter(gach->popSize(), false);
+            }
+            else  // No sorting requested
+            {
+                sorter_ = new EmptySorter();
+            }
 
             // ProbabilityComputer
             if (strcmp(gach->probComputer(), "RANK") == 0)

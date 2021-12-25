@@ -73,6 +73,7 @@ set(ALEXANDRIA_SOURCES
            mutability.cpp
            mymol.cpp
            mymol_low.cpp
+           npointcrossover.cpp
            openmm_xml.cpp
            particletype.cpp
            percentmutator.cpp

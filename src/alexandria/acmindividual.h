@@ -103,6 +103,16 @@ public:
     }
 
     /* * * * * * * * * * * * * * * * * * * * * *
+    * BEGIN: Cloning                           *
+    * * * * * * * * * * * * * * * * * * * * * */
+
+    virtual ga::Individual *clone() { return new ACMIndividual(*this); }
+
+    /* * * * * * * * * * * * * * * * * * * * * *
+    * END: Cloning                             *
+    * * * * * * * * * * * * * * * * * * * * * */
+
+    /* * * * * * * * * * * * * * * * * * * * * *
     * BEGIN: Adding parameters                 *
     * * * * * * * * * * * * * * * * * * * * * */
 

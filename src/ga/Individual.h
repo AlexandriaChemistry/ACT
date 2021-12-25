@@ -43,6 +43,17 @@ protected:
 public:
 
     /* * * * * * * * * * * * * * * * * * * * * *
+    * BEGIN: Cloning                           *
+    * * * * * * * * * * * * * * * * * * * * * */
+
+    //! Return a copy of this individual
+    virtual Individual *clone() = 0;
+
+    /* * * * * * * * * * * * * * * * * * * * * *
+    * END: Cloning                             *
+    * * * * * * * * * * * * * * * * * * * * * */
+
+    /* * * * * * * * * * * * * * * * * * * * * *
     * BEGIN: Getters and Setters               *
     * * * * * * * * * * * * * * * * * * * * * */
 

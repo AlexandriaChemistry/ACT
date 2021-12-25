@@ -32,6 +32,7 @@ set(GA_SOURCES
            Mutator.cpp
            ProbabilityComputer.cpp
            Selector.cpp
+           Sorter.cpp
 	)
 
 #if (BUILD_TESTING)

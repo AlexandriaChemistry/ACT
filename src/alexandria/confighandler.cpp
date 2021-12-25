@@ -158,6 +158,8 @@ void GAConfigHandler::check_pargs()
 
   GMX_RELEASE_ASSERT(nElites_ > 0 && nElites_ % 2 == 0, "-nElites must be positive and even.");
 
+  GMX_RELEASE_ASSERT(nCrossovers_ > 0, "-nCrossovers must be nonnegative.");
+
   if (strcmp(probComputer_[0], "RANK") == 0)  // If rank-based probability is requested
   {
     GMX_RELEASE_ASSERT(strcmp(sorter_[0], "NONE") != 0, "You must choose a sorter if you want rank-based probability computing.");
