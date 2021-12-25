@@ -56,7 +56,7 @@ public:
      * \return true if we should terminate, false otherwise
      */
     virtual bool terminate(const std::vector<Individual*>  &pop,
-                           const int                        generationNumber)
+                           const int                        generationNumber);
 
 };
 

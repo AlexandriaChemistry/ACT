@@ -46,7 +46,7 @@ protected:
      * Obtain a random number in \f$ [0, 1] \f$
      * @returns     a double-precision floating point number in \f$ [0, 1] \f$
      */
-    double randNum() const { return dis_base(gen_base); }
+    double randNum() { return dis_base(gen_base); }
 
 public:
 

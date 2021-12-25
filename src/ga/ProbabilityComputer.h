@@ -74,7 +74,7 @@ public:
      */
     BoltzmannProbabilityComputer(const int      popSize,
                                  const double   temperature)
-    : exponentials_(popSize), temperature_(temperature) {}
+    : temperature_(temperature), exponentials_(popSize) {}
 
     virtual void compute(std::vector<Individual*> *pop);
 

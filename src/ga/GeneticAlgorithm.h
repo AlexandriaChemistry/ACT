@@ -148,7 +148,7 @@ public:
             // Sorter
             if (strcmp(gach->sorter(), "QUICK") == 0)
             {
-                sorter_ = new QuickSorter(gach->popSize(), false);
+                sorter_ = new QuickSorter(false);
             }
             else if (strcmp(gach->sorter(), "MERGE") == 0)
             {
@@ -178,8 +178,8 @@ public:
             selector_ = new RouletteSelector();
 
             // Crossover
-            GMX_RELEASE_ASSERT(gach->nCrossovers() < sii->nParam(),
-                               gmx::formatString("The order of the crossover operator should be smaller than the amount of parameters. You chose -nCrossovers %i, but there are %lu parameters. Please adjust -nCrossovers.", gach->nCrossovers(), sii->nParam()).c_str());
+            GMX_RELEASE_ASSERT( ( (unsigned int) gach->nCrossovers() ) < sii->nParam(),
+                               gmx::formatString("The order of the crossover operator should be smaller than the amount of parameters. You chose -nCrossovers %i, but there are %lu parameters. Please adjust -nCrossovers.", gach->nCrossovers(), sii->nParam()).c_str() );
             crossover_ = new NPointCrossover(sii->nParam(), gach->nCrossovers());
 
             // Terminator

@@ -6,6 +6,8 @@
 
 #include "Individual.h"
 
+#include "gromacs/utility/basedefinitions.h"
+
 
 namespace ga
 {
@@ -51,7 +53,7 @@ class EmptySorter : public Sorter
 
 public:
 
-      virtual void sort(std::vector<Individual*> *pop) {};
+      virtual void sort(gmx_unused std::vector<Individual*> *pop) {};
 
 };
 
@@ -164,12 +166,10 @@ public:
 
       /*!
        * Create a new QuickSorter
-       * @param popSize       amount of individuals in the population
-       * @param descending    true if sorting in descending order (using fitness),
-       *                      false otherwise (using chi2)
+       * \param[in] descending      true if sorting in descending order (using fitness),
+       *                            false otherwise (using chi2)
        */
-      QuickSorter(const int   popSize,
-                  const bool  descending)
+      QuickSorter(const bool descending)
       : Sorter(descending) {}
 
       virtual void sort(std::vector<Individual*> *pop);

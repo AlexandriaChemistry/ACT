@@ -23,11 +23,11 @@ namespace alexandria
 
 void ACMIndividual::fprintSelf(FILE *fp)
 {
-    fprintf("id_: %i; ", id_);
-    fprintf("param_: [ ");
-    for (const double ele : param_) fprintf("%f ", ele);
-    fprintf("]; ");
-    fprintf("fitnessTrain_: %f; fitnessTest_: %f; probability_: %i\n",
+    fprintf(fp, "id_: %i; ", id_);
+    fprintf(fp, "param_: [ ");
+    for (const double ele : param_) fprintf(fp, "%f ", ele);
+    fprintf(fp, "]; ");
+    fprintf(fp, "fitnessTrain_: %f; fitnessTest_: %f; probability_: %i\n",
             fitnessTrain_, fitnessTest_, probability_);
 }
 

@@ -110,6 +110,7 @@ void MCMCMutator::stepMutation(      ACMIndividual          *ind,
     }
     (*changed)[paramIndex] = false;  // Set changed[j] back to false for upcoming iterations
 
+    // FIXME: Make these part of Individual?
     fprintParameterStep(ind, xiter);
     fprintChi2Step(ind, false, xiter, *prevEval, 0);
 

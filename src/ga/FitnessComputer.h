@@ -22,7 +22,7 @@ enum class Target
     Train,
     //! Test fitness
     Test
-}
+};
 
 /*!
  * Abstract class for computing the fitness of an individual

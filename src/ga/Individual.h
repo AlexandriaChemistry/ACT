@@ -9,6 +9,9 @@
 #define GA_INDIVIDUAL_H
 
 
+#include <cstdio>
+
+
 namespace ga
 {
 
