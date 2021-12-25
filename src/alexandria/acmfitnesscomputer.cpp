@@ -18,9 +18,13 @@ namespace alexandria
 * BEGIN: ACMFitnessComputer            *
 * * * * * * * * * * * * * * * * * * * */
 
-void ACMFitnessComputer::compute(ga::Individual *ind)
+void ACMFitnessComputer::compute(ga::Individual *ind,
+                                 ga::Target      trgtFit)
 {
-    // TODO: Implement this function.
+    const iMolSelect ims = trgtFit == ga::Target::Train ? iMolSelect::Train : iMolSelect::Test;
+    const double fitness = calcDeviation(static_cast<ACMIndividual*>(ind), false, CalcDev::Parallel, ims);
+    if (ims == iMolSelect::Train) ind->setFitnessTrain(fitness);
+    else ind->setFitnessTest(fitness);
 }
 
 double ACMFitnessComputer::calcDeviation(      ACMIndividual   *ind,

@@ -15,6 +15,15 @@ namespace ga
 {
 
 
+//! Target for the fitness computation
+enum class Target
+{
+    //! Train fitness
+    Train,
+    //! Test fitness
+    Test
+}
+
 /*!
  * Abstract class for computing the fitness of an individual
  */
@@ -25,9 +34,11 @@ public:
 
     /*!
      * Compute the fitness of an individual
-     * @param individual the individual
+     * \param[in] individual    the individual
+     * \param[in] trgtFit       the target for fitness computation. Either Train or Test
      */
-    virtual void compute(Individual *individual) = 0;
+    virtual void compute(Individual *individual,
+                         Target      trgtFit) = 0;
 
 };
 
