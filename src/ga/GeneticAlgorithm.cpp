@@ -1,6 +1,6 @@
 #include "GeneticAlgorithm.h"
 
-#include <stdio.h>
+#include <cstdio>
 
 #include "Initializer.h"
 #include "FitnessComputer.h"
@@ -130,7 +130,7 @@ void GeneticAlgorithm::evolveGA()
     for (i = 0; i < oldPop_.size(); i++)
     {
         initializer_->initialize(&(oldPop_[i]));
-        fitComputer_->compute(oldPop_[i]);
+        fitComputer_->compute(oldPop_[i], Target::Train);
     }
 
     // FIXME: THIS IS NOT GENERAL. Open files of each individual
@@ -229,7 +229,7 @@ void GeneticAlgorithm::evolveGA()
         fprintf(logfile_, "Computing fitness of new generation...\n");
         for (i = 0; i < oldPop_.size(); i++)
         {
-            fitComputer_->compute(oldPop_[i]);
+            fitComputer_->compute(oldPop_[i], Target::Train);
         }
 
         fprintPop();
