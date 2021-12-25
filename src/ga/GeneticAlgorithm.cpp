@@ -1,5 +1,3 @@
-#define GEN_PRINTS 500
-
 #include "GeneticAlgorithm.h"
 
 #include <stdio.h>
@@ -11,7 +9,6 @@
 #include "Mutator.h"
 #include "Terminator.h"
 
-#include "ga_helpers.h"
 
 #include "alexandria/acmindividual.h"
 #include "alexandria/mcmcmutator.h"
@@ -20,6 +17,46 @@
 namespace ga
 {
 
+
+void GeneticAlgorithm::fprintPop() const
+{
+    fprintf(logfile_, "Population:\n");
+    for (Individual *ind : oldPop_) ind->fprintSelf(logfile_);
+}
+
+void GeneticAlgorithm::fprintBestInd() const
+{
+    fprintf(logfile_, "Overall Best Individual:\n");
+    bestInd_->fprintSelf(logfile_);
+}
+
+void GeneticAlgorithm::fprintBestIndInPop() const
+{
+    fprintf(logfile_, "Best Individual in current population:\n");
+    oldPop_[findBestIndex()]->fprintSelf(logfile_);
+}
+
+int GeneticAlgorithm::findBestIndex() const
+{
+    int index = 0;
+    double bestFitness = oldPop_[index]->fitnessTrain();
+    for (int i = 1; i < oldPop_.size(); i++)
+    {
+        if (oldPop_[i]->fitnessTrain() < bestFitness)
+        {
+            index = i;
+            bestFitness = oldPop_[i]->fitnessTrain();
+        }
+    }
+    return index;
+}
+
+void GeneticAlgorithm::fprintProbability() const
+{
+    fprintf(logfile_, "Probability: [ ");
+    for (Individual *ind : oldPop_) fprintf(logfile_, "%f ", ind->probability());
+    fprintf(logfile_, "]");
+}
 
 void GeneticAlgorithm::evolveMCMC()
 {
@@ -67,6 +104,160 @@ void GeneticAlgorithm::evolveMCMC()
 
 }
 
+void GeneticAlgorithm::evolveGA()
+{
+    
+    fprintf(logfile_, "\nStarting GA/HYBRID evolution\n");
+
+    // Random number generation
+    std::random_device rd;  // Will be used to obtain a seed for the random number engine
+    std::mt19937 gen(rd()); // Standard mersenne_twister_engine seeded with rd()
+    std::uniform_real_distribution<double> dis(0.0, 1.0);
+
+    // Iteration variables
+    int i, k;
+
+    // Indices for parents
+    int parent1;
+    int parent2;
+
+    // Generations
+    int generation = 0;
+    fprintf(logfile_, "\nGeneration %i\n", generation);
+
+    // Initialize the population and compute fitness
+    fprintf(logfile_, "Initializing individuals and computing initial fitness...\n");
+    for (i = 0; i < oldPop_.size(); i++)
+    {
+        initializer_->initialize(&(oldPop_[i]));
+        fitComputer_->compute(oldPop_[i]);
+    }
+
+    // FIXME: THIS IS NOT GENERAL. Open files of each individual
+    for (Individual *ind : oldPop)
+    {
+        ACMIndividual *tmpInd = static_cast<ACMIndividual*>(ind);
+        tmpInd->openParamConvFiles(oenv_);
+        tmpInd->openChi2ConvFile(oenv_, bch_->evaluateTestset());
+    }
+
+    // Copy individuals into newPop_
+    for (i = 0; i < oldPop_.size(); i++) newPop_[i] = oldPop_[i]->clone();
+
+    // Initialize best individual
+    bestInd_ = oldPop_[findBestIndex()]->clone();
+
+    fprintPop();
+    fprintBestIndInPop();
+    fprintBestInd();
+
+    // Iterate and create new generation
+    do
+    {
+
+        // Increase generation counter
+        generation++;
+        fprintf(logfile_, "\nGeneration %i\n", generation);
+
+        // Sort individuals based on fitness
+        fprintf(logfile_, "Sorting... (if needed)\n");
+        sorter_->sort(&oldPop_);
+        fprintPop();
+
+        // Normalize the fitness into a probability
+        fprintf(logfile_, "Computing probabilities...\n");
+        probComputer_->compute(&oldPop_);
+        fprintProbability();
+
+        // Move the "nElites" best individuals (unchanged) into the new population (assuming population is sorted)
+        fprintf(logfile_, "Moving the %i best individual(s) into the new population...\n", gach_->nElites());
+        for (i = 0; i < gach_->nElites(); i++) newPop_[i]->copyGenome(oldPop_[i]);
+
+        // Generate new population after the elitism
+        fprintf(logfile_, "Generating the rest of the new population...\n");
+        for (i = gach_->nElites(); i < oldPop_.size(); i += 2)
+        {
+            fprintf(logfile_, "i = %i, %i\n", i, i + 1);
+
+            // Select parents
+            parent1 = selector_->select(oldPop_);
+            parent2 = selector_->select(oldPop_);
+            fprintf("parent1: %i; parent2: %i\n", parent1, parent2);
+
+            // Do crossover
+            fprintf(logfile_, "Before crossover\n");
+            fprintf(logfile_, "Parent 1:\n");
+            oldPop_[parent1]->fprintSelf(logfile_);
+            fprintf(logfile_, "Parent 2:\n");
+            oldPop_[parent2]->fprintSelf(logfile_);
+            if (dis(gen) <= gach_->prCross())  // If crossover is to be performed
+            {
+                fprintf(logfile_, "Doing crossover...\n");
+                crossover_->offspring(oldPop_[parent1], oldPop_[parent2], newPop_[i], newPop_[i+1]);
+            }
+            else
+            {
+                fprintf(logfile_, "Omitting crossover...\n");
+                newPop_[i]->copyGenome(oldPop_[parent1]);
+                newPop_[i+1]->copyGenome(oldPop_[parent2]);
+            }
+            fprintf(logfile_, "Child 1:\n");
+            newPop_[i]->fprintSelf(logfile_);
+            fprintf(logfile_, "Child 2:\n");
+            newPop_[i+1]->fprintSelf(logfile_);
+
+            // Do mutation in each child
+            fprintf(logfile_, "Doing mutation...\n");
+            for (k = 0; k < 2; k++)
+            {
+                mutator_->mutate(newPop_[i + k], gach_->prMut());
+            }
+            fprintf(logfile_, "Child 1:\n");
+            newPop_[i]->fprintSelf(logfile_);
+            fprintf(logfile_, "Child 2:\n");
+            newPop_[i+1]->fprintSelf(logfile_);
+
+        }
+
+        // Swap oldPop and newPop
+        fprintf(logfile_, "Swapping oldPop and newPop...\n");
+        tmpPop_ = oldPop_;
+        oldPop_ = newPop_;
+        newPop_ = tmpPop_;
+
+        // Compute fitness
+        fprintf(logfile_, "Computing fitness of new generation...\n");
+        for (i = 0; i < oldPop_.size(); i++)
+        {
+            fitComputer_->compute(oldPop_[i]);
+        }
+
+        fprintPop();
+        fprintBestIndInPop();
+
+        // Check if a better individual was found, and update if so
+        Individual *tmpBest = oldPop_[findBestIndex()];
+        if (tmpBest->fitnessTrain() < bestInd_->fitnessTrain())
+        {
+            fprintf(logfile_, "A new best individual has been found!\n");
+            fprintf(logfile_, "Previous best:\n");
+            bestInd_->fprintSelf(logfile_);
+            fprintf(logfile_, "New best:\n");
+            bestInd_ = tmpBest->clone();
+        }
+
+        fprintf(logfile_, "Checking termination conditions...\n");
+
+    } while (!terminator_->terminate(oldPop_, generation));
+
+    fprintf(logfile_, "\nGA/HYBRID Evolution is done!\n");
+    fprintBestInd();
+
+    // FIXME: THIS IS NOT GENERAL. Close files of each individual
+    for (Individual *ind : oldPop_) static_cast<ACMIndividual*>(ind)->closeConvFiles();
+
+}
+
 void GeneticAlgorithm::evolve()
 {
 
@@ -76,158 +267,7 @@ void GeneticAlgorithm::evolve()
     }
     else
     {
-        if (verbose >= 1) printf("\nStarting evolution...\n");
-
-        // Random number generation
-        std::random_device rd;  // Will be used to obtain a seed for the random number engine
-        std::mt19937 gen(rd()); // Standard mersenne_twister_engine seeded with rd()
-        std::uniform_real_distribution<double> dis(0.0, 1.0);
-
-        // Iteration variables
-        int i, k;
-
-        // Indices for parents
-        int parent1;
-        int parent2;
-
-        // Generations
-        int generation = 0;
-        if (verbose >= 2 or (verbose >= 1 and generation % GEN_PRINTS == 0))
-        {
-            printf("\nGeneration: %i\n", generation);
-        }
-
-        // Initialize the population and compute fitness
-        if (verbose >= 2) printf("Initializing individuals and computing initial fitness...\n");
-        for (i = 0; i < popSize_; i++)
-        {
-            initializer_->initialize(&(oldPop_[i]), chromosomeLength_);
-            fitComputer_->compute(oldPop_[i], &fitness_, i, chromosomeLength_);
-        }
-
-        // If verbose, print best individual
-        if (verbose >= 1)
-        {
-            const int index = findMaximumIndex(fitness_, popSize_);
-            printf("Best individual: ");
-            printVector(oldPop_[index]);
-            printf("Max fitness: %f\n", fitness_[index]);
-        }
-        if (verbose >= 2)
-        {
-            printf("Population:\n");
-            printMatrix(oldPop_);
-
-            printf("Fitness vector: ");
-            printVector(fitness_);
-        }
-
-        // Iterate and create new generations
-        do
-        {
-
-            // Increase generation counter
-            generation++;
-            if (verbose >= 2 or (verbose >= 1 and generation % GEN_PRINTS == 0))
-            {
-                printf("\nGeneration: %i\n", generation);
-            }
-
-            // Sort individuals based on fitness
-            if (verbose >= 2) printf("Sorting... (if needed)\n");
-            sorter_->sort(&oldPop_, &fitness_, popSize_);
-            if (verbose >= 2)
-            {
-                printf("Population after sorting:\n");
-                printMatrix(oldPop_);
-                printf("Fitness vector after sorting: ");
-                printVector(fitness_);
-            }
-
-            // Normalize the fitness into a probability
-            if (verbose >= 2) printf("Computing probabilities...\n");
-            probComputer_->compute(fitness_, &probability_, popSize_);
-            if (verbose >= 2)
-            {
-                printf("Probabilities: ");
-                printVector(probability_);
-            }
-
-            // Move the "nElites" best individuals (unchanged) into the new population (assuming population is sorted)
-            if (verbose >= 2) printf("Moving the %i best individual(s) into the new population...\n", nElites_);
-            for (i = 0; i < nElites_; i++) newPop_[i] = oldPop_[i];
-
-            // Generate new population after the elitism
-            if (verbose >= 2) printf("Generating the rest of the new population...\n");
-            for (i = nElites_; i < popSize_; i += 2)
-            {
-                if (verbose >= 3) printf("i = %i, %i\n", i, i + 1);
-
-                // Select parents
-                parent1 = selector_->select(probability_, popSize_);
-                parent2 = selector_->select(probability_, popSize_);
-                if (verbose >= 3) printf("parent1: %i; parent2: %i\n", parent1, parent2);
-
-                // Do crossover
-                if (dis(gen) <= prCross)
-                {
-                    if (verbose >= 3) printf("Doing crossover...\n");
-                    crossover_->offspring(oldPop_[parent1], oldPop_[parent2], &(newPop_[i]),
-                                        &(newPop_[i+1]), chromosomeLength_);
-                }
-                else
-                {
-                    if (verbose >= 3) printf("Omitting crossover...\n");
-                    newPop_[i] = oldPop_[parent1];
-                    newPop_[i+1] = oldPop_[parent2];
-                }
-
-                // Do mutation in each child
-                if (verbose >= 3) printf("Doing mutation...\n");
-                for (k = 0; k < 2; k++)
-                {
-                    mutator_->mutate(&(newPop_[i + k]), prMut);
-                }
-
-            }
-
-            // Swap oldPop and newPop
-            if (verbose >= 2) printf("Swapping oldPop and newPop...\n");
-            tmpPop_ = oldPop_;
-            oldPop_ = newPop_;
-            newPop_ = tmpPop_;
-
-            // Compute fitness
-            for (i = 0; i < popSize_; i++) {
-                // Compute fitness
-                fitComputer_->compute(oldPop_[i]);
-            }
-
-            // If verbose, print best individual
-            if (verbose >= 2 or (verbose >= 1 and generation % GEN_PRINTS == 0))
-            {
-                const int index = findMaximumIndex(fitness_, popSize_);
-                printf("Best individual: ");
-                printVector(oldPop_[index]);
-                printf("Max fitness: %f\n", fitness_[index]);
-            }
-            if (verbose >= 2)
-            {
-                printf("Population:\n");
-                printMatrix(oldPop_);
-
-                printf("Fitness vector: ");
-                printVector(fitness_);
-            }
-
-            if (verbose >= 2) printf("Checking termination conditions...\n");
-
-        } while (!terminator_->terminate(oldPop_, fitness_, generation, popSize_, chromosomeLength_));
-
-        if (verbose >= 1) printf("\nEvolution is done!\n");
-
-        int bestFitIndex = findMaximumIndex(fitness_, popSize_);
-        
+        evolveGA();
     }
 
 }

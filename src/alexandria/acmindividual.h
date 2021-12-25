@@ -106,6 +106,8 @@ public:
     * BEGIN: Cloning                           *
     * * * * * * * * * * * * * * * * * * * * * */
 
+    virtual void copyGenome(Individual *other) { param_ = static_cast<ACMIndividual*>(other)->param(); }
+
     virtual ga::Individual *clone() { return new ACMIndividual(*this); }
 
     /* * * * * * * * * * * * * * * * * * * * * *
@@ -125,6 +127,8 @@ public:
     /* * * * * * * * * * * * * * * * * * * * * *
     * BEGIN: File stuff                        *
     * * * * * * * * * * * * * * * * * * * * * */
+
+    virtual void fprintSelf(FILE *fp);
 
     /*!
      * \brief Print individual header to a file

@@ -74,8 +74,30 @@ private:
     //! Checks if the evolution should continue or be terminated
     // Terminator             *terminator_;
 
+
+    // FIXME: Something could be done about generalizing the evolution. We could make all Individuals
+    // have their own parameter and fitness convergence files. IDK if this makes sense...
+
     //! Pure MCMC evaluation
     void evolveMCMC();
+
+    //! Regular GA evolution (could be HYBRID too)
+    void evolveGA();
+
+    //! Print population to log file
+    void fprintPop() const;
+
+    //! Print best individual to log file
+    void fprintBestInd() const;
+
+    //! Print best individual (in current population) to log file
+    void fprintBestIndInPop() const;
+
+    //! \return the index of the Individual with the best fitness. FIXME: make this general. Now, the lower the fitness the better
+    int findBestIndex() const;
+
+    //! Print the probability of each individual
+    void fprintProbability() const;
 
 public:
 

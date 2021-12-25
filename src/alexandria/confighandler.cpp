@@ -150,13 +150,17 @@ void GAConfigHandler::check_pargs()
 {
   
   GMX_RELEASE_ASSERT(popSize_ > 0, "-popSize must be positive.");
-  
   if (popSize_ % 2 != 0)  // If popSize is odd
   {
     GMX_RELEASE_ASSERT(strcmp(optimizer_[0], "MCMC") == 0, "With odd population sizes, only the MCMC optimizer will do.");
   }
 
-  GMX_RELEASE_ASSERT(nElites_ > 0 && nElites_ % 2 == 0, "-nElites must be positive and even.");
+  GMX_RELEASE_ASSERT(nElites_ >= 0 && nElites_ % 2 == 0, "-nElites must be nonnegative and even.");
+  if (nElites_ > 0)  // Make sure a sorter has been selected
+  {
+    GMX_RELEASE_ASSERT(strcmp(sorter_[0], "NONE") != 0,
+                       "When -nElites > 0, a sorter should be selected. Please change -sorter.");
+  }
 
   GMX_RELEASE_ASSERT(nCrossovers_ > 0, "-nCrossovers must be nonnegative.");
 

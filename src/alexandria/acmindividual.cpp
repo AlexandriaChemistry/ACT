@@ -21,6 +21,16 @@ namespace alexandria
 * BEGIN: File stuff                        *
 * * * * * * * * * * * * * * * * * * * * * */
 
+void ACMIndividual::fprintSelf(FILE *fp)
+{
+    fprintf("id_: %i; ", id_);
+    fprintf("param_: [ ");
+    for (const double ele : param_) fprintf("%f ", ele);
+    fprintf("]; ");
+    fprintf("fitnessTrain_: %f; fitnessTest_: %f; probability_: %i\n",
+            fitnessTrain_, fitnessTest_, probability_);
+}
+
 void ACMIndividual::printHeader(FILE *fp)
 {
     fprintf(fp, "\nIndividual %i\n", id_);

@@ -43,11 +43,31 @@ protected:
 public:
 
     /* * * * * * * * * * * * * * * * * * * * * *
+    * BEGIN: Printing                          *
+    * * * * * * * * * * * * * * * * * * * * * */
+
+    /*!
+     * Print information about the individual to file
+     * \param[in] fp file pointer
+     */
+    virtual void fprintSelf(FILE *fp) = 0;
+
+    /* * * * * * * * * * * * * * * * * * * * * *
+    * END: Printing                            *
+    * * * * * * * * * * * * * * * * * * * * * */
+
+    /* * * * * * * * * * * * * * * * * * * * * *
     * BEGIN: Cloning                           *
     * * * * * * * * * * * * * * * * * * * * * */
 
     //! Return a copy of this individual
     virtual Individual *clone() = 0;
+
+    /*!
+     * Copy the genome from another individual
+     * \param[in] other pointer to another individual
+     */
+    virtual void copyGenome(Individual *other) = 0;
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * END: Cloning                             *
