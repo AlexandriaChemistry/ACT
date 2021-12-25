@@ -75,6 +75,7 @@ set(ALEXANDRIA_SOURCES
            mymol_low.cpp
            openmm_xml.cpp
            particletype.cpp
+           percentmutator.cpp
            phase.cpp
            plistwrapper.cpp
            poldata.cpp

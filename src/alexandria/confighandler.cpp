@@ -135,7 +135,9 @@ void GAConfigHandler::add_pargs(std::vector<t_pargs> *pargs)
         { "-prCross", FALSE, etREAL, {&prCross_},
           "Probability of crossover." },
         { "-prMut", FALSE, etREAL, {&prMut_},
-          "Probability of mutation" }
+          "Probability of mutation" },
+        { "-percent", FALSE, etREAL, {&percent_},
+          "When GA optimizer is selected, -percent denotes the maximum allowed change in a parameter as a fraction of its allowed range." }
     };
     for (int i = 0; i < asize(pa); i++)
     {
@@ -166,6 +168,8 @@ void GAConfigHandler::check_pargs()
   GMX_RELEASE_ASSERT(prCross_ >= 0 && prCross_ <= 1, "-prCross must be in [0,1].");
 
   GMX_RELEASE_ASSERT(prMut_ >= 0 && prMut_ <= 1, "-prMut must be in [0,1].");
+
+  GMX_RELEASE_ASSERT(percent_ >= 0 && percent_ <= 1, "-percent must be in [0,1].");
 
 }
 

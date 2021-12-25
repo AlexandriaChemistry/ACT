@@ -7,8 +7,8 @@
 #include "Initializer.h"
 #include "FitnessComputer.h"
 // #include "Sorter.h"
-// #include "ProbabilityComputer.h"
-// #include "Selector.h"
+#include "ProbabilityComputer.h"
+#include "Selector.h"
 // #include "Crossover.h"
 #include "Mutator.h"
 // #include "Terminator.h"
@@ -18,6 +18,7 @@
 #include "alexandria/acmfitnesscomputer.h"
 #include "alexandria/acminitializer.h"
 #include "alexandria/mcmcmutator.h"
+#include "alexandria/percentmutator.h"
 
 
 namespace ga
@@ -62,9 +63,9 @@ private:
     //! Sorts the individuals based on their fitness
     // Sorter                 *sorter_;
     //! Computes the probability of selection of each individual
-    // ProbabilityComputer    *probComputer_;
+    ProbabilityComputer    *probComputer_;
     //! Selects an individual from the population based on its probability
-    // Selector               *selector_;
+    Selector               *selector_;
     //! Grabs 2 individuals and crosses their genes to generate 2 new individuals
     // Crossover              *crossover_;
     //! Mutates the genes of the individuals
@@ -97,10 +98,48 @@ public:
     : bch_(bch), gach_(gach), cr_(cr), logfile_(logFile), oenv_(oenv),
       oldPop_(gach->popSize()), newPop_(gach->popSize())
     {
+
+        // Initializer
         initializer_ = new alexandria::ACMInitializer(mg->mindata(), sii, gach->randomInit(), outputFile);
+        
+        // FitnessComputer
         ACMFitnessComputer* tmpACMFitComp = new alexandria::ACMFitnessComputer(cr, logFile, sii, mg, removeMol, verbose, fullQuadrupole);
         fitComputer_ = tmpACMFitComp;
-        mutator_ = new alexandria::MCMCMutator(logFile, verbose, bch, tmpACMFitComp, sii, sii->nParam());
+        
+        // Mutator
+        if (strcmp(gach->optimizer(), "GA") == 0)
+        {
+            mutator_ = new alexandria::PercentMutator(sii, gach->percent());
+        }
+        else
+        {
+            mutator_ = new alexandria::MCMCMutator(logFile, verbose, bch, tmpACMFitComp, sii, sii->nParam());
+        }
+
+        // If GA or HYBRID have been selected as optimizers, intialize the rest of the elements
+        if (strcmp(gach->optimizer(), "MCMC") != 0)
+        {
+
+            // ProbabilityComputer
+            if (strcmp(gach->probComputer(), "RANK") == 0)
+            {
+                probComputer_ = new RankProbabilityComputer(gach->popSize());
+            }
+            else if (strcmp(gach->probComputer(), "FITNESS") == 0)
+            {
+                probComputer_ = new FitnessProbabilityComputer();
+            }
+            else  // BOLTZMANN
+            {
+                probComputer_ = new BoltzmannProbabilityComputer(gach->popSize(),
+                                                                 gach->boltzTemp());
+            }
+
+            // Selector
+            selector_ = new RouletteSelector();
+
+        }
+
     }
 
     //! \brief Evolve the initial population

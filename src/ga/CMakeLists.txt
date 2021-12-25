@@ -30,6 +30,8 @@ set(GA_SOURCES
            GeneticAlgorithm.cpp
            Initializer.cpp
            Mutator.cpp
+           ProbabilityComputer.cpp
+           Selector.cpp
 	)
 
 #if (BUILD_TESTING)

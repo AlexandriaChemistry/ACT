@@ -76,6 +76,8 @@ private:
     real prCross_ = 0.35;
     //! Probability of mutation
     real prMut_ = 0.01;
+    //! For PercentMutator: Maximum allowed change in a parameter as a fraction of its allowed range
+    real percent_ = 0.1;
 
 public:
 
@@ -104,14 +106,26 @@ public:
     //! \return the amount of top individuals that pass, unchanged, to the next generation
     int nElites() const { return nElites_; }
 
+    //! \return whether to initialize an individual randomly
+    real randomInit() const { return randomInit_; }
+
+    //! \return the order of the crossover operator
+    int nCrossovers() const { return nCrossovers_; }
+
+    //! \return the probability computer
+    const char *probComputer() const { return probComputer_[0]; }
+
+    //! \return the Boltzmann temperature parameter
+    real boltzTemp() const { return boltzTemp_; }
+
     //! \return the probability of crossover
-    double prCross() const { return prCross_; }
+    real prCross() const { return prCross_; }
 
     //! \return the probability of mutation
-    double prMut() const { return prMut_; }
+    real prMut() const { return prMut_; }
 
-    //! \return to initialize an individual randomly
-    double randomInit() const { return randomInit_; }
+    //! \return For PercentMutator: Maximum allowed change in a parameter as a fraction of its allowed range
+    real percent() const { return percent_; }
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * END: Getters and setters                 *

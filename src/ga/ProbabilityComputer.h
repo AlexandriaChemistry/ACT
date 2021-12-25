@@ -2,7 +2,9 @@
 #define GA_PROBABILITYCOMPUTER_H
 
 
-#include "aliases.h"
+#include <vector>
+
+#include "Individual.h"
 
 
 namespace ga
@@ -18,14 +20,10 @@ class ProbabilityComputer
 public:
 
     /*!
-     * Compute the probability of each individual in the population
-     * @param fitness   the fitness of each individual
-     * @param prob      pointer to structure to store the probability for each individual
-     * @param popSize   number of individuals in the population
+     * Compute the selection probability of each individual in the population
+     * \param[in] pop pointer to the population
      */
-    virtual void compute(const vector  &fitness,
-                               vector  *prob,
-                         const int      popSize) = 0;
+    virtual void compute(std::vector<Individual*> *pop) = 0;
 
 };
 
@@ -43,9 +41,7 @@ class FitnessProbabilityComputer : public ProbabilityComputer
 
 public:
 
-    virtual void compute(const vector  &fitness,
-                               vector  *prob,
-                         const int      popSize);
+    virtual void compute(std::vector<Individual*> *pop);
 
 };
 
@@ -65,27 +61,22 @@ class BoltzmannProbabilityComputer : public ProbabilityComputer
 private:
 
     //! The temperature parameter
-    double temperature;
+    double temperature_;
     //! Stores e^fitness for each individual
-    vector exponentials;
+    std::vector<double> exponentials_;
 
 public:
 
     /*!
      * Create a new BoltzmannProbabilityComputer object
-     * @param popSize           number of individuals in the population
-     * @param temperature       the temperature
+     * \param[in] popSize           number of individuals in the population
+     * \param[in] temperature       the temperature
      */
     BoltzmannProbabilityComputer(const int      popSize,
                                  const double   temperature)
-    {
-        exponentials = vector(popSize);
-        this->temperature = temperature;
-    }
+    : exponentials_(popSize), temperature_(temperature) {}
 
-    virtual void compute(const vector  &fitness,
-                               vector  *prob,
-                         const int      popSize);
+    virtual void compute(std::vector<Individual*> *pop);
 
 };
 
@@ -104,29 +95,23 @@ class RankProbabilityComputer : public ProbabilityComputer
 private:
 
     //! Stores the sum of ranks. E.g., if there are 10 individuals, the sum of ranks is 1 + 2  + 3 + ... + 9 + 10
-    double sumOfRanks;
+    double sumOfRanks_;
 
 public:
 
     /*!
      * Create a new RankProbabilityComputer object
-     * @param popSize   number of individuals in the population
+     * \param[in] popSize   number of individuals in the population
      */
     RankProbabilityComputer(const int popSize)
-    {
-        sumOfRanks = popSize * (popSize + 1) / 2;
-    }
+    : sumOfRanks_(popSize * (popSize + 1) / 2) {}
 
     /*!
      * Here we assume that population and fitness are sorted in a descending manner.<br>
      * Compute the probability of each individual in the population
-     * @param fitness   the fitness of each individual
-     * @param prob      pointer to structure to store the probability for each individual
-     * @param popSize   number of individuals in the population
+     * @param pop pointer to the population
      */
-    virtual void compute(const vector  &fitness,
-                               vector  *prob,
-                         const int      popSize);
+    virtual void compute(std::vector<Individual*> *pop);
 
 };
 

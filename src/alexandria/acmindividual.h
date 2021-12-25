@@ -317,11 +317,18 @@ public:
      * \param[j]   Index
      * \param[val] The new value
      */
-    void setParam(size_t j, real val)
+    void setParam(const size_t j, const real val)
     {
         GMX_RELEASE_ASSERT(j < param_.size(), "Parameter out of range");
         param_[j] = val;
     }
+
+    /*!
+     * Get the value of a parameter by index
+     * \param[in] j the index
+     * \return the value of the parameter at index \p j
+     */
+    double paramAtIndex(const size_t j) const { return param_[j]; }
 
     //! \brief Set all parameters to the array passed
     void setParam(std::vector<double> param)
