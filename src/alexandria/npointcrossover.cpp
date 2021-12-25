@@ -36,7 +36,7 @@ void NPointCrossover::offspring(ga::Individual  *parent1,
     // Start by the regions that are not swapped
     for (i = 0; i < crossoverPoints_.size() - 1; i += 2)
     {
-        for (j = crossoverPoints_[i]; j < crossoverPoints_[i] + 1; j++)
+        for (j = crossoverPoints_[i]; j < crossoverPoints_[i+1]; j++)
         {
             tmpChild1->setParam(j, tmpParent1->paramAtIndex(j));
             tmpChild2->setParam(j, tmpParent2->paramAtIndex(j));
@@ -45,7 +45,7 @@ void NPointCrossover::offspring(ga::Individual  *parent1,
     // Now the regions that should be swapped
     for (i = 1; i < crossoverPoints_.size() - 1; i += 2)
     {
-        for (j = crossoverPoints_[i]; j < crossoverPoints_[i] + 1; j++)
+        for (j = crossoverPoints_[i]; j < crossoverPoints_[i+1]; j++)
         {
             tmpChild1->setParam(j, tmpParent2->paramAtIndex(j));
             tmpChild2->setParam(j, tmpParent1->paramAtIndex(j));
