@@ -9,7 +9,7 @@
 #include "Sorter.h"
 #include "ProbabilityComputer.h"
 #include "Selector.h"
-// #include "Crossover.h"
+#include "Crossover.h"
 #include "Mutator.h"
 // #include "Terminator.h"
 
@@ -19,6 +19,7 @@
 #include "alexandria/acminitializer.h"
 #include "alexandria/mcmcmutator.h"
 #include "alexandria/percentmutator.h"
+#include "alexandria/npointcrossover.h"
 
 
 namespace ga
@@ -67,7 +68,7 @@ private:
     //! Selects an individual from the population based on its probability
     Selector               *selector_;
     //! Grabs 2 individuals and crosses their genes to generate 2 new individuals
-    // Crossover              *crossover_;
+    Crossover              *crossover_;
     //! Mutates the genes of the individuals
     Mutator                *mutator_;
     //! Checks if the evolution should continue or be terminated
@@ -151,6 +152,11 @@ public:
 
             // Selector
             selector_ = new RouletteSelector();
+
+            // Crossover
+            GMX_RELEASE_ASSERT(gach->nCrossovers() < sii->nParam(),
+                               gmx::formatString("The order of the crossover operator should be smaller than the amount of parameters. You chose -nCrossovers %i, but there are %lu parameters. Please adjust -nCrossovers.", gach->nCrossovers(), sii->nParam()).c_str());
+            crossover_ = new NPointCrossover(sii->nParam(), gach->nCrossovers());
 
         }
 
