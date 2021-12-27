@@ -28,7 +28,7 @@ void BayesConfigHandler::add_pargs(std::vector<t_pargs> *pargs)
 {
     t_pargs pa[] = {
         { "-maxiter", FALSE, etINT, {&maxiter_},
-          "Max number of iterations for optimization." },
+          "Max number of iterations for MCMC optimization." },
         { "-temp",    FALSE, etREAL, {&temperature_},
           "'Temperature' for the Monte Carlo simulation." },
         { "-tweight", FALSE, etBOOL, {&tempWeight_},
@@ -38,9 +38,9 @@ void BayesConfigHandler::add_pargs(std::vector<t_pargs> *pargs)
         { "-seed",   FALSE, etINT,  {&seed_},
           "Random number seed. If zero, a seed will be generated." },
         { "-step",  FALSE, etREAL, {&step_},
-          "Step size for the parameter optimization. Is used as fraction of the available range per parameter which depends on the parameter type." },
+          "Step size for the MCMC parameter optimization. Is used as fraction of the available range per parameter which depends on the parameter type." },
         { "-bEvaluate_testset", FALSE, etBOOL, {&evaluate_testset_},
-          "Evaluate the MCMC energy on the test set." }
+          "Evaluate the MCMC energy on the test set. Only used in pure MCMC optmization." }
     };
     for (int i = 0; i < asize(pa); i++)
     {
