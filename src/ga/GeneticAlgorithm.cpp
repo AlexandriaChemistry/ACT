@@ -256,7 +256,7 @@ void GeneticAlgorithm::evolveGA()
 
         // Check if a better individual was found, and update if so
         Individual *tmpBest = oldPop_[findBestIndex()];
-        if (tmpBest->fitnessTrain() < bestInd_->fitnessTrain())
+        if (tmpBest->fitnessTrain() < bestInd_->fitnessTrain())  // If we have a new best
         {
             fprintf(logfile_, "A new best individual has been found!\n");
             fprintf(logfile_, "Previous best:\n");
@@ -265,6 +265,7 @@ void GeneticAlgorithm::evolveGA()
             bestInd_ = tmpBest->clone();
             bestInd_->fprintSelf(logfile_);
         }
+        else fprintf(logfile_, "HAVE NOT FOUND a new best individual...\n");  // New best not found...
 
         fprintf(logfile_, "Checking termination conditions...\n");
 
