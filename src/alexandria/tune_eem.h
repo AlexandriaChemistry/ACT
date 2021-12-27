@@ -55,9 +55,6 @@ private:
     bool bRemoveMol_ = true;
     //! Flush output immediately rather than letting the OS buffer it. Don't use for production simulations.
     bool verbose_ = false;
-    /*! Generate completely random starting parameters within the limits set by the options.
-        This will be done at the very first step and before each subsequent run. */
-    bool randomInit_ = false;
     //! Pointer to log file
     gmx::unique_cptr<FILE, my_fclose> fplog_ = nullptr;
     //! File name for the output force field file
@@ -158,7 +155,7 @@ public:
     //! \brief Initialize the ACMInitializer
     void initInitializer()
     {
-        initializer_ = new ACMInitializer(mg_.mindata(), &sii_, randomInit_, outputFile_);
+        initializer_ = new ACMInitializer(mg_.mindata(), &sii_, gach_.randomInit(), outputFile_);
     }
 
     //! \brief initialize the Individual \p baseInd_ and ACMIndividual \p ind_
@@ -188,9 +185,6 @@ public:
     /* * * * * * * * * * * * * * * * * * * * * *
     * BEGIN: Getters and setters               *
     * * * * * * * * * * * * * * * * * * * * * */
-
-    //! \return whether we initialize the FF parameters randomly or not
-    bool randomInit() const { return randomInit_; }
 
     //! \return whether or not we use the full quadrupol
     bool fullQuadrupole() const { return bFullQuadrupole_; }

@@ -108,7 +108,7 @@ void GeneticAlgorithm::evolveMCMC()
             bestIndex = i;
         }
     }
-    bestInd_ = new ACMIndividual(acmPop[bestIndex]);
+    bestInd_ = acmPop[bestIndex]->clone();
 
     // Close files of each individual
     for (ACMIndividual *ind : acmPop) ind->closeConvFiles();
@@ -152,7 +152,7 @@ void GeneticAlgorithm::evolveGA()
     fprintFitness();
 
     // FIXME: THIS IS NOT GENERAL. Open files of each individual
-    for (Individual *ind : oldPop)
+    for (Individual *ind : oldPop_)
     {
         ACMIndividual *tmpInd = static_cast<ACMIndividual*>(ind);
         tmpInd->openParamConvFiles(oenv_);
@@ -200,7 +200,7 @@ void GeneticAlgorithm::evolveGA()
             // Select parents
             parent1 = selector_->select(oldPop_);
             parent2 = selector_->select(oldPop_);
-            fprintf("parent1: %i; parent2: %i\n", parent1, parent2);
+            fprintf(logfile_, "parent1: %i; parent2: %i\n", parent1, parent2);
 
             // Do crossover
             fprintf(logfile_, "Before crossover\n");

@@ -26,16 +26,18 @@
 #
 
 set(GA_SOURCES
-           Crossover.cpp
-           FitnessComputer.cpp
+           # Crossover.cpp
+           # FitnessComputer.cpp
            GeneticAlgorithm.cpp
-           Initializer.cpp
-           Mutator.cpp
+           # Initializer.cpp
+           # Mutator.cpp
            ProbabilityComputer.cpp
            Selector.cpp
            Sorter.cpp
            Terminator.cpp
 	)
+
+add_library(actga OBJECT ${GA_SOURCES})
 
 #if (BUILD_TESTING)
 #    add_subdirectory(tests)

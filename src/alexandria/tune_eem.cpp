@@ -146,9 +146,7 @@ void OptACM::add_pargs(std::vector<t_pargs> *pargs) {
                     {"-removemol",      FALSE, etBOOL, {&bRemoveMol_},
                             "Remove a molecule from training set if shell minimization does not converge."},
                     {"-v",              FALSE, etBOOL, {&verbose_},
-                        "Flush output immediately rather than letting the OS buffer it. Don't use for production simulations."},
-                    { "-randomInit", FALSE, etBOOL, {&randomInit_},
-                            "Generate completely random starting parameters within the limits set by the options. This will be done at the very first step and before each subsequent run." }
+                        "Flush output immediately rather than letting the OS buffer it. Don't use for production simulations."}
             };
     for (int i = 0; i < asize(pa); i++) {
         pargs->push_back(pa[i]);
