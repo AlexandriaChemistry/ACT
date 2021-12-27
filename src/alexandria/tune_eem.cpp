@@ -277,6 +277,8 @@ bool OptACM::runMaster(const char             *xvgconv,
             fprintf(logFile(), "Minimum chi2 for %s %g\n",
                     iMolSelectName(ims.first), chi2);
         }
+        // Save force field of best individual
+        bestInd_->saveState();
     }
     else if (optimize)
     {
@@ -499,13 +501,13 @@ int tune_eem(int argc, char *argv[])
         if (bMinimum || bForceOutput || !bOptimize)
         {
             ACMIndividual *bestInd = opt.bestInd();
-            if (bForceOutput)
-            {
+            // if (bForceOutput)
+            // {
                 // FIXME: this is not true! The best parameters are fed back to params_ (and to pd_) at the end
                 // of runMaster if a better parameter set was found. So no, the final step will not be the output
                 fprintf(opt.logFile(), "Output based on last step of MC simulation per your specification.\nUse the -noforce_output flag to prevent this.\nThe force field output file %s is based on the last MC step as well.\n", opt2fn("-o", filenms.size(), filenms.data()));
                 bestInd->saveState();
-            }
+            // }
             MolGen *tmpMg = opt.mg();
             printer.print(opt.logFile(),
                           &(tmpMg->mymols()),

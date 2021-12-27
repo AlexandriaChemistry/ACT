@@ -303,7 +303,7 @@ public:
         id_ = id;
         const size_t firstIndex = outputFile_.find("-");  // We need to discard the existing indX- part
         const size_t strLength = outputFile_.size();
-        outputFile_ = "ind" + std::to_string(id_) + "-" + outputFile_.substr(firstIndex, strLength - firstIndex);
+        outputFile_ = "ind" + std::to_string(id_) + outputFile_.substr(firstIndex, strLength - firstIndex);
     }
 
     //! \return a pointer to the SharedIndividualInfo instance
