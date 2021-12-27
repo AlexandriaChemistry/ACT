@@ -27,7 +27,7 @@ void ACMIndividual::fprintSelf(FILE *fp)
     fprintf(fp, "param_: [ ");
     for (const double ele : param_) fprintf(fp, "%f ", ele);
     fprintf(fp, "]; ");
-    fprintf(fp, "fitnessTrain_: %f; fitnessTest_: %f; probability_: %i\n",
+    fprintf(fp, "fitnessTrain_: %f; fitnessTest_: %f; probability_: %f\n",
             fitnessTrain_, fitnessTest_, probability_);
 }
 
@@ -41,7 +41,7 @@ void ACMIndividual::openParamConvFiles(const gmx_output_env_t *oenv)
     const std::vector<std::string> pClass = sii_->paramClass();
     for (size_t i = 0; i < pClass.size(); i++)
     {
-        std::string fileName = "ind" + std::to_string(id_) + "-" + pClass[i] + "-" + sii_->xvgConv();
+        std::string fileName = "ind" + std::to_string(id_) + "/ind" + std::to_string(id_) + "-" + pClass[i] + "-" + sii_->xvgConv();
         fpc_.push_back(xvgropen(fileName.c_str(),
                                 "Parameter convergence",
                                 "iteration",
@@ -63,7 +63,7 @@ void ACMIndividual::openParamConvFiles(const gmx_output_env_t *oenv)
 void ACMIndividual::openChi2ConvFile(const gmx_output_env_t    *oenv,
                                      const bool                 bEvaluate_testset)
 {
-    std::string fileName = "ind" + std::to_string(id_) + "-" + sii_->xvgEpot();
+    std::string fileName = "ind" + std::to_string(id_) + "/ind" + std::to_string(id_) + "-" + sii_->xvgEpot();
     fpe_ = xvgropen(fileName.c_str(),
                     "Chi squared",
                     "Iteration",

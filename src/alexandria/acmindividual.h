@@ -34,6 +34,7 @@ private:
 
     //! ID of the individual
     int id_;
+    //! Directory name for the individual
     //! Pointer to shared individual information
     SharedIndividualInfo *sii_;
     //! Fitting targets for each dataset and eRMS
@@ -82,7 +83,7 @@ public:
     {
         id_ = id;
         sii_ = sii;
-        outputFile_ = "ind" + std::to_string(id_) + "-" + outputFile;
+        outputFile_ = "ind" + std::to_string(id_) + "/ind" + std::to_string(id_) + "-" + outputFile;
 
         // Initialize vectors for statistics and bestParam_.
         // initialParam_ and param_ will be initialized later
@@ -296,6 +297,7 @@ public:
     /*!
      * \brief Set a new value for \p id_
      * Also adjust \p outputFile
+     * CAREFUL! This does not change convergence files! You will have to call the open file routines again to fix it!
      * \param[in] id the new ID
      */
     void setId(const int id)
@@ -303,7 +305,7 @@ public:
         id_ = id;
         const size_t firstIndex = outputFile_.find("-");  // We need to discard the existing indX- part
         const size_t strLength = outputFile_.size();
-        outputFile_ = "ind" + std::to_string(id_) + outputFile_.substr(firstIndex, strLength - firstIndex);
+        outputFile_ = "ind" + std::to_string(id_) + "/ind" + std::to_string(id_) + outputFile_.substr(firstIndex, strLength - firstIndex);
     }
 
     //! \return a pointer to the SharedIndividualInfo instance

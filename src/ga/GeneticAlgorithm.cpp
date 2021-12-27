@@ -40,7 +40,7 @@ int GeneticAlgorithm::findBestIndex() const
 {
     int index = 0;
     double bestFitness = oldPop_[index]->fitnessTrain();
-    for (int i = 1; i < oldPop_.size(); i++)
+    for (size_t i = 1; i < oldPop_.size(); i++)
     {
         if (oldPop_[i]->fitnessTrain() < bestFitness)
         {
@@ -60,7 +60,7 @@ void GeneticAlgorithm::fprintProbability() const
 
 void GeneticAlgorithm::fprintFitness() const
 {
-    for (int i = 0; i < oldPop_.size() - 1; i++)
+    for (size_t i = 0; i < oldPop_.size() - 1; i++)
     {
         fprintf(fileFitnessTrain_, "%lf ", oldPop_[i]->fitnessTrain());
         fprintf(fileFitnessTest_, "%lf ", oldPop_[i]->fitnessTest());
@@ -132,7 +132,7 @@ void GeneticAlgorithm::evolveGA()
     std::uniform_real_distribution<double> dis(0.0, 1.0);
 
     // Iteration variables
-    int i, k;
+    size_t i, k;
 
     // Indices for parents
     int parent1;
@@ -189,13 +189,13 @@ void GeneticAlgorithm::evolveGA()
 
         // Move the "nElites" best individuals (unchanged) into the new population (assuming population is sorted)
         fprintf(logfile_, "Moving the %i best individual(s) into the new population...\n", gach_->nElites());
-        for (i = 0; i < gach_->nElites(); i++) newPop_[i]->copyGenome(oldPop_[i]);
+        for (i = 0; i < (size_t) gach_->nElites(); i++) newPop_[i]->copyGenome(oldPop_[i]);
 
         // Generate new population after the elitism
         fprintf(logfile_, "Generating the rest of the new population...\n");
         for (i = gach_->nElites(); i < oldPop_.size(); i += 2)
         {
-            fprintf(logfile_, "i = %i, %i\n", i, i + 1);
+            fprintf(logfile_, "i = %zu, %zu\n", i, i + 1);
 
             // Select parents
             parent1 = selector_->select(oldPop_);

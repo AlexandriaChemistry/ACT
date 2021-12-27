@@ -2,7 +2,7 @@
 #define GA_GENETICALGORITHM_H
 
 
-// #include "aliases.h"
+#include <cstdlib>
 
 #include "Initializer.h"
 #include "FitnessComputer.h"
@@ -133,8 +133,6 @@ public:
       oldPop_(gach->popSize()), newPop_(gach->popSize())
     {
 
-        // TODO: Create a surveillance file for GA where every row is the fitness vector of the current population
-
         // Initializer
         initializer_ = new alexandria::ACMInitializer(mg->mindata(), sii, gach->randomInit(), outputFile);
         
@@ -196,6 +194,14 @@ public:
             // Terminator
             terminator_ = new GenerationTerminator(gach->maxGenerations());
 
+        }
+
+        // Create directories for each individual
+        for (int i = 0; i <= gach->popSize(); i++)
+        {
+            const std::string command = "mkdir ind" + std::to_string(i);
+            system(command.c_str());
+            // std::filesystem::create_directory(dirName.c_str());
         }
 
     }
