@@ -72,11 +72,9 @@ private:
       /*!
        * Split \p fitA into 2 runs, sort both runs into \p fitB, merge both runs from \p fitB into \p fitA
        * @param popB      pointer to population B
-       * @param fitB      pointer to fitness B
        * @param left      left index (inclusive)
        * @param right     right index (exclusive)
        * @param popA      pointer to population A
-       * @param fitA      pointer to fitness A
        */
       void topDownSplitMerge(      std::vector<Individual*>      *popB,
                              const int                            left,
@@ -88,12 +86,10 @@ private:
        * Right source half is A[middle:right-1].
        * Result is B[left:right-1].
        * @param popA          pointer to population A
-       * @param fitA          pointer to fitness A
        * @param left          left index (inclusive)
        * @param middle        middle index
        * @param right         right index (exclusive)
        * @param popB          pointer to population B
-       * @param fitB          pointer to fitness B
        */
       void topDownMerge(      std::vector<Individual*>     *popA,
                         const int                           left,
@@ -132,7 +128,6 @@ private:
       /*!
        * Split \p fitness into 2 parts, one left of the pivot element and one to the right of it, and sort both.
        * @param pop       pointer to the population
-       * @param fitness   pointer to the fitness vector
        * @param low       the left-most point of the part of the population vector in this recursion
        * @param high      the right-most point of the part of the population vector in this recursion
        */
@@ -143,7 +138,6 @@ private:
       /*!
        * Find the pivot element and sort everything by comparing with it in an ascending order.
        * @param pop       pointer to the population
-       * @param fitness   pointer to the fitness vector
        * @param low       the left-most point of the part of the population vector in this recursion
        * @param high      the right-most point of the part of the population vector in this recursion
        */
@@ -154,7 +148,6 @@ private:
       /*!
        * Find the pivot element and sort everything by comparing with it in a descending order.
        * @param pop       pointer to the population
-       * @param fitness   pointer to the fitness vector
        * @param low       the left-most point of the part of the population vector in this recursion
        * @param high      the right-most point of the part of the population vector in this recursion
        */
