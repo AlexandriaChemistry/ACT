@@ -152,7 +152,7 @@ class BayesConfigHandler : public ConfigHandler
 private:
     //! Maximum number of iterations
     int   maxiter_           = 100;
-    //! Random number seed
+    //! FIXME: Move somewhere else? Random number seed
     real  seed_              = -1;
     //! Relative step when optimizing
     real  step_              = 0.02;
