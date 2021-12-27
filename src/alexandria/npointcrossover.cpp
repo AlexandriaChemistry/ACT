@@ -30,6 +30,8 @@ void NPointCrossover::offspring(ga::Individual  *parent1,
     std::shuffle(tmpAvailableIndices.begin(), tmpAvailableIndices.end(), gen);
     // Now we copy the first order_ elements to crossoverPoints_
     for (i = 0; i < order_; i++) crossoverPoints_[i+1] = tmpAvailableIndices[i];
+    // Finally, sort the newly added crossover points
+    std::sort(crossoverPoints_.begin()+1, crossoverPoints_.end()-1);
     // DONE! Sampled without replacement!
 
     // We now cross the genes of the individuals
