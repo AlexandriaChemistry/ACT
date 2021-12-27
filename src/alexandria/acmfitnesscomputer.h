@@ -83,10 +83,8 @@ public:
         fillDevComputers();
     }
 
-    /*! \brief Compute the desired entities.
-     * @param[in] ind    The pointer to the individual to compute for
-     */
-    virtual void compute(ga::Individual *ind);
+    virtual void compute(ga::Individual *ind,
+                         ga::Target trgtFit);
 
     /*! \brief Computes deviation from target
      * \param[in] ind           pointer to individual

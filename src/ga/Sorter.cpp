@@ -1,8 +1,5 @@
 #include "Sorter.h"
 
-#include "aliases.h"
-#include "ga_helpers.h"
-
 
 namespace ga
 {
@@ -12,45 +9,39 @@ namespace ga
 * BEGIN: MergeSorter                       *
 * * * * * * * * * * * * * * * * * * * * * */
 
-void MergeSorter::sort(      matrix    *pop,
-                             vector    *fitness,
-                       const int        popSize)
+void MergeSorter::sort(std::vector<Individual*> *pop)
 {
 
-    tmpFitness = (*fitness);
-    tmpPop = (*pop);
-    topDownSplitMerge(&tmpPop, &tmpFitness, 0, popSize, pop, fitness);
+    // Clone the population into tmpPop_
+    for (int i = 0; i < pop->size(); i++) tmpPop_[i] = (*pop)[i]->clone();
+    topDownSplitMerge(&tmpPop_, 0, pop->size(), pop);
 
 }
 
 
-void MergeSorter::topDownSplitMerge(      matrix   *popB,
-                                          vector   *fitB,
-                                    const int       left,
-                                    const int       right,
-                                          matrix   *popA,
-                                          vector   *fitA)
+void MergeSorter::topDownSplitMerge(      std::vector<Individual*> *popB,
+                                    const int                       left,
+                                    const int                       right,
+                                          std::vector<Individual*> *popA)
 {
 
     if (right - left <= 1) return;
 
     const int middle = (right + left) / 2;
 
-    topDownSplitMerge(popA, fitA, left, middle, popB, fitB);
-    topDownSplitMerge(popA, fitA, middle, right, popB, fitB);
+    topDownSplitMerge(popA, left, middle, popB);
+    topDownSplitMerge(popA, middle, right, popB);
 
-    topDownMerge(popB, fitB, left, middle, right, popA, fitA);
+    topDownMerge(popB, left, middle, right, popA);
 
 }
 
 
-void MergeSorter::topDownMerge(      matrix    *popA,
-                                     vector    *fitA,
-                               const int        left,
-                               const int        middle,
-                               const int        right,
-                                     matrix    *popB,
-                                     vector    *fitB)
+void MergeSorter::topDownMerge(      std::vector<Individual*>  *popA,
+                               const int                        left,
+                               const int                        middle,
+                               const int                        right,
+                                     std::vector<Individual*>  *popB)
 {
 
     int i = left;
@@ -58,16 +49,15 @@ void MergeSorter::topDownMerge(      matrix    *popA,
 
     for (int k = left; k < right; k++)
     {
-        if ( i < middle && ( j >= right || ( descending == ( (*fitA)[i] >= (*fitA)[j] ) ) ) )
+        if ( i < middle && ( j >= right ||
+            ( descending_ == ( (*popA)[i]->fitnessTrain() >= (*popA)[j]->fitnessTrain() ) ) ) )
         {
-            (*fitB)[k] = (*fitA)[i];
-            (*popB)[k] = (*popA)[i];
+            (*popB)[k] = (*popA)[i]->clone();
             i++;
         }
         else
         {
-            (*fitB)[k] = (*fitA)[j];
-            (*popB)[k] = (*popA)[j];
+            (*popB)[k] = (*popA)[j]->clone();
             j++;
         }
     }
@@ -82,79 +72,68 @@ void MergeSorter::topDownMerge(      matrix    *popA,
 * BEGIN: QuickSorter                       *
 * * * * * * * * * * * * * * * * * * * * * */
 
-void QuickSorter::sort(      matrix    *pop,
-                             vector    *fitness,
-                       const int        popSize)
+void QuickSorter::sort(std::vector<Individual*> *pop)
 {
     const int low = 0;
-    const int high = popSize - 1;
-    quickSort(pop, fitness, low, high);
+    const int high = pop->size() - 1;
+    quickSort(pop, low, high);
 }
 
-void QuickSorter::quickSort(      matrix   *pop,
-                                  vector   *fitness,
-                            const int       low,
-                            const int       high)
+void QuickSorter::quickSort(      std::vector<Individual*> *pop,
+                            const int                       low,
+                            const int                       high)
 {
     if (low >= 0 && high >= 0 && low < high)
     {
-        if (!descending) {
-            const int p = ascendingPartition(pop, fitness, low, high);
-            quickSort(pop, fitness, low, p - 1);
-            quickSort(pop, fitness, p + 1, high);
+        if (!descending_) {
+            const int p = ascendingPartition(pop, low, high);
+            quickSort(pop, low, p - 1);
+            quickSort(pop, p + 1, high);
         } else {
-            const int p = descendingPartition(pop, fitness, low, high);
-            quickSort(pop, fitness, low, p - 1);
-            quickSort(pop, fitness, p + 1, high);
+            const int p = descendingPartition(pop, low, high);
+            quickSort(pop, low, p - 1);
+            quickSort(pop, p + 1, high);
         }
     }
 }
 
-int QuickSorter::ascendingPartition(      matrix    *pop,
-                                          vector    *fitness,
-                                    const int        low,
-                                    const int        high)
+int QuickSorter::ascendingPartition(      std::vector<Individual*> *pop,
+                                    const int                       low,
+                                    const int                       high)
 {
-    const double pivot = (*fitness)[high];
+    const double pivot = (*pop)[high]->fitnessTrain();
     int candidate = low - 1;
     double temp;
 
     for (int check = low; check <= high; check++)
     {
-        if ( (*fitness)[check] <= pivot )
+        if ( (*pop)[check]->fitnessTrain() <= pivot )
         {
             candidate += 1;
-            tmpFitness = (*pop)[candidate];
-            temp = (*fitness)[candidate];
+            tmpInd_ = (*pop)[candidate];
             (*pop)[candidate] = (*pop)[check];
-            (*fitness)[candidate] = (*fitness)[check];
-            (*pop)[check] = tmpFitness;
-            (*fitness)[check] = temp;
+            (*pop)[check] = tmpInd_;
         }
     }
     return candidate;
 }
 
-int QuickSorter::descendingPartition(      matrix    *pop,
-                                           vector    *fitness,
+int QuickSorter::descendingPartition(      std::vector<Individual*> *pop,
                                      const int        low,
                                      const int        high)
 {
-    const double pivot = (*fitness)[high];
+    const double pivot = (*pop)[high]->fitnessTrain();
     int candidate = low - 1;
     double temp;
 
     for (int check = low; check <= high; check++)
     {
-        if ( (*fitness)[check] >= pivot )
+        if ( (*pop)[check]->fitnessTrain() >= pivot )
         {
             candidate += 1;
-            tmpFitness = (*pop)[candidate];
-            temp = (*fitness)[candidate];
+            tmpInd_ = (*pop)[candidate];
             (*pop)[candidate] = (*pop)[check];
-            (*fitness)[candidate] = (*fitness)[check];
-            (*pop)[check] = tmpFitness;
-            (*fitness)[check] = temp;
+            (*pop)[check] = tmpInd_;
         }
     }
     return candidate;

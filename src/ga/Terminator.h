@@ -2,7 +2,9 @@
 #define GA_TERMINATOR_H
 
 
-#include "aliases.h"
+#include <vector>
+
+#include "Individual.h"
 
 
 namespace ga
@@ -19,63 +21,12 @@ public:
 
     /*!
      * Check whether the evolution should be terminated
-     * @param population            each row is an individual
-     * @param fitness               fitness of each individual
-     * @param generationNumber      generation number
-     * @param popSize               size of the population
-     * @param chromosomeLength      length of each individual
-     * @return                      true if the evolution is complete, false otherwise
+     * \param[in] population            the population
+     * \param[in] generationNumber      the generation number
+     * \return true if we should terminate, false otherwise
      */
-    virtual bool terminate(const matrix    &population,
-                           const vector    &fitness,
-                           const int        generationNumber,
-                           const int        popSize,
-                           const int        chromosomeLength) = 0;
-
-};
-
-
-/*!
- * Toy terminator class which returns true when the genes in the best individual are sufficiently close to 0
- */
-class SimpleTerminator : public Terminator
-{
-
-private:
-
-    double tolerance;
-
-public:
-
-    /*!
-     * Create a new SimpleTerminator object
-     * @param tolerance     the tolerance value
-     */
-    SimpleTerminator(const double tolerance)
-    {
-        this->tolerance = tolerance;
-    }
-
-    /*!
-     * Check whether the evolution should be terminated.<br>
-     * Assume the \f$i\f$-th individual has the highest fitness. We will terminate when
-     * \f[
-     *      f_i \geq \frac{ 1 }{ tolerance \cdot m },
-     * \f]
-     * where \f$m\f$ is the amount of genes in each individual.
-     *
-     * @param population            each row is an individual
-     * @param fitness               fitness of each individual
-     * @param generationNumber      generation number
-     * @param popSize               size of the population
-     * @param chromosomeLength      length of each individual
-     * @return                      true if the evolution is complete, false otherwise
-     */
-    virtual bool terminate(const matrix    &population,
-                           const vector    &fitness,
-                           const int        generationNumber,
-                           const int        popSize,
-                           const int        chromosomeLength);
+    virtual bool terminate(const std::vector<Individual*>  &pop,
+                           const int                        generationNumber) = 0;
 
 };
 
@@ -87,7 +38,7 @@ class GenerationTerminator : public Terminator
 
 private:
 
-    int maxGenerations;
+    int maxGenerations_;
 
 public:
 
@@ -96,24 +47,16 @@ public:
      * @param maxGenerations    the maximum amount of generations
      */
     GenerationTerminator(const int maxGenerations)
-    {
-        this->maxGenerations = maxGenerations;
-    }
+    : maxGenerations_(maxGenerations) {}
 
     /*!
      * Will return true when \p generationNumber \f$\geq\f$ \p maxGenerations, and false otherwise.
-     * @param population            each row is an individual
-     * @param fitness               fitness of each individual
-     * @param generationNumber      generation number
-     * @param popSize               size of the population
-     * @param chromosomeLength      length of each individual
-     * @return                      true if the evolution is complete, false otherwise
+     * \param[in] population            the population
+     * \param[in] generationNumber      the generation number
+     * \return true if we should terminate, false otherwise
      */
-    virtual bool terminate(const matrix    &population,
-                           const vector    &fitness,
-                           const int        generationNumber,
-                           const int        popSize,
-                           const int        chromosomeLength);
+    virtual bool terminate(const std::vector<Individual*>  &pop,
+                           const int                        generationNumber);
 
 };
 

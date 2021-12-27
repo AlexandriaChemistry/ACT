@@ -46,6 +46,7 @@ public:
 
 /*!
  * Handles optimization parameters for Genetic Algorithm
+ * FIXME: Should this be under the ga directory???
  */
 class GAConfigHandler : public ConfigHandler
 {
@@ -56,7 +57,7 @@ private:
     // After argument parsing, first element in the array will point to the selected enum value, so optimizer_[0]
     // Static means the variable will be shared among objects (only 1 place in memory)
     //! Optimizer to use
-    // const char *optimizer_[] = {nullptr, "MCMC", "GA", "HYBRID", nullptr};
+    const char *optimizer_[5] = {nullptr, "MCMC", "GA", "HYBRID", nullptr};
     //! Population size
     int popSize_ = 1;
     //! Amount of elites in the population
@@ -66,16 +67,21 @@ private:
     //! Order of crossover operator
     int nCrossovers_ = 1;
     //! Sorter algorithm
-    // const char *sorter_[] = {nullptr, "QUICK", "MERGE", "NONE", nullptr};
+    const char *sorter_[5] = {nullptr, "QUICK", "MERGE", "NONE", nullptr};
     //! Probability computing algorithm
-    // const char *probComputer_[] = {nullptr, "RANK", "FITNESS", "BOLTZMANN", nullptr};
+    const char *probComputer_[5] = {nullptr, "RANK", "FITNESS", "BOLTZMANN", nullptr};
     //! Boltzmann probability temperature. TODO: This temperature should be lowered over time.
     real boltzTemp_ = 1;
-    // TODO: Termination options???
     //! Probability of crossover
     real prCross_ = 0.35;
     //! Probability of mutation
     real prMut_ = 0.01;
+    //! For PercentMutator: Maximum allowed change in a parameter as a fraction of its allowed range
+    real percent_ = 0.1;
+
+    // TODO: Improve termination criteria
+    //! Generation limit in Genetic Algorithm
+    int maxGenerations_ = 10;
 
 public:
 
@@ -95,20 +101,41 @@ public:
     * BEGIN: Getters and setters               *
     * * * * * * * * * * * * * * * * * * * * * */
 
+    //! \return the optimizer
+    const char *optimizer() { return optimizer_[0]; }
+
     //! \return the size of the population
     int popSize() const { return popSize_; }
 
     //! \return the amount of top individuals that pass, unchanged, to the next generation
     int nElites() const { return nElites_; }
 
+    //! \return whether to initialize an individual randomly
+    real randomInit() const { return randomInit_; }
+
+    //! \return the order of the crossover operator
+    int nCrossovers() const { return nCrossovers_; }
+
+    //! \return the sorter
+    const char *sorter() const { return sorter_[0]; }
+
+    //! \return the probability computer
+    const char *probComputer() const { return probComputer_[0]; }
+
+    //! \return the Boltzmann temperature parameter
+    real boltzTemp() const { return boltzTemp_; }
+
     //! \return the probability of crossover
-    double prCross() const { return prCross_; }
+    real prCross() const { return prCross_; }
 
     //! \return the probability of mutation
-    double prMut() const { return prMut_; }
+    real prMut() const { return prMut_; }
 
-    //! \return to initialize an individual randomly
-    double randomInit() const { return randomInit_; }
+    //! \return For PercentMutator: Maximum allowed change in a parameter as a fraction of its allowed range
+    real percent() const { return percent_; }
+
+    //! \return the generation limit
+    int maxGenerations() const { return maxGenerations_; }
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * END: Getters and setters                 *

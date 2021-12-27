@@ -2,10 +2,11 @@
 #define GA_SELECTOR_H
 
 
-#include "aliases.h"
-
 #include <random>
 #include <time.h>
+#include <vector>
+
+#include "Individual.h"
 
 
 namespace ga
@@ -21,13 +22,11 @@ class Selector
 public:
 
     /*!
-     * Select an individual from the population
-     * @param probability       selection probability of each individual
-     * @param popSize           size of the population
-     * @return                  the selected individual
+     * Select an individual (by index) from the population
+     * @param pop               the population
+     * @return                  the index of the selected individual
      */
-    virtual int select(const vector  &probability,
-                       const int      popSize) = 0;
+    virtual int select(const std::vector<Individual*> &pop) = 0;
 
 };
 
@@ -55,8 +54,8 @@ public:
         gen.seed(::time(NULL));
     }
 
-    virtual int select(const vector  &probability,
-                       const int      popSize);
+    virtual int select(const std::vector<Individual*> &pop);
+
 };
 
 

@@ -50,6 +50,9 @@ public:
                    const std::string            &outputFile)
     : gen(rd()), dis(std::uniform_real_distribution<double>(0.0, 1.0))
     {
+
+        gen.seed(::time(NULL));
+
         mindata_  = mindata;
         sii_      = sii;
         randInit_ = randInit;

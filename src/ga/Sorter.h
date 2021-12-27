@@ -2,7 +2,11 @@
 #define GA_SORTER_H
 
 
-#include "aliases.h"
+#include <vector>
+
+#include "Individual.h"
+
+#include "gromacs/utility/basedefinitions.h"
 
 
 namespace ga
@@ -18,31 +22,25 @@ class Sorter
 protected:
 
       //! Whether to sort in descending order of fitness (default false)
-      bool descending = false;
+      bool descending_ = false;
 
       //! Default constructor
       Sorter() {}
 
       /*!
-       * Create a new Sorter
+       * Property constructor
        * @param descending whether to sort in descending order of fitness
        */
       Sorter(const bool descending)
-      {
-            this->descending = descending;
-      }
+      : descending_(descending) {}
 
 public:
 
       /*!
        * Sort individuals (in place) based on fitness
-       * @param pop                   pointer to the population. Each row is an individual.
-       * @param fitness               pointer to the fitness of each individual in the population
-       * @param popSize               number of individuals in the population
+       * \param[in] pop                   pointer to the population
        */
-      virtual void sort(      matrix *pop,
-                              vector *fitness,
-                        const int     popSize) = 0;
+      virtual void sort(std::vector<Individual*> *pop) = 0;
 
 };
 
@@ -55,9 +53,7 @@ class EmptySorter : public Sorter
 
 public:
 
-      virtual void sort(      matrix *pop,
-                              vector *fitness,
-                        const int     popSize) {};
+      virtual void sort(gmx_unused std::vector<Individual*> *pop) {};
 
 };
 
@@ -71,9 +67,7 @@ class MergeSorter : public Sorter
 private:
 
       //! Temporal storage for a population
-      matrix tmpPop;
-      //! Temporal vector for fitness
-      vector tmpFitness;
+      std::vector<Individual*> tmpPop_;
 
       /*!
        * Split \p fitA into 2 runs, sort both runs into \p fitB, merge both runs from \p fitB into \p fitA
@@ -84,12 +78,10 @@ private:
        * @param popA      pointer to population A
        * @param fitA      pointer to fitness A
        */
-      void topDownSplitMerge(      matrix    *popB,
-                                   vector    *fitB,
-                             const int        left,
-                             const int        right,
-                                   matrix    *popA,
-                                   vector    *fitA);
+      void topDownSplitMerge(      std::vector<Individual*>      *popB,
+                             const int                            left,
+                             const int                            right,
+                                   std::vector<Individual*>      *popA);
 
       /*!
        * Left source half is A[left:middle-1].
@@ -103,35 +95,25 @@ private:
        * @param popB          pointer to population B
        * @param fitB          pointer to fitness B
        */
-      void topDownMerge(      matrix     *popA,
-                              vector     *fitA,
-                        const int         left,
-                        const int         middle,
-                        const int         right,
-                              matrix     *popB,
-                              vector     *fitB);
+      void topDownMerge(      std::vector<Individual*>     *popA,
+                        const int                           left,
+                        const int                           middle,
+                        const int                           right,
+                              std::vector<Individual*>     *popB);
 
 public:
 
       /*!
        * Create a new MergeSorter object
-       * @param popSize               number of individuals in the population
-       * @param chromosomeLength      the size of each individual
-       * @param descending            true if sorting in descending order (using fitness),
-       *                              false otherwise (using chi2)
+       * \param[in] popSize               number of individuals in the population
+       * \param[in] descending            true if sorting in descending order (using regular fitness),
+       *                                  false otherwise (using chi2)
        */
       MergeSorter(const int   popSize,
-                  const int   chromosomeLength,
                   const bool  descending)
-      : Sorter(descending)
-      {
-            tmpFitness  = vector(popSize);
-            tmpPop      = allocateMatrix(popSize, chromosomeLength);
-      }
+      : Sorter(descending), tmpPop_(popSize) {}
 
-      virtual void sort(      matrix *pop,
-                              vector *fitness,
-                        const int     popSize);
+      virtual void sort(std::vector<Individual*> *pop);
 
 };
 
@@ -144,8 +126,8 @@ class QuickSorter : public Sorter
 
 private:
 
-      //! Temporal storage for fitness
-      vector tmpFitness;
+      //! Temporal storage for an individual
+      Individual *tmpInd_;
 
       /*!
        * Split \p fitness into 2 parts, one left of the pivot element and one to the right of it, and sort both.
@@ -154,10 +136,9 @@ private:
        * @param low       the left-most point of the part of the population vector in this recursion
        * @param high      the right-most point of the part of the population vector in this recursion
        */
-      void quickSort(      matrix    *pop,
-                           vector    *fitness,
-                     const int        low,
-                     const int        high);
+      void quickSort(      std::vector<Individual*>  *pop,
+                     const int                        low,
+                     const int                        high);
 
       /*!
        * Find the pivot element and sort everything by comparing with it in an ascending order.
@@ -166,10 +147,9 @@ private:
        * @param low       the left-most point of the part of the population vector in this recursion
        * @param high      the right-most point of the part of the population vector in this recursion
        */
-      int ascendingPartition(      matrix     *pop,
-                                   vector     *fitness,
-                             const int         low,
-                             const int         high);
+      int ascendingPartition(      std::vector<Individual*>      *pop,
+                             const int                            low,
+                             const int                            high);
 
       /*!
        * Find the pivot element and sort everything by comparing with it in a descending order.
@@ -178,30 +158,21 @@ private:
        * @param low       the left-most point of the part of the population vector in this recursion
        * @param high      the right-most point of the part of the population vector in this recursion
        */
-      int descendingPartition(      matrix     *pop,
-                                    vector     *fitness,
-                              const int         low,
-                              const int         high);
+      int descendingPartition(      std::vector<Individual*>     *pop,
+                              const int                           low,
+                              const int                           high);
 
 public:
 
       /*!
        * Create a new QuickSorter
-       * @param popSize       amount of individuals in the population
-       * @param descending    true if sorting in descending order (using fitness),
-       *                      false otherwise (using chi2)
+       * \param[in] descending      true if sorting in descending order (using fitness),
+       *                            false otherwise (using chi2)
        */
-      QuickSorter(const int   popSize,
-                  const bool  descending)
-      : Sorter(descending)
-      {
-            tmpFitness = vector(popSize);
-      }
+      QuickSorter(const bool descending)
+      : Sorter(descending) {}
 
-
-      virtual void sort(      matrix *pop,
-                              vector *fitness,
-                        const int     popSize);
+      virtual void sort(std::vector<Individual*> *pop);
 
 };
 

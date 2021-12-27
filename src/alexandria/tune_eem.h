@@ -27,6 +27,7 @@
 #include "acmfitnesscomputer.h"
 #include "acminitializer.h"
 #include "mcmcmutator.h"
+#include "ga/GeneticAlgorithm.h"
 
 
 namespace alexandria
@@ -54,36 +55,43 @@ private:
     bool bRemoveMol_ = true;
     //! Flush output immediately rather than letting the OS buffer it. Don't use for production simulations.
     bool verbose_ = false;
-    /*! Generate completely random starting parameters within the limits set by the options.
-        This will be done at the very first step and before each subsequent run. */
-    bool randomInit_ = false;
     //! Pointer to log file
     gmx::unique_cptr<FILE, my_fclose> fplog_ = nullptr;
     //! File name for the output force field file
     std::string outputFile_;
     //! GROMACS communication data structure
     t_commrec *cr_ = nullptr;
+    //! GROMACS output environment
+    gmx_output_env_t *oenv_;
     //! MolGen instance
     MolGen mg_;
     //! BayesConfigHandler instance
     BayesConfigHandler bch_;
+    //! GAConfigHandler instance
+    GAConfigHandler gach_;
     //! SharedIndividualInfo instance
     SharedIndividualInfo sii_;
 
-    // Start TODO: Substitute this to a pointer to the genetic algorithm setting.
+    // This is for MASTER node
+    //! GeneticAlgorithm instance
+    ga::GeneticAlgorithm *ga_;
+    //! A pointer to a future best individual
+    ACMIndividual *bestInd_;
+
+    // This is for the HELPER node (and MASTER when sensitivity)
     //! Pointer to ACMFitnessComputer since it will be initialized later
     ACMFitnessComputer *fitComp_;
     //! Pointer to ACMInitializer since it will be initialized later
     ACMInitializer *initializer_;
+    //! Pointer to MCMCMutator instance
+    MCMCMutator *mutator_;
     //! Pointer to the Base class individual
     ga::Individual *baseInd_;
     //! Pointer to ACMIndividual which will be casted from \p baseInd_
     ACMIndividual *ind_;
-    //! Pointer to MCMCMutator
-    MCMCMutator *mutator_;
-    // End TODO:
 
 public:
+
     //! Constructor
     OptACM()
     : cr_(init_commrec()), mg_(cr_), sii_(cr_) {}
@@ -118,20 +126,16 @@ public:
 
     /*! \brief
      * Do the actual optimization.
-     * \param[in] oenv        Output environment for managing xvg files etc.
      * \param[in] xvgconv     Output file monitoring parameters
      * \param[in] xvgepot     Output file monitoring penalty function
      * \param[in] optimize    If true an optimization will be done
      * \param[in] sensitivity If true, a sensitivity analysis will be done
-     * \param[in] bEvaluate_testset Whether or not to evaluate the test set
      * \return true if better parameters were found.
      */
-    bool runMaster(const gmx_output_env_t *oenv,
-                   const char *xvgconv,
+    bool runMaster(const char *xvgconv,
                    const char *xvgepot,
                    bool optimize,
-                   bool sensitivity,
-                   bool bEvaluate_testset);
+                   bool sensitivity);
 
     /*! \brief
      * For the helper nodes.
@@ -151,7 +155,7 @@ public:
     //! \brief Initialize the ACMInitializer
     void initInitializer()
     {
-        initializer_ = new ACMInitializer(mg_.mindata(), &sii_, randomInit_, outputFile_);
+        initializer_ = new ACMInitializer(mg_.mindata(), &sii_, gach_.randomInit(), outputFile_);
     }
 
     //! \brief initialize the Individual \p baseInd_ and ACMIndividual \p ind_
@@ -167,6 +171,13 @@ public:
         mutator_ = new MCMCMutator(logFile(), verbose_, &bch_, fitComp_, &sii_, sii_.nParam());
     }
 
+    //! \brief Initialize the Genetic Algorithm
+    void initGA()
+    {
+        ga_ = new ga::GeneticAlgorithm(verbose_, bRemoveMol_, bFullQuadrupole_, cr_, &mg_,
+                                       logFile(), oenv_, &bch_, &sii_, &gach_, outputFile_);
+    }
+
     /* * * * * * * * * * * * * * * * * * * * * *
     * END: Initializing stuff                  *
     * * * * * * * * * * * * * * * * * * * * * */
@@ -174,9 +185,6 @@ public:
     /* * * * * * * * * * * * * * * * * * * * * *
     * BEGIN: Getters and setters               *
     * * * * * * * * * * * * * * * * * * * * * */
-
-    //! \return whether we initialize the FF parameters randomly or not
-    bool randomInit() const { return randomInit_; }
 
     //! \return whether or not we use the full quadrupol
     bool fullQuadrupole() const { return bFullQuadrupole_; }
@@ -193,6 +201,14 @@ public:
     //! \brief Get the communications record \p cr_ pointer
     t_commrec *commrec() { return cr_; }
 
+    /*! \brief Set the output environment pointer \p oenv_
+     * \param[in] oenv the reference pointer
+     */
+    void setOenv(gmx_output_env_t *oenv) { oenv_ = oenv; }
+
+    //! \brief Get the output environment \p oenv_ pointer
+    gmx_output_env_t *oenv() { return oenv_; }
+
     //! \brief Get the MolGen \p mg_ pointer
     MolGen *mg() { return &mg_; }
 
@@ -207,6 +223,12 @@ public:
 
     //! \brief Get the ACMIndividual \p ind_ pointer
     ACMIndividual *ind() { return ind_; }
+
+    //! \brief Get the GeneticAlgorithm \p ga_ pointer
+    ga::GeneticAlgorithm *ga() { return ga_; }
+
+    //! \brief Get the \p bestInd_ pointer
+    ACMIndividual *bestInd() { return bestInd_; }
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * END: Getters and setters                 *
