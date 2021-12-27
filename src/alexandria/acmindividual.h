@@ -34,7 +34,6 @@ private:
 
     //! ID of the individual
     int id_;
-    //! Directory name for the individual
     //! Pointer to shared individual information
     SharedIndividualInfo *sii_;
     //! Fitting targets for each dataset and eRMS
