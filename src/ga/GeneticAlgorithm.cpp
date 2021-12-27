@@ -55,7 +55,18 @@ void GeneticAlgorithm::fprintProbability() const
 {
     fprintf(logfile_, "Probability: [ ");
     for (Individual *ind : oldPop_) fprintf(logfile_, "%f ", ind->probability());
-    fprintf(logfile_, "]");
+    fprintf(logfile_, "]\n");
+}
+
+void GeneticAlgorithm::fprintFitness() const
+{
+    for (int i = 0; i < oldPop_.size() - 1; i++)
+    {
+        fprintf(fileFitnessTrain_, "%lf ", oldPop_[i]->fitnessTrain());
+        fprintf(fileFitnessTest_, "%lf ", oldPop_[i]->fitnessTest());
+    }
+    fprintf(fileFitnessTrain_, "%lf\n", oldPop_[oldPop_.size()-1]->fitnessTrain());
+    fprintf(fileFitnessTest_, "%lf\n", oldPop_[oldPop_.size()-1]->fitnessTest());
 }
 
 void GeneticAlgorithm::evolveMCMC()
@@ -109,6 +120,12 @@ void GeneticAlgorithm::evolveGA()
     
     fprintf(logfile_, "\nStarting GA/HYBRID evolution\n");
 
+    // Open surveillance files for fitness
+    fileFitnessTrain_ = fopen(filenameFitnessTrain_, "w");
+    fileFitnessTest_  = fopen(filenameFitnessTest_, "w");
+    GMX_RELEASE_ASSERT(fileFitnessTrain_ != NULL && fileFitnessTest_ != NULL,
+                       "GeneticAlgorithm: error opening the fitness output files.");
+
     // Random number generation
     std::random_device rd;  // Will be used to obtain a seed for the random number engine
     std::mt19937 gen(rd()); // Standard mersenne_twister_engine seeded with rd()
@@ -132,6 +149,7 @@ void GeneticAlgorithm::evolveGA()
         initializer_->initialize(&(oldPop_[i]));
         fitComputer_->compute(oldPop_[i], Target::Train);
     }
+    fprintFitness();
 
     // FIXME: THIS IS NOT GENERAL. Open files of each individual
     for (Individual *ind : oldPop)
@@ -231,6 +249,7 @@ void GeneticAlgorithm::evolveGA()
         {
             fitComputer_->compute(oldPop_[i], Target::Train);
         }
+        fprintFitness();
 
         fprintPop();
         fprintBestIndInPop();
@@ -250,11 +269,15 @@ void GeneticAlgorithm::evolveGA()
 
     } while (!terminator_->terminate(oldPop_, generation));
 
-    fprintf(logfile_, "\nGA/HYBRID Evolution is done!\n");
-    fprintBestInd();
-
     // FIXME: THIS IS NOT GENERAL. Close files of each individual
     for (Individual *ind : oldPop_) static_cast<ACMIndividual*>(ind)->closeConvFiles();
+
+    // Close surveillance files for fitness
+    fclose(fileFitnessTrain_); fileFitnessTrain_ = NULL;
+    fclose(fileFitnessTest_); fileFitnessTest_ = NULL;
+
+    fprintf(logfile_, "\nGA/HYBRID Evolution is done!\n");
+    fprintBestInd();
 
 }
 

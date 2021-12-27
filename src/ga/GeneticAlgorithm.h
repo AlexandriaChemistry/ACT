@@ -43,6 +43,14 @@ private:
 
     //! Logfile for logging info
     FILE *logfile_;
+    //! Name for fitness train output file
+    const char *const filenameFitnessTrain_ = "ga_fitness_train.txt";
+    //! File for fitness train output
+    FILE *fileFitnessTrain_ = NULL;
+    //! Name for fitness test output file
+    const char *const filenameFitnessTest_ = "ga_fitness_test.txt";
+    //! File for fitness test output
+    FILE *fileFitnessTest_ = NULL;
 
     //! Output environment (GROMACS)
     gmx_output_env_t *oenv_;
@@ -98,6 +106,9 @@ private:
 
     //! Print the probability of each individual
     void fprintProbability() const;
+
+    //! Print the fitness of the population to the output files \p fileFitnessTrain_ and \p fileFitnessTest_
+    void fprintFitness() const;
 
 public:
 
