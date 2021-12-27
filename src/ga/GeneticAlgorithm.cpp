@@ -263,6 +263,7 @@ void GeneticAlgorithm::evolveGA()
             bestInd_->fprintSelf(logfile_);
             fprintf(logfile_, "New best:\n");
             bestInd_ = tmpBest->clone();
+            bestInd_->fprintSelf(logfile_);
         }
 
         fprintf(logfile_, "Checking termination conditions...\n");

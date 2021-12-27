@@ -265,8 +265,8 @@ bool OptACM::runMaster(const char             *xvgconv,
         {
             GMX_THROW(gmx::InternalError("Minimum found but not best parameters"));
         }
-        // Restore best parameter set
-        bestInd_->setParam(best);
+        // If MCMC was chosen as optimizer, restore best parameter set
+        if (strcmp(gach_.optimizer(), "MCMC") == 0) bestInd_->setParam(best);
         // Copy it to Poldata
         std::vector<bool> changed;
         changed.resize(best.size(), true);
