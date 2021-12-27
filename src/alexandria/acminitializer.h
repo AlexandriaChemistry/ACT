@@ -39,7 +39,7 @@ private:
     std::uniform_real_distribution<double>  dis;
     //! Amount of initialized individuals
     int nCreated_ = 0;
-    //! Base name
+    //! Base name plus the inividual part
     std::string outputFile_;
 
 public: 
