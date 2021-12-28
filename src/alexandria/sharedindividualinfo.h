@@ -22,6 +22,9 @@ namespace alexandria
 {
 
 
+/*!
+ * \brief Contains all information that is shared among ACMIndividual objects and other classes that manage them
+ */
 class SharedIndividualInfo
 {
 
@@ -58,7 +61,7 @@ private:
     //! Base name for Force field output file
     std::string outputFile_;
 
-    //! \brief Fills the \p targets_ map
+    //! \brief Fills the fitting targets data structure
     void fillFittingTargets();
 
 public:
@@ -78,9 +81,9 @@ public:
     * * * * * * * * * * * * * * * * * * * * * */
 
     /*!
-     * \brief Fill the Poldata attribute from a file
+     * \brief Fill the Poldata attribute by reading from a file
      * \param[in] fp        File pointer for printing information
-     * \param[in] pd_fn     name of the gentop file
+     * \param[in] pd_fn     name of the gentop (Force Field) file
      */
     void fillPoldata(      FILE *fp,
                      const char *pd_fn);
@@ -93,15 +96,16 @@ public:
     * BEGIN: FittingTarget stuff               *
     * * * * * * * * * * * * * * * * * * * * * */
 
-    //! \brief Propage weights from training set to other sets
+    //! \brief In the  fitting targets structure, propagate the \f$ \chi^2 \f$ component weights from training set to other sets
     void propagateWeightFittingTargets();
 
     // FIXME: How can we avoid having to decleare the query functions both in SharedIndividualInfo
     // and in Individual, we put them around the FittingTarget class?
 
-    /*! \brief Return the fitting targets for editing
-     * \param[in] ims The selection to return
-     * \return The map of fittingtargets or nullptr
+    /*!
+     * \brief Return the fitting targets for editing for a given dataset
+     * \param[in] ims The selection dataset to return
+     * \return The map of eRMS to FittingTarget, or nullptr
      */
     std::map<eRMS, FittingTarget> *fittingTargets(iMolSelect ims)
     {
@@ -116,9 +120,10 @@ public:
         }
     }
 
-    /*! \brief Return the fitting targets as constant
-     * \param[in] ims The selection to return
-     * \return The map of fittingtargets or nullptr
+    /*!
+     * \brief Return the fitting targets for a given dataset as constant
+     * \param[in] ims The selection dataset to return
+     * \return The map of eRMS to FittingTarget or nullptr
      */
     const std::map<eRMS, FittingTarget> &fittingTargetsConst(iMolSelect ims) const
     {
@@ -127,10 +132,11 @@ public:
         return tt->second;
     }
 
-    /*! \brief return appropriate fitting target
-     * \param[in] ims The selection
-     * \param[in] rms The contributor to the chi squared
-     * \return FittingTarget class or nullptr if not found
+    /*!
+     * \brief get a pointer to a FittingTarget given a dataset choice and \f$ \chi^2 \f$ component
+     * \param[in] ims The selection dataset
+     * \param[in] rms The \f$ \chi^2 \f$ component
+     * \return FittingTarget pointer or nullptr if not found
      */
     FittingTarget *target(iMolSelect ims, eRMS rms)
     {
@@ -156,7 +162,7 @@ public:
     * * * * * * * * * * * * * * * * * * * * * */
 
     /*!
-     * Compute weighted temperature for each parameter
+     * \brief Compute weighted temperature for each parameter (for MCMC optimization)
      * If weighting is not required, it will just be a vector of 1s
      * @param tempWeight    whether weighting is required
      */
@@ -170,7 +176,8 @@ public:
     * BEGIN: OptimizationIndex stuff           *
     * * * * * * * * * * * * * * * * * * * * * */
 
-    /*! \brief Generate \p optIndex_
+    /*!
+     * \brief Generate the vector of OptimizationIndex instances
      * \param[in] fp File to print logging information to. May be nullptr.
      * \param[in] mg MolGen pointer
      */
@@ -185,8 +192,11 @@ public:
     * BEGIN: Vector stuff                      *
     * * * * * * * * * * * * * * * * * * * * * */
 
-    /*! Fills \p ntrain_ \p lowerBound_ \p upperBound_ \p mutability_ and \p paramNames_
-     * @param mindata   mininum number of datapoints to consider a parameter
+    /*!
+     * \brief Fills some vector structures for parameter information.
+     * Per parameter, we have: required amount of training steps, lower bound, upper bound, Mutability, and name<br>
+     * Dev: Fills \p ntrain_ \p lowerBound_ \p upperBound_ \p mutability_ and \p paramNames_
+     * \param[in] mindata mininum number of existing datapoints to consider a parameter for optimization
      */
     void fillVectors(const int mindata);
 
@@ -198,9 +208,7 @@ public:
     * BEGIN: ParamClassIndex stuff             *
     * * * * * * * * * * * * * * * * * * * * * */
 
-    /*!
-     * Assign a class (by index) to each parameter
-     */
+    //! \brief Assign a class index to each parameter
     void assignParamClassIndex();
 
     /* * * * * * * * * * * * * * * * * * * * * *
@@ -211,7 +219,8 @@ public:
     * BEGIN: File stuff                        *
     * * * * * * * * * * * * * * * * * * * * * */
 
-    /*! \brief Set the output file names.
+    /*!
+    * \brief Set the output file names.
     *
     * The parameter values are split over
     * a number of files in order to make it easier to visualize the
@@ -220,7 +229,7 @@ public:
     *
     * \param[in] xvgconv    The parameter convergence base name
     * \param[in] paramClass The parameter classes (e.g. zeta, alpha)
-    * \param[in] xvgepot    The base filename to print the chi2 value
+    * \param[in] xvgepot    The base filename to print the \f$ \chi^2 \f$ value
     */
     void setOutputFiles(const char                     *xvgconv,
                         const std::vector<std::string> &paramClass,
@@ -234,69 +243,61 @@ public:
     * BEGIN: Getters and setters               *
     * * * * * * * * * * * * * * * * * * * * * */
 
-    //! \brief Get a constant \p optIndex_ reference
+    //! \return the vector of OptimizationIndex instances as a const reference
     const std::vector<OptimizationIndex> &optIndex() const { return optIndex_; }
 
-    //! \brief Get a pointer to \p optIndex_
+    //! \return a pointer to the vector of OptimizationIndex instances
     std::vector<OptimizationIndex> *optIndexPtr() { return &optIndex_; }
     
-    //! \brief Get a constant \p paramNames_ reference
+    //! \return the vector of parameter names as a const reference
     const std::vector<std::string> &paramNames() const { return paramNames_; }
 
-    //! \brief Return the number of parameters
+    //! \return the number of parameters to optimize
     size_t nParam() const { return paramNames_.size(); }
 
-    //! \brief Get a constant \p paramClass_ reference
+    //! \return the vector of existing parameter classes as const reference
     const std::vector<std::string> &paramClass() const { return paramClass_; }
 
-    //! \brief Get a constant \p paramClassIndex_ reference
+    //! \return a vector which links parameters to a class via the class index
     const std::vector<size_t> &paramClassIndex() const { return paramClassIndex_; }
 
-    /*! \brief
-     * Returns the current vector of lower bounds
-     * @return the current vector of lower bounds
-     */
+    //! \return the vector of lower bounds as a const reference
     const std::vector<double> &lowerBound() const { return lowerBound_; }
 
-    /*! \brief
-     * Returns the current vector of upper bounds
-     * @return the current vector of upper bounds
-     */
+    //! \return the vector of upper bounds as a const reference
     const std::vector<double> &upperBound() const { return upperBound_; }
 
-    /*! \brief
-     * Returns the number of training points per parameter
-     */
+    //! \return the vector of training steps as a const reference
     const std::vector<int> &nTrain() const { return ntrain_; }
 
-    //! \brief Get a constant \p mutability_ reference
+    //! \return the vector of Mutability instances as a const reference
     const std::vector<Mutability> &mutability() const { return mutability_; }
 
-    //! \brief Return xvg file for convergence information
+    //! \return the base name for parameter convergence files as a const reference
     const std::string &xvgConv() const { return xvgconv_; }
 
-    //! \brief Return xvg file for epot information
+    //! \return the base name for the \f$ \chi_2 \f$ convergence file as a const reference
     const std::string &xvgEpot() const { return xvgepot_; }
 
-    //! \brief Get a constant \p outputFile_ reference
+    //! \return the base name for Force Field output files as a const reference
     const std::string &outputFile() const { return outputFile_; }
 
-    //! \brief Get a constant \p weightedTemperature_ reference
+    //! \return the vector of weighted temperatures as a const reference
     const std::vector<double> &weightedTemperature() const { return weightedTemperature_; }
 
-    //! \brief Get a constant \p targets_ reference
+    //! \return the fitting targets data structure as a const reference
     const std::map<iMolSelect, std::map<eRMS, FittingTarget>> &targets() const { return targets_; }
 
-    //! \return pointer to \p targets_
+    //! \return a pointer to the fitting targets data structure
     std::map<iMolSelect, std::map<eRMS, FittingTarget>> *targetsPtr() { return &targets_; }
     
-    //! \brief Return the poldata as pointer to const variable
+    //! \return a pointer to the const Poldata structure (for const objects)
     const Poldata *poldata() const { return &pd_; }
 
-    //! \brief Return the poldata as const reference
+    //! \return the Poldata structure as a const reference
     const Poldata &poldataConst() const { return pd_; }
     
-    //! \brief Return pointer to the poldata
+    //! \return a pointer to the Poldata structure
     Poldata *poldata() { return &pd_; }
 
     /* * * * * * * * * * * * * * * * * * * * * *
