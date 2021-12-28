@@ -1,3 +1,9 @@
+/*! \internal \brief
+ * Implements part of the alexandria program.
+ * \author Julian Ramon Marrades Furquet <julian.marrades@hotmail.es>
+ */
+
+
 #ifndef ALEXANDRIA_NPOINTCROSSOVER_H
 #define ALEXANDRIA_NPOINTCROSSOVER_H
 
@@ -9,6 +15,11 @@ namespace alexandria
 {
 
 
+/*!
+ * \brief Performs N-Point Crossover operation
+ * See <a href="https://en.wikipedia.org/wiki/Crossover_(genetic_algorithm)#One-point_crossover">this</a> for details.
+ *
+ */
 class NPointCrossover : public ga::Crossover
 {
 

@@ -2,7 +2,7 @@
  * Implements part of the alexandria program.
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
- * \author Julian Ramon Marrades Furquet <julianramon.marradesfurquet.8049@student.uu.se>
+ * \author Julian Ramon Marrades Furquet <julian.marrades@hotmail.es>
  * \author Oskar Tegby <oskar.tegby@it.uu.se>
  */
 
@@ -27,6 +27,10 @@ namespace alexandria
 {
 
 
+/*!
+ * \brief An individual for the Alexandria Charge Model (ACM)
+ * It has its own force field parameters and handles its output files.
+ */
 class ACMIndividual : public ga::Individual
 {
 
@@ -75,6 +79,12 @@ public:
       acceptedMoves_(other.acceptedMoves()), fpc_(other.fpc()), fpe_(other.fpeConst()),
       outputFile_(other.outputFile()) {}
 
+    /*!
+     * \brief Property constructor
+     * \param[in] id            the ID of the individual
+     * \param[in] sii           pointer to SharedIndividualInfo instance
+     * \param[in] outputFile    the base name for Force Field output files
+     */
     ACMIndividual(const int                     id,
                         SharedIndividualInfo   *sii,
                   const std::string            &outputFile)
@@ -118,6 +128,10 @@ public:
     * BEGIN: Adding parameters                 *
     * * * * * * * * * * * * * * * * * * * * * */
 
+    /*!
+     * \brief Add a force field parameter
+     * \param[in] val the value of the parameter
+     */
     void addParam(const real val) { initialParam_.push_back(val); param_.push_back(val); }
 
     /* * * * * * * * * * * * * * * * * * * * * *
@@ -138,20 +152,20 @@ public:
     void printHeader(FILE *fp);
 
     /*!
-     * Open parameter convergence surveillance files
+     * \brief Open parameter convergence files
+     * \param[in] oenv the GROMACS output environment
      */
     void openParamConvFiles(const gmx_output_env_t *oenv);
 
     /*!
-     * Open a chi2 surveillance file
-     * @param bEvaluate_testset     whether the test set will be evaluated
+     * \brief Open a \f$ \chi^2 \f$ convergence file
+     * \param[in] oenv              the GROMACS output environment
+     * \param[in] bEvaluate_testset whether the test set will be evaluated in MCMC
      */
     void openChi2ConvFile(const gmx_output_env_t    *oenv,
                           const bool                 bEvaluate_testset);
     
-    /*!
-     * Close chi2 and parameter convergence files
-     */
+    //! Close \f$ \chi^2 \f$ and parameter convergence files
     void closeConvFiles();
 
     /* * * * * * * * * * * * * * * * * * * * * *
@@ -162,8 +176,9 @@ public:
     * BEGIN: Chi2 stuff                        *
     * * * * * * * * * * * * * * * * * * * * * */
 
-    /*! \brief Set the chiSquared to zero.
-     * \param[in] ims The selection to reset
+    /*!
+     * \brief Set the \f$ \chi^2 \f$ to 0 for a given data set.
+     * \param[in] ims The data set to reset
      */
     void resetChiSquared(iMolSelect ims)
     {
@@ -177,18 +192,20 @@ public:
         }
     }
 
-    /*! \brief 
+    /*!
+     * \brief Add up the \f$ \chi^2 \f$ components
      * Sum over the energies of the cores if desired.
      * Also multiplies the terms by the weighting factors.
      * \param[in] cr        Pointer to communication record
      * \param[in] parallel  Whether or not to sum in parallel
-     * \param[in] ims       The selection to sum
+     * \param[in] ims       The selection dataset to sum
      */
     void sumChiSquared(t_commrec *cr, bool parallel, iMolSelect ims);
 
-    /*! \brief Print the chiSquared components.
+    /*!
+     * \brief Print the \f$ \chi^2 \f$ components.
      * \param[in] fp  File pointer to print to, may be nullptr
-     * \param[in] ims The selection to print
+     * \param[in] ims The selection dataset to print
      */  
     void printChiSquared(t_commrec *cr, FILE *fp, iMolSelect ims) const;
 
@@ -200,11 +217,11 @@ public:
     * BEGIN: Output stuff                      *
     * * * * * * * * * * * * * * * * * * * * * */
 
-    //! \brief Save the current state of the Force field
+    //! \brief Save the current state of the Force Field to the output file
     void saveState();
 
-    /*! \brief
-     * Print the parameters to a file
+    /*!
+     * \brief Print the Force Field parameters to a file
      * \param[in] fp File pointer to open file
      */
     void printParameters(FILE *fp) const;
@@ -217,8 +234,8 @@ public:
     * BEGIN: Poldata stuff                     *
     * * * * * * * * * * * * * * * * * * * * * */
 
-    /*! \brief
-     * Copy the optimization parameters to the poldata structure
+    /*!
+     * \brief Copy the Force Field parameters to the Poldata structure
      * \param[in] changed List over the parameters that have changed.
      */
     void toPoldata(const std::vector<bool> &changed);
@@ -231,9 +248,10 @@ public:
     * BEGIN: FittingTarget queries             *
     * * * * * * * * * * * * * * * * * * * * * */
 
-    /*! \brief Return the fitting targets for editing
-     * \param[in] ims The selection to return
-     * \return The map of fittingtargets or nullptr
+    /*!
+     * \brief Return the fitting targets for editing for a given dataset
+     * \param[in] ims The selection dataset to return
+     * \return The map of eRMS to FittingTarget, or nullptr
      */
     std::map<eRMS, FittingTarget> *fittingTargets(iMolSelect ims)
     {
@@ -248,9 +266,10 @@ public:
         }
     }
 
-    /*! \brief Return the fitting targets as constant
-     * \param[in] ims The selection to return
-     * \return The map of fittingtargets or nullptr
+    /*!
+     * \brief Return the fitting targets for a given dataset as constant
+     * \param[in] ims The selection dataset to return
+     * \return The map of eRMS to FittingTarget or nullptr
      */
     const std::map<eRMS, FittingTarget> &fittingTargetsConst(iMolSelect ims) const
     {
@@ -259,10 +278,11 @@ public:
         return tt->second;
     }
 
-    /*! \brief return appropriate fitting target
-     * \param[in] ims The selection
-     * \param[in] rms The contributor to the chi squared
-     * \return FittingTarget class or nullptr if not found
+    /*!
+     * \brief get a pointer to a FittingTarget given a dataset choice and \f$ \chi^2 \f$ component
+     * \param[in] ims The selection dataset
+     * \param[in] rms The \f$ \chi^2 \f$ component
+     * \return FittingTarget pointer or nullptr if not found
      */
     FittingTarget *target(iMolSelect ims, eRMS rms)
     {
@@ -287,16 +307,14 @@ public:
     * BEGIN: Getters and Setters               *
     * * * * * * * * * * * * * * * * * * * * * */
 
-    /*!
-     * Get the ID of the individual
-     * @returns the id
-     */
+    //! \return the ID
     int id() const { return id_; }
 
     /*!
-     * \brief Set a new value for \p id_
-     * Also adjust \p outputFile
-     * CAREFUL! This does not change convergence files! You will have to call the open file routines again to fix it!
+     * \brief Set a new value for the ID
+     * Also adjusts the Force Field output file.<br>
+     * CAREFUL! This does not change convergence files! You will have to call the open file routines again to fix it!<br>
+     * That is, ACMIndividual::openParamConvFiles() and ACMIndividual::openChi2ConvFile()
      * \param[in] id the new ID
      */
     void setId(const int id)
@@ -313,24 +331,25 @@ public:
     //! \return a pointer to the SharedIndividualInfo instance (for const objects)
     SharedIndividualInfo *siiConst() const { return sii_; }
 
-    //! \brief Get a constant \p targets_ reference
+    //! \return a constant reference of the fitting targets
     const std::map<iMolSelect, std::map<eRMS, FittingTarget>> &targets() const { return targets_; }
 
-    //! \brief Return the poldata as pointe to const variable
+    //! \return the Poldata structure as pointr to a const variable
     const Poldata *poldata() const { return &pd_; }
 
-    //! \brief Return the poldata as const reference
+    //! \return the Poldata structure as const reference
     const Poldata &poldataConst() const { return pd_; }
     
-    //! \brief Return pointer to the poldata
+    //! \return pointer to the Poldata structure
     Poldata *poldata() { return &pd_; }
 
-    //! \brief Return the number of parameters
+    //! \return the number of Force Field parameters
     size_t nParam() const { return param_.size(); }
 
-    /*! \brief Set parameter j to a new value
-     * \param[j]   Index
-     * \param[val] The new value
+    /*!
+     * \brief Set parameter at a given index to a new value
+     * \param[in] j   the index
+     * \param[in] val the new value
      */
     void setParam(const size_t j, const real val)
     {
@@ -339,13 +358,16 @@ public:
     }
 
     /*!
-     * Get the value of a parameter by index
+     * \brief Get the value of a parameter by index
      * \param[in] j the index
      * \return the value of the parameter at index \p j
      */
     double paramAtIndex(const size_t j) const { return param_[j]; }
 
-    //! \brief Set all parameters to the array passed
+    /*!
+     * \brief Set all parameters to new values
+     * \param[in] param the new values
+     */
     void setParam(std::vector<double> param)
     {
         GMX_RELEASE_ASSERT(param.size() == param_.size() || param_.empty(),
@@ -353,64 +375,58 @@ public:
         param_ = param;
     }
 
-    //! \brief Returns the current vector of parameters.
+    //! \return the initial vector of parameters as a const reference
     const std::vector<double> &initialParam() const { return initialParam_; }
 
-    //! \brief Returns the current vector of parameters.
+    //! \return the current vector of parameters as a const reference
     const std::vector<double> &param() const { return param_; }
 
-    //! \return pointer to \p param_
+    //! \return a pointer to the current vector of parameters
     std::vector<double> *paramPtr() { return &param_; }
 
-    //! \brief Returns the vector of best found value for each parameter.
+    //! \return the vector of best parameters as a const reference
     const std::vector<double> &bestParam() const { return bestParam_; }
 
     /*!
-     * Set a new best parameter vector
+     * \brief Set a new best parameter vector
      * \param[in] param the new best parameter vector
      */
     void setBestParam(const std::vector<double> &param) { bestParam_ = param; }
 
-    /*! \brief
-     * Returns the vector of mean value calculated for each parameter.
-     */
+    //! \return the vector of mean value calculated for each parameter as const reference
     const std::vector<double> &pMean() const { return pmean_; }
 
-    //! \return a pointer to \p pmean_
+    //! \return a pointer to the vector of mean value calculated for each parameter
     std::vector<double> *pMeanPtr() { return &pmean_; }
 
-    /*! \brief
-     * Returns the vector of standard deviation calculated for each parameter.
-     */
+    //! the vector of standard deviation calculated for each parameter as const reference
     const std::vector<double> &pSigma() const { return psigma_; }
 
-    //! \return a pointer to \p psigma_
+    //! \return a pointer to vector of standard deviation calculated for each parameter
     std::vector<double> *pSigmaPtr() { return &psigma_; }
 
-    //! \brief Return the vector of number of attempted moves for each parameter
+    //! \return the vector of number of attempted moves for each parameter as const reference
     const std::vector<int> &attemptedMoves() const { return attemptedMoves_; }
 
-    //! \return a pointer to \p attemptedMoves_
+    //! \return a pointer to the vector of number of attempted moves for each parameter
     std::vector<int> *attemptedMovesPtr() { return &attemptedMoves_; }
 
-    /*! \brief
-     * Return the vector of number of accepted moves for each parameter
-     */
+    //! \return the vector of number of accepted moves for each parameter as const reference
     const std::vector<int> &acceptedMoves() const { return acceptedMoves_; }
 
-    //! \return a pointer to \p acceptedMoves_
+    //! \return a pointer to the vector of number of accepted moves for each parameter
     std::vector<int> *acceptedMovesPtr() { return &acceptedMoves_; }
 
-    //! \return a constant \p fpc_ reference
+    //! \return the vector of force field parameter convergence files as const reference
     const std::vector<FILE*> &fpc() const { return fpc_; }
 
-    //! \return a \p fpe_ file for Chi2
+    //! \return a pointer to the \f$ \chi^2 \f$ convergence file
     FILE *fpe() { return fpe_; }
 
-    //! \return a \p fpe_ file for Chi2 (for constant objects)
+    //! \return a pointer to the \f$ \chi^2 \f$ convergence file (for const objects)
     FILE *fpeConst() const { return fpe_; }
 
-    //! \return a constant reference to \p outputFile_
+    //! \return the name of the Force Field output file as const reference
     const std::string &outputFile() const { return outputFile_; }
 
     /* * * * * * * * * * * * * * * * * * * * * *

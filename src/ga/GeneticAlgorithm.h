@@ -1,3 +1,10 @@
+/*! \internal \brief
+ * Implements part of the alexandria program.
+ * \author Julian Ramon Marrades Furquet <julian.marrades@hotmail.es>
+ * \author Oskar Tegby <oskar.tegby@it.uu.se>
+ */
+
+
 #ifndef GA_GENETICALGORITHM_H
 #define GA_GENETICALGORITHM_H
 
@@ -27,7 +34,7 @@ namespace ga
 
 
 /*!
- * Class which encapsulates a genetic algorithm
+ * \brief Class which encapsulates a genetic algorithm
  */
 class GeneticAlgorithm
 {
@@ -86,37 +93,37 @@ private:
     // FIXME: Something could be done about generalizing the evolution. We could make all Individuals
     // have their own parameter and fitness convergence files. IDK if this makes sense...
 
-    //! Pure MCMC evaluation
+    //! \brief Pure MCMC evaluation
     void evolveMCMC();
 
-    //! Regular GA evolution (could be HYBRID too)
+    //! \brief Regular GA evolution (could be HYBRID too)
     void evolveGA();
 
-    //! Print population to log file
+    //! \brief Print population to log file
     void fprintPop() const;
 
-    //! Print best individual to log file
+    //! \brief Print best individual to log file
     void fprintBestInd() const;
 
-    //! Print best individual (in current population) to log file
+    //! \brief Print best individual (in current population) to log file
     void fprintBestIndInPop() const;
 
     //! \return the index of the Individual with the best fitness. FIXME: make this general. Now, the lower the fitness the better
     int findBestIndex() const;
 
-    //! Print the probability of each individual
+    //! \brief Print the probability of each individual
     void fprintProbability() const;
 
-    //! Print the fitness of the population to the output files \p fileFitnessTrain_ and \p fileFitnessTest_
+    //! \brief Print the fitness of the population to the output files \p fileFitnessTrain_ and \p fileFitnessTest_
     void fprintFitness() const;
 
 public:
 
-    //! Default constructor
+    //! \brief Default constructor
     GeneticAlgorithm() {}
 
     /*!
-     * Constructor for ACT
+     * \brief Constructor for self-building
      */
     GeneticAlgorithm(const  bool                                 verbose,
                      const  bool                                 removeMol,

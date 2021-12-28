@@ -1,7 +1,6 @@
 /*! \internal \brief
  * Implements part of the alexandria program.
- * \author Julian Ramon Marrades Furquet <julianramon.marradesfurquet.8049@student.uu.se>
- * \author Oskar Tegby <oskar.tegby@it.uu.se>
+ * \author Julian Ramon Marrades Furquet <julian.marrades@hotmail.es>
  */
 
 
@@ -16,7 +15,7 @@ namespace ga
 {
 
 
-//! Abstract individual for genetic algorithms!
+//! \brief Abstract individual for genetic algorithms
 class Individual
 {
 
@@ -29,11 +28,11 @@ protected:
     //! Probability of selection
     double probability_ = 0.0;
 
-    //! Default constructor FIXME: maybe we have to make it public
+    //! \brief Default constructor
     Individual() {}
 
     /*!
-     * Property constructor
+     * \brief Property constructor
      * \param[in] fitnessTrain  the fitness for training set
      * \param[in] fitnessTest   the fitness for test set
      * \param[in] probability   the probability of selection
@@ -50,7 +49,7 @@ public:
     * * * * * * * * * * * * * * * * * * * * * */
 
     /*!
-     * Print information about the individual to file
+     * \brief Print information about this Individual to file
      * \param[in] fp file pointer
      */
     virtual void fprintSelf(FILE *fp) = 0;
@@ -63,12 +62,12 @@ public:
     * BEGIN: Cloning                           *
     * * * * * * * * * * * * * * * * * * * * * */
 
-    //! Return a copy of this individual
+    //! \return a copy of this Individual
     virtual Individual *clone() = 0;
 
     /*!
-     * Copy the genome from another individual
-     * \param[in] other pointer to another individual
+     * \brief Copy the genome from another Individual
+     * \param[in] other pointer to another Individual
      */
     virtual void copyGenome(Individual *other) = 0;
 
@@ -80,57 +79,39 @@ public:
     * BEGIN: Getters and Setters               *
     * * * * * * * * * * * * * * * * * * * * * */
 
-    /*!
-     * Get the fitness of the individual in training set
-     * @returns the fitness
-     */
+    //! \return the fitness in training set
     double fitnessTrain() const { return fitnessTrain_; }
 
-    /*!
-     * Get a pointer to \p fitnessTrain_
-     * @returns the pointer
-     */
+    //! \return a pointer to the fitness in training set
     double *fitnessTrainPtr() { return &fitnessTrain_; }
 
     /*!
-     * Set the fitness of the individual in training set
-     * @param fitnessTrain the fitness
+     * \brief Set the fitness in training set
+     * \param[in] fitnessTrain the fitness
      */
     void setFitnessTrain(const double fitnessTrain) { fitnessTrain_ = fitnessTrain; }
 
-    /*!
-     * Get the fitness of the individual in test set
-     * @returns the fitness
-     */
+    //! \return the fitness in test set
     double fitnessTest() const { return fitnessTest_; }
 
-    /*!
-     * Get a pointer to \p fitnessTest_
-     * @returns the pointer
-     */
+    //! \return a pointer to the fitness in test set
     double *fitnessTestPtr() { return &fitnessTest_; }
 
     /*!
-     * Set the fitness of the individual in test set
-     * @param fitnessTest the fitness
+     * \brief Set the fitness in test set
+     * \param[in] fitnessTest the fitness
      */
     void setFitnessTest(const double fitnessTest) { fitnessTest_ = fitnessTest; }
 
-    /*!
-     * Get the selection probability of the individual
-     * @returns the selection probability
-     */
+    //! \return the selection probability
     double probability() const { return probability_; }
 
-    /*!
-     * Get a pointer to \p probability_
-     * @returns the pointer
-     */
+    //! \return a pointer to the selection probability
     double *probabilityPtr() { return &probability_; }
 
     /*!
-     * Set the selection probability
-     * @param probability the selection probability
+     * \brief Set the selection probability
+     * \param[in] probability the selection probability
      */
     void setProbability(const double probability) { probability_ = probability; }
 

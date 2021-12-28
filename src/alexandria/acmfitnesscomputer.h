@@ -2,7 +2,7 @@
  * Implements part of the alexandria program.
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
- * \author Julian Ramon Marrades Furquet <julianramon.marradesfurquet.8049@student.uu.se>
+ * \author Julian Ramon Marrades Furquet <julian.marrades@hotmail.es>
  * \author Oskar Tegby <oskar.tegby@it.uu.se>
  */
 
@@ -23,6 +23,9 @@ namespace alexandria
 {
 
 
+/*!
+ * \brief Computes \f$ \chi^2 \f$ of an individual as its fitness
+ */
 class ACMFitnessComputer : public ga::FitnessComputer
 {
 
@@ -88,9 +91,9 @@ public:
 
     /*! \brief Computes deviation from target
      * \param[in] ind           pointer to individual
-     * \param[in] verbose       Whether or not to print a lot (for when this gets called from outside the compute() routine)
+     * \param[in] verbose       Whether or not to print a lot
      * \param[in] calcDev       The type of calculation to do
-     * \param[in] ims           The data set to do computations on
+     * \param[in] ims           The dataset to do computations on
      * \return the square deviation
      */
     double calcDeviation(      ACMIndividual   *ind,

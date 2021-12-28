@@ -1,3 +1,9 @@
+/*! \internal \brief
+ * Implements part of the alexandria program.
+ * \author Julian Ramon Marrades Furquet <julian.marrades@hotmail.es>
+ */
+
+
 #ifndef GA_SELECTOR_H
 #define GA_SELECTOR_H
 

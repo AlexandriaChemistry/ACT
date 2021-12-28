@@ -1,3 +1,10 @@
+/*! \internal \brief
+ * Implements part of the alexandria program.
+ * \author Julian Ramon Marrades Furquet <julian.marrades@hotmail.es>
+ * \author Oskar Tegby <oskar.tegby@it.uu.se>
+ */
+
+
 #ifndef GA_SORTER_H
 #define GA_SORTER_H
 
