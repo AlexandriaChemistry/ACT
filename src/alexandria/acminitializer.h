@@ -21,7 +21,9 @@
 namespace alexandria
 {
 
-
+/*!
+ * \brief Initializes Individual instances as ACMIndividual objects
+ */
 class ACMInitializer : public ga::Initializer
 {
 
@@ -44,6 +46,13 @@ private:
 
 public: 
 
+    /*!
+     * \brief Property constructor
+     * \param[in] mindata       minimum amount of datapoints required to consider a parameter for optimization
+     * \param[in] sii           pointer to SharedIndividualInfo instance
+     * \param[in] randInit      whether we initialize the force field parameters randomly
+     * \param[in] outputFile    base name for Force Field output files
+     */
     ACMInitializer(const int                     mindata,
                          SharedIndividualInfo   *sii,
                    const bool                    randInit,
@@ -59,11 +68,7 @@ public:
         outputFile_ = outputFile;
     }
 
-    /*!
-     * Initialize an individual
-     * @param individual pointer to pointer to the individual to initialize
-     */
-    virtual void initialize(ga::Individual **individual);
+    virtual void initialize(ga::Individual **ind);
 
 };
 

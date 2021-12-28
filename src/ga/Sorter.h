@@ -21,7 +21,7 @@ namespace ga
 
 
 /*!
- * Abstract class for sorting the population based on fitness
+ * \brief Abstract class for sorting the population based on the fitness of each Individual
  */
 class Sorter
 {
@@ -31,12 +31,12 @@ protected:
       //! Whether to sort in descending order of fitness (default false)
       bool descending_ = false;
 
-      //! Default constructor
+      //! \brief Default constructor
       Sorter() {}
 
       /*!
-       * Property constructor
-       * @param descending whether to sort in descending order of fitness
+       * \brief Property constructor
+       * \param[in] descending whether to sort in descending order of fitness
        */
       Sorter(const bool descending)
       : descending_(descending) {}
@@ -44,8 +44,8 @@ protected:
 public:
 
       /*!
-       * Sort individuals (in place) based on fitness
-       * \param[in] pop                   pointer to the population
+       * \brief Sort the population
+       * \param[in] pop pointer to the population
        */
       virtual void sort(std::vector<Individual*> *pop) = 0;
 
@@ -53,7 +53,7 @@ public:
 
 
 /*!
- * Sorter which does nothing. Will be used when sorting is not required.
+ * \brief Sorter which does nothing. Will be used when sorting is not required.
  */
 class EmptySorter : public Sorter
 {
@@ -66,7 +66,7 @@ public:
 
 
 /*!
- * Class for Merge-sort
+ * \brief Class for Merge-sort
  */
 class MergeSorter : public Sorter
 {
@@ -77,11 +77,11 @@ private:
       std::vector<Individual*> tmpPop_;
 
       /*!
-       * Split \p fitA into 2 runs, sort both runs into \p fitB, merge both runs from \p fitB into \p fitA
-       * @param popB      pointer to population B
-       * @param left      left index (inclusive)
-       * @param right     right index (exclusive)
-       * @param popA      pointer to population A
+       * \brief Split \p fitA into 2 runs, sort both runs into \p fitB, merge both runs from \p fitB into \p fitA
+       * \param[in] popB      pointer to population B
+       * \param[in] left      left index (inclusive)
+       * \param[in] right     right index (exclusive)
+       * \param[in] popA      pointer to population A
        */
       void topDownSplitMerge(      std::vector<Individual*>      *popB,
                              const int                            left,
@@ -89,14 +89,15 @@ private:
                                    std::vector<Individual*>      *popA);
 
       /*!
+       * \brief Merge both runs from \p fitA into \p fitB <br>
        * Left source half is A[left:middle-1].
        * Right source half is A[middle:right-1].
        * Result is B[left:right-1].
-       * @param popA          pointer to population A
-       * @param left          left index (inclusive)
-       * @param middle        middle index
-       * @param right         right index (exclusive)
-       * @param popB          pointer to population B
+       * \param[in] popA      pointer to population A
+       * \param[in] left      left index (inclusive)
+       * \param[in] middle    middle index
+       * \param[in] right     right index (exclusive)
+       * \param[in] popB      pointer to population B
        */
       void topDownMerge(      std::vector<Individual*>     *popA,
                         const int                           left,
@@ -107,10 +108,9 @@ private:
 public:
 
       /*!
-       * Create a new MergeSorter object
-       * \param[in] popSize               number of individuals in the population
-       * \param[in] descending            true if sorting in descending order (using regular fitness),
-       *                                  false otherwise (using chi2)
+       * \brief Constructor
+       * \param[in] popSize         number of individuals in the population
+       * \param[in] descending      whether we sort in descending order
        */
       MergeSorter(const int   popSize,
                   const bool  descending)
@@ -122,7 +122,7 @@ public:
 
 
 /*!
- * Class for Quick-sort
+ * \brief Class for Quick-sort
  */
 class QuickSorter : public Sorter
 {
@@ -133,30 +133,30 @@ private:
       Individual *tmpInd_;
 
       /*!
-       * Split \p fitness into 2 parts, one left of the pivot element and one to the right of it, and sort both.
-       * @param pop       pointer to the population
-       * @param low       the left-most point of the part of the population vector in this recursion
-       * @param high      the right-most point of the part of the population vector in this recursion
+       * \brief Split the population into 2 parts, one left of the pivot element and one to the right of it, and sort both.
+       * \param[in] pop     pointer to the population
+       * \param[in] low     the left-most point of the part of the population vector in this recursive run
+       * \param[in] high    the right-most point of the part of the population vector in this recursive run
        */
       void quickSort(      std::vector<Individual*>  *pop,
                      const int                        low,
                      const int                        high);
 
       /*!
-       * Find the pivot element and sort everything by comparing with it in an ascending order.
-       * @param pop       pointer to the population
-       * @param low       the left-most point of the part of the population vector in this recursion
-       * @param high      the right-most point of the part of the population vector in this recursion
+       * \brief Find the pivot element and sort everything by comparing with it in an ascending order.
+       * \param[in] pop       pointer to the population
+       * \param[in] low       the left-most point of the part of the population vector in this recursive run
+       * \param[in] high      the right-most point of the part of the population vector in this recursive run
        */
       int ascendingPartition(      std::vector<Individual*>      *pop,
                              const int                            low,
                              const int                            high);
 
       /*!
-       * Find the pivot element and sort everything by comparing with it in a descending order.
-       * @param pop       pointer to the population
-       * @param low       the left-most point of the part of the population vector in this recursion
-       * @param high      the right-most point of the part of the population vector in this recursion
+       * \brief Find the pivot element and sort everything by comparing with it in a descending order.
+       * \param[in] pop       pointer to the population
+       * \param[in] low       the left-most point of the part of the population vector in this recursive run
+       * \param[in] high      the right-most point of the part of the population vector in this recursive run
        */
       int descendingPartition(      std::vector<Individual*>     *pop,
                               const int                           low,
@@ -165,9 +165,8 @@ private:
 public:
 
       /*!
-       * Create a new QuickSorter
-       * \param[in] descending      true if sorting in descending order (using fitness),
-       *                            false otherwise (using chi2)
+       * \brief Constructor
+       * \param[in] descending whether we sort in descending order
        */
       QuickSorter(const bool descending)
       : Sorter(descending) {}

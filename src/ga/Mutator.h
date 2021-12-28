@@ -19,40 +19,36 @@ namespace ga
 
 
 /*!
- * Abstract class for gene mutation
+ * \brief Abstract class for gene mutation of Individual objects
  */
 class Mutator
 {
 
 private:
 
+    // Ranom number generation
     std::random_device                      rd_base;
     std::mt19937                            gen_base;
     std::uniform_real_distribution<double>  dis_base;
 
 protected:
 
-    /*!
-     * Constructor which initializes the random number generator
-     */
+    //! \brief Constructor
     Mutator()
     : gen_base(rd_base()), dis_base(std::uniform_real_distribution<double>(0.0, 1.0))
     {
         gen_base.seed(::time(NULL));
     };
 
-    /*!
-     * Obtain a random number in \f$ [0, 1] \f$
-     * @returns     a double-precision floating point number in \f$ [0, 1] \f$
-     */
+    //! \return a random number in \f$ [0, 1] \f$
     double randNum() { return dis_base(gen_base); }
 
 public:
 
     /*!
-     * Mutate an individual's genes (in place)
-     * @param individual        pointer to the individual to mutate
-     * @param prMut             probability of mutating a gene
+     * \brief Mutate genes of an Individual (in place)
+     * \param[in] individual    pointer to the Individual to mutate
+     * \param[in] prMut         probability of mutating a gene
      */
     virtual void mutate(      Individual   *ind,
                         const double        prMut) = 0;

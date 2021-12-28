@@ -19,7 +19,7 @@ namespace ga
 
 
 /*!
-* Abstract class for initializing individuals
+* \brief Abstract class for initializing Individual instances
 */
 class Initializer
 {
@@ -27,10 +27,10 @@ class Initializer
 public:
 
     /*!
-     * Initialize an individual
-     * @param individual    pointer to pointer to the individual to initialize
+     * \brief Initialize an Individual
+     * \param[in] ind  pointer to pointer to the individual to initialize
      */
-    virtual void initialize(Individual **individual) = 0;
+    virtual void initialize(Individual **ind) = 0;
 };
 
 

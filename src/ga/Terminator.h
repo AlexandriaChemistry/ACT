@@ -18,7 +18,7 @@ namespace ga
 
 
 /*!
- * Abstract class to check for evolution termination conditions
+ * \brief Abstract class to check for evolution termination conditions
  */
 class Terminator
 {
@@ -26,7 +26,7 @@ class Terminator
 public:
 
     /*!
-     * Check whether the evolution should be terminated
+     * \brief Check whether the evolution should be terminated
      * \param[in] population            the population
      * \param[in] generationNumber      the generation number
      * \return true if we should terminate, false otherwise
@@ -37,20 +37,21 @@ public:
 };
 
 /*!
- * Terminator which stops evolution after a given amount of generations.
+ * \brief Terminator which stops evolution after a given amount of generations.
  */
 class GenerationTerminator : public Terminator
 {
 
 private:
 
+    //! Maximum allowed amount of generations
     int maxGenerations_;
 
 public:
 
     /*!
-     * Create a new GenerationTerminator object
-     * @param maxGenerations    the maximum amount of generations
+     * \brief Constructor
+     * @param maxGenerations the maximum allowed amount of generations
      */
     GenerationTerminator(const int maxGenerations)
     : maxGenerations_(maxGenerations) {}

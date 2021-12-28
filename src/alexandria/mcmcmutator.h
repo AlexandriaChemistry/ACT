@@ -21,6 +21,11 @@ namespace alexandria
 {
 
 
+/*!
+ * \brief Mutator which applies MCMC optimization to an ACMIndividual.
+ * It can also conduct sensitivity analysis if requested.
+ * FIXME: shouldn't we move sensitivity analysis somewhere else?
+ */
 class MCMCMutator : public ga::Mutator
 {
 
@@ -37,13 +42,13 @@ private:
     //! Flush output immediately rather than letting the OS buffer it. Don't use for production simulations.
     bool verbose_;
 
+    // Random number generation
     std::random_device                      rd;
     std::mt19937                            gen;
     std::uniform_int_distribution<size_t>   dis;
 
-    /*! \brief
-     * Change parameter \p j in an individual based on a random number
-     * obtained from a uniform distribution.
+    /*!
+     * \brief Change force field parameter at a given index for an individual
      * \param[in] ind   pointer to the individual
      * \param[in] j     index of the parameter to change
      */
@@ -51,12 +56,12 @@ private:
                      size_t         j);
 
     /*!
-     * Print new minimum to log file and, if necessary, print params to debug file
-     * @param ind                   pointer to individual
-     * @param bEvaluate_testset     true if test set is evaluated, false otherwise
-     * @param xiter                 fractional iteration. E.g, if we are halfway through iteration 3 it is 3.5
-     * @param currEval              current chi2 in training set
-     * @param currEval_testset      current chi2 in test set
+     * \brief Print new minimum to log file and, if necessary, print params to debug file
+     * \param[in] ind                   pointer to individual
+     * \param[in] bEvaluate_testset     true if test set is evaluated, false otherwise
+     * \param[in] xiter                 fractional iteration. E.g., if we are halfway through iteration 3, it is 3.5
+     * \param[in] currEval              current chi2 in training set
+     * \param[in] currEval_testset      current chi2 in test set
      */
     void fprintNewMinimum(      ACMIndividual  *ind,
                           const bool            bEvaluate_testset,
@@ -65,20 +70,20 @@ private:
                           const double          currEval_testset);     
 
     /*!
-     * Print parameter values to their respective surveillance files
-     * @param ind   pointer to the individual
-     * @param xiter fractional iteration (e.g. 3.5, 2.89, ...)
+     * \brief Print parameter values to their respective surveillance files
+     * \param[in] ind   pointer to the individual
+     * \param[in] xiter fractional iteration. E.g., if we are halfway through iteration 3, it is 3.5
      */
     void fprintParameterStep(      ACMIndividual   *ind,
                              const double           xiter);                                          
 
     /*!
-     * Write chi2 value to surveillance file, if it exists
-     * @param ind                   pointer to individual
-     * @param bEvaluate_testset     true if test set is evaluated, false otherwise
-     * @param xiter                 fractional iteration (3.6, 3.89, ...)
-     * @param prevEval              chi2 fro training set
-     * @param prevEval_testset      chi2 for test set
+     * \brief Write \f$ \chi^2 \f$ value of an individual to its convergence file, if it exists
+     * \param[in] ind                   pointer to individual
+     * \param[in] bEvaluate_testset     true if test set is evaluated, false otherwise
+     * \param[in] xiter                 fractional iteration. E.g., if we are halfway through iteration 3, it is 3.5
+     * \param[in] prevEval              \f$ \chi^2 \f$ for training set
+     * \param[in] prevEval_testset      \f$ \chi^2 \f$ for test set
      */
     void fprintChi2Step(      ACMIndividual    *ind,
                         const bool              bEvaluate_testset,
@@ -86,17 +91,17 @@ private:
                         const double            prevEval,
                         const double            prevEval_testset);
 
-    //! \return a random index of the parameter vector
+    //! \return a random index of the force field parameter vector
     size_t randIndex() { return dis(gen); }
 
     /*!
-     * Compute mean (pmean_) and standard deviation (psigma_) for each parameter
-     * @param pmean         pointer to \p pmean_ vector in the individual
-     * @param psigma        pointer to \p psigma_ vector in the individual
-     * @param nParam        number of parameters in the system
-     * @param sum           over "nsum" iterations, the sum of each parameter
-     * @param nsum          number of iterations to compute statistics over
-     * @param sum_of_sq     over "nsum" iterations, the sum of each parameter squared
+     * \brief Compute mean and standard deviation for each force field parameter
+     * \param[in] pmean         pointer to mean vector in the individual
+     * \param[in] psigma        pointer to standard deviation vector in the individual
+     * \param[in] nParam        number of parameters in the system
+     * \param[in] sum           over "nsum" iterations, the sum of each parameter
+     * \param[in] nsum          number of iterations to compute statistics over
+     * \param[in] sum_of_sq     over "nsum" iterations, the sum of each parameter squared
      */
     void computeMeanSigma(      std::vector<double>    *pmean,
                                 std::vector<double>    *psigma,
@@ -106,19 +111,19 @@ private:
                                 std::vector<double>    *sum_of_sq);
 
     /*!
-     * Take a step of MCMC by attempting to alter a parameter
-     * @param ind               pointer to individual
-     * @param param             pointer to parameter vector of the individual
-     * @param changed           a reference to a vector which has true for parameters that change and false otherwise
-     * @param prevEval          pointer to a double storage with the previous chi2 for training set
-     * @param prevEval_testset  a pointer to a double storage with the previous chi2 for test set
-     * @param bEvaluate_testset true if evaluation should be done on test set, false otherwise
-     * @param pp                index of inner loop over number of parameters
-     * @param iter              current iteration number
-     * @param beta0             pointer to beta for annealing
-     * @param nParam            number of parameters in the model
-     * @param minEval           pointer to the minimum chi2 found so far for the training set
-     * @param paramClassIndex   class (by index) of each parameter in the model
+     * \brief Take a step of MCMC by attempting to alter a parameter
+     * \param[in] ind               pointer to individual
+     * \param[in] param             pointer to parameter vector of the individual
+     * \param[in] changed           a reference to a vector which has true for parameters that change and false otherwise
+     * \param[in] prevEval          pointer to a double storage with the previous \f$ \chi^2 \f$ for training set
+     * \param[in] prevEval_testset  a pointer to a double storage with the previous \f$ \chi^2 \f$ for test set
+     * \param[in] bEvaluate_testset true if evaluation should be done on test set, false otherwise
+     * \param[in] pp                index of inner loop over number of parameters
+     * \param[in] iter              current iteration number
+     * \param[in] beta0             pointer to beta for annealing
+     * \param[in] nParam            number of parameters in the model
+     * \param[in] minEval           pointer to the minimum \f$ \chi^2 \f$ found so far for the training set
+     * \param[in] paramClassIndex   class index of each parameter in the model
      */
     void stepMCMC(      ACMIndividual          *ind,
                         std::vector<double>    *param,
@@ -134,16 +139,16 @@ private:
                   const std::vector<size_t>    &paramClassIndex);
 
     /*!
-     * Perform a mutation step
-     * @param ind               pointer to individual
-     * @param param             pointer to parameter vector of the individual
-     * @param changed           a reference to a vector which has true for parameters that change and false otherwise
-     * @param prevEval          pointer to a double storage with the previous chi2 for training set
-     * @param pp                index of inner loop over number of parameters
-     * @param iter              current iteration number
-     * @param beta0             pointer to beta for annealing
-     * @param nParam            number of parameters in the model
-     * @param paramClassIndex   class (by index) of each parameter in the model
+     * \brief Perform a mutation step
+     * \param[in] ind               pointer to individual
+     * \param[in] param             pointer to parameter vector of the individual
+     * \param[in] changed           a reference to a vector which has true for parameters that change and false otherwise
+     * \param[in] prevEval          pointer to a double storage with the previous \f$ \chi^2 \f$ for training set
+     * \param[in] pp                index of inner loop over number of parameters
+     * \param[in] iter              current iteration number
+     * \param[in] beta0             pointer to beta for annealing
+     * \param[in] nParam            number of parameters in the model
+     * \param[in] paramClassIndex   class index of each parameter in the model
      */
     void stepMutation(      ACMIndividual          *ind,
                             std::vector<double>    *param,
@@ -158,13 +163,13 @@ private:
 public:
 
     /*!
-     * Constructor of MCMCMutator
-     * @param logfile   pointer to log file (may be nullptr)
-     * @param verbose   Flush output immediately rather than letting the OS buffer it. Don't use for production simulations.
-     * @param bch       pointer to BayesConfigHandler object
-     * @param fitComp   pointer to ACMFitnessComputer object
-     * @param sii       pointer to SharedIndividualInfo object
-     * @param nParam    size of the parameter vector
+     * \brief Constructor
+     * \param[in] logfile   pointer to log file (may be nullptr)
+     * \param[in] verbose   Flush output immediately rather than letting the OS buffer it. Don't use for production simulations.
+     * \param[in] bch       pointer to BayesConfigHandler object
+     * \param[in] fitComp   pointer to ACMFitnessComputer object
+     * \param[in] sii       pointer to SharedIndividualInfo object
+     * \param[in] nParam    size of the force field parameter vector
      */
     MCMCMutator(      FILE                     *logfile,
                 const bool                      verbose,
@@ -183,45 +188,36 @@ public:
         sii_     = sii;
     };
 
-    /*!
-     * Mutate an individual's genes (in place). Only used when combined with GA.
-     * @param ind       pointer to the individual to mutate
-     * @param prMut     probability of mutating a gene
-     */
     virtual void mutate(      ga::Individual   *individual,
                         const double            prMut);
 
-    /*! \brief
-     * Run the Markov chain Monte carlo (MCMC) simulation
-     * \param[in]  ind              pointer to the individual
-     * \param[in]  evaluate_testset If true, evaluate the energy on
+    /*!
+     * \brief Run the Markov chain Monte carlo (MCMC) simulation
+     * \param[in] ind               pointer to the individual
+     * \param[in] evaluate_testset  If true, evaluate the energy on
      *                              the test set.
      */
     bool MCMC(      ACMIndividual  *ind,
               const bool            evaluate_testset);
 
-    /*! \brief
-     * Return the number of calls to the objective function
-     * that will be made by the MCMC routine
-     */
+    //! \return the number of calls to the objective function MCMCMutator::MCMC() routine
     size_t numberObjectiveFunctionCalls() const
     {
         return 1 + bch_->maxIter() * sii_->nParam();
     }
 
-    /*! \brief
-     * Print the MC statistics to a file.
+    /*!
+     * \brief Print the MC statistics to a file.
      * \param[in] ind   pointer to the indivifdual
      * \param[in] fp    File pointer to print to
      */
     void printMonteCarloStatistics(ACMIndividual   *ind,
                                    FILE            *fp);
 
-    /*! \brief
-     * Perform a sensitivity analysis by systematically changing
-     * all parameters and re-evaluating the chi2.
+    /*!
+     * \brief Perform a sensitivity analysis by systematically changing all parameters and re-evaluating the \f$ \chi^2 \f$.
      * \param[in] ind   pointer to individual
-     * \param[in] ims   Data set to perform sensitivity analysis on
+     * \param[in] ims   Dataset to perform sensitivity analysis on
      */
     void sensitivityAnalysis(ACMIndividual  *ind,
                              iMolSelect      ims);

@@ -18,7 +18,7 @@ namespace ga
 
 
 /*!
- * Abstract class for computing the selection probability of each individual in the population
+ * Abstract class for computing the selection probability of each Individual in the population
  */
 class ProbabilityComputer
 {
@@ -26,7 +26,7 @@ class ProbabilityComputer
 public:
 
     /*!
-     * Compute the selection probability of each individual in the population
+     * \brief Compute the selection probability of each individual in the population
      * \param[in] pop pointer to the population
      */
     virtual void compute(std::vector<Individual*> *pop) = 0;
@@ -68,13 +68,13 @@ private:
 
     //! The temperature parameter
     double temperature_;
-    //! Stores e^fitness for each individual
+    //! Stores \f$ e^{f_i} \f$ for each Individual \f$ i \f$
     std::vector<double> exponentials_;
 
 public:
 
     /*!
-     * Create a new BoltzmannProbabilityComputer object
+     * \brief Constructor
      * \param[in] popSize           number of individuals in the population
      * \param[in] temperature       the temperature
      */
@@ -106,14 +106,14 @@ private:
 public:
 
     /*!
-     * Create a new RankProbabilityComputer object
+     * \brief
      * \param[in] popSize   number of individuals in the population
      */
     RankProbabilityComputer(const int popSize)
     : sumOfRanks_(popSize * (popSize + 1) / 2) {}
 
     /*!
-     * Here we assume that population and fitness are sorted in a descending manner.<br>
+     * \brief Here we assume that population and fitness are sorted.<br>
      * Compute the probability of each individual in the population
      * @param pop pointer to the population
      */

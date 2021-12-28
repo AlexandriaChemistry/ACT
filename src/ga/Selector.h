@@ -20,7 +20,7 @@ namespace ga
 
 
 /*!
- * Abstract class to select an individual from the population based on its selection probability
+ * \brief Abstract class to select an Individual from the population based on its selection probability
  */
 class Selector
 {
@@ -29,8 +29,8 @@ public:
 
     /*!
      * Select an individual (by index) from the population
-     * @param pop               the population
-     * @return                  the index of the selected individual
+     * \param[in] pop   the population
+     * \return          the index of the selected individual
      */
     virtual int select(const std::vector<Individual*> &pop) = 0;
 
@@ -38,22 +38,21 @@ public:
 
 
 /*!
- * Class for roulette-based selection. Uses cumulative probability to perform selection.
+ * \brief Class for roulette-based selection. Uses cumulative probability to perform selection.
  */
 class RouletteSelector : public Selector
 {
 
 private:
 
+    // Random number stuff
     std::random_device                      rd;
     std::mt19937                            gen;
     std::uniform_real_distribution<double>  dis;
 
 public:
 
-    /*!
-     * Create a new instance of RouletteSelector.
-     */
+    //! \brief Constructor
     RouletteSelector()
     : gen(rd()), dis(std::uniform_real_distribution<>(0.0, 1.0))
     {

@@ -21,12 +21,14 @@ namespace alexandria
 * BEGIN: ACMInitializer                *
 * * * * * * * * * * * * * * * * * * * */
 
-void ACMInitializer::initialize(ga::Individual **individual)
+void ACMInitializer::initialize(ga::Individual **ind)
 {
     nCreated_++;
     ACMIndividual *tmpInd = new ACMIndividual(nCreated_, sii_, outputFile_);
-    (*individual) = tmpInd;
+    (*ind) = tmpInd;
     Poldata* pd = sii_->poldata();
+    // FIXME: We could store the file-in value of parameters in SharedIndividualInfo and avoid doing all this again here.
+    // Then, we could just either use that value from sii_ or a randomly generated one. We also remove dependency in mindata_
     for(auto &optIndex : sii_->optIndex())
     {
         auto                iType = optIndex.iType();
