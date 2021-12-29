@@ -155,7 +155,7 @@ public:
     //! \brief Initialize the ACMInitializer
     void initInitializer()
     {
-        initializer_ = new ACMInitializer(mg_.mindata(), &sii_, gach_.randomInit(), outputFile_);
+        initializer_ = new ACMInitializer(&sii_, gach_.randomInit(), outputFile_);
     }
 
     //! \brief initialize the Individual \p baseInd_ and ACMIndividual \p ind_

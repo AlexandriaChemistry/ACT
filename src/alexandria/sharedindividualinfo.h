@@ -36,7 +36,9 @@ private:
     Poldata pd_;
     //! Base targets_ from which to make copies
     std::map<iMolSelect, std::map<eRMS, FittingTarget>> targets_;
-    //! Training steps per parameter
+    //! Default parameter values as specified by input file
+    std::vector<double> defaultParam_;
+    //! Training datapoints per parameter
     std::vector<int> ntrain_;
     //! Lower bound per parameter
     std::vector<double> lowerBound_;
@@ -194,8 +196,8 @@ public:
 
     /*!
      * \brief Fills some vector structures for parameter information.
-     * Per parameter, we have: required amount of training steps, lower bound, upper bound, Mutability, and name<br>
-     * Dev: Fills \p ntrain_ \p lowerBound_ \p upperBound_ \p mutability_ and \p paramNames_
+     * Per parameter, we have: its default value, required amount of training steps, lower bound, upper bound, Mutability, and name<br>
+     * Dev: Fills \p defaultParam_ \p ntrain_ \p lowerBound_ \p upperBound_ \p mutability_ and \p paramNames_
      * \param[in] mindata mininum number of existing datapoints to consider a parameter for optimization
      */
     void fillVectors(const int mindata);
@@ -249,6 +251,9 @@ public:
     //! \return a pointer to the vector of OptimizationIndex instances
     std::vector<OptimizationIndex> *optIndexPtr() { return &optIndex_; }
     
+    //! \return the vector of default parameter values as const reference
+    const std::vector<double> &defaultParam() const { return defaultParam_; }
+
     //! \return the vector of parameter names as a const reference
     const std::vector<std::string> &paramNames() const { return paramNames_; }
 
@@ -264,10 +269,24 @@ public:
     //! \return the vector of lower bounds as a const reference
     const std::vector<double> &lowerBound() const { return lowerBound_; }
 
+    /*!
+     * Get the lower bound of a given parameter
+     * \param[in] i the index of the parameter
+     * \return the lower bound of the parameter at index \p i
+     */
+    double lowerBoundAtIndex(const size_t i) const { return lowerBound_[i]; }
+
     //! \return the vector of upper bounds as a const reference
     const std::vector<double> &upperBound() const { return upperBound_; }
 
-    //! \return the vector of training steps as a const reference
+    /*!
+     * Get the upper bound of a given parameter
+     * \param[in] i the index of the parameter
+     * \return the upper bound of the parameter at index \p i
+     */
+    double upperBoundAtIndex(const size_t i) const { return upperBound_[i]; }
+
+    //! \return the vector of training datapoints as a const reference
     const std::vector<int> &nTrain() const { return ntrain_; }
 
     //! \return the vector of Mutability instances as a const reference

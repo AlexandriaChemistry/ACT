@@ -141,7 +141,7 @@ public:
     {
 
         // Initializer
-        initializer_ = new alexandria::ACMInitializer(mg->mindata(), sii, gach->randomInit(), outputFile);
+        initializer_ = new alexandria::ACMInitializer(sii, gach->randomInit(), outputFile);
         
         // FitnessComputer
         ACMFitnessComputer* tmpACMFitComp = new alexandria::ACMFitnessComputer(cr, logFile, sii, mg, removeMol, verbose, fullQuadrupole);

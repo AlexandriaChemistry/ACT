@@ -26,35 +26,17 @@ void ACMInitializer::initialize(ga::Individual **ind)
     nCreated_++;
     ACMIndividual *tmpInd = new ACMIndividual(nCreated_, sii_, outputFile_);
     (*ind) = tmpInd;
-    Poldata* pd = sii_->poldata();
-    // FIXME: We could store the file-in value of parameters in SharedIndividualInfo and avoid doing all this again here.
-    // Then, we could just either use that value from sii_ or a randomly generated one. We also remove dependency in mindata_
-    for(auto &optIndex : sii_->optIndex())
+    if (randInit_)  // Insert random value in range
     {
-        auto                iType = optIndex.iType();
-        ForceFieldParameter p;
-        if (iType == InteractionType::CHARGE)
+        for (size_t i = 0; i < sii_->nParam(); i++)
         {
-            if (pd->hasParticleType(optIndex.particleType()))
-            {
-                p = pd->findParticleType(optIndex.particleType())->parameterConst(optIndex.parameterType());
-            }
+            tmpInd->addParam(dis(gen)*(sii_->upperBoundAtIndex(i) - sii_->lowerBoundAtIndex(i))
+                             + sii_->lowerBoundAtIndex(i));
         }
-        else if (pd->interactionPresent(iType))
-        {
-            p = pd->findForcesConst(iType).findParameterTypeConst(optIndex.id(), optIndex.parameterType());
-        }
-        if (p.ntrain() >= mindata_)
-        {
-            if (randInit_)
-            {
-                tmpInd->addParam(dis(gen)*(p.maximum()-p.minimum()) + p.minimum());
-            }
-            else
-            {
-                tmpInd->addParam(p.value());
-            }
-        }
+    }
+    else  // Insert default values in SharedIndividualInfo
+    {
+        for (const double val : sii_->defaultParam()) tmpInd->addParam(val);
     }
 }
 

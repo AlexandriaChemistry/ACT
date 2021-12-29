@@ -29,11 +29,9 @@ class ACMInitializer : public ga::Initializer
 
 private:
 
-    //! The minimum amount of data points to consider a parameter
-    int mindata_;
-    //! Share individual info
+    //! SharedIndividualInfo pointer
     SharedIndividualInfo *sii_;
-    //! Random initialization or not.
+    //! Whether we do random initialization or not.
     bool randInit_;
     // Random number generation
     std::random_device                      rd;
@@ -41,20 +39,18 @@ private:
     std::uniform_real_distribution<double>  dis;
     //! Amount of initialized individuals
     int nCreated_ = 0;
-    //! Base name plus the inividual part
+    //! Base name for Force Field output file
     std::string outputFile_;
 
 public: 
 
     /*!
      * \brief Property constructor
-     * \param[in] mindata       minimum amount of datapoints required to consider a parameter for optimization
      * \param[in] sii           pointer to SharedIndividualInfo instance
      * \param[in] randInit      whether we initialize the force field parameters randomly
      * \param[in] outputFile    base name for Force Field output files
      */
-    ACMInitializer(const int                     mindata,
-                         SharedIndividualInfo   *sii,
+    ACMInitializer(      SharedIndividualInfo   *sii,
                    const bool                    randInit,
                    const std::string            &outputFile)
     : gen(rd()), dis(std::uniform_real_distribution<double>(0.0, 1.0))
@@ -62,7 +58,6 @@ public:
 
         gen.seed(::time(NULL));
 
-        mindata_  = mindata;
         sii_      = sii;
         randInit_ = randInit;
         outputFile_ = outputFile;

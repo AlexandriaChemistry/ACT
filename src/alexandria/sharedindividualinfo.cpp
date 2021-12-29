@@ -192,6 +192,7 @@ void SharedIndividualInfo::fillVectors(const int mindata)
         }
         if (p.ntrain() >= mindata)
         {
+            defaultParam_.push_back(p.value());
             paramNames_.push_back(optIndex.name());
             mutability_.push_back(p.mutability());
             lowerBound_.push_back(p.minimum());
