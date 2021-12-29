@@ -46,6 +46,7 @@
 #include "particletype.h"
 #include "poldata_low.h"
 #include "stringutil.h"
+#include "vsite.h"
 
 /* This source code file is part of the Alexandria project */
 
@@ -415,11 +416,11 @@ class Poldata
         //! \brief Check internal consistency of data structures
         void checkConsistency(FILE *fplog) const;
     private:
+        std::string                           alexandriaVersion_;
         std::map<std::string, InteractionType> type2Itype_;
         std::string                           filename_;
         std::vector<ParticleType>             alexandria_;
         std::vector<Vsite>                    vsite_;
-        std::string                           alexandriaVersion_;
         std::string                           vsite_angle_unit_;
         std::string                           vsite_length_unit_;
         int                                   nexcl_ = 0;

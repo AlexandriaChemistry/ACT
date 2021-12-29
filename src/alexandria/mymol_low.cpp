@@ -55,8 +55,9 @@
 #include "gromacs/utility/strconvert.h"
 
 #include "forcefieldparameter.h"
-#include "plistwrapper.h"
 #include "poldata.h"
+#include "qgen_acm.h"
+#include "topology.h"
 #include "units.h"
 
 namespace alexandria
@@ -97,8 +98,8 @@ const char *immsg(immStatus imm)
     return immMessages[imm];
 }
 
-bool is_planar(rvec xi, rvec xj, rvec xk,
-               rvec xl, t_pbc *pbc,
+bool is_planar(const rvec xi,  const rvec xj, const rvec xk,
+               const rvec xl, const t_pbc *pbc,
                real phi_toler)
 {
     int  t1, t2, t3;
@@ -110,8 +111,8 @@ bool is_planar(rvec xi, rvec xj, rvec xk,
     return (fabs(phi) < phi_toler);
 }
 
-bool is_linear(rvec xi, rvec xj,
-               rvec xk, t_pbc *pbc,
+bool is_linear(const rvec xi, const rvec xj,
+               const rvec xk, const t_pbc *pbc,
                real th_toler)
 {
     int  t1, t2;
@@ -255,30 +256,6 @@ void copy_atoms(t_atoms *src, t_atoms *dest)
     }
 }
 
-void cp_plist(t_params                   plist[],
-              int                        ftype,
-              InteractionType            itype,
-              std::vector<PlistWrapper> &plist_)
-{
-    if (plist[ftype].nr > 0)
-    {
-        PlistWrapper pw(itype, ftype);
-        for (int i = 0; (i < plist[ftype].nr); i++)
-        {
-            for (int j = interaction_function[ftype].nratoms; j < MAXATOMLIST; j++)
-            {
-                plist[ftype].param[i].a[j] = 0;
-            }
-            for (int j = interaction_function[ftype].nrfpA; j < MAXFORCEPARAM; j++)
-            {
-                plist[ftype].param[i].c[j] = 0;
-            }
-            pw.addParam(plist[ftype].param[i]);
-        }
-        plist_.push_back(pw);
-    }
-}
-
 real calc_r13(const Poldata                  *pd,
               const std::vector<std::string> &atoms,
               const std::vector<double>      &bondOrders,
@@ -322,163 +299,6 @@ real calc_relposition(const Poldata                  *pd,
     return relative_position;
 }
 
-static double PlistToBondOrder(const std::vector<PlistWrapper>::iterator bonds,
-                               int ai, int aj)
-{
-    auto param = bonds->paramsConst();
-    for(size_t i = 0; i < param.size(); i++)
-    {
-        if ((param[i].a[0] == ai && param[i].a[1] == aj) ||
-            (param[i].a[0] == aj && param[i].a[1] == ai))
-        {
-            return bonds->bondOrder(i);
-        }
-    }
-    return 0;
-}
-
-immStatus updatePlist(const Poldata             *pd,
-                      std::vector<PlistWrapper> *plist,
-                      const t_atoms             *atoms,
-                      missingParameters          missing,
-                      const std::string         &molname,
-                      std::vector<std::string>  *errors)
-{
-    auto mybonds = plist->end();
-    for (auto pw = plist->begin(); pw < plist->end(); ++pw)
-    {
-        if (pw->getItype() == InteractionType::BONDS)
-        {
-            mybonds = pw;
-            break;
-        }
-    }
-    if (mybonds == plist->end())
-    {
-        return immStatus::OK;
-    }
-    for (auto pw = plist->begin(); pw < plist->end(); ++pw)
-    {
-        auto iType   = pw->getItype();
-        auto fs      = pd->findForcesConst(iType);
-        auto canSwap = fs.canSwap();
-        pw->setFtype(fs.fType());
-        auto nratoms = interaction_function[fs.fType()].nratoms;
-        auto mypar   = pw->params();
-        for (auto pwi = mypar->begin(); pwi < mypar->end(); ++pwi)
-        {
-            std::vector<std::string> bondAtomType, reverseAtomType;
-            bool bondNamesOK = true;
-            // Store last atom type in case something goes wrong
-            std::string         lastAtype;
-            std::vector<double> bondOrders, reverseBO;
-            for(int i = 0; i < nratoms && bondNamesOK; i++)
-            {
-                std::string tmp;
-                GMX_RELEASE_ASSERT(i < atoms->nr, "BAH");
-                lastAtype.assign(*atoms->atomtype[pwi->a[i]]);
-                bondNamesOK = pd->atypeToBtype(lastAtype, &tmp);
-                bondAtomType.push_back(tmp);
-                // Check whether we can swap the order of atoms and
-                // find a parameter in that case. For some interactions
-                // the force field parameters depend on the order of
-                // the atoms. E.g. the force constant for a linear angle
-                // for H-C#N is not the same as N#C-H.
-                reverseAtomType.insert(reverseAtomType.begin(), 1, tmp); 
-            }
-            if (!bondNamesOK)
-            {
-                errors->push_back(gmx::formatString("Unsupported atom type: %s!\n", lastAtype.c_str()));
-                return immStatus::AtomTypes;
-            }
-            Identifier       bondId;
-            std::vector<int> aa;
-            if (fs.fType() == F_IDIHS)
-            {
-                bondOrders.push_back(PlistToBondOrder(mybonds, pwi->a[0], pwi->a[1]));
-                bondOrders.push_back(PlistToBondOrder(mybonds, pwi->a[1], pwi->a[2]));
-                bondOrders.push_back(PlistToBondOrder(mybonds, pwi->a[1], pwi->a[3]));
-                bondId = Identifier(bondAtomType, bondOrders, canSwap);
-                // Note that the atoms are not in the same order for
-                // computing the forces as in the identifier.
-                if (fs.parameterExists(bondId))
-                {
-                    aa = { pwi->a[0], pwi->a[2], pwi->a[1], pwi->a[3] };
-                }
-                else
-                {
-                    bondId = Identifier({ bondAtomType[3], bondAtomType[2], bondAtomType[1], bondAtomType[0] },
-                                        { bondOrders[2], bondOrders[1], bondOrders[0] },
-                                        canSwap);
-                    aa = { pwi->a[3], pwi->a[1], pwi->a[2], pwi->a[0] };
-                }
-            }
-            else
-            {
-                reverseBO.resize(nratoms-1);
-                bondOrders.clear();
-                for(int i = 1; i < nratoms && bondNamesOK; i++)
-                {
-                    double bbb = PlistToBondOrder(mybonds, pwi->a[i-1], pwi->a[i]);
-                    bondOrders.push_back(bbb);
-                    reverseBO[nratoms-1-i] = bbb;
-                }
-            
-                bondId = Identifier(bondAtomType, bondOrders, canSwap);
-                if (!fs.parameterExists(bondId))
-                {
-                    bondId = Identifier(reverseAtomType, reverseBO, canSwap);
-                    // Swap the plist wrapper as well
-                    for (int i = 0; i < nratoms; i++)
-                    {
-                        aa.push_back(pwi->a[nratoms-1-i]);
-                    }
-                    for (int i = 0; i < nratoms; i++)
-                    {
-                        pwi->a[i] = aa[i];
-                    }
-                }
-            }
-            if (fs.parameterExists(bondId))
-            {
-                int n = 0;
-                for(const auto &fp : fs.findParametersConst(bondId))
-                {
-                    pwi->c[n++] = convertToGromacs(fp.second.value(), fp.second.unit());
-                }
-            }
-            else if (missing == missingParameters::Error)
-            {
-                std::string atomnum = gmx::formatString("%d %d",
-                                                        1+pwi->a[0],
-                                                        1+pwi->a[1]);
-                for(int i = 2; i < nratoms; i++)
-                {
-                    atomnum += gmx::formatString(" %d", 1+pwi->a[i]);
-                }
-                errors->push_back(gmx::formatString("Could not find bond/angle/dihedral information for %s in %s - ftype %s. Atom numbers %s",
-                                                    bondId.id().c_str(), molname.c_str(), interaction_function[fs.fType()].longname, atomnum.c_str()).c_str());
-                if (iType == InteractionType::BONDS)
-                {
-                    return immStatus::NotSupportedBond;
-                }
-                else if (iType ==  InteractionType::ANGLES)
-                {
-                    return immStatus::NotSupportedAngle;
-                }
-                else if (iType ==  InteractionType::LINEAR_ANGLES)
-                {
-                    return immStatus::NotSupportedLinearAngle;
-                }
-                else
-                {
-                    return immStatus::NotSupportedDihedral;
-                }
-            }
-        }
-    }
-    return immStatus::OK;
-}
 
 std::vector<double> getDoubles(const std::string &s)
 {
@@ -739,62 +559,10 @@ void nonbondedFromPdToMtop(gmx_mtop_t    *mtop,
     }
 }
 
-void plist_to_mtop(const std::vector<PlistWrapper> &plist,
-                   gmx_mtop_t                      *mtop_)
-{
-    int ffparamsSize = mtop_->ffparams.numTypes();
-    for (auto &pw : plist)
-    {
-        int ftype  = pw.getFtype();
-        int nra    = NRAL(ftype);
-        int nrfp   = NRFPA(ftype);
-        int nratot = pw.nParam()*(1+nra);
-        if (nratot > 0 && debug)
-        {
-            fprintf(debug, "There are %d interactions of type %s\n", nratot/(nra+1),
-                    interaction_function[ftype].name);
-        }
-        //mtop_->moltype[0].ilist[ftype].iatoms.resize(nratot, {0});
-        /* For generating pairs */
-        for (auto &j : pw.paramsConst())
-        {
-            std::vector<real> c;
-            c.resize(MAXFORCEPARAM, 0);
-            if (ftype == F_LJ14)
-            {
-                int ati = mtop_->moltype[0].atoms.atom[j.a[0]].type;
-                int atj = mtop_->moltype[0].atoms.atom[j.a[1]].type;
-                int tp  = ati*mtop_->ffparams.atnr+atj;
-                c[0] = c[nrfp]   = mtop_->ffparams.iparams[tp].lj.c6;
-                c[1] = c[nrfp+1] = mtop_->ffparams.iparams[tp].lj.c12;
-            }
-            else
-            {
-                for (int l = 0; (l < nrfp); l++)
-                {
-                    c[l] = j.c[l];
-                    if (NOTSET == c[l])
-                    {
-                        c[l] = 0;
-                    }
-                    c[l+nrfp] = c[l];
-                }
-            }
-            double reppow = 12.0;
-            int    type   = enter_params(&mtop_->ffparams, ftype, c.data(), 0, reppow, ffparamsSize, false);
-            mtop_->moltype[0].ilist[ftype].iatoms.push_back(type);
-            for (int m = 0; m < interaction_function[ftype].nratoms; m++)
-            {
-                mtop_->moltype[0].ilist[ftype].iatoms.push_back(j.a[m]);
-            }
-        }
-    }
-}
 
 gmx_mtop_t *do_init_mtop(const Poldata                   *pd,
                          char                           **molname,
                          t_atoms                         *atoms,
-                         const std::vector<PlistWrapper> &plist,
                          t_inputrec                      *ir,
                          t_symtab                        *symtab,
                          const char                      *tabfn)
@@ -887,8 +655,7 @@ gmx_mtop_t *do_init_mtop(const Poldata                   *pd,
     gmx_mtop_finalize(mtop);
     /* Create a charge group block */
     stupid_fill_block(&(mtop->moltype[0].cgs), atoms->nr, false);
-    plist_to_mtop(plist, mtop);
-
+    
     return mtop;
 }
 
@@ -1043,10 +810,10 @@ void write_zeta_q(FILE       *fp,
     fprintf(fp, "\n");
 }
 
-void write_zeta_q2(QgenAcm        *qgen,
-                   gpp_atomtype_t  atype,
-                   t_atoms        *atoms,
-                   ChargeType      iChargeType)
+void write_zeta_q2(QgenAcm             *qgen,
+                   struct gpp_atomtype *atype,
+                   t_atoms             *atoms,
+                   ChargeType           iChargeType)
 {
     FILE      *fp;
     int        i, k, row;
@@ -1089,7 +856,7 @@ void write_zeta_q2(QgenAcm        *qgen,
     fclose(fp);
 }
 
-int get_subtype(directive d, int ftype)
+static int get_subtype(directive d, int ftype)
 {
     int i;
     for (i = 1; i < 20; i++)
@@ -1105,52 +872,66 @@ int get_subtype(directive d, int ftype)
     return 1;
 }
 
-void print_bondeds(FILE                            *out,
-                   directive                        d,
-                   int                              plist_ftype,
-                   int                              print_ftype,
-                   const std::vector<PlistWrapper> &plist)
-{
-    auto p = SearchPlist(plist, plist_ftype);
 
-    if (plist.end() == p || p->nParam() == 0)
+static void print_bondeds(FILE                               *out,
+                          directive                           d,
+                          int                                 ftype,
+                          const std::vector<TopologyEntry *> &entries)
+{
+    if (entries.empty())
     {
         return;
     }
     fprintf(out, "[ %s ]\n", dir2str(d));
     fprintf(out, ";atom i");
-    for (int j = 1; (j < NRAL(print_ftype)); j++)
+    for (int j = 1; (j < NRAL(ftype)); j++)
     {
         fprintf(out, "  %5c", j+'i');
     }
     fprintf(out, "   type  parameters\n");
-    int subtype = get_subtype(d, print_ftype);
-    for (auto &i : p->paramsConst())
+    int subtype = get_subtype(d, ftype);
+    for (auto &entry : entries)
     {
-        for (int j = 0; (j < NRAL(print_ftype)); j++)
+        for (auto &j : entry->atomIndices())
         {
-            fprintf(out, "  %5d", 1+i.a[j]);
+            fprintf(out, "  %5d", 1+j);
         }
         fprintf(out, "  %5d", subtype);
-        for (int j = 0; (j < NRFPA(print_ftype)); j++)
+        for (int j = 0; (j < NRFPA(ftype)); j++)
         {
-            fprintf(out, "  %10g", i.c[j]);
+            fprintf(out, "  %10g", 0.0);
         }
-        fprintf(out, "\n");
+        fprintf(out, "; %s\n", entry->id().id().c_str());
     }
     fprintf(out, "\n");
 }
 
-void write_top(FILE                            *out,
-               char                            *molname,
-               t_atoms                         *at,
-               gmx_bool                         bRTPresname,
-               const std::vector<PlistWrapper> &plist,
-               t_excls                          excls[],
-               gpp_atomtype_t                   atype,
-               int                             *cgnr,
-               const Poldata                   *pd)
+
+void write_top(FILE            *out,
+               char            *molname,
+               t_atoms         *at,
+               gmx_bool         bRTPresname,
+               const Topology  *topology,
+               t_excls          excls[],
+               struct gpp_atomtype *atype,
+               int             *cgnr,
+               const Poldata   *pd)
 {
+     std::map<int, directive> toPrint = {
+            { F_CONSTR,       d_constraints },
+            { F_CONSTRNC,     d_constraints },
+            { F_LJ14,         d_pairs },
+            { F_CMAP,         d_cmap },
+            { F_POLARIZATION, d_polarization },
+            { F_THOLE_POL,    d_thole_polarization },
+            { F_VSITE2,       d_vsites2 },
+            { F_VSITE3,       d_vsites3 },
+            { F_VSITE3FD,     d_vsites3 },
+            { F_VSITE3FAD,    d_vsites3 },
+            { F_VSITE3OUT,    d_vsites3 },
+            { F_VSITE4FD,     d_vsites4 },
+            { F_VSITE4FDN,    d_vsites4 }
+        };
     if (at && atype && cgnr)
     {
         fprintf(out, "[ %s ]\n", dir2str(d_moleculetype));
@@ -1160,34 +941,29 @@ void write_top(FILE                            *out,
         for (auto &fs : pd->forcesConst())
         {
             auto iType = fs.first;
+            if (!topology->hasEntry(iType))
+            {
+                continue;
+            }
             auto fType = fs.second.fType();
             if (InteractionType::BONDS == fs.first)
             {
-                print_bondeds(out, d_bonds, fType, fType, plist);
+                print_bondeds(out, d_bonds, fType, topology->entry(iType));
             }
             else if (InteractionType::ANGLES == iType || InteractionType::LINEAR_ANGLES == iType)
             {
-                print_bondeds(out, d_angles, fType, fType, plist);
+                print_bondeds(out, d_angles, fType, topology->entry(iType));
             }
             else if (InteractionType::PROPER_DIHEDRALS == iType || InteractionType::IMPROPER_DIHEDRALS == iType)
             {
-                print_bondeds(out, d_dihedrals, fType, fType, plist);
+                print_bondeds(out, d_dihedrals, fType, topology->entry(iType));
+            }
+            else if (toPrint.end() != toPrint.find(fType))
+            {
+                print_bondeds(out, toPrint.find(fType)->second, fType, topology->entry(iType));
             }
         }
-        print_bondeds(out, d_constraints, F_CONSTR, F_CONSTR, plist);
-        print_bondeds(out, d_constraints, F_CONSTRNC, F_CONSTRNC, plist);
-        print_bondeds(out, d_pairs, F_LJ14, F_LJ14, plist);
         print_excl(out, at->nr, excls);
-        print_bondeds(out, d_cmap, F_CMAP, F_CMAP, plist);
-        print_bondeds(out, d_polarization, F_POLARIZATION, F_POLARIZATION, plist);
-        print_bondeds(out, d_thole_polarization, F_THOLE_POL, F_THOLE_POL, plist);
-        print_bondeds(out, d_vsites2, F_VSITE2, F_VSITE2, plist);
-        print_bondeds(out, d_vsites3, F_VSITE3, F_VSITE3, plist);
-        print_bondeds(out, d_vsites3, F_VSITE3FD, F_VSITE3FD, plist);
-        print_bondeds(out, d_vsites3, F_VSITE3FAD, F_VSITE3FAD, plist);
-        print_bondeds(out, d_vsites3, F_VSITE3OUT, F_VSITE3OUT, plist);
-        print_bondeds(out, d_vsites4, F_VSITE4FD, F_VSITE4FD, plist);
-        print_bondeds(out, d_vsites4, F_VSITE4FDN, F_VSITE4FDN, plist);
     }
 }
 

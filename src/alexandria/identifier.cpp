@@ -179,8 +179,11 @@ Identifier::Identifier(const std::vector<std::string> &atoms,
         {
             gmx_fatal(FARGS, "Don't understand a bond order of %g", bondOrders[i-1]);
         }
-        id_ += BondOrderDelimeter[bondOrders[i-1]];
-        id_ += atoms[i];
+        if (!atoms[i].empty())
+        {
+            id_ += BondOrderDelimeter[bondOrders[i-1]];
+            id_ += atoms[i];
+        }
     }
     atoms_      = atoms;
     bondOrders_ = bondOrders;

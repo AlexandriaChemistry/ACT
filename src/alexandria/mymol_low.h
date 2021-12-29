@@ -39,18 +39,23 @@
 #include <cstring>
 
 #include "gromacs/mdlib/mdatoms.h"
-#include "gromacs/mdlib/shellfc.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/pbcutil/pbc.h"
 
-#include "gentop_core.h"
-#include "gentop_vsite.h"
-#include "poldata.h"
-#include "qgen_acm.h"
-#include "qgen_resp.h"
+#include "chargemodel.h"
+
+struct gpp_atomtype;
+struct t_atoms;
+struct t_blocka;
+struct t_excls;
+struct t_symtab;
 
 namespace alexandria
 {
+
+class Poldata;
+class QgenAcm;
+class Topology;
 
 /*! \brief
  * Class to determine how to treat missing parameters.
@@ -127,12 +132,12 @@ enum class immStatus {
 
 const char *immsg(immStatus imm);
  
-bool is_planar(rvec   xi,  rvec xj,
-               rvec   xk,  rvec xl,
-               t_pbc *pbc, real phi_toler);
+bool is_planar(const rvec   xi,  const rvec xj,
+               const rvec   xk,  const rvec xl,
+               const t_pbc *pbc, real phi_toler);
 
-bool is_linear(rvec xi, rvec xj,
-               rvec xk, t_pbc *pbc,
+bool is_linear(const rvec xi, const rvec xj,
+               const rvec xk, const t_pbc *pbc,
                real th_toler);
 
 void add_excl(t_excls *excls, int e);
@@ -141,14 +146,9 @@ void add_excl_pair(t_excls excls[], int e1, int e2);
 
 void remove_excl(t_excls *excls, int remove);
 
-void let_shells_see_shells(t_excls excls[], t_atoms *atoms, gpp_atomtype_t atype);
+void let_shells_see_shells(t_excls excls[], t_atoms *atoms, struct gpp_atomtype *atype);
 
 void copy_atoms(t_atoms *src, t_atoms *dest);
-
-void cp_plist(t_params                   plist[],
-              int                        ftype,
-              InteractionType            itype,
-              std::vector<PlistWrapper> &plist_);
 
 real calc_r13(const Poldata                  *pd,
               const std::vector<std::string> &atoms,
@@ -159,42 +159,11 @@ real calc_relposition(const Poldata                  *pd,
                       const std::vector<std::string> &atoms,
                       const std::vector<double>      &bondOrders);
 
-/*! \brief Update GROMACS force field parameters
- *
- * The force field parameters in gromacs idef-style structures are updated from the
- * Poldata structure. This can be a heavy calculation for a large system, but it will 
- * only handle the  bonds etc. in the system (a molecule typically).
- * \param[in]  pd      Poldata structure
- * \param[out] plist   The parameter vector
- * \param[in]  atoms   GROMACS atom structure
- * \param[in]  missing Determining whether parameters can be missing
- * \param[in]  molname Molecule name
- * \param[out] errors  Error messages are appended to this vector.
- * \return Warning status
- */ 
-immStatus updatePlist(const Poldata             *pd,
-                      std::vector<PlistWrapper> *plist,
-                      const t_atoms             *atoms,
-                      missingParameters          missing,
-                      const std::string         &molname,
-                      std::vector<std::string>  *errors);
-
 std::vector<double> getDoubles(const std::string &s);
 
 void nonbondedFromPdToMtop(gmx_mtop_t    *mtop,
                            const Poldata *pd,
                            t_forcerec    *fr);
-
-void plist_to_mtop(const std::vector<PlistWrapper> &plist,
-                   gmx_mtop_t                      *mtop_);
-
-gmx_mtop_t *do_init_mtop(const Poldata                   *pd,
-                         char                           **molname,
-                         t_atoms                         *atoms,
-                         const std::vector<PlistWrapper> &plist,
-                         t_inputrec                      *ir,
-                         t_symtab                        *symtab,
-                         const char                      *tabfn);
 
 void excls_to_blocka(int natom, t_excls excls_[], t_blocka *blocka);
 
@@ -207,36 +176,29 @@ void write_zeta_q(FILE       *fp,
                   t_atoms    *atoms,
                   ChargeType  iChargeType);
 
-void write_zeta_q2(QgenAcm        *qgen,
-                   gpp_atomtype_t  atype,
-                   t_atoms        *atoms,
-                   ChargeType      iChargeType);
-
-int get_subtype(directive d, int ftype);
-
-void print_bondeds(FILE                            *out,
-                   directive                        d,
-                   int                              plist_ftype,
-                   int                              print_ftype,
-                   const std::vector<PlistWrapper> &plist);
+void write_zeta_q2(QgenAcm             *qgen,
+                   struct gpp_atomtype *atype,
+                   t_atoms             *atoms,
+                   ChargeType           iChargeType);
 
 void write_top(FILE                            *out,
                char                            *molname,
                t_atoms                         *at,
                gmx_bool                         bRTPresname,
-               const std::vector<PlistWrapper> &plist,
+               const Topology *topology,
                t_excls                          excls[],
-               gpp_atomtype_t                   atype,
+               struct gpp_atomtype             *atype,
                int                             *cgnr,
                const Poldata                   *pd);
 
-void print_top_header(FILE                    *fp,
-                      const Poldata           *pd,
-                      bool                     bPol,
-                      std::vector<std::string> commercials,
-                      bool                     bItp);
-
 void calc_rotmatrix(rvec target_vec, rvec ref_vec, matrix rotmatrix);
+
+gmx_mtop_t *do_init_mtop(const Poldata                   *pd,
+                         char                           **molname,
+                         t_atoms                         *atoms,
+                         t_inputrec                      *ir,
+                         t_symtab                        *symtab,
+                         const char                      *tabfn);
 
 } // namespace alexandria
 #endif

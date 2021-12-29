@@ -58,6 +58,9 @@
 #include "openmm_xml.h"
 #include "poldata_xml.h"
 
+namespace alexandria
+{
+
 static void print_errors(const char                     *fn,
                          const std::vector<std::string> &errors,
                          immStatus                       imm)
@@ -70,9 +73,6 @@ static void print_errors(const char                     *fn,
     }
     fclose(fp);
 }
-
-namespace alexandria
-{
 
 int gentop(int argc, char *argv[])
 {
@@ -160,7 +160,6 @@ int gentop(int argc, char *argv[])
     static gmx_bool                  addHydrogens   = false;
 
     static const char               *ff[]           = {nullptr, "ACM-g", "ACM-pg", "ACM-s", "ACM-ps", "Verstraelen", nullptr};
-    static const char               *cgopt[]        = {nullptr, "Atom", "Group", "Neutral", nullptr};
     static const char               *lot            = nullptr;
     static const char               *qcustom        = nullptr;
 
@@ -212,9 +211,7 @@ int gentop(int argc, char *argv[])
           "Use the order given here for symmetrizing, e.g. when specifying [TT]-symm '0 1 0'[tt] for a water molecule (H-O-H) the hydrogens will have obtain the same charge. For simple groups, like methyl (or water) this is done automatically, but higher symmetry is not detected by the program. The numbers should correspond to atom numbers minus 1, and point to either the atom itself or to a previous atom." },
         { "-qcustom", FALSE, etSTR, {&qcustom}, 
           "Here a quoted string of custom charges can be provided such that a third party source can be used. It is then possible to generate multipoles and compare the ESP to a quantum chemistry result. The number of charges provided must match the number of particles (including shells if present in the force field used)." },
-        { "-cgsort", FALSE, etSTR, {cgopt},
-          "HIDDENOption for assembling charge groups: based on Atom (default, does not change the atom order), Group (e.g. CH3 groups are kept together), or Neutral sections (try to find groups that together are neutral). If the order of atoms is changed an index file is written in order to facilitate changing the order in old files." },
-        { "-jobtype",  FALSE, etSTR, {&jobtype},
+         { "-jobtype",  FALSE, etSTR, {&jobtype},
           "The job type used in the Gaussian calculation: Opt, Polar, SP, and etc." }
     };
 
@@ -228,7 +225,6 @@ int gentop(int argc, char *argv[])
     t_inputrec    *inputrec = new t_inputrec();
     t_commrec     *cr       = init_commrec();
     const char    *tabfn    = opt2fn_null("-table", NFILE, fnm);
-    eChargeGroup   ecg      = (eChargeGroup) get_option(cgopt);
     gmx::MDLogger  mdlog {};
     std::string    method, basis;
     splitLot(lot, &method, &basis);
@@ -417,11 +413,6 @@ int gentop(int argc, char *argv[])
                            opt2fn_null("-diff",     NFILE, fnm),
                            opt2fn_null("-diffhist", NFILE, fnm),
                            oenv);
-    }
-
-    if (immStatus::OK == imm)
-    {
-        imm = mymol.GenerateChargeGroups(ecg, bUsePDBcharge);
     }
 
     if (immStatus::OK == imm && mymol.errors().size() == 0)

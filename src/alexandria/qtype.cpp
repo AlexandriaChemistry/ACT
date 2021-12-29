@@ -36,6 +36,11 @@
 #include <random>
 
 #include "gromacs/math/units.h"
+#include "gromacs/topology/atoms.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/stringutil.h"
+
+#include "qgen_resp.h"
 
 static const double A2CM = E_CHARGE*1.0e-10;        /* e Angstrom to Coulomb meter */
 

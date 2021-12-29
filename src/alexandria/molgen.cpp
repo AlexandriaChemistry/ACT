@@ -412,19 +412,12 @@ void MolGen::checkDataSufficiency(FILE *fp)
             // Now check bonds and bondcorrections
             auto btype = InteractionType::BONDS;
             auto bonds = pd_.findForces(btype);
-            for(int i = 0; i < mol.ltop_->idef.il[bonds->fType()].nr;
-                i+= interaction_function[bonds->fType()].nratoms+1)
+            auto top   = mol.topology();
+            for(const auto &topentry : top->entry(btype))
             {
-                // Skip type, which is the first entry in iatoms
-                int ai = mol.ltop_->idef.il[bonds->fType()].iatoms[i+1];
-                int aj = mol.ltop_->idef.il[bonds->fType()].iatoms[i+2];
-                auto bo     = mol.bondOrder(ai, aj);
                 if (optimize(btype))
                 {
-                    auto iPType = pd_.findParticleType(*myatoms.atomtype[ai])->interactionTypeToIdentifier(btype).id();
-                    auto jPType = pd_.findParticleType(*myatoms.atomtype[aj])->interactionTypeToIdentifier(btype).id();
-                    auto bondId = Identifier({iPType, jPType}, { bo }, bonds->canSwap());
-                    for(auto &ff : *(bonds->findParameters(bondId)))
+                    for(auto &ff : *(bonds->findParameters(topentry->id())))
                     {
                         if (ff.second.isMutable())
                         {
@@ -435,14 +428,16 @@ void MolGen::checkDataSufficiency(FILE *fp)
                 auto bcctype = InteractionType::BONDCORRECTIONS;
                 if (optimize(bcctype) && pd_.interactionPresent(bcctype))
                 {
+                    int ai = topentry->atomIndex(0);
+                    int aj = topentry->atomIndex(1);
                     auto ztype  = InteractionType::ELECTRONEGATIVITYEQUALIZATION;
                     auto iPType = pd_.findParticleType(*myatoms.atomtype[ai])->interactionTypeToIdentifier(ztype).id();
                     auto jPType = pd_.findParticleType(*myatoms.atomtype[aj])->interactionTypeToIdentifier(ztype).id();
                     auto bcc   = pd_.findForces(bcctype);
-                    auto bccId = Identifier({iPType, jPType}, { bo }, bcc->canSwap());
+                    auto bccId = Identifier({iPType, jPType}, topentry->bondOrders(), bcc->canSwap());
                     if (!bcc->parameterExists(bccId))
                     {
-                        bccId = Identifier({jPType, iPType}, { bo }, bcc->canSwap());
+                        bccId = Identifier({jPType, iPType}, topentry->bondOrders(), bcc->canSwap());
                         if (!bcc->parameterExists(bccId))
                         {
                             GMX_THROW(gmx::InternalError("Unknown bondcorrection"));
@@ -468,25 +463,9 @@ void MolGen::checkDataSufficiency(FILE *fp)
                 if (optimize(atype))
                 {
                     auto angles = pd_.findForces(atype);
-                    for(int i = 0; i < mol.ltop_->idef.il[angles->fType()].nr;
-                        i+= interaction_function[angles->fType()].nratoms+1)
+                    for(const auto &topentry : top->entry(atype))
                     {
-                        // Skip type, which is the first entry in iatoms
-                        std::vector<std::string> aa;
-                        std::vector<double>      bondOrders;
-                        int                      ajprev = 0;
-                        for (int j = 1; j < interaction_function[angles->fType()].nratoms+1; j++)
-                        {
-                            int aj = mol.ltop_->idef.il[angles->fType()].iatoms[i+j];
-                            aa.push_back(pd_.findParticleType(*myatoms.atomtype[aj])->interactionTypeToIdentifier(atype).id());
-                            if (j > 1)
-                            {
-                                bondOrders.push_back(mol.bondToBondOrder(ajprev+1, aj+1));
-                            }
-                            ajprev = aj;
-                        }
-                        Identifier aId(aa, bondOrders, angles->canSwap());
-                        for(auto &ff : *(angles->findParameters(aId)))
+                        for(auto &ff : *(angles->findParameters(topentry->id())))
                         {
                             if (ff.second.isMutable())
                             {
@@ -820,16 +799,7 @@ size_t MolGen::Read(FILE            *fp,
                     }
                     continue;
                 }
-                imm = mymol.GenerateChargeGroups(ecgGroup, false);
-                if (immStatus::OK != imm)
-                {
-                    if (verbose && fp)
-                    {
-                        fprintf(fp, "Tried to generate charge groups for %s. Outcome: %s\n",
-                                mymol.getMolname().c_str(), immsg(imm));
-                    }
-                    continue;
-                }
+
                 // TODO Check for G4 as well
                 imm = mymol.getExpProps(iqmMap, bZero,
                                         method, basis, &pd_);
@@ -896,7 +866,7 @@ size_t MolGen::Read(FILE            *fp,
                 }
                 if (dest > 0)
                 {
-                    mymol.eSupp_ = eSupport::Remote;
+                    mymol.setSupport(eSupport::Remote);
                     if (nullptr != debug)
                     {
                         fprintf(debug, "Going to send %s to cpu %d\n", mymol.getMolname().c_str(), dest);
@@ -924,7 +894,7 @@ size_t MolGen::Read(FILE            *fp,
                 }
                 else
                 {
-                    mymol.eSupp_ = eSupport::Local;
+                    mymol.setSupport(eSupport::Local);
                     nLocal.find(mymol.datasetType())->second += 1;
                 }
                 if ((immStatus::OK != imm) && (nullptr != debug))
@@ -1015,14 +985,10 @@ size_t MolGen::Read(FILE            *fp,
             }
             if (immStatus::OK == imm)
             {
-                imm = mymol.GenerateChargeGroups(ecgAtom, false);
-            }
-            if (immStatus::OK == imm)
-            {
                 imm = mymol.getExpProps(iqmMap, bZero,
                                         method, basis, &pd_);
             }
-            mymol.eSupp_ = eSupport::Local;
+            mymol.setSupport(eSupport::Local);
             incrementImmCount(&imm_count, imm);
             if (immStatus::OK == imm)
             {

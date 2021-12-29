@@ -52,11 +52,11 @@
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/real.h"
 
-#include "gentop_core.h"
 #include "gentop_vsite.h"
 #include "molprop.h"
 #include "molselect.h"
 #include "mymol_low.h"
+#include "plistwrapper.h"
 #include "poldata.h"
 #include "qgen_acm.h"
 #include "qgen_resp.h"
@@ -68,7 +68,6 @@ struct t_commrec;
 struct t_forcerec;
 struct t_inputrec;
 struct gmx_hw_info_t;
-
 struct gmx_vsite_t;
 struct t_nrnb;
 
@@ -114,7 +113,7 @@ namespace alexandria
         std::unique_ptr<gmx::MDAtoms>   *MDatoms_        = nullptr;
         std::unique_ptr<gmx::MDModules> *mdModules_      = nullptr;
         MyForceProvider                 *myforce_        = nullptr;
-        GentopVsites                     gvt_;
+        //GentopVsites                     gvt_;
         //! This points to the atom indices before shells were added
         std::map<int, int>               originalAtomIndex_;
         std::string                      forcefield_;
@@ -122,9 +121,7 @@ namespace alexandria
         double                           isoPol_calc_      = 0;
         bool                             gromacsGenerated_ = false;
         gpp_atomtype_t                   gromppAtomtype_;
-        //! Store the bond order for an atom pair
-        std::map<std::pair<int, int>, double> bondOrder_;
-
+ 
         //! Map of charge type dependent properties
         std::map<qType, QtypeProps>           qProps_;
         //! Center of nuclear charge
@@ -181,8 +178,8 @@ namespace alexandria
          * \param[in] pd         Poldata
          * \param[in] atoms      Atoms structure
          */
-        void MakeSpecialInteractions(const Poldata *pd,
-                                     t_atoms       *atoms);
+        //void MakeSpecialInteractions(const Poldata *pd,
+        //                             t_atoms       *atoms);
         /*! \brief
          * Add vsites on bonds to hos bond shell particles
          *
@@ -242,48 +239,32 @@ namespace alexandria
          */
         void findOutPlaneAtoms(int ca, std::vector<int> &atoms);
 
-        /*! \brief Utility function to construct an identifier from GROMACS
-         * topology indices.
-         *
-         * \param[in] pd     Poldata
-         * \param[in] iType  The interaction type
-         * \param[in] btype  Vector of all bond types for the atoms in this mymol
-         * \param[in] natoms Number of atoms in this interaction
-         * \param[in] iatoms The atom indices
-         * \return An identifier
-         */
-        Identifier getIdentifier(const Poldata                  *pd,
-                                 InteractionType                 iType,
-                                 const std::vector<std::string> &btype,
-                                 int                             natoms,
-                                 const int                      *iatoms);
-
-        // Energy terms for this compounds
+        //! Energy terms for this compounds
         std::map<MolPropObservable, double> energy_;
-    public:
-        double                         chieq_         = 0;
-        double                         anisoPol_elec_ = 0;
-        double                         anisoPol_calc_ = 0;
-        double                         mpad_          = 0; //molecular polarizability anisotropy difference (mpad)
-        tensor                         alpha_elec_    = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
-        tensor                         alpha_calc_    = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
-        eSupport                       eSupp_         = eSupport::Local;
-        PaddedVector<gmx::RVec>        f_;
-        PaddedVector<gmx::RVec>        optf_;
-        std::vector<int>               symmetric_charges_;
-        QgenAcm                       *QgenAcm_        = nullptr;
-        std::vector<PlistWrapper>      plist_;
+        //! Molecular Topology
+        Topology                      *topology_;
         gmx_mtop_t                    *mtop_           = nullptr;
         gmx_localtop_t                *ltop_           = nullptr;
-        gmx_shellfc_t                 *shellfc_        = nullptr;
+        //std::vector<PlistWrapper>      plist_;
         t_symtab                      *symtab_         = nullptr;
         t_inputrec                    *inputrec_       = nullptr;
         gmx_enerdata_t                *enerd_          = nullptr;
         t_fcdata                      *fcd_            = nullptr;
+        PaddedVector<gmx::RVec>        f_;
+        PaddedVector<gmx::RVec>        optf_;
         t_nrnb                         nrnb_;
         gmx_wallcycle_t                wcycle_;
+        gmx_shellfc_t                 *shellfc_        = nullptr;
+        std::vector<int>               symmetric_charges_;
         std::vector<std::string>       error_messages_;
-
+        eSupport                       eSupp_         = eSupport::Local;
+        double                         anisoPol_elec_ = 0;
+        double                         anisoPol_calc_ = 0;
+        tensor                         alpha_elec_    = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+        tensor                         alpha_calc_    = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+        QgenAcm                       *QgenAcm_        = nullptr;
+   public:
+  
         /*! \brief
          * Constructor
          */
@@ -297,6 +278,29 @@ namespace alexandria
         {
             dataset_type_ = dataset_type;
         }
+
+        //! \return true if shells are present
+        bool haveShells() const { return nullptr != shellfc_; }
+
+        //! \return how this compound is supported on this processor
+        eSupport support() const { return eSupp_; }
+
+        /*! \brief Set the support type
+         * \param[in] esup The support type
+         */
+        void setSupport(eSupport esup) { eSupp_ = esup; }
+
+        //! \return Calculated (ACM) polarizability tensor
+        const tensor &alpha_calc() const { return alpha_calc_; }
+
+        //! \return Electronic (QM) polarizability tensor
+        const tensor &alpha_elec() const { return alpha_elec_; }
+
+        //! \return Electronic polarizability anisotropy
+        double anisoPolElec() const { return anisoPol_elec_; }
+
+        //! \return Calculated (ACM) polarizability anisotropy
+        double anisoPolCalc() const { return anisoPol_calc_; }
 
         /*! Return an energy component
          * \param[in]  mpo  The particular term that is requested
@@ -312,9 +316,19 @@ namespace alexandria
             *ener = energy_.find(mpo)->second;
             return true;
         }
+
+        //! \return the ACM data structure
+        QgenAcm *qgenAcm() { return QgenAcm_; }
         /*! \brief
          * \return the center of nuclear charge
          */
+
+        /*! Set a pointer to a new QgenAcm
+         * \param[in] qgenAcm The pointer to an initiated class
+         */
+        void setQgenAcm(QgenAcm *qgenAcm) { QgenAcm_ = std::move(qgenAcm); }
+
+        //! \return the center of charge
         const rvec &centerOfCharge() const { return CenterOfCharge_; }
 
         /*! \brief Return QtypeProps for a charge type
@@ -417,6 +431,9 @@ namespace alexandria
                                    missingParameters  missing,
                                    const char        *tabfn,
                                    bool               strict=true);
+
+        //! Return the topology structure
+        const Topology *topology() const { return topology_; }
 
         /*! \brief
          *  Computes isotropic polarizability at the presence of external
@@ -533,7 +550,6 @@ namespace alexandria
          * \param[in] pd       Force field structure
          */
         immStatus getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
-                             
                               gmx_bool           bZero,
                               const std::string &method,
                               const std::string &basis,
@@ -638,14 +654,6 @@ namespace alexandria
         std::string getForceField() { return forcefield_; }
 
         /*! \brief
-         * Generate Charge Groups
-         *
-         * \param[in] ecg
-         * \param[in] bUsePDBcharge
-         */
-        immStatus GenerateChargeGroups(eChargeGroup ecg, bool bUsePDBcharge);
-
-        /*! \brief
          * Generate GROMACS structures.
          */
         immStatus GenerateGromacs(const gmx::MDLogger      &mdlog,
@@ -685,7 +693,7 @@ namespace alexandria
         /*! \brief
          * Print the coordinates corresponding to topology after adding shell particles and/or vsites.
          *
-         * \param[in] fn A File pointer opened previously.
+         * \param[in] fn The filename.
          */
         void PrintConformation(const char *fn);
 

@@ -644,11 +644,11 @@ int QgenAcm::solveSQE(FILE                    *fp,
     // First fill the matrix
     for (int bij = 0; bij < nbonds; bij++)
     {
-        auto ai      = bonds[bij].getAi()-1;
-        auto aj      = bonds[bij].getAj()-1;
+        auto ai      = bonds[bij].aI();
+        auto aj      = bonds[bij].aJ();
         
         double delta_chi = 0, hardness = 0;
-        getBccParams(pd, ai, aj, bonds[bij].getBondOrder(),
+        getBccParams(pd, ai, aj, bonds[bij].bondOrder(),
                      &delta_chi, &hardness);
         if (debug)
         {
@@ -661,8 +661,8 @@ int QgenAcm::solveSQE(FILE                    *fp,
         
         for (int bkl = 0; bkl < nbonds; bkl++)
         {
-            auto ak  = bonds[bkl].getAi()-1;
-            auto al  = bonds[bkl].getAj()-1;
+            auto ak  = bonds[bkl].aI();
+            auto al  = bonds[bkl].aJ();
             
             double J = (Jcc_[ai][ak] - Jcc_[ai][al] - Jcc_[aj][ak] + Jcc_[aj][al]);
             if (bij == bkl)
@@ -694,11 +694,11 @@ int QgenAcm::solveSQE(FILE                    *fp,
         chi_corr[i] += chi0_[nfi];
         for (int bij = 0; bij < nbonds; bij++)
         {
-            if (ai == bonds[bij].getAi()-1)
+            if (ai == bonds[bij].aI())
             {
                 chi_corr[i] += delta_chis[bij];
             }
-            else if (ai == bonds[bij].getAj()-1)
+            else if (ai == bonds[bij].aJ())
             {
                 chi_corr[i] -= delta_chis[bij];
             }
@@ -717,8 +717,8 @@ int QgenAcm::solveSQE(FILE                    *fp,
     }
     for (int bij = 0; bij < nbonds; bij++)
     {
-        auto ai    = bonds[bij].getAi()-1;
-        auto aj    = bonds[bij].getAj()-1;
+        auto ai    = bonds[bij].aI();
+        auto aj    = bonds[bij].aJ();
         rhs[bij]   = chi_corr[aj] - chi_corr[ai];
     }
 
@@ -747,8 +747,8 @@ int QgenAcm::solveSQE(FILE                    *fp,
     }
     for (int bij = 0; bij < nbonds; bij++)
     {
-        auto ai  = bonds[bij].getAi()-1;
-        auto aj  = bonds[bij].getAj()-1;
+        auto ai  = bonds[bij].aI();
+        auto aj  = bonds[bij].aJ();
         myq[ai] += pij[bij];
         myq[aj] -= pij[bij];
     }

@@ -53,9 +53,7 @@ class AllBondedsTest : public gmx::test::CommandLineTestBase
 {
     protected:
         gmx::test::TestReferenceChecker checker_;
-        static std::vector<std::string> atomNames;
-        static std::string              atomName;
-
+ 
         AllBondedsTest () : checker_(this->rootChecker())
         {
             auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 5e-2);

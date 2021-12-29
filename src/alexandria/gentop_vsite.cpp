@@ -416,7 +416,7 @@ static void calc_vsite2parm(t_atoms                   *atoms,
     pp.a[0] = gvl->a[0];
     pp.a[1] = natoms;
     pp.c[0] = rVV;
-    add_param_to_plist(plist, F_CONSTR, InteractionType::CONSTR, pp);
+    add_param_to_plist(plist, F_CONSTR, InteractionType::CONSTR, pp, { 1.0 });
 
     /* Add vsites */
     for (i = 1; (i < gvl->nline); i++)
@@ -426,7 +426,7 @@ static void calc_vsite2parm(t_atoms                   *atoms,
         pp.a[1] = gvl->a[0];
         pp.a[2] = natoms;
         pp.c[0] = ac[i];
-        add_param_to_plist(plist, F_VSITE2, InteractionType::VSITE2, pp);
+        add_param_to_plist(plist, F_VSITE2, InteractionType::VSITE2, pp, { 1.0, 1.0 });
     }
 }
 
@@ -527,7 +527,8 @@ void GentopVsites::mergeLinear(bool bGenVsites)
  * \param[out] plist The parameter list
  */
 static void set_linear_angle_params(const int                  atoms[],
-                                    std::vector<PlistWrapper> *plist)
+                                    std::vector<PlistWrapper> *plist,
+                                    std::vector<double>        bondOrders)
 {
     t_param pp;
     bool    found = false;
@@ -552,7 +553,7 @@ static void set_linear_angle_params(const int                  atoms[],
             {
                 pp.a[i] = atoms[i];
             }
-            add_param_to_plist(plist, F_LINEAR_ANGLES, InteractionType::LINEAR_ANGLES, pp);
+            add_param_to_plist(plist, F_LINEAR_ANGLES, InteractionType::LINEAR_ANGLES, pp, bondOrders);
             found = true;
             break;
         }
@@ -568,6 +569,7 @@ static void set_linear_angle_params(const int                  atoms[],
 void GentopVsites::gen_Vsites(const Poldata             *pd,
                               t_atoms                   *atoms,
                               std::vector<PlistWrapper> *plist,
+                              Topology                  *top,
                               gpp_atomtype              *atype,
                               t_symtab                  *symtab,
                               t_excls                   **excls,
@@ -646,7 +648,8 @@ void GentopVsites::gen_Vsites(const Poldata             *pd,
                             vs.a[3] = renum[inplane->bbca2()];                            
                             vs.c[0] = aijl;
                         }
-                        add_param_to_plist(plist, F_VSITE3FAD, InteractionType::VSITE3FAD, vs);
+                        add_param_to_plist(plist, F_VSITE3FAD, InteractionType::VSITE3FAD, vs,
+                                           { 1.0, 1.0, 1.0 });
                     }                                                
                 }
             }
@@ -697,7 +700,8 @@ void GentopVsites::gen_Vsites(const Poldata             *pd,
                             {
                                 vs.c[2] = (-1)*c;
                             }
-                            add_param_to_plist(plist, F_VSITE3OUT, InteractionType::VSITE3OUT, vs);
+                            add_param_to_plist(plist, F_VSITE3OUT, InteractionType::VSITE3OUT, vs,
+                                               { 1.0, 1.0, 1.0 });
                         }
                     }
                 }
@@ -894,6 +898,7 @@ void GentopVsites::generateSpecial(const Poldata              *pd,
                                    t_atoms                    *atoms,
                                    rvec                      **x,
                                    std::vector<PlistWrapper>  *plist,
+                                   Topology                  *top,
                                    t_symtab                   *symtab,
                                    gpp_atomtype_t              atype,
                                    t_excls                   **excls,
@@ -982,7 +987,7 @@ void GentopVsites::generateSpecial(const Poldata              *pd,
             }
             else
             {
-                set_linear_angle_params(a, plist);
+                set_linear_angle_params(a, plist, { 1.0, 1.0 });
             }
         }
     }
@@ -1035,12 +1040,13 @@ void GentopVsites::generateSpecial(const Poldata              *pd,
             {
                 pp.a[j] = planar_[i].a[j];
             }
-            add_param_to_plist(plist, F_IDIHS, InteractionType::IMPROPER_DIHEDRALS, pp);
+            add_param_to_plist(plist, F_IDIHS, InteractionType::IMPROPER_DIHEDRALS, pp,
+                               { 1.0, 1.0, 1.0 });
         }
     }
     if (bUseVsites && (inplane_.size() > 0 || outplane_.size() > 0))
     {
-        gen_Vsites(pd, atoms, plist, atype, symtab, excls, state);
+        gen_Vsites(pd, atoms, plist, top, atype, symtab, excls, state);
     }
 }
 

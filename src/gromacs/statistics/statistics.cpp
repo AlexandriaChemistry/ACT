@@ -533,7 +533,7 @@ eStats gmx_stats::make_histogram(real binwidth, int *nb,
     {
         return eStats::INVALID_INPUT;
     }
-    if (x_.size() <= 1)
+    if (x_.size() < 1)
     {
         return eStats::NO_POINTS;
     }

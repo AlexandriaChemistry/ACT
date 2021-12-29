@@ -96,7 +96,7 @@ typedef struct {        // NOLINT (clang-analyzer-optin.performance.Padding)
 
 } t_params;
 
-typedef struct {
+typedef struct t_excls {
     int            nr;      /* The number of exclusions             */
     int           *e;       /* The excluded atoms                   */
 } t_excls;

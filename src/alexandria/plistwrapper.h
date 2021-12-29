@@ -30,7 +30,6 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
  
- 
 #ifndef PLISTWRAPPER_H
 #define PLISTWRAPPER_H
 
@@ -40,6 +39,8 @@
 #include "gromacs/gmxpreprocess/hackblock.h"
 
 #include "interactiontype.h"
+#include "mymol_low.h"
+#include "poldata.h"
 
 namespace alexandria
 {
@@ -59,7 +60,8 @@ class PlistWrapper
                      {}
 
         //! Add one parameter
-        void addParam(t_param p) { p_.push_back(p); }
+        void addParam(t_param p,
+                      const std::vector<double> bondOrder);
 
         //! Return the function type
         int getFtype() const { return ftype_; }
@@ -84,9 +86,6 @@ class PlistWrapper
 
         //! Return number of parameters
         unsigned int nParam() const { return p_.size(); }
-        
-        //! Set bond order
-        void addBondOrder (double bondOrder) {bondOrder_.push_back(bondOrder);}
         
         //! Return bond order vector
         const std::vector<double> &bondOrder () const {return bondOrder_;}
@@ -124,17 +123,44 @@ void delete_params(std::vector<PlistWrapper> *plist_,
                    const int                  ftype,
                    const int                  alist[]);
                    
-
-void add_param_to_plist(std::vector<PlistWrapper> *plist,
-                        int                        ftype,
-                        InteractionType            itype,
-                        const t_param             &p);
-                        
 void add_param_to_plist(std::vector<PlistWrapper> *plist,
                         int                        ftype,
                         InteractionType            itype,
                         const t_param             &p,
-                        double                     bondOrder);
-}
+                        const std::vector<double> &bondOrder);
 
+void cp_plist(t_params                   plist[],
+              int                        ftype,
+              InteractionType            itype,
+              std::vector<PlistWrapper> &plist_);
+
+/*! \brief Update GROMACS force field parameters
+ *
+ * The force field parameters in gromacs idef-style structures are updated from the
+ * Poldata structure. This can be a heavy calculation for a large system, but it will 
+ * only handle the  bonds etc. in the system (a molecule typically).
+ * \param[in]  pd      Poldata structure
+ * \param[out] plist   The parameter vector
+ * \param[in]  atoms   GROMACS atom structure
+ * \param[in]  missing Determining whether parameters can be missing
+ * \param[in]  molname Molecule name
+ * \param[out] errors  Error messages are appended to this vector.
+ * \return Warning status
+ */ 
+immStatus updatePlist(const Poldata             *pd,
+                      std::vector<PlistWrapper> *plist,
+                      const t_atoms             *atoms,
+                      missingParameters          missing,
+                      const std::string         &molname,
+                      std::vector<std::string>  *errors);
+
+
+
+void print_top_header(FILE                    *fp,
+                      const Poldata           *pd,
+                      bool                     bPol,
+                      std::vector<std::string> commercials,
+                      bool                     bItp);
+
+}
 #endif

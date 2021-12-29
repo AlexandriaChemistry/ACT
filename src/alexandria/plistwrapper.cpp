@@ -42,6 +42,7 @@
 
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 
 namespace alexandria
 {
@@ -60,6 +61,17 @@ ConstPlistWrapperIterator SearchPlist(const std::vector<PlistWrapper> &plist, In
                         { return p.getItype() == itype; });
 }
 
+void PlistWrapper::addParam(t_param p,
+                            const std::vector<double> bondOrder)
+{
+    GMX_RELEASE_ASSERT(interaction_function[ftype_].nratoms == 1+static_cast<int>(bondOrder.size()), "Incorrect number of bond orders passed");
+    p_.push_back(p);
+    for (auto &b : bondOrder)
+    {
+        bondOrder_.push_back(b);
+    }
+}
+
 PlistWrapperIterator SearchPlist(std::vector<PlistWrapper> &plist, int ftype)
 {
     return std::find_if(plist.begin(), plist.end(),
@@ -73,6 +85,7 @@ PlistWrapperIterator SearchPlist(std::vector<PlistWrapper> &plist, InteractionTy
                         [itype](PlistWrapper &p) 
                         { return p.getItype() == itype; });
 }
+
 
 unsigned int CountPlist(const std::vector<PlistWrapper> &plist, int ftype)
 {
@@ -181,7 +194,8 @@ void delete_params(std::vector<PlistWrapper> *plist_,
 void add_param_to_plist(std::vector<PlistWrapper> *plist,
                         int                        ftype,
                         InteractionType            itype,
-                        const t_param             &p)
+                        const t_param             &p,
+                        const std::vector<double> &bondOrder)
 {
     std::vector<PlistWrapper>::iterator pwi = SearchPlist(*plist, ftype);
 
@@ -191,27 +205,35 @@ void add_param_to_plist(std::vector<PlistWrapper> *plist,
         plist->push_back(pw);
         pwi = plist->end() - 1;
     }
-    pwi->addParam(p);
+    pwi->addParam(p, bondOrder);
 }
 
-void add_param_to_plist(std::vector<PlistWrapper> *plist,
-                        int                        ftype,
-                        InteractionType            itype,
-                        const t_param             &p,
-                        double                     bondOrder)
+static void print_pl(FILE       *fp, 
+                     t_params    plist[], 
+                     int         ftp, 
+                     const char *name,
+                     char       ***atomname)
 {
-    std::vector<PlistWrapper>::iterator pwi = SearchPlist(*plist, ftype);
+    int i, j, nral, nrfp;
 
-    if (plist->end() == pwi)
+    if (plist[ftp].nr > 0)
     {
-        PlistWrapper pw(itype, ftype);
-        plist->push_back(pw);
-        pwi = plist->end() - 1;
-    }
-    pwi->addParam(p);
-    if (InteractionType::BONDS == itype)
-    {
-        pwi->addBondOrder(bondOrder);
+        fprintf(fp, "\n");
+        fprintf(fp, "[ %s ]\n", name);
+        nral = interaction_function[ftp].nratoms;
+        nrfp = interaction_function[ftp].nrfpA;
+        for (i = 0; (i < plist[ftp].nr); i++)
+        {
+            for (j = 0; (j < nral); j++)
+            {
+                fprintf(fp, "  %5s", *atomname[plist[ftp].param[i].a[j]]);
+            }
+            for (j = 0; (j < nrfp); j++)
+            {
+                fprintf(fp, "  %10.3e", plist[ftp].param[i].c[j]);
+            }
+            fprintf(fp, "\n");
+        }
     }
 }
 

@@ -64,7 +64,6 @@
 #include "gromacs/utility/unique_cptr.h"
 
 #include "alex_modules.h"
-#include "gentop_core.h"
 #include "gmx_simple_comm.h"
 #include "memory_check.h"
 #include "molgen.h"
@@ -203,13 +202,13 @@ void OptACM::initChargeGeneration(iMolSelect ims)
                             mymol.getMolname().c_str(),
                             method.c_str(), basis.c_str());
                 }
-                mymol.eSupp_ = eSupport::No;
+                mymol.setSupport(eSupport::No);
             }
         }
-        if (mymol.eSupp_ != eSupport::No)
+        if (mymol.support() != eSupport::No)
         {
-            mymol.QgenAcm_ = new QgenAcm(poldata(), mymol.atoms(),
-                                         mymol.totalCharge());
+            mymol.setQgenAcm(new QgenAcm(poldata(), mymol.atoms(),
+                                         mymol.totalCharge()));
         }
     }
 }
@@ -288,8 +287,8 @@ double OptACM::calcDeviation(bool       verbose,
         {
             continue;
         }
-        if ((mymol.eSupp_ == eSupport::Local) ||
-            (calcDev == CalcDev::Master && mymol.eSupp_ == eSupport::Remote))
+        if ((mymol.support() == eSupport::Local) ||
+            (calcDev == CalcDev::Master && mymol.support() == eSupport::Remote))
         {
             nmolCalculated += 1;
             // Update the polarizabilities only once before the loop
@@ -311,7 +310,7 @@ double OptACM::calcDeviation(bool       verbose,
             // Check whether we have to disable this compound
             if (immStatus::OK != imm && removeMol())
             {
-                mymol.eSupp_ = eSupport::No;
+                mymol.setSupport(eSupport::No);
                 continue;
             }
 

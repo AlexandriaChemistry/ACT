@@ -38,7 +38,7 @@
 #include "gromacs/mdtypes/commrec.h"
 
 #include "communication.h"
-#include "plistwrapper.h"
+#include "interactiontype.h"
 
 namespace alexandria
 {

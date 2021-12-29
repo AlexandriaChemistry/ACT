@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="#angles">6</Int>
+  <Sequence Name="Angle">
+    <Int Name="Length">6</Int>
+    <String>1-2-3</String>
+    <String>1-2-4</String>
+    <String>2-1-6</String>
+    <String>3-2-4</String>
+    <String>2-4-5</String>
+    <String>4-5-6</String>
+  </Sequence>
+  <Sequence Name="LinearAngle">
+    <Int Name="Length">1</Int>
+    <String>5-6-1</String>
+  </Sequence>
+</ReferenceData>

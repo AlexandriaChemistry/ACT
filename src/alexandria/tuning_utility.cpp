@@ -233,7 +233,7 @@ static void print_polarizability(FILE              *fp,
     {
         if (calc_name == qTypeName(qType::Calc))
         {
-            m_sub(mol->alpha_elec_, mol->alpha_calc_, dalpha);
+            m_sub(mol->alpha_elec(), mol->alpha_calc(), dalpha);
             delta = sqrt(gmx::square(dalpha[XX][XX])+gmx::square(dalpha[XX][YY])+gmx::square(dalpha[XX][ZZ])+
                          gmx::square(dalpha[YY][YY])+gmx::square(dalpha[YY][ZZ]));
             diso_pol   = std::abs(mol->PolarizabilityDeviation());
@@ -243,11 +243,11 @@ static void print_polarizability(FILE              *fp,
                     "     (%6s %6.2f %6.2f)      (%6s %6.2f %6.2f)\n"
                     "     (%6s %6s %6.2f)      (%6s %6s %6.2f)\n",
                     calc_name.c_str(),
-                    mol->alpha_calc_[XX][XX], mol->alpha_calc_[XX][YY], mol->alpha_calc_[XX][ZZ],
+                    mol->alpha_calc()[XX][XX], mol->alpha_calc()[XX][YY], mol->alpha_calc()[XX][ZZ],
                     dalpha[XX][XX], dalpha[XX][YY], dalpha[XX][ZZ], delta, (delta > alpha_toler) ? "ALPHA" : "",
-                    "", mol->alpha_calc_[YY][YY], mol->alpha_calc_[YY][ZZ],
+                    "", mol->alpha_calc()[YY][YY], mol->alpha_calc()[YY][ZZ],
                     "", dalpha[YY][YY], dalpha[YY][ZZ],
-                    "", "", mol->alpha_calc_[ZZ][ZZ],
+                    "", "", mol->alpha_calc()[ZZ][ZZ],
                     "", "", dalpha[ZZ][ZZ]);
             fprintf(fp,
                     "Isotropic polarizability:  %s Electronic: %6.2f  Calculated: %6.2f  Delta: %6.2f %s\n\n",
@@ -270,9 +270,9 @@ static void print_polarizability(FILE              *fp,
                     "Electronic   (%6.2f %6.2f %6.2f)\n"
                     "             (%6s %6.2f %6.2f)\n"
                     "             (%6s %6s %6.2f)\n",
-                    mol->alpha_elec_[XX][XX], mol->alpha_elec_[XX][YY], mol->alpha_elec_[XX][ZZ],
-                    "", mol->alpha_elec_[YY][YY], mol->alpha_elec_[YY][ZZ],
-                    "", "", mol->alpha_elec_[ZZ][ZZ]);
+                    mol->alpha_elec()[XX][XX], mol->alpha_elec()[XX][YY], mol->alpha_elec()[XX][ZZ],
+                    "", mol->alpha_elec()[YY][YY], mol->alpha_elec()[YY][ZZ],
+                    "", "", mol->alpha_elec()[ZZ][ZZ]);
         }
     }
 }
@@ -587,7 +587,7 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
     }
     for (auto mol = mymol->begin(); mol < mymol->end(); ++mol)
     {
-        if (mol->eSupp_ != eSupport::No)
+        if (mol->support() != eSupport::No)
         {
             auto ims = mol->datasetType();
             fprintf(fp, "\nMolecule %d: Name: %s, Qtot: %d, Multiplicity: %d, Dataset: %s\n", n+1,
@@ -684,10 +684,10 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
                 print_polarizability(fp, mol, qTypeName(qType::Calc), alpha_toler_, isopol_toler_);
                 lsq_isoPol[ims][qType::Calc].add_point(mol->ElectronicPolarizability(),
                                                        mol->CalculatedPolarizability(),       0, 0);
-                lsq_anisoPol[ims][qType::Calc].add_point(mol->anisoPol_elec_, mol->anisoPol_calc_, 0, 0);
+                lsq_anisoPol[ims][qType::Calc].add_point(mol->anisoPolElec(), mol->anisoPolCalc(), 0, 0);
                 for (int mm = 0; mm < DIM; mm++)
                 {
-                    lsq_alpha[ims][qType::Calc].add_point(mol->alpha_elec_[mm][mm], mol->alpha_calc_[mm][mm], 0, 0);
+                    lsq_alpha[ims][qType::Calc].add_point(mol->alpha_elec()[mm][mm], mol->alpha_calc()[mm][mm], 0, 0);
                 }
             }
 
@@ -830,7 +830,7 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
             auto qelec = mol->qTypeProps(qType::Elec);
             auto qcalc = mol->qTypeProps(qType::Calc);
             auto deviation = std::abs(qcalc->dipole() - qelec->dipole());
-            if ((mol->eSupp_ != eSupport::No)  &&
+            if ((mol->support() != eSupport::No)  &&
                 (qelec->dipole() > sigma) &&
                 (deviation > 2*sigma))
             {
@@ -856,7 +856,7 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
             real rms, rrms, cosesp, mae, mse;
             auto qcalc = mol->qTypeProps(qType::Calc);
             rms        = convertToGromacs(qcalc->qgenResp()->getStatistics(&rrms, &cosesp, &mae, &mse), "Hartree/e");
-            if ((mol->eSupp_ != eSupport::No) && (rms > espMax))
+            if ((mol->support() != eSupport::No) && (rms > espMax))
             {
                 fprintf(fp, "%-40s  %12.3f", mol->getMolname().c_str(), rms);
                 auto qesp = mol->qTypeProps(qType::ESP);

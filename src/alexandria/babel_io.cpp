@@ -92,6 +92,7 @@
 #undef KOKO
 #endif
 
+using namespace alexandria;
 
 static inline double A2PM(double a) {return a*1.0e+2; }                /* Angstrom to pm */
 
@@ -257,8 +258,8 @@ static void checkBondOrders(alexandria::MolProp *mpt)
                 auto allBonds = mpt->bonds();
                 for(size_t b = 0; b < (*allBonds).size(); b++)
                 {
-                    size_t ai = (*allBonds)[b].getAi()-1;
-                    size_t aj = (*allBonds)[b].getAj()-1;
+                    size_t ai = (*allBonds)[b].aI();
+                    size_t aj = (*allBonds)[b].aJ();
                     if ((ai == i && atomName[aj] == my_pair.second) ||
                         (aj == i && atomName[ai] == my_pair.second))
                     {
@@ -271,7 +272,7 @@ static void checkBondOrders(alexandria::MolProp *mpt)
                 {
                     for (size_t j = 0; j < bondIndex.size(); j++)
                     {
-                        (*allBonds)[bondIndex[j]].setBondOrder(1.5);
+                        (*allBonds)[bondIndex[j]].setBondOrder(0, 1.5);
                     }
                 }
             }
@@ -295,8 +296,8 @@ static bool getBondsFromOpenBabel(OpenBabel::OBMol    *mol,
             {
                 bo = 1.5;
             }
-            alexandria::Bond ab(1+OBb->GetBeginAtom()->GetIndex(),
-                                1+OBb->GetEndAtom()->GetIndex(),
+            alexandria::Bond ab(OBb->GetBeginAtom()->GetIndex(),
+                                OBb->GetEndAtom()->GetIndex(),
                                 bo);
             mpt->AddBond(ab);
         }

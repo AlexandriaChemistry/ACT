@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="#custom">2</Int>
+  <Sequence Name="POLARIZATION">
+    <Int Name="Length">2</Int>
+    <String>1-2</String>
+    <String>3-4</String>
+  </Sequence>
+</ReferenceData>

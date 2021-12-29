@@ -108,7 +108,7 @@ void ChargeCM5DevComputer::calcDeviation(      MyMol                            
         double qj  = myatoms.atom[j].q;
         double qjj = qj;
         // TODO: only count in real shells
-        if (nullptr != mymol->shellfc_ &&
+        if (mymol->haveShells() &&
             j < myatoms.nr-1 &&
             myatoms.atom[j+1].ptype == eptShell)
         {
@@ -176,7 +176,7 @@ void EspDevComputer::calcDeviation(      MyMol                             *mymo
     real rrms     = 0;
     real cosangle = 0;
     QgenResp *qgr = mymol->qTypeProps(qType::Calc)->qgenResp();
-    if (nullptr != mymol->shellfc_)
+    if (mymol->haveShells())
     {
         qgr->updateAtomCoords(mymol->x());
     }

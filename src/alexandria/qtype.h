@@ -35,13 +35,17 @@
 #include <map>
 #include <string>
 
+#include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 
-#include "qgen_resp.h"
+struct t_atoms;
 
 namespace alexandria
-{ 
+{
+
+class QgenResp;
+
 /*! \brief Enumerated type to differentiate the charge types 
  * and properties derived from the charges.
  */
