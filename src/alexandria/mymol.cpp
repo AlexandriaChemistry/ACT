@@ -2057,6 +2057,10 @@ immStatus MyMol::getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
                         }
                     }
                 }
+                else
+                {
+                    imm = immStatus::NoData;
+                }
             }
             break;
         case MolPropObservable::DHFORM:
@@ -2068,6 +2072,10 @@ immStatus MyMol::getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
                 if (gp)
                 {
                     energy_.insert(std::pair<MolPropObservable, double>(mpo, gp->getValue()));
+                }
+                else
+                {
+                    imm = immStatus::NoData;
                 }
             }
             break;
@@ -2099,6 +2107,10 @@ immStatus MyMol::getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
                         imm = immStatus::ZeroDip;
                     }
                 }
+                else
+                {
+                    imm = immStatus::NoData;
+                }
             }
             break;
         case MolPropObservable::QUADRUPOLE:
@@ -2108,6 +2120,10 @@ immStatus MyMol::getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
                 if (gp)
                 {
                     qProps_.find(qType::Elec)->second.setQuadrupole(gp->getTensor());
+                }
+                else
+                {
+                    imm = immStatus::NoData;
                 }
             }
             break;
@@ -2120,6 +2136,10 @@ immStatus MyMol::getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
                     copy_mat(gp->getTensor(), alpha_elec_);
                     CalcAnisoPolarizability(alpha_elec_, &anisoPol_elec_);
                 }
+                else
+                {
+                    imm = immStatus::NoData;
+                }
             }
             break;
         default:
@@ -2127,7 +2147,8 @@ immStatus MyMol::getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
         }
     }
 
-    if (energy_.find(MolPropObservable::DHFORM) != energy_.end())
+    if (immStatus::OK == imm &&
+        energy_.find(MolPropObservable::DHFORM) != energy_.end())
     {
         double Emol = energy_[MolPropObservable::DHFORM];
         for (ia = 0; ia < myatoms.nr; ia++)
