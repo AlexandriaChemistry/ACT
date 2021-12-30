@@ -51,8 +51,7 @@ set(ALEXANDRIA_SOURCES
            forcefieldparameterlist.cpp
 #           gen_table.cpp
            gentop.cpp
-           gentop_core.cpp
-           gentop_vsite.cpp
+ #          gentop_vsite.cpp
            gmx_simple_comm.cpp
            identifier.cpp
            interactiontype.cpp
@@ -78,7 +77,7 @@ set(ALEXANDRIA_SOURCES
            particletype.cpp
            percentmutator.cpp
            phase.cpp
-           plistwrapper.cpp
+  #         plistwrapper.cpp
            poldata.cpp
            poldata_low.cpp
            poldata_tables.cpp
@@ -93,6 +92,8 @@ set(ALEXANDRIA_SOURCES
            regression.cpp
            sharedindividualinfo.cpp
            stringutil.cpp
+           symmetrize_charges.cpp
+           topology.cpp
            tune_eem.cpp
 #           tune_fc.cpp
 #           tune_fc_utils.cpp
@@ -101,6 +102,7 @@ set(ALEXANDRIA_SOURCES
            xml_util.cpp
            analyze.cpp
            molprop_tables.cpp
+           vsite.cpp
 	)
 	
 add_subdirectory(coulombintegrals)

@@ -138,27 +138,15 @@ void AllBondeds::addOptions(std::vector<t_pargs> *pargs)
 }
     
 void AllBondeds::addBonded(FILE                           *fplog, 
-                           const Poldata                  &pd,
                            InteractionType                 iType,
                            const MyMol                    &mmi,
-                           const std::vector<int>         &atomid,
-                           CanSwap                         canSwap)
+                           const Identifier               &bondId,
+                           const std::vector<int>         &atomid)
 {
-    auto                     myatoms = mmi.atomsConst();
-    auto                     x       = mmi.x();
-    std::vector<double>      bondOrder;
-    std::vector<std::string> atoms;
-    for(size_t k = 0; k < atomid.size(); k++)
-    {
-        std::string cak;
-        GMX_RELEASE_ASSERT(pd.atypeToBtype(*myatoms.atomtype[atomid[k]], &cak) &&
-                           cak.size() > 0, "atom name is empty");
-        atoms.push_back(cak);
-    }
+    auto x = mmi.x();
     // We need to check for linear angles here before we
     // add this to the tables.
-    double refValue;
-    
+    double refValue = 0;
     switch(iType)
     {
     case InteractionType::ANGLES:
@@ -166,14 +154,11 @@ void AllBondeds::addBonded(FILE                           *fplog,
         {
             rvec rij, rkj;
             rvec_sub(x[atomid[0]], x[atomid[1]], rij);
-            bondOrder.push_back(mmi.bondToBondOrder(1+atomid[0], 1+atomid[1]));
             rvec_sub(x[atomid[2]], x[atomid[1]], rkj);
-            bondOrder.push_back(mmi.bondToBondOrder(1+atomid[2], 1+atomid[1]));
             refValue = RAD2DEG*gmx_angle(rij, rkj);
             if ( (refValue > 175) || (refValue < 5) )
             {
                 iType = InteractionType::LINEAR_ANGLES;
-                //GMX_RELEASE_ASSERT(iType == InteractionType::LINEAR_ANGLES, "nee toch");
             }
         }
         break;
@@ -181,7 +166,6 @@ void AllBondeds::addBonded(FILE                           *fplog,
         {
             rvec rij;
             rvec_sub(x[atomid[0]], x[atomid[1]], rij);
-            bondOrder.push_back(mmi.bondToBondOrder(1+atomid[0], 1+atomid[1]));
             refValue = norm(rij)*1000;
         }
         break;
@@ -198,9 +182,6 @@ void AllBondeds::addBonded(FILE                           *fplog,
                                          x[atomid[3]],
                                          &pbc, r_ij, r_kj, r_kl, mm, nn,
                                          &t1, &t2, &t3);
-            bondOrder.push_back(mmi.bondToBondOrder(1+atomid[0], 1+atomid[1]));
-            bondOrder.push_back(mmi.bondToBondOrder(1+atomid[1], 1+atomid[2]));
-            bondOrder.push_back(mmi.bondToBondOrder(1+atomid[2], 1+atomid[3]));
             if (refValue < 0)
             {
                 refValue += 360;
@@ -220,10 +201,6 @@ void AllBondeds::addBonded(FILE                           *fplog,
                                          x[atomid[3]],
                                          &pbc, r_ij, r_kj, r_kl, mm, nn,
                                          &t1, &t2, &t3);
-            bondOrder.push_back(mmi.bondToBondOrder(1+atomid[0], 1+atomid[1]));
-            bondOrder.push_back(mmi.bondToBondOrder(1+atomid[1], 1+atomid[2]));
-            bondOrder.push_back(mmi.bondToBondOrder(1+atomid[1], 1+atomid[3]));
-            
             if (refValue < 0)
             {
                 refValue += 360;
@@ -253,7 +230,6 @@ void AllBondeds::addBonded(FILE                           *fplog,
         bondeds_.insert(std::pair<InteractionType, std::vector<OneBonded> >(iType, std::move(ob)));
     }
     // Look up the bondId in the data structure
-    Identifier bondId(atoms, bondOrder, canSwap);
     auto ob = std::find_if(bondeds_[iType].begin(), bondeds_[iType].end(),
                            [bondId](const OneBonded &b){ return bondId == b.id(); });
     if (bondeds_[iType].end() == ob)
@@ -492,24 +468,12 @@ void AllBondeds::extractGeometries(FILE                       *fp,
                 }
                 continue;
             }
-            for (auto &fs : pd.forcesConst())
+            auto top = mmi.topology();
+            for(const auto &entry : top->entries())
             {
-                auto    iType    = fs.first;
-                auto    funcType = fs.second.fType();
-                int     nratoms  = interaction_function[funcType].nratoms;
-                CanSwap canSwap  = fs.second.canSwap();
-                if (mmi.ltop_->idef.il[funcType].nr < nratoms)
+                for (auto topentry : entry.second)
                 {
-                    continue;
-                }
-                for (int j = 0; j < mmi.ltop_->idef.il[funcType].nr; j += nratoms+1)
-                {
-                    std::vector<int> atomid;
-                    for (int k = 1; k <= nratoms; k++)
-                    {
-                        atomid.push_back(mmi.ltop_->idef.il[funcType].iatoms[j+k]);
-                    }
-                    addBonded(fp, pd, iType, mmi, atomid, canSwap);
+                    addBonded(fp, entry.first, mmi, topentry->id(), topentry->atomIndices());
                 }
             }
             mymols->push_back(mmi);

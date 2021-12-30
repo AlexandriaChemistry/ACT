@@ -127,18 +127,16 @@ namespace alexandria
         real                                               dspacing_  = 1;
         /*! \brief Add bonds etc. for one molecule and list of atoms
          * \param[in] fplog   File to print information
-         * \param[in] pd      Force field structure
          * \param[in] iType   InteractionType
          * \param[in] mmi     Molecule structure
+         * \param[in] bondId  The bond identifier
          * \param[in] atomid  List of atoms involved in the interaction
-         * \param[in] canSwap Whether or not the atom order can be swapped
-         */
+          */
         void addBonded(FILE                           *fplog, 
-                       const Poldata                  &pd,
                        InteractionType                 iType,
                        const MyMol                    &mmi,
-                       const std::vector<int>         &atomid,
-                       CanSwap                         canSwap);
+                       const Identifier               &bondId,         
+                       const std::vector<int>         &atomid);
 
     public:
         //! Constructor

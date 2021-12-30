@@ -180,13 +180,13 @@ static bool calcDissoc(FILE                              *fplog,
         auto myatoms = mymol->atomsConst();
         for (auto &b : mymol->bondsConst())
         {
-            auto atypeI = *myatoms.atomtype[b.getAi()-1];
-            auto atypeJ = *myatoms.atomtype[b.getAj()-1];
+            auto atypeI = *myatoms.atomtype[b.aI()];
+            auto atypeJ = *myatoms.atomtype[b.aJ()];
             std::string btypeI, btypeJ;
             if (pd->atypeToBtype(atypeI, &btypeI) &&
                 pd->atypeToBtype(atypeJ, &btypeJ))
             {
-                Identifier bondId({btypeI, btypeJ}, { b.getBondOrder() }, CanSwap::Yes);
+                Identifier bondId({btypeI, btypeJ}, { b.bondOrder() }, CanSwap::Yes);
                 if (bondIdToIndex.find(bondId) == bondIdToIndex.end())
                 {
                     bondIdToIndex.insert(std::pair<Identifier, int>(bondId, nColumn++));
@@ -225,13 +225,13 @@ static bool calcDissoc(FILE                              *fplog,
         auto myatoms = mymol->atomsConst();
         for (auto &b : mymol->bondsConst())
         {
-            const char *atypeI = *myatoms.atomtype[b.getAi()-1];
-            const char *atypeJ = *myatoms.atomtype[b.getAj()-1];
+            const char *atypeI = *myatoms.atomtype[b.aI()];
+            const char *atypeJ = *myatoms.atomtype[b.aJ()];
             std::string btypeI, btypeJ;
             if (pd->atypeToBtype(atypeI, &btypeI) &&
                 pd->atypeToBtype(atypeJ, &btypeJ))
             {
-                Identifier bondId({btypeI, btypeJ}, { b.getBondOrder() }, CanSwap::Yes);
+                Identifier bondId({btypeI, btypeJ}, { b.bondOrder() }, CanSwap::Yes);
                 int column = bondIdToIndex[bondId];
                 GMX_RELEASE_ASSERT(column < nColumn && column >= 0, gmx::formatString("Column %d should be within 0..%d", column, nColumn).c_str());
                 GMX_RELEASE_ASSERT(row < nRow && row >= 0, gmx::formatString("Row %d should be within 0..%d", row, nRow).c_str());
@@ -422,8 +422,8 @@ double getDissociationEnergy(FILE               *fplog,
             }
         }
         // Fetch the parameter from the force field
-        auto fp = fs->findParameterType(bi.first, "Dm");
-        int ntr = ntrain.find(bi.first)->second;
+        auto fp  = fs->findParameterType(bi.first, "Dm");
+        int  ntr = ntrain.find(bi.first)->second;
         // Print to the log file    
         if (fplog)
         {

@@ -405,13 +405,11 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
         }    
 
         auto fs = pd->findForcesConst(InteractionType::BONDS);
-        auto ftype = fs.fType();
-
-        for (auto i = 0; i < mymol->ltop_->idef.il[ftype].nr;
-            i += interaction_function[ftype].nratoms+1)
+        
+        for(const auto topentry : mymol->topology()->entry(InteractionType::BONDS))
         {
-            int ai = mymol->ltop_->idef.il[ftype].iatoms[i+1];
-            int aj = mymol->ltop_->idef.il[ftype].iatoms[i+2];
+            int ai = topentry->atomIndex(0);
+            int aj = topentry->atomIndex(1);
             
             std::string name_ai;
             name_ai += *(myatoms.atomtype[ai]);

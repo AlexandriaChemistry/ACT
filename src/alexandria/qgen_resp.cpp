@@ -537,7 +537,7 @@ void QgenResp::optimizeCharges(double epsilonr)
 
     }
     GMX_RELEASE_ASSERT(j1 == static_cast<int>(rhs.size()), "Inconsistency adding equations for symmetric charges");
-    GMX_RELEASE_ASSERT(j1 == nrow, "Something fishy adding equations for symmetric charges");
+    GMX_RELEASE_ASSERT(j1 == nrow, gmx::formatString("Something fishy adding equations for symmetric charges. j1 = %d, nrow = %d", j1, nrow).c_str());
     if (debug)
     {
         fprintf(debug, "ncolumn = %d nrow = %d point = %zu nfixed = %d nUnique = %d\n",

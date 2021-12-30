@@ -30,9 +30,8 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-
-#ifndef GMX_QGEN_RESP_H
-#define GMX_QGEN_RESP_H
+#ifndef ACT_QGEN_RESP_H
+#define ACT_QGEN_RESP_H
 
 #include <cstdio>
 
@@ -41,9 +40,9 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/statistics/statistics.h"
-#include "gromacs/topology/atomprop.h"
+//#include "gromacs/topology/atomprop.h"
 
-#include "poldata.h"
+#include "chargemodel.h"
 
 struct gmx_output_env_t;
 struct t_atoms;
@@ -51,6 +50,9 @@ struct t_symtab;
 
 namespace alexandria
 {
+
+class Poldata;
+
 class EspPoint
 {
     public:

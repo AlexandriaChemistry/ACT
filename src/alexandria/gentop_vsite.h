@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020 
+ * Copyright (C) 2014-2021
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -30,22 +30,25 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
  
- 
 #ifndef GENTOP_VSITE_H
 #define GENTOP_VSITE_H
 
 #include <vector>
 
-#include "gromacs/gmxpreprocess/grompp.h"
+#include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/mdtypes/state.h"
 
-#include "plistwrapper.h"
-#include "poldata.h"
+#include "vsite.h"
 
 struct gpp_atomtype;
+struct t_symtab;
 
 namespace alexandria
 {
+
+class PlistWrapper;
+class Poldata;
+class Topology;
 
 //! Structure for linear virtual sites
 typedef struct {
@@ -173,7 +176,16 @@ class GentopVsites
         //! The ring-planar vsites
         std::vector<gv_ringplanar> ringplanar_;
 
-    public:
+        void gen_Vsites(const Poldata             *pd,
+                        t_atoms                   *atoms,
+                        std::vector<PlistWrapper> *plist,
+                        Topology                  *top,
+                        gpp_atomtype              *atype,
+                        t_symtab                  *symtab,
+                        t_excls                   **excls,
+                        t_state                    *state);
+
+           public:
         //! Default constructor
         GentopVsites(VsiteType gvt) : gvt_(gvt) 
         {}
@@ -262,15 +274,7 @@ class GentopVsites
         
         int nVsites();
         
-        void gen_Vsites(const Poldata             *pd,
-                        t_atoms                   *atoms,
-                        std::vector<PlistWrapper> *plist,
-                        gpp_atomtype              *atype,
-                        t_symtab                  *symtab,
-                        t_excls                   **excls,
-                        t_state                    *state);
-
-        /*! \brief Add a ring-planar vsite
+         /*! \brief Add a ring-planar vsite
          *
          * param[in] natom number of atoms in the ring
          * param[in] a the ring atoms
@@ -288,6 +292,7 @@ class GentopVsites
                              t_atoms                   *atoms,
                              rvec                     **x,
                              std::vector<PlistWrapper> *plist,
+                             Topology                  *top,
                              t_symtab                  *symtab,
                              gpp_atomtype              *atype,
                              t_excls                  **excls,

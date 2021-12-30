@@ -256,7 +256,7 @@ CommunicationStatus Experiment::Receive(t_commrec *cr, int src)
             int  ngp = gmx_recv_int(cr, src);
             for (int n = 0; n < ngp; n++)
             {
-                GenericProperty *gp = nullptr;
+                GenericProperty *gp;
                 switch (mpo)
                 {
                 case MolPropObservable::DIPOLE:
@@ -266,8 +266,8 @@ CommunicationStatus Experiment::Receive(t_commrec *cr, int src)
                     }
                 case MolPropObservable::QUADRUPOLE:
                     {
-                        gp = new MolecularQuadrupole;
-                        break;
+                       gp = new MolecularQuadrupole;
+                       break;
                     }
                 case MolPropObservable::POLARIZABILITY:
                     {
@@ -296,9 +296,10 @@ CommunicationStatus Experiment::Receive(t_commrec *cr, int src)
                     {
                         gmx_fatal(FARGS, "Don't know what to do...");
                     }
-                } 
+                }
                 gp->Receive(cr, src);
                 addProperty(mpo, gp);
+
             }
         } 
         

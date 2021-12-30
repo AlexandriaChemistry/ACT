@@ -52,6 +52,7 @@ gmx_add_unit_test(
     qgen_acmTest.cpp
     qgen_respTest.cpp
     regressionTest.cpp
+    topologyTest.cpp
     unitsTest.cpp
     #rotationTest.cpp
     # pseudo-library for code for alexandria

@@ -74,103 +74,6 @@ DataSource dataSourceFromName(const std::string &name)
     gmx_fatal(FARGS, "No data source corresponding to %s", name.c_str());
 }
 
-
-
-CommunicationStatus Bond::Send(t_commrec *cr, int dest) const
-{
-    CommunicationStatus cs;
-
-    cs = gmx_send_data(cr, dest);
-    if (CS_OK == cs)
-    {
-        gmx_send_int(cr, dest, ai_);
-        gmx_send_int(cr, dest, aj_);
-        gmx_send_double(cr, dest, bondorder_);
-    }
-    else if (nullptr != debug)
-    {
-        fprintf(debug, "Trying to send Bond, status %s\n", cs_name(cs));
-        fflush(debug);
-    }
-    return cs;
-}
-
-CommunicationStatus Bond::Receive(t_commrec *cr, int src)
-{
-    CommunicationStatus cs;
-
-    cs = gmx_recv_data(cr, src);
-    if (CS_OK == cs)
-    {
-        ai_        = gmx_recv_int(cr, src);
-        aj_        = gmx_recv_int(cr, src);
-        bondorder_ = gmx_recv_double(cr, src);
-    }
-    else if (nullptr != debug)
-    {
-        fprintf(debug, "Trying to receive Bond, status %s\n", cs_name(cs));
-        fflush(debug);
-    }
-    return cs;
-}
-
-bool Bond::operator==(const Bond &other) const
-{
-    return ((ai_ == other.getAi() && aj_ == other.getAj()) ||
-            (aj_ == other.getAi() && ai_ == other.getAj()));
-}
-
-double MolProp::bondToBondOrder(int ai, int aj) const
-{
-    Bond   mybond(ai, aj, 1.0);
-    auto   bb = std::find(bond_.begin(), bond_.end(), mybond);
-    if (bb != bond_.end())
-    {
-        return bb->getBondOrder();
-    }
-    else
-    {
-        Bond   mybond(aj, ai, 1.0);
-        auto   bb = std::find(bond_.begin(), bond_.end(), mybond);
-        if (bb != bond_.end())
-        {
-            return bb->getBondOrder();
-        }
-    }
-    printf("Looking for %d-%d\n", ai, aj);
-    for(auto &b : bond_)
-    {
-        printf("Have %d-%d\n", b.getAi(), b.getAj());
-    }
-    gmx_fatal(FARGS, "Sorry...");
-    return 0.0;
-}
-
-void MolProp::AddBond(Bond b)
-{
-    BondConstIterator bi;
-    bool              bFound = false;
-
-    for (bi = bondsConst().begin(); bi < bondsConst().end(); ++bi)
-    {
-        bFound = (((bi->getAi() == b.getAi()) && (bi->getAj() == b.getAj())) ||
-                  ((bi->getAi() == b.getAj()) && (bi->getAj() == b.getAi())));
-        if (bFound)
-        {
-            break;
-        }
-    }
-    if (!bFound)
-    {
-        bond_.push_back(b);
-    }
-    else if ((nullptr != debug) && (bi->getBondOrder() != b.getBondOrder()))
-    {
-        fprintf(debug, "Different bond orders in molecule %s\n", getMolname().c_str());
-        fflush(debug);
-    }
-}
-
 void MolProp::CheckConsistency()
 {
 }
@@ -217,12 +120,12 @@ bool MolProp::SearchCategory(const std::string &catname) const
     return false;
 }
 
-bool MolProp::BondExists(Bond b)
+bool MolProp::BondExists(const Bond &b)
 {
     for (auto &bi : bondsConst())
     {
-        if (((bi.getAi() == b.getAi()) && (bi.getAj() == b.getAj())) ||
-            ((bi.getAi() == b.getAj()) && (bi.getAj() == b.getAi())))
+        if (((bi.aI() == b.aI()) && (bi.aJ() == b.aJ())) ||
+            ((bi.aI() == b.aJ()) && (bi.aJ() == b.aI())))
         {
             return true;
         }
@@ -302,7 +205,7 @@ int MolProp::Merge(const MolProp *src)
     {
         for (auto &bi : src->bondsConst())
         {
-            alexandria::Bond bb(bi.getAi(), bi.getAj(), bi.getBondOrder());
+            alexandria::Bond bb(bi.aI(), bi.aJ(), bi.bondOrder());
             AddBond(bb);
         }
     }
@@ -310,11 +213,11 @@ int MolProp::Merge(const MolProp *src)
     {
         for (auto &bi : src->bondsConst())
         {
-            alexandria::Bond bb(bi.getAi(), bi.getAj(), bi.getBondOrder());
+            alexandria::Bond bb(bi.aI(), bi.aJ(), bi.bondOrder());
             if (!BondExists(bb))
             {
                 fprintf(stderr, "WARNING bond %d-%d not present in %s\n",
-                        bi.getAi(), bi.getAj(), getMolname().c_str());
+                        bi.aI(), bi.aJ(), getMolname().c_str());
                 nwarn++;
             }
         }

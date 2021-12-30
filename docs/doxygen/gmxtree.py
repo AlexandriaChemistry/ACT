@@ -1000,6 +1000,7 @@ class GromacsTree(object):
 
     def load_installed_file_list(self):
         """Load list of installed files from the build tree."""
+        return
         listpath = os.path.join(self._build_root, 'src', 'gromacs', 'installed-headers.txt')
         with open(listpath, 'r') as installedfp:
             for line in installedfp:

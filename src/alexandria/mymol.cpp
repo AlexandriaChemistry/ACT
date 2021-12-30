@@ -77,6 +77,7 @@
 #include "forcefieldparameter.h"
 #include "molprop_util.h"
 #include "mymol_low.h"
+#include "symmetrize_charges.h"
 #include "units.h"
 
 namespace alexandria
@@ -144,7 +145,7 @@ void MyForceProvider::calculateForces(const gmx::ForceProviderInput &forceProvid
 }
 
 
-MyMol::MyMol() : gvt_(VsiteType::ALL)
+MyMol::MyMol() //: gvt_(VsiteType::ALL)
 
 {
     myforce_           = new MyForceProvider;
@@ -248,17 +249,17 @@ void MyMol::findInPlaneAtoms(int ca, std::vector<int> &atoms)
     /*First try to find the atom bound to the central atom (ca).*/
     for (auto &bi : bondsConst())
     {
-        if ((ca == (bi.getAj() - 1) ||
-             ca == (bi.getAi() - 1)))
+        if (ca == bi.aJ() ||
+            ca == bi.aI())
         {
-            if (ca == (bi.getAi() - 1))
+            if (ca == bi.aI())
             {
-                bca = (bi.getAj() - 1);
+                bca = bi.aJ();
                 atoms.push_back(bca);
             }
             else
             {
-                bca = (bi.getAi() - 1);
+                bca = bi.aI();
                 atoms.push_back(bca);
             }
         }
@@ -266,18 +267,18 @@ void MyMol::findInPlaneAtoms(int ca, std::vector<int> &atoms)
     /*Now try to find atoms bound to bca, except ca.*/
     for (auto bi : bondsConst())
     {
-        if ((ca != (bi.getAj() - 1)   &&
-             ca != (bi.getAi() - 1))  &&
-            (bca == (bi.getAj() - 1)  ||
-             bca == (bi.getAi() - 1)))
+        if ((ca != bi.aJ()   &&
+             ca != bi.aI())  &&
+            (bca == bi.aJ()  ||
+             bca == bi.aI()))
         {
-            if (bca == (bi.getAi() - 1))
+            if (bca == bi.aI())
             {
-                atoms.push_back(bi.getAj() - 1);
+                atoms.push_back(bi.aJ());
             }
             else
             {
-                atoms.push_back(bi.getAi() - 1);
+                atoms.push_back(bi.aI());
             }
         }
     }
@@ -287,17 +288,17 @@ void MyMol::findOutPlaneAtoms(int ca, std::vector<int> &atoms)
 {
     for (auto &bi : bondsConst())
     {
-        if (bi.getBondOrder() == 1  &&
-            (ca == (bi.getAj() - 1) ||
-             ca == (bi.getAi() - 1)))
+        if (bi.bondOrder() == 1  &&
+            (ca == bi.aJ() ||
+             ca == bi.aI()))
         {
-            if (ca == (bi.getAi() - 1))
+            if (ca == bi.aI())
             {
-                atoms.push_back(bi.getAj() - 1);
+                atoms.push_back(bi.aJ());
             }
             else
             {
-                atoms.push_back(bi.getAi() - 1);
+                atoms.push_back(bi.aI());
             }
         }
     }
@@ -314,213 +315,6 @@ bool MyMol::IsVsiteNeeded(std::string    atype,
     else
     {
         return false;
-    }
-}
-
-/*
- * Make Linear Angles, Improper Dihedrals, and Virtual Sites
- */
-void MyMol::MakeSpecialInteractions(const Poldata *pd,
-                                    t_atoms       *atoms)
-{
-    std::vector < std::vector < unsigned int>> bonds;
-    std::vector<int> nbonds;
-    t_pbc            pbc;
-    real             th_toler = 175;
-    real             ph_toler = 5;
-
-    rvec            *x = as_rvec_array(state_->x.data());
-
-    set_pbc(&pbc, epbcNONE, state_->box);
-
-    bonds.resize(atoms->nr);
-    for (auto &bi : bondsConst())
-    {
-        // Store bonds bidirectionally to get the number correct
-        bonds[bi.getAi() - 1].push_back(bi.getAj() - 1);
-        bonds[bi.getAj() - 1].push_back(bi.getAi() - 1);
-    }
-    nbonds.resize(atoms->nr);
-    for (auto i = 0; i < atoms->nr; i++)
-    {
-        nbonds[i] = bonds[i].size();
-    }
-    for (auto i = 0; i < atoms->nr; i++)
-    {
-        /* Now test initial geometry */
-        if ((bonds[i].size() == 2) &&
-            is_linear(x[bonds[i][0]], x[i], x[bonds[i][1]],
-                      &pbc, th_toler))
-        {
-            if (nullptr != debug)
-            {
-                fprintf(debug, "found linear angle %s-%s-%s in %s\n",
-                        *atoms->atomtype[bonds[i][0]],
-                        *atoms->atomtype[i],
-                        *atoms->atomtype[bonds[i][1]],
-                        getMolname().c_str());
-            }
-            gvt_.addLinear(bonds[i][0], i, bonds[i][1]);
-        }
-        else if ((bonds[i].size() == 3) &&
-                 is_planar(x[i], x[bonds[i][0]],
-                           x[bonds[i][1]], x[bonds[i][2]],
-                           &pbc, ph_toler))
-        {
-            if (nullptr != debug)
-            {
-                fprintf(debug, "found planar group %s-%s-%s-%s in %s\n",
-                        *atoms->atomtype[i],
-                        *atoms->atomtype[bonds[i][0]],
-                        *atoms->atomtype[bonds[i][1]],
-                        *atoms->atomtype[bonds[i][2]],
-                        getMolname().c_str());
-            }
-            gvt_.addPlanar(bonds[i][0], i, bonds[i][1], bonds[i][2],
-                           &nbonds[0]);
-        }
-        const auto atype(*atoms->atomtype[i]);
-        if (IsVsiteNeeded(atype, pd))
-        {
-            std::vector<int> vAtoms;
-            auto             vsite = pd->findVsite(atype);
-            if (vsite->type() == VsiteType::IN_PLANE)
-            {
-                vAtoms.push_back(i);
-                findInPlaneAtoms(i, vAtoms);
-                if (vsite->ncontrolatoms() == static_cast<int>(vAtoms.size()))
-                {
-                    gvt_.addInPlane(vsite->ncontrolatoms(),
-                                    vsite->nvsite(),
-                                    vAtoms[0], vAtoms[1],
-                                    vAtoms[2], vAtoms[3]);
-                }
-            }
-            else if (vsite->type() == VsiteType::OUT_OF_PLANE)
-            {
-                vAtoms.push_back(i);
-                findOutPlaneAtoms(i, vAtoms);
-                if (vsite->ncontrolatoms() == static_cast<int>(vAtoms.size()))
-                {
-                    gvt_.addOutPlane(vsite->ncontrolatoms(),
-                                     vsite->nvsite(),
-                                     vAtoms[0], vAtoms[1], vAtoms[2]);
-                }
-            }
-            if (!bNeedVsites_)
-            {
-                bNeedVsites_ = true;
-            }
-        }
-    }
-    auto anr = atoms->nr;
-    gvt_.generateSpecial(pd, true, atoms, &x, &plist_,
-                         symtab_, gromppAtomtype_, &excls_, state_);
-    bHaveVSites_ = (atoms->nr > anr);
-}
-
-/*
- * Make Harmonic Angles, Proper Dihedrals
- * This needs the bonds to be F_BONDS.
- */
-void MyMol::MakeAngles(t_atoms *atoms,
-                       bool     bDihs,
-                       int      nrexcl)
-{
-    t_nextnb nnb;
-    t_restp  rtp;
-    t_params plist[F_NRE];
-
-    init_plist(plist);
-    for (auto &pw : plist_)
-    {
-        if (F_BONDS == pw.getFtype())
-        {
-            pr_alloc(pw.nParam(), &(plist[F_BONDS]));
-            auto i     = 0;
-            for (auto &pi : pw.paramsConst())
-            {
-                for (auto j = 0; j < MAXATOMLIST; j++)
-                {
-                    plist[F_BONDS].param[i].a[j] = pi.a[j];
-                }
-                for (auto j = 0; j < MAXFORCEPARAM; j++)
-                {
-                    plist[F_BONDS].param[i].c[j] = pi.c[j];
-                }
-                i++;
-            }
-            plist[F_BONDS].nr = i;
-            break;
-        }
-    }
-    /* Make Harmonic Angles and Proper Dihedrals */
-    snew(excls_, atoms->nr);
-    init_nnb(&nnb, atoms->nr, nrexcl + 2);
-    gen_nnb(&nnb, plist);
-
-    print_nnb(&nnb, "NNB");
-    rtp.bKeepAllGeneratedDihedrals    = bDihs;
-    rtp.bRemoveDihedralIfWithImproper = bDihs;
-    rtp.bGenerateHH14Interactions     = true;
-    rtp.nrexcl                        = nrexcl;
-
-    gen_pad(&nnb, atoms, &rtp, plist, excls_, nullptr, false);
-
-    t_blocka *EXCL;
-    snew(EXCL, 1);
-    if (debug)
-    {
-        fprintf(debug, "Will generate %d exclusions for %d atoms\n",
-                nrexcl, atoms->nr);
-    }
-    generate_excl(nrexcl, atoms->nr, plist, &nnb, EXCL);
-    for (int i = 0; i < EXCL->nr; i++)
-    {
-        int ne = EXCL->index[i+1]-EXCL->index[i];
-        srenew(excls_[i].e, ne);
-        excls_[i].nr = 0;
-        for (auto j = EXCL->index[i]; j < EXCL->index[i+1]; j++)
-        {
-            if (EXCL->a[j] != i)
-            {
-                excls_[i].e[excls_[i].nr++] = EXCL->a[j];
-            }
-        }
-        // Set the rest of the memory to zero
-        for (auto j = excls_[i].nr; j < ne; j++)
-        {
-            excls_[i].e[j] = 0;
-        }
-    }
-    done_blocka(EXCL);
-    sfree(EXCL);
-    if (nullptr != debug)
-    {
-        for (auto i = 0; i < atoms->nr; i++)
-        {
-            fprintf(debug, "excl %d", i);
-            for (auto j = 0; j < excls_[i].nr; j++)
-            {
-                fprintf(debug, "  %2d", excls_[i].e[j]);
-            }
-            fprintf(debug, "\n");
-        }
-    }
-    done_nnb(&nnb);
-
-    cp_plist(plist, F_ANGLES, InteractionType::ANGLES, plist_);
-
-    if (bDihs)
-    {
-        cp_plist(plist, F_PDIHS, InteractionType::PROPER_DIHEDRALS, plist_);
-    }
-    for (auto i = 0; i < F_NRE; i++)
-    {
-        if (plist[i].nr > 0)
-        {
-            sfree(plist[i].param);
-        }
     }
 }
 
@@ -723,7 +517,101 @@ static void fill_atom(t_atom *atom,
     atom->row           = row;
     atom->resind        = resind;
 }
-                       
+
+static void setTopologyIdentifiers(Topology      *top,
+                                   const Poldata *pd,
+                                   const t_atoms *myatoms)
+{
+    auto entries = top->entries(); 
+    for(auto &entry : *entries)
+    {
+        auto fs = pd->findForcesConst(entry.first);
+        for(auto &topentry : entry.second)
+        {
+            std::vector<std::string> btype;
+            for(auto &jj : topentry->atomIndices())
+            {
+                auto atype = pd->findParticleType(*myatoms->atomtype[jj]);
+                switch (entry.first)
+                {
+                case InteractionType::VSITE2:
+                {
+                    btype.push_back(*myatoms->atomtype[jj]);
+                    break;
+                }
+                case InteractionType::POLARIZATION:
+                {
+                    btype.push_back(atype->interactionTypeToIdentifier(entry.first).id());
+                    break;
+                }
+                default:
+                {
+                    btype.push_back(atype->interactionTypeToIdentifier(InteractionType::BONDS).id());
+                    break;
+                }
+                }
+            }
+            topentry->setId(Identifier(btype, topentry->bondOrders(), fs.canSwap()));   
+        }
+    }
+}
+
+static void TopologyToMtop(Topology       *top,
+                           const Poldata  *pd,
+                           gmx_mtop_t     *mtop)
+{
+    int ffparamsSize = mtop->ffparams.numTypes();
+    auto entries = top->entries();
+    bool append = true;
+    for(auto &entry : *entries)
+    {
+        std::map<Identifier, int> idToGromacsType;
+        auto fs = pd->findForcesConst(entry.first);
+        for(auto &topentry: entry.second)
+        {
+            int gromacsType = -1;
+            // First check whether we have this gromacsType already
+            auto &bondId = topentry->id();
+            GMX_RELEASE_ASSERT(!bondId.id().empty(), "Empty bondId");
+            if (idToGromacsType.end() != idToGromacsType.find(bondId))
+            {
+                gromacsType = idToGromacsType.find(bondId)->second;
+            }
+            else
+            {
+                std::vector<real> forceParam;
+                forceParam.resize(NRFP(fs.fType()), 1.0);
+                gromacsType = enter_params(&mtop->ffparams, fs.fType(), forceParam.data(), 0,
+                                           mtop->ffparams.reppow, ffparamsSize, append);
+            }
+            if (gromacsType >= ffparamsSize)
+            {
+                topentry->setGromacsType(gromacsType);
+                idToGromacsType.insert(std::pair<Identifier, int>(bondId, gromacsType));
+            }
+            else
+            {
+                GMX_THROW(gmx::InternalError("Could not add a force field parameter to the gromacs structure"));
+            }
+            // One more consistency check
+            if (interaction_function[fs.fType()].nratoms !=
+                static_cast<int>(topentry->atomIndices().size()))
+            {
+                GMX_THROW(gmx::InternalError(
+                           gmx::formatString("Inconsistency in number of atoms. Expected %d, got %d for %s",
+                           interaction_function[fs.fType()].nratoms, static_cast<int>(topentry->atomIndices().size()),
+                           interaction_function[fs.fType()].name).c_str()));
+            }
+            // Now fill the gromacs structure
+            mtop->moltype[0].ilist[fs.fType()].iatoms.push_back(gromacsType);
+            for (auto &i : topentry->atomIndices())
+            {
+                mtop->moltype[0].ilist[fs.fType()].iatoms.push_back(i);
+            }
+        }
+    }
+}
+                 
 immStatus MyMol::GenerateTopology(FILE              *fp,
                                   const Poldata     *pd,
                                   const std::string &method,
@@ -762,33 +650,7 @@ immStatus MyMol::GenerateTopology(FILE              *fp,
     /* Store bonds in harmonic potential list first, update type later */
     if (immStatus::OK == imm)
     {
-        if (NBond() > 0)
-        {
-            int  ftb = F_BONDS;
-            auto fs  = pd->findForcesConst(InteractionType::BONDS);
-            for (auto &bi : bondsConst())
-            {
-                t_param b;
-                memset(&b, 0, sizeof(b));
-                b.a[0] = bi.getAi() - 1;
-                b.a[1] = bi.getAj() - 1;
-                pd->atypeToBtype(*atoms->atomtype[b.a[0]], &btype1);
-                pd->atypeToBtype(*atoms->atomtype[b.a[1]], &btype2);
-                Identifier bondId({btype1, btype2}, { bi.getBondOrder() }, CanSwap::Yes);
-                // Store the bond order for later usage.
-                bondOrder_.insert({std::make_pair(b.a[0],b.a[1]), bi.getBondOrder()});
-                // We add the parameter with zero parameters, they will be
-                // set further down. However it is important to set the
-                // bondorder.
-                add_param_to_plist(&plist_, ftb, InteractionType::BONDS,
-                                   b, bi.getBondOrder());
-            }
-            auto pw = SearchPlist(plist_, ftb);
-            if (plist_.end() == pw || pw->nParam() == 0)
-            {
-                imm = immStatus::GenBonds;
-            }
-        }
+        topology_ = new Topology(bondsConst());
     }
     // Check whether we have dihedrals in the force field.
     bool bDih = false;
@@ -799,11 +661,9 @@ immStatus MyMol::GenerateTopology(FILE              *fp,
     
     if (immStatus::OK == imm)
     {
-        MakeAngles(atoms, bDih, pd->getNexcl());
-
-        MakeSpecialInteractions(pd, atoms);
-        imm = updatePlist(pd, &plist_, atoms, missing,
-                          getMolname(), &error_messages_);
+        topology_->makeAngles(state_->x, 175.0);
+        topology_->makeImpropers(state_->x, 5.0);
+        topology_->makePropers();
     }
     if (immStatus::OK == imm)
     {
@@ -830,11 +690,23 @@ immStatus MyMol::GenerateTopology(FILE              *fp,
         {
             addShells(debug, pd, atoms);
         }
+        else
+        {
+            snew(excls_, atoms->nr);
+            excls_->nr = 0;
+        }
         char **molnameptr = put_symtab(symtab_, getMolname().c_str());
         // Generate mtop
-        mtop_ = do_init_mtop(pd, molnameptr, atoms, plist_,
+        mtop_ = do_init_mtop(pd, molnameptr, atoms,
                              inputrec_, symtab_, tabfn);
-        excls_to_blocka(atoms->nr, excls_, &(mtop_->moltype[0].excls));
+        // First create the identifiers for topology entries
+        setTopologyIdentifiers(topology_, pd, atoms);
+        // Now generate the mtop fields
+        TopologyToMtop(topology_, pd, mtop_);
+        if (excls_)
+        {
+            excls_to_blocka(atoms->nr, excls_, &(mtop_->moltype[0].excls));
+        }
         if (pd->polarizable())
         {
             // Update mtop internals to account for shell type
@@ -846,7 +718,6 @@ immStatus MyMol::GenerateTopology(FILE              *fp,
             }
             mtop_->ffparams.atnr = get_atomtype_ntypes(gromppAtomtype_);
             // Generate shell data structure
-            shellfc_             = init_shell_flexcon(debug, mtop_, 0, 1, false);
         }
         if (nullptr == ltop_)
         {
@@ -856,19 +727,14 @@ immStatus MyMol::GenerateTopology(FILE              *fp,
     }
     if (immStatus::OK == imm && missing != missingParameters::Generate)
     {
-        UpdateIdef(pd, InteractionType::BONDS);
-        UpdateIdef(pd, InteractionType::ANGLES);
-        if (pd->polarizable())
+        for(auto &entry : *(topology_->entries()))
         {
-            UpdateIdef(pd, InteractionType::POLARIZATION);
+            UpdateIdef(pd, entry.first);
         }
-        UpdateIdef(pd, InteractionType::LINEAR_ANGLES);
-        UpdateIdef(pd, InteractionType::IMPROPER_DIHEDRALS);
-        if (bDih)
-        {
-            UpdateIdef(pd, InteractionType::PROPER_DIHEDRALS);
-        }
-        UpdateIdef(pd, InteractionType::VSITE2);
+    }
+    if (pd->polarizable())
+    {
+        shellfc_ = init_shell_flexcon(debug, mtop_, 0, 1, false);
     }
     if (immStatus::OK == imm)
     {
@@ -891,38 +757,41 @@ void MyMol::addBondVsites(FILE          *fp,
                           t_atoms       *atoms)
 {
     int     atomNrOld = atoms->nr;
-    t_param p         = { { 0 } };
     // First add virtual sites for bond shells if needed.
     auto    vs2       = pd->findForcesConst(InteractionType::VSITE2);
     auto    qt        = pd->findForcesConst(InteractionType::CHARGEDISTRIBUTION);
     // TODO: add a flag to turn that on or off?
-    t_atom vsite_atom = { 0 };
-    for (auto b: bondsConst())
+    t_atom  vsite_atom = { 0 };
+    t_param nb         = { { 0 } };
+    auto bonds = topology_->entry(InteractionType::BONDS);
+    std::vector<TopologyEntry *> vsites;
+    for (auto &b: bonds)
     {
-        int ai = b.getAi()-1;
-        int aj = b.getAj()-1;
+        int ai = b->atomIndex(0);
+        int aj = b->atomIndex(1);
         std::string aTypei(*atoms->atomtype[ai]);
         std::string aTypej(*atoms->atomtype[aj]);
-        Identifier  bsId({ aTypei, aTypej }, { b.getBondOrder() }, CanSwap::No);
+        Identifier  bsId({ aTypei, aTypej }, b->bondOrders(), CanSwap::No);
         // Check whether a vsite is defined for this bond
         std::string v2("v2");
         if (vs2.parameterExists(bsId) && pd->hasParticleType(v2))
         {
             // Yes! We need to add a virtual site
-            p.a[0] = atoms->nr;
-            p.a[1] = ai;
-            p.a[2] = aj;
-            auto param = vs2.findParameterTypeConst(bsId, "v2_a");
-            p.c[0] = convertToGromacs(param.value(), param.unit());
-            add_param_to_plist(&plist_, F_VSITE2, InteractionType::VSITE2, p);
-            // Now add the particle
+            auto vsite = new TopologyEntry();
+            vsite->addAtom(atoms->nr);
+            vsite->addAtom(ai);
+            vsite->addAtom(aj);
+            vsite->addBondOrder(0.0);
+            vsite->addBondOrder(0.0);
+            vsites.push_back(vsite);
+             // Now add the particle
             add_t_atoms(atoms, 1, 0);
             // Add exclusion for the vsite and its constituting atoms
             srenew(excls_, atoms->nr);
-            excls_[atoms->nr-1].nr = 0;
-            //snew(excls_[atoms->nr-1].e, 2);
-            //excls_[atoms->nr-1].e[0] = ai;
-            //excls_[atoms->nr-1].e[1] = aj;
+            excls_[atoms->nr-1].nr = 2;
+            snew(excls_[atoms->nr-1].e, 2);
+            excls_[atoms->nr-1].e[0] = ai;
+            excls_[atoms->nr-1].e[1] = aj;
         
             auto ptype     = pd->findParticleType(v2);
             auto m         = ptype->paramValue("mass");
@@ -934,18 +803,19 @@ void MyMol::addBondVsites(FILE          *fp,
             // Now fill the newatom
             auto zeta      = vseep["zeta"].value();
             auto vsgpp     = add_atomtype(gromppAtomtype_, symtab_, &vsite_atom,
-                                          ptype->id().id().c_str(), &p, 0, 0);
+                                          ptype->id().id().c_str(), &nb, 0, 0);
             fill_atom(&atoms->atom[atoms->nr-1],
                       m, q, m, q,
                       ptype->atomnumber(),
                       vsgpp, eptVSite,
                       zeta, zeta, ptype->row(), 
                       atoms->atom[ai].resind);
-            atoms->atomname[atoms->nr-1] = put_symtab(symtab_, v2.c_str());
-            atoms->atomtype[atoms->nr-1] = put_symtab(symtab_, v2.c_str());
+            atoms->atomname[atoms->nr-1]  = put_symtab(symtab_, v2.c_str());
+            atoms->atomtype[atoms->nr-1]  = put_symtab(symtab_, v2.c_str());
             atoms->atomtypeB[atoms->nr-1] = put_symtab(symtab_, v2.c_str());
         }
     }
+    topology_->addEntry(InteractionType::VSITE2, vsites);
     if (atoms->nr > atomNrOld && fp)
     {
         fprintf(fp, "Added %d bond vsite(s) for %s\n",
@@ -966,6 +836,7 @@ void MyMol::addShells(FILE          *fp,
     std::vector<gmx::RVec> newx;
     t_param                p = { { 0 } };
     std::vector<int>       shellRenumber;
+    std::vector<TopologyEntry *> pols;
     
     /* Calculate the total number of Atom and Vsite particles and
      * generate the renumbering array.
@@ -1015,8 +886,6 @@ void MyMol::addShells(FILE          *fp,
                         GMX_THROW(gmx::InvalidInputError(gmx::formatString("Polarizability should be positive for %s", fa->id().id().c_str()).c_str()));
                     }
                     // TODO Multiple shell support
-                    p.a[0] = shellRenumber[i];
-                    p.a[1] = shellRenumber[i]+1;
                     if (bHaveVSites_)
                     {
                         auto vsite = pd->findVsite(atomtype);
@@ -1025,9 +894,11 @@ void MyMol::addShells(FILE          *fp,
                             pol /= vsite->nvsite();
                         }
                     }
-                    p.c[0] = pol;
-                    add_param_to_plist(&plist_, F_POLARIZATION,
-                                       InteractionType::POLARIZATION, p);
+                    auto pp = new TopologyEntry();
+                    pp->addAtom(shellRenumber[i]);
+                    pp->addAtom(shellRenumber[i]+1);
+                    pp->addBondOrder(1.0);
+                    pols.push_back(pp);
                 }
             }
             else
@@ -1037,6 +908,7 @@ void MyMol::addShells(FILE          *fp,
             }
         }
     }
+
     /* Make new atoms and x arrays. */
     snew(newatoms, 1);
     init_t_atoms(newatoms, nParticles, true);
@@ -1050,37 +922,6 @@ void MyMol::addShells(FILE          *fp,
     /* Make a new exclusion array and put the shells in it. */
     snew(newexcls, newatoms->nr);
     /* Add exclusion for F_POLARIZATION. */
-    auto pw = SearchPlist(plist_, F_POLARIZATION);
-    if (plist_.end() != pw)
-    {
-        /* Exclude the vsites and the atoms from their own shell. */
-        if (pd->getNexcl() >= 0)
-        {
-            for (auto &j : pw->paramsConst())
-            {
-                add_excl_pair(newexcls, j.a[0], j.a[1]);
-            }
-        }
-
-        // Make a copy of the exclusions of the Atom or Vsite for the shell.
-        for (auto &j : pw->paramsConst())
-        {
-            // We know that the Atom or Vsite is 0 as we added it to plist as such.
-            int  i0 = originalAtomIndex_[j.a[0]];
-            for (auto j0 = 0; j0 < excls_[i0].nr; j0++)
-            {
-                add_excl_pair(newexcls, j.a[0], shellRenumber[excls_[i0].e[j0]]);
-                add_excl_pair(newexcls, j.a[1], shellRenumber[excls_[i0].e[j0]]);
-            }
-        }
-        for (auto &j : pw->paramsConst())
-        {
-            for (auto j0 = 0; j0 < newexcls[j.a[0]].nr; j0++)
-            {
-                add_excl_pair(newexcls, j.a[1], newexcls[j.a[0]].e[j0]);
-            }
-        }
-    }
 
     /* Copy the old atoms to the new structures. */
     for (int i = 0; i < atoms->nr; i++)
@@ -1109,6 +950,10 @@ void MyMol::addShells(FILE          *fp,
             // Shell sits next to the Atom or Vsite
             // TODO make this more precise.
             auto j            = 1+shellRenumber[i];
+            // Add an exclusion for the shell
+            snew(newexcls[shellRenumber[i]].e, 1);
+            newexcls[shellRenumber[i]].e[0] = j;
+            newexcls[shellRenumber[i]].nr = 1;
             auto atomtypeName = get_atomtype_name(atoms->atom[i].type, gromppAtomtype_);
             auto fa           = pd->findParticleType(atomtypeName);
             auto shellid      = fa->interactionTypeToIdentifier(InteractionType::POLARIZATION);
@@ -1166,47 +1011,17 @@ void MyMol::addShells(FILE          *fp,
             atoms->atomtypeB[i] = put_symtab(symtab_, *newatoms->atomtype[i]);
     }
 
-    /* Update the bond orders */
-    auto  boCopy = bondOrder_;
-    bondOrder_.clear();
-    for(const auto &boc : boCopy)
-    {
-        bondOrder_.insert({std::make_pair(shellRenumber[boc.first.first],
-                                          shellRenumber[boc.first.second]), boc.second});
-    }
     /* Copy exclusions, empty the original first */
     sfree(excls_);
     excls_ = newexcls;
-
-    /* Now renumber atoms in all other plist interaction types */
-    for (auto i = plist_.begin(); i < plist_.end(); ++i)
-    {
-        if (i->getFtype() != F_POLARIZATION)
-        {
-            auto mypar = i->params();
-            for (auto j = mypar->begin(); j < mypar->end(); ++j)
-            {
-                for (int k = 0; k < NRAL(i->getFtype()); k++)
-                {
-                    j->a[k] = shellRenumber[j->a[k]];
-                }
-            }
-        }
-    }
+    topology_->renumberAtoms(shellRenumber);
+    topology_->addEntry(InteractionType::POLARIZATION, pols);
     bHaveShells_ = true;
 }
 
 double MyMol::bondOrder(int ai, int aj) const
 {
-    if (bondOrder_.find({ai, aj}) != bondOrder_.end())
-    {
-        return bondOrder_.find({ai, aj})->second;
-    }
-    else if (bondOrder_.find({aj, ai}) != bondOrder_.end())
-    {
-        return bondOrder_.find({aj, ai})->second;
-    }
-    return 0;
+    return topology_->findBond(ai, aj)->bondOrder();
 }
 
 immStatus MyMol::GenerateGromacs(const gmx::MDLogger       &mdlog,
@@ -1386,12 +1201,8 @@ void MyMol::symmetrizeCharges(const Poldata  *pd,
     if (bSymmetricCharges)
     {
         symmetric_charges_.clear();
-        ConstPlistWrapperIterator bonds = SearchPlist(plist_, InteractionType::BONDS);
-        if (plist_.end() != bonds)
-        {
-            symmetrize_charges(bSymmetricCharges, atoms(), bonds,
-                               pd, symm_string, &symmetric_charges_);
-        }
+        symmetrize_charges(bSymmetricCharges, atoms(), topology_->entry(InteractionType::BONDS),
+                           pd, symm_string, &symmetric_charges_);
     }
     else
     {
@@ -1429,7 +1240,7 @@ immStatus MyMol::GenerateAcmCharges(const Poldata       *pd,
                                                    state_->x,
                                                    bondsConst()))
         {
-            if (nullptr != shellfc_)
+            if (haveShells())
             {
                 double rmsf;
                 auto imm = computeForces(nullptr, cr, &rmsf);
@@ -1446,7 +1257,7 @@ immStatus MyMol::GenerateAcmCharges(const Poldata       *pd,
                 qq[i]    = q_i;
             }
             EemRms   /= mtop_->natoms;
-            converged = (EemRms < tolerance) || (nullptr == shellfc_);
+            converged = (EemRms < tolerance) || !haveShells();
             iter++;
         }
         else
@@ -2006,21 +1817,23 @@ void MyMol::PrintTopology(FILE                   *fp,
         }
     }
 
+    // TODO write a replacement for this function
     print_top_header(fp, pd, bHaveShells_, commercials, bITP);
     write_top(fp, printmol.name, atoms(), false,
-              plist_, excls_, gromppAtomtype_, cgnr_, pd);
+              topology_, excls_, gromppAtomtype_, pd);
     if (!bITP)
     {
         print_top_mols(fp, printmol.name, getForceField().c_str(), nullptr, 0, nullptr, 1, &printmol);
     }
     if (bVerbose)
     {
-        for (auto &p : plist_)
+        for (auto &entry : *(topology_->entries()))
         {
-            if (p.nParam() > 0)
+            int ftype = pd->findForcesConst(entry.first).fType();
+            if (entry.second.size() > 0)
             {
-                printf("There are %4d %s interactions\n", p.nParam(),
-                       interaction_function[p.getFtype()].name);
+                printf("There are %4d %s interactions\n", static_cast<int>(entry.second.size()),
+                       interaction_function[ftype].name);
             }
         }
         for (auto i = commercials.begin(); (i < commercials.end()); ++i)
@@ -2030,17 +1843,6 @@ void MyMol::PrintTopology(FILE                   *fp,
     }
 
     sfree(printmol.name);
-}
-
-immStatus MyMol::GenerateChargeGroups(eChargeGroup ecg, bool bUsePDBcharge)
-{
-    real qtot, mtot;
-    if ((cgnr_ = generate_charge_groups(ecg, atoms(), plist_, bUsePDBcharge,
-                                        &qtot, &mtot)) == nullptr)
-    {
-        return immStatus::ChargeGeneration;
-    }
-    return immStatus::OK;
 }
 
 void MyMol::GenerateCube(const Poldata          *pd,
@@ -2343,110 +2145,7 @@ immStatus MyMol::getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
             energy_[MolPropObservable::EMOL] -= energy_[MolPropObservable::ZPE];
         }
     }
-    if (imm == immStatus::OK)
-    {
-    }
-    if (immStatus::OK == imm)
-    {
-    }
     return imm;
-}
-
-Identifier MyMol::getIdentifier(const Poldata                  *pd,
-                                InteractionType                 iType,
-                                const std::vector<std::string> &btype,
-                                int                             natoms,
-                                const int                      *iatoms)
-{
-    // A rather dirty hack.
-    // TODO: make it less dirty.
-    if (iType == InteractionType::VSITE2)
-    {
-        natoms -= 1;
-        iatoms += 1;
-    }
-    std::vector<std::string> batoms;
-    std::vector<double>      bondOrders;
-    if (InteractionType::IMPROPER_DIHEDRALS == iType)
-    {
-        for (int j = 0; j < natoms; j++)
-        {
-            batoms.push_back(btype[iatoms[j]]);
-        }
-        std::vector<std::pair<int, int>> index = 
-            { { 0, 1 }, { 1, 2 }, { 1, 3 }};
-        for (const auto &p : index)
-        {
-            int  ai  = iatoms[p.first];
-            auto aii = originalAtomIndex_.find(ai);
-            int  aj  = iatoms[p.second];
-            auto ajj = originalAtomIndex_.find(aj);
-            if (aii != originalAtomIndex_.end())
-            {
-                ai = aii->second;
-            }
-            if (ajj != originalAtomIndex_.end())
-            {
-                aj = ajj->second;
-            }
-            bondOrders.push_back(bondToBondOrder(ai+1, aj+1));
-        }    
-    }
-    else
-    {
-        for (int j = 0; j < natoms; j++)
-        {
-            // Some atom types can be empty, e.g. polarizability of shells
-            // since this a property of the atom.
-            if (btype[iatoms[j]].empty())
-            {
-                continue;
-            }
-            batoms.push_back(btype[iatoms[j]]);
-            
-            // TODO check atom numbers
-            if (j > 0)
-            {
-                int  ai  = iatoms[j-1];
-                auto aii = originalAtomIndex_.find(ai);
-                int  aj  = iatoms[j];
-                auto ajj = originalAtomIndex_.find(aj);
-                if (aii != originalAtomIndex_.end())
-                {
-                    ai = aii->second;
-                }
-                if (ajj != originalAtomIndex_.end())
-                {
-                    aj = ajj->second;
-                }
-                bondOrders.push_back(bondToBondOrder(ai+1, aj+1));
-            }
-        }
-    }
-    auto fs = pd->findForcesConst(iType);
-    if (natoms == 2 && 
-        (iType == InteractionType::BONDS ||
-         iType == InteractionType::VSITE2))
-    {
-        auto bb = std::make_pair(iatoms[0], iatoms[1]);
-        auto bo = bondOrder_.find(bb);
-        if (bo == bondOrder_.end())
-        {
-            bb = std::make_pair(iatoms[1], iatoms[0]);
-            bo = bondOrder_.find(bb);
-        }
-        if (bo != bondOrder_.end())
-        {
-            return Identifier(batoms, { bo->second }, fs.canSwap());
-        }
-        else
-        {
-            GMX_THROW(gmx::InvalidInputError(gmx::formatString("Cannot find bond order for %s-%s",
-                                                               btype[iatoms[0]].c_str(),
-                                                               btype[iatoms[1]].c_str()).c_str()));
-        }
-    }
-    return Identifier(batoms, bondOrders, fs.canSwap());
 }
 
 void MyMol::UpdateIdef(const Poldata   *pd,
@@ -2456,6 +2155,7 @@ void MyMol::UpdateIdef(const Poldata   *pd,
     {
         fprintf(debug, "UpdateIdef for %s\n", interactionTypeToString(iType).c_str());
     }
+
     if (iType == InteractionType::VDW)
     {
         nonbondedFromPdToMtop(mtop_, pd, fr_);
@@ -2469,36 +2169,20 @@ void MyMol::UpdateIdef(const Poldata   *pd,
         // Update other iTypes
         auto fs    = pd->findForcesConst(iType);
         auto ftype = fs.fType();
-        // Small optimization. This assumes angles etc. use the same
-        // types as bonds. For this reason there is some special
-        // treatment for polarization and vsites.
-        std::vector<std::string> btype;
-        auto myatoms = atomsConst();
-        for(int j = 0; j < myatoms.nr; j++)
+        if (!topology_->hasEntry(iType))
         {
-            if (iType == InteractionType::VSITE2)
-            {
-                btype.push_back(*myatoms.atomtype[j]);
-            }
-            else
-            {
-                auto atype = pd->findParticleType(*myatoms.atomtype[j]);
-                if (iType == InteractionType::POLARIZATION)
-                {
-                    btype.push_back(atype->interactionTypeToIdentifier(iType).id());
-                }
-                else
-                {
-                    btype.push_back(atype->interactionTypeToIdentifier(InteractionType::BONDS).id());
-                }
-            }
+            GMX_THROW(gmx::InternalError(gmx::formatString("No topology entry for %s",
+                      interactionTypeToString(iType).c_str()).c_str()));
         }
-        for (auto i = 0; i < ltop_->idef.il[ftype].nr; i += interaction_function[ftype].nratoms+1)
+        auto entry = topology_->entry(iType);
+        for (size_t i = 0; i < entry.size(); i++)
         {
-            auto tp     = ltop_->idef.il[ftype].iatoms[i];
-            auto bondId = getIdentifier(pd, iType, btype,
-                                        interaction_function[ftype].nratoms,
-                                        &ltop_->idef.il[ftype].iatoms[i+1]);
+            auto &bondId = entry[i]->id();
+            auto  tp     = entry[i]->gromacsType();
+            if (tp < 0 || tp >= mtop_->ffparams.numTypes())
+            {
+                GMX_THROW(gmx::InternalError(gmx::formatString("tp = %d should be >= 0 and < %d for %s %s", tp, mtop_->ffparams.numTypes(), interactionTypeToString(iType).c_str(), bondId.id().c_str()).c_str()));
+            }
             
             switch (ftype)
             {

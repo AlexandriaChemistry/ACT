@@ -56,6 +56,12 @@
 
 #include "poldata_utils.h"
 
+namespace alexandria
+{
+
+namespace
+{
+
 /*! \brief Class to test the RESP algorithm
  */
 class RespTest : public gmx::test::CommandLineTestBase
@@ -170,9 +176,10 @@ class RespTest : public gmx::test::CommandLineTestBase
                                 ChargeGenerationAlgorithm::ESP, qcustom, lot);
 
             std::vector<double> qtotValues;
-            for (int atom = 0; atom < mp_.mtop_->moltype[0].atoms.nr; atom++)
+            auto atoms = mp_.atoms();
+            for (int atom = 0; atom < atoms->nr; atom++)
             {
-                qtotValues.push_back(mp_.mtop_->moltype[0].atoms.atom[atom].q);
+                qtotValues.push_back(atoms->atom[atom].q);
             }
             char buf[256];
             snprintf(buf, sizeof(buf), "qtotValuesEqdModel_%s",
@@ -208,3 +215,6 @@ TEST_F (RespTest, AXgSymmetricPolarCharges)
     testResp("ESP-pg", true);
 }
 
+}
+
+} // namespace alexandria

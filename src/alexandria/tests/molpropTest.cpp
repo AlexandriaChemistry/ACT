@@ -94,7 +94,7 @@ protected:
             for (auto &bi : mpi.bondsConst())
             {
                 char buf[256];
-                snprintf(buf, sizeof(buf), "atoms %d %d order %g", bi.getAi(), bi.getAj(), bi.getBondOrder());
+                snprintf(buf, sizeof(buf), "atoms %d %d order %g", 1+bi.aI(), 1+bi.aJ(), bi.bondOrder());
                 std::string bond("bond");
                 char        ibuf[256];
                 snprintf(ibuf, sizeof(ibuf), "molecule %d bond %d", mol, i++);

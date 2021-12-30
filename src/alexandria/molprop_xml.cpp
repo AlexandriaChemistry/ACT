@@ -573,7 +573,7 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                             if (NN(xbuf[exmlAI]) && NN(xbuf[exmlAJ]) &&
                                 NN(xbuf[exmlBONDORDER]))
                             {
-                                Bond b(atoi(xbuf[exmlAI].c_str()), atoi(xbuf[exmlAJ].c_str()),
+                                Bond b(atoi(xbuf[exmlAI].c_str())-1, atoi(xbuf[exmlAJ].c_str())-1,
                                                    xbuf_atof(xbuf, exmlBONDORDER));
                                 mpt->AddBond(b);
                             }
@@ -887,9 +887,9 @@ static void add_xml_molprop(xmlNodePtr                 parent,
     for (auto &b : mp.bondsConst())
     {
         xmlNodePtr child = add_xml_child(ptr, exml_names(exmlBOND));
-        add_xml_int(child, exml_names(exmlAI), b.getAi());
-        add_xml_int(child, exml_names(exmlAJ), b.getAj());
-        add_xml_double(child, exml_names(exmlBONDORDER), b.getBondOrder());
+        add_xml_int(child, exml_names(exmlAI), 1+b.aI());
+        add_xml_int(child, exml_names(exmlAJ), 1+b.aJ());
+        add_xml_double(child, exml_names(exmlBONDORDER), b.bondOrder());
     }
 
     for (auto &me : mp.experimentConst())

@@ -40,6 +40,7 @@
 #include <libxml/parser.h>
 #include <libxml/tree.h>
 
+#include "gromacs/topology/atoms.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/futil.h"
 

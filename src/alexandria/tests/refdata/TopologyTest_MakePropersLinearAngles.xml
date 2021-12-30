@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="#propers">4</Int>
+  <Sequence Name="Proper">
+    <Int Name="Length">4</Int>
+    <String>4-2-1-6</String>
+    <String>1-2-4-5</String>
+    <String>3-2-4-5</String>
+    <String>2-4-5-6</String>
+  </Sequence>
+</ReferenceData>

@@ -156,6 +156,7 @@ private:
 
     /*! \brief Dump charges to a file
      * Debugging routine
+     * \TODO move to cpp file
      * \param[in] fp   The file pointer to print to
      * \param[in] mol  The molecule to read from
      * \param[in] info Additional debugging information
@@ -174,14 +175,16 @@ private:
                         md->chargeA[i]);
             }
             fprintf(fp, "\n");
-            fprintf(fp, "%s alpha", label.c_str());
-            int ft = F_POLARIZATION;
-            for(int i = 0; i < mol->ltop_->idef.il[ft].nr; i += interaction_function[ft].nratoms+1)
+            auto top = mol->topology();
+            if (top->hasEntry(InteractionType::POLARIZATION))
             {
-                auto tp = mol->ltop_->idef.il[ft].iatoms[i];
-                fprintf(fp, " %g", mol->ltop_->idef.iparams[tp].polarize.alpha);
+                fprintf(fp, "%s alpha", label.c_str());
+                for(auto &topentry : top->entry(InteractionType::POLARIZATION))
+                {
+                    //fprintf(fp, " %g", mol->ltop_->idef.iparams[topentry->gromacsType()].polarize.alpha);
+                }
+                fprintf(fp, "\n");
             }
-            fprintf(fp, "\n");
             pr_rvecs(fp, 0, label.c_str(), mol->x().rvec_array(), myatoms.nr);
         }
     }

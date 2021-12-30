@@ -127,9 +127,9 @@ static void dump_molecule(FILE              *fp,
         auto bctype = InteractionType::BONDCORRECTIONS;
         for (const auto &b : mp.bondsConst())
         {
-            int ai = b.getAi()-1;
-            int aj = b.getAj()-1;
-            fprintf(fp, "bcc: %3d  %3d  %5g", ai+1, aj+1, b.getBondOrder());
+            int ai = b.aI();
+            int aj = b.aJ();
+            fprintf(fp, "bcc: %3d  %3d  %5g", ai+1, aj+1, b.bondOrder());
             if (pd.hasParticleType(atomId[ai]) && pd.hasParticleType(atomId[aj]))
             {
                 auto pidI = pd.findParticleType(atomId[ai]);
@@ -138,7 +138,7 @@ static void dump_molecule(FILE              *fp,
                 {
                     auto zidI = pidI->interactionTypeToIdentifier(ztype);
                     auto zidJ = pidJ->interactionTypeToIdentifier(ztype);
-                    Identifier mybond({ zidI.id(), zidJ.id()}, { b.getBondOrder() }, CanSwap::No);
+                    Identifier mybond({ zidI.id(), zidJ.id()}, { b.bondOrder() }, CanSwap::No);
                     auto btypeMap   = bccTypeCount->find(mybond.id());
                     bool bondExists = false;
                     auto fs         = pd.findForcesConst(bctype);
@@ -149,7 +149,7 @@ static void dump_molecule(FILE              *fp,
                     }
                     else
                     {
-                        Identifier mybond2({ zidJ.id(), zidI.id()}, { b.getBondOrder() }, CanSwap::No);
+                        Identifier mybond2({ zidJ.id(), zidI.id()}, { b.bondOrder() }, CanSwap::No);
                         mybond = mybond2;
                         btypeMap   = bccTypeCount->find(mybond.id());
                         auto fs = pd.findForcesConst(bctype);

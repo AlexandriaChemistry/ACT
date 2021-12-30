@@ -39,6 +39,7 @@
 
 #include "forcefieldparameter.h"
 #include "identifier.h"
+#include "interactiontype.h"
 
 namespace alexandria
 {

@@ -65,7 +65,6 @@
 #include "gromacs/utility/unique_cptr.h"
 
 #include "alex_modules.h"
-#include "gentop_core.h"
 #include "gmx_simple_comm.h"
 #include "memory_check.h"
 #include "molgen.h"
@@ -208,13 +207,13 @@ void OptACM::initChargeGeneration(iMolSelect ims)
                             mymol.getMolname().c_str(),
                             method.c_str(), basis.c_str());
                 }
-                mymol.eSupp_ = eSupport::No;
+                mymol.setSupport(eSupport::No);
             }
         }
-        if (mymol.eSupp_ != eSupport::No)
+        if (mymol.support() != eSupport::No)
         {
-            mymol.QgenAcm_ = new QgenAcm(sii_.poldata(), mymol.atoms(),
-                                         mymol.totalCharge());
+            mymol.setQgenAcm(new QgenAcm(sii_.poldata(), mymol.atoms(),
+                                         mymol.totalCharge()));
         }
     }
 }
@@ -532,7 +531,7 @@ int tune_eem(int argc, char *argv[])
     {
 
         opt.runHelper();
-        
+
     }
     return 0;
 }

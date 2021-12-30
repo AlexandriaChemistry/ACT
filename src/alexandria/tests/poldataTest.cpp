@@ -35,7 +35,6 @@
 
 #include <gtest/gtest.h>
 
-#include "alexandria/plistwrapper.h"
 #include "alexandria/poldata.h"
 #include "alexandria/poldata_low.h"
 #include "alexandria/poldata_xml.h"
@@ -44,6 +43,8 @@
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
+
+#include "gromacs/topology/atoms.h"
 
 #include "poldata_utils.h"
 
