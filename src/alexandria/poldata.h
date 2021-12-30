@@ -67,10 +67,9 @@ class Poldata
          * \param[in] other    the reference Poldata object
          */
         Poldata(const Poldata &other)
-        : type2Itype_(other.type2Itype()), filename_(other.filename()),
-          alexandria_(other.particleTypesConst()), vsite_(other.getVsiteConst()),
-          alexandriaVersion_(other.getVersion()),
-          vsite_angle_unit_(other.getVsite_angle_unit()),
+        : alexandriaVersion_(other.getVersion()), type2Itype_(other.type2Itype()),
+          filename_(other.filename()), alexandria_(other.particleTypesConst()),
+          vsite_(other.getVsiteConst()), vsite_angle_unit_(other.getVsite_angle_unit()),
           vsite_length_unit_(other.getVsite_length_unit()),
           nexcl_(other.getNexcl()), gtEpsilonR_(other.getEpsilonR()),
           forces_(other.forcesConst()), symcharges_(other.getSymcharges()),

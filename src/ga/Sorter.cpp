@@ -20,7 +20,7 @@ void MergeSorter::sort(std::vector<Individual*> *pop)
 {
 
     // Clone the population into tmpPop_
-    for (int i = 0; i < pop->size(); i++) tmpPop_[i] = (*pop)[i]->clone();
+    for (size_t i = 0; i < pop->size(); i++) tmpPop_[i] = (*pop)[i]->clone();
     topDownSplitMerge(&tmpPop_, 0, pop->size(), pop);
 
 }
@@ -110,7 +110,6 @@ int QuickSorter::ascendingPartition(      std::vector<Individual*> *pop,
 {
     const double pivot = (*pop)[high]->fitnessTrain();
     int candidate = low - 1;
-    double temp;
 
     for (int check = low; check <= high; check++)
     {
@@ -131,7 +130,6 @@ int QuickSorter::descendingPartition(      std::vector<Individual*> *pop,
 {
     const double pivot = (*pop)[high]->fitnessTrain();
     int candidate = low - 1;
-    double temp;
 
     for (int check = low; check <= high; check++)
     {

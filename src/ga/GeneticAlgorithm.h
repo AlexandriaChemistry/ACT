@@ -129,7 +129,7 @@ public:
                      const  bool                                 removeMol,
                      const  bool                                 fullQuadrupole,
                             t_commrec                           *cr,
-                            MolGen                              *mg,
+                            alexandria::MolGen                  *mg,
                             FILE                                *logFile,
                             gmx_output_env_t                    *oenv,
                             alexandria::BayesConfigHandler      *bch,
@@ -144,7 +144,7 @@ public:
         initializer_ = new alexandria::ACMInitializer(sii, gach->randomInit(), outputFile);
         
         // FitnessComputer
-        ACMFitnessComputer* tmpACMFitComp = new alexandria::ACMFitnessComputer(cr, logFile, sii, mg, removeMol, verbose, fullQuadrupole);
+        alexandria::ACMFitnessComputer* tmpACMFitComp = new alexandria::ACMFitnessComputer(cr, logFile, sii, mg, removeMol, verbose, fullQuadrupole);
         fitComputer_ = tmpACMFitComp;
         
         // Mutator
@@ -196,7 +196,7 @@ public:
             // Crossover
             GMX_RELEASE_ASSERT( ( (unsigned int) gach->nCrossovers() ) < sii->nParam(),
                                gmx::formatString("The order of the crossover operator should be smaller than the amount of parameters. You chose -nCrossovers %i, but there are %lu parameters. Please adjust -nCrossovers.", gach->nCrossovers(), sii->nParam()).c_str() );
-            crossover_ = new NPointCrossover(sii->nParam(), gach->nCrossovers());
+            crossover_ = new alexandria::NPointCrossover(sii->nParam(), gach->nCrossovers());
 
             // Terminator
             terminator_ = new GenerationTerminator(gach->maxGenerations());

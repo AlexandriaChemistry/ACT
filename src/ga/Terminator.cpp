@@ -6,6 +6,7 @@
 
 #include "Terminator.h"
 
+#include "gromacs/utility/basedefinitions.h"
 
 namespace ga
 {
@@ -15,8 +16,8 @@ namespace ga
 * BEGIN: GenerationTerminator              *
 * * * * * * * * * * * * * * * * * * * * * */
 
-bool GenerationTerminator::terminate(const std::vector<Individual*>  &pop,
-                                     const int                        generationNumber)
+bool GenerationTerminator::terminate(gmx_unused const std::vector<Individual*>  &pop,
+                                                const int                        generationNumber)
 {
     return generationNumber >= maxGenerations_;
 }

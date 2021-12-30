@@ -160,7 +160,7 @@ void GeneticAlgorithm::evolveGA()
     // FIXME: THIS IS NOT GENERAL. Open files of each individual
     for (Individual *ind : oldPop_)
     {
-        ACMIndividual *tmpInd = static_cast<ACMIndividual*>(ind);
+        alexandria::ACMIndividual *tmpInd = static_cast<alexandria::ACMIndividual*>(ind);
         tmpInd->openParamConvFiles(oenv_);
         tmpInd->openChi2ConvFile(oenv_, bch_->evaluateTestset());
     }
@@ -278,7 +278,7 @@ void GeneticAlgorithm::evolveGA()
     } while (!terminator_->terminate(oldPop_, generation));
 
     // FIXME: THIS IS NOT GENERAL. Close files of each individual
-    for (Individual *ind : oldPop_) static_cast<ACMIndividual*>(ind)->closeConvFiles();
+    for (Individual *ind : oldPop_) static_cast<alexandria::ACMIndividual*>(ind)->closeConvFiles();
 
     // Close surveillance files for fitness
     fclose(fileFitnessTrain_); fileFitnessTrain_ = NULL;
