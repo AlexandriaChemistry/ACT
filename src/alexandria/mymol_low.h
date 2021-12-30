@@ -140,14 +140,6 @@ bool is_linear(const rvec xi, const rvec xj,
                const rvec xk, const t_pbc *pbc,
                real th_toler);
 
-void add_excl(t_excls *excls, int e);
-
-void add_excl_pair(t_excls excls[], int e1, int e2);
-
-void remove_excl(t_excls *excls, int remove);
-
-void let_shells_see_shells(t_excls excls[], t_atoms *atoms, struct gpp_atomtype *atype);
-
 void copy_atoms(t_atoms *src, t_atoms *dest);
 
 real calc_r13(const Poldata                  *pd,
@@ -167,19 +159,13 @@ void nonbondedFromPdToMtop(gmx_mtop_t    *mtop,
 
 void excls_to_blocka(int natom, t_excls excls_[], t_blocka *blocka);
 
-void mtop_update_cgs(gmx_mtop_t *mtop);
-
 void put_in_box(int natom, matrix box, rvec x[], real dbox);
 
-void write_zeta_q(FILE       *fp,
-                  QgenAcm    *qgen,
-                  t_atoms    *atoms,
-                  ChargeType  iChargeType);
-
-void write_zeta_q2(QgenAcm             *qgen,
-                   struct gpp_atomtype *atype,
-                   t_atoms             *atoms,
-                   ChargeType           iChargeType);
+void print_top_header(FILE                    *fp,
+                      const Poldata           *pd,
+                      bool                     bPol,
+                      std::vector<std::string> commercials,
+                      bool                     bItp);
 
 void write_top(FILE                            *out,
                char                            *molname,
@@ -188,7 +174,6 @@ void write_top(FILE                            *out,
                const Topology *topology,
                t_excls                          excls[],
                struct gpp_atomtype             *atype,
-               int                             *cgnr,
                const Poldata                   *pd);
 
 void calc_rotmatrix(rvec target_vec, rvec ref_vec, matrix rotmatrix);

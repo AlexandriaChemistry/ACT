@@ -788,10 +788,10 @@ void MyMol::addBondVsites(FILE          *fp,
             add_t_atoms(atoms, 1, 0);
             // Add exclusion for the vsite and its constituting atoms
             srenew(excls_, atoms->nr);
-            excls_[atoms->nr-1].nr = 0;
-            //snew(excls_[atoms->nr-1].e, 2);
-            //excls_[atoms->nr-1].e[0] = ai;
-            //excls_[atoms->nr-1].e[1] = aj;
+            excls_[atoms->nr-1].nr = 2;
+            snew(excls_[atoms->nr-1].e, 2);
+            excls_[atoms->nr-1].e[0] = ai;
+            excls_[atoms->nr-1].e[1] = aj;
         
             auto ptype     = pd->findParticleType(v2);
             auto m         = ptype->paramValue("mass");
@@ -950,6 +950,10 @@ void MyMol::addShells(FILE          *fp,
             // Shell sits next to the Atom or Vsite
             // TODO make this more precise.
             auto j            = 1+shellRenumber[i];
+            // Add an exclusion for the shell
+            snew(newexcls[shellRenumber[i]].e, 1);
+            newexcls[shellRenumber[i]].e[0] = j;
+            newexcls[shellRenumber[i]].nr = 1;
             auto atomtypeName = get_atomtype_name(atoms->atom[i].type, gromppAtomtype_);
             auto fa           = pd->findParticleType(atomtypeName);
             auto shellid      = fa->interactionTypeToIdentifier(InteractionType::POLARIZATION);
@@ -1253,7 +1257,7 @@ immStatus MyMol::GenerateAcmCharges(const Poldata       *pd,
                 qq[i]    = q_i;
             }
             EemRms   /= mtop_->natoms;
-            converged = (EemRms < tolerance) || (haveShells());
+            converged = (EemRms < tolerance) || !haveShells();
             iter++;
         }
         else
@@ -1813,9 +1817,10 @@ void MyMol::PrintTopology(FILE                   *fp,
         }
     }
 
+    // TODO write a replacement for this function
     print_top_header(fp, pd, bHaveShells_, commercials, bITP);
     write_top(fp, printmol.name, atoms(), false,
-              topology_, excls_, gromppAtomtype_, cgnr_, pd);
+              topology_, excls_, gromppAtomtype_, pd);
     if (!bITP)
     {
         print_top_mols(fp, printmol.name, getForceField().c_str(), nullptr, 0, nullptr, 1, &printmol);

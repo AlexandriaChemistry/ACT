@@ -38,8 +38,8 @@
 #include <cstdio>
 #include <cstring>
 
-#include "gromacs/gmxpreprocess/convparm.h"
-#include "gromacs/gmxpreprocess/gen_ad.h"
+#include "gromacs/gmxpreprocess/gpp_atomtype.h"
+#include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/gmxpreprocess/topdirs.h"
 #include "gromacs/listed-forces/bonded.h"
@@ -129,65 +129,6 @@ bool is_linear(const rvec xi, const rvec xj,
         return true;
     }
     return false;
-}
-
-void add_excl(t_excls *excls, int e)
-{
-    int i;
-
-    for (i = 0; (i < excls->nr); i++)
-    {
-        if (excls->e[i] == e)
-        {
-            return;
-        }
-    }
-    srenew(excls->e, excls->nr+1);
-    excls->e[excls->nr++] = e;
-}
-
-void add_excl_pair(t_excls excls[], int e1, int e2)
-{
-    if (e1 != e2)
-    {
-        add_excl(&excls[e1], e2);
-        add_excl(&excls[e2], e1);
-    }
-}
-
-void remove_excl(t_excls *excls, int remove)
-{
-    int i;
-
-    for (i = remove+1; i < excls->nr; i++)
-    {
-        excls->e[i-1] = excls->e[i];
-    }
-
-    excls->nr--;
-}
-
-void let_shells_see_shells(t_excls excls[], t_atoms *atoms, gpp_atomtype_t atype)
-{
-    int i, k, ak;
-    for (i = 0; i < atoms->nr; i++)
-    {
-        if (get_atomtype_ptype(atoms->atom[i].type, atype) == eptShell)
-        {
-            for (k = 0; k < excls[i].nr; )
-            {
-                ak = excls[i].e[k];
-                if (get_atomtype_ptype(atoms->atom[ak].type, atype) == eptShell)
-                {
-                    remove_excl(&(excls[i]), k);
-                }
-                else
-                {
-                    k++;
-                }
-            }
-        }
-    }
 }
 
 void copy_atoms(t_atoms *src, t_atoms *dest)
@@ -692,23 +633,6 @@ void excls_to_blocka(int natom, t_excls excls_[], t_blocka *blocka)
     blocka->nra          = nra;
 }
 
-void mtop_update_cgs(gmx_mtop_t *mtop)
-{
-    for (auto &i : mtop->moltype)
-    {
-        if (i.atoms.nr > i.cgs.nr)
-        {
-            i.cgs.nr           = i.atoms.nr;
-            i.cgs.nalloc_index = i.atoms.nr+1;
-            srenew(i.cgs.index, i.cgs.nr+1);
-            for (int j = 0; (j <= i.cgs.nr); j++)
-            {
-                i.cgs.index[j] = j;
-            }
-        }
-    }
-}
-
 void put_in_box(int natom, matrix box, rvec x[], real dbox)
 {
     int  i, m;
@@ -739,123 +663,6 @@ void put_in_box(int natom, matrix box, rvec x[], real dbox)
     }
 }
 
-void write_zeta_q(FILE       *fp,
-                  QgenAcm    *qgen,
-                  t_atoms    *atoms,
-                  ChargeType  iChargeType)
-{
-    int    i, ii, k, row;
-    double zeta, q;
-    bool   bAtom, bTypeSet;
-
-    if (nullptr == qgen)
-    {
-        return;
-    }
-
-    fprintf(fp, "[ charge_spreading ]\n");
-    fprintf(fp, "; This section describes additional atom type properties.\n");
-    fprintf(fp, "; Spreading type (stype) can be either Gaussian (AXg) or Slater (AXs).\n");
-    fprintf(fp, "; The zeta are the same for atoms of the same type, and all but the last\n");
-    fprintf(fp, "; charge as well. The final charge is different between atoms however,\n");
-    fprintf(fp, "; and it is listed below in the [ atoms ] section.\n");
-    fprintf(fp, "; atype stype  nq%s      zeta          q  ...\n",
-            (ChargeType::Slater == iChargeType) ? "  row" : "");
-
-    k = -1;
-    for (i = 0; (i < atoms->nr); i++)
-    {
-        bAtom = (atoms->atom[i].ptype == eptAtom);
-        if (bAtom)
-        {
-            k++;
-        }
-        if (k == -1)
-        {
-            gmx_fatal(FARGS, "The first atom must be a real atom, not a shell");
-        }
-        bTypeSet = false;
-        for (ii = 0; !bTypeSet && (ii < i); ii++)
-        {
-            bTypeSet = (atoms->atom[ii].type == atoms->atom[i].type);
-        }
-        if (!bTypeSet)
-        {
-            fprintf(fp, "%5s %6s",
-                    *atoms->atomtype[i],
-                    chargeTypeName(iChargeType).c_str());
-            row   = qgen->getRow(k);
-            q     = qgen->getQ(k);
-            zeta  = qgen->getZeta(k);
-            if ((row != NOTSET) && (q != NOTSET) && (zeta != NOTSET))
-            {
-                atoms->atom[i].q      =
-                    atoms->atom[i].qB = q;
-                if (!bTypeSet)
-                {
-                    if (ChargeType::Slater == iChargeType)
-                    {
-                        fprintf(fp, "  %4d", row);
-                    }
-                    fprintf(fp, " %10f", zeta);
-                    fprintf(fp, " %10f", q);
-                }
-            }
-            if (!bTypeSet)
-            {
-                fprintf(fp, "\n");
-            }
-        }
-    }
-    fprintf(fp, "\n");
-}
-
-void write_zeta_q2(QgenAcm             *qgen,
-                   struct gpp_atomtype *atype,
-                   t_atoms             *atoms,
-                   ChargeType           iChargeType)
-{
-    FILE      *fp;
-    int        i, k, row;
-    double     zeta, q, qtot;
-    gmx_bool   bAtom;
-
-    if (nullptr == qgen)
-    {
-        return;
-    }
-
-    fp = fopen("zeta_q.txt", "w");
-    k  = -1;
-    for (i = 0; (i < atoms->nr); i++)
-    {
-        bAtom = (atoms->atom[i].ptype == eptAtom);
-        if (bAtom)
-        {
-            k++;
-        }
-        if (k == -1)
-        {
-            gmx_fatal(FARGS, "The first atom must be a real atom, not a shell");
-        }
-        fprintf(fp, "%6s  %5s", chargeTypeName(iChargeType).c_str(),
-                get_atomtype_name(atoms->atom[i].type, atype));
-        qtot = 0;
-        row   = qgen->getRow(k);
-        q     = qgen->getQ(k);
-        zeta  = qgen->getZeta(k);
-        if ((row != NOTSET) && (q != NOTSET) && (zeta != NOTSET))
-        {
-            qtot += q;
-            fprintf(fp, "%5d %10g %10g", row, zeta, q);
-        }
-        atoms->atom[i].q = qtot;
-        fprintf(fp, "\n");
-    }
-    fprintf(fp, "\n");
-    fclose(fp);
-}
-
 static int get_subtype(directive d, int ftype)
 {
     int i;
@@ -871,7 +678,6 @@ static int get_subtype(directive d, int ftype)
     }
     return 1;
 }
-
 
 static void print_bondeds(FILE                               *out,
                           directive                           d,
@@ -914,7 +720,6 @@ void write_top(FILE            *out,
                const Topology  *topology,
                t_excls          excls[],
                struct gpp_atomtype *atype,
-               int             *cgnr,
                const Poldata   *pd)
 {
      std::map<int, directive> toPrint = {
@@ -932,12 +737,18 @@ void write_top(FILE            *out,
             { F_VSITE4FD,     d_vsites4 },
             { F_VSITE4FDN,    d_vsites4 }
         };
-    if (at && atype && cgnr)
+    if (at && atype)
     {
+        std::vector<int> cgnr;
+        cgnr.resize(at->nr, 0);
+        for(int i = 0; i < at->nr; i++)
+        {
+            cgnr[i] = i+1;
+        }
         fprintf(out, "[ %s ]\n", dir2str(d_moleculetype));
         fprintf(out, "; %-15s %5s\n", "Name", "nrexcl");
         fprintf(out, "%-15s %5d\n\n", molname ? molname : "Protein", pd->getNexcl());
-        print_atoms(out, atype, at, cgnr, bRTPresname);
+        print_atoms(out, atype, at, cgnr.data(), bRTPresname);
         for (auto &fs : pd->forcesConst())
         {
             auto iType = fs.first;
