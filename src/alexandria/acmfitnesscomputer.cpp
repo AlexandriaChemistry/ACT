@@ -91,8 +91,8 @@ double ACMFitnessComputer::calcDeviation(      ACMIndividual   *ind,
         {
             continue;
         }
-        if ((mymol.eSupp_ == eSupport::Local) ||
-            (calcDev == CalcDev::Master && mymol.eSupp_ == eSupport::Remote))
+        if ((mymol.support() == eSupport::Local) ||
+            (calcDev == CalcDev::Master && mymol.support() == eSupport::Remote))
         {
             nmolCalculated += 1;
             // Update the polarizabilities only once before the loop
@@ -114,7 +114,7 @@ double ACMFitnessComputer::calcDeviation(      ACMIndividual   *ind,
             // Check whether we have to disable this compound
             if (immStatus::OK != imm && removeMol_)
             {
-                mymol.eSupp_ = eSupport::No;
+                mymol.setSupport(eSupport::No);
                 continue;
             }
 
