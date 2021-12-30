@@ -732,7 +732,7 @@ immStatus MyMol::GenerateTopology(FILE              *fp,
             UpdateIdef(pd, entry.first);
         }
     }
-    if (pd->polarizable())
+    if (immStatus::OK == imm && pd->polarizable())
     {
         shellfc_ = init_shell_flexcon(debug, mtop_, 0, 1, false);
     }
@@ -747,8 +747,11 @@ immStatus MyMol::GenerateTopology(FILE              *fp,
             fprintf(debug, "%s\n", emsg.c_str());
         }
     }
-    qProps_.insert(std::pair<qType, QtypeProps>(qType::Calc, QtypeProps(qType::Calc)));
-    qProps_.insert(std::pair<qType, QtypeProps>(qType::Elec, QtypeProps(qType::Elec)));
+    if (immStatus::OK == imm)
+    {
+        qProps_.insert(std::pair<qType, QtypeProps>(qType::Calc, QtypeProps(qType::Calc)));
+        qProps_.insert(std::pair<qType, QtypeProps>(qType::Elec, QtypeProps(qType::Elec)));
+    }
     return imm;
 }
 
@@ -2068,7 +2071,7 @@ immStatus MyMol::getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
         case MolPropObservable::ZPE:
             {
                 double    T   = 298.15;
-                auto gp = findProperty(mpo, miq.second, T, method, basis, "");
+                auto gp = static_cast<const MolecularEnergy *>(findProperty(mpo, miq.second, T, method, basis, ""));
                 if (gp)
                 {
                     energy_.insert(std::pair<MolPropObservable, double>(mpo, gp->getValue()));
@@ -2082,7 +2085,7 @@ immStatus MyMol::getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
         case MolPropObservable::DIPOLE:
             {
                 double T = -1;
-                auto gp = findProperty(mpo, miq.second, T, method, basis, "");
+                auto gp = static_cast<const MolecularDipole *>(findProperty(mpo, miq.second, T, method, basis, ""));
                 if (gp)
                 {
                     // TODO distinguish experimental and QM data
@@ -2116,7 +2119,7 @@ immStatus MyMol::getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
         case MolPropObservable::QUADRUPOLE:
             {
                 double T = -1;
-                auto gp = findProperty(mpo, miq.second, T, method, basis, "");
+                auto gp = static_cast<const MolecularQuadrupole *>(findProperty(mpo, miq.second, T, method, basis, ""));
                 if (gp)
                 {
                     qProps_.find(qType::Elec)->second.setQuadrupole(gp->getTensor());
@@ -2130,7 +2133,7 @@ immStatus MyMol::getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
         case MolPropObservable::POLARIZABILITY:
             {
                 double T = -1;
-                auto gp = findProperty(mpo, miq.second, T, method, basis, "");
+                auto gp = static_cast<const MolecularPolarizability *>(findProperty(mpo, miq.second, T, method, basis, ""));
                 if (gp)
                 {
                     copy_mat(gp->getTensor(), alpha_elec_);

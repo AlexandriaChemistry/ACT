@@ -583,13 +583,25 @@ size_t MolGen::Read(FILE            *fp,
     {
         nLocal.insert(std::pair<iMolSelect, int>(ims.first, 0));
     }
-    std::map<MolPropObservable, iqmType> iqmMap =
-        {
-            { MolPropObservable::DHFORM,         iqmType::Exp },
-            { MolPropObservable::DIPOLE,         iqmType::QM  },
-            { MolPropObservable::QUADRUPOLE,     iqmType::QM  },
-            { MolPropObservable::POLARIZABILITY, iqmType::QM  },
-        };
+    // TODO Only list the terms that we need
+    std::map<MolPropObservable, iqmType> iqmMap;
+    if (optimize(InteractionType::VDW) ||
+        optimize(InteractionType::BONDS)||
+        optimize(InteractionType::ANGLES)||
+        optimize(InteractionType::LINEAR_ANGLES)||
+        optimize(InteractionType::IMPROPER_DIHEDRALS)||
+        optimize(InteractionType::PROPER_DIHEDRALS))
+    {
+        iqmMap.insert(std::pair<MolPropObservable, iqmType>(MolPropObservable::DHFORM, iqmType::Exp));
+    }
+    if (optimize(InteractionType::POLARIZATION) ||
+        optimize(InteractionType::CHARGEDISTRIBUTION) ||
+        optimize(InteractionType::ELECTRONEGATIVITYEQUALIZATION))
+    {       
+         iqmMap.insert(std::pair<MolPropObservable, iqmType>(MolPropObservable::DIPOLE,         iqmType::QM));
+         iqmMap.insert(std::pair<MolPropObservable, iqmType>(MolPropObservable::QUADRUPOLE,     iqmType::QM));
+         iqmMap.insert(std::pair<MolPropObservable, iqmType>(MolPropObservable::POLARIZABILITY, iqmType::QM));
+    }
     if (MASTER(cr_))
     {
         if (fp)
@@ -659,11 +671,14 @@ size_t MolGen::Read(FILE            *fp,
                                 mymol.getMolname().c_str(), immsg(imm));
                     }
                 }
+                else
+                {
+                    // Only include the compound if we have all data. 
+                    mymol.set_datasetType(ims);
 
-                mymol.set_datasetType(ims);
-
-                // mymol_ contains all molecules
-                mymol_.push_back(std::move(mymol));
+                    // mymol_ contains all molecules
+                    mymol_.push_back(std::move(mymol));
+                }
             }
             else if (verbose && fp)
             {

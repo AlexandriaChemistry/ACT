@@ -596,17 +596,16 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
                     mol->getMultiplicity(),
                     iMolSelectName(ims));
 
-            // Recalculate the atomic charges using the optmized parameters.
+            // Recalculate the atomic charges using the optimized parameters.
             std::vector<double> dummy;
             mol->GenerateCharges(pd, fplog, cr, nullptr, qcycle, qtol,
                                  ChargeGenerationAlgorithm::NONE, dummy, lot);
             // Energy
-            double T = 0;
-            auto gp = mol->findProperty(MolPropObservable::EMOL, iqmType::QM, T, "", "", "");
-            if (gp)
+            double emol = 0;
+            if (mol->energy(MolPropObservable::EMOL, &emol))
             {
-                lsq_epot[ims][qType::Calc].add_point(gp->getValue(), mol->potentialEnergy(), 0, 0);
-                fprintf(fp, "Reference potential energy %.2f\n", gp->getValue());
+                lsq_epot[ims][qType::Calc].add_point(emol, mol->potentialEnergy(), 0, 0);
+                fprintf(fp, "Reference potential energy %.2f\n", emol);
             }
             auto terms = mol->energyTerms();
             for(auto &ep : ePlot)
