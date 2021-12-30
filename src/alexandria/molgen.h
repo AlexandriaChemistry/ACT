@@ -70,6 +70,9 @@ enum class eRMS {
     TOT
 };
 
+//! \return map from each eRMS to its string name
+const std::map<eRMS, const char *> &geteRMSNames();
+
 //! \brief Return string corresponding to eRMS
 const char *rmsName(eRMS e);
 
@@ -77,7 +80,9 @@ const char *rmsName(eRMS e);
  */
 class FittingTarget 
 {
+
 private:
+
     //! The actual term stored here
     eRMS       erms_;
     //! The data set used
@@ -88,13 +93,25 @@ private:
     int        numberOfDatapoints_ = 0;
     //! The unweighted chi squared for this property
     real       chiSquared_         = 0;
+
 public:
+
     /*! \brief Constructor
      * \param[in] e   The fitting target
      * \param[in] ims The data set used
      */
     FittingTarget(eRMS e, iMolSelect ims) : erms_(e), ims_(ims) {};
+
+    /*! \brief Copy constructor
+     * \param[in] ft    the reference fitting target
+     */
+    FittingTarget(const FittingTarget &ft)
+    : erms_(ft.erms()), ims_(ft.ims()), weight_(ft.weight()),
+      numberOfDatapoints_(ft.numberOfDatapoints()), chiSquared_(ft.chiSquared()) {}
   
+    //! \return the eRMS component covered by this FittingTarget
+    eRMS erms() const { return erms_; }
+
     /*! \brief Set the weight factor
      * \param[in] w The new weighting factor
      */
@@ -160,6 +177,7 @@ public:
      * \param[in] fp   File pointer, print only if non null
      */
     void print(FILE *fp) const;
+    
 };
 
 //! Which part of the force field to optimize  
@@ -217,7 +235,7 @@ public:
 };
 
 //! Map from RMS type to FittingTarget structure
-using RmsFittingTarget       = typename std::map<eRMS, FittingTarget>;
+// using RmsFittingTarget       = typename std::map<eRMS, FittingTarget>;
 
 /*! \brief Convenience storage of parameters to optimize
  */
@@ -294,6 +312,8 @@ class MolGen
 
 private:
 
+    //! Communication record
+    t_commrec *cr_;
     //! Minimum number of data points to consider a parameter
     int                             mindata_    = 1;
     //! Percentage of ESP points to use
@@ -304,8 +324,6 @@ private:
     real                            qtol_       = 1e-6;
     //! Max number of iterations for determining charges
     int                             qcycle_     = 500;
-    //! Map with the fitting targets for each data set. RmsFittingTarget is itself a map from eRMS to FittingTarget.
-    std::map<iMolSelect, RmsFittingTarget> targets_;  // TODO: this should go into the ACMIndividual class?
     //! Map that holds the number of compounds in each data set
     std::map<iMolSelect, size_t>    targetSize_;
     //! Tell us whether this interaction type needs optimizing
@@ -314,10 +332,6 @@ private:
     gmx_bool                        bQM_        = false;
     //! Whether or not to use charge symmetry
     gmx_bool                        qsymm_      = false;
-    //! Force field data structure
-    Poldata                         pd_;  // TODO: this should go into the ACMIndividual class?
-    //! GROMACS communication data structure
-    t_commrec                      *cr_         = nullptr;
     //! GROMACS logger structure
     gmx::MDLogger                   mdlog_;
     //! GROMACS MD parameter structure
@@ -339,13 +353,10 @@ private:
      * Check that we have enough data for all parameters to optimize
      * in this molecule.
      * \param[in] fp File to print logging information to. May be nullptr.
+     * \param[in] pd Pointer to poldata object
      */
-    void checkDataSufficiency(FILE *fp);
-    
-    /*! \brief Generate optIndex
-     * \param[in] fp File to print logging information to. May be nullptr.
-     */
-    void generateOptimizationIndex(FILE *fp);
+    void checkDataSufficiency(FILE     *fp,
+                              Poldata  *pd);
     
     //! Compute amount of compounds in each group
     void countTargetSize();
@@ -360,39 +371,32 @@ private:
         return 0;
     }
     
-    //! \brief Fill the  iOpt_ map
-    void fillIopt();
+    /*! \brief Fill the  iOpt_ map
+     * \param[in] pd Pointer to poldata
+     */
+    void fillIopt(Poldata *pd);
     
 public:
-
-    //! Information for each parameter
-    std::vector<OptimizationIndex>  optIndex_;
     
+    //! Default constructor
+    MolGen() {}
+
     /*! \brief 
      * Constructor of MolGen class.
+     * \param[in] cr communication record
      */ 
-    MolGen();
-    
-    /*! \brief 
-     * Deconstructor of MolGen class.
-     */
-    ~MolGen();
+    MolGen(t_commrec *cr);
     
     /*! \brief Add options to the command line
-     * \param[in] pargs Vector of command line arguments
-     * \param[in] etune The type of optimization being run
+     * \param[in] pargs   Vector of command line arguments
+     * \param[in] etune   The type of optimization being run
+     * \param[in] targets pointer to targets map for train dataset. Comes from sharedIndividualInfo
      */
-    void addOptions(std::vector<t_pargs> *pargs, eTune etune);
+    void addOptions(std::vector<t_pargs> *pargs, eTune etune, std::map<eRMS, FittingTarget> *targets);
     
     /*! \brief Process options after parsing
      */
     void optionsFinished();
-    
-    //! \brief Return the poldata as const variable
-    const Poldata *poldata() const { return &pd_; }
-    
-    //! \brief Return the poldata
-    Poldata *poldata() { return &pd_; }
 
     //! \brief Return the const vector of molecules
     const std::vector<MyMol> &mymols() const { return mymol_; }
@@ -458,12 +462,6 @@ public:
 
     //! \brief Return minimum amount of data needed
     int mindata() const { return mindata_; }
-
-    //! \brief Return const communication record
-    const t_commrec *commrec() const { return cr_; }
-    
-    //! \brief Return non-const communication record
-    t_commrec *commrec() { return cr_; }
   
     //! \return the GROMACS hardware information structure      
     gmx_hw_info_t *hwinfo() {return hwinfo_;}
@@ -473,71 +471,11 @@ public:
 
     //! \brief Return level of theory
     const char *lot() const { return lot_; }
-
-    /*! \brief Return the fitting targets for editing
-     * \param[in] ims The selection to return
-     * \return The map of fittingtargets or nullptr
-     */
-    std::map<eRMS, FittingTarget> *fittingTargets(iMolSelect ims)
-    {
-        auto tt = targets_.find(ims);
-        if (targets_.end() == tt)
-        {
-            return nullptr;
-        }
-        else
-        {
-            return &tt->second;
-        }
-    }
-        
-    const std::map<eRMS, FittingTarget> &fittingTargetsConst(iMolSelect ims) const
-    {
-        auto tt = targets_.find(ims);
-        GMX_RELEASE_ASSERT(targets_.end() != tt, gmx::formatString("Cannot find selection %s", iMolSelectName(ims)).c_str());
-        return tt->second;
-    }
-        
-    /*! \brief return appropriate fitting target
-     * \param[in] ims The selection
-     * \param[in] rms The contributor to the chi squared
-     * \return FittingTarget class or nullptr if not found
-     */
-    FittingTarget *target(iMolSelect ims, eRMS rms);
-	
-    /*! \brief Set the chiSquared to zero.
-     * \param[in] ims The selection to reset
-     */
-    void resetChiSquared(iMolSelect ims)
-    {
-        auto fts = fittingTargets(ims);
-        if (fts != nullptr)
-        {
-            for (auto &ft : *fts)
-            {
-                ft.second.reset();
-                }
-            }
-        }
-
-    /*! \brief 
-     * Sum over the energies of the cores if desired.
-     * Also multiplies the terms by the weighting factors.
-     * \param[in] parallel Whether or not to sum in parallel
-     * \param[in] ims      The selection to sum
-     */
-    void sumChiSquared(bool parallel, iMolSelect ims);
-    
-    /*! \brief Print the chiSquared components.
-     * \param[in] fp  File pointer to print to, may be nullptr
-     * \param[in] ims The selection to print
-     */  
-    void printChiSquared(FILE *fp, iMolSelect ims) const;
     
     /*! \brief Read the molecular property data file to generate molecules.
      * \param[in] fp      File pointer for printing information
      * \param[in] fn      Filename for molecules
-     * \param[in] pd_fn   Filename for force field file
+     * \param[in] pd      Pointer to Poldata object
      * \param[in] bZero   Use compounds with zero dipole
      * \param[in] gms     The molecule selection
      * \param[in] tabfn   Table function for gromacs
@@ -546,7 +484,7 @@ public:
      */
     size_t Read(FILE            *fp,
                 const char      *fn,
-                const char      *pd_fn,
+                Poldata         *pd,
                 gmx_bool         bZero,
                 const MolSelect &gms,
                 const char      *tabfn,

@@ -4,8 +4,8 @@
  * Copyright (C) 2014-2021
  *
  * Developers:
- *             Mohammad Mehdi Ghahremanpour, 
- *             Paul J. van Maaren, 
+ *             Mohammad Mehdi Ghahremanpour,
+ *             Paul J. van Maaren,
  *             David van der Spoel (Project leader)
  *
  * This program is free software; you can redistribute it and/or
@@ -20,10 +20,10 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301, USA.
  */
- 
+
 /*! \internal \brief
  * Implements part of the alexandria program.
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
@@ -170,6 +170,15 @@ class Symcharges
 
         Symcharges () {}
 
+        /*!
+         * Copy constructor
+         * FIXME: cannot copy the const strings
+         * \param[in] other reference Symcharges object
+         */
+        Symcharges(const Symcharges &other)
+        : central_(other.getCentral()), attached_(other.getAttached()),
+          numattach_(other.getNumattach()) {}
+
         Symcharges(const std::string &central,
                    const std::string &attached,
                    int                numattach);
@@ -185,9 +194,9 @@ class Symcharges
         CommunicationStatus Receive(const t_commrec *cr, int src);
 
     private:
-        const std::string central_;
-        const std::string attached_;
-        int               numattach_;
+        std::string central_;
+        std::string attached_;
+        int         numattach_;
 };
 
 using SymchargesIterator      = typename std::vector<Symcharges>::iterator;

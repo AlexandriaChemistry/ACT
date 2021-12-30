@@ -45,7 +45,7 @@ namespace alexandria
 {
 
 //! \brief Shortcut for recurring declaration
-typedef std::map<const Identifier, ForceFieldParameterMap> ForceFieldParameterListMap;
+typedef std::map<Identifier, ForceFieldParameterMap> ForceFieldParameterListMap;
 
 /*! \brief Class to hold the parameters for an interaction type
  *
@@ -58,6 +58,17 @@ class ForceFieldParameterList
  public:
     //! Empty constructor for helper nodes
     ForceFieldParameterList() {};
+    
+    /*!
+     * Copy constructor
+     * FIXME: cannot copy the options map
+     * \param[in] other     reference ForceFieldParameter object
+     */
+    ForceFieldParameterList(const ForceFieldParameterList &other)
+    : function_(other.function()), canSwap_(other.canSwap()), fType_(other.fType()),
+      options_(other.option()), parameters_(other.parametersConst()),
+      counter_(other.counter()) {}
+
     /*! \brief Constructor
      *
      * \param[in] function The function for which parameters are stored. This may be an empty variable.
@@ -116,7 +127,7 @@ class ForceFieldParameterList
     }
 
     //! Return the options map
-    const std::map<const std::string, const std::string> &option() const { return options_; }
+    const std::map<std::string, std::string> &option() const { return options_; }
 
     //! Return the parameters map as a const variable
     const ForceFieldParameterListMap &parametersConst() const { return parameters_; };
@@ -220,6 +231,9 @@ class ForceFieldParameterList
      */
     CommunicationStatus Receive(const t_commrec *cr, int src);
 
+    //! \return The counter \p counter_ for index
+    size_t counter() const { return counter_; };
+
  private:
     //! The function type string
     std::string  function_;
@@ -231,7 +245,7 @@ class ForceFieldParameterList
     unsigned int fType_;
 
     //! Map structure for the options associated with the parameter list
-    std::map<const std::string, const std::string> options_;
+    std::map<std::string, std::string> options_;
         
     //! Map of parameters 
     ForceFieldParameterListMap parameters_;

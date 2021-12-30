@@ -27,6 +27,7 @@ CMakeLists.txt.user
 Testing
 build_Debug_DOUBLE
 build_Release_DOUBLE
+build_Debug_DOUBLE
 cmake-build-debug
 
 # GA

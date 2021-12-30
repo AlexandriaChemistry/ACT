@@ -186,14 +186,11 @@ CommunicationStatus Symcharges::Send(const t_commrec *cr, int dest)
 CommunicationStatus Symcharges::Receive(const t_commrec *cr, int src)
 {
     CommunicationStatus cs;
-    std::string         central, attached;
     cs = gmx_recv_data(cr, src);
     if (CS_OK == cs)
     {
-        gmx_recv_str(cr, src, &central);
-        gmx_recv_str(cr, src, &attached);
-        const_cast<std::string &>(central_)   = central;
-        const_cast<std::string &>(attached_)  = attached;
+        gmx_recv_str(cr, src, &central_);
+        gmx_recv_str(cr, src, &attached_);
         numattach_ = gmx_recv_int(cr, src);
         if (nullptr != debug)
         {

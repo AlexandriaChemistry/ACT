@@ -61,6 +61,19 @@ class ForceFieldParameter
     //! \brief default constructor
     ForceFieldParameter() {}
     
+    /*!
+     * Copy constructor
+     * \param other reference ForceFieldParameter object
+     */
+    ForceFieldParameter(const ForceFieldParameter &other)
+    : unit_(other.unit()), value_(other.value()),
+      originalValue_(other.originalValue()), uncertainty_(other.uncertainty()),
+      originalUncertainty_(other.originalUncertainty()), ntrain_(other.ntrain()),
+      originalNtrain_(other.originalNtrain()), minimum_(other.minimum()),
+      maximum_(other.maximum()), mutability_(other.mutability()),
+      strict_(other.strict()), nonNegative_(other.nonNegative()),
+      index_(other.index()) {}
+
     /*! \brief Constructor initiating all parameters.
      *
      * TODO: Check unit
@@ -157,6 +170,9 @@ class ForceFieldParameter
     
     //! \brief Return the number of training points used
     int ntrain() const { return ntrain_; }
+
+    //! \brief \return the value of \p originalNtrain_
+    int originalNtrain() const { return originalNtrain_; }
     
     /*!\brief Set the number of training point used for this value if not fixed
      * \param[in] ntrain  The number of data points

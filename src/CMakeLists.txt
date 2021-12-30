@@ -106,4 +106,5 @@ if (BUILD_TESTING)
 endif()
 
 add_subdirectory(gromacs)
+add_subdirectory(ga)
 add_subdirectory(alexandria)

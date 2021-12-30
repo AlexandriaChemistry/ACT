@@ -59,7 +59,22 @@ class Poldata
 {
     public:
 
+        //! Default constructor
         Poldata() {};
+
+        /*!
+         * Copy constructor
+         * \param[in] other    the reference Poldata object
+         */
+        Poldata(const Poldata &other)
+        : alexandriaVersion_(other.getVersion()), type2Itype_(other.type2Itype()),
+          filename_(other.filename()), alexandria_(other.particleTypesConst()),
+          vsite_(other.getVsiteConst()), vsite_angle_unit_(other.getVsite_angle_unit()),
+          vsite_length_unit_(other.getVsite_length_unit()),
+          nexcl_(other.getNexcl()), gtEpsilonR_(other.getEpsilonR()),
+          forces_(other.forcesConst()), symcharges_(other.getSymcharges()),
+          polarizable_(other.polarizable()),
+          ChargeGenerationAlgorithm_(other.chargeGenerationAlgorithm()) {};
 
         /*! \brief
          * Set the file name gentop.dat
@@ -143,7 +158,9 @@ class Poldata
             vsite_length_unit_ = length_unit;
         }
 
-        std::vector<Vsite> &getVsite() {return vsite_; }
+        std::vector<Vsite> &getVsite() { return vsite_; }
+
+        const std::vector<Vsite> &getVsiteConst() const { return vsite_; }
 
         int getNexcl() const { return nexcl_; }
 
@@ -242,11 +259,11 @@ class Poldata
                                 { return (id == f.id()); });
         }
         
-        /*! \brief Return mutable vector
+        /*! \brief Return mutable vector \p alexandria_
          */
         std::vector<ParticleType> *particleTypes() { return &alexandria_; }
 
-        /*! \brief Return const vector
+        /*! \brief Return const vector \p alexandria_
          */
         const std::vector<ParticleType> &particleTypesConst() const { return alexandria_; }
 
@@ -380,6 +397,9 @@ class Poldata
                            const std::string &attached,
                            int                numattach);
 
+        //! \return a constant reference of \p symcharges_
+        const std::vector<Symcharges> &getSymcharges() const { return symcharges_; }
+
         SymchargesIterator getSymchargesBegin() { return symcharges_.begin(); }
 
         SymchargesIterator getSymchargesEnd() { return symcharges_.end(); }
@@ -415,6 +435,10 @@ class Poldata
 
         //! \brief Check internal consistency of data structures
         void checkConsistency(FILE *fplog) const;
+
+        //! \return a constant \p type2Itype_ reference
+        const std::map<std::string, InteractionType> &type2Itype() const { return type2Itype_; }
+
     private:
         std::string                           alexandriaVersion_;
         std::map<std::string, InteractionType> type2Itype_;
@@ -437,6 +461,7 @@ class Poldata
         {
             return (pointer - &(vector[0]));
         }
+
 };
 
 }

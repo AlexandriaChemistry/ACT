@@ -1,11 +1,18 @@
-#ifndef ACT_CROSSOVER_H
-#define ACT_CROSSOVER_H
+/*! \internal \brief
+ * Implements part of the alexandria program.
+ * \author Julian Ramon Marrades Furquet <julian.marrades@hotmail.es>
+ */
+
+
+#ifndef GA_CROSSOVER_H
+#define GA_CROSSOVER_H
 
 
 #include <random>
 #include <time.h>
+#include <vector>
 
-#include "aliases.h"
+#include "Individual.h"
 
 
 namespace ga
@@ -13,132 +20,50 @@ namespace ga
 
 
 /*!
- * Abstract class to perform crossover
+ * \brief Abstract class to perform crossover.
+ * Given two \ref Individual (parents), it will mix their genomes to generate two new Individual (children)
  */
 class Crossover
 {
 
 private:
 
-    std::random_device                  rd;
-    std::mt19937                        gen;
-    std::uniform_int_distribution<int>  dis;
+    // Random number stuff
+    std::random_device                     rd_base;
+    std::mt19937                           gen_base;
+    std::uniform_int_distribution<size_t>  dis_base;
 
 protected:
 
     /*!
-     * Create a new crossover object.
-     * @param chromosomeLength  length of the chromosome
+     * \brief Constructor
+     * \param[in] chromosomeLength  length of the chromosome
      */
-    Crossover(const int chromosomeLength)
-    : gen(rd()), dis(std::uniform_int_distribution<>(1, chromosomeLength - 1))
+    Crossover(const size_t chromosomeLength)
+    : gen_base(rd_base()), dis_base(std::uniform_int_distribution<size_t>(1, chromosomeLength - 1))
     {
-        gen.seed(::time(NULL));
+        gen_base.seed(::time(NULL));
     }
 
     /*!
-     * Pick a random gene index
-     * @returns     an integer representing an index
+     * \brief Pick a random gene index
+     * \return the selected index
      */
-    int randIndex();
+    size_t randIndex() { return dis_base(gen_base); }
 
 public:
 
     /*!
-     * Perform crossover operation
-     * @param parent1   the first parent
-     * @param parent2   the second parent
-     * @param child1    the first child to write to
-     * @param child2    the second child to write to
-     * @param length    length of each individual
+     * \brief Perform crossover operation
+     * \param[in] parent1   the first parent
+     * \param[in] parent2   the second parent
+     * \param[in] child1    the first child to write to
+     * \param[in] child2    the second child to write to
      */
-    virtual void offspring(const vector &parent1,
-                           const vector &parent2,
-                                 vector *child1,
-                                 vector *child2,
-                           const int     length) = 0;
-
-};
-
-
-/*!
- * Class for the single-point crossover operation.
- */
-class SinglePointCrossover : public Crossover
-{
-
-public:
-
-    /*!
-     * Create a new SinglePointCrossover object
-     * @param chromosomeLength  amount of genes in each individual
-     */
-    SinglePointCrossover(const int chromosomeLength)
-    : Crossover(chromosomeLength) {}
-
-    virtual void offspring(const vector &parent1,
-                           const vector &parent2,
-                                 vector *child1,
-                                 vector *child2,
-                           const int     length);
-
-};
-
-
-/*!
- * Class for the double-point crossover operation.
- */
-class DoublePointCrossover : public Crossover
-{
-
-public:
-
-    /*!
-     * Create a new DoublePointCrossover object
-     * @param chromosomeLength  amount of genes in each individual
-     */
-    DoublePointCrossover(const int chromosomeLength)
-    : Crossover(chromosomeLength) {};
-
-    virtual void offspring(const vector &parent1,
-                           const vector &parent2,
-                                 vector *child1,
-                                 vector *child2,
-                           const int     length);
-
-};
-
-
-/*!
- * Class for the n-point crossover operation.
- */
-class NPointCrossover : public Crossover
-{
-
-private:
-
-    int numberOfCrossovers;
-    vector crossoverIndices;
-
-public:
-
-    /*!
-     * Create a new NPointCrossover object
-     * @param chromosomeLength       amount of genes in each individual
-     * @param numberOfCrossovers     the number of places the genes swap
-     */
-    NPointCrossover(const int chromosomeLength,
-                    const int numberOfCrossovers)
-    : Crossover(chromosomeLength)
-    {
-        this->numberOfCrossovers = numberOfCrossovers;
-    };
-
-    virtual void offspring(const vector &parent1,
-                           const vector &parent2,
-                                 vector *child1,
-                                 vector *child2,
-                           const int     length);
+    virtual void offspring(Individual  *parent1,
+                           Individual  *parent2,
+                           Individual  *child1,
+                           Individual  *child2) = 0;
 
 };
 
@@ -146,4 +71,4 @@ public:
 } //namespace ga
 
 
-#endif //ACT_CROSSOVER_H
+#endif //GA_CROSSOVER_H

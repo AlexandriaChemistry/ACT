@@ -26,6 +26,9 @@
 #
 
 set(ALEXANDRIA_SOURCES
+           acmfitnesscomputer.cpp
+           acmindividual.cpp
+           acminitializer.cpp
            alex_modules.cpp
       	   molpropobservable.cpp
            experiment.cpp
@@ -53,6 +56,7 @@ set(ALEXANDRIA_SOURCES
            identifier.cpp
            interactiontype.cpp
            latex_util.cpp
+           mcmcmutator.cpp
            memory_check.cpp
            merge_mp.cpp
            merge_pd.cpp
@@ -68,8 +72,10 @@ set(ALEXANDRIA_SOURCES
            mutability.cpp
            mymol.cpp
            mymol_low.cpp
+           npointcrossover.cpp
            openmm_xml.cpp
            particletype.cpp
+           percentmutator.cpp
            phase.cpp
   #         plistwrapper.cpp
            poldata.cpp
@@ -84,6 +90,7 @@ set(ALEXANDRIA_SOURCES
            qtype.cpp
            readpsi4.cpp
            regression.cpp
+           sharedindividualinfo.cpp
            stringutil.cpp
            symmetrize_charges.cpp
            topology.cpp
@@ -105,7 +112,7 @@ add_library(alexandria_objlib OBJECT ${ALEXANDRIA_SOURCES})
 add_executable(alexandria alexandria.cpp
          $<TARGET_OBJECTS:alexandria_objlib>)
 
-target_link_libraries(alexandria libactgromacs ${GMX_EXTRA_LIBRARIES} ${XML_LIBRARIES}
+target_link_libraries(alexandria libactgromacs actga ${GMX_EXTRA_LIBRARIES} ${XML_LIBRARIES}
          ${GMX_EXE_LINKER_FLAGS})
 set(BINARY_NAME "alexandria${GMX_BINARY_SUFFIX}")
 set_target_properties(alexandria PROPERTIES 

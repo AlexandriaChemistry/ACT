@@ -28,6 +28,7 @@
  * Implements part of the alexandria program.
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
+ * \author Julian Ramon Marrades Furquet <julian.marrades@hotmail.es>
  */
 
 #include "tune_eem.h"
@@ -136,11 +137,6 @@ void my_fclose(FILE *fp)
     }
 }
 
-void OptACM::saveState()
-{
-    writePoldata(outputFile_, poldata(), false);
-}
-
 void OptACM::add_pargs(std::vector<t_pargs> *pargs) {
     t_pargs pa[] =
             {
@@ -148,16 +144,25 @@ void OptACM::add_pargs(std::vector<t_pargs> *pargs) {
                             "Consider both diagonal and off-diagonal elements of the Q_Calc matrix for optimization"},
                     {"-removemol",      FALSE, etBOOL, {&bRemoveMol_},
                             "Remove a molecule from training set if shell minimization does not converge."},
+                    {"-v",              FALSE, etBOOL, {&verbose_},
+                        "Flush output immediately rather than letting the OS buffer it. Don't use for production simulations."}
             };
     for (int i = 0; i < asize(pa); i++) {
         pargs->push_back(pa[i]);
     }
-    addOptions(pargs, eTune::EEM);
-    configHandlerPtr()->add_pargs(pargs);
+    mg_.addOptions(pargs, eTune::EEM, sii_.fittingTargets(iMolSelect::Train));
+    bch_.add_pargs(pargs);
+    gach_.add_pargs(pargs);
+}
+
+void OptACM::check_pargs()
+{
+    bch_.check_pargs();
+    gach_.check_pargs();
 }
 
 void OptACM::optionsFinished(const std::string &outputFile) {
-    MolGen::optionsFinished();
+    mg_.optionsFinished();
     outputFile_ = outputFile;
 }
 
@@ -176,15 +181,15 @@ FILE *OptACM::logFile() {
 void OptACM::initChargeGeneration(iMolSelect ims)
 {
     std::string method, basis, conf, type, myref, mylot;
-    splitLot(lot(), &method, &basis);
+    splitLot(mg_.lot(), &method, &basis);
     std::vector<double> vec;
-    for (MyMol &mymol : mymols())
+    for (MyMol &mymol : mg_.mymols())
     {
         if (mymol.datasetType() != ims)
         {
             continue;
         }
-        if (fit("alpha"))
+        if (mg_.fit("alpha"))
         {
             // For fitting alpha we need a reference polarizability
             double T = 0;
@@ -207,267 +212,72 @@ void OptACM::initChargeGeneration(iMolSelect ims)
         }
         if (mymol.support() != eSupport::No)
         {
-            mymol.setQgenAcm(new QgenAcm(poldata(), mymol.atoms(),
+            mymol.setQgenAcm(new QgenAcm(sii_.poldata(), mymol.atoms(),
                                          mymol.totalCharge()));
         }
     }
 }
 
-void OptACM::fillDevComputers()
-{
-    FILE *lf = logFile();
-    bool verb = verbose();
-
-    if (target(iMolSelect::Train, eRMS::BOUNDS)->weight() > 0)
-        bdc_ = new BoundsDevComputer(lf, verb, &optIndex_);
-
-    if (target(iMolSelect::Train, eRMS::CHARGE)->weight() > 0 ||
-        target(iMolSelect::Train, eRMS::CM5)->weight() > 0)
-        devComputers_.push_back(new ChargeCM5DevComputer(lf, verb));
-    if (target(iMolSelect::Train, eRMS::ESP)->weight() > 0)
-        devComputers_.push_back(new EspDevComputer(lf, verb, fit("zeta")));
-    if (target(iMolSelect::Train, eRMS::Polar)->weight() > 0)
-        devComputers_.push_back(new PolarDevComputer(lf, verb, bFullQuadrupole_));
-    if (target(iMolSelect::Train, eRMS::QUAD)->weight() > 0)
-        devComputers_.push_back(new QuadDevComputer(lf, verb, bFullQuadrupole_));
-    if (target(iMolSelect::Train, eRMS::MU)->weight() > 0)
-        devComputers_.push_back(new MuDevComputer(lf, verb, bQM()));
-    if (target(iMolSelect::Train, eRMS::EPOT)->weight() > 0)
-        devComputers_.push_back(new EnergyDevComputer(lf, verb));
-
-}
-
-double OptACM::calcDeviation(bool       verbose,
-                             CalcDev    calcDev,
-                             iMolSelect ims)
-{
-    t_commrec *cr = commrec();
-    if (MASTER(cr))
-    {
-        if (PAR(cr) && calcDev != CalcDev::Master)
-        {
-            for (int i = 1; i < cr->nnodes; i++)
-            {
-                gmx_send_int(cr, i, static_cast<int>(calcDev));
-                gmx_send_int(cr, i, static_cast<int>(ims));
-            }
-        }
-    }
-    else
-    {
-        calcDev = static_cast<CalcDev>(gmx_recv_int(cr, 0));
-        ims     = static_cast<iMolSelect>(gmx_recv_int(cr, 0));
-    }
-    if (calcDev == CalcDev::Final)
-    {
-        return -1;
-    }
-    resetChiSquared(ims);
-    std::map<eRMS, FittingTarget> *targets = fittingTargets(ims);
-    if (MASTER(cr))
-    {
-        if (bdc_ != nullptr)
-        {
-            bdc_->calcDeviation(nullptr, targets, poldata(), getParam(), cr);
-        }
-    }
-
-    if (PAR(cr))
-    {
-        if (calcDev == CalcDev::Parallel)
-        {
-            poldata()->broadcast_eemprop(cr);
-            poldata()->broadcast_particles(cr);
-        }
-    }
-    int nmolCalculated = 0;
-    for (MyMol &mymol : mymols())
-    {
-        if (ims != mymol.datasetType())
-        {
-            continue;
-        }
-        if ((mymol.support() == eSupport::Local) ||
-            (calcDev == CalcDev::Master && mymol.support() == eSupport::Remote))
-        {
-            nmolCalculated += 1;
-            // Update the polarizabilities only once before the loop
-            if (fit("alpha"))
-            {
-                mymol.UpdateIdef(poldata(), InteractionType::POLARIZATION);
-            }
-            // TODO do this systematically
-            if (fit("Dm"))
-            {
-                mymol.UpdateIdef(poldata(), InteractionType::BONDS);
-            }
-            // Update the electronegativity parameters
-            mymol.zetaToAtoms(poldata(), mymol.atoms());
-            // Run charge generation including shell minimization
-            immStatus imm = mymol.GenerateAcmCharges(poldata(), cr,
-                                                     qcycle(), qtol());
-
-            // Check whether we have to disable this compound
-            if (immStatus::OK != imm && removeMol())
-            {
-                mymol.setSupport(eSupport::No);
-                continue;
-            }
-
-            computeDiQuad(targets, &mymol);
-
-            for (DevComputer *mydev : devComputers_)
-                mydev->calcDeviation(&mymol, targets, poldata(), getParam(), cr);
-        }
-    }
-    if (debug)
-    {
-        printParameters(debug);
-    }
-    sumChiSquared(calcDev == CalcDev::Parallel, ims);
-    if (verbose && logFile())
-    {
-        printChiSquared(logFile(), ims);
-    }
-    numberCalcDevCalled_ += 1;
-    return (*targets).find(eRMS::TOT)->second.chiSquared();
-}
-
-void OptACM::computeDiQuad(std::map<eRMS, FittingTarget> *targets,
-                           MyMol                         *mymol)
-{
-
-    // These two things need to be present, if not the code will crash
-    // TODO: What happens with this little interlude when we bring in
-    // the for loop?
-    // QtypeProps *qelec = mymol->qTypeProps(qType::Elec);
-    QtypeProps *qcalc = mymol->qTypeProps(qType::Calc);
-    if ((*targets).find(eRMS::MU)->second.weight() > 0 ||
-        (*targets).find(eRMS::QUAD)->second.weight() > 0)
-    {
-        qcalc->setQ(mymol->atoms());
-        qcalc->setX(mymol->x());
-        qcalc->calcMoments();
-    }
-
-}
-
-void OptACM::initOpt(bool bRandom)
-{
-    for(auto &optIndex : optIndex_)
-    {
-        auto                iType = optIndex.iType();
-        ForceFieldParameter p;
-        if (iType == InteractionType::CHARGE)
-        {
-            if (poldata()->hasParticleType(optIndex.particleType()))
-            {
-                p = poldata()->findParticleType(optIndex.particleType())->parameterConst(optIndex.parameterType());
-            }
-        }
-        else if (poldata()->interactionPresent(iType))
-        {
-            p = poldata()->findForcesConst(iType).findParameterTypeConst(optIndex.id(), optIndex.parameterType());
-        }
-        if (p.ntrain() >= mindata())
-        {
-            Bayes::addParam(optIndex.name(),
-                            p.value(), p.mutability(),
-                            p.minimum(), p.maximum(),
-                            p.ntrain(), bRandom);
-        }
-    }
-}
-
-void OptACM::toPoldata(const std::vector<bool> &changed)
-{
-    size_t   n      = 0;
-    auto     param  = Bayes::getParam();
-    auto     psigma = Bayes::getPsigma();
-    if (psigma.empty())
-    {
-        psigma.resize(param.size(), 0);
-    }
-    Bayes::printParameters(debug);
-    for (const auto &optIndex : optIndex_)
-    {
-        if (changed[n])
-        {
-            auto                 iType = optIndex.iType();
-            ForceFieldParameter *p = nullptr;
-            if (iType != InteractionType::CHARGE)
-            {
-                p = poldata()->findForces(iType)->findParameterType(optIndex.id(), optIndex.parameterType());
-            }
-            else if (poldata()->hasParticleType(optIndex.particleType()))
-            {
-                p = poldata()->findParticleType(optIndex.particleType())->parameter(optIndex.parameterType());
-            }
-            GMX_RELEASE_ASSERT(p, gmx::formatString("Could not find parameter %s", optIndex.id().id().c_str()).c_str());
-            if (p)
-            {
-                p->setValue(param[n]);
-                p->setUncertainty(psigma[n]);
-            }
-        }
-        n++;
-    }
-    GMX_RELEASE_ASSERT(n == changed.size(),
-                       gmx::formatString("n = %zu changed.size() = %zu",
-                                         n, changed.size()).c_str());
-}
-
-bool OptACM::runMaster(const gmx_output_env_t *oenv,
-                       const char             *xvgconv,
+bool OptACM::runMaster(const char             *xvgconv,
                        const char             *xvgepot,
                        bool                    optimize,
-                       bool                    sensitivity,
-                       bool 		           bEvaluate_testset)
+                       bool                    sensitivity)
 {
-    bool bMinimum = false;
-    GMX_RELEASE_ASSERT(MASTER(commrec()), "WTF");
+    bool bMinimum = true;  // FIXME: what do we do with this???
+    GMX_RELEASE_ASSERT(MASTER(cr_), "WTF");
 
     print_memory_usage(debug);
     std::vector<std::string> paramClass;
-    for(const auto &fm : typesToFit())
+    for(const auto &fm : mg_.typesToFit())
     {
         paramClass.push_back(fm.first);
     }
     if (optimize)
     {
-        configHandlerPtr()->setOutputFiles(xvgconv, paramClass, xvgepot, oenv);
-        double chi2     = 0;
-        bMinimum = Bayes::MCMC(logFile(), bEvaluate_testset, &chi2);
+        sii_.setOutputFiles(xvgconv, paramClass, xvgepot);
+        sii_.assignParamClassIndex();
+        sii_.computeWeightedTemperature(bch_.temperatureWeighting());
+        // bMinimum = mutator_->MCMC(ind_, bEvaluate_testset);
+        ga_->evolve();
     }
     if (sensitivity)
     {
         // only on the training set
-        Bayes::SensitivityAnalysis(logFile(), iMolSelect::Train);
+        mutator_->sensitivityAnalysis(ind_, iMolSelect::Train);
     }
     // Finalize the calculations on the helpers
-    GMX_RELEASE_ASSERT(calcDeviation(false, CalcDev::Final, iMolSelect::Train) < 0,
+    GMX_RELEASE_ASSERT(fitComp_->calcDeviation(ind_, false, CalcDev::Final, iMolSelect::Train) < 0,
                        "Result for final parallel calcDeviation should be less than zero");
 
-    printMonteCarloStatistics(logFile());
+    for (ga::Individual *finalInd : ga_->oldPop())
+    {
+        mutator_->printMonteCarloStatistics(static_cast<ACMIndividual*>(finalInd), logFile());
+    }
+
+    bestInd_ = static_cast<ACMIndividual*>(ga_->bestInd());
+    bestInd_->setId(0);  // ID 0 corresponds to the best individual
+
     if (bMinimum)
     {
-        auto best = Bayes::getBestParam();
+        auto best = bestInd_->bestParam();
         if (best.empty())
         {
             GMX_THROW(gmx::InternalError("Minimum found but not best parameters"));
         }
-        // Restore best parameter set
-        Bayes::setParam(best);
+        // If MCMC was chosen as optimizer, restore best parameter set
+        if (strcmp(gach_.optimizer(), "MCMC") == 0) bestInd_->setParam(best);
         // Copy it to Poldata
         std::vector<bool> changed;
         changed.resize(best.size(), true);
-        toPoldata(changed);
+        bestInd_->toPoldata(changed);
         for (const auto &ims : iMolSelectNames())
         {
-            double chi2 = calcDeviation(true, CalcDev::Master, ims.first);
+            double chi2 = fitComp_->calcDeviation(bestInd_, true, CalcDev::Master, ims.first);
             fprintf(logFile(), "Minimum chi2 for %s %g\n",
                     iMolSelectName(ims.first), chi2);
         }
+        // Save force field of best individual
+        bestInd_->saveState();
     }
     else if (optimize)
     {
@@ -482,7 +292,7 @@ void OptACM::runHelper()
     // The second and third variable are set by the master, but
     // we have to pass something.
     // If the result is less than zero (-1), we are done.
-    while (calcDeviation(false, CalcDev::Parallel, iMolSelect::Train) >= 0)
+    while (fitComp_->calcDeviation(ind_, false, CalcDev::Parallel, iMolSelect::Train) >= 0)
     {
         ;
     }
@@ -524,7 +334,6 @@ int tune_eem(int argc, char *argv[])
     };
 
     real                efield              = 10;
-    bool                bRandom             = false;
     bool                bcompress           = false;
     bool                bZero               = true;
     bool                bOptimize           = true;
@@ -540,8 +349,6 @@ int tune_eem(int argc, char *argv[])
     std::vector<t_pargs>        pargs;
     {
         t_pargs                     pa[]         = {
-            { "-random", FALSE, etBOOL, {&bRandom},
-              "Generate completely random starting parameters within the limits set by the options. This will be done at the very first step and before each subsequent run." },
             { "-zero", FALSE, etBOOL, {&bZero},
               "Use molecules with zero dipole in the fit as well" },
             { "-compress", FALSE, etBOOL, {&bcompress},
@@ -602,12 +409,17 @@ int tune_eem(int argc, char *argv[])
         return 0;
     }
 
-    // TODO: Check validity of arguments with check_pargs() in ConfigHandler(s)
-    opt.configHandlerPtr()->check_pargs();
+    // Set output environment in the optimization driver
+    opt.setOenv(oenv);
 
-    opt.optionsFinished(opt2fn("-o", filenms.size(), filenms.data()));
+    // Check validity of arguments with check_pargs() in ConfigHandler(s)
+    opt.check_pargs();
 
-    opt.fillDevComputers();
+    // finishing MolGen stuff and setting output file for FF in OptACM
+    opt.optionsFinished(opt2fn("-o", filenms.size(), filenms.data()));  // Calls optionsFinished() for MolGen instance
+
+    // Propagate weights from training set to other sets
+    opt.sii()->propagateWeightFittingTargets();
 
     if (MASTER(opt.commrec()))
     {
@@ -621,14 +433,21 @@ int tune_eem(int argc, char *argv[])
         print_memory_usage(debug);
     }
 
+    // Figure out a logfile to pass down :)
+    FILE *fp = opt.logFile() ? opt.logFile() : (debug ? debug : nullptr);
+
+    // Read poldata in SharedIndividualInfo sii_
+    opt.sii()->fillPoldata(fp,
+                           opt2fn_null("-d", filenms.size(), filenms.data()));
+
     // MolGen read being called here!
-    if (0 == opt.Read(opt.logFile() ? opt.logFile() : (debug ? debug : nullptr),
-                      opt2fn("-f", filenms.size(), filenms.data()),
-                      opt2fn_null("-d", filenms.size(), filenms.data()),
-                      bZero,
-                      gms,
-                      opt2fn_null("-table", filenms.size(), filenms.data()),
-                      opt.verbose()))
+    if (0 == opt.mg()->Read(fp,
+                            opt2fn("-f", filenms.size(), filenms.data()),
+                            opt.sii()->poldata(),
+                            bZero,
+                            gms,
+                            opt2fn_null("-table", filenms.size(), filenms.data()),
+                            opt.verbose()))
     {
         if (opt.logFile())
         {
@@ -636,6 +455,11 @@ int tune_eem(int argc, char *argv[])
         }
         return 0;
     }
+
+    // SharedIndividualInfo things
+    opt.sii()->generateOptimizationIndex(fp, opt.mg());
+    opt.sii()->fillVectors(opt.mg()->mindata());
+
     // init charge generation for compounds in the
     // training set
     opt.initChargeGeneration(iMolSelect::Train);
@@ -647,33 +471,50 @@ int tune_eem(int argc, char *argv[])
         opt.initChargeGeneration(iMolSelect::Ignore);
     }
 
+    // Create ACMFitnessComputer and fill the DevComputers
+    opt.initFitComp();
+    // Create the ACMInitializer
+    opt.initInitializer();
+    // Create and initialize the individual
+    opt.initIndividual();
+    // Create and initialize the mutator
+    opt.initMutator();
+
     if (MASTER(opt.commrec()))
     {
-        if (bOptimize || bSensitivity)
-        {
-            opt.initOpt(bRandom);
-        }
-        bool bMinimum = opt.runMaster(oenv,
-                                      opt2fn("-conv", filenms.size(), filenms.data()),
+        // FIXME: Individual has been initialized above, should we check for
+        // bOptimize or bSensitivity still?
+        //
+        // if (bOptimize || bSensitivity)
+        // {
+        //     opt.initOpt(bRandom);
+        // }
+
+        opt.initGA();
+
+        bool bMinimum = opt.runMaster(opt2fn("-conv", filenms.size(), filenms.data()),
                                       opt2fn("-epot", filenms.size(), filenms.data()),
                                       bOptimize,
-                                      bSensitivity,
-                                      bEvaluate_testset);
+                                      bSensitivity);
 
         if (bMinimum || bForceOutput || !bOptimize)
         {
-            if (bForceOutput)
-            {
+            ACMIndividual *bestInd = opt.bestInd();
+            // if (bForceOutput)
+            // {
+                // FIXME: this is not true! The best parameters are fed back to params_ (and to pd_) at the end
+                // of runMaster if a better parameter set was found. So no, the final step will not be the output
                 fprintf(opt.logFile(), "Output based on last step of MC simulation per your specification.\nUse the -noforce_output flag to prevent this.\nThe force field output file %s is based on the last MC step as well.\n", opt2fn("-o", filenms.size(), filenms.data()));
-                opt.saveState();
-            }
+                bestInd->saveState();
+            // }
+            MolGen *tmpMg = opt.mg();
             printer.print(opt.logFile(),
-                          &(opt.mymols()),
-                          opt.poldata(),
-                          opt.mdlog(),
-                          opt.lot(),
-                          opt.qcycle(),
-                          opt.qtol(),
+                          &(tmpMg->mymols()),
+                          bestInd->poldata(),
+                          tmpMg->mdlog(),
+                          tmpMg->lot(),
+                          tmpMg->qcycle(),
+                          tmpMg->qtol(),
                           oenv,
                           opt.fullQuadrupole(),
                           opt.commrec(),
@@ -688,10 +529,11 @@ int tune_eem(int argc, char *argv[])
     }
     else if (bOptimize || bSensitivity)
     {
+
         opt.runHelper();
+
     }
     return 0;
 }
 
 } // namespace alexandria
-

@@ -15,7 +15,7 @@ def get_host():
 
 def get_compilers(ostype: str):
     '''Utility to return the C and C++ compiler respectively'''
-    if "darwin" in ostype:
+    if "darwin" in ostype or "mac" in ostype:
         CXX = shutil.which("clang++")
         CC  = shutil.which("clang")
     else:
@@ -139,7 +139,7 @@ def install_openbabel(anonymous, clone, destination, prefix, build_type, CXX, CC
         if check_for_openbabel(destination):
             print("Succesfully installed OpenBabel in %s/bin. Please add to your PATH variable" % destination)
         # Some hacking for MacOS only
-        if "darwin" in HOST:
+        if "darwin" in HOST or "mac" in HOST:
             oblib = ( "%s/lib/openbabel" % destination )
             if os.path.exists(oblib):
                 os.chdir(oblib)
@@ -214,7 +214,7 @@ def install_act(args, CXX, CC, HOST, prefix):
     PPATH  = prefix + ";" + args.destination
     LAPACK = None
     BLAS   = None
-    if "darwin" in HOST:
+    if "darwin" in HOST or "mac" in HOST:
         # MacOS machines
         LAPACK   = find_lib(PPATH, "liblapack.dylib", args.verbose)
         BLAS     = find_lib(PPATH, "libblas.dylib", args.verbose)
