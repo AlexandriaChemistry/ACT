@@ -260,10 +260,10 @@ private:
         bool hasAllAtomTypes() const { return hasAllAtomTypes_; }
 
         //! Add a Bond element
-        void AddBond(Bond b);
+        void AddBond(const Bond &b) { bond_.push_back(b); }
 
         //! Check whether a Bond element is present already
-        bool BondExists(Bond b);
+        bool BondExists(const Bond &b);
 
         //! Return the number of Bond elements
         int NBond() const { return bond_.size(); }
@@ -284,7 +284,7 @@ private:
                                               const std::string &basis,
                                               const std::string &conformation) const;
         //! Add an experiment
-        void AddExperiment(Experiment myexp) { exper_.push_back(myexp); }
+        void AddExperiment(const Experiment &myexp) { exper_.push_back(myexp); }
 
         void Stats()
         {

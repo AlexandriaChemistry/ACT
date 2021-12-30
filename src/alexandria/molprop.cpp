@@ -74,31 +74,6 @@ DataSource dataSourceFromName(const std::string &name)
     gmx_fatal(FARGS, "No data source corresponding to %s", name.c_str());
 }
 
-void MolProp::AddBond(Bond b)
-{
-    BondConstIterator bi;
-    bool              bFound = false;
-
-    for (bi = bondsConst().begin(); bi < bondsConst().end(); ++bi)
-    {
-        bFound = (((bi->aI() == b.aI()) && (bi->aJ() == b.aJ())) ||
-                  ((bi->aI() == b.aJ()) && (bi->aJ() == b.aI())));
-        if (bFound)
-        {
-            break;
-        }
-    }
-    if (!bFound)
-    {
-        bond_.push_back(b);
-    }
-    else if ((nullptr != debug) && (bi->bondOrder() != b.bondOrder()))
-    {
-        fprintf(debug, "Different bond orders in molecule %s\n", getMolname().c_str());
-        fflush(debug);
-    }
-}
-
 void MolProp::CheckConsistency()
 {
 }
@@ -145,7 +120,7 @@ bool MolProp::SearchCategory(const std::string &catname) const
     return false;
 }
 
-bool MolProp::BondExists(Bond b)
+bool MolProp::BondExists(const Bond &b)
 {
     for (auto &bi : bondsConst())
     {

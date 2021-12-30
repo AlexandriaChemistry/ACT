@@ -569,7 +569,7 @@ static void TopologyToMtop(Topology       *top,
         auto fs = pd->findForcesConst(entry.first);
         for(auto &topentry: entry.second)
         {
-            int gromacsType = 0;
+            int gromacsType = -1;
             // First check whether we have this gromacsType already
             auto &bondId = topentry->id();
             GMX_RELEASE_ASSERT(!bondId.id().empty(), "Empty bondId");
@@ -583,15 +583,15 @@ static void TopologyToMtop(Topology       *top,
                 forceParam.resize(NRFP(fs.fType()), 1.0);
                 gromacsType = enter_params(&mtop->ffparams, fs.fType(), forceParam.data(), 0,
                                            mtop->ffparams.reppow, ffparamsSize, append);
-                if (gromacsType >= ffparamsSize)
-                {
-                    topentry->setGromacsType(gromacsType);
-                    idToGromacsType.insert(std::pair<Identifier, int>(bondId, gromacsType));
-                }
-                else
-                {
-                    GMX_THROW(gmx::InternalError("Could not add a force field parameter to the gromacs structure"));
-                }
+            }
+            if (gromacsType >= ffparamsSize)
+            {
+                topentry->setGromacsType(gromacsType);
+                idToGromacsType.insert(std::pair<Identifier, int>(bondId, gromacsType));
+            }
+            else
+            {
+                GMX_THROW(gmx::InternalError("Could not add a force field parameter to the gromacs structure"));
             }
             // One more consistency check
             if (interaction_function[fs.fType()].nratoms !=
@@ -2172,8 +2172,12 @@ void MyMol::UpdateIdef(const Poldata   *pd,
         auto entry = topology_->entry(iType);
         for (size_t i = 0; i < entry.size(); i++)
         {
-            auto  tp     = entry[i]->gromacsType();
             auto &bondId = entry[i]->id();
+            auto  tp     = entry[i]->gromacsType();
+            if (tp < 0 || tp >= mtop_->ffparams.numTypes())
+            {
+                GMX_THROW(gmx::InternalError(gmx::formatString("tp = %d should be >= 0 and < %d for %s %s", tp, mtop_->ffparams.numTypes(), interactionTypeToString(iType).c_str(), bondId.id().c_str()).c_str()));
+            }
             
             switch (ftype)
             {
