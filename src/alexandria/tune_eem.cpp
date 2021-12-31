@@ -289,7 +289,7 @@ bool OptACM::runMaster(const char             *xvgconv,
 void OptACM::runHelper()
 {
     // H E L P E R   N O D E S
-    // The second and third variable are set by the master, but
+    // The third and fourth variable are set by the master, but
     // we have to pass something.
     // If the result is less than zero (-1), we are done.
     while (fitComp_->calcDeviation(ind_, false, CalcDev::Parallel, iMolSelect::Train) >= 0)
