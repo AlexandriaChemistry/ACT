@@ -249,9 +249,9 @@ void xvgr_header(FILE *fp, const char *title, const std::string &xaxis,
                                         settings);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-        fprintf(fp, "# %s is part of G R O M A C S:\n#\n",
+        fprintf(fp, "# %s is part of the Alexandria Chemistry Toolkit:\n#\n",
                 output_env_get_program_display_name(oenv));
-        fprintf(fp, "# %s\n#\n", gmx::bromacs().c_str());
+        fprintf(fp, "# check https://github.com/dspoel/ACT/wiki for more info.\n");
         fprintf(fp, "@    title \"%s\"\n", xvgrstr(title, oenv, buf, STRLEN));
         fprintf(fp, "@    xaxis  label \"%s\"\n",
                 xvgrstr(xaxis, oenv, buf, STRLEN));

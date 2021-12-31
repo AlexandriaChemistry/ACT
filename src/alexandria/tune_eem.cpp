@@ -311,7 +311,7 @@ int tune_eem(int argc, char *argv[])
         "function, for which the force constant can be set explicitly.[PAR]",
         "At every reinit step parameters are changed by a random amount within",
         "the fraction set by step size, and within the boundaries given",
-        "by the minima and maxima. If the [TT]-random[tt] flag is",
+        "by the minima and maxima. If the [TT]-randomInit[tt] flag is",
         "given a completely random set of parameters is generated at the start",
         "of each run. At reinit steps however, the parameters are only changed",
         "slightly, in order to speed-up local search but not global search.",
