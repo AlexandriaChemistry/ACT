@@ -179,8 +179,14 @@ public:
                 const size_t                    nParam)
     : Mutator(), gen(rd()), dis(std::uniform_int_distribution<size_t>(0, nParam-1))
     {
-        gen.seed(::time(NULL));
-
+        if (bch->seed() == 0)
+        {
+            gen.seed(::time(NULL));
+        }
+        else
+        {
+            gen.seed(bch->seed());
+        }
         logfile_ = logfile;
         verbose_ = verbose;
         bch_     = bch;

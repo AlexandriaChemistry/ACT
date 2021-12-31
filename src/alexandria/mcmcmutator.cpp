@@ -259,7 +259,10 @@ void MCMCMutator::stepMCMC(      ACMIndividual          *ind,
     if (!accept)
     {
         // Only anneal if the simulation reached a certain number of steps
-        if (bch_->anneal(iter)) (*beta0) = bch_->computeBeta(iter);
+        if (bch_->anneal(iter))
+        {
+             (*beta0) = bch_->computeBeta(iter);
+        }
         const double randProbability = randNum();
         const double mcProbability   = exp( - ( (*beta0) / (sii_->weightedTemperature())[paramIndex] ) * deltaEval );
         accept = (mcProbability > randProbability);

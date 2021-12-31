@@ -153,7 +153,7 @@ private:
     //! Maximum number of iterations
     int   maxiter_           = 100;
     //! FIXME: Move somewhere else? Random number seed
-    real  seed_              = -1;
+    int   seed_              = -1;
     //! Relative step when optimizing
     real  step_              = 0.02;
     //! Temperature in chi2 units
@@ -183,6 +183,9 @@ public:
 
     //! \brief Return temperature
     real temperature() const { return temperature_; }
+
+    //! \return the seed
+    int seed() const { return seed_; }
 
     /*! \brief Compute and return the Boltzmann factor
     *
