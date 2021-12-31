@@ -53,6 +53,7 @@ set(ALEXANDRIA_SOURCES
            gentop.cpp
  #          gentop_vsite.cpp
            gmx_simple_comm.cpp
+           gromacs_top.cpp
            identifier.cpp
            interactiontype.cpp
            latex_util.cpp

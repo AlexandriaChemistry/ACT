@@ -30,15 +30,12 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#ifndef MYMOL_H
-#define MYMOL_H
+#ifndef ACT_MYMOL_H
+#define ACT_MYMOL_H
 
 #include <map>
 
 #include "gromacs/gmxlib/nrnb.h"
-#include "gromacs/gmxpreprocess/gpp_atomtype.h"
-#include "gromacs/gmxpreprocess/grompp-impl.h"
-#include "gromacs/gmxpreprocess/pdb2top.h"
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"

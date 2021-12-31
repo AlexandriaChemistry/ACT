@@ -41,10 +41,6 @@
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/gmxlib/nonbonded/nonbonded.h"
-#include "gromacs/gmxpreprocess/convparm.h"
-#include "gromacs/gmxpreprocess/gen_ad.h"
-#include "gromacs/gmxpreprocess/notset.h"
-#include "gromacs/gmxpreprocess/topdirs.h"
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/listed-forces/manage-threading.h"
 #include "gromacs/math/vec.h"
@@ -75,6 +71,7 @@
 #include "gromacs/utility/stringcompare.h"
 
 #include "forcefieldparameter.h"
+#include "gromacs_top.h"
 #include "molprop_util.h"
 #include "mymol_low.h"
 #include "symmetrize_charges.h"
@@ -556,6 +553,269 @@ static void setTopologyIdentifiers(Topology      *top,
     }
 }
 
+static void UpdateIdefEntry(const ForceFieldParameterList &fs,
+                            const Identifier              &bondId,
+                            int                            gromacsType,
+                            gmx_mtop_t                    *mtop,
+                            gmx_localtop_t                *ltop)
+{
+    double myval = 0;
+    switch (fs.fType())
+    {
+    case F_MORSE:
+        {
+            auto fp = fs.findParameterTypeConst(bondId, "bondlength");
+            myval = convertToGromacs(fp.value(), fp.unit());
+            mtop->ffparams.iparams[gromacsType].morse.b0A         =
+                mtop->ffparams.iparams[gromacsType].morse.b0B     = myval;
+            if (ltop)
+            { 
+                ltop->idef.iparams[gromacsType].morse.b0A     =
+                ltop->idef.iparams[gromacsType].morse.b0B = myval;
+            }
+                    
+            fp = fs.findParameterTypeConst(bondId, "Dm");
+            myval = convertToGromacs(fp.value(), fp.unit());
+            mtop->ffparams.iparams[gromacsType].morse.cbA         =
+                mtop->ffparams.iparams[gromacsType].morse.cbB     = myval;
+            if (ltop)
+            {
+                ltop->idef.iparams[gromacsType].morse.cbA     =
+                ltop->idef.iparams[gromacsType].morse.cbB = myval;
+            }   
+                        
+            fp = fs.findParameterTypeConst(bondId, "beta");
+            myval = convertToGromacs(fp.value(), fp.unit());
+            mtop->ffparams.iparams[gromacsType].morse.betaA         =
+                mtop->ffparams.iparams[gromacsType].morse.betaB     = myval;
+            if (ltop)
+            {
+                ltop->idef.iparams[gromacsType].morse.betaA     =
+                ltop->idef.iparams[gromacsType].morse.betaB = myval;
+            }
+        }
+        break;
+    case F_ANGLES:
+        {
+            auto fp = fs.findParameterTypeConst(bondId, "angle");
+            myval = convertToGromacs(fp.value(), fp.unit());
+            mtop->ffparams.iparams[gromacsType].harmonic.rA         =
+                mtop->ffparams.iparams[gromacsType].harmonic.rB     = myval;
+            if (ltop)
+            {
+                ltop->idef.iparams[gromacsType].harmonic.rA     =
+                ltop->idef.iparams[gromacsType].harmonic.rB = myval;
+            }
+                        
+            fp = fs.findParameterTypeConst(bondId, "kt");
+            myval = convertToGromacs(fp.value(), fp.unit());
+            mtop->ffparams.iparams[gromacsType].harmonic.krA         =
+                mtop->ffparams.iparams[gromacsType].harmonic.krB     = myval;
+            if (ltop)
+            {
+                ltop->idef.iparams[gromacsType].harmonic.krA     =
+                ltop->idef.iparams[gromacsType].harmonic.krB = myval;
+            }
+        }
+        break;
+    case F_POLARIZATION:
+        {
+            auto fp = fs.findParameterTypeConst(bondId, "alpha");
+            myval = convertToGromacs(fp.value(), fp.unit());
+            mtop->ffparams.iparams[gromacsType].polarize.alpha = myval;
+            if (ltop)
+            {
+                ltop->idef.iparams[gromacsType].polarize.alpha = myval;
+            }
+        }
+        break;
+    case F_UREY_BRADLEY:
+        {
+            auto fp = fs.findParameterTypeConst(bondId, "angle");
+            myval = convertToGromacs(fp.value(), fp.unit());
+            mtop->ffparams.iparams[gromacsType].u_b.thetaA         =
+                mtop->ffparams.iparams[gromacsType].u_b.thetaB     = myval;
+            if (ltop)
+            {
+                ltop->idef.iparams[gromacsType].u_b.thetaA     =
+                ltop->idef.iparams[gromacsType].u_b.thetaB = myval;
+            }
+                        
+            fp = fs.findParameterTypeConst(bondId, "r13");
+            myval = convertToGromacs(fp.value(), fp.unit());
+            mtop->ffparams.iparams[gromacsType].u_b.r13A         =
+                mtop->ffparams.iparams[gromacsType].u_b.r13B     = myval;
+            if (ltop)
+            {
+                ltop->idef.iparams[gromacsType].u_b.r13A     =
+                ltop->idef.iparams[gromacsType].u_b.r13B = myval;
+            }
+                        
+            fp = fs.findParameterTypeConst(bondId, "kt");
+            myval = convertToGromacs(fp.value(), fp.unit());
+            mtop->ffparams.iparams[gromacsType].u_b.kthetaA         =
+                mtop->ffparams.iparams[gromacsType].u_b.kthetaB     = myval;
+            if (ltop)
+            {
+                ltop->idef.iparams[gromacsType].u_b.kthetaA     =
+                ltop->idef.iparams[gromacsType].u_b.kthetaB = myval;
+            }
+                         
+            fp = fs.findParameterTypeConst(bondId, "kub");
+            myval = convertToGromacs(fp.value(), fp.unit());
+            mtop->ffparams.iparams[gromacsType].u_b.kUBA         =
+                mtop->ffparams.iparams[gromacsType].u_b.kUBB     = myval;
+            if (ltop)
+            {
+                ltop->idef.iparams[gromacsType].u_b.kUBA     =
+                ltop->idef.iparams[gromacsType].u_b.kUBB = myval;
+            }
+        }
+        break;
+    case F_LINEAR_ANGLES:
+        {
+            // TODO: Check whether this is still needed!
+            //double relative_position = calc_relposition(pd, atoms[0], atoms[1], atoms[2]);
+            auto fp = fs.findParameterTypeConst(bondId, "a");
+            myval = convertToGromacs(fp.value(), fp.unit());
+            mtop->ffparams.iparams[gromacsType].linangle.aA         =
+                mtop->ffparams.iparams[gromacsType].linangle.aB     = myval;
+            if (ltop)
+            {
+                ltop->idef.iparams[gromacsType].linangle.aA     =
+                ltop->idef.iparams[gromacsType].linangle.aB = myval;
+            }
+            
+            fp = fs.findParameterTypeConst(bondId, "klin");
+            myval = convertToGromacs(fp.value(), fp.unit());
+            mtop->ffparams.iparams[gromacsType].linangle.klinA         =
+                mtop->ffparams.iparams[gromacsType].linangle.klinB     = myval;
+            if (ltop)
+            {
+                ltop->idef.iparams[gromacsType].linangle.klinA     =
+                ltop->idef.iparams[gromacsType].linangle.klinB = myval;
+            }
+
+            // TODO: fix r13 in LINEAR_ANGLES                        
+            fp = fs.findParameterTypeConst(bondId, "r13");
+            myval = convertToGromacs(fp.value(), fp.unit());
+            mtop->ffparams.iparams[gromacsType].linangle.r13A         =
+                mtop->ffparams.iparams[gromacsType].linangle.r13B     = myval;
+            if (ltop)
+            {
+                ltop->idef.iparams[gromacsType].linangle.r13A     =
+                ltop->idef.iparams[gromacsType].linangle.r13B = myval;
+            }
+                        
+            fp = fs.findParameterTypeConst(bondId, "kub");
+            myval = convertToGromacs(fp.value(), fp.unit());
+            mtop->ffparams.iparams[gromacsType].linangle.kUBA         =
+                mtop->ffparams.iparams[gromacsType].linangle.kUBB     = myval;
+            if (ltop)
+            {
+                ltop->idef.iparams[gromacsType].linangle.kUBA     =
+                ltop->idef.iparams[gromacsType].linangle.kUBB = myval;
+            }
+        }
+        break;
+    case F_FOURDIHS:
+        {
+            auto newparam = &mtop->ffparams.iparams[gromacsType];
+            std::vector<double> parameters = {
+                fs.findParameterTypeConst(bondId, "c0").value(),
+                fs.findParameterTypeConst(bondId, "c1").value(),
+                fs.findParameterTypeConst(bondId, "c2").value(),
+                fs.findParameterTypeConst(bondId, "c3").value()
+            };
+            newparam->rbdihs.rbcA[0] = parameters[1]+0.5*(parameters[0]+parameters[2]);
+            newparam->rbdihs.rbcA[1] = 0.5*(3.0*parameters[2]-parameters[0]);
+            newparam->rbdihs.rbcA[2] = 4.0*parameters[3]-parameters[1];
+            newparam->rbdihs.rbcA[3] = -2.0*parameters[2];
+            newparam->rbdihs.rbcA[4] = -4.0*parameters[3];
+            newparam->rbdihs.rbcA[5] = 0.0;
+            for (int k = 0; k < NR_RBDIHS; k++)
+            {
+                if (ltop)
+                {
+                    ltop->idef.iparams[gromacsType].rbdihs.rbcA[k]     =
+                    ltop->idef.iparams[gromacsType].rbdihs.rbcB[k] = newparam->rbdihs.rbcA[k];
+                }
+                newparam->rbdihs.rbcB[k] = newparam->rbdihs.rbcA[k];
+                    
+            }
+            break;
+        }
+    case F_PDIHS:
+        {
+            auto fp = fs.findParameterTypeConst(bondId, "phi");
+            myval = convertToGromacs(fp.value(), fp.unit());
+            mtop->ffparams.iparams[gromacsType].pdihs.phiA         =
+                mtop->ffparams.iparams[gromacsType].pdihs.phiB     = myval;
+            if (ltop)
+            {
+                ltop->idef.iparams[gromacsType].pdihs.phiA     =
+                ltop->idef.iparams[gromacsType].pdihs.phiB = myval;
+            }
+                        
+            fp = fs.findParameterTypeConst(bondId, "cp");
+            myval = convertToGromacs(fp.value(), fp.unit());
+            mtop->ffparams.iparams[gromacsType].pdihs.cpA         =
+                mtop->ffparams.iparams[gromacsType].pdihs.cpB     = myval;
+            if (ltop)
+            {
+                ltop->idef.iparams[gromacsType].pdihs.cpA     =
+                ltop->idef.iparams[gromacsType].pdihs.cpB = myval;
+            }
+                    
+            int mult = fs.findParameterTypeConst(bondId, "mult").value();
+            mtop->ffparams.iparams[gromacsType].pdihs.mult = mult;
+            if (ltop)
+            {
+                ltop->idef.iparams[gromacsType].pdihs.mult = mult;
+            }
+        }
+        break;
+    case F_IDIHS:
+        {
+            auto fp = fs.findParameterTypeConst(bondId, "phi");
+            myval = convertToGromacs(fp.value(), fp.unit());
+            mtop->ffparams.iparams[gromacsType].harmonic.rA         =
+                mtop->ffparams.iparams[gromacsType].harmonic.rB     = myval;
+            if (ltop)
+            {
+                ltop->idef.iparams[gromacsType].harmonic.rA     =
+                ltop->idef.iparams[gromacsType].harmonic.rB = myval;
+            }
+                        
+            fp = fs.findParameterTypeConst(bondId, "kimp");
+            myval = convertToGromacs(fp.value(), fp.unit());
+            mtop->ffparams.iparams[gromacsType].harmonic.krA         =
+                mtop->ffparams.iparams[gromacsType].harmonic.krB     = myval;
+            if (ltop)
+            {
+                ltop->idef.iparams[gromacsType].harmonic.krA     =
+                ltop->idef.iparams[gromacsType].harmonic.krB = myval;
+            }
+        }
+        break;
+    case F_VSITE2:
+        {
+            auto fp = fs.findParameterTypeConst(bondId, "v2_a");
+            myval = convertToGromacs(fp.value(), fp.unit());
+            mtop->ffparams.iparams[gromacsType].vsite.a         = myval;
+            if (ltop)
+            {
+                ltop->idef.iparams[gromacsType].vsite.a = myval;
+            }
+        }
+        break;
+    default:
+        GMX_THROW(gmx::InternalError(gmx::formatString("Do not know what to do for %s",
+                                                        interaction_function[fs.fType()].longname).c_str()));
+        break;
+    }
+}
+
 static void TopologyToMtop(Topology       *top,
                            const Poldata  *pd,
                            gmx_mtop_t     *mtop)
@@ -579,10 +839,12 @@ static void TopologyToMtop(Topology       *top,
             }
             else
             {
-                std::vector<real> forceParam;
-                forceParam.resize(NRFP(fs.fType()), 1.0);
-                gromacsType = enter_params(&mtop->ffparams, fs.fType(), forceParam.data(), 0,
-                                           mtop->ffparams.reppow, ffparamsSize, append);
+                mtop->ffparams.functype.push_back(fs.fType());
+                t_iparams ip = { { 0 } };
+                mtop->ffparams.iparams.push_back(ip);
+                gromacsType = mtop->ffparams.numTypes()-1;
+                UpdateIdefEntry(fs, topentry->id(), gromacsType, mtop, nullptr);
+                
             }
             if (gromacsType >= ffparamsSize)
             {
@@ -2192,7 +2454,6 @@ void MyMol::UpdateIdef(const Poldata   *pd,
     {
         // Update other iTypes
         auto fs    = pd->findForcesConst(iType);
-        auto ftype = fs.fType();
         if (!topology_->hasEntry(iType))
         {
             GMX_THROW(gmx::InternalError(gmx::formatString("No topology entry for %s",
@@ -2202,197 +2463,13 @@ void MyMol::UpdateIdef(const Poldata   *pd,
         for (size_t i = 0; i < entry.size(); i++)
         {
             auto &bondId = entry[i]->id();
-            auto  tp     = entry[i]->gromacsType();
-            if (tp < 0 || tp >= mtop_->ffparams.numTypes())
+            auto  gromacsType     = entry[i]->gromacsType();
+            if (gromacsType < 0 || gromacsType >= mtop_->ffparams.numTypes())
             {
-                GMX_THROW(gmx::InternalError(gmx::formatString("tp = %d should be >= 0 and < %d for %s %s", tp, mtop_->ffparams.numTypes(), interactionTypeToString(iType).c_str(), bondId.id().c_str()).c_str()));
+                GMX_THROW(gmx::InternalError(gmx::formatString("gromacsType = %d should be >= 0 and < %d for %s %s", gromacsType, mtop_->ffparams.numTypes(), interactionTypeToString(iType).c_str(), bondId.id().c_str()).c_str()));
             }
-            
-            switch (ftype)
-            {
-            case F_MORSE:
-                {
-                    auto fp = fs.findParameterTypeConst(bondId, "bondlength");
-                    mtop_->ffparams.iparams[tp].morse.b0A         =
-                        mtop_->ffparams.iparams[tp].morse.b0B     =
-                        ltop_->idef.iparams[tp].morse.b0A     =
-                        ltop_->idef.iparams[tp].morse.b0B =
-                        convertToGromacs(fp.value(), fp.unit());
-                    
-                    fp = fs.findParameterTypeConst(bondId, "Dm");
-                    mtop_->ffparams.iparams[tp].morse.cbA         =
-                        mtop_->ffparams.iparams[tp].morse.cbB     =
-                        ltop_->idef.iparams[tp].morse.cbA     =
-                        ltop_->idef.iparams[tp].morse.cbB =
-                        convertToGromacs(fp.value(), fp.unit());
-                        
-                    fp = fs.findParameterTypeConst(bondId, "beta");
-                    mtop_->ffparams.iparams[tp].morse.betaA         =
-                        mtop_->ffparams.iparams[tp].morse.betaB     =
-                        ltop_->idef.iparams[tp].morse.betaA     =
-                        ltop_->idef.iparams[tp].morse.betaB =
-                        convertToGromacs(fp.value(), fp.unit());
-                }
-                break;
-            case F_ANGLES:
-                {
-                    auto fp = fs.findParameterTypeConst(bondId, "angle");
-                    mtop_->ffparams.iparams[tp].harmonic.rA         =
-                        mtop_->ffparams.iparams[tp].harmonic.rB     =
-                        ltop_->idef.iparams[tp].harmonic.rA     =
-                        ltop_->idef.iparams[tp].harmonic.rB =
-                        fp.value();
-                        
-                    fp = fs.findParameterTypeConst(bondId, "kt");
-                    mtop_->ffparams.iparams[tp].harmonic.krA         =
-                        mtop_->ffparams.iparams[tp].harmonic.krB     =
-                        ltop_->idef.iparams[tp].harmonic.krA     =
-                        ltop_->idef.iparams[tp].harmonic.krB =
-                        convertToGromacs(fp.value(), fp.unit());
-                }
-                break;
-            case F_POLARIZATION:
-                {
-                    auto fp = fs.findParameterTypeConst(bondId, "alpha");
-                    mtop_->ffparams.iparams[tp].polarize.alpha =
-                        ltop_->idef.iparams[tp].polarize.alpha =
-                        convertToGromacs(fp.value(), fp.unit());
-                }
-                break;
-            case F_UREY_BRADLEY:
-                {
-                    auto fp = fs.findParameterTypeConst(bondId, "angle");
-                    mtop_->ffparams.iparams[tp].u_b.thetaA         =
-                        mtop_->ffparams.iparams[tp].u_b.thetaB     =
-                        ltop_->idef.iparams[tp].u_b.thetaA     =
-                        ltop_->idef.iparams[tp].u_b.thetaB =
-                        fp.value();
-                        
-                    fp = fs.findParameterTypeConst(bondId, "r13");
-                    mtop_->ffparams.iparams[tp].u_b.r13A         =
-                        mtop_->ffparams.iparams[tp].u_b.r13B     =
-                        ltop_->idef.iparams[tp].u_b.r13A     =
-                        ltop_->idef.iparams[tp].u_b.r13B =
-                        convertToGromacs(fp.value(), fp.unit());
-                        
-                    fp = fs.findParameterTypeConst(bondId, "kt");
-                    mtop_->ffparams.iparams[tp].u_b.kthetaA         =
-                        mtop_->ffparams.iparams[tp].u_b.kthetaB     =
-                        ltop_->idef.iparams[tp].u_b.kthetaA     =
-                        ltop_->idef.iparams[tp].u_b.kthetaB =
-                        convertToGromacs(fp.value(), fp.unit());
-                        
-                    fp = fs.findParameterTypeConst(bondId, "kub");
-                    mtop_->ffparams.iparams[tp].u_b.kUBA         =
-                        mtop_->ffparams.iparams[tp].u_b.kUBB     =
-                        ltop_->idef.iparams[tp].u_b.kUBA     =
-                        ltop_->idef.iparams[tp].u_b.kUBB =
-                        convertToGromacs(fp.value(), fp.unit());
-                }
-                break;
-            case F_LINEAR_ANGLES:
-                {
-                    // TODO: Check whether this is still needed!
-                    //double relative_position = calc_relposition(pd, atoms[0], atoms[1], atoms[2]);
-                    auto fp = fs.findParameterTypeConst(bondId, "a");
-                    mtop_->ffparams.iparams[tp].linangle.aA         =
-                        mtop_->ffparams.iparams[tp].linangle.aB     =
-                        ltop_->idef.iparams[tp].linangle.aA     =
-                        ltop_->idef.iparams[tp].linangle.aB =
-                        convertToGromacs(fp.value(), fp.unit());
-                    fp = fs.findParameterTypeConst(bondId, "klin");
-                    mtop_->ffparams.iparams[tp].linangle.klinA         =
-                        mtop_->ffparams.iparams[tp].linangle.klinB     =
-                        ltop_->idef.iparams[tp].linangle.klinA     =
-                        ltop_->idef.iparams[tp].linangle.klinB =
-                        convertToGromacs(fp.value(), fp.unit());
-                    // TODO: fix r13 in LINEAR_ANGLES                        
-                    mtop_->ffparams.iparams[tp].linangle.r13A         =
-                        mtop_->ffparams.iparams[tp].linangle.r13B     =
-                        ltop_->idef.iparams[tp].linangle.r13A     =
-                        ltop_->idef.iparams[tp].linangle.r13B = 0;
-                        
-                    mtop_->ffparams.iparams[tp].linangle.kUBA         =
-                        mtop_->ffparams.iparams[tp].linangle.kUBB     =
-                        ltop_->idef.iparams[tp].linangle.kUBA     =
-                        ltop_->idef.iparams[tp].linangle.kUBB = 0;
-                }
-                break;
-            case F_FOURDIHS:
-                {
-                    auto newparam = &mtop_->ffparams.iparams[tp];
-                    std::vector<double> parameters = {
-                        fs.findParameterTypeConst(bondId, "c0").value(),
-                        fs.findParameterTypeConst(bondId, "c1").value(),
-                        fs.findParameterTypeConst(bondId, "c2").value(),
-                        fs.findParameterTypeConst(bondId, "c3").value()
-                    };
-                    newparam->rbdihs.rbcA[0] = parameters[1]+0.5*(parameters[0]+parameters[2]);
-                    newparam->rbdihs.rbcA[1] = 0.5*(3.0*parameters[2]-parameters[0]);
-                    newparam->rbdihs.rbcA[2] = 4.0*parameters[3]-parameters[1];
-                    newparam->rbdihs.rbcA[3] = -2.0*parameters[2];
-                    newparam->rbdihs.rbcA[4] = -4.0*parameters[3];
-                    newparam->rbdihs.rbcA[5] = 0.0;
-                    for (int k = 0; k < NR_RBDIHS; k++)
-                    {
-                        ltop_->idef.iparams[tp].rbdihs.rbcA[k]     =
-                            ltop_->idef.iparams[tp].rbdihs.rbcB[k] =
-                            newparam->rbdihs.rbcB[k]           =
-                            newparam->rbdihs.rbcA[k];
-                    }
-                    break;
-                }
-            case F_PDIHS:
-                {
-                    auto fp = fs.findParameterTypeConst(bondId, "phi");
-                    mtop_->ffparams.iparams[tp].pdihs.phiA         =
-                        mtop_->ffparams.iparams[tp].pdihs.phiB     =
-                        ltop_->idef.iparams[tp].pdihs.phiA     =
-                        ltop_->idef.iparams[tp].pdihs.phiB =
-                        convertToGromacs(fp.value(), fp.unit());
-                        
-                    fp = fs.findParameterTypeConst(bondId, "cp");
-                    mtop_->ffparams.iparams[tp].pdihs.cpA         =
-                        mtop_->ffparams.iparams[tp].pdihs.cpB     =
-                        ltop_->idef.iparams[tp].pdihs.cpA     =
-                        ltop_->idef.iparams[tp].pdihs.cpB =
-                        convertToGromacs(fp.value(), fp.unit());
-                    
-                    int mult = fs.findParameterTypeConst(bondId, "mult").value();
-                    mtop_->ffparams.iparams[tp].pdihs.mult =
-                        ltop_->idef.iparams[tp].pdihs.mult = mult;
-                }
-                break;
-            case F_IDIHS:
-                {
-                    auto fp = fs.findParameterTypeConst(bondId, "phi");
-                    mtop_->ffparams.iparams[tp].harmonic.rA         =
-                        mtop_->ffparams.iparams[tp].harmonic.rB     =
-                        ltop_->idef.iparams[tp].harmonic.rA     =
-                        ltop_->idef.iparams[tp].harmonic.rB =
-                        convertToGromacs(fp.value(), fp.unit());
-                        
-                    fp = fs.findParameterTypeConst(bondId, "kimp");
-                    mtop_->ffparams.iparams[tp].harmonic.krA         =
-                        mtop_->ffparams.iparams[tp].harmonic.krB     =
-                        ltop_->idef.iparams[tp].harmonic.krA     =
-                        ltop_->idef.iparams[tp].harmonic.krB =
-                        convertToGromacs(fp.value(), fp.unit());
-                }
-                break;
-            case F_VSITE2:
-                {
-                    auto fp = fs.findParameterTypeConst(bondId, "v2_a");
-                    mtop_->ffparams.iparams[tp].vsite.a         =
-                        convertToGromacs(fp.value(), fp.unit());
-                }
-                break;
-            default:
-                GMX_THROW(gmx::InternalError(gmx::formatString("Do not know what to do for %s",
-                                                               interaction_function[ftype].longname).c_str()));
-                break;
-            }
-        }
+            UpdateIdefEntry(fs, bondId, gromacsType, mtop_, ltop_);
+        }            
     }
 }
 

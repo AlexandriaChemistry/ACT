@@ -113,7 +113,7 @@ typedef struct {
     t_params          plist[F_NRE]; /* Parameters in old style              */
 } t_molinfo;
 
-typedef struct {
+typedef struct t_mols {
     char *name;
     int   nr;
 } t_mols;

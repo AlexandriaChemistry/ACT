@@ -157,24 +157,7 @@ void nonbondedFromPdToMtop(gmx_mtop_t    *mtop,
                            const Poldata *pd,
                            t_forcerec    *fr);
 
-void excls_to_blocka(int natom, t_excls excls_[], t_blocka *blocka);
-
 void put_in_box(int natom, matrix box, rvec x[], real dbox);
-
-void print_top_header(FILE                    *fp,
-                      const Poldata           *pd,
-                      bool                     bPol,
-                      std::vector<std::string> commercials,
-                      bool                     bItp);
-
-void write_top(FILE                            *out,
-               char                            *molname,
-               t_atoms                         *at,
-               gmx_bool                         bRTPresname,
-               const Topology *topology,
-               t_excls                          excls[],
-               struct gpp_atomtype             *atype,
-               const Poldata                   *pd);
 
 void calc_rotmatrix(rvec target_vec, rvec ref_vec, matrix rotmatrix);
 
