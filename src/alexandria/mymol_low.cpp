@@ -39,8 +39,6 @@
 #include <cstring>
 
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
-#include "gromacs/gmxpreprocess/toputil.h"
-#include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/gmxpreprocess/topdirs.h"
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/math/vec.h"
@@ -712,6 +710,144 @@ static void print_bondeds(FILE                               *out,
     fprintf(out, "\n");
 }
 
+static double get_residue_charge(const t_atoms *atoms, int at)
+{
+    int    ri;
+    double q;
+
+    ri = atoms->atom[at].resind;
+    q  = 0;
+    while (at < atoms->nr && atoms->atom[at].resind == ri)
+    {
+        q += atoms->atom[at].q;
+        at++;
+    }
+
+    return q;
+}
+
+static void print_atoms(FILE *out, gpp_atomtype_t atype, t_atoms *at, int *cgnr,
+                 bool bRTPresname)
+{
+    int         i, ri;
+    int         tpA, tpB;
+    const char *as;
+    char       *tpnmA, *tpnmB;
+    double      qres, qtot;
+
+    as = dir2str(d_atoms);
+    fprintf(out, "[ %s ]\n", as);
+    fprintf(out, "; %4s %10s %6s %7s%6s %6s %10s %10s %6s %10s %10s\n",
+            "nr", "type", "resnr", "residue", "atom", "cgnr", "charge", "mass", "typeB", "chargeB", "massB");
+
+    qtot  = 0;
+
+    if (at->nres)
+    {
+        /* if the information is present... */
+        for (i = 0; (i < at->nr); i++)
+        {
+            ri = at->atom[i].resind;
+            if ((i == 0 || ri != at->atom[i-1].resind) &&
+                at->resinfo[ri].rtp != nullptr)
+            {
+                qres = get_residue_charge(at, i);
+                fprintf(out, "; residue %3d %-3s rtp %-4s q ",
+                        at->resinfo[ri].nr,
+                        *at->resinfo[ri].name,
+                        *at->resinfo[ri].rtp);
+                if (fabs(qres) < 0.001)
+                {
+                    fprintf(out, " %s", "0.0");
+                }
+                else
+                {
+                    fprintf(out, "%+3.1f", qres);
+                }
+                fprintf(out, "\n");
+            }
+            tpA = at->atom[i].type;
+            if ((tpnmA = get_atomtype_name(tpA, atype)) == nullptr)
+            {
+                gmx_fatal(FARGS, "tpA = %d, i= %d in print_atoms", tpA, i);
+            }
+
+            /* This is true by construction, but static analysers don't know */
+            GMX_ASSERT(!bRTPresname || at->resinfo[at->atom[i].resind].rtp, "-rtpres did not have residue name available");
+            fprintf(out, "%6d %10s %6d%c %5s %6s %6d %10g %10g",
+                    i+1, tpnmA,
+                    at->resinfo[ri].nr,
+                    at->resinfo[ri].ic,
+                    bRTPresname ?
+                    *(at->resinfo[at->atom[i].resind].rtp) :
+                    *(at->resinfo[at->atom[i].resind].name),
+                    *(at->atomname[i]), cgnr[i],
+                    at->atom[i].q, at->atom[i].m);
+            if (PERTURBED(at->atom[i]))
+            {
+                tpB = at->atom[i].typeB;
+                if ((tpnmB = get_atomtype_name(tpB, atype)) == nullptr)
+                {
+                    gmx_fatal(FARGS, "tpB = %d, i= %d in print_atoms", tpB, i);
+                }
+                fprintf(out, " %6s %10g %10g",
+                        tpnmB, at->atom[i].qB, at->atom[i].mB);
+            }
+            // Accumulate the total charge to help troubleshoot issues.
+            qtot += static_cast<double>(at->atom[i].q);
+            // Round it to zero if it is close to zero, because
+            // printing -9.34e-5 confuses users.
+            if (fabs(qtot) < 0.0001)
+            {
+                qtot = 0;
+            }
+            // Write the total charge for the last atom of the system
+            // and/or residue, because generally that's where it is
+            // expected to be an integer.
+            if (i == at->nr-1 || ri != at->atom[i+1].resind)
+            {
+                fprintf(out, "   ; qtot %.4g\n", qtot);
+            }
+            else
+            {
+                fputs("\n", out);
+            }
+        }
+    }
+    fprintf(out, "\n");
+}
+
+static void print_excl(FILE *out, int natoms, t_excls excls[])
+{
+    int         i;
+    bool        have_excl;
+    int         j;
+
+    have_excl = FALSE;
+    for (i = 0; i < natoms && !have_excl; i++)
+    {
+        have_excl = (excls[i].nr > 0);
+    }
+
+    if (have_excl)
+    {
+        fprintf (out, "[ %s ]\n", dir2str(d_exclusions));
+        fprintf (out, "; %4s    %s\n", "i", "excluded from i");
+        for (i = 0; i < natoms; i++)
+        {
+            if (excls[i].nr > 0)
+            {
+                fprintf (out, "%6d ", i+1);
+                for (j = 0; j < excls[i].nr; j++)
+                {
+                    fprintf (out, " %5d", excls[i].e[j]+1);
+                }
+                fprintf (out, "\n");
+            }
+        }
+        fprintf (out, "\n");
+    }
+}
 
 void write_top(FILE            *out,
                char            *molname,
