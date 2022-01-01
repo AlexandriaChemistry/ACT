@@ -152,8 +152,8 @@ class BayesConfigHandler : public ConfigHandler
 private:
     //! Maximum number of iterations
     int   maxiter_           = 100;
-    //! FIXME: Move somewhere else? Random number seed
-    int   seed_              = -1;
+    //! Random number seed for the MCMCMutator random number generator
+    int   seed_              = 0;
     //! Relative step when optimizing
     real  step_              = 0.02;
     //! Temperature in chi2 units
