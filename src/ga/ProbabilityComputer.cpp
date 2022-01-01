@@ -20,7 +20,7 @@ namespace ga
 void FitnessProbabilityComputer::compute(std::vector<Individual*> *pop)
 {
     double total = 0;
-    int i;
+    size_t i;
     for (i = 0; i < pop->size(); i++)
     {
         total += (*pop)[i]->fitnessTrain();
@@ -42,7 +42,7 @@ void FitnessProbabilityComputer::compute(std::vector<Individual*> *pop)
 void BoltzmannProbabilityComputer::compute(std::vector<Individual*> *pop)
 {
     double total = 0;
-    int i;
+    size_t i;
     for (i = 0; i < pop->size(); i++)
     {
         exponentials_[i] = exp((*pop)[i]->fitnessTrain() / temperature_);
@@ -64,7 +64,7 @@ void BoltzmannProbabilityComputer::compute(std::vector<Individual*> *pop)
 
 void RankProbabilityComputer::compute(std::vector<Individual*> *pop)
 {
-    for (int i = 0; i < pop->size(); i++)
+    for (size_t i = 0; i < pop->size(); i++)
     {
         (*pop)[i]->setProbability((pop->size() - i) / sumOfRanks_);
     }

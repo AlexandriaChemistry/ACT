@@ -20,7 +20,7 @@ namespace ga
 int RouletteSelector::select(const std::vector<Individual*> &pop)
 {
     double num = dis(gen);
-    int i = 0;
+    size_t i = 0;
     while (num > 0 and i < pop.size())
     {
         num -= pop[i]->probability();
