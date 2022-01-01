@@ -43,6 +43,7 @@
 #include "gromacs/pbcutil/pbc.h"
 
 #include "chargemodel.h"
+#include "identifier.h"
 
 struct gpp_atomtype;
 struct t_atoms;
@@ -141,11 +142,6 @@ bool is_linear(const rvec xi, const rvec xj,
                real th_toler);
 
 void copy_atoms(t_atoms *src, t_atoms *dest);
-
-real calc_r13(const Poldata                  *pd,
-              const std::vector<std::string> &atoms,
-              const std::vector<double>      &bondOrders,
-              const real                      angle);
 
 real calc_relposition(const Poldata                  *pd,
                       const std::vector<std::string> &atoms,

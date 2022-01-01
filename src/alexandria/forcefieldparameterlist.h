@@ -212,7 +212,11 @@ class ForceFieldParameterList
     /*! \brief
      * Clear the parameter map. Used in bastat to rebuild the parameters.
      */
-    void eraseParameter() { parameters_.clear(); }
+    void eraseParameter()
+    {
+        parameters_.clear();
+        counter_ = 0;
+    }
 
     /*! \brief Dump contents to a file
      * \param[in] fp File pointer

@@ -71,15 +71,15 @@ void ForceFieldParameterList::addParameter(const Identifier          &identifier
                                            const std::string         &type,
                                            const ForceFieldParameter &param)
 {
-    auto params                  = parameters_.find(identifier);
-    ForceFieldParameter newParam = param;    
-    newParam.setIndex(counter_);
+    std::map<std::string, ForceFieldParameter> newParam = {
+        { type, param }
+    };
+    auto params = parameters_.find(identifier);
     if (params == parameters_.end())
     {
         // New parameter!
-        std::map<std::string, ForceFieldParameter> entry;
-        entry[type] = newParam;
-        parameters_[identifier] = entry;
+        newParam[type].setIndex(counter_);
+        parameters_.insert(std::pair<Identifier, std::map<std::string, ForceFieldParameter>>(identifier, newParam));
         // Increase counter since we have a new parameter
         counter_ += 1;
     }
@@ -89,7 +89,7 @@ void ForceFieldParameterList::addParameter(const Identifier          &identifier
         {
             GMX_THROW(gmx::InvalidInputError(gmx::formatString("A parameter with type %s was defined for identifier %s already.", type.c_str(), identifier.id().c_str()).c_str()));
         }
-        parameters_[identifier][type] = newParam;
+        params->second.insert(std::pair<std::string, ForceFieldParameter>( type, param ));
     }
 }
 

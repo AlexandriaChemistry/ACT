@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2021
+ * Copyright (C) 2014-2022
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -34,6 +34,7 @@
 #include "gromacs/fileio/xvgr.h"
 
 #include "tuning_utility.h"
+#include "units.h"
     
 static void round_numbers(real *av, real *sig, int power10)
 {
@@ -136,7 +137,7 @@ void AllBondeds::addOptions(std::vector<t_pargs> *pargs)
         };
     doAddOptions(pargs, sizeof(mypargs)/sizeof(mypargs[0]), mypargs);
 }
-    
+
 void AllBondeds::addBonded(FILE                           *fplog, 
                            InteractionType                 iType,
                            const MyMol                    &mmi,
@@ -274,16 +275,72 @@ void AllBondeds::writeHistogram(const gmx_output_env_t *oenv)
     }
 }
     
-void AllBondeds::updatePoldata(FILE             *fp,
-                               Poldata          *pd)
+static real calc_r13(const Poldata    *pd,
+                     const Identifier &bondId,
+                     const real        angle)
 {
+    double r12 = 0, r23 = 0, r13 = 0;
+    auto atoms      = bondId.atoms();
+    auto bondOrders = bondId.bondOrders();
+    Identifier aij ({atoms[0], atoms[1] }, { bondOrders[0] }, CanSwap::Yes);
+    Identifier akj ({atoms[2], atoms[1] }, { bondOrders[1] }, CanSwap::Yes);
+
+    std::string type("bondlength");
+    auto fs  = pd->findForcesConst(InteractionType::BONDS);
+    if (fs.parameterExists(aij) && fs.parameterExists(akj))
+    {
+        auto bij = fs.findParameterTypeConst(aij, type);
+        auto bkj = fs.findParameterTypeConst(akj, type);
+
+        r12 = convertToGromacs(bij.value(), bij.unit());
+        r23 = convertToGromacs(bkj.value(), bkj.unit());
+
+        r13 = std::sqrt((r12*r12) + (r23*r23) - (2*r12*r23*std::cos(DEG2RAD*angle)));
+
+        return r13;
+    }
+    else
+    {
+        fprintf(stderr, "Cannot find one of %s or %s\n", aij.id().c_str(), akj.id().c_str());
+    }
+    return 0.0;
+}
+  
+void AllBondeds::updatePoldata(FILE    *fp,
+                               Poldata *pd)
+{
+    auto bType = InteractionType::BONDS;
+    auto fs    = pd->findForces(bType);
+    fs->eraseParameter();
+    for(auto &i : bondeds_[bType])
+    {
+        size_t N = 0;
+        real   av = 0, sig = 0;
+        i.getAverageSigmaN(&av, &sig, &N);
+        auto bondId = i.id();
+        // Note that the order of parameters is important!
+        // Rounding the numbers to 1/10 pm and 1/10 degree
+        round_numbers(&av, &sig, 10); 
+        fs->addParameter(bondId, "bondlength",
+                                     ForceFieldParameter("pm", av, sig, N, av*factor_, av/factor_, Mutability::Bounded, false, true));
+        fs->addParameter(bondId, "Dm",
+                                     ForceFieldParameter("kJ/mol", Dm_, 0, 1, Dm_*factor_, Dm_/factor_, Mutability::Bounded, false, true));
+        fs->addParameter(bondId, "beta",
+                                     ForceFieldParameter("1/nm", beta_, 0, 1, beta_*factor_, beta_/factor_, Mutability::Bounded, false, true));
+                    
+        fprintf(fp, "bond-%s len %g sigma %g (pm) N = %d%s\n",
+                            i.id().id().c_str(), av, sig, static_cast<int>(N), (sig > bond_tol_) ? " WARNING" : "");
+    }
+
     for(auto &bb : bondeds_)
     {
         auto iType = bb.first;
         auto fs    = pd->findForces(iType);
         auto fType = fs->fType();
-        fs->eraseParameter();
-        
+        if (iType != bType)
+        {
+            fs->eraseParameter();
+        }
         for (auto &i : bb.second)
         {
             size_t N = 0;
@@ -293,54 +350,48 @@ void AllBondeds::updatePoldata(FILE             *fp,
             switch (iType)
             {
             case InteractionType::BONDS:
-                {
-                    // Note that the order of parameters is important!
-                    // Rounding the numbers to 1/10 pm and 1/10 degree
-                    round_numbers(&av, &sig, 10); 
-                    fs->addParameter(bondId, "bondlength",
-                                     ForceFieldParameter("pm", av, sig, N, av*factor_, av/factor_, Mutability::Bounded, false, true));
-                    fs->addParameter(bondId, "Dm",
-                                     ForceFieldParameter("kJ/mol", Dm_, 0, 1, Dm_*factor_, Dm_/factor_, Mutability::Bounded, false, true));
-                    fs->addParameter(bondId, "beta",
-                                     ForceFieldParameter("1/nm", beta_, 0, 1, beta_*factor_, beta_/factor_, Mutability::Bounded, false, true));
-                    
-                    fprintf(fp, "bond-%s len %g sigma %g (pm) N = %d%s\n",
-                            i.id().id().c_str(), av, sig, static_cast<int>(N), (sig > bond_tol_) ? " WARNING" : "");
-                    
-                }
+                // Done earlier!
                 break;
             case InteractionType::ANGLES:
-                {
-                    round_numbers(&av, &sig, 10);
-                    fs->addParameter(bondId, "angle",
+            case InteractionType::LINEAR_ANGLES:
+                 {
+                    double angle = av;
+                    if (iType == InteractionType::LINEAR_ANGLES)
+                    {
+                        angle = 180;
+                        round_numbers(&av, &sig, 1000000);
+                        // TODO Fix the parameters to be correct!
+                        double myfactor = 0.99;
+                        fs->addParameter(bondId, "a",
+                                         ForceFieldParameter("", av, sig, N, av*myfactor, av/myfactor, Mutability::Bounded, false, true));
+                        fs->addParameter(bondId, "klin", 
+                                         ForceFieldParameter("kJ/mol/nm2", klin_, 0, 1, klin_*factor_, klin_/factor_, Mutability::Bounded, false, true));
+                    
+                        fprintf(fp, "linear_angle-%s angle %g sigma %g N = %d%s\n",
+                            bondId.id().c_str(), av, sig, static_cast<int>(N), (sig > angle_tol_) ? " WARNING" : "");
+                    }
+                    else
+                    {
+                        round_numbers(&av, &sig, 10);
+                        fs->addParameter(bondId, "angle",
                                      ForceFieldParameter("degree", av, sig, N, av*factor_, 
                                                          std::min(180.0, av/factor_), Mutability::Bounded, false, true));
-                    fs->addParameter(bondId, "kt",
+                        fs->addParameter(bondId, "kt",
                                      ForceFieldParameter("kJ/mol/rad2", kt_, 0, 1, kt_*factor_, kt_/factor_, Mutability::Bounded, false, false));
-                    if (fType == F_UREY_BRADLEY)
+                        fprintf(fp, "angle-%s angle %g sigma %g (deg) N = %d%s\n",
+                            bondId.id().c_str(), av, sig, static_cast<int>(N), (sig > angle_tol_) ? " WARNING" : "");
+                    }
+                    if (fType == F_UREY_BRADLEY || iType == InteractionType::LINEAR_ANGLES)
                     {
+                        std::string unit("pm");
+                        double r13 = convertFromGromacs(calc_r13(pd, bondId, angle), unit);
                         fs->addParameter(bondId, "r13", 
-                                         ForceFieldParameter("nm", 0, 0, 1, 0, 0, Mutability::Dependent, false, true));
+                                         ForceFieldParameter(unit, r13, 0, N, r13*factor_, r13/factor_,
+                                                             Mutability::Bounded, false, true));
                         fs->addParameter(bondId, "kub", 
                                          ForceFieldParameter("kJ/mol/nm2", kub_, 0, 1, kub_*factor_, kub_/factor_, Mutability::Bounded, false, false));
                     }
                     
-                    fprintf(fp, "angle-%s angle %g sigma %g (deg) N = %d%s\n",
-                            bondId.id().c_str(), av, sig, static_cast<int>(N), (sig > angle_tol_) ? " WARNING" : "");
-                }
-                break;
-            case InteractionType::LINEAR_ANGLES:
-                {
-                    round_numbers(&av, &sig, 1000000);
-                    // TODO Fix the parameters to be correct!
-                    double myfactor = 0.99;
-                    fs->addParameter(bondId, "a",
-                                     ForceFieldParameter("", av, sig, N, av*myfactor, av/myfactor, Mutability::Bounded, false, true));
-                    fs->addParameter(bondId, "klin", 
-                                     ForceFieldParameter("kJ/mol/nm2", klin_, 0, 1, klin_*factor_, klin_/factor_, Mutability::Bounded, false, true));
-                    
-                    fprintf(fp, "linear_angle-%s angle %g sigma %g N = %d%s\n",
-                            bondId.id().c_str(), av, sig, static_cast<int>(N), (sig > angle_tol_) ? " WARNING" : "");
                 }
                 break;
             case InteractionType::PROPER_DIHEDRALS:

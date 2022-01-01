@@ -193,28 +193,6 @@ void copy_atoms(t_atoms *src, t_atoms *dest)
     }
 }
 
-real calc_r13(const Poldata                  *pd,
-              const std::vector<std::string> &atoms,
-              const std::vector<double>      &bondOrders,
-              const real                      angle)
-{
-    double r12 = 0, r23 = 0, r13 = 0;
-
-    Identifier aij ({atoms[0], atoms[1] }, { bondOrders[0] }, CanSwap::Yes);
-    Identifier akj ({atoms[2], atoms[1] }, { bondOrders[1] }, CanSwap::Yes);
-
-    std::string type("bondlength");
-    auto bij = pd->findForcesConst(InteractionType::BONDS).findParameterTypeConst(aij, type);
-    auto bkj = pd->findForcesConst(InteractionType::BONDS).findParameterTypeConst(akj, type);
-
-    r12 = convertToGromacs(bij.value(), bij.unit());
-    r23 = convertToGromacs(bkj.value(), bkj.unit());
-
-    r13 = std::sqrt((r12*r12) + (r23*r23) - (2*r12*r23*std::cos(DEG2RAD*angle)));
-
-    return r13;
-}
-
 real calc_relposition(const Poldata                  *pd,
                       const std::vector<std::string> &atoms,
                       const std::vector<double>      &bondOrders)

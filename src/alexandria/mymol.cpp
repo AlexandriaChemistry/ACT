@@ -553,7 +553,8 @@ static void setTopologyIdentifiers(Topology      *top,
     }
 }
 
-static void UpdateIdefEntry(const ForceFieldParameterList &fs,
+static void UpdateIdefEntry(const Poldata                 *pd,
+                            const ForceFieldParameterList &fs,
                             const Identifier              &bondId,
                             int                            gromacsType,
                             gmx_mtop_t                    *mtop,
@@ -632,25 +633,15 @@ static void UpdateIdefEntry(const ForceFieldParameterList &fs,
     case F_UREY_BRADLEY:
         {
             auto fp = fs.findParameterTypeConst(bondId, "angle");
-            myval = convertToGromacs(fp.value(), fp.unit());
+            double angle = convertToGromacs(fp.value(), fp.unit());
             mtop->ffparams.iparams[gromacsType].u_b.thetaA         =
-                mtop->ffparams.iparams[gromacsType].u_b.thetaB     = myval;
+                mtop->ffparams.iparams[gromacsType].u_b.thetaB     = angle;
             if (ltop)
             {
                 ltop->idef.iparams[gromacsType].u_b.thetaA     =
-                ltop->idef.iparams[gromacsType].u_b.thetaB = myval;
+                ltop->idef.iparams[gromacsType].u_b.thetaB = angle;
             }
-                        
-            fp = fs.findParameterTypeConst(bondId, "r13");
-            myval = convertToGromacs(fp.value(), fp.unit());
-            mtop->ffparams.iparams[gromacsType].u_b.r13A         =
-                mtop->ffparams.iparams[gromacsType].u_b.r13B     = myval;
-            if (ltop)
-            {
-                ltop->idef.iparams[gromacsType].u_b.r13A     =
-                ltop->idef.iparams[gromacsType].u_b.r13B = myval;
-            }
-                        
+
             fp = fs.findParameterTypeConst(bondId, "kt");
             myval = convertToGromacs(fp.value(), fp.unit());
             mtop->ffparams.iparams[gromacsType].u_b.kthetaA         =
@@ -660,6 +651,16 @@ static void UpdateIdefEntry(const ForceFieldParameterList &fs,
                 ltop->idef.iparams[gromacsType].u_b.kthetaA     =
                 ltop->idef.iparams[gromacsType].u_b.kthetaB = myval;
             }
+
+            fp = fs.findParameterTypeConst(bondId, "r13");
+            myval = convertToGromacs(fp.value(), fp.unit());
+            mtop->ffparams.iparams[gromacsType].u_b.r13A         =
+                mtop->ffparams.iparams[gromacsType].u_b.r13B     = myval;
+            if (ltop)
+            {
+                ltop->idef.iparams[gromacsType].u_b.r13A     =
+                ltop->idef.iparams[gromacsType].u_b.r13B = myval;
+            }                     
                          
             fp = fs.findParameterTypeConst(bondId, "kub");
             myval = convertToGromacs(fp.value(), fp.unit());
@@ -696,7 +697,6 @@ static void UpdateIdefEntry(const ForceFieldParameterList &fs,
                 ltop->idef.iparams[gromacsType].linangle.klinB = myval;
             }
 
-            // TODO: fix r13 in LINEAR_ANGLES                        
             fp = fs.findParameterTypeConst(bondId, "r13");
             myval = convertToGromacs(fp.value(), fp.unit());
             mtop->ffparams.iparams[gromacsType].linangle.r13A         =
@@ -843,7 +843,7 @@ static void TopologyToMtop(Topology       *top,
                 t_iparams ip = { { 0 } };
                 mtop->ffparams.iparams.push_back(ip);
                 gromacsType = mtop->ffparams.numTypes()-1;
-                UpdateIdefEntry(fs, topentry->id(), gromacsType, mtop, nullptr);
+                UpdateIdefEntry(pd, fs, topentry->id(), gromacsType, mtop, nullptr);
                 
             }
             if (gromacsType >= ffparamsSize)
@@ -964,7 +964,10 @@ immStatus MyMol::GenerateTopology(FILE              *fp,
         // First create the identifiers for topology entries
         setTopologyIdentifiers(topology_, pd, atoms);
         // Now generate the mtop fields
-        TopologyToMtop(topology_, pd, mtop_);
+        if (missing != missingParameters::Generate)
+        {
+            TopologyToMtop(topology_, pd, mtop_);
+        }
         if (excls_)
         {
             excls_to_blocka(atoms->nr, excls_, &(mtop_->moltype[0].excls));
@@ -2044,9 +2047,6 @@ void MyMol::PrintTopology(FILE                   *fp,
                qm_type, mylot.c_str());
     }
 
-    // snprintf(buf, sizeof(buf), "Alexandria Isotropic Polarizability (Additive Law): %.2f +/- %.2f (A^3)\n", polarizability_, sig_pol_);
-    // commercials.push_back(buf);
-
     double efield = 0.1;
     if (nullptr != cr)
     {
@@ -2468,7 +2468,7 @@ void MyMol::UpdateIdef(const Poldata   *pd,
             {
                 GMX_THROW(gmx::InternalError(gmx::formatString("gromacsType = %d should be >= 0 and < %d for %s %s", gromacsType, mtop_->ffparams.numTypes(), interactionTypeToString(iType).c_str(), bondId.id().c_str()).c_str()));
             }
-            UpdateIdefEntry(fs, bondId, gromacsType, mtop_, ltop_);
+            UpdateIdefEntry(pd, fs, bondId, gromacsType, mtop_, ltop_);
         }            
     }
 }

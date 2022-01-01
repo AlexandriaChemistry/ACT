@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2020,2021
+ * Copyright (C) 2020-2022
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -38,6 +38,7 @@
 
 #include "gromacs/math/units.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 
 #include "communication.h"
@@ -130,10 +131,11 @@ class ForceFieldParameter
                 }
             }
         }
-        else
+        else if (value_ < minimum_ || value_ > maximum_)
         {
-            GMX_RELEASE_ASSERT(value_ >= minimum_ && value_ <= maximum_, 
-                               gmx::formatString("Value for force field parameter %g (%s) not within bounds [%g, %g]", value_, unit_.c_str(), minimum_, maximum_).c_str());
+            GMX_THROW(gmx::InvalidInputError( 
+                      gmx::formatString("Value for force field parameter %g (%s) not within bounds [%g, %g]",
+                      value_, unit_.c_str(), minimum_, maximum_).c_str()));
         }
     }
         
