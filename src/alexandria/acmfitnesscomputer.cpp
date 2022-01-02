@@ -121,10 +121,14 @@ double ACMFitnessComputer::calcDeviation(      ACMIndividual   *ind,
             computeDiQuad(targets, &mymol);
 
             for (DevComputer *mydev : devComputers_)
+            {
                 mydev->calcDeviation(&mymol, targets, ind->poldata(), ind->param(), cr_);
+            }
         }
-        ind->sumChiSquared(cr_, calcDev == CalcDev::Parallel, ims);
     }
+    // Sum the terms of the chi-squared once we have done calculations
+    // for all the molecules.
+    ind->sumChiSquared(cr_, calcDev == CalcDev::Parallel, ims);
 
     if (debug)
     {
