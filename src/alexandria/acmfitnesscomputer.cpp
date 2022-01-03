@@ -85,7 +85,7 @@ double ACMFitnessComputer::calcDeviation(      ACMIndividual   *ind,
 
     // Loop over molecules
     int nmolCalculated = 0;
-    for (MyMol &mymol : mg_->mymols())
+    for (MyMol &mymol : molgen_->mymols())
     {
         if (ims != mymol.datasetType())
         {
@@ -95,21 +95,23 @@ double ACMFitnessComputer::calcDeviation(      ACMIndividual   *ind,
             (calcDev == CalcDev::Master && mymol.support() == eSupport::Remote))
         {
             nmolCalculated += 1;
-            // Update the polarizabilities only once before the loop
-            if (mg_->fit("alpha"))
+            for(auto &io : molgen_->iopt())
             {
-                mymol.UpdateIdef(ind->poldata(), InteractionType::POLARIZATION);
+                if (io.second)
+                {
+                    // Update the polarizabilities only once before the loop
+                    mymol.UpdateIdef(ind->poldata(), io.first);
+                }
             }
-            // TODO: do this systematically
-            if (mg_->fit("Dm"))
+            // TODO Check whether this is sufficient for updating the particleTypes
+            if (molgen_->fit("zeta"))
             {
-                mymol.UpdateIdef(ind->poldata(), InteractionType::BONDS);
+                // Update the electronegativity parameters
+                mymol.zetaToAtoms(ind->poldata(), mymol.atoms());
             }
-            // Update the electronegativity parameters
-            mymol.zetaToAtoms(ind->poldata(), mymol.atoms());
             // Run charge generation including shell minimization
             immStatus imm = mymol.GenerateAcmCharges(ind->poldata(), cr_,
-                                                     mg_->qcycle(), mg_->qtol());
+                                                     molgen_->qcycle(), molgen_->qtol());
 
             // Check whether we have to disable this compound
             if (immStatus::OK != imm && removeMol_)
@@ -167,13 +169,13 @@ void ACMFitnessComputer::fillDevComputers()
         sii_->target(iMolSelect::Train, eRMS::CM5)->weight() > 0)
         devComputers_.push_back(new ChargeCM5DevComputer(logfile_, verbose_));
     if (sii_->target(iMolSelect::Train, eRMS::ESP)->weight() > 0)
-        devComputers_.push_back(new EspDevComputer(logfile_, verbose_, mg_->fit("zeta")));
+        devComputers_.push_back(new EspDevComputer(logfile_, verbose_, molgen_->fit("zeta")));
     if (sii_->target(iMolSelect::Train, eRMS::Polar)->weight() > 0)
         devComputers_.push_back(new PolarDevComputer(logfile_, verbose_, fullQuadrupole_));
     if (sii_->target(iMolSelect::Train, eRMS::QUAD)->weight() > 0)
         devComputers_.push_back(new QuadDevComputer(logfile_, verbose_, fullQuadrupole_));
     if (sii_->target(iMolSelect::Train, eRMS::MU)->weight() > 0)
-        devComputers_.push_back(new MuDevComputer(logfile_, verbose_, mg_->bQM()));
+        devComputers_.push_back(new MuDevComputer(logfile_, verbose_, molgen_->bQM()));
     if (sii_->target(iMolSelect::Train, eRMS::EPOT)->weight() > 0)
         devComputers_.push_back(new EnergyDevComputer(logfile_, verbose_));
 }

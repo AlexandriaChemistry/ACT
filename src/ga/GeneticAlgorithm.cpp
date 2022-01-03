@@ -90,7 +90,10 @@ void GeneticAlgorithm::evolveMCMC()
 
     // Cast each individual to ACMIndividual for easier evolution
     std::vector<ACMIndividual*> acmPop;
-    for (Individual *ind : oldPop_) acmPop.push_back(static_cast<ACMIndividual*>(ind));
+    for (Individual *ind : oldPop_)
+    {
+        acmPop.push_back(static_cast<ACMIndividual*>(ind));
+    }
 
     // Open files of each individual
     for (ACMIndividual *ind : acmPop)
@@ -101,7 +104,10 @@ void GeneticAlgorithm::evolveMCMC()
 
     // Evolve each individual
     MCMCMutator *acmMut = static_cast<MCMCMutator*>(mutator_);
-    for (ACMIndividual *ind : acmPop) acmMut->MCMC(ind, bch_->evaluateTestset());
+    for (ACMIndividual *ind : acmPop)
+    {
+        acmMut->MCMC(ind, bch_->evaluateTestset());
+    }
 
     // Collect results into the best individual
     int bestIndex = 0;
@@ -166,7 +172,10 @@ void GeneticAlgorithm::evolveGA()
     }
 
     // Copy individuals into newPop_
-    for (i = 0; i < oldPop_.size(); i++) newPop_[i] = oldPop_[i]->clone();
+    for (i = 0; i < oldPop_.size(); i++)
+    {
+        newPop_[i] = oldPop_[i]->clone();
+    }
 
     // Initialize best individual
     bestInd_ = oldPop_[findBestIndex()]->clone();
@@ -195,7 +204,10 @@ void GeneticAlgorithm::evolveGA()
 
         // Move the "nElites" best individuals (unchanged) into the new population (assuming population is sorted)
         fprintf(logfile_, "Moving the %i best individual(s) into the new population...\n", gach_->nElites());
-        for (i = 0; i < (size_t) gach_->nElites(); i++) newPop_[i]->copyGenome(oldPop_[i]);
+        for (i = 0; i < (size_t) gach_->nElites(); i++)
+        {
+            newPop_[i]->copyGenome(oldPop_[i]);
+        }
 
         // Generate new population after the elitism
         fprintf(logfile_, "Generating the rest of the new population...\n");

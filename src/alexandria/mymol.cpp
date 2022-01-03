@@ -2453,22 +2453,20 @@ void MyMol::UpdateIdef(const Poldata   *pd,
     else
     {
         // Update other iTypes
-        auto fs    = pd->findForcesConst(iType);
-        if (!topology_->hasEntry(iType))
+        if (topology_->hasEntry(iType))
         {
-            GMX_THROW(gmx::InternalError(gmx::formatString("No topology entry for %s",
-                      interactionTypeToString(iType).c_str()).c_str()));
-        }
-        auto entry = topology_->entry(iType);
-        for (size_t i = 0; i < entry.size(); i++)
-        {
-            auto &bondId = entry[i]->id();
-            auto  gromacsType     = entry[i]->gromacsType();
-            if (gromacsType < 0 || gromacsType >= mtop_->ffparams.numTypes())
+            auto fs    = pd->findForcesConst(iType);
+            auto entry = topology_->entry(iType);
+            for (size_t i = 0; i < entry.size(); i++)
             {
-                GMX_THROW(gmx::InternalError(gmx::formatString("gromacsType = %d should be >= 0 and < %d for %s %s", gromacsType, mtop_->ffparams.numTypes(), interactionTypeToString(iType).c_str(), bondId.id().c_str()).c_str()));
+                auto &bondId = entry[i]->id();
+                auto  gromacsType     = entry[i]->gromacsType();
+                if (gromacsType < 0 || gromacsType >= mtop_->ffparams.numTypes())
+                {
+                    GMX_THROW(gmx::InternalError(gmx::formatString("gromacsType = %d should be >= 0 and < %d for %s %s", gromacsType, mtop_->ffparams.numTypes(), interactionTypeToString(iType).c_str(), bondId.id().c_str()).c_str()));
+                }
+                UpdateIdefEntry(pd, fs, bondId, gromacsType, mtop_, ltop_);
             }
-            UpdateIdefEntry(pd, fs, bondId, gromacsType, mtop_, ltop_);
         }            
     }
 }

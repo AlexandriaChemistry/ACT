@@ -42,7 +42,7 @@ private:
     //! \brief SharedIndividualInfo pointer
     SharedIndividualInfo *sii_;
     //! \brief MolGen pointer
-    MolGen *mg_;
+    MolGen *molgen_;
     //! \brief Whether or not to remove molecules that fail to converge in the shell minimization
     bool removeMol_;
     //! \brief Flush output immediately rather than letting the OS buffer it. Don't use for production simulations.
@@ -77,11 +77,11 @@ public:
     ACMFitnessComputer(      t_commrec             *cr,
                              FILE                  *logfile,
                              SharedIndividualInfo  *sii,
-                             MolGen                *mg,
+                             MolGen                *molgen,
                        const bool                   removeMol,
                        const bool                   verbose,
                        const bool                   fullQuadrupole)
-    : cr_(cr), logfile_(logfile), sii_(sii), mg_(mg), removeMol_(removeMol), verbose_(verbose), fullQuadrupole_(fullQuadrupole)
+    : cr_(cr), logfile_(logfile), sii_(sii), molgen_(molgen), removeMol_(removeMol), verbose_(verbose), fullQuadrupole_(fullQuadrupole)
     {
         fillDevComputers();
     }
