@@ -27,8 +27,14 @@ void ACMFitnessComputer::compute(ga::Individual *ind,
     changed.resize(tmpInd->nParam(), true);
     tmpInd->toPoldata(changed);
     const double fitness = calcDeviation(tmpInd, false, CalcDev::Parallel, ims);
-    if (ims == iMolSelect::Train) ind->setFitnessTrain(fitness);
-    else ind->setFitnessTest(fitness);
+    if (ims == iMolSelect::Train)
+    {
+        ind->setFitnessTrain(fitness);
+    }
+    else
+    {
+        ind->setFitnessTest(fitness);
+    }
 }
 
 double ACMFitnessComputer::calcDeviation(      ACMIndividual   *ind,

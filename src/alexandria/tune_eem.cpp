@@ -164,6 +164,20 @@ void OptACM::check_pargs()
 void OptACM::optionsFinished(const std::string &outputFile) {
     mg_.optionsFinished();
     outputFile_ = outputFile;
+    // Update the communication record and do necessary checks.
+    if (gach_.popSize() > cr_->nnodes || gach_.popSize() < 1)
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("Cannot handle %d individuals with %d cores/threads",
+                  gach_.popSize(), cr_->nnodes).c_str()));
+    }
+    cr_->nmiddlemen = gach_.popSize();
+    // We are picky. Each individual needs the same number of helpers
+    if (cr_->nnodes % cr_->nmiddlemen != 0)
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("The number of cores/threads (%d) should be the product of the number of helpers and the number of individuals (%d)",
+                  cr_->nnodes, cr_->nmiddlemen).c_str()));
+    }
+    cr_->nhelper_per_middleman = cr_->nnodes / cr_->nmiddlemen;
 }
 
 void OptACM::openLogFile(const char *logfileName) {
@@ -419,6 +433,7 @@ int tune_eem(int argc, char *argv[])
     opt.optionsFinished(opt2fn("-o", filenms.size(), filenms.data()));  // Calls optionsFinished() for MolGen instance
 
     // Propagate weights from training set to other sets
+    // TODO: is this necessary if all processors parse the command line?
     opt.sii()->propagateWeightFittingTargets();
 
     if (MASTER(opt.commrec()))

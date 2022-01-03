@@ -92,6 +92,16 @@ struct t_commrec {
      */
     int sim_nodeid, nnodes, npmenodes;
 
+    /* The number of middle men in a 2D parallellization
+     * Of nnodes nodes, the middlemen each have
+     * nhelper_per_middleman = nnodes/nmiddlemen
+     * helpers. 
+     */
+    int nhelper_per_middleman;
+    /* The number of middlemen. 
+     */
+    int nmiddlemen;
+
     /* thread numbers: */
     /* Not used yet: int threadid, nthreads; */
     /* The nodeid in the PP/PME, PP or PME group */
@@ -147,6 +157,8 @@ inline bool thisRankHasDuty(const t_commrec *cr, int duty)
 
 //! True of this is the master node
 #define MASTER(cr)     (((cr)->nodeid == 0) || !PAR(cr))
+
+#define MIDDLEMAN(cr)  ((cr)->nodeid %  )
 
 //! True if this is the particle-particle master
 #define SIMMASTER(cr)  ((MASTER(cr) && thisRankHasDuty((cr), DUTY_PP)) || !PAR(cr))
