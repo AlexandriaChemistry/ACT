@@ -34,6 +34,7 @@
 
 #include <cstdio>
 
+#include <string>
 #include <vector>
 
 struct t_atoms;
