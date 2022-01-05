@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int64 Name="nElites">0</Int64>
+  <Real Name="tolerance">0.10000000000000001</Real>
+  <Bool Name="verbose">false</Bool>
+  <Int64 Name="nrep">1</Int64>
+  <Int64 Name="popSize">4</Int64>
+  <Int64 Name="ncrossovers">1</Int64>
+  <Bool Name="epsilon">true</Bool>
+  <Bool Name="gamma">true</Bool>
+  <Bool Name="VANDERWAALS">true</Bool>
+  <Sequence Name="MoleculeName">
+    <Int Name="Length">0</Int>
+  </Sequence>
+  <Sequence Name="paramClass">
+    <Int Name="Length">0</Int>
+  </Sequence>
+  <Sequence Name="weightedTemperatures">
+    <Int Name="Length">0</Int>
+  </Sequence>
+  <Sequence Name="paramNames">
+    <Int Name="Length">0</Int>
+  </Sequence>
+</ReferenceData>

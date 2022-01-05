@@ -4,10 +4,8 @@
  * \author Oskar Tegby <oskar.tegby@it.uu.se>
  */
 
-
 #ifndef GA_GENETICALGORITHM_H
 #define GA_GENETICALGORITHM_H
-
 
 #include <cstdlib>
 
@@ -20,18 +18,11 @@
 #include "Mutator.h"
 #include "Terminator.h"
 
-#include "alexandria/confighandler.h"
-#include "alexandria/sharedindividualinfo.h"
-#include "alexandria/acmfitnesscomputer.h"
-#include "alexandria/acminitializer.h"
-#include "alexandria/mcmcmutator.h"
-#include "alexandria/percentmutator.h"
-#include "alexandria/npointcrossover.h"
-
+struct gmx_output_env_t;
+struct t_commrec;
 
 namespace ga
 {
-
 
 /*!
  * \brief Class which encapsulates a genetic algorithm
@@ -40,36 +31,27 @@ class GeneticAlgorithm
 {
 
 private:
-
-    //! BayesConfigHandler pointer
-    alexandria::BayesConfigHandler *bch_;
-    //! GAConfigHandler pointer
-    alexandria::GAConfigHandler *gach_;
-    //! Communcations record
-    t_commrec *cr_;
+    //! The population size
+    int popSize_          = 0;
+    //! Whether or not to evaluate the test set
+    bool evaluateTestSet_ = false;
 
     //! Logfile for logging info
-    FILE *logfile_;
-    //! Name for fitness train output file
-    const char *const filenameFitnessTrain_ = "ga_fitness_train.txt";
-    //! File for fitness train output
-    FILE *fileFitnessTrain_ = NULL;
-    //! Name for fitness test output file
-    const char *const filenameFitnessTest_ = "ga_fitness_test.txt";
+    FILE *logfile_          = nullptr;
+     //! File for fitness train output
+    FILE *fileFitnessTrain_ = nullptr;
     //! File for fitness test output
-    FILE *fileFitnessTest_ = NULL;
+    FILE *fileFitnessTest_  = nullptr;
 
     //! Output environment (GROMACS)
-    gmx_output_env_t *oenv_;
+    struct gmx_output_env_t *oenv_ = nullptr;
 
     //! Old population
-    std::vector<Individual*> oldPop_;
+    std::vector<Individual*>  oldPop_;
     //! New population, which emerges from the old population
-    std::vector<Individual*> newPop_;
-    //! Temporal storage to swap "oldPop" and "newPop" after each generation
-    std::vector<Individual*> tmpPop_;
+    std::vector<Individual*>  newPop_;
     //! The best individual
-    Individual* bestInd_;
+    Individual               *bestInd_ = nullptr;
 
 
     //! Initializes each individual in the population
@@ -89,15 +71,108 @@ private:
     //! Checks if the evolution should continue or be terminated
     Terminator             *terminator_;
 
-
     // FIXME: Something could be done about generalizing the evolution. We could make all Individuals
     // have their own parameter and fitness convergence files. IDK if this makes sense...
+public:
 
-    //! \brief Pure MCMC evaluation
-    void evolveMCMC();
+    //! \brief Default constructor
+    GeneticAlgorithm() {}
 
-    //! \brief Regular GA evolution (could be HYBRID too)
-    void evolveGA();
+    /*!
+     * \brief Constructor for self-building
+     */
+    GeneticAlgorithm(FILE                                *logFile,
+                     struct gmx_output_env_t             *oenv,
+                     Initializer                         *initializer,
+                     FitnessComputer                     *fitnessComputer,
+                     Sorter                              *sorter,
+                     ProbabilityComputer                 *probComputer,
+                     Selector                            *selector,
+                     Crossover                           *crossover,
+                     Mutator                             *mutator,
+                     Terminator                          *terminator,
+                     int                                  popSize,
+                     bool                                 evaluateTestSet,
+                     const  std::string                   &outputFile);
+ 
+    //! \brief Evolve the initial population
+    virtual void evolve() = 0;
+
+    /* * * * * * * * * * * * * * * * * * * * * *
+    * BEGIN: Getters and Setters               *
+    * * * * * * * * * * * * * * * * * * * * * */
+    //! \return the population size
+    int populationSize() const { return popSize_; }
+
+    //! \return whether to evaluate the test set
+    bool evaluateTestSet() const { return evaluateTestSet_; }
+
+    //! \return the best individual
+    Individual *bestInd() { return bestInd_; }
+
+    /*! \brief Set the new best individual
+     * \param[in] ind New best individual that will be moved to the storage.
+     */
+    void setBestIndividual(Individual *ind);
+
+    //! \return the logfile
+    FILE *logFile() { return logfile_; }
+
+    //! Open fitness output
+    void openFitnessFiles();
+
+    //! And close them when the time is due
+    void closeFitnessFiles();
+
+    //! \return the mutator
+    Mutator *mutator() { return mutator_; }
+
+    //! \return the fitness computer
+    FitnessComputer *fitnessComputer() { return fitComputer_; }
+
+    //! \return the probability computer
+    ProbabilityComputer *probabilityComputer() { return probComputer_; }
+
+    //! \return the initializer
+    Initializer *initializer() { return initializer_; }
+
+    //! \return the crossover
+    Crossover *crossover() { return crossover_; }
+
+    //! \return the selector
+    Selector *selector() { return selector_; }
+
+    //! \return the sorter
+    Sorter *sorter() { return sorter_; }
+
+    //! \return the terminator
+    Terminator *terminator() { return terminator_; }
+
+    //! Return the output environment
+    struct gmx_output_env_t *oenv() const { return oenv_; }
+
+    //! \return a constant reference to \p oldPop_
+    const std::vector<Individual*> &oldPop() const { return oldPop_; }
+
+    //! \return a pointer to \p oldPop_
+    std::vector<Individual*> *oldPopPtr() { return &oldPop_; }
+
+    //! \return a pointer to \p newPop_
+    std::vector<Individual*> *newPopPtr() { return &newPop_; }
+
+    //! \brief Swap the old and new populations
+    void swapOldNewPopulations();
+
+    //! \brief Replace new by old populations
+    void copyOldToNewPopulations();
+
+    /* * * * * * * * * * * * * * * * * * * * * *
+    * END: Getters and Setters                 *
+    * * * * * * * * * * * * * * * * * * * * * */
+
+    /* * * * * * * * * * * * * * * * * * * * * *
+     * BEGIN: Output routines                  *
+     * * * * * * * * * * * * * * * * * * * * * */
 
     //! \brief Print population to log file
     void fprintPop() const;
@@ -117,132 +192,11 @@ private:
     //! \brief Print the fitness of the population to the output files \p fileFitnessTrain_ and \p fileFitnessTest_
     void fprintFitness() const;
 
-public:
-
-    //! \brief Default constructor
-    GeneticAlgorithm() {}
-
-    /*!
-     * \brief Constructor for self-building
-     */
-    GeneticAlgorithm(const  bool                                 verbose,
-                     const  bool                                 removeMol,
-                     const  bool                                 fullQuadrupole,
-                            t_commrec                           *cr,
-                            alexandria::MolGen                  *mg,
-                            FILE                                *logFile,
-                            gmx_output_env_t                    *oenv,
-                            alexandria::BayesConfigHandler      *bch,
-                            alexandria::SharedIndividualInfo    *sii,
-                            alexandria::GAConfigHandler         *gach,
-                     const  std::string                         &outputFile)
-    : bch_(bch), gach_(gach), cr_(cr), logfile_(logFile), oenv_(oenv),
-      oldPop_(gach->popSize()), newPop_(gach->popSize())
-    {
-
-        // Initializer
-        initializer_ = new alexandria::ACMInitializer(sii, gach->randomInit(), outputFile);
-        
-        // FitnessComputer
-        alexandria::ACMFitnessComputer* tmpACMFitComp = new alexandria::ACMFitnessComputer(cr, logFile, sii, mg, removeMol, verbose, fullQuadrupole);
-        fitComputer_ = tmpACMFitComp;
-        
-        // Mutator
-        if (strcmp(gach->optimizer(), "GA") == 0)
-        {
-            mutator_ = new alexandria::PercentMutator(sii, gach->percent());
-        }
-        else
-        {
-            mutator_ = new alexandria::MCMCMutator(logFile, verbose, bch, tmpACMFitComp, sii, sii->nParam());
-        }
-
-        // If GA or HYBRID have been selected as optimizers, intialize the rest of the elements
-        if (strcmp(gach->optimizer(), "MCMC") != 0)
-        {
-
-            // Sorter
-            if (strcmp(gach->sorter(), "QUICK") == 0)
-            {
-                sorter_ = new QuickSorter(false);
-            }
-            else if (strcmp(gach->sorter(), "MERGE") == 0)
-            {
-                sorter_ = new MergeSorter(gach->popSize(), false);
-            }
-            else  // No sorting requested
-            {
-                sorter_ = new EmptySorter();
-            }
-
-            // ProbabilityComputer
-            if (strcmp(gach->probComputer(), "RANK") == 0)
-            {
-                probComputer_ = new RankProbabilityComputer(gach->popSize());
-            }
-            else if (strcmp(gach->probComputer(), "FITNESS") == 0)
-            {
-                probComputer_ = new FitnessProbabilityComputer();
-            }
-            else  // BOLTZMANN
-            {
-                probComputer_ = new BoltzmannProbabilityComputer(gach->popSize(),
-                                                                 gach->boltzTemp());
-            }
-
-            // Selector
-            selector_ = new RouletteSelector();
-
-            // Crossover
-            GMX_RELEASE_ASSERT( ( (unsigned int) gach->nCrossovers() ) < sii->nParam(),
-                               gmx::formatString("The order of the crossover operator should be smaller than the amount of parameters. You chose -nCrossovers %i, but there are %lu parameters. Please adjust -nCrossovers.", gach->nCrossovers(), sii->nParam()).c_str() );
-            crossover_ = new alexandria::NPointCrossover(sii->nParam(), gach->nCrossovers());
-
-            // Terminator
-            terminator_ = new GenerationTerminator(gach->maxGenerations());
-
-        }
-
-        // Create directories for each individual
-        for (int i = 0; i <= gach->popSize(); i++)
-        {
-            const std::string command = "mkdir ind" + std::to_string(i);
-            system(command.c_str());
-            // std::filesystem::create_directory(dirName.c_str());
-        }
-
-    }
-
-    //! \brief Evolve the initial population
-    void evolve();
-
     /* * * * * * * * * * * * * * * * * * * * * *
-    * BEGIN: Getters and Setters               *
-    * * * * * * * * * * * * * * * * * * * * * */
-
-    //! \return the best individual
-    Individual *bestInd() { return bestInd_; }
-
-    //! \return the mutator
-    Mutator *mutator() { return mutator_; }
-
-    //! \return the fitness computer
-    FitnessComputer *fitComputer() { return fitComputer_; }
-
-    //! \return a constant reference to \p oldPop_
-    const std::vector<Individual*> &oldPop() const { return oldPop_; }
-
-    //! \return a pointer to \p oldPop_
-    std::vector<Individual*> *oldPopPtr() { return &oldPop_; }
-
-    /* * * * * * * * * * * * * * * * * * * * * *
-    * END: Getters and Setters                 *
-    * * * * * * * * * * * * * * * * * * * * * */
-
+     * END: Output routines                  *
+     * * * * * * * * * * * * * * * * * * * * * */  
 };
-
 
 } //namespace ga
 
-
-#endif //GA_GENETICALGORITHM_H
+#endif // GA_GENETICALGORITHM_H

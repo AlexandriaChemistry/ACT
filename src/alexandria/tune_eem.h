@@ -26,7 +26,7 @@
 #include "sharedindividualinfo.h"
 #include "acmfitnesscomputer.h"
 #include "acminitializer.h"
-#include "mcmcmutator.h"
+#include "ga/Mutator.h"
 #include "ga/GeneticAlgorithm.h"
 
 
@@ -83,10 +83,8 @@ private:
     ACMFitnessComputer *fitComp_;
     //! Pointer to ACMInitializer since it will be initialized later
     ACMInitializer *initializer_;
-    //! Pointer to MCMCMutator instance
-    MCMCMutator *mutator_;
-    //! Pointer to the Base class individual
-    ga::Individual *baseInd_;
+    //! Pointer to Mutator instance
+    ga::Mutator    *mutator_;
     //! Pointer to ACMIndividual which will be casted from \p baseInd_
     ACMIndividual *ind_;
 
@@ -147,36 +145,19 @@ public:
     * * * * * * * * * * * * * * * * * * * * * */
 
     //! \brief Initialize the ACMFitnessComputer
-    void initFitComp()
-    {
-        fitComp_ = new ACMFitnessComputer(cr_, logFile(), &sii_, &mg_, bRemoveMol_, verbose_, bFullQuadrupole_);
-    }
+    void initFitComp();
 
     //! \brief Initialize the ACMInitializer
-    void initInitializer()
-    {
-        initializer_ = new ACMInitializer(&sii_, gach_.randomInit(), outputFile_);
-    }
+    void initInitializer();
 
     //! \brief initialize the Individual \p baseInd_ and ACMIndividual \p ind_
-    void initIndividual()
-    {
-        initializer_->initialize(&baseInd_);
-        ind_ = static_cast<ACMIndividual*>(baseInd_);
-    }
+    void initIndividual();
 
-    //! \brief Initialize the MCMCMutator
-    void initMutator()
-    {
-        mutator_ = new MCMCMutator(logFile(), verbose_, &bch_, fitComp_, &sii_, sii_.nParam());
-    }
+    //! \brief Initialize the Mutator
+    void initMutator();
 
     //! \brief Initialize the Genetic Algorithm
-    void initGA()
-    {
-        ga_ = new ga::GeneticAlgorithm(verbose_, bRemoveMol_, bFullQuadrupole_, cr_, &mg_,
-                                       logFile(), oenv_, &bch_, &sii_, &gach_, outputFile_);
-    }
+    void initGA();
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * END: Initializing stuff                  *

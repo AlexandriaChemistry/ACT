@@ -1,15 +1,12 @@
 /*! \internal \brief
  * Implements part of the alexandria program.
- * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  * \author Julian Ramon Marrades Furquet <julian.marrades@hotmail.es>
  * \author Oskar Tegby <oskar.tegby@it.uu.se>
  */
 
-
 #ifndef ALEXANDRIA_ACMINDIVIDUAL_H
 #define ALEXANDRIA_ACMINDIVIDUAL_H
-
 
 #include <cstdio>
 #include <map>
@@ -22,10 +19,8 @@
 
 #include "ga/Individual.h"
 
-
 namespace alexandria
 {
-
 
 /*!
  * \brief An individual for the Alexandria Charge Model (ACM)

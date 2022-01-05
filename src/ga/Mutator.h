@@ -50,8 +50,8 @@ public:
      * \param[in] individual    pointer to the Individual to mutate
      * \param[in] prMut         probability of mutating a gene
      */
-    virtual void mutate(      Individual   *ind,
-                        const double        prMut) = 0;
+    virtual void mutate(Individual   *ind,
+                        double        prMut) = 0;
 
 };
 

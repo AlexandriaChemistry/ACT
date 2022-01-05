@@ -64,13 +64,17 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/unique_cptr.h"
 
+#include "acm_ga.h"
 #include "alex_modules.h"
+#include "bayes.h"
 #include "gmx_simple_comm.h"
 #include "memory_check.h"
+#include "mcmcmutator.h"
 #include "molgen.h"
 #include "molprop_util.h"
 #include "mymol_low.h"
-#include "bayes.h"
+#include "npointcrossover.h"
+#include "percentmutator.h"
 #include "poldata.h"
 #include "poldata_tables.h"
 #include "poldata_xml.h"
@@ -232,6 +236,98 @@ void OptACM::initChargeGeneration(iMolSelect ims)
     }
 }
 
+void OptACM::initFitComp()
+{
+    fitComp_ = new ACMFitnessComputer(cr_, logFile(), &sii_, &mg_, bRemoveMol_, verbose_, bFullQuadrupole_);
+}
+
+void OptACM::initInitializer()
+{
+    initializer_ = new ACMInitializer(&sii_, gach_.randomInit(), outputFile_);
+}
+
+void OptACM::initMutator()
+{
+    // Mutator
+    if (strcmp(gach_.optimizer(), "GA") == 0)
+    {
+        mutator_ = new alexandria::PercentMutator(&sii_, gach_.percent());
+    }
+    else
+    {
+        mutator_ = new alexandria::MCMCMutator(logFile(), verbose_, &bch_, fitComp_, &sii_, sii_.nParam());
+    }
+}
+
+void OptACM::initIndividual()
+{
+    ind_ = static_cast<ACMIndividual *>(ga_->initializer()->initialize());
+}
+
+void OptACM::initGA()
+{
+    ga::Sorter *sorter = nullptr;
+    // Sorter
+    if (strcmp(gach_.sorter(), "QUICK") == 0)
+    {
+        sorter = new ga::QuickSorter(false);
+    }
+    else if (strcmp(gach_.sorter(), "MERGE") == 0)
+    {
+        sorter = new ga::MergeSorter(gach_.popSize(), false);
+    }
+    else  // No sorting requested
+    {
+        sorter = new ga::EmptySorter();
+    }
+ 
+    ga::ProbabilityComputer *probComputer = nullptr;
+    // ProbabilityComputer
+    if (strcmp(gach_.probComputer(), "RANK") == 0)
+    {
+        probComputer = new ga::RankProbabilityComputer(gach_.popSize());
+    }
+    else if (strcmp(gach_.probComputer(), "FITNESS") == 0)
+    {
+        probComputer = new ga::FitnessProbabilityComputer();
+    }
+    else  // BOLTZMANN
+    {
+        probComputer = new ga::BoltzmannProbabilityComputer(gach_.popSize(),
+                                                            gach_.boltzTemp());
+    }
+
+    // Selector
+    auto *selector = new ga::RouletteSelector();
+    
+    // Crossover
+    GMX_RELEASE_ASSERT(gach_.nCrossovers() < sii_.nParam(),
+                       gmx::formatString("The order of the crossover operator should be smaller than the amount of parameters. You chose -nCrossovers %i, but there are %lu parameters. Please adjust -nCrossovers.", gach_.nCrossovers(), sii_.nParam()).c_str() );
+    
+    auto *crossover = new alexandria::NPointCrossover(sii_.nParam(),
+                                                      gach_.nCrossovers());
+
+    // Terminator
+    auto *terminator = new ga::GenerationTerminator(gach_.maxGenerations());
+  
+    if (strcmp(gach_.optimizer(), "GA") == 0)
+    {
+        ga_ = new ga::PureGA(logFile(), oenv_, initializer_, 
+                             fitComp_, sorter,probComputer,
+                             selector, crossover, mutator_, terminator,
+                             &gach_, bch_.evaluateTestset(),
+                             outputFile_);
+    }
+    else
+    {
+        ga_ = new ga::HybridGA(logFile(), oenv_, initializer_, 
+                               fitComp_, sorter,probComputer,
+                               selector, crossover, mutator_, terminator,
+                               &gach_, bch_.evaluateTestset(),
+                               outputFile_);
+    }
+}
+
 bool OptACM::runMaster(const char             *xvgconv,
                        const char             *xvgepot,
                        bool                    optimize,
@@ -254,18 +350,26 @@ bool OptACM::runMaster(const char             *xvgconv,
         // bMinimum = mutator_->MCMC(ind_, bEvaluate_testset);
         ga_->evolve();
     }
-    if (sensitivity)
+    if (strcmp(gach_.optimizer(), "GA") != 0)
     {
-        // only on the training set
-        mutator_->sensitivityAnalysis(ind_, iMolSelect::Train);
+        auto mut = static_cast<MCMCMutator *>(mutator_);
+        if (sensitivity)
+        {
+            // only on the training set
+            mut->sensitivityAnalysis(ind_, iMolSelect::Train);
+        }
     }
     // Finalize the calculations on the helpers
     GMX_RELEASE_ASSERT(fitComp_->calcDeviation(ind_, false, CalcDev::Final, iMolSelect::Train) < 0,
                        "Result for final parallel calcDeviation should be less than zero");
 
-    for (ga::Individual *finalInd : ga_->oldPop())
+    if (strcmp(gach_.optimizer(), "GA") != 0)
     {
-        mutator_->printMonteCarloStatistics(static_cast<ACMIndividual*>(finalInd), logFile());
+        auto mut = static_cast<MCMCMutator *>(mutator_);
+        for (ga::Individual *finalInd : ga_->oldPop())
+        {
+            mut->printMonteCarloStatistics(static_cast<ACMIndividual*>(finalInd), logFile());
+        }
     }
 
     bestInd_ = static_cast<ACMIndividual*>(ga_->bestInd());
@@ -504,7 +608,7 @@ int tune_eem(int argc, char *argv[])
         // {
         //     opt.initOpt(bRandom);
         // }
-
+        opt.initMutator();
         opt.initGA();
 
         bool bMinimum = opt.runMaster(opt2fn("-conv", filenms.size(), filenms.data()),

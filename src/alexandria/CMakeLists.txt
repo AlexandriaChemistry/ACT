@@ -26,6 +26,7 @@
 #
 
 set(ALEXANDRIA_SOURCES
+           acm_ga.cpp
            acmfitnesscomputer.cpp
            acmindividual.cpp
            acminitializer.cpp

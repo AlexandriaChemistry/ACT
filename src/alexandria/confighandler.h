@@ -107,6 +107,11 @@ public:
     //! \return the size of the population
     int popSize() const { return popSize_; }
 
+    /*! \brief Set the population size
+     * \param[in] size The size
+     */
+    void setPopSize(int size) { popSize_ = size; }
+    
     //! \return the amount of top individuals that pass, unchanged, to the next generation
     int nElites() const { return nElites_; }
 
@@ -116,6 +121,11 @@ public:
     //! \return the order of the crossover operator
     int nCrossovers() const { return nCrossovers_; }
 
+    /*! \brief Set the number of crossovers
+     * \param[in] number The number
+     */
+    void setCrossovers(int number) { nCrossovers_ = number; }
+    
     //! \return the sorter
     const char *sorter() const { return sorter_[0]; }
 
@@ -181,12 +191,22 @@ public:
     //! \brief Return Max # iterations
     int maxIter() const { return maxiter_; }
 
+    /*! \brief Set the number of iterations
+     * \param[in] maxiter The max number of iterations
+     */
+    void setMaxIter(int maxiter) { maxiter_ = maxiter; }
+
     //! \brief Return temperature
     real temperature() const { return temperature_; }
 
     //! \return the seed
     int seed() const { return seed_; }
 
+    /*! \brief Set the random number seed (0 is generate)
+     * \param[in] seed The new seed
+     */
+    void setSeed(int seed) { seed_ = seed; }
+    
     /*! \brief Compute and return the Boltzmann factor
     *
     * \param[in] iter  The iteration number

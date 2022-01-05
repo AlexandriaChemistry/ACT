@@ -21,23 +21,26 @@ namespace alexandria
 * BEGIN: ACMInitializer                *
 * * * * * * * * * * * * * * * * * * * */
 
-void ACMInitializer::initialize(ga::Individual **ind)
+ga::Individual *ACMInitializer::initialize()
 {
     nCreated_++;
-    ACMIndividual *tmpInd = new ACMIndividual(nCreated_, sii_, outputFile_);
-    (*ind) = tmpInd;
+    auto ind = new ACMIndividual(nCreated_, sii_, outputFile_);
     if (randInit_)  // Insert random value in range
     {
         for (size_t i = 0; i < sii_->nParam(); i++)
         {
-            tmpInd->addParam(dis(gen)*(sii_->upperBoundAtIndex(i) - sii_->lowerBoundAtIndex(i))
+            ind->addParam(dis(gen)*(sii_->upperBoundAtIndex(i) - sii_->lowerBoundAtIndex(i))
                              + sii_->lowerBoundAtIndex(i));
         }
     }
     else  // Insert default values in SharedIndividualInfo
     {
-        for (const double val : sii_->defaultParam()) tmpInd->addParam(val);
+        for (const double val : sii_->defaultParam())
+        {
+            ind->addParam(val);
+        }
     }
+    return ind;
 }
 
 /* * * * * * * * * * * * * * * * * * * *

@@ -16,8 +16,7 @@
 namespace alexandria
 {
 
-
-void MCMCMutator::mutate(                 ga::Individual   *ind,
+void MCMCMutator::mutateOld(                 ga::Individual   *ind,
                          gmx_unused const double            prMut)
 {
     
@@ -118,12 +117,13 @@ void MCMCMutator::stepMutation(      ACMIndividual          *ind,
 
 }
 
-bool MCMCMutator::MCMC(      ACMIndividual *ind,
-                       const bool           evaluate_testset)
+void MCMCMutator::mutate(ga::Individual *ind,
+                         double          prMut)
 {
-
+    auto acmInd = static_cast<ACMIndividual *>(ind);
+    bool evaluate_testset = prMut > 0;
     int nsum = 0;
-    const size_t nParam = ind->nParam();
+    const size_t nParam = acmInd->nParam();
     double minEval = 0;
     double prevEval = 0;
     double prevEval_testset = 0;
@@ -136,15 +136,15 @@ bool MCMCMutator::MCMC(      ACMIndividual *ind,
     // Initialize to true to make sure the parameters are 
     // all spread around the processors.
     changed.resize(nParam, true);
-    ind->toPoldata(changed);
+    acmInd->toPoldata(changed);
     // Now set them back to false, further spreading is done
     // one parameter at a time.
     std::fill(changed.begin(), changed.end(), false);
 
-    const std::vector<FILE*> fpc = ind->fpc();
-    FILE *fpe = ind->fpe();
+    const std::vector<FILE*> fpc = acmInd->fpc();
+    FILE *fpe = acmInd->fpe();
     const auto paramClassIndex = sii_->paramClassIndex();
-    std::vector<double> *param = ind->paramPtr();
+    std::vector<double> *param = acmInd->paramPtr();
     
     if (sii_->xvgConv().empty() || sii_->xvgEpot().empty())
     {
@@ -153,17 +153,17 @@ bool MCMCMutator::MCMC(      ACMIndividual *ind,
     if (param->empty())
     {
         fprintf(stderr, "No parameters to optimize.\n");
-        return 0;
+        return;
     }
 
     // Gather initial chi2 evaluations for training and test sets
-    prevEval = fitComp_->calcDeviation(ind, true, CalcDev::Parallel, iMolSelect::Train);  // This does not fill the fitness attribute in individual!
+    prevEval = fitComp_->calcDeviation(acmInd, true, CalcDev::Parallel, iMolSelect::Train);  // This does not fill the fitness attribute in individual!
     minEval = prevEval;
-    ind->setFitnessTrain(prevEval);
+    acmInd->setFitnessTrain(prevEval);
     if (evaluate_testset)
     {
-        prevEval_testset = fitComp_->calcDeviation(ind, true, CalcDev::Parallel, iMolSelect::Test);
-        ind->setFitnessTest(prevEval_testset);
+        prevEval_testset = fitComp_->calcDeviation(acmInd, true, CalcDev::Parallel, iMolSelect::Test);
+        acmInd->setFitnessTest(prevEval_testset);
     }
 
     print_memory_usage(debug);
@@ -176,7 +176,7 @@ bool MCMCMutator::MCMC(      ACMIndividual *ind,
         for (size_t pp = 0; pp < nParam; pp++)
         {
             // Do the step!
-            stepMCMC(ind, param, &changed, &prevEval, &prevEval_testset,
+            stepMCMC(acmInd, param, &changed, &prevEval, &prevEval_testset,
                      evaluate_testset, pp, iter, &beta0, nParam, &minEval, paramClassIndex);
 
             // For the second half of the optimization, collect data to find the mean and standard deviation of each
@@ -195,16 +195,14 @@ bool MCMCMutator::MCMC(      ACMIndividual *ind,
 
     // OPTIMIZATION IS COMPLETE
 
-    computeMeanSigma(ind->pMeanPtr(), ind->pSigmaPtr(), nParam, sum, nsum, &sum_of_sq);
+    computeMeanSigma(acmInd->pMeanPtr(), acmInd->pSigmaPtr(), nParam, sum, nsum, &sum_of_sq);
 
-    bool bMinimum = false; // Assume no better minimum was found
-    if (minEval < ind->fitnessTrain())  // If better minimum was found, update the value in <*chi2> and return true
+    bMinimum_ = false; // Assume no better minimum was found
+    if (minEval < acmInd->fitnessTrain())  // If better minimum was found, update the value in <*chi2> and return true
     {
-        ind->setFitnessTrain(minEval);
-        bMinimum = true;
+        acmInd->setFitnessTrain(minEval);
+        bMinimum_ = true;
     }
-    return bMinimum;
-
 }
 
 void MCMCMutator::stepMCMC(      ACMIndividual          *ind,

@@ -371,10 +371,6 @@ private:
         return 0;
     }
     
-    /*! \brief Fill the  iOpt_ map
-     * \param[in] pd Pointer to poldata
-     */
-    void fillIopt(Poldata *pd);
     
 public:
     
@@ -398,6 +394,16 @@ public:
      */
     void optionsFinished();
 
+    /*! \brief Manually add fitting option
+     * \param[in] opt The string, e.g. sigma or alpha
+     */
+    void addFitOption(const std::string &opt) { fit_.insert({ opt, true }); }
+
+    /*! \brief Fill the  iOpt_ map
+     * \param[in] pd Pointer to poldata
+     */
+    void fillIopt(Poldata *pd);
+    
     //! \brief Return the const vector of molecules
     const std::vector<MyMol> &mymols() const { return mymol_; }
 

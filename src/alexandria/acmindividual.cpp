@@ -23,9 +23,16 @@ namespace alexandria
 
 void ACMIndividual::fprintSelf(FILE *fp)
 {
+    if (!fp)
+    {
+        return;
+    }
     fprintf(fp, "id_: %i; ", id_);
     fprintf(fp, "param_: [ ");
-    for (const double ele : param_) fprintf(fp, "%f ", ele);
+    for (const double ele : param_)
+    {
+        fprintf(fp, "%f ", ele);
+    }
     fprintf(fp, "]; ");
     fprintf(fp, "fitnessTrain_: %f; fitnessTest_: %f; probability_: %f\n",
             fitnessTrain_, fitnessTest_, probability_);
@@ -33,7 +40,10 @@ void ACMIndividual::fprintSelf(FILE *fp)
 
 void ACMIndividual::printHeader(FILE *fp)
 {
-    fprintf(fp, "\nIndividual %i\n", id_);
+    if (fp)
+    {
+        fprintf(fp, "\nIndividual %i\n", id_);
+    }
 }
 
 void ACMIndividual::openParamConvFiles(const gmx_output_env_t *oenv)

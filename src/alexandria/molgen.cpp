@@ -545,7 +545,10 @@ size_t MolGen::Read(FILE            *fp,
     if (MASTER(cr_))
     {
         MolPropRead(fn, &mp);
-        fprintf(fp, "Read %d compounds from %s\n", static_cast<int>(mp.size()), fn);
+        if (fp)
+        {
+            fprintf(fp, "Read %d compounds from %s\n", static_cast<int>(mp.size()), fn);
+        }
         print_memory_usage(debug);
         for (auto mpi = mp.begin(); mpi < mp.end(); )
         {

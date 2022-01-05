@@ -45,10 +45,18 @@ public:
      */
     NPointCrossover(const size_t chromosomeLength,
                     const size_t order)
-    : ga::Crossover(chromosomeLength), gen(rd()), order_(order), availableIndices_(chromosomeLength - 1),
-      crossoverPoints_(order_ + 2)
+    : ga::Crossover(chromosomeLength), gen(rd()), 
+      crossoverPoints_(order + 2)
     {
-        for (size_t i = 1; i < chromosomeLength; i++) availableIndices_[i-1] = i;
+        order_ = order;
+        if (chromosomeLength >= 2)
+        {
+            availableIndices_.resize(chromosomeLength - 1);
+            for (size_t i = 1; i < chromosomeLength; i++)
+            {
+                availableIndices_[i-1] = i;
+            }
+        }
         crossoverPoints_[0] = 0;
         crossoverPoints_[crossoverPoints_.size() - 1] = chromosomeLength;
     }

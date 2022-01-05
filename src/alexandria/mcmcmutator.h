@@ -30,7 +30,8 @@ class MCMCMutator : public ga::Mutator
 {
 
 private:
-
+    //! Did we find a minimum yet?
+    bool                bMinimum_ = false;
     //! Pointer to BayesConfigHandler
     BayesConfigHandler *bch_;
     //! Pointer to ACMFitnessComputer
@@ -159,6 +160,8 @@ private:
                             double                 *beta0,
                       const size_t                  nParam,
                       const std::vector<size_t>    &paramClassIndex);
+   void mutateOld(      ga::Individual   *individual,
+                        const double            prMut);
 
 public:
 
@@ -194,23 +197,24 @@ public:
         sii_     = sii;
     };
 
-    virtual void mutate(      ga::Individual   *individual,
-                        const double            prMut);
-
+ 
     /*!
      * \brief Run the Markov chain Monte carlo (MCMC) simulation
      * \param[in] ind               pointer to the individual
      * \param[in] evaluate_testset  If true, evaluate the energy on
      *                              the test set.
      */
-    bool MCMC(      ACMIndividual  *ind,
-              const bool            evaluate_testset);
+    virtual void mutate(ga::Individual *ind,
+                        double          prMut);
 
     //! \return the number of calls to the objective function MCMCMutator::MCMC() routine
     size_t numberObjectiveFunctionCalls() const
     {
         return 1 + bch_->maxIter() * sii_->nParam();
     }
+
+    //! \return whether a minimum was found
+    bool foundMinimum() const { return bMinimum_; }
 
     /*!
      * \brief Print the MC statistics to a file.

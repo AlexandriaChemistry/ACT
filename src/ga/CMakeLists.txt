@@ -2,7 +2,7 @@
 #
 #  This source file is part of the Alexandria program.
 #
-#  Copyright (C) 2014-2021
+#  Copyright (C) 2021-2022
 #
 #  Developers:
 #             Mohammad Mehdi Ghahremanpour,
@@ -39,7 +39,7 @@ set(GA_SOURCES
 
 add_library(actga OBJECT ${GA_SOURCES})
 
-#if (BUILD_TESTING)
-#    add_subdirectory(tests)
-#endif()
+if (BUILD_TESTING)
+    add_subdirectory(tests)
+endif()
 

@@ -63,7 +63,7 @@ public:
         outputFile_ = outputFile;
     }
 
-    virtual void initialize(ga::Individual **ind);
+    virtual ga::Individual *initialize();
 
 };
 

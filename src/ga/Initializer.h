@@ -28,9 +28,9 @@ public:
 
     /*!
      * \brief Initialize an Individual
-     * \param[in] ind  pointer to pointer to the individual to initialize
+     * \return   pointer to a new individual
      */
-    virtual void initialize(Individual **ind) = 0;
+    virtual Individual *initialize() = 0;
 };
 
 
