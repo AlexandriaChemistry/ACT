@@ -20,9 +20,9 @@ def parseArguments():
   parser.add_argument("-maxpot", "--maxpot",       help="Percent of the total number of ESP, default "+str(maxpot), type=int, default=maxpot)
   sel = "../SELECTIONS/alcohol.dat"
   parser.add_argument("-sel", "--selection",       help="Selection file, default "+sel, type=str, default=sel)
-  output = "alcohol.dat"
+  output = "alcohol.xml"
   parser.add_argument("-o", "--output",            help="Output file, default "+output, type=str, default=output)
-  gentop = "../ACS-pg.dat"
+  gentop = "../ACS-pg.xml"
   parser.add_argument("-d", "--gentop",            help="Force field input file, default "+gentop, type=str, default=gentop)
   args = parser.parse_args()
   return args
@@ -33,12 +33,12 @@ def XML_directory():
 def name_of_data_log_file(molname: str, lot: str):
   logfile = ( "%s/compounds/%s/%s-%s.log.gz" % ( AlexandriaLib, molname, molname, lot ))
   if os.path.exists(logfile):
-    datafile = ( "%s-3.dat" % molname )
+    datafile = ( "%s-3.xml" % molname )
     return datafile, logfile
   else:
     logfile = ( "%s/compounds/%s/%s-%s-oep.log.gz" % ( AlexandriaLib, molname, molname, lot ))
     if os.path.exists(logfile):
-      datafile = ( "%s-3.dat" % molname )
+      datafile = ( "%s-3.xml" % molname )
       return datafile, logfile
 
   return None, None
@@ -76,7 +76,7 @@ def write_makefile(selection, gentop, maxpot, method, basisset, qm2molprop, merg
   makefile.write("\n%s: %s\n" % ( output, files ) )
   makefile.write("\t\t%s -di %s -o %s -maxwarn 0 -f %s\n" % (merge_mp, gentop, output, files))
   makefile.write("\nclean:\n")
-  makefile.write("\trm -f *.dat *.sdf *.debug \\#* Makefile\n")
+  makefile.write("\trm -f *.xml *.sdf *.debug \\#* Makefile\n")
   makefile.write("\techo 'run ./extract_xml.py to recreate the Makefile'\n")
   makefile.close()      
   os.chdir(cwd)
