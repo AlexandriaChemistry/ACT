@@ -439,7 +439,7 @@ void QmCount::addCalc(const std::string &method,
 
 void find_calculations(const std::vector<alexandria::MolProp> &mp,
                        MolPropObservable                       mpo,
-                       const char                             *fc_str,
+                       const char                             *fc_types,
                        QmCount                                *qmc)
 {
     std::vector<std::string> types;
@@ -448,12 +448,15 @@ void find_calculations(const std::vector<alexandria::MolProp> &mp,
     {
         for (auto &ei : mpi.experimentConst())
         {
-            qmc->addConf(ei.getConformation());
+            if (ei.hasProperty(mpo))
+            {
+                qmc->addConf(ei.getConformation());
+            }
         }
     }
-    if (nullptr != fc_str)
+    if (nullptr != fc_types)
     {
-        std::vector<std::string> qm = split(fc_str, ':');
+        std::vector<std::string> qm = split(fc_types, ':');
         int n = 0;
         for (auto pqm = qm.begin(); (pqm < qm.end()); ++pqm)
         {
@@ -514,7 +517,7 @@ void find_calculations(const std::vector<alexandria::MolProp> &mp,
     for (auto q = qmc->beginCalc(); q < qmc->endCalc(); ++q)
     {
         /* Since we initialized these we have counted one extra */
-        if (nullptr != fc_str)
+        if (nullptr != fc_types)
         {
             q->decrement();
         }

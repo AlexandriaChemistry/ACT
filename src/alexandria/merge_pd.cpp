@@ -187,8 +187,8 @@ int merge_pd(int argc, char *argv[])
     };    
     t_filenm    fnm[] =
     {
-        { efDAT, "-di",    "pdin",  ffRDMULT},
-        { efDAT, "-do",    "pdout", ffWRITE },
+        { efXML, "-di",    "pdin",  ffRDMULT},
+        { efXML, "-do",    "pdout", ffWRITE },
         { efTEX, "-latex", "pdout", ffWRITE }
     };
     int         NFILE       = asize(fnm);;

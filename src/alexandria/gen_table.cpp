@@ -404,7 +404,7 @@ int alex_gen_table(int argc, char *argv[])
 
     t_filenm                      fnm[] = {
         { efXVG, "-o", "table",  ffWRITE },
-        { efDAT, "-d", "gentop", ffOPTRD }
+        { efXML, "-d", "gentop", ffOPTRD }
     };
     
     const  int                    NFILE      = asize(fnm);

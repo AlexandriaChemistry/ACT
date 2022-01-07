@@ -30,13 +30,12 @@ GeneticAlgorithm::GeneticAlgorithm(FILE                                *logFile,
                                    Mutator                             *mutator,
                                    Terminator                          *terminator,
                                    int                                  popSize,
-                                   bool                                 evaluateTestSet,
-                                   const std::string                   &outputFile)
+                                   bool                                 evaluateTestSet)
     : popSize_(popSize), evaluateTestSet_(evaluateTestSet), logfile_(logFile), oenv_(oenv),
+      newPop_(popSize),
       initializer_(initializer),
       fitComputer_(fitnessComputer), sorter_(sorter), probComputer_(probComputer),
-      selector_(selector), crossover_(crossover), mutator_(mutator), terminator_(terminator),
-      newPop_(popSize)
+      selector_(selector), crossover_(crossover), mutator_(mutator), terminator_(terminator)
    {
         // Create directories for each individual
         for (int i = 0; i <= popSize; i++)
@@ -49,11 +48,7 @@ GeneticAlgorithm::GeneticAlgorithm(FILE                                *logFile,
 
 void GeneticAlgorithm::setBestIndividual(Individual *ind)
 {
-    if (bestInd_)
-    {
-        delete bestInd_;
-    }
-    bestInd_ = ind->clone();
+    bestInd_ = ind;
 }
 
 void GeneticAlgorithm::fprintPop() const

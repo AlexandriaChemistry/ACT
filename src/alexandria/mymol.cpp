@@ -553,8 +553,7 @@ static void setTopologyIdentifiers(Topology      *top,
     }
 }
 
-static void UpdateIdefEntry(const Poldata                 *pd,
-                            const ForceFieldParameterList &fs,
+static void UpdateIdefEntry(const ForceFieldParameterList &fs,
                             const Identifier              &bondId,
                             int                            gromacsType,
                             gmx_mtop_t                    *mtop,
@@ -822,7 +821,6 @@ static void TopologyToMtop(Topology       *top,
 {
     int ffparamsSize = mtop->ffparams.numTypes();
     auto entries = top->entries();
-    bool append = true;
     for(auto &entry : *entries)
     {
         std::map<Identifier, int> idToGromacsType;
@@ -843,7 +841,7 @@ static void TopologyToMtop(Topology       *top,
                 t_iparams ip = { { 0 } };
                 mtop->ffparams.iparams.push_back(ip);
                 gromacsType = mtop->ffparams.numTypes()-1;
-                UpdateIdefEntry(pd, fs, topentry->id(), gromacsType, mtop, nullptr);
+                UpdateIdefEntry(fs, topentry->id(), gromacsType, mtop, nullptr);
                 
             }
             if (gromacsType >= ffparamsSize)
@@ -2465,7 +2463,7 @@ void MyMol::UpdateIdef(const Poldata   *pd,
                 {
                     GMX_THROW(gmx::InternalError(gmx::formatString("gromacsType = %d should be >= 0 and < %d for %s %s", gromacsType, mtop_->ffparams.numTypes(), interactionTypeToString(iType).c_str(), bondId.id().c_str()).c_str()));
                 }
-                UpdateIdefEntry(pd, fs, bondId, gromacsType, mtop_, ltop_);
+                UpdateIdefEntry(fs, bondId, gromacsType, mtop_, ltop_);
             }
         }            
     }

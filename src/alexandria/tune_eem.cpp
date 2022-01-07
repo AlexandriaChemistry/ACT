@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2021
+ * Copyright (C) 2014-2022
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -301,7 +301,7 @@ void OptACM::initGA()
     auto *selector = new ga::RouletteSelector();
     
     // Crossover
-    GMX_RELEASE_ASSERT(gach_.nCrossovers() < sii_.nParam(),
+    GMX_RELEASE_ASSERT(gach_.nCrossovers() < static_cast<int>(sii_.nParam()),
                        gmx::formatString("The order of the crossover operator should be smaller than the amount of parameters. You chose -nCrossovers %i, but there are %lu parameters. Please adjust -nCrossovers.", gach_.nCrossovers(), sii_.nParam()).c_str() );
     
     auto *crossover = new alexandria::NPointCrossover(sii_.nParam(),
@@ -315,16 +315,14 @@ void OptACM::initGA()
         ga_ = new ga::MCMC(logFile(), oenv_, initializer_, 
                            fitComp_, sorter, probComputer,
                            selector, crossover, mutator_, terminator,
-                           &gach_, bch_.evaluateTestset(),
-                           outputFile_);
+                           &gach_, bch_.evaluateTestset());
     }
     else
     {
         ga_ = new ga::HybridGAMC(logFile(), oenv_, initializer_, 
                                  fitComp_, sorter, probComputer,
                                  selector, crossover, mutator_, terminator,
-                                 &gach_, bch_.evaluateTestset(),
-                                 outputFile_);
+                                 &gach_, bch_.evaluateTestset());
     }
 }
 
@@ -496,8 +494,8 @@ int tune_eem(int argc, char *argv[])
     {
         t_filenm                    fnm[] = {
         { efXML, "-f",         "allmols",       ffREAD  },
-        { efDAT, "-d",         "gentop",        ffOPTRD },
-        { efDAT, "-o",         "tune_eem",      ffWRITE },
+        { efXML, "-d",         "gentop",        ffOPTRD },
+        { efXML, "-o",         "tune_eem",      ffWRITE },
         { efDAT, "-sel",       "molselect",     ffREAD  },
         { efXVG, "-table",     "table",         ffOPTRD },
         { efLOG, "-g",         "tune_eem",      ffWRITE },

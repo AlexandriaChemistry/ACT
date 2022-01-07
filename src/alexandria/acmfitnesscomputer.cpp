@@ -37,10 +37,10 @@ void ACMFitnessComputer::compute(ga::Individual *ind,
     }
 }
 
-double ACMFitnessComputer::calcDeviation(      ACMIndividual   *ind,
-                                         const bool             verbose,
-                                               CalcDev          calcDev,
-                                               iMolSelect       ims)
+double ACMFitnessComputer::calcDeviation(ACMIndividual   *ind,
+                                         bool             verbose,
+                                         CalcDev          calcDev,
+                                         iMolSelect       ims)
 {
 
     // Send / receive parameters
@@ -143,7 +143,7 @@ double ACMFitnessComputer::calcDeviation(      ACMIndividual   *ind,
         ind->printParameters(debug);
     }
 
-    if (verbose_ && logfile_)
+    if (verbose && logfile_)
     {
         ind->printChiSquared(cr_, logfile_, ims);  // Will only be done by MASTER
     }

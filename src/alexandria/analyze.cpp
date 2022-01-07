@@ -357,8 +357,8 @@ int analyze(int argc, char *argv[])
         "yielding only those molecules for which experimental data is available."
     };
     t_filenm                         fnm[] = {
-        { efDAT, "-d",      "gentop",    ffREAD   },
-        { efDAT, "-m",      "allmols",   ffRDMULT },
+        { efXML, "-d",      "gentop",    ffREAD   },
+        { efXML, "-m",      "allmols",   ffRDMULT },
         { efTEX, "-t",      "table",     ffWRITE  },
         { efTEX, "-cat",    "category",  ffOPTWR  },
         { efDAT, "-sel",    "molselect", ffREAD   },

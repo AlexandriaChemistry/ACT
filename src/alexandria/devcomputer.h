@@ -161,34 +161,8 @@ private:
      * \param[in] mol  The molecule to read from
      * \param[in] info Additional debugging information
      */
-    static void dumpQX(FILE *fp, MyMol *mol, const std::string &info)
-    {
-        if (false && fp)
-        {
-            std::string label = mol->getMolname() + "-" + info;
-            fprintf(fp, "%s q:", label.c_str());
-            t_mdatoms *md = mol->getMdatoms();
-            auto myatoms = mol->atomsConst();
-            for (int i = 0; i < myatoms.nr; i++)
-            {
-                fprintf(fp, " %g (%g)", myatoms.atom[i].q,
-                        md->chargeA[i]);
-            }
-            fprintf(fp, "\n");
-            auto top = mol->topology();
-            if (top->hasEntry(InteractionType::POLARIZATION))
-            {
-                fprintf(fp, "%s alpha", label.c_str());
-                for(auto &topentry : top->entry(InteractionType::POLARIZATION))
-                {
-                    //fprintf(fp, " %g", mol->ltop_->idef.iparams[topentry->gromacsType()].polarize.alpha);
-                }
-                fprintf(fp, "\n");
-            }
-            pr_rvecs(fp, 0, label.c_str(), mol->x().rvec_array(), myatoms.nr);
-        }
-    }
-
+    void dumpQX(FILE *fp, MyMol *mol, const std::string &info);
+   
 public:
 
     /*! \brief Create a new DevComputer

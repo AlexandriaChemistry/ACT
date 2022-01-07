@@ -145,10 +145,16 @@ int merge_xml(gmx::ArrayRef<const std::string>  infiles,
               gmx_atomprop_t ap,
               bool bForceMerge);
 
-/* Check the available molprops to see what kind of calculations are stored in there */
+/*! \brief Check the available molprops to see what kind of calculations are stored.
+ * \param[in]  mp       The molprops
+ * \param[in]  mpo      The observable to check
+ * \param[in]  fc_types Observable measurement types. Multiple strings may be
+ *                      provided, separated by a colon (:). Ignored if nullptr.
+ * \param[out] qmc      Overview of the calculations
+ */
 void find_calculations(const std::vector<alexandria::MolProp> &mp,
                        MolPropObservable                       mpo,
-                       const char                             *fc_str,
+                       const char                             *fc_types,
                        QmCount                                *qmc);
 
 /*! \brief

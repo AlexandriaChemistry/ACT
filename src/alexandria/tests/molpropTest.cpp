@@ -66,7 +66,7 @@ protected:
     {
         aps_  = gmx_atomprop_init();
         
-        std::string mpFile = fileManager().getInputFilePath("molprop.dat");
+        std::string mpFile = fileManager().getInputFilePath("molprop.xml");
         MolPropRead(mpFile.c_str(), &mp_);
     }
 

@@ -47,11 +47,10 @@ public:
                Mutator                             *mutator,
                Terminator                          *terminator,
                alexandria::GAConfigHandler         *gach,
-               bool                                 evaluateTestSet,
-               const  std::string                   &outputFile)
+               bool                                 evaluateTestSet)
     : GeneticAlgorithm(logFile, oenv, initializer, fitnessComputer,
                        sorter, probComputer, selector, crossover, mutator, terminator,
-                       gach->popSize(), evaluateTestSet, outputFile), gach_(gach) {}
+                       gach->popSize(), evaluateTestSet), gach_(gach) {}
  
     //! \brief Evolve the initial population
     virtual void evolve();
@@ -75,11 +74,10 @@ public:
          Mutator                             *mutator,
          Terminator                          *terminator,
          alexandria::GAConfigHandler         *gach,
-         bool                                 evaluateTestSet,
-         const  std::string                  &outputFile)
+         bool                                 evaluateTestSet)
     : GeneticAlgorithm(logFile, oenv, initializer, fitnessComputer,
                        sorter, probComputer, selector, crossover, mutator, terminator,
-                       gach->popSize(), evaluateTestSet, outputFile) {}
+                       gach->popSize(), evaluateTestSet) {}
     
     //! \brief Evolve the initial population
     virtual void evolve();

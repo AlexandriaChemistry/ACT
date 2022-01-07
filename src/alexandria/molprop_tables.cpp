@@ -829,13 +829,8 @@ void alexandria_molprop_prop_table(FILE                 *fp,
                                    const MolSelect      &gms,
                                    iMolSelect            ims)
 {
-    int                         iprint = 0;
 #define BLEN 1024
-    char                        vbuf[BLEN-32];
-    double                      calc_val, calc_err, vc;
     std::vector<double>         vec;
-    tensor                      quadrupole;
-    bool                        bPrintConf;
 
     LongTable                   lt(fp, true, "small");
 
@@ -849,7 +844,7 @@ void alexandria_molprop_prop_table(FILE                 *fp,
     {
         return;
     }
-    bPrintConf = false;
+    bool bPrintConf = false;
     prop_header(lt, mpo_name(mpo), mpo_unit(mpo),
                 rel_toler, abs_toler, qmc,
                 ims, bPrintConf, bPrintBasis, bPrintMultQ);

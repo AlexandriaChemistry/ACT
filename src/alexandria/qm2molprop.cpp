@@ -78,7 +78,7 @@ int qm2molprop(int argc, char *argv[])
         { efLOG, "-g03",  "gauss",   ffOPTRDMULT },
         { efOUT, "-psi4", "psi4",    ffOPTRDMULT },
         { efSDF, "-sdf",  "mol",     ffOPTRDMULT },
-        { efDAT, "-d",    "gentop",  ffREAD },
+        { efXML, "-d",    "gentop",  ffREAD },
         { efDAT, "-map",  "mapping", ffOPTRD },
         { efXML, "-o",    "molprop", ffWRITE }
     };

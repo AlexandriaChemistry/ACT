@@ -102,7 +102,7 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
             
             // Create shared individual
             alexandria::SharedIndividualInfo sii(&cr);
-            std::string ffName("ACS-g.dat");
+            std::string ffName("ACS-g.xml");
             std::string ffDataName = gmx::test::TestFileManager::getInputFilePath(ffName);
             sii.fillPoldata(nullptr, ffDataName.c_str());
             std::string selName("testAlcohol.dat");
@@ -156,11 +156,10 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
             alexandria::BayesConfigHandler bch;
             bch.setMaxIter(1);
             bch.setSeed(1993);
-            std::string outputFile("GeneticAlgorithmTest.out");
+            std::string outputFile("GeneticAlgorithmTest.dat");
             auto init         = new alexandria::ACMInitializer(&sii, false, outputFile);
             auto fit          = new alexandria::ACMFitnessComputer(&cr, nullptr, &sii, &molgen, false, verbose, false);
-	        auto npoint       = new alexandria::NPointCrossover(sii.nParam(), gach.nCrossovers());
-            auto mutator      = new alexandria::MCMCMutator(nullptr, false, &bch, fit, &sii, gach.popSize());
+	        auto mutator      = new alexandria::MCMCMutator(nullptr, false, &bch, fit, &sii, gach.popSize());
 
             auto sorter       = new QuickSorter(gach.popSize());
             auto probComputer = new RankProbabilityComputer(gach.popSize());
@@ -178,14 +177,14 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
                 ga = new ga::HybridGAMC(nullptr, oenv, init, 
                                         fit, sorter,probComputer,
                                         selector, crossover, mutator, terminator,
-                                        &gach, false, outputFile);
+                                        &gach, false);
             }
             else
             {
                 ga = new ga::MCMC(nullptr, oenv, init, 
                                   fit, sorter,probComputer,
                                   selector, crossover, mutator, terminator,
-                                  &gach, false, outputFile);
+                                  &gach, false);
             }
             checker_.checkInt64(gach.maxGenerations(), "Maximum Number of Generations");
             checker_.checkReal(gach.prCross(), "Probability for Crossover");

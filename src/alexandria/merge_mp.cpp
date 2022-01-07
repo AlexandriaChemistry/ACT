@@ -72,7 +72,7 @@ int merge_mp(int argc, char *argv[])
     {
         { efXML, "-f",  "data",      ffOPTRDMULT },
         { efXML, "-o",  "allmols",   ffWRITE },
-        { efDAT, "-di", "gentop",    ffOPTRD },
+        { efXML, "-di", "gentop",    ffOPTRD },
         { efDAT, "-db", "sqlite",    ffOPTRD }
     };
     int                              NFILE       = asize(fnm);

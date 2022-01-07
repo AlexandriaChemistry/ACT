@@ -91,15 +91,15 @@ public:
 
     /*! \brief Computes deviation from target
      * \param[in] ind           pointer to individual
-     * \param[in] verbose       Whether or not to print a lot
+     * \param[in] verbose       whether or not to print to the logfile
      * \param[in] calcDev       The type of calculation to do
      * \param[in] ims           The dataset to do computations on
      * \return the square deviation
      */
-    double calcDeviation(      ACMIndividual   *ind,
-                         const bool             verbose,
-                               CalcDev          calcDev,
-                               iMolSelect       ims);
+    double calcDeviation(ACMIndividual *ind,
+                         bool           verbose,
+                         CalcDev        calcDev,
+                         iMolSelect     ims);
 
 };
 

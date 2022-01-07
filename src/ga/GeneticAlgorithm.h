@@ -53,7 +53,6 @@ private:
     //! The best individual
     Individual               *bestInd_ = nullptr;
 
-
     //! Initializes each individual in the population
     Initializer            *initializer_;
     //! Computes fitness for each individual in the population
@@ -92,8 +91,7 @@ public:
                      Mutator                             *mutator,
                      Terminator                          *terminator,
                      int                                  popSize,
-                     bool                                 evaluateTestSet,
-                     const  std::string                   &outputFile);
+                     bool                                 evaluateTestSet);
  
     //! \brief Evolve the initial population
     virtual void evolve() = 0;

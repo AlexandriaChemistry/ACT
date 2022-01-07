@@ -124,7 +124,6 @@ private:
      * \param[in] beta0             pointer to beta for annealing
      * \param[in] nParam            number of parameters in the model
      * \param[in] minEval           pointer to the minimum \f$ \chi^2 \f$ found so far for the training set
-     * \param[in] paramClassIndex   class index of each parameter in the model
      */
     void stepMCMC(      ACMIndividual          *ind,
                         std::vector<double>    *param,
@@ -136,8 +135,7 @@ private:
                   const int                     iter,
                         double                 *beta0,
                   const size_t                  nParam,
-                        double                 *minEval,
-                  const std::vector<size_t>    &paramClassIndex);
+                        double                 *minEval);
 
     /*!
      * \brief Perform a mutation step
@@ -149,7 +147,6 @@ private:
      * \param[in] iter              current iteration number
      * \param[in] beta0             pointer to beta for annealing
      * \param[in] nParam            number of parameters in the model
-     * \param[in] paramClassIndex   class index of each parameter in the model
      */
     void stepMutation(      ACMIndividual          *ind,
                             std::vector<double>    *param,
@@ -158,8 +155,7 @@ private:
                       const size_t                  pp,
                       const int                     iter,
                             double                 *beta0,
-                      const size_t                  nParam,
-                      const std::vector<size_t>    &paramClassIndex);
+                      const size_t                  nParam);
    void mutateOld(      ga::Individual   *individual,
                         const double            prMut);
 

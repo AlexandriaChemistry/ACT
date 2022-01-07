@@ -186,7 +186,7 @@ int molprop_check(int argc, char*argv[])
     };
     t_filenm                         fnm[] =
     {
-        { efDAT, "-d",  "gentop",  ffREAD },
+        { efXML, "-d",  "gentop",  ffREAD },
         { efXML, "-f",  "allmols",  ffREAD },
         { efLOG, "-g",  "molprop_check", ffWRITE }
     };

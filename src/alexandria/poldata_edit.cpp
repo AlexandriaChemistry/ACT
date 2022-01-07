@@ -643,9 +643,9 @@ int poldata_edit(int argc, char*argv[])
     };
     gmx_output_env_t                *oenv;
     t_filenm                         fnm[] = {
-        { efDAT, "-f",  "pdin" , ffREAD  },
-        { efDAT, "-f2", "pdin2", ffOPTRD },
-        { efDAT, "-o", "pdout",  ffOPTWR },
+        { efXML, "-f",  "pdin" , ffREAD  },
+        { efXML, "-f2", "pdin2", ffOPTRD },
+        { efXML, "-o", "pdout",  ffOPTWR },
         { efDAT, "-dump", "params", ffOPTWR }
     };
 

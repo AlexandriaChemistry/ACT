@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2021
+ * Copyright (C) 2014-2022
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -59,7 +59,7 @@ main(int argc, char *argv[])
         if (MASTER(cr))
         {
             printf("\n     Welcome to the Alexandria Chemistry Toolkit\n\n");
-            printf("              Copyright (c) 2014-2021\n\n");
+            printf("              Copyright (c) 2014-2022\n\n");
             printf("Mohammad M. Ghahremanpour, Paul J. van Maaren and David van der Spoel\n\n");
             printf("See https://github.com/dspoel/ACT for details.\n\n");
             printf("Alexandria Chemistry Toolkit is free software under the Gnu Public License v 2.\n");

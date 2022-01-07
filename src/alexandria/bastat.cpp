@@ -142,8 +142,8 @@ int bastat(int argc, char *argv[])
 
     t_filenm                         fnm[] = {
         { efXML, "-f",   "allmols",      ffRDMULT },
-        { efDAT, "-d",   "gentop",       ffOPTRD },
-        { efDAT, "-o",   "bastat",       ffWRITE },
+        { efXML, "-d",   "gentop",       ffOPTRD },
+        { efXML, "-o",   "bastat",       ffWRITE },
         { efDAT, "-sel", "molselect",    ffREAD },
         { efLOG, "-g",   "bastat",       ffWRITE },
         { efCSV, "-de",  "dissociation", ffOPTWR }

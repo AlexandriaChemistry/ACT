@@ -206,7 +206,7 @@ def write_syms(out):
   out.write("  </symmetric_charges>\n")
 
 def write_bonds(out):
-  with open(library_filename("gt_bonds.dat"), "r") as inf:
+  with open(library_filename("gt_bonds.xml"), "r") as inf:
     for line in inf.readlines():
       out.write(line)
 
@@ -388,7 +388,7 @@ if __name__ == '__main__':
       output = arg.force_field
       if arg.bondvsites:
         output += "-bv"
-      output += ".dat"
+      output += ".xml"
 
     print_gentop(output, myff, myatp, bs,
                  arg.combRule, arg.nexcl, arg.dihedral,

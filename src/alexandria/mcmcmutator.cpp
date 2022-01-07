@@ -36,7 +36,6 @@ void MCMCMutator::mutateOld(                 ga::Individual   *ind,
     std::fill(changed.begin(), changed.end(), false);
 
     const std::vector<FILE*> fpc = tmpInd->fpc();
-    FILE *fpe = tmpInd->fpe();
     const auto paramClassIndex = sii_->paramClassIndex();
     std::vector<double> *param = tmpInd->paramPtr();
 
@@ -52,7 +51,7 @@ void MCMCMutator::mutateOld(                 ga::Individual   *ind,
         for (size_t pp = 0; pp < nParam; pp++)
         {
             // Do the step!
-            stepMutation(tmpInd, param, &changed, &prevEval, pp, iter, &beta0, nParam, paramClassIndex);
+            stepMutation(tmpInd, param, &changed, &prevEval, pp, iter, &beta0, nParam);
         }
     }
 
@@ -65,8 +64,7 @@ void MCMCMutator::stepMutation(      ACMIndividual          *ind,
                                const size_t                  pp,
                                const int                     iter,
                                      double                 *beta0,
-                               const size_t                  nParam,
-                               const std::vector<size_t>    &paramClassIndex)
+                               const size_t                  nParam)
 {
 
     // Pick a random parameter index
@@ -142,7 +140,6 @@ void MCMCMutator::mutate(ga::Individual *ind,
     std::fill(changed.begin(), changed.end(), false);
 
     const std::vector<FILE*> fpc = acmInd->fpc();
-    FILE *fpe = acmInd->fpe();
     const auto paramClassIndex = sii_->paramClassIndex();
     std::vector<double> *param = acmInd->paramPtr();
     
@@ -177,7 +174,7 @@ void MCMCMutator::mutate(ga::Individual *ind,
         {
             // Do the step!
             stepMCMC(acmInd, param, &changed, &prevEval, &prevEval_testset,
-                     evaluate_testset, pp, iter, &beta0, nParam, &minEval, paramClassIndex);
+                     evaluate_testset, pp, iter, &beta0, nParam, &minEval);
 
             // For the second half of the optimization, collect data to find the mean and standard deviation of each
             // parameter
@@ -215,8 +212,7 @@ void MCMCMutator::stepMCMC(      ACMIndividual          *ind,
                            const int                     iter,
                                  double                 *beta0,
                            const size_t                  nParam,
-                                 double                 *minEval,
-                           const std::vector<size_t>    &paramClassIndex)
+                                 double                 *minEval)
 {
 
     // Get pointers for attempted and accepted moves

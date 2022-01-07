@@ -213,8 +213,8 @@ void SharedIndividualInfo::fillVectors(const int mindata)
 
 void SharedIndividualInfo::assignParamClassIndex()
 {
-
-    paramClassIndex_.resize(paramNames_.size(), -1);
+    size_t notFound = ~0;
+    paramClassIndex_.resize(paramNames_.size(), notFound);
 
     for (size_t i = 0; i < paramClass_.size(); i++)
     {
@@ -231,7 +231,7 @@ void SharedIndividualInfo::assignParamClassIndex()
     bool restClass = false;
     for (size_t i = 0; i < paramClassIndex_.size(); i++)
     {
-        if (paramClassIndex_[i] == -1)
+        if (paramClassIndex_[i] == notFound)
         {
             if (!restClass)  // If <i> is the first parameter without a class
             {
