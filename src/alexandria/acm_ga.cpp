@@ -4,7 +4,7 @@
 namespace ga
 {
 
-void HybridGA::evolve()
+void MCMC::evolve()
 {
     if (populationSize() < 1)
     {
@@ -68,7 +68,7 @@ void HybridGA::evolve()
     }
 }
 
-void PureGA::evolve()
+void HybridGAMC::evolve()
 {
     if (gach_->popSize() < 2)
     {

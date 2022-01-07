@@ -479,13 +479,13 @@ public:
     const char *lot() const { return lot_; }
     
     /*! \brief Read the molecular property data file to generate molecules.
-     * \param[in] fp      File pointer for printing information
-     * \param[in] fn      Filename for molecules
+     * \param[in] fp      File pointer for printing information, may be nullptr
+     * \param[in] fn      Filename for to read molecules from
      * \param[in] pd      Pointer to Poldata object
      * \param[in] bZero   Use compounds with zero dipole
      * \param[in] gms     The molecule selection
      * \param[in] tabfn   Table function for gromacs
-     * \param[in] verbose Whether or not to print stuff
+     * \param[in] verbose Whether or not to print extra information
      * \return number of molecules read and processed correctly
      */
     size_t Read(FILE            *fp,

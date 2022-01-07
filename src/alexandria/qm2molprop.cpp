@@ -80,7 +80,7 @@ int qm2molprop(int argc, char *argv[])
         { efSDF, "-sdf",  "mol",     ffOPTRDMULT },
         { efDAT, "-d",    "gentop",  ffREAD },
         { efDAT, "-map",  "mapping", ffOPTRD },
-        { efDAT, "-o",    "molprop", ffWRITE }
+        { efXML, "-o",    "molprop", ffWRITE }
     };
 #define NFILE sizeof(fnm)/sizeof(fnm[0])
 

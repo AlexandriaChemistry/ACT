@@ -143,14 +143,14 @@ void my_fclose(FILE *fp)
 
 void OptACM::add_pargs(std::vector<t_pargs> *pargs) {
     t_pargs pa[] =
-            {
-                    {"-fullQuadrupole", FALSE, etBOOL, {&bFullQuadrupole_},
-                            "Consider both diagonal and off-diagonal elements of the Q_Calc matrix for optimization"},
-                    {"-removemol",      FALSE, etBOOL, {&bRemoveMol_},
-                            "Remove a molecule from training set if shell minimization does not converge."},
-                    {"-v",              FALSE, etBOOL, {&verbose_},
-                        "Flush output immediately rather than letting the OS buffer it. Don't use for production simulations."}
-            };
+        {
+            {"-fullQuadrupole", FALSE, etBOOL, {&bFullQuadrupole_},
+             "Consider both diagonal and off-diagonal elements of the Q_Calc matrix for optimization"},
+            {"-removemol",      FALSE, etBOOL, {&bRemoveMol_},
+             "Remove a molecule from training set if shell minimization does not converge."},
+            {"-v",              FALSE, etBOOL, {&verbose_},
+             "Flush output immediately rather than letting the OS buffer it. Don't use for production simulations."}
+        };
     for (int i = 0; i < asize(pa); i++) {
         pargs->push_back(pa[i]);
     }
@@ -310,21 +310,21 @@ void OptACM::initGA()
     // Terminator
     auto *terminator = new ga::GenerationTerminator(gach_.maxGenerations());
   
-    if (strcmp(gach_.optimizer(), "GA") == 0)
+    if (strcmp(gach_.optimizer(), "MCMC") == 0)
     {
-        ga_ = new ga::PureGA(logFile(), oenv_, initializer_, 
-                             fitComp_, sorter,probComputer,
-                             selector, crossover, mutator_, terminator,
-                             &gach_, bch_.evaluateTestset(),
-                             outputFile_);
+        ga_ = new ga::MCMC(logFile(), oenv_, initializer_, 
+                           fitComp_, sorter, probComputer,
+                           selector, crossover, mutator_, terminator,
+                           &gach_, bch_.evaluateTestset(),
+                           outputFile_);
     }
     else
     {
-        ga_ = new ga::HybridGA(logFile(), oenv_, initializer_, 
-                               fitComp_, sorter,probComputer,
-                               selector, crossover, mutator_, terminator,
-                               &gach_, bch_.evaluateTestset(),
-                               outputFile_);
+        ga_ = new ga::HybridGAMC(logFile(), oenv_, initializer_, 
+                                 fitComp_, sorter, probComputer,
+                                 selector, crossover, mutator_, terminator,
+                                 &gach_, bch_.evaluateTestset(),
+                                 outputFile_);
     }
 }
 
@@ -495,7 +495,7 @@ int tune_eem(int argc, char *argv[])
     std::vector<t_filenm>       filenms;
     {
         t_filenm                    fnm[] = {
-        { efDAT, "-f",         "allmols",       ffREAD  },
+        { efXML, "-f",         "allmols",       ffREAD  },
         { efDAT, "-d",         "gentop",        ffOPTRD },
         { efDAT, "-o",         "tune_eem",      ffWRITE },
         { efDAT, "-sel",       "molselect",     ffREAD  },

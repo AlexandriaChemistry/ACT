@@ -233,7 +233,7 @@ void ReadSqlite3(const char           *sqlite_file,
     sqlite3                    *db   = nullptr;
     sqlite3_stmt               *stmt = nullptr;
     char sql_str[1024];
-    const char                 *cas, *csid, *prop;//, *unit, *source;
+    const char                 *cas, *csid, *prop, *unit, *source;
     double                      value, error, temperature;
     int                         cidx, rc, nbind, nexp_prop, theory, preferred;
     std::vector<Synonym>        synonyms;
@@ -258,7 +258,7 @@ void ReadSqlite3(const char           *sqlite_file,
 
     /* Now present a query statement */
     nexp_prop = 0;
-    sprintf(sql_str, "SELECT mol.iupac,mol.cas,mol.csid,pt.prop,pt.unit_text,gp.temperature,gp.value,gp.error, gp.preferred,ds.theory,ds.source FROM molecules as mol,molproperty as gp,proptypes as pt, datasource as ds,phasetype as ph WHERE ((gp.phaseid=ph.phaseid) AND (ph.phase='gas') AND (mol.molid = gp.molid) AND (gp.propid = pt.propid) AND (gp.srcid = ds.srcid) AND (upper(?) = upper(mol.iupac)));");
+    sprintf(sql_str, "SELECT distinct mol.iupac,mol.cas,mol.csid,pt.prop,pt.unit_text,gp.temperature,gp.value,gp.error, gp.preferred,ds.theory,ds.source FROM molecules as mol,molproperty as gp,proptypes as pt, datasource as ds,phasetype as ph WHERE ((gp.phaseid=ph.phaseid) AND (ph.phase='gas') AND (mol.molid = gp.molid) AND (gp.propid = pt.propid) AND (gp.srcid = ds.srcid) AND (upper(?) = upper(mol.iupac)));");
     check_sqlite3(db, "Preparing sqlite3 statement",
                   sqlite3_prepare_v2(db, sql_str, 1+strlen(sql_str), &stmt, nullptr));
 
@@ -302,18 +302,22 @@ void ReadSqlite3(const char           *sqlite_file,
                     cas            = (char *)sqlite3_column_text(stmt, cidx++);
                     csid           = (char *)sqlite3_column_text(stmt, cidx++);
                     prop           = (char *)sqlite3_column_text(stmt, cidx++);
-                    //unit           = (char *)sqlite3_column_text(stmt, cidx++);
+                    unit           = (char *)sqlite3_column_text(stmt, cidx++);
                     temperature    = sqlite3_column_double(stmt, cidx++);
                     value          = sqlite3_column_double(stmt, cidx++);
                     error          = sqlite3_column_double(stmt, cidx++);
                     preferred      = sqlite3_column_int(stmt, cidx++);
                     theory         = sqlite3_column_int(stmt, cidx++);
-                    //source         = (char *)sqlite3_column_text(stmt, cidx++);
-                    
+                    source         = (char *)sqlite3_column_text(stmt, cidx++);
+                    if (debug)
+                    {
+                        fprintf(debug, "Found: mol %s prop %s value %g temp %g theory %d preferred %d\n",
+                                molname.c_str(), prop, value, temperature, theory, preferred);
+                    }
                     if (fabs(ref_temperature-temperature) < 0.1)
                     {
                         iqmType iqm = iqmType::Exp;
-                        if (0 == theory)
+                        if (1 == theory)
                         {
                             iqm = iqmType::QM;
                         }
@@ -322,8 +326,8 @@ void ReadSqlite3(const char           *sqlite_file,
                         {
                             fprintf(stderr, "Unknown property %s\n", prop);
                         }
-                        else if ((iqm == iqmType::Exp && preferred) ||
-                            (iqm == iqmType::QM))
+                        else if ((iqm == iqmType::Exp && 1==preferred) ||
+                                 (iqm == iqmType::QM))
                         {
                             if (iqm == iqmType::Exp)
                             {
@@ -353,6 +357,7 @@ void ReadSqlite3(const char           *sqlite_file,
                             case MolPropObservable::STRANS:
                             case MolPropObservable::SROT:
                             case MolPropObservable::SVIB:
+                            case MolPropObservable::ZPE:
                             case MolPropObservable::CP:
                             case MolPropObservable::CV:
                                 {

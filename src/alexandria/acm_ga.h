@@ -27,7 +27,7 @@ struct t_commrec;
 namespace ga
 {
 
-class PureGA : public GeneticAlgorithm
+class HybridGAMC : public GeneticAlgorithm
 {
 private:
     //! GAConfigHandler pointer
@@ -36,19 +36,19 @@ public:
     /*!
      * \brief Constructor for self-building
      */
-    PureGA(FILE                                *logFile,
-           struct gmx_output_env_t             *oenv,
-           Initializer                         *initializer,
-           FitnessComputer                     *fitnessComputer,
-           Sorter                              *sorter,
-           ProbabilityComputer                 *probComputer,
-           Selector                            *selector,
-           Crossover                           *crossover,
-           Mutator                             *mutator,
-           Terminator                          *terminator,
-           alexandria::GAConfigHandler         *gach,
-           bool                                 evaluateTestSet,
-           const  std::string                   &outputFile)
+    HybridGAMC(FILE                                *logFile,
+               struct gmx_output_env_t             *oenv,
+               Initializer                         *initializer,
+               FitnessComputer                     *fitnessComputer,
+               Sorter                              *sorter,
+               ProbabilityComputer                 *probComputer,
+               Selector                            *selector,
+               Crossover                           *crossover,
+               Mutator                             *mutator,
+               Terminator                          *terminator,
+               alexandria::GAConfigHandler         *gach,
+               bool                                 evaluateTestSet,
+               const  std::string                   &outputFile)
     : GeneticAlgorithm(logFile, oenv, initializer, fitnessComputer,
                        sorter, probComputer, selector, crossover, mutator, terminator,
                        gach->popSize(), evaluateTestSet, outputFile), gach_(gach) {}
@@ -58,25 +58,25 @@ public:
     
 };
 
-class HybridGA : public GeneticAlgorithm
+class MCMC : public GeneticAlgorithm
 {
 public:
     /*!
      * \brief Constructor for self-building
      */
-    HybridGA(FILE                                *logFile,
-             struct gmx_output_env_t             *oenv,
-             Initializer                         *initializer,
-             FitnessComputer                     *fitnessComputer,
-             Sorter                              *sorter,
-             ProbabilityComputer                 *probComputer,
-             Selector                            *selector,
-             Crossover                           *crossover,
-             Mutator                             *mutator,
-             Terminator                          *terminator,
-             alexandria::GAConfigHandler         *gach,
-             bool                                 evaluateTestSet,
-             const  std::string                  &outputFile)
+    MCMC(FILE                                *logFile,
+         struct gmx_output_env_t             *oenv,
+         Initializer                         *initializer,
+         FitnessComputer                     *fitnessComputer,
+         Sorter                              *sorter,
+         ProbabilityComputer                 *probComputer,
+         Selector                            *selector,
+         Crossover                           *crossover,
+         Mutator                             *mutator,
+         Terminator                          *terminator,
+         alexandria::GAConfigHandler         *gach,
+         bool                                 evaluateTestSet,
+         const  std::string                  &outputFile)
     : GeneticAlgorithm(logFile, oenv, initializer, fitnessComputer,
                        sorter, probComputer, selector, crossover, mutator, terminator,
                        gach->popSize(), evaluateTestSet, outputFile) {}

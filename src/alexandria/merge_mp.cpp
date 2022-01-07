@@ -70,8 +70,8 @@ int merge_mp(int argc, char *argv[])
     };
     t_filenm                         fnm[] =
     {
-        { efDAT, "-f",  "data",      ffOPTRDMULT },
-        { efDAT, "-o",  "allmols",   ffWRITE },
+        { efXML, "-f",  "data",      ffOPTRDMULT },
+        { efXML, "-o",  "allmols",   ffWRITE },
         { efDAT, "-di", "gentop",    ffOPTRD },
         { efDAT, "-db", "sqlite",    ffOPTRD }
     };

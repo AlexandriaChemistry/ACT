@@ -81,7 +81,7 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
         }
 
         void testIt(int nElites, int popSize, double tolerance,
-                    bool verbose, int nrep, int ncrossovers, bool pure_ga,
+                    bool verbose, int nrep, int ncrossovers, bool hybrid_gamc,
                     const std::vector<std::string> &fitstrings)
         {
             checker_.checkInt64(nElites, "nElites");
@@ -127,7 +127,7 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
             {
                 checker_.checkBoolean(io.second, interactionTypeToString(io.first).c_str());
             }
-           std::vector<std::string> molnames;
+            std::vector<std::string> molnames;
             for(const auto &mm: molgen.mymols())
             {
                 molnames.push_back(mm.getMolname());
@@ -143,10 +143,11 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
             {
                 paramClass.push_back(fm.first);
             }
-            checker_.checkSequence(sii.paramClass().begin(), sii.paramClass().end(), "paramClass");
+            checker_.checkSequence(paramClass.begin(), paramClass.end(), "paramClass");
             sii.setOutputFiles(xvgconv.c_str(), paramClass, xvgepot.c_str());
             sii.assignParamClassIndex();
-            sii.computeWeightedTemperature(false);
+            sii.computeWeightedTemperature(true);
+            sii.propagateWeightFittingTargets();
             checker_.checkSequence(sii.weightedTemperature().begin(),
                                    sii.weightedTemperature().end(), "weightedTemperatures");
             checker_.checkSequence(sii.paramNames().begin(), sii.paramNames().end(), "paramNames");
@@ -172,25 +173,28 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
             auto terminator   = new ga::GenerationTerminator(gach.maxGenerations());
   
             GeneticAlgorithm *ga;
-            if (pure_ga)
+            if (hybrid_gamc)
             {
-                ga = new ga::PureGA(nullptr, oenv, init, 
-                                    fit, sorter,probComputer,
-                                    selector, crossover, mutator, terminator,
-                                    &gach, false, outputFile);
+                ga = new ga::HybridGAMC(nullptr, oenv, init, 
+                                        fit, sorter,probComputer,
+                                        selector, crossover, mutator, terminator,
+                                        &gach, false, outputFile);
             }
             else
             {
-                ga = new ga::HybridGA(nullptr, oenv, init, 
-                                      fit, sorter,probComputer,
-                                      selector, crossover, mutator, terminator,
-                                      &gach, false, outputFile);
+                ga = new ga::MCMC(nullptr, oenv, init, 
+                                  fit, sorter,probComputer,
+                                  selector, crossover, mutator, terminator,
+                                  &gach, false, outputFile);
             }
-            //ga->evolve();
+            checker_.checkInt64(gach.maxGenerations(), "Maximum Number of Generations");
+            checker_.checkReal(gach.prCross(), "Probability for Crossover");
+            checker_.checkReal(gach.prMut(), "Probability for Mutation");
+            ga->evolve();
             alexandria::ACMIndividual *ind = static_cast<alexandria::ACMIndividual *>(ga->bestInd());
             if (ind)
             {
-                //    checker_.checkSequence(ind->bestParam().begin(), ind->bestParam().end(), "bestParam");
+                checker_.checkSequence(ind->bestParam().begin(), ind->bestParam().end(), "bestParam");
             }
         }
     
@@ -204,6 +208,11 @@ TEST_F (GeneticAlgorithmTest, EmptyPop) {
 TEST_F (GeneticAlgorithmTest, PopFour) {
     
     testIt(0, 4, 0.1, false, 1, 1, true, { "epsilon", "gamma" });
+}
+
+TEST_F (GeneticAlgorithmTest, PopOneMCMC) {
+    
+    testIt(0, 1, 0.1, false, 1, 1, true, { "epsilon", "gamma" });
 }
 
 }
