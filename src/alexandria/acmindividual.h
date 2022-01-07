@@ -56,24 +56,11 @@ private:
     //! Convergence file for each parameter type
     std::vector<FILE*> fpc_;
     //! Convergence file for Chi2
-    FILE *fpe_;
+    FILE *fpe_ = nullptr;
     //! Force field file name (to be used in saveState())
     std::string outputFile_;
 
 public:
-
-    /*!
-     * Copy constructor
-     * \param[in] other the ACMIndividual reference instance
-     */
-    ACMIndividual(const ACMIndividual &other)
-    : ga::Individual(other.fitnessTrain(), other.fitnessTest(), other.probability()), id_(other.id()),
-      sii_(other.siiConst()), targets_(other.targets()), pd_(other.poldataConst()),
-      initialParam_(other.initialParam()), param_(other.param()), bestParam_(other.bestParam()),
-      pmean_(other.pMean()), psigma_(other.pSigma()), attemptedMoves_(other.attemptedMoves()),
-      acceptedMoves_(other.acceptedMoves()), fpc_(other.fpc()), fpe_(other.fpeConst()),
-      outputFile_(other.outputFile()) {}
-
     /*!
      * \brief Property constructor
      * \param[in] id            the ID of the individual

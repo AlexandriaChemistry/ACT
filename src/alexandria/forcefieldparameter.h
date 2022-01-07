@@ -62,19 +62,6 @@ class ForceFieldParameter
     //! \brief default constructor
     ForceFieldParameter() {}
     
-    /*!
-     * Copy constructor
-     * \param other reference ForceFieldParameter object
-     */
-    ForceFieldParameter(const ForceFieldParameter &other)
-    : unit_(other.unit()), value_(other.value()),
-      originalValue_(other.originalValue()), uncertainty_(other.uncertainty()),
-      originalUncertainty_(other.originalUncertainty()), ntrain_(other.ntrain()),
-      originalNtrain_(other.originalNtrain()), minimum_(other.minimum()),
-      maximum_(other.maximum()), mutability_(other.mutability()),
-      strict_(other.strict()), nonNegative_(other.nonNegative()),
-      index_(other.index()) {}
-
     /*! \brief Constructor initiating all parameters.
      *
      * TODO: Check unit

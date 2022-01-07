@@ -73,14 +73,6 @@ class Identifier
      */
     Identifier() {}
 
-    /*!
-     * Copy constructor
-     * \param[in] other   reference Identifier object
-     */
-    Identifier(const Identifier &other)
-    : id_(other.id()), swappedId_(other.swappedId()),
-      bondOrders_(other.bondOrders()), atoms_(other.atoms()) {}
-
     /*! \brief Simple constructor
      * \param[in] atoms   Vector containing atom/bond names
      * \param[in] canSwap Can the order of the atoms be swapped

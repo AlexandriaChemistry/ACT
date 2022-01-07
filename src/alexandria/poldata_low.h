@@ -170,15 +170,6 @@ class Symcharges
 
         Symcharges () {}
 
-        /*!
-         * Copy constructor
-         * FIXME: cannot copy the const strings
-         * \param[in] other reference Symcharges object
-         */
-        Symcharges(const Symcharges &other)
-        : central_(other.getCentral()), attached_(other.getAttached()),
-          numattach_(other.getNumattach()) {}
-
         Symcharges(const std::string &central,
                    const std::string &attached,
                    int                numattach);

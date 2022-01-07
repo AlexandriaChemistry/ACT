@@ -91,9 +91,6 @@ class QgenResp
     public:
         QgenResp() {}
 
-        //! Copy constructor
-        QgenResp(const QgenResp *src);
-        
         ChargeType chargeType() const { return ChargeType_; }
 
         /*! \brief Set option for ESP charge generation

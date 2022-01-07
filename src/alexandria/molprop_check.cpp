@@ -187,7 +187,7 @@ int molprop_check(int argc, char*argv[])
     t_filenm                         fnm[] =
     {
         { efDAT, "-d",  "gentop",  ffREAD },
-        { efDAT, "-f",  "allmols",  ffREAD },
+        { efXML, "-f",  "allmols",  ffREAD },
         { efLOG, "-g",  "molprop_check", ffWRITE }
     };
     int                              NFILE   = (sizeof(fnm)/sizeof(fnm[0]));

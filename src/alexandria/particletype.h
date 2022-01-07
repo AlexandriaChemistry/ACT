@@ -69,16 +69,6 @@ class ParticleType
                  int               gmxParticleType) :
     id_(id), desc_(desc), gmxParticleType_(gmxParticleType) {}
 
-    /*!
-     * Copy constructor
-     * \param[in] other     reference ParticleType object
-     */
-    ParticleType(const ParticleType &other)
-    : id_(other.id()), desc_(other.description()),
-      gmxParticleType_(other.gmxParticleType()),
-      option_(other.optionsConst()),
-      parameterMap_(other.parametersConst()) {};
-    
     /*! \brief Return the identifier
      */
     const Identifier &id() const { return id_; }

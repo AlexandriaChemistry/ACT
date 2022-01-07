@@ -52,8 +52,8 @@ int molprop_test(int argc, char*argv[])
     gmx_output_env_t                *oenv;
     std::vector<alexandria::MolProp> mpt;
     t_filenm                         fnm[] = {
-        { efDAT, "-f", "molin",     ffREAD },
-        { efDAT, "-o", "molout",    ffWRITE }
+        { efXML, "-f", "molin",     ffREAD },
+        { efXML, "-o", "molout",    ffWRITE }
     };
 #define NFILE sizeof(fnm)/sizeof(fnm[0])
 

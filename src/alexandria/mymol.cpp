@@ -2140,8 +2140,8 @@ void MyMol::GenerateCube(const Poldata          *pd,
 
         /* This has to be done before the grid is f*cked up by
            writing a cube file */
-        QgenResp qCalc(qc->second.qgenResp());
-        QgenResp grref(qc->second.qgenResp());
+        QgenResp qCalc(*qc->second.qgenResp());
+        QgenResp grref(*qc->second.qgenResp());
 
         if (reffn)
         {

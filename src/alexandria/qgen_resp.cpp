@@ -60,31 +60,6 @@
 namespace alexandria
 {
 
-QgenResp::QgenResp(const QgenResp *src)
-{
-    ChargeType_         = src->ChargeType_;      
-    qtot_               = src->qtot_;                    
-    qshell_             = src->qshell_;                  
-    rms_                = src->rms_;                     
-    rrms_               = src->rrms_;
-    mse_                = src->mse_;
-    mae_                = src->mae_;                    
-    cosangle_           = src->cosangle_;                
-    for(int m = 0; m < DIM; m++)
-    {
-        origin_[m] = src->origin_[m];  
-        space_[m]  = src->space_[m];
-        nxyz_[m]   = src->nxyz_[m];  
-    }  
-    uniqueQ_            = src->uniqueQ_;                 
-    fitQ_               = src->fitQ_;                    
-    nAtom_              = src->nAtom_;                   
-    dzatoms_            = src->dzatoms_;                 
-    stoichiometry_      = src->stoichiometry_;           
-    ep_                 = src->ep_;                      
-    symmetricAtoms_     = src->symmetricAtoms_;          
-}
-
 void QgenResp::updateAtomCoords(const gmx::HostVector<gmx::RVec> &x)
 {
     GMX_RELEASE_ASSERT(x.size()-nAtom_ == 0,

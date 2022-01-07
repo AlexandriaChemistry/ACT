@@ -161,8 +161,8 @@ int mp2csv(int argc, char*argv[])
     };
     t_filenm                         fnm[] =
     {
-        { efDAT, "-f",  "allmols",  ffREAD },
-        { efDAT, "-o",  "csvout",   ffWRITE }
+        { efXML, "-f",  "allmols",  ffREAD },
+        { efCSV, "-o",  "csvout",   ffWRITE }
     };
     int                              NFILE   = (sizeof(fnm)/sizeof(fnm[0]));
     static const char               *sort[]  = { nullptr, "molname", "formula", "composition", nullptr };

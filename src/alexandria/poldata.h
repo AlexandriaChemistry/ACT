@@ -62,20 +62,6 @@ class Poldata
         //! Default constructor
         Poldata() {};
 
-        /*!
-         * Copy constructor
-         * \param[in] other    the reference Poldata object
-         */
-        Poldata(const Poldata &other)
-        : alexandriaVersion_(other.getVersion()), type2Itype_(other.type2Itype()),
-          filename_(other.filename()), alexandria_(other.particleTypesConst()),
-          vsite_(other.getVsiteConst()), vsite_angle_unit_(other.getVsite_angle_unit()),
-          vsite_length_unit_(other.getVsite_length_unit()),
-          nexcl_(other.getNexcl()), gtEpsilonR_(other.getEpsilonR()),
-          forces_(other.forcesConst()), symcharges_(other.getSymcharges()),
-          polarizable_(other.polarizable()),
-          ChargeGenerationAlgorithm_(other.chargeGenerationAlgorithm()) {};
-
         /*! \brief
          * Set the file name gentop.dat
          *
