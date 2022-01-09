@@ -173,16 +173,6 @@ public:
     
 };
 
-//! Which part of the force field to optimize  
-enum class eTune {
-    //! Tuning the electrostatic equalization method and friends
-    EEM,
-    //! Tuning other force constants
-    FC,
-    //! Not tuning anything
-    None
-};
-
 class AtomIndex
 {
 private:
@@ -378,10 +368,9 @@ public:
     
     /*! \brief Add options to the command line
      * \param[in] pargs   Vector of command line arguments
-     * \param[in] etune   The type of optimization being run
      * \param[in] targets pointer to targets map for train dataset. Comes from sharedIndividualInfo
      */
-    void addOptions(std::vector<t_pargs> *pargs, eTune etune, std::map<eRMS, FittingTarget> *targets);
+    void addOptions(std::vector<t_pargs> *pargs, std::map<eRMS, FittingTarget> *targets);
     
     /*! \brief Process options after parsing
      */

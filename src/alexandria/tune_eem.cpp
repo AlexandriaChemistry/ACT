@@ -144,17 +144,17 @@ void my_fclose(FILE *fp)
 void OptACM::add_pargs(std::vector<t_pargs> *pargs) {
     t_pargs pa[] =
         {
-            {"-fullQuadrupole", FALSE, etBOOL, {&bFullQuadrupole_},
-             "Consider both diagonal and off-diagonal elements of the Q_Calc matrix for optimization"},
-            {"-removemol",      FALSE, etBOOL, {&bRemoveMol_},
-             "Remove a molecule from training set if shell minimization does not converge."},
-            {"-v",              FALSE, etBOOL, {&verbose_},
-             "Flush output immediately rather than letting the OS buffer it. Don't use for production simulations."}
+            { "-fullQuadrupole", FALSE, etBOOL, {&bFullQuadrupole_},
+              "Consider both diagonal and off-diagonal elements of the Q_Calc matrix for optimization"},
+            { "-removemol",      FALSE, etBOOL, {&bRemoveMol_},
+              "Remove a molecule from training set if shell minimization does not converge."},
+            { "-v",              FALSE, etBOOL, {&verbose_},
+              "Flush output immediately rather than letting the OS buffer it. Don't use for production simulations."}
         };
     for (int i = 0; i < asize(pa); i++) {
         pargs->push_back(pa[i]);
     }
-    mg_.addOptions(pargs, eTune::EEM, sii_.fittingTargets(iMolSelect::Train));
+    mg_.addOptions(pargs, sii_.fittingTargets(iMolSelect::Train));
     bch_.add_pargs(pargs);
     gach_.add_pargs(pargs);
 }
@@ -243,7 +243,7 @@ void OptACM::initFitComp()
 
 void OptACM::initInitializer()
 {
-    initializer_ = new ACMInitializer(&sii_, gach_.randomInit(), outputFile_);
+    initializer_ = new ACMInitializer(&sii_, gach_.randomInit(), outputFile_, bch_.seed());
 }
 
 void OptACM::initMutator()
@@ -531,8 +531,9 @@ int tune_eem(int argc, char *argv[])
     // Check validity of arguments with check_pargs() in ConfigHandler(s)
     opt.check_pargs();
 
-    // finishing MolGen stuff and setting output file for FF in OptACM
-    opt.optionsFinished(opt2fn("-o", filenms.size(), filenms.data()));  // Calls optionsFinished() for MolGen instance
+    // Finishing MolGen stuff and setting output file for FF in OptACM.
+    // Calls optionsFinished() for MolGen instance.
+    opt.optionsFinished(opt2fn("-o", filenms.size(), filenms.data()));
 
     // Propagate weights from training set to other sets
     // TODO: is this necessary if all processors parse the command line?
@@ -627,7 +628,7 @@ int tune_eem(int argc, char *argv[])
             MolGen *tmpMg = opt.mg();
             printer.print(opt.logFile(),
                           &(tmpMg->mymols()),
-                          bestInd->poldata(),
+                          bestInd->sii()->poldata(),
                           tmpMg->mdlog(),
                           tmpMg->lot(),
                           tmpMg->qcycle(),

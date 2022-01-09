@@ -16,6 +16,33 @@
 
 namespace alexandria
 {
+/* Constructor */
+ACMIndividual::ACMIndividual(const int             id,
+                             SharedIndividualInfo *sii,
+                             const std::string    &outputFile)
+    : ga::Individual()
+{
+    id_ = id;
+    sii_ = sii;
+    outputFile_ = "ind" + std::to_string(id_) + "/ind" + std::to_string(id_) + "-" + outputFile;
+    
+    // Initialize vectors for statistics and bestParam_.
+    // initialParam_ and param_ will be initialized later
+    size_t nParam = sii_->nParam();
+    pmean_.resize(nParam, 0.0);
+    psigma_.resize(nParam, 0.0);
+    attemptedMoves_.resize(nParam, 0);
+    acceptedMoves_.resize(nParam, 0);
+    bestParam_.resize(nParam, 0.0);
+    
+    // Copy targets_ from sii_
+    //targets_ = sii_->targets();  // This should make a deep copy if
+    // the copy constructors are well made
+    
+    // Copy poldata from sii_
+    //pd_ = sii_->poldataConst();    
+}
+
 
 /* * * * * * * * * * * * * * * * * * * * * *
 * BEGIN: File stuff                        *
@@ -113,7 +140,7 @@ void ACMIndividual::sumChiSquared(t_commrec *cr, bool parallel, iMolSelect ims)
     // Now sum over processors
     if (PAR(cr) && parallel)
     {
-        auto target = targets_.find(ims);
+        auto target = sii_->targetsPtr()->find(ims);
         for (auto &ft : target->second)
         {
             auto chi2 = ft.second.chiSquared();
@@ -124,18 +151,26 @@ void ACMIndividual::sumChiSquared(t_commrec *cr, bool parallel, iMolSelect ims)
             ft.second.setNumberOfDatapoints(ndp);
         }
     }
-    auto etot = target(ims, eRMS::TOT);
-    GMX_RELEASE_ASSERT(etot != nullptr, "Cannot find etot");
-    etot->reset();
-    for (const auto &ft : fittingTargetsConst(ims))
+    auto myft = sii_->targetsPtr()->find(ims);
+    if (myft !=  sii_->targetsPtr()->end())
     {
-        if (ft.first != eRMS::TOT)
-        { 
-            etot->increase(1.0, ft.second.chiSquaredWeighted());
+        auto etot = myft->second.find(eRMS::TOT);
+        GMX_RELEASE_ASSERT(etot != myft->second.end(), "Cannot find etot");
+        etot->second.reset();
+        auto tc = sii_->targets().find(ims);
+        if (tc != sii_->targets().end())
+        {
+            for (const auto &ft : tc->second)
+            {
+                if (ft.first != eRMS::TOT)
+                { 
+                    etot->second.increase(1.0, ft.second.chiSquaredWeighted());
+                }
+            }
         }
+        // Weighting is already included.
+        etot->second.setNumberOfDatapoints(1);
     }
-    // Weighting is already included.
-    etot->setNumberOfDatapoints(1);
 }
 
 void ACMIndividual::printChiSquared(t_commrec *cr, FILE *fp, iMolSelect ims) const
@@ -144,7 +179,7 @@ void ACMIndividual::printChiSquared(t_commrec *cr, FILE *fp, iMolSelect ims) con
     {
         fprintf(fp, "\nComponents of fitting function for %s set\n",
                 iMolSelectName(ims));
-        for (const auto &ft : fittingTargetsConst(ims))
+        for (const auto &ft : sii_->targets().find(ims)->second)
         {
             ft.second.print(fp);
         }
@@ -162,7 +197,7 @@ void ACMIndividual::printChiSquared(t_commrec *cr, FILE *fp, iMolSelect ims) con
 
 void ACMIndividual::saveState()
 {
-    writePoldata(outputFile_, &pd_, false);
+    writePoldata(outputFile_, sii_->poldata(), false);
 }
 
 void ACMIndividual::printParameters(FILE *fp) const
@@ -200,14 +235,15 @@ void ACMIndividual::toPoldata(const std::vector<bool> &changed)
         if (changed[n])
         {
             auto                 iType = optIndex.iType();
-            ForceFieldParameter *p = nullptr;
+            ForceFieldParameter *p  = nullptr;
+            auto                 pd = sii_->poldata(); 
             if (iType != InteractionType::CHARGE)
             {
-                p = pd_.findForces(iType)->findParameterType(optIndex.id(), optIndex.parameterType());
+                p = pd->findForces(iType)->findParameterType(optIndex.id(), optIndex.parameterType());
             }
-            else if (pd_.hasParticleType(optIndex.particleType()))
+            else if (pd->hasParticleType(optIndex.particleType()))
             {
-                p = pd_.findParticleType(optIndex.particleType())->parameter(optIndex.parameterType());
+                p = pd->findParticleType(optIndex.particleType())->parameter(optIndex.parameterType());
             }
             GMX_RELEASE_ASSERT(p, gmx::formatString("Could not find parameter %s", optIndex.id().id().c_str()).c_str());
             if (p)

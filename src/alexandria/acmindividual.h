@@ -36,9 +36,9 @@ private:
     //! Pointer to shared individual information
     SharedIndividualInfo *sii_;
     //! Fitting targets for each dataset and eRMS
-    std::map<iMolSelect, std::map<eRMS, FittingTarget>> targets_;
+    //std::map<iMolSelect, std::map<eRMS, FittingTarget>> targets_;
     //! Force field data structure
-    Poldata pd_;
+    //Poldata pd_;
     //! Initial parameter vector
     std::vector<double> initialParam_;
     //! Parameter vector
@@ -69,30 +69,7 @@ public:
      */
     ACMIndividual(const int                     id,
                         SharedIndividualInfo   *sii,
-                  const std::string            &outputFile)
-    : ga::Individual()
-    {
-        id_ = id;
-        sii_ = sii;
-        outputFile_ = "ind" + std::to_string(id_) + "/ind" + std::to_string(id_) + "-" + outputFile;
-
-        // Initialize vectors for statistics and bestParam_.
-        // initialParam_ and param_ will be initialized later
-        size_t nParam = sii_->nParam();
-        pmean_.resize(nParam, 0.0);
-        psigma_.resize(nParam, 0.0);
-        attemptedMoves_.resize(nParam, 0);
-        acceptedMoves_.resize(nParam, 0);
-        bestParam_.resize(nParam, 0.0);
-
-        // Copy targets_ from sii_
-        targets_ = sii_->targets();  // This should make a deep copy if
-                                     // the copy constructors are well made
-
-        // Copy poldata from sii_
-        pd_ = sii_->poldataConst();
-        
-    }
+                  const std::string            &outputFile);
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * BEGIN: Cloning                           *
@@ -164,7 +141,7 @@ public:
      */
     void resetChiSquared(iMolSelect ims)
     {
-        auto fts = fittingTargets(ims);
+        auto fts = sii_->fittingTargets(ims);
         if (fts != nullptr)
         {
             for (auto &ft : *fts)
@@ -235,6 +212,7 @@ public:
      * \param[in] ims The selection dataset to return
      * \return The map of eRMS to FittingTarget, or nullptr
      */
+     #ifdef OLD
     std::map<eRMS, FittingTarget> *fittingTargets(iMolSelect ims)
     {
         auto tt = targets_.find(ims);
@@ -247,7 +225,6 @@ public:
             return &tt->second;
         }
     }
-
     /*!
      * \brief Return the fitting targets for a given dataset as constant
      * \param[in] ims The selection dataset to return
@@ -280,7 +257,8 @@ public:
         }
         return &ift->second;
     }
-
+#endif
+    
     /* * * * * * * * * * * * * * * * * * * * * *
     * END: FittingTarget queries               *
     * * * * * * * * * * * * * * * * * * * * * */
@@ -314,16 +292,16 @@ public:
     SharedIndividualInfo *siiConst() const { return sii_; }
 
     //! \return a constant reference of the fitting targets
-    const std::map<iMolSelect, std::map<eRMS, FittingTarget>> &targets() const { return targets_; }
+    // const std::map<iMolSelect, std::map<eRMS, FittingTarget>> &targets() const { return targets_; }
 
     //! \return the Poldata structure as pointr to a const variable
-    const Poldata *poldata() const { return &pd_; }
+    //const Poldata *poldata() const { return &sii_.pd_; }
 
     //! \return the Poldata structure as const reference
-    const Poldata &poldataConst() const { return pd_; }
+    //const Poldata &poldataConst() const { return pd_; }
     
     //! \return pointer to the Poldata structure
-    Poldata *poldata() { return &pd_; }
+    //Poldata *poldata() { return &pd_; }
 
     //! \return the number of Force Field parameters
     size_t nParam() const { return param_.size(); }

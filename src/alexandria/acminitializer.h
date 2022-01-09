@@ -30,17 +30,19 @@ class ACMInitializer : public ga::Initializer
 private:
 
     //! SharedIndividualInfo pointer
-    SharedIndividualInfo *sii_;
+    SharedIndividualInfo                    *sii_;
     //! Whether we do random initialization or not.
-    bool randInit_;
+    bool                                     randInit_;
     // Random number generation
-    std::random_device                      rd;
-    std::mt19937                            gen;
-    std::uniform_real_distribution<double>  dis;
+    std::random_device                       rd_;
+    std::mt19937                             gen_;
+    std::uniform_real_distribution<double>   dis_;
+    //! Seeds for random number generation
+    std::vector<int>                         seeds_;
     //! Amount of initialized individuals
-    int nCreated_ = 0;
+    int                                      nCreated_ = 0;
     //! Base name for Force Field output file
-    std::string outputFile_;
+    std::string                              outputFile_;
 
 public: 
 
@@ -49,19 +51,13 @@ public:
      * \param[in] sii           pointer to SharedIndividualInfo instance
      * \param[in] randInit      whether we initialize the force field parameters randomly
      * \param[in] outputFile    base name for Force Field output files
+     * \param[in] seed          Seed for random number initialization,
+     *                          if zero it will be generated.
      */
-    ACMInitializer(      SharedIndividualInfo   *sii,
-                   const bool                    randInit,
-                   const std::string            &outputFile)
-    : gen(rd()), dis(std::uniform_real_distribution<double>(0.0, 1.0))
-    {
-
-        gen.seed(::time(NULL));
-
-        sii_      = sii;
-        randInit_ = randInit;
-        outputFile_ = outputFile;
-    }
+    ACMInitializer(SharedIndividualInfo   *sii,
+                   bool                    randInit,
+                   const std::string      &outputFile,
+                   int                     seed);
 
     virtual ga::Individual *initialize();
 

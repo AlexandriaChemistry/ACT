@@ -98,13 +98,14 @@ void FittingTarget::print(FILE *fp) const
 
 MolGen::MolGen(t_commrec *cr)
 {
-    cr_ = cr;
+    cr_        = cr;
     lot_       = "B3LYP/aug-cc-pVTZ";
     inputrec_  = new t_inputrec();
     fill_inputrec(inputrec_);
 }
 
-void MolGen::addOptions(std::vector<t_pargs> *pargs, eTune etune, std::map<eRMS, FittingTarget> *targets)
+void MolGen::addOptions(std::vector<t_pargs>          *pargs,
+                        std::map<eRMS, FittingTarget> *targets)
 {
     t_pargs pa_general[] =
     {
@@ -125,42 +126,27 @@ void MolGen::addOptions(std::vector<t_pargs> *pargs, eTune etune, std::map<eRMS,
         { "-fit", FALSE, etSTR, {&fitString_},
           "Quoted list of parameters to fit,  e.g. 'alpha zeta'." },
         { "-qm",     FALSE, etBOOL, {&bQM_},
-          "[HIDDEN]Use only quantum chemistry results (from the levels of theory below) in order to fit the parameters. If not set, experimental values will be used as reference with optional quantum chemistry results, in case no experimental results are available" }
+          "[HIDDEN]Use only quantum chemistry results (from the levels of theory below) in order to fit the parameters. If not set, experimental values will be used as reference with optional quantum chemistry results, in case no experimental results are available" },
+        { "-watoms", FALSE, etREAL, {&watoms_},
+          "Weight for the atoms when fitting the charges to the electrostatic potential. The potential on atoms is usually two orders of magnitude larger than on other points (and negative). For point charges or single smeared charges use zero. For point+smeared charges 1 is recommended." },
+        { "-maxpot", FALSE, etINT, {&maxESP_},
+          "Maximum percent of the electrostatic potential points that will be used to fit partial charges. Note that the input file may have a reduced amount of ESP points compared to the Gaussian output already so do not reduce the amount twice unless you know what you are doing. Note that if you use a value less than 100, the ESP points are picked randomly and therefore the runs will not be reproducible." },
+        { "-fc_mu",    FALSE, etREAL, {targets->find(eRMS::MU)->second.weightPtr()},
+          "Force constant in the penalty function for the magnitude of the dipole components." },
+        { "-fc_quad",  FALSE, etREAL, {targets->find(eRMS::QUAD)->second.weightPtr()},
+          "Force constant in the penalty function for the magnitude of the quadrupole components." },
+        { "-fc_esp",   FALSE, etREAL, {targets->find(eRMS::ESP)->second.weightPtr()},
+          "Force constant in the penalty function for the magnitude of the electrostatic potential." },
+        { "-fc_charge",  FALSE, etREAL, {targets->find(eRMS::CHARGE)->second.weightPtr()},
+          "Force constant in the penalty function for 'unchemical' charges, i.e. negative hydrogens, and positive oxygens." },
+        { "-fc_cm5",  FALSE, etREAL, {targets->find(eRMS::CM5)->second.weightPtr()},
+          "Force constant in the penalty function for deviation from CM5 charges." },
+        { "-fc_polar",  FALSE, etREAL, {targets->find(eRMS::Polar)->second.weightPtr()},
+          "Force constant in the penalty function for polarizability." },
+        { "-fc_force",  FALSE, etREAL, {targets->find(eRMS::Force2)->second.weightPtr()},
+          "Force constant in the penalty function for the magnitude of the force." }
     };
     doAddOptions(pargs, asize(pa_general), pa_general);
-
-    if (etune == eTune::EEM)
-    {
-        t_pargs pa_eem[] =
-            {
-                { "-watoms", FALSE, etREAL, {&watoms_},
-                  "Weight for the atoms when fitting the charges to the electrostatic potential. The potential on atoms is usually two orders of magnitude larger than on other points (and negative). For point charges or single smeared charges use zero. For point+smeared charges 1 is recommended." },
-                { "-maxpot", FALSE, etINT, {&maxESP_},
-                  "Maximum percent of the electrostatic potential points that will be used to fit partial charges. Note that the input file may have a reduced amount of ESP points compared to the Gaussian output already so do not reduce the amount twice unless you know what you are doing. Note that if you use a value less than 100, the ESP points are picked randomly and therefore the runs will not be reproducible." },
-                { "-fc_mu",    FALSE, etREAL, {targets->find(eRMS::MU)->second.weightPtr()},
-                  "Force constant in the penalty function for the magnitude of the dipole components." },
-                { "-fc_quad",  FALSE, etREAL, {targets->find(eRMS::QUAD)->second.weightPtr()},
-                  "Force constant in the penalty function for the magnitude of the quadrupole components." },
-                { "-fc_esp",   FALSE, etREAL, {targets->find(eRMS::ESP)->second.weightPtr()},
-                  "Force constant in the penalty function for the magnitude of the electrostatic potential." },
-                { "-fc_charge",  FALSE, etREAL, {targets->find(eRMS::CHARGE)->second.weightPtr()},
-                  "Force constant in the penalty function for 'unchemical' charges, i.e. negative hydrogens, and positive oxygens." },
-                { "-fc_cm5",  FALSE, etREAL, {targets->find(eRMS::CM5)->second.weightPtr()},
-                  "Force constant in the penalty function for deviation from CM5 charges." },
-                { "-fc_polar",  FALSE, etREAL, {targets->find(eRMS::Polar)->second.weightPtr()},
-                  "Force constant in the penalty function for polarizability." }
-            };
-        doAddOptions(pargs, asize(pa_eem), pa_eem);
-    }
-    else if (etune == eTune::FC)
-    {
-        t_pargs pa_fc[] =
-            {
-                { "-fc_force",  FALSE, etREAL, {targets->find(eRMS::Force2)->second.weightPtr()},
-                  "Force constant in the penalty function for the magnitude of the force." }
-            };
-        doAddOptions(pargs, asize(pa_fc), pa_fc);
-    }
 }
 
 void MolGen::optionsFinished()

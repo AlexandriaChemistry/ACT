@@ -20,17 +20,37 @@ namespace alexandria
 /* * * * * * * * * * * * * * * * * * * *
 * BEGIN: ACMInitializer                *
 * * * * * * * * * * * * * * * * * * * */
+ACMInitializer::ACMInitializer(SharedIndividualInfo   *sii,
+                               bool                    randInit,
+                               const std::string      &outputFile,
+                               int                     seed)
+    : gen_(rd_()), dis_(std::uniform_real_distribution<double>(0.0, 1.0))
+{
+    if (seed == 0)
+    {
+        gen_.seed(::time(NULL));
+    }
+    else
+    {
+        gen_.seed(seed);
+    }
+    
+    sii_      = sii;
+    randInit_ = randInit;
+    outputFile_ = outputFile;
+}
 
 ga::Individual *ACMInitializer::initialize()
 {
     nCreated_++;
     auto ind = new ACMIndividual(nCreated_, sii_, outputFile_);
-    if (randInit_)  // Insert random value in range
+    if (randInit_)
+    // Insert random value in range
     {
         for (size_t i = 0; i < sii_->nParam(); i++)
         {
-            ind->addParam(dis(gen)*(sii_->upperBoundAtIndex(i) - sii_->lowerBoundAtIndex(i))
-                             + sii_->lowerBoundAtIndex(i));
+            ind->addParam(dis_(gen_)*(sii_->upperBoundAtIndex(i) - sii_->lowerBoundAtIndex(i))
+                          + sii_->lowerBoundAtIndex(i));
         }
     }
     else  // Insert default values in SharedIndividualInfo

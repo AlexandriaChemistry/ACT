@@ -31,37 +31,37 @@ class SharedIndividualInfo
 private:
 
     //! Communication record
-    t_commrec *cr_;
+    t_commrec                                           *cr_;
     //! Base Poldata from which to make copies
-    Poldata pd_;
+    Poldata                                              pd_;
     //! Base targets_ from which to make copies
-    std::map<iMolSelect, std::map<eRMS, FittingTarget>> targets_;
+    std::map<iMolSelect, std::map<eRMS, FittingTarget>>  targets_;
     //! Default parameter values as specified by input file
-    std::vector<double> defaultParam_;
+    std::vector<double>                                  defaultParam_;
     //! Training datapoints per parameter
-    std::vector<int> ntrain_;
+    std::vector<int>                                     ntrain_;
     //! Lower bound per parameter
-    std::vector<double> lowerBound_;
+    std::vector<double>                                  lowerBound_;
     //! Upper bound per parameter
-    std::vector<double> upperBound_;
+    std::vector<double>                                  upperBound_;
     //! Mutability per parameter
-    std::vector<Mutability> mutability_; 
+    std::vector<Mutability>                              mutability_; 
     //! Weighted temperature
-    std::vector<double> weightedTemperature_;
+    std::vector<double>                                  weightedTemperature_;
     //! Optimization index for each parameter
-    std::vector<OptimizationIndex> optIndex_;
+    std::vector<OptimizationIndex>                       optIndex_;
     //! Class-name for each parameter
-    std::vector<std::string> paramNames_;
+    std::vector<std::string>                             paramNames_;
     //! Classes in the system
-    std::vector<std::string> paramClass_;
+    std::vector<std::string>                             paramClass_;
     //! Class-index for each parameter
-    std::vector<size_t> paramClassIndex_;
+    std::vector<size_t>                                  paramClassIndex_;
     //! Base name for parameter convergence files
-    std::string xvgconv_;
+    std::string                                          xvgconv_;
     //! Base name for Chi2 convergence file
-    std::string xvgepot_;
+    std::string                                          xvgepot_;
     //! Base name for Force field output file
-    std::string outputFile_;
+    std::string                                          outputFile_;
 
     //! \brief Fills the fitting targets data structure
     void fillFittingTargets();
@@ -98,7 +98,10 @@ public:
     * BEGIN: FittingTarget stuff               *
     * * * * * * * * * * * * * * * * * * * * * */
 
-    //! \brief In the  fitting targets structure, propagate the \f$ \chi^2 \f$ component weights from training set to other sets
+    /*! \brief In the  fitting targets structure, 
+     * propagate the \f$ \chi^2 \f$ component weights from 
+     * the training set to the other sets.
+     */
     void propagateWeightFittingTargets();
 
     // FIXME: How can we avoid having to decleare the query functions both in SharedIndividualInfo

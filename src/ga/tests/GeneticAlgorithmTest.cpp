@@ -49,6 +49,7 @@
 #include "alexandria/molgen.h"
 #include "alexandria/molselect.h"
 #include "alexandria/npointcrossover.h"
+#include "alexandria/percentmutator.h"
 #include "gromacs/fileio/oenv.h"
 #include "ga/FitnessComputer.h"
 #include "ga/Sorter.h"
@@ -82,7 +83,8 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
 
         void testIt(int nElites, int popSize, double tolerance,
                     bool verbose, int nrep, int ncrossovers, bool hybrid_gamc,
-                    const std::vector<std::string> &fitstrings)
+                    const std::vector<std::string> &fitstrings,
+                    int seed)
         {
             checker_.checkInt64(nElites, "nElites");
             checker_.checkReal(tolerance, "tolerance");
@@ -146,21 +148,20 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
             checker_.checkSequence(paramClass.begin(), paramClass.end(), "paramClass");
             sii.setOutputFiles(xvgconv.c_str(), paramClass, xvgepot.c_str());
             sii.assignParamClassIndex();
+            sii.target(alexandria::iMolSelect::Train, alexandria::eRMS::MU)->setWeight(1.0);
             sii.computeWeightedTemperature(true);
             sii.propagateWeightFittingTargets();
             checker_.checkSequence(sii.weightedTemperature().begin(),
                                    sii.weightedTemperature().end(), "weightedTemperatures");
             checker_.checkSequence(sii.paramNames().begin(), sii.paramNames().end(), "paramNames");
 	        
-            // Now the rest of the classes
             alexandria::BayesConfigHandler bch;
-            bch.setMaxIter(1);
-            bch.setSeed(1993);
+            bch.setMaxIter(5);
+            bch.setSeed(seed);
+            // Now the rest of the classes
             std::string outputFile("GeneticAlgorithmTest.dat");
-            auto init         = new alexandria::ACMInitializer(&sii, false, outputFile);
+            auto init         = new alexandria::ACMInitializer(&sii, false, outputFile, bch.seed());
             auto fit          = new alexandria::ACMFitnessComputer(&cr, nullptr, &sii, &molgen, false, verbose, false);
-	        auto mutator      = new alexandria::MCMCMutator(nullptr, false, &bch, fit, &sii, gach.popSize());
-
             auto sorter       = new QuickSorter(gach.popSize());
             auto probComputer = new RankProbabilityComputer(gach.popSize());
             // Selector
@@ -174,6 +175,8 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
             GeneticAlgorithm *ga;
             if (hybrid_gamc)
             {
+                auto mutator = new alexandria::PercentMutator(&sii, gach.percent());
+                checker_.checkInt64(gach.percent(), "gach.percent");
                 ga = new ga::HybridGAMC(nullptr, oenv, init, 
                                         fit, sorter,probComputer,
                                         selector, crossover, mutator, terminator,
@@ -181,6 +184,11 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
             }
             else
             {
+                checker_.checkInt64(bch.maxIter(), "bch.maxIter");
+                checker_.checkInt64(bch.seed(), "bch.seed");
+                checker_.checkReal(bch.temperature(), "bch.temperature");
+                auto mutator      = new alexandria::MCMCMutator(nullptr, false, &bch, fit, &sii, gach.popSize());
+
                 ga = new ga::MCMC(nullptr, oenv, init, 
                                   fit, sorter,probComputer,
                                   selector, crossover, mutator, terminator,
@@ -201,17 +209,17 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
 
 TEST_F (GeneticAlgorithmTest, EmptyPop) {
     
-    testIt(0, 0, 0.1, false, 1, 1, false, { "sigma", "alpha" });
+    testIt(0, 0, 0.1, false, 1, 1, true, { "sigma", "alpha" }, 1993);
 }
 
 TEST_F (GeneticAlgorithmTest, PopFour) {
     
-    testIt(0, 4, 0.1, false, 1, 1, true, { "epsilon", "gamma" });
+    testIt(0, 4, 0.1, false, 1, 1, true, { "epsilon", "gamma" }, 1993);
 }
 
 TEST_F (GeneticAlgorithmTest, PopOneMCMC) {
     
-    testIt(0, 1, 0.1, false, 1, 1, true, { "epsilon", "gamma" });
+    testIt(0, 1, 0.1, false, 1, 1, false, { "epsilon", "gamma" }, 1993);
 }
 
 }

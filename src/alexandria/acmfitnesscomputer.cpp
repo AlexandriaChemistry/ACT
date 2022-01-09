@@ -68,14 +68,14 @@ double ACMFitnessComputer::calcDeviation(ACMIndividual   *ind,
     ind->resetChiSquared(ims);
 
     // Gather fitting targets from the individual
-    std::map<eRMS, FittingTarget> *targets = ind->fittingTargets(ims);
+    std::map<eRMS, FittingTarget> *targets = ind->sii()->fittingTargets(ims);
 
     // If MASTER, penalize out of bounds
     if (MASTER(cr_))
     {
         if (bdc_ != nullptr)
         {
-            bdc_->calcDeviation(nullptr, targets, ind->poldata(), ind->param(), cr_);
+            bdc_->calcDeviation(nullptr, targets, ind->siiConst()->poldata(), ind->param(), cr_);
         }
     }
 
@@ -84,8 +84,8 @@ double ACMFitnessComputer::calcDeviation(ACMIndividual   *ind,
     {
         if (calcDev == CalcDev::Parallel)
         {
-            ind->poldata()->broadcast_eemprop(cr_);
-            ind->poldata()->broadcast_particles(cr_);
+            ind->sii()->poldata()->broadcast_eemprop(cr_);
+            ind->sii()->poldata()->broadcast_particles(cr_);
         }
     }
 
@@ -106,17 +106,17 @@ double ACMFitnessComputer::calcDeviation(ACMIndividual   *ind,
                 if (io.second)
                 {
                     // Update the polarizabilities only once before the loop
-                    mymol.UpdateIdef(ind->poldata(), io.first);
+                    mymol.UpdateIdef(ind->sii()->poldata(), io.first);
                 }
             }
             // TODO Check whether this is sufficient for updating the particleTypes
             if (molgen_->fit("zeta"))
             {
                 // Update the electronegativity parameters
-                mymol.zetaToAtoms(ind->poldata(), mymol.atoms());
+                mymol.zetaToAtoms(ind->sii()->poldata(), mymol.atoms());
             }
             // Run charge generation including shell minimization
-            immStatus imm = mymol.GenerateAcmCharges(ind->poldata(), cr_,
+            immStatus imm = mymol.GenerateAcmCharges(ind->sii()->poldata(), cr_,
                                                      molgen_->qcycle(), molgen_->qtol());
 
             // Check whether we have to disable this compound
@@ -130,7 +130,7 @@ double ACMFitnessComputer::calcDeviation(ACMIndividual   *ind,
 
             for (DevComputer *mydev : devComputers_)
             {
-                mydev->calcDeviation(&mymol, targets, ind->poldata(), ind->param(), cr_);
+                mydev->calcDeviation(&mymol, targets, ind->sii()->poldata(), ind->param(), cr_);
             }
         }
     }
