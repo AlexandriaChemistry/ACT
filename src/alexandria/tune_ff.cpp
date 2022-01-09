@@ -31,11 +31,9 @@
  * \author Julian Ramon Marrades Furquet <julian.marrades@hotmail.es>
  */
 
-#include "tune_eem.h"
-
 #include "actpre.h"
 
-#include "tune_eem.h"
+#include "tune_ff.h"
 
 #include <cctype>
 #include <cmath>
@@ -84,13 +82,13 @@
 namespace alexandria
 {
 
-/*! \defgroup tune_eem Schematic flowchart for tune_eem
+/*! \defgroup tune_ff Schematic flowchart for tune_ff
  *
  * This diagram shows how the program is parallelized.
  * Boxes in cyan run on all nodes, pink on the master node
  * and yellow on the helper nodes.
  * \dot
-digraph tune_eem {
+digraph tune_ff {
     compound = true;
     splines=true;
     node [shape=box,style=filled,color=pink] rif rm;
@@ -415,10 +413,10 @@ void OptACM::runHelper()
 
 }
 
-int tune_eem(int argc, char *argv[])
+int tune_ff(int argc, char *argv[])
 {
     static const char          *desc[] = {
-        "tune_eem read a series of molecules and corresponding experimental",
+        "tune_ff read a series of molecules and corresponding experimental",
         "dipole moments from a file, and tunes parameters in an algorithm",
         "until the experimental dipole moments are reproduced by the",
         "charge generating algorithm AX as implemented in the gentop program.[PAR]",
@@ -493,14 +491,14 @@ int tune_eem(int argc, char *argv[])
     std::vector<t_filenm>       filenms;
     {
         t_filenm                    fnm[] = {
-        { efXML, "-f",         "allmols",       ffREAD  },
-        { efXML, "-d",         "gentop",        ffOPTRD },
-        { efXML, "-o",         "tune_eem",      ffWRITE },
-        { efDAT, "-sel",       "molselect",     ffREAD  },
-        { efXVG, "-table",     "table",         ffOPTRD },
-        { efLOG, "-g",         "tune_eem",      ffWRITE },
-        { efXVG, "-conv",      "param-conv",    ffWRITE },
-        { efXVG, "-epot",      "param-epot",    ffWRITE }
+        { efXML, "-f",         "allmols",    ffREAD  },
+        { efXML, "-d",         "gentop",     ffOPTRD },
+        { efXML, "-o",         "tune_ff",    ffWRITE },
+        { efDAT, "-sel",       "molselect",  ffREAD  },
+        { efXVG, "-table",     "table",      ffOPTRD },
+        { efLOG, "-g",         "tune_ff",    ffWRITE },
+        { efXVG, "-conv",      "param-conv", ffWRITE },
+        { efXVG, "-epot",      "param-epot", ffWRITE }
         };
         for(int i = 0; i < asize(fnm); i++)
         {

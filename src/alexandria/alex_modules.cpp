@@ -66,10 +66,8 @@ void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
     // Modules from this directory
     registerModule(manager, &alexandria::gentop, "gentop",
                    "Generate a molecular topology and coordinates based on structure files or quantum chemistry output from Gaussian.");
-    //registerModule(manager, &alexandria::tune_fc, "tune_fc",
-    //              "Optimize force field parameters");
-    registerModule(manager, &alexandria::tune_eem, "tune_eem",
-                   "Optimize parameters of the Alexandria Charge Model algorithms.");
+    registerModule(manager, &alexandria::tune_ff, "tune_ff",
+                   "Optimize force field parameters.");
     registerModule(manager, &alexandria::bastat, "bastat",
                    "Deduce bond/angle/dihedral distributions from a set of strucures and create a new force field file.");
     registerModule(manager, &alexandria::analyze, "analyze",
@@ -97,8 +95,7 @@ void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
         gmx::CommandLineModuleGroup group =
             manager->addModuleGroup("Alexandria core tools");
         group.addModule("bastat");
-        group.addModule("tune_eem");
-        //group.addModule("tune_fc");
+        group.addModule("tune_ff");
         group.addModule("qm2molprop");
         group.addModule("molprop_check");
     }

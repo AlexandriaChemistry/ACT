@@ -96,9 +96,7 @@ set(ALEXANDRIA_SOURCES
            stringutil.cpp
            symmetrize_charges.cpp
            topology.cpp
-           tune_eem.cpp
-#           tune_fc.cpp
-#           tune_fc_utils.cpp
+           tune_ff.cpp
            tuning_utility.cpp          
            units.cpp
            xml_util.cpp

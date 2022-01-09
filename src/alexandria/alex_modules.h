@@ -37,8 +37,7 @@ namespace alexandria
 {
 
 int gentop(int argc, char *argv[]);
-//int tune_fc(int argc, char *argv[]);
-int tune_eem(int argc, char *argv[]);
+int tune_ff(int argc, char *argv[]);
 int poldata_edit(int argc, char *argv[]);
 int qm2molprop(int argc, char *argv[]);
 int bastat(int argc, char *argv[]);
@@ -49,7 +48,6 @@ int merge_pd(int argc, char *argv[]);
 int mp2csv(int argc, char *argv[]);
 int molprop_test(int argc, char *argv[]);
 int molprop_check(int argc, char *argv[]);
-//int tune_zeta(int argc, char *argv[]);
 //int molselect(int argc, char *argv[]);
 }
 
