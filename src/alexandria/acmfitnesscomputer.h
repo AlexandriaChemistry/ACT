@@ -95,9 +95,9 @@ public:
      * \param[in] ims      The dataset to do computations on
      * \return the square deviation
      */
-    double calcDeviation(const std::vector<double> &params,
-                         CalcDev                    calcDev,
-                         iMolSelect                 ims);
+    double calcDeviation(std::vector<double> *params,
+                         CalcDev              calcDev,
+                         iMolSelect           ims);
 
 };
 

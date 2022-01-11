@@ -31,7 +31,7 @@ void ACMFitnessComputer::compute(ga::Individual *ind,
     // TODO: the middle man should know/decide which parameters have changed.
     changed.resize(sii_->nParam(), true);
     tmpInd->toPoldata(changed);
-    const double fitness = calcDeviation(tmpInd->param(), CalcDev::Parallel, ims);
+    const double fitness = calcDeviation(tmpInd->paramPtr(), CalcDev::Parallel, ims);
     if (ims == iMolSelect::Train)
     {
         tmpInd->setFitnessTrain(fitness);
@@ -50,12 +50,12 @@ void ACMFitnessComputer::compute(ga::Individual *ind,
     }
 }
 
-double ACMFitnessComputer::calcDeviation(const std::vector<double> &params,
-                                         CalcDev                    calcDev,
-                                         iMolSelect                 ims)
+double ACMFitnessComputer::calcDeviation(std::vector<double> *params,
+                                         CalcDev              calcDev,
+                                         iMolSelect           ims)
 {
     // Send / receive parameters
-    std::vector<double> myparams;
+    std::vector<double> *myparams;
     if (MIDDLEMAN(cr_))
     {
         if (PAR(cr_) && calcDev != CalcDev::Master)
@@ -66,9 +66,9 @@ double ACMFitnessComputer::calcDeviation(const std::vector<double> &params,
                 gmx_send_int(cr_, dest, static_cast<int>(calcDev));
                 gmx_send_int(cr_, dest, static_cast<int>(ims));
                 gmx_send_double_vector(cr_, dest, params);
-                myparams = params;
             }
         }
+        myparams = params;
     }
     else
     {
@@ -76,9 +76,10 @@ double ACMFitnessComputer::calcDeviation(const std::vector<double> &params,
         // M H M H M H. Now who is my middleman?
         // Do integer division, rounding down, the multiply again.
         int src = (cr_->nodeid / cr_->nhelper_per_middleman) * cr_->nhelper_per_middleman;
-        calcDev = static_cast<CalcDev>(gmx_recv_int(cr_, src));
-        ims     = static_cast<iMolSelect>(gmx_recv_int(cr_, src));
-        gmx_recv_double_vector(cr_, src, &myparams);
+        calcDev  = static_cast<CalcDev>(gmx_recv_int(cr_, src));
+        ims      = static_cast<iMolSelect>(gmx_recv_int(cr_, src));
+        myparams = new std::vector<double>;
+        gmx_recv_double_vector(cr_, src, myparams);
     }
 
     // If final call, return -1
@@ -96,7 +97,7 @@ double ACMFitnessComputer::calcDeviation(const std::vector<double> &params,
     // If MIDDLEMAN, penalize out of bounds
     if (MIDDLEMAN(cr_) && bdc_)
     {
-        bdc_->calcDeviation(nullptr, targets, sii_->poldata(), myparams, cr_);
+        bdc_->calcDeviation(nullptr, targets, sii_->poldata(), *myparams, cr_);
     }
 
     // If we are running in parallel, spread/receive Poldata properties
@@ -150,7 +151,7 @@ double ACMFitnessComputer::calcDeviation(const std::vector<double> &params,
 
             for (DevComputer *mydev : devComputers_)
             {
-                mydev->calcDeviation(&mymol, targets, sii_->poldata(), myparams, cr_);
+                mydev->calcDeviation(&mymol, targets, sii_->poldata(), *myparams, cr_);
             }
         }
     }

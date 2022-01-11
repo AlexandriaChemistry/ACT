@@ -164,12 +164,12 @@ int gmx_recv_int(const t_commrec *cr, int src)
     return d;
 }
 
-void gmx_send_double_vector(const t_commrec *cr, int dest, const std::vector<double> &d)
+void gmx_send_double_vector(const t_commrec *cr, int dest, const std::vector<double> *d)
 {
-    gmx_send_int(cr, dest, d.size());
-    if (d.size() > 0)
+    gmx_send_int(cr, dest, d->size());
+    if (d->size() > 0)
     {
-        gmx_send(cr, dest, static_cast<const void *>(d.data()), d.size()*sizeof(double));
+        gmx_send(cr, dest, static_cast<const void *>(d->data()), d->size()*sizeof(double));
     }
 }
 

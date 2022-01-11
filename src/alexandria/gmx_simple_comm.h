@@ -56,7 +56,7 @@ void gmx_recv_str(const t_commrec *cr, int src, std::string *str);
 
 void gmx_send_double(const t_commrec *cr, int dest, double d);
 
-void gmx_send_double_vector(const t_commrec *cr, int dest, const std::vector<double> &d);
+void gmx_send_double_vector(const t_commrec *cr, int dest, const std::vector<double> *d);
 
 double gmx_recv_double(const t_commrec *cr, int src);
 

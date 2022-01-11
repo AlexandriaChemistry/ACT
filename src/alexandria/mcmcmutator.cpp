@@ -39,7 +39,7 @@ void MCMCMutator::mutateOld(                 ga::Individual   *ind,
     const auto paramClassIndex = sii_->paramClassIndex();
     std::vector<double> *param = tmpInd->paramPtr();
 
-    prevEval = fitComp_->calcDeviation(tmpInd->param(), CalcDev::Parallel, iMolSelect::Train);
+    prevEval = fitComp_->calcDeviation(tmpInd->paramPtr(), CalcDev::Parallel, iMolSelect::Train);
 
     print_memory_usage(debug);
 
@@ -79,7 +79,7 @@ void MCMCMutator::stepMutation(      ACMIndividual          *ind,
     ind->toPoldata(*changed);
 
     // Evaluate energy
-    const double currEval = fitComp_->calcDeviation(ind->param(), CalcDev::Parallel, iMolSelect::Train);
+    const double currEval = fitComp_->calcDeviation(ind->paramPtr(), CalcDev::Parallel, iMolSelect::Train);
     const double deltaEval = currEval - (*prevEval);
 
     // Accept any downhill move
@@ -154,14 +154,14 @@ void MCMCMutator::mutate(ga::Individual *ind,
     }
 
     // Gather initial chi2 evaluations for training and test sets
-    prevEval = fitComp_->calcDeviation(acmInd->param(), CalcDev::Parallel, iMolSelect::Train);  
+    prevEval = fitComp_->calcDeviation(acmInd->paramPtr(), CalcDev::Parallel, iMolSelect::Train);  
     // This does not fill the fitness attribute in individual!
     // TODO Print results
     minEval = prevEval;
     acmInd->setFitnessTrain(prevEval);
     if (evaluate_testset)
     {
-        prevEval_testset = fitComp_->calcDeviation(acmInd->param(), CalcDev::Parallel, iMolSelect::Test);
+        prevEval_testset = fitComp_->calcDeviation(acmInd->paramPtr(), CalcDev::Parallel, iMolSelect::Test);
         // TODO printing
         acmInd->setFitnessTest(prevEval_testset);
     }
@@ -239,13 +239,13 @@ void MCMCMutator::stepMCMC(      ACMIndividual          *ind,
     ind->toPoldata(*changed);
 
     // Evaluate the energy on training set
-    const double currEval = fitComp_->calcDeviation(ind->param(), CalcDev::Parallel, iMolSelect::Train);
+    const double currEval = fitComp_->calcDeviation(ind->paramPtr(), CalcDev::Parallel, iMolSelect::Train);
     const double deltaEval = currEval - (*prevEval);
     // Evaluate the energy on the test set only on whole steps!
     double currEval_testset = (*prevEval_testset);
     if (evaluate_testset && pp == 0)
     {
-        currEval_testset = fitComp_->calcDeviation(ind->param(), CalcDev::Parallel, iMolSelect::Test);
+        currEval_testset = fitComp_->calcDeviation(ind->paramPtr(), CalcDev::Parallel, iMolSelect::Test);
     }
 
     // Accept any downhill move
@@ -472,7 +472,7 @@ void MCMCMutator::sensitivityAnalysis(ACMIndividual  *ind,
     changed.resize(param_->size(), true);
     ind->toPoldata(changed);
     std::fill(changed.begin(), changed.end(), false);
-    double chi2_0 = fitComp_->calcDeviation(ind->param(), CalcDev::Parallel, ims);
+    double chi2_0 = fitComp_->calcDeviation(ind->paramPtr(), CalcDev::Parallel, ims);
     if (logfile_)
     {
         fprintf(logfile_, "\nStarting sensitivity analysis. chi2_0 = %g nParam = %d\n",
@@ -490,13 +490,13 @@ void MCMCMutator::sensitivityAnalysis(ACMIndividual  *ind,
         changed[i]    = true;
         (*param_)[i]     = pmin;
         ind->toPoldata(changed);
-        s.add((*param_)[i], fitComp_->calcDeviation(ind->param(), CalcDev::Parallel, ims));
+        s.add((*param_)[i], fitComp_->calcDeviation(ind->paramPtr(), CalcDev::Parallel, ims));
         (*param_)[i]     = p_0;
         ind->toPoldata(changed);
-        s.add((*param_)[i], fitComp_->calcDeviation(ind->param(), CalcDev::Parallel, ims));
+        s.add((*param_)[i], fitComp_->calcDeviation(ind->paramPtr(), CalcDev::Parallel, ims));
         (*param_)[i]     = pmax;
         ind->toPoldata(changed);
-        s.add((*param_)[i],  fitComp_->calcDeviation(ind->param(), CalcDev::Parallel, ims));
+        s.add((*param_)[i],  fitComp_->calcDeviation(ind->paramPtr(), CalcDev::Parallel, ims));
         (*param_)[i]     = pstore;
         ind->toPoldata(changed);
         changed[i]    = false;

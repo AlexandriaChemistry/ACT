@@ -350,7 +350,7 @@ bool OptACM::runMaster(const char             *xvgconv,
         }
     }
     // Finalize the calculations on the helpers
-    GMX_RELEASE_ASSERT(fitComp_->calcDeviation(bestInd()->param(), CalcDev::Final, iMolSelect::Train) < 0,
+    GMX_RELEASE_ASSERT(fitComp_->calcDeviation(bestInd()->paramPtr(), CalcDev::Final, iMolSelect::Train) < 0,
                        "Result for final parallel calcDeviation should be less than zero");
 
     if (strcmp(gach_.optimizer(), "GA") != 0)
@@ -384,7 +384,7 @@ bool OptACM::runMaster(const char             *xvgconv,
         for (const auto &ims : iMolSelectNames())
         {
             // TODO printing
-            double chi2 = fitComp_->calcDeviation(bestInd()->param(), CalcDev::Master, ims.first);
+            double chi2 = fitComp_->calcDeviation(bestInd()->paramPtr(), CalcDev::Master, ims.first);
             fprintf(logFile(), "Minimum chi2 for %s %g\n",
                     iMolSelectName(ims.first), chi2);
         }
@@ -405,7 +405,7 @@ void OptACM::runHelper()
     // we have to pass something.
     // If the result is less than zero (-1), we are done.
     std::vector<double> dummy;
-    while (fitComp_->calcDeviation(dummy, CalcDev::Parallel, iMolSelect::Train) >= 0)
+    while (fitComp_->calcDeviation(&dummy, CalcDev::Parallel, iMolSelect::Train) >= 0)
     {
         ;
     }
