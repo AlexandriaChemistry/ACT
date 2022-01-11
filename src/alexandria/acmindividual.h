@@ -32,9 +32,9 @@ class ACMIndividual : public ga::Individual
 private:
 
     //! ID of the individual
-    int id_;
+    int id_ = 0;
     //! Pointer to shared individual information
-    SharedIndividualInfo *sii_;
+    SharedIndividualInfo *sii_ = nullptr;
     //! Fitting targets for each dataset and eRMS
     //std::map<iMolSelect, std::map<eRMS, FittingTarget>> targets_;
     //! Force field data structure
@@ -136,32 +136,6 @@ public:
     * * * * * * * * * * * * * * * * * * * * * */
 
     /*!
-     * \brief Set the \f$ \chi^2 \f$ to 0 for a given data set.
-     * \param[in] ims The data set to reset
-     */
-    void resetChiSquared(iMolSelect ims)
-    {
-        auto fts = sii_->fittingTargets(ims);
-        if (fts != nullptr)
-        {
-            for (auto &ft : *fts)
-            {
-                ft.second.reset();
-            }
-        }
-    }
-
-    /*!
-     * \brief Add up the \f$ \chi^2 \f$ components
-     * Sum over the energies of the cores if desired.
-     * Also multiplies the terms by the weighting factors.
-     * \param[in] cr        Pointer to communication record
-     * \param[in] parallel  Whether or not to sum in parallel
-     * \param[in] ims       The selection dataset to sum
-     */
-    void sumChiSquared(t_commrec *cr, bool parallel, iMolSelect ims);
-
-    /*!
      * \brief Print the \f$ \chi^2 \f$ components.
      * \param[in] fp  File pointer to print to, may be nullptr
      * \param[in] ims The selection dataset to print
@@ -176,8 +150,12 @@ public:
     * BEGIN: Output stuff                      *
     * * * * * * * * * * * * * * * * * * * * * */
 
-    //! \brief Save the current state of the Force Field to the output file
-    void saveState();
+    /*! \brief Save the current state of the Force Field to the output file
+     * \param[in] updateCheckSum If true, the checksum is updated, typically
+     *                           this should only be done at the end of a run
+     *                           since it is expensive.
+     */
+    void saveState(bool updateCheckSum);
 
     /*!
      * \brief Print the Force Field parameters to a file
@@ -277,13 +255,13 @@ public:
      * That is, ACMIndividual::openParamConvFiles() and ACMIndividual::openChi2ConvFile()
      * \param[in] id the new ID
      */
-    void setId(const int id)
-    {
-        id_ = id;
-        const size_t firstIndex = outputFile_.find("-");  // We need to discard the existing indX- part
-        const size_t strLength = outputFile_.size();
-        outputFile_ = "ind" + std::to_string(id_) + "/ind" + std::to_string(id_) + outputFile_.substr(firstIndex, strLength - firstIndex);
-    }
+    //void setId(const int id)
+    //{
+    //  id_ = id;
+    //  const size_t firstIndex = outputFile_.find("-");  // We need to discard the existing indX- part
+    //  const size_t strLength = outputFile_.size();
+    //  outputFile_ = "ind" + std::to_string(id_) + "/ind" + std::to_string(id_) + outputFile_.substr(firstIndex, strLength - firstIndex);
+    //}
 
     //! \return a pointer to the SharedIndividualInfo instance
     SharedIndividualInfo *sii() { return sii_; }

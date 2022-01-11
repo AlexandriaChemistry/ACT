@@ -36,11 +36,11 @@ private:
     //! \brief The filepointer to the log file.
     FILE *logfile_;
     //! \brief A pointer to the BoundsDevComputer.
-    BoundsDevComputer *bdc_ = nullptr;
+    BoundsDevComputer         *bdc_  = nullptr;
     //! \brief A vector of devComputers.
-    std::vector<DevComputer*> devComputers_;
+    std::vector<DevComputer*>  devComputers_;
     //! \brief SharedIndividualInfo pointer
-    SharedIndividualInfo *sii_;
+    SharedIndividualInfo      *sii_ = nullptr;
     //! \brief MolGen pointer
     MolGen *molgen_;
     //! \brief Whether or not to remove molecules that fail to converge in the shell minimization
@@ -90,16 +90,14 @@ public:
                          ga::Target trgtFit);
 
     /*! \brief Computes deviation from target
-     * \param[in] ind           pointer to individual
-     * \param[in] verbose       whether or not to print to the logfile
-     * \param[in] calcDev       The type of calculation to do
-     * \param[in] ims           The dataset to do computations on
+     * \param[in] params   The force field parameters
+     * \param[in] calcDev  The type of calculation to do
+     * \param[in] ims      The dataset to do computations on
      * \return the square deviation
      */
-    double calcDeviation(ACMIndividual *ind,
-                         bool           verbose,
-                         CalcDev        calcDev,
-                         iMolSelect     ims);
+    double calcDeviation(const std::vector<double> &params,
+                         CalcDev                    calcDev,
+                         iMolSelect                 ims);
 
 };
 

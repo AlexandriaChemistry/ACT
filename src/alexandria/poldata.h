@@ -72,23 +72,53 @@ class Poldata
         const std::string &filename() const { return filename_; }
 
         /*! \brief
-         * Set the force field version
-         * \param[in] version Force field version
+         * Set the force field checksum
+         * \param[in] version Force field checksum
          */
-        void setVersion(const std::string &version)
+        void setCheckSum(const std::string &checkSum)
         {
-            alexandriaVersion_ = version;
+            checkSum_ = checkSum;
         }
-
+        
+        /*! \brief Verify the checksum and print message if required
+         * \param[in] fp       A file to write messages to, may be nullptr
+         * \param[in] checkSum The checksum computed for the Poldata
+         * \return true if checkSum matches.
+         */
+        bool verifyCheckSum(FILE              *fp,
+                            const std::string &checkSum);
+    
+        /*! \brief Verify the checksum and print message if required
+         * \param[in] fp       A file to write messages to, may be nullptr
+         * \return true if checkSum is correct.
+         */
+        bool verifyCheckSum(FILE *fp);
+    
+        /*! \brief Update the checkSum
+         * Compute a new checkSum and store it in the appropriate data field.
+         */
+        void updateCheckSum();
         /*! \brief
-         * Get the force field version
-         * \return Force field version
+         * Get the force field checkSum
+         * \return Force field checkSum
          */
-        const std::string &getVersion() const
+        const std::string &checkSum() const
         {
-            return alexandriaVersion_;
+            return checkSum_;
         }
 
+        /*! \brief Generate a new time stamp with the current time.
+         */
+        void updateTimeStamp();
+
+        //! \return the time stamp for this force field file
+        const std::string &timeStamp() const { return timeStamp_; }
+
+        /*! \brief 
+         * Set the time stamp for this force field file
+         * \param[in] timeStamp the new value
+         */
+        void setTimeStamp(const std::string &timeStamp) { timeStamp_ = timeStamp; }
         //! Return whether or not the original Rappe & Goddard is used
         bool rappe() const;
         
@@ -426,7 +456,8 @@ class Poldata
         const std::map<std::string, InteractionType> &type2Itype() const { return type2Itype_; }
 
     private:
-        std::string                           alexandriaVersion_;
+        std::string                           checkSum_;
+        std::string                           timeStamp_;
         std::map<std::string, InteractionType> type2Itype_;
         std::string                           filename_;
         std::vector<ParticleType>             alexandria_;

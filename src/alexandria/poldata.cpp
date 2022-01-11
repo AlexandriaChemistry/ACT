@@ -36,19 +36,60 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <ctime>
 
 #include <algorithm>
+#include <chrono>
 #include <map>
 #include <vector>
 
+#include "gromacs/fileio/md5.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/ifunc.h"
+#include "gromacs/utility/textreader.h"
 
+#include "act_checksum.h"
 #include "gmx_simple_comm.h"
+#include "poldata_xml.h"
 #include "stringutil.h"
 
 namespace alexandria
 {
+
+bool Poldata::verifyCheckSum(FILE              *fp,
+                             const std::string &checkSum)
+{
+    bool match = checkSum == checkSum_;
+    if (!match && fp)
+    {
+        fprintf(fp, "Checksum mismatch in %s. Expected %s Found %s\n",
+                filename_.c_str(),
+                checkSum_.c_str(), checkSum.c_str());
+    }
+    return match;
+}
+
+bool Poldata::verifyCheckSum(FILE *fp)
+{
+    std::string checkSum = poldataCheckSum(this);
+    return verifyCheckSum(fp, checkSum);
+}
+
+void Poldata::updateCheckSum()
+{
+    checkSum_ = poldataCheckSum(this);
+}
+
+void Poldata::updateTimeStamp()
+{
+    auto tnow    = std::chrono::system_clock::now();
+    auto ttt     = std::chrono::system_clock::to_time_t(tnow);
+    std::tm *now = std::localtime(&ttt);
+    timeStamp_   = gmx::formatString("%d-%02d-%02d %02d:%02d:%02d",
+                                     now->tm_year+1900, 1+now->tm_mon,
+                                     now->tm_mday, now->tm_hour,
+                                     now->tm_min, now->tm_sec);
+}
 
 void Poldata::setFilename(const std::string &fn2)
 {
@@ -301,7 +342,8 @@ CommunicationStatus Poldata::Send(const t_commrec *cr, int dest)
     if (CS_OK == cs)
     {
         gmx_send_str(cr, dest, &filename_);
-        gmx_send_str(cr, dest, &alexandriaVersion_);
+        gmx_send_str(cr, dest, &checkSum_);
+        gmx_send_str(cr, dest, &timeStamp_);
         gmx_send_int(cr, dest, nexcl_);
         gmx_send_double(cr, dest, gtEpsilonR_);
         gmx_send_str(cr, dest, &vsite_angle_unit_);
@@ -373,7 +415,8 @@ CommunicationStatus Poldata::Receive(const t_commrec *cr, int src)
     if (CS_OK == cs)
     {
         gmx_recv_str(cr, src, &filename_);
-        gmx_recv_str(cr, src, &alexandriaVersion_);
+        gmx_recv_str(cr, src, &checkSum_);
+        gmx_recv_str(cr, src, &timeStamp_);
         nexcl_                = gmx_recv_int(cr, src);
         gtEpsilonR_           = gmx_recv_double(cr, src);
         gmx_recv_str(cr, src, &vsite_angle_unit_);

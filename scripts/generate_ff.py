@@ -100,7 +100,8 @@ class AtomTypes:
     out.write("      <parameter type=\"%s\" unit=\"%s\" value=\"%s\" uncertainty=\"0\" minimum=\"%s\" maximum=\"%s\" ntrain=\"0\" mutability=\"%s\" nonnegative=\"%s\"/>\n" % ( mytype, myunit, value, minval, maxval, mymut, nnstr ))
     
   def write_xml(self, myff, out, nexcl):
-    out.write("  <particletypes version=\"2022\" nexclusions=\"%s\" epsilonr=\"1\">\n" % (nexcl))
+    out.write("  <version checksum=\"\" timestamp=\"\"/>\n")
+    out.write("  <particletypes nexclusions=\"%s\" epsilonr=\"1\">\n" % (nexcl))
     shell_written = {}
     for key in sorted(list(self.atp.keys()), key=lambda y: (self.atp[y]["index"])):
       mymass = self.atp[key]["mass"]

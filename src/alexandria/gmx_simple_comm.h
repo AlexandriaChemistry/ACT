@@ -46,7 +46,7 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/mdtypes/commrec.h"
 
-void gmx_send(const t_commrec *cr, int dest, void *buf, int bufsize);
+void gmx_send(const t_commrec *cr, int dest, const void *buf, int bufsize);
 
 void gmx_recv(const t_commrec *cr, int src, void *buf, int bufsize);
 
@@ -56,7 +56,11 @@ void gmx_recv_str(const t_commrec *cr, int src, std::string *str);
 
 void gmx_send_double(const t_commrec *cr, int dest, double d);
 
+void gmx_send_double_vector(const t_commrec *cr, int dest, const std::vector<double> &d);
+
 double gmx_recv_double(const t_commrec *cr, int src);
+
+void gmx_recv_double_vector(const t_commrec *cr, int src, std::vector<double> *d);
 
 void gmx_send_int(const t_commrec *cr, int dest, int d);
 

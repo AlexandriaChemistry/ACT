@@ -39,6 +39,7 @@
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/utility/arraysize.h"
 
+#include "act_checksum.h"
 #include "alex_modules.h"
 #include "forcefieldparameter.h"
 #include "interactiontype.h"
@@ -235,7 +236,7 @@ static void modifyPoldata(Poldata *pd,
 {
     if (!(bSetVal || bSetMin || bSetMax || bSetMut || stretch || bScale))
     {
-        printf("No parameter to change\n");
+        printf("No parameter to change.\n");
         return;
     }
     if (paramType.empty())
@@ -709,15 +710,17 @@ int poldata_edit(int argc, char*argv[])
             alexandria::readPoldata(opt2fn("-f", NFILE, fnm), &pd);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-        
+        (void) pd.verifyCheckSum(stderr, poldataCheckSum(&pd));
         if (opt2bSet("-f2", NFILE, fnm))
         {
             alexandria::Poldata pd2;
-            try 
+            try
             {
                 alexandria::readPoldata(opt2fn("-f2", NFILE, fnm), &pd2);
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+            (void) pd2.verifyCheckSum(stderr, poldataCheckSum(&pd2));
+            
             if (strlen(missing) > 0)
             {
                 copy_missing(&pd2, &pd, missing, false);
@@ -777,8 +780,17 @@ int poldata_edit(int argc, char*argv[])
         }
         else
         {
-
-            writePoldata(opt2fn("-o", NFILE, fnm), &pd, 0);
+            std::string checkSum = poldataCheckSum(&pd);
+            if (checkSum == pd.checkSum())
+            {
+                printf("No changes to poldata structure, not writing a new file.");
+            }
+            else
+            {
+                pd.updateTimeStamp();
+                pd.setCheckSum(checkSum);
+                writePoldata(opt2fn("-o", NFILE, fnm), &pd, 0);
+            }
         }
     }
     return 0;

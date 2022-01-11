@@ -77,6 +77,22 @@ public:
     {
         fillFittingTargets();
     }
+    
+    /*!
+     * \brief Set the \f$ \chi^2 \f$ to 0 for a given data set.
+     * \param[in] ims The data set to reset
+     */
+    void resetChiSquared(iMolSelect ims);
+    
+    /*!
+     * \brief Add up the \f$ \chi^2 \f$ components
+     * Sum over the energies of the cores if desired.
+     * Also multiplies the terms by the weighting factors.
+     * \param[in] cr        Pointer to communication record
+     * \param[in] parallel  Whether or not to sum in parallel
+     * \param[in] ims       The selection dataset to sum
+     */
+    void sumChiSquared(t_commrec *cr, bool parallel, iMolSelect ims);
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * BEGIN: Poldata stuff                     *

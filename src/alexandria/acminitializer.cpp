@@ -42,8 +42,8 @@ ACMInitializer::ACMInitializer(SharedIndividualInfo   *sii,
 
 ga::Individual *ACMInitializer::initialize()
 {
-    nCreated_++;
     auto ind = new ACMIndividual(nCreated_, sii_, outputFile_);
+    nCreated_++;
     if (randInit_)
     // Insert random value in range
     {

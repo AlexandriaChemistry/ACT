@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020
+ * Copyright (C) 2014-2022
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -82,6 +82,8 @@ const char *xmltypes[] = {
 //! The different entries to excpect in force field file
 enum class xmlEntry {
     GENTOP,
+    TIMESTAMP,
+    CHECKSUM,
     REFERENCE,
     PARTICLETYPES,
     PARTICLETYPE, 
@@ -141,6 +143,8 @@ enum class xmlEntry {
 std::map<const std::string, xmlEntry> xml_pd =
 {
     { "gentop",                    xmlEntry::GENTOP           },
+    { "timestamp",                 xmlEntry::TIMESTAMP        },
+    { "checksum",                  xmlEntry::CHECKSUM         },
     { "reference",                 xmlEntry::REFERENCE        },
     { "particletypes",             xmlEntry::PARTICLETYPES    },
     { "particletype",              xmlEntry::PARTICLETYPE     },
@@ -308,11 +312,17 @@ static void processAttr(FILE       *fp,
     static Identifier      myIdentifier;
     switch (elem)
     {
-    case xmlEntry::PARTICLETYPES:
-        if (NNobligatory(xbuf, xmlEntry::VERSION))
+    case xmlEntry::VERSION:
+        if (NN(xbuf, xmlEntry::CHECKSUM))
         {
-            pd->setVersion(xbufString(xmlEntry::VERSION));
+            pd->setCheckSum(xbufString(xmlEntry::CHECKSUM));
         }
+        if (NN(xbuf, xmlEntry::TIMESTAMP))
+        {
+            pd->setTimeStamp(xbufString(xmlEntry::TIMESTAMP));
+        }
+        break;
+    case xmlEntry::PARTICLETYPES:
         if (NNobligatory(xbuf, xmlEntry::NEXCL))
         {
             pd->setNexcl(atoi(xbufString(xmlEntry::NEXCL).c_str()));
@@ -613,12 +623,20 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd)
         acentral, attached, tau_unit, ahp_unit,
         epref, desc, params, tmp;
 
-    auto child = add_xml_child(parent, exml_names(xmlEntry::PARTICLETYPES));
-    tmp   = pd->getVersion();
-    if (0 != tmp.size())
+    auto child = add_xml_child(parent, exml_names(xmlEntry::VERSION));
+    tmp   = pd->checkSum();
+    if (!tmp.empty())
     {
-        add_xml_char(child, exml_names(xmlEntry::VERSION), tmp.c_str());
+        add_xml_char(child, exml_names(xmlEntry::CHECKSUM), tmp.c_str());
     }
+    tmp   = pd->timeStamp();
+    if (!tmp.empty())
+    {
+        add_xml_char(child, exml_names(xmlEntry::TIMESTAMP), tmp.c_str());
+    }
+    
+    child = add_xml_child(parent, exml_names(xmlEntry::PARTICLETYPES));
+                 
     add_xml_int(child, exml_names(xmlEntry::NEXCL), pd->getNexcl());
     double epsilonr = pd->getEpsilonR();
     add_xml_double(child, exml_names(xmlEntry::EPSILONR), epsilonr);

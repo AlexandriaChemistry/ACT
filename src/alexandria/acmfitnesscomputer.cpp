@@ -21,62 +21,82 @@ namespace alexandria
 void ACMFitnessComputer::compute(ga::Individual *ind,
                                  ga::Target      trgtFit)
 {
+    if (nullptr == ind)
+    {
+        GMX_THROW(gmx::InternalError("Empty individual"));
+    }
     const iMolSelect ims = trgtFit == ga::Target::Train ? iMolSelect::Train : iMolSelect::Test;
     ACMIndividual *tmpInd = static_cast<ACMIndividual*>(ind);
     std::vector<bool> changed;
-    changed.resize(tmpInd->nParam(), true);
+    // TODO: the middle man should know/decide which parameters have changed.
+    changed.resize(sii_->nParam(), true);
     tmpInd->toPoldata(changed);
-    const double fitness = calcDeviation(tmpInd, false, CalcDev::Parallel, ims);
+    const double fitness = calcDeviation(tmpInd->param(), CalcDev::Parallel, ims);
     if (ims == iMolSelect::Train)
     {
-        ind->setFitnessTrain(fitness);
+        tmpInd->setFitnessTrain(fitness);
     }
     else
     {
-        ind->setFitnessTest(fitness);
+        tmpInd->setFitnessTest(fitness);
+    }
+    if (debug)
+    {
+        tmpInd->printParameters(debug);
+    }
+    if (verbose_ && logfile_)
+    {
+        tmpInd->printChiSquared(cr_, logfile_, ims);  // Will only be done by MASTER
     }
 }
 
-double ACMFitnessComputer::calcDeviation(ACMIndividual   *ind,
-                                         bool             verbose,
-                                         CalcDev          calcDev,
-                                         iMolSelect       ims)
+double ACMFitnessComputer::calcDeviation(const std::vector<double> &params,
+                                         CalcDev                    calcDev,
+                                         iMolSelect                 ims)
 {
-
     // Send / receive parameters
-    if (MASTER(cr_))
+    std::vector<double> myparams;
+    if (MIDDLEMAN(cr_))
     {
         if (PAR(cr_) && calcDev != CalcDev::Master)
         {
-            for (int i = 1; i < cr_->nnodes; i++)
+            // Send only to my helpers
+            for (int dest = cr_->nodeid+1; dest < cr_->nodeid+cr_->nhelper_per_middleman; dest++)
             {
-                gmx_send_int(cr_, i, static_cast<int>(calcDev));
-                gmx_send_int(cr_, i, static_cast<int>(ims));
+                gmx_send_int(cr_, dest, static_cast<int>(calcDev));
+                gmx_send_int(cr_, dest, static_cast<int>(ims));
+                gmx_send_double_vector(cr_, dest, params);
+                myparams = params;
             }
         }
     }
     else
     {
-        calcDev = static_cast<CalcDev>(gmx_recv_int(cr_, 0));
-        ims     = static_cast<iMolSelect>(gmx_recv_int(cr_, 0));
+        // If we have e.g. 3 middlemen with 1 helper each, we have
+        // M H M H M H. Now who is my middleman?
+        // Do integer division, rounding down, the multiply again.
+        int src = (cr_->nodeid / cr_->nhelper_per_middleman) * cr_->nhelper_per_middleman;
+        calcDev = static_cast<CalcDev>(gmx_recv_int(cr_, src));
+        ims     = static_cast<iMolSelect>(gmx_recv_int(cr_, src));
+        gmx_recv_double_vector(cr_, src, &myparams);
     }
 
     // If final call, return -1
-    if (calcDev == CalcDev::Final) return -1;
-
-    // Reset the chi2 in FittingTargets of individual for the given dataset in ims
-    ind->resetChiSquared(ims);
-
-    // Gather fitting targets from the individual
-    std::map<eRMS, FittingTarget> *targets = ind->sii()->fittingTargets(ims);
-
-    // If MASTER, penalize out of bounds
-    if (MASTER(cr_))
+    if (calcDev == CalcDev::Final)
     {
-        if (bdc_ != nullptr)
-        {
-            bdc_->calcDeviation(nullptr, targets, ind->siiConst()->poldata(), ind->param(), cr_);
-        }
+        return -1;
+    }
+
+    // Reset the chi2 in FittingTargets for the given dataset in ims
+    sii_->resetChiSquared(ims);
+
+    // Gather fitting targets
+    std::map<eRMS, FittingTarget> *targets = sii_->fittingTargets(ims);
+
+    // If MIDDLEMAN, penalize out of bounds
+    if (MIDDLEMAN(cr_) && bdc_)
+    {
+        bdc_->calcDeviation(nullptr, targets, sii_->poldata(), myparams, cr_);
     }
 
     // If we are running in parallel, spread/receive Poldata properties
@@ -84,8 +104,8 @@ double ACMFitnessComputer::calcDeviation(ACMIndividual   *ind,
     {
         if (calcDev == CalcDev::Parallel)
         {
-            ind->sii()->poldata()->broadcast_eemprop(cr_);
-            ind->sii()->poldata()->broadcast_particles(cr_);
+            sii_->poldata()->broadcast_eemprop(cr_);
+            sii_->poldata()->broadcast_particles(cr_);
         }
     }
 
@@ -106,17 +126,17 @@ double ACMFitnessComputer::calcDeviation(ACMIndividual   *ind,
                 if (io.second)
                 {
                     // Update the polarizabilities only once before the loop
-                    mymol.UpdateIdef(ind->sii()->poldata(), io.first);
+                    mymol.UpdateIdef(sii_->poldata(), io.first);
                 }
             }
             // TODO Check whether this is sufficient for updating the particleTypes
             if (molgen_->fit("zeta"))
             {
                 // Update the electronegativity parameters
-                mymol.zetaToAtoms(ind->sii()->poldata(), mymol.atoms());
+                mymol.zetaToAtoms(sii_->poldata(), mymol.atoms());
             }
             // Run charge generation including shell minimization
-            immStatus imm = mymol.GenerateAcmCharges(ind->sii()->poldata(), cr_,
+            immStatus imm = mymol.GenerateAcmCharges(sii_->poldata(), cr_,
                                                      molgen_->qcycle(), molgen_->qtol());
 
             // Check whether we have to disable this compound
@@ -130,27 +150,17 @@ double ACMFitnessComputer::calcDeviation(ACMIndividual   *ind,
 
             for (DevComputer *mydev : devComputers_)
             {
-                mydev->calcDeviation(&mymol, targets, ind->sii()->poldata(), ind->param(), cr_);
+                mydev->calcDeviation(&mymol, targets, sii_->poldata(), myparams, cr_);
             }
         }
     }
     // Sum the terms of the chi-squared once we have done calculations
     // for all the molecules.
-    ind->sumChiSquared(cr_, calcDev == CalcDev::Parallel, ims);
-
-    if (debug)
-    {
-        ind->printParameters(debug);
-    }
-
-    if (verbose && logfile_)
-    {
-        ind->printChiSquared(cr_, logfile_, ims);  // Will only be done by MASTER
-    }
+    sii_->sumChiSquared(cr_, calcDev == CalcDev::Parallel, ims);
 
     numberCalcDevCalled_ += 1;
+    
     return (*targets).find(eRMS::TOT)->second.chiSquared();
-
 }
 
 void ACMFitnessComputer::computeDiQuad(std::map<eRMS, FittingTarget> *targets,

@@ -60,33 +60,27 @@ private:
     //! File name for the output force field file
     std::string outputFile_;
     //! GROMACS communication data structure
-    t_commrec *cr_ = nullptr;
+    t_commrec            *cr_   = nullptr;
     //! GROMACS output environment
-    gmx_output_env_t *oenv_;
+    gmx_output_env_t     *oenv_ = nullptr;
     //! MolGen instance
-    MolGen mg_;
+    MolGen                mg_;
     //! BayesConfigHandler instance
-    BayesConfigHandler bch_;
+    BayesConfigHandler    bch_;
     //! GAConfigHandler instance
-    GAConfigHandler gach_;
+    GAConfigHandler       gach_;
     //! SharedIndividualInfo instance
-    SharedIndividualInfo sii_;
+    SharedIndividualInfo  sii_;
 
     // This is for MASTER node
     //! GeneticAlgorithm instance
-    ga::GeneticAlgorithm *ga_;
-    //! A pointer to a future best individual
-    ACMIndividual *bestInd_;
+    ga::GeneticAlgorithm *ga_          = nullptr;
 
     // This is for the HELPER node (and MASTER when sensitivity)
     //! Pointer to ACMFitnessComputer since it will be initialized later
-    ACMFitnessComputer *fitComp_;
-    //! Pointer to ACMInitializer since it will be initialized later
-    ACMInitializer *initializer_;
-    //! Pointer to Mutator instance
-    ga::Mutator    *mutator_;
+    ACMFitnessComputer   *fitComp_     = nullptr;
     //! Pointer to ACMIndividual which will be casted from \p baseInd_
-    ACMIndividual *ind_;
+    ACMIndividual        *ind_         = nullptr;
 
 public:
 
@@ -147,15 +141,6 @@ public:
     //! \brief Initialize the ACMFitnessComputer
     void initFitComp();
 
-    //! \brief Initialize the ACMInitializer
-    void initInitializer();
-
-    //! \brief initialize the Individual \p baseInd_ and ACMIndividual \p ind_
-    void initIndividual();
-
-    //! \brief Initialize the Mutator
-    void initMutator();
-
     //! \brief Initialize the Genetic Algorithm
     void initGA();
 
@@ -208,8 +193,11 @@ public:
     //! \brief Get the GeneticAlgorithm \p ga_ pointer
     ga::GeneticAlgorithm *ga() { return ga_; }
 
-    //! \brief Get the \p bestInd_ pointer
-    ACMIndividual *bestInd() { return bestInd_; }
+    /*! \brief Get the \p bestInd_ pointer
+     * Note that we cannot be sure that the Individual stored in ga_ is 
+     * of the right type!
+     */
+    ACMIndividual *bestInd() { return static_cast<ACMIndividual *>(ga_->bestInd()); }
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * END: Getters and setters                 *

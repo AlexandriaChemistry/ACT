@@ -82,13 +82,12 @@ void BoundsDevComputer::calcDeviation(gmx_unused MyMol                          
 * BEGIN: ChargeCM5DevComputer              *
 * * * * * * * * * * * * * * * * * * * * * */
 
-void ChargeCM5DevComputer::calcDeviation(      MyMol                             *mymol,
-                                               std::map<eRMS, FittingTarget>     *targets,
-                                               Poldata                           *poldata,
-                                         gmx_unused const std::vector<double>               &param,
-                                         gmx_unused      t_commrec                         *commrec)
+void ChargeCM5DevComputer::calcDeviation(MyMol                                *mymol,
+                                         std::map<eRMS, FittingTarget>        *targets,
+                                         Poldata                              *poldata,
+                                         gmx_unused const std::vector<double> &param,
+                                         gmx_unused      t_commrec            *commrec)
 {
-
     double qtot = 0;
     int i = 0;
     const t_atoms myatoms = mymol->atomsConst();
@@ -175,11 +174,11 @@ void ChargeCM5DevComputer::calcDeviation(      MyMol                            
 * BEGIN: EspDevComputer                    *
 * * * * * * * * * * * * * * * * * * * * * */
 
-void EspDevComputer::calcDeviation(      MyMol                             *mymol,
-                                         std::map<eRMS, FittingTarget>     *targets,
-                                         Poldata                           *poldata,
-                                   gmx_unused const std::vector<double>               &param,
-                                         gmx_unused t_commrec                         *commrec)
+void EspDevComputer::calcDeviation(MyMol                                *mymol,
+                                   std::map<eRMS, FittingTarget>        *targets,
+                                   Poldata                              *poldata,
+                                   gmx_unused const std::vector<double> &param,
+                                   gmx_unused t_commrec                 *commrec)
 {
 
     real rrms     = 0;
@@ -214,27 +213,27 @@ void EspDevComputer::dumpQX(FILE *fp, MyMol *mol, const std::string &info)
 {
     if (false && fp)
     {
-            std::string label = mol->getMolname() + "-" + info;
-            fprintf(fp, "%s q:", label.c_str());
-            t_mdatoms *md = mol->getMdatoms();
-            auto myatoms = mol->atomsConst();
-            for (int i = 0; i < myatoms.nr; i++)
+        std::string label = mol->getMolname() + "-" + info;
+        fprintf(fp, "%s q:", label.c_str());
+        t_mdatoms *md = mol->getMdatoms();
+        auto myatoms = mol->atomsConst();
+        for (int i = 0; i < myatoms.nr; i++)
+        {
+            fprintf(fp, " %g (%g)", myatoms.atom[i].q,
+                    md->chargeA[i]);
+        }
+        fprintf(fp, "\n");
+        auto top = mol->topology();
+        if (top->hasEntry(InteractionType::POLARIZATION))
+        {
+            fprintf(fp, "%s alpha", label.c_str());
+            for(auto &topentry : top->entry(InteractionType::POLARIZATION))
             {
-                fprintf(fp, " %g (%g)", myatoms.atom[i].q,
-                        md->chargeA[i]);
+                //fprintf(fp, " %g", mol->ltop_->idef.iparams[topentry->gromacsType()].polarize.alpha);
             }
             fprintf(fp, "\n");
-            auto top = mol->topology();
-            if (top->hasEntry(InteractionType::POLARIZATION))
-            {
-                fprintf(fp, "%s alpha", label.c_str());
-                for(auto &topentry : top->entry(InteractionType::POLARIZATION))
-                {
-                    //fprintf(fp, " %g", mol->ltop_->idef.iparams[topentry->gromacsType()].polarize.alpha);
-                }
-                fprintf(fp, "\n");
-            }
-            pr_rvecs(fp, 0, label.c_str(), mol->x().rvec_array(), myatoms.nr);
+        }
+        pr_rvecs(fp, 0, label.c_str(), mol->x().rvec_array(), myatoms.nr);
     }
 }
 

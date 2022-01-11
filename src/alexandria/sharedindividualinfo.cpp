@@ -53,6 +53,55 @@ void SharedIndividualInfo::fillPoldata(      FILE *fp,
 * BEGIN: FittingTarget stuff               *
 * * * * * * * * * * * * * * * * * * * * * */
 
+void SharedIndividualInfo::sumChiSquared(t_commrec *cr, bool parallel, iMolSelect ims)
+{
+    // Now sum over processors
+    if (PAR(cr) && parallel)
+    {
+        for (auto &ft : targets_[ims])
+        {
+            auto chi2 = ft.second.chiSquared();
+            gmx_sum(1, &chi2, cr);
+            ft.second.setChiSquared(chi2);
+            auto ndp = ft.second.numberOfDatapoints();
+            gmx_sumi(1, &ndp, cr);
+            ft.second.setNumberOfDatapoints(ndp);
+        }
+    }
+    auto myft = targets_.find(ims);
+    if (myft !=  targets_.end())
+    {
+        auto etot = myft->second.find(eRMS::TOT);
+        GMX_RELEASE_ASSERT(etot != myft->second.end(), "Cannot find etot");
+        etot->second.reset();
+        auto tc = targets_.find(ims);
+        if (tc != targets_.end())
+        {
+            for (const auto &ft : tc->second)
+            {
+                if (ft.first != eRMS::TOT)
+                { 
+                    etot->second.increase(1.0, ft.second.chiSquaredWeighted());
+                }
+            }
+        }
+        // Weighting is already included.
+        etot->second.setNumberOfDatapoints(1);
+    }
+}
+
+void SharedIndividualInfo::resetChiSquared(iMolSelect ims)
+{
+    auto fts = targets_.find(ims);
+    if (fts != targets_.end())
+    {
+        for (auto &ft : fts->second)
+        {
+            ft.second.reset();
+        }
+    }
+}
+
 void SharedIndividualInfo::fillFittingTargets()
 {
     for (const auto &ims : iMolSelectNames()) 

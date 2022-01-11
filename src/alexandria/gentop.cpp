@@ -262,7 +262,8 @@ int gentop(int argc, char *argv[])
         readPoldata(gentop_fnm, &pd);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-    
+    (void) pd.verifyCheckSum(stderr);
+
     auto fs = pd.findForcesConst(InteractionType::CHARGEDISTRIBUTION);
     const char *ct = "chargetype";
     if (!fs.optionExists(ct))
@@ -384,6 +385,11 @@ int gentop(int argc, char *argv[])
             GMX_RELEASE_ASSERT(nullptr != lot, "Please specify the level of theory to use when selecting QM charges.");
             alg = nameToChargeGenerationAlgorithm(qqm);
         }
+        std::string mylot;
+        if (lot)
+        {
+            mylot.assign(lot);
+        }
         imm    = mymol.GenerateCharges(&pd,
                                        mdlog,
                                        cr,
@@ -392,7 +398,7 @@ int gentop(int argc, char *argv[])
                                        qtol,
                                        alg,
                                        myq,
-                                       lot);
+                                       mylot);
     }
     /* Generate output file for debugging if requested */
     if (immStatus::OK == imm)

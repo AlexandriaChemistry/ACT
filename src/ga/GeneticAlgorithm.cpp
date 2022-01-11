@@ -36,15 +36,15 @@ GeneticAlgorithm::GeneticAlgorithm(FILE                                *logFile,
       initializer_(initializer),
       fitComputer_(fitnessComputer), sorter_(sorter), probComputer_(probComputer),
       selector_(selector), crossover_(crossover), mutator_(mutator), terminator_(terminator)
-   {
-        // Create directories for each individual
-        for (int i = 0; i <= popSize; i++)
-        {
-            const std::string command = "mkdir ind" + std::to_string(i);
-            system(command.c_str());
-            // std::filesystem::create_directory(dirName.c_str());
-        }
+{
+    // Create directories for each individual
+    for (int i = 0; i <= popSize; i++)
+    {
+        const std::string command = "mkdir ind" + std::to_string(i);
+        system(command.c_str());
+        // std::filesystem::create_directory(dirName.c_str());
     }
+}
 
 void GeneticAlgorithm::setBestIndividual(Individual *ind)
 {

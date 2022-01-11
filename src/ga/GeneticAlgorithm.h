@@ -9,6 +9,7 @@
 
 #include <cstdlib>
 
+#include "Individual.h"
 #include "Initializer.h"
 #include "FitnessComputer.h"
 #include "Sorter.h"
@@ -54,24 +55,26 @@ private:
     Individual               *bestInd_ = nullptr;
 
     //! Initializes each individual in the population
-    Initializer            *initializer_;
+    Initializer            *initializer_ = nullptr;
     //! Computes fitness for each individual in the population
-    FitnessComputer        *fitComputer_;
+    FitnessComputer        *fitComputer_ = nullptr;
     //! Sorts the individuals based on their fitness
-    Sorter                 *sorter_;
+    Sorter                 *sorter_ = nullptr;
     //! Computes the probability of selection of each individual
-    ProbabilityComputer    *probComputer_;
+    ProbabilityComputer    *probComputer_ = nullptr;
     //! Selects an individual from the population based on its probability
-    Selector               *selector_;
+    Selector               *selector_ = nullptr;
     //! Grabs 2 individuals and crosses their genes to generate 2 new individuals
-    Crossover              *crossover_;
+    Crossover              *crossover_ = nullptr;
     //! Mutates the genes of the individuals
-    Mutator                *mutator_;
+    Mutator                *mutator_ = nullptr;
     //! Checks if the evolution should continue or be terminated
-    Terminator             *terminator_;
+    Terminator             *terminator_ = nullptr;
 
-    // FIXME: Something could be done about generalizing the evolution. We could make all Individuals
-    // have their own parameter and fitness convergence files. IDK if this makes sense...
+    // FIXME: Something could be done about generalizing the evolution.
+    // We could make all Individuals
+    // have their own parameter and fitness convergence files. 
+    // IDK if this makes sense...
 public:
 
     //! \brief Default constructor

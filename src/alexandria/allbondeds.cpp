@@ -353,45 +353,48 @@ void AllBondeds::updatePoldata(FILE    *fp,
                 // Done earlier!
                 break;
             case InteractionType::ANGLES:
-            case InteractionType::LINEAR_ANGLES:
-                 {
-                    double angle = av;
-                    if (iType == InteractionType::LINEAR_ANGLES)
-                    {
-                        angle = 180;
-                        round_numbers(&av, &sig, 1000000);
-                        // TODO Fix the parameters to be correct!
-                        double myfactor = 0.99;
-                        fs->addParameter(bondId, "a",
-                                         ForceFieldParameter("", av, sig, N, av*myfactor, av/myfactor, Mutability::Bounded, false, true));
-                        fs->addParameter(bondId, "klin", 
-                                         ForceFieldParameter("kJ/mol/nm2", klin_, 0, 1, klin_*factor_, klin_/factor_, Mutability::Bounded, false, true));
-                    
-                        fprintf(fp, "linear_angle-%s angle %g sigma %g N = %d%s\n",
-                            bondId.id().c_str(), av, sig, static_cast<int>(N), (sig > angle_tol_) ? " WARNING" : "");
-                    }
-                    else
-                    {
-                        round_numbers(&av, &sig, 10);
-                        fs->addParameter(bondId, "angle",
+                {
+                    round_numbers(&av, &sig, 10);
+                    fs->addParameter(bondId, "angle",
                                      ForceFieldParameter("degree", av, sig, N, av*factor_, 
                                                          std::min(180.0, av/factor_), Mutability::Bounded, false, true));
-                        fs->addParameter(bondId, "kt",
+                    fs->addParameter(bondId, "kt",
                                      ForceFieldParameter("kJ/mol/rad2", kt_, 0, 1, kt_*factor_, kt_/factor_, Mutability::Bounded, false, false));
-                        fprintf(fp, "angle-%s angle %g sigma %g (deg) N = %d%s\n",
+                    fprintf(fp, "angle-%s angle %g sigma %g (deg) N = %d%s\n",
                             bondId.id().c_str(), av, sig, static_cast<int>(N), (sig > angle_tol_) ? " WARNING" : "");
-                    }
-                    if (fType == F_UREY_BRADLEY || iType == InteractionType::LINEAR_ANGLES)
+                    if (fType == F_UREY_BRADLEY)
                     {
                         std::string unit("pm");
-                        double r13 = convertFromGromacs(calc_r13(pd, bondId, angle), unit);
+                        double r13 = convertFromGromacs(calc_r13(pd, bondId, av), unit);
                         fs->addParameter(bondId, "r13", 
                                          ForceFieldParameter(unit, r13, 0, N, r13*factor_, r13/factor_,
                                                              Mutability::Bounded, false, true));
                         fs->addParameter(bondId, "kub", 
                                          ForceFieldParameter("kJ/mol/nm2", kub_, 0, 1, kub_*factor_, kub_/factor_, Mutability::Bounded, false, false));
                     }
+                }
+                break;
+            case InteractionType::LINEAR_ANGLES:
+                {
+                    av = 180;
+                    round_numbers(&av, &sig, 1000000);
+                    // TODO Fix the parameters to be correct!
+                    double myfactor = 0.99;
+                    fs->addParameter(bondId, "a",
+                                     ForceFieldParameter("", av, sig, N, av*myfactor, av/myfactor, Mutability::Bounded, false, true));
+                    fs->addParameter(bondId, "klin", 
+                                     ForceFieldParameter("kJ/mol/nm2", klin_, 0, 1, klin_*factor_, klin_/factor_, Mutability::Bounded, false, true));
                     
+                    fprintf(fp, "linear_angle-%s angle %g sigma %g N = %d%s\n",
+                            bondId.id().c_str(), av, sig, static_cast<int>(N), (sig > angle_tol_) ? " WARNING" : "");
+                
+                    std::string unit("pm");
+                    double r13 = convertFromGromacs(calc_r13(pd, bondId, av), unit);
+                    fs->addParameter(bondId, "r13lin", 
+                                     ForceFieldParameter(unit, r13, 0, N, r13*factor_, r13/factor_,
+                                                         Mutability::Bounded, false, true));
+                    fs->addParameter(bondId, "kublin", 
+                                     ForceFieldParameter("kJ/mol/nm2", kub_, 0, 1, kub_*factor_, kub_/factor_, Mutability::Bounded, false, false));
                 }
                 break;
             case InteractionType::PROPER_DIHEDRALS:

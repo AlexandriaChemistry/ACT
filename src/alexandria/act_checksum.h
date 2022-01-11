@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020
+ * Copyright (C) 2022
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -26,39 +26,36 @@
  
 /*! \internal \brief
  * Implements part of the alexandria program.
- * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
- 
- 
-#ifndef POLDATA_XML_H
-#define POLDATA_XML_H
+
+#ifndef ACT_CHECKSUM_H
+#define ACT_CHECKSUM_H
 
 #include <string>
 
-#include "gromacs/topology/atomprop.h"
-
 namespace alexandria
 {
+
     class Poldata;
-
-    /*! \brief Store the Poldata class to an XML file
-     *
-     * \param[in] fileName The filename to save to
-     * \param[in] pd       Pointer to a Poldata class instance
-     * \param[in] compress Whether or not to write a compressed file
+    
+    /*! \brief Generate an MD5 checksum of a file
+     * \param[in] filename The name of the file
      */
-    void writePoldata(const std::string &fileName,
-                      const Poldata     *pd,
-                      bool compress = true);
+    std::string computeCheckSum(const std::string &filename);
 
-    /*! \brief Read a Poldata class from an XML file
-     *
-     * \param[in]  fileName The filename to read from
-     * \param[out] pd       The Poldata class instance
+    /*! \brief Will generate an MD5 checksum of the Poldata structure.
+     * The Poldata structure will be written to a temporary file with
+     * empty internal checksum and timestamp fields. Then the checksum
+     * will be computed using the above routine, and the original 
+     * checksum and timestamp will be restored. 
+     * The integrity of a force field file can then
+     * be checked by comparing pd->version() to poldataCheckSum(pd).
+     * \param[in] pd Poldata structure. Even though this is mutable it
+     *                should be unchanged after the call to this function.
      */
-    void readPoldata(const std::string &fileName,
-                     Poldata           *pd);
+    std::string poldataCheckSum(Poldata *pd);
+
 
 } // namespace alexandria
 

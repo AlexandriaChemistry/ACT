@@ -43,7 +43,7 @@
 #include <gromacs/utility/gmxmpi.h>
 #include "gromacs/utility/smalloc.h"
 
-void gmx_send(const t_commrec *cr, int dest, void *buf, int bufsize)
+void gmx_send(const t_commrec *cr, int dest, const void *buf, int bufsize)
 {
 #ifndef GMX_MPI
     gmx_call("gmx_send");
@@ -163,3 +163,24 @@ int gmx_recv_int(const t_commrec *cr, int src)
 
     return d;
 }
+
+void gmx_send_double_vector(const t_commrec *cr, int dest, const std::vector<double> &d)
+{
+    gmx_send_int(cr, dest, d.size());
+    if (d.size() > 0)
+    {
+        gmx_send(cr, dest, static_cast<const void *>(d.data()), d.size()*sizeof(double));
+    }
+}
+
+void gmx_recv_double_vector(const t_commrec *cr, int src, std::vector<double> *d)
+{
+    int len = gmx_recv_int(cr, src);
+    d->resize(len);
+    if (len > 0)
+    {
+        gmx_recv(cr, src, static_cast<void *>(d->data()), len*sizeof(double));
+    }
+}
+
+

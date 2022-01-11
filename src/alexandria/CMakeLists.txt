@@ -2,7 +2,7 @@
 #
 #  This source file is part of the Alexandria program.
 #
-#  Copyright (C) 2014-2021
+#  Copyright (C) 2014-2022
 #
 #  Developers:
 #             Mohammad Mehdi Ghahremanpour,
@@ -30,6 +30,7 @@ set(ALEXANDRIA_SOURCES
            acmfitnesscomputer.cpp
            acmindividual.cpp
            acminitializer.cpp
+           act_checksum.cpp
            alex_modules.cpp
       	   molpropobservable.cpp
            experiment.cpp

@@ -33,11 +33,7 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 set(test_sources
-    confio.cpp
     filemd5.cpp
     readinp.cpp
     )
-if (GMX_USE_TNG)
-    list(APPEND test_sources tngio.cpp)
-endif()
 gmx_add_unit_test(FileIOTests fileio-test ${test_sources})

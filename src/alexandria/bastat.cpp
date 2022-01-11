@@ -263,6 +263,8 @@ int bastat(int argc, char *argv[])
                                             method, basis, nBootStrap);
         fprintf(fp, "Root mean square deviation %.1f kJ/mol\n", rmsd);
     }
+    pd.updateTimeStamp();
+    pd.updateCheckSum();
     writePoldata(opt2fn("-o", NFILE, fnm), &pd, compress);
     bonds.writeSummary(fp);
     print_memory_usage(debug);

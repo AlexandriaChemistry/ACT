@@ -696,7 +696,7 @@ static void UpdateIdefEntry(const ForceFieldParameterList &fs,
                 ltop->idef.iparams[gromacsType].linangle.klinB = myval;
             }
 
-            fp = fs.findParameterTypeConst(bondId, "r13");
+            fp = fs.findParameterTypeConst(bondId, "r13lin");
             myval = convertToGromacs(fp.value(), fp.unit());
             mtop->ffparams.iparams[gromacsType].linangle.r13A         =
                 mtop->ffparams.iparams[gromacsType].linangle.r13B     = myval;
@@ -706,7 +706,7 @@ static void UpdateIdefEntry(const ForceFieldParameterList &fs,
                 ltop->idef.iparams[gromacsType].linangle.r13B = myval;
             }
                         
-            fp = fs.findParameterTypeConst(bondId, "kub");
+            fp = fs.findParameterTypeConst(bondId, "kublin");
             myval = convertToGromacs(fp.value(), fp.unit());
             mtop->ffparams.iparams[gromacsType].linangle.kUBA         =
                 mtop->ffparams.iparams[gromacsType].linangle.kUBB     = myval;

@@ -135,44 +135,6 @@ void ACMIndividual::closeConvFiles()
 * BEGIN: Chi2 stuff                        *
 * * * * * * * * * * * * * * * * * * * * * */
 
-void ACMIndividual::sumChiSquared(t_commrec *cr, bool parallel, iMolSelect ims)
-{
-    // Now sum over processors
-    if (PAR(cr) && parallel)
-    {
-        auto target = sii_->targetsPtr()->find(ims);
-        for (auto &ft : target->second)
-        {
-            auto chi2 = ft.second.chiSquared();
-            gmx_sum(1, &chi2, cr);
-            ft.second.setChiSquared(chi2);
-            auto ndp = ft.second.numberOfDatapoints();
-            gmx_sumi(1, &ndp, cr);
-            ft.second.setNumberOfDatapoints(ndp);
-        }
-    }
-    auto myft = sii_->targetsPtr()->find(ims);
-    if (myft !=  sii_->targetsPtr()->end())
-    {
-        auto etot = myft->second.find(eRMS::TOT);
-        GMX_RELEASE_ASSERT(etot != myft->second.end(), "Cannot find etot");
-        etot->second.reset();
-        auto tc = sii_->targets().find(ims);
-        if (tc != sii_->targets().end())
-        {
-            for (const auto &ft : tc->second)
-            {
-                if (ft.first != eRMS::TOT)
-                { 
-                    etot->second.increase(1.0, ft.second.chiSquaredWeighted());
-                }
-            }
-        }
-        // Weighting is already included.
-        etot->second.setNumberOfDatapoints(1);
-    }
-}
-
 void ACMIndividual::printChiSquared(t_commrec *cr, FILE *fp, iMolSelect ims) const
 {
     if (nullptr != fp && MASTER(cr))
@@ -195,8 +157,13 @@ void ACMIndividual::printChiSquared(t_commrec *cr, FILE *fp, iMolSelect ims) con
 * BEGIN: Output stuff                      *
 * * * * * * * * * * * * * * * * * * * * * */
 
-void ACMIndividual::saveState()
+void ACMIndividual::saveState(bool updateCheckSum)
 {
+    sii_->poldata()->updateTimeStamp();
+    if (updateCheckSum)
+    {
+        sii_->poldata()->updateCheckSum();
+    }
     writePoldata(outputFile_, sii_->poldata(), false);
 }
 
