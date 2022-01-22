@@ -1,83 +1,54 @@
 ﻿#include "acm_ga.h"
+
+#include <algorithm>
+
+#include "ga/GenePool.h"
+
+#include "gmx_simple_comm.h"
 #include "mcmcmutator.h"
+#include "tune_ff.h"
 
 namespace ga
 {
 
-void MCMC::evolve()
+void MCMC::evolve(ga::Genome *bestGenome)
 {
-    if (populationSize() < 1)
+    if (populationSize() != 1)
     {
-        fprintf(stderr, "No individuals at all!\n");
+        fprintf(stderr, "MCMC needs to have exactly one individual!\n");
         return;
     }
-    // Simplify syntax
-    using alexandria::ACMIndividual;
-    using alexandria::MCMCMutator;
-    
-    auto oldPop = oldPopPtr();
-    oldPop->clear();
-    // Initialize population/s
-    for (int i = 0; i < populationSize(); i++)
-    {
-        oldPop->push_back(initializer()->initialize());
-    }
-    
-    // Cast each individual to ACMIndividual for easier evolution
-    std::vector<ACMIndividual*> acmPop;
-    for (Individual *ind : *oldPop)
-    {
-        acmPop.push_back(static_cast<ACMIndividual*>(ind));
-    }
-    if (acmPop[0]->sii()->nParam() < 1)
+    if (sii_->nParam() < 1)
     {
         fprintf(stderr, "Cannot evolve a chromosome without genes.\n");
         return;
     }
+    // Simplify syntax, create individual
+    auto *ind = static_cast<alexandria::ACMIndividual *>(initializer()->initialize());
     
-    // Open files of each individual
-    for (ACMIndividual *ind : acmPop)
-    {
-        ind->openParamConvFiles(oenv());
-        ind->openChi2ConvFile(oenv(), evaluateTestSet());
-    }
-    
-    // Evolve each individual
-    for (ACMIndividual *ind : acmPop)
-    {
-        mutator()->mutate(ind, evaluateTestSet());
-    }
+    mutator()->mutate(ind->genomePtr(), bestGenome, evaluateTestSet_);
 
-    // Collect results into the best individual
-    int bestIndex = 0;
-    double bestFitness = (*oldPop)[0]->fitnessTrain();
-    for (int i = 0; i < populationSize(); i++)
-    {
-        if (acmPop[i]->fitnessTrain() < bestFitness)
-        {
-            bestFitness = acmPop[i]->fitnessTrain();
-            bestIndex = i;
-        }
-    }
-    setBestIndividual(acmPop[bestIndex]);
+    mutator()->finalize();
     
-    // Close files of each individual
-    for (ACMIndividual *ind : acmPop)
-    {
-        ind->closeConvFiles();
-    }
+    delete ind;
 }
 
-void HybridGAMC::evolve()
+void HybridGAMC::evolve(ga::Genome *bestGenome)
 {
     if (gach_->popSize() < 2)
     {
         fprintf(stderr, "Need at least two individuals in the population.\n");
         return;
     }
-    if (logFile())
+    auto cr = sii_->commrec();
+    if (cr->nmiddlemen < 1)
     {
-        fprintf(logFile(), "\nStarting GA/HYBRID evolution\n");
+        fprintf(stderr, "Need at least two cores/processes to run the genetic algorithm.\n");
+        return; 
+    }
+    if (logFile_)
+    {
+        fprintf(logFile_, "\nStarting GA/HYBRID evolution\n");
     }
     // Open surveillance files for fitness
     openFitnessFiles();
@@ -87,238 +58,175 @@ void HybridGAMC::evolve()
     std::mt19937 gen(rd()); // Standard mersenne_twister_engine seeded with rd()
     std::uniform_real_distribution<double> dis(0.0, 1.0);
     
-    // Iteration variables
-    size_t i, k;
-    
     // Indices for parents
-    int parent1;
-    int parent2;
+    size_t parent1, parent2;
     
     // Generations
     int generation = 0;
-    if (logFile())
+    if (logFile_)
     {
-        fprintf(logFile(), "\nGeneration %i\n", generation);
+        fprintf(logFile_, "\nGeneration %i\n", generation);
     
         // Initialize the population and compute fitness
-        fprintf(logFile(), "Initializing individuals and computing initial fitness...\n");
+        fprintf(logFile_, "Initializing individuals and computing initial fitness...\n");
     }
+#ifdef OLD
     auto oldPop = oldPopPtr();
-    // Initialize population/s
+    // Initialize population only for this node
     for (int i = 0; i < populationSize(); i++)
     {
         oldPop->push_back(initializer()->initialize());
         fitnessComputer()->compute((*oldPop)[i], Target::Train);
     }
     auto firstInd = static_cast<alexandria::ACMIndividual*>((*oldPop)[0]);
-    if (firstInd->sii()->nParam() < 1)
-    {
-        fprintf(stderr, "Cannot evolve a chromosome without genes.\n");
-        return;
-    }
-    fprintFitness();
+#endif
 
-    // FIXME: THIS IS NOT GENERAL. Open files of each individual
-    for (Individual *ind : *oldPop)
+    // Create the gene pools
+    GenePool *pool[2];
+    int       pold = 0;
+#define pnew (1-pold)
+    pool[pold] = new GenePool(sii_->nParam());
+    pool[pnew] = new GenePool(sii_->nParam()); 
+    
+    // Load the initial genomes from the middlemen. 
+    // This is needed since they have read their own parameters
+    // from the Poldata structures.
+    for(int i = 0; i < cr->nmiddlemen; i++)
     {
-        alexandria::ACMIndividual *tmpInd = static_cast<alexandria::ACMIndividual*>(ind);
-        tmpInd->openParamConvFiles(oenv());
-        tmpInd->openChi2ConvFile(oenv(), evaluateTestSet());
+        int src = middleManGlobalIndex(cr, i);
+        ga::Genome genome;
+        genome.Receive(cr, src);
+        pool[pold]->addGenome(genome);
+        pool[pnew]->addGenome(genome);
     }
-    
-    // Copy individuals into newPop_
-    copyOldToNewPopulations();
-    
-    // Initialize best individual
-    auto bestIndex = findBestIndex();
-    setBestIndividual((*oldPop)[bestIndex]);
-    
-    fprintPop();
-    fprintBestIndInPop();
-    fprintBestInd();
+    // Now we have filled the gene pool and initial fitness values
+    pool[pold]->print(logFile_);
+
+    auto bestIndex = pool[pold]->findBestIndex();
+    // TODO Check whether we need to update this at all here
+    *bestGenome    = pool[pold]->genome(bestIndex);
     
     // Iterate and create new generation
     do
     {
         // Increase generation counter
         generation++;
-        if (logFile())
-        {
-            fprintf(logFile(), "\nGeneration %i\n", generation);
+        fprintf(logFile_, "\nGeneration %i\n", generation);
         
-            // Sort individuals based on fitness
-            fprintf(logFile(), "Sorting... (if needed)\n");
-        }
-        sorter()->sort(oldPop);
-        fprintPop();
+        // Sort individuals based on fitness
+        fprintf(logFile_, "Sorting old population... (if needed)\n");
+        // Should fitness be increasing or decreasing?
+        auto gp = pool[pold]->genePoolPtr();
+        std::sort(gp->begin(), gp->end(), 
+                  [](const Genome &a, const Genome &b) -> bool
+                  { return a.fitness(iMolSelect::Train) < b.fitness(iMolSelect::Train); });
         
         // Normalize the fitness into a probability
-        if (logFile())
-        {
-            fprintf(logFile(), "Computing probabilities...\n");
-        }
-        probabilityComputer()->compute(oldPop);
-        if (logFile())
-        {
-            fprintProbability();
+        fprintf(logFile_, "Computing probabilities...\n");
+        probabilityComputer()->compute(gp);
         
-            // Move the "nElites" best individuals (unchanged) into the new population (assuming population is sorted)
-            fprintf(logFile(), "Moving the %i best individual(s) into the new population...\n", gach_->nElites());
-        }
-        auto newPop = newPopPtr();
-        for (i = 0; i < (size_t) gach_->nElites(); i++)
-        {
-            (*newPop)[i]->copyGenome(((*oldPop)[i]));
-        }
+        pool[pold]->print(logFile_);
         
-        // Generate new population after the elitism
-        if (logFile())
+        if (gach_->nElites() > 0)
         {
-            fprintf(logFile(), "Generating the rest of the new population...\n");
-        }
-        for (i = gach_->nElites(); i < oldPop->size(); i += 2)
-        {
-            if (logFile())
+            // Move the "nElites" best individuals (unchanged) into the new population 
+            // (assuming population is sorted)
+            fprintf(logFile_, "Moving the %i best individual(s) into the new population...\n", gach_->nElites());
+            for (int i = 0; i < gach_->nElites(); i++)
             {
-                fprintf(logFile(), "i = %zu, %zu\n", i, i + 1);
+                pool[pnew]->replaceGenome(i, pool[pold]->genome(i));
             }
+            
+            // Generate new population after the elitism
+            fprintf(logFile_, "Generating the rest of the new population...\n");
+        }
+        for (size_t i = gach_->nElites(); i < pool[pold]->popSize(); i += 2)
+        {
             // Select parents
-            parent1 = selector()->select(*oldPop);
-            parent2 = selector()->select(*oldPop);
-            if (logFile())
+            parent1 = selector()->select(gp);
+            parent2 = selector()->select(gp);
+            fprintf(logFile_, "parent1: %zu; parent2: %zu\n", parent1, parent2);
+            
+            // If crossover is to be performed
+            if (dis(gen) <= gach_->prCross())  
             {
-                fprintf(logFile(), "parent1: %i; parent2: %i\n", parent1, parent2);
-
                 // Do crossover
-                fprintf(logFile(), "Before crossover\n");
-                fprintf(logFile(), "Parent 1:\n");
-            }
-            (*oldPop)[parent1]->fprintSelf(logFile());
-            if (logFile())
-            {
-                fprintf(logFile(), "Parent 2:\n");
-            }
-            (*oldPop)[parent2]->fprintSelf(logFile());
-            if (dis(gen) <= gach_->prCross())  // If crossover is to be performed
-            {
-                if (logFile())
-                {
-                    fprintf(logFile(), "Doing crossover...\n");
-                }
-                crossover()->offspring((*oldPop)[parent1], (*oldPop)[parent2], (*newPop)[i], (*newPop)[i+1]);
+                fprintf(logFile_, "Before crossover\n");
+                pool[pold]->genome(parent1).print("Parent 1:", logFile_);
+                pool[pold]->genome(parent2).print("Parent 2:", logFile_);
+                
+                fprintf(logFile_, "Doing crossover...\n");
+                crossover()->offspring(pool[pold]->genomePtr(parent1),
+                                       pool[pold]->genomePtr(parent2),
+                                       pool[pnew]->genomePtr(i),
+                                       pool[pnew]->genomePtr(i+1));
             }
             else
             {
-                if (logFile())
-                {
-                    fprintf(logFile(), "Omitting crossover...\n");
-                }
-                (*newPop)[i]->copyGenome((*oldPop)[parent1]);
-                (*newPop)[i+1]->copyGenome((*oldPop)[parent2]);
+                fprintf(logFile_, "Omitting crossover...\n");
+                pool[pnew]->replaceGenome(i,   pool[pold]->genome(parent1));
+                pool[pnew]->replaceGenome(i+1, pool[pold]->genome(parent2));
             }
-            if (logFile())
-            {
-                fprintf(logFile(), "Child 1:\n");
-            }
-            (*newPop)[i]->fprintSelf(logFile());
-            if (logFile())
-            {
-                fprintf(logFile(), "Child 2:\n");
-            }
-            (*newPop)[i+1]->fprintSelf(logFile());
+            pool[pnew]->genomePtr(i)->unsetFitness(iMolSelect::Train);
+            pool[pnew]->genomePtr(i+1)->unsetFitness(iMolSelect::Train);
+            pool[pnew]->genome(i).print("Child 1:", logFile_);
+            pool[pnew]->genome(i+1).print("Child 2:", logFile_);
 
             // Do mutation in each child
-            if (logFile())
+            fprintf(logFile_, "Doing mutation...\n");
+            for (size_t k = 0; k < 2; k++)
             {
-                fprintf(logFile(), "Doing mutation...\n");
+                mutator()->mutate(pool[pnew]->genomePtr(i + k), bestGenome, gach_->prMut());
             }
-            for (k = 0; k < 2; k++)
-            {
-                mutator()->mutate((*newPop)[i + k], gach_->prMut());
-            }
-            if (logFile())
-            {
-                fprintf(logFile(), "Child 1:\n");
-            }
-            (*newPop)[i]->fprintSelf(logFile());
-            if (logFile())
-            {
-                fprintf(logFile(), "Child 2:\n");
-            }
-            (*newPop)[i+1]->fprintSelf(logFile());
+            pool[pnew]->genome(i).print("Child 1:", logFile_);
+            pool[pnew]->genome(i+1).print("Child 2:", logFile_);
         }
 
         // Swap oldPop and newPop
-        if (logFile())
-        {
-            fprintf(logFile(), "Swapping oldPop and newPop...\n");
-        }
-        swapOldNewPopulations();
+        fprintf(logFile_, "Swapping oldPop and newPop...\n");
+        pold = pnew;
         
-        // Compute fitness
-        if (logFile())
+        // Now time to send out the new genomes to the individuals
+        for(int i = 0; i < cr->nmiddlemen; i++)
         {
-            fprintf(logFile(), "Computing fitness of new generation...\n");
+            int dest = middleManGlobalIndex(cr, i);
+            // Send a 1 to tell the middlemen to continue
+            gmx_send_int(cr, dest, 1);
+            // Send the data set, 0 for iMolSelect::Train
+            gmx_send_int(cr, dest, 0);
+            // Now send the new bases
+            gmx_send_double_vector(cr, dest, pool[pold]->genomePtr(i)->basesPtr());
         }
-        for (i = 0; i < oldPop->size(); i++)
+        fprintf(logFile_, "Computing fitness of new generation...\n");
+        // And receive back the updated fitnesses
+        for(int i = 0; i < cr->nmiddlemen; i++)
         {
-            fitnessComputer()->compute((*oldPop)[i], Target::Train);
+            int src = middleManGlobalIndex(cr, i);
+            auto fitness = gmx_recv_double(cr, src);
+            pool[pold]->genomePtr(i)->setFitness(iMolSelect::Train, fitness);
         }
-        fprintFitness();
-
-        fprintPop();
-        fprintBestIndInPop();
-
-        // Check if a better individual was found, and update if so
-        Individual *tmpBest = (*oldPop)[findBestIndex()];
-        if (tmpBest->fitnessTrain() < bestInd()->fitnessTrain())  // If we have a new best
+        
+        // Check if a better genome was found, and update if so
+        size_t newBest = pool[pold]->findBestIndex();
+        if (pool[pold]->genome(newBest).fitness(iMolSelect::Train) < 
+            bestGenome->fitness(iMolSelect::Train))  // If we have a new best
         {
-            if (logFile())
-            {
-                fprintf(logFile(), "A new best individual has been found!\n");
-                fprintf(logFile(), "Previous best:\n");
-            }
-            bestInd()->fprintSelf(logFile());
-            if (logFile())
-            {
-                fprintf(logFile(), "New best:\n");
-            }
-            setBestIndividual(tmpBest->clone());
-            if (logFile())
-            {
-                bestInd()->fprintSelf(logFile());
-            }
-        }
-        else
-        {
-            // New best not found...
-            if (logFile())
-            {
-                fprintf(logFile(), "HAVE NOT FOUND a new best individual...\n");
-            }
-        }
-
-        if (logFile())
-        {
-            fprintf(logFile(), "Checking termination conditions...\n");
+            bestGenome->print("A new best individual has been found!\nPrevious best:\n",
+                              logFile_);
+            *bestGenome = pool[pold]->genome(newBest); 
+            bestGenome->print("New best:\n", logFile_);
         }
     }
-    while (!terminator()->terminate(*oldPop, generation));
-    
-    // FIXME: THIS IS NOT GENERAL. Close files of each individual
-    for (Individual *ind : *oldPop)
-    {
-        static_cast<alexandria::ACMIndividual*>(ind)->closeConvFiles();
-    }
+    while (!terminator()->terminate(pool[pold], generation));
     
     // Close surveillance files for fitness
     closeFitnessFiles();
     
-    if (logFile())
+    if (logFile_)
     {
-        fprintf(logFile(), "\nGA/HYBRID Evolution is done!\n");
+        fprintf(logFile_, "\nGA/HYBRID Evolution is done!\n");
     }
-    fprintBestInd();
+    bestGenome->print("Best: ", logFile_);
     
 }
 

@@ -436,11 +436,13 @@ namespace alexandria
          *  electric field (under construction!!!)
          *
          * \param[in]  efield   Strenght of the external electric field
-         * \param[in]  fplog
-         * \param[in]  cr
+         * \param[in]  cr       Communication record
+         * \param[in]  fplog    File pointer for logging
          * \returns the result of the calculation, if fine it is immOK
          */
-        immStatus CalcPolarizability(double efield, t_commrec *cr, FILE *fplog);
+        immStatus CalcPolarizability(double     efield,
+                                     t_commrec *cr,
+                                     FILE      *fplog);
       
         /*! \brief set the electronic polarizability
          * \param[in] isoPol The isotropic polarizability
@@ -611,7 +613,9 @@ namespace alexandria
          * \param[out] rmsf  Root mean square force on the shells
          * \return immOK if everything went fine, an error otherwise.
          */
-        immStatus computeForces(FILE *fplog, t_commrec *cr, double *rmsf);
+        immStatus computeForces(FILE      *fplog,
+                                t_commrec *cr,
+                                double    *rmsf);
 
         /*! \brief
          * Change the coordinate of the molecule based

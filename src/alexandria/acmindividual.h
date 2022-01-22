@@ -15,8 +15,9 @@
 
 #include "molgen.h"
 #include "poldata.h"
-#include "sharedindividualinfo.h"
+#include "staticindividualinfo.h"
 
+#include "ga/Genome.h"
 #include "ga/Individual.h"
 
 namespace alexandria
@@ -30,52 +31,38 @@ class ACMIndividual : public ga::Individual
 {
 
 private:
-
     //! ID of the individual
-    int id_ = 0;
-    //! Pointer to shared individual information
-    SharedIndividualInfo *sii_ = nullptr;
-    //! Fitting targets for each dataset and eRMS
-    //std::map<iMolSelect, std::map<eRMS, FittingTarget>> targets_;
-    //! Force field data structure
-    //Poldata pd_;
-    //! Initial parameter vector
-    std::vector<double> initialParam_;
+    int                   id_ = 0;
+    //! Pointer to static individual information
+    StaticIndividualInfo *sii_ = nullptr;
+    //! Initial genome
+    ga::Genome            initialGenome_;
     //! Parameter vector
-    std::vector<double> param_;
+    ga::Genome            genome_;
     //! Best parameter vector
-    std::vector<double> bestParam_;
-    //! Mean of each parameter
-    std::vector<double> pmean_;
-    //! Standard deviation of each parameter
-    std::vector<double> psigma_;
-    //! Attempted changes for each parameter
-    std::vector<int> attemptedMoves_;
-    //! Accepted changes for each parameter
-    std::vector<int> acceptedMoves_;
-    //! Convergence file for each parameter type
-    std::vector<FILE*> fpc_;
-    //! Convergence file for Chi2
-    FILE *fpe_ = nullptr;
+    ga::Genome            bestGenome_;
     //! Force field file name (to be used in saveState())
-    std::string outputFile_;
+    //std::string           outputFile_;
 
 public:
     /*!
      * \brief Property constructor
      * \param[in] id            the ID of the individual
-     * \param[in] sii           pointer to SharedIndividualInfo instance
+     * \param[in] sii           pointer to StaticIndividualInfo instance
      * \param[in] outputFile    the base name for Force Field output files
      */
     ACMIndividual(const int                     id,
-                        SharedIndividualInfo   *sii,
+                        StaticIndividualInfo   *sii,
                   const std::string            &outputFile);
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * BEGIN: Cloning                           *
     * * * * * * * * * * * * * * * * * * * * * */
 
-    virtual void copyGenome(Individual *other) { param_ = static_cast<ACMIndividual*>(other)->param(); }
+    /*! \brief Copy the genome to this individual
+     * \param[in] genome Complete genome, only the bases are copied.
+     */
+    virtual void copyGenome(ga::Genome *genome);
 
     virtual ga::Individual *clone() { return new ACMIndividual(*this); }
 
@@ -91,71 +78,15 @@ public:
      * \brief Add a force field parameter
      * \param[in] val the value of the parameter
      */
-    void addParam(const real val) { initialParam_.push_back(val); param_.push_back(val); }
+    void addParam(const real val);
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * END: Adding parameters                   *
     * * * * * * * * * * * * * * * * * * * * * */
 
     /* * * * * * * * * * * * * * * * * * * * * *
-    * BEGIN: File stuff                        *
-    * * * * * * * * * * * * * * * * * * * * * */
-
-    virtual void fprintSelf(FILE *fp);
-
-    /*!
-     * \brief Print individual header to a file
-     * For individual with ID X, the header is: \nIndividual X\n
-     * \param[in] fp the file to print to
-     */
-    void printHeader(FILE *fp);
-
-    /*!
-     * \brief Open parameter convergence files
-     * \param[in] oenv the GROMACS output environment
-     */
-    void openParamConvFiles(const gmx_output_env_t *oenv);
-
-    /*!
-     * \brief Open a \f$ \chi^2 \f$ convergence file
-     * \param[in] oenv              the GROMACS output environment
-     * \param[in] bEvaluate_testset whether the test set will be evaluated in MCMC
-     */
-    void openChi2ConvFile(const gmx_output_env_t    *oenv,
-                          const bool                 bEvaluate_testset);
-    
-    //! Close \f$ \chi^2 \f$ and parameter convergence files
-    void closeConvFiles();
-
-    /* * * * * * * * * * * * * * * * * * * * * *
-    * END: File stuff                          *
-    * * * * * * * * * * * * * * * * * * * * * */
-
-    /* * * * * * * * * * * * * * * * * * * * * *
-    * BEGIN: Chi2 stuff                        *
-    * * * * * * * * * * * * * * * * * * * * * */
-
-    /*!
-     * \brief Print the \f$ \chi^2 \f$ components.
-     * \param[in] fp  File pointer to print to, may be nullptr
-     * \param[in] ims The selection dataset to print
-     */  
-    void printChiSquared(t_commrec *cr, FILE *fp, iMolSelect ims) const;
-
-    /* * * * * * * * * * * * * * * * * * * * * *
-    * END: Chi2 stuff                          *
-    * * * * * * * * * * * * * * * * * * * * * */
-
-    /* * * * * * * * * * * * * * * * * * * * * *
     * BEGIN: Output stuff                      *
     * * * * * * * * * * * * * * * * * * * * * */
-
-    /*! \brief Save the current state of the Force Field to the output file
-     * \param[in] updateCheckSum If true, the checksum is updated, typically
-     *                           this should only be done at the end of a run
-     *                           since it is expensive.
-     */
-    void saveState(bool updateCheckSum);
 
     /*!
      * \brief Print the Force Field parameters to a file
@@ -168,29 +99,15 @@ public:
     * * * * * * * * * * * * * * * * * * * * * */
 
     /* * * * * * * * * * * * * * * * * * * * * *
-    * BEGIN: Poldata stuff                     *
-    * * * * * * * * * * * * * * * * * * * * * */
-
-    /*!
-     * \brief Copy the Force Field parameters to the Poldata structure
-     * \param[in] changed List over the parameters that have changed.
-     */
-    void toPoldata(const std::vector<bool> &changed);
-
-    /* * * * * * * * * * * * * * * * * * * * * *
-    * END: Poldata stuff                       *
-    * * * * * * * * * * * * * * * * * * * * * */
-
-    /* * * * * * * * * * * * * * * * * * * * * *
     * BEGIN: FittingTarget queries             *
     * * * * * * * * * * * * * * * * * * * * * */
 
+#ifdef OLD
     /*!
      * \brief Return the fitting targets for editing for a given dataset
      * \param[in] ims The selection dataset to return
      * \return The map of eRMS to FittingTarget, or nullptr
      */
-     #ifdef OLD
     std::map<eRMS, FittingTarget> *fittingTargets(iMolSelect ims)
     {
         auto tt = targets_.find(ims);
@@ -263,11 +180,11 @@ public:
     //  outputFile_ = "ind" + std::to_string(id_) + "/ind" + std::to_string(id_) + outputFile_.substr(firstIndex, strLength - firstIndex);
     //}
 
-    //! \return a pointer to the SharedIndividualInfo instance
-    SharedIndividualInfo *sii() { return sii_; }
+    //! \return a pointer to the StaticIndividualInfo instance
+    StaticIndividualInfo *sii() { return sii_; }
 
-    //! \return a pointer to the SharedIndividualInfo instance (for const objects)
-    SharedIndividualInfo *siiConst() const { return sii_; }
+    //! \return a pointer to the StaticIndividualInfo instance (for const objects)
+    StaticIndividualInfo *siiConst() const { return sii_; }
 
     //! \return a constant reference of the fitting targets
     // const std::map<iMolSelect, std::map<eRMS, FittingTarget>> &targets() const { return targets_; }
@@ -282,90 +199,60 @@ public:
     //Poldata *poldata() { return &pd_; }
 
     //! \return the number of Force Field parameters
-    size_t nParam() const { return param_.size(); }
+    //size_t nParam() const { return genome_.nBase(); }
 
     /*!
      * \brief Set parameter at a given index to a new value
      * \param[in] j   the index
      * \param[in] val the new value
      */
-    void setParam(const size_t j, const real val)
-    {
-        GMX_RELEASE_ASSERT(j < param_.size(), "Parameter out of range");
-        param_[j] = val;
-    }
+    //void setParam(const size_t j, const real val)
+    //{
+    //   GMX_RELEASE_ASSERT(j < genome_.nParam(), "Parameter out of range");
+    //  genome_setParam(j, val);
+    //}
 
     /*!
      * \brief Get the value of a parameter by index
      * \param[in] j the index
      * \return the value of the parameter at index \p j
      */
-    double paramAtIndex(const size_t j) const { return param_[j]; }
+    //double paramAtIndex(const size_t j) const { return genome_[j]; }
 
     /*!
      * \brief Set all parameters to new values
      * \param[in] param the new values
      */
-    void setParam(std::vector<double> param)
-    {
-        GMX_RELEASE_ASSERT(param.size() == param_.size() || param_.empty(),
-                           "Incorrect size of input parameters");
-        param_ = param;
-    }
+    //void setParam(std::vector<double> param)
+    //{
+    //  GMX_RELEASE_ASSERT(param.size() == genome_.size() || genome_.empty(),
+    //                     "Incorrect size of input parameters");
+    //  genome_ = param;
+    //}
 
     //! \return the initial vector of parameters as a const reference
-    const std::vector<double> &initialParam() const { return initialParam_; }
+    const ga::Genome &initialGenome() const { return initialGenome_; }
 
-    //! \return the current vector of parameters as a const reference
-    const std::vector<double> &param() const { return param_; }
+    //! \return the current genome as a const reference
+    const ga::Genome &genome() const { return genome_; }
 
     //! \return a pointer to the current vector of parameters
-    std::vector<double> *paramPtr() { return &param_; }
+    ga::Genome *genomePtr() { return &genome_; }
 
     //! \return the vector of best parameters as a const reference
-    const std::vector<double> &bestParam() const { return bestParam_; }
+    const ga::Genome &bestGenome() const { return bestGenome_; }
+
+    //! \return a pointer to the current vector of parameters
+    //ga::Genome *bestGenomePtr() { return &bestGenome_; }
 
     /*!
      * \brief Set a new best parameter vector
      * \param[in] param the new best parameter vector
      */
-    void setBestParam(const std::vector<double> &param) { bestParam_ = param; }
-
-    //! \return the vector of mean value calculated for each parameter as const reference
-    const std::vector<double> &pMean() const { return pmean_; }
-
-    //! \return a pointer to the vector of mean value calculated for each parameter
-    std::vector<double> *pMeanPtr() { return &pmean_; }
-
-    //! the vector of standard deviation calculated for each parameter as const reference
-    const std::vector<double> &pSigma() const { return psigma_; }
-
-    //! \return a pointer to vector of standard deviation calculated for each parameter
-    std::vector<double> *pSigmaPtr() { return &psigma_; }
-
-    //! \return the vector of number of attempted moves for each parameter as const reference
-    const std::vector<int> &attemptedMoves() const { return attemptedMoves_; }
-
-    //! \return a pointer to the vector of number of attempted moves for each parameter
-    std::vector<int> *attemptedMovesPtr() { return &attemptedMoves_; }
-
-    //! \return the vector of number of accepted moves for each parameter as const reference
-    const std::vector<int> &acceptedMoves() const { return acceptedMoves_; }
-
-    //! \return a pointer to the vector of number of accepted moves for each parameter
-    std::vector<int> *acceptedMovesPtr() { return &acceptedMoves_; }
-
-    //! \return the vector of force field parameter convergence files as const reference
-    const std::vector<FILE*> &fpc() const { return fpc_; }
-
-    //! \return a pointer to the \f$ \chi^2 \f$ convergence file
-    FILE *fpe() { return fpe_; }
-
-    //! \return a pointer to the \f$ \chi^2 \f$ convergence file (for const objects)
-    FILE *fpeConst() const { return fpe_; }
+    void setBestGenome(const ga::Genome &genome) { bestGenome_ = genome; }
 
     //! \return the name of the Force Field output file as const reference
-    const std::string &outputFile() const { return outputFile_; }
+    //const std::string &outputFile() const { return outputFile_; }
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * END: Getters and Setters                 *

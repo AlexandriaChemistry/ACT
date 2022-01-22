@@ -11,7 +11,6 @@
 
 #include <vector>
 
-#include "confighandler.h"
 #include "ga/Crossover.h"
 #include "ga/FitnessComputer.h"
 #include "ga/GeneticAlgorithm.h"
@@ -22,6 +21,9 @@
 #include "ga/Sorter.h"
 #include "ga/Terminator.h"
 
+#include "confighandler.h"
+#include "staticindividualinfo.h"
+
 struct gmx_output_env;
 struct t_commrec;
 namespace ga
@@ -30,14 +32,17 @@ namespace ga
 class HybridGAMC : public GeneticAlgorithm
 {
 private:
+    //! Who am I?
+    alexandria::StaticIndividualInfo *sii_;
     //! GAConfigHandler pointer
-    alexandria::GAConfigHandler *gach_;
+    alexandria::GAConfigHandler      *gach_;
+    //! logFile
+    FILE                             *logFile_;
 public:
     /*!
      * \brief Constructor for self-building
      */
     HybridGAMC(FILE                                *logFile,
-               struct gmx_output_env_t             *oenv,
                Initializer                         *initializer,
                FitnessComputer                     *fitnessComputer,
                Sorter                              *sorter,
@@ -46,25 +51,31 @@ public:
                Crossover                           *crossover,
                Mutator                             *mutator,
                Terminator                          *terminator,
-               alexandria::GAConfigHandler         *gach,
-               bool                                 evaluateTestSet)
-    : GeneticAlgorithm(logFile, oenv, initializer, fitnessComputer,
+               alexandria::StaticIndividualInfo    *sii,
+               alexandria::GAConfigHandler         *gach)
+    : GeneticAlgorithm(initializer, fitnessComputer,
                        sorter, probComputer, selector, crossover, mutator, terminator,
-                       gach->popSize(), evaluateTestSet), gach_(gach) {}
+                       gach->popSize()), sii_(sii), gach_(gach), logFile_(logFile) {}
  
     //! \brief Evolve the initial population
-    virtual void evolve();
+    virtual void evolve(ga::Genome *bestGenome);
     
 };
 
 class MCMC : public GeneticAlgorithm
 {
+private:
+    //! Who am I?
+    alexandria::StaticIndividualInfo *sii_;
+    //! logFile
+    FILE                             *logFile_;
+    //! Should we regularly evaluate the test set?
+    bool                               evaluateTestSet_;
 public:
     /*!
      * \brief Constructor for self-building
      */
     MCMC(FILE                                *logFile,
-         struct gmx_output_env_t             *oenv,
          Initializer                         *initializer,
          FitnessComputer                     *fitnessComputer,
          Sorter                              *sorter,
@@ -73,14 +84,16 @@ public:
          Crossover                           *crossover,
          Mutator                             *mutator,
          Terminator                          *terminator,
+         alexandria::StaticIndividualInfo    *sii,
          alexandria::GAConfigHandler         *gach,
          bool                                 evaluateTestSet)
-    : GeneticAlgorithm(logFile, oenv, initializer, fitnessComputer,
+    : GeneticAlgorithm(initializer, fitnessComputer,
                        sorter, probComputer, selector, crossover, mutator, terminator,
-                       gach->popSize(), evaluateTestSet) {}
+                       gach->popSize()),
+      sii_(sii), logFile_(logFile), evaluateTestSet_(evaluateTestSet) {}
     
     //! \brief Evolve the initial population
-    virtual void evolve();
+    virtual void evolve(ga::Genome *bestGenome);
     
 };
 

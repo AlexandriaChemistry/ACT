@@ -381,8 +381,8 @@ immStatus MyMol::GenerateAtoms(const Poldata     *pd,
             }
             else
             {
-                error_messages_.push_back(gmx::formatString("Cannot find atomtype %s (atom %d) in poldata\n", 
-                                                            cai.getObtype().c_str(), natom));
+                error_messages_.push_back(gmx::formatString("Cannot find atomtype %s (atom %d) in poldata, there are %d atomtypes.\n", 
+                                                            cai.getObtype().c_str(), natom, pd->nParticleTypes()));
 
                 return immStatus::AtomTypes;
             }
@@ -1479,10 +1479,10 @@ void MyMol::symmetrizeCharges(const Poldata  *pd,
     }
 }
 
-immStatus MyMol::GenerateAcmCharges(const Poldata       *pd,
-                                    t_commrec           *cr,
-                                    int                  maxiter,
-                                    real                 tolerance)
+immStatus MyMol::GenerateAcmCharges(const Poldata   *pd,
+                                    t_commrec       *cr,
+                                    int              maxiter,
+                                    real             tolerance)
 {
     if (QgenAcm_ == nullptr)
     {

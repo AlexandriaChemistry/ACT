@@ -28,7 +28,10 @@
 set(GA_SOURCES
            # Crossover.cpp
            # FitnessComputer.cpp
+           Dataset.cpp
            GeneticAlgorithm.cpp
+           GenePool.cpp
+           Genome.cpp
            # Initializer.cpp
            # Mutator.cpp
            ProbabilityComputer.cpp

@@ -10,14 +10,14 @@
 #ifndef ALEXANDRIA_ACMFITNESSCOMPUTER_H
 #define ALEXANDRIA_ACMFITNESSCOMPUTER_H
 
-
 #include <vector>
 
-#include "devcomputer.h"
-#include "acmindividual.h"
 #include "ga/FitnessComputer.h"
-#include "bayes.h"
 
+#include "acmindividual.h"
+#include "bayes.h"
+#include "devcomputer.h"
+#include "molgen.h"
 
 namespace alexandria
 {
@@ -30,17 +30,14 @@ class ACMFitnessComputer : public ga::FitnessComputer
 {
 
 private: 
-
-    //! Communications record
-    t_commrec *cr_;
     //! \brief The filepointer to the log file.
     FILE *logfile_;
     //! \brief A pointer to the BoundsDevComputer.
     BoundsDevComputer         *bdc_  = nullptr;
     //! \brief A vector of devComputers.
     std::vector<DevComputer*>  devComputers_;
-    //! \brief SharedIndividualInfo pointer
-    SharedIndividualInfo      *sii_ = nullptr;
+    //! \brief StaticIndividualInfo pointer
+    StaticIndividualInfo      *sii_ = nullptr;
     //! \brief MolGen pointer
     MolGen *molgen_;
     //! \brief Whether or not to remove molecules that fail to converge in the shell minimization
@@ -66,28 +63,26 @@ public:
 
     /*!
      * Constructor
-     * \param[in] cr                communcations record
      * \param[in] logfile           pointer to logfile
-     * \param[in] sii               pointer to SharedIndividualInfo
+     * \param[in] sii               pointer to StaticIndividualInfo
      * \param[in] mg                pointer to molgen
      * \param[in] removeMol         Whether or not to remove molecules that fail to converge in the shell minimization
      * \param[in] verbose           Flush output immediately rather than letting the OS buffer it. Don't use for production simulations.
      * \param[in] fullQuadrupole    Whether we consider both diagonal and off-diagonal elements of the Q_Calc matrix for optimization
      */
-    ACMFitnessComputer(      t_commrec             *cr,
-                             FILE                  *logfile,
-                             SharedIndividualInfo  *sii,
+    ACMFitnessComputer(      FILE                  *logfile,
+                             StaticIndividualInfo  *sii,
                              MolGen                *molgen,
                        const bool                   removeMol,
                        const bool                   verbose,
                        const bool                   fullQuadrupole)
-    : cr_(cr), logfile_(logfile), sii_(sii), molgen_(molgen), removeMol_(removeMol), verbose_(verbose), fullQuadrupole_(fullQuadrupole)
+    : logfile_(logfile), sii_(sii), molgen_(molgen), removeMol_(removeMol), verbose_(verbose), fullQuadrupole_(fullQuadrupole)
     {
         fillDevComputers();
     }
 
-    virtual void compute(ga::Individual *ind,
-                         ga::Target trgtFit);
+    virtual void compute(ga::Genome *genome,
+                         iMolSelect  trgtFit);
 
     /*! \brief Computes deviation from target
      * \param[in] params   The force field parameters

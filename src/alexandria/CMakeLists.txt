@@ -31,6 +31,8 @@ set(ALEXANDRIA_SOURCES
            acmindividual.cpp
            acminitializer.cpp
            act_checksum.cpp
+           acthelper.cpp
+           actmiddleman.cpp
            alex_modules.cpp
       	   molpropobservable.cpp
            experiment.cpp
@@ -93,7 +95,7 @@ set(ALEXANDRIA_SOURCES
            qtype.cpp
            readpsi4.cpp
            regression.cpp
-           sharedindividualinfo.cpp
+           staticindividualinfo.cpp
            stringutil.cpp
            symmetrize_charges.cpp
            topology.cpp

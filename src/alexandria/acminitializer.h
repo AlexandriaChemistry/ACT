@@ -12,7 +12,7 @@
 
 
 #include "ga/Initializer.h"
-#include "sharedindividualinfo.h"
+#include "staticindividualinfo.h"
 
 #include <time.h>
 #include <random>
@@ -29,8 +29,8 @@ class ACMInitializer : public ga::Initializer
 
 private:
 
-    //! SharedIndividualInfo pointer
-    SharedIndividualInfo                    *sii_;
+    //! StaticIndividualInfo pointer
+    StaticIndividualInfo                    *sii_;
     //! Whether we do random initialization or not.
     bool                                     randInit_;
     // Random number generation
@@ -39,8 +39,6 @@ private:
     std::uniform_real_distribution<double>   dis_;
     //! Seeds for random number generation
     std::vector<int>                         seeds_;
-    //! Amount of initialized individuals
-    int                                      nCreated_ = 0;
     //! Base name for Force Field output file
     std::string                              outputFile_;
 
@@ -48,13 +46,13 @@ public:
 
     /*!
      * \brief Property constructor
-     * \param[in] sii           pointer to SharedIndividualInfo instance
+     * \param[in] sii           pointer to StaticIndividualInfo instance
      * \param[in] randInit      whether we initialize the force field parameters randomly
      * \param[in] outputFile    base name for Force Field output files
      * \param[in] seed          Seed for random number initialization,
      *                          if zero it will be generated.
      */
-    ACMInitializer(SharedIndividualInfo   *sii,
+    ACMInitializer(StaticIndividualInfo   *sii,
                    bool                    randInit,
                    const std::string      &outputFile,
                    int                     seed);

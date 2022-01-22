@@ -33,7 +33,9 @@
 #include "molgen.h"
 
 #include <cmath>
+
 #include <map>
+#include <set>
 #include <vector>
 
 #include "gromacs/commandline/pargs.h"
@@ -677,7 +679,6 @@ size_t MolGen::Read(FILE            *fp,
         }
         print_memory_usage(debug);
         countTargetSize();
-        checkDataSufficiency(fp, pd);
         // Now distribute the molecules over processors.
         // Make sure the master has a bit less work to do
         // than the helpers and that in particular train
@@ -705,49 +706,62 @@ size_t MolGen::Read(FILE            *fp,
             }
             int mymolIndex = 0;
             int dest       = 0;
+            enum class MolDest { MiddleMan, Helper };
+            std::set<int> destMiddleMen;
+            for(int i = 0; i < cr_->nmiddlemen; i++)
+            {
+                destMiddleMen.insert(middleManGlobalIndex(cr_, i));
+            }
             for(auto &mymol : mymol_)
             {
                 if (mymol.datasetType() != ts.first)
                 {
                     continue;
                 }
+                std::set<int> destAll = destMiddleMen;
                 if (mymolIndex++ >= ntsNode[dest])
                 {
-                    dest = std::min(cr_->nnodes-1, dest + 1);
+                    // We have to divide the molecules in a complicated manner.
+                    // Each individual gets the complete set and divides it between
+                    // helpers. 
+                    // For pure MCMC runs we have just one individual.
+                    for(int i = 0; i < cr_->nmiddlemen; i++)
+                    {
+                        destAll.insert(middleManGlobalIndex(cr_, i)+dest);
+                    }
                 }
-                if (dest > 0)
+                for (auto &mydest : destAll)
                 {
                     mymol.setSupport(eSupport::Remote);
                     if (nullptr != debug)
                     {
-                        fprintf(debug, "Going to send %s to cpu %d\n", mymol.getMolname().c_str(), dest);
+                        fprintf(debug, "Going to send %s to cpu %d\n", mymol.getMolname().c_str(), mydest);
                     }
-                    gmx_send_int(cr_, dest, 1);
-                    CommunicationStatus cs = mymol.Send(cr_, dest);
+                    gmx_send_int(cr_, mydest, 1);
+                    CommunicationStatus cs = mymol.Send(cr_, mydest);
                     if (CS_OK != cs)
                     {
                         imm = immStatus::CommProblem;
                     }
                     else
                     {
-                        imm = static_cast<immStatus>(gmx_recv_int(cr_, dest));
+                        imm = static_cast<immStatus>(gmx_recv_int(cr_, mydest));
                     }
 
                     if (imm != immStatus::OK)
                     {
                         fprintf(stderr, "Molecule %s was not accepted on node %d - error %s\n",
-                                mymol.getMolname().c_str(), dest, alexandria::immsg(imm));
+                                mymol.getMolname().c_str(), mydest, alexandria::immsg(imm));
                     }
                     else if (nullptr != debug)
                     {
                         fprintf(debug, "Succesfully beamed over %s\n", mymol.getMolname().c_str());
                     }
                 }
-                else
-                {
-                    mymol.setSupport(eSupport::Local);
-                    nLocal.find(mymol.datasetType())->second += 1;
-                }
+                // Now modify the local copy
+                mymol.setSupport(eSupport::Local);
+                nLocal.find(mymol.datasetType())->second += 1;
+                
                 if ((immStatus::OK != imm) && (nullptr != debug))
                 {
                     fprintf(debug, "IMM: Dest: %d %s - %s\n",
@@ -846,18 +860,37 @@ size_t MolGen::Read(FILE            *fp,
                 mymol_.push_back(std::move(mymol));
 
                 nLocal.find(mymol.datasetType())->second += 1;
-                if (nullptr != debug)
+                // TODO Checks for energy should be done only when energy is a target for fitting.
+                if (false)
                 {
                     double emol;
-                    GMX_RELEASE_ASSERT(mymol.energy(MolPropObservable::EMOL, &emol),
-                                       gmx::formatString("No molecular energy for %s",
-                                                         mymol.getMolname().c_str()).c_str());
-                    double hform;
-                    GMX_RELEASE_ASSERT(mymol.energy(MolPropObservable::DHFORM, &hform),
-                                       gmx::formatString("No DeltaHform for %s",
-                                                         mymol.getMolname().c_str()).c_str());
-                    fprintf(debug, "Added molecule %s. Hform = %g Emol = %g\n",
-                            mymol.getMolname().c_str(), hform, emol);
+                    if (!mymol.energy(MolPropObservable::EMOL, &emol))
+                    {
+                        if (nullptr != debug)
+                        {
+                            fprintf(debug, "No molecular energy for %s",
+                                    mymol.getMolname().c_str());
+                        }
+                        imm = immStatus::NoData;
+                    }
+                    if (immStatus::OK == imm)
+                    {
+                        double hform;
+                        if (!mymol.energy(MolPropObservable::DHFORM, &hform))
+                        {
+                            if (nullptr != debug)
+                            {
+                                fprintf(debug, "No DeltaHform for %s",
+                                        mymol.getMolname().c_str());
+                            }
+                            imm = immStatus::NoData;
+                        }
+                        else if (nullptr != debug)
+                        {
+                            fprintf(debug, "Added molecule %s. Hform = %g Emol = %g\n",
+                                    mymol.getMolname().c_str(), hform, emol);
+                        }
+                    }
                 }
             }
             gmx_send_int(cr_, 0, static_cast<int>(imm));
@@ -868,6 +901,10 @@ size_t MolGen::Read(FILE            *fp,
         }
         countTargetSize();
     }
+    // After all molecules have been sent around let's check whether we have
+    // support for them, at least on the middlemen but may be needed everywhere.
+    // TODO Check that this is correct.
+    checkDataSufficiency(fp, pd);
     if (fp)
     {
         fprintf(fp, "There were %d warnings because of zero error bars.\n", nwarn);

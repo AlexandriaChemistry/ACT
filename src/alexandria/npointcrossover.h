@@ -61,10 +61,10 @@ public:
         crossoverPoints_[crossoverPoints_.size() - 1] = chromosomeLength;
     }
 
-    virtual void offspring(ga::Individual  *parent1,
-                           ga::Individual  *parent2,
-                           ga::Individual  *child1,
-                           ga::Individual  *child2);
+    virtual void offspring(ga::Genome *parent1,
+                           ga::Genome *parent2,
+                           ga::Genome *child1,
+                           ga::Genome *child2);
 
 };
 

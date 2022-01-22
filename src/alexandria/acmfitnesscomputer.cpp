@@ -9,6 +9,8 @@
 
 #include "acmfitnesscomputer.h"
 
+#include "ga/Dataset.h"
+#include "ga/Genome.h"
 
 namespace alexandria
 {
@@ -18,35 +20,37 @@ namespace alexandria
 * BEGIN: ACMFitnessComputer            *
 * * * * * * * * * * * * * * * * * * * */
 
-void ACMFitnessComputer::compute(ga::Individual *ind,
-                                 ga::Target      trgtFit)
+void ACMFitnessComputer::compute(ga::Genome *genome,
+                                 iMolSelect  trgtFit)
 {
-    if (nullptr == ind)
+    if (nullptr == genome)
     {
-        GMX_THROW(gmx::InternalError("Empty individual"));
+        GMX_THROW(gmx::InternalError("Empty genome"));
     }
-    const iMolSelect ims = trgtFit == ga::Target::Train ? iMolSelect::Train : iMolSelect::Test;
-    ACMIndividual *tmpInd = static_cast<ACMIndividual*>(ind);
+    //ACMIndividual *tmpInd = static_cast<ACMIndividual*>(ind);
     std::vector<bool> changed;
     // TODO: the middle man should know/decide which parameters have changed.
     changed.resize(sii_->nParam(), true);
-    tmpInd->toPoldata(changed);
-    const double fitness = calcDeviation(tmpInd->paramPtr(), CalcDev::Parallel, ims);
-    if (ims == iMolSelect::Train)
-    {
-        tmpInd->setFitnessTrain(fitness);
-    }
-    else
-    {
-        tmpInd->setFitnessTest(fitness);
-    }
+    sii_->updatePoldata(changed, genome);
+    double fitness = calcDeviation(genome->basesPtr(),
+                                   CalcDev::Parallel, trgtFit);
+    genome->setFitness(trgtFit, fitness);
     if (debug)
     {
-        tmpInd->printParameters(debug);
+        // TODO fix printing
+        //tmpInd->printParameters(debug);
     }
     if (verbose_ && logfile_)
     {
-        tmpInd->printChiSquared(cr_, logfile_, ims);  // Will only be done by MASTER
+        for(auto &imsn : iMolSelectNames())
+        {
+            fprintf(logfile_, "\nComponents of fitting function for %s set\n",
+                    imsn.second);
+            for (const auto &ft : sii_->targets().find(imsn.first)->second)
+            {
+                ft.second.print(logfile_);
+            }
+        }
     }
 }
 
@@ -56,30 +60,35 @@ double ACMFitnessComputer::calcDeviation(std::vector<double> *params,
 {
     // Send / receive parameters
     std::vector<double> *myparams;
-    if (MIDDLEMAN(cr_))
+    auto cr = sii_->commrecPtr();
+    if (actMiddleMan(cr))
     {
-        if (PAR(cr_) && calcDev != CalcDev::Master)
+        if (PAR(cr) && calcDev != CalcDev::Master)
         {
             // Send only to my helpers
-            for (int dest = cr_->nodeid+1; dest < cr_->nodeid+cr_->nhelper_per_middleman; dest++)
+            for (int dest = cr->nodeid+1; dest < cr->nodeid+1+cr->nhelper_per_middleman; dest++)
             {
-                gmx_send_int(cr_, dest, static_cast<int>(calcDev));
-                gmx_send_int(cr_, dest, static_cast<int>(ims));
-                gmx_send_double_vector(cr_, dest, params);
+                gmx_send_int(cr, dest, static_cast<int>(calcDev));
+                gmx_send_int(cr, dest, static_cast<int>(ims));
+                gmx_send_double_vector(cr, dest, params);
+                sii_->poldata()->sendEemprops(cr, dest);
+                sii_->poldata()->sendParticles(cr, dest);
             }
         }
         myparams = params;
     }
-    else
+    else if (!MASTER(cr))
     {
-        // If we have e.g. 3 middlemen with 1 helper each, we have
-        // M H M H M H. Now who is my middleman?
+        // If we have e.g. 1 overlord and 3 middlemen with 1 helper each, we have
+        // O M H M H M H. Now who is my middleman?
         // Do integer division, rounding down, the multiply again.
-        int src = (cr_->nodeid / cr_->nhelper_per_middleman) * cr_->nhelper_per_middleman;
-        calcDev  = static_cast<CalcDev>(gmx_recv_int(cr_, src));
-        ims      = static_cast<iMolSelect>(gmx_recv_int(cr_, src));
+        int src = 1+((cr->nodeid-1) / cr->nhelper_per_middleman) * cr->nhelper_per_middleman;
+        calcDev  = static_cast<CalcDev>(gmx_recv_int(cr, src));
+        ims      = static_cast<iMolSelect>(gmx_recv_int(cr, src));
         myparams = new std::vector<double>;
-        gmx_recv_double_vector(cr_, src, myparams);
+        gmx_recv_double_vector(cr, src, myparams);
+        sii_->poldata()->receiveEemprops(cr, src);
+        sii_->poldata()->receiveParticles(cr, src);
     }
 
     // If final call, return -1
@@ -94,20 +103,10 @@ double ACMFitnessComputer::calcDeviation(std::vector<double> *params,
     // Gather fitting targets
     std::map<eRMS, FittingTarget> *targets = sii_->fittingTargets(ims);
 
-    // If MIDDLEMAN, penalize out of bounds
-    if (MIDDLEMAN(cr_) && bdc_)
+    // If actMiddleMan, penalize out of bounds
+    if (actMiddleMan(cr) && bdc_)
     {
-        bdc_->calcDeviation(nullptr, targets, sii_->poldata(), *myparams, cr_);
-    }
-
-    // If we are running in parallel, spread/receive Poldata properties
-    if (PAR(cr_))
-    {
-        if (calcDev == CalcDev::Parallel)
-        {
-            sii_->poldata()->broadcast_eemprop(cr_);
-            sii_->poldata()->broadcast_particles(cr_);
-        }
+        bdc_->calcDeviation(nullptr, targets, sii_->poldata(), *myparams, cr);
     }
 
     // Loop over molecules
@@ -137,7 +136,7 @@ double ACMFitnessComputer::calcDeviation(std::vector<double> *params,
                 mymol.zetaToAtoms(sii_->poldata(), mymol.atoms());
             }
             // Run charge generation including shell minimization
-            immStatus imm = mymol.GenerateAcmCharges(sii_->poldata(), cr_,
+            immStatus imm = mymol.GenerateAcmCharges(sii_->poldata(), cr,
                                                      molgen_->qcycle(), molgen_->qtol());
 
             // Check whether we have to disable this compound
@@ -151,13 +150,13 @@ double ACMFitnessComputer::calcDeviation(std::vector<double> *params,
 
             for (DevComputer *mydev : devComputers_)
             {
-                mydev->calcDeviation(&mymol, targets, sii_->poldata(), *myparams, cr_);
+                mydev->calcDeviation(&mymol, targets, sii_->poldata(), *myparams, cr);
             }
         }
     }
     // Sum the terms of the chi-squared once we have done calculations
     // for all the molecules.
-    sii_->sumChiSquared(cr_, calcDev == CalcDev::Parallel, ims);
+    sii_->sumChiSquared(cr, calcDev == CalcDev::Parallel, ims);
 
     numberCalcDevCalled_ += 1;
     

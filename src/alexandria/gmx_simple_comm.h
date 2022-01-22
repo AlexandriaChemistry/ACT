@@ -66,4 +66,23 @@ void gmx_send_int(const t_commrec *cr, int dest, int d);
 
 int gmx_recv_int(const t_commrec *cr, int src);
 
+//! \return true if I am a middleman
+bool actMiddleMan(const t_commrec *cr);
+
+//! \return true if I am a helper
+bool actHelper(const t_commrec *cr);
+
+//! \return the middleman index for this processor (0..N-1 for N middlemen)
+int middleManLocalIndex(const t_commrec *cr);
+
+//! \return the globale middleman index for this processor (0..N-1 for N middlemen)
+int middleManGlobalIndex(const t_commrec *cr);
+
+/*! \brief Compute global middleman index
+ * \param[in] cr        Communication record
+ * \param[in] middleman The middleman index (0 .. N-1 for N middle men)
+ * \return global index
+ */
+int middleManGlobalIndex(const t_commrec *cr, int middleman);
+
 #endif

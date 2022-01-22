@@ -43,11 +43,11 @@ double BoundsDevComputer::l2_regularizer(      double          x,
 }
 
 
-void BoundsDevComputer::calcDeviation(gmx_unused MyMol                             *mymol,
-                                      gmx_unused std::map<eRMS, FittingTarget>     *targets,
-                                            Poldata                           *poldata,
-                                      const std::vector<double>               &param,
-                                      gmx_unused      t_commrec                         *commrec)
+void BoundsDevComputer::calcDeviation(gmx_unused MyMol                         *mymol,
+                                      gmx_unused std::map<eRMS, FittingTarget> *targets,
+                                            Poldata                             *poldata,
+                                      const std::vector<double>                 &param,
+                                      gmx_unused t_commrec                      *commrec)
 {
     double bound = 0;
     size_t n     = 0;
@@ -86,7 +86,7 @@ void ChargeCM5DevComputer::calcDeviation(MyMol                                *m
                                          std::map<eRMS, FittingTarget>        *targets,
                                          Poldata                              *poldata,
                                          gmx_unused const std::vector<double> &param,
-                                         gmx_unused      t_commrec            *commrec)
+                                         gmx_unused t_commrec                 *commrec)
 {
     double qtot = 0;
     int i = 0;
@@ -246,11 +246,11 @@ void EspDevComputer::dumpQX(FILE *fp, MyMol *mol, const std::string &info)
 * BEGIN: PolarDevComputer                  *
 * * * * * * * * * * * * * * * * * * * * * */
 
-void PolarDevComputer::calcDeviation(      MyMol                             *mymol,
-                                           std::map<eRMS, FittingTarget>     *targets,
-                                           gmx_unused Poldata                           *poldata,
-                                     gmx_unused const std::vector<double>               &param,
-                                           t_commrec                         *commrec)
+void PolarDevComputer::calcDeviation(MyMol                                *mymol,
+                                     std::map<eRMS, FittingTarget>        *targets,
+                                     gmx_unused Poldata                   *poldata,
+                                     gmx_unused const std::vector<double> &param,
+                                     t_commrec                            *commrec)
 {
     double diff2 = 0;
     mymol->CalcPolarizability(10, commrec, nullptr);
@@ -278,11 +278,11 @@ void PolarDevComputer::calcDeviation(      MyMol                             *my
 * BEGIN: QuadDevComputer                   *
 * * * * * * * * * * * * * * * * * * * * * */
 
-void QuadDevComputer::calcDeviation(      MyMol                             *mymol,
-                                          std::map<eRMS, FittingTarget>     *targets,
-                                          gmx_unused Poldata                           *poldata,
-                                    gmx_unused const std::vector<double>               &param,
-                                    gmx_unused     t_commrec                         *commrec)
+void QuadDevComputer::calcDeviation(MyMol                                *mymol,
+                                    std::map<eRMS, FittingTarget>        *targets,
+                                    gmx_unused Poldata                   *poldata,
+                                    gmx_unused const std::vector<double> &param,
+                                    gmx_unused t_commrec                 *commrec)
 {
     QtypeProps *qelec = mymol->qTypeProps(qType::Elec);
     QtypeProps *qcalc = mymol->qTypeProps(qType::Calc);
@@ -308,11 +308,11 @@ void QuadDevComputer::calcDeviation(      MyMol                             *mym
 * BEGIN: MuDevComputer                     *
 * * * * * * * * * * * * * * * * * * * * * */
 
-void MuDevComputer::calcDeviation(      MyMol                             *mymol,
-                                        std::map<eRMS, FittingTarget>     *targets,
-                                        gmx_unused Poldata                           *poldata,
-                                  gmx_unused const std::vector<double>               &param,
-                                        gmx_unused t_commrec                         *commrec)
+void MuDevComputer::calcDeviation(MyMol                                *mymol,
+                                  std::map<eRMS, FittingTarget>        *targets,
+                                  gmx_unused Poldata                   *poldata,
+                                  gmx_unused const std::vector<double> &param,
+                                  gmx_unused t_commrec                 *commrec)
 {
     QtypeProps *qelec = mymol->qTypeProps(qType::Elec);
     QtypeProps *qcalc = mymol->qTypeProps(qType::Calc);
@@ -338,11 +338,11 @@ void MuDevComputer::calcDeviation(      MyMol                             *mymol
 * BEGIN: EnergyDevComputer                 *
 * * * * * * * * * * * * * * * * * * * * * */
 
-void EnergyDevComputer::calcDeviation(      MyMol                             *mymol,
-                                            std::map<eRMS, FittingTarget>     *targets,
-                                            gmx_unused Poldata                           *poldata,
-                                      const gmx_unused std::vector<double>               &param,
-                                            gmx_unused t_commrec                         *commrec)
+void EnergyDevComputer::calcDeviation(MyMol                                *mymol,
+                                      std::map<eRMS, FittingTarget>        *targets,
+                                      gmx_unused Poldata                   *poldata,
+                                      gmx_unused const std::vector<double> &param,
+                                      gmx_unused t_commrec                 *commrec)
 {
     double emol;
     GMX_RELEASE_ASSERT(mymol->energy(MolPropObservable::EMOL, &emol),

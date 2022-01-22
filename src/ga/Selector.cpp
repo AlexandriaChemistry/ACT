@@ -17,13 +17,13 @@ namespace ga
 * BEGIN: RouletteSelector                  *
 * * * * * * * * * * * * * * * * * * * * * */
 
-int RouletteSelector::select(const std::vector<Individual*> &pop)
+int RouletteSelector::select(const std::vector<Genome> *pop)
 {
     double num = dis(gen);
     size_t i = 0;
-    while (num > 0 and i < pop.size())
+    while (num > 0 and i < pop->size())
     {
-        num -= pop[i]->probability();
+        num -= (*pop)[i].probability();
         i++;
     }
     return i - 1;

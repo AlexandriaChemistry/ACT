@@ -2,30 +2,22 @@
  * Implements part of the alexandria program.
  * \author Julian Ramon Marrades Furquet <julian.marrades@hotmail.es>
  */
-
-
 #ifndef GA_MUTATOR_H
 #define GA_MUTATOR_H
-
 
 #include <random>
 #include <time.h>
 
-#include "Individual.h"
-
+#include "Genome.h"
 
 namespace ga
 {
-
-
 /*!
  * \brief Abstract class for gene mutation of Individual objects
  */
 class Mutator
 {
-
 private:
-
     // Ranom number generation
     std::random_device                      rd_base;
     std::mt19937                            gen_base;
@@ -47,12 +39,15 @@ public:
 
     /*!
      * \brief Mutate genes of an Individual (in place)
-     * \param[in] individual    pointer to the Individual to mutate
-     * \param[in] prMut         probability of mutating a gene
+     * \param[inout] genome     Pointer to the genome to mutate
+     * \param[out]   bestGenome Pointer to the best genome found
+     * \param[in]    prMut      Probability of mutating a gene
      */
-    virtual void mutate(Individual   *ind,
-                        double        prMut) = 0;
+    virtual void mutate(Genome *genome,
+                        Genome *bestGenome,
+                        double  prMut) = 0;
 
+    virtual void finalize() = 0;
 };
 
 

@@ -10,12 +10,11 @@
 #ifndef ALEXANDRIA_MCMCMUTATOR_H
 #define ALEXANDRIA_MCMCMUTATOR_H
 
-
+#include "ga/Genome.h"
 #include "ga/Mutator.h"
 #include "confighandler.h"
 #include "acmfitnesscomputer.h"
 #include "acmindividual.h"
-
 
 namespace alexandria
 {
@@ -31,17 +30,33 @@ class MCMCMutator : public ga::Mutator
 
 private:
     //! Did we find a minimum yet?
-    bool                bMinimum_ = false;
+    bool                  bMinimum_ = false;
     //! Pointer to BayesConfigHandler
-    BayesConfigHandler *bch_;
+    BayesConfigHandler   *bch_     = nullptr;
     //! Pointer to ACMFitnessComputer
-    ACMFitnessComputer *fitComp_;
-    //! Pointer to SharedIndividualInfo
-    SharedIndividualInfo *sii_;
+    ACMFitnessComputer   *fitComp_ = nullptr;
+    //! Pointer to Individual
+    StaticIndividualInfo *sii_     = nullptr;
+    //! The initial genome is stored for printing
+    ga::Genome            initialGenome_;
+    //! Attempted changes for each parameter
+    std::vector<int>      attemptedMoves_;
+    //! Accepted changes for each parameter
+    std::vector<int>      acceptedMoves_;
+    //! Mean of each parameter
+    std::vector<double>   pMean_;
+    //! Standard deviation of each parameter
+    std::vector<double>   pSigma_;
+    //! Convergence file for each parameter type
+    std::vector<FILE*>    fpc_;
+    //! Convergence file for Chi2
+    FILE                 *fpe_ = nullptr;
     //! Pointer to log file (may be nullptr)
-    FILE *logfile_;
-    //! Flush output immediately rather than letting the OS buffer it. Don't use for production simulations.
-    bool verbose_;
+    FILE                 *logfile_ = nullptr;
+    /*! Flush output immediately rather than letting the OS buffer it.
+     * Don't use for production simulations.
+     */
+    bool                  verbose_ = false;
 
     // Random number generation
     std::random_device                      rd;
@@ -50,97 +65,93 @@ private:
 
     /*!
      * \brief Change force field parameter at a given index for an individual
-     * \param[in] ind   pointer to the individual
+     * \param[in] genome   pointer to the genome
      * \param[in] j     index of the parameter to change
      */
-    void changeParam(ACMIndividual *ind,
-                     size_t         j);
+    void changeParam(ga::Genome *genome,
+                     size_t  j);
 
     /*!
      * \brief Print new minimum to log file and, if necessary, print params to debug file
-     * \param[in] ind                   pointer to individual
-     * \param[in] bEvaluate_testset     true if test set is evaluated, false otherwise
-     * \param[in] xiter                 fractional iteration. E.g., if we are halfway through iteration 3, it is 3.5
-     * \param[in] currEval              current chi2 in training set
-     * \param[in] currEval_testset      current chi2 in test set
+     * \param[in] genome            The genome
+     * \param[in] bEvaluate_testset true if test set is evaluated, false otherwise
+     * \param[in] xiter             fractional iteration. E.g., if we are halfway through iteration 3, it is 3.5
      */
-    void fprintNewMinimum(      ACMIndividual  *ind,
-                          const bool            bEvaluate_testset,
-                          const double          xiter,
-                          const double          currEval,
-                          const double          currEval_testset);     
+    void printNewMinimum(const ga::Genome *genome,
+                         bool              bEvaluate_testset,
+                         double            xiter);
 
     /*!
      * \brief Print parameter values to their respective surveillance files
-     * \param[in] ind   pointer to the individual
-     * \param[in] xiter fractional iteration. E.g., if we are halfway through iteration 3, it is 3.5
+     * \param[in] genome Pointer to the genome
+     * \param[in] xiter  Fractional iteration. E.g., if we are halfway through iteration 3, it is 3.5
      */
-    void fprintParameterStep(      ACMIndividual   *ind,
-                             const double           xiter);                                          
+    void printParameterStep(ga::Genome          *genome,
+                            double               xiter);                                          
 
     /*!
-     * \brief Write \f$ \chi^2 \f$ value of an individual to its convergence file, if it exists
-     * \param[in] ind                   pointer to individual
+     * \brief Write \f$ \chi^2 \f$ value of a genome to its convergence file, if it exists
+     * \param[in] ind                   pointer to genome
      * \param[in] bEvaluate_testset     true if test set is evaluated, false otherwise
      * \param[in] xiter                 fractional iteration. E.g., if we are halfway through iteration 3, it is 3.5
-     * \param[in] prevEval              \f$ \chi^2 \f$ for training set
-     * \param[in] prevEval_testset      \f$ \chi^2 \f$ for test set
      */
-    void fprintChi2Step(      ACMIndividual    *ind,
-                        const bool              bEvaluate_testset,
-                        const double            xiter,
-                        const double            prevEval,
-                        const double            prevEval_testset);
+    void printChi2Step(ga::Genome  *ind,
+                       bool         bEvaluate_testset,
+                       double       xiter);
 
     //! \return a random index of the force field parameter vector
     size_t randIndex() { return dis(gen); }
 
     /*!
      * \brief Compute mean and standard deviation for each force field parameter
-     * \param[in] pmean         pointer to mean vector in the individual
-     * \param[in] psigma        pointer to standard deviation vector in the individual
-     * \param[in] nParam        number of parameters in the system
      * \param[in] sum           over "nsum" iterations, the sum of each parameter
      * \param[in] nsum          number of iterations to compute statistics over
      * \param[in] sum_of_sq     over "nsum" iterations, the sum of each parameter squared
      */
-    void computeMeanSigma(      std::vector<double>    *pmean,
-                                std::vector<double>    *psigma,
-                          const size_t                  nParam,
-                          const std::vector<double>    &sum,
+    void computeMeanSigma(const std::vector<double>    &sum,
                           const int                     nsum,
                                 std::vector<double>    *sum_of_sq);
 
     /*!
      * \brief Take a step of MCMC by attempting to alter a parameter
-     * \param[in] ind               pointer to individual
-     * \param[in] param             pointer to parameter vector of the individual
+     * \param[inout] genome         pointer to a genome
+     * \param[out] bestGenome       pointer to the best genome, to be filled
      * \param[in] changed           a reference to a vector which has true for parameters that change and false otherwise
-     * \param[in] prevEval          pointer to a double storage with the previous \f$ \chi^2 \f$ for training set
-     * \param[in] prevEval_testset  a pointer to a double storage with the previous \f$ \chi^2 \f$ for test set
+     * \param[in] prevEval          pointer to a map with the previous \f$ \chi^2 \f$
+     * \param[in] minEval           pointer to the minimum \f$ \chi^2 \f$ found so far for the training set
      * \param[in] bEvaluate_testset true if evaluation should be done on test set, false otherwise
      * \param[in] pp                index of inner loop over number of parameters
      * \param[in] iter              current iteration number
      * \param[in] beta0             pointer to beta for annealing
-     * \param[in] nParam            number of parameters in the model
-     * \param[in] minEval           pointer to the minimum \f$ \chi^2 \f$ found so far for the training set
      */
-    void stepMCMC(      ACMIndividual          *ind,
-                        std::vector<double>    *param,
-                        std::vector<bool>      *changed,
-                        double                 *prevEval,
-                        double                 *prevEval_testset,
-                  const bool                    evaluate_testset,
-                  const size_t                  pp,
-                  const int                     iter,
-                        double                 *beta0,
-                  const size_t                  nParam,
-                        double                 *minEval);
+    void stepMCMC(ga::Genome                   *genome,
+                  ga::Genome                   *bestGenome,
+                  std::vector<bool>            *changed,
+                  std::map<iMolSelect, double> *prevEval,
+                  std::map<iMolSelect, double> *minEval,
+                  bool                          evaluate_testset,
+                  size_t                        pp,
+                  int                           iter,
+                  double                       *beta0);
+
+    /* * * * * * * * * * * * * * * * * * * * * *
+    * BEGIN: File stuff                        *
+    * * * * * * * * * * * * * * * * * * * * * */
+
+    //! \brief Create a working directory
+    void makeWorkDir();
+
+
+    /* * * * * * * * * * * * * * * * * * * * * *
+    * END: File stuff                          *
+    * * * * * * * * * * * * * * * * * * * * * */
+
+#ifdef OLD
 
     /*!
      * \brief Perform a mutation step
-     * \param[in] ind               pointer to individual
-     * \param[in] param             pointer to parameter vector of the individual
+     * \param[in] ind               pointer to a genome
+     * \param[in] param             pointer to parameter vector of the genome
      * \param[in] changed           a reference to a vector which has true for parameters that change and false otherwise
      * \param[in] prevEval          pointer to a double storage with the previous \f$ \chi^2 \f$ for training set
      * \param[in] pp                index of inner loop over number of parameters
@@ -148,7 +159,7 @@ private:
      * \param[in] beta0             pointer to beta for annealing
      * \param[in] nParam            number of parameters in the model
      */
-    void stepMutation(      ACMIndividual          *ind,
+    void stepMutation(      ga::Genome             *ind,
                             std::vector<double>    *param,
                             std::vector<bool>      *changed,
                             double                 *prevEval,
@@ -156,9 +167,9 @@ private:
                       const int                     iter,
                             double                 *beta0,
                       const size_t                  nParam);
-   void mutateOld(      ga::Individual   *individual,
-                        const double            prMut);
-
+   void mutateOld(      ga::Genome   *individual,
+                        const double  prMut);
+#endif
 public:
 
     /*!
@@ -167,41 +178,25 @@ public:
      * \param[in] verbose   Flush output immediately rather than letting the OS buffer it. Don't use for production simulations.
      * \param[in] bch       pointer to BayesConfigHandler object
      * \param[in] fitComp   pointer to ACMFitnessComputer object
-     * \param[in] sii       pointer to SharedIndividualInfo object
+     * \param[in] sii       pointer to StaticIndividualInfo object
      * \param[in] nParam    size of the force field parameter vector
      */
-    MCMCMutator(      FILE                     *logfile,
-                const bool                      verbose,
-                      BayesConfigHandler       *bch,
-                      ACMFitnessComputer       *fitComp,
-                      SharedIndividualInfo     *sii,
-                const size_t                    nParam)
-    : Mutator(), gen(rd()), dis(std::uniform_int_distribution<size_t>(0, nParam-1))
-    {
-        if (bch->seed() == 0)
-        {
-            gen.seed(::time(NULL));
-        }
-        else
-        {
-            gen.seed(bch->seed());
-        }
-        logfile_ = logfile;
-        verbose_ = verbose;
-        bch_     = bch;
-        fitComp_ = fitComp;
-        sii_     = sii;
-    };
-
+    MCMCMutator(FILE               *logfile,
+                bool                verbose,
+                BayesConfigHandler *bch,
+                ACMFitnessComputer *fitComp,
+                StaticIndividualInfo *sii);
  
     /*!
      * \brief Run the Markov chain Monte carlo (MCMC) simulation
-     * \param[in] ind               pointer to the individual
-     * \param[in] evaluate_testset  If true, evaluate the energy on
-     *                              the test set.
+     * \param[in]  genome     pointer to the genome
+     * \param[out] bestGenome pointer to the best genome
+     * \param[in]  prMut      Probability for mutation. 
+     *                   Abused as a boolean for evaluating the test set here, if > 0.
      */
-    virtual void mutate(ga::Individual *ind,
-                        double          prMut);
+    virtual void mutate(ga::Genome *genome,
+                        ga::Genome *bestGenome,
+                        double      prMut);
 
     //! \return the number of calls to the objective function MCMCMutator::MCMC() routine
     size_t numberObjectiveFunctionCalls() const
@@ -214,20 +209,36 @@ public:
 
     /*!
      * \brief Print the MC statistics to a file.
-     * \param[in] ind   pointer to the indivifdual
-     * \param[in] fp    File pointer to print to
+     * \param[in] fp         File pointer to print to
+     * \param[in] bestGenome The genome with highest fitness
      */
-    void printMonteCarloStatistics(ACMIndividual   *ind,
-                                   FILE            *fp);
+    void printMonteCarloStatistics(FILE             *fp,
+                                   const ga::Genome *bestGenome);
 
     /*!
      * \brief Perform a sensitivity analysis by systematically changing all parameters and re-evaluating the \f$ \chi^2 \f$.
-     * \param[in] ind   pointer to individual
-     * \param[in] ims   Dataset to perform sensitivity analysis on
+     * \param[in] genome Pointer to genome
+     * \param[in] ims    Dataset to perform sensitivity analysis on
      */
-    void sensitivityAnalysis(ACMIndividual  *ind,
-                             iMolSelect      ims);
+    void sensitivityAnalysis(ga::Genome *genome,
+                             iMolSelect  ims);
 
+    /*!
+     * \brief Open parameter convergence files
+     * \param[in] oenv the GROMACS output environment
+     */
+    void openParamConvFiles(const gmx_output_env_t *oenv);
+
+    /*!
+     * \brief Open a \f$ \chi^2 \f$ convergence file
+     * \param[in] oenv              the GROMACS output environment
+     * \param[in] bEvaluate_testset whether the test set will be evaluated in MCMC
+     */
+    void openChi2ConvFile(const gmx_output_env_t    *oenv,
+                          const bool                 bEvaluate_testset);
+    
+    //! Close \f$ \chi^2 \f$ and parameter convergence files
+    void finalize();
 };
 
 

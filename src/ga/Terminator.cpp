@@ -8,6 +8,8 @@
 
 #include "gromacs/utility/basedefinitions.h"
 
+#include "GenePool.h"
+
 namespace ga
 {
 
@@ -16,8 +18,8 @@ namespace ga
 * BEGIN: GenerationTerminator              *
 * * * * * * * * * * * * * * * * * * * * * */
 
-bool GenerationTerminator::terminate(gmx_unused const std::vector<Individual*>  &pop,
-                                                const int                        generationNumber)
+bool GenerationTerminator::terminate(gmx_unused const GenePool *pool,
+                                                const int       generationNumber)
 {
     return generationNumber >= maxGenerations_;
 }

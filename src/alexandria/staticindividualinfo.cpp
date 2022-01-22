@@ -6,7 +6,9 @@
  */
 
 
-#include "sharedindividualinfo.h"
+#include "staticindividualinfo.h"
+
+#include "ga/Genome.h"
 
 #include "poldata_xml.h"
 #include "memory_check.h"
@@ -15,15 +17,29 @@
 namespace alexandria
 {
 
+StaticIndividualInfo::StaticIndividualInfo(t_commrec         *cr) : cr_(cr)
+{
+    fillFittingTargets();
+    id_ = middleManGlobalIndex(cr);
+    if (id_ >= 0)
+    {
+        prefix_ = gmx::formatString("ind%d/", id_);
+    }
+}
+
+void StaticIndividualInfo::setOutputFile(const std::string &outputFile)
+{
+    outputFile_ = prefix_ + "ind" + std::to_string(id_) + "-" + outputFile;
+}
 
 /* * * * * * * * * * * * * * * * * * * * * *
 * BEGIN: Poldata stuff                     *
 * * * * * * * * * * * * * * * * * * * * * */
 
-void SharedIndividualInfo::fillPoldata(      FILE *fp,
+void StaticIndividualInfo::fillPoldata(      FILE *fp,
                                        const char *pd_fn)
 {
-    if (MASTER(cr_))
+    if (!actHelper(cr_))
     {
         GMX_RELEASE_ASSERT(nullptr != pd_fn, "Give me a poldata file name");
         try
@@ -34,15 +50,58 @@ void SharedIndividualInfo::fillPoldata(      FILE *fp,
         print_memory_usage(debug);
     }
     /* Broadcasting Force Field Data from Master to Helper nodes */
-    if (PAR(cr_))
+    if (PAR(cr_) && !MASTER(cr_))
     {
-        pd_.broadcast(cr_);
+        pd_.sendToHelpers(cr_);
     }
     if (nullptr != fp)
     {
         fprintf(fp, "There are %d atom types in the input file %s.\n\n",
                 static_cast<int>(pd_.getNatypes()), pd_fn);
     }
+}
+
+void StaticIndividualInfo::updatePoldata(const std::vector<bool> &changed,
+                                         const ga::Genome        *genome)
+{
+    size_t n = 0;
+    for (const auto &optIndex : optIndex())
+    {
+        if (changed[n])
+        {
+            auto                 iType = optIndex.iType();
+            ForceFieldParameter *p  = nullptr;
+            if (iType != InteractionType::CHARGE)
+            {
+                p = pd_.findForces(iType)->findParameterType(optIndex.id(), optIndex.parameterType());
+            }
+            else if (pd_.hasParticleType(optIndex.particleType()))
+            {
+                p = pd_.findParticleType(optIndex.particleType())->parameter(optIndex.parameterType());
+            }
+            GMX_RELEASE_ASSERT(p, gmx::formatString("Could not find parameter %s", optIndex.id().id().c_str()).c_str());
+            if (p)
+            {
+                p->setValue(genome->base(n));
+                // TODO fix the uncertainty
+                // p->setUncertainty(psigma_[n]);
+            }
+        }
+        n++;
+    }
+    GMX_RELEASE_ASSERT(n == changed.size(),
+                       gmx::formatString("n = %zu changed.size() = %zu",
+                                         n, changed.size()).c_str());
+}
+
+void StaticIndividualInfo::saveState(bool updateCheckSum)
+{
+    pd_.updateTimeStamp();
+    if (updateCheckSum)
+    {
+        pd_.updateCheckSum();
+    }
+    writePoldata(outputFile_, &pd_, false);
 }
 
 /* * * * * * * * * * * * * * * * * * * * * *
@@ -53,18 +112,20 @@ void SharedIndividualInfo::fillPoldata(      FILE *fp,
 * BEGIN: FittingTarget stuff               *
 * * * * * * * * * * * * * * * * * * * * * */
 
-void SharedIndividualInfo::sumChiSquared(t_commrec *cr, bool parallel, iMolSelect ims)
+void StaticIndividualInfo::sumChiSquared(const t_commrec *cr,
+                                         bool             parallel,
+                                         iMolSelect       ims)
 {
-    // Now sum over processors
+    // Now sum over processors, except the master!
     if (PAR(cr) && parallel)
     {
         for (auto &ft : targets_[ims])
         {
             auto chi2 = ft.second.chiSquared();
-            gmx_sum(1, &chi2, cr);
+            gmx_sumd_helpers(1, &chi2, cr);
             ft.second.setChiSquared(chi2);
             auto ndp = ft.second.numberOfDatapoints();
-            gmx_sumi(1, &ndp, cr);
+            gmx_sumi_helpers(1, &ndp, cr);
             ft.second.setNumberOfDatapoints(ndp);
         }
     }
@@ -90,7 +151,7 @@ void SharedIndividualInfo::sumChiSquared(t_commrec *cr, bool parallel, iMolSelec
     }
 }
 
-void SharedIndividualInfo::resetChiSquared(iMolSelect ims)
+void StaticIndividualInfo::resetChiSquared(iMolSelect ims)
 {
     auto fts = targets_.find(ims);
     if (fts != targets_.end())
@@ -102,7 +163,7 @@ void SharedIndividualInfo::resetChiSquared(iMolSelect ims)
     }
 }
 
-void SharedIndividualInfo::fillFittingTargets()
+void StaticIndividualInfo::fillFittingTargets()
 {
     for (const auto &ims : iMolSelectNames()) 
     {
@@ -119,7 +180,7 @@ void SharedIndividualInfo::fillFittingTargets()
     }
 }
 
-void SharedIndividualInfo::propagateWeightFittingTargets()
+void StaticIndividualInfo::propagateWeightFittingTargets()
 {
     for(auto &ims : iMolSelectNames())
     {
@@ -146,7 +207,7 @@ void SharedIndividualInfo::propagateWeightFittingTargets()
 * BEGIN: Weighted temperature stuff        *
 * * * * * * * * * * * * * * * * * * * * * */
 
-void SharedIndividualInfo::computeWeightedTemperature(const bool tempWeight)
+void StaticIndividualInfo::computeWeightedTemperature(const bool tempWeight)
 {
     if (tempWeight)
     {
@@ -171,7 +232,7 @@ void SharedIndividualInfo::computeWeightedTemperature(const bool tempWeight)
 * BEGIN: OptimizationIndex stuff           *
 * * * * * * * * * * * * * * * * * * * * * */
 
-void SharedIndividualInfo::generateOptimizationIndex(FILE   *fp,
+void StaticIndividualInfo::generateOptimizationIndex(FILE   *fp,
                                                      MolGen *mg)
 {
     for(auto &fs : pd_.forcesConst())
@@ -221,7 +282,7 @@ void SharedIndividualInfo::generateOptimizationIndex(FILE   *fp,
 * BEGIN: Vector stuff                      *
 * * * * * * * * * * * * * * * * * * * * * */
 
-void SharedIndividualInfo::fillVectors(const int mindata)
+void StaticIndividualInfo::fillVectors(const int mindata)
 {
 
     for(auto &optIndex : optIndex_)
@@ -260,7 +321,7 @@ void SharedIndividualInfo::fillVectors(const int mindata)
 * BEGIN: ParamClassIndex stuff             *
 * * * * * * * * * * * * * * * * * * * * * */
 
-void SharedIndividualInfo::assignParamClassIndex()
+void StaticIndividualInfo::assignParamClassIndex()
 {
     size_t notFound = ~0;
     paramClassIndex_.resize(paramNames_.size(), notFound);
@@ -302,7 +363,7 @@ void SharedIndividualInfo::assignParamClassIndex()
 * BEGIN: File stuff                        *
 * * * * * * * * * * * * * * * * * * * * * */
 
-void SharedIndividualInfo::setOutputFiles(const char                     *xvgconv,
+void StaticIndividualInfo::setOutputFiles(const char                     *xvgconv,
                                           const std::vector<std::string> &paramClass,
                                           const char                     *xvgepot)
 {

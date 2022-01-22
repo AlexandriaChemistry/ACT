@@ -11,7 +11,7 @@
 
 #include <vector>
 
-#include "Individual.h"
+#include "Genome.h"
 
 #include "gromacs/utility/basedefinitions.h"
 
@@ -47,7 +47,7 @@ public:
        * \brief Sort the population
        * \param[in] pop pointer to the population
        */
-      virtual void sort(std::vector<Individual*> *pop) = 0;
+      virtual void sort(std::vector<Genome> *pop) = 0;
 
 };
 
@@ -60,11 +60,11 @@ class EmptySorter : public Sorter
 
 public:
 
-      virtual void sort(gmx_unused std::vector<Individual*> *pop) {};
+      virtual void sort(gmx_unused std::vector<Genome> *pop) {};
 
 };
 
-
+#ifdef OLD
 /*!
  * \brief Class for Merge-sort
  */
@@ -74,7 +74,7 @@ class MergeSorter : public Sorter
 private:
 
       //! Temporal storage for a population
-      std::vector<Individual*> tmpPop_;
+      std::vector<Genome> tmpPop_;
 
       /*!
        * \brief Split \p fitA into 2 runs, sort both runs into \p fitB, merge both runs from \p fitB into \p fitA
@@ -83,10 +83,10 @@ private:
        * \param[in] right     right index (exclusive)
        * \param[in] popA      pointer to population A
        */
-      void topDownSplitMerge(      std::vector<Individual*>      *popB,
+      void topDownSplitMerge(      std::vector<Genome>      *popB,
                              const int                            left,
                              const int                            right,
-                                   std::vector<Individual*>      *popA);
+                                   std::vector<Genome>      *popA);
 
       /*!
        * \brief Merge both runs from \p fitA into \p fitB <br>
@@ -99,11 +99,11 @@ private:
        * \param[in] right     right index (exclusive)
        * \param[in] popB      pointer to population B
        */
-      void topDownMerge(      std::vector<Individual*>     *popA,
+    void topDownMerge(      std::vector<Genome>     *popA,
                         const int                           left,
                         const int                           middle,
                         const int                           right,
-                              std::vector<Individual*>     *popB);
+                              std::vector<Genome>     *popB);
 
 public:
 
@@ -116,10 +116,10 @@ public:
                   const bool  descending)
       : Sorter(descending), tmpPop_(popSize) {}
 
-      virtual void sort(std::vector<Individual*> *pop);
+      virtual void sort(std::vector<Genome> *pop);
 
 };
-
+#endif
 
 /*!
  * \brief Class for Quick-sort
@@ -130,7 +130,7 @@ class QuickSorter : public Sorter
 private:
 
       //! Temporal storage for an individual
-      Individual *tmpInd_;
+    Genome tmpInd_;
 
       /*!
        * \brief Split the population into 2 parts, one left of the pivot element and one to the right of it, and sort both.
@@ -138,7 +138,7 @@ private:
        * \param[in] low     the left-most point of the part of the population vector in this recursive run
        * \param[in] high    the right-most point of the part of the population vector in this recursive run
        */
-      void quickSort(      std::vector<Individual*>  *pop,
+      void quickSort(      std::vector<Genome>  *pop,
                      const int                        low,
                      const int                        high);
 
@@ -148,7 +148,7 @@ private:
        * \param[in] low       the left-most point of the part of the population vector in this recursive run
        * \param[in] high      the right-most point of the part of the population vector in this recursive run
        */
-      int ascendingPartition(      std::vector<Individual*>      *pop,
+      int ascendingPartition(      std::vector<Genome>      *pop,
                              const int                            low,
                              const int                            high);
 
@@ -158,7 +158,7 @@ private:
        * \param[in] low       the left-most point of the part of the population vector in this recursive run
        * \param[in] high      the right-most point of the part of the population vector in this recursive run
        */
-      int descendingPartition(      std::vector<Individual*>     *pop,
+      int descendingPartition(      std::vector<Genome>     *pop,
                               const int                           low,
                               const int                           high);
 
@@ -171,7 +171,7 @@ public:
       QuickSorter(const bool descending)
       : Sorter(descending) {}
 
-      virtual void sort(std::vector<Individual*> *pop);
+      virtual void sort(std::vector<Genome> *pop);
 
 };
 

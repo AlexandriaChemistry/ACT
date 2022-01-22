@@ -2,23 +2,17 @@
  * Implements part of the alexandria program.
  * \author Julian Ramon Marrades Furquet <julian.marrades@hotmail.es>
  */
-
-
 #ifndef GA_PROBABILITYCOMPUTER_H
 #define GA_PROBABILITYCOMPUTER_H
 
-
 #include <vector>
 
-#include "Individual.h"
-
+#include "Genome.h"
 
 namespace ga
 {
-
-
 /*!
- * Abstract class for computing the selection probability of each Individual in the population
+ * Abstract class for computing the selection probability of each Genome in the population
  */
 class ProbabilityComputer
 {
@@ -26,71 +20,64 @@ class ProbabilityComputer
 public:
 
     /*!
-     * \brief Compute the selection probability of each individual in the population
+     * \brief Compute the selection probability of each genome in the population
      * \param[in] pop pointer to the population
      */
-    virtual void compute(std::vector<Individual*> *pop) = 0;
-
+    virtual void compute(std::vector<Genome> *pop) = 0;
 };
-
 
 /*!
  * Class for fitness-based probability computation, that is, the probability is proportional to the fitness.<br>
- * The probability of individual \f$ i \f$ can be written as
+ * The probability of a genome \f$ i \f$ can be written as
  * \f[
  *      p_i = \frac { f_i } { \sum \limits_{ j=1 }^{ n } f_j },
  * \f]
- * where \f$ n \f$ is the number of individuals in the population.
+ * where \f$ n \f$ is the number of genomes in the population.
  */
 class FitnessProbabilityComputer : public ProbabilityComputer
 {
 
 public:
 
-    virtual void compute(std::vector<Individual*> *pop);
+    virtual void compute(std::vector<Genome> *pop);
 
 };
 
 
 /*!
  * Class for Boltzmann temperature probability computation.<br>
- * The probability of individual \f$ i \f$ can be written as
+ * The probability of a genome \f$ i \f$ can be written as
  * \f[
  *      p_i = \frac{ e^{ f_i / T } }{ \sum \limits_{ j=1 }^{ n } e^{ f_j / T } },
  * \f]
- * where \f$ n \f$ is the number of individuals in the population, and \f$ T \in \mathbb{R} \f$ is the Boltzmann
+ * where \f$ n \f$ is the number of genomes in the population, and \f$ T \in \mathbb{R} \f$ is the Boltzmann
  * temperature parameter.
  */
 class BoltzmannProbabilityComputer : public ProbabilityComputer
 {
 
 private:
-
     //! The temperature parameter
     double temperature_;
-    //! Stores \f$ e^{f_i} \f$ for each Individual \f$ i \f$
-    std::vector<double> exponentials_;
 
 public:
 
     /*!
      * \brief Constructor
-     * \param[in] popSize           number of individuals in the population
      * \param[in] temperature       the temperature
      */
-    BoltzmannProbabilityComputer(const int      popSize,
-                                 const double   temperature)
-    : temperature_(temperature), exponentials_(popSize) {}
+    BoltzmannProbabilityComputer(const double   temperature)
+        : temperature_(temperature) {}
 
-    virtual void compute(std::vector<Individual*> *pop);
+    virtual void compute(std::vector<Genome> *pop);
 
 };
 
 
 /*!
- * Class for Rank probability computation, that is, the probability of an individual is proportional to its rank.
+ * Class for Rank probability computation, that is, the probability of a genome is proportional to its rank.
  * Rank 1 means highest fitness, rank 2 second highest, etc.<br>
- * If there are \f$ R \f$ ranks, then the probability of the individual at rank \f$ i \f$ is
+ * If there are \f$ R \f$ ranks, then the probability of the genome at rank \f$ i \f$ is
  * \f[
  *      p_i = \frac{R - i + 1}{ R \left( R+1 \right) / 2 }
  * \f]
@@ -100,24 +87,24 @@ class RankProbabilityComputer : public ProbabilityComputer
 
 private:
 
-    //! Stores the sum of ranks. E.g., if there are 10 individuals, the sum of ranks is \f$ 1 + 2  + 3 + \dots + 9 + 10 \f$
+    //! Stores the sum of ranks. E.g., if there are 10 genomes, the sum of ranks is \f$ 1 + 2  + 3 + \dots + 9 + 10 \f$
     double sumOfRanks_;
 
 public:
 
     /*!
      * \brief
-     * \param[in] popSize   number of individuals in the population
+     * \param[in] popSize   number of genomes in the population
      */
     RankProbabilityComputer(const int popSize)
-    : sumOfRanks_(popSize * (popSize + 1) / 2) {}
+        : sumOfRanks_(popSize * (popSize + 1) / 2) {}
 
     /*!
      * \brief Here we assume that population and fitness are sorted.<br>
-     * Compute the probability of each individual in the population
+     * Compute the probability of each genome in the population
      * @param pop pointer to the population
      */
-    virtual void compute(std::vector<Individual*> *pop);
+    virtual void compute(std::vector<Genome> *pop);
 
 };
 

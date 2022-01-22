@@ -85,11 +85,13 @@ t_commrec *init_commrec()
 #if GMX_LIB_MPI
     gmx_fill_commrec_from_mpi(cr);
 #else
-    cr->mpi_comm_mysim   = MPI_COMM_NULL;
-    cr->mpi_comm_mygroup = MPI_COMM_NULL;
-    cr->nnodes           = 1;
-    cr->sim_nodeid       = 0;
-    cr->nodeid           = cr->sim_nodeid;
+    cr->mpi_comm_mysim     = MPI_COMM_NULL;
+    cr->mpi_comm_mygroup   = MPI_COMM_NULL;
+    cr->mpi_act_helpers    = MPI_COMM_NULL;
+    cr->mpi_act_not_master = MPI_COMM_NULL;
+    cr->nnodes             = 1;
+    cr->sim_nodeid         = 0;
+    cr->nodeid             = cr->sim_nodeid;
 #endif
 
     // TODO cr->duty should not be initialized here
@@ -267,6 +269,38 @@ void gmx_bcast_sim(int gmx_unused nbytes, void gmx_unused *b, const t_commrec gm
     gmx_call("gmx_bast");
 #else
     MPI_Bcast(b, nbytes, MPI_BYTE, MASTERRANK(cr), cr->mpi_comm_mysim);
+#endif
+}
+
+void gmx_sumd_helpers(int gmx_unused nr, 
+                      double gmx_unused r[], 
+                      const t_commrec gmx_unused *cr)
+{
+#if !GMX_MPI
+    gmx_call("gmx_sumd_helpers");
+#else
+    int size = 0;
+    if (MPI_Comm_size(cr->mpi_act_helpers, &size) && size > 1)
+    {
+        MPI_Allreduce(MPI_IN_PLACE, r, nr, MPI_DOUBLE, MPI_SUM,
+                      cr->mpi_act_helpers);
+    }
+#endif
+}
+
+void gmx_sumi_helpers(int gmx_unused nr, 
+                      int gmx_unused r[], 
+                      const t_commrec gmx_unused *cr)
+{
+#if !GMX_MPI
+    gmx_call("gmx_sumi_helpers");
+#else
+    int size = 0;
+    if (MPI_Comm_size(cr->mpi_act_helpers, &size) && size > 1)
+    {
+        MPI_Allreduce(MPI_IN_PLACE, r, nr, MPI_INT, MPI_SUM,
+                      cr->mpi_act_helpers);
+    }
 #endif
 }
 

@@ -6,33 +6,31 @@
  */
 
 
-#ifndef ALEXANDRIA_SHAREDINDIVIDUALINFO_H
-#define ALEXANDRIA_SHAREDINDIVIDUALINFO_H
-
+#ifndef ALEXANDRIA_STATICINDIVIDUALINFO_H
+#define ALEXANDRIA_STATICINDIVIDUALINFO_H
 
 #include <vector>
 #include <string>
 #include <map>
+#include "ga/Genome.h"
 
 #include "mutability.h"
 #include "molgen.h"
 
-
 namespace alexandria
 {
-
-
 /*!
  * \brief Contains all information that is shared among ACMIndividual objects and other classes that manage them
  */
-class SharedIndividualInfo
+class StaticIndividualInfo
 {
 
 private:
-
+    //! My identy
+    int                                                  id_ = -1;
     //! Communication record
     t_commrec                                           *cr_;
-    //! Base Poldata from which to make copies
+    //! Poldata for this individual
     Poldata                                              pd_;
     //! Base targets_ from which to make copies
     std::map<iMolSelect, std::map<eRMS, FittingTarget>>  targets_;
@@ -62,6 +60,8 @@ private:
     std::string                                          xvgepot_;
     //! Base name for Force field output file
     std::string                                          outputFile_;
+    //! Output file prefix
+    std::string                                          prefix_;
 
     //! \brief Fills the fitting targets data structure
     void fillFittingTargets();
@@ -70,13 +70,15 @@ public:
 
     /*!
      * Constructor
-     * \param[in] cr The communications record
+     * \param[in] cr         The communications record
      */
-    SharedIndividualInfo(t_commrec *cr)
-    : cr_(cr)
-    {
-        fillFittingTargets();
-    }
+    StaticIndividualInfo(t_commrec         *cr);
+    
+    
+    /*! \brief Set the output file name
+     * \param[in] outputFile The force field file name for output
+     */
+    void setOutputFile(const std::string &outputFile);
     
     /*!
      * \brief Set the \f$ \chi^2 \f$ to 0 for a given data set.
@@ -92,7 +94,9 @@ public:
      * \param[in] parallel  Whether or not to sum in parallel
      * \param[in] ims       The selection dataset to sum
      */
-    void sumChiSquared(t_commrec *cr, bool parallel, iMolSelect ims);
+    void sumChiSquared(const t_commrec *cr,
+                       bool             parallel,
+                       iMolSelect       ims);
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * BEGIN: Poldata stuff                     *
@@ -106,9 +110,30 @@ public:
     void fillPoldata(      FILE *fp,
                      const char *pd_fn);
 
+    /*!
+     * \brief Copy the Force Field parameters to the Poldata structure
+     * \param[in] changed List over the parameters that have changed.
+     * \param[in] genome  The parameters in the current genome
+     */
+    void updatePoldata(const std::vector<bool> &changed,
+                       const ga::Genome        *genome);
+    
+    /*! \brief Save the current state of the Force Field to the output file
+     * \param[in] updateCheckSum If true, the checksum is updated, typically
+     *                           this should only be done at the end of a run
+     *                           since it is expensive.
+     */
+    void saveState(bool updateCheckSum);
+
     /* * * * * * * * * * * * * * * * * * * * * *
     * END: Poldata stuff                       *
     * * * * * * * * * * * * * * * * * * * * * */
+
+    //! \return the communication record
+    const t_commrec *commrec() const { return cr_; }
+
+    //! \return a mutable communication record
+    t_commrec *commrecPtr() { return cr_; }
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * BEGIN: FittingTarget stuff               *
@@ -120,7 +145,7 @@ public:
      */
     void propagateWeightFittingTargets();
 
-    // FIXME: How can we avoid having to decleare the query functions both in SharedIndividualInfo
+    // FIXME: How can we avoid having to decleare the query functions both in StaticIndividualInfo
     // and in Individual, we put them around the FittingTarget class?
 
     /*!
@@ -256,6 +281,12 @@ public:
                         const std::vector<std::string> &paramClass,
                         const char                     *xvgepot);
 
+    //! \return the output file prefix
+    const std::string &prefix() const { return prefix_; }
+    
+    //! \return my id
+    int id() const { return id_; }
+    
     /* * * * * * * * * * * * * * * * * * * * * *
     * END: File stuff                          *
     * * * * * * * * * * * * * * * * * * * * * */
@@ -348,4 +379,4 @@ public:
 } //namespace alexandria
 
 
-#endif //ALEXANDRIA_SHAREDINDIVIDUALINFO_H
+#endif //ALEXANDRIA_STATICINDIVIDUALINFO_H

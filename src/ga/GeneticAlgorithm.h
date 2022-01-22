@@ -9,7 +9,8 @@
 
 #include <cstdlib>
 
-#include "Individual.h"
+//#include "GenePool.h"
+#include "Genome.h"
 #include "Initializer.h"
 #include "FitnessComputer.h"
 #include "Sorter.h"
@@ -34,26 +35,13 @@ class GeneticAlgorithm
 private:
     //! The population size
     int popSize_          = 0;
-    //! Whether or not to evaluate the test set
-    bool evaluateTestSet_ = false;
 
-    //! Logfile for logging info
-    FILE *logfile_          = nullptr;
      //! File for fitness train output
     FILE *fileFitnessTrain_ = nullptr;
     //! File for fitness test output
     FILE *fileFitnessTest_  = nullptr;
-
-    //! Output environment (GROMACS)
-    struct gmx_output_env_t *oenv_ = nullptr;
-
-    //! Old population
-    std::vector<Individual*>  oldPop_;
-    //! New population, which emerges from the old population
-    std::vector<Individual*>  newPop_;
-    //! The best individual
-    Individual               *bestInd_ = nullptr;
-
+    //! The best genome
+    Genome                  bestGenome_;
     //! Initializes each individual in the population
     Initializer            *initializer_ = nullptr;
     //! Computes fitness for each individual in the population
@@ -83,9 +71,7 @@ public:
     /*!
      * \brief Constructor for self-building
      */
-    GeneticAlgorithm(FILE                                *logFile,
-                     struct gmx_output_env_t             *oenv,
-                     Initializer                         *initializer,
+    GeneticAlgorithm(Initializer                         *initializer,
                      FitnessComputer                     *fitnessComputer,
                      Sorter                              *sorter,
                      ProbabilityComputer                 *probComputer,
@@ -93,11 +79,16 @@ public:
                      Crossover                           *crossover,
                      Mutator                             *mutator,
                      Terminator                          *terminator,
-                     int                                  popSize,
-                     bool                                 evaluateTestSet);
+                     int                                  popSize) :
+        popSize_(popSize), initializer_(initializer),
+        fitComputer_(fitnessComputer), sorter_(sorter), probComputer_(probComputer),
+        selector_(selector), crossover_(crossover), mutator_(mutator), terminator_(terminator) {}
+
  
-    //! \brief Evolve the initial population
-    virtual void evolve() = 0;
+    /*! \brief Evolve the initial population
+     * \param[out] bestGenome The best genome found during the evolution
+     */
+    virtual void evolve(Genome *bestGenome) = 0;
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * BEGIN: Getters and Setters               *
@@ -105,26 +96,18 @@ public:
     //! \return the population size
     int populationSize() const { return popSize_; }
 
-    //! \return whether to evaluate the test set
-    bool evaluateTestSet() const { return evaluateTestSet_; }
-
-    //! \return the best individual
-    Individual *bestInd() { return bestInd_; }
-
-    /*! \brief Set the new best individual
-     * \param[in] ind New best individual that will be moved to the storage.
-     */
-    void setBestIndividual(Individual *ind);
-
-    //! \return the logfile
-    FILE *logFile() { return logfile_; }
-
     //! Open fitness output
     void openFitnessFiles();
 
     //! And close them when the time is due
     void closeFitnessFiles();
 
+    //! \return pointer to bestGenome
+    ga::Genome *bestGenomePtr() { return &bestGenome_; }
+    
+    //! \return constant best genome
+    const ga::Genome &bestGenome() { return bestGenome_; }
+    
     //! \return the mutator
     Mutator *mutator() { return mutator_; }
 
@@ -149,50 +132,16 @@ public:
     //! \return the terminator
     Terminator *terminator() { return terminator_; }
 
-    //! Return the output environment
-    struct gmx_output_env_t *oenv() const { return oenv_; }
-
-    //! \return a constant reference to \p oldPop_
-    const std::vector<Individual*> &oldPop() const { return oldPop_; }
-
-    //! \return a pointer to \p oldPop_
-    std::vector<Individual*> *oldPopPtr() { return &oldPop_; }
-
-    //! \return a pointer to \p newPop_
-    std::vector<Individual*> *newPopPtr() { return &newPop_; }
-
-    //! \brief Swap the old and new populations
-    void swapOldNewPopulations();
-
-    //! \brief Replace new by old populations
-    void copyOldToNewPopulations();
-
-    /* * * * * * * * * * * * * * * * * * * * * *
-    * END: Getters and Setters                 *
-    * * * * * * * * * * * * * * * * * * * * * */
-
     /* * * * * * * * * * * * * * * * * * * * * *
      * BEGIN: Output routines                  *
      * * * * * * * * * * * * * * * * * * * * * */
 
-    //! \brief Print population to log file
-    void fprintPop() const;
-
-    //! \brief Print best individual to log file
-    void fprintBestInd() const;
-
-    //! \brief Print best individual (in current population) to log file
-    void fprintBestIndInPop() const;
-
-    //! \return the index of the Individual with the best fitness. FIXME: make this general. Now, the lower the fitness the better
-    int findBestIndex() const;
-
-    //! \brief Print the probability of each individual
-    void fprintProbability() const;
-
-    //! \brief Print the fitness of the population to the output files \p fileFitnessTrain_ and \p fileFitnessTest_
-    void fprintFitness() const;
-
+    //! \return fitness file for training
+    FILE *fitnessTrain() { return fileFitnessTrain_; }
+    
+    //! \return fitness file for testing
+    FILE *fitnessTest() { return fileFitnessTest_; }
+    
     /* * * * * * * * * * * * * * * * * * * * * *
      * END: Output routines                  *
      * * * * * * * * * * * * * * * * * * * * * */  

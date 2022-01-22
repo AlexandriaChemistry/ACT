@@ -503,144 +503,135 @@ CommunicationStatus Poldata::Receive(const t_commrec *cr, int src)
     return cs;
 }
 
-void Poldata::broadcast_particles(const t_commrec *cr)
+void Poldata::sendParticles(const t_commrec *cr, int dest)
 {
-    const int src = 0;
-
-    if (MASTER(cr))
+    auto cs = gmx_send_data(cr, dest);
+    if (CS_OK == cs)
     {
-        for (auto dest = 1; dest < cr->nnodes; dest++)
+        if (nullptr != debug)
         {
-            auto cs = gmx_send_data(cr, dest);
-            if (CS_OK == cs)
+            fprintf(debug, "Going to update Poldata::particles on node %d\n", dest);
+        }
+        for(auto &ax : alexandria_)
+        {
+            for(auto &p : ax.parametersConst())
             {
-                if (nullptr != debug)
+                auto mut = p.second.mutability();
+                if (Mutability::Free    == mut ||
+                    Mutability::Bounded == mut)
                 {
-                    fprintf(debug, "Going to update Poldata::particles on node %d\n", dest);
+                    gmx_send_int(cr, dest, 1);
+                    gmx_send_str(cr, dest, &ax.id().id());
+                    gmx_send_str(cr, dest, &p.first);
+                    gmx_send_double(cr, dest, p.second.value());
                 }
-                for(auto &ax : alexandria_)
-                {
-                    for(auto &p : ax.parametersConst())
-                    {
-                        auto mut = p.second.mutability();
-                        if (Mutability::Free    == mut ||
-                            Mutability::Bounded == mut)
-                        {
-                            gmx_send_int(cr, dest, 1);
-                            gmx_send_str(cr, dest, &ax.id().id());
-                            gmx_send_str(cr, dest, &p.first);
-                            gmx_send_double(cr, dest, p.second.value());
-                        }
-                    }
-                }
+            }
+        }
+        gmx_send_int(cr, dest, 0);
+    }
+    gmx_send_done(cr, dest);
+}
+
+
+void Poldata::receiveParticles(const t_commrec *cr, int src)
+{
+    auto cs = gmx_recv_data(cr, src);
+    if (CS_OK == cs)
+    {
+        /* Receive Particle info */
+        while (1 == gmx_recv_int(cr, src))
+        {
+            std::string axid, paramname;
+            double value;
+            gmx_recv_str(cr, src, &axid);
+            gmx_recv_str(cr, src, &paramname);
+            value = gmx_recv_double(cr, src);
+            findParticleType(axid)->parameter(paramname)->setValue(value);
+        }
+    }
+    else
+    {
+        if (nullptr != debug)
+        {
+            fprintf(debug, "Could not update eem properties on node %d\n", cr->nodeid);
+        }
+    }
+    gmx_recv_data(cr, src);
+}
+
+/* Force Field Parameter Lists */
+static std::vector<InteractionType> eemlist = 
+    { InteractionType::BONDCORRECTIONS,
+      InteractionType::CHARGEDISTRIBUTION,
+      InteractionType::POLARIZATION,
+      InteractionType::ELECTRONEGATIVITYEQUALIZATION
+    };
+
+void Poldata::sendEemprops(const t_commrec *cr, int dest)
+{
+    auto cs = gmx_send_data(cr, dest);
+    if (CS_OK == cs)
+    {
+        if (nullptr != debug)
+        {
+            fprintf(debug, "Going to update Poldata::eemprop on node %d\n", dest);
+        }
+        for(auto myeem : eemlist)
+        {
+            auto fs = forces_.find(myeem);
+            if (fs != forces_.end())
+            {
+                gmx_send_int(cr, dest, 1);
+                cs = fs->second.Send(cr, dest);
+            }
+            else
+            {
                 gmx_send_int(cr, dest, 0);
             }
-            gmx_send_done(cr, dest);
+        }
+    }
+    gmx_send_done(cr, dest);
+}
+
+void Poldata::receiveEemprops(const t_commrec *cr, int src)
+{
+    auto cs = gmx_recv_data(cr, src);
+    if (CS_OK == cs)
+    {
+        /* Receive EEMprops and Bond Corrections */
+        for(auto myeem : eemlist)
+        {
+            int nbc = gmx_recv_int(cr, src);
+            if (nbc == 1)
+            {
+                auto fs = forces_.find(myeem);
+                if (fs != forces_.end())
+                {
+                    forces_.erase(fs);
+                }
+                ForceFieldParameterList eem;
+                eem.Receive(cr, src);
+                addForces(interactionTypeToString(myeem), eem);
+            }
         }
     }
     else
     {
-        auto cs = gmx_recv_data(cr, src);
-        if (CS_OK == cs)
+        if (nullptr != debug)
         {
-            /* Receive Particle info */
-            while (1 == gmx_recv_int(cr, src))
-            {
-                std::string axid, paramname;
-                double value;
-                gmx_recv_str(cr, src, &axid);
-                gmx_recv_str(cr, src, &paramname);
-                value = gmx_recv_double(cr, src);
-                findParticleType(axid)->parameter(paramname)->setValue(value);
-            }
-        }
-        else
-        {
-            if (nullptr != debug)
-            {
-                fprintf(debug, "Could not update eem properties on node %d\n", cr->nodeid);
-            }
-        }
-        gmx_recv_data(cr, src);
-    }   
-}
-
-void Poldata::broadcast_eemprop(const t_commrec *cr)
-{
-    const int src = 0;
-    /* Force Field Parameter Lists */
-    std::vector<InteractionType> eemlist = 
-        { InteractionType::BONDCORRECTIONS,
-          InteractionType::CHARGEDISTRIBUTION,
-          InteractionType::POLARIZATION,
-          InteractionType::ELECTRONEGATIVITYEQUALIZATION };
-    if (MASTER(cr))
-    {
-        for (auto dest = 1; dest < cr->nnodes; dest++)
-        {
-            auto cs = gmx_send_data(cr, dest);
-            if (CS_OK == cs)
-            {
-                if (nullptr != debug)
-                {
-                    fprintf(debug, "Going to update Poldata::eemprop on node %d\n", dest);
-                }
-                for(auto myeem : eemlist)
-                {
-                    auto fs = forces_.find(myeem);
-                    if (fs != forces_.end())
-                    {
-                        gmx_send_int(cr, dest, 1);
-                        cs = fs->second.Send(cr, dest);
-                    }
-                    else
-                    {
-                        gmx_send_int(cr, dest, 0);
-                    }
-                }
-            }
-            gmx_send_done(cr, dest);
+            fprintf(debug, "Could not update eem properties on node %d\n", cr->nodeid);
         }
     }
-    else
-    {
-        auto cs = gmx_recv_data(cr, src);
-        if (CS_OK == cs)
-        {
-            /* Receive EEMprops and Bond Corrections */
-            for(auto myeem : eemlist)
-            {
-                int nbc = gmx_recv_int(cr, src);
-                if (nbc == 1)
-                {
-                    auto fs = forces_.find(myeem);
-                    if (fs != forces_.end())
-                    {
-                        forces_.erase(fs);
-                    }
-                    ForceFieldParameterList eem;
-                    eem.Receive(cr, src);
-                    addForces(interactionTypeToString(myeem), eem);
-                }
-            }
-        }
-        else
-        {
-            if (nullptr != debug)
-            {
-                fprintf(debug, "Could not update eem properties on node %d\n", cr->nodeid);
-            }
-        }
-        gmx_recv_data(cr, src);
-    }   
+    gmx_recv_data(cr, src);
 }
 
-void Poldata::broadcast(const t_commrec *cr)
+void Poldata::sendToHelpers(const t_commrec *cr)
 {
-    const int src = 0;
-    if (MASTER(cr))
+    GMX_RELEASE_ASSERT(!MASTER(cr), "I wasn't expecting no overlord here");
+    int src = middleManGlobalIndex(cr);
+    if (actMiddleMan(cr))
     {
-        for (int dest = 1; dest < cr->nnodes; dest++)
+        for (int dest = src+1; dest < src+cr->nhelper_per_middleman; dest++)
         {
             auto cs = gmx_send_data(cr, dest);
             if (CS_OK == cs)
@@ -654,7 +645,7 @@ void Poldata::broadcast(const t_commrec *cr)
             gmx_send_done(cr, dest);
         }
     }
-    else
+    else if (actHelper(cr))
     {
         auto cs = gmx_recv_data(cr, src);
         if (CS_OK == cs)

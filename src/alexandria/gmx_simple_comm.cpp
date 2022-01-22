@@ -183,4 +183,55 @@ void gmx_recv_double_vector(const t_commrec *cr, int src, std::vector<double> *d
     }
 }
 
+bool actMiddleMan(const t_commrec *cr)
+{
+    if (cr->nodeid > 0)
+    {
+        return (cr->nhelper_per_middleman == 0 || 
+                (cr->nodeid-1) % cr->nhelper_per_middleman == 0);
+    }
+    return false;
+}
 
+bool actHelper(const t_commrec *cr)
+{
+    return (!MASTER(cr) && !actMiddleMan(cr));
+}
+
+int middleManLocalIndex(const t_commrec *cr)
+{
+    if (cr->nhelper_per_middleman == 0)
+    {
+        return cr->nodeid-1;
+    }
+    else
+    {
+        return (cr->nodeid-1) / cr->nhelper_per_middleman;
+    }
+}
+
+int middleManGlobalIndex(const t_commrec *cr)
+{
+    if (cr->nhelper_per_middleman == 0)
+    {
+        return cr->nodeid;
+    }
+    else
+    {
+        return 1 + ((cr->nodeid-1) / cr->nhelper_per_middleman)*cr->nhelper_per_middleman;
+    }
+}
+
+int middleManGlobalIndex(const t_commrec *cr, int middleman)
+{
+    int src;
+    if (cr->nhelper_per_middleman == 0)
+    {
+        src = 1+middleman;
+    }
+    else
+    {
+        src = 1+middleman*cr->nhelper_per_middleman;
+    }
+    return src;
+}

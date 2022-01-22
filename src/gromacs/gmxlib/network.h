@@ -89,6 +89,16 @@ void gmx_sumli(int nr, int64_t r[], const struct t_commrec *cr);
 void gmx_sumf(int nr, float r[], const struct t_commrec *cr);
 /* Calculate the global sum of an array of floats */
 
+void gmx_sumd_helpers(int gmx_unused nr, 
+                      double gmx_unused r[], 
+                      const t_commrec gmx_unused *cr);
+/* Calculate the global sum of an array of doubles on an act helper group  */
+
+void gmx_sumi_helpers(int gmx_unused nr, 
+                      int gmx_unused r[], 
+                      const t_commrec gmx_unused *cr);
+/* Calculate the global sum of an array of ints on an act helper group  */
+
 void gmx_sumd(int nr, double r[], const struct t_commrec *cr);
 /* Calculate the global sum of an array of doubles */
 

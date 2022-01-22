@@ -35,9 +35,9 @@
 set(testname "GeneticAlgorithmTests")
 set(exename "ga-test")
 
-gmx_add_unit_test(
+gmx_add_mpi_unit_test(
     ${testname}
-    ${exename}
+    ${exename} 2
     # files with code for tests
     GeneticAlgorithmTest.cpp
     # pseudo-library for code for alexandria

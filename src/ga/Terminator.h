@@ -10,7 +10,7 @@
 
 #include <vector>
 
-#include "Individual.h"
+#include "GenePool.h"
 
 
 namespace ga
@@ -27,12 +27,12 @@ public:
 
     /*!
      * \brief Check whether the evolution should be terminated
-     * \param[in] population            the population
-     * \param[in] generationNumber      the generation number
+     * \param[in] pool              The GenePool
+     * \param[in] generationNumber  The generation number
      * \return true if we should terminate, false otherwise
      */
-    virtual bool terminate(const std::vector<Individual*>  &pop,
-                           const int                        generationNumber) = 0;
+    virtual bool terminate(const GenePool *pool,
+                           const int       generationNumber) = 0;
 
 };
 
@@ -58,12 +58,12 @@ public:
 
     /*!
      * Will return true when \p generationNumber \f$\geq\f$ \p maxGenerations, and false otherwise.
-     * \param[in] population            the population
-     * \param[in] generationNumber      the generation number
+     * \param[in] pool             The gene pool
+     * \param[in] generationNumber The generation number
      * \return true if we should terminate, false otherwise
      */
-    virtual bool terminate(const std::vector<Individual*>  &pop,
-                           const int                        generationNumber);
+    virtual bool terminate(const GenePool *pool,
+                           const int       generationNumber);
 
 };
 

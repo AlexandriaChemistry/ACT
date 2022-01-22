@@ -12,7 +12,7 @@
 #include <time.h>
 #include <vector>
 
-#include "Individual.h"
+#include "Genome.h"
 
 
 namespace ga
@@ -60,10 +60,10 @@ public:
      * \param[in] child1    the first child to write to
      * \param[in] child2    the second child to write to
      */
-    virtual void offspring(Individual  *parent1,
-                           Individual  *parent2,
-                           Individual  *child1,
-                           Individual  *child2) = 0;
+    virtual void offspring(Genome *parent1,
+                           Genome *parent2,
+                           Genome *child1,
+                           Genome *child2) = 0;
 
 };
 

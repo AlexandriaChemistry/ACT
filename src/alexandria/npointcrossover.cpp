@@ -13,17 +13,17 @@ namespace alexandria
 {
 
 
-void NPointCrossover::offspring(ga::Individual  *parent1,
-                                ga::Individual  *parent2,
-                                ga::Individual  *child1,
-                                ga::Individual  *child2)
+void NPointCrossover::offspring(ga::Genome  *parent1,
+                                ga::Genome  *parent2,
+                                ga::Genome  *child1,
+                                ga::Genome  *child2)
 {
 
     // Casting individuals
-    ACMIndividual *tmpParent1   = static_cast<ACMIndividual*>(parent1);
-    ACMIndividual *tmpParent2   = static_cast<ACMIndividual*>(parent2);
-    ACMIndividual *tmpChild1    = static_cast<ACMIndividual*>(child1);
-    ACMIndividual *tmpChild2    = static_cast<ACMIndividual*>(child2);
+    //ACMGenome *tmpParent1   = static_cast<ACMGenome*>(parent1);
+    //ACMGenome *tmpParent2   = static_cast<ACMGenome*>(parent2);
+    //ACMGenome *tmpChild1    = static_cast<ACMGenome*>(child1);
+    //ACMGenome *tmpChild2    = static_cast<ACMGenome*>(child2);
 
     // Iteration variable(s)
     size_t i;
@@ -35,7 +35,10 @@ void NPointCrossover::offspring(ga::Individual  *parent1,
     // We start by shuffling the temporal storage for indices
     std::shuffle(tmpAvailableIndices.begin(), tmpAvailableIndices.end(), gen);
     // Now we copy the first order_ elements to crossoverPoints_
-    for (i = 0; i < order_; i++) crossoverPoints_[i+1] = tmpAvailableIndices[i];
+    for (i = 0; i < order_; i++)
+    {
+        crossoverPoints_[i+1] = tmpAvailableIndices[i];
+    }
     // Finally, sort the newly added crossover points
     std::sort(crossoverPoints_.begin()+1, crossoverPoints_.end()-1);
     // DONE! Sampled without replacement!
@@ -46,8 +49,8 @@ void NPointCrossover::offspring(ga::Individual  *parent1,
     {
         for (j = crossoverPoints_[i]; j < crossoverPoints_[i+1]; j++)
         {
-            tmpChild1->setParam(j, tmpParent1->paramAtIndex(j));
-            tmpChild2->setParam(j, tmpParent2->paramAtIndex(j));
+            child1->setBase(j, parent1->base(j));
+            child2->setBase(j, parent2->base(j));
         }
     }
     // Now the regions that should be swapped
@@ -55,11 +58,10 @@ void NPointCrossover::offspring(ga::Individual  *parent1,
     {
         for (j = crossoverPoints_[i]; j < crossoverPoints_[i+1]; j++)
         {
-            tmpChild1->setParam(j, tmpParent2->paramAtIndex(j));
-            tmpChild2->setParam(j, tmpParent1->paramAtIndex(j));
+            child1->setBase(j, parent2->base(j));
+            child2->setBase(j, parent1->base(j));
         }
     }
-
 }
 
 

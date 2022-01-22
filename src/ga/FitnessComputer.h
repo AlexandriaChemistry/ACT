@@ -7,23 +7,11 @@
 #ifndef GA_FITNESSCOMPUTER_H
 #define GA_FITNESSCOMPUTER_H
 
-#include "Individual.h"
-
+#include "Dataset.h"
+#include "Genome.h"
 
 namespace ga
 {
-
-
-//! \brief Target for the fitness computation
-enum class Target
-{
-    //! Train fitness
-    Train,
-    //! Test fitness
-    Test,
-    //! Both Tran and Test fitness
-    Both
-};
 
 /*!
  * \brief Abstract class for computing the fitness of an individual
@@ -34,12 +22,12 @@ class FitnessComputer
 public:
 
     /*!
-     * \brief Compute the fitness of an individual
-     * \param[in] individual    the individual
-     * \param[in] trgtFit       the target for fitness computation. Either Train or Test
+     * \brief Compute the fitness of a genome
+     * \param[in] genome  The genome
+     * \param[in] trgtFit The target for fitness computation. Either Train or Test
      */
-    virtual void compute(Individual *individual,
-                         Target      trgtFit) = 0;
+    virtual void compute(Genome     *genome,
+                         iMolSelect  trgtFit) = 0;
 
 };
 

@@ -4,32 +4,32 @@
  * \author Oskar Tegby <oskar.tegby@it.uu.se>
  */
 
-
+#include "Dataset.h"
 #include "Sorter.h"
-
 
 namespace ga
 {
 
-
 /* * * * * * * * * * * * * * * * * * * * * *
 * BEGIN: MergeSorter                       *
 * * * * * * * * * * * * * * * * * * * * * */
-
-void MergeSorter::sort(std::vector<Individual*> *pop)
+#ifdef OLD
+void MergeSorter::sort(std::vector<Genome> *pop)
 {
 
     // Clone the population into tmpPop_
-    for (size_t i = 0; i < pop->size(); i++) tmpPop_[i] = (*pop)[i]->clone();
+    for (size_t i = 0; i < pop->size(); i++)
+    {
+        tmpPop_[i] = (*pop)[i]->clone();
+    }
     topDownSplitMerge(&tmpPop_, 0, pop->size(), pop);
 
 }
 
-
-void MergeSorter::topDownSplitMerge(      std::vector<Individual*> *popB,
+void MergeSorter::topDownSplitMerge(      std::vector<Genome> *popB,
                                     const int                       left,
                                     const int                       right,
-                                          std::vector<Individual*> *popA)
+                                          std::vector<Genome> *popA)
 {
 
     if (right - left <= 1) return;
@@ -44,11 +44,11 @@ void MergeSorter::topDownSplitMerge(      std::vector<Individual*> *popB,
 }
 
 
-void MergeSorter::topDownMerge(      std::vector<Individual*>  *popA,
+void MergeSorter::topDownMerge(      std::vector<Genome>  *popA,
                                const int                        left,
                                const int                        middle,
                                const int                        right,
-                                     std::vector<Individual*>  *popB)
+                                     std::vector<Genome>  *popB)
 {
 
     int i = left;
@@ -57,7 +57,7 @@ void MergeSorter::topDownMerge(      std::vector<Individual*>  *popA,
     for (int k = left; k < right; k++)
     {
         if ( i < middle && ( j >= right ||
-            ( descending_ == ( (*popA)[i]->fitnessTrain() >= (*popA)[j]->fitnessTrain() ) ) ) )
+                             ( descending_ == ( (*popA)[i]->fitness(iMolSelect::Train) >= (*popA)[j]->fitness(iMolSelect::Train) ) ) ) )
         {
             (*popB)[k] = (*popA)[i]->clone();
             i++;
@@ -70,7 +70,7 @@ void MergeSorter::topDownMerge(      std::vector<Individual*>  *popA,
     }
 
 }
-
+#endif
 /* * * * * * * * * * * * * * * * * * * * * *
 * END: MergeSorter                         *
 * * * * * * * * * * * * * * * * * * * * * */
@@ -79,14 +79,14 @@ void MergeSorter::topDownMerge(      std::vector<Individual*>  *popA,
 * BEGIN: QuickSorter                       *
 * * * * * * * * * * * * * * * * * * * * * */
 
-void QuickSorter::sort(std::vector<Individual*> *pop)
+void QuickSorter::sort(std::vector<Genome> *pop)
 {
     const int low = 0;
     const int high = pop->size() - 1;
     quickSort(pop, low, high);
 }
 
-void QuickSorter::quickSort(      std::vector<Individual*> *pop,
+void QuickSorter::quickSort(      std::vector<Genome> *pop,
                             const int                       low,
                             const int                       high)
 {
@@ -104,16 +104,16 @@ void QuickSorter::quickSort(      std::vector<Individual*> *pop,
     }
 }
 
-int QuickSorter::ascendingPartition(      std::vector<Individual*> *pop,
+int QuickSorter::ascendingPartition(      std::vector<Genome> *pop,
                                     const int                       low,
                                     const int                       high)
 {
-    const double pivot = (*pop)[high]->fitnessTrain();
+    const double pivot = (*pop)[high].fitness(iMolSelect::Train);
     int candidate = low - 1;
 
     for (int check = low; check <= high; check++)
     {
-        if ( (*pop)[check]->fitnessTrain() <= pivot )
+        if ( (*pop)[check].fitness(iMolSelect::Train) <= pivot )
         {
             candidate += 1;
             tmpInd_ = (*pop)[candidate];
@@ -124,16 +124,16 @@ int QuickSorter::ascendingPartition(      std::vector<Individual*> *pop,
     return candidate;
 }
 
-int QuickSorter::descendingPartition(      std::vector<Individual*> *pop,
+int QuickSorter::descendingPartition(      std::vector<Genome> *pop,
                                      const int        low,
                                      const int        high)
 {
-    const double pivot = (*pop)[high]->fitnessTrain();
+    const double pivot = (*pop)[high].fitness(iMolSelect::Train);
     int candidate = low - 1;
 
     for (int check = low; check <= high; check++)
     {
-        if ( (*pop)[check]->fitnessTrain() >= pivot )
+        if ( (*pop)[check].fitness(iMolSelect::Train) >= pivot )
         {
             candidate += 1;
             tmpInd_ = (*pop)[candidate];

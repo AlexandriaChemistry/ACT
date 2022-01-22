@@ -182,9 +182,9 @@ static void write_corr_xvg(FILE                             *fplog,
                     bQM      = true;
                 }
             }
-            alexandria::iMolSelect ims;
+            iMolSelect ims;
             if (gms.status(mpi.getIupac(), &ims) &&
-                ((ims == alexandria::iMolSelect::Train) || (ims == alexandria::iMolSelect::Test)))
+                ((ims == iMolSelect::Train) || (ims == iMolSelect::Test)))
             {
                 if (bExp && bQM)
                 {
@@ -287,26 +287,26 @@ static void alexandria_molprop_analyze(FILE                              *fplog,
                q->basis().c_str(), q->type().c_str());
     }
     printf("--------------------------------------------------\n");
-    makeCategoryList(&cList, mp, gms, alexandria::iMolSelect::Train);
+    makeCategoryList(&cList, mp, gms, iMolSelect::Train);
     fp = gmx_ffopen(texfn, "w");
     if (bStatsTable)
     {
         alexandria_molprop_stats_table(fp, mpo, mp, qmc,
-                                       outlier, cList, gms, alexandria::iMolSelect::Train);
+                                       outlier, cList, gms, iMolSelect::Train);
         if (0)
         {
             alexandria::CategoryList cListTest;
-            makeCategoryList(&cListTest, mp, gms, alexandria::iMolSelect::Test);
+            makeCategoryList(&cListTest, mp, gms, iMolSelect::Test);
             alexandria_molprop_stats_table(fp, mpo, mp, qmc,
-                                           outlier, cListTest, gms, alexandria::iMolSelect::Test);
+                                           outlier, cListTest, gms, iMolSelect::Test);
         }
     }
     if (bPropTable)
     {
         alexandria_molprop_prop_table(fp, mpo, rtoler, atoler, mp, qmc, bPrintAll, bPrintBasis,
-                                      bPrintMultQ, gms, alexandria::iMolSelect::Train);
+                                      bPrintMultQ, gms, iMolSelect::Train);
         alexandria_molprop_prop_table(fp, mpo, rtoler, atoler, mp, qmc, bPrintAll, bPrintBasis,
-                                      bPrintMultQ, gms, alexandria::iMolSelect::Test);
+                                      bPrintMultQ, gms, iMolSelect::Test);
         if (nullptr != selout)
         {
             gp = fopen(selout, "w");

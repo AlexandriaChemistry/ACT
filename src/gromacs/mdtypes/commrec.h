@@ -115,6 +115,9 @@ struct t_commrec {
     MPI_Comm mpi_comm_mygroup;         /* subset of mpi_comm_mysim including only
                                           the ranks in the same group (PP or PME) */
 
+    MPI_Comm mpi_act_helpers;          /* Special communicator for helpers */
+    MPI_Comm mpi_act_not_master;       /* Special communicator for all but the master */
+
     gmx_nodecomm_t nc;
 
     /* The duties of this node, see the DUTY_ defines above.
@@ -157,8 +160,6 @@ inline bool thisRankHasDuty(const t_commrec *cr, int duty)
 
 //! True of this is the master node
 #define MASTER(cr)     (((cr)->nodeid == 0) || !PAR(cr))
-
-#define MIDDLEMAN(cr)  ((cr)->nhelper_per_middleman == 0 || (cr)->nodeid % (cr)->nhelper_per_middleman == 0)
 
 //! True if this is the particle-particle master
 #define SIMMASTER(cr)  ((MASTER(cr) && thisRankHasDuty((cr), DUTY_PP)) || !PAR(cr))

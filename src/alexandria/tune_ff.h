@@ -23,7 +23,7 @@
 
 #include "molgen.h"
 #include "bayes.h"
-#include "sharedindividualinfo.h"
+#include "staticindividualinfo.h"
 #include "acmfitnesscomputer.h"
 #include "acminitializer.h"
 #include "ga/Mutator.h"
@@ -57,8 +57,6 @@ private:
     bool verbose_ = false;
     //! Pointer to log file
     gmx::unique_cptr<FILE, my_fclose> fplog_ = nullptr;
-    //! File name for the output force field file
-    std::string outputFile_;
     //! GROMACS communication data structure
     t_commrec            *cr_   = nullptr;
     //! GROMACS output environment
@@ -69,29 +67,36 @@ private:
     BayesConfigHandler    bch_;
     //! GAConfigHandler instance
     GAConfigHandler       gach_;
-    //! SharedIndividualInfo instance
-    SharedIndividualInfo  sii_;
+    //! StaticIndividualInfo instance
+    StaticIndividualInfo  *sii_        = nullptr;
 
     // This is for MASTER node
     //! GeneticAlgorithm instance
     ga::GeneticAlgorithm *ga_          = nullptr;
 
-    // This is for the HELPER node (and MASTER when sensitivity)
     //! Pointer to ACMFitnessComputer since it will be initialized later
     ACMFitnessComputer   *fitComp_     = nullptr;
-    //! Pointer to ACMIndividual which will be casted from \p baseInd_
-    ACMIndividual        *ind_         = nullptr;
+    //! Pointer to ACMInitializer, needed by Master
+    ACMInitializer       *initializer_ = nullptr;
+    //! Pointer to ACMMutator, needed by Master
+    ga::Mutator          *mutator_ = nullptr;
 
 public:
 
     //! Constructor
     OptACM()
-    : cr_(init_commrec()), mg_(cr_), sii_(cr_) {}
+    : cr_(init_commrec()), mg_(cr_)
+    {
+        sii_ = new StaticIndividualInfo(cr_);
+    }
 
     //! Destructor
     ~OptACM()
     {
-        if (cr_) done_commrec(cr_);
+        if (cr_)
+        {
+            done_commrec(cr_);
+        }
     }
 
     virtual void add_pargs(std::vector<t_pargs> *pargs);
@@ -116,33 +121,22 @@ public:
      */
     void initChargeGeneration(iMolSelect ims);
 
-    /*! \brief
-     * Do the actual optimization.
-     * \param[in] xvgconv     Output file monitoring parameters
-     * \param[in] xvgepot     Output file monitoring penalty function
+    /*! \brief Do the actual optimization.
      * \param[in] optimize    If true an optimization will be done
      * \param[in] sensitivity If true, a sensitivity analysis will be done
      * \return true if better parameters were found.
      */
-    bool runMaster(const char *xvgconv,
-                   const char *xvgepot,
-                   bool optimize,
+    bool runMaster(bool optimize,
                    bool sensitivity);
-
-    /*! \brief
-     * For the helper nodes.
-     */
-    void runHelper();
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * BEGIN: Initializing stuff                *
     * * * * * * * * * * * * * * * * * * * * * */
 
-    //! \brief Initialize the ACMFitnessComputer
-    void initFitComp();
-
-    //! \brief Initialize the Genetic Algorithm
-    void initGA();
+    /*! \brief Initialize the main components of the
+     * Genetic Algorithm, just on the master.
+     */
+    void initMaster();
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * END: Initializing stuff                  *
@@ -181,23 +175,17 @@ public:
     //! \brief Get the BayesConfigHandler \p bch_ pointer
     BayesConfigHandler *bch() { return &bch_; }
 
-    //! \brief Get the SharedIndividualInfo \p sii_ pointer
-    SharedIndividualInfo *sii() { return &sii_; }
+    //! \brief Get the GAConfigHandler \p gach_ pointer
+    GAConfigHandler *gach() { return &gach_; }
+
+    //! \brief Get the StaticIndividualInfo \p sii_ pointer
+    StaticIndividualInfo *sii() { return sii_; }
 
     //! \brief Get the ACMFitnessComputer \p fitComp_ pointer
     ACMFitnessComputer *fitComp() { return fitComp_; }
 
-    //! \brief Get the ACMIndividual \p ind_ pointer
-    ACMIndividual *ind() { return ind_; }
-
     //! \brief Get the GeneticAlgorithm \p ga_ pointer
     ga::GeneticAlgorithm *ga() { return ga_; }
-
-    /*! \brief Get the \p bestInd_ pointer
-     * Note that we cannot be sure that the Individual stored in ga_ is 
-     * of the right type!
-     */
-    ACMIndividual *bestInd() { return static_cast<ACMIndividual *>(ga_->bestInd()); }
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * END: Getters and setters                 *

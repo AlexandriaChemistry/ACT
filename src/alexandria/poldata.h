@@ -279,6 +279,9 @@ class Poldata
          */
         std::vector<ParticleType> *particleTypes() { return &alexandria_; }
 
+        //! \return the number of particle types
+        int nParticleTypes() const { return alexandria_.size(); }
+        
         /*! \brief Return const vector \p alexandria_
          */
         const std::vector<ParticleType> &particleTypesConst() const { return alexandria_; }
@@ -436,14 +439,34 @@ class Poldata
         //! Turn polarizability on or off automatically
         void checkForPolarizability();
 
-        //! Spread from master to helper nodes
-        void  broadcast(const t_commrec *cr);
+        /*! Spread from master to other nodes
+         * \param[in] cr Communication record
+         */
+        void sendToHelpers(const t_commrec *cr);
 
-        //! Spread eemprop from master to helper nodes
-        void broadcast_eemprop(const t_commrec *cr);
+        /*! Spread eemprop to a helper node
+         * \param[in] cr   Communication record
+         * \param[in] dest Destination node
+         */
+        void sendEemprops(const t_commrec *cr, int dest);
+    
+        /*! Receive eemprop from someone
+         * \param[in] cr  Communication record
+         * \param[in] src Source node
+         */
+        void receiveEemprops(const t_commrec *cr, int src);
         
-        //! Spread mutable particle properties from master to helper nodes
-        void broadcast_particles(const t_commrec *cr);
+        /*! Spread mutable particle properties to a helper node
+         * \param[in] cr   Communication record
+         * \param[in] dest Destination node
+         */
+        void sendParticles(const t_commrec *cr, int dest);
+        
+        /*! Receive particles from someone
+         * \param[in] cr  Communication record
+         * \param[in] src Source node
+         */
+        void receiveParticles(const t_commrec *cr, int src);
         
         CommunicationStatus Send(const t_commrec *cr, int dest);
 

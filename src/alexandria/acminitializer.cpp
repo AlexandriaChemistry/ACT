@@ -20,7 +20,7 @@ namespace alexandria
 /* * * * * * * * * * * * * * * * * * * *
 * BEGIN: ACMInitializer                *
 * * * * * * * * * * * * * * * * * * * */
-ACMInitializer::ACMInitializer(SharedIndividualInfo   *sii,
+ACMInitializer::ACMInitializer(StaticIndividualInfo   *sii,
                                bool                    randInit,
                                const std::string      &outputFile,
                                int                     seed)
@@ -42,8 +42,8 @@ ACMInitializer::ACMInitializer(SharedIndividualInfo   *sii,
 
 ga::Individual *ACMInitializer::initialize()
 {
-    auto ind = new ACMIndividual(nCreated_, sii_, outputFile_);
-    nCreated_++;
+    int id = middleManLocalIndex(sii_->commrec());
+    auto ind = new ACMIndividual(id, sii_, outputFile_);
     if (randInit_)
     // Insert random value in range
     {
@@ -53,7 +53,7 @@ ga::Individual *ACMInitializer::initialize()
                           + sii_->lowerBoundAtIndex(i));
         }
     }
-    else  // Insert default values in SharedIndividualInfo
+    else  // Insert default values in StaticIndividualInfo
     {
         for (const double val : sii_->defaultParam())
         {

@@ -7,13 +7,11 @@
 #ifndef GA_SELECTOR_H
 #define GA_SELECTOR_H
 
-
 #include <random>
 #include <time.h>
 #include <vector>
 
-#include "Individual.h"
-
+#include "Genome.h"
 
 namespace ga
 {
@@ -29,10 +27,10 @@ public:
 
     /*!
      * Select an individual (by index) from the population
-     * \param[in] pop   the population
+     * \param[in] pop   Pointer to the genes
      * \return          the index of the selected individual
      */
-    virtual int select(const std::vector<Individual*> &pop) = 0;
+    virtual int select(const std::vector<Genome> *pop) = 0;
 
 };
 
@@ -59,7 +57,7 @@ public:
         gen.seed(::time(NULL));
     }
 
-    virtual int select(const std::vector<Individual*> &pop);
+    virtual int select(const std::vector<Genome> *pop);
 
 };
 

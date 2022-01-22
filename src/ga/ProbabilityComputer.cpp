@@ -2,32 +2,27 @@
  * Implements part of the alexandria program.
  * \author Julian Ramon Marrades Furquet <julian.marrades@hotmail.es>
  */
-
-
 #include "ProbabilityComputer.h"
 
 #include <math.h>
 
-
 namespace ga
 {
-
 
 /* * * * * * * * * * * * * * * * * * * * * *
 * BEGIN: FitnessProbabilityComputer        *
 * * * * * * * * * * * * * * * * * * * * * */
 
-void FitnessProbabilityComputer::compute(std::vector<Individual*> *pop)
+void FitnessProbabilityComputer::compute(std::vector<Genome> *pop)
 {
     double total = 0;
-    size_t i;
-    for (i = 0; i < pop->size(); i++)
+    for (size_t i = 0; i < pop->size(); i++)
     {
-        total += (*pop)[i]->fitnessTrain();
+        total += (*pop)[i].fitness(iMolSelect::Train);
     }
-    for (i = 0; i < pop->size(); i++)
+    for (size_t i = 0; i < pop->size(); i++)
     {
-        (*pop)[i]->setProbability((*pop)[i]->fitnessTrain() / total);
+        (*pop)[i].setProbability((*pop)[i].fitness(iMolSelect::Train) / total);
     }
 }
 
@@ -39,18 +34,19 @@ void FitnessProbabilityComputer::compute(std::vector<Individual*> *pop)
 * BEGIN: BoltzmannProbabilityComputer      *
 * * * * * * * * * * * * * * * * * * * * * */
 
-void BoltzmannProbabilityComputer::compute(std::vector<Individual*> *pop)
+void BoltzmannProbabilityComputer::compute(std::vector<Genome> *pop)
 {
-    double total = 0;
-    size_t i;
-    for (i = 0; i < pop->size(); i++)
+    //! Stores \f$ e^{f_i} \f$ for each Individual \f$ i \f$
+    std::vector<double> exponentials;
+    double              total = 0;
+    for (size_t i = 0; i < pop->size(); i++)
     {
-        exponentials_[i] = exp((*pop)[i]->fitnessTrain() / temperature_);
-        total += exponentials_[i];
+        exponentials.push_back(exp((*pop)[i].fitness(iMolSelect::Train) / temperature_));
+        total += exponentials[i];
     }
-    for (i = 0; i < pop->size(); i++)
+    for (size_t i = 0; i < pop->size(); i++)
     {
-        (*pop)[i]->setProbability(exponentials_[i] / total);
+        (*pop)[i].setProbability(exponentials[i] / total);
     }
 }
 
@@ -62,11 +58,11 @@ void BoltzmannProbabilityComputer::compute(std::vector<Individual*> *pop)
 * BEGIN: RankProbabilityComputer           *
 * * * * * * * * * * * * * * * * * * * * * */
 
-void RankProbabilityComputer::compute(std::vector<Individual*> *pop)
+void RankProbabilityComputer::compute(std::vector<Genome> *pop)
 {
     for (size_t i = 0; i < pop->size(); i++)
     {
-        (*pop)[i]->setProbability((pop->size() - i) / sumOfRanks_);
+        (*pop)[i].setProbability((pop->size() - i) / sumOfRanks_);
     }
 }
 
