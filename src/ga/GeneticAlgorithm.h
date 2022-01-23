@@ -87,8 +87,9 @@ public:
  
     /*! \brief Evolve the initial population
      * \param[out] bestGenome The best genome found during the evolution
+     * \return whether a genome with better fitness was found.
      */
-    virtual void evolve(Genome *bestGenome) = 0;
+    virtual bool evolve(Genome *bestGenome) = 0;
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * BEGIN: Getters and Setters               *

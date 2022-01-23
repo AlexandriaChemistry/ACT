@@ -12,7 +12,6 @@
 namespace alexandria
 {
 
-
 void PercentMutator::mutate(ga::Genome *genome,
                             gmx_unused ga::Genome *bestGenome,
                             double      prMut)
@@ -31,7 +30,6 @@ void PercentMutator::mutate(ga::Genome *genome,
             genome->setBase(i, newVal);
         }
     }
-
 }
 
 

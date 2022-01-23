@@ -11,17 +11,17 @@
 namespace ga
 {
 
-void MCMC::evolve(ga::Genome *bestGenome)
+bool MCMC::evolve(ga::Genome *bestGenome)
 {
     if (populationSize() != 1)
     {
         fprintf(stderr, "MCMC needs to have exactly one individual!\n");
-        return;
+        return false;
     }
     if (sii_->nParam() < 1)
     {
         fprintf(stderr, "Cannot evolve a chromosome without genes.\n");
-        return;
+        return false;
     }
     // Simplify syntax, create individual
     auto *ind = static_cast<alexandria::ACMIndividual *>(initializer()->initialize());
@@ -31,20 +31,22 @@ void MCMC::evolve(ga::Genome *bestGenome)
     mutator()->finalize();
     
     delete ind;
+    
+    return mutator()->foundMinimum();
 }
 
-void HybridGAMC::evolve(ga::Genome *bestGenome)
+bool HybridGAMC::evolve(ga::Genome *bestGenome)
 {
     if (gach_->popSize() < 2)
     {
         fprintf(stderr, "Need at least two individuals in the population.\n");
-        return;
+        return false;
     }
     auto cr = sii_->commrec();
     if (cr->nmiddlemen < 1)
     {
         fprintf(stderr, "Need at least two cores/processes to run the genetic algorithm.\n");
-        return; 
+        return false; 
     }
     if (logFile_)
     {
@@ -106,6 +108,7 @@ void HybridGAMC::evolve(ga::Genome *bestGenome)
     // TODO Check whether we need to update this at all here
     *bestGenome    = pool[pold]->genome(bestIndex);
     
+    bool bMinimum = false;
     // Iterate and create new generation
     do
     {
@@ -215,6 +218,7 @@ void HybridGAMC::evolve(ga::Genome *bestGenome)
                               logFile_);
             *bestGenome = pool[pold]->genome(newBest); 
             bestGenome->print("New best:\n", logFile_);
+            bMinimum = true;
         }
     }
     while (!terminator()->terminate(pool[pold], generation));
@@ -227,7 +231,8 @@ void HybridGAMC::evolve(ga::Genome *bestGenome)
         fprintf(logFile_, "\nGA/HYBRID Evolution is done!\n");
     }
     bestGenome->print("Best: ", logFile_);
-    
+
+    return bMinimum;    
 }
 
 } // namespace ga

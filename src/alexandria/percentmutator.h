@@ -24,7 +24,6 @@ private:
     StaticIndividualInfo *sii_;
     //! The maximum change allowed as percent/100 of the range
     double                percent_;
-
 public:
 
     /*!
@@ -48,6 +47,9 @@ public:
     virtual void stopHelpers() {}
     
     virtual void finalize() {}
+    
+    //! \return whether a minimum was found
+    bool foundMinimum() { return false; }
 };
 
 

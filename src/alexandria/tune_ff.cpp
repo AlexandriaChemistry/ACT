@@ -350,14 +350,14 @@ void OptACM::initMaster(const std::string &outputFile)
 
 bool OptACM::runMaster(bool        optimize,
                        bool        sensitivity)
-    {
+{
     GMX_RELEASE_ASSERT(MASTER(cr_), "I thought I was the master...");
-    bool bMinimum = true;  // FIXME: what do we do with this???
 
     print_memory_usage(debug);
+    bool bMinimum = false;
     if (optimize)
     {
-        ga_->evolve(ga_->bestGenomePtr());
+        bMinimum = ga_->evolve(ga_->bestGenomePtr());
     }
     auto mut = static_cast<MCMCMutator *>(ga_->mutator());
     if (gach_.optimizer() != OptimizerAlg::GA && sensitivity)
@@ -375,9 +375,6 @@ bool OptACM::runMaster(bool        optimize,
     {
         mut->printMonteCarloStatistics(logFile(), ga_->bestGenomePtr());
     }
-
-    // ID 0 corresponds to the best individual
-    //bestInd()->setId(0);
 
     if (bMinimum)
     {

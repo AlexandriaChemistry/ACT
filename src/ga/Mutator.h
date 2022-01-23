@@ -50,6 +50,8 @@ public:
     virtual void stopHelpers() = 0;
     
     virtual void finalize() = 0;
+    
+    virtual bool foundMinimum() = 0;
 };
 
 

@@ -180,7 +180,7 @@ public:
     }
 
     //! \return whether a minimum was found
-    bool foundMinimum() const { return bMinimum_; }
+    bool foundMinimum() { return bMinimum_; }
 
     /*!
      * \brief Print the MC statistics to a file.

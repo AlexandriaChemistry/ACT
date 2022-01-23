@@ -55,8 +55,8 @@ public:
                        nullptr, probComputer, selector, crossover, mutator, terminator,
                        gach->popSize()), sii_(sii), gach_(gach), logFile_(logFile) {}
  
-    //! \brief Evolve the initial population
-    virtual void evolve(ga::Genome *bestGenome);
+    //! \copydocs ga::GeneticAlgorithm::evolve
+    virtual bool evolve(ga::Genome *bestGenome);
     
 };
 
@@ -89,8 +89,8 @@ public:
                        gach->popSize()),
       sii_(sii), logFile_(logFile), evaluateTestSet_(evaluateTestSet) {}
     
-    //! \brief Evolve the initial population
-    virtual void evolve(ga::Genome *bestGenome);
+    //! \copydocs ga::GeneticAlgorithm::evolve
+    virtual bool evolve(ga::Genome *bestGenome);
     
 };
 
