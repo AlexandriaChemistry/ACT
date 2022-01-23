@@ -174,14 +174,23 @@ void OptACM::optionsFinished(const std::string &outputFile) {
         GMX_THROW(gmx::InvalidInputError(gmx::formatString("Cannot handle %d individuals with %d cores/threads",
                   gach_.popSize(), cr_->nnodes).c_str()));
     }
-    cr_->nmiddlemen            = gach_.popSize();
-    cr_->nhelper_per_middleman = (cr_->nnodes-1) / cr_->nmiddlemen - 1;
-    // We are picky. Each individual needs the same number of helpers
-    if (!((cr_->nhelper_per_middleman == 0 && cr_->nnodes == 1+cr_->nmiddlemen) ||
-          (cr_->nhelper_per_middleman > 0 && cr_->nnodes % cr_->nhelper_per_middleman == 1)))
+    if (gach_.optimizer() == OptimizerAlg::MCMC)
     {
-        GMX_THROW(gmx::InvalidInputError(gmx::formatString("The number of cores/threads (%d) should be the product of the number of helpers (%d) and the number of individuals (%d) plus 1 for the overlord",
-                                                           cr_->nnodes, cr_->nhelper_per_middleman, cr_->nmiddlemen).c_str()));
+        cr_->nmiddlemen            = 0;
+        cr_->nhelper_per_middleman = cr_->nnodes-1;
+    }
+    else
+    {
+        cr_->nmiddlemen            = gach_.popSize();
+        cr_->nhelper_per_middleman = (cr_->nnodes-1) / cr_->nmiddlemen - 1;
+    
+        // We are picky. Each individual needs the same number of helpers
+        if (!((cr_->nhelper_per_middleman == 0 && cr_->nnodes == 1+cr_->nmiddlemen) ||
+              (cr_->nhelper_per_middleman > 0 && cr_->nnodes % (1+cr_->nhelper_per_middleman) == 1)))
+        {
+            GMX_THROW(gmx::InvalidInputError(gmx::formatString("The number of cores/threads (%d) should be the product of the number of helpers (%d) and the number of individuals (%d) plus 1 for the overlord",
+                                                               cr_->nnodes, cr_->nhelper_per_middleman, cr_->nmiddlemen).c_str()));
+        }
     }
     {
         // Create ACT communicators for helpers and middlemen
@@ -193,14 +202,20 @@ void OptACM::optionsFinished(const std::string &outputFile) {
             key   = cr_->nodeid-1;
         }
         MPI_Comm_split(cr_->mpi_comm_mysim, color, key, &cr_->mpi_act_not_master);
+        // Default value
+        cr_->mpi_act_helpers = MPI_COMM_WORLD;
         if (!MASTER(cr_))
         {
             int nonMasterSize;
             MPI_Comm_size(cr_->mpi_act_not_master, &nonMasterSize);
             int myrank;
             MPI_Comm_rank(cr_->mpi_act_not_master, &myrank);
-            MPI_Comm_split(cr_->mpi_act_not_master, myrank / cr_->nmiddlemen,
-                           myrank % cr_->nmiddlemen, &cr_->mpi_act_helpers);
+            if (cr_->nmiddlemen > 0)
+            {
+                // Split the non-masters into nmiddlemen X nhelpers
+                MPI_Comm_split(cr_->mpi_act_not_master, myrank / cr_->nmiddlemen,
+                               myrank % cr_->nmiddlemen, &cr_->mpi_act_helpers);
+            }
         }
     }
 }
@@ -210,9 +225,12 @@ void OptACM::openLogFile(const char *logfileName) {
 }
 
 FILE *OptACM::logFile() {
-    if (fplog_) {
+    if (fplog_) 
+    {
         return fplog_.get();
-    } else {
+    }
+    else
+    {
         return nullptr;
     }
 }
@@ -257,37 +275,27 @@ void OptACM::initChargeGeneration(iMolSelect ims)
     }
 }
 
-void OptACM::initMaster()
+void OptACM::initMaster(const std::string &outputFile)
 {
-    ga::Sorter *sorter = nullptr;
-    // Sorter
-    if (strcmp(gach_.sorter(), "QUICK") == 0)
-    {
-        sorter = new ga::QuickSorter(false);
-    }
-#ifdef OLD
-    else if (strcmp(gach_.sorter(), "MERGE") == 0)
-    {
-        sorter = new ga::MergeSorter(gach_.popSize(), false);
-    }
-#endif
-    else  // No sorting requested
-    {
-        sorter = new ga::EmptySorter();
-    }
     ga::ProbabilityComputer *probComputer = nullptr;
     // ProbabilityComputer
-    if (strcmp(gach_.probComputer(), "RANK") == 0)
+    switch (gach_.probabilityComputerAlg())
     {
-        probComputer = new ga::RankProbabilityComputer(gach_.popSize());
-    }
-    else if (strcmp(gach_.probComputer(), "FITNESS") == 0)
-    {
-        probComputer = new ga::FitnessProbabilityComputer();
-    }
-    else  // BOLTZMANN
-    {
-        probComputer = new ga::BoltzmannProbabilityComputer(gach_.boltzTemp());
+    case ProbabilityComputerAlg::pcRANK:
+        {
+            probComputer = new ga::RankProbabilityComputer(gach_.popSize());
+            break;
+        }
+    case ProbabilityComputerAlg::pcFITNESS:
+        {
+            probComputer = new ga::FitnessProbabilityComputer();
+            break;
+        }
+    case ProbabilityComputerAlg::pcBOLTZMANN:
+        {
+            probComputer = new ga::BoltzmannProbabilityComputer(gach_.boltzTemp());
+            break;
+        }
     }
     
     // Fitness computer
@@ -295,13 +303,17 @@ void OptACM::initMaster()
                                       false, false, false);
     
     // Create and initialize the mutator
-    if (strcmp(gach_.optimizer(), "GA") == 0)
+    ga::Mutator *mutator;
+    if (gach_.optimizer() == OptimizerAlg::GA)
     {
-        mutator_ = new alexandria::PercentMutator(sii_, gach_.percent());
+        mutator = new alexandria::PercentMutator(sii_, gach_.percent());
     }
     else
     {
-        mutator_ = new alexandria::MCMCMutator(nullptr, verbose(), &bch_, fitComp_, sii_);
+        auto mut = new alexandria::MCMCMutator(nullptr, verbose(), &bch_, fitComp_, sii_);
+        mut->openParamConvFiles(oenv());
+        mut->openChi2ConvFile(oenv(), bch()->evaluateTestset());
+        mutator = mut;
     }
     
     // Selector
@@ -317,25 +329,28 @@ void OptACM::initMaster()
     // Terminator
     auto *terminator = new ga::GenerationTerminator(gach_.maxGenerations());
     
-    if (strcmp(gach_.optimizer(), "MCMC") == 0)
+    if (gach_.optimizer() == OptimizerAlg::MCMC)
     {
-        ga_ = new ga::MCMC(logFile(), initializer_,
-                           fitComp_, sorter, probComputer,
-                           selector, crossover, mutator_, terminator, sii_,
+        auto initializer = new ACMInitializer(sii_, gach_.randomInit(),
+                                              outputFile, bch_.seed());
+    
+        ga_ = new ga::MCMC(logFile(), initializer,
+                           fitComp_, probComputer,
+                           selector, crossover, mutator, terminator, sii_,
                            &gach_, bch_.evaluateTestset());
     }
     else
     {
-        ga_ = new ga::HybridGAMC(logFile(), initializer_,
-                                 fitComp_, sorter, probComputer,
-                                 selector, crossover, mutator_, terminator, sii_,
+        ga_ = new ga::HybridGAMC(logFile(), nullptr,
+                                 fitComp_, probComputer,
+                                 selector, crossover, mutator, terminator, sii_,
                                  &gach_);
     }
 }
 
 bool OptACM::runMaster(bool        optimize,
                        bool        sensitivity)
-{
+    {
     GMX_RELEASE_ASSERT(MASTER(cr_), "I thought I was the master...");
     bool bMinimum = true;  // FIXME: what do we do with this???
 
@@ -345,7 +360,7 @@ bool OptACM::runMaster(bool        optimize,
         ga_->evolve(ga_->bestGenomePtr());
     }
     auto mut = static_cast<MCMCMutator *>(ga_->mutator());
-    if (strcmp(gach_.optimizer(), "GA") != 0 && sensitivity)
+    if (gach_.optimizer() != OptimizerAlg::GA && sensitivity)
     {
         // Do sensitivity analysis only on the training set
         mut->sensitivityAnalysis(ga_->bestGenomePtr(), iMolSelect::Train);
@@ -356,7 +371,7 @@ bool OptACM::runMaster(bool        optimize,
         int dest = middleManGlobalIndex(sii_->commrec(), i);
         gmx_send_int(sii_->commrec(), dest, 0);
     }
-    if (strcmp(gach_.optimizer(), "GA") != 0)
+    if (gach_.optimizer() != OptimizerAlg::GA)
     {
         mut->printMonteCarloStatistics(logFile(), ga_->bestGenomePtr());
     }
@@ -373,7 +388,7 @@ bool OptACM::runMaster(bool        optimize,
         }
         // If MCMC was chosen as optimizer, restore best parameter set
         // TODO CHECK THIS
-        if (strcmp(gach_.optimizer(), "MCMC") == 0)
+        if (gach_.optimizer() == OptimizerAlg::MCMC)
         {
             //bestGenome()->setParam(best);
         }
@@ -538,7 +553,9 @@ int tune_ff(int argc, char *argv[])
         GMX_RELEASE_ASSERT(fns.size() == 1 || fns.size() == opt.gach()->popSize(),
                            gmx::formatString("Please pass exactly one or %d (popSize) force field file names", opt.gach()->popSize()).c_str());
         
-        if (fns.size() == 1 || MASTER(opt.commrec()))
+        if (fns.size() == 1 || 
+            MASTER(opt.commrec()) || 
+            opt.commrec()->nmiddlemen == 0)
         {
             opt.sii()->fillPoldata(fp, fns[0].c_str());
         }
@@ -570,6 +587,20 @@ int tune_ff(int argc, char *argv[])
     opt.sii()->generateOptimizationIndex(fp, opt.mg());
     opt.sii()->fillVectors(opt.mg()->mindata());
     opt.sii()->assignParamClassIndex();
+    opt.sii()->computeWeightedTemperature(opt.bch()->temperatureWeighting());
+    // Set the output file names, has to be done before
+    // creating a mutator.
+    if (bOptimize)
+    {
+        std::vector<std::string> paramClass;
+        for(const auto &fm : opt.mg()->typesToFit())
+        {
+            paramClass.push_back(fm.first);
+        }
+        opt.sii()->setOutputFiles(opt2fn("-conv", filenms.size(), filenms.data()), 
+                                  paramClass,
+                                  opt2fn("-epot", filenms.size(), filenms.data()));
+    }
 
     // init charge generation for compounds in the
     // training set
@@ -585,20 +616,9 @@ int tune_ff(int argc, char *argv[])
     // Create ACMFitnessComputer and fill the DevComputers
     // This is needed on all nodes.
 
-    if (actMiddleMan(opt.commrec()))
+    if (MASTER(opt.commrec()))
     {
-        // Master and Individuals (middle-men) need to initialize more,
-        // so let's go.
-        ACTMiddleMan middleman(opt.logFile(),
-                               opt2fn("-conv", filenms.size(), filenms.data()),
-                               opt2fn("-epot", filenms.size(), filenms.data()),
-                               bOptimize, opt.mg(), opt.sii(), opt.gach(), opt.bch(),
-                               "output.xml", opt.verbose(), opt.oenv());
-        middleman.run();
-    }
-    else if (MASTER(opt.commrec()))
-    {
-        opt.initMaster();
+        opt.initMaster(opt2fn("-o", filenms.size(), filenms.data()));
 
         // Master only
         bool bMinimum = opt.runMaster(bOptimize, bSensitivity);
@@ -625,6 +645,16 @@ int tune_ff(int argc, char *argv[])
         {
             printf("No improved parameters found. Please try again with more iterations.\n");
         }
+    }
+    else if (actMiddleMan(opt.commrec()))
+    {
+        // Master and Individuals (middle-men) need to initialize more,
+        // so let's go.
+        ACTMiddleMan middleman(opt.logFile(),
+                               opt.mg(), opt.sii(), opt.gach(), opt.bch(),
+                               opt2fn("-o", filenms.size(), filenms.data()),
+                               opt.verbose(), opt.oenv());
+        middleman.run();
     }
     else if (bOptimize || bSensitivity)
     {

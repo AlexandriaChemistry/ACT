@@ -6,19 +6,73 @@
  * \author Oskar Tegby <oskar.tegby@it.uu.se>
  */
 
-
 #include "confighandler.h"
 
-#include <string.h>
+#include <cstring>
+#include <map>
 
-#include "gromacs/utility/arraysize.h"
 #include "gromacs/math/units.h"
+#include "gromacs/utility/arraysize.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
-
+#include "gromacs/utility/stringutil.h"
 
 namespace alexandria
 {
 
+std::map<OptimizerAlg, std::string> opt2str =
+    {
+        { OptimizerAlg::MCMC,   "MCMC"   },
+        { OptimizerAlg::GA,     "GA"     },
+        { OptimizerAlg::HYBRID, "HYBRID" }
+    };
+    
+OptimizerAlg stringToOptimizerAlg(const std::string &str)
+{
+    for(auto &o2s : opt2str)
+    {
+        if (str == o2s.second)
+        {
+            return o2s.first;
+        }
+    }
+    GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such Optimizer %s",
+                                                       str.c_str()).c_str()));
+    // To satisfy the compiler
+    return OptimizerAlg::GA;
+}
+
+const std::string &optimizerAlgToString(OptimizerAlg opt)
+{
+    return opt2str[opt];
+}
+
+std::map<ProbabilityComputerAlg, std::string> prob2str =
+    {
+        { ProbabilityComputerAlg::pcRANK,      "RANK"      },
+        { ProbabilityComputerAlg::pcFITNESS,   "FITNESS"   },
+        { ProbabilityComputerAlg::pcBOLTZMANN, "BOLTZMANN" }
+    };
+    
+ProbabilityComputerAlg stringToProbabilityComputerAlg(const std::string &str)
+{
+    for(auto &o2s : prob2str)
+    {
+        if (str == o2s.second)
+        {
+            return o2s.first;
+        }
+    }
+    GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such ProbabilityComputer %s",
+                                                       str.c_str()).c_str()));
+    // To satisfy the compiler
+    return ProbabilityComputerAlg::pcRANK;
+}
+
+const std::string &probabilityComputerAlgToString(ProbabilityComputerAlg opt)
+{
+    return prob2str[opt];
+}
 
 /* * * * * * * * * * * * * * * * * * * * * *
 * BEGIN: BayesConfigHandler                *

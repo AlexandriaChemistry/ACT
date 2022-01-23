@@ -45,6 +45,8 @@ public:
                         ga::Genome *bestGenome,
                         double      prMut);
 
+    virtual void stopHelpers() {}
+    
     virtual void finalize() {}
 };
 

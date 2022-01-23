@@ -18,7 +18,6 @@
 #include "ga/Mutator.h"
 #include "ga/ProbabilityComputer.h"
 #include "ga/Selector.h"
-#include "ga/Sorter.h"
 #include "ga/Terminator.h"
 
 #include "confighandler.h"
@@ -45,7 +44,6 @@ public:
     HybridGAMC(FILE                                *logFile,
                Initializer                         *initializer,
                FitnessComputer                     *fitnessComputer,
-               Sorter                              *sorter,
                ProbabilityComputer                 *probComputer,
                Selector                            *selector,
                Crossover                           *crossover,
@@ -54,7 +52,7 @@ public:
                alexandria::StaticIndividualInfo    *sii,
                alexandria::GAConfigHandler         *gach)
     : GeneticAlgorithm(initializer, fitnessComputer,
-                       sorter, probComputer, selector, crossover, mutator, terminator,
+                       nullptr, probComputer, selector, crossover, mutator, terminator,
                        gach->popSize()), sii_(sii), gach_(gach), logFile_(logFile) {}
  
     //! \brief Evolve the initial population
@@ -78,7 +76,6 @@ public:
     MCMC(FILE                                *logFile,
          Initializer                         *initializer,
          FitnessComputer                     *fitnessComputer,
-         Sorter                              *sorter,
          ProbabilityComputer                 *probComputer,
          Selector                            *selector,
          Crossover                           *crossover,
@@ -88,7 +85,7 @@ public:
          alexandria::GAConfigHandler         *gach,
          bool                                 evaluateTestSet)
     : GeneticAlgorithm(initializer, fitnessComputer,
-                       sorter, probComputer, selector, crossover, mutator, terminator,
+                       nullptr, probComputer, selector, crossover, mutator, terminator,
                        gach->popSize()),
       sii_(sii), logFile_(logFile), evaluateTestSet_(evaluateTestSet) {}
     

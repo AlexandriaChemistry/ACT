@@ -5,20 +5,15 @@
  * \author Julian Ramon Marrades Furquet <julian.marrades@hotmail.es>
  * \author Oskar Tegby <oskar.tegby@it.uu.se>
  */
-
-
 #ifndef ALEXANDRIA_CONFIGHANDLER_H
 #define ALEXANDRIA_CONFIGHANDLER_H
-
 
 #include <vector>
 
 #include "gromacs/commandline/pargs.h"
 
-
 namespace alexandria
 {
-
 
 /*!
  * Abstract class to handle configuration for methods.
@@ -43,6 +38,37 @@ public:
     virtual void check_pargs() = 0;
 
 };
+
+//! \brief Class to select the optimizer to use
+enum class OptimizerAlg { MCMC, GA, HYBRID };
+
+/*! \brief Convert string into OptimizerAlg
+ * \param[in] str The string
+ * \return the optimizer algorithm
+ * \throws if there is no optimizer matching the string
+ */
+OptimizerAlg stringToOptimizerAlg(const std::string &str);
+
+/*! \brief Convert OptimizerAlg to string
+ * \param[in] opt The optimizer
+ * \return The corresponding string
+ */
+const std::string &optimizerAlgToString(OptimizerAlg opt);
+
+enum class ProbabilityComputerAlg { pcRANK, pcFITNESS, pcBOLTZMANN };
+
+/*! \brief Convert string into ProbabilityComputerAlg
+ * \param[in] str The string
+ * \return the ProbabilityComputer algorithm
+ * \throws if there is no ProbabilityComputer matching the string
+ */
+ProbabilityComputerAlg stringToProbabilityComputerAlg(const std::string &str);
+
+/*! \brief Convert ProbabilityComputerAlg to string
+ * \param[in] opt The ProbabilityComputer
+ * \return The corresponding string
+ */
+const std::string &probabilityComputerAlgToString(ProbabilityComputerAlg opt);
 
 /*!
  * Handles optimization parameters for Genetic Algorithm
@@ -102,7 +128,7 @@ public:
     * * * * * * * * * * * * * * * * * * * * * */
 
     //! \return the optimizer
-    const char *optimizer() { return optimizer_[0]; }
+    OptimizerAlg optimizer() { return stringToOptimizerAlg(optimizer_[0]); }
 
     //! \return the size of the population
     int popSize() const { return popSize_; }
@@ -130,7 +156,7 @@ public:
     const char *sorter() const { return sorter_[0]; }
 
     //! \return the probability computer
-    const char *probComputer() const { return probComputer_[0]; }
+    ProbabilityComputerAlg probabilityComputerAlg() const { return stringToProbabilityComputerAlg(probComputer_[0]); }
 
     //! \return the Boltzmann temperature parameter
     real boltzTemp() const { return boltzTemp_; }

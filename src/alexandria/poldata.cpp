@@ -627,11 +627,11 @@ void Poldata::receiveEemprops(const t_commrec *cr, int src)
 
 void Poldata::sendToHelpers(const t_commrec *cr)
 {
-    GMX_RELEASE_ASSERT(!MASTER(cr), "I wasn't expecting no overlord here");
+    // TODO check GMX_RELEASE_ASSERT(!MASTER(cr), "I wasn't expecting no overlord here");
     int src = middleManGlobalIndex(cr);
-    if (actMiddleMan(cr))
+    if (actMiddleMan(cr) || (cr->nmiddlemen == 0 && MASTER(cr)))
     {
-        for (int dest = src+1; dest < src+cr->nhelper_per_middleman; dest++)
+        for (int dest = src+1; dest <= src+cr->nhelper_per_middleman; dest++)
         {
             auto cs = gmx_send_data(cr, dest);
             if (CS_OK == cs)

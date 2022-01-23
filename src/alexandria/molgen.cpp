@@ -59,7 +59,6 @@
 #include "poldata_xml.h"
 #include "tuning_utility.h"
 
-
 namespace alexandria
 {
 
@@ -685,28 +684,7 @@ size_t MolGen::Read(FILE            *fp,
         // compounds are distributed equally otherwise.
         for(auto &ts: targetSize_)
         {
-            std::vector<int> ntsNode;
-            int              nts  = nTargetSize(ts.first);
-            double           ntsD = 0;
-            if (cr_->nnodes > 32)
-            {
-                ntsNode.push_back(nts/(2*cr_->nnodes));
-                ntsD  = (1.0*(nts-ntsNode[0]))/(cr_->nnodes-1);
-            }
-            else
-            {
-                ntsNode.push_back(nts/cr_->nnodes);
-                ntsD = (1.0*nts)/cr_->nnodes;
-            }
-            double nTot = ntsNode[0]+0.001;
-            for(int i = 1; i < cr_->nnodes; i++)
-            {
-                nTot += ntsD;
-                ntsNode.push_back(std::min(nts, int(std::round(nTot))));
-            }
             int mymolIndex = 0;
-            int dest       = 0;
-            enum class MolDest { MiddleMan, Helper };
             std::set<int> destMiddleMen;
             for(int i = 0; i < cr_->nmiddlemen; i++)
             {
@@ -719,19 +697,30 @@ size_t MolGen::Read(FILE            *fp,
                     continue;
                 }
                 std::set<int> destAll = destMiddleMen;
-                if (mymolIndex++ >= ntsNode[dest])
+                if (cr_->nmiddlemen == 0)
+                {
+                    // Looks like an MCMC run where compounds are distributed evenly
+                    destAll.insert(mymolIndex % cr_->nnodes);
+                }
+                else if (cr_->nhelper_per_middleman > 0)
                 {
                     // We have to divide the molecules in a complicated manner.
                     // Each individual gets the complete set and divides it between
                     // helpers. 
-                    // For pure MCMC runs we have just one individual.
+                    int helperDest = mymolIndex % cr_->nhelper_per_middleman;
                     for(int i = 0; i < cr_->nmiddlemen; i++)
                     {
-                        destAll.insert(middleManGlobalIndex(cr_, i)+dest);
+                        destAll.insert(middleManGlobalIndex(cr_, i)+helperDest);
                     }
                 }
+                mymolIndex += 1;
                 for (auto &mydest : destAll)
                 {
+                    if (mydest == cr_->nodeid)
+                    {
+                        mymol.setSupport(eSupport::Local);
+                        continue;
+                    }
                     mymol.setSupport(eSupport::Remote);
                     if (nullptr != debug)
                     {
@@ -761,12 +750,6 @@ size_t MolGen::Read(FILE            *fp,
                 // Now modify the local copy
                 mymol.setSupport(eSupport::Local);
                 nLocal.find(mymol.datasetType())->second += 1;
-                
-                if ((immStatus::OK != imm) && (nullptr != debug))
-                {
-                    fprintf(debug, "IMM: Dest: %d %s - %s\n",
-                            dest, mymol.getMolname().c_str(), immsg(imm));
-                }
                 incrementImmCount(&imm_count, imm);
             }
         }
@@ -804,7 +787,7 @@ size_t MolGen::Read(FILE            *fp,
     {
         /***********************************************
          *                                             *
-         *           S L A V E   N O D E S             *
+         *          H E L P E R  N O D E S             *
          *                                             *
          ***********************************************/
         while (gmx_recv_int(cr_, 0) == 1)

@@ -50,7 +50,7 @@ void StaticIndividualInfo::fillPoldata(      FILE *fp,
         print_memory_usage(debug);
     }
     /* Broadcasting Force Field Data from Master to Helper nodes */
-    if (PAR(cr_) && !MASTER(cr_))
+    if ((PAR(cr_) && !MASTER(cr_)) || (MASTER(cr_) && cr_->nmiddlemen == 0))
     {
         pd_.sendToHelpers(cr_);
     }

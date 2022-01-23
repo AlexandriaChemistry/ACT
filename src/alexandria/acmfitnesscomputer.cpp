@@ -82,7 +82,7 @@ double ACMFitnessComputer::calcDeviation(std::vector<double> *params,
         // If we have e.g. 1 overlord and 3 middlemen with 1 helper each, we have
         // O M H M H M H. Now who is my middleman?
         // Do integer division, rounding down, the multiply again.
-        int src = 1+((cr->nodeid-1) / cr->nhelper_per_middleman) * cr->nhelper_per_middleman;
+        int src = middleManLocalIndex(cr);
         calcDev  = static_cast<CalcDev>(gmx_recv_int(cr, src));
         ims      = static_cast<iMolSelect>(gmx_recv_int(cr, src));
         myparams = new std::vector<double>;

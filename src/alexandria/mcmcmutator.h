@@ -145,31 +145,6 @@ private:
     /* * * * * * * * * * * * * * * * * * * * * *
     * END: File stuff                          *
     * * * * * * * * * * * * * * * * * * * * * */
-
-#ifdef OLD
-
-    /*!
-     * \brief Perform a mutation step
-     * \param[in] ind               pointer to a genome
-     * \param[in] param             pointer to parameter vector of the genome
-     * \param[in] changed           a reference to a vector which has true for parameters that change and false otherwise
-     * \param[in] prevEval          pointer to a double storage with the previous \f$ \chi^2 \f$ for training set
-     * \param[in] pp                index of inner loop over number of parameters
-     * \param[in] iter              current iteration number
-     * \param[in] beta0             pointer to beta for annealing
-     * \param[in] nParam            number of parameters in the model
-     */
-    void stepMutation(      ga::Genome             *ind,
-                            std::vector<double>    *param,
-                            std::vector<bool>      *changed,
-                            double                 *prevEval,
-                      const size_t                  pp,
-                      const int                     iter,
-                            double                 *beta0,
-                      const size_t                  nParam);
-   void mutateOld(      ga::Genome   *individual,
-                        const double  prMut);
-#endif
 public:
 
     /*!
@@ -237,6 +212,8 @@ public:
     void openChi2ConvFile(const gmx_output_env_t    *oenv,
                           const bool                 bEvaluate_testset);
     
+    void stopHelpers();
+
     //! Close \f$ \chi^2 \f$ and parameter convergence files
     void finalize();
 };

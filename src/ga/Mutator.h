@@ -47,6 +47,8 @@ public:
                         Genome *bestGenome,
                         double  prMut) = 0;
 
+    virtual void stopHelpers() = 0;
+    
     virtual void finalize() = 0;
 };
 

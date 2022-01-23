@@ -27,7 +27,7 @@ void MCMC::evolve(ga::Genome *bestGenome)
     auto *ind = static_cast<alexandria::ACMIndividual *>(initializer()->initialize());
     
     mutator()->mutate(ind->genomePtr(), bestGenome, evaluateTestSet_);
-
+    mutator()->stopHelpers();
     mutator()->finalize();
     
     delete ind;

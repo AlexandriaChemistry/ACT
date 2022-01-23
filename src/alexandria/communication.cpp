@@ -83,7 +83,7 @@ static CommunicationStatus gmx_recv_data_(const t_commrec *cr, int src, int line
 
     if ((kk != GMX_SEND_DATA) && (kk != GMX_SEND_DONE))
     {
-        gmx_fatal(FARGS, "Received %d in gmx_recv_data (line %d). Was expecting either %d or %d\n.", kk, line,
+        gmx_fatal(FARGS, "Received %d from src %d in gmx_recv_data (line %d). Was expecting either %d or %d\n.", kk, src, line,
                   (int)GMX_SEND_DATA, (int)GMX_SEND_DONE);
     }
     return CS_OK;

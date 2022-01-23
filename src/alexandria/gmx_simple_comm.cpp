@@ -185,12 +185,17 @@ void gmx_recv_double_vector(const t_commrec *cr, int src, std::vector<double> *d
 
 bool actMiddleMan(const t_commrec *cr)
 {
+    if (cr->nmiddlemen == 0)
+    {
+        return (MASTER(cr));
+    }
     if (cr->nodeid > 0)
     {
-        return (cr->nhelper_per_middleman == 0 || 
-                (cr->nodeid-1) % cr->nhelper_per_middleman == 0);
+        return ((cr->nmiddlemen > 0) &&
+                (cr->nhelper_per_middleman == 0 || 
+                 (cr->nodeid-1) % cr->nhelper_per_middleman == 0));
     }
-    return false;
+    return false; 
 }
 
 bool actHelper(const t_commrec *cr)
@@ -200,7 +205,11 @@ bool actHelper(const t_commrec *cr)
 
 int middleManLocalIndex(const t_commrec *cr)
 {
-    if (cr->nhelper_per_middleman == 0)
+    if (cr->nmiddlemen == 0)
+    {
+        return 0;
+    }
+    else if (cr->nhelper_per_middleman == 0)
     {
         return cr->nodeid-1;
     }
@@ -212,7 +221,11 @@ int middleManLocalIndex(const t_commrec *cr)
 
 int middleManGlobalIndex(const t_commrec *cr)
 {
-    if (cr->nhelper_per_middleman == 0)
+    if (cr->nmiddlemen == 0)
+    {
+        return 0;
+    }
+    else if (cr->nhelper_per_middleman == 0)
     {
         return cr->nodeid;
     }
@@ -225,7 +238,11 @@ int middleManGlobalIndex(const t_commrec *cr)
 int middleManGlobalIndex(const t_commrec *cr, int middleman)
 {
     int src;
-    if (cr->nhelper_per_middleman == 0)
+    if (cr->nmiddlemen == 0)
+    {
+        src = 0;
+    }
+    else if (cr->nhelper_per_middleman == 0)
     {
         src = 1+middleman;
     }
