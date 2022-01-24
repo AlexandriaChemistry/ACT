@@ -88,8 +88,7 @@ public:
     //! Return the population size
     size_t popSize() const { return genomes_.size(); }
     
-    /*! \return the index of the genone with the best fitness. 
-     * FIXME: make this general. Now, the lower the fitness the better
+    /*! \return the index of the genome with the lowest fitness. 
      */
     size_t findBestIndex() const;
 

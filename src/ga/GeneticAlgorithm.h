@@ -9,7 +9,7 @@
 
 #include <cstdlib>
 
-//#include "GenePool.h"
+#include "GenePool.h"
 #include "Genome.h"
 #include "Initializer.h"
 #include "FitnessComputer.h"
@@ -135,6 +135,12 @@ public:
     
     //! \return fitness file for testing
     FILE *fitnessTest() { return fileFitnessTest_; }
+
+    /*!
+     * \brief Print the fitness of each genome in a pool
+     * \param[in] pool the genome pool
+     */
+    void fprintFitness(const GenePool &pool);
     
     /* * * * * * * * * * * * * * * * * * * * * *
      * END: Output routines                  *

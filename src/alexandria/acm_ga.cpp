@@ -103,6 +103,7 @@ bool HybridGAMC::evolve(ga::Genome *bestGenome)
     }
     // Now we have filled the gene pool and initial fitness values
     pool[pold]->print(logFile_);
+    fprintFitness(*(pool[pold]));
 
     auto bestIndex = pool[pold]->findBestIndex();
     // TODO Check whether we need to update this at all here
@@ -210,6 +211,7 @@ bool HybridGAMC::evolve(ga::Genome *bestGenome)
             auto fitness = gmx_recv_double(cr, src);
             pool[pold]->genomePtr(i)->setFitness(iMolSelect::Train, fitness);
         }
+        fprintFitness(*(pool[pold]));
         
         // Check if a better genome was found, and update if so
         size_t newBest = pool[pold]->findBestIndex();
