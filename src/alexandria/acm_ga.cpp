@@ -109,7 +109,8 @@ bool HybridGAMC::evolve(ga::Genome *bestGenome)
     // TODO Check whether we need to update this at all here
     *bestGenome    = pool[pold]->genome(bestIndex);
     
-    bool bMinimum = false;
+    // When random initialization, assume a better minimum has been found no matter what
+    bool bMinimum = gach_->randomInit() ? true : false;
     // Iterate and create new generation
     do
     {

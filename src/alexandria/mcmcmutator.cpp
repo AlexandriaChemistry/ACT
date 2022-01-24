@@ -213,7 +213,7 @@ void MCMCMutator::stepMCMC(ga::Genome                   *genome,
             // If pointer to log file exists, write information about new minimum
             if (logfile_)
             {
-                printNewMinimum(genome, evaluate_testset, xiter);
+                printNewMinimum(currEval, evaluate_testset, xiter);
             }
             *bestGenome = *genome;
             minEval->find(ims)->second = currEval[ims];
@@ -240,7 +240,7 @@ void MCMCMutator::stepMCMC(ga::Genome                   *genome,
     (*changed)[paramIndex] = false;
 
     printParameterStep(genome, xiter);
-    printChi2Step(genome, evaluate_testset, xiter);
+    printChi2Step(currEval, evaluate_testset, xiter);
 }                  
 
 void MCMCMutator::computeMeanSigma(const std::vector<double>    &sum,
@@ -318,24 +318,24 @@ void MCMCMutator::printMonteCarloStatistics(FILE             *fp,
     }
 }
 
-void MCMCMutator::printNewMinimum(const ga::Genome *genome,
-                                  bool              bEvaluate_testset,
-                                  double            xiter)
+void MCMCMutator::printNewMinimum(const std::map<iMolSelect, double> &chi2,
+                                  bool                                bEvaluate_testset,
+                                  double                              xiter)
 {
     if (bEvaluate_testset)
     {
         fprintf(logfile_, "iter %10g. Found new minimum at %10g. Corresponding energy on the test set: %g\n",
-                xiter, genome->fitness(iMolSelect::Train), genome->fitness(iMolSelect::Test));
+                xiter, chi2.find(iMolSelect::Train)->second, chi2.find(iMolSelect::Test)->second);
     }
     else
     {
         fprintf(logfile_, "iter %10g. Found new minimum at %10g\n",
-                xiter, genome->fitness(iMolSelect::Train));
+                xiter, chi2.find(iMolSelect::Train)->second);
     }
-    if (debug)
-    {
-        genome->print(debug);
-    }
+    // if (debug)
+    // {
+    //     genome->print(debug);
+    // }
 }             
 
 void MCMCMutator::printParameterStep(ga::Genome          *genome,
@@ -363,9 +363,9 @@ void MCMCMutator::printParameterStep(ga::Genome          *genome,
     }
 }                             
 
-void MCMCMutator::printChi2Step(ga::Genome *genome,
-                                bool        bEvaluate_testset,
-                                double      xiter)
+void MCMCMutator::printChi2Step(const std::map<iMolSelect, double> &chi2,
+                                bool                                bEvaluate_testset,
+                                double                              xiter)
 {
     if (fpe_ == nullptr)
     {
@@ -375,12 +375,12 @@ void MCMCMutator::printChi2Step(ga::Genome *genome,
 
     if (bEvaluate_testset)
     {
-        fprintf(fpe_, "%8f  %10g  %10g\n", xiter, genome->fitness(iMolSelect::Train),
-                genome->fitness(iMolSelect::Test));
+        fprintf(fpe_, "%8f  %10g  %10g\n", xiter, chi2.find(iMolSelect::Train)->second,
+                chi2.find(iMolSelect::Train)->second);
     }
     else
     {
-        fprintf(fpe_, "%8f  %10g\n", xiter, genome->fitness(iMolSelect::Train));
+        fprintf(fpe_, "%8f  %10g\n", xiter, chi2.find(iMolSelect::Train)->second);
     }
     if (verbose_)
     {

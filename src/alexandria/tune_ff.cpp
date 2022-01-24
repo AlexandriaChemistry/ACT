@@ -298,7 +298,7 @@ void OptACM::initMaster(const std::string &outputFile)
         }
     }
     
-    // Fitness computer
+    // Fitness computer FIXME: do we want to give the pointer to the logfile instead of nullptr?
     fitComp_ = new ACMFitnessComputer(nullptr, sii_, &mg_, 
                                       false, false, false);
     
@@ -310,7 +310,8 @@ void OptACM::initMaster(const std::string &outputFile)
     }
     else
     {
-        auto mut = new alexandria::MCMCMutator(nullptr, verbose(), &bch_, fitComp_, sii_);
+        // auto mut = new alexandria::MCMCMutator(nullptr, verbose(), &bch_, fitComp_, sii_);
+        auto mut = new alexandria::MCMCMutator(logFile(), verbose(), &bch_, fitComp_, sii_);
         mut->openParamConvFiles(oenv());
         mut->openChi2ConvFile(oenv(), bch()->evaluateTestset());
         mutator = mut;

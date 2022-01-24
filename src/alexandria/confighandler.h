@@ -142,7 +142,7 @@ public:
     int nElites() const { return nElites_; }
 
     //! \return whether to initialize an individual randomly
-    real randomInit() const { return randomInit_; }
+    bool randomInit() const { return randomInit_; }
 
     //! \return the order of the crossover operator
     int nCrossovers() const { return nCrossovers_; }
@@ -188,7 +188,7 @@ class BayesConfigHandler : public ConfigHandler
 private:
     //! Maximum number of iterations
     int   maxiter_           = 100;
-    //! Random number seed for the MCMCMutator random number generator
+    //! Random number seed for the Initializer random number generator FIXME: This shouldn't be here?
     int   seed_              = 0;
     //! Relative step when optimizing
     real  step_              = 0.02;
