@@ -13,7 +13,6 @@
 #include "Genome.h"
 #include "Initializer.h"
 #include "FitnessComputer.h"
-#include "Sorter.h"
 #include "ProbabilityComputer.h"
 #include "Selector.h"
 #include "Crossover.h"
@@ -46,8 +45,6 @@ private:
     Initializer            *initializer_ = nullptr;
     //! Computes fitness for each individual in the population
     FitnessComputer        *fitComputer_ = nullptr;
-    //! Sorts the individuals based on their fitness
-    Sorter                 *sorter_ = nullptr;
     //! Computes the probability of selection of each individual
     ProbabilityComputer    *probComputer_ = nullptr;
     //! Selects an individual from the population based on its probability
@@ -73,7 +70,6 @@ public:
      */
     GeneticAlgorithm(Initializer                         *initializer,
                      FitnessComputer                     *fitnessComputer,
-                     Sorter                              *sorter,
                      ProbabilityComputer                 *probComputer,
                      Selector                            *selector,
                      Crossover                           *crossover,
@@ -81,7 +77,7 @@ public:
                      Terminator                          *terminator,
                      int                                  popSize) :
         popSize_(popSize), initializer_(initializer),
-        fitComputer_(fitnessComputer), sorter_(sorter), probComputer_(probComputer),
+        fitComputer_(fitnessComputer), probComputer_(probComputer),
         selector_(selector), crossover_(crossover), mutator_(mutator), terminator_(terminator) {}
 
  
@@ -126,9 +122,6 @@ public:
 
     //! \return the selector
     Selector *selector() { return selector_; }
-
-    //! \return the sorter
-    Sorter *sorter() { return sorter_; }
 
     //! \return the terminator
     Terminator *terminator() { return terminator_; }

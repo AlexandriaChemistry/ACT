@@ -116,13 +116,15 @@ bool HybridGAMC::evolve(ga::Genome *bestGenome)
         generation++;
         fprintf(logFile_, "\nGeneration %i\n", generation);
         
-        // Sort individuals based on fitness
-        fprintf(logFile_, "Sorting old population... (if needed)\n");
-        // Should fitness be increasing or decreasing?
+        // Sort individuals in increasing order of fitness
         auto gp = pool[pold]->genePoolPtr();
-        std::sort(gp->begin(), gp->end(), 
-                  [](const Genome &a, const Genome &b) -> bool
-                  { return a.fitness(iMolSelect::Train) < b.fitness(iMolSelect::Train); });
+        if (gach_->sort())
+        {
+            fprintf(logFile_, "Sorting old population...\n");
+            std::sort(gp->begin(), gp->end(), 
+                      [](const Genome &a, const Genome &b) -> bool
+                      { return a.fitness(iMolSelect::Train) < b.fitness(iMolSelect::Train); });
+        }
         
         // Normalize the fitness into a probability
         fprintf(logFile_, "Computing probabilities...\n");

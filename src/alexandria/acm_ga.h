@@ -51,9 +51,9 @@ public:
                Terminator                          *terminator,
                alexandria::StaticIndividualInfo    *sii,
                alexandria::GAConfigHandler         *gach)
-    : GeneticAlgorithm(initializer, fitnessComputer,
-                       nullptr, probComputer, selector, crossover, mutator, terminator,
-                       gach->popSize()), sii_(sii), gach_(gach), logFile_(logFile) {}
+    : GeneticAlgorithm(initializer, fitnessComputer, probComputer, selector, crossover,
+                       mutator, terminator, gach->popSize()), sii_(sii), gach_(gach),
+                       logFile_(logFile) {}
  
     //! \copydocs ga::GeneticAlgorithm::evolve
     virtual bool evolve(ga::Genome *bestGenome);
@@ -84,9 +84,8 @@ public:
          alexandria::StaticIndividualInfo    *sii,
          alexandria::GAConfigHandler         *gach,
          bool                                 evaluateTestSet)
-    : GeneticAlgorithm(initializer, fitnessComputer,
-                       nullptr, probComputer, selector, crossover, mutator, terminator,
-                       gach->popSize()),
+    : GeneticAlgorithm(initializer, fitnessComputer, probComputer, selector, crossover,
+                       mutator, terminator, gach->popSize()),
       sii_(sii), logFile_(logFile), evaluateTestSet_(evaluateTestSet) {}
     
     //! \copydocs ga::GeneticAlgorithm::evolve
