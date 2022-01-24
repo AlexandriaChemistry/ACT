@@ -15,14 +15,15 @@ namespace ga
 
 void FitnessProbabilityComputer::compute(std::vector<Genome> *pop)
 {
-    double total = 0;
+    double       total = 0;
+    const double epsilon = 1e-4;
     for (size_t i = 0; i < pop->size(); i++)
     {
-        total += (*pop)[i].fitness(iMolSelect::Train);
+        total += 1 / ( epsilon + (*pop)[i].fitness(iMolSelect::Train) );
     }
     for (size_t i = 0; i < pop->size(); i++)
     {
-        (*pop)[i].setProbability((*pop)[i].fitness(iMolSelect::Train) / total);
+        (*pop)[i].setProbability( ( 1 / ( epsilon + (*pop)[i].fitness(iMolSelect::Train) ) ) / total );
     }
 }
 
@@ -36,17 +37,16 @@ void FitnessProbabilityComputer::compute(std::vector<Genome> *pop)
 
 void BoltzmannProbabilityComputer::compute(std::vector<Genome> *pop)
 {
-    //! Stores \f$ e^{f_i} \f$ for each Individual \f$ i \f$
-    std::vector<double> exponentials;
-    double              total = 0;
+    double       total = 0;
+    const double epsilon = 1e-4;
     for (size_t i = 0; i < pop->size(); i++)
     {
-        exponentials.push_back(exp((*pop)[i].fitness(iMolSelect::Train) / temperature_));
-        total += exponentials[i];
+        exponentials_[i] = exp(( 1 / ( epsilon + (*pop)[i].fitness(iMolSelect::Train) ) ) / temperature_);
+        total += exponentials_[i];
     }
     for (size_t i = 0; i < pop->size(); i++)
     {
-        (*pop)[i].setProbability(exponentials[i] / total);
+        (*pop)[i].setProbability(exponentials_[i] / total);
     }
 }
 

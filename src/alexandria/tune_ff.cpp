@@ -293,7 +293,7 @@ void OptACM::initMaster(const std::string &outputFile)
         }
     case ProbabilityComputerAlg::pcBOLTZMANN:
         {
-            probComputer = new ga::BoltzmannProbabilityComputer(gach_.boltzTemp());
+            probComputer = new ga::BoltzmannProbabilityComputer(gach_.boltzTemp(), gach_.popSize());
             break;
         }
     }
