@@ -584,7 +584,6 @@ int tune_ff(int argc, char *argv[])
     // StaticIndividualInfo things
     opt.sii()->generateOptimizationIndex(fp, opt.mg());
     opt.sii()->fillVectors(opt.mg()->mindata());
-    opt.sii()->assignParamClassIndex();
     opt.sii()->computeWeightedTemperature(opt.bch()->temperatureWeighting());
     // Set the output file names, has to be done before
     // creating a mutator.
@@ -598,6 +597,7 @@ int tune_ff(int argc, char *argv[])
         opt.sii()->setOutputFiles(opt2fn("-conv", filenms.size(), filenms.data()), 
                                   paramClass,
                                   opt2fn("-epot", filenms.size(), filenms.data()));
+        opt.sii()->assignParamClassIndex();  // paramClass needs to be defined when we call this!
     }
 
     // init charge generation for compounds in the
