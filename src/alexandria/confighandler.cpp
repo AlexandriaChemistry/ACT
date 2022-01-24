@@ -123,7 +123,9 @@ double BayesConfigHandler::computeBeta(int iter)
     }
     else if (maxiter_ > 0)
     {
-        temp = temperature_*(1.0 - iter/(1.0*maxiter_));
+        // temp = temperature_*(1.0 - iter/(1.0*maxiter_));
+        // Line: temp = m * iter + b
+        temp = ( temperature_ / ( anneal_ * maxiter_ - maxiter_ ) ) * iter + ( ( temperature_ / ( maxiter_ - anneal_ * maxiter_ ) ) * maxiter_ );
     }
     return 1/(BOLTZ*temp);
 }
