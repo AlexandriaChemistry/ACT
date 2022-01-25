@@ -306,6 +306,8 @@ void OptACM::initMaster(const std::string &outputFile)
     ga::Mutator *mutator;
     if (gach_.optimizer() == OptimizerAlg::GA)
     {
+        // Create the "ind0" directory
+        system("mkdir ind0");
         mutator = new alexandria::PercentMutator(sii_, gach_.percent());
     }
     else

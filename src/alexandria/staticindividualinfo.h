@@ -145,9 +145,6 @@ public:
      */
     void propagateWeightFittingTargets();
 
-    // FIXME: How can we avoid having to decleare the query functions both in StaticIndividualInfo
-    // and in Individual, we put them around the FittingTarget class?
-
     /*!
      * \brief Return the fitting targets for editing for a given dataset
      * \param[in] ims The selection dataset to return

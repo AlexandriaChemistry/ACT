@@ -30,7 +30,7 @@ bool MCMC::evolve(ga::Genome *bestGenome)
     mutator()->stopHelpers();
     mutator()->finalize();
     
-    delete ind;
+    delete ind;  // FIXME: compilation warning about non-virtual destructor
     
     return mutator()->foundMinimum();
 }
@@ -103,6 +103,7 @@ bool HybridGAMC::evolve(ga::Genome *bestGenome)
     }
     // Now we have filled the gene pool and initial fitness values
     pool[pold]->print(logFile_);
+    // Print fitness to surveillance files
     fprintFitness(*(pool[pold]));
 
     auto bestIndex = pool[pold]->findBestIndex();
@@ -212,6 +213,7 @@ bool HybridGAMC::evolve(ga::Genome *bestGenome)
             auto fitness = gmx_recv_double(cr, src);
             pool[pold]->genomePtr(i)->setFitness(iMolSelect::Train, fitness);
         }
+        // Print fitness to surveillance files
         fprintFitness(*(pool[pold]));
         
         // Check if a better genome was found, and update if so
