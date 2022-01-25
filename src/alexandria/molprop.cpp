@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2021
+ * Copyright (C) 2014-2022
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -637,7 +637,7 @@ ExperimentIterator MolProp::getCalcPropType(const std::string &method,
     return ci;
 }
 #endif
-CommunicationStatus MolProp::Send(t_commrec *cr, int dest) const
+CommunicationStatus MolProp::Send(const t_commrec *cr, int dest) const
 {
     CommunicationStatus                cs;
     BondIterator                       bi;
@@ -714,7 +714,7 @@ CommunicationStatus MolProp::Send(t_commrec *cr, int dest) const
     return cs;
 }
 
-CommunicationStatus MolProp::Receive(t_commrec *cr, int src)
+CommunicationStatus MolProp::Receive(const t_commrec *cr, int src)
 {
     CommunicationStatus cs;
     int                 Nbond, Ncategory, Nexper;

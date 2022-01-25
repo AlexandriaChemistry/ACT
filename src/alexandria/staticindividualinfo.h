@@ -14,6 +14,7 @@
 #include <map>
 #include "ga/Genome.h"
 
+#include "communicationrecord.h"
 #include "mutability.h"
 #include "molgen.h"
 
@@ -29,7 +30,7 @@ private:
     //! My identy
     int                                                  id_ = -1;
     //! Communication record
-    t_commrec                                           *cr_;
+    const CommunicationRecord                           *cr_;
     //! Poldata for this individual
     Poldata                                              pd_;
     //! Base targets_ from which to make copies
@@ -70,9 +71,9 @@ public:
 
     /*!
      * Constructor
-     * \param[in] cr         The communications record
+     * \param[in] cr The communication record
      */
-    StaticIndividualInfo(t_commrec         *cr);
+    StaticIndividualInfo(const CommunicationRecord *cr);
     
     
     /*! \brief Set the output file name
@@ -130,10 +131,7 @@ public:
     * * * * * * * * * * * * * * * * * * * * * */
 
     //! \return the communication record
-    const t_commrec *commrec() const { return cr_; }
-
-    //! \return a mutable communication record
-    t_commrec *commrecPtr() { return cr_; }
+    const t_commrec *commrec() const { return cr_->commrec(); }
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * BEGIN: FittingTarget stuff               *

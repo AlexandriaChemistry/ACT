@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2021
+ * Copyright (C) 2014-2022
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -223,7 +223,7 @@ bool Experiment::getCharges(std::vector<double> *q,
     return i == NAtom();
 }
 
-CommunicationStatus Experiment::Receive(t_commrec *cr, int src)
+CommunicationStatus Experiment::Receive(const t_commrec *cr, int src)
 {
     CommunicationStatus cs;
     std::string         jobtype;
@@ -336,7 +336,7 @@ CommunicationStatus Experiment::Receive(t_commrec *cr, int src)
     return cs;
 }
 
-CommunicationStatus Experiment::Send(t_commrec *cr, int dest) const
+CommunicationStatus Experiment::Send(const t_commrec *cr, int dest) const
 {
     CommunicationStatus cs;
     std::string         jobtype;

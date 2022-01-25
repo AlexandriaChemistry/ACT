@@ -440,9 +440,9 @@ namespace alexandria
          * \param[in]  fplog    File pointer for logging
          * \returns the result of the calculation, if fine it is immOK
          */
-        immStatus CalcPolarizability(double     efield,
-                                     t_commrec *cr,
-                                     FILE      *fplog);
+        immStatus CalcPolarizability(double           efield,
+                                     const t_commrec *cr,
+                                     FILE            *fplog);
       
         /*! \brief set the electronic polarizability
          * \param[in] isoPol The isotropic polarizability
@@ -486,7 +486,7 @@ namespace alexandria
          */
         immStatus GenerateCharges(const Poldata             *pd,
                                   const gmx::MDLogger       &fplog,
-                                  t_commrec                 *cr,
+                                  const t_commrec           *cr,
                                   const char                *tabfn,
                                   int                        qcycle,
                                   real                       qtol,
@@ -502,10 +502,10 @@ namespace alexandria
          * \param[in] qcycle  Number of cycles for computing charges
          * \param[in] qtol    Convergence of charges tolerance
          */
-        immStatus GenerateAcmCharges(const Poldata *pd,
-                                     t_commrec     *cr,
-                                     int            qcycle,
-                                     real           qtol);
+        immStatus GenerateAcmCharges(const Poldata   *pd,
+                                     const t_commrec *cr,
+                                     int              qcycle,
+                                     real             qtol);
                                      
         /*! \brief Implement charge symmetrization
          *
@@ -536,7 +536,7 @@ namespace alexandria
          */
         void plotEspCorrelation(const char             *espcorr,
                                 const gmx_output_env_t *oenv,
-                                t_commrec              *cr);
+                                const t_commrec        *cr);
 
         /*! \brief
          * Collect the experimental properties
@@ -566,7 +566,7 @@ namespace alexandria
         void PrintTopology(const char        *fn,
                            bool               bVerbose,
                            const Poldata     *pd,
-                           t_commrec         *cr,
+                           const t_commrec   *cr,
                            const std::string &method,
                            const std::string &basis);
 
@@ -585,7 +585,7 @@ namespace alexandria
                            bool                     bVerbose,
                            const Poldata           *pd,
                            bool                     bITP,
-                           t_commrec               *cr,
+                           const t_commrec         *cr,
                            const std::string       &method,
                            const std::string       &basis);
 
@@ -613,9 +613,9 @@ namespace alexandria
          * \param[out] rmsf  Root mean square force on the shells
          * \return immOK if everything went fine, an error otherwise.
          */
-        immStatus computeForces(FILE      *fplog,
-                                t_commrec *cr,
-                                double    *rmsf);
+        immStatus computeForces(FILE            *fplog,
+                                const t_commrec *cr,
+                                double          *rmsf);
 
         /*! \brief
          * Change the coordinate of the molecule based
@@ -657,7 +657,7 @@ namespace alexandria
          * Generate GROMACS structures.
          */
         immStatus GenerateGromacs(const gmx::MDLogger      &mdlog,
-                                  t_commrec                *cr,
+                                  const t_commrec          *cr,
                                   const char               *tabfn,
                                   ChargeType               iType);
 
@@ -740,7 +740,7 @@ namespace alexandria
          * \param[in] dest Destination processor
          * \return the CommunicationStatus of the operation
          */
-        CommunicationStatus Send(t_commrec *cr, int dest) const;
+        CommunicationStatus Send(const t_commrec *cr, int dest) const;
 
         /*! \brief
          * Receives this object over an MPI connection
@@ -749,7 +749,7 @@ namespace alexandria
          * \param[in] src Source processor
          * \return the CommunicationStatus of the operation
          */
-        CommunicationStatus Receive(t_commrec *cr, int src);
+        CommunicationStatus Receive(const t_commrec *cr, int src);
 
     };
 

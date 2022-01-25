@@ -36,10 +36,10 @@
 #include <map>
 
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/gmxlib/network.h"
 #include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/utility/real.h"
 
+#include "communicationrecord.h"
 #include "molselect.h"
 #include "mymol.h"
 
@@ -296,7 +296,7 @@ class MolGen
 private:
 
     //! Communication record
-    t_commrec *cr_;
+    const CommunicationRecord      *cr_;
     //! Minimum number of data points to consider a parameter
     int                             mindata_    = 1;
     //! Percentage of ESP points to use
@@ -364,7 +364,7 @@ public:
      * Constructor of MolGen class.
      * \param[in] cr communication record
      */ 
-    MolGen(t_commrec *cr);
+    MolGen(const CommunicationRecord *cr);
     
     /*! \brief Add options to the command line
      * \param[in] pargs   Vector of command line arguments

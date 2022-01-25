@@ -26,6 +26,7 @@
 #include "staticindividualinfo.h"
 #include "acmfitnesscomputer.h"
 #include "acminitializer.h"
+#include "communicationrecord.h"
 #include "ga/Mutator.h"
 #include "ga/GeneticAlgorithm.h"
 
@@ -57,8 +58,8 @@ private:
     bool verbose_ = false;
     //! Pointer to log file
     gmx::unique_cptr<FILE, my_fclose> fplog_ = nullptr;
-    //! GROMACS communication data structure
-    t_commrec            *cr_   = nullptr;
+    //! ACT Communication data structure
+    CommunicationRecord   commRec_;
     //! GROMACS output environment
     gmx_output_env_t     *oenv_ = nullptr;
     //! MolGen instance
@@ -68,7 +69,7 @@ private:
     //! GAConfigHandler instance
     GAConfigHandler       gach_;
     //! StaticIndividualInfo instance
-    StaticIndividualInfo  *sii_        = nullptr;
+    StaticIndividualInfo *sii_;
 
     // This is for MASTER node
     //! GeneticAlgorithm instance
@@ -84,19 +85,9 @@ private:
 public:
 
     //! Constructor
-    OptACM()
-    : cr_(init_commrec()), mg_(cr_)
+    OptACM() : mg_(&commRec_)
     {
-        sii_ = new StaticIndividualInfo(cr_);
-    }
-
-    //! Destructor
-    ~OptACM()
-    {
-        if (cr_)
-        {
-            done_commrec(cr_);
-        }
+        sii_ = new StaticIndividualInfo(&commRec_);
     }
 
     virtual void add_pargs(std::vector<t_pargs> *pargs);
@@ -156,11 +147,10 @@ public:
     //! \return whether or not we are in verbose mode
     bool verbose() const { return verbose_; }
 
-    //! \brief Get the constant communications record \p cr_ constant pointer
-    const t_commrec *commrec() const { return cr_; }
-
+    const CommunicationRecord *commRec() const { return &commRec_; }
+    
     //! \brief Get the communications record \p cr_ pointer
-    t_commrec *commrec() { return cr_; }
+    //t_commrec *commrec() { return commRec_.commrec(); }
 
     /*! \brief Set the output environment pointer \p oenv_
      * \param[in] oenv the reference pointer
@@ -181,9 +171,6 @@ public:
 
     //! \brief Get the StaticIndividualInfo \p sii_ pointer
     StaticIndividualInfo *sii() { return sii_; }
-
-    //! \brief Get the ACMFitnessComputer \p fitComp_ pointer
-    //ACMFitnessComputer *fitComp() { return fitComp_; }
 
     //! \brief Get the GeneticAlgorithm \p ga_ pointer
     ga::GeneticAlgorithm *ga() { return ga_; }

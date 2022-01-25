@@ -87,7 +87,7 @@ Bond Bond::swap() const
     return te;
 }
 
-CommunicationStatus TopologyEntry::Send(t_commrec *cr, int dest) const
+CommunicationStatus TopologyEntry::Send(const t_commrec *cr, int dest) const
 {
     CommunicationStatus cs;
 
@@ -113,7 +113,7 @@ CommunicationStatus TopologyEntry::Send(t_commrec *cr, int dest) const
     return cs;
 }
 
-CommunicationStatus TopologyEntry::Receive(t_commrec *cr, int src)
+CommunicationStatus TopologyEntry::Receive(const t_commrec *cr, int src)
 {
     CommunicationStatus cs;
 

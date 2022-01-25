@@ -1,7 +1,7 @@
 ﻿/*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2021
+ * Copyright (C) 2014-2022
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -69,7 +69,7 @@ bool CalcAtom::Equal(CalcAtom ca)
              (atomID_ != ca.getAtomid()));
 }
 
-CommunicationStatus CalcAtom::Receive(t_commrec *cr, int src)
+CommunicationStatus CalcAtom::Receive(const t_commrec *cr, int src)
 {
     CommunicationStatus cs;
     int                 Ncharge;
@@ -103,7 +103,7 @@ CommunicationStatus CalcAtom::Receive(t_commrec *cr, int src)
     return cs;
 }
 
-CommunicationStatus CalcAtom::Send(t_commrec *cr, int dest) const
+CommunicationStatus CalcAtom::Send(const t_commrec *cr, int dest) const
 {
     CommunicationStatus  cs;
 
@@ -135,7 +135,7 @@ CommunicationStatus CalcAtom::Send(t_commrec *cr, int dest) const
     return cs;
 }
 
-CommunicationStatus AtomNum::Send(t_commrec *cr, int dest) const
+CommunicationStatus AtomNum::Send(const t_commrec *cr, int dest) const
 {
     CommunicationStatus cs;
 
@@ -154,7 +154,7 @@ CommunicationStatus AtomNum::Send(t_commrec *cr, int dest) const
     return cs;
 }
 
-CommunicationStatus AtomNum::Receive(t_commrec *cr, int src)
+CommunicationStatus AtomNum::Receive(const t_commrec *cr, int src)
 {
     CommunicationStatus cs;
 
@@ -257,7 +257,7 @@ int MolecularComposition::CountAtoms() const
     return nat;
 }
 
-CommunicationStatus MolecularComposition::Send(t_commrec *cr, int dest) const
+CommunicationStatus MolecularComposition::Send(const t_commrec *cr, int dest) const
 {
     CommunicationStatus cs = gmx_send_data(cr, dest);
     if (CS_OK == cs)
@@ -282,7 +282,7 @@ CommunicationStatus MolecularComposition::Send(t_commrec *cr, int dest) const
     return cs;
 }
 
-CommunicationStatus MolecularComposition::Receive(t_commrec *cr, int src)
+CommunicationStatus MolecularComposition::Receive(const t_commrec *cr, int src)
 {
     int                 Natomnum;
     CommunicationStatus cs = gmx_recv_data(cr, src);

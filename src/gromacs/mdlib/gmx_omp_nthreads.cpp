@@ -462,7 +462,7 @@ reportOpenmpSettings(const gmx::MDLogger &mdlog,
     GMX_LOG(mdlog.warning);
 }
 
-void gmx_omp_nthreads_init(const gmx::MDLogger &mdlog, t_commrec *cr,
+void gmx_omp_nthreads_init(const gmx::MDLogger &mdlog, const t_commrec *cr,
                            int nthreads_hw_avail,
                            int numRanksOnThisNode,
                            int omp_nthreads_req,

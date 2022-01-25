@@ -97,7 +97,7 @@ void FittingTarget::print(FILE *fp) const
     }
 }
 
-MolGen::MolGen(t_commrec *cr)
+MolGen::MolGen(const CommunicationRecord *cr)
 {
     cr_        = cr;
     lot_       = "B3LYP/aug-cc-pVTZ";
@@ -153,9 +153,8 @@ void MolGen::addOptions(std::vector<t_pargs>          *pargs,
 void MolGen::optionsFinished()
 {
     mdlog_                      = gmx::MDLogger {};
-    gmx_omp_nthreads_init(mdlog_, cr_, 1, 1, 1, 0, false, false);
     auto pnc                    = gmx::PhysicalNodeCommunicator(MPI_COMM_WORLD, 0);
-    gmx_omp_nthreads_init(mdlog_, cr_, 1, 1, 1, 0, false, false);
+    gmx_omp_nthreads_init(mdlog_, cr_->commrec(), 1, 1, 1, 0, false, false);
     if (nullptr != fitString_)
     {
         for(const auto &toFit : gmx::splitString(fitString_))
@@ -163,9 +162,9 @@ void MolGen::optionsFinished()
             fit_.insert({ toFit, true });
         }
     }
-    if (MASTER(cr_))
+    if (cr_->isMaster())
     {
-        printf("There are %d threads/processes and %zu parameter types to optimize.\n", cr_->nnodes, fit_.size());
+        printf("There are %d threads/processes and %zu parameter types to optimize.\n", cr_->size(), fit_.size());
     }
     if (debug)
     {
@@ -529,7 +528,7 @@ size_t MolGen::Read(FILE            *fp,
     //  Now  we have read the poldata and spread it to processors
     fillIopt(pd);
     /* Reading Molecules from allmols.dat */
-    if (MASTER(cr_))
+    if (cr_->isMaster())
     {
         MolPropRead(fn, &mp);
         if (fp)
@@ -592,7 +591,7 @@ size_t MolGen::Read(FILE            *fp,
          iqmMap.insert(std::pair<MolPropObservable, iqmType>(MolPropObservable::QUADRUPOLE,     iqmType::QM));
          iqmMap.insert(std::pair<MolPropObservable, iqmType>(MolPropObservable::POLARIZABILITY, iqmType::QM));
     }
-    if (MASTER(cr_))
+    if (cr_->isMaster())
     {
         if (fp)
         {
@@ -632,7 +631,7 @@ size_t MolGen::Read(FILE            *fp,
                 std::vector<double> dummy;
                 imm = mymol.GenerateCharges(pd,
                                             mdlog_,
-                                            cr_,
+                                            cr_->commrec(),
                                             tabfn,
                                             qcycle_,
                                             qtol_,
@@ -686,9 +685,9 @@ size_t MolGen::Read(FILE            *fp,
         {
             int mymolIndex = 0;
             std::set<int> destMiddleMen;
-            for(int i = 0; i < cr_->nmiddlemen; i++)
+            for(auto &i : cr_->middlemen())
             {
-                destMiddleMen.insert(middleManGlobalIndex(cr_, i));
+                destMiddleMen.insert(i);
             }
             for(auto &mymol : mymol_)
             {
@@ -697,26 +696,26 @@ size_t MolGen::Read(FILE            *fp,
                     continue;
                 }
                 std::set<int> destAll = destMiddleMen;
-                if (cr_->nmiddlemen == 0)
+                if (cr_->nmiddlemen() == 0)
                 {
                     // Looks like an MCMC run where compounds are distributed evenly
-                    destAll.insert(mymolIndex % cr_->nnodes);
+                    destAll.insert(mymolIndex % cr_->size());
                 }
-                else if (cr_->nhelper_per_middleman > 0)
+                else if (cr_->nhelper_per_middleman() > 0)
                 {
                     // We have to divide the molecules in a complicated manner.
                     // Each individual gets the complete set and divides it between
                     // helpers. 
-                    int helperDest = mymolIndex % cr_->nhelper_per_middleman;
-                    for(int i = 0; i < cr_->nmiddlemen; i++)
+                    int helperDest = mymolIndex % cr_->nhelper_per_middleman();
+                    for(auto &mm : destMiddleMen)
                     {
-                        destAll.insert(middleManGlobalIndex(cr_, i)+helperDest);
+                        destAll.insert(mm + helperDest);
                     }
                 }
                 mymolIndex += 1;
                 for (auto &mydest : destAll)
                 {
-                    if (mydest == cr_->nodeid)
+                    if (mydest == cr_->rank())
                     {
                         mymol.setSupport(eSupport::Local);
                         continue;
@@ -726,15 +725,15 @@ size_t MolGen::Read(FILE            *fp,
                     {
                         fprintf(debug, "Going to send %s to cpu %d\n", mymol.getMolname().c_str(), mydest);
                     }
-                    gmx_send_int(cr_, mydest, 1);
-                    CommunicationStatus cs = mymol.Send(cr_, mydest);
+                    cr_->send_int(mydest, 1);
+                    CommunicationStatus cs = mymol.Send(cr_->commrec(), mydest);
                     if (CS_OK != cs)
                     {
                         imm = immStatus::CommProblem;
                     }
                     else
                     {
-                        imm = static_cast<immStatus>(gmx_recv_int(cr_, mydest));
+                        imm = static_cast<immStatus>(cr_->recv_int(mydest));
                     }
 
                     if (imm != immStatus::OK)
@@ -754,11 +753,11 @@ size_t MolGen::Read(FILE            *fp,
             }
         }
         /* Send signal done with transferring molecules */
-        for (int i = 1; i < cr_->nnodes; i++)
+        for (auto &i : cr_->helpers())
         {
-            gmx_send_int(cr_, i, 0);
+            cr_->send_int(i, 0);
         }
-        for (int i = 0; i < cr_->nnodes; i++)
+        for (int i = 0; i < cr_->size(); i++)
         {
             if (fp)
             {
@@ -769,7 +768,7 @@ size_t MolGen::Read(FILE            *fp,
                 int n = nLocal.find(ims.first)->second;
                 if (i > 0)
                 {
-                    n = gmx_recv_int(cr_, i);
+                    n = cr_->recv_int(i);
                 }
                 if (fp)
                 {
@@ -790,14 +789,14 @@ size_t MolGen::Read(FILE            *fp,
          *          H E L P E R  N O D E S             *
          *                                             *
          ***********************************************/
-        while (gmx_recv_int(cr_, 0) == 1)
+        while (cr_->recv_int(0) == 1)
         {
             alexandria::MyMol mymol;
             if (nullptr != debug)
             {
                 fprintf(debug, "Going to retrieve new compound\n");
             }
-            CommunicationStatus cs = mymol.Receive(cr_, 0);
+            CommunicationStatus cs = mymol.Receive(cr_->commrec(), 0);
             if (CS_OK != cs)
             {
                 imm = immStatus::CommProblem;
@@ -823,7 +822,7 @@ size_t MolGen::Read(FILE            *fp,
                 mymol.initQgenResp(pd, method, basis, 0.0, maxESP_);
                 imm = mymol.GenerateCharges(pd,
                                             mdlog_,
-                                            cr_,
+                                            cr_->commrec(),
                                             tabfn,
                                             qcycle_,
                                             qtol_,
@@ -876,11 +875,11 @@ size_t MolGen::Read(FILE            *fp,
                     }
                 }
             }
-            gmx_send_int(cr_, 0, static_cast<int>(imm));
+            cr_->send_int(0, static_cast<int>(imm));
         }
         for(const auto &ims : iMolSelectNames())
         {
-            gmx_send_int(cr_, 0, nLocal.find(ims.first)->second);
+            cr_->send_int(0, nLocal.find(ims.first)->second);
         }
         countTargetSize();
     }

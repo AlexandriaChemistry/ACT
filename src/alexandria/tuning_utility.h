@@ -95,7 +95,7 @@ namespace alexandria
                    real                            qtol,
                    const gmx_output_env_t         *oenv,
                    bool                            bfullTensor,
-                   t_commrec                      *cr,
+                   const t_commrec                *cr,
                    real                            efield,
                    const std::vector<t_filenm>    &filenm);
     };

@@ -66,7 +66,7 @@ public:
                                      std::map<eRMS, FittingTarget>     *targets,
                                      Poldata                           *poldata,
                                const std::vector<double>               &param,
-                                     t_commrec                         *commrec) = 0;
+                               const t_commrec                         *commrec) = 0;
 
 };
 
@@ -113,7 +113,7 @@ public:
                                      std::map<eRMS, FittingTarget>     *targets,
                                      Poldata                           *poldata,
                                const std::vector<double>               &param,
-                                     t_commrec                         *commrec);
+                               const t_commrec                         *commrec);
 
 };
 
@@ -139,7 +139,7 @@ public:
                                      std::map<eRMS, FittingTarget>     *targets,
                                      Poldata                           *poldata,
                                const std::vector<double>               &param,
-                                     t_commrec                         *commrec);
+                               const t_commrec                         *commrec);
 
 };
 
@@ -182,7 +182,7 @@ public:
                                      std::map<eRMS, FittingTarget>     *targets,
                                      Poldata                           *poldata,
                                const std::vector<double>               &param,
-                                     t_commrec                         *commrec);
+                               const t_commrec                         *commrec);
 
 };
 
@@ -216,7 +216,7 @@ public:
                                      std::map<eRMS, FittingTarget>     *targets,
                                      Poldata                           *poldata,
                                const std::vector<double>               &param,
-                                     t_commrec                         *commrec);
+                               const t_commrec                         *commrec);
 
 };
 
@@ -250,7 +250,7 @@ public:
                                      std::map<eRMS, FittingTarget>     *targets,
                                      Poldata                           *poldata,
                                const std::vector<double>               &param,
-                                     t_commrec                         *commrec);
+                               const t_commrec                         *commrec);
 
 };
 
@@ -283,7 +283,7 @@ public:
                                      std::map<eRMS, FittingTarget>     *targets,
                                      Poldata                           *poldata,
                                const std::vector<double>               &param,
-                                     t_commrec                         *commrec);
+                               const t_commrec                         *commrec);
 
 };
 
@@ -309,7 +309,7 @@ public:
                                      std::map<eRMS, FittingTarget>     *targets,
                                      Poldata                           *poldata,
                                const std::vector<double>               &param,
-                                     t_commrec                         *commrec);
+                               const t_commrec                         *commrec);
 
 };
 

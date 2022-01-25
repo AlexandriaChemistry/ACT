@@ -151,7 +151,7 @@ gmx_bool wallcycle_have_counter()
     return gmx_cycles_have_counter();
 }
 
-gmx_wallcycle_t wallcycle_init(FILE *fplog, int resetstep, t_commrec gmx_unused *cr)
+gmx_wallcycle_t wallcycle_init(FILE *fplog, int resetstep, const t_commrec gmx_unused *cr)
 {
     gmx_wallcycle_t wc;
 

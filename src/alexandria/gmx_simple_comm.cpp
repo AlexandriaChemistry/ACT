@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020 
+ * Copyright (C) 2014-2022
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -192,8 +192,7 @@ bool actMiddleMan(const t_commrec *cr)
     if (cr->nodeid > 0)
     {
         return ((cr->nmiddlemen > 0) &&
-                (cr->nhelper_per_middleman == 0 || 
-                 (cr->nodeid-1) % cr->nhelper_per_middleman == 0));
+                (cr->nodeid-1) % (1+cr->nhelper_per_middleman) == 0);
     }
     return false; 
 }
@@ -209,13 +208,9 @@ int middleManLocalIndex(const t_commrec *cr)
     {
         return 0;
     }
-    else if (cr->nhelper_per_middleman == 0)
-    {
-        return cr->nodeid-1;
-    }
     else
     {
-        return (cr->nodeid-1) / cr->nhelper_per_middleman;
+        return (cr->nodeid-1) / (1+cr->nhelper_per_middleman);
     }
 }
 
@@ -225,13 +220,9 @@ int middleManGlobalIndex(const t_commrec *cr)
     {
         return 0;
     }
-    else if (cr->nhelper_per_middleman == 0)
-    {
-        return cr->nodeid;
-    }
     else
     {
-        return 1 + ((cr->nodeid-1) / cr->nhelper_per_middleman)*cr->nhelper_per_middleman;
+        return 1 + ((cr->nodeid-1) / (1+cr->nhelper_per_middleman))*(1+cr->nhelper_per_middleman);
     }
 }
 
@@ -242,13 +233,9 @@ int middleManGlobalIndex(const t_commrec *cr, int middleman)
     {
         src = 0;
     }
-    else if (cr->nhelper_per_middleman == 0)
-    {
-        src = 1+middleman;
-    }
     else
     {
-        src = 1+middleman*cr->nhelper_per_middleman;
+        src = 1+middleman*(1+cr->nhelper_per_middleman);
     }
     return src;
 }

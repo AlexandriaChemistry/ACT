@@ -30,7 +30,6 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
  
- 
 #ifndef GMX_SIMPLE_COMM_H
 #define GMX_SIMPLE_COMM_H
 

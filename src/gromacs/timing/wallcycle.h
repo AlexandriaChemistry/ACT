@@ -84,7 +84,7 @@ enum {
 gmx_bool wallcycle_have_counter();
 /* Returns if cycle counting is supported */
 
-gmx_wallcycle_t wallcycle_init(FILE *fplog, int resetstep, struct t_commrec *cr);
+gmx_wallcycle_t wallcycle_init(FILE *fplog, int resetstep, const struct t_commrec *cr);
 /* Returns the wall cycle structure.
  * Returns NULL when cycle counting is not supported.
  */

@@ -1,7 +1,7 @@
 ﻿/*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2021
+ * Copyright (C) 2014-2022
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -123,8 +123,8 @@ class AtomNum
          * \param[in] dest Destination processor
          * \return the CommunicationStatus of the operation
          */
-        CommunicationStatus Send(t_commrec *cr,
-                                 int        dest) const;
+        CommunicationStatus Send(const t_commrec *cr,
+                                 int              dest) const;
 
         /*! \brief
          * Receives this object over an MPI connection
@@ -133,8 +133,8 @@ class AtomNum
          * \param[in] src Source processor
          * \return the CommunicationStatus of the operation
          */
-        CommunicationStatus Receive(t_commrec *cr,
-                                    int        src);
+        CommunicationStatus Receive(const t_commrec *cr,
+                                    int              src);
 };
 
 //! Iterator over a vector of AtomNum
@@ -257,8 +257,8 @@ class MolecularComposition
          * \param[in] dest Destination processor
          * \return the CommunicationStatus of the operation
          */
-        CommunicationStatus Send(t_commrec *cr,
-                                 int        dest) const;
+        CommunicationStatus Send(const t_commrec *cr,
+                                 int              dest) const;
 
         /*! \brief
          * Receives this object over an MPI connection
@@ -267,8 +267,8 @@ class MolecularComposition
          * \param[in] src Source processor
          * \return the CommunicationStatus of the operation
          */
-        CommunicationStatus Receive(t_commrec *cr,
-                                    int        src);
+        CommunicationStatus Receive(const t_commrec *cr,
+                                    int              src);
 };
 //! Iterator over MolecularComposition items
 using MolecularCompositionIterator      = typename std::vector<MolecularComposition>::iterator;

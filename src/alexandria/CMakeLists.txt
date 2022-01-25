@@ -34,10 +34,8 @@ set(ALEXANDRIA_SOURCES
            acthelper.cpp
            actmiddleman.cpp
            alex_modules.cpp
-      	   molpropobservable.cpp
-           experiment.cpp
-      	   molprop.cpp
            allbondeds.cpp
+           analyze.cpp
            analyze.cpp
            atype_mapping.cpp
            babel_io.cpp
@@ -46,16 +44,16 @@ set(ALEXANDRIA_SOURCES
            categories.cpp
            chargemodel.cpp
            communication.cpp
+           communicationrecord.cpp
            composition.cpp
            confighandler.cpp
            devcomputer.cpp
            dissociation_energy.cpp
+           experiment.cpp
            fill_inputrec.cpp
            forcefieldparameter.cpp
            forcefieldparameterlist.cpp
-#           gen_table.cpp
            gentop.cpp
- #          gentop_vsite.cpp
            gmx_simple_comm.cpp
            gromacs_top.cpp
            identifier.cpp
@@ -70,9 +68,12 @@ set(ALEXANDRIA_SOURCES
            molprop_csv.cpp
            molprop_sqlite3.cpp
            molprop_tables.cpp
+           molprop_tables.cpp
            molprop_test.cpp
            molprop_util.cpp
            molprop_xml.cpp
+      	   molprop.cpp
+      	   molpropobservable.cpp
            molselect.cpp
            mutability.cpp
            mymol.cpp
@@ -82,11 +83,10 @@ set(ALEXANDRIA_SOURCES
            particletype.cpp
            percentmutator.cpp
            phase.cpp
-  #         plistwrapper.cpp
            poldata.cpp
+           poldata_edit.cpp
            poldata_low.cpp
            poldata_tables.cpp
-           poldata_edit.cpp
            poldata_xml.cpp
            qgen_acm.cpp
            qgen_cube.cpp
@@ -102,10 +102,8 @@ set(ALEXANDRIA_SOURCES
            tune_ff.cpp
            tuning_utility.cpp          
            units.cpp
-           xml_util.cpp
-           analyze.cpp
-           molprop_tables.cpp
            vsite.cpp
+           xml_util.cpp
 	)
 	
 add_subdirectory(coulombintegrals)

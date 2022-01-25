@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2021
+ * Copyright (C) 2014-2022
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -227,8 +227,8 @@ public:
      * \param[in] dest Destination processor
      * \return the CommunicationStatus of the operation
      */
-    CommunicationStatus Send(t_commrec *cr,
-                             int        dest) const;
+    CommunicationStatus Send(const t_commrec *cr,
+                             int              dest) const;
     
     /*! \brief
      * Receives this object over an MPI connection
@@ -237,8 +237,8 @@ public:
      * \param[in] src Source processor
      * \return the CommunicationStatus of the operation
      */
-    CommunicationStatus Receive(t_commrec *cr,
-                                int        src);
+    CommunicationStatus Receive(const t_commrec *cr,
+                                int              src);
 };
 
 //! Iterator over CalcAtom items
@@ -450,8 +450,8 @@ public:
      * \param[in] dest Destination processor
      * \return the CommunicationStatus of the operation
      */
-    CommunicationStatus Send(t_commrec *cr,
-                             int        dest) const;
+    CommunicationStatus Send(const t_commrec *cr,
+                             int              dest) const;
     
     /*! \brief
      * Receives this object over an MPI connection
@@ -460,8 +460,8 @@ public:
      * \param[in] src Source processor
      * \return the CommunicationStatus of the operation
      */
-    CommunicationStatus Receive(t_commrec *cr,
-                                int        src);
+    CommunicationStatus Receive(const t_commrec *cr,
+                                int              src);
     
     bool hasMolPropObservable(MolPropObservable mpo) const
     {

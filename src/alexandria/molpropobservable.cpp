@@ -109,7 +109,7 @@ bool stringToMolPropObservable(const std::string &str, MolPropObservable *mpo)
     return false;
 }
 
-CommunicationStatus GenericProperty::Send(t_commrec *cr, int dest) const
+CommunicationStatus GenericProperty::Send(const t_commrec *cr, int dest) const
 {
     CommunicationStatus cs;
 
@@ -129,7 +129,7 @@ CommunicationStatus GenericProperty::Send(t_commrec *cr, int dest) const
     return cs;
 }
 
-CommunicationStatus GenericProperty::Receive(t_commrec *cr, int src)
+CommunicationStatus GenericProperty::Receive(const t_commrec *cr, int src)
 {
     CommunicationStatus cs;
 
@@ -153,7 +153,7 @@ CommunicationStatus GenericProperty::Receive(t_commrec *cr, int src)
     return cs;
 }
 
-CommunicationStatus MolecularDipole::Send(t_commrec *cr, int dest) const
+CommunicationStatus MolecularDipole::Send(const t_commrec *cr, int dest) const
 {
     CommunicationStatus cs;
 
@@ -180,7 +180,7 @@ CommunicationStatus MolecularDipole::Send(t_commrec *cr, int dest) const
     return cs;
 }
 
-CommunicationStatus MolecularDipole::Receive(t_commrec *cr, int src)
+CommunicationStatus MolecularDipole::Receive(const t_commrec *cr, int src)
 {
     CommunicationStatus cs;
 
@@ -209,7 +209,7 @@ CommunicationStatus MolecularDipole::Receive(t_commrec *cr, int src)
     return cs;
 }
 
-CommunicationStatus MolecularQuadrupole::Send(t_commrec *cr, int dest) const
+CommunicationStatus MolecularQuadrupole::Send(const t_commrec *cr, int dest) const
 {
     CommunicationStatus cs;
 
@@ -236,7 +236,7 @@ CommunicationStatus MolecularQuadrupole::Send(t_commrec *cr, int dest) const
     return cs;
 }
 
-CommunicationStatus MolecularQuadrupole::Receive(t_commrec *cr, int src)
+CommunicationStatus MolecularQuadrupole::Receive(const t_commrec *cr, int src)
 {
     CommunicationStatus cs;
 
@@ -276,7 +276,7 @@ double MolecularPolarizability::getValue() const
     }
 }
 
-CommunicationStatus MolecularPolarizability::Send(t_commrec *cr, int dest) const
+CommunicationStatus MolecularPolarizability::Send(const t_commrec *cr, int dest) const
 {
     CommunicationStatus cs;
 
@@ -312,7 +312,7 @@ CommunicationStatus MolecularPolarizability::Send(t_commrec *cr, int dest) const
     return cs;
 }
 
-CommunicationStatus MolecularPolarizability::Receive(t_commrec *cr, int src)
+CommunicationStatus MolecularPolarizability::Receive(const t_commrec *cr, int src)
 {
     CommunicationStatus cs;
 
@@ -348,7 +348,7 @@ CommunicationStatus MolecularPolarizability::Receive(t_commrec *cr, int src)
     return cs;
 }
 
-CommunicationStatus MolecularEnergy::Receive(t_commrec *cr, int src)
+CommunicationStatus MolecularEnergy::Receive(const t_commrec *cr, int src)
 {
     CommunicationStatus cs;
 
@@ -370,7 +370,7 @@ CommunicationStatus MolecularEnergy::Receive(t_commrec *cr, int src)
     return cs;
 }
 
-CommunicationStatus MolecularEnergy::Send(t_commrec *cr, int dest) const
+CommunicationStatus MolecularEnergy::Send(const t_commrec *cr, int dest) const
 {
     CommunicationStatus cs;
 
@@ -392,7 +392,7 @@ CommunicationStatus MolecularEnergy::Send(t_commrec *cr, int dest) const
     return cs;
 }
 
-CommunicationStatus ElectrostaticPotential::Receive(t_commrec *cr, int src)
+CommunicationStatus ElectrostaticPotential::Receive(const t_commrec *cr, int src)
 {
     CommunicationStatus cs;
 
@@ -415,7 +415,7 @@ CommunicationStatus ElectrostaticPotential::Receive(t_commrec *cr, int src)
     return cs;
 }
 
-CommunicationStatus ElectrostaticPotential::Send(t_commrec *cr, int dest) const
+CommunicationStatus ElectrostaticPotential::Send(const t_commrec *cr, int dest) const
 {
     CommunicationStatus cs;
 

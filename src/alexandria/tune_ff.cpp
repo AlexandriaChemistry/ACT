@@ -165,59 +165,17 @@ void OptACM::check_pargs()
     gach_.check_pargs();
 }
 
-void OptACM::optionsFinished(const std::string &outputFile) {
+void OptACM::optionsFinished(const std::string &outputFile)
+{
     mg_.optionsFinished();
     sii_->setOutputFile(outputFile);
+    int nmiddlemen = 0;
+    if (gach_.optimizer() != OptimizerAlg::MCMC)
+    {
+        nmiddlemen = gach_.popSize();
+    }
     // Update the communication record and do necessary checks.
-    if (gach_.popSize() > cr_->nnodes || gach_.popSize() < 1)
-    {
-        GMX_THROW(gmx::InvalidInputError(gmx::formatString("Cannot handle %d individuals with %d cores/threads",
-                  gach_.popSize(), cr_->nnodes).c_str()));
-    }
-    if (gach_.optimizer() == OptimizerAlg::MCMC)
-    {
-        cr_->nmiddlemen            = 0;
-        cr_->nhelper_per_middleman = cr_->nnodes-1;
-    }
-    else
-    {
-        cr_->nmiddlemen            = gach_.popSize();
-        cr_->nhelper_per_middleman = (cr_->nnodes-1) / cr_->nmiddlemen - 1;
-    
-        // We are picky. Each individual needs the same number of helpers
-        if (!((cr_->nhelper_per_middleman == 0 && cr_->nnodes == 1+cr_->nmiddlemen) ||
-              (cr_->nhelper_per_middleman > 0 && cr_->nnodes % (1+cr_->nhelper_per_middleman) == 1)))
-        {
-            GMX_THROW(gmx::InvalidInputError(gmx::formatString("The number of cores/threads (%d) should be the product of the number of helpers (%d) and the number of individuals (%d) plus 1 for the overlord",
-                                                               cr_->nnodes, cr_->nhelper_per_middleman, cr_->nmiddlemen).c_str()));
-        }
-    }
-    {
-        // Create ACT communicators for helpers and middlemen
-        int color = MPI_UNDEFINED;
-        int key   = 0;
-        if (cr_->nodeid > 0)
-        {
-            color = 0;
-            key   = cr_->nodeid-1;
-        }
-        MPI_Comm_split(cr_->mpi_comm_mysim, color, key, &cr_->mpi_act_not_master);
-        // Default value
-        cr_->mpi_act_helpers = MPI_COMM_WORLD;
-        if (!MASTER(cr_))
-        {
-            int nonMasterSize;
-            MPI_Comm_size(cr_->mpi_act_not_master, &nonMasterSize);
-            int myrank;
-            MPI_Comm_rank(cr_->mpi_act_not_master, &myrank);
-            if (cr_->nmiddlemen > 0)
-            {
-                // Split the non-masters into nmiddlemen X nhelpers
-                MPI_Comm_split(cr_->mpi_act_not_master, myrank / cr_->nmiddlemen,
-                               myrank % cr_->nmiddlemen, &cr_->mpi_act_helpers);
-            }
-        }
-    }
+    commRec_.init(nmiddlemen);
 }
 
 void OptACM::openLogFile(const char *logfileName) {
@@ -351,7 +309,8 @@ void OptACM::initMaster(const std::string &outputFile)
 bool OptACM::runMaster(bool        optimize,
                        bool        sensitivity)
 {
-    GMX_RELEASE_ASSERT(MASTER(cr_), "I thought I was the master...");
+    GMX_RELEASE_ASSERT(commRec_.nodeType() == NodeType::Master,
+                       "I thought I was the master...");
 
     print_memory_usage(debug);
     bool bMinimum = false;
@@ -366,10 +325,9 @@ bool OptACM::runMaster(bool        optimize,
         mut->sensitivityAnalysis(ga_->bestGenomePtr(), iMolSelect::Train);
     }
     // Stop the middlemen
-    for(int i = 0; i < sii_->commrec()->nmiddlemen; i++)
+    for(auto &dest : commRec_.helpers())
     {
-        int dest = middleManGlobalIndex(sii_->commrec(), i);
-        gmx_send_int(sii_->commrec(), dest, 0);
+        gmx_send_int(commRec_.commrec(), dest, 0);
     }
     if (gach_.optimizer() != OptimizerAlg::GA)
     {
@@ -529,7 +487,7 @@ int tune_ff(int argc, char *argv[])
     // TODO: is this necessary if all processors parse the command line?
     opt.sii()->propagateWeightFittingTargets();
 
-    if (MASTER(opt.commrec()))
+    if (NodeType::Master == opt.commRec()->nodeType())
     {
         opt.openLogFile(opt2fn("-g", filenms.size(), filenms.data()));
         print_memory_usage(debug);
@@ -550,16 +508,13 @@ int tune_ff(int argc, char *argv[])
         GMX_RELEASE_ASSERT(fns.size() == 1 || fns.size() == opt.gach()->popSize(),
                            gmx::formatString("Please pass exactly one or %d (popSize) force field file names", opt.gach()->popSize()).c_str());
         
-        if (fns.size() == 1 || 
-            MASTER(opt.commrec()) || 
-            opt.commrec()->nmiddlemen == 0)
+        int fnIndex = 0;
+        if (NodeType::MiddleMan == opt.commRec()->nodeType() && 
+            fns.size() > 1)
         {
-            opt.sii()->fillPoldata(fp, fns[0].c_str());
+            fnIndex = opt.commRec()->middleManOrdinal();
         }
-        else
-        {
-            opt.sii()->fillPoldata(fp, fns[middleManLocalIndex(opt.commrec())].c_str());
-        }
+        opt.sii()->fillPoldata(fp, fns[fnIndex].c_str());
         printf("On proc %d, found %d particle types\n",
                opt.sii()->commrec()->nodeid,
                opt.sii()->poldata()->nParticleTypes());
@@ -613,7 +568,7 @@ int tune_ff(int argc, char *argv[])
     // Create ACMFitnessComputer and fill the DevComputers
     // This is needed on all nodes.
 
-    if (MASTER(opt.commrec()))
+    if (NodeType::Master == opt.commRec()->nodeType())
     {
         opt.initMaster(opt2fn("-o", filenms.size(), filenms.data()));
 
@@ -635,7 +590,7 @@ int tune_ff(int argc, char *argv[])
                           tmpMg->mdlog(), tmpMg->lot(),
                           tmpMg->qcycle(), tmpMg->qtol(),
                           oenv, opt.fullQuadrupole(),
-                          opt.commrec(), efield, filenms);
+                          opt.commRec()->commrec(), efield, filenms);
             print_memory_usage(debug);
         }
         else if (!bMinimum)
@@ -643,7 +598,7 @@ int tune_ff(int argc, char *argv[])
             printf("No improved parameters found. Please try again with more iterations.\n");
         }
     }
-    else if (actMiddleMan(opt.commrec()))
+    else if (NodeType::MiddleMan == opt.commRec()->nodeType())
     {
         // Master and Individuals (middle-men) need to initialize more,
         // so let's go.

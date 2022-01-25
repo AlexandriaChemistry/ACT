@@ -60,7 +60,7 @@ double ACMFitnessComputer::calcDeviation(std::vector<double> *params,
 {
     // Send / receive parameters
     std::vector<double> *myparams;
-    auto cr = sii_->commrecPtr();
+    auto cr = sii_->commrec();
     if (actMiddleMan(cr))
     {
         if (PAR(cr) && calcDev != CalcDev::Master)

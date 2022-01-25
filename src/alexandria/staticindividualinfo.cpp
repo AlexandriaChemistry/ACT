@@ -17,10 +17,10 @@
 namespace alexandria
 {
 
-StaticIndividualInfo::StaticIndividualInfo(t_commrec         *cr) : cr_(cr)
+StaticIndividualInfo::StaticIndividualInfo(const CommunicationRecord *cr) : cr_(cr)
 {
     fillFittingTargets();
-    id_ = middleManGlobalIndex(cr);
+    id_ = cr_->middleManOrdinal();
     if (id_ >= 0)
     {
         prefix_ = gmx::formatString("ind%d/", id_);
@@ -39,7 +39,7 @@ void StaticIndividualInfo::setOutputFile(const std::string &outputFile)
 void StaticIndividualInfo::fillPoldata(      FILE *fp,
                                        const char *pd_fn)
 {
-    if (!actHelper(cr_))
+    if (!cr_->isHelper())
     {
         GMX_RELEASE_ASSERT(nullptr != pd_fn, "Give me a poldata file name");
         try
@@ -50,9 +50,10 @@ void StaticIndividualInfo::fillPoldata(      FILE *fp,
         print_memory_usage(debug);
     }
     /* Broadcasting Force Field Data from Master to Helper nodes */
-    if ((PAR(cr_) && !MASTER(cr_)) || (MASTER(cr_) && cr_->nmiddlemen == 0))
+    if (cr_->isParallel() && (!cr_->isMaster() || 
+                              (cr_->isMaster() && cr_->nmiddlemen() == 0)))
     {
-        pd_.sendToHelpers(cr_);
+        pd_.sendToHelpers(cr_->commrec());
     }
     if (nullptr != fp)
     {

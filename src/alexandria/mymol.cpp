@@ -1291,7 +1291,7 @@ double MyMol::bondOrder(int ai, int aj) const
 }
 
 immStatus MyMol::GenerateGromacs(const gmx::MDLogger       &mdlog,
-                                 t_commrec                 *cr,
+                                 const t_commrec           *cr,
                                  const char                *tabfn,
                                  ChargeType                 ieqt)
 {
@@ -1350,7 +1350,7 @@ real MyMol::potentialEnergy() const
     return enerd_->term[F_EPOT];
 }
 
-immStatus MyMol::computeForces(FILE *fplog, t_commrec *cr, double *rmsf)
+immStatus MyMol::computeForces(FILE *fplog, const t_commrec *cr, double *rmsf)
 {
     auto mdatoms = MDatoms_->get()->mdatoms();
     auto atoms   = atomsConst();
@@ -1404,12 +1404,13 @@ immStatus MyMol::computeForces(FILE *fplog, t_commrec *cr, double *rmsf)
                     getMolname().c_str(),
                     mtop_->ffparams.iparams[mtop_->moltype[0].ilist[F_POLARIZATION].iatoms[0]].polarize.alpha);
         }
-        auto nnodes = cr->nnodes;
-        cr->nnodes  = 1;
+        t_commrec *crtmp = init_commrec();
+        crtmp->nnodes = 1;
+        crtmp->nodeid = 0;
         real force2 = 0;
         try
         {
-            force2 = relax_shell_flexcon(nullptr, cr, nullptr, false,
+            force2 = relax_shell_flexcon(nullptr, crtmp, nullptr, false,
                                          0, inputrec_,
                                          true, force_flags, ltop_,
                                          enerd_, fcd_, state_,
@@ -1442,7 +1443,6 @@ immStatus MyMol::computeForces(FILE *fplog, t_commrec *cr, double *rmsf)
             pr_rvecs(fplog, 0, "f", f_.rvec_array(), mtop_->natoms);
             imm = immStatus::ShellMinimization;
         }
-        cr->nnodes = nnodes;
     }
     else
     {
@@ -1480,7 +1480,7 @@ void MyMol::symmetrizeCharges(const Poldata  *pd,
 }
 
 immStatus MyMol::GenerateAcmCharges(const Poldata   *pd,
-                                    t_commrec       *cr,
+                                    const t_commrec *cr,
                                     int              maxiter,
                                     real             tolerance)
 {
@@ -1544,7 +1544,7 @@ immStatus MyMol::GenerateAcmCharges(const Poldata   *pd,
 
 immStatus MyMol::GenerateCharges(const Poldata             *pd,
                                  const gmx::MDLogger       &mdlog,
-                                 t_commrec                 *cr,
+                                 const t_commrec           *cr,
                                  const char                *tabfn,
                                  int                        maxiter,
                                  real                       tolerance,
@@ -1857,9 +1857,9 @@ void MyMol::restoreCoordinates()
     }
 }
 
-immStatus MyMol::CalcPolarizability(double     efield,
-                                    t_commrec *cr,
-                                    FILE      *fplog)
+immStatus MyMol::CalcPolarizability(double           efield,
+                                    const t_commrec *cr,
+                                    FILE            *fplog)
 {
     const double        POLFAC = 29.957004; /* C.m**2.V*-1 to Å**3 */
     std::vector<double> field;
@@ -1918,7 +1918,7 @@ void MyMol::PrintConformation(const char *fn)
 void MyMol::PrintTopology(const char        *fn,
                           bool               bVerbose,
                           const Poldata     *pd,
-                          t_commrec         *cr,
+                          const t_commrec   *cr,
                           const std::string &method,
                           const std::string &basis)
 {
@@ -1949,7 +1949,7 @@ void MyMol::PrintTopology(FILE                   *fp,
                           bool                    bVerbose,
                           const Poldata          *pd,
                           bool                    bITP,
-                          t_commrec              *cr,
+                          const t_commrec        *cr,
                           const std::string      &method,
                           const std::string      &basis)
 {
@@ -2551,7 +2551,7 @@ const QtypeProps *MyMol::qTypeProps(qType qt) const
 
 void MyMol::plotEspCorrelation(const char             *espcorr,
                                const gmx_output_env_t *oenv,
-                               t_commrec              *cr)
+                               const t_commrec        *cr)
 {
     if (espcorr && oenv)
     {
@@ -2567,7 +2567,7 @@ void MyMol::plotEspCorrelation(const char             *espcorr,
     }
 }
 
-CommunicationStatus MyMol::Send(t_commrec *cr, int dest) const
+CommunicationStatus MyMol::Send(const t_commrec *cr, int dest) const
 {
     auto cs = MolProp::Send(cr, dest);
     if (CS_OK == cs)
@@ -2577,7 +2577,7 @@ CommunicationStatus MyMol::Send(t_commrec *cr, int dest) const
     return cs;
 }
 
-CommunicationStatus MyMol::Receive(t_commrec *cr, int src)
+CommunicationStatus MyMol::Receive(const t_commrec *cr, int src)
 {
     auto cs = MolProp::Receive(cr, src);
     if (CS_OK == cs)
