@@ -293,12 +293,12 @@ void OptACM::initMaster(const std::string &outputFile)
         }
     case ProbabilityComputerAlg::pcBOLTZMANN:
         {
-            probComputer = new ga::BoltzmannProbabilityComputer(gach_.boltzTemp());
+            probComputer = new ga::BoltzmannProbabilityComputer(gach_.boltzTemp(), gach_.popSize());
             break;
         }
     }
     
-    // Fitness computer
+    // Fitness computer FIXME: do we want to give the pointer to the logfile instead of nullptr?
     fitComp_ = new ACMFitnessComputer(nullptr, sii_, &mg_, 
                                       false, false, false);
     
@@ -306,11 +306,14 @@ void OptACM::initMaster(const std::string &outputFile)
     ga::Mutator *mutator;
     if (gach_.optimizer() == OptimizerAlg::GA)
     {
+        // Create the "ind0" directory
+        system("mkdir ind0");
         mutator = new alexandria::PercentMutator(sii_, gach_.percent());
     }
     else
     {
-        auto mut = new alexandria::MCMCMutator(nullptr, verbose(), &bch_, fitComp_, sii_);
+        // auto mut = new alexandria::MCMCMutator(nullptr, verbose(), &bch_, fitComp_, sii_);
+        auto mut = new alexandria::MCMCMutator(logFile(), verbose(), &bch_, fitComp_, sii_);
         mut->openParamConvFiles(oenv());
         mut->openChi2ConvFile(oenv(), bch()->evaluateTestset());
         mutator = mut;
@@ -583,7 +586,6 @@ int tune_ff(int argc, char *argv[])
     // StaticIndividualInfo things
     opt.sii()->generateOptimizationIndex(fp, opt.mg());
     opt.sii()->fillVectors(opt.mg()->mindata());
-    opt.sii()->assignParamClassIndex();
     opt.sii()->computeWeightedTemperature(opt.bch()->temperatureWeighting());
     // Set the output file names, has to be done before
     // creating a mutator.
@@ -597,6 +599,7 @@ int tune_ff(int argc, char *argv[])
         opt.sii()->setOutputFiles(opt2fn("-conv", filenms.size(), filenms.data()), 
                                   paramClass,
                                   opt2fn("-epot", filenms.size(), filenms.data()));
+        opt.sii()->assignParamClassIndex();  // paramClass needs to be defined when we call this!
     }
 
     // init charge generation for compounds in the

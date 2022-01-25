@@ -92,8 +92,8 @@ private:
     bool randomInit_ = true;
     //! Order of crossover operator
     int nCrossovers_ = 1;
-    //! Sorter algorithm
-    const char *sorter_[5] = {nullptr, "QUICK", "MERGE", "NONE", nullptr};
+    //! Whether we sort the population or not
+    bool sort_ = true;
     //! Probability computing algorithm
     const char *probComputer_[5] = {nullptr, "RANK", "FITNESS", "BOLTZMANN", nullptr};
     //! Boltzmann probability temperature. TODO: This temperature should be lowered over time.
@@ -142,7 +142,7 @@ public:
     int nElites() const { return nElites_; }
 
     //! \return whether to initialize an individual randomly
-    real randomInit() const { return randomInit_; }
+    bool randomInit() const { return randomInit_; }
 
     //! \return the order of the crossover operator
     int nCrossovers() const { return nCrossovers_; }
@@ -152,8 +152,8 @@ public:
      */
     void setCrossovers(int number) { nCrossovers_ = number; }
     
-    //! \return the sorter
-    const char *sorter() const { return sorter_[0]; }
+    //! \return whether we sort the population or not
+    bool sort() const { return sort_; }
 
     //! \return the probability computer
     ProbabilityComputerAlg probabilityComputerAlg() const { return stringToProbabilityComputerAlg(probComputer_[0]); }
@@ -188,7 +188,7 @@ class BayesConfigHandler : public ConfigHandler
 private:
     //! Maximum number of iterations
     int   maxiter_           = 100;
-    //! Random number seed for the MCMCMutator random number generator
+    //! Random number seed for the Initializer random number generator FIXME: This shouldn't be here?
     int   seed_              = 0;
     //! Relative step when optimizing
     real  step_              = 0.02;

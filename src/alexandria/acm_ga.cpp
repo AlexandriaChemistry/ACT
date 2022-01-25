@@ -30,7 +30,7 @@ bool MCMC::evolve(ga::Genome *bestGenome)
     mutator()->stopHelpers();
     mutator()->finalize();
     
-    delete ind;
+    delete ind;  // FIXME: compilation warning about non-virtual destructor
     
     return mutator()->foundMinimum();
 }
@@ -103,12 +103,15 @@ bool HybridGAMC::evolve(ga::Genome *bestGenome)
     }
     // Now we have filled the gene pool and initial fitness values
     pool[pold]->print(logFile_);
+    // Print fitness to surveillance files
+    fprintFitness(*(pool[pold]));
 
     auto bestIndex = pool[pold]->findBestIndex();
     // TODO Check whether we need to update this at all here
     *bestGenome    = pool[pold]->genome(bestIndex);
     
-    bool bMinimum = false;
+    // When random initialization, assume a better minimum has been found no matter what
+    bool bMinimum = gach_->randomInit() ? true : false;
     // Iterate and create new generation
     do
     {
@@ -116,13 +119,15 @@ bool HybridGAMC::evolve(ga::Genome *bestGenome)
         generation++;
         fprintf(logFile_, "\nGeneration %i\n", generation);
         
-        // Sort individuals based on fitness
-        fprintf(logFile_, "Sorting old population... (if needed)\n");
-        // Should fitness be increasing or decreasing?
+        // Sort individuals in increasing order of fitness
         auto gp = pool[pold]->genePoolPtr();
-        std::sort(gp->begin(), gp->end(), 
-                  [](const Genome &a, const Genome &b) -> bool
-                  { return a.fitness(iMolSelect::Train) < b.fitness(iMolSelect::Train); });
+        if (gach_->sort())
+        {
+            fprintf(logFile_, "Sorting old population...\n");
+            std::sort(gp->begin(), gp->end(), 
+                      [](const Genome &a, const Genome &b) -> bool
+                      { return a.fitness(iMolSelect::Train) < b.fitness(iMolSelect::Train); });
+        }
         
         // Normalize the fitness into a probability
         fprintf(logFile_, "Computing probabilities...\n");
@@ -208,6 +213,8 @@ bool HybridGAMC::evolve(ga::Genome *bestGenome)
             auto fitness = gmx_recv_double(cr, src);
             pool[pold]->genomePtr(i)->setFitness(iMolSelect::Train, fitness);
         }
+        // Print fitness to surveillance files
+        fprintFitness(*(pool[pold]));
         
         // Check if a better genome was found, and update if so
         size_t newBest = pool[pold]->findBestIndex();

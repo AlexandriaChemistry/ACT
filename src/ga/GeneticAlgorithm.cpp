@@ -34,4 +34,15 @@ void GeneticAlgorithm::closeFitnessFiles()
     gmx_fio_fclose(fileFitnessTest_);
 }
 
+void GeneticAlgorithm::fprintFitness(const GenePool &pool)
+{
+    for (const auto &genome : pool.genePool())
+    {
+        fprintf(fileFitnessTrain_, "%f ", genome.fitness(iMolSelect::Train));
+        fprintf(fileFitnessTest_, "%f ", genome.fitness(iMolSelect::Test));
+    }
+    fprintf(fileFitnessTrain_, "\n");
+    fprintf(fileFitnessTest_, "\n");
+}
+
 }  //namespace ga
