@@ -73,13 +73,13 @@ private:
 
     /*!
      * \brief Print new minimum to log file and, if necessary, print params to debug file
-     * \param[in] genome            The genome
+     * \param[in] chi2              the new minimum
      * \param[in] bEvaluate_testset true if test set is evaluated, false otherwise
      * \param[in] xiter             fractional iteration. E.g., if we are halfway through iteration 3, it is 3.5
      */
-    void printNewMinimum(const ga::Genome *genome,
-                         bool              bEvaluate_testset,
-                         double            xiter);
+    void printNewMinimum(const std::map<iMolSelect, double> &chi2,
+                         bool                                bEvaluate_testset,
+                         double                              xiter);
 
     /*!
      * \brief Print parameter values to their respective surveillance files
@@ -91,13 +91,13 @@ private:
 
     /*!
      * \brief Write \f$ \chi^2 \f$ value of a genome to its convergence file, if it exists
-     * \param[in] ind                   pointer to genome
+     * \param[in] chi2                  chi2 for train and test sets
      * \param[in] bEvaluate_testset     true if test set is evaluated, false otherwise
      * \param[in] xiter                 fractional iteration. E.g., if we are halfway through iteration 3, it is 3.5
      */
-    void printChi2Step(ga::Genome  *ind,
-                       bool         bEvaluate_testset,
-                       double       xiter);
+    void printChi2Step(const std::map<iMolSelect, double> &chi2,
+                       bool                                bEvaluate_testset,
+                       double                              xiter);
 
     //! \return a random index of the force field parameter vector
     size_t randIndex() { return dis(gen); }

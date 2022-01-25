@@ -123,7 +123,9 @@ double BayesConfigHandler::computeBeta(int iter)
     }
     else if (maxiter_ > 0)
     {
-        temp = temperature_*(1.0 - iter/(1.0*maxiter_));
+        // temp = temperature_*(1.0 - iter/(1.0*maxiter_));
+        // Line: temp = m * iter + b
+        temp = ( temperature_ / ( anneal_ * maxiter_ - maxiter_ ) ) * iter + ( ( temperature_ / ( maxiter_ - anneal_ * maxiter_ ) ) * maxiter_ );
     }
     return 1/(BOLTZ*temp);
 }
@@ -180,8 +182,8 @@ void GAConfigHandler::add_pargs(std::vector<t_pargs> *pargs)
           "Initialize the individuals randomly, within the given bounds." },  
         { "-nCrossovers", FALSE, etINT, {&nCrossovers_},
           "Order of the crossover operator. That is, amount of crossover points." },
-        { "-sorter", FALSE, etENUM, {sorter_},
-          "Sorter algorithm to rank population based on fitness" },
+        { "-sort", FALSE, etBOOL, {&sort_},
+          "Whether we sort the genomes in the population based on their fitness." },
         { "-probComputer", FALSE, etENUM, {probComputer_},
           "Probability computation algorithm" },
         { "-boltzTemp", FALSE, etREAL, {&boltzTemp_},
@@ -214,15 +216,15 @@ void GAConfigHandler::check_pargs()
   GMX_RELEASE_ASSERT(nElites_ >= 0 && nElites_ % 2 == 0, "-nElites must be nonnegative and even.");
   if (nElites_ > 0)  // Make sure a sorter has been selected
   {
-    GMX_RELEASE_ASSERT(strcmp(sorter_[0], "NONE") != 0,
-                       "When -nElites > 0, a sorter should be selected. Please change -sorter.");
+    GMX_RELEASE_ASSERT(sort_ == true,
+                       "When -nElites > 0, -sort should be used.");
   }
 
   GMX_RELEASE_ASSERT(nCrossovers_ > 0, "-nCrossovers must be nonnegative.");
 
   if (strcmp(probComputer_[0], "RANK") == 0)  // If rank-based probability is requested
   {
-    GMX_RELEASE_ASSERT(strcmp(sorter_[0], "NONE") != 0, "You must choose a sorter if you want rank-based probability computing.");
+    GMX_RELEASE_ASSERT(sort_ == true, "You must enable -sort if you want rank-based probability computing.");
   }
 
   GMX_RELEASE_ASSERT(boltzTemp_ >= 0, "-boltzTemp must be nonnegative.");

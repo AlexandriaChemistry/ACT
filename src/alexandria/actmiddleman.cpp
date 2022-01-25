@@ -21,11 +21,19 @@ ACTMiddleMan::ACTMiddleMan(FILE                 *logFile,
 {
     // This ica
     int seed = bch->seed();
-    if (seed == 0)
+    // Create random number generator and feed it the global seed
+    std::random_device rd;  // Will be used to obtain a seed for the random number engine
+    std::mt19937 gen(rd()); // Standard mersenne_twister_engine seeded with rd()
+    std::uniform_int_distribution<int> dis(0); // Default constructor to cover all available (positive) range
+    gen.seed(seed);
+    // Use the random number generator to get a seed for this processor based on the global seed
+    // Skip the first "nodeid" numbers and grab the next one
+    for (int i = 0; i < sii->commrec()->nodeid; i++)
     {
-        // Not very random seeds, but different ones on each processor.
-        seed = 1993 + 2*(sii->commrec()->nodeid+1);
+        dis(gen);
     }
+    seed = dis(gen);
+    
     auto initializer = new ACMInitializer(sii, gach->randomInit(), outputFile, seed);
     
     // Create and initialize the individual
