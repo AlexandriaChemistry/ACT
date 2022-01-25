@@ -20,6 +20,7 @@
 #include "gromacs/math/vecdump.h"
 #include "gromacs/topology/topology.h"
 
+#include "communicationrecord.h"
 #include "mymol.h"
 #include "molgen.h"
 
@@ -62,11 +63,11 @@ public:
      * @param param     the current force field parameter vector
      * @param commrec   pointer to communications record
      */
-    virtual void calcDeviation(      MyMol                             *mymol,
-                                     std::map<eRMS, FittingTarget>     *targets,
-                                     Poldata                           *poldata,
-                               const std::vector<double>               &param,
-                               const t_commrec                         *commrec) = 0;
+    virtual void calcDeviation(      MyMol                         *mymol,
+                                     std::map<eRMS, FittingTarget> *targets,
+                                     Poldata                       *poldata,
+                               const std::vector<double>           &param,
+                               const CommunicationRecord           *commrec) = 0;
 
 };
 
@@ -109,11 +110,11 @@ public:
         optIndex_ = optIndex;
     }
 
-    virtual void calcDeviation(      MyMol                             *mymol,
-                                     std::map<eRMS, FittingTarget>     *targets,
-                                     Poldata                           *poldata,
-                               const std::vector<double>               &param,
-                               const t_commrec                         *commrec);
+    virtual void calcDeviation(      MyMol                         *mymol,
+                                     std::map<eRMS, FittingTarget> *targets,
+                                     Poldata                       *poldata,
+                               const std::vector<double>           &param,
+                               const CommunicationRecord           *commrec);
 
 };
 
@@ -135,11 +136,11 @@ public:
     : DevComputer(logfile, verbose)
     {}
 
-    virtual void calcDeviation(      MyMol                             *mymol,
-                                     std::map<eRMS, FittingTarget>     *targets,
-                                     Poldata                           *poldata,
-                               const std::vector<double>               &param,
-                               const t_commrec                         *commrec);
+    virtual void calcDeviation(      MyMol                         *mymol,
+                                     std::map<eRMS, FittingTarget> *targets,
+                                     Poldata                       *poldata,
+                               const std::vector<double>           &param,
+                               const CommunicationRecord           *commrec);
 
 };
 
@@ -178,11 +179,11 @@ public:
         fit_ = fit;
     }
 
-    virtual void calcDeviation(      MyMol                             *mymol,
-                                     std::map<eRMS, FittingTarget>     *targets,
-                                     Poldata                           *poldata,
-                               const std::vector<double>               &param,
-                               const t_commrec                         *commrec);
+    virtual void calcDeviation(      MyMol                         *mymol,
+                                     std::map<eRMS, FittingTarget> *targets,
+                                     Poldata                       *poldata,
+                               const std::vector<double>           &param,
+                               const CommunicationRecord           *commrec);
 
 };
 
@@ -212,11 +213,11 @@ public:
         bFullQuadrupole_ = bFullQuadrupole;
     }
 
-    virtual void calcDeviation(      MyMol                             *mymol,
-                                     std::map<eRMS, FittingTarget>     *targets,
-                                     Poldata                           *poldata,
-                               const std::vector<double>               &param,
-                               const t_commrec                         *commrec);
+    virtual void calcDeviation(      MyMol                         *mymol,
+                                     std::map<eRMS, FittingTarget> *targets,
+                                     Poldata                       *poldata,
+                               const std::vector<double>           &param,
+                               const CommunicationRecord           *commrec);
 
 };
 
@@ -246,11 +247,11 @@ public:
         bFullQuadrupole_ = bFullQuadrupole;
     }
 
-    virtual void calcDeviation(      MyMol                             *mymol,
-                                     std::map<eRMS, FittingTarget>     *targets,
-                                     Poldata                           *poldata,
-                               const std::vector<double>               &param,
-                               const t_commrec                         *commrec);
+    virtual void calcDeviation(      MyMol                         *mymol,
+                                     std::map<eRMS, FittingTarget> *targets,
+                                     Poldata                       *poldata,
+                               const std::vector<double>           &param,
+                               const CommunicationRecord                         *commrec);
 
 };
 
@@ -279,11 +280,11 @@ public:
         bQM_ = bQM;
     }
 
-    virtual void calcDeviation(      MyMol                             *mymol,
-                                     std::map<eRMS, FittingTarget>     *targets,
-                                     Poldata                           *poldata,
-                               const std::vector<double>               &param,
-                               const t_commrec                         *commrec);
+    virtual void calcDeviation(      MyMol                         *mymol,
+                                     std::map<eRMS, FittingTarget> *targets,
+                                     Poldata                       *poldata,
+                               const std::vector<double>           &param,
+                               const CommunicationRecord                         *commrec);
 
 };
 
@@ -305,11 +306,11 @@ public:
     {
     }
 
-    virtual void calcDeviation(      MyMol                             *mymol,
-                                     std::map<eRMS, FittingTarget>     *targets,
-                                     Poldata                           *poldata,
-                               const std::vector<double>               &param,
-                               const t_commrec                         *commrec);
+    virtual void calcDeviation(      MyMol                         *mymol,
+                                     std::map<eRMS, FittingTarget> *targets,
+                                     Poldata                       *poldata,
+                               const std::vector<double>           &param,
+                               const CommunicationRecord           *commrec);
 
 };
 

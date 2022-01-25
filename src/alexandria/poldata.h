@@ -40,6 +40,7 @@
 #include "gromacs/utility/stringutil.h"
 
 #include "chargemodel.h"
+#include "communicationrecord.h"
 #include "forcefieldparameter.h"
 #include "forcefieldparameterlist.h"
 #include "interactiontype.h"
@@ -47,10 +48,6 @@
 #include "poldata_low.h"
 #include "stringutil.h"
 #include "vsite.h"
-
-/* This source code file is part of the Alexandria project */
-
-struct t_commrec;
 
 namespace alexandria
 {
@@ -442,35 +439,35 @@ class Poldata
         /*! Spread from master to other nodes
          * \param[in] cr Communication record
          */
-        void sendToHelpers(const t_commrec *cr);
+        void sendToHelpers(const CommunicationRecord *cr);
 
         /*! Spread eemprop to a helper node
          * \param[in] cr   Communication record
          * \param[in] dest Destination node
          */
-        void sendEemprops(const t_commrec *cr, int dest);
+        void sendEemprops(const CommunicationRecord *cr, int dest);
     
         /*! Receive eemprop from someone
          * \param[in] cr  Communication record
          * \param[in] src Source node
          */
-        void receiveEemprops(const t_commrec *cr, int src);
+        void receiveEemprops(const CommunicationRecord *cr, int src);
         
         /*! Spread mutable particle properties to a helper node
          * \param[in] cr   Communication record
          * \param[in] dest Destination node
          */
-        void sendParticles(const t_commrec *cr, int dest);
+        void sendParticles(const CommunicationRecord *cr, int dest);
         
         /*! Receive particles from someone
          * \param[in] cr  Communication record
          * \param[in] src Source node
          */
-        void receiveParticles(const t_commrec *cr, int src);
+        void receiveParticles(const CommunicationRecord *cr, int src);
         
-        CommunicationStatus Send(const t_commrec *cr, int dest);
+        CommunicationStatus Send(const CommunicationRecord *cr, int dest);
 
-        CommunicationStatus Receive(const t_commrec *cr, int src);
+        CommunicationStatus Receive(const CommunicationRecord *cr, int src);
 
         //! \brief Check internal consistency of data structures
         void checkConsistency(FILE *fplog) const;

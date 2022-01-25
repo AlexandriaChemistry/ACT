@@ -2,9 +2,9 @@
     
 #include <cstdio>
 
-#include "alexandria/gmx_simple_comm.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/stringutil.h"
 
 namespace ga
 {
@@ -77,38 +77,38 @@ void Genome::setBase(size_t index, double value)
     genome_[index] = value;
 }
     
-void Genome::Send(const t_commrec *cr, int dest) const
+void Genome::Send(const alexandria::CommunicationRecord *cr, int dest) const
 {
-    gmx_send_double_vector(cr, dest, &genome_);
-    gmx_send_int(cr, dest, fitness_.size());
+    cr->send_double_vector(dest, &genome_);
+    cr->send_int(dest, fitness_.size());
     for(auto &f : fitness_)
     {
         std::string imsName(iMolSelectName(f.first));
-        gmx_send_str(cr, dest, &imsName);
-        gmx_send_double(cr, dest, f.second);
+        cr->send_str(dest, &imsName);
+        cr->send_double(dest, f.second);
     }
-    gmx_send_double(cr, dest, probability_);
+    cr->send_double(dest, probability_);
 }
     
-void Genome::Receive(const t_commrec *cr, int src)
+void Genome::Receive(const alexandria::CommunicationRecord *cr, int src)
 {
-    gmx_recv_double_vector(cr, src, &genome_);
-    int nfmap = gmx_recv_int(cr, src);
+    cr->recv_double_vector(src, &genome_);
+    int nfmap = cr->recv_int(src);
     fitness_.clear();
     for (int i = 0; i < nfmap; i++)
     {
         std::string imsName;
-        gmx_recv_str(cr, src, &imsName);
+        cr->recv_str(src, &imsName);
         iMolSelect ims;
         if (!name2molselect(imsName, &ims))
         {
             GMX_THROW(gmx::InternalError(gmx::formatString("Invalid iMolSelect name %s",
                                                            imsName.c_str()).c_str()));
         }
-        double fitness = gmx_recv_double(cr, src);
+        double fitness = cr->recv_double(src);
         fitness_.insert({ims, fitness});
     }
-    probability_ = gmx_recv_double(cr, src);
+    probability_ = cr->recv_double(src);
 }
 
 } // namespace ga

@@ -52,7 +52,6 @@
 
 #include "alex_modules.h"
 #include "fill_inputrec.h"
-#include "gmx_simple_comm.h"
 #include "memory_check.h"
 #include "molprop_util.h"
 #include "molprop_xml.h"
@@ -631,7 +630,7 @@ size_t MolGen::Read(FILE            *fp,
                 std::vector<double> dummy;
                 imm = mymol.GenerateCharges(pd,
                                             mdlog_,
-                                            cr_->commrec(),
+                                            cr_,
                                             tabfn,
                                             qcycle_,
                                             qtol_,
@@ -726,7 +725,7 @@ size_t MolGen::Read(FILE            *fp,
                         fprintf(debug, "Going to send %s to cpu %d\n", mymol.getMolname().c_str(), mydest);
                     }
                     cr_->send_int(mydest, 1);
-                    CommunicationStatus cs = mymol.Send(cr_->commrec(), mydest);
+                    CommunicationStatus cs = mymol.Send(cr_, mydest);
                     if (CS_OK != cs)
                     {
                         imm = immStatus::CommProblem;
@@ -796,7 +795,7 @@ size_t MolGen::Read(FILE            *fp,
             {
                 fprintf(debug, "Going to retrieve new compound\n");
             }
-            CommunicationStatus cs = mymol.Receive(cr_->commrec(), 0);
+            CommunicationStatus cs = mymol.Receive(cr_, 0);
             if (CS_OK != cs)
             {
                 imm = immStatus::CommProblem;
@@ -822,7 +821,7 @@ size_t MolGen::Read(FILE            *fp,
                 mymol.initQgenResp(pd, method, basis, 0.0, maxESP_);
                 imm = mymol.GenerateCharges(pd,
                                             mdlog_,
-                                            cr_->commrec(),
+                                            cr_,
                                             tabfn,
                                             qcycle_,
                                             qtol_,

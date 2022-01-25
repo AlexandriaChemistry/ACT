@@ -40,7 +40,7 @@
 #include "gromacs/utility/stringutil.h"
 
 #include "communication.h"
-#include "gmx_simple_comm.h"
+#include "communicationrecord.h"
 #include "stringutil.h"
 
 namespace alexandria
@@ -191,40 +191,40 @@ Identifier::Identifier(const std::vector<std::string> &atoms,
     orderAtoms();
 }
 
-CommunicationStatus Identifier::Send(const t_commrec *cr, int dest) const
+CommunicationStatus Identifier::Send(const CommunicationRecord *cr, int dest) const
 {
-    gmx_send_str(cr, dest, &id_);
-    gmx_send_str(cr, dest, &swappedId_);
-    gmx_send_int(cr, dest, static_cast<int>(atoms_.size()));
+    cr->send_str(dest, &id_);
+    cr->send_str(dest, &swappedId_);
+    cr->send_int(dest, static_cast<int>(atoms_.size()));
     for(auto &a : atoms_)
     {
-        gmx_send_str(cr, dest, &a);
+        cr->send_str(dest, &a);
     }
-    gmx_send_int(cr, dest, static_cast<int>(bondOrders_.size()));
+    cr->send_int(dest, static_cast<int>(bondOrders_.size()));
     for(auto &b : bondOrders_)
     {
-        gmx_send_double(cr, dest, b);
+        cr->send_double(dest, b);
     }
     return CS_OK;
 }
 
-CommunicationStatus Identifier::Receive(const t_commrec *cr, int src)
+CommunicationStatus Identifier::Receive(const CommunicationRecord *cr, int src)
 {
-    gmx_recv_str(cr, src, &id_);
-    gmx_recv_str(cr, src, &swappedId_);
-    int natoms = gmx_recv_int(cr, src);
+    cr->recv_str(src, &id_);
+    cr->recv_str(src, &swappedId_);
+    int natoms = cr->recv_int(src);
     atoms_.clear();
     for(int i = 0; i < natoms; i++)
     {
         std::string a;
-        gmx_recv_str(cr, src, &a);
+        cr->recv_str(src, &a);
         atoms_.push_back(a);
     }
-    int nbo = gmx_recv_int(cr, src);
+    int nbo = cr->recv_int(src);
     bondOrders_.clear();
     for(int i = 0; i < nbo; i++)
     {
-        bondOrders_.push_back(gmx_recv_double(cr, src));
+        bondOrders_.push_back(cr->recv_double(src));
     }
     return CS_OK;
 }

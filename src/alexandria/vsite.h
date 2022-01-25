@@ -86,9 +86,9 @@ class Vsite
          */
         int ncontrolatoms() const {return ncontrolatoms_; }
 
-        CommunicationStatus Send(const t_commrec *cr, int dest);
+        CommunicationStatus Send(const CommunicationRecord *cr, int dest);
 
-        CommunicationStatus Receive(const t_commrec *cr, int src);
+        CommunicationStatus Receive(const CommunicationRecord *cr, int src);
 
 
     private:

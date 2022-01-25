@@ -42,8 +42,8 @@
 #include "gromacs/utility/fatalerror.h"
 
 #include "communication.h"
+#include "communicationrecord.h"
 #include "composition.h"
-#include "gmx_simple_comm.h"
 #include "units.h"
 
 namespace alexandria
@@ -637,7 +637,7 @@ ExperimentIterator MolProp::getCalcPropType(const std::string &method,
     return ci;
 }
 #endif
-CommunicationStatus MolProp::Send(const t_commrec *cr, int dest) const
+CommunicationStatus MolProp::Send(const CommunicationRecord *cr, int dest) const
 {
     CommunicationStatus                cs;
     BondIterator                       bi;
@@ -649,19 +649,19 @@ CommunicationStatus MolProp::Send(const t_commrec *cr, int dest) const
     cs = gmx_send_data(cr, dest);
     if (CS_OK == cs)
     {
-        gmx_send_double(cr, dest, mass_);
-        gmx_send_int(cr, dest, index_);
-        gmx_send_int(cr, dest, charge_);
-        gmx_send_int(cr, dest, multiplicity_);
-        gmx_send_str(cr, dest, &formula_);
-        gmx_send_str(cr, dest, &molname_);
-        gmx_send_str(cr, dest, &iupac_);
-        gmx_send_str(cr, dest, &cas_);
-        gmx_send_str(cr, dest, &cid_);
-        gmx_send_str(cr, dest, &inchi_);
-        gmx_send_int(cr, dest, bond_.size());
-        gmx_send_int(cr, dest, category_.size());
-        gmx_send_int(cr, dest, exper_.size());
+        cr->send_double(dest, mass_);
+        cr->send_int(dest, index_);
+        cr->send_int(dest, charge_);
+        cr->send_int(dest, multiplicity_);
+        cr->send_str(dest, &formula_);
+        cr->send_str(dest, &molname_);
+        cr->send_str(dest, &iupac_);
+        cr->send_str(dest, &cas_);
+        cr->send_str(dest, &cid_);
+        cr->send_str(dest, &inchi_);
+        cr->send_int(dest, bond_.size());
+        cr->send_int(dest, category_.size());
+        cr->send_int(dest, exper_.size());
 
         /* Send Bonds */
         for (auto &bi : bondsConst())
@@ -682,7 +682,7 @@ CommunicationStatus MolProp::Send(const t_commrec *cr, int dest) const
                 if (CS_OK == cs)
                 {
                     std::string sii = si.c_str();
-                    gmx_send_str(cr, dest, &sii);
+                    cr->send_str(dest, &sii);
                     if (nullptr != debug)
                     {
                         fprintf(debug, "Sent category %s\n", si.c_str());
@@ -714,7 +714,7 @@ CommunicationStatus MolProp::Send(const t_commrec *cr, int dest) const
     return cs;
 }
 
-CommunicationStatus MolProp::Receive(const t_commrec *cr, int src)
+CommunicationStatus MolProp::Receive(const CommunicationRecord *cr, int src)
 {
     CommunicationStatus cs;
     int                 Nbond, Ncategory, Nexper;
@@ -724,19 +724,19 @@ CommunicationStatus MolProp::Receive(const t_commrec *cr, int src)
     if (CS_OK == cs)
     {
         //! Receive mass and more
-        mass_         = gmx_recv_double(cr, src);
-        index_        = gmx_recv_int(cr, src);
-        charge_       = gmx_recv_int(cr, src);
-        multiplicity_ = gmx_recv_int(cr, src);
-        gmx_recv_str(cr, src, &formula_);
-        gmx_recv_str(cr, src, &molname_);
-        gmx_recv_str(cr, src, &iupac_);
-        gmx_recv_str(cr, src, &cas_);
-        gmx_recv_str(cr, src, &cid_);
-        gmx_recv_str(cr, src, &inchi_);
-        Nbond     = gmx_recv_int(cr, src);
-        Ncategory = gmx_recv_int(cr, src);
-        Nexper    = gmx_recv_int(cr, src);
+        mass_         = cr->recv_double(src);
+        index_        = cr->recv_int(src);
+        charge_       = cr->recv_int(src);
+        multiplicity_ = cr->recv_int(src);
+        cr->recv_str(src, &formula_);
+        cr->recv_str(src, &molname_);
+        cr->recv_str(src, &iupac_);
+        cr->recv_str(src, &cas_);
+        cr->recv_str(src, &cid_);
+        cr->recv_str(src, &inchi_);
+        Nbond     = cr->recv_int(src);
+        Ncategory = cr->recv_int(src);
+        Nexper    = cr->recv_int(src);
 
         if (nullptr != debug)
         {
@@ -760,7 +760,7 @@ CommunicationStatus MolProp::Receive(const t_commrec *cr, int src)
             if (CS_OK == cs)
             {
                 std::string str;
-                gmx_recv_str(cr, src, &str);
+                cr->recv_str(src, &str);
                 if (!str.empty())
                 {
                     AddCategory(str);

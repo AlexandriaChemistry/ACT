@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2021
+ * Copyright (C) 2014-2022
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -39,7 +39,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 
-#include "gmx_simple_comm.h"
+#include "communicationrecord.h"
 
 namespace alexandria
 {
@@ -109,7 +109,7 @@ bool stringToMolPropObservable(const std::string &str, MolPropObservable *mpo)
     return false;
 }
 
-CommunicationStatus GenericProperty::Send(const t_commrec *cr, int dest) const
+CommunicationStatus GenericProperty::Send(const CommunicationRecord *cr, int dest) const
 {
     CommunicationStatus cs;
 
@@ -117,9 +117,9 @@ CommunicationStatus GenericProperty::Send(const t_commrec *cr, int dest) const
     if (CS_OK == cs)
     {
         std::string type(mpo_name(mpo_));
-        gmx_send_str(cr, dest, &type);
-        gmx_send_double(cr, dest, T_);
-        gmx_send_int(cr, dest, (int) eP_);
+        cr->send_str(dest, &type);
+        cr->send_double(dest, T_);
+        cr->send_int(dest, (int) eP_);
     }
     else if (nullptr != debug)
     {
@@ -129,7 +129,7 @@ CommunicationStatus GenericProperty::Send(const t_commrec *cr, int dest) const
     return cs;
 }
 
-CommunicationStatus GenericProperty::Receive(const t_commrec *cr, int src)
+CommunicationStatus GenericProperty::Receive(const CommunicationRecord *cr, int src)
 {
     CommunicationStatus cs;
 
@@ -137,13 +137,13 @@ CommunicationStatus GenericProperty::Receive(const t_commrec *cr, int src)
     if (CS_OK == cs)
     {
         std::string type;
-        gmx_recv_str(cr, src, &type);
+        cr->recv_str(src, &type);
         if (!stringToMolPropObservable(type, &mpo_))
         {
             gmx_fatal(FARGS, "Unknown observable %s", type.c_str());
         }
-        T_   = gmx_recv_double(cr, src);
-        eP_  = (ePhase) gmx_recv_int(cr, src);
+        T_   = cr->recv_double(src);
+        eP_  = (ePhase) cr->recv_int(src);
     }
     else if (nullptr != debug)
     {
@@ -153,7 +153,7 @@ CommunicationStatus GenericProperty::Receive(const t_commrec *cr, int src)
     return cs;
 }
 
-CommunicationStatus MolecularDipole::Send(const t_commrec *cr, int dest) const
+CommunicationStatus MolecularDipole::Send(const CommunicationRecord *cr, int dest) const
 {
     CommunicationStatus cs;
 
@@ -164,13 +164,13 @@ CommunicationStatus MolecularDipole::Send(const t_commrec *cr, int dest) const
     }
     if (CS_OK == cs)
     {
-        gmx_send_int(cr, dest, mu_.size());
+        cr->send_int(dest, mu_.size());
         for(auto &m : mu_)
         {
-            gmx_send_double(cr, dest, m);
+            cr->send_double(dest, m);
         }
-        gmx_send_double(cr, dest, average_);
-        gmx_send_double(cr, dest, error_);
+        cr->send_double(dest, average_);
+        cr->send_double(dest, error_);
     }
     else if (nullptr != debug)
     {
@@ -180,7 +180,7 @@ CommunicationStatus MolecularDipole::Send(const t_commrec *cr, int dest) const
     return cs;
 }
 
-CommunicationStatus MolecularDipole::Receive(const t_commrec *cr, int src)
+CommunicationStatus MolecularDipole::Receive(const CommunicationRecord *cr, int src)
 {
     CommunicationStatus cs;
 
@@ -192,14 +192,14 @@ CommunicationStatus MolecularDipole::Receive(const t_commrec *cr, int src)
     if (CS_OK == cs)
     {
         mu_.clear();
-        size_t N = gmx_recv_int(cr, src);
+        size_t N = cr->recv_int(src);
         for(size_t m = 0; m < N; m++)
         {
-            double x = gmx_recv_double(cr, src);
+            double x = cr->recv_double(src);
             mu_.push_back(x);
         }
-        average_  = gmx_recv_double(cr, src);
-        error_    = gmx_recv_double(cr, src);
+        average_  = cr->recv_double(src);
+        error_    = cr->recv_double(src);
     }
     else if (nullptr != debug)
     {
@@ -209,7 +209,7 @@ CommunicationStatus MolecularDipole::Receive(const t_commrec *cr, int src)
     return cs;
 }
 
-CommunicationStatus MolecularQuadrupole::Send(const t_commrec *cr, int dest) const
+CommunicationStatus MolecularQuadrupole::Send(const CommunicationRecord *cr, int dest) const
 {
     CommunicationStatus cs;
 
@@ -224,7 +224,7 @@ CommunicationStatus MolecularQuadrupole::Send(const t_commrec *cr, int dest) con
         {
             for(int n = 0; n < DIM; n++)
             {
-                gmx_send_double(cr, dest, quad_[m][n]);
+                cr->send_double(dest, quad_[m][n]);
             }
         }
     }
@@ -236,7 +236,7 @@ CommunicationStatus MolecularQuadrupole::Send(const t_commrec *cr, int dest) con
     return cs;
 }
 
-CommunicationStatus MolecularQuadrupole::Receive(const t_commrec *cr, int src)
+CommunicationStatus MolecularQuadrupole::Receive(const CommunicationRecord *cr, int src)
 {
     CommunicationStatus cs;
 
@@ -251,7 +251,7 @@ CommunicationStatus MolecularQuadrupole::Receive(const t_commrec *cr, int src)
         {
             for(int n = 0; n < DIM; n++)
             {
-                quad_[m][n] = gmx_recv_double(cr, src);
+                quad_[m][n] = cr->recv_double(src);
             }
         }
     }
@@ -276,7 +276,7 @@ double MolecularPolarizability::getValue() const
     }
 }
 
-CommunicationStatus MolecularPolarizability::Send(const t_commrec *cr, int dest) const
+CommunicationStatus MolecularPolarizability::Send(const CommunicationRecord *cr, int dest) const
 {
     CommunicationStatus cs;
 
@@ -291,7 +291,7 @@ CommunicationStatus MolecularPolarizability::Send(const t_commrec *cr, int dest)
         {
             for(int n = 0; n < DIM; n++)
             {
-                gmx_send_double(cr, dest, alpha_[m][n]);
+                cr->send_double(dest, alpha_[m][n]);
             }
         }
     }
@@ -301,8 +301,8 @@ CommunicationStatus MolecularPolarizability::Send(const t_commrec *cr, int dest)
     }
     if (CS_OK == cs)
     {
-        gmx_send_double(cr, dest, average_);
-        gmx_send_double(cr, dest, error_);
+        cr->send_double(dest, average_);
+        cr->send_double(dest, error_);
     }
     else if (nullptr != debug)
     {
@@ -312,7 +312,7 @@ CommunicationStatus MolecularPolarizability::Send(const t_commrec *cr, int dest)
     return cs;
 }
 
-CommunicationStatus MolecularPolarizability::Receive(const t_commrec *cr, int src)
+CommunicationStatus MolecularPolarizability::Receive(const CommunicationRecord *cr, int src)
 {
     CommunicationStatus cs;
 
@@ -327,7 +327,7 @@ CommunicationStatus MolecularPolarizability::Receive(const t_commrec *cr, int sr
         {
             for(int n = 0; n < DIM; n++)
             {
-                alpha_[m][n] = gmx_recv_double(cr, src);
+                alpha_[m][n] = cr->recv_double(src);
             }
         }
     }
@@ -337,8 +337,8 @@ CommunicationStatus MolecularPolarizability::Receive(const t_commrec *cr, int sr
     }
     if (CS_OK == cs)
     {
-        average_ = gmx_recv_double(cr, src);
-        error_   = gmx_recv_double(cr, src);
+        average_ = cr->recv_double(src);
+        error_   = cr->recv_double(src);
     }
     else if (nullptr != debug)
     {
@@ -348,7 +348,7 @@ CommunicationStatus MolecularPolarizability::Receive(const t_commrec *cr, int sr
     return cs;
 }
 
-CommunicationStatus MolecularEnergy::Receive(const t_commrec *cr, int src)
+CommunicationStatus MolecularEnergy::Receive(const CommunicationRecord *cr, int src)
 {
     CommunicationStatus cs;
 
@@ -359,8 +359,8 @@ CommunicationStatus MolecularEnergy::Receive(const t_commrec *cr, int src)
     }
     if (CS_OK == cs)
     {
-        average_ = gmx_recv_double(cr, src);
-        error_   = gmx_recv_double(cr, src);
+        average_ = cr->recv_double(src);
+        error_   = cr->recv_double(src);
     }
     else if (nullptr != debug)
     {
@@ -370,7 +370,7 @@ CommunicationStatus MolecularEnergy::Receive(const t_commrec *cr, int src)
     return cs;
 }
 
-CommunicationStatus MolecularEnergy::Send(const t_commrec *cr, int dest) const
+CommunicationStatus MolecularEnergy::Send(const CommunicationRecord *cr, int dest) const
 {
     CommunicationStatus cs;
 
@@ -381,8 +381,8 @@ CommunicationStatus MolecularEnergy::Send(const t_commrec *cr, int dest) const
     }
     if (CS_OK == cs)
     {
-        gmx_send_double(cr, dest, average_);
-        gmx_send_double(cr, dest, error_);
+        cr->send_double(dest, average_);
+        cr->send_double(dest, error_);
     }
     else if (nullptr != debug)
     {
@@ -392,20 +392,20 @@ CommunicationStatus MolecularEnergy::Send(const t_commrec *cr, int dest) const
     return cs;
 }
 
-CommunicationStatus ElectrostaticPotential::Receive(const t_commrec *cr, int src)
+CommunicationStatus ElectrostaticPotential::Receive(const CommunicationRecord *cr, int src)
 {
     CommunicationStatus cs;
 
     cs = gmx_recv_data(cr, src);
     if (CS_OK == cs)
     {
-        gmx_recv_str(cr, src, &xyzUnit_);
-        gmx_recv_str(cr, src, &vUnit_);
-        espID_ = gmx_recv_int(cr, src);
-        x_     = gmx_recv_double(cr, src);
-        y_     = gmx_recv_double(cr, src);
-        z_     = gmx_recv_double(cr, src);
-        V_     = gmx_recv_double(cr, src);
+        cr->recv_str(src, &xyzUnit_);
+        cr->recv_str(src, &vUnit_);
+        espID_ = cr->recv_int(src);
+        x_     = cr->recv_double(src);
+        y_     = cr->recv_double(src);
+        z_     = cr->recv_double(src);
+        V_     = cr->recv_double(src);
     }
     else if (nullptr != debug)
     {
@@ -415,20 +415,20 @@ CommunicationStatus ElectrostaticPotential::Receive(const t_commrec *cr, int src
     return cs;
 }
 
-CommunicationStatus ElectrostaticPotential::Send(const t_commrec *cr, int dest) const
+CommunicationStatus ElectrostaticPotential::Send(const CommunicationRecord *cr, int dest) const
 {
     CommunicationStatus cs;
 
     cs = gmx_send_data(cr, dest);
     if (CS_OK == cs)
     {
-        gmx_send_str(cr, dest, &xyzUnit_);
-        gmx_send_str(cr, dest, &vUnit_);
-        gmx_send_int(cr, dest, espID_);
-        gmx_send_double(cr, dest, x_);
-        gmx_send_double(cr, dest, y_);
-        gmx_send_double(cr, dest, z_);
-        gmx_send_double(cr, dest, V_);
+        cr->send_str(dest, &xyzUnit_);
+        cr->send_str(dest, &vUnit_);
+        cr->send_int(dest, espID_);
+        cr->send_double(dest, x_);
+        cr->send_double(dest, y_);
+        cr->send_double(dest, z_);
+        cr->send_double(dest, V_);
     }
     else if (nullptr != debug)
     {

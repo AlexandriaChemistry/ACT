@@ -60,6 +60,8 @@
 namespace alexandria
 {
 
+class CommunicationRecord;
+
 /*! \brief
  * Contains molecular properties from a range of sources.
  *
@@ -342,8 +344,8 @@ private:
          * \param[in] dest Destination processor
          * \return the CommunicationStatus of the operation
          */
-        CommunicationStatus Send(const t_commrec *cr,
-                                 int              dest) const;
+        CommunicationStatus Send(const CommunicationRecord *cr,
+                                 int                        dest) const;
 
         /*! \brief
          * Receives this object over an MPI connection
@@ -352,8 +354,8 @@ private:
          * \param[in] src Source processor
          * \return the CommunicationStatus of the operation
          */
-        CommunicationStatus Receive(const t_commrec *cr,
-                                    int              src);
+        CommunicationStatus Receive(const CommunicationRecord *cr,
+                                    int                        src);
 };
 
 //! Iterator over MolProp items

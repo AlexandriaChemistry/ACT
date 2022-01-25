@@ -72,7 +72,7 @@ class RespTest : public gmx::test::CommandLineTestBase
         //! Alexandria molecular properties class
         alexandria::MyMol               mp_;
 
-        //! Init set tolecrance
+        //! Init set tolerance
         RespTest () : checker_(this->rootChecker())
         {
             alexandria::MolProp     molprop;
@@ -144,7 +144,7 @@ class RespTest : public gmx::test::CommandLineTestBase
             }
 
             //Needed for GenerateCharges
-            t_commrec     *cr          = init_commrec();
+            CommunicationRecord cr;
             auto           pnc         = gmx::PhysicalNodeCommunicator(MPI_COMM_WORLD, 0);
             gmx::MDLogger  mdlog {};
             int            qcycle      = 100;
@@ -170,7 +170,7 @@ class RespTest : public gmx::test::CommandLineTestBase
             mp_.symmetrizeCharges(pd, qSymm, nullptr);
             mp_.initQgenResp(pd, method, basis, 0.0, 100);
             std::vector<double> qcustom;
-            mp_.GenerateCharges(pd, mdlog, cr,
+            mp_.GenerateCharges(pd, mdlog, &cr,
                                 tabFile.empty() ? nullptr : tabFile.c_str(),
                                 qcycle, qtol, 
                                 ChargeGenerationAlgorithm::ESP, qcustom, lot);

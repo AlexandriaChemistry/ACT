@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2020 
+ * Copyright (C) 2020-2022
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -202,32 +202,32 @@ void ForceFieldParameterList::dump(FILE *fp) const
     }
 }
 
-CommunicationStatus ForceFieldParameterList::Send(const t_commrec *cr, int dest) const
+CommunicationStatus ForceFieldParameterList::Send(const CommunicationRecord *cr, int dest) const
 {
     CommunicationStatus cs;
     cs = gmx_send_data(cr, dest);
     if (CS_OK == cs)
     {
-        gmx_send_str(cr, dest, &function_);
+        cr->send_str(dest, &function_);
         std::string canSwapString = canSwapToString(canSwap_);
-        gmx_send_str(cr, dest, &canSwapString);
-        gmx_send_int(cr, dest, fType_);
-        gmx_send_int(cr, dest, options_.size());
+        cr->send_str(dest, &canSwapString);
+        cr->send_int(dest, fType_);
+        cr->send_int(dest, options_.size());
         for(auto const &x : options_)
         {
-            gmx_send_str(cr, dest, &x.first);
-            gmx_send_str(cr, dest, &x.second);
+            cr->send_str(dest, &x.first);
+            cr->send_str(dest, &x.second);
         }
-        gmx_send_int(cr, dest, parameters_.size());
+        cr->send_int(dest, parameters_.size());
         for(auto const &x : parameters_)
         {
             cs = x.first.Send(cr, dest);
             if (CS_OK == cs)
             {
-                gmx_send_int(cr, dest, x.second.size());
+                cr->send_int(dest, x.second.size());
                 for(auto const &p : x.second)
                 {
-                    gmx_send_str(cr, dest, &p.first);
+                    cr->send_str(dest, &p.first);
                     cs = p.second.Send(cr, dest);
                     if (CS_OK != cs)
                     {
@@ -240,29 +240,29 @@ CommunicationStatus ForceFieldParameterList::Send(const t_commrec *cr, int dest)
                 break;
             }
         }
-        gmx_send_int(cr, dest, counter_);
+        cr->send_int(dest, counter_);
     }
     return cs;
 }
 
-CommunicationStatus ForceFieldParameterList::Receive(const t_commrec *cr, int src)
+CommunicationStatus ForceFieldParameterList::Receive(const CommunicationRecord *cr, int src)
 {
     CommunicationStatus cs;
     cs = gmx_recv_data(cr, src);
     if (CS_OK == cs)
     {
-        gmx_recv_str(cr, src, &function_);
+        cr->recv_str(src, &function_);
         std::string canSwapString;
-        gmx_recv_str(cr, src, &canSwapString);
+        cr->recv_str(src, &canSwapString);
         canSwap_     = stringToCanSwap(canSwapString);
-        fType_       = gmx_recv_int(cr, src);
-        int noptions = gmx_recv_int(cr, src);
+        fType_       = cr->recv_int(src);
+        int noptions = cr->recv_int(src);
         options_.clear();
         for(int i = 0; i < noptions; i++)
         {
             std::string key, value;
-            gmx_recv_str(cr, src, &key);
-            gmx_recv_str(cr, src, &value);
+            cr->recv_str(src, &key);
+            cr->recv_str(src, &value);
             options_.insert({key, value});
         }
         if (debug)
@@ -270,7 +270,7 @@ CommunicationStatus ForceFieldParameterList::Receive(const t_commrec *cr, int sr
             fprintf(debug, "Done receiving options\n");
             fflush(debug);
         }
-        int nparam =  gmx_recv_int(cr, src);
+        int nparam =  cr->recv_int(src);
         parameters_.clear();
         for(int i = 0; i < nparam; i++)
         {
@@ -283,7 +283,7 @@ CommunicationStatus ForceFieldParameterList::Receive(const t_commrec *cr, int sr
             }
             if (CS_OK == cs)
             {
-                int ntype = gmx_recv_int(cr, src);
+                int ntype = cr->recv_int(src);
                 if (debug)
                 {
                     fprintf(debug, "Done receiving ntype = %d\n", ntype);
@@ -292,7 +292,7 @@ CommunicationStatus ForceFieldParameterList::Receive(const t_commrec *cr, int sr
                 for(int j = 0; j < ntype; j++)
                 {
                     std::string type;
-                    gmx_recv_str(cr, src, &type);
+                    cr->recv_str(src, &type);
                     ForceFieldParameter p;
                     cs = p.Receive(cr, src);
                     if (CS_OK == cs)
@@ -320,7 +320,7 @@ CommunicationStatus ForceFieldParameterList::Receive(const t_commrec *cr, int sr
                 break;
             }
         }
-        counter_ = gmx_recv_int(cr, src);
+        counter_ = cr->recv_int(src);
     }
     return cs;
 }

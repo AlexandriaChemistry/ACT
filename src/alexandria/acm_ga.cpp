@@ -4,7 +4,7 @@
 
 #include "ga/GenePool.h"
 
-#include "gmx_simple_comm.h"
+#include "communicationrecord.h"
 #include "mcmcmutator.h"
 #include "tune_ff.h"
 
@@ -42,8 +42,8 @@ bool HybridGAMC::evolve(ga::Genome *bestGenome)
         fprintf(stderr, "Need at least two individuals in the population.\n");
         return false;
     }
-    auto cr = sii_->commrec();
-    if (cr->nmiddlemen < 1)
+    auto cr = sii_->commRec();
+    if (cr->nmiddlemen() < 1)
     {
         fprintf(stderr, "Need at least two cores/processes to run the genetic algorithm.\n");
         return false; 
@@ -93,9 +93,8 @@ bool HybridGAMC::evolve(ga::Genome *bestGenome)
     // Load the initial genomes from the middlemen. 
     // This is needed since they have read their own parameters
     // from the Poldata structures.
-    for(int i = 0; i < cr->nmiddlemen; i++)
+    for(auto &src : cr->middlemen())
     {
-        int src = middleManGlobalIndex(cr, i);
         ga::Genome genome;
         genome.Receive(cr, src);
         pool[pold]->addGenome(genome);
@@ -195,23 +194,25 @@ bool HybridGAMC::evolve(ga::Genome *bestGenome)
         pold = pnew;
         
         // Now time to send out the new genomes to the individuals
-        for(int i = 0; i < cr->nmiddlemen; i++)
+        int i = 0;
+        for(auto &dest : cr->middlemen())
         {
-            int dest = middleManGlobalIndex(cr, i);
             // Send a 1 to tell the middlemen to continue
-            gmx_send_int(cr, dest, 1);
+            cr->send_int(dest, 1);
             // Send the data set, 0 for iMolSelect::Train
-            gmx_send_int(cr, dest, 0);
+            cr->send_int(dest, 0);
             // Now send the new bases
-            gmx_send_double_vector(cr, dest, pool[pold]->genomePtr(i)->basesPtr());
+            cr->send_double_vector(dest, pool[pold]->genomePtr(i)->basesPtr());
+            i += 1;
         }
         fprintf(logFile_, "Computing fitness of new generation...\n");
         // And receive back the updated fitnesses
-        for(int i = 0; i < cr->nmiddlemen; i++)
+        i = 0;
+        for(auto &src : cr->middlemen())
         {
-            int src = middleManGlobalIndex(cr, i);
-            auto fitness = gmx_recv_double(cr, src);
+            auto fitness = cr->recv_double(src);
             pool[pold]->genomePtr(i)->setFitness(iMolSelect::Train, fitness);
+            i += 1;
         }
         // Print fitness to surveillance files
         fprintFitness(*(pool[pold]));

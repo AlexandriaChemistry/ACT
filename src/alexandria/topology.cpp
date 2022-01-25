@@ -37,7 +37,6 @@
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/fatalerror.h"
 
 #include "mymol_low.h"
@@ -87,23 +86,23 @@ Bond Bond::swap() const
     return te;
 }
 
-CommunicationStatus TopologyEntry::Send(const t_commrec *cr, int dest) const
+CommunicationStatus TopologyEntry::Send(const CommunicationRecord *cr, int dest) const
 {
     CommunicationStatus cs;
 
     cs = gmx_send_data(cr, dest);
     if (CS_OK == cs)
     {
-        gmx_send_int(cr, dest, indices_.size());
+        cr->send_int(dest, indices_.size());
         for(auto &ai : indices_)
         {
-            gmx_send_int(cr, dest, ai);
+            cr->send_int(dest, ai);
         }
-        gmx_send_int(cr, dest, bondOrder_.size());
+        cr->send_int(dest, bondOrder_.size());
         for(auto &bo : bondOrder_)
         {
-            gmx_send_double(cr, dest, bo);
-        }        
+            cr->send_double(dest, bo);
+        }
     }
     else if (nullptr != debug)
     {
@@ -113,22 +112,22 @@ CommunicationStatus TopologyEntry::Send(const t_commrec *cr, int dest) const
     return cs;
 }
 
-CommunicationStatus TopologyEntry::Receive(const t_commrec *cr, int src)
+CommunicationStatus TopologyEntry::Receive(const CommunicationRecord *cr, int src)
 {
     CommunicationStatus cs;
 
     cs = gmx_recv_data(cr, src);
     if (CS_OK == cs)
     {
-        int nai = gmx_recv_int(cr, src);
+        int nai = cr->recv_int(src);
         for (int i=0; i < nai; i++)
         {
-            addAtom(gmx_recv_int(cr, src));
+            addAtom(cr->recv_int(src));
         }
-        int nbo = gmx_recv_int(cr, src);
+        int nbo = cr->recv_int(src);
         for (int i=0; i < nbo; i++)
         {
-            addBondOrder(gmx_recv_double(cr, src));
+            addBondOrder(cr->recv_double(src));
         }
     }
     else if (nullptr != debug)

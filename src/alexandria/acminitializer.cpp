@@ -42,7 +42,7 @@ ACMInitializer::ACMInitializer(StaticIndividualInfo   *sii,
 
 ga::Individual *ACMInitializer::initialize()
 {
-    int id = middleManLocalIndex(sii_->commrec());
+    int id   = sii_->commRec()->middleManOrdinal();
     auto ind = new ACMIndividual(id, sii_, outputFile_);
     if (randInit_)
     // Insert random value in range

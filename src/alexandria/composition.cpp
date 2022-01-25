@@ -37,8 +37,7 @@
 #include <string>
 #include <vector>
 
-#include "communication.h"
-#include "gmx_simple_comm.h"
+#include "communicationrecord.h"
 #include "units.h"
 
 namespace alexandria
@@ -69,7 +68,7 @@ bool CalcAtom::Equal(CalcAtom ca)
              (atomID_ != ca.getAtomid()));
 }
 
-CommunicationStatus CalcAtom::Receive(const t_commrec *cr, int src)
+CommunicationStatus CalcAtom::Receive(const CommunicationRecord *cr, int src)
 {
     CommunicationStatus cs;
     int                 Ncharge;
@@ -77,22 +76,22 @@ CommunicationStatus CalcAtom::Receive(const t_commrec *cr, int src)
     cs = gmx_recv_data(cr, src);
     if (CS_OK == cs)
     {
-        gmx_recv_str(cr, src, &name_);
-        gmx_recv_str(cr, src, &obType_);
-        gmx_recv_str(cr, src, &residueName_);
-        residueNumber_ = gmx_recv_int(cr, src);
-        atomID_ = gmx_recv_int(cr, src);
-        gmx_recv_str(cr, src, &unit_);
-        x_      = gmx_recv_double(cr, src);
-        y_      = gmx_recv_double(cr, src);
-        z_      = gmx_recv_double(cr, src);
-        Ncharge = gmx_recv_int(cr, src);
+        cr->recv_str(src, &name_);
+        cr->recv_str(src, &obType_);
+        cr->recv_str(src, &residueName_);
+        residueNumber_ = cr->recv_int(src);
+        atomID_ = cr->recv_int(src);
+        cr->recv_str(src, &unit_);
+        x_      = cr->recv_double(src);
+        y_      = cr->recv_double(src);
+        z_      = cr->recv_double(src);
+        Ncharge = cr->recv_int(src);
 
         for (int n = 0; (CS_OK == cs) && (n < Ncharge); n++)
         {
             std::string type;
-            gmx_recv_str(cr, src, &type);
-            double q = gmx_recv_double(cr, src);
+            cr->recv_str(src, &type);
+            double q = cr->recv_double(src);
             AddCharge(stringToQtype(type), q);
         }
     }
@@ -103,29 +102,29 @@ CommunicationStatus CalcAtom::Receive(const t_commrec *cr, int src)
     return cs;
 }
 
-CommunicationStatus CalcAtom::Send(const t_commrec *cr, int dest) const
+CommunicationStatus CalcAtom::Send(const CommunicationRecord *cr, int dest) const
 {
     CommunicationStatus  cs;
 
     cs = gmx_send_data(cr, dest);
     if (CS_OK == cs)
     {
-        gmx_send_str(cr, dest, &name_);
-        gmx_send_str(cr, dest, &obType_);
-        gmx_send_str(cr, dest, &residueName_);
-        gmx_send_int(cr, dest, residueNumber_);
-        gmx_send_int(cr, dest, atomID_);
-        gmx_send_str(cr, dest, &unit_);
-        gmx_send_double(cr, dest, x_);
-        gmx_send_double(cr, dest, y_);
-        gmx_send_double(cr, dest, z_);
-        gmx_send_int(cr, dest, q_.size());
+        cr->send_str(dest, &name_);
+        cr->send_str(dest, &obType_);
+        cr->send_str(dest, &residueName_);
+        cr->send_int(dest, residueNumber_);
+        cr->send_int(dest, atomID_);
+        cr->send_str(dest, &unit_);
+        cr->send_double(dest, x_);
+        cr->send_double(dest, y_);
+        cr->send_double(dest, z_);
+        cr->send_int(dest, q_.size());
 
         for (const auto &qi : q_)
         {
             std::string type = qTypeName(qi.first);
-            gmx_send_str(cr, dest, &type);
-            gmx_send_double(cr, dest, qi.second);
+            cr->send_str(dest, &type);
+            cr->send_double(dest, qi.second);
         }
     }
     if (nullptr != debug)
@@ -135,15 +134,15 @@ CommunicationStatus CalcAtom::Send(const t_commrec *cr, int dest) const
     return cs;
 }
 
-CommunicationStatus AtomNum::Send(const t_commrec *cr, int dest) const
+CommunicationStatus AtomNum::Send(const CommunicationRecord *cr, int dest) const
 {
     CommunicationStatus cs;
 
     cs = gmx_send_data(cr, dest);
     if (CS_OK == cs)
     {
-        gmx_send_str(cr, dest, &catom_);
-        gmx_send_int(cr, dest, cnumber_);
+        cr->send_str(dest, &catom_);
+        cr->send_int(dest, cnumber_);
         if (nullptr != debug)
         {
             fprintf(debug, "Sent AtomNum %s %d, status %s\n",
@@ -154,15 +153,15 @@ CommunicationStatus AtomNum::Send(const t_commrec *cr, int dest) const
     return cs;
 }
 
-CommunicationStatus AtomNum::Receive(const t_commrec *cr, int src)
+CommunicationStatus AtomNum::Receive(const CommunicationRecord *cr, int src)
 {
     CommunicationStatus cs;
 
     cs = gmx_recv_data(cr, src);
     if (CS_OK == cs)
     {
-        gmx_recv_str(cr, src, &catom_);
-        cnumber_ = gmx_recv_int(cr, src);
+        cr->recv_str(src, &catom_);
+        cnumber_ = cr->recv_int(src);
         if (nullptr != debug)
         {
             fprintf(debug, "Received AtomNum %s %d, status %s\n",
@@ -257,13 +256,13 @@ int MolecularComposition::CountAtoms() const
     return nat;
 }
 
-CommunicationStatus MolecularComposition::Send(const t_commrec *cr, int dest) const
+CommunicationStatus MolecularComposition::Send(const CommunicationRecord *cr, int dest) const
 {
     CommunicationStatus cs = gmx_send_data(cr, dest);
     if (CS_OK == cs)
     {
-        gmx_send_int(cr, dest, atomnum_.size());
-        gmx_send_str(cr, dest, &compname_);
+        cr->send_int(dest, atomnum_.size());
+        cr->send_str(dest, &compname_);
         for (auto &ani : atomnum_)
         {
             cs = ani.Send(cr, dest);
@@ -282,14 +281,14 @@ CommunicationStatus MolecularComposition::Send(const t_commrec *cr, int dest) co
     return cs;
 }
 
-CommunicationStatus MolecularComposition::Receive(const t_commrec *cr, int src)
+CommunicationStatus MolecularComposition::Receive(const CommunicationRecord *cr, int src)
 {
     int                 Natomnum;
     CommunicationStatus cs = gmx_recv_data(cr, src);
     if (CS_OK == cs)
     {
-        Natomnum = gmx_recv_int(cr, src);
-        gmx_recv_str(cr, src, &compname_);
+        Natomnum = cr->recv_int(src);
+        cr->recv_str(src, &compname_);
         CommunicationStatus cs2;
         for (int n = 0; n < Natomnum; n++)
         {

@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2021
+ * Copyright (C) 2014-2022
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -40,6 +40,7 @@
 
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/fileio/confio.h"
+#include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nonbonded/nonbonded.h"
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/listed-forces/manage-threading.h"
@@ -1291,7 +1292,7 @@ double MyMol::bondOrder(int ai, int aj) const
 }
 
 immStatus MyMol::GenerateGromacs(const gmx::MDLogger       &mdlog,
-                                 const t_commrec           *cr,
+                                 const CommunicationRecord *cr,
                                  const char                *tabfn,
                                  ChargeType                 ieqt)
 {
@@ -1317,12 +1318,12 @@ immStatus MyMol::GenerateGromacs(const gmx::MDLogger       &mdlog,
     gmx_nonbonded_setup(fr_, true);
 
     gmx::ArrayRef<const std::string>  tabbfnm;
-    init_forcerec(nullptr, mdlog, fr_, nullptr, inputrec_, mtop_, cr,
+    init_forcerec(nullptr, mdlog, fr_, nullptr, inputrec_, mtop_, cr->commrec(),
                   state_->box, tabfn, tabfn, tabbfnm, false, true, -1);
     gmx_omp_nthreads_set(emntBonded, 1);
     init_bonded_threading(nullptr, 1, &fr_->bondedThreading);
     setup_bonded_threading(fr_->bondedThreading, atomsConst().nr, false, ltop_->idef);
-    wcycle_    = wallcycle_init(debug, 0, cr);
+    wcycle_    = wallcycle_init(debug, 0, cr->commrec());
 
     MDatoms_  = new std::unique_ptr<gmx::MDAtoms>(new gmx::MDAtoms());
     *MDatoms_ = gmx::makeMDAtoms(nullptr, *mtop_, *inputrec_);
@@ -1350,7 +1351,7 @@ real MyMol::potentialEnergy() const
     return enerd_->term[F_EPOT];
 }
 
-immStatus MyMol::computeForces(FILE *fplog, const t_commrec *cr, double *rmsf)
+immStatus MyMol::computeForces(FILE *fplog, const CommunicationRecord *cr, double *rmsf)
 {
     auto mdatoms = MDatoms_->get()->mdatoms();
     auto atoms   = atomsConst();
@@ -1371,7 +1372,7 @@ immStatus MyMol::computeForces(FILE *fplog, const t_commrec *cr, double *rmsf)
     if (!vsite_)
     {
         vsite_  = new std::unique_ptr<gmx_vsite_t>(new gmx_vsite_t());
-        *vsite_ = initVsite(*mtop_, cr);
+        *vsite_ = initVsite(*mtop_, cr->commrec());
     }
     unsigned long force_flags = ~0;
     double        t           = 0;
@@ -1400,7 +1401,7 @@ immStatus MyMol::computeForces(FILE *fplog, const t_commrec *cr, double *rmsf)
     {
         if (debug)
         {
-            fprintf(debug, "cr->nodide %d mol %s alpha %g\n", cr->nodeid,
+            fprintf(debug, "cr->nodide %d mol %s alpha %g\n", cr->rank(),
                     getMolname().c_str(),
                     mtop_->ffparams.iparams[mtop_->moltype[0].ilist[F_POLARIZATION].iatoms[0]].polarize.alpha);
         }
@@ -1446,7 +1447,7 @@ immStatus MyMol::computeForces(FILE *fplog, const t_commrec *cr, double *rmsf)
     }
     else
     {
-        do_force(fplog, cr, nullptr, inputrec_, 0,
+        do_force(fplog, cr->commrec(), nullptr, inputrec_, 0,
                  &nrnb_, wcycle_, ltop_,
                  &(mtop_->groups),
                  state_->box, state_->x.arrayRefWithPadding(), nullptr,
@@ -1479,10 +1480,10 @@ void MyMol::symmetrizeCharges(const Poldata  *pd,
     }
 }
 
-immStatus MyMol::GenerateAcmCharges(const Poldata   *pd,
-                                    const t_commrec *cr,
-                                    int              maxiter,
-                                    real             tolerance)
+immStatus MyMol::GenerateAcmCharges(const Poldata             *pd,
+                                    const CommunicationRecord *cr,
+                                    int                        maxiter,
+                                    real                       tolerance)
 {
     if (QgenAcm_ == nullptr)
     {
@@ -1544,7 +1545,7 @@ immStatus MyMol::GenerateAcmCharges(const Poldata   *pd,
 
 immStatus MyMol::GenerateCharges(const Poldata             *pd,
                                  const gmx::MDLogger       &mdlog,
-                                 const t_commrec           *cr,
+                                 const CommunicationRecord *cr,
                                  const char                *tabfn,
                                  int                        maxiter,
                                  real                       tolerance,
@@ -1857,9 +1858,9 @@ void MyMol::restoreCoordinates()
     }
 }
 
-immStatus MyMol::CalcPolarizability(double           efield,
-                                    const t_commrec *cr,
-                                    FILE            *fplog)
+immStatus MyMol::CalcPolarizability(double                     efield,
+                                    const CommunicationRecord *cr,
+                                    FILE                      *fplog)
 {
     const double        POLFAC = 29.957004; /* C.m**2.V*-1 to Å**3 */
     std::vector<double> field;
@@ -1915,12 +1916,12 @@ void MyMol::PrintConformation(const char *fn)
     write_sto_conf(fn, title, atoms(), as_rvec_array(state_->x.data()), nullptr, epbcNONE, state_->box);
 }
 
-void MyMol::PrintTopology(const char        *fn,
-                          bool               bVerbose,
-                          const Poldata     *pd,
-                          const t_commrec   *cr,
-                          const std::string &method,
-                          const std::string &basis)
+void MyMol::PrintTopology(const char                *fn,
+                          bool                       bVerbose,
+                          const Poldata             *pd,
+                          const CommunicationRecord *cr,
+                          const std::string         &method,
+                          const std::string         &basis)
 {
     FILE  *fp   = gmx_ffopen(fn, "w");
     bool   bITP = (fn2ftp(fn) == efITP);
@@ -1945,13 +1946,13 @@ static void add_tensor(std::vector<std::string> *commercials,
     commercials->push_back(buf);
 }
 
-void MyMol::PrintTopology(FILE                   *fp,
-                          bool                    bVerbose,
-                          const Poldata          *pd,
-                          bool                    bITP,
-                          const t_commrec        *cr,
-                          const std::string      &method,
-                          const std::string      &basis)
+void MyMol::PrintTopology(FILE                      *fp,
+                          bool                       bVerbose,
+                          const Poldata             *pd,
+                          bool                       bITP,
+                          const CommunicationRecord *cr,
+                          const std::string         &method,
+                          const std::string         &basis)
 {
     char                     buf[256];
     t_mols                   printmol;
@@ -2549,9 +2550,9 @@ const QtypeProps *MyMol::qTypeProps(qType qt) const
     return nullptr;
 }
 
-void MyMol::plotEspCorrelation(const char             *espcorr,
-                               const gmx_output_env_t *oenv,
-                               const t_commrec        *cr)
+void MyMol::plotEspCorrelation(const char                *espcorr,
+                               const gmx_output_env_t    *oenv,
+                               const CommunicationRecord *cr)
 {
     if (espcorr && oenv)
     {
@@ -2567,22 +2568,22 @@ void MyMol::plotEspCorrelation(const char             *espcorr,
     }
 }
 
-CommunicationStatus MyMol::Send(const t_commrec *cr, int dest) const
+CommunicationStatus MyMol::Send(const CommunicationRecord *cr, int dest) const
 {
     auto cs = MolProp::Send(cr, dest);
     if (CS_OK == cs)
     {
-        gmx_send_int(cr, dest, static_cast<int>(dataset_type_));
+        cr->send_int(dest, static_cast<int>(dataset_type_));
     }
     return cs;
 }
 
-CommunicationStatus MyMol::Receive(const t_commrec *cr, int src)
+CommunicationStatus MyMol::Receive(const CommunicationRecord *cr, int src)
 {
     auto cs = MolProp::Receive(cr, src);
     if (CS_OK == cs)
     {
-        set_datasetType(static_cast<iMolSelect>(gmx_recv_int(cr, src)));
+        set_datasetType(static_cast<iMolSelect>(cr->recv_int(src)));
     }
     return cs;
 }

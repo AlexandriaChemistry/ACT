@@ -227,8 +227,8 @@ public:
      * \param[in] dest Destination processor
      * \return the CommunicationStatus of the operation
      */
-    CommunicationStatus Send(const t_commrec *cr,
-                             int              dest) const;
+    CommunicationStatus Send(const CommunicationRecord *cr,
+                             int                        dest) const;
     
     /*! \brief
      * Receives this object over an MPI connection
@@ -237,8 +237,8 @@ public:
      * \param[in] src Source processor
      * \return the CommunicationStatus of the operation
      */
-    CommunicationStatus Receive(const t_commrec *cr,
-                                int              src);
+    CommunicationStatus Receive(const CommunicationRecord *cr,
+                                int                        src);
 };
 
 //! Iterator over CalcAtom items
@@ -351,65 +351,6 @@ public:
     const std::string &getDatafile() const { return datafile_; }
     
     /*! \brief
-     * Function that fetches an energy from this experiment/QM
-     *
-     * \param[in]  mpo       Enum selecting the type of data to fetch
-     * \param[out] value     The value of e.g. the energy
-     * \param[out] error     The error in the value of e.g. the energy
-     * \param[out] T         Temperature
-     * \param[out] reference The literature reference (if nullptr this is ignored)
-     * \param[out] lot       The level of theory (if nullptr this is ignored)
-     * \return true on success
-     * \throws if a non-supported energy (mpo) is requested
-     */
-    //bool getEnergy(MolPropObservable    mpo,
-    //              double              *value,
-    //             double              *error,
-    //             double              *T,
-    //             std::string         *reference,
-    //             std::string         *lot) const;
-    
-    /*! \brief
-     * Function that fetches a dipole vector from this QM
-     * \param[out]   value     The value of the dipole
-     * \param[out]   error     The error in the value of the dipole
-     * \param[out]   vec       The dipole vector
-     * \param[inout] T         The desired (input) and actual (output) temperature
-     * \param[out]   reference The literature reference (if nullptr this is ignored)
-     * \param[out]   lot       The level of theory (if nullptr this is ignored)
-     * \return true if successful
-     */
-    //bool getDipole(double              *value,
-    //             double              *error,
-    //             std::vector<double> *vec,
-      //            double              *T,
-    //            std::string         *reference,
-    //             std::string         *lot) const;
-    /*! \brief
-     * Function that fetches a polarizability from this QM
-     * \param[inout] T         The desired (input) and actual (output) temperature
-     * \param[out]   polar     The polarizability tensor
-     * \param[out]   reference The literature reference (if nullptr this is ignored)
-     * \param[out]   lot       The level of theory (if nullptr this is ignored)
-     * \return true if successful
-     */
-    //bool getPolarizability(double      *T,
-    //                     tensor      *polar,
-    //                     std::string *reference,
-    //                     std::string *lot) const;
-    /*! \brief
-     * Function that fetches a quadrupole from this QM
-     * \param[inout] T         The desired (input) and actual (output) temperature
-     * \param[out]   quad      The quadrupole tensor
-     * \param[out]   reference The literature reference (if nullptr this is ignored)
-     * \param[out]   lot       The level of theory (if nullptr this is ignored)
-     * \return true if successful
-     */
-    //bool getQuadrupole(double      *T,
-    //                 tensor      *quad,
-    //                 std::string *reference,
-    //                 std::string *lot) const;
-    /*! \brief
      * Function that fetches charges from this QM
      * \param[out] q         The charges
      * \param[in]  qtype     The charge type
@@ -422,24 +363,6 @@ public:
                     std::string         *reference,
                     std::string         *lot) const;
 
-    /*! \brief
-     * Convenience function that fetches a value from this experiment
-     *
-     * \param[in]  mpo    Enum selecting the type of data to fetch
-     * \param[out] value  The value of e.g. the energy
-     * \param[out] error  The error in the value of e.g. the energy
-     * \param[out] T      Temperature
-     * \param[out] vec    Vector data to be output, dipole or diagonal element of polarizability
-     * \param[out] quadrupole The quadrupole tensor
-     * \return true on success
-     */
-    //bool getVal(MolPropObservable    mpo,
-    //              double              *value,
-    //              double              *error,
-    //              double              *T,
-    //              std::vector<double> *vec,
-    //              tensor               quadrupole) const;
-
     //! Merge in another object. Return number of warnings.
     int Merge(const Experiment *src);
     
@@ -450,8 +373,8 @@ public:
      * \param[in] dest Destination processor
      * \return the CommunicationStatus of the operation
      */
-    CommunicationStatus Send(const t_commrec *cr,
-                             int              dest) const;
+    CommunicationStatus Send(const CommunicationRecord *cr,
+                             int                        dest) const;
     
     /*! \brief
      * Receives this object over an MPI connection
@@ -460,8 +383,8 @@ public:
      * \param[in] src Source processor
      * \return the CommunicationStatus of the operation
      */
-    CommunicationStatus Receive(const t_commrec *cr,
-                                int              src);
+    CommunicationStatus Receive(const CommunicationRecord *cr,
+                                int                        src);
     
     bool hasMolPropObservable(MolPropObservable mpo) const
     {

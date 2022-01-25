@@ -38,7 +38,7 @@
 #include <map>
 
 #include "gromacs/utility/exceptions.h"
-#include "gmx_simple_comm.h"
+#include "communicationrecord.h"
 #include "identifier.h"
 
 namespace alexandria
@@ -228,48 +228,48 @@ std::string ParticleType::element() const
     return empty;
 }
 
-CommunicationStatus ParticleType::Send(const t_commrec *cr, int dest)
+CommunicationStatus ParticleType::Send(const CommunicationRecord *cr, int dest)
 {
     CommunicationStatus cs = CS_OK;
     id_.Send(cr, dest);
-    gmx_send_str(cr, dest, &desc_);
-    gmx_send_int(cr, dest, gmxParticleType_);
-    gmx_send_int(cr, dest, option_.size());
+    cr->send_str(dest, &desc_);
+    cr->send_int(dest, gmxParticleType_);
+    cr->send_int(dest, option_.size());
     for(const auto &opt : option_)
     {
-        gmx_send_str(cr, dest, &opt.first);
-        gmx_send_str(cr, dest, &opt.second);
+        cr->send_str(dest, &opt.first);
+        cr->send_str(dest, &opt.second);
     }
-    gmx_send_int(cr, dest, parameterMap_.size());
+    cr->send_int(dest, parameterMap_.size());
     for(const auto &param : parameterMap_)
     {
-        gmx_send_str(cr, dest, &param.first);
+        cr->send_str(dest, &param.first);
         cs = param.second.Send(cr, dest);
     }
     return cs;
 }
     
-CommunicationStatus ParticleType::Receive(const t_commrec *cr, int src)
+CommunicationStatus ParticleType::Receive(const CommunicationRecord *cr, int src)
 {
     CommunicationStatus cs = CS_OK;
     cs = id_.Receive(cr, src);
-    gmx_recv_str(cr, src, &desc_);
-    gmxParticleType_ = gmx_recv_int(cr, src);
-    int nopt = gmx_recv_int(cr, src);
+    cr->recv_str(src, &desc_);
+    gmxParticleType_ = cr->recv_int(src);
+    int nopt = cr->recv_int(src);
     option_.clear();
     for(int i = 0; i < nopt; i++)
     {
         std::string key, value;
-        gmx_recv_str(cr, src, &key);
-        gmx_recv_str(cr, src, &value);
+        cr->recv_str(src, &key);
+        cr->recv_str(src, &value);
         setOption(key, value);
     }
-    int nparm = gmx_recv_int(cr, src);
+    int nparm = cr->recv_int(src);
     parameterMap_.clear();
     for(int i = 0; i < nparm; i++)
     {
         std::string type;
-        gmx_recv_str(cr, src, &type);
+        cr->recv_str(src, &type);
         ForceFieldParameter ff;
         ff.Receive(cr, src);
         parameterMap_.insert({type, ff});

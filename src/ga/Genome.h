@@ -34,7 +34,7 @@
 #include <map>
 #include <vector>
 
-#include "gromacs/mdtypes/commrec.h"
+#include "alexandria/communicationrecord.h"
 
 #include "Dataset.h"
 
@@ -142,13 +142,13 @@ public:
      * \param[in] cr   The communication record
      * \param[in] dest The destination processor
      */
-    void Send(const t_commrec *cr, int dest) const;
+    void Send(const alexandria::CommunicationRecord *cr, int dest) const;
     
     /*! \brief Receive from another processor
      * \param[in] cr  The communication record
      * \param[in] src The source processor
      */
-    void Receive(const t_commrec *cr, int src);
+    void Receive(const alexandria::CommunicationRecord *cr, int src);
 };
 
 } // namespace ga

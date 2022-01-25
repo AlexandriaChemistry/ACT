@@ -6,7 +6,6 @@
  * \author Oskar Tegby <oskar.tegby@it.uu.se>
  */
 
-
 #include "acmfitnesscomputer.h"
 
 #include "ga/Dataset.h"
@@ -14,7 +13,6 @@
 
 namespace alexandria
 {
-
 
 /* * * * * * * * * * * * * * * * * * * *
 * BEGIN: ACMFitnessComputer            *
@@ -60,33 +58,33 @@ double ACMFitnessComputer::calcDeviation(std::vector<double> *params,
 {
     // Send / receive parameters
     std::vector<double> *myparams;
-    auto cr = sii_->commrec();
-    if (actMiddleMan(cr))
+    auto cr = sii_->commRec();
+    if (cr->isMiddleMan())
     {
-        if (PAR(cr) && calcDev != CalcDev::Master)
+        if (cr->isParallel() && calcDev != CalcDev::Master)
         {
             // Send only to my helpers
-            for (int dest = cr->nodeid+1; dest < cr->nodeid+1+cr->nhelper_per_middleman; dest++)
+            for (auto &dest : cr->helpers())
             {
-                gmx_send_int(cr, dest, static_cast<int>(calcDev));
-                gmx_send_int(cr, dest, static_cast<int>(ims));
-                gmx_send_double_vector(cr, dest, params);
+                cr->send_int(dest, static_cast<int>(calcDev));
+                cr->send_int(dest, static_cast<int>(ims));
+                cr->send_double_vector(dest, params);
                 sii_->poldata()->sendEemprops(cr, dest);
                 sii_->poldata()->sendParticles(cr, dest);
             }
         }
         myparams = params;
     }
-    else if (!MASTER(cr))
+    else if (!cr->isMaster())
     {
         // If we have e.g. 1 overlord and 3 middlemen with 1 helper each, we have
         // O M H M H M H. Now who is my middleman?
         // Do integer division, rounding down, the multiply again.
-        int src = middleManLocalIndex(cr);
-        calcDev  = static_cast<CalcDev>(gmx_recv_int(cr, src));
-        ims      = static_cast<iMolSelect>(gmx_recv_int(cr, src));
+        int src = cr->middleManOrdinal();
+        calcDev  = static_cast<CalcDev>(cr->recv_int(src));
+        ims      = static_cast<iMolSelect>(cr->recv_int(src));
         myparams = new std::vector<double>;
-        gmx_recv_double_vector(cr, src, myparams);
+        cr->recv_double_vector(src, myparams);
         sii_->poldata()->receiveEemprops(cr, src);
         sii_->poldata()->receiveParticles(cr, src);
     }
@@ -104,9 +102,10 @@ double ACMFitnessComputer::calcDeviation(std::vector<double> *params,
     std::map<eRMS, FittingTarget> *targets = sii_->fittingTargets(ims);
 
     // If actMiddleMan, penalize out of bounds
-    if (actMiddleMan(cr) && bdc_)
+    if (cr->isMiddleMan() && bdc_)
     {
-        bdc_->calcDeviation(nullptr, targets, sii_->poldata(), *myparams, cr);
+        bdc_->calcDeviation(nullptr, targets, sii_->poldata(),
+                            *myparams, cr);
     }
 
     // Loop over molecules
@@ -150,13 +149,14 @@ double ACMFitnessComputer::calcDeviation(std::vector<double> *params,
 
             for (DevComputer *mydev : devComputers_)
             {
-                mydev->calcDeviation(&mymol, targets, sii_->poldata(), *myparams, cr);
+                mydev->calcDeviation(&mymol, targets, sii_->poldata(),
+                                     *myparams, cr);
             }
         }
     }
     // Sum the terms of the chi-squared once we have done calculations
     // for all the molecules.
-    sii_->sumChiSquared(cr, calcDev == CalcDev::Parallel, ims);
+    sii_->sumChiSquared(calcDev == CalcDev::Parallel, ims);
 
     numberCalcDevCalled_ += 1;
     

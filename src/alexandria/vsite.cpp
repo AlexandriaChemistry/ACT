@@ -38,8 +38,6 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 
-#include "gmx_simple_comm.h"
-
 namespace alexandria
 {
 
@@ -84,7 +82,7 @@ Vsite::Vsite(const std::string &atype,
       ncontrolatoms_(ncontrolatoms)
 {}
 
-CommunicationStatus Vsite::Send(const t_commrec *cr, int dest)
+CommunicationStatus Vsite::Send(const CommunicationRecord *cr, int dest)
 {
     CommunicationStatus cs;
     cs = gmx_send_data(cr, dest);
@@ -92,12 +90,12 @@ CommunicationStatus Vsite::Send(const t_commrec *cr, int dest)
     {
         std::string vtype;
         vtype.assign(vsiteType2string(type_));
-        gmx_send_str(cr, dest, &atype_);
-        gmx_send_str(cr, dest, &vtype);
-        gmx_send_int(cr, dest, number_);
-        gmx_send_double(cr, dest, distance_);
-        gmx_send_double(cr, dest, angle_);
-        gmx_send_int(cr, dest, ncontrolatoms_);
+        cr->send_str(dest, &atype_);
+        cr->send_str(dest, &vtype);
+        cr->send_int(dest, number_);
+        cr->send_double(dest, distance_);
+        cr->send_double(dest, angle_);
+        cr->send_int(dest, ncontrolatoms_);
         if (nullptr != debug)
         {
             fprintf(debug, "Sent Vsite %s %s %d %g %g %d, status %s\n",
@@ -109,20 +107,20 @@ CommunicationStatus Vsite::Send(const t_commrec *cr, int dest)
     return cs;
 }
 
-CommunicationStatus Vsite::Receive(const t_commrec *cr, int src)
+CommunicationStatus Vsite::Receive(const CommunicationRecord *cr, int src)
 {
     CommunicationStatus cs;
     cs = gmx_recv_data(cr, src);
     if (CS_OK == cs)
     {
         std::string type;
-        gmx_recv_str(cr, src, &atype_);
-        gmx_recv_str(cr, src, &type);
+        cr->recv_str(src, &atype_);
+        cr->recv_str(src, &type);
         type_          = string2vsiteType(type.c_str());
-        number_        = gmx_recv_int(cr, src);
-        distance_      = gmx_recv_double(cr, src);
-        angle_         = gmx_recv_double(cr, src);
-        ncontrolatoms_ = gmx_recv_int(cr, src);
+        number_        = cr->recv_int(src);
+        distance_      = cr->recv_double(src);
+        angle_         = cr->recv_double(src);
+        ncontrolatoms_ = cr->recv_int(src);
         if (nullptr != debug)
         {
             fprintf(debug, "Received Vsite %s %s %d %g %g %d, status %s\n",

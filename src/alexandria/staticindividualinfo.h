@@ -95,8 +95,7 @@ public:
      * \param[in] parallel  Whether or not to sum in parallel
      * \param[in] ims       The selection dataset to sum
      */
-    void sumChiSquared(const t_commrec *cr,
-                       bool             parallel,
+    void sumChiSquared(bool             parallel,
                        iMolSelect       ims);
 
     /* * * * * * * * * * * * * * * * * * * * * *
@@ -131,7 +130,7 @@ public:
     * * * * * * * * * * * * * * * * * * * * * */
 
     //! \return the communication record
-    const t_commrec *commrec() const { return cr_->commrec(); }
+    const CommunicationRecord *commRec() const { return cr_; }
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * BEGIN: FittingTarget stuff               *

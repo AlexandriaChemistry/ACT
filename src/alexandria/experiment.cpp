@@ -34,7 +34,6 @@
 
 #include "gromacs/utility/fatalerror.h"
 
-#include "gmx_simple_comm.h"
 #include "units.h"
 
 namespace alexandria
@@ -223,7 +222,7 @@ bool Experiment::getCharges(std::vector<double> *q,
     return i == NAtom();
 }
 
-CommunicationStatus Experiment::Receive(const t_commrec *cr, int src)
+CommunicationStatus Experiment::Receive(const CommunicationRecord *cr, int src)
 {
     CommunicationStatus cs;
     std::string         jobtype;
@@ -231,29 +230,29 @@ CommunicationStatus Experiment::Receive(const t_commrec *cr, int src)
     cs = gmx_recv_data(cr, src);
     if (CS_OK == cs)
     {
-        dataSource_ = static_cast<DataSource>(gmx_recv_int(cr, src));
-        gmx_recv_str(cr, src, &reference_);
-        gmx_recv_str(cr, src, &conformation_);
-        gmx_recv_str(cr, src, &program_);
-        gmx_recv_str(cr, src, &method_);
-        gmx_recv_str(cr, src, &basisset_);
-        gmx_recv_str(cr, src, &datafile_);
-        gmx_recv_str(cr, src, &jobtype);
+        dataSource_ = static_cast<DataSource>(cr->recv_int(src));
+        cr->recv_str(src, &reference_);
+        cr->recv_str(src, &conformation_);
+        cr->recv_str(src, &program_);
+        cr->recv_str(src, &method_);
+        cr->recv_str(src, &basisset_);
+        cr->recv_str(src, &datafile_);
+        cr->recv_str(src, &jobtype);
         jobtype_    = string2jobType(jobtype);
 
-        int nmpo = gmx_recv_int(cr, src);
+        int nmpo = cr->recv_int(src);
         
         //! Receive Properties
         for (int i = 0; i < nmpo; i++)
         {
             MolPropObservable mpo;
             std::string       mpo_str;
-            gmx_recv_str(cr, src, &mpo_str);
+            cr->recv_str(src, &mpo_str);
             if (!stringToMolPropObservable(mpo_str, &mpo))
             {
                 gmx_fatal(FARGS, "Unknown observable %s", mpo_str.c_str());
             }
-            int  ngp = gmx_recv_int(cr, src);
+            int  ngp = cr->recv_int(src);
             for (int n = 0; n < ngp; n++)
             {
                 GenericProperty *gp;
@@ -304,7 +303,7 @@ CommunicationStatus Experiment::Receive(const t_commrec *cr, int src)
         } 
         
         //! Receive Potentials
-        int Npotential = gmx_recv_int(cr, src);
+        int Npotential = cr->recv_int(src);
         for (int n = 0; (CS_OK == cs) && (n < Npotential); n++)
         {
             ElectrostaticPotential ep;
@@ -316,7 +315,7 @@ CommunicationStatus Experiment::Receive(const t_commrec *cr, int src)
         }
 
         //! Receive Atoms
-        int Natom = gmx_recv_int(cr, src);
+        int Natom = cr->recv_int(src);
         for (int n = 0; (CS_OK == cs) && (n < Natom); n++)
         {
             CalcAtom ca;
@@ -336,7 +335,7 @@ CommunicationStatus Experiment::Receive(const t_commrec *cr, int src)
     return cs;
 }
 
-CommunicationStatus Experiment::Send(const t_commrec *cr, int dest) const
+CommunicationStatus Experiment::Send(const CommunicationRecord *cr, int dest) const
 {
     CommunicationStatus cs;
     std::string         jobtype;
@@ -344,22 +343,22 @@ CommunicationStatus Experiment::Send(const t_commrec *cr, int dest) const
     cs = gmx_send_data(cr, dest);
     if (CS_OK == cs)
     {
-        gmx_send_int(cr, dest, static_cast<int>(dataSource_));
-        gmx_send_str(cr, dest, &reference_);
-        gmx_send_str(cr, dest, &conformation_);
-        gmx_send_str(cr, dest, &program_);
-        gmx_send_str(cr, dest, &method_);
-        gmx_send_str(cr, dest, &basisset_);
-        gmx_send_str(cr, dest, &datafile_);
+        cr->send_int(dest, static_cast<int>(dataSource_));
+        cr->send_str(dest, &reference_);
+        cr->send_str(dest, &conformation_);
+        cr->send_str(dest, &program_);
+        cr->send_str(dest, &method_);
+        cr->send_str(dest, &basisset_);
+        cr->send_str(dest, &datafile_);
         jobtype.assign(jobType2string(jobtype_));
-        gmx_send_str(cr, dest, &jobtype);
+        cr->send_str(dest, &jobtype);
         
-        gmx_send_int(cr, dest, property_.size());
+        cr->send_int(dest, property_.size());
         for(const auto &prop : property_)
         {
             std::string mpo_str(mpo_name(prop.first));
-            gmx_send_str(cr, dest, &mpo_str);
-            gmx_send_int(cr, dest, prop.second.size());
+            cr->send_str(dest, &mpo_str);
+            cr->send_int(dest, prop.second.size());
             for (const auto &p : prop.second)
             {
                 p->Send(cr, dest);
@@ -369,7 +368,7 @@ CommunicationStatus Experiment::Send(const t_commrec *cr, int dest) const
         //! Send Potentials
         if (CS_OK == cs)
         {
-            gmx_send_int(cr, dest, electrostaticPotentialConst().size());
+            cr->send_int(dest, electrostaticPotentialConst().size());
             for (auto &epi : electrostaticPotentialConst())
             {
                 cs = epi.Send(cr, dest);
@@ -383,7 +382,7 @@ CommunicationStatus Experiment::Send(const t_commrec *cr, int dest) const
         //! Send Atoms
         if (CS_OK == cs)
         {
-            gmx_send_int(cr, dest, calcAtomConst().size());
+            cr->send_int(dest, calcAtomConst().size());
             for (auto &cai : calcAtomConst())
             {
                 cs = cai.Send(cr, dest);

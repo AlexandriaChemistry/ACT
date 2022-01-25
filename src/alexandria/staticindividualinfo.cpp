@@ -9,10 +9,8 @@
 #include "staticindividualinfo.h"
 
 #include "ga/Genome.h"
-
-#include "poldata_xml.h"
 #include "memory_check.h"
-
+#include "poldata_xml.h"
 
 namespace alexandria
 {
@@ -53,7 +51,7 @@ void StaticIndividualInfo::fillPoldata(      FILE *fp,
     if (cr_->isParallel() && (!cr_->isMaster() || 
                               (cr_->isMaster() && cr_->nmiddlemen() == 0)))
     {
-        pd_.sendToHelpers(cr_->commrec());
+        pd_.sendToHelpers(cr_);
     }
     if (nullptr != fp)
     {
@@ -113,20 +111,19 @@ void StaticIndividualInfo::saveState(bool updateCheckSum)
 * BEGIN: FittingTarget stuff               *
 * * * * * * * * * * * * * * * * * * * * * */
 
-void StaticIndividualInfo::sumChiSquared(const t_commrec *cr,
-                                         bool             parallel,
+void StaticIndividualInfo::sumChiSquared(bool             parallel,
                                          iMolSelect       ims)
 {
     // Now sum over processors, except the master!
-    if (PAR(cr) && parallel)
+    if (cr_->isParallel() && parallel)
     {
         for (auto &ft : targets_[ims])
         {
             auto chi2 = ft.second.chiSquared();
-            gmx_sumd_helpers(1, &chi2, cr);
+            cr_->sumd_helpers(1, &chi2);
             ft.second.setChiSquared(chi2);
             auto ndp = ft.second.numberOfDatapoints();
-            gmx_sumi_helpers(1, &ndp, cr);
+            cr_->sumi_helpers(1, &ndp);
             ft.second.setNumberOfDatapoints(ndp);
         }
     }

@@ -37,7 +37,6 @@
 #include <string>
 #include <vector>
 
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/exceptions.h"
 
@@ -211,22 +210,22 @@ public:
     /*! \brief
      * Sends this object over an MPI connection
      *
-     * \param[in] cr   GROMACS data structure for MPI communication
+     * \param[in] cr   Data structure for MPI communication
      * \param[in] dest Destination processor
      * \return the CommunicationStatus of the operation
      */
-    virtual CommunicationStatus Send(const t_commrec *cr,
-                                     int              dest) const;
+    virtual CommunicationStatus Send(const CommunicationRecord *cr,
+                                     int                        dest) const;
     
     /*! \brief
      * Receives this object over an MPI connection
      *
-     * \param[in] cr  GROMACS data structure for MPI communication
+     * \param[in] cr  Data structure for MPI communication
      * \param[in] src Source processor
      * \return the CommunicationStatus of the operation
      */
-    virtual CommunicationStatus Receive(const t_commrec *cr,
-                                        int              src);
+    virtual CommunicationStatus Receive(const CommunicationRecord *cr,
+                                        int                        src);
 
     virtual double getValue() const = 0;
     
@@ -289,22 +288,22 @@ public:
     /*! \brief
      * Sends this object over an MPI connection
      *
-     * \param[in] cr   GROMACS data structure for MPI communication
+     * \param[in] cr   Data structure for MPI communication
      * \param[in] dest Destination processor
      * \return the CommunicationStatus of the operation
      */
-    CommunicationStatus Send(const t_commrec *cr,
-                             int              dest) const;
+    CommunicationStatus Send(const CommunicationRecord *cr,
+                             int                        dest) const;
     
     /*! \brief
      * Receives this object over an MPI connection
      *
-     * \param[in] cr  GROMACS data structure for MPI communication
+     * \param[in] cr  Data structure for MPI communication
      * \param[in] src Source processor
      * \return the CommunicationStatus of the operation
      */
-    CommunicationStatus Receive(const t_commrec *cr,
-                                int              src);
+    CommunicationStatus Receive(const CommunicationRecord *cr,
+                                int                        src);
 };
 
 /*! \brief
@@ -364,22 +363,22 @@ public:
     /*! \brief
      * Sends this object over an MPI connection
      *
-     * \param[in] cr   GROMACS data structure for MPI communication
+     * \param[in] cr   Data structure for MPI communication
      * \param[in] dest Destination processor
      * \return the CommunicationStatus of the operation
      */
-    CommunicationStatus Send(const t_commrec *cr,
-                             int              dest) const;
+    CommunicationStatus Send(const CommunicationRecord *cr,
+                             int                        dest) const;
     
     /*! \brief
      * Receives this object over an MPI connection
      *
-     * \param[in] cr  GROMACS data structure for MPI communication
+     * \param[in] cr  Data structure for MPI communication
      * \param[in] src Source processor
      * \return the CommunicationStatus of the operation
      */
-    CommunicationStatus Receive(const t_commrec *cr,
-                                int              src);
+    CommunicationStatus Receive(const CommunicationRecord *cr,
+                                int                        src);
 };
 
 /*! \brief
@@ -431,22 +430,22 @@ public:
     /*! \brief
      * Sends this object over an MPI connection
      *
-     * \param[in] cr   GROMACS data structure for MPI communication
+     * \param[in] cr   Data structure for MPI communication
      * \param[in] dest Destination processor
      * \return the CommunicationStatus of the operation
      */
-    CommunicationStatus Send(const t_commrec *cr,
-                             int              dest) const;
+    CommunicationStatus Send(const CommunicationRecord *cr,
+                             int                        dest) const;
     
     /*! \brief
      * Receives this object over an MPI connection
      *
-     * \param[in] cr  GROMACS data structure for MPI communication
+     * \param[in] cr  Data structure for MPI communication
      * \param[in] src Source processor
      * \return the CommunicationStatus of the operation
      */
-    CommunicationStatus Receive(const t_commrec *cr,
-                                int              src);
+    CommunicationStatus Receive(const CommunicationRecord *cr,
+                                int                        src);
 };
 
 /*! \brief
@@ -497,21 +496,22 @@ public:
     /*! \brief
      * Sends this object over an MPI connection
      *
-     * \param[in] cr   GROMACS data structure for MPI communication
+     * \param[in] cr   Data structure for MPI communication
      * \param[in] dest Destination processor
      * \return the CommunicationStatus of the operation
      */
-    CommunicationStatus Send(const t_commrec *cr,
-                             int              dest) const;
+    CommunicationStatus Send(const CommunicationRecord *cr,
+                             int                        dest) const;
     
     /*! \brief
      * Receives this object over an MPI connection
      *
-     * \param[in] cr  GROMACS data structure for MPI communication
+     * \param[in] cr  Data structure for MPI communication
      * \param[in] src Source processor
      * \return the CommunicationStatus of the operation
      */
-    CommunicationStatus Receive(const t_commrec *cr, int src);
+    CommunicationStatus Receive(const CommunicationRecord *cr,
+                                int                        src);
 };
 
 /*! \brief
@@ -604,20 +604,20 @@ public:
     /*! \brief
      * Sends this object over an MPI connection
      *
-     * \param[in] cr   GROMACS data structure for MPI communication
+     * \param[in] cr   Data structure for MPI communication
      * \param[in] dest Destination processor
      * \return the CommunicationStatus of the operation
      */
-    CommunicationStatus Send(const t_commrec *cr, int dest) const;
+    CommunicationStatus Send(const CommunicationRecord *cr, int dest) const;
     
     /*! \brief
      * Receives this object over an MPI connection
      *
-     * \param[in] cr  GROMACS data structure for MPI communication
+     * \param[in] cr  Data structure for MPI communication
      * \param[in] src Source processor
      * \return the CommunicationStatus of the operation
      */
-    CommunicationStatus Receive(const t_commrec *cr, int src);
+    CommunicationStatus Receive(const CommunicationRecord *cr, int src);
 };
 
 } // namespace alexandria

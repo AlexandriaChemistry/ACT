@@ -1,3 +1,28 @@
+/*
+ * This source file is part of the Alexandria Chemistry Toolkit.
+ *
+ * Copyright (C) 2022
+ *
+ * Developers:
+ *             Mohammad Mehdi Ghahremanpour, 
+ *             Paul J. van Maaren, 
+ *             David van der Spoel (Project leader)
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+ * Boston, MA  02110-1301, USA.
+ */
 #include "communicationrecord.h"
 
 #include "mpi.h"
@@ -264,6 +289,28 @@ void CommunicationRecord::recv_double_vector(int src,
     if (len > 0)
     {
         recv(src, static_cast<void *>(d->data()), len*sizeof(double));
+    }
+}
+
+void CommunicationRecord::sumd_helpers(int    nr, 
+                                       double r[]) const
+{
+    int size = 0;
+    if (MPI_Comm_size(cr_->mpi_act_helpers, &size) && size > 1)
+    {
+        MPI_Allreduce(MPI_IN_PLACE, r, nr, MPI_DOUBLE, MPI_SUM,
+                      cr_->mpi_act_helpers);
+    }
+}
+
+void CommunicationRecord::sumi_helpers(int nr, 
+                                       int r[]) const
+{
+    int size = 0;
+    if (MPI_Comm_size(cr_->mpi_act_helpers, &size) && size > 1)
+    {
+        MPI_Allreduce(MPI_IN_PLACE, r, nr, MPI_INT, MPI_SUM,
+                      cr_->mpi_act_helpers);
     }
 }
 

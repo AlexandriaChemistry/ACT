@@ -67,7 +67,6 @@
 #include "actmiddleman.h"
 #include "alex_modules.h"
 #include "bayes.h"
-#include "gmx_simple_comm.h"
 #include "memory_check.h"
 #include "mcmcmutator.h"
 #include "molgen.h"
@@ -330,7 +329,7 @@ bool OptACM::runMaster(bool        optimize,
     // Stop the middlemen
     for(auto &dest : commRec_.helpers())
     {
-        gmx_send_int(commRec_.commrec(), dest, 0);
+        commRec_.send_int(dest, 0);
     }
     if (gach_.optimizer() != OptimizerAlg::GA)
     {
@@ -519,7 +518,7 @@ int tune_ff(int argc, char *argv[])
         }
         opt.sii()->fillPoldata(fp, fns[fnIndex].c_str());
         printf("On proc %d, found %d particle types\n",
-               opt.sii()->commrec()->nodeid,
+               opt.sii()->commRec()->rank(),
                opt.sii()->poldata()->nParticleTypes());
     }
     // MolGen read being called here!
@@ -593,7 +592,7 @@ int tune_ff(int argc, char *argv[])
                           tmpMg->mdlog(), tmpMg->lot(),
                           tmpMg->qcycle(), tmpMg->qtol(),
                           oenv, opt.fullQuadrupole(),
-                          opt.commRec()->commrec(), efield, filenms);
+                          opt.commRec(), efield, filenms);
             print_memory_usage(debug);
         }
         else if (!bMinimum)

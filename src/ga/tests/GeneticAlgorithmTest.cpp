@@ -100,12 +100,13 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
             checker_.checkInt64(gach.popSize(), "popSize");
             checker_.checkInt64(gach.nCrossovers(), "ncrossovers");
             
-            t_commrec  *cr = init_commrec();
-            gmx_output_env_t *oenv;
+            alexandria::CommunicationRecord  cr;
+            cr.init(popSize);
+            gmx_output_env_t    *oenv;
             output_env_init_default(&oenv);
             
             // Create static individual
-            alexandria::StaticIndividualInfo sii(cr);
+            alexandria::StaticIndividualInfo sii(&cr);
             std::string ffName("ACS-g.xml");
             std::string ffDataName = gmx::test::TestFileManager::getInputFilePath(ffName);
             sii.fillPoldata(nullptr, ffDataName.c_str());
@@ -115,7 +116,7 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
             gms.read(selDataName.c_str());
             
             // Now read the molprop file
-            alexandria::MolGen               molgen(cr);
+            alexandria::MolGen               molgen(&cr);
             std::string mpName("testAlcohol.xml");
             std::string mpDataName = gmx::test::TestFileManager::getInputFilePath(mpName);
             for(const auto &fs : fitstrings)
@@ -165,7 +166,6 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
             bool randInit     = false;
             auto init         = new alexandria::ACMInitializer(&sii, randInit, outputFile, bch.seed());
             auto fit          = new alexandria::ACMFitnessComputer(nullptr, &sii, &molgen, false, verbose, false);
-            auto sorter       = new QuickSorter(gach.popSize());
             auto probComputer = new RankProbabilityComputer(gach.popSize());
             // Selector
             auto selector     = new ga::RouletteSelector();
@@ -174,39 +174,39 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
             
             // Terminator
             auto terminator   = new ga::GenerationTerminator(gach.maxGenerations());
-            alexandria::ACMIndividual *ind = static_cast<alexandria::ACMIndividual *>(init->initialize());
             GeneticAlgorithm *ga;
             if (hybrid_gamc)
             {
-                auto mutator = new alexandria::PercentMutator(ind, gach.percent());
+                auto mutator = new alexandria::PercentMutator(&sii, gach.percent());
                 checker_.checkInt64(gach.percent(), "gach.percent");
-                ga = new ga::HybridGAMC(nullptr, oenv, init, 
-                                        fit, sorter,probComputer,
+                ga = new ga::HybridGAMC(nullptr, init, 
+                                        fit, probComputer,
                                         selector, crossover, mutator, terminator,
-                                        &sii, &gach, false);
+                                        &sii, &gach);
             }
             else
             {
                 checker_.checkInt64(bch.maxIter(), "bch.maxIter");
                 checker_.checkInt64(bch.seed(), "bch.seed");
                 checker_.checkReal(bch.temperature(), "bch.temperature");
-                auto mutator      = new alexandria::MCMCMutator(nullptr, false, &bch, fit, ind);
+                auto mutator      = new alexandria::MCMCMutator(nullptr, false, &bch, fit, &sii);
 
-                ga = new ga::MCMC(nullptr, oenv, init, 
-                                  fit, sorter,probComputer,
+                ga = new ga::MCMC(nullptr, init, 
+                                  fit, probComputer,
                                   selector, crossover, mutator, terminator,
                                   &sii, &gach, false);
             }
             checker_.checkInt64(gach.maxGenerations(), "Maximum Number of Generations");
             checker_.checkReal(gach.prCross(), "Probability for Crossover");
             checker_.checkReal(gach.prMut(), "Probability for Mutation");
-            if (MASTER(cr))
+            if (cr.isMaster())
             {
-                ga->evolve();
-                if (ind->bestGenome().nBase() > 0)
+                Genome best;
+                ga->evolve(&best);
+                if (best.nBase() > 0)
                 {
-                    checker_.checkSequence(ind->bestGenome().bases().begin(),
-                                           ind->bestGenome().bases().end(), "bestParam");
+                    checker_.checkSequence(best.bases().begin(),
+                                           best.bases().end(), "bestParam");
                 }
             }
             else
@@ -238,5 +238,3 @@ TEST_F (GeneticAlgorithmTest, PopOneMCMC)
 }
 
 } 
-
-

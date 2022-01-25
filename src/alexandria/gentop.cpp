@@ -223,7 +223,7 @@ int gentop(int argc, char *argv[])
 
     Poldata        pd;
     t_inputrec    *inputrec = new t_inputrec();
-    t_commrec     *cr       = init_commrec();
+    CommunicationRecord cr;
     const char    *tabfn    = opt2fn_null("-table", NFILE, fnm);
     gmx::MDLogger  mdlog {};
     std::string    method, basis;
@@ -360,7 +360,7 @@ int gentop(int argc, char *argv[])
                                  bAllowMissing ? missingParameters::Ignore : missingParameters::Error,
                                  tabfn);
 
-    gmx_omp_nthreads_init(mdlog, cr, 1, 1, 1, 0, false, false);
+    gmx_omp_nthreads_init(mdlog, cr.commrec(), 1, 1, 1, 0, false, false);
 
     if (immStatus::OK == imm)
     {
@@ -392,7 +392,7 @@ int gentop(int argc, char *argv[])
         }
         imm    = mymol.GenerateCharges(&pd,
                                        mdlog,
-                                       cr,
+                                       &cr,
                                        tabfn,
                                        qcycle,
                                        qtol,
@@ -403,7 +403,7 @@ int gentop(int argc, char *argv[])
     /* Generate output file for debugging if requested */
     if (immStatus::OK == imm)
     {
-        mymol.plotEspCorrelation(opt2fn_null("-plotESP", NFILE, fnm), oenv, cr);
+        mymol.plotEspCorrelation(opt2fn_null("-plotESP", NFILE, fnm), oenv, &cr);
     }
 
     if (immStatus::OK == imm)
@@ -433,7 +433,7 @@ int gentop(int argc, char *argv[])
             mymol.PrintTopology(bITP ? ftp2fn(efITP, NFILE, fnm) : ftp2fn(efTOP, NFILE, fnm),
                                 bVerbose,
                                 &pd,
-                                cr,
+                                &cr,
                                 method,
                                 basis);
         }

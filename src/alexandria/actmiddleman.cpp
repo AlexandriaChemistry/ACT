@@ -3,6 +3,7 @@
 #include "gromacs/utility/gmxassert.h"
 
 #include "acminitializer.h"
+#include "communicationrecord.h"
 #include "mcmcmutator.h"
 #include "percentmutator.h"
 #include "staticindividualinfo.h"
@@ -28,7 +29,7 @@ ACTMiddleMan::ACTMiddleMan(FILE                 *logFile,
     gen.seed(seed);
     // Use the random number generator to get a seed for this processor based on the global seed
     // Skip the first "nodeid" numbers and grab the next one
-    for (int i = 0; i < sii->commrec()->nodeid; i++)
+    for (int i = 0; i < sii->commRec()->rank(); i++)
     {
         dis(gen);
     }
@@ -58,8 +59,8 @@ ACTMiddleMan::ACTMiddleMan(FILE                 *logFile,
     
 void ACTMiddleMan::run()
 {
-    auto cr = ind_->sii()->commrec();
-    GMX_RELEASE_ASSERT(actMiddleMan(cr), "I thought I was the middle man...");
+    auto cr = ind_->sii()->commRec();
+    GMX_RELEASE_ASSERT(cr->isMiddleMan(), "I thought I was the middle man...");
     // Start by computing my own fitness
     fitComp_->compute(ind_->genomePtr(), iMolSelect::Train);
     // The send my initial genome and fitness to the master
@@ -67,10 +68,10 @@ void ACTMiddleMan::run()
     int cont = 0;
     do
     {
-        cont = gmx_recv_int(cr, 0);
+        cont = cr->recv_int(0);
         if (cont)
         {
-            int imsi = gmx_recv_int(cr, 0);
+            int imsi = cr->recv_int(0);
             // Get the dataset
             iMolSelect ims;
             switch (imsi)
@@ -86,9 +87,9 @@ void ACTMiddleMan::run()
                 break;
             }
             // Now get the parameters
-            gmx_recv_double_vector(cr, 0, ind_->genomePtr()->basesPtr());
+            cr->recv_double_vector(0, ind_->genomePtr()->basesPtr());
             fitComp_->compute(ind_->genomePtr(), ims);
-            gmx_send_double(cr, 0, ind_->genome().fitness(ims));
+            cr->send_double(0, ind_->genome().fitness(ims));
         }
     }
     while (cont);

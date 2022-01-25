@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2020 
+ * Copyright (C) 2020-2022
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -217,13 +217,13 @@ class ForceFieldParameterList
      * \param[in] cr   Communication data structure
      * \param[in] dest Processor id to send the data to
      */
-    CommunicationStatus Send(const t_commrec *cr, int dest) const;
+    CommunicationStatus Send(const CommunicationRecord *cr, int dest) const;
 
     /*! \brief Receive contents from another processor
      * \param[in] cr  Communication data structure
      * \param[in] src Processor id to receive the data from
      */
-    CommunicationStatus Receive(const t_commrec *cr, int src);
+    CommunicationStatus Receive(const CommunicationRecord *cr, int src);
 
     //! \return The counter \p counter_ for index
     size_t counter() const { return counter_; };

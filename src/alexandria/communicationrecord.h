@@ -102,6 +102,9 @@ public:
     //! \return whether I am the master
     bool isMaster() const { return NodeType::Master == nt_; }
 
+    //! \return whether I am a middleman
+    bool isMiddleMan() const { return NodeType::MiddleMan == nt_; }
+
     //! \return whether I am the master
     bool isHelper() const { return NodeType::Helper == nt_; }
 
@@ -159,6 +162,24 @@ public:
      * \return The int received
      */
     int recv_int(int src) const;
+ 
+    /*! \brief Calculate the global sum of an array of doubles
+     * but only on my act helpers.
+     * \param[in]    nr The number of doubles
+     * \param[inout] r  The list of doubles input and output
+     */
+    void sumd_helpers(int    nr, 
+                      double r[]) const;
+    
+    /*! \brief Calculate the global sum of an array of ints 
+     * but only on my act helper group
+     * \param[in] nr The number of ints
+     * \param[in] r  The ints.
+     */
+    void sumi_helpers(int nr, 
+                      int r[]) const;
+
+
 };
 
 } // namespace alexandria

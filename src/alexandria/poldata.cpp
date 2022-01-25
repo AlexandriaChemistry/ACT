@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020 
+ * Copyright (C) 2014-2022
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -49,7 +49,6 @@
 #include "gromacs/utility/textreader.h"
 
 #include "act_checksum.h"
-#include "gmx_simple_comm.h"
 #include "poldata_xml.h"
 #include "stringutil.h"
 
@@ -335,23 +334,23 @@ void Poldata::addSymcharges(const std::string &central,
     }
 }
 
-CommunicationStatus Poldata::Send(const t_commrec *cr, int dest)
+CommunicationStatus Poldata::Send(const CommunicationRecord *cr, int dest)
 {
     CommunicationStatus cs;
     cs = gmx_send_data(cr, dest);
     if (CS_OK == cs)
     {
-        gmx_send_str(cr, dest, &filename_);
-        gmx_send_str(cr, dest, &checkSum_);
-        gmx_send_str(cr, dest, &timeStamp_);
-        gmx_send_int(cr, dest, nexcl_);
-        gmx_send_double(cr, dest, gtEpsilonR_);
-        gmx_send_str(cr, dest, &vsite_angle_unit_);
-        gmx_send_str(cr, dest, &vsite_length_unit_);
-        gmx_send_int(cr, dest, static_cast<int>(ChargeGenerationAlgorithm_));
-        gmx_send_int(cr, dest, polarizable_ ? 1 : 0);
+        cr->send_str(dest, &filename_);
+        cr->send_str(dest, &checkSum_);
+        cr->send_str(dest, &timeStamp_);
+        cr->send_int(dest, nexcl_);
+        cr->send_double(dest, gtEpsilonR_);
+        cr->send_str(dest, &vsite_angle_unit_);
+        cr->send_str(dest, &vsite_length_unit_);
+        cr->send_int(dest, static_cast<int>(ChargeGenerationAlgorithm_));
+        cr->send_int(dest, polarizable_ ? 1 : 0);
         /* Send Ffatype */
-        gmx_send_int(cr, dest, alexandria_.size());
+        cr->send_int(dest, alexandria_.size());
         for (auto &alexandria : alexandria_)
         {
             cs = alexandria.Send(cr, dest);
@@ -364,7 +363,7 @@ CommunicationStatus Poldata::Send(const t_commrec *cr, int dest)
         /* Send Vsite */
         if (CS_OK == cs)
         {
-            gmx_send_int(cr, dest, vsite_.size());
+            cr->send_int(dest, vsite_.size());
             for (auto &vsite : vsite_)
             {
                 cs = vsite.Send(cr, dest);
@@ -378,11 +377,11 @@ CommunicationStatus Poldata::Send(const t_commrec *cr, int dest)
         /* Force Field Parameter Lists */
         if (CS_OK == cs)
         {
-            gmx_send_int(cr, dest, forces_.size());
+            cr->send_int(dest, forces_.size());
             for (auto &force : forces_)
             {
                 std::string key(interactionTypeToString(force.first));
-                gmx_send_str(cr, dest, &key);
+                cr->send_str(dest, &key);
                 cs = force.second.Send(cr, dest);
                 if (CS_OK != cs)
                 {
@@ -394,7 +393,7 @@ CommunicationStatus Poldata::Send(const t_commrec *cr, int dest)
         /* Send Symcharges */
         if (CS_OK == cs)
         {
-            gmx_send_int(cr, dest, symcharges_.size());
+            cr->send_int(dest, symcharges_.size());
             for (auto &symcharges : symcharges_)
             {
                 cs = symcharges.Send(cr, dest);
@@ -408,23 +407,23 @@ CommunicationStatus Poldata::Send(const t_commrec *cr, int dest)
     return cs;
 }
 
-CommunicationStatus Poldata::Receive(const t_commrec *cr, int src)
+CommunicationStatus Poldata::Receive(const CommunicationRecord *cr, int src)
 {
     CommunicationStatus cs;
     cs = gmx_recv_data(cr, src);
     if (CS_OK == cs)
     {
-        gmx_recv_str(cr, src, &filename_);
-        gmx_recv_str(cr, src, &checkSum_);
-        gmx_recv_str(cr, src, &timeStamp_);
-        nexcl_                = gmx_recv_int(cr, src);
-        gtEpsilonR_           = gmx_recv_double(cr, src);
-        gmx_recv_str(cr, src, &vsite_angle_unit_);
-        gmx_recv_str(cr, src, &vsite_length_unit_);
-        ChargeGenerationAlgorithm_ = static_cast<ChargeGenerationAlgorithm>(gmx_recv_int(cr, src));
-        polarizable_          = static_cast<bool>(gmx_recv_int(cr, src));
+        cr->recv_str(src, &filename_);
+        cr->recv_str(src, &checkSum_);
+        cr->recv_str(src, &timeStamp_);
+        nexcl_                = cr->recv_int(src);
+        gtEpsilonR_           = cr->recv_double(src);
+        cr->recv_str(src, &vsite_angle_unit_);
+        cr->recv_str(src, &vsite_length_unit_);
+        ChargeGenerationAlgorithm_ = static_cast<ChargeGenerationAlgorithm>(cr->recv_int(src));
+        polarizable_          = static_cast<bool>(cr->recv_int(src));
         /* Rceive Ffatype */
-        size_t nalexandria = gmx_recv_int(cr, src);
+        size_t nalexandria = cr->recv_int(src);
         alexandria_.clear();
         for (size_t n = 0; (CS_OK == cs) && (n < nalexandria); n++)
         {
@@ -442,7 +441,7 @@ CommunicationStatus Poldata::Receive(const t_commrec *cr, int src)
         }
 
         /* Receive Vsites */
-        size_t nvsite = gmx_recv_int(cr, src);
+        size_t nvsite = cr->recv_int(src);
         vsite_.clear();
         for (size_t n = 0; (CS_OK == cs) && (n < nvsite); n++)
         {
@@ -460,13 +459,13 @@ CommunicationStatus Poldata::Receive(const t_commrec *cr, int src)
         }
 
         /* Receive Listed Forces */
-        size_t nforces           = gmx_recv_int(cr, src);
+        size_t nforces           = cr->recv_int(src);
         forces_.clear();
         for (size_t n = 0; (CS_OK == cs) && (n < nforces); n++)
         {
             ForceFieldParameterList fs;
             std::string             key;
-            gmx_recv_str(cr, src, &key);
+            cr->recv_str(src, &key);
             InteractionType iType = stringToInteractionType(key.c_str());
             cs                    = fs.Receive(cr, src);
             if (CS_OK == cs)
@@ -487,7 +486,7 @@ CommunicationStatus Poldata::Receive(const t_commrec *cr, int src)
         /* Receive Symcharges */
         if (CS_OK == cs)
         {
-            size_t nsymcharges = gmx_recv_int(cr, src);
+            size_t nsymcharges = cr->recv_int(src);
             symcharges_.clear();
             for (size_t n = 0; (CS_OK == cs) && (n < nsymcharges); n++)
             {
@@ -503,7 +502,7 @@ CommunicationStatus Poldata::Receive(const t_commrec *cr, int src)
     return cs;
 }
 
-void Poldata::sendParticles(const t_commrec *cr, int dest)
+void Poldata::sendParticles(const CommunicationRecord *cr, int dest)
 {
     auto cs = gmx_send_data(cr, dest);
     if (CS_OK == cs)
@@ -520,32 +519,32 @@ void Poldata::sendParticles(const t_commrec *cr, int dest)
                 if (Mutability::Free    == mut ||
                     Mutability::Bounded == mut)
                 {
-                    gmx_send_int(cr, dest, 1);
-                    gmx_send_str(cr, dest, &ax.id().id());
-                    gmx_send_str(cr, dest, &p.first);
-                    gmx_send_double(cr, dest, p.second.value());
+                    cr->send_int(dest, 1);
+                    cr->send_str(dest, &ax.id().id());
+                    cr->send_str(dest, &p.first);
+                    cr->send_double(dest, p.second.value());
                 }
             }
         }
-        gmx_send_int(cr, dest, 0);
+        cr->send_int(dest, 0);
     }
     gmx_send_done(cr, dest);
 }
 
 
-void Poldata::receiveParticles(const t_commrec *cr, int src)
+void Poldata::receiveParticles(const CommunicationRecord *cr, int src)
 {
     auto cs = gmx_recv_data(cr, src);
     if (CS_OK == cs)
     {
         /* Receive Particle info */
-        while (1 == gmx_recv_int(cr, src))
+        while (1 == cr->recv_int(src))
         {
             std::string axid, paramname;
             double value;
-            gmx_recv_str(cr, src, &axid);
-            gmx_recv_str(cr, src, &paramname);
-            value = gmx_recv_double(cr, src);
+            cr->recv_str(src, &axid);
+            cr->recv_str(src, &paramname);
+            value = cr->recv_double(src);
             findParticleType(axid)->parameter(paramname)->setValue(value);
         }
     }
@@ -553,7 +552,7 @@ void Poldata::receiveParticles(const t_commrec *cr, int src)
     {
         if (nullptr != debug)
         {
-            fprintf(debug, "Could not update eem properties on node %d\n", cr->nodeid);
+            fprintf(debug, "Could not update eem properties on node %d\n", cr->rank());
         }
     }
     gmx_recv_data(cr, src);
@@ -567,7 +566,7 @@ static std::vector<InteractionType> eemlist =
       InteractionType::ELECTRONEGATIVITYEQUALIZATION
     };
 
-void Poldata::sendEemprops(const t_commrec *cr, int dest)
+void Poldata::sendEemprops(const CommunicationRecord *cr, int dest)
 {
     auto cs = gmx_send_data(cr, dest);
     if (CS_OK == cs)
@@ -581,19 +580,19 @@ void Poldata::sendEemprops(const t_commrec *cr, int dest)
             auto fs = forces_.find(myeem);
             if (fs != forces_.end())
             {
-                gmx_send_int(cr, dest, 1);
+                cr->send_int(dest, 1);
                 cs = fs->second.Send(cr, dest);
             }
             else
             {
-                gmx_send_int(cr, dest, 0);
+                cr->send_int(dest, 0);
             }
         }
     }
     gmx_send_done(cr, dest);
 }
 
-void Poldata::receiveEemprops(const t_commrec *cr, int src)
+void Poldata::receiveEemprops(const CommunicationRecord *cr, int src)
 {
     auto cs = gmx_recv_data(cr, src);
     if (CS_OK == cs)
@@ -601,7 +600,7 @@ void Poldata::receiveEemprops(const t_commrec *cr, int src)
         /* Receive EEMprops and Bond Corrections */
         for(auto myeem : eemlist)
         {
-            int nbc = gmx_recv_int(cr, src);
+            int nbc = cr->recv_int(src);
             if (nbc == 1)
             {
                 auto fs = forces_.find(myeem);
@@ -619,19 +618,19 @@ void Poldata::receiveEemprops(const t_commrec *cr, int src)
     {
         if (nullptr != debug)
         {
-            fprintf(debug, "Could not update eem properties on node %d\n", cr->nodeid);
+            fprintf(debug, "Could not update eem properties on node %d\n", cr->rank());
         }
     }
     gmx_recv_data(cr, src);
 }
 
-void Poldata::sendToHelpers(const t_commrec *cr)
+void Poldata::sendToHelpers(const CommunicationRecord *cr)
 {
     // TODO check GMX_RELEASE_ASSERT(!MASTER(cr), "I wasn't expecting no overlord here");
-    int src = middleManGlobalIndex(cr);
-    if (actMiddleMan(cr) || (cr->nmiddlemen == 0 && MASTER(cr)))
+    int src = cr->rank();
+    if (cr->isMiddleMan() || (cr->nmiddlemen() == 0 && cr->isMaster()))
     {
-        for (int dest = src+1; dest <= src+cr->nhelper_per_middleman; dest++)
+        for (auto &dest : cr->helpers())
         {
             auto cs = gmx_send_data(cr, dest);
             if (CS_OK == cs)
@@ -645,7 +644,7 @@ void Poldata::sendToHelpers(const t_commrec *cr)
             gmx_send_done(cr, dest);
         }
     }
-    else if (actHelper(cr))
+    else if (cr->isHelper())
     {
         auto cs = gmx_recv_data(cr, src);
         if (CS_OK == cs)
@@ -655,14 +654,14 @@ void Poldata::sendToHelpers(const t_commrec *cr)
             {
                 if (nullptr != debug)
                 {
-                    fprintf(debug, "Poldata is updated on node %d\n", cr->nodeid);
+                    fprintf(debug, "Poldata is updated on node %d\n", cr->rank());
                 }
             }
             else
             {
                 if (nullptr != debug)
                 {
-                    fprintf(debug, "Could not update Poldata on node %d\n", cr->nodeid);
+                    fprintf(debug, "Could not update Poldata on node %d\n", cr->rank());
                 }
             }
         }

@@ -506,7 +506,7 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
                                   real                            qtol,
                                   const gmx_output_env_t         *oenv,
                                   bool                            bfullTensor,
-                                  const t_commrec                *cr,
+                                  const CommunicationRecord      *cr,
                                   real                            efield,
                                   const std::vector<t_filenm>    &filenm)
 {

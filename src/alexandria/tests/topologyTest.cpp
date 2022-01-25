@@ -38,6 +38,7 @@
 #include <gtest/gtest.h>
 
 #include "alexandria/topology.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"

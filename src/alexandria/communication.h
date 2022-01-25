@@ -34,7 +34,10 @@
 #ifndef COMMUNICATION_H
 #define COMMUNICATION_H
 
-#include "gromacs/mdtypes/commrec.h"
+#include "communicationrecord.h"
+
+namespace alexandria
+{
 
 /*! \brief
  * Enumerated type holding the result status of communication operations
@@ -51,10 +54,12 @@ enum CommunicationStatus {
 
 const char *cs_name(CommunicationStatus cs);
 
-CommunicationStatus gmx_send_data(const t_commrec *cr, int dest);
+CommunicationStatus gmx_send_data(const CommunicationRecord *cr, int dest);
 
-CommunicationStatus gmx_send_done(const t_commrec *cr, int dest);
+CommunicationStatus gmx_send_done(const CommunicationRecord *cr, int dest);
 
-CommunicationStatus gmx_recv_data(const t_commrec *cr, int src);
+CommunicationStatus gmx_recv_data(const CommunicationRecord *cr, int src);
+
+}
 
 #endif

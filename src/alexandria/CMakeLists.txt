@@ -54,7 +54,6 @@ set(ALEXANDRIA_SOURCES
            forcefieldparameter.cpp
            forcefieldparameterlist.cpp
            gentop.cpp
-           gmx_simple_comm.cpp
            gromacs_top.cpp
            identifier.cpp
            interactiontype.cpp

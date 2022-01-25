@@ -83,9 +83,9 @@ class Bosque
          */
         double getPolarizability() const { return polarizability_; }
 
-        CommunicationStatus Send(const t_commrec *cr, int dest);
+        CommunicationStatus Send(const CommunicationRecord *cr, int dest);
 
-        CommunicationStatus Receive(const t_commrec *cr, int src);
+        CommunicationStatus Receive(const CommunicationRecord *cr, int src);
 
     private:
         std::string bosque_;
@@ -149,9 +149,9 @@ class Miller
          */
         const std::string &getAlexandriaEquiv() const { return alexandria_equiv_; }
 
-        CommunicationStatus Send(const t_commrec *cr, int dest);
+        CommunicationStatus Send(const CommunicationRecord *cr, int dest);
 
-        CommunicationStatus Receive(const t_commrec *cr, int src);
+        CommunicationStatus Receive(const CommunicationRecord *cr, int src);
 
     private:
         std::string miller_;
@@ -180,9 +180,9 @@ class Symcharges
 
         int getNumattach() const { return numattach_; }
 
-        CommunicationStatus Send(const t_commrec *cr, int dest);
+        CommunicationStatus Send(const CommunicationRecord *cr, int dest);
 
-        CommunicationStatus Receive(const t_commrec *cr, int src);
+        CommunicationStatus Receive(const CommunicationRecord *cr, int src);
 
     private:
         std::string central_;

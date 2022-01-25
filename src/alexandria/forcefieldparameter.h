@@ -42,7 +42,6 @@
 #include "gromacs/utility/fatalerror.h"
 
 #include "communication.h"
-#include "gmx_simple_comm.h"
 #include "mutability.h"
 
 /*! \brief Convert string to boolean
@@ -243,13 +242,13 @@ class ForceFieldParameter
      * \param[in] cr   Communication data structure
      * \param[in] dest Processor id to send the data to
      */
-    CommunicationStatus Send(const t_commrec *cr, int dest)  const;
+    CommunicationStatus Send(const CommunicationRecord *cr, int dest)  const;
 
     /*! \brief Receive contents from another processor
      * \param[in] cr  Communication data structure
      * \param[in] src Processor id to receive the data from
      */
-    CommunicationStatus Receive(const t_commrec *cr, int src);
+    CommunicationStatus Receive(const CommunicationRecord *cr, int src);
 
  private:
     //! The unit of the parameter

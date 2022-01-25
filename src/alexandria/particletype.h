@@ -199,16 +199,16 @@ class ParticleType
     std::string element() const;
 
     /*! \brief Distribute my data
-     * \param[in] cr   GROMACS communication record
+     * \param[in] cr   communication record
      * \param[in] dest Destination processor
      */
-    CommunicationStatus Send(const t_commrec *cr, int dest);
+    CommunicationStatus Send(const CommunicationRecord *cr, int dest);
     
     /*! \brief Receive my data
-     * \param[in] cr  GROMACS communication record
+     * \param[in] cr  communication record
      * \param[in] src Source processor
      */
-    CommunicationStatus Receive(const t_commrec *cr, int src);
+    CommunicationStatus Receive(const CommunicationRecord *cr, int src);
 
  private:
     //! My identifier

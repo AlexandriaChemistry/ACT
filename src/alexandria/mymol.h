@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2021
+ * Copyright (C) 2014-2022
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -49,6 +49,7 @@
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/real.h"
 
+#include "communicationrecord.h"
 #include "gentop_vsite.h"
 #include "molprop.h"
 #include "molselect.h"
@@ -60,7 +61,6 @@
 
 struct gmx_enerdata_t;
 struct gmx_shellfc_t;
-struct t_commrec;
 struct t_forcerec;
 struct t_inputrec;
 struct gmx_hw_info_t;
@@ -440,9 +440,9 @@ namespace alexandria
          * \param[in]  fplog    File pointer for logging
          * \returns the result of the calculation, if fine it is immOK
          */
-        immStatus CalcPolarizability(double           efield,
-                                     const t_commrec *cr,
-                                     FILE            *fplog);
+        immStatus CalcPolarizability(double                     efield,
+                                     const CommunicationRecord *cr,
+                                     FILE                      *fplog);
       
         /*! \brief set the electronic polarizability
          * \param[in] isoPol The isotropic polarizability
@@ -486,7 +486,7 @@ namespace alexandria
          */
         immStatus GenerateCharges(const Poldata             *pd,
                                   const gmx::MDLogger       &fplog,
-                                  const t_commrec           *cr,
+                                  const CommunicationRecord *cr,
                                   const char                *tabfn,
                                   int                        qcycle,
                                   real                       qtol,
@@ -502,10 +502,10 @@ namespace alexandria
          * \param[in] qcycle  Number of cycles for computing charges
          * \param[in] qtol    Convergence of charges tolerance
          */
-        immStatus GenerateAcmCharges(const Poldata   *pd,
-                                     const t_commrec *cr,
-                                     int              qcycle,
-                                     real             qtol);
+        immStatus GenerateAcmCharges(const Poldata             *pd,
+                                     const CommunicationRecord *cr,
+                                     int                        qcycle,
+                                     real                       qtol);
                                      
         /*! \brief Implement charge symmetrization
          *
@@ -534,9 +534,9 @@ namespace alexandria
          * \param[in] oenv    Gromacs output structure
          * \param[in] cr      Gromacs communication record
          */
-        void plotEspCorrelation(const char             *espcorr,
-                                const gmx_output_env_t *oenv,
-                                const t_commrec        *cr);
+        void plotEspCorrelation(const char                *espcorr,
+                                const gmx_output_env_t    *oenv,
+                                const CommunicationRecord *cr);
 
         /*! \brief
          * Collect the experimental properties
@@ -563,12 +563,12 @@ namespace alexandria
          * \param[in] method    QC method
          * \param[in] basis     QC basis set
          */
-        void PrintTopology(const char        *fn,
-                           bool               bVerbose,
-                           const Poldata     *pd,
-                           const t_commrec   *cr,
-                           const std::string &method,
-                           const std::string &basis);
+        void PrintTopology(const char                *fn,
+                           bool                       bVerbose,
+                           const Poldata             *pd,
+                           const CommunicationRecord *cr,
+                           const std::string         &method,
+                           const std::string         &basis);
 
         /*! \brief
          * Print the topology that was generated previously in GROMACS format.
@@ -581,13 +581,13 @@ namespace alexandria
          * \param[in] method    QC method
          * \param[in] basis     WC basis set
          */
-        void PrintTopology(FILE                    *fp,
-                           bool                     bVerbose,
-                           const Poldata           *pd,
-                           bool                     bITP,
-                           const t_commrec         *cr,
-                           const std::string       &method,
-                           const std::string       &basis);
+        void PrintTopology(FILE                      *fp,
+                           bool                       bVerbose,
+                           const Poldata             *pd,
+                           bool                       bITP,
+                           const CommunicationRecord *cr,
+                           const std::string         &method,
+                           const std::string         &basis);
 
         /*! \brief
          *  Compute or derive global info about the molecule
@@ -613,9 +613,9 @@ namespace alexandria
          * \param[out] rmsf  Root mean square force on the shells
          * \return immOK if everything went fine, an error otherwise.
          */
-        immStatus computeForces(FILE            *fplog,
-                                const t_commrec *cr,
-                                double          *rmsf);
+        immStatus computeForces(FILE                      *fplog,
+                                const CommunicationRecord *cr,
+                                double                    *rmsf);
 
         /*! \brief
          * Change the coordinate of the molecule based
@@ -656,10 +656,10 @@ namespace alexandria
         /*! \brief
          * Generate GROMACS structures.
          */
-        immStatus GenerateGromacs(const gmx::MDLogger      &mdlog,
-                                  const t_commrec          *cr,
-                                  const char               *tabfn,
-                                  ChargeType               iType);
+        immStatus GenerateGromacs(const gmx::MDLogger       &mdlog,
+                                  const CommunicationRecord *cr,
+                                  const char                *tabfn,
+                                  ChargeType                 iType);
 
         /*! \brief
          * Generate cube
@@ -740,7 +740,7 @@ namespace alexandria
          * \param[in] dest Destination processor
          * \return the CommunicationStatus of the operation
          */
-        CommunicationStatus Send(const t_commrec *cr, int dest) const;
+        CommunicationStatus Send(const CommunicationRecord *cr, int dest) const;
 
         /*! \brief
          * Receives this object over an MPI connection
@@ -749,7 +749,7 @@ namespace alexandria
          * \param[in] src Source processor
          * \return the CommunicationStatus of the operation
          */
-        CommunicationStatus Receive(const t_commrec *cr, int src);
+        CommunicationStatus Receive(const CommunicationRecord *cr, int src);
 
     };
 

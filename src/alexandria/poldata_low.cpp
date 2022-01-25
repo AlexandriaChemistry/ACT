@@ -41,13 +41,7 @@
 #include <map>
 #include <vector>
 
-//#include "gromacs/topology/ifunc.h"
-//#include "gromacs/utility/cstringutil.h"
-//#include "gromacs/utility/stringutil.h"
-
-#include "gmx_simple_comm.h"
-//#include "identifier.h"
-//#include "plistwrapper.h"
+#include "communicationrecord.h"
 #include "stringutil.h"
 
 namespace alexandria
@@ -60,14 +54,14 @@ Bosque::Bosque(const std::string &bosque, double polarizability)
       polarizability_(polarizability)
 {}
 
-CommunicationStatus Bosque::Send(const t_commrec *cr, int dest)
+CommunicationStatus Bosque::Send(const CommunicationRecord *cr, int dest)
 {
     CommunicationStatus cs;
     cs = gmx_send_data(cr, dest);
     if (CS_OK == cs)
     {
-        gmx_send_str(cr, dest, &bosque_);
-        gmx_send_double(cr, dest, polarizability_);
+        cr->send_str(dest, &bosque_);
+        cr->send_double(dest, polarizability_);
         if (nullptr != debug)
         {
             fprintf(debug, "Sent Bosque %s %g, status %s\n",
@@ -78,14 +72,14 @@ CommunicationStatus Bosque::Send(const t_commrec *cr, int dest)
     return cs;
 }
 
-CommunicationStatus Bosque::Receive(const t_commrec *cr, int src)
+CommunicationStatus Bosque::Receive(const CommunicationRecord *cr, int src)
 {
     CommunicationStatus cs;
     cs = gmx_recv_data(cr, src);
     if (CS_OK == cs)
     {
-        gmx_recv_str(cr, src, &bosque_);
-        polarizability_ = gmx_recv_double(cr, src);
+        cr->recv_str(src, &bosque_);
+        polarizability_ = cr->recv_double(src);
         if (nullptr != debug)
         {
             fprintf(debug, "Received Bosque %s %g, status %s\n",
@@ -109,17 +103,17 @@ Miller::Miller(const std::string &miller,
       alexandria_equiv_(alexandria_equiv)
 {}
 
-CommunicationStatus Miller::Send(const t_commrec *cr, int dest)
+CommunicationStatus Miller::Send(const CommunicationRecord *cr, int dest)
 {
     CommunicationStatus cs;
     cs = gmx_send_data(cr, dest);
     if (CS_OK == cs)
     {
-        gmx_send_str(cr, dest, &miller_);
-        gmx_send_int(cr, dest, atomnumber_);
-        gmx_send_double(cr, dest, tauAhc_);
-        gmx_send_double(cr, dest, alphaAhp_);
-        gmx_send_str(cr, dest, &alexandria_equiv_);
+        cr->send_str(dest, &miller_);
+        cr->send_int(dest, atomnumber_);
+        cr->send_double(dest, tauAhc_);
+        cr->send_double(dest, alphaAhp_);
+        cr->send_str(dest, &alexandria_equiv_);
 
         if (nullptr != debug)
         {
@@ -132,17 +126,17 @@ CommunicationStatus Miller::Send(const t_commrec *cr, int dest)
     return cs;
 }
 
-CommunicationStatus Miller::Receive(const t_commrec *cr, int src)
+CommunicationStatus Miller::Receive(const CommunicationRecord *cr, int src)
 {
     CommunicationStatus cs;
     cs = gmx_recv_data(cr, src);
     if (CS_OK == cs)
     {
-        gmx_recv_str(cr, src, &miller_);
-        atomnumber_ = gmx_recv_int(cr, src);
-        tauAhc_     = gmx_recv_double(cr, src);
-        alphaAhp_   = gmx_recv_double(cr, src);
-        gmx_recv_str(cr, src, &alexandria_equiv_);
+        cr->recv_str(src, &miller_);
+        atomnumber_ = cr->recv_int(src);
+        tauAhc_     = cr->recv_double(src);
+        alphaAhp_   = cr->recv_double(src);
+        cr->recv_str(src, &alexandria_equiv_);
         if (nullptr != debug)
         {
             fprintf(debug, "Received Miller %s %d %g %g %s, status %s\n",
@@ -163,15 +157,15 @@ Symcharges::Symcharges(const std::string &central,
       numattach_(numattach)
 {}
 
-CommunicationStatus Symcharges::Send(const t_commrec *cr, int dest)
+CommunicationStatus Symcharges::Send(const CommunicationRecord *cr, int dest)
 {
     CommunicationStatus cs;
     cs = gmx_send_data(cr, dest);
     if (CS_OK == cs)
     {
-        gmx_send_str(cr, dest, &central_);
-        gmx_send_str(cr, dest, &attached_);
-        gmx_send_int(cr, dest, numattach_);
+        cr->send_str(dest, &central_);
+        cr->send_str(dest, &attached_);
+        cr->send_int(dest, numattach_);
 
         if (nullptr != debug)
         {
@@ -183,15 +177,15 @@ CommunicationStatus Symcharges::Send(const t_commrec *cr, int dest)
     return cs;
 }
 
-CommunicationStatus Symcharges::Receive(const t_commrec *cr, int src)
+CommunicationStatus Symcharges::Receive(const CommunicationRecord *cr, int src)
 {
     CommunicationStatus cs;
     cs = gmx_recv_data(cr, src);
     if (CS_OK == cs)
     {
-        gmx_recv_str(cr, src, &central_);
-        gmx_recv_str(cr, src, &attached_);
-        numattach_ = gmx_recv_int(cr, src);
+        cr->recv_str(src, &central_);
+        cr->recv_str(src, &attached_);
+        numattach_ = cr->recv_int(src);
         if (nullptr != debug)
         {
             fprintf(debug, "Received Symcharges %s %s %d, status %s\n",

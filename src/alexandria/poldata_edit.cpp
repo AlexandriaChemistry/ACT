@@ -696,8 +696,8 @@ int poldata_edit(int argc, char*argv[])
     int                 NFILE  = asize(fnm);
     alexandria::Poldata pd;
     
-    auto cr = init_commrec();
-    if (MASTER(cr))
+    CommunicationRecord cr;
+    if (cr.isMaster())
     {
         if (!parse_common_args(&argc, argv, 0, NFILE, fnm, npargs, pa,
                                1, desc, 0, nullptr, &oenv))
@@ -762,19 +762,19 @@ int poldata_edit(int argc, char*argv[])
     }
     if (opt2bSet("-o", NFILE, fnm))
     {
-        if (PAR(cr))
+        if (cr.isParallel())
         {
-            if (MASTER(cr))
+            if (cr.isMaster())
             {
-                pd.Send(cr, 1);
+                pd.Send(&cr, 1);
                 std::string outfile(opt2fn("-o", NFILE, fnm));
-                gmx_send_str(cr, 1, &outfile);
+                cr.send_str(1, &outfile);
             }
-            else if (cr->nodeid == 1)
+            else if (cr.rank() == 1)
             {
-                pd.Receive(cr, 0);
+                pd.Receive(&cr, 0);
                 std::string outfile;
-                gmx_recv_str(cr, 0, &outfile);
+                cr.recv_str(0, &outfile);
                 alexandria::writePoldata(outfile, &pd, 0);
             }
         }

@@ -39,7 +39,7 @@
 #include "gromacs/gpu_utils/hostallocator.h"
 
 #include "communication.h"
-#include "gmx_simple_comm.h"
+#include "communicationrecord.h"
 #include "identifier.h"
 
 namespace alexandria
@@ -131,8 +131,8 @@ public:
      * \param[in] dest Destination processor
      * \return the CommunicationStatus of the operation
      */
-    CommunicationStatus Send(const t_commrec *cr,
-                             int              dest) const;
+    CommunicationStatus Send(const CommunicationRecord *cr,
+                             int                        dest) const;
     
     /*! \brief
      * Receives this object over an MPI connection
@@ -141,8 +141,8 @@ public:
      * \param[in] src Source processor
      * \return the CommunicationStatus of the operation
      */
-    CommunicationStatus Receive(const t_commrec *cr,
-                                int              src);
+    CommunicationStatus Receive(const CommunicationRecord *cr,
+                                int                        src);
 };
 
 /*! \brief

@@ -175,7 +175,7 @@ class AcmTest : public gmx::test::CommandLineTestBase
             }
 
             // Needed for GenerateCharges
-            t_commrec     *cr       = init_commrec();
+            CommunicationRecord cr;
             auto           pnc      = gmx::PhysicalNodeCommunicator(MPI_COMM_WORLD, 0);
             gmx::MDLogger  mdlog {};
             int            qcycle   = 100;
@@ -188,7 +188,7 @@ class AcmTest : public gmx::test::CommandLineTestBase
                 alg = ChargeGenerationAlgorithm::Custom;
             }
             mp_.symmetrizeCharges(pd, qSymm, nullptr);
-            mp_.GenerateCharges(pd, mdlog, cr, nullptr, 
+            mp_.GenerateCharges(pd, mdlog, &cr, nullptr, 
                                 qcycle, qtol, 
                                 alg, qcustom, lot);
                                 

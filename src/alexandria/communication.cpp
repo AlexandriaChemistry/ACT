@@ -33,11 +33,10 @@
 
 #include "communication.h"
 
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/fatalerror.h"
 
-#include "gmx_simple_comm.h"
-
+namespace alexandria
+{
 
 const char *cs_name(CommunicationStatus cs)
 {
@@ -63,23 +62,23 @@ const char *cs_name(CommunicationStatus cs)
 
 #define GMX_SEND_DATA 19823
 #define GMX_SEND_DONE -666
-CommunicationStatus gmx_send_data(const t_commrec *cr, int dest)
+CommunicationStatus gmx_send_data(const CommunicationRecord *cr, int dest)
 {
-    gmx_send_int(cr, dest, GMX_SEND_DATA);
+    cr->send_int(dest, GMX_SEND_DATA);
 
     return CS_OK;
 }
 
-CommunicationStatus gmx_send_done(const t_commrec *cr, int dest)
+CommunicationStatus gmx_send_done(const CommunicationRecord *cr, int dest)
 {
-    gmx_send_int(cr, dest, GMX_SEND_DONE);
+    cr->send_int(dest, GMX_SEND_DONE);
 
     return CS_OK;
 }
 
-static CommunicationStatus gmx_recv_data_(const t_commrec *cr, int src, int line)
+static CommunicationStatus gmx_recv_data_(const CommunicationRecord *cr, int src, int line)
 {
-    int kk = gmx_recv_int(cr, src);
+    int kk = cr->recv_int(src);
 
     if ((kk != GMX_SEND_DATA) && (kk != GMX_SEND_DONE))
     {
@@ -89,9 +88,11 @@ static CommunicationStatus gmx_recv_data_(const t_commrec *cr, int src, int line
     return CS_OK;
 }
 
-CommunicationStatus gmx_recv_data(const t_commrec *cr, int src)
+CommunicationStatus gmx_recv_data(const CommunicationRecord *cr, int src)
 {
     return gmx_recv_data_(cr, src, __LINE__);
 }
 #undef GMX_SEND_DATA
 #undef GMX_SEND_DONE
+
+}

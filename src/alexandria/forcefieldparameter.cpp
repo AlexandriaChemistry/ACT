@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2020 
+ * Copyright (C) 2020-2022
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -23,7 +23,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, 
  * Boston, MA  02110-1301, USA.
  */
- 
+
 /*! \internal \brief
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
@@ -125,30 +125,30 @@ void ForceFieldParameter::copy(const ForceFieldParameter &src)
     strict_              = src.strict();
 }
 
-CommunicationStatus ForceFieldParameter::Send(const t_commrec *cr, int dest) const
+CommunicationStatus ForceFieldParameter::Send(const CommunicationRecord *cr, int dest) const
 {
     CommunicationStatus cs;
     cs = gmx_send_data(cr, dest);
     if (CS_OK == cs)
     {
-        gmx_send_str(cr, dest, &unit_);
-        gmx_send_double(cr, dest, value_);
-        gmx_send_str(cr, dest, &mutabilityName(mutability_));
-        gmx_send_double(cr, dest, originalValue_);
-        gmx_send_double(cr, dest, uncertainty_);
-        gmx_send_double(cr, dest, originalUncertainty_);
-        gmx_send_int(cr, dest, ntrain_);
-        gmx_send_int(cr, dest, originalNtrain_);
-        gmx_send_double(cr, dest, minimum_);
-        gmx_send_double(cr, dest, maximum_);
-        gmx_send_int(cr, dest, strict_ ? 1 : 0);
+        cr->send_str(dest, &unit_);
+        cr->send_double(dest, value_);
+        cr->send_str(dest, &mutabilityName(mutability_));
+        cr->send_double(dest, originalValue_);
+        cr->send_double(dest, uncertainty_);
+        cr->send_double(dest, originalUncertainty_);
+        cr->send_int(dest, ntrain_);
+        cr->send_int(dest, originalNtrain_);
+        cr->send_double(dest, minimum_);
+        cr->send_double(dest, maximum_);
+        cr->send_int(dest, strict_ ? 1 : 0);
         if (debug)
         {
             fprintf(debug, "Sent most of a parameter\n");
             fflush(debug);
         }
         std::string mname = mutabilityName(mutability_);
-        gmx_send_str(cr, dest, &mname);
+        cr->send_str(dest, &mname);
 
         if (nullptr != debug)
         {
@@ -160,37 +160,37 @@ CommunicationStatus ForceFieldParameter::Send(const t_commrec *cr, int dest) con
     return cs;
 }
 
-CommunicationStatus ForceFieldParameter::Receive(const t_commrec *cr, int src)
+CommunicationStatus ForceFieldParameter::Receive(const CommunicationRecord *cr, int src)
 {
     CommunicationStatus cs;
     cs = gmx_recv_data(cr, src);
     if (CS_OK == cs)
     {
-        gmx_recv_str(cr, src, &unit_);
-        value_               = gmx_recv_double(cr, src);
+        cr->recv_str(src, &unit_);
+        value_               = cr->recv_double(src);
         std::string mutstr;
-        gmx_recv_str(cr, src, &mutstr);
+        cr->recv_str(src, &mutstr);
         Mutability mut;
         if (!nameToMutability(mutstr, &mut))
         {
             GMX_THROW(gmx::InternalError(gmx::formatString("Invalid mutability %s", mutstr.c_str()).c_str()));
         }
         mutability_          = mut;
-        originalValue_       = gmx_recv_double(cr, src);
-        uncertainty_         = gmx_recv_double(cr, src);
-        originalUncertainty_ = gmx_recv_double(cr, src);
-        ntrain_              = gmx_recv_int(cr, src);
-        originalNtrain_      = gmx_recv_int(cr, src);
-        minimum_             = gmx_recv_double(cr, src);
-        maximum_             = gmx_recv_double(cr, src);
-        strict_              = gmx_recv_int(cr, src);
+        originalValue_       = cr->recv_double(src);
+        uncertainty_         = cr->recv_double(src);
+        originalUncertainty_ = cr->recv_double(src);
+        ntrain_              = cr->recv_int(src);
+        originalNtrain_      = cr->recv_int(src);
+        minimum_             = cr->recv_double(src);
+        maximum_             = cr->recv_double(src);
+        strict_              = cr->recv_int(src);
         if (debug)
         {
             fprintf(debug, "Received most of ff param\n");
             fflush(debug);
         }
         std::string mname;
-        gmx_recv_str(cr, src, &mname);
+        cr->recv_str(src, &mname);
         if (!nameToMutability(mname, &mutability_))
         {
             GMX_THROW(gmx::InternalError("Communicating mutability"));
