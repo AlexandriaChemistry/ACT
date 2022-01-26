@@ -39,26 +39,11 @@
 namespace alexandria
 {
 
-/*! \brief
- * Enumerated type holding the result status of communication operations
- *
- * \inpublicapi
- * \ingroup module_alexandria
- */
-enum CommunicationStatus {
-    CS_OK        = 6666,
-    CS_ERROR     = 7777,
-    CS_SEND_DATA = 8888,
-    CS_RECV_DATA = 9999
-};
+    //CommunicationStatus gmx_send_data(const CommunicationRecord *cr, int dest);
 
-const char *cs_name(CommunicationStatus cs);
+    //CommunicationStatus gmx_send_done(const CommunicationRecord *cr, int dest);
 
-CommunicationStatus gmx_send_data(const CommunicationRecord *cr, int dest);
-
-CommunicationStatus gmx_send_done(const CommunicationRecord *cr, int dest);
-
-CommunicationStatus gmx_recv_data(const CommunicationRecord *cr, int src);
+    //CommunicationStatus gmx_recv_data(const CommunicationRecord *cr, int src);
 
 }
 

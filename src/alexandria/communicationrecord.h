@@ -8,9 +8,32 @@
 namespace alexandria
 {
 
+/*! \brief Distinguish the node types in use in ACT
+ */
 enum class NodeType {
-    Master, MiddleMan, Helper
+    //! Master, also known as the Overlord
+    Master,
+    //! The process that mediates contacts and does some calculations too
+    MiddleMan,
+    //! The helper process, only working on low-level calculations
+    Helper
 };
+
+/*! \brief
+ * Enumerated type holding the result status of communication operations
+ *
+ * \inpublicapi
+ * \ingroup module_alexandria
+ */
+enum CommunicationStatus {
+    CS_OK        = 6666,
+    CS_ERROR     = 7777,
+    CS_SEND_DATA = 8888,
+    CS_RECV_DATA = 9999
+};
+
+//! \return A string corresponding to a CommunicationStatus
+const char *cs_name(CommunicationStatus cs);
 
 class CommunicationRecord
 {
@@ -179,6 +202,23 @@ public:
     void sumi_helpers(int nr, 
                       int r[]) const;
 
+    /*********************************************************
+     * Routines to initiate and finalize data transmissions
+     *********************************************************/
+    /*! \brief Initiate sending data to a processor
+     * \param[in] dest The destination processor
+     */
+    CommunicationStatus send_data(int dest) const;
+    
+    /*! \brief Finalize sending data to a processor
+     * \param[in] dest The destination processor
+     */
+    CommunicationStatus send_done(int dest) const;
+
+    /*! \brief Initiate or finalize receiving data from a processor
+     * \param[in] src The source processor
+     */
+    CommunicationStatus recv_data_(int src) const;
 
 };
 

@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020 
+ * Copyright (C) 2014-2022
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -60,39 +60,5 @@ const char *cs_name(CommunicationStatus cs)
     return nullptr;
 };
 
-#define GMX_SEND_DATA 19823
-#define GMX_SEND_DONE -666
-CommunicationStatus gmx_send_data(const CommunicationRecord *cr, int dest)
-{
-    cr->send_int(dest, GMX_SEND_DATA);
-
-    return CS_OK;
-}
-
-CommunicationStatus gmx_send_done(const CommunicationRecord *cr, int dest)
-{
-    cr->send_int(dest, GMX_SEND_DONE);
-
-    return CS_OK;
-}
-
-static CommunicationStatus gmx_recv_data_(const CommunicationRecord *cr, int src, int line)
-{
-    int kk = cr->recv_int(src);
-
-    if ((kk != GMX_SEND_DATA) && (kk != GMX_SEND_DONE))
-    {
-        gmx_fatal(FARGS, "Received %d from src %d in gmx_recv_data (line %d). Was expecting either %d or %d\n.", kk, src, line,
-                  (int)GMX_SEND_DATA, (int)GMX_SEND_DONE);
-    }
-    return CS_OK;
-}
-
-CommunicationStatus gmx_recv_data(const CommunicationRecord *cr, int src)
-{
-    return gmx_recv_data_(cr, src, __LINE__);
-}
-#undef GMX_SEND_DATA
-#undef GMX_SEND_DONE
 
 }

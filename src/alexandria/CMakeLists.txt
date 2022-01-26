@@ -43,7 +43,6 @@ set(ALEXANDRIA_SOURCES
            bayes.cpp
            categories.cpp
            chargemodel.cpp
-           communication.cpp
            communicationrecord.cpp
            composition.cpp
            confighandler.cpp

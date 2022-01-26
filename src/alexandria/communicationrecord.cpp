@@ -314,4 +314,33 @@ void CommunicationRecord::sumi_helpers(int nr,
     }
 }
 
+#define GMX_SEND_DATA 19823
+#define GMX_SEND_DONE -666
+CommunicationStatus CommunicationRecord::send_data(int dest) const
+{
+    send_int(dest, GMX_SEND_DATA);
+
+    return CS_OK;
+}
+
+CommunicationStatus CommunicationRecord::send_done(int dest) const
+{
+    send_int(dest, GMX_SEND_DONE);
+
+    return CS_OK;
+}
+
+CommunicationStatus CommunicationRecord::recv_data_(int src) const
+{
+    int kk = cr->recv_int(src);
+
+    if ((kk != GMX_SEND_DATA) && (kk != GMX_SEND_DONE))
+    {
+        GMX_THROW(gmx::InternalError(gmx::formatString("Received %d from src %d in gmx_recv_data. Was expecting either %d or %d\n.", kk, src, (int)GMX_SEND_DATA, (int)GMX_SEND_DONE).c_str()));
+    }
+    return CS_OK;
+}
+
+#undef GMX_SEND_DATA
+#undef GMX_SEND_DONE
 } // namespace alexandria
