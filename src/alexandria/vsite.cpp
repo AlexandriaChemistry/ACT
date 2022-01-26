@@ -85,7 +85,7 @@ Vsite::Vsite(const std::string &atype,
 CommunicationStatus Vsite::Send(const CommunicationRecord *cr, int dest)
 {
     CommunicationStatus cs;
-    cs = gmx_send_data(cr, dest);
+    cs = cr->send_data(dest);
     if (CS_OK == cs)
     {
         std::string vtype;
@@ -110,7 +110,7 @@ CommunicationStatus Vsite::Send(const CommunicationRecord *cr, int dest)
 CommunicationStatus Vsite::Receive(const CommunicationRecord *cr, int src)
 {
     CommunicationStatus cs;
-    cs = gmx_recv_data(cr, src);
+    cs = cr->recv_data(src);
     if (CS_OK == cs)
     {
         std::string type;

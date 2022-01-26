@@ -227,7 +227,7 @@ CommunicationStatus Experiment::Receive(const CommunicationRecord *cr, int src)
     CommunicationStatus cs;
     std::string         jobtype;
 
-    cs = gmx_recv_data(cr, src);
+    cs = cr->recv_data(src);
     if (CS_OK == cs)
     {
         dataSource_ = static_cast<DataSource>(cr->recv_int(src));
@@ -340,7 +340,7 @@ CommunicationStatus Experiment::Send(const CommunicationRecord *cr, int dest) co
     CommunicationStatus cs;
     std::string         jobtype;
 
-    cs = gmx_send_data(cr, dest);
+    cs = cr->send_data(dest);
     if (CS_OK == cs)
     {
         cr->send_int(dest, static_cast<int>(dataSource_));

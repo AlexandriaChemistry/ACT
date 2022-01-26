@@ -218,7 +218,7 @@ public:
     /*! \brief Initiate or finalize receiving data from a processor
      * \param[in] src The source processor
      */
-    CommunicationStatus recv_data_(int src) const;
+    CommunicationStatus recv_data(int src) const;
 
 };
 

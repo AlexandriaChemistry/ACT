@@ -90,7 +90,7 @@ CommunicationStatus TopologyEntry::Send(const CommunicationRecord *cr, int dest)
 {
     CommunicationStatus cs;
 
-    cs = gmx_send_data(cr, dest);
+    cs = cr->send_data(dest);
     if (CS_OK == cs)
     {
         cr->send_int(dest, indices_.size());
@@ -116,7 +116,7 @@ CommunicationStatus TopologyEntry::Receive(const CommunicationRecord *cr, int sr
 {
     CommunicationStatus cs;
 
-    cs = gmx_recv_data(cr, src);
+    cs = cr->recv_data(src);
     if (CS_OK == cs)
     {
         int nai = cr->recv_int(src);

@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
  
-#include "communication.h"
+#include "communicationrecord.h"
 
 namespace alexandria
 {

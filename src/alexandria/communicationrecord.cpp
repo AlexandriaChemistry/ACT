@@ -25,6 +25,8 @@
  */
 #include "communicationrecord.h"
 
+#include <map>
+
 #include "mpi.h"
 
 #include "gromacs/gmxlib/network.h"
@@ -33,6 +35,19 @@
 
 namespace alexandria
 {
+
+std::map<CommunicationStatus, const char*> csToString = {
+    { CS_OK,        "Communication OK"        },
+    { CS_ERROR,     "Communication Error"     },
+    { CS_SEND_DATA, "Communication sent data" },
+    { CS_RECV_DATA, "Communication OK"        }
+};
+
+const char *cs_name(CommunicationStatus cs)
+{
+    return csToString[cs];
+};
+
 CommunicationRecord::CommunicationRecord()
 {
     cr_   = init_commrec();
@@ -330,9 +345,9 @@ CommunicationStatus CommunicationRecord::send_done(int dest) const
     return CS_OK;
 }
 
-CommunicationStatus CommunicationRecord::recv_data_(int src) const
+CommunicationStatus CommunicationRecord::recv_data(int src) const
 {
-    int kk = cr->recv_int(src);
+    int kk = recv_int(src);
 
     if ((kk != GMX_SEND_DATA) && (kk != GMX_SEND_DONE))
     {

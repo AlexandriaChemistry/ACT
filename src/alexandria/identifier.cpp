@@ -39,7 +39,6 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/stringutil.h"
 
-#include "communication.h"
 #include "communicationrecord.h"
 #include "stringutil.h"
 

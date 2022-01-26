@@ -73,7 +73,7 @@ CommunicationStatus CalcAtom::Receive(const CommunicationRecord *cr, int src)
     CommunicationStatus cs;
     int                 Ncharge;
 
-    cs = gmx_recv_data(cr, src);
+    cs = cr->recv_data(src);
     if (CS_OK == cs)
     {
         cr->recv_str(src, &name_);
@@ -106,7 +106,7 @@ CommunicationStatus CalcAtom::Send(const CommunicationRecord *cr, int dest) cons
 {
     CommunicationStatus  cs;
 
-    cs = gmx_send_data(cr, dest);
+    cs = cr->send_data(dest);
     if (CS_OK == cs)
     {
         cr->send_str(dest, &name_);
@@ -138,7 +138,7 @@ CommunicationStatus AtomNum::Send(const CommunicationRecord *cr, int dest) const
 {
     CommunicationStatus cs;
 
-    cs = gmx_send_data(cr, dest);
+    cs = cr->send_data(dest);
     if (CS_OK == cs)
     {
         cr->send_str(dest, &catom_);
@@ -157,7 +157,7 @@ CommunicationStatus AtomNum::Receive(const CommunicationRecord *cr, int src)
 {
     CommunicationStatus cs;
 
-    cs = gmx_recv_data(cr, src);
+    cs = cr->recv_data(src);
     if (CS_OK == cs)
     {
         cr->recv_str(src, &catom_);
@@ -258,7 +258,7 @@ int MolecularComposition::CountAtoms() const
 
 CommunicationStatus MolecularComposition::Send(const CommunicationRecord *cr, int dest) const
 {
-    CommunicationStatus cs = gmx_send_data(cr, dest);
+    CommunicationStatus cs = cr->send_data(dest);
     if (CS_OK == cs)
     {
         cr->send_int(dest, atomnum_.size());
@@ -284,7 +284,7 @@ CommunicationStatus MolecularComposition::Send(const CommunicationRecord *cr, in
 CommunicationStatus MolecularComposition::Receive(const CommunicationRecord *cr, int src)
 {
     int                 Natomnum;
-    CommunicationStatus cs = gmx_recv_data(cr, src);
+    CommunicationStatus cs = cr->recv_data(src);
     if (CS_OK == cs)
     {
         Natomnum = cr->recv_int(src);

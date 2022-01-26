@@ -47,7 +47,6 @@
 namespace alexandria
 {
 
-
 Bosque::Bosque(const std::string &bosque, double polarizability)
     :
       bosque_(bosque),
@@ -57,7 +56,7 @@ Bosque::Bosque(const std::string &bosque, double polarizability)
 CommunicationStatus Bosque::Send(const CommunicationRecord *cr, int dest)
 {
     CommunicationStatus cs;
-    cs = gmx_send_data(cr, dest);
+    cs = cr->send_data(dest);
     if (CS_OK == cs)
     {
         cr->send_str(dest, &bosque_);
@@ -75,7 +74,7 @@ CommunicationStatus Bosque::Send(const CommunicationRecord *cr, int dest)
 CommunicationStatus Bosque::Receive(const CommunicationRecord *cr, int src)
 {
     CommunicationStatus cs;
-    cs = gmx_recv_data(cr, src);
+    cs = cr->recv_data(src);
     if (CS_OK == cs)
     {
         cr->recv_str(src, &bosque_);
@@ -106,7 +105,7 @@ Miller::Miller(const std::string &miller,
 CommunicationStatus Miller::Send(const CommunicationRecord *cr, int dest)
 {
     CommunicationStatus cs;
-    cs = gmx_send_data(cr, dest);
+    cs = cr->send_data(dest);
     if (CS_OK == cs)
     {
         cr->send_str(dest, &miller_);
@@ -129,7 +128,7 @@ CommunicationStatus Miller::Send(const CommunicationRecord *cr, int dest)
 CommunicationStatus Miller::Receive(const CommunicationRecord *cr, int src)
 {
     CommunicationStatus cs;
-    cs = gmx_recv_data(cr, src);
+    cs = cr->recv_data(src);
     if (CS_OK == cs)
     {
         cr->recv_str(src, &miller_);
@@ -160,7 +159,7 @@ Symcharges::Symcharges(const std::string &central,
 CommunicationStatus Symcharges::Send(const CommunicationRecord *cr, int dest)
 {
     CommunicationStatus cs;
-    cs = gmx_send_data(cr, dest);
+    cs = cr->send_data(dest);
     if (CS_OK == cs)
     {
         cr->send_str(dest, &central_);
@@ -180,7 +179,7 @@ CommunicationStatus Symcharges::Send(const CommunicationRecord *cr, int dest)
 CommunicationStatus Symcharges::Receive(const CommunicationRecord *cr, int src)
 {
     CommunicationStatus cs;
-    cs = gmx_recv_data(cr, src);
+    cs = cr->recv_data(src);
     if (CS_OK == cs)
     {
         cr->recv_str(src, &central_);

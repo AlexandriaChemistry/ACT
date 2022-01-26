@@ -337,7 +337,7 @@ void Poldata::addSymcharges(const std::string &central,
 CommunicationStatus Poldata::Send(const CommunicationRecord *cr, int dest)
 {
     CommunicationStatus cs;
-    cs = gmx_send_data(cr, dest);
+    cs = cr->send_data(dest);
     if (CS_OK == cs)
     {
         cr->send_str(dest, &filename_);
@@ -410,7 +410,7 @@ CommunicationStatus Poldata::Send(const CommunicationRecord *cr, int dest)
 CommunicationStatus Poldata::Receive(const CommunicationRecord *cr, int src)
 {
     CommunicationStatus cs;
-    cs = gmx_recv_data(cr, src);
+    cs = cr->recv_data(src);
     if (CS_OK == cs)
     {
         cr->recv_str(src, &filename_);
@@ -504,7 +504,7 @@ CommunicationStatus Poldata::Receive(const CommunicationRecord *cr, int src)
 
 void Poldata::sendParticles(const CommunicationRecord *cr, int dest)
 {
-    auto cs = gmx_send_data(cr, dest);
+    auto cs = cr->send_data(dest);
     if (CS_OK == cs)
     {
         if (nullptr != debug)
@@ -528,13 +528,13 @@ void Poldata::sendParticles(const CommunicationRecord *cr, int dest)
         }
         cr->send_int(dest, 0);
     }
-    gmx_send_done(cr, dest);
+    cr->send_done(dest);
 }
 
 
 void Poldata::receiveParticles(const CommunicationRecord *cr, int src)
 {
-    auto cs = gmx_recv_data(cr, src);
+    auto cs = cr->recv_data(src);
     if (CS_OK == cs)
     {
         /* Receive Particle info */
@@ -555,7 +555,7 @@ void Poldata::receiveParticles(const CommunicationRecord *cr, int src)
             fprintf(debug, "Could not update eem properties on node %d\n", cr->rank());
         }
     }
-    gmx_recv_data(cr, src);
+    cr->recv_data(src);
 }
 
 /* Force Field Parameter Lists */
@@ -568,7 +568,7 @@ static std::vector<InteractionType> eemlist =
 
 void Poldata::sendEemprops(const CommunicationRecord *cr, int dest)
 {
-    auto cs = gmx_send_data(cr, dest);
+    auto cs = cr->send_data(dest);
     if (CS_OK == cs)
     {
         if (nullptr != debug)
@@ -589,12 +589,12 @@ void Poldata::sendEemprops(const CommunicationRecord *cr, int dest)
             }
         }
     }
-    gmx_send_done(cr, dest);
+    cr->send_done(dest);
 }
 
 void Poldata::receiveEemprops(const CommunicationRecord *cr, int src)
 {
-    auto cs = gmx_recv_data(cr, src);
+    auto cs = cr->recv_data(src);
     if (CS_OK == cs)
     {
         /* Receive EEMprops and Bond Corrections */
@@ -621,7 +621,7 @@ void Poldata::receiveEemprops(const CommunicationRecord *cr, int src)
             fprintf(debug, "Could not update eem properties on node %d\n", cr->rank());
         }
     }
-    gmx_recv_data(cr, src);
+    cr->recv_data(src);
 }
 
 void Poldata::sendToHelpers(const CommunicationRecord *cr)
@@ -632,7 +632,7 @@ void Poldata::sendToHelpers(const CommunicationRecord *cr)
     {
         for (auto &dest : cr->helpers())
         {
-            auto cs = gmx_send_data(cr, dest);
+            auto cs = cr->send_data(dest);
             if (CS_OK == cs)
             {
                 if (nullptr != debug)
@@ -641,12 +641,12 @@ void Poldata::sendToHelpers(const CommunicationRecord *cr)
                 }
                 Send(cr, dest);
             }
-            gmx_send_done(cr, dest);
+            cr->send_done(dest);
         }
     }
     else if (cr->isHelper())
     {
-        auto cs = gmx_recv_data(cr, src);
+        auto cs = cr->recv_data(src);
         if (CS_OK == cs)
         {
             auto cs = Receive(cr, src);
@@ -665,7 +665,7 @@ void Poldata::sendToHelpers(const CommunicationRecord *cr)
                 }
             }
         }
-        gmx_recv_data(cr, src);
+        cr->recv_data(src);
     }
 }
 

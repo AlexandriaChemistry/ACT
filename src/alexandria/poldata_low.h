@@ -36,15 +36,10 @@
 #include <string>
 #include <vector>
 
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 
-#include "communication.h"
-//#include "gentop_vsite.h"
-//#include "identifier.h"
-//#include "mutability.h"
-//#include "plistwrapper.h"
+#include "communicationrecord.h"
 
 struct t_excls;
 struct t_symtab;

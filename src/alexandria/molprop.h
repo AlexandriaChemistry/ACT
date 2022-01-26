@@ -43,7 +43,7 @@
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/utility/real.h"
 
-#include "communication.h"
+#include "communicationrecord.h"
 #include "composition.h"
 #include "experiment.h"
 #include "molpropobservable.h"

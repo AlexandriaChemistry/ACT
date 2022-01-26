@@ -38,7 +38,6 @@
 
 #include "gromacs/gpu_utils/hostallocator.h"
 
-#include "communication.h"
 #include "communicationrecord.h"
 #include "identifier.h"
 

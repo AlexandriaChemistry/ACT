@@ -37,7 +37,7 @@
 
 #include "gromacs/mdtypes/commrec.h"
 
-#include "communication.h"
+#include "communicationrecord.h"
 #include "interactiontype.h"
 
 namespace alexandria

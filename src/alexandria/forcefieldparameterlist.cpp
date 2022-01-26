@@ -205,7 +205,7 @@ void ForceFieldParameterList::dump(FILE *fp) const
 CommunicationStatus ForceFieldParameterList::Send(const CommunicationRecord *cr, int dest) const
 {
     CommunicationStatus cs;
-    cs = gmx_send_data(cr, dest);
+    cs = cr->send_data(dest);
     if (CS_OK == cs)
     {
         cr->send_str(dest, &function_);
@@ -248,7 +248,7 @@ CommunicationStatus ForceFieldParameterList::Send(const CommunicationRecord *cr,
 CommunicationStatus ForceFieldParameterList::Receive(const CommunicationRecord *cr, int src)
 {
     CommunicationStatus cs;
-    cs = gmx_recv_data(cr, src);
+    cs = cr->recv_data(src);
     if (CS_OK == cs)
     {
         cr->recv_str(src, &function_);

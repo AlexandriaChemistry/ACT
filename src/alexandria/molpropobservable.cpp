@@ -113,7 +113,7 @@ CommunicationStatus GenericProperty::Send(const CommunicationRecord *cr, int des
 {
     CommunicationStatus cs;
 
-    cs = gmx_send_data(cr, dest);
+    cs = cr->send_data(dest);
     if (CS_OK == cs)
     {
         std::string type(mpo_name(mpo_));
@@ -133,7 +133,7 @@ CommunicationStatus GenericProperty::Receive(const CommunicationRecord *cr, int 
 {
     CommunicationStatus cs;
 
-    cs = gmx_recv_data(cr, src);
+    cs = cr->recv_data(src);
     if (CS_OK == cs)
     {
         std::string type;
@@ -160,7 +160,7 @@ CommunicationStatus MolecularDipole::Send(const CommunicationRecord *cr, int des
     cs = GenericProperty::Send(cr, dest);
     if (CS_OK == cs)
     {
-        cs = gmx_send_data(cr, dest);
+        cs = cr->send_data(dest);
     }
     if (CS_OK == cs)
     {
@@ -187,7 +187,7 @@ CommunicationStatus MolecularDipole::Receive(const CommunicationRecord *cr, int 
     cs = GenericProperty::Receive(cr, src);
     if (CS_OK == cs)
     {
-        cs = gmx_recv_data(cr, src);
+        cs = cr->recv_data(src);
     }
     if (CS_OK == cs)
     {
@@ -216,7 +216,7 @@ CommunicationStatus MolecularQuadrupole::Send(const CommunicationRecord *cr, int
     cs = GenericProperty::Send(cr, dest);
     if (CS_OK == cs)
     {
-        cs = gmx_send_data(cr, dest);
+        cs = cr->send_data(dest);
     }
     if (CS_OK == cs)
     {
@@ -243,7 +243,7 @@ CommunicationStatus MolecularQuadrupole::Receive(const CommunicationRecord *cr, 
     cs = GenericProperty::Receive(cr, src);
     if (CS_OK == cs)
     {
-        cs = gmx_recv_data(cr, src);
+        cs = cr->recv_data(src);
     }
     if (CS_OK == cs)
     {
@@ -283,7 +283,7 @@ CommunicationStatus MolecularPolarizability::Send(const CommunicationRecord *cr,
     cs = GenericProperty::Send(cr, dest);
     if (CS_OK == cs)
     {
-        cs = gmx_send_data(cr, dest);
+        cs = cr->send_data(dest);
     }
     if (CS_OK == cs)
     {
@@ -297,7 +297,7 @@ CommunicationStatus MolecularPolarizability::Send(const CommunicationRecord *cr,
     }
     if (CS_OK == cs)
     {
-        cs = gmx_send_data(cr, dest);
+        cs = cr->send_data(dest);
     }
     if (CS_OK == cs)
     {
@@ -319,7 +319,7 @@ CommunicationStatus MolecularPolarizability::Receive(const CommunicationRecord *
     cs = GenericProperty::Receive(cr, src);
     if (CS_OK == cs)
     {
-        cs = gmx_recv_data(cr, src);
+        cs = cr->recv_data(src);
     }
     if (CS_OK == cs)
     {
@@ -333,7 +333,7 @@ CommunicationStatus MolecularPolarizability::Receive(const CommunicationRecord *
     }
     if (CS_OK == cs)
     {
-        cs = gmx_recv_data(cr, src);
+        cs = cr->recv_data(src);
     }
     if (CS_OK == cs)
     {
@@ -355,7 +355,7 @@ CommunicationStatus MolecularEnergy::Receive(const CommunicationRecord *cr, int 
     cs = GenericProperty::Receive(cr, src);
     if (CS_OK == cs)
     {
-        cs = gmx_recv_data(cr, src);
+        cs = cr->recv_data(src);
     }
     if (CS_OK == cs)
     {
@@ -377,7 +377,7 @@ CommunicationStatus MolecularEnergy::Send(const CommunicationRecord *cr, int des
     cs = GenericProperty::Send(cr, dest);
     if (CS_OK == cs)
     {
-        cs = gmx_send_data(cr, dest);
+        cs = cr->send_data(dest);
     }
     if (CS_OK == cs)
     {
@@ -396,7 +396,7 @@ CommunicationStatus ElectrostaticPotential::Receive(const CommunicationRecord *c
 {
     CommunicationStatus cs;
 
-    cs = gmx_recv_data(cr, src);
+    cs = cr->recv_data(src);
     if (CS_OK == cs)
     {
         cr->recv_str(src, &xyzUnit_);
@@ -419,7 +419,7 @@ CommunicationStatus ElectrostaticPotential::Send(const CommunicationRecord *cr, 
 {
     CommunicationStatus cs;
 
-    cs = gmx_send_data(cr, dest);
+    cs = cr->send_data(dest);
     if (CS_OK == cs)
     {
         cr->send_str(dest, &xyzUnit_);

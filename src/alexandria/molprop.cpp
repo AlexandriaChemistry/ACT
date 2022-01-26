@@ -41,7 +41,6 @@
 #include "gromacs/math/utilities.h"
 #include "gromacs/utility/fatalerror.h"
 
-#include "communication.h"
 #include "communicationrecord.h"
 #include "composition.h"
 #include "units.h"
@@ -646,7 +645,7 @@ CommunicationStatus MolProp::Send(const CommunicationRecord *cr, int dest) const
     ExperimentIterator                 ei;
 
     /* Generic stuff */
-    cs = gmx_send_data(cr, dest);
+    cs = cr->send_data(dest);
     if (CS_OK == cs)
     {
         cr->send_double(dest, mass_);
@@ -678,7 +677,7 @@ CommunicationStatus MolProp::Send(const CommunicationRecord *cr, int dest) const
         {
             for (auto &si : categoryConst())
             {
-                cs = gmx_send_data(cr, dest);
+                cs = cr->send_data(dest);
                 if (CS_OK == cs)
                 {
                     std::string sii = si.c_str();
@@ -720,7 +719,7 @@ CommunicationStatus MolProp::Receive(const CommunicationRecord *cr, int src)
     int                 Nbond, Ncategory, Nexper;
 
     /* Generic stuff */
-    cs = gmx_recv_data(cr, src);
+    cs = cr->recv_data(src);
     if (CS_OK == cs)
     {
         //! Receive mass and more
@@ -756,7 +755,7 @@ CommunicationStatus MolProp::Receive(const CommunicationRecord *cr, int src)
         //! Receive Categories
         for (int n = 0; (CS_OK == cs) && (n < Ncategory); n++)
         {
-            cs = gmx_recv_data(cr, src);
+            cs = cr->recv_data(src);
             if (CS_OK == cs)
             {
                 std::string str;
