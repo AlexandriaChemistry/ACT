@@ -31,6 +31,7 @@
 #ifndef ACT_GA_GENEPOOL_H
 #define ACT_GA_GENEPOOL_H
 
+#include <algorithm>
 #include <vector>
 
 #include "gromacs/utility/gmxassert.h"

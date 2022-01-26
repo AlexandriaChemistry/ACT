@@ -1,6 +1,7 @@
 #ifndef ACT_COMMUNICATIONRECORD_H
 #define ACT_COMMUNICATIONRECORD_H
 
+#include <string>
 #include <vector>
 
 #include "gromacs/mdtypes/commrec.h"

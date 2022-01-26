@@ -63,7 +63,7 @@ void TopologyEntry::renumberAtoms(const std::vector<int> &renumber)
 
 void TopologyEntry::setBondOrder(size_t ai, double bo)
 {
-    if (ai < 0 || ai >= bondOrder_.size())
+    if (ai >= bondOrder_.size())
     {
         GMX_THROW(gmx::InvalidInputError("Incorrect index"));
     }

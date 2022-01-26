@@ -255,7 +255,7 @@ CommunicationStatus Experiment::Receive(const CommunicationRecord *cr, int src)
             int  ngp = cr->recv_int(src);
             for (int n = 0; n < ngp; n++)
             {
-                GenericProperty *gp;
+                GenericProperty *gp = nullptr;
                 switch (mpo)
                 {
                 case MolPropObservable::DIPOLE:
@@ -296,8 +296,11 @@ CommunicationStatus Experiment::Receive(const CommunicationRecord *cr, int src)
                         gmx_fatal(FARGS, "Don't know what to do...");
                     }
                 }
-                gp->Receive(cr, src);
-                addProperty(mpo, gp);
+                if (gp)
+                {
+                    gp->Receive(cr, src);
+                    addProperty(mpo, gp);
+                }
 
             }
         } 
