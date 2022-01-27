@@ -204,9 +204,8 @@ void ForceFieldParameterList::dump(FILE *fp) const
 
 CommunicationStatus ForceFieldParameterList::Send(const CommunicationRecord *cr, int dest) const
 {
-    CommunicationStatus cs;
-    cs = cr->send_data(dest);
-    if (CS_OK == cs)
+    CommunicationStatus cs = CommunicationStatus::OK;
+    if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
     {
         cr->send_str(dest, &function_);
         std::string canSwapString = canSwapToString(canSwap_);
@@ -222,14 +221,14 @@ CommunicationStatus ForceFieldParameterList::Send(const CommunicationRecord *cr,
         for(auto const &x : parameters_)
         {
             cs = x.first.Send(cr, dest);
-            if (CS_OK == cs)
+            if (CommunicationStatus::OK == cs)
             {
                 cr->send_int(dest, x.second.size());
                 for(auto const &p : x.second)
                 {
                     cr->send_str(dest, &p.first);
                     cs = p.second.Send(cr, dest);
-                    if (CS_OK != cs)
+                    if (CommunicationStatus::OK != cs)
                     {
                         break;
                     }
@@ -247,9 +246,8 @@ CommunicationStatus ForceFieldParameterList::Send(const CommunicationRecord *cr,
 
 CommunicationStatus ForceFieldParameterList::Receive(const CommunicationRecord *cr, int src)
 {
-    CommunicationStatus cs;
-    cs = cr->recv_data(src);
-    if (CS_OK == cs)
+    CommunicationStatus cs = CommunicationStatus::OK;
+    if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
     {
         cr->recv_str(src, &function_);
         std::string canSwapString;
@@ -281,7 +279,7 @@ CommunicationStatus ForceFieldParameterList::Receive(const CommunicationRecord *
                 fprintf(debug, "Done receiving key %s\n", key.id().c_str());
                 fflush(debug);
             }
-            if (CS_OK == cs)
+            if (CommunicationStatus::OK == cs)
             {
                 int ntype = cr->recv_int(src);
                 if (debug)
@@ -295,7 +293,7 @@ CommunicationStatus ForceFieldParameterList::Receive(const CommunicationRecord *
                     cr->recv_str(src, &type);
                     ForceFieldParameter p;
                     cs = p.Receive(cr, src);
-                    if (CS_OK == cs)
+                    if (CommunicationStatus::OK == cs)
                     {
                         parameters_[key].insert({type, p});
                         if (debug)

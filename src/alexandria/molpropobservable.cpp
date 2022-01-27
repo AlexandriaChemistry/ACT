@@ -111,10 +111,9 @@ bool stringToMolPropObservable(const std::string &str, MolPropObservable *mpo)
 
 CommunicationStatus GenericProperty::Send(const CommunicationRecord *cr, int dest) const
 {
-    CommunicationStatus cs;
+    CommunicationStatus cs = CommunicationStatus::OK;
 
-    cs = cr->send_data(dest);
-    if (CS_OK == cs)
+    if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
     {
         std::string type(mpo_name(mpo_));
         cr->send_str(dest, &type);
@@ -131,10 +130,9 @@ CommunicationStatus GenericProperty::Send(const CommunicationRecord *cr, int des
 
 CommunicationStatus GenericProperty::Receive(const CommunicationRecord *cr, int src)
 {
-    CommunicationStatus cs;
+    CommunicationStatus cs = CommunicationStatus::OK;
 
-    cs = cr->recv_data(src);
-    if (CS_OK == cs)
+    if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
     {
         std::string type;
         cr->recv_str(src, &type);
@@ -158,11 +156,8 @@ CommunicationStatus MolecularDipole::Send(const CommunicationRecord *cr, int des
     CommunicationStatus cs;
 
     cs = GenericProperty::Send(cr, dest);
-    if (CS_OK == cs)
-    {
-        cs = cr->send_data(dest);
-    }
-    if (CS_OK == cs)
+    if (CommunicationStatus::OK == cs &&
+        CommunicationStatus::SEND_DATA == cr->send_data(dest))
     {
         cr->send_int(dest, mu_.size());
         for(auto &m : mu_)
@@ -185,11 +180,8 @@ CommunicationStatus MolecularDipole::Receive(const CommunicationRecord *cr, int 
     CommunicationStatus cs;
 
     cs = GenericProperty::Receive(cr, src);
-    if (CS_OK == cs)
-    {
-        cs = cr->recv_data(src);
-    }
-    if (CS_OK == cs)
+    if (CommunicationStatus::OK == cs &&
+        CommunicationStatus::RECV_DATA == cr->recv_data(src))
     {
         mu_.clear();
         size_t N = cr->recv_int(src);
@@ -214,11 +206,8 @@ CommunicationStatus MolecularQuadrupole::Send(const CommunicationRecord *cr, int
     CommunicationStatus cs;
 
     cs = GenericProperty::Send(cr, dest);
-    if (CS_OK == cs)
-    {
-        cs = cr->send_data(dest);
-    }
-    if (CS_OK == cs)
+    if (CommunicationStatus::OK == cs &&
+        CommunicationStatus::SEND_DATA == cr->send_data(dest))
     {
         for(int m = 0; m < DIM; m++)
         {
@@ -241,11 +230,8 @@ CommunicationStatus MolecularQuadrupole::Receive(const CommunicationRecord *cr, 
     CommunicationStatus cs;
 
     cs = GenericProperty::Receive(cr, src);
-    if (CS_OK == cs)
-    {
-        cs = cr->recv_data(src);
-    }
-    if (CS_OK == cs)
+    if (CommunicationStatus::OK == cs &&
+        CommunicationStatus::RECV_DATA == cr->recv_data(src))
     {
         for(int m = 0; m < DIM; m++)
         {
@@ -281,11 +267,8 @@ CommunicationStatus MolecularPolarizability::Send(const CommunicationRecord *cr,
     CommunicationStatus cs;
 
     cs = GenericProperty::Send(cr, dest);
-    if (CS_OK == cs)
-    {
-        cs = cr->send_data(dest);
-    }
-    if (CS_OK == cs)
+    if (CommunicationStatus::OK == cs &&
+        CommunicationStatus::SEND_DATA == cr->send_data(dest))
     {
         for(int m = 0; m < DIM; m++)
         {
@@ -295,11 +278,8 @@ CommunicationStatus MolecularPolarizability::Send(const CommunicationRecord *cr,
             }
         }
     }
-    if (CS_OK == cs)
-    {
-        cs = cr->send_data(dest);
-    }
-    if (CS_OK == cs)
+    if (CommunicationStatus::OK == cs &&
+        CommunicationStatus::SEND_DATA == cr->send_data(dest))
     {
         cr->send_double(dest, average_);
         cr->send_double(dest, error_);
@@ -317,11 +297,8 @@ CommunicationStatus MolecularPolarizability::Receive(const CommunicationRecord *
     CommunicationStatus cs;
 
     cs = GenericProperty::Receive(cr, src);
-    if (CS_OK == cs)
-    {
-        cs = cr->recv_data(src);
-    }
-    if (CS_OK == cs)
+    if (CommunicationStatus::OK == cs &&
+        CommunicationStatus::RECV_DATA == cr->recv_data(src))
     {
         for(int m = 0; m < DIM; m++)
         {
@@ -331,11 +308,8 @@ CommunicationStatus MolecularPolarizability::Receive(const CommunicationRecord *
             }
         }
     }
-    if (CS_OK == cs)
-    {
-        cs = cr->recv_data(src);
-    }
-    if (CS_OK == cs)
+    if (CommunicationStatus::OK == cs &&
+        CommunicationStatus::RECV_DATA == cr->recv_data(src))
     {
         average_ = cr->recv_double(src);
         error_   = cr->recv_double(src);
@@ -353,11 +327,8 @@ CommunicationStatus MolecularEnergy::Receive(const CommunicationRecord *cr, int 
     CommunicationStatus cs;
 
     cs = GenericProperty::Receive(cr, src);
-    if (CS_OK == cs)
-    {
-        cs = cr->recv_data(src);
-    }
-    if (CS_OK == cs)
+    if (CommunicationStatus::OK == cs &&
+        CommunicationStatus::RECV_DATA == cr->recv_data(src))
     {
         average_ = cr->recv_double(src);
         error_   = cr->recv_double(src);
@@ -375,11 +346,8 @@ CommunicationStatus MolecularEnergy::Send(const CommunicationRecord *cr, int des
     CommunicationStatus cs;
 
     cs = GenericProperty::Send(cr, dest);
-    if (CS_OK == cs)
-    {
-        cs = cr->send_data(dest);
-    }
-    if (CS_OK == cs)
+    if (CommunicationStatus::OK == cs &&
+        CommunicationStatus::SEND_DATA == cr->send_data(dest))
     {
         cr->send_double(dest, average_);
         cr->send_double(dest, error_);
@@ -394,10 +362,9 @@ CommunicationStatus MolecularEnergy::Send(const CommunicationRecord *cr, int des
 
 CommunicationStatus ElectrostaticPotential::Receive(const CommunicationRecord *cr, int src)
 {
-    CommunicationStatus cs;
+    CommunicationStatus cs = CommunicationStatus::OK;
 
-    cs = cr->recv_data(src);
-    if (CS_OK == cs)
+    if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
     {
         cr->recv_str(src, &xyzUnit_);
         cr->recv_str(src, &vUnit_);
@@ -417,10 +384,9 @@ CommunicationStatus ElectrostaticPotential::Receive(const CommunicationRecord *c
 
 CommunicationStatus ElectrostaticPotential::Send(const CommunicationRecord *cr, int dest) const
 {
-    CommunicationStatus cs;
+    CommunicationStatus cs = CommunicationStatus::OK;
 
-    cs = cr->send_data(dest);
-    if (CS_OK == cs)
+    if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
     {
         cr->send_str(dest, &xyzUnit_);
         cr->send_str(dest, &vUnit_);

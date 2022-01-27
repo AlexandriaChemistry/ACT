@@ -88,10 +88,9 @@ Bond Bond::swap() const
 
 CommunicationStatus TopologyEntry::Send(const CommunicationRecord *cr, int dest) const
 {
-    CommunicationStatus cs;
+    CommunicationStatus cs = CommunicationStatus::OK;
 
-    cs = cr->send_data(dest);
-    if (CS_OK == cs)
+    if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
     {
         cr->send_int(dest, indices_.size());
         for(auto &ai : indices_)
@@ -114,10 +113,9 @@ CommunicationStatus TopologyEntry::Send(const CommunicationRecord *cr, int dest)
 
 CommunicationStatus TopologyEntry::Receive(const CommunicationRecord *cr, int src)
 {
-    CommunicationStatus cs;
+    CommunicationStatus cs = CommunicationStatus::OK;
 
-    cs = cr->recv_data(src);
-    if (CS_OK == cs)
+    if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
     {
         int nai = cr->recv_int(src);
         for (int i=0; i < nai; i++)

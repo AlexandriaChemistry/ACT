@@ -59,34 +59,31 @@ double ACMFitnessComputer::calcDeviation(std::vector<double> *params,
     // Send / receive parameters
     std::vector<double> *myparams;
     auto cr = sii_->commRec();
-    if (cr->isMiddleMan())
-    {
-        if (cr->isParallel() && calcDev != CalcDev::Master)
-        {
-            // Send only to my helpers
-            for (auto &dest : cr->helpers())
-            {
-                cr->send_int(dest, static_cast<int>(calcDev));
-                cr->send_int(dest, static_cast<int>(ims));
-                cr->send_double_vector(dest, params);
-                sii_->poldata()->sendEemprops(cr, dest);
-                sii_->poldata()->sendParticles(cr, dest);
-            }
-        }
-        myparams = params;
-    }
-    else if (!cr->isMaster())
+    if (cr->isHelper())
     {
         // If we have e.g. 1 overlord and 3 middlemen with 1 helper each, we have
         // O M H M H M H. Now who is my middleman?
         // Do integer division, rounding down, the multiply again.
-        int src = cr->middleManOrdinal();
+        int src = cr->superior();
         calcDev  = static_cast<CalcDev>(cr->recv_int(src));
         ims      = static_cast<iMolSelect>(cr->recv_int(src));
         myparams = new std::vector<double>;
         cr->recv_double_vector(src, myparams);
         sii_->poldata()->receiveEemprops(cr, src);
         sii_->poldata()->receiveParticles(cr, src);
+    }
+    else if (calcDev != CalcDev::Master)
+    {
+        // Send only to my helpers
+        for (auto &dest : cr->helpers())
+        {
+            cr->send_int(dest, static_cast<int>(calcDev));
+            cr->send_int(dest, static_cast<int>(ims));
+            cr->send_double_vector(dest, params);
+            sii_->poldata()->sendEemprops(cr, dest);
+            sii_->poldata()->sendParticles(cr, dest);
+        }
+        myparams = params;
     }
 
     // If final call, return -1

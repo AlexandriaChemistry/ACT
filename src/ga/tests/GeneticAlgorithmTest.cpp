@@ -219,19 +219,19 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
 
 TEST_F (GeneticAlgorithmTest, EmptyPop)
 {
-    GMX_MPI_TEST(3);    
+    GMX_MPI_TEST(3);
     testIt(0, 0, 0.1, false, 1, 1, true, { "sigma", "alpha" }, 1993);
 }
 
 TEST_F (GeneticAlgorithmTest, PopFour)
 {
-    GMX_MPI_TEST(3);    
+    GMX_MPI_TEST(3);
     testIt(0, 4, 0.1, false, 1, 1, true, { "epsilon", "gamma" }, 1993);
 }
 
 TEST_F (GeneticAlgorithmTest, PopOneMCMC)
 {
-    GMX_MPI_TEST(2);    
+    GMX_MPI_TEST(3);
     testIt(0, 1, 0.1, false, 1, 1, false, { "epsilon", "gamma" }, 1993);
 }
 

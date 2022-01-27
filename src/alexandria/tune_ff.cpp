@@ -263,8 +263,6 @@ void OptACM::initMaster(const std::string &outputFile)
     ga::Mutator *mutator;
     if (gach_.optimizer() == OptimizerAlg::GA)
     {
-        // Create the "ind0" directory
-        system("mkdir ind0");
         mutator = new alexandria::PercentMutator(sii_, gach_.percent());
     }
     else
@@ -326,10 +324,21 @@ bool OptACM::runMaster(bool        optimize,
         // Do sensitivity analysis only on the training set
         mut->sensitivityAnalysis(ga_->bestGenomePtr(), iMolSelect::Train);
     }
-    // Stop the middlemen
-    for(auto &dest : commRec_.helpers())
+    // Stop the middlemen ...
+    if (commRec_.nmiddlemen() > 0)
     {
-        commRec_.send_int(dest, 0);
+        for(auto &dest : commRec_.middlemen())
+        {
+            commRec_.send_done(dest);
+        }
+    }
+    else
+    {
+        // ... or the helpers if there are no middlemen.
+        for(auto &dest : commRec_.helpers())
+        {
+            commRec_.send_done(dest);
+        }
     }
     if (gach_.optimizer() != OptimizerAlg::GA)
     {
@@ -489,7 +498,7 @@ int tune_ff(int argc, char *argv[])
     // TODO: is this necessary if all processors parse the command line?
     opt.sii()->propagateWeightFittingTargets();
 
-    if (NodeType::Master == opt.commRec()->nodeType())
+    if (opt.commRec()->isMaster())
     {
         opt.openLogFile(opt2fn("-g", filenms.size(), filenms.data()));
         print_memory_usage(debug);
@@ -511,8 +520,7 @@ int tune_ff(int argc, char *argv[])
                            gmx::formatString("Please pass exactly one or %d (popSize) force field file names", opt.gach()->popSize()).c_str());
         
         int fnIndex = 0;
-        if (NodeType::MiddleMan == opt.commRec()->nodeType() && 
-            fns.size() > 1)
+        if (opt.commRec()->isMiddleMan() && fns.size() > 1)
         {
             fnIndex = opt.commRec()->middleManOrdinal();
         }

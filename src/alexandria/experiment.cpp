@@ -224,11 +224,10 @@ bool Experiment::getCharges(std::vector<double> *q,
 
 CommunicationStatus Experiment::Receive(const CommunicationRecord *cr, int src)
 {
-    CommunicationStatus cs;
+    CommunicationStatus cs = CommunicationStatus::OK;
     std::string         jobtype;
 
-    cs = cr->recv_data(src);
-    if (CS_OK == cs)
+    if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
     {
         dataSource_ = static_cast<DataSource>(cr->recv_int(src));
         cr->recv_str(src, &reference_);
@@ -307,11 +306,11 @@ CommunicationStatus Experiment::Receive(const CommunicationRecord *cr, int src)
         
         //! Receive Potentials
         int Npotential = cr->recv_int(src);
-        for (int n = 0; (CS_OK == cs) && (n < Npotential); n++)
+        for (int n = 0; (CommunicationStatus::OK == cs) && (n < Npotential); n++)
         {
             ElectrostaticPotential ep;
             cs = ep.Receive(cr, src);
-            if (CS_OK == cs)
+            if (CommunicationStatus::OK == cs)
             {
                 AddPotential(ep);
             }
@@ -319,18 +318,18 @@ CommunicationStatus Experiment::Receive(const CommunicationRecord *cr, int src)
 
         //! Receive Atoms
         int Natom = cr->recv_int(src);
-        for (int n = 0; (CS_OK == cs) && (n < Natom); n++)
+        for (int n = 0; (CommunicationStatus::OK == cs) && (n < Natom); n++)
         {
             CalcAtom ca;
             cs = ca.Receive(cr, src);
-            if (CS_OK == cs)
+            if (CommunicationStatus::OK == cs)
             {
                 AddAtom(ca);
             }
         }
     }
 
-    if ((CS_OK != cs) && (nullptr != debug))
+    if ((CommunicationStatus::OK != cs) && (nullptr != debug))
     {
         fprintf(debug, "Trying to receive Experiment, status %s\n", cs_name(cs));
         fflush(debug);
@@ -340,11 +339,10 @@ CommunicationStatus Experiment::Receive(const CommunicationRecord *cr, int src)
 
 CommunicationStatus Experiment::Send(const CommunicationRecord *cr, int dest) const
 {
-    CommunicationStatus cs;
+    CommunicationStatus cs = CommunicationStatus::OK;
     std::string         jobtype;
 
-    cs = cr->send_data(dest);
-    if (CS_OK == cs)
+    if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
     {
         cr->send_int(dest, static_cast<int>(dataSource_));
         cr->send_str(dest, &reference_);
@@ -369,13 +367,13 @@ CommunicationStatus Experiment::Send(const CommunicationRecord *cr, int dest) co
         }
         
         //! Send Potentials
-        if (CS_OK == cs)
+        if (CommunicationStatus::OK == cs)
         {
             cr->send_int(dest, electrostaticPotentialConst().size());
             for (auto &epi : electrostaticPotentialConst())
             {
                 cs = epi.Send(cr, dest);
-                if (CS_OK != cs)
+                if (CommunicationStatus::OK != cs)
                 {
                     break;
                 }
@@ -383,13 +381,13 @@ CommunicationStatus Experiment::Send(const CommunicationRecord *cr, int dest) co
         }
 
         //! Send Atoms
-        if (CS_OK == cs)
+        if (CommunicationStatus::OK == cs)
         {
             cr->send_int(dest, calcAtomConst().size());
             for (auto &cai : calcAtomConst())
             {
                 cs = cai.Send(cr, dest);
-                if (CS_OK != cs)
+                if (CommunicationStatus::OK != cs)
                 {
                     break;
                 }
@@ -397,7 +395,7 @@ CommunicationStatus Experiment::Send(const CommunicationRecord *cr, int dest) co
         }
     }
 
-    if ((CS_OK != cs) && (nullptr != debug))
+    if ((CommunicationStatus::OK != cs) && (nullptr != debug))
     {
         fprintf(debug, "Trying to send Experiment, status %s\n", cs_name(cs));
         fflush(debug);

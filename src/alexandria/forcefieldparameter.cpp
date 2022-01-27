@@ -127,9 +127,8 @@ void ForceFieldParameter::copy(const ForceFieldParameter &src)
 
 CommunicationStatus ForceFieldParameter::Send(const CommunicationRecord *cr, int dest) const
 {
-    CommunicationStatus cs;
-    cs = cr->send_data(dest);
-    if (CS_OK == cs)
+    CommunicationStatus cs = CommunicationStatus::OK;
+    if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
     {
         cr->send_str(dest, &unit_);
         cr->send_double(dest, value_);
@@ -162,9 +161,8 @@ CommunicationStatus ForceFieldParameter::Send(const CommunicationRecord *cr, int
 
 CommunicationStatus ForceFieldParameter::Receive(const CommunicationRecord *cr, int src)
 {
-    CommunicationStatus cs;
-    cs = cr->recv_data(src);
-    if (CS_OK == cs)
+    CommunicationStatus cs = CommunicationStatus::OK;
+    if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
     {
         cr->recv_str(src, &unit_);
         value_               = cr->recv_double(src);

@@ -40,6 +40,10 @@ void StaticIndividualInfo::fillPoldata(      FILE *fp,
     if (!cr_->isHelper())
     {
         GMX_RELEASE_ASSERT(nullptr != pd_fn, "Give me a poldata file name");
+        if (debug)
+        {
+            fprintf(debug, "On node %d, will try to read %s\n", cr_->rank(), pd_fn);
+        }
         try
         {
             alexandria::readPoldata(pd_fn, &pd_);
@@ -48,8 +52,7 @@ void StaticIndividualInfo::fillPoldata(      FILE *fp,
         print_memory_usage(debug);
     }
     /* Broadcasting Force Field Data from Master to Helper nodes */
-    if (cr_->isParallel() && (!cr_->isMaster() || 
-                              (cr_->isMaster() && cr_->nmiddlemen() == 0)))
+    if (cr_->isParallel())
     {
         pd_.sendToHelpers(cr_);
     }

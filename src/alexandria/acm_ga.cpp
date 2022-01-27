@@ -197,8 +197,8 @@ bool HybridGAMC::evolve(ga::Genome *bestGenome)
         int i = 0;
         for(auto &dest : cr->middlemen())
         {
-            // Send a 1 to tell the middlemen to continue
-            cr->send_int(dest, 1);
+            // Signify the middlemen to continue
+            cr->send_data(dest);
             // Send the data set, 0 for iMolSelect::Train
             cr->send_int(dest, 0);
             // Now send the new bases

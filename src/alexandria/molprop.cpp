@@ -528,125 +528,16 @@ int MolProp::NOptSP()
     return n;
 }
 
-#ifdef OLD
-bool MolProp::getProp(MolPropObservable mpo, iqmType iQM,
-                      const std::string &method,
-                      const std::string &basis,
-                      const std::string &conf,
-                      const std::string &type,
-                      double *value, double *error, double *T)
-{
-    double              myerror;
-    std::vector<double> vec;
-    tensor              quad;
-    bool                bReturn;
-    std::string         myref, mylot;
-
-    bReturn = getPropRef(mpo, iQM, method, basis,
-                         conf, type, value, &myerror, T,
-                         &myref, &mylot, &vec, quad);
-    if (nullptr != error)
-    {
-        *error = myerror;
-    }
-    return bReturn;
-}
-#endif
-
-#ifdef OLD
-ExperimentIterator MolProp::getCalcPropType(const std::string &method,
-                                            const std::string &basis,
-                                            std::string       *mylot,
-                                            MolPropObservable  mpo,
-                                            const char        *type)
-{
-    ExperimentIterator ci;
-
-    for (ci = exper_.begin(); (ci < exper_.end()); ci++)
-    {
-        if ((method.size() == 0 || strcasecmp(method.c_str(), ci->getMethod().c_str()) == 0) &&
-            (basis.size() == 0  || strcasecmp(basis.c_str(), ci->getBasisset().c_str()) == 0))
-        {
-            bool done = false;
-            switch (mpo)
-            {
-                case MolPropObservable::POTENTIAL:
-                    done = ci->NPotential() > 0;
-                    break;
-                case MolPropObservable::DIPOLE:
-                    for (auto &mdp : ci->dipoleConst())
-                    {
-                        done = ((nullptr == type) ||
-                                (strcasecmp(type, mdp.getType().c_str()) == 0));
-                        if (done)
-                        {
-                            break;
-                        }
-                    }
-                    break;
-                case MolPropObservable::QUADRUPOLE:
-                    for (auto &mdp : ci->quadrupoleConst())
-                    {
-                        done = ((nullptr == type) ||
-                                (strcasecmp(type, mdp.getType().c_str()) == 0));
-                        if (done)
-                        {
-                            break;
-                        }
-                    }
-                    break;
-                case MolPropObservable::POLARIZABILITY:
-                    for (auto &mdp : ci->polarizabilityConst())
-                    {
-                        done = ((nullptr == type) ||
-                                (strcasecmp(type, mdp.getType().c_str()) == 0));
-                        if (done)
-                        {
-                            break;
-                        }
-                    }
-                    break;
-                case MolPropObservable::DHFORM:
-                case MolPropObservable::ENTROPY:
-                    for (auto &mdp : ci->molecularEnergyConst())
-                    {
-                        done = mdp.mpo() == mpo;
-                        if (done)
-                        {
-                            break;
-                        }
-                    }
-                    break;
-                case MolPropObservable::COORDINATES:
-                    done = NAtom() > 0;
-                    break;
-            default:
-                    break;
-            }
-            if (done)
-            {
-                if (nullptr != mylot)
-                {
-                    mylot->assign(ci->getMethod() + "/" + ci->getBasisset());
-                }
-                break;
-            }
-        }
-    }
-    return ci;
-}
-#endif
 CommunicationStatus MolProp::Send(const CommunicationRecord *cr, int dest) const
 {
-    CommunicationStatus                cs;
+    CommunicationStatus                cs = CommunicationStatus::OK;
     BondIterator                       bi;
     MolecularCompositionIterator       mci;
     std::vector<std::string>::iterator si;
     ExperimentIterator                 ei;
 
     /* Generic stuff */
-    cs = cr->send_data(dest);
-    if (CS_OK == cs)
+    if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
     {
         cr->send_double(dest, mass_);
         cr->send_int(dest, index_);
@@ -666,19 +557,18 @@ CommunicationStatus MolProp::Send(const CommunicationRecord *cr, int dest) const
         for (auto &bi : bondsConst())
         {
             cs = bi.Send(cr, dest);
-            if (CS_OK != cs)
+            if (CommunicationStatus::OK != cs)
             {
                 break;
             }
         }
 
         /* send Categories */
-        if (CS_OK == cs)
+        if (CommunicationStatus::OK == cs)
         {
             for (auto &si : categoryConst())
             {
-                cs = cr->send_data(dest);
-                if (CS_OK == cs)
+                if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
                 {
                     std::string sii = si.c_str();
                     cr->send_str(dest, &sii);
@@ -692,12 +582,12 @@ CommunicationStatus MolProp::Send(const CommunicationRecord *cr, int dest) const
         }
 
         /* Send Experiments */
-        if (CS_OK == cs)
+        if (CommunicationStatus::OK == cs)
         {
             for (auto &ei : experimentConst())
             {
                 cs = ei.Send(cr, dest);
-                if (CS_OK != cs)
+                if (CommunicationStatus::OK != cs)
                 {
                     break;
                 }
@@ -715,12 +605,11 @@ CommunicationStatus MolProp::Send(const CommunicationRecord *cr, int dest) const
 
 CommunicationStatus MolProp::Receive(const CommunicationRecord *cr, int src)
 {
-    CommunicationStatus cs;
+    CommunicationStatus cs = CommunicationStatus::OK;
     int                 Nbond, Ncategory, Nexper;
 
     /* Generic stuff */
-    cs = cr->recv_data(src);
-    if (CS_OK == cs)
+    if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
     {
         //! Receive mass and more
         mass_         = cr->recv_double(src);
@@ -742,21 +631,21 @@ CommunicationStatus MolProp::Receive(const CommunicationRecord *cr, int src)
             fprintf(debug, "Got molname %s\n", getMolname().c_str());
         }
         //! Receive Bonds
-        for (int n = 0; (CS_OK == cs) && (n < Nbond); n++)
+        cs = CommunicationStatus::OK;
+        for (int n = 0; (CommunicationStatus::OK == cs) && (n < Nbond); n++)
         {
             Bond b;
             cs = b.Receive(cr, src);
-            if (CS_OK == cs)
+            if (CommunicationStatus::OK == cs)
             {
                 AddBond(b);
             }
         }
 
         //! Receive Categories
-        for (int n = 0; (CS_OK == cs) && (n < Ncategory); n++)
+        for (int n = 0; (CommunicationStatus::OK == cs) && (n < Ncategory); n++)
         {
-            cs = cr->recv_data(src);
-            if (CS_OK == cs)
+            if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
             {
                 std::string str;
                 cr->recv_str(src, &str);
@@ -777,11 +666,11 @@ CommunicationStatus MolProp::Receive(const CommunicationRecord *cr, int src)
         }
 
         //! Receive Experiments
-        for (int n = 0; (CS_OK == cs) && (n < Nexper); n++)
+        for (int n = 0; (CommunicationStatus::OK == cs) && (n < Nexper); n++)
         {
             Experiment ex;
             cs = ex.Receive(cr, src);
-            if (CS_OK == cs)
+            if (CommunicationStatus::OK == cs)
             {
                 AddExperiment(ex);
             }

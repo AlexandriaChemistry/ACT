@@ -39,6 +39,7 @@
 #include <vector>
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/force.h"
@@ -708,7 +709,8 @@ size_t MolGen::Read(FILE            *fp,
                     int helperDest = mymolIndex % cr_->nhelper_per_middleman();
                     for(auto &mm : destMiddleMen)
                     {
-                        destAll.insert(mm + helperDest);
+                        // TODO Check this
+                        destAll.insert(mm + 1 + helperDest);
                     }
                 }
                 mymolIndex += 1;
@@ -724,9 +726,12 @@ size_t MolGen::Read(FILE            *fp,
                     {
                         fprintf(debug, "Going to send %s to cpu %d\n", mymol.getMolname().c_str(), mydest);
                     }
-                    cr_->send_int(mydest, 1);
+                    if (CommunicationStatus::SEND_DATA != cr_->send_data(mydest))
+                    {
+                        GMX_THROW(gmx::InternalError("Communication problem."));
+                    }
                     CommunicationStatus cs = mymol.Send(cr_, mydest);
-                    if (CS_OK != cs)
+                    if (CommunicationStatus::OK != cs)
                     {
                         imm = immStatus::CommProblem;
                     }
@@ -752,9 +757,9 @@ size_t MolGen::Read(FILE            *fp,
             }
         }
         /* Send signal done with transferring molecules */
-        for (auto &i : cr_->helpers())
+        for (int i = 0;  i < cr_->size(); i++)
         {
-            cr_->send_int(i, 0);
+            cr_->send_done(i);
         }
         for (int i = 0; i < cr_->size(); i++)
         {
@@ -788,7 +793,7 @@ size_t MolGen::Read(FILE            *fp,
          *          H E L P E R  N O D E S             *
          *                                             *
          ***********************************************/
-        while (cr_->recv_int(0) == 1)
+        while (CommunicationStatus::RECV_DATA == cr_->recv_data(0))
         {
             alexandria::MyMol mymol;
             if (nullptr != debug)
@@ -796,7 +801,7 @@ size_t MolGen::Read(FILE            *fp,
                 fprintf(debug, "Going to retrieve new compound\n");
             }
             CommunicationStatus cs = mymol.Receive(cr_, 0);
-            if (CS_OK != cs)
+            if (CommunicationStatus::OK != cs)
             {
                 imm = immStatus::CommProblem;
             }

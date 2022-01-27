@@ -24,7 +24,7 @@
 #include "staticindividualinfo.h"
 
 struct gmx_output_env;
-struct t_commrec;
+
 namespace ga
 {
 

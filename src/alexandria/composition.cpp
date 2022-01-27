@@ -70,11 +70,10 @@ bool CalcAtom::Equal(CalcAtom ca)
 
 CommunicationStatus CalcAtom::Receive(const CommunicationRecord *cr, int src)
 {
-    CommunicationStatus cs;
+    CommunicationStatus cs       = CommunicationStatus::OK;
     int                 Ncharge;
 
-    cs = cr->recv_data(src);
-    if (CS_OK == cs)
+    if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
     {
         cr->recv_str(src, &name_);
         cr->recv_str(src, &obType_);
@@ -87,7 +86,7 @@ CommunicationStatus CalcAtom::Receive(const CommunicationRecord *cr, int src)
         z_      = cr->recv_double(src);
         Ncharge = cr->recv_int(src);
 
-        for (int n = 0; (CS_OK == cs) && (n < Ncharge); n++)
+        for (int n = 0; (CommunicationStatus::OK == cs) && (n < Ncharge); n++)
         {
             std::string type;
             cr->recv_str(src, &type);
@@ -104,10 +103,9 @@ CommunicationStatus CalcAtom::Receive(const CommunicationRecord *cr, int src)
 
 CommunicationStatus CalcAtom::Send(const CommunicationRecord *cr, int dest) const
 {
-    CommunicationStatus  cs;
+    CommunicationStatus  cs = CommunicationStatus::OK;
 
-    cs = cr->send_data(dest);
-    if (CS_OK == cs)
+    if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
     {
         cr->send_str(dest, &name_);
         cr->send_str(dest, &obType_);
@@ -136,10 +134,9 @@ CommunicationStatus CalcAtom::Send(const CommunicationRecord *cr, int dest) cons
 
 CommunicationStatus AtomNum::Send(const CommunicationRecord *cr, int dest) const
 {
-    CommunicationStatus cs;
+    CommunicationStatus cs = CommunicationStatus::OK;
 
-    cs = cr->send_data(dest);
-    if (CS_OK == cs)
+    if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
     {
         cr->send_str(dest, &catom_);
         cr->send_int(dest, cnumber_);
@@ -155,10 +152,9 @@ CommunicationStatus AtomNum::Send(const CommunicationRecord *cr, int dest) const
 
 CommunicationStatus AtomNum::Receive(const CommunicationRecord *cr, int src)
 {
-    CommunicationStatus cs;
+    CommunicationStatus cs = CommunicationStatus::OK;
 
-    cs = cr->recv_data(src);
-    if (CS_OK == cs)
+    if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
     {
         cr->recv_str(src, &catom_);
         cnumber_ = cr->recv_int(src);
@@ -258,15 +254,15 @@ int MolecularComposition::CountAtoms() const
 
 CommunicationStatus MolecularComposition::Send(const CommunicationRecord *cr, int dest) const
 {
-    CommunicationStatus cs = cr->send_data(dest);
-    if (CS_OK == cs)
+    CommunicationStatus cs = CommunicationStatus::OK;
+    if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
     {
         cr->send_int(dest, atomnum_.size());
         cr->send_str(dest, &compname_);
         for (auto &ani : atomnum_)
         {
             cs = ani.Send(cr, dest);
-            if (CS_OK != cs)
+            if (CommunicationStatus::OK != cs)
             {
                 break;
             }
@@ -284,8 +280,8 @@ CommunicationStatus MolecularComposition::Send(const CommunicationRecord *cr, in
 CommunicationStatus MolecularComposition::Receive(const CommunicationRecord *cr, int src)
 {
     int                 Natomnum;
-    CommunicationStatus cs = cr->recv_data(src);
-    if (CS_OK == cs)
+    CommunicationStatus cs = CommunicationStatus::OK;
+    if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
     {
         Natomnum = cr->recv_int(src);
         cr->recv_str(src, &compname_);
@@ -294,7 +290,7 @@ CommunicationStatus MolecularComposition::Receive(const CommunicationRecord *cr,
         {
             AtomNum an;
             cs2 = an.Receive(cr, src);
-            if (CS_OK == cs2)
+            if (CommunicationStatus::OK == cs2)
             {
                 AddAtom(an);
             }

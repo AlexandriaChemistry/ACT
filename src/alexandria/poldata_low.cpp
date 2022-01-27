@@ -55,9 +55,8 @@ Bosque::Bosque(const std::string &bosque, double polarizability)
 
 CommunicationStatus Bosque::Send(const CommunicationRecord *cr, int dest)
 {
-    CommunicationStatus cs;
-    cs = cr->send_data(dest);
-    if (CS_OK == cs)
+    CommunicationStatus cs = CommunicationStatus::OK;
+    if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
     {
         cr->send_str(dest, &bosque_);
         cr->send_double(dest, polarizability_);
@@ -73,9 +72,8 @@ CommunicationStatus Bosque::Send(const CommunicationRecord *cr, int dest)
 
 CommunicationStatus Bosque::Receive(const CommunicationRecord *cr, int src)
 {
-    CommunicationStatus cs;
-    cs = cr->recv_data(src);
-    if (CS_OK == cs)
+    CommunicationStatus cs = CommunicationStatus::OK;
+    if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
     {
         cr->recv_str(src, &bosque_);
         polarizability_ = cr->recv_double(src);
@@ -104,9 +102,8 @@ Miller::Miller(const std::string &miller,
 
 CommunicationStatus Miller::Send(const CommunicationRecord *cr, int dest)
 {
-    CommunicationStatus cs;
-    cs = cr->send_data(dest);
-    if (CS_OK == cs)
+    CommunicationStatus cs = CommunicationStatus::OK;
+    if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
     {
         cr->send_str(dest, &miller_);
         cr->send_int(dest, atomnumber_);
@@ -127,9 +124,8 @@ CommunicationStatus Miller::Send(const CommunicationRecord *cr, int dest)
 
 CommunicationStatus Miller::Receive(const CommunicationRecord *cr, int src)
 {
-    CommunicationStatus cs;
-    cs = cr->recv_data(src);
-    if (CS_OK == cs)
+    CommunicationStatus cs = CommunicationStatus::OK;
+    if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
     {
         cr->recv_str(src, &miller_);
         atomnumber_ = cr->recv_int(src);
@@ -158,9 +154,8 @@ Symcharges::Symcharges(const std::string &central,
 
 CommunicationStatus Symcharges::Send(const CommunicationRecord *cr, int dest)
 {
-    CommunicationStatus cs;
-    cs = cr->send_data(dest);
-    if (CS_OK == cs)
+    CommunicationStatus cs = CommunicationStatus::OK;
+    if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
     {
         cr->send_str(dest, &central_);
         cr->send_str(dest, &attached_);
@@ -178,9 +173,8 @@ CommunicationStatus Symcharges::Send(const CommunicationRecord *cr, int dest)
 
 CommunicationStatus Symcharges::Receive(const CommunicationRecord *cr, int src)
 {
-    CommunicationStatus cs;
-    cs = cr->recv_data(src);
-    if (CS_OK == cs)
+    CommunicationStatus cs = CommunicationStatus::OK;
+    if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
     {
         cr->recv_str(src, &central_);
         cr->recv_str(src, &attached_);

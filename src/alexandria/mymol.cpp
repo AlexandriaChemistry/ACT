@@ -2571,7 +2571,7 @@ void MyMol::plotEspCorrelation(const char                *espcorr,
 CommunicationStatus MyMol::Send(const CommunicationRecord *cr, int dest) const
 {
     auto cs = MolProp::Send(cr, dest);
-    if (CS_OK == cs)
+    if (CommunicationStatus::OK == cs)
     {
         cr->send_int(dest, static_cast<int>(dataset_type_));
     }
@@ -2581,7 +2581,7 @@ CommunicationStatus MyMol::Send(const CommunicationRecord *cr, int dest) const
 CommunicationStatus MyMol::Receive(const CommunicationRecord *cr, int src)
 {
     auto cs = MolProp::Receive(cr, src);
-    if (CS_OK == cs)
+    if (CommunicationStatus::OK == cs)
     {
         set_datasetType(static_cast<iMolSelect>(cr->recv_int(src)));
     }

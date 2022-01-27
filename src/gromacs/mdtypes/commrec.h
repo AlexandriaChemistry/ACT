@@ -92,16 +92,6 @@ struct t_commrec {
      */
     int sim_nodeid, nnodes, npmenodes;
 
-    /* The number of middle men in a 2D parallellization
-     * Of nnodes nodes, the middlemen each have
-     * nhelper_per_middleman = nnodes/nmiddlemen
-     * helpers. 
-     */
-    int nhelper_per_middleman;
-    /* The number of middlemen. 
-     */
-    int nmiddlemen;
-
     /* thread numbers: */
     /* Not used yet: int threadid, nthreads; */
     /* The nodeid in the PP/PME, PP or PME group */
@@ -114,9 +104,6 @@ struct t_commrec {
                                           a single simulation */
     MPI_Comm mpi_comm_mygroup;         /* subset of mpi_comm_mysim including only
                                           the ranks in the same group (PP or PME) */
-
-    MPI_Comm mpi_act_helpers;          /* Special communicator for helpers */
-    MPI_Comm mpi_act_not_master;       /* Special communicator for all but the master */
 
     gmx_nodecomm_t nc;
 

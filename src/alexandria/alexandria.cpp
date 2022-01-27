@@ -34,15 +34,17 @@
 
 #include <cstdlib>
 
+#include "mpi.h"
+
 #include "gromacs/commandline/cmdlineinit.h"
 #include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/selection/selhelp.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/init.h"
 
 #include "alex_modules.h"
-
 
 int
 main(int argc, char *argv[])
@@ -50,7 +52,7 @@ main(int argc, char *argv[])
     gmx::CommandLineProgramContext &context = gmx::initForCommandLine(&argc, &argv);
     try
     {
-        t_commrec                    *cr = init_commrec();
+        t_commrec *cr = init_commrec();
         gmx::CommandLineModuleManager manager("alexandria", &context);
         registerAlexandriaModules(&manager);
         manager.addHelpTopic(gmx::createSelectionHelpTopic());

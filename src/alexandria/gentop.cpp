@@ -361,7 +361,6 @@ int gentop(int argc, char *argv[])
                                  tabfn);
 
     gmx_omp_nthreads_init(mdlog, cr.commrec(), 1, 1, 1, 0, false, false);
-
     if (immStatus::OK == imm)
     {
         mymol.symmetrizeCharges(&pd, bQsym, symm_string);

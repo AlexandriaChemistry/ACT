@@ -336,9 +336,8 @@ void Poldata::addSymcharges(const std::string &central,
 
 CommunicationStatus Poldata::Send(const CommunicationRecord *cr, int dest)
 {
-    CommunicationStatus cs;
-    cs = cr->send_data(dest);
-    if (CS_OK == cs)
+    CommunicationStatus cs = CommunicationStatus::OK;
+    if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
     {
         cr->send_str(dest, &filename_);
         cr->send_str(dest, &checkSum_);
@@ -354,20 +353,20 @@ CommunicationStatus Poldata::Send(const CommunicationRecord *cr, int dest)
         for (auto &alexandria : alexandria_)
         {
             cs = alexandria.Send(cr, dest);
-            if (CS_OK != cs)
+            if (CommunicationStatus::OK != cs)
             {
                 break;
             }
         }
 
         /* Send Vsite */
-        if (CS_OK == cs)
+        if (CommunicationStatus::OK == cs)
         {
             cr->send_int(dest, vsite_.size());
             for (auto &vsite : vsite_)
             {
                 cs = vsite.Send(cr, dest);
-                if (CS_OK != cs)
+                if (CommunicationStatus::OK != cs)
                 {
                     break;
                 }
@@ -375,7 +374,7 @@ CommunicationStatus Poldata::Send(const CommunicationRecord *cr, int dest)
         }
 
         /* Force Field Parameter Lists */
-        if (CS_OK == cs)
+        if (CommunicationStatus::OK == cs)
         {
             cr->send_int(dest, forces_.size());
             for (auto &force : forces_)
@@ -383,7 +382,7 @@ CommunicationStatus Poldata::Send(const CommunicationRecord *cr, int dest)
                 std::string key(interactionTypeToString(force.first));
                 cr->send_str(dest, &key);
                 cs = force.second.Send(cr, dest);
-                if (CS_OK != cs)
+                if (CommunicationStatus::OK != cs)
                 {
                     break;
                 }
@@ -391,13 +390,13 @@ CommunicationStatus Poldata::Send(const CommunicationRecord *cr, int dest)
         }
 
         /* Send Symcharges */
-        if (CS_OK == cs)
+        if (CommunicationStatus::OK == cs)
         {
             cr->send_int(dest, symcharges_.size());
             for (auto &symcharges : symcharges_)
             {
                 cs = symcharges.Send(cr, dest);
-                if (CS_OK != cs)
+                if (CommunicationStatus::OK != cs)
                 {
                     break;
                 }
@@ -409,9 +408,8 @@ CommunicationStatus Poldata::Send(const CommunicationRecord *cr, int dest)
 
 CommunicationStatus Poldata::Receive(const CommunicationRecord *cr, int src)
 {
-    CommunicationStatus cs;
-    cs = cr->recv_data(src);
-    if (CS_OK == cs)
+    CommunicationStatus cs = CommunicationStatus::OK;
+    if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
     {
         cr->recv_str(src, &filename_);
         cr->recv_str(src, &checkSum_);
@@ -425,11 +423,11 @@ CommunicationStatus Poldata::Receive(const CommunicationRecord *cr, int src)
         /* Rceive Ffatype */
         size_t nalexandria = cr->recv_int(src);
         alexandria_.clear();
-        for (size_t n = 0; (CS_OK == cs) && (n < nalexandria); n++)
+        for (size_t n = 0; (CommunicationStatus::OK == cs) && (n < nalexandria); n++)
         {
             ParticleType alexandria;
             cs = alexandria.Receive(cr, src);
-            if (CS_OK == cs)
+            if (CommunicationStatus::OK == cs)
             {
                 alexandria_.push_back(alexandria);
             }
@@ -443,11 +441,11 @@ CommunicationStatus Poldata::Receive(const CommunicationRecord *cr, int src)
         /* Receive Vsites */
         size_t nvsite = cr->recv_int(src);
         vsite_.clear();
-        for (size_t n = 0; (CS_OK == cs) && (n < nvsite); n++)
+        for (size_t n = 0; (CommunicationStatus::OK == cs) && (n < nvsite); n++)
         {
             Vsite vsite;
             cs = vsite.Receive(cr, src);
-            if (CS_OK == cs)
+            if (CommunicationStatus::OK == cs)
             {
                 vsite_.push_back(vsite);
             }
@@ -461,14 +459,14 @@ CommunicationStatus Poldata::Receive(const CommunicationRecord *cr, int src)
         /* Receive Listed Forces */
         size_t nforces           = cr->recv_int(src);
         forces_.clear();
-        for (size_t n = 0; (CS_OK == cs) && (n < nforces); n++)
+        for (size_t n = 0; (CommunicationStatus::OK == cs) && (n < nforces); n++)
         {
             ForceFieldParameterList fs;
             std::string             key;
             cr->recv_str(src, &key);
             InteractionType iType = stringToInteractionType(key.c_str());
             cs                    = fs.Receive(cr, src);
-            if (CS_OK == cs)
+            if (CommunicationStatus::OK == cs)
             {
                 forces_.insert({iType, fs});
             }
@@ -484,15 +482,15 @@ CommunicationStatus Poldata::Receive(const CommunicationRecord *cr, int src)
             fflush(debug);
         }
         /* Receive Symcharges */
-        if (CS_OK == cs)
+        if (CommunicationStatus::OK == cs)
         {
             size_t nsymcharges = cr->recv_int(src);
             symcharges_.clear();
-            for (size_t n = 0; (CS_OK == cs) && (n < nsymcharges); n++)
+            for (size_t n = 0; (CommunicationStatus::OK == cs) && (n < nsymcharges); n++)
             {
                 Symcharges symcharges;
                 cs = symcharges.Receive(cr, src);
-                if (CS_OK == cs)
+                if (CommunicationStatus::OK == cs)
                 {
                     symcharges_.push_back(symcharges);
                 }
@@ -504,8 +502,8 @@ CommunicationStatus Poldata::Receive(const CommunicationRecord *cr, int src)
 
 void Poldata::sendParticles(const CommunicationRecord *cr, int dest)
 {
-    auto cs = cr->send_data(dest);
-    if (CS_OK == cs)
+    auto cs = CommunicationStatus::OK;
+    if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
     {
         if (nullptr != debug)
         {
@@ -534,8 +532,8 @@ void Poldata::sendParticles(const CommunicationRecord *cr, int dest)
 
 void Poldata::receiveParticles(const CommunicationRecord *cr, int src)
 {
-    auto cs = cr->recv_data(src);
-    if (CS_OK == cs)
+    auto cs = CommunicationStatus::OK;
+    if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
     {
         /* Receive Particle info */
         while (1 == cr->recv_int(src))
@@ -555,7 +553,8 @@ void Poldata::receiveParticles(const CommunicationRecord *cr, int src)
             fprintf(debug, "Could not update eem properties on node %d\n", cr->rank());
         }
     }
-    cr->recv_data(src);
+    GMX_RELEASE_ASSERT(CommunicationStatus::DONE == cr->recv_data(src),
+                       "Communication did not end correctly");
 }
 
 /* Force Field Parameter Lists */
@@ -568,8 +567,8 @@ static std::vector<InteractionType> eemlist =
 
 void Poldata::sendEemprops(const CommunicationRecord *cr, int dest)
 {
-    auto cs = cr->send_data(dest);
-    if (CS_OK == cs)
+    auto cs = CommunicationStatus::OK;
+    if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
     {
         if (nullptr != debug)
         {
@@ -594,8 +593,8 @@ void Poldata::sendEemprops(const CommunicationRecord *cr, int dest)
 
 void Poldata::receiveEemprops(const CommunicationRecord *cr, int src)
 {
-    auto cs = cr->recv_data(src);
-    if (CS_OK == cs)
+    auto cs = CommunicationStatus::OK;
+    if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
     {
         /* Receive EEMprops and Bond Corrections */
         for(auto myeem : eemlist)
@@ -621,19 +620,18 @@ void Poldata::receiveEemprops(const CommunicationRecord *cr, int src)
             fprintf(debug, "Could not update eem properties on node %d\n", cr->rank());
         }
     }
-    cr->recv_data(src);
+    GMX_RELEASE_ASSERT(CommunicationStatus::DONE == cr->recv_data(src),
+                       "Communication did not end correctly");
 }
 
 void Poldata::sendToHelpers(const CommunicationRecord *cr)
 {
     // TODO check GMX_RELEASE_ASSERT(!MASTER(cr), "I wasn't expecting no overlord here");
-    int src = cr->rank();
     if (cr->isMiddleMan() || (cr->nmiddlemen() == 0 && cr->isMaster()))
     {
         for (auto &dest : cr->helpers())
         {
-            auto cs = cr->send_data(dest);
-            if (CS_OK == cs)
+            if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
             {
                 if (nullptr != debug)
                 {
@@ -646,11 +644,11 @@ void Poldata::sendToHelpers(const CommunicationRecord *cr)
     }
     else if (cr->isHelper())
     {
-        auto cs = cr->recv_data(src);
-        if (CS_OK == cs)
+        int src = cr->superior();
+        if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
         {
             auto cs = Receive(cr, src);
-            if (CS_OK == cs)
+            if (CommunicationStatus::OK == cs)
             {
                 if (nullptr != debug)
                 {
@@ -665,7 +663,8 @@ void Poldata::sendToHelpers(const CommunicationRecord *cr)
                 }
             }
         }
-        cr->recv_data(src);
+        GMX_RELEASE_ASSERT(CommunicationStatus::DONE == cr->recv_data(src),
+                           "Communication did not end correctly");
     }
 }
 

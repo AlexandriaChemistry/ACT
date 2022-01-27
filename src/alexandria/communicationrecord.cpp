@@ -37,10 +37,11 @@ namespace alexandria
 {
 
 std::map<CommunicationStatus, const char*> csToString = {
-    { CS_OK,        "Communication OK"        },
-    { CS_ERROR,     "Communication Error"     },
-    { CS_SEND_DATA, "Communication sent data" },
-    { CS_RECV_DATA, "Communication OK"        }
+    { CommunicationStatus::OK,        "Communication OK"        },
+    { CommunicationStatus::DONE,      "Communication Done"      },
+    { CommunicationStatus::ERROR,     "Communication Error"     },
+    { CommunicationStatus::SEND_DATA, "Communication sent data" },
+    { CommunicationStatus::RECV_DATA, "Communication OK"        }
 };
 
 const char *cs_name(CommunicationStatus cs)
@@ -50,9 +51,10 @@ const char *cs_name(CommunicationStatus cs)
 
 CommunicationRecord::CommunicationRecord()
 {
-    cr_   = init_commrec();
-    rank_ = cr_->nodeid;
-    size_ = cr_->nnodes;
+    cr_            = init_commrec();
+    mpi_act_world_ = cr_->mpi_comm_mysim;
+    rank_          = cr_->nodeid;
+    size_          = cr_->nnodes;
 }
 
 void CommunicationRecord::init(int nmiddleman)
@@ -63,7 +65,6 @@ void CommunicationRecord::init(int nmiddleman)
         GMX_THROW(gmx::InvalidInputError(gmx::formatString("Cannot handle %d middlemen (individuals) with %d cores/threads",
                   nmiddlemen_, size_).c_str()));
     }
-    cr_->nmiddlemen = nmiddlemen_;
     if (nmiddlemen_ == 0)
     {
         nhelper_per_middleman_ = size_-1;
@@ -81,20 +82,24 @@ void CommunicationRecord::init(int nmiddleman)
             GMX_THROW(gmx::InvalidInputError(gmx::formatString("The number of cores/threads (%d) should be the product of the number of helpers (%d) and the number of individuals (%d) plus 1 for the overlord", size_, nhelper_per_middleman_, nmiddlemen_).c_str()));
         }
     }
-    cr_->nhelper_per_middleman = nhelper_per_middleman_;
     // Select the node type etc.
     if (rank_ == 0)
     {
         nt_ = NodeType::Master;
         for (int i = 1; i < size_; i++)
         {
-            helpers_.push_back(i);
             // Not updating superior_ from the default value. If it is
             // used for communication the program will crash, since
             // it is an error to do so.
             
             // Not updating ordinal_ for the same reason.
-            if (nmiddlemen_ > 0)
+            if (nmiddlemen_ == 0)
+            {
+                // If there are no middlemen, the master servers the helpers 
+                // directly, otherwise, the middlemen do.
+                helpers_.push_back(i);
+            }
+            else
             {
                 if ((i - 1) % (1+nhelper_per_middleman_) == 0)
                 {
@@ -122,7 +127,7 @@ void CommunicationRecord::init(int nmiddleman)
                 nt_       = NodeType::MiddleMan;
                 superior_ = 0;
                 ordinal_  = (rank_ - 1) / (1+nhelper_per_middleman_);
-                for (int i = rank_ + 1; i <= nhelper_per_middleman_; i++)
+                for (int i = rank_ + 1; i <= 1+nhelper_per_middleman_; i++)
                 {
                     helpers_.push_back(i);
                 }
@@ -130,7 +135,7 @@ void CommunicationRecord::init(int nmiddleman)
             else
             {
                 nt_       = NodeType::Helper;
-                superior_ = (rank_-1)/(1+nhelper_per_middleman_) + 1;
+                superior_ = ((rank_-1)/(1+nhelper_per_middleman_))*(1+nhelper_per_middleman_) + 1;
             }
         }
     }
@@ -143,20 +148,20 @@ void CommunicationRecord::init(int nmiddleman)
         color = 0;
         key   = rank_-1;
     }
-    MPI_Comm_split(cr_->mpi_comm_mysim, color, key, &cr_->mpi_act_not_master);
+    MPI_Comm_split(mpi_act_world_, color, key, &mpi_act_not_master_);
     // Default value
-    cr_->mpi_act_helpers = MPI_COMM_WORLD;
-    if (!MASTER(cr_))
+    mpi_act_helpers_ = mpi_act_world_;
+    if (!isMaster())
     {
         int nonMasterSize;
-        MPI_Comm_size(cr_->mpi_act_not_master, &nonMasterSize);
+        MPI_Comm_size(mpi_act_not_master_, &nonMasterSize);
         int myrank;
-        MPI_Comm_rank(cr_->mpi_act_not_master, &myrank);
+        MPI_Comm_rank(mpi_act_not_master_, &myrank);
         if (nmiddlemen_ > 0)
         {
             // Split the non-masters into nmiddlemen X nhelpers
-            MPI_Comm_split(cr_->mpi_act_not_master, myrank / nmiddlemen_,
-                           myrank % nmiddlemen_, &cr_->mpi_act_helpers);
+            MPI_Comm_split(mpi_act_not_master_, myrank / nmiddlemen_,
+                           myrank % nmiddlemen_, &mpi_act_helpers_);
         }
     }
 }
@@ -172,21 +177,32 @@ CommunicationRecord::~CommunicationRecord()
 /*************************************************
  *           LOW LEVEL ROUTINES                  *
  *************************************************/
+
+ static void check_return(const char *msg, int returnvalue)
+{
+    switch (returnvalue)
+    {
+    case MPI_SUCCESS:
+        return;
+    case MPI_ERR_COMM:
+        GMX_THROW(gmx::InternalError(gmx::formatString("Invalid communicator. %s.", msg).c_str()));
+        break;
+    case MPI_ERR_ARG:
+        GMX_THROW(gmx::InternalError(gmx::formatString("Invalid argument. %s.", msg).c_str()));
+        break;
+    }
+}
+
 void CommunicationRecord::send(int dest, const void *buf, int bufsize) const
 {
     int         tag = 0;
     MPI_Status  status;
     MPI_Request req;
 
-    if (MPI_Isend(buf, bufsize, MPI_BYTE, RANK(cr, dest), tag,
-                  cr_->mpi_comm_mygroup, &req) != MPI_SUCCESS)
-    {
-        gmx_comm("MPI_Isend Failed");
-    }
-    if (MPI_Wait(&req, &status) != MPI_SUCCESS)
-    {
-        gmx_comm("MPI_Wait failed");
-    }
+    check_return("MPI_Isend Failed",
+                 MPI_Isend(buf, bufsize, MPI_BYTE, RANK(cr, dest), tag,
+                           mpi_act_world_, &req));
+    check_return("MPI_Wait failed", MPI_Wait(&req, &status));
 }
 
 void CommunicationRecord::recv( int src, void *buf, int bufsize) const
@@ -195,15 +211,10 @@ void CommunicationRecord::recv( int src, void *buf, int bufsize) const
     MPI_Status  status;
     MPI_Request req;
 
-    if (MPI_Irecv(buf, bufsize, MPI_BYTE, src, tag,
-                  cr_->mpi_comm_mygroup, &req) != MPI_SUCCESS)
-    {
-        gmx_comm("MPI_Irecv Failed");
-    }
-    if (MPI_Wait(&req, &status) != MPI_SUCCESS)
-    {
-        gmx_comm("MPI_Wait failed");
-    }
+    check_return ("MPI_Irecv Failed",
+                  MPI_Irecv(buf, bufsize, MPI_BYTE, src, tag,
+                            mpi_act_world_, &req));
+    check_return("MPI_Wait failed", MPI_Wait(&req, &status));
 }
 
 void CommunicationRecord::send_str(int dest, const std::string *str) const
@@ -310,52 +321,66 @@ void CommunicationRecord::recv_double_vector(int src,
 void CommunicationRecord::sumd_helpers(int    nr, 
                                        double r[]) const
 {
+    if (nhelper_per_middleman_ == 0)
+    {
+        return;
+    }
     int size = 0;
-    if (MPI_Comm_size(cr_->mpi_act_helpers, &size) && size > 1)
+    if (MPI_SUCCESS == MPI_Comm_size(mpi_act_helpers_, &size) && size > 1)
     {
         MPI_Allreduce(MPI_IN_PLACE, r, nr, MPI_DOUBLE, MPI_SUM,
-                      cr_->mpi_act_helpers);
+                      mpi_act_helpers_);
     }
 }
 
 void CommunicationRecord::sumi_helpers(int nr, 
                                        int r[]) const
 {
+    if (nhelper_per_middleman_ == 0)
+    {
+        return;
+    }
     int size = 0;
-    if (MPI_Comm_size(cr_->mpi_act_helpers, &size) && size > 1)
+    if (MPI_SUCCESS == MPI_Comm_size(mpi_act_helpers_, &size) && size > 1)
     {
         MPI_Allreduce(MPI_IN_PLACE, r, nr, MPI_INT, MPI_SUM,
-                      cr_->mpi_act_helpers);
+                      mpi_act_helpers_);
     }
 }
 
-#define GMX_SEND_DATA 19823
-#define GMX_SEND_DONE -666
+#define ACT_SEND_DATA 19823
+#define ACT_SEND_DONE -666
 CommunicationStatus CommunicationRecord::send_data(int dest) const
 {
-    send_int(dest, GMX_SEND_DATA);
+    send_int(dest, ACT_SEND_DATA);
 
-    return CS_OK;
+    return CommunicationStatus::SEND_DATA;
 }
 
 CommunicationStatus CommunicationRecord::send_done(int dest) const
 {
-    send_int(dest, GMX_SEND_DONE);
+    send_int(dest, ACT_SEND_DONE);
 
-    return CS_OK;
+    return CommunicationStatus::OK;
 }
 
 CommunicationStatus CommunicationRecord::recv_data(int src) const
 {
     int kk = recv_int(src);
 
-    if ((kk != GMX_SEND_DATA) && (kk != GMX_SEND_DONE))
+    switch (kk)
     {
-        GMX_THROW(gmx::InternalError(gmx::formatString("Received %d from src %d in gmx_recv_data. Was expecting either %d or %d\n.", kk, src, (int)GMX_SEND_DATA, (int)GMX_SEND_DONE).c_str()));
+    case ACT_SEND_DATA:
+        return CommunicationStatus::RECV_DATA;
+    case ACT_SEND_DONE:
+        return CommunicationStatus::DONE;
+    default:
+        GMX_THROW(gmx::InternalError(gmx::formatString("Received %d from src %d in gmx_recv_data. Was expecting either %d or %d\n.", kk, src, (int)ACT_SEND_DATA, (int)ACT_SEND_DONE).c_str()));
     }
-    return CS_OK;
+    return CommunicationStatus::ERROR;
 }
 
-#undef GMX_SEND_DATA
-#undef GMX_SEND_DONE
+#undef ACT_SEND_DATA
+#undef ACT_SEND_DONE
+
 } // namespace alexandria

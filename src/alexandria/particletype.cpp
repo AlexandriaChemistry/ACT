@@ -230,7 +230,7 @@ std::string ParticleType::element() const
 
 CommunicationStatus ParticleType::Send(const CommunicationRecord *cr, int dest)
 {
-    CommunicationStatus cs = CS_OK;
+    CommunicationStatus cs = CommunicationStatus::OK;
     id_.Send(cr, dest);
     cr->send_str(dest, &desc_);
     cr->send_int(dest, gmxParticleType_);
@@ -251,7 +251,7 @@ CommunicationStatus ParticleType::Send(const CommunicationRecord *cr, int dest)
     
 CommunicationStatus ParticleType::Receive(const CommunicationRecord *cr, int src)
 {
-    CommunicationStatus cs = CS_OK;
+    CommunicationStatus cs = CommunicationStatus::OK;
     cs = id_.Receive(cr, src);
     cr->recv_str(src, &desc_);
     gmxParticleType_ = cr->recv_int(src);

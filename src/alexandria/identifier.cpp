@@ -204,7 +204,7 @@ CommunicationStatus Identifier::Send(const CommunicationRecord *cr, int dest) co
     {
         cr->send_double(dest, b);
     }
-    return CS_OK;
+    return CommunicationStatus::OK;
 }
 
 CommunicationStatus Identifier::Receive(const CommunicationRecord *cr, int src)
@@ -225,7 +225,7 @@ CommunicationStatus Identifier::Receive(const CommunicationRecord *cr, int src)
     {
         bondOrders_.push_back(cr->recv_double(src));
     }
-    return CS_OK;
+    return CommunicationStatus::OK;
 }
 
 bool operator==(const Identifier &a, const Identifier &b)

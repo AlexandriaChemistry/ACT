@@ -5,7 +5,6 @@
  * \author Julian Ramon Marrades Furquet <julian.marrades@hotmail.es>
  */
 
-
 #ifndef ALEXANDRIA_TUNE_EEM_H
 #define ALEXANDRIA_TUNE_EEM_H
 
@@ -149,9 +148,6 @@ public:
 
     const CommunicationRecord *commRec() const { return &commRec_; }
     
-    //! \brief Get the communications record \p cr_ pointer
-    //t_commrec *commrec() { return commRec_.commrec(); }
-
     /*! \brief Set the output environment pointer \p oenv_
      * \param[in] oenv the reference pointer
      */

@@ -27,10 +27,11 @@ enum class NodeType {
  * \ingroup module_alexandria
  */
 enum CommunicationStatus {
-    CS_OK        = 6666,
-    CS_ERROR     = 7777,
-    CS_SEND_DATA = 8888,
-    CS_RECV_DATA = 9999
+    OK        = 6666,
+    DONE      = 6789,
+    ERROR     = 7777,
+    SEND_DATA = 8888,
+    RECV_DATA = 9999
 };
 
 //! \return A string corresponding to a CommunicationStatus
@@ -43,11 +44,22 @@ private:
     t_commrec        *cr_                    = nullptr;
     //! My NodeType
     NodeType          nt_                    = NodeType::Helper;
+    //! MPI Communicator for the whole system
+    MPI_Comm          mpi_act_world_         = MPI_COMM_NULL;
+    //! MPI Communicator for every processor except the master
+    MPI_Comm          mpi_act_not_master_    = MPI_COMM_NULL;
+    //! MPI Communicator for my local helpers
+    MPI_Comm          mpi_act_helpers_       = MPI_COMM_NULL;
     //! My MPI rank
     int               rank_                  = 0;
     //! Total number of MPI ranks
     int               size_                  = 0;
     //! Total number of middlemen
+    /*! \brief The number of middle men in a 2D parallellization
+     * Of all the size_ nodes, the middlemen each have
+     * nhelper_per_middleman_ = size_/nmiddlemen_
+     * helpers. 
+     */
     int               nmiddlemen_            = 0;
     //! Number of helpers per middleman
     int               nhelper_per_middleman_ = 0;
@@ -208,16 +220,19 @@ public:
      *********************************************************/
     /*! \brief Initiate sending data to a processor
      * \param[in] dest The destination processor
+     * \return CommunicationStatus::SEND_DATA, if OK
      */
     CommunicationStatus send_data(int dest) const;
     
     /*! \brief Finalize sending data to a processor
      * \param[in] dest The destination processor
+     * \return CommunicationStatus::OK, if OK
      */
     CommunicationStatus send_done(int dest) const;
 
     /*! \brief Initiate or finalize receiving data from a processor
      * \param[in] src The source processor
+     * \return CommunicationStatus::RECV_DATA, if OK
      */
     CommunicationStatus recv_data(int src) const;
 

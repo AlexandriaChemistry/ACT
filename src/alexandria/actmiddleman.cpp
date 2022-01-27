@@ -65,11 +65,11 @@ void ACTMiddleMan::run()
     fitComp_->compute(ind_->genomePtr(), iMolSelect::Train);
     // The send my initial genome and fitness to the master
     ind_->genome().Send(cr, 0);
-    int cont = 0;
+    auto cont = CommunicationStatus::OK;
     do
     {
-        cont = cr->recv_int(0);
-        if (cont)
+        cont = cr->recv_data(0);
+        if (cont == CommunicationStatus::RECV_DATA)
         {
             int imsi = cr->recv_int(0);
             // Get the dataset
@@ -92,7 +92,7 @@ void ACTMiddleMan::run()
             cr->send_double(0, ind_->genome().fitness(ims));
         }
     }
-    while (cont);
+    while (CommunicationStatus::RECV_DATA == cont);
     // Close our files or whaterver we need to do, then we're done!
     mutator_->finalize();
 }
