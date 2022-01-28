@@ -85,7 +85,6 @@ void MCMCMutator::mutate(ga::Genome *genome,
                                                                 iMolSelect::Train)});  
     // This does not fill the fitness attribute in individual!
     // TODO Print results
-    auto minEval = prevEval;
     genome->setFitness(iMolSelect::Train, prevEval[iMolSelect::Train]);
     if (evaluate_testset)
     {
@@ -95,6 +94,9 @@ void MCMCMutator::mutate(ga::Genome *genome,
         // TODO printing
         genome->setFitness(iMolSelect::Test, prevEval[iMolSelect::Test]);
     }
+    // Save initial evaluation and initialize a structure for the minimum evaluation
+    auto initEval = prevEval;
+    auto minEval = prevEval;
 
     print_memory_usage(debug);
 
@@ -111,6 +113,7 @@ void MCMCMutator::mutate(ga::Genome *genome,
             // For the second half of the optimization, collect data 
             // to find the mean and standard deviation of each
             // parameter
+            // TODO: make optional
             if (iter >= bch_->maxIter()/2)
             {
                 size_t k = 0;
@@ -132,10 +135,10 @@ void MCMCMutator::mutate(ga::Genome *genome,
     // Assume no better minimum was found
     bMinimum_ = false;
     auto ims  = iMolSelect::Train;
-    if (minEval[ims] < genome->fitness(ims))
+    if (minEval[ims] < initEval[ims])  // FIXME: there is no need for minEval anymore, we can just use bestGenome
     {
         // If better minimum was found, update the value in <*chi2> and return true
-        genome->setFitness(ims, minEval[ims]);
+        // genome->setFitness(ims, minEval[ims]);
         bMinimum_ = true;
     }
 }
@@ -204,8 +207,8 @@ void MCMCMutator::stepMCMC(ga::Genome                   *genome,
     const double xiter = iter + (1.0*pp)/genome->nBase();
     if (accept)
     {  // If the parameter change is accepted
-        auto ims = iMolSelect::Train;
-        if (currEval[ims] < minEval->find(ims)->second)
+        auto imstr = iMolSelect::Train;
+        if (currEval[imstr] < minEval->find(imstr)->second)  // If a new minimim was found
         {
             // If pointer to log file exists, write information about new minimum
             if (logfile_)
@@ -213,15 +216,18 @@ void MCMCMutator::stepMCMC(ga::Genome                   *genome,
                 printNewMinimum(currEval, evaluate_testset, xiter);
             }
             *bestGenome = *genome;
-            minEval->find(ims)->second = currEval[ims];
+            bestGenome->setFitness(imstr, currEval[imstr]);  // Pass the fitness for training set to the best genome
+            minEval->find(imstr)->second = currEval[imstr];
             sii_->saveState(false);
         }
-        prevEval->find(ims)->second = currEval[ims];
+        prevEval->find(imstr)->second = currEval[imstr];
+        genome->setFitness(imstr, currEval[imstr]);
         if (evaluate_testset)
         {
-            auto ims = iMolSelect::Test;
-            prevEval->find(ims)->second = currEval[ims];
-            genome->setFitness(ims, currEval[ims]);
+            auto imste = iMolSelect::Test;
+            prevEval->find(imste)->second = currEval[imste];
+            bestGenome->setFitness(imste, currEval[imste]);  // Pass the fitness for the test set to the best genome
+            genome->setFitness(imste, currEval[imste]);
         }
         acceptedMoves_[paramIndex] += 1;
     }

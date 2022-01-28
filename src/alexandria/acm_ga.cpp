@@ -170,7 +170,7 @@ bool HybridGAMC::evolve(ga::Genome *bestGenome)
             pool[pnew]->genome(i+1).print("Child 2:", logFile_);
 
             // Do mutation in each child, this is done by the middleman
-            fprintf(logFile_, "Doing mutation...\n");
+            fprintf(logFile_, "Sending for mutation...\n");
             // Now time to send out the new genomes to the two individuals
             for (size_t k = 0; k < 2; k++)
             {
@@ -182,21 +182,26 @@ bool HybridGAMC::evolve(ga::Genome *bestGenome)
                 // Now send the new bases
                 cr->send_double_vector(dest, pool[pold]->genomePtr(i+k)->basesPtr());
             }
-            pool[pnew]->genome(i).print("Child 1:", logFile_);
-            pool[pnew]->genome(i+1).print("Child 2:", logFile_);
+            // pool[pnew]->genome(i).print("Child 1:", logFile_);
+            // pool[pnew]->genome(i+1).print("Child 2:", logFile_);
         }
         // Swap oldPop and newPop
         fprintf(logFile_, "Swapping oldPop and newPop...\n");
         pold = pnew;
         
-        fprintf(logFile_, "Fetching fitness from new generation...\n");
-        // Now receive back the updated fitnesses, from the non-elitists
+        fprintf(logFile_, "Fetching mutated children and fitness from new generation...\n");
+        // Receive the new children (parameters + fitness) from the middle men for the non elitist
+        // FIXME: if we end up sending more stuff, it might be worth it to just send the entire genome
         for (size_t i = gach_->nElites(); i < pool[pold]->popSize(); i += 1)
         {
             int src      = cr->middlemen()[i];
-            auto fitness = cr->recv_double(src);
+            cr->recv_double_vector(src, pool[pold]->genomePtr(i)->basesPtr());  // Receiving the mutated parameters
+            auto fitness = cr->recv_double(src);  // Receiving the new training fitness
             pool[pold]->genomePtr(i)->setFitness(iMolSelect::Train, fitness);
         }
+
+        // Print population again!
+        pool[pold]->print(logFile_);
 
         // Print fitness to surveillance files
         fprintFitness(*(pool[pold]));
