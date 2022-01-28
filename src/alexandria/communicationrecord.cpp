@@ -130,7 +130,7 @@ void CommunicationRecord::init(int nmiddleman)
             // it is an error to do so.
             
             // Not updating ordinal_ for the same reason.
-            ordinal_ = 0;
+            // ordinal_ = 0;
             if (nmiddlemen_ == 0)
             {
                 // If there are no middlemen, the master servers the helpers 

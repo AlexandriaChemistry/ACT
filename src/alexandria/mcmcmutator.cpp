@@ -326,6 +326,7 @@ void MCMCMutator::printNewMinimum(const std::map<iMolSelect, double> &chi2,
                                   bool                                bEvaluate_testset,
                                   double                              xiter)
 {
+    fprintf(logfile_, "Middleman %i\n", sii_->id());
     if (bEvaluate_testset)
     {
         fprintf(logfile_, "iter %10g. Found new minimum at %10g. Corresponding energy on the test set: %g\n",
@@ -468,7 +469,6 @@ void MCMCMutator::makeWorkDir()
 
 void MCMCMutator::openParamConvFiles(const gmx_output_env_t *oenv)
 {
-    makeWorkDir();
     const std::vector<std::string> pClass = sii_->paramClass();
     for (size_t i = 0; i < pClass.size(); i++)
     {
@@ -495,7 +495,6 @@ void MCMCMutator::openParamConvFiles(const gmx_output_env_t *oenv)
 void MCMCMutator::openChi2ConvFile(const gmx_output_env_t    *oenv,
                                      const bool                 bEvaluate_testset)
 {
-    makeWorkDir();
     auto fileName = gmx::formatString("%sind%d-%s", sii_->prefix().c_str(), sii_->id(), sii_->xvgEpot().c_str());
     fpe_ = xvgropen(fileName.c_str(),
                     "Chi squared",

@@ -74,6 +74,11 @@ public:
      * \param[in] cr The communication record
      */
     StaticIndividualInfo(const CommunicationRecord *cr);
+
+    /*! \brief Fill the \p id_ and \p prefix_ fields
+     * (to be called after the communication record structure has been initialized)
+     */
+    void fillIdAndPrefix();
     
     
     /*! \brief Set the output file name

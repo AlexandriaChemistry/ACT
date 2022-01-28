@@ -18,6 +18,10 @@ namespace alexandria
 StaticIndividualInfo::StaticIndividualInfo(const CommunicationRecord *cr) : cr_(cr)
 {
     fillFittingTargets();
+}
+
+void StaticIndividualInfo::fillIdAndPrefix()
+{
     id_ = cr_->middleManOrdinal();
     if (id_ >= 0)
     {
@@ -27,7 +31,14 @@ StaticIndividualInfo::StaticIndividualInfo(const CommunicationRecord *cr) : cr_(
 
 void StaticIndividualInfo::setOutputFile(const std::string &outputFile)
 {
-    outputFile_ = prefix_ + "ind" + std::to_string(id_) + "-" + outputFile;
+    if (cr_->isMaster())
+    {
+        outputFile_ = prefix_ + "ind-global-best" + "-" + outputFile;
+    }
+    else if (cr_->isMiddleMan())
+    {   
+        outputFile_ = prefix_ + "ind" + std::to_string(id_) + "-" + outputFile;
+    }
 }
 
 /* * * * * * * * * * * * * * * * * * * * * *

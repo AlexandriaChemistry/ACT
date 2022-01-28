@@ -167,7 +167,6 @@ void OptACM::check_pargs()
 void OptACM::optionsFinished(const std::string &outputFile)
 {
     mg_.optionsFinished();
-    sii_->setOutputFile(outputFile);
     int nmiddlemen = 0;
     if (gach_.optimizer() != OptimizerAlg::MCMC)
     {
@@ -175,6 +174,10 @@ void OptACM::optionsFinished(const std::string &outputFile)
     }
     // Update the communication record and do necessary checks.
     commRec_.init(nmiddlemen);
+    // Set prefix and id in sii_
+    sii_->fillIdAndPrefix();
+    // Set output file for FF parameters
+    sii_->setOutputFile(outputFile);
 }
 
 void OptACM::openLogFile(const char *logfileName) {
@@ -268,7 +271,7 @@ void OptACM::initMaster()
     {
         // auto mut = new alexandria::MCMCMutator(nullptr, verbose(), &bch_, fitComp_, sii_);
         auto mut = new alexandria::MCMCMutator(logFile(), verbose(), &bch_, fitComp_, sii_);
-        if (sii_->commRec()->nmiddlemen() == 0)
+        if (sii_->commRec()->nmiddlemen() == 0)  // If we are running pure MCMC
         {
             mut->openParamConvFiles(oenv());
             mut->openChi2ConvFile(oenv(), bch()->evaluateTestset());
@@ -493,6 +496,8 @@ int tune_ff(int argc, char *argv[])
     opt.check_pargs();
 
     // Finishing MolGen stuff and setting output file for FF in OptACM.
+    // Initializes commRec_ in opt
+    // Fills id and prefix in sii
     // Calls optionsFinished() for MolGen instance.
     opt.optionsFinished(opt2fn("-o", filenms.size(), filenms.data()));
 

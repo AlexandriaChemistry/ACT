@@ -132,17 +132,6 @@ private:
                   int                           iter,
                   double                       *beta0);
 
-    /* * * * * * * * * * * * * * * * * * * * * *
-    * BEGIN: File stuff                        *
-    * * * * * * * * * * * * * * * * * * * * * */
-
-    //! \brief Create a working directory
-    void makeWorkDir();
-
-
-    /* * * * * * * * * * * * * * * * * * * * * *
-    * END: File stuff                          *
-    * * * * * * * * * * * * * * * * * * * * * */
 public:
 
     /*!
@@ -197,6 +186,9 @@ public:
      */
     void sensitivityAnalysis(ga::Genome *genome,
                              iMolSelect  ims);
+
+    //! \brief Create a working directory
+    void makeWorkDir();
 
     /*!
      * \brief Open parameter convergence files
