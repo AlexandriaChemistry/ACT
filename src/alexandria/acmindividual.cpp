@@ -14,29 +14,10 @@
 
 namespace alexandria
 {
-/* Constructor */
-ACMIndividual::ACMIndividual(const int             id,
-                             StaticIndividualInfo *sii,
-                             const std::string    &outputFile)
-    : ga::Individual(), initialGenome_(), genome_(), bestGenome_()
-{
-    id_  = id;
-    sii_ = sii;
-    
-    // Initialize vectors for statistics and bestGenome_.
-    // initialGenome_ and genome_ will be initialized later
-    
-    // Copy targets_ from sii_
-    //targets_ = sii_->targets();  // This should make a deep copy if
-    // the copy constructors are well made
-    
-    // Copy poldata from sii_
-    //pd_ = sii_->poldataConst();    
-}
 
 /* * * * * * * * * * * * * * * * * * * * * *
-* BEGIN: Output stuff                      *
-* * * * * * * * * * * * * * * * * * * * * */
+ * BEGIN: Output stuff                     *
+ * * * * * * * * * * * * * * * * * * * * * */
 
 void ACMIndividual::printParameters(FILE *fp) const
 {
@@ -52,16 +33,16 @@ void ACMIndividual::printParameters(FILE *fp) const
 }
 
 /* * * * * * * * * * * * * * * * * * * * * *
-* END: Output stuff                        *
-* * * * * * * * * * * * * * * * * * * * * */
+ * END: Output stuff                       *
+ * * * * * * * * * * * * * * * * * * * * * */
 
 /* * * * * * * * * * * * * * * * * * * * * *
-* BEGIN: Poldata stuff                     *
-* * * * * * * * * * * * * * * * * * * * * */
+ * BEGIN: Poldata stuff                    *
+ * * * * * * * * * * * * * * * * * * * * * */
 
-void ACMIndividual::copyGenome(ga::Genome *genome)
+void ACMIndividual::copyGenome(const ga::Genome &genome)
 {
-    genome_ = *genome;
+    genome_ = genome;
 }
 
 /* * * * * * * * * * * * * * * * * * * * * *

@@ -39,7 +39,6 @@ namespace alexandria
          * \param[in] sii        The individual info
          * \param[in] gach       GA Config handler
          * \param[in] bch        Bayes Config handler
-         * \param[in] outputFile The output force field file
          * \param[in] verbose    Whether or not to print a lot
          * \param[in] oenv       GROMACS output environment
          */
@@ -48,7 +47,6 @@ namespace alexandria
                      StaticIndividualInfo *sii,
                      GAConfigHandler      *gach,
                      BayesConfigHandler   *bch,
-                     const std::string    &outputFile,
                      bool                  verbose,
                      gmx_output_env_t     *oenv);
         

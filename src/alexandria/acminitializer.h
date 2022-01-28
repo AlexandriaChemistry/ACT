@@ -10,13 +10,11 @@
 #ifndef ALEXANDRIA_ACMINITIALIZER_H
 #define ALEXANDRIA_ACMINITIALIZER_H
 
-
 #include "ga/Initializer.h"
 #include "staticindividualinfo.h"
 
 #include <time.h>
 #include <random>
-
 
 namespace alexandria
 {
@@ -39,8 +37,6 @@ private:
     std::uniform_real_distribution<double>   dis_;
     //! Seeds for random number generation
     std::vector<int>                         seeds_;
-    //! Base name for Force Field output file
-    std::string                              outputFile_;
 
 public: 
 
@@ -48,13 +44,11 @@ public:
      * \brief Property constructor
      * \param[in] sii           pointer to StaticIndividualInfo instance
      * \param[in] randInit      whether we initialize the force field parameters randomly
-     * \param[in] outputFile    base name for Force Field output files
      * \param[in] seed          Seed for random number initialization,
      *                          if zero it will be generated.
      */
     ACMInitializer(StaticIndividualInfo   *sii,
                    bool                    randInit,
-                   const std::string      &outputFile,
                    int                     seed);
 
     virtual ga::Individual *initialize();

@@ -20,10 +20,9 @@ namespace alexandria
 /* * * * * * * * * * * * * * * * * * * *
 * BEGIN: ACMInitializer                *
 * * * * * * * * * * * * * * * * * * * */
-ACMInitializer::ACMInitializer(StaticIndividualInfo   *sii,
-                               bool                    randInit,
-                               const std::string      &outputFile,
-                               int                     seed)
+ACMInitializer::ACMInitializer(StaticIndividualInfo *sii,
+                               bool                  randInit,
+                               int                   seed)
     : gen_(rd_()), dis_(std::uniform_real_distribution<double>(0.0, 1.0))
 {
     if (seed == 0)
@@ -37,13 +36,12 @@ ACMInitializer::ACMInitializer(StaticIndividualInfo   *sii,
     
     sii_      = sii;
     randInit_ = randInit;
-    outputFile_ = outputFile;
 }
 
 ga::Individual *ACMInitializer::initialize()
 {
     int id   = sii_->commRec()->middleManOrdinal();
-    auto ind = new ACMIndividual(id, sii_, outputFile_);
+    auto ind = new ACMIndividual(id, sii_);
     if (randInit_)
     // Insert random value in range
     {
@@ -60,6 +58,7 @@ ga::Individual *ACMInitializer::initialize()
             ind->addParam(val);
         }
     }
+    ind->setBestGenome(ind->genome());
     return ind;
 }
 

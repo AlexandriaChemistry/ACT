@@ -49,12 +49,49 @@ const char *cs_name(CommunicationStatus cs)
     return csToString[cs];
 };
 
+std::map<NodeType, const char *> ntToString = {
+    { NodeType::Master,    "Master"    },
+    { NodeType::MiddleMan, "MiddleMan" },
+    { NodeType::Helper,    "Helper"    }  
+};
+
 CommunicationRecord::CommunicationRecord()
 {
     cr_            = init_commrec();
     mpi_act_world_ = cr_->mpi_comm_mysim;
     rank_          = cr_->nodeid;
     size_          = cr_->nnodes;
+}
+
+void CommunicationRecord::print(FILE *fp)
+{
+    if (!fp)
+    {
+        return;
+    }
+    fprintf(fp, "rank: %d/%d nodetype: %s superior: %d\n",
+            rank_, size_, ntToString[nt_], superior_);
+    if (isMaster())
+    {
+        fprintf(fp, "nmiddlemen: %d nhelper_per_middleman: %d\n", nmiddlemen_, 
+                nhelper_per_middleman_);
+    }
+    if (isMiddleMan())
+    {
+        fprintf(fp, "ordinal: %d nhelper: %d\n", middleManOrdinal(), nhelper_per_middleman_);
+    }
+    fprintf(fp, "helpers:");
+    for (auto &h : helpers_)
+    {
+        fprintf(fp, " %3d", h);
+    }
+    fprintf(fp, "\n");
+    fprintf(fp, "middlemen:");
+    for (auto &m : middlemen_)
+    {
+        fprintf(fp, " %3d", m);
+    }
+    fprintf(fp, "\n");
 }
 
 void CommunicationRecord::init(int nmiddleman)
@@ -93,6 +130,7 @@ void CommunicationRecord::init(int nmiddleman)
             // it is an error to do so.
             
             // Not updating ordinal_ for the same reason.
+            ordinal_ = 0;
             if (nmiddlemen_ == 0)
             {
                 // If there are no middlemen, the master servers the helpers 
@@ -116,6 +154,7 @@ void CommunicationRecord::init(int nmiddleman)
     {
         if (nmiddlemen_ == 0)
         {
+            // No middlemen, then I am a helper reporting to the master
             nt_       = NodeType::Helper;
             superior_ = 0;
             // Not updating ordinal_, see above.
@@ -127,9 +166,9 @@ void CommunicationRecord::init(int nmiddleman)
                 nt_       = NodeType::MiddleMan;
                 superior_ = 0;
                 ordinal_  = (rank_ - 1) / (1+nhelper_per_middleman_);
-                for (int i = rank_ + 1; i <= 1+nhelper_per_middleman_; i++)
+                for (int i = 0; i < nhelper_per_middleman_; i++)
                 {
-                    helpers_.push_back(i);
+                    helpers_.push_back(rank_ + i + 1);
                 }
             }
             else
@@ -164,6 +203,7 @@ void CommunicationRecord::init(int nmiddleman)
                            myrank % nmiddlemen_, &mpi_act_helpers_);
         }
     }
+    print(stderr);
 }
 
 CommunicationRecord::~CommunicationRecord()

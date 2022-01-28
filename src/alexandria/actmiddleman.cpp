@@ -16,7 +16,6 @@ ACTMiddleMan::ACTMiddleMan(FILE                 *logFile,
                            StaticIndividualInfo *sii,
                            GAConfigHandler      *gach,
                            BayesConfigHandler   *bch,
-                           const std::string    &outputFile,
                            bool                  verbose,
                            gmx_output_env_t     *oenv)
 {
@@ -35,7 +34,7 @@ ACTMiddleMan::ACTMiddleMan(FILE                 *logFile,
     }
     seed = dis(gen);
     
-    auto initializer = new ACMInitializer(sii, gach->randomInit(), outputFile, seed);
+    auto initializer = new ACMInitializer(sii, gach->randomInit(), seed);
     
     // Create and initialize the individual
     ind_ = static_cast<ACMIndividual *>(initializer->initialize());
@@ -66,6 +65,7 @@ void ACTMiddleMan::run()
     // The send my initial genome and fitness to the master
     ind_->genome().Send(cr, 0);
     auto cont = CommunicationStatus::OK;
+    
     do
     {
         cont = cr->recv_data(0);
@@ -88,13 +88,19 @@ void ACTMiddleMan::run()
             }
             // Now get the parameters
             cr->recv_double_vector(0, ind_->genomePtr()->basesPtr());
-            fitComp_->compute(ind_->genomePtr(), ims);
+            
+            // TODO fix prMut
+            mutator_->mutate(ind_->genomePtr(), ind_->bestGenomePtr(), 0.0);
+
+            //fitComp_->compute(ind_->genomePtr(), ims);
             cr->send_double(0, ind_->genome().fitness(ims));
         }
     }
     while (CommunicationStatus::RECV_DATA == cont);
     // Close our files or whaterver we need to do, then we're done!
     mutator_->finalize();
+    // Stop my helpers too.
+    mutator_->stopHelpers();
 }
 
 } // namespace alexandria

@@ -67,7 +67,10 @@ void Genome::unsetFitness(iMolSelect ims)
 
 double Genome::base(size_t index) const
 {
-    GMX_RELEASE_ASSERT(index < genome_.size(), "Index out of range");
+    if (index >= genome_.size())
+    {
+        GMX_THROW(gmx::InternalError(gmx::formatString("Index %zu out of range (should be less than %zu)", index, genome_.size()).c_str()));
+    }
     return genome_[index];
 }
 

@@ -37,8 +37,6 @@ private:
     ACMFitnessComputer   *fitComp_ = nullptr;
     //! Pointer to Individual
     StaticIndividualInfo *sii_     = nullptr;
-    //! The initial genome is stored for printing
-    ga::Genome            initialGenome_;
     //! Attempted changes for each parameter
     std::vector<int>      attemptedMoves_;
     //! Accepted changes for each parameter
@@ -69,7 +67,7 @@ private:
      * \param[in] j     index of the parameter to change
      */
     void changeParam(ga::Genome *genome,
-                     size_t  j);
+                     size_t      j);
 
     /*!
      * \brief Print new minimum to log file and, if necessary, print params to debug file
@@ -86,8 +84,8 @@ private:
      * \param[in] genome Pointer to the genome
      * \param[in] xiter  Fractional iteration. E.g., if we are halfway through iteration 3, it is 3.5
      */
-    void printParameterStep(ga::Genome          *genome,
-                            double               xiter);                                          
+    void printParameterStep(ga::Genome *genome,
+                            double      xiter);                                          
 
     /*!
      * \brief Write \f$ \chi^2 \f$ value of a genome to its convergence file, if it exists
@@ -184,11 +182,13 @@ public:
 
     /*!
      * \brief Print the MC statistics to a file.
-     * \param[in] fp         File pointer to print to
-     * \param[in] bestGenome The genome with highest fitness
+     * \param[in] fp            File pointer to print to
+     * \param[in] initialGenome The initial genome
+     * \param[in] bestGenome    The genome with highest fitness
      */
     void printMonteCarloStatistics(FILE             *fp,
-                                   const ga::Genome *bestGenome);
+                                   const ga::Genome &initialGenome,
+                                   const ga::Genome &bestGenome);
 
     /*!
      * \brief Perform a sensitivity analysis by systematically changing all parameters and re-evaluating the \f$ \chi^2 \f$.

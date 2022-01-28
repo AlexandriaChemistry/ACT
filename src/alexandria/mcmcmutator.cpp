@@ -51,10 +51,6 @@ void MCMCMutator::mutate(ga::Genome *genome,
     int    nsum             = 0;
     size_t nParam           = genome->nBase();
 
-    if (initialGenome_.nBase() == 0)
-    {
-        initialGenome_ = *genome;
-    }
     std::vector<double> sum, sum_of_sq;
     sum.resize(nParam, 0);
     sum_of_sq.resize(nParam, 0);
@@ -130,6 +126,7 @@ void MCMCMutator::mutate(ga::Genome *genome,
     }
 
     // OPTIMIZATION IS COMPLETE
+    // TODO Make optional
     computeMeanSigma(sum, nsum, &sum_of_sq);
 
     // Assume no better minimum was found
@@ -287,7 +284,8 @@ void MCMCMutator::changeParam(ga::Genome *genome,
 
 
 void MCMCMutator::printMonteCarloStatistics(FILE             *fp,
-                                            const ga::Genome *bestGenome)
+                                            const ga::Genome &initialGenome,
+                                            const ga::Genome &bestGenome)
 {
     if (!fp)
     {
@@ -300,10 +298,10 @@ void MCMCMutator::printMonteCarloStatistics(FILE             *fp,
 
     fprintf(fp, "Monte Carlo statistics of parameters after optimization\n");
     fprintf(fp, "#best %zu #mean %zu #sigma %zu #param %zu\n",
-            bestGenome->nBase(), pMean_.size(), 
+            bestGenome.nBase(), pMean_.size(), 
             pSigma_.size(), paramNames.size());
     fprintf(fp, "Parameter                     Ncopies Initial   Best    Mean    Sigma Attempt  Acceptance  T-Weight\n");
-    for (size_t k = 0; k < bestGenome->nBase(); k++)
+    for (size_t k = 0; k < bestGenome.nBase(); k++)
     {
         double acceptance_ratio = 0;
         if (attemptedMoves_[k] > 0)
@@ -312,7 +310,7 @@ void MCMCMutator::printMonteCarloStatistics(FILE             *fp,
         }
         fprintf(fp, "%-30s  %5d  %6.3f  %6.3f  %6.3f  %6.3f    %4d %5.1f%%  %10.5f\n",
                 paramNames[k].c_str(), ntrain[k],
-                initialGenome_.base(k), bestGenome->base(k), 
+                initialGenome.base(k), bestGenome.base(k), 
                 pMean_[k], pSigma_[k],
                 attemptedMoves_[k], acceptance_ratio, weightedTemperature[k]);
     }
@@ -509,7 +507,8 @@ void MCMCMutator::openChi2ConvFile(const gmx_output_env_t    *oenv,
 
 void MCMCMutator::stopHelpers()
 {
-    fitComp_->calcDeviation(initialGenome_.basesPtr(),
+    std::vector<double> dummy;
+    fitComp_->calcDeviation(&dummy,
                             alexandria::CalcDev::Final, iMolSelect::Train);
 }
 

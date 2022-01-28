@@ -232,7 +232,7 @@ void OptACM::initChargeGeneration(iMolSelect ims)
     }
 }
 
-void OptACM::initMaster(const std::string &outputFile)
+void OptACM::initMaster()
 {
     ga::ProbabilityComputer *probComputer = nullptr;
     // ProbabilityComputer
@@ -256,8 +256,7 @@ void OptACM::initMaster(const std::string &outputFile)
     }
     
     // Fitness computer FIXME: do we want to give the pointer to the logfile instead of nullptr?
-    fitComp_ = new ACMFitnessComputer(nullptr, sii_, &mg_, 
-                                      false, false, false);
+    fitComp_ = new ACMFitnessComputer(nullptr, sii_, &mg_, false, false, false);
     
     // Create and initialize the mutator
     ga::Mutator *mutator;
@@ -269,8 +268,11 @@ void OptACM::initMaster(const std::string &outputFile)
     {
         // auto mut = new alexandria::MCMCMutator(nullptr, verbose(), &bch_, fitComp_, sii_);
         auto mut = new alexandria::MCMCMutator(logFile(), verbose(), &bch_, fitComp_, sii_);
-        mut->openParamConvFiles(oenv());
-        mut->openChi2ConvFile(oenv(), bch()->evaluateTestset());
+        if (sii_->commRec()->nmiddlemen() == 0)
+        {
+            mut->openParamConvFiles(oenv());
+            mut->openChi2ConvFile(oenv(), bch()->evaluateTestset());
+        }
         mutator = mut;
     }
     
@@ -289,8 +291,7 @@ void OptACM::initMaster(const std::string &outputFile)
     
     if (gach_.optimizer() == OptimizerAlg::MCMC)
     {
-        auto initializer = new ACMInitializer(sii_, gach_.randomInit(),
-                                              outputFile, bch_.seed());
+        auto initializer = new ACMInitializer(sii_, gach_.randomInit(), bch_.seed());
     
         ga_ = new ga::MCMC(logFile(), initializer,
                            fitComp_, probComputer,
@@ -342,7 +343,8 @@ bool OptACM::runMaster(bool        optimize,
     }
     if (gach_.optimizer() != OptimizerAlg::GA)
     {
-        mut->printMonteCarloStatistics(logFile(), ga_->bestGenomePtr());
+        // TODO In hybrid mode we have multiple MCMC mutators and the middlemen should do the printing. 
+        //mut->printMonteCarloStatistics(logFile(), ga_->bestGenome());
     }
 
     if (bMinimum)
@@ -580,7 +582,7 @@ int tune_ff(int argc, char *argv[])
 
     if (NodeType::Master == opt.commRec()->nodeType())
     {
-        opt.initMaster(opt2fn("-o", filenms.size(), filenms.data()));
+        opt.initMaster();
 
         // Master only
         bool bMinimum = opt.runMaster(bOptimize, bSensitivity);
@@ -614,7 +616,6 @@ int tune_ff(int argc, char *argv[])
         // so let's go.
         ACTMiddleMan middleman(opt.logFile(),
                                opt.mg(), opt.sii(), opt.gach(), opt.bch(),
-                               opt2fn("-o", filenms.size(), filenms.data()),
                                opt.verbose(), opt.oenv());
         middleman.run();
     }

@@ -41,8 +41,6 @@ private:
     ga::Genome            genome_;
     //! Best parameter vector
     ga::Genome            bestGenome_;
-    //! Force field file name (to be used in saveState())
-    //std::string           outputFile_;
 
 public:
     /*!
@@ -51,20 +49,17 @@ public:
      * \param[in] sii           pointer to StaticIndividualInfo instance
      * \param[in] outputFile    the base name for Force Field output files
      */
-    ACMIndividual(const int                     id,
-                        StaticIndividualInfo   *sii,
-                  const std::string            &outputFile);
+    ACMIndividual(const int             id,
+                  StaticIndividualInfo *sii) : ga::Individual(), id_(id), sii_(sii) {}
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * BEGIN: Cloning                           *
     * * * * * * * * * * * * * * * * * * * * * */
 
     /*! \brief Copy the genome to this individual
-     * \param[in] genome Complete genome, only the bases are copied.
+     * \param[in] genome Complete input genome
      */
-    virtual void copyGenome(ga::Genome *genome);
-
-    virtual ga::Individual *clone() { return new ACMIndividual(*this); }
+    virtual void copyGenome(const ga::Genome &genome);
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * END: Cloning                             *
@@ -99,136 +94,17 @@ public:
     * * * * * * * * * * * * * * * * * * * * * */
 
     /* * * * * * * * * * * * * * * * * * * * * *
-    * BEGIN: FittingTarget queries             *
-    * * * * * * * * * * * * * * * * * * * * * */
-
-#ifdef OLD
-    /*!
-     * \brief Return the fitting targets for editing for a given dataset
-     * \param[in] ims The selection dataset to return
-     * \return The map of eRMS to FittingTarget, or nullptr
-     */
-    std::map<eRMS, FittingTarget> *fittingTargets(iMolSelect ims)
-    {
-        auto tt = targets_.find(ims);
-        if (targets_.end() == tt)
-        {
-            return nullptr;
-        }
-        else
-        {
-            return &tt->second;
-        }
-    }
-    /*!
-     * \brief Return the fitting targets for a given dataset as constant
-     * \param[in] ims The selection dataset to return
-     * \return The map of eRMS to FittingTarget or nullptr
-     */
-    const std::map<eRMS, FittingTarget> &fittingTargetsConst(iMolSelect ims) const
-    {
-        auto tt = targets_.find(ims);
-        GMX_RELEASE_ASSERT(targets_.end() != tt, gmx::formatString("Cannot find selection %s", iMolSelectName(ims)).c_str());
-        return tt->second;
-    }
-
-    /*!
-     * \brief get a pointer to a FittingTarget given a dataset choice and \f$ \chi^2 \f$ component
-     * \param[in] ims The selection dataset
-     * \param[in] rms The \f$ \chi^2 \f$ component
-     * \return FittingTarget pointer or nullptr if not found
-     */
-    FittingTarget *target(iMolSelect ims, eRMS rms)
-    {
-        auto itarget = targets_.find(ims);
-        if (itarget == targets_.end())
-        {
-            return nullptr;
-        }
-        auto ift = itarget->second.find(rms);
-        if (ift == itarget->second.end())
-        {
-            return nullptr;
-        }
-        return &ift->second;
-    }
-#endif
-    
-    /* * * * * * * * * * * * * * * * * * * * * *
-    * END: FittingTarget queries               *
-    * * * * * * * * * * * * * * * * * * * * * */
-    
-    /* * * * * * * * * * * * * * * * * * * * * *
     * BEGIN: Getters and Setters               *
     * * * * * * * * * * * * * * * * * * * * * */
 
     //! \return the ID
     int id() const { return id_; }
 
-    /*!
-     * \brief Set a new value for the ID
-     * Also adjusts the Force Field output file.<br>
-     * CAREFUL! This does not change convergence files! You will have to call the open file routines again to fix it!<br>
-     * That is, ACMIndividual::openParamConvFiles() and ACMIndividual::openChi2ConvFile()
-     * \param[in] id the new ID
-     */
-    //void setId(const int id)
-    //{
-    //  id_ = id;
-    //  const size_t firstIndex = outputFile_.find("-");  // We need to discard the existing indX- part
-    //  const size_t strLength = outputFile_.size();
-    //  outputFile_ = "ind" + std::to_string(id_) + "/ind" + std::to_string(id_) + outputFile_.substr(firstIndex, strLength - firstIndex);
-    //}
-
     //! \return a pointer to the StaticIndividualInfo instance
     StaticIndividualInfo *sii() { return sii_; }
 
     //! \return a pointer to the StaticIndividualInfo instance (for const objects)
     StaticIndividualInfo *siiConst() const { return sii_; }
-
-    //! \return a constant reference of the fitting targets
-    // const std::map<iMolSelect, std::map<eRMS, FittingTarget>> &targets() const { return targets_; }
-
-    //! \return the Poldata structure as pointr to a const variable
-    //const Poldata *poldata() const { return &sii_.pd_; }
-
-    //! \return the Poldata structure as const reference
-    //const Poldata &poldataConst() const { return pd_; }
-    
-    //! \return pointer to the Poldata structure
-    //Poldata *poldata() { return &pd_; }
-
-    //! \return the number of Force Field parameters
-    //size_t nParam() const { return genome_.nBase(); }
-
-    /*!
-     * \brief Set parameter at a given index to a new value
-     * \param[in] j   the index
-     * \param[in] val the new value
-     */
-    //void setParam(const size_t j, const real val)
-    //{
-    //   GMX_RELEASE_ASSERT(j < genome_.nParam(), "Parameter out of range");
-    //  genome_setParam(j, val);
-    //}
-
-    /*!
-     * \brief Get the value of a parameter by index
-     * \param[in] j the index
-     * \return the value of the parameter at index \p j
-     */
-    //double paramAtIndex(const size_t j) const { return genome_[j]; }
-
-    /*!
-     * \brief Set all parameters to new values
-     * \param[in] param the new values
-     */
-    //void setParam(std::vector<double> param)
-    //{
-    //  GMX_RELEASE_ASSERT(param.size() == genome_.size() || genome_.empty(),
-    //                     "Incorrect size of input parameters");
-    //  genome_ = param;
-    //}
 
     //! \return the initial vector of parameters as a const reference
     const ga::Genome &initialGenome() const { return initialGenome_; }
@@ -243,7 +119,7 @@ public:
     const ga::Genome &bestGenome() const { return bestGenome_; }
 
     //! \return a pointer to the current vector of parameters
-    //ga::Genome *bestGenomePtr() { return &bestGenome_; }
+    ga::Genome *bestGenomePtr() { return &bestGenome_; }
 
     /*!
      * \brief Set a new best parameter vector

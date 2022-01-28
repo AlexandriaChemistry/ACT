@@ -72,16 +72,6 @@ bool HybridGAMC::evolve(ga::Genome *bestGenome)
         // Initialize the population and compute fitness
         fprintf(logFile_, "Initializing individuals and computing initial fitness...\n");
     }
-#ifdef OLD
-    auto oldPop = oldPopPtr();
-    // Initialize population only for this node
-    for (int i = 0; i < populationSize(); i++)
-    {
-        oldPop->push_back(initializer()->initialize());
-        fitnessComputer()->compute((*oldPop)[i], Target::Train);
-    }
-    auto firstInd = static_cast<alexandria::ACMIndividual*>((*oldPop)[0]);
-#endif
 
     // Create the gene pools
     GenePool *pool[2];
@@ -179,41 +169,35 @@ bool HybridGAMC::evolve(ga::Genome *bestGenome)
             pool[pnew]->genome(i).print("Child 1:", logFile_);
             pool[pnew]->genome(i+1).print("Child 2:", logFile_);
 
-            // Do mutation in each child
+            // Do mutation in each child, this is done by the middleman
             fprintf(logFile_, "Doing mutation...\n");
+            // Now time to send out the new genomes to the two individuals
             for (size_t k = 0; k < 2; k++)
             {
-                mutator()->mutate(pool[pnew]->genomePtr(i + k), bestGenome, gach_->prMut());
+                int dest = cr->middlemen()[i+k];
+                // Signify the middlemen to continue
+                cr->send_data(dest);
+                // Send the data set, 0 for iMolSelect::Train
+                cr->send_int(dest, 0);
+                // Now send the new bases
+                cr->send_double_vector(dest, pool[pold]->genomePtr(i+k)->basesPtr());
             }
             pool[pnew]->genome(i).print("Child 1:", logFile_);
             pool[pnew]->genome(i+1).print("Child 2:", logFile_);
         }
-
         // Swap oldPop and newPop
         fprintf(logFile_, "Swapping oldPop and newPop...\n");
         pold = pnew;
         
-        // Now time to send out the new genomes to the individuals
-        int i = 0;
-        for(auto &dest : cr->middlemen())
+        fprintf(logFile_, "Fetching fitness from new generation...\n");
+        // Now receive back the updated fitnesses, from the non-elitists
+        for (size_t i = gach_->nElites(); i < pool[pold]->popSize(); i += 1)
         {
-            // Signify the middlemen to continue
-            cr->send_data(dest);
-            // Send the data set, 0 for iMolSelect::Train
-            cr->send_int(dest, 0);
-            // Now send the new bases
-            cr->send_double_vector(dest, pool[pold]->genomePtr(i)->basesPtr());
-            i += 1;
-        }
-        fprintf(logFile_, "Computing fitness of new generation...\n");
-        // And receive back the updated fitnesses
-        i = 0;
-        for(auto &src : cr->middlemen())
-        {
+            int src      = cr->middlemen()[i];
             auto fitness = cr->recv_double(src);
             pool[pold]->genomePtr(i)->setFitness(iMolSelect::Train, fitness);
-            i += 1;
         }
+
         // Print fitness to surveillance files
         fprintFitness(*(pool[pold]));
         

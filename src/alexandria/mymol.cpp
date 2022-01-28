@@ -1351,7 +1351,7 @@ real MyMol::potentialEnergy() const
     return enerd_->term[F_EPOT];
 }
 
-immStatus MyMol::computeForces(FILE *fplog, const CommunicationRecord *cr, double *rmsf)
+immStatus MyMol::computeForces(FILE *fplog, double *rmsf)
 {
     auto mdatoms = MDatoms_->get()->mdatoms();
     auto atoms   = atomsConst();
@@ -1369,10 +1369,13 @@ immStatus MyMol::computeForces(FILE *fplog, const CommunicationRecord *cr, doubl
             fprintf(debug, "QQQ Setting q[%d] to %g\n", i, mdatoms->chargeA[i]);
         }
     }
+    t_commrec *crtmp = init_commrec();
+    crtmp->nnodes = 1;
+    crtmp->nodeid = 0;
     if (!vsite_)
     {
         vsite_  = new std::unique_ptr<gmx_vsite_t>(new gmx_vsite_t());
-        *vsite_ = initVsite(*mtop_, cr->commrec());
+        *vsite_ = initVsite(*mtop_, crtmp);
     }
     unsigned long force_flags = ~0;
     double        t           = 0;
@@ -1401,13 +1404,10 @@ immStatus MyMol::computeForces(FILE *fplog, const CommunicationRecord *cr, doubl
     {
         if (debug)
         {
-            fprintf(debug, "cr->nodide %d mol %s alpha %g\n", cr->rank(),
+            fprintf(debug, "mol %s alpha %g\n", 
                     getMolname().c_str(),
                     mtop_->ffparams.iparams[mtop_->moltype[0].ilist[F_POLARIZATION].iatoms[0]].polarize.alpha);
         }
-        t_commrec *crtmp = init_commrec();
-        crtmp->nnodes = 1;
-        crtmp->nodeid = 0;
         real force2 = 0;
         try
         {
@@ -1447,7 +1447,7 @@ immStatus MyMol::computeForces(FILE *fplog, const CommunicationRecord *cr, doubl
     }
     else
     {
-        do_force(fplog, cr->commrec(), nullptr, inputrec_, 0,
+        do_force(fplog, crtmp, nullptr, inputrec_, 0,
                  &nrnb_, wcycle_, ltop_,
                  &(mtop_->groups),
                  state_->box, state_->x.arrayRefWithPadding(), nullptr,
@@ -1458,6 +1458,7 @@ immStatus MyMol::computeForces(FILE *fplog, const CommunicationRecord *cr, doubl
                  force_flags);
         *rmsf = 0;
     }
+    done_commrec(crtmp);
     return imm;
 }
 
@@ -1510,7 +1511,7 @@ immStatus MyMol::GenerateAcmCharges(const Poldata             *pd,
             if (haveShells())
             {
                 double rmsf;
-                auto imm = computeForces(nullptr, cr, &rmsf);
+                auto imm = computeForces(nullptr, &rmsf);
                 if (imm != immStatus::OK)
                 {
                     return imm;
@@ -1611,7 +1612,7 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
             if (nullptr != shellfc_)
             {
                 double rmsf;
-                auto imm = computeForces(nullptr, cr, &rmsf);
+                auto imm = computeForces(nullptr, &rmsf);
                 if (imm != immStatus::OK)
                 {
                     return imm;
@@ -1697,7 +1698,7 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
                 if (nullptr != shellfc_)
                 {
                     double rmsf;
-                    auto imm = computeForces(nullptr, cr, &rmsf);
+                    auto imm = computeForces(nullptr, &rmsf);
                     if (imm != immStatus::OK)
                     {
                         return imm;
@@ -1872,7 +1873,7 @@ immStatus MyMol::CalcPolarizability(double                     efield,
     backupCoordinates();
     field.resize(DIM, 0);
     myforce_->setField(field);
-    imm          = computeForces(fplog, cr, &rmsf);
+    imm          = computeForces(fplog, &rmsf);
     qtp.setQ(atoms());
     qtp.setX(state_->x);
     isoPol_calc_ = 0;
@@ -1882,7 +1883,7 @@ immStatus MyMol::CalcPolarizability(double                     efield,
     {
         field[m] = efield;
         myforce_->setField(field);
-        imm = computeForces(fplog, cr, &rmsf);
+        imm = computeForces(fplog, &rmsf);
         qtp.setX(state_->x);
         field[m] = 0;
         myforce_->setField(field);
@@ -2560,7 +2561,7 @@ void MyMol::plotEspCorrelation(const char                *espcorr,
         qgr->updateAtomCharges(atoms());
         qgr->updateAtomCoords(state_->x);
         double rmsf = 0;
-        if (immStatus::OK == computeForces(nullptr, cr, &rmsf))
+        if (immStatus::OK == computeForces(nullptr, &rmsf))
         {
             qgr->calcPot(1.0);
             qgr->plotLsq(oenv, espcorr);

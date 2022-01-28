@@ -76,10 +76,6 @@ private:
 
     //! Pointer to ACMFitnessComputer since it will be initialized later
     ACMFitnessComputer   *fitComp_     = nullptr;
-    //! Pointer to ACMInitializer, needed by Master
-    //ACMInitializer       *initializer_ = nullptr;
-    //! Pointer to ACMMutator, needed by Master
-    //ga::Mutator          *mutator_ = nullptr;
 
 public:
 
@@ -125,9 +121,8 @@ public:
 
     /*! \brief Initialize the main components of the
      * Genetic Algorithm, just on the master.
-     * \param[in] outputFile Name of the force field file to be created.
      */
-    void initMaster(const std::string &outputFile);
+    void initMaster();
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * END: Initializing stuff                  *

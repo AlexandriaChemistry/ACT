@@ -62,8 +62,7 @@ double ACMFitnessComputer::calcDeviation(std::vector<double> *params,
     if (cr->isHelper())
     {
         // If we have e.g. 1 overlord and 3 middlemen with 1 helper each, we have
-        // O M H M H M H. Now who is my middleman?
-        // Do integer division, rounding down, the multiply again.
+        // O M H M H M H. Now who is my middleman? This is handled by the library
         int src = cr->superior();
         calcDev  = static_cast<CalcDev>(cr->recv_int(src));
         ims      = static_cast<iMolSelect>(cr->recv_int(src));
@@ -102,7 +101,7 @@ double ACMFitnessComputer::calcDeviation(std::vector<double> *params,
     if (cr->isMiddleMan() && bdc_)
     {
         bdc_->calcDeviation(nullptr, targets, sii_->poldata(),
-                            *myparams, cr);
+                            *myparams, nullptr);
     }
 
     // Loop over molecules

@@ -30,14 +30,11 @@ public:
     * BEGIN: Cloning                           *
     * * * * * * * * * * * * * * * * * * * * * */
 
-    //! \return a copy of this Individual
-    virtual Individual *clone() = 0;
-
     /*!
      * \brief Copy the genome from another Individual
      * \param[in] other pointer to another Individual
      */
-    virtual void copyGenome(Genome *other) = 0;
+    virtual void copyGenome(const Genome &other) = 0;
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * END: Cloning                             *

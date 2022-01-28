@@ -89,6 +89,10 @@ private:
      * \param[in] bufsize The size of the buffer in bytes
      */
     void recv(int src, void *buf, int bufsize) const;
+    /*! \brief Print the values to a file
+     * \param[in] fp The file pointer to print to
+     */
+    void print(FILE *fp);
     
 public:
     //! \brief Constructor
