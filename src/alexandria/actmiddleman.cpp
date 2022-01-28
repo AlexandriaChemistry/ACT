@@ -18,6 +18,7 @@ ACTMiddleMan::ACTMiddleMan(FILE                 *logFile,
                            BayesConfigHandler   *bch,
                            bool                  verbose,
                            gmx_output_env_t     *oenv)
+: prMut_(gach->prMut())
 {
     // This ica
     int seed = bch->seed();
@@ -90,7 +91,7 @@ void ACTMiddleMan::run()
             cr->recv_double_vector(0, ind_->genomePtr()->basesPtr());
             
             // TODO fix prMut
-            mutator_->mutate(ind_->genomePtr(), ind_->bestGenomePtr(), 0.0);
+            mutator_->mutate(ind_->genomePtr(), ind_->bestGenomePtr(), prMut_);
 
             //fitComp_->compute(ind_->genomePtr(), ims);
             cr->send_double(0, ind_->genome().fitness(ims));

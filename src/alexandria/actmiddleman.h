@@ -32,6 +32,8 @@ namespace alexandria
         ga::Mutator        *mutator_;
         //! Individual
         ACMIndividual      *ind_;
+        //! Probability of mutating a gene
+        double              prMut_;
     public:
         /*! \brief Constructor
          * \param[in] logFile    FILE to print stuff to, can be nullptr
