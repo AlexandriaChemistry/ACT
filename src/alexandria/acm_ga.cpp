@@ -180,25 +180,26 @@ bool HybridGAMC::evolve(ga::Genome *bestGenome)
                 // Send the data set, 0 for iMolSelect::Train
                 cr->send_int(dest, 0);
                 // Now send the new bases
-                cr->send_double_vector(dest, pool[pold]->genomePtr(i+k)->basesPtr());
+                cr->send_double_vector(dest, pool[pnew]->genomePtr(i+k)->basesPtr());
             }
             // pool[pnew]->genome(i).print("Child 1:", logFile_);
             // pool[pnew]->genome(i+1).print("Child 2:", logFile_);
         }
-        // Swap oldPop and newPop
-        fprintf(logFile_, "Swapping oldPop and newPop...\n");
-        pold = pnew;
         
         fprintf(logFile_, "Fetching mutated children and fitness from new generation...\n");
         // Receive the new children (parameters + fitness) from the middle men for the non elitist
         // FIXME: if we end up sending more stuff, it might be worth it to just send the entire genome
-        for (size_t i = gach_->nElites(); i < pool[pold]->popSize(); i += 1)
+        for (size_t i = gach_->nElites(); i < pool[pnew]->popSize(); i += 1)
         {
             int src      = cr->middlemen()[i];
-            cr->recv_double_vector(src, pool[pold]->genomePtr(i)->basesPtr());  // Receiving the mutated parameters
+            cr->recv_double_vector(src, pool[pnew]->genomePtr(i)->basesPtr());  // Receiving the mutated parameters
             auto fitness = cr->recv_double(src);  // Receiving the new training fitness
-            pool[pold]->genomePtr(i)->setFitness(iMolSelect::Train, fitness);
+            pool[pnew]->genomePtr(i)->setFitness(iMolSelect::Train, fitness);
         }
+
+        // Swap oldPop and newPop
+        fprintf(logFile_, "Swapping oldPop and newPop...\n");
+        pold = pnew;
 
         // Print population again!
         pool[pold]->print(logFile_);

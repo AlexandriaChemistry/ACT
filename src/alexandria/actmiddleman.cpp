@@ -93,13 +93,13 @@ void ACTMiddleMan::run()
             
             mutator_->mutate(ind_->genomePtr(), ind_->bestGenomePtr(), gach_->prMut());
 
-            // Send the mutated vector
-            cr->send_double_vector(0, ind_->genomePtr()->basesPtr());
-
             if (gach_->optimizer() == OptimizerAlg::GA)
             {
                 fitComp_->compute(ind_->genomePtr(), ims);
             }
+
+            // Send the mutated vector
+            cr->send_double_vector(0, ind_->genomePtr()->basesPtr());
 
             // Send the new fitness
             cr->send_double(0, ind_->genome().fitness(ims));
