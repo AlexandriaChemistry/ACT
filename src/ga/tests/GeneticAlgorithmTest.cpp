@@ -164,7 +164,7 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
             // Now the rest of the classes
             std::string outputFile("GeneticAlgorithmTest.dat");
             bool randInit     = false;
-            auto init         = new alexandria::ACMInitializer(&sii, randInit, outputFile, bch.seed());
+            auto init         = new alexandria::ACMInitializer(&sii, randInit, bch.seed());
             auto fit          = new alexandria::ACMFitnessComputer(nullptr, &sii, &molgen, false, verbose, false);
             auto probComputer = new RankProbabilityComputer(gach.popSize());
             // Selector
