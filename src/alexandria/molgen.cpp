@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2021
+ * Copyright (C) 2014-2022
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -734,11 +734,17 @@ size_t MolGen::Read(FILE            *fp,
                     if (CommunicationStatus::OK != cs)
                     {
                         imm = immStatus::CommProblem;
+                        if (immStatus::OK != imm)
+                        {
+                            GMX_THROW(gmx::InternalError("Comunication problem."));
+                        }
                     }
-                    else
-                    {
-                        imm = static_cast<immStatus>(cr_->recv_int(mydest));
-                    }
+                }
+                // Small optimization. First send to all processors,
+                // then wait for the answer.
+                for (auto &mydest : destAll)
+                {
+                    imm = static_cast<immStatus>(cr_->recv_int(mydest));
 
                     if (imm != immStatus::OK)
                     {
