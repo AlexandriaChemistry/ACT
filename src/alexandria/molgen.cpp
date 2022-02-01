@@ -744,6 +744,10 @@ size_t MolGen::Read(FILE            *fp,
                 // then wait for the answer.
                 for (auto &mydest : destAll)
                 {
+                    if (mydest == cr_->rank())
+                    {
+                        continue;
+                    }
                     imm = static_cast<immStatus>(cr_->recv_int(mydest));
 
                     if (imm != immStatus::OK)
@@ -762,8 +766,8 @@ size_t MolGen::Read(FILE            *fp,
                 incrementImmCount(&imm_count, imm);
             }
         }
-        /* Send signal done with transferring molecules */
-        for (int i = 0;  i < cr_->size(); i++)
+        /* Send signal done` transferring molecules */
+        for (int i = 1;  i < cr_->size(); i++)
         {
             cr_->send_done(i);
         }
