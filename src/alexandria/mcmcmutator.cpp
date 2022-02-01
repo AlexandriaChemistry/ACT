@@ -359,7 +359,7 @@ void MCMCMutator::printParameterStep(ga::Genome          *genome,
     const auto paramClassIndex = sii_->paramClassIndex();
 
     auto bases = genome->bases();
-    if (fpc_.size() == genome->nBase())
+    if (fpc_.size() == sii_->paramClass().size())
     {
         // Write iteration number to each parameter convergence 
         // surveillance file
