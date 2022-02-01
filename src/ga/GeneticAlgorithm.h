@@ -9,6 +9,8 @@
 
 #include <cstdlib>
 
+#include <map>
+
 #include "GenePool.h"
 #include "Genome.h"
 #include "Initializer.h"
@@ -35,26 +37,24 @@ private:
     //! The population size
     int popSize_          = 0;
 
-     //! File for fitness train output
-    FILE *fileFitnessTrain_ = nullptr;
-    //! File for fitness test output
-    FILE *fileFitnessTest_  = nullptr;
+     //! Files for fitness output
+    std::map<iMolSelect, FILE *>  fileFitness_;
     //! The best genome
-    Genome                  bestGenome_;
+    Genome                        bestGenome_;
     //! Initializes each individual in the population
-    Initializer            *initializer_ = nullptr;
+    Initializer                  *initializer_ = nullptr;
     //! Computes fitness for each individual in the population
-    FitnessComputer        *fitComputer_ = nullptr;
+    FitnessComputer              *fitComputer_ = nullptr;
     //! Computes the probability of selection of each individual
-    ProbabilityComputer    *probComputer_ = nullptr;
+    ProbabilityComputer          *probComputer_ = nullptr;
     //! Selects an individual from the population based on its probability
-    Selector               *selector_ = nullptr;
+    Selector                     *selector_ = nullptr;
     //! Grabs 2 individuals and crosses their genes to generate 2 new individuals
-    Crossover              *crossover_ = nullptr;
+    Crossover                    *crossover_ = nullptr;
     //! Mutates the genes of the individuals
-    Mutator                *mutator_ = nullptr;
+    Mutator                      *mutator_ = nullptr;
     //! Checks if the evolution should continue or be terminated
-    Terminator             *terminator_ = nullptr;
+    Terminator                   *terminator_ = nullptr;
 
     // FIXME: Something could be done about generalizing the evolution.
     // We could make all Individuals
@@ -130,12 +130,12 @@ public:
      * BEGIN: Output routines                  *
      * * * * * * * * * * * * * * * * * * * * * */
 
-    //! \return fitness file for training
-    FILE *fitnessTrain() { return fileFitnessTrain_; }
+    /*! Return a FILE pointer for a data set
+     * \param[in] ims The corresponding data set
+     * \return fitness file for training
+     */
+    FILE *fitnessFile(iMolSelect ims) { return fileFitness_[ims]; }
     
-    //! \return fitness file for testing
-    FILE *fitnessTest() { return fileFitnessTest_; }
-
     /*!
      * \brief Print the fitness of each genome in a pool
      * \param[in] pool the genome pool

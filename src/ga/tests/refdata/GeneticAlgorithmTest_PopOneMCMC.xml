@@ -2,24 +2,24 @@
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
   <Int64 Name="nElites">0</Int64>
-  <Real Name="tolerance">0.10000000000000001</Real>
-  <Bool Name="verbose">false</Bool>
+  <Bool Name="verbose">true</Bool>
   <Int64 Name="nrep">1</Int64>
   <Int64 Name="popSize">1</Int64>
-  <Int64 Name="ncrossovers">1</Int64>
+  <Int64 Name="ncrossovers">0</Int64>
+  <String Name="algorithm">MCMC</String>
   <Bool Name="epsilon">true</Bool>
   <Bool Name="gamma">true</Bool>
   <Bool Name="VANDERWAALS">true</Bool>
+  <Sequence Name="paramClass">
+    <Int Name="Length">2</Int>
+    <String>epsilon</String>
+    <String>gamma</String>
+  </Sequence>
   <Sequence Name="MoleculeName">
     <Int Name="Length">3</Int>
     <String>methanol</String>
     <String>ethanol-trans</String>
     <String>1-butanol</String>
-  </Sequence>
-  <Sequence Name="paramClass">
-    <Int Name="Length">2</Int>
-    <String>epsilon</String>
-    <String>gamma</String>
   </Sequence>
   <Sequence Name="weightedTemperatures">
     <Int Name="Length">6</Int>
@@ -45,13 +45,4 @@
   <Int64 Name="Maximum Number of Generations">10</Int64>
   <Real Name="Probability for Crossover">0.34999999999999998</Real>
   <Real Name="Probability for Mutation">0.01</Real>
-  <Sequence Name="bestParam">
-    <Int Name="Length">6</Int>
-    <Real>0</Real>
-    <Real>0</Real>
-    <Real>0</Real>
-    <Real>0</Real>
-    <Real>0</Real>
-    <Real>0</Real>
-  </Sequence>
 </ReferenceData>

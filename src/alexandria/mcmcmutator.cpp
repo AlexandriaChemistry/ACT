@@ -179,10 +179,20 @@ void MCMCMutator::stepMCMC(ga::Genome                   *genome,
             fitComp_->calcDeviation(param, CalcDev::Parallel, ims) });
     double deltaEval = currEval[ims] - prevEval->find(ims)->second;
     // Evaluate the energy on the test set only on whole steps!
-    ims = iMolSelect::Test;
-    currEval.insert({ims, prevEval->find(ims)->second});
     if (evaluate_testset && pp == 0)
     {
+        ims            = iMolSelect::Test;
+        // Is the first time we insert a test value?
+        if (currEval.find(ims) == currEval.end())
+        {
+            double oldTest = currEval[iMolSelect::Train];
+            auto pef = prevEval->find(ims);
+            if (prevEval->end() != pef)
+            {
+                oldTest = pef->second;
+            }
+            currEval.insert({ims, oldTest});
+        }
         currEval[ims] = fitComp_->calcDeviation(param, CalcDev::Parallel, ims);
     }
 
@@ -348,22 +358,30 @@ void MCMCMutator::printParameterStep(ga::Genome          *genome,
 {
     const auto paramClassIndex = sii_->paramClassIndex();
 
-    for (FILE *fp: fpc_)  // Write iteration number to each parameter convergence surveillance file
-    {
-        fprintf(fp, "%8f", xiter);
-    }
     auto bases = genome->bases();
-    for (size_t k = 0; k < genome->nBase(); k++)  // Write value of each parameter to its respective surveillance file
+    if (fpc_.size() == genome->nBase())
     {
-        fprintf(fpc_[paramClassIndex[k]], "  %10g", bases[k]);
-    }
-    for (FILE *fp: fpc_)
-    {
-        fprintf(fp, "\n");
-        // If verbose = True, flush the file to be able to add new data to surveillance plots
-        if (verbose_)
+        // Write iteration number to each parameter convergence 
+        // surveillance file
+        for (FILE *fp: fpc_) 
+            
         {
-            fflush(fp);
+            fprintf(fp, "%8f", xiter);
+        }
+        // Write value of each parameter to its respective surveillance file
+        for (size_t k = 0; k < genome->nBase(); k++)  
+        {
+            fprintf(fpc_[paramClassIndex[k]], "  %10g", bases[k]);
+        }
+        for (FILE *fp: fpc_)
+        {
+            fprintf(fp, "\n");
+            // If verbose, flush the file to be able to add 
+            // new data to surveillance plots
+            if (verbose_)
+            {
+                fflush(fp);
+            }
         }
     }
 }                             

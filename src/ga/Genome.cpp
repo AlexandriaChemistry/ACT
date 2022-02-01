@@ -43,6 +43,16 @@ void Genome::print(const char *name, FILE *fp) const
     print(fp);
 }
 
+double Genome::fitness(iMolSelect ims) const
+{
+    auto ff = fitness_.find(ims);
+    if (ff == fitness_.end())
+    {
+        GMX_THROW(gmx::InternalError(gmx::formatString("No fitness for data set %s", iMolSelectName(ims)).c_str()));
+    }
+    return ff->second;
+}
+
 void Genome::setFitness(iMolSelect ims, double fitness)
 {
     auto ff = fitness_.find(ims);

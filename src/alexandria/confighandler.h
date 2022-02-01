@@ -83,7 +83,7 @@ private:
     // After argument parsing, first element in the array will point to the selected enum value, so optimizer_[0]
     // Static means the variable will be shared among objects (only 1 place in memory)
     //! Optimizer to use
-    const char *optimizer_[5] = {nullptr, "MCMC", "GA", "HYBRID", nullptr};
+    OptimizerAlg  alg_ = OptimizerAlg::GA;
     //! Population size
     int popSize_ = 1;
     //! Amount of elites in the population
@@ -128,8 +128,13 @@ public:
     * * * * * * * * * * * * * * * * * * * * * */
 
     //! \return the optimizer
-    OptimizerAlg optimizer() { return stringToOptimizerAlg(optimizer_[0]); }
+    OptimizerAlg optimizer() const { return alg_; }
 
+    /*! \brief Set the optimizer algorithm
+     * \param[in] alg The new algorithm
+     */
+    void setOptimizerAlg(OptimizerAlg alg) { alg_ = alg; }
+    
     //! \return the size of the population
     int popSize() const { return popSize_; }
 

@@ -69,7 +69,7 @@ public:
      * \return the fitness
      * \throws if not found
      */
-    double fitness(iMolSelect ims) const { return fitness_.find(ims)->second; }
+    double fitness(iMolSelect ims) const;
 
     /*! Return a pointer to the fitness in the data set
      * \param[in] ims The data set
@@ -120,7 +120,7 @@ public:
     /*! \brief Get the values of the whole genome
      * \return the value vector
      */
-    const std::vector<double> bases() const { return genome_; }
+    const std::vector<double> &bases() const { return genome_; }
     
     /*! \brief Get the mutable values of the whole genome
      * \return the value vector

@@ -168,11 +168,13 @@ bool BayesConfigHandler::anneal(int iter) const
 * BEGIN: GAConfigHandler                   *
 * * * * * * * * * * * * * * * * * * * * * */
 
+static const char *optimizerStr[5] = {nullptr, "MCMC", "GA", "HYBRID", nullptr};
+
 void GAConfigHandler::add_pargs(std::vector<t_pargs> *pargs)
 {
 
     t_pargs pa[] = {
-        { "-optimizer", FALSE, etENUM, {optimizer_},
+        { "-optimizer", FALSE, etENUM, {optimizerStr},
           "Optimization method" },
         { "-popSize", FALSE, etINT, {&popSize_},
           "Population size." },
@@ -206,37 +208,37 @@ void GAConfigHandler::add_pargs(std::vector<t_pargs> *pargs)
 
 void GAConfigHandler::check_pargs()
 {
-  
-  GMX_RELEASE_ASSERT(popSize_ > 0, "-popSize must be positive.");
-  if (popSize_ % 2 != 0)  // If popSize is odd
-  {
-    GMX_RELEASE_ASSERT(strcmp(optimizer_[0], "MCMC") == 0, "With odd population sizes, only the MCMC optimizer will do.");
-  }
-
-  GMX_RELEASE_ASSERT(nElites_ >= 0 && nElites_ % 2 == 0, "-nElites must be nonnegative and even.");
-  if (nElites_ > 0)  // Make sure a sorter has been selected
-  {
-    GMX_RELEASE_ASSERT(sort_ == true,
-                       "When -nElites > 0, -sort should be used.");
-  }
-
-  GMX_RELEASE_ASSERT(nCrossovers_ > 0, "-nCrossovers must be nonnegative.");
-
-  if (strcmp(probComputer_[0], "RANK") == 0)  // If rank-based probability is requested
-  {
-    GMX_RELEASE_ASSERT(sort_ == true, "You must enable -sort if you want rank-based probability computing.");
-  }
-
-  GMX_RELEASE_ASSERT(boltzTemp_ >= 0, "-boltzTemp must be nonnegative.");
-
-  GMX_RELEASE_ASSERT(prCross_ >= 0 && prCross_ <= 1, "-prCross must be in [0,1].");
-
-  GMX_RELEASE_ASSERT(prMut_ >= 0 && prMut_ <= 1, "-prMut must be in [0,1].");
-
-  GMX_RELEASE_ASSERT(percent_ >= 0 && percent_ <= 1, "-percent must be in [0,1].");
-
-  GMX_RELEASE_ASSERT(maxGenerations_ > 0, "-maxGenerations must be positive.");
-
+    alg_ = stringToOptimizerAlg(optimizerStr[0]);
+    
+    GMX_RELEASE_ASSERT(popSize_ > 0, "-popSize must be positive.");
+    if (popSize_ % 2 != 0)  // If popSize is odd
+    {
+        GMX_RELEASE_ASSERT(OptimizerAlg::MCMC == alg_, "With odd population sizes, only the MCMC optimizer will do.");
+    }
+    
+    GMX_RELEASE_ASSERT(nElites_ >= 0 && nElites_ % 2 == 0, "-nElites must be nonnegative and even.");
+    if (nElites_ > 0)  // Make sure a sorter has been selected
+    {
+        GMX_RELEASE_ASSERT(sort_ == true,
+                           "When -nElites > 0, -sort should be used.");
+    }
+    
+    GMX_RELEASE_ASSERT(nCrossovers_ > 0, "-nCrossovers must be nonnegative.");
+    
+    if (strcmp(probComputer_[0], "RANK") == 0)  // If rank-based probability is requested
+    {
+        GMX_RELEASE_ASSERT(sort_ == true, "You must enable -sort if you want rank-based probability computing.");
+    }
+    
+    GMX_RELEASE_ASSERT(boltzTemp_ >= 0, "-boltzTemp must be nonnegative.");
+    
+    GMX_RELEASE_ASSERT(prCross_ >= 0 && prCross_ <= 1, "-prCross must be in [0,1].");
+    
+    GMX_RELEASE_ASSERT(prMut_ >= 0 && prMut_ <= 1, "-prMut must be in [0,1].");
+    
+    GMX_RELEASE_ASSERT(percent_ >= 0 && percent_ <= 1, "-percent must be in [0,1].");
+    
+    GMX_RELEASE_ASSERT(maxGenerations_ > 0, "-maxGenerations must be positive.");
 }
 
 /* * * * * * * * * * * * * * * * * * * * * *

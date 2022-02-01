@@ -8,8 +8,8 @@
 #include <cstdio>
 
 #include "Crossover.h"
+#include "Dataset.h"
 #include "FitnessComputer.h"
-//#include "GenePool.h"
 #include "Initializer.h"
 #include "Mutator.h"
 #include "ProbabilityComputer.h"
@@ -17,32 +17,42 @@
 
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/stringutil.h"
 
 namespace ga
 {
 
 void GeneticAlgorithm::openFitnessFiles()
 {
-    fileFitnessTrain_ = gmx_fio_fopen("ga_fitness_train.txt", "w");
-    fileFitnessTest_  = gmx_fio_fopen("ga_fitness_test.txt", "w");
-    GMX_RELEASE_ASSERT(fileFitnessTrain_ != NULL && fileFitnessTest_ != NULL, "Could not open files");
+    for(const auto &im : iMolSelectNames())
+    {
+        std::string fn = gmx::formatString("ga_fitness_%s.txt", im.second);
+        fileFitness_.insert({im.first, gmx_fio_fopen(fn.c_str(), "w")});
+        GMX_RELEASE_ASSERT(fileFitness_[im.first] != NULL, "Could not open file");
+    }
 }
 
 void GeneticAlgorithm::closeFitnessFiles()
 {
-    gmx_fio_fclose(fileFitnessTrain_);
-    gmx_fio_fclose(fileFitnessTest_);
+    for(const auto &ff : fileFitness_)
+    {
+        gmx_fio_fclose(ff.second);
+    }
 }
 
 void GeneticAlgorithm::fprintFitness(const GenePool &pool)
 {
-    for (const auto &genome : pool.genePool())
+    for (const auto &ff : fileFitness_)
     {
-        fprintf(fileFitnessTrain_, "%f ", genome.fitness(iMolSelect::Train));
-        fprintf(fileFitnessTest_, "%f ", genome.fitness(iMolSelect::Test));
+        for (const auto &genome : pool.genePool())
+        {
+            if (genome.hasFitness(ff.first))
+            {
+                fprintf(ff.second, "%f ", genome.fitness(ff.first));
+            }
+        }
+        fprintf(ff.second, "\n");
     }
-    fprintf(fileFitnessTrain_, "\n");
-    fprintf(fileFitnessTest_, "\n");
 }
 
 }  //namespace ga
