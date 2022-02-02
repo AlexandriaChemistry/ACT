@@ -114,7 +114,10 @@ void StaticIndividualInfo::saveState(bool updateCheckSum)
     {
         pd_.updateCheckSum();
     }
-    writePoldata(outputFile_, &pd_, false);
+    if (!outputFile_.empty())
+    {
+        writePoldata(outputFile_, &pd_, false);
+    }
 }
 
 /* * * * * * * * * * * * * * * * * * * * * *

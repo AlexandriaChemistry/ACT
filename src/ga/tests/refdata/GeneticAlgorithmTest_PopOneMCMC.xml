@@ -7,13 +7,13 @@
   <Int64 Name="popSize">1</Int64>
   <Int64 Name="ncrossovers">0</Int64>
   <String Name="algorithm">MCMC</String>
-  <Bool Name="epsilon">true</Bool>
-  <Bool Name="gamma">true</Bool>
-  <Bool Name="VANDERWAALS">true</Bool>
+  <Bool Name="chi">true</Bool>
+  <Bool Name="jaa">true</Bool>
+  <Bool Name="ELECTRONEGATIVITYEQUALIZATION">true</Bool>
   <Sequence Name="paramClass">
     <Int Name="Length">2</Int>
-    <String>epsilon</String>
-    <String>gamma</String>
+    <String>chi</String>
+    <String>jaa</String>
   </Sequence>
   <Sequence Name="MoleculeName">
     <Int Name="Length">3</Int>
@@ -32,12 +32,12 @@
   </Sequence>
   <Sequence Name="paramNames">
     <Int Name="Length">6</Int>
-    <String>c3-epsilon</String>
-    <String>c3-gamma</String>
-    <String>h-epsilon</String>
-    <String>h-gamma</String>
-    <String>o3-epsilon</String>
-    <String>o3-gamma</String>
+    <String>c3_z-chi</String>
+    <String>c3_z-jaa</String>
+    <String>h_z-chi</String>
+    <String>h_z-jaa</String>
+    <String>o3_z-chi</String>
+    <String>o3_z-jaa</String>
   </Sequence>
   <Int64 Name="bch.maxIter">20</Int64>
   <Int64 Name="bch.seed">1993</Int64>
@@ -47,11 +47,11 @@
   <Real Name="Probability for Mutation">0.01</Real>
   <Sequence Name="bestParam">
     <Int Name="Length">6</Int>
-    <Real>0.47612089788233386</Real>
-    <Real>11.711568134531221</Real>
-    <Real>0.078044576449785491</Real>
-    <Real>15.201645181120764</Real>
-    <Real>0.7759251026829036</Real>
-    <Real>15.585684895984986</Real>
+    <Real>4.4830942856399609</Real>
+    <Real>7.7434959305226334</Real>
+    <Real>2.8685763877742776</Real>
+    <Real>14.461626651804576</Real>
+    <Real>6.1786573084824719</Real>
+    <Real>11.291311058215781</Real>
   </Sequence>
 </ReferenceData>
