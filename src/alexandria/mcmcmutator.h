@@ -116,7 +116,6 @@ private:
      * \param[out] bestGenome       pointer to the best genome, to be filled
      * \param[in] changed           a reference to a vector which has true for parameters that change and false otherwise
      * \param[in] prevEval          pointer to a map with the previous \f$ \chi^2 \f$
-     * \param[in] minEval           pointer to the minimum \f$ \chi^2 \f$ found so far for the training set
      * \param[in] bEvaluate_testset true if evaluation should be done on test set, false otherwise
      * \param[in] pp                index of inner loop over number of parameters
      * \param[in] iter              current iteration number
@@ -126,7 +125,6 @@ private:
                   ga::Genome                   *bestGenome,
                   std::vector<bool>            *changed,
                   std::map<iMolSelect, double> *prevEval,
-                  std::map<iMolSelect, double> *minEval,
                   bool                          evaluate_testset,
                   size_t                        pp,
                   int                           iter,

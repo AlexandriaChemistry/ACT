@@ -84,7 +84,7 @@ bool MCMC::evolve(ga::Genome *bestGenome)
         bestGenome->fitness(iMolSelect::Train))  // If we have a new best
     {
         bestGenome->print("A new best individual has been found!\nPrevious best:\n",
-                            logFile_);
+                          logFile_);
         *bestGenome = pool.genome(newBest); 
         bestGenome->print("New best:\n", logFile_);
         bMinimum = true;

@@ -230,6 +230,11 @@ public:
     //! \brief Return temperature
     real temperature() const { return temperature_; }
 
+    /*! \brief set a new value for temperature
+     * \param[in] temperature the new temperature
+     */
+    void setTemperature(const real temperature) { temperature_ = temperature; }
+
     //! \return the seed
     int seed() const { return seed_; }
 
@@ -265,6 +270,11 @@ public:
     * \param iter The iteration number
     */
     bool anneal (int iter) const;
+
+    /*! \brief Set a new value for annealing start
+     * \param[in] anneal the new starting point for simulated annealing
+     */
+    void setAnneal(const real anneal) { anneal_ = anneal; };
 
     //! \return whether test set should be evaluated during the MCMC run
     bool evaluateTestset() const { return evaluate_testset_; }

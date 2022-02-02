@@ -143,7 +143,9 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
             sii.propagateWeightFittingTargets();
             // One more config handler
             alexandria::BayesConfigHandler bch;
-            bch.setMaxIter(5);
+            bch.setMaxIter(20);
+            bch.setAnneal(0.5);
+            bch.setTemperature(10);
             bch.setSeed(seed);
             if (cr.isMaster())
             {
