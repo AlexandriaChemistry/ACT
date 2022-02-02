@@ -138,6 +138,7 @@ public:
      * \brief Constructor
      * \param[in] logfile   pointer to log file (may be nullptr)
      * \param[in] verbose   Flush output immediately rather than letting the OS buffer it. Don't use for production simulations.
+     * \param[in] seed      seed coming from the middle man creating this mutator
      * \param[in] bch       pointer to BayesConfigHandler object
      * \param[in] fitComp   pointer to ACMFitnessComputer object
      * \param[in] sii       pointer to StaticIndividualInfo object
@@ -145,6 +146,7 @@ public:
      */
     MCMCMutator(FILE               *logfile,
                 bool                verbose,
+                int                 seed,
                 BayesConfigHandler *bch,
                 ACMFitnessComputer *fitComp,
                 StaticIndividualInfo *sii);

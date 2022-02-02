@@ -50,11 +50,13 @@ private:
 
 public:
 
-    //! \brief Constructor
-    RouletteSelector()
+    /*! \brief Constructor
+     * \param[in] seed seed for random number generation
+     */
+    RouletteSelector(const int seed)
     : gen(rd()), dis(std::uniform_real_distribution<>(0.0, 1.0))
     {
-        gen.seed(::time(NULL));
+        gen.seed(seed);
     }
 
     virtual int select(const std::vector<Genome> *pop);

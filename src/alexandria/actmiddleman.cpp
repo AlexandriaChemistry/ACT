@@ -18,7 +18,7 @@ ACTMiddleMan::ACTMiddleMan(FILE                 *logFile,
                            BayesConfigHandler   *bch,
                            bool                  verbose,
                            gmx_output_env_t     *oenv)
-: gach_(gach)
+: gach_(gach), logFile_(logFile), id_(sii->commRec()->middleManOrdinal())
 {
     // This ica
     int seed = bch->seed();
@@ -29,7 +29,7 @@ ACTMiddleMan::ACTMiddleMan(FILE                 *logFile,
     gen.seed(seed);
     // Use the random number generator to get a seed for this processor based on the global seed
     // Skip the first "nodeid" numbers and grab the next one
-    for (int i = 0; i < sii->commRec()->rank(); i++)
+    for (int i = 0; i < sii->commRec()->middleManOrdinal(); i++)
     {
         dis(gen);
     }
@@ -40,17 +40,17 @@ ACTMiddleMan::ACTMiddleMan(FILE                 *logFile,
     // Create and initialize the individual
     ind_ = static_cast<ACMIndividual *>(initializer->initialize());
 
-    // Fitness computer
+    // Fitness computer FIXME: what about those false flags?
     fitComp_ = new ACMFitnessComputer(nullptr, sii, mg, 
                                       false, false, false);
     // Create and initialize the mutator
     if (gach->optimizer() == OptimizerAlg::GA)
     {
-        mutator_ = new alexandria::PercentMutator(sii, gach->percent());
+        mutator_ = new alexandria::PercentMutator(sii, seed, gach->percent());
     }
     else
     {
-        auto mut = new alexandria::MCMCMutator(nullptr, verbose, bch, fitComp_, sii);
+        auto mut = new alexandria::MCMCMutator(nullptr, verbose, seed, bch, fitComp_, sii);
         mut->makeWorkDir();  // We need to call this before opening working files!
         mut->openParamConvFiles(oenv);
         mut->openChi2ConvFile(oenv, bch->evaluateTestset());
@@ -71,7 +71,7 @@ void ACTMiddleMan::run()
     do
     {
         cont = cr->recv_data(0);
-        if (cont == CommunicationStatus::RECV_DATA)
+        if (cont == CommunicationStatus::RECV_DATA)  // FIXME: reverse condition and save an identation
         {
             int imsi = cr->recv_int(0);
             // Get the dataset
@@ -103,9 +103,23 @@ void ACTMiddleMan::run()
 
             // Send the new fitness
             cr->send_double(0, ind_->genome().fitness(ims));
+
+            // If we are working with MCMC, send the best found to the MASTER
+            if (gach_->optimizer() == OptimizerAlg::MCMC)
+            {
+                ind_->bestGenome().Send(cr, 0);
+            }
         }
     }
     while (CommunicationStatus::RECV_DATA == cont);
+    // TODO: Print Monte Carlo statistics if necessary
+    // FIXME: in HYBRID this won't be correct
+    // if (gach_->optimizer() != OptimizerAlg::GA)
+    // {
+    //     fprintf(logFile_, "Middle man %i\n", id_);
+    //     static_cast<MCMCMutator *>(mutator_)->printMonteCarloStatistics(logFile_, ind_->initialGenome(),
+    //                                                                     ind_->bestGenome());
+    // }
     // Close our files or whaterver we need to do, then we're done!
     mutator_->finalize();
     // Stop my helpers too.

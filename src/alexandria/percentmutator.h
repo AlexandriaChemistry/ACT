@@ -29,11 +29,13 @@ public:
     /*!
      * Constructor
      * \param[in] sii     Pointer to StaticindividualInfo instance
+     * \param[in] seed    seed passed by the middle man creating this
      * \param[in] percent Maximum allowed change
      */
     PercentMutator(StaticIndividualInfo *sii,
+                   int                   seed,
                    double                percent)
-    : ga::Mutator(), sii_(sii), percent_(percent) {}                
+    : ga::Mutator(seed), sii_(sii), percent_(percent) {}                
 
     /*! \brief Do the actual mutation
      * \param[inout] genome     The genome to mutate

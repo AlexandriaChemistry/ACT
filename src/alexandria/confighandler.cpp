@@ -104,6 +104,12 @@ void BayesConfigHandler::add_pargs(std::vector<t_pargs> *pargs)
 
 void BayesConfigHandler::check_pargs()
 {
+    // Check seed
+    GMX_RELEASE_ASSERT(seed_ >= 0, "-seed must be nonnegative.");
+    if (seed_ == 0)  // Randomize seed if 0 is provided
+    {
+      seed_ = ::time(NULL);
+    }
     // maxiter_
     GMX_RELEASE_ASSERT(maxiter_ >= 0, "-maxiter must be nonnegative.");
     // step_

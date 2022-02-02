@@ -193,7 +193,7 @@ class BayesConfigHandler : public ConfigHandler
 private:
     //! Maximum number of iterations
     int   maxiter_           = 100;
-    //! Random number seed for the Initializer random number generator FIXME: This shouldn't be here?
+    //! Random number seed for initializer, crossover, mutator, and selector FIXME: This should be general
     int   seed_              = 0;
     //! Relative step when optimizing
     real  step_              = 0.02;

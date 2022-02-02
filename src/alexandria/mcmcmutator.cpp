@@ -18,19 +18,13 @@ namespace alexandria
 
 MCMCMutator::MCMCMutator(FILE                 *logfile,
                          bool                  verbose,
+                         int                   seed,
                          BayesConfigHandler   *bch,
                          ACMFitnessComputer   *fitComp,
                          StaticIndividualInfo *sii)
-    : Mutator(), gen(rd()), dis(std::uniform_int_distribution<size_t>(0, sii->nParam()-1))
+    : Mutator(seed), gen(rd()), dis(std::uniform_int_distribution<size_t>(0, sii->nParam()-1))
 {
-    if (bch->seed() == 0)
-    {
-        gen.seed(::time(NULL));
-    }
-    else
-    {
-        gen.seed(bch->seed());
-    }
+    gen.seed(seed);
     logfile_ = logfile;
     verbose_ = verbose;
     bch_     = bch;
