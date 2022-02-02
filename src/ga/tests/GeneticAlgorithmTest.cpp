@@ -97,11 +97,11 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
             gach.setPopSize(popSize);
             gach.setCrossovers(ncrossovers);
             gach.setOptimizerAlg(alg);
-            int nmiddlemen = 0;
-            if (gach.optimizer() != alexandria::OptimizerAlg::MCMC)
-            {
-                nmiddlemen = gach.popSize();
-            }
+            int nmiddlemen = gach.popSize();
+            // if (gach.optimizer() != alexandria::OptimizerAlg::MCMC)
+            // {
+            //     nmiddlemen = gach.popSize();
+            // }
             alexandria::CommunicationRecord  cr;
             cr.init(nmiddlemen);
             gmx_output_env_t    *oenv;
@@ -179,13 +179,14 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
                 // Now the rest of the classes
                 std::string outputFile("GeneticAlgorithmTest.dat");
                 bool randInit     = false;
-                auto init         = new alexandria::ACMInitializer(&sii, randInit, bch.seed());
-                auto fit          = new alexandria::ACMFitnessComputer(nullptr, &sii, &molgen, false, verbose, false);
+                // auto init         = new alexandria::ACMInitializer(&sii, randInit, bch.seed());
+                // auto fit          = new alexandria::ACMFitnessComputer(nullptr, &sii, &molgen, false, verbose, false);
                 auto probComputer = new RankProbabilityComputer(gach.popSize());
                 // Selector
-                auto selector     = new ga::RouletteSelector();
+                auto selector     = new ga::RouletteSelector(bch.seed());
                 auto crossover    = new alexandria::NPointCrossover(gach.popSize(),
-                                                                    gach.nCrossovers());
+                                                                    gach.nCrossovers(),
+                                                                    bch.seed());
             
                 // Terminator
                 auto terminator   = new ga::GenerationTerminator(gach.maxGenerations());
@@ -195,21 +196,16 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
                     checker_.checkInt64(bch.maxIter(), "bch.maxIter");
                     checker_.checkInt64(bch.seed(), "bch.seed");
                     checker_.checkReal(bch.temperature(), "bch.temperature");
-                    auto mutator      = new alexandria::MCMCMutator(nullptr, false, &bch, fit, &sii);
+                    // auto mutator      = new alexandria::MCMCMutator(nullptr, false, &bch, fit, &sii);
                     
-                    ga = new ga::MCMC(stdout, init, 
-                                      fit, probComputer,
-                                      selector, crossover, mutator, terminator,
-                                      &sii, &gach, false);
+                    ga = new ga::MCMC(stdout, &sii, &gach, false);
                 }
                 else
                 {
-                    auto mutator = new alexandria::PercentMutator(&sii, gach.percent());
+                    // auto mutator = new alexandria::PercentMutator(&sii, gach.percent());
                     checker_.checkInt64(gach.percent(), "gach.percent");
-                    ga = new ga::HybridGAMC(stdout, init, 
-                                            fit, probComputer,
-                                            selector, crossover, mutator, terminator,
-                                            &sii, &gach);
+                    ga = new ga::HybridGAMC(stdout, probComputer, selector, crossover, terminator,
+                                            &sii, &gach, bch.seed());
                 }
                 checker_.checkInt64(gach.maxGenerations(), "Maximum Number of Generations");
                 checker_.checkReal(gach.prCross(), "Probability for Crossover");
@@ -223,7 +219,7 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
                         cr.send_done(dest);
                     }
                 }
-                else
+                else  // FIXME: already done by the middlemen
                 {
                     // ... or the helpers if there are no middlemen.
                     for(auto &dest : cr.helpers())
