@@ -263,6 +263,9 @@ public:
     //! \brief Return the step
     real step() const { return step_; }
 
+    //! \brief Set the step
+    void setStep(real step) { step_ = step; }
+
     //! \brief Return whether or not temperature weighting should be considered
     bool temperatureWeighting() const { return tempWeight_; }
 

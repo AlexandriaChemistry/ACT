@@ -328,6 +328,10 @@ void MCMCMutator::printNewMinimum(const std::map<iMolSelect, double> &chi2,
                                   bool                                bEvaluate_testset,
                                   double                              xiter)
 {
+    if (!logfile_)
+    {
+        return;
+    }
     fprintf(logfile_, "Middleman %i\n", sii_->id());
     if (bEvaluate_testset)
     {
@@ -358,21 +362,30 @@ void MCMCMutator::printParameterStep(ga::Genome          *genome,
         for (FILE *fp: fpc_) 
             
         {
-            fprintf(fp, "%8f", xiter);
+            if (fp)
+            {
+                fprintf(fp, "%8f", xiter);
+            }
         }
         // Write value of each parameter to its respective surveillance file
         for (size_t k = 0; k < genome->nBase(); k++)  
         {
-            fprintf(fpc_[paramClassIndex[k]], "  %10g", bases[k]);
+            if (fpc_[paramClassIndex[k]])
+            {
+                fprintf(fpc_[paramClassIndex[k]], "  %10g", bases[k]);
+            }
         }
         for (FILE *fp: fpc_)
         {
-            fprintf(fp, "\n");
-            // If verbose, flush the file to be able to add 
-            // new data to surveillance plots
-            if (verbose_)
+            if (fp)
             {
-                fflush(fp);
+                fprintf(fp, "\n");
+                // If verbose, flush the file to be able to add 
+                // new data to surveillance plots
+                if (verbose_)
+                {
+                    fflush(fp);
+                }
             }
         }
     }
@@ -531,7 +544,10 @@ void MCMCMutator::finalize()
 {
     for(FILE *fp: fpc_)  // Close all parameter convergence surveillance files
     {
-        xvgrclose(fp);
+        if (fp)
+        {
+            xvgrclose(fp);
+        }
     }
     if (fpe_ != nullptr)  // Close chi2 surveillance file
     {
