@@ -2,18 +2,19 @@
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
   <Int64 Name="nElites">0</Int64>
-  <Bool Name="verbose">false</Bool>
+  <Bool Name="verbose">true</Bool>
   <Int64 Name="nrep">1</Int64>
-  <Int64 Name="popSize">1</Int64>
-  <Int64 Name="ncrossovers">0</Int64>
-  <String Name="algorithm">MCMC</String>
+  <Int64 Name="popSize">6</Int64>
+  <Int64 Name="ncrossovers">1</Int64>
+  <String Name="algorithm">HYBRID</String>
   <Bool Name="chi">true</Bool>
-  <Bool Name="jaa">true</Bool>
+  <Bool Name="zeta">true</Bool>
+  <Bool Name="CHARGEDISTRIBUTION">true</Bool>
   <Bool Name="ELECTRONEGATIVITYEQUALIZATION">true</Bool>
   <Sequence Name="paramClass">
     <Int Name="Length">2</Int>
     <String>chi</String>
-    <String>jaa</String>
+    <String>zeta</String>
   </Sequence>
   <Sequence Name="MoleculeName">
     <Int Name="Length">3</Int>
@@ -22,36 +23,25 @@
     <String>1-butanol</String>
   </Sequence>
   <Sequence Name="weightedTemperatures">
-    <Int Name="Length">6</Int>
-    <Real>0.3779644730092272</Real>
+    <Int Name="Length">3</Int>
     <Real>0.3779644730092272</Real>
     <Real>0.22360679774997896</Real>
-    <Real>0.22360679774997896</Real>
-    <Real>0.57735026918962573</Real>
     <Real>0.57735026918962573</Real>
   </Sequence>
   <Sequence Name="paramNames">
-    <Int Name="Length">6</Int>
+    <Int Name="Length">3</Int>
     <String>c3_z-chi</String>
-    <String>c3_z-jaa</String>
     <String>h_z-chi</String>
-    <String>h_z-jaa</String>
     <String>o3_z-chi</String>
-    <String>o3_z-jaa</String>
   </Sequence>
-  <Int64 Name="bch.maxIter">20</Int64>
-  <Int64 Name="bch.seed">1993</Int64>
-  <Real Name="bch.temperature">10</Real>
+  <Real Name="bch.step">0.1</Real>
   <Int64 Name="Maximum Number of Generations">10</Int64>
-  <Real Name="Probability for Crossover">0.34999999999999998</Real>
+  <Real Name="Probability for Crossover">0.35</Real>
   <Real Name="Probability for Mutation">1</Real>
   <Sequence Name="bestParam">
-    <Int Name="Length">6</Int>
-    <Real>4.4830942856399609</Real>
-    <Real>7.7434959305226334</Real>
-    <Real>2.8685763877742776</Real>
-    <Real>14.461626651804576</Real>
-    <Real>6.1786573084824719</Real>
-    <Real>11.291311058215781</Real>
+    <Int Name="Length">3</Int>
+    <Real>4.5649612993485702</Real>
+    <Real>2.9149762076472161</Real>
+    <Real>7.2407488396211335</Real>
   </Sequence>
 </ReferenceData>

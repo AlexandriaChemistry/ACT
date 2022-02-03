@@ -97,7 +97,7 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
             gach.setPopSize(popSize);
             gach.setCrossovers(ncrossovers);
             gach.setOptimizerAlg(alg);
-            if (alg == alexandria::OptimizerAlg::MCMC)
+            if (alg != alexandria::OptimizerAlg::GA)
             {
                 gach.setPrMut(1);
             }
@@ -190,7 +190,7 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
                 auto probComputer = new RankProbabilityComputer(gach.popSize());
                 // Selector
                 auto selector     = new ga::RouletteSelector(bch.seed());
-                auto crossover    = new alexandria::NPointCrossover(gach.popSize(),
+                auto crossover    = new alexandria::NPointCrossover(sii.nParam(),
                                                                     gach.nCrossovers(),
                                                                     bch.seed());
             
@@ -207,7 +207,14 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
                 }
                 else
                 {
-                    checker_.checkInt64(gach.percent(), "gach.percent");
+                    if (alg == alexandria::OptimizerAlg::GA)
+                    {
+                        checker_.checkReal(gach.percent(), "gach.percent");
+                    }
+                    else if (alg == alexandria::OptimizerAlg::HYBRID)
+                    {
+                        checker_.checkReal(bch.step(), "bch.step");
+                    }
                     ga = new ga::HybridGAMC(stdout, probComputer, selector, crossover, terminator,
                                             &sii, &gach, bch.seed());
                 }
@@ -257,17 +264,24 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
 };
 
 
-TEST_F (GeneticAlgorithmTest, PopTwo)
+TEST_F (GeneticAlgorithmTest, PopSix)  // HYBRID
 {
-    GMX_MPI_TEST(3);
-    testIt(alexandria::OptimizerAlg::GA, 0, 2, 0.1, 1, 1, true,
+    GMX_MPI_TEST(7);
+    testIt(alexandria::OptimizerAlg::HYBRID, 0, 6, 0.1, true, 1, 1,
            { "chi", "zeta" }, 1993, alexandria::eRMS::QUAD);
 }
 
-TEST_F (GeneticAlgorithmTest, PopOneMCMC)
+TEST_F (GeneticAlgorithmTest, PopTwo)  // GA
 {
-    GMX_MPI_TEST(3);
-    testIt(alexandria::OptimizerAlg::MCMC, 0, 1, 0.1, 1, 1, false,
+    GMX_MPI_TEST(7);
+    testIt(alexandria::OptimizerAlg::GA, 0, 2, 0.1, true, 1, 1,
+           { "chi", "zeta" }, 1993, alexandria::eRMS::QUAD);
+}
+
+TEST_F (GeneticAlgorithmTest, PopOneMCMC)  // MCMC
+{
+    GMX_MPI_TEST(7);
+    testIt(alexandria::OptimizerAlg::MCMC, 0, 1, 0.1, false, 1, 0,
            { "chi", "jaa" }, 1993, alexandria::eRMS::MU);
 }
 
