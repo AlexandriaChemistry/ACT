@@ -45,8 +45,6 @@ public:
     virtual void mutate(ga::Genome *genome,
                         ga::Genome *bestGenome,
                         double      prMut);
-
-    virtual void stopHelpers() {}
     
     virtual void finalize() {}
     

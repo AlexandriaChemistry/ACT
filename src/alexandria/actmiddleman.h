@@ -38,6 +38,10 @@ namespace alexandria
         FILE               *logFile_ = nullptr;
         //! My ID
         int                 id_;
+
+        //! \brief Stop my helpers
+        void stopHelpers();
+
     public:
         /*! \brief Constructor
          * \param[in] logFile    FILE to print stuff to, can be nullptr

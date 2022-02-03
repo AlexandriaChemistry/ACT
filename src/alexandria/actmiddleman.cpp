@@ -123,7 +123,14 @@ void ACTMiddleMan::run()
     // Close our files or whaterver we need to do, then we're done!
     mutator_->finalize();
     // Stop my helpers too.
-    mutator_->stopHelpers();
+    stopHelpers();
+}
+
+void ACTMiddleMan::stopHelpers()
+{
+    std::vector<double> dummy;
+    fitComp_->calcDeviation(&dummy,
+                            alexandria::CalcDev::Final, iMolSelect::Train);
 }
 
 } // namespace alexandria

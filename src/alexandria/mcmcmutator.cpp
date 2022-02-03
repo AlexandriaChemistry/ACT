@@ -45,7 +45,7 @@ void MCMCMutator::mutate(ga::Genome *genome,
     {
         return;
     }
-    
+
     bool   evaluate_testset = prMut > 0;
     int    nsum             = 0;
     size_t nParam           = genome->nBase();
@@ -536,13 +536,6 @@ void MCMCMutator::openChi2ConvFile(const gmx_output_env_t    *oenv,
         legend.push_back(iMolSelectName(iMolSelect::Test));
         xvgrLegend(fpe_, legend, oenv);
     }
-}
-
-void MCMCMutator::stopHelpers()
-{
-    std::vector<double> dummy;
-    fitComp_->calcDeviation(&dummy,
-                            alexandria::CalcDev::Final, iMolSelect::Train);
 }
 
 void MCMCMutator::finalize()

@@ -203,8 +203,6 @@ public:
      */
     void openChi2ConvFile(const gmx_output_env_t    *oenv,
                           const bool                 bEvaluate_testset);
-    
-    void stopHelpers();
 
     //! Close \f$ \chi^2 \f$ and parameter convergence files
     void finalize();
