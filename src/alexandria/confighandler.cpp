@@ -221,6 +221,12 @@ void GAConfigHandler::check_pargs()
     {
         GMX_RELEASE_ASSERT(OptimizerAlg::MCMC == alg_, "With odd population sizes, only the MCMC optimizer will do.");
     }
+
+    // If MCMC is selected, change the probability of mutation to 1
+    if (alg_ == OptimizerAlg::MCMC)
+    {
+      prMut_ = 1;
+    }
     
     GMX_RELEASE_ASSERT(nElites_ >= 0 && nElites_ % 2 == 0, "-nElites must be nonnegative and even.");
     if (nElites_ > 0)  // Make sure a sorter has been selected

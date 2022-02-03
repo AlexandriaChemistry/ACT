@@ -41,6 +41,11 @@ void MCMCMutator::mutate(ga::Genome *genome,
                          ga::Genome *bestGenome,
                          double      prMut)
 {
+    if (randNum() > prMut)
+    {
+        return;
+    }
+    
     bool   evaluate_testset = prMut > 0;
     int    nsum             = 0;
     size_t nParam           = genome->nBase();
