@@ -13,37 +13,101 @@ namespace ga
 
 bool MCMC::evolve(ga::Genome *bestGenome)
 {
-    if (populationSize() != 1)
-    {
-        fprintf(stderr, "MCMC needs to have exactly one individual!\n");
-        return false;
-    }
+    // if (populationSize() != 1)
+    // {
+    //     fprintf(stderr, "MCMC needs to have exactly one individual!\n");
+    //     return false;
+    // }
     if (sii_->nParam() < 1)
     {
         fprintf(stderr, "Cannot evolve a chromosome without genes.\n");
         return false;
     }
     // Simplify syntax, create individual
-    auto *ind = static_cast<alexandria::ACMIndividual *>(initializer()->initialize());
+    // auto *ind = static_cast<alexandria::ACMIndividual *>(initializer()->initialize());
     
-    mutator()->mutate(ind->genomePtr(), bestGenome, evaluateTestSet_);
-    mutator()->stopHelpers();
-    mutator()->finalize();
+    auto cr = sii_->commRec();
+
+    // Create a gene pool
+    GenePool pool(sii_->nParam());
+    // Receive initial genomes from middlemen
+    for (auto &src : cr->middlemen())
+    {
+        ga::Genome genome;
+        genome.Receive(cr, src);
+        pool.addGenome(genome);
+    }
+    // Print the genomes to the logfile
+    pool.print(logFile_);
+
+    // Update best genome
+    auto bestIndex = pool.findBestIndex();
+    *bestGenome    = pool.genome(bestIndex);
+
+    // When random initialization, assume a better minimum has been found no matter what
+    bool bMinimum = gach_->randomInit() ? true : false;
+
+    // Resend the genomes back to the middlemen (they expect them anyway...)
+    for (size_t i = 0; i < pool.popSize(); i++)
+    {
+        int dest = cr->middlemen()[i];
+        // Tell the middle man to continue
+        cr->send_data(dest);
+        // Send the data set, 0 for iMolSelect::Train
+        cr->send_int(dest, 0);
+        // Now resend the bases
+        cr->send_double_vector(dest, pool.genomePtr(i)->basesPtr());
+    }
+
+    // Fetch the mutated genomes and their fitness. FIXME: use them when -bForceOutput
+    for (size_t i = 0; i < pool.popSize(); i++)
+    {
+        int src      = cr->middlemen()[i];
+        cr->recv_double_vector(src, pool.genomePtr(i)->basesPtr());  // Receiving the mutated parameters
+        auto fitness = cr->recv_double(src);  // Receiving the new training fitness
+        pool.genomePtr(i)->setFitness(iMolSelect::Train, fitness);
+    }
+
+    // Fetch the best genomes FIXME: use them when -nobForceOutput
+    for (size_t i = 0; i < pool.popSize(); i++)
+    {
+        int src = cr->middlemen()[i];
+        pool.genomePtr(i)->Receive(cr, src);
+    }
+
+    // Print the genomes to the logfile
+    pool.print(logFile_);
+
+    // Check if a better genome was found, and update if so
+    size_t newBest = pool.findBestIndex();
+    if (pool.genome(newBest).fitness(iMolSelect::Train) < 
+        bestGenome->fitness(iMolSelect::Train))  // If we have a new best
+    {
+        bestGenome->print("A new best individual has been found!\nPrevious best:\n",
+                          logFile_);
+        *bestGenome = pool.genome(newBest); 
+        bestGenome->print("New best:\n", logFile_);
+        bMinimum = true;
+    }
+
+    // mutator()->mutate(ind->genomePtr(), bestGenome, evaluateTestSet_);
+    // mutator()->stopHelpers();
+    // mutator()->finalize();
     
-    delete ind;  // FIXME: compilation warning about non-virtual destructor
+    // delete ind;  // FIXME: compilation warning about non-virtual destructor
     
-    return mutator()->foundMinimum();
+    return bMinimum;
 }
 
 bool HybridGAMC::evolve(ga::Genome *bestGenome)
 {
-    if (gach_->popSize() < 2)
+    if (gach_->popSize() < 2)  // FIXME: This is already checked in GAConfigHandler::check_pargs()
     {
         fprintf(stderr, "Need at least two individuals in the population.\n");
         return false;
     }
     auto cr = sii_->commRec();
-    if (cr->nmiddlemen() < 1)
+    if (cr->nmiddlemen() < 1)  // FIXME: have we already checked that the number of processors is the correct one?
     {
         fprintf(stderr, "Need at least two cores/processes to run the genetic algorithm.\n");
         return false; 
@@ -59,6 +123,7 @@ bool HybridGAMC::evolve(ga::Genome *bestGenome)
     std::random_device rd;  // Will be used to obtain a seed for the random number engine
     std::mt19937 gen(rd()); // Standard mersenne_twister_engine seeded with rd()
     std::uniform_real_distribution<double> dis(0.0, 1.0);
+    gen.seed(seed_);
     
     // Indices for parents
     size_t parent1, parent2;
@@ -96,7 +161,7 @@ bool HybridGAMC::evolve(ga::Genome *bestGenome)
     fprintFitness(*(pool[pold]));
 
     auto bestIndex = pool[pold]->findBestIndex();
-    // TODO Check whether we need to update this at all here
+    // TODO: Check whether we need to update this at all here
     *bestGenome    = pool[pold]->genome(bestIndex);
     
     // When random initialization, assume a better minimum has been found no matter what

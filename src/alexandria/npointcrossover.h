@@ -42,12 +42,15 @@ public:
      * Property constructor
      * \param[in] chromosomeLength  the length of the chromosomes
      * \param[in] order             order of the crossover operator (amount of cutting points)
+     * \param[in] seed              seed for the random number generator
      */
     NPointCrossover(const size_t chromosomeLength,
-                    const size_t order)
-    : ga::Crossover(chromosomeLength), gen(rd()), 
+                    const size_t order,
+                    const int seed)
+    : ga::Crossover(chromosomeLength, seed), gen(rd()), 
       crossoverPoints_(order + 2)
     {
+        gen.seed(seed);
         order_ = order;
         if (chromosomeLength >= 2)
         {

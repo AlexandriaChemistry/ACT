@@ -90,18 +90,18 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
                     int nElites, int popSize, double tolerance,
                     bool verbose, int nrep, int ncrossovers, 
                     const std::vector<std::string> &fitstrings,
-                    int seed)
+                    int seed, alexandria::eRMS erms)
         {
             // GA stuff
             alexandria::GAConfigHandler      gach;
             gach.setPopSize(popSize);
             gach.setCrossovers(ncrossovers);
             gach.setOptimizerAlg(alg);
-            int nmiddlemen = 0;
-            if (gach.optimizer() != alexandria::OptimizerAlg::MCMC)
-            {
-                nmiddlemen = gach.popSize();
-            }
+            int nmiddlemen = gach.popSize();
+            // if (gach.optimizer() != alexandria::OptimizerAlg::MCMC)
+            // {
+            //     nmiddlemen = gach.popSize();
+            // }
             alexandria::CommunicationRecord  cr;
             cr.init(nmiddlemen);
             gmx_output_env_t    *oenv;
@@ -125,6 +125,7 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
             {
                 molgen.addFitOption(fs);
             }
+            // TODO check return value
             (void) molgen.Read(nullptr, mpDataName.c_str(), sii.poldata(),
                                false, gms, nullptr, false);
             // Continue filling the shared individual
@@ -138,13 +139,16 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
             }
             sii.setOutputFiles(xvgconv.c_str(), paramClass, xvgepot.c_str());
             sii.assignParamClassIndex();
-            sii.target(iMolSelect::Train, alexandria::eRMS::MU)->setWeight(1.0);
+            sii.target(iMolSelect::Train, erms)->setWeight(1.0);
             sii.computeWeightedTemperature(true);
             sii.propagateWeightFittingTargets();
             // One more config handler
             alexandria::BayesConfigHandler bch;
-            bch.setMaxIter(5);
+            bch.setMaxIter(20);
+            bch.setAnneal(0.5);
+            bch.setTemperature(10);
             bch.setSeed(seed);
+            bch.setStep(0.1);
             if (cr.isMaster())
             {
                 // Checker, Master only
@@ -179,13 +183,12 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
                 // Now the rest of the classes
                 std::string outputFile("GeneticAlgorithmTest.dat");
                 bool randInit     = false;
-                auto init         = new alexandria::ACMInitializer(&sii, randInit, bch.seed());
-                auto fit          = new alexandria::ACMFitnessComputer(nullptr, &sii, &molgen, false, verbose, false);
                 auto probComputer = new RankProbabilityComputer(gach.popSize());
                 // Selector
-                auto selector     = new ga::RouletteSelector();
+                auto selector     = new ga::RouletteSelector(bch.seed());
                 auto crossover    = new alexandria::NPointCrossover(gach.popSize(),
-                                                                    gach.nCrossovers());
+                                                                    gach.nCrossovers(),
+                                                                    bch.seed());
             
                 // Terminator
                 auto terminator   = new ga::GenerationTerminator(gach.maxGenerations());
@@ -195,21 +198,14 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
                     checker_.checkInt64(bch.maxIter(), "bch.maxIter");
                     checker_.checkInt64(bch.seed(), "bch.seed");
                     checker_.checkReal(bch.temperature(), "bch.temperature");
-                    auto mutator      = new alexandria::MCMCMutator(nullptr, false, &bch, fit, &sii);
                     
-                    ga = new ga::MCMC(stdout, init, 
-                                      fit, probComputer,
-                                      selector, crossover, mutator, terminator,
-                                      &sii, &gach, false);
+                    ga = new ga::MCMC(stdout, &sii, &gach, false);
                 }
                 else
                 {
-                    auto mutator = new alexandria::PercentMutator(&sii, gach.percent());
                     checker_.checkInt64(gach.percent(), "gach.percent");
-                    ga = new ga::HybridGAMC(stdout, init, 
-                                            fit, probComputer,
-                                            selector, crossover, mutator, terminator,
-                                            &sii, &gach);
+                    ga = new ga::HybridGAMC(stdout, probComputer, selector, crossover, terminator,
+                                            &sii, &gach, bch.seed());
                 }
                 checker_.checkInt64(gach.maxGenerations(), "Maximum Number of Generations");
                 checker_.checkReal(gach.prCross(), "Probability for Crossover");
@@ -223,7 +219,7 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
                         cr.send_done(dest);
                     }
                 }
-                else
+                else  // FIXME: already done by the middlemen
                 {
                     // ... or the helpers if there are no middlemen.
                     for(auto &dest : cr.helpers())
@@ -240,7 +236,7 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
             }
             else if (cr.isMiddleMan())
             {
-                // Run middleman like code.
+                // Run middleman-like code.
                 alexandria::ACTMiddleMan middleman(nullptr, &molgen, 
                                                    &sii, &gach, &bch,
                                                    false, oenv);
@@ -248,7 +244,7 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
             }
             else if (cr.isHelper())
             {
-                // Run helper like code
+                // Run helper-like code
                 alexandria::ACTHelper helper(&sii, &molgen);
                 helper.run();
             }
@@ -260,13 +256,15 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
 TEST_F (GeneticAlgorithmTest, PopTwo)
 {
     GMX_MPI_TEST(3);
-    testIt(alexandria::OptimizerAlg::GA, 0, 2, 0.1, 1, 1, true, { "epsilon", "gamma" }, 1993);
+    testIt(alexandria::OptimizerAlg::GA, 0, 2, 0.1, 1, 1, true,
+           { "chi", "zeta" }, 1993, alexandria::eRMS::QUAD);
 }
 
 TEST_F (GeneticAlgorithmTest, PopOneMCMC)
 {
     GMX_MPI_TEST(3);
-    testIt(alexandria::OptimizerAlg::MCMC, 0, 1, 0.1, 1, 1, false, { "epsilon", "gamma" }, 1993);
+    testIt(alexandria::OptimizerAlg::MCMC, 0, 1, 0.1, 1, 1, false,
+           { "chi", "jaa" }, 1993, alexandria::eRMS::MU);
 }
 
 //TEST_F (GeneticAlgorithmTest, EmptyPop)

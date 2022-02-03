@@ -27,16 +27,16 @@ class ACMInitializer : public ga::Initializer
 
 private:
 
-    //! StaticIndividualInfo pointer
-    StaticIndividualInfo                    *sii_;
-    //! Whether we do random initialization or not.
-    bool                                     randInit_;
     // Random number generation
     std::random_device                       rd_;
     std::mt19937                             gen_;
     std::uniform_real_distribution<double>   dis_;
+    //! StaticIndividualInfo pointer
+    StaticIndividualInfo                    *sii_;
+    //! Whether we do random initialization or not.
+    bool                                     randInit_;
     //! Seeds for random number generation
-    std::vector<int>                         seeds_;
+    // std::vector<int>                         seeds_;
 
 public: 
 

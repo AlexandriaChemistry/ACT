@@ -193,7 +193,7 @@ class BayesConfigHandler : public ConfigHandler
 private:
     //! Maximum number of iterations
     int   maxiter_           = 100;
-    //! Random number seed for the Initializer random number generator FIXME: This shouldn't be here?
+    //! Random number seed for initializer, crossover, mutator, and selector FIXME: This should be general
     int   seed_              = 0;
     //! Relative step when optimizing
     real  step_              = 0.02;
@@ -230,6 +230,11 @@ public:
     //! \brief Return temperature
     real temperature() const { return temperature_; }
 
+    /*! \brief set a new value for temperature
+     * \param[in] temperature the new temperature
+     */
+    void setTemperature(const real temperature) { temperature_ = temperature; }
+
     //! \return the seed
     int seed() const { return seed_; }
 
@@ -258,6 +263,9 @@ public:
     //! \brief Return the step
     real step() const { return step_; }
 
+    //! \brief Set the step
+    void setStep(real step) { step_ = step; }
+
     //! \brief Return whether or not temperature weighting should be considered
     bool temperatureWeighting() const { return tempWeight_; }
 
@@ -265,6 +273,11 @@ public:
     * \param iter The iteration number
     */
     bool anneal (int iter) const;
+
+    /*! \brief Set a new value for annealing start
+     * \param[in] anneal the new starting point for simulated annealing
+     */
+    void setAnneal(const real anneal) { anneal_ = anneal; };
 
     //! \return whether test set should be evaluated during the MCMC run
     bool evaluateTestset() const { return evaluate_testset_; }

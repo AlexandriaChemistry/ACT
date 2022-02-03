@@ -18,19 +18,13 @@ namespace alexandria
 
 MCMCMutator::MCMCMutator(FILE                 *logfile,
                          bool                  verbose,
+                         int                   seed,
                          BayesConfigHandler   *bch,
                          ACMFitnessComputer   *fitComp,
                          StaticIndividualInfo *sii)
-    : Mutator(), gen(rd()), dis(std::uniform_int_distribution<size_t>(0, sii->nParam()-1))
+    : Mutator(seed), gen(rd()), dis(std::uniform_int_distribution<size_t>(0, sii->nParam()-1))
 {
-    if (bch->seed() == 0)
-    {
-        gen.seed(::time(NULL));
-    }
-    else
-    {
-        gen.seed(bch->seed());
-    }
+    gen.seed(seed);
     logfile_ = logfile;
     verbose_ = verbose;
     bch_     = bch;
@@ -96,7 +90,7 @@ void MCMCMutator::mutate(ga::Genome *genome,
     }
     // Save initial evaluation and initialize a structure for the minimum evaluation
     auto initEval = prevEval;
-    auto minEval = prevEval;
+    *bestGenome = *genome;
 
     print_memory_usage(debug);
 
@@ -107,7 +101,7 @@ void MCMCMutator::mutate(ga::Genome *genome,
         for (size_t pp = 0; pp < nParam; pp++)
         {
             // Do the step!
-            stepMCMC(genome, bestGenome, &changed, &prevEval, &minEval,
+            stepMCMC(genome, bestGenome, &changed, &prevEval,
                      evaluate_testset, pp, iter, &beta0);
 
             // For the second half of the optimization, collect data 
@@ -135,7 +129,7 @@ void MCMCMutator::mutate(ga::Genome *genome,
     // Assume no better minimum was found
     bMinimum_ = false;
     auto ims  = iMolSelect::Train;
-    if (minEval[ims] < initEval[ims])  // FIXME: there is no need for minEval anymore, we can just use bestGenome
+    if (bestGenome->fitness(ims) < initEval[ims])
     {
         // If better minimum was found, update the value in <*chi2> and return true
         // genome->setFitness(ims, minEval[ims]);
@@ -147,7 +141,6 @@ void MCMCMutator::stepMCMC(ga::Genome                   *genome,
                            ga::Genome                   *bestGenome,
                            std::vector<bool>            *changed,
                            std::map<iMolSelect, double> *prevEval,
-                           std::map<iMolSelect, double> *minEval,
                            bool                          evaluate_testset,
                            size_t                        pp,
                            int                           iter,
@@ -218,7 +211,7 @@ void MCMCMutator::stepMCMC(ga::Genome                   *genome,
     if (accept)
     {  // If the parameter change is accepted
         auto imstr = iMolSelect::Train;
-        if (currEval[imstr] < minEval->find(imstr)->second)  // If a new minimim was found
+        if (currEval[imstr] < bestGenome->fitness(imstr))  // If a new minimim was found
         {
             // If pointer to log file exists, write information about new minimum
             if (logfile_)
@@ -227,7 +220,6 @@ void MCMCMutator::stepMCMC(ga::Genome                   *genome,
             }
             *bestGenome = *genome;
             bestGenome->setFitness(imstr, currEval[imstr]);  // Pass the fitness for training set to the best genome
-            minEval->find(imstr)->second = currEval[imstr];
             sii_->saveState(false);
         }
         prevEval->find(imstr)->second = currEval[imstr];
@@ -336,6 +328,10 @@ void MCMCMutator::printNewMinimum(const std::map<iMolSelect, double> &chi2,
                                   bool                                bEvaluate_testset,
                                   double                              xiter)
 {
+    if (!logfile_)
+    {
+        return;
+    }
     fprintf(logfile_, "Middleman %i\n", sii_->id());
     if (bEvaluate_testset)
     {
@@ -366,21 +362,30 @@ void MCMCMutator::printParameterStep(ga::Genome          *genome,
         for (FILE *fp: fpc_) 
             
         {
-            fprintf(fp, "%8f", xiter);
+            if (fp)
+            {
+                fprintf(fp, "%8f", xiter);
+            }
         }
         // Write value of each parameter to its respective surveillance file
         for (size_t k = 0; k < genome->nBase(); k++)  
         {
-            fprintf(fpc_[paramClassIndex[k]], "  %10g", bases[k]);
+            if (fpc_[paramClassIndex[k]])
+            {
+                fprintf(fpc_[paramClassIndex[k]], "  %10g", bases[k]);
+            }
         }
         for (FILE *fp: fpc_)
         {
-            fprintf(fp, "\n");
-            // If verbose, flush the file to be able to add 
-            // new data to surveillance plots
-            if (verbose_)
+            if (fp)
             {
-                fflush(fp);
+                fprintf(fp, "\n");
+                // If verbose, flush the file to be able to add 
+                // new data to surveillance plots
+                if (verbose_)
+                {
+                    fflush(fp);
+                }
             }
         }
     }
@@ -539,7 +544,10 @@ void MCMCMutator::finalize()
 {
     for(FILE *fp: fpc_)  // Close all parameter convergence surveillance files
     {
-        xvgrclose(fp);
+        if (fp)
+        {
+            xvgrclose(fp);
+        }
     }
     if (fpe_ != nullptr)  // Close chi2 surveillance file
     {

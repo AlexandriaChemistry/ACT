@@ -23,19 +23,10 @@ namespace alexandria
 ACMInitializer::ACMInitializer(StaticIndividualInfo *sii,
                                bool                  randInit,
                                int                   seed)
-    : gen_(rd_()), dis_(std::uniform_real_distribution<double>(0.0, 1.0))
+    : gen_(rd_()), dis_(std::uniform_real_distribution<double>(0.0, 1.0)),
+      sii_(sii), randInit_(randInit)
 {
-    if (seed == 0)
-    {
-        gen_.seed(::time(NULL));
-    }
-    else
-    {
-        gen_.seed(seed);
-    }
-    
-    sii_      = sii;
-    randInit_ = randInit;
+    gen_.seed(seed);
 }
 
 ga::Individual *ACMInitializer::initialize()

@@ -34,6 +34,10 @@ namespace alexandria
         ACMIndividual      *ind_;
         //! Config handler for GA
         GAConfigHandler    *gach_;
+        //! Log file
+        FILE               *logFile_ = nullptr;
+        //! My ID
+        int                 id_;
     public:
         /*! \brief Constructor
          * \param[in] logFile    FILE to print stuff to, can be nullptr

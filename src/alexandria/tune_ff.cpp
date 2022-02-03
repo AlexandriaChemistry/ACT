@@ -167,11 +167,13 @@ void OptACM::check_pargs()
 void OptACM::optionsFinished(const std::string &outputFile)
 {
     mg_.optionsFinished();
-    int nmiddlemen = 0;
-    if (gach_.optimizer() != OptimizerAlg::MCMC)
-    {
-        nmiddlemen = gach_.popSize();
-    }
+    // COMMENTED TO MAKE MCMC WORK WITH ANY POPULATION SIZE
+    // int nmiddlemen = 0;
+    // if (gach_.optimizer() != OptimizerAlg::MCMC)
+    // {
+    //     nmiddlemen = gach_.popSize();
+    // }
+    const int nmiddlemen = gach_.popSize();
     // Update the communication record and do necessary checks.
     commRec_.init(nmiddlemen);
     // Set prefix and id in sii_
@@ -258,55 +260,53 @@ void OptACM::initMaster()
         }
     }
     
-    // Fitness computer FIXME: do we want to give the pointer to the logfile instead of nullptr?
+    // Fitness computer
+    // FIXME: do we want to give the pointer to the logfile instead of nullptr?
+    // FIXME: what about the flags? Here it is a bit more clear that they should be all false?
     fitComp_ = new ACMFitnessComputer(nullptr, sii_, &mg_, false, false, false);
     
     // Create and initialize the mutator
-    ga::Mutator *mutator;
-    if (gach_.optimizer() == OptimizerAlg::GA)
-    {
-        mutator = new alexandria::PercentMutator(sii_, gach_.percent());
-    }
-    else
-    {
-        // auto mut = new alexandria::MCMCMutator(nullptr, verbose(), &bch_, fitComp_, sii_);
-        auto mut = new alexandria::MCMCMutator(logFile(), verbose(), &bch_, fitComp_, sii_);
-        if (sii_->commRec()->nmiddlemen() == 0)  // If we are running pure MCMC
-        {
-            mut->openParamConvFiles(oenv());
-            mut->openChi2ConvFile(oenv(), bch()->evaluateTestset());
-        }
-        mutator = mut;
-    }
+    // ga::Mutator *mutator;
+    // if (gach_.optimizer() == OptimizerAlg::GA)
+    // {
+    //     mutator = new alexandria::PercentMutator(sii_, gach_.percent());
+    // }
+    // else
+    // {
+    //     // auto mut = new alexandria::MCMCMutator(nullptr, verbose(), &bch_, fitComp_, sii_);
+    //     auto mut = new alexandria::MCMCMutator(logFile(), verbose(), &bch_, fitComp_, sii_);
+    //     // if (sii_->commRec()->nmiddlemen() == 0)  // If we are running pure MCMC
+    //     // {
+    //     //     mut->openParamConvFiles(oenv());
+    //     //     mut->openChi2ConvFile(oenv(), bch()->evaluateTestset());
+    //     // }
+    //     mutator = mut;
+    // }
     
     // Selector
-    auto *selector = new ga::RouletteSelector();
+    auto *selector = new ga::RouletteSelector(bch_.seed());
     
     // Crossover
     GMX_RELEASE_ASSERT(gach_.nCrossovers() < static_cast<int>(sii_->nParam()),
                        gmx::formatString("The order of the crossover operator should be smaller than the amount of parameters. You chose -nCrossovers %i, but there are %lu parameters. Please adjust -nCrossovers.", gach_.nCrossovers(), sii_->nParam()).c_str() );
     
     auto *crossover = new alexandria::NPointCrossover(sii_->nParam(),
-                                                      gach_.nCrossovers());
+                                                      gach_.nCrossovers(),
+                                                      bch_.seed());
     
     // Terminator
     auto *terminator = new ga::GenerationTerminator(gach_.maxGenerations());
     
     if (gach_.optimizer() == OptimizerAlg::MCMC)
     {
-        auto initializer = new ACMInitializer(sii_, gach_.randomInit(), bch_.seed());
+        // auto initializer = new ACMInitializer(sii_, gach_.randomInit(), bch_.seed());
     
-        ga_ = new ga::MCMC(logFile(), initializer,
-                           fitComp_, probComputer,
-                           selector, crossover, mutator, terminator, sii_,
-                           &gach_, bch_.evaluateTestset());
+        ga_ = new ga::MCMC(logFile(), sii_, &gach_, bch_.evaluateTestset());
     }
     else
     {
-        ga_ = new ga::HybridGAMC(logFile(), nullptr,
-                                 fitComp_, probComputer,
-                                 selector, crossover, mutator, terminator, sii_,
-                                 &gach_);
+        ga_ = new ga::HybridGAMC(logFile(), probComputer, selector, crossover, terminator, sii_, &gach_,
+                                 bch_.seed());
     }
 }
 
@@ -336,18 +336,13 @@ bool OptACM::runMaster(bool        optimize,
             commRec_.send_done(dest);
         }
     }
-    else
+    else  // FIXME: helpers are already stopped by their middlemen
     {
         // ... or the helpers if there are no middlemen.
         for(auto &dest : commRec_.helpers())
         {
             commRec_.send_done(dest);
         }
-    }
-    if (gach_.optimizer() != OptimizerAlg::GA)
-    {
-        // TODO In hybrid mode we have multiple MCMC mutators and the middlemen should do the printing. 
-        //mut->printMonteCarloStatistics(logFile(), ga_->bestGenome());
     }
 
     if (bMinimum)
@@ -357,17 +352,11 @@ bool OptACM::runMaster(bool        optimize,
         {
             GMX_THROW(gmx::InternalError("Minimum found but no best parameters"));
         }
-        // If MCMC was chosen as optimizer, restore best parameter set
-        // TODO CHECK THIS
-        if (gach_.optimizer() == OptimizerAlg::MCMC)
-        {
-            //bestGenome()->setParam(best);
-        }
         // Copy it to Poldata
         std::vector<bool> changed;
         changed.resize(best.size(), true);
         sii_->updatePoldata(changed, ga_->bestGenomePtr());
-        for (const auto &ims : iMolSelectNames())
+        for (const auto &ims : iMolSelectNames())  // FIXME: this last calc deviation will be very slow?
         {
             // TODO printing
             double chi2 = fitComp_->calcDeviation(ga_->bestGenomePtr()->basesPtr(),
@@ -502,7 +491,6 @@ int tune_ff(int argc, char *argv[])
     opt.optionsFinished(opt2fn("-o", filenms.size(), filenms.data()));
 
     // Propagate weights from training set to other sets
-    // TODO: is this necessary if all processors parse the command line?
     opt.sii()->propagateWeightFittingTargets();
 
     if (opt.commRec()->isMaster())

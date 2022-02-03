@@ -38,11 +38,13 @@ protected:
     /*!
      * \brief Constructor
      * \param[in] chromosomeLength  length of the chromosome
+     * \param[in] seed              seed for random number generation
      */
-    Crossover(const size_t chromosomeLength)
+    Crossover(const size_t chromosomeLength,
+              const int seed)
     : gen_base(rd_base()), dis_base(std::uniform_int_distribution<size_t>(1, chromosomeLength - 1))
     {
-        gen_base.seed(::time(NULL));
+        gen_base.seed(seed);
     }
 
     /*!

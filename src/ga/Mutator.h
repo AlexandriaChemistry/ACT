@@ -25,12 +25,14 @@ private:
 
 protected:
 
-    //! \brief Constructor
-    Mutator()
+    /*! \brief Constructor
+     * \param[in] seed seed for the random number generator
+     */
+    Mutator(int seed)
     : gen_base(rd_base()), dis_base(std::uniform_real_distribution<double>(0.0, 1.0))
     {
-        gen_base.seed(::time(NULL));
-    };
+        gen_base.seed(seed);
+    }
 
     //! \return a random number in \f$ [0, 1] \f$
     double randNum() { return dis_base(gen_base); }

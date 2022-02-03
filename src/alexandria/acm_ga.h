@@ -37,23 +37,23 @@ private:
     alexandria::GAConfigHandler      *gach_;
     //! logFile
     FILE                             *logFile_;
+    //! seed for random numbers
+    int                               seed_;
 public:
     /*!
      * \brief Constructor for self-building
      */
     HybridGAMC(FILE                                *logFile,
-               Initializer                         *initializer,
-               FitnessComputer                     *fitnessComputer,
                ProbabilityComputer                 *probComputer,
                Selector                            *selector,
                Crossover                           *crossover,
-               Mutator                             *mutator,
                Terminator                          *terminator,
                alexandria::StaticIndividualInfo    *sii,
-               alexandria::GAConfigHandler         *gach)
-    : GeneticAlgorithm(initializer, fitnessComputer, probComputer, selector, crossover,
-                       mutator, terminator, gach->popSize()), sii_(sii), gach_(gach),
-                       logFile_(logFile) {}
+               alexandria::GAConfigHandler         *gach,
+               int                                  seed)
+    : GeneticAlgorithm(nullptr, nullptr, probComputer, selector, crossover,
+                       nullptr, terminator, gach->popSize()), sii_(sii), gach_(gach),
+                       logFile_(logFile), seed_(seed) {}
  
     //! \copydocs ga::GeneticAlgorithm::evolve
     virtual bool evolve(ga::Genome *bestGenome);
@@ -65,28 +65,23 @@ class MCMC : public GeneticAlgorithm
 private:
     //! Who am I?
     alexandria::StaticIndividualInfo *sii_;
+    //! GAConfigHandler pointer
+    alexandria::GAConfigHandler      *gach_;
     //! logFile
     FILE                             *logFile_;
     //! Should we regularly evaluate the test set?
-    bool                               evaluateTestSet_;
+    bool                              evaluateTestSet_;
 public:
     /*!
      * \brief Constructor for self-building
      */
     MCMC(FILE                                *logFile,
-         Initializer                         *initializer,
-         FitnessComputer                     *fitnessComputer,
-         ProbabilityComputer                 *probComputer,
-         Selector                            *selector,
-         Crossover                           *crossover,
-         Mutator                             *mutator,
-         Terminator                          *terminator,
          alexandria::StaticIndividualInfo    *sii,
          alexandria::GAConfigHandler         *gach,
          bool                                 evaluateTestSet)
-    : GeneticAlgorithm(initializer, fitnessComputer, probComputer, selector, crossover,
-                       mutator, terminator, gach->popSize()),
-      sii_(sii), logFile_(logFile), evaluateTestSet_(evaluateTestSet) {}
+    : GeneticAlgorithm(nullptr, nullptr, nullptr, nullptr, nullptr,
+                       nullptr, nullptr, gach->popSize()),
+      sii_(sii), gach_(gach), logFile_(logFile), evaluateTestSet_(evaluateTestSet) {}
     
     //! \copydocs ga::GeneticAlgorithm::evolve
     virtual bool evolve(ga::Genome *bestGenome);
