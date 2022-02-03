@@ -97,6 +97,10 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
             gach.setPopSize(popSize);
             gach.setCrossovers(ncrossovers);
             gach.setOptimizerAlg(alg);
+            if (alg == alexandria::OptimizerAlg::MCMC)
+            {
+                gach.setPrMut(1);
+            }
             int nmiddlemen = gach.popSize();
             // if (gach.optimizer() != alexandria::OptimizerAlg::MCMC)
             // {

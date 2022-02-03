@@ -172,6 +172,11 @@ public:
     //! \return the probability of mutation
     real prMut() const { return prMut_; }
 
+    /*! \brief Set a new value for probability of mutation
+     * \param[in] prMut the new mutation probability
+     */
+    void setPrMut(const real prMut) { prMut_ = prMut; }
+
     //! \return For PercentMutator: Maximum allowed change in a parameter as a fraction of its allowed range
     real percent() const { return percent_; }
 
