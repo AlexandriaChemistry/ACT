@@ -15,7 +15,6 @@
 #include "ga/FitnessComputer.h"
 #include "ga/GeneticAlgorithm.h"
 #include "ga/Initializer.h"
-#include "ga/Mutator.h"
 #include "ga/ProbabilityComputer.h"
 #include "ga/Selector.h"
 #include "ga/Terminator.h"
@@ -52,7 +51,7 @@ public:
                alexandria::GAConfigHandler         *gach,
                int                                  seed)
     : GeneticAlgorithm(nullptr, nullptr, probComputer, selector, crossover,
-                       nullptr, terminator, gach->popSize()), sii_(sii), gach_(gach),
+                       terminator, gach->popSize()), sii_(sii), gach_(gach),
                        logFile_(logFile), seed_(seed) {}
  
     //! \copydocs ga::GeneticAlgorithm::evolve
@@ -80,7 +79,7 @@ public:
          alexandria::GAConfigHandler         *gach,
          bool                                 evaluateTestSet)
     : GeneticAlgorithm(nullptr, nullptr, nullptr, nullptr, nullptr,
-                       nullptr, nullptr, gach->popSize()),
+                       nullptr, gach->popSize()),
       sii_(sii), gach_(gach), logFile_(logFile), evaluateTestSet_(evaluateTestSet) {}
     
     //! \copydocs ga::GeneticAlgorithm::evolve

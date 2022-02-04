@@ -18,7 +18,6 @@
 #include "ProbabilityComputer.h"
 #include "Selector.h"
 #include "Crossover.h"
-#include "Mutator.h"
 #include "Terminator.h"
 
 struct gmx_output_env_t;
@@ -51,8 +50,6 @@ private:
     Selector                     *selector_ = nullptr;
     //! Grabs 2 individuals and crosses their genes to generate 2 new individuals
     Crossover                    *crossover_ = nullptr;
-    //! Mutates the genes of the individuals
-    Mutator                      *mutator_ = nullptr;
     //! Checks if the evolution should continue or be terminated
     Terminator                   *terminator_ = nullptr;
 
@@ -73,12 +70,11 @@ public:
                      ProbabilityComputer                 *probComputer,
                      Selector                            *selector,
                      Crossover                           *crossover,
-                     Mutator                             *mutator,
                      Terminator                          *terminator,
                      int                                  popSize) :
         popSize_(popSize), initializer_(initializer),
         fitComputer_(fitnessComputer), probComputer_(probComputer),
-        selector_(selector), crossover_(crossover), mutator_(mutator), terminator_(terminator) {}
+        selector_(selector), crossover_(crossover), terminator_(terminator) {}
 
  
     /*! \brief Evolve the initial population
@@ -105,9 +101,6 @@ public:
     //! \return constant best genome
     const ga::Genome &bestGenome() { return bestGenome_; }
     
-    //! \return the mutator
-    Mutator *mutator() { return mutator_; }
-
     //! \return the fitness computer
     FitnessComputer *fitnessComputer() { return fitComputer_; }
 

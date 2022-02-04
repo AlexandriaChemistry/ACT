@@ -322,11 +322,10 @@ bool OptACM::runMaster(bool        optimize,
     {
         bMinimum = ga_->evolve(ga_->bestGenomePtr());
     }
-    auto mut = static_cast<MCMCMutator *>(ga_->mutator());
     if (gach_.optimizer() != OptimizerAlg::GA && sensitivity)
     {
         // Do sensitivity analysis only on the training set
-        mut->sensitivityAnalysis(ga_->bestGenomePtr(), iMolSelect::Train);
+        // mut->sensitivityAnalysis(ga_->bestGenomePtr(), iMolSelect::Train);
     }
     // Stop the middlemen ...
     if (commRec_.nmiddlemen() > 0)
