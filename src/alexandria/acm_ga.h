@@ -53,10 +53,10 @@ public:
     : GeneticAlgorithm(nullptr, nullptr, probComputer, selector, crossover,
                        nullptr, terminator, gach->popSize()),
       sii_(sii), gach_(gach), logFile_(logFile), seed_(seed) {}
- 
+
     //! \copydocs ga::GeneticAlgorithm::evolve
     virtual bool evolve(ga::Genome *bestGenome);
-    
+
 };
 
 class MCMC : public GeneticAlgorithm
@@ -68,8 +68,6 @@ private:
     alexandria::GAConfigHandler      *gach_;
     //! logFile
     FILE                             *logFile_;
-    //! Should we regularly evaluate the test set?
-    bool                              evaluateTestSet_;
 public:
     /*!
      * \brief Constructor for self-building
@@ -78,16 +76,14 @@ public:
          Initializer                         *initializer,
          Mutator                             *mutator,
          alexandria::StaticIndividualInfo    *sii,
-         alexandria::GAConfigHandler         *gach,
-         bool                                 evaluateTestSet)
+         alexandria::GAConfigHandler         *gach)
     : GeneticAlgorithm(initializer, nullptr, nullptr, nullptr, nullptr,
                        mutator, nullptr, gach->popSize()),
-      sii_(sii), gach_(gach), logFile_(logFile),
-      evaluateTestSet_(evaluateTestSet) {}
-    
+      sii_(sii), gach_(gach), logFile_(logFile) {}
+
     //! \copydocs ga::GeneticAlgorithm::evolve
     virtual bool evolve(ga::Genome *bestGenome);
-    
+
 };
 
 } // namespace ga

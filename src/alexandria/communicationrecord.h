@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 
+#include "ga/Dataset.h"
 #include "gromacs/mdtypes/commrec.h"
 
 namespace alexandria
@@ -205,6 +206,19 @@ public:
      * \return The int received
      */
     int recv_int(int src) const;
+ 
+    /*! Send an iMolSelect to another processor.
+     * \param[in] dest The destination processor
+     * \param[in] ims  The value of the iMolSelect
+     */
+    void send_iMolSelect(int dest, iMolSelect ims) const;
+    
+    /*! \brief Receive an iMolSelect
+     * \param[in] src The source processor
+     * \return The iMolSelect received
+     * \throws if something is wrong
+     */
+    iMolSelect recv_iMolSelect(int src) const;
  
     /*! \brief Calculate the global sum of an array of doubles
      * but only on my act helpers.

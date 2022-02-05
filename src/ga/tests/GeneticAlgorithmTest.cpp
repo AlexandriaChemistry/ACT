@@ -87,7 +87,7 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
         }
     
         void testIt(alexandria::OptimizerAlg alg,
-                    int nElites, int popSize, double tolerance,
+                    int nElites, int popSize,
                     bool verbose, int nrep, int ncrossovers, 
                     const std::vector<std::string> &fitstrings,
                     int seed, alexandria::eRMS erms)
@@ -203,7 +203,7 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
                     checker_.checkInt64(bch.seed(), "bch.seed");
                     checker_.checkReal(bch.temperature(), "bch.temperature");
                     
-                    ga = new ga::MCMC(stdout, &sii, &gach, false);
+                    ga = new ga::MCMC(stdout, &sii, &gach);
                 }
                 else
                 {
@@ -267,29 +267,38 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
 TEST_F (GeneticAlgorithmTest, PopSix)  // HYBRID
 {
     GMX_MPI_TEST(7);
-    testIt(alexandria::OptimizerAlg::HYBRID, 0, 6, 0.1, true, 1, 1,
+    testIt(alexandria::OptimizerAlg::HYBRID, 0, 6, true, 1, 1,
            { "chi", "zeta" }, 1993, alexandria::eRMS::QUAD);
 }
 
 TEST_F (GeneticAlgorithmTest, PopTwo)  // GA
 {
     GMX_MPI_TEST(7);
-    testIt(alexandria::OptimizerAlg::GA, 0, 2, 0.1, true, 1, 1,
+    testIt(alexandria::OptimizerAlg::GA, 0, 2, true, 1, 1,
            { "chi", "zeta" }, 1993, alexandria::eRMS::QUAD);
 }
 
 TEST_F (GeneticAlgorithmTest, PopOneMCMC)  // MCMC
 {
     GMX_MPI_TEST(7);
-    testIt(alexandria::OptimizerAlg::MCMC, 0, 1, 0.1, false, 1, 0,
+    testIt(alexandria::OptimizerAlg::MCMC, 0, 1, false, 1, 0,
            { "chi", "jaa" }, 1993, alexandria::eRMS::MU);
 }
 
-//TEST_F (GeneticAlgorithmTest, EmptyPop)
-//{
-//  GMX_MPI_TEST(3);
-//  testIt(alexandria::OptimizerAlg::GA, 0, 0, 0.1, 1, 1, true, { "sigma", "alpha" }, 1993);
-//}
+TEST_F (GeneticAlgorithmTest, PopTwoEspGA)  // GA
+{
+    GMX_MPI_TEST(7);
+    testIt(alexandria::OptimizerAlg::GA, 0, 2, true, 1, 1,
+           { "chi", "jaa" }, 1993, alexandria::eRMS::ESP);
+}
+
+TEST_F (GeneticAlgorithmTest, MCMCThreeVariables)  // MCMC
+{
+    GMX_MPI_TEST(7);
+    testIt(alexandria::OptimizerAlg::MCMC, 0, 1, false, 1, 0,
+           { "chi", "jaa", "zeta" }, 1997, alexandria::eRMS::MU);
+}
+
 
 }
 

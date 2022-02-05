@@ -188,7 +188,7 @@ void OptACM::openLogFile(const char *logfileName) {
 }
 
 FILE *OptACM::logFile() {
-    if (fplog_) 
+    if (fplog_)
     {
         return fplog_.get();
     }
@@ -260,12 +260,12 @@ void OptACM::initMaster()
             break;
         }
     }
-    
+
     // Fitness computer
     // FIXME: do we want to give the pointer to the logfile instead of nullptr?
     // FIXME: what about the flags? Here it is a bit more clear that they should be all false?
     fitComp_ = new ACMFitnessComputer(nullptr, sii_, &mg_, false, false, false);
-    
+
     // Adjust the seed that gets passed around
     int seed = bch_.seed();
     // Create random number generator and feed it the global seed
@@ -298,26 +298,26 @@ void OptACM::initMaster()
         // }
         mutator = mut;
     }
-    
+
     // Selector
     auto *selector = new ga::RouletteSelector(seed);
-    
+
     // Crossover
     GMX_RELEASE_ASSERT(gach_.nCrossovers() < static_cast<int>(sii_->nParam()),
                        gmx::formatString("The order of the crossover operator should be smaller than the amount of parameters. You chose -nCrossovers %i, but there are %lu parameters. Please adjust -nCrossovers.", gach_.nCrossovers(), sii_->nParam()).c_str() );
-    
+
     auto *crossover = new alexandria::NPointCrossover(sii_->nParam(),
                                                       gach_.nCrossovers(),
                                                       seed);
-    
+
     // Terminator
     auto *terminator = new ga::GenerationTerminator(gach_.maxGenerations());
-    
+
     if (gach_.optimizer() == OptimizerAlg::MCMC)
     {
         // auto initializer = new ACMInitializer(sii_, gach_.randomInit(), bch_.seed());
-    
-        ga_ = new ga::MCMC(logFile(), initializer, mutator, sii_, &gach_, bch_.evaluateTestset());
+
+        ga_ = new ga::MCMC(logFile(), initializer, mutator, sii_, &gach_);
     }
     else
     {
@@ -533,7 +533,7 @@ int tune_ff(int argc, char *argv[])
         auto fns = opt2fns("-d", filenms.size(), filenms.data());
         GMX_RELEASE_ASSERT(fns.size() == 1 || fns.size() == opt.gach()->popSize(),
                            gmx::formatString("Please pass exactly one or %d (popSize) force field file names", opt.gach()->popSize()).c_str());
-        
+
         int fnIndex = 0;
         if (opt.commRec()->isMiddleMan() && fns.size() > 1)
         {
@@ -573,7 +573,7 @@ int tune_ff(int argc, char *argv[])
         {
             paramClass.push_back(fm.first);
         }
-        opt.sii()->setOutputFiles(opt2fn("-conv", filenms.size(), filenms.data()), 
+        opt.sii()->setOutputFiles(opt2fn("-conv", filenms.size(), filenms.data()),
                                   paramClass,
                                   opt2fn("-epot", filenms.size(), filenms.data()));
         opt.sii()->assignParamClassIndex();  // paramClass needs to be defined when we call this!
@@ -599,7 +599,7 @@ int tune_ff(int argc, char *argv[])
 
         // Master only
         bool bMinimum = opt.runMaster(bOptimize, bSensitivity);
-        
+
         if (bMinimum || bForceOutput || !bOptimize)
         {
             // if (bForceOutput)
