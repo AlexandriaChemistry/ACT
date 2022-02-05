@@ -79,7 +79,6 @@ target_sources(actLib
            particletype.cpp
            percentmutator.cpp
            phase.cpp
-           poldata_edit.cpp
            qgen_acm.cpp
            qgen_cube.cpp
            qgen_resp.cpp

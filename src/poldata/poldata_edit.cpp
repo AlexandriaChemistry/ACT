@@ -40,10 +40,10 @@
 #include "gromacs/utility/arraysize.h"
 
 #include "poldata/act_checksum.h"
-#include "alex_modules.h"
-#include "forcefieldparameter.h"
-#include "interactiontype.h"
-#include "mutability.h"
+#include "alexandria/alex_modules.h"
+#include "alexandria/forcefieldparameter.h"
+#include "alexandria/interactiontype.h"
+#include "alexandria/mutability.h"
 #include "poldata/poldata.h"
 #include "poldata/poldata_xml.h"
 
