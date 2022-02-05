@@ -41,7 +41,7 @@
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
 
-#include "poldata_utils.h"
+#include "poldata/poldata_utils.h"
 
 namespace alexandria
 {

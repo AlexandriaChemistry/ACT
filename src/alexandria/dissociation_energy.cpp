@@ -39,7 +39,6 @@
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/utility/futil.h"
 
-#include "poldata.h"
 #include "utility/regression.h"
 
 namespace alexandria

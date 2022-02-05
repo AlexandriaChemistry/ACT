@@ -44,8 +44,8 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/futil.h"
 
-#include "forcefieldparameter.h"
-#include "forcefieldparameterlist.h"
+#include "alexandria/forcefieldparameter.h"
+#include "alexandria/forcefieldparameterlist.h"
 #include "poldata.h"
 #include "poldata_low.h"
 #include "utility/xml_util.h"

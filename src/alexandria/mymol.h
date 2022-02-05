@@ -54,7 +54,7 @@
 #include "molprop.h"
 #include "molselect.h"
 #include "mymol_low.h"
-#include "poldata.h"
+#include "poldata/poldata.h"
 #include "qgen_acm.h"
 #include "qgen_resp.h"
 #include "qtype.h"

@@ -51,7 +51,7 @@
 #include "gromacs/utility/strconvert.h"
 
 #include "forcefieldparameter.h"
-#include "poldata.h"
+#include "poldata/poldata.h"
 #include "qgen_acm.h"
 #include "topology.h"
 #include "utility/units.h"

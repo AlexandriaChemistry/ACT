@@ -40,7 +40,7 @@
 #include "ga/Dataset.h"
 
 #include "molprop.h"
-#include "poldata.h"
+#include "poldata/poldata.h"
 
 namespace alexandria
 {

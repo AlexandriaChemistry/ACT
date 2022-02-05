@@ -39,7 +39,7 @@
 #include "gromacs/mdtypes/state.h"
 
 #include "molprop.h"
-#include "poldata.h"
+#include "poldata/poldata.h"
 
 struct t_atoms;
 

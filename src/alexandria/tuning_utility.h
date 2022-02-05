@@ -43,7 +43,7 @@
 #include "gromacs/topology/mtop_util.h"
 
 #include "mymol.h"
-#include "poldata.h"
+#include "poldata/poldata.h"
 
 /*! \brief Utility function to merge command line arguments
  * \param[inout] pargs The complete list of arguments

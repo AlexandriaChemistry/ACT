@@ -35,9 +35,10 @@
 
 #include <gtest/gtest.h>
 
-#include "alexandria/poldata.h"
-#include "alexandria/poldata_low.h"
-#include "alexandria/poldata_xml.h"
+#include "poldata/poldata.h"
+#include "poldata/poldata_low.h"
+#include "poldata/poldata_utils.h"
+#include "poldata/poldata_xml.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
@@ -45,8 +46,6 @@
 #include "testutils/testfilemanager.h"
 
 #include "gromacs/topology/atoms.h"
-
-#include "poldata_utils.h"
 
 namespace alexandria
 {

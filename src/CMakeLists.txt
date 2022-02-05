@@ -111,5 +111,6 @@ add_library(actLib "")
 
 add_subdirectory(coulombintegrals)
 add_subdirectory(ga)
+add_subdirectory(poldata)
 add_subdirectory(utility)
 add_subdirectory(alexandria)

@@ -47,12 +47,10 @@ gmx_add_unit_test(
     identifierMapTest.cpp
     interactiontypeTest.cpp
     molpropTest.cpp
-    poldataTest.cpp
-    poldata_utils.cpp
     qgen_acmTest.cpp
     qgen_respTest.cpp
     topologyTest.cpp
     # pseudo-library for code for alexandria
     $<TARGET_OBJECTS:actLib>
     )
-target_link_libraries(alexandria-test libactgromacs ${GMX_EXTRA_LIBRARIES} ${XML_LIBRARIES} ${GMX_EXE_LINKER_FLAGS})
+target_link_libraries(${exename} libactgromacs ${GMX_EXTRA_LIBRARIES} ${XML_LIBRARIES} ${GMX_EXE_LINKER_FLAGS})

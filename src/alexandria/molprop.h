@@ -48,7 +48,7 @@
 #include "experiment.h"
 #include "molpropobservable.h"
 #include "phase.h"
-#include "poldata.h"
+#include "poldata/poldata.h"
 #include "topology.h"
 
 /*! \brief

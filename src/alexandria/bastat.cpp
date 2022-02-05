@@ -63,7 +63,7 @@
 #include "utility/memory_check.h"
 #include "molprop_util.h"
 #include "mymol.h"
-#include "poldata_xml.h"
+#include "poldata/poldata_xml.h"
 #include "utility/stringutil.h"
 #include "tuning_utility.h"
 

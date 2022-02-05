@@ -51,7 +51,7 @@
 #include "gromacs/utility/textreader.h"
 
 #include "coulombintegrals/coulombintegrals.h"
-#include "poldata.h"
+#include "poldata/poldata.h"
 #include "utility/units.h"
 
 namespace alexandria

@@ -39,7 +39,7 @@
 #include "molprop.h"
 #include "molprop_xml.h"
 #include "mymol.h"
-#include "poldata_xml.h"
+#include "poldata/poldata_xml.h"
 
 namespace alexandria
 {

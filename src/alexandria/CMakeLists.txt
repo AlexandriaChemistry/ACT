@@ -31,7 +31,6 @@ target_sources(actLib
            acmfitnesscomputer.cpp
            acmindividual.cpp
            acminitializer.cpp
-           act_checksum.cpp
            acthelper.cpp
            actmiddleman.cpp
            alex_modules.cpp
@@ -80,11 +79,7 @@ target_sources(actLib
            particletype.cpp
            percentmutator.cpp
            phase.cpp
-           poldata.cpp
            poldata_edit.cpp
-           poldata_low.cpp
-           poldata_tables.cpp
-           poldata_xml.cpp
            qgen_acm.cpp
            qgen_cube.cpp
            qgen_resp.cpp

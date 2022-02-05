@@ -30,7 +30,7 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "alexandria/poldata.h"
+#include "poldata/poldata.h"
 
 //! Return testing poldata structure
 alexandria::Poldata *getPoldata(std::string qdist);

@@ -41,7 +41,7 @@
 #include <map>
 #include <vector>
 
-#include "communicationrecord.h"
+#include "alexandria/communicationrecord.h"
 #include "utility/stringutil.h"
 
 namespace alexandria

@@ -44,7 +44,7 @@
 
 #include "coulombintegrals/coulombintegrals.h"
 #include "molprop.h"
-#include "poldata.h"
+#include "poldata/poldata.h"
 #include "utility/regression.h"
 
 namespace alexandria

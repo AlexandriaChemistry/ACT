@@ -48,8 +48,8 @@
 #include "molprop_tables.h"
 #include "molprop_util.h"
 #include "molselect.h"
-#include "poldata.h"
-#include "poldata_xml.h"
+#include "poldata/poldata.h"
+#include "poldata/poldata_xml.h"
 
 namespace alexandria
 {

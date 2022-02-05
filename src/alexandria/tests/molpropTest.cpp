@@ -44,7 +44,7 @@
 #include "alexandria/molprop.h"
 #include "alexandria/molpropobservable.h"
 #include "alexandria/molprop_xml.h"
-#include "alexandria/poldata_xml.h"
+#include "poldata/poldata_xml.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"

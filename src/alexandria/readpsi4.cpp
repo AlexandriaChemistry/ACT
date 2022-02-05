@@ -47,7 +47,7 @@
 
 #include "molprop.h"
 #include "molprop_util.h"
-#include "poldata.h"
+#include "poldata/poldata.h"
 #include "utility/stringutil.h"
 #include "utility/units.h"
 

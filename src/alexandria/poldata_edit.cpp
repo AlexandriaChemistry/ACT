@@ -39,13 +39,13 @@
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/utility/arraysize.h"
 
-#include "act_checksum.h"
+#include "poldata/act_checksum.h"
 #include "alex_modules.h"
 #include "forcefieldparameter.h"
 #include "interactiontype.h"
 #include "mutability.h"
-#include "poldata.h"
-#include "poldata_xml.h"
+#include "poldata/poldata.h"
+#include "poldata/poldata_xml.h"
 
 namespace alexandria
 {

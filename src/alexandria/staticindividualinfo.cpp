@@ -10,7 +10,7 @@
 
 #include "ga/Genome.h"
 #include "utility/memory_check.h"
-#include "poldata_xml.h"
+#include "poldata/poldata_xml.h"
 
 namespace alexandria
 {

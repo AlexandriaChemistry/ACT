@@ -74,9 +74,9 @@
 #include "mymol_low.h"
 #include "npointcrossover.h"
 #include "percentmutator.h"
-#include "poldata.h"
-#include "poldata_tables.h"
-#include "poldata_xml.h"
+#include "poldata/poldata.h"
+#include "poldata/poldata_tables.h"
+#include "poldata/poldata_xml.h"
 #include "tuning_utility.h"
 #include "utility/units.h"
 
