@@ -46,8 +46,6 @@ public:
                         ga::Genome *bestGenome,
                         double      prMut);
     
-    virtual void finalize() {}
-    
     //! \return whether a minimum was found
     bool foundMinimum() { return false; }
 };

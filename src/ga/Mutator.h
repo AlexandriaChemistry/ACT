@@ -49,8 +49,6 @@ public:
                         Genome *bestGenome,
                         double  prMut) = 0;
     
-    virtual void finalize() = 0;
-    
     virtual bool foundMinimum() = 0;
 };
 

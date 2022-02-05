@@ -120,8 +120,6 @@ void ACTMiddleMan::run()
     //     static_cast<MCMCMutator *>(mutator_)->printMonteCarloStatistics(logFile_, ind_->initialGenome(),
     //                                                                     ind_->bestGenome());
     // }
-    // Close our files or whaterver we need to do, then we're done!
-    mutator_->finalize();
     // Stop my helpers too.
     stopHelpers();
 }

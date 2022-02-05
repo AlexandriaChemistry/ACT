@@ -12,6 +12,7 @@
 
 #include "ga/Genome.h"
 #include "ga/Mutator.h"
+#include "gromacs/utility/fileptr.h"
 #include "confighandler.h"
 #include "acmfitnesscomputer.h"
 #include "acmindividual.h"
@@ -30,27 +31,27 @@ class MCMCMutator : public ga::Mutator
 
 private:
     //! Did we find a minimum yet?
-    bool                  bMinimum_ = false;
+    bool                       bMinimum_ = false;
     //! Pointer to BayesConfigHandler
-    BayesConfigHandler   *bch_     = nullptr;
+    BayesConfigHandler        *bch_     = nullptr;
     //! Pointer to ACMFitnessComputer
-    ACMFitnessComputer   *fitComp_ = nullptr;
+    ACMFitnessComputer        *fitComp_ = nullptr;
     //! Pointer to Individual
-    StaticIndividualInfo *sii_     = nullptr;
+    StaticIndividualInfo      *sii_     = nullptr;
     //! Attempted changes for each parameter
-    std::vector<int>      attemptedMoves_;
+    std::vector<int>           attemptedMoves_;
     //! Accepted changes for each parameter
-    std::vector<int>      acceptedMoves_;
+    std::vector<int>           acceptedMoves_;
     //! Mean of each parameter
-    std::vector<double>   pMean_;
+    std::vector<double>        pMean_;
     //! Standard deviation of each parameter
-    std::vector<double>   pSigma_;
+    std::vector<double>        pSigma_;
     //! Convergence file for each parameter type
-    std::vector<FILE*>    fpc_;
+    std::vector<gmx::FilePtr>  fpc_;
     //! Convergence file for Chi2
-    FILE                 *fpe_ = nullptr;
+    gmx::FilePtr               fpe_;
     //! Pointer to log file (may be nullptr)
-    FILE                 *logfile_ = nullptr;
+    FILE                      *logfile_ = nullptr;
     /*! Flush output immediately rather than letting the OS buffer it.
      * Don't use for production simulations.
      */
@@ -199,9 +200,6 @@ public:
      * \param[in] oenv              the GROMACS output environment
      */
     void openChi2ConvFile(const gmx_output_env_t *oenv);
-
-    //! Close \f$ \chi^2 \f$ and parameter convergence files
-    void finalize();
 };
 
 

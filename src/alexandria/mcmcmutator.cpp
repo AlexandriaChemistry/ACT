@@ -59,9 +59,6 @@ void MCMCMutator::mutate(ga::Genome *genome,
     // one parameter at a time.
     std::fill(changed.begin(), changed.end(), false);
 
-    //const std::vector<FILE*> fpc = ind_->fpc();
-    //const auto paramClassIndex = sii_->paramClassIndex();
-    
     if (sii_->xvgConv().empty() || sii_->xvgEpot().empty())
     {
         gmx_fatal(FARGS, "You forgot to call setOutputFiles. Back to the drawing board.");
@@ -347,42 +344,42 @@ void MCMCMutator::printNewMinimum(const std::map<iMolSelect, double> &chi2,
     // }
 }             
 
-void MCMCMutator::printParameterStep(ga::Genome          *genome,
-                                     double               xiter)
+void MCMCMutator::printParameterStep(ga::Genome *genome,
+                                     double      xiter)
 {
-    const auto paramClassIndex = sii_->paramClassIndex();
+    const auto &paramClassIndex = sii_->paramClassIndex();
 
     auto bases = genome->bases();
     if (fpc_.size() == sii_->paramClass().size())
     {
         // Write iteration number to each parameter convergence 
         // surveillance file
-        for (FILE *fp: fpc_) 
+        for (auto &fp: fpc_) 
             
         {
-            if (fp)
+            if (fp.get())
             {
-                fprintf(fp, "%8f", xiter);
+                fprintf(fp.get(), "%8f", xiter);
             }
         }
         // Write value of each parameter to its respective surveillance file
         for (size_t k = 0; k < genome->nBase(); k++)  
         {
-            if (fpc_[paramClassIndex[k]])
+            if (fpc_[paramClassIndex[k]].get())
             {
-                fprintf(fpc_[paramClassIndex[k]], "  %10g", bases[k]);
+                fprintf(fpc_[paramClassIndex[k]].get(), "  %10g", bases[k]);
             }
         }
-        for (FILE *fp: fpc_)
+        for (auto &fp: fpc_)
         {
-            if (fp)
+            if (fp.get())
             {
-                fprintf(fp, "\n");
+                fprintf(fp.get(), "\n");
                 // If verbose, flush the file to be able to add 
                 // new data to surveillance plots
                 if (verbose_)
                 {
-                    fflush(fp);
+                    fflush(fp.get());
                 }
             }
         }
@@ -392,7 +389,7 @@ void MCMCMutator::printParameterStep(ga::Genome          *genome,
 void MCMCMutator::printChi2Step(const std::map<iMolSelect, double> &chi2,
                                 double                              xiter)
 {
-    if (fpe_ == nullptr)
+    if (fpe_.get() == nullptr)
     {
         // If fpe is a null pointer, return
         return;
@@ -400,16 +397,16 @@ void MCMCMutator::printChi2Step(const std::map<iMolSelect, double> &chi2,
 
     if (evaluateTestSet_)
     {
-        fprintf(fpe_, "%8f  %10g  %10g\n", xiter, chi2.find(iMolSelect::Train)->second,
+        fprintf(fpe_.get(), "%8f  %10g  %10g\n", xiter, chi2.find(iMolSelect::Train)->second,
                 chi2.find(iMolSelect::Train)->second);
     }
     else
     {
-        fprintf(fpe_, "%8f  %10g\n", xiter, chi2.find(iMolSelect::Train)->second);
+        fprintf(fpe_.get(), "%8f  %10g\n", xiter, chi2.find(iMolSelect::Train)->second);
     }
     if (verbose_)
     {
-        fflush(fpe_);
+        fflush(fpe_.get());
     }
 }                    
 
@@ -489,16 +486,16 @@ void MCMCMutator::makeWorkDir()
 
 void MCMCMutator::openParamConvFiles(const gmx_output_env_t *oenv)
 {
-    const std::vector<std::string> pClass = sii_->paramClass();
+    const std::vector<std::string> &pClass = sii_->paramClass();
     for (size_t i = 0; i < pClass.size(); i++)
     {
-        auto fileName = gmx::formatString("%sind%d-%s-%s", sii_->prefix().c_str(), sii_->id(),
-                                          pClass[i].c_str(), sii_->xvgConv().c_str());
-        fpc_.push_back(xvgropen(fileName.c_str(),
-                                "Parameter convergence",
-                                "iteration",
-                                "",
-                                oenv));
+        auto fileName = gmx::formatString("%sind%d-%s-%s",
+                                          sii_->prefix().c_str(), sii_->id(),
+                                          pClass[i].c_str(),
+                                          sii_->xvgConv().c_str());
+        gmx::FilePtr fp(xvgropen(fileName.c_str(), "Parameter convergence",
+                                 "iteration", "", oenv));
+        fpc_.push_back(std::move(fp));
 
         std::vector<const char*> tmpParamNames;
         for (size_t j = 0; j < sii_->paramNames().size(); j++)
@@ -508,41 +505,27 @@ void MCMCMutator::openParamConvFiles(const gmx_output_env_t *oenv)
                 tmpParamNames.push_back( (sii_->paramNames())[j].c_str() );
             }
         }
-        xvgr_legend(fpc_[i], tmpParamNames.size(), tmpParamNames.data(), oenv);
+        xvgr_legend(fpc_[i].get(), tmpParamNames.size(),
+                    tmpParamNames.data(), oenv);
     }
 }
 
 void MCMCMutator::openChi2ConvFile(const gmx_output_env_t *oenv)
 {
-    auto fileName = gmx::formatString("%sind%d-%s", sii_->prefix().c_str(), sii_->id(), sii_->xvgEpot().c_str());
-    fpe_ = xvgropen(fileName.c_str(),
-                    "Chi squared",
-                    "Iteration",
-                    "Unknown units",
-                    oenv);
+    auto fileName = gmx::formatString("%sind%d-%s", sii_->prefix().c_str(),
+                                      sii_->id(), sii_->xvgEpot().c_str());
+    fpe_.reset(xvgropen(fileName.c_str(),
+                        "Chi squared",
+                        "Iteration",
+                        "Unknown units",
+                        oenv));
     if (evaluateTestSet_)
     {
         std::vector<std::string> legend;
         legend.push_back(iMolSelectName(iMolSelect::Train));
         legend.push_back(iMolSelectName(iMolSelect::Test));
-        xvgrLegend(fpe_, legend, oenv);
+        xvgrLegend(fpe_.get(), legend, oenv);
     }
 }
-
-void MCMCMutator::finalize()
-{
-    for(FILE *fp: fpc_)  // Close all parameter convergence surveillance files
-    {
-        if (fp)
-        {
-            xvgrclose(fp);
-        }
-    }
-    if (fpe_ != nullptr)  // Close chi2 surveillance file
-    {
-        xvgrclose(fpe_);
-    }
-}
-
 
 } //namespace alexandria
