@@ -173,7 +173,7 @@ void OptACM::optionsFinished(const std::string &outputFile)
     // {
     //     nmiddlemen = gach_.popSize();
     // }
-    const int nmiddlemen = gach_.popSize();
+    const int nmiddlemen = gach_.popSize();  // MASTER now makes the work of a middleman too
     // Update the communication record and do necessary checks.
     commRec_.init(nmiddlemen);
     // Set prefix and id in sii_

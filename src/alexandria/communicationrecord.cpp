@@ -97,52 +97,55 @@ void CommunicationRecord::print(FILE *fp)
 void CommunicationRecord::init(int nmiddleman)
 {
     nmiddlemen_ = nmiddleman;
-    if (nmiddlemen_ > size_-1 || nmiddlemen_ < 0)
+    if (nmiddlemen_ > size_ || nmiddlemen_ < 1)
     {
         GMX_THROW(gmx::InvalidInputError(gmx::formatString("Cannot handle %d middlemen (individuals) with %d cores/threads",
                   nmiddlemen_, size_).c_str()));
     }
-    if (nmiddlemen_ == 0)
+    if (nmiddlemen_ == 1)  // Only MASTER + HELPERS
     {
         nhelper_per_middleman_ = size_-1;
     }
     else
     {
-        nhelper_per_middleman_ = (size_-1) / nmiddlemen_ - 1;
+        nhelper_per_middleman_ = size_ / nmiddlemen_ - 1;
         
         // We are picky. Each individual needs the same number of helpers
-        if (!((nhelper_per_middleman_ == 0 && 
-               size_ == 1+nmiddlemen_) ||
-              (nhelper_per_middleman_ > 0 && 
-               size_ % (1+nhelper_per_middleman_) == 1)))
+        if (nmiddlemen_ * (1+nhelper_per_middleman_) != size_)
         {
-            GMX_THROW(gmx::InvalidInputError(gmx::formatString("The number of cores/threads (%d) should be the product of the number of helpers (%d) and the number of individuals (%d) plus 1 for the overlord", size_, nhelper_per_middleman_, nmiddlemen_).c_str()));
+            GMX_THROW(gmx::InvalidInputError(gmx::formatString("The number of cores/threads (%d) should be the product of the number of helpers (per individual) (%d) and the number of individuals (%d)", size_, nhelper_per_middleman_, nmiddlemen_).c_str()));
         }
     }
     // Select the node type etc.
-    if (rank_ == 0)
+    if (rank_ == 0)  // If I am the MASTER
     {
         nt_ = NodeType::Master;
-        for (int i = 1; i < size_; i++)
+
+        // Not updating superior_ from the default value. If it is
+        // used for communication the program will crash, since
+        // it is an error to do so.
+
+        // Set ordinal to 0, as the first middleman
+        ordinal_ = 0;
+        middlemen_.push_back(0);
+        if (nmiddlemen_ = 1) // If only master and helpers
         {
-            // Not updating superior_ from the default value. If it is
-            // used for communication the program will crash, since
-            // it is an error to do so.
-            
-            // Not updating ordinal_ for the same reason.
-            // ordinal_ = 0;
-            if (nmiddlemen_ == 0)
+            for (int i = 1; i < size_; i++)
             {
-                // If there are no middlemen, the master servers the helpers 
-                // directly, otherwise, the middlemen do.
                 helpers_.push_back(i);
             }
-            else
+        }
+        else  // If there are helpers
+        {
+            // Fill in my helpers
+            for (int i = 0; i < nhelper_per_middleman_; i++)
             {
-                if ((i - 1) % (1+nhelper_per_middleman_) == 0)
-                {
-                    middlemen_.push_back(i);
-                }
+                helpers_.push_back(i+1);
+            }
+            // Fill in the middlemen
+            for (int i = 1+nhelper_per_middleman_; i < size_; i += 1+nhelper_per_middleman_)
+            {
+                middlemen_.push_back(i);
             }
         }
         if (nmiddlemen_ != static_cast<int>(middlemen_.size()))
@@ -150,22 +153,22 @@ void CommunicationRecord::init(int nmiddleman)
             GMX_THROW(gmx::InternalError(gmx::formatString("Inconsistency in number of middlemen. Expected %d but found %zu.", nmiddlemen_, middlemen_.size()).c_str()));
         }                   
     }
-    else
+    else  // If I am NOT the MASTER
     {
         if (nmiddlemen_ == 0)
         {
             // No middlemen, then I am a helper reporting to the master
             nt_       = NodeType::Helper;
             superior_ = 0;
-            // Not updating ordinal_, see above.
+            // Not updating ordinal_
         }
         else
         {
-            if ((rank_ - 1) % (1+nhelper_per_middleman_) == 0)
+            if (rank_ % (1+nhelper_per_middleman_) == 0)
             {
                 nt_       = NodeType::MiddleMan;
                 superior_ = 0;
-                ordinal_  = (rank_ - 1) / (1+nhelper_per_middleman_);
+                ordinal_  = rank_ / (1+nhelper_per_middleman_);
                 for (int i = 0; i < nhelper_per_middleman_; i++)
                 {
                     helpers_.push_back(rank_ + i + 1);
@@ -174,7 +177,7 @@ void CommunicationRecord::init(int nmiddleman)
             else
             {
                 nt_       = NodeType::Helper;
-                superior_ = ((rank_-1)/(1+nhelper_per_middleman_))*(1+nhelper_per_middleman_) + 1;
+                superior_ = (rank_/(1+nhelper_per_middleman_)) * (1+nhelper_per_middleman_);
             }
         }
     }
@@ -204,6 +207,7 @@ void CommunicationRecord::init(int nmiddleman)
         }
     }
     print(stderr);
+    exit(0);  // Halt execution here
 }
 
 CommunicationRecord::~CommunicationRecord()

@@ -139,6 +139,9 @@ public:
     //! \return my NodeType
     NodeType nodeType() const { return nt_; }
     
+    //! \return whether I am the master or a middleman
+    bool isMasterOrMiddleMan() const { return NodeType::Helper != nt_; }
+
     //! \return whether I am the master
     bool isMaster() const { return NodeType::Master == nt_; }
 
