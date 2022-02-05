@@ -57,7 +57,7 @@ double ACMFitnessComputer::calcDeviation(std::vector<double> *params,
                                          iMolSelect           ims)
 {
     // Send / receive parameters
-    std::vector<double> *myparams;
+    std::vector<double> *myparams = nullptr;
     auto cr = sii_->commRec();
     if (cr->isHelper())
     {

@@ -53,8 +53,8 @@ bool MCMC::evolve(ga::Genome *bestGenome)
         int dest = cr->middlemen()[i];
         // Tell the middle man to continue
         cr->send_data(dest);
-        // Send the data set, 0 for iMolSelect::Train
-        cr->send_int(dest, 0);
+        // Send the data set
+        cr->send_iMolSelect(dest, iMolSelect::Train);
         // Now resend the bases
         cr->send_double_vector(dest, pool.genomePtr(i)->basesPtr());
     }
@@ -90,10 +90,6 @@ bool MCMC::evolve(ga::Genome *bestGenome)
         bMinimum = true;
     }
 
-    // mutator()->mutate(ind->genomePtr(), bestGenome, evaluateTestSet_);
-    // mutator()->stopHelpers();
-    // mutator()->finalize();
-    
     // delete ind;  // FIXME: compilation warning about non-virtual destructor
     
     return bMinimum;
@@ -242,8 +238,8 @@ bool HybridGAMC::evolve(ga::Genome *bestGenome)
                 int dest = cr->middlemen()[i+k];
                 // Signify the middlemen to continue
                 cr->send_data(dest);
-                // Send the data set, 0 for iMolSelect::Train
-                cr->send_int(dest, 0);
+                // Send the data set 
+                cr->send_iMolSelect(dest, iMolSelect::Train);
                 // Now send the new bases
                 cr->send_double_vector(dest, pool[pnew]->genomePtr(i+k)->basesPtr());
             }

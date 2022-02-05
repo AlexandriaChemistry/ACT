@@ -73,21 +73,9 @@ void ACTMiddleMan::run()
         cont = cr->recv_data(0);
         if (cont == CommunicationStatus::RECV_DATA)  // FIXME: reverse condition and save an identation
         {
-            int imsi = cr->recv_int(0);
             // Get the dataset
-            iMolSelect ims;
-            switch (imsi)
-            {
-            case 0:
-                ims = iMolSelect::Train;
-                break;
-            case 1:
-                ims = iMolSelect::Test;
-                break;
-            case 2:
-                ims = iMolSelect::Ignore;
-                break;
-            }
+            iMolSelect ims = cr->recv_iMolSelect(0);
+
             // Now get the parameters
             cr->recv_double_vector(0, ind_->genomePtr()->basesPtr());
             

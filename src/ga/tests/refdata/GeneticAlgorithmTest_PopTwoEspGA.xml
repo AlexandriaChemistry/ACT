@@ -1,0 +1,55 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int64 Name="nElites">0</Int64>
+  <Bool Name="verbose">true</Bool>
+  <Int64 Name="nrep">1</Int64>
+  <Int64 Name="popSize">2</Int64>
+  <Int64 Name="ncrossovers">1</Int64>
+  <String Name="algorithm">GA</String>
+  <Bool Name="chi">true</Bool>
+  <Bool Name="jaa">true</Bool>
+  <Bool Name="ELECTRONEGATIVITYEQUALIZATION">true</Bool>
+  <Sequence Name="paramClass">
+    <Int Name="Length">2</Int>
+    <String>chi</String>
+    <String>jaa</String>
+  </Sequence>
+  <Sequence Name="MoleculeName">
+    <Int Name="Length">3</Int>
+    <String>methanol</String>
+    <String>ethanol-trans</String>
+    <String>1-butanol</String>
+  </Sequence>
+  <Sequence Name="weightedTemperatures">
+    <Int Name="Length">6</Int>
+    <Real>0.3779644730092272</Real>
+    <Real>0.3779644730092272</Real>
+    <Real>0.22360679774997896</Real>
+    <Real>0.22360679774997896</Real>
+    <Real>0.57735026918962573</Real>
+    <Real>0.57735026918962573</Real>
+  </Sequence>
+  <Sequence Name="paramNames">
+    <Int Name="Length">6</Int>
+    <String>c3_z-chi</String>
+    <String>c3_z-jaa</String>
+    <String>h_z-chi</String>
+    <String>h_z-jaa</String>
+    <String>o3_z-chi</String>
+    <String>o3_z-jaa</String>
+  </Sequence>
+  <Real Name="gach.percent">0.10000000000000001</Real>
+  <Int64 Name="Maximum Number of Generations">10</Int64>
+  <Real Name="Probability for Crossover">0.34999999999999998</Real>
+  <Real Name="Probability for Mutation">0.01</Real>
+  <Sequence Name="bestParam">
+    <Int Name="Length">6</Int>
+    <Real>5.1938601011762566</Real>
+    <Real>10.46274871965379</Real>
+    <Real>4.2723402636137378</Real>
+    <Real>12.691368185907335</Real>
+    <Real>7.3562165394308092</Real>
+    <Real>8.4493804882467405</Real>
+  </Sequence>
+</ReferenceData>

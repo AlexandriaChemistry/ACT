@@ -301,7 +301,7 @@ void OptACM::initMaster()
     {
         // auto initializer = new ACMInitializer(sii_, gach_.randomInit(), bch_.seed());
     
-        ga_ = new ga::MCMC(logFile(), sii_, &gach_, bch_.evaluateTestset());
+        ga_ = new ga::MCMC(logFile(), sii_, &gach_);
     }
     else
     {

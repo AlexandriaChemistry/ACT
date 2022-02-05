@@ -68,19 +68,16 @@ private:
     alexandria::GAConfigHandler      *gach_;
     //! logFile
     FILE                             *logFile_;
-    //! Should we regularly evaluate the test set?
-    bool                              evaluateTestSet_;
 public:
     /*!
      * \brief Constructor for self-building
      */
     MCMC(FILE                                *logFile,
          alexandria::StaticIndividualInfo    *sii,
-         alexandria::GAConfigHandler         *gach,
-         bool                                 evaluateTestSet)
+         alexandria::GAConfigHandler         *gach)
     : GeneticAlgorithm(nullptr, nullptr, nullptr, nullptr, nullptr,
                        nullptr, gach->popSize()),
-      sii_(sii), gach_(gach), logFile_(logFile), evaluateTestSet_(evaluateTestSet) {}
+      sii_(sii), gach_(gach), logFile_(logFile) {}
     
     //! \copydocs ga::GeneticAlgorithm::evolve
     virtual bool evolve(ga::Genome *bestGenome);

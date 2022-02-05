@@ -336,6 +336,45 @@ int CommunicationRecord::recv_int(int src) const
     return d;
 }
 
+std::map<iMolSelect, int> imsInt = 
+    {
+        { iMolSelect::Train, 3 },
+        { iMolSelect::Test,  7 },
+        { iMolSelect::Ignore, 13 }
+    };
+    
+void CommunicationRecord::send_iMolSelect(int dest, iMolSelect ims) const
+{
+    if (nullptr != debug)
+    {
+        fprintf(debug, "Sending iMolSelect '%s' to %d\n",
+                iMolSelectName(ims), dest);
+    }
+    int d = imsInt[ims];
+    send(dest, &d, sizeof(d));
+}   
+
+iMolSelect CommunicationRecord::recv_iMolSelect(int src) const
+{
+    int d;
+
+    recv(src, &d, sizeof(d));
+    for(auto &ims : imsInt)
+    {
+        if (ims.second == d)
+        {
+            if (nullptr != debug)
+            {
+                fprintf(debug, "Received iMolSelect '%s' from %d\n",
+                        iMolSelectName(ims.first), src);
+            }
+            return ims.first;
+        }
+    }
+    GMX_THROW(gmx::InternalError(gmx::formatString("Received unknown iMolSelect, int code %d", d).c_str()));
+    return iMolSelect::Ignore;
+}
+
 void CommunicationRecord::send_double_vector(int dest,
                                              const std::vector<double> *d) const
 {

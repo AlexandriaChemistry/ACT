@@ -397,12 +397,14 @@ void MCMCMutator::printChi2Step(const std::map<iMolSelect, double> &chi2,
 
     if (evaluateTestSet_)
     {
-        fprintf(fpe_.get(), "%8f  %10g  %10g\n", xiter, chi2.find(iMolSelect::Train)->second,
+        fprintf(fpe_.get(), "%8f  %10g  %10g\n",
+                xiter, chi2.find(iMolSelect::Train)->second,
                 chi2.find(iMolSelect::Train)->second);
     }
     else
     {
-        fprintf(fpe_.get(), "%8f  %10g\n", xiter, chi2.find(iMolSelect::Train)->second);
+        fprintf(fpe_.get(), "%8f  %10g\n",
+                xiter, chi2.find(iMolSelect::Train)->second);
     }
     if (verbose_)
     {
