@@ -45,8 +45,8 @@
 
 #include "categories.h"
 #include "chargemodel.h"
-#include "latex_util.h"
 #include "poldata_low.h"
+#include "utility/latex_util.h"
 
 namespace alexandria
 {

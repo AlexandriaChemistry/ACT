@@ -47,7 +47,7 @@
 
 #include "alex_modules.h"
 #include "categories.h"
-#include "latex_util.h"
+#include "utility/latex_util.h"
 
 namespace alexandria
 {

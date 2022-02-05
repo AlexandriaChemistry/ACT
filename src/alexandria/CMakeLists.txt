@@ -57,7 +57,6 @@ target_sources(actLib
            gromacs_top.cpp
            identifier.cpp
            interactiontype.cpp
-           latex_util.cpp
            mcmcmutator.cpp
            merge_mp.cpp
            merge_pd.cpp
@@ -98,7 +97,6 @@ target_sources(actLib
            tune_ff.cpp
            tuning_utility.cpp          
            vsite.cpp
-           xml_util.cpp
 	)
 	
 add_executable(alexandria alexandria.cpp ${actLib})

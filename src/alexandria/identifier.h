@@ -35,8 +35,6 @@
 #include <string>
 #include <vector>
 
-#include "gromacs/mdtypes/commrec.h"
-
 #include "communicationrecord.h"
 #include "interactiontype.h"
 

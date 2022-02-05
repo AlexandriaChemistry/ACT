@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021
+ * Copyright (C) 2021-2022
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -52,7 +52,7 @@
 #include "poldata_low.h"
 #include "molprop_util.h"
 #include "mymol.h"
-#include "xml_util.h"
+#include "utility/xml_util.h"
 
 
 namespace alexandria

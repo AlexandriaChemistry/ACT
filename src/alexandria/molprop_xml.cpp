@@ -43,11 +43,10 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
-
-#include "utility/memory_check.h"
 #include "molprop.h"
+#include "utility/memory_check.h"
 #include "utility/stringutil.h"
-#include "xml_util.h"
+#include "utility/xml_util.h"
 
 namespace alexandria 
 {

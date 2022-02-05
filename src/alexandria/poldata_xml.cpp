@@ -48,9 +48,8 @@
 #include "forcefieldparameterlist.h"
 #include "poldata.h"
 #include "poldata_low.h"
-#include "xml_util.h"
+#include "utility/xml_util.h"
 
-//extern int xmlDoValidityCheckingDefaultValue;
 namespace alexandria
 {
 
