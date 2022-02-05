@@ -37,8 +37,8 @@
 #include <string>
 #include <vector>
 
-#include "molpropobservable.h"
-#include "qtype.h"
+#include "molprop/molpropobservable.h"
+#include "alexandria/qtype.h"
 
 namespace alexandria
 {

@@ -34,7 +34,7 @@
 #ifndef READPSI4_H
 #define READPSI4_H
 
-#include "molprop.h"
+#include "molprop/molprop.h"
 
 namespace alexandria
 {

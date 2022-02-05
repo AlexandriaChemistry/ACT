@@ -45,8 +45,8 @@
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textreader.h"
 
-#include "molprop.h"
-#include "molprop_util.h"
+#include "molprop/molprop.h"
+#include "molprop/molprop_util.h"
 #include "poldata/poldata.h"
 #include "utility/stringutil.h"
 #include "utility/units.h"

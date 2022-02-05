@@ -73,7 +73,7 @@
 
 #include "forcefieldparameter.h"
 #include "gromacs_top.h"
-#include "molprop_util.h"
+#include "molprop/molprop_util.h"
 #include "mymol_low.h"
 #include "symmetrize_charges.h"
 #include "utility/units.h"

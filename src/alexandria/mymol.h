@@ -51,7 +51,7 @@
 
 #include "communicationrecord.h"
 #include "gentop_vsite.h"
-#include "molprop.h"
+#include "molprop/molprop.h"
 #include "molselect.h"
 #include "mymol_low.h"
 #include "poldata/poldata.h"

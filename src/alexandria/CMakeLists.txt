@@ -48,7 +48,6 @@ target_sources(actLib
            confighandler.cpp
            devcomputer.cpp
            dissociation_energy.cpp
-           experiment.cpp
            fill_inputrec.cpp
            forcefieldparameter.cpp
            forcefieldparameterlist.cpp
@@ -60,16 +59,6 @@ target_sources(actLib
            merge_mp.cpp
            merge_pd.cpp
            molgen.cpp
-           molprop_check.cpp
-           molprop_csv.cpp
-           molprop_sqlite3.cpp
-           molprop_tables.cpp
-           molprop_tables.cpp
-           molprop_test.cpp
-           molprop_util.cpp
-           molprop_xml.cpp
-      	   molprop.cpp
-      	   molpropobservable.cpp
            molselect.cpp
            mutability.cpp
            mymol.cpp
@@ -78,7 +67,6 @@ target_sources(actLib
            openmm_xml.cpp
            particletype.cpp
            percentmutator.cpp
-           phase.cpp
            qgen_acm.cpp
            qgen_cube.cpp
            qgen_resp.cpp

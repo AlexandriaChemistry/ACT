@@ -43,12 +43,12 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/utility/strconvert.h"
 
-#include "alex_modules.h"
-#include "fill_inputrec.h"
+#include "alexandria/alex_modules.h"
+#include "alexandria/fill_inputrec.h"
 #include "molprop.h"
 #include "molprop_util.h"
 #include "molprop_xml.h"
-#include "mymol.h"
+#include "alexandria/mymol.h"
 #include "poldata/poldata_xml.h"
 #include "utility/units.h"
 

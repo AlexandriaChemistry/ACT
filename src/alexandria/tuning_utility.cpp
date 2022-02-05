@@ -40,7 +40,7 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/utility/coolstuff.h"
 
-#include "molprop_util.h"
+#include "molprop/molprop_util.h"
 #include "mymol.h"
 #include "qtype.h"
 #include "utility/units.h"

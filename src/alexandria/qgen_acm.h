@@ -38,7 +38,7 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/state.h"
 
-#include "molprop.h"
+#include "molprop/molprop.h"
 #include "poldata/poldata.h"
 
 struct t_atoms;

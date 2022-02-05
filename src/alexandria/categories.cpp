@@ -44,9 +44,9 @@
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/utility/futil.h"
 
-#include "molprop.h"
-#include "molprop_tables.h"
-#include "molprop_util.h"
+#include "molprop/molprop.h"
+#include "molprop/molprop_tables.h"
+#include "molprop/molprop_util.h"
 #include "molselect.h"
 #include "poldata/poldata.h"
 #include "poldata/poldata_xml.h"

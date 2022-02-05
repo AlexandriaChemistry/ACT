@@ -45,8 +45,8 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/strconvert.h"
 
-#include "alex_modules.h"
-#include "categories.h"
+#include "alexandria/alex_modules.h"
+#include "alexandria/categories.h"
 #include "utility/latex_util.h"
 
 namespace alexandria

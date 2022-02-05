@@ -43,13 +43,13 @@
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/utility/real.h"
 
-#include "communicationrecord.h"
-#include "composition.h"
+#include "alexandria/communicationrecord.h"
+#include "alexandria/composition.h"
 #include "experiment.h"
 #include "molpropobservable.h"
 #include "phase.h"
 #include "poldata/poldata.h"
-#include "topology.h"
+#include "alexandria/topology.h"
 
 /*! \brief
  * Contains all classes related to alexandria force field tools

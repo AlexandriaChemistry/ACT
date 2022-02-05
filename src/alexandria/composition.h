@@ -45,7 +45,7 @@
 #include "gromacs/utility/real.h"
 
 #include "communicationrecord.h"
-#include "experiment.h"
+#include "molprop/experiment.h"
 
 namespace alexandria
 {

@@ -61,7 +61,7 @@
 #include "dissociation_energy.h"
 #include "identifier.h"
 #include "utility/memory_check.h"
-#include "molprop_util.h"
+#include "molprop/molprop_util.h"
 #include "mymol.h"
 #include "poldata/poldata_xml.h"
 #include "utility/stringutil.h"

@@ -39,7 +39,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 
-#include "communicationrecord.h"
+#include "alexandria/communicationrecord.h"
 
 namespace alexandria
 {

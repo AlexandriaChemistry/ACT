@@ -70,7 +70,7 @@
 #include "utility/memory_check.h"
 #include "mcmcmutator.h"
 #include "molgen.h"
-#include "molprop_util.h"
+#include "molprop/molprop_util.h"
 #include "mymol_low.h"
 #include "npointcrossover.h"
 #include "percentmutator.h"

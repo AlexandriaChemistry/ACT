@@ -41,9 +41,9 @@
 
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/utility/snprintf.h"
-#include "alexandria/molprop.h"
-#include "alexandria/molpropobservable.h"
-#include "alexandria/molprop_xml.h"
+#include "molprop/molprop.h"
+#include "molprop/molpropobservable.h"
+#include "molprop/molprop_xml.h"
 #include "poldata/poldata_xml.h"
 
 #include "testutils/cmdlinetest.h"

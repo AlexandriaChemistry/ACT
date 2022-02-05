@@ -42,7 +42,7 @@
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/futil.h"
 
-#include "alex_modules.h"
+#include "alexandria/alex_modules.h"
 #include "molprop.h"
 #include "molprop_util.h"
 #include "molprop_xml.h"

@@ -37,7 +37,7 @@
 #include "gromacs/utility/arrayref.h"
 
 #include "molprop.h"
-#include "molselect.h"
+#include "alexandria/molselect.h"
 
 struct t_topology;
 

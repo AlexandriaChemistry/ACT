@@ -41,8 +41,8 @@
 #include "gromacs/math/utilities.h"
 #include "gromacs/utility/fatalerror.h"
 
-#include "communicationrecord.h"
-#include "composition.h"
+#include "alexandria/communicationrecord.h"
+#include "alexandria/composition.h"
 #include "utility/units.h"
 
 namespace alexandria

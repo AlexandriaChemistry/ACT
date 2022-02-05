@@ -52,8 +52,8 @@
 
 #include "alex_modules.h"
 #include "molgen.h"
-#include "molprop.h"
-#include "molprop_xml.h"
+#include "molprop/molprop.h"
+#include "molprop/molprop_xml.h"
 #include "mymol.h"
 #include "poldata/poldata.h"
 #include "poldata/poldata_xml.h"

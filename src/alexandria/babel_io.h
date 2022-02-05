@@ -34,7 +34,7 @@
 #ifndef BABEL_IO_H
 #define BABEL_IO_H
 
-#include "molprop.h"
+#include "molprop/molprop.h"
 
 
 enum BabelFileType {

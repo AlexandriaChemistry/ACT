@@ -54,8 +54,8 @@
 #include "alex_modules.h"
 #include "fill_inputrec.h"
 #include "utility/memory_check.h"
-#include "molprop_util.h"
-#include "molprop_xml.h"
+#include "molprop/molprop_util.h"
+#include "molprop/molprop_xml.h"
 #include "poldata/poldata_xml.h"
 #include "tuning_utility.h"
 

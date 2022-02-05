@@ -46,7 +46,6 @@ gmx_add_unit_test(
     identifierTest.cpp
     identifierMapTest.cpp
     interactiontypeTest.cpp
-    molpropTest.cpp
     qgen_acmTest.cpp
     qgen_respTest.cpp
     topologyTest.cpp

@@ -50,7 +50,7 @@
 #include "forcefieldparameterlist.h"
 #include "poldata/poldata.h"
 #include "poldata/poldata_low.h"
-#include "molprop_util.h"
+#include "molprop/molprop_util.h"
 #include "mymol.h"
 #include "utility/xml_util.h"
 

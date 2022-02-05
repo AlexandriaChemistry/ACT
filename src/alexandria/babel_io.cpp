@@ -54,8 +54,8 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
 
-#include "molprop.h"
-#include "molprop_util.h"
+#include "molprop/molprop.h"
+#include "molprop/molprop_util.h"
 #include "mymol.h"
 #include "poldata/poldata.h"
 #include "utility/stringutil.h"

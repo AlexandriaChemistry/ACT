@@ -40,7 +40,7 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/exceptions.h"
 
-#include "communicationrecord.h"
+#include "alexandria/communicationrecord.h"
 #include "phase.h"
 
 namespace alexandria
