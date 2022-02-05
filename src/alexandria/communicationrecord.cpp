@@ -69,29 +69,41 @@ void CommunicationRecord::print(FILE *fp)
     {
         return;
     }
-    fprintf(fp, "rank: %d/%d nodetype: %s superior: %d\n",
-            rank_, size_, ntToString[nt_], superior_);
+    std::string strToPrint = gmx::formatString("rank: %d/%d nodetype: %s superior: %d\n",
+                                               rank_, size_, ntToString[nt_], superior_);
+    // fprintf(fp, "rank: %d/%d nodetype: %s superior: %d\n",
+            // rank_, size_, ntToString[nt_], superior_);
     if (isMaster())
     {
-        fprintf(fp, "nmiddlemen: %d nhelper_per_middleman: %d\n", nmiddlemen_, 
-                nhelper_per_middleman_);
+        strToPrint.append(gmx::formatString("nmiddlemen: %d nhelper_per_middleman: %d\n", nmiddlemen_, 
+                                            nhelper_per_middleman_));
+        // fprintf(fp, "nmiddlemen: %d nhelper_per_middleman: %d\n", nmiddlemen_, 
+        //         nhelper_per_middleman_);
     }
     if (isMiddleMan())
     {
-        fprintf(fp, "ordinal: %d nhelper: %d\n", middleManOrdinal(), nhelper_per_middleman_);
+        strToPrint.append(gmx::formatString("ordinal: %d nhelper: %d\n",
+                                            ordinal_, nhelper_per_middleman_));
+        // fprintf(fp, "ordinal: %d nhelper: %d\n", middleManOrdinal(), nhelper_per_middleman_);
     }
-    fprintf(fp, "helpers:");
+    strToPrint.append("helpers:");
+    // fprintf(fp, "helpers:");
     for (auto &h : helpers_)
     {
-        fprintf(fp, " %3d", h);
+        strToPrint.append(gmx::formatString(" %3d", h));
+        // fprintf(fp, " %3d", h);
     }
-    fprintf(fp, "\n");
-    fprintf(fp, "middlemen:");
+    strToPrint.append("\nmiddlemen:");
+    // fprintf(fp, "\n");
+    // fprintf(fp, "middlemen:");
     for (auto &m : middlemen_)
     {
-        fprintf(fp, " %3d", m);
+        strToPrint.append(gmx::formatString(" %3d", m));
+        // fprintf(fp, " %3d", m);
     }
-    fprintf(fp, "\n");
+    strToPrint.append("\n");
+    // fprintf(fp, "\n");
+    fprintf(fp, strToPrint.c_str());
 }
 
 void CommunicationRecord::init(int nmiddleman)
@@ -113,7 +125,7 @@ void CommunicationRecord::init(int nmiddleman)
         // We are picky. Each individual needs the same number of helpers
         if (nmiddlemen_ * (1+nhelper_per_middleman_) != size_)
         {
-            GMX_THROW(gmx::InvalidInputError(gmx::formatString("The number of cores/threads (%d) should be the product of the number of helpers (per individual) (%d) and the number of individuals (%d)", size_, nhelper_per_middleman_, nmiddlemen_).c_str()));
+            GMX_THROW(gmx::InvalidInputError(gmx::formatString("The number of cores/threads (%d) should be the product of the number of workers (per individual) (%d) and the number of individuals (%d)", size_, nhelper_per_middleman_ + 1, nmiddlemen_).c_str()));
         }
     }
     // Select the node type etc.
@@ -128,7 +140,7 @@ void CommunicationRecord::init(int nmiddleman)
         // Set ordinal to 0, as the first middleman
         ordinal_ = 0;
         middlemen_.push_back(0);
-        if (nmiddlemen_ = 1) // If only master and helpers
+        if (nmiddlemen_ == 1) // If only master and helpers
         {
             for (int i = 1; i < size_; i++)
             {
@@ -155,7 +167,7 @@ void CommunicationRecord::init(int nmiddleman)
     }
     else  // If I am NOT the MASTER
     {
-        if (nmiddlemen_ == 0)
+        if (nmiddlemen_ == 1)
         {
             // No middlemen, then I am a helper reporting to the master
             nt_       = NodeType::Helper;
@@ -183,31 +195,12 @@ void CommunicationRecord::init(int nmiddleman)
     }
     
     // Create ACT communicators for helpers and middlemen
-    int color = MPI_UNDEFINED;
-    int key   = 0;
-    if (rank_ > 0)
-    {
-        color = 0;
-        key   = rank_-1;
-    }
-    MPI_Comm_split(mpi_act_world_, color, key, &mpi_act_not_master_);
     // Default value
     mpi_act_helpers_ = mpi_act_world_;
-    if (!isMaster())
-    {
-        int nonMasterSize;
-        MPI_Comm_size(mpi_act_not_master_, &nonMasterSize);
-        int myrank;
-        MPI_Comm_rank(mpi_act_not_master_, &myrank);
-        if (nmiddlemen_ > 0)
-        {
-            // Split the non-masters into nmiddlemen X nhelpers
-            MPI_Comm_split(mpi_act_not_master_, myrank / nmiddlemen_,
-                           myrank % nmiddlemen_, &mpi_act_helpers_);
-        }
-    }
+    // Split the non-masters into nmiddlemen X nhelpers
+    MPI_Comm_split(mpi_act_world_, rank_ / nmiddlemen_,
+                   rank_ % nmiddlemen_, &mpi_act_helpers_);
     print(stderr);
-    exit(0);  // Halt execution here
 }
 
 CommunicationRecord::~CommunicationRecord()
