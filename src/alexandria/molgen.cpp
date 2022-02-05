@@ -696,17 +696,20 @@ size_t MolGen::Read(FILE            *fp,
                     continue;
                 }
                 std::set<int> destAll = destMiddleMen;
-                if (cr_->nmiddlemen() == 0)
+                if (cr_->nmiddlemen() == 1)  // Only MASTER as MIDDLEMAN
                 {
                     // Looks like an MCMC run where compounds are distributed evenly
                     destAll.insert(mymolIndex % cr_->size());
                 }
-                else if (cr_->nhelper_per_middleman() > 0)
+                else if (cr_->nhelper_per_middleman() > 0)  // If we have more than one middleman, and we also have helpers
                 {
                     // We have to divide the molecules in a complicated manner.
                     // Each individual gets the complete set and divides it between
-                    // helpers. 
+                    // helpers.
                     int helperDest = mymolIndex % cr_->nhelper_per_middleman();
+                    // Add master's helper
+                    destAll.insert(1 + helperDest);
+                    // Add middleman's helper
                     for(auto &mm : destMiddleMen)
                     {
                         // TODO Check this

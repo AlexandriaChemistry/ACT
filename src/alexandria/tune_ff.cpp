@@ -544,6 +544,7 @@ int tune_ff(int argc, char *argv[])
                opt.sii()->commRec()->rank(),
                opt.sii()->poldata()->nParticleTypes());
     }
+
     // MolGen read being called here!
     if (0 == opt.mg()->Read(fp,
                             opt2fn("-f", filenms.size(), filenms.data()),
@@ -559,6 +560,7 @@ int tune_ff(int argc, char *argv[])
         }
         return 0;
     }
+
 
     // StaticIndividualInfo things
     opt.sii()->generateOptimizationIndex(fp, opt.mg());
@@ -593,7 +595,9 @@ int tune_ff(int argc, char *argv[])
     // Create ACMFitnessComputer and fill the DevComputers
     // This is needed on all nodes.
 
-    if (NodeType::Master == opt.commRec()->nodeType())
+    printf("Processor %d here\n", opt.commRec()->rank());
+
+    if (opt.commRec()->isMaster())
     {
         opt.initMaster();
 
@@ -623,7 +627,7 @@ int tune_ff(int argc, char *argv[])
             printf("No improved parameters found. Please try again with more iterations.\n");
         }
     }
-    else if (NodeType::MiddleMan == opt.commRec()->nodeType())
+    else if (opt.commRec()->isMiddleMan())
     {
         // Master and Individuals (middle-men) need to initialize more,
         // so let's go.
