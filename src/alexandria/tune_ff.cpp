@@ -179,6 +179,7 @@ void OptACM::optionsFinished(const std::string &outputFile)
     // Set prefix and id in sii_
     sii_->fillIdAndPrefix();
     // Set output file for FF parameters
+    baseOutputFileName_ = outputFile;
     sii_->setOutputFile(outputFile);
 }
 
@@ -265,26 +266,41 @@ void OptACM::initMaster()
     // FIXME: what about the flags? Here it is a bit more clear that they should be all false?
     fitComp_ = new ACMFitnessComputer(nullptr, sii_, &mg_, false, false, false);
     
+    // Adjust the seed that gets passed around
+    int seed = bch_.seed();
+    // Create random number generator and feed it the global seed
+    std::random_device rd;  // Will be used to obtain a seed for the random number engine
+    std::mt19937 gen(rd()); // Standard mersenne_twister_engine seeded with rd()
+    std::uniform_int_distribution<int> dis(0); // Default constructor to cover all available (positive) range
+    gen.seed(seed);
+    seed = dis(gen);
+
+    // Initializer
+    auto *initializer = new ACMInitializer(sii_, gach_.randomInit(), seed);
+
     // Create and initialize the mutator
-    // ga::Mutator *mutator;
-    // if (gach_.optimizer() == OptimizerAlg::GA)
-    // {
-    //     mutator = new alexandria::PercentMutator(sii_, gach_.percent());
-    // }
-    // else
-    // {
-    //     // auto mut = new alexandria::MCMCMutator(nullptr, verbose(), &bch_, fitComp_, sii_);
-    //     auto mut = new alexandria::MCMCMutator(logFile(), verbose(), &bch_, fitComp_, sii_);
-    //     // if (sii_->commRec()->nmiddlemen() == 0)  // If we are running pure MCMC
-    //     // {
-    //     //     mut->openParamConvFiles(oenv());
-    //     //     mut->openChi2ConvFile(oenv(), bch()->evaluateTestset());
-    //     // }
-    //     mutator = mut;
-    // }
+    ga::Mutator *mutator;
+    if (gach_.optimizer() == OptimizerAlg::GA)
+    {
+        mutator = new alexandria::PercentMutator(sii_, seed, gach_.percent());
+    }
+    else
+    {
+        // auto mut = new alexandria::MCMCMutator(nullptr, verbose(), &bch_, fitComp_, sii_);
+        auto mut = new alexandria::MCMCMutator(logFile(), verbose_, seed, &bch_, fitComp_, sii_, bch_.evaluateTestset());
+        mut->makeWorkDir();
+        mut->openParamConvFiles(oenv_);
+        mut->openChi2ConvFile(oenv_);
+        // if (sii_->commRec()->nmiddlemen() == 0)  // If we are running pure MCMC
+        // {
+        //     mut->openParamConvFiles(oenv());
+        //     mut->openChi2ConvFile(oenv(), bch()->evaluateTestset());
+        // }
+        mutator = mut;
+    }
     
     // Selector
-    auto *selector = new ga::RouletteSelector(bch_.seed());
+    auto *selector = new ga::RouletteSelector(seed);
     
     // Crossover
     GMX_RELEASE_ASSERT(gach_.nCrossovers() < static_cast<int>(sii_->nParam()),
@@ -292,7 +308,7 @@ void OptACM::initMaster()
     
     auto *crossover = new alexandria::NPointCrossover(sii_->nParam(),
                                                       gach_.nCrossovers(),
-                                                      bch_.seed());
+                                                      seed);
     
     // Terminator
     auto *terminator = new ga::GenerationTerminator(gach_.maxGenerations());
@@ -301,7 +317,7 @@ void OptACM::initMaster()
     {
         // auto initializer = new ACMInitializer(sii_, gach_.randomInit(), bch_.seed());
     
-        ga_ = new ga::MCMC(logFile(), sii_, &gach_, bch_.evaluateTestset());
+        ga_ = new ga::MCMC(logFile(), initializer, mutator, sii_, &gach_, bch_.evaluateTestset());
     }
     else
     {
@@ -328,21 +344,25 @@ bool OptACM::runMaster(bool        optimize,
         // mut->sensitivityAnalysis(ga_->bestGenomePtr(), iMolSelect::Train);
     }
     // Stop the middlemen ...
-    if (commRec_.nmiddlemen() > 0)
+    if (commRec_.nmiddlemen() > 1)
     {
         for(auto &dest : commRec_.middlemen())
         {
             commRec_.send_done(dest);
         }
     }
-    else  // FIXME: helpers are already stopped by their middlemen
-    {
-        // ... or the helpers if there are no middlemen.
-        for(auto &dest : commRec_.helpers())
-        {
-            commRec_.send_done(dest);
-        }
-    }
+    // Stop MASTER's helpers
+    std::vector<double> dummy;
+    fitComp_->calcDeviation(&dummy, CalcDev::Final, iMolSelect::Train);
+
+    // else
+    // {
+    //     // ... or the helpers if there are no middlemen.
+    //     for(auto &dest : commRec_.helpers())
+    //     {
+    //         commRec_.send_done(dest);
+    //     }
+    // }
 
     if (bMinimum)
     {
@@ -362,8 +382,9 @@ bool OptACM::runMaster(bool        optimize,
                                                   CalcDev::Master, ims.first);
             fprintf(logFile(), "Minimum chi2 for %s %g\n",
                     iMolSelectName(ims.first), chi2);
-        }
+    }
         // Save force field of best individual
+        sii_->setFinalOutputFile(baseOutputFileName_);
         sii_->saveState(true);
     }
     else if (optimize)

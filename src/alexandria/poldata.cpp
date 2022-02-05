@@ -627,7 +627,8 @@ void Poldata::receiveEemprops(const CommunicationRecord *cr, int src)
 void Poldata::sendToHelpers(const CommunicationRecord *cr)
 {
     // TODO check GMX_RELEASE_ASSERT(!MASTER(cr), "I wasn't expecting no overlord here");
-    if (cr->isMiddleMan() || (cr->nmiddlemen() == 0 && cr->isMaster()))
+    // if (cr->isMiddleMan() || (cr->nmiddlemen() == 0 && cr->isMaster()))
+    if (cr->isMasterOrMiddleMan())
     {
         for (auto &dest : cr->helpers())
         {

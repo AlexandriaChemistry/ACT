@@ -114,6 +114,7 @@ void ACTMiddleMan::run()
     while (CommunicationStatus::RECV_DATA == cont);
     // TODO: Print Monte Carlo statistics if necessary
     // FIXME: in HYBRID this won't be correct
+    // FIXME: do this in MASTER too
     // if (gach_->optimizer() != OptimizerAlg::GA)
     // {
     //     fprintf(logFile_, "Middle man %i\n", id_);

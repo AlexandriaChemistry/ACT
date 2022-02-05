@@ -18,6 +18,7 @@
 #include "ProbabilityComputer.h"
 #include "Selector.h"
 #include "Crossover.h"
+#include "Mutator.h"
 #include "Terminator.h"
 
 struct gmx_output_env_t;
@@ -41,17 +42,19 @@ private:
     //! The best genome
     Genome                        bestGenome_;
     //! Initializes each individual in the population
-    Initializer                  *initializer_ = nullptr;
+    Initializer                  *initializer_  = nullptr;
     //! Computes fitness for each individual in the population
-    FitnessComputer              *fitComputer_ = nullptr;
+    FitnessComputer              *fitComputer_  = nullptr;
     //! Computes the probability of selection of each individual
     ProbabilityComputer          *probComputer_ = nullptr;
     //! Selects an individual from the population based on its probability
-    Selector                     *selector_ = nullptr;
+    Selector                     *selector_     = nullptr;
     //! Grabs 2 individuals and crosses their genes to generate 2 new individuals
-    Crossover                    *crossover_ = nullptr;
+    Crossover                    *crossover_    = nullptr;
+    //! Grabs 1 individual and mutates its genes
+    Mutator                      *mutator_      = nullptr;
     //! Checks if the evolution should continue or be terminated
-    Terminator                   *terminator_ = nullptr;
+    Terminator                   *terminator_   = nullptr;
 
     // FIXME: Something could be done about generalizing the evolution.
     // We could make all Individuals
@@ -70,11 +73,12 @@ public:
                      ProbabilityComputer                 *probComputer,
                      Selector                            *selector,
                      Crossover                           *crossover,
+                     Mutator                             *mutator,
                      Terminator                          *terminator,
                      int                                  popSize) :
         popSize_(popSize), initializer_(initializer),
         fitComputer_(fitnessComputer), probComputer_(probComputer),
-        selector_(selector), crossover_(crossover), terminator_(terminator) {}
+        selector_(selector), crossover_(crossover), mutator_(mutator), terminator_(terminator) {}
 
  
     /*! \brief Evolve the initial population
@@ -112,6 +116,9 @@ public:
 
     //! \return the crossover
     Crossover *crossover() { return crossover_; }
+
+    //! \return the mutator
+    Mutator *mutator() { return mutator_; }
 
     //! \return the selector
     Selector *selector() { return selector_; }

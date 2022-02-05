@@ -23,13 +23,14 @@ bool MCMC::evolve(ga::Genome *bestGenome)
         fprintf(stderr, "Cannot evolve a chromosome without genes.\n");
         return false;
     }
-    // Simplify syntax, create individual
-    // auto *ind = static_cast<alexandria::ACMIndividual *>(initializer()->initialize());
     
     auto cr = sii_->commRec();
 
     // Create a gene pool
     GenePool pool(sii_->nParam());
+    // Create and add our own individual (Will be the first one in the pool)
+    auto *ind = static_cast<alexandria::ACMIndividual *>(initializer()->initialize());
+    pool.addGenome(ind->genome());
     // Receive initial genomes from middlemen
     for (auto &src : cr->middlemen())
     {
@@ -37,6 +38,8 @@ bool MCMC::evolve(ga::Genome *bestGenome)
         genome.Receive(cr, src);
         pool.addGenome(genome);
     }
+    GMX_RELEASE_ASSERT(static_cast<int>(pool.popSize()) == gach_->popSize(),
+                       "The initial population does not match the specified population size...");
     // Print the genomes to the logfile
     pool.print(logFile_);
 
@@ -48,9 +51,9 @@ bool MCMC::evolve(ga::Genome *bestGenome)
     bool bMinimum = gach_->randomInit() ? true : false;
 
     // Resend the genomes back to the middlemen (they expect them anyway...)
-    for (size_t i = 0; i < pool.popSize(); i++)
+    for (size_t i = 1; i < pool.popSize(); i++)
     {
-        int dest = cr->middlemen()[i];
+        int dest = cr->middlemen()[i-1];
         // Tell the middle man to continue
         cr->send_data(dest);
         // Send the data set, 0 for iMolSelect::Train
@@ -59,19 +62,25 @@ bool MCMC::evolve(ga::Genome *bestGenome)
         cr->send_double_vector(dest, pool.genomePtr(i)->basesPtr());
     }
 
+    // Mutate my own genome
+    mutator()->mutate(ind->genomePtr(), ind->bestGenomePtr(), gach_->prMut());
+    // Bring it into the population
+    // FIXME: what if -bForceOutput? Make it sensitive to the flag
+    pool.replaceGenome(0, ind->bestGenome());
+
     // Fetch the mutated genomes and their fitness. FIXME: use them when -bForceOutput
-    for (size_t i = 0; i < pool.popSize(); i++)
+    for (size_t i = 1; i < pool.popSize(); i++)
     {
-        int src      = cr->middlemen()[i];
+        int src      = cr->middlemen()[i-1];
         cr->recv_double_vector(src, pool.genomePtr(i)->basesPtr());  // Receiving the mutated parameters
         auto fitness = cr->recv_double(src);  // Receiving the new training fitness
         pool.genomePtr(i)->setFitness(iMolSelect::Train, fitness);
     }
 
     // Fetch the best genomes FIXME: use them when -nobForceOutput
-    for (size_t i = 0; i < pool.popSize(); i++)
+    for (size_t i = 1; i < pool.popSize(); i++)
     {
-        int src = cr->middlemen()[i];
+        int src = cr->middlemen()[i-1];
         pool.genomePtr(i)->Receive(cr, src);
     }
 

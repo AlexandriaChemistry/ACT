@@ -82,9 +82,14 @@ public:
     
     
     /*! \brief Set the output file name
-     * \param[in] outputFile The force field file name for output
+     * \param[in] outputFile The base force field file name for output
      */
     void setOutputFile(const std::string &outputFile);
+
+    /*! \brief Set the output file name for best output
+     * \param[in] outputFile The base force field file name for output
+     */
+    void setFinalOutputFile(const std::string &outputFile);
     
     /*!
      * \brief Set the \f$ \chi^2 \f$ to 0 for a given data set.

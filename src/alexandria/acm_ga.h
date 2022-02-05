@@ -51,8 +51,8 @@ public:
                alexandria::GAConfigHandler         *gach,
                int                                  seed)
     : GeneticAlgorithm(nullptr, nullptr, probComputer, selector, crossover,
-                       terminator, gach->popSize()), sii_(sii), gach_(gach),
-                       logFile_(logFile), seed_(seed) {}
+                       nullptr, terminator, gach->popSize()),
+      sii_(sii), gach_(gach), logFile_(logFile), seed_(seed) {}
  
     //! \copydocs ga::GeneticAlgorithm::evolve
     virtual bool evolve(ga::Genome *bestGenome);
@@ -75,12 +75,15 @@ public:
      * \brief Constructor for self-building
      */
     MCMC(FILE                                *logFile,
+         Initializer                         *initializer,
+         Mutator                             *mutator,
          alexandria::StaticIndividualInfo    *sii,
          alexandria::GAConfigHandler         *gach,
          bool                                 evaluateTestSet)
-    : GeneticAlgorithm(nullptr, nullptr, nullptr, nullptr, nullptr,
-                       nullptr, gach->popSize()),
-      sii_(sii), gach_(gach), logFile_(logFile), evaluateTestSet_(evaluateTestSet) {}
+    : GeneticAlgorithm(initializer, nullptr, nullptr, nullptr, nullptr,
+                       mutator, nullptr, gach->popSize()),
+      sii_(sii), gach_(gach), logFile_(logFile),
+      evaluateTestSet_(evaluateTestSet) {}
     
     //! \copydocs ga::GeneticAlgorithm::evolve
     virtual bool evolve(ga::Genome *bestGenome);

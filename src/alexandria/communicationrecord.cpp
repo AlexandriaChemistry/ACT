@@ -139,7 +139,7 @@ void CommunicationRecord::init(int nmiddleman)
 
         // Set ordinal to 0, as the first middleman
         ordinal_ = 0;
-        middlemen_.push_back(0);
+        // middlemen_.push_back(0);
         if (nmiddlemen_ == 1) // If only master and helpers
         {
             for (int i = 1; i < size_; i++)
@@ -160,7 +160,7 @@ void CommunicationRecord::init(int nmiddleman)
                 middlemen_.push_back(i);
             }
         }
-        if (nmiddlemen_ != static_cast<int>(middlemen_.size()))
+        if (nmiddlemen_ - 1 != static_cast<int>(middlemen_.size()))
         {
             GMX_THROW(gmx::InternalError(gmx::formatString("Inconsistency in number of middlemen. Expected %d but found %zu.", nmiddlemen_, middlemen_.size()).c_str()));
         }                   
