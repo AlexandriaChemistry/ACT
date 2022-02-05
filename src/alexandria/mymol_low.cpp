@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020
+ * Copyright (C) 2014-2022
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -54,7 +54,7 @@
 #include "poldata.h"
 #include "qgen_acm.h"
 #include "topology.h"
-#include "units.h"
+#include "utility/units.h"
 
 namespace alexandria
 {

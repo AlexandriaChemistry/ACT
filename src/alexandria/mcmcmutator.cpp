@@ -13,7 +13,7 @@
 #include "gromacs/utility/basedefinitions.h"
 
 #include "bayes.h"
-#include "memory_check.h"
+#include "utility/memory_check.h"
 
 namespace alexandria
 {

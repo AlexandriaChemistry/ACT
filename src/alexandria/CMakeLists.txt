@@ -25,7 +25,8 @@
 #  Boston, MA  02110-1301, USA.
 #
 
-set(ALEXANDRIA_SOURCES
+target_sources(actLib
+    PRIVATE
            acm_ga.cpp
            acmfitnesscomputer.cpp
            acmindividual.cpp
@@ -58,7 +59,6 @@ set(ALEXANDRIA_SOURCES
            interactiontype.cpp
            latex_util.cpp
            mcmcmutator.cpp
-           memory_check.cpp
            merge_mp.cpp
            merge_pd.cpp
            molgen.cpp
@@ -92,27 +92,20 @@ set(ALEXANDRIA_SOURCES
            qm2molprop.cpp
            qtype.cpp
            readpsi4.cpp
-           regression.cpp
            staticindividualinfo.cpp
-           stringutil.cpp
            symmetrize_charges.cpp
            topology.cpp
            tune_ff.cpp
            tuning_utility.cpp          
-           units.cpp
            vsite.cpp
            xml_util.cpp
 	)
 	
-add_subdirectory(coulombintegrals)
+add_executable(alexandria alexandria.cpp ${actLib})
 
-add_library(alexandria_objlib OBJECT ${ALEXANDRIA_SOURCES})
-
-add_executable(alexandria alexandria.cpp
-         $<TARGET_OBJECTS:alexandria_objlib>)
-
-target_link_libraries(alexandria libactgromacs actga ${GMX_EXTRA_LIBRARIES} ${XML_LIBRARIES}
-         ${GMX_EXE_LINKER_FLAGS})
+target_link_libraries(alexandria libactgromacs actLib
+                      ${GMX_EXTRA_LIBRARIES} ${XML_LIBRARIES}
+                      ${GMX_EXE_LINKER_FLAGS})
 set(BINARY_NAME "alexandria${GMX_BINARY_SUFFIX}")
 set_target_properties(alexandria PROPERTIES 
                       OUTPUT_NAME "${BINARY_NAME}")
@@ -129,4 +122,3 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libalexandria.pc
 if (BUILD_TESTING)
     add_subdirectory(tests)
 endif()
-

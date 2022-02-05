@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014,2016, by the GROMACS development team, led by
+# Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,5 +32,53 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-gmx_add_unit_test(CoulombIntegralsTest coulombIntegrals-test
-                  coulombintegralstest.cpp ${COULOMBINTEGRALS_SOURCES} ../../chargemodel.cpp)
+target_sources(actLib
+        PRIVATE
+          DSlater_1S_1S.cpp
+          DSlater_1S_2S.cpp
+          DSlater_1S_3S.cpp
+          #DSlater_1S_4S.cpp
+          #DSlater_1S_5S.cpp
+          #DSlater_1S_6S.cpp
+          DSlater_2S_2S.cpp
+          DSlater_2S_3S.cpp
+          #DSlater_2S_4S.cpp
+          #DSlater_2S_5S.cpp
+          #DSlater_2S_6S.cpp
+          DSlater_3S_3S.cpp
+          #DSlater_3S_4S.cpp
+          #DSlater_3S_5S.cpp
+          #DSlater_3S_6S.cpp
+          #DSlater_4S_4S.cpp
+          #DSlater_4S_5S.cpp
+          #DSlater_4S_6S.cpp
+          #DSlater_5S_5S.cpp
+          #DSlater_5S_6S.cpp
+          #DSlater_6S_6S.cpp
+          Slater_1S_1S.cpp
+          Slater_1S_2S.cpp
+          Slater_1S_3S.cpp
+          #Slater_1S_4S.cpp
+          #Slater_1S_5S.cpp
+          #Slater_1S_6S.cpp
+          Slater_2S_2S.cpp
+          Slater_2S_3S.cpp
+          #Slater_2S_4S.cpp
+          #Slater_2S_5S.cpp
+          #Slater_2S_6S.cpp
+          Slater_3S_3S.cpp
+          #Slater_3S_4S.cpp
+          #Slater_3S_5S.cpp
+          #Slater_3S_6S.cpp
+          #Slater_4S_4S.cpp
+          #Slater_4S_5S.cpp
+          #Slater_4S_6S.cpp
+          #Slater_5S_5S.cpp
+          #Slater_5S_6S.cpp
+          #Slater_6S_6S.cpp
+          gaussian_integrals.cpp
+          slater_integrals.cpp)
+
+if (BUILD_TESTING)
+    add_subdirectory(tests)
+endif()

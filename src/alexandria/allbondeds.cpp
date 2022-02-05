@@ -34,7 +34,7 @@
 #include "gromacs/fileio/xvgr.h"
 
 #include "tuning_utility.h"
-#include "units.h"
+#include "utility/units.h"
     
 static void round_numbers(real *av, real *sig, int power10)
 {

@@ -9,7 +9,7 @@
 #include "staticindividualinfo.h"
 
 #include "ga/Genome.h"
-#include "memory_check.h"
+#include "utility/memory_check.h"
 #include "poldata_xml.h"
 
 namespace alexandria

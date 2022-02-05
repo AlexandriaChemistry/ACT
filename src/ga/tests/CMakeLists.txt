@@ -41,7 +41,6 @@ gmx_add_mpi_unit_test(
     # files with code for tests
     GeneticAlgorithmTest.cpp
     # pseudo-library for code for alexandria
-    $<TARGET_OBJECTS:alexandria_objlib>
     )
-target_link_libraries(ga-test libactgromacs actga ${GMX_EXTRA_LIBRARIES} ${XML_LIBRARIES}
+target_link_libraries(ga-test libactgromacs actLib ${GMX_EXTRA_LIBRARIES} ${XML_LIBRARIES}
          ${GMX_EXE_LINKER_FLAGS})

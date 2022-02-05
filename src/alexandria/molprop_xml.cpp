@@ -44,9 +44,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 
-#include "memory_check.h"
+#include "utility/memory_check.h"
 #include "molprop.h"
-#include "stringutil.h"
+#include "utility/stringutil.h"
 #include "xml_util.h"
 
 namespace alexandria 

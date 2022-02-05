@@ -25,24 +25,18 @@
 #  Boston, MA  02110-1301, USA.
 #
 
-set(GA_SOURCES
-           # Crossover.cpp
-           # FitnessComputer.cpp
+target_sources(actLib
+        PRIVATE
            Dataset.cpp
            GeneticAlgorithm.cpp
            GenePool.cpp
            Genome.cpp
-           # Initializer.cpp
-           # Mutator.cpp
            ProbabilityComputer.cpp
            Selector.cpp
-           # Sorter.cpp
            Terminator.cpp
 	)
 
-add_library(actga OBJECT ${GA_SOURCES})
-
 if (BUILD_TESTING)
-    add_subdirectory(tests)
+   add_subdirectory(tests)
 endif()
 

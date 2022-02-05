@@ -34,7 +34,7 @@
 
 #include "gromacs/utility/fatalerror.h"
 
-#include "units.h"
+#include "utility/units.h"
 
 namespace alexandria
 {

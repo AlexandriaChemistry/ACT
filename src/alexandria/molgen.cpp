@@ -53,7 +53,7 @@
 
 #include "alex_modules.h"
 #include "fill_inputrec.h"
-#include "memory_check.h"
+#include "utility/memory_check.h"
 #include "molprop_util.h"
 #include "molprop_xml.h"
 #include "poldata_xml.h"

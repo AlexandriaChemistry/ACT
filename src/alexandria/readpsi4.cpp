@@ -48,8 +48,8 @@
 #include "molprop.h"
 #include "molprop_util.h"
 #include "poldata.h"
-#include "stringutil.h"
-#include "units.h"
+#include "utility/stringutil.h"
+#include "utility/units.h"
 
 namespace alexandria
 {

@@ -52,8 +52,7 @@
 
 #include "coulombintegrals/coulombintegrals.h"
 #include "poldata.h"
-#include "regression.h"
-#include "units.h"
+#include "utility/units.h"
 
 namespace alexandria
 {

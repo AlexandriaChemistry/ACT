@@ -67,7 +67,7 @@
 #include "actmiddleman.h"
 #include "alex_modules.h"
 #include "bayes.h"
-#include "memory_check.h"
+#include "utility/memory_check.h"
 #include "mcmcmutator.h"
 #include "molgen.h"
 #include "molprop_util.h"
@@ -78,7 +78,7 @@
 #include "poldata_tables.h"
 #include "poldata_xml.h"
 #include "tuning_utility.h"
-#include "units.h"
+#include "utility/units.h"
 
 namespace alexandria
 {

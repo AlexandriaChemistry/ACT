@@ -46,7 +46,7 @@
 #include "interactiontype.h"
 #include "particletype.h"
 #include "poldata_low.h"
-#include "stringutil.h"
+#include "utility/stringutil.h"
 #include "vsite.h"
 
 namespace alexandria

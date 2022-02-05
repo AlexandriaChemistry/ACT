@@ -43,7 +43,7 @@
 #include "molprop_util.h"
 #include "mymol.h"
 #include "qtype.h"
-#include "units.h"
+#include "utility/units.h"
 
 void doAddOptions(std::vector<t_pargs> *pargs, size_t npa, t_pargs pa[])
 {

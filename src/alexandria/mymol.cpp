@@ -76,7 +76,7 @@
 #include "molprop_util.h"
 #include "mymol_low.h"
 #include "symmetrize_charges.h"
-#include "units.h"
+#include "utility/units.h"
 
 namespace alexandria
 {

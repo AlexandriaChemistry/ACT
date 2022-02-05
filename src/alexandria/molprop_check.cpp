@@ -50,7 +50,7 @@
 #include "molprop_xml.h"
 #include "mymol.h"
 #include "poldata_xml.h"
-#include "units.h"
+#include "utility/units.h"
 
 namespace alexandria
 {

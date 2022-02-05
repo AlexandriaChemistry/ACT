@@ -60,11 +60,11 @@
 #include "allbondeds.h"
 #include "dissociation_energy.h"
 #include "identifier.h"
-#include "memory_check.h"
+#include "utility/memory_check.h"
 #include "molprop_util.h"
 #include "mymol.h"
 #include "poldata_xml.h"
-#include "stringutil.h"
+#include "utility/stringutil.h"
 #include "tuning_utility.h"
 
 namespace alexandria

@@ -58,8 +58,8 @@
 #include "molprop_util.h"
 #include "mymol.h"
 #include "poldata.h"
-#include "stringutil.h"
-#include "units.h"
+#include "utility/stringutil.h"
+#include "utility/units.h"
 
 // Include Open Babel classes for OBMol and OBConversion
 #if HAVE_LIBOPENBABEL3

@@ -43,7 +43,7 @@
 
 #include "communicationrecord.h"
 #include "composition.h"
-#include "units.h"
+#include "utility/units.h"
 
 namespace alexandria
 {

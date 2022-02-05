@@ -55,7 +55,7 @@
 #include "molprop_xml.h"
 #include "poldata.h"
 #include "poldata_xml.h"
-#include "stringutil.h"
+#include "utility/stringutil.h"
 
 namespace alexandria
 {

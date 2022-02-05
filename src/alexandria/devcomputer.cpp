@@ -10,7 +10,7 @@
 #include "devcomputer.h"
 
 #include "communicationrecord.h"
-#include "units.h"
+#include "utility/units.h"
 
 namespace alexandria
 {

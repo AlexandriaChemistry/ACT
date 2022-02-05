@@ -106,5 +106,10 @@ if (BUILD_TESTING)
 endif()
 
 add_subdirectory(gromacs)
+
+add_library(actLib "")
+
+add_subdirectory(coulombintegrals)
 add_subdirectory(ga)
+add_subdirectory(utility)
 add_subdirectory(alexandria)

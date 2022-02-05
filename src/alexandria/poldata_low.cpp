@@ -42,7 +42,7 @@
 #include <vector>
 
 #include "communicationrecord.h"
-#include "stringutil.h"
+#include "utility/stringutil.h"
 
 namespace alexandria
 {
