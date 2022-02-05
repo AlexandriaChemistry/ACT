@@ -55,7 +55,8 @@ private:
      * Don't use for production simulations.
      */
     bool                  verbose_ = false;
-
+    //! Evaluate the test set at each iteration?
+    bool                  evaluateTestSet_ = false;
     // Random number generation
     std::random_device                      rd;
     std::mt19937                            gen;
@@ -72,11 +73,9 @@ private:
     /*!
      * \brief Print new minimum to log file and, if necessary, print params to debug file
      * \param[in] chi2              the new minimum
-     * \param[in] bEvaluate_testset true if test set is evaluated, false otherwise
      * \param[in] xiter             fractional iteration. E.g., if we are halfway through iteration 3, it is 3.5
      */
     void printNewMinimum(const std::map<iMolSelect, double> &chi2,
-                         bool                                bEvaluate_testset,
                          double                              xiter);
 
     /*!
@@ -90,11 +89,9 @@ private:
     /*!
      * \brief Write \f$ \chi^2 \f$ value of a genome to its convergence file, if it exists
      * \param[in] chi2                  chi2 for train and test sets
-     * \param[in] bEvaluate_testset     true if test set is evaluated, false otherwise
      * \param[in] xiter                 fractional iteration. E.g., if we are halfway through iteration 3, it is 3.5
      */
     void printChi2Step(const std::map<iMolSelect, double> &chi2,
-                       bool                                bEvaluate_testset,
                        double                              xiter);
 
     //! \return a random index of the force field parameter vector
@@ -116,7 +113,6 @@ private:
      * \param[out] bestGenome       pointer to the best genome, to be filled
      * \param[in] changed           a reference to a vector which has true for parameters that change and false otherwise
      * \param[in] prevEval          pointer to a map with the previous \f$ \chi^2 \f$
-     * \param[in] bEvaluate_testset true if evaluation should be done on test set, false otherwise
      * \param[in] pp                index of inner loop over number of parameters
      * \param[in] iter              current iteration number
      * \param[in] beta0             pointer to beta for annealing
@@ -125,7 +121,6 @@ private:
                   ga::Genome                   *bestGenome,
                   std::vector<bool>            *changed,
                   std::map<iMolSelect, double> *prevEval,
-                  bool                          evaluate_testset,
                   size_t                        pp,
                   int                           iter,
                   double                       *beta0);
@@ -134,20 +129,23 @@ public:
 
     /*!
      * \brief Constructor
-     * \param[in] logfile   pointer to log file (may be nullptr)
-     * \param[in] verbose   Flush output immediately rather than letting the OS buffer it. Don't use for production simulations.
-     * \param[in] seed      seed coming from the middle man creating this mutator
-     * \param[in] bch       pointer to BayesConfigHandler object
-     * \param[in] fitComp   pointer to ACMFitnessComputer object
-     * \param[in] sii       pointer to StaticIndividualInfo object
-     * \param[in] nParam    size of the force field parameter vector
+     * \param[in] logfile         pointer to log file (may be nullptr)
+     * \param[in] verbose         Flush output immediately rather than letting the OS buffer it. Don't use for production simulations.
+     * \param[in] seed            seed coming from the middle man creating this mutator
+     * \param[in] bch             pointer to BayesConfigHandler object
+     * \param[in] fitComp         pointer to ACMFitnessComputer object
+     * \param[in] sii             pointer to StaticIndividualInfo object
+     * \param[in] nParam          size of the force field parameter vector
+     * \param[in] evaluateTestSet Whether or not to evaluate the test set
+     *                            every once in a while
      */
-    MCMCMutator(FILE               *logfile,
-                bool                verbose,
-                int                 seed,
-                BayesConfigHandler *bch,
-                ACMFitnessComputer *fitComp,
-                StaticIndividualInfo *sii);
+    MCMCMutator(FILE                 *logfile,
+                bool                  verbose,
+                int                   seed,
+                BayesConfigHandler   *bch,
+                ACMFitnessComputer   *fitComp,
+                StaticIndividualInfo *sii,
+                bool                  evaluateTestSet);
  
     /*!
      * \brief Run the Markov chain Monte carlo (MCMC) simulation
@@ -199,10 +197,8 @@ public:
     /*!
      * \brief Open a \f$ \chi^2 \f$ convergence file
      * \param[in] oenv              the GROMACS output environment
-     * \param[in] bEvaluate_testset whether the test set will be evaluated in MCMC
      */
-    void openChi2ConvFile(const gmx_output_env_t    *oenv,
-                          const bool                 bEvaluate_testset);
+    void openChi2ConvFile(const gmx_output_env_t *oenv);
 
     //! Close \f$ \chi^2 \f$ and parameter convergence files
     void finalize();

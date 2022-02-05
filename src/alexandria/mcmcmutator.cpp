@@ -21,8 +21,9 @@ MCMCMutator::MCMCMutator(FILE                 *logfile,
                          int                   seed,
                          BayesConfigHandler   *bch,
                          ACMFitnessComputer   *fitComp,
-                         StaticIndividualInfo *sii)
-    : Mutator(seed), gen(rd()), dis(std::uniform_int_distribution<size_t>(0, sii->nParam()-1))
+                         StaticIndividualInfo *sii,
+                         bool                  evaluateTestSet)
+    : Mutator(seed), evaluateTestSet_(evaluateTestSet), gen(rd()), dis(std::uniform_int_distribution<size_t>(0, sii->nParam()-1))
 {
     gen.seed(seed);
     logfile_ = logfile;
@@ -46,7 +47,6 @@ void MCMCMutator::mutate(ga::Genome *genome,
         return;
     }
 
-    bool   evaluate_testset = prMut > 0;
     int    nsum             = 0;
     size_t nParam           = genome->nBase();
 
@@ -85,7 +85,7 @@ void MCMCMutator::mutate(ga::Genome *genome,
     // This does not fill the fitness attribute in individual!
     // TODO Print results
     genome->setFitness(iMolSelect::Train, prevEval[iMolSelect::Train]);
-    if (evaluate_testset)
+    if (evaluateTestSet_)
     {
         prevEval.insert({iMolSelect::Test, fitComp_->calcDeviation(genome->basesPtr(),
                                                                    CalcDev::Parallel,
@@ -107,7 +107,7 @@ void MCMCMutator::mutate(ga::Genome *genome,
         {
             // Do the step!
             stepMCMC(genome, bestGenome, &changed, &prevEval,
-                     evaluate_testset, pp, iter, &beta0);
+                     pp, iter, &beta0);
 
             // For the second half of the optimization, collect data 
             // to find the mean and standard deviation of each
@@ -146,7 +146,6 @@ void MCMCMutator::stepMCMC(ga::Genome                   *genome,
                            ga::Genome                   *bestGenome,
                            std::vector<bool>            *changed,
                            std::map<iMolSelect, double> *prevEval,
-                           bool                          evaluate_testset,
                            size_t                        pp,
                            int                           iter,
                            double                       *beta0)
@@ -177,7 +176,7 @@ void MCMCMutator::stepMCMC(ga::Genome                   *genome,
             fitComp_->calcDeviation(param, CalcDev::Parallel, ims) });
     double deltaEval = currEval[ims] - prevEval->find(ims)->second;
     // Evaluate the energy on the test set only on whole steps!
-    if (evaluate_testset && pp == 0)
+    if (evaluateTestSet_ && pp == 0)
     {
         ims            = iMolSelect::Test;
         // Is the first time we insert a test value?
@@ -221,7 +220,7 @@ void MCMCMutator::stepMCMC(ga::Genome                   *genome,
             // If pointer to log file exists, write information about new minimum
             if (logfile_)
             {
-                printNewMinimum(currEval, evaluate_testset, xiter);
+                printNewMinimum(currEval, xiter);
             }
             *bestGenome = *genome;
             bestGenome->setFitness(imstr, currEval[imstr]);  // Pass the fitness for training set to the best genome
@@ -229,7 +228,7 @@ void MCMCMutator::stepMCMC(ga::Genome                   *genome,
         }
         prevEval->find(imstr)->second = currEval[imstr];
         genome->setFitness(imstr, currEval[imstr]);
-        if (evaluate_testset)
+        if (evaluateTestSet_)
         {
             auto imste = iMolSelect::Test;
             prevEval->find(imste)->second = currEval[imste];
@@ -250,7 +249,7 @@ void MCMCMutator::stepMCMC(ga::Genome                   *genome,
     (*changed)[paramIndex] = false;
 
     printParameterStep(genome, xiter);
-    printChi2Step(currEval, evaluate_testset, xiter);
+    printChi2Step(currEval, xiter);
 }                  
 
 void MCMCMutator::computeMeanSigma(const std::vector<double>    &sum,
@@ -330,7 +329,6 @@ void MCMCMutator::printMonteCarloStatistics(FILE             *fp,
 }
 
 void MCMCMutator::printNewMinimum(const std::map<iMolSelect, double> &chi2,
-                                  bool                                bEvaluate_testset,
                                   double                              xiter)
 {
     if (!logfile_)
@@ -338,7 +336,7 @@ void MCMCMutator::printNewMinimum(const std::map<iMolSelect, double> &chi2,
         return;
     }
     fprintf(logfile_, "Middleman %i\n", sii_->id());
-    if (bEvaluate_testset)
+    if (evaluateTestSet_)
     {
         fprintf(logfile_, "iter %10g. Found new minimum at %10g. Corresponding energy on the test set: %g\n",
                 xiter, chi2.find(iMolSelect::Train)->second, chi2.find(iMolSelect::Test)->second);
@@ -397,7 +395,6 @@ void MCMCMutator::printParameterStep(ga::Genome          *genome,
 }                             
 
 void MCMCMutator::printChi2Step(const std::map<iMolSelect, double> &chi2,
-                                bool                                bEvaluate_testset,
                                 double                              xiter)
 {
     if (fpe_ == nullptr)
@@ -406,7 +403,7 @@ void MCMCMutator::printChi2Step(const std::map<iMolSelect, double> &chi2,
         return;
     }
 
-    if (bEvaluate_testset)
+    if (evaluateTestSet_)
     {
         fprintf(fpe_, "%8f  %10g  %10g\n", xiter, chi2.find(iMolSelect::Train)->second,
                 chi2.find(iMolSelect::Train)->second);
@@ -520,8 +517,7 @@ void MCMCMutator::openParamConvFiles(const gmx_output_env_t *oenv)
     }
 }
 
-void MCMCMutator::openChi2ConvFile(const gmx_output_env_t    *oenv,
-                                     const bool                 bEvaluate_testset)
+void MCMCMutator::openChi2ConvFile(const gmx_output_env_t *oenv)
 {
     auto fileName = gmx::formatString("%sind%d-%s", sii_->prefix().c_str(), sii_->id(), sii_->xvgEpot().c_str());
     fpe_ = xvgropen(fileName.c_str(),
@@ -529,7 +525,7 @@ void MCMCMutator::openChi2ConvFile(const gmx_output_env_t    *oenv,
                     "Iteration",
                     "Unknown units",
                     oenv);
-    if (bEvaluate_testset)
+    if (evaluateTestSet_)
     {
         std::vector<std::string> legend;
         legend.push_back(iMolSelectName(iMolSelect::Train));

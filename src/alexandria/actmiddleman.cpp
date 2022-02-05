@@ -50,10 +50,10 @@ ACTMiddleMan::ACTMiddleMan(FILE                 *logFile,
     }
     else
     {
-        auto mut = new alexandria::MCMCMutator(nullptr, verbose, seed, bch, fitComp_, sii);
+        auto mut = new alexandria::MCMCMutator(nullptr, verbose, seed, bch, fitComp_, sii, bch->evaluateTestset());
         mut->makeWorkDir();  // We need to call this before opening working files!
         mut->openParamConvFiles(oenv);
-        mut->openChi2ConvFile(oenv, bch->evaluateTestset());
+        mut->openChi2ConvFile(oenv);
         mutator_ = mut;
     }
 }
