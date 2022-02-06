@@ -3,7 +3,7 @@
 #include "gromacs/utility/gmxassert.h"
 
 #include "acminitializer.h"
-#include "communicationrecord.h"
+#include "act/utility/communicationrecord.h"
 #include "mcmcmutator.h"
 #include "percentmutator.h"
 #include "staticindividualinfo.h"

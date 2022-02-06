@@ -38,7 +38,7 @@
 #include <map>
 
 #include "gromacs/utility/exceptions.h"
-#include "communicationrecord.h"
+#include "act/utility/communicationrecord.h"
 #include "identifier.h"
 
 namespace alexandria

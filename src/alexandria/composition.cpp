@@ -37,8 +37,8 @@
 #include <string>
 #include <vector>
 
-#include "communicationrecord.h"
-#include "utility/units.h"
+#include "act/utility/communicationrecord.h"
+#include "act/utility/units.h"
 
 namespace alexandria
 {

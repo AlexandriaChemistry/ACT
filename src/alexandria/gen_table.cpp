@@ -46,8 +46,8 @@
 #include "gromacs/utility/smalloc.h"
 
 #include "alex_modules.h"
-#include "poldata.h"
-#include "poldata_xml.h"
+#include "act/poldata.h"
+#include "act/poldata_xml.h"
 
 using namespace alexandria;
 

@@ -48,11 +48,11 @@
 
 #include "forcefieldparameter.h"
 #include "forcefieldparameterlist.h"
-#include "poldata/poldata.h"
-#include "poldata/poldata_low.h"
-#include "molprop/molprop_util.h"
+#include "act/poldata/poldata.h"
+#include "act/poldata/poldata_low.h"
+#include "act/molprop/molprop_util.h"
 #include "mymol.h"
-#include "utility/xml_util.h"
+#include "act/utility/xml_util.h"
 
 
 namespace alexandria

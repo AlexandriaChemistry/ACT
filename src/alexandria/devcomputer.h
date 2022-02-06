@@ -20,7 +20,7 @@
 #include "gromacs/math/vecdump.h"
 #include "gromacs/topology/topology.h"
 
-#include "communicationrecord.h"
+#include "act/utility/communicationrecord.h"
 #include "mymol.h"
 #include "molgen.h"
 

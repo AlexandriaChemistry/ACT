@@ -53,10 +53,10 @@
 
 #include "alex_modules.h"
 #include "fill_inputrec.h"
-#include "utility/memory_check.h"
-#include "molprop/molprop_util.h"
-#include "molprop/molprop_xml.h"
-#include "poldata/poldata_xml.h"
+#include "act/utility/memory_check.h"
+#include "act/molprop/molprop_util.h"
+#include "act/molprop/molprop_xml.h"
+#include "act/poldata/poldata_xml.h"
 #include "tuning_utility.h"
 
 namespace alexandria

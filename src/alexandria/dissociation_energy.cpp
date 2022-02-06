@@ -39,7 +39,7 @@
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/utility/futil.h"
 
-#include "utility/regression.h"
+#include "act/utility/regression.h"
 
 namespace alexandria
 {

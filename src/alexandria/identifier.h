@@ -35,7 +35,7 @@
 #include <string>
 #include <vector>
 
-#include "communicationrecord.h"
+#include "act/utility/communicationrecord.h"
 #include "interactiontype.h"
 
 namespace alexandria

@@ -45,11 +45,11 @@
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textreader.h"
 
-#include "molprop/molprop.h"
-#include "molprop/molprop_util.h"
-#include "poldata/poldata.h"
-#include "utility/stringutil.h"
-#include "utility/units.h"
+#include "act/molprop/molprop.h"
+#include "act/molprop/molprop_util.h"
+#include "act/poldata/poldata.h"
+#include "act/utility/stringutil.h"
+#include "act/utility/units.h"
 
 namespace alexandria
 {

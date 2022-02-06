@@ -40,7 +40,7 @@
 #include "gromacs/utility/real.h"
 
 #include "mymol.h"
-#include "poldata/poldata.h"
+#include "act/poldata/poldata.h"
 
 namespace alexandria
 {

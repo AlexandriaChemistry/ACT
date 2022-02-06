@@ -25,7 +25,7 @@
 #include "staticindividualinfo.h"
 #include "acmfitnesscomputer.h"
 #include "acminitializer.h"
-#include "communicationrecord.h"
+#include "act/utility/communicationrecord.h"
 #include "ga/Mutator.h"
 #include "ga/GeneticAlgorithm.h"
 

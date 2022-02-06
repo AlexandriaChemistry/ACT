@@ -45,9 +45,9 @@
 #include "alexandria/babel_io.h"
 #include "alexandria/fill_inputrec.h"
 #include "alexandria/mymol.h"
-#include "poldata/poldata.h"
-#include "poldata/poldata_utils.h"
-#include "poldata/poldata_xml.h"
+#include "act/poldata/poldata.h"
+#include "act/poldata/poldata_utils.h"
+#include "act/poldata/poldata_xml.h"
 #include "alexandria/qgen_resp.h"
 
 #include "testutils/cmdlinetest.h"

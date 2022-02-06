@@ -41,7 +41,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 
-#include "communicationrecord.h"
+#include "act/utility/communicationrecord.h"
 #include "mutability.h"
 
 /*! \brief Convert string to boolean

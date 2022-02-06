@@ -49,13 +49,13 @@
 #include "gromacs/utility/smalloc.h"
 
 #include "alex_modules.h"
-#include "molprop/molprop.h"
-#include "molprop/molprop_sqlite3.h"
-#include "molprop/molprop_util.h"
-#include "molprop/molprop_xml.h"
-#include "poldata/poldata.h"
-#include "poldata/poldata_xml.h"
-#include "utility/stringutil.h"
+#include "act/molprop/molprop.h"
+#include "act/molprop/molprop_sqlite3.h"
+#include "act/molprop/molprop_util.h"
+#include "act/molprop/molprop_xml.h"
+#include "act/poldata/poldata.h"
+#include "act/poldata/poldata_xml.h"
+#include "act/utility/stringutil.h"
 
 namespace alexandria
 {

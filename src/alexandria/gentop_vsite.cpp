@@ -46,7 +46,7 @@
 #include "identifier.h"
 #include "mymol_low.h"
 #include "plistwrapper.h"
-#include "poldata.h"
+#include "act/poldata.h"
 #include "units.h"
 
 namespace alexandria

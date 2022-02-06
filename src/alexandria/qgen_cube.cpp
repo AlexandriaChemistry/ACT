@@ -50,9 +50,9 @@
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/textreader.h"
 
-#include "coulombintegrals/coulombintegrals.h"
-#include "poldata/poldata.h"
-#include "utility/units.h"
+#include "act/coulombintegrals/coulombintegrals.h"
+#include "act/poldata/poldata.h"
+#include "act/utility/units.h"
 
 namespace alexandria
 {

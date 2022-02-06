@@ -52,11 +52,11 @@
 #include "atype_mapping.h"
 #include "babel_io.h"
 #include "fill_inputrec.h"
-#include "molprop/molprop_util.h"
-#include "molprop/molprop_xml.h"
+#include "act/molprop/molprop_util.h"
+#include "act/molprop/molprop_xml.h"
 #include "mymol.h"
 #include "openmm_xml.h"
-#include "poldata/poldata_xml.h"
+#include "act/poldata/poldata_xml.h"
 
 namespace alexandria
 {

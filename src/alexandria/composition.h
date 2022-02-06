@@ -44,8 +44,8 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/real.h"
 
-#include "communicationrecord.h"
-#include "molprop/experiment.h"
+#include "act/utility/communicationrecord.h"
+#include "act/molprop/experiment.h"
 
 namespace alexandria
 {

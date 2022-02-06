@@ -34,7 +34,7 @@
 #include <map>
 #include <vector>
 
-#include "alexandria/communicationrecord.h"
+#include "act/utility/communicationrecord.h"
 
 #include "Dataset.h"
 

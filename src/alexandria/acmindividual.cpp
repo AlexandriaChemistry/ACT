@@ -10,7 +10,7 @@
 #include "acmindividual.h"
 
 #include "gromacs/fileio/xvgr.h"
-#include "poldata/poldata_xml.h"
+#include "act/poldata/poldata_xml.h"
 
 namespace alexandria
 {

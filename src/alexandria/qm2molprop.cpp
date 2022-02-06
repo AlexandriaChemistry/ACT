@@ -45,11 +45,11 @@
 #include "alex_modules.h"
 #include "atype_mapping.h"
 #include "babel_io.h"
-#include "molprop/molprop.h"
-#include "molprop/molprop_util.h"
-#include "molprop/molprop_xml.h"
-#include "poldata/poldata.h"
-#include "poldata/poldata_xml.h"
+#include "act/molprop/molprop.h"
+#include "act/molprop/molprop_util.h"
+#include "act/molprop/molprop_xml.h"
+#include "act/poldata/poldata.h"
+#include "act/poldata/poldata_xml.h"
 #include "readpsi4.h"
 
 namespace alexandria

@@ -34,7 +34,7 @@
 #define DISSOCIATION_ENERGY_H
 
 #include "mymol.h"
-#include "poldata/poldata.h"
+#include "act/poldata/poldata.h"
 
 namespace alexandria
 {

@@ -14,7 +14,7 @@
 #include <string>
 
 #include "molgen.h"
-#include "poldata/poldata.h"
+#include "act/poldata/poldata.h"
 #include "staticindividualinfo.h"
 
 #include "ga/Genome.h"

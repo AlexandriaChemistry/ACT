@@ -14,7 +14,7 @@
 #include <map>
 #include "ga/Genome.h"
 
-#include "communicationrecord.h"
+#include "act/utility/communicationrecord.h"
 #include "mutability.h"
 #include "molgen.h"
 

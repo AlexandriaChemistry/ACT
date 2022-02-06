@@ -42,10 +42,10 @@
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/atoms.h"
 
-#include "coulombintegrals/coulombintegrals.h"
-#include "molprop/molprop.h"
-#include "poldata/poldata.h"
-#include "utility/regression.h"
+#include "act/coulombintegrals/coulombintegrals.h"
+#include "act/molprop/molprop.h"
+#include "act/poldata/poldata.h"
+#include "act/utility/regression.h"
 
 namespace alexandria
 {

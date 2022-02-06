@@ -39,7 +39,7 @@
 #include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/utility/real.h"
 
-#include "communicationrecord.h"
+#include "act/utility/communicationrecord.h"
 #include "molselect.h"
 #include "mymol.h"
 

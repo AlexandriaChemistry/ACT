@@ -43,7 +43,6 @@ target_sources(actLib
            bayes.cpp
            categories.cpp
            chargemodel.cpp
-           communicationrecord.cpp
            composition.cpp
            confighandler.cpp
            devcomputer.cpp

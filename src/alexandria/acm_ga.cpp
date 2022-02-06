@@ -4,7 +4,7 @@
 
 #include "ga/GenePool.h"
 
-#include "communicationrecord.h"
+#include "act/utility/communicationrecord.h"
 #include "mcmcmutator.h"
 #include "tune_ff.h"
 

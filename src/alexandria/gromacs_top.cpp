@@ -11,7 +11,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/path.h"
 
-#include "poldata/poldata.h"
+#include "act/poldata/poldata.h"
 #include "topology.h"
 
 namespace alexandria

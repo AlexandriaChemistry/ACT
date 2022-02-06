@@ -38,7 +38,7 @@
 
 #include "gromacs/gpu_utils/hostallocator.h"
 
-#include "communicationrecord.h"
+#include "act/utility/communicationrecord.h"
 #include "identifier.h"
 
 namespace alexandria

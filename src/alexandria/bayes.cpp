@@ -50,8 +50,8 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-#include "utility/memory_check.h"
-#include "utility/regression.h"
+#include "act/utility/memory_check.h"
+#include "act/utility/regression.h"
 
 
 namespace alexandria

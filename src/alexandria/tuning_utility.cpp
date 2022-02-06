@@ -40,10 +40,10 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/utility/coolstuff.h"
 
-#include "molprop/molprop_util.h"
+#include "act/molprop/molprop_util.h"
 #include "mymol.h"
 #include "qtype.h"
-#include "utility/units.h"
+#include "act/utility/units.h"
 
 void doAddOptions(std::vector<t_pargs> *pargs, size_t npa, t_pargs pa[])
 {

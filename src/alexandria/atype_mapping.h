@@ -34,7 +34,7 @@
 
 #include <map>
 
-#include "molprop/molprop.h"
+#include "act/molprop/molprop.h"
 
 /*! \brief
  * Read a mapping file

@@ -39,8 +39,8 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/stringutil.h"
 
-#include "communicationrecord.h"
-#include "utility/stringutil.h"
+#include "act/utility/communicationrecord.h"
+#include "act/utility/stringutil.h"
 
 namespace alexandria
 {

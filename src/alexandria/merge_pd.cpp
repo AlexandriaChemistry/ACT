@@ -51,9 +51,9 @@
 
 #include "alex_modules.h"
 #include "identifier.h"
-#include "poldata/poldata.h"
-#include "poldata/poldata_tables.h"
-#include "poldata/poldata_xml.h"
+#include "act/poldata/poldata.h"
+#include "act/poldata/poldata_tables.h"
+#include "act/poldata/poldata_xml.h"
 
 namespace alexandria
 {

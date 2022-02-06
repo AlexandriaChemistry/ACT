@@ -33,7 +33,7 @@
 #ifndef OPENMM_XML_H
 #define OPENMM_XML_H
 
-#include "poldata/poldata.h"
+#include "act/poldata/poldata.h"
 #include "mymol.h"
 
 namespace alexandria

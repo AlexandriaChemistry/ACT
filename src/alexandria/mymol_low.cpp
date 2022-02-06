@@ -51,10 +51,10 @@
 #include "gromacs/utility/strconvert.h"
 
 #include "forcefieldparameter.h"
-#include "poldata/poldata.h"
+#include "act/poldata/poldata.h"
 #include "qgen_acm.h"
 #include "topology.h"
-#include "utility/units.h"
+#include "act/utility/units.h"
 
 namespace alexandria
 {

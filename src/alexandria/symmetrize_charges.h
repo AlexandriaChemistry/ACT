@@ -38,7 +38,7 @@
 
 #include "gromacs/topology/atoms.h"
 
-#include "poldata/poldata.h"
+#include "act/poldata/poldata.h"
 #include "topology.h"
 
 struct gmx_atomprop;

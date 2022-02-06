@@ -73,10 +73,10 @@
 
 #include "forcefieldparameter.h"
 #include "gromacs_top.h"
-#include "molprop/molprop_util.h"
+#include "act/molprop/molprop_util.h"
 #include "mymol_low.h"
 #include "symmetrize_charges.h"
-#include "utility/units.h"
+#include "act/utility/units.h"
 
 namespace alexandria
 {
