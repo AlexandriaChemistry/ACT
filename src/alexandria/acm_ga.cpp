@@ -30,6 +30,8 @@ bool MCMC::evolve(ga::Genome *bestGenome)
     GenePool pool(sii_->nParam());
     // Create and add our own individual (Will be the first one in the pool)
     auto *ind = static_cast<alexandria::ACMIndividual *>(initializer()->initialize());
+    // Compute its fitness
+    fitnessComputer()->compute(ind->genomePtr(), iMolSelect::Train);
     pool.addGenome(ind->genome());
     // Receive initial genomes from middlemen
     for (auto &src : cr->middlemen())

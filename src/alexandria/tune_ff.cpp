@@ -317,7 +317,7 @@ void OptACM::initMaster()
     {
         // auto initializer = new ACMInitializer(sii_, gach_.randomInit(), bch_.seed());
 
-        ga_ = new ga::MCMC(logFile(), initializer, mutator, sii_, &gach_);
+        ga_ = new ga::MCMC(logFile(), initializer, fitComp_, mutator, sii_, &gach_);
     }
     else
     {
@@ -594,8 +594,6 @@ int tune_ff(int argc, char *argv[])
 
     // Create ACMFitnessComputer and fill the DevComputers
     // This is needed on all nodes.
-
-    printf("Processor %d here\n", opt.commRec()->rank());
 
     if (opt.commRec()->isMaster())
     {

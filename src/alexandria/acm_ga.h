@@ -74,10 +74,11 @@ public:
      */
     MCMC(FILE                                *logFile,
          Initializer                         *initializer,
+         FitnessComputer                     *fitnessComputer,
          Mutator                             *mutator,
          alexandria::StaticIndividualInfo    *sii,
          alexandria::GAConfigHandler         *gach)
-    : GeneticAlgorithm(initializer, nullptr, nullptr, nullptr, nullptr,
+    : GeneticAlgorithm(initializer, fitnessComputer, nullptr, nullptr, nullptr,
                        mutator, nullptr, gach->popSize()),
       sii_(sii), gach_(gach), logFile_(logFile) {}
 

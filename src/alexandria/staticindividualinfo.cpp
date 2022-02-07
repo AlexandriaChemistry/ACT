@@ -39,7 +39,8 @@ void StaticIndividualInfo::setOutputFile(const std::string &outputFile)
 
 void StaticIndividualInfo::setFinalOutputFile(const std::string &outputFile)
 {
-    outputFile_ = "global-best" + outputFile;
+    // FIXME: is "global-best-" really necessary? Do we just keep the original output file?
+    outputFile_ = "global-best-" + outputFile;
 }
 
 /* * * * * * * * * * * * * * * * * * * * * *
