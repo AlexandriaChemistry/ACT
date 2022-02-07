@@ -84,6 +84,10 @@ double ACMFitnessComputer::calcDeviation(std::vector<double> *params,
         }
         myparams = params;
     }
+    else
+    {
+        myparams = params;
+    }
 
     // If final call, return -1
     if (calcDev == CalcDev::Final)
