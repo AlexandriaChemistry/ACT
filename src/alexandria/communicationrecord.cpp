@@ -80,7 +80,7 @@ void CommunicationRecord::print(FILE *fp)
         // fprintf(fp, "nmiddlemen: %d nhelper_per_middleman: %d\n", nmiddlemen_, 
         //         nhelper_per_middleman_);
     }
-    if (isMiddleMan())
+    if (isMasterOrMiddleMan())
     {
         strToPrint.append(gmx::formatString("ordinal: %d nhelper: %d\n",
                                             ordinal_, nhelper_per_middleman_));
