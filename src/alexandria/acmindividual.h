@@ -115,6 +115,12 @@ public:
     //! \return a pointer to the current vector of parameters
     ga::Genome *genomePtr() { return &genome_; }
 
+    /*!
+     * \brief Set a new parameter vector
+     * \param[in] param the new parameter vector
+     */
+    void setGenome(const ga::Genome &genome) { genome_ = genome; }
+
     //! \return the vector of best parameters as a const reference
     const ga::Genome &bestGenome() const { return bestGenome_; }
 

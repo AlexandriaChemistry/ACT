@@ -43,15 +43,18 @@ public:
      * \brief Constructor for self-building
      */
     HybridGAMC(FILE                                *logFile,
+               Initializer                         *initializer,
+               FitnessComputer                     *fitnessComputer,
                ProbabilityComputer                 *probComputer,
                Selector                            *selector,
                Crossover                           *crossover,
+               Mutator                             *mutator,
                Terminator                          *terminator,
                alexandria::StaticIndividualInfo    *sii,
                alexandria::GAConfigHandler         *gach,
                int                                  seed)
-    : GeneticAlgorithm(nullptr, nullptr, probComputer, selector, crossover,
-                       nullptr, terminator, gach->popSize()),
+    : GeneticAlgorithm(initializer, fitnessComputer, probComputer, selector, crossover,
+                       mutator, terminator, gach->popSize()),
       sii_(sii), gach_(gach), logFile_(logFile), seed_(seed) {}
 
     //! \copydocs ga::GeneticAlgorithm::evolve

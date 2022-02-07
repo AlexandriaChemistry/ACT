@@ -266,7 +266,7 @@ void OptACM::initMaster()
     // FIXME: what about the flags? Here it is a bit more clear that they should be all false?
     fitComp_ = new ACMFitnessComputer(nullptr, sii_, &mg_, false, false, false);
 
-    // Adjust the seed that gets passed around
+    // Adjust the seed that gets passed around to components of the optimizer
     int seed = bch_.seed();
     // Create random number generator and feed it the global seed
     std::random_device rd;  // Will be used to obtain a seed for the random number engine
@@ -321,7 +321,8 @@ void OptACM::initMaster()
     }
     else
     {
-        ga_ = new ga::HybridGAMC(logFile(), probComputer, selector, crossover, terminator, sii_, &gach_,
+        // We pass the global seed to the optimizer
+        ga_ = new ga::HybridGAMC(logFile(), initializer, fitComp_, probComputer, selector, crossover, mutator, terminator, sii_, &gach_,
                                  bch_.seed());
     }
 }
