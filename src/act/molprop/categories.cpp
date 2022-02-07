@@ -47,7 +47,6 @@
 #include "act/molprop/molprop.h"
 #include "act/molprop/molprop_tables.h"
 #include "act/molprop/molprop_util.h"
-#include "molselect.h"
 #include "act/poldata/poldata.h"
 #include "act/poldata/poldata_xml.h"
 

@@ -34,7 +34,7 @@
 #ifndef MOLPROP_TABLES_H
 #define MOLPROP_TABLES_H
 
-#include "alexandria/categories.h"
+#include "act/molprop/categories.h"
 #include "act/molprop/molprop.h"
 #include "act/molprop/molprop_util.h"
 

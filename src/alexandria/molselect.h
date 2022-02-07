@@ -39,8 +39,8 @@
 
 #include "ga/Dataset.h"
 
-#include "act/molprop/molprop.h"
-#include "act/poldata/poldata.h"
+//#include "act/molprop/molprop.h"
+//#include "act/poldata/poldata.h"
 
 namespace alexandria
 {

@@ -41,7 +41,7 @@
 
 #include "gromacs/utility/real.h"
 
-#include "molselect.h"
+#include "alexandria/molselect.h"
 
 /*! \brief
  * Contains classes related to alexandria force field tools

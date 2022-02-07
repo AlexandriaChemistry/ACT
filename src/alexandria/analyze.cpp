@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2021
+ * Copyright (C) 2014-2022
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -56,7 +56,7 @@
 #include "gromacs/utility/pleasecite.h"
 
 #include "alex_modules.h"
-#include "categories.h"
+#include "act/molprop/categories.h"
 #include "act/molprop/molprop.h"
 #include "act/molprop/molpropobservable.h"
 #include "act/molprop/molprop_tables.h"

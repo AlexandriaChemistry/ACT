@@ -46,7 +46,6 @@
 #include "gromacs/utility/strconvert.h"
 
 #include "alexandria/alex_modules.h"
-#include "alexandria/categories.h"
 #include "act/utility/latex_util.h"
 
 namespace alexandria

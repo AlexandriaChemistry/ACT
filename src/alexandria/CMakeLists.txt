@@ -41,7 +41,6 @@ target_sources(actLib
            babel_io.cpp
            bastat.cpp
            bayes.cpp
-           categories.cpp
            chargemodel.cpp
            composition.cpp
            confighandler.cpp
