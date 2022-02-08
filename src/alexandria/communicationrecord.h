@@ -55,10 +55,10 @@ private:
     int               rank_                  = 0;
     //! Total number of MPI ranks
     int               size_                  = 0;
-    //! Total number of middlemen
+    //! Total number of middlemen (includes the MASTER node)
     /*! \brief The number of middle men in a 2D parallellization
      * Of all the size_ nodes, the middlemen each have
-     * nhelper_per_middleman_ = size_/nmiddlemen_
+     * nhelper_per_middleman_ = size_/nmiddlemen_ - 1
      * helpers. 
      */
     int               nmiddlemen_            = 0;
@@ -70,7 +70,7 @@ private:
     int               ordinal_               = -1;
     //! My helpers (if any)
     std::vector<int>  helpers_;
-    //! All the middlemen, as if anyone should care
+    //! All the middlemen (not including the MASTER), as if anyone should care
     std::vector<int>  middlemen_;
     
     /*************************************************
