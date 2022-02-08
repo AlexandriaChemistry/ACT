@@ -31,14 +31,16 @@ void StaticIndividualInfo::fillIdAndPrefix()
 
 void StaticIndividualInfo::setOutputFile(const std::string &outputFile)
 {
-    if (cr_->isMaster())
-    {
-        outputFile_ = prefix_ + "ind-global-best" + "-" + outputFile;
-    }
-    else if (cr_->isMiddleMan())
+    if (cr_->isMasterOrMiddleMan())
     {   
         outputFile_ = prefix_ + "ind" + std::to_string(id_) + "-" + outputFile;
     }
+}
+
+void StaticIndividualInfo::setFinalOutputFile(const std::string &outputFile)
+{
+    // FIXME: is "global-best-" really necessary? Do we just keep the original output file?
+    outputFile_ = "global-best-" + outputFile;
 }
 
 /* * * * * * * * * * * * * * * * * * * * * *

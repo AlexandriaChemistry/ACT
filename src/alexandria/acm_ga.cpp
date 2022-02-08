@@ -23,13 +23,16 @@ bool MCMC::evolve(ga::Genome *bestGenome)
         fprintf(stderr, "Cannot evolve a chromosome without genes.\n");
         return false;
     }
-    // Simplify syntax, create individual
-    // auto *ind = static_cast<alexandria::ACMIndividual *>(initializer()->initialize());
     
     auto cr = sii_->commRec();
 
     // Create a gene pool
     GenePool pool(sii_->nParam());
+    // Create and add our own individual (Will be the first one in the pool)
+    auto *ind = static_cast<alexandria::ACMIndividual *>(initializer()->initialize());
+    // Compute its fitness
+    fitnessComputer()->compute(ind->genomePtr(), iMolSelect::Train);
+    pool.addGenome(ind->genome());
     // Receive initial genomes from middlemen
     for (auto &src : cr->middlemen())
     {
@@ -37,6 +40,8 @@ bool MCMC::evolve(ga::Genome *bestGenome)
         genome.Receive(cr, src);
         pool.addGenome(genome);
     }
+    GMX_RELEASE_ASSERT(static_cast<int>(pool.popSize()) == gach_->popSize(),
+                       "The initial population does not match the specified population size...");
     // Print the genomes to the logfile
     pool.print(logFile_);
 
@@ -48,9 +53,9 @@ bool MCMC::evolve(ga::Genome *bestGenome)
     bool bMinimum = gach_->randomInit() ? true : false;
 
     // Resend the genomes back to the middlemen (they expect them anyway...)
-    for (size_t i = 0; i < pool.popSize(); i++)
+    for (size_t i = 1; i < pool.popSize(); i++)
     {
-        int dest = cr->middlemen()[i];
+        int dest = cr->middlemen()[i-1];
         // Tell the middle man to continue
         cr->send_data(dest);
         // Send the data set
@@ -59,19 +64,25 @@ bool MCMC::evolve(ga::Genome *bestGenome)
         cr->send_double_vector(dest, pool.genomePtr(i)->basesPtr());
     }
 
+    // Mutate my own genome
+    mutator()->mutate(ind->genomePtr(), ind->bestGenomePtr(), gach_->prMut());
+    // Bring it into the population
+    // FIXME: what if -bForceOutput? Make it sensitive to the flag
+    pool.replaceGenome(0, ind->bestGenome());
+
     // Fetch the mutated genomes and their fitness. FIXME: use them when -bForceOutput
-    for (size_t i = 0; i < pool.popSize(); i++)
+    for (size_t i = 1; i < pool.popSize(); i++)
     {
-        int src      = cr->middlemen()[i];
+        int src      = cr->middlemen()[i-1];
         cr->recv_double_vector(src, pool.genomePtr(i)->basesPtr());  // Receiving the mutated parameters
         auto fitness = cr->recv_double(src);  // Receiving the new training fitness
         pool.genomePtr(i)->setFitness(iMolSelect::Train, fitness);
     }
 
     // Fetch the best genomes FIXME: use them when -nobForceOutput
-    for (size_t i = 0; i < pool.popSize(); i++)
+    for (size_t i = 1; i < pool.popSize(); i++)
     {
-        int src = cr->middlemen()[i];
+        int src = cr->middlemen()[i-1];
         pool.genomePtr(i)->Receive(cr, src);
     }
 
@@ -103,7 +114,7 @@ bool HybridGAMC::evolve(ga::Genome *bestGenome)
         return false;
     }
     auto cr = sii_->commRec();
-    if (cr->nmiddlemen() < 1)  // FIXME: have we already checked that the number of processors is the correct one?
+    if (cr->nmiddlemen() < 2)  // FIXME: have we already checked that the number of processors is the correct one?
     {
         fprintf(stderr, "Need at least two cores/processes to run the genetic algorithm.\n");
         return false; 
@@ -141,6 +152,12 @@ bool HybridGAMC::evolve(ga::Genome *bestGenome)
     pool[pold] = new GenePool(sii_->nParam());
     pool[pnew] = new GenePool(sii_->nParam()); 
     
+    // Create and add our own individual (Will be the first one in the pool)
+    auto *ind = static_cast<alexandria::ACMIndividual *>(initializer()->initialize());
+    // Compute its fitness
+    fitnessComputer()->compute(ind->genomePtr(), iMolSelect::Train);
+    pool[pold]->addGenome(ind->genome());
+    pool[pnew]->addGenome(ind->genome());
     // Load the initial genomes from the middlemen. 
     // This is needed since they have read their own parameters
     // from the Poldata structures.
@@ -185,7 +202,7 @@ bool HybridGAMC::evolve(ga::Genome *bestGenome)
         
         pool[pold]->print(logFile_);
         
-        if (gach_->nElites() > 0)
+        if (gach_->nElites() > 0)  // FIXME: can we remove the > 0?
         {
             // Move the "nElites" best individuals (unchanged) into the new population 
             // (assuming population is sorted)
@@ -229,30 +246,35 @@ bool HybridGAMC::evolve(ga::Genome *bestGenome)
             pool[pnew]->genomePtr(i+1)->unsetFitness(iMolSelect::Train);
             pool[pnew]->genome(i).print("Child 1:", logFile_);
             pool[pnew]->genome(i+1).print("Child 2:", logFile_);
-
-            // Do mutation in each child, this is done by the middleman
-            fprintf(logFile_, "Sending for mutation...\n");
-            // Now time to send out the new genomes to the two individuals
-            for (size_t k = 0; k < 2; k++)
+        }
+        fprintf(logFile_, "Sending for mutation...\n");
+        for (size_t i = std::max(1, gach_->nElites()); i < pool[pnew]->popSize(); i++)
+        {
+            int dest = cr->middlemen()[i-1];
+            // Signify the middlemen to continue
+            cr->send_data(dest);
+            // Send the data set 
+            cr->send_iMolSelect(dest, iMolSelect::Train);
+            // Now send the new bases
+            cr->send_double_vector(dest, pool[pnew]->genomePtr(i)->basesPtr());
+        }
+        // Mutate the MASTER's genome if no elitism
+        if (gach_->nElites() == 0)  // FIXME: can we just negate instead of comparing?
+        {
+            fprintf(logFile_, "Mutating the MASTER's genome...\n");
+            mutator()->mutate(pool[pnew]->genomePtr(0), ind->bestGenomePtr(), gach_->prMut());
+            if (gach_->optimizer() == alexandria::OptimizerAlg::GA)
             {
-                int dest = cr->middlemen()[i+k];
-                // Signify the middlemen to continue
-                cr->send_data(dest);
-                // Send the data set 
-                cr->send_iMolSelect(dest, iMolSelect::Train);
-                // Now send the new bases
-                cr->send_double_vector(dest, pool[pnew]->genomePtr(i+k)->basesPtr());
+                fitnessComputer()->compute(pool[pnew]->genomePtr(0), iMolSelect::Train);
             }
-            // pool[pnew]->genome(i).print("Child 1:", logFile_);
-            // pool[pnew]->genome(i+1).print("Child 2:", logFile_);
         }
         
         fprintf(logFile_, "Fetching mutated children and fitness from new generation...\n");
         // Receive the new children (parameters + fitness) from the middle men for the non elitist
         // FIXME: if we end up sending more stuff, it might be worth it to just send the entire genome
-        for (size_t i = gach_->nElites(); i < pool[pnew]->popSize(); i += 1)
+        for (size_t i = std::max(1, gach_->nElites()); i < pool[pnew]->popSize(); i++)
         {
-            int src      = cr->middlemen()[i];
+            int src      = cr->middlemen()[i-1];
             cr->recv_double_vector(src, pool[pnew]->genomePtr(i)->basesPtr());  // Receiving the mutated parameters
             auto fitness = cr->recv_double(src);  // Receiving the new training fitness
             pool[pnew]->genomePtr(i)->setFitness(iMolSelect::Train, fitness);

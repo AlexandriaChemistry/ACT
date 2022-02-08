@@ -84,6 +84,10 @@ double ACMFitnessComputer::calcDeviation(std::vector<double> *params,
         }
         myparams = params;
     }
+    else
+    {
+        myparams = params;
+    }
 
     // If final call, return -1
     if (calcDev == CalcDev::Final)
@@ -97,8 +101,8 @@ double ACMFitnessComputer::calcDeviation(std::vector<double> *params,
     // Gather fitting targets
     std::map<eRMS, FittingTarget> *targets = sii_->fittingTargets(ims);
 
-    // If actMiddleMan, penalize out of bounds
-    if (cr->isMiddleMan() && bdc_)
+    // If actMaster or actMiddleMan, penalize out of bounds
+    if (cr->isMasterOrMiddleMan() && bdc_)
     {
         bdc_->calcDeviation(nullptr, targets, sii_->poldata(),
                             *myparams, nullptr);

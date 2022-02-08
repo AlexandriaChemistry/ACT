@@ -43,20 +43,23 @@ public:
      * \brief Constructor for self-building
      */
     HybridGAMC(FILE                                *logFile,
+               Initializer                         *initializer,
+               FitnessComputer                     *fitnessComputer,
                ProbabilityComputer                 *probComputer,
                Selector                            *selector,
                Crossover                           *crossover,
+               Mutator                             *mutator,
                Terminator                          *terminator,
                alexandria::StaticIndividualInfo    *sii,
                alexandria::GAConfigHandler         *gach,
                int                                  seed)
-    : GeneticAlgorithm(nullptr, nullptr, probComputer, selector, crossover,
-                       terminator, gach->popSize()), sii_(sii), gach_(gach),
-                       logFile_(logFile), seed_(seed) {}
- 
+    : GeneticAlgorithm(initializer, fitnessComputer, probComputer, selector, crossover,
+                       mutator, terminator, gach->popSize()),
+      sii_(sii), gach_(gach), logFile_(logFile), seed_(seed) {}
+
     //! \copydocs ga::GeneticAlgorithm::evolve
     virtual bool evolve(ga::Genome *bestGenome);
-    
+
 };
 
 class MCMC : public GeneticAlgorithm
@@ -73,15 +76,18 @@ public:
      * \brief Constructor for self-building
      */
     MCMC(FILE                                *logFile,
+         Initializer                         *initializer,
+         FitnessComputer                     *fitnessComputer,
+         Mutator                             *mutator,
          alexandria::StaticIndividualInfo    *sii,
          alexandria::GAConfigHandler         *gach)
-    : GeneticAlgorithm(nullptr, nullptr, nullptr, nullptr, nullptr,
-                       nullptr, gach->popSize()),
+    : GeneticAlgorithm(initializer, fitnessComputer, nullptr, nullptr, nullptr,
+                       mutator, nullptr, gach->popSize()),
       sii_(sii), gach_(gach), logFile_(logFile) {}
-    
+
     //! \copydocs ga::GeneticAlgorithm::evolve
     virtual bool evolve(ga::Genome *bestGenome);
-    
+
 };
 
 } // namespace ga

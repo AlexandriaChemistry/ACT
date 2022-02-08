@@ -10,6 +10,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include "gromacs/utility/basedefinitions.h"
+
 #include "bayes.h"
 #include "memory_check.h"
 
@@ -38,9 +40,9 @@ MCMCMutator::MCMCMutator(FILE                 *logfile,
     acceptedMoves_.resize(nParam, 0);
 }
 
-void MCMCMutator::mutate(ga::Genome *genome,
-                         ga::Genome *bestGenome,
-                         double      prMut)
+void MCMCMutator::mutate(ga::Genome        *genome,
+                         ga::Genome        *bestGenome,
+                         gmx_unused double  prMut)
 {
     int    nsum             = 0;
     size_t nParam           = genome->nBase();
