@@ -103,7 +103,7 @@ void CommunicationRecord::print(FILE *fp)
     }
     strToPrint.append("\n");
     // fprintf(fp, "\n");
-    fprintf(fp, strToPrint.c_str());
+    fprintf(fp, "%s\n", strToPrint.c_str());
 }
 
 void CommunicationRecord::init(int nmiddleman)

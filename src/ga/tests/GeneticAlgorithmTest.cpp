@@ -187,6 +187,11 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
                 // Now the rest of the classes
                 std::string outputFile("GeneticAlgorithmTest.dat");
                 bool randInit     = false;
+                
+                // Initializer
+                auto *initializer = new alexandria::ACMInitializer(&sii, gach.randomInit(), seed);
+                auto *fitComp     = new alexandria::ACMFitnessComputer(nullptr, &sii, &molgen, false, false, false);
+
                 auto probComputer = new RankProbabilityComputer(gach.popSize());
                 // Selector
                 auto selector     = new ga::RouletteSelector(bch.seed());
@@ -203,7 +208,9 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
                     checker_.checkInt64(bch.seed(), "bch.seed");
                     checker_.checkReal(bch.temperature(), "bch.temperature");
                     
-                    ga = new ga::MCMC(stdout, &sii, &gach);
+                    auto mut = new alexandria::MCMCMutator(stdout, false, seed, &bch, fitComp, &sii, bch.evaluateTestset());
+
+                    ga = new ga::MCMC(stdout, initializer, fitComp, mut, &sii, &gach);
                 }
                 else
                 {
@@ -215,7 +222,8 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
                     {
                         checker_.checkReal(bch.step(), "bch.step");
                     }
-                    ga = new ga::HybridGAMC(stdout, probComputer, selector, crossover, terminator,
+                    auto mutator = new alexandria::PercentMutator(&sii, seed, gach.percent());
+                    ga = new ga::HybridGAMC(stdout, initializer, fitComp, probComputer, selector, crossover, mutator, terminator,
                                             &sii, &gach, bch.seed());
                 }
                 checker_.checkInt64(gach.maxGenerations(), "Maximum Number of Generations");
@@ -266,35 +274,35 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
 
 TEST_F (GeneticAlgorithmTest, PopSix)  // HYBRID
 {
-    GMX_MPI_TEST(7);
+    GMX_MPI_TEST(6);
     testIt(alexandria::OptimizerAlg::HYBRID, 0, 6, true, 1, 1,
            { "chi", "zeta" }, 1993, alexandria::eRMS::QUAD);
 }
 
 TEST_F (GeneticAlgorithmTest, PopTwo)  // GA
 {
-    GMX_MPI_TEST(7);
+    GMX_MPI_TEST(6);
     testIt(alexandria::OptimizerAlg::GA, 0, 2, true, 1, 1,
            { "chi", "zeta" }, 1993, alexandria::eRMS::QUAD);
 }
 
 TEST_F (GeneticAlgorithmTest, PopOneMCMC)  // MCMC
 {
-    GMX_MPI_TEST(7);
+    GMX_MPI_TEST(6);
     testIt(alexandria::OptimizerAlg::MCMC, 0, 1, false, 1, 0,
            { "chi", "jaa" }, 1993, alexandria::eRMS::MU);
 }
 
 TEST_F (GeneticAlgorithmTest, PopTwoEspGA)  // GA
 {
-    GMX_MPI_TEST(7);
+    GMX_MPI_TEST(6);
     testIt(alexandria::OptimizerAlg::GA, 0, 2, true, 1, 1,
            { "chi", "jaa" }, 1993, alexandria::eRMS::ESP);
 }
 
 TEST_F (GeneticAlgorithmTest, MCMCThreeVariables)  // MCMC
 {
-    GMX_MPI_TEST(7);
+    GMX_MPI_TEST(6);
     testIt(alexandria::OptimizerAlg::MCMC, 0, 1, false, 1, 0,
            { "chi", "jaa", "zeta" }, 1997, alexandria::eRMS::MU);
 }
