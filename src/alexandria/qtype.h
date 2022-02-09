@@ -81,6 +81,13 @@ qType stringToQtype(const std::string &type);
  */
 const std::map<qType, std::string> &qTypes();
 
+//! typedef for octupole
+typedef std::array<tensor, DIM> Octapole;
+
+//! typedef for hexadecapole
+typedef std::array<Octapole, DIM> Hexadecapole;
+
+
 /*! Class to hold electrostatic properties
  * To compare the properties of different models we have this class
  * to hold electrostatic moments and charges, and indeed a grid 
@@ -92,35 +99,27 @@ class QtypeProps
     //! Identity
     qType                  qtype_;
     //! Electrostatic moments
-    rvec                   mu_         = { 0 };
-    tensor                 quadrupole_ = {{ 0 }};
-    std::vector<std::vector<std::vector<double>>>  octupole_  = {{{0,0,0},{0,0,0},{0,0,0}},
-                                                                {{0,0,0},{0,0,0},{0,0,0}},
-                                                                {{0,0,0},{0,0,0},{0,0,0}}};                                            
-    std::vector<std::vector<std::vector<std::vector<double>>>>  hexadecapole_  = {{{{0,0,0},{0,0,0},{0,0,0}},
-                                                                                   {{0,0,0},{0,0,0},{0,0,0}},
-                                                                                   {{0,0,0},{0,0,0},{0,0,0}}},
-                                                                                  {{{0,0,0},{0,0,0},{0,0,0}},
-                                                                                   {{0,0,0},{0,0,0},{0,0,0}},
-                                                                                   {{0,0,0},{0,0,0},{0,0,0}}},
-                                                                                  {{{0,0,0},{0,0,0},{0,0,0}},
-                                                                                   {{0,0,0},{0,0,0},{0,0,0}},
-                                                                                   {{0,0,0},{0,0,0},{0,0,0}}}}; 
+    rvec                   mu_           = { 0 };
+    tensor                 quadrupole_   = {{ 0 }};
+    Octapole               octupole_;
+    Hexadecapole           hexadecapole_;
     //! Norm of the dipole
     double                 dipole_     = 0;
     //! The coordinates
     gmx::HostVector<gmx::RVec> x_;
     //! Center of charge
-    rvec                   coc_        = {0, 0, 0};
+    rvec                   coc_        = { 0 };
     //! Atomic charges
     std::vector<double>    q_;
     //! Resp calculation structure
     QgenResp               *QgenResp_   = nullptr;
+    //! Reset all the calc moments to zero
+    void resetMoments();
  public:
     /*! \brief Constructor
      * \param[in] qtype  My own identity
      */
-    QtypeProps(qType qtype) : qtype_(qtype)  {}
+    QtypeProps(qType qtype);
     
     /*! \brief Set charges and coordinates.
      *
@@ -189,24 +188,27 @@ class QtypeProps
     /*! \brief Return octupole
      * \return The octupole
      */
-    const std::vector<std::vector<std::vector<double>>> &oct() const { return octupole_; };
+    //const std::vector<std::vector<std::vector<double>>> &oct() const { return octupole_; };
+    const Octapole &oct() const { return octupole_; };
     
 
     /*! \brief Set octupole tensor
      * \param[in] oct The octupole tensor 3x3x3
      */
-    void setOctupole(const std::vector<std::vector<std::vector<double>>> oct);
+    void setOctupole(const Octapole &oct) { octupole_ = oct; }
+                     //const std::vector<std::vector<std::vector<double>>> oct);
 
     /*! \brief Return hexadecapole
      * \return The hexadecapole
      */
-    const std::vector<std::vector<std::vector<std::vector<double>>>> &hexadeca() const { return hexadecapole_; };
-    
+    //const std::vector<std::vector<std::vector<std::vector<double>>>> &hexadeca() const { return hexadecapole_; };
+    const Hexadecapole &hexadeca() const { return hexadecapole_; };
 
     /*! \brief Set hexadecapole tensor
      * \param[in] hexadeca The hexadecapole tensor 3x3x3x3
      */
-    void setHexadecapole(const std::vector<std::vector<std::vector<std::vector<double>>>> hexadeca);
+    void setHexadecapole(const Hexadecapole &hexadeca) { hexadecapole_ = hexadeca; }
+                         //const std::vector<std::vector<std::vector<std::vector<double>>>> hexadeca);
     
     /*! \brief Return charges
      * \return The atomic charges

@@ -87,6 +87,25 @@ qType stringToQtype(const std::string &type)
     return qType::ESP;
 }
 
+QtypeProps::QtypeProps(qType qtype) : qtype_(qtype)
+{
+    resetMoments();
+}
+
+void QtypeProps::resetMoments()
+{
+    clear_rvec(mu_);
+    clear_mat(quadrupole_);
+    for(int m = 0; m < DIM; m++)
+    {
+        clear_mat(octupole_[m]);
+        for(int n = 0; n < DIM; n++)
+        {
+            clear_mat(hexadecapole_[m][n]);
+        }
+    }
+}
+
 void QtypeProps::setX(const gmx::HostVector<gmx::RVec> &x)
 {
     // Check that arrays are equally long
@@ -155,47 +174,13 @@ void QtypeProps::setQuadrupole(const tensor quad)
     copy_mat(quad, quadrupole_);
 }
 
-void QtypeProps::setOctupole(const std::vector<std::vector<std::vector<double>>> oct)
-{ 
-    for (int x=0 ; x < 3; x++)
-    {
-        for (int y=0 ; y < 3; y++)
-        {
-            for (int z=0 ; z < 3; z++)
-            {
-                octupole_[x][y][z] = oct[x][y][z];
-            }
-        }    
-    }
-}
-
-void QtypeProps::setHexadecapole(const std::vector<std::vector<std::vector<std::vector<double>>>> hexadeca)
-{ 
-    for (int x=0 ; x < 3; x++)
-    {
-        for (int y=0 ; y < 3; y++)
-        {
-            for (int z=0 ; z < 3; z++)
-            {
-                for (int w=0 ; w < 3; w++)
-                {
-                    hexadecapole_[x][y][z][w] = hexadeca[x][y][z][w];
-                }    
-            }
-        }    
-    }
-}
-
 void QtypeProps::calcMoments()
 {
     GMX_RELEASE_ASSERT(q_.size() > 0, gmx::formatString("No charges for %s", qTypeName(qtype_).c_str()).c_str());
     GMX_RELEASE_ASSERT(x_.size() > 0, gmx::formatString("No coordinates for %s", qTypeName(qtype_).c_str()).c_str());
     // distance of atoms to center of charge
-    rvec   r; 
-    clear_mat(quadrupole_);
-    octupole_.clear();
-    hexadecapole_.clear();
-    clear_rvec(mu_);
+    rvec   r;
+    resetMoments(); 
     for (size_t i = 0; i < q_.size(); i++)
     {
         rvec_sub(x_[i], coc_, r);
