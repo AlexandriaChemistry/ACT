@@ -198,8 +198,8 @@ void CommunicationRecord::init(int nmiddleman)
     // Default value
     mpi_act_helpers_ = mpi_act_world_;
     // Split the non-masters into nmiddlemen X nhelpers
-    MPI_Comm_split(mpi_act_world_, rank_ / nmiddlemen_,
-                   rank_ % nmiddlemen_, &mpi_act_helpers_);
+    MPI_Comm_split(mpi_act_world_, rank_ / (nhelper_per_middleman_ + 1),
+                   rank_ % (nhelper_per_middleman_ + 1), &mpi_act_helpers_);
     print(stderr);
 }
 
