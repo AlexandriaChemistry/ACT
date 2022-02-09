@@ -97,6 +97,15 @@ class QtypeProps
     std::vector<std::vector<std::vector<double>>>  octupole_  = {{{0,0,0},{0,0,0},{0,0,0}},
                                                                 {{0,0,0},{0,0,0},{0,0,0}},
                                                                 {{0,0,0},{0,0,0},{0,0,0}}};                                            
+    std::vector<std::vector<std::vector<std::vector<double>>>>  hexadecapole_  = {{{{0,0,0},{0,0,0},{0,0,0}},
+                                                                                   {{0,0,0},{0,0,0},{0,0,0}},
+                                                                                   {{0,0,0},{0,0,0},{0,0,0}}},
+                                                                                  {{{0,0,0},{0,0,0},{0,0,0}},
+                                                                                   {{0,0,0},{0,0,0},{0,0,0}},
+                                                                                   {{0,0,0},{0,0,0},{0,0,0}}},
+                                                                                  {{{0,0,0},{0,0,0},{0,0,0}},
+                                                                                   {{0,0,0},{0,0,0},{0,0,0}},
+                                                                                   {{0,0,0},{0,0,0},{0,0,0}}}}; 
     //! Norm of the dipole
     double                 dipole_     = 0;
     //! The coordinates
@@ -187,6 +196,17 @@ class QtypeProps
      * \param[in] oct The octupole tensor 3x3x3
      */
     void setOctupole(const std::vector<std::vector<std::vector<double>>> oct);
+
+    /*! \brief Return hexadecapole
+     * \return The hexadecapole
+     */
+    const std::vector<std::vector<std::vector<std::vector<double>>>> &hexadeca() const { return hexadecapole_; };
+    
+
+    /*! \brief Set hexadecapole tensor
+     * \param[in] hexadeca The hexadecapole tensor 3x3x3x3
+     */
+    void setHexadecapole(const std::vector<std::vector<std::vector<std::vector<double>>>> hexadeca);
     
     /*! \brief Return charges
      * \return The atomic charges
