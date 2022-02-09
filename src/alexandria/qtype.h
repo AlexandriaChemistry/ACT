@@ -94,6 +94,9 @@ class QtypeProps
     //! Electrostatic moments
     rvec                   mu_         = { 0 };
     tensor                 quadrupole_ = {{ 0 }};
+    std::vector<std::vector<std::vector<double>>>  octupole_  = {{{0,0,0},{0,0,0},{0,0,0}},
+                                                                {{0,0,0},{0,0,0},{0,0,0}},
+                                                                {{0,0,0},{0,0,0},{0,0,0}}};                                            
     //! Norm of the dipole
     double                 dipole_     = 0;
     //! The coordinates
@@ -172,6 +175,18 @@ class QtypeProps
      * \param[in] quad The quadrupole tensor
      */
     void setQuadrupole(const tensor quad);
+
+
+    /*! \brief Return octupole
+     * \return The octupole
+     */
+    const std::vector<std::vector<std::vector<double>>> &oct() const { return octupole_; };
+    
+
+    /*! \brief Set octupole tensor
+     * \param[in] oct The octupole tensor 3x3x3
+     */
+    void setOctupole(const std::vector<std::vector<std::vector<double>>> oct);
     
     /*! \brief Return charges
      * \return The atomic charges

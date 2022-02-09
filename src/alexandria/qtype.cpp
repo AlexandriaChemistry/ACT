@@ -155,6 +155,20 @@ void QtypeProps::setQuadrupole(const tensor quad)
     copy_mat(quad, quadrupole_);
 }
 
+void QtypeProps::setOctupole(const std::vector<std::vector<std::vector<double>>> oct)
+{ 
+    for (int x=0 ; x < 3; x++)
+    {
+        for (int y=0 ; y < 3; y++)
+        {
+            for (int z=0 ; z < 3; z++)
+            {
+                octupole_[x][y][z] = oct[x][y][z];
+            }
+        }    
+    }
+}
+
 void QtypeProps::calcMoments()
 {
     GMX_RELEASE_ASSERT(q_.size() > 0, gmx::formatString("No charges for %s", qTypeName(qtype_).c_str()).c_str());
@@ -162,6 +176,7 @@ void QtypeProps::calcMoments()
     // distance of atoms to center of charge
     rvec   r; 
     clear_mat(quadrupole_);
+    octupole_.clear();
     clear_rvec(mu_);
     for (size_t i = 0; i < q_.size(); i++)
     {
@@ -175,6 +190,16 @@ void QtypeProps::calcMoments()
             for (int n = m; n < DIM; n++)
             {
                 quadrupole_[m][n] += q_[i]*(r[m]*r[n])*NM2A*A2CM*CM2D*10;
+            }
+        }
+        for (int m = 0; m < DIM; m++)
+        {
+            for (int n = m; n < DIM; n++)
+            {
+                for (int o = n; o < DIM; o++)
+                {    
+                    octupole_[m][n][o] += q_[i]*(r[m]*r[n]*r[o])*NM2A*1e-12*A2CM*CM2D*1e10*10;
+                }
             }
         }
     }
