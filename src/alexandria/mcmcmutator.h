@@ -10,8 +10,8 @@
 #ifndef ALEXANDRIA_MCMCMUTATOR_H
 #define ALEXANDRIA_MCMCMUTATOR_H
 
-#include "ga/Genome.h"
-#include "ga/Mutator.h"
+#include "act/ga//Genome.h"
+#include "act/ga//Mutator.h"
 #include "gromacs/utility/fileptr.h"
 #include "confighandler.h"
 #include "acmfitnesscomputer.h"

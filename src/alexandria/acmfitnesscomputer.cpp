@@ -9,7 +9,7 @@
 #include "acmfitnesscomputer.h"
 
 #include "act/basics/dataset.h"
-#include "ga/Genome.h"
+#include "act/ga//Genome.h"
 
 namespace alexandria
 {

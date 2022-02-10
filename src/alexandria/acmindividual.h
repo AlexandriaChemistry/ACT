@@ -17,8 +17,8 @@
 #include "act/poldata/poldata.h"
 #include "staticindividualinfo.h"
 
-#include "ga/Genome.h"
-#include "ga/Individual.h"
+#include "act/ga//Genome.h"
+#include "act/ga//Individual.h"
 
 namespace alexandria
 {

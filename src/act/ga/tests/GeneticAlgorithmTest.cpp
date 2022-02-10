@@ -36,7 +36,7 @@
 
 #include <gtest/gtest.h>
 
-#include "ga/GeneticAlgorithm.h"
+#include "../GeneticAlgorithm.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/mpitest.h"
@@ -59,9 +59,9 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/gmxmpi.h"
-#include "ga/FitnessComputer.h"
-#include "ga/Sorter.h"
-#include "ga/Terminator.h"
+#include "../FitnessComputer.h"
+#include "../Sorter.h"
+#include "../Terminator.h"
 
 namespace ga
 {

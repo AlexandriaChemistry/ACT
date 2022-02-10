@@ -5,7 +5,7 @@
 #ifndef ALEXANDRIA_PERCENT_MUTATOR
 #define ALEXANDRIA_PERCENT_MUTATOR
 
-#include "ga/Mutator.h"
+#include "act/ga//Mutator.h"
 
 #include "acmindividual.h"
 

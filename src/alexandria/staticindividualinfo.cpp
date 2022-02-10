@@ -8,7 +8,7 @@
 
 #include "staticindividualinfo.h"
 
-#include "ga/Genome.h"
+#include "act/ga//Genome.h"
 #include "act/utility/memory_check.h"
 #include "act/poldata/poldata_xml.h"
 

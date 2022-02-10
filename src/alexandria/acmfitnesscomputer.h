@@ -12,7 +12,7 @@
 
 #include <vector>
 
-#include "ga/FitnessComputer.h"
+#include "act/ga//FitnessComputer.h"
 
 #include "acmindividual.h"
 #include "bayes.h"

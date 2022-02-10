@@ -8,7 +8,7 @@
 #define ALEXANDRIA_NPOINTCROSSOVER_H
 
 
-#include "ga/Crossover.h"
+#include "act/ga//Crossover.h"
 
 
 namespace alexandria

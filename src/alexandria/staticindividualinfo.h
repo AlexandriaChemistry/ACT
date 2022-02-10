@@ -12,7 +12,7 @@
 #include <vector>
 #include <string>
 #include <map>
-#include "ga/Genome.h"
+#include "act/ga//Genome.h"
 
 #include "act/utility/communicationrecord.h"
 #include "mutability.h"

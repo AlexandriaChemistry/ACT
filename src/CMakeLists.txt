@@ -110,6 +110,5 @@ add_subdirectory(gromacs)
 add_library(actLib "")
 
 add_subdirectory(act)
-add_subdirectory(ga)
 # This must come last (I think)
 add_subdirectory(alexandria)

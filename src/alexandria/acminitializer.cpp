@@ -9,7 +9,7 @@
 
 #include "acminitializer.h"
 
-#include "ga/Individual.h"
+#include "act/ga//Individual.h"
 #include "acmindividual.h"
 
 
