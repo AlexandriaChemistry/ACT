@@ -37,7 +37,7 @@
 #include <string>
 #include <vector>
 
-#include "ga/Dataset.h"
+#include "act/basics/dataset.h"
 
 //#include "act/molprop/molprop.h"
 //#include "act/poldata/poldata.h"

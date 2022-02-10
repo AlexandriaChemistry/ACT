@@ -2,7 +2,7 @@
 #
 #  This source file is part of the Alexandria program.
 #
-#  Copyright (C) 2021-2022
+#  Copyright (C) 2014-2022
 #
 #  Developers:
 #             Mohammad Mehdi Ghahremanpour,
@@ -25,10 +25,10 @@
 #  Boston, MA  02110-1301, USA.
 #
 
-file(GLOB GA_SOURCES *.cpp *.h)
-target_sources(actLib PRIVATE ${GA_SOURCES})
-
+file(GLOB BASICS_SOURCES *.cpp *.h)
+target_sources(actLib PRIVATE ${BASICS_SOURCES})
+	
 if (BUILD_TESTING)
-   add_subdirectory(tests)
+    add_subdirectory(tests)
 endif()
 

@@ -7,7 +7,6 @@
 #ifndef GA_FITNESSCOMPUTER_H
 #define GA_FITNESSCOMPUTER_H
 
-#include "Dataset.h"
 #include "Genome.h"
 
 namespace ga

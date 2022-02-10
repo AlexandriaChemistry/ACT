@@ -4,7 +4,7 @@
     
 #include "acmfitnesscomputer.h"
 #include "bayes.h"
-#include "ga/Dataset.h"
+#include "act/basics/dataset.h"
 
 namespace alexandria
 {

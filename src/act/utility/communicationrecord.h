@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include "ga/Dataset.h"
+#include "act/basics/dataset.h"
 #include "gromacs/mdtypes/commrec.h"
 
 namespace alexandria

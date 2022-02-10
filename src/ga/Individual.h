@@ -9,7 +9,6 @@
 
 #include <map>
 
-#include "Dataset.h"
 #include "Genome.h"
 
 namespace ga

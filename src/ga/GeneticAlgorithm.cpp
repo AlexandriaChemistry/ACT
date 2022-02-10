@@ -8,13 +8,13 @@
 #include <cstdio>
 
 #include "Crossover.h"
-#include "Dataset.h"
 #include "FitnessComputer.h"
 #include "Initializer.h"
 #include "Mutator.h"
 #include "ProbabilityComputer.h"
 #include "Terminator.h"
 
+#include "act/basics/dataset.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"

@@ -25,6 +25,7 @@
 #  Boston, MA  02110-1301, USA.
 #
 
+add_subdirectory(basics)
 add_subdirectory(coulombintegrals)
 add_subdirectory(molprop)
 add_subdirectory(poldata)

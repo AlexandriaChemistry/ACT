@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="iMolSelectNames">
+    <Int Name="Length">3</Int>
+    <String>Train</String>
+    <String>Test</String>
+    <String>Ignore</String>
+  </Sequence>
+</ReferenceData>

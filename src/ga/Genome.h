@@ -34,9 +34,8 @@
 #include <map>
 #include <vector>
 
+#include "act/basics/dataset.h"
 #include "act/utility/communicationrecord.h"
-
-#include "Dataset.h"
 
 typedef std::map<iMolSelect, double> FitnessMap;
 
