@@ -235,15 +235,10 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
                 {
                     for(auto &dest : cr.middlemen())
                     {
-                        cr.send_done(dest);
-                    }
-                }
-                else  // FIXME: already done by the middlemen
-                {
-                    // ... or the helpers if there are no middlemen.
-                    for(auto &dest : cr.helpers())
-                    {
-                        cr.send_done(dest);
+                        if (cr.rank() != dest)
+                        {
+                            cr.send_done(dest);
+                        }
                     }
                 }
 

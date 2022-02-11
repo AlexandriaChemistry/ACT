@@ -41,9 +41,9 @@
 
 #include "act/poldata/act_checksum.h"
 #include "alexandria/alex_modules.h"
-#include "alexandria/forcefieldparameter.h"
-#include "alexandria/interactiontype.h"
-#include "alexandria/mutability.h"
+#include "act/poldata/forcefieldparameter.h"
+#include "act/basics/interactiontype.h"
+#include "act/basics/mutability.h"
 #include "act/poldata/poldata.h"
 #include "act/poldata/poldata_xml.h"
 

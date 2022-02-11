@@ -38,8 +38,8 @@
 #include "gromacs/utility/stringutil.h"
 
 #include "forcefieldparameter.h"
-#include "identifier.h"
-#include "interactiontype.h"
+#include "act/basics/identifier.h"
+#include "act/basics/interactiontype.h"
 
 namespace alexandria
 {

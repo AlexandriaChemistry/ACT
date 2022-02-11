@@ -89,6 +89,11 @@ public:
     //! Return the population size
     size_t popSize() const { return genomes_.size(); }
     
+    /*! \brief Sort the GenePool according to a data set
+     * \param[in] ims The data set to use for the fitness
+     */
+    void sort(iMolSelect ims);
+    
     /*! \return the index of the genome with the lowest fitness. 
      */
     size_t findBestIndex() const;

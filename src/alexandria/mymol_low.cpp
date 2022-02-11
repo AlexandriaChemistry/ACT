@@ -50,7 +50,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strconvert.h"
 
-#include "forcefieldparameter.h"
+#include "act/poldata/forcefieldparameter.h"
 #include "act/poldata/poldata.h"
 #include "qgen_acm.h"
 #include "topology.h"

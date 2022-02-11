@@ -33,17 +33,10 @@
 #ifndef LATEX_UTIL_H
 #define LATEX_UTIL_H
 
-//#include <math.h>
-#include <stdio.h>
-//#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
 
 #include <string>
 #include <vector>
-//#include "categories.h"
-//#include "molprop.h"
-//#include "molprop_util.h"
-
 
 namespace alexandria
 {

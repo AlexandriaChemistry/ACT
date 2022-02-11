@@ -46,8 +46,8 @@
 #include "gromacs/topology/topology.h"
 
 
-#include "forcefieldparameter.h"
-#include "forcefieldparameterlist.h"
+#include "act/poldata/forcefieldparameter.h"
+#include "act/poldata/forcefieldparameterlist.h"
 #include "act/poldata/poldata.h"
 #include "act/poldata/poldata_low.h"
 #include "act/molprop/molprop_util.h"

@@ -47,23 +47,17 @@ target_sources(actLib
            devcomputer.cpp
            dissociation_energy.cpp
            fill_inputrec.cpp
-           forcefieldparameter.cpp
-           forcefieldparameterlist.cpp
            gentop.cpp
            gromacs_top.cpp
-           identifier.cpp
-           interactiontype.cpp
            mcmcmutator.cpp
            merge_mp.cpp
            merge_pd.cpp
            molgen.cpp
            molselect.cpp
-           mutability.cpp
            mymol.cpp
            mymol_low.cpp
            npointcrossover.cpp
            openmm_xml.cpp
-           particletype.cpp
            percentmutator.cpp
            qgen_acm.cpp
            qgen_cube.cpp

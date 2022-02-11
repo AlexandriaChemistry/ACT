@@ -71,7 +71,7 @@
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringcompare.h"
 
-#include "forcefieldparameter.h"
+#include "act/poldata/forcefieldparameter.h"
 #include "gromacs_top.h"
 #include "act/molprop/molprop_util.h"
 #include "mymol_low.h"

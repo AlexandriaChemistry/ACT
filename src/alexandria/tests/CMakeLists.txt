@@ -41,11 +41,6 @@ gmx_add_unit_test(
     # files with code for tests
 #    atomtypeTest.cpp
     allbondedsTest.cpp
-    forcefieldparameterTest.cpp
-    forcefieldparameterlistTest.cpp
-    identifierTest.cpp
-    identifierMapTest.cpp
-    interactiontypeTest.cpp
     qgen_acmTest.cpp
     qgen_respTest.cpp
     topologyTest.cpp

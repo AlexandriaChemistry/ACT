@@ -38,7 +38,7 @@
 #include <string>
 
 #include "forcefieldparameter.h"
-#include "identifier.h"
+#include "act/basics/identifier.h"
 
 namespace alexandria
 {

@@ -90,15 +90,24 @@ bool MCMC::evolve(ga::Genome *bestGenome)
     pool.print(logFile_);
 
     // Check if a better genome was found, and update if so
+    auto imstr = iMolSelect::Train;
     size_t newBest = pool.findBestIndex();
-    if (pool.genome(newBest).fitness(iMolSelect::Train) < 
-        bestGenome->fitness(iMolSelect::Train))  // If we have a new best
+    if (newBest >= 0 && newBest < pool.popSize() &&
+        pool.genome(newBest).hasFitness(imstr))
     {
-        bestGenome->print("A new best individual has been found!\nPrevious best:\n",
-                          logFile_);
-        *bestGenome = pool.genome(newBest); 
-        bestGenome->print("New best:\n", logFile_);
-        bMinimum = true;
+        if (pool.genome(newBest).fitness(imstr) < 
+            bestGenome->fitness(imstr))  // If we have a new best
+        {
+            bestGenome->print("A new best individual has been found!\nPrevious best:\n",
+                              logFile_);
+            *bestGenome = pool.genome(newBest); 
+            bestGenome->print("New best:\n", logFile_);
+            bMinimum = true;
+        }
+    }
+    else
+    {
+        fprintf(stderr, "No best genome in pool. WTF?\n");
     }
 
     // delete ind;  // FIXME: compilation warning about non-virtual destructor
@@ -191,9 +200,7 @@ bool HybridGAMC::evolve(ga::Genome *bestGenome)
         if (gach_->sort())
         {
             fprintf(logFile_, "Sorting old population...\n");
-            std::sort(gp->begin(), gp->end(), 
-                      [](const Genome &a, const Genome &b) -> bool
-                      { return a.fitness(iMolSelect::Train) < b.fitness(iMolSelect::Train); });
+            pool[pold]->sort(iMolSelect::Train);
         }
         
         // Normalize the fitness into a probability
@@ -291,15 +298,24 @@ bool HybridGAMC::evolve(ga::Genome *bestGenome)
         fprintFitness(*(pool[pold]));
         
         // Check if a better genome was found, and update if so
+        auto   imstr   = iMolSelect::Train;
         size_t newBest = pool[pold]->findBestIndex();
-        if (pool[pold]->genome(newBest).fitness(iMolSelect::Train) < 
-            bestGenome->fitness(iMolSelect::Train))  // If we have a new best
+        if (newBest >= 0 && newBest < pool[pold]->popSize() &&
+            pool[pold]->genome(newBest).hasFitness(imstr))
         {
-            bestGenome->print("A new best individual has been found!\nPrevious best:\n",
-                              logFile_);
-            *bestGenome = pool[pold]->genome(newBest); 
-            bestGenome->print("New best:\n", logFile_);
-            bMinimum = true;
+            if (pool[pold]->genome(newBest).fitness(imstr) < 
+                bestGenome->fitness(imstr))  // If we have a new best
+            {
+                bestGenome->print("A new best individual has been found!\nPrevious best:\n",
+                                  logFile_);
+                *bestGenome = pool[pold]->genome(newBest); 
+                bestGenome->print("New best:\n", logFile_);
+                bMinimum = true;
+            }
+        }
+        else
+        {
+            fprintf(stderr, "No best genome in pool. Que?\n");
         }
     }
     while (!terminator()->terminate(pool[pold], generation));

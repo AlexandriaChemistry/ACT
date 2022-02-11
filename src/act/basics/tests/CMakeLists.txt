@@ -40,6 +40,9 @@ gmx_add_unit_test(
     ${exename}
     # files with code for tests
     datasetTest.cpp
+    identifierTest.cpp
+    identifierMapTest.cpp
+    interactiontypeTest.cpp
     # pseudo-library for code for alexandria
     )
 target_link_libraries(${exename} actLib libactgromacs ${GMX_EXTRA_LIBRARIES} ${XML_LIBRARIES}

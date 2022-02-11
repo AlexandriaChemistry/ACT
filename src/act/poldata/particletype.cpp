@@ -39,7 +39,7 @@
 
 #include "gromacs/utility/exceptions.h"
 #include "act/utility/communicationrecord.h"
-#include "identifier.h"
+#include "act/basics/identifier.h"
 
 namespace alexandria
 {

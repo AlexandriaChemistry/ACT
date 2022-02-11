@@ -43,7 +43,7 @@
 #include "gromacs/pbcutil/pbc.h"
 
 #include "chargemodel.h"
-#include "identifier.h"
+#include "act/basics/identifier.h"
 
 struct gpp_atomtype;
 struct t_atoms;

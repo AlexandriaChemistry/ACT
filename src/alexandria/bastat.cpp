@@ -59,7 +59,7 @@
 #include "alex_modules.h"
 #include "allbondeds.h"
 #include "dissociation_energy.h"
-#include "identifier.h"
+#include "act/basics/identifier.h"
 #include "act/utility/memory_check.h"
 #include "act/molprop/molprop_util.h"
 #include "mymol.h"

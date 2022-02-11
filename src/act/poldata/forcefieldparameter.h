@@ -42,7 +42,7 @@
 #include "gromacs/utility/fatalerror.h"
 
 #include "act/utility/communicationrecord.h"
-#include "mutability.h"
+#include "act/basics/mutability.h"
 
 /*! \brief Convert string to boolean
  * \param[in] str The string to convert

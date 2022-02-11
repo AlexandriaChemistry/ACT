@@ -15,7 +15,7 @@
 #include "act/ga//Genome.h"
 
 #include "act/utility/communicationrecord.h"
-#include "mutability.h"
+#include "act/basics/mutability.h"
 #include "molgen.h"
 
 namespace alexandria

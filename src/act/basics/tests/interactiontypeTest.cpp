@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2020
+ * Copyright (C) 2020-2022
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -30,7 +30,7 @@
  */
 #include <gtest/gtest.h>
 
-#include "alexandria/interactiontype.h"
+#include "../interactiontype.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"

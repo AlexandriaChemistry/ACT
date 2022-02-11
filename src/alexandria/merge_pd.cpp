@@ -50,7 +50,7 @@
 #include "gromacs/utility/smalloc.h"
 
 #include "alex_modules.h"
-#include "identifier.h"
+#include "act/basics/identifier.h"
 #include "act/poldata/poldata.h"
 #include "act/poldata/poldata_tables.h"
 #include "act/poldata/poldata_xml.h"

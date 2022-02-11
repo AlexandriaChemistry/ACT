@@ -128,7 +128,8 @@ void MCMCMutator::mutate(ga::Genome        *genome,
     // Assume no better minimum was found
     bMinimum_ = false;
     auto ims  = iMolSelect::Train;
-    if (bestGenome->fitness(ims) < initEval[ims])
+    if (bestGenome->hasFitness(ims) &&
+        bestGenome->fitness(ims) < initEval[ims])
     {
         // If better minimum was found, update the value in <*chi2> and return true
         // genome->setFitness(ims, minEval[ims]);
@@ -209,7 +210,8 @@ void MCMCMutator::stepMCMC(ga::Genome                   *genome,
     if (accept)
     {  // If the parameter change is accepted
         auto imstr = iMolSelect::Train;
-        if (currEval[imstr] < bestGenome->fitness(imstr))  // If a new minimim was found
+        if (!bestGenome->hasFitness(imstr) || 
+            currEval[imstr] < bestGenome->fitness(imstr))  // If a new minimim was found
         {
             // If pointer to log file exists, write information about new minimum
             if (logfile_)

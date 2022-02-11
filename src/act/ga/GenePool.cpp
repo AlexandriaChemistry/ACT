@@ -22,11 +22,52 @@ void GenePool::print(FILE *fp) const
     }
 }
 
+void GenePool::sort(iMolSelect ims)
+{
+    std::sort(genomes_.begin(), genomes_.end(), 
+              [ims](const Genome &a, const Genome &b) -> bool
+              { 
+                  if (a.hasFitness(ims))
+                  {
+                      if (b.hasFitness(ims))
+                      {
+                          return a.fitness(ims) < b.fitness(ims); 
+                      }
+                      else
+                      {
+                          return false;
+                      } 
+                  }
+                  else
+                  {
+                      return b.hasFitness(ims);
+                  }
+              });
+}
+
 size_t GenePool::findBestIndex() const
 {
+    auto ims = iMolSelect::Train;
     return std::min_element(genomes_.begin(), genomes_.end(),
-                            [](const Genome &a, const Genome &b) 
-                            { return a.fitness(iMolSelect::Train) < b.fitness(iMolSelect::Train); }) - genomes_.begin();
+                            [ims](const Genome &a, const Genome &b) 
+                            {
+                                if (a.hasFitness(ims))
+                                {
+                                    if (b.hasFitness(ims))
+                                    {
+                                        return a.fitness(ims) < b.fitness(ims); 
+                                    }
+                                    else
+                                    {
+                                        return false;
+                                    } 
+                                }
+                                else
+                                {
+                                    return b.hasFitness(ims);
+                                }
+                            }
+                            ) - genomes_.begin();
 }
 
 void GenePool::addGenome(const std::vector<double> &genome, double fitness)

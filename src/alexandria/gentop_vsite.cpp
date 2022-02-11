@@ -43,7 +43,7 @@
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/smalloc.h"
 
-#include "identifier.h"
+#include "act/basics/identifier.h"
 #include "mymol_low.h"
 #include "plistwrapper.h"
 #include "act/poldata.h"

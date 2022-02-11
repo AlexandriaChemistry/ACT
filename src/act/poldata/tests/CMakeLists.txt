@@ -39,6 +39,8 @@ gmx_add_unit_test(
     ${testname}
     ${exename}
     # files with code for tests
+    forcefieldparameterTest.cpp
+    forcefieldparameterlistTest.cpp
     poldataTest.cpp
     # pseudo-library for code for alexandria
     $<TARGET_OBJECTS:actLib>
