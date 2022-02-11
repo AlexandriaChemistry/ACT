@@ -47,7 +47,7 @@
 
 #include <gtest/gtest.h>
 
-#include "alexandria/chargemodel.h"
+#include "act/basics/chargemodel.h"
 #include "act/coulombintegrals/coulombintegrals.h"
 #include "act/coulombintegrals/gaussian_integrals.h"
 #include "act/coulombintegrals/slater_integrals.h"

@@ -38,7 +38,7 @@
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/mdtypes/state.h"
 
-#include "vsite.h"
+#include "act/poldata/vsite.h"
 
 struct gpp_atomtype;
 struct t_symtab;

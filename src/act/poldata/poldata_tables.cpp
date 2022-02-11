@@ -43,7 +43,7 @@
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/utility/cstringutil.h"
 
-#include "alexandria/chargemodel.h"
+#include "act/basics/chargemodel.h"
 #include "poldata_low.h"
 #include "act/utility/latex_util.h"
 

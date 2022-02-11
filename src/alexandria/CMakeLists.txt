@@ -41,7 +41,6 @@ target_sources(actLib
            babel_io.cpp
            bastat.cpp
            bayes.cpp
-           chargemodel.cpp
            composition.cpp
            confighandler.cpp
            devcomputer.cpp
@@ -70,7 +69,6 @@ target_sources(actLib
            topology.cpp
            tune_ff.cpp
            tuning_utility.cpp          
-           vsite.cpp
 	)
 	
 add_executable(alexandria alexandria.cpp ${actLib})

@@ -42,7 +42,7 @@
 #include "gromacs/statistics/statistics.h"
 //#include "gromacs/topology/atomprop.h"
 
-#include "chargemodel.h"
+#include "act/basics/chargemodel.h"
 
 struct gmx_output_env_t;
 struct t_atoms;

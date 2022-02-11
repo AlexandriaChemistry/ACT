@@ -42,7 +42,7 @@
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/pbcutil/pbc.h"
 
-#include "chargemodel.h"
+#include "act/basics/chargemodel.h"
 #include "act/basics/identifier.h"
 
 struct gpp_atomtype;

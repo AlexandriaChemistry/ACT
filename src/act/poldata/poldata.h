@@ -39,15 +39,15 @@
 
 #include "gromacs/utility/stringutil.h"
 
-#include "alexandria/chargemodel.h"
-#include "act/utility/communicationrecord.h"
+#include "act/basics/chargemodel.h"
+#include "act/basics/interactiontype.h"
 #include "act/poldata/forcefieldparameter.h"
 #include "act/poldata/forcefieldparameterlist.h"
-#include "act/basics/interactiontype.h"
 #include "act/poldata/particletype.h"
-#include "poldata_low.h"
+#include "act/poldata/poldata_low.h"
+#include "act/poldata/vsite.h"
+#include "act/utility/communicationrecord.h"
 #include "act/utility/stringutil.h"
-#include "alexandria/vsite.h"
 
 namespace alexandria
 {
