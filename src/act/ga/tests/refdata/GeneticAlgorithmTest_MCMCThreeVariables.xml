@@ -3,7 +3,6 @@
 <ReferenceData>
   <Int64 Name="nElites">0</Int64>
   <Bool Name="verbose">false</Bool>
-  <Int64 Name="nrep">1</Int64>
   <Int64 Name="popSize">1</Int64>
   <Int64 Name="ncrossovers">0</Int64>
   <String Name="algorithm">MCMC</String>
@@ -12,6 +11,8 @@
   <Bool Name="zeta">true</Bool>
   <Bool Name="CHARGEDISTRIBUTION">true</Bool>
   <Bool Name="ELECTRONEGATIVITYEQUALIZATION">true</Bool>
+  <Real Name="Weight_MU">1</Real>
+  <Real Name="Weight_TOT">1</Real>
   <Sequence Name="paramClass">
     <Int Name="Length">3</Int>
     <String>chi</String>

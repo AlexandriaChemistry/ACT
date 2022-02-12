@@ -1,0 +1,66 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int64 Name="nElites">0</Int64>
+  <Bool Name="verbose">false</Bool>
+  <Int64 Name="popSize">6</Int64>
+  <Int64 Name="ncrossovers">0</Int64>
+  <String Name="algorithm">GA</String>
+  <Bool Name="epsilon">true</Bool>
+  <Bool Name="kt">true</Bool>
+  <Bool Name="ANGLES">true</Bool>
+  <Bool Name="VANDERWAALS">true</Bool>
+  <Real Name="Weight_EPOT">1</Real>
+  <Real Name="Weight_TOT">1</Real>
+  <Sequence Name="paramClass">
+    <Int Name="Length">2</Int>
+    <String>epsilon</String>
+    <String>kt</String>
+  </Sequence>
+  <Sequence Name="MoleculeName">
+    <Int Name="Length">3</Int>
+    <String>methanol</String>
+    <String>ethanol-trans</String>
+    <String>1-butanol</String>
+  </Sequence>
+  <Sequence Name="weightedTemperatures">
+    <Int Name="Length">9</Int>
+    <Real>0.70710678118654757</Real>
+    <Real>0.23570226039551584</Real>
+    <Real>0.70710678118654757</Real>
+    <Real>0.57735026918962573</Real>
+    <Real>0.27735009811261457</Real>
+    <Real>0.3779644730092272</Real>
+    <Real>0.3779644730092272</Real>
+    <Real>0.22360679774997896</Real>
+    <Real>0.57735026918962573</Real>
+  </Sequence>
+  <Sequence Name="paramNames">
+    <Int Name="Length">9</Int>
+    <String>c3_b~c3_b~c3_b-kt</String>
+    <String>c3_b~c3_b~h_b-kt</String>
+    <String>c3_b~c3_b~o3_b-kt</String>
+    <String>c3_b~o3_b~h_b-kt</String>
+    <String>h_b~c3_b~h_b-kt</String>
+    <String>h_b~c3_b~o3_b-kt</String>
+    <String>c3-epsilon</String>
+    <String>h-epsilon</String>
+    <String>o3-epsilon</String>
+  </Sequence>
+  <Real Name="gach.percent">0.10000000000000001</Real>
+  <Int64 Name="Maximum Number of Generations">10</Int64>
+  <Real Name="Probability for Crossover">0.34999999999999998</Real>
+  <Real Name="Probability for Mutation">0.01</Real>
+  <Sequence Name="bestParam">
+    <Int Name="Length">9</Int>
+    <Real>297.58785219220943</Real>
+    <Real>336.02560514000072</Real>
+    <Real>361.60000491457458</Real>
+    <Real>252.62155302318823</Real>
+    <Real>362.4957760759462</Real>
+    <Real>256.09803097115247</Real>
+    <Real>0.46984863435635094</Real>
+    <Real>0.06687071146409998</Real>
+    <Real>1.0897882516479076</Real>
+  </Sequence>
+</ReferenceData>

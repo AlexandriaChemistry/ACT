@@ -71,39 +71,35 @@ void CommunicationRecord::print(FILE *fp)
     }
     std::string strToPrint = gmx::formatString("rank: %d/%d nodetype: %s superior: %d\n",
                                                rank_, size_, ntToString[nt_], superior_);
-    // fprintf(fp, "rank: %d/%d nodetype: %s superior: %d\n",
-            // rank_, size_, ntToString[nt_], superior_);
     if (isMaster())
     {
         strToPrint.append(gmx::formatString("nmiddlemen: %d nhelper_per_middleman: %d\n", nmiddlemen_, 
                                             nhelper_per_middleman_));
-        // fprintf(fp, "nmiddlemen: %d nhelper_per_middleman: %d\n", nmiddlemen_, 
-        //         nhelper_per_middleman_);
     }
     if (isMasterOrMiddleMan())
     {
         strToPrint.append(gmx::formatString("ordinal: %d nhelper: %d\n",
                                             ordinal_, nhelper_per_middleman_));
-        // fprintf(fp, "ordinal: %d nhelper: %d\n", middleManOrdinal(), nhelper_per_middleman_);
     }
-    strToPrint.append("helpers:");
-    // fprintf(fp, "helpers:");
-    for (auto &h : helpers_)
+    if (!helpers_.empty())
     {
-        strToPrint.append(gmx::formatString(" %3d", h));
-        // fprintf(fp, " %3d", h);
+        strToPrint.append("helpers:");
+        for (auto &h : helpers_)
+        {
+            strToPrint.append(gmx::formatString(" %3d", h));
+        }
+        strToPrint.append("\n");
     }
-    strToPrint.append("\nmiddlemen:");
-    // fprintf(fp, "\n");
-    // fprintf(fp, "middlemen:");
-    for (auto &m : middlemen_)
+    if (!middlemen_.empty())
     {
-        strToPrint.append(gmx::formatString(" %3d", m));
-        // fprintf(fp, " %3d", m);
+        strToPrint.append("middlemen:");
+        for (auto &m : middlemen_)
+        {
+            strToPrint.append(gmx::formatString(" %3d", m));
+        }
+        strToPrint.append("\n");
     }
-    strToPrint.append("\n");
-    // fprintf(fp, "\n");
-    fprintf(fp, "%s\n", strToPrint.c_str());
+    fprintf(fp, "%s", strToPrint.c_str());
 }
 
 void CommunicationRecord::init(int nmiddleman)

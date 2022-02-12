@@ -15,9 +15,11 @@ void GenePool::print(FILE *fp) const
     if (fp)
     {
         fprintf(fp, "Population:\n");
+        int i = 0;
         for (auto &ind : genomes_)
         {
-            ind.print(fp);
+            auto istr = gmx::formatString(" %3d ", i);
+            ind.print(istr.c_str(), fp);
         }
     }
 }

@@ -127,12 +127,7 @@ public:
     std::vector<double> *basesPtr() { return &genome_; }
     
     /*! \brief Print my content
-     * \param[in] fp File pointer to print to
-     */
-    void print(FILE *fp) const;
-    
-    /*! \brief Print my content
-     * \param[in] name String to start the line with
+     * \param[in] name String identifier
      * \param[in] fp   File pointer to print to. If nullptr nothing is printed.
      */
     void print(const char *name, FILE *fp) const;

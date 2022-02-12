@@ -34,8 +34,6 @@ namespace alexandria
         ACMIndividual      *ind_;
         //! Config handler for GA
         GAConfigHandler    *gach_;
-        //! Log file
-        FILE               *logFile_ = nullptr;
         //! My ID
         int                 id_;
 
@@ -44,7 +42,6 @@ namespace alexandria
 
     public:
         /*! \brief Constructor
-         * \param[in] logFile    FILE to print stuff to, can be nullptr
          * \param[in] mg         Molecule info
          * \param[in] sii        The individual info
          * \param[in] gach       GA Config handler
@@ -52,8 +49,7 @@ namespace alexandria
          * \param[in] verbose    Whether or not to print a lot
          * \param[in] oenv       GROMACS output environment
          */
-        ACTMiddleMan(FILE                 *logFile,
-                     MolGen               *mg,
+        ACTMiddleMan(MolGen               *mg,
                      StaticIndividualInfo *sii,
                      GAConfigHandler      *gach,
                      BayesConfigHandler   *bch,

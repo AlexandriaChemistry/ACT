@@ -9,13 +9,13 @@
 namespace ga
 {
     
-void Genome::print(FILE *fp) const
+void Genome::print(const char *name, FILE *fp) const
 {
     if (!fp)
     {
         return;
     }
-    fprintf(fp, "genome_: [ ");
+    fprintf(fp, "genome_%s: [ ", name);
     for (auto &ele : genome_)
     {
         fprintf(fp, "%8g ", ele);
@@ -31,16 +31,6 @@ void Genome::print(FILE *fp) const
     {
         fprintf(fp, "\n");
     }
-}
-
-void Genome::print(const char *name, FILE *fp) const
-{
-    if (!fp)
-    {
-        return;
-    }
-    fprintf(fp, "%s", name);
-    print(fp);
 }
 
 double Genome::fitness(iMolSelect ims) const

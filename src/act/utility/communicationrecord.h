@@ -47,8 +47,6 @@ private:
     NodeType          nt_                    = NodeType::Helper;
     //! MPI Communicator for the whole system
     MPI_Comm          mpi_act_world_         = MPI_COMM_NULL;
-    //! MPI Communicator for every processor except the master
-    MPI_Comm          mpi_act_not_master_    = MPI_COMM_NULL;
     //! MPI Communicator for my local helpers
     MPI_Comm          mpi_act_helpers_       = MPI_COMM_NULL;
     //! My MPI rank

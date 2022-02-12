@@ -11,14 +11,13 @@
 namespace alexandria
 {
  
-ACTMiddleMan::ACTMiddleMan(FILE                 *logFile,
-                           MolGen               *mg,
+ACTMiddleMan::ACTMiddleMan(MolGen               *mg,
                            StaticIndividualInfo *sii,
                            GAConfigHandler      *gach,
                            BayesConfigHandler   *bch,
                            bool                  verbose,
                            gmx_output_env_t     *oenv)
-: gach_(gach), logFile_(logFile), id_(sii->commRec()->middleManOrdinal())
+: gach_(gach), id_(sii->commRec()->middleManOrdinal())
 {
     // This ica
     int seed = bch->seed();

@@ -6,15 +6,16 @@
   <Int64 Name="popSize">1</Int64>
   <Int64 Name="ncrossovers">0</Int64>
   <String Name="algorithm">MCMC</String>
-  <Bool Name="chi">true</Bool>
-  <Bool Name="jaa">true</Bool>
-  <Bool Name="ELECTRONEGATIVITYEQUALIZATION">true</Bool>
-  <Real Name="Weight_MU">1</Real>
+  <Bool Name="Dm">true</Bool>
+  <Bool Name="sigma">true</Bool>
+  <Bool Name="BONDS">true</Bool>
+  <Bool Name="VANDERWAALS">true</Bool>
+  <Real Name="Weight_EPOT">1</Real>
   <Real Name="Weight_TOT">1</Real>
   <Sequence Name="paramClass">
     <Int Name="Length">2</Int>
-    <String>chi</String>
-    <String>jaa</String>
+    <String>Dm</String>
+    <String>sigma</String>
   </Sequence>
   <Sequence Name="MoleculeName">
     <Int Name="Length">3</Int>
@@ -23,36 +24,39 @@
     <String>1-butanol</String>
   </Sequence>
   <Sequence Name="weightedTemperatures">
-    <Int Name="Length">6</Int>
-    <Real>0.3779644730092272</Real>
-    <Real>0.3779644730092272</Real>
-    <Real>0.22360679774997896</Real>
-    <Real>0.22360679774997896</Real>
+    <Int Name="Length">7</Int>
+    <Real>0.5</Real>
+    <Real>0.24253562503633297</Real>
     <Real>0.57735026918962573</Real>
+    <Real>0.57735026918962573</Real>
+    <Real>0.3779644730092272</Real>
+    <Real>0.22360679774997896</Real>
     <Real>0.57735026918962573</Real>
   </Sequence>
   <Sequence Name="paramNames">
-    <Int Name="Length">6</Int>
-    <String>c3_z-chi</String>
-    <String>c3_z-jaa</String>
-    <String>h_z-chi</String>
-    <String>h_z-jaa</String>
-    <String>o3_z-chi</String>
-    <String>o3_z-jaa</String>
+    <Int Name="Length">7</Int>
+    <String>c3_b~c3_b-Dm</String>
+    <String>c3_b~h_b-Dm</String>
+    <String>c3_b~o3_b-Dm</String>
+    <String>h_b~o3_b-Dm</String>
+    <String>c3-sigma</String>
+    <String>h-sigma</String>
+    <String>o3-sigma</String>
   </Sequence>
   <Int64 Name="bch.maxIter">20</Int64>
-  <Int64 Name="bch.seed">1993</Int64>
+  <Int64 Name="bch.seed">1991</Int64>
   <Real Name="bch.temperature">10</Real>
   <Int64 Name="Maximum Number of Generations">10</Int64>
   <Real Name="Probability for Crossover">0.34999999999999998</Real>
   <Real Name="Probability for Mutation">0.01</Real>
   <Sequence Name="bestParam">
-    <Int Name="Length">6</Int>
-    <Real>4.553977930175261</Real>
-    <Real>7.5741028194370017</Real>
-    <Real>2.962580186259824</Real>
-    <Real>14.230209390483429</Real>
-    <Real>6.1786573084824719</Real>
-    <Real>11.003372641147518</Real>
+    <Int Name="Length">7</Int>
+    <Real>396.78380292294588</Real>
+    <Real>448.03414018666763</Real>
+    <Real>482.13333988609952</Real>
+    <Real>336.82873736425097</Real>
+    <Real>0.40610641786216239</Real>
+    <Real>0.21311691412464276</Real>
+    <Real>0.3049016123316281</Real>
   </Sequence>
 </ReferenceData>

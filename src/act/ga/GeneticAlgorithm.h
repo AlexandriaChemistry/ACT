@@ -39,8 +39,6 @@ private:
 
      //! Files for fitness output
     std::map<iMolSelect, FILE *>  fileFitness_;
-    //! The best genome
-    Genome                        bestGenome_;
     //! Initializes each individual in the population
     Initializer                  *initializer_  = nullptr;
     //! Computes fitness for each individual in the population
@@ -99,12 +97,6 @@ public:
     //! And close them when the time is due
     void closeFitnessFiles();
 
-    //! \return pointer to bestGenome
-    ga::Genome *bestGenomePtr() { return &bestGenome_; }
-    
-    //! \return constant best genome
-    const ga::Genome &bestGenome() { return bestGenome_; }
-    
     //! \return the fitness computer
     FitnessComputer *fitnessComputer() { return fitComputer_; }
 

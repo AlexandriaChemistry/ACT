@@ -3,13 +3,14 @@
 <ReferenceData>
   <Int64 Name="nElites">0</Int64>
   <Bool Name="verbose">true</Bool>
-  <Int64 Name="nrep">1</Int64>
   <Int64 Name="popSize">2</Int64>
   <Int64 Name="ncrossovers">1</Int64>
   <String Name="algorithm">GA</String>
   <Bool Name="chi">true</Bool>
   <Bool Name="jaa">true</Bool>
   <Bool Name="ELECTRONEGATIVITYEQUALIZATION">true</Bool>
+  <Real Name="Weight_ESP">1</Real>
+  <Real Name="Weight_TOT">1</Real>
   <Sequence Name="paramClass">
     <Int Name="Length">2</Int>
     <String>chi</String>

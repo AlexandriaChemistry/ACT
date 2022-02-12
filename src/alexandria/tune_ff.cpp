@@ -334,15 +334,16 @@ bool OptACM::runMaster(bool        optimize,
                        "I thought I was the master...");
 
     print_memory_usage(debug);
-    bool bMinimum = false;
+    bool       bMinimum = false;
+    ga::Genome bestGenome;
     if (optimize)
     {
-        bMinimum = ga_->evolve(ga_->bestGenomePtr());
+        bMinimum = ga_->evolve(&bestGenome);
     }
     if (gach_.optimizer() != OptimizerAlg::GA && sensitivity)
     {
         // Do sensitivity analysis only on the training set
-        // mut->sensitivityAnalysis(ga_->bestGenomePtr(), iMolSelect::Train);
+        // mut->sensitivityAnalysis(&bestGenome, iMolSelect::Train);
     }
     // Stop the middlemen ...
     if (commRec_.nmiddlemen() > 1)
@@ -367,7 +368,7 @@ bool OptACM::runMaster(bool        optimize,
 
     if (bMinimum)
     {
-        auto best = ga_->bestGenome().bases();
+        auto best = bestGenome.bases();
         if (best.empty())
         {
             GMX_THROW(gmx::InternalError("Minimum found but no best parameters"));
@@ -375,11 +376,11 @@ bool OptACM::runMaster(bool        optimize,
         // Copy it to Poldata
         std::vector<bool> changed;
         changed.resize(best.size(), true);
-        sii_->updatePoldata(changed, ga_->bestGenomePtr());
+        sii_->updatePoldata(changed, &bestGenome);
         for (const auto &ims : iMolSelectNames())  // FIXME: this last calc deviation will be very slow?
         {
             // TODO printing
-            double chi2 = fitComp_->calcDeviation(ga_->bestGenomePtr()->basesPtr(),
+            double chi2 = fitComp_->calcDeviation(bestGenome.basesPtr(),
                                                   CalcDev::Master, ims.first);
             fprintf(logFile(), "Minimum chi2 for %s %g\n",
                     iMolSelectName(ims.first), chi2);
@@ -630,8 +631,7 @@ int tune_ff(int argc, char *argv[])
     {
         // Master and Individuals (middle-men) need to initialize more,
         // so let's go.
-        ACTMiddleMan middleman(opt.logFile(),
-                               opt.mg(), opt.sii(), opt.gach(), opt.bch(),
+        ACTMiddleMan middleman(opt.mg(), opt.sii(), opt.gach(), opt.bch(),
                                opt.verbose(), opt.oenv());
         middleman.run();
     }

@@ -89,24 +89,16 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
     
         void testIt(alexandria::OptimizerAlg alg,
                     int nElites, int popSize,
-                    bool verbose, int nrep, int ncrossovers, 
+                    bool verbose, int ncrossovers, 
                     const std::vector<std::string> &fitstrings,
-                    int seed, alexandria::eRMS erms)
+                    int seed, std::vector<alexandria::eRMS> erms)
         {
             // GA stuff
             alexandria::GAConfigHandler      gach;
             gach.setPopSize(popSize);
             gach.setCrossovers(ncrossovers);
             gach.setOptimizerAlg(alg);
-            // if (alg != alexandria::OptimizerAlg::GA)  NOT NEEDED ANYMORE SINCE MCMCMutator ignores prMut
-            // {
-            //     gach.setPrMut(1);
-            // }
             int nmiddlemen = gach.popSize();
-            // if (gach.optimizer() != alexandria::OptimizerAlg::MCMC)
-            // {
-            //     nmiddlemen = gach.popSize();
-            // }
             alexandria::CommunicationRecord  cr;
             cr.init(nmiddlemen);
             gmx_output_env_t    *oenv;
@@ -144,7 +136,10 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
             }
             sii.setOutputFiles(xvgconv.c_str(), paramClass, xvgepot.c_str());
             sii.assignParamClassIndex();
-            sii.target(iMolSelect::Train, erms)->setWeight(1.0);
+            for(const auto &er : erms)
+            {
+                sii.target(iMolSelect::Train, er)->setWeight(1.0);
+            }
             sii.computeWeightedTemperature(true);
             sii.propagateWeightFittingTargets();
             // One more config handler
@@ -163,7 +158,6 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
             
                 checker_.checkInt64(nElites, "nElites");
                 checker_.checkBoolean(verbose, "verbose");
-                checker_.checkInt64(nrep, "nrep");
                 checker_.checkInt64(gach.popSize(), "popSize");
                 checker_.checkInt64(gach.nCrossovers(), "ncrossovers");
                 checker_.checkString(optimizerAlgToString(gach.optimizer()), "algorithm");
@@ -174,6 +168,15 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
                 for(auto &io : molgen.iopt())
                 {
                     checker_.checkBoolean(io.second, interactionTypeToString(io.first).c_str());
+                }
+                for(auto &ft : sii.fittingTargetsConst(iMolSelect::Train))
+                {
+                    double w = ft.second.weight();
+                    if (w > 0)
+                    {
+                        std::string name = gmx::formatString("Weight_%s", rmsName(ft.first));
+                        checker_.checkReal(w, name.c_str());
+                    }
                 }
                 checker_.checkSequence(paramClass.begin(), paramClass.end(), "paramClass");
                 std::vector<std::string> molnames;
@@ -272,7 +275,7 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
             else if (cr.isMiddleMan())
             {
                 // Run middleman-like code.
-                alexandria::ACTMiddleMan middleman(nullptr, &molgen, 
+                alexandria::ACTMiddleMan middleman(&molgen, 
                                                    &sii, &gach, &bch,
                                                    false, oenv);
                 middleman.run();
@@ -291,36 +294,64 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
 TEST_F (GeneticAlgorithmTest, PopSix)  // HYBRID
 {
     GMX_MPI_TEST(6);
-    testIt(alexandria::OptimizerAlg::HYBRID, 0, 6, true, 1, 1,
-           { "chi", "zeta" }, 1993, alexandria::eRMS::QUAD);
+    testIt(alexandria::OptimizerAlg::HYBRID, 0, 6, true, 1,
+           { "chi", "zeta" }, 1993, { alexandria::eRMS::QUAD });
 }
 
 TEST_F (GeneticAlgorithmTest, PopTwo)  // GA
 {
     GMX_MPI_TEST(6);
-    testIt(alexandria::OptimizerAlg::GA, 0, 2, true, 1, 1,
-           { "chi", "zeta" }, 1993, alexandria::eRMS::QUAD);
+    testIt(alexandria::OptimizerAlg::GA, 0, 2, true, 1,
+           { "chi", "zeta" }, 1993, { alexandria::eRMS::QUAD });
 }
 
 TEST_F (GeneticAlgorithmTest, PopOneMCMC)  // MCMC
 {
     GMX_MPI_TEST(6);
-    testIt(alexandria::OptimizerAlg::MCMC, 0, 1, false, 1, 0,
-           { "chi", "jaa" }, 1993, alexandria::eRMS::MU);
+    testIt(alexandria::OptimizerAlg::MCMC, 0, 1, false, 0,
+           { "chi", "jaa" }, 1993, { alexandria::eRMS::MU });
 }
 
 TEST_F (GeneticAlgorithmTest, PopTwoEspGA)  // GA
 {
     GMX_MPI_TEST(6);
-    testIt(alexandria::OptimizerAlg::GA, 0, 2, true, 1, 1,
-           { "chi", "jaa" }, 1993, alexandria::eRMS::ESP);
+    testIt(alexandria::OptimizerAlg::GA, 0, 2, true, 1,
+           { "chi", "jaa" }, 1993, { alexandria::eRMS::ESP });
 }
 
 TEST_F (GeneticAlgorithmTest, MCMCThreeVariables)  // MCMC
 {
     GMX_MPI_TEST(6);
-    testIt(alexandria::OptimizerAlg::MCMC, 0, 1, false, 1, 0,
-           { "chi", "jaa", "zeta" }, 1997, alexandria::eRMS::MU);
+    testIt(alexandria::OptimizerAlg::MCMC, 0, 1, false, 0,
+           { "chi", "jaa", "zeta" }, 1997, { alexandria::eRMS::MU });
+}
+
+TEST_F (GeneticAlgorithmTest, MCMCTwoVariablesQuad)  // MCMC
+{
+    GMX_MPI_TEST(6);
+    testIt(alexandria::OptimizerAlg::MCMC, 0, 1, false, 0,
+           { "jaa", "zeta" }, 1997, { alexandria::eRMS::QUAD });
+}
+
+TEST_F (GeneticAlgorithmTest, MCMCEpot)  // MCMC
+{
+    GMX_MPI_TEST(6);
+    testIt(alexandria::OptimizerAlg::MCMC, 0, 1, false, 0,
+           { "Dm", "sigma" }, 1991, { alexandria::eRMS::EPOT });
+}
+
+TEST_F (GeneticAlgorithmTest, GAEpot)  // GA
+{
+    GMX_MPI_TEST(6);
+    testIt(alexandria::OptimizerAlg::GA, 0, 6, false, 0,
+           { "epsilon", "kt" }, 1991, { alexandria::eRMS::EPOT } );
+}
+
+TEST_F (GeneticAlgorithmTest, GAEpotESP)  // GA
+{
+    GMX_MPI_TEST(6);
+    testIt(alexandria::OptimizerAlg::GA, 0, 6, false, 0,
+           { "epsilon", "kt", "jaa", "chi" }, 1991, { alexandria::eRMS::EPOT, alexandria::eRMS::ESP } );
 }
 
 

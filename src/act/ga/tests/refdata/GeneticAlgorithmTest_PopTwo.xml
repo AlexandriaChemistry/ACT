@@ -3,7 +3,6 @@
 <ReferenceData>
   <Int64 Name="nElites">0</Int64>
   <Bool Name="verbose">true</Bool>
-  <Int64 Name="nrep">1</Int64>
   <Int64 Name="popSize">2</Int64>
   <Int64 Name="ncrossovers">1</Int64>
   <String Name="algorithm">GA</String>
@@ -11,6 +10,8 @@
   <Bool Name="zeta">true</Bool>
   <Bool Name="CHARGEDISTRIBUTION">true</Bool>
   <Bool Name="ELECTRONEGATIVITYEQUALIZATION">true</Bool>
+  <Real Name="Weight_QUAD">1</Real>
+  <Real Name="Weight_TOT">1</Real>
   <Sequence Name="paramClass">
     <Int Name="Length">2</Int>
     <String>chi</String>
@@ -34,9 +35,9 @@
     <String>h_z-chi</String>
     <String>o3_z-chi</String>
   </Sequence>
-  <Real Name="gach.percent">0.1</Real>
+  <Real Name="gach.percent">0.10000000000000001</Real>
   <Int64 Name="Maximum Number of Generations">10</Int64>
-  <Real Name="Probability for Crossover">0.35</Real>
+  <Real Name="Probability for Crossover">0.34999999999999998</Real>
   <Real Name="Probability for Mutation">0.01</Real>
   <Sequence Name="bestParam">
     <Int Name="Length">3</Int>
