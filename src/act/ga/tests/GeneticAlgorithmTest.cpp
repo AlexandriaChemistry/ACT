@@ -153,7 +153,7 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
             {
                 // Checker, Master only
                 gmx::test::TestReferenceChecker  checker_(this->rootChecker());
-                auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 5e-2);
+                auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 1e-4);
                 checker_.setDefaultTolerance(tolerance);
             
                 checker_.checkInt64(nElites, "nElites");

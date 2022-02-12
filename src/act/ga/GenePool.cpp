@@ -18,7 +18,7 @@ void GenePool::print(FILE *fp) const
         int i = 0;
         for (auto &ind : genomes_)
         {
-            auto istr = gmx::formatString(" %3d ", i);
+            auto istr = gmx::formatString(" %3d ", i++);
             ind.print(istr.c_str(), fp);
         }
     }
