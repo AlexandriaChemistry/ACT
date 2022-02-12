@@ -377,7 +377,8 @@ bool OptACM::runMaster(bool        optimize,
         std::vector<bool> changed;
         changed.resize(best.size(), true);
         sii_->updatePoldata(changed, &bestGenome);
-        for (const auto &ims : iMolSelectNames())  // FIXME: this last calc deviation will be very slow?
+        // FIXME: these last calc deviations will be very slow? We could stop MASTER's helpers at the end of the function
+        for (const auto &ims : iMolSelectNames())
         {
             // TODO printing
             double chi2 = fitComp_->calcDeviation(bestGenome.basesPtr(),

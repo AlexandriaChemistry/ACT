@@ -270,6 +270,9 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
 
                 checker_.checkReal(best.fitness(imstr), "Training fitness after evolve");
                 
+                std::vector<bool> changed;
+                changed.resize(sii.nParam(), true);
+                sii.updatePoldata(changed, &best);
                 auto chi2 = fitComp->calcDeviation(best.basesPtr(), alexandria::CalcDev::Master, imstr);
                 EXPECT_EQ(best.fitness(imstr), chi2);
                 if (best.nBase() > 0)
