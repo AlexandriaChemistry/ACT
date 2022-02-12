@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2021
+ * Copyright (C) 2014-2022
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -50,12 +50,16 @@ namespace alexandria
 enum class eRMS { 
     //! Parameters going out of bound
     BOUNDS,
+    //! Charge
+    CHARGE,
     //! Molecular dipole
     MU,
     //! Molecular quadrupole
     QUAD,
-    //! Charge
-    CHARGE,
+    //! Molecular octupole
+    OCT,
+    //! Molecular hexadecapole
+    HEXADEC,
     //! Deviation from CM5 charge
     CM5,
     //! Deviation from Electrostatic potential

@@ -59,6 +59,10 @@ enum class MolPropObservable {
     DIPOLE,
     //! Quadrupole
     QUADRUPOLE,
+    //! Octupole
+    OCTUPOLE,
+    //! Hexadecapole
+    HEXADECAPOLE,
     //! Polarizability
     POLARIZABILITY,
     //! Hartree fock energy

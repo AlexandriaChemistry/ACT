@@ -64,16 +64,18 @@ namespace alexandria
 
     std::map<eRMS, const char *> ermsNames =
     {
-     { eRMS::BOUNDS, "BOUNDS" },
-     { eRMS::MU,     "MU" },
-     { eRMS::QUAD,   "QUAD" },
-     { eRMS::CHARGE, "CHARGE" },
-     { eRMS::CM5,    "CM5" },
-     { eRMS::ESP,    "ESP" },
-     { eRMS::EPOT,   "EPOT" },
-     { eRMS::Force2, "Force2" },
-     { eRMS::Polar,  "Polar" },
-     { eRMS::TOT,    "TOT" }
+     { eRMS::BOUNDS,  "BOUNDS"  },
+     { eRMS::CHARGE,  "CHARGE"  },
+     { eRMS::MU,      "MU"      },
+     { eRMS::QUAD,    "QUAD"    },
+     { eRMS::OCT,     "OCT"     },
+     { eRMS::HEXADEC, "HEXADEC" },
+     { eRMS::CM5,     "CM5"     },
+     { eRMS::ESP,     "ESP"     },
+     { eRMS::EPOT,    "EPOT"    },
+     { eRMS::Force2,  "Force2"  },
+     { eRMS::Polar,   "Polar"   },
+     { eRMS::TOT,     "TOT"     }
     };
 
 const std::map<eRMS, const char *> &geteRMSNames()
@@ -135,6 +137,10 @@ void MolGen::addOptions(std::vector<t_pargs>          *pargs,
         { "-fc_mu",    FALSE, etREAL, {targets->find(eRMS::MU)->second.weightPtr()},
           "Force constant in the penalty function for the magnitude of the dipole components." },
         { "-fc_quad",  FALSE, etREAL, {targets->find(eRMS::QUAD)->second.weightPtr()},
+          "Force constant in the penalty function for the magnitude of the octupole components." },
+        { "-fc_oct",  FALSE, etREAL, {targets->find(eRMS::OCT)->second.weightPtr()},
+          "Force constant in the penalty function for the magnitude of the hexedecapole components." },
+        { "-fc_hexadec",  FALSE, etREAL, {targets->find(eRMS::HEXADEC)->second.weightPtr()},
           "Force constant in the penalty function for the magnitude of the quadrupole components." },
         { "-fc_esp",   FALSE, etREAL, {targets->find(eRMS::ESP)->second.weightPtr()},
           "Force constant in the penalty function for the magnitude of the electrostatic potential." },
