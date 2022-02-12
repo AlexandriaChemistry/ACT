@@ -30,7 +30,6 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
  
- 
 #ifndef XML_UTIL_H
 #define XML_UTIL_H
 
@@ -39,15 +38,15 @@
 #include <libxml/parser.h>
 #include <libxml/tree.h>
 
-void add_xml_int(xmlNodePtr ptr, const char *name, int val);
+void add_xml_int(xmlNodePtr ptr, const std::string &name, int val);
 
-void add_xml_double(xmlNodePtr ptr, const char *name, double val);
+void add_xml_double(xmlNodePtr ptr, const std::string &name, double val);
 
-void add_xml_char(xmlNodePtr ptr, const char *name, const char *val);
+void add_xml_char(xmlNodePtr ptr, const std::string &name, const char *val);
 
-xmlNodePtr add_xml_child(xmlNodePtr parent, const char *type);
+xmlNodePtr add_xml_child(xmlNodePtr parent, const std::string &type);
 
-xmlNodePtr add_xml_child_val(xmlNodePtr parent, const char *type, const char *value);
+xmlNodePtr add_xml_child_val(xmlNodePtr parent, const std::string &type, const char *value);
 
 xmlNodePtr add_xml_comment(xmlDocPtr   doc,
                            xmlNodePtr  prev,

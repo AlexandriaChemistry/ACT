@@ -161,6 +161,9 @@ protected:
                                 }
                             }
                             break;
+                        case MolPropObservable::OCTUPOLE:
+                        case MolPropObservable::HEXADECAPOLE:
+                            gmx_fatal(FARGS, "Please implement multipoles");
                         case MolPropObservable::QUADRUPOLE:
                             {
                                 auto vv = gp->getTensor();

@@ -40,7 +40,6 @@
 #include <libxml/parser.h>
 #include <libxml/tree.h>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "act/molprop/molprop.h"
@@ -89,11 +88,6 @@ JobType string2jobType(const std::string &str)
     return JobType::UNKNOWN;
 }
 
-static bool NN(const std::string &s)
-{
-    return s.size() > 0;
-}
-
 static const char *xmltypes[] = {
     nullptr,
     "XML_ELEMENT_NODE",
@@ -119,164 +113,151 @@ static const char *xmltypes[] = {
 };
 #define NXMLTYPES sizeof(xmltypes)/sizeof(xmltypes[0])
 
-enum {
-    exmlMOLECULES      = 0,
-    exmlMOLECULE       = 1,
-    exmlFORMULA        = 2,
-    exmlMOLNAME        = 3,
-    exmlMASS           = 4,
-    exmlMOLINFO        = 5,
-    exmlIUPAC          = 6,
-    exmlCAS            = 7,
-    exmlCID            = 8,
-    exmlINCHI          = 9,
-    exmlMULTIPLICITY   = 10,
-    exmlCHARGE         = 11,
-    exmlCATEGORY       = 12,
-    exmlCATNAME        = 13,
-    exmlEXPERIMENT     = 14,
-    exmlPOLARIZABILITY = 15,
-    exmlENERGY         = 16,
-    exmlDIPOLE         = 17,
-    exmlQUADRUPOLE     = 18,
-    exmlPOTENTIAL      = 19,
-    exmlNAME           = 20,
-    exmlAVERAGE        = 21,
-    exmlERROR          = 22,
-    exmlTEMPERATURE    = 23,
-    exmlPHASE          = 24,
-    exmlMETHOD         = 25,
-    exmlREFERENCE      = 26,
-    exmlTYPE           = 27,
-    exmlSOURCE         = 28,
-    exmlBOND           = 29,
-    exmlAI             = 30,
-    exmlAJ             = 31,
-    exmlBONDORDER      = 32,
-    exmlCOMPOSITION    = 33,
-    exmlCOMPNAME       = 34,
-    exmlCATOM          = 35,
-    exmlC_NAME         = 36,
-    exmlC_NUMBER       = 37,
-    exmlDATASOURCE     = 38,
-    exmlPROGRAM        = 39,
-    exmlBASISSET       = 40,
-    exmlJOBTYPE        = 41,
-    exmlCONFORMATION   = 42,
-    exmlDATAFILE       = 43,
-    exmlUNIT           = 44,
-    exmlATOM           = 45,
-    exmlATOMID         = 46,
-    exmlOBTYPE         = 47,
-    exmlX_UNIT         = 48,
-    exmlV_UNIT         = 49,
-    exmlESPID          = 50,
-    exmlX              = 51,
-    exmlY              = 52,
-    exmlZ              = 53,
-    exmlV              = 54,
-    exmlXX             = 55,
-    exmlYY             = 56,
-    exmlZZ             = 57,
-    exmlXY             = 58,
-    exmlXZ             = 59,
-    exmlYZ             = 60,
-    exmlQ              = 61,
-    exmlNR             = 62
+enum class MolPropXml {
+    MOLECULES,
+    MOLECULE,
+    FORMULA,
+    MOLNAME,
+    MASS,
+    MOLINFO,
+    IUPAC,
+    CAS,
+    CID,
+    INCHI,
+    MULTIPLICITY,
+    CHARGE,
+    CATEGORY,
+    CATNAME,
+    EXPERIMENT,
+    POLARIZABILITY,
+    ENERGY,
+    DIPOLE,
+    QUADRUPOLE,
+    POTENTIAL,
+    NAME,
+    AVERAGE,
+    ERROR,
+    TEMPERATURE,
+    PHASE,
+    METHOD,
+    REFERENCE,
+    TYPE,
+    SOURCE,
+    BOND,
+    AI,
+    AJ,
+    BONDORDER,
+    COMPOSITION,
+    COMPNAME,
+    CATOM,
+    C_NAME,
+    C_NUMBER,
+    DATASOURCE,
+    PROGRAM,
+    BASISSET,
+    JOBTYPE,
+    CONFORMATION,
+    DATAFILE,
+    UNIT,
+    ATOM,
+    ATOMID,
+    OBTYPE,
+    X_UNIT,
+    V_UNIT,
+    ESPID,
+    dX,
+    dY,
+    dZ,
+    dV,
+    qXX,
+    qYY,
+    qZZ,
+    qXY,
+    qXZ,
+    qYZ,
+    aQ
 };
 
-//static const char *exml_names[exmlNR] = {
-std::map<const std::string, int> xmlxxx =
+std::map<const std::string, MolPropXml> xmlxxx =
 {
-    { "molecules",        exmlMOLECULES     },
-    { "molecule",         exmlMOLECULE      },
-    { "formula",          exmlFORMULA       },
-    { "molname",          exmlMOLNAME       },
-    { "mass",             exmlMASS          },
-    { "molinfo",          exmlMOLINFO       },
-    { "iupac",            exmlIUPAC         },
-    { "cas",              exmlCAS           },
-    { "cid",              exmlCID           },
-    { "inchi",            exmlINCHI         },
-    { "multiplicity",     exmlMULTIPLICITY  },
-    { "charge",           exmlCHARGE        },
-    { "category",         exmlCATEGORY      },
-    { "catname",          exmlCATNAME       },
-    { "experiment",       exmlEXPERIMENT    },
-    { "polarizability",   exmlPOLARIZABILITY},
-    { "energy",           exmlENERGY        },
-    { "dipole",           exmlDIPOLE        },
-    { "quadrupole",       exmlQUADRUPOLE    },
-    { "potential",        exmlPOTENTIAL     },
-    { "name",             exmlNAME          },
-    { "average",          exmlAVERAGE       },
-    { "error",            exmlERROR         },
-    { "temperature",      exmlTEMPERATURE   },
-    { "phase",            exmlPHASE         },
-    { "method",           exmlMETHOD        },
-    { "reference",        exmlREFERENCE     },
-    { "type",             exmlTYPE          },
-    { "source",           exmlSOURCE        },
-    { "bond",             exmlBOND          },
-    { "ai",               exmlAI            },
-    { "aj",               exmlAJ            },
-    { "bondorder",        exmlBONDORDER     },
-    { "composition",      exmlCOMPOSITION   },
-    { "compname",         exmlCOMPNAME      },
-    { "catom",            exmlCATOM         },
-    { "cname",            exmlC_NAME        },
-    { "cnumber",          exmlC_NUMBER      },
-    { "datasource",       exmlDATASOURCE    },
-    { "program",          exmlPROGRAM       },
-    { "basisset",         exmlBASISSET      },
-    { "jobtype",          exmlJOBTYPE       },
-    { "conformation",     exmlCONFORMATION  },
-    { "datafile",         exmlDATAFILE      },
-    { "unit",             exmlUNIT          },
-    { "atom",             exmlATOM          },
-    { "atomid",           exmlATOMID        },
-    { "obtype",           exmlOBTYPE        },
-    { "coord_unit",       exmlX_UNIT        },
-    { "potential_unit",   exmlV_UNIT        },
-    { "espid",            exmlESPID         },
-    { "x",                exmlX             },
-    { "y",                exmlY             },
-    { "z",                exmlZ             },
-    { "V",                exmlV             },
-    { "xx",               exmlXX            },
-    { "yy",               exmlYY            },
-    { "zz",               exmlZZ            },
-    { "xy",               exmlXY            },
-    { "xz",               exmlXZ            },
-    { "yz",               exmlYZ            },
-    { "q",                exmlQ             }
+    { "molecules",        MolPropXml::MOLECULES     },
+    { "molecule",         MolPropXml::MOLECULE      },
+    { "formula",          MolPropXml::FORMULA       },
+    { "molname",          MolPropXml::MOLNAME       },
+    { "mass",             MolPropXml::MASS          },
+    { "molinfo",          MolPropXml::MOLINFO       },
+    { "iupac",            MolPropXml::IUPAC         },
+    { "cas",              MolPropXml::CAS           },
+    { "cid",              MolPropXml::CID           },
+    { "inchi",            MolPropXml::INCHI         },
+    { "multiplicity",     MolPropXml::MULTIPLICITY  },
+    { "charge",           MolPropXml::CHARGE        },
+    { "category",         MolPropXml::CATEGORY      },
+    { "catname",          MolPropXml::CATNAME       },
+    { "experiment",       MolPropXml::EXPERIMENT    },
+    { "polarizability",   MolPropXml::POLARIZABILITY},
+    { "energy",           MolPropXml::ENERGY        },
+    { "dipole",           MolPropXml::DIPOLE        },
+    { "quadrupole",       MolPropXml::QUADRUPOLE    },
+    { "potential",        MolPropXml::POTENTIAL     },
+    { "name",             MolPropXml::NAME          },
+    { "average",          MolPropXml::AVERAGE       },
+    { "error",            MolPropXml::ERROR         },
+    { "temperature",      MolPropXml::TEMPERATURE   },
+    { "phase",            MolPropXml::PHASE         },
+    { "method",           MolPropXml::METHOD        },
+    { "reference",        MolPropXml::REFERENCE     },
+    { "type",             MolPropXml::TYPE          },
+    { "source",           MolPropXml::SOURCE        },
+    { "bond",             MolPropXml::BOND          },
+    { "ai",               MolPropXml::AI            },
+    { "aj",               MolPropXml::AJ            },
+    { "bondorder",        MolPropXml::BONDORDER     },
+    { "composition",      MolPropXml::COMPOSITION   },
+    { "compname",         MolPropXml::COMPNAME      },
+    { "catom",            MolPropXml::CATOM         },
+    { "cname",            MolPropXml::C_NAME        },
+    { "cnumber",          MolPropXml::C_NUMBER      },
+    { "datasource",       MolPropXml::DATASOURCE    },
+    { "program",          MolPropXml::PROGRAM       },
+    { "basisset",         MolPropXml::BASISSET      },
+    { "jobtype",          MolPropXml::JOBTYPE       },
+    { "conformation",     MolPropXml::CONFORMATION  },
+    { "datafile",         MolPropXml::DATAFILE      },
+    { "unit",             MolPropXml::UNIT          },
+    { "atom",             MolPropXml::ATOM          },
+    { "atomid",           MolPropXml::ATOMID        },
+    { "obtype",           MolPropXml::OBTYPE        },
+    { "coord_unit",       MolPropXml::X_UNIT        },
+    { "potential_unit",   MolPropXml::V_UNIT        },
+    { "espid",            MolPropXml::ESPID         },
+    { "x",                MolPropXml::dX            },
+    { "y",                MolPropXml::dY            },
+    { "z",                MolPropXml::dZ            },
+    { "V",                MolPropXml::dV            },
+    { "xx",               MolPropXml::qXX           },
+    { "yy",               MolPropXml::qYY           },
+    { "zz",               MolPropXml::qZZ           },
+    { "xy",               MolPropXml::qXY           },
+    { "xz",               MolPropXml::qXZ           },
+    { "yz",               MolPropXml::qYZ           },
+    { "q",                MolPropXml::aQ            }
 };
 
-std::map<int, const std::string> rmap = {};
+std::map<MolPropXml, const std::string> rmap = {};
 
-static const char *exml_names(int xml)
+static void add_xml_string(xmlNodePtr ptr, const std::string &name, const std::string &val)
 {
-    if (rmap.empty())
+    if (xmlSetProp(ptr, xmlCharStrdup(name.c_str()), xmlCharStrdup(val.c_str())) == 0)
     {
-        for (auto iter = xmlxxx.begin(); iter != xmlxxx.end(); ++iter)
-        {
-            rmap.insert({iter->second, iter->first});
-        }
+        gmx_fatal(FARGS, "Setting %s", name.c_str());
     }
-    auto iter = rmap.find(xml);
-    if (iter != rmap.end())
-    {
-        return iter->second.c_str();
-    }
-    return nullptr;
 }
 
-static void add_xml_string(xmlNodePtr ptr, const char *name, std::string val)
+static bool NN(const std::map<MolPropXml, std::string> &xbuf, MolPropXml index)
 {
-    if (xmlSetProp(ptr, xmlCharStrdup(name), xmlCharStrdup(val.c_str())) == 0)
-    {
-        gmx_fatal(FARGS, "Setting %s", (char *)name);
-    }
+    auto ptr = xbuf.find(index);
+    return (xbuf.end() != ptr) && !ptr->second.empty();
 }
 
 static char *sp(int n, char buf[], int maxindent)
@@ -297,33 +278,43 @@ static char *sp(int n, char buf[], int maxindent)
     return buf;
 }
 
-static double xbuf_atof(std::vector<std::string> xbuf, int xbuf_index)
+static double xbuf_atof(const std::map<MolPropXml, std::string> &xbuf, MolPropXml index)
 {
-    return my_atof(xbuf[xbuf_index].c_str(), rmap[xbuf_index].c_str());
+    auto ptr = xbuf.find(index);
+    if (ptr != xbuf.end())
+    {
+        return my_atof(ptr->second.c_str(), rmap[index].c_str());
+    }
+    return my_atof("", rmap[index].c_str());
 }
 
-static void get_attributes(FILE *fp, gmx_bool bZero, int indent, xmlAttrPtr attr,
-                           std::vector<std::string> &xbuf)
+static void get_attributes(FILE                              *fp, 
+                           gmx_bool                           bZero,
+                           int                                indent,
+                           xmlAttrPtr                         attr,
+                           std::map<MolPropXml, std::string> *xbuf)
 {
     if (bZero)
     {
-        for (auto &x : xbuf)
-        {
-            x.clear();
-        }
+        xbuf->clear();
     }
 
     while (attr != nullptr)
     {
-        char *attrname = (char *)attr->name;
-        char *attrval  = (char *)attr->children->content;
+        std::string attrname(reinterpret_cast<const char *>(attr->name));
+        std::string attrval(reinterpret_cast<const char *>(attr->children->content));
 
         auto  iter = xmlxxx.find(attrname);
-        if (iter != xmlxxx.end())
+        if (iter != xmlxxx.end() && !attrval.empty())
         {
-            if (attrval != nullptr)
+            auto ptr = xbuf->find(iter->second);
+            if (xbuf->end() == ptr)
             {
-                xbuf[iter->second].assign(attrval);
+                xbuf->insert({iter->second, attrval});
+            }
+            else
+            {
+                ptr->second.assign(attrval);
             }
         }
         if (fp)
@@ -332,16 +323,14 @@ static void get_attributes(FILE *fp, gmx_bool bZero, int indent, xmlAttrPtr attr
 
             fprintf(fp, "%sProperty: '%s' Value: '%s'\n",
                     sp(indent, buf, sizeof(buf)-1),
-                    attrname, attrval);
+                    attrname.c_str(), attrval.c_str());
         }
         attr = attr->next;
     }
 }
 
-static void process_children(xmlNodePtr tree, std::vector<std::string> &xbuf)
+static void process_children(xmlNodePtr tree, std::map<MolPropXml, std::string> *xbuf)
 {
-    int node;
-
     while (nullptr != tree)
     {
         auto iter = xmlxxx.find((const char *)tree->name);
@@ -349,30 +338,39 @@ static void process_children(xmlNodePtr tree, std::vector<std::string> &xbuf)
             (nullptr != tree->children) &&
             (nullptr != tree->children->content))
         {
-            node = iter->second;
-            if (xbuf[node].size() == 0)
+            std::string content(reinterpret_cast<char *>(tree->children->content));
+            auto node = xbuf->find(iter->second);
+            if (xbuf->end() == node)
             {
-                xbuf[node].assign(reinterpret_cast<char *>(tree->children->content));
+                xbuf->insert({ iter->second, content });
+            }
+            else if (node->second.empty())
+            {
+                node->second.assign(content);
+            }
+            else if (debug)
+            {
+                fprintf(debug, "Multiple children with property '%s' value '%s'\n", tree->name,
+                        content.c_str());
             }
         }
         tree = tree->next;
     }
 }
 
-static void mp_process_tree(FILE *fp, xmlNodePtr tree,
-                            int indent,
+static void mp_process_tree(FILE                 *fp, 
+                            xmlNodePtr            tree,
+                            int                   indent,
                             std::vector<MolProp> *molprops,
-                            gmx_bool *bExperiment)
+                            gmx_bool             *bExperiment)
 {
-    xmlNodePtr                   tc;
-    char                         buf[100];
-    MolProp         *mpt;
-    std::vector<std::string>     xbuf;
-    int                          node;
-    std::string                  xxx;
+    xmlNodePtr                         tc;
+    char                               buf[100];
+    MolProp                           *mpt;
+    std::map<MolPropXml, std::string>  xbuf;
+    MolPropXml                         node;
+    std::string                        xxx;
 
-    xxx.clear();
-    xbuf.resize(exmlNR, xxx);
     while (tree != nullptr)
     {
         if (fp)
@@ -415,7 +413,7 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                         fprintf(fp, "%sElement node name %s\n", sp(indent, buf, 99),
                                 (char *)tree->name);
                     }
-                    get_attributes(fp, TRUE, indent, tree->properties, xbuf);
+                    get_attributes(fp, TRUE, indent, tree->properties, &xbuf);
 
                     Experiment *last = nullptr;
                     if (nullptr != mpt)
@@ -424,67 +422,67 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                     }
                     switch (elem)
                     {
-                        case exmlMOLECULES:
+                        case MolPropXml::MOLECULES:
                             break;
-                        case exmlMOLECULE:
+                        case MolPropXml::MOLECULE:
                         {
                             MolProp mp;
-                            if (NN(xbuf[exmlFORMULA]))
+                            if (NN(xbuf, MolPropXml::FORMULA))
                             {
-                                mp.SetFormula(xbuf[exmlFORMULA]);
+                                mp.SetFormula(xbuf[MolPropXml::FORMULA]);
                             }
-                            if (NN(xbuf[exmlMOLNAME]))
+                            if (NN(xbuf, MolPropXml::MOLNAME))
                             {
-                                mp.SetMolname(xbuf[exmlMOLNAME]);
+                                mp.SetMolname(xbuf[MolPropXml::MOLNAME]);
                             }
-                            if (NN(xbuf[exmlMASS]))
+                            if (NN(xbuf, MolPropXml::MASS))
                             {
-                                mp.SetMass(xbuf_atof(xbuf, exmlMASS));
+                                mp.SetMass(xbuf_atof(xbuf, MolPropXml::MASS));
                             }
-                            if (NN(xbuf[exmlCHARGE]))
+                            if (NN(xbuf, MolPropXml::CHARGE))
                             {
-                                mp.SetTotalCharge(atoi(xbuf[exmlCHARGE].c_str()));
+                                mp.SetTotalCharge(atoi(xbuf[MolPropXml::CHARGE].c_str()));
                             }
-                            if (NN(xbuf[exmlMULTIPLICITY]))
+                            if (NN(xbuf, MolPropXml::MULTIPLICITY))
                             {
-                                mp.SetMultiplicity(atoi(xbuf[exmlMULTIPLICITY].c_str()));
+                                mp.SetMultiplicity(atoi(xbuf[MolPropXml::MULTIPLICITY].c_str()));
                             }
                             molprops->push_back(mp);
                             mpt = &(molprops->back());
                         }
                         break;
                         /* The items below are handled when treating attributes */
-                        case exmlMOLINFO:
-                            if (NN(xbuf[exmlIUPAC]))
+                        case MolPropXml::MOLINFO:
+                            if (NN(xbuf, MolPropXml::IUPAC))
                             {
-                                mpt->SetIupac(xbuf[exmlIUPAC]);
+                                mpt->SetIupac(xbuf[MolPropXml::IUPAC]);
                             }
-                            if (NN(xbuf[exmlCAS]))
+                            if (NN(xbuf, MolPropXml::CAS))
                             {
-                                mpt->SetCas(xbuf[exmlCAS]);
+                                mpt->SetCas(xbuf[MolPropXml::CAS]);
                             }
-                            if (NN(xbuf[exmlCID]))
+                            if (NN(xbuf, MolPropXml::CID))
                             {
-                                mpt->SetCid(xbuf[exmlCID]);
+                                mpt->SetCid(xbuf[MolPropXml::CID]);
                             }
-                            if (NN(xbuf[exmlINCHI]))
+                            if (NN(xbuf, MolPropXml::INCHI))
                             {
-                                mpt->SetInchi(xbuf[exmlINCHI]);
-                            }
-                            break;
-                        case exmlCATEGORY:
-                            if (NN(xbuf[exmlCATNAME]))
-                            {
-                                mpt->AddCategory(xbuf[exmlCATNAME]);
+                                mpt->SetInchi(xbuf[MolPropXml::INCHI]);
                             }
                             break;
-                        case exmlPOLARIZABILITY:
-                            process_children(tree->children, xbuf);
+                        case MolPropXml::CATEGORY:
+                            if (NN(xbuf, MolPropXml::CATNAME))
+                            {
+                                mpt->AddCategory(xbuf[MolPropXml::CATNAME]);
+                            }
+                            break;
+                        case MolPropXml::POLARIZABILITY:
+                            process_children(tree->children, &xbuf);
                             if ((nullptr != last) &&
-                                NN(xbuf[exmlTYPE])  && NN(xbuf[exmlUNIT]) &&
-                                NN(xbuf[exmlTEMPERATURE]) &&
-                                ((NN(xbuf[exmlAVERAGE]) && NN(xbuf[exmlERROR])) ||
-                                 (NN(xbuf[exmlXX]) && NN(xbuf[exmlYY]) && NN(xbuf[exmlZZ]))))
+                                NN(xbuf, MolPropXml::TYPE)  && NN(xbuf, MolPropXml::UNIT) &&
+                                NN(xbuf, MolPropXml::TEMPERATURE) &&
+                                ((NN(xbuf, MolPropXml::AVERAGE) && NN(xbuf, MolPropXml::ERROR)) ||
+                                 (NN(xbuf, MolPropXml::qXX) && NN(xbuf, MolPropXml::qYY) && NN(xbuf, MolPropXml::qZZ))))
                             {
                                 std::string mytype(qm_type);
                                 if (last->dataSource() == dsExperiment)
@@ -492,41 +490,41 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                                     mytype = exp_type;
                                 }
                                 auto mdp = new MolecularPolarizability(mytype,
-                                                                       xbuf_atof(xbuf, exmlTEMPERATURE),
-                                                                       xbuf_atof(xbuf, exmlXX),
-                                                                       xbuf_atof(xbuf, exmlYY),
-                                                                       xbuf_atof(xbuf, exmlZZ),
-                                                                       xbuf_atof(xbuf, exmlXY),
-                                                                       xbuf_atof(xbuf, exmlXZ),
-                                                                       xbuf_atof(xbuf, exmlYZ),
-                                                                       xbuf_atof(xbuf, exmlAVERAGE),
-                                                                       xbuf_atof(xbuf, exmlERROR));
+                                                                       xbuf_atof(xbuf, MolPropXml::TEMPERATURE),
+                                                                       xbuf_atof(xbuf, MolPropXml::qXX),
+                                                                       xbuf_atof(xbuf, MolPropXml::qYY),
+                                                                       xbuf_atof(xbuf, MolPropXml::qZZ),
+                                                                       xbuf_atof(xbuf, MolPropXml::qXY),
+                                                                       xbuf_atof(xbuf, MolPropXml::qXZ),
+                                                                       xbuf_atof(xbuf, MolPropXml::qYZ),
+                                                                       xbuf_atof(xbuf, MolPropXml::AVERAGE),
+                                                                       xbuf_atof(xbuf, MolPropXml::ERROR));
                                 last->addProperty(MolPropObservable::POLARIZABILITY, mdp);
                             }
                             break;
-                        case exmlPOTENTIAL:
-                            process_children(tree->children, xbuf);
+                        case MolPropXml::POTENTIAL:
+                            process_children(tree->children, &xbuf);
                             if ((nullptr != last) &&
-                                NN(xbuf[exmlX_UNIT]) && NN(xbuf[exmlV_UNIT]) &&
-                                NN(xbuf[exmlESPID]) &&
-                                NN(xbuf[exmlX]) && NN(xbuf[exmlY]) &&
-                                NN(xbuf[exmlZ]) && NN(xbuf[exmlV]))
+                                NN(xbuf, MolPropXml::X_UNIT) && NN(xbuf, MolPropXml::V_UNIT) &&
+                                NN(xbuf, MolPropXml::ESPID) &&
+                                NN(xbuf, MolPropXml::dX) && NN(xbuf, MolPropXml::dY) &&
+                                NN(xbuf, MolPropXml::dZ) && NN(xbuf, MolPropXml::dV))
                             {
-                                ElectrostaticPotential ep(xbuf[exmlX_UNIT], xbuf[exmlV_UNIT],
-                                                          atoi(xbuf[exmlESPID].c_str()),
-                                                          xbuf_atof(xbuf, exmlX),
-                                                          xbuf_atof(xbuf, exmlY),
-                                                          xbuf_atof(xbuf, exmlZ),
-                                                          xbuf_atof(xbuf, exmlV));
+                                ElectrostaticPotential ep(xbuf[MolPropXml::X_UNIT], xbuf[MolPropXml::V_UNIT],
+                                                          atoi(xbuf[MolPropXml::ESPID].c_str()),
+                                                          xbuf_atof(xbuf, MolPropXml::dX),
+                                                          xbuf_atof(xbuf, MolPropXml::dY),
+                                                          xbuf_atof(xbuf, MolPropXml::dZ),
+                                                          xbuf_atof(xbuf, MolPropXml::dV));
                                 last->AddPotential(ep);
                             }
                             break;
-                        case exmlDIPOLE:
-                            process_children(tree->children, xbuf);
+                        case MolPropXml::DIPOLE:
+                            process_children(tree->children, &xbuf);
                             if ((nullptr != last) &&
-                                NN(xbuf[exmlTYPE]) && NN(xbuf[exmlUNIT]) &&
-                                NN(xbuf[exmlAVERAGE]) && NN(xbuf[exmlERROR]) &&
-                                NN(xbuf[exmlTEMPERATURE]))
+                                NN(xbuf, MolPropXml::TYPE) && NN(xbuf, MolPropXml::UNIT) &&
+                                NN(xbuf, MolPropXml::AVERAGE) && NN(xbuf, MolPropXml::ERROR) &&
+                                NN(xbuf, MolPropXml::TEMPERATURE))
                             {
                                 std::string mytype(qm_type);
                                 if (last->dataSource() == dsExperiment)
@@ -534,22 +532,22 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                                     mytype = exp_type;
                                 }
                                 auto mdp = new MolecularDipole(mytype,
-                                                               xbuf_atof(xbuf, exmlTEMPERATURE),
-                                                               xbuf_atof(xbuf, exmlX),
-                                                               xbuf_atof(xbuf, exmlY),
-                                                               xbuf_atof(xbuf, exmlZ),
-                                                               xbuf_atof(xbuf, exmlAVERAGE),
-                                                               xbuf_atof(xbuf, exmlERROR));
+                                                               xbuf_atof(xbuf, MolPropXml::TEMPERATURE),
+                                                               xbuf_atof(xbuf, MolPropXml::dX),
+                                                               xbuf_atof(xbuf, MolPropXml::dY),
+                                                               xbuf_atof(xbuf, MolPropXml::dZ),
+                                                               xbuf_atof(xbuf, MolPropXml::AVERAGE),
+                                                               xbuf_atof(xbuf, MolPropXml::ERROR));
                                 last->addProperty(MolPropObservable::DIPOLE, mdp);
                             }
                             break;
-                        case exmlQUADRUPOLE:
-                            process_children(tree->children, xbuf);
+                        case MolPropXml::QUADRUPOLE:
+                            process_children(tree->children, &xbuf);
                             if ((nullptr != last) &&
-                                NN(xbuf[exmlTYPE]) && NN(xbuf[exmlUNIT]) &&
-                                NN(xbuf[exmlTEMPERATURE]) &&
-                                NN(xbuf[exmlXX]) && NN(xbuf[exmlYY]) && NN(xbuf[exmlZZ]) &&
-                                NN(xbuf[exmlXY]) && NN(xbuf[exmlXZ]) && NN(xbuf[exmlYZ]))
+                                NN(xbuf, MolPropXml::TYPE) && NN(xbuf, MolPropXml::UNIT) &&
+                                NN(xbuf, MolPropXml::TEMPERATURE) &&
+                                NN(xbuf, MolPropXml::qXX) && NN(xbuf, MolPropXml::qYY) && NN(xbuf, MolPropXml::qZZ) &&
+                                NN(xbuf, MolPropXml::qXY) && NN(xbuf, MolPropXml::qXZ) && NN(xbuf, MolPropXml::qYZ))
                             {
                                 std::string mytype(qm_type);
                                 if (last->dataSource() == dsExperiment)
@@ -557,35 +555,35 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                                     mytype = exp_type;
                                 }
                                 auto mq = new MolecularQuadrupole(mytype,
-                                                                  xbuf_atof(xbuf, exmlTEMPERATURE),
-                                                                  xbuf_atof(xbuf, exmlXX),
-                                                                  xbuf_atof(xbuf, exmlYY),
-                                                                  xbuf_atof(xbuf, exmlZZ),
-                                                                  xbuf_atof(xbuf, exmlXY),
-                                                                  xbuf_atof(xbuf, exmlXZ),
-                                                                  xbuf_atof(xbuf, exmlYZ));
+                                                                  xbuf_atof(xbuf, MolPropXml::TEMPERATURE),
+                                                                  xbuf_atof(xbuf, MolPropXml::qXX),
+                                                                  xbuf_atof(xbuf, MolPropXml::qYY),
+                                                                  xbuf_atof(xbuf, MolPropXml::qZZ),
+                                                                  xbuf_atof(xbuf, MolPropXml::qXY),
+                                                                  xbuf_atof(xbuf, MolPropXml::qXZ),
+                                                                  xbuf_atof(xbuf, MolPropXml::qYZ));
                                 last->addProperty(MolPropObservable::QUADRUPOLE, mq);
                             }
                             break;
-                        case exmlBOND:
-                            process_children(tree->children, xbuf);
-                            if (NN(xbuf[exmlAI]) && NN(xbuf[exmlAJ]) &&
-                                NN(xbuf[exmlBONDORDER]))
+                        case MolPropXml::BOND:
+                            process_children(tree->children, &xbuf);
+                            if (NN(xbuf, MolPropXml::AI) && NN(xbuf, MolPropXml::AJ) &&
+                                NN(xbuf, MolPropXml::BONDORDER))
                             {
-                                Bond b(atoi(xbuf[exmlAI].c_str())-1, atoi(xbuf[exmlAJ].c_str())-1,
-                                                   xbuf_atof(xbuf, exmlBONDORDER));
+                                Bond b(atoi(xbuf[MolPropXml::AI].c_str())-1, atoi(xbuf[MolPropXml::AJ].c_str())-1,
+                                                   xbuf_atof(xbuf, MolPropXml::BONDORDER));
                                 mpt->AddBond(b);
                             }
                             break;
-                        case exmlENERGY:
-                            process_children(tree, xbuf);
+                        case MolPropXml::ENERGY:
+                            process_children(tree, &xbuf);
                             if ((nullptr != last) &&
-                                NN(xbuf[exmlTYPE]) && NN(xbuf[exmlUNIT]) &&
-                                NN(xbuf[exmlENERGY]) && NN(xbuf[exmlTEMPERATURE]) &&
-                                NN(xbuf[exmlPHASE]))
+                                NN(xbuf, MolPropXml::TYPE) && NN(xbuf, MolPropXml::UNIT) &&
+                                NN(xbuf, MolPropXml::ENERGY) && NN(xbuf, MolPropXml::TEMPERATURE) &&
+                                NN(xbuf, MolPropXml::PHASE))
                             {
                                 MolPropObservable mpo;
-                                if (stringToMolPropObservable(xbuf[exmlTYPE], &mpo))
+                                if (stringToMolPropObservable(xbuf[MolPropXml::TYPE], &mpo))
                                 {
                                     std::string mytype(qm_type);
                                     if (last->dataSource() == dsExperiment)
@@ -593,31 +591,33 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                                         mytype = exp_type;
                                     }
                                     auto me  = new MolecularEnergy(mpo, mytype,
-                                                                   xbuf_atof(xbuf, exmlTEMPERATURE),
-                                                                   string2phase(xbuf[exmlPHASE]),
-                                                                   xbuf_atof(xbuf, exmlENERGY),
-                                                                   xbuf_atof(xbuf, exmlERROR));
+                                                                   xbuf_atof(xbuf, MolPropXml::TEMPERATURE),
+                                                                   string2phase(xbuf[MolPropXml::PHASE]),
+                                                                   xbuf_atof(xbuf, MolPropXml::ENERGY),
+                                                                   xbuf_atof(xbuf, MolPropXml::ERROR));
                                     last->addProperty(mpo, me);
                                 }
                                 else
                                 {
-                                    fprintf(stderr, "Ignoring unknown property %s\n", xbuf[exmlTYPE].c_str());
+                                    fprintf(stderr, "Ignoring unknown property %s\n", xbuf[MolPropXml::TYPE].c_str());
                                 }
+                                xbuf.erase(xbuf.find(MolPropXml::TYPE));
+                                xbuf.erase(xbuf.find(MolPropXml::ENERGY));
                             }
                             break;
 
-                        case exmlATOM:
+                        case MolPropXml::ATOM:
                             if ((nullptr != last) &&
-                                NN(xbuf[exmlNAME]) && NN(xbuf[exmlOBTYPE]) && NN(xbuf[exmlATOMID]))
+                                NN(xbuf, MolPropXml::NAME) && NN(xbuf, MolPropXml::OBTYPE) && NN(xbuf, MolPropXml::ATOMID))
                             {
-                                CalcAtom ca(xbuf[exmlNAME], xbuf[exmlOBTYPE],
-                                                        atoi(xbuf[exmlATOMID].c_str()));
-                                xbuf[exmlNAME].clear();
-                                xbuf[exmlOBTYPE].clear();
-                                xbuf[exmlATOMID].clear();
+                                CalcAtom ca(xbuf[MolPropXml::NAME], xbuf[MolPropXml::OBTYPE],
+                                                        atoi(xbuf[MolPropXml::ATOMID].c_str()));
+                                xbuf[MolPropXml::NAME].clear();
+                                xbuf[MolPropXml::OBTYPE].clear();
+                                xbuf[MolPropXml::ATOMID].clear();
                                 for (tc = tree->children; (nullptr != tc); tc = tc->next)
                                 {
-                                    get_attributes(fp, FALSE, indent, tc->properties, xbuf);
+                                    get_attributes(fp, FALSE, indent, tc->properties, &xbuf);
                                     auto iter = xmlxxx.find((char *)tc->name);
                                     if (iter != xmlxxx.end() &&
                                         (nullptr != tc->children) &&
@@ -627,24 +627,24 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                                         xbuf[node].assign((char *)tc->children->content);
                                     }
 
-                                    if (NN(xbuf[exmlX]) && NN(xbuf[exmlY]) && NN(xbuf[exmlZ])
-                                        && NN(xbuf[exmlUNIT]))
+                                    if (NN(xbuf, MolPropXml::dX) && NN(xbuf, MolPropXml::dY) && NN(xbuf, MolPropXml::dZ)
+                                        && NN(xbuf, MolPropXml::UNIT))
                                     {
-                                        ca.SetUnit(xbuf[exmlUNIT]);
-                                        ca.SetCoords(xbuf_atof(xbuf, exmlX),
-                                                     xbuf_atof(xbuf, exmlY),
-                                                     xbuf_atof(xbuf, exmlZ));
-                                        xbuf[exmlX].clear();
-                                        xbuf[exmlY].clear();
-                                        xbuf[exmlZ].clear();
-                                        xbuf[exmlUNIT].clear();
+                                        ca.SetUnit(xbuf[MolPropXml::UNIT]);
+                                        ca.SetCoords(xbuf_atof(xbuf, MolPropXml::dX),
+                                                     xbuf_atof(xbuf, MolPropXml::dY),
+                                                     xbuf_atof(xbuf, MolPropXml::dZ));
+                                        xbuf[MolPropXml::dX].clear();
+                                        xbuf[MolPropXml::dY].clear();
+                                        xbuf[MolPropXml::dZ].clear();
+                                        xbuf[MolPropXml::UNIT].clear();
                                     }
-                                    if (NN(xbuf[exmlQ]) && NN(xbuf[exmlTYPE]))
+                                    if (NN(xbuf, MolPropXml::aQ) && NN(xbuf, MolPropXml::TYPE))
                                     {
-                                        ca.AddCharge(stringToQtype(xbuf[exmlTYPE]),
-                                                     xbuf_atof(xbuf, exmlQ));
-                                        xbuf[exmlQ].clear();
-                                        xbuf[exmlTYPE].clear();
+                                        ca.AddCharge(stringToQtype(xbuf[MolPropXml::TYPE]),
+                                                     xbuf_atof(xbuf, MolPropXml::aQ));
+                                        xbuf[MolPropXml::aQ].clear();
+                                        xbuf[MolPropXml::TYPE].clear();
                                     }
                                 }
                                 /* Now finally add the atom */
@@ -652,28 +652,32 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                             }
                             break;
 
-                        case exmlEXPERIMENT:
-                            if (NN(xbuf[exmlDATASOURCE]))
+                        case MolPropXml::EXPERIMENT:
+                            if (NN(xbuf, MolPropXml::DATASOURCE))
                             {
-                                DataSource ds = dataSourceFromName(xbuf[exmlDATASOURCE]);
+                                DataSource ds = dataSourceFromName(xbuf[MolPropXml::DATASOURCE]);
 
                                 if (ds == dsTheory &&
-                                    NN(xbuf[exmlPROGRAM]) && NN(xbuf[exmlREFERENCE]) &&
-                                    NN(xbuf[exmlCONFORMATION]) && NN(xbuf[exmlDATAFILE]))
+                                    NN(xbuf, MolPropXml::PROGRAM) && NN(xbuf, MolPropXml::REFERENCE) &&
+                                    NN(xbuf, MolPropXml::CONFORMATION) && NN(xbuf, MolPropXml::DATAFILE) &&
+                                    NN(xbuf, MolPropXml::BASISSET) && NN(xbuf, MolPropXml::METHOD))
                                 {
-                                    Experiment mycalc(xbuf[exmlPROGRAM], xbuf[exmlMETHOD],
-                                                      xbuf[exmlBASISSET], xbuf[exmlREFERENCE],
-                                                      xbuf[exmlCONFORMATION], xbuf[exmlDATAFILE],
-                                                      string2jobType(xbuf[exmlJOBTYPE]));
+                                    Experiment mycalc(xbuf[MolPropXml::PROGRAM], xbuf[MolPropXml::METHOD],
+                                                      xbuf[MolPropXml::BASISSET], xbuf[MolPropXml::REFERENCE],
+                                                      xbuf[MolPropXml::CONFORMATION], xbuf[MolPropXml::DATAFILE],
+                                                      string2jobType(xbuf[MolPropXml::JOBTYPE]));
                                     mpt->AddExperiment(mycalc);
                                 }
                                 else if (ds == dsExperiment)
                                 {
-                                    if (NN(xbuf[exmlREFERENCE]))
+                                    if (NN(xbuf, MolPropXml::REFERENCE))
                                     {
-                                        const char            *unknown = "unknown";
-                                        Experiment myexp(xbuf[exmlREFERENCE],
-                                                         NN(xbuf[exmlCONFORMATION]) ? xbuf[exmlCONFORMATION] : unknown);
+                                        std::string conf("unknown");
+                                        if (NN(xbuf, MolPropXml::CONFORMATION))
+                                        {
+                                            conf = xbuf[MolPropXml::CONFORMATION];
+                                        }
+                                        Experiment myexp(xbuf[MolPropXml::REFERENCE], conf);
                                         mpt->AddExperiment(myexp);
                                     }
                                     else
@@ -687,13 +691,7 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                             break;
                     }
                 }
-                for (auto &i : xbuf)
-                {
-                    if (NN(i))
-                    {
-                        i.clear();
-                    }
-                }
+                xbuf.clear();
                 if (tree->children)
                 {
                     auto iter = xmlxxx.find((char *)tree->name);
@@ -758,6 +756,9 @@ static void add_exper_properties(xmlNodePtr                    exp,
         {
             switch(mpo)
             {
+            case MolPropObservable::OCTUPOLE:
+            case MolPropObservable::HEXADECAPOLE:
+                gmx_fatal(FARGS, "Please implement multipoles");
             case MolPropObservable::HF:
             case MolPropObservable::DHFORM:
             case MolPropObservable::DGFORM:
@@ -773,13 +774,13 @@ static void add_exper_properties(xmlNodePtr                    exp,
                 {
                     double average = prop->getValue();
                     double error   = prop->getError();
-                    child = add_xml_child_val(exp, exml_names(exmlENERGY), gmx_dtoa(average).c_str());
-                    add_xml_string(child, exml_names(exmlTYPE), mpo_name(mpo));
-                    add_xml_string(child, exml_names(exmlUNIT), mpo_unit(mpo));
-                    add_xml_double(child, exml_names(exmlTEMPERATURE), prop->getTemperature());
-                    add_xml_string(child, exml_names(exmlPHASE), phase2string(prop->getPhase()));
-                    add_xml_child_val(child, exml_names(exmlAVERAGE), gmx_ftoa(average).c_str());
-                    add_xml_child_val(child, exml_names(exmlERROR), gmx_ftoa(error).c_str());
+                    child = add_xml_child_val(exp, rmap[MolPropXml::ENERGY], gmx_dtoa(average).c_str());
+                    add_xml_string(child, rmap[MolPropXml::TYPE], mpo_name(mpo));
+                    add_xml_string(child, rmap[MolPropXml::UNIT], mpo_unit(mpo));
+                    add_xml_double(child, rmap[MolPropXml::TEMPERATURE], prop->getTemperature());
+                    add_xml_string(child, rmap[MolPropXml::PHASE], phase2string(prop->getPhase()));
+                    add_xml_child_val(child, rmap[MolPropXml::AVERAGE], gmx_ftoa(average).c_str());
+                    add_xml_child_val(child, rmap[MolPropXml::ERROR], gmx_ftoa(error).c_str());
                     break;
                 }
             case MolPropObservable::DIPOLE:
@@ -788,49 +789,49 @@ static void add_exper_properties(xmlNodePtr                    exp,
                     double error   = prop->getError();
                     auto dp = prop->getVector();
                     
-                    child = add_xml_child(exp, exml_names(exmlDIPOLE));
-                    add_xml_string(child, exml_names(exmlTYPE), prop->getType());
-                    add_xml_string(child, exml_names(exmlUNIT), prop->getUnit());
-                    add_xml_double(child, exml_names(exmlTEMPERATURE), prop->getTemperature());
-                    add_xml_child_val(child, exml_names(exmlAVERAGE), gmx_ftoa(average).c_str());
-                    add_xml_child_val(child, exml_names(exmlERROR), gmx_ftoa(error).c_str());
-                    add_xml_child_val(child, exml_names(exmlX), gmx_ftoa(dp[XX]).c_str());
-                    add_xml_child_val(child, exml_names(exmlY), gmx_ftoa(dp[YY]).c_str());
-                    add_xml_child_val(child, exml_names(exmlZ), gmx_ftoa(dp[ZZ]).c_str());
+                    child = add_xml_child(exp, rmap[MolPropXml::DIPOLE]);
+                    add_xml_string(child, rmap[MolPropXml::TYPE], prop->getType());
+                    add_xml_string(child, rmap[MolPropXml::UNIT], prop->getUnit());
+                    add_xml_double(child, rmap[MolPropXml::TEMPERATURE], prop->getTemperature());
+                    add_xml_child_val(child, rmap[MolPropXml::AVERAGE], gmx_ftoa(average).c_str());
+                    add_xml_child_val(child, rmap[MolPropXml::ERROR], gmx_ftoa(error).c_str());
+                    add_xml_child_val(child, rmap[MolPropXml::dX], gmx_ftoa(dp[XX]).c_str());
+                    add_xml_child_val(child, rmap[MolPropXml::dY], gmx_ftoa(dp[YY]).c_str());
+                    add_xml_child_val(child, rmap[MolPropXml::dZ], gmx_ftoa(dp[ZZ]).c_str());
                     break;
                 }
             case MolPropObservable::QUADRUPOLE:
                 {
                     auto mq = prop->getTensor();
                     
-                    child = add_xml_child(exp, exml_names(exmlQUADRUPOLE));
-                    add_xml_string(child, exml_names(exmlTYPE), prop->getType());
-                    add_xml_string(child, exml_names(exmlUNIT), prop->getUnit());
-                    add_xml_double(child, exml_names(exmlTEMPERATURE), prop->getTemperature());
-                    add_xml_child_val(child, exml_names(exmlXX), gmx_ftoa(mq[XX][XX]).c_str());
-                    add_xml_child_val(child, exml_names(exmlYY), gmx_ftoa(mq[YY][YY]).c_str());
-                    add_xml_child_val(child, exml_names(exmlZZ), gmx_ftoa(mq[ZZ][ZZ]).c_str());
-                    add_xml_child_val(child, exml_names(exmlXY), gmx_ftoa(mq[XX][YY]).c_str());
-                    add_xml_child_val(child, exml_names(exmlXZ), gmx_ftoa(mq[XX][YY]).c_str());
-                    add_xml_child_val(child, exml_names(exmlYZ), gmx_ftoa(mq[YY][ZZ]).c_str());
+                    child = add_xml_child(exp, rmap[MolPropXml::QUADRUPOLE]);
+                    add_xml_string(child, rmap[MolPropXml::TYPE], prop->getType());
+                    add_xml_string(child, rmap[MolPropXml::UNIT], prop->getUnit());
+                    add_xml_double(child, rmap[MolPropXml::TEMPERATURE], prop->getTemperature());
+                    add_xml_child_val(child, rmap[MolPropXml::qXX], gmx_ftoa(mq[XX][XX]).c_str());
+                    add_xml_child_val(child, rmap[MolPropXml::qYY], gmx_ftoa(mq[YY][YY]).c_str());
+                    add_xml_child_val(child, rmap[MolPropXml::qZZ], gmx_ftoa(mq[ZZ][ZZ]).c_str());
+                    add_xml_child_val(child, rmap[MolPropXml::qXY], gmx_ftoa(mq[XX][YY]).c_str());
+                    add_xml_child_val(child, rmap[MolPropXml::qXZ], gmx_ftoa(mq[XX][YY]).c_str());
+                    add_xml_child_val(child, rmap[MolPropXml::qYZ], gmx_ftoa(mq[YY][ZZ]).c_str());
                     break;
                 }
             case MolPropObservable::POLARIZABILITY:
                 {
                     auto mq = prop->getTensor();
                     
-                    child = add_xml_child(exp, exml_names(exmlPOLARIZABILITY));
-                    add_xml_string(child, exml_names(exmlTYPE), prop->getType());
-                    add_xml_string(child, exml_names(exmlUNIT), prop->getUnit());
-                    add_xml_double(child, exml_names(exmlTEMPERATURE), prop->getTemperature());
-                    add_xml_child_val(child, exml_names(exmlAVERAGE), gmx_ftoa(prop->getValue()).c_str());
-                    add_xml_child_val(child, exml_names(exmlERROR), gmx_ftoa(prop->getError()).c_str());
-                    add_xml_child_val(child, exml_names(exmlXX), gmx_ftoa(mq[XX][XX]).c_str());
-                    add_xml_child_val(child, exml_names(exmlYY), gmx_ftoa(mq[YY][YY]).c_str());
-                    add_xml_child_val(child, exml_names(exmlZZ), gmx_ftoa(mq[ZZ][ZZ]).c_str());
-                    add_xml_child_val(child, exml_names(exmlXY), gmx_ftoa(mq[XX][YY]).c_str());
-                    add_xml_child_val(child, exml_names(exmlXZ), gmx_ftoa(mq[XX][YY]).c_str());
-                    add_xml_child_val(child, exml_names(exmlYZ), gmx_ftoa(mq[YY][ZZ]).c_str());
+                    child = add_xml_child(exp, rmap[MolPropXml::POLARIZABILITY]);
+                    add_xml_string(child, rmap[MolPropXml::TYPE], prop->getType());
+                    add_xml_string(child, rmap[MolPropXml::UNIT], prop->getUnit());
+                    add_xml_double(child, rmap[MolPropXml::TEMPERATURE], prop->getTemperature());
+                    add_xml_child_val(child, rmap[MolPropXml::AVERAGE], gmx_ftoa(prop->getValue()).c_str());
+                    add_xml_child_val(child, rmap[MolPropXml::ERROR], gmx_ftoa(prop->getError()).c_str());
+                    add_xml_child_val(child, rmap[MolPropXml::qXX], gmx_ftoa(mq[XX][XX]).c_str());
+                    add_xml_child_val(child, rmap[MolPropXml::qYY], gmx_ftoa(mq[YY][YY]).c_str());
+                    add_xml_child_val(child, rmap[MolPropXml::qZZ], gmx_ftoa(mq[ZZ][ZZ]).c_str());
+                    add_xml_child_val(child, rmap[MolPropXml::qXY], gmx_ftoa(mq[XX][YY]).c_str());
+                    add_xml_child_val(child, rmap[MolPropXml::qXZ], gmx_ftoa(mq[XX][YY]).c_str());
+                    add_xml_child_val(child, rmap[MolPropXml::qYZ], gmx_ftoa(mq[YY][ZZ]).c_str());
                     break;
                 }
             case MolPropObservable::POTENTIAL:
@@ -853,16 +854,16 @@ static void add_calc_properties(xmlNodePtr                    exp,
 
         ep.get(&x_unit, &v_unit, &espid, &x, &y, &z, &V);
 
-        xmlNodePtr child = add_xml_child(exp, exml_names(exmlPOTENTIAL));
-        add_xml_char(child, exml_names(exmlX_UNIT), x_unit.c_str());
-        add_xml_char(child, exml_names(exmlV_UNIT), v_unit.c_str());
-        add_xml_int(child, exml_names(exmlESPID), espid);
+        xmlNodePtr child = add_xml_child(exp, rmap[MolPropXml::POTENTIAL]);
+        add_xml_char(child, rmap[MolPropXml::X_UNIT], x_unit.c_str());
+        add_xml_char(child, rmap[MolPropXml::V_UNIT], v_unit.c_str());
+        add_xml_int(child, rmap[MolPropXml::ESPID], espid);
         if ((x != 0) || (y != 0) || (z != 0) || (V != 0))
         {
-            add_xml_child_val(child, exml_names(exmlX), gmx::formatString("%g", x).c_str());
-            add_xml_child_val(child, exml_names(exmlY), gmx::formatString("%g", y).c_str());
-            add_xml_child_val(child, exml_names(exmlZ), gmx::formatString("%g", z).c_str());
-            add_xml_child_val(child, exml_names(exmlV), gmx::formatString("%g", V).c_str());
+            add_xml_child_val(child, rmap[MolPropXml::dX], gmx::formatString("%g", x).c_str());
+            add_xml_child_val(child, rmap[MolPropXml::dY], gmx::formatString("%g", y).c_str());
+            add_xml_child_val(child, rmap[MolPropXml::dZ], gmx::formatString("%g", z).c_str());
+            add_xml_child_val(child, rmap[MolPropXml::dV], gmx::formatString("%g", V).c_str());
         }
     }
 }
@@ -870,41 +871,41 @@ static void add_calc_properties(xmlNodePtr                    exp,
 static void add_xml_molprop(xmlNodePtr                 parent,
                             const MolProp &mp)
 {
-    xmlNodePtr ptr = add_xml_child(parent, exml_names(exmlMOLECULE));
-    add_xml_string(ptr, exml_names(exmlMOLNAME), mp.getMolname());
-    add_xml_string(ptr, exml_names(exmlFORMULA), mp.formula());
-    add_xml_double(ptr, exml_names(exmlMASS), mp.getMass());
-    add_xml_double(ptr, exml_names(exmlCHARGE), mp.totalCharge());
-    add_xml_double(ptr, exml_names(exmlMULTIPLICITY), mp.getMultiplicity());
+    xmlNodePtr ptr = add_xml_child(parent, rmap[MolPropXml::MOLECULE]);
+    add_xml_string(ptr, rmap[MolPropXml::MOLNAME], mp.getMolname());
+    add_xml_string(ptr, rmap[MolPropXml::FORMULA], mp.formula());
+    add_xml_double(ptr, rmap[MolPropXml::MASS], mp.getMass());
+    add_xml_double(ptr, rmap[MolPropXml::CHARGE], mp.totalCharge());
+    add_xml_double(ptr, rmap[MolPropXml::MULTIPLICITY], mp.getMultiplicity());
 
-    xmlNodePtr child = add_xml_child(ptr, exml_names(exmlMOLINFO));
-    add_xml_string(child, exml_names(exmlIUPAC), mp.getIupac());
-    add_xml_string(child, exml_names(exmlCAS), mp.getCas());
-    add_xml_string(child, exml_names(exmlCID), mp.getCid());
-    add_xml_string(child, exml_names(exmlINCHI), mp.getInchi());
+    xmlNodePtr child = add_xml_child(ptr, rmap[MolPropXml::MOLINFO]);
+    add_xml_string(child, rmap[MolPropXml::IUPAC], mp.getIupac());
+    add_xml_string(child, rmap[MolPropXml::CAS], mp.getCas());
+    add_xml_string(child, rmap[MolPropXml::CID], mp.getCid());
+    add_xml_string(child, rmap[MolPropXml::INCHI], mp.getInchi());
 
     for (auto &b : mp.bondsConst())
     {
-        xmlNodePtr child = add_xml_child(ptr, exml_names(exmlBOND));
-        add_xml_int(child, exml_names(exmlAI), 1+b.aI());
-        add_xml_int(child, exml_names(exmlAJ), 1+b.aJ());
-        add_xml_double(child, exml_names(exmlBONDORDER), b.bondOrder());
+        xmlNodePtr child = add_xml_child(ptr, rmap[MolPropXml::BOND]);
+        add_xml_int(child, rmap[MolPropXml::AI], 1+b.aI());
+        add_xml_int(child, rmap[MolPropXml::AJ], 1+b.aJ());
+        add_xml_double(child, rmap[MolPropXml::BONDORDER], b.bondOrder());
     }
 
     for (auto &me : mp.experimentConst())
     {
-        xmlNodePtr             child = add_xml_child(ptr, exml_names(exmlEXPERIMENT));
+        xmlNodePtr             child = add_xml_child(ptr, rmap[MolPropXml::EXPERIMENT]);
         DataSource ds    = me.dataSource();
-        add_xml_string(child, exml_names(exmlDATASOURCE), dataSourceName(ds));
-        add_xml_string(child, exml_names(exmlREFERENCE), me.getReference());
-        add_xml_string(child, exml_names(exmlCONFORMATION), me.getConformation());
+        add_xml_string(child, rmap[MolPropXml::DATASOURCE], dataSourceName(ds));
+        add_xml_string(child, rmap[MolPropXml::REFERENCE], me.getReference());
+        add_xml_string(child, rmap[MolPropXml::CONFORMATION], me.getConformation());
         if (dsTheory == ds)
         {
-            add_xml_string(child, exml_names(exmlPROGRAM), me.getProgram());
-            add_xml_string(child, exml_names(exmlMETHOD), me.getMethod());
-            add_xml_string(child, exml_names(exmlBASISSET), me.getBasisset());
-            add_xml_string(child, exml_names(exmlJOBTYPE), jobType2string(me.getJobtype()));
-            add_xml_string(child, exml_names(exmlDATAFILE), me.getDatafile());
+            add_xml_string(child, rmap[MolPropXml::PROGRAM], me.getProgram());
+            add_xml_string(child, rmap[MolPropXml::METHOD], me.getMethod());
+            add_xml_string(child, rmap[MolPropXml::BASISSET], me.getBasisset());
+            add_xml_string(child, rmap[MolPropXml::JOBTYPE], jobType2string(me.getJobtype()));
+            add_xml_string(child, rmap[MolPropXml::DATAFILE], me.getDatafile());
         }
 
         add_exper_properties(child, me);
@@ -912,32 +913,32 @@ static void add_xml_molprop(xmlNodePtr                 parent,
 
         for (auto &ca : me.calcAtomConst())
         {
-            xmlNodePtr grandchild = add_xml_child(child, exml_names(exmlATOM));
-            add_xml_string(grandchild, exml_names(exmlNAME), ca.getName());
-            add_xml_string(grandchild, exml_names(exmlOBTYPE), ca.getObtype());
-            add_xml_int(grandchild, exml_names(exmlATOMID), ca.getAtomid());
+            xmlNodePtr grandchild = add_xml_child(child, rmap[MolPropXml::ATOM]);
+            add_xml_string(grandchild, rmap[MolPropXml::NAME], ca.getName());
+            add_xml_string(grandchild, rmap[MolPropXml::OBTYPE], ca.getObtype());
+            add_xml_int(grandchild, rmap[MolPropXml::ATOMID], ca.getAtomid());
 
             double x, y, z;
             ca.getCoords(&x, &y, &z);
 
-            xmlNodePtr  baby = add_xml_child_val(grandchild, exml_names(exmlX), gmx::formatString("%g", x).c_str());
-            add_xml_string(baby, exml_names(exmlUNIT), ca.getUnit());
-            baby = add_xml_child_val(grandchild, exml_names(exmlY), gmx::formatString("%g", y).c_str());
-            add_xml_string(baby, exml_names(exmlUNIT), ca.getUnit());
-            baby = add_xml_child_val(grandchild, exml_names(exmlZ), gmx::formatString("%g", z).c_str());
-            add_xml_string(baby, exml_names(exmlUNIT), ca.getUnit());
+            xmlNodePtr  baby = add_xml_child_val(grandchild, rmap[MolPropXml::dX], gmx::formatString("%g", x).c_str());
+            add_xml_string(baby, rmap[MolPropXml::UNIT], ca.getUnit());
+            baby = add_xml_child_val(grandchild, rmap[MolPropXml::dY], gmx::formatString("%g", y).c_str());
+            add_xml_string(baby, rmap[MolPropXml::UNIT], ca.getUnit());
+            baby = add_xml_child_val(grandchild, rmap[MolPropXml::dZ], gmx::formatString("%g", z).c_str());
+            add_xml_string(baby, rmap[MolPropXml::UNIT], ca.getUnit());
 
             for (auto &q : ca.chargesConst())
             {
-                xmlNodePtr atomptr = add_xml_child_val(grandchild, exml_names(exmlQ), gmx::formatString("%g", q.second).c_str());
-                add_xml_string(atomptr, exml_names(exmlTYPE), qTypeName(q.first));
+                xmlNodePtr atomptr = add_xml_child_val(grandchild, rmap[MolPropXml::aQ], gmx::formatString("%g", q.second).c_str());
+                add_xml_string(atomptr, rmap[MolPropXml::TYPE], qTypeName(q.first));
             }
         }
     }
     for (auto &s : mp.categoryConst())
     {
-        xmlNodePtr child = add_xml_child(ptr, exml_names(exmlCATEGORY));
-        add_xml_string(child, exml_names(exmlCATNAME), s);
+        xmlNodePtr child = add_xml_child(ptr, rmap[MolPropXml::CATEGORY]);
+        add_xml_string(child, rmap[MolPropXml::CATNAME], s);
     }
 
 }

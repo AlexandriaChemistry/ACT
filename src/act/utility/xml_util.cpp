@@ -36,55 +36,55 @@
 
 #include "gromacs/utility/fatalerror.h"
 
-void add_xml_int(xmlNodePtr ptr, const char *name, int val)
+void add_xml_int(xmlNodePtr ptr, const std::string &name, int val)
 {
     xmlChar buf[32];
 
     sprintf((char *)buf, "%d", val);
-    if (xmlSetProp(ptr, (xmlChar *)name, buf) == 0)
+    if (xmlSetProp(ptr, (xmlChar *)name.c_str(), buf) == 0)
     {
-        gmx_fatal(FARGS, "Setting %s", (char *)name);
+        gmx_fatal(FARGS, "Setting %s", name.c_str());
     }
 }
 
-void add_xml_double(xmlNodePtr ptr, const char *name, double val)
+void add_xml_double(xmlNodePtr ptr, const std::string &name, double val)
 {
     xmlChar buf[32];
 
     sprintf((char *)buf, "%g", val);
-    if (xmlSetProp(ptr, (xmlChar *)name, buf) == 0)
+    if (xmlSetProp(ptr, (xmlChar *)name.c_str(), buf) == 0)
     {
-        gmx_fatal(FARGS, "Setting %s", (char *)name);
+        gmx_fatal(FARGS, "Setting %s", name.c_str());
     }
 }
 
-void add_xml_char(xmlNodePtr ptr, const char *name, const char *val)
+void add_xml_char(xmlNodePtr ptr, const std::string &name, const char *val)
 {
-    if (xmlSetProp(ptr, (xmlChar *)name, (xmlChar *)val) == 0)
+    if (xmlSetProp(ptr, (xmlChar *)name.c_str(), (xmlChar *)val) == 0)
     {
-        gmx_fatal(FARGS, "Setting %s", (char *)name);
+        gmx_fatal(FARGS, "Setting %s", name.c_str());
     }
 }
 
-xmlNodePtr add_xml_child(xmlNodePtr parent, const char *type)
+xmlNodePtr add_xml_child(xmlNodePtr parent, const std::string &type)
 {
     xmlNodePtr child;
 
-    if ((child = xmlNewChild(parent, NULL, (xmlChar *)type, NULL)) == NULL)
+    if ((child = xmlNewChild(parent, NULL, (xmlChar *)type.c_str(), NULL)) == NULL)
     {
-        gmx_fatal(FARGS, "Creating element %s", (char *)type);
+        gmx_fatal(FARGS, "Creating element %s", type.c_str());
     }
 
     return child;
 }
 
-xmlNodePtr add_xml_child_val(xmlNodePtr parent, const char *type, const char *value)
+xmlNodePtr add_xml_child_val(xmlNodePtr parent, const std::string &type, const char *value)
 {
     xmlNodePtr child;
 
-    if ((child = xmlNewChild(parent, NULL, (xmlChar *)type, (xmlChar *)value)) == NULL)
+    if ((child = xmlNewChild(parent, NULL, (xmlChar *)type.c_str(), (xmlChar *)value)) == NULL)
     {
-        gmx_fatal(FARGS, "Creating element %s", (char *)type);
+        gmx_fatal(FARGS, "Creating element %s", (char *)type.c_str());
     }
 
     return child;
