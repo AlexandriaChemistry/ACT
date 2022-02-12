@@ -193,51 +193,75 @@ bool HybridGAMC::evolve(ga::Genome *bestGenome)
     {
         // Increase generation counter
         generation++;
-        fprintf(logFile_, "\nGeneration %i\n", generation);
-        
+        if (debug)
+        {
+            fprintf(debug, "\nGeneration %i\n", generation);
+        }
         // Sort individuals in increasing order of fitness
         auto gp = pool[pold]->genePoolPtr();
         if (gach_->sort())
         {
-            fprintf(logFile_, "Sorting old population...\n");
+            if (debug)
+            {
+                fprintf(debug, "Sorting old population...\n");
+            }
             pool[pold]->sort(iMolSelect::Train);
         }
         
         // Normalize the fitness into a probability
-        fprintf(logFile_, "Computing probabilities...\n");
+        if (debug)
+        {
+            fprintf(debug, "Computing probabilities...\n");
+        }
         probabilityComputer()->compute(gp);
         
-        pool[pold]->print(logFile_);
-        
+        if (debug)
+        {
+            pool[pold]->print(debug);
+        }
         if (gach_->nElites() > 0)  // FIXME: can we remove the > 0?
         {
             // Move the "nElites" best individuals (unchanged) into the new population 
             // (assuming population is sorted)
-            fprintf(logFile_, "Moving the %i best individual(s) into the new population...\n", gach_->nElites());
+            if (debug)
+            {
+                fprintf(debug, "Moving the %i best individual(s) into the new population...\n", gach_->nElites());
+            }
             for (int i = 0; i < gach_->nElites(); i++)
             {
                 pool[pnew]->replaceGenome(i, pool[pold]->genome(i));
             }
             
             // Generate new population after the elitism
-            fprintf(logFile_, "Generating the rest of the new population...\n");
+            if (debug)
+            {
+                fprintf(logFile_, "Generating the rest of the new population...\n");
+            }
         }
         for (size_t i = gach_->nElites(); i < pool[pold]->popSize(); i += 2)
         {
             // Select parents
             parent1 = selector()->select(gp);
             parent2 = selector()->select(gp);
-            fprintf(logFile_, "parent1: %zu; parent2: %zu\n", parent1, parent2);
+            if (debug)
+            {
+                fprintf(debug, "parent1: %zu; parent2: %zu\n", parent1, parent2);
+            }
             
             // If crossover is to be performed
             if (dis(gen) <= gach_->prCross())  
             {
                 // Do crossover
-                fprintf(logFile_, "Before crossover\n");
-                pool[pold]->genome(parent1).print("Parent 1:", logFile_);
-                pool[pold]->genome(parent2).print("Parent 2:", logFile_);
-                
-                fprintf(logFile_, "Doing crossover...\n");
+                if (debug)
+                {
+                    fprintf(debug, "Before crossover\n");
+                    pool[pold]->genome(parent1).print("Parent 1:", debug);
+                    pool[pold]->genome(parent2).print("Parent 2:", debug);
+                }
+                if (debug)
+                {
+                    fprintf(debug, "Doing crossover...\n");
+                }
                 crossover()->offspring(pool[pold]->genomePtr(parent1),
                                        pool[pold]->genomePtr(parent2),
                                        pool[pnew]->genomePtr(i),
@@ -245,16 +269,25 @@ bool HybridGAMC::evolve(ga::Genome *bestGenome)
             }
             else
             {
-                fprintf(logFile_, "Omitting crossover...\n");
+                if (debug)
+                {
+                    fprintf(debug, "Omitting crossover...\n");
+                }
                 pool[pnew]->replaceGenome(i,   pool[pold]->genome(parent1));
                 pool[pnew]->replaceGenome(i+1, pool[pold]->genome(parent2));
             }
             pool[pnew]->genomePtr(i)->unsetFitness(iMolSelect::Train);
             pool[pnew]->genomePtr(i+1)->unsetFitness(iMolSelect::Train);
-            pool[pnew]->genome(i).print("Child 1:", logFile_);
-            pool[pnew]->genome(i+1).print("Child 2:", logFile_);
+            if (debug)
+            {
+                pool[pnew]->genome(i).print("Child 1:", debug);
+                pool[pnew]->genome(i+1).print("Child 2:", debug);
+            }
         }
-        fprintf(logFile_, "Sending for mutation...\n");
+        if (debug)
+        {
+            fprintf(debug, "Sending for mutation...\n");
+        }
         for (size_t i = std::max(1, gach_->nElites()); i < pool[pnew]->popSize(); i++)
         {
             int dest = cr->middlemen()[i-1];
@@ -268,15 +301,20 @@ bool HybridGAMC::evolve(ga::Genome *bestGenome)
         // Mutate the MASTER's genome if no elitism
         if (gach_->nElites() == 0)  // FIXME: can we just negate instead of comparing?
         {
-            fprintf(logFile_, "Mutating the MASTER's genome...\n");
+            if (debug)
+            {
+                fprintf(debug, "Mutating the MASTER's genome...\n");
+            }
             mutator()->mutate(pool[pnew]->genomePtr(0), ind->bestGenomePtr(), gach_->prMut());
             if (gach_->optimizer() == alexandria::OptimizerAlg::GA)
             {
                 fitnessComputer()->compute(pool[pnew]->genomePtr(0), iMolSelect::Train);
             }
         }
-        
-        fprintf(logFile_, "Fetching mutated children and fitness from new generation...\n");
+        if (debug)
+        {
+            fprintf(debug, "Fetching mutated children and fitness from new generation...\n");
+        }
         // Receive the new children (parameters + fitness) from the middle men for the non elitist
         // FIXME: if we end up sending more stuff, it might be worth it to just send the entire genome
         for (size_t i = std::max(1, gach_->nElites()); i < pool[pnew]->popSize(); i++)
@@ -288,11 +326,17 @@ bool HybridGAMC::evolve(ga::Genome *bestGenome)
         }
 
         // Swap oldPop and newPop
-        fprintf(logFile_, "Swapping oldPop and newPop...\n");
+        if (debug)
+        {
+            fprintf(debug, "Swapping oldPop and newPop...\n");
+        }
         pold = pnew;
 
         // Print population again!
-        pool[pold]->print(logFile_);
+        if (debug)
+        {
+            pool[pold]->print(debug);
+        }
 
         // Print fitness to surveillance files
         fprintFitness(*(pool[pold]));

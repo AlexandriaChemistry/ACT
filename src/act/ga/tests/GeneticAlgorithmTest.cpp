@@ -252,6 +252,7 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
                 checker_.checkReal(gach.prMut(), "Probability for Mutation");
                 Genome best;
                 ga->evolve(&best);
+                checker_.checkReal(best.fitness(iMolSelect::Train), "Training fitness");
                 if (cr.nmiddlemen() > 1)  // If we have more middlemen than the master, stop them
                 {
                     for(auto &dest : cr.middlemen())
@@ -264,8 +265,13 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
                 }
                 // Stop MASTER's helpers
                 std::vector<double> dummy;
-                fitComp->calcDeviation(&dummy, alexandria::CalcDev::Final, iMolSelect::Train);
+                auto                imstr = iMolSelect::Train;
+                fitComp->calcDeviation(&dummy, alexandria::CalcDev::Final, imstr);
 
+                checker_.checkReal(best.fitness(imstr), "Training fitness after evolve");
+                
+                auto chi2 = fitComp->calcDeviation(best.basesPtr(), alexandria::CalcDev::Master, imstr);
+                EXPECT_EQ(best.fitness(imstr), chi2);
                 if (best.nBase() > 0)
                 {
                     checker_.checkSequence(best.bases().begin(),

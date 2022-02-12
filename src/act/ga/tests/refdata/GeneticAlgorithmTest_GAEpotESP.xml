@@ -69,6 +69,8 @@
   <Int64 Name="Maximum Number of Generations">10</Int64>
   <Real Name="Probability for Crossover">0.34999999999999998</Real>
   <Real Name="Probability for Mutation">0.01</Real>
+  <Real Name="Training fitness">15487842.357363187</Real>
+  <Real Name="Training fitness after evolve">15487842.357363187</Real>
   <Sequence Name="bestParam">
     <Int Name="Length">15</Int>
     <Real>297.58785219220943</Real>
