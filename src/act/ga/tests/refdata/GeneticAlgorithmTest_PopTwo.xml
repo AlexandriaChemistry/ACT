@@ -40,8 +40,8 @@
   <Real Name="Probability for Mutation">0.01</Real>
   <Sequence Name="bestParam">
     <Int Name="Length">3</Int>
-    <Real>5.3032791128982693</Real>
-    <Real>3.2869448867794704</Real>
+    <Real>5.1938601011762566</Real>
+    <Real>4.0688467243098074</Real>
     <Real>7.3240118804806933</Real>
   </Sequence>
 </ReferenceData>

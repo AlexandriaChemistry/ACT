@@ -37,11 +37,11 @@
   <Real Name="bch.step">0.1</Real>
   <Int64 Name="Maximum Number of Generations">10</Int64>
   <Real Name="Probability for Crossover">0.35</Real>
-  <Real Name="Probability for Mutation">1</Real>
+  <Real Name="Probability for Mutation">0.01</Real>
   <Sequence Name="bestParam">
     <Int Name="Length">3</Int>
-    <Real>4.5649612993485702</Real>
-    <Real>2.9149762076472161</Real>
-    <Real>7.2407488396211335</Real>
+    <Real>4.6509736071940448</Real>
+    <Real>3.0274258944717714</Real>
+    <Real>7.3395876102619182</Real>
   </Sequence>
 </ReferenceData>

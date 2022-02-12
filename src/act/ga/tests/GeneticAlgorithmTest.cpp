@@ -45,6 +45,7 @@
 #include "testutils/testfilemanager.h"
 
 #include "alexandria/acm_ga.h"
+#include "alexandria/bayes.h"
 #include "alexandria/acmfitnesscomputer.h"
 #include "alexandria/acminitializer.h"
 #include "alexandria/acthelper.h"
@@ -97,10 +98,10 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
             gach.setPopSize(popSize);
             gach.setCrossovers(ncrossovers);
             gach.setOptimizerAlg(alg);
-            if (alg != alexandria::OptimizerAlg::GA)
-            {
-                gach.setPrMut(1);
-            }
+            // if (alg != alexandria::OptimizerAlg::GA)  NOT NEEDED ANYMORE SINCE MCMCMutator ignores prMut
+            // {
+            //     gach.setPrMut(1);
+            // }
             int nmiddlemen = gach.popSize();
             // if (gach.optimizer() != alexandria::OptimizerAlg::MCMC)
             // {
@@ -186,19 +187,39 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
                 checker_.checkSequence(sii.paramNames().begin(), sii.paramNames().end(), "paramNames");
                 // Now the rest of the classes
                 std::string outputFile("GeneticAlgorithmTest.dat");
-                bool randInit     = false;
+                // bool randInit     = false;
                 
+                // Adjust the seed that gets passed around to components of the optimizer
+                // Create random number generator and feed it the global seed
+                std::random_device rd;  // Will be used to obtain a seed for the random number engine
+                std::mt19937 gen(rd()); // Standard mersenne_twister_engine seeded with rd()
+                std::uniform_int_distribution<int> dis(0); // Default constructor to cover all available (positive) range
+                gen.seed(seed);
+                seed = dis(gen);
+
                 // Initializer
                 auto *initializer = new alexandria::ACMInitializer(&sii, gach.randomInit(), seed);
                 auto *fitComp     = new alexandria::ACMFitnessComputer(nullptr, &sii, &molgen, false, false, false);
 
                 auto probComputer = new RankProbabilityComputer(gach.popSize());
                 // Selector
-                auto selector     = new ga::RouletteSelector(bch.seed());
+                auto selector     = new ga::RouletteSelector(seed);
                 auto crossover    = new alexandria::NPointCrossover(sii.nParam(),
                                                                     gach.nCrossovers(),
-                                                                    bch.seed());
+                                                                    seed);
             
+                // Mutator
+                Mutator *mut;
+                if (alg == alexandria::OptimizerAlg::GA)
+                {
+                    mut = new alexandria::PercentMutator(&sii, seed, gach.percent());
+                }
+                else
+                {
+                    // mut = new alexandria::MCMCMutator(stdout, false, seed, &bch, fitComp, &sii, bch.evaluateTestset());
+                    mut = new alexandria::MCMCMutator(nullptr, false, seed, &bch, fitComp, &sii, bch.evaluateTestset());
+                }
+
                 // Terminator
                 auto terminator   = new ga::GenerationTerminator(gach.maxGenerations());
                 GeneticAlgorithm *ga;
@@ -207,8 +228,6 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
                     checker_.checkInt64(bch.maxIter(), "bch.maxIter");
                     checker_.checkInt64(bch.seed(), "bch.seed");
                     checker_.checkReal(bch.temperature(), "bch.temperature");
-                    
-                    auto mut = new alexandria::MCMCMutator(stdout, false, seed, &bch, fitComp, &sii, bch.evaluateTestset());
 
                     ga = new ga::MCMC(stdout, initializer, fitComp, mut, &sii, &gach);
                 }
@@ -222,8 +241,7 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
                     {
                         checker_.checkReal(bch.step(), "bch.step");
                     }
-                    auto mutator = new alexandria::PercentMutator(&sii, seed, gach.percent());
-                    ga = new ga::HybridGAMC(stdout, initializer, fitComp, probComputer, selector, crossover, mutator, terminator,
+                    ga = new ga::HybridGAMC(stdout, initializer, fitComp, probComputer, selector, crossover, mut, terminator,
                                             &sii, &gach, bch.seed());
                 }
                 checker_.checkInt64(gach.maxGenerations(), "Maximum Number of Generations");
@@ -231,7 +249,7 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
                 checker_.checkReal(gach.prMut(), "Probability for Mutation");
                 Genome best;
                 ga->evolve(&best);
-                if (cr.nmiddlemen() > 0)
+                if (cr.nmiddlemen() > 1)  // If we have more middlemen than the master, stop them
                 {
                     for(auto &dest : cr.middlemen())
                     {
@@ -241,6 +259,9 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
                         }
                     }
                 }
+                // Stop MASTER's helpers
+                std::vector<double> dummy;
+                fitComp->calcDeviation(&dummy, alexandria::CalcDev::Final, iMolSelect::Train);
 
                 if (best.nBase() > 0)
                 {
