@@ -52,7 +52,7 @@
 
 #include "act/poldata/forcefieldparameter.h"
 #include "act/poldata/poldata.h"
-#include "qgen_acm.h"
+#include "act/qgen/qgen_acm.h"
 #include "topology.h"
 #include "act/utility/units.h"
 

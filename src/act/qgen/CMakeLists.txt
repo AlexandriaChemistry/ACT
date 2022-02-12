@@ -25,11 +25,10 @@
 #  Boston, MA  02110-1301, USA.
 #
 
-add_subdirectory(basics)
-add_subdirectory(coulombintegrals)
-add_subdirectory(ga)
-add_subdirectory(molprop)
-add_subdirectory(poldata)
-add_subdirectory(qgen)
-add_subdirectory(utility)
+file(GLOB QGEN_SOURCES *.cpp *.h)
+target_sources(actLib PRIVATE ${QGEN_SOURCES})
+
+if (BUILD_TESTING)
+   add_subdirectory(tests)
+endif()
 

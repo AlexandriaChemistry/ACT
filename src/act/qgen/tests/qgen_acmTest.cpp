@@ -47,7 +47,7 @@
 #include "act/poldata/poldata.h"
 #include "act/poldata/poldata_utils.h"
 #include "act/poldata/poldata_xml.h"
-#include "alexandria/qgen_acm.h"
+#include "../qgen_acm.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"

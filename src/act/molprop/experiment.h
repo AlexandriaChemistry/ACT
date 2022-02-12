@@ -38,7 +38,7 @@
 #include <vector>
 
 #include "act/molprop/molpropobservable.h"
-#include "alexandria/qtype.h"
+#include "act/qgen/qtype.h"
 
 namespace alexandria
 {

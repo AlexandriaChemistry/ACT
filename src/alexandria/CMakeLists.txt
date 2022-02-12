@@ -41,7 +41,6 @@ target_sources(actLib
            babel_io.cpp
            bastat.cpp
            bayes.cpp
-           composition.cpp
            confighandler.cpp
            devcomputer.cpp
            dissociation_energy.cpp
@@ -58,11 +57,7 @@ target_sources(actLib
            npointcrossover.cpp
            openmm_xml.cpp
            percentmutator.cpp
-           qgen_acm.cpp
-           qgen_cube.cpp
-           qgen_resp.cpp
            qm2molprop.cpp
-           qtype.cpp
            readpsi4.cpp
            staticindividualinfo.cpp
            symmetrize_charges.cpp

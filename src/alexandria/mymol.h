@@ -55,9 +55,9 @@
 #include "molselect.h"
 #include "mymol_low.h"
 #include "act/poldata/poldata.h"
-#include "qgen_acm.h"
-#include "qgen_resp.h"
-#include "qtype.h"
+#include "act/qgen/qgen_acm.h"
+#include "act/qgen/qgen_resp.h"
+#include "act/qgen/qtype.h"
 
 struct gmx_enerdata_t;
 struct gmx_shellfc_t;
@@ -320,7 +320,7 @@ namespace alexandria
          */
 
         /*! Set a pointer to a new QgenAcm
-         * \param[in] qgenAcm The pointer to an initiated class
+         * \param[in] act/qgen/qgenAcm The pointer to an initiated class
          */
         void setQgenAcm(QgenAcm *qgenAcm) { QgenAcm_ = std::move(qgenAcm); }
 

@@ -42,7 +42,7 @@
 #include "gromacs/utility/fatalerror.h"
 
 #include "act/utility/communicationrecord.h"
-#include "alexandria/composition.h"
+#include "act/molprop/composition.h"
 #include "act/utility/units.h"
 
 namespace alexandria

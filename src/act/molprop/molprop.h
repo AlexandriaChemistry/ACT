@@ -44,7 +44,7 @@
 #include "gromacs/utility/real.h"
 
 #include "act/utility/communicationrecord.h"
-#include "alexandria/composition.h"
+#include "act/molprop/composition.h"
 #include "experiment.h"
 #include "act/molprop/molpropobservable.h"
 #include "phase.h"

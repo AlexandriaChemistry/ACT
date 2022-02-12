@@ -32,16 +32,15 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-set(testname "AlexandriaTests")
-set(exename "alexandria-test")
+set(testname "QgenTests")
+set(exename "qgen-test")
 
 gmx_add_unit_test(
     ${testname}
     ${exename}
     # files with code for tests
-#    atomtypeTest.cpp
-    allbondedsTest.cpp
-    topologyTest.cpp
+    qgen_acmTest.cpp
+    qgen_respTest.cpp
     # pseudo-library for code for alexandria
     $<TARGET_OBJECTS:actLib>
     )

@@ -92,7 +92,7 @@ int gentop(int argc, char *argv[])
         "database from one of the specified QM calculations (given with [TT]-lot[tt]).",
         "An alternative to the system-wide database [TT]molprops.dat[tt]",
         "can be passed along using the [TT]-mpdb[tt] flag.[PAR]",
-        "If the flag [TT]-qgen[tt] is given, charges will be generated using the",
+        "If the flag [TT]-act/qgen/qgen[tt] is given, charges will be generated using the",
         "specified algorithm. Without the flag the charges from the QM calculation",
         "will be used.",
         "The supported force field for this tool are Alexandria with two",
