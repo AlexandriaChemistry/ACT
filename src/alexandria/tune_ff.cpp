@@ -353,9 +353,6 @@ bool OptACM::runMaster(bool        optimize,
             commRec_.send_done(dest);
         }
     }
-    // Stop MASTER's helpers
-    std::vector<double> dummy;
-    fitComp_->calcDeviation(&dummy, CalcDev::Final, iMolSelect::Train);
 
     // else
     // {
@@ -368,21 +365,16 @@ bool OptACM::runMaster(bool        optimize,
 
     if (bMinimum)
     {
-        auto best = bestGenome.bases();
-        if (best.empty())
+        if (bestGenome.bases().empty())
         {
             GMX_THROW(gmx::InternalError("Minimum found but no best parameters"));
         }
-        // Copy it to Poldata
-        std::vector<bool> changed;
-        changed.resize(best.size(), true);
-        sii_->updatePoldata(changed, &bestGenome);
-        // FIXME: these last calc deviations will be very slow? We could stop MASTER's helpers at the end of the function
+        
         for (const auto &ims : iMolSelectNames())
         {
             // TODO printing
-            double chi2 = fitComp_->calcDeviation(bestGenome.basesPtr(),
-                                                  CalcDev::Master, ims.first);
+            fitComp_->compute(&bestGenome, ims.first);
+            double chi2 = bestGenome.fitness(ims.first);
             fprintf(logFile(), "Minimum chi2 for %s %g\n",
                     iMolSelectName(ims.first), chi2);
     }
@@ -394,6 +386,11 @@ bool OptACM::runMaster(bool        optimize,
     {
         fprintf(logFile(), "Did not find a better parameter set\n");
     }
+
+    // Stop MASTER's helpers
+    std::vector<double> dummy;
+    fitComp_->calcDeviation(&dummy, CalcDev::Final, iMolSelect::Train);
+
     return bMinimum;
 }
 
