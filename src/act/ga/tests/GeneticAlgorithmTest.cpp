@@ -263,20 +263,22 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
                         }
                     }
                 }
-                // Stop MASTER's helpers
-                std::vector<double> dummy;
-                auto                imstr = iMolSelect::Train;
-                fitComp->calcDeviation(&dummy, alexandria::CalcDev::Final, imstr);
 
+                auto imstr = iMolSelect::Train;
                 checker_.checkReal(best.fitness(imstr), "Training fitness after evolve");
                 
-                auto chi2 = fitComp->calcDeviation(best.basesPtr(), alexandria::CalcDev::Master, imstr);
-                EXPECT_EQ(best.fitness(imstr), chi2);
+                auto bestDuplicate = best;
+                fitComp->compute(&bestDuplicate, imstr);
+                EXPECT_EQ(best.fitness(imstr), bestDuplicate.fitness(imstr));
                 if (best.nBase() > 0)
                 {
                     checker_.checkSequence(best.bases().begin(),
                                            best.bases().end(), "bestParam");
                 }
+
+                // Stop MASTER's helpers
+                std::vector<double> dummy;
+                fitComp->calcDeviation(&dummy, alexandria::CalcDev::Final, imstr);
             }
             else if (cr.isMiddleMan())
             {
