@@ -34,6 +34,7 @@
 #define XML_UTIL_H
 
 #include <stdio.h>
+#include <string>
 
 #include <libxml/parser.h>
 #include <libxml/tree.h>
