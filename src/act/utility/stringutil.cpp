@@ -32,6 +32,7 @@
  
 #include "stringutil.h"
 
+#include <inttypes.h>
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
@@ -108,21 +109,6 @@ std::string gmx_ftoa(double f)
     return std::string(buf);
 }
 
-std::string gmx_dtoa(double f)
-{
-    char buf[32];
-
-    if (fabs(f) < 1e8)
-    {
-        sprintf(buf, "%.3f", f);
-    }
-    else
-    {
-        sprintf(buf, "%g", f);
-    }
-    return std::string(buf);
-}
-
 std::string gmx_itoa(int f)
 {
     char a[32];
@@ -135,12 +121,25 @@ std::string gmx_itoa(int f)
 double my_atof(const char *str, const char *description)
 {
     char   *ptr = nullptr;
-    double  d   = strtod(str, &ptr);
+    double  d   = std::strtod(str, &ptr);
     if (ptr == nullptr)
     {
-        fprintf(stderr, "Could not read double precision number %s from '%s' found %f\n", description ? description : "", str, d);
+        fprintf(stderr, "Could not read double precision number %s from '%s' found %f\n",
+                description ? description : "", str, d);
         d = -1;
     }
     return d;
 }
 
+int my_atoi(const char *str, const char *description)
+{
+    char *ptr = nullptr;
+    int   d   = std::strtol(str, &ptr, 10);
+    if (ptr == nullptr)
+    {
+        fprintf(stderr, "Could not read double precision number %s from '%s' found %d\n",
+                description ? description : "", str, d);
+        d = -1;
+    }
+    return d;
+}

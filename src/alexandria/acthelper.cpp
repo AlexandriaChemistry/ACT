@@ -12,8 +12,7 @@ namespace alexandria
 ACTHelper::ACTHelper(StaticIndividualInfo *sii,
                      MolGen               *mg)
 {
-    fitComp_ = new ACMFitnessComputer(nullptr, sii, mg, 
-                                      false, false, false);
+    fitComp_ = new ACMFitnessComputer(nullptr, sii, mg, false, false);
 }
 
 void ACTHelper::run()

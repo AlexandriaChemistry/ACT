@@ -79,6 +79,8 @@ enum class immStatus {
     Unknown,
     //! No error, all OK.
     OK,
+    //! No atoms foumd
+    NoAtoms,
     //! Zero dipole found in a molecule
     ZeroDip,
     //! No Quadrupole present

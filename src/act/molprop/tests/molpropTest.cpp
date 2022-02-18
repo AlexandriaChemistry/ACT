@@ -44,6 +44,7 @@
 #include "act/molprop/molprop.h"
 #include "act/molprop/molpropobservable.h"
 #include "act/molprop/molprop_xml.h"
+#include "act/molprop/multipole_names.h"
 #include "act/poldata/poldata_xml.h"
 
 #include "testutils/cmdlinetest.h"
@@ -149,45 +150,34 @@ protected:
                         {
                         case alexandria::MolPropObservable::POLARIZABILITY:
                             {
-                                myCheck.checkDouble(gp->getValue(),
-                                                    gmx::formatString("%s %s %s average", mpostr, gp->getType(), cbuf).c_str());
-                                myCheck.checkDouble(gp->getError(),
-                                                    gmx::formatString("%s %s %s error", mpostr, gp->getType(), cbuf).c_str());
-                                auto pp = gp->getTensor();
+                                auto gpp = static_cast<MolecularPolarizability *>(gp);
+                                myCheck.checkDouble(gpp->getValue(),
+                                                    gmx::formatString("%s %s %s average", mpostr, gpp->getType(), cbuf).c_str());
+                                myCheck.checkDouble(gpp->getError(),
+                                                    gmx::formatString("%s %s %s error", mpostr, gpp->getType(), cbuf).c_str());
+                                auto pp = gpp->getTensor();
                                 for(auto &t : t_elem)
                                 {
                                     myCheck.checkDouble(pp[t.second.first][t.second.second],
-                                                        gmx::formatString("%s %s %s %s", mpostr, gp->getType(), cbuf, t.first).c_str());
-                                }
-                            }
-                            break;
-                        case MolPropObservable::OCTUPOLE:
-                        case MolPropObservable::HEXADECAPOLE:
-                            gmx_fatal(FARGS, "Please implement multipoles");
-                        case MolPropObservable::QUADRUPOLE:
-                            {
-                                auto vv = gp->getTensor();
-                                for(auto &t : t_elem)
-                                {
-                                    myCheck.checkDouble(vv[t.second.first][t.second.second],
-                                                        gmx::formatString("%s %s %s %s", mpostr, gp->getType(), cbuf, t.first).c_str());
+                                                        gmx::formatString("%s %s %s %s",
+                                                                          mpostr, gpp->getType(), cbuf, t.first).c_str());
                                 }
                             }
                             break;
                         case MolPropObservable::DIPOLE:
+                        case MolPropObservable::QUADRUPOLE:
+                        case MolPropObservable::OCTUPOLE:
+                        case MolPropObservable::HEXADECAPOLE:
                             {
-                                std::map<const char *,int> v_elem = {
-                                    { "X", XX }, { "Y", YY }, { "Z", ZZ }
-                                };
-                                myCheck.checkDouble(gp->getValue(),
-                                                    gmx::formatString("%s %s %s average", mpostr, gp->getType(), cbuf).c_str());
-                                myCheck.checkDouble(gp->getError(),
-                                                    gmx::formatString("%s %s %s error", mpostr, gp->getType(), cbuf).c_str());
-                                auto mu = gp->getVector();
-                                for(auto &v : v_elem)
+                                auto vv = gp->getVector();
+                                auto nn = multipoleNames(propi.first);
+                                for(size_t i = 0; i < vv.size(); i++)
                                 {
-                                    myCheck.checkDouble(mu[v.second],
-                                                        gmx::formatString("%s %s %s %s", mpostr, gp->getType(), cbuf, v.first).c_str());
+                                    myCheck.checkDouble(vv[i],
+                                                        gmx::formatString("%s %s %s %s",
+                                                                          mbuf,
+                                                                          mpostr, gp->getType(),
+                                                                          nn[i].c_str()).c_str());
                                 }
                             }
                             break;

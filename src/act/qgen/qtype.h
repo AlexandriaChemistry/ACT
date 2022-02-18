@@ -35,6 +35,7 @@
 #include <map>
 #include <string>
 
+#include "act/molprop/molpropobservable.h"
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
@@ -81,11 +82,8 @@ qType stringToQtype(const std::string &type);
  */
 const std::map<qType, std::string> &qTypes();
 
-//! typedef for octupole
-typedef std::array<tensor, DIM> Octapole;
-
 //! typedef for hexadecapole
-typedef std::array<Octapole, DIM> Hexadecapole;
+//typedef std::array<Octupole, DIM> Hexadecapole;
 
 
 /*! Class to hold electrostatic properties
@@ -99,12 +97,7 @@ class QtypeProps
     //! Identity
     qType                  qtype_;
     //! Electrostatic moments
-    rvec                   mu_           = { 0 };
-    tensor                 quadrupole_   = {{ 0 }};
-    Octapole               octupole_;
-    Hexadecapole           hexadecapole_;
-    //! Norm of the dipole
-    double                 dipole_     = 0;
+    std::map<MolPropObservable, std::vector<double> > multipoles_;
     //! The coordinates
     gmx::HostVector<gmx::RVec> x_;
     //! Center of charge
@@ -159,57 +152,29 @@ class QtypeProps
      */
     void calcMoments();
     
-    /*! \brief Return dipole vector
-     * \return The dipole vector
-     */
-    const rvec &mu() const { return mu_; };
-    
-    /*! \brief Set dipole vector
-     * \param[in] mu The dipole vector
-     */
-    void setMu(const rvec mu);
-    
     /*! \brief
      * Return computed dipole for charge type qt.
      */
-    double dipole() const { return dipole_; }
+    double dipole() const;
 
-    /*! \brief Return quadrupole
-     * \return The quadrupole
+    /*! \brief Check whether a multipole observable is present
+     * \param[in] mpo The type of multipole
+     * \return true if found
      */
-    const tensor &quad() const { return quadrupole_; };
+    bool hasMultipole(MolPropObservable mpo) const;
+    
+    /*! \brief Return multipole
+     * \param[in] mpo The type of multipole
+     * \return The multipole values
+     * \throws with invalid input
+     */
+    const std::vector<double> &getMultipole(MolPropObservable mpo) const;
 
     /*! \brief Set quadrupole tensor
      * \param[in] quad The quadrupole tensor
      */
-    void setQuadrupole(const tensor quad);
+    void setMultipole(MolPropObservable mpo, const std::vector<double> &mult);
 
-
-    /*! \brief Return octupole
-     * \return The octupole
-     */
-    //const std::vector<std::vector<std::vector<double>>> &oct() const { return octupole_; };
-    const Octapole &oct() const { return octupole_; };
-    
-
-    /*! \brief Set octupole tensor
-     * \param[in] oct The octupole tensor 3x3x3
-     */
-    void setOctupole(const Octapole &oct) { octupole_ = oct; }
-                     //const std::vector<std::vector<std::vector<double>>> oct);
-
-    /*! \brief Return hexadecapole
-     * \return The hexadecapole
-     */
-    //const std::vector<std::vector<std::vector<std::vector<double>>>> &hexadeca() const { return hexadecapole_; };
-    const Hexadecapole &hexadeca() const { return hexadecapole_; };
-
-    /*! \brief Set hexadecapole tensor
-     * \param[in] hexadeca The hexadecapole tensor 3x3x3x3
-     */
-    void setHexadecapole(const Hexadecapole &hexadeca) { hexadecapole_ = hexadeca; }
-                         //const std::vector<std::vector<std::vector<std::vector<double>>>> hexadeca);
-    
     /*! \brief Return charges
      * \return The atomic charges
      */

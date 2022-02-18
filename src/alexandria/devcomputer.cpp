@@ -276,64 +276,53 @@ void PolarDevComputer::calcDeviation(MyMol                                *mymol
 * * * * * * * * * * * * * * * * * * * * * */
 
 /* * * * * * * * * * * * * * * * * * * * * *
-* BEGIN: QuadDevComputer                   *
+* BEGIN: MultiPoleDevComputer              *
 * * * * * * * * * * * * * * * * * * * * * */
 
-void QuadDevComputer::calcDeviation(MyMol                                *mymol,
-                                    std::map<eRMS, FittingTarget>        *targets,
-                                    gmx_unused Poldata                   *poldata,
-                                    gmx_unused const std::vector<double> &param,
-                                    gmx_unused const CommunicationRecord *commrec)
+void MultiPoleDevComputer::calcDeviation(MyMol                                *mymol,
+                                         std::map<eRMS, FittingTarget>        *targets,
+                                         gmx_unused Poldata                   *poldata,
+                                         gmx_unused const std::vector<double> &param,
+                                         gmx_unused const CommunicationRecord *commrec)
 {
-    QtypeProps *qelec = mymol->qTypeProps(qType::Elec);
-    QtypeProps *qcalc = mymol->qTypeProps(qType::Calc);
+    if (!(mymol->qTypeProps(qType::Elec)->hasMultipole(mpo_) &&
+          mymol->qTypeProps(qType::Calc)->hasMultipole(mpo_)))
+    {
+        return;
+    }
+    auto qelec = mymol->qTypeProps(qType::Elec)->getMultipole(mpo_);
+    auto qcalc = mymol->qTypeProps(qType::Calc)->getMultipole(mpo_);
     double delta = 0;
-    for (int mm = 0; mm < DIM; mm++)
+    for (size_t mm = 0; mm < qelec.size(); mm++)
     {
-        for (int nn = 0; nn < DIM; nn++)
-        {
-            if (bFullQuadrupole_ || mm == nn)
-            {
-                delta += gmx::square(qcalc->quad()[mm][nn] - qelec->quad()[mm][nn]);
-            }
-        }
+        delta += gmx::square(qcalc[mm] - qelec[mm]);
     }
-    (*targets).find(eRMS::QUAD)->second.increase(1, delta);
+    eRMS rms;
+    switch (mpo_)
+    {
+    case MolPropObservable::DIPOLE:
+        rms = eRMS::MU;
+        break;
+    case MolPropObservable::QUADRUPOLE:
+        rms = eRMS::QUAD;
+        break;
+    case MolPropObservable::OCTUPOLE:
+        rms = eRMS::OCT;
+        break;
+    case MolPropObservable::HEXADECAPOLE:
+        rms = eRMS::HEXADEC;
+        break;
+    default:
+        GMX_THROW(gmx::InternalError(gmx::formatString("Not support MolPropObservable %s", mpo_name(mpo_)).c_str()));
+    }
+    
+    (*targets).find(rms)->second.increase(1, delta);
 }
 
 /* * * * * * * * * * * * * * * * * * * * * *
-* END: QuadDevComputer                     *
+* END: MultipoleDevComputer                *
 * * * * * * * * * * * * * * * * * * * * * */
 
-/* * * * * * * * * * * * * * * * * * * * * *
-* BEGIN: MuDevComputer                     *
-* * * * * * * * * * * * * * * * * * * * * */
-
-void MuDevComputer::calcDeviation(MyMol                                *mymol,
-                                  std::map<eRMS, FittingTarget>        *targets,
-                                  gmx_unused Poldata                   *poldata,
-                                  gmx_unused const std::vector<double> &param,
-                                  gmx_unused const CommunicationRecord *commrec)
-{
-    QtypeProps *qelec = mymol->qTypeProps(qType::Elec);
-    QtypeProps *qcalc = mymol->qTypeProps(qType::Calc);
-    real delta = 0;
-    if (bQM_)
-    {
-        rvec dmu;
-        rvec_sub(qcalc->mu(), qelec->mu(), dmu);
-        delta = iprod(dmu, dmu);
-    }
-    else
-    {
-        delta = gmx::square(qcalc->dipole() - mymol->dipExper());
-    }
-    (*targets).find(eRMS::MU)->second.increase(1, delta);
-}
-
-/* * * * * * * * * * * * * * * * * * * * * *
-* END: MuDevComputer                       *
-* * * * * * * * * * * * * * * * * * * * * */
 
 /* * * * * * * * * * * * * * * * * * * * * *
 * BEGIN: EnergyDevComputer                 *

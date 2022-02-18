@@ -33,6 +33,7 @@
 #ifndef MOLPROPOBSERVABLE_H
 #define MOLPROPOBSERVABLE_H
 
+#include <array>
 #include <map>
 #include <string>
 #include <vector>
@@ -237,57 +238,61 @@ public:
     
     virtual const std::vector<double> &getVector() const = 0;
     
-    virtual const tensor &getTensor() const = 0;
 };
 
 typedef std::vector<GenericProperty>::const_iterator GPConstIterator;
 
 /*! \brief
- * Contains the elements of the molecular quadrupole
- *
- * The six elements of the upper diagonal of a quadrupole tensor are stored.
- * The values are dependent on the orientation of the molecule and are relative
- * to the center of charge in case that the total charge or total dipole of
- * the molecules are non-zero.
- *
- * \inpublicapi
- * \ingroup module_alexandria
+ * Elements of the electrostatic multipole
  */
-class MolecularQuadrupole : public GenericProperty
+class MolecularMultipole : public GenericProperty
 {
 private:
-    //! The quadrupole moment
-    tensor quad_ = {{ 0 }};
+    //! Average value
+    double              average_;
+    //! Error
+    double              error_;
+    //! The values of the electric multipole
+    std::vector<double> values_;
 public:
     //! Default constructor
-    MolecularQuadrupole() {}
+    MolecularMultipole() {}
     
-    //! Constructor initiating all elements of the quadrupole tensor
-    MolecularQuadrupole(const std::string &type,
-                        double T,
-                        double xx, double yy, double zz,
-                        double xy, double xz, double yz) :
-        GenericProperty(MolPropObservable::QUADRUPOLE, type, T, ePhase::GAS)
-    { Set(xx, yy, zz, xy, xz, yz); };
+    /*! Constructor initiating all elements of the multipole
+     * \param[in] type   The calculation type
+     * \param[in] T      The temperature
+     * \param[in] mpo    The multipole type
+     * \throws if mpo is not a multipole
+     */
+    MolecularMultipole(const std::string &type,
+                       double             T,
+                       MolPropObservable  mpo);
     
-    //! Set all the elements of the qudrupole tensor
-    void Set(double xx, double yy, double zz, double xy, double xz, double yz)
-    { 
-        quad_[XX][XX] = xx;
-        quad_[YY][YY] = yy;
-        quad_[ZZ][ZZ] = zz;
-        quad_[XX][YY] = xy;
-        quad_[XX][ZZ] = xz; 
-        quad_[YY][ZZ] = yz;
-    };
+    /*! \brief Check whether a certain id is present
+     * \param[in] id    The name of the parameter, e.g. "xy"
+     * \return true if present
+     */
+    bool hasId(const std::string &id);
     
-    double getValue() const { crash(); }
+    /*! \brief Set a value based on the name
+     * \param[in] id    The name of the parameter, e.g. "xy"
+     * \param[in] value The value
+     * \throws if unknown id
+     */
+    void setValue(const std::string &id, double value);
     
-    double getError() const { crash(); }
+    double getValue() const
+    {
+        return average_;
+    }
     
-    const std::vector<double> &getVector() const { crash(); }
+    double getError() const
+    {
+        return error_;
+    }
     
-    const tensor &getTensor() const { return quad_; }
+    //! \return the values
+    const std::vector<double> &getVector() const { return values_; }
     
     /*! \brief
      * Sends this object over an MPI connection
@@ -428,74 +433,6 @@ public:
     double getError() const { return error_; }
 
     const std::vector<double> &getVector() const { crash(); }
-
-    const tensor &getTensor() const { crash(); }
-    
-    /*! \brief
-     * Sends this object over an MPI connection
-     *
-     * \param[in] cr   Data structure for MPI communication
-     * \param[in] dest Destination processor
-     * \return the CommunicationStatus of the operation
-     */
-    CommunicationStatus Send(const CommunicationRecord *cr,
-                             int                        dest) const;
-    
-    /*! \brief
-     * Receives this object over an MPI connection
-     *
-     * \param[in] cr  Data structure for MPI communication
-     * \param[in] src Source processor
-     * \return the CommunicationStatus of the operation
-     */
-    CommunicationStatus Receive(const CommunicationRecord *cr,
-                                int                        src);
-};
-
-/*! \brief
- * Contains the dipole vector
- *
- * \inpublicapi
- * \ingroup module_alexandria
- */
-class MolecularDipole : public GenericProperty
-{
-private:
-    std::vector<double> mu_;
-    double              average_;
-    double              error_;
-public:
-    //! Default constructor
-    MolecularDipole() {}
-    
-    //! Constructor storing all properties related to this dipole
-    MolecularDipole(const std::string &type,
-                    double T,
-                    double x, double y, double z, double aver, double error)
-        : GenericProperty(MolPropObservable::DIPOLE, type, T, ePhase::GAS)
-    { Set(x, y, z, aver, error); }
-
-    //! Set all properties related to this dipole
-    void Set(double x, double y, double z, double aver, double error)
-    {
-        mu_.clear();
-        mu_.push_back(x);
-        mu_.push_back(y);
-        mu_.push_back(z);
-        average_ = aver;
-        error_   = error;
-    };
-
-    //! Return all properties of this dipole
-    const std::vector<double> &getVector() const { return mu_; }
-
-    //! Return the average dipole value
-    double getValue() const { return average_; }
-
-    //! Return the error in the average dipole
-    double getError() const { return error_; }
-    
-    const tensor &getTensor() const { crash(); }
 
     /*! \brief
      * Sends this object over an MPI connection

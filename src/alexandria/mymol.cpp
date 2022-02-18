@@ -74,6 +74,7 @@
 #include "act/poldata/forcefieldparameter.h"
 #include "gromacs_top.h"
 #include "act/molprop/molprop_util.h"
+#include "act/molprop/multipole_names.h"
 #include "mymol_low.h"
 #include "symmetrize_charges.h"
 #include "act/utility/units.h"
@@ -322,11 +323,20 @@ immStatus MyMol::GenerateAtoms(const Poldata     *pd,
                                const std::string &basis,
                                bool               strict=true)
 {
-    double              xx, yy, zz;
-    int                 natom = 0;
-    immStatus           imm   = immStatus::OK;
-
-    auto ci = findExperimentConst(method, basis, "");
+    double                    xx, yy, zz;
+    int                       natom = 0;
+    immStatus                 imm   = immStatus::OK;
+    std::vector<std::string>  confs = { "minimum" };
+    const Experiment         *ci    = nullptr;
+    
+    for(size_t iconf = 0; iconf < confs.size(); iconf++)
+    { 
+        ci = findExperimentConst(method, basis, confs[iconf]);
+        if (ci && ci->NAtom() > 0)
+        {
+            break;
+        }
+    }
     if (!ci && !strict)
     {
         if (debug)
@@ -337,6 +347,10 @@ immStatus MyMol::GenerateAtoms(const Poldata     *pd,
     }
     if (ci)
     {
+        if (ci->NAtom() == 0)
+        {
+            return immStatus::NoAtoms;
+        }
         t_param nb;
         memset(&nb, 0, sizeof(nb));
         natom = 0;
@@ -1865,7 +1879,6 @@ immStatus MyMol::CalcPolarizability(double                     efield,
 {
     const double        POLFAC = 29.957004; /* C.m**2.V*-1 to Å**3 */
     std::vector<double> field;
-    rvec                mu_ref;
     immStatus           imm = immStatus::OK;
     double              rmsf;
     QtypeProps          qtp(qType::Calc);
@@ -1878,7 +1891,12 @@ immStatus MyMol::CalcPolarizability(double                     efield,
     qtp.setX(state_->x);
     isoPol_calc_ = 0;
     qtp.calcMoments();
-    copy_rvec(qtp.mu(), mu_ref);
+    auto mpo = MolPropObservable::DIPOLE;
+    if (!qtp.hasMultipole(mpo))
+    {
+        GMX_THROW(gmx::InternalError("No dipole to compute."));
+    }
+    auto mu_ref = qtp.getMultipole(mpo);
     for (auto m = 0; imm == immStatus::OK && m < DIM; m++)
     {
         field[m] = efield;
@@ -1889,12 +1907,11 @@ immStatus MyMol::CalcPolarizability(double                     efield,
         myforce_->setField(field);
         if (imm == immStatus::OK)
         {
-            rvec mu_tot;
             qtp.calcMoments();
-            copy_rvec(qtp.mu(), mu_tot);
+            auto qmu = qtp.getMultipole(mpo);
             for (auto n = 0; n < DIM; n++)
             {
-                alpha_calc_[n][m] = ((mu_tot[n]-mu_ref[n])/efield)*(POLFAC);
+                alpha_calc_[n][m] = ((qmu[n]-mu_ref[n])/efield)*(POLFAC);
             }
             isoPol_calc_ += alpha_calc_[m][m]/DIM;
         }
@@ -1933,17 +1950,15 @@ void MyMol::PrintTopology(const char                *fn,
 }
 
 static void add_tensor(std::vector<std::string> *commercials,
-                       const char *title, const tensor &Q)
+                       const char *title, const std::vector<double> &Q)
 {
     char buf[256];
     snprintf(buf, sizeof(buf), "%s:\n"
              "; ( %6.2f %6.2f %6.2f )\n"
-             "; ( %6.2f %6.2f %6.2f )\n"
-             "; ( %6.2f %6.2f %6.2f )\n",
+             "; (       %6.2f %6.2f )\n"
+             "; (             %6.2f )\n",
              title,
-             Q[XX][XX], Q[XX][YY], Q[XX][ZZ],
-             Q[YY][XX], Q[YY][YY], Q[YY][ZZ],
-             Q[ZZ][XX], Q[ZZ][YY], Q[ZZ][ZZ]);
+             Q[0], Q[1], Q[2], Q[3], Q[4], Q[5]);
     commercials->push_back(buf);
 }
 
@@ -1997,54 +2012,38 @@ void MyMol::PrintTopology(FILE                      *fp,
     commercials.push_back(buf);
     
     auto qcalc = qTypeProps(qType::Calc);
+    auto qelec = qTypeProps(qType::Elec);
     qcalc->setQ(atoms());
     qcalc->setX(state_->x);
     qcalc->calcMoments();
-    snprintf(buf, sizeof(buf), "Alexandria Dipole Moment (Debye):\n"
-             "; ( %.2f %6.2f %6.2f ) Total= %.2f\n",
-             qcalc->mu()[XX], qcalc->mu()[YY], qcalc->mu()[ZZ],
-             qcalc->dipole());
-    commercials.push_back(buf);
-
+    
     T = -1;
     const char *qm_type = "electronic";
     const char *qm_conf = "minimum";
-    auto gp = findProperty(MolPropObservable::DIPOLE, iqmType::QM, T, method, basis, qm_conf);
-    if (gp)
+    for(auto &mpo : mpoMultiPoles)
     {
-        auto vec = gp->getVector();
-        qProps_.find(qType::Elec)->second.setMu(vec.data());
-        snprintf(buf, sizeof(buf), "%s Dipole Moment (Debye):\n"
-                 "; ( %.2f %6.2f %6.2f ) Total= %.2f\n",
-                 mylot.c_str(),
-                 vec[XX], vec[YY], vec[ZZ],
-                 qProps_.find(qType::Elec)->second.dipole());
-        commercials.push_back(buf);
-    }
-    else if (bVerbose)
-    {
-        printf("WARNING: QM dipole of type %s not found for lot %s\n",
-               qm_type, mylot.c_str());
-    }
-    tensor aquad;
-    copy_mat(qProps_.find(qType::Calc)->second.quad(), aquad);
-    add_tensor(&commercials,
-               "Alexandria Traceless Quadrupole Moments (Buckingham)",
-               aquad);
-
-    T = -1;
-    gp = findProperty(MolPropObservable::QUADRUPOLE, iqmType::QM, T, method, basis, qm_conf);
-    if (gp)
-    {
-        const tensor &myQ = gp->getTensor();
-        qProps_.find(qType::Elec)->second.setQuadrupole(myQ);
-        snprintf(buf, sizeof(buf), "%s Traceless Quadrupole Moments (Buckingham)", mylot.c_str());
-        add_tensor(&commercials, buf, myQ);
-    }
-    else if (bVerbose)
-    {
-        printf("WARNING: QM quadrupole of type %s not found for lot %s\n",
-               qm_type, mylot.c_str());
+        auto gp = findProperty(mpo, iqmType::QM, T, method, basis, qm_conf);
+        if (gp)
+        {
+            auto vec = gp->getVector();
+            qelec->setMultipole(mpo, vec);
+            auto mymu = qelec->getMultipole(mpo);
+            commercials.push_back(gmx::formatString("%s %s (%s)\n",
+                                                    mylot.c_str(), mpo_name(mpo), mpo_unit(mpo)));
+            for(auto &fmp : formatMultipole(mpo, mymu))
+            {
+                commercials.push_back(fmp);
+            }
+        }
+        if (qcalc->hasMultipole(mpo))
+        {
+            auto mymu = qcalc->getMultipole(mpo);
+            commercials.push_back(gmx::formatString("Alexandria %s (%s)\n", mpo_name(mpo), mpo_unit(mpo)));
+            for(auto &fmp : formatMultipole(mpo, mymu))
+            {
+                commercials.push_back(fmp);
+            }
+        }
     }
 
     double efield = 0.1;
@@ -2053,7 +2052,9 @@ void MyMol::PrintTopology(FILE                      *fp,
         auto imm = CalcPolarizability(efield, cr, debug);
         if (imm == immStatus::OK)
         {
-            add_tensor(&commercials, "Alexandria Polarizability components (A^3)", alpha_calc_);
+            std::vector<double> ac = { alpha_calc_[XX][XX], alpha_calc_[XX][YY], alpha_calc_[XX][ZZ],
+                alpha_calc_[YY][YY], alpha_calc_[YY][ZZ], alpha_calc_[ZZ][ZZ] };
+            add_tensor(&commercials, "Alexandria Polarizability components (A^3)", ac);
             
             snprintf(buf, sizeof(buf), "Alexandria Isotropic Polarizability: %.2f (A^3)\n", isoPol_calc_);
             commercials.push_back(buf);
@@ -2066,10 +2067,10 @@ void MyMol::PrintTopology(FILE                      *fp,
             if (gp)
             {
                 //&isoPol_elec_, &error, &T, &myref, &mylot, &vec, alpha_elec_))
-                copy_mat(gp->getTensor(), alpha_elec_);
+                auto alpha_elec = gp->getVector();
                 CalcAnisoPolarizability(alpha_elec_, &anisoPol_elec_);
                 snprintf(buf, sizeof(buf), "%s + Polarizability components (A^3)", mylot.c_str());
-                add_tensor(&commercials, buf, alpha_elec_);
+                add_tensor(&commercials, buf, alpha_elec);
                 snprintf(buf, sizeof(buf), "%s Isotropic Polarizability: %.2f (A^3)\n", mylot.c_str(), isoPol_elec_);
                 commercials.push_back(buf);
                 snprintf(buf, sizeof(buf), "%s Anisotropic Polarizability: %.2f (A^3)\n", mylot.c_str(), anisoPol_elec_);
@@ -2345,46 +2346,15 @@ immStatus MyMol::getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
             }
             break;
         case MolPropObservable::DIPOLE:
-            {
-                double T = -1;
-                auto gp = static_cast<const MolecularDipole *>(findProperty(mpo, miq.second, T, method, basis, ""));
-                if (gp)
-                {
-                    // TODO distinguish experimental and QM data
-                    dip_exp_  = gp->getValue();
-                    dip_err_  = gp->getError();
-                    qProps_.find(qType::Elec)->second.setMu(gp->getVector().data());
-                    
-                    if (dip_err_ <= 0)
-                    {
-                        if (debug)
-                        {
-                            fprintf(debug, "WARNING: Error for %s is %g, assuming it is 10%%.\n",
-                                    getMolname().c_str(), dip_err_);
-                        }
-                        nwarn++;
-                        dip_err_ = 0.1*dip_exp_;
-                    }
-                    dip_weight_ = gmx::square(1.0/dip_err_);
-                    
-                    if (!bZero && fabs(qProps_.find(qType::Elec)->second.dipole()) < 1e-2)
-                    {
-                        imm = immStatus::ZeroDip;
-                    }
-                }
-                else
-                {
-                    imm = immStatus::NoData;
-                }
-            }
-            break;
         case MolPropObservable::QUADRUPOLE:
+        case MolPropObservable::OCTUPOLE:
+        case MolPropObservable::HEXADECAPOLE:
             {
                 double T = -1;
-                auto gp = static_cast<const MolecularQuadrupole *>(findProperty(mpo, miq.second, T, method, basis, ""));
+                auto gp = static_cast<const MolecularMultipole *>(findProperty(mpo, miq.second, T, method, basis, ""));
                 if (gp)
                 {
-                    qProps_.find(qType::Elec)->second.setQuadrupole(gp->getTensor());
+                    qProps_.find(qType::Elec)->second.setMultipole(mpo, gp->getVector());
                 }
                 else
                 {

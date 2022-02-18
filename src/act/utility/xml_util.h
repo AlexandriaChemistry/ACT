@@ -38,20 +38,64 @@
 #include <libxml/parser.h>
 #include <libxml/tree.h>
 
+/*! Add integer to xmlNode
+ * \param[in] ptr  The XML structure
+ * \paran[in] name The name of the variable
+ * \param[in] val  The value of the variable
+ * Will crash with fatal error if operation fails
+ */
 void add_xml_int(xmlNodePtr ptr, const std::string &name, int val);
 
+/*! Add double to xmlNode
+ * \param[in] ptr  The XML structure
+ * \paran[in] name The name of the variable
+ * \param[in] val  The value of the variable
+ * Will crash with fatal error if operation fails
+ */
 void add_xml_double(xmlNodePtr ptr, const std::string &name, double val);
 
+/*! Add integer to xmlNode
+ * \param[in] ptr  The XML structure
+ * \paran[in] name The name of the variable
+ * \param[in] val  The value of the variable
+ * Will crash with fatal error if operation fails
+ */
 void add_xml_char(xmlNodePtr ptr, const std::string &name, const char *val);
 
+/*! Add std::string to xmlNode
+ * \param[in] ptr  The XML structure
+ * \paran[in] name The name of the variable
+ * \param[in] val  The value of the variable
+ * Will crash with fatal error if operation fails
+ */
+void add_xml_string(xmlNodePtr ptr, const std::string &name, const std::string &val);
+
+/*! Add a child to the xml tree
+ * \param[in] parent The parent in the tree
+ * \param[in] type   The name of the child
+ * \returns the child
+ * Will crash with fatal error if it was not possible to add a child
+ */
 xmlNodePtr add_xml_child(xmlNodePtr parent, const std::string &type);
 
+/*! Add a child with a value to the xml tree
+ * \param[in] parent The parent in the tree
+ * \param[in] type   The name of the child
+ * \param[in] value  The string value
+ * \returns the child
+ * Will crash with fatal error if it was not possible to add a child
+ */
 xmlNodePtr add_xml_child_val(xmlNodePtr parent, const std::string &type, const char *value);
 
+/*! Add a comment to an XML file
+ * \param[in] doc     The document level pointer
+ * \param[in] prev    The node where to add the comment to, at the bottom of the tree
+ * \param[in] comment The text of the comment
+ * \returns the comment pointer
+ * Will crash with fatal error if it was not possible to add a child
+ */
 xmlNodePtr add_xml_comment(xmlDocPtr   doc,
                            xmlNodePtr  prev,
                            const char *comment);
-
-double my_atof(const char *str);
 
 #endif

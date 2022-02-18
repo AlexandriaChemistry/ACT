@@ -202,7 +202,7 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
 
                 // Initializer
                 auto *initializer = new alexandria::ACMInitializer(&sii, gach.randomInit(), seed);
-                auto *fitComp     = new alexandria::ACMFitnessComputer(nullptr, &sii, &molgen, false, false, false);
+                auto *fitComp     = new alexandria::ACMFitnessComputer(nullptr, &sii, &molgen, false, false);
 
                 auto probComputer = new RankProbabilityComputer(gach.popSize());
                 // Selector

@@ -143,8 +143,6 @@ void my_fclose(FILE *fp)
 void OptACM::add_pargs(std::vector<t_pargs> *pargs) {
     t_pargs pa[] =
         {
-            { "-fullQuadrupole", FALSE, etBOOL, {&bFullQuadrupole_},
-              "Consider both diagonal and off-diagonal elements of the Q_Calc matrix for optimization"},
             { "-removemol",      FALSE, etBOOL, {&bRemoveMol_},
               "Remove a molecule from training set if shell minimization does not converge."},
             { "-v",              FALSE, etBOOL, {&verbose_},
@@ -264,7 +262,7 @@ void OptACM::initMaster()
     // Fitness computer
     // FIXME: do we want to give the pointer to the logfile instead of nullptr?
     // FIXME: what about the flags? Here it is a bit more clear that they should be all false?
-    fitComp_ = new ACMFitnessComputer(nullptr, sii_, &mg_, false, false, false);
+    fitComp_ = new ACMFitnessComputer(nullptr, sii_, &mg_, false, false);
 
     // Adjust the seed that gets passed around to components of the optimizer
     int seed = bch_.seed();
@@ -616,8 +614,7 @@ int tune_ff(int argc, char *argv[])
                           opt.sii()->poldata(),
                           tmpMg->mdlog(), tmpMg->lot(),
                           tmpMg->qcycle(), tmpMg->qtol(),
-                          oenv, opt.fullQuadrupole(),
-                          opt.commRec(), efield, filenms);
+                          oenv, opt.commRec(), efield, filenms);
             print_memory_usage(debug);
         }
         else if (!bMinimum)

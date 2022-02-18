@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021
+ * Copyright (C) 2021-2022
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -35,6 +35,7 @@
 #include <map>
 #include <random>
 
+#include "act/molprop/multipole_names.h"
 #include "gromacs/math/units.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/utility/fatalerror.h"
@@ -89,20 +90,20 @@ qType stringToQtype(const std::string &type)
 
 QtypeProps::QtypeProps(qType qtype) : qtype_(qtype)
 {
+    for(auto &mpo : mpoMultiPoles)
+    {
+        std::vector<double> dummy;
+        dummy.resize(multipoleNames(mpo).size(), 0.0);
+        multipoles_.insert({mpo, std::move(dummy)});
+    }
     resetMoments();
 }
 
 void QtypeProps::resetMoments()
 {
-    clear_rvec(mu_);
-    clear_mat(quadrupole_);
-    for(int m = 0; m < DIM; m++)
+    for(auto &m : multipoles_)
     {
-        clear_mat(octupole_[m]);
-        for(int n = 0; n < DIM; n++)
-        {
-            clear_mat(hexadecapole_[m][n]);
-        }
+        std::fill(m.second.begin(), m.second.end(), 0.0);
     }
 }
 
@@ -163,15 +164,47 @@ void QtypeProps::setQandX(const std::vector<double>        &q,
     setX(x);
 }
 
-void QtypeProps::setMu(const rvec mu)
+double QtypeProps::dipole() const
 {
-    copy_rvec(mu, mu_);
-    dipole_ = norm(mu_);
+    auto mm = multipoles_.find(MolPropObservable::DIPOLE);
+    if (multipoles_.end() == mm)
+    {
+        GMX_THROW(gmx::InternalError("No dipole!"));
+    }
+    double d2 = 0;
+    for (int m = 0; m < DIM; m++)
+    {
+        d2 += gmx::square(mm->second[m]);
+    }
+    return std::sqrt(d2);
 }
 
-void QtypeProps::setQuadrupole(const tensor quad)
+bool QtypeProps::hasMultipole(MolPropObservable mpo) const
 {
-    copy_mat(quad, quadrupole_);
+    return (multipoles_.find(mpo) != multipoles_.end());
+}
+
+const std::vector<double> &QtypeProps::getMultipole(MolPropObservable mpo) const
+{
+    auto mf = multipoles_.find(mpo);
+    if (mf == multipoles_.end())
+    {
+        GMX_THROW(gmx::InternalError(gmx::formatString("No such observable %s in multipoles",
+                                                       mpo_name(mpo)).c_str()));
+    }
+    return mf->second;
+}
+
+void QtypeProps::setMultipole(MolPropObservable mpo, const std::vector<double> &mult)
+{
+    if (multipoles_.find(mpo) == multipoles_.end())
+    {
+        multipoles_.insert({mpo, mult});
+    }
+    else
+    {
+        multipoles_[mpo] = mult;
+    }
 }
 
 void QtypeProps::calcMoments()
@@ -181,39 +214,28 @@ void QtypeProps::calcMoments()
     // distance of atoms to center of charge
     rvec   r;
     resetMoments(); 
+    auto &dipole       = multipoles_[MolPropObservable::DIPOLE];
+    auto &quadrupole   = multipoles_[MolPropObservable::QUADRUPOLE];
+    auto &octupole     = multipoles_[MolPropObservable::OCTUPOLE];
+    auto &hexadecapole = multipoles_[MolPropObservable::HEXADECAPOLE];
     for (size_t i = 0; i < q_.size(); i++)
     {
         rvec_sub(x_[i], coc_, r);
+        int qindex = 0;
+        int oindex = 0;
+        int hindex = 0;
         for (int m = 0; m < DIM; m++)
         {
-            mu_[m] += e2d(r[m]*q_[i]);
-        }
-        for (int m = 0; m < DIM; m++)
-        {
+            dipole[m] += e2d(r[m]*q_[i]);
             for (int n = m; n < DIM; n++)
             {
-                quadrupole_[m][n] += q_[i]*(r[m]*r[n])*NM2A*A2CM*CM2D*10;
-            }
-        }
-        for (int m = 0; m < DIM; m++)
-        {
-            for (int n = m; n < DIM; n++)
-            {
+                quadrupole[qindex++] += q_[i]*(r[m]*r[n])*NM2A*A2CM*CM2D*10;
                 for (int o = n; o < DIM; o++)
                 {    
-                    octupole_[m][n][o] += q_[i]*(r[m]*r[n]*r[o])*NM2A*1e-12*A2CM*CM2D*1e10*10;
-                }
-            }
-        }
-        for (int m = 0; m < DIM; m++)
-        {
-            for (int n = m; n < DIM; n++)
-            {
-                for (int o = n; o < DIM; o++)
-                {                   
+                    octupole[oindex++] += q_[i]*(r[m]*r[n]*r[o])*NM2A*1e-12*A2CM*CM2D*1e10*10;
                     for (int p = o; p < DIM; p++)
                     {  
-                        hexadecapole_[m][n][o][p] += q_[i]*(r[m]*r[n]*r[o]*r[p])*NM2A*1e-12*1e-12*A2CM*CM2D*1e10*1e10*10;
+                        hexadecapole[hindex++] += q_[i]*(r[m]*r[n]*r[o]*r[p])*NM2A*1e-12*1e-12*A2CM*CM2D*1e10*1e10*10;
                     }    
                 }
             }
@@ -221,22 +243,29 @@ void QtypeProps::calcMoments()
     }
     if (debug)
     {
-        fprintf(debug, "Quadrupole: %7.3f %7.3f %7.3f\n", quadrupole_[XX][XX],
-                quadrupole_[YY][YY], quadrupole_[ZZ][ZZ]);
+        fprintf(debug, "Quadrupole: %7.3f %7.3f %7.3f\n", 
+                quadrupole[multipoleIndex({XX, XX})],
+                quadrupole[multipoleIndex({YY, YY})],
+                quadrupole[multipoleIndex({ZZ, ZZ})]);
     }
     // Compute trace divided by 3
-    double tr = trace(quadrupole_)/3.0;
+    double tr = 0.0;
+    for (int m = 0; m < DIM; m++)
+    {
+        tr += quadrupole[multipoleIndex({m, m})]/3.0;
+    }
     // Subtract trace/3 to make the quadrupole traceless
     for (int m = 0; m < DIM; m++)
     {
-        quadrupole_[m][m] -= tr;
+        quadrupole[multipoleIndex({m, m})] -= tr;
     }
     if (debug)
     {
-        fprintf(debug, "Traceless:  %7.3f %7.3f %7.3f\n", quadrupole_[XX][XX],
-                quadrupole_[YY][YY], quadrupole_[ZZ][ZZ]);
+        fprintf(debug, "Traceless:  %7.3f %7.3f %7.3f\n", 
+                quadrupole[multipoleIndex({XX, XX})],
+                quadrupole[multipoleIndex({YY, YY})],
+                quadrupole[multipoleIndex({ZZ, ZZ})]);
     }
-    dipole_ = norm(mu_);
 }
 
 QgenResp *QtypeProps::qgenResp()

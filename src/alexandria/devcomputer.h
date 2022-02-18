@@ -24,10 +24,8 @@
 #include "mymol.h"
 #include "molgen.h"
 
-
 namespace alexandria
 {
-
 
 /*!
  * Abstract class for chi-squared deviation computation
@@ -203,14 +201,11 @@ public:
     /*! \brief Create a new BoundsDevComputer
      * @param logfile           pointer to log file
      * @param verbose           whether we are in verbose mode
-     * @param bFullQuadrupole   whether or not to use off-diagonal elements of the quadrupole for fitting
      */
     PolarDevComputer(    FILE  *logfile,
-                     const bool verbose,
-                     const bool bFullQuadrupole)
+                     const bool verbose)
     : DevComputer(logfile, verbose)
     {
-        bFullQuadrupole_ = bFullQuadrupole;
     }
 
     virtual void calcDeviation(      MyMol                         *mymol,
@@ -222,62 +217,25 @@ public:
 };
 
 /*!
- * DevComputer that computes the deviation of the molecular quadrupole -> eRMS::QUAD
+ * DevComputer that computes the deviation of the molecular multipole -> eRMS::QUAD
  */
-class QuadDevComputer : public DevComputer
+class MultiPoleDevComputer : public DevComputer
 {
-
 private:
-
-    //! Whether or not to use off-diagonal elements of the quadrupole for fitting
-    bool bFullQuadrupole_;
-
+    //! The MolPropObservable, e.g. quadrupole
+    MolPropObservable mpo_;
 public:
 
-    /*! \brief Create a new QuadDevComputer
-     * @param logfile           pointer to log file
-     * @param verbose           whether we are in verbose mode
-     * @param bFullQuadrupole   whether or not to use off-diagonal elements of the quadrupole for fitting
+    /*! \brief Create a new MultiPoleDevComputer
+     * @param logfile  Pointer to log file
+     * @param verbose  Whether we are in verbose mode
+     * @param mpo      The MolPropObservable, e.g. quadrupole
      */
-    QuadDevComputer(      FILE *logfile,
-                    const bool  verbose,
-                    const bool  bFullQuadrupole)
-    : DevComputer(logfile, verbose)
+    MultiPoleDevComputer(FILE             *logfile,
+                         const bool        verbose,
+                         MolPropObservable mpo)
+        : DevComputer(logfile, verbose), mpo_(mpo)
     {
-        bFullQuadrupole_ = bFullQuadrupole;
-    }
-
-    virtual void calcDeviation(      MyMol                         *mymol,
-                                     std::map<eRMS, FittingTarget> *targets,
-                                     Poldata                       *poldata,
-                               const std::vector<double>           &param,
-                               const CommunicationRecord                         *commrec);
-
-};
-
-/*!
- * DevComputer the computes the deviation of the molecular dipole -> eRMS::MU
- */
-class MuDevComputer : public DevComputer
-{
-
-private:
-    //! Are we using QM only?
-    bool bQM_;
-
-public:
-
-    /*! \brief Create a new MuComputer
-     * @param logfile   pointer to log file
-     * @param verbose   whether we are in verbose mode
-     * @param bQM       are we using QM only?
-     */
-    MuDevComputer(      FILE *logfile,
-                  const bool  verbose,
-                  const bool  bQM)
-    : DevComputer(logfile, verbose)
-    {
-        bQM_ = bQM;
     }
 
     virtual void calcDeviation(      MyMol                         *mymol,

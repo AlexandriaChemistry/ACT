@@ -255,7 +255,7 @@ std::vector<alexandria::MolProp> mp;
             if (nC > 0 && nH == 0)
             {
                 fprintf(mylog, "%s #C %d #H %d\n",
-                        ci.getDatafile().c_str(),
+                        ci.getDatafile().c_str(), 
                         nC, nH);
             }
             double T = 0;

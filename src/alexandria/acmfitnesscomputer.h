@@ -44,17 +44,15 @@ private:
     bool removeMol_;
     //! \brief Flush output immediately rather than letting the OS buffer it. Don't use for production simulations.
     bool verbose_;
-    //! Whether we consider both diagonal and off-diagonal elements of the Q_Calc matrix for optimization
-    bool fullQuadrupole_;
     //! \brief Amount of times calcDeviation() has been called
     int numberCalcDevCalled_ = 0;
 
-    /*! \brief Compute dipole and quadrupole moments (if needed), for a given molecule
+    /*! \brief Compute multipole moments (if needed), for a given molecule
      * @param targets   pointer to a map between the components of chi-squared and the fitting targets
      * @param mymol     the molecule
      */
-    void computeDiQuad(std::map<eRMS, FittingTarget> *targets,
-                       MyMol                         *mymol);
+    void computeMultipoles(std::map<eRMS, FittingTarget> *targets,
+                           MyMol                         *mymol);
 
     //! \brief Fill the devComputers vector according to the needs of the user
     void fillDevComputers();
@@ -68,15 +66,13 @@ public:
      * \param[in] mg                pointer to molgen
      * \param[in] removeMol         Whether or not to remove molecules that fail to converge in the shell minimization
      * \param[in] verbose           Flush output immediately rather than letting the OS buffer it. Don't use for production simulations.
-     * \param[in] fullQuadrupole    Whether we consider both diagonal and off-diagonal elements of the Q_Calc matrix for optimization
      */
     ACMFitnessComputer(      FILE                  *logfile,
                              StaticIndividualInfo  *sii,
                              MolGen                *molgen,
                        const bool                   removeMol,
-                       const bool                   verbose,
-                       const bool                   fullQuadrupole)
-    : logfile_(logfile), sii_(sii), molgen_(molgen), removeMol_(removeMol), verbose_(verbose), fullQuadrupole_(fullQuadrupole)
+                       const bool                   verbose)
+    : logfile_(logfile), sii_(sii), molgen_(molgen), removeMol_(removeMol), verbose_(verbose)
     {
         fillDevComputers();
     }

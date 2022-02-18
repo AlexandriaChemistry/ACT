@@ -67,9 +67,6 @@ std::vector<std::string> split(const std::string &s,
 std::string gmx_ftoa(double f);
 
 /** return new string with f printed. */
-std::string gmx_dtoa(double f);
-
-/** return new string with f printed. */
 std::string gmx_itoa(int f);
 
 /*! \brief
@@ -82,5 +79,16 @@ std::string gmx_itoa(int f);
  * \return The value read or -1 in case of issues.
  */
 double my_atof(const char *str, const char *description);
+
+/*! \brief
+ *
+ * Read a int from a string and apply error checking.
+ * \param[in] str         The string to read a int from
+ * \param[in] description If there is any issue this will be used
+ *                        to describe the variable being read.
+ *                        May be nullptr.
+ * \return The value read or -1 in case of issues.
+ */
+int my_atoi(const char *str, const char *description);
 
 #endif

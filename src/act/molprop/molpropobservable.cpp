@@ -39,6 +39,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 
+#include "act/molprop/multipole_names.h"
 #include "act/utility/communicationrecord.h"
 
 namespace alexandria
@@ -50,7 +51,7 @@ std::map<MolPropObservable, const char *> mpo_name_ =
     { MolPropObservable::DIPOLE, "dipole" }, 
     { MolPropObservable::QUADRUPOLE, "quadrupole" },
     { MolPropObservable::OCTUPOLE, "octupole" },
-    { MolPropObservable::HEXADECAPOLE, "hexedecapole" },
+    { MolPropObservable::HEXADECAPOLE, "hexadecapole" },
     { MolPropObservable::POLARIZABILITY, "polarizability" }, 
     { MolPropObservable::HF, "HF" }, 
     { MolPropObservable::DHFORM, "DeltaHform" }, 
@@ -155,7 +156,48 @@ CommunicationStatus GenericProperty::Receive(const CommunicationRecord *cr, int 
     return cs;
 }
 
-CommunicationStatus MolecularDipole::Send(const CommunicationRecord *cr, int dest) const
+MolecularMultipole::MolecularMultipole(const std::string         &type,
+                                       double                     T,
+                                       MolPropObservable          mpo) :
+    GenericProperty(mpo, type, T, ePhase::GAS)
+{
+    size_t nvalues = multipoleNames(mpo).size();
+    values_.resize(nvalues, 0.0);
+}
+
+bool MolecularMultipole::hasId(const std::string &myid)
+{
+    int index;
+    
+    return (multipoleIndex(myid, &index) ||
+            myid.compare("average") == 0 ||
+            myid.compare("error") == 0);
+}
+    
+void MolecularMultipole::setValue(const std::string &myid, double value)
+{
+    int index; 
+    
+    if (multipoleIndex(myid, &index))
+    {
+        range_check(index, 0, values_.size());
+        values_[index] = value;
+    }
+    else if (myid.compare("average") == 0)
+    {
+        average_ = value;
+    }
+    else if (myid.compare("error") == 0)
+    {
+        error_ = value;
+    }
+    else if (debug)
+    {
+        fprintf(debug, "Unknown id %s with value %g\n", myid.c_str(), value);
+    }
+}
+
+CommunicationStatus MolecularMultipole::Send(const CommunicationRecord *cr, int dest) const
 {
     CommunicationStatus cs;
 
@@ -163,8 +205,8 @@ CommunicationStatus MolecularDipole::Send(const CommunicationRecord *cr, int des
     if (CommunicationStatus::OK == cs &&
         CommunicationStatus::SEND_DATA == cr->send_data(dest))
     {
-        cr->send_int(dest, mu_.size());
-        for(auto &m : mu_)
+        cr->send_int(dest, values_.size());
+        for(auto &m : values_)
         {
             cr->send_double(dest, m);
         }
@@ -173,13 +215,13 @@ CommunicationStatus MolecularDipole::Send(const CommunicationRecord *cr, int des
     }
     else if (nullptr != debug)
     {
-        fprintf(debug, "Trying to send MolecularDipole, status %s\n", cs_name(cs));
+        fprintf(debug, "Trying to send MolecularMultipole, status %s\n", cs_name(cs));
         fflush(debug);
     }
     return cs;
 }
 
-CommunicationStatus MolecularDipole::Receive(const CommunicationRecord *cr, int src)
+CommunicationStatus MolecularMultipole::Receive(const CommunicationRecord *cr, int src)
 {
     CommunicationStatus cs;
 
@@ -187,67 +229,19 @@ CommunicationStatus MolecularDipole::Receive(const CommunicationRecord *cr, int 
     if (CommunicationStatus::OK == cs &&
         CommunicationStatus::RECV_DATA == cr->recv_data(src))
     {
-        mu_.clear();
+        values_.clear();
         size_t N = cr->recv_int(src);
         for(size_t m = 0; m < N; m++)
         {
             double x = cr->recv_double(src);
-            mu_.push_back(x);
+            values_.push_back(x);
         }
-        average_  = cr->recv_double(src);
-        error_    = cr->recv_double(src);
+        average_ = cr->recv_double(src);
+        error_ = cr->recv_double(src);
     }
     else if (nullptr != debug)
     {
-        fprintf(debug, "Trying to receive MolecularDipole, status %s\n", cs_name(cs));
-        fflush(debug);
-    }
-    return cs;
-}
-
-CommunicationStatus MolecularQuadrupole::Send(const CommunicationRecord *cr, int dest) const
-{
-    CommunicationStatus cs;
-
-    cs = GenericProperty::Send(cr, dest);
-    if (CommunicationStatus::OK == cs &&
-        CommunicationStatus::SEND_DATA == cr->send_data(dest))
-    {
-        for(int m = 0; m < DIM; m++)
-        {
-            for(int n = 0; n < DIM; n++)
-            {
-                cr->send_double(dest, quad_[m][n]);
-            }
-        }
-    }
-    else if (nullptr != debug)
-    {
-        fprintf(debug, "Trying to send MolecularQuadrupole, status %s\n", cs_name(cs));
-        fflush(debug);
-    }
-    return cs;
-}
-
-CommunicationStatus MolecularQuadrupole::Receive(const CommunicationRecord *cr, int src)
-{
-    CommunicationStatus cs;
-
-    cs = GenericProperty::Receive(cr, src);
-    if (CommunicationStatus::OK == cs &&
-        CommunicationStatus::RECV_DATA == cr->recv_data(src))
-    {
-        for(int m = 0; m < DIM; m++)
-        {
-            for(int n = 0; n < DIM; n++)
-            {
-                quad_[m][n] = cr->recv_double(src);
-            }
-        }
-    }
-    else if (nullptr != debug)
-    {
-        fprintf(debug, "Trying to received MolecularQuadrupole, status %s\n", cs_name(cs));
+        fprintf(debug, "Trying to receive MolecularMultipole, status %s\n", cs_name(cs));
         fflush(debug);
     }
     return cs;

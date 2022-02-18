@@ -62,6 +62,7 @@ namespace alexandria
 std::map<immStatus, const char *> immMessages = {
     { immStatus::Unknown,                  "Unknown status" },
     { immStatus::OK,                       "OK" },
+    { immStatus::NoAtoms,                  "No Atoms" },
     { immStatus::ZeroDip,                  "Zero Dipole" },
     { immStatus::NoQuad,                   "No Quadrupole" },
     { immStatus::Charged,                  "Charged" },

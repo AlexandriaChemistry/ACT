@@ -216,25 +216,7 @@ private:
                                             const std::string &method,
                                             const std::string &basis,
                                             const std::string &conf) const;
-#ifdef OLD
-        //! Convenience function
-        //! TODO document and clean up
-        bool getPropRef(MolPropObservable mpo, iqmType iQM,
-                        const std::string &method,
-                        const std::string &basis,
-                        const std::string &conf,
-                        double *value, double *error, double *T,
-                        std::string *ref, std::string *mylot,
-                        std::vector<double> *vec, tensor quadrupole);
 
-        //! And another one
-        //! TODO document and clean up
-        bool getProp(MolPropObservable mpo, iqmType iQM,
-                     const std::string &method,
-                     const std::string &basis,
-                     const std::string &conf,
-                     double *value, double *error, double *T);
-#endif
         //! Returns true if the HF energy of the optimized geometry exists and returns the HF
         bool getOptHF(double *value);
 

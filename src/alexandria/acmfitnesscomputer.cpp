@@ -145,7 +145,7 @@ double ACMFitnessComputer::calcDeviation(std::vector<double> *params,
                 continue;
             }
 
-            computeDiQuad(targets, &mymol);
+            computeMultipoles(targets, &mymol);
 
             for (DevComputer *mydev : devComputers_)
             {
@@ -163,12 +163,14 @@ double ACMFitnessComputer::calcDeviation(std::vector<double> *params,
     return (*targets).find(eRMS::TOT)->second.chiSquared();
 }
 
-void ACMFitnessComputer::computeDiQuad(std::map<eRMS, FittingTarget> *targets,
-                                       MyMol                         *mymol)
+void ACMFitnessComputer::computeMultipoles(std::map<eRMS, FittingTarget> *targets,
+                                           MyMol                         *mymol)
 {
     QtypeProps *qcalc = mymol->qTypeProps(qType::Calc);
-    if ((*targets).find(eRMS::MU)->second.weight() > 0 ||
-        (*targets).find(eRMS::QUAD)->second.weight() > 0)
+    if ((*targets).find(eRMS::MU)->second.weight() > 0   ||
+        (*targets).find(eRMS::QUAD)->second.weight() > 0 ||
+        (*targets).find(eRMS::OCT)->second.weight() > 0  ||
+        (*targets).find(eRMS::HEXADEC)->second.weight() > 0)
     {
         qcalc->setQ(mymol->atoms());
         qcalc->setX(mymol->x());
@@ -187,11 +189,19 @@ void ACMFitnessComputer::fillDevComputers()
     if (sii_->target(iMolSelect::Train, eRMS::ESP)->weight() > 0)
         devComputers_.push_back(new EspDevComputer(logfile_, verbose_, molgen_->fit("zeta")));
     if (sii_->target(iMolSelect::Train, eRMS::Polar)->weight() > 0)
-        devComputers_.push_back(new PolarDevComputer(logfile_, verbose_, fullQuadrupole_));
-    if (sii_->target(iMolSelect::Train, eRMS::QUAD)->weight() > 0)
-        devComputers_.push_back(new QuadDevComputer(logfile_, verbose_, fullQuadrupole_));
+        devComputers_.push_back(new PolarDevComputer(logfile_, verbose_));
     if (sii_->target(iMolSelect::Train, eRMS::MU)->weight() > 0)
-        devComputers_.push_back(new MuDevComputer(logfile_, verbose_, molgen_->bQM()));
+        devComputers_.push_back(new MultiPoleDevComputer(logfile_, verbose_,
+                                                         MolPropObservable::DIPOLE));
+    if (sii_->target(iMolSelect::Train, eRMS::QUAD)->weight() > 0)
+        devComputers_.push_back(new MultiPoleDevComputer(logfile_, verbose_, 
+                                                         MolPropObservable::QUADRUPOLE));
+    if (sii_->target(iMolSelect::Train, eRMS::OCT)->weight() > 0)
+        devComputers_.push_back(new MultiPoleDevComputer(logfile_, verbose_, 
+                                                         MolPropObservable::OCTUPOLE));
+    if (sii_->target(iMolSelect::Train, eRMS::HEXADEC)->weight() > 0)
+        devComputers_.push_back(new MultiPoleDevComputer(logfile_, verbose_, 
+                                                         MolPropObservable::HEXADECAPOLE));
     if (sii_->target(iMolSelect::Train, eRMS::EPOT)->weight() > 0)
         devComputers_.push_back(new EnergyDevComputer(logfile_, verbose_));
 }

@@ -40,8 +40,7 @@ ACTMiddleMan::ACTMiddleMan(MolGen               *mg,
     ind_ = static_cast<ACMIndividual *>(initializer->initialize());
 
     // Fitness computer FIXME: what about those false flags?
-    fitComp_ = new ACMFitnessComputer(nullptr, sii, mg, 
-                                      false, false, false);
+    fitComp_ = new ACMFitnessComputer(nullptr, sii, mg, false, false);
     // Create and initialize the mutator
     if (gach->optimizer() == OptimizerAlg::GA)
     {

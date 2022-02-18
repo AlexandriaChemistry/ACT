@@ -49,8 +49,6 @@ class OptACM : public ConfigHandler
 {
 
 private:
-    //! Whether or not to use off-diagonal elements of the quadrupole for fitting
-    bool bFullQuadrupole_ = false;
     //! Whether or not to remove molecules that fail to converge in the shell minimization
     bool bRemoveMol_ = true;
     //! Flush output immediately rather than letting the OS buffer it. Don't use for production simulations.
@@ -133,9 +131,6 @@ public:
     /* * * * * * * * * * * * * * * * * * * * * *
     * BEGIN: Getters and setters               *
     * * * * * * * * * * * * * * * * * * * * * */
-
-    //! \return whether or not we use the full quadrupol
-    bool fullQuadrupole() const { return bFullQuadrupole_; }
 
     //! \return whether or not we remove problematic compounds
     bool removeMol() const { return bRemoveMol_; }

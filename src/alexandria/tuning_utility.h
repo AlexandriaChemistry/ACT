@@ -66,6 +66,10 @@ namespace alexandria
         real dip_toler_           = 0.5;
         //! Tolerance (Buckingham) for marking quadrupole as an outlier in the log file
         real quad_toler_          = 5;
+        //! Tolerance (Debye A^2) for marking octupole as an outlier in the log file
+        real oct_toler_          = 5;
+        //! Tolerance (Debye A^3) for marking hexadecapole as an outlier in the log file
+        real hex_toler_          = 5;
         //! Tolerance (A^3) for marking diagonal elements of the polarizability tensor as an outlier in the log file
         real alpha_toler_         = 3;
         //! Tolerance (A^3) for marking isotropic polarizability as an outlier in the log file
@@ -94,7 +98,6 @@ namespace alexandria
                    int                             qcycle,
                    real                            qtol,
                    const gmx_output_env_t         *oenv,
-                   bool                            bfullTensor,
                    const CommunicationRecord      *cr,
                    real                            efield,
                    const std::vector<t_filenm>    &filenm);

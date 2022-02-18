@@ -258,19 +258,13 @@ CommunicationStatus Experiment::Receive(const CommunicationRecord *cr, int src)
                 switch (mpo)
                 {
                 case MolPropObservable::DIPOLE:
-                    {
-                        gp = new MolecularDipole;
-                        break;
-                    }
                 case MolPropObservable::QUADRUPOLE:
+                case MolPropObservable::OCTUPOLE:
+                case MolPropObservable::HEXADECAPOLE:
                     {
-                       gp = new MolecularQuadrupole;
+                       gp = new MolecularMultipole;
                        break;
                     }
-                    //case MolPropObservable::OCTUPOLE:
-                    //TODO Implementation
-                    //case MolPropObservable::HEXADECAPOLE:
-                    //TOTO Implementation
                 case MolPropObservable::POLARIZABILITY:
                     {
                         gp = new MolecularPolarizability;

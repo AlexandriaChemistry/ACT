@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2021
+ * Copyright (C) 2014-2022
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -41,6 +41,7 @@
 #include "gromacs/utility/coolstuff.h"
 
 #include "act/molprop/molprop_util.h"
+#include "act/molprop/multipole_names.h"
 #include "mymol.h"
 #include "act/qgen/qtype.h"
 #include "act/utility/units.h"
@@ -277,91 +278,54 @@ static void print_polarizability(FILE              *fp,
     }
 }
 
-static void analyse_quadrapole(FILE                                           *fp,
-                               const std::vector<alexandria::MyMol>::iterator &mol,
-                               real                                            q_toler,
-                               std::map<qType, gmx_stats>                      lsq_quad,
-                               bool                                            bFullTensor)
+static void analyse_multipoles(FILE                                                     *fp,
+                               const std::vector<alexandria::MyMol>::iterator           &mol,
+                               std::map<MolPropObservable, double>                       toler,
+                               std::map<MolPropObservable, std::map<iMolSelect, std::map<qType, gmx_stats> > > lsq)
 {
     auto qelec = mol->qTypeProps(qType::Elec);
-    fprintf(fp, "Quadrupole analysis (5 independent components only)\n");
-    fprintf(fp,
-            "Electronic   (%6.2f %6.2f %6.2f)\n"
-            "             (%6s %6.2f %6.2f)\n"
-            "             (%6s %6s %6.2f)\n",
-            qelec->quad()[XX][XX], qelec->quad()[XX][YY], qelec->quad()[XX][ZZ],
-            "", qelec->quad()[YY][YY], qelec->quad()[YY][ZZ],
-            "", "", qelec->quad()[ZZ][ZZ]);
-    for (auto &j : qTypes())
+    for(auto &mpo : mpoMultiPoles)
     {
-        qType qt = j.first;
-        if (qt == qType::Elec)
+        fprintf(fp, "Electronic %s (%s):\n",
+                mpo_name(mpo), mpo_unit(mpo));
+        auto Telec = qelec->getMultipole(mpo);
+        printMultipole(fp, mpo, Telec);
+
+        for (auto &j : qTypes())
         {
-            continue;
-        }
-        auto qcalc = mol->qTypeProps(qt);
-        if (qcalc)
-        {
-            tensor        dQ;
-            real          delta = 0;
-            
-            m_sub(qelec->quad(), qcalc->quad(), dQ);
-            delta = sqrt(gmx::square(dQ[XX][XX])+gmx::square(dQ[XX][YY])+gmx::square(dQ[XX][ZZ])+
-                         gmx::square(dQ[YY][YY])+gmx::square(dQ[YY][ZZ]));
-            fprintf(fp,
-                    "%-10s (%6.2f %6.2f %6.2f) Dev: (%6.2f %6.2f %6.2f) Delta: %6.2f %s\n"
-                    "           (%6s %6.2f %6.2f)      (%6s %6.2f %6.2f)\n"
-                    "           (%6s %6s %6.2f)      (%6s %6s %6.2f)\n",
-                    qTypeName(qt).c_str(),
-                    qcalc->quad()[XX][XX], qcalc->quad()[XX][YY], qcalc->quad()[XX][ZZ],
-                    dQ[XX][XX], dQ[XX][YY], dQ[XX][ZZ], delta, (delta > q_toler) ? "QUAD" : "",
-                    "", qcalc->quad()[YY][YY], qcalc->quad()[YY][ZZ],
-                    "", dQ[YY][YY], dQ[YY][ZZ],
-                    "", "", qcalc->quad()[ZZ][ZZ],
-                    "", "", dQ[ZZ][ZZ]);
-            for (int mm = 0; mm < DIM; mm++)
+            qType qt = j.first;
+            if (qt == qType::Elec)
             {
-                for (int nn = 0; nn < DIM; nn++)
+                continue;
+            }
+            auto qcalc = mol->qTypeProps(qt);
+            if (qcalc)
+            {
+                real delta = 0;
+                auto Tcalc = qcalc->getMultipole(mpo);
+                fprintf(fp, "%s %s (%s):\n",
+                        qTypeName(qt).c_str(), mpo_name(mpo), mpo_unit(mpo));
+                printMultipole(fp, mpo, Tcalc);
+
+                std::vector<double> diff;
+                for(size_t i = 0; i < Tcalc.size(); i++)
                 {
-                    if (bFullTensor || (mm == nn))
-                    {
-                        lsq_quad[qt].add_point(qelec->quad()[mm][nn], qcalc->quad()[mm][nn], 0, 0);
-                    }
+                    diff.push_back(Tcalc[i]-Telec[i]);
+                    delta += gmx::square(diff[diff.size()-1]);
+                    lsq[mpo][mol->datasetType()][qt].add_point(Telec[i], Tcalc[i], 0, 0);
                 }
+                double rms = std::sqrt(delta/Tcalc.size());
+                std::string flag("");
+                if (rms > toler[mpo])
+                {
+                    flag = " XXX";
+                }
+                fprintf(fp, "Difference %s RMS = %g (%s)%s:\n",
+                        mpo_name(mpo), rms, mpo_unit(mpo), flag.c_str());
+                printMultipole(fp, mpo, diff);
             }
         }
     }
-}
-
-static void print_dipole(FILE       *fp,
-                         qType       qt,
-                         const rvec  muelec,
-                         const rvec  muqt,
-                         real        toler)
-{
-    rvec dmu;
-    real ndmu, cosa;
-    char ebuf[32];
-    
-    rvec_sub(muelec, muqt, dmu);
-    ndmu = norm(dmu);
-    cosa = cos_angle(muelec, muqt);
-    if (ndmu > toler || fabs(cosa) < 0.1)
-    {
-        sprintf(ebuf, "DIP");
-    }
-    else
-    {
-        ebuf[0] = '\0';
-    }
-    fprintf(fp, "%-10s (%6.3f,%6.3f,%6.3f) |Mu| = %6.3f",
-            qTypeName(qt).c_str(), muqt[XX], muqt[YY], muqt[ZZ], norm(muqt));
-
-    if (qt != qType::Elec)
-    {
-        fprintf(fp, " |Dev|: %6.3f CosAngle %6.3f %s", ndmu, cosa, ebuf);
-    }
-    fprintf(fp, "\n");
 }
 
 static void print_corr(const char                         *outfile,
@@ -392,22 +356,6 @@ static void print_corr(const char                         *outfile,
     FILE *muc = xvgropen(outfile, title, xaxis, yaxis, oenv);
     xvgr_symbolize(muc, eprnm, oenv);
     print_lsq_sets(muc, lsq);
-    /*
-    for (auto &ims : iMolSelectNames())
-    {
-        auto qs = stats.find(ims.first);
-        if (qs != stats.end())
-        {
-            for (auto &i : qs->second)
-            {
-                int N;
-                if (eStats::OK == gmx_stats_get_npoints(i.second, &N) && N > 0)
-                {
-                    print_lsq_set(muc, i.second);
-                }
-            }
-        }
-        }*/
     fclose(muc);
 }
 
@@ -465,6 +413,10 @@ void TuneForceFieldPrinter::addOptions(std::vector<t_pargs> *pargs)
           "Tolerance (Debye) for marking dipole as an outlier in the log file" },
         { "-quad_toler", FALSE, etREAL, {&quad_toler_},
           "Tolerance (Buckingham) for marking quadrupole as an outlier in the log file" },
+        { "-oct_toler", FALSE, etREAL, {&oct_toler_},
+          "Tolerance (Buckingham) for marking octupole as an outlier in the log file" },
+        { "-hex_toler", FALSE, etREAL, {&hex_toler_},
+          "Tolerance (Buckingham) for marking hexapole as an outlier in the log file" },
         { "-alpha_toler", FALSE, etREAL, {&alpha_toler_},
           "Tolerance (A^3) for marking diagonal elements of the polarizability tensor as an outlier in the log file" },
         { "-isopol_toler", FALSE, etREAL, {&isopol_toler_},
@@ -477,23 +429,31 @@ void TuneForceFieldPrinter::addOptions(std::vector<t_pargs> *pargs)
 
 void TuneForceFieldPrinter::addFileOptions(std::vector<t_filenm> *filenm)
 {
-    t_filenm fnm[] =
-        {
-            { efXVG, "-qhisto",    "q_histo",       ffWRITE },
-            { efXVG, "-dipcorr",   "dip_corr",      ffWRITE },
-            { efXVG, "-mucorr",    "mu_corr",       ffWRITE },
-            { efXVG, "-epotcorr",  "epot_corr",     ffWRITE },
-            { efXVG, "-thetacorr", "theta_corr",    ffWRITE },
-            { efXVG, "-espcorr",   "esp_corr",      ffWRITE },
-            { efXVG, "-alphacorr", "alpha_corr",    ffWRITE },
-            { efXVG, "-qcorr",     "q_corr",        ffWRITE },
-            { efXVG, "-isopol",    "isopol_corr",   ffWRITE },
-            { efXVG, "-anisopol",  "anisopol_corr", ffWRITE }
-        };
-    int nfm = sizeof(fnm)/sizeof(fnm[0]);
-    for(int i = 0; i < nfm; i++)
+    std::vector<t_filenm> fnm = {
+        { efXVG, "-qhisto",    "q_histo",       ffWRITE },
+        { efXVG, "-epotcorr",  "epot_corr",     ffWRITE },
+        { efXVG, "-espcorr",   "esp_corr",      ffWRITE },
+        { efXVG, "-alphacorr", "alpha_corr",    ffWRITE },
+        { efXVG, "-qcorr",     "q_corr",        ffWRITE },
+        { efXVG, "-isopol",    "isopol_corr",   ffWRITE },
+        { efXVG, "-anisopol",  "anisopol_corr", ffWRITE }
+    };
+    for(size_t i = 0; i < fnm.size(); i++)
     {
         filenm->push_back(fnm[i]);
+    }
+    std::vector<t_filenm> multi;
+    multi.resize(mpoMultiPoles.size());
+    size_t ii = 0;
+    for(auto &mpo : mpoMultiPoles)
+    {
+        std::string cmdFlag = gmx::formatString("-%scorr", mpo_name(mpo));
+        std::string defFnm  = gmx::formatString("%s_corr", mpo_name(mpo));
+        multi[ii].ftp  = efXVG;
+        multi[ii].opt  = strdup(cmdFlag.c_str());
+        multi[ii].fn   = strdup(defFnm.c_str());
+        multi[ii].flag = ffWRITE;
+        filenm->push_back(multi[ii]);
     }
 }
 
@@ -505,39 +465,44 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
                                   int                             qcycle,
                                   real                            qtol,
                                   const gmx_output_env_t         *oenv,
-                                  bool                            bfullTensor,
                                   const CommunicationRecord      *cr,
                                   real                            efield,
                                   const std::vector<t_filenm>    &filenm)
 {
     int  n = 0;
-
-    std::map<iMolSelect, qtStats>                   lsq_mu, lsq_dip, lsq_quad, lsq_esp, 
-        lsq_alpha, lsq_isoPol, lsq_anisoPol, lsq_charge, lsq_epot;
-    std::map<iMolSelect, std::vector<ZetaTypeLsq> > lsqt;
-
+    std::map<iMolSelect, qtStats>                               lsq_esp, lsq_alpha, lsq_isoPol,
+                                                                lsq_anisoPol, lsq_charge, lsq_epot;
+    std::map<MolPropObservable, std::map<iMolSelect, qtStats> > lsq_multi;
+    std::map<iMolSelect, std::vector<ZetaTypeLsq> >             lsqt;
+    
+    for (auto &mpo : mpoMultiPoles)
+    {
+        std::map<iMolSelect, qtStats> mq_multi;
+        for(auto &ims : iMolSelectNames())
+        {
+            qtStats qmpo;
+            for (auto &i : qTypes())
+            {
+                gmx_stats gmult;
+                qmpo.insert({ i.first, std::move(gmult) });
+            }
+            mq_multi.insert({ ims.first, qmpo });
+        }
+        lsq_multi.insert({ mpo, std::move(mq_multi) });
+    }
     for(auto &ims : iMolSelectNames())
     {
-        qtStats qesp, qquad, qdip, qmu, qepot;
+        qtStats qesp, qepot;
         for (auto &i : qTypes())
         {
             //TODO Add checks for existence
             gmx_stats gesp;
-            qesp.insert(std::pair<qType, gmx_stats>(i.first, std::move(gesp)));
-            gmx_stats gquad;
-            qquad.insert(std::pair<qType, gmx_stats>(i.first, std::move(gquad)));
-            gmx_stats gdip;
-            qdip.insert(std::pair<qType, gmx_stats>(i.first, std::move(gdip)));
-            gmx_stats gmu;
-            qmu.insert(std::pair<qType, gmx_stats>(i.first, std::move(gmu)));
+            qesp.insert({ i.first, std::move(gesp) });
             gmx_stats gepot;
-            qepot.insert(std::pair<qType, gmx_stats>(i.first, std::move(gepot)));
+            qepot.insert({ i.first, std::move(gepot) });
         }
-        lsq_esp.insert(std::pair<iMolSelect, qtStats>(ims.first, std::move(qesp)));
-        lsq_quad.insert(std::pair<iMolSelect, qtStats>(ims.first, std::move(qquad)));
-        lsq_dip.insert(std::pair<iMolSelect, qtStats>(ims.first, std::move(qdip)));
-        lsq_mu.insert(std::pair<iMolSelect, qtStats>(ims.first, std::move(qmu)));
-        lsq_epot.insert(std::pair<iMolSelect, qtStats>(ims.first, std::move(qepot)));
+        lsq_esp.insert({ ims.first, std::move(qesp) });
+        lsq_epot.insert({ ims.first, std::move(qepot) });
         
         gmx_stats galpha;
         lsq_alpha.insert(std::pair<iMolSelect, qtStats>(ims.first, {{ qType::Calc, galpha }}));
@@ -569,7 +534,12 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
     }
     
     bool bPolar = pd->polarizable();
-    
+    std::map<MolPropObservable, double> multi_toler = {
+        { MolPropObservable::DIPOLE,       dip_toler_  },
+        { MolPropObservable::QUADRUPOLE,   quad_toler_ },
+        { MolPropObservable::OCTUPOLE,     oct_toler_  },
+        { MolPropObservable::HEXADECAPOLE, hex_toler_  },
+    };
     // Extract terms to print for the enery ters
     std::vector<int> ePlot = { F_EPOT, F_COUL_SR };
     {
@@ -645,35 +615,8 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
                     }
                 }
             }
-            // Dipoles
-            auto qelec = mol->qTypeProps(qType::Elec);
-            print_dipole(fp, qType::Elec, qelec->mu(), qelec->mu(), dip_toler_);
-            for (auto &j : qTypes())
-            {
-                qType qt = j.first;
-                auto qprop = mol->qTypeProps(qt);
-                if (qt != qType::Elec && qprop)
-                {
-                    if (qt == qType::Calc)
-                    {
-                        qprop->setX(mol->x());
-                    }
-                    qprop->setCenterOfCharge(mol->centerOfCharge());
-                    qprop->calcMoments();
-                    print_dipole(fp, qt, qelec->mu(), qprop->mu(), dip_toler_);
-                    if (mol->datasetType() == ims)
-                    {
-                        lsq_dip[ims][qt].add_point(qelec->dipole(), qprop->dipole(), 0, 0);
-                        for(int mm = 0; mm < DIM; mm++)
-                        {
-                            lsq_mu[ims][qt].add_point(qelec->mu()[mm], qprop->mu()[mm], 0, 0);
-                        }
-                    }
-                }
-            }
-
-            // Quadrupoles
-            analyse_quadrapole(fp, mol, quad_toler_, lsq_quad[ims], bfullTensor);
+            // Multipoles
+            analyse_multipoles(fp, mol, multi_toler, lsq_multi);
             
             // Polarizability
             if (bPolar)
@@ -780,9 +723,10 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
             const char *name = qTypeName(qt).c_str();
             print_stats(fp, "ESP  (kJ/mol e)", &lsq_esp[ims.first][qt],  header, "Electronic", name, useOffset_);
             header = false;
-            print_stats(fp, "Dipoles",         &lsq_mu[ims.first][qt],   header, "Electronic", name, useOffset_);
-            print_stats(fp, "Dipole Moment",   &lsq_dip[ims.first][qt],  header, "Electronic", name, useOffset_);
-            print_stats(fp, "Quadrupoles",     &lsq_quad[ims.first][qt], header, "Electronic", name, useOffset_);
+            for(auto &mpo : mpoMultiPoles)
+            {
+                print_stats(fp, mpo_name(mpo), &lsq_multi[mpo][ims.first][qt],   header, "Electronic", name, useOffset_);
+            }
             if (bPolar && qt == qType::Calc)
             {
                 print_stats(fp, "Polariz. components (A^3)",  &lsq_alpha[ims.first][qType::Calc],    header, "Electronic", name, useOffset_);
@@ -794,15 +738,16 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
     }
     write_q_histo(fp, opt2fn("-qhisto", filenm.size(), filenm.data()),
                   lsqt[iMolSelect::Train], oenv, &(lsq_charge[iMolSelect::Train]), useOffset_);
-    
-    print_corr(opt2fn("-dipcorr", filenm.size(), filenm.data()),
-               "Dipole Moment (Debye)", "Electronic", "Empirical", lsq_dip, oenv);
-    print_corr(opt2fn("-mucorr", filenm.size(), filenm.data()),
-               "Dipole components (Debye)", "Electronic", "Empirical", lsq_mu, oenv);
+
+    for(auto &mpo : mpoMultiPoles)
+    {
+        std::string cmdFlag = gmx::formatString("-%scorr", mpo_name(mpo));
+        std::string title   = gmx::formatString("%s components %s", mpo_name(mpo), mpo_unit(mpo));
+        print_corr(opt2fn(cmdFlag.c_str(), filenm.size(), filenm.data()),
+                   title.c_str(), "Electronic", "Empirical", lsq_multi[mpo], oenv);
+    }
     print_corr(opt2fn("-epotcorr", filenm.size(), filenm.data()),
                "Potential energy (kJ/mol)", "Reference", "Empirical", lsq_epot, oenv);
-    print_corr(opt2fn("-thetacorr", filenm.size(), filenm.data()),
-               "Quadrupole components (Buckingham)", "Electronic", "Empirical", lsq_quad, oenv);
     print_corr(opt2fn("-espcorr", filenm.size(), filenm.data()),
                "Electrostatic Potential (Hartree/e)", "Electronic", "Calc", lsq_esp, oenv);
     print_corr(opt2fn("-qcorr", filenm.size(), filenm.data()),
@@ -818,28 +763,6 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
                    "Anisotropic Polarizability (A\\S3\\N)", "Electronic", "Calc", lsq_anisoPol, oenv);
     }
     // List outliers based on the deviation in the total dipole moment
-    real sigma;
-    if (eStats::OK == lsq_dip[iMolSelect::Train][qType::Calc].get_rmsd(&sigma))
-    {
-        fprintf(fp, "Overview of dipole moment outliers (> %.3f off)\n", 2*sigma);
-        fprintf(fp, "----------------------------------\n");
-        fprintf(fp, "%-40s  %12s  %12s  %12s\n", "Name", "Calc", "Electronic", "Deviation (Debye)");
-        for (auto mol = mymol->begin(); mol < mymol->end(); ++mol)
-        {
-            auto qelec = mol->qTypeProps(qType::Elec);
-            auto qcalc = mol->qTypeProps(qType::Calc);
-            auto deviation = std::abs(qcalc->dipole() - qelec->dipole());
-            if ((mol->support() != eSupport::No)  &&
-                (qelec->dipole() > sigma) &&
-                (deviation > 2*sigma))
-            {
-                fprintf(fp, "%-40s  %12.3f  %12.3f  %12.3f  %s\n",
-                        mol->getMolname().c_str(),
-                        qcalc->dipole(),qelec->dipole(), deviation,
-                        iMolSelectName(mol->datasetType()));
-            }
-        }
-    }
     real espAver;
     if (eStats::OK == lsq_esp[iMolSelect::Train][qType::Calc].get_rmsd(&espAver))
     {

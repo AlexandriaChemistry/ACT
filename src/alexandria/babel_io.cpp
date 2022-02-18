@@ -56,6 +56,7 @@
 
 #include "act/molprop/molprop.h"
 #include "act/molprop/molprop_util.h"
+#include "act/molprop/multipole_names.h"
 #include "mymol.h"
 #include "act/poldata/poldata.h"
 #include "act/utility/stringutil.h"
@@ -638,15 +639,13 @@ bool readBabel(const char          *g09,
     dipole = (OpenBabel::OBVectorData *) mol.GetData("Dipole Moment");
     if (nullptr != dipole)
     {
-        OpenBabel::vector3            v3 = dipole->GetData();
-        auto dp = new alexandria::MolecularDipole(qm_type,
-                                                  0.0,
-                                                  v3.GetX(),
-                                                  v3.GetY(),
-                                                  v3.GetZ(),
-                                                  v3.length(),
-                                                  0.0);
-        mpt->LastExperiment()->addProperty(MolPropObservable::DIPOLE, dp);
+        OpenBabel::vector3 v3  = dipole->GetData();
+        auto               mpo = MolPropObservable::DIPOLE;
+        auto               dp  = new alexandria::MolecularMultipole(qm_type, 0.0, mpo);
+        dp->setValue(multipoleName({ XX }), v3.GetX());
+        dp->setValue(multipoleName({ YY }), v3.GetY());
+        dp->setValue(multipoleName({ ZZ }), v3.GetZ());
+        mpt->LastExperiment()->addProperty(mpo, dp);
     }
     
     // Quadrupole
@@ -656,9 +655,15 @@ bool readBabel(const char          *g09,
         OpenBabel::matrix3x3            m3 = quadrupole->GetData();
         double                          mm[9];
         m3.GetArray(mm);
-        auto mq = new alexandria::MolecularQuadrupole(qm_type, 0.0, mm[0], mm[4], mm[8],
-                                                      mm[1], mm[2], mm[5]);
-        mpt->LastExperiment()->addProperty(MolPropObservable::QUADRUPOLE, mq);
+        auto mpo = MolPropObservable::QUADRUPOLE;
+        auto mq  = new alexandria::MolecularMultipole(qm_type, 0.0, mpo);
+        mq->setValue(multipoleName({ XX, XX }), mm[0]);
+        mq->setValue(multipoleName({ XX, YY }), mm[1]);
+        mq->setValue(multipoleName({ XX, ZZ }), mm[2]);
+        mq->setValue(multipoleName({ YY, YY }), mm[4]);
+        mq->setValue(multipoleName({ YY, ZZ }), mm[5]);
+        mq->setValue(multipoleName({ ZZ, ZZ }), mm[8]);
+        mpt->LastExperiment()->addProperty(mpo, mq);
     }
 
     // Polarizability

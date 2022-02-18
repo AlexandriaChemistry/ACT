@@ -347,7 +347,9 @@ void ReadSqlite3(const char           *sqlite_file,
                                 }
                             case MolPropObservable::DIPOLE:
                                 {
-                                    gp = new MolecularDipole(exp_type, temperature, 0, 0, 0, value, error);
+                                    gp = new MolecularMultipole(exp_type, temperature, MolPropObservable::DIPOLE);
+                                    // gp->setValue("average", value);
+                                    // TODO add error 0, 0, 0, value, error);
                                     break;
                                 }
                             case MolPropObservable::DGFORM:
