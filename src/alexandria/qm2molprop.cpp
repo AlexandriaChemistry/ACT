@@ -50,7 +50,6 @@
 #include "act/molprop/molprop_xml.h"
 #include "act/poldata/poldata.h"
 #include "act/poldata/poldata_xml.h"
-#include "readpsi4.h"
 
 namespace alexandria
 {
@@ -59,8 +58,8 @@ int qm2molprop(int argc, char *argv[])
 {
     static const char               *desc[] = 
         {
-         "qm2molprop reads a series of output files from either",
-         "Gaussian ([TT]-g03[tt] option) or Psi4 ([TT]-psi4[tt] option),",
+         "qm2molprop reads a series of output files from ",
+         "Gaussian ([TT]-g03[tt] option),",
          "collects useful information and saves it to molprop file.[PAR]",
          "The program can optionally map atom type names from an external",
          "source to alexandria types. In the case supply a mapping file",
@@ -76,7 +75,6 @@ int qm2molprop(int argc, char *argv[])
 
     t_filenm fnm[] = {
         { efLOG, "-g03",  "gauss",   ffOPTRDMULT },
-        { efOUT, "-psi4", "psi4",    ffOPTRDMULT },
         { efSDF, "-sdf",  "mol",     ffOPTRDMULT },
         { efXML, "-d",    "gentop",  ffREAD },
         { efDAT, "-map",  "mapping", ffOPTRD },
@@ -179,26 +177,7 @@ int qm2molprop(int argc, char *argv[])
         printf("Read %d molprops from %d Gaussian files.\n", 
                static_cast<int>(mp.size()), static_cast<int>(gfns.size()));
     }
-    auto mpsize = mp.size();
     
-    // Read Psi4 files
-    if (opt2bSet("-psi4", NFILE, fnm))
-    {
-        gmx::ArrayRef<const std::string> pfns = ftp2fns(efOUT, NFILE, fnm);    
-        for (auto &i : pfns)
-        {
-            alexandria::MolProp mmm;
-            if (alexandria::readPsi4(i, &mmm))
-            {
-                if (SetMolpropAtomTypesAndBonds(&mmm))
-                {
-                    mp.push_back(std::move(mmm));
-                }
-            }
-        }
-        printf("Read %d molprops from %d Psi4 files.\n", 
-               static_cast<int>(mp.size()-mpsize), static_cast<int>(pfns.size()));
-    }
     alexandria::MolSelect gms;
     MolPropSort(&mp, MPSA_MOLNAME, nullptr, gms);
     MergeDoubleMolprops(&mp, nullptr, TRUE);

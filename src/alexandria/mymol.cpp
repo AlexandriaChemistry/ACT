@@ -2029,7 +2029,7 @@ void MyMol::PrintTopology(FILE                      *fp,
             qelec->setMultipole(mpo, vec);
             auto mymu = qelec->getMultipole(mpo);
             commercials.push_back(gmx::formatString("%s %s (%s)\n",
-                                                    mylot.c_str(), mpo_name(mpo), mpo_unit(mpo)));
+                                                    mylot.c_str(), mpo_name(mpo), gp->getUnit()));
             for(auto &fmp : formatMultipole(mpo, mymu))
             {
                 commercials.push_back(fmp);
@@ -2038,7 +2038,7 @@ void MyMol::PrintTopology(FILE                      *fp,
         if (qcalc->hasMultipole(mpo))
         {
             auto mymu = qcalc->getMultipole(mpo);
-            commercials.push_back(gmx::formatString("Alexandria %s (%s)\n", mpo_name(mpo), mpo_unit(mpo)));
+            commercials.push_back(gmx::formatString("Alexandria %s (%s)\n", mpo_name(mpo), gp->getUnit()));
             for(auto &fmp : formatMultipole(mpo, mymu))
             {
                 commercials.push_back(fmp);

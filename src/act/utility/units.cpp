@@ -44,12 +44,13 @@
 namespace alexandria
 {
 
-static std::map<const std::string, double> unitConversion =
+const static std::map<const std::string, double> unitConversion =
     {
         { "Angstrom",   A2NM    },
         { "nm",         1       },
         { "pm",         0.001   },
         { "Bohr",       BOHR2NM },
+        { "Bohr3",      BOHR2NM*BOHR2NM*BOHR2NM },
         { "kcal/mol",   CAL2JOULE },
         { "kJ/mol",     1 },
         { "J/mol K",    1 },
@@ -61,6 +62,8 @@ static std::map<const std::string, double> unitConversion =
         { "Debye",      DEBYE2ENM },
         { "Electron",   1 },
         { "Buckingham", A2NM*DEBYE2ENM },
+        { "DAngstrom2", A2NM*A2NM*DEBYE2ENM },
+        { "DAngstrom3", A2NM*A2NM*A2NM*DEBYE2ENM },
         { "1/nm",       1 },
         { "degree",     M_PI/180.0 },
         { "kJ/mol/rad2",1 },

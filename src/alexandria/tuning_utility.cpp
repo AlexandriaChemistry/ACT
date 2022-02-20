@@ -287,7 +287,7 @@ static void analyse_multipoles(FILE                                             
     for(auto &mpo : mpoMultiPoles)
     {
         fprintf(fp, "Electronic %s (%s):\n",
-                mpo_name(mpo), mpo_unit(mpo));
+                mpo_name(mpo), mpo_unit2(mpo));
         auto Telec = qelec->getMultipole(mpo);
         printMultipole(fp, mpo, Telec);
 
@@ -304,7 +304,7 @@ static void analyse_multipoles(FILE                                             
                 real delta = 0;
                 auto Tcalc = qcalc->getMultipole(mpo);
                 fprintf(fp, "%s %s (%s):\n",
-                        qTypeName(qt).c_str(), mpo_name(mpo), mpo_unit(mpo));
+                        qTypeName(qt).c_str(), mpo_name(mpo), mpo_unit2(mpo));
                 printMultipole(fp, mpo, Tcalc);
 
                 std::vector<double> diff;
@@ -321,7 +321,7 @@ static void analyse_multipoles(FILE                                             
                     flag = " XXX";
                 }
                 fprintf(fp, "Difference %s RMS = %g (%s)%s:\n",
-                        mpo_name(mpo), rms, mpo_unit(mpo), flag.c_str());
+                        mpo_name(mpo), rms, mpo_unit2(mpo), flag.c_str());
                 printMultipole(fp, mpo, diff);
             }
         }
@@ -742,7 +742,7 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
     for(auto &mpo : mpoMultiPoles)
     {
         std::string cmdFlag = gmx::formatString("-%scorr", mpo_name(mpo));
-        std::string title   = gmx::formatString("%s components %s", mpo_name(mpo), mpo_unit(mpo));
+        std::string title   = gmx::formatString("%s components %s", mpo_name(mpo), mpo_unit2(mpo));
         print_corr(opt2fn(cmdFlag.c_str(), filenm.size(), filenm.data()),
                    title.c_str(), "Electronic", "Empirical", lsq_multi[mpo], oenv);
     }

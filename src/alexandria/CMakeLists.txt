@@ -58,7 +58,7 @@ target_sources(actLib
            openmm_xml.cpp
            percentmutator.cpp
            qm2molprop.cpp
-           readpsi4.cpp
+#           readpsi4.cpp
            staticindividualinfo.cpp
            symmetrize_charges.cpp
            topology.cpp

@@ -88,7 +88,8 @@ typedef struct {
 } t_sm_lsq;
 
 static void stats_header(LongTable         &lt,
-                         MolPropObservable  mpo,
+                         const char        *mpo_name,
+                         const char        *mpo_unit,
                          const QmCount     &qmc,
                          iMolSelect         ims)
 {
@@ -101,11 +102,11 @@ static void stats_header(LongTable         &lt,
             // Caption
             char caption[STRLEN];
             snprintf(caption, sizeof(caption), "Performance of the different methods for predicting the molecular %s for molecules containing different chemical groups, given as the RMSD from experimental values (%s), and in brackets the number of molecules in this particular subset. {\\bf Data set: %s.} At the bottom the correlation coefficient R, the regression coefficient a and the intercept b are given as well as the normalized quality of the fit $\\chi^2$, the mean signed error (MSE) and the mean absolute error (MSA).",
-                     mpo_name(mpo), mpo_unit(mpo), iMolSelectName(ims));
+                     mpo_name, mpo_unit, iMolSelectName(ims));
             lt.setCaption(caption);
             // Label
             char label[STRLEN];
-            snprintf(label, sizeof(label), "%s_rmsd", mpo_name(mpo));
+            snprintf(label, sizeof(label), "%s_rmsd", mpo_name);
             lt.setLabel(label);
         }
         else
@@ -162,7 +163,7 @@ void alexandria_molprop_stats_table(FILE                 *fp,
         return;
     }
 
-    stats_header(lt, mpo, qmc, ims);
+    stats_header(lt, mpo_name(mpo), mpo_unit2(mpo), qmc, ims);
 
     for (auto &i : cList.elementsConst())
     {
@@ -844,7 +845,7 @@ void alexandria_molprop_prop_table(FILE                 *fp,
         return;
     }
     bool bPrintConf = false;
-    prop_header(lt, mpo_name(mpo), mpo_unit(mpo),
+    prop_header(lt, mpo_name(mpo), mpo_unit2(mpo),
                 rel_toler, abs_toler, qmc,
                 ims, bPrintConf, bPrintBasis, bPrintMultQ);
     for (auto &mpi : mp)

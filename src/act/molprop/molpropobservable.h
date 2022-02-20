@@ -123,7 +123,7 @@ const char *mpo_name(MolPropObservable MPO);
  * \param[in] MPO The observable
  * \return the string describing the unit
  */
-const char *mpo_unit(MolPropObservable MPO);
+const char *mpo_unit2(MolPropObservable MPO);
 
 /*! \brief Deduct MolPropObservable from string
  * \param[in]   str The string to use
@@ -148,15 +148,17 @@ private:
      */
     MolPropObservable mpo_;
     //! Subtype of this property
-    std::string type_;
+    std::string       type_;
+    //! Unit of this property
+    std::string       unit_;
     /*! \brief
      * Temperature at which the property is measured or computed.
      */
-    double      T_;
+    double            T_;
     /*! \brief
      * Phase in which the property is measured or computed: e.x. Gas, Liquid, and Solid
      */
-    ePhase      eP_;
+    ePhase            eP_;
 public:
     //! Default constructor
     GenericProperty() { T_ = 0; eP_ = ePhase::GAS; };
@@ -164,15 +166,18 @@ public:
     /*! \brief
      * Creates a new GenericProperty object.
      *
-     * \param[in] mpo Type of the property
-     * \param[in] T   Temperature
-     * \param[in] ep  The phase
+     * \param[in] mpo  Type of the property
+     * \param[in] type The subtype of this property
+     * \param[in] unit The unit for this property
+     * \param[in] T    Temperature
+     * \param[in] ep   The phase
      */
     GenericProperty(MolPropObservable  mpo,
                     const std::string &type,
+                    const std::string &unit,
                     double             T,
                     ePhase             ep) : 
-        mpo_(mpo), type_(type), T_(T), eP_(ep)
+        mpo_(mpo), type_(type), unit_(unit), T_(T), eP_(ep)
     {}
 
     /*! \brief
@@ -183,7 +188,7 @@ public:
     /*! \brief
      * Return the unit of the property
      */
-    const char *getUnit() const { return mpo_unit(mpo_); }
+    const char *getUnit() const { return unit_.c_str(); }
     
     /*! \brief
      * Return the temperature
@@ -260,11 +265,13 @@ public:
     
     /*! Constructor initiating all elements of the multipole
      * \param[in] type   The calculation type
+     * \param[in] unit   The unit of the values
      * \param[in] T      The temperature
      * \param[in] mpo    The multipole type
      * \throws if mpo is not a multipole
      */
     MolecularMultipole(const std::string &type,
+                       const std::string &unit,
                        double             T,
                        MolPropObservable  mpo);
     
@@ -275,7 +282,7 @@ public:
     bool hasId(const std::string &id);
     
     /*! \brief Set a value based on the name
-     * \param[in] id    The name of the parameter, e.g. "xy"
+     * \param[in] id    The name of the parameter, e.g. "xy", "average", "error"
      * \param[in] value The value
      * \throws if unknown id
      */
@@ -337,11 +344,12 @@ public:
     
     //! Constructor initiating all elements of the quadrupole tensor
     MolecularPolarizability(const std::string &type,
+                            const std::string &unit,
                             double T,
                             double xx, double yy, double zz,
                             double xy, double xz, double yz,
                             double average, double error) :
-        GenericProperty(MolPropObservable::POLARIZABILITY,  type, T, ePhase::GAS)
+        GenericProperty(MolPropObservable::POLARIZABILITY,  type, unit, T, ePhase::GAS)
     { 
         Set(xx, yy, zz, xy, xz, yz);
         average_ = average;
@@ -412,11 +420,12 @@ public:
     //! Constructor storing all properties related to this energy term
     MolecularEnergy(MolPropObservable mpo,
                     const std::string &type,
+                    const std::string &unit,
                     double T,
                     ePhase ep,
                     double average,
                     double error)
-        : GenericProperty(mpo, type, T, ep)
+        : GenericProperty(mpo, type, unit, T, ep)
     { 
         Set(average, error);
     };

@@ -446,6 +446,7 @@ static void get_polarizability(std::map<MolPropXml, std::string> *xbuf,
         mytype.assign("experiment");
     }
     auto mdp = new MolecularPolarizability(mytype,
+                                           (*xbuf)[MolPropXml::UNIT],
                                            xbuf_atof(xbuf, MolPropXml::TEMPERATURE),
                                            xbuf_atof(xbuf, MolPropXml::qXX),
                                            xbuf_atof(xbuf, MolPropXml::qYY),
@@ -459,7 +460,7 @@ static void get_polarizability(std::map<MolPropXml, std::string> *xbuf,
     clean_xbuf(xbuf,
                { MolPropXml::TEMPERATURE, MolPropXml::qXX, MolPropXml::qYY, MolPropXml::qZZ,
                  MolPropXml::qXY, MolPropXml::qXZ, MolPropXml::qYZ, MolPropXml::AVERAGE,
-                 MolPropXml::ERROR });
+                 MolPropXml::UNIT, MolPropXml::ERROR });
 }
 
 static void mp_process_tree(FILE                              *fp, 
@@ -605,14 +606,9 @@ static void mp_process_tree(FILE                              *fp,
                         NN(xbuf, MolPropXml::TEMPERATURE))
                     {
                         mp_process_tree(fp, tree->children, molprops, xbuf);
-                        //process_children(tree->children, xbuf);
-                        std::string mytype(qm_type);
-                        if (last->dataSource() == dsExperiment)
-                        {
-                            mytype = exp_type;
-                        }
                         MolPropObservable mpo = xoMap.find(elem)->second;
-                        auto mq = new MolecularMultipole(mytype,
+                        auto mq = new MolecularMultipole((*xbuf)[MolPropXml::TYPE],
+                                                         (*xbuf)[MolPropXml::UNIT],
                                                          xbuf_atof(xbuf, MolPropXml::TEMPERATURE),
                                                          mpo);
                         std::vector<MolPropXml> myclean;
@@ -662,7 +658,7 @@ static void mp_process_tree(FILE                              *fp,
                             {
                                 mytype = exp_type;
                             }
-                            auto me  = new MolecularEnergy(mpo, mytype,
+                            auto me  = new MolecularEnergy(mpo, mytype, (*xbuf)[MolPropXml::UNIT],
                                                            xbuf_atof(xbuf, MolPropXml::TEMPERATURE),
                                                            string2phase((*xbuf)[MolPropXml::PHASE]),
                                                            xbuf_atof(xbuf, MolPropXml::ENERGY),
@@ -830,8 +826,8 @@ static void add_exper_properties(xmlNodePtr                    exp,
                     double average = prop->getValue();
                     double error   = prop->getError();
                     child = add_xml_child_val(exp, rmap[MolPropXml::ENERGY], gmx_ftoa(average).c_str());
-                    add_xml_string(child, rmap[MolPropXml::TYPE], mpo_name(mpo));
-                    add_xml_string(child, rmap[MolPropXml::UNIT], mpo_unit(mpo));
+                    add_xml_string(child, rmap[MolPropXml::TYPE], prop->getType());
+                    add_xml_string(child, rmap[MolPropXml::UNIT], prop->getUnit());
                     add_xml_double(child, rmap[MolPropXml::TEMPERATURE], prop->getTemperature());
                     add_xml_string(child, rmap[MolPropXml::PHASE], phase2string(prop->getPhase()));
                     add_xml_child_val(child, rmap[MolPropXml::AVERAGE], gmx_ftoa(average).c_str());

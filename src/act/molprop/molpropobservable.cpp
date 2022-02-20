@@ -96,7 +96,7 @@ const char *mpo_name(MolPropObservable MPO)
     return mpo_name_[MPO];
 }
 
-const char *mpo_unit(MolPropObservable MPO)
+const char *mpo_unit2(MolPropObservable MPO)
 {
     return mpo_unit_[MPO];
 }
@@ -120,8 +120,10 @@ CommunicationStatus GenericProperty::Send(const CommunicationRecord *cr, int des
 
     if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
     {
-        std::string type(mpo_name(mpo_));
-        cr->send_str(dest, &type);
+        std::string mpo_type(mpo_name(mpo_));
+        cr->send_str(dest, &mpo_type);
+        cr->send_str(dest, &type_);
+        cr->send_str(dest, &unit_);
         cr->send_double(dest, T_);
         cr->send_int(dest, (int) eP_);
     }
@@ -139,12 +141,14 @@ CommunicationStatus GenericProperty::Receive(const CommunicationRecord *cr, int 
 
     if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
     {
-        std::string type;
-        cr->recv_str(src, &type);
-        if (!stringToMolPropObservable(type, &mpo_))
+        std::string mpo_type;
+        cr->recv_str(src, &mpo_type);
+        if (!stringToMolPropObservable(mpo_type, &mpo_))
         {
-            gmx_fatal(FARGS, "Unknown observable %s", type.c_str());
+            gmx_fatal(FARGS, "Unknown observable %s", mpo_type.c_str());
         }
+        cr->recv_str(src, &type_);
+        cr->recv_str(src, &unit_);
         T_   = cr->recv_double(src);
         eP_  = (ePhase) cr->recv_int(src);
     }
@@ -157,9 +161,10 @@ CommunicationStatus GenericProperty::Receive(const CommunicationRecord *cr, int 
 }
 
 MolecularMultipole::MolecularMultipole(const std::string         &type,
+                                       const std::string         &unit,
                                        double                     T,
                                        MolPropObservable          mpo) :
-    GenericProperty(mpo, type, T, ePhase::GAS)
+    GenericProperty(mpo, type, unit, T, ePhase::GAS)
 {
     size_t nvalues = multipoleNames(mpo).size();
     values_.resize(nvalues, 0.0);
@@ -173,7 +178,7 @@ bool MolecularMultipole::hasId(const std::string &myid)
             myid.compare("average") == 0 ||
             myid.compare("error") == 0);
 }
-    
+
 void MolecularMultipole::setValue(const std::string &myid, double value)
 {
     int index; 
