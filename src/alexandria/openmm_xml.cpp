@@ -911,7 +911,8 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
 
         // !!! Shell particle has to be type1, core particle has to be type2 !!!
         // 
-        if (strcmp(interactionTypeToString(fs.first).c_str(), "POLARIZATION") == 0)
+        //if (strcmp(interactionTypeToString(fs.first).c_str(), "POLARIZATION") == 0)
+        if (pd->polarizable())    
         {
             auto child6 = add_xml_child(parent, exml_names(xmlEntryOpenMM::DRUDEFORCE));
             for (const auto &aType : pd->particleTypesConst())
