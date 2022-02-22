@@ -488,7 +488,13 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
                 int i = 0;
                 for (auto &a:params.first.atoms())
                 {
-                    add_xml_char(grandchild2, exml_names(class_vec[i]), a.c_str());
+                    std::string s = a.c_str();
+ 
+                    if (!s.empty()) 
+                    {
+                        s.resize(s.size() - 2);
+                    }
+                    add_xml_char(grandchild2, exml_names(class_vec[i]), s.c_str());
                     i++;
                 } 
 
@@ -516,7 +522,12 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
                 int i=0;
                 for (auto &a:params.first.atoms())
                 {
-                    add_xml_char(grandchild2, exml_names(class_vec[i]), a.c_str());
+                    std::string s = a.c_str();
+                    if (!s.empty()) 
+                    {
+                        s.resize(s.size() - 2);
+                    }
+                    add_xml_char(grandchild2, exml_names(class_vec[i]), s.c_str());
                     i++;
                 } 
 
@@ -541,7 +552,12 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
                 int i = 0;
                 for (auto &a:params.first.atoms())
                 {
-                    add_xml_char(grandchild2, exml_names(class_vec[i]), a.c_str());
+                    std::string s = a.c_str();
+                    if (!s.empty()) 
+                    {
+                        s.resize(s.size() - 2);
+                    }
+                    add_xml_char(grandchild2, exml_names(class_vec[i]), s.c_str());
                     i++;
                 } 
 
@@ -580,7 +596,12 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
         //        int i = 0;
         //        for (auto &a:params.first.atoms())
         //        {
-        //            add_xml_char(grandchild2, exml_names(class_vec[i]), a.c_str());
+                      //std::string s = a.c_str();
+                      //if (!s.empty()) 
+                      //{
+                      //     s.resize(s.size() - 2);
+                      //}
+        //            add_xml_char(grandchild2, exml_names(class_vec[i]), s.c_str());
         //            i++;
         //        }
 
@@ -600,11 +621,15 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
             {
                
                 auto grandchild2 = add_xml_child(child6, exml_names(xmlEntryOpenMM::PROPER));
-                // need to implement class1 - class4
                 int i=0;
                 for (auto &a:params.first.atoms())
                 {
-                    add_xml_char(grandchild2, exml_names(class_vec[i]), a.c_str());
+                    std::string s = a.c_str();
+                    if (!s.empty()) 
+                    {
+                        s.resize(s.size() - 2);
+                    }
+                    add_xml_char(grandchild2, exml_names(class_vec[i]), s.c_str());
                     i++;
                 } 
 
@@ -627,11 +652,15 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
             {
                
                 auto grandchild2 = add_xml_child(child6, exml_names(xmlEntryOpenMM::IMPROPER));
-                // need to implement class1 - class4
                 int i=0;
                 for (auto &a:params.first.atoms())
                 {
-                    add_xml_char(grandchild2, exml_names(class_vec[i]), a.c_str());
+                    std::string s = a.c_str();
+                    if (!s.empty()) 
+                    {
+                        s.resize(s.size() - 2);
+                    }
+                    add_xml_char(grandchild2, exml_names(class_vec[i]), s.c_str());
                     i++;
                 } 
 
