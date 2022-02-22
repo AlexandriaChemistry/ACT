@@ -107,6 +107,9 @@ endif()
 
 add_subdirectory(gromacs)
 
+# Couple of ACT python scripts, independent of C++ code.
+add_subdirectory(python)
+# The ACT library file
 add_library(actLib "")
 
 add_subdirectory(act)

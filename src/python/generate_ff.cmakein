@@ -1,29 +1,13 @@
 #!/usr/bin/env python3
 
-import os, sys, subprocess, argparse, csv
+import os, sys, subprocess, argparse
 from enum    import Enum
-#from dbutils import *
-#from legacy_models import *
+
+# ACT python code
+sys.path.insert(1, "@ACT_PYTHON_LIB_PATH@")
+from get_csv_rows import *
     
 BohrInverse2nmInverse = 18.897268
-
-delim = "|"
-
-def get_csv_rows(csv_file, minimum_nr_columns, enc='utf-8'):
-    inputfile = open(csv_file, "r", encoding=enc)
-    csv.register_dialect('pipes', delimiter=delim)
-
-    rows = []
-    try:
-        reader = csv.reader(inputfile, dialect='pipes')
-
-        for row in reader:
-            if (len(row) >= minimum_nr_columns) and (row[0].find("#") < 0):
-                rows.append(row)
-    finally:
-        inputfile.close()
-    print("Read %d rows from %s" % ( len(rows), csv_file ))
-    return rows
 
 def library_filename(filename):
   if not os.path.exists(filename):
