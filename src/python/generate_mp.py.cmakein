@@ -1,0 +1,149 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+#
+# This file is part of the Alexandria Chemistry Toolkit
+# https://github.com/dspoel/ACT
+#
+import os, shutil, argparse, sys
+from multiprocessing import Pool
+from pathlib           import Path
+
+# ACT python code
+sys.path.insert(1, "@ACT_PYTHON_LIB_PATH@")
+from mol_csv_api       import *
+from molprops          import *
+from read_gaussian_log import *
+
+def get_environ(myvar):
+  if myvar in os.environ:
+    return os.environ[myvar]
+  else:
+    print("Please set the %s environment variable" % myvar)
+    exit(1)
+    
+AlexandriaLib = get_environ("AlexandriaLib")
+ACTDATA       = get_environ("ACTDATA")
+
+def parseArguments():
+  parser  = argparse.ArgumentParser()
+  alexdef = ACTDATA + "/forcefield/alexandria.csv"
+  parser.add_argument("-a",      "--alexandria",   help="Compound definition file for reading, default "+alexdef,             type=str, default=alexdef)
+  defmethods = "B3LYP-aug-cc-pVTZ;g4"
+  parser.add_argument("-methods","--methods",      help="Quantum chemistry methods to include, default "+defmethods, type=str, default=defmethods)
+  maxpot = 25
+  parser.add_argument("-maxpot", "--maxpot",       help="Percent of the total number of ESP, default "+str(maxpot), type=int, default=maxpot)
+  sel = "selection.dat"
+  parser.add_argument("-sel", "--selection",       help="Selection file, default "+sel, type=str, default=sel)
+  output = "allmols.xml"
+  parser.add_argument("-o", "--output",            help="Output file, default "+output, type=str, default=output)
+  gentop = "ACS-pg.xml"
+  parser.add_argument("-d", "--gentop",            help="Force field input file, default "+gentop, type=str, default=gentop)
+  parser.add_argument("-db", "--database",         help="SQLite database containing experimental data, default none", type=str, default=None)
+  parser.add_argument("-clean", "--clean",         help="Remove data files", action="store_true")
+  args = parser.parse_args()
+  return args
+
+def name_of_data_log_file(meth, molname, sdf_ok=False):
+  datafile = None
+  logfile  = None
+  datafile = ( "%s-%s.xml" % ( molname, meth ))
+  alexfile = ( "%s/compounds/%s/%s-%s.log.gz" % ( AlexandriaLib, molname, molname, meth))
+  if os.path.exists(alexfile):
+    logfile = alexfile
+
+  return datafile, logfile
+
+def get_mols(M, whitelist, ahlist, output):
+  mols  = []
+  if ahlist:
+    for m in M.mols:
+      mol = M.mols[m]
+      if mol.iupac in ahlist:
+        filename = Path(mol.filename).stem
+        mols.append(mol)
+  else:
+    white = get_csv_rows(whitelist, 2)
+    print("There are %d entries in %s" % ( len(white), whitelist ))
+    for www in white:
+      mol = M.find_mol(www[0])
+      if mol:
+        filename = Path(mol.filename).stem
+        mols.append(filename)
+  print("There are %d molecules in %s to generate %s" % ( len(mols), whitelist, output ) )
+  return mols
+
+def build_one(logfile, datafile, maxpot, molname, basisset, jobtype):
+  flag = "-g03"
+  if logfile[-3:] == "sdf":
+    flag = "-sdf"
+  if not os.path.exists(datafile):
+    mp = read_gaussian_log(logfile, molname, basisset, False)
+    if mp:
+      molprops = Molprops()
+      mp.experiments[0].add_prop("jobtype", jobtype)
+      molprops.add_molecule(mp)
+      molprops.write(datafile)
+  if os.path.exists(datafile):
+    return datafile
+  else:
+    return None
+
+def get_method_basis_jobtype(meth:str):
+  if meth == "B3LYP-aug-cc-pVTZ":
+    return "B3LYP", "aug-cc-pVTZ", "Opt"
+  elif meth == "HF-6-311G**":
+    return "HF", "6-311G**", "Opt"
+  else:
+    mm = meth.upper()
+    return mm, mm, mm
+  
+def parallel_build(mols, methods, gentop, database, maxpot, merge_mp, output, sdf_ok):
+  pool      = Pool()
+  results   = []
+  for molname in mols:
+    for meth in methods.split(";"):
+      datafile, logfile = name_of_data_log_file(meth, molname, sdf_ok)
+      mm, basis, jobtype = get_method_basis_jobtype(meth)
+      if logfile and os.path.exists(logfile):
+        results.append(pool.apply_async(build_one, [logfile, datafile, maxpot, molname, basis, jobtype]))
+  datafiles = []
+  for r in results:
+    ddd = r.get(timeout=10)
+    if ddd:
+      datafiles.append(ddd)
+
+  files = ' '.join(map(str, datafiles))
+  command = ("%s -di %s -o %s -maxwarn 0 -f %s" % (merge_mp, gentop, output, files))
+  if None != database:
+    command += " -db " + database
+  os.system(command)
+
+def get_alexandria():
+  for name in ["alexandria", "alexandria_d", "alexandria_mpi", "alexandria_mpi_d"]:
+    alexandria = shutil.which(name)
+    if alexandria:
+      return alexandria
+  return None
+  
+if __name__ == "__main__":
+  args        = parseArguments()
+  if args.clean:
+    os.system("rm -f *.xml")
+    exit(0)
+  alexandria  = get_alexandria()
+  if not alexandria:
+    print("Can not find the alexandria executable. Stopping script.")
+    exit(1)
+  whitelist     = args.selection
+  gentop        = args.gentop
+  merge_mp      = alexandria + " merge_mp"
+
+  M = Molecules()
+  M.read(args.alexandria, 3, False)
+  mols = get_mols(M, whitelist, None, args.output)
+
+  if args.output[-4:] != ".xml":
+    args.output = args.output + ".xml"
+  parallel_build(mols, args.methods, gentop, args.database,
+                 min(100, max(20, args.maxpot)),
+                 merge_mp, args.output, False)
