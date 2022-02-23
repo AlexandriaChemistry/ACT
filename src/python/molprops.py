@@ -238,7 +238,7 @@ class Experiment:
     def add_atom(self, name, obtype, atomid, coord_unit, x, y, z):
         self.atoms.append({ "name": name, "obtype": obtype, "atomid": str(atomid), "coord_unit": coord_unit, "x": str(x), "y": str(y), "z": str(z)})
         
-    def extract_thermo(self, tcmap, atomname):
+    def extract_thermo(self, tcmap, atomname, verbose=False):
         if (not tcmap["Ezpe"] or not tcmap["Hcorr"] or not tcmap["Gcorr"] or
             not tcmap["E0"] or not tcmap["CV"] or not tcmap["Method"]):
             return
@@ -257,7 +257,7 @@ class Experiment:
         # Now fetch the atomic contributions to the heat of formation.
         # These depend on atomtype, temperature and method used.
         atomid   = 0
-        ahof     = AtomicHOF(tcmap["Method"], tcmap["Temp"])
+        ahof     = AtomicHOF(tcmap["Method"], tcmap["Temp"], verbose)
         for a in atomname:
             dhfx0, dhfxT, S0xT = ahof.get(a, tcmap["Temp"])
             if dhfx0 and dhfxT and S0xT:

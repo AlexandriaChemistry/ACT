@@ -33,6 +33,7 @@ def interpret_gauss(content:list, infile:str,
     coordinates  = []
     exper        = None
     espfitcenter = []
+    lastespindex = None
     potential    = []
     # Thermochemistry variables
     tcmap        = { "CV": None, "Ezpe": None, "Hcorr": None,
@@ -130,23 +131,60 @@ def interpret_gauss(content:list, infile:str,
                                          words[5], words[6], words[7])
         elif line.find("Atomic Center") >= 0:
             words     = line.split()
-            if len(words) < 8:
+            mywords   = [ None, None, None, None ]
+            if len(words) == 8:
+                mywords = [ words[2], words[5], words[6], words[7] ]
+            elif len(words) < 8:
+                mywords[0] = line[14:18]
+                mywords[1] = line[25:35]
+                mywords[2] = line[35:45]
+                mywords[3] = line[45:55]
+                if verbose:
+                    print("found these words {}".format(mywords))
+            try:
+                # The index field may overflow if there are more than
+                # 9999 points. In that case Fortran prints ****. We
+                # try to circumvent that problem here.
+                if mywords[0].find("****") >= 0:
+                    lastespindex += 1
+                else:
+                    lastespindex = int(mywords[0])
+                espindex = lastespindex-1
+                mycoords = [ float(mywords[1]), float(mywords[2]), float(mywords[3]) ]
+            except ValueError:
                 print("Do not understand line '%s' in %s." % (line, infile))
                 return None
-            espindex  = int(words[2])-1
-            mycoords  = [ float(words[5]), float(words[6]), float(words[7]) ]
             if espindex >= len(espfitcenter):
                 espfitcenter.append(mycoords)
             else:
                 espfitcenter[espindex] = mycoords
         elif line.find("ESP Fit Center") >= 0:
             words     = line.split()
-            if len(words) < 9:
+            mywords   = [ None, None, None, None ]
+            if len(words) == 9:
+                mywords = [ words[3], words[6], words[7], words[8] ]
+            elif len(words) < 9:
+                mywords[0] = line[14:19]
+                mywords[1] = line[26:36]
+                mywords[2] = line[36:46]
+                mywords[3] = line[46:56]
+                if verbose:
+                    print("found these words {}".format(mywords))
+            else:
                 print("Do not understand line '%s' in %s" % (line, infile))
                 return None
-            espindex  = int(words[3])-1
             try:
-                mycoords  = [ float(words[6]), float(words[7]), float(words[8]) ]
+                # See comment above.
+                if mywords[0].find("****") >= 0:
+                    lastespindex += 1
+                else:
+                    lastespindex  = int(mywords[0])
+                espindex = lastespindex - 1
+            except ValueError:
+                print("Line '%s' in %s not comprehensible" % ( line, infile))
+                return None
+            try:
+                mycoords  = [ float(mywords[1]), float(mywords[2]), float(mywords[3]) ]
             except:
                 print("'%s' does not contain ESP in %s" % ( line, infile))
                 return None

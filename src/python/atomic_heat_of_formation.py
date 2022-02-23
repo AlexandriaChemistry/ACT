@@ -29,7 +29,7 @@ class AtomicHOF:
         actdata  = "ACTDATA"
         if not actdata in os.environ:
             sys.exit("No variable %s in your environment. Did you source ACTRC?" % actdata)
-        datafile = os.environ[actdata] + "/top/atomization-energies.txt"
+        datafile = os.environ[actdata] + "/top/atomization-energies.csv"
         if not os.path.exists(datafile):
             sys.exit("Cannot find %s, please reinstall ACT" % datafile)
         rows = get_csv_rows(datafile, 9)
