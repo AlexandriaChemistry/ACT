@@ -1,7 +1,12 @@
+#
+# This file is part of the Alexandria Chemistry Toolkit
+# https://github.com/dspoel/ACT
+#
 import gzip, math, os
 from get_mol_dict import *
 from molprops import *
 from gaff_to_alexandria import *
+from elements import AtomNumberToAtomName
 
 def method_basis(ww: str):
     if len(ww) >= 3:
@@ -10,6 +15,7 @@ def method_basis(ww: str):
             return elem[0], elem[1]
     return "", ""
 
+        
 def interpret_gauss(content:list, infile:str,
                     molname:str, basisset:str, verbose:bool):
     '''Interpret the content of a Gaussian log file and put the
@@ -47,15 +53,20 @@ def interpret_gauss(content:list, infile:str,
             if len(words) == 6:
                 mp.add_prop("charge", words[2])
                 mp.add_prop("multiplicity", words[5])
-                c = content_index+1
-                while len(content[c].strip()) > 0:
-                    words = content[c].strip().split()
-                    if len(words) == 4:
-                        atomname.append(words[0])
-                        coordinates.append([ float(words[1]), float(words[2]), float(words[3])])
-                    else:
-                        break
-                    c += 1
+        elif line.find("Input orientation") >= 0:
+            c = content_index+5
+            atomname.clear()
+            coordinates.clear()
+            while content[c].strip().find("--------------------") < 0:
+                words = content[c].strip().split()
+                if len(words) == 6:
+                    atomnumber = int(words[1])
+                    atomname.append(AtomNumberToAtomName(atomnumber))
+                    coordinates.append([ float(words[3]), float(words[4]), float(words[5])])
+                else:
+                    break
+                c += 1
+            
         elif line.find("Dipole moment") >= 0:
             words = content[content_index+1].strip().split()
             if len(words) >= 6 and exper:
@@ -206,35 +217,36 @@ def interpret_gauss(content:list, infile:str,
     
     exper.extract_thermo(tcmap, atomname)
     weight, numb_atoms, formula, multiplicity, atomtypes, bonds_dict = get_info_from_coords_elements(atomname, coordinates)
-    mp.add_prop("mass", str(weight))
-    mp.add_prop("formula", formula)
-    for index_atom in bonds_dict:
-        for index_neighbour in bonds_dict[index_atom]:
-            mp.add_bond(index_atom, index_neighbour, bonds_dict[index_atom][index_neighbour]["bond_order"])
-    Angstrom = "A"
-    pm       = "pm"
-    g2a      = GaffToAlexandria()
-    if exper:
-        if len(potential) != len(espfitcenter):
-            print("Found %d potentials for %d centers in %s" % ( len(potential), len(espfitcenter), infile))
-            return None
-        for i in range(len(potential)):
-            exper.add_potential(str(i+1), "Hartree/e", pm,
-                                str(100*espfitcenter[i][0]),
-                                str(100*espfitcenter[i][1]),
-                                str(100*espfitcenter[i][2]),
-                                potential[i])
-        if len(atomtypes) != len(coordinates):
-            print("Found %d atomtype for %d coordinates in %s" % ( len(atomtypes), len(coordinates), infile))
-            return None
-        for i in range(len(atomtypes)):
-            alextype = g2a.rename(atomtypes[i])
-            exper.add_atom(atomname[i], alextype, i+1, pm, 
-                           (100*coordinates[i][0]),
-                           (100*coordinates[i][1]),
-                           (100*coordinates[i][2]))
-        mp.add_experiment(exper)
-        return mp
+    if None != weight:
+        mp.add_prop("mass", str(weight))
+        mp.add_prop("formula", formula)
+        for index_atom in bonds_dict:
+            for index_neighbour in bonds_dict[index_atom]:
+                mp.add_bond(index_atom, index_neighbour, bonds_dict[index_atom][index_neighbour]["bond_order"])
+        Angstrom = "A"
+        pm       = "pm"
+        g2a      = GaffToAlexandria()
+        if exper:
+            if len(potential) != len(espfitcenter):
+                print("Found %d potentials for %d centers in %s" % ( len(potential), len(espfitcenter), infile))
+                return None
+            for i in range(len(potential)):
+                exper.add_potential(str(i+1), "Hartree/e", pm,
+                                    str(100*espfitcenter[i][0]),
+                                    str(100*espfitcenter[i][1]),
+                                    str(100*espfitcenter[i][2]),
+                                    potential[i])
+            if len(atomtypes) != len(coordinates):
+                print("Found %d atomtype for %d coordinates in %s" % ( len(atomtypes), len(coordinates), infile))
+                return None
+            for i in range(len(atomtypes)):
+                alextype = g2a.rename(atomtypes[i])
+                exper.add_atom(atomname[i], alextype, i+1, pm, 
+                               (100*coordinates[i][0]),
+                               (100*coordinates[i][1]),
+                               (100*coordinates[i][2]))
+            mp.add_experiment(exper)
+            return mp
     else:
         return None
     

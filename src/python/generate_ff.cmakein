@@ -1,21 +1,27 @@
 #!/usr/bin/env python3
-
-import os, sys, subprocess, argparse
+#
+# This file is part of the Alexandria Chemistry Toolkit
+# https://github.com/dspoel/ACT
+#
+import os, sys, subprocess, argparse, glob
 from enum    import Enum
 
 # ACT python code
 sys.path.insert(1, "@ACT_PYTHON_LIB_PATH@")
 from get_csv_rows import *
-    
+from elements     import AtomNumberToAtomName
+
 BohrInverse2nmInverse = 18.897268
+
+def actdata() -> str:
+  actdata = "ACTDATA"
+  if not actdata in os.environ:
+    sys.exit("Please source ACTRC before running this script. No environment variable %s." % actdata)
+  return os.environ[actdata]
 
 def library_filename(filename):
   if not os.path.exists(filename):
-    actdata = "ACTDATA"
-    if actdata in os.environ:
-      filename = ("%s/forcefield/%s" % ( os.environ[actdata], filename ))
-    else:
-      sys.exit("Cannot find %s" % filename)
+    filename = ("%s/forcefield/%s" % ( actdata(), filename ))
   return filename
 
 def string2bool(string):
@@ -146,10 +152,18 @@ class AtomTypes:
       
 class ForceField:
   """Class to hold generic FF information"""
-  def __init__(self, qdist, filename="ffnames.csv"):
-    rows  = get_csv_rows(library_filename(filename), 7)
+  def __init__(self, filename="ffnames.csv"):
+    self.rows  = get_csv_rows(library_filename(filename), 7)
+  
+  def names(self):
+    nms = ""
+    for row in self.rows:
+      nms += " " + row[0]
+    return nms
+
+  def assign(self, qdist):
     found = False
-    for row in rows:
+    for row in self.rows:
       if row[0] == qdist:
         self.qdist = qdist
         self.chargetype = row[1]
@@ -163,8 +177,7 @@ class ForceField:
         print("vanderwaals = {}".format(self.vanderwaals))
         print("polarizable = {}".format(self.polarizable))
     if not found:
-      print("Unsupported force field %s" % qdist)
-      exit(1)
+      sys.exit("Unsupported force field %s" % qdist)
 
 class AtomProps:
   """Basic atom properties"""
@@ -298,7 +311,7 @@ def write_polarization(out, myff, myatp):
 
 def print_gentop(output, myff, myatp, bs,
                  combRule, nexcl, pdihs, 
-                 vsite, slaterMax, reference):
+                 vsite, reference):
   out = open(output, "w")
   out.write("<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n")
   out.write("<!DOCTYPE gentop.dtd PUBLIC \"gentop.dtd\" \"gentop.dtd\">\n")
@@ -340,26 +353,54 @@ def print_gentop(output, myff, myatp, bs,
   print("Generated %s\n" % output)
 
 if __name__ == '__main__':
-
-    def parseArguments():
-        parser = argparse.ArgumentParser()
+    def getFFDefs(template:str):
+        pwd = os.getcwd()
+        os.chdir("%s/forcefield" % actdata())
+        atdefs = ""
+        for g in glob.glob("%s*csv" % template):
+            atdefs += " " + g
+        os.chdir(pwd)
+        return atdefs
+        
+    def parseArguments(ffs):
+        desc = ('''This script will generate a force field file that can be used as input for
+        force field optimizations in the Alexandria Chemistry Toolkit. Input files can be found
+        in %s. You can copy these files to your working directory, modify them and pass the
+        modified version to this script. 
+        Force field files can use two charge generation algorithms, the split charge equilibration method (SQE)
+        or the eloctronegativity equilibration method (EEM). The force field file can be written with or without
+        support for polarization. If you choose a force field without polarization, please select atomtypes_nonpol.csv
+        or provide your own. Note that there is limited error checking only.''' % actdata())
+        parser = argparse.ArgumentParser(description=desc)
         parser.add_argument("-o",        "--output",     help="Output file name, will be generated if empty",     type=str, default="")
-        parser.add_argument("-comb",     "--combRule",   help="combination rule:  arithmetic, geometric, kong.",  type=str,   default = "Geometric")
-        parser.add_argument("-g",        "--gamma",      help="gamma value for wbk potential.",                   type=float, default =  13.0)
-        parser.add_argument("-nexcl",    "--nexcl",      help="number of exclusions.",                            type=int,   default =  0)
-        scaleFactor = 0.8
-        parser.add_argument("-sf",       "--scaleFactor",help="Scaling factor to set minimum and maximum allowed values of parameters, according to min = factor*value, max = value/factor. Number should be > 0 and <= 1", type=float, default=scaleFactor)
-        parser.add_argument("-dih",      "--dihedral",   help="Which GROMACS function to use for dihedrals, PDIHS or FOURDIHS", type=str, default="FOURDIHS")
-        parser.add_argument("-ff",    "--force_field",   help="The charge distribution scheme for which eemprops will be written", type=str, default="ACM-g")
-        parser.add_argument("-smax",     "--slater_max", type=int, default=3)
-        parser.add_argument("-bv",       "--bondvsites", help="Added vsites to selected bonds and for polarizable models a shell to the vsite", type=str, default=None)
+        defcomb = "geometric"
+        parser.add_argument("-comb",     "--combRule",   help=("Combination rule:  arithmetic, geometric, kong, default %s" % defcomb), type=str, default =defcomb)
+        nexcl = 0
+        parser.add_argument("-nexcl",    "--nexcl",      help=("Number of exclusions, default %d" % nexcl), type=int,   default=nexcl)
+        defdih = "FOURDIHS"
+        parser.add_argument("-dih",      "--dihedral",   help=("Which GROMACS function to use for dihedrals, PDIHS or FOURDIHS. Default %s" % defdih), type=str, default=defdih)
+        ffdef  = "ACS-pg"
+        ffhelp = "The force field. Choose from"
+        for ff in ffs.rows:
+          # We do not want to expose all the force field possibilities
+          # since they are for testing only.
+          if ff[0].find("ESP") < 0 and not ff[0] == "ACS-p":
+            ffhelp += (" %s: Qgen = %s Polarizable = %s," % (ff[0], ff[2], str(ff[3])))
+        ffhelp += (" default %s." % ffdef)
+        parser.add_argument("-ff",    "--force_field",  help=ffhelp, type=str, default=ffdef)
+        btdefs = getFFDefs("bondvsites")
+        bthelp = ( "Added vsites to selected bonds and for polarizable models a shell to the vsite. Choose one from %s. Default no vsites." % btdefs)
+        parser.add_argument("-bv",       "--bondvsites", help=bthelp, type=str, default=None)
+        atdefs    = getFFDefs("atomtypes")
         defaprops = "atomtypes.csv"
-        parser.add_argument("-atypes", "--atomtypes", help=("Definition to use when generating a force field file (default %s)" % defaprops), type=str, default=defaprops)
+        athelp    = ("Definition to use when generating a force field file. Choose one from %s. Default %s." % ( atdefs, defaprops))
+        parser.add_argument("-atypes", "--atomtypes", help=athelp, type=str, default=defaprops)
         args = parser.parse_args()
         return args
 
-    arg    = parseArguments()
-    myff   = ForceField(arg.force_field)
+    myff   = ForceField()
+    arg    = parseArguments(myff)
+    myff.assign(arg.force_field)
     aprops = AtomProps()
     myatp  = AtomTypes()
     myatp.read4(arg.atomtypes, aprops, myff.polarizable)
@@ -377,5 +418,4 @@ if __name__ == '__main__':
 
     print_gentop(output, myff, myatp, bs,
                  arg.combRule, arg.nexcl, arg.dihedral,
-                 None, arg.slater_max, 
-                 "Ghahremanpour2022a")
+                 None, "Ghahremanpour2022a")

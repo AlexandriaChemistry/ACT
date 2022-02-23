@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+#
+# This file is part of the Alexandria Chemistry Toolkit
+# https://github.com/dspoel/ACT
+#
 
 import os, shutil, argparse, sys
 from multiprocessing import Pool
@@ -22,21 +26,29 @@ AlexandriaLib = get_environ("AlexandriaLib")
 ACTDATA       = get_environ("ACTDATA")
 
 def parseArguments():
-  parser  = argparse.ArgumentParser()
+  desc='''This script will generate a molecular property (molprop) file for input to the
+  Alexandria Chemistry Toolkit (ACT, see https://github.com/dspoel/ACT/wiki).
+  It will read and process Gaussian output files from the Alexandria Library,
+  that you can download from https://zenodo.org/record/1170597.
+  Optionally, experimental data can be added to the molprop file, for this you have to
+  download that database from the ACT wiki. Since the script can take quite some time
+  it runs in parallel using all the available CPU cores on your computer.
+  '''
+  parser  = argparse.ArgumentParser(description=desc)
   alexdef = ACTDATA + "/forcefield/alexandria.csv"
   parser.add_argument("-a",      "--alexandria",   help="Compound definition file for reading, default "+alexdef,             type=str, default=alexdef)
   defmethods = "B3LYP-aug-cc-pVTZ;g4"
   parser.add_argument("-methods","--methods",      help="Quantum chemistry methods to include, default "+defmethods, type=str, default=defmethods)
   maxpot = 25
-  parser.add_argument("-maxpot", "--maxpot",       help="Percent of the total number of ESP, default "+str(maxpot), type=int, default=maxpot)
+  parser.add_argument("-maxpot", "--maxpot",       help="Percent of the total number of electrostatic potential points, default "+str(maxpot), type=int, default=maxpot)
   sel = "selection.dat"
-  parser.add_argument("-sel", "--selection",       help="Selection file, default "+sel, type=str, default=sel)
+  parser.add_argument("-sel", "--selection",       help="Selection file determining the Train and Test data sets. Default "+sel, type=str, default=sel)
   output = "allmols.xml"
   parser.add_argument("-o", "--output",            help="Output file, default "+output, type=str, default=output)
   gentop = "ACS-pg.xml"
-  parser.add_argument("-d", "--gentop",            help="Force field input file, default "+gentop, type=str, default=gentop)
-  parser.add_argument("-db", "--database",         help="SQLite database containing experimental data, default none", type=str, default=None)
-  parser.add_argument("-clean", "--clean",         help="Remove data files", action="store_true")
+  parser.add_argument("-d", "--force_field",       help="Force field input file, default "+gentop, type=str, default=gentop)
+  parser.add_argument("-db", "--database",         help="Optional SQLite database containing experimental data, default none", type=str, default=None)
+  parser.add_argument("-clean", "--clean",         help="Remove data files after use.", action="store_true")
   args = parser.parse_args()
   return args
 
@@ -132,7 +144,7 @@ if __name__ == "__main__":
     print("Can not find the alexandria executable. Stopping script.")
     exit(1)
   whitelist     = args.selection
-  gentop        = args.gentop
+  gentop        = args.force_field
   merge_mp      = alexandria + " merge_mp"
 
   M = Molecules()

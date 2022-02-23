@@ -92,6 +92,11 @@ def get_mol_dict(filename, fileformat, forcefield=None):
     return molecule_dict
 
 def get_info_from_coords_elements(elements, coords, forcefield="alexandria"):
+  if len(coords) != len(elements):
+    print("Inconsistent input: There are %d coordinates but %d elements." % ( len(coords), len(elements) ))
+    return None, None, None, None, None, None
+  elif len(coords) == 0:
+    return None, None, None, None, None, None
   atomnumber = len(elements)
   xyzstring = ("%d\nCoordinates\n" % atomnumber)
   for i in range(len(elements)):

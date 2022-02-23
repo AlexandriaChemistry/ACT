@@ -3,6 +3,7 @@
 # https://github.com/dspoel/ACT
 #
 import math, os, sys
+from get_csv_rows import *
 
 def UnitToConversionFactor(unit:str):
     KCAL = 4.184
@@ -18,9 +19,10 @@ def UnitToConversionFactor(unit:str):
         sys.exit("Unknown unit %s" % unit)
 
 class AtomicHOF:
-    def __init__(self, method, temperature):
+    def __init__(self, method, temperature, verbose=False):
         self.method      = method
         self.temperature = temperature
+        self.verbose     = verbose
         self.read()
         
     def read(self):
@@ -56,24 +58,30 @@ class AtomicHOF:
         Vmodel = None
         for p in range(len(self.ahof[akey])):
             thisprop = self.ahof[akey][p]
-            print("prop %d method %s desc %s temp %g" % ( p, thisprop["Method"], thisprop["Desc"], thisprop["Temp"]))
+            if self.verbose:
+                print("prop %d method %s desc %s temp %g" % 
+                      ( p, thisprop["Method"], thisprop["Desc"], thisprop["Temp"]))
             eFac = UnitToConversionFactor(thisprop["Unit"])
             if abs(temp - thisprop["Temp"]) <= 1e-2:
                 if thisprop["Method"] == "exp":
                     if thisprop["Desc"] == "H(0)-H(T)":
                         HexpT = thisprop["Value"]
-                        print("found HexpT = %g" % HexpT)
+                        if self.verbose:
+                            print("found HexpT = %g" % HexpT)
                     elif thisprop["Desc"] == "S0(T)":
                         S0 = thisprop["Value"]
-                        print("found S0 = %g" % S0)
+                        if self.verbose:
+                            print("found S0 = %g" % S0)
             elif thisprop["Temp"] == 0:
                 if thisprop["Method"] == "exp":
                     if thisprop["Desc"] == "DHf(T)":
                         Vdhf = thisprop["Value"]
-                        print("found Vdhf = %g" % Vdhf)
+                        if self.verbose:
+                            print("found Vdhf = %g" % Vdhf)
                 else:
                     Vmodel = thisprop["Value"]*eFac
-                    print("found Vmodel = %g" % Vmodel)
+                    if self.verbose:
+                        print("found Vmodel = %g" % Vmodel)
         # Check whether we found everything
         if HexpT and S0 and Vdhf and Vmodel:
             dhof0 = Vdhf-Vmodel
