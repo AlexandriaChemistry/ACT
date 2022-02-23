@@ -374,9 +374,9 @@ if __name__ == '__main__':
         parser = argparse.ArgumentParser(description=desc)
         parser.add_argument("-o",        "--output",     help="Output file name, will be generated if empty",     type=str, default="")
         defcomb = "geometric"
-        parser.add_argument("-comb",     "--combRule",   help=("Combination rule:  arithmetic, geometric, kong, default %s" % defcomb), type=str, default =defcomb)
+        parser.add_argument("-comb",     "--combRule",   help=("Combination rule:  arithmetic, geometric, kong. Default %s" % defcomb), type=str, default =defcomb)
         nexcl = 0
-        parser.add_argument("-nexcl",    "--nexcl",      help=("Number of exclusions, default %d" % nexcl), type=int,   default=nexcl)
+        parser.add_argument("-nexcl",    "--nexcl",      help=("Number of exclusions. Default %d" % nexcl), type=int,   default=nexcl)
         defdih = "FOURDIHS"
         parser.add_argument("-dih",      "--dihedral",   help=("Which GROMACS function to use for dihedrals, PDIHS or FOURDIHS. Default %s" % defdih), type=str, default=defdih)
         ffdef  = "ACS-pg"
@@ -385,8 +385,8 @@ if __name__ == '__main__':
           # We do not want to expose all the force field possibilities
           # since they are for testing only.
           if ff[0].find("ESP") < 0 and not ff[0] == "ACS-p":
-            ffhelp += (" %s: Qgen = %s Polarizable = %s," % (ff[0], ff[2], str(ff[3])))
-        ffhelp += (" default %s." % ffdef)
+            ffhelp += (" %s: Qgen = %s Polarizable = %s." % (ff[0], ff[2], str(ff[3])))
+        ffhelp += (" Default %s." % ffdef)
         parser.add_argument("-ff",    "--force_field",  help=ffhelp, type=str, default=ffdef)
         btdefs = getFFDefs("bondvsites")
         bthelp = ( "Added vsites to selected bonds and for polarizable models a shell to the vsite. Choose one from %s. Default no vsites." % btdefs)
