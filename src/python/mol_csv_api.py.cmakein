@@ -11,8 +11,8 @@ from pathlib     import Path
 # ACT python code
 sys.path.insert(1, "@ACT_PYTHON_LIB_PATH@")
 from get_csv_rows import *
-#from dbutils import *
 from get_mol_dict import *
+from molutils import *
 
 try:
     from pubchempy import *

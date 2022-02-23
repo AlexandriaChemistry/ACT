@@ -43,12 +43,12 @@
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/utility/real.h"
 
-#include "act/utility/communicationrecord.h"
 #include "act/molprop/composition.h"
-#include "experiment.h"
+#include "act/molprop/experiment.h"
 #include "act/molprop/molpropobservable.h"
-#include "phase.h"
+#include "act/molprop/phase.h"
 #include "act/poldata/poldata.h"
+#include "act/utility/communicationrecord.h"
 #include "alexandria/topology.h"
 
 /*! \brief
