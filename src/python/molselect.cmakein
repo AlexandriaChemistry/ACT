@@ -14,6 +14,8 @@ from molutils    import *
 from datetime    import datetime
 import numpy as np
 
+strained = [ "oxetane", "norborn", "spiropentane", "cycloprop", "cyclobut", "oxiran" ]
+
 def parseArguments():
   sestr = ""
   for se in supported_elements():
@@ -27,7 +29,8 @@ def parseArguments():
   parser.add_argument("-a",          "--alexandria",   help="Compound descriptions. Default "+alexandria,                type=str,         default=alexandria)
   outfile = "selection.dat"
   parser.add_argument("-o",          "--outfile",      help="Output selection file for writing. Default "+outfile,     type=str, default=outfile)
-  parser.add_argument("-p",          "--probability",  help="Probability of being in the Test set (number between 0 and 1)", type=float,       default=0.5)
+  defprob = 0.5
+  parser.add_argument("-p",          "--probability",  help="Probability of being in the Test set. Default "+str(defprob), type=float,       default=defprob)
   parser.add_argument("-elem",       "--elements",     help="List of elements to filter compounds, e.g. 'C H'. Default allow all.",  type=str,         default=None)
   parser.add_argument("-fullelem",   "--fullelem",     help="Select a molecule if all its elements exists in -elem",   action="store_true")
   parser.add_argument("-supported",  "--supported",    help="Only non-radical compounds with elements supported by Alexandria FF",               action="store_true")
@@ -36,7 +39,11 @@ def parseArguments():
   parser.add_argument("-charged",    "--charged",      help="Select charged compounds only",                           action="store_true")
   parser.add_argument("-neutral",    "--neutral",      help="Select neutral compounds only",                           action="store_true")
   parser.add_argument("-must",       "--musthave",     help="File containing a list of compounds that must be included in the Train data set", type=str, default=None)
-  parser.add_argument("-unstrained", "--unstrained",   help="Remove strained compounds",                               action="store_true")
+  strainhelp = "Remove strained compounds, i.e. with names containing "
+  for sm in strained[:-1]:
+    strainhelp += (" '%s'" % sm)
+  strainhelp += (" or '%s'" % strained[-1])
+  parser.add_argument("-unstrained", "--unstrained", help=strainhelp, action="store_true")
   parser.add_argument("-withoutoep", "--withoutoep",   help="Add compounds for which no OEP calcs have been done",                               action="store_true")
                   
   args = parser.parse_args()
@@ -130,7 +137,6 @@ def filter_neutrals(mols):
   return filtered_mols
 
 def filter_strained(mols):
-  strained = [ "oxetane", "norborn", "spiropentane", "cycloprop", "cyclobut", "oxiran" ]
   filtered_mols = []
   n = 0
   for mol in mols:
