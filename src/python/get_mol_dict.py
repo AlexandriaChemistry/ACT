@@ -7,6 +7,7 @@ try:
 except:
     print("OpenBabel not found. Proceed at your own risk")
 import os, sys
+from gaff_to_alexandria import *
 
 debug = False
 
@@ -58,6 +59,7 @@ def get_mol_dict(filename, fileformat, forcefield=None):
             if not ff.GetAtomTypes(obmol):
                 print("Could not get atomtypes from force field %s for %s" % ( forcefield, filename))
 
+    g2a      = GaffToAlexandria()
     # Add the atoms
     for atom in ob.OBMolAtomIter(obmol):
         index      = atom.GetIdx()
@@ -66,7 +68,7 @@ def get_mol_dict(filename, fileformat, forcefield=None):
         if forcefield and atom.HasData(ffatomtype):
             atp = atom.GetData(ffatomtype)
             if atp:
-                atomtype = rename_atomtype(atp.GetValue())
+                atomtype = g2a.rename(atp.GetValue())
         X = atom.GetX()
         Y = atom.GetY()
         Z = atom.GetZ()
