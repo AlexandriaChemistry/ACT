@@ -60,6 +60,7 @@ jobtype    = "SP"
 tot_charge = "1"
 multiplicity = "1"
 
+fileformat  = "xyz"
 gridfile    = "grid.dat"
 esp_data    = "grid_esp.dat"
 filename    = "water_Li.xyz"
