@@ -1,0 +1,202 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+#
+# This file is part of the Alexandria Chemistry Toolkit
+# https://github.com/dspoel/ACT
+#
+import os, sys, argparse
+from pathlib     import Path
+
+# ACT python code
+sys.path.insert(1, "@ACT_PYTHON_LIB_PATH@")
+from mol_csv_api import *
+from molutils    import *
+from datetime    import datetime
+import numpy as np
+
+strained = [ "oxetane", "norborn", "spiropentane", "cycloprop", "cyclobut", "oxiran" ]
+
+def parseArguments():
+  sestr = ""
+  for se in supported_elements():
+    sestr += " " + se
+  desc=('''The molselect script will make a selection of compounds based on the Alexandria Library.
+  You can select out compounds for which there is support in the Alexandria force field family (non-radicals containing the elements%s)
+  but also prioritize certain compounds by providing a 'must-have' list.
+  ''' % sestr)
+  parser     = argparse.ArgumentParser(description=desc)
+  alexandria = os.environ["ACTDATA"] + "/forcefield/alexandria.csv"
+  parser.add_argument("-a",          "--alexandria",   help="Compound descriptions. Default "+alexandria,                type=str,         default=alexandria)
+  outfile = "selection.dat"
+  parser.add_argument("-o",          "--outfile",      help="Output selection file for writing. Default "+outfile,     type=str, default=outfile)
+  defprob = 0.5
+  parser.add_argument("-p",          "--probability",  help="Probability of being in the Test set. Default "+str(defprob), type=float,       default=defprob)
+  parser.add_argument("-elem",       "--elements",     help="List of elements to filter compounds, e.g. 'C H'. Default allow all.",  type=str,         default=None)
+  parser.add_argument("-fullelem",   "--fullelem",     help="Select a molecule if all its elements exists in -elem",   action="store_true")
+  parser.add_argument("-supported",  "--supported",    help="Only non-radical compounds with elements supported by Alexandria FF",               action="store_true")
+  parser.add_argument("-nometal",    "--noMetal",      help="Remove metals from the selected molecules",               action="store_true")
+  parser.add_argument("-noradical",  "--noRadical",    help="Remove radicals from the selected molecules",             action="store_true")
+  parser.add_argument("-charged",    "--charged",      help="Select charged compounds only",                           action="store_true")
+  parser.add_argument("-neutral",    "--neutral",      help="Select neutral compounds only",                           action="store_true")
+  parser.add_argument("-must",       "--musthave",     help="File containing a list of compounds that must be included in the Train data set", type=str, default=None)
+  strainhelp = "Remove strained compounds, i.e. with names containing "
+  for sm in strained[:-1]:
+    strainhelp += (" '%s'" % sm)
+  strainhelp += (" or '%s'" % strained[-1])
+  parser.add_argument("-unstrained", "--unstrained", help=strainhelp, action="store_true")
+  parser.add_argument("-withoutoep", "--withoutoep",   help="Add compounds for which no OEP calcs have been done",                               action="store_true")
+                  
+  args = parser.parse_args()
+  return args
+
+def getMustHaveList(M, MustHaveList):
+  mols = []
+  for row in get_csv_rows(MustHaveList, 1):
+    m = M.find_mol(row[0])
+    if m:
+      mols.append(m)
+  return mols
+
+def has_oep_calcs(filename):
+  mylog = os.environ["AlexandriaLib"] + "/compounds/" + filename + "/" + filename + "-B3LYP-aug-cc-pVTZ.log.gz"
+  if os.path.exists(mylog):
+    return True
+  mylog = os.environ["LIQUIDS"] + "/MOLECULES/OEP/" + filename + "/" + filename + "-3-oep.log.gz"
+  return os.path.exists(mylog)
+  
+def filter_noOEPcalcs(mols):
+  filtered_mols = []
+  no_oep = "without_oep.txt"
+  with open(no_oep, "w") as outf:
+    n = 0
+    for mol in mols:
+      molname = Path(mol.filename).stem
+      if has_oep_calcs(molname):
+        filtered_mols.append(mol)
+      else:
+        outf.write("%s %s %s\n" % (mol.weight, mol.formula, molname))
+        n += 1
+  print("%d of them are without OEP (level 3) calculation, check %s." % (n, no_oep))
+  return filtered_mols
+
+def filter_mols_by_element(mols, my_elems, fullelem = False):
+  filtered_mols = []
+  for mol in mols:
+    mol_elems = parse_formula(mol.formula)
+    if fullelem:
+      if set(mol_elems.keys()) == set(my_elems):
+        filtered_mols.append(mol)
+    else:
+      if not set(mol_elems).isdisjoint(my_elems):
+        filtered_mols.append(mol)
+  return filtered_mols
+
+def filter_metals(mols):
+  filtered_mols = []
+  n = 0
+  for mol in mols:
+    if not metal(mol.formula):
+      filtered_mols.append(mol)
+    else:
+      n += 1
+  print("%d of them are metal." % n)
+  return filtered_mols
+
+def filter_radicals(mols):
+  filtered_mols = []
+  n = 0
+  for mol in mols:
+    if not "radical" in mol.classes():
+      filtered_mols.append(mol)
+    else:
+      n += 1
+  print("%d of them are radical." % n)
+  return filtered_mols
+
+
+def filter_charged(mols):
+  filtered_mols = []
+  n = 0
+  for mol in mols:
+    if mol.charge == 0:
+      filtered_mols.append(mol)
+    else:
+      n += 1
+  print("%d of them are charged." % n)
+  return filtered_mols
+
+def filter_neutrals(mols):
+  filtered_mols = []
+  n = 0
+  for mol in mols:
+    if mol.charge != 0:
+      filtered_mols.append(mol)
+    else:
+      n += 1
+  print("%d of them are neutral." % n)
+  return filtered_mols
+
+def filter_strained(mols):
+  filtered_mols = []
+  n = 0
+  for mol in mols:
+    keep = True
+    for s in strained:
+      if mol.iupac.find(s) >= 0 or mol.filename.find(s) >= 0:
+        keep = False
+    if keep:
+      filtered_mols.append(mol)
+    else:
+      n += 1
+  print("%d of them are strained." % n)
+  return filtered_mols
+
+def write_selection(M, mols, probability, filename, MustHaveList):
+  MustHave = []
+  if MustHaveList:
+    MustHave = get_MustHavelist(M, MustHaveList)
+  with open(filename, "w") as f:
+    for w in MustHave:
+      f.write("%s|Train\n" % w.filename[:-4])
+      if w in mols:
+        mols.remove(w)
+    if probability > (1.0*len(MustHave)/len(mols)) and probability < 1:
+      probability -= (1.0*len(MustHave)/len(mols))
+    for mol in mols:
+      filename = Path(mol.filename).stem
+      if np.random.uniform(0, 1) > probability:
+        f.write("%s|Train\n" % filename)
+      else:
+        f.write("%s|Test\n" % filename)
+  f.close()
+
+if __name__ == '__main__':
+  args       = parseArguments()
+
+  M = Molecules()
+  M.read(args.alexandria, 3, False)
+
+  print("There are %d molecules in the Alexandria Library." % len(M.mols))
+  
+  mols = []
+  for mol in M.mols:
+    if M.mols[mol].is_supported() and not M.mols[mol].is_blacklisted():
+      mols.append(M.mols[mol])
+  if not args.withoutoep:
+    mols = filter_noOEPcalcs(mols)
+  if len(mols) == 0:
+    sys.exit("No molecules left")
+
+  if args.elements:
+    mols = filter_mols_by_element(mols, args.elements.split(), args.fullelem)
+
+  if args.unstrained:
+    mols = filter_strained(mols)
+
+  print("%s of the rest are selected to generate %s.dat randomly." % (len(mols) , args.outfile))
+
+  filename = args.outfile
+  if not filename[-4:] == ".dat":
+    filename += ".dat"
+  write_selection(M, mols, args.probability, filename, args.musthave)
+  print("Generated %s" % filename)

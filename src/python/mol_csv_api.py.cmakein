@@ -11,8 +11,8 @@ from pathlib     import Path
 # ACT python code
 sys.path.insert(1, "@ACT_PYTHON_LIB_PATH@")
 from get_csv_rows import *
-#from dbutils import *
 from get_mol_dict import *
+from molutils import *
 
 try:
     from pubchempy import *
@@ -155,6 +155,9 @@ def set_sdf_charge(sdf_fn, charge):
     finally:
         sdf.close()
     out.close()
+
+def supported_elements() -> str:
+    return ['H', 'C', 'N', 'O', 'F', 'P', 'S', 'Cl', 'Br', 'I']
 
 class Molecule:
     """Class to handle an entry from the alexandria.csv database"""
@@ -479,9 +482,8 @@ class Molecule:
         return self.iupac
 
     def is_supported(self):
-        supported_elements = ['H', 'C', 'N', 'O', 'F', 'P', 'S', 'Cl', 'Br', 'I']
         elements = parse_formula(self.formula)
-        if all(element in supported_elements for element in elements.keys()) and (self.mult % 2 == 1):
+        if all(element in supported_elements() for element in elements.keys()) and (self.mult % 2 == 1):
             return True
         return False
 

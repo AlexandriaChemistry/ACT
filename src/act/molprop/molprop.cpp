@@ -38,12 +38,11 @@
 #include <string>
 #include <vector>
 
+#include "act/molprop/composition.h"
+#include "act/utility/communicationrecord.h"
+#include "act/utility/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/utility/fatalerror.h"
-
-#include "act/utility/communicationrecord.h"
-#include "act/molprop/composition.h"
-#include "act/utility/units.h"
 
 namespace alexandria
 {
@@ -215,8 +214,18 @@ int MolProp::Merge(const MolProp *src)
             alexandria::Bond bb(bi.aI(), bi.aJ(), bi.bondOrder());
             if (!BondExists(bb))
             {
-                fprintf(stderr, "WARNING bond %d-%d not present in %s\n",
+                fprintf(stderr, "WARNING bond %d-%d not present in %s.\n",
                         bi.aI(), bi.aJ(), getMolname().c_str());
+                for(auto &k : src->bondsConst())
+                {
+                    fprintf(stderr, "src bond %d %d\n",
+                            k.aI(), k.aJ());
+                }
+                for(auto &k : bondsConst())
+                {
+                    fprintf(stderr, "dest bond %d %d\n",
+                            k.aI(), k.aJ());
+                }
                 nwarn++;
             }
         }
