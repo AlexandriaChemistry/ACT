@@ -190,12 +190,6 @@ public:
  */
 class PolarDevComputer : public DevComputer
 {
-
-private:
-
-    //! Whether or not to use off-diagonal elements of the quadrupole for fitting
-    bool bFullQuadrupole_;
-
 public:
 
     /*! \brief Create a new BoundsDevComputer

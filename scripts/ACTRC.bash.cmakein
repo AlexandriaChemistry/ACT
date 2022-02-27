@@ -1,15 +1,15 @@
-# sh/bash/zsh configuration file for Gromacs
-# First we remove old gromacs stuff from the paths
+# sh/bash/zsh configuration file for ACT
+# First we remove old ACT stuff from the paths
 # by selecting everything else.
 # This is not 100% necessary, but very useful when we
-# repeatedly switch between gmx versions in a shell.
+# repeatedly switch between ACT versions in a shell.
 
 #we make use of IFS, which needs shwordsplit in zsh
 test -n "${ZSH_VERSION+set}" && setopt shwordsplit
 old_IFS="$IFS"
 IFS=":"
 
-# First remove gromacs part of ld_library_path
+# First remove ACT part of ld_library_path
 tmppath=""
 for i in $LD_LIBRARY_PATH; do
   if test "$i" != "$ACTLDLIB"; then
@@ -46,7 +46,7 @@ done
 MANPATH=$tmppath
 
 ##########################################################
-# This is the real configuration part. We save the Gromacs
+# This is the real configuration part. We save the ACT
 # things in separate vars, so we can remove them later.
 # If you move gromacs, change the first line.
 ##########################################################

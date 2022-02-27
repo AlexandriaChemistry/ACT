@@ -135,8 +135,7 @@ double ACMFitnessComputer::calcDeviation(std::vector<double> *params,
                 mymol.zetaToAtoms(sii_->poldata(), mymol.atoms());
             }
             // Run charge generation including shell minimization
-            immStatus imm = mymol.GenerateAcmCharges(sii_->poldata(), cr,
-                                                     molgen_->qcycle(), molgen_->qtol());
+            immStatus imm = mymol.GenerateAcmCharges(sii_->poldata(), molgen_->qcycle(), molgen_->qtol());
 
             // Check whether we have to disable this compound
             if (immStatus::OK != imm && removeMol_)

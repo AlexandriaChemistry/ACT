@@ -47,6 +47,7 @@
 #include "act/molprop/multipole_names.h"
 #include "act/utility/memory_check.h"
 #include "act/utility/stringutil.h"
+#include "act/utility/units.h"
 #include "act/utility/xml_util.h"
 
 namespace alexandria 
@@ -548,6 +549,7 @@ static void mp_process_tree(FILE                              *fp,
                         };
                         if ((nullptr != last) && xmlFound(xbuf, clean1))
                         {
+                            mp_process_tree(fp, tree->children, molprops, xbuf);
                             std::vector<MolPropXml> clean2 = {
                                 MolPropXml::AVERAGE, MolPropXml::ERROR
                             };
@@ -559,10 +561,6 @@ static void mp_process_tree(FILE                              *fp,
                             {
                                 // This routine cleans up as well.
                                 get_polarizability(xbuf, last);
-                            }
-                            else
-                            {
-                                mp_process_tree(fp, tree->children, molprops, xbuf);
                             }
                         }
                     }
@@ -808,6 +806,8 @@ static void add_exper_properties(xmlNodePtr                    exp,
         auto mpo = props.first;
         for (auto &prop : props.second)
         {
+            std::string outUnit(mpo_unit2(mpo));
+            double      fac = convertFromGromacs(1, outUnit);
             switch(mpo)
             {
             case MolPropObservable::HF:
@@ -827,11 +827,11 @@ static void add_exper_properties(xmlNodePtr                    exp,
                     double error   = prop->getError();
                     child = add_xml_child_val(exp, rmap[MolPropXml::ENERGY], gmx_ftoa(average).c_str());
                     add_xml_string(child, rmap[MolPropXml::TYPE], prop->getType());
-                    add_xml_string(child, rmap[MolPropXml::UNIT], prop->getUnit());
+                    add_xml_string(child, rmap[MolPropXml::UNIT], outUnit);
                     add_xml_double(child, rmap[MolPropXml::TEMPERATURE], prop->getTemperature());
                     add_xml_string(child, rmap[MolPropXml::PHASE], phase2string(prop->getPhase()));
-                    add_xml_child_val(child, rmap[MolPropXml::AVERAGE], gmx_ftoa(average).c_str());
-                    add_xml_child_val(child, rmap[MolPropXml::ERROR], gmx_ftoa(error).c_str());
+                    add_xml_child_val(child, rmap[MolPropXml::AVERAGE], gmx_ftoa(fac*average).c_str());
+                    add_xml_child_val(child, rmap[MolPropXml::ERROR], gmx_ftoa(fac*error).c_str());
                     break;
                 }
             case MolPropObservable::DIPOLE:
@@ -844,33 +844,33 @@ static void add_exper_properties(xmlNodePtr                    exp,
                     
                     child = add_xml_child(exp, mpo_name(mpo));
                     add_xml_string(child, rmap[MolPropXml::TYPE], prop->getType());
-                    add_xml_string(child, rmap[MolPropXml::UNIT], prop->getUnit());
+                    add_xml_string(child, rmap[MolPropXml::UNIT], outUnit);
                     add_xml_double(child, rmap[MolPropXml::TEMPERATURE], prop->getTemperature());
                     for(size_t i = 0; i < mn.size(); i++)
                     {
-                        add_xml_child_val(child, mn[i], gmx_ftoa(mq[i]).c_str());
+                        add_xml_child_val(child, mn[i], gmx_ftoa(fac*mq[i]).c_str());
                     }
                     break;
                 }
             case MolPropObservable::POLARIZABILITY:
                 {
                     auto pprop = static_cast<MolecularPolarizability *>(prop);
-                    auto mq = pprop->getTensor();
+                    auto mq    = pprop->getTensor();
                     
                     child = add_xml_child(exp, rmap[MolPropXml::POLARIZABILITY]);
                     add_xml_string(child, rmap[MolPropXml::TYPE], prop->getType());
-                    add_xml_string(child, rmap[MolPropXml::UNIT], prop->getUnit());
+                    add_xml_string(child, rmap[MolPropXml::UNIT], outUnit);
                     add_xml_double(child, rmap[MolPropXml::TEMPERATURE], prop->getTemperature());
-                    add_xml_child_val(child, rmap[MolPropXml::AVERAGE], gmx_ftoa(prop->getValue()).c_str());
-                    add_xml_child_val(child, rmap[MolPropXml::ERROR], gmx_ftoa(prop->getError()).c_str());
-                    if (mq[XX][XX] > 0 && mq[YY][YY] > 0 && mq[ZZ][ZZ])
+                    add_xml_child_val(child, rmap[MolPropXml::AVERAGE], gmx_ftoa(fac*prop->getValue()).c_str());
+                    add_xml_child_val(child, rmap[MolPropXml::ERROR], gmx_ftoa(fac*prop->getError()).c_str());
+                    if (mq[XX][XX] > 0 || mq[YY][YY] > 0 || mq[ZZ][ZZ])
                     {
-                        add_xml_child_val(child, rmap[MolPropXml::qXX], gmx_ftoa(mq[XX][XX]).c_str());
-                        add_xml_child_val(child, rmap[MolPropXml::qYY], gmx_ftoa(mq[YY][YY]).c_str());
-                        add_xml_child_val(child, rmap[MolPropXml::qZZ], gmx_ftoa(mq[ZZ][ZZ]).c_str());
-                        add_xml_child_val(child, rmap[MolPropXml::qXY], gmx_ftoa(mq[XX][YY]).c_str());
-                        add_xml_child_val(child, rmap[MolPropXml::qXZ], gmx_ftoa(mq[XX][YY]).c_str());
-                        add_xml_child_val(child, rmap[MolPropXml::qYZ], gmx_ftoa(mq[YY][ZZ]).c_str());
+                        add_xml_child_val(child, rmap[MolPropXml::qXX], gmx_ftoa(fac*mq[XX][XX]).c_str());
+                        add_xml_child_val(child, rmap[MolPropXml::qYY], gmx_ftoa(fac*mq[YY][YY]).c_str());
+                        add_xml_child_val(child, rmap[MolPropXml::qZZ], gmx_ftoa(fac*mq[ZZ][ZZ]).c_str());
+                        add_xml_child_val(child, rmap[MolPropXml::qXY], gmx_ftoa(fac*mq[XX][YY]).c_str());
+                        add_xml_child_val(child, rmap[MolPropXml::qXZ], gmx_ftoa(fac*mq[XX][YY]).c_str());
+                        add_xml_child_val(child, rmap[MolPropXml::qYZ], gmx_ftoa(fac*mq[YY][ZZ]).c_str());
                     }
                     break;
                 }
@@ -893,17 +893,20 @@ static void add_calc_properties(xmlNodePtr                    exp,
         int         espid;
 
         ep.get(&x_unit, &v_unit, &espid, &x, &y, &z, &V);
-
+        std::string x_unitOut("pm");
+        std::string V_unitOut("Hartree/e");
+        double xfac = convertFromGromacs(1.0, x_unitOut);
+        double Vfac = convertFromGromacs(1.0, V_unitOut);
         xmlNodePtr child = add_xml_child(exp, rmap[MolPropXml::POTENTIAL]);
-        add_xml_char(child, rmap[MolPropXml::X_UNIT], x_unit.c_str());
-        add_xml_char(child, rmap[MolPropXml::V_UNIT], v_unit.c_str());
+        add_xml_char(child, rmap[MolPropXml::X_UNIT], x_unitOut.c_str());
+        add_xml_char(child, rmap[MolPropXml::V_UNIT], V_unitOut.c_str());
         add_xml_int(child, rmap[MolPropXml::ESPID], espid);
         if ((x != 0) || (y != 0) || (z != 0) || (V != 0))
         {
-            add_xml_child_val(child, rmap[MolPropXml::dX], gmx::formatString("%g", x).c_str());
-            add_xml_child_val(child, rmap[MolPropXml::dY], gmx::formatString("%g", y).c_str());
-            add_xml_child_val(child, rmap[MolPropXml::dZ], gmx::formatString("%g", z).c_str());
-            add_xml_child_val(child, rmap[MolPropXml::dV], gmx::formatString("%g", V).c_str());
+            add_xml_child_val(child, rmap[MolPropXml::dX], gmx::formatString("%g", xfac*x).c_str());
+            add_xml_child_val(child, rmap[MolPropXml::dY], gmx::formatString("%g", xfac*y).c_str());
+            add_xml_child_val(child, rmap[MolPropXml::dZ], gmx::formatString("%g", xfac*z).c_str());
+            add_xml_child_val(child, rmap[MolPropXml::dV], gmx::formatString("%g", Vfac*V).c_str());
         }
     }
 }

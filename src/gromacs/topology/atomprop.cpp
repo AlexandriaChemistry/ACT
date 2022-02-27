@@ -55,6 +55,7 @@
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strdb.h"
+#include "gromacs/utility/stringutil.h"
 
 typedef struct {
     gmx_bool    bSet;
@@ -100,7 +101,7 @@ static int dbcmp_len(const char *search, const char *database)
 }
 
 static int get_prop_index(aprop_t *ap, gmx_residuetype_t *restype,
-                          char *resnm, char *atomnm,
+                          const char *resnm, const char *atomnm,
                           gmx_bool *bExact)
 {
     int      i, j = NOTFOUND;
@@ -161,7 +162,7 @@ static int get_prop_index(aprop_t *ap, gmx_residuetype_t *restype,
 }
 
 static void add_prop(aprop_t *ap, gmx_residuetype_t *restype,
-                     char *resnm, char *atomnm,
+                     const char *resnm, const char *atomnm,
                      real p, int line)
 {
     int      i, j;
@@ -228,15 +229,27 @@ static void read_prop(gmx_atomprop_t aps, int eprop, double factor)
     while (get_a_line(fp.get(), line, STRLEN))
     {
         line_no++;
-        if (sscanf(line, "%31s %31s %20lf", resnm, atomnm, &pp) == 3)
+        if (sscanf(line, "%s %s %lf", resnm, atomnm, &pp) == 3)
         {
             pp *= factor;
             add_prop(ap, aps->restype, resnm, atomnm, pp, line_no);
         }
         else
         {
-            fprintf(stderr, "WARNING: Error in file %s at line %d ignored\n",
-                    ap->db, line_no);
+            // Maybe a CSV file.
+            auto words = gmx::splitDelimitedString(line, '|');
+            if (words.size() >= 2)
+            {
+                pp  = atof(words[1].c_str());
+                pp *= factor;
+                const char *unknown = "???";
+                add_prop(ap, aps->restype, unknown, words[0].c_str(), pp, line_no);
+            }
+            else
+            {
+                fprintf(stderr, "WARNING: Error in file %s at line %d '%s' ignored\n",
+                        ap->db, line_no, line);
+            }
         }
     }
     ap->bSet = TRUE;
@@ -245,7 +258,7 @@ static void read_prop(gmx_atomprop_t aps, int eprop, double factor)
 static void set_prop(gmx_atomprop_t aps, int eprop)
 {
     gmx_atomprop *ap2           = static_cast<gmx_atomprop*>(aps);
-    const char   *fns[epropNR]  = { "atommass.dat", "vdwradii.dat", "dgsolv.dat", "electroneg.dat",  "atomization-energy.dat", "elements.dat" };
+    const char   *fns[epropNR]  = { "atommass.dat", "vdwradii.dat", "dgsolv.dat", "electroneg.dat",  "atomization-energy.csv", "elements.csv" };
     double        fac[epropNR]  = { 1.0,    1.0,  418.4, 1.0, 1.0, 1.0 };
     double        def[epropNR]  = { 12.011, 0.14, 0.0, 2.2, 0, -1 };
     aprop_t      *ap;

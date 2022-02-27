@@ -436,12 +436,10 @@ namespace alexandria
          *  electric field (under construction!!!)
          *
          * \param[in]  efield   Strenght of the external electric field
-         * \param[in]  cr       Communication record
          * \param[in]  fplog    File pointer for logging
          * \returns the result of the calculation, if fine it is immOK
          */
         immStatus CalcPolarizability(double                     efield,
-                                     const CommunicationRecord *cr,
                                      FILE                      *fplog);
       
         /*! \brief set the electronic polarizability
@@ -498,12 +496,10 @@ namespace alexandria
          * If shells are present they will be minimized.
          *
          * \param[in] pd      Data structure containing atomic properties
-         * \param[in] cr      Communication parameters
          * \param[in] qcycle  Number of cycles for computing charges
          * \param[in] qtol    Convergence of charges tolerance
          */
         immStatus GenerateAcmCharges(const Poldata             *pd,
-                                     const CommunicationRecord *cr,
                                      int                        qcycle,
                                      real                       qtol);
                                      
@@ -532,11 +528,9 @@ namespace alexandria
          * Alexandria potential.
          * \param[in] espcorr File name to plot to
          * \param[in] oenv    Gromacs output structure
-         * \param[in] cr      Gromacs communication record
          */
         void plotEspCorrelation(const char                *espcorr,
-                                const gmx_output_env_t    *oenv,
-                                const CommunicationRecord *cr);
+                                const gmx_output_env_t    *oenv);
 
         /*! \brief
          * Collect the experimental properties
@@ -595,15 +589,6 @@ namespace alexandria
          * \param[in] pd   Data structure containing atomic properties
          */
         void CalcQPol(const Poldata *pd);
-
-        /*! \brief
-         * Compute the anisotropic polarizability from the polarizability tensor
-         *
-         * \param[in]  polar     Tensor of polarizability
-         * \param[out] anisoPol  Anisotropic polarizability
-         */
-        void CalcAnisoPolarizability(tensor polar, double *anisoPol);
-
 
         /*! \brief
          * Relax the shells (if any) or compute the forces in the molecule

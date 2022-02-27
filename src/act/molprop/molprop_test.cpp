@@ -56,8 +56,12 @@ int molprop_test(int argc, char*argv[])
         { efXML, "-o", "molout",    ffWRITE }
     };
 #define NFILE sizeof(fnm)/sizeof(fnm[0])
-
-    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, 0, nullptr,
+    int compress = 1;
+    std::vector<t_pargs> pa  = {
+        { "-compress", FALSE, etBOOL, {&compress},
+          "Compress the output file" }
+    };
+    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, pa.size(), pa.data(),
                            sizeof(desc)/sizeof(desc[0]), desc, 0, nullptr, &oenv))
     {
         return 0;
@@ -65,7 +69,7 @@ int molprop_test(int argc, char*argv[])
 
     MolPropRead(opt2fn("-f", NFILE, fnm), &mpt);
     printf("Read %d molecules from %s\n", (int)mpt.size(), opt2fn("-f", NFILE, fnm));
-    MolPropWrite(opt2fn("-o", NFILE, fnm), mpt, 1);
+    MolPropWrite(opt2fn("-o", NFILE, fnm), mpt, compress);
 
     return 0;
 }

@@ -46,6 +46,7 @@
 #include "act/molprop/molprop_xml.h"
 #include "act/molprop/multipole_names.h"
 #include "act/poldata/poldata_xml.h"
+#include "act/utility/units.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
@@ -146,19 +147,20 @@ protected:
                             { "YZ", { YY, ZZ } } 
                         }; 
                         const char *mpostr = mpo_name(propi.first);
+                        double fac = convertFromGromacs(1.0, gp->getInputUnit());
                         switch(propi.first)
                         {
                         case alexandria::MolPropObservable::POLARIZABILITY:
                             {
                                 auto gpp = static_cast<MolecularPolarizability *>(gp);
-                                myCheck.checkDouble(gpp->getValue(),
+                                myCheck.checkDouble(gpp->getValue()*fac,
                                                     gmx::formatString("%s %s %s average", mpostr, gpp->getType(), cbuf).c_str());
-                                myCheck.checkDouble(gpp->getError(),
+                                myCheck.checkDouble(gpp->getError()*fac,
                                                     gmx::formatString("%s %s %s error", mpostr, gpp->getType(), cbuf).c_str());
                                 auto pp = gpp->getTensor();
                                 for(auto &t : t_elem)
                                 {
-                                    myCheck.checkDouble(pp[t.second.first][t.second.second],
+                                    myCheck.checkDouble(pp[t.second.first][t.second.second]*fac,
                                                         gmx::formatString("%s %s %s %s",
                                                                           mpostr, gpp->getType(), cbuf, t.first).c_str());
                                 }
@@ -173,7 +175,7 @@ protected:
                                 auto nn = multipoleNames(propi.first);
                                 for(size_t i = 0; i < vv.size(); i++)
                                 {
-                                    myCheck.checkDouble(vv[i],
+                                    myCheck.checkDouble(vv[i]*fac,
                                                         gmx::formatString("%s %s %s %s",
                                                                           mbuf,
                                                                           mpostr, gp->getType(),
@@ -183,11 +185,11 @@ protected:
                             break;
                         default:
                             {
-                                myCheck.checkDouble(gp->getValue(),
+                                myCheck.checkDouble(gp->getValue()*fac,
                                                     gmx::formatString("%s %s %s %s %d value",
                                                                       mpostr, gp->getType(), gp->getUnit(),
                                                                       cbuf, nener).c_str());
-                                myCheck.checkDouble(gp->getError(),
+                                myCheck.checkDouble(gp->getError()*fac,
                                                     gmx::formatString("%s %s %s %s %d error",
                                                                       mpostr, gp->getType(), gp->getUnit(),
                                                                       cbuf, nener).c_str());

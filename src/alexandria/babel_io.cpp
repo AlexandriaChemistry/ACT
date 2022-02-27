@@ -95,10 +95,6 @@
 
 using namespace alexandria;
 
-static inline double A2PM(double a) {return a*1.0e+2; }                /* Angstrom to pm */
-
-static inline double NM_cubed_to_A_cubed(double a) {return a*1.0e+3; } /* nm^3 to A^3 */
-
 enum einformat{
     einfGaussian    = 0,
     einfNotGaussian = 1,
@@ -596,8 +592,8 @@ bool readBabel(const char          *g09,
             alexandria::CalcAtom ca(OpenBabel::OBElements::GetSymbol(atom->GetAtomicNum()),
                                     type->GetValue(), atom->GetIdx());
 
-            ca.SetUnit("pm");
-            ca.SetCoords(A2PM(atom->x()), A2PM(atom->y()), A2PM(atom->z()));
+            ca.SetUnit("Angstrom");
+            ca.SetCoords(atom->x(), atom->y(), atom->z());
             auto myres = atom->GetResidue();
             ca.SetResidue(myres->GetName(), myres->GetNum());
             ca.SetChain(myres->GetChainNum(), myres->GetChain());
@@ -683,14 +679,9 @@ bool readBabel(const char          *g09,
         double               mm[9], alpha, fac;
         int                  i;
         m3.GetArray(mm);
-        fac = NM_cubed_to_A_cubed(pow(alexandria::convertToGromacs(1, "Bohr"), 3));
-        for (i = 0; i < 9; i++)
-        {
-            mm[i] *= fac;
-        }
         alpha = (mm[0]+mm[4]+mm[8])/3.0;
 
-        auto mdp = new alexandria::MolecularPolarizability(qm_type, "Angstrom3",
+        auto mdp = new alexandria::MolecularPolarizability(qm_type, "Bohr3",
                                                            0.0, mm[0], mm[4], mm[8],
                                                            mm[1], mm[2], mm[5], alpha, 0);
         mpt->LastExperiment()->addProperty(MolPropObservable::POLARIZABILITY, mdp);
@@ -702,17 +693,13 @@ bool readBabel(const char          *g09,
     {
         OpenBabel::OBFreeGridPoint        *fgp;
         OpenBabel::OBFreeGridPointIterator fgpi;
-        std::string                        xyz_unit("pm");
-        std::string                        V_unit("Hartree/e");
         int                                espid = 0;
 
         fgpi = esp->BeginPoints();
         for (fgp = esp->BeginPoint(fgpi); (nullptr != fgp); fgp = esp->NextPoint(fgpi))
         {
-            alexandria::ElectrostaticPotential ep(xyz_unit, V_unit, ++espid,
-                                                  A2PM(fgp->GetX()),
-                                                  A2PM(fgp->GetY()),
-                                                  A2PM(fgp->GetZ()),
+            alexandria::ElectrostaticPotential ep("Angstrom", "Hartree/e", ++espid,
+                                                  fgp->GetX(), fgp->GetY(), fgp->GetZ(),
                                                   fgp->GetV());
             espv.push_back(ep);
         }

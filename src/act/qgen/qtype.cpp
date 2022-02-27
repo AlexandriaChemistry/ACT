@@ -36,20 +36,12 @@
 #include <random>
 
 #include "act/molprop/multipole_names.h"
-#include "gromacs/math/units.h"
+#include "act/utility/units.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "qgen_resp.h"
-
-static const double A2CM = E_CHARGE*1.0e-10;        /* e Angstrom to Coulomb meter */
-
-static const double CM2D = SPEED_OF_LIGHT*1.0e+24;  /* Coulomb meter to Debye */
-
-static inline double e2d(double a) {return a*ENM2DEBYE; }
-
-// static inline int delta(int a, int b) { return ( a == b ) ? 1 : 0; }
 
 namespace alexandria
 {
@@ -218,6 +210,10 @@ void QtypeProps::calcMoments()
     auto &quadrupole   = multipoles_[MolPropObservable::QUADRUPOLE];
     auto &octupole     = multipoles_[MolPropObservable::OCTUPOLE];
     auto &hexadecapole = multipoles_[MolPropObservable::HEXADECAPOLE];
+    double dipfac  = 1; //convertFromGromacs(1.0, "Debye");
+    double quadfac = 1; //dipfac*10;
+    double octfac  = 1; //quadfac*10;
+    double hexfac  = 1; //octfac*10;
     for (size_t i = 0; i < q_.size(); i++)
     {
         rvec_sub(x_[i], coc_, r);
@@ -226,16 +222,16 @@ void QtypeProps::calcMoments()
         int hindex = 0;
         for (int m = 0; m < DIM; m++)
         {
-            dipole[m] += e2d(r[m]*q_[i]);
+            dipole[m] += dipfac*r[m]*q_[i];
             for (int n = m; n < DIM; n++)
             {
-                quadrupole[qindex++] += q_[i]*(r[m]*r[n])*NM2A*A2CM*CM2D*10;
+                quadrupole[qindex++] += q_[i]*(r[m]*r[n])*quadfac;
                 for (int o = n; o < DIM; o++)
                 {    
-                    octupole[oindex++] += q_[i]*(r[m]*r[n]*r[o])*NM2A*1e-12*A2CM*CM2D*1e10*10;
+                    octupole[oindex++] += q_[i]*(r[m]*r[n]*r[o])*octfac;
                     for (int p = o; p < DIM; p++)
                     {  
-                        hexadecapole[hindex++] += q_[i]*(r[m]*r[n]*r[o]*r[p])*NM2A*1e-12*1e-12*A2CM*CM2D*1e10*1e10*10;
+                        hexadecapole[hindex++] += q_[i]*(r[m]*r[n]*r[o]*r[p])*hexfac;
                     }    
                 }
             }

@@ -44,33 +44,63 @@
 namespace alexandria
 {
 
-const static std::map<const std::string, double> unitConversion =
+const static std::map<const std::string, std::pair<const std::string, double> > unitConversion =
     {
-        { "Angstrom",   A2NM    },
-        { "nm",         1       },
-        { "pm",         0.001   },
-        { "Bohr",       BOHR2NM },
-        { "Bohr3",      BOHR2NM*BOHR2NM*BOHR2NM },
-        { "kcal/mol",   CAL2JOULE },
-        { "kJ/mol",     1 },
-        { "J/mol K",    1 },
-        { "cal/mol K",  CAL2JOULE },
-        { "Hartree",    ONE_4PI_EPS0/BOHR2NM },
-        { "Hartree/e",  ONE_4PI_EPS0/BOHR2NM },
-        { "Angstrom3",  A2NM*A2NM*A2NM },
-        { "Coulomb",    1.0/E_CHARGE },
-        { "Debye",      DEBYE2ENM },
-        { "Electron",   1 },
-        { "Buckingham", A2NM*DEBYE2ENM },
-        { "DAngstrom2", A2NM*A2NM*DEBYE2ENM },
-        { "DAngstrom3", A2NM*A2NM*A2NM*DEBYE2ENM },
-        { "1/nm",       1 },
-        { "degree",     M_PI/180.0 },
-        { "kJ/mol/rad2",1 },
-        { "kJ/mol/nm2", 1 },
-        { "e",          1 },
-        { "", 1 }
+        { "Angstrom",    { "nm", A2NM    } },
+        { "nm",          { "nm", 1       } },
+        { "pm",          { "nm", 0.001   } },
+        { "Bohr",        { "nm", BOHR2NM } },
+        { "Bohr3",       { "nm3", BOHR2NM*BOHR2NM*BOHR2NM } },
+        { "nm3",         { "nm3", 1 } },
+        { "kcal/mol",    { "kJ/mol", CAL2JOULE } },
+        { "kJ/mol",      { "kJ/mol", 1 } },
+        { "kJ/mol e",    { "kJ/mol e", 1 } },
+        { "J/mol K",     { "J/mol K", 1 } },
+        { "cal/mol K",   { "J/mol K", CAL2JOULE } },
+        { "Hartree",     { "kJ/mol", ONE_4PI_EPS0/BOHR2NM } },
+        { "Hartree/e",   { "kJ/mol e", ONE_4PI_EPS0/BOHR2NM } },
+        { "Angstrom3",   { "nm3", A2NM*A2NM*A2NM } },
+        { "A^3",         { "nm3", A2NM*A2NM*A2NM } },
+        { "Coulomb",     { "e", 1.0/E_CHARGE } },
+        { "e nm",        { "e nm", 1 } },
+        { "Debye",       { "e nm", DEBYE2ENM } },
+        { "D",           { "e nm", DEBYE2ENM } },
+        { "Electron",    { "e", 1 } },
+        { "Buckingham",  { "e nm2", A2NM*DEBYE2ENM } },
+        { "B",           { "e nm2", A2NM*DEBYE2ENM } },
+        { "e nm2",       { "e nm2", 1 } },
+        { "e nm3",       { "e nm3", 1 } },
+        { "DAngstrom2",  { "e nm2", A2NM*A2NM*DEBYE2ENM } },
+        { "DAngstrom3",  { "e nm3", A2NM*A2NM*A2NM*DEBYE2ENM } },
+        { "D.Angstrom",  { "e nm", A2NM*DEBYE2ENM } },
+        { "D.Angstrom2", { "e nm2", A2NM*A2NM*DEBYE2ENM } },
+        { "D.Angstrom3", { "e nm3", A2NM*A2NM*A2NM*DEBYE2ENM } },
+        { "D*Angstrom",  { "e nm", A2NM*DEBYE2ENM } },
+        { "D*Angstrom2", { "e nm2", A2NM*A2NM*DEBYE2ENM } },
+        { "D*Angstrom3", { "e nm3", A2NM*A2NM*A2NM*DEBYE2ENM } },
+        { "1/nm",        { "1/nm", 1 } },
+        { "degree",      { "", M_PI/180.0 } },
+        { "kJ/mol/rad2", { "kJ/mol/rad2", 1 } },
+        { "kJ/mol/nm2",  { "kJ/mol/nm2", 1 } },
+        { "e",           { "e", 1 } },
+        { "",            { "", 1 } }
     };
+
+std::string gromacsUnit(const std::string &unit)
+{
+    auto uc = unitConversion.find(unit);
+    if (uc  == unitConversion.end())
+    {
+#if CMAKE_BUILD_TYPE == CMAKE_BUILD_TYPE_DEBUG
+        GMX_THROW(gmx::InternalError(gmx::formatString("Unknown unit '%s'\n", unit.c_str()).c_str()));
+#else
+        fprintf(stderr, "Unknown unit getting GROMACS unit %s\n", unit.c_str());
+#endif
+        return "";
+    }
+    return uc->second.first;
+    
+}
 
 double convertToGromacs(double x, const std::string &unit)
 {
@@ -80,11 +110,11 @@ double convertToGromacs(double x, const std::string &unit)
 #if CMAKE_BUILD_TYPE == CMAKE_BUILD_TYPE_DEBUG
         GMX_THROW(gmx::InternalError(gmx::formatString("Unknown unit '%s'\n", unit.c_str()).c_str()));
 #else
-        fprintf(stderr, "Unknown unit %s\n", unit.c_str());
+        fprintf(stderr, "Unknown unit converting to GROMACS %s\n", unit.c_str());
 #endif
         return 1;
     }
-    return x*uc->second;
+    return x*uc->second.second;
 }
 
 double convertFromGromacs(double x, const std::string &unit)
@@ -95,11 +125,11 @@ double convertFromGromacs(double x, const std::string &unit)
 #if CMAKE_BUILD_TYPE == CMAKE_BUILD_TYPE_DEBUG
         GMX_THROW(gmx::InternalError(gmx::formatString("Unknown unit %s\n", unit.c_str()).c_str()));
 #else
-        fprintf(stderr, "Unknown unit %s\n", unit.c_str());
+        fprintf(stderr, "Unknown unit converting from GROMACS %s\n", unit.c_str());
 #endif
         return 1;
     }
-    return x/uc->second;
+    return x/uc->second.second;
 }
 
 } // namespace alexandria

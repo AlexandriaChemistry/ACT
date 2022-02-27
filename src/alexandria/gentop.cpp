@@ -402,7 +402,7 @@ int gentop(int argc, char *argv[])
     /* Generate output file for debugging if requested */
     if (immStatus::OK == imm)
     {
-        mymol.plotEspCorrelation(opt2fn_null("-plotESP", NFILE, fnm), oenv, &cr);
+        mymol.plotEspCorrelation(opt2fn_null("-plotESP", NFILE, fnm), oenv);
     }
 
     if (immStatus::OK == imm)

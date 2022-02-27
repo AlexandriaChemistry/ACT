@@ -94,7 +94,7 @@ def interpret_gauss(content:list, infile:str,
                     windex = words[w][:-1]
                     elem[windex.lower()] = words[w+1]
             exper.octupole.clear()
-            exper.add_octupole(qmtype, "DAngstrom2", temperature,
+            exper.add_octupole(qmtype, "D.Angstrom2", temperature,
                                elem["xxx"], elem["xxy"], elem["xxz"],
                                elem["xyy"], elem["xyz"], elem["xzz"],
                                elem["yyy"], elem["yyz"], elem["yzz"],
@@ -114,7 +114,7 @@ def interpret_gauss(content:list, infile:str,
                         windex = hdmap[windex]
                     elem[windex] = words[w+1]
             exper.hexadecapole.clear()
-            exper.add_hexadecapole(qmtype, "DAngstrom3", temperature,
+            exper.add_hexadecapole(qmtype, "D.Angstrom3", temperature,
                                    elem["xxxx"], elem["xxxy"], elem["xxxz"],
                                    elem["xxyy"], elem["xxyz"], elem["xxzz"],
                                    elem["xyyy"], elem["xyyz"], elem["xyzz"],

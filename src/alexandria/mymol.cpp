@@ -1496,7 +1496,6 @@ void MyMol::symmetrizeCharges(const Poldata  *pd,
 }
 
 immStatus MyMol::GenerateAcmCharges(const Poldata             *pd,
-                                    const CommunicationRecord *cr,
                                     int                        maxiter,
                                     real                       tolerance)
 {
@@ -1742,7 +1741,7 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
     case ChargeGenerationAlgorithm::EEM:
     case ChargeGenerationAlgorithm::SQE:
         {
-            return GenerateAcmCharges(pd, cr, maxiter, tolerance);
+            return GenerateAcmCharges(pd, maxiter, tolerance);
         }
         break;
     }
@@ -1824,16 +1823,6 @@ void MyMol::CalcQPol(const Poldata *pd)
     }
 }
 
-void MyMol::CalcAnisoPolarizability(tensor polar, double *anisoPol)
-{
-    auto a = gmx::square(polar[XX][XX] - polar[YY][YY]);
-    auto b = gmx::square(polar[XX][XX] - polar[ZZ][ZZ]);
-    auto c = gmx::square(polar[ZZ][ZZ] - polar[YY][YY]);
-    auto d = 6 * (gmx::square(polar[XX][YY]) + gmx::square(polar[XX][ZZ]) + gmx::square(polar[ZZ][YY]));
-
-    *anisoPol = sqrt(1/2.0) * sqrt(a + b + c + d);
-}
-
 double MyMol::PolarizabilityTensorDeviation() const
 {
     double delta2 = 0;
@@ -1873,11 +1862,36 @@ void MyMol::restoreCoordinates()
     }
 }
 
+/*! \brief
+ * Compute the anisotropic polarizability from the polarizability tensor
+ *
+ * \param[in]  polar     Tensor of polarizability
+ * \return The anisotropic polarizability
+ */
+static double CalcAnisoPolarizability(tensor polar)
+{
+    auto a = gmx::square(polar[XX][XX] - polar[YY][YY]);
+    auto b = gmx::square(polar[XX][XX] - polar[ZZ][ZZ]);
+    auto c = gmx::square(polar[ZZ][ZZ] - polar[YY][YY]);
+    auto d = 6 * (gmx::square(polar[XX][YY]) + gmx::square(polar[XX][ZZ]) + gmx::square(polar[ZZ][YY]));
+
+    return sqrt(1/2.0) * sqrt(a + b + c + d);
+}
+
+static double CalcAnisoPolarizability(const std::vector<double> &polar)
+{
+    auto a = gmx::square(polar[0] - polar[3]);
+    auto b = gmx::square(polar[0] - polar[5]);
+    auto c = gmx::square(polar[5] - polar[3]);
+    auto d = 6 * (gmx::square(polar[1]) + gmx::square(polar[2]) + gmx::square(polar[4]));
+
+    return sqrt(1/2.0) * sqrt(a + b + c + d);
+}
+
 immStatus MyMol::CalcPolarizability(double                     efield,
-                                    const CommunicationRecord *cr,
                                     FILE                      *fplog)
 {
-    const double        POLFAC = 29.957004; /* C.m**2.V*-1 to Å**3 */
+    //const double        POLFAC = 29.957004; /* C.m**2.V*-1 to Å**3 */
     std::vector<double> field;
     immStatus           imm = immStatus::OK;
     double              rmsf;
@@ -1911,14 +1925,14 @@ immStatus MyMol::CalcPolarizability(double                     efield,
             auto qmu = qtp.getMultipole(mpo);
             for (auto n = 0; n < DIM; n++)
             {
-                alpha_calc_[n][m] = ((qmu[n]-mu_ref[n])/efield)*(POLFAC);
+                alpha_calc_[n][m] = ((qmu[n]-mu_ref[n])/efield);
             }
             isoPol_calc_ += alpha_calc_[m][m]/DIM;
         }
     }
     if (immStatus::OK == imm)
     {
-        CalcAnisoPolarizability(alpha_calc_, &anisoPol_calc_);
+        anisoPol_calc_ = CalcAnisoPolarizability(alpha_calc_);
     }
     restoreCoordinates();
     return imm;
@@ -1950,15 +1964,19 @@ void MyMol::PrintTopology(const char                *fn,
 }
 
 static void add_tensor(std::vector<std::string> *commercials,
-                       const char *title, const std::vector<double> &Q)
+                       const char               *title,
+                       const char               *unit,
+                       const std::vector<double> &Q)
 {
+    double fac = convertFromGromacs(1.0, unit);
     char buf[256];
     snprintf(buf, sizeof(buf), "%s:\n"
              "; ( %6.2f %6.2f %6.2f )\n"
              "; (       %6.2f %6.2f )\n"
              "; (             %6.2f )\n",
              title,
-             Q[0], Q[1], Q[2], Q[3], Q[4], Q[5]);
+             fac*Q[0], fac*Q[1], fac*Q[2],
+             fac*Q[3], fac*Q[4], fac*Q[5]);
     commercials->push_back(buf);
 }
 
@@ -2049,12 +2067,13 @@ void MyMol::PrintTopology(FILE                      *fp,
     double efield = 0.1;
     if (nullptr != cr)
     {
-        auto imm = CalcPolarizability(efield, cr, debug);
+        auto imm = CalcPolarizability(efield, debug);
         if (imm == immStatus::OK)
         {
             std::vector<double> ac = { alpha_calc_[XX][XX], alpha_calc_[XX][YY], alpha_calc_[XX][ZZ],
                 alpha_calc_[YY][YY], alpha_calc_[YY][ZZ], alpha_calc_[ZZ][ZZ] };
-            add_tensor(&commercials, "Alexandria Polarizability components (A^3)", ac);
+            auto unit = mpo_unit2(MolPropObservable::POLARIZABILITY);
+            add_tensor(&commercials, "Alexandria Polarizability components (A^3)", unit, ac);
             
             snprintf(buf, sizeof(buf), "Alexandria Isotropic Polarizability: %.2f (A^3)\n", isoPol_calc_);
             commercials.push_back(buf);
@@ -2066,11 +2085,10 @@ void MyMol::PrintTopology(FILE                      *fp,
             auto gp = findProperty(MolPropObservable::POLARIZABILITY, iqmType::QM, T, method, basis, "");
             if (gp)
             {
-                //&isoPol_elec_, &error, &T, &myref, &mylot, &vec, alpha_elec_))
                 auto alpha_elec = gp->getVector();
-                CalcAnisoPolarizability(alpha_elec_, &anisoPol_elec_);
+                anisoPol_elec_  = CalcAnisoPolarizability(alpha_elec);
                 snprintf(buf, sizeof(buf), "%s + Polarizability components (A^3)", mylot.c_str());
-                add_tensor(&commercials, buf, alpha_elec);
+                add_tensor(&commercials, buf, unit, alpha_elec);
                 snprintf(buf, sizeof(buf), "%s Isotropic Polarizability: %.2f (A^3)\n", mylot.c_str(), isoPol_elec_);
                 commercials.push_back(buf);
                 snprintf(buf, sizeof(buf), "%s Anisotropic Polarizability: %.2f (A^3)\n", mylot.c_str(), anisoPol_elec_);
@@ -2269,7 +2287,6 @@ immStatus MyMol::getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
 {
     int                 ia    = 0;
     int                 natom = 0;
-    unsigned int        nwarn = 0;
     std::vector<double> vec;
     std::string         myref;
     std::string         mylot;
@@ -2369,7 +2386,8 @@ immStatus MyMol::getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
                 if (gp)
                 {
                     copy_mat(gp->getTensor(), alpha_elec_);
-                    CalcAnisoPolarizability(alpha_elec_, &anisoPol_elec_);
+                    anisoPol_elec_ = CalcAnisoPolarizability(alpha_elec_);
+                    isoPol_elec_   = trace(alpha_elec_)/3.0;
                 }
                 else
                 {
@@ -2522,8 +2540,7 @@ const QtypeProps *MyMol::qTypeProps(qType qt) const
 }
 
 void MyMol::plotEspCorrelation(const char                *espcorr,
-                               const gmx_output_env_t    *oenv,
-                               const CommunicationRecord *cr)
+                               const gmx_output_env_t    *oenv)
 {
     if (espcorr && oenv)
     {

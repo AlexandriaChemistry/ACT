@@ -139,8 +139,8 @@ int Experiment::Merge(const Experiment *src)
         CalcAtom caa(cai.getName(), cai.getObtype(), cai.getAtomid());
 
         cai.getCoords(&x, &y, &z);
-        caa.SetCoords(x, y, z);
         caa.SetUnit(cai.getUnit());
+        caa.SetCoords(x, y, z);
         caa.SetResidue(cai.ResidueName(), cai.ResidueNumber());
         for (const auto &aci : cai.chargesConst())
         {

@@ -1,4 +1,5 @@
 #include "act/molprop/multipole_names.h"
+#include "act/utility/units.h"
 #include "gromacs/utility/fatalerror.h"
 
 namespace alexandria
@@ -122,12 +123,13 @@ std::vector<std::string> formatMultipole(MolPropObservable          mpo,
         GMX_THROW(gmx::InvalidInputError("Order does not match values"));
     }
     size_t delta = 4;
+    double fac   = convertFromGromacs(1, mpo_unit2(mpo));
     for(size_t i = 0; i < values.size(); i+= delta)
     {
         std::string fmpi;
         for(size_t j = i; j < std::min(values.size(), i+delta) ; j++)
         {
-            fmpi += gmx::formatString(" %4s: %8.3f", multipole_names[mpo][j].c_str(), values[j]);
+            fmpi += gmx::formatString(" %4s: %8.3f", multipole_names[mpo][j].c_str(), fac*values[j]);
         }
         fmp.push_back(fmpi);
     }

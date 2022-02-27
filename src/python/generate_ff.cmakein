@@ -373,8 +373,8 @@ if __name__ == '__main__':
         or provide your own. Note that there is limited error checking only.''' % actdata())
         parser = argparse.ArgumentParser(description=desc)
         parser.add_argument("-o",        "--output",     help="Output file name, will be generated if empty",     type=str, default="")
-        defcomb = "geometric"
-        parser.add_argument("-comb",     "--combRule",   help=("Combination rule:  arithmetic, geometric, kong. Default %s" % defcomb), type=str, default =defcomb)
+        defcomb = "Geometric"
+        parser.add_argument("-comb",     "--combRule",   help=("Combination rule:  Arithmetic, Geometric, Kong. Default %s" % defcomb), type=str, default =defcomb)
         nexcl = 0
         parser.add_argument("-nexcl",    "--nexcl",      help=("Number of exclusions. Default %d" % nexcl), type=int,   default=nexcl)
         defdih = "FOURDIHS"

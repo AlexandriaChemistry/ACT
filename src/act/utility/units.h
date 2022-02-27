@@ -36,19 +36,27 @@
 
 namespace alexandria
 {
-    /*! Routine for unit conversion to GROMACS internal units
-     * \param[in] x    The value to convert
-     * \param[in] unit Normal string, e.g. pm or Angstrom
-     * \return x*factor
-     */
-    double convertToGromacs(double x, const std::string &unit);
-    
-    /*! Routine for unit conversion from GROMACS internal units
-     * \param[in] x    The value to convert
-     * \param[in] unit Normal string, e.g. pm or Angstrom
-     * \return x/factor
-     */
-    double convertFromGromacs(double x, const std::string &unit);
+/*! Routine for unit conversion to GROMACS internal units
+ * \param[in] x    The value to convert
+ * \param[in] unit Normal string, e.g. pm or Angstrom
+ * \return x*factor
+ */
+double convertToGromacs(double x, const std::string &unit);
+
+/*! Routine to determine the corresponding GROMACS unit
+ * after conversion.
+ * \param[in] unit The external unit
+ * \return the GROMACS unit
+ * \throws if not found
+ */
+std::string gromacsUnit(const std::string &unit);
+
+/*! Routine for unit conversion from GROMACS internal units
+ * \param[in] x    The value to convert
+ * \param[in] unit Normal string, e.g. pm or Angstrom
+ * \return x/factor
+ */
+double convertFromGromacs(double x, const std::string &unit);
 
 } // namespace gmx
 

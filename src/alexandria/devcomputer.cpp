@@ -251,19 +251,12 @@ void PolarDevComputer::calcDeviation(MyMol                                *mymol
                                      std::map<eRMS, FittingTarget>        *targets,
                                      gmx_unused Poldata                   *poldata,
                                      gmx_unused const std::vector<double> &param,
-                                     const CommunicationRecord            *commrec)
+                                     gmx_unused const CommunicationRecord *commrec)
 {
     double diff2 = 0;
-    mymol->CalcPolarizability(10, commrec, nullptr);
-    if (bFullQuadrupole_)
-    {
-        // It is already squared
-        diff2 = mymol->PolarizabilityTensorDeviation();
-    }
-    else
-    {
-        diff2 = gmx::square(mymol->PolarizabilityDeviation());
-    }
+    mymol->CalcPolarizability(10, nullptr);
+    diff2 = gmx::square(mymol->PolarizabilityDeviation());
+    
     if (false && logfile_)
     {
         fprintf(logfile_, "DIFF %s %g\n", mymol->getMolname().c_str(), diff2);

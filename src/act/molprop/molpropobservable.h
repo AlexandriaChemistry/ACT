@@ -144,13 +144,17 @@ class GenericProperty
 {
 private:
     /*! \brief
-     * The type of property
+     * The type of property. Upon entering data, the values should be converted
+     * to internal units. When the data should be exported it can be converted
+     * back. Conversion should use the functions in act/utility/units.h.
      */
     MolPropObservable mpo_;
     //! Subtype of this property
     std::string       type_;
-    //! Unit of this property
+    //! Internal unit of this property
     std::string       unit_;
+    //! Original unit of this property
+    std::string       inputUnit_;
     /*! \brief
      * Temperature at which the property is measured or computed.
      */
@@ -166,19 +170,20 @@ public:
     /*! \brief
      * Creates a new GenericProperty object.
      *
-     * \param[in] mpo  Type of the property
-     * \param[in] type The subtype of this property
-     * \param[in] unit The unit for this property
-     * \param[in] T    Temperature
-     * \param[in] ep   The phase
+     * \param[in] mpo       Type of the property
+     * \param[in] type      The subtype of this property
+     * \param[in] inputUnit The unit for this property
+     * \param[in] T         Temperature
+     * \param[in] ep        The phase
      */
     GenericProperty(MolPropObservable  mpo,
                     const std::string &type,
-                    const std::string &unit,
+                    const std::string &inputUnit,
                     double             T,
                     ePhase             ep) : 
-        mpo_(mpo), type_(type), unit_(unit), T_(T), eP_(ep)
-    {}
+        mpo_(mpo), type_(type), inputUnit_(inputUnit), T_(T), eP_(ep)
+    {
+    }
 
     /*! \brief
      * Return the property type
@@ -186,9 +191,14 @@ public:
     const char *getType() const { return type_.c_str(); }
     
     /*! \brief
-     * Return the unit of the property
+     * Return the internal unit of the property
      */
     const char *getUnit() const { return unit_.c_str(); }
+    
+    /*! \brief
+     * Return the input unit of the property
+     */
+    const char *getInputUnit() const { return inputUnit_.c_str(); }
     
     /*! \brief
      * Return the temperature
@@ -199,6 +209,13 @@ public:
      * Return the phase
      */
     ePhase getPhase() const { return eP_; }
+    
+    /*! \brief
+     * Set the internal unit of the property
+     *
+     **\param[in] unit The unit
+     */
+    void setUnit(const std::string &unit) { unit_ = unit; }
     
     /*! \brief
      * Set the temperature of the property
@@ -254,9 +271,9 @@ class MolecularMultipole : public GenericProperty
 {
 private:
     //! Average value
-    double              average_;
+    double              average_ = 0;
     //! Error
-    double              error_;
+    double              error_   = 0;
     //! The values of the electric multipole
     std::vector<double> values_;
 public:
@@ -264,14 +281,14 @@ public:
     MolecularMultipole() {}
     
     /*! Constructor initiating all elements of the multipole
-     * \param[in] type   The calculation type
-     * \param[in] unit   The unit of the values
-     * \param[in] T      The temperature
-     * \param[in] mpo    The multipole type
+     * \param[in] type      The calculation type
+     * \param[in] inputUnit The unit of the values
+     * \param[in] T         The temperature
+     * \param[in] mpo       The multipole type
      * \throws if mpo is not a multipole
      */
     MolecularMultipole(const std::string &type,
-                       const std::string &unit,
+                       const std::string &inputUnit,
                        double             T,
                        MolPropObservable  mpo);
     
@@ -342,30 +359,28 @@ public:
     //! Default constructor
     MolecularPolarizability() {}
     
-    //! Constructor initiating all elements of the quadrupole tensor
+    /*! Constructor initiating all elements of the quadrupole tensor
+     * \param[in] type      The calculation type
+     * \param[in] inputUnit The unit of the values
+     * \param[in] T         The temperature
+     * \param[in] xx        The corresponding value
+     * \param[in] yy        The corresponding value
+     * \param[in] zz        The corresponding value
+     * \param[in] xy        The corresponding value
+     * \param[in] xz        The corresponding value
+     * \param[in] yz        The corresponding value
+     * \param[in] average   The average value
+     * \param[in] error     The (experimental) error
+     */
     MolecularPolarizability(const std::string &type,
-                            const std::string &unit,
+                            const std::string &inputUnit,
                             double T,
                             double xx, double yy, double zz,
                             double xy, double xz, double yz,
-                            double average, double error) :
-        GenericProperty(MolPropObservable::POLARIZABILITY,  type, unit, T, ePhase::GAS)
-    { 
-        Set(xx, yy, zz, xy, xz, yz);
-        average_ = average;
-        error_   = error;
-    };
+                            double average, double error);
     
-    //! Set all the elements of the polarizablity tensor
-    void Set(double xx, double yy, double zz, double xy, double xz, double yz)
-    { 
-        alpha_[XX][XX] = xx;
-        alpha_[YY][YY] = yy;
-        alpha_[ZZ][ZZ] = zz;
-        alpha_[XX][YY] = xy;
-        alpha_[XX][ZZ] = xz; 
-        alpha_[YY][ZZ] = yz;
-    };
+    //! Set all the elements of the polarizablity tensor and converts them to internal units
+    void Set(double xx, double yy, double zz, double xy, double xz, double yz);
     
     double getValue() const;
     
@@ -417,18 +432,22 @@ public:
     //! Default constructor needed for receiving over a network
     MolecularEnergy() {};
 
-    //! Constructor storing all properties related to this energy term
+    /*! Constructor storing all properties related to this energy term
+     * \param[in] mpo       The energy type
+     * \param[in] type      The calculation type
+     * \param[in] inputUnit The unit of the values
+     * \param[in] T         The temperature
+     * \param[in] ep        The physical phase of the measurement
+     * \param[in] average   The average value
+     * \param[in] error     The (experimental) error
+     */
     MolecularEnergy(MolPropObservable mpo,
                     const std::string &type,
-                    const std::string &unit,
+                    const std::string &inputUnit,
                     double T,
                     ePhase ep,
                     double average,
-                    double error)
-        : GenericProperty(mpo, type, unit, T, ep)
-    { 
-        Set(average, error);
-    };
+                    double error);
     
     //! Set the average and error for the energy
     void Set(double average, double error) 
@@ -476,32 +495,47 @@ public:
 class ElectrostaticPotential
 {
 private:
-    std::string xyzUnit_, vUnit_;
+    //! Internal coordinate unit
+    std::string xyzUnit_;
+    //! Input coordinate unit
+    std::string xyzInputUnit_;
+    //! Internal potential unit
+    std::string vUnit_;
+    //! Input potential unit
+    std::string vInputUnit_;
+    //! Electrostatic potential id
     int         espID_;
-    double      x_, y_, z_, V_;
+    //! X coordinate
+    double      x_;
+    //! Y coordinate
+    double      y_;
+    //! Z coordinate
+    double      z_;
+    //! Potential value
+    double      V_;
 public:
     //! Default constructor
     ElectrostaticPotential() {}
     
     //! Constructor that set the units of coordinates and potential, the ESP id, the coordinates and the potential itself
-    ElectrostaticPotential(const std::string &xyz_unit,
-                           const std::string &V_unit,
+    ElectrostaticPotential(const std::string &xyzInputUnit,
+                           const std::string &vInputUnit,
                            int espid, double x, double y, double z, double V)
-    { set(xyz_unit, V_unit, espid, x, y, z, V); };
+    { set(xyzInputUnit, vInputUnit, espid, x, y, z, V); };
     
     /*! Fill the contents of the ESP
      * Set the units of coordinates and potential, the ESP id,
      * the coordinates and the potential itself.
-     * \param[in] xyz_unit Unit for coordinates
-     * \param[in] V_unit   Unit for the potential
-     * \param[in] espid    Unique id
-     * \param[in] x        X coordinate
-     * \param[in] y        Y coordinate
-     * \param[in] z        Z coordinate
-     * \param[in] V        Potential
+     * \param[in] xyzInputUnit Input unit for coordinates
+     * \param[in] vInputUnit   Input unit for the potential
+     * \param[in] espid        Unique id
+     * \param[in] x            X coordinate
+     * \param[in] y            Y coordinate
+     * \param[in] z            Z coordinate
+     * \param[in] V            Potential
      */
-    void set(const std::string &xyz_unit,
-             const std::string &V_unit,
+    void set(const std::string &xyzInputUnit,
+             const std::string &vInputUnit,
              int                espid, 
              double             x,
              double             y,

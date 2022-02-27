@@ -168,6 +168,11 @@ void MolGen::optionsFinished()
             fit_.insert({ toFit, true });
         }
     }
+    else
+    {
+        fprintf(stderr, "Nothing to fit. Please provide the -fit option.\n");
+        exit(0);
+    }
     if (cr_->isMaster())
     {
         printf("There are %d threads/processes and %zu parameter types to optimize.\n", cr_->size(), fit_.size());
@@ -595,6 +600,8 @@ size_t MolGen::Read(FILE            *fp,
     {       
          iqmMap.insert(std::pair<MolPropObservable, iqmType>(MolPropObservable::DIPOLE,         iqmType::QM));
          iqmMap.insert(std::pair<MolPropObservable, iqmType>(MolPropObservable::QUADRUPOLE,     iqmType::QM));
+         iqmMap.insert(std::pair<MolPropObservable, iqmType>(MolPropObservable::OCTUPOLE,     iqmType::QM));
+         iqmMap.insert(std::pair<MolPropObservable, iqmType>(MolPropObservable::HEXADECAPOLE,     iqmType::QM));
          iqmMap.insert(std::pair<MolPropObservable, iqmType>(MolPropObservable::POLARIZABILITY, iqmType::QM));
     }
     if (cr_->isMaster())

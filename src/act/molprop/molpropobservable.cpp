@@ -41,6 +41,7 @@
 
 #include "act/molprop/multipole_names.h"
 #include "act/utility/communicationrecord.h"
+#include "act/utility/units.h"
 
 namespace alexandria
 {
@@ -70,25 +71,25 @@ std::map<MolPropObservable, const char *> mpo_name_ =
 
 std::map<MolPropObservable, const char *> mpo_unit_ =
 {
-    { MolPropObservable::POTENTIAL, "e/nm" }, 
-    { MolPropObservable::DIPOLE, "D" }, 
-    { MolPropObservable::QUADRUPOLE, "B" },
-    { MolPropObservable::OCTUPOLE, "D\\A$^2%" },
-    { MolPropObservable::HEXADECAPOLE, "D\\A$^3$" },
-    { MolPropObservable::POLARIZABILITY, "\\AA$^3$" }, 
-    { MolPropObservable::HF, "kJ/mol" }, 
-    { MolPropObservable::DHFORM, "kJ/mol" }, 
-    { MolPropObservable::DGFORM, "kJ/mol" }, 
-    { MolPropObservable::DSFORM, "J/mol K" }, 
-    { MolPropObservable::ZPE, "kJ/mol" }, 
-    { MolPropObservable::EMOL, "kJ/mol" }, 
-    { MolPropObservable::ENTROPY, "J/mol K" },
-    { MolPropObservable::STRANS, "J/mol K" },
-    { MolPropObservable::SROT, "J/mol K" },
-    { MolPropObservable::SVIB, "J/mol K" },
-    { MolPropObservable::CP, "J/mol K" },
-    { MolPropObservable::CV, "J/mol K" },
-    { MolPropObservable::CHARGE, "e" }
+    { MolPropObservable::POTENTIAL,      "e/nm" }, 
+    { MolPropObservable::DIPOLE,         "D" }, 
+    { MolPropObservable::QUADRUPOLE,     "B" },
+    { MolPropObservable::OCTUPOLE,       "D.Angstrom2" },
+    { MolPropObservable::HEXADECAPOLE,   "D.Angstrom3" },
+    { MolPropObservable::POLARIZABILITY, "Angstrom3" }, 
+    { MolPropObservable::HF,             "kJ/mol" }, 
+    { MolPropObservable::DHFORM,         "kJ/mol" }, 
+    { MolPropObservable::DGFORM,         "kJ/mol" }, 
+    { MolPropObservable::DSFORM,         "J/mol K" }, 
+    { MolPropObservable::ZPE,            "kJ/mol" }, 
+    { MolPropObservable::EMOL,           "kJ/mol" }, 
+    { MolPropObservable::ENTROPY,        "J/mol K" },
+    { MolPropObservable::STRANS,         "J/mol K" },
+    { MolPropObservable::SROT,           "J/mol K" },
+    { MolPropObservable::SVIB,           "J/mol K" },
+    { MolPropObservable::CP,             "J/mol K" },
+    { MolPropObservable::CV,             "J/mol K" },
+    { MolPropObservable::CHARGE,         "e" }
 };
 
 const char *mpo_name(MolPropObservable MPO)
@@ -123,6 +124,7 @@ CommunicationStatus GenericProperty::Send(const CommunicationRecord *cr, int des
         std::string mpo_type(mpo_name(mpo_));
         cr->send_str(dest, &mpo_type);
         cr->send_str(dest, &type_);
+        cr->send_str(dest, &inputUnit_);
         cr->send_str(dest, &unit_);
         cr->send_double(dest, T_);
         cr->send_int(dest, (int) eP_);
@@ -148,6 +150,7 @@ CommunicationStatus GenericProperty::Receive(const CommunicationRecord *cr, int 
             gmx_fatal(FARGS, "Unknown observable %s", mpo_type.c_str());
         }
         cr->recv_str(src, &type_);
+        cr->recv_str(src, &inputUnit_);
         cr->recv_str(src, &unit_);
         T_   = cr->recv_double(src);
         eP_  = (ePhase) cr->recv_int(src);
@@ -160,14 +163,15 @@ CommunicationStatus GenericProperty::Receive(const CommunicationRecord *cr, int 
     return cs;
 }
 
-MolecularMultipole::MolecularMultipole(const std::string         &type,
-                                       const std::string         &unit,
-                                       double                     T,
-                                       MolPropObservable          mpo) :
-    GenericProperty(mpo, type, unit, T, ePhase::GAS)
+MolecularMultipole::MolecularMultipole(const std::string &type,
+                                       const std::string &inputUnit,
+                                       double             T,
+                                       MolPropObservable  mpo) :
+    GenericProperty(mpo, type, inputUnit, T, ePhase::GAS)
 {
     size_t nvalues = multipoleNames(mpo).size();
     values_.resize(nvalues, 0.0);
+    setUnit(gromacsUnit(inputUnit));
 }
 
 bool MolecularMultipole::hasId(const std::string &myid)
@@ -183,18 +187,19 @@ void MolecularMultipole::setValue(const std::string &myid, double value)
 {
     int index; 
     
+    double actValue = convertToGromacs(value, getInputUnit());
     if (multipoleIndex(myid, &index))
     {
         range_check(index, 0, values_.size());
-        values_[index] = value;
+        values_[index] = actValue;
     }
     else if (myid.compare("average") == 0)
     {
-        average_ = value;
+        average_ = actValue;
     }
     else if (myid.compare("error") == 0)
     {
-        error_ = value;
+        error_ = actValue;
     }
     else if (debug)
     {
@@ -252,6 +257,20 @@ CommunicationStatus MolecularMultipole::Receive(const CommunicationRecord *cr, i
     return cs;
 }
 
+MolecularPolarizability::MolecularPolarizability(const std::string &type,
+                                                 const std::string &inputUnit,
+                                                 double T,
+                                                 double xx, double yy, double zz,
+                                                 double xy, double xz, double yz,
+                                                 double average, double error) :
+    GenericProperty(MolPropObservable::POLARIZABILITY,  type, inputUnit, T, ePhase::GAS)
+{ 
+    Set(xx, yy, zz, xy, xz, yz);
+    average_ = convertToGromacs(average, inputUnit);
+    error_   = convertToGromacs(error, inputUnit);
+    setUnit(gromacsUnit(inputUnit));
+}
+
 double MolecularPolarizability::getValue() const
 {
     if (average_ != 0)
@@ -264,6 +283,17 @@ double MolecularPolarizability::getValue() const
         return (alpha[XX][XX] + alpha[YY][YY] + alpha[ZZ][ZZ])/3.0;
     }
 }
+
+void MolecularPolarizability::Set(double xx, double yy, double zz, double xy, double xz, double yz)
+{
+    auto unit = getInputUnit();
+    alpha_[XX][XX] = convertToGromacs(xx, unit);
+    alpha_[YY][YY] = convertToGromacs(yy, unit);
+    alpha_[ZZ][ZZ] = convertToGromacs(zz, unit);
+    alpha_[XX][YY] = convertToGromacs(xy, unit);
+    alpha_[XX][ZZ] = convertToGromacs(xz, unit); 
+    alpha_[YY][ZZ] = convertToGromacs(yz, unit);
+};
 
 CommunicationStatus MolecularPolarizability::Send(const CommunicationRecord *cr, int dest) const
 {
@@ -325,6 +355,19 @@ CommunicationStatus MolecularPolarizability::Receive(const CommunicationRecord *
     return cs;
 }
 
+MolecularEnergy::MolecularEnergy(MolPropObservable mpo,
+                                 const std::string &type,
+                                 const std::string &inputUnit,
+                                 double T,
+                                 ePhase ep,
+                                 double average,
+                                 double error)
+    : GenericProperty(mpo, type, inputUnit, T, ep)
+{ 
+    Set(average, error);
+    setUnit(gromacsUnit(inputUnit));
+}
+
 CommunicationStatus MolecularEnergy::Receive(const CommunicationRecord *cr, int src)
 {
     CommunicationStatus cs;
@@ -369,6 +412,8 @@ CommunicationStatus ElectrostaticPotential::Receive(const CommunicationRecord *c
 
     if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
     {
+        cr->recv_str(src, &xyzInputUnit_);
+        cr->recv_str(src, &vInputUnit_);
         cr->recv_str(src, &xyzUnit_);
         cr->recv_str(src, &vUnit_);
         espID_ = cr->recv_int(src);
@@ -391,6 +436,8 @@ CommunicationStatus ElectrostaticPotential::Send(const CommunicationRecord *cr, 
 
     if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
     {
+        cr->send_str(dest, &xyzInputUnit_);
+        cr->send_str(dest, &vInputUnit_);
         cr->send_str(dest, &xyzUnit_);
         cr->send_str(dest, &vUnit_);
         cr->send_int(dest, espID_);
@@ -407,21 +454,23 @@ CommunicationStatus ElectrostaticPotential::Send(const CommunicationRecord *cr, 
     return cs;
 }
 
-void ElectrostaticPotential::set(const std::string &xyz_unit,
-                                 const std::string &V_unit,
+void ElectrostaticPotential::set(const std::string &xyzInputUnit,
+                                 const std::string &vInputUnit,
                                  int                espid, 
                                  double             x,
                                  double             y,
                                  double             z,
                                  double             V)
 { 
-    xyzUnit_ = xyz_unit;
-    vUnit_ = V_unit;
+    xyzInputUnit_ = xyzInputUnit;
+    vInputUnit_   = vInputUnit;
     espID_ = espid;
-    x_ = x;
-    y_ = y;
-    z_ = z;
-    V_ = V; 
+    x_ = convertToGromacs(x, xyzInputUnit);
+    y_ = convertToGromacs(y, xyzInputUnit);
+    z_ = convertToGromacs(z, xyzInputUnit);
+    V_ = convertToGromacs(V, vInputUnit); 
+    xyzUnit_.assign("nm");
+    vUnit_.assign("kJ/mol e");
 }
 
 void ElectrostaticPotential::get(std::string *xyz_unit,
