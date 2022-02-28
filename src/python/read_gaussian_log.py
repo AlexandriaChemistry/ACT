@@ -2,11 +2,12 @@
 # This file is part of the Alexandria Chemistry Toolkit
 # https://github.com/dspoel/ACT
 #
-import gzip, math, os
+import gzip, math, os, openbabel
 from get_mol_dict import *
 from molprops import *
 from gaff_to_alexandria import *
 from elements import AtomNumberToAtomName
+from dofit import *
 
 def method_basis(ww: str):
     if len(ww) >= 3:
@@ -15,6 +16,56 @@ def method_basis(ww: str):
             return elem[0], elem[1]
     return "", ""
 
+def matrix_op(matrix: list, vector: list)->list:
+    result = [ 0.0, 0.0, 0.0 ]
+    for m in range(3):
+        for n in range(3):
+            result[m] += matrix[m][n]*vector[n]
+    return result
+    
+def rotate_esp_and_add_to_exper(exper, espfitcenter, potential, coordinates):
+    # Added by MMW START
+    # Get optimized coords and the last set of coords to determine the rotation matrix
+    # Using the rotation matrix we will then rotate the esp grid points 
+    natom     = len(coordinates)
+    if natom < 1:
+        print("No atoms")
+        return
+    if len(espfitcenter) < natom:
+        print("Not enough fitting centers (%d for %d atoms)." % ( len(espfitcenter), natom))
+        return
+    refcoord  = np.zeros((natom, 3))
+    testcoord = np.zeros((len(espfitcenter), 3))
+    ref_com   = np.zeros(3)
+    test_com  = np.zeros(3)
+    for i in range(natom):
+        refcoord[i] = coordinates[i]
+        ref_com    += coordinates[i]
+    for i in range(len(espfitcenter)):
+        testcoord[i] = espfitcenter[i]
+        # Only include atomic positions in the center of mass
+        if i < natom:
+            test_com    += espfitcenter[i]
+    # Divide COM by number of atoms
+    for m in range(3):
+        ref_com[m]  /= natom
+        test_com[m] /= natom
+    # Subtract center of mass
+    for i in range(natom):
+        refcoord[i]  -= ref_com
+    for i in range(len(espfitcenter)):
+        testcoord[i] -= test_com
+    
+    # Now do the fit and get the matrix in return
+    Rfit = calc_fit_R(natom, refcoord, testcoord)
+    # Now rotate the esp points and add them to the experiment
+    for i in range(len(espfitcenter)):
+        espx = 100*(Rfit.dot(testcoord[i]) + test_com)
+        exper.add_potential(str(i+1), "Hartree/e", "pm",
+                            str(espx[0]),
+                            str(espx[1]),
+                            str(espx[2]),
+                            potential[i])
         
 def interpret_gauss(content:list, infile:str,
                     molname:str, basisset:str, verbose:bool):
@@ -268,12 +319,10 @@ def interpret_gauss(content:list, infile:str,
             if len(potential) != len(espfitcenter):
                 print("Found %d potentials for %d centers in %s" % ( len(potential), len(espfitcenter), infile))
                 return None
-            for i in range(len(potential)):
-                exper.add_potential(str(i+1), "Hartree/e", pm,
-                                    str(100*espfitcenter[i][0]),
-                                    str(100*espfitcenter[i][1]),
-                                    str(100*espfitcenter[i][2]),
-                                    potential[i])
+            # Now we have to rotate the electrostatic potential grid points from 
+            # the standard orientation to the input orientation.
+            if len(espfitcenter) > 0:
+                rotate_esp_and_add_to_exper(exper, espfitcenter, potential, coordinates)
             if len(atomtypes) != len(coordinates):
                 print("Found %d atomtype for %d coordinates in %s" % ( len(atomtypes), len(coordinates), infile))
                 return None

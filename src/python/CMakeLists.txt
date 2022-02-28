@@ -14,10 +14,12 @@ configure_file(molselect.cmakein molselect @ONLY)
 
 # Library scripts
 install(FILES atomic_heat_of_formation.py DESTINATION ${ACT_PYTHON_LIB_PATH})
+install(FILES dofit.py DESTINATION ${ACT_PYTHON_LIB_PATH})
 install(FILES elements.py DESTINATION ${ACT_PYTHON_LIB_PATH})
 install(FILES gaff_to_alexandria.py DESTINATION ${ACT_PYTHON_LIB_PATH})
 install(FILES get_csv_rows.py DESTINATION ${ACT_PYTHON_LIB_PATH})
 install(FILES get_mol_dict.py DESTINATION ${ACT_PYTHON_LIB_PATH})
+install(FILES jacobi.py DESTINATION ${ACT_PYTHON_LIB_PATH})
 install(FILES molprops.py DESTINATION ${ACT_PYTHON_LIB_PATH})
 install(FILES molutils.py DESTINATION ${ACT_PYTHON_LIB_PATH})
 install(FILES read_gaussian_log.py DESTINATION ${ACT_PYTHON_LIB_PATH})
