@@ -87,7 +87,11 @@ def filter_mols_by_element(mols, my_elems, fullelem = False):
       if set(mol_elems.keys()) == set(my_elems):
         filtered_mols.append(mol)
     else:
-      if not set(mol_elems).isdisjoint(my_elems):
+      have_all = True
+      for me in mol_elems:
+        if not me in my_elems:
+          have_all = False
+      if have_all:
         filtered_mols.append(mol)
   return filtered_mols
 
