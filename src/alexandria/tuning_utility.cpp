@@ -292,6 +292,8 @@ static void analyse_multipoles(FILE                                             
                                std::map<MolPropObservable, std::map<iMolSelect, std::map<qType, gmx_stats> > > *lsq)
 {
     auto qelec = mol->qTypeProps(qType::Elec);
+    auto qcalc = mol->qTypeProps(qType::Calc);
+    qcalc->calcMoments();
     for(auto &mpo : mpoMultiPoles)
     {
         fprintf(fp, "Electronic %s (%s):\n",
