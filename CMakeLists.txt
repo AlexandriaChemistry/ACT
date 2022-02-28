@@ -189,19 +189,13 @@ option(GMX_DOUBLE "Use double precision (much slower, use only if you really nee
 option(GMX_RELAXED_DOUBLE_PRECISION "Accept single precision 1/sqrt(x) when using Fujitsu HPC-ACE SIMD" OFF)
 mark_as_advanced(GMX_RELAXED_DOUBLE_PRECISION)
 
-option(GMX_MPI    "Build a parallel (message-passing) version of GROMACS" OFF)
-option(GMX_THREAD_MPI  "Build a thread-MPI-based multithreaded version of GROMACS (not compatible with MPI)" ON)
+option(GMX_MPI    "Build a parallel (message-passing) version of GROMACS" ON)
 gmx_dependent_option(
     GMX_MPI_IN_PLACE
     "Enable MPI_IN_PLACE for MPIs that have it defined"
     ON
     GMX_MPI)
 mark_as_advanced(GMX_MPI_IN_PLACE)
-
-option(GMX_MIMIC "Enable MiMiC QM/MM interface (CPMD is required)" OFF)
-
-option(GMX_FAHCORE "Build a library with mdrun functionality" OFF)
-mark_as_advanced(GMX_FAHCORE)
 
 option(GMX_COOL_QUOTES "Enable GROMACS cool quotes" ON)
 mark_as_advanced(GMX_COOL_QUOTES)
