@@ -74,6 +74,12 @@ class Molprops:
                     if coord in atom:
                         myx = ET.SubElement(myatm, coord)
                         myx.text = atom[coord]
+                qmap = "qmap"
+                if qmap in atom:
+                    for q in atom[qmap].keys():
+                        myq = ET.SubElement(myatm, "q")
+                        myq.set("type", q)
+                        myq.text = atom[qmap][q]
                         
             for pol in ep.polarisability:
                 mypol = ET.SubElement(exper, "polarizability")
@@ -229,14 +235,24 @@ class Experiment:
     def add_octupole(self, type, unit, temperature, xxx, xxy, xxz, xyy, xyz, xzz, yyy, yyz, yzz, zzz):
         self.octupole.append({"type":type, "unit":unit, "temperature": str(temperature), "xxx":xxx, "xxy":xxy, "xxz":xxz, "xyy":xyy, "xyz":xyz, "xzz":xzz, "yyy":yyy, "yyz":yyz, "yzz":yzz, "zzz":zzz})
 
-    def add_hexadecapole(self, type, unit, temperature, xxxx, xxxy, xxxz, xxyy, xxyz, xxzz, xyyy, xyyz, xyzz, xzzz, yyyy, yyyz, yyzz, yzzz, zzzz):
+    def add_hexadecapole(self, type, unit, temperature, xxxx, xxxy, xxxz,
+                         xxyy, xxyz, xxzz, xyyy, xyyz, xyzz, xzzz,
+                         yyyy, yyyz, yyzz, yzzz, zzzz):
         self.hexadecapole.append({"type":type, "unit":unit, "temperature": str(temperature), "xxxx":xxxx, "xxxy":xxxy, "xxxz":xxxz, "xxyy":xxyy, "xxyz":xxyz, "xxzz":xxzz, "xyyy":xyyy, "xyyz":xyyz, "xyzz":xyzz, "xzzz":xzzz, "yyyy":yyyy, "yyyz":yyyz, "yyzz":yyzz, "yzzz":yzzz, "zzzz":zzzz})
 
-    def add_polarisability(self, type, unit, temperature, average, error, xx, yy, zz, xy, xz, yz):    
+    def add_polarisability(self, type, unit, temperature,
+                           average, error, xx, yy, zz, xy, xz, yz):    
         self.polarisability.append({"type":type, "unit": unit, "temperature": str(temperature), "average": str(average), "error":str(error), "xx":xx, "yy":yy, "zz":zz, "xy":xy, "xz":xz, "yz":yz})
 
-    def add_atom(self, name, obtype, atomid, coord_unit, x, y, z):
-        self.atoms.append({ "name": name, "obtype": obtype, "atomid": str(atomid), "coord_unit": coord_unit, "x": str(x), "y": str(y), "z": str(z)})
+    def add_atom(self, name, obtype, atomid, coord_unit, x, y, z, qmap=None):
+        newatom = { "name": name, "obtype": obtype, "atomid": str(atomid),
+                    "coord_unit": coord_unit, 
+                    "x": str(x), "y": str(y), "z": str(z)}
+        if qmap:
+            newatom["qmap"] = {}
+            for q in qmap.keys():
+                newatom["qmap"][q] = qmap[q]
+        self.atoms.append(newatom)
         
     def extract_thermo(self, tcmap, atomname, ahof, verbose=False):
         if (not tcmap["Ezpe"] or not tcmap["Hcorr"] or not tcmap["Gcorr"] or

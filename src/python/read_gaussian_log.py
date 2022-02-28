@@ -86,6 +86,10 @@ def interpret_gauss(content:list, infile:str,
     espfitcenter = []
     lastespindex = None
     potential    = []
+    qEsp         = []
+    qCM5         = []
+    qHirshfeld   = []
+    qMulliken    = []
     # Thermochemistry variables
     tcmap        = { "CV": None, "Ezpe": None, "Hcorr": None,
                      "Gcorr": None, "Temp": None, "Method": None,
@@ -105,7 +109,7 @@ def interpret_gauss(content:list, infile:str,
             if len(words) == 6:
                 mp.add_prop("charge", words[2])
                 mp.add_prop("multiplicity", words[5])
-        elif line.find("Input orientation") >= 0:
+        elif line.find("Standard orientation") >= 0:
             c = content_index+5
             atomname.clear()
             coordinates.clear()
@@ -263,6 +267,42 @@ def interpret_gauss(content:list, infile:str,
                         potential[dd] = words[2]
                 elif thisline.find("----------") >= 0:
                     break
+        elif line.find("Charges from ESP fit") >= 0:
+            qEsp.clear()
+            for c in range(content_index+3, content_index+3+len(coordinates)):
+                words = content[c].strip().split()
+                if len(words) == 3:
+                    try:
+                        qEsp.append(words[2])
+                    except ValueError:
+                        print("No charge on this line '%s'" % content[c].strip())
+                        break
+        
+        elif line.find("Mulliken charges:") >= 0:
+            qMulliken.clear()
+            for c in range(content_index+2, content_index+2+len(coordinates)):
+                words = content[c].strip().split()
+                if len(words) == 3:
+                    try:
+                        qMulliken.append(words[2])
+                    except ValueError:
+                        print("No charge on this line '%s'" % content[c].strip())
+                        break
+        
+        elif (line.find("Hirshfeld charges") >= 0 and 
+              line.find("CM5 charges") >= 0):
+            qCM5.clear()
+            qHirshfeld.clear()
+            for c in range(content_index+2, content_index+2+len(coordinates)):
+                words = content[c].strip().split()
+                if len(words) == 8:
+                    try:
+                        qHirshfeld.append(words[2])
+                        qCM5.append(words[7])
+                    except ValueError:
+                        print("No charge on this line '%s'" % content[c].strip())
+                        break
+              
         elif line.find(" This molecule is ") >= 0:
             words = content[content_index+1].strip().split()
             tcmap["RotSymNum"] = int(words[3])
@@ -330,10 +370,20 @@ def interpret_gauss(content:list, infile:str,
                 return None
             for i in range(len(atomtypes)):
                 alextype = g2a.rename(atomtypes[i])
+                qmap = {}
+                if len(qEsp) == len(atomtypes):
+                    qmap["ESP"] = qEsp[i]
+                if len(qCM5) == len(atomtypes):
+                    qmap["CM5"] = qCM5[i]
+                if len(qHirshfeld) == len(atomtypes):
+                    qmap["Hirshfeld"] = qHirshfeld[i]
+                if len(qMulliken) == len(atomtypes):
+                    qmap["Mulliken"] = qMulliken[i]
                 exper.add_atom(atomname[i], alextype, i+1, pm, 
                                (100*coordinates[i][0]),
                                (100*coordinates[i][1]),
-                               (100*coordinates[i][2]))
+                               (100*coordinates[i][2]),
+                               qmap)
             mp.add_experiment(exper)
             return mp
     else:
