@@ -68,7 +68,7 @@ def rotate_esp_and_add_to_exper(exper, espfitcenter, potential, coordinates):
                             potential[i])
         
 def interpret_gauss(content:list, infile:str,
-                    molname:str, basisset:str, verbose:bool, ahof):
+                    molname:str, basisset:str, verbose:bool):
     '''Interpret the content of a Gaussian log file and put the
     contents in a molprop structure for later storage in an XML
     file.'''
@@ -303,8 +303,10 @@ def interpret_gauss(content:list, infile:str,
                 if line.find(tc) >= 0:
                     tcmap["Method"] = methodmap[tc][0]
                     tcmap["E0"]     = float(line.split()[methodmap[tc][1]])
-    
-    exper.extract_thermo(tcmap, atomname, ahof)
+    # See if we gathered any thermochemistry data
+    if tcmap["Temp"] and tcmap["Method"]:
+        ahof = AtomicHOF(tcmap["Method"], tcmap["Temp"], verbose)
+        exper.extract_thermo(tcmap, atomname, ahof)
     weight, numb_atoms, formula, multiplicity, atomtypes, bonds_dict = get_info_from_coords_elements(atomname, coordinates)
     if None != weight:
         mp.add_prop("mass", str(weight))
@@ -337,7 +339,7 @@ def interpret_gauss(content:list, infile:str,
     else:
         return None
     
-def read_gaussian_log(infile:str, molname:str, basisset:str, verbose:bool, ahof):
+def read_gaussian_log(infile:str, molname:str, basisset:str, verbose:bool):
     '''Read the output from a Gaussian calculation to extract
     coordinates, charge, multiplicity, multipole moments and
     more.'''
@@ -347,7 +349,7 @@ def read_gaussian_log(infile:str, molname:str, basisset:str, verbose:bool, ahof)
     try:
         with gzip.open(infile, "rt") as inf:
             content = inf.readlines()
-            return interpret_gauss(content, infile, molname, basisset, verbose, ahof)
+            return interpret_gauss(content, infile, molname, basisset, verbose)
     except gzip.BadGzipFile:
         print("Something fishy with " + infile)
         return None
