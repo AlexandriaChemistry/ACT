@@ -81,12 +81,12 @@ def get_mols(M, whitelist, ahlist, output):
   print("There are %d molecules in %s to generate %s" % ( len(mols), whitelist, output ) )
   return mols
 
-def build_one(logfile, datafile, maxpot, molname, basisset, jobtype):
+def build_one(logfile, datafile, maxpot, molname, basisset, jobtype, ahof):
   flag = "-g03"
   if logfile[-3:] == "sdf":
     flag = "-sdf"
   if not os.path.exists(datafile):
-    mp = read_gaussian_log(logfile, molname, basisset, False)
+    mp = read_gaussian_log(logfile, molname, basisset, False, ahof)
     if mp:
       molprops = Molprops()
       mp.experiments[0].add_prop("jobtype", jobtype)
@@ -109,12 +109,13 @@ def get_method_basis_jobtype(meth:str):
 def parallel_build(mols, methods, gentop, database, maxpot, merge_mp, output, sdf_ok):
   pool      = Pool()
   results   = []
+  ahof      = AtomicHOF(tcmap["Method"], tcmap["Temp"], verbose)
   for molname in mols:
     for meth in methods.split(";"):
       datafile, logfile = name_of_data_log_file(meth, molname, sdf_ok)
       mm, basis, jobtype = get_method_basis_jobtype(meth)
       if logfile and os.path.exists(logfile):
-        results.append(pool.apply_async(build_one, [logfile, datafile, maxpot, molname, basis, jobtype]))
+        results.append(pool.apply_async(build_one, [logfile, datafile, maxpot, molname, basis, jobtype], ahof))
   datafiles = []
   for r in results:
     ddd = r.get(timeout=10)

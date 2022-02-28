@@ -140,8 +140,8 @@ static void print_stats(FILE        *fp,
         if (eStats::OK == ok)
         {
             fprintf(fp, "%-26s %6d %6.3f(%5.3f) %6.3f(%5.3f) %7.2f %8.4f %8.4f %8.4f %10s\n",
-                    newprop.c_str(), n, conversion*a, conversion*da, 
-                    conversion*b, conversion*b, Rfit*100, 
+                    newprop.c_str(), n, a, da, 
+                    b, db, Rfit*100, 
                     conversion*rmsd, conversion*mse, 
                     conversion*mae, yaxis);
         }
@@ -171,7 +171,7 @@ static void print_stats(FILE        *fp,
         if (eStats::OK == ok)
         {
             fprintf(fp, "%-26s %6d %6.3f(%5.3f) %7.2f %8.4f %8.4f %8.4f %10s\n",
-                    newprop.c_str(), n, conversion*a, conversion*da, Rfit*100,
+                    newprop.c_str(), n, a, da, Rfit*100,
                     conversion*rmsd, conversion*mse, conversion*mae, yaxis);
         }
         else
