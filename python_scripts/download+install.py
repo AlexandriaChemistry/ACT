@@ -171,7 +171,7 @@ def install_act(args, CXX, CC, HOST, prefix):
         
         if args.clone_ACT:
             if os.path.isdir(swdir):
-                print("Will not clone since directory %s exists. Will gitt pull instead")
+                print("Will not clone since directory %s exists. Will gitt pull instead" % swdir)
                 os.chdir(swdir)
                 run_command("git", "pull")
             else:
