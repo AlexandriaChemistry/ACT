@@ -4,7 +4,7 @@ import openbabel as ob
 
 import subprocess
 import os,sys, glob
-sys.path.append('/Users/walz/GG/ACT/src/python')
+sys.path.append(' ../../src/python')
 import get_mol_dict as gmd
 import molprops as mp
 import numpy as np
