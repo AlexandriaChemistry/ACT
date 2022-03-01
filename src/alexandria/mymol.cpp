@@ -892,7 +892,6 @@ immStatus MyMol::GenerateTopology(FILE              *fp,
                                   const std::string &method,
                                   const std::string &basis,
                                   missingParameters  missing,
-                                  const char        *tabfn,
                                   bool               strict)
 {
     immStatus   imm = immStatus::OK;
@@ -973,7 +972,7 @@ immStatus MyMol::GenerateTopology(FILE              *fp,
         char **molnameptr = put_symtab(symtab_, getMolname().c_str());
         // Generate mtop
         mtop_ = do_init_mtop(pd, molnameptr, atoms,
-                             inputrec_, symtab_, tabfn);
+                             inputrec_, symtab_, nullptr);
         // First create the identifiers for topology entries
         setTopologyIdentifiers(topology_, pd, atoms);
         // Now generate the mtop fields
@@ -1495,9 +1494,7 @@ void MyMol::symmetrizeCharges(const Poldata  *pd,
     }
 }
 
-immStatus MyMol::GenerateAcmCharges(const Poldata             *pd,
-                                    int                        maxiter,
-                                    real                       tolerance)
+immStatus MyMol::GenerateAcmCharges(const Poldata *pd)
 {
     if (QgenAcm_ == nullptr)
     {
@@ -1538,7 +1535,7 @@ immStatus MyMol::GenerateAcmCharges(const Poldata             *pd,
                 qq[i]    = q_i;
             }
             EemRms   /= mtop_->natoms;
-            converged = (EemRms < tolerance) || !haveShells();
+            converged = (EemRms < qTolerance_) || !haveShells();
             iter++;
         }
         else
@@ -1546,11 +1543,11 @@ immStatus MyMol::GenerateAcmCharges(const Poldata             *pd,
             imm = immStatus::ChargeGeneration;
         }
     }
-    while (imm == immStatus::OK && (!converged) && (iter < maxiter));
+    while (imm == immStatus::OK && (!converged) && (iter < maxQiter_));
     if (!converged)
     {
         printf("Alexandria Charge Model did not converge to %g. rms: %g\n",
-               tolerance, sqrt(EemRms));
+               qTolerance_, sqrt(EemRms));
     }
     auto qcalc = qTypeProps(qType::Calc);
     qcalc->setQ(atoms());
@@ -1560,20 +1557,16 @@ immStatus MyMol::GenerateAcmCharges(const Poldata             *pd,
 immStatus MyMol::GenerateCharges(const Poldata             *pd,
                                  const gmx::MDLogger       &mdlog,
                                  const CommunicationRecord *cr,
-                                 const char                *tabfn,
-                                 int                        maxiter,
-                                 real                       tolerance,
                                  ChargeGenerationAlgorithm  algorithm,
                                  const std::vector<double> &qcustom,
                                  const std::string         &lot)
 {
     immStatus imm         = immStatus::OK;
     bool      converged   = false;
-    int       iter        = 0;
     auto      qt          = pd->findForcesConst(InteractionType::CHARGEDISTRIBUTION);
     auto      iChargeType = name2ChargeType(qt.optionValue("chargetype"));
 
-    GenerateGromacs(mdlog, cr, tabfn, iChargeType);
+    GenerateGromacs(mdlog, cr, nullptr, iChargeType);
     if (backupCoordinates_.size() == 0)
     {
         backupCoordinates();
@@ -1682,9 +1675,10 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
         }
     case ChargeGenerationAlgorithm::ESP:
         {
-            double chi2[2]   = {1e8, 1e8};
-            int    cur       = 0;
-            iter             = 0;
+            double chi2[2] = {1e8, 1e8};
+            int    cur     = 0;
+            int    maxiter = 5;
+            int    iter    = 0;
             
             // Init Qgresp should be called before this!
             auto qcalc   = qTypeProps(qType::Calc);
@@ -1725,7 +1719,7 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
                 {
                     fprintf(debug, "RESP: RMS %g\n", chi2[cur]);
                 }
-                converged = (fabs(chi2[cur] - chi2[1-cur]) < tolerance) || (nullptr == shellfc_);
+                converged = (fabs(chi2[cur] - chi2[1-cur]) < qTolerance_) || (nullptr == shellfc_);
                 cur       = 1-cur;
                 iter++;
             }
@@ -1741,7 +1735,7 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
     case ChargeGenerationAlgorithm::EEM:
     case ChargeGenerationAlgorithm::SQE:
         {
-            return GenerateAcmCharges(pd, maxiter, tolerance);
+            return GenerateAcmCharges(pd);
         }
         break;
     }

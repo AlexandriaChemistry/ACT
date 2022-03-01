@@ -166,7 +166,7 @@ class AcmTest : public gmx::test::CommandLineTestBase
             // Get poldata
             auto pd  = getPoldata(model);
             auto imm = mp_.GenerateTopology(stdout, pd, method, basis,
-                                            missingParameters::Error, nullptr);
+                                            missingParameters::Error);
             if (immStatus::OK != imm)
             {
                 fprintf(stderr, "Error generating topology: %s\n", immsg(imm));
@@ -177,8 +177,6 @@ class AcmTest : public gmx::test::CommandLineTestBase
             CommunicationRecord cr;
             auto           pnc      = gmx::PhysicalNodeCommunicator(MPI_COMM_WORLD, 0);
             gmx::MDLogger  mdlog {};
-            int            qcycle   = 100;
-            real           qtol     = 1e-6;
             std::string    lot(method);
             lot += "/" + basis;
             auto alg = ChargeGenerationAlgorithm::NONE;
@@ -187,9 +185,7 @@ class AcmTest : public gmx::test::CommandLineTestBase
                 alg = ChargeGenerationAlgorithm::Custom;
             }
             mp_.symmetrizeCharges(pd, qSymm, nullptr);
-            mp_.GenerateCharges(pd, mdlog, &cr, nullptr, 
-                                qcycle, qtol, 
-                                alg, qcustom, lot);
+            mp_.GenerateCharges(pd, mdlog, &cr, alg, qcustom, lot);
                                 
             std::vector<double> qtotValues;
             auto myatoms = mp_.atomsConst();

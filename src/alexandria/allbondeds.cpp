@@ -485,7 +485,6 @@ void AllBondeds::extractGeometries(FILE                       *fp,
                                             method,
                                             basis,
                                             missingParameters::Generate,
-                                            nullptr,
                                             strict);
             if (immStatus::OK != imm)
             {

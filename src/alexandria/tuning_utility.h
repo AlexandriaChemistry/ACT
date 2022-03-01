@@ -95,8 +95,6 @@ namespace alexandria
                    const Poldata                  *pd,
                    const gmx::MDLogger            &fplog,
                    const char                     *lot,
-                   int                             qcycle,
-                   real                            qtol,
                    const gmx_output_env_t         *oenv,
                    const CommunicationRecord      *cr,
                    real                            efield,

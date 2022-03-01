@@ -74,7 +74,6 @@ static void dump_molecule(FILE              *fp,
                                       method,
                                       basis,
                                       missingParameters::Error,
-                                      nullptr,
                                       false);
     if (immStatus::OK != imm)
     {

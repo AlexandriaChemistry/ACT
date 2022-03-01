@@ -472,8 +472,6 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
                                   const Poldata                  *pd,
                                   const gmx::MDLogger            &fplog,
                                   const char                     *lot,
-                                  int                             qcycle,
-                                  real                            qtol,
                                   const gmx_output_env_t         *oenv,
                                   const CommunicationRecord      *cr,
                                   real                            efield,
@@ -578,7 +576,7 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
 
             // Recalculate the atomic charges using the optimized parameters.
             std::vector<double> dummy;
-            mol->GenerateCharges(pd, fplog, cr, nullptr, qcycle, qtol,
+            mol->GenerateCharges(pd, fplog, cr,
                                  ChargeGenerationAlgorithm::NONE, dummy, lot);
             // Energy
             double emol = 0;

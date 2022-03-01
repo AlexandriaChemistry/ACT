@@ -94,13 +94,14 @@ namespace alexandria
     class MyMol : public MolProp
     {
     private:
-        /*! \brief
-         * Gromacs structures
-         */
         int                             *cgnr_           = nullptr;
         bool                             bHaveShells_    = false;
         bool                             bHaveVSites_    = false;
         bool                             bNeedVsites_    = false;
+        //! Tolerance for converged SQE or EEM calculations
+        double                           qTolerance_     = 1e-6;
+        //! Max iterations for SQE or EEM calculations
+        int                              maxQiter_       = 5;
         double                           ref_enthalpy_   = 0;
         double                           polarizability_ = 0;
         double                           sig_pol_        = 0;
@@ -416,7 +417,6 @@ namespace alexandria
          * \param[in]  method  Method used for QM calculation
          * \param[in]  basis   Basis set used for QM calculation
          * \param[in]  missing How to treat missing parameters
-         * \param[in]  tabfn   Table function file for table potentials
          * \param[in]  strict  Whether or not to only allow the requested LOT
          * \return status
          */
@@ -425,7 +425,6 @@ namespace alexandria
                                    const std::string &method,
                                    const std::string &basis,
                                    missingParameters  missing,
-                                   const char        *tabfn,
                                    bool               strict=true);
 
         //! Return the topology structure
@@ -474,9 +473,6 @@ namespace alexandria
          * \param[in] pd                             Data structure containing atomic properties
          * \param[in] fplog                          Logger
          * \param[in] cr      Communication parameters
-         * \param[in] tabfn   Table function
-         * \param[in] qcycle  Number of cycles for computing charges
-         * \param[in] qtol    Convergence of charges tolerance
          * \param[in] algorithm The algorithm for determining charges,
          *                    if NONE it is read from the Poldata structure.
          * \param[in] qcustom Custom (user-provided) charges
@@ -485,9 +481,6 @@ namespace alexandria
         immStatus GenerateCharges(const Poldata             *pd,
                                   const gmx::MDLogger       &fplog,
                                   const CommunicationRecord *cr,
-                                  const char                *tabfn,
-                                  int                        qcycle,
-                                  real                       qtol,
                                   ChargeGenerationAlgorithm  algorithm,
                                   const std::vector<double> &qcustom,
                                   const std::string         &lot);
@@ -496,12 +489,8 @@ namespace alexandria
          * If shells are present they will be minimized.
          *
          * \param[in] pd      Data structure containing atomic properties
-         * \param[in] qcycle  Number of cycles for computing charges
-         * \param[in] qtol    Convergence of charges tolerance
          */
-        immStatus GenerateAcmCharges(const Poldata             *pd,
-                                     int                        qcycle,
-                                     real                       qtol);
+        immStatus GenerateAcmCharges(const Poldata *pd);
                                      
         /*! \brief Implement charge symmetrization
          *

@@ -120,10 +120,6 @@ void MolGen::addOptions(std::vector<t_pargs>          *pargs,
           "Force constant in the penalty function for going outside the borders given with the fitting options (see below)." },
         { "-fc_epot",    FALSE, etREAL, {targets->find(eRMS::EPOT)->second.weightPtr()},
           "Force constant in the penalty function for the potential energy of the compound." },
-        { "-qtol",   FALSE, etREAL, {&qtol_},
-          "Tolerance for assigning charge generation algorithm." },
-        { "-qcycle", FALSE, etINT, {&qcycle_},
-          "Max number of tries for optimizing the charges." },
         { "-qsymm",  FALSE, etBOOL, {&qsymm_},
           "Symmetrize the charges on symmetric groups, e.g. CH3, NH2." },
         { "-fit", FALSE, etSTR, {&fitString_},
@@ -179,8 +175,7 @@ void MolGen::optionsFinished()
     }
     if (debug)
     {
-        fprintf(debug, "optionsFinished: qtol = %g mindata = %d qcycle = %d\n",
-                qtol_, mindata_, qcycle_);
+        fprintf(debug, "optionsFinished: mindata = %d \n", mindata_);
     }
 }
 
@@ -526,7 +521,6 @@ size_t MolGen::Read(FILE            *fp,
                     Poldata         *pd,
                     gmx_bool         bZero,
                     const MolSelect &gms,
-                    const char      *tabfn,
                     bool             verbose)
 {
     int                              nwarn    = 0;
@@ -627,8 +621,7 @@ size_t MolGen::Read(FILE            *fp,
                                              pd,
                                              method,
                                              basis,
-                                             missingParameters::Error,
-                                             tabfn);
+                                             missingParameters::Error);
                 if (immStatus::OK != imm)
                 {
                     if (verbose && fp)
@@ -645,9 +638,6 @@ size_t MolGen::Read(FILE            *fp,
                 imm = mymol.GenerateCharges(pd,
                                             mdlog_,
                                             cr_,
-                                            tabfn,
-                                            qcycle_,
-                                            qtol_,
                                             ChargeGenerationAlgorithm::NONE,
                                             dummy,
                                             lot_);
@@ -842,8 +832,7 @@ size_t MolGen::Read(FILE            *fp,
                                          pd,
                                          method,
                                          basis,
-                                         missingParameters::Error,
-                                         tabfn);
+                                         missingParameters::Error);
 
             if (immStatus::OK == imm)
             {
@@ -853,9 +842,6 @@ size_t MolGen::Read(FILE            *fp,
                 imm = mymol.GenerateCharges(pd,
                                             mdlog_,
                                             cr_,
-                                            tabfn,
-                                            qcycle_,
-                                            qtol_,
                                             ChargeGenerationAlgorithm::NONE,
                                             dummy,
                                             lot_);

@@ -568,7 +568,6 @@ int tune_ff(int argc, char *argv[])
                             opt.sii()->poldata(),
                             bZero,
                             gms,
-                            nullptr,
                             opt.verbose()))
     {
         if (opt.logFile())
@@ -632,7 +631,6 @@ int tune_ff(int argc, char *argv[])
             printer.print(opt.logFile(), &(tmpMg->mymols()),
                           opt.sii()->poldata(),
                           tmpMg->mdlog(), tmpMg->lot(),
-                          tmpMg->qcycle(), tmpMg->qtol(),
                           oenv, opt.commRec(), efield, filenms);
             print_memory_usage(debug);
         }

@@ -119,7 +119,6 @@ int gentop(int argc, char *argv[])
         { efDAT, "-q",        "qout",          ffOPTWR },
         { efXML, "-mpdb",     "molprops",      ffOPTRD },
         { efXML, "-d",        "gentop",        ffOPTRD },
-        { efXVG, "-table",    "table",         ffOPTRD },
         { efCUB, "-pot",      "potential",     ffOPTWR },
         { efCUB, "-ref",      "refpot",        ffOPTRD },
         { efCUB, "-diff",     "diffpot",       ffOPTWR },
@@ -136,8 +135,6 @@ int gentop(int argc, char *argv[])
 
     static int                       maxpot         = 100;
     static int                       nsymm          = 0;
-    static int                       qcycle         = 1000;
-    static real                      qtol           = 1e-6;
     static real                      qtot           = 0;
     static real                      watoms         = 0;
     static real                      spacing        = 0.01;
@@ -193,16 +190,12 @@ int gentop(int argc, char *argv[])
           "Weight for the atoms when fitting the charges to the electrostatic potential. The potential on atoms is usually two orders of magnitude larger than on other points (and negative). For point charges or single smeared charges use 0. For point+smeared charges 1 is recommended." },
         { "-ff",     FALSE, etENUM, {ff},
           "Force field model. Note that only ACM-xx will yield complete topologies but see help text ([TT]-h[tt])." },
-        { "-qtol",   FALSE, etREAL, {&qtol},
-          "Tolerance for assigning charge generation algorithm" },
         { "-qtot",   FALSE, etREAL, {&qtot},
           "Total charge of the molecule. This will be taken from the input file by default, but that is reliable only if the input is a Gaussian log file." },
         { "-qqm",    FALSE, etSTR,  {&qqm},
           "Use a method from quantum mechanics that needs to be present in the input file. Either ESP, Hirshfeld, CM5 or Mulliken may be available." },
         { "-addh",   FALSE, etBOOL, {&addHydrogens},
           "Add hydrogen atoms to the compound - useful for PDB files." },
-        { "-qcycle", FALSE, etINT, {&qcycle},
-          "Max number of tries for optimizing the charges. The trial with lowest chi2 will be used for generating a topology. Will be turned off if randzeta is No." },
         { "-qsymm",  FALSE, etBOOL, {&bQsym},
           "Symmetrize the charges on symmetric groups, e.g. CH3, NH2." },
         { "-symm",   FALSE, etSTR, {&symm_string},
@@ -222,17 +215,12 @@ int gentop(int argc, char *argv[])
     Poldata        pd;
     t_inputrec    *inputrec = new t_inputrec();
     CommunicationRecord cr;
-    const char    *tabfn    = opt2fn_null("-table", NFILE, fnm);
     gmx::MDLogger  mdlog {};
     std::string    method, basis;
     splitLot(lot, &method, &basis);
 
     /* Check the options */
     bITP = opt2bSet("-oi", NFILE, fnm);
-    if ((qtol < 0) || (qtol > 1))
-    {
-        gmx_fatal(FARGS, "Charge tolerance should be between 0 and 1 (not %g)", qtol);
-    }
     // Check whether there is something to read
     if (strlen(dbname) == 0 && strlen(filename) == 0)
     {
@@ -355,8 +343,7 @@ int gentop(int argc, char *argv[])
                                  &pd,
                                  method,
                                  basis,
-                                 bAllowMissing ? missingParameters::Ignore : missingParameters::Error,
-                                 tabfn);
+                                 bAllowMissing ? missingParameters::Ignore : missingParameters::Error);
 
     gmx_omp_nthreads_init(mdlog, cr.commrec(), 1, 1, 1, 0, false, false);
     if (immStatus::OK == imm)
@@ -390,9 +377,6 @@ int gentop(int argc, char *argv[])
         imm    = mymol.GenerateCharges(&pd,
                                        mdlog,
                                        &cr,
-                                       tabfn,
-                                       qcycle,
-                                       qtol,
                                        alg,
                                        myq,
                                        mylot);

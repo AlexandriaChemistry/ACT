@@ -135,7 +135,7 @@ class RespTest : public gmx::test::CommandLineTestBase
             mp_.SetForceField("alexandria");
             Poldata      *pd = getPoldata(qdist);
             auto imm = mp_.GenerateTopology(nullptr, pd, method, basis,
-                                            missingParameters::Error, nullptr);
+                                            missingParameters::Error);
             if (immStatus::OK != imm)
             {
                 fprintf(stderr, "Error generating topology: %s\n", immsg(imm));
@@ -146,9 +146,6 @@ class RespTest : public gmx::test::CommandLineTestBase
             CommunicationRecord cr;
             auto           pnc         = gmx::PhysicalNodeCommunicator(MPI_COMM_WORLD, 0);
             gmx::MDLogger  mdlog {};
-            int            qcycle      = 100;
-            real           qtol        = 1e-6;
-            std::string    tabFile;
             auto qt = pd->findForcesConst(InteractionType::CHARGEDISTRIBUTION);
             auto ct = name2ChargeType(qt.optionValue("chargetype"));
             std::string    lot(method);
@@ -156,22 +153,13 @@ class RespTest : public gmx::test::CommandLineTestBase
             
             if (ChargeType::Slater  == ct)
             {
-                const char *tabname =  "table.xvg";
-                inputrec.coulombtype = eelUSER;
-                tabFile              = fileManager().getInputFilePath(tabname);
-                if (tabFile.empty())
-                {
-                    GMX_THROW(gmx::InternalError(gmx::formatString("Cannot find file %s", tabname).c_str()));
-                }
-                printf("tabfn %s\n", tabFile.c_str());
+                GMX_THROW(gmx::InternalError("No support for tables anymore"));
             }
             mp_.setInputrec(&inputrec);
             mp_.symmetrizeCharges(pd, qSymm, nullptr);
             mp_.initQgenResp(pd, method, basis, 0.0, 100);
             std::vector<double> qcustom;
             mp_.GenerateCharges(pd, mdlog, &cr,
-                                tabFile.empty() ? nullptr : tabFile.c_str(),
-                                qcycle, qtol, 
                                 ChargeGenerationAlgorithm::ESP, qcustom, lot);
 
             std::vector<double> qtotValues;

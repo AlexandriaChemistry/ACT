@@ -307,10 +307,6 @@ private:
     int                             maxESP_     = 100;
     //! Weighting factor for the ESP on the atoms
     real                            watoms_     = 0;
-    //! Tolerance for iteratively determining charges
-    real                            qtol_       = 1e-6;
-    //! Max number of iterations for determining charges
-    int                             qcycle_     = 500;
     //! Map that holds the number of compounds in each data set
     std::map<iMolSelect, size_t>    targetSize_;
     //! Tell us whether this interaction type needs optimizing
@@ -437,14 +433,8 @@ public:
     //! Return the whole optimization map
     const std::map<InteractionType, bool> iopt() const { return iOpt_; }
     
-    //! \return the number of iterations to compute the charges
-    int qcycle() const { return qcycle_;}
-        
     //! \return fraction of ESP points
     int maxPot() const { return maxESP_;}
-        
-    //! \return charge optimization parameters
-    double qtol() const { return qtol_;}
         
     //! Whether or not to use charge symmetry
     gmx_bool bQsym() const { return qsymm_;}
@@ -470,7 +460,6 @@ public:
      * \param[in] pd      Pointer to Poldata object
      * \param[in] bZero   Use compounds with zero dipole
      * \param[in] gms     The molecule selection
-     * \param[in] tabfn   Table function for gromacs
      * \param[in] verbose Whether or not to print extra information
      * \return number of molecules read and processed correctly
      */
@@ -479,7 +468,6 @@ public:
                 Poldata         *pd,
                 gmx_bool         bZero,
                 const MolSelect &gms,
-                const char      *tabfn,
                 bool             verbose);
 
 };
