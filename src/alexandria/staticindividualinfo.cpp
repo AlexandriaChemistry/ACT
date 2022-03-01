@@ -8,9 +8,12 @@
 
 #include "staticindividualinfo.h"
 
-#include "act/ga//Genome.h"
+#include "act/ga/Genome.h"
 #include "act/utility/memory_check.h"
 #include "act/poldata/poldata_xml.h"
+
+#include <sys/types.h>
+#include <sys/stat.h>
 
 namespace alexandria
 {
@@ -106,6 +109,32 @@ void StaticIndividualInfo::updatePoldata(const std::vector<bool> &changed,
     GMX_RELEASE_ASSERT(n == changed.size(),
                        gmx::formatString("n = %zu changed.size() = %zu",
                                          n, changed.size()).c_str());
+}
+
+void StaticIndividualInfo::updatePoldata(const ga::Genome *genome)
+{
+    size_t n = 0;
+    for (const auto &optIndex : optIndex())
+    {
+        auto iType = optIndex.iType();
+        ForceFieldParameter *p  = nullptr;
+        if (iType != InteractionType::CHARGE)
+        {
+            p = pd_.findForces(iType)->findParameterType(optIndex.id(), optIndex.parameterType());
+        }
+        else if (pd_.hasParticleType(optIndex.particleType()))
+        {
+            p = pd_.findParticleType(optIndex.particleType())->parameter(optIndex.parameterType());
+        }
+        GMX_RELEASE_ASSERT(p, gmx::formatString("Could not find parameter %s", optIndex.id().id().c_str()).c_str());
+        if (p)
+        {
+            p->setValue(genome->base(n));
+            // TODO fix the uncertainty
+            // p->setUncertainty(psigma_[n]);
+        }
+        n++;
+    }
 }
 
 void StaticIndividualInfo::saveState(bool updateCheckSum)
@@ -385,6 +414,24 @@ void StaticIndividualInfo::setOutputFiles(const char                     *xvgcon
     xvgconv_.assign(xvgconv);
     paramClass_ = paramClass;
     xvgepot_.assign(xvgepot);
+}
+
+void StaticIndividualInfo::makeIndividualDir()
+{
+    if (!prefix_.empty())
+    {
+        struct stat info;
+
+        if (stat(prefix_.c_str(), &info ) == 0 && (info.st_mode & S_IFDIR))
+        {
+            printf("%s is a directory already\n", prefix_.c_str());
+        }
+        else
+        {
+            std::string command = gmx::formatString("mkdir %s", prefix_.c_str());
+            system(command.c_str());
+        }
+    }
 }
 
 /* * * * * * * * * * * * * * * * * * * * * *

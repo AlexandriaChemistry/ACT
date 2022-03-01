@@ -26,10 +26,11 @@ void ACMFitnessComputer::compute(ga::Genome *genome,
         GMX_THROW(gmx::InternalError("Empty genome"));
     }
     //ACMIndividual *tmpInd = static_cast<ACMIndividual*>(ind);
-    std::vector<bool> changed;
+    // std::vector<bool> changed;
     // TODO: the middle man should know/decide which parameters have changed.
-    changed.resize(sii_->nParam(), true);
-    sii_->updatePoldata(changed, genome);
+    // changed.resize(sii_->nParam(), true);
+    // sii_->updatePoldata(changed, genome);
+    sii_->updatePoldata(genome);
     double fitness = calcDeviation(genome->basesPtr(),
                                    CalcDev::Parallel, trgtFit);
     genome->setFitness(trgtFit, fitness);

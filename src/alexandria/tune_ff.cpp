@@ -286,7 +286,7 @@ void OptACM::initMaster()
     {
         // auto mut = new alexandria::MCMCMutator(nullptr, verbose(), &bch_, fitComp_, sii_);
         auto mut = new alexandria::MCMCMutator(logFile(), verbose_, seed, &bch_, fitComp_, sii_, bch_.evaluateTestset());
-        mut->makeWorkDir();
+        sii_->makeIndividualDir();
         mut->openParamConvFiles(oenv_);
         mut->openChi2ConvFile(oenv_);
         // if (sii_->commRec()->nmiddlemen() == 0)  // If we are running pure MCMC
@@ -332,7 +332,7 @@ bool OptACM::runMaster(bool        optimize,
                        "I thought I was the master...");
 
     print_memory_usage(debug);
-    bool       bMinimum = false;
+    bool bMinimum = false;
     ga::Genome bestGenome;
     if (optimize)
     {
@@ -398,7 +398,7 @@ int tune_ff(int argc, char *argv[])
     static const char          *desc[] = {
         "tune_ff read a series of molecules and corresponding physicochemical",
         "properties from a file. The properties can either originate from",
-        "experimental data or from quantum chemistry calculitions.",
+        "experimental data or from quantum chemistry calculations.",
         "The program then tunes empirical force field parameters using",
         "one of a series of algorithms",
         "until the experimental properties are reproduced reasonably.",
@@ -471,8 +471,8 @@ int tune_ff(int argc, char *argv[])
               "Do parameter optimization when true, or a single calculation otherwise." },
             { "-sensitivity",  FALSE, etBOOL, {&bSensitivity},
               "Do a sensitivity analysis." },
-            { "-force_output", FALSE, etBOOL, {&bForceOutput},
-              "Write output even if no new minimum is found" },
+            // { "-force_output", FALSE, etBOOL, {&bForceOutput},
+            //   "Write output force field even if no new minimum is found beyond the initial set of candidate solutions." },
             { "-evaluate_testset", FALSE, etBOOL, {&bEvaluate_testset},
               "Evaluate the MCMC energy on the test set." }
         };
@@ -620,13 +620,12 @@ int tune_ff(int argc, char *argv[])
 
         if (bMinimum || bForceOutput || !bOptimize)
         {
-            // if (bForceOutput)
-            // {
-            // FIXME: this is not true! The best parameters are restored in runMaster()!
-            // of runMaster if a better parameter set was found. So no, the final step will not be the output
-            fprintf(opt.logFile(), "Output based on last step of MC simulation per your specification.\nUse the -noforce_output flag to prevent this.\nThe force field output file %s is based on the last MC step as well.\n", opt2fn("-o", filenms.size(), filenms.data()));
-            opt.sii()->saveState(true);
-            // }
+            if (bForceOutput && !bMinimum)
+            {
+                fprintf(opt.logFile(), "No better minimum than the best initial candidate solution was found but -force_output was selected. This means that a global best force field file %s has been written written anyway.\n", opt2fn("-o", filenms.size(), filenms.data()));
+                // fprintf(opt.logFile(), "Output based on last step of MC simulation per your specification.\nUse the -noforce_output flag to prevent this.\nThe force field output file %s is based on the last MC step as well.\n", opt2fn("-o", filenms.size(), filenms.data()));
+                opt.sii()->saveState(true);
+            }
             MolGen *tmpMg = opt.mg();
             printer.print(opt.logFile(), &(tmpMg->mymols()),
                           opt.sii()->poldata(),

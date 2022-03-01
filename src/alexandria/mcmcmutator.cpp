@@ -51,15 +51,15 @@ void MCMCMutator::mutate(ga::Genome        *genome,
     sum.resize(nParam, 0);
     sum_of_sq.resize(nParam, 0);
 
-    std::vector<bool> changed;
-    // Initialize to true to make sure the parameters are 
-    // all spread around the processors.
-    changed.resize(nParam, true);
-    
-    sii_->updatePoldata(changed, genome);
+    // changed.resize(nParam, true);
+    // Update all parameters in poldata
+    sii_->updatePoldata(genome);
+    // Create and fill the changed vector
     // Now set them back to false, further spreading is done
     // one parameter at a time.
-    std::fill(changed.begin(), changed.end(), false);
+    // std::fill(changed.begin(), changed.end(), false);
+    std::vector<bool> changed;
+    changed.resize(nParam, false);
 
     if (sii_->xvgConv().empty() || sii_->xvgEpot().empty())
     {
@@ -429,10 +429,10 @@ void MCMCMutator::sensitivityAnalysis(ga::Genome *genome,
     {
         return;
     }
+    sii_->updatePoldata(genome);
+    // std::fill(changed.begin(), changed.end(), false);
     std::vector<bool> changed;
-    changed.resize(param->size(), true);
-    sii_->updatePoldata(changed, genome);
-    std::fill(changed.begin(), changed.end(), false);
+    changed.resize(param->size(), false);
     double chi2_0 = fitComp_->calcDeviation(param, CalcDev::Parallel, ims);
     if (logfile_)
     {
@@ -470,25 +470,6 @@ void MCMCMutator::sensitivityAnalysis(ga::Genome *genome,
     }
 
 }                                      
-
-void MCMCMutator::makeWorkDir()
-{
-    auto prefix = sii_->prefix();
-    if (!prefix.empty())
-    {
-        struct stat info;
-
-        if (stat(prefix.c_str(), &info ) == 0 && (info.st_mode & S_IFDIR))
-        {
-            printf( "%s is a directory already\n", prefix.c_str());
-        }
-        else
-        {
-            std::string command = gmx::formatString("mkdir %s", prefix.c_str());
-            system(command.c_str());
-        }
-    }
-}
 
 void MCMCMutator::openParamConvFiles(const gmx_output_env_t *oenv)
 {

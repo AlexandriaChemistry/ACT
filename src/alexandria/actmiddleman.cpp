@@ -50,7 +50,7 @@ ACTMiddleMan::ACTMiddleMan(MolGen               *mg,
     {
         // FIXME: we need to make some logfiles for the middlemen, because they apparently cannot write to the global logfile
         auto mut = new alexandria::MCMCMutator(nullptr, verbose, seed, bch, fitComp_, sii, bch->evaluateTestset());
-        mut->makeWorkDir();  // We need to call this before opening working files!
+        sii->makeIndividualDir();  // We need to call this before opening working files!
         mut->openParamConvFiles(oenv);
         mut->openChi2ConvFile(oenv);
         mutator_ = mut;
