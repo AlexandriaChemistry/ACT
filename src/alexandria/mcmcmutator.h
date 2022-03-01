@@ -186,9 +186,6 @@ public:
     void sensitivityAnalysis(ga::Genome *genome,
                              iMolSelect  ims);
 
-    //! \brief Create a working directory
-    void makeWorkDir();
-
     /*!
      * \brief Open parameter convergence files
      * \param[in] oenv the GROMACS output environment

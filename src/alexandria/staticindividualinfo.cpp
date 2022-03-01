@@ -108,6 +108,33 @@ void StaticIndividualInfo::updatePoldata(const std::vector<bool> &changed,
                                          n, changed.size()).c_str());
 }
 
+void StaticIndividualInfo::updatePoldata(const ga::Genome *genome)
+{
+    for (const auto &optIndex : optIndex())
+    {
+        auto iType = optIndex.iType();
+        ForceFieldParameter *p  = nullptr;
+        if (iType != InteractionType::CHARGE)
+        {
+            p = pd_.findForces(iType)->findParameterType(optIndex.id(), optIndex.parameterType());
+        }
+        else if (pd_.hasParticleType(optIndex.particleType()))
+        {
+            p = pd_.findParticleType(optIndex.particleType())->parameter(optIndex.parameterType());
+        }
+        GMX_RELEASE_ASSERT(p, gmx::formatString("Could not find parameter %s", optIndex.id().id().c_str()).c_str());
+        if (p)
+        {
+            p->setValue(genome->base(n));
+            // TODO fix the uncertainty
+            // p->setUncertainty(psigma_[n]);
+        }
+    }
+    GMX_RELEASE_ASSERT(n == changed.size(),
+                       gmx::formatString("n = %zu changed.size() = %zu",
+                                         n, changed.size()).c_str());
+}
+
 void StaticIndividualInfo::saveState(bool updateCheckSum)
 {
     pd_.updateTimeStamp();
@@ -385,6 +412,24 @@ void StaticIndividualInfo::setOutputFiles(const char                     *xvgcon
     xvgconv_.assign(xvgconv);
     paramClass_ = paramClass;
     xvgepot_.assign(xvgepot);
+}
+
+void StaticIndividualInfo::makeIndividualDir()
+{
+    if (!prefix_.empty())
+    {
+        struct stat info;
+
+        if (stat(prefix_.c_str(), &info ) == 0 && (info.st_mode & S_IFDIR))
+        {
+            printf("%s is a directory already\n", prefix_.c_str());
+        }
+        else
+        {
+            std::string command = gmx::formatString("mkdir %s", prefix_.c_str());
+            system(command.c_str());
+        }
+    }
 }
 
 /* * * * * * * * * * * * * * * * * * * * * *

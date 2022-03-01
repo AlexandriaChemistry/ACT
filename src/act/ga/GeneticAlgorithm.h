@@ -54,10 +54,6 @@ private:
     //! Checks if the evolution should continue or be terminated
     Terminator                   *terminator_   = nullptr;
 
-    // FIXME: Something could be done about generalizing the evolution.
-    // We could make all Individuals
-    // have their own parameter and fitness convergence files. 
-    // IDK if this makes sense...
 public:
 
     //! \brief Default constructor

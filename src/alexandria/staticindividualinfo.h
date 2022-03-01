@@ -128,6 +128,12 @@ public:
     void updatePoldata(const std::vector<bool> &changed,
                        const ga::Genome        *genome);
     
+    /*!
+     * \brief Copy the Force Field parameters to the Poldata structure
+     * \param[in] genome  The parameters in the current genome
+     */
+    void updatePoldata(const ga::Genome *genome);
+    
     /*! \brief Save the current state of the Force Field to the output file
      * \param[in] updateCheckSum If true, the checksum is updated, typically
      *                           this should only be done at the end of a run
@@ -284,6 +290,9 @@ public:
     void setOutputFiles(const char                     *xvgconv,
                         const std::vector<std::string> &paramClass,
                         const char                     *xvgepot);
+
+    //! \brief Create a working directory for the local individual
+    void makeIndividualDir();
 
     //! \return the output file prefix
     const std::string &prefix() const { return prefix_; }
