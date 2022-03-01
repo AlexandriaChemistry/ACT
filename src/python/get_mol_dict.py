@@ -5,7 +5,8 @@
 try:
     import openbabel as ob
 except:
-    print("OpenBabel not found. Proceed at your own risk")
+    print("OpenBabel not found. Check your PYTHONPATH environment variable.")
+    print("Proceed at your own risk")
 import os, sys
 from gaff_to_alexandria import *
 

@@ -200,8 +200,8 @@ static void print_lsq_sets(FILE *fp, const std::vector<gmx_stats> &lsq)
         }
     }
     
-    fprintf(fp, "@type xy\n");
-    for(size_t i = 0; i < lsq.size(); i++)
+    fprintf(fp, "@type nxy\n");
+    for(size_t i = 0; i < x[0].size(); i++)
     {
         fprintf(fp, "%10g", x[0][i]);
         for(size_t j = 0; j < lsq.size(); j++)
@@ -338,12 +338,12 @@ static void analyse_multipoles(FILE                                             
     }
 }
 
-static void print_corr(const char                         *outfile,
-                       const char                         *title,
-                       const char                         *xaxis,
-                       const char                         *yaxis, 
-                       std::map<iMolSelect, std::map<qType, gmx_stats> > &stats,
-                       const gmx_output_env_t             *oenv)
+static void print_corr(const char                    *outfile,
+                       const char                    *title,
+                       const char                    *xaxis,
+                       const char                    *yaxis, 
+                       std::map<iMolSelect, qtStats> &stats,
+                       const gmx_output_env_t        *oenv)
 {
     std::vector<std::string> eprnm;
     std::vector<gmx_stats>   lsq;
@@ -756,7 +756,8 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
     for(auto &mpo : mpoMultiPoles)
     {
         std::string cmdFlag = gmx::formatString("-%scorr", mpo_name(mpo));
-        std::string title   = gmx::formatString("%s components %s", mpo_name(mpo), mpo_unit2(mpo));
+        std::string title   = gmx::formatString("%s components %s", mpo_name(mpo),
+                                                mpo_unit2(mpo));
         print_corr(opt2fn(cmdFlag.c_str(), filenm.size(), filenm.data()),
                    title.c_str(), "Electronic", "Empirical", lsq_multi[mpo], oenv);
     }
