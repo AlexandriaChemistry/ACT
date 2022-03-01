@@ -41,14 +41,9 @@
 #include "gromacs/utility/coolstuff.h"
 
 #include "act/molprop/molprop_util.h"
-<<<<<<< HEAD
 #include "act/molprop/multipole_names.h"
 #include "mymol.h"
 #include "act/qgen/qtype.h"
-=======
-#include "mymol.h"
-#include "qtype.h"
->>>>>>> 076e57a5842391e59bfcd72c911ca78116b0a76d
 #include "act/utility/units.h"
 
 void doAddOptions(std::vector<t_pargs> *pargs, size_t npa, t_pargs pa[])
