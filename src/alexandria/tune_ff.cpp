@@ -398,7 +398,7 @@ int tune_ff(int argc, char *argv[])
     static const char          *desc[] = {
         "tune_ff read a series of molecules and corresponding physicochemical",
         "properties from a file. The properties can either originate from",
-        "experimental data or from quantum chemistry calculitions.",
+        "experimental data or from quantum chemistry calculations.",
         "The program then tunes empirical force field parameters using",
         "one of a series of algorithms",
         "until the experimental properties are reproduced reasonably.",
