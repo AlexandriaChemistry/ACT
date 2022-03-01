@@ -247,9 +247,9 @@ static void print_polarizability(FILE              *fp,
             diso_pol   = fac*std::abs(mol->PolarizabilityDeviation());
             daniso_pol = fac*std::abs(mol->AnisoPolarizabilityDeviation());
             fprintf(fp,
-                    "%-4s (%6.2f %6.2f %6.2f) Dev: (%6.2f %6.2f %6.2f) Delta: %6.2f %s\n"
-                    "     (%6s %6.2f %6.2f)      (%6s %6.2f %6.2f)\n"
-                    "     (%6s %6s %6.2f)      (%6s %6s %6.2f)\n",
+                    "%-12s (%6.2f %6.2f %6.2f) Dev: (%6.2f %6.2f %6.2f) Delta: %6.2f %s\n"
+                    "             (%6s %6.2f %6.2f)      (%6s %6.2f %6.2f)\n"
+                    "             (%6s %6s %6.2f)      (%6s %6s %6.2f)\n",
                     calc_name.c_str(),
                     fac*mol->alpha_calc()[XX][XX], fac*mol->alpha_calc()[XX][YY], fac*mol->alpha_calc()[XX][ZZ],
                     fac*dalpha[XX][XX], fac*dalpha[XX][YY], fac*dalpha[XX][ZZ], delta, (delta > alpha_toler) ? "ALPHA" : "",
