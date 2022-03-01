@@ -35,17 +35,22 @@ class AtomicHOF:
         rows = get_csv_rows(datafile, 9)
         self.ahof = {}
         for row in rows:
-            if ((row[2] == "exp" or row[2] == self.method) and 
-                (float(row[4]) == 0 or abs(float(row[4])-self.temperature) <= 1e-2)):
-                akey = row[0]+"|"+row[1]
-                if not akey in self.ahof:
-                    self.ahof[akey] = []
-                self.ahof[akey].append({ "Method": row[2],
-                                         "Desc": row[3],
-                                         "Temp": float(row[4]),
-                                         "Value": float(row[5]),
-                                         "Multiplicity": row[6] , 
-                                         "Unit": row[7]})
+            try:
+                mytemp = float(row[4])
+                if ((row[2] == "exp" or row[2] == self.method) and 
+                    (mytemp == 0 or abs(mytemp-self.temperature) <= 1e-2)):
+                    akey = row[0]+"|"+row[1]
+                    if not akey in self.ahof:
+                        self.ahof[akey] = []
+                    self.ahof[akey].append({ "Method": row[2],
+                                             "Desc": row[3],
+                                             "Temp": float(row[4]),
+                                             "Value": float(row[5]),
+                                             "Multiplicity": row[6] , 
+                                             "Unit": row[7]})
+            except ValueError:
+                print("It seems that '%s' is not a number" % row[4])
+        
 
     def get(self, elem, temp):
         # Assume zero charge

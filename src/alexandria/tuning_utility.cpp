@@ -98,7 +98,6 @@ public:
     }
 };
 
-
 static void print_stats(FILE        *fp,
                         const char  *prop,
                         const char  *unit,
@@ -124,7 +123,7 @@ static void print_stats(FILE        *fp,
         if (bHeader)
         {
             fprintf(fp, "Fitting data to y = ax + b, where x = %s\n", xaxis);
-            fprintf(fp, "%-26s %6s %13s %13s %7s %8s %8s %8s %10s\n",
+            fprintf(fp, "%-32s %6s %13s %13s %7s %8s %8s %8s %10s\n",
                     "Property", "N", "a", "b", "R(%)", "RMSD", "MSE", "MAE", "Model");
             fprintf(fp, "------------------------------------------------------------------------------------------------\n");
         }
@@ -139,9 +138,9 @@ static void print_stats(FILE        *fp,
         }
         if (eStats::OK == ok)
         {
-            fprintf(fp, "%-26s %6d %6.3f(%5.3f) %6.3f(%5.3f) %7.2f %8.4f %8.4f %8.4f %10s\n",
-                    newprop.c_str(), n, conversion*a, conversion*da, 
-                    conversion*b, conversion*b, Rfit*100, 
+            fprintf(fp, "%-32s %6d %6.3f(%5.3f) %6.3f(%5.3f) %7.2f %8.4f %8.4f %8.4f %10s\n",
+                    newprop.c_str(), n, a, da, 
+                    b, db, Rfit*100, 
                     conversion*rmsd, conversion*mse, 
                     conversion*mae, yaxis);
         }
@@ -155,7 +154,7 @@ static void print_stats(FILE        *fp,
         if (bHeader)
         {
             fprintf(fp, "Fitting data to y = ax, where x = %s\n", xaxis);
-            fprintf(fp, "%-26s %6s %13s %7s %8s %8s %8s %10s\n",
+            fprintf(fp, "%-32s %6s %13s %7s %8s %8s %8s %10s\n",
                     "Property", "N", "a", "R(%)", "RMSD", "MSE", "MAE", "Model");
             fprintf(fp, "----------------------------------------------------------------------------------------------\n");
         }
@@ -170,8 +169,8 @@ static void print_stats(FILE        *fp,
         }
         if (eStats::OK == ok)
         {
-            fprintf(fp, "%-26s %6d %6.3f(%5.3f) %7.2f %8.4f %8.4f %8.4f %10s\n",
-                    newprop.c_str(), n, conversion*a, conversion*da, Rfit*100,
+            fprintf(fp, "%-32s %6d %6.3f(%5.3f) %7.2f %8.4f %8.4f %8.4f %10s\n",
+                    newprop.c_str(), n, a, da, Rfit*100,
                     conversion*rmsd, conversion*mse, conversion*mae, yaxis);
         }
         else
@@ -740,8 +739,8 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
             }
             if (bPolar && qt == qType::Calc)
             {
-                auto polunit = gromacsUnit("Angstrom3");
-                auto polfactor = convertFromGromacs(1.0, "Angstrom3");
+                std::string polunit("Angstrom3");
+                auto polfactor = convertFromGromacs(1.0, polunit);
                 print_stats(fp, "Polariz. components", polunit.c_str(), polfactor,
                             &lsq_alpha[ims.first][qType::Calc],    header, "Electronic", name, useOffset_);
                 print_stats(fp, "Isotropic Polariz.", polunit.c_str(), polfactor,
