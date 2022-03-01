@@ -41,9 +41,14 @@
 #include "gromacs/utility/coolstuff.h"
 
 #include "act/molprop/molprop_util.h"
+<<<<<<< HEAD
 #include "act/molprop/multipole_names.h"
 #include "mymol.h"
 #include "act/qgen/qtype.h"
+=======
+#include "mymol.h"
+#include "qtype.h"
+>>>>>>> 076e57a5842391e59bfcd72c911ca78116b0a76d
 #include "act/utility/units.h"
 
 void doAddOptions(std::vector<t_pargs> *pargs, size_t npa, t_pargs pa[])
@@ -285,10 +290,10 @@ static void print_polarizability(FILE              *fp,
     }
 }
 
-static void analyse_multipoles(FILE                                                     *fp,
-                               const std::vector<alexandria::MyMol>::iterator           &mol,
-                               std::map<MolPropObservable, double>                       toler,
-                               std::map<MolPropObservable, std::map<iMolSelect, std::map<qType, gmx_stats> > > *lsq)
+static void analyse_multipoles(FILE                                                        *fp,
+                               const std::vector<alexandria::MyMol>::iterator              &mol,
+                               std::map<MolPropObservable, double>                          toler,
+                               std::map<MolPropObservable, std::map<iMolSelect, qtStats> > *lsq)
 {
     auto qelec = mol->qTypeProps(qType::Elec);
     auto qcalc = mol->qTypeProps(qType::Calc);
@@ -323,14 +328,15 @@ static void analyse_multipoles(FILE                                             
                     delta += gmx::square(diff[diff.size()-1]);
                     (*lsq)[mpo][mol->datasetType()][qt].add_point(Telec[i], Tcalc[i], 0, 0);
                 }
-                double rms = std::sqrt(delta/Tcalc.size());
+                double rms = convertFromGromacs(std::sqrt(delta/Tcalc.size()), mpo_unit2(mpo));
                 std::string flag("");
                 if (rms > toler[mpo])
                 {
                     flag = " XXX";
                 }
-                fprintf(fp, "Difference %s RMS = %g (%s)%s:\n",
-                        mpo_name(mpo), rms, mpo_unit2(mpo), flag.c_str());
+                fprintf(fp, "Difference %s Norm %g RMS = %g (%s)%s:\n",
+                        mpo_name(mpo), convertFromGromacs(std::sqrt(delta), mpo_unit2(mpo)),
+                        rms, mpo_unit2(mpo), flag.c_str());
                 printMultipole(fp, mpo, diff);
             }
         }
