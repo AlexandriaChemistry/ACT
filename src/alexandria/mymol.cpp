@@ -689,8 +689,6 @@ static void UpdateIdefEntry(const ForceFieldParameterList &fs,
         break;
     case F_LINEAR_ANGLES:
         {
-            // TODO: Check whether this is still needed!
-            //double relative_position = calc_relposition(pd, atoms[0], atoms[1], atoms[2]);
             auto fp = fs.findParameterTypeConst(bondId, "a");
             myval = convertToGromacs(fp.value(), fp.unit());
             mtop->ffparams.iparams[gromacsType].linangle.aA         =

@@ -305,7 +305,36 @@ static real calc_r13(const Poldata    *pd,
     }
     return 0.0;
 }
-  
+
+
+/*! \brief Compute geometry parameters for linear angles
+ * \param[in]  pd       Force field
+ * \param[in]  bondId   Identifier corresponding to angle, i.e. three atoms
+ * \param[out] alin     The constant determining the center of the bond
+ * \param[out] sigmalin The uncertainty in alin.
+ */
+static void calc_linear_angle_a(const Poldata    *pd,
+                                const Identifier &bondId,
+                                double           *alin,
+                                double           *sigmalin)
+{
+    auto atoms      = bondId.atoms();
+    auto bondOrders = bondId.bondOrders();
+    auto bij = Identifier({atoms[0], atoms[1]}, {bondOrders[0]}, CanSwap::Yes);
+    auto bjk = Identifier({atoms[1], atoms[2]}, {bondOrders[0]}, CanSwap::Yes);
+    auto fs  = pd->findForcesConst(InteractionType::BONDS);
+    if (!fs.parameterExists(bij) || !fs.parameterExists(bjk))
+    {
+        GMX_THROW(gmx::InternalError(gmx::formatString("Cannot find bond %s or %s in force field", bij.id().c_str(), bjk.id().c_str()).c_str()));
+    }
+    std::string blen("bondlength");
+    auto pij = fs.findParameterTypeConst(bij, blen);
+    auto pjk = fs.findParameterTypeConst(bjk, blen);
+    *alin = pjk.value()/(pij.value()+pjk.value());
+    *sigmalin = std::sqrt(gmx::square(pij.uncertainty())+
+                          gmx::square(pjk.uncertainty()));
+}
+
 void AllBondeds::updatePoldata(FILE    *fp,
                                Poldata *pd)
 {
@@ -376,12 +405,11 @@ void AllBondeds::updatePoldata(FILE    *fp,
                 break;
             case InteractionType::LINEAR_ANGLES:
                 {
-                    av = 180;
-                    round_numbers(&av, &sig, 1000000);
-                    // TODO Fix the parameters to be correct!
-                    double myfactor = 0.99;
+                    double alin, sigmalin, myfactor = 0.99;
+                    
+                    calc_linear_angle_a(pd, bondId, &alin, &sigmalin);
                     fs->addParameter(bondId, "a",
-                                     ForceFieldParameter("", av, sig, N, av*myfactor, av/myfactor, Mutability::Bounded, false, true));
+                                     ForceFieldParameter("", alin, sigmalin, N, alin*myfactor, alin/myfactor, Mutability::Bounded, false, true));
                     fs->addParameter(bondId, "klin", 
                                      ForceFieldParameter("kJ/mol/nm2", klin_, 0, 1, klin_*factor_, klin_/factor_, Mutability::Bounded, false, true));
                     
