@@ -941,6 +941,11 @@ immStatus MyMol::GenerateTopology(FILE              *fp,
     }
     if (immStatus::OK == imm)
     {
+        qProps_.insert(std::pair<qType, QtypeProps>(qType::Calc, QtypeProps(qType::Calc)));
+        qProps_.insert(std::pair<qType, QtypeProps>(qType::Elec, QtypeProps(qType::Elec)));
+    }
+    if (immStatus::OK == imm)
+    {
         /* Center of charge */
         auto atntot = 0;
         rvec coc    = { 0 };
@@ -1023,11 +1028,6 @@ immStatus MyMol::GenerateTopology(FILE              *fp,
         {
             fprintf(debug, "%s\n", emsg.c_str());
         }
-    }
-    if (immStatus::OK == imm)
-    {
-        qProps_.insert(std::pair<qType, QtypeProps>(qType::Calc, QtypeProps(qType::Calc)));
-        qProps_.insert(std::pair<qType, QtypeProps>(qType::Elec, QtypeProps(qType::Elec)));
     }
     return imm;
 }
