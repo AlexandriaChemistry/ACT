@@ -178,12 +178,12 @@ def interpret_gauss(content:list, infile:str,
         elif line.find("Exact polarizability") >= 0:
             words = line.split()
             if len(words) == 8:
-                average = (float(words[2])+float(words[3])+float(words[4]))/3
+                average = (float(words[2])+float(words[4])+float(words[7]))/3
                 exper.polarisability.clear()
                 exper.add_polarisability(qmtype, "Bohr3", temperature, 
                                          average, 0.0, 
-                                         words[2], words[3], words[4],
-                                         words[5], words[6], words[7])
+                                         words[2], words[4], words[7],
+                                         words[3], words[5], words[6])
         elif line.find("Atomic Center") >= 0:
             words     = line.split()
             mywords   = [ None, None, None, None ]

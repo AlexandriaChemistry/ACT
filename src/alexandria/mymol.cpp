@@ -1905,6 +1905,8 @@ immStatus MyMol::CalcPolarizability(double                     efield,
         GMX_THROW(gmx::InternalError("No dipole to compute."));
     }
     auto mu_ref = qtp.getMultipole(mpo);
+    // Convert from e nm2/V to cubic nm
+    double enm2_V = E_CHARGE*1e6*1e-18/(4*M_PI*EPSILON0_SI)*1e21;
     for (auto m = 0; imm == immStatus::OK && m < DIM; m++)
     {
         field[m] = efield;
@@ -1919,7 +1921,7 @@ immStatus MyMol::CalcPolarizability(double                     efield,
             auto qmu = qtp.getMultipole(mpo);
             for (auto n = 0; n < DIM; n++)
             {
-                alpha_calc_[n][m] = ((qmu[n]-mu_ref[n])/efield);
+                alpha_calc_[n][m] = enm2_V*((qmu[n]-mu_ref[n])/efield);
             }
             isoPol_calc_ += alpha_calc_[m][m]/DIM;
         }

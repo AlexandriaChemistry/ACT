@@ -869,7 +869,7 @@ static void add_exper_properties(xmlNodePtr                    exp,
                         add_xml_child_val(child, rmap[MolPropXml::qYY], gmx_ftoa(fac*mq[YY][YY]).c_str());
                         add_xml_child_val(child, rmap[MolPropXml::qZZ], gmx_ftoa(fac*mq[ZZ][ZZ]).c_str());
                         add_xml_child_val(child, rmap[MolPropXml::qXY], gmx_ftoa(fac*mq[XX][YY]).c_str());
-                        add_xml_child_val(child, rmap[MolPropXml::qXZ], gmx_ftoa(fac*mq[XX][YY]).c_str());
+                        add_xml_child_val(child, rmap[MolPropXml::qXZ], gmx_ftoa(fac*mq[XX][ZZ]).c_str());
                         add_xml_child_val(child, rmap[MolPropXml::qYZ], gmx_ftoa(fac*mq[YY][ZZ]).c_str());
                     }
                     break;

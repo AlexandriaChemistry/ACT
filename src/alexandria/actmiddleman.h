@@ -57,7 +57,11 @@ namespace alexandria
                      gmx_output_env_t     *oenv);
         
         //! \brief Run the middleman process
-        void run();    
+        void run();
+
+        //! Print the MCMC statistics if appropriate
+        void printStatistics(FILE *logFile);
+
     };
     
 } // namespace alexandria

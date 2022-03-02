@@ -99,17 +99,18 @@ void ACTMiddleMan::run()
         }
     }
     while (CommunicationStatus::RECV_DATA == cont);
-    // TODO: Print Monte Carlo statistics if necessary
-    // FIXME: in HYBRID this won't be correct
-    // FIXME: do this in MASTER too
-    // if (gach_->optimizer() != OptimizerAlg::GA)
-    // {
-    //     fprintf(logFile_, "Middle man %i\n", id_);
-    //     static_cast<MCMCMutator *>(mutator_)->printMonteCarloStatistics(logFile_, ind_->initialGenome(),
-    //                                                                     ind_->bestGenome());
-    // }
     // Stop my helpers too.
     stopHelpers();
+}
+
+void ACTMiddleMan::printStatistics(FILE *logFile)
+{
+   if (gach_->optimizer() == OptimizerAlg::MCMC && logFile)
+   {       
+       fprintf(logFile, "Middle man %i\n", id_);
+       static_cast<MCMCMutator *>(mutator_)->printMonteCarloStatistics(logFile, ind_->initialGenome(),
+                                                                       ind_->bestGenome());
+   }
 }
 
 void ACTMiddleMan::stopHelpers()

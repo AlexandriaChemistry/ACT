@@ -236,7 +236,7 @@ static void print_polarizability(FILE              *fp,
     real   diso_pol   = 0;
     real   daniso_pol = 0;
 
-    double fac = convertFromGromacs(1.0, mpo_unit2(MolPropObservable::POLARIZABILITY));
+    double fac = convertFromGromacs(1.0, "Angstrom3");
     if (!calc_name.empty())
     {
         if (calc_name == qTypeName(qType::Calc))
