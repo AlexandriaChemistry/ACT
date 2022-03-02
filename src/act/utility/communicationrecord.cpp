@@ -61,6 +61,10 @@ CommunicationRecord::CommunicationRecord()
     mpi_act_world_ = cr_->mpi_comm_mysim;
     rank_          = cr_->nodeid;
     size_          = cr_->nnodes;
+    if (rank_ == 0)
+    {
+        nt_ = NodeType::Master;
+    }
 }
 
 void CommunicationRecord::print(FILE *fp)
@@ -127,7 +131,7 @@ void CommunicationRecord::init(int nmiddleman)
     // Select the node type etc.
     if (rank_ == 0)  // If I am the MASTER
     {
-        nt_ = NodeType::Master;
+        // nt_ = NodeType::Master;  ALREADY DONE IN THE CONSTRUCTOR!
 
         // Not updating superior_ from the default value. If it is
         // used for communication the program will crash, since

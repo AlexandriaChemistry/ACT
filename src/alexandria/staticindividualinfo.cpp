@@ -67,7 +67,7 @@ void StaticIndividualInfo::fillPoldata(      FILE *fp,
         print_memory_usage(debug);
     }
     /* Broadcasting Force Field Data from Master to Helper nodes */
-    if (cr_->isParallel())
+    if (cr_->isParallelCalc())
     {
         pd_.sendToHelpers(cr_);
     }
@@ -161,8 +161,8 @@ void StaticIndividualInfo::saveState(bool updateCheckSum)
 void StaticIndividualInfo::sumChiSquared(bool             parallel,
                                          iMolSelect       ims)
 {
-    // Now sum over processors, except the master!
-    if (cr_->isParallel() && parallel)
+    // Now sum over processors, except the master/middleman!
+    if (cr_->isParallelCalc() && parallel)
     {
         for (auto &ft : targets_[ims])
         {

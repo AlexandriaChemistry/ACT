@@ -100,7 +100,7 @@ public:
     //! \brief Destructor is needed to get rid of commrec
     ~CommunicationRecord();
 
-    /*! \brief Initiate the internal data  once and for all.
+    /*! \brief Initiate the internal data once and for all.
      * Only constant data can be extracted from this.
      * \param[in] nmiddlemen The number of middlemen. Knowing the total 
      *                       number of cores is then sufficient to derive
@@ -115,7 +115,10 @@ public:
     int size() const { return size_; }
     
     //! \return whether this is a parallel calculation
-    bool isParallel() const { return size_ > 0; }
+    bool isParallelCalc() const { return nhelper_per_middleman_ > 0; }
+
+    //! \return whether there is more than one processor
+    bool isParallel() const { return size_ > 1; }
     
     //! \return my helper nodes, or empty vector if none
     const std::vector<int> &helpers() const { return helpers_; }

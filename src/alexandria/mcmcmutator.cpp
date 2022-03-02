@@ -245,7 +245,7 @@ void MCMCMutator::stepMCMC(ga::Genome                   *genome,
     (*changed)[paramIndex] = false;
 
     printParameterStep(genome, xiter);
-    printChi2Step(currEval, xiter);
+    printChi2Step(*prevEval, xiter);
 }                  
 
 void MCMCMutator::computeMeanSigma(const std::vector<double>    &sum,
@@ -359,7 +359,6 @@ void MCMCMutator::printParameterStep(ga::Genome *genome,
         // Write iteration number to each parameter convergence 
         // surveillance file
         for (auto &fp: fpc_) 
-            
         {
             if (fp.get())
             {
