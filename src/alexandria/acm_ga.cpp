@@ -102,6 +102,11 @@ bool MCMC::evolve(ga::Genome *bestGenome)
                               logFile_);
             *bestGenome = pool.genome(newBest); 
             bestGenome->print("New best:\n", logFile_);
+            fprintf(logFile_, "\nMCMC Statistics for the master node only\n");
+            auto mymut = reinterpret_cast<alexandria::MCMCMutator *>(mutator());
+            mymut->printMonteCarloStatistics(logFile_, ind->initialGenome(),
+                                             *bestGenome);
+
             bMinimum = true;
         }
     }
