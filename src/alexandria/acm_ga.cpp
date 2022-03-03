@@ -13,11 +13,6 @@ namespace ga
 
 bool MCMC::evolve(ga::Genome *bestGenome)
 {
-    // if (populationSize() != 1)
-    // {
-    //     fprintf(stderr, "MCMC needs to have exactly one individual!\n");
-    //     return false;
-    // }
     if (sii_->nParam() < 1)
     {
         fprintf(stderr, "Cannot evolve a chromosome without genes.\n");
@@ -36,9 +31,12 @@ bool MCMC::evolve(ga::Genome *bestGenome)
     // Receive initial genomes from middlemen
     for (auto &src : cr->middlemen())
     {
-        ga::Genome genome;
-        genome.Receive(cr, src);
-        pool.addGenome(genome);
+        if (src != cr->rank())
+        {
+            ga::Genome genome;
+            genome.Receive(cr, src);
+            pool.addGenome(genome);
+        }
     }
     GMX_RELEASE_ASSERT(static_cast<int>(pool.popSize()) == gach_->popSize(),
                        "The initial population does not match the specified population size...");
