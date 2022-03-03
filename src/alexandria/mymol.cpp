@@ -924,18 +924,23 @@ immStatus MyMol::GenerateTopology(FILE              *fp,
     {
         topology_ = new Topology(bondsConst());
     }
-    // Check whether we have dihedrals in the force field.
-    bool bDih = false;
-    if (pd->interactionPresent(InteractionType::PROPER_DIHEDRALS))
-    {
-        bDih = !pd->findForcesConst(InteractionType::PROPER_DIHEDRALS).empty();
-    }
     
     if (immStatus::OK == imm)
     {
         topology_->makeAngles(state_->x, 175.0);
         topology_->makeImpropers(state_->x, 5.0);
-        topology_->makePropers();
+        // Check whether we have dihedrals in the force field.
+        if (pd->interactionPresent(InteractionType::PROPER_DIHEDRALS) &&
+            !pd->findForcesConst(InteractionType::PROPER_DIHEDRALS).empty())
+        {
+            topology_->makePropers();
+        }
+        // Check whether we have virtual sites in the force field.
+        if (pd->interactionPresent(InteractionType::VSITE2) &&
+            !pd->findForcesConst(InteractionType::VSITE2).empty())
+        {
+            topology_->makeVsite2s(pd->findForcesConst(InteractionType::VSITE2));
+        }
     }
     if (immStatus::OK == imm)
     {

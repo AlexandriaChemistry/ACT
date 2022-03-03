@@ -825,8 +825,8 @@ static void add_exper_properties(xmlNodePtr                    exp,
                 {
                     double average = prop->getValue();
                     double error   = prop->getError();
-                    child = add_xml_child_val(exp, rmap[MolPropXml::ENERGY], gmx_ftoa(average).c_str());
-                    add_xml_string(child, rmap[MolPropXml::TYPE], prop->getType());
+                    child = add_xml_child(exp, rmap[MolPropXml::ENERGY]); //, gmx_ftoa(average).c_str());
+                    add_xml_string(child, rmap[MolPropXml::TYPE], mpo_name(mpo));
                     add_xml_string(child, rmap[MolPropXml::UNIT], outUnit);
                     add_xml_double(child, rmap[MolPropXml::TEMPERATURE], prop->getTemperature());
                     add_xml_string(child, rmap[MolPropXml::PHASE], phase2string(prop->getPhase()));

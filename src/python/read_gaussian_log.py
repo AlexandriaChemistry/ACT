@@ -13,8 +13,9 @@ def method_basis(ww: str):
     if len(ww) >= 3:
         elem = ww.split("/")
         if len(elem) == 2:
-            return elem[0], elem[1]
-    return "", ""
+            return elem[0], elem[1], "OEP"
+    else:
+        return ww, ww, ww
 
 def matrix_op(matrix: list, vector: list)->list:
     result = [ 0.0, 0.0, 0.0 ]
@@ -75,7 +76,7 @@ def interpret_gauss(content:list, infile:str,
     # Default stuff
     author       = "Spoel2022a"
     conformation = "minimum"
-    jobtype      = "OEP"
+    jobtype      = None
     temperature  = 0
     qmtype       = "electronic"
     # New compound
@@ -99,7 +100,7 @@ def interpret_gauss(content:list, infile:str,
         if line.find("Revision") > 0:
             program = line
         elif line.find("#P") >= 0 and not exper:
-            method, basis = method_basis(line.split()[1])
+            method, basis, jobtype = method_basis(line.split()[1])
             if len(basisset) > 0:
                 basis = basisset
             exper = Experiment("Theory", author, program, method, basis,

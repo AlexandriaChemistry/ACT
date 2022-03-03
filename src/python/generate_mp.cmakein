@@ -82,9 +82,6 @@ def get_mols(M, whitelist, ahlist, output):
   return mols
 
 def build_one(logfile, datafile, maxpot, molname, basisset, jobtype):
-  flag = "-g03"
-  if logfile[-3:] == "sdf":
-    flag = "-sdf"
   if not os.path.exists(datafile):
     mp = read_gaussian_log(logfile, molname, basisset, False)
     if mp:

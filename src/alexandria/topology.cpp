@@ -478,6 +478,11 @@ void Topology::makePropers()
     }
 }
 
+void Topology::makeVsite2s(const ForceFieldParameterList &vsite2)
+{
+    gmx_fatal(FARGS, "Vsite2 not implemented yet");
+}
+
 void Topology::renumberAtoms(const std::vector<int> &renumber)
 {
     for(auto &myEntry: entries_)

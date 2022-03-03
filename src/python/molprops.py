@@ -261,8 +261,9 @@ class Experiment:
         eFactor   = UnitToConversionFactor("Hartree")
         Rgas      = 1.9872041*UnitToConversionFactor("kcal/mol")
         S0MT      = 0
+        kilo      = 1000
         if tcmap["Temp"] > 0:
-            S0MT += 1000*eFactor*(tcmap["Hcorr"]-tcmap["Gcorr"])/tcmap["Temp"]
+            S0MT += kilo*eFactor*(tcmap["Hcorr"]-tcmap["Gcorr"])/tcmap["Temp"]
         Srot    = -Rgas*math.log(float(tcmap["RotSymNum"]))
         if tcmap["RotSymNum"] > 1:
             Srot = 0
@@ -283,16 +284,18 @@ class Experiment:
             else:
                 print("Could not get atomization energies")
         # Final results, please check values and units!
+        myT = float(tcmap["Temp"])
         self.add_energy("ZPE", "kJ/mol", 0, "gas", tcmap["Ezpe"])
         self.add_energy("CV", "J/mol K", 0, "gas", tcmap["CV"])
         self.add_energy("CP", "J/mol K", 0, "gas", Rgas+tcmap["CV"])
-        self.add_energy("DeltaHform", "kJ/mol", 298.15, "gas", dhofMT)
+        self.add_energy("DeltaHform", "kJ/mol", myT, "gas", dhofMT)
+        self.add_energy("DeltaGform", "kJ/mol", myT, "gas", dhofMT-myT*DeltaSMT/kilo)
         self.add_energy("DeltaHform", "kJ/mol", 0, "gas", dhofM0)
-        self.add_energy("TDeltaS", "J/mol K", 298.15, "gas", DeltaSMT)
+        self.add_energy("DeltaSform", "J/mol K", myT, "gas", DeltaSMT)
         Scomps = [ "Strans", "Srot", "Svib" ]
         if len(tcmap["Scomponent"]) == len(Scomps):
             for i in range(len(Scomps)):
-                self.add_energy(Scomps[i], "J/mol K", 298.15, "gas", tcmap["Scomponent"][i])
+                self.add_energy(Scomps[i], "J/mol K", myT, "gas", tcmap["Scomponent"][i])
 
 
     

@@ -38,6 +38,7 @@
 
 #include "gromacs/gpu_utils/hostallocator.h"
 
+#include "act/poldata/forcefieldparameterlist.h"
 #include "act/utility/communicationrecord.h"
 #include "act/basics/identifier.h"
 
@@ -370,6 +371,10 @@ private:
     /*! Generate the proper dihedrals
      */
     void makePropers();
+
+    /*! Generate virtual sites for bonds
+     */
+    void makeVsite2s(const ForceFieldParameterList &vsite2);
 
     //! @copydoc Bond::renumberAtoms
     void renumberAtoms(const std::vector<int> &renumber);
