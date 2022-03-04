@@ -64,7 +64,7 @@ def plot_fitness(data: np.ndarray, dataset: str, args: SimpleNamespace) -> None:
     if 'median' not in hide_lowercase:
         ax.plot(gen_vector, median, color='C3', label="median")
 
-    ax.set_ylim([args.ymin, args.ymax])
+    ax.set_ylim([np.max(0.0, args.ymin), args.ymax])
     
     ax.legend(loc='upper right')
 
