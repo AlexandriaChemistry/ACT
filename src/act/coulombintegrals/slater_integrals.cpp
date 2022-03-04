@@ -387,23 +387,23 @@ double DNuclear_3S(double r, double xi)
 
 typedef double t_slater_SS_func (double r, double xi, double xj);
 typedef double t_slater_NS_func (double r, double xi);
-t_slater_SS_func (*Slater_SS[SLATER_MAX][SLATER_MAX]) = {
+t_slater_SS_func *Slater_SS[SLATER_MAX][SLATER_MAX] = {
     {  Slater_1S_1S,  Slater_1S_2S,  Slater_1S_3S},
     {  Slater_2S_1S,  Slater_2S_2S,  Slater_2S_3S},
     {  Slater_3S_1S,  Slater_3S_2S,  Slater_3S_3S}
 };
 
-t_slater_SS_func (*DSlater_SS[SLATER_MAX][SLATER_MAX]) = {
+t_slater_SS_func *DSlater_SS[SLATER_MAX][SLATER_MAX] = {
     {  DSlater_1S_1S,  DSlater_1S_2S,  DSlater_1S_3S},
     {  DSlater_2S_1S,  DSlater_2S_2S,  DSlater_2S_3S},
     {  DSlater_3S_1S,  DSlater_3S_2S,  DSlater_3S_3S}
 };
 
-t_slater_NS_func (*Slater_NS[SLATER_MAX]) = {
+t_slater_NS_func *Slater_NS[SLATER_MAX] = {
     Nuclear_1S,  Nuclear_2S,  Nuclear_3S
 };
 
-t_slater_NS_func (*DSlater_NS[SLATER_MAX]) = {
+t_slater_NS_func *DSlater_NS[SLATER_MAX] = {
     DNuclear_1S,  DNuclear_2S,  DNuclear_3S
 };
 
