@@ -1367,7 +1367,7 @@ real MyMol::potentialEnergy() const
     return enerd_->term[F_EPOT];
 }
 
-immStatus MyMol::computeForces(FILE *fplog, double *rmsf)
+immStatus MyMol::computeForces(double *rmsf)
 {
     auto mdatoms = MDatoms_->get()->mdatoms();
     auto atoms   = atomsConst();
@@ -1443,27 +1443,27 @@ immStatus MyMol::computeForces(FILE *fplog, double *rmsf)
             imm = immStatus::ShellMinimization;
         }
         *rmsf = std::sqrt(force2);
-        if (force2 > inputrec_->em_tol && fplog)
+        if (force2 > inputrec_->em_tol && debug)
         {
             for (int i = 0;  i<F_NRE; i++)
             {
                 auto ei = enerd_->term[i];
                 if (ei != 0)
                 {
-                    fprintf(fplog, "E[%s] = %g\n", interaction_function[i].name,
+                    fprintf(debug, "E[%s] = %g\n", interaction_function[i].name,
                             ei);
                 }
             }
-            fprintf(fplog, "Shell minimization did not converge in %d steps for %s. RMS Force = %g.\n",
+            fprintf(debug, "Shell minimization did not converge in %d steps for %s. RMS Force = %g.\n",
                     inputrec_->niter, getMolname().c_str(),
                     *rmsf);
-            pr_rvecs(fplog, 0, "f", f_.rvec_array(), mtop_->natoms);
+            pr_rvecs(debug, 0, "f", f_.rvec_array(), mtop_->natoms);
             imm = immStatus::ShellMinimization;
         }
     }
     else
     {
-        do_force(fplog, crtmp, nullptr, inputrec_, 0,
+        do_force(debug, crtmp, nullptr, inputrec_, 0,
                  &nrnb_, wcycle_, ltop_,
                  &(mtop_->groups),
                  state_->box, state_->x.arrayRefWithPadding(), nullptr,
@@ -1524,7 +1524,7 @@ immStatus MyMol::GenerateAcmCharges(const Poldata *pd)
             if (haveShells())
             {
                 double rmsf;
-                auto imm = computeForces(nullptr, &rmsf);
+                auto imm = computeForces(&rmsf);
                 if (imm != immStatus::OK)
                 {
                     return imm;
@@ -1621,7 +1621,7 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
             if (nullptr != shellfc_)
             {
                 double rmsf;
-                auto imm = computeForces(nullptr, &rmsf);
+                auto imm = computeForces(&rmsf);
                 if (imm != immStatus::OK)
                 {
                     return imm;
@@ -1708,7 +1708,7 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
                 if (nullptr != shellfc_)
                 {
                     double rmsf;
-                    auto imm = computeForces(nullptr, &rmsf);
+                    auto imm = computeForces(&rmsf);
                     if (imm != immStatus::OK)
                     {
                         return imm;
@@ -1885,8 +1885,7 @@ static double CalcAnisoPolarizability(const std::vector<double> &polar)
     return sqrt(1/2.0) * sqrt(a + b + c + d);
 }
 
-immStatus MyMol::CalcPolarizability(double                     efield,
-                                    FILE                      *fplog)
+immStatus MyMol::CalcPolarizability(double efield)
 {
     //const double        POLFAC = 29.957004; /* C.m**2.V*-1 to Å**3 */
     std::vector<double> field;
@@ -1897,7 +1896,7 @@ immStatus MyMol::CalcPolarizability(double                     efield,
     backupCoordinates();
     field.resize(DIM, 0);
     myforce_->setField(field);
-    imm          = computeForces(fplog, &rmsf);
+    imm          = computeForces(&rmsf);
     qtp.setQ(atoms());
     qtp.setX(state_->x);
     isoPol_calc_ = 0;
@@ -1914,7 +1913,7 @@ immStatus MyMol::CalcPolarizability(double                     efield,
     {
         field[m] = efield;
         myforce_->setField(field);
-        imm = computeForces(fplog, &rmsf);
+        imm = computeForces(&rmsf);
         qtp.setX(state_->x);
         field[m] = 0;
         myforce_->setField(field);
@@ -2035,7 +2034,6 @@ void MyMol::PrintTopology(FILE                      *fp,
     qcalc->calcMoments();
     
     T = -1;
-    const char *qm_type = "electronic";
     const char *qm_conf = "minimum";
     for(auto &mpo : mpoMultiPoles)
     {
@@ -2066,7 +2064,7 @@ void MyMol::PrintTopology(FILE                      *fp,
     double efield = 0.1;
     if (nullptr != cr)
     {
-        auto imm = CalcPolarizability(efield, debug);
+        auto imm = CalcPolarizability(efield);
         if (imm == immStatus::OK)
         {
             std::vector<double> ac = { alpha_calc_[XX][XX], alpha_calc_[XX][YY], alpha_calc_[XX][ZZ],
@@ -2279,7 +2277,6 @@ const real *MyMol::energyTerms() const
 }
         
 immStatus MyMol::getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
-                             gmx_bool                                    bZero,
                              const std::string                          &method,
                              const std::string                          &basis,
                              const Poldata                              *pd)
@@ -2547,7 +2544,7 @@ void MyMol::plotEspCorrelation(const char                *espcorr,
         qgr->updateAtomCharges(atoms());
         qgr->updateAtomCoords(state_->x);
         double rmsf = 0;
-        if (immStatus::OK == computeForces(nullptr, &rmsf))
+        if (immStatus::OK == computeForces(&rmsf))
         {
             qgr->calcPot(1.0);
             qgr->plotLsq(oenv, espcorr);

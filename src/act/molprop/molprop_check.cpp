@@ -90,7 +90,7 @@ static void dump_molecule(FILE              *fp,
        
         fprintf(fp, "Molecule: %s Formula: %s q: %d Mult: %d\n", mymol.getMolname().c_str(),
                 mymol.formula().c_str(), mymol.totalCharge(), mymol.getMultiplicity());
-        mymol.getExpProps(iqm, true, "", "", &pd);
+        mymol.getExpProps(iqm, "", "", &pd);
         mymol.Dump(fp);
         // Atoms!
         auto &atoms = mymol.atomsConst();

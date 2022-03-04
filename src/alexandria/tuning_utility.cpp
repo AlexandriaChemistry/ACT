@@ -629,7 +629,7 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
             // Polarizability
             if (bPolar)
             {
-                mol->CalcPolarizability(efield, nullptr);
+                mol->CalcPolarizability(efield);
                 print_polarizability(fp, mol, qTypeName(qType::Elec), alpha_toler_, isopol_toler_);
                 print_polarizability(fp, mol, qTypeName(qType::Calc), alpha_toler_, isopol_toler_);
                 lsq_isoPol[ims][qType::Calc].add_point(mol->ElectronicPolarizability(),

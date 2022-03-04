@@ -446,9 +446,8 @@ int tune_ff(int argc, char *argv[])
         " can be generated using the [TT]molselect[tt] script."
     };
 
-    real                efield              = 10;
+    real                efield              = 1;
     bool                bcompress           = false;
-    bool                bZero               = true;
     bool                bOptimize           = true;
     bool                bSensitivity        = true;
     bool                bForceOutput        = false;
@@ -461,8 +460,6 @@ int tune_ff(int argc, char *argv[])
     std::vector<t_pargs>        pargs;
     {
         t_pargs                     pa[]         = {
-            { "-zero", FALSE, etBOOL, {&bZero},
-              "Use molecules with zero dipole in the fit as well" },
             { "-compress", FALSE, etBOOL, {&bcompress},
               "Compress output XML file" },
             { "-efield",  FALSE, etREAL, {&efield},
@@ -566,7 +563,6 @@ int tune_ff(int argc, char *argv[])
     if (0 == opt.mg()->Read(fp,
                             opt2fn("-f", filenms.size(), filenms.data()),
                             opt.sii()->poldata(),
-                            bZero,
                             gms,
                             opt.verbose()))
     {

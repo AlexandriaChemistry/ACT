@@ -342,8 +342,7 @@ double getDissociationEnergy(FILE               *fplog,
     for (size_t i = 0; i < molset->size(); i++)
     {
         auto mymol = &((*molset)[i]);
-        if (immStatus::OK == mymol->getExpProps(myprops, true,
-                                                method, basis, pd))
+        if (immStatus::OK == mymol->getExpProps(myprops, method, basis, pd))
         {
             double emol;
             if (mymol->energy(MolPropObservable::EMOL, &emol))

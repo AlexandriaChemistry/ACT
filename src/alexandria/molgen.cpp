@@ -519,7 +519,6 @@ void MolGen::countTargetSize() // Called in read method
 size_t MolGen::Read(FILE            *fp,
                     const char      *fn,
                     Poldata         *pd,
-                    gmx_bool         bZero,
                     const MolSelect &gms,
                     bool             verbose)
 {
@@ -653,8 +652,7 @@ size_t MolGen::Read(FILE            *fp,
                 }
 
                 // TODO Check for G4 as well
-                imm = mymol.getExpProps(iqmMap, bZero,
-                                        method, basis, pd);
+                imm = mymol.getExpProps(iqmMap, method, basis, pd);
                 if (immStatus::OK != imm)
                 {
                     if (verbose && fp)
@@ -848,8 +846,7 @@ size_t MolGen::Read(FILE            *fp,
             }
             if (immStatus::OK == imm)
             {
-                imm = mymol.getExpProps(iqmMap, bZero,
-                                        method, basis, pd);
+                imm = mymol.getExpProps(iqmMap, method, basis, pd);
             }
             mymol.setSupport(eSupport::Local);
             incrementImmCount(&imm_count, imm);

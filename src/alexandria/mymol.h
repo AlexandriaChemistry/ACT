@@ -435,11 +435,9 @@ namespace alexandria
          *  electric field (under construction!!!)
          *
          * \param[in]  efield   Strenght of the external electric field
-         * \param[in]  fplog    File pointer for logging
          * \returns the result of the calculation, if fine it is immOK
          */
-        immStatus CalcPolarizability(double                     efield,
-                                     FILE                      *fplog);
+        immStatus CalcPolarizability(double efield);
       
         /*! \brief set the electronic polarizability
          * \param[in] isoPol The isotropic polarizability
@@ -525,13 +523,11 @@ namespace alexandria
          * Collect the experimental properties
          *
          * \param[in] iqm      Determine whether to allow exp or QM results or both for each property
-         * \param[in] bZero    Allow zero dipoles
          * \param[in] method   Method used for QM calculation
          * \param[in] basis    Basis set used for QM calculation
          * \param[in] pd       Force field structure
          */
         immStatus getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
-                              gmx_bool           bZero,
                               const std::string &method,
                               const std::string &basis,
                               const Poldata     *pd);
@@ -582,12 +578,10 @@ namespace alexandria
         /*! \brief
          * Relax the shells (if any) or compute the forces in the molecule
          *
-         * \param[in]  fplog Log file pointer
          * \param[out] rmsf  Root mean square force on the shells
          * \return immOK if everything went fine, an error otherwise.
          */
-        immStatus computeForces(FILE                      *fplog,
-                                double                    *rmsf);
+        immStatus computeForces(double *rmsf);
 
         /*! \brief
          * Change the coordinate of the molecule based

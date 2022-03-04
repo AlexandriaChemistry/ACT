@@ -458,7 +458,6 @@ public:
      * \param[in] fp      File pointer for printing information, may be nullptr
      * \param[in] fn      Filename for to read molecules from
      * \param[in] pd      Pointer to Poldata object
-     * \param[in] bZero   Use compounds with zero dipole
      * \param[in] gms     The molecule selection
      * \param[in] verbose Whether or not to print extra information
      * \return number of molecules read and processed correctly
@@ -466,7 +465,6 @@ public:
     size_t Read(FILE            *fp,
                 const char      *fn,
                 Poldata         *pd,
-                gmx_bool         bZero,
                 const MolSelect &gms,
                 bool             verbose);
 

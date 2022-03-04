@@ -254,7 +254,7 @@ void PolarDevComputer::calcDeviation(MyMol                                *mymol
                                      gmx_unused const CommunicationRecord *commrec)
 {
     double diff2 = 0;
-    mymol->CalcPolarizability(10, nullptr);
+    mymol->CalcPolarizability(10);
     diff2 = gmx::square(mymol->PolarizabilityDeviation());
     
     if (false && logfile_)
