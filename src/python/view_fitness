@@ -13,20 +13,23 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def check_for_file(fp: str) -> None:
+def check_for_file(fp: str) -> bool:
     """
     Check if a certain path corresponds to an existing file.
-    If not, halt execution.
     ---------------------------------------------------------
     Parameters:
         fp (str): path
+    Returns:
+        True if 'fp' is a file, False otherwise
     """
     if not os.path.exists(fp):
         print(f'{fp} does not exist...')
-        sys.exit(1)
+        return False
     elif not os.path.isfile(fp):
         print(f'{fp} is not a file...')
-        sys.exit(1)
+        return False
+    else:
+        return True
 
 
 def plot_fitness(data: np.ndarray, dataset: str, args: SimpleNamespace) -> None:
@@ -52,19 +55,20 @@ def plot_fitness(data: np.ndarray, dataset: str, args: SimpleNamespace) -> None:
         ax.set_yscale('log')
         ax.set_ylabel("log10(Fitness)")
     else:
+        if not args.ymin:  # Weird matplotlib things
+            args.ymin = 0
         ax.set_ylabel("Fitness")
 
-    hide_lowercase: list[str] = [stat.lower() for stat in args.hide]
-    if 'min' not in hide_lowercase:
+    if 'min' not in args.hide:
         ax.plot(gen_vector, min, color='C0', label="min")
-    if 'max' not in hide_lowercase:
+    if 'max' not in args.hide:
         ax.plot(gen_vector, max, color='C1', label="max")
-    if 'mean' not in hide_lowercase:
+    if 'mean' not in args.hide:
         ax.plot(gen_vector, mean, color='C2', label="mean")
-    if 'median' not in hide_lowercase:
+    if 'median' not in args.hide:
         ax.plot(gen_vector, median, color='C3', label="median")
 
-    ax.set_ylim([np.max(0.0, args.ymin), args.ymax])
+    ax.set_ylim(args.ymin, args.ymax)
     
     ax.legend(loc='upper right')
 
@@ -85,9 +89,40 @@ def parse_cmdline() -> SimpleNamespace:
     parser.add_argument('-ftest', type=str, help='Filename for test fitness of GA')
     parser.add_argument('-log',  help='Plot the log10 of the fitness value', action="store_true")
     parser.add_argument('-ymax', help="Maximum value for y-axis in plot(s).", type=float, default=None)
-    parser.add_argument('-ymin', help="Minimum value for y-axis in plot(s). If negative, it will become 0.", type=float, default=0)
+    parser.add_argument('-ymin', help="Minimum value for y-axis in plot(s). For regular y-axis scale, if not specified by the user, it defaults to 0.", type=float, default=None)
     parser.add_argument('-hide', help="Statistics to hide. E.g. 'max median' (without quotes)", nargs='*', default=[])
     return parser.parse_args()
+
+
+def check_args(args: SimpleNamespace) -> None:
+    """
+    Check the command-line arguments for invalid input.
+    If an invalid parameter is detected, the execution will
+    be halted.
+    ---------------------------------------------------------
+    Parameters:
+        args (SimpleNamespace): command-line argumnents
+    """
+    halt: bool = False
+    if args.ymax and args.ymin and args.ymax <= args.ymin:
+        print(f'-ymax ({args.ymax}) should be larger than -ymin ({args.ymin})...')
+        halt = True
+    args.hide = [stat.lower() for stat in args.hide]
+    if sorted(['min', 'max', 'median', 'mean']) == sorted(args.hide):
+        print(f'You are hiding all statistics...')
+        halt = True
+    if args.log and args.ymin is not None and args.ymin <= 0:
+        print(f'When using log scale, -ymin ({args.ymin}) should be positive...')
+        halt = True
+    if args.log and args.ymax is not None and args.ymax <= 0:
+        print(f'When using log scale, -ymax ({args.ymax}) should be positive...')
+        halt = True
+    if args.ftrain and not check_for_file(args.ftrain):
+        halt = True
+    if args.ftest and not check_for_file(args.ftest):
+        halt = True
+    if halt:
+        sys.exit(1)
 
 
 def main() -> None:
@@ -97,6 +132,7 @@ def main() -> None:
         2) Plot
     """
     args: SimpleNamespace = parse_cmdline()
+    check_args(args)
 
     if not (args.ftrain or args.ftest):
         print("No file to read, okay...")
@@ -104,13 +140,11 @@ def main() -> None:
 
     # For TRAIN
     if args.ftrain:
-        check_for_file(args.ftrain)
         ftrain_data = np.loadtxt(args.ftrain)
         plot_fitness(ftrain_data, 'train', args)
 
     # For TEST
     if args.ftest:
-        check_for_file(args.ftest)
         ftest_data = np.loadtxt(args.ftest)
         plot_fitness(ftest_data, 'test', args)
 
