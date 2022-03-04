@@ -1,6 +1,12 @@
 #!/usr/bin/env python3
 
+"""
+Visualizes the fitness per generation of GA/HYBRID.
+"""
+
 import argparse
+from ast import parse
+from types import SimpleNamespace
 import sys
 import os
 import matplotlib
@@ -8,91 +14,109 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-# Add command-line arguments
-parser = argparse.ArgumentParser(
-    description='Visualizes the fitness per generation of a GA/HYBRID by plotting the maximum, minimum, mean, and median.'
-)
-parser.add_argument('-ftrain', type=str, help='Filename for train fitness of GA')
-parser.add_argument('-ftest', type=str, help='Filename for test fitness of GA')
-parser.add_argument('-log',  help='Plot the 10 log of the fitness value', action="store_true")
-args = parser.parse_args()
-
-if not (args.ftrain or args.ftest):
-    print("No file to read, okay...")
-    sys.exit(0)
-
-# For TRAIN
-if args.ftrain:
-
-    if not os.path.exists(args.ftrain):
-        print(f'{args.ftrain} does not exist...')
+def check_for_file(fp: str) -> None:
+    """
+    Check if a certain path corresponds to an existing file.
+    If not, halt execution.
+    ---------------------------------------------------------
+    Parameters:
+        fp (str): path
+    """
+    if not os.path.exists(fp):
+        print(f'{fp} does not exist...')
         sys.exit(1)
-    elif not os.path.isfile(args.ftrain):
-        print(f'{args.ftrain} is not a file...')
+    elif not os.path.isfile(fp):
+        print(f'{fp} is not a file...')
         sys.exit(1)
 
-    ftrain_data = np.loadtxt(args.ftrain)
-    if args.log:
-        logger = lambda t: np.log10(t)
-        ftrain_data = np.array([logger(xi) for xi in ftrain_data])
-    gen_vector = np.arange(0, ftrain_data.shape[0])
 
-    min, max = np.amin(ftrain_data, axis=1), np.amax(ftrain_data, axis=1)
-    mean, median = np.mean(ftrain_data, axis=1), np.median(ftrain_data, axis=1)
+def plot_fitness(data: np.ndarray, dataset: str, args: SimpleNamespace) -> None:
+    """
+    Plot the fitness summary statatistics.
+    ---------------------------------------------------------
+    Parameters:
+        data (np.ndarray[nGenerations, popSize]): the fitness
+            matrix where each row contains the fitness of each
+            individual for that generation
+        dataset (str): name of the dataset. E.g. train, test...
+        args (SimpleNamespace): command-line arguments
+    """
+    gen_vector = np.arange(0, data.shape[0])
+    min, max = np.amin(data, axis=1), np.amax(data, axis=1)
+    mean, median = np.mean(data, axis=1), np.median(data, axis=1)
 
     fig, ax = plt.subplots()
 
-    ax.set_title("Train fitness")
+    ax.set_title(f"{dataset.capitalize()} fitness")
     ax.set_xlabel("Generation")
     if args.log:
-        ax.set_ylabel("10log(Fitness)")
+        ax.set_yscale('log')
+        ax.set_ylabel("log10(Fitness)")
     else:
-        ax.set_ylabel("10log(Fitness)")
-    ax.plot(gen_vector, min, color='C0', label="min")
-    ax.plot(gen_vector, max, color='C1', label="max")
-    ax.plot(gen_vector, mean, color='C2', label="mean")
-    ax.plot(gen_vector, median, color='C3', label="median")
+        ax.set_ylabel("Fitness")
 
-    ax.legend(loc='upper right')
+    hide_lowercase: list[str] = [stat.lower() for stat in args.hide]
+    if 'min' not in hide_lowercase:
+        ax.plot(gen_vector, min, color='C0', label="min")
+    if 'max' not in hide_lowercase:
+        ax.plot(gen_vector, max, color='C1', label="max")
+    if 'mean' not in hide_lowercase:
+        ax.plot(gen_vector, mean, color='C2', label="mean")
+    if 'median' not in hide_lowercase:
+        ax.plot(gen_vector, median, color='C3', label="median")
 
-    fig.tight_layout()
-
-# For TEST
-if args.ftest:
-
-    if not os.path.exists(args.ftest):
-        print(f'{args.ftest} does not exist...')
-        sys.exit(1)
-    elif not os.path.isfile(args.ftest):
-        print(f'{args.ftest} is not a file...')
-        sys.exit(1)
-
-    ftest_data = np.loadtxt(args.ftest)
-    if args.log:
-        logger = lambda t: np.log10(t)
-        ftest_data = np.array([logger(xi) for xi in ftest_data])
-    gen_vector = np.arange(0, ftest_data.shape[0])
-
-    min, max = np.amin(ftest_data, axis=1), np.amax(ftest_data, axis=1)
-    mean, median = np.mean(ftest_data, axis=1), np.median(ftest_data, axis=1)
-
-    fig, ax = plt.subplots()
-
-    ax.set_title("Test fitness")
-    ax.set_xlabel("Generation")
-    if args.log:
-        ax.set_ylabel("10log(Fitness)")
-    else:
-        ax.set_ylabel("10log(Fitness)")
-
-    ax.plot(gen_vector, min, color='C0', label="min")
-    ax.plot(gen_vector, max, color='C1', label="max")
-    ax.plot(gen_vector, mean, color='C2', label="mean")
-    ax.plot(gen_vector, median, color='C3', label="median")
-
+    ax.set_ylim([None, args.ymax])
+    
     ax.legend(loc='upper right')
 
     fig.tight_layout()
 
 
-plt.show()
+def parse_cmdline() -> SimpleNamespace:
+    """
+    Parse command line arguments.
+    ---------------------------------------------------------
+    Returns:
+        the arguments as a SimpleNamespace objects
+    """
+    parser = argparse.ArgumentParser(
+        description='Visualizes the fitness per generation of a GA/HYBRID by plotting the maximum, minimum, mean, and median.'
+    )
+    parser.add_argument('-ftrain', type=str, help='Filename for train fitness of GA')
+    parser.add_argument('-ftest', type=str, help='Filename for test fitness of GA')
+    parser.add_argument('-log',  help='Plot the log10 of the fitness value', action="store_true")
+    parser.add_argument('-ymax', help="Maximum value for y-axis in plot(s).", type=float, default=None)
+    parser.add_argument('-hide', help="Statistics to hide. E.g. 'max median' (without quotes)", nargs='*', default=[])
+    return parser.parse_args()
+
+
+def main() -> None:
+    """
+    Drive the script:
+        1) Parse command line arguments
+        2) Plot
+    """
+    args: SimpleNamespace = parse_cmdline()
+
+    if not (args.ftrain or args.ftest):
+        print("No file to read, okay...")
+        sys.exit(0)
+
+    # For TRAIN
+    if args.ftrain:
+        check_for_file(args.ftrain)
+        ftrain_data = np.loadtxt(args.ftrain)
+        plot_fitness(ftrain_data, 'train', args)
+
+    # For TEST
+    if args.ftest:
+        check_for_file(args.ftest)
+        ftest_data = np.loadtxt(args.ftest)
+        plot_fitness(ftest_data, 'test', args)
+
+    # Render matplotlib
+    plt.show()
+
+
+if __name__ == '__main__':
+    main()
