@@ -30,7 +30,10 @@
  */
 #include "act_checksum.h"
 
+#include <unistd.h>
+
 #include <cstdio>
+#include <cstdlib>
 
 #include <string>
 
@@ -83,20 +86,30 @@ std::string poldataCheckSum(Poldata *pd)
     std::string timeStamp = pd->timeStamp();
     pd->setTimeStamp("");
     // Write the document to a tmp file
-    std::string tmpPoldata = std::tmpnam(nullptr);
-    writePoldata(tmpPoldata, pd, false);
-    // Now compute the md5 checksum
-    std::string checksum = computeCheckSum(tmpPoldata);
-    // Restore old chekcsum and time stamp
-    pd->setCheckSum(oldCheckSum);
-    pd->setTimeStamp(timeStamp);
-    // Delete the tmp file
-    int errcode = std::remove(tmpPoldata.c_str());
-    if (errcode != 0)
+    char tmpPoldata[] = "poldataTmpXXXXXX";
+    int fileDescriptor = mkstemp(tmpPoldata);
+    if (fileDescriptor >= 0)
     {
-        std::perror("Could not delete temporary file");
+        close(fileDescriptor);
+        writePoldata(tmpPoldata, pd, false);
+        // Now compute the md5 checksum
+        std::string checksum = computeCheckSum(tmpPoldata);
+        // Restore old chekcsum and time stamp
+        pd->setCheckSum(oldCheckSum);
+        pd->setTimeStamp(timeStamp);
+        // Delete the tmp file
+        int errcode = std::remove(tmpPoldata);
+        if (errcode != 0)
+        {
+            std::perror("Could not delete temporary file");
+        }
+        return checksum;
     }
-    return checksum;
+    else
+    {
+        fprintf(stderr, "Could not create a temporary file for generating a checksum.\n");
+        return std::string("");
+    }
 }
 
 } // namespace alexandria
