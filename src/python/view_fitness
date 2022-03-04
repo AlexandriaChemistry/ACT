@@ -1,0 +1,86 @@
+#!/usr/bin/env python3
+
+import argparse
+import sys
+import os
+import matplotlib
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+# Add command-line arguments
+parser = argparse.ArgumentParser(
+    description='Visualizes the fitness per generation of a GA/HYBRID by plotting the maximum, minimum, mean, and median.'
+)
+parser.add_argument('-ftrain', type=str, help='Filename for train fitness of GA')
+parser.add_argument('-ftest', type=str, help='Filename for test fitness of GA')
+args = parser.parse_args()
+
+if not (args.ftrain or args.ftest):
+    print("No file to read, okay...")
+    sys.exit(0)
+
+# For TRAIN
+if args.ftrain:
+
+    if not os.path.exists(args.ftrain):
+        print(f'{args.ftrain} does not exist...')
+        sys.exit(1)
+    elif not os.path.isfile(args.ftrain):
+        print(f'{args.ftrain} is not a file...')
+        sys.exit(1)
+
+    ftrain_data = np.loadtxt(args.ftrain)
+    gen_vector = np.arange(0, ftrain_data.shape[0])
+
+    min, max = np.amin(ftrain_data, axis=1), np.amax(ftrain_data, axis=1)
+    mean, median = np.mean(ftrain_data, axis=1), np.median(ftrain_data, axis=1)
+
+    fig, ax = plt.subplots()
+
+    ax.set_title("Train fitness")
+    ax.set_xlabel("Generation")
+    ax.set_ylabel("Fitness")
+
+    ax.plot(gen_vector, min, color='C0', label="min")
+    ax.plot(gen_vector, max, color='C1', label="max")
+    ax.plot(gen_vector, mean, color='C2', label="mean")
+    ax.plot(gen_vector, median, color='C3', label="median")
+
+    ax.legend(loc='upper right')
+
+    fig.tight_layout()
+
+# For TEST
+if args.ftest:
+
+    if not os.path.exists(args.ftest):
+        print(f'{args.ftest} does not exist...')
+        sys.exit(1)
+    elif not os.path.isfile(args.ftest):
+        print(f'{args.ftest} is not a file...')
+        sys.exit(1)
+
+    ftest_data = np.loadtxt(args.ftest)
+    gen_vector = np.arange(0, ftest_data.shape[0])
+
+    min, max = np.amin(ftest_data, axis=1), np.amax(ftest_data, axis=1)
+    mean, median = np.mean(ftest_data, axis=1), np.median(ftest_data, axis=1)
+
+    fig, ax = plt.subplots()
+
+    ax.set_title("Test fitness")
+    ax.set_xlabel("Generation")
+    ax.set_ylabel("Fitness")
+
+    ax.plot(gen_vector, min, color='C0', label="min")
+    ax.plot(gen_vector, max, color='C1', label="max")
+    ax.plot(gen_vector, mean, color='C2', label="mean")
+    ax.plot(gen_vector, median, color='C3', label="median")
+
+    ax.legend(loc='upper right')
+
+    fig.tight_layout()
+
+
+plt.show()
