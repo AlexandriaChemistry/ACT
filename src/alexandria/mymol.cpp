@@ -1521,14 +1521,11 @@ immStatus MyMol::GenerateAcmCharges(const Poldata *pd)
                                                    state_->x,
                                                    bondsConst()))
         {
-            if (haveShells())
+            double rmsf;
+            auto imm = computeForces(&rmsf);
+            if (imm != immStatus::OK)
             {
-                double rmsf;
-                auto imm = computeForces(&rmsf);
-                if (imm != immStatus::OK)
-                {
-                    return imm;
-                }
+                return imm;
             }
             EemRms = 0;
             for (int i = 0; i < mtop_->natoms; i++)
@@ -1617,15 +1614,16 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
                 auto qval  = ptype->parameterConst("charge").value();
                 myatoms->atom[i].q  = myatoms->atom[i].qB = qval;
             }
-            // Now if we have shells, we still have to minimize them!
+            // If we have shells, we still have to minimize them,
+            // but we may want to know the energies anyway.
+            double rmsf;
+            auto imm = computeForces(&rmsf);
+            if (imm != immStatus::OK)
+            {
+                return imm;
+            }
             if (nullptr != shellfc_)
             {
-                double rmsf;
-                auto imm = computeForces(&rmsf);
-                if (imm != immStatus::OK)
-                {
-                    return imm;
-                }
                 auto qcalc = qTypeProps(qType::Calc);
                 qcalc->setQ(myatoms);
                 qcalc->setX(state_->x);
@@ -1705,14 +1703,14 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
                 {
                     myatoms->atom[i].q = myatoms->atom[i].qB = qq[i];
                 }
+                double rmsf;
+                auto imm = computeForces(&rmsf);
+                if (imm != immStatus::OK)
+                {
+                    return imm;
+                }
                 if (nullptr != shellfc_)
                 {
-                    double rmsf;
-                    auto imm = computeForces(&rmsf);
-                    if (imm != immStatus::OK)
-                    {
-                        return imm;
-                    }
                     qcalc->setX(state_->x);
                 }
                 qcalc->qgenResp()->optimizeCharges(pd->getEpsilonR());
