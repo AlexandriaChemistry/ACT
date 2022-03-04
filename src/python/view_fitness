@@ -64,7 +64,7 @@ def plot_fitness(data: np.ndarray, dataset: str, args: SimpleNamespace) -> None:
     if 'median' not in hide_lowercase:
         ax.plot(gen_vector, median, color='C3', label="median")
 
-    ax.set_ylim([None, args.ymax])
+    ax.set_ylim([args.ymin, args.ymax])
     
     ax.legend(loc='upper right')
 
@@ -85,6 +85,7 @@ def parse_cmdline() -> SimpleNamespace:
     parser.add_argument('-ftest', type=str, help='Filename for test fitness of GA')
     parser.add_argument('-log',  help='Plot the log10 of the fitness value', action="store_true")
     parser.add_argument('-ymax', help="Maximum value for y-axis in plot(s).", type=float, default=None)
+    parser.add_argument('-ymin', help="Minimum value for y-axis in plot(s). If negative, it will become 0.", type=float, default=0)
     parser.add_argument('-hide', help="Statistics to hide. E.g. 'max median' (without quotes)", nargs='*', default=[])
     return parser.parse_args()
 
