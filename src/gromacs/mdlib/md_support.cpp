@@ -160,15 +160,13 @@ void compute_globals(gmx_global_stat *gstat, t_commrec *cr, t_inputrec *ir,
 {
     tensor   corr_vir, corr_pres;
     gmx_bool bEner, bPres, bTemp;
-    gmx_bool bStopCM, bGStat,
-        bReadEkin, bConstrain;
+    gmx_bool bStopCM, bGStat, bConstrain;
     gmx_bool bCheckNumberOfBondedInteractions;
     real     prescorr, enercorr, dvdlcorr;
 
     /* translate CGLO flags to gmx_booleans */
     bStopCM                          = ((flags & CGLO_STOPCM) != 0);
     bGStat                           = ((flags & CGLO_GSTAT) != 0);
-    bReadEkin                        = ((flags & CGLO_READEKIN) != 0);
     bEner                            = ((flags & CGLO_ENERGY) != 0);
     bTemp                            = ((flags & CGLO_TEMPERATURE) != 0);
     bPres                            = ((flags & CGLO_PRESSURE) != 0);

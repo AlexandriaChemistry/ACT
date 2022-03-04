@@ -5,6 +5,13 @@
 namespace alexandria
 {
 
+std::array<MolPropObservable, 4> mpoMultiPoles = { 
+    MolPropObservable::DIPOLE,
+    MolPropObservable::QUADRUPOLE,
+    MolPropObservable::OCTUPOLE,
+    MolPropObservable::HEXADECAPOLE
+};
+
 std::map<MolPropObservable, std::vector<std::string> >        multipole_names;
 std::map<MolPropObservable, std::map<std::string, int> >      multipole_map;
 std::map<MolPropObservable, std::map<int, std::string> >      multipole_rmap;

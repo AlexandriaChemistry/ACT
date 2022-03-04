@@ -90,7 +90,7 @@ bool MCMC::evolve(ga::Genome *bestGenome)
     // Check if a better genome was found, and update if so
     auto imstr = iMolSelect::Train;
     size_t newBest = pool.findBestIndex();
-    if (newBest >= 0 && newBest < pool.popSize() &&
+    if (newBest < pool.popSize() &&
         pool.genome(newBest).hasFitness(imstr))
     {
         if (pool.genome(newBest).fitness(imstr) < 
@@ -347,7 +347,7 @@ bool HybridGAMC::evolve(ga::Genome *bestGenome)
         // Check if a better genome was found, and update if so
         auto   imstr   = iMolSelect::Train;
         size_t newBest = pool[pold]->findBestIndex();
-        if (newBest >= 0 && newBest < pool[pold]->popSize() &&
+        if (newBest < pool[pold]->popSize() &&
             pool[pold]->genome(newBest).hasFitness(imstr))
         {
             if (pool[pold]->genome(newBest).fitness(imstr) < 

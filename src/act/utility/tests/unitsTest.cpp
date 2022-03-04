@@ -97,9 +97,8 @@ TEST_F(UnitsTest, FromGromacs)
 #if CMAKE_BUILD_TYPE == CMAKE_BUILD_TYPE_DEBUG
 TEST(UnitsTestSimple, WrongUnitThrows)
 {
-    double x, y;
-    EXPECT_THROW(x = convertToGromacs(1.0, "Foo"), gmx::InternalError);
-    EXPECT_THROW(y = convertFromGromacs(2.2, "Bar"), gmx::InternalError);
+    EXPECT_THROW((void) convertToGromacs(1.0, "Foo"), gmx::InternalError);
+    EXPECT_THROW((void) convertFromGromacs(2.2, "Bar"), gmx::InternalError);
 }
 #endif
 }

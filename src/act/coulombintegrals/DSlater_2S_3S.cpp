@@ -54,7 +54,7 @@ cl_R DSlater_2S_3S(cl_R r, cl_R xi, cl_R xj)
         }
         else
         {
-            S = -(-7430535LL*xi + 8709120LL*exp(2LL*r*xi)*xi - 12303900LL*r*Power(xi, 2LL) -
+            S = -(-7430535LL*xi + 8709120LL*exp(2LL*rxi)*xi - 12303900LL*r*Power(xi, 2LL) -
 
                   9826110LL*Power(r, 2LL)*Power(xi, 3LL) - 5004720LL*Power(r, 3LL)*Power(xi, 4LL) -
 
@@ -62,9 +62,9 @@ cl_R DSlater_2S_3S(cl_R r, cl_R xi, cl_R xj)
 
                   96768LL*Power(r, 6LL)*Power(xi, 7LL) - 13824LL*Power(r, 7LL)*Power(xi, 8LL) -
 
-                  1152LL*Power(r, 8LL)*Power(xi, 9LL))/(4.35456e6*exp(2LL*r*xi)*r) +
+                  1152LL*Power(r, 8LL)*Power(xi, 9LL))/(4.35456e6*exp(2LL*rxi)*r) +
 
-                (-4354560LL + 4354560LL*exp(2LL*r*xi) - 7430535LL*r*xi -
+                (-4354560LL + 4354560LL*exp(2LL*rxi) - 7430535LL*rxi -
 
                  6151950LL*Power(r, 2LL)*Power(xi, 2LL) - 3275370LL*Power(r, 3LL)*Power(xi, 3LL) -
 
@@ -74,9 +74,9 @@ cl_R DSlater_2S_3S(cl_R r, cl_R xi, cl_R xj)
 
                  1728LL*Power(r, 8LL)*Power(xi, 8LL) - 128LL*Power(r, 9LL)*Power(xi, 9LL))/
 
-                (4.35456e6*exp(2LL*r*xi)*Power(r, 2LL)) +
+                (4.35456e6*exp(2LL*rxi)*Power(r, 2LL)) +
 
-                (xi*(-4354560LL + 4354560LL*exp(2LL*r*xi) - 7430535LL*r*xi -
+                (xi*(-4354560LL + 4354560LL*exp(2LL*rxi) - 7430535LL*rxi -
 
                      6151950LL*Power(r, 2LL)*Power(xi, 2LL) - 3275370LL*Power(r, 3LL)*Power(xi, 3LL) -
 
@@ -86,7 +86,7 @@ cl_R DSlater_2S_3S(cl_R r, cl_R xi, cl_R xj)
 
                      1728LL*Power(r, 8LL)*Power(xi, 8LL) - 128LL*Power(r, 9LL)*Power(xi, 9LL)))/
 
-                (2.17728e6*exp(2LL*r*xi)*r)
+                (2.17728e6*exp(2LL*rxi)*r)
 
             ;
         }
@@ -108,7 +108,7 @@ cl_R DSlater_2S_3S(cl_R r, cl_R xi, cl_R xj)
 
                  (-90LL*Power(r, 2LL)*Power(xi, 12LL) - 6LL*Power(r, 3LL)*Power(xi, 13LL) +
 
-                  18LL*Power(xj, 10LL) + 27LL*r*xi*Power(xj, 10LL) +
+                  18LL*Power(xj, 10LL) + 27LL*rxi*Power(xj, 10LL) +
 
                   18LL*Power(xi, 2LL)*Power(xj, 8LL)*(-9LL + Power(r, 2LL)*Power(xj, 2LL)) -
 
@@ -130,7 +130,7 @@ cl_R DSlater_2S_3S(cl_R r, cl_R xi, cl_R xj)
 
                   6LL*Power(xi, 8LL)*Power(xj, 2LL)*(-1063LL + 90LL*Power(r, 2LL)*Power(xj, 2LL))) -
 
-                 2LL*exp(2LL*r*xi)*Power(xi, 6LL)*
+                 2LL*exp(2LL*rxi)*Power(xi, 6LL)*
 
                  (-90LL*Power(xi, 6LL)*Power(xj, 6LL)*
 
@@ -190,7 +190,7 @@ cl_R DSlater_2S_3S(cl_R r, cl_R xi, cl_R xj)
 
                    (-90LL*Power(r, 2LL)*Power(xi, 12LL) - 6LL*Power(r, 3LL)*Power(xi, 13LL) +
 
-                    18LL*Power(xj, 10LL) + 27LL*r*xi*Power(xj, 10LL) +
+                    18LL*Power(xj, 10LL) + 27LL*rxi*Power(xj, 10LL) +
 
                     18LL*Power(xi, 2LL)*Power(xj, 8LL)*(-9LL + Power(r, 2LL)*Power(xj, 2LL)) -
 
@@ -212,7 +212,7 @@ cl_R DSlater_2S_3S(cl_R r, cl_R xi, cl_R xj)
 
                     6LL*Power(xi, 8LL)*Power(xj, 2LL)*(-1063LL + 90LL*Power(r, 2LL)*Power(xj, 2LL))) -
 
-                   2LL*exp(2LL*r*xi)*Power(xi, 6LL)*
+                   2LL*exp(2LL*rxi)*Power(xi, 6LL)*
 
                    (-90LL*Power(xi, 6LL)*Power(xj, 6LL)*
 
@@ -306,7 +306,7 @@ cl_R DSlater_2S_3S(cl_R r, cl_R xi, cl_R xj)
 
                  (-90LL*Power(r, 2LL)*Power(xi, 12LL) - 6LL*Power(r, 3LL)*Power(xi, 13LL) +
 
-                  18LL*Power(xj, 10LL) + 27LL*r*xi*Power(xj, 10LL) +
+                  18LL*Power(xj, 10LL) + 27LL*rxi*Power(xj, 10LL) +
 
                   18LL*Power(xi, 2LL)*Power(xj, 8LL)*(-9LL + Power(r, 2LL)*Power(xj, 2LL)) -
 
@@ -328,7 +328,7 @@ cl_R DSlater_2S_3S(cl_R r, cl_R xi, cl_R xj)
 
                   6LL*Power(xi, 8LL)*Power(xj, 2LL)*(-1063LL + 90LL*Power(r, 2LL)*Power(xj, 2LL))) -
 
-                 2LL*exp(2LL*r*xi)*Power(xi, 6LL)*
+                 2LL*exp(2LL*rxi)*Power(xi, 6LL)*
 
                  (-90LL*Power(xi, 6LL)*Power(xj, 6LL)*
 
@@ -372,7 +372,7 @@ cl_R DSlater_2S_3S(cl_R r, cl_R xi, cl_R xj)
 
                    440LL*Power(r, 3LL)*Power(xj, 4LL) + 40LL*Power(r, 4LL)*Power(xj, 5LL))) -
 
-                 4LL*exp(2LL*r*xi)*Power(xi, 7LL)*
+                 4LL*exp(2LL*rxi)*Power(xi, 7LL)*
 
                  (-90LL*Power(xi, 6LL)*Power(xj, 6LL)*
 
@@ -458,7 +458,7 @@ double DSlater_2S_3S(double r, double xi, double xj)
         }
         else
         {
-            S = -(-7430535*xi + 8709120*exp(2*r*xi)*xi - 12303900*r*pow(xi, 2) -
+            S = -(-7430535*xi + 8709120*exp(2*rxi)*xi - 12303900*r*pow(xi, 2) -
 
                   9826110*pow(r, 2)*pow(xi, 3) - 5004720*pow(r, 3)*pow(xi, 4) -
 
@@ -466,9 +466,9 @@ double DSlater_2S_3S(double r, double xi, double xj)
 
                   96768*pow(r, 6)*pow(xi, 7) - 13824*pow(r, 7)*pow(xi, 8) -
 
-                  1152*pow(r, 8)*pow(xi, 9))/(4.35456e6*exp(2*r*xi)*r) +
+                  1152*pow(r, 8)*pow(xi, 9))/(4.35456e6*exp(2*rxi)*r) +
 
-                (-4354560 + 4354560*exp(2*r*xi) - 7430535*r*xi -
+                (-4354560 + 4354560*exp(2*rxi) - 7430535*rxi -
 
                  6151950*pow(r, 2)*pow(xi, 2) - 3275370*pow(r, 3)*pow(xi, 3) -
 
@@ -478,9 +478,9 @@ double DSlater_2S_3S(double r, double xi, double xj)
 
                  1728*pow(r, 8)*pow(xi, 8) - 128*pow(r, 9)*pow(xi, 9))/
 
-                (4.35456e6*exp(2*r*xi)*pow(r, 2)) +
+                (4.35456e6*exp(2*rxi)*pow(r, 2)) +
 
-                (xi*(-4354560 + 4354560*exp(2*r*xi) - 7430535*r*xi -
+                (xi*(-4354560 + 4354560*exp(2*rxi) - 7430535*rxi -
 
                      6151950*pow(r, 2)*pow(xi, 2) - 3275370*pow(r, 3)*pow(xi, 3) -
 
@@ -490,7 +490,7 @@ double DSlater_2S_3S(double r, double xi, double xj)
 
                      1728*pow(r, 8)*pow(xi, 8) - 128*pow(r, 9)*pow(xi, 9)))/
 
-                (2.17728e6*exp(2*r*xi)*r)
+                (2.17728e6*exp(2*rxi)*r)
 
             ;
         }
@@ -512,7 +512,7 @@ double DSlater_2S_3S(double r, double xi, double xj)
 
                  (-90*pow(r, 2)*pow(xi, 12) - 6*pow(r, 3)*pow(xi, 13) +
 
-                  18*pow(xj, 10) + 27*r*xi*pow(xj, 10) +
+                  18*pow(xj, 10) + 27*rxi*pow(xj, 10) +
 
                   18*pow(xi, 2)*pow(xj, 8)*(-9 + pow(r, 2)*pow(xj, 2)) -
 
@@ -534,7 +534,7 @@ double DSlater_2S_3S(double r, double xi, double xj)
 
                   6*pow(xi, 8)*pow(xj, 2)*(-1063 + 90*pow(r, 2)*pow(xj, 2))) -
 
-                 2*exp(2*r*xi)*pow(xi, 6)*
+                 2*exp(2*rxi)*pow(xi, 6)*
 
                  (-90*pow(xi, 6)*pow(xj, 6)*
 
@@ -594,7 +594,7 @@ double DSlater_2S_3S(double r, double xi, double xj)
 
                    (-90*pow(r, 2)*pow(xi, 12) - 6*pow(r, 3)*pow(xi, 13) +
 
-                    18*pow(xj, 10) + 27*r*xi*pow(xj, 10) +
+                    18*pow(xj, 10) + 27*rxi*pow(xj, 10) +
 
                     18*pow(xi, 2)*pow(xj, 8)*(-9 + pow(r, 2)*pow(xj, 2)) -
 
@@ -616,7 +616,7 @@ double DSlater_2S_3S(double r, double xi, double xj)
 
                     6*pow(xi, 8)*pow(xj, 2)*(-1063 + 90*pow(r, 2)*pow(xj, 2))) -
 
-                   2*exp(2*r*xi)*pow(xi, 6)*
+                   2*exp(2*rxi)*pow(xi, 6)*
 
                    (-90*pow(xi, 6)*pow(xj, 6)*
 
@@ -710,7 +710,7 @@ double DSlater_2S_3S(double r, double xi, double xj)
 
                  (-90*pow(r, 2)*pow(xi, 12) - 6*pow(r, 3)*pow(xi, 13) +
 
-                  18*pow(xj, 10) + 27*r*xi*pow(xj, 10) +
+                  18*pow(xj, 10) + 27*rxi*pow(xj, 10) +
 
                   18*pow(xi, 2)*pow(xj, 8)*(-9 + pow(r, 2)*pow(xj, 2)) -
 
@@ -732,7 +732,7 @@ double DSlater_2S_3S(double r, double xi, double xj)
 
                   6*pow(xi, 8)*pow(xj, 2)*(-1063 + 90*pow(r, 2)*pow(xj, 2))) -
 
-                 2*exp(2*r*xi)*pow(xi, 6)*
+                 2*exp(2*rxi)*pow(xi, 6)*
 
                  (-90*pow(xi, 6)*pow(xj, 6)*
 
@@ -776,7 +776,7 @@ double DSlater_2S_3S(double r, double xi, double xj)
 
                    440*pow(r, 3)*pow(xj, 4) + 40*pow(r, 4)*pow(xj, 5))) -
 
-                 4*exp(2*r*xi)*pow(xi, 7)*
+                 4*exp(2*rxi)*pow(xi, 7)*
 
                  (-90*pow(xi, 6)*pow(xj, 6)*
 

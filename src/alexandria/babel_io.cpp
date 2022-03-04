@@ -676,8 +676,7 @@ bool readBabel(const char          *g09,
     if (nullptr != pol_tensor)
     {
         OpenBabel::matrix3x3 m3 = pol_tensor->GetData();
-        double               mm[9], alpha, fac;
-        int                  i;
+        double               mm[9], alpha;
         m3.GetArray(mm);
         alpha = (mm[0]+mm[4]+mm[8])/3.0;
 

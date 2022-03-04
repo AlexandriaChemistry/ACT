@@ -502,7 +502,6 @@ CommunicationStatus Poldata::Receive(const CommunicationRecord *cr, int src)
 
 void Poldata::sendParticles(const CommunicationRecord *cr, int dest)
 {
-    auto cs = CommunicationStatus::OK;
     if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
     {
         if (nullptr != debug)
@@ -532,7 +531,6 @@ void Poldata::sendParticles(const CommunicationRecord *cr, int dest)
 
 void Poldata::receiveParticles(const CommunicationRecord *cr, int src)
 {
-    auto cs = CommunicationStatus::OK;
     if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
     {
         /* Receive Particle info */
@@ -593,7 +591,6 @@ void Poldata::sendEemprops(const CommunicationRecord *cr, int dest)
 
 void Poldata::receiveEemprops(const CommunicationRecord *cr, int src)
 {
-    auto cs = CommunicationStatus::OK;
     if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
     {
         /* Receive EEMprops and Bond Corrections */

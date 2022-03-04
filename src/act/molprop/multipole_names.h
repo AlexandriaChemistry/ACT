@@ -8,12 +8,7 @@
 namespace alexandria
 {
 
-static std::array<MolPropObservable, 4> mpoMultiPoles = { 
-    MolPropObservable::DIPOLE,
-    MolPropObservable::QUADRUPOLE,
-    MolPropObservable::OCTUPOLE,
-    MolPropObservable::HEXADECAPOLE
-};
+extern std::array<MolPropObservable, 4> mpoMultiPoles;
 
 /*! \brief Return index in array
  * \param[in] id The string, e.g. "xxx" will be interpreted both for its length

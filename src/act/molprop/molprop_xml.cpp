@@ -965,10 +965,9 @@ static void add_xml_molprop(xmlNodePtr                 parent,
             double x, y, z;
             ca.getCoords(&x, &y, &z);
 
-            xmlNodePtr  baby = add_xml_child_val(grandchild, rmap[MolPropXml::dX],
-                                                 gmx::formatString("%g", x).c_str());
-            baby = add_xml_child_val(grandchild, rmap[MolPropXml::dY], gmx::formatString("%g", y).c_str());
-            baby = add_xml_child_val(grandchild, rmap[MolPropXml::dZ], gmx::formatString("%g", z).c_str());
+            (void) add_xml_child_val(grandchild, rmap[MolPropXml::dX], gmx::formatString("%g", x).c_str());
+            (void) add_xml_child_val(grandchild, rmap[MolPropXml::dY], gmx::formatString("%g", y).c_str());
+            (void) add_xml_child_val(grandchild, rmap[MolPropXml::dZ], gmx::formatString("%g", z).c_str());
 
             for (auto &q : ca.chargesConst())
             {

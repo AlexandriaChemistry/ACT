@@ -148,17 +148,17 @@ double DSlater_1S_1S(double r, double xi, double xj)
         }
         else
         {
-            S = -(-33*xi + 48*exp(2*r*xi)*xi - 36*r*pow(xi, 2) -
+            S = -(-33*xi + 48*exp(2*rxi)*xi - 36*r*pow(xi, 2) -
 
-                  12*pow(r, 2)*pow(xi, 3))/(24*exp(2*r*xi)*r) +
+                  12*pow(r, 2)*pow(xi, 3))/(24*exp(2*rxi)*r) +
 
-                (-24 + 24*exp(2*r*xi) - 33*r*xi - 18*pow(r, 2)*pow(xi, 2) -
+                (-24 + 24*exp(2*rxi) - 33*rxi - 18*pow(r, 2)*pow(xi, 2) -
 
-                 4*pow(r, 3)*pow(xi, 3))/(24*exp(2*r*xi)*pow(r, 2)) +
+                 4*pow(r, 3)*pow(xi, 3))/(24*exp(2*rxi)*pow(r, 2)) +
 
-                (xi*(-24 + 24*exp(2*r*xi) - 33*r*xi - 18*pow(r, 2)*pow(xi, 2) -
+                (xi*(-24 + 24*exp(2*rxi) - 33*rxi - 18*pow(r, 2)*pow(xi, 2) -
 
-                     4*pow(r, 3)*pow(xi, 3)))/(12*exp(2*r*xi)*r)
+                     4*pow(r, 3)*pow(xi, 3)))/(12*exp(2*rxi)*r)
 
             ;
         }
@@ -178,9 +178,9 @@ double DSlater_1S_1S(double r, double xi, double xj)
 
                  exp(2*r*xj)*pow(xj, 4)*
 
-                 (-3*pow(xi, 2) - r*pow(xi, 3) + pow(xj, 2) + r*xi*pow(xj, 2)) -
+                 (-3*pow(xi, 2) - r*pow(xi, 3) + pow(xj, 2) + rxi*pow(xj, 2)) -
 
-                 exp(2*r*xi)*pow(xi, 4)*
+                 exp(2*rxi)*pow(xi, 4)*
 
                  (pow(xi, 2)*(1 + r*xj) - pow(xj, 2)*(3 + r*xj)))/
 
@@ -190,9 +190,9 @@ double DSlater_1S_1S(double r, double xi, double xj)
 
                       exp(2*r*xj)*pow(xj, 4)*
 
-                      (-3*pow(xi, 2) - r*pow(xi, 3) + pow(xj, 2) + r*xi*pow(xj, 2)) -
+                      (-3*pow(xi, 2) - r*pow(xi, 3) + pow(xj, 2) + rxi*pow(xj, 2)) -
 
-                      exp(2*r*xi)*pow(xi, 4)*
+                      exp(2*rxi)*pow(xi, 4)*
 
                       (pow(xi, 2)*(1 + r*xj) - pow(xj, 2)*(3 + r*xj))))/
 
@@ -204,11 +204,11 @@ double DSlater_1S_1S(double r, double xi, double xj)
 
                  2*exp(2*r*xj)*pow(xj, 5)*
 
-                 (-3*pow(xi, 2) - r*pow(xi, 3) + pow(xj, 2) + r*xi*pow(xj, 2)) -
+                 (-3*pow(xi, 2) - r*pow(xi, 3) + pow(xj, 2) + rxi*pow(xj, 2)) -
 
-                 exp(2*r*xi)*pow(xi, 4)*(pow(xi, 2)*xj - pow(xj, 3)) -
+                 exp(2*rxi)*pow(xi, 4)*(pow(xi, 2)*xj - pow(xj, 3)) -
 
-                 2*exp(2*r*xi)*pow(xi, 5)*
+                 2*exp(2*rxi)*pow(xi, 5)*
 
                  (pow(xi, 2)*(1 + r*xj) - pow(xj, 2)*(3 + r*xj)))/
 
