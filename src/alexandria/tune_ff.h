@@ -77,6 +77,12 @@ private:
     //! Pointer to ACMFitnessComputer since it will be initialized later
     ACMFitnessComputer   *fitComp_     = nullptr;
 
+    /*!
+     * \brief Print to log file (if it exists), the estimated number of times
+     * we will call calcDeviation per dataset
+     */
+    void printNumCalcDevEstimate();
+
 public:
 
     //! Constructor

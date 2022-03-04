@@ -325,6 +325,48 @@ void OptACM::initMaster()
     }
 }
 
+void OptACM::printNumCalcDevEstimate()
+{
+    long nCalcDevTrain = 0;
+    long nCalcDevTest = 0;
+    long nCalcDevIgnore = 0;
+
+    if (gach_.optimizer() == OptimizerAlg::MCMC)
+    {
+        nCalcDevTrain = bch_.maxIter() * sii_->nParam() + 1; // Initial one
+        if (bch_.evaluateTestset())
+        {
+            nCalcDevTest = bch_.maxIter() + 1;  // Initial one
+        }
+    }
+    else if (gach_.optimizer() == OptimizerAlg::GA)
+    {
+        nCalcDevTrain = gach_.maxGenerations() + 1;  // Extra initial generation
+    }
+    else if (gach_.optimizer() == OptimizerAlg::HYBRID)
+    {
+        nCalcDevTrain = (bch_.maxIter() * sii_->nParam() + 1) * gach_.maxGenerations() + 1;
+        if (bch_.evaluateTestset())
+        {
+            nCalcDevTest = (bch_.maxIter() + 1) * gach_.maxGenerations();
+        }
+    }
+
+    // Multiply by amount of individuals
+    nCalcDevTrain *= gach_.popSize();
+    nCalcDevTest *= gach_.popSize();
+
+    nCalcDevTrain += 1;  // At the end, for the best
+    nCalcDevTest += 1;  // At the end, for the best
+    nCalcDevIgnore += 1;  // At the end, for the best
+
+    fprintf(
+        logFile(),
+        "\nTotal number of fitness computations to be done:\n  - Train: %ld\n  - Test: %ld\n  - Ignore: %ld\n\n",
+        nCalcDevTrain, nCalcDevTest, nCalcDevIgnore
+    );
+}
+
 bool OptACM::runMaster(bool        optimize,
                        bool        sensitivity)
 {
@@ -336,6 +378,12 @@ bool OptACM::runMaster(bool        optimize,
     ga::Genome bestGenome;
     if (optimize)
     {
+        // Estimate number of fitness computations per dataset
+        if (logFile())
+        {
+            printNumCalcDevEstimate();
+        }
+        // Optimize!
         bMinimum = ga_->evolve(&bestGenome);
     }
     if (gach_.optimizer() != OptimizerAlg::GA && sensitivity)
@@ -451,7 +499,6 @@ int tune_ff(int argc, char *argv[])
     bool                bOptimize           = true;
     bool                bSensitivity        = true;
     bool                bForceOutput        = false;
-    bool                bEvaluate_testset   = false;
 
     gmx_output_env_t           *oenv;
     MolSelect                   gms;
@@ -467,11 +514,9 @@ int tune_ff(int argc, char *argv[])
             { "-optimize",     FALSE, etBOOL, {&bOptimize},
               "Do parameter optimization when true, or a single calculation otherwise." },
             { "-sensitivity",  FALSE, etBOOL, {&bSensitivity},
-              "Do a sensitivity analysis." },
+              "Do a sensitivity analysis." }
             // { "-force_output", FALSE, etBOOL, {&bForceOutput},
             //   "Write output force field even if no new minimum is found beyond the initial set of candidate solutions." },
-            { "-evaluate_testset", FALSE, etBOOL, {&bEvaluate_testset},
-              "Evaluate the MCMC energy on the test set." }
         };
 
         for (int i = 0; i < asize(pa); i++)
@@ -596,7 +641,7 @@ int tune_ff(int argc, char *argv[])
     // init charge generation for compounds in the
     // training set
     opt.initChargeGeneration(iMolSelect::Train);
-    if (bEvaluate_testset)
+    if (opt.bch()->evaluateTestset())
     {
         // init charge generation for compounds in the
         // test and ignore sets
