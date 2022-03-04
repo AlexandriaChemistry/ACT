@@ -5,7 +5,6 @@ Visualizes the fitness per generation of GA/HYBRID.
 """
 
 import argparse
-from ast import parse
 from types import SimpleNamespace
 import sys
 import os
