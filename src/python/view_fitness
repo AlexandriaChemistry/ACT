@@ -104,6 +104,9 @@ def check_args(args: SimpleNamespace) -> None:
         args (SimpleNamespace): command-line argumnents
     """
     halt: bool = False
+    if not (args.ftrain or args.ftest):
+        print("No file to read, okay...")
+        halt = True
     if args.ymax and args.ymin and args.ymax <= args.ymin:
         print(f'-ymax ({args.ymax}) should be larger than -ymin ({args.ymin})...')
         halt = True
@@ -133,10 +136,6 @@ def main() -> None:
     """
     args: SimpleNamespace = parse_cmdline()
     check_args(args)
-
-    if not (args.ftrain or args.ftest):
-        print("No file to read, okay...")
-        sys.exit(0)
 
     # For TRAIN
     if args.ftrain:
