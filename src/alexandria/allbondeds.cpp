@@ -321,7 +321,7 @@ static void calc_linear_angle_a(const Poldata    *pd,
     auto atoms      = bondId.atoms();
     auto bondOrders = bondId.bondOrders();
     auto bij = Identifier({atoms[0], atoms[1]}, {bondOrders[0]}, CanSwap::Yes);
-    auto bjk = Identifier({atoms[1], atoms[2]}, {bondOrders[0]}, CanSwap::Yes);
+    auto bjk = Identifier({atoms[1], atoms[2]}, {bondOrders[1]}, CanSwap::Yes);
     auto fs  = pd->findForcesConst(InteractionType::BONDS);
     if (!fs.parameterExists(bij) || !fs.parameterExists(bjk))
     {
