@@ -14,6 +14,7 @@ parser = argparse.ArgumentParser(
 )
 parser.add_argument('-ftrain', type=str, help='Filename for train fitness of GA')
 parser.add_argument('-ftest', type=str, help='Filename for test fitness of GA')
+parser.add_argument('-log',  help='Plot the 10 log of the fitness value', action="store_true")
 args = parser.parse_args()
 
 if not (args.ftrain or args.ftest):
@@ -31,6 +32,9 @@ if args.ftrain:
         sys.exit(1)
 
     ftrain_data = np.loadtxt(args.ftrain)
+    if args.log:
+        logger = lambda t: np.log10(t)
+        ftrain_data = np.array([logger(xi) for xi in ftrain_data])
     gen_vector = np.arange(0, ftrain_data.shape[0])
 
     min, max = np.amin(ftrain_data, axis=1), np.amax(ftrain_data, axis=1)
@@ -40,8 +44,10 @@ if args.ftrain:
 
     ax.set_title("Train fitness")
     ax.set_xlabel("Generation")
-    ax.set_ylabel("Fitness")
-
+    if args.log:
+        ax.set_ylabel("10log(Fitness)")
+    else:
+        ax.set_ylabel("10log(Fitness)")
     ax.plot(gen_vector, min, color='C0', label="min")
     ax.plot(gen_vector, max, color='C1', label="max")
     ax.plot(gen_vector, mean, color='C2', label="mean")
@@ -62,6 +68,9 @@ if args.ftest:
         sys.exit(1)
 
     ftest_data = np.loadtxt(args.ftest)
+    if args.log:
+        logger = lambda t: np.log10(t)
+        ftest_data = np.array([logger(xi) for xi in ftest_data])
     gen_vector = np.arange(0, ftest_data.shape[0])
 
     min, max = np.amin(ftest_data, axis=1), np.amax(ftest_data, axis=1)
@@ -71,7 +80,10 @@ if args.ftest:
 
     ax.set_title("Test fitness")
     ax.set_xlabel("Generation")
-    ax.set_ylabel("Fitness")
+    if args.log:
+        ax.set_ylabel("10log(Fitness)")
+    else:
+        ax.set_ylabel("10log(Fitness)")
 
     ax.plot(gen_vector, min, color='C0', label="min")
     ax.plot(gen_vector, max, color='C1', label="max")
