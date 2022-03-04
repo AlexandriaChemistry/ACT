@@ -262,7 +262,11 @@ def install_act(args, CXX, CC, HOST, prefix):
     os.chdir(pwd)
     
 def parseArguments():
-    parser = argparse.ArgumentParser()
+    desc='''This script will download and install the 
+    Alexandria Chemistry Toolkit as well as the Alexandria branch of
+    the OpenBabel software.
+    '''
+    parser = argparse.ArgumentParser(description=desc)
     branch = "main"  
     parser.add_argument("-b", "--branch", help="Branch to clone from either ACT or GROMACS depending on branch name. Default is ACT with branch "+branch,             type=str, default=branch)
     parser.add_argument("-f", "--flags",  help="Additional compilation flags",type=str, default="")
