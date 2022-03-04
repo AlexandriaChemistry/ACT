@@ -31,4 +31,5 @@ install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/generate_ff DESTINATION bin)
 install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/generate_mp DESTINATION bin)
 install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/molselect DESTINATION bin)
 install(PROGRAMS viewxvg DESTINATION bin)
+install(PROGRAMS view_fitness DESTINATION bin)
 
