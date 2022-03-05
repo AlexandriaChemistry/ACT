@@ -365,7 +365,7 @@ if __name__ == '__main__':
     def parseArguments(ffs):
         desc = ('''This script will generate a force field file that can be used as input for
         force field optimizations in the Alexandria Chemistry Toolkit. Input files can be found
-        in %s. You can copy these files to your working directory, modify them and pass the
+        in $ACTDATA/forcefield (%s/forcefield in your installation). You can copy these files to your working directory, modify them and pass the
         modified version to this script. 
         Force field files can use two charge generation algorithms, the split charge equilibration method (SQE)
         or the eloctronegativity equilibration method (EEM). The force field file can be written with or without
