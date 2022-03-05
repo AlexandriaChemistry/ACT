@@ -613,7 +613,9 @@ static void UpdateIdefEntry(const ForceFieldParameterList &fs,
     case F_ANGLES:
         {
             auto fp = fs.findParameterTypeConst(bondId, "angle");
-            myval = convertToGromacs(fp.value(), fp.unit());
+            // GROMACS uses degrees internally, therefore no conversion
+            // myval = convertToGromacs(fp.value(), fp.unit());
+            myval = fp.value();
             mtop->ffparams.iparams[gromacsType].harmonic.rA         =
                 mtop->ffparams.iparams[gromacsType].harmonic.rB     = myval;
             if (ltop)
@@ -647,7 +649,9 @@ static void UpdateIdefEntry(const ForceFieldParameterList &fs,
     case F_UREY_BRADLEY:
         {
             auto fp = fs.findParameterTypeConst(bondId, "angle");
-            double angle = convertToGromacs(fp.value(), fp.unit());
+            // GROMACS uses degrees internally, therefore no conversion
+            // double angle = convertToGromacs(fp.value(), fp.unit());
+            double angle = fp.value();
             mtop->ffparams.iparams[gromacsType].u_b.thetaA         =
                 mtop->ffparams.iparams[gromacsType].u_b.thetaB     = angle;
             if (ltop)
