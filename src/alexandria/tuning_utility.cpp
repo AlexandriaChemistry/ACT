@@ -239,35 +239,43 @@ static void print_polarizability(FILE              *fp,
     double fac = convertFromGromacs(1.0, "Angstrom3");
     if (!calc_name.empty())
     {
+        auto qelec = mol->qTypeProps(qType::Elec);
+        auto aelec = qelec->polarizabilityTensor();
         if (calc_name == qTypeName(qType::Calc))
         {
-            m_sub(mol->alpha_elec(), mol->alpha_calc(), dalpha);
-            delta = fac*sqrt(gmx::square(dalpha[XX][XX])+gmx::square(dalpha[XX][YY])+gmx::square(dalpha[XX][ZZ])+
-                         gmx::square(dalpha[YY][YY])+gmx::square(dalpha[YY][ZZ]));
-            diso_pol   = fac*std::abs(mol->PolarizabilityDeviation());
-            daniso_pol = fac*std::abs(mol->AnisoPolarizabilityDeviation());
+            auto qcalc = mol->qTypeProps(qType::Calc);
+            auto acalc = qcalc->polarizabilityTensor();
+
+            m_sub(aelec, acalc, dalpha);
+            delta = fac*sqrt(gmx::square(dalpha[XX][XX])+gmx::square(dalpha[XX][YY])+
+                             gmx::square(dalpha[XX][ZZ])+
+                             gmx::square(dalpha[YY][YY])+gmx::square(dalpha[YY][ZZ]));
+            diso_pol   = fac*std::abs(qcalc->isotropicPolarizability()-
+                                      qelec->isotropicPolarizability());
+            daniso_pol = fac*std::abs(qcalc->anisotropicPolarizability()-
+                                      qelec->anisotropicPolarizability());
             fprintf(fp,
                     "%-12s (%6.2f %6.2f %6.2f) Dev: (%6.2f %6.2f %6.2f) Delta: %6.2f %s\n"
                     "             (%6s %6.2f %6.2f)      (%6s %6.2f %6.2f)\n"
                     "             (%6s %6s %6.2f)      (%6s %6s %6.2f)\n",
                     calc_name.c_str(),
-                    fac*mol->alpha_calc()[XX][XX], fac*mol->alpha_calc()[XX][YY], fac*mol->alpha_calc()[XX][ZZ],
+                    fac*acalc[XX][XX], fac*acalc[XX][YY], fac*acalc[XX][ZZ],
                     fac*dalpha[XX][XX], fac*dalpha[XX][YY], fac*dalpha[XX][ZZ], delta, (delta > alpha_toler) ? "ALPHA" : "",
-                    "", fac*mol->alpha_calc()[YY][YY], fac*mol->alpha_calc()[YY][ZZ],
+                    "", fac*acalc[YY][YY], fac*acalc[YY][ZZ],
                     "", fac*dalpha[YY][YY], fac*dalpha[YY][ZZ],
-                    "", "", fac*mol->alpha_calc()[ZZ][ZZ],
+                    "", "", fac*acalc[ZZ][ZZ],
                     "", "", fac*dalpha[ZZ][ZZ]);
             fprintf(fp,
                     "Isotropic polarizability:  %s Electronic: %6.2f  Calculated: %6.2f  Delta: %6.2f %s\n\n",
                     mol->getMolname().c_str(), 
-                    fac*mol->ElectronicPolarizability(),
-                    fac*mol->CalculatedPolarizability(), 
+                    fac*qelec->isotropicPolarizability(),
+                    fac*qcalc->isotropicPolarizability(), 
                     diso_pol, (diso_pol > isopol_toler) ? "ISO" : "");
             fprintf(fp,
                     "Anisotropic polarizability:  %s Electronic: %6.2f  Calculated: %6.2f  Delta: %6.2f %s\n\n",
                     mol->getMolname().c_str(), 
-                    fac*mol->ElectronicAnisoPolarizability(),
-                    fac*mol->CalculatedAnisoPolarizability(), 
+                    fac*qelec->anisotropicPolarizability(),
+                    fac*qcalc->anisotropicPolarizability(), 
                     daniso_pol, (daniso_pol > isopol_toler) ? "ANISO" : "");
 
         }
@@ -278,9 +286,9 @@ static void print_polarizability(FILE              *fp,
                     "Electronic   (%6.2f %6.2f %6.2f)\n"
                     "             (%6s %6.2f %6.2f)\n"
                     "             (%6s %6s %6.2f)\n",
-                    fac*mol->alpha_elec()[XX][XX], fac*mol->alpha_elec()[XX][YY], fac*mol->alpha_elec()[XX][ZZ],
-                    "", fac*mol->alpha_elec()[YY][YY], fac*mol->alpha_elec()[YY][ZZ],
-                    "", "", fac*mol->alpha_elec()[ZZ][ZZ]);
+                    fac*aelec[XX][XX], fac*aelec[XX][YY], fac*aelec[XX][ZZ],
+                    "", fac*aelec[YY][YY], fac*aelec[YY][ZZ],
+                    "", "", fac*aelec[ZZ][ZZ]);
         }
     }
 }
@@ -629,15 +637,23 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
             // Polarizability
             if (bPolar)
             {
+                auto qelec = mol->qTypeProps(qType::Elec);
+                auto aelec = qelec->polarizabilityTensor();
                 mol->CalcPolarizability(efield);
+                auto qcalc = mol->qTypeProps(qType::Calc);
+                auto acalc = qcalc->polarizabilityTensor();
+
                 print_polarizability(fp, mol, qTypeName(qType::Elec), alpha_toler_, isopol_toler_);
                 print_polarizability(fp, mol, qTypeName(qType::Calc), alpha_toler_, isopol_toler_);
-                lsq_isoPol[ims][qType::Calc].add_point(mol->ElectronicPolarizability(),
-                                                       mol->CalculatedPolarizability(),       0, 0);
-                lsq_anisoPol[ims][qType::Calc].add_point(mol->anisoPolElec(), mol->anisoPolCalc(), 0, 0);
+                lsq_isoPol[ims][qType::Calc].add_point(qelec->isotropicPolarizability(),
+                                                       qcalc->isotropicPolarizability(),
+                                                       0, 0);
+                lsq_anisoPol[ims][qType::Calc].add_point(qelec->anisotropicPolarizability(),
+                                                         qcalc->anisotropicPolarizability(),
+                                                         0, 0);
                 for (int mm = 0; mm < DIM; mm++)
                 {
-                    lsq_alpha[ims][qType::Calc].add_point(mol->alpha_elec()[mm][mm], mol->alpha_calc()[mm][mm], 0, 0);
+                    lsq_alpha[ims][qType::Calc].add_point(aelec[mm][mm], acalc[mm][mm], 0, 0);
                 }
             }
 

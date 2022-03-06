@@ -156,6 +156,18 @@ void QtypeProps::setQandX(const std::vector<double>        &q,
     setX(x);
 }
 
+void QtypeProps::setPolarizabilityTensor(const tensor &alpha)
+{
+    copy_mat(alpha, alpha_);
+    auto a = gmx::square(alpha_[XX][XX] - alpha_[YY][YY]);
+    auto b = gmx::square(alpha_[XX][XX] - alpha_[ZZ][ZZ]);
+    auto c = gmx::square(alpha_[ZZ][ZZ] - alpha_[YY][YY]);
+    auto d = 6 * (gmx::square(alpha_[XX][YY]) + gmx::square(alpha_[XX][ZZ]) + gmx::square(alpha_[ZZ][YY]));
+
+    anisotropy_ = sqrt(1/2.0) * sqrt(a + b + c + d);
+    isotropy_   = (alpha_[XX][XX]+alpha_[YY][YY]+alpha_[ZZ][ZZ])/3;
+}
+
 double QtypeProps::dipole() const
 {
     auto mm = multipoles_.find(MolPropObservable::DIPOLE);

@@ -270,15 +270,6 @@ private:
         //! Add an experiment
         void AddExperiment(const Experiment &myexp) { exper_.push_back(myexp); }
 
-        void Stats()
-        {
-            printf("%s - %s - %d experiments\n",
-                   molname_.c_str(), formula_.c_str(),
-                   (int)exper_.size());
-        }
-        //! Return the number of experiments
-        int NExperiment() const { return exper_.size(); }
-
         //! Return const vector of experiments
         const std::vector<Experiment> &experimentConst() const { return exper_; }
 
@@ -291,7 +282,7 @@ private:
         //! Return pointer to the last inserted experiment or nullptr if the number of experiments is zero
         Experiment *LastExperiment()
         {
-            if (NExperiment() > 0)
+            if (!exper_.empty())
             {
                 return &(exper_.back());
             }

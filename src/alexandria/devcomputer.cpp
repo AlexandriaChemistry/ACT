@@ -253,9 +253,17 @@ void PolarDevComputer::calcDeviation(MyMol                                *mymol
                                      gmx_unused const std::vector<double> &param,
                                      gmx_unused const CommunicationRecord *commrec)
 {
+    mymol->CalcPolarizability(1);
+    auto aelec = mymol->qTypeProps(qType::Elec)->polarizabilityTensor();
+    auto acalc = mymol->qTypeProps(qType::Calc)->polarizabilityTensor();
     double diff2 = 0;
-    mymol->CalcPolarizability(10);
-    diff2 = gmx::square(mymol->PolarizabilityDeviation());
+    for(int i = 0; i < DIM; i++)
+    {
+        for(int j = 0; j < DIM; j++)
+        {
+            diff2 += gmx::square(aelec[i][j]-acalc[i][j]);
+        }
+    }
     
     if (false && logfile_)
     {

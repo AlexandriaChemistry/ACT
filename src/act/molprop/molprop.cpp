@@ -687,8 +687,8 @@ CommunicationStatus MolProp::Receive(const CommunicationRecord *cr, int src)
 
         if (nullptr != debug)
         {
-            fprintf(debug, "Received %d experiments from %d for mol %s\n",
-                    NExperiment(), src, getMolname().c_str());
+            fprintf(debug, "Received %zu experiments from %d for mol %s\n",
+                    exper_.size(), src, getMolname().c_str());
             fprintf(debug, "Received MolProp %s, status %s\n",
                     getMolname().c_str(), cs_name(cs));
             fflush(debug);

@@ -86,7 +86,7 @@ const std::map<qType, std::string> &qTypes();
 //typedef std::array<Octupole, DIM> Hexadecapole;
 
 
-/*! Class to hold electrostatic properties
+/*! Class to hold electrostatic properties.
  * To compare the properties of different models we have this class
  * to hold electrostatic moments and charges, and indeed a grid 
  * structure to hold the electrostatic potential.
@@ -98,6 +98,12 @@ class QtypeProps
     qType                  qtype_;
     //! Electrostatic moments
     std::map<MolPropObservable, std::vector<double> > multipoles_;
+    //! Polarizability tensor
+    tensor                 alpha_ = { { 0 } };
+    //! Polarizability anisotropy
+    double                 anisotropy_ = 0;
+    //! Polarizability isotropic value
+    double                 isotropy_   = 0;
     //! The coordinates
     gmx::HostVector<gmx::RVec> x_;
     //! Center of charge
@@ -152,11 +158,27 @@ class QtypeProps
      */
     void calcMoments();
     
-    /*! \brief
-     * Return computed dipole for charge type qt.
+    /*! \brief Return dipole for charge type qt.
      */
     double dipole() const;
-
+    
+    /*! \brief Return polarizability tensor
+     */
+    const tensor &polarizabilityTensor() const { return alpha_; }
+    
+    /*! \brief Set the polarizability tensor
+     * \param[in] alpha The new tensor
+     */
+    void setPolarizabilityTensor(const tensor &alpha);
+    
+    /*! \brief Return isotropic polarizability
+     */
+    double isotropicPolarizability() const { return isotropy_; }
+    
+    /*! \brief Return anisotropic polarizability
+     */
+    double anisotropicPolarizability() const { return anisotropy_; }
+   
     /*! \brief Check whether a multipole observable is present
      * \param[in] mpo The type of multipole
      * \return true if found

@@ -118,7 +118,7 @@ protected:
             int  nener = 1;
             snprintf(mbuf, sizeof(mbuf), "molecule %d, %s, number of calcs",
                      mol++, mpi.getMolname().c_str());
-            myCheck.checkInteger(mpi.NExperiment(), mbuf);
+            myCheck.checkInteger(mpi.experimentConst().size(), mbuf);
             for (auto &ci : mpi.experimentConst())
             {
                 char cbuf[256];

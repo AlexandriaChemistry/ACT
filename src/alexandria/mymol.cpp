@@ -1788,51 +1788,18 @@ bool MyMol::getOptimizedGeometry(rvec *x)
     return bopt;
 }
 
-void MyMol::CalcQPol(const Poldata *pd)
+static double calcRefEnthalpy(const Poldata *pd,
+                              const t_atoms &myatoms)
 {
-    int     np;
-    double  poltot, sptot, ereftot;
+    double ereftot;
 
-    poltot  = 0;
-    sptot   = 0;
     ereftot = 0;
-    np      = 0;
-    auto eep = pd->findForcesConst(InteractionType::POLARIZATION);
-    auto myatoms = atomsConst();
     for (int i = 0; i < myatoms.nr; i++)
     {
-        std::string ptype;
         auto atype = pd->findParticleType(*myatoms.atomtype[i]);
-        auto idP   = atype->interactionTypeToIdentifier(InteractionType::POLARIZATION);
-        if (!idP.id().empty() && eep.parameterExists(idP))
-        {
-            auto param  = eep.findParameterTypeConst(idP, "alpha");
-            poltot += param.value();
-            sptot  += gmx::square(param.uncertainty());
-            np++;
-        }
         ereftot += atype->refEnthalpy();
     }
-    qProps_.find(qType::Calc)->second.calcMoments();
-    ref_enthalpy_   = ereftot;
-    if (np > 0)
-    {
-        polarizability_ = poltot;
-        sig_pol_        = sqrt(sptot/np);
-    }
-}
-
-double MyMol::PolarizabilityTensorDeviation() const
-{
-    double delta2 = 0;
-    for (auto i = 0; i < DIM; i++)
-    {
-        for (auto j = 0; j < DIM; j++)
-        {
-            delta2 += gmx::square(alpha_calc_[i][j] - alpha_elec_[i][j]);
-        }
-    }
-    return delta2;
+    return ereftot;
 }
 
 void MyMol::backupCoordinates()
@@ -1861,35 +1828,8 @@ void MyMol::restoreCoordinates()
     }
 }
 
-/*! \brief
- * Compute the anisotropic polarizability from the polarizability tensor
- *
- * \param[in]  polar     Tensor of polarizability
- * \return The anisotropic polarizability
- */
-static double CalcAnisoPolarizability(tensor polar)
-{
-    auto a = gmx::square(polar[XX][XX] - polar[YY][YY]);
-    auto b = gmx::square(polar[XX][XX] - polar[ZZ][ZZ]);
-    auto c = gmx::square(polar[ZZ][ZZ] - polar[YY][YY]);
-    auto d = 6 * (gmx::square(polar[XX][YY]) + gmx::square(polar[XX][ZZ]) + gmx::square(polar[ZZ][YY]));
-
-    return sqrt(1/2.0) * sqrt(a + b + c + d);
-}
-
-static double CalcAnisoPolarizability(const std::vector<double> &polar)
-{
-    auto a = gmx::square(polar[0] - polar[3]);
-    auto b = gmx::square(polar[0] - polar[5]);
-    auto c = gmx::square(polar[5] - polar[3]);
-    auto d = 6 * (gmx::square(polar[1]) + gmx::square(polar[2]) + gmx::square(polar[4]));
-
-    return sqrt(1/2.0) * sqrt(a + b + c + d);
-}
-
 immStatus MyMol::CalcPolarizability(double efield)
 {
-    //const double        POLFAC = 29.957004; /* C.m**2.V*-1 to Å**3 */
     std::vector<double> field;
     immStatus           imm = immStatus::OK;
     double              rmsf;
@@ -1898,41 +1838,44 @@ immStatus MyMol::CalcPolarizability(double efield)
     backupCoordinates();
     field.resize(DIM, 0);
     myforce_->setField(field);
-    imm          = computeForces(&rmsf);
-    qtp.setQ(atoms());
-    qtp.setX(state_->x);
-    isoPol_calc_ = 0;
-    qtp.calcMoments();
-    auto mpo = MolPropObservable::DIPOLE;
-    if (!qtp.hasMultipole(mpo))
-    {
-        GMX_THROW(gmx::InternalError("No dipole to compute."));
-    }
-    auto mu_ref = qtp.getMultipole(mpo);
-    // Convert from e nm2/V to cubic nm
-    double enm2_V = E_CHARGE*1e6*1e-18/(4*M_PI*EPSILON0_SI)*1e21;
-    for (auto m = 0; imm == immStatus::OK && m < DIM; m++)
-    {
-        field[m] = efield;
-        myforce_->setField(field);
-        imm = computeForces(&rmsf);
-        qtp.setX(state_->x);
-        field[m] = 0;
-        myforce_->setField(field);
-        if (imm == immStatus::OK)
-        {
-            qtp.calcMoments();
-            auto qmu = qtp.getMultipole(mpo);
-            for (auto n = 0; n < DIM; n++)
-            {
-                alpha_calc_[n][m] = enm2_V*((qmu[n]-mu_ref[n])/efield);
-            }
-            isoPol_calc_ += alpha_calc_[m][m]/DIM;
-        }
-    }
+    imm = computeForces(&rmsf);
     if (immStatus::OK == imm)
     {
-        anisoPol_calc_ = CalcAnisoPolarizability(alpha_calc_);
+        qtp.setQ(atoms());
+        qtp.setX(state_->x);
+        qtp.calcMoments();
+        auto mpo = MolPropObservable::DIPOLE;
+        if (!qtp.hasMultipole(mpo))
+        {
+            GMX_THROW(gmx::InternalError("No dipole to compute."));
+        }
+        auto mu_ref = qtp.getMultipole(mpo);
+        // Convert from e nm2/V to cubic nm
+        double enm2_V = E_CHARGE*1e6*1e-18/(4*M_PI*EPSILON0_SI)*1e21;
+        tensor alpha;
+        for (auto m = 0; imm == immStatus::OK && m < DIM; m++)
+        {
+            field[m] = efield;
+            myforce_->setField(field);
+            imm = computeForces(&rmsf);
+            qtp.setX(state_->x);
+            field[m] = 0;
+            myforce_->setField(field);
+            if (imm == immStatus::OK)
+            {
+                qtp.calcMoments();
+                auto qmu = qtp.getMultipole(mpo);
+                for (auto n = 0; n < DIM; n++)
+                {
+                    alpha[n][m] = enm2_V*((qmu[n]-mu_ref[n])/efield);
+                }
+            }
+        }
+        if (immStatus::OK == imm)
+        {
+            auto qcalc = qTypeProps(qType::Calc);
+            qcalc->setPolarizabilityTensor(alpha);
+        }
     }
     restoreCoordinates();
     return imm;
@@ -2003,7 +1946,7 @@ void MyMol::PrintTopology(FILE                      *fp,
         return;
     }
 
-    CalcQPol(pd);
+    auto ref_enthalpy = calcRefEnthalpy(pd, atomsConst());
     if (getMolname().size() > 0)
     {
         printmol.name = strdup(getMolname().c_str());
@@ -2021,7 +1964,7 @@ void MyMol::PrintTopology(FILE                      *fp,
 
     snprintf(buf, sizeof(buf), "Total Mass = %.3f (Da)", getMass());
     commercials.push_back(buf);
-    snprintf(buf, sizeof(buf), "Reference_Enthalpy = %.3f (kJ/mol)", ref_enthalpy_);
+    snprintf(buf, sizeof(buf), "Reference_Enthalpy = %.3f (kJ/mol)", ref_enthalpy);
     commercials.push_back(buf);
     snprintf(buf, sizeof(buf), "Total Charge = %d (e)", totalCharge());
     commercials.push_back(buf);
@@ -2069,28 +2012,36 @@ void MyMol::PrintTopology(FILE                      *fp,
         auto imm = CalcPolarizability(efield);
         if (imm == immStatus::OK)
         {
-            std::vector<double> ac = { alpha_calc_[XX][XX], alpha_calc_[XX][YY], alpha_calc_[XX][ZZ],
-                alpha_calc_[YY][YY], alpha_calc_[YY][ZZ], alpha_calc_[ZZ][ZZ] };
+            auto qcalc = qTypeProps(qType::Calc);
+            auto acalc = qcalc->polarizabilityTensor();
+            std::vector<double> ac = { acalc[XX][XX], acalc[XX][YY], acalc[XX][ZZ],
+                acalc[YY][YY], acalc[YY][ZZ], acalc[ZZ][ZZ] };
             auto unit = mpo_unit2(MolPropObservable::POLARIZABILITY);
             add_tensor(&commercials, "Alexandria Polarizability components (A^3)", unit, ac);
             
-            snprintf(buf, sizeof(buf), "Alexandria Isotropic Polarizability: %.2f (A^3)\n", isoPol_calc_);
+            snprintf(buf, sizeof(buf), "Alexandria Isotropic Polarizability: %.2f (A^3)\n",
+                     qcalc->isotropicPolarizability());
             commercials.push_back(buf);
             
-            snprintf(buf, sizeof(buf), "Alexandria Anisotropic Polarizability: %.2f (A^3)\n", anisoPol_calc_);
+            snprintf(buf, sizeof(buf), "Alexandria Anisotropic Polarizability: %.2f (A^3)\n",
+                     qcalc->anisotropicPolarizability());
             commercials.push_back(buf);
 
             T = -1;
             auto gp = findProperty(MolPropObservable::POLARIZABILITY, iqmType::QM, T, method, basis, "");
             if (gp)
             {
-                auto alpha_elec = gp->getVector();
-                anisoPol_elec_  = CalcAnisoPolarizability(alpha_elec);
+                auto qelec = qTypeProps(qType::Elec);
+                auto aelec = qelec->polarizabilityTensor();
+                std::vector<double> ae = { aelec[XX][XX], aelec[XX][YY], aelec[XX][ZZ],
+                    aelec[YY][YY], aelec[YY][ZZ], aelec[ZZ][ZZ] };
                 snprintf(buf, sizeof(buf), "%s + Polarizability components (A^3)", mylot.c_str());
-                add_tensor(&commercials, buf, unit, alpha_elec);
-                snprintf(buf, sizeof(buf), "%s Isotropic Polarizability: %.2f (A^3)\n", mylot.c_str(), isoPol_elec_);
+                add_tensor(&commercials, buf, unit, ae);
+                snprintf(buf, sizeof(buf), "%s Isotropic Polarizability: %.2f (A^3)\n",
+                         mylot.c_str(), qelec->isotropicPolarizability());
                 commercials.push_back(buf);
-                snprintf(buf, sizeof(buf), "%s Anisotropic Polarizability: %.2f (A^3)\n", mylot.c_str(), anisoPol_elec_);
+                snprintf(buf, sizeof(buf), "%s Anisotropic Polarizability: %.2f (A^3)\n",
+                         mylot.c_str(), qelec->anisotropicPolarizability());
                 commercials.push_back(buf);
             }
         }
@@ -2383,9 +2334,8 @@ immStatus MyMol::getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
                 auto gp = static_cast<const MolecularPolarizability *>(findProperty(mpo, miq.second, T, method, basis, ""));
                 if (gp)
                 {
-                    copy_mat(gp->getTensor(), alpha_elec_);
-                    anisoPol_elec_ = CalcAnisoPolarizability(alpha_elec_);
-                    isoPol_elec_   = trace(alpha_elec_)/3.0;
+                    auto qelec = qTypeProps(qType::Elec);
+                    qelec->setPolarizabilityTensor(gp->getTensor());
                 }
                 else
                 {

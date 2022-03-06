@@ -211,11 +211,12 @@ void OptACM::initChargeGeneration(iMolSelect ims)
         {
             // For fitting alpha we need a reference polarizability
             double T = 0;
-            auto gp = mymol.findProperty(MolPropObservable::POLARIZABILITY, iqmType::QM, T,
-                                         method, basis, "");
+            auto gp = reinterpret_cast<const MolecularPolarizability*>(mymol.findProperty(MolPropObservable::POLARIZABILITY, iqmType::QM,
+                                                                                          T, method, basis, ""));
             if (gp)
             {
-                mymol.SetElectronicPolarizability(gp->getValue());
+                auto qelec = mymol.qTypeProps(qType::Elec);
+                qelec->setPolarizabilityTensor(gp->getTensor());
             }
             else
             {

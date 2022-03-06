@@ -102,9 +102,6 @@ namespace alexandria
         double                           qTolerance_     = 1e-6;
         //! Max iterations for SQE or EEM calculations
         int                              maxQiter_       = 5;
-        double                           ref_enthalpy_   = 0;
-        double                           polarizability_ = 0;
-        double                           sig_pol_        = 0;
         t_excls                         *excls_          = nullptr;
         std::unique_ptr<gmx_vsite_t>    *vsite_          = nullptr;
         std::unique_ptr<gmx::MDAtoms>   *MDatoms_        = nullptr;
@@ -114,8 +111,6 @@ namespace alexandria
         //! This points to the atom indices before shells were added
         std::map<int, int>               originalAtomIndex_;
         std::string                      forcefield_;
-        double                           isoPol_elec_      = 0;
-        double                           isoPol_calc_      = 0;
         bool                             gromacsGenerated_ = false;
         gpp_atomtype_t                   gromppAtomtype_;
  
@@ -255,10 +250,6 @@ namespace alexandria
         std::vector<int>               symmetric_charges_;
         std::vector<std::string>       error_messages_;
         eSupport                       eSupp_         = eSupport::Local;
-        double                         anisoPol_elec_ = 0;
-        double                         anisoPol_calc_ = 0;
-        tensor                         alpha_elec_    = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
-        tensor                         alpha_calc_    = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
         QgenAcm                       *QgenAcm_        = nullptr;
    public:
   
@@ -286,18 +277,6 @@ namespace alexandria
          * \param[in] esup The support type
          */
         void setSupport(eSupport esup) { eSupp_ = esup; }
-
-        //! \return Calculated (ACM) polarizability tensor
-        const tensor &alpha_calc() const { return alpha_calc_; }
-
-        //! \return Electronic (QM) polarizability tensor
-        const tensor &alpha_elec() const { return alpha_elec_; }
-
-        //! \return Electronic polarizability anisotropy
-        double anisoPolElec() const { return anisoPol_elec_; }
-
-        //! \return Calculated (ACM) polarizability anisotropy
-        double anisoPolCalc() const { return anisoPol_calc_; }
 
         /*! Return an energy component
          * \param[in]  mpo  The particular term that is requested
@@ -396,18 +375,6 @@ namespace alexandria
          * \return bond order or 0 if not present
          */
         double bondOrder(int ai, int aj) const;
-        /*! \brief
-         * Return mtop structure
-         */
-        const gmx_mtop_t *mtop() const { return mtop_; }
-        /*! \brief
-         * Return grompp Atomtype structure
-         */
-        const gpp_atomtype_t *gromppAtomtype() const { return &gromppAtomtype_; }
-        /*! \brief
-         * Return mol state
-         */
-        t_state *molState() const { return state_; }
 
         /*! \brief
          * It generates the atoms structure which will be used to print the topology file.
@@ -427,44 +394,19 @@ namespace alexandria
                                    missingParameters  missing,
                                    bool               strict=true);
 
-        //! Return the topology structure
+        //! Return the ACT topology structure
         const Topology *topology() const { return topology_; }
 
         /*! \brief
-         *  Computes isotropic polarizability at the presence of external
-         *  electric field (under construction!!!)
+         *  Computes polarizability tensor in the presence of external
+         *  electric field. The result is stored in 
+         *  mymol->qTypeProps(qType::Calc).
          *
          * \param[in]  efield   Strenght of the external electric field
          * \returns the result of the calculation, if fine it is immOK
          */
         immStatus CalcPolarizability(double efield);
-      
-        /*! \brief set the electronic polarizability
-         * \param[in] isoPol The isotropic polarizability
-         */
-        void SetElectronicPolarizability(double isoPol) { isoPol_elec_ = isoPol; }
-        /*! \brief get the electronic polarizability
-         */
-        double ElectronicPolarizability() { return isoPol_elec_; }
-        /*! \brief get the calculated polarizability
-         */
-        double CalculatedPolarizability() { return isoPol_calc_; }
-        /*! \brief get the electronic anisotropic polarizability
-         */
-        double ElectronicAnisoPolarizability() { return anisoPol_elec_; }
-        /*! \brief get the calculated anisotropic polarizability
-         */
-        double CalculatedAnisoPolarizability() { return anisoPol_calc_; }
-        /*! \brief Return difference between calculated and electronic isotropy polarizability 
-         */
-        double PolarizabilityDeviation() const { return isoPol_calc_ - isoPol_elec_; }
-        /*! \brief Return difference between calculated and electronic anisotropy polarizability 
-         */
-        double AnisoPolarizabilityDeviation() const { return anisoPol_calc_ - anisoPol_elec_; }
-        /*! \brief Return difference between calculated and electronic polarizability tensor
-         */
-        double PolarizabilityTensorDeviation() const;
-
+        
         /*! \brief
          * Generate atomic partial charges
          *
@@ -567,13 +509,6 @@ namespace alexandria
                            const CommunicationRecord *cr,
                            const std::string         &method,
                            const std::string         &basis);
-
-        /*! \brief
-         *  Compute or derive global info about the molecule
-         *
-         * \param[in] pd   Data structure containing atomic properties
-         */
-        void CalcQPol(const Poldata *pd);
 
         /*! \brief
          * Relax the shells (if any) or compute the forces in the molecule
