@@ -49,7 +49,7 @@ public:
                Selector                            *selector,
                Crossover                           *crossover,
                Mutator                             *mutator,
-               std::vector<Terminator*>             terminators,
+               std::vector<Terminator*>            *terminators,
                alexandria::StaticIndividualInfo    *sii,
                alexandria::GAConfigHandler         *gach,
                int                                  seed)
@@ -82,7 +82,7 @@ public:
          alexandria::StaticIndividualInfo    *sii,
          alexandria::GAConfigHandler         *gach)
     : GeneticAlgorithm(initializer, fitnessComputer, nullptr, nullptr, nullptr,
-                       mutator, std::vector<Terminator*>(), gach->popSize()),
+                       mutator, nullptr, gach->popSize()),
       sii_(sii), gach_(gach), logFile_(logFile) {}
 
     //! \copydocs ga::GeneticAlgorithm::evolve

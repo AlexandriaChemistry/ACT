@@ -24,8 +24,8 @@ namespace ga
 
 Terminator *GeneticAlgorithm::terminator(const int index)
 {
-    GMX_RELEASE_ASSERT(index < terminators_.size(), "Index of terminator is out of bounds!");
-    return terminators_[index];
+    GMX_RELEASE_ASSERT(index < static_cast<int>(terminators_->size()), "Index of terminator is out of bounds!");
+    return terminators_->at(index);
 }
 
 bool GeneticAlgorithm::terminate(const GenePool *pool,
@@ -34,7 +34,7 @@ bool GeneticAlgorithm::terminate(const GenePool *pool,
     // Even if a terminator says we must halt, we will ask them all just in case
     // there is more than one stopping message to be printed
     bool halt = false;
-    for (auto *term : terminators_)
+    for (auto *term : *terminators_)
     {
         if (term->terminate(pool, generationNumber))
         {

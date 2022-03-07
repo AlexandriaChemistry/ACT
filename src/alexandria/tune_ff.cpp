@@ -309,18 +309,18 @@ void OptACM::initMaster()
                                                       seed);
 
     // Terminator(s)
-    std::vector<ga::Terminator*> terminators;
-    terminators.push_back(new ga::GenerationTerminator(gach_.maxGenerations(), logFile()));  // maxGenerations will always be positive!
+    std::vector<ga::Terminator*> *terminators = new std::vector<ga::Terminator*>;
+    fprintf(logFile(), "Appending a GenerationTerminator to the list of terminators...\n");
+    terminators->push_back(new ga::GenerationTerminator(gach_.maxGenerations(), logFile()));  // maxGenerations will always be positive!
     if (gach_.maxTestGenerations() != -1)  // If maxTestGenerations is enabled...
     {
-        fprintf(logFile(), "Appending a TestGenTerminator to the list...\n");
-        terminators.push_back(new ga::TestGenTerminator(gach_.maxTestGenerations(), logFile()));
+        fprintf(logFile(), "Appending a TestGenTerminator to the list of terminators...\n");
+        terminators->push_back(new ga::TestGenTerminator(gach_.maxTestGenerations(), logFile()));
     }
 
     if (gach_.optimizer() == OptimizerAlg::MCMC)
     {
         // auto initializer = new ACMInitializer(sii_, gach_.randomInit(), bch_.seed());
-
         ga_ = new ga::MCMC(logFile(), initializer, fitComp_, mutator, sii_, &gach_);
     }
     else
@@ -339,24 +339,30 @@ void OptACM::printNumCalcDevEstimate()
 
     if (gach_.optimizer() == OptimizerAlg::MCMC)
     {
-        nCalcDevTrain = bch_.maxIter() * sii_->nParam() + 1; // Initial one
+        nCalcDevTrain += bch_.maxIter() * sii_->nParam() + 1; // Initial one
         if (bch_.evaluateTestset())
         {
-            nCalcDevTest = bch_.maxIter() + 1;  // Initial one
+            nCalcDevTest += bch_.maxIter() + 1;  // Initial one
         }
     }
     else if (gach_.optimizer() == OptimizerAlg::GA)
     {
-        nCalcDevTrain = gach_.maxGenerations() + 1;  // Extra initial generation
-        nCalcDevTest  = gach_.maxGenerations() + 1;  // Extra initial generation
+        nCalcDevTrain += gach_.maxGenerations() + 1;  // Extra initial generation
+        if (gach_.evaluateTestset())
+        {
+            nCalcDevTest += gach_.maxGenerations() + 1;  // Extra initial generation
+        }
     }
     else if (gach_.optimizer() == OptimizerAlg::HYBRID)
     {
-        nCalcDevTrain = (bch_.maxIter() * sii_->nParam() + 1) * gach_.maxGenerations() + 1;
+        nCalcDevTrain += (bch_.maxIter() * sii_->nParam() + 1) * gach_.maxGenerations() + 1;
         if (bch_.evaluateTestset())
         {
-            // Extra one per generation at the end (on top of the MCMC one)
-            nCalcDevTest = (bch_.maxIter() + 2) * gach_.maxGenerations();
+            nCalcDevTest += (bch_.maxIter() + 1) * gach_.maxGenerations();
+        }
+        if (gach_.evaluateTestset())
+        {
+            nCalcDevTest += gach_.maxGenerations() + 1;  // Extra initial generation
         }
     }
 
@@ -370,8 +376,8 @@ void OptACM::printNumCalcDevEstimate()
 
     fprintf(
         logFile(),
-        "\nTotal number of fitness computations to be done:\n  - Train: %ld\n  - Test: %ld\n  - Ignore: %ld\n\n",
-        nCalcDevTrain, nCalcDevTest, nCalcDevIgnore
+        "\nMaximum number of fitness computations to be done for %d generations:\n  - Train: %ld\n  - Test: %ld\n  - Ignore: %ld\n\n",
+        gach_.maxGenerations(), nCalcDevTrain, nCalcDevTest, nCalcDevIgnore
     );
 }
 

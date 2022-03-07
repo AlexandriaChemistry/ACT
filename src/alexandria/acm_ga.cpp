@@ -13,6 +13,7 @@ namespace ga
 
 bool MCMC::evolve(ga::Genome *bestGenome)
 {
+
     if (sii_->nParam() < 1)
     {
         fprintf(stderr, "Cannot evolve a chromosome without genes.\n");
@@ -171,6 +172,10 @@ bool HybridGAMC::evolve(ga::Genome *bestGenome)
     auto *ind = static_cast<alexandria::ACMIndividual *>(initializer()->initialize());
     // Compute its fitness
     fitnessComputer()->compute(ind->genomePtr(), iMolSelect::Train);
+    if (gach_->evaluateTestset())
+    {
+        fitnessComputer()->compute(ind->genomePtr(), iMolSelect::Test);
+    }
     pool[pold]->addGenome(ind->genome());
     pool[pnew]->addGenome(ind->genome());
     // Load the initial genomes from the middlemen. 
@@ -320,6 +325,10 @@ bool HybridGAMC::evolve(ga::Genome *bestGenome)
             if (gach_->optimizer() == alexandria::OptimizerAlg::GA)
             {
                 fitnessComputer()->compute(pool[pnew]->genomePtr(0), iMolSelect::Train);
+            }
+            if (gach_->evaluateTestset())
+            {
+                fitnessComputer()->compute(pool[pnew]->genomePtr(0), iMolSelect::Test);
             }
         }
         if (debug)

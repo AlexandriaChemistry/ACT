@@ -52,7 +52,7 @@ private:
     //! Grabs 1 individual and mutates its genes
     Mutator                      *mutator_      = nullptr;
     //! Checks if the evolution should continue or be terminated
-    std::vector<Terminator*>      terminators_;
+    std::vector<Terminator*>     *terminators_  = nullptr;
 
 public:
 
@@ -68,13 +68,16 @@ public:
                      Selector                            *selector,
                      Crossover                           *crossover,
                      Mutator                             *mutator,
-                     std::vector<Terminator*>             terminators,
+                     std::vector<Terminator*>            *terminators,
                      int                                  popSize) :
         popSize_(popSize), initializer_(initializer),
         fitComputer_(fitnessComputer), probComputer_(probComputer),
         selector_(selector), crossover_(crossover), mutator_(mutator), terminators_(terminators)
     {
-        GMX_RELEASE_ASSERT(!terminators_.empty(), "There are no terminators!");
+        if (terminators_)
+        {
+            GMX_RELEASE_ASSERT(!terminators_->empty(), "There are no terminators!");
+        }
     }
 
  
@@ -113,6 +116,9 @@ public:
 
     //! \return the selector
     Selector *selector() { return selector_; }
+
+    //! \return the terminators
+    std::vector<Terminator*> *terminators() { return terminators_; }
 
     /*!
      * \param[in] index the index of the terminator

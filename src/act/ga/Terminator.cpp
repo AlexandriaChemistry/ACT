@@ -68,7 +68,7 @@ bool TestGenTerminator::terminate(           const GenePool *pool,
         {
             fprintf(
                 outfile_,
-                "TestGenTerminator: evolution will be terminated as the best test fitness (%lf) has not improved in the last (%d) generations.\n",
+                "TestGenTerminator: evolution will be terminated as the best test fitness (%lf) has not improved in the last (%d) generation(s).\n",
                 bestFitness_,
                 generations_
             );
