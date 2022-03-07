@@ -46,6 +46,8 @@ private:
     std::vector<double>        pMean_;
     //! Standard deviation of each parameter
     std::vector<double>        pSigma_;
+    //! Internal counter for generation number
+    int                        myGeneration_ = 0;
     //! Convergence file for each parameter type
     std::vector<gmx::FilePtr>  fpc_;
     //! Convergence file for Chi2
@@ -116,6 +118,7 @@ private:
      * \param[in] prevEval          pointer to a map with the previous \f$ \chi^2 \f$
      * \param[in] pp                index of inner loop over number of parameters
      * \param[in] iter              current iteration number
+     * \param[in] iterOffset        total iteration number in all generations prior to this one
      * \param[in] beta0             pointer to beta for annealing
      */
     void stepMCMC(ga::Genome                   *genome,
@@ -124,6 +127,7 @@ private:
                   std::map<iMolSelect, double> *prevEval,
                   size_t                        pp,
                   int                           iter,
+                  int                           iterOffset,
                   double                       *beta0);
 
 public:

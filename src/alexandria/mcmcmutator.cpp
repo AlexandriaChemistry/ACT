@@ -93,15 +93,16 @@ void MCMCMutator::mutate(ga::Genome        *genome,
 
     print_memory_usage(debug);
 
-    double beta0   = 1 / (BOLTZ * bch_->temperature());
+    double beta0      = 1 / (BOLTZ * bch_->temperature());
     // Optimization loop
+    int    iterOffset = myGeneration_*bch_->maxIter();
     for (int iter = 0; iter < bch_->maxIter(); iter++)
     {
         for (size_t pp = 0; pp < nParam; pp++)
         {
             // Do the step!
             stepMCMC(genome, bestGenome, &changed, &prevEval,
-                     pp, iter, &beta0);
+                     pp, iter, iterOffset, &beta0);
 
             // For the second half of the optimization, collect data 
             // to find the mean and standard deviation of each
@@ -120,7 +121,7 @@ void MCMCMutator::mutate(ga::Genome        *genome,
             }
         }
     }
-
+    myGeneration_ += 1;
     // OPTIMIZATION IS COMPLETE
     // TODO Make optional
     computeMeanSigma(sum, nsum, &sum_of_sq);
@@ -143,6 +144,7 @@ void MCMCMutator::stepMCMC(ga::Genome                   *genome,
                            std::map<iMolSelect, double> *prevEval,
                            size_t                        pp,
                            int                           iter,
+                           int                           iterOffset,
                            double                       *beta0)
 {
     // Pick a random parameter index
@@ -206,7 +208,7 @@ void MCMCMutator::stepMCMC(ga::Genome                   *genome,
     }
 
     // Fractional iteration taking into account the inner loop with <pp> over <nParam>
-    const double xiter = iter + (1.0*pp)/genome->nBase();
+    const double xiter = iterOffset + iter + (1.0*pp)/genome->nBase();
     if (accept)
     {  // If the parameter change is accepted
         auto imstr = iMolSelect::Train;
