@@ -745,9 +745,13 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
                 continue;
             }
             const char *name = qTypeName(qt).c_str();
-            print_stats(fp, "EPot", "kJ/mol", 1.0, &lsq_epot[ims.first][qt],  header, "Experiment", name, useOffset_);
-            header = false;
+            if (lsq_epot[ims.first][qt].get_npoints() > 0)
+            {
+                print_stats(fp, "EPot", "kJ/mol", 1.0, &lsq_epot[ims.first][qt],  header, "Experiment", name, useOffset_);
+                header = false;
+            }
             print_stats(fp, "ESP", "kJ/mol e", 1.0, &lsq_esp[ims.first][qt],  header, "Electronic", name, useOffset_);
+            header = false;
             for(auto &mpo : mpoMultiPoles)
             {
                 print_stats(fp, mpo_name(mpo), mpo_unit2(mpo), convertFromGromacs(1.0, mpo_unit2(mpo)),

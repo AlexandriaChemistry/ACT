@@ -639,14 +639,14 @@ static void mp_process_tree(FILE                              *fp,
                     clean_xbuf(xbuf, { elem });
                     break;
                 case MolPropXml::ENERGY:
-                    if (!NN(xbuf, MolPropXml::ENERGY))
+                    if (!NN(xbuf, MolPropXml::AVERAGE))
                     {
                         mp_process_tree(fp, tree->children, molprops, xbuf);
                     }   
                     if ((nullptr != last) &&
                         NN(xbuf, MolPropXml::TYPE)   && NN(xbuf, MolPropXml::UNIT) &&
                         NN(xbuf, MolPropXml::ENERGY) && NN(xbuf, MolPropXml::TEMPERATURE) &&
-                        NN(xbuf, MolPropXml::PHASE))
+                        NN(xbuf, MolPropXml::PHASE)  && NN(xbuf, MolPropXml::AVERAGE))
                     {
                         MolPropObservable mpo;
                         if (stringToMolPropObservable((*xbuf)[MolPropXml::TYPE], &mpo))
@@ -659,7 +659,7 @@ static void mp_process_tree(FILE                              *fp,
                             auto me  = new MolecularEnergy(mpo, mytype, (*xbuf)[MolPropXml::UNIT],
                                                            xbuf_atof(xbuf, MolPropXml::TEMPERATURE),
                                                            string2phase((*xbuf)[MolPropXml::PHASE]),
-                                                           xbuf_atof(xbuf, MolPropXml::ENERGY),
+                                                           xbuf_atof(xbuf, MolPropXml::AVERAGE),
                                                            xbuf_atof(xbuf, MolPropXml::ERROR));
                             last->addProperty(mpo, me);
                         }
