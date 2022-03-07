@@ -12,6 +12,7 @@
 #include "act/ga//Mutator.h"
 
 #include "confighandler.h"
+#include "staticindividualinfo.h"
 
 namespace alexandria
 {
@@ -34,6 +35,8 @@ namespace alexandria
         ACMIndividual      *ind_;
         //! Config handler for GA
         GAConfigHandler    *gach_;
+        //! SharedIndividualInfo
+        StaticIndividualInfo *sii_;
         //! My ID
         int                 id_;
 

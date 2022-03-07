@@ -59,8 +59,10 @@ private:
     std::string                                          xvgconv_;
     //! Base name for Chi2 convergence file
     std::string                                          xvgepot_;
-    //! Base name for Force field output file
+    //! name for best Force field output file
     std::string                                          outputFile_;
+    //! name for last Force field output file
+    std::string                                          outputFileLast_;
     //! Output file prefix
     std::string                                          prefix_;
 
@@ -86,7 +88,7 @@ public:
      */
     void setOutputFile(const std::string &outputFile);
 
-    /*! \brief Set the output file name for best output
+    /*! \brief Set the output file name for best output (only at MASTER)
      * \param[in] outputFile The base force field file name for output
      */
     void setFinalOutputFile(const std::string &outputFile);
@@ -140,6 +142,14 @@ public:
      *                           since it is expensive.
      */
     void saveState(bool updateCheckSum);
+
+    /*! \brief Save the current state of the Force Field to the output file
+     * \param[in] updateCheckSum If true, the checksum is updated, typically
+     *                           this should only be done at the end of a run
+     *                           since it is expensive.
+     * \param[in] fname          name of the output file
+     */
+    void saveState(bool updateCheckSum, const std::string &fname);
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * END: Poldata stuff                       *
@@ -361,8 +371,11 @@ public:
     //! \return the base name for the \f$ \chi_2 \f$ convergence file as a const reference
     const std::string &xvgEpot() const { return xvgepot_; }
 
-    //! \return the base name for Force Field output files as a const reference
+    //! \return the name for best Force Field output files as a const reference
     const std::string &outputFile() const { return outputFile_; }
+
+    //! \return the name for last Force Field output files as a const reference
+    const std::string &outputFileLast() const { return outputFileLast_; }
 
     //! \return the vector of weighted temperatures as a const reference
     const std::vector<double> &weightedTemperature() const { return weightedTemperature_; }

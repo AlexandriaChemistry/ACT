@@ -17,7 +17,7 @@ ACTMiddleMan::ACTMiddleMan(MolGen               *mg,
                            BayesConfigHandler   *bch,
                            bool                  verbose,
                            gmx_output_env_t     *oenv)
-: gach_(gach), id_(sii->commRec()->middleManOrdinal())
+: gach_(gach), sii_(sii), id_(sii->commRec()->middleManOrdinal())
 {
     // This ica
     int seed = bch->seed();
@@ -42,6 +42,7 @@ ACTMiddleMan::ACTMiddleMan(MolGen               *mg,
     // Fitness computer FIXME: what about those false flags?
     fitComp_ = new ACMFitnessComputer(nullptr, sii, mg, false, false);
     // Create and initialize the mutator
+    sii->makeIndividualDir();  // We need to call this before opening working files!
     if (gach->optimizer() == OptimizerAlg::GA)
     {
         mutator_ = new alexandria::PercentMutator(sii, seed, gach->percent());
@@ -50,7 +51,6 @@ ACTMiddleMan::ACTMiddleMan(MolGen               *mg,
     {
         // FIXME: we need to make some logfiles for the middlemen, because they apparently cannot write to the global logfile
         auto mut = new alexandria::MCMCMutator(nullptr, verbose, seed, bch, fitComp_, sii, bch->evaluateTestset());
-        sii->makeIndividualDir();  // We need to call this before opening working files!
         mut->openParamConvFiles(oenv);
         mut->openChi2ConvFile(oenv);
         mutator_ = mut;
@@ -63,6 +63,10 @@ void ACTMiddleMan::run()
     GMX_RELEASE_ASSERT(cr->isMiddleMan(), "I thought I was the middle man...");
     // Start by computing my own fitness
     fitComp_->compute(ind_->genomePtr(), iMolSelect::Train);
+    if (gach_->evaluateTestset())
+    {
+        fitComp_->compute(ind_->genomePtr(), iMolSelect::Test);
+    }
     // The send my initial genome and fitness to the master
     ind_->genome().Send(cr, 0);
     auto cont = CommunicationStatus::OK;
@@ -73,6 +77,7 @@ void ACTMiddleMan::run()
         if (cont == CommunicationStatus::RECV_DATA)  // FIXME: reverse condition and save an identation
         {
             // Get the dataset
+            // FIXME: is this really necessary?
             iMolSelect ims = cr->recv_iMolSelect(0);
 
             // Now get the parameters
@@ -88,8 +93,13 @@ void ACTMiddleMan::run()
             // Send the mutated vector
             cr->send_double_vector(0, ind_->genomePtr()->basesPtr());
 
-            // Send the new fitness
+            // Send the new train fitness
             cr->send_double(0, ind_->genome().fitness(ims));
+            if (gach_->evaluateTestset() && gach_->optimizer() != OptimizerAlg::MCMC)
+            {
+                fitComp_->compute(ind_->genomePtr(), iMolSelect::Test);
+                cr->send_double(0, ind_->genome().fitness(iMolSelect::Test));
+            }
 
             // If we are working with MCMC, send the best found to the MASTER
             if (gach_->optimizer() == OptimizerAlg::MCMC)
@@ -101,6 +111,8 @@ void ACTMiddleMan::run()
     while (CommunicationStatus::RECV_DATA == cont);
     // Stop my helpers too.
     stopHelpers();
+    // Save the last genome
+    sii_->saveState(true, sii_->outputFileLast());
 }
 
 void ACTMiddleMan::printStatistics(FILE *logFile)

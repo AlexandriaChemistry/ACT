@@ -58,8 +58,8 @@ void MCMCMutator::mutate(ga::Genome        *genome,
     // Now set them back to false, further spreading is done
     // one parameter at a time.
     // std::fill(changed.begin(), changed.end(), false);
-    std::vector<bool> changed;
-    changed.resize(nParam, false);
+    std::vector<bool> changed(nParam, false);
+    // changed.resize(nParam, false);
 
     if (sii_->xvgConv().empty() || sii_->xvgEpot().empty())
     {
@@ -432,8 +432,8 @@ void MCMCMutator::sensitivityAnalysis(ga::Genome *genome,
     }
     sii_->updatePoldata(genome);
     // std::fill(changed.begin(), changed.end(), false);
-    std::vector<bool> changed;
-    changed.resize(param->size(), false);
+    std::vector<bool> changed(param->size(), false);
+    // changed.resize(param->size(), false);
     double chi2_0 = fitComp_->calcDeviation(param, CalcDev::Parallel, ims);
     if (logfile_)
     {
