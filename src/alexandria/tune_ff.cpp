@@ -278,6 +278,7 @@ void OptACM::initMaster()
 
     // Create and initialize the mutator
     ga::Mutator *mutator;
+    sii_->makeIndividualDir();  // We need to call this before opening working files!
     if (gach_.optimizer() == OptimizerAlg::GA)
     {
         mutator = new alexandria::PercentMutator(sii_, seed, gach_.percent());
@@ -286,7 +287,6 @@ void OptACM::initMaster()
     {
         // auto mut = new alexandria::MCMCMutator(nullptr, verbose(), &bch_, fitComp_, sii_);
         auto mut = new alexandria::MCMCMutator(logFile(), verbose_, seed, &bch_, fitComp_, sii_, bch_.evaluateTestset());
-        sii_->makeIndividualDir();
         mut->openParamConvFiles(oenv_);
         mut->openChi2ConvFile(oenv_);
         // if (sii_->commRec()->nmiddlemen() == 0)  // If we are running pure MCMC

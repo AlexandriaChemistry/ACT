@@ -36,7 +36,8 @@ void StaticIndividualInfo::setOutputFile(const std::string &outputFile)
 {
     if (cr_->isMasterOrMiddleMan())
     {   
-        outputFile_ = prefix_ + "ind" + std::to_string(id_) + "-" + outputFile;
+        outputFile_     = prefix_ + "ind" + std::to_string(id_) + "-" + outputFile;
+        outputFileLast_ = prefix_ + "ind" + std::to_string(id_) + "-last-" + outputFile;
     }
 }
 
@@ -147,6 +148,19 @@ void StaticIndividualInfo::saveState(bool updateCheckSum)
     if (!outputFile_.empty())
     {
         writePoldata(outputFile_, &pd_, false);
+    }
+}
+
+void StaticIndividualInfo::saveState(bool updateCheckSum, const std::string &fname)
+{
+    pd_.updateTimeStamp();
+    if (updateCheckSum)
+    {
+        pd_.updateCheckSum();
+    }
+    if (!fname.empty())
+    {
+        writePoldata(fname, &pd_, false);
     }
 }
 

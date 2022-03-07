@@ -87,6 +87,9 @@ bool MCMC::evolve(ga::Genome *bestGenome)
     // Print the genomes to the logfile
     pool.print(logFile_);
 
+    // Save the last genome of the master
+    sii_->saveState(true, sii_->outputFileLast());
+
     // Check if a better genome was found, and update if so
     auto imstr = iMolSelect::Train;
     size_t newBest = pool.findBestIndex();
@@ -281,6 +284,11 @@ bool HybridGAMC::evolve(ga::Genome *bestGenome)
             }
             pool[pnew]->genomePtr(i)->unsetFitness(iMolSelect::Train);
             pool[pnew]->genomePtr(i+1)->unsetFitness(iMolSelect::Train);
+            if (gach_->evaluateTestset())
+            {
+                pool[pnew]->genomePtr(i)->unsetFitness(iMolSelect::Test);
+                pool[pnew]->genomePtr(i+1)->unsetFitness(iMolSelect::Test);
+            }
             if (debug)
             {
                 pool[pnew]->genome(i).print("Child 1:", debug);
@@ -326,6 +334,11 @@ bool HybridGAMC::evolve(ga::Genome *bestGenome)
             cr->recv_double_vector(src, pool[pnew]->genomePtr(i)->basesPtr());  // Receiving the mutated parameters
             auto fitness = cr->recv_double(src);  // Receiving the new training fitness
             pool[pnew]->genomePtr(i)->setFitness(iMolSelect::Train, fitness);
+            if (gach_->evaluateTestset())
+            {
+                auto fitnessTest = cr->recv_double(src);  // Receiving the new training fitness
+                pool[pnew]->genomePtr(i)->setFitness(iMolSelect::Test, fitnessTest);
+            }
         }
 
         // Swap oldPop and newPop
@@ -366,6 +379,9 @@ bool HybridGAMC::evolve(ga::Genome *bestGenome)
         }
     }
     while (!terminate(pool[pold], generation));
+
+    // Save the last genome of the master
+    sii_->saveState(true, sii_->outputFileLast());
     
     // Close surveillance files for fitness
     closeFitnessFiles();
