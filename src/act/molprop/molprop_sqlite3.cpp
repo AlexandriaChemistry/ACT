@@ -232,8 +232,7 @@ void ReadSqlite3(const char           *sqlite_file,
 
     sqlite3                    *db   = nullptr;
     sqlite3_stmt               *stmt = nullptr;
-    char sql_str[1024];
-    const char                 *cas, *csid, *prop, *unit;
+    const char                 *cas, *csid, *prop, *unit, *ref;
     double                      value, error, temperature;
     int                         cidx, rc, nbind, nexp_prop, theory, preferred;
     std::vector<Synonym>        synonyms;
@@ -258,15 +257,16 @@ void ReadSqlite3(const char           *sqlite_file,
 
     /* Now present a query statement */
     nexp_prop = 0;
-    sprintf(sql_str, "SELECT distinct mol.iupac,mol.cas,mol.csid,pt.prop,pt.unit_text,gp.temperature,gp.value,gp.error, gp.preferred,ds.theory FROM molecules as mol,molproperty as gp,proptypes as pt, datasource as ds,phasetype as ph WHERE ((gp.phaseid=ph.phaseid) AND (ph.phase='gas') AND (mol.molid = gp.molid) AND (gp.propid = pt.propid) AND (gp.srcid = ds.srcid) AND (upper(?) = upper(mol.iupac)));");
+    auto sql_str = gmx::formatString("SELECT distinct mol.iupac,mol.cas,mol.csid,pt.prop,pt.unit_text,ref.ref,gp.temperature,gp.value,gp.error, gp.preferred,ds.theory FROM molecules as mol,molproperty as gp,proptypes as pt, datasource as ds,phasetype as ph,reference as ref,link_molprop_ref as lmr WHERE ((gp.phaseid=ph.phaseid) AND (ph.phase='gas') AND (mol.molid = gp.molid) AND (gp.propid = pt.propid) AND (gp.molpropid = lmr.molpropid) AND (lmr.refid = ref.refid) AND (gp.srcid = ds.srcid) AND (upper(?) = upper(mol.iupac)));");
     check_sqlite3(db, "Preparing sqlite3 statement",
-                  sqlite3_prepare_v2(db, sql_str, 1+strlen(sql_str), &stmt, nullptr));
+                  sqlite3_prepare_v2(db, sql_str.c_str(), 1+sql_str.size(), &stmt, nullptr));
 
     if (nullptr != debug)
     {
-        fprintf(debug, "sql_str = '%s'\nvariable = '%s'\n", sql_str, sqlite3_bind_parameter_name(stmt, 1));
+        fprintf(debug, "sql_str = '%s'\nvariable = '%s'\n", sql_str.c_str(),
+                sqlite3_bind_parameter_name(stmt, 1));
         nbind = sqlite3_bind_parameter_count(stmt);
-        fprintf(debug, "%d binding parameter(s) in the statement\n%s\n", nbind, sql_str);
+        fprintf(debug, "%d binding parameter(s) in the statement\n%s\n", nbind, sql_str.c_str());
     }
     for (auto mpi = mp->begin(); (mpi < mp->end()); mpi++)
     {
@@ -303,6 +303,7 @@ void ReadSqlite3(const char           *sqlite_file,
                     csid           = (char *)sqlite3_column_text(stmt, cidx++);
                     prop           = (char *)sqlite3_column_text(stmt, cidx++);
                     unit           = (char *)sqlite3_column_text(stmt, cidx++);
+                    ref            = (char *)sqlite3_column_text(stmt, cidx++);
                     temperature    = sqlite3_column_double(stmt, cidx++);
                     value          = sqlite3_column_double(stmt, cidx++);
                     error          = sqlite3_column_double(stmt, cidx++);
@@ -335,7 +336,7 @@ void ReadSqlite3(const char           *sqlite_file,
                             {
                                 nexp_prop++;
                             }
-                            alexandria::Experiment exper("unknown", "minimum");
+                            alexandria::Experiment exper(ref, "minimum");
                             std::string exp_type("experiment");
                             GenericProperty *gp;
                             switch (mpo)
