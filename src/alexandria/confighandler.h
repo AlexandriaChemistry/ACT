@@ -104,10 +104,10 @@ private:
     real prMut_ = 0.01;
     //! For PercentMutator: Maximum allowed change in a parameter as a fraction of its allowed range
     real percent_ = 0.1;
-
-    // TODO: Improve termination criteria
     //! Generation limit in Genetic Algorithm
     int maxGenerations_ = 10;
+    //! Generation limit for the test fitness to improve
+    int maxTestGenerations_ = -1;
 
 public:
 
@@ -182,6 +182,12 @@ public:
 
     //! \return the generation limit
     int maxGenerations() const { return maxGenerations_; }
+
+    //! \return the generation limit for the test fitness to improve
+    int maxTestGenerations() const { return maxTestGenerations_; }
+
+    //! \return true if we must evaluate fitness on test set, false otherwise
+    bool evaluateTestset() const { return maxTestGenerations_ > 0; }
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * END: Getters and setters                 *

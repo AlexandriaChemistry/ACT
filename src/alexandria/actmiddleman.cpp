@@ -88,7 +88,7 @@ void ACTMiddleMan::run()
             // Send the mutated vector
             cr->send_double_vector(0, ind_->genomePtr()->basesPtr());
 
-            // Send the new fitness
+            // Send the new train fitness
             cr->send_double(0, ind_->genome().fitness(ims));
 
             // If we are working with MCMC, send the best found to the MASTER

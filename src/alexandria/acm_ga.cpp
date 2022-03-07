@@ -365,7 +365,7 @@ bool HybridGAMC::evolve(ga::Genome *bestGenome)
             fprintf(stderr, "No best genome in pool. Que?\n");
         }
     }
-    while (!terminator()->terminate(pool[pold], generation));
+    while (!terminate(pool[pold], generation));
     
     // Close surveillance files for fitness
     closeFitnessFiles();

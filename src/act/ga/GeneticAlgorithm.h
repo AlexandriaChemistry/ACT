@@ -37,7 +37,7 @@ private:
     //! The population size
     int popSize_          = 0;
 
-     //! Files for fitness output
+    //! Files for fitness output
     std::map<iMolSelect, FILE *>  fileFitness_;
     //! Initializes each individual in the population
     Initializer                  *initializer_  = nullptr;
@@ -52,7 +52,7 @@ private:
     //! Grabs 1 individual and mutates its genes
     Mutator                      *mutator_      = nullptr;
     //! Checks if the evolution should continue or be terminated
-    Terminator                   *terminator_   = nullptr;
+    std::vector<Terminator*>      terminators_;
 
 public:
 
@@ -68,11 +68,14 @@ public:
                      Selector                            *selector,
                      Crossover                           *crossover,
                      Mutator                             *mutator,
-                     Terminator                          *terminator,
+                     std::vector<Terminator*>             terminators,
                      int                                  popSize) :
         popSize_(popSize), initializer_(initializer),
         fitComputer_(fitnessComputer), probComputer_(probComputer),
-        selector_(selector), crossover_(crossover), mutator_(mutator), terminator_(terminator) {}
+        selector_(selector), crossover_(crossover), mutator_(mutator), terminators_(terminators)
+    {
+        GMX_RELEASE_ASSERT(!terminators_.empty(), "There are no terminators!");
+    }
 
  
     /*! \brief Evolve the initial population
@@ -111,12 +114,19 @@ public:
     //! \return the selector
     Selector *selector() { return selector_; }
 
-    //! \return the terminator
-    Terminator *terminator() { return terminator_; }
+    /*!
+     * \param[in] index the index of the terminator
+     * \return the terminator at the given index
+     */
+    Terminator *terminator(const int index);
 
     /* * * * * * * * * * * * * * * * * * * * * *
-     * BEGIN: Output routines                  *
-     * * * * * * * * * * * * * * * * * * * * * */
+    * END: Getters and Setters                 *
+    * * * * * * * * * * * * * * * * * * * * * */
+
+    /* * * * * * * * * * * * * * * * * * * * * *
+    * BEGIN: Output routines                   *
+    * * * * * * * * * * * * * * * * * * * * * */
 
     /*! Return a FILE pointer for a data set
      * \param[in] ims The corresponding data set
@@ -131,8 +141,18 @@ public:
     void fprintFitness(const GenePool &pool);
     
     /* * * * * * * * * * * * * * * * * * * * * *
-     * END: Output routines                  *
-     * * * * * * * * * * * * * * * * * * * * * */  
+    * END: Output routines                     *
+    * * * * * * * * * * * * * * * * * * * * * */  
+
+    /*!
+     * Check if we have to stop the evolution by asking each terminator
+     * \param[in] pool             the GenePool    
+     * \param[in] generationNumber the current generation number
+     * \return true if we stop the evolution, false otherwise
+     */
+    bool terminate(const GenePool *pool,
+                   const int       generationNumber);
+
 };
 
 } //namespace ga

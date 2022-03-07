@@ -261,7 +261,6 @@ void OptACM::initMaster()
     }
 
     // Fitness computer
-    // FIXME: do we want to give the pointer to the logfile instead of nullptr?
     // FIXME: what about the flags? Here it is a bit more clear that they should be all false?
     fitComp_ = new ACMFitnessComputer(nullptr, sii_, &mg_, false, false);
 
@@ -309,8 +308,14 @@ void OptACM::initMaster()
                                                       gach_.nCrossovers(),
                                                       seed);
 
-    // Terminator
-    auto *terminator = new ga::GenerationTerminator(gach_.maxGenerations());
+    // Terminator(s)
+    std::vector<ga::Terminator*> terminators;
+    terminators.push_back(new ga::GenerationTerminator(gach_.maxGenerations(), logFile()));  // maxGenerations will always be positive!
+    if (gach_.maxTestGenerations() != -1)  // If maxTestGenerations is enabled...
+    {
+        fprintf(logFile(), "Appending a TestGenTerminator to the list...\n");
+        terminators.push_back(new ga::TestGenTerminator(gach_.maxTestGenerations(), logFile()));
+    }
 
     if (gach_.optimizer() == OptimizerAlg::MCMC)
     {
@@ -321,7 +326,7 @@ void OptACM::initMaster()
     else
     {
         // We pass the global seed to the optimizer
-        ga_ = new ga::HybridGAMC(logFile(), initializer, fitComp_, probComputer, selector, crossover, mutator, terminator, sii_, &gach_,
+        ga_ = new ga::HybridGAMC(logFile(), initializer, fitComp_, probComputer, selector, crossover, mutator, terminators, sii_, &gach_,
                                  bch_.seed());
     }
 }
@@ -343,13 +348,15 @@ void OptACM::printNumCalcDevEstimate()
     else if (gach_.optimizer() == OptimizerAlg::GA)
     {
         nCalcDevTrain = gach_.maxGenerations() + 1;  // Extra initial generation
+        nCalcDevTest  = gach_.maxGenerations() + 1;  // Extra initial generation
     }
     else if (gach_.optimizer() == OptimizerAlg::HYBRID)
     {
         nCalcDevTrain = (bch_.maxIter() * sii_->nParam() + 1) * gach_.maxGenerations() + 1;
         if (bch_.evaluateTestset())
         {
-            nCalcDevTest = (bch_.maxIter() + 1) * gach_.maxGenerations();
+            // Extra one per generation at the end (on top of the MCMC one)
+            nCalcDevTest = (bch_.maxIter() + 2) * gach_.maxGenerations();
         }
     }
 
