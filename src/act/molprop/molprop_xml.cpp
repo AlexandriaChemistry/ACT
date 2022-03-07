@@ -639,39 +639,42 @@ static void mp_process_tree(FILE                              *fp,
                     clean_xbuf(xbuf, { elem });
                     break;
                 case MolPropXml::ENERGY:
-                    if (!NN(xbuf, MolPropXml::AVERAGE))
                     {
-                        mp_process_tree(fp, tree->children, molprops, xbuf);
-                    }   
-                    if ((nullptr != last) &&
-                        NN(xbuf, MolPropXml::TYPE)   && NN(xbuf, MolPropXml::UNIT) &&
-                        NN(xbuf, MolPropXml::ENERGY) && NN(xbuf, MolPropXml::TEMPERATURE) &&
-                        NN(xbuf, MolPropXml::PHASE)  && NN(xbuf, MolPropXml::AVERAGE))
-                    {
-                        MolPropObservable mpo;
-                        if (stringToMolPropObservable((*xbuf)[MolPropXml::TYPE], &mpo))
+                        if (!NN(xbuf, MolPropXml::AVERAGE))
                         {
-                            std::string mytype(qm_type);
-                            if (last->dataSource() == dsExperiment)
+                            mp_process_tree(fp, tree->children, molprops, xbuf);
+                        }
+                        std::vector<MolPropXml> clean1 = {
+                            MolPropXml::TYPE, MolPropXml::UNIT,
+                            MolPropXml::ENERGY, MolPropXml::TEMPERATURE,
+                            MolPropXml::PHASE, MolPropXml::AVERAGE 
+                        };
+                        if (nullptr != last && xmlFound(xbuf, clean1))
+                        {
+                            MolPropObservable mpo;
+                            if (stringToMolPropObservable((*xbuf)[MolPropXml::TYPE], &mpo))
                             {
-                                mytype = exp_type;
+                                std::string mytype(qm_type);
+                                if (last->dataSource() == dsExperiment)
+                                {
+                                    mytype = exp_type;
+                                }
+                                auto me  = new MolecularEnergy(mpo, mytype, (*xbuf)[MolPropXml::UNIT],
+                                                               xbuf_atof(xbuf, MolPropXml::TEMPERATURE),
+                                                               string2phase((*xbuf)[MolPropXml::PHASE]),
+                                                               xbuf_atof(xbuf, MolPropXml::AVERAGE),
+                                                               xbuf_atof(xbuf, MolPropXml::ERROR));
+                                last->addProperty(mpo, me);
                             }
-                            auto me  = new MolecularEnergy(mpo, mytype, (*xbuf)[MolPropXml::UNIT],
-                                                           xbuf_atof(xbuf, MolPropXml::TEMPERATURE),
-                                                           string2phase((*xbuf)[MolPropXml::PHASE]),
-                                                           xbuf_atof(xbuf, MolPropXml::AVERAGE),
-                                                           xbuf_atof(xbuf, MolPropXml::ERROR));
-                            last->addProperty(mpo, me);
+                            else
+                            {
+                                fprintf(stderr, "Ignoring unknown property %s\n",
+                                        (*xbuf)[MolPropXml::TYPE].c_str());
+                            }
+                            clean_xbuf(xbuf, clean1);
                         }
-                        else
-                        {
-                            fprintf(stderr, "Ignoring unknown property %s\n",
-                                    (*xbuf)[MolPropXml::TYPE].c_str());
-                        }
-                        clean_xbuf(xbuf, { MolPropXml::TYPE, MolPropXml::UNIT,
-                                          MolPropXml::TEMPERATURE, MolPropXml::PHASE });
+                        clean_xbuf(xbuf, { elem });
                     }
-                    clean_xbuf(xbuf, { elem });
                     break;
 
                 case MolPropXml::ATOM:

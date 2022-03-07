@@ -164,8 +164,9 @@ def write_selection(M, mols, probability, filename, MustHaveList):
       f.write("%s|Train\n" % w.filename[:-4])
       if w in mols:
         mols.remove(w)
-    if probability > (1.0*len(MustHave)/len(mols)) and probability < 1:
-      probability -= (1.0*len(MustHave)/len(mols))
+    if len(mols) > 0:
+      if probability > (1.0*len(MustHave)/len(mols)) and probability < 1:
+        probability -= (1.0*len(MustHave)/len(mols))
     for mol in mols:
       filename = Path(mol.filename).stem
       if np.random.uniform(0, 1) > probability:

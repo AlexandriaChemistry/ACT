@@ -45,8 +45,10 @@ class Molprops:
             for ene in ep.energies:
                 myene = ET.SubElement(exper, "energy")
                 for prop in ene.keys():
-                    if prop == "value":
-                        myene.text = ene[prop]
+                    aver = "average"
+                    if prop == aver:
+                        ccc = ET.SubElement(myene, aver)
+                        ccc.text = ene[prop]
                     else:
                         myene.set(prop, ene[prop])
             for dip in ep.dipoles:
@@ -221,7 +223,7 @@ class Experiment:
         self.properties[propname] = str(value)
         
     def add_energy(self, type, unit, temperature, phase, value):
-        self.energies.append({ "type": type, "unit": unit, "temperature": str(temperature), "phase": phase, "value": str(value)})
+        self.energies.append({ "type": type, "unit": unit, "temperature": str(temperature), "phase": phase, "average": str(value)})
     
     def add_dipole(self, type, unit, temperature, average, error, x, y, z): # phase,value
         self.dipoles.append({ "type": type, "unit": unit, "temperature": str(temperature), "average": str(average), "error": str(error), "x": str(x), "y": str(y), "z": str(z)})   #"phase": phase, "value": str(value)

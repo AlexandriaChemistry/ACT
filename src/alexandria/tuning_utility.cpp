@@ -180,35 +180,14 @@ static void print_stats(FILE        *fp,
     }
 }
 
-static void print_lsq_sets(FILE *fp, const std::vector<gmx_stats> &lsq)
+static void print_lsq_set(FILE *fp, const gmx_stats &lsq)
 {
-    if (0 == lsq.size())
-    {
-        return;
-    }
-    std::vector<std::vector<double> > x, y;
-    x.resize(lsq.size());
-    y.resize(lsq.size());
-    for (size_t s = 0; s < lsq.size(); s++)
-    {
-        auto xx = lsq[s].getX();
-        auto yy = lsq[s].getY();
-        for (size_t k=0; k < xx.size(); k++)
-        {
-                x[s].push_back(xx[k]);
-                y[s].push_back(yy[k]);
-        }
-    }
-    
     fprintf(fp, "@type nxy\n");
-    for(size_t i = 0; i < x[0].size(); i++)
+    auto x = lsq.getX();
+    auto y = lsq.getY();
+    for(size_t i = 0; i < x.size(); i++)
     {
-        fprintf(fp, "%10g", x[0][i]);
-        for(size_t j = 0; j < lsq.size(); j++)
-        {
-            fprintf(fp, "  %10g", y[j][i]);
-        }
-        fprintf(fp, "\n");
+        fprintf(fp, "%10g  %10g\n", x[i], y[i]);
     }
     fprintf(fp, "&\n");
 }
@@ -373,7 +352,10 @@ static void print_corr(const char                    *outfile,
     }
     FILE *muc = xvgropen(outfile, title, xaxis, yaxis, oenv);
     xvgr_symbolize(muc, eprnm, oenv);
-    print_lsq_sets(muc, lsq);
+    for(size_t i = 0; i < lsq.size(); i++)
+    {
+        print_lsq_set(muc, lsq[i]);
+    }
     fclose(muc);
 }
 
