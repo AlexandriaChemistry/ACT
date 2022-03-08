@@ -6,6 +6,7 @@ import gzip, math, os
 from get_mol_dict import *
 from molprops import *
 from gaff_to_alexandria import *
+from get_csv_rows import *
 from elements import AtomNumberToAtomName
 from dofit import *
 
@@ -67,6 +68,14 @@ def rotate_esp_and_add_to_exper(exper, espfitcenter, potential, coordinates):
                             str(espx[1]),
                             str(espx[2]),
                             potential[i])
+
+def compute_dhform(energyHF:float, atomtypes, g2a, ahof,
+                   leveloftheory:str, temperature:float):
+    eatom = 0
+    for a in atomtypes:
+        myelem = g2a.get_elem(a)
+        eatom += ahof.get_atomization(myelem, leveloftheory, temperature)
+    return energyHF - eatom
         
 def interpret_gauss(content:list, infile:str,
                     molname:str, basisset:str, verbose:bool):
@@ -356,9 +365,16 @@ def interpret_gauss(content:list, infile:str,
         ahof = AtomicHOF(tcmap["Method"], tcmap["Temp"], verbose)
         exper.extract_thermo(tcmap, atomname, ahof)
     weight, numb_atoms, formula, multiplicity, atomtypes, bonds_dict = get_info_from_coords_elements(atomname, coordinates)
-    if None != energyHF:
-        exper.add_energy("HF", "Hartree", 0.0, "gas", energyHF)
-    if None != weight:
+    if None != weight and None != formula:
+        g2a      = GaffToAlexandria()
+        if None != energyHF:
+            temperature   = 0
+            leveloftheory = method + "/" + basis
+            ahof = AtomicHOF(leveloftheory, temperature, verbose)
+            print("Read %d keys for AHOF" % len(ahof.ahof.keys()))
+            eHF  = compute_dhform(energyHF, atomtypes, g2a, ahof,
+                                  leveloftheory, temperature)
+            exper.add_energy("DeltaHform", "Hartree", 0.0, "gas", eHF)
         mp.add_prop("mass", str(weight))
         mp.add_prop("formula", formula)
         for index_atom in bonds_dict:
@@ -366,7 +382,6 @@ def interpret_gauss(content:list, infile:str,
                 mp.add_bond(index_atom, index_neighbour, bonds_dict[index_atom][index_neighbour]["bond_order"])
         Angstrom = "A"
         pm       = "pm"
-        g2a      = GaffToAlexandria()
         if exper:
             if len(potential) != len(espfitcenter):
                 print("Found %d potentials for %d centers in %s" % ( len(potential), len(espfitcenter), infile))

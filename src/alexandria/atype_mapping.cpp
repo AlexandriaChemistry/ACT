@@ -52,8 +52,8 @@ void gaffToAlexandria(const std::string                  &filenm,
     std::string      line;
     while (ttt.readLine(&line))
     {
-        auto words = gmx::splitString(line);
-        if (words.size() == 2)
+        auto words = split(line, '|');
+        if (words.size() == 3)
         {
             if (g2a->find(words[0]) == g2a->end())
             {

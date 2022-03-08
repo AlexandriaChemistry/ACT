@@ -1,4 +1,4 @@
-#
+1#
 # This file is part of the Alexandria Chemistry Toolkit
 # https://github.com/dspoel/ACT
 #
@@ -29,29 +29,40 @@ class AtomicHOF:
         actdata  = "ACTDATA"
         if not actdata in os.environ:
             sys.exit("No variable %s in your environment. Did you source ACTRC?" % actdata)
-        datafile = os.environ[actdata] + "/top/atomization-energies.csv"
-        if not os.path.exists(datafile):
-            sys.exit("Cannot find %s, please reinstall ACT" % datafile)
-        rows = get_csv_rows(datafile, 9)
-        self.ahof = {}
-        for row in rows:
-            try:
-                mytemp = float(row[4])
-                if ((row[2] == "exp" or row[2] == self.method) and 
-                    (mytemp == 0 or abs(mytemp-self.temperature) <= 1e-2)):
-                    akey = row[0]+"|"+row[1]
-                    if not akey in self.ahof:
-                        self.ahof[akey] = []
-                    self.ahof[akey].append({ "Method": row[2],
-                                             "Desc": row[3],
-                                             "Temp": float(row[4]),
-                                             "Value": float(row[5]),
-                                             "Multiplicity": row[6] , 
-                                             "Unit": row[7]})
-            except ValueError:
-                print("It seems that '%s' is not a number" % row[4])
-        
+        topdir = os.environ[actdata] + "/top/"
+        for datafile in [ topdir+"atomization-energies.csv", 
+                          topdir+"atomization-energies-dft.csv" ]:
+            if not os.path.exists(datafile):
+                sys.exit("Cannot find %s, please reinstall ACT" % datafile)
+            rows = get_csv_rows(datafile, 9)
+            self.ahof = {}
+            for row in rows:
+                try:
+                    mytemp = float(row[4])
+                    if ((row[2] == "exp" or row[2] == self.method) and 
+                        (mytemp == 0 or abs(mytemp-self.temperature) <= 1e-2)):
+                        akey = row[0]+"|"+row[1]
+                        if not akey in self.ahof:
+                            self.ahof[akey] = []
+                        self.ahof[akey].append({ "Method": row[2],
+                                                 "Desc": row[3],
+                                                 "Temp": float(row[4]),
+                                                 "Value": float(row[5]),
+                                                 "Multiplicity": row[6] , 
+                                                 "Unit": row[7]})
+                except ValueError:
+                    print("It seems that '%s' is not a number" % row[4])
 
+    def get_atomization(self, elem, method, temp):
+        akey = elem + "|0"
+        if not akey in self.ahof:
+            sys.exit("Cannot find key %s in the Atomic Heat of Formation table" % akey)
+        for p in range(len(self.ahof[akey])):
+            thisprop = self.ahof[akey][p]
+            if thisprop["Method"] == method and thisprop["Temp"] == temp:
+                return thisprop["Value"]
+        return None
+        
     def get(self, elem, temp):
         # Assume zero charge
         akey = elem + "|0"
