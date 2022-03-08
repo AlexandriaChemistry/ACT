@@ -47,9 +47,10 @@ def parseArguments():
   parser.add_argument("-o", "--output",            help="Output file, default "+output, type=str, default=output)
   gentop = "ACS-pg.xml"
   parser.add_argument("-d", "--force_field",       help="Force field input file, default "+gentop, type=str, default=gentop)
-  parser.add_argument("-db", "--database",         help="Optional SQLite database containing experimental data, default none", type=str, default=None)
+  parser.add_argument("-db", "--database",         help="Optional SQLite database containing experimental data, default none", type=str, default="")
   xmldir = "xmldir"
   parser.add_argument("-xmldir", "--xmldir",       help="Directory for molecule.xml files, leave empty to use the current directory", type=str, default=xmldir)
+  parser.add_argument("-skip", "--skip_build",     help="Do not rebuild the xml files for molecules", action="store_true")
   parser.add_argument("-clean", "--clean",         help="Remove data files after use.", action="store_true")
   args = parser.parse_args()
   return args
@@ -108,7 +109,7 @@ def get_method_basis_jobtype(meth:str):
     mm = meth.upper()
     return mm, mm, mm
   
-def parallel_build(mols, methods:str, gentop:str, database:str, xmldir:str, maxpot, merge_mp, output, sdf_ok):
+def parallel_build(mols, methods:str, xmldir:str, maxpot:int, sdf_ok):
   pool      = Pool()
   results   = []
   for molname in mols:
@@ -117,15 +118,19 @@ def parallel_build(mols, methods:str, gentop:str, database:str, xmldir:str, maxp
       mm, basis, jobtype = get_method_basis_jobtype(meth)
       if logfile and os.path.exists(logfile):
         results.append(pool.apply_async(build_one, [logfile, datafile, maxpot, molname, basis, jobtype]))
-  datafiles = []
   for r in results:
-    ddd = r.get(timeout=10)
-    if ddd:
-      datafiles.append(ddd)
+    ddd = r.get(timeout=1000)
 
-  files = ' '.join(map(str, datafiles))
+def run_merge(mols, methods:str, merge_mp:str, xmldir:str, gentop:str,
+              database:str, maxpot, output:str, sdf_ok=False):
+  files = ""
+  for molname in mols:
+    for meth in methods.split(";"):
+      datafile, logfile = name_of_data_log_file(meth, molname, xmldir, sdf_ok)
+      if os.path.exists(datafile):
+        files += " " + datafile
   command = ("%s -di %s -o %s -maxwarn 0 -f %s" % (merge_mp, gentop, output, files))
-  if None != database:
+  if len(database) > 0:
     command += " -db " + database
   os.system(command)
 
@@ -157,6 +162,8 @@ if __name__ == "__main__":
     args.output = args.output + ".xml"
   if len(args.xmldir) > 0:
     os.makedirs(args.xmldir, exist_ok=True)
-  parallel_build(mols, args.methods, gentop, args.database, args.xmldir,
-                 min(100, max(20, args.maxpot)),
-                 merge_mp, args.output, False)
+  maxpot = min(100, max(20, args.maxpot))
+  if not args.skip_build:
+    parallel_build(mols, args.methods, args.xmldir, maxpot, False)
+  run_merge(mols, args.methods, merge_mp, args.xmldir,
+            gentop, args.database, maxpot, args.output)

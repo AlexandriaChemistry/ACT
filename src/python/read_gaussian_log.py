@@ -110,6 +110,8 @@ def interpret_gauss(content:list, infile:str,
         line = content[content_index].strip()
         if line.find("Revision") > 0:
             program = line
+            if program[len(program)-1] == ",":
+                program = program[:-1]
         elif line.find("#P") >= 0 and not exper:
             method, basis, jobtype = method_basis(line.split()[1])
             if len(basisset) > 0:
