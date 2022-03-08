@@ -91,6 +91,7 @@ def interpret_gauss(content:list, infile:str,
     qCM5         = []
     qHirshfeld   = []
     qMulliken    = []
+    energyHF     = None
     # Thermochemistry variables
     tcmap        = { "CV": None, "Ezpe": None, "Hcorr": None,
                      "Gcorr": None, "Temp": None, "Method": None,
@@ -123,7 +124,13 @@ def interpret_gauss(content:list, infile:str,
                 else:
                     break
                 c += 1
-            
+        elif line.find("SCF Done:") >= 0:
+            words = line.split()
+            if len(words) >= 8:
+                try:
+                    energyHF = float(words[4])
+                except ValueError:
+                    print("Do not understand energy in line '%s'" % line)
         elif line.find("Dipole moment") >= 0:
             words = content[content_index+1].strip().split()
             if len(words) >= 6 and exper:
@@ -349,6 +356,8 @@ def interpret_gauss(content:list, infile:str,
         ahof = AtomicHOF(tcmap["Method"], tcmap["Temp"], verbose)
         exper.extract_thermo(tcmap, atomname, ahof)
     weight, numb_atoms, formula, multiplicity, atomtypes, bonds_dict = get_info_from_coords_elements(atomname, coordinates)
+    if None != energyHF:
+        exper.add_energy("HF", "Hartree", 0.0, "gas", energyHF)
     if None != weight:
         mp.add_prop("mass", str(weight))
         mp.add_prop("formula", formula)

@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2014-2018
+ * Copyright (C) 2014-2022
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,

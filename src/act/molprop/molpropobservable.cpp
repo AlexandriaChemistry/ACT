@@ -364,7 +364,7 @@ MolecularEnergy::MolecularEnergy(MolPropObservable mpo,
                                  double error)
     : GenericProperty(mpo, type, inputUnit, T, ep)
 { 
-    Set(average, error);
+    Set(convertToGromacs(average, inputUnit), convertToGromacs(error, inputUnit));
     setUnit(gromacsUnit(inputUnit));
 }
 

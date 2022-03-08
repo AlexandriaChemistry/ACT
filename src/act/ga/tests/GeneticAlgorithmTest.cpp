@@ -224,7 +224,8 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
                 }
 
                 // Terminator
-                auto terminator   = new ga::GenerationTerminator(gach.maxGenerations());
+                std::vector<Terminator *> terminators;
+                terminators.push_back(new ga::GenerationTerminator(gach.maxGenerations(), nullptr));
                 GeneticAlgorithm *ga;
                 if (alexandria::OptimizerAlg::MCMC == alg)
                 {
@@ -244,7 +245,9 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
                     {
                         checker_.checkReal(bch.step(), "bch.step");
                     }
-                    ga = new ga::HybridGAMC(stdout, initializer, fitComp, probComputer, selector, crossover, mut, terminator,
+                    ga = new ga::HybridGAMC(stdout, initializer, fitComp,
+                                            probComputer, selector, crossover,
+                                            mut, &terminators,
                                             &sii, &gach, bch.seed());
                 }
                 checker_.checkInt64(gach.maxGenerations(), "Maximum Number of Generations");
