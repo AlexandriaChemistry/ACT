@@ -37,7 +37,7 @@ def parseArguments():
   parser  = argparse.ArgumentParser(description=desc)
   alexdef = ACTDATA + "/forcefield/alexandria.csv"
   parser.add_argument("-a",      "--alexandria",   help="Compound definition file for reading, default "+alexdef,             type=str, default=alexdef)
-  defmethods = "B3LYP-aug-cc-pVTZ;g4"
+  defmethods = "B3LYP-aug-cc-pVTZ"
   parser.add_argument("-methods","--methods",      help="Quantum chemistry methods to include, default "+defmethods, type=str, default=defmethods)
   maxpot = 25
   parser.add_argument("-maxpot", "--maxpot",       help="Percent of the total number of electrostatic potential points, default "+str(maxpot), type=int, default=maxpot)

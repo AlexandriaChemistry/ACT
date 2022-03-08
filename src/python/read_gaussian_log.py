@@ -88,6 +88,7 @@ def interpret_gauss(content:list, infile:str,
     jobtype      = None
     temperature  = 0
     qmtype       = "electronic"
+    method       = None
     # New compound
     mp           = Molprop(molname)
     atomname     = []
@@ -371,7 +372,6 @@ def interpret_gauss(content:list, infile:str,
             temperature   = 0
             leveloftheory = method + "/" + basis
             ahof = AtomicHOF(leveloftheory, temperature, verbose)
-            print("Read %d keys for AHOF" % len(ahof.ahof.keys()))
             eHF  = compute_dhform(energyHF, atomtypes, g2a, ahof,
                                   leveloftheory, temperature)
             exper.add_energy("DeltaHform", "Hartree", 0.0, "gas", eHF)

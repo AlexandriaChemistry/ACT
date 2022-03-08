@@ -56,7 +56,7 @@ class AtomicHOF:
     def get_atomization(self, elem, method, temp):
         akey = elem + "|0"
         if not akey in self.ahof:
-            sys.exit("Cannot find key %s in the Atomic Heat of Formation table" % akey)
+            sys.exit("Cannot find key %s in the Atomic Heat of Formation table. Method is %s" % ( akey, self.method ))
         for p in range(len(self.ahof[akey])):
             thisprop = self.ahof[akey][p]
             if thisprop["Method"] == method and thisprop["Temp"] == temp:
@@ -67,7 +67,7 @@ class AtomicHOF:
         # Assume zero charge
         akey = elem + "|0"
         if not akey in self.ahof:
-            sys.exit("Cannot find key %s in the Atomic Heat of Formation table" % akey)
+            sys.exit("Cannot find key %s in the Atomic Heat of Formation table. Method is %s" % ( akey, self.method ))
         HexpT  = None
         S0     = None
         Vdhf   = None
