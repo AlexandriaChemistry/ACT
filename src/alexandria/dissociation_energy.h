@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2021
+ * Copyright (C) 2014-2022
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -58,6 +58,8 @@ namespace alexandria
  * \param[in]    fplog   File pointer to write to
  * \param[inout] pd      The force field to update
  * \param[inout] molset  The molecules
+ * \param[in]    iqm     Whether to use QM or Exp data for determining
+ *                        the energies or both
  * \param[in]    csvFile Will dump the matrix and right hand side to a csv file
  * \param[in]    method  QM method
  * \param[in]    basis   QM basis set
@@ -67,6 +69,7 @@ namespace alexandria
 double getDissociationEnergy(FILE                     *fplog,
                              Poldata                  *pd,
                              std::vector<MyMol>       *molset,
+                             iqmType                  iqm,
                              const char               *csvFile,
                              const std::string        &method,
                              const std::string        &basis,

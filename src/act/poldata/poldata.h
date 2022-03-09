@@ -337,15 +337,6 @@ class Poldata
         bool atypeToZtype(const std::string &atype,
                           std::string       *ztype) const;
  
-        /*! \brief Convenience function to create a zeta Identifier
-         *
-         * Routine will convert atom types to a zeta identifier
-         * \param[in] atoms Vector of atom types
-         * \return BCC identifier
-         * \throws if something wrong
-         */
-    //const Identifier atomtypesToZetaIdentifier(const std::vector<std::string> atoms) const;
-
         /*! \brief
          * Add a new force list. The routine checks for duplicate itypes
          * and will not add a second block of a certain type is one is

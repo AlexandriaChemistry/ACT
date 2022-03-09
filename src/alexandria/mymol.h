@@ -468,11 +468,13 @@ namespace alexandria
          * \param[in] method   Method used for QM calculation
          * \param[in] basis    Basis set used for QM calculation
          * \param[in] pd       Force field structure
+         * \param[in] T        The temperature to use. -1 allows any T.
          */
         immStatus getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
                               const std::string &method,
                               const std::string &basis,
-                              const Poldata     *pd);
+                              const Poldata     *pd,
+                              double             T);
 
         /*! \brief
          * Print the topology that was generated previously in GROMACS format.

@@ -585,7 +585,7 @@ size_t MolGen::Read(FILE            *fp,
         optimize(InteractionType::IMPROPER_DIHEDRALS)||
         optimize(InteractionType::PROPER_DIHEDRALS))
     {
-        iqmMap.insert(std::pair<MolPropObservable, iqmType>(MolPropObservable::DHFORM, iqmType::Exp));
+        iqmMap.insert(std::pair<MolPropObservable, iqmType>(MolPropObservable::DHFORM, iqmType::QM));
     }
     if (optimize(InteractionType::POLARIZATION) ||
         optimize(InteractionType::CHARGEDISTRIBUTION) ||
@@ -652,7 +652,7 @@ size_t MolGen::Read(FILE            *fp,
                 }
 
                 // TODO Check for G4 as well
-                imm = mymol.getExpProps(iqmMap, method, basis, pd);
+                imm = mymol.getExpProps(iqmMap, method, basis, pd, 0);
                 if (immStatus::OK != imm)
                 {
                     if (verbose && fp)
@@ -846,7 +846,7 @@ size_t MolGen::Read(FILE            *fp,
             }
             if (immStatus::OK == imm)
             {
-                imm = mymol.getExpProps(iqmMap, method, basis, pd);
+                imm = mymol.getExpProps(iqmMap, method, basis, pd, 0);
             }
             mymol.setSupport(eSupport::Local);
             incrementImmCount(&imm_count, imm);

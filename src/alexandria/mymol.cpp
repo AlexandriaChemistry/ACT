@@ -2232,7 +2232,8 @@ const real *MyMol::energyTerms() const
 immStatus MyMol::getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
                              const std::string                          &method,
                              const std::string                          &basis,
-                             const Poldata                              *pd)
+                             const Poldata                              *pd,
+                             double                                      T)
 {
     int                 ia    = 0;
     int                 natom = 0;
@@ -2299,7 +2300,6 @@ immStatus MyMol::getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
         case MolPropObservable::DGFORM:
         case MolPropObservable::ZPE:
             {
-                double    T   = 298.15;
                 auto gp = static_cast<const MolecularEnergy *>(findProperty(mpo, miq.second, T, method, basis, ""));
                 if (gp)
                 {
@@ -2316,7 +2316,6 @@ immStatus MyMol::getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
         case MolPropObservable::OCTUPOLE:
         case MolPropObservable::HEXADECAPOLE:
             {
-                double T = -1;
                 auto gp = static_cast<const MolecularMultipole *>(findProperty(mpo, miq.second, T, method, basis, ""));
                 if (gp)
                 {
@@ -2330,7 +2329,6 @@ immStatus MyMol::getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
             break;
         case MolPropObservable::POLARIZABILITY:
             {
-                double T = -1;
                 auto gp = static_cast<const MolecularPolarizability *>(findProperty(mpo, miq.second, T, method, basis, ""));
                 if (gp)
                 {

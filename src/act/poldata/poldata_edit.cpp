@@ -267,70 +267,40 @@ static void modifyPoldata(Poldata *pd,
     {
         printf("Cannot find any particle %s\n", particle.c_str());
     }
-    for (auto p : myParticles)
+    
+    InteractionType itype;
+    if (pd->typeToInteractionType(paramType, &itype))
     {
-        InteractionType itype;
-        if (pd->typeToInteractionType(paramType, &itype))
+        if (pd->interactionPresent(itype))
         {
-            if (!p->hasInteractionType(itype))
+            // A true interaction
+            auto fs = pd->findForces(itype);
+            for (auto &ffp : fs->parametersConst())
             {
-                continue;
-            }
-            auto pId    = p->interactionTypeToIdentifier(itype);
-            if (pId.id().empty())
-            {
-                continue;
-            }
-            auto natoms = interactionTypeToNatoms(itype);
-            switch (natoms)
-            {
-            case 1:
-                {
-                    modifyInteraction(pd, itype, paramType, pId,
-                                      bSetMin, pmin,
-                                      bSetVal, pval,
-                                      bSetMax, pmax,
-                                      bSetMut, mutability,
-                                      bScale,  scale,
-                                      force, stretch);
-                    break;
-                }
-            case 2:
-                {
-                    auto q1id = pId.id();
-                    for (auto q2: myParticles)
-                    {
-                        auto q2id = q2->interactionTypeToIdentifier(itype).id();
-                        const double bondorders[] = { 1, 1.5, 2, 3 };
-                        const size_t nBondorder   = std::extent<decltype(bondorders)>::value;
-                        for(size_t bb = 0; bb < nBondorder; bb++)
-                        {
-                            auto qId = Identifier({q1id, q2id}, { bondorders[bb] }, CanSwap::No);
-                            modifyInteraction(pd, itype, paramType, qId,
-                                              bSetMin, pmin,
-                                              bSetVal, pval,
-                                              bSetMax, pmax,
-                                              bSetMut, mutability,
-                                              bScale,  scale,
-                                              force, stretch);
-                        }
-                    }
-                    break;
-                }
-            default:
-                fprintf(stderr, "Don't know how to handle interactions with %d atoms", natoms);
+                auto id = ffp.first;
+                modifyInteraction(pd, itype, paramType, id,
+                                  bSetMin, pmin,
+                                  bSetVal, pval,
+                                  bSetMax, pmax,
+                                  bSetMut, mutability,
+                                  bScale,  scale,
+                                  force, stretch);
             }
         }
         else
         {
-            modifyParticle(paramType, p,
-                           bSetMin, pmin,
-                           bSetVal, pval,
-                           bSetMax, pmax,
-                           bSetMut, mutability,
-                           bScale,  scale,
-                           force, stretch);
-        }
+            // A particle?
+            for (auto p : myParticles)
+            {
+                modifyParticle(paramType, p,
+                               bSetMin, pmin,
+                               bSetVal, pval,
+                               bSetMax, pmax,
+                               bSetMut, mutability,
+                               bScale,  scale,
+                               force, stretch);
+            }
+       }
     }
 }
 

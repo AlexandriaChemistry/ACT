@@ -46,7 +46,7 @@ void gaffToAlexandria(const std::string                  &filenm,
     std::string myfilenm(filenm);
     if (myfilenm.empty())
     {
-        myfilenm.assign(gmx::findLibraryFile("atomtype_mapping.dat", false, true));
+        myfilenm.assign(gmx::findLibraryFile("atomtype_mapping.csv", false, true));
     }
     gmx::TextReader  ttt(myfilenm);
     std::string      line;
