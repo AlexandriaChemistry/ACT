@@ -83,7 +83,10 @@ def find_lib(prefix, libname, verbose):
     sys.exit("Cannot find %s" % libname)
 
 def run_command(command, flags):
-    cmdlist = [ shutil.which(command) ] + flags.split()
+    mycommand = shutil.which(command)
+    if not mycommand or len(mycommand) == 0:
+        sys.exit("Cannot find the '%s' program" % command)
+    cmdlist = [ mycommand ] + flags.split()
     with Popen(cmdlist, stdout=PIPE, stderr=PIPE, stdin=PIPE) as p:
         output, error = p.communicate()
         with open(command+".out", "w") as outf:
