@@ -351,14 +351,14 @@ void AllBondeds::updatePoldata(FILE    *fp,
         // Rounding the numbers to 1/10 pm and 1/10 degree
         round_numbers(&av, &sig, 10); 
         fs->addParameter(bondId, "bondlength",
-                                     ForceFieldParameter("pm", av, sig, N, av*factor_, av/factor_, Mutability::Bounded, false, true));
+                         ForceFieldParameter("pm", av, sig, N, av*factor_, av/factor_, Mutability::Bounded, false, true));
         fs->addParameter(bondId, "Dm",
-                                     ForceFieldParameter("kJ/mol", Dm_, 0, 1, Dm_*factor_, Dm_/factor_, Mutability::Bounded, false, true));
+                         ForceFieldParameter("kJ/mol", Dm_, 0, 1, Dm_*factor_, Dm_/factor_, Mutability::Bounded, false, true));
         fs->addParameter(bondId, "beta",
-                                     ForceFieldParameter("1/nm", beta_, 0, 1, beta_*factor_, beta_/factor_, Mutability::Bounded, false, true));
+                         ForceFieldParameter("1/nm", beta_, 0, 1, beta_*factor_, beta_/factor_, Mutability::Bounded, false, true));
                     
         fprintf(fp, "bond-%s len %g sigma %g (pm) N = %d%s\n",
-                            i.id().id().c_str(), av, sig, static_cast<int>(N), (sig > bond_tol_) ? " WARNING" : "");
+                i.id().id().c_str(), av, sig, static_cast<int>(N), (sig > bond_tol_) ? " WARNING" : "");
     }
 
     for(auto &bb : bondeds_)

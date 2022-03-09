@@ -423,6 +423,12 @@ double getDissociationEnergy(FILE               *fplog,
                 GMX_RELEASE_ASSERT(eStats::OK == estats, gmx_stats_message(estats));
             }
         }
+        double delta = error;
+        if (error == 0)
+        {
+            // Can happen when there is one data point only
+            delta = std::abs(average*0.1);
+        }
         // Fetch the parameter from the force field
         auto fp  = fs->findParameterType(bi.first, "Dm");
         int  ntr = ntrain.find(bi.first)->second;
@@ -436,8 +442,8 @@ double getDissociationEnergy(FILE               *fplog,
         if (fp->mutability() == Mutability::Free ||
             fp->mutability() == Mutability::Bounded)
         {
-            fp->setMinimum(average-2*error);
-            fp->setMaximum(average+2*error);
+            fp->setMinimum(average-2*delta);
+            fp->setMaximum(average+2*delta);
             fp->setValue(average);
             fp->setUncertainty(error);
             fp->setNtrain(ntr);
