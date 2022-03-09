@@ -308,13 +308,13 @@ static const std::set<InteractionType> &findInteractionMap(const std::string &an
                                                            bool              *found)
 {
     static std::set<InteractionType> bonds = {
+        InteractionType::VDW,
         InteractionType::BONDS,
         InteractionType::ANGLES,
         InteractionType::LINEAR_ANGLES,
         InteractionType::PROPER_DIHEDRALS,
         InteractionType::IMPROPER_DIHEDRALS };
     static std::set<InteractionType> other = {
-        InteractionType::VDW,
         InteractionType::CONSTR,
         InteractionType::VSITE2,
         InteractionType::VSITE3FAD,
