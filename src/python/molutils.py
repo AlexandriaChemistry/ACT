@@ -118,6 +118,4 @@ def cmp_to_key(mycmp):
     return K
 
 def sort_formula(mylist):
-    global elements
-    elements = get_elements()
     return sorted(mylist, key=cmp_to_key(cmp_form_low))
