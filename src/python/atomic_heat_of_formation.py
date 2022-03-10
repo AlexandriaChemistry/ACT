@@ -3,6 +3,7 @@
 # https://github.com/dspoel/ACT
 #
 import math, os, sys
+from actutils     import *
 from get_csv_rows import *
 
 def UnitToConversionFactor(unit:str):
@@ -26,12 +27,8 @@ class AtomicHOF:
         self.read()
         
     def read(self):
-        actdata  = "ACTDATA"
-        if not actdata in os.environ:
-            sys.exit("No variable %s in your environment. Did you source ACTRC?" % actdata)
-        topdir = os.environ[actdata] + "/top/"
-        for datafile in [ topdir+"atomization-energies.csv", 
-                          topdir+"atomization-energies-dft.csv" ]:
+        for datafile in [ act_library_filename("atomization-energies.csv"),
+                          act_library_filename("atomization-energies-dft.csv") ]:
             if not os.path.exists(datafile):
                 sys.exit("Cannot find %s, please reinstall ACT" % datafile)
             rows = get_csv_rows(datafile, 9)
