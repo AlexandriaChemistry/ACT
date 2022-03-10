@@ -152,8 +152,10 @@ static void setMinMaxMut(FILE *fp,
     }
     if (bLimits)
     {
-        pp->setMinimum(pp->value()*factor);
-        pp->setMaximum(pp->value()/factor);
+        double mm = pp->value()*factor;
+        double mx = pp->value()/factor;
+        pp->setMinimum(std::min(mx, mm));
+        pp->setMaximum(std::max(mx, mm));
     }
 }
 
