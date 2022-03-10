@@ -430,6 +430,7 @@ class Molecule:
                 self.inchikey = str(compound.inchikey)
 
     def row(self, version):
+        delim = '|'
         if (version == 1):
             myrow = self.iupac + delim + self.formula + delim + self.weight + delim + self.cas + delim + self.csid + delim
             myrow += self.stdinchi + delim + self.inchikey + delim

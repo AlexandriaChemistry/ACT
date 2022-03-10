@@ -7987,3 +7987,6 @@
 9590|0|sulfanylidene-(sulfanylidene-lambda4-sulfanylidene)-lambda4-sulfane|S4|0|1|128.3|||5460597|InChI=1S/S4/c1-3-4-2|IOOGPFMMGKCAGU-UHFFFAOYSA-N|||sulfanylidene--sulfanylidene-lambda4-sulfanylidene--lambda4-sulfane.sdf|C1|1|0|||spoel|2021-11-30 12:20:44
 9591|0|pentathiolane|S5|0|1|160.3|||139341|InChI=1S/S5/c1-2-4-5-3-1|DEVHCWHUQVZNMT-UHFFFAOYSA-N|||pentathiolane.sdf|C1|1|0|||spoel|2021-11-30 12:20:44
 9592|0|hexathiane|S6|0|1|192.4|||139602|InChI=1S/S6/c1-2-4-6-5-3-1|FEXCMMPRRBSCRG-UHFFFAOYSA-N|||hexathiane.sdf|C1|1|0|||spoel|2021-11-30 12:20:44
+9593|0|1-bromoprop-1-yne|C3H3Br|0|1|118.96|||137279|InChI=1S/C3H3Br/c1-2-3-4/h1H3|XXFUZSHTIOFGNV-UHFFFAOYSA-N|||1-bromoprop-1-yne.sdf|C1|1|0|||spoel|2022-03-10 07:27:51
+9594|0|1-bromobut-1-yne|C4H5Br|0|1|132.99|||10997082|InChI=1S/C4H5Br/c1-2-3-4-5/h2H2,1H3|KPOVYMZGZNPRNA-UHFFFAOYSA-N|||1-bromobut-1-yne.sdf|C1|1|0|||spoel|2022-03-10 07:27:51
+9595|0|1-bromopent-1-yne|C5H7Br|0|1|147.01|||11768713|InChI=1S/C5H7Br/c1-2-3-4-5-6/h2-3H2,1H3|TWFJIRZDULTSKN-UHFFFAOYSA-N|||1-bromopent-1-yne.sdf|C1|1|1|||spoel|2022-03-10 07:27:51
