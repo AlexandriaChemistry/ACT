@@ -1,23 +1,23 @@
 atomtype|element|q_min|q_max|charge_mutability|bondtype|poltype|zetatype|acmtype|epsilon_min|epsilon_max|epsilon_mutability|gamma_min|gamma_max|gamma_mutability|sigma_min|sigma_max|sigma_mutability|radius|row|alpha_min|alpha_max|alpha_mutability|zeta_min|zeta_max|zeta_mutability|jaa_min|jaa_max|jaa_mutability|chi_min|chi_max|chi_mutability|comment|ref_enthalpy|reference
 #|||||||||kJ/mol||||||nm|||nm||A3|A3||1/nm|1/nm||eV|||eV|||||
-h|H|0|0|ACM|h_b||h_z|h_z|0.03|0.1|Bounded|10|20|Bounded|0.15|0.4|Bounded|0.031|1||||6|20|Bounded|6|20|Bounded|2|5|Bounded|hydrogen|222.232|
-c1|C|0|0|ACM|c1_b||c1_z|c1_z|0.5|1|Bounded|10|20|Bounded|0.25|0.5|Bounded|0.069|2||||6|20|Bounded|6|20|Bounded|4|9|Bounded|sp carbon|717.721|
-c2|C|0|0|ACM|c2_b||c2_z|c2_z|0.3|0.8|Bounded|10|20|Bounded|0.25|0.5|Bounded|0.073|2||||6|20|Bounded|6|20|Bounded|4|9|Bounded|sp2 carbon|717.721|
-c3|C|0|0|ACM|c3_b||c3_z|c3_z|0.3|0.8|Bounded|10|20|Bounded|0.25|0.5|Bounded|0.076|2||||6|20|Bounded|6|20|Bounded|4|9|Bounded|sp3 carbon|717.721|
-n1|N|0|0|ACM|n1_b||n1_z|n1_z|0.3|0.8|Bounded|10|20|Bounded|0.25|0.5|Bounded|0.071|2||||6|20|Bounded|6|20|Bounded|4|9|Bounded|sp1 nitrogen|477.018|
-n2|N|0|0|ACM|n2_b||n2_z|n2_z|0.3|0.8|Bounded|10|20|Bounded|0.25|0.5|Bounded|0.071|2||||6|20|Bounded|6|20|Bounded|4|9|Bounded|sp2 nitrogen|477.018|
-n3|N|0|0|ACM|n3_b||n3_z|n3_z|0.3|0.8|Bounded|10|20|Bounded|0.25|0.5|Bounded|0.071|2||||6|20|Bounded|6|20|Bounded|4|9|Bounded|sp3 nitrogen|477.018|
-n4|N|0|0|ACM|n4_b||n4_z|n4_z|0.3|0.8|Bounded|10|20|Bounded|0.25|0.5|Bounded|0.071|2||||6|20|Bounded|6|20|Bounded|4|9|Bounded|positively charged sp3 nitrogen|477.018|
-o1|O|0|0|ACM|o1_b||o1_z|o1_z|0.5|1|Bounded|10|20|Bounded|0.25|0.5|Bounded|0.066|2||||6|20|Bounded|6|20|Bounded|4|9|Bounded|sp oxygen|253.514|
-o2|O|0|0|ACM|o2_b||o2_z|o2_z|0.5|1|Bounded|10|20|Bounded|0.25|0.5|Bounded|0.066|2||||6|20|Bounded|6|20|Bounded|4|9|Bounded|sp2 oxygen|253.514|
-o3|O|0|0|ACM|o3_b||o3_z|o3_z|0.5|1|Bounded|10|20|Bounded|0.25|0.5|Bounded|0.066|2||||6|20|Bounded|6|20|Bounded|4|9|Bounded|sp3 oxygen|253.514|
-f|F|0|0|ACM|f_b||f_z|f_z|0.2|0.6|Bounded|10|20|Bounded|0.25|0.5|Bounded|0.057|2||||6|20|Bounded|6|20|Bounded|4|9|Bounded|fluorine|83.8025|
-p1|P|0|0|ACM|p1_b||p1_z|p1_z|0.5|1.2|Bounded|10|20|Bounded|0.25|0.5|Bounded|0.107|3||||6|20|Bounded|6|20|Bounded|4|9|Bounded|sp phosphor|321.75|
-p2|P|0|0|ACM|p2_b||p2_z|p2_z|0.5|1.2|Bounded|10|20|Bounded|0.25|0.5|Bounded|0.107|3||||6|20|Bounded|6|20|Bounded|4|9|Bounded|sp2 phosphor|321.75|
-p3|P|0|0|ACM|p3_b||p3_z|p3_z|0.5|1.2|Bounded|10|20|Bounded|0.25|0.5|Bounded|0.107|3||||6|20|Bounded|6|20|Bounded|4|9|Bounded|sp3 phosphor|321.75|
-s1|S|0|0|ACM|s1_b||s1_z|s1_z|0.6|1.5|Bounded|10|20|Bounded|0.25|0.5|Bounded|0.105|3||||6|20|Bounded|6|20|Bounded|4|9|Bounded|sp sulfur|281.392|
-s2|S|0|0|ACM|s2_b||s2_z|s2_z|0.6|1.5|Bounded|10|20|Bounded|0.25|0.5|Bounded|0.105|3||||6|20|Bounded|6|20|Bounded|4|9|Bounded|sp2 sulfur|281.392|
-s3|S|0|0|ACM|s3_b||s3_z|s3_z|0.6|1.5|Bounded|10|20|Bounded|0.25|0.5|Bounded|0.105|3||||6|20|Bounded|6|20|Bounded|4|9|Bounded|sp3 sulfur|281.392|
-cl|Cl|0|0|ACM|cl_b||cl_z|cl_z|0.6|1.5|Bounded|10|20|Bounded|0.25|0.5|Bounded|0.102|3||||6|20|Bounded|6|20|Bounded|4|9|Bounded|chlorine|125.893|
-br|Br|0|0|ACM|br_b||br_z|br_z|0.6|1.5|Bounded|10|20|Bounded|0.25|0.5|Bounded|0.12|4||||6|20|Bounded|6|20|Bounded|4|9|Bounded|bromine|124.114|
-i|I|0|0|ACM|i_b||i_z|i_z|1.2|3|Bounded|10|20|Bounded|0.25|0.5|Bounded|0.139|5||||6|20|Bounded|6|20|Bounded|4|9|Bounded|iodine|113.361|
+h|H|0|0|ACM|h_b||h_z|h_z|0.03|0.1|Bounded|10|20|Bounded|0.15|0.4|Bounded|0.031|1||||6|20|Bounded|6|24|Bounded|2.3|2.3|Fixed|hydrogen|222.232|
+c1|C|0|0|ACM|c1_b||c1_z|c1_z|0.5|1|Bounded|10|20|Bounded|0.25|0.5|Bounded|0.069|2||||4|20|Bounded|6|24|Bounded|4|9|Bounded|sp carbon|717.721|
+c2|C|0|0|ACM|c2_b||c2_z|c2_z|0.3|0.8|Bounded|10|20|Bounded|0.25|0.5|Bounded|0.073|2||||4|20|Bounded|6|24|Bounded|4|9|Bounded|sp2 carbon|717.721|
+c3|C|0|0|ACM|c3_b||c3_z|c3_z|0.3|0.8|Bounded|10|20|Bounded|0.25|0.5|Bounded|0.076|2||||4|20|Bounded|6|24|Bounded|4|9|Bounded|sp3 carbon|717.721|
+n1|N|0|0|ACM|n1_b||n1_z|n1_z|0.3|0.8|Bounded|10|20|Bounded|0.25|0.5|Bounded|0.071|2||||5|20|Bounded|6|24|Bounded|4|9|Bounded|sp1 nitrogen|477.018|
+n2|N|0|0|ACM|n2_b||n2_z|n2_z|0.3|0.8|Bounded|10|20|Bounded|0.25|0.5|Bounded|0.071|2||||5|20|Bounded|6|24|Bounded|4|9|Bounded|sp2 nitrogen|477.018|
+n3|N|0|0|ACM|n3_b||n3_z|n3_z|0.3|0.8|Bounded|10|20|Bounded|0.25|0.5|Bounded|0.071|2||||5|20|Bounded|6|24|Bounded|4|9|Bounded|sp3 nitrogen|477.018|
+n4|N|0|0|ACM|n4_b||n4_z|n4_z|0.3|0.8|Bounded|10|20|Bounded|0.25|0.5|Bounded|0.071|2||||5|20|Bounded|6|24|Bounded|4|9|Bounded|positively charged sp3 nitrogen|477.018|
+o1|O|0|0|ACM|o1_b||o1_z|o1_z|0.5|1|Bounded|10|20|Bounded|0.25|0.5|Bounded|0.066|2||||6|20|Bounded|6|24|Bounded|4|9|Bounded|sp oxygen|253.514|
+o2|O|0|0|ACM|o2_b||o2_z|o2_z|0.5|1|Bounded|10|20|Bounded|0.25|0.5|Bounded|0.066|2||||6|20|Bounded|6|24|Bounded|4|9|Bounded|sp2 oxygen|253.514|
+o3|O|0|0|ACM|o3_b||o3_z|o3_z|0.5|1|Bounded|10|20|Bounded|0.25|0.5|Bounded|0.066|2||||6|20|Bounded|6|24|Bounded|4|9|Bounded|sp3 oxygen|253.514|
+f|F|0|0|ACM|f_b||f_z|f_z|0.2|0.6|Bounded|10|20|Bounded|0.25|0.5|Bounded|0.057|2||||6|20|Bounded|6|24|Bounded|4|9|Bounded|fluorine|83.8025|
+p1|P|0|0|ACM|p1_b||p1_z|p1_z|0.5|1.2|Bounded|10|20|Bounded|0.25|0.5|Bounded|0.107|3||||6|20|Bounded|6|24|Bounded|4|9|Bounded|sp phosphor|321.75|
+p2|P|0|0|ACM|p2_b||p2_z|p2_z|0.5|1.2|Bounded|10|20|Bounded|0.25|0.5|Bounded|0.107|3||||6|20|Bounded|6|24|Bounded|4|9|Bounded|sp2 phosphor|321.75|
+p3|P|0|0|ACM|p3_b||p3_z|p3_z|0.5|1.2|Bounded|10|20|Bounded|0.25|0.5|Bounded|0.107|3||||6|20|Bounded|6|24|Bounded|4|9|Bounded|sp3 phosphor|321.75|
+s1|S|0|0|ACM|s1_b||s1_z|s1_z|0.6|1.5|Bounded|10|20|Bounded|0.25|0.5|Bounded|0.105|3||||6|20|Bounded|6|24|Bounded|4|9|Bounded|sp sulfur|281.392|
+s2|S|0|0|ACM|s2_b||s2_z|s2_z|0.6|1.5|Bounded|10|20|Bounded|0.25|0.5|Bounded|0.105|3||||6|20|Bounded|6|24|Bounded|4|9|Bounded|sp2 sulfur|281.392|
+s3|S|0|0|ACM|s3_b||s3_z|s3_z|0.6|1.5|Bounded|10|20|Bounded|0.25|0.5|Bounded|0.105|3||||6|20|Bounded|6|24|Bounded|4|9|Bounded|sp3 sulfur|281.392|
+cl|Cl|0|0|ACM|cl_b||cl_z|cl_z|0.6|1.5|Bounded|10|20|Bounded|0.25|0.5|Bounded|0.102|3||||6|20|Bounded|6|24|Bounded|4|9|Bounded|chlorine|125.893|
+br|Br|0|0|ACM|br_b||br_z|br_z|0.6|1.5|Bounded|10|20|Bounded|0.25|0.5|Bounded|0.12|4||||4|20|Bounded|6|24|Bounded|4|9|Bounded|bromine|124.114|
+i|I|0|0|ACM|i_b||i_z|i_z|1.2|3|Bounded|10|20|Bounded|0.25|0.5|Bounded|0.139|5||||4|20|Bounded|6|24|Bounded|4|9|Bounded|iodine|113.361|
