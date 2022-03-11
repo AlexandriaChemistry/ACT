@@ -1417,6 +1417,7 @@ immStatus MyMol::computeForces(double *rmsf)
             enerd_->grpp.ener[j][i] = 0;
         }
     }
+    // TODO check if this is really necessary
     restoreCoordinates();
     constructVsitesGlobal(*mtop_, state_->x);
     immStatus imm =  immStatus::OK;
@@ -1555,6 +1556,7 @@ immStatus MyMol::GenerateAcmCharges(const Poldata *pd)
     }
     auto qcalc = qTypeProps(qType::Calc);
     qcalc->setQ(atoms());
+    qcalc->setX(state_->x);
     return imm;
 }
 
