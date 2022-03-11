@@ -538,8 +538,8 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
         { MolPropObservable::OCTUPOLE,     oct_toler_  },
         { MolPropObservable::HEXADECAPOLE, hex_toler_  },
     };
-    // Extract terms to print for the enery ters
-    std::vector<int> ePlot = { F_EPOT, F_COUL_SR };
+    // Extract terms to print for the enery terms
+    std::vector<int> ePlot = { F_EPOT, F_COUL_SR, F_ATOMIZATION };
     {
         std::vector<InteractionType> includeTerms = { InteractionType::BONDS, InteractionType::ANGLES,
             InteractionType::LINEAR_ANGLES, InteractionType::PROPER_DIHEDRALS,
@@ -573,7 +573,7 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
             if (mol->energy(MolPropObservable::EMOL, &emol))
             {
                 lsq_epot[ims][qType::Calc].add_point(emol, mol->potentialEnergy(), 0, 0);
-                fprintf(fp, "Reference potential energy %.2f\n", emol);
+                fprintf(fp, "Enthalpy of formation %.2f\n", emol);
             }
             auto terms = mol->energyTerms();
             for(auto &ep : ePlot)
@@ -729,7 +729,7 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
             const char *name = qTypeName(qt).c_str();
             if (lsq_epot[ims.first][qt].get_npoints() > 0)
             {
-                print_stats(fp, "EPot", "kJ/mol", 1.0, &lsq_epot[ims.first][qt],  header, "Experiment", name, useOffset_);
+                print_stats(fp, "Enthalpy of formation", "kJ/mol", 1.0, &lsq_epot[ims.first][qt],  header, "Experiment", name, useOffset_);
                 header = false;
             }
             print_stats(fp, "ESP", "kJ/mol e", 1.0, &lsq_esp[ims.first][qt],  header, "Electronic", name, useOffset_);

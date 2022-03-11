@@ -1036,6 +1036,8 @@ immStatus MyMol::GenerateTopology(FILE              *fp,
             fprintf(debug, "%s\n", emsg.c_str());
         }
     }
+    computeAtomizationEnergy(pd);
+    
     return imm;
 }
 
@@ -1371,6 +1373,21 @@ real MyMol::potentialEnergy() const
     return enerd_->term[F_EPOT];
 }
 
+void MyMol::computeAtomizationEnergy(const Poldata *pd)
+{
+    atomizationEnergy_ = 0;
+    auto myatoms = atoms();
+    for (auto i = 0; i < myatoms->nr; i++)
+    {
+        if (myatoms->atom[i].ptype == eptAtom ||
+            myatoms->atom[i].ptype == eptNucleus)
+        {
+            auto atype = pd->findParticleType(*myatoms->atomtype[i]);
+            atomizationEnergy_ += atype->refEnthalpy();
+        }
+    }
+}
+
 immStatus MyMol::computeForces(double *rmsf)
 {
     auto mdatoms = MDatoms_->get()->mdatoms();
@@ -1479,6 +1496,9 @@ immStatus MyMol::computeForces(double *rmsf)
                  force_flags);
         *rmsf = 0;
     }
+    enerd_->term[F_ATOMIZATION] = atomizationEnergy();
+    enerd_->term[F_EPOT]       += atomizationEnergy();
+    enerd_->term[F_ETOT]       += atomizationEnergy();
     done_commrec(crtmp);
     return imm;
 }
@@ -2237,7 +2257,6 @@ immStatus MyMol::getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
                              const Poldata                              *pd,
                              double                                      T)
 {
-    int                 ia    = 0;
     int                 natom = 0;
     std::vector<double> vec;
     std::string         myref;
@@ -2352,20 +2371,7 @@ immStatus MyMol::getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
         energy_.find(MolPropObservable::DHFORM) != energy_.end())
     {
         double Emol = energy_[MolPropObservable::DHFORM];
-        for (ia = 0; ia < myatoms.nr; ia++)
-        {
-            if (myatoms.atom[ia].ptype == eptAtom ||
-                myatoms.atom[ia].ptype == eptNucleus)
-            {
-                auto atype = pd->findParticleType(*myatoms.atomtype[ia]);
-                Emol -= atype->refEnthalpy();
-            }
-        }
         energy_.insert(std::pair<MolPropObservable, double>(MolPropObservable::EMOL, Emol));
-        if (energy_.find(MolPropObservable::ZPE) != energy_.end())
-        {
-            energy_[MolPropObservable::EMOL] -= energy_[MolPropObservable::ZPE];
-        }
     }
     return imm;
 }
