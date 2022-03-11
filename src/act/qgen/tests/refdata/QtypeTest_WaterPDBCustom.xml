@@ -1,0 +1,56 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="Charge">
+    <Int Name="Length">3</Int>
+    <Real>0.33000000000000002</Real>
+    <Real>-0.66000000000000003</Real>
+    <Real>0.33000000000000002</Real>
+  </Sequence>
+  <Sequence Name="dipole">
+    <Int Name="Length">3</Int>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>-1.8545172596559698</Real>
+  </Sequence>
+  <Sequence Name="quadrupole">
+    <Int Name="Length">6</Int>
+    <Real>-0.83377299595647247</Real>
+    <Real>0</Real>
+    <Real>-1.8545172596559698</Real>
+    <Real>1.0166104337736996</Real>
+    <Real>0</Real>
+    <Real>-0.18283743781722703</Real>
+  </Sequence>
+  <Sequence Name="octupole">
+    <Int Name="Length">10</Int>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>-1.8545172596559698</Real>
+    <Real>1.8503834297301722</Real>
+    <Real>0</Real>
+    <Real>0.65093555813924553</Real>
+    <Real>0</Real>
+    <Real>-0.86597944511372071</Real>
+    <Real>0</Real>
+    <Real>-0.33002432797659742</Real>
+  </Sequence>
+  <Sequence Name="hexadecapole">
+    <Int Name="Length">15</Int>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>-1.8545172596559696</Real>
+    <Real>1.850383429730172</Real>
+    <Real>0</Real>
+    <Real>0.65093555813924542</Real>
+    <Real>0</Real>
+    <Real>-0.8659794451137206</Real>
+    <Real>0</Real>
+    <Real>-0.33002432797659742</Real>
+    <Real>1.0800614063997827</Real>
+    <Real>0</Real>
+    <Real>0.40527838031322133</Real>
+    <Real>0</Real>
+    <Real>0.15148116654125823</Real>
+  </Sequence>
+</ReferenceData>

@@ -278,6 +278,24 @@ TEST_F (QtypeTest, AcetatePDBCoQ)
     testQtype("ACS-g", inputFormat::LOG, "acetate", false, -1, qcustom, true);
 }
 
+TEST_F (QtypeTest, WaterPDB)
+{
+    std::vector<double> qcustom;
+    testQtype("ACS-g", inputFormat::PDB, "water", true, 0, qcustom, false);
+}
+
+TEST_F (QtypeTest, WaterPDBCoQ)
+{
+    std::vector<double> qcustom;
+    testQtype("ACS-g", inputFormat::PDB, "water", true, 0, qcustom, true);
+}
+
+TEST_F (QtypeTest, WaterPDBCustom)
+{
+    std::vector<double> qcustom = { 0.33, -0.66, 0.33 };
+    testQtype("ACS-g", inputFormat::PDB, "water", true, 0, qcustom, false);
+}
+
 }
 
 }
