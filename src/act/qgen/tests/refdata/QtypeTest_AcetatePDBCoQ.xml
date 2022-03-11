@@ -1,0 +1,60 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="Charge">
+    <Int Name="Length">7</Int>
+    <Real>-0.44861545822229115</Real>
+    <Real>0.19713819563225615</Real>
+    <Real>-0.42209406556718082</Real>
+    <Real>-0.42209313534367715</Real>
+    <Real>0.033029338343155967</Real>
+    <Real>0.029607695636294007</Real>
+    <Real>0.033027429521442997</Real>
+  </Sequence>
+  <Sequence Name="dipole">
+    <Int Name="Length">3</Int>
+    <Real>0.73518906941988926</Real>
+    <Real>1.850362169776744e-05</Real>
+    <Real>-0.013423998718728658</Real>
+  </Sequence>
+  <Sequence Name="quadrupole">
+    <Int Name="Length">6</Int>
+    <Real>-1.635159155857463</Real>
+    <Real>5.3891227771968146e-05</Real>
+    <Real>0.0010433108050777887</Real>
+    <Real>-1.7642103310262285</Real>
+    <Real>9.0097529521361482e-07</Real>
+    <Real>3.3993694868836903</Real>
+  </Sequence>
+  <Sequence Name="octupole">
+    <Int Name="Length">10</Int>
+    <Real>-1.2151331184187522</Real>
+    <Real>-0.00030304535620013725</Real>
+    <Real>-0.033588615513002677</Real>
+    <Real>4.3475423755876834</Real>
+    <Real>4.8640476812001386e-06</Real>
+    <Real>0.38942088701326183</Real>
+    <Real>0.00044168380640164252</Real>
+    <Real>-0.13371609689329719</Real>
+    <Real>-8.7169293001010829e-05</Real>
+    <Real>0.12027209136891658</Real>
+  </Sequence>
+  <Sequence Name="hexadecapole">
+    <Int Name="Length">15</Int>
+    <Real>-4.3494498457958644</Real>
+    <Real>0.00019099307186504693</Real>
+    <Real>-0.075914100956174263</Real>
+    <Real>-2.1596691439602225</Real>
+    <Real>1.3486710169706688e-05</Real>
+    <Real>0.66671856453275424</Real>
+    <Real>0.0002328514286751465</Real>
+    <Real>-0.20979659537696752</Real>
+    <Real>-0.00015108820826824251</Real>
+    <Real>0.20209619556306008</Real>
+    <Real>-6.4404029081885854</Real>
+    <Real>-1.2367702391902931e-05</Real>
+    <Real>0.06064763101059726</Real>
+    <Real>1.8888485763784601e-06</Real>
+    <Real>0.18045345408780189</Real>
+  </Sequence>
+</ReferenceData>
