@@ -573,7 +573,7 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
             if (mol->energy(MolPropObservable::EMOL, &emol))
             {
                 lsq_epot[ims][qType::Calc].add_point(emol, mol->potentialEnergy(), 0, 0);
-                fprintf(fp, "Enthalpy of formation %.2f\n", emol);
+                fprintf(fp, "Delta E0 %.2f\n", emol);
             }
             auto terms = mol->energyTerms();
             for(auto &ep : ePlot)
