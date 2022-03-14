@@ -113,17 +113,18 @@ namespace alexandria
         std::string                      forcefield_;
         bool                             gromacsGenerated_ = false;
         gpp_atomtype_t                   gromppAtomtype_;
- 
+        double                           atomizationEnergy_ = 0;
+
         //! Map of charge type dependent properties
         std::map<qType, QtypeProps>           qProps_;
         //! Center of nuclear charge
         rvec                      CenterOfCharge_ = { 0 };
         //! Experimental dipole
-        double                    dip_exp_    = 0;
+        //double                    dip_exp_    = 0;
         //! Error in experimental dipole
-        double                    dip_err_    = 0;
+        //double                    dip_err_    = 0;
         //! Weighting factor for dipole????
-        double                    dip_weight_ = 0;
+        //double                    dip_weight_ = 0;
         //! GROMACS state variable
         t_state                  *state_      = nullptr;
         //! GROMACS force record
@@ -231,6 +232,13 @@ namespace alexandria
          */
         void findOutPlaneAtoms(int ca, std::vector<int> &atoms);
 
+        /*! \brief Compute the atomization energy
+         * Will add the reference enthalpy values per atom
+         * in the molecule and store it locally.
+         * \param[in] pd The force field structure.
+         */
+        void computeAtomizationEnergy(const Poldata *pd);
+
         //! Energy terms for this compounds
         std::map<MolPropObservable, double> energy_;
         //! Molecular Topology
@@ -278,6 +286,9 @@ namespace alexandria
          */
         void setSupport(eSupport esup) { eSupp_ = esup; }
 
+        //! \return the atomization energy
+        double atomizationEnergy() const { return atomizationEnergy_; }
+        
         /*! Return an energy component
          * \param[in]  mpo  The particular term that is requested
          * \param[out] ener The value found
@@ -332,7 +343,7 @@ namespace alexandria
         /*! \brief
          * Return experimental dipole
          */
-        double dipExper() const { return dip_exp_; }
+        //double dipExper() const { return dip_exp_; }
 
         /*! \brief
          * Add the screening factors of the distributed charge to atom structure
@@ -468,11 +479,13 @@ namespace alexandria
          * \param[in] method   Method used for QM calculation
          * \param[in] basis    Basis set used for QM calculation
          * \param[in] pd       Force field structure
+         * \param[in] T        The temperature to use. -1 allows any T.
          */
         immStatus getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
                               const std::string &method,
                               const std::string &basis,
-                              const Poldata     *pd);
+                              const Poldata     *pd,
+                              double             T);
 
         /*! \brief
          * Print the topology that was generated previously in GROMACS format.

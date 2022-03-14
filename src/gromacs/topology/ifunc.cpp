@@ -133,6 +133,7 @@ const t_interaction_function interaction_function[F_NRE] =
     def_bonded  ("WATERPOL", "Water Pol.",      5, 6, 0),
     def_bonded  ("THOLE",    "Thole Pol.",      4, 3, 0),
     def_bondnb  ("ANHARM_POL", "Anharm. Pol.", 2, 3, 0),
+    def_bonded  ("ATOMIZATION", "Atomization", 1, 1, 0),
     def_bonded  ("POSRES",   "Position Rest.",  1, 3, 3),
     def_bonded  ("FBPOSRES", "Flat-bottom posres", 1, 3, 0),
     def_bonded  ("DISRES",   "Dis. Rest.",      2, 6, 0),

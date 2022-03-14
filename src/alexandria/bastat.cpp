@@ -85,7 +85,7 @@ static void generate_bcc(Poldata *pd,
     auto bcc   = pd->findForces(itype);
     bcc->clearParameters();
 
-    auto hardnessParam = ForceFieldParameter("eV/e", hardness, 0, 0, -2, 10, Mutability::Bounded, true, false);
+    auto hardnessParam = ForceFieldParameter("eV/e", hardness, 0, 0, -4, 12, Mutability::Bounded, true, false);
     auto enpBounded    = ForceFieldParameter("eV", 0, 0, 0, -5, 5, Mutability::Bounded, true, false);
     auto enpFixed      = ForceFieldParameter("eV", 0, 0, 0, 0, 0, Mutability::Fixed, true, true);
     auto ptypes = pd->particleTypesConst();
@@ -137,7 +137,7 @@ int bastat(int argc, char *argv[])
         "those. First atomtypes are determined and then bond-lengths, bond-angles",
         "and dihedral angles are extracted. The results are stored in a gentop.dat file.[PAR]"
         "The program can also generate (quite) realistic dissociation energies from"
-        "experimental data when the [TT]-dissoc[tt] optionis given." 
+        "experimental or QM data when the [TT]-dissoc[tt] optionis given." 
     };
 
     t_filenm                         fnm[] = {
@@ -160,6 +160,7 @@ int bastat(int argc, char *argv[])
     static gmx_bool                  genBCC      = false;
     static gmx_bool                  bDissoc     = false;
     static gmx_bool                  strict      = true;
+    static gmx_bool                  bQM         = true;
     std::vector<t_pargs> pa = {
         { "-lot",    FALSE, etSTR,  {&lot},
           "Use this method and level of theory when selecting coordinates and charges" },
@@ -169,6 +170,8 @@ int bastat(int argc, char *argv[])
           "Will only write output if number of warnings is at most this." },
         { "-dissoc",  FALSE, etBOOL, {&bDissoc},
           "Derive dissociation energy from the enthalpy of formation. If not chosen, the dissociation energy will be read from the gentop.dat file." },
+        { "-qm", FALSE, etBOOL, {&bQM},
+          "Usa data from quantum chemistry to determine the dissociation energies. See also the [TT]-lot[tt] option." },
         { "-bootstrap", FALSE, etINT, {&nBootStrap},
           "Use bootstrap analysis for determining the uncertainty in the dissocation energy. If the value is less than 2 no bootstrapping will be done." },
         { "-histo", FALSE, etBOOL, {&bHisto},
@@ -258,7 +261,12 @@ int bastat(int argc, char *argv[])
     print_memory_usage(debug);
     if (bDissoc)
     {
-        double rmsd = getDissociationEnergy(fp, &pd, &mymols,
+        iqmType iqm = iqmType::Exp;
+        if (bQM)
+        {
+            iqm = iqmType::QM;
+        }
+        double rmsd = getDissociationEnergy(fp, &pd, &mymols, iqm,
                                             opt2fn_null("-de",  NFILE, fnm), 
                                             method, basis, nBootStrap);
         fprintf(fp, "Root mean square deviation %.1f kJ/mol\n", rmsd);

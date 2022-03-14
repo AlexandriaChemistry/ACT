@@ -33,9 +33,17 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 install(FILES 
+         alexandria.csv
+         atomtype_mapping.csv
+         bondvsites.csv
+         atomization-energies-dft.csv
+         atomtypes.csv
+         elements.csv
+         atomization-energies.csv
+         atomtypes_nonpol.csv
+         ffnames.csv
+         atomprops.csv
+         atomtypes_same_zeta.csv
+         residuetypes.dat 
     DESTINATION ${GMX_INSTALL_GMXDATADIR}
     COMPONENT data)
-install(DIRECTORY top forcefield
-    DESTINATION ${GMX_INSTALL_GMXDATADIR}
-    COMPONENT data
-    PATTERN "*~" EXCLUDE)

@@ -9,6 +9,7 @@ from pathlib     import Path
 
 # ACT python code
 sys.path.insert(1, "@ACT_PYTHON_LIB_PATH@")
+from actutils    import *
 from mol_csv_api import *
 from molutils    import *
 from datetime    import datetime
@@ -25,7 +26,7 @@ def parseArguments():
   but also prioritize certain compounds by providing a 'must-have' list.
   ''' % sestr)
   parser     = argparse.ArgumentParser(description=desc)
-  alexandria = os.environ["ACTDATA"] + "/forcefield/alexandria.csv"
+  alexandria = act_library_filename("alexandria.csv")
   parser.add_argument("-a",          "--alexandria",   help="Compound descriptions. Default "+alexandria,                type=str,         default=alexandria)
   outfile = "selection.dat"
   parser.add_argument("-o",          "--outfile",      help="Output selection file for writing. Default "+outfile,     type=str, default=outfile)
@@ -38,6 +39,7 @@ def parseArguments():
   parser.add_argument("-noradical",  "--noRadical",    help="Remove radicals from the selected molecules",             action="store_true")
   parser.add_argument("-charged",    "--charged",      help="Select charged compounds only",                           action="store_true")
   parser.add_argument("-neutral",    "--neutral",      help="Select neutral compounds only",                           action="store_true")
+  parser.add_argument("-class",      "--molclass",     help="Class of compounds, e.g. alcohol", type=str, default=None) 
   parser.add_argument("-must",       "--musthave",     help="File containing a list of compounds that must be included in the Train data set", type=str, default=None)
   strainhelp = "Remove strained compounds, i.e. with names containing "
   for sm in strained[:-1]:
@@ -155,6 +157,14 @@ def filter_strained(mols):
   print("%d of them are strained." % n)
   return filtered_mols
 
+def filter_mols_by_class(mols, molclass):
+  newmols = []
+  for m in mols:
+    if molclass in m.classes():
+      newmols.append(m)
+  print("Found %d compounds in class %s" % (len(newmols), molclass))
+  return newmols
+
 def write_selection(M, mols, probability, filename, MustHaveList):
   MustHave = []
   if MustHaveList:
@@ -194,7 +204,8 @@ if __name__ == '__main__':
 
   if args.elements:
     mols = filter_mols_by_element(mols, args.elements.split(), args.fullelem)
-
+  if args.molclass:
+    mols = filter_mols_by_class(mols, args.molclass)
   if args.unstrained:
     mols = filter_strained(mols)
 

@@ -7987,3 +7987,12 @@
 9590|0|sulfanylidene-(sulfanylidene-lambda4-sulfanylidene)-lambda4-sulfane|S4|0|1|128.3|||5460597|InChI=1S/S4/c1-3-4-2|IOOGPFMMGKCAGU-UHFFFAOYSA-N|||sulfanylidene--sulfanylidene-lambda4-sulfanylidene--lambda4-sulfane.sdf|C1|1|0|||spoel|2021-11-30 12:20:44
 9591|0|pentathiolane|S5|0|1|160.3|||139341|InChI=1S/S5/c1-2-4-5-3-1|DEVHCWHUQVZNMT-UHFFFAOYSA-N|||pentathiolane.sdf|C1|1|0|||spoel|2021-11-30 12:20:44
 9592|0|hexathiane|S6|0|1|192.4|||139602|InChI=1S/S6/c1-2-4-6-5-3-1|FEXCMMPRRBSCRG-UHFFFAOYSA-N|||hexathiane.sdf|C1|1|0|||spoel|2021-11-30 12:20:44
+9593|0|1-chloroprop-1-yne|C3H3Cl|0|1|74.51|||24427|InChI=1S/C3H3Cl/c1-2-3-4/h1H3|OMNGRPHPKWAMSY-UHFFFAOYSA-N|||1-chloroprop-1-yne.sdf|C1|1|0|||spoel|2022-03-10 07:41:23
+9594|0|1-chlorobut-1-yne|C4H5Cl|0|1|88.53|||44250|InChI=1S/C4H5Cl/c1-2-3-4-5/h2H2,1H3|QMCVJHYLJSSYQF-UHFFFAOYSA-N|||1-chlorobut-1-yne.sdf|C1|1|0|||spoel|2022-03-10 07:41:23
+9595|0|1-chloropent-1-yne|C5H7Cl|0|1|102.56|||21799299|InChI=1S/C5H7Cl/c1-2-3-4-5-6/h2-3H2,1H3|UYDVMSBEKRHISS-UHFFFAOYSA-N|||1-chloropent-1-yne.sdf|C1|1|1|||spoel|2022-03-10 07:41:23
+9596|0|1-fluoroprop-1-yne|C3H3F|0|1|58.05|||14337718|InChI=1S/C3H3F/c1-2-3-4/h1H3|JZYKNIBCQRIYQP-UHFFFAOYSA-N|||1-fluoroprop-1-yne.sdf|C1|1|0|||spoel|2022-03-10 07:41:23
+9597|0|1-iodoprop-1-yne|C3H3I|0|1|165.96|||136437|InChI=1S/C3H3I/c1-2-3-4/h1H3|JHUPGXNKUPOSIE-UHFFFAOYSA-N|||1-iodoprop-1-yne.sdf|C1|1|0|||spoel|2022-03-10 07:41:23
+9598|0|1-iodobut-1-yne|C4H5I|0|1|179.99|||12914634|InChI=1S/C4H5I/c1-2-3-4-5/h2H2,1H3|GPHAMKUHSWZJKB-UHFFFAOYSA-N|||1-iodobut-1-yne.sdf|C1|1|0|||spoel|2022-03-10 07:41:23
+9599|0|1-bromoprop-1-yne|C3H3Br|0|1|118.96|||137279|InChI=1S/C3H3Br/c1-2-3-4/h1H3|XXFUZSHTIOFGNV-UHFFFAOYSA-N|||COMPOUNDS/1-bromoprop-1-yne.sdf|C1|1|0|||spoel|2022-03-10 16:46:43
+9600|0|1-bromobut-1-yne|C4H5Br|0|1|132.99|||10997082|InChI=1S/C4H5Br/c1-2-3-4-5/h2H2,1H3|KPOVYMZGZNPRNA-UHFFFAOYSA-N|||COMPOUNDS/1-bromobut-1-yne.sdf|C1|1|0|||spoel|2022-03-10 16:46:43
+9601|0|1-bromopent-1-yne|C5H7Br|0|1|147.01|||11768713|InChI=1S/C5H7Br/c1-2-3-4-5-6/h2-3H2,1H3|TWFJIRZDULTSKN-UHFFFAOYSA-N|||COMPOUNDS/1-bromopent-1-yne.sdf|C1|1|1|||spoel|2022-03-10 16:46:43

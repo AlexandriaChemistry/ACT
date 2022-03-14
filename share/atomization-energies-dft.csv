@@ -1,0 +1,31 @@
+#atom|charge|method|property|T(K)|Value|spin multiplicity|unit|reference|comment|DFT output
+H|0|B3LYP/aug-cc-pVTZ|E0|0|-0.590011936035|1|Hartree|Ghahremanpour2018a|E0(H2)/2|-1.18002387207
+C|0|B3LYP/aug-cc-pVTZ|E0|0|-38.17837727876|1|Hartree|Ghahremanpour2018a|E(CH4)-2*E(H2)|
+N|0|B3LYP/aug-cc-pVTZ|E0|0|-54.7852926995|1|Hartree|Ghahremanpour2018a|E0(N2)/2|-109.570585399
+O|0|B3LYP/aug-cc-pVTZ|E0|0|-75.1923061345|1|Hartree|Ghahremanpour2018a|E0(O2)/2|-150.384612269
+F|0|B3LYP/aug-cc-pVTZ|E0|0|-99.795714463|1|Hartree|Ghahremanpour2018a|E0(F2)/2|-199.591428926
+P|0|B3LYP/aug-cc-pVTZ|E0|0|-341.410514178895|1|Hartree|Ghahremanpour2018a|E(PH3)-1.5*E(H2)|
+S|0|B3LYP/aug-cc-pVTZ|E0|0|-398.25223830593|1|Hartree|Ghahremanpour2018a|E(H2S)-E(H2)|
+Cl|0|B3LYP/aug-cc-pVTZ|E0|0|-460.2183734245|1|Hartree|Ghahremanpour2018a|E0(Cl2)/2|-920.436746849
+Br|0|B3LYP/aug-cc-pVTZ|E0|0|-2574.22695102|1|Hartree|Ghahremanpour2018a|E0(Br2)/2|-5148.45390204
+I|0|B3LYP/aug-cc-pVTZ|E0|0|-295.8160068215|1|Hartree|Ghahremanpour2018a|E0(I2)/2 |-591.632013643
+H|0|pwpb95-d3bj/aug-cc-pVTZ|E0|0|-0.58462912436115|1|Hartree|Spoel2022a|E0(H2)/2|-1.1692582487223
+C|0|pwpb95-d3bj/aug-cc-pVTZ|E0|0|-38.155729093687|1|Hartree|Spoel2022a|E(CH4)-2*E(H2)|-40.4942455911316
+N|0|pwpb95-d3bj/aug-cc-pVTZ|E0|0|-54.757578568726|1|Hartree|Spoel2022a|E0(N2)/2|-109.515157137452
+O|0|pwpb95-d3bj/aug-cc-pVTZ|E0|0|-75.1527030103101|1|Hartree|Spoel2022a|E0(O2)/2|-150.30540602062
+F|0|pwpb95-d3bj/aug-cc-pVTZ|E0|0|-99.7543080051777|1|Hartree|Spoel2022a|E0(F2)/2|-199.508616010355
+P|0|pwpb95-d3bj/aug-cc-pVTZ|E0|0|-341.348619148341|1|Hartree|Spoel2022a|E(PH3)-1.5*E(H2)|-343.102506521424
+S|0|pwpb95-d3bj/aug-cc-pVTZ|E0|0|-398.193504475403|1|Hartree|Spoel2022a|E(H2S)-E(H2)|-399.362762724125
+Cl|0|pwpb95-d3bj/aug-cc-pVTZ|E0|0|-460.163506282169|1|Hartree|Spoel2022a|E0(Cl2)/2|-920.327012564339
+Br|0|pwpb95-d3bj/aug-cc-pVTZ|E0|0|-2574.17027386219|1|Hartree|Spoel2022a|E0(Br2)/2|-5148.34054772437
+I|0|pwpb95-d3bj/aug-cc-pVTZ|E0|0|0|1|Hartree|Spoel2022a|E0(I2)/2 |
+H|0|pwpb95-d3bj/aug-cc-pVQZ|E0|0|-0.58505860688225|1|Hartree|Spoel2022a|E0(H2)/2|-1.1701172137645
+C|0|pwpb95-d3bj/aug-cc-pVQZ|E0|0|-38.1623904469338|1|Hartree|Spoel2022a|E(CH4)-2*E(H2)|-40.5026248744628
+N|0|pwpb95-d3bj/aug-cc-pVQZ|E0|0|-54.7674859302522|1|Hartree|Spoel2022a|E0(N2)/2|-109.534971860504
+O|0|pwpb95-d3bj/aug-cc-pVQZ|E0|0|-75.1655785670317|1|Hartree|Spoel2022a|E0(O2)/2|-150.331157134063
+F|0|pwpb95-d3bj/aug-cc-pVQZ|E0|0|-99.7707872590424|1|Hartree|Spoel2022a|E0(F2)/2|-199.541574518085
+P|0|pwpb95-d3bj/aug-cc-pVQZ|E0|0|-341.355931726051|1|Hartree|Spoel2022a|E(PH3)-1.5*E(H2)|-343.111107546698
+S|0|pwpb95-d3bj/aug-cc-pVQZ|E0|0|-398.204724108021|1|Hartree|Spoel2022a|E(H2S)-E(H2)|-399.374841321785
+Cl|0|pwpb95-d3bj/aug-cc-pVQZ|E0|0|-460.177464321344|1|Hartree|Spoel2022a|E0(Cl2)/2|-920.354928642689
+Br|0|pwpb95-d3bj/aug-cc-pVQZ|E0|0|-2574.19453501027|1|Hartree|Spoel2022a|E0(Br2)/2|-5148.38907002053
+I|0|pwpb95-d3bj/aug-cc-pVQZ|E0|0|0|1|Hartree|Spoel2022a|E0(I2)/2 |

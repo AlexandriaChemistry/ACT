@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2021 
+ * Copyright (C) 2014-2022
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -57,7 +57,8 @@ static void setMinMaxMut(FILE *fp,
                          bool bSetMax, double pmax,
                          bool bSetMut, const std::string &mutability,
                          bool bScale,  double scale,
-                         bool stretch, const std::string &particleId)
+                         bool stretch, const std::string &particleId,
+                         bool bLimits, double factor)
 {
     if (bSetVal && bSetMin)
     {
@@ -149,6 +150,13 @@ static void setMinMaxMut(FILE *fp,
             }
         }
     }
+    if (bLimits)
+    {
+        double mm = pp->value()*factor;
+        double mx = pp->value()/factor;
+        pp->setMinimum(std::min(mx, mm));
+        pp->setMaximum(std::max(mx, mm));
+    }
 }
 
 static void modifyParticle(const std::string &paramType,
@@ -158,7 +166,8 @@ static void modifyParticle(const std::string &paramType,
                            bool bSetMax, double pmax,
                            bool bSetMut, const std::string &mutability,
                            bool bScale,  double scale,
-                           bool force, bool stretch)
+                           bool force,   bool stretch,
+                           bool bLimit,  double factor)
 {
     // Check particletypes instead
     if (particle->hasParameter(paramType))
@@ -175,7 +184,8 @@ static void modifyParticle(const std::string &paramType,
                          bSetVal, pval, bSetMax, pmax,
                          bSetMut, mutability, 
                          bScale,  scale,
-                         stretch, particleId);
+                         stretch, particleId,
+                         bLimit,  factor);
         }
     }
     else
@@ -193,7 +203,8 @@ static void modifyInteraction(Poldata *pd,
                               bool bSetMax, double pmax,
                               bool bSetMut, const std::string &mutability,
                               bool bScale,  double scale,
-                              bool force, bool stretch)
+                              bool force,   bool stretch,
+                              bool bLimit,  double factor)
 {
     auto fs = pd->findForces(itype)->parameters();
     for(auto &ffs : *fs)
@@ -216,7 +227,8 @@ static void modifyInteraction(Poldata *pd,
                                      bSetVal, pval, bSetMax, pmax,
                                      bSetMut, mutability, 
                                      bScale,  scale,
-                                     stretch, myId);
+                                     stretch, myId,
+                                     bLimit,  factor);
                     }
                 }
             }
@@ -232,9 +244,10 @@ static void modifyPoldata(Poldata *pd,
                           bool bSetMax, double pmax,
                           bool bSetMut, const std::string &mutability,
                           bool bScale,  double scale,
-                          bool force, bool stretch)
+                          bool force,   bool stretch,
+                          bool bLimit,  double factor)
 {
-    if (!(bSetVal || bSetMin || bSetMax || bSetMut || stretch || bScale))
+    if (!(bSetVal || bSetMin || bSetMax || bSetMut || stretch || bScale || bLimit))
     {
         printf("No parameter to change.\n");
         return;
@@ -267,70 +280,42 @@ static void modifyPoldata(Poldata *pd,
     {
         printf("Cannot find any particle %s\n", particle.c_str());
     }
-    for (auto p : myParticles)
+    
+    InteractionType itype;
+    if (pd->typeToInteractionType(paramType, &itype))
     {
-        InteractionType itype;
-        if (pd->typeToInteractionType(paramType, &itype))
+        if (pd->interactionPresent(itype))
         {
-            if (!p->hasInteractionType(itype))
+            // A true interaction
+            auto fs = pd->findForces(itype);
+            for (auto &ffp : fs->parametersConst())
             {
-                continue;
-            }
-            auto pId    = p->interactionTypeToIdentifier(itype);
-            if (pId.id().empty())
-            {
-                continue;
-            }
-            auto natoms = interactionTypeToNatoms(itype);
-            switch (natoms)
-            {
-            case 1:
-                {
-                    modifyInteraction(pd, itype, paramType, pId,
-                                      bSetMin, pmin,
-                                      bSetVal, pval,
-                                      bSetMax, pmax,
-                                      bSetMut, mutability,
-                                      bScale,  scale,
-                                      force, stretch);
-                    break;
-                }
-            case 2:
-                {
-                    auto q1id = pId.id();
-                    for (auto q2: myParticles)
-                    {
-                        auto q2id = q2->interactionTypeToIdentifier(itype).id();
-                        const double bondorders[] = { 1, 1.5, 2, 3 };
-                        const size_t nBondorder   = std::extent<decltype(bondorders)>::value;
-                        for(size_t bb = 0; bb < nBondorder; bb++)
-                        {
-                            auto qId = Identifier({q1id, q2id}, { bondorders[bb] }, CanSwap::No);
-                            modifyInteraction(pd, itype, paramType, qId,
-                                              bSetMin, pmin,
-                                              bSetVal, pval,
-                                              bSetMax, pmax,
-                                              bSetMut, mutability,
-                                              bScale,  scale,
-                                              force, stretch);
-                        }
-                    }
-                    break;
-                }
-            default:
-                fprintf(stderr, "Don't know how to handle interactions with %d atoms", natoms);
+                auto id = ffp.first;
+                modifyInteraction(pd, itype, paramType, id,
+                                  bSetMin, pmin,
+                                  bSetVal, pval,
+                                  bSetMax, pmax,
+                                  bSetMut, mutability,
+                                  bScale,  scale,
+                                  force,   stretch,
+                                  bLimit,  factor);
             }
         }
         else
         {
-            modifyParticle(paramType, p,
-                           bSetMin, pmin,
-                           bSetVal, pval,
-                           bSetMax, pmax,
-                           bSetMut, mutability,
-                           bScale,  scale,
-                           force, stretch);
-        }
+            // A particle?
+            for (auto p : myParticles)
+            {
+                modifyParticle(paramType, p,
+                               bSetMin, pmin,
+                               bSetVal, pval,
+                               bSetMax, pmax,
+                               bSetMut, mutability,
+                               bScale,  scale,
+                               force,   stretch,
+                               bLimit,  factor);
+            }
+       }
     }
 }
 
@@ -338,13 +323,13 @@ static const std::set<InteractionType> &findInteractionMap(const std::string &an
                                                            bool              *found)
 {
     static std::set<InteractionType> bonds = {
+        InteractionType::VDW,
         InteractionType::BONDS,
         InteractionType::ANGLES,
         InteractionType::LINEAR_ANGLES,
         InteractionType::PROPER_DIHEDRALS,
         InteractionType::IMPROPER_DIHEDRALS };
     static std::set<InteractionType> other = {
-        InteractionType::VDW,
         InteractionType::CONSTR,
         InteractionType::VSITE2,
         InteractionType::VSITE3FAD,
@@ -657,6 +642,7 @@ int poldata_edit(int argc, char*argv[])
     real         pmax       = 0;
     real         pval       = 0;
     real         scale      = 1;
+    real         limits     = 1;
     gmx_bool     force      = false;
     gmx_bool     stretch    = false;
     static char *missing    = (char *)"";
@@ -683,6 +669,8 @@ int poldata_edit(int argc, char*argv[])
           "Will change also non-mutable parameters. Use with care!" },
         { "-stretch", FALSE, etBOOL, {&stretch},
           " Will automatically stretch boundaries for individual parameters" },
+        { "-limits",  FALSE, etREAL, {&limits},
+          "Reset the limits for a parameter (class) to the current value of the parameter times this number (between 0 and 1) and one over the value. If you set e.g. -limits 0.8 the parameter min and max will be set to 0.8 respectively 1.25 times the present value." },
         { "-ana", FALSE, etSTR, {&analyze},
           "Analyze either the EEM, the BONDED or OTHER parameters in a simple manner" },
         { "-copy_missing", FALSE, etSTR, {&missing},
@@ -751,13 +739,25 @@ int poldata_edit(int argc, char*argv[])
         }
         else
         {
+            bool bLimits = opt2parg_bSet("-limits", npargs, pa);
+            if (limits <= 0)
+            {
+                fprintf(stderr, "%g is an inappropriate value for the limits option\n", limits);
+                limits  = 1;
+                bLimits = false;
+            }
+            else if (limits > 1)
+            {
+                limits = 1.0/limits;
+            }
             modifyPoldata(&pd, parameter, particle,
                           opt2parg_bSet("-min", npargs, pa), pmin,
                           opt2parg_bSet("-val", npargs, pa), pval,
                           opt2parg_bSet("-max", npargs, pa), pmax,
                           opt2parg_bSet("-mut", npargs, pa), mutability,
                           opt2parg_bSet("-scale", npargs, pa), scale,
-                          force, stretch);
+                          force, stretch,
+                          bLimits, limits);
         }
     }
     if (opt2bSet("-o", NFILE, fnm))

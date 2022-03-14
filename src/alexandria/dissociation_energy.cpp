@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2021
+ * Copyright (C) 2014-2022
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -323,6 +323,7 @@ static bool calcDissoc(FILE                              *fplog,
 double getDissociationEnergy(FILE               *fplog,
                              Poldata            *pd,
                              std::vector<MyMol> *molset,
+                             iqmType             iqm,
                              const char         *csvFile,
                              const std::string  &method,
                              const std::string  &basis,
@@ -333,16 +334,19 @@ double getDissociationEnergy(FILE               *fplog,
     std::uniform_real_distribution<> uniform(0.0, 1.0);
     std::map<Identifier, int>        bondIdToIndex;
     std::vector<int>                 hasExpData;
-    std::map<MolPropObservable, iqmType> myprops = 
-        {
-            { MolPropObservable::DHFORM, iqmType::Both },
-            { MolPropObservable::EMOL, iqmType::Both }
-        };
+    std::map<MolPropObservable, iqmType> myprops = {
+        { MolPropObservable::DHFORM, iqm },
+        { MolPropObservable::EMOL, iqm }
+    };
+    std::map<iqmType, double> tmap = {
+        { iqmType::Exp, 298.15 }, { iqmType::QM, 0 }, { iqmType::Both, -1 }
+    };
     // Loop over molecules to find the ones with experimental DeltaHform
     for (size_t i = 0; i < molset->size(); i++)
     {
         auto mymol = &((*molset)[i]);
-        if (immStatus::OK == mymol->getExpProps(myprops, method, basis, pd))
+        if (immStatus::OK == mymol->getExpProps(myprops, method, basis, pd, 
+                                                tmap[iqm]))
         {
             double emol;
             if (mymol->energy(MolPropObservable::EMOL, &emol))
@@ -419,6 +423,12 @@ double getDissociationEnergy(FILE               *fplog,
                 GMX_RELEASE_ASSERT(eStats::OK == estats, gmx_stats_message(estats));
             }
         }
+        double delta = error;
+        if (error == 0)
+        {
+            // Can happen when there is one data point only
+            delta = std::abs(average*0.1);
+        }
         // Fetch the parameter from the force field
         auto fp  = fs->findParameterType(bi.first, "Dm");
         int  ntr = ntrain.find(bi.first)->second;
@@ -432,8 +442,8 @@ double getDissociationEnergy(FILE               *fplog,
         if (fp->mutability() == Mutability::Free ||
             fp->mutability() == Mutability::Bounded)
         {
-            fp->setMinimum(average-2*error);
-            fp->setMaximum(average+2*error);
+            fp->setMinimum(average-2*delta);
+            fp->setMaximum(average+2*delta);
             fp->setValue(average);
             fp->setUncertainty(error);
             fp->setNtrain(ntr);

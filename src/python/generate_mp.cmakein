@@ -11,6 +11,7 @@ from pathlib           import Path
 
 # ACT python code
 sys.path.insert(1, "@ACT_PYTHON_LIB_PATH@")
+from actutils          import *
 from mol_csv_api       import *
 from molprops          import *
 from read_gaussian_log import *
@@ -23,7 +24,6 @@ def get_environ(myvar):
     exit(1)
     
 AlexandriaLib = get_environ("AlexandriaLib")
-ACTDATA       = get_environ("ACTDATA")
 
 def parseArguments():
   desc='''This script will generate a molecular property (molprop) file for input to the
@@ -35,7 +35,7 @@ def parseArguments():
   it runs in parallel using all the available CPU cores on your computer.
   '''
   parser  = argparse.ArgumentParser(description=desc)
-  alexdef = ACTDATA + "/forcefield/alexandria.csv"
+  alexdef = act_library_filename("alexandria.csv")
   parser.add_argument("-a",      "--alexandria",   help="Compound definition file for reading, default "+alexdef,             type=str, default=alexdef)
   defmethods = "B3LYP-aug-cc-pVTZ"
   parser.add_argument("-methods","--methods",      help="Quantum chemistry methods to include, default "+defmethods, type=str, default=defmethods)
