@@ -207,9 +207,9 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
                 auto probComputer = new RankProbabilityComputer(gach.popSize());
                 // Selector
                 auto selector     = new ga::RouletteSelector(seed);
-                auto crossover    = new alexandria::NPointCrossover(sii.nParam(),
-                                                                    gach.nCrossovers(),
-                                                                    seed);
+                auto crossover    = new ga::NPointCrossover(sii.nParam(),
+                                                            gach.nCrossovers(),
+                                                            seed);
             
                 // Mutator
                 Mutator *mut;

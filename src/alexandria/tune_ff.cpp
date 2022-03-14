@@ -304,9 +304,9 @@ void OptACM::initMaster()
     GMX_RELEASE_ASSERT(gach_.nCrossovers() < static_cast<int>(sii_->nParam()),
                        gmx::formatString("The order of the crossover operator should be smaller than the amount of parameters. You chose -nCrossovers %i, but there are %lu parameters. Please adjust -nCrossovers.", gach_.nCrossovers(), sii_->nParam()).c_str() );
 
-    auto *crossover = new alexandria::NPointCrossover(sii_->nParam(),
-                                                      gach_.nCrossovers(),
-                                                      seed);
+    auto *crossover = new ga::NPointCrossover(sii_->nParam(),
+                                              gach_.nCrossovers(),
+                                              seed);
 
     // Terminator(s)
     std::vector<ga::Terminator*> *terminators = new std::vector<ga::Terminator*>;

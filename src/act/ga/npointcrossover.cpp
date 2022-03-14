@@ -9,7 +9,7 @@
 #include "acmindividual.h"
 
 
-namespace alexandria
+namespace ga
 {
 
 
@@ -18,12 +18,6 @@ void NPointCrossover::offspring(ga::Genome  *parent1,
                                 ga::Genome  *child1,
                                 ga::Genome  *child2)
 {
-
-    // Casting individuals
-    //ACMGenome *tmpParent1   = static_cast<ACMGenome*>(parent1);
-    //ACMGenome *tmpParent2   = static_cast<ACMGenome*>(parent2);
-    //ACMGenome *tmpChild1    = static_cast<ACMGenome*>(child1);
-    //ACMGenome *tmpChild2    = static_cast<ACMGenome*>(child2);
 
     // Iteration variable(s)
     size_t i;
@@ -65,4 +59,4 @@ void NPointCrossover::offspring(ga::Genome  *parent1,
 }
 
 
-} //namespace alexandria
+} //namespace ga
