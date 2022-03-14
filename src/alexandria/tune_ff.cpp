@@ -250,7 +250,7 @@ void OptACM::initMaster()
         }
     case ProbabilityComputerAlg::pcFITNESS:
         {
-            probComputer = new ga::FitnessProbabilityComputer();
+            probComputer = new ga::FitnessProbabilityComputer(gach_.popSize());
             break;
         }
     case ProbabilityComputerAlg::pcBOLTZMANN:
