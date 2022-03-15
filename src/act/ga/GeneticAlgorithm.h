@@ -173,8 +173,9 @@ public:
      * Never call this method if no terminators were given to the GA.
      * \param[in] pool             the GenePool    
      * \param[in] generationNumber the current generation number
+     * \return true if the population has been penalized, false otherwise
      */
-    void penalize(      GenePool *pool,
+    bool penalize(      GenePool *pool,
                   const int       generationNumber);
 
 };
