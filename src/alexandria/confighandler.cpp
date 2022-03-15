@@ -205,7 +205,11 @@ void GAConfigHandler::add_pargs(std::vector<t_pargs> *pargs)
         { "-maxGenerations", FALSE, etINT, {&maxGenerations_},
           "Generation limit for Genetic Algorithm." },
         { "-maxTestGenerations", FALSE, etINT, {&maxTestGenerations_},
-          "Generation limit for the test fitness to improve in Genetic Algorithm. -1 stands for disabled." }
+          "Generation limit for the test fitness to improve in Genetic Algorithm. -1 stands for disabled." },
+        { "-vfpVolFracLimit", FALSE, etREAL, {&vfpVolFracLimit_},
+          "Limit [0, 1] of the populationVolume/totalVolume to trigger the VolumeFractionPenalizer. -1 stands for disabled." },
+        { "-vfpPopFrac", FALSE, etREAL, {&vfpPopFrac_},
+          "Fraction [0, 1] of the worst genomes to randomize when VolumeFractionPenalizer is triggered." }
     };
     for (int i = 0; i < asize(pa); i++)
     {
@@ -258,6 +262,18 @@ void GAConfigHandler::check_pargs()
     {
       GMX_RELEASE_ASSERT(maxGenerations_ > 0, "-maxTestGenerations must be positive or -1 (disabled).");
     }
+
+    if (vfpVolFracLimit_ != -1)
+    {
+      GMX_RELEASE_ASSERT(
+        vfpVolFracLimit_ >= 0 && vfpVolFracLimit_ <= 1,
+        "-vfpVolFracLimit must be in [0, 1] when enabled."
+      );
+    }
+    GMX_RELEASE_ASSERT(
+      vfpPopFrac_ >= 0 && vfpPopFrac_ <= 1,
+      "-vfpPopFrac must be in [0, 1]."
+    );
 
 }
 
