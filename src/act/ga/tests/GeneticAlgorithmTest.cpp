@@ -54,13 +54,13 @@
 #include "alexandria/mcmcmutator.h"
 #include "alexandria/molgen.h"
 #include "alexandria/molselect.h"
-#include "alexandria/npointcrossover.h"
 #include "alexandria/percentmutator.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "../FitnessComputer.h"
+#include "../npointcrossover.h"
 #include "../Sorter.h"
 #include "../Terminator.h"
 
@@ -245,9 +245,11 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
                     {
                         checker_.checkReal(bch.step(), "bch.step");
                     }
+                    std::vector<ga::Penalizer*> *penalizers = new std::vector<ga::Penalizer*>();
+
                     ga = new ga::HybridGAMC(stdout, initializer, fitComp,
                                             probComputer, selector, crossover,
-                                            mut, &terminators,
+                                            mut, &terminators, penalizers,
                                             &sii, &gach, bch.seed());
                 }
                 checker_.checkInt64(gach.maxGenerations(), "Maximum Number of Generations");
