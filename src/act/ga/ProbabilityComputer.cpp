@@ -19,11 +19,12 @@ void FitnessProbabilityComputer::compute(std::vector<Genome> *pop)
     const double epsilon = 1e-4;
     for (size_t i = 0; i < pop->size(); i++)
     {
-        total += 1 / ( epsilon + (*pop)[i].fitness(iMolSelect::Train) );
+        inverses_[i] = 1 / ( epsilon + (*pop)[i].fitness(iMolSelect::Train) );
+        total += inverses_[i];
     }
     for (size_t i = 0; i < pop->size(); i++)
     {
-        (*pop)[i].setProbability( ( 1 / ( epsilon + (*pop)[i].fitness(iMolSelect::Train) ) ) / total );
+        (*pop)[i].setProbability( inverses_[i] / total );
     }
 }
 

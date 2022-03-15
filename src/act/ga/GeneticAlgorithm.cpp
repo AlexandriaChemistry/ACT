@@ -31,6 +31,10 @@ Terminator *GeneticAlgorithm::terminator(const int index)
 bool GeneticAlgorithm::terminate(const GenePool *pool,
                                  const int       generationNumber)
 {
+    GMX_RELEASE_ASSERT(
+        terminators_ != nullptr,
+        "GA does not have a pointer to a vector of Terminator."
+    );
     // Even if a terminator says we must halt, we will ask them all just in case
     // there is more than one stopping message to be printed
     bool halt = false;
@@ -42,6 +46,24 @@ bool GeneticAlgorithm::terminate(const GenePool *pool,
         }
     }
     return halt;
+}
+
+bool GeneticAlgorithm::penalize(      GenePool *pool,
+                                const int       generationNumber)
+{
+    GMX_RELEASE_ASSERT(
+        penalizers_ != nullptr,
+        "GA does not have a pointer to a vector of Penalizer."
+    );
+    bool penalized = false;
+    for (auto pen : *penalizers_)
+    {
+        if (pen->penalize(pool, generationNumber))
+        {
+            penalized = true;
+        }
+    }
+    return penalized;
 }
 
 void GeneticAlgorithm::openFitnessFiles()

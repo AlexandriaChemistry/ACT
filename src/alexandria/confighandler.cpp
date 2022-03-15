@@ -182,30 +182,34 @@ void GAConfigHandler::add_pargs(std::vector<t_pargs> *pargs)
     t_pargs pa[] = {
         { "-optimizer", FALSE, etENUM, {optimizerStr},
           "Optimization method" },
-        { "-popSize", FALSE, etINT, {&popSize_},
+        { "-pop_size", FALSE, etINT, {&popSize_},
           "Population size." },
-        { "-nElites", FALSE, etINT, {&nElites_},
+        { "-n_elites", FALSE, etINT, {&nElites_},
           "Amount of top individuals to be moved, unchanged, to the next generation." },
-        { "-randomInit", FALSE, etBOOL, {&randomInit_},
+        { "-random_init", FALSE, etBOOL, {&randomInit_},
           "Initialize the individuals randomly, within the given bounds." },  
-        { "-nCrossovers", FALSE, etINT, {&nCrossovers_},
+        { "-n_crossovers", FALSE, etINT, {&nCrossovers_},
           "Order of the crossover operator. That is, amount of crossover points." },
         { "-sort", FALSE, etBOOL, {&sort_},
           "Whether we sort the genomes in the population based on their fitness." },
-        { "-probComputer", FALSE, etENUM, {probComputer_},
+        { "-prob_computer", FALSE, etENUM, {probComputer_},
           "Probability computation algorithm" },
-        { "-boltzTemp", FALSE, etREAL, {&boltzTemp_},
+        { "-boltz_temp", FALSE, etREAL, {&boltzTemp_},
           "Initial temperature for Boltzmann probability computing." },
-        { "-prCross", FALSE, etREAL, {&prCross_},
+        { "-pr_cross", FALSE, etREAL, {&prCross_},
           "Probability of crossover." },
-        { "-prMut", FALSE, etREAL, {&prMut_},
+        { "-pr_mut", FALSE, etREAL, {&prMut_},
           "Probability of mutation" },
         { "-percent", FALSE, etREAL, {&percent_},
           "When GA optimizer is selected, -percent denotes the maximum allowed change in a parameter as a fraction of its allowed range." },
-        { "-maxGenerations", FALSE, etINT, {&maxGenerations_},
+        { "-max_generations", FALSE, etINT, {&maxGenerations_},
           "Generation limit for Genetic Algorithm." },
-        { "-maxTestGenerations", FALSE, etINT, {&maxTestGenerations_},
-          "Generation limit for the test fitness to improve in Genetic Algorithm. -1 stands for disabled." }
+        { "-max_test_generations", FALSE, etINT, {&maxTestGenerations_},
+          "Generation limit for the test fitness to improve in Genetic Algorithm. -1 stands for disabled." },
+        { "-vfp_vol_frac_limit", FALSE, etREAL, {&vfpVolFracLimit_},
+          "Limit [0, 1] of the population_volume/total_volume to trigger the VolumeFractionPenalizer. -1 stands for disabled." },
+        { "-vfp_pop_frac", FALSE, etREAL, {&vfpPopFrac_},
+          "Fraction [0, 1] of the worst genomes to randomize when VolumeFractionPenalizer is triggered." }
     };
     for (int i = 0; i < asize(pa); i++)
     {
@@ -218,7 +222,7 @@ void GAConfigHandler::check_pargs()
 {
     alg_ = stringToOptimizerAlg(optimizerStr[0]);
     
-    GMX_RELEASE_ASSERT(popSize_ > 0, "-popSize must be positive.");
+    GMX_RELEASE_ASSERT(popSize_ > 0, "-pop_size must be positive.");
     if (popSize_ % 2 != 0)  // If popSize is odd
     {
         GMX_RELEASE_ASSERT(OptimizerAlg::MCMC == alg_, "With odd population sizes, only the MCMC optimizer will do.");
@@ -230,34 +234,50 @@ void GAConfigHandler::check_pargs()
       prMut_ = 1;
     }
     
-    GMX_RELEASE_ASSERT(nElites_ >= 0 && nElites_ % 2 == 0, "-nElites must be nonnegative and even.");
+    GMX_RELEASE_ASSERT(nElites_ >= 0 && nElites_ % 2 == 0, "-n_elites must be nonnegative and even.");
     if (nElites_ > 0)  // Make sure a sorter has been selected
     {
         GMX_RELEASE_ASSERT(sort_ == true,
-                           "When -nElites > 0, -sort should be used.");
+                           "When -n_elites > 0, -sort should be used.");
     }
     
-    GMX_RELEASE_ASSERT(nCrossovers_ > 0, "-nCrossovers must be nonnegative.");
+    GMX_RELEASE_ASSERT(nCrossovers_ > 0, "-n_crossovers must be nonnegative.");
     
     if (strcmp(probComputer_[0], "RANK") == 0)  // If rank-based probability is requested
     {
         GMX_RELEASE_ASSERT(sort_ == true, "You must enable -sort if you want rank-based probability computing.");
     }
     
-    GMX_RELEASE_ASSERT(boltzTemp_ >= 0, "-boltzTemp must be nonnegative.");
+    GMX_RELEASE_ASSERT(boltzTemp_ >= 0, "-boltz_temp must be nonnegative.");
     
-    GMX_RELEASE_ASSERT(prCross_ >= 0 && prCross_ <= 1, "-prCross must be in [0,1].");
+    GMX_RELEASE_ASSERT(prCross_ >= 0 && prCross_ <= 1, "-pr_cross must be in [0,1].");
     
-    GMX_RELEASE_ASSERT(prMut_ >= 0 && prMut_ <= 1, "-prMut must be in [0,1].");
+    GMX_RELEASE_ASSERT(prMut_ >= 0 && prMut_ <= 1, "-pr_mut must be in [0,1].");
     
     GMX_RELEASE_ASSERT(percent_ >= 0 && percent_ <= 1, "-percent must be in [0,1].");
     
-    GMX_RELEASE_ASSERT(maxGenerations_ > 0, "-maxGenerations must be positive.");
+    GMX_RELEASE_ASSERT(maxGenerations_ > 0, "-max_generations must be positive.");
     
     if (maxTestGenerations_ != -1)
     {
-      GMX_RELEASE_ASSERT(maxGenerations_ > 0, "-maxTestGenerations must be positive or -1 (disabled).");
+      GMX_RELEASE_ASSERT(maxGenerations_ > 0, "-max_test_generations must be positive or -1 (disabled).");
     }
+
+    if (vfpVolFracLimit_ != -1)
+    {
+      GMX_RELEASE_ASSERT(
+        vfpVolFracLimit_ >= 0 && vfpVolFracLimit_ <= 1,
+        "-vfp_vol_frac_limit must be in [0, 1] when enabled."
+      );
+      GMX_RELEASE_ASSERT(
+        sort_,
+        "-sort must be used when -vfp_vol_frac_limit is enabled."
+      );
+    }
+    GMX_RELEASE_ASSERT(
+      vfpPopFrac_ >= 0 && vfpPopFrac_ <= 1,
+      "-vfp_pop_frac must be in [0, 1]."
+    );
 
 }
 

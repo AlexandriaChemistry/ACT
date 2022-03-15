@@ -72,7 +72,8 @@
 #include "molgen.h"
 #include "act/molprop/molprop_util.h"
 #include "mymol_low.h"
-#include "npointcrossover.h"
+#include "act/ga/npointcrossover.h"
+#include "act/ga/Penalizer.h"
 #include "percentmutator.h"
 #include "act/poldata/poldata.h"
 #include "act/poldata/poldata_tables.h"
@@ -250,7 +251,7 @@ void OptACM::initMaster()
         }
     case ProbabilityComputerAlg::pcFITNESS:
         {
-            probComputer = new ga::FitnessProbabilityComputer();
+            probComputer = new ga::FitnessProbabilityComputer(gach_.popSize());
             break;
         }
     case ProbabilityComputerAlg::pcBOLTZMANN:
@@ -304,20 +305,62 @@ void OptACM::initMaster()
     GMX_RELEASE_ASSERT(gach_.nCrossovers() < static_cast<int>(sii_->nParam()),
                        gmx::formatString("The order of the crossover operator should be smaller than the amount of parameters. You chose -nCrossovers %i, but there are %lu parameters. Please adjust -nCrossovers.", gach_.nCrossovers(), sii_->nParam()).c_str() );
 
-    auto *crossover = new alexandria::NPointCrossover(sii_->nParam(),
-                                                      gach_.nCrossovers(),
-                                                      seed);
+    auto *crossover = new ga::NPointCrossover(sii_->nParam(),
+                                              gach_.nCrossovers(),
+                                              seed);
+
+    // Penalizer(s)
+    std::vector<ga::Penalizer*> *penalizers = new std::vector<ga::Penalizer*>();
+    // VolumeFractionPenalizer
+    const double totalVolume = sii_->getParamSpaceVolume();
+    if (logFile())
+    {
+        fprintf(
+            logFile(),
+            "\nTotal (hyper)volume of the parameter space is %lf.\n",
+            totalVolume
+        );
+    }
+    if (gach_.vfpVolFracLimit() != -1)  // VolumeFractionPenalizer enabled
+    {
+        if (logFile())
+    {
+        fprintf(
+            logFile(),
+            "Appending a VolumeFractionPenalizer to the list of penalizers...\n"
+        );
+    }
+        penalizers->push_back(
+            new ga::VolumeFractionPenalizer(
+                logFile(), totalVolume, gach_.vfpVolFracLimit(),
+                gach_.vfpPopFrac(), initializer
+            )
+        );
+    }
 
     // Terminator(s)
     std::vector<ga::Terminator*> *terminators = new std::vector<ga::Terminator*>;
-    fprintf(logFile(), "Appending a GenerationTerminator to the list of terminators...\n");
+    if (logFile())
+    {
+        fprintf(
+            logFile(),
+            "Appending a GenerationTerminator to the list of terminators...\n"
+        );
+    }
     terminators->push_back(new ga::GenerationTerminator(gach_.maxGenerations(), logFile()));  // maxGenerations will always be positive!
     if (gach_.maxTestGenerations() != -1)  // If maxTestGenerations is enabled...
     {
-        fprintf(logFile(), "Appending a TestGenTerminator to the list of terminators...\n");
+        if (logFile())
+        {
+            fprintf(
+                logFile(),
+                "Appending a TestGenTerminator to the list of terminators...\n"
+            );
+        }
         terminators->push_back(new ga::TestGenTerminator(gach_.maxTestGenerations(), logFile()));
     }
 
+    // Initialize the optimizer
     if (gach_.optimizer() == OptimizerAlg::MCMC)
     {
         // auto initializer = new ACMInitializer(sii_, gach_.randomInit(), bch_.seed());
@@ -326,8 +369,10 @@ void OptACM::initMaster()
     else
     {
         // We pass the global seed to the optimizer
-        ga_ = new ga::HybridGAMC(logFile(), initializer, fitComp_, probComputer, selector, crossover, mutator, terminators, sii_, &gach_,
-                                 bch_.seed());
+        ga_ = new ga::HybridGAMC(
+            logFile(), initializer, fitComp_, probComputer, selector, crossover,
+            mutator, terminators, penalizers, sii_, &gach_, bch_.seed()
+        );
     }
 }
 

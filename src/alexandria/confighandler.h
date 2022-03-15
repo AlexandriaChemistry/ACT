@@ -108,6 +108,10 @@ private:
     int maxGenerations_ = 10;
     //! Generation limit for the test fitness to improve
     int maxTestGenerations_ = -1;
+    //! For VolumeFractionPenalizer, the limit of the volume fraction
+    real vfpVolFracLimit_ = -1;
+    //! For VolumeFractionPenalizer, the fraction of worst genomes to reinitialize
+    real vfpPopFrac_ = 0.8;
 
 public:
 
@@ -188,6 +192,12 @@ public:
 
     //! \return true if we must evaluate fitness on test set, false otherwise
     bool evaluateTestset() const { return maxTestGenerations_ > 0; }
+
+    //! \return for VolumeFractionPenalizer, the limit of the volume fraction allowed
+    real vfpVolFracLimit() const { return vfpVolFracLimit_; }
+
+    //! \return for VolumeFractionPenalizer, the fraction of the worst genomes to randomize
+    real vfpPopFrac() const { return vfpPopFrac_; }
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * END: Getters and setters                 *

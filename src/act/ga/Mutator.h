@@ -13,7 +13,7 @@
 namespace ga
 {
 /*!
- * \brief Abstract class for gene mutation of Individual objects
+ * \brief Abstract class for gene mutation of Genome objects
  */
 class Mutator
 {
@@ -40,7 +40,7 @@ protected:
 public:
 
     /*!
-     * \brief Mutate genes of an Individual (in place)
+     * \brief Mutate genes of a Genome (in place)
      * \param[inout] genome     Pointer to the genome to mutate
      * \param[out]   bestGenome Pointer to the best genome found
      * \param[in]    prMut      Probability of mutating a gene

@@ -54,7 +54,6 @@ target_sources(actLib
            molselect.cpp
            mymol.cpp
            mymol_low.cpp
-           npointcrossover.cpp
            openmm_xml.cpp
            percentmutator.cpp
            qm2molprop.cpp

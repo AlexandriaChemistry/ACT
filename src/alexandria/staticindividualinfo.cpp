@@ -452,5 +452,22 @@ void StaticIndividualInfo::makeIndividualDir()
 * END: File stuff                          *
 * * * * * * * * * * * * * * * * * * * * * */
 
+/* * * * * * * * * * * * * * * * * * * * * *
+* BEGIN: Getters and setters               *
+* * * * * * * * * * * * * * * * * * * * * */
+
+double StaticIndividualInfo::getParamSpaceVolume() const
+{
+    double aggregate = 1;
+    for (size_t i = 0; i < nParam(); i++)
+    {
+        aggregate *= upperBound_[i] - lowerBound_[i];
+    }
+    return aggregate;
+}
+
+/* * * * * * * * * * * * * * * * * * * * * *
+* END: Getters and setters                 *
+* * * * * * * * * * * * * * * * * * * * * */
 
 } //namespace alexandria

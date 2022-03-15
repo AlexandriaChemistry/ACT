@@ -37,7 +37,19 @@ public:
 class FitnessProbabilityComputer : public ProbabilityComputer
 {
 
+private:
+
+    //! Will store inverses
+    std::vector<double> inverses_;
+
 public:
+
+    /*!
+     * \brief Constructor
+     * \param[in] popSize           amount of genomes in the population
+     */
+    FitnessProbabilityComputer(const size_t popSize)
+        : inverses_(popSize) {}
 
     virtual void compute(std::vector<Genome> *pop);
 

@@ -4,14 +4,14 @@
  */
 
 
-#ifndef ALEXANDRIA_NPOINTCROSSOVER_H
-#define ALEXANDRIA_NPOINTCROSSOVER_H
+#ifndef GA_NPOINTCROSSOVER_H
+#define GA_NPOINTCROSSOVER_H
 
 
-#include "act/ga//Crossover.h"
+#include "Crossover.h"
 
 
-namespace alexandria
+namespace ga
 {
 
 
@@ -20,7 +20,7 @@ namespace alexandria
  * See <a href="https://en.wikipedia.org/wiki/Crossover_(genetic_algorithm)#One-point_crossover">this</a> for details.
  *
  */
-class NPointCrossover : public ga::Crossover
+class NPointCrossover : public Crossover
 {
 
 private:
@@ -72,7 +72,7 @@ public:
 };
 
 
-} //namespace alexandria
+} //namespace ga
 
 
 #endif //ALEXANDRIA_NPOINTCROSSOVER_H
