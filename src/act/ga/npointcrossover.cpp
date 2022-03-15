@@ -6,9 +6,6 @@
 
 #include "npointcrossover.h"
 
-#include "acmindividual.h"
-
-
 namespace ga
 {
 
@@ -37,7 +34,7 @@ void NPointCrossover::offspring(ga::Genome  *parent1,
     std::sort(crossoverPoints_.begin()+1, crossoverPoints_.end()-1);
     // DONE! Sampled without replacement!
 
-    // We now cross the genes of the individuals
+    // We now cross the genes of the genomes
     // Start by the regions that are not swapped
     for (i = 0; i < crossoverPoints_.size() - 1; i += 2)
     {

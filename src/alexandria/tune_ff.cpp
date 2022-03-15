@@ -72,7 +72,7 @@
 #include "molgen.h"
 #include "act/molprop/molprop_util.h"
 #include "mymol_low.h"
-#include "npointcrossover.h"
+#include "act/ga/npointcrossover.h"
 #include "percentmutator.h"
 #include "act/poldata/poldata.h"
 #include "act/poldata/poldata_tables.h"

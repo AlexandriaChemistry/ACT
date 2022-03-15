@@ -1,4 +1,4 @@
-1/*! \internal \brief
+/*! \internal \brief
  * Implements part of the alexandria program.
  * \author Julian Ramon Marrades Furquet <julian.marrades@hotmail.es>
  */
