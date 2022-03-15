@@ -202,6 +202,14 @@ bool HybridGAMC::evolve(ga::Genome *bestGenome)
     // Iterate and create new generation
     do
     {
+        // Penalize
+        penalize(pool[pold], generation);
+        // Print population to debug if we have penalizers
+        if (debug && penalizers() && !penalizers()->empty())
+        {
+            fprintf(debug, "Penalizing...\n");
+            pool[pold]->print(debug);
+        }
         // Increase generation counter
         generation++;
         if (debug)

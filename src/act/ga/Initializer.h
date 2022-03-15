@@ -19,7 +19,7 @@ namespace ga
 
 
 /*!
-* \brief Abstract class for initializing Individual instances
+* \brief Abstract class for initializing and randomizing Individual/Genome instances
 */
 class Initializer
 {
@@ -31,6 +31,12 @@ public:
      * \return   pointer to a new individual
      */
     virtual Individual *initialize() = 0;
+
+    /*!
+     * \brief Randomize a Genome object
+     * \param[in] genome the Genome to randomize
+     */
+    virtual void randomizeGenome(Genome *genome) = 0;
 };
 
 

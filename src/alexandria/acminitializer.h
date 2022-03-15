@@ -51,7 +51,9 @@ public:
                    bool                    randInit,
                    int                     seed);
 
-    virtual ga::Individual *initialize();
+    ga::Individual *initialize() override;
+
+    void randomizeGenome(ga::Genome *genome) override;
 
 };
 

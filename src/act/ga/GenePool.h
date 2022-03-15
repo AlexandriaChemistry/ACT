@@ -54,6 +54,9 @@ public:
     //! Constructor
     GenePool(size_t genomeSize) : genomeSize_(genomeSize) {}
     
+    //! \return the genome size
+    size_t genomeSize() const { return genomeSize_; } 
+
     /*! Add a genome
      * \param[in] genome  The parameter values
      * \param[in] fitness The fitness value (optiona)
