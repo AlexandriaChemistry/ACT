@@ -213,11 +213,12 @@ bool HybridGAMC::evolve(ga::Genome *bestGenome)
         auto gp = pool[pold]->genePoolPtr();
         if (gach_->sort())
         {
+            pool[pold]->sort(imstr);
             if (debug)
             {
                 fprintf(debug, "Sorting old population...\n");
+                pool[pold]->print(debug);
             }
-            pool[pold]->sort(imstr);
         }
 
         // Penalize
