@@ -207,7 +207,7 @@ void GAConfigHandler::add_pargs(std::vector<t_pargs> *pargs)
         { "-max_test_generations", FALSE, etINT, {&maxTestGenerations_},
           "Generation limit for the test fitness to improve in Genetic Algorithm. -1 stands for disabled." },
         { "-vfp_vol_frac_limit", FALSE, etREAL, {&vfpVolFracLimit_},
-          "Limit [0, 1] of the populationVolume/totalVolume to trigger the VolumeFractionPenalizer. -1 stands for disabled." },
+          "Limit [0, 1] of the population_volume/total_volume to trigger the VolumeFractionPenalizer. -1 stands for disabled." },
         { "-vfp_pop_frac", FALSE, etREAL, {&vfpPopFrac_},
           "Fraction [0, 1] of the worst genomes to randomize when VolumeFractionPenalizer is triggered." }
     };
