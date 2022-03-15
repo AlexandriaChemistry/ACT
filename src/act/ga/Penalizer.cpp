@@ -4,6 +4,7 @@
  */
 
 #include <limits>
+#include <cmath>
 
 #include "Penalizer.h"
 
@@ -45,7 +46,9 @@ void VolumeFractionPenalizer::penalize(                 GenePool *pool,
         }
         // Randomize
         size_t i = static_cast<size_t>(
-            (1-popFrac_) * static_cast<double>(pool->popSize())
+            lround(
+                (1-popFrac_) * static_cast<double>(pool->popSize())
+            )
         );
         for (; i < pool->popSize(); i++)
         {
