@@ -585,7 +585,7 @@ size_t MolGen::Read(FILE            *fp,
         optimize(InteractionType::IMPROPER_DIHEDRALS)||
         optimize(InteractionType::PROPER_DIHEDRALS))
     {
-        iqmMap.insert(std::pair<MolPropObservable, iqmType>(MolPropObservable::DHFORM, iqmType::QM));
+        iqmMap.insert(std::pair<MolPropObservable, iqmType>(MolPropObservable::DELTAE0, iqmType::QM));
     }
     if (optimize(InteractionType::POLARIZATION) ||
         optimize(InteractionType::CHARGEDISTRIBUTION) ||
@@ -858,12 +858,12 @@ size_t MolGen::Read(FILE            *fp,
                 // TODO Checks for energy should be done only when energy is a target for fitting.
                 if (false)
                 {
-                    double emol;
-                    if (!mymol.energy(MolPropObservable::EMOL, &emol))
+                    double deltaE0;
+                    if (!mymol.energy(MolPropObservable::DELTAE0, &deltaE0))
                     {
                         if (nullptr != debug)
                         {
-                            fprintf(debug, "No molecular energy for %s",
+                            fprintf(debug, "No DeltaE0 for %s",
                                     mymol.getMolname().c_str());
                         }
                         imm = immStatus::NoData;
@@ -882,8 +882,8 @@ size_t MolGen::Read(FILE            *fp,
                         }
                         else if (nullptr != debug)
                         {
-                            fprintf(debug, "Added molecule %s. Hform = %g Emol = %g\n",
-                                    mymol.getMolname().c_str(), hform, emol);
+                            fprintf(debug, "Added molecule %s. Hform = %g DeltaE0 = %g\n",
+                                    mymol.getMolname().c_str(), hform, deltaE0);
                         }
                     }
                 }

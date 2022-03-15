@@ -76,7 +76,7 @@ static void dump_csv(const char                      *csvFile,
     {
         fprintf(csv, "%s,", j.second.id().c_str());
     }
-    fprintf(csv, "Emol,DeltaHf\n");
+    fprintf(csv, "DeltaE0\n");
     int row = 0;
     for (const auto &j : used)
     {
@@ -86,15 +86,11 @@ static void dump_csv(const char                      *csvFile,
         {
             fprintf(csv, "%g,", a.get(i, row));
         }
-        double emol;
-        GMX_RELEASE_ASSERT(mymol->energy(MolPropObservable::EMOL, &emol),
-                           gmx::formatString("No molecular energy for %s",
+        double deltaE0;
+        GMX_RELEASE_ASSERT(mymol->energy(MolPropObservable::DELTAE0, &deltaE0),
+                           gmx::formatString("No DeltaE0 for %s",
                                              mymol->getMolname().c_str()).c_str());
-        double hform;
-        GMX_RELEASE_ASSERT(mymol->energy(MolPropObservable::DHFORM, &hform),
-                           gmx::formatString("No DeltaHform for %s",
-                                             mymol->getMolname().c_str()).c_str());     
-        fprintf(csv, "%.3f,%.3f\n", -emol*j.second, hform*j.second);
+        fprintf(csv, "%.3f\n", -deltaE0*j.second);
         row++;
     }
     if (ntrain)
@@ -248,11 +244,11 @@ static bool calcDissoc(FILE                              *fplog,
                 }
             }
         }
-        double emol;
-        GMX_RELEASE_ASSERT(mymol->energy(MolPropObservable::EMOL, &emol),
+        double deltaE0;
+        GMX_RELEASE_ASSERT(mymol->energy(MolPropObservable::DELTAE0, &deltaE0),
                            gmx::formatString("No molecular energy for %s",
                                              mymol->getMolname().c_str()).c_str());
-        rhs.push_back(-emol * uu.second);
+        rhs.push_back(-deltaE0 * uu.second);
         row += 1;
     }
 
@@ -335,11 +331,10 @@ double getDissociationEnergy(FILE               *fplog,
     std::map<Identifier, int>        bondIdToIndex;
     std::vector<int>                 hasExpData;
     std::map<MolPropObservable, iqmType> myprops = {
-        { MolPropObservable::DHFORM, iqm },
-        { MolPropObservable::EMOL, iqm }
+        { MolPropObservable::DELTAE0, iqm }
     };
     std::map<iqmType, double> tmap = {
-        { iqmType::Exp, 298.15 }, { iqmType::QM, 0 }, { iqmType::Both, -1 }
+        { iqmType::QM, 0 }, { iqmType::Both, -1 }
     };
     // Loop over molecules to find the ones with experimental DeltaHform
     for (size_t i = 0; i < molset->size(); i++)
@@ -348,8 +343,8 @@ double getDissociationEnergy(FILE               *fplog,
         if (immStatus::OK == mymol->getExpProps(myprops, method, basis, pd, 
                                                 tmap[iqm]))
         {
-            double emol;
-            if (mymol->energy(MolPropObservable::EMOL, &emol))
+            double deltaE0;
+            if (mymol->energy(MolPropObservable::DELTAE0, &deltaE0))
             {
                 hasExpData.push_back(i);
             }

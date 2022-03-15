@@ -825,7 +825,6 @@ static void add_exper_properties(xmlNodePtr                    exp,
             case MolPropObservable::CP:
             case MolPropObservable::CV:
             case MolPropObservable::ZPE:
-            case MolPropObservable::EMOL:
                 {
                     double average = prop->getValue();
                     double error   = prop->getError();

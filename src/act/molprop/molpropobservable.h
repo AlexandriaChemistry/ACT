@@ -90,8 +90,6 @@ enum class MolPropObservable {
     CV,
     //! Zero point energy
     ZPE,
-    //! Molecular energy
-    EMOL,
     //! Charge
     CHARGE,
     //! Coordinates

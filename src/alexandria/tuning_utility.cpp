@@ -569,11 +569,11 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
             mol->GenerateCharges(pd, fplog, cr,
                                  ChargeGenerationAlgorithm::NONE, dummy, lot);
             // Energy
-            double emol = 0;
-            if (mol->energy(MolPropObservable::EMOL, &emol))
+            double deltaE0 = 0;
+            if (mol->energy(MolPropObservable::DELTAE0, &deltaE0))
             {
-                lsq_epot[ims][qType::Calc].add_point(emol, mol->potentialEnergy(), 0, 0);
-                fprintf(fp, "Delta E0 %.2f\n", emol);
+                lsq_epot[ims][qType::Calc].add_point(deltaE0, mol->potentialEnergy(), 0, 0);
+                fprintf(fp, "Delta E0 %.2f\n", deltaE0);
             }
             auto terms = mol->energyTerms();
             for(auto &ep : ePlot)
