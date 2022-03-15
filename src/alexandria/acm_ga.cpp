@@ -248,7 +248,7 @@ bool HybridGAMC::evolve(ga::Genome *bestGenome)
             // Print population to debug if we have penalized the population
             if (debug)
             {
-                fprintf(debug, "Penalizing...\n");
+                fprintf(debug, "Population has been penalized!\n");
                 pool[pold]->print(debug);
             }
         }
