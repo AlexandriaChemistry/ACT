@@ -73,6 +73,7 @@
 #include "act/molprop/molprop_util.h"
 #include "mymol_low.h"
 #include "act/ga/npointcrossover.h"
+#include "act/ga/Penalizer.h"
 #include "percentmutator.h"
 #include "act/poldata/poldata.h"
 #include "act/poldata/poldata_tables.h"
@@ -309,6 +310,8 @@ void OptACM::initMaster()
                                               seed);
 
     // Penalizer(s)
+    std::vector<ga::Penalizer*> *penalizers = new std::vector<ga::Penalizer*>();
+    // VolumeFractionPenalizer
     const double totalVolume = sii_->getParamSpaceVolume();
     if (logFile())
     {
@@ -316,6 +319,15 @@ void OptACM::initMaster()
             logFile(),
             "\nTotal (hyper)volume of the parameter space is %lf.\n",
             totalVolume
+        );
+    }
+    if (gach_.vfpVolFracLimit() != -1)  // VolumeFractionPenalizer enabled
+    {
+        penalizers->push_back(
+            new ga::VolumeFractionPenalizer(
+                logFile(), totalVolume, gach_.vfpVolFracLimit(),
+                gach_.vfpPopFrac(), initializer
+            )
         );
     }
 
@@ -350,8 +362,10 @@ void OptACM::initMaster()
     else
     {
         // We pass the global seed to the optimizer
-        ga_ = new ga::HybridGAMC(logFile(), initializer, fitComp_, probComputer, selector, crossover, mutator, terminators, sii_, &gach_,
-                                 bch_.seed());
+        ga_ = new ga::HybridGAMC(
+            logFile(), initializer, fitComp_, probComputer, selector, crossover,
+            mutator, terminators, penalizers, sii_, &gach_, bch_.seed()
+        );
     }
 }
 
