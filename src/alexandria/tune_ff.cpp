@@ -323,6 +323,13 @@ void OptACM::initMaster()
     }
     if (gach_.vfpVolFracLimit() != -1)  // VolumeFractionPenalizer enabled
     {
+        if (logFile())
+    {
+        fprintf(
+            logFile(),
+            "Appending a VolumeFractionPenalizer to the list of penalizers...\n"
+        );
+    }
         penalizers->push_back(
             new ga::VolumeFractionPenalizer(
                 logFile(), totalVolume, gach_.vfpVolFracLimit(),

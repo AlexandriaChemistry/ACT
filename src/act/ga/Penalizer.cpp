@@ -3,6 +3,8 @@
  * \author Julian Ramon Marrades Furquet <julian.marrades@hotmail.es>
  */
 
+#include <limits>
+
 #include "Penalizer.h"
 
 namespace ga
@@ -50,6 +52,33 @@ void VolumeFractionPenalizer::penalize(                 GenePool *pool,
             initializer_->randomizeGenome(pool->genomePtr(i));
         }
     }
+}
+
+double VolumeFractionPenalizer::getPoolVolume(const GenePool &pool) const
+{
+    double volume = 1;
+    for (size_t i = 0; i < pool.genomeSize(); i++)  // For each parameter
+    {
+        double maximum = std::numeric_limits<double>::min();
+        double minimum = std::numeric_limits<double>::max();
+        for (auto genome : pool.genePool())  // For each genome
+        {
+            if (genome.base(i) > maximum)
+            {
+                maximum = genome.base(i);
+            }
+            else if (genome.base(i) < minimum)
+            {
+                minimum = genome.base(i);
+            }
+        }
+        volume *= maximum - minimum;
+    }
+    GMX_RELEASE_ASSERT(
+        volume >= 0,
+        "VolumeFractionPenalizer: the volume of the population is negative. Something went really wrong"
+    );
+    return volume;
 }
 
 /* * * * * * * * * * * * * * * * * * * * * *
