@@ -24,7 +24,7 @@ VolumeFractionPenalizer::VolumeFractionPenalizer(      FILE        *logfile,
   popFrac_(popFrac), initializer_(initializer)
 {}
 
-void VolumeFractionPenalizer::penalize(                 GenePool *pool,
+bool VolumeFractionPenalizer::penalize(                 GenePool *pool,
                                        gmx_unused const int       generation)
 {
     // Get the volume of the population
@@ -54,6 +54,11 @@ void VolumeFractionPenalizer::penalize(                 GenePool *pool,
         {
             initializer_->randomizeGenome(pool->genomePtr(i));
         }
+        return true;
+    }
+    else
+    {
+        return false;
     }
 }
 

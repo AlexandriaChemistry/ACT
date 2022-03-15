@@ -32,8 +32,9 @@ public:
      * \brief Penalize a population
      * \param[inout] pool       the collection of genomes
      * \param[in]    generation the current generation number
+     * \return true if the population has been penalized, false otherwise
      */
-    virtual void penalize(      GenePool *pool,
+    virtual bool penalize(      GenePool *pool,
                           const int       generation) = 0;
 
 }; // class Penalizer
@@ -81,7 +82,7 @@ public:
                             const double       popFrac,
                                   Initializer *initializer);
 
-    void penalize(      GenePool *pool,
+    bool penalize(      GenePool *pool,
                   const int       generation) override;
 
 }; // class VolumeFactorPenalizer

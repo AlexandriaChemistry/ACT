@@ -35,6 +35,16 @@ enum CommunicationStatus {
     RECV_DATA = 9999
 };
 
+/*!
+ * \brief Operation modes of the middleman in tune_ff
+ * \inpublicapi
+ * \ingroup module_alexandria
+ */
+enum class TuneFFMiddlemanMode {
+    FITNESS  = 1999,  // Compute fitness and send fitness back
+    MUTATION = 2022   // Mutate, compute fitness, send parameters and fitness back
+};
+
 //! \return A string corresponding to a CommunicationStatus
 const char *cs_name(CommunicationStatus cs);
 
@@ -207,6 +217,20 @@ public:
      * \return The int received
      */
     int recv_int(int src) const;
+
+    /*!
+     * \brief Send a tune_ff middleman mode to another processor
+     * \param[in] dest the destination processor
+     * \param[in] mode the middleman mode to send
+     */
+    void send_ff_middleman_mode(int dest, TuneFFMiddlemanMode mode) const;
+
+    /*!
+     * \brief Receive a tune_ff middleman mode from another processor
+     * \param[in] the source node
+     * \return the tune_ff middleman mode
+     */
+    TuneFFMiddlemanMode recv_ff_middleman_mode(int src) const;
  
     /*! Send an iMolSelect to another processor.
      * \param[in] dest The destination processor

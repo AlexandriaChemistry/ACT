@@ -269,6 +269,10 @@ void GAConfigHandler::check_pargs()
         vfpVolFracLimit_ >= 0 && vfpVolFracLimit_ <= 1,
         "-vfp_vol_frac_limit must be in [0, 1] when enabled."
       );
+      GMX_RELEASE_ASSERT(
+        sort_,
+        "-sort must be used when -vfp_vol_frac_limit is enabled."
+      );
     }
     GMX_RELEASE_ASSERT(
       vfpPopFrac_ >= 0 && vfpPopFrac_ <= 1,
