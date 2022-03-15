@@ -308,16 +308,40 @@ void OptACM::initMaster()
                                               gach_.nCrossovers(),
                                               seed);
 
+    // Penalizer(s)
+    const double totalVolume = sii_->getParamSpaceVolume();
+    if (logFile())
+    {
+        fprintf(
+            logFile(),
+            "\nTotal (hyper)volume of the parameter space is %lf.\n",
+            totalVolume
+        );
+    }
+
     // Terminator(s)
     std::vector<ga::Terminator*> *terminators = new std::vector<ga::Terminator*>;
-    fprintf(logFile(), "Appending a GenerationTerminator to the list of terminators...\n");
+    if (logFile())
+    {
+        fprintf(
+            logFile(),
+            "Appending a GenerationTerminator to the list of terminators...\n"
+        );
+    }
     terminators->push_back(new ga::GenerationTerminator(gach_.maxGenerations(), logFile()));  // maxGenerations will always be positive!
     if (gach_.maxTestGenerations() != -1)  // If maxTestGenerations is enabled...
     {
-        fprintf(logFile(), "Appending a TestGenTerminator to the list of terminators...\n");
+        if (logFile())
+        {
+            fprintf(
+                logFile(),
+                "Appending a TestGenTerminator to the list of terminators...\n"
+            );
+        }
         terminators->push_back(new ga::TestGenTerminator(gach_.maxTestGenerations(), logFile()));
     }
 
+    // Initialize the optimizer
     if (gach_.optimizer() == OptimizerAlg::MCMC)
     {
         // auto initializer = new ACMInitializer(sii_, gach_.randomInit(), bch_.seed());
