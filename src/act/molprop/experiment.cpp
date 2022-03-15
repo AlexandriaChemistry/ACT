@@ -271,6 +271,7 @@ CommunicationStatus Experiment::Receive(const CommunicationRecord *cr, int src)
                         break;
                     }
                 case MolPropObservable::HF:
+                case MolPropObservable::DELTAE0:
                 case MolPropObservable::DHFORM:
                 case MolPropObservable::DGFORM:
                 case MolPropObservable::DSFORM:

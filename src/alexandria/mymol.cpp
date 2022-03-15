@@ -1036,8 +1036,10 @@ immStatus MyMol::GenerateTopology(FILE              *fp,
             fprintf(debug, "%s\n", emsg.c_str());
         }
     }
-    computeAtomizationEnergy(pd);
-    
+    if (immStatus::OK == imm)
+    {
+        computeAtomizationEnergy(pd);
+    }
     return imm;
 }
 
@@ -2368,9 +2370,9 @@ immStatus MyMol::getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
     }
 
     if (immStatus::OK == imm &&
-        energy_.find(MolPropObservable::DHFORM) != energy_.end())
+        energy_.find(MolPropObservable::DELTAE0) != energy_.end())
     {
-        double Emol = energy_[MolPropObservable::DHFORM];
+        double Emol = energy_[MolPropObservable::DELTAE0];
         energy_.insert(std::pair<MolPropObservable, double>(MolPropObservable::EMOL, Emol));
     }
     return imm;

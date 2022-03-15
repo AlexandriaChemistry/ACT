@@ -68,6 +68,8 @@ enum class MolPropObservable {
     POLARIZABILITY,
     //! Hartree fock energy
     HF,
+    //! QM energy of molecule minus atomic contribution
+    DELTAE0,
     //! Delta H formation
     DHFORM,
     //! Delta G formation
