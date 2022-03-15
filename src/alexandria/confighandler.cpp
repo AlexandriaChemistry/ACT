@@ -205,11 +205,11 @@ void GAConfigHandler::add_pargs(std::vector<t_pargs> *pargs)
         { "-max_generations", FALSE, etINT, {&maxGenerations_},
           "Generation limit for Genetic Algorithm." },
         { "-max_test_generations", FALSE, etINT, {&maxTestGenerations_},
-          "Generation limit for the test fitness to improve in Genetic Algorithm. -1 stands for disabled." },
-        { "-vfp_vol_frac_limit", FALSE, etREAL, {&vfpVolFracLimit_},
-          "Limit [0, 1] of the population_volume/total_volume to trigger the VolumeFractionPenalizer. -1 stands for disabled." },
-        { "-vfp_pop_frac", FALSE, etREAL, {&vfpPopFrac_},
-          "Fraction [0, 1] of the worst genomes to randomize when VolumeFractionPenalizer is triggered." }
+          "Generation limit for the test fitness to improve in Genetic Algorithm. -1 stands for disabled." }
+        // { "-vfp_vol_frac_limit", FALSE, etREAL, {&vfpVolFracLimit_},
+        //   "Limit [0, 1] of the population_volume/total_volume to trigger the VolumeFractionPenalizer. -1 stands for disabled." },
+        // { "-vfp_pop_frac", FALSE, etREAL, {&vfpPopFrac_},
+        //   "Fraction [0, 1] of the worst genomes to randomize when VolumeFractionPenalizer is triggered." }
     };
     for (int i = 0; i < asize(pa); i++)
     {
