@@ -325,16 +325,32 @@ void OptACM::initMaster()
     if (gach_.vfpVolFracLimit() != -1)  // VolumeFractionPenalizer enabled
     {
         if (logFile())
-    {
-        fprintf(
-            logFile(),
-            "Appending a VolumeFractionPenalizer to the list of penalizers...\n"
-        );
-    }
+        {
+            fprintf(
+                logFile(),
+                "Appending a VolumeFractionPenalizer to the list of penalizers...\n"
+            );
+        }
         penalizers->push_back(
             new ga::VolumeFractionPenalizer(
                 oenv_, gach_.logVolume(), logFile(), totalVolume,
                 gach_.vfpVolFracLimit(), gach_.vfpPopFrac(), initializer
+            )
+        );
+    }
+    if (gach_.cpGenInterval() != -1)  // CatastrophePenalizer enabled
+    {
+        if (logFile())
+        {
+            fprintf(
+                logFile(),
+                "Appending a CatastrophePenalizer to the list of penalizers...\n"
+            );
+        }
+        penalizers->push_back(
+            new ga::CatastrophePenalizer(
+                logFile(), seed, gach_.cpGenInterval(), gach_.cpPopFrac(),
+                initializer, gach_.popSize()
             )
         );
     }
