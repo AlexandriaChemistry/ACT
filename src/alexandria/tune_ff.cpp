@@ -498,9 +498,12 @@ bool OptACM::runMaster(bool        optimize,
     fitComp_->calcDeviation(&dummy, CalcDev::Final, iMolSelect::Train);
 
     // Delete the penalizers
-    for (auto pen : *ga_->penalizers())
+    if (nullptr != ga_->penalizers())
     {
-        delete pen;
+        for (auto pen : *ga_->penalizers())
+        {
+            delete pen;
+        }
     }
 
     return bMinimum;

@@ -154,10 +154,11 @@ def plot_once():
                         ax.plot(xdata, ydata[n], label=mylabel, ls=args.linestyle, marker=markers[n % len(markers)])
             else:
                 for n in range(len(ydata)):
-                    if label[n] not in args.ignore:
+                    mylabel = ""
+                    if len(label) > n and label[n] not in args.ignore:
                         if print_label:
                             mylabel = label[n]
-                        ax.plot(xdata, ydata[n], label=mylabel, ls=args.linestyle, marker=None)
+                    ax.plot(xdata, ydata[n], label=mylabel, ls=args.linestyle, marker=None)
 
     if "title" in legends:
         plt.title(legends["title"], fontsize=args.titlefontsize)

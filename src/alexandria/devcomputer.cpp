@@ -133,6 +133,7 @@ void ChargeCM5DevComputer::calcDeviation(MyMol                                *m
                                                                 *myatoms.atomname[j], mymol->getMolname().c_str(), qparm.value(), qj).c_str()));
             }
             break;
+        case Mutability::ACM:
         case Mutability::Bounded:
             {
                 if ((*targets).find(eRMS::CHARGE)->second.weight() > 0)
