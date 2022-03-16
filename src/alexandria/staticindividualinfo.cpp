@@ -456,14 +456,14 @@ void StaticIndividualInfo::makeIndividualDir()
 * BEGIN: Getters and setters               *
 * * * * * * * * * * * * * * * * * * * * * */
 
-double StaticIndividualInfo::getParamSpaceVolume() const
+double StaticIndividualInfo::getParamSpaceVolume(const bool logScale) const
 {
     double aggregate = 1;
     for (size_t i = 0; i < nParam(); i++)
     {
         aggregate *= upperBound_[i] - lowerBound_[i];
     }
-    return aggregate;
+    return logScale ? log(aggregate) : aggregate;
 }
 
 /* * * * * * * * * * * * * * * * * * * * * *

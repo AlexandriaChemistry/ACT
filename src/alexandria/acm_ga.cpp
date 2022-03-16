@@ -252,6 +252,11 @@ bool HybridGAMC::evolve(ga::Genome *bestGenome)
                 auto fitness = cr->recv_double(src);  // Receiving the new training fitness
                 pool[pold]->genomePtr(i)->setFitness(imstr, fitness);
             }
+            // Sort again if needed
+            if (gach_->sort())
+            {
+                pool[pold]->sort(imstr);
+            }
             // Print population to debug if we have penalized the population
             if (debug)
             {
