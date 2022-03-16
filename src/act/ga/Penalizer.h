@@ -9,6 +9,8 @@
 #include "GenePool.h"
 #include "Initializer.h"
 
+#include "gromacs/fileio/xvgr.h"
+
 namespace ga
 {
 
@@ -27,6 +29,9 @@ protected:
     Penalizer(FILE *logfile): logfile_(logfile) {}
 
 public:
+
+    //! \brief Default base destructor
+    virtual ~Penalizer() {}
 
     /*!
      * \brief Penalize a population
@@ -53,7 +58,9 @@ class VolumeFractionPenalizer : public Penalizer
 
 private:
 
-    //! Total volume of the parameter space
+    //! Whether we compute the volume in log scale
+    bool logVolume_;
+    //! Total volume of the parameter space (may be log scale)
     double totalVolume_;
     //! Limit of fraction of volume
     double volFracLimit_;
@@ -62,13 +69,21 @@ private:
     //! Initializer to randomize genomes
     Initializer *initializer_;
 
+    //! Output file
+    FILE *outfile_ = nullptr;
+
     //! \return the volume of a population
     double getPoolVolume(const GenePool &pool) const;
 
 public:
 
+    //! \brief Destructor: closes output file
+    ~VolumeFractionPenalizer();
+
     /*!
      * \brief Create a new VolumeFractionPenalizer
+     * \param[in] oenv         gromacs output environment
+     * \param[in] logVolume    true if volume in log scale, false otherwise
      * \param[in] totalVolume  total volume of the parameter space
      * \param[in] volFracLimit if the volume of the population divided by
      *                         \p totalVolume is smaller than \p volFracLimit then
@@ -76,11 +91,13 @@ public:
      * \param[in] popFrac      fraction of the population to penalize (worst genomes)
      * \param[in] initializer  Initializer to randomize genomes
      */
-    VolumeFractionPenalizer(      FILE        *logfile,
-                            const double       totalVolume,
-                            const double       volFracLimit,
-                            const double       popFrac,
-                                  Initializer *initializer);
+    VolumeFractionPenalizer(      gmx_output_env_t  *oenv,
+                            const bool               logVolume,
+                                  FILE              *logfile,
+                            const double             totalVolume,
+                            const double             volFracLimit,
+                            const double             popFrac,
+                                  Initializer       *initializer);
 
     bool penalize(      GenePool *pool,
                   const int       generation) override;

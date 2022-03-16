@@ -398,9 +398,10 @@ public:
      * \brief Compute the (hypervolume) of the parameter space
      * 
      * We assume orthongal axes, leading to a parallelogram.
+     * \param[in] logScale true if we compute the volume in log scale, false otherwise
      * \return the (hyper)volume of the parameter space
      */
-    double getParamSpaceVolume() const;
+    double getParamSpaceVolume(const bool logScale) const;
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * END: Getters and setters                 *

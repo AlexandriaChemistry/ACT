@@ -108,6 +108,8 @@ private:
     int maxGenerations_ = 10;
     //! Generation limit for the test fitness to improve
     int maxTestGenerations_ = -1;
+    //! Whether to compute the volume in logarithmic scale
+    bool logVolume_ = false;
     //! For VolumeFractionPenalizer, the limit of the volume fraction
     real vfpVolFracLimit_ = -1;
     //! For VolumeFractionPenalizer, the fraction of worst genomes to reinitialize
@@ -192,6 +194,9 @@ public:
 
     //! \return true if we must evaluate fitness on test set, false otherwise
     bool evaluateTestset() const { return maxTestGenerations_ > 0; }
+
+    //! \return true whether the volume will be computed in log scale, false otherwise
+    bool logVolume() const { return logVolume_; }
 
     //! \return for VolumeFractionPenalizer, the limit of the volume fraction allowed
     real vfpVolFracLimit() const { return vfpVolFracLimit_; }
