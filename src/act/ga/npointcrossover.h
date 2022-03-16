@@ -25,7 +25,7 @@ class NPointCrossover : public Crossover
 
 private:
 
-    // Random number stuff
+    // Random number stuff (for shuffling)
     std::random_device  rd;
     std::mt19937        gen;
 
@@ -52,13 +52,14 @@ public:
     {
         gen.seed(seed);
         order_ = order;
-        if (chromosomeLength >= 2)
+        GMX_RELEASE_ASSERT(
+            chromosomeLength >= 2,
+            "There is 1 or less parameters to optimize, cannot crossover..."
+        );
+        availableIndices_.resize(chromosomeLength - 1);
+        for (size_t i = 1; i < chromosomeLength; i++)
         {
-            availableIndices_.resize(chromosomeLength - 1);
-            for (size_t i = 1; i < chromosomeLength; i++)
-            {
-                availableIndices_[i-1] = i;
-            }
+            availableIndices_[i-1] = i;
         }
         crossoverPoints_[0] = 0;
         crossoverPoints_[crossoverPoints_.size() - 1] = chromosomeLength;
