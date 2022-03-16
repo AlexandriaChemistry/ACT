@@ -84,6 +84,7 @@ public:
      * \brief Create a new VolumeFractionPenalizer
      * \param[in] oenv         gromacs output environment
      * \param[in] logVolume    true if volume in log scale, false otherwise
+     * \param[in] logfile      file to print log stuff to (may be nullptr)
      * \param[in] totalVolume  total volume of the parameter space
      * \param[in] volFracLimit if the volume of the population divided by
      *                         \p totalVolume is smaller than \p volFracLimit then
@@ -103,6 +104,55 @@ public:
                   const int       generation) override;
 
 }; // class VolumeFactorPenalizer
+
+/*!
+ * \brief A catastrophe happens and a fraction of the population (at random) is
+ * randomized
+ * 
+ * Each X generations a fraction Y (at random) of the population is randomized
+ * TODO: if needed, make this penalizer print the indices of the individuals it is
+ * randomizing to a file
+ */
+class CatastrophePenalizer : public Penalizer
+{
+
+private:
+
+    // Random number stuff (for shuffling)
+    std::random_device  rd;
+    std::mt19937        gen;
+
+    //! Interval of generations between the penalizer triggers
+    int genInterval_;
+    //! Fraction of the population to reinitialize
+    double popFrac_;
+    //! Initializer to randomize genomes
+    Initializer *initializer_;
+    //! List of all existing indices for genomes in the population (0 to popSize-1)
+    std::vector<size_t> availableIndices_;
+
+public:
+
+    /*!
+     * \brief Create a new CatastrophePenalizer
+     * \param[in] logfile     file to print log stuff to (may be nullptr)
+     * \param[in] seed        seed for the random number generation
+     * \param[in] genInterval number of generations as interval between penalties
+     * \param[in] popFrac     fraction of the population to penalize
+     * \param[in] initializer Initializer to randomize genomes
+     * \param[in] popSize     Size of the population
+     */
+    CatastrophePenalizer(      FILE        *logfile,
+                         const int          seed,
+                         const int          genInterval,
+                         const double       popFrac,
+                               Initializer *initializer,
+                         const size_t       popSize);
+
+    bool penalize(      GenePool *pool,
+                  const int       generation) override;
+
+}; // class CatastrophePenalizer
 
 } // namespace ga
 

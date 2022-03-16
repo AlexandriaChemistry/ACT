@@ -20,15 +20,13 @@ void NPointCrossover::offspring(ga::Genome  *parent1,
     size_t i;
     size_t j;
 
-    // Create a copy of availableIndices_ to sample without replacement
-    std::vector<size_t> tmpAvailableIndices(availableIndices_);
     // Fill in the crossover points
-    // We start by shuffling the temporal storage for indices
-    std::shuffle(tmpAvailableIndices.begin(), tmpAvailableIndices.end(), gen);
+    // We start by shuffling the available indices
+    std::shuffle(availableIndices_.begin(), availableIndices_.end(), gen);
     // Now we copy the first order_ elements to crossoverPoints_
     for (i = 0; i < order_; i++)
     {
-        crossoverPoints_[i+1] = tmpAvailableIndices[i];
+        crossoverPoints_[i+1] = availableIndices_[i];
     }
     // Finally, sort the newly added crossover points
     std::sort(crossoverPoints_.begin()+1, crossoverPoints_.end()-1);

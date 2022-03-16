@@ -117,4 +117,62 @@ VolumeFractionPenalizer::~VolumeFractionPenalizer()
 * END: VolumeFractionPenalizer             *
 * * * * * * * * * * * * * * * * * * * * * */
 
+/* * * * * * * * * * * * * * * * * * * * * *
+* BEGIN: CatastrophePenalizer              *
+* * * * * * * * * * * * * * * * * * * * * */
+
+CatastrophePenalizer::CatastrophePenalizer(      FILE        *logfile,
+                                           const int          seed,
+                                           const int          genInterval,
+                                           const double       popFrac,
+                                                 Initializer *initializer,
+                                           const size_t       popSize)
+: Penalizer(logfile), gen(rd()), genInterval_(genInterval), popFrac_(popFrac),
+  initializer_(initializer), availableIndices_(popSize)
+{
+    gen.seed(seed);
+    for (size_t i = 0; i < popSize; i++)
+    {
+        availableIndices_[i] = i;
+    }
+}
+
+bool CatastrophePenalizer::penalize(      GenePool *pool,
+                                    const int       generation)
+{
+    if (generation > 0 && generation % genInterval_ == 0)
+    {
+        if (logfile_)
+        {
+            fprintf(
+                logfile_,
+                "Generation %d --> CatastrophePenalizer (interval %d): randomizing %lf%% of the genomes...\n",
+                generation,
+                genInterval_,
+                popFrac_ * 100
+            );
+        }
+        // Shuffle the indices vector and randomize the last (100 - popFrac_*100)%
+        std::shuffle(availableIndices_.begin(), availableIndices_.end(), gen);
+        size_t i = static_cast<size_t>(
+            lround(
+                (1-popFrac_) * static_cast<double>(availableIndices_.size())
+            )
+        );
+        for (; i < availableIndices_.size(); i++)
+        {
+            initializer_->randomizeGenome(pool->genomePtr(availableIndices_[i]));
+        }
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+/* * * * * * * * * * * * * * * * * * * * * *
+* END: CatastrophePenalizer                *
+* * * * * * * * * * * * * * * * * * * * * */
+
 } // namespace ga
