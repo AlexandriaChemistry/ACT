@@ -312,12 +312,13 @@ void OptACM::initMaster()
     // Penalizer(s)
     std::vector<ga::Penalizer*> *penalizers = new std::vector<ga::Penalizer*>();
     // VolumeFractionPenalizer
-    const double totalVolume = sii_->getParamSpaceVolume();
+    const double totalVolume = sii_->getParamSpaceVolume(gach_.logVolume());
     if (logFile())
     {
         fprintf(
             logFile(),
-            "\nTotal (hyper)volume of the parameter space is %lf.\n",
+            "\nTotal %s(hyper)volume of the parameter space is %lf.\n",
+            gach_.logVolume() ? "log " : "",
             totalVolume
         );
     }
@@ -332,8 +333,8 @@ void OptACM::initMaster()
     }
         penalizers->push_back(
             new ga::VolumeFractionPenalizer(
-                logFile(), totalVolume, gach_.vfpVolFracLimit(),
-                gach_.vfpPopFrac(), initializer
+                oenv_, gach_.logVolume(), logFile(), totalVolume,
+                gach_.vfpVolFracLimit(), gach_.vfpPopFrac(), initializer
             )
         );
     }
@@ -495,6 +496,12 @@ bool OptACM::runMaster(bool        optimize,
     // Stop MASTER's helpers
     std::vector<double> dummy;
     fitComp_->calcDeviation(&dummy, CalcDev::Final, iMolSelect::Train);
+
+    // Delete the penalizers
+    for (auto pen : *ga_->penalizers())
+    {
+        delete pen;
+    }
 
     return bMinimum;
 }
