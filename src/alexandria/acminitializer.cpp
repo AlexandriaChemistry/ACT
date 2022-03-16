@@ -20,6 +20,7 @@ namespace alexandria
 /* * * * * * * * * * * * * * * * * * * *
 * BEGIN: ACMInitializer                *
 * * * * * * * * * * * * * * * * * * * */
+
 ACMInitializer::ACMInitializer(StaticIndividualInfo *sii,
                                bool                  randInit,
                                int                   seed)
@@ -51,6 +52,17 @@ ga::Individual *ACMInitializer::initialize()
     }
     ind->setBestGenome(ind->genome());
     return ind;
+}
+
+void ACMInitializer::randomizeGenome(ga::Genome *genome)
+{
+    for (size_t i = 0; i < sii_->nParam(); i++)
+    {
+        genome->setBase(
+            i,
+            dis_(gen_)*(sii_->upperBoundAtIndex(i) - sii_->lowerBoundAtIndex(i)) + sii_->lowerBoundAtIndex(i)
+        );
+    }
 }
 
 /* * * * * * * * * * * * * * * * * * * *

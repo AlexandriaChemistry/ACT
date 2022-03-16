@@ -333,6 +333,16 @@ int CommunicationRecord::recv_int(int src) const
     return d;
 }
 
+void CommunicationRecord::send_ff_middleman_mode(int dest, TuneFFMiddlemanMode mode) const
+{
+    send_int(dest, static_cast<int>(mode));
+}
+
+TuneFFMiddlemanMode CommunicationRecord::recv_ff_middleman_mode(int src) const
+{
+    return static_cast<TuneFFMiddlemanMode>( recv_int(src) );
+}
+
 std::map<iMolSelect, int> imsInt = 
     {
         { iMolSelect::Train, 3 },

@@ -11,7 +11,10 @@ def compute_dhform(energyHF:float, atomtypes, g2a, ahof,
     eatom = 0
     for a in atomtypes:
         myelem = g2a.get_elem(a)
-        eatom += ahof.get_atomization(myelem, leveloftheory, temperature)
+        ae     = ahof.get_atomization(myelem, leveloftheory, temperature)
+        if None == ae:
+            sys.exit("Cannot find atomization energy for %s with %s at %f K" % ( myelem, leveloftheory, temperature))
+        eatom += ae
     return energyHF - eatom
         
 def UnitToConversionFactor(unit:str):

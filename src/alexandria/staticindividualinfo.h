@@ -82,7 +82,6 @@ public:
      */
     void fillIdAndPrefix();
     
-    
     /*! \brief Set the output file name
      * \param[in] outputFile The base force field file name for output
      */
@@ -394,6 +393,14 @@ public:
     
     //! \return a pointer to the Poldata structure
     Poldata *poldata() { return &pd_; }
+
+    /*!
+     * \brief Compute the (hypervolume) of the parameter space
+     * 
+     * We assume orthongal axes, leading to a parallelogram.
+     * \return the (hyper)volume of the parameter space
+     */
+    double getParamSpaceVolume() const;
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * END: Getters and setters                 *

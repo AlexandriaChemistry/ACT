@@ -20,6 +20,7 @@
 #include "Crossover.h"
 #include "Mutator.h"
 #include "Terminator.h"
+#include "Penalizer.h"
 
 struct gmx_output_env_t;
 struct t_commrec;
@@ -53,6 +54,8 @@ private:
     Mutator                      *mutator_      = nullptr;
     //! Checks if the evolution should continue or be terminated
     std::vector<Terminator*>     *terminators_  = nullptr;
+    //! Penalizes the population
+    std::vector<Penalizer*>      *penalizers_   = nullptr;
 
 public:
 
@@ -69,10 +72,12 @@ public:
                      Crossover                           *crossover,
                      Mutator                             *mutator,
                      std::vector<Terminator*>            *terminators,
+                     std::vector<Penalizer*>             *penalizers,
                      int                                  popSize) :
         popSize_(popSize), initializer_(initializer),
         fitComputer_(fitnessComputer), probComputer_(probComputer),
-        selector_(selector), crossover_(crossover), mutator_(mutator), terminators_(terminators)
+        selector_(selector), crossover_(crossover), mutator_(mutator),
+        terminators_(terminators), penalizers_(penalizers)
     {
         if (terminators_)
         {
@@ -126,6 +131,9 @@ public:
      */
     Terminator *terminator(const int index);
 
+    //! \return the penalizers
+    std::vector<Penalizer*> *penalizers() { return penalizers_; }
+
     /* * * * * * * * * * * * * * * * * * * * * *
     * END: Getters and Setters                 *
     * * * * * * * * * * * * * * * * * * * * * */
@@ -151,13 +159,24 @@ public:
     * * * * * * * * * * * * * * * * * * * * * */  
 
     /*!
-     * Check if we have to stop the evolution by asking each terminator
+     * \brief Check if we have to stop the evolution by asking each terminator.
+     * Never call this method if no terminators were given to the GA.
      * \param[in] pool             the GenePool    
      * \param[in] generationNumber the current generation number
      * \return true if we stop the evolution, false otherwise
      */
     bool terminate(const GenePool *pool,
                    const int       generationNumber);
+
+    /*!
+     * \brief Penalize the population.
+     * Never call this method if no terminators were given to the GA.
+     * \param[in] pool             the GenePool    
+     * \param[in] generationNumber the current generation number
+     * \return true if the population has been penalized, false otherwise
+     */
+    bool penalize(      GenePool *pool,
+                  const int       generationNumber);
 
 };
 

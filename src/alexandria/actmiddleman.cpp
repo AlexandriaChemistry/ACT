@@ -74,15 +74,21 @@ void ACTMiddleMan::run()
     do
     {
         cont = cr->recv_data(0);
-        if (cont == CommunicationStatus::RECV_DATA)  // FIXME: reverse condition and save an identation
+        if (cont != CommunicationStatus::RECV_DATA)
         {
-            // Get the dataset
-            // FIXME: is this really necessary?
-            iMolSelect ims = cr->recv_iMolSelect(0);
+            continue;
+        }
 
-            // Now get the parameters
-            cr->recv_double_vector(0, ind_->genomePtr()->basesPtr());
-            
+        // Get the dataset
+        // FIXME: is this really necessary?
+        iMolSelect ims = cr->recv_iMolSelect(0);
+
+        // Now get the parameters
+        cr->recv_double_vector(0, ind_->genomePtr()->basesPtr());
+        
+        TuneFFMiddlemanMode mode = cr->recv_ff_middleman_mode(0);
+        if (mode == TuneFFMiddlemanMode::MUTATION)
+        {
             mutator_->mutate(ind_->genomePtr(), ind_->bestGenomePtr(), gach_->prMut());
 
             if (gach_->optimizer() == OptimizerAlg::GA)
@@ -106,6 +112,11 @@ void ACTMiddleMan::run()
             {
                 ind_->bestGenome().Send(cr, 0);
             }
+        }
+        else if (mode == TuneFFMiddlemanMode::FITNESS)
+        {
+            fitComp_->compute(ind_->genomePtr(), ims);
+            cr->send_double(0, ind_->genome().fitness(ims));
         }
     }
     while (CommunicationStatus::RECV_DATA == cont);

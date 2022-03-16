@@ -289,7 +289,6 @@ def interpret_gauss(content:list, infile:str,
                     except ValueError:
                         print("No charge on this line '%s'" % content[c].strip())
                         break
-        
         elif line.find("Mulliken charges:") >= 0:
             qMulliken.clear()
             for c in range(content_index+2, content_index+2+len(coordinates)):
@@ -362,13 +361,14 @@ def interpret_gauss(content:list, infile:str,
     weight, numb_atoms, formula, multiplicity, atomtypes, bonds_dict = get_info_from_coords_elements(atomname, coordinates)
     if None != weight and None != formula:
         g2a      = GaffToAlexandria()
-        if None != energyHF:
+        if None != energyHF and None != tcmap["Ezpe"]:
             temperature   = 0
             leveloftheory = method + "/" + basis
             ahof = AtomicHOF(leveloftheory, temperature, verbose)
-            eHF  = compute_dhform(energyHF, atomtypes, g2a, ahof,
+            eHF  = compute_dhform(energyHF-tcmap["Ezpe"], atomtypes, g2a, ahof,
                                   leveloftheory, temperature)
-            exper.add_energy("DeltaHform", "Hartree", 0.0, "gas", eHF)
+            exper.add_energy("DeltaE0", "Hartree", 0.0, "gas", eHF)
+            exper.add_energy("ZPE", "Hartree", 0.0, "gas", tcmap["Ezpe"])
         mp.add_prop("mass", str(weight))
         mp.add_prop("formula", formula)
         for index_atom in bonds_dict:

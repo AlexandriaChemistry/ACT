@@ -271,6 +271,7 @@ CommunicationStatus Experiment::Receive(const CommunicationRecord *cr, int src)
                         break;
                     }
                 case MolPropObservable::HF:
+                case MolPropObservable::DELTAE0:
                 case MolPropObservable::DHFORM:
                 case MolPropObservable::DGFORM:
                 case MolPropObservable::DSFORM:
@@ -281,7 +282,6 @@ CommunicationStatus Experiment::Receive(const CommunicationRecord *cr, int src)
                 case MolPropObservable::CP:
                 case MolPropObservable::CV:
                 case MolPropObservable::ZPE:
-                case MolPropObservable::EMOL:
                     {
                         gp = new MolecularEnergy;
                         break;
