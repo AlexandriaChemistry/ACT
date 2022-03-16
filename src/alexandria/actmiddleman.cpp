@@ -71,18 +71,13 @@ void ACTMiddleMan::run()
     ind_->genome().Send(cr, 0);
     auto cont = CommunicationStatus::OK;
     
-    do
+    cont = cr->recv_data(0);
+    while (CommunicationStatus::RECV_DATA == cont)
     {
-        cont = cr->recv_data(0);
-        if (cont != CommunicationStatus::RECV_DATA)
-        {
-            continue;
-        }
-
         // Get the dataset
         // FIXME: is this really necessary?
         iMolSelect ims = cr->recv_iMolSelect(0);
-
+        
         // Now get the parameters
         cr->recv_double_vector(0, ind_->genomePtr()->basesPtr());
         
@@ -90,15 +85,15 @@ void ACTMiddleMan::run()
         if (mode == TuneFFMiddlemanMode::MUTATION)
         {
             mutator_->mutate(ind_->genomePtr(), ind_->bestGenomePtr(), gach_->prMut());
-
+            
             if (gach_->optimizer() == OptimizerAlg::GA)
             {
                 fitComp_->compute(ind_->genomePtr(), ims);
             }
-
+            
             // Send the mutated vector
             cr->send_double_vector(0, ind_->genomePtr()->basesPtr());
-
+            
             // Send the new train fitness
             cr->send_double(0, ind_->genome().fitness(ims));
             if (gach_->evaluateTestset() && gach_->optimizer() != OptimizerAlg::MCMC)
@@ -106,7 +101,7 @@ void ACTMiddleMan::run()
                 fitComp_->compute(ind_->genomePtr(), iMolSelect::Test);
                 cr->send_double(0, ind_->genome().fitness(iMolSelect::Test));
             }
-
+            
             // If we are working with MCMC, send the best found to the MASTER
             if (gach_->optimizer() == OptimizerAlg::MCMC)
             {
@@ -118,8 +113,9 @@ void ACTMiddleMan::run()
             fitComp_->compute(ind_->genomePtr(), ims);
             cr->send_double(0, ind_->genome().fitness(ims));
         }
+        cont = cr->recv_data(0);
     }
-    while (CommunicationStatus::RECV_DATA == cont);
+    
     // Stop my helpers too.
     stopHelpers();
     // Save the last genome

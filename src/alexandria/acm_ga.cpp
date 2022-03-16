@@ -55,15 +55,21 @@ bool MCMC::evolve(ga::Genome *bestGenome)
     bool bMinimum = gach_->randomInit() ? true : false;
 
     // Resend the genomes back to the middlemen (they expect them anyway...)
-    for (size_t i = 1; i < pool.popSize(); i++)
+    int i = 1;
+    for (auto &dest : cr->middlemen())
     {
-        int dest = cr->middlemen()[i-1];
-        // Tell the middle man to continue
-        cr->send_data(dest);
-        // Send the data set
-        cr->send_iMolSelect(dest, imstr);
-        // Now resend the bases
-        cr->send_double_vector(dest, pool.genomePtr(i)->basesPtr());
+        if (dest != cr->rank())
+        {
+            // Tell the middle man to continue
+            cr->send_data(dest);
+            // Send the data set
+            cr->send_iMolSelect(dest, imstr);
+            // Now resend the bases
+            cr->send_double_vector(dest, pool.genomePtr(i)->basesPtr());
+            // Tell the middleman to carry the MUTATION mode
+            cr->send_ff_middleman_mode(dest, alexandria::TuneFFMiddlemanMode::MUTATION);
+            i += 1;
+        }
     }
 
     // Mutate my own genome
