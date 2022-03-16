@@ -6,6 +6,17 @@ import math, os, sys
 from actutils     import *
 from get_csv_rows import *
 
+def compute_dhform(energyHF:float, atomtypes, g2a, ahof,
+                   leveloftheory:str, temperature:float):
+    eatom = 0
+    for a in atomtypes:
+        myelem = g2a.get_elem(a)
+        ae     = ahof.get_atomization(myelem, leveloftheory, temperature)
+        if None == ae:
+            sys.exit("Cannot find atomization energy for %s with %s at %f K" % ( myelem, leveloftheory, temperature))
+        eatom += ae
+    return energyHF - eatom
+        
 def UnitToConversionFactor(unit:str):
     KCAL = 4.184
     if unit == "eV" or unit == "electronvolt":
