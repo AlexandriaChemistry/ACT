@@ -27,11 +27,16 @@ VolumeFractionPenalizer::VolumeFractionPenalizer(      gmx_output_env_t  *oenv,
 {
     outfile_ = xvgropen(
        logVolume ? "vfp_log_volume.xvg" : "vfp_volume.xvg",
-       logVolume ? "Population volume" : "Population volume",
+       "",
        "generation",
        logVolume ? "log_volume" : "volume",
        oenv
     );
+    std::vector<const char*> tmpParamNames = {
+        logVolume ? "pop_log_volume" : "pop_volume",
+        "volume_fraction"
+    };
+    xvgr_legend(outfile_, tmpParamNames.size(), tmpParamNames.data(), oenv);
 }
 
 bool VolumeFractionPenalizer::penalize(      GenePool *pool,
@@ -39,9 +44,9 @@ bool VolumeFractionPenalizer::penalize(      GenePool *pool,
 {
     // Get the volume of the population
     const double poolVolume = getPoolVolume(*pool);
-    // Print to output file
-    fprintf(outfile_, "%d %lf\n", generation, poolVolume);
     const double volFrac_ = poolVolume/totalVolume_;
+    // Print to output file
+    fprintf(outfile_, "%d %lf %lf\n", generation, poolVolume, volFrac_);
     if (volFrac_ < volFracLimit_)
     {
         if (logfile_)
