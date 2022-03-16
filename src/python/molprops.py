@@ -8,7 +8,7 @@ from atomic_heat_of_formation import *
 
 class Molprops:
     '''
-    Class to read and write molprop files (molecule properties) from the
+    Class to write molprop files (molecule properties) from the
     Alexandria Chemistry Toolkit
     '''
 
@@ -20,7 +20,6 @@ class Molprops:
         for prop in molecule.properties.keys():
             lastmol.set(prop, molecule.properties[prop])
         if len(molecule.bonds) > 0:
-            #bonds = ET.SubElement(lastmol, "bonds")
             for bond in molecule.bonds:
                 newbond = ET.SubElement(lastmol, "bond")
                 newbond.set("ai", bond[0])
@@ -31,13 +30,12 @@ class Molprops:
             for prop in comp.properties:
                 compound.set(prop, comp.properties[prop])
             if len(comp.bonds) > 0:
-                #bonds = ET.SubElement(compound, "bonds")
                 for bond in comp.bonds:
                     newbond = ET.SubElement(compound, "bond")
-                    #newbond = ET.SubElement(bonds, "bond")
                     newbond.set("ai", bond[0])
                     newbond.set("aj", bond[1])
                     newbond.set("bondorder", bond[2])
+
         for ep in molecule.experiments:
             exper = ET.SubElement(lastmol, "experiment")
             for prop in ep.properties:
@@ -53,11 +51,6 @@ class Molprops:
                         myene.set(prop, ene[prop])
             for dip in ep.dipoles:
                 mydip = ET.SubElement(exper, "dipole")
-                #for prop in dip.keys():
-                #    if prop == "value":
-                #        mydip.text = dip[prop]
-                #    else:
-                #        mydip.set(prop, dip[prop])
                 for myprop in [ "type", "unit", "temperature" ]:
                     if myprop in dip:
                         mydip.set(myprop, dip[myprop])
@@ -133,37 +126,29 @@ class Molprops:
                        myvalue = ET.SubElement(myesp, value)
                        myvalue.text = esp[value]
 
-
-
-
     def write(self, outfile):
         xmlstr      = minidom.parseString(ET.tostring(self.molecules)).toprettyxml(indent="  ")
         with open(outfile, "w") as f:
             f.write(xmlstr)
 
-
-    
 class Molprop:
     '''
     Class to store a single molprop (molecule properties) from the
     Alexandria Chemistry Toolkit
     '''
 
-    def __init__(self, molname):#, charge_1, charge_2, multiplicity_1, multiplicity_2, compound_1, compound_2):
+    def __init__(self, molname):
         self.properties = {}
         self.properties["molname"] = molname
-        #self.properties["charge_1"] = str(charge_1)
-        #self.properties["charge_2"] = str(charge_2)
-        #self.properties["multiplicity_1"] = str(multiplicity_1)
-        #self.properties["multiplicity_2"] = str(multiplicity_2)
-        #self.properties["compound_1"] = str(compound_1)
-        #self.properties["compound_2"] = str(compound_2)
         self.bonds = []
         self.experiments = []
         self.compounds = []
         
+    def prop(self, propname):
+        return self.properties[propname]
+
     def add_prop(self, propname, value):
-        self.properties[propname] = value
+        self.properties[propname] = str(value)
 
     def add_bond(self, atom1, atom2, bondorder):
         self.bonds.append([str(atom1), str(atom2), str(bondorder)])

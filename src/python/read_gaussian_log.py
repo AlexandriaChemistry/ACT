@@ -69,16 +69,8 @@ def rotate_esp_and_add_to_exper(exper, espfitcenter, potential, coordinates):
                             str(espx[2]),
                             potential[i])
 
-def compute_dhform(energyHF:float, atomtypes, g2a, ahof,
-                   leveloftheory:str, temperature:float):
-    eatom = 0
-    for a in atomtypes:
-        myelem = g2a.get_elem(a)
-        eatom += ahof.get_atomization(myelem, leveloftheory, temperature)
-    return energyHF - eatom
-        
 def interpret_gauss(content:list, infile:str,
-                    molname:str, basisset:str, verbose:bool):
+                    molname:str, basisset:str, verbose:bool) -> Molprop:
     '''Interpret the content of a Gaussian log file and put the
     contents in a molprop structure for later storage in an XML
     file.'''
@@ -416,7 +408,7 @@ def interpret_gauss(content:list, infile:str,
     else:
         return None
     
-def read_gaussian_log(infile:str, molname:str, basisset:str, verbose:bool):
+def read_gaussian_log(infile:str, molname:str, basisset:str, verbose:bool) -> Molprop:
     '''Read the output from a Gaussian calculation to extract
     coordinates, charge, multiplicity, multipole moments and
     more.'''
