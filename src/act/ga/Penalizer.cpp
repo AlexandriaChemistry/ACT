@@ -140,13 +140,14 @@ CatastrophePenalizer::CatastrophePenalizer(      FILE        *logfile,
 bool CatastrophePenalizer::penalize(      GenePool *pool,
                                     const int       generation)
 {
-    if (generation % genInterval_ == 0)
+    if (generation > 0 && generation % genInterval_ == 0)
     {
         if (logfile_)
         {
             fprintf(
                 logfile_,
                 "Generation %d --> CatastrophePenalizer (interval %d): randomizing %lf%% of the genomes...\n",
+                generation,
                 genInterval_,
                 popFrac_ * 100
             );

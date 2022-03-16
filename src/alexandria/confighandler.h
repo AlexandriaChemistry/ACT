@@ -114,6 +114,10 @@ private:
     real vfpVolFracLimit_ = -1;
     //! For VolumeFractionPenalizer, the fraction of worst genomes to reinitialize
     real vfpPopFrac_ = 0.8;
+    //! For CatastrophePenalizer, the interval (in generations) between each penalty
+    int cpGenInterval_ = -1;
+    //! For CatastrophePenalizer, the fraction of genomes to reinitialize
+    real cpPopFrac_ = 0.5;
 
 public:
 
@@ -203,6 +207,12 @@ public:
 
     //! \return for VolumeFractionPenalizer, the fraction of the worst genomes to randomize
     real vfpPopFrac() const { return vfpPopFrac_; }
+
+    //! \return for CatastrophePenalizer, the interval (in generations) between each penalty
+    int cpGenInterval() const { return cpGenInterval_; }
+
+    //! \return for CatastrophePenalizer, the fraction of genomes to reinitialize
+    real cpPopFrac() const { return cpPopFrac_; }
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * END: Getters and setters                 *
