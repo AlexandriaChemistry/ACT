@@ -4,6 +4,8 @@
 #
 import csv
 
+debug = False
+
 def get_csv_rows(csv_file, minimum_nr_columns, enc='utf-8'):
     delim     = "|"
     inputfile = open(csv_file, "r", encoding=enc)
@@ -18,6 +20,7 @@ def get_csv_rows(csv_file, minimum_nr_columns, enc='utf-8'):
                 rows.append(row)
     finally:
         inputfile.close()
-    print("Read %d rows from %s" % ( len(rows), csv_file ))
+    if debug:
+        print("Read %d rows from %s" % ( len(rows), csv_file ))
     return rows
 
