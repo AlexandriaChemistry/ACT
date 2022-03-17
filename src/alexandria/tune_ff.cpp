@@ -556,7 +556,7 @@ int tune_ff(int argc, char *argv[])
         "multiple ([TT]M[tt]) additional processor cores to compute the fitness. The total",
         "number of cores [TT]N[tt] should therefore be exactly equal to ",
         "[TT]PxM[tt].[PAR]",
-        "If the [TT]-randomInit[tt] flag is",
+        "If the [TT]-random_init[tt] flag is",
         "given a completely random set of parameters is generated at the start",
         "of each run, within the bounds given in the input force field file.[PAR]"
         "The absolut dipole moment of a molecule remains unchanged if all the",
