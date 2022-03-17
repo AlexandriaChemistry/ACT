@@ -277,7 +277,6 @@ class Experiment:
                 foundThermo = False
         # Final results, please check values and units!
         myT = float(tcmap["Temp"])
-        self.add_energy("E0", "Hartree", 0, "gas", tcmap["E0"])
         self.add_energy("ZPE", "Hartree", 0, "gas", tcmap["Ezpe"])
         self.add_energy("CV", "J/mol K", 0, "gas", tcmap["CV"])
         self.add_energy("CP", "J/mol K", 0, "gas", Rgas+tcmap["CV"])

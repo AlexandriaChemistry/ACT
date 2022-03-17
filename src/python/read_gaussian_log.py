@@ -255,7 +255,8 @@ class GaussianReader:
         c        = content_index
         while (content[c].find(acenter) >= 0 or
                content[c].find(ecenter) >= 0):
-            words   = content[c].strip().split()
+            line    = content[c].strip()
+            words   = line.split()
             mywords = [ None, None, None, None ]
             if content[c].find(acenter) >= 0:
                 if len(words) == 8:
