@@ -438,7 +438,7 @@ void OptACM::printNumCalcDevEstimate()
 
     fprintf(
         logFile(),
-        "\nMaximum number of fitness computations to be done for %d generations:\n  - Train: %ld\n  - Test: %ld\n  - Ignore: %ld\n\n",
+        "\nMaximum number of fitness computations to be done for %d generations:\n  - Train: %ld\n  - Test: %ld\n  - Ignore: %ld\nConsider that in GA and HYBRID each penalty conveys an extra fitness computation per genome for the training set.\n\n",
         gach_.maxGenerations(), nCalcDevTrain, nCalcDevTest, nCalcDevIgnore
     );
 }
