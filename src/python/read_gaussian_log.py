@@ -41,6 +41,7 @@ class GaussianReader:
         self.mp            = Molprop(molname)
         self.atomname      = []
         self.atomtypes     = None
+        self.coord_archive = []
         self.coordinates   = []
         self.exper         = None
         self.espfitcenter  = []
@@ -63,7 +64,8 @@ class GaussianReader:
     def rotate_esp_and_add_to_exper(self, infile:str):
         # Added by MMW START
         # Get optimized coords and the last set of coords to determine the rotation matrix
-        # Using the rotation matrix we will then rotate the esp grid points 
+        # Using the rotation matrix we will then rotate the esp grid points
+
         natom     = len(self.coordinates)
         if natom < 1:
             print("No atoms")
@@ -151,19 +153,36 @@ class GaussianReader:
             self.mp.add_prop("multiplicity", words[5])
         return 1
 
+    def select_coordinates(self):
+        n_archive = len(self.coord_archive)
+        if n_archive > 2:
+            n_select = n_archive - 1
+            if self.verbose:
+                print("There are %d sets of coordinates. Will use #%d." % ( n_archive, n_select ))
+            self.coordinates = self.coord_archive[n_select]
+
     def get_standard_orientation(self, content, content_index:int) -> int:
         c = content_index+5
-        self.atomname.clear()
-        self.coordinates.clear()
+        newatomname    = []
+        newcoordinates = []
         while content[c].strip().find("--------------------") < 0:
             words = content[c].strip().split()
             if len(words) == 6:
                 atomnumber = int(words[1])
-                self.atomname.append(AtomNumberToAtomName(atomnumber))
-                self.coordinates.append([ float(words[3]), float(words[4]), float(words[5])])
+                newatomname.append(AtomNumberToAtomName(atomnumber))
+                newcoordinates.append([ float(words[3]), float(words[4]), float(words[5])])
+            elif len(words) == 5:
+                atomnumber = int(words[1])
+                newatomname.append(AtomNumberToAtomName(atomnumber))
+                newcoordinates.append([ float(words[2]), float(words[3]), float(words[4])])
             else:
                 break
             c += 1
+        if len(newatomname) > 0:
+            if len(self.coordinates) > 0:
+                self.coord_archive.append(self.coordinates)
+            self.atomname    = newatomname
+            self.coordinates = newcoordinates
         return c-content_index
 
     def get_energy(self, line:str) -> int:
@@ -413,8 +432,7 @@ class GaussianReader:
             elif line.find("Multiplicity") >= 0:
                 content_index += self.get_qmult(line) 
                 
-            elif (line.find("Standard orientation") >= 0
-                  and line.find("Standard orientation") < 23):
+            elif line.find("Standard orientation") >= 0:
                 content_index += self.get_standard_orientation(content, content_index)
                 
             elif line.find("SCF Done:") >= 0:
@@ -507,9 +525,16 @@ class GaussianReader:
             leveloftheory =  self.tcmap["Method"] + "/" + basis
             ahof = AtomicHOF(leveloftheory, self.tcmap["Temp"], self.verbose)
             self.exper.extract_thermo(self.tcmap, self.atomname, ahof)
+            
+            # Find the right set of coordinates.
+            self.select_coordinates()
+            
             weight, numb_atoms, formula, multiplicity, self.atomtypes, bonds_dict = get_info_from_coords_elements(self.atomname, self.coordinates)
             if None != weight and None != formula:
                 g2a      = GaffToAlexandria()
+            else:
+                print("Cannot find weight or formula")
+                return None
             if None != self.tcmap["E0"] and None != self.tcmap["Ezpe"]:
                 self.tcmap["Temp"]   = 0
                 ahof = AtomicHOF(leveloftheory, self.tcmap["Temp"], self.verbose)
@@ -518,6 +543,12 @@ class GaussianReader:
                 if debug:
                     print("Computed eHF = %g" % eHF)
                 self.exper.add_energy("DeltaE0", "Hartree", 0.0, "gas", eHF)
+                # Now we have to rotate the electrostatic potential grid points 
+                # from the standards orientation to the input orientation.
+                if len(self.espfitcenter) > 0:
+                    self.rotate_esp_and_add_to_exper(infile)
+                # We can only add the atoms after selecting the coordinates.
+                # This is likely a peculiarity of the Alexandria library.
                 if not self.add_atoms(g2a):
                     return None
                 self.mp.add_prop("mass", str(weight))
@@ -531,10 +562,6 @@ class GaussianReader:
                     if len(self.potential) != len(self.espfitcenter):
                         print("Found %d potentials for %d centers in %s" % ( len(self.potential), len(self.espfitcenter), infile))
                         return None
-                # Now we have to rotate the electrostatic potential grid points from 
-                # the standard orientation to the input orientation.
-                if len(self.espfitcenter) > 0:
-                    self.rotate_esp_and_add_to_exper(infile)
                 self.mp.add_experiment(self.exper)
                 return self.mp
             else:
