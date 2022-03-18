@@ -113,11 +113,14 @@ class GaussianReader:
         # Now rotate the esp points and add them to the experiment
         rmsafter = 0.0
         for i in range(len(self.espfitcenter)):
-            newx = Rfit.dot(testcoord[i]) + test_com
+            oldx = testcoord[i]
+            newx = Rfit.dot(oldx) + ref_com #test_com
             if i < natom:
                 if debug:
+                    print("refx {}".format(self.coordinates[i]))
+                    print("oldx {}".format(oldx))
                     print("newx {}".format(newx))
-                xdiff     = newx-refcoord[i]-ref_com
+                xdiff     = newx - (refcoord[i]+ref_com)
                 rmsafter += xdiff.dot(xdiff)
             espx = 100*newx 
             self.exper.add_potential(str(i+1), "Hartree/e", "pm",
@@ -127,7 +130,7 @@ class GaussianReader:
                                      self.potential[i])
         rmsb = math.sqrt(rmsbefore/natom)
         rmsa = math.sqrt(rmsafter/natom)
-        if debug or (rmsa - rmsb) > 1e-8 or rmsa > 0.1:
+        if debug or (rmsa - rmsb) > 1e-8 or rmsa > 0.01:
             print("RMSD before %g after %g Angstrom in %s" % (rmsb, rmsa, infile))
 
     def get_revision(self, line):
@@ -405,9 +408,10 @@ class GaussianReader:
             if len(self.qMulliken) == len(self.atomtypes):
                 qmap["Mulliken"] = self.qMulliken[i]
             # Convert Angstrom to pm
-            myx = 100*self.coordinates[i]
             self.exper.add_atom(self.atomname[i], alextype, i+1, "pm", 
-                                myx[0], myx[1], myx[2], qmap)
+                                100*self.coordinates[i][0], 
+                                100*self.coordinates[i][1], 
+                                100*self.coordinates[i][2], qmap)
         return True
 
     def interpret_gauss(self, content:list, infile:str) -> Molprop:
