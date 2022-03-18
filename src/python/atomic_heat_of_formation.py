@@ -6,8 +6,10 @@ import math, os, sys
 from actutils     import *
 from get_csv_rows import *
 
+debug = False
+
 def compute_dhform(energyHF:float, atomtypes, g2a, ahof,
-                   leveloftheory:str, temperature:float):
+                   leveloftheory:str, temperature:float) -> float:
     eatom = 0
     for a in atomtypes:
         myelem = g2a.get_elem(a)
@@ -42,7 +44,7 @@ class AtomicHOF:
                           act_library_filename("atomization-energies-dft.csv") ]:
             if not os.path.exists(datafile):
                 sys.exit("Cannot find %s, please reinstall ACT" % datafile)
-            rows = get_csv_rows(datafile, 9)
+            rows = get_csv_rows(datafile, 8)
             self.ahof = {}
             for row in rows:
                 try:
@@ -71,9 +73,8 @@ class AtomicHOF:
                 return thisprop["Value"]
         return None
         
-    def get(self, elem, temp):
-        # Assume zero charge
-        akey = elem + "|0"
+    def get(self, elem, temp, charge):
+        akey = elem + "|" + str(charge)
         if not akey in self.ahof:
             sys.exit("Cannot find key %s in the Atomic Heat of Formation table. Method is %s" % ( akey, self.method ))
         HexpT  = None
@@ -82,7 +83,7 @@ class AtomicHOF:
         Vmodel = None
         for p in range(len(self.ahof[akey])):
             thisprop = self.ahof[akey][p]
-            if self.verbose:
+            if self.verbose and debug:
                 print("prop %d method %s desc %s temp %g" % 
                       ( p, thisprop["Method"], thisprop["Desc"], thisprop["Temp"]))
             eFac = UnitToConversionFactor(thisprop["Unit"])

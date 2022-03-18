@@ -312,28 +312,45 @@ void OptACM::initMaster()
     // Penalizer(s)
     std::vector<ga::Penalizer*> *penalizers = new std::vector<ga::Penalizer*>();
     // VolumeFractionPenalizer
-    const double totalVolume = sii_->getParamSpaceVolume();
+    const double totalVolume = sii_->getParamSpaceVolume(gach_.logVolume());
     if (logFile())
     {
         fprintf(
             logFile(),
-            "\nTotal (hyper)volume of the parameter space is %lf.\n",
+            "\nTotal %s(hyper)volume of the parameter space is %lf.\n",
+            gach_.logVolume() ? "log " : "",
             totalVolume
         );
     }
     if (gach_.vfpVolFracLimit() != -1)  // VolumeFractionPenalizer enabled
     {
         if (logFile())
-    {
-        fprintf(
-            logFile(),
-            "Appending a VolumeFractionPenalizer to the list of penalizers...\n"
-        );
-    }
+        {
+            fprintf(
+                logFile(),
+                "Appending a VolumeFractionPenalizer to the list of penalizers...\n"
+            );
+        }
         penalizers->push_back(
             new ga::VolumeFractionPenalizer(
-                logFile(), totalVolume, gach_.vfpVolFracLimit(),
-                gach_.vfpPopFrac(), initializer
+                oenv_, gach_.logVolume(), logFile(), totalVolume,
+                gach_.vfpVolFracLimit(), gach_.vfpPopFrac(), initializer
+            )
+        );
+    }
+    if (gach_.cpGenInterval() != -1)  // CatastrophePenalizer enabled
+    {
+        if (logFile())
+        {
+            fprintf(
+                logFile(),
+                "Appending a CatastrophePenalizer to the list of penalizers...\n"
+            );
+        }
+        penalizers->push_back(
+            new ga::CatastrophePenalizer(
+                logFile(), seed, gach_.cpGenInterval(), gach_.cpPopFrac(),
+                initializer, gach_.popSize()
             )
         );
     }
@@ -496,6 +513,15 @@ bool OptACM::runMaster(bool        optimize,
     std::vector<double> dummy;
     fitComp_->calcDeviation(&dummy, CalcDev::Final, iMolSelect::Train);
 
+    // Delete the penalizers
+    if (nullptr != ga_->penalizers())
+    {
+        for (auto pen : *ga_->penalizers())
+        {
+            delete pen;
+        }
+    }
+
     return bMinimum;
 }
 
@@ -533,7 +559,7 @@ int tune_ff(int argc, char *argv[])
         "multiple ([TT]M[tt]) additional processor cores to compute the fitness. The total",
         "number of cores [TT]N[tt] should therefore be exactly equal to ",
         "[TT]PxM[tt].[PAR]",
-        "If the [TT]-randomInit[tt] flag is",
+        "If the [TT]-random_init[tt] flag is",
         "given a completely random set of parameters is generated at the start",
         "of each run, within the bounds given in the input force field file.[PAR]"
         "The absolut dipole moment of a molecule remains unchanged if all the",

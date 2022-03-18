@@ -206,10 +206,16 @@ void GAConfigHandler::add_pargs(std::vector<t_pargs> *pargs)
           "Generation limit for Genetic Algorithm." },
         { "-max_test_generations", FALSE, etINT, {&maxTestGenerations_},
           "Generation limit for the test fitness to improve in Genetic Algorithm. -1 stands for disabled." },
+        { "-log_volume", FALSE, etBOOL, {&logVolume_},
+          "Compute the (hyper)volume in logarithmic scale." },
         { "-vfp_vol_frac_limit", FALSE, etREAL, {&vfpVolFracLimit_},
           "Limit [0, 1] of the population_volume/total_volume to trigger the VolumeFractionPenalizer. -1 stands for disabled." },
         { "-vfp_pop_frac", FALSE, etREAL, {&vfpPopFrac_},
-          "Fraction [0, 1] of the worst genomes to randomize when VolumeFractionPenalizer is triggered." }
+          "Fraction [0, 1] of the worst genomes to randomize when VolumeFractionPenalizer is triggered." },
+        { "-cp_gen_interval", FALSE, etINT, {&cpGenInterval_},
+          "Interval (in number of generations) between triggers of CatastrophePenalizer." },
+        { "-cp_pop_frac", FALSE, etREAL, {&cpPopFrac_},
+          "Fraction [0, 1] of the genomes to randomize when CatastrophePenalizer is triggered." }
     };
     for (int i = 0; i < asize(pa); i++)
     {
@@ -277,6 +283,18 @@ void GAConfigHandler::check_pargs()
     GMX_RELEASE_ASSERT(
       vfpPopFrac_ >= 0 && vfpPopFrac_ <= 1,
       "-vfp_pop_frac must be in [0, 1]."
+    );
+
+    if (cpGenInterval_ != -1)
+    {
+      GMX_RELEASE_ASSERT(
+        cpGenInterval_ > 0,
+        "When enabled (!= -1), -cp_gen_interval must be positive."
+      );
+    }
+    GMX_RELEASE_ASSERT(
+      cpPopFrac_ >= 0 && cpPopFrac_ <= 1,
+      "-cp_pop_frac must be in [0, 1]."
     );
 
 }

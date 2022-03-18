@@ -6,6 +6,8 @@ import xml.etree.ElementTree as ET
 from xml.dom import minidom
 from atomic_heat_of_formation import *
 
+debug = False
+
 class Molprops:
     '''
     Class to write molprop files (molecule properties) from the
@@ -259,26 +261,33 @@ class Experiment:
         dhofM0   = tcmap["E0"]*eFactor
         dhofMT   = dhofM0+(tcmap["Hcorr"]-tcmap["Ezpe"])*eFactor
         # Now fetch the atomic contributions to the heat of formation.
-        # These depend on atomtype, temperature and method used.
-        atomid   = 0
+        # These depend on atomtype, temperature and method used as
+        # well as the charge.
+        charge = 0
+        atomid = 0
+        foundThermo = True
         for a in atomname:
-            dhfx0, dhfxT, S0xT = ahof.get(a, tcmap["Temp"])
+            dhfx0, dhfxT, S0xT = ahof.get(a, tcmap["Temp"], charge)
             if dhfx0 and dhfxT and S0xT:
                 dhofM0   += dhfx0
                 dhofMT   += dhfxT
                 DeltaSMT += S0xT
                 atomid   += 1
             else:
-                print("Could not get atomization energies")
+                foundThermo = False
         # Final results, please check values and units!
         myT = float(tcmap["Temp"])
-        self.add_energy("ZPE", "kJ/mol", 0, "gas", tcmap["Ezpe"])
+        self.add_energy("ZPE", "Hartree", 0, "gas", tcmap["Ezpe"])
         self.add_energy("CV", "J/mol K", 0, "gas", tcmap["CV"])
         self.add_energy("CP", "J/mol K", 0, "gas", Rgas+tcmap["CV"])
-        self.add_energy("DeltaHform", "kJ/mol", myT, "gas", dhofMT)
-        self.add_energy("DeltaGform", "kJ/mol", myT, "gas", dhofMT-myT*DeltaSMT/kilo)
-        self.add_energy("DeltaHform", "kJ/mol", 0, "gas", dhofM0)
-        self.add_energy("DeltaSform", "J/mol K", myT, "gas", DeltaSMT)
+        if not foundThermo:
+            if debug:
+                print("Could not get atomization energies for %s at T = %g" % ( a, tcmap["Temp"]))
+        else:
+            self.add_energy("DeltaHform", "kJ/mol", myT, "gas", dhofMT)
+            self.add_energy("DeltaGform", "kJ/mol", myT, "gas", dhofMT-myT*DeltaSMT/kilo)
+            self.add_energy("DeltaHform", "kJ/mol", 0, "gas", dhofM0)
+            self.add_energy("DeltaSform", "J/mol K", myT, "gas", DeltaSMT)
         Scomps = [ "Strans", "Srot", "Svib" ]
         if len(tcmap["Scomponent"]) == len(Scomps):
             for i in range(len(Scomps)):

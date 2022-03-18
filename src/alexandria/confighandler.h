@@ -108,10 +108,16 @@ private:
     int maxGenerations_ = 10;
     //! Generation limit for the test fitness to improve
     int maxTestGenerations_ = -1;
+    //! Whether to compute the volume in logarithmic scale
+    bool logVolume_ = false;
     //! For VolumeFractionPenalizer, the limit of the volume fraction
     real vfpVolFracLimit_ = -1;
     //! For VolumeFractionPenalizer, the fraction of worst genomes to reinitialize
     real vfpPopFrac_ = 0.8;
+    //! For CatastrophePenalizer, the interval (in generations) between each penalty
+    int cpGenInterval_ = -1;
+    //! For CatastrophePenalizer, the fraction of genomes to reinitialize
+    real cpPopFrac_ = 0.5;
 
 public:
 
@@ -193,11 +199,20 @@ public:
     //! \return true if we must evaluate fitness on test set, false otherwise
     bool evaluateTestset() const { return maxTestGenerations_ > 0; }
 
+    //! \return true whether the volume will be computed in log scale, false otherwise
+    bool logVolume() const { return logVolume_; }
+
     //! \return for VolumeFractionPenalizer, the limit of the volume fraction allowed
     real vfpVolFracLimit() const { return vfpVolFracLimit_; }
 
     //! \return for VolumeFractionPenalizer, the fraction of the worst genomes to randomize
     real vfpPopFrac() const { return vfpPopFrac_; }
+
+    //! \return for CatastrophePenalizer, the interval (in generations) between each penalty
+    int cpGenInterval() const { return cpGenInterval_; }
+
+    //! \return for CatastrophePenalizer, the fraction of genomes to reinitialize
+    real cpPopFrac() const { return cpPopFrac_; }
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * END: Getters and setters                 *
