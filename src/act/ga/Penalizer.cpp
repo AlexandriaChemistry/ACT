@@ -53,7 +53,7 @@ bool VolumeFractionPenalizer::penalize(      GenePool *pool,
         {
             fprintf(
                 logfile_,
-                "Generation %d -> VolumeFractionPenalizer %s: population volume is %lf, total volume is %lf, fraction %lf is below the limit %lf, thus randomizing the worst %lf%% of genomes...\n",
+                "Generation %d -> VolumeFractionPenalizer %s: population volume is %g, total volume is %g, fraction %g is below the limit %g, thus randomizing the worst %g%% of genomes...\n",
                 generation,
                 logVolume_ ? "(log scale)" : "",
                 poolVolume,
@@ -137,6 +137,33 @@ CatastrophePenalizer::CatastrophePenalizer(      FILE        *logfile,
     }
 }
 
+static void printCause(FILE         *out,
+                       int           generation,
+                       double        percentage,
+                       std::mt19937 &gen)
+{
+    std::vector<const char *> ccc = {
+        "Earth was hit by a strong burst of gamma radiation wiping out %g percent\nof the population. New mutants will take over.\n",
+        "Forest fires wiped out %g percent of the population.\nSeedlings will replace them.\n",
+        "Anthrax bacteria were released from thawing permafrost, killing %g of the population.\nBreeding of new individuals commenced.\n",
+        "Collapse of the Thwaites glacier in Antarctica leads to flooding globally\nkilling %g percent of the population. New life forms will repopulate.\n",
+        "Melting of the Greenland ice cap released so much fresh water that the\nNorth Atlantic Current stopped and Europe became uninhabitable.\n%g percent of the population will be replaced.",
+        "Deforestation leading to catastrophic loss of biodiversity reduced fitness.\n%g percent new species will be created.\n",
+        "Alien invaders exterminate %d percent of the population and replaced them\nwith tenage Mutant Ninja turtles.\n",
+        "An asteroid hits earth and kills %d of all living organism.\nEvolution starts anew.\n",
+        "A tsunami hits the western pacific rim wiping out %d of the population.\nRebuilding will commence.\n",
+        "Tornadoes accross North America wipe out most major cities.\n%g percent of the population is replaced.\n",
+        "Hurricanes wipe out the population in south-east Asia.\n%g percent of the population will be rejuvenated.\n",
+        "Collapsed hydrological dams devastate land in South America.%g percent of the population is reborn.\n",
+        "Drought, exacerbated by climate change, wipes out the population of\nsub-Saharan Africa. %g of the world population is replaced.\n",
+        "A solar flare wipes out all communication on earth, killing %g percent.\nNewborns on the way.\n"
+    };
+    std::uniform_int_distribution<int>  distr(0, ccc.size());
+    int csel = distr(gen) % ccc.size();
+    fprintf(out, "Generation %d: ", generation);
+    fprintf(out, ccc[csel], percentage);
+}
+
 bool CatastrophePenalizer::penalize(      GenePool *pool,
                                     const int       generation)
 {
@@ -144,13 +171,7 @@ bool CatastrophePenalizer::penalize(      GenePool *pool,
     {
         if (logfile_)
         {
-            fprintf(
-                logfile_,
-                "Generation %d --> CatastrophePenalizer (interval %d): randomizing %lf%% of the genomes...\n",
-                generation,
-                genInterval_,
-                popFrac_ * 100
-            );
+            printCause(logfile_, generation, popFrac_ * 100, gen);
         }
         // Shuffle the indices vector and randomize the last (100 - popFrac_*100)%
         std::shuffle(availableIndices_.begin(), availableIndices_.end(), gen);
