@@ -2,7 +2,7 @@
  * Implements part of the alexandria program.
  * \author Julian Ramon Marrades Furquet <julian.marrades@hotmail.es>
  */
-
+#include <algorithm>
 
 #include "npointcrossover.h"
 
