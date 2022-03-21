@@ -53,37 +53,56 @@ namespace alexandria
 
 class Poldata;
 
+/*! \brief Class to store one grid point and it's potential.
+ * The structure store both the reference and the calculated
+ * electrostatic potential.
+ * TODO Make clear what unit is used.
+ */
 class EspPoint
 {
-    public:
-        EspPoint(gmx::RVec esp, double v) : esp_(esp), v_(v)
-        {
-            vCalc_  = 0;
-            rho_    = 0;
-        }
-        const gmx::RVec &esp() const { return esp_; }
+public:
+    /*! \brief Constructor
+     * \param[in] esp Coordinates of the point
+     * \param[in] v   The potential in this point
+     */
+    EspPoint(const gmx::RVec &esp, double v) : esp_(esp), v_(v) {}
+        
+    //! Return coordinates of the grid point
+    const gmx::RVec &esp() const { return esp_; }
 
-        double v() const { return v_; }
+    //! Return the reference potential at this grid point
+    double v() const { return v_; }
 
-        void setV(double v) { v_ = v; }
+    /*! \brief Set the reference potential at this grid point
+     * \param[in] v The new potential
+     */
+    void setV(double v) { v_ = v; }
+    
+    //! Return the calculated potential at this grid point
+    double vCalc() const { return vCalc_; }
+    
+    /*! \brief Set the calculated potential at this grid point
+     * \param[in] vCalc The new potential
+     */
+    void setVCalc(double vcalc) { vCalc_ = vcalc; }
 
-        double vCalc() const { return vCalc_; }
-
-        void setVCalc(double vcalc) { vCalc_ = vcalc; }
-
-        double rho() const { return rho_; }
-
-        void setRho(double rho) { rho_ = rho; }
-
-    private:
-        //! The coordinates of a point
-        gmx::RVec esp_   = { 0, 0,  0};
-        //! The measured potential
-        double    v_     = 0;
-        //! The calculated potential
-        double    vCalc_ = 0;
-        //! The electron density in the point
-        double    rho_   = 0;
+    //! Return the electron density in this grid point
+    double rho() const { return rho_; }
+    
+    /*! \brief Set the electron density in this point
+     * \param[in] rho The new electron density
+     */
+    void setRho(double rho) { rho_ = rho; }
+    
+private:
+    //! The coordinates of a point
+    gmx::RVec esp_   = { 0, 0,  0};
+    //! The measured potential
+    double    v_     = 0;
+    //! The calculated potential
+    double    vCalc_ = 0;
+    //! The electron density in the point
+    double    rho_   = 0;
 };
 
 class QgenResp
