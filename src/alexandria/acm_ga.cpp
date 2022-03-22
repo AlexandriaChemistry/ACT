@@ -197,6 +197,10 @@ bool HybridGAMC::evolve(ga::Genome *bestGenome)
     }
     fitnessComputer()->compute(ind->genomePtr(), imstr, true);
     fitnessComputer()->compute(ind->genomePtr(), imste, true);  // Maybe not really needed but just to print the components
+    if (logFile_)
+    {
+        fprintf(logFile_, "\n");
+    }
     // if (gach_->evaluateTestset())
     // {
     //     fitnessComputer()->compute(ind->genomePtr(), imste);
