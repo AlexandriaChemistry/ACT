@@ -77,9 +77,9 @@ public:
         fillDevComputers();
     }
 
-    virtual void compute(ga::Genome *genome,
-                         iMolSelect  trgtFit
-                         bool        verbose) override;
+    void compute(ga::Genome *genome,
+                 iMolSelect  trgtFit,
+                 bool        verbose = false) override;  // Does not inherit the default value, damn C++ ...
 
     /*! \brief Computes deviation from target
      * \param[in] params   The force field parameters

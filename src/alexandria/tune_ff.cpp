@@ -487,22 +487,27 @@ bool OptACM::runMaster(bool        optimize,
         {
             GMX_THROW(gmx::InternalError("Minimum found but no best parameters"));
         }
-        
-        for (const auto &ims : iMolSelectNames())
+        if (logFile())
         {
-            // TODO printing
-            fitComp_->compute(&bestGenome, ims.first);
-            double chi2 = bestGenome.fitness(ims.first);
-            fprintf(logFile(), "Minimum chi2 for %s %g\n",
-                    iMolSelectName(ims.first), chi2);
-    }
+            fprintf(logFile(), "\nAbout the best parameter vector found:\n");
+            for (const auto &ims : iMolSelectNames())
+            {
+                fitComp_->compute(&bestGenome, ims.first, true);
+                double chi2 = bestGenome.fitness(ims.first);
+                fprintf(logFile(), "Minimum chi2 for %s %g\n",
+                        iMolSelectName(ims.first), chi2);
+            }
+        }
         // Save force field of best individual
         sii_->setFinalOutputFile(baseOutputFileName_);
         sii_->saveState(true);
     }
     else if (optimize)
     {
-        fprintf(logFile(), "Did not find a better parameter set\n");
+        if (logFile())
+        {
+            fprintf(logFile(), "Did not find a better parameter set\n");
+        }
     }
 
     // Stop MASTER's helpers
