@@ -24,9 +24,11 @@ public:
      * \brief Compute the fitness of a genome
      * \param[in] genome  The genome
      * \param[in] trgtFit The target for fitness computation. Either Train or Test
+     * \param[in] verbose Whether to print the components of the fitness
      */
     virtual void compute(Genome     *genome,
-                         iMolSelect  trgtFit) = 0;
+                         iMolSelect  trgtFit,
+                         bool        verbose = false) = 0;
 
 };
 

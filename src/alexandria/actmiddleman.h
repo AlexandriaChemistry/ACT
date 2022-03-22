@@ -49,14 +49,14 @@ namespace alexandria
          * \param[in] sii        The individual info
          * \param[in] gach       GA Config handler
          * \param[in] bch        Bayes Config handler
-         * \param[in] verbose    Whether or not to print a lot
+         * \param[in] flush      Whether or not to to flush file output directly instead of letting the OS handle it.
          * \param[in] oenv       GROMACS output environment
          */
         ACTMiddleMan(MolGen               *mg,
                      StaticIndividualInfo *sii,
                      GAConfigHandler      *gach,
                      BayesConfigHandler   *bch,
-                     bool                  verbose,
+                     bool                  flush,
                      gmx_output_env_t     *oenv);
         
         //! \brief Run the middleman process
