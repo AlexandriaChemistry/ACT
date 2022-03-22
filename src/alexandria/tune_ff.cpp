@@ -720,7 +720,7 @@ int tune_ff(int argc, char *argv[])
     // init charge generation for compounds in the
     // training set
     opt.initChargeGeneration(iMolSelect::Train);
-    if (opt.bch()->evaluateTestset())
+    if (opt.bch()->evaluateTestset() || opt.gach()->evaluateTestset())
     {
         // init charge generation for compounds in the
         // test and ignore sets
