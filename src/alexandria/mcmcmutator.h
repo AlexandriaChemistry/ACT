@@ -57,6 +57,8 @@ private:
     /*! Flush output immediately rather than letting the OS buffer it.
      * Don't use for production simulations.
      */
+    bool                  flush_ = false;
+    //! Print information to the log file as we optimize
     bool                  verbose_ = false;
     //! Evaluate the test set at each iteration?
     bool                  evaluateTestSet_ = false;
@@ -135,7 +137,8 @@ public:
     /*!
      * \brief Constructor
      * \param[in] logfile         pointer to log file (may be nullptr)
-     * \param[in] verbose         Flush output immediately rather than letting the OS buffer it. Don't use for production simulations.
+     * \param[in] verbose         Print information to the log file
+     * \param[in] flush           Flush output immediately rather than letting the OS buffer it. Don't use for production simulations.
      * \param[in] seed            seed coming from the middle man creating this mutator
      * \param[in] bch             pointer to BayesConfigHandler object
      * \param[in] fitComp         pointer to ACMFitnessComputer object
@@ -146,6 +149,7 @@ public:
      */
     MCMCMutator(FILE                 *logfile,
                 bool                  verbose,
+                bool                  flush,
                 int                   seed,
                 BayesConfigHandler   *bch,
                 ACMFitnessComputer   *fitComp,

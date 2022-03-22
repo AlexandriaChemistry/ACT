@@ -19,7 +19,8 @@ namespace alexandria
 * * * * * * * * * * * * * * * * * * * */
 
 void ACMFitnessComputer::compute(ga::Genome *genome,
-                                 iMolSelect  trgtFit)
+                                 iMolSelect  trgtFit,
+                                 bool        verbose)
 {
     if (nullptr == genome)
     {
@@ -39,16 +40,21 @@ void ACMFitnessComputer::compute(ga::Genome *genome,
         // TODO fix printing
         //tmpInd->printParameters(debug);
     }
-    if (verbose_ && logfile_)
+    if (verbose && logfile_)
     {
-        for(auto &imsn : iMolSelectNames())
+        // for(auto &imsn : iMolSelectNames())
+        // {
+        //     fprintf(logfile_, "\nComponents of fitting function for %s set\n",
+        //             imsn.second);
+        //     for (const auto &ft : sii_->targets().find(imsn.first)->second)
+        //     {
+        //         ft.second.print(logfile_);
+        //     }
+        // }
+        fprintf(logfile_, "Components of fitting function for %s set\n", iMolSelectName(trgtFit));
+        for (const auto &ft : sii_->targets().find(trgtFit)->second)
         {
-            fprintf(logfile_, "\nComponents of fitting function for %s set\n",
-                    imsn.second);
-            for (const auto &ft : sii_->targets().find(imsn.first)->second)
-            {
-                ft.second.print(logfile_);
-            }
+            ft.second.print(logfile_);
         }
     }
 }
@@ -178,32 +184,32 @@ void ACMFitnessComputer::computeMultipoles(std::map<eRMS, FittingTarget> *target
     }
 }
 
-void ACMFitnessComputer::fillDevComputers()
+void ACMFitnessComputer::fillDevComputers(const bool verbose)
 {
     if (sii_->target(iMolSelect::Train, eRMS::BOUNDS)->weight() > 0)
-        bdc_ = new BoundsDevComputer(logfile_, verbose_, sii_->optIndexPtr());
+        bdc_ = new BoundsDevComputer(logfile_, verbose, sii_->optIndexPtr());
 
     if (sii_->target(iMolSelect::Train, eRMS::CHARGE)->weight() > 0 ||
         sii_->target(iMolSelect::Train, eRMS::CM5)->weight() > 0)
-        devComputers_.push_back(new ChargeCM5DevComputer(logfile_, verbose_));
+        devComputers_.push_back(new ChargeCM5DevComputer(logfile_, verbose));
     if (sii_->target(iMolSelect::Train, eRMS::ESP)->weight() > 0)
-        devComputers_.push_back(new EspDevComputer(logfile_, verbose_, molgen_->fit("zeta")));
+        devComputers_.push_back(new EspDevComputer(logfile_, verbose, molgen_->fit("zeta")));
     if (sii_->target(iMolSelect::Train, eRMS::Polar)->weight() > 0)
-        devComputers_.push_back(new PolarDevComputer(logfile_, verbose_));
+        devComputers_.push_back(new PolarDevComputer(logfile_, verbose));
     if (sii_->target(iMolSelect::Train, eRMS::MU)->weight() > 0)
-        devComputers_.push_back(new MultiPoleDevComputer(logfile_, verbose_,
+        devComputers_.push_back(new MultiPoleDevComputer(logfile_, verbose,
                                                          MolPropObservable::DIPOLE));
     if (sii_->target(iMolSelect::Train, eRMS::QUAD)->weight() > 0)
-        devComputers_.push_back(new MultiPoleDevComputer(logfile_, verbose_, 
+        devComputers_.push_back(new MultiPoleDevComputer(logfile_, verbose, 
                                                          MolPropObservable::QUADRUPOLE));
     if (sii_->target(iMolSelect::Train, eRMS::OCT)->weight() > 0)
-        devComputers_.push_back(new MultiPoleDevComputer(logfile_, verbose_, 
+        devComputers_.push_back(new MultiPoleDevComputer(logfile_, verbose, 
                                                          MolPropObservable::OCTUPOLE));
     if (sii_->target(iMolSelect::Train, eRMS::HEXADEC)->weight() > 0)
-        devComputers_.push_back(new MultiPoleDevComputer(logfile_, verbose_, 
+        devComputers_.push_back(new MultiPoleDevComputer(logfile_, verbose, 
                                                          MolPropObservable::HEXADECAPOLE));
     if (sii_->target(iMolSelect::Train, eRMS::EPOT)->weight() > 0)
-        devComputers_.push_back(new EnergyDevComputer(logfile_, verbose_));
+        devComputers_.push_back(new EnergyDevComputer(logfile_, verbose));
 }
 
 

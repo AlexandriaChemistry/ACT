@@ -52,6 +52,8 @@ private:
     //! Whether or not to remove molecules that fail to converge in the shell minimization
     bool bRemoveMol_ = true;
     //! Flush output immediately rather than letting the OS buffer it. Don't use for production simulations.
+    bool flush_ = false;
+    //! Print extra stuff during the optimization
     bool verbose_ = false;
     //! Pointer to log file
     gmx::unique_cptr<FILE, my_fclose> fplog_ = nullptr;

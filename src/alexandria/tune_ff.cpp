@@ -146,8 +146,10 @@ void OptACM::add_pargs(std::vector<t_pargs> *pargs) {
         {
             { "-removemol",      FALSE, etBOOL, {&bRemoveMol_},
               "Remove a molecule from training set if shell minimization does not converge."},
+            { "-flush",              FALSE, etBOOL, {&flush_},
+              "Flush output immediately rather than letting the OS buffer it. Don't use for production simulations."},
             { "-v",              FALSE, etBOOL, {&verbose_},
-              "Flush output immediately rather than letting the OS buffer it. Don't use for production simulations."}
+              "Print extra information to the log file during optimization."}
         };
     for (int i = 0; i < asize(pa); i++) {
         pargs->push_back(pa[i]);
@@ -263,7 +265,7 @@ void OptACM::initMaster()
 
     // Fitness computer
     // FIXME: what about the flags? Here it is a bit more clear that they should be all false?
-    fitComp_ = new ACMFitnessComputer(nullptr, sii_, &mg_, false, verbose_);
+    fitComp_ = new ACMFitnessComputer(logFile(), verbose_, sii_, &mg_, false);
 
     // Adjust the seed that gets passed around to components of the optimizer
     int seed = bch_.seed();
@@ -286,7 +288,7 @@ void OptACM::initMaster()
     }
     else
     {
-        auto mut = new alexandria::MCMCMutator(logFile(), verbose_, seed, &bch_, fitComp_, sii_, bch_.evaluateTestset());
+        auto mut = new alexandria::MCMCMutator(logFile(), verbose_, flush_, seed, &bch_, fitComp_, sii_, bch_.evaluateTestset());
         mut->openParamConvFiles(oenv_);
         mut->openChi2ConvFile(oenv_);
         mutator = mut;
@@ -395,10 +397,10 @@ void OptACM::printNumCalcDevEstimate()
 
     if (gach_.optimizer() == OptimizerAlg::MCMC)
     {
-        nCalcDevTrain += bch_.maxIter() * sii_->nParam() + 1; // Initial one
+        nCalcDevTrain += bch_.maxIter() * sii_->nParam() + 1 + 1; // Initial one by MCMC mutator and initial one by middlemen/master
         if (bch_.evaluateTestset())
         {
-            nCalcDevTest += bch_.maxIter() + 1;  // Initial one
+            nCalcDevTest += bch_.maxIter() + 1;  // Initial one in MCMC mutator
         }
     }
     else if (gach_.optimizer() == OptimizerAlg::GA)
@@ -423,9 +425,12 @@ void OptACM::printNumCalcDevEstimate()
     }
 
     // Multiply by amount of individuals
-    nCalcDevTrain *= gach_.popSize();
-    nCalcDevTest *= gach_.popSize();
+    nCalcDevTrain  *= gach_.popSize();
+    nCalcDevTest   *= gach_.popSize();
+    nCalcDevIgnore *= gach_.popSize();
 
+    // Add extra ones just in master
+    nCalcDevTest += 1;  // Always done in master to print the components of the initial vector
     nCalcDevTrain += 1;  // At the end, for the best
     nCalcDevTest += 1;  // At the end, for the best
     nCalcDevIgnore += 1;  // At the end, for the best
@@ -485,22 +490,27 @@ bool OptACM::runMaster(bool        optimize,
         {
             GMX_THROW(gmx::InternalError("Minimum found but no best parameters"));
         }
-        
-        for (const auto &ims : iMolSelectNames())
+        if (logFile())
         {
-            // TODO printing
-            fitComp_->compute(&bestGenome, ims.first);
-            double chi2 = bestGenome.fitness(ims.first);
-            fprintf(logFile(), "Minimum chi2 for %s %g\n",
-                    iMolSelectName(ims.first), chi2);
-    }
+            fprintf(logFile(), "\nChi2 components of the best parameter vector found:\n");
+            for (const auto &ims : iMolSelectNames())
+            {
+                fitComp_->compute(&bestGenome, ims.first, true);
+                double chi2 = bestGenome.fitness(ims.first);
+                fprintf(logFile(), "Minimum chi2 for %s %g\n",
+                        iMolSelectName(ims.first), chi2);
+            }
+        }
         // Save force field of best individual
         sii_->setFinalOutputFile(baseOutputFileName_);
         sii_->saveState(true);
     }
     else if (optimize)
     {
-        fprintf(logFile(), "Did not find a better parameter set\n");
+        if (logFile())
+        {
+            fprintf(logFile(), "Did not find a better parameter set\n");
+        }
     }
 
     // Stop MASTER's helpers
@@ -720,16 +730,13 @@ int tune_ff(int argc, char *argv[])
     // init charge generation for compounds in the
     // training set
     opt.initChargeGeneration(iMolSelect::Train);
-    if (opt.bch()->evaluateTestset())
+    if (opt.bch()->evaluateTestset() || opt.gach()->evaluateTestset())
     {
         // init charge generation for compounds in the
         // test and ignore sets
         opt.initChargeGeneration(iMolSelect::Test);
         opt.initChargeGeneration(iMolSelect::Ignore);
     }
-
-    // Create ACMFitnessComputer and fill the DevComputers
-    // This is needed on all nodes.
 
     if (opt.commRec()->isMaster())
     {

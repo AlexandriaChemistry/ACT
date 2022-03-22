@@ -20,6 +20,7 @@ namespace alexandria
 
 MCMCMutator::MCMCMutator(FILE                 *logfile,
                          bool                  verbose,
+                         bool                  flush,
                          int                   seed,
                          BayesConfigHandler   *bch,
                          ACMFitnessComputer   *fitComp,
@@ -30,6 +31,7 @@ MCMCMutator::MCMCMutator(FILE                 *logfile,
     gen.seed(seed);
     logfile_ = logfile;
     verbose_ = verbose;
+    flush_   = flush;
     bch_     = bch;
     fitComp_ = fitComp;
     sii_     = sii;
@@ -216,7 +218,7 @@ void MCMCMutator::stepMCMC(ga::Genome                   *genome,
             currEval[imstr] < bestGenome->fitness(imstr))  // If a new minimim was found
         {
             // If pointer to log file exists, write information about new minimum
-            if (logfile_)
+            if (logfile_ && verbose_)
             {
                 printNewMinimum(currEval, xiter);
             }
@@ -376,9 +378,9 @@ void MCMCMutator::printParameterStep(ga::Genome *genome,
             if (fp.get())
             {
                 fprintf(fp.get(), "\n");
-                // If verbose, flush the file to be able to add 
+                // If asked, flush the file to be able to add 
                 // new data to surveillance plots
-                if (verbose_)
+                if (flush_)
                 {
                     fflush(fp.get());
                 }
@@ -407,7 +409,7 @@ void MCMCMutator::printChi2Step(const std::map<iMolSelect, double> &chi2,
         fprintf(fpe_.get(), "%8f  %10g\n",
                 xiter, chi2.find(iMolSelect::Train)->second);
     }
-    if (verbose_)
+    if (flush_)
     {
         fflush(fpe_.get());
     }
