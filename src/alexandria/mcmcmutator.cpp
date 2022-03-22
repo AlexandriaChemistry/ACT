@@ -333,7 +333,7 @@ void MCMCMutator::printNewMinimum(const std::map<iMolSelect, double> &chi2,
     {
         return;
     }
-    fprintf(logfile_, "Middleman %i\n", sii_->id());
+    fprintf(logfile_, "Middleman %i ", sii_->id());
     if (evaluateTestSet_)
     {
         fprintf(logfile_, "iter %10g. Found new minimum at %10g. Corresponding energy on the test set: %g\n",
@@ -344,10 +344,6 @@ void MCMCMutator::printNewMinimum(const std::map<iMolSelect, double> &chi2,
         fprintf(logfile_, "iter %10g. Found new minimum at %10g\n",
                 xiter, chi2.find(iMolSelect::Train)->second);
     }
-    // if (debug)
-    // {
-    //     genome->print(debug);
-    // }
 }             
 
 void MCMCMutator::printParameterStep(ga::Genome *genome,

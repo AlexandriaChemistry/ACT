@@ -572,13 +572,24 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
             double deltaE0 = 0;
             if (mol->energy(MolPropObservable::DELTAE0, &deltaE0))
             {
+                deltaE0 += mol->atomizationEnergy();
                 lsq_epot[ims][qType::Calc].add_point(deltaE0, mol->potentialEnergy(), 0, 0);
-                fprintf(fp, "Delta E0 %.2f\n", deltaE0);
+                fprintf(fp, "DeltaE0+Atomization   %.2f\n", deltaE0);
             }
             auto terms = mol->energyTerms();
             for(auto &ep : ePlot)
             {
-                fprintf(fp, "%-20s  %.2f\n", interaction_function[ep].name, terms[ep]);
+                std::string extra;
+                if (ep == F_EPOT)
+                {
+                    if (std::abs(terms[ep]-deltaE0) > 20)
+                    {
+                        extra.assign(" PPP");
+                    }
+                }
+                fprintf(fp, "%-20s  %.2f%s\n",
+                        interaction_function[ep].name,
+                        terms[ep], extra.c_str());
             }
             // Now compute all the ESP RMSDs.
             mol->calcEspRms(pd);

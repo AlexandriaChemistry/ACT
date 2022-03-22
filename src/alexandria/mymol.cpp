@@ -996,6 +996,8 @@ immStatus MyMol::GenerateTopology(FILE              *fp,
         {
             excls_to_blocka(atoms->nr, excls_, &(mtop_->moltype[0].excls));
         }
+        computeAtomizationEnergy(pd);
+        
         if (pd->polarizable())
         {
             // Update mtop internals to account for shell type
@@ -1006,7 +1008,6 @@ immStatus MyMol::GenerateTopology(FILE              *fp,
                 mtop_->atomtypes.atomnumber[i] = get_atomtype_atomnumber(i, gromppAtomtype_);
             }
             mtop_->ffparams.atnr = get_atomtype_ntypes(gromppAtomtype_);
-            // Generate shell data structure
         }
         if (nullptr == ltop_)
         {
@@ -1023,6 +1024,7 @@ immStatus MyMol::GenerateTopology(FILE              *fp,
     }
     if (immStatus::OK == imm && pd->polarizable())
     {
+        // Generate shell data structure
         shellfc_ = init_shell_flexcon(debug, mtop_, 0, 1, false);
     }
     if (immStatus::OK == imm)

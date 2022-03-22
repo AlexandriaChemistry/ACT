@@ -340,7 +340,7 @@ void EnergyDevComputer::calcDeviation(MyMol                                *mymo
     GMX_RELEASE_ASSERT(mymol->energy(MolPropObservable::DELTAE0, &deltaE0),
                        gmx::formatString("No molecular energy for %s", mymol->getMolname().c_str()).c_str());
     
-    real delta = gmx::square(mymol->potentialEnergy() - deltaE0);
+    real delta = gmx::square(mymol->potentialEnergy() - deltaE0-mymol->atomizationEnergy());
     (*targets).find(eRMS::EPOT)->second.increase(1, delta);
 }
 
