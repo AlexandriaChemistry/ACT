@@ -52,25 +52,30 @@ private:
     void computeMultipoles(std::map<eRMS, FittingTarget> *targets,
                            MyMol                         *mymol);
 
-    //! \brief Fill the devComputers vector according to the needs of the user
-    void fillDevComputers();
+    /*!
+     * \brief Fill the devComputers vector according to the needs of the user
+     * \param[in] verbose whether the DevComputers write stuff to the logfile or not
+     */
+    void fillDevComputers(const bool verbose);
 
 public:
 
     /*!
      * Constructor
      * \param[in] logfile           pointer to logfile
+     * \param[in] verbose           print more stuff to the logfile. Used by the DevComputers
      * \param[in] sii               pointer to StaticIndividualInfo
      * \param[in] mg                pointer to molgen
      * \param[in] removeMol         Whether or not to remove molecules that fail to converge in the shell minimization
      */
     ACMFitnessComputer(      FILE                  *logfile,
+                       const bool                   verbose,
                              StaticIndividualInfo  *sii,
                              MolGen                *molgen,
                        const bool                   removeMol)
     : logfile_(logfile), sii_(sii), molgen_(molgen), removeMol_(removeMol)
     {
-        fillDevComputers();
+        fillDevComputers(verbose);
     }
 
     void compute(ga::Genome *genome,

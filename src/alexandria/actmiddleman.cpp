@@ -15,7 +15,7 @@ ACTMiddleMan::ACTMiddleMan(MolGen               *mg,
                            StaticIndividualInfo *sii,
                            GAConfigHandler      *gach,
                            BayesConfigHandler   *bch,
-                           bool                  verbose,
+                           bool                  flush,
                            gmx_output_env_t     *oenv)
 : gach_(gach), sii_(sii), id_(sii->commRec()->middleManOrdinal())
 {
@@ -40,7 +40,7 @@ ACTMiddleMan::ACTMiddleMan(MolGen               *mg,
     ind_ = static_cast<ACMIndividual *>(initializer->initialize());
 
     // Fitness computer FIXME: what about those false flags?
-    fitComp_ = new ACMFitnessComputer(nullptr, sii, mg, false, false);
+    fitComp_ = new ACMFitnessComputer(nullptr, false, sii, mg, false);
     // Create and initialize the mutator
     sii->makeIndividualDir();  // We need to call this before opening working files!
     if (gach->optimizer() == OptimizerAlg::GA)
@@ -50,7 +50,7 @@ ACTMiddleMan::ACTMiddleMan(MolGen               *mg,
     else
     {
         // FIXME: we need to make some logfiles for the middlemen, because they apparently cannot write to the global logfile
-        auto mut = new alexandria::MCMCMutator(nullptr, verbose, seed, bch, fitComp_, sii, bch->evaluateTestset());
+        auto mut = new alexandria::MCMCMutator(nullptr, false, flush, seed, bch, fitComp_, sii, bch->evaluateTestset());
         mut->openParamConvFiles(oenv);
         mut->openChi2ConvFile(oenv);
         mutator_ = mut;

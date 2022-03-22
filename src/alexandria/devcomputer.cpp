@@ -35,7 +35,7 @@ double BoundsDevComputer::l2_regularizer(      double          x,
     {
         p = (0.5 * gmx::square(x-max));
     }
-    if (verbose_ && p != 0.0)
+    if (verbose_ && logfile_ && p != 0.0)
     {
         fprintf(logfile_, "Variable %s is %g, should be within %g and %g\n", label.c_str(), x, min, max);
     }

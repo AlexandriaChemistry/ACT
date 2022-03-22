@@ -38,12 +38,12 @@ protected:
 
     //! Pointer to log file
     FILE *logfile_;
-    //! Flush output immediately rather than letting the OS buffer it. Don't use for production simulations.
+    //! Whether to print stuff in the logfile
     bool verbose_;
 
     /*! \brief Create a new DevComputer
      * @param logfile   pointer to log file
-     * @param verbose   Flush output immediately rather than letting the OS buffer it. Don't use for production simulations.
+     * @param verbose   Whether to print stuff in the logfile
      */
     DevComputer(      FILE *logfile,
                 const bool  verbose)
