@@ -265,7 +265,7 @@ void OptACM::initMaster()
 
     // Fitness computer
     // FIXME: what about the flags? Here it is a bit more clear that they should be all false?
-    fitComp_ = new ACMFitnessComputer(nullptr, sii_, &mg_, false, verbose_);
+    fitComp_ = new ACMFitnessComputer(logFile(), sii_, &mg_, false);
 
     // Adjust the seed that gets passed around to components of the optimizer
     int seed = bch_.seed();

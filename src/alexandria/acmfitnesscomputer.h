@@ -42,8 +42,6 @@ private:
     MolGen *molgen_;
     //! \brief Whether or not to remove molecules that fail to converge in the shell minimization
     bool removeMol_;
-    //! \brief Flush output immediately rather than letting the OS buffer it. Don't use for production simulations.
-    bool verbose_;
     //! \brief Amount of times calcDeviation() has been called
     int numberCalcDevCalled_ = 0;
 
@@ -65,14 +63,12 @@ public:
      * \param[in] sii               pointer to StaticIndividualInfo
      * \param[in] mg                pointer to molgen
      * \param[in] removeMol         Whether or not to remove molecules that fail to converge in the shell minimization
-     * \param[in] verbose           Flush output immediately rather than letting the OS buffer it. Don't use for production simulations.
      */
     ACMFitnessComputer(      FILE                  *logfile,
                              StaticIndividualInfo  *sii,
                              MolGen                *molgen,
-                       const bool                   removeMol,
-                       const bool                   verbose)
-    : logfile_(logfile), sii_(sii), molgen_(molgen), removeMol_(removeMol), verbose_(verbose)
+                       const bool                   removeMol)
+    : logfile_(logfile), sii_(sii), molgen_(molgen), removeMol_(removeMol)
     {
         fillDevComputers();
     }

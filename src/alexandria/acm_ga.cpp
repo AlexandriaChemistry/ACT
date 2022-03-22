@@ -23,13 +23,19 @@ bool MCMC::evolve(ga::Genome *bestGenome)
 
     // Dataset(s)
     const auto imstr = iMolSelect::Train;
+    const auto imste = iMolSelect::Test;
 
     // Create a gene pool
     GenePool pool(sii_->nParam());
     // Create and add our own individual (Will be the first one in the pool)
     auto *ind = static_cast<alexandria::ACMIndividual *>(initializer()->initialize());
     // Compute its fitness
-    fitnessComputer()->compute(ind->genomePtr(), imstr);
+    if (logFile_)
+    {
+        fprintf(logFile_, "\nMASTER's initial parameter vector chi2 components:\n");
+    }
+    fitnessComputer()->compute(ind->genomePtr(), imstr, true);
+    fitnessComputer()->compute(ind->genomePtr(), imste, true);  // Not really needed but just to print the components
     pool.addGenome(ind->genome());
     // Receive initial genomes from middlemen
     for (auto &src : cr->middlemen())
@@ -74,10 +80,9 @@ bool MCMC::evolve(ga::Genome *bestGenome)
     // Mutate my own genome
     mutator()->mutate(ind->genomePtr(), ind->bestGenomePtr(), gach_->prMut());
     // Bring it into the population
-    // FIXME: what if -bForceOutput? Make it sensitive to the flag
     pool.replaceGenome(0, ind->bestGenome());
 
-    // Fetch the mutated genomes and their fitness. FIXME: use them when -bForceOutput
+    // Fetch the mutated genomes and their fitness.
     for (size_t i = 1; i < pool.popSize(); i++)
     {
         int src      = cr->middlemen()[i-1];
@@ -86,7 +91,7 @@ bool MCMC::evolve(ga::Genome *bestGenome)
         pool.genomePtr(i)->setFitness(imstr, fitness);
     }
 
-    // Fetch the best genomes FIXME: use them when -nobForceOutput
+    // Fetch the best genomes
     for (size_t i = 1; i < pool.popSize(); i++)
     {
         int src = cr->middlemen()[i-1];
@@ -123,8 +128,6 @@ bool MCMC::evolve(ga::Genome *bestGenome)
     {
         fprintf(stderr, "No best genome in pool. WTF?\n");
     }
-
-    // delete ind;  // FIXME: compilation warning about non-virtual destructor
     
     return bMinimum;
 }
@@ -182,7 +185,12 @@ bool HybridGAMC::evolve(ga::Genome *bestGenome)
     // Create and add our own individual (Will be the first one in the pool)
     auto *ind = static_cast<alexandria::ACMIndividual *>(initializer()->initialize());
     // Compute its fitness
-    fitnessComputer()->compute(ind->genomePtr(), imstr);
+    if (logFile_)
+    {
+        fprintf(logFile_, "\nMASTER's initial parameter vector chi2 components:\n");
+    }
+    fitnessComputer()->compute(ind->genomePtr(), imstr, true);
+    fitnessComputer()->compute(ind->genomePtr(), imste, true);  // Not really needed but just to print the components
     if (gach_->evaluateTestset())
     {
         fitnessComputer()->compute(ind->genomePtr(), imste);
