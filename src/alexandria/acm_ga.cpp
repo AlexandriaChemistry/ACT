@@ -29,13 +29,19 @@ bool MCMC::evolve(ga::Genome *bestGenome)
     GenePool pool(sii_->nParam());
     // Create and add our own individual (Will be the first one in the pool)
     auto *ind = static_cast<alexandria::ACMIndividual *>(initializer()->initialize());
+
     // Compute its fitness
     if (logFile_)
     {
-        fprintf(logFile_, "\nMASTER's initial parameter vector chi2 components:\n");
+        fprintf(logFile_, "MASTER's initial parameter vector chi2 components:\n");
     }
     fitnessComputer()->compute(ind->genomePtr(), imstr, true);
     fitnessComputer()->compute(ind->genomePtr(), imste, true);  // Not really needed but just to print the components
+    if (logFile_)
+    {
+        fprintf(logFile_, "\n");
+    }
+    
     pool.addGenome(ind->genome());
     // Receive initial genomes from middlemen
     for (auto &src : cr->middlemen())
@@ -187,14 +193,14 @@ bool HybridGAMC::evolve(ga::Genome *bestGenome)
     // Compute its fitness
     if (logFile_)
     {
-        fprintf(logFile_, "\nMASTER's initial parameter vector chi2 components:\n");
+        fprintf(logFile_, "MASTER's initial parameter vector chi2 components:\n");
     }
     fitnessComputer()->compute(ind->genomePtr(), imstr, true);
-    fitnessComputer()->compute(ind->genomePtr(), imste, true);  // Not really needed but just to print the components
-    if (gach_->evaluateTestset())
-    {
-        fitnessComputer()->compute(ind->genomePtr(), imste);
-    }
+    fitnessComputer()->compute(ind->genomePtr(), imste, true);  // Maybe not really needed but just to print the components
+    // if (gach_->evaluateTestset())
+    // {
+    //     fitnessComputer()->compute(ind->genomePtr(), imste);
+    // }
     pool[pold]->addGenome(ind->genome());
     pool[pnew]->addGenome(ind->genome());
     // Load the initial genomes from the middlemen. 

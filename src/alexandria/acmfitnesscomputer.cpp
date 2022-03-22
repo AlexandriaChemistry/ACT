@@ -51,7 +51,7 @@ void ACMFitnessComputer::compute(ga::Genome *genome,
         //         ft.second.print(logfile_);
         //     }
         // }
-        fprintf(logfile_, "\nComponents of fitting function for %s set\n", iMolSelectName(trgtFit));
+        fprintf(logfile_, "Components of fitting function for %s set\n", iMolSelectName(trgtFit));
         for (const auto &ft : sii_->targets().find(trgtFit)->second)
         {
             ft.second.print(logfile_);

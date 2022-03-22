@@ -397,10 +397,10 @@ void OptACM::printNumCalcDevEstimate()
 
     if (gach_.optimizer() == OptimizerAlg::MCMC)
     {
-        nCalcDevTrain += bch_.maxIter() * sii_->nParam() + 1; // Initial one
+        nCalcDevTrain += bch_.maxIter() * sii_->nParam() + 1 + 1; // Initial one by MCMC mutator and initial one by middlemen/master
         if (bch_.evaluateTestset())
         {
-            nCalcDevTest += bch_.maxIter() + 1;  // Initial one
+            nCalcDevTest += bch_.maxIter() + 1;  // Initial one in MCMC mutator
         }
     }
     else if (gach_.optimizer() == OptimizerAlg::GA)
@@ -425,9 +425,12 @@ void OptACM::printNumCalcDevEstimate()
     }
 
     // Multiply by amount of individuals
-    nCalcDevTrain *= gach_.popSize();
-    nCalcDevTest *= gach_.popSize();
+    nCalcDevTrain  *= gach_.popSize();
+    nCalcDevTest   *= gach_.popSize();
+    nCalcDevIgnore *= gach_.popSize();
 
+    // Add extra ones just in master
+    nCalcDevTest += 1;  // Always done in master to print the components of the initial vector
     nCalcDevTrain += 1;  // At the end, for the best
     nCalcDevTest += 1;  // At the end, for the best
     nCalcDevIgnore += 1;  // At the end, for the best
@@ -489,7 +492,7 @@ bool OptACM::runMaster(bool        optimize,
         }
         if (logFile())
         {
-            fprintf(logFile(), "\nAbout the best parameter vector found:\n");
+            fprintf(logFile(), "\nChi2 components of the best parameter vector found:\n");
             for (const auto &ims : iMolSelectNames())
             {
                 fitComp_->compute(&bestGenome, ims.first, true);
