@@ -19,7 +19,8 @@ namespace alexandria
 * * * * * * * * * * * * * * * * * * * */
 
 void ACMFitnessComputer::compute(ga::Genome *genome,
-                                 iMolSelect  trgtFit)
+                                 iMolSelect  trgtFit,
+                                 bool        verbose)
 {
     if (nullptr == genome)
     {
@@ -39,16 +40,21 @@ void ACMFitnessComputer::compute(ga::Genome *genome,
         // TODO fix printing
         //tmpInd->printParameters(debug);
     }
-    if (verbose_ && logfile_)
+    if (verbose && logfile_)
     {
-        for(auto &imsn : iMolSelectNames())
+        // for(auto &imsn : iMolSelectNames())
+        // {
+        //     fprintf(logfile_, "\nComponents of fitting function for %s set\n",
+        //             imsn.second);
+        //     for (const auto &ft : sii_->targets().find(imsn.first)->second)
+        //     {
+        //         ft.second.print(logfile_);
+        //     }
+        // }
+        fprintf(logfile_, "\nComponents of fitting function for %s set\n", iMolSelectName(trgtFit));
+        for (const auto &ft : sii_->targets().find(trgtFit)->second)
         {
-            fprintf(logfile_, "\nComponents of fitting function for %s set\n",
-                    imsn.second);
-            for (const auto &ft : sii_->targets().find(imsn.first)->second)
-            {
-                ft.second.print(logfile_);
-            }
+            ft.second.print(logfile_);
         }
     }
 }

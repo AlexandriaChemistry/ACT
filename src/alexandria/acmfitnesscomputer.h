@@ -78,7 +78,8 @@ public:
     }
 
     virtual void compute(ga::Genome *genome,
-                         iMolSelect  trgtFit);
+                         iMolSelect  trgtFit
+                         bool        verbose) override;
 
     /*! \brief Computes deviation from target
      * \param[in] params   The force field parameters

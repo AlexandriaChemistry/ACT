@@ -146,8 +146,10 @@ void OptACM::add_pargs(std::vector<t_pargs> *pargs) {
         {
             { "-removemol",      FALSE, etBOOL, {&bRemoveMol_},
               "Remove a molecule from training set if shell minimization does not converge."},
+            { "-flush",              FALSE, etBOOL, {&flush_},
+              "Flush output immediately rather than letting the OS buffer it. Don't use for production simulations."},
             { "-v",              FALSE, etBOOL, {&verbose_},
-              "Flush output immediately rather than letting the OS buffer it. Don't use for production simulations."}
+              "Print extra information to the log file during optimization."}
         };
     for (int i = 0; i < asize(pa); i++) {
         pargs->push_back(pa[i]);
