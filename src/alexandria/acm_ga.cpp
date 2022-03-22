@@ -2,8 +2,7 @@
 
 #include <algorithm>
 
-#include "act/ga//GenePool.h"
-
+#include "act/ga/GenePool.h"
 #include "act/utility/communicationrecord.h"
 #include "mcmcmutator.h"
 #include "tune_ff.h"

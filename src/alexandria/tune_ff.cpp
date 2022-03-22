@@ -263,7 +263,7 @@ void OptACM::initMaster()
 
     // Fitness computer
     // FIXME: what about the flags? Here it is a bit more clear that they should be all false?
-    fitComp_ = new ACMFitnessComputer(nullptr, sii_, &mg_, false, false);
+    fitComp_ = new ACMFitnessComputer(nullptr, sii_, &mg_, false, verbose_);
 
     // Adjust the seed that gets passed around to components of the optimizer
     int seed = bch_.seed();
@@ -286,15 +286,9 @@ void OptACM::initMaster()
     }
     else
     {
-        // auto mut = new alexandria::MCMCMutator(nullptr, verbose(), &bch_, fitComp_, sii_);
         auto mut = new alexandria::MCMCMutator(logFile(), verbose_, seed, &bch_, fitComp_, sii_, bch_.evaluateTestset());
         mut->openParamConvFiles(oenv_);
         mut->openChi2ConvFile(oenv_);
-        // if (sii_->commRec()->nmiddlemen() == 0)  // If we are running pure MCMC
-        // {
-        //     mut->openParamConvFiles(oenv());
-        //     mut->openChi2ConvFile(oenv(), bch()->evaluateTestset());
-        // }
         mutator = mut;
     }
 
