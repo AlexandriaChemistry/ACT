@@ -202,7 +202,7 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
 
                 // Initializer
                 auto *initializer = new alexandria::ACMInitializer(&sii, gach.randomInit(), seed);
-                auto *fitComp     = new alexandria::ACMFitnessComputer(nullptr, &sii, &molgen, false, false);
+                auto *fitComp     = new alexandria::ACMFitnessComputer(nullptr, false, &sii, &molgen, false);
 
                 auto probComputer = new RankProbabilityComputer(gach.popSize());
                 // Selector
@@ -220,7 +220,7 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
                 else
                 {
                     // mut = new alexandria::MCMCMutator(stdout, false, seed, &bch, fitComp, &sii, bch.evaluateTestset());
-                    mut = new alexandria::MCMCMutator(nullptr, false, seed, &bch, fitComp, &sii, bch.evaluateTestset());
+                    mut = new alexandria::MCMCMutator(nullptr, false, false, seed, &bch, fitComp, &sii, bch.evaluateTestset());
                 }
 
                 // Terminator

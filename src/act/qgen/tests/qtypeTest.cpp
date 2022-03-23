@@ -134,7 +134,7 @@ class QtypeTest : public gmx::test::CommandLineTestBase
             }
             auto dataName = gmx::test::TestFileManager::getInputFilePath(fileName);
  
-            double qtot_babel;
+            double qtot_babel = qtotal;
             if (readBabel(dataName.c_str(),
                           &molprop,
                           molname.c_str(),

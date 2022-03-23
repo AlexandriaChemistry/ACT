@@ -97,7 +97,8 @@ class BabelFiles
  * \param[in]  nsymm       Symmetry number for this molecule. If zero it will be detected from
  *                         the input.
  * \param[in]  jobtype     Calculation type for reading QM output
- * \param[out] qtot        Total charge as deduced by OB from the input
+ * \param[out] qtot        Total charge as deduced by OB from the input. If initialized to a non-zero 
+ *                         value, that will be used instead of what is read from the input file.
  * \param[in]  addHydrogen If true, hydrogens will be added
  * \returns true if everything succeeded, false otherwise
  * \ingroup module_alexandria

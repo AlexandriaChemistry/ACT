@@ -87,7 +87,7 @@ class RespTest : public gmx::test::CommandLineTestBase
 
             //Read input file for molprop
             auto dataName = gmx::test::TestFileManager::getInputFilePath("1-butanol-3-oep.log");
-            double qtot;
+            double qtot = 0;
             if (readBabel(dataName.c_str(), &molprop, molnm, iupac, conf, basis,
                           maxpot, nsymm, jobtype, &qtot, false))
             {

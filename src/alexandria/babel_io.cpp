@@ -447,8 +447,20 @@ bool readBabel(const char          *g09,
     // We don't just set this here, since the user may override the value
     // However, it seems that OB does not extract this correctly from
     // the input, unless it is a Gaussian log file.
-    *qtot = mol.GetTotalCharge();
-
+    if (*qtot != 0)
+    {
+        double qtest = mol.GetTotalCharge();
+        if (qtest != *qtot)
+        {
+            fprintf(stderr,"WARNING: OpenBabel found a total charge of %g, user specified %g. File %s.\n",
+                    qtest, *qtot, g09);
+        }
+        mol.SetTotalCharge(*qtot);
+    }
+    else
+    {
+        *qtot = mol.GetTotalCharge();
+    }
     if (nullptr != molnm)
     {
         mpt->SetMolname(molnm);
