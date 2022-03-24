@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2014-2021
+ * Copyright (C) 2014-2022
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -329,6 +329,7 @@ TEST_F (AcmTest, SQEgPositive)
     std::vector<double> qcustom;
     testAcm("ACS-g", inputFormat::SDF, "guanidinium", false, 1, qcustom, 0, false);
 }
+#define LATER
 #ifdef LATER
 TEST_F (AcmTest, SQEpgNeutral)
 {

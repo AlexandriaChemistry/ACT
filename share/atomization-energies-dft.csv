@@ -10,9 +10,11 @@ C|0|B3LYP/aug-cc-pVTZ|E0|0|-37.7941292006|1|Hartree|Spoel2022a||
 Cl|-1|B3LYP/aug-cc-pVTZ|E0|0|-460.310516244|1|Hartree|Spoel2022a||
 Cl|0|B3LYP/aug-cc-pVTZ|E0|0|-460.175330828|2|Hartree|Spoel2022a||
 F|-1|B3LYP/aug-cc-pVTZ|E0|0|-99.8958520771|1|Hartree|Spoel2022a||
-F|0|B3LYP/aug-cc-pVTZ|E0|0|-99.7661405570|2|Hartree|Spoel2022a||
+F|0|B3LYP/aug-cc-pVTZ|E0|0|-99.766140557|2|Hartree|Spoel2022a||
 H|0|B3LYP/aug-cc-pVTZ|E0|0|-0.502259675743|2|Hartree|Spoel2022a||
 He|0|B3LYP/aug-cc-pVTZ|E0|0|-2.91469381767|1|Hartree|Spoel2022a||
+I|0|B3LYP/aug-cc-pVTZ|E0|0|-1700.72189525|2|Hartree|Spoel2022a|Effective core potential|
+I|-1|B3LYP/aug-cc-pVTZ|E0|0|-1700.98104389|1|Hartree|Spoel2022a|Effective core potential|
 Li|1|B3LYP/aug-cc-pVTZ|E0|0|-7.28540137201|1|Hartree|Spoel2022a||
 Li|0|B3LYP/aug-cc-pVTZ|E0|0|-7.49205441154|2|Hartree|Spoel2022a||
 Mg|0|B3LYP/aug-cc-pVTZ|E0|0|-200.097752622|1|Hartree|Spoel2022a||

@@ -145,7 +145,7 @@ static void printCause(FILE         *out,
     std::vector<const char *> ccc = {
         "Earth was hit by a strong burst of gamma radiation wiping out %g percent\nof the population. New mutants will take over.\n",
         "Forest fires wiped out %g percent of the population.\nSeedlings will replace them.\n",
-        "Anthrax bacteria were released from thawing permafrost, killing %g of the population.\nBreeding of new individuals commenced.\n",
+        "Anthrax bacteria were released from thawing permafrost, killing %g percent of\n"the population. Breeding of new individuals commenced.\n",
         "Collapse of the Thwaites glacier in Antarctica leads to flooding globally\nkilling %g percent of the population. New life forms will repopulate.\n",
         "Melting of the Greenland ice cap released so much fresh water that the\nNorth Atlantic Current stopped and Europe became uninhabitable.\n%g percent of the population will be replaced.",
         "Deforestation leading to catastrophic loss of biodiversity reduced fitness.\n%g percent new species will be created.\n",

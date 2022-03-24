@@ -150,13 +150,16 @@ if __name__ == "__main__":
   if not alexandria:
     print("Can not find the alexandria executable. Stopping script.")
     exit(1)
-  whitelist     = args.selection
+  myselection   = args.selection
+  selext = ".dat"
+  if myselection[-4:] != selext:
+    myselection += selext
   gentop        = args.force_field
   merge_mp      = alexandria + " merge_mp"
 
   M = Molecules()
   M.read(args.alexandria, 3, False)
-  mols = get_mols(M, whitelist, None, args.output)
+  mols = get_mols(M, myselection, None, args.output)
   
   if args.output[-4:] != ".xml":
     args.output = args.output + ".xml"

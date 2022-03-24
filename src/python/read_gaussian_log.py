@@ -73,6 +73,10 @@ class GaussianReader:
         if len(self.espfitcenter) < natom:
             print("Not enough fitting centers (%d for %d atoms)." % ( len(self.espfitcenter), natom))
             return
+        if len(self.espfitcenter) != len(self.potential):
+            print("Inconsistency in %s. %d ESP fit centers and %d potentials" %
+                  ( infile, len(self.espfitcenter), len(self.potential)))
+            return
         refcoord  = np.zeros((natom, 3))
         testcoord = np.zeros((len(self.espfitcenter), 3))
         ref_com   = np.zeros(3)
@@ -262,11 +266,11 @@ class GaussianReader:
         words = line.split()
         if len(words) == 8:
             average = (float(words[2])+float(words[4])+float(words[7]))/3
-        self.exper.polarisability.clear()
-        self.exper.add_polarisability(self.qmtype, "Bohr3", self.tcmap["Temp"], 
-                                      average, 0.0, 
-                                      words[2], words[4], words[7],
-                                      words[3], words[5], words[6])
+            self.exper.polarisability.clear()
+            self.exper.add_polarisability(self.qmtype, "Bohr3", self.tcmap["Temp"], 
+                                          average, 0.0, 
+                                          words[2], words[4], words[7],
+                                          words[3], words[5], words[6])
         return 1
 
     def get_esp_centers(self, content, content_index:int) -> int:
@@ -306,14 +310,15 @@ class GaussianReader:
                 # The index field may overflow if there are more than
                 # 9999 points. In that case Fortran prints ****. We
                 # try to circumvent that problem here.
-                if mywords[0].find("****") >= 0:
+                if None != mywords[0] and None != mywords[1] and None != mywords[2] and None != mywords[3]:
+                    if mywords[0].find("****") >= 0:
+                        espindex += 1
+                    else:
+                        if espindex != int(mywords[0]):
+                            print("Expected espindex %d, found %d" % ( espindex, int(mywords[0])))
                     espindex += 1
-                else:
-                    if espindex != int(mywords[0]):
-                        print("Expected espindex %d, found %d" % ( espindex, int(mywords[0])))
-                espindex += 1
-                mycoords  = [ float(mywords[1]), float(mywords[2]), float(mywords[3]) ]
-                self.espfitcenter.append(mycoords)
+                    mycoords  = [ float(mywords[1]), float(mywords[2]), float(mywords[3]) ]
+                    self.espfitcenter.append(mycoords)
             except ValueError:
                 print("Do not understand line '%s' in %s." % (line, infile))
                 return 0
@@ -533,16 +538,19 @@ class GaussianReader:
             # Find the right set of coordinates.
             self.select_coordinates()
             
-            weight, numb_atoms, formula, multiplicity, self.atomtypes, bonds_dict = get_info_from_coords_elements(self.atomname, self.coordinates)
-            if None != weight and None != formula:
-                g2a      = GaffToAlexandria()
-            else:
-                print("Cannot find weight or formula")
+            md = MoleculeDict()
+            if not md.from_coords_elements(self.atomname, self.coordinates, "alexandria"):
+                print("Cannot deduce weight or formula from %s" % infile)
                 return None
+            self.atomtypes = []
+            for atom in md.atoms:
+                self.atomtypes.append(md.atoms[atom]["atomtype"])
+            g2a      = GaffToAlexandria()
+            
             if None != self.tcmap["E0"] and None != self.tcmap["Ezpe"]:
                 self.tcmap["Temp"]   = 0
                 ahof = AtomicHOF(leveloftheory, self.tcmap["Temp"], self.verbose)
-                eHF  = compute_dhform(self.tcmap["E0"], self.atomtypes, g2a, ahof,
+                eHF  = compute_dhform(self.tcmap["E0"], self.atomname, g2a, ahof,
                                       leveloftheory, self.tcmap["Temp"])
                 if debug:
                     print("Computed eHF = %g" % eHF)
@@ -555,11 +563,10 @@ class GaussianReader:
                 # This is likely a peculiarity of the Alexandria library.
                 if not self.add_atoms(g2a):
                     return None
-                self.mp.add_prop("mass", str(weight))
-                self.mp.add_prop("formula", formula)
-                for index_atom in bonds_dict:
-                    for index_neighbour in bonds_dict[index_atom]:
-                        self.mp.add_bond(index_atom, index_neighbour, bonds_dict[index_atom][index_neighbour]["bond_order"])
+                self.mp.add_prop("mass", str(md.mol_weight))
+                self.mp.add_prop("formula", md.formula)
+                for index_tuple in md.bonds:
+                    self.mp.add_bond(index_tuple[0], index_tuple[1], md.bonds[index_tuple])
                 Angstrom = "A"
                 pm       = "pm"
                 if self.exper:
@@ -578,7 +585,11 @@ class GaussianReader:
             return None
         try:
             with gzip.open(infile, "rt") as inf:
-                return self.interpret_gauss(inf.readlines(), infile)
+                mp = self.interpret_gauss(inf.readlines(), infile)
+                if None == mp:
+                    sys.exit("Could not real %s" % infile)
+                else:
+                    return mp
         except gzip.BadGzipFile:
             try:
                 with open(infile, "r") as inf:
@@ -589,4 +600,8 @@ class GaussianReader:
         
 def read_gaussian_log(infile:str, molname:str, basisset:str, verbose:bool) -> Molprop:
     gr = GaussianReader(molname, basisset, verbose)
-    return gr.read(infile)
+    mp = gr.read(infile)
+    if None == mp:
+        sys.exit("Could not real %s" % infile)
+    else:
+        return mp

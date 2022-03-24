@@ -334,6 +334,7 @@ static void print_corr(const char                    *outfile,
 {
     std::vector<std::string> eprnm;
     std::vector<gmx_stats>   lsq;
+    bool                     haveData = false;
     for (auto &ims : iMolSelectNames())
     {
         auto qs = stats.find(ims.first);
@@ -346,17 +347,21 @@ static void print_corr(const char                    *outfile,
                 {
                     eprnm.push_back(gmx::formatString("%s-%s", qTypeName(i.first).c_str(), ims.second));
                     lsq.push_back(i.second);
+                    haveData = true;
                 }
             }
         }
     }
-    FILE *muc = xvgropen(outfile, title, xaxis, yaxis, oenv);
-    xvgr_symbolize(muc, eprnm, oenv);
-    for(size_t i = 0; i < lsq.size(); i++)
+    if (haveData)
     {
-        print_lsq_set(muc, lsq[i]);
+        FILE *muc = xvgropen(outfile, title, xaxis, yaxis, oenv);
+        xvgr_symbolize(muc, eprnm, oenv);
+        for(size_t i = 0; i < lsq.size(); i++)
+        {
+            print_lsq_set(muc, lsq[i]);
+        }
+        fclose(muc);
     }
-    fclose(muc);
 }
 
 static void write_q_histo(FILE                      *fplog,
