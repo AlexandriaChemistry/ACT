@@ -49,8 +49,10 @@ private:
     std::vector<double>                                  weightedTemperature_;
     //! Optimization index for each parameter
     std::vector<OptimizationIndex>                       optIndex_;
-    //! Class-name for each parameter
+    //! Class+name for each parameter
     std::vector<std::string>                             paramNames_;
+    //! Name for each parameter
+    std::vector<std::string>                             paramNamesWOClass_;
     //! Classes in the system
     std::vector<std::string>                             paramClass_;
     //! Class-index for each parameter
@@ -326,8 +328,11 @@ public:
     //! \return the vector of default parameter values as const reference
     const std::vector<double> &defaultParam() const { return defaultParam_; }
 
-    //! \return the vector of parameter names as a const reference
+    //! \return the vector of parameter class+names as a const reference
     const std::vector<std::string> &paramNames() const { return paramNames_; }
+
+    //! \return the vector of parameter names as a const reference
+    const std::vector<std::string> &paramNamesWOClass() const { return paramNamesWOClass_; }
 
     //! \return the number of parameters to optimize
     size_t nParam() const { return paramNames_.size(); }
