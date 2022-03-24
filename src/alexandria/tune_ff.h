@@ -85,6 +85,13 @@ private:
      */
     void printNumCalcDevEstimate();
 
+    /*!
+     * \brief Print a table about the parameters in a genome to the logfile,
+     * if it exists
+     * \param[in] genome the Genome object
+     */
+    void printGenomeTable(const ga::Genome &genome);
+
 public:
 
     //! Constructor

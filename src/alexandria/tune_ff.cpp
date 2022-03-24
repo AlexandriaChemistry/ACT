@@ -442,8 +442,66 @@ void OptACM::printNumCalcDevEstimate()
     );
 }
 
-bool OptACM::runMaster(bool        optimize,
-                       bool        sensitivity)
+void OptACM::printGenomeTable(const ga::Genome &genome)
+{
+    if (!logFile())
+    {
+        return;
+    }
+    const int defaultFloatSize = 9;
+    int totalWidth;
+    const auto paramClass = sii_->paramClass();
+    const auto paramClassIndex = sii_->paramClassIndex();
+    const auto paramNames = sii_->paramNamesWOClass();
+    std::vector<int> paramWidth(paramNames.size());  // Width reserved for each parameter
+    // Iterate over the parameter classes, and create one table for each
+    for (size_t i = 0; i < paramClass.size(); i++)
+    {
+        // Find out the max width of the table
+        totalWidth = 1;  // The left '|' character
+        for (size_t j = 0; j < paramNames.size(); j++)
+        {
+            if (paramClassIndex[j] != i)
+            {
+                continue;
+            }
+            paramWidth[j] = defaultFloatSize >= paramNames[i].size() ? defaultFloatSize : static_cast<int>(paramNames[i].size());
+            totalWidth += paramWidth[j] + 3; // For the '|' separating character and two spaces as margin
+        }
+        const std::string hLine(totalWidth, '-');
+        // Print header of the table
+        fprintf(logFile(), "\n%s\n", hLine.c_str());
+        fprintf(logFile(), "| %-*s|\n", totalWidth-3, paramClass[i].c_str());
+        fprintf(logFile(), "%s\n", hLine.c_str());
+        // Print the names of the parameters in this class
+        fprintf(logFile(), "|");
+        for (size_t j = 0; j < paramNames.size(); j++)
+        {
+            if (paramClassIndex[j] != i)
+            {
+                continue;
+            }
+            fprintf(logFile(), " %-*s |", paramWidth[i], paramNames[j].c_str());
+        }
+        fprintf(logFile(), "\n");
+        fprintf(logFile(), "%s\n", hLine.c_str());
+        // Print the parameter values
+        fprintf(logFile(), "|");
+        for (size_t j = 0; j < paramNames.size(); j++)
+        {
+            if (paramClassIndex[j] != i)
+            {
+                continue;
+            }
+            fprintf(logFile(), " %-*f |", paramWidth[i], genome.base(j));
+        }
+        fprintf(logFile(), "\n");
+        fprintf(logFile(), "%s\n", hLine.c_str());
+    }
+}
+
+bool OptACM::runMaster(bool optimize,
+                       bool sensitivity)
 {
     GMX_RELEASE_ASSERT(commRec_.nodeType() == NodeType::Master,
                        "I thought I was the master...");
@@ -460,6 +518,11 @@ bool OptACM::runMaster(bool        optimize,
         }
         // Optimize!
         bMinimum = ga_->evolve(&bestGenome);
+        if (logFile())
+        {
+            fprintf(logFile(), "\nHere are the best parameters I found:");
+        }
+        printGenomeTable(bestGenome);
     }
     if (gach_.optimizer() != OptimizerAlg::GA && sensitivity)
     {
