@@ -672,13 +672,13 @@ int poldata_edit(int argc, char*argv[])
         { "-limits",  FALSE, etREAL, {&limits},
           "Reset the limits for a parameter (class) to the current value of the parameter times this number (between 0 and 1) and one over the value. If you set e.g. -limits 0.8 the parameter min and max will be set to 0.8 respectively 1.25 times the present value." },
         { "-ana", FALSE, etSTR, {&analyze},
-          "Analyze either the EEM, the BONDED or OTHER parameters in a simple manner" },
+          "Analyze either the EEM, the BONDS or OTHER parameters in a simple manner" },
         { "-copy_missing", FALSE, etSTR, {&missing},
-          "Copy either the EEM, the BONDED or OTHER parameters from file two [TT]-f2[tt] that are missing from file one [TT]-f[tt] to another [TT]-o[tt]." },
+          "Copy either the EEM, the BONDS or OTHER parameters from file two [TT]-f2[tt] that are missing from file one [TT]-f[tt] to another [TT]-o[tt]." },
         { "-replace", FALSE, etSTR, {&replace},
-          "Replace either the EEM, the BONDED or OTHER parameters in file one [TT]-f[ff] by those from file two [TT]-f2[tt] and store in another [TT]-o[tt]." },
+          "Replace either the EEM, the BONDS or OTHER parameters in file one [TT]-f[ff] by those from file two [TT]-f2[tt] and store in another [TT]-o[tt]." },
         { "-implant", FALSE, etSTR, {&implant},
-          "Implant (write over) either the EEM, the BONDED or OTHER parameters in file one [TT]-f[ff] by those from file two [TT]-f2[tt] and store in another [TT]-o[tt]." }
+          "Implant (write over) either the EEM, the BONDS or OTHER parameters in file one [TT]-f[ff] by those from file two [TT]-f2[tt] and store in another [TT]-o[tt]." }
     };
     int                 npargs = asize(pa);
     int                 NFILE  = asize(fnm);

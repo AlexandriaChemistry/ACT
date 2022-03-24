@@ -303,16 +303,10 @@ private:
     const CommunicationRecord      *cr_;
     //! Minimum number of data points to consider a parameter
     int                             mindata_    = 1;
-    //! Percentage of ESP points to use
-    int                             maxESP_     = 100;
-    //! Weighting factor for the ESP on the atoms
-    real                            watoms_     = 0;
     //! Map that holds the number of compounds in each data set
     std::map<iMolSelect, size_t>    targetSize_;
     //! Tell us whether this interaction type needs optimizing
     std::map<InteractionType, bool> iOpt_;
-    //! Whether or not to fit to QM data only (ignoring experimental data)
-    gmx_bool                        bQM_        = false;
     //! Whether or not to use charge symmetry
     gmx_bool                        qsymm_      = false;
     //! GROMACS logger structure
@@ -433,24 +427,15 @@ public:
     //! Return the whole optimization map
     const std::map<InteractionType, bool> iopt() const { return iOpt_; }
     
-    //! \return fraction of ESP points
-    int maxPot() const { return maxESP_;}
-        
     //! Whether or not to use charge symmetry
     gmx_bool bQsym() const { return qsymm_;}
         
-    //! \brief Return ESP weighting factor for atoms
-    real watoms() const { return watoms_; }
-
     //! \brief Return minimum amount of data needed
     int mindata() const { return mindata_; }
   
     //! \return the GROMACS hardware information structure      
     gmx_hw_info_t *hwinfo() {return hwinfo_;}
         
-    //! \brief Are we using QM only?
-    bool bQM() const { return bQM_; }
-
     //! \brief Return level of theory
     const char *lot() const { return lot_; }
     

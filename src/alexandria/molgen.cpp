@@ -124,12 +124,6 @@ void MolGen::addOptions(std::vector<t_pargs>          *pargs,
           "Symmetrize the charges on symmetric groups, e.g. CH3, NH2." },
         { "-fit", FALSE, etSTR, {&fitString_},
           "Quoted list of parameters to fit,  e.g. 'alpha zeta'." },
-        { "-qm",     FALSE, etBOOL, {&bQM_},
-          "[HIDDEN]Use only quantum chemistry results (from the levels of theory below) in order to fit the parameters. If not set, experimental values will be used as reference with optional quantum chemistry results, in case no experimental results are available" },
-        { "-watoms", FALSE, etREAL, {&watoms_},
-          "Weight for the atoms when fitting the charges to the electrostatic potential. The potential on atoms is usually two orders of magnitude larger than on other points (and negative). For point charges or single smeared charges use zero. For point+smeared charges 1 is recommended." },
-        { "-maxpot", FALSE, etINT, {&maxESP_},
-          "Maximum percent of the electrostatic potential points that will be used to fit partial charges. Note that the input file may have a reduced amount of ESP points compared to the Gaussian output already so do not reduce the amount twice unless you know what you are doing. Note that if you use a value less than 100, the ESP points are picked randomly and therefore the runs will not be reproducible." },
         { "-fc_mu",    FALSE, etREAL, {targets->find(eRMS::MU)->second.weightPtr()},
           "Force constant in the penalty function for the magnitude of the dipole components." },
         { "-fc_quad",  FALSE, etREAL, {targets->find(eRMS::QUAD)->second.weightPtr()},
@@ -632,7 +626,7 @@ size_t MolGen::Read(FILE            *fp,
                 }
 
                 mymol.symmetrizeCharges(pd, qsymm_, nullptr);
-                mymol.initQgenResp(pd, method, basis, 0.0, maxESP_);
+                mymol.initQgenResp(pd, method, basis, 0.0, 100);
                 std::vector<double> dummy;
                 imm = mymol.GenerateCharges(pd,
                                             mdlog_,
@@ -836,7 +830,7 @@ size_t MolGen::Read(FILE            *fp,
             {
                 std::vector<double> dummy;
                 mymol.symmetrizeCharges(pd, qsymm_, nullptr);
-                mymol.initQgenResp(pd, method, basis, 0.0, maxESP_);
+                mymol.initQgenResp(pd, method, basis, 0.0, 100);
                 imm = mymol.GenerateCharges(pd,
                                             mdlog_,
                                             cr_,

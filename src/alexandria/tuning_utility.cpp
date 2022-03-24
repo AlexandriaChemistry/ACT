@@ -853,37 +853,43 @@ void print_header(FILE                       *fp,
     fprintf(fp, "# This file was created %s", ctime(&my_t));
     fprintf(fp, "# alexandria is the engine of the Alexandria Chemistry Toolkit\n#\n");
     fprintf(fp, "# https://github.com/dspoel/ACT\n#\n");
-    fprintf(fp, "%-15s  %s\n", "Option", "Value");
     for (auto &p: pargs)
     {
-        std::string value;
+        std::string value, type;
         switch(p.type)
         {
         case etINT:
+            type.assign("int");
             value = gmx::formatString("%d", *p.u.i);
             break;
         case etINT64:
+            type.assign("int64");
             value = gmx::formatString("%" PRId64, *p.u.is);
             break;
         case etREAL:
+            type.assign("real");
             value = gmx::formatString("%g", *p.u.r);
             break;
         case etSTR:
+            type.assign("string");
             if (*p.u.c != nullptr)
             {
                 value = *p.u.c;
             }
             break;
         case etENUM:
+            type.assign("enum");
             if (*p.u.c != nullptr)
             {
                 value = gmx::formatString("%s", *p.u.c);
             }
             break;
         case etBOOL:
+            type.assign("bool");
             value = gmx::formatString("%s", *p.u.b ? "true" : "false");
             break;
         case etRVEC:
+            type.assign("rvec");
             value = gmx::formatString("%g %g %g", *p.u.rv[XX],
                                       *p.u.rv[YY], *p.u.rv[ZZ]);
             break;
@@ -892,7 +898,18 @@ void print_header(FILE                       *fp,
         default:
             value.assign("help");
         }
-        fprintf(fp, "%-15s  %s\n", p.option, value.c_str());
+        {
+            std::string left = gmx::formatString("Option: %s (%s), Value: %s\n  Help: ", 
+                                                 p.option, type.c_str(), value.c_str());
+            gmx::TextLineWrapperSettings settings;
+            settings.setLineLength(71);
+            settings.setFirstLineIndent(0);
+            settings.setIndent(8);
+            gmx::TextLineWrapper wrapper(settings);
+            std::string toWrap(p.desc);
+            fprintf(fp, "%s%s\n", left.c_str(),
+                    wrapper.wrapToString(toWrap).c_str());
+        }
     }
 }
 
