@@ -92,4 +92,50 @@ void GenePool::addGenome(const Genome &genome)
     genomes_.push_back(genome);
 }
 
+std::vector<double> GenePool::min() const
+{
+    std::vector<double> vec(genomeSize_, std::numeric_limits<double>::max());
+    for (size_t i = 0; i < genomeSize_; i++)
+    {
+        for (size_t j = 0; j < popSize(); j++)
+        {
+            vec[i] = genomes_[j].base(i) < vec[i] ? genomes_[j].base(i) : vec[i];
+        }
+    }
+    return vec;
+}
+
+std::vector<double> GenePool::max() const
+{
+    std::vector<double> vec(genomeSize_, std::numeric_limits<double>::min());
+    for (size_t i = 0; i < genomeSize_; i++)
+    {
+        for (size_t j = 0; j < popSize(); j++)
+        {
+            vec[i] = genomes_[j].base(i) > vec[i] ? genomes_[j].base(i) : vec[i];
+        }
+    }
+    return vec;
+}
+
+std::vector<double> GenePool::mean() const
+{
+    std::vector<double> vec(genomeSize_);
+    std::vector<double> values(popSize());
+    for (size_t i = 0; i < genomeSize_; i++)
+    {
+        for (size_t j = 0; j < popSize(); j++)
+        {
+            values[j] = genomes_[j].base(i);
+        }
+        double sum = 0;
+        for (auto ele : values)
+        {
+            sum += ele;
+        }
+        vec[i] = sum / static_cast<double>(popSize());
+    }
+    return vec;
+}
+
 } // namespace ga

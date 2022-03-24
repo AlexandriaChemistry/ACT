@@ -105,7 +105,18 @@ public:
      * \param[in] fp The file to print to
      */
     void print(FILE *fp) const;
-};
+    
+    //! \return the minimum value per parameter in this pool
+    std::vector<double> min() const;
+
+    //! \return the maximum value per parameter in this pool
+    std::vector<double> max() const;
+
+    //! \return the mean value per parameter in this pool
+    std::vector<double> mean() const;
+
+    //! \return the median value per parameter in this pool
+    std::vector<double> median() const;
 
 } // namespace ga
 

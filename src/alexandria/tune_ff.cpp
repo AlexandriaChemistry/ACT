@@ -479,10 +479,10 @@ void OptACM::printGenomeTable(const ga::Genome   &genome
     }
     fprintf(logFile(), "\n%s\n", HLINE.c_str());
     // Gather statistics from the population
-    const std::vector<double> min;
-    const std::vector<double> max;
-    const std::vector<double> mean;
-    const std::vector<double> median;
+    const std::vector<double> min    = pop.min();
+    const std::vector<double> max    = pop.max();
+    const std::vector<double> mean   = pop.mean();
+    const std::vector<double> median = pop.median();
     // Print the parameter information
     for (size_t i = 0; i < paramClass.size(); i++)
     {

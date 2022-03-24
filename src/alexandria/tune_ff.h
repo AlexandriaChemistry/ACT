@@ -26,8 +26,8 @@
 #include "acmfitnesscomputer.h"
 #include "acminitializer.h"
 #include "act/utility/communicationrecord.h"
-#include "act/ga//Mutator.h"
-#include "act/ga//GeneticAlgorithm.h"
+#include "act/ga/Mutator.h"
+#include "act/ga/GeneticAlgorithm.h"
 
 
 namespace alexandria
