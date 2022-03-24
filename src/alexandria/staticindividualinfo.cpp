@@ -362,6 +362,9 @@ void StaticIndividualInfo::fillVectors(const int mindata)
         {
             defaultParam_.push_back(p.value());
             paramNames_.push_back(optIndex.name());
+            paramNamesWOClass_.push_back(
+                optIndex.name().substr(0, optIndex.name().find("-"))
+            );
             mutability_.push_back(p.mutability());
             lowerBound_.push_back(p.minimum());
             upperBound_.push_back(p.maximum());
