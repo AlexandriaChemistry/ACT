@@ -118,6 +118,17 @@ public:
     //! \return the mean value per parameter in this pool
     std::vector<double> mean() const;
 
+    /*!
+     * \param[in] mean the mean per parameter in this pool
+     * \return the standard deviation per parameter in this pool
+     */ 
+    std::vector<double> stdev(const std::vector<double> &mean) const;
+
+    /*!
+     * \return the standard deviation per parameter in this pool
+     */ 
+    std::vector<double> stdev() const { return stdev(mean()); }
+
     //! \return the median value per parameter in this pool
     std::vector<double> median() const;
 

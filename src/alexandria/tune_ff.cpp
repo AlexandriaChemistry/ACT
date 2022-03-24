@@ -449,9 +449,9 @@ void OptACM::printGenomeTable(const ga::Genome   &genome,
     {
         return;
     }
-    const std::vector<std::string> HEADER_NAMES{ "CLASS", "NAME", "BEST", "MIN", "MAX", "MEAN", "MEDIAN" };
+    const std::vector<std::string> HEADER_NAMES{ "CLASS", "NAME", "BEST", "MIN", "MAX", "MEAN", "STDEV", "MEDIAN" };
     const int FLOAT_SIZE = 9;
-    std::vector<int> SIZES{5, 4, FLOAT_SIZE, FLOAT_SIZE, FLOAT_SIZE, FLOAT_SIZE, FLOAT_SIZE};
+    std::vector<int> SIZES{5, 4, FLOAT_SIZE, FLOAT_SIZE, FLOAT_SIZE, FLOAT_SIZE, FLOAT_SIZE, FLOAT_SIZE};
     const auto paramClass = sii_->paramClass();
     for (auto pClass : paramClass)
     {
@@ -469,7 +469,7 @@ void OptACM::printGenomeTable(const ga::Genome   &genome,
             SIZES[1] = pName.size();
         }
     }
-    const size_t TOTAL_WIDTH = SIZES[0] + SIZES[1] + 5*FLOAT_SIZE + 22;
+    const size_t TOTAL_WIDTH = SIZES[0] + SIZES[1] + 6*FLOAT_SIZE + 25;
     const std::string HLINE(TOTAL_WIDTH, '-');
     // Print header
     fprintf(logFile(), "%s\n|", HLINE.c_str());
@@ -482,6 +482,7 @@ void OptACM::printGenomeTable(const ga::Genome   &genome,
     const std::vector<double> min    = pop.min();
     const std::vector<double> max    = pop.max();
     const std::vector<double> mean   = pop.mean();
+    const std::vector<double> stdev  = pop.stdev();
     const std::vector<double> median = pop.median();
     // Print the parameter information
     for (size_t i = 0; i < paramClass.size(); i++)
@@ -494,14 +495,15 @@ void OptACM::printGenomeTable(const ga::Genome   &genome,
             }
             fprintf(
                 logFile(),
-                "| %-*s | %-*s | %-*f | %-*f | %-*f | %-*f | %-*f |\n%s\n",
+                "| %-*s | %-*s | %-*f | %-*f | %-*f | %-*f | %-*f | %-*f |\n%s\n",
                 SIZES[0], paramClass[i].c_str(),
                 SIZES[1], paramNames[j].c_str(),
                 SIZES[2], genome.base(j),
                 SIZES[3], min[j],
                 SIZES[4], max[j],
                 SIZES[5], mean[j],
-                SIZES[6], median[j],
+                SIZES[6], stdev[j],
+                SIZES[7], median[j],
                 HLINE.c_str()
             );
         }

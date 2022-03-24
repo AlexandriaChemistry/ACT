@@ -1,6 +1,7 @@
 #include "GenePool.h"
 
 #include <cstdio>
+#include <cmath>
 
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
@@ -121,19 +122,29 @@ std::vector<double> GenePool::max() const
 std::vector<double> GenePool::mean() const
 {
     std::vector<double> vec(genomeSize_);
-    std::vector<double> values(popSize());
     for (size_t i = 0; i < genomeSize_; i++)
     {
+        double sum = 0;
         for (size_t j = 0; j < popSize(); j++)
         {
-            values[j] = genomes_[j].base(i);
-        }
-        double sum = 0;
-        for (auto ele : values)
-        {
-            sum += ele;
+            sum += genomes_[j].base(i);
         }
         vec[i] = sum / static_cast<double>(popSize());
+    }
+    return vec;
+}
+
+std::vector<double> GenePool::stdev(const std::vector<double> &mean) const
+{
+    std::vector<double> vec(genomeSize_);
+    for (size_t i = 0; i < genomeSize_; i++)
+    {
+        double sum = 0;
+        for (size_t j = 0; j < popSize(); j++)
+        {
+            sum += (genomes_[j].base(i)-mean[i])*(genomes_[j].base(i)-mean[i]);
+        }
+        vec[i] = sqrt(sum / static_cast<double>(popSize()));
     }
     return vec;
 }
