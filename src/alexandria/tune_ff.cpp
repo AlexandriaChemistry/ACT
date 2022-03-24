@@ -442,7 +442,7 @@ void OptACM::printNumCalcDevEstimate()
     );
 }
 
-void OptACM::printGenomeTable(const ga::Genome   &genome
+void OptACM::printGenomeTable(const ga::Genome   &genome,
                               const ga::GenePool &pop)
 {
     if (!logFile())
@@ -455,7 +455,7 @@ void OptACM::printGenomeTable(const ga::Genome   &genome
     const auto paramClass = sii_->paramClass();
     for (auto pClass : paramClass)
     {
-        if (pClass.size() > SIZES[0])
+        if (static_cast<int>(pClass.size()) > SIZES[0])
         {
             SIZES[0] = pClass.size();
         }
@@ -464,13 +464,13 @@ void OptACM::printGenomeTable(const ga::Genome   &genome
     const auto paramNames = sii_->paramNamesWOClass();
     for (auto pName : paramNames)
     {
-        if (pName.size() > SIZES[1])
+        if (static_cast<int>(pName.size()) > SIZES[1])
         {
             SIZES[1] = pName.size();
         }
     }
-    const int TOTAL_WIDTH = SIZES[0] + SIZES[1] + 5*FLOAT_SIZE + 22;
-    const std::string HLINE(TOTAL_WIDTH, "-");
+    const size_t TOTAL_WIDTH = SIZES[0] + SIZES[1] + 5*FLOAT_SIZE + 22;
+    const std::string HLINE(TOTAL_WIDTH, '-');
     // Print header
     fprintf(logFile(), "%s\n|", HLINE.c_str());
     for (size_t i = 0; i < HEADER_NAMES.size(); i++)
@@ -497,7 +497,7 @@ void OptACM::printGenomeTable(const ga::Genome   &genome
                 "| %-*s | %-*s | %-*f | %-*f | %-*f | %-*f | %-*f |\n%s\n",
                 SIZES[0], paramClass[i].c_str(),
                 SIZES[1], paramNames[j].c_str(),
-                SIZES[2], genome.base[j],
+                SIZES[2], genome.base(j),
                 SIZES[3], min[j],
                 SIZES[4], max[j],
                 SIZES[5], mean[j],

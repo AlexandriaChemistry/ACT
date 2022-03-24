@@ -54,6 +54,9 @@ public:
     //! Constructor
     GenePool(size_t genomeSize) : genomeSize_(genomeSize) {}
     
+    //! Default constructor
+    GenePool() {}
+
     //! \return the genome size
     size_t genomeSize() const { return genomeSize_; } 
 
@@ -117,6 +120,8 @@ public:
 
     //! \return the median value per parameter in this pool
     std::vector<double> median() const;
+
+};
 
 } // namespace ga
 

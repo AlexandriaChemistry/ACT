@@ -138,4 +138,28 @@ std::vector<double> GenePool::mean() const
     return vec;
 }
 
+std::vector<double> GenePool::median() const
+{
+    std::vector<double> vec(genomeSize_);
+    std::vector<double> values(popSize());
+    for (size_t i = 0; i < genomeSize_; i++)
+    {
+        for (size_t j = 0; j < popSize(); j++)
+        {
+            values[j] = genomes_[j].base(i);
+        }
+        std::sort(values.begin(), values.end());
+        // Remember that popsize can be odd in MCMC
+        if (popSize() % 2 != 0)
+        {
+            vec[i] = values[genomeSize_/2];
+        }
+        else
+        {
+            vec[i] = (values[genomeSize_/2 - 1]+values[genomeSize_/2])/2.0;
+        }
+    }
+    return vec;
+}
+
 } // namespace ga
