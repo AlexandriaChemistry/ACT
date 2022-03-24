@@ -134,6 +134,9 @@ bool MCMC::evolve(ga::Genome *bestGenome)
     {
         fprintf(stderr, "No best genome in pool. WTF?\n");
     }
+
+    // Save last population
+    lastPop_ = pool;
     
     return bMinimum;
 }
@@ -471,6 +474,9 @@ bool HybridGAMC::evolve(ga::Genome *bestGenome)
         fprintf(logFile_, "\nGA/HYBRID Evolution is done!\n");
     }
     bestGenome->print("Best: ", logFile_);
+
+    // Save last population
+    lastPop_ = *(pool[pold]);
 
     return bMinimum;    
 }
