@@ -668,7 +668,7 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
                     qQM.insert(std::pair<qType, std::vector<double>>(qt, qqm));
                 }
             }
-            fprintf(fp, "Atom   Type        ACM");
+            fprintf(fp, "Atom   Type         ACM");
             for(auto &qt : qQM)
             {
                 if (!qQM.find(qt.first)->second.empty())
@@ -680,17 +680,19 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
             auto x       = mol->x();
             auto myatoms = mol->atomsConst();
             int  i       = 0;
+            double qtot  = 0;
             for (int j = i = 0; j < myatoms.nr; j++)
             {
                 if (myatoms.atom[j].ptype == eptAtom ||
                     myatoms.atom[j].ptype == eptNucleus)
                 {
                     real qCalc = myatoms.atom[j].q;
-                    fprintf(fp, "%-2d%3d  %-5s  %8.4f",
+                    fprintf(fp, "%-2d%3d  %-5s  %9g",
                             myatoms.atom[j].atomnumber,
                             j+1,
                             *(myatoms.atomtype[j]),
                             qCalc);
+                    qtot += qCalc;
                     for(auto &qt : qQM)
                     {
                         if (!qQM.find(qt.first)->second.empty())
@@ -698,20 +700,22 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
                             fprintf(fp, "  %8.4f", qt.second[i]);
                         }
                     }
-                    fprintf(fp," %8.3f %8.3f %8.3f\n", 
+                    fprintf(fp," %8.3f %8.3f %8.3f  qtot: %10g\n", 
                             convertFromGromacs(x[j][XX], "pm"),
                             convertFromGromacs(x[j][YY], "pm"),
-                            convertFromGromacs(x[j][ZZ], "pm"));
+                            convertFromGromacs(x[j][ZZ], "pm"),
+                            qtot);
                     i++;
                 }
                 else
                 {
                     // Turned on printing of shells again
-                    fprintf(fp, "%-2d%3d  %-5s  %8.4f",
+                    fprintf(fp, "%-2d%3d  %-5s  %9g",
                             0,
                             j+1,
                             *(myatoms.atomtype[j]),
                             myatoms.atom[j].q);
+                    qtot += myatoms.atom[j].q;
                     for(auto &qt : qQM)
                     {
                         if (!qQM.find(qt.first)->second.empty())
@@ -719,10 +723,11 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
                             fprintf(fp, "          ");
                         }
                     }
-                    fprintf(fp," %8.3f %8.3f %8.3f\n", 
+                    fprintf(fp," %8.3f %8.3f %8.3f  qtot: %10g\n", 
                             convertFromGromacs(x[j][XX], "pm"),
                             convertFromGromacs(x[j][YY], "pm"),
-                            convertFromGromacs(x[j][ZZ], "pm"));
+                            convertFromGromacs(x[j][ZZ], "pm"),
+                            qtot);
                 }
             }
             fprintf(fp, "\n");
