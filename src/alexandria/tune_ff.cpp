@@ -313,7 +313,7 @@ void OptACM::initMaster()
     {
         fprintf(
             logFile(),
-            "\nTotal %s(hyper)volume of the parameter space is %lf.\n",
+            "\nTotal %s(hyper)volume of the parameter space is %g.\n",
             gach_.logVolume() ? "log " : "",
             totalVolume
         );
