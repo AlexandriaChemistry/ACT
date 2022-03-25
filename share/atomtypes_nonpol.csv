@@ -21,3 +21,16 @@ s3|S|0|0|ACM|s3_b||s3_z|s3_z|0.6|1.5|Bounded|10|20|Bounded|0.25|0.5|Bounded|0.10
 cl|Cl|0|0|ACM|cl_b||cl_z|cl_z|0.6|1.5|Bounded|10|20|Bounded|0.25|0.5|Bounded|0.102|3||||6|20|Bounded|6|24|Bounded|4|9|Bounded|chlorine|125.893|
 br|Br|0|0|ACM|br_b||br_z|br_z|0.6|1.5|Bounded|10|20|Bounded|0.25|0.5|Bounded|0.12|4||||4|20|Bounded|6|24|Bounded|4|9|Bounded|bromine|124.114|
 i|I|0|0|ACM|i_b||i_z|i_z|1.2|3|Bounded|10|20|Bounded|0.25|0.5|Bounded|0.139|5||||4|20|Bounded|6|24|Bounded|4|9|Bounded|iodine|113.361|
+# Ions| that can not use any ACM algorithm for charges|||||||||||||||||||||||||||||||||
+Be2+|Be|2|2|Fixed|||Be2+_z||0.02|1|Bounded|10|20|Bounded|0.1|0.5|Bounded|0.059|2||||6|20|Bounded|||||||beryllium ion|0|
+Ca2+|Ca|2|2|Fixed|||Ca2+_z||0.02|1|Bounded|10|20|Bounded|0.1|0.5|Bounded|0.114|4||||6|20|Bounded|||||||calcium ion|0|
+Mg2+|Mg|2|2|Fixed|||Mg2+_z||0.02|1|Bounded|10|20|Bounded|0.1|0.5|Bounded|0.141|3||||6|20|Bounded|||||||magnesium ion|152.098|?
+Na+|Na|1|1|Fixed|||Na+_z||0.02|1|Bounded|10|20|Bounded|0.1|0.5|Bounded|0.141|3||||6|20|Bounded|||||||sodium ion|0|
+Cl-|Cl|-1|-1|Fixed|||Cl-_z||0.02|1|Bounded|10|20|Bounded|0.1|0.5|Bounded|0.141|3||||6|20|Bounded|||||||chloride ion|0|
+I-|I|-1|-1|Fixed|||I-_z||0.02|1|Bounded|10|20|Bounded|0.1|0.5|Bounded|0.141|5||||6|20|Bounded|||||||iodide ion|0|
+F-|F|-1|-1|Fixed|||F-_z||0.02|1|Bounded|10|20|Bounded|0.1|0.5|Bounded|0.141|2||||6|20|Bounded|||||||fluoride ion|0|
+Rb+|Rb|1|1|Fixed|||Rb+_z||0.02|1|Bounded|10|20|Bounded|0.1|0.5|Bounded|0.141|5||||6|20|Bounded|||||||rubidium ion|0|
+Li+|Li|1|1|Fixed|||Li+_z||0.02|1|Bounded|10|20|Bounded|0.1|0.5|Bounded|0.141|2||||6|20|Bounded|||||||lithium ion|0|
+Br-|Br|-1|-1|Fixed|||Br-_z||0.02|1|Bounded|10|20|Bounded|0.1|0.5|Bounded|0.141|4||||6|20|Bounded|||||||bromide ion|0|
+Cs+|Cs|1|1|Fixed|||Cs+_z||0.02|1|Bounded|10|20|Bounded|0.1|0.5|Bounded|0.141|6||||6|20|Bounded|||||||cesium ion|0|
+K+|K|1|1|Fixed|||K+_z||0.02|1|Bounded|10|20|Bounded|0.1|0.5|Bounded|0.141|4||||6|20|Bounded|||||||potassium ion|0|

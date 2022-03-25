@@ -358,7 +358,7 @@ TEST_F (AcmTest, WaterDimerACSpg)
 TEST_F (AcmTest, WaterIodideACSpg)
 {
     std::vector<double> qcustom;
-    testAcm("ACS-pg", inputFormat::LOG, "water_I", true, 0, qcustom, 6, true);
+    testAcm("ACS-pg", inputFormat::LOG, "water_I", true, -1, qcustom, 6, true);
 }
 
 #endif
