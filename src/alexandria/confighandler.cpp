@@ -93,8 +93,8 @@ void BayesConfigHandler::add_pargs(std::vector<t_pargs> *pargs)
           "Random number seed. If zero, a seed will be generated." },
         { "-step",  FALSE, etREAL, {&step_},
           "Step size for the MCMC parameter optimization. Is used as fraction of the available range per parameter which depends on the parameter type." },
-        { "-bEvaluate_testset", FALSE, etBOOL, {&evaluate_testset_},
-          "Evaluate the MCMC energy on the test set. Only used in pure MCMC optmization." }
+        { "-evaluate_testset", FALSE, etBOOL, {&evaluate_testset_},
+          "Evaluate the parameters on the test set. Only used in pure MCMC optmization." }
     };
     for (int i = 0; i < asize(pa); i++)
     {
