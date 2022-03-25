@@ -2016,14 +2016,14 @@ void MyMol::PrintTopology(FILE                      *fp,
             {
                 commercials.push_back(fmp);
             }
-        }
-        if (qcalc->hasMultipole(mpo))
-        {
-            auto mymu = qcalc->getMultipole(mpo);
-            commercials.push_back(gmx::formatString("Alexandria %s (%s)\n", mpo_name(mpo), gp->getUnit()));
-            for(auto &fmp : formatMultipole(mpo, mymu))
+            if (qcalc->hasMultipole(mpo))
             {
-                commercials.push_back(fmp);
+                auto mymu = qcalc->getMultipole(mpo);
+                commercials.push_back(gmx::formatString("Alexandria %s (%s)\n", mpo_name(mpo), gp->getUnit()));
+                for(auto &fmp : formatMultipole(mpo, mymu))
+                {
+                    commercials.push_back(fmp);
+                }
             }
         }
     }
