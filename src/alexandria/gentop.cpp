@@ -127,7 +127,7 @@ int gentop(int argc, char *argv[])
         { efXVG, "-his",      "pot-histo",     ffOPTWR },
         { efXVG, "-pc",       "pot-comp",      ffOPTWR },
         { efPDB, "-pdbdiff",  "pdbdiff",       ffOPTWR },
-        { efXVG, "-plotESP",  "ESPcorr",       ffOPTWR },
+        { efXVG, "-plot_esp", "ESPcorr",       ffOPTWR },
         { efLOG, "-g",        "gentop_errors", ffWRITE }
     };
 
@@ -384,7 +384,7 @@ int gentop(int argc, char *argv[])
     /* Generate output file for debugging if requested */
     if (immStatus::OK == imm)
     {
-        mymol.plotEspCorrelation(opt2fn_null("-plotESP", NFILE, fnm), oenv);
+        mymol.plotEspCorrelation(opt2fn_null("-plot_esp", NFILE, fnm), oenv);
     }
 
     if (immStatus::OK == imm)
