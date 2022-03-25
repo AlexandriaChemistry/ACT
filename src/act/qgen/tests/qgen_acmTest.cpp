@@ -393,6 +393,18 @@ TEST_F (AcmTest, WaterIodideACSg)
     testAcm("ACS-g", inputFormat::LOG, "water_I", true, -1, qcustom, 3, true);
 }
 
+TEST_F (AcmTest, MethanolWaterACSg)
+{
+    std::vector<double> qcustom;
+    testAcm("ACS-g", inputFormat::SDF, "methanol-water", true, 0, qcustom, 6, true);
+}
+
+TEST_F (AcmTest, MethanolWaterACSpg)
+{
+    std::vector<double> qcustom;
+    testAcm("ACS-pg", inputFormat::SDF, "methanol-water", true, 0, qcustom, 12, true);
+}
+
 }
 
 }
