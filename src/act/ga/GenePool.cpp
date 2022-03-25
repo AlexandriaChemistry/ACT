@@ -1,5 +1,8 @@
 #include "GenePool.h"
 
+#include <algorithm>
+#include <vector>
+
 #include <cstdio>
 #include <cmath>
 
@@ -152,22 +155,23 @@ std::vector<double> GenePool::stdev(const std::vector<double> &mean) const
 std::vector<double> GenePool::median() const
 {
     std::vector<double> vec(genomeSize_);
-    std::vector<double> values(popSize());
+    size_t popsize = popSize();
+    std::vector<double> values(popsize);
     for (size_t i = 0; i < genomeSize_; i++)
     {
-        for (size_t j = 0; j < popSize(); j++)
+        for (size_t j = 0; j < popsize; j++)
         {
             values[j] = genomes_[j].base(i);
         }
         std::sort(values.begin(), values.end());
         // Remember that popsize can be odd in MCMC
-        if (popSize() % 2 != 0)
+        if (popsize % 2 != 0)
         {
-            vec[i] = values[genomeSize_/2];
+            vec[i] = values[popsize/2];
         }
         else
         {
-            vec[i] = (values[genomeSize_/2 - 1]+values[genomeSize_/2])/2.0;
+            vec[i] = (values[popsize/2 - 1]+values[popsize/2])/2.0;
         }
     }
     return vec;
