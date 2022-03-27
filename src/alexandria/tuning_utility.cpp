@@ -477,7 +477,7 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
                                                                 lsq_anisoPol, lsq_charge, lsq_epot;
     std::map<MolPropObservable, std::map<iMolSelect, qtStats> > lsq_multi;
     std::map<iMolSelect, std::vector<ZetaTypeLsq> >             lsqt;
-    
+    std::map<iMolSelect, gmx_stats>                             lsq_rmsf;
     for (auto &mpo : mpoMultiPoles)
     {
         std::map<iMolSelect, qtStats> mq_multi;
@@ -495,6 +495,10 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
     }
     for(auto &ims : iMolSelectNames())
     {
+        {
+            gmx_stats rmsf;
+            lsq_rmsf.insert({ ims.first, std::move(rmsf) });
+        }
         qtStats qesp, qepot;
         for (auto &i : qTypes())
         {
@@ -574,7 +578,9 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
             mol->GenerateCharges(pd, fplog, cr,
                                  ChargeGenerationAlgorithm::NONE, dummy, lot);
             // Force2
-            fprintf(fp, "RMS Force %g (kJ/mol/nm)\n", mol->rmsForce());
+            double rmsf = mol->rmsForce();
+            fprintf(fp, "RMS Force %g (kJ/mol/nm)\n", rmsf);
+            lsq_rmsf[ims].add_point(0, rmsf, 0, 0);
             // Energy
             fprintf(fp, "Energy terms (kJ/mol)\n");
             double deltaE0 = 0;
@@ -753,7 +759,12 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
             const char *name = qTypeName(qt).c_str();
             if (lsq_epot[ims.first][qt].get_npoints() > 0)
             {
-                print_stats(fp, "Enthalpy of formation", "kJ/mol", 1.0, &lsq_epot[ims.first][qt],  header, "Experiment", name, useOffset_);
+                print_stats(fp, "Potential energy", "kJ/mol", 1.0, &lsq_epot[ims.first][qt],  header, "QM/DFT", name, useOffset_);
+                header = false;
+            }
+            if (lsq_rmsf[ims.first].get_npoints() > 0 && qt == qType::Calc)
+            {
+                print_stats(fp, "RMS Force", "kJ/mol nm", 1.0, &lsq_rmsf[ims.first], header, "QM/DFT", name, useOffset_);
                 header = false;
             }
             print_stats(fp, "ESP", "kJ/mol e", 1.0, &lsq_esp[ims.first][qt],  header, "Electronic", name, useOffset_);
@@ -774,7 +785,6 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
                 print_stats(fp, "Anisotropic Polariz.", polunit.c_str(), polfactor,
                             &lsq_anisoPol[ims.first][qType::Calc], header, "Electronic", name, useOffset_);
             }
-            fprintf(fp, "\n");
         }
     }
     write_q_histo(fp, opt2fn("-qhisto", filenm.size(), filenm.data()),
@@ -804,7 +814,7 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
         print_corr(opt2fn("-anisopol", filenm.size(), filenm.data()),
                    "Anisotropic Polarizability (A\\S3\\N)", "Electronic", "Calc", lsq_anisoPol, oenv);
     }
-    // List outliers based on the deviation in the total dipole moment
+    // List outliers based on the deviation in the Electrostatic Potential
     real espAver;
     if (eStats::OK == lsq_esp[iMolSelect::Train][qType::Calc].get_rmsd(&espAver))
     {
@@ -840,11 +850,49 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
         }
         if (nout)
         {
-            printf("There were %d ESP outliers. See at the very bottom of the log file\n", nout);
+            printf("There were %d ESP outliers. Check the bottom of the log file\n", nout);
         }
         else
         {
-            printf("No outliers! Well done.\n");
+            printf("No ESP outliers! Well done.\n");
+        }
+    }
+    // List outliers based on the deviation in the Potential energy
+    real epotAver;
+    if (eStats::OK == lsq_epot[iMolSelect::Train][qType::Calc].get_rmsd(&epotAver))
+    {
+        int nout = 0;
+        double epotMax = 1.5*epotAver;
+        fprintf(fp, "\nOverview of Epot outliers for %s (Diff > %.3f)\n",
+                qTypeName(qType::Calc).c_str(), epotMax);
+        fprintf(fp, "----------------------------------\n");
+        fprintf(fp, "%-40s  %12s  %12s\n", "Name",
+                qTypeName(qType::Calc).c_str(), "QM/DFT");
+        for (auto mol = mymol->begin(); mol < mymol->end(); ++mol)
+        {
+            double deltaE0;
+            if (!mol->energy(MolPropObservable::DELTAE0, &deltaE0))
+            {
+                GMX_THROW(gmx::InternalError(gmx::formatString("No molecular energy for %s",
+                                                               mol->getMolname().c_str()).c_str()));
+            }
+            deltaE0 += mol->atomizationEnergy();
+            auto diff = std::abs(mol->potentialEnergy()-deltaE0);
+            if ((mol->support() != eSupport::No) && (diff > epotMax))
+            {
+                fprintf(fp, "%-40s  %12.3f  %12.3f  %s\n",
+                        mol->getMolname().c_str(), mol->potentialEnergy(), deltaE0,
+                        iMolSelectName(mol->datasetType()));
+                nout++;
+            }
+        }
+        if (nout)
+        {
+            printf("There were %d EPot outliers. Check the bottom of the log file\n", nout);
+        }
+        else
+        {
+            printf("No Epot outliers! Well done.\n");
         }
     }
 }

@@ -2374,15 +2374,6 @@ immStatus MyMol::getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
         }
     }
 
-#ifdef OLD
-    // TODO seems not necessary
-    if (immStatus::OK == imm &&
-        energy_.find(MolPropObservable::DELTAE0) != energy_.end())
-    {
-        double deltaE0 = energy_[MolPropObservable::DELTAE0];
-        energy_.insert(std::pair<MolPropObservable, double>(MolPropObservable::DELTAE0, deltaE0));
-    }
-#endif
     return imm;
 }
 

@@ -570,27 +570,15 @@ size_t MolGen::Read(FILE            *fp,
     {
         nLocal.insert(std::pair<iMolSelect, int>(ims.first, 0));
     }
-    // TODO Only list the terms that we need
-    std::map<MolPropObservable, iqmType> iqmMap;
-    if (optimize(InteractionType::VDW) ||
-        optimize(InteractionType::BONDS)||
-        optimize(InteractionType::ANGLES)||
-        optimize(InteractionType::LINEAR_ANGLES)||
-        optimize(InteractionType::IMPROPER_DIHEDRALS)||
-        optimize(InteractionType::PROPER_DIHEDRALS))
-    {
-        iqmMap.insert(std::pair<MolPropObservable, iqmType>(MolPropObservable::DELTAE0, iqmType::QM));
-    }
-    if (optimize(InteractionType::POLARIZATION) ||
-        optimize(InteractionType::CHARGEDISTRIBUTION) ||
-        optimize(InteractionType::ELECTRONEGATIVITYEQUALIZATION))
-    {       
-         iqmMap.insert(std::pair<MolPropObservable, iqmType>(MolPropObservable::DIPOLE,         iqmType::QM));
-         iqmMap.insert(std::pair<MolPropObservable, iqmType>(MolPropObservable::QUADRUPOLE,     iqmType::QM));
-         iqmMap.insert(std::pair<MolPropObservable, iqmType>(MolPropObservable::OCTUPOLE,     iqmType::QM));
-         iqmMap.insert(std::pair<MolPropObservable, iqmType>(MolPropObservable::HEXADECAPOLE,     iqmType::QM));
-         iqmMap.insert(std::pair<MolPropObservable, iqmType>(MolPropObservable::POLARIZABILITY, iqmType::QM));
-    }
+    std::map<MolPropObservable, iqmType> iqmMap = 
+        {
+            { MolPropObservable::DELTAE0,        iqmType::QM },
+            { MolPropObservable::DIPOLE,         iqmType::QM },
+            { MolPropObservable::QUADRUPOLE,     iqmType::QM },
+            { MolPropObservable::OCTUPOLE,       iqmType::QM },
+            { MolPropObservable::HEXADECAPOLE,   iqmType::QM },
+            { MolPropObservable::POLARIZABILITY, iqmType::QM }
+        };
     if (cr_->isMaster())
     {
         if (fp)
@@ -645,7 +633,6 @@ size_t MolGen::Read(FILE            *fp,
                     continue;
                 }
 
-                // TODO Check for G4 as well
                 imm = mymol.getExpProps(iqmMap, method, basis, pd, 0);
                 if (immStatus::OK != imm)
                 {
