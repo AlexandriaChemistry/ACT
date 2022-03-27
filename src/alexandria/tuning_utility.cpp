@@ -573,7 +573,10 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
             std::vector<double> dummy;
             mol->GenerateCharges(pd, fplog, cr,
                                  ChargeGenerationAlgorithm::NONE, dummy, lot);
+            // Force2
+            fprintf(fp, "RMS Force %g (kJ/mol/nm)\n", mol->rmsForce());
             // Energy
+            fprintf(fp, "Energy terms (kJ/mol)\n");
             double deltaE0 = 0;
             if (mol->energy(MolPropObservable::DELTAE0, &deltaE0))
             {

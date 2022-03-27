@@ -119,12 +119,6 @@ namespace alexandria
         std::map<qType, QtypeProps>           qProps_;
         //! Center of nuclear charge
         rvec                      CenterOfCharge_ = { 0 };
-        //! Experimental dipole
-        //double                    dip_exp_    = 0;
-        //! Error in experimental dipole
-        //double                    dip_err_    = 0;
-        //! Weighting factor for dipole????
-        //double                    dip_weight_ = 0;
         //! GROMACS state variable
         t_state                  *state_      = nullptr;
         //! GROMACS force record
@@ -304,6 +298,12 @@ namespace alexandria
             return true;
         }
 
+        //! Return the sum of squared forces on the atoms
+        double force2() const;
+        
+        //! Return the root mean square force on the atoms
+        double rmsForce() const;
+        
         //! \return the ACM data structure
         QgenAcm *qgenAcm() { return QgenAcm_; }
         /*! \brief
@@ -331,19 +331,6 @@ namespace alexandria
         const QtypeProps *qTypeProps(qType qt) const;
         
         const std::vector<std::string> &errors() const {return error_messages_;}
-
-        /*! \brief
-         * Rotate the molcular dipole vector onto a reference vector
-         *
-         * \param[in] mu             Molecular dipole vector
-         * \param[in] muReference    The reference vector
-         */
-        void rotateDipole(rvec mu, rvec muReference);
-
-        /*! \brief
-         * Return experimental dipole
-         */
-        //double dipExper() const { return dip_exp_; }
 
         /*! \brief
          * Add the screening factors of the distributed charge to atom structure

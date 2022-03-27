@@ -511,6 +511,26 @@ immStatus MyMol::zetaToAtoms(const Poldata *pd,
     return immStatus::OK;
 }
 
+double MyMol::force2() const
+{
+    const auto myatoms = atomsConst();
+    double     f2      = 0;
+    for (int i = 0; i < myatoms.nr; i++)
+    {
+        if (myatoms.atom[i].ptype == eptAtom)
+        {
+            f2 += iprod(f_[i], f_[i]);
+        }
+    }
+    return f2;
+}
+
+double MyMol::rmsForce() const
+{
+    const auto myatoms = atomsConst();
+    return std::sqrt(force2()/myatoms.nr);
+}
+
 static void fill_atom(t_atom *atom,
                       real m, real q, real mB, real qB, int atomnumber,
                       int atomtype, int ept,
@@ -2176,20 +2196,6 @@ void MyMol::GenerateCube(const Poldata          *pd,
             qCalc.writeDiffCube(&grref, difffn, diffhistfn, buf, oenv, 0);
         }
     }
-}
-
-void MyMol::rotateDipole(rvec mu, rvec muReference)
-{
-    if (norm(mu) < 0.04 or norm(muReference) < 0.04)
-    {
-        return;
-    }
-    return;
-    matrix rotmatrix;
-    rvec   tmpvec;
-    calc_rotmatrix(mu, muReference, rotmatrix);
-    mvmul(rotmatrix, mu, tmpvec);
-    copy_rvec(tmpvec, mu);
 }
 
 void MyMol::calcEspRms(const Poldata *pd)
