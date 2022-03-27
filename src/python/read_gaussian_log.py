@@ -587,7 +587,7 @@ class GaussianReader:
             with gzip.open(infile, "rt") as inf:
                 mp = self.interpret_gauss(inf.readlines(), infile)
                 if None == mp:
-                    sys.exit("Could not real %s" % infile)
+                    sys.exit("Could not read %s" % infile)
                 else:
                     return mp
         except gzip.BadGzipFile:
@@ -602,6 +602,6 @@ def read_gaussian_log(infile:str, molname:str, basisset:str, verbose:bool) -> Mo
     gr = GaussianReader(molname, basisset, verbose)
     mp = gr.read(infile)
     if None == mp:
-        sys.exit("Could not real %s" % infile)
+        sys.exit("Could not read %s" % infile)
     else:
         return mp
