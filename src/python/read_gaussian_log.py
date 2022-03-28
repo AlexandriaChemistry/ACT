@@ -16,7 +16,7 @@ def method_basis(ww: str):
     if len(ww) >= 3:
         elem = ww.split("/")
         if len(elem) == 2:
-            return elem[0], elem[1], "OEP"
+            return elem[0], elem[1], "Opt"
     else:
         return ww, ww, ww
 

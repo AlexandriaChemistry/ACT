@@ -361,8 +361,8 @@ immStatus MyMol::GenerateAtoms(const Poldata     *pd,
         atoms->nres = 0;
         for (auto &cai : ci->calcAtomConst())
         {
-            auto myunit = cai.getUnit();
-            cai.getCoords(&xx, &yy, &zz);
+            auto myunit = cai.coordUnit();
+            cai.coords(&xx, &yy, &zz);
             int resnr = cai.ResidueNumber();
             if (resnr != res0)
             {
@@ -513,13 +513,34 @@ immStatus MyMol::zetaToAtoms(const Poldata *pd,
 
 double MyMol::force2() const
 {
-    const auto myatoms = atomsConst();
-    double     f2      = 0;
-    for (int i = 0; i < myatoms.nr; i++)
+    auto   myatoms = atomsConst();
+    double f2      = 0;
+    for (auto &ei : experimentConst())
     {
-        if (myatoms.atom[i].ptype == eptAtom)
+        const std::vector<gmx::RVec> &fff = ei.getForces();
+        if (fff.empty())
         {
-            f2 += iprod(f_[i], f_[i]);
+            continue;
+        }
+        size_t ifff = 0;
+        for (int i = 0; i < myatoms.nr; i++)
+        {
+            if (myatoms.atom[i].ptype == eptAtom)
+            {
+                rvec df;
+                if (ifff >= fff.size())
+                {
+                    GMX_THROW(gmx::InternalError(gmx::formatString("Inconsistency: there are %d atoms and shells, but only %zu forces", myatoms.nr, fff.size())));
+                }
+                rvec_sub(f_[i], fff[ifff], df);
+                f2 += iprod(df, df);
+                ifff += 1;
+            }
+        }
+        // Once we found a force array, we quit.
+        if (f2 > 0)
+        {
+            break;
         }
     }
     return f2;
@@ -1787,27 +1808,6 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
         break;
     }
     return imm;
-}
-
-void MyMol::changeCoordinate(const Experiment &ei, gmx_bool bpolar)
-{
-    const std::vector<gmx::RVec> &x = ei.getCoordinates();
-
-    if (bpolar)
-    {
-        for (size_t i = 0; i < x.size(); i++)
-        {
-            copy_rvec(x[i], state_->x[2*i]);
-            copy_rvec(x[i], state_->x[2*i+1]);
-        }
-    }
-    else
-    {
-        for (size_t i = 0; i < x.size(); i++)
-        {
-            copy_rvec(x[i], state_->x[i]);
-        }
-    }
 }
 
 bool MyMol::getOptimizedGeometry(rvec *x)

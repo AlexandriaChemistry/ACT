@@ -43,19 +43,24 @@
 namespace alexandria
 {
 
-void CalcAtom::SetUnit(const std::string &unit)
+void CalcAtom::setCoordUnit(const std::string &unit)
 {
-    if ((unit_.size() == 0) && (unit.size() > 0))
+    if ((coord_unit_.size() == 0) && (unit.size() > 0))
     {
-        unit_ = unit;
+        coord_unit_ = unit;
     }
     else
     {
-        if (unit_.size() == 0)
+        if (coord_unit_.size() == 0)
         {
-            fprintf(stderr, "Replacing CalcAtom unit '%s' by '%s'\n", unit_.c_str(), unit.c_str());
+            fprintf(stderr, "Trying to replace CalcAtom unit '%s' by '%s'\n", coord_unit_.c_str(), unit.c_str());
         }
     }
+}
+
+void CalcAtom::setForceUnit(const std::string &unit)
+{
+    force_unit_ = unit;
 }
 
 bool CalcAtom::Equal(CalcAtom ca)
@@ -80,10 +85,14 @@ CommunicationStatus CalcAtom::Receive(const CommunicationRecord *cr, int src)
         cr->recv_str(src, &residueName_);
         residueNumber_ = cr->recv_int(src);
         atomID_ = cr->recv_int(src);
-        cr->recv_str(src, &unit_);
+        cr->recv_str(src, &coord_unit_);
         x_      = cr->recv_double(src);
         y_      = cr->recv_double(src);
         z_      = cr->recv_double(src);
+        cr->recv_str(src, &force_unit_);
+        fx_     = cr->recv_double(src);
+        fy_     = cr->recv_double(src);
+        fz_     = cr->recv_double(src);
         Ncharge = cr->recv_int(src);
 
         for (int n = 0; (CommunicationStatus::OK == cs) && (n < Ncharge); n++)
@@ -112,10 +121,14 @@ CommunicationStatus CalcAtom::Send(const CommunicationRecord *cr, int dest) cons
         cr->send_str(dest, &residueName_);
         cr->send_int(dest, residueNumber_);
         cr->send_int(dest, atomID_);
-        cr->send_str(dest, &unit_);
+        cr->send_str(dest, &coord_unit_);
         cr->send_double(dest, x_);
         cr->send_double(dest, y_);
         cr->send_double(dest, z_);
+        cr->send_str(dest, &force_unit_);
+        cr->send_double(dest, fx_);
+        cr->send_double(dest, fy_);
+        cr->send_double(dest, fz_);
         cr->send_int(dest, q_.size());
 
         for (const auto &qi : q_)

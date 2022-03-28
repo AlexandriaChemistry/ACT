@@ -519,16 +519,6 @@ namespace alexandria
         immStatus computeForces(double *rmsf);
 
         /*! \brief
-         * Change the coordinate of the molecule based
-         * on the coordinate of the conformation stored
-         * in molprop experiment class.
-         *
-         * \param[in] ei     Experiment
-         * \param[in] bpolar Whether or not there are shells
-         */
-        void changeCoordinate(const Experiment &ei, gmx_bool bpolar);
-
-        /*! \brief
          * Return the optimized geometry of the molecule from the data file.
          */
         bool getOptimizedGeometry(rvec *x);

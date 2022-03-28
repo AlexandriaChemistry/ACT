@@ -59,6 +59,7 @@ const static std::map<const std::string, std::pair<const std::string, double> > 
         { "cal/mol K",   { "J/mol K", CAL2JOULE } },
         { "Hartree",     { "kJ/mol", ONE_4PI_EPS0/BOHR2NM } },
         { "Hartree/e",   { "kJ/mol e", ONE_4PI_EPS0/BOHR2NM } },
+        { "Hartree/Bohr",{ "kJ/mol nm", ONE_4PI_EPS0/(BOHR2NM*BOHR2NM) } },
         { "Angstrom3",   { "nm3", A2NM*A2NM*A2NM } },
         { "A^3",         { "nm3", A2NM*A2NM*A2NM } },
         { "Coulomb",     { "e", 1.0/E_CHARGE } },

@@ -93,7 +93,7 @@ DataSource dataSourceFromName(const std::string &name);
 
 /*! \brief
  * Contains data on an atom based on a calculation.
- *
+ * Coordinates and Forces are store in the specified units.
  * This class coordinates, name, atom type and an array of
  * Charge values based on different methods.
  *
@@ -103,8 +103,9 @@ DataSource dataSourceFromName(const std::string &name);
 class CalcAtom
 {
 private:
-    std::string             name_, obType_, unit_, residueName_;
+    std::string             name_, obType_, coord_unit_, force_unit_, residueName_;
     double                  x_ = 0, y_ = 0, z_ = 0;
+    double                  fx_ = 0, fy_ = 0, fz_ = 0;
     int                     atomID_ = 0, residueNumber_ = 0, chainId_ = 0;
     char                    chain_ = ' ';
     std::map<qType, double> q_;
@@ -173,7 +174,10 @@ public:
     void setObtype(const std::string &obtype) { obType_ = obtype; }
     
     //! Return the unit of the coordinates of the atom
-    const std::string &getUnit() const { return unit_; }
+    const std::string &coordUnit() const { return coord_unit_; }
+    
+    //! Return the unit of the coordinates of the atom
+    const std::string &forceUnit() const { return force_unit_; }
     
     //! Return the name of residue
     const std::string &ResidueName() const { return residueName_; }
@@ -182,7 +186,10 @@ public:
     int ResidueNumber() const { return residueNumber_; }
 
     //! Set the unit of the coordinates of the atom
-    void SetUnit(const std::string &unit);
+    void setCoordUnit(const std::string &unit);
+    
+    //! Set the unit of the forces on the atom
+    void setForceUnit(const std::string &unit);
     
     //! Set the residue name for the atom
     void SetResidue(const std::string &residueName, int residueNumber)
@@ -205,11 +212,18 @@ public:
     char chain() const { return chain_; }
     
     //! Set the coordinates of the atom
-    void SetCoords(double x, double y, double z) { x_ = x; y_ = y; z_ = z; }
+    void setCoords(double x, double y, double z) { x_ = x; y_ = y; z_ = z; }
     
     //! Return all the coordinates of the atom
-    void getCoords(double *x, double *y, double *z) const
+    void coords(double *x, double *y, double *z) const
     { *x = x_; *y = y_; *z = z_; }
+
+    //! Set the forces on the atom
+    void setForces(double fx, double fy, double fz) { fx_ = fx; fy_ = fy; fz_ = fz; }
+    
+    //! Return all the coordinates of the atom
+    void forces(double *fx, double *fy, double *fz) const
+    { *fx = fx_; *fy = fy_; *fz = fz_; }
 
     //! Return the X coordinate of the atom
     double getX() const { return x_; }
@@ -329,6 +343,9 @@ public:
     //! Return a complete coordinate array
     const std::vector<gmx::RVec> &getCoordinates() const { return coordinates_; }
     
+    //! Return a complete forces array
+    const std::vector<gmx::RVec> &getForces() const { return forces_; }
+    
     //! Add ElectrostaticPotential element to the array
     void AddPotential(ElectrostaticPotential ep) { potential_.push_back(ep); }
     
@@ -416,6 +433,7 @@ private:
     
     std::vector<ElectrostaticPotential>  potential_;
     std::vector<gmx::RVec>               coordinates_;
+    std::vector<gmx::RVec>               forces_;
 };
 
 //! Iterator over Experiment items

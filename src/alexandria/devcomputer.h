@@ -288,10 +288,7 @@ public:
                                      std::map<eRMS, FittingTarget>  *targets,
                                      gmx_unused Poldata             *poldata,
                                const gmx_unused std::vector<double> &param,
-                               const gmx_unused CommunicationRecord *commrec)
-    {
-        (*targets).find(eRMS::Force2)->second.increase(1, mymol->force2());
-    }
+                               const gmx_unused CommunicationRecord *commrec);
 
 };
 

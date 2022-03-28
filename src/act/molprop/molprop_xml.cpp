@@ -168,8 +168,10 @@ enum class MolPropXml {
     ATOMID,
     OBTYPE,
     X_UNIT,
+    F_UNIT,
     V_UNIT,
     ESPID,
+    fX, fY, fZ,
     dX, dY, dZ, dV,
     qXX, qYY, qZZ, qXY, qXZ, qYZ,
     oXXX, oXXY, oXXZ, oXYY, oXYZ, oXZZ, oYYY, oYYZ, oYZZ, oZZZ,
@@ -233,10 +235,14 @@ std::map<const std::string, MolPropXml> xmlxxx =
     { "atomid",           MolPropXml::ATOMID        },
     { "obtype",           MolPropXml::OBTYPE        },
     { "coord_unit",       MolPropXml::X_UNIT        },
+    { "force_unit",       MolPropXml::F_UNIT        },
     { "potential_unit",   MolPropXml::V_UNIT        },
     { "espid",            MolPropXml::ESPID         },
     { "V",                MolPropXml::dV            },
-    { "q",                MolPropXml::aQ            }
+    { "q",                MolPropXml::aQ            },
+    { "fx",               MolPropXml::fX            },
+    { "fy",               MolPropXml::fY            },
+    { "fz",               MolPropXml::fZ            }
 };
 
 std::map<MolPropXml, const std::string> rmap = {};
@@ -696,11 +702,23 @@ static void mp_process_tree(FILE                              *fp,
                             };
                             if (xmlFound(xbuf, clean1))
                             {
-                                ca.SetUnit((*xbuf)[MolPropXml::X_UNIT]);
-                                ca.SetCoords(xbuf_atof(xbuf, MolPropXml::dX),
+                                ca.setCoordUnit((*xbuf)[MolPropXml::X_UNIT]);
+                                ca.setCoords(xbuf_atof(xbuf, MolPropXml::dX),
                                              xbuf_atof(xbuf, MolPropXml::dY),
                                              xbuf_atof(xbuf, MolPropXml::dZ));
                                 clean_xbuf(xbuf, clean1);
+                            }
+                            std::vector<MolPropXml> clean3 = {
+                                MolPropXml::fX, MolPropXml::fY, 
+                                MolPropXml::fZ, MolPropXml::F_UNIT
+                            };
+                            if (xmlFound(xbuf, clean3))
+                            {
+                                ca.setForceUnit((*xbuf)[MolPropXml::F_UNIT]);
+                                ca.setForces(xbuf_atof(xbuf, MolPropXml::fX),
+                                             xbuf_atof(xbuf, MolPropXml::fY),
+                                             xbuf_atof(xbuf, MolPropXml::fZ));
+                                clean_xbuf(xbuf, clean3);
                             }
                             std::vector<MolPropXml> clean2 = {
                                 MolPropXml::aQ, MolPropXml::TYPE
@@ -963,14 +981,25 @@ static void add_xml_molprop(xmlNodePtr                 parent,
             add_xml_string(grandchild, rmap[MolPropXml::NAME], ca.getName());
             add_xml_string(grandchild, rmap[MolPropXml::OBTYPE], ca.getObtype());
             add_xml_int(grandchild, rmap[MolPropXml::ATOMID], ca.getAtomid());
-            add_xml_string(grandchild, rmap[MolPropXml::X_UNIT], ca.getUnit());
-
+            add_xml_string(grandchild, rmap[MolPropXml::X_UNIT], ca.coordUnit());
             double x, y, z;
-            ca.getCoords(&x, &y, &z);
+            ca.coords(&x, &y, &z);
 
             (void) add_xml_child_val(grandchild, rmap[MolPropXml::dX], gmx::formatString("%g", x).c_str());
             (void) add_xml_child_val(grandchild, rmap[MolPropXml::dY], gmx::formatString("%g", y).c_str());
             (void) add_xml_child_val(grandchild, rmap[MolPropXml::dZ], gmx::formatString("%g", z).c_str());
+
+            auto f_unit = ca.forceUnit();
+            if (!f_unit.empty())
+            {
+                add_xml_string(grandchild, rmap[MolPropXml::F_UNIT], f_unit);
+                double fx, fy, fz;
+                ca.forces(&fx, &fy, &fz);
+                
+                (void) add_xml_child_val(grandchild, rmap[MolPropXml::fX], gmx::formatString("%g", fx).c_str());
+                (void) add_xml_child_val(grandchild, rmap[MolPropXml::fY], gmx::formatString("%g", fy).c_str());
+                (void) add_xml_child_val(grandchild, rmap[MolPropXml::fZ], gmx::formatString("%g", fz).c_str());
+            }
 
             for (auto &q : ca.chargesConst())
             {
