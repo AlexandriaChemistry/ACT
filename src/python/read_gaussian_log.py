@@ -426,17 +426,19 @@ class GaussianReader:
                 qmap["Hirshfeld"] = self.qHirshfeld[i]
             if len(self.qMulliken) == len(self.atomtypes):
                 qmap["Mulliken"] = self.qMulliken[i]
-            # Convert Angstrom to pm
-            ff = [ 0.0, 0.0, 0.0 ]
+            # If no forces are found, the fc_unit will be None
+            # and no forces will be written.
+            ff      = [ 0.0, 0.0, 0.0 ]
+            fc_unit = None
             if len(self.forces) == len(self.atomtypes):
-                ff = self.forces[i]
+                ff      = self.forces[i]
+                fc_unit = "Hartree/Bohr"
+            # Convert Angstrom to pm
             self.exper.add_atom(self.atomname[i], alextype, i+1, "pm", 
                                 100*self.coordinates[i][0], 
                                 100*self.coordinates[i][1], 
                                 100*self.coordinates[i][2], 
-                                "Hartree/Bohr",
-                                ff[0], ff[1], ff[2],
-                                qmap)
+                                fc_unit, ff[0], ff[1], ff[2], qmap)
         return True
 
     def interpret_gauss(self, content:list, infile:str) -> Molprop:

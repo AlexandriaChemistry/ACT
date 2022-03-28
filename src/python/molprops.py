@@ -63,11 +63,15 @@ class Molprops:
 
 
             for atom in ep.atoms:
-                myatm = ET.SubElement(exper, "atom")
-                for myprop in [ "name", "obtype", "atomid", "coord_unit", "force_unit" ]:
-                    if myprop in atom:
+                myatm   = ET.SubElement(exper, "atom")
+                fc_unit = "force_unit"
+                for myprop in [ "name", "obtype", "atomid", "coord_unit", fc_unit ]:
+                    if myprop in atom and None != atom[myprop]:
                         myatm.set(myprop, atom[myprop])
-                for coord in [ "x", "y", "z", "fx", "fy", "fz" ]:
+                myelem = [ "x", "y", "z" ]
+                if fc_unit in atom and None != atom[fc_unit]:
+                    myelem += [ "fx", "fy", "fz" ]
+                for coord in myelem:
                     if coord in atom:
                         myx = ET.SubElement(myatm, coord)
                         myx.text = atom[coord]
