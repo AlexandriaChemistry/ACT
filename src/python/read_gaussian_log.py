@@ -43,6 +43,7 @@ class GaussianReader:
         self.atomtypes     = None
         self.coord_archive = []
         self.coordinates   = []
+        self.forces        = []
         self.exper         = None
         self.espfitcenter  = []
         self.lastespindex  = None
@@ -168,6 +169,19 @@ class GaussianReader:
                 print("There are %d sets of coordinates. Will use #%d." % ( n_archive, n_select ))
             self.coordinates = self.coord_archive[n_select]
 
+    def get_forces(self, content, content_index:int) -> int:
+        c         = content_index+3
+        newforces = []
+        while content[c].strip().find("--------------------") < 0:
+            words = content[c].strip().split()
+            if len(words) == 5:
+                atomnumber = int(words[1])
+                newforces.append([ float(words[2]), float(words[3]), float(words[4])])
+                c += 1
+        if len(newforces) > 0:
+            self.forces = newforces
+        return c-content_index
+        
     def get_standard_orientation(self, content, content_index:int) -> int:
         c = content_index+5
         newatomname    = []
@@ -413,10 +427,16 @@ class GaussianReader:
             if len(self.qMulliken) == len(self.atomtypes):
                 qmap["Mulliken"] = self.qMulliken[i]
             # Convert Angstrom to pm
+            ff = [ 0.0, 0.0, 0.0 ]
+            if len(self.forces) == len(self.atomtypes):
+                ff = self.forces[i]
             self.exper.add_atom(self.atomname[i], alextype, i+1, "pm", 
                                 100*self.coordinates[i][0], 
                                 100*self.coordinates[i][1], 
-                                100*self.coordinates[i][2], qmap)
+                                100*self.coordinates[i][2], 
+                                "Hartree/Bohr",
+                                ff[0], ff[1], ff[2],
+                                qmap)
         return True
 
     def interpret_gauss(self, content:list, infile:str) -> Molprop:
@@ -443,7 +463,10 @@ class GaussianReader:
                 
             elif line.find("Standard orientation") >= 0:
                 content_index += self.get_standard_orientation(content, content_index)
-                
+            
+            elif line.find("Forces (Hartrees/Bohr)") >= 0:
+                content_index += self.get_forces(content, content_index)
+
             elif line.find("SCF Done:") >= 0:
                 content_index += self.get_energy(line)
                 

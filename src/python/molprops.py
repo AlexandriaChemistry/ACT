@@ -64,10 +64,10 @@ class Molprops:
 
             for atom in ep.atoms:
                 myatm = ET.SubElement(exper, "atom")
-                for myprop in [ "name", "obtype", "atomid", "coord_unit"]:
+                for myprop in [ "name", "obtype", "atomid", "coord_unit", "force_unit" ]:
                     if myprop in atom:
                         myatm.set(myprop, atom[myprop])
-                for coord in [ "x", "y", "z" ]:
+                for coord in [ "x", "y", "z", "fx", "fy", "fz" ]:
                     if coord in atom:
                         myx = ET.SubElement(myatm, coord)
                         myx.text = atom[coord]
@@ -233,10 +233,13 @@ class Experiment:
                            average, error, xx, yy, zz, xy, xz, yz):    
         self.polarisability.append({"type":type, "unit": unit, "temperature": str(temperature), "average": str(average), "error":str(error), "xx":xx, "yy":yy, "zz":zz, "xy":xy, "xz":xz, "yz":yz})
 
-    def add_atom(self, name, obtype, atomid, coord_unit, x, y, z, qmap=None):
+    def add_atom(self, name, obtype, atomid, coord_unit, x, y, z,
+                 force_unit, fx, fy, fz, qmap=None):
         newatom = { "name": name, "obtype": obtype, "atomid": str(atomid),
                     "coord_unit": coord_unit, 
-                    "x": str(x), "y": str(y), "z": str(z)}
+                    "x": str(x), "y": str(y), "z": str(z),
+                    "force_unit": force_unit,
+                    "fx": str(fx), "fy": str(fy), "fz": str(fz) }
         if qmap:
             newatom["qmap"] = {}
             for q in qmap.keys():

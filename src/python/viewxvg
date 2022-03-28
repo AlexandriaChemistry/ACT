@@ -68,7 +68,6 @@ def read_xvg(filename):
             if nleg >= 0:
                 myline = line[nleg+1:].strip()
                 if line.find("@type") == 0:
-                    print("Found @type")
                     dataset.append(xvgDataSet())
                 elif len(myline) > 0:
                     legkey, legval = interpret_legend(myline)
@@ -177,7 +176,6 @@ def plot_once():
                 ax.bar(xy.x, xy.y, width=0.8/len(xy.y), bottom=0.0, align="center", label=fn)
         else:
             print_label = len(label) == len(dataset)
-            print("len(label) = %d len(dataset) = %d" % ( len(label), len(dataset) ))
             mylabel     = None
             if args.marker:
                 markers = [ "+", "x", ".", "v", "s", "o" ]
