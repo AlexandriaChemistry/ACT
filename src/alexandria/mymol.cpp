@@ -1571,6 +1571,73 @@ immStatus MyMol::computeForces(double *rmsf)
     return imm;
 }
 
+double MyMol::computeHessian(const t_commrec        *crtmp,
+                             const std::vector<int> &atomIndex,
+                             MatrixWrapper          *hessian,
+                             std::vector<double>    *forceZero)
+{
+    std::vector<double> fneg;
+    fneg.resize(DIM*atomIndex.size(), 0.0);
+    
+    double shellForceRMS = 0;
+    (void) calculateEnergy(crtmp, &shellForceRMS);
+    double epot0  = enerd_->term[F_EPOT];
+
+    // Store central force vector
+    forceZero->clear();
+    for(auto &atom : atomIndex)
+    {
+        for(int m = 0; m < DIM; m++)
+        {
+            forceZero->push_back(f_[atom][m]);
+        }
+    }
+    double    stepSize     = 1e-6; // 1 pm
+    for(size_t ai = 0; ai < atomIndex.size(); ai++)
+    {
+        auto atomI = atomIndex[ai];
+        for(int atomXYZ = 0; atomXYZ < DIM; atomXYZ++)
+        {
+            double xyzRef = state_->x[atomI][atomXYZ];
+            for(int delta  = 0; delta <= 1; delta++)
+            {
+                state_->x[atomI][atomXYZ] = xyzRef + (2*delta-1)*stepSize;
+                (void) calculateEnergy(crtmp, &shellForceRMS);
+                if (delta == 0)
+                {
+                    for(size_t aj = 0; aj < atomIndex.size(); aj++)
+                    {
+                        int atomJ = atomIndex[aj];
+                        for (int d = 0; d < DIM; d++)
+                        {
+                            fneg[aj*DIM+d] = f_[atomJ][d];
+                        }
+                    }
+                }
+            }
+            state_->x[atomI][atomXYZ] = xyzRef;
+            {
+                int col = ai*DIM+atomXYZ;
+                for(size_t aj = 0; aj < atomIndex.size(); aj++)
+                {
+                    int    atomJ = atomIndex[aj];
+                    for(int d = 0; d < DIM; d++)
+                    {
+                        int    row   = aj*DIM+d;
+                        double value = -(f_[atomJ][d]-fneg[row])/(2*stepSize);
+                        if (false && debug)
+                        {
+                            fprintf(debug, "Setting H[%2d][%2d] = %10g\n", row, col, value); 
+                        }
+                        hessian->set(row, col, value);
+                    }
+                }
+            }
+        }
+    }
+    return epot0;
+}
+
 immStatus MyMol::minimizeCoordinates(double *rmsd)
 {
     updateMDAtoms();
@@ -1584,13 +1651,11 @@ immStatus MyMol::minimizeCoordinates(double *rmsd)
     auto      mdatoms      = MDatoms_->get()->mdatoms();
     // Below is a simple minimization algorithm using steepest descent
     bool      converged    = false;
-    double    stepSize     = 1e-6; // 1 pm
     double    myForceToler = 0.001; // kJ/mol nm
     int       myIter       = 0;
     int       maxIter      = 100;
     double em_tol_backup = inputrec_->em_tol;
     inputrec_->em_tol    = 1e-8;
-    double shellForceRMS = 0;
     std::vector<int> theAtoms;
     for(int atom = 0; atom < mdatoms->nr; atom++)
     {
@@ -1601,69 +1666,16 @@ immStatus MyMol::minimizeCoordinates(double *rmsd)
     }
     MatrixWrapper Hessian(DIM*theAtoms.size(), DIM*theAtoms.size());
     std::vector<double> f0;
-    std::vector<double> fneg;
-    fneg.resize(DIM*theAtoms.size());
     double epot0    = 0;
     bool   epot0set = false;
+    // Now start the minimization loop.
     do
     {
-        (void) calculateEnergy(crtmp, &shellForceRMS);
+        double newEpot = computeHessian(crtmp, theAtoms, &Hessian, &f0);
         if (!epot0set)
         {
-            epot0    = enerd_->term[F_EPOT];
+            epot0    = newEpot;
             epot0set = true;
-        }
-        // Store central force vector
-        f0.clear();
-        for(auto &atom : theAtoms)
-        {
-            for(int m = 0; m < DIM; m++)
-            {
-                f0.push_back(f_[atom][m]);
-            }
-        }
-        for(size_t ai = 0; ai < theAtoms.size(); ai++)
-        {
-            auto atomI = theAtoms[ai];
-            for(int atomXYZ = 0; atomXYZ < DIM; atomXYZ++)
-            {
-                //double epot[2], gradE[2];
-                double xyzRef = state_->x[atomI][atomXYZ];
-                for(int delta  = 0; delta <= 1; delta++)
-                {
-                    state_->x[atomI][atomXYZ] = xyzRef + (2*delta-1)*stepSize;
-                    imm   = calculateEnergy(crtmp, &shellForceRMS);
-                    if (delta == 0)
-                    {
-                        for(size_t aj = 0; aj < theAtoms.size(); aj++)
-                        {
-                            int atomJ = theAtoms[aj];
-                            for (int d = 0; d < DIM; d++)
-                            {
-                                fneg[aj*DIM+d] = f_[atomJ][d];
-                            }
-                        }
-                    }
-                }
-                state_->x[atomI][atomXYZ] = xyzRef;
-                {
-                    int col = ai*DIM+atomXYZ;
-                    for(size_t aj = 0; aj < theAtoms.size(); aj++)
-                    {
-                        int    atomJ = theAtoms[aj];
-                        for(int d = 0; d < DIM; d++)
-                        {
-                            int    row   = aj*DIM+d;
-                            double value = -(f_[atomJ][d]-fneg[row])/(2*stepSize);
-                            if (false && debug)
-                            {
-                                fprintf(debug, "Setting H[%2d][%2d] = %10g\n", row, col, value); 
-                            }
-                            Hessian.set(row, col, value);
-                        }
-                    }
-                }
-            }
         }
         std::vector<double> deltaX;
         deltaX.resize(DIM*theAtoms.size(), 0.0);
@@ -1697,10 +1709,6 @@ immStatus MyMol::minimizeCoordinates(double *rmsd)
             {
                 dcom[m] /= theAtoms.size();
             }
-            if (false && debug)
-            {
-                printf("dcom %10g %10g %10g\n", dcom[XX], dcom[YY], dcom[ZZ]);
-            }
             for (auto &atomI : theAtoms)
             {
                 for(int m = 0; m < DIM; m++)
@@ -1714,24 +1722,23 @@ immStatus MyMol::minimizeCoordinates(double *rmsd)
             break;
         }
                 
+        // One more energy and force calculation with the new coordinates
+        double shellForceRMS = 0;
+        imm = calculateEnergy(crtmp, &shellForceRMS);
+        
+        double msAtomForce  = 0;
+        for(size_t kk = 0; kk < theAtoms.size(); kk++)
         {
-            // One more energy and force calculation with the new coordinates
-            imm = calculateEnergy(crtmp, &shellForceRMS);
-                    
-            double msAtomForce  = 0;
-            for(size_t kk = 0; kk < theAtoms.size(); kk++)
-            {
-                int atomI = theAtoms[kk];
-                msAtomForce  += iprod(f_[atomI], f_[atomI]);
-            }
-            msAtomForce /= theAtoms.size();
-            converged = msAtomForce <= myForceToler;
-            
-            if (debug)
-            {
-                fprintf(debug, "%s rmsForce %10g Epot before %10g now %10g\n", getMolname().c_str(),
-                        std::sqrt(msAtomForce), epot0, enerd_->term[F_EPOT]);
-            }
+            int atomI = theAtoms[kk];
+            msAtomForce  += iprod(f_[atomI], f_[atomI]);
+        }
+        msAtomForce /= theAtoms.size();
+        converged = msAtomForce <= myForceToler;
+        
+        if (debug)
+        {
+            fprintf(debug, "%s rmsForce %10g Epot before %10g now %10g\n", getMolname().c_str(),
+                    std::sqrt(msAtomForce), epot0, enerd_->term[F_EPOT]);
         }
         myIter += 1;
     }
@@ -1746,9 +1753,10 @@ immStatus MyMol::minimizeCoordinates(double *rmsd)
             fprintf(debug, "force[%2d] = %10g %10g %10g\n", kk, f_[kk][XX], f_[kk][YY],f_[kk][ZZ]);
         }
     }
-
+    // Fetch back the input structure.
     restoreCoordinates();
     // Compute RMSD
+    // TODO: Add least-squares fitting of the new structure on the old.
     double msd  = 0;
     for (auto &kk : theAtoms)
     {

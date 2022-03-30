@@ -35,6 +35,16 @@
 
 #include <map>
 
+#include "act/molprop/molprop.h"
+#include "act/poldata/poldata.h"
+#include "act/qgen/qgen_acm.h"
+#include "act/qgen/qgen_resp.h"
+#include "act/qgen/qtype.h"
+#include "act/utility/communicationrecord.h"
+#include "act/utility/regression.h"
+#include "alexandria/gentop_vsite.h"
+#include "alexandria/molselect.h"
+#include "alexandria/mymol_low.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/math/vec.h"
@@ -48,16 +58,6 @@
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/real.h"
-
-#include "act/utility/communicationrecord.h"
-#include "gentop_vsite.h"
-#include "act/molprop/molprop.h"
-#include "molselect.h"
-#include "mymol_low.h"
-#include "act/poldata/poldata.h"
-#include "act/qgen/qgen_acm.h"
-#include "act/qgen/qgen_resp.h"
-#include "act/qgen/qtype.h"
 
 struct gmx_enerdata_t;
 struct gmx_shellfc_t;
@@ -530,6 +530,21 @@ namespace alexandria
          */
         immStatus computeForces(double *rmsf);
 
+        /*! \brief Compute the second derivative matrix
+         *
+         * \param[in]  crtmp     Temporary communication record for one core.
+         * \param[in]  atomIndex Vector containing the indices of the real 
+         *                       atoms, not shells or vsites.
+         * \param[out] hessian   MatrixWrapper object that must be pre-
+         *                       allocated to NxN where N = 3*atomIndex.size()
+         * \param[out] forceZero The forces on the atoms in the input structure,
+         *                       that is, not on the shells or vsites.
+         * \return the potential energy of the input structure
+         */
+        double computeHessian(const t_commrec        *crtmp,
+                              const std::vector<int> &atomIndex,
+                              MatrixWrapper          *hessian,
+                              std::vector<double>    *forceZero);
         /*! \brief
          * The routine will energy minimize the atomic coordinates while
          * relaxing the shells.
