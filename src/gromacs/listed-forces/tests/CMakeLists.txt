@@ -32,6 +32,13 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-gmx_add_unit_test(ListedForcesTest listed-forces-test
-  bonded.cpp)
+set(testname "ListedForcesTest")
+set(exename "listed-forces-test")
 
+
+gmx_add_unit_test(${testname} ${exename}
+    bonded.cpp
+    # pseudo-library for code for alexandria
+    $<TARGET_OBJECTS:actLib>
+    )
+target_link_libraries(${exename} libactgromacs ${GMX_EXTRA_LIBRARIES} ${XML_LIBRARIES} ${GMX_EXE_LINKER_FLAGS})

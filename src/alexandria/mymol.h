@@ -510,16 +510,40 @@ namespace alexandria
                            const std::string         &method,
                            const std::string         &basis);
 
+        //! \brief Update GROMACS data structures
+        void updateMDAtoms();
+        
+        /*! \brief Calculate the forces and energies
+         * For a polatizable model the shell positions are minimized.
+         * \param[in]  crtmp         Temporary communication record with one core only.
+         * \param[out] shellForceRMS Root mean square force on the shells
+         * \return immStatus::OK if everything worked fine, error code otherwise.
+         */
+        immStatus calculateEnergy(const t_commrec *crtmp,
+                                  real            *shellForceRMS);
+
         /*! \brief
-         * Relax the shells (if any) or compute the forces in the molecule
+         * Relax the shells (if any) or compute the forces in the molecule.
          *
-         * \param[out] rmsf  Root mean square force on the shells
+         * \param[out] rmsf                Root mean square force on the shells
          * \return immOK if everything went fine, an error otherwise.
          */
         immStatus computeForces(double *rmsf);
 
         /*! \brief
+         * The routine will energy minimize the atomic coordinates while
+         * relaxing the shells.
+         *
+         * \param[out] rmsd                Root mean square atomic deviation of atomic
+         *                                 coordinates after minimization.
+         * \return immOK if everything went fine, an error otherwise.
+         */
+        immStatus minimizeCoordinates(double *rmsd);
+
+        /*! \brief
          * Return the optimized geometry of the molecule from the data file.
+         * The structure returned here corresponds to the one from the input
+         * file.
          */
         bool getOptimizedGeometry(rvec *x);
 

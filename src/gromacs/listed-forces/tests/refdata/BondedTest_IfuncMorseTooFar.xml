@@ -1,14 +1,14 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <Real Name="Bond">2.9999999999999987</Real>
+  <Real Name="Morse">-1.814790757478292</Real>
   <Sequence Name="Forces">
     <Int Name="Length">6</Int>
     <Real>0</Real>
     <Real>0</Real>
-    <Real>9.9999999999999982</Real>
+    <Real>35.960352521663367</Real>
     <Real>0</Real>
-    <Real>9.9999999999999982</Real>
-    <Real>-9.9999999999999982</Real>
+    <Real>0</Real>
+    <Real>-35.960352521663367</Real>
   </Sequence>
 </ReferenceData>

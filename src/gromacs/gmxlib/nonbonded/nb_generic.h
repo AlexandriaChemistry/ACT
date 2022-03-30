@@ -53,5 +53,8 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                       nb_kernel_data_t *        kernel_data,
                       t_nrnb *                  nrnb);
 
+void wang_buckingham(real sigma, real epsilon, real gamma, 
+                     real rsq, real rinv,
+                     real *vvdw, real *fvdw);
 
 #endif

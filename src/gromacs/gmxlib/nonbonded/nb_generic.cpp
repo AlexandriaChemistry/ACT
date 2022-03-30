@@ -49,6 +49,32 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/fatalerror.h"
 
+void wang_buckingham(real sigma, real epsilon, real gamma, 
+                     real rsq, real rinv,
+                     real *vvdw, real *fvdw)
+{
+    /* Modified Buckingham: JCTC  Volume: 9  Page: 452  Year: 2012 */
+    real r           = rsq*rinv;
+    real r5          = rsq*rsq*r;
+    real r6          = r5*r;
+    real sigma2      = sigma*sigma;
+    real sigma6      = sigma2*sigma2*sigma2;
+    real sigma5      = sigma2*sigma2*sigma;
+    real sigma6_r6   = sigma6 + r6;
+    real gamma_3     = 3.0/(gamma + 3.0);
+    real gamma3_inv  = 1.0/(1.0 - gamma_3);
+    real disp_pre    = 2 * epsilon * gamma3_inv;
+    real erep_exp    = gamma_3*std::exp(gamma*(1-(r/sigma)));
+    
+    real vvdw_disp   = - disp_pre * (sigma6 / sigma6_r6);
+    real vvdw_rep    = -vvdw_disp*erep_exp;
+    *vvdw            = vvdw_rep + vvdw_disp;
+    
+    real fvdw_disp   = - disp_pre * sigma6 * 6 * r5 / (sigma6_r6 * sigma6_r6);
+    real fvdw_rep    = - fvdw_disp*erep_exp - vvdw_disp*erep_exp*(gamma/sigma);
+    *fvdw            = fvdw_rep + fvdw_disp;
+}
+
 void
 gmx_nb_generic_kernel(t_nblist *                nlist,
                       rvec *                    xx,
@@ -428,38 +454,12 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                         break;
 
                     case GMX_NBKERNEL_VDW_BUCKINGHAM:
-                        /* Modiefied Buckingham: JCTC  Volume: 9  Page: 452  Year: 2012 */
-                        c                = vdwparam[tj+1];   /*sigma*/
-                        cexp1            = vdwparam[tj+2];   /*epsilon*/
-                        cexp2            = vdwparam[tj];     /*gamma*/
-                        r                = rsq*rinv;
-                        r5               = rsq*rsq*r;
-                        r6               = r5*r;
-                        c2               = c*c;
-                        c6               = c2*c2*c2;
-                        c5               = c2*c2*c;
-                        vdw_wang1        = std::exp(cexp2*(1-(r/c)));
-                        vdw_wang2        = c6 + r6;
-                        vdw_wang3        = cexp2 + 3;
-                        
-                        vvdw_disp        = -2*cexp1*(1.0/(1-(3.0/vdw_wang3))*(c6/vdw_wang2));
-                        vvdw_rep         = -vvdw_disp*((3.0/vdw_wang3)*vdw_wang1);
-                        fvdw_disp        = -2*cexp1*((6*vdw_wang3*r5*c6)/(cexp2*(vdw_wang2*vdw_wang2)));
-                        fvdw_rep         = (6*vdw_wang1*cexp1*c5*(cexp2*r6 + 6*r5*c + cexp2*c6))/(cexp2*(vdw_wang2*vdw_wang2));
-                        fvdw             = fvdw_rep - fvdw_disp;
-                        
-                        if (ic->vdw_modifier == eintmodPOTSHIFT)
-                        {
-                            vvdw             = (vvdw_rep-cexp1*std::exp(-cexp2*rvdw))-(vvdw_disp + c6*sh_dispersion)/6.0;
-                        }
-                        else
-                        {
-                            vvdw             = vvdw_rep-vvdw_disp/6.0;
-                        }
-                        if (debug)
-                        {
-                            fprintf(debug, "vvdw: %0.3f r: %0.3f sigma: %0.3f epsilon: %0.3f gamma %0.3f  i: %d j: %d\n", vvdw, r, c, cexp1, cexp2, ii, jnr);
-                        }
+                        wang_buckingham(/*sigma*/   vdwparam[tj+1],
+                                        /*epsilon*/ vdwparam[tj+2],
+                                        /*gamma*/   vdwparam[tj],
+                                        rsq, rinv,
+                                        &vvdw,
+                                        &fvdw);
                         break;
                         
                     case GMX_NBKERNEL_VDW_CUBICSPLINETABLE:

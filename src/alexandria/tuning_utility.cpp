@@ -582,29 +582,34 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
             fprintf(fp, "RMS Force %g (kJ/mol/nm)\n", rmsf);
             lsq_rmsf[ims].add_point(0, rmsf, 0, 0);
             // Energy
-            fprintf(fp, "Energy terms (kJ/mol)\n");
+            fprintf(fp, "Energy terms (kJ/mol, EPOT including atomization terms)\n");
+            std::vector<double> eBefore;
+            auto terms = mol->energyTerms();
+            for(int ii = 0; ii < F_NRE; ii++)
+            {
+                eBefore.push_back(terms[ii]);
+            }
             double deltaE0 = 0;
             if (mol->energy(MolPropObservable::DELTAE0, &deltaE0))
             {
                 deltaE0 += mol->atomizationEnergy();
                 lsq_epot[ims][qType::Calc].add_point(deltaE0, mol->potentialEnergy(), 0, 0);
-                fprintf(fp, "DeltaE0+Atomization   %.2f\n", deltaE0);
+                fprintf(fp, "   %-20s  %10.3f  Difference: %10.3f\n", "Reference EPOT", deltaE0,
+                        eBefore[F_EPOT]-deltaE0);
             }
-            auto terms = mol->energyTerms();
+            double rmsd = 0;
+            // Now get the minimized structure RMSD and Energy
+            // TODO: Only do this for JobType::OPT
+            mol->minimizeCoordinates(&rmsd);
+            auto eAfter = mol->energyTerms();
+            fprintf(fp, "   %-20s  %10s  %10s  %10s minimization\n", "Term", "Before", "After", "Difference");
             for(auto &ep : ePlot)
             {
-                std::string extra;
-                if (ep == F_EPOT)
-                {
-                    if (std::abs(terms[ep]-deltaE0) > 20)
-                    {
-                        extra.assign(" PPP");
-                    }
-                }
-                fprintf(fp, "%-20s  %.2f%s\n",
+                fprintf(fp, "   %-20s  %10.3f  %10.3f  %10.3f\n",
                         interaction_function[ep].name,
-                        terms[ep], extra.c_str());
+                        eBefore[ep], eAfter[ep], eAfter[ep]-eBefore[ep]);
             }
+            fprintf(fp, "Coordinate RMSD after minimization %10g pm\n\n", 1000*rmsd);
             // Now compute all the ESP RMSDs.
             mol->calcEspRms(pd);
             for (auto &i : qTypes())

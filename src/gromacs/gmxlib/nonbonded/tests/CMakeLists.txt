@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014,2015,2016,2018, by the GROMACS development team, led by
+# Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,15 +32,15 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-file(GLOB LISTED_FORCES_SOURCES *.cpp)
+set(testname "WangBuckinghamTests")
+set(exename "wang-buckingham-test")
 
-if(GMX_USE_CUDA)
-   file(GLOB BONDED_CUDA_KERNEL_SOURCES
-       bonded.cu)
-endif()
-
-set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${LISTED_FORCES_SOURCES} ${BONDED_CUDA_KERNEL_SOURCES} PARENT_SCOPE)
-
-if (BUILD_TESTING)
-     add_subdirectory(tests)
-endif()
+gmx_add_unit_test(
+    ${testname}
+    ${exename}
+    # files with code for tests
+    wbhTest.cpp
+    # pseudo-library for code for alexandria
+    $<TARGET_OBJECTS:actLib>
+    )
+target_link_libraries(${exename} libactgromacs ${GMX_EXTRA_LIBRARIES} ${XML_LIBRARIES} ${GMX_EXE_LINKER_FLAGS})
