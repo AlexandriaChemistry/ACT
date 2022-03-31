@@ -50,7 +50,9 @@
 #include "gromacs/gmxlib/nonbonded/nonbonded.h"
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/listed-forces/manage-threading.h"
+#include "gromacs/math/do_fit.h"
 #include "gromacs/math/invertmatrix.h"
+#include "gromacs/math/paddedvector.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vecdump.h"
 #include "gromacs/math/vectypes.h"
@@ -1657,11 +1659,17 @@ immStatus MyMol::minimizeCoordinates(double *rmsd)
     double em_tol_backup = inputrec_->em_tol;
     inputrec_->em_tol    = 1e-8;
     std::vector<int> theAtoms;
+    std::vector<real> w_rls;
     for(int atom = 0; atom < mdatoms->nr; atom++)
     {
         if (mdatoms->ptype[atom] == eptAtom)
         {
             theAtoms.push_back(atom);
+            w_rls.push_back(1);
+        }
+        else
+        {
+            w_rls.push_back(0);
         }
     }
     MatrixWrapper Hessian(DIM*theAtoms.size(), DIM*theAtoms.size());
@@ -1743,8 +1751,8 @@ immStatus MyMol::minimizeCoordinates(double *rmsd)
         myIter += 1;
     }
     while (!converged && myIter < maxIter);
-    gmx::HostVector<gmx::RVec> xmin;
-    xmin.resizeWithPadding(mtop_->natoms);
+    std::vector<gmx::RVec> xmin;
+    xmin.resize(mtop_->natoms);
     for (auto &kk : theAtoms)
     {
         copy_rvec(state_->x[kk], xmin[kk]);
@@ -1755,8 +1763,14 @@ immStatus MyMol::minimizeCoordinates(double *rmsd)
     }
     // Fetch back the input structure.
     restoreCoordinates();
+    std::vector<gmx::RVec> xp;
+    xp.resize(mtop_->natoms);
+    for (auto &kk : theAtoms)
+    {
+        copy_rvec(state_->x[kk], xp[kk]);
+    }
     // Compute RMSD
-    // TODO: Add least-squares fitting of the new structure on the old.
+    do_fit(w_rls.size(), w_rls.data(), as_rvec_array(xp.data()), as_rvec_array(xmin.data()));
     double msd  = 0;
     for (auto &kk : theAtoms)
     {
