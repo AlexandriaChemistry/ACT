@@ -282,8 +282,9 @@ static void analyse_multipoles(FILE                                             
     qcalc->calcMoments();
     for(auto &mpo : mpoMultiPoles)
     {
-        fprintf(fp, "Electronic %s (%s):\n",
-                mpo_name(mpo), mpo_unit2(mpo));
+        const char *name = mpo_name(mpo);
+        const char *unit = mpo_unit2(mpo);
+        fprintf(fp, "Electronic %s (%s):\n", name, unit);
         auto Telec = qelec->getMultipole(mpo);
         printMultipole(fp, mpo, Telec);
 
@@ -300,25 +301,27 @@ static void analyse_multipoles(FILE                                             
                 real delta = 0;
                 auto Tcalc = qcalc->getMultipole(mpo);
                 fprintf(fp, "%s %s (%s):\n",
-                        qTypeName(qt).c_str(), mpo_name(mpo), mpo_unit2(mpo));
+                        qTypeName(qt).c_str(), name, unit);
                 printMultipole(fp, mpo, Tcalc);
 
                 std::vector<double> diff;
                 for(size_t i = 0; i < Tcalc.size(); i++)
                 {
-                    diff.push_back(Tcalc[i]-Telec[i]);
-                    delta += gmx::square(diff[diff.size()-1]);
-                    (*lsq)[mpo][mol->datasetType()][qt].add_point(Telec[i], Tcalc[i], 0, 0);
+                    auto tc = Tcalc[i];
+                    auto te = Telec[i];
+                    diff.push_back(tc-te);
+                    delta += gmx::square(tc-te);
+                    (*lsq)[mpo][mol->datasetType()][qt].add_point(convertFromGromacs(te, unit), 
+                                                                  convertFromGromacs(tc, unit), 0, 0);
                 }
-                double rms = convertFromGromacs(std::sqrt(delta/Tcalc.size()), mpo_unit2(mpo));
+                double rms = std::sqrt(delta/Tcalc.size());
                 std::string flag("");
                 if (rms > toler[mpo])
                 {
-                    flag = " XXX";
+                    flag = " MULTI";
                 }
                 fprintf(fp, "Difference %s Norm %g RMS = %g (%s)%s:\n",
-                        mpo_name(mpo), convertFromGromacs(std::sqrt(delta), mpo_unit2(mpo)),
-                        rms, mpo_unit2(mpo), flag.c_str());
+                        name, std::sqrt(delta), rms, unit, flag.c_str());
                 printMultipole(fp, mpo, diff);
             }
         }
@@ -776,7 +779,7 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
             header = false;
             for(auto &mpo : mpoMultiPoles)
             {
-                print_stats(fp, mpo_name(mpo), mpo_unit2(mpo), convertFromGromacs(1.0, mpo_unit2(mpo)),
+                print_stats(fp, mpo_name(mpo), mpo_unit2(mpo), 1.0, //convertFromGromacs(1.0, mpo_unit2(mpo)),
                             &lsq_multi[mpo][ims.first][qt],   header, "Electronic", name, useOffset_);
             }
             if (bPolar && qt == qType::Calc)
@@ -798,7 +801,7 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
     for(auto &mpo : mpoMultiPoles)
     {
         std::string cmdFlag = gmx::formatString("-%scorr", mpo_name(mpo));
-        std::string title   = gmx::formatString("%s components %s", mpo_name(mpo),
+        std::string title   = gmx::formatString("%s components (%s)", mpo_name(mpo),
                                                 mpo_unit2(mpo));
         print_corr(opt2fn(cmdFlag.c_str(), filenm.size(), filenm.data()),
                    title.c_str(), "Electronic", "Empirical", lsq_multi[mpo], oenv);
