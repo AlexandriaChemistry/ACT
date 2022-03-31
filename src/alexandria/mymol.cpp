@@ -1673,13 +1673,17 @@ immStatus MyMol::minimizeCoordinates(double *rmsd)
         }
     }
     MatrixWrapper Hessian(DIM*theAtoms.size(), DIM*theAtoms.size());
-    std::vector<double> f0;
+    std::vector<double> f0, f00;
     double epot0    = 0;
     bool   epot0set = false;
     // Now start the minimization loop.
     do
     {
         double newEpot = computeHessian(crtmp, theAtoms, &Hessian, &f0);
+        if (f00.empty())
+        {
+            f00 = f0;
+        }
         if (!epot0set)
         {
             epot0    = newEpot;
@@ -1763,6 +1767,14 @@ immStatus MyMol::minimizeCoordinates(double *rmsd)
     }
     // Fetch back the input structure.
     restoreCoordinates();
+    // Restore the forces
+    for(size_t kk = 0; kk < theAtoms.size(); kk++)
+    {
+        for(int m = 0; m < DIM; m++)
+        {
+            f_[theAtoms[kk]][m] = f00[DIM*kk+m];
+        }
+    }
     std::vector<gmx::RVec> xp;
     xp.resize(mtop_->natoms);
     for (auto &kk : theAtoms)

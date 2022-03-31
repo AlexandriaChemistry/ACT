@@ -346,6 +346,11 @@ namespace alexandria
          */
         const gmx::HostVector<gmx::RVec> &x() const { return state_->x; }
 
+        /*! \brief
+         * Return the force vector of the molecule
+         */
+        const PaddedVector<gmx::RVec> &f() const { return f_; }
+
         //! \return the potential energy of this molecule
         real potentialEnergy() const;
 
