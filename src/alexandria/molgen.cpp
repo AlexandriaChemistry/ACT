@@ -139,7 +139,7 @@ void MolGen::addOptions(std::vector<t_pargs>          *pargs,
         { "-fc_cm5",  FALSE, etREAL, {targets->find(eRMS::CM5)->second.weightPtr()},
           "Force constant in the penalty function for deviation from CM5 charges." },
         { "-fc_polar",  FALSE, etREAL, {targets->find(eRMS::Polar)->second.weightPtr()},
-          "Force constant in the penalty function for deviation of the isotropic molecular polarizability from the reference." },
+          "Force constant in the penalty function for deviation of the six independent components of the molecular polarizability tensor from the reference." },
         { "-fc_force",  FALSE, etREAL, {targets->find(eRMS::Force2)->second.weightPtr()},
           "Force constant in the penalty function for the magnitude of the squared force on the atoms. For optimized structures the force on the atoms should be zero." }
     };
