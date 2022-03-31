@@ -722,7 +722,7 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
                             convertFromGromacs(x[j][XX], "pm"),
                             convertFromGromacs(x[j][YY], "pm"),
                             convertFromGromacs(x[j][ZZ], "pm"),
-                            force[i][XX], force[i][YY], force[i][ZZ],
+                            force[j][XX], force[j][YY], force[j][ZZ],
                             qtot);
                     i++;
                 }
