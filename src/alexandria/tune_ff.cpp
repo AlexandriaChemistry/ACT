@@ -495,7 +495,7 @@ void OptACM::printGenomeTable(const ga::Genome   &genome,
             }
             fprintf(
                 logFile(),
-                "| %-*s | %-*s | %-*f | %-*f | %-*f | %-*f | %-*f | %-*f |\n%s\n",
+                "| %-*s | %-*s | %-*.3f | %-*.3f | %-*.3f | %-*.3f | %-*.3f | %-*.3f |\n%s\n",
                 SIZES[0], paramClass[i].c_str(),
                 SIZES[1], paramNames[j].c_str(),
                 SIZES[2], genome.base(j),
