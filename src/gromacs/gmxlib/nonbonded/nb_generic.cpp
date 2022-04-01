@@ -59,7 +59,6 @@ void wang_buckingham(real sigma, real epsilon, real gamma,
     real r6          = r5*r;
     real sigma2      = sigma*sigma;
     real sigma6      = sigma2*sigma2*sigma2;
-    real sigma5      = sigma2*sigma2*sigma;
     real sigma6_r6   = sigma6 + r6;
     real gamma_3     = 3.0/(gamma + 3.0);
     real gamma3_inv  = 1.0/(1.0 - gamma_3);
@@ -75,6 +74,13 @@ void wang_buckingham(real sigma, real epsilon, real gamma,
     *fvdw            = fvdw_rep + fvdw_disp;
 }
 
+void coulomb_gaussian(real qq, real izeta, real jzeta,
+                      real r, real *velec, real *felec)
+{
+    *velec       = qq*Coulomb_GG(r, izeta, jzeta);
+    *felec       = qq*DCoulomb_GG(r, izeta, jzeta);
+}
+
 void
 gmx_nb_generic_kernel(t_nblist *                nlist,
                       rvec *                    xx,
@@ -88,13 +94,13 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
     real          facel;
     int           n, ii, is3, ii3, k, nj0, nj1, jnr, j3, ggid, nnn, n0;
     real          shX, shY, shZ;
-    real          fscal, felec, fvdw, fvdw_disp, fvdw_rep, velec, vvdw, tx, ty, tz;
+    real          fscal, felec, fvdw, velec, vvdw, tx, ty, tz;
     real          rinvsq;
     real          iq;
     real          qq, vctot;
     int           nti, nvdwparam;
     int           tj;
-    real          rt, r, r5, r6, eps, eps2, Y, F, Geps, Heps2, VV, FF, Fp, fijD, fijR;
+    real          rt, r, eps, eps2, Y, F, Geps, Heps2, VV, FF, Fp, fijD, fijR;
     real          rinvsix;
     real          vvdwtot;
     real          vvdw_rep, vvdw_disp;
@@ -102,7 +108,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
     real          jx, jy, jz;
     real          dx, dy, dz, rsq, rinv;
     real          izeta, jzeta, irow, jrow;
-    real          c, c2, c6, c5, c12, c6grid, cexp1, cexp2; //br is removed
+    real          c6, c12, c6grid;
     real *        charge;
     real *        zeta;
     real *        row;
@@ -123,7 +129,6 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
     real          rcutoff, rcutoff2;
     real          d, d2, sw, dsw, rinvcorr;
     real          elec_swV3, elec_swV4, elec_swV5, elec_swF2, elec_swF3, elec_swF4;
-    real          vdw_wang1, vdw_wang2, vdw_wang3;
     real          vdw_swV3, vdw_swV4, vdw_swV5, vdw_swF2, vdw_swF3, vdw_swF4;
     real          ewclj, ewclj2, ewclj6, ewcljrsq, poly, exponent, sh_lj_ewald;
     gmx_bool      bExactElecCutoff, bExactVdwCutoff, bExactCutoff;
@@ -334,8 +339,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                         {
                             if (irow == 0 && jrow == 0)
                             {
-                                velec       = qq*Coulomb_GG(r, izeta, jzeta);
-                                felec       = (qq*rinv)*DCoulomb_GG(r, izeta, jzeta);
+                                coulomb_gaussian(qq, izeta, jzeta, rsq*rinv, &velec, &felec);
                             }
                             else
                             {

@@ -1,0 +1,44 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Real Name="iq">0.20000000000000001</Real>
+  <Real Name="jq">-0.40000000000000002</Real>
+  <Real Name="izeta">12</Real>
+  <Real Name="jzeta">14</Real>
+  <Sequence Name="Distance">
+    <Int Name="Length">9</Int>
+    <Real>0.10000000000000001</Real>
+    <Real>0.14999999999999999</Real>
+    <Real>0.20000000000000001</Real>
+    <Real>0.25</Real>
+    <Real>0.29999999999999999</Real>
+    <Real>0.34999999999999998</Real>
+    <Real>0.40000000000000002</Real>
+    <Real>0.45000000000000001</Real>
+    <Real>0.5</Real>
+  </Sequence>
+  <Sequence Name="Energy">
+    <Int Name="Length">9</Int>
+    <Real>-0.64194275366640152</Real>
+    <Real>-0.50492438181328836</Real>
+    <Real>-0.3960135492215246</Real>
+    <Real>-0.31959157937545546</Real>
+    <Real>-0.26663710393620815</Real>
+    <Real>-0.22856994507880626</Real>
+    <Real>-0.1999999490036975</Real>
+    <Real>-0.17777777658651772</Real>
+    <Real>-0.15999999998119735</Real>
+  </Sequence>
+  <Sequence Name="Force">
+    <Int Name="Length">9</Int>
+    <Real>-2.833517778375279</Real>
+    <Real>-2.5192009752619158</Real>
+    <Real>-1.8314663738066734</Real>
+    <Real>-1.2600029256427441</Real>
+    <Real>-0.88722952224056062</Real>
+    <Real>-0.65296688448834694</Real>
+    <Real>-0.49999636655161578</Real>
+    <Real>-0.39506163423894369</Real>
+    <Real>-0.31999999836557075</Real>
+  </Sequence>
+</ReferenceData>

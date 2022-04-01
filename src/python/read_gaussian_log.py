@@ -52,6 +52,8 @@ class GaussianReader:
         self.qCM5          = []
         self.qHirshfeld    = []
         self.qMulliken     = []
+        self.frequencies   = []
+        self.intensities   = []
         self.atomicCenter  = 0
         self.readPotential = 0
         self.molname       = molname
@@ -181,6 +183,9 @@ class GaussianReader:
         if len(newforces) > 0:
             self.forces = newforces
         return c-content_index
+        
+    def get_frequencies(self, content, content_index:int) -> int:
+        
         
     def get_standard_orientation(self, content, content_index:int) -> int:
         c = content_index+5

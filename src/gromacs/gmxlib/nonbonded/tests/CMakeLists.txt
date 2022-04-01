@@ -40,6 +40,7 @@ gmx_add_unit_test(
     ${exename}
     # files with code for tests
     wbhTest.cpp
+    coulombTest.cpp
     # pseudo-library for code for alexandria
     $<TARGET_OBJECTS:actLib>
     )

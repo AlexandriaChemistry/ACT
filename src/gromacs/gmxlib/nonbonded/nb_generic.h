@@ -57,4 +57,7 @@ void wang_buckingham(real sigma, real epsilon, real gamma,
                      real rsq, real rinv,
                      real *vvdw, real *fvdw);
 
+void coulomb_gaussian(real qq, real izeta, real jzeta,
+                      real r, real *velec, real *felec);
+
 #endif

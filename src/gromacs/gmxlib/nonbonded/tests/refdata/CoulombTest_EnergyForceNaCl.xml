@@ -1,0 +1,44 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Real Name="iq">1</Real>
+  <Real Name="jq">-1</Real>
+  <Real Name="izeta">0</Real>
+  <Real Name="jzeta">0</Real>
+  <Sequence Name="Distance">
+    <Int Name="Length">9</Int>
+    <Real>0.10000000000000001</Real>
+    <Real>0.14999999999999999</Real>
+    <Real>0.20000000000000001</Real>
+    <Real>0.25</Real>
+    <Real>0.29999999999999999</Real>
+    <Real>0.34999999999999998</Real>
+    <Real>0.40000000000000002</Real>
+    <Real>0.45000000000000001</Real>
+    <Real>0.5</Real>
+  </Sequence>
+  <Sequence Name="Energy">
+    <Int Name="Length">9</Int>
+    <Real>-10</Real>
+    <Real>-6.666666666666667</Real>
+    <Real>-5</Real>
+    <Real>-4</Real>
+    <Real>-3.3333333333333335</Real>
+    <Real>-2.8571428571428572</Real>
+    <Real>-2.5</Real>
+    <Real>-2.2222222222222223</Real>
+    <Real>-2</Real>
+  </Sequence>
+  <Sequence Name="Force">
+    <Int Name="Length">9</Int>
+    <Real>99.999999999999986</Real>
+    <Real>44.444444444444443</Real>
+    <Real>24.999999999999996</Real>
+    <Real>16</Real>
+    <Real>11.111111111111111</Real>
+    <Real>8.1632653061224509</Real>
+    <Real>6.2499999999999991</Real>
+    <Real>4.9382716049382713</Real>
+    <Real>4</Real>
+  </Sequence>
+</ReferenceData>
