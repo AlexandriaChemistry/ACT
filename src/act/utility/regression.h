@@ -41,12 +41,35 @@
 class MatrixWrapper
 {
     public:
+        //! \brief Default constructor
+        MatrixWrapper() {}
+
         /*! \brief Constructor
          *
          * \param[in] ncolumn Number of columns in the matrix
          * \param[in] nrow    Number of rows
          */
         MatrixWrapper(int ncolumn, int nrow);
+
+        /*! \brief Copy constructor
+         * \param[in] source the matrix to copy values from
+         */
+        MatrixWrapper(const MatrixWrapper &source);
+
+        /*! \brief Move constructor
+         * \param[in] source the matrix to move values from
+         */
+        MatrixWrapper(MatrixWrapper &&source);
+
+        /*! \brief Copy assignment operator
+         * \param[in] rhs matrix to copy from
+         */
+        MatrixWrapper &operator=(const MatrixWrapper &rhs);
+
+        /*! \brief Move assignment operator
+         * \param[in] rhs matrix to move from
+         */
+        MatrixWrapper &operator=(MatrixWrapper &&rhs);
 
         //! \brief Destructor in charge of freeing memory
         ~MatrixWrapper();
@@ -61,8 +84,13 @@ class MatrixWrapper
         {
             a_[col][row] = value;
         }
-        //! Return the number of columns
+
+        //! \return the number of columns
         int nColumn() const { return ncol_; }
+
+        //! \return the number of rows
+        int nRow() const { return nrow_; }
+
         /*! \brief Get a value from the matrix
          *
          * \param[in] col    The column
@@ -74,6 +102,18 @@ class MatrixWrapper
             return a_[col][row];
         }
 
+        /*! \brief Get a flattened version of the matrix
+         * \param[in] order 'R' if row-wise ([row1 - row2 - ...]), or 'C' if column-wise
+         *                  ([col1^T - col2^T - ...]), where T stands for transpose
+         * \return a vector as the flattened version of the matrix
+         */
+        std::vector<double> flatten(const char order) const;
+
+        /*! \brief Average the lower and upper triangular parts of the matrix
+         * Beware! The matrix should be square! Otherwise, the assert condition will fail.
+         */
+        void averageTriangle();
+
         /*! \brief Solve a matrix equation A solution = rhs
          *
          * \param[in]  rhs      Vector of right hand side values.
@@ -83,9 +123,11 @@ class MatrixWrapper
         int solve(std::vector<double> rhs, std::vector<double> *solution);
     private:
         // The internal data structure
-        double **a_;
+        double **a_ = nullptr;
         // The number of columns
         int      ncol_;
+        // The number of rows
+        int      nrow_;
 };
 
 void kabsch_rotation(tensor p, tensor q, tensor rotated_p);
