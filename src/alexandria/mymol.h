@@ -94,6 +94,9 @@ namespace alexandria
     class MyMol : public MolProp
     {
     private:
+        // Now class MolHandler can
+        // access private members of MyMol
+        friend class MolHandler;
         int                             *cgnr_           = nullptr;
         bool                             bHaveShells_    = false;
         bool                             bHaveVSites_    = false;
