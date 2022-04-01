@@ -580,9 +580,12 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
             std::vector<double> dummy;
             mol->GenerateCharges(pd, fplog, cr,
                                  ChargeGenerationAlgorithm::NONE, dummy, lot);
-            // Force2
+            // RMS force
             double rmsf = mol->rmsForce();
             fprintf(fp, "RMS Force %g (kJ/mol/nm)\n", rmsf);
+            auto force   = mol->f();
+            auto myatoms = mol->atomsConst();
+     
             lsq_rmsf[ims].add_point(0, rmsf, 0, 0);
             // Energy
             fprintf(fp, "Energy terms (kJ/mol, EPOT including atomization terms)\n");
@@ -613,6 +616,7 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
                         eBefore[ep], eAfter[ep], eAfter[ep]-eBefore[ep]);
             }
             fprintf(fp, "Coordinate RMSD after minimization %10g pm\n\n", 1000*rmsd);
+            
             // Now compute all the ESP RMSDs.
             mol->calcEspRms(pd);
             for (auto &i : qTypes())
@@ -695,10 +699,8 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
             }
             fprintf(fp, "        x        y   z(pm)          fx         fy fz(kJ/mol nm)     qtot\n");
             auto x       = mol->x();
-            auto myatoms = mol->atomsConst();
             int  i       = 0;
             double qtot  = 0;
-            auto   force = mol->f();
             for (int j = i = 0; j < myatoms.nr; j++)
             {
                 if (myatoms.atom[j].ptype == eptAtom ||
@@ -722,7 +724,7 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
                             convertFromGromacs(x[j][XX], "pm"),
                             convertFromGromacs(x[j][YY], "pm"),
                             convertFromGromacs(x[j][ZZ], "pm"),
-                            force[i][XX], force[i][YY], force[i][ZZ],
+                            force[j][XX], force[j][YY], force[j][ZZ],
                             qtot);
                     i++;
                 }

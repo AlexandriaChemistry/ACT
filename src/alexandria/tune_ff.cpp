@@ -450,8 +450,9 @@ void OptACM::printGenomeTable(const ga::Genome   &genome,
         return;
     }
     const std::vector<std::string> HEADER_NAMES{ "CLASS", "NAME", "BEST", "MIN", "MAX", "MEAN", "STDEV", "MEDIAN" };
-    const int FLOAT_SIZE = 9;
+    const int FLOAT_SIZE = 14;  // Adjusted for the %g formatting plus negative numbers
     std::vector<int> SIZES{5, 4, FLOAT_SIZE, FLOAT_SIZE, FLOAT_SIZE, FLOAT_SIZE, FLOAT_SIZE, FLOAT_SIZE};
+    // Adjust size for class field
     const auto paramClass = sii_->paramClass();
     for (auto pClass : paramClass)
     {
@@ -460,6 +461,7 @@ void OptACM::printGenomeTable(const ga::Genome   &genome,
             SIZES[0] = pClass.size();
         }
     }
+    // Adjust size for name field
     const auto paramClassIndex = sii_->paramClassIndex();
     const auto paramNames = sii_->paramNamesWOClass();
     for (auto pName : paramNames)
@@ -495,7 +497,7 @@ void OptACM::printGenomeTable(const ga::Genome   &genome,
             }
             fprintf(
                 logFile(),
-                "| %-*s | %-*s | %-*.3f | %-*.3f | %-*.3f | %-*.3f | %-*.3f | %-*.3f |\n%s\n",
+                "| %-*s | %-*s | %-*g | %-*g | %-*g | %-*g | %-*g | %-*g |\n%s\n",
                 SIZES[0], paramClass[i].c_str(),
                 SIZES[1], paramNames[j].c_str(),
                 SIZES[2], genome.base(j),
