@@ -553,7 +553,15 @@ double MyMol::force2() const
 double MyMol::rmsForce() const
 {
     const auto myatoms = atomsConst();
-    return std::sqrt(force2()/myatoms.nr);
+    int natoms = 0;
+    for (int i = 0; i < myatoms.nr; i++)
+    {
+        if (myatoms.atom[i].ptype == eptAtom)
+        {
+            natoms++;
+        }
+    }
+    return std::sqrt(force2()/natoms);
 }
 
 static void fill_atom(t_atom *atom,
@@ -1498,17 +1506,16 @@ immStatus MyMol::calculateEnergy(const t_commrec *crtmp,
                     getMolname().c_str(),
                     mtop_->ffparams.iparams[mtop_->moltype[0].ilist[F_POLARIZATION].iatoms[0]].polarize.alpha);
         }
-        real shellForceSquared = 0;
         try
         {
-            shellForceSquared = relax_shell_flexcon(nullptr, crtmp, nullptr, false,
-                                                    0, inputrec_,
-                                                    true, force_flags, ltop_,
-                                                    enerd_, fcd_, state_,
-                                                    f_.arrayRefWithPadding(), force_vir, mdatoms,
-                                                    &nrnb_, wcycle_, nullptr,
-                                                    &(mtop_->groups), shellfc_,
-                                                    fr_, t, mu_tot, vsite_->get());
+            *shellForceRMS = relax_shell_flexcon(nullptr, crtmp, nullptr, false,
+                                                 0, inputrec_,
+                                                 true, force_flags, ltop_,
+                                                 enerd_, fcd_, state_,
+                                                 f_.arrayRefWithPadding(), force_vir, mdatoms,
+                                                 &nrnb_, wcycle_, nullptr,
+                                                 &(mtop_->groups), shellfc_,
+                                                 fr_, t, mu_tot, vsite_->get());
         }
         catch (gmx::SimulationInstabilityError &ex)
         {
@@ -1516,8 +1523,7 @@ immStatus MyMol::calculateEnergy(const t_commrec *crtmp,
                     getMolname().c_str(), ex.errorCode());
             imm = immStatus::ShellMinimization;
         }
-        *shellForceRMS = std::sqrt(shellForceSquared);
-        if (shellForceSquared > inputrec_->em_tol && debug)
+        if (*shellForceRMS > inputrec_->em_tol && debug)
         {
             for (int i = 0;  i<F_NRE; i++)
             {
@@ -1643,6 +1649,7 @@ double MyMol::computeHessian(const t_commrec        *crtmp,
 immStatus MyMol::minimizeCoordinates(double *rmsd)
 {
     updateMDAtoms();
+    // We need to use a single core system for minimizing shells
     t_commrec *crtmp = init_commrec();
     crtmp->nnodes = 1;
     crtmp->nodeid = 0;
@@ -1651,13 +1658,12 @@ immStatus MyMol::minimizeCoordinates(double *rmsd)
     restoreCoordinates();
     immStatus imm          = immStatus::OK;
     auto      mdatoms      = MDatoms_->get()->mdatoms();
-    // Below is a simple minimization algorithm using steepest descent
+    // Below is a Newton-Rhapson algorithm
     bool      converged    = false;
-    double    myForceToler = 0.001; // kJ/mol nm
+    double    myForceToler = inputrec_->em_tol; // kJ/mol nm
     int       myIter       = 0;
     int       maxIter      = 100;
-    double em_tol_backup = inputrec_->em_tol;
-    inputrec_->em_tol    = 1e-8;
+    // List of atoms (not shells) and weighting factors
     std::vector<int> theAtoms;
     std::vector<real> w_rls;
     for(int atom = 0; atom < mdatoms->nr; atom++)
@@ -1672,60 +1678,45 @@ immStatus MyMol::minimizeCoordinates(double *rmsd)
             w_rls.push_back(0);
         }
     }
-    MatrixWrapper Hessian(DIM*theAtoms.size(), DIM*theAtoms.size());
+    MatrixWrapper       Hessian(DIM*theAtoms.size(), DIM*theAtoms.size());
     std::vector<double> f0, f00;
-    double epot0    = 0;
-    bool   epot0set = false;
+    double              epot0     = 0;
+    bool                firstStep = true;
     // Now start the minimization loop.
     do
     {
         double newEpot = computeHessian(crtmp, theAtoms, &Hessian, &f0);
-        if (f00.empty())
+        if (firstStep)
         {
-            f00 = f0;
-        }
-        if (!epot0set)
-        {
-            epot0    = newEpot;
-            epot0set = true;
+            epot0     = newEpot;
+            f00       = f0;
+            firstStep = false;
         }
         std::vector<double> deltaX;
         deltaX.resize(DIM*theAtoms.size(), 0.0);
-        // Solve H delta X = -grad (E)
+        // Solve H delta X = -grad (E) = force(E)
         int result = Hessian.solve(f0, &deltaX);
-        double deltaXTolerance = 0.01; // nm
-        double normDeltaX = 0;
-        for(auto &dx : deltaX)
-        {
-            normDeltaX += dx*dx;
-        }
-        double rmsDeltaX = std::sqrt(normDeltaX/deltaX.size());
-        double scaleDeltaX = 1;
-        if (rmsDeltaX > deltaXTolerance)
-        {
-            scaleDeltaX = deltaXTolerance/rmsDeltaX;
-        }
         if (0 == result)
         {
+            // Set a maximum displacement to prevent exploding molecules
+            double deltaXTolerance = 0.01; // nm
+            double normDeltaX = 0;
+            for(auto &dx : deltaX)
+            {
+                normDeltaX += dx*dx;
+            }
+            double rmsDeltaX = std::sqrt(normDeltaX/deltaX.size());
+            double scaleDeltaX = 1;
+            if (rmsDeltaX > deltaXTolerance)
+            {
+                scaleDeltaX = deltaXTolerance/rmsDeltaX;
+            }
             int  i    = 0;
-            rvec dcom = { 0, 0, 0 };
             for (auto &atomI : theAtoms)
             {
                 for (int m = 0; m < DIM; m++)
                 {
-                    dcom[m]             += scaleDeltaX*deltaX[i];
                     state_->x[atomI][m] += scaleDeltaX*deltaX[i++];
-                }
-            }
-            for (int m = 0; m < DIM; m++)
-            {
-                dcom[m] /= theAtoms.size();
-            }
-            for (auto &atomI : theAtoms)
-            {
-                for(int m = 0; m < DIM; m++)
-                {
-                    state_->x[atomI][m] -= dcom[m];
                 }
             }
         }
@@ -1782,7 +1773,8 @@ immStatus MyMol::minimizeCoordinates(double *rmsd)
         copy_rvec(state_->x[kk], xp[kk]);
     }
     // Compute RMSD
-    do_fit(w_rls.size(), w_rls.data(), as_rvec_array(xp.data()), as_rvec_array(xmin.data()));
+    do_fit(w_rls.size(), w_rls.data(),
+           as_rvec_array(xp.data()), as_rvec_array(xmin.data()));
     double msd  = 0;
     for (auto &kk : theAtoms)
     {
@@ -1792,7 +1784,6 @@ immStatus MyMol::minimizeCoordinates(double *rmsd)
     }
     *rmsd = std::sqrt(msd/theAtoms.size());
     done_commrec(crtmp);
-    inputrec_->em_tol = em_tol_backup;
     return imm;
 }
 
