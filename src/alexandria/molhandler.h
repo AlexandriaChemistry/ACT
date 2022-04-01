@@ -34,15 +34,45 @@
 #ifndef ACT_MOLHANDLER_H
 #define ACT_MOLHANDLER_H
 
+#include <vector>
+
+#include "act/utility/regression.h"
+#include "mymol.h"
+#include "gromacs/mdtypes/commrec.h"
+
 namespace alexandria
 {
 
-/*! \brief Handles a molecule by performing algorithms on it
+/*! \brief Handles molecules by performing algorithms on them
  * For example, energy minimization and hessian computation.
  * This class can access private members of MyMol as it is a friend class
  */
 class MolHandler
 {
+
+public:
+
+    /*! \brief Compute the second derivative matrix of the potential energy
+     *
+     * \param[in]  mol       Molecule to get the hessian for
+     * \param[in]  crtmp     Temporary communication record for one core.
+     *                       FIXME: another method without this
+     * \param[in]  atomIndex Vector containing the indices of the real 
+     *                       atoms, not shells or vsites.
+     *                       FIXME: Create another method without this argument, then
+     *                       get it and call this one
+     * \param[out] hessian   MatrixWrapper object that must be pre-
+     *                       allocated to NxN where N = 3*atomIndex.size()
+     * \param[out] forceZero The forces on the atoms in the input structure,
+     *                       that is, not on the shells or vsites. Will be cleared
+     *                       and overwritten
+     * \return the potential energy of the input structure
+     */
+    double computeHessian(      MyMol               *mol,
+                          const t_commrec           *crtmp,
+                          const std::vector<int>    &atomIndex,
+                                MatrixWrapper       *hessian,
+                                std::vector<double> *forceZero);
 
 };
 

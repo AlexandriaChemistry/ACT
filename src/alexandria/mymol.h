@@ -94,8 +94,7 @@ namespace alexandria
     class MyMol : public MolProp
     {
     private:
-        // Now class MolHandler can
-        // access private members of MyMol
+        // Now class MolHandler can access private members of MyMol
         friend class MolHandler;
         int                             *cgnr_           = nullptr;
         bool                             bHaveShells_    = false;
@@ -546,7 +545,8 @@ namespace alexandria
          * \param[out] hessian   MatrixWrapper object that must be pre-
          *                       allocated to NxN where N = 3*atomIndex.size()
          * \param[out] forceZero The forces on the atoms in the input structure,
-         *                       that is, not on the shells or vsites.
+         *                       that is, not on the shells or vsites. Will be cleared
+         *                       and overwritten
          * \return the potential energy of the input structure
          */
         double computeHessian(const t_commrec        *crtmp,
