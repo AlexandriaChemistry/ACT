@@ -1,6 +1,10 @@
 #include "GenePool.h"
 
+#include <algorithm>
+#include <vector>
+
 #include <cstdio>
+#include <cmath>
 
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
@@ -90,6 +94,87 @@ void GenePool::addGenome(const Genome &genome)
         GMX_THROW(gmx::InternalError(gmx::formatString("All genes must be the same length. Expected %zu, got %zu.", genomeSize_, genome.nBase()).c_str()));
     }
     genomes_.push_back(genome);
+}
+
+std::vector<double> GenePool::min() const
+{
+    std::vector<double> vec(genomeSize_, std::numeric_limits<double>::max());
+    for (size_t i = 0; i < genomeSize_; i++)
+    {
+        for (size_t j = 0; j < popSize(); j++)
+        {
+            vec[i] = genomes_[j].base(i) < vec[i] ? genomes_[j].base(i) : vec[i];
+        }
+    }
+    return vec;
+}
+
+std::vector<double> GenePool::max() const
+{
+    std::vector<double> vec(genomeSize_, std::numeric_limits<double>::min());
+    for (size_t i = 0; i < genomeSize_; i++)
+    {
+        for (size_t j = 0; j < popSize(); j++)
+        {
+            vec[i] = genomes_[j].base(i) > vec[i] ? genomes_[j].base(i) : vec[i];
+        }
+    }
+    return vec;
+}
+
+std::vector<double> GenePool::mean() const
+{
+    std::vector<double> vec(genomeSize_);
+    for (size_t i = 0; i < genomeSize_; i++)
+    {
+        double sum = 0;
+        for (size_t j = 0; j < popSize(); j++)
+        {
+            sum += genomes_[j].base(i);
+        }
+        vec[i] = sum / static_cast<double>(popSize());
+    }
+    return vec;
+}
+
+std::vector<double> GenePool::stdev(const std::vector<double> &mean) const
+{
+    std::vector<double> vec(genomeSize_);
+    for (size_t i = 0; i < genomeSize_; i++)
+    {
+        double sum = 0;
+        for (size_t j = 0; j < popSize(); j++)
+        {
+            sum += (genomes_[j].base(i)-mean[i])*(genomes_[j].base(i)-mean[i]);
+        }
+        vec[i] = sqrt(sum / static_cast<double>(popSize()));
+    }
+    return vec;
+}
+
+std::vector<double> GenePool::median() const
+{
+    std::vector<double> vec(genomeSize_);
+    size_t popsize = popSize();
+    std::vector<double> values(popsize);
+    for (size_t i = 0; i < genomeSize_; i++)
+    {
+        for (size_t j = 0; j < popsize; j++)
+        {
+            values[j] = genomes_[j].base(i);
+        }
+        std::sort(values.begin(), values.end());
+        // Remember that popsize can be odd in MCMC
+        if (popsize % 2 != 0)
+        {
+            vec[i] = values[popsize/2];
+        }
+        else
+        {
+            vec[i] = (values[popsize/2 - 1]+values[popsize/2])/2.0;
+        }
+    }
+    return vec;
 }
 
 } // namespace ga

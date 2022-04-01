@@ -1,5 +1,14 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <Real Name="Bond">6.75</Real>
+  <Real Name="Bond">6.7500000000000018</Real>
+  <Sequence Name="Forces">
+    <Int Name="Length">6</Int>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>15.000000000000002</Real>
+    <Real>0</Real>
+    <Real>15.000000000000002</Real>
+    <Real>-15.000000000000002</Real>
+  </Sequence>
 </ReferenceData>

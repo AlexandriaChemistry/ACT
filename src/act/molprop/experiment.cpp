@@ -90,10 +90,13 @@ void Experiment::Dump(FILE *fp) const
             for (auto &cai : calcAtomConst())
             {
                 double   x, y, z;
-                cai.getCoords(&x, &y, &z);
+                cai.coords(&x, &y, &z);
                 fprintf(fp, "%-3s  %-3s  %3d  %10.3f  %10.3f  %10.3f\n",
                         cai.getName().c_str(), cai.getObtype().c_str(),
                         cai.getAtomid(), x, y, z);
+                cai.forces(&x, &y, &z);
+                fprintf(fp, "%-3s  %-3s  %3d  %10.3f  %10.3f  %10.3f\n",
+                        "", "", cai.getAtomid(), x, y, z);
             }
         }
         for(const auto &p : property_)
@@ -138,9 +141,12 @@ int Experiment::Merge(const Experiment *src)
         double   x, y, z;
         CalcAtom caa(cai.getName(), cai.getObtype(), cai.getAtomid());
 
-        cai.getCoords(&x, &y, &z);
-        caa.SetUnit(cai.getUnit());
-        caa.SetCoords(x, y, z);
+        cai.coords(&x, &y, &z);
+        caa.setCoordUnit(cai.coordUnit());
+        caa.setCoords(x, y, z);
+        cai.forces(&x, &y, &z);
+        caa.setForceUnit(cai.forceUnit());
+        caa.setForces(x, y, z);
         caa.SetResidue(cai.ResidueName(), cai.ResidueNumber());
         for (const auto &aci : cai.chargesConst())
         {
@@ -167,12 +173,19 @@ void Experiment::AddAtom(CalcAtom ca)
 
     if (cai == catom_.end())
     {
-        gmx::RVec x;
-        auto      unit = ca.getUnit();
-        x[XX]          = convertToGromacs(ca.getX(), unit);
-        x[YY]          = convertToGromacs(ca.getY(), unit);
-        x[ZZ]          = convertToGromacs(ca.getZ(), unit);
+        gmx::RVec x, f;
+        auto      cunit = ca.coordUnit();
+        x[XX]           = convertToGromacs(ca.getX(), cunit);
+        x[YY]           = convertToGromacs(ca.getY(), cunit);
+        x[ZZ]           = convertToGromacs(ca.getZ(), cunit);
         coordinates_.push_back(x);
+        auto      funit = ca.forceUnit();
+        ca.forces(&f[XX], &f[YY], &f[ZZ]);
+        for (int m = 0; m < DIM; m++)
+        {
+            f[m] = convertToGromacs(f[m], funit);
+        }
+        forces_.push_back(f);
         catom_.push_back(ca);
     }
     else

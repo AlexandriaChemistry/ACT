@@ -345,8 +345,25 @@ void EnergyDevComputer::calcDeviation(MyMol                                *mymo
 }
 
 /* * * * * * * * * * * * * * * * * * * * * *
-* END: EnergyDevComputer                       *
+* END: EnergyDevComputer                   *
 * * * * * * * * * * * * * * * * * * * * * */
 
+/* * * * * * * * * * * * * * * * * * * * * *
+* BEGIN: ForceDevComputer                 *
+* * * * * * * * * * * * * * * * * * * * * */
+
+void ForceDevComputer::calcDeviation(      MyMol                          *mymol,
+                                           std::map<eRMS, FittingTarget>  *targets,
+                                           gmx_unused Poldata             *poldata,
+                                     const gmx_unused std::vector<double> &param,
+                                     const gmx_unused CommunicationRecord *commrec)
+{
+    auto myatoms = mymol->atomsConst();
+    (*targets).find(eRMS::Force2)->second.increase(1, mymol->force2()/myatoms.nr);
+}
+
+/* * * * * * * * * * * * * * * * * * * * * *
+* END: ForceDevComputer                    *
+* * * * * * * * * * * * * * * * * * * * * */
 
 } // namespace alexandria

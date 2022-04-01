@@ -157,7 +157,7 @@ int bastat(int argc, char *argv[])
     static char                     *lot         = (char *)"B3LYP/aug-cc-pVTZ";
     static gmx_bool                  bHisto      = false;
     static gmx_bool                  bBondOrder  = true;
-    static gmx_bool                  genBCC      = false;
+    static gmx_bool                  genBCC      = true;
     static gmx_bool                  bDissoc     = false;
     static gmx_bool                  strict      = true;
     static gmx_bool                  bQM         = true;
@@ -180,7 +180,7 @@ int bastat(int argc, char *argv[])
           "Compress output XML file" },
         { "-bondorder", FALSE, etBOOL, {&bBondOrder},
           "Make separate bonds for different bond orders" },
-        { "-genBCC", FALSE, etBOOL, {&genBCC},
+        { "-gen_bcc", FALSE, etBOOL, {&genBCC},
           "Re-generate bond charge corrections based on the list of bonds" },
         { "-hardness", FALSE, etREAL, {&hardness},
           "Default bond hardness when generating bond charge corrections based on the list of bonds" },

@@ -116,38 +116,32 @@ void MolGen::addOptions(std::vector<t_pargs>          *pargs,
           "Minimum number of data points to optimize force field parameters" },
         { "-lot",    FALSE, etSTR,  {&lot_},
           "Use this method and level of theory when selecting coordinates and charges. Multiple levels can be specified which will be used in the order given, e.g.  B3LYP/aug-cc-pVTZ:HF/6-311G**" },
+        { "-qsymm",  FALSE, etBOOL, {&qsymm_},
+          "Symmetrize the charges on symmetric groups, e.g. CH3, NH2. The list of groups to symmetrize is specified in the force field file." },
+        { "-fit", FALSE, etSTR, {&fitString_},
+          "Quoted list of parameters to fit,  e.g. 'alpha zeta'." },
         { "-fc_bound",    FALSE, etREAL, {targets->find(eRMS::BOUNDS)->second.weightPtr()},
           "Force constant in the penalty function for going outside the borders given with the fitting options (see below)." },
         { "-fc_epot",    FALSE, etREAL, {targets->find(eRMS::EPOT)->second.weightPtr()},
-          "Force constant in the penalty function for the potential energy of the compound." },
-        { "-qsymm",  FALSE, etBOOL, {&qsymm_},
-          "Symmetrize the charges on symmetric groups, e.g. CH3, NH2." },
-        { "-fit", FALSE, etSTR, {&fitString_},
-          "Quoted list of parameters to fit,  e.g. 'alpha zeta'." },
-        { "-qm",     FALSE, etBOOL, {&bQM_},
-          "[HIDDEN]Use only quantum chemistry results (from the levels of theory below) in order to fit the parameters. If not set, experimental values will be used as reference with optional quantum chemistry results, in case no experimental results are available" },
-        { "-watoms", FALSE, etREAL, {&watoms_},
-          "Weight for the atoms when fitting the charges to the electrostatic potential. The potential on atoms is usually two orders of magnitude larger than on other points (and negative). For point charges or single smeared charges use zero. For point+smeared charges 1 is recommended." },
-        { "-maxpot", FALSE, etINT, {&maxESP_},
-          "Maximum percent of the electrostatic potential points that will be used to fit partial charges. Note that the input file may have a reduced amount of ESP points compared to the Gaussian output already so do not reduce the amount twice unless you know what you are doing. Note that if you use a value less than 100, the ESP points are picked randomly and therefore the runs will not be reproducible." },
+          "Force constant in the penalty function for the deviation of the potential energy of the compound from the reference." },
         { "-fc_mu",    FALSE, etREAL, {targets->find(eRMS::MU)->second.weightPtr()},
-          "Force constant in the penalty function for the magnitude of the dipole components." },
+          "Force constant in the penalty function for the deviation of the magnitude of the dipole components from the reference." },
         { "-fc_quad",  FALSE, etREAL, {targets->find(eRMS::QUAD)->second.weightPtr()},
-          "Force constant in the penalty function for the magnitude of the quadrupole components." },
+          "Force constant in the penalty function for the deviation of the magnitude of the quadrupole components from the reference." },
         { "-fc_oct",  FALSE, etREAL, {targets->find(eRMS::OCT)->second.weightPtr()},
-          "Force constant in the penalty function for the magnitude of the octupole components." },
+          "Force constant in the penalty function for the deviation of the magnitude of the octupole components from the reference." },
         { "-fc_hexadec",  FALSE, etREAL, {targets->find(eRMS::HEXADEC)->second.weightPtr()},
-          "Force constant in the penalty function for the magnitude of the hexedecapole components." },
+          "Force constant in the penalty function for the deviation of the magnitude of the hexedecapole components from the reference." },
         { "-fc_esp",   FALSE, etREAL, {targets->find(eRMS::ESP)->second.weightPtr()},
-          "Force constant in the penalty function for the magnitude of the electrostatic potential." },
+          "Force constant in the penalty function for the deviation of the magnitude of the electrostatic potential from the reference." },
         { "-fc_charge",  FALSE, etREAL, {targets->find(eRMS::CHARGE)->second.weightPtr()},
-          "Force constant in the penalty function for 'unchemical' charges, i.e. negative hydrogens, and positive oxygens." },
+          "Force constant in the penalty function for 'unchemical' charges as determined by the bounds set in the force field file. This is applied to charges that are determined using the Alexandria Charge Model only." },
         { "-fc_cm5",  FALSE, etREAL, {targets->find(eRMS::CM5)->second.weightPtr()},
           "Force constant in the penalty function for deviation from CM5 charges." },
         { "-fc_polar",  FALSE, etREAL, {targets->find(eRMS::Polar)->second.weightPtr()},
-          "Force constant in the penalty function for polarizability." },
+          "Force constant in the penalty function for deviation of the six independent components of the molecular polarizability tensor from the reference." },
         { "-fc_force",  FALSE, etREAL, {targets->find(eRMS::Force2)->second.weightPtr()},
-          "Force constant in the penalty function for the magnitude of the force." }
+          "Force constant in the penalty function for the magnitude of the squared force on the atoms. For optimized structures the force on the atoms should be zero." }
     };
     doAddOptions(pargs, asize(pa_general), pa_general);
 }
@@ -576,27 +570,15 @@ size_t MolGen::Read(FILE            *fp,
     {
         nLocal.insert(std::pair<iMolSelect, int>(ims.first, 0));
     }
-    // TODO Only list the terms that we need
-    std::map<MolPropObservable, iqmType> iqmMap;
-    if (optimize(InteractionType::VDW) ||
-        optimize(InteractionType::BONDS)||
-        optimize(InteractionType::ANGLES)||
-        optimize(InteractionType::LINEAR_ANGLES)||
-        optimize(InteractionType::IMPROPER_DIHEDRALS)||
-        optimize(InteractionType::PROPER_DIHEDRALS))
-    {
-        iqmMap.insert(std::pair<MolPropObservable, iqmType>(MolPropObservable::DELTAE0, iqmType::QM));
-    }
-    if (optimize(InteractionType::POLARIZATION) ||
-        optimize(InteractionType::CHARGEDISTRIBUTION) ||
-        optimize(InteractionType::ELECTRONEGATIVITYEQUALIZATION))
-    {       
-         iqmMap.insert(std::pair<MolPropObservable, iqmType>(MolPropObservable::DIPOLE,         iqmType::QM));
-         iqmMap.insert(std::pair<MolPropObservable, iqmType>(MolPropObservable::QUADRUPOLE,     iqmType::QM));
-         iqmMap.insert(std::pair<MolPropObservable, iqmType>(MolPropObservable::OCTUPOLE,     iqmType::QM));
-         iqmMap.insert(std::pair<MolPropObservable, iqmType>(MolPropObservable::HEXADECAPOLE,     iqmType::QM));
-         iqmMap.insert(std::pair<MolPropObservable, iqmType>(MolPropObservable::POLARIZABILITY, iqmType::QM));
-    }
+    std::map<MolPropObservable, iqmType> iqmMap = 
+        {
+            { MolPropObservable::DELTAE0,        iqmType::QM },
+            { MolPropObservable::DIPOLE,         iqmType::QM },
+            { MolPropObservable::QUADRUPOLE,     iqmType::QM },
+            { MolPropObservable::OCTUPOLE,       iqmType::QM },
+            { MolPropObservable::HEXADECAPOLE,   iqmType::QM },
+            { MolPropObservable::POLARIZABILITY, iqmType::QM }
+        };
     if (cr_->isMaster())
     {
         if (fp)
@@ -632,7 +614,7 @@ size_t MolGen::Read(FILE            *fp,
                 }
 
                 mymol.symmetrizeCharges(pd, qsymm_, nullptr);
-                mymol.initQgenResp(pd, method, basis, 0.0, maxESP_);
+                mymol.initQgenResp(pd, method, basis, 0.0, 100);
                 std::vector<double> dummy;
                 imm = mymol.GenerateCharges(pd,
                                             mdlog_,
@@ -651,7 +633,6 @@ size_t MolGen::Read(FILE            *fp,
                     continue;
                 }
 
-                // TODO Check for G4 as well
                 imm = mymol.getExpProps(iqmMap, method, basis, pd, 0);
                 if (immStatus::OK != imm)
                 {
@@ -836,7 +817,7 @@ size_t MolGen::Read(FILE            *fp,
             {
                 std::vector<double> dummy;
                 mymol.symmetrizeCharges(pd, qsymm_, nullptr);
-                mymol.initQgenResp(pd, method, basis, 0.0, maxESP_);
+                mymol.initQgenResp(pd, method, basis, 0.0, 100);
                 imm = mymol.GenerateCharges(pd,
                                             mdlog_,
                                             cr_,

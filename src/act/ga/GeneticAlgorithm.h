@@ -57,6 +57,10 @@ private:
     //! Penalizes the population
     std::vector<Penalizer*>      *penalizers_   = nullptr;
 
+protected:
+    //! Last population
+    GenePool                      lastPop_;
+
 public:
 
     //! \brief Default constructor
@@ -91,6 +95,12 @@ public:
      * \return whether a genome with better fitness was found.
      */
     virtual bool evolve(Genome *bestGenome) = 0;
+
+    /*! \brief Retrieve the last population (to be called after evolve,
+     * otherwise undersired behavior will occur)
+     * \return a constant reference to the last population
+     */
+    const GenePool &getLastPop() { return lastPop_; }
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * BEGIN: Getters and Setters               *

@@ -210,6 +210,8 @@ void ACMFitnessComputer::fillDevComputers(const bool verbose)
                                                          MolPropObservable::HEXADECAPOLE));
     if (sii_->target(iMolSelect::Train, eRMS::EPOT)->weight() > 0)
         devComputers_.push_back(new EnergyDevComputer(logfile_, verbose));
+    if (sii_->target(iMolSelect::Train, eRMS::Force2)->weight() > 0)
+        devComputers_.push_back(new ForceDevComputer(logfile_, verbose));
 }
 
 

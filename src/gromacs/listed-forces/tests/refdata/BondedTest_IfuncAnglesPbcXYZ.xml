@@ -1,5 +1,17 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <Real Name="Angle">1.5230865</Real>
+  <Real Name="Angle">1.5230870989335434</Real>
+  <Sequence Name="Forces">
+    <Int Name="Length">9</Int>
+    <Real>0</Real>
+    <Real>17.453292519943297</Real>
+    <Real>0</Real>
+    <Real>17.453292519943297</Real>
+    <Real>-17.453292519943297</Real>
+    <Real>17.453292519943297</Real>
+    <Real>-17.453292519943297</Real>
+    <Real>17.453292519943297</Real>
+    <Real>-17.453292519943297</Real>
+  </Sequence>
 </ReferenceData>

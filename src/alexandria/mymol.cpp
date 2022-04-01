@@ -38,12 +38,21 @@
 #include <random>
 #include <string>
 
+
+#include "act/molprop/molprop_util.h"
+#include "act/molprop/multipole_names.h"
+#include "act/poldata/forcefieldparameter.h"
+#include "act/utility/regression.h"
+#include "act/utility/units.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nonbonded/nonbonded.h"
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/listed-forces/manage-threading.h"
+#include "gromacs/math/do_fit.h"
+#include "gromacs/math/invertmatrix.h"
+#include "gromacs/math/paddedvector.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vecdump.h"
 #include "gromacs/math/vectypes.h"
@@ -70,14 +79,9 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringcompare.h"
-
-#include "act/poldata/forcefieldparameter.h"
 #include "gromacs_top.h"
-#include "act/molprop/molprop_util.h"
-#include "act/molprop/multipole_names.h"
 #include "mymol_low.h"
 #include "symmetrize_charges.h"
-#include "act/utility/units.h"
 
 namespace alexandria
 {
@@ -361,8 +365,8 @@ immStatus MyMol::GenerateAtoms(const Poldata     *pd,
         atoms->nres = 0;
         for (auto &cai : ci->calcAtomConst())
         {
-            auto myunit = cai.getUnit();
-            cai.getCoords(&xx, &yy, &zz);
+            auto myunit = cai.coordUnit();
+            cai.coords(&xx, &yy, &zz);
             int resnr = cai.ResidueNumber();
             if (resnr != res0)
             {
@@ -509,6 +513,55 @@ immStatus MyMol::zetaToAtoms(const Poldata *pd,
         atoms->atom[i].row       = eep["row"].value();
     }
     return immStatus::OK;
+}
+
+double MyMol::force2() const
+{
+    auto   myatoms = atomsConst();
+    double f2      = 0;
+    for (auto &ei : experimentConst())
+    {
+        const std::vector<gmx::RVec> &fff = ei.getForces();
+        if (fff.empty())
+        {
+            continue;
+        }
+        size_t ifff = 0;
+        for (int i = 0; i < myatoms.nr; i++)
+        {
+            if (myatoms.atom[i].ptype == eptAtom)
+            {
+                rvec df;
+                if (ifff >= fff.size())
+                {
+                    GMX_THROW(gmx::InternalError(gmx::formatString("Inconsistency: there are %d atoms and shells, but only %zu forces", myatoms.nr, fff.size())));
+                }
+                rvec_sub(f_[i], fff[ifff], df);
+                f2 += iprod(df, df);
+                ifff += 1;
+            }
+        }
+        // Once we found a force array, we quit.
+        if (f2 > 0)
+        {
+            break;
+        }
+    }
+    return f2;
+}
+
+double MyMol::rmsForce() const
+{
+    const auto myatoms = atomsConst();
+    int natoms = 0;
+    for (int i = 0; i < myatoms.nr; i++)
+    {
+        if (myatoms.atom[i].ptype == eptAtom)
+        {
+            natoms++;
+        }
+    }
+    return std::sqrt(force2()/natoms);
 }
 
 static void fill_atom(t_atom *atom,
@@ -1388,7 +1441,7 @@ void MyMol::computeAtomizationEnergy(const Poldata *pd)
     }
 }
 
-immStatus MyMol::computeForces(double *rmsf)
+void MyMol::updateMDAtoms()
 {
     auto mdatoms = MDatoms_->get()->mdatoms();
     auto atoms   = atomsConst();
@@ -1406,20 +1459,13 @@ immStatus MyMol::computeForces(double *rmsf)
             fprintf(debug, "QQQ Setting q[%d] to %g\n", i, mdatoms->chargeA[i]);
         }
     }
-    t_commrec *crtmp = init_commrec();
-    crtmp->nnodes = 1;
-    crtmp->nodeid = 0;
-    if (!vsite_)
-    {
-        vsite_  = new std::unique_ptr<gmx_vsite_t>(new gmx_vsite_t());
-        *vsite_ = initVsite(*mtop_, crtmp);
-    }
-    unsigned long force_flags = ~0;
-    double        t           = 0;
-    rvec          mu_tot      = { 0, 0, 0 };
-    tensor        force_vir;
-    clear_mat (force_vir);
-    for (int i = 0; i < mtop_->natoms; i++)
+}
+
+static void reset_f_e(int natoms, 
+                      PaddedVector<gmx::RVec> f_,
+                      gmx_enerdata_t *enerd_)
+{
+    for (int i = 0; i < natoms; i++)
     {
         clear_rvec(f_[i]);
     }
@@ -1434,29 +1480,42 @@ immStatus MyMol::computeForces(double *rmsf)
             enerd_->grpp.ener[j][i] = 0;
         }
     }
-    // TODO check if this is really necessary
-    restoreCoordinates();
+}
+
+immStatus MyMol::calculateEnergy(const t_commrec *crtmp,
+                                 real            *shellForceRMS)
+{
+    auto          imm         = immStatus::OK;
+    unsigned long force_flags = ~0;
+    double        t           = 0;
+    rvec          mu_tot      = { 0, 0, 0 };
+    tensor        force_vir   = { { 0 } };
+    auto          mdatoms     = MDatoms_->get()->mdatoms();
+    
+    // Recreate v-sites
     constructVsitesGlobal(*mtop_, state_->x);
-    immStatus imm =  immStatus::OK;
+    
+    // Set force and energy to zero
+    reset_f_e(mtop_->natoms, f_, enerd_);
+    
     if (nullptr != shellfc_)
     {
         if (debug)
         {
-            fprintf(debug, "mol %s alpha %g\n", 
+            fprintf(debug, "mol %s alpha %g\n",
                     getMolname().c_str(),
                     mtop_->ffparams.iparams[mtop_->moltype[0].ilist[F_POLARIZATION].iatoms[0]].polarize.alpha);
         }
-        real force2 = 0;
         try
         {
-            force2 = relax_shell_flexcon(nullptr, crtmp, nullptr, false,
-                                         0, inputrec_,
-                                         true, force_flags, ltop_,
-                                         enerd_, fcd_, state_,
-                                         f_.arrayRefWithPadding(), force_vir, mdatoms,
-                                         &nrnb_, wcycle_, nullptr,
-                                         &(mtop_->groups), shellfc_,
-                                         fr_, t, mu_tot, vsite_->get());
+            *shellForceRMS = relax_shell_flexcon(nullptr, crtmp, nullptr, false,
+                                                 0, inputrec_,
+                                                 true, force_flags, ltop_,
+                                                 enerd_, fcd_, state_,
+                                                 f_.arrayRefWithPadding(), force_vir, mdatoms,
+                                                 &nrnb_, wcycle_, nullptr,
+                                                 &(mtop_->groups), shellfc_,
+                                                 fr_, t, mu_tot, vsite_->get());
         }
         catch (gmx::SimulationInstabilityError &ex)
         {
@@ -1464,8 +1523,7 @@ immStatus MyMol::computeForces(double *rmsf)
                     getMolname().c_str(), ex.errorCode());
             imm = immStatus::ShellMinimization;
         }
-        *rmsf = std::sqrt(force2);
-        if (force2 > inputrec_->em_tol && debug)
+        if (*shellForceRMS > inputrec_->em_tol && debug)
         {
             for (int i = 0;  i<F_NRE; i++)
             {
@@ -1473,12 +1531,12 @@ immStatus MyMol::computeForces(double *rmsf)
                 if (ei != 0)
                 {
                     fprintf(debug, "E[%s] = %g\n", interaction_function[i].name,
-                            ei);
+                                ei);
                 }
             }
             fprintf(debug, "Shell minimization did not converge in %d steps for %s. RMS Force = %g.\n",
                     inputrec_->niter, getMolname().c_str(),
-                    *rmsf);
+                    *shellForceRMS);
             pr_rvecs(debug, 0, "f", f_.rvec_array(), mtop_->natoms);
             imm = immStatus::ShellMinimization;
         }
@@ -1494,11 +1552,237 @@ immStatus MyMol::computeForces(double *rmsf)
                  state_->lambda, nullptr,
                  fr_, vsite_->get(), mu_tot, t,
                  force_flags);
-        *rmsf = 0;
+        *shellForceRMS = 0;
     }
     enerd_->term[F_ATOMIZATION] = atomizationEnergy();
     enerd_->term[F_EPOT]       += atomizationEnergy();
     enerd_->term[F_ETOT]       += atomizationEnergy();
+
+    return imm;
+}
+
+immStatus MyMol::computeForces(double *rmsf)
+{
+    updateMDAtoms();
+    t_commrec *crtmp = init_commrec();
+    crtmp->nnodes = 1;
+    crtmp->nodeid = 0;
+    if (!vsite_)
+    {
+        vsite_  = new std::unique_ptr<gmx_vsite_t>(new gmx_vsite_t());
+        *vsite_ = initVsite(*mtop_, crtmp);
+    }
+    // TODO check if this is really necessary
+    restoreCoordinates();
+    immStatus imm = calculateEnergy(crtmp, rmsf);
+    done_commrec(crtmp);
+    return imm;
+}
+
+double MyMol::computeHessian(const t_commrec        *crtmp,
+                             const std::vector<int> &atomIndex,
+                             MatrixWrapper          *hessian,
+                             std::vector<double>    *forceZero)
+{
+    std::vector<double> fneg;
+    fneg.resize(DIM*atomIndex.size(), 0.0);
+    
+    double shellForceRMS = 0;
+    (void) calculateEnergy(crtmp, &shellForceRMS);
+    double epot0  = enerd_->term[F_EPOT];
+
+    // Store central force vector
+    forceZero->clear();
+    for(auto &atom : atomIndex)
+    {
+        for(int m = 0; m < DIM; m++)
+        {
+            forceZero->push_back(f_[atom][m]);
+        }
+    }
+    double    stepSize     = 1e-6; // 1 pm
+    for(size_t ai = 0; ai < atomIndex.size(); ai++)
+    {
+        auto atomI = atomIndex[ai];
+        for(int atomXYZ = 0; atomXYZ < DIM; atomXYZ++)
+        {
+            double xyzRef = state_->x[atomI][atomXYZ];
+            for(int delta  = 0; delta <= 1; delta++)
+            {
+                state_->x[atomI][atomXYZ] = xyzRef + (2*delta-1)*stepSize;
+                (void) calculateEnergy(crtmp, &shellForceRMS);
+                if (delta == 0)
+                {
+                    for(size_t aj = 0; aj < atomIndex.size(); aj++)
+                    {
+                        int atomJ = atomIndex[aj];
+                        for (int d = 0; d < DIM; d++)
+                        {
+                            fneg[aj*DIM+d] = f_[atomJ][d];
+                        }
+                    }
+                }
+            }
+            state_->x[atomI][atomXYZ] = xyzRef;
+            {
+                int col = ai*DIM+atomXYZ;
+                for(size_t aj = 0; aj < atomIndex.size(); aj++)
+                {
+                    int    atomJ = atomIndex[aj];
+                    for(int d = 0; d < DIM; d++)
+                    {
+                        int    row   = aj*DIM+d;
+                        double value = -(f_[atomJ][d]-fneg[row])/(2*stepSize);
+                        if (false && debug)
+                        {
+                            fprintf(debug, "Setting H[%2d][%2d] = %10g\n", row, col, value); 
+                        }
+                        hessian->set(row, col, value);
+                    }
+                }
+            }
+        }
+    }
+    return epot0;
+}
+
+immStatus MyMol::minimizeCoordinates(double *rmsd)
+{
+    updateMDAtoms();
+    // We need to use a single core system for minimizing shells
+    t_commrec *crtmp = init_commrec();
+    crtmp->nnodes = 1;
+    crtmp->nodeid = 0;
+
+    // TODO check if this is really necessary
+    restoreCoordinates();
+    immStatus imm          = immStatus::OK;
+    auto      mdatoms      = MDatoms_->get()->mdatoms();
+    // Below is a Newton-Rhapson algorithm
+    bool      converged    = false;
+    double    myForceToler = inputrec_->em_tol; // kJ/mol nm
+    int       myIter       = 0;
+    int       maxIter      = 100;
+    // List of atoms (not shells) and weighting factors
+    std::vector<int> theAtoms;
+    std::vector<real> w_rls;
+    for(int atom = 0; atom < mdatoms->nr; atom++)
+    {
+        if (mdatoms->ptype[atom] == eptAtom)
+        {
+            theAtoms.push_back(atom);
+            w_rls.push_back(1);
+        }
+        else
+        {
+            w_rls.push_back(0);
+        }
+    }
+    MatrixWrapper       Hessian(DIM*theAtoms.size(), DIM*theAtoms.size());
+    std::vector<double> f0, f00;
+    double              epot0     = 0;
+    bool                firstStep = true;
+    // Now start the minimization loop.
+    do
+    {
+        double newEpot = computeHessian(crtmp, theAtoms, &Hessian, &f0);
+        if (firstStep)
+        {
+            epot0     = newEpot;
+            f00       = f0;
+            firstStep = false;
+        }
+        std::vector<double> deltaX;
+        deltaX.resize(DIM*theAtoms.size(), 0.0);
+        // Solve H delta X = -grad (E) = force(E)
+        int result = Hessian.solve(f0, &deltaX);
+        if (0 == result)
+        {
+            // Set a maximum displacement to prevent exploding molecules
+            double deltaXTolerance = 0.01; // nm
+            double normDeltaX = 0;
+            for(auto &dx : deltaX)
+            {
+                normDeltaX += dx*dx;
+            }
+            double rmsDeltaX = std::sqrt(normDeltaX/deltaX.size());
+            double scaleDeltaX = 1;
+            if (rmsDeltaX > deltaXTolerance)
+            {
+                scaleDeltaX = deltaXTolerance/rmsDeltaX;
+            }
+            int  i    = 0;
+            for (auto &atomI : theAtoms)
+            {
+                for (int m = 0; m < DIM; m++)
+                {
+                    state_->x[atomI][m] += scaleDeltaX*deltaX[i++];
+                }
+            }
+        }
+        else
+        {
+            break;
+        }
+                
+        // One more energy and force calculation with the new coordinates
+        double shellForceRMS = 0;
+        imm = calculateEnergy(crtmp, &shellForceRMS);
+        
+        double msAtomForce  = 0;
+        for(size_t kk = 0; kk < theAtoms.size(); kk++)
+        {
+            int atomI = theAtoms[kk];
+            msAtomForce  += iprod(f_[atomI], f_[atomI]);
+        }
+        msAtomForce /= theAtoms.size();
+        converged = msAtomForce <= myForceToler;
+        
+        if (debug)
+        {
+            fprintf(debug, "%s rmsForce %10g Epot before %10g now %10g\n", getMolname().c_str(),
+                    std::sqrt(msAtomForce), epot0, enerd_->term[F_EPOT]);
+        }
+        myIter += 1;
+    }
+    while (!converged && myIter < maxIter);
+    std::vector<gmx::RVec> xmin;
+    xmin.resize(mtop_->natoms);
+    for (auto &kk : theAtoms)
+    {
+        copy_rvec(state_->x[kk], xmin[kk]);
+        if (debug)
+        {
+            fprintf(debug, "force[%2d] = %10g %10g %10g\n", kk, f_[kk][XX], f_[kk][YY],f_[kk][ZZ]);
+        }
+    }
+    // Fetch back the input structure.
+    restoreCoordinates();
+    // Restore the forces
+    for(size_t kk = 0; kk < theAtoms.size(); kk++)
+    {
+        for(int m = 0; m < DIM; m++)
+        {
+            f_[theAtoms[kk]][m] = f00[DIM*kk+m];
+        }
+    }
+    std::vector<gmx::RVec> xp;
+    xp.resize(mtop_->natoms);
+    for (auto &kk : theAtoms)
+    {
+        copy_rvec(state_->x[kk], xp[kk]);
+    }
+    // Compute RMSD
+    do_fit(w_rls.size(), w_rls.data(),
+           as_rvec_array(xp.data()), as_rvec_array(xmin.data()));
+    double msd  = 0;
+    for (auto &kk : theAtoms)
+    {
+        rvec dx;
+        rvec_sub(xmin[kk], state_->x[kk], dx);
+        msd += iprod(dx, dx);
+    }
+    *rmsd = std::sqrt(msd/theAtoms.size());
     done_commrec(crtmp);
     return imm;
 }
@@ -1769,27 +2053,6 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
     return imm;
 }
 
-void MyMol::changeCoordinate(const Experiment &ei, gmx_bool bpolar)
-{
-    const std::vector<gmx::RVec> &x = ei.getCoordinates();
-
-    if (bpolar)
-    {
-        for (size_t i = 0; i < x.size(); i++)
-        {
-            copy_rvec(x[i], state_->x[2*i]);
-            copy_rvec(x[i], state_->x[2*i+1]);
-        }
-    }
-    else
-    {
-        for (size_t i = 0; i < x.size(); i++)
-        {
-            copy_rvec(x[i], state_->x[i]);
-        }
-    }
-}
-
 bool MyMol::getOptimizedGeometry(rvec *x)
 {
     bool    bopt = false;
@@ -2016,14 +2279,14 @@ void MyMol::PrintTopology(FILE                      *fp,
             {
                 commercials.push_back(fmp);
             }
-        }
-        if (qcalc->hasMultipole(mpo))
-        {
-            auto mymu = qcalc->getMultipole(mpo);
-            commercials.push_back(gmx::formatString("Alexandria %s (%s)\n", mpo_name(mpo), gp->getUnit()));
-            for(auto &fmp : formatMultipole(mpo, mymu))
+            if (qcalc->hasMultipole(mpo))
             {
-                commercials.push_back(fmp);
+                auto mymu = qcalc->getMultipole(mpo);
+                commercials.push_back(gmx::formatString("Alexandria %s (%s)\n", mpo_name(mpo), gp->getUnit()));
+                for(auto &fmp : formatMultipole(mpo, mymu))
+                {
+                    commercials.push_back(fmp);
+                }
             }
         }
     }
@@ -2176,20 +2439,6 @@ void MyMol::GenerateCube(const Poldata          *pd,
             qCalc.writeDiffCube(&grref, difffn, diffhistfn, buf, oenv, 0);
         }
     }
-}
-
-void MyMol::rotateDipole(rvec mu, rvec muReference)
-{
-    if (norm(mu) < 0.04 or norm(muReference) < 0.04)
-    {
-        return;
-    }
-    return;
-    matrix rotmatrix;
-    rvec   tmpvec;
-    calc_rotmatrix(mu, muReference, rotmatrix);
-    mvmul(rotmatrix, mu, tmpvec);
-    copy_rvec(tmpvec, mu);
 }
 
 void MyMol::calcEspRms(const Poldata *pd)
@@ -2368,15 +2617,6 @@ immStatus MyMol::getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
         }
     }
 
-#ifdef OLD
-    // TODO seems not necessary
-    if (immStatus::OK == imm &&
-        energy_.find(MolPropObservable::DELTAE0) != energy_.end())
-    {
-        double deltaE0 = energy_[MolPropObservable::DELTAE0];
-        energy_.insert(std::pair<MolPropObservable, double>(MolPropObservable::DELTAE0, deltaE0));
-    }
-#endif
     return imm;
 }
 

@@ -54,6 +54,9 @@ public:
     //! Constructor
     GenePool(size_t genomeSize) : genomeSize_(genomeSize) {}
     
+    //! Default constructor
+    GenePool() {}
+
     //! \return the genome size
     size_t genomeSize() const { return genomeSize_; } 
 
@@ -105,6 +108,30 @@ public:
      * \param[in] fp The file to print to
      */
     void print(FILE *fp) const;
+    
+    //! \return the minimum value per parameter in this pool
+    std::vector<double> min() const;
+
+    //! \return the maximum value per parameter in this pool
+    std::vector<double> max() const;
+
+    //! \return the mean value per parameter in this pool
+    std::vector<double> mean() const;
+
+    /*!
+     * \param[in] mean the mean per parameter in this pool
+     * \return the standard deviation per parameter in this pool
+     */ 
+    std::vector<double> stdev(const std::vector<double> &mean) const;
+
+    /*!
+     * \return the standard deviation per parameter in this pool
+     */ 
+    std::vector<double> stdev() const { return stdev(mean()); }
+
+    //! \return the median value per parameter in this pool
+    std::vector<double> median() const;
+
 };
 
 } // namespace ga

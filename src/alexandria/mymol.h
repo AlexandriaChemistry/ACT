@@ -35,6 +35,16 @@
 
 #include <map>
 
+#include "act/molprop/molprop.h"
+#include "act/poldata/poldata.h"
+#include "act/qgen/qgen_acm.h"
+#include "act/qgen/qgen_resp.h"
+#include "act/qgen/qtype.h"
+#include "act/utility/communicationrecord.h"
+#include "act/utility/regression.h"
+#include "alexandria/gentop_vsite.h"
+#include "alexandria/molselect.h"
+#include "alexandria/mymol_low.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/math/vec.h"
@@ -48,16 +58,6 @@
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/real.h"
-
-#include "act/utility/communicationrecord.h"
-#include "gentop_vsite.h"
-#include "act/molprop/molprop.h"
-#include "molselect.h"
-#include "mymol_low.h"
-#include "act/poldata/poldata.h"
-#include "act/qgen/qgen_acm.h"
-#include "act/qgen/qgen_resp.h"
-#include "act/qgen/qtype.h"
 
 struct gmx_enerdata_t;
 struct gmx_shellfc_t;
@@ -119,12 +119,6 @@ namespace alexandria
         std::map<qType, QtypeProps>           qProps_;
         //! Center of nuclear charge
         rvec                      CenterOfCharge_ = { 0 };
-        //! Experimental dipole
-        //double                    dip_exp_    = 0;
-        //! Error in experimental dipole
-        //double                    dip_err_    = 0;
-        //! Weighting factor for dipole????
-        //double                    dip_weight_ = 0;
         //! GROMACS state variable
         t_state                  *state_      = nullptr;
         //! GROMACS force record
@@ -304,6 +298,12 @@ namespace alexandria
             return true;
         }
 
+        //! Return the sum of squared forces on the atoms
+        double force2() const;
+        
+        //! Return the root mean square force on the atoms
+        double rmsForce() const;
+        
         //! \return the ACM data structure
         QgenAcm *qgenAcm() { return QgenAcm_; }
         /*! \brief
@@ -333,19 +333,6 @@ namespace alexandria
         const std::vector<std::string> &errors() const {return error_messages_;}
 
         /*! \brief
-         * Rotate the molcular dipole vector onto a reference vector
-         *
-         * \param[in] mu             Molecular dipole vector
-         * \param[in] muReference    The reference vector
-         */
-        void rotateDipole(rvec mu, rvec muReference);
-
-        /*! \brief
-         * Return experimental dipole
-         */
-        //double dipExper() const { return dip_exp_; }
-
-        /*! \brief
          * Add the screening factors of the distributed charge to atom structure
          *
          * \param[in] pd     Data structure containing atomic properties
@@ -358,6 +345,11 @@ namespace alexandria
          * Return the coordinate vector of the molecule
          */
         const gmx::HostVector<gmx::RVec> &x() const { return state_->x; }
+
+        /*! \brief
+         * Return the force vector of the molecule
+         */
+        const PaddedVector<gmx::RVec> &f() const { return f_; }
 
         //! \return the potential energy of this molecule
         real potentialEnergy() const;
@@ -523,26 +515,55 @@ namespace alexandria
                            const std::string         &method,
                            const std::string         &basis);
 
+        //! \brief Update GROMACS data structures
+        void updateMDAtoms();
+        
+        /*! \brief Calculate the forces and energies
+         * For a polatizable model the shell positions are minimized.
+         * \param[in]  crtmp         Temporary communication record with one core only.
+         * \param[out] shellForceRMS Root mean square force on the shells
+         * \return immStatus::OK if everything worked fine, error code otherwise.
+         */
+        immStatus calculateEnergy(const t_commrec *crtmp,
+                                  real            *shellForceRMS);
+
         /*! \brief
-         * Relax the shells (if any) or compute the forces in the molecule
+         * Relax the shells (if any) or compute the forces in the molecule.
          *
-         * \param[out] rmsf  Root mean square force on the shells
+         * \param[out] rmsf                Root mean square force on the shells
          * \return immOK if everything went fine, an error otherwise.
          */
         immStatus computeForces(double *rmsf);
 
-        /*! \brief
-         * Change the coordinate of the molecule based
-         * on the coordinate of the conformation stored
-         * in molprop experiment class.
+        /*! \brief Compute the second derivative matrix
          *
-         * \param[in] ei     Experiment
-         * \param[in] bpolar Whether or not there are shells
+         * \param[in]  crtmp     Temporary communication record for one core.
+         * \param[in]  atomIndex Vector containing the indices of the real 
+         *                       atoms, not shells or vsites.
+         * \param[out] hessian   MatrixWrapper object that must be pre-
+         *                       allocated to NxN where N = 3*atomIndex.size()
+         * \param[out] forceZero The forces on the atoms in the input structure,
+         *                       that is, not on the shells or vsites.
+         * \return the potential energy of the input structure
          */
-        void changeCoordinate(const Experiment &ei, gmx_bool bpolar);
+        double computeHessian(const t_commrec        *crtmp,
+                              const std::vector<int> &atomIndex,
+                              MatrixWrapper          *hessian,
+                              std::vector<double>    *forceZero);
+        /*! \brief
+         * The routine will energy minimize the atomic coordinates while
+         * relaxing the shells.
+         *
+         * \param[out] rmsd                Root mean square atomic deviation of atomic
+         *                                 coordinates after minimization.
+         * \return immOK if everything went fine, an error otherwise.
+         */
+        immStatus minimizeCoordinates(double *rmsd);
 
         /*! \brief
          * Return the optimized geometry of the molecule from the data file.
+         * The structure returned here corresponds to the one from the input
+         * file.
          */
         bool getOptimizedGeometry(rvec *x);
 

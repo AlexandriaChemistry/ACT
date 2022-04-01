@@ -282,8 +282,9 @@ static void analyse_multipoles(FILE                                             
     qcalc->calcMoments();
     for(auto &mpo : mpoMultiPoles)
     {
-        fprintf(fp, "Electronic %s (%s):\n",
-                mpo_name(mpo), mpo_unit2(mpo));
+        const char *name = mpo_name(mpo);
+        const char *unit = mpo_unit2(mpo);
+        fprintf(fp, "Electronic %s (%s):\n", name, unit);
         auto Telec = qelec->getMultipole(mpo);
         printMultipole(fp, mpo, Telec);
 
@@ -300,25 +301,27 @@ static void analyse_multipoles(FILE                                             
                 real delta = 0;
                 auto Tcalc = qcalc->getMultipole(mpo);
                 fprintf(fp, "%s %s (%s):\n",
-                        qTypeName(qt).c_str(), mpo_name(mpo), mpo_unit2(mpo));
+                        qTypeName(qt).c_str(), name, unit);
                 printMultipole(fp, mpo, Tcalc);
 
                 std::vector<double> diff;
                 for(size_t i = 0; i < Tcalc.size(); i++)
                 {
-                    diff.push_back(Tcalc[i]-Telec[i]);
-                    delta += gmx::square(diff[diff.size()-1]);
-                    (*lsq)[mpo][mol->datasetType()][qt].add_point(Telec[i], Tcalc[i], 0, 0);
+                    auto tc = Tcalc[i];
+                    auto te = Telec[i];
+                    diff.push_back(tc-te);
+                    delta += gmx::square(tc-te);
+                    (*lsq)[mpo][mol->datasetType()][qt].add_point(convertFromGromacs(te, unit), 
+                                                                  convertFromGromacs(tc, unit), 0, 0);
                 }
-                double rms = convertFromGromacs(std::sqrt(delta/Tcalc.size()), mpo_unit2(mpo));
+                double rms = std::sqrt(delta/Tcalc.size());
                 std::string flag("");
                 if (rms > toler[mpo])
                 {
-                    flag = " XXX";
+                    flag = " MULTI";
                 }
                 fprintf(fp, "Difference %s Norm %g RMS = %g (%s)%s:\n",
-                        mpo_name(mpo), convertFromGromacs(std::sqrt(delta), mpo_unit2(mpo)),
-                        rms, mpo_unit2(mpo), flag.c_str());
+                        name, std::sqrt(delta), rms, unit, flag.c_str());
                 printMultipole(fp, mpo, diff);
             }
         }
@@ -334,6 +337,7 @@ static void print_corr(const char                    *outfile,
 {
     std::vector<std::string> eprnm;
     std::vector<gmx_stats>   lsq;
+    bool                     haveData = false;
     for (auto &ims : iMolSelectNames())
     {
         auto qs = stats.find(ims.first);
@@ -346,17 +350,21 @@ static void print_corr(const char                    *outfile,
                 {
                     eprnm.push_back(gmx::formatString("%s-%s", qTypeName(i.first).c_str(), ims.second));
                     lsq.push_back(i.second);
+                    haveData = true;
                 }
             }
         }
     }
-    FILE *muc = xvgropen(outfile, title, xaxis, yaxis, oenv);
-    xvgr_symbolize(muc, eprnm, oenv);
-    for(size_t i = 0; i < lsq.size(); i++)
+    if (haveData)
     {
-        print_lsq_set(muc, lsq[i]);
+        FILE *muc = xvgropen(outfile, title, xaxis, yaxis, oenv);
+        xvgr_symbolize(muc, eprnm, oenv);
+        for(size_t i = 0; i < lsq.size(); i++)
+        {
+            print_lsq_set(muc, lsq[i]);
+        }
+        fclose(muc);
     }
-    fclose(muc);
 }
 
 static void write_q_histo(FILE                      *fplog,
@@ -472,7 +480,7 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
                                                                 lsq_anisoPol, lsq_charge, lsq_epot;
     std::map<MolPropObservable, std::map<iMolSelect, qtStats> > lsq_multi;
     std::map<iMolSelect, std::vector<ZetaTypeLsq> >             lsqt;
-    
+    std::map<iMolSelect, gmx_stats>                             lsq_rmsf;
     for (auto &mpo : mpoMultiPoles)
     {
         std::map<iMolSelect, qtStats> mq_multi;
@@ -490,6 +498,10 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
     }
     for(auto &ims : iMolSelectNames())
     {
+        {
+            gmx_stats rmsf;
+            lsq_rmsf.insert({ ims.first, std::move(rmsf) });
+        }
         qtStats qesp, qepot;
         for (auto &i : qTypes())
         {
@@ -568,29 +580,43 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
             std::vector<double> dummy;
             mol->GenerateCharges(pd, fplog, cr,
                                  ChargeGenerationAlgorithm::NONE, dummy, lot);
+            // RMS force
+            double rmsf = mol->rmsForce();
+            fprintf(fp, "RMS Force %g (kJ/mol/nm)\n", rmsf);
+            auto force   = mol->f();
+            auto myatoms = mol->atomsConst();
+     
+            lsq_rmsf[ims].add_point(0, rmsf, 0, 0);
             // Energy
+            fprintf(fp, "Energy terms (kJ/mol, EPOT including atomization terms)\n");
+            std::vector<double> eBefore;
+            auto terms = mol->energyTerms();
+            for(int ii = 0; ii < F_NRE; ii++)
+            {
+                eBefore.push_back(terms[ii]);
+            }
             double deltaE0 = 0;
             if (mol->energy(MolPropObservable::DELTAE0, &deltaE0))
             {
                 deltaE0 += mol->atomizationEnergy();
                 lsq_epot[ims][qType::Calc].add_point(deltaE0, mol->potentialEnergy(), 0, 0);
-                fprintf(fp, "DeltaE0+Atomization   %.2f\n", deltaE0);
+                fprintf(fp, "   %-20s  %10.3f  Difference: %10.3f\n", "Reference EPOT", deltaE0,
+                        eBefore[F_EPOT]-deltaE0);
             }
-            auto terms = mol->energyTerms();
+            double rmsd = 0;
+            // Now get the minimized structure RMSD and Energy
+            // TODO: Only do this for JobType::OPT
+            mol->minimizeCoordinates(&rmsd);
+            auto eAfter = mol->energyTerms();
+            fprintf(fp, "   %-20s  %10s  %10s  %10s minimization\n", "Term", "Before", "After", "Difference");
             for(auto &ep : ePlot)
             {
-                std::string extra;
-                if (ep == F_EPOT)
-                {
-                    if (std::abs(terms[ep]-deltaE0) > 20)
-                    {
-                        extra.assign(" PPP");
-                    }
-                }
-                fprintf(fp, "%-20s  %.2f%s\n",
+                fprintf(fp, "   %-20s  %10.3f  %10.3f  %10.3f\n",
                         interaction_function[ep].name,
-                        terms[ep], extra.c_str());
+                        eBefore[ep], eAfter[ep], eAfter[ep]-eBefore[ep]);
             }
+            fprintf(fp, "Coordinate RMSD after minimization %10g pm\n\n", 1000*rmsd);
+            
             // Now compute all the ESP RMSDs.
             mol->calcEspRms(pd);
             for (auto &i : qTypes())
@@ -663,7 +689,7 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
                     qQM.insert(std::pair<qType, std::vector<double>>(qt, qqm));
                 }
             }
-            fprintf(fp, "Atom   Type        ACM");
+            fprintf(fp, "Atom   Type            ACM");
             for(auto &qt : qQM)
             {
                 if (!qQM.find(qt.first)->second.empty())
@@ -671,21 +697,22 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
                     fprintf(fp, "%10s", qTypeName(qt.first).c_str());
                 }
             }
-            fprintf(fp, "        x        y        z (pm)\n");
+            fprintf(fp, "        x        y   z(pm)          fx         fy fz(kJ/mol nm)     qtot\n");
             auto x       = mol->x();
-            auto myatoms = mol->atomsConst();
             int  i       = 0;
+            double qtot  = 0;
             for (int j = i = 0; j < myatoms.nr; j++)
             {
                 if (myatoms.atom[j].ptype == eptAtom ||
                     myatoms.atom[j].ptype == eptNucleus)
                 {
                     real qCalc = myatoms.atom[j].q;
-                    fprintf(fp, "%-2d%3d  %-5s  %8.4f",
+                    fprintf(fp, "%-2d%3d  %-5s  %12g",
                             myatoms.atom[j].atomnumber,
                             j+1,
                             *(myatoms.atomtype[j]),
                             qCalc);
+                    qtot += qCalc;
                     for(auto &qt : qQM)
                     {
                         if (!qQM.find(qt.first)->second.empty())
@@ -693,20 +720,23 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
                             fprintf(fp, "  %8.4f", qt.second[i]);
                         }
                     }
-                    fprintf(fp," %8.3f %8.3f %8.3f\n", 
+                    fprintf(fp," %8.3f %8.3f %8.3f %10.3f %10.3f %10.3f  %10g\n", 
                             convertFromGromacs(x[j][XX], "pm"),
                             convertFromGromacs(x[j][YY], "pm"),
-                            convertFromGromacs(x[j][ZZ], "pm"));
+                            convertFromGromacs(x[j][ZZ], "pm"),
+                            force[j][XX], force[j][YY], force[j][ZZ],
+                            qtot);
                     i++;
                 }
                 else
                 {
                     // Turned on printing of shells again
-                    fprintf(fp, "%-2d%3d  %-5s  %8.4f",
+                    fprintf(fp, "%-2d%3d  %-5s  %12g",
                             0,
                             j+1,
                             *(myatoms.atomtype[j]),
                             myatoms.atom[j].q);
+                    qtot += myatoms.atom[j].q;
                     for(auto &qt : qQM)
                     {
                         if (!qQM.find(qt.first)->second.empty())
@@ -714,10 +744,12 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
                             fprintf(fp, "          ");
                         }
                     }
-                    fprintf(fp," %8.3f %8.3f %8.3f\n", 
+                    fprintf(fp," %8.3f %8.3f %8.3f %10.3f %10.3f %10.3f  %10g\n", 
                             convertFromGromacs(x[j][XX], "pm"),
                             convertFromGromacs(x[j][YY], "pm"),
-                            convertFromGromacs(x[j][ZZ], "pm"));
+                            convertFromGromacs(x[j][ZZ], "pm"),
+                            force[j][XX], force[j][YY], force[j][ZZ],
+                            qtot);
                 }
             }
             fprintf(fp, "\n");
@@ -740,14 +772,19 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
             const char *name = qTypeName(qt).c_str();
             if (lsq_epot[ims.first][qt].get_npoints() > 0)
             {
-                print_stats(fp, "Enthalpy of formation", "kJ/mol", 1.0, &lsq_epot[ims.first][qt],  header, "Experiment", name, useOffset_);
+                print_stats(fp, "Potential energy", "kJ/mol", 1.0, &lsq_epot[ims.first][qt],  header, "QM/DFT", name, useOffset_);
+                header = false;
+            }
+            if (lsq_rmsf[ims.first].get_npoints() > 0 && qt == qType::Calc)
+            {
+                print_stats(fp, "RMS Force", "kJ/mol nm", 1.0, &lsq_rmsf[ims.first], header, "QM/DFT", name, useOffset_);
                 header = false;
             }
             print_stats(fp, "ESP", "kJ/mol e", 1.0, &lsq_esp[ims.first][qt],  header, "Electronic", name, useOffset_);
             header = false;
             for(auto &mpo : mpoMultiPoles)
             {
-                print_stats(fp, mpo_name(mpo), mpo_unit2(mpo), convertFromGromacs(1.0, mpo_unit2(mpo)),
+                print_stats(fp, mpo_name(mpo), mpo_unit2(mpo), 1.0, //convertFromGromacs(1.0, mpo_unit2(mpo)),
                             &lsq_multi[mpo][ims.first][qt],   header, "Electronic", name, useOffset_);
             }
             if (bPolar && qt == qType::Calc)
@@ -761,7 +798,6 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
                 print_stats(fp, "Anisotropic Polariz.", polunit.c_str(), polfactor,
                             &lsq_anisoPol[ims.first][qType::Calc], header, "Electronic", name, useOffset_);
             }
-            fprintf(fp, "\n");
         }
     }
     write_q_histo(fp, opt2fn("-qhisto", filenm.size(), filenm.data()),
@@ -770,7 +806,7 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
     for(auto &mpo : mpoMultiPoles)
     {
         std::string cmdFlag = gmx::formatString("-%scorr", mpo_name(mpo));
-        std::string title   = gmx::formatString("%s components %s", mpo_name(mpo),
+        std::string title   = gmx::formatString("%s components (%s)", mpo_name(mpo),
                                                 mpo_unit2(mpo));
         print_corr(opt2fn(cmdFlag.c_str(), filenm.size(), filenm.data()),
                    title.c_str(), "Electronic", "Empirical", lsq_multi[mpo], oenv);
@@ -791,7 +827,7 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
         print_corr(opt2fn("-anisopol", filenm.size(), filenm.data()),
                    "Anisotropic Polarizability (A\\S3\\N)", "Electronic", "Calc", lsq_anisoPol, oenv);
     }
-    // List outliers based on the deviation in the total dipole moment
+    // List outliers based on the deviation in the Electrostatic Potential
     real espAver;
     if (eStats::OK == lsq_esp[iMolSelect::Train][qType::Calc].get_rmsd(&espAver))
     {
@@ -827,11 +863,49 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
         }
         if (nout)
         {
-            printf("There were %d ESP outliers. See at the very bottom of the log file\n", nout);
+            printf("There were %d ESP outliers. Check the bottom of the log file\n", nout);
         }
         else
         {
-            printf("No outliers! Well done.\n");
+            printf("No ESP outliers! Well done.\n");
+        }
+    }
+    // List outliers based on the deviation in the Potential energy
+    real epotAver;
+    if (eStats::OK == lsq_epot[iMolSelect::Train][qType::Calc].get_rmsd(&epotAver))
+    {
+        int nout = 0;
+        double epotMax = 1.5*epotAver;
+        fprintf(fp, "\nOverview of Epot outliers for %s (Diff > %.3f)\n",
+                qTypeName(qType::Calc).c_str(), epotMax);
+        fprintf(fp, "----------------------------------\n");
+        fprintf(fp, "%-40s  %12s  %12s\n", "Name",
+                qTypeName(qType::Calc).c_str(), "QM/DFT");
+        for (auto mol = mymol->begin(); mol < mymol->end(); ++mol)
+        {
+            double deltaE0;
+            if (!mol->energy(MolPropObservable::DELTAE0, &deltaE0))
+            {
+                GMX_THROW(gmx::InternalError(gmx::formatString("No molecular energy for %s",
+                                                               mol->getMolname().c_str()).c_str()));
+            }
+            deltaE0 += mol->atomizationEnergy();
+            auto diff = std::abs(mol->potentialEnergy()-deltaE0);
+            if ((mol->support() != eSupport::No) && (diff > epotMax))
+            {
+                fprintf(fp, "%-40s  %12.3f  %12.3f  %s\n",
+                        mol->getMolname().c_str(), mol->potentialEnergy(), deltaE0,
+                        iMolSelectName(mol->datasetType()));
+                nout++;
+            }
+        }
+        if (nout)
+        {
+            printf("There were %d EPot outliers. Check the bottom of the log file\n", nout);
+        }
+        else
+        {
+            printf("No Epot outliers! Well done.\n");
         }
     }
 }
@@ -848,37 +922,43 @@ void print_header(FILE                       *fp,
     fprintf(fp, "# This file was created %s", ctime(&my_t));
     fprintf(fp, "# alexandria is the engine of the Alexandria Chemistry Toolkit\n#\n");
     fprintf(fp, "# https://github.com/dspoel/ACT\n#\n");
-    fprintf(fp, "%-15s  %s\n", "Option", "Value");
     for (auto &p: pargs)
     {
-        std::string value;
+        std::string value, type;
         switch(p.type)
         {
         case etINT:
+            type.assign("int");
             value = gmx::formatString("%d", *p.u.i);
             break;
         case etINT64:
+            type.assign("int64");
             value = gmx::formatString("%" PRId64, *p.u.is);
             break;
         case etREAL:
+            type.assign("real");
             value = gmx::formatString("%g", *p.u.r);
             break;
         case etSTR:
+            type.assign("string");
             if (*p.u.c != nullptr)
             {
                 value = *p.u.c;
             }
             break;
         case etENUM:
+            type.assign("enum");
             if (*p.u.c != nullptr)
             {
                 value = gmx::formatString("%s", *p.u.c);
             }
             break;
         case etBOOL:
+            type.assign("bool");
             value = gmx::formatString("%s", *p.u.b ? "true" : "false");
             break;
         case etRVEC:
+            type.assign("rvec");
             value = gmx::formatString("%g %g %g", *p.u.rv[XX],
                                       *p.u.rv[YY], *p.u.rv[ZZ]);
             break;
@@ -887,7 +967,18 @@ void print_header(FILE                       *fp,
         default:
             value.assign("help");
         }
-        fprintf(fp, "%-15s  %s\n", p.option, value.c_str());
+        {
+            std::string left = gmx::formatString("Option: %s (%s), Value: %s\n  Help: ", 
+                                                 p.option, type.c_str(), value.c_str());
+            gmx::TextLineWrapperSettings settings;
+            settings.setLineLength(71);
+            settings.setFirstLineIndent(0);
+            settings.setIndent(8);
+            gmx::TextLineWrapper wrapper(settings);
+            std::string toWrap(p.desc);
+            fprintf(fp, "%s%s\n", left.c_str(),
+                    wrapper.wrapToString(toWrap).c_str());
+        }
     }
 }
 

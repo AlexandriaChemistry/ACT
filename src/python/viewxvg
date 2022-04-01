@@ -29,13 +29,34 @@ def interpret_legend(line):
         legval = legval[1:-1]
         return "label", legval
     return None, None
-    
+
+class xvgDataSet:
+    '''A simple class to hold an xvg data set'''
+    def __init__(self):
+        self.x = []
+        self.y = []
+        self.xmin = 1e9
+        self.xmax = -1e9
+        self.ymin = 1e9
+        self.ymax = -1e9
+        
+    def set_label(self, label:str):
+        self.label = label
+
+    def add_point(self, x:float, y:float):
+        self.x.append(x)
+        self.y.append(y)
+        self.xmin = min(self.xmin, x)
+        self.ymin = min(self.xmin, y)
+        self.xmax = min(self.xmin, x)
+        self.ymax = min(self.xmin, y)
+
 def read_xvg(filename):
-    legends = {}
-    labels  = []
-    xdata   = []
-    ydata   = []
+    legends  = {}
+    labels   = []
+    dataset  = []
     numwords = None
+    newset   = None
     with open(filename, "r") as inf:
         for line in inf:
             nhash = line.find("#")
@@ -46,7 +67,9 @@ def read_xvg(filename):
             nleg = line.find("@")
             if nleg >= 0:
                 myline = line[nleg+1:].strip()
-                if len(myline) > 0:
+                if line.find("@type") == 0:
+                    dataset.append(xvgDataSet())
+                elif len(myline) > 0:
                     legkey, legval = interpret_legend(myline)
                     if legkey and legval:
                         if legkey == "label":
@@ -55,19 +78,22 @@ def read_xvg(filename):
                             legends[legkey] = legval
                 continue
             
-            # Ignore multiple sequential sets for now
             w = line.split()
             if None == numwords:
                 numwords = len(w)
             if len(w) == numwords:
-                xdata.append(float(w[0]))
-                if len(ydata) == 0:
-                    for nw in range(1,len(w)):
-                        ydata.append([float(w[nw])])
-                elif len(ydata) == len(w)-1:
-                    for nw in range(1,len(w)):
-                        ydata[nw-1].append(float(w[nw]))
-    return labels, legends, xdata, ydata
+                if numwords == 2:
+                    if len(dataset) == 0:
+                        print("Found data but no dataset yet")
+                        dataset.append(xvgDataSet())
+                    dataset[len(dataset)-1].add_point(float(w[0]), float(w[1]))
+                elif numwords > 2:
+                    if len(dataset) < numwords-1:
+                        for i in range(len(dataset), numwords-1):
+                            dataset.append(xvgDataSet())
+                    for i in range(numwords-1):
+                        dataset[i].add_point(float(w[0]), float(w[i+1]))
+    return labels, legends, dataset
     
 def parseArguments():
     parser = argparse.ArgumentParser(
@@ -120,14 +146,20 @@ def plot_once():
     ax.clear()
     have_labels = False
     for fn in args.filename:
-        label, legend, xdata, ydata = read_xvg(fn)
+        label, legend, dataset = read_xvg(fn)
         if args.square:
             ax.set_aspect('equal', adjustable='box')
-            xxmin, xxmax = get_min_max(xdata)
-            for kkk in range(len(ydata)):
-                yymin, yymax = get_min_max(ydata[kkk])
-                mmin = min(xxmin, yymin)
-                mmax = max(xxmax, yymax)
+            xxmin = dataset[0].xmin
+            xxmax = dataset[0].xmax
+            yymin = dataset[0].ymin
+            yymax = dataset[0].ymax
+            for ii in range(len(dataset)):
+                xxmin = min(xxmin, dataset[ii].xmin)
+                xxmax = max(xxmax, dataset[ii].xmax)
+                yymin = min(yymin, dataset[ii].ymin)
+                yymax = max(yymax, dataset[ii].ymax)
+            mmin = min(xxmin, yymin)
+            mmax = max(xxmax, yymax)
             delta = (mmax-mmin)/20
             mmin -= delta
             mmax += delta
@@ -140,25 +172,25 @@ def plot_once():
         have_labels = have_labels or len(label) > 0
         if args.bar:
             print("Doing bar graphs")
-            for y in ydata:
-                ax.bar(xdata, y, width=0.8/len(ydata), bottom=0.0, align="center", label=fn)
+            for xy in dataset:
+                ax.bar(xy.x, xy.y, width=0.8/len(xy.y), bottom=0.0, align="center", label=fn)
         else:
-            print_label = len(label) == len(ydata)
+            print_label = len(label) == len(dataset)
             mylabel     = None
             if args.marker:
                 markers = [ "+", "x", ".", "v", "s", "o" ]
-                for n in range(len(ydata)):
+                for n in range(len(dataset)):
                     if label[n] not in args.ignore:
                         if print_label:
                             mylabel = label[n]
-                        ax.plot(xdata, ydata[n], label=mylabel, ls=args.linestyle, marker=markers[n % len(markers)])
+                        ax.plot(dataset[n].x, dataset[n].y, label=mylabel, ls=args.linestyle, marker=markers[n % len(markers)])
             else:
-                for n in range(len(ydata)):
+                for n in range(len(dataset)):
                     mylabel = ""
                     if len(label) > n and label[n] not in args.ignore:
                         if print_label:
                             mylabel = label[n]
-                    ax.plot(xdata, ydata[n], label=mylabel, ls=args.linestyle, marker=None)
+                    ax.plot(dataset[n].x, dataset[n].y, label=mylabel, ls=args.linestyle, marker=None)
 
     if "title" in legends:
         plt.title(legends["title"], fontsize=args.titlefontsize)

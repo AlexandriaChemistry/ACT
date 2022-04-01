@@ -82,7 +82,7 @@ void BayesConfigHandler::add_pargs(std::vector<t_pargs> *pargs)
 {
     t_pargs pa[] = {
         { "-maxiter", FALSE, etINT, {&maxiter_},
-          "Max number of iterations for MCMC optimization." },
+          "Max number of iterations for MCMC optimization. Also applies for the mutation step in the HYBRID optimization algoroithm." },
         { "-temp",    FALSE, etREAL, {&temperature_},
           "'Temperature' for the Monte Carlo simulation." },
         { "-tweight", FALSE, etBOOL, {&tempWeight_},
@@ -93,8 +93,8 @@ void BayesConfigHandler::add_pargs(std::vector<t_pargs> *pargs)
           "Random number seed. If zero, a seed will be generated." },
         { "-step",  FALSE, etREAL, {&step_},
           "Step size for the MCMC parameter optimization. Is used as fraction of the available range per parameter which depends on the parameter type." },
-        { "-bEvaluate_testset", FALSE, etBOOL, {&evaluate_testset_},
-          "Evaluate the MCMC energy on the test set. Only used in pure MCMC optmization." }
+        { "-evaluate_testset", FALSE, etBOOL, {&evaluate_testset_},
+          "Evaluate the parameters on the test set. Only used in pure MCMC optmization." }
     };
     for (int i = 0; i < asize(pa); i++)
     {
@@ -181,9 +181,9 @@ void GAConfigHandler::add_pargs(std::vector<t_pargs> *pargs)
 
     t_pargs pa[] = {
         { "-optimizer", FALSE, etENUM, {optimizerStr},
-          "Optimization method" },
+          "Optimization method (see above)." },
         { "-pop_size", FALSE, etINT, {&popSize_},
-          "Population size." },
+          "Population size for the GA and HYBRID algorithms (must be even) alternatively number of parallel MCMC calculations that will be performed (can be any integer number > 0 in this case)." },
         { "-n_elites", FALSE, etINT, {&nElites_},
           "Amount of top individuals to be moved, unchanged, to the next generation." },
         { "-random_init", FALSE, etBOOL, {&randomInit_},
@@ -197,15 +197,15 @@ void GAConfigHandler::add_pargs(std::vector<t_pargs> *pargs)
         { "-boltz_temp", FALSE, etREAL, {&boltzTemp_},
           "Initial temperature for Boltzmann probability computing." },
         { "-pr_cross", FALSE, etREAL, {&prCross_},
-          "Probability of crossover." },
+          "Probability of a crossover event." },
         { "-pr_mut", FALSE, etREAL, {&prMut_},
-          "Probability of mutation" },
+          "Probability of a mutation to happen in the GA algorithm." },
         { "-percent", FALSE, etREAL, {&percent_},
           "When GA optimizer is selected, -percent denotes the maximum allowed change in a parameter as a fraction of its allowed range." },
         { "-max_generations", FALSE, etINT, {&maxGenerations_},
-          "Generation limit for Genetic Algorithm." },
+          "Maximum number of generations before terminating the Genetic Algorithm." },
         { "-max_test_generations", FALSE, etINT, {&maxTestGenerations_},
-          "Generation limit for the test fitness to improve in Genetic Algorithm. -1 stands for disabled." },
+          "Generation limit for the test fitness to improve in Genetic Algorithm. -1 stands for disabled, otherwise if the test fitness does not improve within this number of generations, the optimization will stop to prevent over-fitting." },
         { "-log_volume", FALSE, etBOOL, {&logVolume_},
           "Compute the (hyper)volume in logarithmic scale." },
         { "-vfp_vol_frac_limit", FALSE, etREAL, {&vfpVolFracLimit_},
@@ -213,9 +213,9 @@ void GAConfigHandler::add_pargs(std::vector<t_pargs> *pargs)
         { "-vfp_pop_frac", FALSE, etREAL, {&vfpPopFrac_},
           "Fraction [0, 1] of the worst genomes to randomize when VolumeFractionPenalizer is triggered." },
         { "-cp_gen_interval", FALSE, etINT, {&cpGenInterval_},
-          "Interval (in number of generations) between triggers of CatastrophePenalizer." },
+          "Interval (in number of generations) between triggering the CatastrophePenalizer." },
         { "-cp_pop_frac", FALSE, etREAL, {&cpPopFrac_},
-          "Fraction [0, 1] of the genomes to randomize when CatastrophePenalizer is triggered." }
+          "Fraction [0, 1] of the genomes to randomize when the CatastrophePenalizer is triggered." }
     };
     for (int i = 0; i < asize(pa); i++)
     {

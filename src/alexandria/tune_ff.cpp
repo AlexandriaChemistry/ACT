@@ -313,7 +313,7 @@ void OptACM::initMaster()
     {
         fprintf(
             logFile(),
-            "\nTotal %s(hyper)volume of the parameter space is %lf.\n",
+            "\nTotal %s(hyper)volume of the parameter space is %g.\n",
             gach_.logVolume() ? "log " : "",
             totalVolume
         );
@@ -442,61 +442,73 @@ void OptACM::printNumCalcDevEstimate()
     );
 }
 
-void OptACM::printGenomeTable(const ga::Genome &genome)
+void OptACM::printGenomeTable(const ga::Genome   &genome,
+                              const ga::GenePool &pop)
 {
     if (!logFile())
     {
         return;
     }
-    const int defaultFloatSize = 9;
-    int totalWidth;
+    const std::vector<std::string> HEADER_NAMES{ "CLASS", "NAME", "BEST", "MIN", "MAX", "MEAN", "STDEV", "MEDIAN" };
+    const int FLOAT_SIZE = 14;  // Adjusted for the %g formatting plus negative numbers
+    std::vector<int> SIZES{5, 4, FLOAT_SIZE, FLOAT_SIZE, FLOAT_SIZE, FLOAT_SIZE, FLOAT_SIZE, FLOAT_SIZE};
+    // Adjust size for class field
     const auto paramClass = sii_->paramClass();
+    for (auto pClass : paramClass)
+    {
+        if (static_cast<int>(pClass.size()) > SIZES[0])
+        {
+            SIZES[0] = pClass.size();
+        }
+    }
+    // Adjust size for name field
     const auto paramClassIndex = sii_->paramClassIndex();
     const auto paramNames = sii_->paramNamesWOClass();
-    std::vector<int> paramWidth(paramNames.size());  // Width reserved for each parameter
-    // Iterate over the parameter classes, and create one table for each
+    for (auto pName : paramNames)
+    {
+        if (static_cast<int>(pName.size()) > SIZES[1])
+        {
+            SIZES[1] = pName.size();
+        }
+    }
+    const size_t TOTAL_WIDTH = SIZES[0] + SIZES[1] + 6*FLOAT_SIZE + 25;
+    const std::string HLINE(TOTAL_WIDTH, '-');
+    // Print header
+    fprintf(logFile(), "%s\n|", HLINE.c_str());
+    for (size_t i = 0; i < HEADER_NAMES.size(); i++)
+    {
+        fprintf(logFile(), " %-*s |", SIZES[i], HEADER_NAMES[i].c_str());
+    }
+    fprintf(logFile(), "\n%s\n", HLINE.c_str());
+    // Gather statistics from the population
+    const std::vector<double> min    = pop.min();
+    const std::vector<double> max    = pop.max();
+    const std::vector<double> mean   = pop.mean();
+    const std::vector<double> stdev  = pop.stdev();
+    const std::vector<double> median = pop.median();
+    // Print the parameter information
     for (size_t i = 0; i < paramClass.size(); i++)
     {
-        // Find out the max width of the table
-        totalWidth = 1;  // The left '|' character
         for (size_t j = 0; j < paramNames.size(); j++)
         {
             if (paramClassIndex[j] != i)
             {
                 continue;
             }
-            paramWidth[j] = defaultFloatSize >= paramNames[i].size() ? defaultFloatSize : static_cast<int>(paramNames[i].size());
-            totalWidth += paramWidth[j] + 3; // For the '|' separating character and two spaces as margin
+            fprintf(
+                logFile(),
+                "| %-*s | %-*s | %-*g | %-*g | %-*g | %-*g | %-*g | %-*g |\n%s\n",
+                SIZES[0], paramClass[i].c_str(),
+                SIZES[1], paramNames[j].c_str(),
+                SIZES[2], genome.base(j),
+                SIZES[3], min[j],
+                SIZES[4], max[j],
+                SIZES[5], mean[j],
+                SIZES[6], stdev[j],
+                SIZES[7], median[j],
+                HLINE.c_str()
+            );
         }
-        const std::string hLine(totalWidth, '-');
-        // Print header of the table
-        fprintf(logFile(), "\n%s\n", hLine.c_str());
-        fprintf(logFile(), "| %-*s|\n", totalWidth-3, paramClass[i].c_str());
-        fprintf(logFile(), "%s\n", hLine.c_str());
-        // Print the names of the parameters in this class
-        fprintf(logFile(), "|");
-        for (size_t j = 0; j < paramNames.size(); j++)
-        {
-            if (paramClassIndex[j] != i)
-            {
-                continue;
-            }
-            fprintf(logFile(), " %-*s |", paramWidth[i], paramNames[j].c_str());
-        }
-        fprintf(logFile(), "\n");
-        fprintf(logFile(), "%s\n", hLine.c_str());
-        // Print the parameter values
-        fprintf(logFile(), "|");
-        for (size_t j = 0; j < paramNames.size(); j++)
-        {
-            if (paramClassIndex[j] != i)
-            {
-                continue;
-            }
-            fprintf(logFile(), " %-*f |", paramWidth[i], genome.base(j));
-        }
-        fprintf(logFile(), "\n");
-        fprintf(logFile(), "%s\n", hLine.c_str());
     }
 }
 
@@ -520,9 +532,9 @@ bool OptACM::runMaster(bool optimize,
         bMinimum = ga_->evolve(&bestGenome);
         if (logFile())
         {
-            fprintf(logFile(), "\nHere are the best parameters I found:");
+            fprintf(logFile(), "\nHere are the best parameters I found, together with some summary statistics of the last population:\n");
         }
-        printGenomeTable(bestGenome);
+        printGenomeTable(bestGenome, ga_->getLastPop());
     }
     if (gach_.optimizer() != OptimizerAlg::GA && sensitivity)
     {

@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2014-2021
+ * Copyright (C) 2014-2022
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -329,6 +329,7 @@ TEST_F (AcmTest, SQEgPositive)
     std::vector<double> qcustom;
     testAcm("ACS-g", inputFormat::SDF, "guanidinium", false, 1, qcustom, 0, false);
 }
+#define LATER
 #ifdef LATER
 TEST_F (AcmTest, SQEpgNeutral)
 {
@@ -357,7 +358,7 @@ TEST_F (AcmTest, WaterDimerACSpg)
 TEST_F (AcmTest, WaterIodideACSpg)
 {
     std::vector<double> qcustom;
-    testAcm("ACS-pg", inputFormat::LOG, "water_I", true, 0, qcustom, 6, true);
+    testAcm("ACS-pg", inputFormat::LOG, "water_I", true, -1, qcustom, 6, true);
 }
 
 #endif
@@ -390,6 +391,18 @@ TEST_F (AcmTest, WaterIodideACSg)
 {
     std::vector<double> qcustom;
     testAcm("ACS-g", inputFormat::LOG, "water_I", true, -1, qcustom, 3, true);
+}
+
+TEST_F (AcmTest, MethanolWaterACSg)
+{
+    std::vector<double> qcustom;
+    testAcm("ACS-g", inputFormat::SDF, "methanol-water", true, 0, qcustom, 6, true);
+}
+
+TEST_F (AcmTest, MethanolWaterACSpg)
+{
+    std::vector<double> qcustom;
+    testAcm("ACS-pg", inputFormat::SDF, "methanol-water", true, 0, qcustom, 12, true);
 }
 
 }

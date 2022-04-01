@@ -42,5 +42,5 @@ endif()
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${LISTED_FORCES_SOURCES} ${BONDED_CUDA_KERNEL_SOURCES} PARENT_SCOPE)
 
 if (BUILD_TESTING)
-#     add_subdirectory(tests)
+     add_subdirectory(tests)
 endif()

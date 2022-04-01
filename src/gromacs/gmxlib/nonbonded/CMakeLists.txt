@@ -42,3 +42,7 @@ endif()
 set(NONBONDED_KERNEL_SOURCES ${NONBONDED_C_SOURCES})
 target_sources(libactgromacs_generated PRIVATE ${NONBONDED_KERNEL_SOURCES})
 set(NONBONDED_SOURCES "${NONBONDED_SOURCES}" PARENT_SCOPE)
+
+if (BUILD_TESTING)
+    add_subdirectory(tests)
+endif()

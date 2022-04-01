@@ -604,8 +604,8 @@ bool readBabel(const char          *g09,
             alexandria::CalcAtom ca(OpenBabel::OBElements::GetSymbol(atom->GetAtomicNum()),
                                     type->GetValue(), atom->GetIdx());
 
-            ca.SetUnit("Angstrom");
-            ca.SetCoords(atom->x(), atom->y(), atom->z());
+            ca.setCoordUnit("Angstrom");
+            ca.setCoords(atom->x(), atom->y(), atom->z());
             auto myres = atom->GetResidue();
             ca.SetResidue(myres->GetName(), myres->GetNum());
             ca.SetChain(myres->GetChainNum(), myres->GetChain());

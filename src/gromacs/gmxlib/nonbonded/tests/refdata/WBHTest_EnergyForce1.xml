@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Real Name="Sigma">0.14999999999999999</Real>
+  <Real Name="Epsilon">0.5</Real>
+  <Real Name="Gamma">8</Real>
+  <Sequence Name="Distance">
+    <Int Name="Length">9</Int>
+    <Real>0.10000000000000001</Real>
+    <Real>0.14999999999999999</Real>
+    <Real>0.20000000000000001</Real>
+    <Real>0.25</Real>
+    <Real>0.29999999999999999</Real>
+    <Real>0.34999999999999998</Real>
+    <Real>0.40000000000000002</Real>
+    <Real>0.45000000000000001</Real>
+    <Real>0.5</Real>
+  </Sequence>
+  <Sequence Name="Energy">
+    <Int Name="Length">9</Int>
+    <Real>3.6973708228393396</Real>
+    <Real>-0.5</Real>
+    <Real>-0.20380931845014838</Real>
+    <Real>-0.06121163991503218</Real>
+    <Real>-0.021151910792531328</Real>
+    <Real>-0.008467524606552531</Real>
+    <Real>-0.0038131514352661784</Real>
+    <Real>-0.0018835615860264502</Real>
+    <Real>-0.0010016447988040618</Real>
+  </Sequence>
+  <Sequence Name="Force">
+    <Int Name="Length">9</Int>
+    <Real>282.51203105547063</Real>
+    <Real>-3.5527136788005009e-15</Real>
+    <Real>-4.9805223486685586</Real>
+    <Real>-1.399289070394216</Real>
+    <Real>-0.41642671633664713</Real>
+    <Real>-0.14426077886756616</Real>
+    <Real>-0.057038562096430684</Real>
+    <Real>-0.025079748445854252</Real>
+    <Real>-0.012010981466154052</Real>
+  </Sequence>
+</ReferenceData>

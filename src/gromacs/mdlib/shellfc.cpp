@@ -111,7 +111,6 @@ struct gmx_shellfc_t {
     int          numConvergedIterations; /* Total number of iterations that converged */
 };
 
-
 static void pr_shell(FILE *fplog, int ns, t_shell s[])
 {
     int i;

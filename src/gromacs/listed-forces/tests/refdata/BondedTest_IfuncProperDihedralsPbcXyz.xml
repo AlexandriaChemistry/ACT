@@ -1,5 +1,20 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <Real Name="Proper Dih.">0.1519227</Real>
+  <Real Name="Proper Dih.">0.15192246987791869</Real>
+  <Sequence Name="Forces">
+    <Int Name="Length">12</Int>
+    <Real>-3.4729635533386007</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>3.4729635533386007</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>-3.4729635533386007</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>3.4729635533386007</Real>
+  </Sequence>
 </ReferenceData>
