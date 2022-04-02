@@ -74,6 +74,18 @@ public:
                                 MatrixWrapper       *hessian,
                                 std::vector<double> *forceZero);
 
+    /*! \brief
+     * The routine will energy minimize the atomic coordinates of a molecule while
+     * relaxing the shells.
+     *
+     * \param[out] mol  the molecule object (will be modified)
+     * \param[out] rmsd Root mean square atomic deviation of atomic
+     *                  coordinates after minimization.
+     * \return immOK if everything went fine, an error otherwise.
+     */
+    immStatus minimizeCoordinates(MyMol  *mol,
+                                  double *rmsd);
+
 };
 
 } // namespace alexandria
