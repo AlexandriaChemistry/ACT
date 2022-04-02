@@ -39,6 +39,7 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/linearalgebra/eigensolver.h"
 
 namespace alexandria
 {
@@ -47,7 +48,7 @@ double MolHandler::computeHessian(      MyMol               *mol,
                                   const t_commrec           *crtmp,
                                   const std::vector<int>    &atomIndex,
                                         MatrixWrapper       *hessian,
-                                        std::vector<double> *forceZero)
+                                        std::vector<double> *forceZero) const
 {
     std::vector<double> fneg;
     fneg.resize(DIM*atomIndex.size(), 0.0);
@@ -111,8 +112,102 @@ double MolHandler::computeHessian(      MyMol               *mol,
     return epot0;
 }
 
+void MolHandler::nma(MyMol *mol,
+                     FILE  *fp) const
+{
+
+    // Init single use commrec
+    t_commrec *crtmp = init_commrec();
+    crtmp->nnodes = 1;
+    crtmp->nodeid = 0;
+
+    // Get the indices of the real atoms of the molecule (not shells and such)
+    auto mdatoms = mol->MDatoms_->get()->mdatoms();
+    std::vector<int> atomIndex;
+    for(int atom = 0; atom < mdatoms->nr; atom++)
+    {
+        if (mdatoms->ptype[atom] == eptAtom)
+        {
+            atomIndex.push_back(atom);
+        }
+    }
+
+    // Get the atoms structure of the molecule
+    // FIXME: does this atoms structure also contain shells. i.e. is the atomIndex valid for this?
+    auto atoms = mol->atomsConst();
+
+    // Compute and average hessian
+    const int matrixSide = DIM*atomIndex.size();
+    MatrixWrapper       hessian(matrixSide, matrixSide);
+    std::vector<double> f0;
+    computeHessian(mol, crtmp, atomIndex, &hessian, &f0);
+    hessian.averageTriangle();
+
+    // Dispose single use commrec
+    done_commrec(crtmp);
+
+    // TODO: maybe print the hessian?
+
+    // divide elements hessian[i][j] by sqrt(mass[i])*sqrt(mass[j])
+    double massFac;
+    for (size_t i = 0; (i < atomIndex.size()); i++)
+    {
+        size_t ai = atomIndex[i];
+        for (size_t j = 0; (j < DIM); j++)
+        {
+            for (size_t k = 0; (k < atomIndex.size()); k++)
+            {
+                size_t ak = atomIndex[k];
+                massFac   = gmx::invsqrt(atoms.atom[ai].m * atoms.atom[ak].m);
+                for (size_t l = 0; (l < DIM); l++)
+                {
+                    hessian.mult(i+j, k+l, massFac);
+                }
+            }
+        }
+    }
+
+    // Call diagonalization routine
+    // fprintf(stderr, "\nDiagonalizing to find vectors...\n");
+    auto hessianFlat = hessian.flatten();
+    std::vector<double> eigenvalues(matrixSide);
+    std::vector<double> eigenvectors(matrixSide*matrixSide);
+    eigensolver(hessianFlat.data(), matrixSide, 0, matrixSide - 1, eigenvalues.data(), eigenvectors.data());
+
+    // Scale the output eigenvectors
+    for (int i = 0; i < matrixSide; i++)
+    {
+        for (size_t j = 0; j < atomIndex.size(); j++)
+        {
+            size_t aj = atomIndex[j];
+            massFac   = gmx::invsqrt(atoms.atom[aj].m);
+            for (size_t k = 0; (k < DIM); k++)
+            {
+                eigenvectors[i * matrixSide + j * DIM + k] *= massFac;
+            }
+        }
+    }
+
+    // Get the eigenvectors into a MatrixWrapper
+    MatrixWrapper eigenvecMat(eigenvectors, matrixSide);
+
+    // Print eigenvalues and eigenvectors to file
+    if (!fp)
+    {
+        return;
+    }
+    const int FLOAT_SIZE = 13;
+    fprintf(fp, "Hessian eigenvalues:\n[ ");
+    for (const auto &val : eigenvalues)
+    {
+        fprintf(fp, "%-*g ", FLOAT_SIZE, val);
+    }
+    fprintf(fp, "]\nHessian eigenvectors:\n%s\n", eigenvecMat.toString().c_str());
+
+}
+
 immStatus MolHandler::minimizeCoordinates(MyMol  *mol,
-                                          double *rmsd)
+                                          double *rmsd) const
 {
     mol->updateMDAtoms();
     // We need to use a single core system for minimizing shells

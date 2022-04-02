@@ -72,7 +72,16 @@ public:
                           const t_commrec           *crtmp,
                           const std::vector<int>    &atomIndex,
                                 MatrixWrapper       *hessian,
-                                std::vector<double> *forceZero);
+                                std::vector<double> *forceZero) const;
+
+    /*! \brief Perform normal-mode analysis on a molecule
+     *
+     * Prints eigenvalues and eigenvectors of the mass-weighted hessian matrix
+     * \param[in] mol the molecule to analyze
+     * \param[in] fp  the file to write analysis to
+     */
+    void nma(MyMol *mol,
+             FILE  *fp) const;
 
     /*! \brief
      * The routine will energy minimize the atomic coordinates of a molecule while
@@ -84,7 +93,7 @@ public:
      * \return immOK if everything went fine, an error otherwise.
      */
     immStatus minimizeCoordinates(MyMol  *mol,
-                                  double *rmsd);
+                                  double *rmsd) const;
 
 };
 

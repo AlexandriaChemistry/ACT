@@ -616,6 +616,9 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
                         eBefore[ep], eAfter[ep], eAfter[ep]-eBefore[ep]);
             }
             fprintf(fp, "Coordinate RMSD after minimization %10g pm\n\n", 1000*rmsd);
+
+            // Do normal-mode analysis
+            molHandler_.nma(&(*mol), fp);
             
             // Now compute all the ESP RMSDs.
             mol->calcEspRms(pd);
