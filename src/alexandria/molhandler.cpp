@@ -188,21 +188,41 @@ void MolHandler::nma(MyMol *mol,
         }
     }
 
+    // Get the vibrational frequencies
+    std::vector<double> freqs;
+    for (const auto val : eigenvalues)
+    {
+        if (val > 0)
+        {
+            freqs.push_back(std::sqrt(val));
+        }
+    }
+
     // Get the eigenvectors into a MatrixWrapper
     MatrixWrapper eigenvecMat(eigenvectors, matrixSide);
 
-    // Print eigenvalues and eigenvectors to file
-    if (!fp)
+    // Print vibrational frequencies to file
+    const int SFLOAT_SIZE = 10;
+    const int FLOAT_SIZE  = 13;
+    if (fp)
     {
-        return;
+        fprintf(fp, "Vibrational frequencies:\n[ ");
+        for (const auto &freq : freqs)
+        {
+            fprintf(fp, "%-*g ", SFLOAT_SIZE, freq);
+        }
+        fprintf(fp, "]\n\n");
     }
-    const int FLOAT_SIZE = 13;
-    fprintf(fp, "Hessian eigenvalues:\n[ ");
-    for (const auto &val : eigenvalues)
+    // Print eigenvalues and eigenvectors to debug files
+    if (debug)
     {
-        fprintf(fp, "%-*g ", FLOAT_SIZE, val);
+        fprintf(debug, "\nMolecule: %s\nHessian eigenvalues:\n[ ", mol->getMolname().c_str());
+        for (const auto &val : eigenvalues)
+        {
+            fprintf(debug, "%-*g ", FLOAT_SIZE, val);
+        }
+        fprintf(debug, "]\nHessian eigenvectors:\n%s\n", eigenvecMat.toString().c_str());
     }
-    fprintf(fp, "]\nHessian eigenvectors:\n%s\n", eigenvecMat.toString().c_str());
 
 }
 
