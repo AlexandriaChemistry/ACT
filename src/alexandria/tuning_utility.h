@@ -43,6 +43,7 @@
 #include "gromacs/topology/mtop_util.h"
 
 #include "mymol.h"
+#include "molhandler.h"
 #include "act/poldata/poldata.h"
 
 /*! \brief Utility function to merge command line arguments
@@ -60,6 +61,8 @@ namespace alexandria
     class TuneForceFieldPrinter
     {
     private:
+        //! Can make computations for molecules, such as the Hessian and energy minimization (for now).
+        MolHandler molHandler_;
         //! Tolerance (kJ/mol e) for marking ESP as an outlier in the log file
         real esp_toler_           = 30;
         //! Tolerance (Debye) for marking dipole as an outlier in the log file
