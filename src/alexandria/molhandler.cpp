@@ -36,6 +36,10 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/do_fit.h"
 
+#include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/enerdata.h"
+#include "gromacs/topology/topology.h"
+
 namespace alexandria
 {
 
@@ -194,7 +198,7 @@ immStatus MolHandler::minimizeCoordinates(MyMol  *mol,
         for(size_t kk = 0; kk < theAtoms.size(); kk++)
         {
             int atomI = theAtoms[kk];
-            msAtomForce  += iprod(f_[atomI], f_[atomI]);
+            msAtomForce  += iprod(mol->f_[atomI], mol->f_[atomI]);
         }
         msAtomForce /= theAtoms.size();
         converged = msAtomForce <= myForceToler;
@@ -226,7 +230,7 @@ immStatus MolHandler::minimizeCoordinates(MyMol  *mol,
             mol->f_[theAtoms[kk]][m] = f00[DIM*kk+m];
         }
     }
-    std::vector<gmx::RVec> xp(mtop_->natoms);
+    std::vector<gmx::RVec> xp(mol->mtop_->natoms);
     for (auto &kk : theAtoms)
     {
         copy_rvec(mol->state_->x[kk], xp[kk]);
