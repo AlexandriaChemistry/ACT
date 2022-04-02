@@ -1758,14 +1758,11 @@ immStatus MyMol::minimizeCoordinates(double *rmsd)
     }
     // Fetch back the input structure.
     restoreCoordinates();
-    // Restore the forces
-    for(size_t kk = 0; kk < theAtoms.size(); kk++)
-    {
-        for(int m = 0; m < DIM; m++)
-        {
-            f_[theAtoms[kk]][m] = f00[DIM*kk+m];
-        }
-    }
+    // Re-compute the energy
+    double shellForceRMS = 0;
+    imm = calculateEnergy(crtmp, &shellForceRMS);
+    printf("shellForceRMS %g\n", shellForceRMS);
+    // Compute the RMSD of the coordinates
     std::vector<gmx::RVec> xp;
     xp.resize(mtop_->natoms);
     for (auto &kk : theAtoms)
