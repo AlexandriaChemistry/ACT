@@ -51,6 +51,7 @@ target_sources(actLib
            merge_mp.cpp
            merge_pd.cpp
            molgen.cpp
+           molhandler.cpp
            molselect.cpp
            mymol.cpp
            mymol_low.cpp

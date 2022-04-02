@@ -819,6 +819,7 @@ int tune_ff(int argc, char *argv[])
 
         // Master only
         bool bMinimum = opt.runMaster(bOptimize, bSensitivity);
+        printf("DONE WITH OPTIMIZATION\n");
 
         if (bMinimum || bForceOutput || !bOptimize)
         {

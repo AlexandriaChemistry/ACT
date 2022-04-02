@@ -606,7 +606,7 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
             double rmsd = 0;
             // Now get the minimized structure RMSD and Energy
             // TODO: Only do this for JobType::OPT
-            mol->minimizeCoordinates(&rmsd);
+            molHandler_.minimizeCoordinates(&(*mol), &rmsd);
             auto eAfter = mol->energyTerms();
             fprintf(fp, "   %-20s  %10s  %10s  %10s minimization\n", "Term", "Before", "After", "Difference");
             for(auto &ep : ePlot)
@@ -616,6 +616,9 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
                         eBefore[ep], eAfter[ep], eAfter[ep]-eBefore[ep]);
             }
             fprintf(fp, "Coordinate RMSD after minimization %10g pm\n\n", 1000*rmsd);
+
+            // Do normal-mode analysis
+            molHandler_.nma(&(*mol), fp);
             
             // Now compute all the ESP RMSDs.
             mol->calcEspRms(pd);
