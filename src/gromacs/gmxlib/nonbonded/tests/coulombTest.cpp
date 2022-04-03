@@ -93,6 +93,11 @@ TEST_F(CoulombTest, EnergyForceNaCl)
     runTest(1, -1, 0.0, 0.0);
 }
 
+TEST_F(CoulombTest, EnergyForceNaClZeta100) 
+{
+    runTest(1, -1, 100.0, 100.0);
+}
+
 TEST_F(CoulombTest, EnergyForce0) 
 {
     runTest(0.3, 0.5, 0.0, 0.0);

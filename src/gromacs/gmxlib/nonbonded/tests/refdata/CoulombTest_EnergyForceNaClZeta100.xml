@@ -3,8 +3,8 @@
 <ReferenceData>
   <Real Name="iq">1</Real>
   <Real Name="jq">-1</Real>
-  <Real Name="izeta">0</Real>
-  <Real Name="jzeta">0</Real>
+  <Real Name="izeta">100</Real>
+  <Real Name="jzeta">100</Real>
   <Sequence Name="Distance">
     <Int Name="Length">9</Int>
     <Real>0.10000000000000001</Real>

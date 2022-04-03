@@ -3,35 +3,35 @@
 <ReferenceData>
   <Sequence Name="qtotValuesEqdModel_Gaussian">
     <Int Name="Length">30</Int>
-    <Real>1.8107395759203784</Real>
+    <Real>1.6912132556232455</Real>
     <Real>-2</Real>
-    <Real>1.0593909761380009</Real>
+    <Real>1.0788736164034733</Real>
     <Real>-1</Real>
-    <Real>1.0364014312222112</Real>
+    <Real>1.064335183875436</Real>
     <Real>-1</Real>
-    <Real>1.0364023855883173</Real>
+    <Real>1.0643362658440165</Real>
     <Real>-1</Real>
-    <Real>2.0462966400224478</Real>
+    <Real>2.155356284730177</Real>
     <Real>-2</Real>
-    <Real>0.98606343332224788</Real>
+    <Real>0.96612333366122649</Real>
     <Real>-1</Real>
-    <Real>0.9860644652346664</Real>
+    <Real>0.96612425764065035</Real>
     <Real>-1</Real>
-    <Real>2.0697821958273481</Real>
+    <Real>2.1052397320801801</Real>
     <Real>-2</Real>
-    <Real>1.0214924593818655</Real>
+    <Real>1.0010427819643075</Real>
     <Real>-1</Real>
-    <Real>1.0214900315662672</Real>
+    <Real>1.0010401311127781</Real>
     <Real>-1</Real>
-    <Real>2.2694106745967062</Real>
+    <Real>2.2633204212288667</Real>
     <Real>-2</Real>
-    <Real>0.96224377615107504</Real>
+    <Real>0.98446099761426986</Real>
     <Real>-1</Real>
-    <Real>0.96224313237088233</Real>
+    <Real>0.98445990916102033</Real>
     <Real>-1</Real>
-    <Real>1.3351031723078364</Real>
+    <Real>1.1749543525716399</Real>
     <Real>-2</Real>
-    <Real>1.3968756503497495</Real>
+    <Real>1.4991194764887115</Real>
     <Real>-1</Real>
   </Sequence>
 </ReferenceData>

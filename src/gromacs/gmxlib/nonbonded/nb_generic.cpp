@@ -78,7 +78,7 @@ void coulomb_gaussian(real qq, real izeta, real jzeta,
                       real r, real *velec, real *felec)
 {
     *velec       = qq*Coulomb_GG(r, izeta, jzeta);
-    *felec       = -qq*DCoulomb_GG(r, izeta, jzeta);
+    *felec       = qq*DCoulomb_GG(r, izeta, jzeta);
 }
 
 void
@@ -229,29 +229,22 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                         break;
 
                     case GMX_NBKERNEL_ELEC_COULOMB:
-                        /* Vanilla cutoff coulomb */
-                        if (izeta == 0 && jzeta == 0)
+                        /* Vanilla or Gaussian cutoff coulomb */
+                        if (irow == 0 && jrow == 0)
                         {
-                            velec        = qq*rinv;
-                            felec        = velec*rinv;
+                            coulomb_gaussian(qq, izeta, jzeta,
+                                             rsq*rinv, &velec, &felec);
                         }
                         else
                         {
-                            if (irow == 0 && jrow == 0)
+                            if (irow < 0 || jrow < 0)
                             {
-                                coulomb_gaussian(qq, izeta, jzeta, rsq*rinv, &velec, &felec);
+                                gmx_fatal(FARGS, "Row cannot be negative in Slater wave function!.\n");
                             }
                             else
                             {
-                                if (irow < 0 || jrow < 0)
-                                {
-                                    gmx_fatal(FARGS, "Row cannot be negative in Slater wave function!.\n");
-                                }
-                                else
-                                {
-                                    velec = qq*Coulomb_SS(r, irow, jrow, izeta, jzeta);
-                                    felec = -qq*DCoulomb_SS(r, irow, jrow, izeta, jzeta);
-                                }
+                                velec = qq*Coulomb_SS(r, irow, jrow, izeta, jzeta);
+                                felec = -qq*DCoulomb_SS(r, irow, jrow, izeta, jzeta);
                             }
                         }
                         if (debug)

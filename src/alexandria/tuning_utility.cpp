@@ -57,8 +57,6 @@ void doAddOptions(std::vector<t_pargs> *pargs, size_t npa, t_pargs pa[])
 namespace alexandria
 {
 
-using qtStats = std::map<qType, gmx_stats>;
-
 class ZetaTypeLsq {
 private:
     std::string ztype_;
@@ -205,7 +203,7 @@ static void xvgr_symbolize(FILE                           *xvgf,
 }
 
 static void print_polarizability(FILE              *fp,
-                                 const std::vector<alexandria::MyMol>::iterator &mol,
+                                 const MyMol       *mol,
                                  const std::string &calc_name,
                                  real               alpha_toler,
                                  real               isopol_toler)
@@ -465,6 +463,163 @@ void TuneForceFieldPrinter::addFileOptions(std::vector<t_filenm> *filenm)
     }
 }
 
+void TuneForceFieldPrinter::analysePolarisability(FILE              *fp,
+                                                  alexandria::MyMol *mol,
+                                                  qtStats           *lsq_isoPol,
+                                                  qtStats           *lsq_anisoPol,
+                                                  qtStats           *lsq_alpha,
+                                                  real               efield)
+{
+    auto qelec = mol->qTypeProps(qType::Elec);
+    auto aelec = qelec->polarizabilityTensor();
+    mol->CalcPolarizability(efield);
+    auto qcalc = mol->qTypeProps(qType::Calc);
+    auto acalc = qcalc->polarizabilityTensor();
+    
+    print_polarizability(fp, mol, qTypeName(qType::Elec), alpha_toler_, isopol_toler_);
+    print_polarizability(fp, mol, qTypeName(qType::Calc), alpha_toler_, isopol_toler_);
+    (*lsq_isoPol)[qType::Calc].add_point(qelec->isotropicPolarizability(),
+                                         qcalc->isotropicPolarizability(),
+                                         0, 0);
+    (*lsq_anisoPol)[qType::Calc].add_point(qelec->anisotropicPolarizability(),
+                                           qcalc->anisotropicPolarizability(),
+                                           0, 0);
+    for (int mm = 0; mm < DIM; mm++)
+    {
+        (*lsq_alpha)[qType::Calc].add_point(aelec[mm][mm], acalc[mm][mm], 0, 0);
+    }
+}
+
+void TuneForceFieldPrinter::printAtoms(FILE              *fp,
+                                       alexandria::MyMol *mol)
+{
+    std::map<qType, std::vector<double> > qQM;
+    std::vector<qType>                    typeQM = { 
+        qType::CM5, qType::ESP, qType::Hirshfeld, qType::Mulliken
+    };
+    for(auto &qt : typeQM)
+    {
+        auto qp = mol->qTypeProps(qt);
+        if (qp)
+        {
+            std::vector<double> qqm;
+            qqm = qp->charge();
+            qQM.insert(std::pair<qType, std::vector<double>>(qt, qqm));
+        }
+    }
+    fprintf(fp, "Atom   Type            ACM");
+    for(auto &qt : qQM)
+    {
+        if (!qQM.find(qt.first)->second.empty())
+        {
+            fprintf(fp, "%10s", qTypeName(qt.first).c_str());
+        }
+    }
+    fprintf(fp, "        x        y   z(pm)          fx         fy fz(kJ/mol nm)     qtot\n");
+    auto x       = mol->x();
+    int  i       = 0;
+    double qtot  = 0;
+    auto myatoms = mol->atomsConst();
+    auto force   = mol->f();
+    for (int j = i = 0; j < myatoms.nr; j++)
+    {
+        if (myatoms.atom[j].ptype == eptAtom ||
+            myatoms.atom[j].ptype == eptNucleus)
+        {
+            real qCalc = myatoms.atom[j].q;
+            fprintf(fp, "%-2d%3d  %-5s  %12g",
+                    myatoms.atom[j].atomnumber,
+                    j+1,
+                    *(myatoms.atomtype[j]),
+                    qCalc);
+            qtot += qCalc;
+            for(auto &qt : qQM)
+            {
+                if (!qQM.find(qt.first)->second.empty())
+                {
+                    fprintf(fp, "  %8.4f", qt.second[i]);
+                }
+            }
+            fprintf(fp," %8.3f %8.3f %8.3f %10.3f %10.3f %10.3f  %10g\n", 
+                    convertFromGromacs(x[j][XX], "pm"),
+                    convertFromGromacs(x[j][YY], "pm"),
+                    convertFromGromacs(x[j][ZZ], "pm"),
+                    force[j][XX], force[j][YY], force[j][ZZ],
+                    qtot);
+            i++;
+        }
+        else
+        {
+            // Turned on printing of shells again
+            fprintf(fp, "%-2d%3d  %-5s  %12g",
+                    0,
+                    j+1,
+                    *(myatoms.atomtype[j]),
+                    myatoms.atom[j].q);
+            qtot += myatoms.atom[j].q;
+            for(auto &qt : qQM)
+            {
+                if (!qQM.find(qt.first)->second.empty())
+                {
+                    fprintf(fp, "          ");
+                }
+            }
+            fprintf(fp," %8.3f %8.3f %8.3f %10.3f %10.3f %10.3f  %10g\n", 
+                    convertFromGromacs(x[j][XX], "pm"),
+                    convertFromGromacs(x[j][YY], "pm"),
+                    convertFromGromacs(x[j][ZZ], "pm"),
+                    force[j][XX], force[j][YY], force[j][ZZ],
+                    qtot);
+        }
+    }
+}
+
+void TuneForceFieldPrinter::printEnergyForces(FILE                   *fp,
+                                              alexandria::MyMol      *mol,
+                                              const std::vector<int> &ePlot,
+                                              gmx_stats              *lsq_rmsf,
+                                              qtStats                *lsq_epot)
+{
+    // RMS force
+    double rmsf  = mol->rmsForce();
+    fprintf(fp, "\nRMS Force %g (kJ/mol/nm)\n", rmsf);
+    auto force   = mol->f();
+    
+    lsq_rmsf->add_point(0, rmsf, 0, 0);
+    // Energy
+    fprintf(fp, "Energy terms (kJ/mol, EPOT including atomization terms)\n");
+    std::vector<double> eBefore;
+    auto terms = mol->energyTerms();
+    for(int ii = 0; ii < F_NRE; ii++)
+    {
+        eBefore.push_back(terms[ii]);
+    }
+    double deltaE0 = 0;
+    if (mol->energy(MolPropObservable::DELTAE0, &deltaE0))
+    {
+        deltaE0 += mol->atomizationEnergy();
+        (*lsq_epot)[qType::Calc].add_point(deltaE0, mol->potentialEnergy(), 0, 0);
+        fprintf(fp, "   %-20s  %10.3f  Difference: %10.3f\n", "Reference EPOT", deltaE0,
+                eBefore[F_EPOT]-deltaE0);
+    }
+    double rmsd = 0;
+    // Now get the minimized structure RMSD and Energy
+    // TODO: Only do this for JobType::OPT
+    molHandler_.minimizeCoordinates(&(*mol), &rmsd);
+    auto eAfter = mol->energyTerms();
+    fprintf(fp, "   %-20s  %10s  %10s  %10s minimization\n", "Term", "Before", "After", "Difference");
+    for(auto &ep : ePlot)
+    {
+        fprintf(fp, "   %-20s  %10.3f  %10.3f  %10.3f\n",
+                interaction_function[ep].name,
+                eBefore[ep], eAfter[ep], eAfter[ep]-eBefore[ep]);
+    }
+    fprintf(fp, "Coordinate RMSD after minimization %10g pm\n\n", 1000*rmsd);
+    
+    // Do normal-mode analysis
+    molHandler_.nma(&(*mol), fp);
+}
+
 void TuneForceFieldPrinter::print(FILE                           *fp,
                                   std::vector<alexandria::MyMol> *mymol,
                                   const Poldata                  *pd,
@@ -580,44 +735,8 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
             std::vector<double> dummy;
             mol->GenerateCharges(pd, fplog, cr,
                                  ChargeGenerationAlgorithm::NONE, dummy, lot);
-            // RMS force
-            double rmsf = mol->rmsForce();
-            fprintf(fp, "RMS Force %g (kJ/mol/nm)\n", rmsf);
-            auto force   = mol->f();
-            auto myatoms = mol->atomsConst();
-     
-            lsq_rmsf[ims].add_point(0, rmsf, 0, 0);
-            // Energy
-            fprintf(fp, "Energy terms (kJ/mol, EPOT including atomization terms)\n");
-            std::vector<double> eBefore;
-            auto terms = mol->energyTerms();
-            for(int ii = 0; ii < F_NRE; ii++)
-            {
-                eBefore.push_back(terms[ii]);
-            }
-            double deltaE0 = 0;
-            if (mol->energy(MolPropObservable::DELTAE0, &deltaE0))
-            {
-                deltaE0 += mol->atomizationEnergy();
-                lsq_epot[ims][qType::Calc].add_point(deltaE0, mol->potentialEnergy(), 0, 0);
-                fprintf(fp, "   %-20s  %10.3f  Difference: %10.3f\n", "Reference EPOT", deltaE0,
-                        eBefore[F_EPOT]-deltaE0);
-            }
-            double rmsd = 0;
-            // Now get the minimized structure RMSD and Energy
-            // TODO: Only do this for JobType::OPT
-            mol->minimizeCoordinates(&rmsd);
-            auto eAfter = mol->energyTerms();
-            fprintf(fp, "   %-20s  %10s  %10s  %10s minimization\n", "Term", "Before", "After", "Difference");
-            for(auto &ep : ePlot)
-            {
-                fprintf(fp, "   %-20s  %10.3f  %10.3f  %10.3f\n",
-                        interaction_function[ep].name,
-                        eBefore[ep], eAfter[ep], eAfter[ep]-eBefore[ep]);
-            }
-            fprintf(fp, "Coordinate RMSD after minimization %10g pm\n\n", 1000*rmsd);
-            
-            // Now compute all the ESP RMSDs.
+            // Now compute all the ESP RMSDs and multipoles and print it.
+            fprintf(fp, "Electrostatic properties.\n");
             mol->calcEspRms(pd);
             for (auto &i : qTypes())
             {
@@ -656,102 +775,15 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
             // Polarizability
             if (bPolar)
             {
-                auto qelec = mol->qTypeProps(qType::Elec);
-                auto aelec = qelec->polarizabilityTensor();
-                mol->CalcPolarizability(efield);
-                auto qcalc = mol->qTypeProps(qType::Calc);
-                auto acalc = qcalc->polarizabilityTensor();
-
-                print_polarizability(fp, mol, qTypeName(qType::Elec), alpha_toler_, isopol_toler_);
-                print_polarizability(fp, mol, qTypeName(qType::Calc), alpha_toler_, isopol_toler_);
-                lsq_isoPol[ims][qType::Calc].add_point(qelec->isotropicPolarizability(),
-                                                       qcalc->isotropicPolarizability(),
-                                                       0, 0);
-                lsq_anisoPol[ims][qType::Calc].add_point(qelec->anisotropicPolarizability(),
-                                                         qcalc->anisotropicPolarizability(),
-                                                         0, 0);
-                for (int mm = 0; mm < DIM; mm++)
-                {
-                    lsq_alpha[ims][qType::Calc].add_point(aelec[mm][mm], acalc[mm][mm], 0, 0);
-                }
+                analysePolarisability(fp, &(*mol), &(lsq_isoPol[ims]),
+                                      &(lsq_anisoPol[ims]), &(lsq_alpha[ims]), efield);
             }
 
             // Atomic charges
-            std::map<qType, std::vector<double> > qQM;
-            std::vector<qType>                    typeQM = { qType::CM5, qType::ESP, qType::Hirshfeld, qType::Mulliken };
-            for(auto &qt : typeQM)
-            {
-                auto qp = mol->qTypeProps(qt);
-                if (qp)
-                {
-                    std::vector<double> qqm;
-                    qqm = qp->charge();
-                    qQM.insert(std::pair<qType, std::vector<double>>(qt, qqm));
-                }
-            }
-            fprintf(fp, "Atom   Type            ACM");
-            for(auto &qt : qQM)
-            {
-                if (!qQM.find(qt.first)->second.empty())
-                {
-                    fprintf(fp, "%10s", qTypeName(qt.first).c_str());
-                }
-            }
-            fprintf(fp, "        x        y   z(pm)          fx         fy fz(kJ/mol nm)     qtot\n");
-            auto x       = mol->x();
-            int  i       = 0;
-            double qtot  = 0;
-            for (int j = i = 0; j < myatoms.nr; j++)
-            {
-                if (myatoms.atom[j].ptype == eptAtom ||
-                    myatoms.atom[j].ptype == eptNucleus)
-                {
-                    real qCalc = myatoms.atom[j].q;
-                    fprintf(fp, "%-2d%3d  %-5s  %12g",
-                            myatoms.atom[j].atomnumber,
-                            j+1,
-                            *(myatoms.atomtype[j]),
-                            qCalc);
-                    qtot += qCalc;
-                    for(auto &qt : qQM)
-                    {
-                        if (!qQM.find(qt.first)->second.empty())
-                        {
-                            fprintf(fp, "  %8.4f", qt.second[i]);
-                        }
-                    }
-                    fprintf(fp," %8.3f %8.3f %8.3f %10.3f %10.3f %10.3f  %10g\n", 
-                            convertFromGromacs(x[j][XX], "pm"),
-                            convertFromGromacs(x[j][YY], "pm"),
-                            convertFromGromacs(x[j][ZZ], "pm"),
-                            force[j][XX], force[j][YY], force[j][ZZ],
-                            qtot);
-                    i++;
-                }
-                else
-                {
-                    // Turned on printing of shells again
-                    fprintf(fp, "%-2d%3d  %-5s  %12g",
-                            0,
-                            j+1,
-                            *(myatoms.atomtype[j]),
-                            myatoms.atom[j].q);
-                    qtot += myatoms.atom[j].q;
-                    for(auto &qt : qQM)
-                    {
-                        if (!qQM.find(qt.first)->second.empty())
-                        {
-                            fprintf(fp, "          ");
-                        }
-                    }
-                    fprintf(fp," %8.3f %8.3f %8.3f %10.3f %10.3f %10.3f  %10g\n", 
-                            convertFromGromacs(x[j][XX], "pm"),
-                            convertFromGromacs(x[j][YY], "pm"),
-                            convertFromGromacs(x[j][ZZ], "pm"),
-                            force[j][XX], force[j][YY], force[j][ZZ],
-                            qtot);
-                }
-            }
+            printAtoms(fp, &(*mol));
+            // Energies
+            printEnergyForces(fp, &(*mol), ePlot,
+                              &lsq_rmsf[ims], &lsq_epot[ims]);
             fprintf(fp, "\n");
             n++;
         }

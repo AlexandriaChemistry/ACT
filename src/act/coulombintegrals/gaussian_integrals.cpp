@@ -74,23 +74,12 @@ double Nuclear_GG(double r, double zeta)
 
 double Coulomb_GG(double r, double zi, double zj)
 {
-    double zeff;
+    double zeff = 0;
 
     /* This routine may be called with one or both zeta 0.
      * In that case it is either a Nuclear_GG or simple 1/r interaction.
      */
-    if ((zi == 0) && (zj == 0))
-    {
-        if (r == 0)
-        {
-            return 0;
-        }
-        else
-        {
-            return 1/r;
-        }
-    }
-    else
+    if ((zi != 0) || (zj != 0))
     {
         if (zi == 0)
         {
@@ -104,55 +93,34 @@ double Coulomb_GG(double r, double zi, double zj)
         {
             zeff = zi*zj/sqrt(sqr(zi)+sqr(zj));
         }
-
-        return Nuclear_GG(r, zeff);
     }
+    
+    return Nuclear_GG(r, zeff);
 }
 
 double DNuclear_GG(double r, double z)
 {
-    double rz = r * z;
-    double dngg;
-
+    if (r == 0)
+    {
+        return 0;
+    }
     if (z == 0)
     {
-        if (r == 0)
-        {
-            return 0;
-        }
-        else
-        {
-            return -1.0/sqr(r);
-        }
-    }
-    else if (r == 0)
-    {
-        dngg = 0;
+        return 1.0/sqr(r);
     }
     else
     {
-        dngg = (-1)*((2.0/sqrt(M_PI))*exp(-sqr(rz))*(z/r) - erf(rz)/sqr(r));
+        double rz = r * z;
+        
+        return  (-1)*((2.0/sqrt(M_PI))*exp(-sqr(rz))*(z/r) - erf(rz)/sqr(r));
     }
-
-    return dngg;
 }
 
 double DCoulomb_GG(double r, double zi, double zj)
 {
-    double zeff;
+    double zeff = 0;
 
-    if ((zi == 0) && (zj == 0))
-    {
-        if (r == 0)
-        {
-            return 0;
-        }
-        else
-        {
-            return -1/sqr(r);
-        }
-    }
-    else
+    if ((zi != 0) || (zj != 0))
     {
         if (zi == 0)
         {
@@ -166,7 +134,7 @@ double DCoulomb_GG(double r, double zi, double zj)
         {
             zeff = zi*zj/sqrt(sqr(zi)+sqr(zj));
         }
-
-        return DNuclear_GG(r, zeff);
     }
+    
+    return DNuclear_GG(r, zeff);
 }

@@ -94,6 +94,8 @@ namespace alexandria
     class MyMol : public MolProp
     {
     private:
+        // Now class MolHandler can access private members of MyMol
+        friend class MolHandler;
         int                             *cgnr_           = nullptr;
         bool                             bHaveShells_    = false;
         bool                             bHaveVSites_    = false;
@@ -272,6 +274,9 @@ namespace alexandria
         //! \return true if shells are present
         bool haveShells() const { return nullptr != shellfc_; }
 
+        //! \return whether this is a linear molecule
+        bool linearMolecule();
+        
         //! \return how this compound is supported on this processor
         eSupport support() const { return eSupp_; }
 
@@ -534,31 +539,6 @@ namespace alexandria
          * \return immOK if everything went fine, an error otherwise.
          */
         immStatus computeForces(double *rmsf);
-
-        /*! \brief Compute the second derivative matrix
-         *
-         * \param[in]  crtmp     Temporary communication record for one core.
-         * \param[in]  atomIndex Vector containing the indices of the real 
-         *                       atoms, not shells or vsites.
-         * \param[out] hessian   MatrixWrapper object that must be pre-
-         *                       allocated to NxN where N = 3*atomIndex.size()
-         * \param[out] forceZero The forces on the atoms in the input structure,
-         *                       that is, not on the shells or vsites.
-         * \return the potential energy of the input structure
-         */
-        double computeHessian(const t_commrec        *crtmp,
-                              const std::vector<int> &atomIndex,
-                              MatrixWrapper          *hessian,
-                              std::vector<double>    *forceZero);
-        /*! \brief
-         * The routine will energy minimize the atomic coordinates while
-         * relaxing the shells.
-         *
-         * \param[out] rmsd                Root mean square atomic deviation of atomic
-         *                                 coordinates after minimization.
-         * \return immOK if everything went fine, an error otherwise.
-         */
-        immStatus minimizeCoordinates(double *rmsd);
 
         /*! \brief
          * Return the optimized geometry of the molecule from the data file.

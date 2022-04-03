@@ -251,17 +251,136 @@ void kabsch_rotation(tensor P, tensor Q, tensor rotated_P)
 }
 
 MatrixWrapper::MatrixWrapper(int ncolumn, int nrow)
+: ncol_(ncolumn), nrow_(nrow)
 {
-    a_    = alloc_matrix(ncolumn, nrow);
-    ncol_ = ncolumn;
+    a_ = alloc_matrix(ncolumn, nrow);
+}
+
+MatrixWrapper::MatrixWrapper(const std::vector<double> &flat, const int number, const char order)
+: MatrixWrapper(order == 'C' ? flat.size()/number : number, order == 'C' ? number : flat.size()/number)
+{
+    GMX_RELEASE_ASSERT(order=='C' || order=='R', "Invalid flattening order. Please use 'C' or 'R'");
+    if (order == 'C')
+    {
+        for (int j = 0; j < ncol_; j++)
+        {
+            for (int i = 0; i < nrow_; i++)
+            {
+                a_[j][i] = flat[j*number + i];
+            }
+        }
+    }
+    else  // order == 'R'
+    {
+        for (int j = 0; j < ncol_; j++)
+        {
+            for (int i = 0; i < nrow_; i++)
+            {
+                a_[j][i] = flat[i*number + j];
+            }
+        }
+    }
+}
+
+MatrixWrapper::MatrixWrapper(const MatrixWrapper &source)
+: MatrixWrapper(source.ncol_, source.nrow_)
+{
+    std::copy(&source.a_[0][0], &source.a_[0][0] + source.ncol_ * source.nrow_, &a_[0][0]);
+}
+
+MatrixWrapper::MatrixWrapper(MatrixWrapper &&source)
+: a_(source.a_), ncol_(source.ncol_), nrow_(source.nrow_)
+{
+    source.a_ = nullptr;
+}
+
+MatrixWrapper &MatrixWrapper::operator=(const MatrixWrapper &rhs)
+{
+    if (&rhs != this)
+    {
+        MatrixWrapper tmp(rhs);
+        double **d = a_;
+        a_ = tmp.a_;
+        tmp.a_ = d;  // When tmp goes out of scope it will free the memory
+    }
+    return *this;
+}
+
+MatrixWrapper &MatrixWrapper::operator=(MatrixWrapper &&rhs)
+{
+    MatrixWrapper tmp(std::move(rhs));
+    double **d = a_;
+    a_ = tmp.a_;
+    tmp.a_ = d;
+    return *this;
 }
 
 MatrixWrapper::~MatrixWrapper()
 {
-    free_matrix(a_);
+    if (a_ != nullptr)
+    {
+        free_matrix(a_);
+    }
+}
+
+std::vector<double> MatrixWrapper::flatten(const char order) const
+{
+    GMX_RELEASE_ASSERT(order=='C' || order=='R', "Invalid flattening order. Please use 'C' or 'R'");
+    std::vector<double> vec(ncol_*nrow_);
+    if (order == 'C')
+    {
+        for (int j = 0; j < ncol_; j++)
+        {
+            for (int i = 0; i < nrow_; i++)
+            {
+                vec[j*nrow_+i] = a_[j][i];
+            }
+        }
+    }
+    else {  // order == 'R'
+        for (int i = 0; i < nrow_; i++)
+        {
+            for (int j = 0; j < ncol_; j++)
+            {
+                vec[i*ncol_+j] = a_[j][i];
+            }
+        }
+    }
+    return vec;
+}
+
+void MatrixWrapper::averageTriangle()
+{
+    GMX_RELEASE_ASSERT(
+        nrow_ == ncol_,
+        gmx::formatString("Matrix with dimensions (%d,%d) is not square!", nrow_, ncol_).c_str()
+    );
+    for (int j = 1; j < ncol_; j++)
+    {
+        for (int i = j+1; i < nrow_; i++)
+        {
+            a_[j][i] = a_[i][j] = (a_[j][i]+a_[i][j])/2;
+        }
+    }
 }
 
 int MatrixWrapper::solve(std::vector<double> rhs, std::vector<double> *solution)
 {
     return multi_regression2(&rhs, a_, solution);
+}
+
+std::string MatrixWrapper::toString() const
+{
+    const int FLOAT_SIZE = 13;
+    std::string str;
+    for (int i = 0; i < nrow_; i++)
+    {
+        str.append("[ ");
+        for (int j = 0; j < ncol_; j++)
+        {
+            str.append(gmx::formatString("%-*g ", FLOAT_SIZE, a_[j][i]));
+        }
+        str.append("]\n");
+    }
+    return str;
 }

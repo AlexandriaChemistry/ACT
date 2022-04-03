@@ -43,6 +43,7 @@
 #include "gromacs/topology/mtop_util.h"
 
 #include "mymol.h"
+#include "molhandler.h"
 #include "act/poldata/poldata.h"
 
 /*! \brief Utility function to merge command line arguments
@@ -55,11 +56,16 @@ void doAddOptions(std::vector<t_pargs> *pargs, size_t npa, t_pargs pa[]);
 namespace alexandria
 {
 
+using qtStats = std::map<qType, gmx_stats>;
+
+
     /*! \brief Class to managa output from force field tuning
      */
     class TuneForceFieldPrinter
     {
     private:
+        //! Can make computations for molecules, such as the Hessian and energy minimization (for now).
+        MolHandler molHandler_;
         //! Tolerance (kJ/mol e) for marking ESP as an outlier in the log file
         real esp_toler_           = 30;
         //! Tolerance (Debye) for marking dipole as an outlier in the log file
@@ -76,7 +82,25 @@ namespace alexandria
         real isopol_toler_        = 2;
         //! Fit regression analysis of results to y = ax+b instead of y = ax
         bool useOffset_           = false;
-        
+
+        //! \brief Analyse polarizability, add to statistics and print
+        void analysePolarisability(FILE              *fp,
+                                   alexandria::MyMol *mol,
+                                   qtStats           *lsq_isoPol,
+                                   qtStats           *lsq_anisoPol,
+                                   qtStats           *lsq_alpha,
+                                   real               efield);
+
+        //! \brief And the atoms.
+        void printAtoms(FILE              *fp,
+                        alexandria::MyMol *mol);
+
+        //! \brief do part of the printing, add to statistics
+        void printEnergyForces(FILE                   *fp,
+                               alexandria::MyMol      *mol,
+                               const std::vector<int> &ePlot,
+                               gmx_stats              *lsq_rmsf,
+                               qtStats                *lsq_epot);
     public:
         TuneForceFieldPrinter() {}
     
