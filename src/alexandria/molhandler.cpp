@@ -33,13 +33,13 @@
 
 #include "molhandler.h"
 
+#include "act/molprop/molpropobservable.h"
 #include "gromacs/gmxlib/network.h"
-#include "gromacs/math/do_fit.h"
-
-#include "gromacs/mdtypes/inputrec.h"
-#include "gromacs/mdtypes/enerdata.h"
-#include "gromacs/topology/topology.h"
 #include "gromacs/linearalgebra/eigensolver.h"
+#include "gromacs/math/do_fit.h"
+#include "gromacs/mdtypes/enerdata.h"
+#include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/topology/topology.h"
 
 namespace alexandria
 {
@@ -211,21 +211,41 @@ void MolHandler::nma(MyMol *mol,
     // Get the eigenvectors into a MatrixWrapper
     MatrixWrapper eigenvecMat(eigenvectors, matrixSide);
 
-    // Print vibrational frequencies to file
-    const int SFLOAT_SIZE = 10;
-    const int FLOAT_SIZE  = 13;
     if (fp)
     {
-        fprintf(fp, "Vibrational frequencies (cm^-1): ");
+        std::vector<GenericProperty *> harm;
+        auto mpo = MolPropObservable::FREQUENCY;
+        for (auto &ee : mol->experimentConst())
+        {
+            if (ee.hasMolPropObservable(mpo))
+            {
+                harm = ee.propertyConst(mpo);
+                break;
+            }
+        }
+        if (!harm.empty())
+        {
+            fprintf(fp, "Electronic vibrational frequncies: (%s):\n",
+                    mpo_unit2(mpo));
+            for(auto &ff : harm[0]->getVector())
+            {
+                fprintf(fp, "  %8.3f", ff);
+            }
+            fprintf(fp, "\n");
+        }
+        fprintf(fp, "Alexandria vibrational frequncies: (%s):\n",
+                mpo_unit2(mpo));
         for (const auto &freq : freqs)
         {
-            fprintf(fp, "%-*g ", SFLOAT_SIZE, freq);
+            fprintf(fp, "  %8.3f ", freq);
         }
         fprintf(fp, "\n\n");
     }
     // Print eigenvalues and eigenvectors to debug files
     if (debug)
     {
+        // Print vibrational frequencies to file
+        const int FLOAT_SIZE  = 13;
         fprintf(debug, "\nMolecule: %s\nHessian eigenvalues:\n[ ", mol->getMolname().c_str());
         for (const auto &val : eigenvalues)
         {

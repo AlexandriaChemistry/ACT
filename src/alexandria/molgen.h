@@ -60,6 +60,8 @@ enum class eRMS {
     OCT,
     //! Molecular hexadecapole
     HEXADEC,
+    //! Vibrational frequencies
+    FREQUENCY,
     //! Deviation from CM5 charge
     CM5,
     //! Deviation from Electrostatic potential

@@ -325,6 +325,54 @@ void MultiPoleDevComputer::calcDeviation(MyMol                                *m
 * END: MultipoleDevComputer                *
 * * * * * * * * * * * * * * * * * * * * * */
 
+/* * * * * * * * * * * * * * * * * * * * * *
+* BEGIN: HarmonicsDevComputer              *
+* * * * * * * * * * * * * * * * * * * * * */
+
+HarmonicsDevComputer::HarmonicsDevComputer(      FILE              *logfile,
+                                           const bool               verbose,
+                                                 MolPropObservable  mpo)
+    : DevComputer(logfile, verbose), mpo_(mpo) 
+{
+}
+
+void HarmonicsDevComputer::calcDeviation(MyMol                                *mymol,
+                                         std::map<eRMS, FittingTarget>        *targets,
+                                         gmx_unused Poldata                   *poldata,
+                                         gmx_unused const std::vector<double> &param,
+                                         gmx_unused const CommunicationRecord *commrec)
+{
+    if (MolPropObservable::FREQUENCY != mpo_)
+    {
+        GMX_THROW(gmx::InternalError("Only frequency fitting implemented in HarmonicsDevComputer"));
+    }
+    double delta = 0;
+    std::vector<GenericProperty *> harm;
+    for (auto &ee : mymol->experimentConst())
+    {
+        if (ee.hasMolPropObservable(mpo_))
+        {
+            harm = ee.propertyConst(mpo_);
+            break;
+        }
+    }
+    if (harm.empty())
+    {
+        return;
+    }
+    for(auto &ff : harm[0]->getVector())
+    {
+        double fcalc = 0;
+        delta += gmx::square(ff-fcalc);
+    }
+
+    (*targets).find(eRMS::FREQUENCY)->second.increase(1, delta);
+}
+
+/* * * * * * * * * * * * * * * * * * * * * *
+* END: HarmonicsDevComputer                *
+* * * * * * * * * * * * * * * * * * * * * */
+
 
 /* * * * * * * * * * * * * * * * * * * * * *
 * BEGIN: EnergyDevComputer                 *

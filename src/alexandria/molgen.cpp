@@ -64,18 +64,19 @@ namespace alexandria
 
     std::map<eRMS, const char *> ermsNames =
     {
-     { eRMS::BOUNDS,  "BOUNDS"  },
-     { eRMS::CHARGE,  "CHARGE"  },
-     { eRMS::MU,      "MU"      },
-     { eRMS::QUAD,    "QUAD"    },
-     { eRMS::OCT,     "OCT"     },
-     { eRMS::HEXADEC, "HEXADEC" },
-     { eRMS::CM5,     "CM5"     },
-     { eRMS::ESP,     "ESP"     },
-     { eRMS::EPOT,    "EPOT"    },
-     { eRMS::Force2,  "Force2"  },
-     { eRMS::Polar,   "Polar"   },
-     { eRMS::TOT,     "TOT"     }
+     { eRMS::BOUNDS,    "BOUNDS"     },
+     { eRMS::CHARGE,    "CHARGE"     },
+     { eRMS::MU,        "MU"         },
+     { eRMS::QUAD,      "QUAD"       },
+     { eRMS::OCT,       "OCT"        },
+     { eRMS::HEXADEC,   "HEXADEC"    },
+     { eRMS::FREQUENCY, "FREQUENCY"  },
+     { eRMS::CM5,       "CM5"        },
+     { eRMS::ESP,       "ESP"        },
+     { eRMS::EPOT,      "EPOT"       },
+     { eRMS::Force2,    "Force2"     },
+     { eRMS::Polar,     "Polar"      },
+     { eRMS::TOT,       "TOT"        }
     };
 
 const std::map<eRMS, const char *> &geteRMSNames()
@@ -124,6 +125,10 @@ void MolGen::addOptions(std::vector<t_pargs>          *pargs,
           "Force constant in the penalty function for going outside the borders given with the fitting options (see below)." },
         { "-fc_epot",    FALSE, etREAL, {targets->find(eRMS::EPOT)->second.weightPtr()},
           "Force constant in the penalty function for the deviation of the potential energy of the compound from the reference." },
+        { "-fc_force",  FALSE, etREAL, {targets->find(eRMS::Force2)->second.weightPtr()},
+          "Force constant in the penalty function for the magnitude of the squared force on the atoms. For optimized structures the force on the atoms should be zero." },
+        { "-fc_freq",  FALSE, etREAL, {targets->find(eRMS::FREQUENCY)->second.weightPtr()},
+          "Force constant in the penalty function for the deviation of the vibrational frequencies from the reference." },
         { "-fc_mu",    FALSE, etREAL, {targets->find(eRMS::MU)->second.weightPtr()},
           "Force constant in the penalty function for the deviation of the magnitude of the dipole components from the reference." },
         { "-fc_quad",  FALSE, etREAL, {targets->find(eRMS::QUAD)->second.weightPtr()},
@@ -140,8 +145,6 @@ void MolGen::addOptions(std::vector<t_pargs>          *pargs,
           "Force constant in the penalty function for deviation from CM5 charges." },
         { "-fc_polar",  FALSE, etREAL, {targets->find(eRMS::Polar)->second.weightPtr()},
           "Force constant in the penalty function for deviation of the six independent components of the molecular polarizability tensor from the reference." },
-        { "-fc_force",  FALSE, etREAL, {targets->find(eRMS::Force2)->second.weightPtr()},
-          "Force constant in the penalty function for the magnitude of the squared force on the atoms. For optimized structures the force on the atoms should be zero." }
     };
     doAddOptions(pargs, asize(pa_general), pa_general);
 }

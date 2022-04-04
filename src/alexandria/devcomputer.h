@@ -6,10 +6,8 @@
  * \author Oskar Tegby <oskar.tegby@it.uu.se>
  */
 
-
 #ifndef ALEXANDRIA_DEVCOMPUTER_H
 #define ALEXANDRIA_DEVCOMPUTER_H
-
 
 #include <cstdio>
 #include <string>
@@ -117,6 +115,34 @@ public:
 };
 
 /*!
+ * DevComputer that penalizes frequencies or intensities out of bounds ->
+ * eRMS::FREQUENCY or eRMS::INTENSITY
+ */
+class HarmonicsDevComputer : public DevComputer
+{
+private:
+    //! The MolPropObservable, e.g. quadrupole
+    MolPropObservable   mpo_;
+
+public:
+
+    /*! \brief Create a new FrequencyDevComputer
+     * @param logfile pointer to log file
+     * @param verbose whether we are in verbose mode
+     * @param mpo     indicating which of the two observables are being used
+     */
+    HarmonicsDevComputer(      FILE              *logfile,
+                         const bool               verbose,
+                               MolPropObservable  mpo);
+
+    virtual void calcDeviation(      MyMol                         *mymol,
+                                     std::map<eRMS, FittingTarget> *targets,
+                                     Poldata                       *poldata,
+                               const std::vector<double>           &param,
+                               const CommunicationRecord           *commrec);
+};
+
+/*!
  * DevComputer that computes the deviation of the (CM5) charge
  * -> eRMS::CHARGE & eRMS::CM5
  */
@@ -192,7 +218,7 @@ class PolarDevComputer : public DevComputer
 {
 public:
 
-    /*! \brief Create a new BoundsDevComputer
+    /*! \brief Create a new PolarDevComputer
      * @param logfile           pointer to log file
      * @param verbose           whether we are in verbose mode
      */
@@ -211,7 +237,8 @@ public:
 };
 
 /*!
- * DevComputer that computes the deviation of the molecular multipole -> eRMS::QUAD
+ * DevComputer that computes the deviation of the molecular multipole -> 
+ * eRMS::DIPOLE, eRMS::QUAD etc.
  */
 class MultiPoleDevComputer : public DevComputer
 {
