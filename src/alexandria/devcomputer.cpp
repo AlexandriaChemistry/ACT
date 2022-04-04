@@ -347,25 +347,10 @@ void HarmonicsDevComputer::calcDeviation(MyMol                                *m
         GMX_THROW(gmx::InternalError("Only frequency fitting implemented in HarmonicsDevComputer"));
     }
     double delta = 0;
-    std::vector<GenericProperty *> harm;
-    for (auto &ee : mymol->experimentConst())
-    {
-        if (ee.hasMolPropObservable(mpo_))
-        {
-            harm = ee.propertyConst(mpo_);
-            break;
-        }
-    }
-    if (harm.empty())
-    {
-        return;
-    }
-    for(auto &ff : harm[0]->getVector())
-    {
-        double fcalc = 0;
-        delta += gmx::square(ff-fcalc);
-    }
-
+    auto ref_freqs = mymol->referenceFrequencies();
+    // TODO: Compute frequencies using MolHandler
+    // auto calc_freqs = 
+    
     (*targets).find(eRMS::FREQUENCY)->second.increase(1, delta);
 }
 

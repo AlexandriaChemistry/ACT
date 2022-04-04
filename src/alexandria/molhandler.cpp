@@ -237,7 +237,7 @@ void MolHandler::nma(MyMol *mol,
         fprintf(fp, "Alexandria vibrational frequencies: (%s):\n", unit);
         for (const auto &freq : freqs)
         {
-            fprintf(fp, "  %8.3f ", convertFromGromacs(freq, unit));
+            fprintf(fp, "  %8.3f", convertFromGromacs(freq, unit));
         }
         fprintf(fp, "\n\n");
     }

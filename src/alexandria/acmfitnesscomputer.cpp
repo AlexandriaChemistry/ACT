@@ -26,11 +26,6 @@ void ACMFitnessComputer::compute(ga::Genome *genome,
     {
         GMX_THROW(gmx::InternalError("Empty genome"));
     }
-    //ACMIndividual *tmpInd = static_cast<ACMIndividual*>(ind);
-    // std::vector<bool> changed;
-    // TODO: the middle man should know/decide which parameters have changed.
-    // changed.resize(sii_->nParam(), true);
-    // sii_->updatePoldata(changed, genome);
     sii_->updatePoldata(genome);
     double fitness = calcDeviation(genome->basesPtr(),
                                    CalcDev::Parallel, trgtFit);
@@ -42,15 +37,6 @@ void ACMFitnessComputer::compute(ga::Genome *genome,
     }
     if (verbose && logfile_)
     {
-        // for(auto &imsn : iMolSelectNames())
-        // {
-        //     fprintf(logfile_, "\nComponents of fitting function for %s set\n",
-        //             imsn.second);
-        //     for (const auto &ft : sii_->targets().find(imsn.first)->second)
-        //     {
-        //         ft.second.print(logfile_);
-        //     }
-        // }
         fprintf(logfile_, "Components of fitting function for %s set\n", iMolSelectName(trgtFit));
         for (const auto &ft : sii_->targets().find(trgtFit)->second)
         {
@@ -212,13 +198,12 @@ void ACMFitnessComputer::fillDevComputers(const bool verbose)
         devComputers_.push_back(new EnergyDevComputer(logfile_, verbose));
     if (sii_->target(iMolSelect::Train, eRMS::Force2)->weight() > 0)
         devComputers_.push_back(new ForceDevComputer(logfile_, verbose));
+    if (sii_->target(iMolSelect::Train, eRMS::FREQUENCY)->weight() > 0)
+        devComputers_.push_back(new HarmonicsDevComputer(logfile_, verbose, MolPropObservable::FREQUENCY));
 }
-
-
 
 /* * * * * * * * * * * * * * * * * * * *
 * END: ACMFitnessComputer              *
 * * * * * * * * * * * * * * * * * * * */
-
 
 } // namespace alexandria

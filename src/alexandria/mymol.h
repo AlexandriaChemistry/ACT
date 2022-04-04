@@ -235,19 +235,26 @@ namespace alexandria
          */
         void computeAtomizationEnergy(const Poldata *pd);
 
+        /*! \brief extract frequencies and intensities if present
+         * \param[in] lot Level of theory
+         */
+        void getHarmonics(const std::string &lot);
+        
         //! Energy terms for this compounds
         std::map<MolPropObservable, double> energy_;
         //! Molecular Topology
         Topology                      *topology_;
         gmx_mtop_t                    *mtop_           = nullptr;
         gmx_localtop_t                *ltop_           = nullptr;
-        //std::vector<PlistWrapper>      plist_;
         t_symtab                      *symtab_         = nullptr;
         t_inputrec                    *inputrec_       = nullptr;
         gmx_enerdata_t                *enerd_          = nullptr;
         t_fcdata                      *fcd_            = nullptr;
         PaddedVector<gmx::RVec>        f_;
         PaddedVector<gmx::RVec>        optf_;
+        // Reference data for devcomputer
+        std::vector<double>            ref_frequencies_;
+        std::vector<double>            ref_intensities_;
         t_nrnb                         nrnb_;
         gmx_wallcycle_t                wcycle_;
         gmx_shellfc_t                 *shellfc_        = nullptr;
@@ -308,7 +315,13 @@ namespace alexandria
         
         //! Return the root mean square force on the atoms
         double rmsForce() const;
-        
+
+        //! Return the reference frequencies collected earlier
+        const std::vector<double> &referenceFrequencies() const { return ref_frequencies_; }
+                
+        //! Return the reference intensities collected earlier
+        const std::vector<double> &referenceIntensities() const { return ref_intensities_; }
+                
         //! \return the ACM data structure
         QgenAcm *qgenAcm() { return QgenAcm_; }
         /*! \brief

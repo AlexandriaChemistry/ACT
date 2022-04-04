@@ -1090,6 +1090,10 @@ immStatus MyMol::GenerateTopology(FILE              *fp,
             fprintf(debug, "%s\n", emsg.c_str());
         }
     }
+    // Finally, extract frequencies etc.
+    std::string lot = gmx::formatString("%s/%s", method.c_str(), basis.c_str());
+    getHarmonics(lot);
+    
     return imm;
 }
 
@@ -2298,6 +2302,37 @@ void MyMol::calcEspRms(const Poldata *pd)
         }
     }
     done_atom(&myatoms);
+}
+
+void MyMol::getHarmonics(const std::string &lot)
+{
+    for(auto &mpo : { MolPropObservable::FREQUENCY, 
+                     MolPropObservable::INTENSITY })
+    {
+        std::vector<GenericProperty *> harm;
+        for (auto &ee : experimentConst())
+        {
+            if (ee.hasMolPropObservable(mpo))
+            {
+                harm = ee.propertyConst(mpo);
+                break;
+            }
+        }
+        if (!harm.empty())
+        {
+            for(auto &ff : harm[0]->getVector())
+            {
+                if (mpo == MolPropObservable::FREQUENCY)
+                {
+                    ref_frequencies_.push_back(ff);
+                }
+                else
+                {
+                    ref_intensities_.push_back(ff);
+                }
+            }
+        }
+    }
 }
 
 const real *MyMol::energyTerms() const
