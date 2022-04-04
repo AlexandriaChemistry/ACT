@@ -74,11 +74,14 @@ public:
                                 MatrixWrapper       *hessian,
                                 std::vector<double> *forceZero) const;
 
-    /*! \brief Perform normal-mode analysis on a molecule
+    /*! \brief Perform normal-mode analysis on a molecule.
+     * Prints vibrational frequencies.
      *
-     * Prints eigenvalues and eigenvectors of the mass-weighted hessian matrix
+     * Also prints eigenvalues and eigenvectors of the mass-weighted hessian matrix
+     * to the debug file, if any.
+     * 
      * \param[in] mol the molecule to analyze
-     * \param[in] fp  the file to write analysis to
+     * \param[in] fp  the file to write frequencies to
      */
     void nma(MyMol *mol,
              FILE  *fp) const;
