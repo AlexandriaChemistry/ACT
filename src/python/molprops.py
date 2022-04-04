@@ -60,8 +60,14 @@ class Molprops:
                     if value in dip:
                        myvalue = ET.SubElement(mydip, value)
                        myvalue.text = dip[value]
-
-
+            if len(ep.frequencies) > 0:
+                myharm = ET.SubElement(exper, "harmonics")
+                myharm.set("frequency_unit", "cm^-1")
+                myharm.set("intensity_unit", "km/mole")
+                for k in range(len(ep.frequencies)):
+                    harm = ET.SubElement(myharm, "harmonic")
+                    harm.set("frequency", ep.frequencies[k])
+                    harm.set("intensity", ep.intensities[k])
             for atom in ep.atoms:
                 myatm   = ET.SubElement(exper, "atom")
                 fc_unit = "force_unit"
@@ -207,6 +213,8 @@ class Experiment:
         self.octupole   = []
         self.hexadecapole   = []
         self.polarisability = []
+        self.frequencies = []
+        self.intensities = []
         self.atoms = []
         self.tcmap = None
         

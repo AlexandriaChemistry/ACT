@@ -185,7 +185,20 @@ class GaussianReader:
         return c-content_index
         
     def get_frequencies(self, content, content_index:int) -> int:
-        
+        myc = content_index
+        self.frequencies = []
+        self.intensities = []
+        while len(content[myc].strip()) > 0:
+            line = content[myc].strip()
+            words = line.split()
+            if line.find("Frequencies --") >= 0:
+                for fff in range(2, len(words)):
+                    self.frequencies.append(words[fff])
+            elif line.find("IR Inten    --") >= 0:
+                for iii in range(3, len(words)):
+                    self.intensities.append(words[iii])
+            myc += 1
+        return myc-content_index
         
     def get_standard_orientation(self, content, content_index:int) -> int:
         c = content_index+5
@@ -534,6 +547,9 @@ class GaussianReader:
                 words = line.split()
                 self.tcmap["Gcorr"] = float(words[6])
                 content_index += 1
+
+            elif line.find("Harmonic frequencies") >= 0:
+                content_index += self.get_frequencies(content, content_index)
                 
             elif line.find("CV") >= 0:
                 content_index += self.get_entropy(content, content_index)
@@ -589,6 +605,10 @@ class GaussianReader:
                 # from the standards orientation to the input orientation.
                 if len(self.espfitcenter) > 0:
                     self.rotate_esp_and_add_to_exper(infile)
+                # Now add frequencies and intensities if they look OK.
+                if len(self.frequencies) > 0 and len(self.frequencies) == len(self.intensities):
+                    self.exper.frequencies = self.frequencies
+                    self.exper.intensities = self.intensities
                 # We can only add the atoms after selecting the coordinates.
                 # This is likely a peculiarity of the Alexandria library.
                 if not self.add_atoms(g2a):
