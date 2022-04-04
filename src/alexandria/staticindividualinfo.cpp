@@ -28,7 +28,8 @@ void StaticIndividualInfo::fillIdAndPrefix()
     id_ = cr_->middleManOrdinal();
     if (id_ >= 0)
     {
-        prefix_ = gmx::formatString("ind%d/", id_);
+        // prefix_ = gmx::formatString("ind%d/", id_);
+        prefix_ = "inds/";
     }
 }
 
@@ -441,11 +442,11 @@ void StaticIndividualInfo::makeIndividualDir()
 
         if (stat(prefix_.c_str(), &info ) == 0 && (info.st_mode & S_IFDIR))
         {
-            printf("%s is a directory already\n", prefix_.c_str());
+            printf("%s is already a directory (maybe was created by another node)\n", prefix_.c_str());
         }
         else
         {
-            std::string command = gmx::formatString("mkdir %s", prefix_.c_str());
+            std::string command = gmx::formatString("mkdir -p %s", prefix_.c_str());
             system(command.c_str());
         }
     }
