@@ -283,6 +283,12 @@ CommunicationStatus Experiment::Receive(const CommunicationRecord *cr, int src)
                         gp = new MolecularPolarizability;
                         break;
                     }
+                case MolPropObservable::FREQUENCY:
+                case MolPropObservable::INTENSITY:
+                    {
+                        gp = new Harmonics;
+                        break;
+                    }
                 case MolPropObservable::HF:
                 case MolPropObservable::DELTAE0:
                 case MolPropObservable::DHFORM:

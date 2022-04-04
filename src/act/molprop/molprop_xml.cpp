@@ -119,6 +119,12 @@ static const char *xmltypes[] = {
 enum class MolPropXml {
     MOLECULES,
     MOLECULE,
+    HARMONICS,
+    HARMONIC,
+    FREQUENCY,
+    INTENSITY,
+    FREQUENCY_UNIT,
+    INTENSITY_UNIT,
     FORMULA,
     MOLNAME,
     MASS,
@@ -180,69 +186,79 @@ enum class MolPropXml {
 };
 
 const std::map<MolPropXml, MolPropObservable> xoMap = {
-    { MolPropXml::DIPOLE,       MolPropObservable::DIPOLE       },
-    { MolPropXml::QUADRUPOLE,   MolPropObservable::QUADRUPOLE   },
-    { MolPropXml::OCTUPOLE,     MolPropObservable::OCTUPOLE     },
-    { MolPropXml::HEXADECAPOLE, MolPropObservable::HEXADECAPOLE }
+    { MolPropXml::FREQUENCY,      MolPropObservable::FREQUENCY    },
+    { MolPropXml::INTENSITY,      MolPropObservable::INTENSITY    },
+    { MolPropXml::FREQUENCY_UNIT, MolPropObservable::FREQUENCY    },
+    { MolPropXml::INTENSITY_UNIT, MolPropObservable::INTENSITY    },
+    { MolPropXml::DIPOLE,         MolPropObservable::DIPOLE       },
+    { MolPropXml::QUADRUPOLE,     MolPropObservable::QUADRUPOLE   },
+    { MolPropXml::OCTUPOLE,       MolPropObservable::OCTUPOLE     },
+    { MolPropXml::HEXADECAPOLE,   MolPropObservable::HEXADECAPOLE }
 };
 
 std::map<const std::string, MolPropXml> xmlxxx =
 {
-    { "molecules",        MolPropXml::MOLECULES     },
-    { "molecule",         MolPropXml::MOLECULE      },
-    { "formula",          MolPropXml::FORMULA       },
-    { "molname",          MolPropXml::MOLNAME       },
-    { "mass",             MolPropXml::MASS          },
-    { "molinfo",          MolPropXml::MOLINFO       },
-    { "iupac",            MolPropXml::IUPAC         },
-    { "cas",              MolPropXml::CAS           },
-    { "cid",              MolPropXml::CID           },
-    { "inchi",            MolPropXml::INCHI         },
-    { "multiplicity",     MolPropXml::MULTIPLICITY  },
-    { "charge",           MolPropXml::CHARGE        },
-    { "category",         MolPropXml::CATEGORY      },
-    { "catname",          MolPropXml::CATNAME       },
-    { "experiment",       MolPropXml::EXPERIMENT    },
-    { "polarizability",   MolPropXml::POLARIZABILITY},
-    { "energy",           MolPropXml::ENERGY        },
-    { "potential",        MolPropXml::POTENTIAL     },
-    { "name",             MolPropXml::NAME          },
-    { "average",          MolPropXml::AVERAGE       },
-    { "error",            MolPropXml::ERROR         },
-    { "temperature",      MolPropXml::TEMPERATURE   },
-    { "phase",            MolPropXml::PHASE         },
-    { "method",           MolPropXml::METHOD        },
-    { "reference",        MolPropXml::REFERENCE     },
-    { "type",             MolPropXml::TYPE          },
-    { "source",           MolPropXml::SOURCE        },
-    { "bond",             MolPropXml::BOND          },
-    { "ai",               MolPropXml::AI            },
-    { "aj",               MolPropXml::AJ            },
-    { "bondorder",        MolPropXml::BONDORDER     },
-    { "composition",      MolPropXml::COMPOSITION   },
-    { "compname",         MolPropXml::COMPNAME      },
-    { "catom",            MolPropXml::CATOM         },
-    { "cname",            MolPropXml::C_NAME        },
-    { "cnumber",          MolPropXml::C_NUMBER      },
-    { "datasource",       MolPropXml::DATASOURCE    },
-    { "program",          MolPropXml::PROGRAM       },
-    { "basisset",         MolPropXml::BASISSET      },
-    { "jobtype",          MolPropXml::JOBTYPE       },
-    { "conformation",     MolPropXml::CONFORMATION  },
-    { "datafile",         MolPropXml::DATAFILE      },
-    { "unit",             MolPropXml::UNIT          },
-    { "atom",             MolPropXml::ATOM          },
-    { "atomid",           MolPropXml::ATOMID        },
-    { "obtype",           MolPropXml::OBTYPE        },
-    { "coord_unit",       MolPropXml::X_UNIT        },
-    { "force_unit",       MolPropXml::F_UNIT        },
-    { "potential_unit",   MolPropXml::V_UNIT        },
-    { "espid",            MolPropXml::ESPID         },
-    { "V",                MolPropXml::dV            },
-    { "q",                MolPropXml::aQ            },
-    { "fx",               MolPropXml::fX            },
-    { "fy",               MolPropXml::fY            },
-    { "fz",               MolPropXml::fZ            }
+    { "molecules",        MolPropXml::MOLECULES      },
+    { "molecule",         MolPropXml::MOLECULE       },
+    { "harmonics",        MolPropXml::HARMONICS      },
+    { "harmonic",         MolPropXml::HARMONIC       },
+    { "frequency",        MolPropXml::FREQUENCY      },
+    { "frequency",        MolPropXml::INTENSITY      },
+    { "frequency_unit",   MolPropXml::FREQUENCY_UNIT },
+    { "intensity_unit",   MolPropXml::INTENSITY_UNIT },
+    { "formula",          MolPropXml::FORMULA        },
+    { "molname",          MolPropXml::MOLNAME        },
+    { "mass",             MolPropXml::MASS           },
+    { "molinfo",          MolPropXml::MOLINFO        },
+    { "iupac",            MolPropXml::IUPAC          },
+    { "cas",              MolPropXml::CAS            },
+    { "cid",              MolPropXml::CID            },
+    { "inchi",            MolPropXml::INCHI          },
+    { "multiplicity",     MolPropXml::MULTIPLICITY   },
+    { "charge",           MolPropXml::CHARGE         },
+    { "category",         MolPropXml::CATEGORY       },
+    { "catname",          MolPropXml::CATNAME        },
+    { "experiment",       MolPropXml::EXPERIMENT     },
+    { "polarizability",   MolPropXml::POLARIZABILITY },
+    { "energy",           MolPropXml::ENERGY         },
+    { "potential",        MolPropXml::POTENTIAL      },
+    { "name",             MolPropXml::NAME           },
+    { "average",          MolPropXml::AVERAGE        },
+    { "error",            MolPropXml::ERROR          },
+    { "temperature",      MolPropXml::TEMPERATURE    },
+    { "phase",            MolPropXml::PHASE          },
+    { "method",           MolPropXml::METHOD         },
+    { "reference",        MolPropXml::REFERENCE      },
+    { "type",             MolPropXml::TYPE           },
+    { "source",           MolPropXml::SOURCE         },
+    { "bond",             MolPropXml::BOND           },
+    { "ai",               MolPropXml::AI             },
+    { "aj",               MolPropXml::AJ             },
+    { "bondorder",        MolPropXml::BONDORDER      },
+    { "composition",      MolPropXml::COMPOSITION    },
+    { "compname",         MolPropXml::COMPNAME       },
+    { "catom",            MolPropXml::CATOM          },
+    { "cname",            MolPropXml::C_NAME         },
+    { "cnumber",          MolPropXml::C_NUMBER       },
+    { "datasource",       MolPropXml::DATASOURCE     },
+    { "program",          MolPropXml::PROGRAM        },
+    { "basisset",         MolPropXml::BASISSET       },
+    { "jobtype",          MolPropXml::JOBTYPE        },
+    { "conformation",     MolPropXml::CONFORMATION   },
+    { "datafile",         MolPropXml::DATAFILE       },
+    { "unit",             MolPropXml::UNIT           },
+    { "atom",             MolPropXml::ATOM           },
+    { "atomid",           MolPropXml::ATOMID         },
+    { "obtype",           MolPropXml::OBTYPE         },
+    { "coord_unit",       MolPropXml::X_UNIT         },
+    { "force_unit",       MolPropXml::F_UNIT         },
+    { "potential_unit",   MolPropXml::V_UNIT         },
+    { "espid",            MolPropXml::ESPID          },
+    { "V",                MolPropXml::dV             },
+    { "q",                MolPropXml::aQ             },
+    { "fx",               MolPropXml::fX             },
+    { "fy",               MolPropXml::fY             },
+    { "fz",               MolPropXml::fZ             }
 };
 
 std::map<MolPropXml, const std::string> rmap = {};
@@ -444,6 +460,26 @@ static void clean_xbuf(std::map<MolPropXml, std::string> *xbuf,
     }
 }
 
+static void get_harmonics(std::map<MolPropXml, std::string> *xbuf,
+                          Experiment                        *last)
+{
+    std::vector<MolPropXml> clean1 = {
+        MolPropXml::FREQUENCY,
+        MolPropXml::INTENSITY
+    };
+    if ((nullptr != last) && xmlFound(xbuf, clean1))
+    {
+        for(const auto &ff : clean1)
+        {
+            auto gps  = last->property(xoMap.find(ff)->second);
+            
+            auto harm = static_cast<Harmonics *>((*gps)[0]);
+            harm->addValue(xbuf_atof(xbuf, ff));
+        }
+    }
+    clean_xbuf(xbuf, clean1);
+}
+
 static void get_polarizability(std::map<MolPropXml, std::string> *xbuf,
                                Experiment                        *last)
 {
@@ -531,6 +567,31 @@ static void mp_process_tree(FILE                              *fp,
                         mpt = &(molprops->back());
                         mp_process_tree(fp, tree->children, molprops, xbuf);
                         clean_xbuf(xbuf, { elem });
+                    }
+                    break;
+                case MolPropXml::HARMONICS:
+                    {
+                        std::vector<MolPropXml> clean1 = {
+                            MolPropXml::FREQUENCY_UNIT,
+                            MolPropXml::INTENSITY_UNIT
+                        };
+                        if ((nullptr != last) && xmlFound(xbuf, clean1))
+                        {
+                            for (const auto &ff : clean1)
+                            {
+                                auto mpo    = xoMap.find(ff)->second;
+                                auto myfreq = new Harmonics(xbuf->find(ff)->second, 0, mpo);
+                                last->addProperty(mpo, myfreq);
+                            }
+                            mp_process_tree(fp, tree->children, molprops, xbuf);
+                        }
+                        clean_xbuf(xbuf, clean1);
+                        clean_xbuf(xbuf, { elem });
+                    }
+                    break;
+                case MolPropXml::HARMONIC:
+                    {
+                        get_harmonics(xbuf, last);
                     }
                     break;
                 case MolPropXml::MOLINFO:
@@ -817,7 +878,7 @@ void MolPropRead(const char *fn, std::vector<MolProp> *mpt)
     print_memory_usage(debug);
 }
 
-static void add_exper_properties(xmlNodePtr                    exp,
+static void add_exper_properties(xmlNodePtr        exp,
                                  const Experiment &exper)
 {
     xmlNodePtr child;
@@ -855,6 +916,32 @@ static void add_exper_properties(xmlNodePtr                    exp,
                     add_xml_child_val(child, rmap[MolPropXml::ERROR], gmx_ftoa(fac*error).c_str());
                     break;
                 }
+            case MolPropObservable::FREQUENCY:
+                {
+                    auto inten = exper.propertyConst(MolPropObservable::INTENSITY);
+                    auto iii   = static_cast<Harmonics *>(inten[0]);
+                    auto fval  = prop->getVector();
+                    auto ival  = iii->getVector();
+                    if (fval.size() == ival.size() && !fval.empty())
+                    {
+                        child = add_xml_child(exp, rmap[MolPropXml::HARMONICS]);
+                        add_xml_string(child, rmap[MolPropXml::FREQUENCY_UNIT], outUnit);
+                        add_xml_string(child, rmap[MolPropXml::INTENSITY_UNIT], iii->getInputUnit());
+                        for(size_t i = 0; i < fval.size(); i++)
+                        {
+                            auto grandchild = add_xml_child(child, rmap[MolPropXml::HARMONIC]);
+                            add_xml_double(grandchild, rmap[MolPropXml::FREQUENCY],
+                                           fac*fval[i]);
+                            add_xml_double(grandchild, rmap[MolPropXml::INTENSITY],
+                                           convertFromGromacs(ival[i], iii->getInputUnit()));
+                        }
+                    }      
+                    break;
+                }
+            
+            case MolPropObservable::INTENSITY:
+                // Intensities are handled simultaneously as frequencies, see above.
+                break;
             case MolPropObservable::DIPOLE:
             case MolPropObservable::QUADRUPOLE:
             case MolPropObservable::OCTUPOLE:

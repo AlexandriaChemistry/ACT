@@ -49,6 +49,8 @@ namespace alexandria
 std::map<MolPropObservable, const char *> mpo_name_ =
 {
     { MolPropObservable::POTENTIAL, "potential" }, 
+    { MolPropObservable::FREQUENCY, "frequency" },
+    { MolPropObservable::INTENSITY, "intensity" },
     { MolPropObservable::DIPOLE, "dipole" }, 
     { MolPropObservable::QUADRUPOLE, "quadrupole" },
     { MolPropObservable::OCTUPOLE, "octupole" },
@@ -72,6 +74,8 @@ std::map<MolPropObservable, const char *> mpo_name_ =
 std::map<MolPropObservable, const char *> mpo_unit_ =
 {
     { MolPropObservable::POTENTIAL,      "e/nm" }, 
+    { MolPropObservable::FREQUENCY,      "cm^-1" },
+    { MolPropObservable::INTENSITY,      "km/mol" },
     { MolPropObservable::DIPOLE,         "D" }, 
     { MolPropObservable::QUADRUPOLE,     "B" },
     { MolPropObservable::OCTUPOLE,       "D.Angstrom2" },
@@ -248,6 +252,70 @@ CommunicationStatus MolecularMultipole::Receive(const CommunicationRecord *cr, i
         }
         average_ = cr->recv_double(src);
         error_ = cr->recv_double(src);
+    }
+    else if (nullptr != debug)
+    {
+        fprintf(debug, "Trying to receive MolecularMultipole, status %s\n", cs_name(cs));
+        fflush(debug);
+    }
+    return cs;
+}
+
+Harmonics::Harmonics(const std::string &inputUnit,
+                     double             T,
+                     MolPropObservable  mpo) :
+    GenericProperty(mpo, "electronic", inputUnit, T, ePhase::GAS)
+{
+    setUnit(gromacsUnit(inputUnit));
+    if (MolPropObservable::FREQUENCY != mpo &&
+        MolPropObservable::INTENSITY != mpo)
+    {
+        GMX_THROW(gmx::InternalError(gmx::formatString("Passed incorrect observable %s to Harmonics constructor", mpo_name(mpo)).c_str()));
+    }
+}
+
+void Harmonics::addValue(double value)
+{
+    values_.push_back(convertToGromacs(value, getInputUnit()));
+}
+
+CommunicationStatus Harmonics::Send(const CommunicationRecord *cr, int dest) const
+{
+    CommunicationStatus cs;
+
+    cs = GenericProperty::Send(cr, dest);
+    if (CommunicationStatus::OK == cs &&
+        CommunicationStatus::SEND_DATA == cr->send_data(dest))
+    {
+        cr->send_int(dest, values_.size());
+        for(auto &m : values_)
+        {
+            cr->send_double(dest, m);
+        }
+    }
+    else if (nullptr != debug)
+    {
+        fprintf(debug, "Trying to send Harmonics, status %s\n", cs_name(cs));
+        fflush(debug);
+    }
+    return cs;
+}
+
+CommunicationStatus Harmonics::Receive(const CommunicationRecord *cr, int src)
+{
+    CommunicationStatus cs;
+
+    cs = GenericProperty::Receive(cr, src);
+    if (CommunicationStatus::OK == cs &&
+        CommunicationStatus::RECV_DATA == cr->recv_data(src))
+    {
+        values_.clear();
+        size_t N = cr->recv_int(src);
+        for(size_t m = 0; m < N; m++)
+        {
+            double x = cr->recv_double(src);
+            values_.push_back(x);
+        }
     }
     else if (nullptr != debug)
     {

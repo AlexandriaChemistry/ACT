@@ -84,6 +84,8 @@ const static std::map<const std::string, std::pair<const std::string, double> > 
         { "kJ/mol/rad2", { "kJ/mol/rad2", 1 } },
         { "kJ/mol/nm2",  { "kJ/mol/nm2", 1 } },
         { "e",           { "e", 1 } },
+        { "cm^-1",       { "GHz", SPEED_OF_LIGHT*(PICO/NANO) } },
+        { "km/mol",      { "nm/mol", 1e-12 } },
         { "",            { "", 1 } }
     };
 

@@ -63,7 +63,7 @@ class Molprops:
             if len(ep.frequencies) > 0:
                 myharm = ET.SubElement(exper, "harmonics")
                 myharm.set("frequency_unit", "cm^-1")
-                myharm.set("intensity_unit", "km/mole")
+                myharm.set("intensity_unit", "km/mol")
                 for k in range(len(ep.frequencies)):
                     harm = ET.SubElement(myharm, "harmonic")
                     harm.set("frequency", ep.frequencies[k])

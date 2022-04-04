@@ -308,6 +308,23 @@ public:
     {
         return property_.find(mpo) != property_.end();
     }
+    
+    /*! Return a property vector for editing
+     * \param[in] mpo The property to look for
+     * \return The property stuctures
+     */
+    std::vector<GenericProperty *> *property(MolPropObservable mpo)
+    {
+        return &property_[mpo];
+    }
+    /*! Return a const property vector
+     * \param[in] mpo The property to look for
+     * \return The property stuctures
+     */
+    const std::vector<GenericProperty *> &propertyConst(MolPropObservable mpo)
+    {
+        return property_[mpo];
+    }
     /*! Add property data
      * \param[in] mpo
      * \param[in] gp
@@ -337,7 +354,7 @@ public:
     //! Return mutable vector of calcatom
     std::vector<CalcAtom> *calcAtom() { return &catom_; }
     
-    //! Return iterator pointint to this particular atom or EndAtom() if not found
+    //! Return iterator pointing to this particular atom or EndAtom() if not found
     CalcAtomIterator searchAtom(CalcAtom ca);
     
     //! Return a complete coordinate array

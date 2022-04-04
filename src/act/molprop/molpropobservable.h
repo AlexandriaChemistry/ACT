@@ -66,6 +66,10 @@ enum class MolPropObservable {
     HEXADECAPOLE,
     //! Polarizability
     POLARIZABILITY,
+    //! Harmonic frequencies 
+    FREQUENCY,
+    //! IR intensity
+    INTENSITY,
     //! Hartree fock energy
     HF,
     //! QM energy of molecule minus atomic contribution
@@ -317,6 +321,69 @@ public:
     
     //! \return the values
     const std::vector<double> &getVector() const { return values_; }
+    
+    /*! \brief
+     * Sends this object over an MPI connection
+     *
+     * \param[in] cr   Data structure for MPI communication
+     * \param[in] dest Destination processor
+     * \return the CommunicationStatus of the operation
+     */
+    CommunicationStatus Send(const CommunicationRecord *cr,
+                             int                        dest) const;
+    
+    /*! \brief
+     * Receives this object over an MPI connection
+     *
+     * \param[in] cr  Data structure for MPI communication
+     * \param[in] src Source processor
+     * \return the CommunicationStatus of the operation
+     */
+    CommunicationStatus Receive(const CommunicationRecord *cr,
+                                int                        src);
+};
+
+/*! \brief
+ * Harmonic frequencies or intensities. Distinction between the
+ * two is through the MolPropObservable
+ */
+class Harmonics : public GenericProperty
+{
+private:
+    //! The frequencies
+    std::vector<double> values_;
+public:
+    //! Default constructor
+    Harmonics() {}
+    
+    /*! Constructor with units
+     * \param[in] unit The unit of the frequency/intensity
+     * \param[in] T    The temperature
+     * \param[in] mpo  The property 
+     * \throw if mpo is not correct
+     */
+    Harmonics(const std::string &unit,
+              double             T,
+              MolPropObservable  mpo);
+    
+    /*! \brief Add a value and convert it to internal units.
+     * \param[in] frequency The frequency
+     * \param[in] intensity The intensity value
+     */
+    void addValue(double value);
+    
+    //! \return the frequencies
+    const std::vector<double> &getVector() const { return values_; }
+    
+    double getValue() const
+    {
+        crash();
+    }
+    
+    double getError() const
+    {
+        crash();
+    }
     
     /*! \brief
      * Sends this object over an MPI connection
