@@ -438,17 +438,17 @@ void StaticIndividualInfo::makeIndividualDir()
 {
     if (!prefix_.empty())
     {
-        struct stat info;
+        // struct stat info;
 
-        if (stat(prefix_.c_str(), &info ) == 0 && (info.st_mode & S_IFDIR))
-        {
-            printf("%s is already a directory (maybe was created by another node)\n", prefix_.c_str());
-        }
-        else
-        {
-            std::string command = gmx::formatString("mkdir -p %s", prefix_.c_str());
-            system(command.c_str());
-        }
+        // if (stat(prefix_.c_str(), &info ) == 0 && (info.st_mode & S_IFDIR))
+        // {
+        //     printf("%s is already a directory (maybe was created by another node)\n", prefix_.c_str());
+        // }
+        // else
+        // {
+        std::string command = gmx::formatString("mkdir -p %s", prefix_.c_str());
+        system(command.c_str());
+        // }
     }
 }
 
