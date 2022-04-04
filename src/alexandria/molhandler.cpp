@@ -34,6 +34,7 @@
 #include "molhandler.h"
 
 #include "act/molprop/molpropobservable.h"
+#include "act/utility/units.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/linearalgebra/eigensolver.h"
 #include "gromacs/math/do_fit.h"
@@ -223,21 +224,20 @@ void MolHandler::nma(MyMol *mol,
                 break;
             }
         }
+        const char *unit = mpo_unit2(mpo);
         if (!harm.empty())
         {
-            fprintf(fp, "Electronic vibrational frequncies: (%s):\n",
-                    mpo_unit2(mpo));
+            fprintf(fp, "Electronic vibrational frequencies: (%s):\n", unit);
             for(auto &ff : harm[0]->getVector())
             {
-                fprintf(fp, "  %8.3f", ff);
+                fprintf(fp, "  %8.3f", convertFromGromacs(ff, unit));
             }
             fprintf(fp, "\n");
         }
-        fprintf(fp, "Alexandria vibrational frequncies: (%s):\n",
-                mpo_unit2(mpo));
+        fprintf(fp, "Alexandria vibrational frequencies: (%s):\n", unit);
         for (const auto &freq : freqs)
         {
-            fprintf(fp, "  %8.3f ", freq);
+            fprintf(fp, "  %8.3f ", convertFromGromacs(freq, unit));
         }
         fprintf(fp, "\n\n");
     }
