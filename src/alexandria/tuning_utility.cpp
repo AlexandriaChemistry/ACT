@@ -280,8 +280,9 @@ static void analyse_multipoles(FILE                                             
     qcalc->calcMoments();
     for(auto &mpo : mpoMultiPoles)
     {
-        const char *name = mpo_name(mpo);
-        const char *unit = mpo_unit2(mpo);
+        const char *name   = mpo_name(mpo);
+        const char *unit   = mpo_unit2(mpo);
+        double      factor = convertFromGromacs(1, unit);
         fprintf(fp, "Electronic %s (%s):\n", name, unit);
         auto Telec = qelec->getMultipole(mpo);
         printMultipole(fp, mpo, Telec);
@@ -309,8 +310,7 @@ static void analyse_multipoles(FILE                                             
                     auto te = Telec[i];
                     diff.push_back(tc-te);
                     delta += gmx::square(tc-te);
-                    (*lsq)[mpo][mol->datasetType()][qt].add_point(convertFromGromacs(te, unit), 
-                                                                  convertFromGromacs(tc, unit), 0, 0);
+                    (*lsq)[mpo][mol->datasetType()][qt].add_point(factor*te, factor*tc, 0, 0);
                 }
                 double rms = std::sqrt(delta/Tcalc.size());
                 std::string flag("");
@@ -319,7 +319,7 @@ static void analyse_multipoles(FILE                                             
                     flag = " MULTI";
                 }
                 fprintf(fp, "Difference %s Norm %g RMS = %g (%s)%s:\n",
-                        name, std::sqrt(delta), rms, unit, flag.c_str());
+                        name, factor*std::sqrt(delta), factor*rms, unit, flag.c_str());
                 printMultipole(fp, mpo, diff);
             }
         }
