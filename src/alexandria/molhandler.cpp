@@ -254,7 +254,8 @@ void MolHandler::nma(MyMol               *mol,
         if (delta > 0)
         {
             fprintf(fp, "\nFrequency RMSD %g\n",
-                    convertFromGromacs(std::sqrt(delta/frequencies->size()), unit));
+                    convertFromGromacs(std::sqrt(delta/frequencies->size()),
+                                       unit));
         }
         else
         {

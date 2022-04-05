@@ -578,7 +578,8 @@ void TuneForceFieldPrinter::printEnergyForces(FILE                   *fp,
                                               alexandria::MyMol      *mol,
                                               const std::vector<int> &ePlot,
                                               gmx_stats              *lsq_rmsf,
-                                              qtStats                *lsq_epot)
+                                              qtStats                *lsq_epot,
+                                              gmx_stats              *lsq_freq)
 {
     // RMS force
     double rmsf  = mol->rmsForce();
@@ -619,6 +620,13 @@ void TuneForceFieldPrinter::printEnergyForces(FILE                   *fp,
     // Do normal-mode analysis
     std::vector<double> frequencies, intensities;
     molHandler_.nma(&(*mol), &frequencies, &intensities, fp);
+    auto ref_freq = mol->referenceFrequencies();
+    auto unit = mpo_unit2(MolPropObservable::FREQUENCY);
+    for(size_t k = 0; k < frequencies.size(); k++)
+    {
+        lsq_freq->add_point(convertFromGromacs(ref_freq[k], unit),
+                            convertFromGromacs(frequencies[k], unit), 0, 0);
+    }
 }
 
 void TuneForceFieldPrinter::print(FILE                           *fp,
@@ -636,7 +644,7 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
                                                                 lsq_anisoPol, lsq_charge, lsq_epot;
     std::map<MolPropObservable, std::map<iMolSelect, qtStats> > lsq_multi;
     std::map<iMolSelect, std::vector<ZetaTypeLsq> >             lsqt;
-    std::map<iMolSelect, gmx_stats>                             lsq_rmsf;
+    std::map<iMolSelect, gmx_stats>                             lsq_rmsf, lsq_freq;
     for (auto &mpo : mpoMultiPoles)
     {
         std::map<iMolSelect, qtStats> mq_multi;
@@ -657,6 +665,8 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
         {
             gmx_stats rmsf;
             lsq_rmsf.insert({ ims.first, std::move(rmsf) });
+            gmx_stats freq;
+            lsq_freq.insert({ ims.first, std::move(freq) });
         }
         qtStats qesp, qepot;
         for (auto &i : qTypes())
@@ -784,7 +794,8 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
             printAtoms(fp, &(*mol));
             // Energies
             printEnergyForces(fp, &(*mol), ePlot,
-                              &lsq_rmsf[ims], &lsq_epot[ims]);
+                              &lsq_rmsf[ims], &lsq_epot[ims],
+                              &lsq_freq[ims]);
             fprintf(fp, "\n");
             n++;
         }
@@ -811,6 +822,12 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
             if (lsq_rmsf[ims.first].get_npoints() > 0 && qt == qType::Calc)
             {
                 print_stats(fp, "RMS Force", "kJ/mol nm", 1.0, &lsq_rmsf[ims.first], header, "QM/DFT", name, useOffset_);
+                header = false;
+            }
+            if (lsq_freq[ims.first].get_npoints() > 0 && qt == qType::Calc)
+            {
+                print_stats(fp, "Frequencies", mpo_unit2(MolPropObservable::FREQUENCY),
+                            1.0, &lsq_freq[ims.first], header, "QM/DFT", name, useOffset_);
                 header = false;
             }
             print_stats(fp, "ESP", "kJ/mol e", 1.0, &lsq_esp[ims.first][qt],  header, "Electronic", name, useOffset_);

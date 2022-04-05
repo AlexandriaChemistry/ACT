@@ -100,7 +100,8 @@ using qtStats = std::map<qType, gmx_stats>;
                                alexandria::MyMol      *mol,
                                const std::vector<int> &ePlot,
                                gmx_stats              *lsq_rmsf,
-                               qtStats                *lsq_epot);
+                               qtStats                *lsq_epot,
+                               gmx_stats              *lsq_freq);
     public:
         TuneForceFieldPrinter() {}
     
