@@ -21,6 +21,7 @@
 #include "act/utility/communicationrecord.h"
 #include "mymol.h"
 #include "molgen.h"
+#include "molhandler.h"
 
 namespace alexandria
 {
@@ -122,8 +123,9 @@ class HarmonicsDevComputer : public DevComputer
 {
 private:
     //! The MolPropObservable, e.g. quadrupole
-    MolPropObservable   mpo_;
-
+    MolPropObservable mpo_;
+    //! Molecule handler for running frequency calculations
+    MolHandler        handler_;
 public:
 
     /*! \brief Create a new FrequencyDevComputer

@@ -75,16 +75,23 @@ public:
                                 std::vector<double> *forceZero) const;
 
     /*! \brief Perform normal-mode analysis on a molecule.
-     * Prints vibrational frequencies.
+     * Computes vibrational frequencies and intensities and 
+     * optionally prints them.
      *
-     * Also prints eigenvalues and eigenvectors of the mass-weighted hessian matrix
-     * to the debug file, if any.
+     * Also prints eigenvalues and eigenvectors of the mass-weighted 
+     * hessian matrix to the debug file, if not nullptr.
      * 
-     * \param[in] mol the molecule to analyze
-     * \param[in] fp  the file to write frequencies to
+     * \param[in] mol          The molecule to analyze
+     * \param[out] frequencies The normal mode frequencies
+     * \param[out] intensities The normal mode intensities
+     * \param[in] fp           File to write frequencies to, maybe nullptr
      */
     void nma(MyMol *mol,
              FILE  *fp) const;
+    void nma(MyMol               *mol,
+             std::vector<double> *frequencies,
+             std::vector<double> *intensities,
+             FILE                *fp) const;
 
     /*! \brief
      * The routine will energy minimize the atomic coordinates of a molecule while

@@ -113,8 +113,10 @@ double MolHandler::computeHessian(      MyMol               *mol,
     return epot0;
 }
 
-void MolHandler::nma(MyMol *mol,
-                     FILE  *fp) const
+void MolHandler::nma(MyMol               *mol,
+                     std::vector<double> *frequencies,
+                     std::vector<double> *intensities,
+                     FILE                *fp) const
 {
 
     // Init single use commrec
@@ -190,22 +192,28 @@ void MolHandler::nma(MyMol *mol,
     }
 
     // Get the vibrational frequencies
-    std::vector<double> freqs;
     int rot_trans = 6;
     if (mol->linearMolecule())
     {
         rot_trans = 5;
     }
+    frequencies->clear();
+    intensities->clear();
     for (size_t i = rot_trans; i < eigenvalues.size(); i++)
     {
         auto val = eigenvalues[i];
         if (val < 0)
         {
-            fprintf(fp, "Warning: negative eigenvalue %zu = %g\n", i, val);
+            if (fp)
+            {
+                fprintf(fp, "Warning: negative eigenvalue %zu = %g\n", i, val);
+            }
+            // We need to store something to be able to compare
+            frequencies->push_back(0);
         }
         else
         {
-            freqs.push_back(std::sqrt(val));
+            frequencies->push_back(std::sqrt(val));
         }
     }
 
@@ -225,21 +233,33 @@ void MolHandler::nma(MyMol *mol,
             }
         }
         const char *unit = mpo_unit2(mpo);
+        double delta = 0;
         if (!harm.empty())
         {
             fprintf(fp, "Electronic vibrational frequencies: (%s):\n", unit);
+            size_t k = 0;
             for(auto &ff : harm[0]->getVector())
             {
                 fprintf(fp, "  %8.3f", convertFromGromacs(ff, unit));
+                delta += gmx::square(ff - (*frequencies)[k]);
+                k++;
             }
             fprintf(fp, "\n");
         }
         fprintf(fp, "Alexandria vibrational frequencies: (%s):\n", unit);
-        for (const auto &freq : freqs)
+        for (const auto &freq : *frequencies)
         {
             fprintf(fp, "  %8.3f", convertFromGromacs(freq, unit));
         }
-        fprintf(fp, "\n\n");
+        if (delta > 0)
+        {
+            fprintf(fp, "Frequency RMSD %g\n\n",
+                    convertFromGromacs(std::sqrt(delta/frequencies->size()), unit));
+        }
+        else
+        {
+            fprintf(fp, "\n\n");
+        }
     }
     // Print eigenvalues and eigenvectors to debug files
     if (debug)

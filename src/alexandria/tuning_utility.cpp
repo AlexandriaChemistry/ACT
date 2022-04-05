@@ -617,7 +617,8 @@ void TuneForceFieldPrinter::printEnergyForces(FILE                   *fp,
     fprintf(fp, "Coordinate RMSD after minimization %10g pm\n\n", 1000*rmsd);
     
     // Do normal-mode analysis
-    molHandler_.nma(&(*mol), fp);
+    std::vector<double> frequencies, intensities;
+    molHandler_.nma(&(*mol), &frequencies, &intensities, fp);
 }
 
 void TuneForceFieldPrinter::print(FILE                           *fp,

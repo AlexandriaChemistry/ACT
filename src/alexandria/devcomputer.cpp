@@ -25,7 +25,6 @@ double BoundsDevComputer::l2_regularizer(      double          x,
                                                double          max,
                                          const std::string    &label)
 {
-
     double p = 0;
     if (x < min)
     {
@@ -346,11 +345,20 @@ void HarmonicsDevComputer::calcDeviation(MyMol                                *m
     {
         GMX_THROW(gmx::InternalError("Only frequency fitting implemented in HarmonicsDevComputer"));
     }
-    double delta = 0;
+    // Compute frequencies
+    std::vector<double> frequencies, intensities;
+    handler_.nma(mymol, &frequencies, &intensities, nullptr);
+
     auto ref_freqs = mymol->referenceFrequencies();
-    // TODO: Compute frequencies using MolHandler
-    // auto calc_freqs = 
-    
+    if (ref_freqs.size() != frequencies.size())
+    {
+        GMX_THROW(gmx::InternalError(gmx::formatString("Reference frequencies size %zu, but calculated %zu for %s", ref_freqs.size(), frequencies.size(), mymol->getMolname().c_str()).c_str()));
+    }
+    double delta = 0;
+    for(size_t k = 0; k < frequencies.size(); k++)
+    {
+        delta += gmx::square(frequencies[k]-ref_freqs[k]);
+    }
     (*targets).find(eRMS::FREQUENCY)->second.increase(1, delta);
 }
 
