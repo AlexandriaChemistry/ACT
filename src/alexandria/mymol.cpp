@@ -1478,13 +1478,13 @@ void MyMol::updateMDAtoms()
     }
 }
 
-static void reset_f_e(int natoms, 
-                      PaddedVector<gmx::RVec> f_,
-                      gmx_enerdata_t *enerd_)
+static void reset_f_e(int                      natoms, 
+                      PaddedVector<gmx::RVec> *f_,
+                      gmx_enerdata_t          *enerd_)
 {
     for (int i = 0; i < natoms; i++)
     {
-        clear_rvec(f_[i]);
+        clear_rvec((*f_)[i]);
     }
     for (int i = 0; i < F_NRE; i++)
     {
@@ -1513,7 +1513,7 @@ immStatus MyMol::calculateEnergy(const t_commrec *crtmp,
     constructVsitesGlobal(*mtop_, state_->x);
     
     // Set force and energy to zero
-    reset_f_e(mtop_->natoms, f_, enerd_);
+    reset_f_e(mtop_->natoms, &f_, enerd_);
     
     if (nullptr != shellfc_)
     {
@@ -1972,6 +1972,7 @@ immStatus MyMol::CalcPolarizability(double efield)
         }
     }
     restoreCoordinates();
+    imm = computeForces(&rmsf);
     return imm;
 }
 

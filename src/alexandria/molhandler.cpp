@@ -110,6 +110,7 @@ double MolHandler::computeHessian(      MyMol               *mol,
             }
         }
     }
+    (void) mol->calculateEnergy(crtmp, &shellForceRMS);
     return epot0;
 }
 

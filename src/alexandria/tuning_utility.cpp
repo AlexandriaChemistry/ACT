@@ -353,7 +353,43 @@ static void print_corr(const char                    *outfile,
             }
         }
     }
-    if (haveData)
+    if (haveData && outfile)
+    {
+        FILE *muc = xvgropen(outfile, title, xaxis, yaxis, oenv);
+        xvgr_symbolize(muc, eprnm, oenv);
+        for(size_t i = 0; i < lsq.size(); i++)
+        {
+            print_lsq_set(muc, lsq[i]);
+        }
+        fclose(muc);
+    }
+}
+
+static void print_corr(const char                      *outfile,
+                       const char                      *title,
+                       const char                      *xaxis,
+                       const char                      *yaxis, 
+                       std::map<iMolSelect, gmx_stats> &stats,
+                       const gmx_output_env_t          *oenv)
+{
+    std::vector<std::string> eprnm;
+    std::vector<gmx_stats>   lsq;
+    bool                     haveData = false;
+    for (auto &ims : iMolSelectNames())
+    {
+        auto qs = stats.find(ims.first);
+        if (qs != stats.end())
+        {
+            int N = qs->second.get_npoints();
+            if (N > 0)
+            {
+                eprnm.push_back(gmx::formatString("%s", ims.second));
+                lsq.push_back(qs->second);
+                haveData = true;
+            }
+        }
+    }
+    if (haveData && outfile)
     {
         FILE *muc = xvgropen(outfile, title, xaxis, yaxis, oenv);
         xvgr_symbolize(muc, eprnm, oenv);
@@ -377,9 +413,12 @@ static void write_q_histo(FILE                      *fplog,
     {
         types.push_back(i->name());
     }
-    FILE *hh = xvgropen(qhisto, "Histogram for charges", "q (e)", "a.u.", oenv);
-    xvgrLegend(hh, types, oenv);
-    
+    FILE *hh = nullptr;
+    if (nullptr != qhisto)
+    {
+        hh = xvgropen(qhisto, "Histogram for charges", "q (e)", "a.u.", oenv);
+        xvgrLegend(hh, types, oenv);
+    }
     auto model = qTypeName(qType::Calc);
     auto gs    = lsq_charge->find(qType::Calc);
     if (gs != lsq_charge->end())
@@ -395,17 +434,23 @@ static void write_q_histo(FILE                      *fplog,
             std::vector<double> x, y;
             if (q.lsq_.make_histogram(0, &nbins, eHisto::Y, 1, &x, &y) == eStats::OK)
             {
-                fprintf(hh, "@type xy\n");
-                for (int i = 0; i < nbins; i++)
+                if (hh)
                 {
-                    fprintf(hh, "%10g  %10g\n", x[i], y[i]);
+                    fprintf(hh, "@type xy\n");
+                    for (int i = 0; i < nbins; i++)
+                    {
+                        fprintf(hh, "%10g  %10g\n", x[i], y[i]);
+                    }
+                    fprintf(hh, "&\n");
                 }
-                fprintf(hh, "&\n");
                 print_stats(fplog, q.name().c_str(), "e", 1.0, &q.lsq_, false,  "CM5", model.c_str(), useOffset);
             }
         }
     }
-    fclose(hh);
+    if (hh)
+    {
+        fclose(hh);
+    }
     fprintf(fplog, "\n");
 }
 
@@ -436,13 +481,15 @@ void TuneForceFieldPrinter::addOptions(std::vector<t_pargs> *pargs)
 void TuneForceFieldPrinter::addFileOptions(std::vector<t_filenm> *filenm)
 {
     std::vector<t_filenm> fnm = {
-        { efXVG, "-qhisto",    "q_histo",       ffWRITE },
-        { efXVG, "-epotcorr",  "epot_corr",     ffWRITE },
-        { efXVG, "-espcorr",   "esp_corr",      ffWRITE },
-        { efXVG, "-alphacorr", "alpha_corr",    ffWRITE },
-        { efXVG, "-qcorr",     "q_corr",        ffWRITE },
-        { efXVG, "-isopol",    "isopol_corr",   ffWRITE },
-        { efXVG, "-anisopol",  "anisopol_corr", ffWRITE }
+        { efXVG, "-qhisto",    "q_histo",       ffOPTWR },
+        { efXVG, "-epotcorr",  "epot_corr",     ffOPTWR },
+        { efXVG, "-forcecorr", "force_corr",    ffOPTWR },
+        { efXVG, "-freqcorr",  "freq_corr",     ffOPTWR },
+        { efXVG, "-espcorr",   "esp_corr",      ffOPTWR },
+        { efXVG, "-alphacorr", "alpha_corr",    ffOPTWR },
+        { efXVG, "-qcorr",     "q_corr",        ffOPTWR },
+        { efXVG, "-isopol",    "isopol_corr",   ffOPTWR },
+        { efXVG, "-anisopol",  "anisopol_corr", ffOPTWR }
     };
     for(size_t i = 0; i < fnm.size(); i++)
     {
@@ -618,14 +665,17 @@ void TuneForceFieldPrinter::printEnergyForces(FILE                   *fp,
     fprintf(fp, "Coordinate RMSD after minimization %10g pm\n\n", 1000*rmsd);
     
     // Do normal-mode analysis
-    std::vector<double> frequencies, intensities;
-    molHandler_.nma(&(*mol), &frequencies, &intensities, fp);
     auto ref_freq = mol->referenceFrequencies();
-    auto unit = mpo_unit2(MolPropObservable::FREQUENCY);
-    for(size_t k = 0; k < frequencies.size(); k++)
+    if (!ref_freq.empty())
     {
-        lsq_freq->add_point(convertFromGromacs(ref_freq[k], unit),
-                            convertFromGromacs(frequencies[k], unit), 0, 0);
+        std::vector<double> frequencies, intensities;
+        molHandler_.nma(&(*mol), &frequencies, &intensities, fp);
+        auto unit = mpo_unit2(MolPropObservable::FREQUENCY);
+        for(size_t k = 0; k < frequencies.size(); k++)
+        {
+            lsq_freq->add_point(convertFromGromacs(ref_freq[k], unit),
+                                convertFromGromacs(frequencies[k], unit), 0, 0);
+        }
     }
 }
 
@@ -850,31 +900,40 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
             }
         }
     }
-    write_q_histo(fp, opt2fn("-qhisto", filenm.size(), filenm.data()),
-                  lsqt[iMolSelect::Train], oenv, &(lsq_charge[iMolSelect::Train]), useOffset_);
+    write_q_histo(fp, opt2fn_null("-qhisto", filenm.size(), filenm.data()),
+                  lsqt[iMolSelect::Train], oenv,
+                  &(lsq_charge[iMolSelect::Train]), useOffset_);
 
     for(auto &mpo : mpoMultiPoles)
     {
         std::string cmdFlag = gmx::formatString("-%scorr", mpo_name(mpo));
         std::string title   = gmx::formatString("%s components (%s)", mpo_name(mpo),
                                                 mpo_unit2(mpo));
-        print_corr(opt2fn(cmdFlag.c_str(), filenm.size(), filenm.data()),
+        print_corr(opt2fn_null(cmdFlag.c_str(), filenm.size(), filenm.data()),
                    title.c_str(), "Electronic", "Empirical", lsq_multi[mpo], oenv);
     }
-    print_corr(opt2fn("-epotcorr", filenm.size(), filenm.data()),
-               "Potential energy (kJ/mol)", "Reference", "Empirical", lsq_epot, oenv);
-    print_corr(opt2fn("-espcorr", filenm.size(), filenm.data()),
-               "Electrostatic Potential (Hartree/e)", "Electronic", "Calc", lsq_esp, oenv);
-    print_corr(opt2fn("-qcorr", filenm.size(), filenm.data()),
+    print_corr(opt2fn_null("-epotcorr", filenm.size(), filenm.data()),
+               "Potential energy (kJ/mol)", "Reference", "Empirical",
+               lsq_epot, oenv);
+    print_corr(opt2fn_null("-forcecorr", filenm.size(), filenm.data()),
+               "Forces (kJ/mol nm)", "Reference", "Empirical",
+               lsq_rmsf, oenv);
+    print_corr(opt2fn_null("-freqcorr", filenm.size(), filenm.data()),
+               "Frequencies (cm^-1)", "Reference", "Empirical",
+               lsq_freq, oenv);
+    print_corr(opt2fn_null("-espcorr", filenm.size(), filenm.data()),
+               "Electrostatic Potential (Hartree/e)", "Electronic", "Calc",
+               lsq_esp, oenv);
+    print_corr(opt2fn_null("-qcorr", filenm.size(), filenm.data()),
                "Atomic Partial Charge", "q (e)", "a.u.", lsq_charge, oenv);
     
     if (bPolar)
     {
-        print_corr(opt2fn("-alphacorr", filenm.size(), filenm.data()),
+        print_corr(opt2fn_null("-alphacorr", filenm.size(), filenm.data()),
                    "Pricipal Components of Polarizability Tensor (A\\S3\\N)", "Electronic", "Calc", lsq_alpha, oenv);
-        print_corr(opt2fn("-isopol", filenm.size(), filenm.data()),
+        print_corr(opt2fn_null("-isopol", filenm.size(), filenm.data()),
                    "Isotropic Polarizability (A\\S3\\N)", "Electronic", "Calc", lsq_isoPol, oenv);
-        print_corr(opt2fn("-anisopol", filenm.size(), filenm.data()),
+        print_corr(opt2fn_null("-anisopol", filenm.size(), filenm.data()),
                    "Anisotropic Polarizability (A\\S3\\N)", "Electronic", "Calc", lsq_anisoPol, oenv);
     }
     // List outliers based on the deviation in the Electrostatic Potential
