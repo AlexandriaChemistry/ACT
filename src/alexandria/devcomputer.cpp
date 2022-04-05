@@ -347,7 +347,7 @@ void HarmonicsDevComputer::calcDeviation(MyMol                                *m
     }
     // Compute frequencies
     std::vector<double> frequencies, intensities;
-    handler_.nma(mymol, &frequencies, &intensities, nullptr);
+    handler_.nma(mymol, &frequencies, &intensities);
 
     auto ref_freqs = mymol->referenceFrequencies();
     if (ref_freqs.size() != frequencies.size())

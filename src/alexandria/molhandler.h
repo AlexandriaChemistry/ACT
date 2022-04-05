@@ -86,12 +86,10 @@ public:
      * \param[out] intensities The normal mode intensities
      * \param[in] fp           File to write frequencies to, maybe nullptr
      */
-    void nma(MyMol *mol,
-             FILE  *fp) const;
     void nma(MyMol               *mol,
              std::vector<double> *frequencies,
              std::vector<double> *intensities,
-             FILE                *fp) const;
+             FILE                *fp = nullptr) const;
 
     /*! \brief
      * The routine will energy minimize the atomic coordinates of a molecule while
