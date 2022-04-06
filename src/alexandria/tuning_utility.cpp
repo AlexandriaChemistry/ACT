@@ -505,7 +505,7 @@ void TuneForceFieldPrinter::addFileOptions(std::vector<t_filenm> *filenm)
         multi[ii].ftp  = efXVG;
         multi[ii].opt  = strdup(cmdFlag.c_str());
         multi[ii].fn   = strdup(defFnm.c_str());
-        multi[ii].flag = ffWRITE;
+        multi[ii].flag = ffOPTWR;
         filenm->push_back(multi[ii]);
     }
 }
