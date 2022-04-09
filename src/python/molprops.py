@@ -18,6 +18,8 @@ class Molprops:
         self.molecules = ET.Element("molecules")
  
     def add_molecule(self, molecule):
+        if len(molecule.fragments) == 0:
+            sys.exit("You forgot to add fragments")
         lastmol = ET.SubElement(self.molecules, "molecule")
         for prop in molecule.properties.keys():
             lastmol.set(prop, molecule.properties[prop])
@@ -26,17 +28,11 @@ class Molprops:
                 newbond = ET.SubElement(lastmol, "bond")
                 newbond.set("ai", bond[0])
                 newbond.set("aj", bond[1])
-                newbond.set("bondorder", bond[2])    
-        for comp in molecule.compounds:
-            compound = ET.SubElement(lastmol, "compound")
-            for prop in comp.properties:
-                compound.set(prop, comp.properties[prop])
-            if len(comp.bonds) > 0:
-                for bond in comp.bonds:
-                    newbond = ET.SubElement(compound, "bond")
-                    newbond.set("ai", bond[0])
-                    newbond.set("aj", bond[1])
-                    newbond.set("bondorder", bond[2])
+                newbond.set("bondorder", bond[2])
+        fragments = ET.SubElement(lastmol, "fragments")
+        for frag in molecule.fragments:
+            xmlfrag = ET.SubElement(fragments, "fragment")
+            frag.add_xml(xmlfrag)
 
         for ep in molecule.experiments:
             exper = ET.SubElement(lastmol, "experiment")
@@ -143,6 +139,27 @@ class Molprops:
         with open(outfile, "w") as f:
             f.write(xmlstr)
 
+class Fragment:
+    '''
+    Class to store molecule "fragments" which in this context 
+    means compounds in e.g. a dimer.
+    '''
+    
+    def __init__(self, charge:int, multiplicity:int, atoms:list):
+        self.charge       = charge
+        self.multiplicity = multiplicity
+        if len(atoms) == 0:
+            sys.exit("Trying to create a fragment without atoms")
+        self.atoms = ""
+        for a in atoms:
+            self.atoms += " " + str(a)
+        self.atoms = self.atoms.strip()
+        
+    def add_xml(self, xml):
+        xml.set("charge", str(self.charge))
+        xml.set("multiplicity", str(self.multiplicity))
+        xml.text = self.atoms
+
 class Molprop:
     '''
     Class to store a single molprop (molecule properties) from the
@@ -153,6 +170,7 @@ class Molprop:
         self.properties = {}
         self.properties["molname"] = molname
         self.bonds = []
+        self.fragments = []
         self.experiments = []
         self.compounds = []
         
@@ -167,31 +185,13 @@ class Molprop:
     
     def add_experiment(self, exper):
         self.experiments.append(exper)
+        
+    def add_fragment(self, f:Fragment):
+        self.fragments.append(f)
 
     def add_compound(self, comp): 
         self.compounds.append(comp)   
         
-
-class Compprop:
-    '''
-    Class to store a single compprop (compound properties) from the
-    Alexandria Chemistry Toolkit
-    '''
-
-    def __init__(self, molname, charge, multiplicity):
-        self.properties = {}
-        self.properties["molname"] = molname
-        self.properties["charge"] = str(charge)
-        self.properties["multiplicity"] = str(multiplicity)
-        self.bonds = []
-
-    def add_prop(self, propname, value):
-        self.properties[propname] = value
-
-    def add_bond(self, atom1, atom2, bondorder):
-        self.bonds.append([str(atom1), str(atom2), str(bondorder)])
-
-
 class Experiment:
     '''
     Class to hold Experiment data for a molecule

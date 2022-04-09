@@ -39,6 +39,8 @@ class GaussianReader:
         self.qmtype        = "electronic"
         # New compound
         self.mp            = Molprop(molname)
+        self.charge        = 0
+        self.multiplicity  = 1
         self.atomname      = []
         self.atomtypes     = None
         self.coord_archive = []
@@ -159,8 +161,8 @@ class GaussianReader:
     def get_qmult(self, line):
         words = line.split()
         if len(words) == 6:
-            self.mp.add_prop("charge", words[2])
-            self.mp.add_prop("multiplicity", words[5])
+            self.charge       = int(words[2])
+            self.multiplicity = int(words[5])
         return 1
 
     def select_coordinates(self):
@@ -592,7 +594,8 @@ class GaussianReader:
             for atom in md.atoms:
                 self.atomtypes.append(md.atoms[atom]["atomtype"])
             g2a      = GaffToAlexandria()
-            
+            frag = Fragment(self.charge, self.multiplicity, range(1,1+len(self.atomtypes)))
+            self.mp.add_fragment(frag)
             if None != self.tcmap["E0"] and None != self.tcmap["Ezpe"]:
                 self.tcmap["Temp"]   = 0
                 ahof = AtomicHOF(leveloftheory, self.tcmap["Temp"], self.verbose)
