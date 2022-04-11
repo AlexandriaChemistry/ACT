@@ -594,8 +594,6 @@ class GaussianReader:
             for atom in md.atoms:
                 self.atomtypes.append(md.atoms[atom]["atomtype"])
             g2a      = GaffToAlexandria()
-            frag = Fragment(self.charge, self.multiplicity, range(1,1+len(self.atomtypes)))
-            self.mp.add_fragment(frag)
             if None != self.tcmap["E0"] and None != self.tcmap["Ezpe"]:
                 self.tcmap["Temp"]   = 0
                 ahof = AtomicHOF(leveloftheory, self.tcmap["Temp"], self.verbose)
@@ -616,8 +614,8 @@ class GaussianReader:
                 # This is likely a peculiarity of the Alexandria library.
                 if not self.add_atoms(g2a):
                     return None
-                self.mp.add_prop("mass", str(md.mol_weight))
-                self.mp.add_prop("formula", md.formula)
+                frag = Fragment(self.charge, self.multiplicity, range(1,1+len(self.atomtypes)), md.mol_weight, md.formula)
+                self.mp.add_fragment(frag)
                 for index_tuple in md.bonds:
                     self.mp.add_bond(index_tuple[0], index_tuple[1], md.bonds[index_tuple])
                 Angstrom = "A"

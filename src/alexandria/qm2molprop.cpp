@@ -169,7 +169,6 @@ int qm2molprop(int argc, char *argv[])
                 nread += 1;
                 if (renameAtomTypes(&mmm, g2a))
                 {
-                    mmm.SetTotalCharge(qtot);
                     mp.push_back(std::move(mmm));
                 }
             }

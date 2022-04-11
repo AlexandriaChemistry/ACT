@@ -455,9 +455,11 @@ immStatus MyMol::checkAtoms(const Poldata *pd,
         return immStatus::AtomTypes;
     }
     // Check multiplicity
-    int multOk = atomnumberTotal + getMultiplicity() + totalCharge();
+    int multOk = atomnumberTotal + totalMultiplicity() + totalCharge();
     if (multOk % 2 == 0)
     {
+        fprintf(stderr, "atomnumberTotal %d, totalMultiplicity %d, totalCharge %d\n",
+                atomnumberTotal, totalMultiplicity(), totalCharge());
         return immStatus::Multiplicity;
     }
     return immStatus::OK;
@@ -1619,7 +1621,7 @@ immStatus MyMol::GenerateAcmCharges(const Poldata *pd)
 {
     if (QgenAcm_ == nullptr)
     {
-        QgenAcm_ = new QgenAcm(pd, atoms(), totalCharge());
+        QgenAcm_ = new QgenAcm(pd, atoms(), fragmentPtr());
     }
     std::vector<double> qq;
     for (auto i = 0; i < mtop_->natoms; i++)
@@ -2057,7 +2059,7 @@ void MyMol::PrintTopology(FILE                      *fp,
 
     printmol.nr = 1;
 
-    snprintf(buf, sizeof(buf), "Total Mass = %.3f (Da)", getMass());
+    snprintf(buf, sizeof(buf), "Total Mass = %.3f (Da)", totalMass());
     commercials.push_back(buf);
     snprintf(buf, sizeof(buf), "Reference_Enthalpy = %.3f (kJ/mol)", ref_enthalpy);
     commercials.push_back(buf);

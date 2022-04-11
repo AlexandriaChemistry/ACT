@@ -50,19 +50,22 @@
 namespace alexandria
 {
 
-QgenAcm::QgenAcm(const Poldata *pd,
-                 t_atoms       *atoms,
-                 int            qtotal)
+QgenAcm::QgenAcm(const Poldata               *pd,
+                 t_atoms                     *atoms,
+                 const std::vector<Fragment> *fragments)
 {
     auto qt     = pd->findForcesConst(InteractionType::CHARGEDISTRIBUTION);
     ChargeType_ = name2ChargeType(qt.optionValue("chargetype"));
     bHaveShell_ = pd->polarizable();
     eQGEN_      = eQgen::OK;
     natom_      = atoms->nr;
-    qtotal_     = qtotal;
-    if (debug)
+    fragments_  = fragments;
+    if (fragments)
     {
-        fprintf(debug, "QgenACM: qtotal = %g\n", qtotal_);
+        for(auto f : *fragments)
+        {
+            qtotal_ += f.charge();
+        }
     }
     auto eem = pd->findForcesConst(InteractionType::ELECTRONEGATIVITYEQUALIZATION);
     for (int i = 0; i < atoms->nr; i++)

@@ -109,7 +109,6 @@ class RespTest : public gmx::test::CommandLineTestBase
                 return;
             }
             EXPECT_TRUE(qtot == 0.0);
-            molprop.SetTotalCharge(qtot);
             mp_.Merge(&molprop);
 
             auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 5e-2);

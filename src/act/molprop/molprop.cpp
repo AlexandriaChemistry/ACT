@@ -131,9 +131,52 @@ bool MolProp::BondExists(const Bond &b)
     return false;
 }
 
+int MolProp::totalCharge()
+{
+    int qtot = 0;
+    
+    for(const auto &f : fragment_)
+    {
+        qtot += f.charge();
+    }
+    return qtot;
+}
+
+int MolProp::totalMultiplicity()
+{
+    int mtot = 1;
+    
+    for(const auto &f : fragment_)
+    {
+        int mm = f.multiplicity();
+        if (mm % 2 == 0)
+        {
+            if (mtot == 1)
+            {
+                mtot = 2;
+            }
+            else
+            {
+                mtot = 1;
+            }
+        }
+    }
+    return mtot;
+}
+
+double MolProp::totalMass()
+{
+    double mtot = 0;
+    
+    for(const auto &f : fragment_)
+    {
+        mtot += f.mass();
+    }
+    return mtot;
+}
+
 int MolProp::Merge(const MolProp *src)
 {
-    double      q = 0, sq = 0;
     std::string stmp;
     int         nwarn = 0;
 
@@ -142,35 +185,23 @@ int MolProp::Merge(const MolProp *src)
         AddCategory(si);
     }
     SetFormula(src->formula());
-    SetMass(src->getMass());
     SetIndex(src->getIndex());
-    if (getMultiplicity() <= 1)
+    for(auto &src_f : src->fragments())
     {
-        SetMultiplicity(src->getMultiplicity());
-    }
-    else
-    {
-        int smult = src->getMultiplicity();
-        if ((nullptr != debug) && (smult != getMultiplicity()))
+        bool found = false;
+        for (auto &dst_f : fragment_)
         {
-            fprintf(debug, "Not overriding multiplicity to %d when merging since it is %d (%s)\n",
-                    smult, getMultiplicity(), src->getMolname().c_str());
-            fflush(debug);
+            // TODO Make this check more rigorous, check for overlaps etc.
+            if (src_f.atoms() == dst_f.atoms() &&
+                src_f.multiplicity() == dst_f.multiplicity() &&
+                src_f.charge() == dst_f.charge())
+            {
+                found = true;
+            }
         }
-    }
-    q = totalCharge();
-    if (q == 0)
-    {
-        SetTotalCharge(src->totalCharge());
-    }
-    else
-    {
-        sq = src->totalCharge();
-        if ((nullptr != debug) && (sq != q))
+        if (!found)
         {
-            fprintf(debug, "Not overriding charge to %g when merging since it is %g (%s)\n",
-                    sq, q, getMolname().c_str());
-            fflush(debug);
+            fragment_.push_back(src_f);
         }
     }
 
@@ -263,9 +294,6 @@ void MolProp::Dump(FILE *fp) const
         fprintf(fp, "CAS:          %s\n", getCas().c_str());
         fprintf(fp, "cis:          %s\n", getCid().c_str());
         fprintf(fp, "InChi:        %s\n", getInchi().c_str());
-        fprintf(fp, "mass:         %g\n", getMass());
-        fprintf(fp, "charge:       %d\n", totalCharge());
-        fprintf(fp, "multiplicity: %d\n", getMultiplicity());
         fprintf(fp, "category:    ");
         for (auto &si : categoryConst())
         {
@@ -548,10 +576,7 @@ CommunicationStatus MolProp::Send(const CommunicationRecord *cr, int dest) const
     /* Generic stuff */
     if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
     {
-        cr->send_double(dest, mass_);
         cr->send_int(dest, index_);
-        cr->send_int(dest, charge_);
-        cr->send_int(dest, multiplicity_);
         cr->send_str(dest, &formula_);
         cr->send_str(dest, &molname_);
         cr->send_str(dest, &iupac_);
@@ -620,11 +645,8 @@ CommunicationStatus MolProp::Receive(const CommunicationRecord *cr, int src)
     /* Generic stuff */
     if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
     {
-        //! Receive mass and more
-        mass_         = cr->recv_double(src);
+        //! Receive index and more
         index_        = cr->recv_int(src);
-        charge_       = cr->recv_int(src);
-        multiplicity_ = cr->recv_int(src);
         cr->recv_str(src, &formula_);
         cr->recv_str(src, &molname_);
         cr->recv_str(src, &iupac_);

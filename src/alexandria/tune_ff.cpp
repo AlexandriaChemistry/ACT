@@ -235,7 +235,7 @@ void OptACM::initChargeGeneration(iMolSelect ims)
         if (mymol.support() != eSupport::No)
         {
             mymol.setQgenAcm(new QgenAcm(sii_->poldata(), mymol.atoms(),
-                                         mymol.totalCharge()));
+                                         mymol.fragmentPtr()));
         }
     }
 }

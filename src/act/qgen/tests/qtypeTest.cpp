@@ -164,7 +164,6 @@ class QtypeTest : public gmx::test::CommandLineTestBase
             {
                 EXPECT_TRUE(qtotal == qtot_babel);
             }
-            molprop.SetTotalCharge(qtotal);
             alexandria::MyMol mymol;
             mymol.Merge(&molprop);
             // Generate charges and topology

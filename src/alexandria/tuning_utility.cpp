@@ -789,7 +789,7 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
             fprintf(fp, "\nMolecule %d: Name: %s, Qtot: %d, Multiplicity: %d, Dataset: %s\n", n+1,
                     mol->getMolname().c_str(),
                     mol->totalCharge(),
-                    mol->getMultiplicity(),
+                    mol->totalMultiplicity(),
                     iMolSelectName(ims));
 
             // Recalculate the atomic charges using the optimized parameters.

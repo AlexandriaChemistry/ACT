@@ -126,13 +126,10 @@ static void gmx_molprop_csv(const char                 *fn,
     }
     for (mpi = mp.begin(); (mpi < mp.end()); mpi++)
     {
-        fprintf(fp, "\"%s\",\"%s\",\"%s\",\"%d\",\"%d\",\"%g\"",
+        fprintf(fp, "\"%s\",\"%s\",\"%s\"",
                 mpi->getIupac().c_str(),
                 mpi->formula().c_str(),
-                mpi->getInchi().c_str(),
-                mpi->totalCharge(),
-                mpi->getMultiplicity(),
-                mpi->getMass());
+                mpi->getInchi().c_str());
         for (int k = 0; (k < NEMP); k++)
         {
             std::vector<iqmType> iqms = { iqmType::Exp, iqmType::QM };

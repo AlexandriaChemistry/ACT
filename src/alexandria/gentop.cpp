@@ -301,7 +301,7 @@ int gentop(int argc, char *argv[])
             molnm = (char *)"MOL";
         }
         MolProp  mp;
-        double qtot_babel = 0;
+        double qtot_babel = qtot;
         if (readBabel(filename,
                       &mp,
                       molnm,
@@ -323,11 +323,6 @@ int gentop(int argc, char *argv[])
             }
             if (mappingOK)
             {
-                if (!opt2parg_bSet("-qtot", asize(pa), pa))
-                {
-                    qtot = qtot_babel;
-                }
-                mp.SetTotalCharge(qtot);
                 mymol.Merge(&mp);
             }
         }

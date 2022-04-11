@@ -45,6 +45,7 @@
 
 #include "act/molprop/composition.h"
 #include "act/molprop/experiment.h"
+#include "act/molprop/fragment.h"
 #include "act/molprop/molpropobservable.h"
 #include "act/molprop/phase.h"
 #include "act/poldata/poldata.h"
@@ -72,9 +73,6 @@ class MolProp
 {
 private:
     int                               index_        = -1;
-    double                            mass_         = 0.0;
-    int                               charge_       = 0;
-    int                               multiplicity_ = 1;
     //! Total number of atoms in this compound
     int                               natom_        = 0;
     //! Whether or not all atoms have proper atom types
@@ -83,6 +81,7 @@ private:
     std::vector<std::string>          category_;
     //! Elemental composition of the compound
     std::map<const char *,int>        composition_;
+    std::vector<Fragment>             fragment_;
     std::vector<Experiment>           exper_;
     std::vector<Bond>                 bond_;
 public:
@@ -101,24 +100,6 @@ public:
     
     //! Return the index number for sorting
     int getIndex() const { return index_; }
-    
-    //! Set the molecular mass
-    void SetMass(double mass) { mass_ = mass; }
-    
-    //! Return the molecular mass
-    double getMass() const { return mass_; }
-    
-    //! Set the total charge of the molecule
-    void SetTotalCharge(double charge) { charge_ = charge; }
-    
-    //! Return the total charge of the molecule
-    int totalCharge() const { return charge_; }
-    
-    //! Set the multiplicity of the molecule
-    void SetMultiplicity(int multiplicity) { multiplicity_ = multiplicity; }
-    
-    //! Return the multiplicity  of the molecule
-    int getMultiplicity() const { return multiplicity_; }
     
     /*! \brief
      * Merge the content of another MolProp into this one
@@ -257,6 +238,29 @@ public:
     
     //! Return pointer to the whole bond array for editing
     std::vector<Bond> *bonds() { return &bond_; }
+
+    //! Return the fragments of this molecule
+    const std::vector<Fragment> &fragments() const { return fragment_; }
+    
+    //! Return the fragments of this molecule
+    const std::vector<Fragment> *fragmentPtr() const { return &fragment_; }
+    
+    /*! Add a new fragment
+     * \param[in] f The new fragment
+     */    
+    void addFragment(const Fragment &f) { fragment_.push_back(f); }
+    
+    //! Clear the fragment information
+    void clearFragments() { fragment_.clear(); }
+    
+    //! Return the total charge by summing over all fragments
+    int totalCharge();
+    
+    //! Return the total multiplicity from all fragments
+    int totalMultiplicity();
+    
+    //! Return the total mass by summing over all fragments
+    double totalMass();
     
     /*! \brief Fetch a calculation according to sepcifications
      * \param[in] method The QM method

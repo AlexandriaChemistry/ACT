@@ -121,6 +121,8 @@ enum class MolPropXml {
     MOLECULE,
     HARMONICS,
     HARMONIC,
+    FRAGMENTS,
+    FRAGMENT,
     FREQUENCY,
     INTENSITY,
     FREQUENCY_UNIT,
@@ -398,24 +400,6 @@ static void get_molecule_attributes(std::map<MolPropXml, std::string> *xbuf,
         mp->SetMolname(ff->second);
         xbuf->erase(ff);
     }
-    ff = xbuf->find(MolPropXml::MASS);
-    if (xbuf->end() != ff)
-    {
-        mp->SetMass(my_atof(ff->second.c_str(), rmap[ff->first].c_str()));
-        xbuf->erase(ff);
-    }
-    ff = xbuf->find(MolPropXml::CHARGE);
-    if (xbuf->end() != ff)
-    {
-        mp->SetTotalCharge(atoi(ff->second.c_str()));
-        xbuf->erase(ff);
-    }
-    ff = xbuf->find(MolPropXml::MULTIPLICITY);
-    if (xbuf->end() != ff)
-    {
-        mp->SetMultiplicity(atoi(ff->second.c_str()));
-        xbuf->erase(ff);
-    }
 }
 
 static void get_molinfo_attributes(std::map<MolPropXml, std::string> *xbuf,
@@ -556,6 +540,7 @@ static void mp_process_tree(FILE                              *fp,
                 switch (elem)
                 {
                 case MolPropXml::MOLECULES:
+                case MolPropXml::FRAGMENTS:
                     mp_process_tree(fp, tree->children, molprops, xbuf);
                     clean_xbuf(xbuf, { elem });
                     break;
@@ -567,6 +552,26 @@ static void mp_process_tree(FILE                              *fp,
                         mpt = &(molprops->back());
                         mp_process_tree(fp, tree->children, molprops, xbuf);
                         clean_xbuf(xbuf, { elem });
+                    }
+                    break;
+                case MolPropXml::FRAGMENT:
+                    {
+                        std::vector<MolPropXml> clean1 = {
+                            MolPropXml::CHARGE, MolPropXml::MULTIPLICITY,
+                            MolPropXml::MASS,   MolPropXml::FRAGMENT
+                        };
+                        if ((nullptr != mpt) && xmlFound(xbuf, clean1))
+                        {
+                            std::vector<int> atoms;
+                            for(auto &ss : gmx::splitString(xbuf->find(MolPropXml::FRAGMENT)->second))
+                            {
+                                atoms.push_back(my_atoi(ss.c_str(), rmap[MolPropXml::FRAGMENT].c_str()));
+                            }
+                            mpt->addFragment(Fragment(xbuf_atof(xbuf, MolPropXml::MASS),
+                                                      xbuf_atoi(xbuf, MolPropXml::CHARGE),
+                                                      xbuf_atoi(xbuf, MolPropXml::MULTIPLICITY),
+                                                      atoms));
+                        }
                     }
                     break;
                 case MolPropXml::HARMONICS:
@@ -1019,17 +1024,22 @@ static void add_calc_properties(xmlNodePtr                    exp,
     }
 }
 
-static void add_xml_molprop(xmlNodePtr                 parent,
+static void add_xml_molprop(xmlNodePtr     parent,
                             const MolProp &mp)
 {
     xmlNodePtr ptr = add_xml_child(parent, rmap[MolPropXml::MOLECULE]);
     add_xml_string(ptr, rmap[MolPropXml::MOLNAME], mp.getMolname());
     add_xml_string(ptr, rmap[MolPropXml::FORMULA], mp.formula());
-    add_xml_double(ptr, rmap[MolPropXml::MASS], mp.getMass());
-    add_xml_double(ptr, rmap[MolPropXml::CHARGE], mp.totalCharge());
-    add_xml_double(ptr, rmap[MolPropXml::MULTIPLICITY], mp.getMultiplicity());
-
-    xmlNodePtr child = add_xml_child(ptr, rmap[MolPropXml::MOLINFO]);
+    
+    xmlNodePtr child = add_xml_child(ptr, rmap[MolPropXml::FRAGMENTS]);
+    for(const auto &f : mp.fragments())
+    {
+        xmlNodePtr grandChild = add_xml_child_val(child, rmap[MolPropXml::FRAGMENT], f.atomString().c_str());
+        add_xml_double(grandChild, rmap[MolPropXml::MASS], f.mass());
+        add_xml_double(grandChild, rmap[MolPropXml::CHARGE], f.charge());
+        add_xml_double(grandChild, rmap[MolPropXml::MULTIPLICITY], f.multiplicity());
+    }
+    child = add_xml_child(ptr, rmap[MolPropXml::MOLINFO]);
     add_xml_string(child, rmap[MolPropXml::IUPAC], mp.getIupac());
     add_xml_string(child, rmap[MolPropXml::CAS], mp.getCas());
     add_xml_string(child, rmap[MolPropXml::CID], mp.getCid());

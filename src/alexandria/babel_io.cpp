@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020
+ * Copyright (C) 2014-2022
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -440,9 +440,6 @@ bool readBabel(const char          *g09,
     }
 
     alexandria::Experiment exp(program, method, basis, reference, conformation, g09ptr, jobtype);
-    mpt->AddExperiment(exp);
-    mpt->SetMass(mol.GetMolWt());
-    mpt->SetMultiplicity(mol.GetTotalSpinMultiplicity());
     mpt->SetFormula(mol.GetFormula());
     // We don't just set this here, since the user may override the value
     // However, it seems that OB does not extract this correctly from
@@ -461,6 +458,7 @@ bool readBabel(const char          *g09,
     {
         *qtot = mol.GetTotalCharge();
     }
+    mpt->AddExperiment(exp);
     if (nullptr != molnm)
     {
         mpt->SetMolname(molnm);
@@ -583,12 +581,14 @@ bool readBabel(const char          *g09,
     }
     // Atoms
     const std::string forcefield("alexandria");
-    auto       *ff         = OpenBabel::OBForceField::FindForceField(forcefield);
+    auto *ff = OpenBabel::OBForceField::FindForceField(forcefield);
+    std::vector<int> atomIndices;
     if (ff && (ff->Setup(mol)))
     {
         ff->GetAtomTypes(mol);
         FOR_ATOMS_OF_MOL (atom, mol)
         {
+            atomIndices.push_back(atom->GetIdx());
             OpenBabel::OBPairData *type = (OpenBabel::OBPairData*) atom->GetData("FFAtomType");
             if (nullptr == type)
             {
@@ -648,6 +648,9 @@ bool readBabel(const char          *g09,
                 forcefield.c_str());
         return false;
     }
+    // Fragment infor
+    Fragment f(mol.GetMolWt(), *qtot, mol.GetTotalSpinMultiplicity(), atomIndices);
+    mpt->addFragment(f);
 
     // Bonds
     getBondsFromOpenBabel(&mol, mpt, g09, forcefield.compare("alexandria") == 0);
@@ -723,8 +726,12 @@ bool SetMolpropAtomTypesAndBonds(alexandria::MolProp *mmm)
 {
     OpenBabel::OBMol mol;
     mol.BeginModify();
-    mol.SetTotalCharge(mmm->totalCharge());
-    mol.SetTotalSpinMultiplicity(mmm->getMultiplicity());
+    auto frags = mmm->fragments();
+    if (!frags.empty())
+    {
+        mol.SetTotalCharge(frags[0].charge());
+        mol.SetTotalSpinMultiplicity(frags[0].multiplicity());
+    }
     auto ei  = mmm->experiment()->begin();
     mol.ReserveAtoms(ei->NAtom());
     int  idx = 0;
@@ -739,7 +746,10 @@ bool SetMolpropAtomTypesAndBonds(alexandria::MolProp *mmm)
     mol.PerceiveBondOrders();
     mol.EndModify();
     mmm->SetFormula(mol.GetFormula());
-    mmm->SetMass(mol.GetMolWt());
+    if (!frags.empty())
+    {
+        frags[0].setMass(mol.GetMolWt());
+    }
     const char *forcefield = "alexandria";
     auto        pFF        = OpenBabel::OBForceField::FindForceField(forcefield);
     if (!pFF)
