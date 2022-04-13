@@ -359,11 +359,16 @@ static void getBhamParams(const ForceFieldParameterList &fa,
             *b = (2.0 * epsilonI * epsilonJ)/(epsilonI + epsilonJ);
             *c = ((gammaI * gammaJ) *  (gammaI + gammaJ))/ (pow(gammaI,2) + pow(gammaJ,2));   
             break;
-        case eCOMB_Qi: // Qi, Bioorg. & Med. Chem., Volume: 24, Page: 4911, Year: 2016. Combination rules for Buf-14-7. Cubic-mean for sigma, and Waldman-Hagler for epsilon. 
+        case eCOMB_QI: // Qi, Bioorg. & Med. Chem., Volume: 24, Page: 4911, Year: 2016. Combination rules for Buf-14-7. Cubic-mean for sigma, and Waldman-Hagler for epsilon. 
             *a = (pow(sigmaI,3) + pow(sigmaJ,3))/(pow(sigmaI,2) + pow(sigmaJ,2));
             *b = std::sqrt(epsilonI * epsilonJ) * ((2.0 * pow(epsilonI,3) * pow(epsilonJ,3))/(pow(epsilonI,6) + pow(epsilonJ,6)));
             *c = 0.5 * (gammaI + gammaJ);
-            break        
+            break
+        case eCOMB_WALDMAN_HAGLER: // Waldman & Hagler, J. Comp. Chem., Year: 1993. 
+            *a = pow(((pow(sigmaI,6)+pow(sigmaJ,6))/2.0),(1/6));
+            *b = std::sqrt(epsilonI * epsilonJ) * ((2.0 * pow(epsilonI,3) * pow(epsilonJ,3))/(pow(epsilonI,6) + pow(epsilonJ,6)));
+            *c = *a * (0.5*((gammaI/sigmaI)+(gammaJ/sigmaJ)));
+            break;            
         case eCOMB_GEOM_SIG_EPS:
         case eCOMB_NONE:
         case eCOMB_NR:
