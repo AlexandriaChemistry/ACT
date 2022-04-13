@@ -37,6 +37,7 @@
 
 #include <cstdio>
 #include <cstring>
+#include <cmath>
 
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/math/vec.h"
@@ -347,6 +348,11 @@ static void getBhamParams(const ForceFieldParameterList &fa,
             *a = std::sqrt(sigmaI * sigmaJ);
             *b = 2.0 * (epsilonI * epsilonJ)/(epsilonI + epsilonJ);
             *c = *a * (0.5*((gammaI/sigmaI)+(gammaJ/sigmaJ)));
+            break;
+        case eCOMB_HOGERVORST:
+            *c = 0.5 * (gammaI + gammaJ);  
+            *b = (2.0 * epsilonI * epsilonJ)/(epsilonI + epsilonJ); 
+            *a = pow(((std::sqrt(((epsilonI*gammaI*pow(sigmaI,6))/(gammaI-6))*((epsilonJ*gammaJ*pow(sigmaJ,6))/(gammaJ-6)))*(*c - 6))/(*b * *c)),(1/6.0));
             break;
         case eCOMB_GEOM_SIG_EPS:
         case eCOMB_NONE:
