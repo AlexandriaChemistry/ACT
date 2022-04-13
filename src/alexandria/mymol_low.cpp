@@ -349,11 +349,16 @@ static void getBhamParams(const ForceFieldParameterList &fa,
             *b = 2.0 * (epsilonI * epsilonJ)/(epsilonI + epsilonJ);
             *c = *a * (0.5*((gammaI/sigmaI)+(gammaJ/sigmaJ)));
             break;
-        case eCOMB_HOGERVORST:
+        case eCOMB_HOGERVORST: // Hogervorst, Physica, Volume: 51, Page: 77, Year: 1971. Combination rules for Buckingham.
             *c = 0.5 * (gammaI + gammaJ);  
             *b = (2.0 * epsilonI * epsilonJ)/(epsilonI + epsilonJ); 
             *a = pow(((std::sqrt(((epsilonI*gammaI*pow(sigmaI,6))/(gammaI-6))*((epsilonJ*gammaJ*pow(sigmaJ,6))/(gammaJ-6)))*(*c - 6))/(*b * *c)),(1/6.0));
             break;
+        case eCOMB_YANG: // Yang, JPhysChemA, Volume: 122, Page: 1672, Year: 2018. Combination rules for Morse.
+            *a = ((sigmaI * sigmaJ) *  (sigmaI + sigmaJ))/ (pow(sigmaI,2) + pow(sigmaJ,2));
+            *b = (2.0 * epsilonI * epsilonJ)/(epsilonI + epsilonJ);
+            *c = ((gammaI * gammaJ) *  (gammaI + gammaJ))/ (pow(gammaI,2) + pow(gammaJ,2));;   
+            break;    
         case eCOMB_GEOM_SIG_EPS:
         case eCOMB_NONE:
         case eCOMB_NR:
