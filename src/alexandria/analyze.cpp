@@ -470,7 +470,7 @@ int analyze(int argc, char *argv[])
 
     if (bMerge)
     {
-        int nwarn = merge_xml(mpname, &mp, nullptr, nullptr, nullptr, ap, TRUE);
+        int nwarn = merge_xml(mpname, &mp, nullptr, nullptr, nullptr, TRUE);
         if (nwarn > maxwarn)
         {
             printf("Too many warnings (%d). Terminating.\n", nwarn);
@@ -480,8 +480,6 @@ int analyze(int argc, char *argv[])
     else if (mpname.size() > 0)
     {
         MolPropRead(mpname[0].c_str(), &mp);
-        //generate_composition(mp);
-        generate_formula(mp, ap);
     }
     if (mpsa != MPSA_NR)
     {

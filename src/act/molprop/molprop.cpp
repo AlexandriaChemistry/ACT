@@ -184,7 +184,6 @@ int MolProp::Merge(const MolProp *src)
     {
         AddCategory(si);
     }
-    SetFormula(src->formula());
     SetIndex(src->getIndex());
     for(auto &src_f : src->fragments())
     {
@@ -194,6 +193,7 @@ int MolProp::Merge(const MolProp *src)
             // TODO Make this check more rigorous, check for overlaps etc.
             if (src_f.atoms() == dst_f.atoms() &&
                 src_f.multiplicity() == dst_f.multiplicity() &&
+                src_f.formula() == dst_f.formula() &&
                 src_f.charge() == dst_f.charge())
             {
                 found = true;
@@ -284,17 +284,48 @@ int MolProp::Merge(const MolProp *src)
     return nwarn;
 }
 
+std::string MolProp::texFormula() const
+{
+    std::string texform;
+    for(size_t i = 0; i < fragment_.size(); i++)
+    {
+        if (i > 0)
+        {
+            texform += ".";
+        }
+        texform += fragment_[i].texFormula();
+    }
+    return texform;
+}
+
+std::string MolProp::formula() const
+{
+    std::string form;
+    for(size_t i = 0; i < fragment_.size(); i++)
+    {
+        if (i > 0)
+        {
+            form += ".";
+        }
+        form += fragment_[i].formula();
+    }
+    return form;
+}
+
 void MolProp::Dump(FILE *fp) const
 {
     if (fp)
     {
-        fprintf(fp, "formula:      %s\n", formula().c_str());
         fprintf(fp, "molname:      %s\n", getMolname().c_str());
         fprintf(fp, "iupac:        %s\n", getIupac().c_str());
         fprintf(fp, "CAS:          %s\n", getCas().c_str());
         fprintf(fp, "cis:          %s\n", getCid().c_str());
         fprintf(fp, "InChi:        %s\n", getInchi().c_str());
         fprintf(fp, "category:    ");
+        for (auto &f : fragments())
+        {
+            f.dump(fp);
+        }
         for (auto &si : categoryConst())
         {
             fprintf(fp, " '%s'", si.c_str());
@@ -305,78 +336,6 @@ void MolProp::Dump(FILE *fp) const
             ei.Dump(fp);
         }
     }
-}
-
-static void add_element_toformula_(const char *elem, int number, char *formula, char *texform)
-{
-    if (number > 0)
-    {
-        strcat(formula, elem);
-        strcat(texform, elem);
-        if (number > 1)
-        {
-            char cnumber[32];
-
-            sprintf(cnumber, "%d", number);
-            strcat(formula, cnumber);
-            sprintf(cnumber, "$_{%d}$", number);
-            strcat(texform, cnumber);
-        }
-    }
-}
-
-bool MolProp::GenerateFormula(gmx_atomprop_t ap)
-{
-    char             myform[1280], texform[2560];
-    std::vector<int> ncomp;
-
-    ncomp.resize(110, 0);
-    myform[0]  = '\0';
-    texform[0] = '\0';
-    for(const auto &cc : composition_)
-    { 
-        real value;
-        if (gmx_atomprop_query(ap, epropElement, "???", cc.first, &value))
-        {
-            int an = std::lround(value);
-            range_check(an, 0, 110);
-            if (an > 0)
-            {
-                ncomp[an] += cc.second;
-            }
-        }
-    }
-    add_element_toformula_("C", ncomp[6], myform, texform);
-    add_element_toformula_("H", ncomp[1], myform, texform);
-    ncomp[6] = ncomp[1] = 0;
-
-    for (int j = 109; (j >= 1); j--)
-    {
-        add_element_toformula_(gmx_atomprop_element(ap, j), ncomp[j], myform, texform);
-    }
-    std::string mform = formula();
-    if (strlen(myform) > 0)
-    {
-        if (debug)
-        {
-            if ((mform.size() > 0) && (strcasecmp(myform, mform.c_str()) != 0))
-            {
-                fprintf(debug, "Formula '%s' does match '%s' based on composition for %s.\n",
-                        mform.c_str(), myform, getMolname().c_str());
-                fflush(debug);
-            }
-        }
-        SetFormula(myform);
-        SetTexFormula(texform);
-    }
-    else if ((mform.size() == 0) && debug)
-    {
-        fprintf(debug, "Empty composition and formula for %s\n",
-                getMolname().c_str());
-        fflush(debug);
-    }
-
-    return (strlen(myform) > 0);
 }
 
 bool bCheckTemperature(double Tref, double T)
@@ -577,7 +536,6 @@ CommunicationStatus MolProp::Send(const CommunicationRecord *cr, int dest) const
     if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
     {
         cr->send_int(dest, index_);
-        cr->send_str(dest, &formula_);
         cr->send_str(dest, &molname_);
         cr->send_str(dest, &iupac_);
         cr->send_str(dest, &cas_);
@@ -647,7 +605,6 @@ CommunicationStatus MolProp::Receive(const CommunicationRecord *cr, int src)
     {
         //! Receive index and more
         index_        = cr->recv_int(src);
-        cr->recv_str(src, &formula_);
         cr->recv_str(src, &molname_);
         cr->recv_str(src, &iupac_);
         cr->recv_str(src, &cas_);
@@ -717,18 +674,6 @@ CommunicationStatus MolProp::Receive(const CommunicationRecord *cr, int src)
         }
     }
     return cs;
-}
-
-const std::string &MolProp::getTexFormula() const
-{
-    if (texform_.size() > 0)
-    {
-        return texform_;
-    }
-    else
-    {
-        return formula_;
-    }
 }
 
 }

@@ -50,23 +50,17 @@
 namespace alexandria
 {
 
-QgenAcm::QgenAcm(const Poldata               *pd,
-                 t_atoms                     *atoms,
-                 const std::vector<Fragment> *fragments)
+QgenAcm::QgenAcm(const Poldata *pd,
+                 t_atoms       *atoms,
+                 int            qtotal)
 {
     auto qt     = pd->findForcesConst(InteractionType::CHARGEDISTRIBUTION);
     ChargeType_ = name2ChargeType(qt.optionValue("chargetype"));
     bHaveShell_ = pd->polarizable();
     eQGEN_      = eQgen::OK;
     natom_      = atoms->nr;
-    fragments_  = fragments;
-    if (fragments)
-    {
-        for(auto f : *fragments)
-        {
-            qtotal_ += f.charge();
-        }
-    }
+    qtotal_     = qtotal;
+
     auto eem = pd->findForcesConst(InteractionType::ELECTRONEGATIVITYEQUALIZATION);
     for (int i = 0; i < atoms->nr; i++)
     {
@@ -120,8 +114,8 @@ QgenAcm::QgenAcm(const Poldata               *pd,
         acm_id_.push_back(acmtype);
     }
     rhs_.resize(nonFixed_.size() + 1, 0);
-    Jcc_.resize(nonFixed_.size() + 1);
-    x_.resize(atoms->nr);
+    Jcc_.resize(nonFixed_.size() + 1, {0});
+    x_.resize(atoms->nr, {0, 0, 0});
 
     for (size_t ii = 0; ii < nonFixed_.size()+1; ii++)
     {
@@ -508,7 +502,7 @@ void QgenAcm::calcRhs(double epsilonr)
     }
     if (debug)
     {
-        fprintf(debug, "QgenACM: qtotal_ = %g qfixed = %g\n", qtotal_, qfixed);
+        fprintf(debug, "QgenACM: qtotal_ = %d qfixed = %g\n", qtotal_, qfixed);
     }
     rhs_[nonFixed_.size()] = qtotal_ - qfixed;
 }
@@ -523,8 +517,10 @@ void QgenAcm::copyChargesToAtoms(t_atoms *atoms)
 
 void QgenAcm::updatePositions(gmx::HostVector<gmx::RVec> x)
 {
-    GMX_RELEASE_ASSERT(x.size() - x_.size() == 0,
-                       "Arrays not equally long. Help!");
+    if (x.size() - x_.size() != 0)
+    {
+        GMX_THROW(gmx::InternalError(gmx::formatString("Arrays not equally long. New %zu Old %zu. Help!", x.size(), x_.size()).c_str()));
+    }
     for (auto i = 0; i < x.size(); i++)
     {
         copy_rvec(x[i], x_[i]);
@@ -591,7 +587,7 @@ int QgenAcm::solveEEM(FILE *fp)
         
         if (fp && (fabs(qtot - qtotal_) > 1e-2))
         {
-            fprintf(fp, "qtot = %g, it should be %g rhs[%zu] = %g\n",
+            fprintf(fp, "qtot = %g, it should be %d rhs[%zu] = %g\n",
                     qtot, qtotal_, nelem, rhs_[nelem]);
         }
     }
@@ -636,124 +632,125 @@ int QgenAcm::solveSQE(FILE                    *fp,
                       const Poldata           *pd,
                       const std::vector<Bond> &bonds)
 {
-    std::vector<double> rhs;
-    
+    std::vector<double> myq(nonFixed_.size(), 0.0);
+    int info   = 0;
     int nbonds = bonds.size();
-    MatrixWrapper lhs(nbonds, nbonds);
-    rhs.resize(nbonds, 0.0);
+    if (nbonds > 0)
+    {
+        MatrixWrapper lhs(nbonds, nbonds);
+        std::vector<double> rhs(nbonds, 0.0);
     
-    auto epsilonr = pd->getEpsilonR();
-    std::vector<double> delta_chis;
-    // First fill the matrix
-    for (int bij = 0; bij < nbonds; bij++)
-    {
-        auto ai      = bonds[bij].aI();
-        auto aj      = bonds[bij].aJ();
-        
-        double delta_chi = 0, hardness = 0;
-        getBccParams(pd, ai, aj, bonds[bij].bondOrder(),
-                     &delta_chi, &hardness);
-        if (debug)
-        {
-            fprintf(debug, "Delta_chi %10g Hardness %10g\n",
-                    delta_chi, hardness);
-        }
-        // The bonds use the original numbering, to get to the ACM data
-        // we have to map to numbers including shells.
-        delta_chis.push_back(delta_chi);
-        
-        for (int bkl = 0; bkl < nbonds; bkl++)
-        {
-            auto ak  = bonds[bkl].aI();
-            auto al  = bonds[bkl].aJ();
-            
-            double J = (Jcc_[ai][ak] - Jcc_[ai][al] - Jcc_[aj][ak] + Jcc_[aj][al]);
-            if (bij == bkl)
-            {
-                J += hardness;
-            }
-            lhs.set(bij, bkl, J);
-        }
-    }
-    if (debug)
-    {
-        fprintf(debug, "Jsqe\n");
-        for(int i = 0; i < nbonds; i++)
-        {
-            for(int j = 0; j <= i; j++)
-            {
-                fprintf(debug, " %7.2f", lhs.get(i, j));
-            }
-            fprintf(debug, "\n");
-        }
-    }
-    // Now fill the right hand side
-    std::vector<double> chi_corr;
-    chi_corr.resize(nonFixed_.size(), 0.0);
-    for(size_t i = 0; i < nonFixed_.size(); i++)
-    {
-        int  ai  = static_cast<int>(i);
-        auto nfi = nonFixed_[ai];
-        chi_corr[i] += chi0_[nfi];
+        auto epsilonr = pd->getEpsilonR();
+        std::vector<double> delta_chis;
+        // First fill the matrix
         for (int bij = 0; bij < nbonds; bij++)
         {
-            if (ai == bonds[bij].aI())
+            auto ai      = bonds[bij].aI();
+            auto aj      = bonds[bij].aJ();
+            
+            double delta_chi = 0, hardness = 0;
+            getBccParams(pd, ai, aj, bonds[bij].bondOrder(),
+                     &delta_chi, &hardness);
+            if (debug)
             {
-                chi_corr[i] += delta_chis[bij];
+                fprintf(debug, "Delta_chi %10g Hardness %10g\n",
+                        delta_chi, hardness);
             }
-            else if (ai == bonds[bij].aJ())
+            // The bonds use the original numbering, to get to the ACM data
+            // we have to map to numbers including shells.
+            delta_chis.push_back(delta_chi);
+            
+            for (int bkl = 0; bkl < nbonds; bkl++)
             {
-                chi_corr[i] -= delta_chis[bij];
+                auto ak  = bonds[bkl].aI();
+                auto al  = bonds[bkl].aJ();
+            
+                double J = (Jcc_[ai][ak] - Jcc_[ai][al] - Jcc_[aj][ak] + Jcc_[aj][al]);
+                if (bij == bkl)
+                {
+                    J += hardness;
+                }
+                lhs.set(bij, bkl, J);
             }
         }
-        double qcorr = qtotal_/nonFixed_.size();
-        for(size_t l = 0; l < nonFixed_.size(); l++)
+        if (debug)
         {
-            chi_corr[i] += Jcc_[i][l]*qcorr;
+            fprintf(debug, "Jsqe\n");
+            for(int i = 0; i < nbonds; i++)
+            {
+                for(int j = 0; j <= i; j++)
+                {
+                    fprintf(debug, " %7.2f", lhs.get(i, j));
+                }
+                fprintf(debug, "\n");
+            }
         }
-        // Check this! Only to be done when there are shells!
-        if (false && nonFixed_.size() < static_cast<size_t>(natom_))
+        // Now fill the right hand side
+        std::vector<double> chi_corr;
+        chi_corr.resize(nonFixed_.size(), 0.0);
+        for(size_t i = 0; i < nonFixed_.size(); i++)
         {
-            chi_corr[i] += jaa_[nfi] * q_[myShell_.find(nfi)->second];
-            chi_corr[i] += 0.5*calcJcs(nfi, epsilonr);
+            int  ai  = static_cast<int>(i);
+            auto nfi = nonFixed_[ai];
+            chi_corr[i] += chi0_[nfi];
+            for (int bij = 0; bij < nbonds; bij++)
+            {
+                if (ai == bonds[bij].aI())
+                {
+                    chi_corr[i] += delta_chis[bij];
+                }
+                else if (ai == bonds[bij].aJ())
+                {
+                    chi_corr[i] -= delta_chis[bij];
+                }
+            }
+            double qcorr = (1.0*qtotal_)/nonFixed_.size();
+            for(size_t l = 0; l < nonFixed_.size(); l++)
+            {
+                chi_corr[i] += Jcc_[i][l]*qcorr;
+            }
+            // Check this! Only to be done when there are shells!
+            if (false && nonFixed_.size() < static_cast<size_t>(natom_))
+            {
+                chi_corr[i] += jaa_[nfi] * q_[myShell_.find(nfi)->second];
+                chi_corr[i] += 0.5*calcJcs(nfi, epsilonr);
+            }
         }
-    }
-    for (int bij = 0; bij < nbonds; bij++)
-    {
-        auto ai    = bonds[bij].aI();
-        auto aj    = bonds[bij].aJ();
-        rhs[bij]   = chi_corr[aj] - chi_corr[ai];
-    }
-
-    std::vector<double> pij, myq;
-    pij.resize(nbonds, 0.0);
-    myq.resize(nonFixed_.size(), 0.0);
-    int info = lhs.solve(rhs, &pij);
-    if (info > 0)
-    {
-        return info;
-    }
-    if (fp)
-    {
-        fprintf(fp, "rhs: ");
-        for(auto &p: rhs)
+        for (int bij = 0; bij < nbonds; bij++)
         {
-            fprintf(fp, " %8g", p);
+            auto ai    = bonds[bij].aI();
+            auto aj    = bonds[bij].aJ();
+            rhs[bij]   = chi_corr[aj] - chi_corr[ai];
         }
-        fprintf(fp, "\n");
-        fprintf(fp, "pij: ");
-        for(auto &p: pij)
+        
+        std::vector<double> pij(nbonds, 0.0); 
+        info = lhs.solve(rhs, &pij);
+        if (info > 0)
         {
-            fprintf(fp, " %8g", p);
+            return info;
         }
-        fprintf(fp, "\n");
-    }
-    for (int bij = 0; bij < nbonds; bij++)
-    {
-        auto ai  = bonds[bij].aI();
-        auto aj  = bonds[bij].aJ();
-        myq[ai] += pij[bij];
-        myq[aj] -= pij[bij];
+        if (fp)
+        {
+            fprintf(fp, "rhs: ");
+            for(auto &p: rhs)
+            {
+                fprintf(fp, " %8g", p);
+            }
+            fprintf(fp, "\n");
+            fprintf(fp, "pij: ");
+            for(auto &p: pij)
+            {
+                fprintf(fp, " %8g", p);
+            }
+            fprintf(fp, "\n");
+        }
+        for (int bij = 0; bij < nbonds; bij++)
+        {
+            auto ai  = bonds[bij].aI();
+            auto aj  = bonds[bij].aJ();
+            myq[ai] += pij[bij];
+            myq[aj] -= pij[bij];
+        }
     }
     double qfixed = qtotal_;
     for (size_t i = 0; i < fixed_.size(); i++)
@@ -786,18 +783,18 @@ int QgenAcm::solveSQE(FILE                    *fp,
         fprintf(fp, "\n");
         if (fabs(qtot - qtotal_) > 1e-2)
         {
-            fprintf(fp, "qtot = %g, it should be %g\n", qtot, qtotal_);
+            fprintf(fp, "qtot = %g, it should be %d\n", qtot, qtotal_);
         }
     }
     return info;
 }
 
-eQgen QgenAcm::generateCharges(FILE                      *fp,
-                               const std::string         &molname,
-                               const Poldata             *pd,
-                               t_atoms                   *atoms,
-                               gmx::HostVector<gmx::RVec> x,
-                               const std::vector<Bond>   &bonds)
+eQgen QgenAcm::generateCharges(FILE                             *fp,
+                               const std::string                &molname,
+                               const Poldata                    *pd,
+                               t_atoms                          *atoms,
+                               const gmx::HostVector<gmx::RVec> &x,
+                               const std::vector<Bond>          &bonds)
 {
     if (nonFixed_.empty())
     {

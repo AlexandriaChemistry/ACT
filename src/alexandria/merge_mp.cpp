@@ -79,7 +79,6 @@ int merge_mp(int argc, char *argv[])
     static int                       compress    = 1;
     static real                      temperature = 298.15;
     static int                       maxwarn     = 0;
-    gmx_atomprop_t                   ap;
     t_pargs                          pa[]        =
     {
         { "-compress", FALSE, etBOOL, {&compress},
@@ -105,9 +104,8 @@ int merge_mp(int argc, char *argv[])
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
-    ap = gmx_atomprop_init();
     auto fns = opt2fns("-f", NFILE, fnm);
-    int nwarn = merge_xml(fns, &mp, nullptr, nullptr, nullptr, ap, true);
+    int nwarn = merge_xml(fns, &mp, nullptr, nullptr, nullptr, true);
 
     if (nwarn <= maxwarn)
     {

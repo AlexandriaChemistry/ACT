@@ -42,6 +42,7 @@
 #include "act/qgen/qtype.h"
 #include "act/utility/communicationrecord.h"
 #include "act/utility/regression.h"
+#include "alexandria/fragmenthandler.h"
 #include "alexandria/gentop_vsite.h"
 #include "alexandria/molselect.h"
 #include "alexandria/mymol_low.h"
@@ -109,6 +110,8 @@ namespace alexandria
         std::unique_ptr<gmx::MDAtoms>   *MDatoms_        = nullptr;
         std::unique_ptr<gmx::MDModules> *mdModules_      = nullptr;
         MyForceProvider                 *myforce_        = nullptr;
+        //! How to renumber input atom numbers to numbers with shells
+        std::vector<int>                 shellRenumber_;
         //GentopVsites                     gvt_;
         //! This points to the atom indices before shells were added
         std::map<int, int>               originalAtomIndex_;
@@ -261,7 +264,8 @@ namespace alexandria
         std::vector<int>               symmetric_charges_;
         std::vector<std::string>       error_messages_;
         eSupport                       eSupp_         = eSupport::Local;
-        QgenAcm                       *QgenAcm_        = nullptr;
+        //! Structure to manage charge generation
+        FragmentHandler               *fraghandler_   = nullptr;
    public:
   
         /*! \brief
@@ -322,17 +326,6 @@ namespace alexandria
         //! Return the reference intensities collected earlier
         const std::vector<double> &referenceIntensities() const { return ref_intensities_; }
                 
-        //! \return the ACM data structure
-        QgenAcm *qgenAcm() { return QgenAcm_; }
-        /*! \brief
-         * \return the center of nuclear charge
-         */
-
-        /*! Set a pointer to a new QgenAcm
-         * \param[in] act/qgen/qgenAcm The pointer to an initiated class
-         */
-        void setQgenAcm(QgenAcm *qgenAcm) { QgenAcm_ = std::move(qgenAcm); }
-
         //! \return the center of charge
         const rvec &centerOfCharge() const { return CenterOfCharge_; }
 
@@ -384,6 +377,10 @@ namespace alexandria
          * \return atoms structure for editing
          */
         t_atoms *atoms();
+        
+        /*! \brief Return the fragment handler
+         */
+        const FragmentHandler *fragmentHandler() const { return fraghandler_; }
         
         /*! \brief
          * \return atoms const structure

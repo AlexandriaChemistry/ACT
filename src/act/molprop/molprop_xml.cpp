@@ -123,6 +123,7 @@ enum class MolPropXml {
     HARMONIC,
     FRAGMENTS,
     FRAGMENT,
+    IDENTIFIER,
     FREQUENCY,
     INTENSITY,
     FREQUENCY_UNIT,
@@ -202,6 +203,9 @@ std::map<const std::string, MolPropXml> xmlxxx =
 {
     { "molecules",        MolPropXml::MOLECULES      },
     { "molecule",         MolPropXml::MOLECULE       },
+    { "fragments",        MolPropXml::FRAGMENTS      },
+    { "fragment",         MolPropXml::FRAGMENT       },
+    { "identifier",       MolPropXml::IDENTIFIER     },
     { "harmonics",        MolPropXml::HARMONICS      },
     { "harmonic",         MolPropXml::HARMONIC       },
     { "frequency",        MolPropXml::FREQUENCY      },
@@ -388,13 +392,7 @@ static void get_attributes(FILE                              *fp,
 static void get_molecule_attributes(std::map<MolPropXml, std::string> *xbuf,
                                     MolProp                           *mp)
 {
-    auto ff = xbuf->find(MolPropXml::FORMULA);
-    if (xbuf->end() != ff)
-    {
-        mp->SetFormula(ff->second);
-        xbuf->erase(ff);
-    }
-    ff = xbuf->find(MolPropXml::MOLNAME);
+    auto ff = xbuf->find(MolPropXml::MOLNAME);
     if (xbuf->end() != ff)
     {
         mp->SetMolname(ff->second);
@@ -558,18 +556,22 @@ static void mp_process_tree(FILE                              *fp,
                     {
                         std::vector<MolPropXml> clean1 = {
                             MolPropXml::CHARGE, MolPropXml::MULTIPLICITY,
-                            MolPropXml::MASS,   MolPropXml::FRAGMENT
+                            MolPropXml::MASS,   MolPropXml::FRAGMENT,
+                            MolPropXml::FORMULA
                         };
+                        mp_process_tree(fp, tree->children, molprops, xbuf);
                         if ((nullptr != mpt) && xmlFound(xbuf, clean1))
                         {
                             std::vector<int> atoms;
                             for(auto &ss : gmx::splitString(xbuf->find(MolPropXml::FRAGMENT)->second))
                             {
-                                atoms.push_back(my_atoi(ss.c_str(), rmap[MolPropXml::FRAGMENT].c_str()));
+                                atoms.push_back(my_atoi(ss.c_str(), rmap[MolPropXml::FRAGMENT].c_str())-1);
                             }
-                            mpt->addFragment(Fragment(xbuf_atof(xbuf, MolPropXml::MASS),
+                            mpt->addFragment(Fragment(xbuf->find(MolPropXml::IDENTIFIER)->second,
+                                                      xbuf_atof(xbuf, MolPropXml::MASS),
                                                       xbuf_atoi(xbuf, MolPropXml::CHARGE),
                                                       xbuf_atoi(xbuf, MolPropXml::MULTIPLICITY),
+                                                      xbuf->find(MolPropXml::FORMULA)->second,
                                                       atoms));
                         }
                     }
@@ -1029,15 +1031,16 @@ static void add_xml_molprop(xmlNodePtr     parent,
 {
     xmlNodePtr ptr = add_xml_child(parent, rmap[MolPropXml::MOLECULE]);
     add_xml_string(ptr, rmap[MolPropXml::MOLNAME], mp.getMolname());
-    add_xml_string(ptr, rmap[MolPropXml::FORMULA], mp.formula());
     
     xmlNodePtr child = add_xml_child(ptr, rmap[MolPropXml::FRAGMENTS]);
     for(const auto &f : mp.fragments())
     {
         xmlNodePtr grandChild = add_xml_child_val(child, rmap[MolPropXml::FRAGMENT], f.atomString().c_str());
+        add_xml_string(grandChild, rmap[MolPropXml::IDENTIFIER], f.id());
         add_xml_double(grandChild, rmap[MolPropXml::MASS], f.mass());
         add_xml_double(grandChild, rmap[MolPropXml::CHARGE], f.charge());
         add_xml_double(grandChild, rmap[MolPropXml::MULTIPLICITY], f.multiplicity());
+        add_xml_string(grandChild, rmap[MolPropXml::FORMULA], f.formula());
     }
     child = add_xml_child(ptr, rmap[MolPropXml::MOLINFO]);
     add_xml_string(child, rmap[MolPropXml::IUPAC], mp.getIupac());

@@ -88,17 +88,10 @@ static void dump_molecule(FILE              *fp,
             { MolPropObservable::POLARIZABILITY, iqmType::Both },
         };
        
-        fprintf(fp, "Molecule: %s Formula: %s\n", mymol.getMolname().c_str(),
-                mymol.formula().c_str());
+        fprintf(fp, "Molecule: %s\n", mymol.getMolname().c_str());
         for(const auto &f : mymol.fragments())
         {
-            fprintf(fp, "Fragment qtot = %d, multiplicity = %d atoms:", f.charge(),
-                    f.multiplicity());
-            for(const auto &a : f.atoms())
-            {
-                fprintf(fp, " %d", a);
-            }
-            fprintf(fp, "\n");
+            f.dump(fp);
         }
         mymol.getExpProps(iqm, "", "", &pd, -1);
         mymol.Dump(fp);

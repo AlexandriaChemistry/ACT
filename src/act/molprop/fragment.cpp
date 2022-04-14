@@ -41,16 +41,46 @@ void Fragment::makeAtomString()
     atomString_.clear();
     for(auto &a : atoms_)
     {
-        atomString_ += gmx::formatString(" %d", a);
+        atomString_ += gmx::formatString(" %d", a+1);
     }
 }
 
+void Fragment::makeTexFormula()
+{
+    texform_.clear();
+    for(const auto c : formula_)
+    {
+        if (isdigit(c))
+        {
+            texform_ += gmx::formatString("$_%c$", c);
+        }
+        else
+        {
+            texform_ += c;
+        }
+    }
+}
+
+void Fragment::dump(FILE *fp) const
+{
+    if (!fp)
+    {
+        return;
+    }
+    fprintf(fp, "Fragment %s mass %g formula %s charge %d multiplicity %d atoms %s\n",
+            id_.c_str(), mass_, formula_.c_str(), charge_, multiplicity_,
+            atomString_.c_str());
+}
+    
 CommunicationStatus Fragment::Receive(const CommunicationRecord *cr, int src)
 {
     CommunicationStatus cs = CommunicationStatus::OK;
     mass_         = cr->recv_double(src);
     charge_       = cr->recv_int(src);
     multiplicity_ = cr->recv_int(src);
+    cr->recv_str(src, &formula_);
+    cr->recv_str(src, &texform_);
+    cr->recv_str(src, &id_);
     int natom     = cr->recv_int(src);
     atoms_.clear();
     for(int i = 0; i < natom; i++)
@@ -66,6 +96,9 @@ CommunicationStatus Fragment::Send(const CommunicationRecord *cr, int dest) cons
     cr->send_double(dest, mass_);
     cr->send_int(dest, charge_);
     cr->send_int(dest, multiplicity_);
+    cr->send_str(dest, &formula_);
+    cr->send_str(dest, &texform_);
+    cr->send_str(dest, &id_);
     cr->send_int(dest, atoms_.size());
     for(auto &a : atoms_)
     {

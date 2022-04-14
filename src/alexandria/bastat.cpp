@@ -190,7 +190,6 @@ int bastat(int argc, char *argv[])
     time_t                           my_t;
     gmx_output_env_t                *oenv      = nullptr;
     Poldata                          pd;
-    gmx_atomprop_t                   aps;
     MolSelect                        gms;
     std::vector<alexandria::MolProp> mp;
     std::string                      method, basis;
@@ -219,7 +218,6 @@ int bastat(int argc, char *argv[])
     fprintf(fp, "# There are %d molecules.\n#\n", (gms.count(iMolSelect::Train) + gms.count(iMolSelect::Test)));
 
     /* Read standard atom properties */
-    aps = gmx_atomprop_init();
     print_memory_usage(debug);
 
     /* Read PolData */
@@ -235,7 +233,7 @@ int bastat(int argc, char *argv[])
     pd.setPolarizable(false);
 
     /* Read Molprops */
-    auto nwarn = merge_xml(opt2fns("-f", NFILE, fnm), &mp, nullptr, nullptr, nullptr, aps, true);
+    auto nwarn = merge_xml(opt2fns("-f", NFILE, fnm), &mp, nullptr, nullptr, nullptr, true);
     print_memory_usage(debug);
 
     if (nwarn > maxwarn)

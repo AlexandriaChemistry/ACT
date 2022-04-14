@@ -327,11 +327,10 @@ bool readBabel(const char          *g09,
     std::string                attr;
     std::string                value;
     einformat                  inputformat = einfNotGaussian;
-    const char                *reference   = "Ghahremanpour2022a";
+    const char                *reference   = "Spoel2022a";
     const char                *mymol       = "AMM";
     const char                *myprogram   = "ACT2022";
     const char                *mybasis     = "";
-
 
     /* Variables to read a Gaussian log file */
     char                      *g09ptr;
@@ -440,7 +439,6 @@ bool readBabel(const char          *g09,
     }
 
     alexandria::Experiment exp(program, method, basis, reference, conformation, g09ptr, jobtype);
-    mpt->SetFormula(mol.GetFormula());
     // We don't just set this here, since the user may override the value
     // However, it seems that OB does not extract this correctly from
     // the input, unless it is a Gaussian log file.
@@ -588,7 +586,8 @@ bool readBabel(const char          *g09,
         ff->GetAtomTypes(mol);
         FOR_ATOMS_OF_MOL (atom, mol)
         {
-            atomIndices.push_back(atom->GetIdx());
+            // For our molecular fragments the indices start at 0
+            atomIndices.push_back(atom->GetIdx()-1);
             OpenBabel::OBPairData *type = (OpenBabel::OBPairData*) atom->GetData("FFAtomType");
             if (nullptr == type)
             {
@@ -649,7 +648,7 @@ bool readBabel(const char          *g09,
         return false;
     }
     // Fragment infor
-    Fragment f(mol.GetMolWt(), *qtot, mol.GetTotalSpinMultiplicity(), atomIndices);
+    Fragment f("1", mol.GetMolWt(), *qtot, mol.GetTotalSpinMultiplicity(), mol.GetFormula(), atomIndices);
     mpt->addFragment(f);
 
     // Bonds
@@ -745,10 +744,10 @@ bool SetMolpropAtomTypesAndBonds(alexandria::MolProp *mmm)
     mol.ConnectTheDots();
     mol.PerceiveBondOrders();
     mol.EndModify();
-    mmm->SetFormula(mol.GetFormula());
     if (!frags.empty())
     {
         frags[0].setMass(mol.GetMolWt());
+        frags[0].setFormula(mol.GetFormula());
     }
     const char *forcefield = "alexandria";
     auto        pFF        = OpenBabel::OBForceField::FindForceField(forcefield);

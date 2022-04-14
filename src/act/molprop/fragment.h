@@ -32,6 +32,7 @@
 #ifndef FRAGMENT_H
 #define FRAGMENT_H
 
+#include <cstdio>
 #include <vector>
 
 #include "act/utility/communicationrecord.h"
@@ -48,33 +49,57 @@ namespace alexandria
 class Fragment
 {
  private:
+    //! Identifier for this fragment
+    std::string      id_;
     //! Mass of this fragment
     double           mass_         = 0.0;
     //! Charge of this fragment
     int              charge_       = 0;
     //! Multiplicity of this fragment
     int              multiplicity_ = 1;
-    //! The atom indices starting at zero in this fragment
+    //! The formula of this fragment
+    std::string      formula_;
+    //! The formula of this fragment formatted for LaTeX
+    std::string      texform_;
+    //! The atom indices starting at 0 in this fragment
     std::vector<int> atoms_;
-    //! String containing the atom indices
+    //! String containing the atom indices, starting from 1 for storing in XML files.
     std::string      atomString_;
     
+    //! Convert atom numbers to a string
     void makeAtomString();
+    
+    //! Convert formula to a LaTeX compatible one.
+    void makeTexFormula();
+
  public:
     //! Default constructor
     Fragment() {}
     
     /*! \brief Constructor with initiation
      */
-    Fragment(double                  mass,
+    Fragment(const std::string      &id,
+             double                  mass,
              int                     charge,
              int                     multiplicity,
-             const std::vector<int> &atoms) : mass_(mass), charge_(charge),
-        multiplicity_(multiplicity), atoms_(atoms)
+             const std::string      &formula,
+             const std::vector<int> &atoms) : 
+        id_(id), mass_(mass), charge_(charge),
+        multiplicity_(multiplicity),
+        formula_(formula), atoms_(atoms)
     {
         makeAtomString();
+        makeTexFormula();
     }
        
+    //! Return the id
+    const std::string &id() const { return id_; }
+    
+    /*! Set the identifier
+     * \param[in] id The new identifier
+     */
+    void setId(const std::string &id) { id_ = id; }
+    
     //! Return the mass
     double mass() const { return mass_; }
     
@@ -89,6 +114,19 @@ class Fragment
     //! Return the multiplicity
     int multiplicity() const { return multiplicity_; }
     
+    //! Return the formula
+    const std::string &formula() const { return formula_; }
+
+    //! Return the formula
+    void setFormula(const std::string &formula)
+    { 
+        formula_ = formula;
+        makeTexFormula();
+    }
+    
+    //! Return the formula for LaTeX
+    const std::string &texFormula() const { return texform_; }
+
     //! Set the atoms
     void setAtoms(const std::vector<int> &atoms)
     {
@@ -101,6 +139,11 @@ class Fragment
     
     //! Return a string containing the atom numbers
     const std::string &atomString() const { return atomString_; }
+    
+    /*! Write the content of this fragment to a file
+     * \param[in] fp The file pointer, if nullptr function will do nothing
+     */
+    void dump(FILE *fp) const;
     
     /*! \brief
      * Sends this object over an MPI connection

@@ -45,6 +45,7 @@ target_sources(actLib
            devcomputer.cpp
            dissociation_energy.cpp
            fill_inputrec.cpp
+           fragmenthandler.cpp
            gentop.cpp
            gromacs_top.cpp
            mcmcmutator.cpp

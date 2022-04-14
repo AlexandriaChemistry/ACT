@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020
+ * Copyright (C) 2014-2022
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -126,9 +126,8 @@ static void gmx_molprop_csv(const char                 *fn,
     }
     for (mpi = mp.begin(); (mpi < mp.end()); mpi++)
     {
-        fprintf(fp, "\"%s\",\"%s\",\"%s\"",
+        fprintf(fp, "\"%s\",\"%s\"",
                 mpi->getIupac().c_str(),
-                mpi->formula().c_str(),
                 mpi->getInchi().c_str());
         for (int k = 0; (k < NEMP); k++)
         {

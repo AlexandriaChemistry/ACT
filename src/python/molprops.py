@@ -145,7 +145,8 @@ class Fragment:
     means compounds in e.g. a dimer.
     '''
     
-    def __init__(self, charge:int, multiplicity:int, atoms:list, mass:float, formula: str):
+    def __init__(self, identifier:str, charge:int, multiplicity:int, atoms:list, mass:float, formula: str):
+        self.identifier   = identifier
         self.charge       = charge
         self.multiplicity = multiplicity
         self.mass         = mass
@@ -158,6 +159,7 @@ class Fragment:
         self.atoms = self.atoms.strip()
         
     def add_xml(self, xml):
+        xml.set("identifier", self.identifier)
         xml.set("charge", str(self.charge))
         xml.set("multiplicity", str(self.multiplicity))
         xml.set("mass", str(self.mass))

@@ -78,13 +78,13 @@ public:
     
     /*! \brief Constructor
      * 
-     * \param[in] pd        Force field information
-     * \param[in] atoms     Atoms data
-     * \param[in] fragments Information on fragments of a molecule
+     * \param[in] pd     Force field information
+     * \param[in] atoms  Atoms data
+     * \param[in] qtotal The total charge in this compound
      */
-    QgenAcm(const Poldata               *pd,
-            t_atoms                     *atoms,
-            const std::vector<Fragment> *fragments);
+    QgenAcm(const Poldata *pd,
+            t_atoms       *atoms,
+            int            qtotal);
     
     /*! \brief Routine that computes the charges
      * 
@@ -99,7 +99,7 @@ public:
                           const std::string                &molname,
                           const Poldata                    *pd,
                           t_atoms                          *atoms,
-                          const gmx::HostVector<gmx::RVec>  x,
+                          const gmx::HostVector<gmx::RVec> &x,
                           const std::vector<Bond>          &bonds);
                           
     /*! \brief Return a status message
@@ -142,8 +142,6 @@ private:
     eQgen                            eQGEN_       = eQgen::OK;
     //! Whether or not a warning has been issued
     gmx_bool                         bWarned_     = false;
-    //! Information about molecule fragments
-    const std::vector<Fragment>     *fragments_;
     //! Total charge
     int                              qtotal_      = 0;
     //! Whether or not shells are present

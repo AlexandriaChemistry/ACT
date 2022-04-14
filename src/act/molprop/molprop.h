@@ -77,7 +77,7 @@ private:
     int                               natom_        = 0;
     //! Whether or not all atoms have proper atom types
     bool                              hasAllAtomTypes_ = false;
-    std::string                       formula_, texform_, molname_, iupac_, cas_, cid_, inchi_;
+    std::string                       molname_, iupac_, cas_, cid_, inchi_;
     std::vector<std::string>          category_;
     //! Elemental composition of the compound
     std::map<const char *,int>        composition_;
@@ -113,33 +113,18 @@ public:
     //! Dump the contents of this object to a file
     void Dump(FILE *fp) const;
     
-    //! Set the LaTeX formula
-    void SetTexFormula(const std::string &formula) { texform_.assign(formula); }
-    
-    //! Set the formula
-    void SetFormula(const std::string &formula) { formula_.assign(formula); }
-    
-    //! \return the formula
-    const std::string &formula() const { return formula_; }
-    
     //! \return the LaTeX formula
-    const std::string &getTexFormula() const;
+    std::string texFormula() const;
     
     //! \brief Generate the elemental composition
     void generateComposition();
     
     //! \return The elemental composition
     const std::map<const char *,int> &composition() const { return composition_; }
-    /*! \brief
-     * Generate the chemical formula for this molecule based on atoms
-     * present in a calculation
-     *
-     * \param[in] ap Data structure containing information about atoms
-     * \todo Check and double check. If there is no calculation data no
-     * formula can be generated
-     */
-    bool GenerateFormula(gmx_atomprop_t ap);
     
+    //! \return Formula for compound or complex
+    std::string formula() const;
+
     //! Set the molname
     void SetMolname(const std::string &molname) { molname_ = molname; }
     

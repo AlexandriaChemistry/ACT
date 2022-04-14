@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020 
+ * Copyright (C) 2014-2022
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -276,8 +276,8 @@ void ReadSqlite3(const char           *sqlite_file,
                                                  { return molname.compare(s.molname()) == 0; });
         if (synonyms.end() == keyptr)
         {
-            fprintf(stderr, "Warning: missing iupac for %s (%s). Will be ignored.\n",
-                    molname.c_str(), mpi->formula().c_str());
+            fprintf(stderr, "Warning: missing iupac for %s. Will be ignored.\n",
+                    molname.c_str());
         }
         else
         {

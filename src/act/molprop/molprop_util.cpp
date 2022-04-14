@@ -88,15 +88,6 @@ void generate_composition(std::vector<MolProp> &mp)
 }
 #endif
 
-void generate_formula(std::vector<MolProp> &mp,
-                      gmx_atomprop_t        ap)
-{
-    for (auto &mpi : mp)
-    {
-        mpi.GenerateFormula(ap);
-    }
-}
-
 int MergeDoubleMolprops(std::vector<alexandria::MolProp> *mp,
                         char                             *doubles,
                         bool                              bForceMerge)
@@ -199,7 +190,6 @@ static void dump_mp(std::vector<alexandria::MolProp> *mp)
 int merge_xml(gmx::ArrayRef<const std::string> filens,
               std::vector<alexandria::MolProp> *mpout,
               char *outf, char *sorted, char *doubles,
-              gmx_atomprop_t ap,
               bool bForceMerge)
 {
     int npout = 0, tmp;
@@ -212,8 +202,6 @@ int merge_xml(gmx::ArrayRef<const std::string> filens,
             continue;
         }
         MolPropRead(fn.c_str(), &mp);
-        //generate_composition(mp);
-        generate_formula(mp, ap);
         for (auto mpi : mp)
         {
             mpout->push_back(std::move(mpi));

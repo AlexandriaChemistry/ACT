@@ -87,7 +87,6 @@ protected:
             char mbuf[256];
             snprintf(mbuf, sizeof(mbuf), "molecule %d name", mol);
             myCheck.checkString(mpi.getMolname(), mbuf);
-            mpi.GenerateFormula(aps_);
             snprintf(mbuf, sizeof(mbuf), "molecule %d formula", mol);
             myCheck.checkString(mpi.formula(), mbuf);
             snprintf(mbuf, sizeof(mbuf), "molecule %d number of bonds", mol);
