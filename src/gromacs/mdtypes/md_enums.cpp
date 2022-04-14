@@ -128,7 +128,7 @@ const char *enbf_names[eNBF_NR+1] = {
 };
 
 const char *ecomb_names[eCOMB_NR+1] = {
-    "", "Geometric", "Arithmetic", "GeomSigEps", "Kong_Mason",nullptr
+    "", "Geometric", "Arithmetic", "GeomSigEps", "Kong_Mason", "Hogervorst", "Yang", "Qi", "Waldman_Hagler", nullptr
 };
 
 const char *esimtemp_names[esimtempNR+1] = {

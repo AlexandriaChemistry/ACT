@@ -35,6 +35,7 @@
 
 #include "act/molprop/molpropobservable.h"
 #include "act/utility/units.h"
+#include "gromacs/math/units.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/linearalgebra/eigensolver.h"
 #include "gromacs/math/do_fit.h"
@@ -214,7 +215,10 @@ void MolHandler::nma(MyMol               *mol,
         }
         else
         {
-            frequencies->push_back(std::sqrt(val));
+            #define SOL_CM_PER_S 29979245800
+            frequencies->push_back(
+                1.0/(2.0*M_PI*SOL_CM_PER_S) * 1E12 * std::sqrt(val)
+            );
         }
     }
 
