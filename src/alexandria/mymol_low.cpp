@@ -353,7 +353,7 @@ static void getBhamParams(const ForceFieldParameterList &fa,
             *c = 0.5 * (gammaI + gammaJ);  
             *b = (2.0 * epsilonI * epsilonJ)/(epsilonI + epsilonJ); 
             *a = pow(((std::sqrt(((epsilonI*gammaI*pow(sigmaI,6))/(gammaI-6))*((epsilonJ*gammaJ*pow(sigmaJ,6))/(gammaJ-6)))*(*c - 6))/(*b * *c)),(1/6.0));
-            break;
+            break;   
         case eCOMB_YANG: // Yang, JPhysChemA, Volume: 122, Page: 1672, Year: 2018. Combination rules for Morse.
             *a = ((sigmaI * sigmaJ) *  (sigmaI + sigmaJ))/ (pow(sigmaI,2) + pow(sigmaJ,2));
             *b = (2.0 * epsilonI * epsilonJ)/(epsilonI + epsilonJ);
@@ -363,7 +363,7 @@ static void getBhamParams(const ForceFieldParameterList &fa,
             *a = (pow(sigmaI,3) + pow(sigmaJ,3))/(pow(sigmaI,2) + pow(sigmaJ,2));
             *b = std::sqrt(epsilonI * epsilonJ) * ((2.0 * pow(epsilonI,3) * pow(epsilonJ,3))/(pow(epsilonI,6) + pow(epsilonJ,6)));
             *c = 0.5 * (gammaI + gammaJ);
-            break
+            break;
         case eCOMB_WALDMAN_HAGLER: // Waldman & Hagler, J. Comp. Chem., Year: 1993. 
             *a = pow(((pow(sigmaI,6)+pow(sigmaJ,6))/2.0),(1/6));
             *b = std::sqrt(epsilonI * epsilonJ) * ((2.0 * pow(epsilonI,3) * pow(epsilonJ,3))/(pow(epsilonI,6) + pow(epsilonJ,6)));
