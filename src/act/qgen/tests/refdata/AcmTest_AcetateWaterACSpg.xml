@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="qtotSize">20</Int>
+  <Sequence Name="qtotValuesEqdAlgorithm_SQE">
+    <Int Name="Length">20</Int>
+    <Real>0.72395189652208591</Real>
+    <Real>-1.2</Real>
+    <Real>0.89124108413504644</Real>
+    <Real>-1.2</Real>
+    <Real>0.78955860093864128</Real>
+    <Real>-1.2</Real>
+    <Real>0.78955860093864116</Real>
+    <Real>-1.2</Real>
+    <Real>1.0022416983322764</Real>
+    <Real>-0.80000000000000004</Real>
+    <Real>1.0012064208010309</Real>
+    <Real>-0.80000000000000004</Real>
+    <Real>1.0022416983322768</Real>
+    <Real>-0.80000000000000004</Real>
+    <Real>1.067301371336699</Real>
+    <Real>-0.80000000000000004</Real>
+    <Real>0.66539725732660182</Real>
+    <Real>-1.2</Real>
+    <Real>1.067301371336699</Real>
+    <Real>-0.80000000000000004</Real>
+  </Sequence>
+  <Real Name="Molecule 1 charge">-1.0000000000000009</Real>
+  <Real Name="Molecule 2 charge">-2.2204460492503131e-16</Real>
+</ReferenceData>
