@@ -215,11 +215,9 @@ void MolHandler::nma(MyMol               *mol,
         }
         else
         {
-            // SPEED_OF_LIGHT is in nm/ps, sqrt(val) is in ps. Have to convert nm
-            // into cm by multiplying by 1E-7
-            #define CM_PER_NM 1E-7
+            #define SOL_CM_PER_S 29979245800
             frequencies->push_back(
-                1.0/(2.0*M_PI*SPEED_OF_LIGHT*CM_PER_NM) * std::sqrt(val)
+                1.0/(2.0*M_PI*SOL_CM_PER_S) * 1E12 * std::sqrt(val)
             );
         }
     }
