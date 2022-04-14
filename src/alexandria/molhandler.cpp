@@ -35,6 +35,7 @@
 
 #include "act/molprop/molpropobservable.h"
 #include "act/utility/units.h"
+#include "gromacs/math/units.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/linearalgebra/eigensolver.h"
 #include "gromacs/math/do_fit.h"
@@ -214,7 +215,12 @@ void MolHandler::nma(MyMol               *mol,
         }
         else
         {
-            frequencies->push_back(std::sqrt(val));
+            // SPEED_OF_LIGHT is in nm/ps, sqrt(val) is in ps. Have to convert nm
+            // into cm by multiplying by 1E-7
+            #define CM_PER_NM 1E-7
+            frequencies->push_back(
+                1.0/(2.0*M_PI*SPEED_OF_LIGHT*CM_PER_NM) * std::sqrt(val)
+            );
         }
     }
 

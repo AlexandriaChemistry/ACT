@@ -82,7 +82,7 @@ public:
      * hessian matrix to the debug file, if not nullptr.
      * 
      * \param[in] mol          The molecule to analyze
-     * \param[out] frequencies The normal mode frequencies
+     * \param[out] frequencies The normal mode frequencies (in cm^-1)
      * \param[out] intensities The normal mode intensities
      * \param[in] fp           File to write frequencies to, maybe nullptr
      */
