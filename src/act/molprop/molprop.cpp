@@ -544,7 +544,8 @@ CommunicationStatus MolProp::Send(const CommunicationRecord *cr, int dest) const
         cr->send_int(dest, bond_.size());
         cr->send_int(dest, category_.size());
         cr->send_int(dest, exper_.size());
-
+        cr->send_int(dest, fragment_.size());
+        
         /* Send Bonds */
         for (auto &bi : bondsConst())
         {
@@ -555,7 +556,7 @@ CommunicationStatus MolProp::Send(const CommunicationRecord *cr, int dest) const
             }
         }
 
-        /* send Categories */
+        /* Send Categories */
         if (CommunicationStatus::OK == cs)
         {
             for (auto &si : categoryConst())
@@ -572,7 +573,20 @@ CommunicationStatus MolProp::Send(const CommunicationRecord *cr, int dest) const
                 }
             }
         }
-
+        
+        /* Send Fragments */
+        if (CommunicationStatus::OK == cs)
+        {
+            for(auto &f : fragments())
+            {
+                cs = f.Send(cr, dest);
+                if (CommunicationStatus::OK != cs)
+                {
+                    break;
+                }
+            }
+        }
+             
         /* Send Experiments */
         if (CommunicationStatus::OK == cs)
         {
@@ -598,7 +612,6 @@ CommunicationStatus MolProp::Send(const CommunicationRecord *cr, int dest) const
 CommunicationStatus MolProp::Receive(const CommunicationRecord *cr, int src)
 {
     CommunicationStatus cs = CommunicationStatus::OK;
-    int                 Nbond, Ncategory, Nexper;
 
     /* Generic stuff */
     if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
@@ -610,9 +623,10 @@ CommunicationStatus MolProp::Receive(const CommunicationRecord *cr, int src)
         cr->recv_str(src, &cas_);
         cr->recv_str(src, &cid_);
         cr->recv_str(src, &inchi_);
-        Nbond     = cr->recv_int(src);
-        Ncategory = cr->recv_int(src);
-        Nexper    = cr->recv_int(src);
+        int Nbond     = cr->recv_int(src);
+        int Ncategory = cr->recv_int(src);
+        int Nexper    = cr->recv_int(src);
+        int Nfrag     = cr->recv_int(src);
 
         if (nullptr != debug)
         {
@@ -650,6 +664,17 @@ CommunicationStatus MolProp::Receive(const CommunicationRecord *cr, int src)
                 {
                     gmx_fatal(FARGS, "A category was promised but I got a nullptr pointer");
                 }
+            }
+        }
+
+        //! Receive Fragments
+        for (int n = 0; (CommunicationStatus::OK == cs) && (n < Nfrag); n++)
+        {
+            Fragment f;
+            cs = f.Receive(cr, src);
+            if (CommunicationStatus::OK == cs)
+            {
+                fragment_.push_back(std::move(f));
             }
         }
 

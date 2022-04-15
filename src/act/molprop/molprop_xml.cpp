@@ -573,6 +573,7 @@ static void mp_process_tree(FILE                              *fp,
                                                       xbuf_atoi(xbuf, MolPropXml::MULTIPLICITY),
                                                       xbuf->find(MolPropXml::FORMULA)->second,
                                                       atoms));
+                            clean_xbuf(xbuf, clean1);
                         }
                     }
                     break;

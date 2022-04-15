@@ -15,8 +15,9 @@ FragmentHandler::FragmentHandler(const Poldata               *pd,
                                  const std::vector<Fragment> *fragments,
                                  const std::vector<int>      &shellRenumber)
 {
-    GMX_RELEASE_ASSERT(fragments != nullptr, "Empty fragments passed. Wazzuppwitdat?");
-    //fragments_ = fragments;
+    GMX_RELEASE_ASSERT(fragments != nullptr,
+                       "Empty fragments passed. Wazzuppwitdat?");
+
     FragAtoms_.resize(fragments->size());
     bonds_.resize(fragments->size());
     natoms_           = 0;
@@ -35,6 +36,7 @@ FragmentHandler::FragmentHandler(const Poldata               *pd,
             auto anew = a;
             if (!shellRenumber.empty())
             {
+                GMX_RELEASE_ASSERT(a < shellRenumber.size(), "Atom number out of range");
                 anew = shellRenumber[a];
             }
             // We add the new atom index, but relative to the first atom

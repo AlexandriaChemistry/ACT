@@ -1626,6 +1626,7 @@ immStatus MyMol::GenerateAcmCharges(const Poldata *pd)
     }
     std::vector<double> qold;
     fraghandler_->fetchCharges(&qold);
+    GMX_RELEASE_ASSERT(qold.size()-atoms()->nr == 0, "Cannot fetch old charges");
     
     immStatus imm       = immStatus::OK;
     int       iter      = 0;
@@ -1646,7 +1647,8 @@ immStatus MyMol::GenerateAcmCharges(const Poldata *pd)
             EemRms = 0;
             std::vector<double> qnew;
             fraghandler_->fetchCharges(&qnew);
-            for (int i = 0; i < mtop_->natoms; i++)
+            GMX_RELEASE_ASSERT(qold.size()==qnew.size(), "Cannot fetch new charges");
+            for (size_t i = 0; i < qnew.size(); i++)
             {
                 EemRms  += gmx::square(qnew[i] - qold[i]);
                 qold[i]  = qnew[i];
