@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2021
+ * Copyright (C) 2014-2022
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -72,38 +72,30 @@ void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
                    "Deduce bond/angle/dihedral distributions from a set of strucures and create a new force field file.");
     registerModule(manager, &alexandria::analyze, "analyze",
                    "Analyze molecular- or force field properties from a database and generate publication quality tables in LaTeX.");
-    //    registerModule(manager, &alexandria::gen_table, "gen_table",
-    //             "Generate tables for interaction functions used in mdrun");
     registerModule(manager, &alexandria::poldata_edit, "poldata_edit",
                    "Manipulate force field files in various ways and test whether reading and writing works.");
     registerModule(manager, &alexandria::molprop_test, "molprop_test",
                    "Test reading and writing the molecular property file.");
     registerModule(manager, &alexandria::molprop_check, "molprop_check",
                    "Check the molecular property file for missing hydrogens and for whether it is possible to generate topologies for all compounds.");
-    registerModule(manager, &alexandria::qm2molprop, "qm2molprop",
-                   "Convert a Gaussian or Psi4 output to a molecular property file.");
     registerModule(manager, &alexandria::mp2csv, "mp2csv",
                    "Utility to dump a molecular property file to a spreadsheet.");
     registerModule(manager, &alexandria::merge_mp, "merge_mp",
                    "Utility to merge a number of molecular property files and a SQLite database.");
     registerModule(manager, &alexandria::merge_pd, "merge_pd",
                    "Utility to merge a number of gentop files and write a new file with average parameters. Can also write a LaTeX table.");
-    //registerModule(manager, &alexandria::molselect, "molselect",
-    //             "Utility to generate random samples from molprop database");
 
     {
         gmx::CommandLineModuleGroup group =
             manager->addModuleGroup("Alexandria core tools");
         group.addModule("bastat");
         group.addModule("tune_ff");
-        group.addModule("qm2molprop");
         group.addModule("molprop_check");
     }
     {
         gmx::CommandLineModuleGroup group =
             manager->addModuleGroup("Generating topologies and other simulation input");
         group.addModule("gentop");
-        //group.addModule("gen_table");
     }
     {
         gmx::CommandLineModuleGroup group =
@@ -113,11 +105,10 @@ void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
     {
         gmx::CommandLineModuleGroup group =
             manager->addModuleGroup("Molprop utilities");
-        //  group.addModule("analyze");
+        group.addModule("analyze");
         group.addModule("merge_mp");
         group.addModule("molprop_test");
         group.addModule("mp2csv");
-        //        group.addModule("molselect");
     }
     {
         gmx::CommandLineModuleGroup group =

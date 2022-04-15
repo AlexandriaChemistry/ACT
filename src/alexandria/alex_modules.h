@@ -39,16 +39,13 @@ namespace alexandria
 int gentop(int argc, char *argv[]);
 int tune_ff(int argc, char *argv[]);
 int poldata_edit(int argc, char *argv[]);
-int qm2molprop(int argc, char *argv[]);
 int bastat(int argc, char *argv[]);
 int analyze(int argc, char *argv[]);
-//int gen_table(int argc, char *argv[]);
 int merge_mp(int argc, char *argv[]);
 int merge_pd(int argc, char *argv[]);
 int mp2csv(int argc, char *argv[]);
 int molprop_test(int argc, char *argv[]);
 int molprop_check(int argc, char *argv[]);
-//int molselect(int argc, char *argv[]);
 }
 
 namespace gmx
