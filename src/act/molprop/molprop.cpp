@@ -191,7 +191,8 @@ int MolProp::Merge(const MolProp *src)
         for (auto &dst_f : fragment_)
         {
             // TODO Make this check more rigorous, check for overlaps etc.
-            if (src_f.atoms() == dst_f.atoms() &&
+            if (src_f.id() == dst_f.id() &&
+                src_f.atoms() == dst_f.atoms() &&
                 src_f.multiplicity() == dst_f.multiplicity() &&
                 src_f.formula() == dst_f.formula() &&
                 src_f.charge() == dst_f.charge())

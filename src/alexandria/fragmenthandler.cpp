@@ -17,7 +17,7 @@ FragmentHandler::FragmentHandler(const Poldata               *pd,
 {
     GMX_RELEASE_ASSERT(fragments != nullptr,
                        "Empty fragments passed. Wazzuppwitdat?");
-
+    GMX_RELEASE_ASSERT(fragments->size() > 0, "No fragments. Huh?");
     FragAtoms_.resize(fragments->size());
     bonds_.resize(fragments->size());
     natoms_           = 0;

@@ -1626,8 +1626,11 @@ immStatus MyMol::GenerateAcmCharges(const Poldata *pd)
     }
     std::vector<double> qold;
     fraghandler_->fetchCharges(&qold);
-    GMX_RELEASE_ASSERT(qold.size()-atoms()->nr == 0, "Cannot fetch old charges");
-    
+    if (qold.size()-atoms()->nr != 0)
+    {
+        GMX_THROW(gmx::InternalError(gmx::formatString("Cannot fetch old charges for %s. #atom %d #qold %zu",
+                                                       getMolname().c_str(), atoms()->nr, qold.size()).c_str()));
+    }
     immStatus imm       = immStatus::OK;
     int       iter      = 0;
     bool      converged = false;
