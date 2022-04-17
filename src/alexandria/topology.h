@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021
+ * Copyright (C) 2021-2022
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -36,11 +36,11 @@
 #include <map>
 #include <vector>
 
-#include "gromacs/gpu_utils/hostallocator.h"
-
+#include "act/basics/identifier.h"
 #include "act/poldata/forcefieldparameterlist.h"
 #include "act/utility/communicationrecord.h"
-#include "act/basics/identifier.h"
+#include "gromacs/gmxpreprocess/grompp-impl.h"
+#include "gromacs/gpu_utils/hostallocator.h"
 
 namespace alexandria
 {
@@ -397,6 +397,15 @@ private:
 
     //! \return the whole map of parameters, const style
     const std::map<InteractionType, std::vector<TopologyEntry *> > &entries() const { return entries_; }
+    
+    /*! \brief Generate exclusiones
+     * \param[out] gmx_excls The GROMACS structure for exclusions
+     * \param[in]  nrexcl    The number of exclusions to generate (max 2)
+     * \param[in]  nratom    The number of atoms in the system
+     */
+    void generateExclusions(t_excls **gmx_excls,
+                            int       nrexcl,
+                            int       nratoms);
  };
 
 } // namespace alexandria

@@ -1,33 +1,33 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <Real Name="Coordinate RMSD after minimizing">0.19703204430778093</Real>
+  <Real Name="Coordinate RMSD after minimizing">0.034153956545476649</Real>
   <Sequence Name="Frequencies">
     <Int Name="Length">24</Int>
-    <Real>2.9366918378180018</Real>
-    <Real>7.2456934182071873</Real>
-    <Real>9.669607021388904</Real>
-    <Real>18.839813333611229</Real>
-    <Real>168.82678315633223</Real>
-    <Real>358.25405548069517</Real>
-    <Real>491.69476580288733</Real>
-    <Real>532.98078905981083</Real>
-    <Real>642.50278150021234</Real>
-    <Real>717.51929171264055</Real>
-    <Real>763.86407847588646</Real>
-    <Real>763.88733765115933</Real>
-    <Real>955.80503724014454</Real>
-    <Real>961.87235386673831</Real>
-    <Real>963.1271527635472</Real>
-    <Real>988.30903799594239</Real>
-    <Real>1377.0200981406244</Real>
-    <Real>1405.4605606411835</Real>
-    <Real>2386.6502600472827</Real>
-    <Real>2421.0205782251005</Real>
-    <Real>2802.4691238398809</Real>
-    <Real>2804.5448379315371</Real>
-    <Real>2823.9674652690242</Real>
-    <Real>2869.9561964314162</Real>
+    <Real>0</Real>
+    <Real>37.727729086110493</Real>
+    <Real>82.635068554196138</Real>
+    <Real>109.66503668600207</Real>
+    <Real>287.13820779166775</Real>
+    <Real>614.79467143292732</Real>
+    <Real>1086.3278993064014</Real>
+    <Real>1133.4644685869714</Real>
+    <Real>1170.0299514899725</Real>
+    <Real>1349.1549408681135</Real>
+    <Real>1385.4789011354387</Real>
+    <Real>1387.5151640967497</Real>
+    <Real>1696.9799725873961</Real>
+    <Real>1704.0831599325911</Real>
+    <Real>1718.9063109148187</Real>
+    <Real>1770.5226822268062</Real>
+    <Real>2497.8854356584025</Real>
+    <Real>2558.6597839869696</Real>
+    <Real>4008.7747703350765</Real>
+    <Real>4125.6167297265465</Real>
+    <Real>4458.8113540797322</Real>
+    <Real>4473.8571889839086</Real>
+    <Real>4508.2977822122357</Real>
+    <Real>4608.0917781915505</Real>
   </Sequence>
   <Sequence Name="Intensities">
     <Int Name="Length">0</Int>

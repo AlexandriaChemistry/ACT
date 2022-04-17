@@ -1002,6 +1002,7 @@ immStatus MyMol::GenerateTopology(FILE              *fp,
         {
             topology_->makeVsite2s(pd->findForcesConst(InteractionType::VSITE2));
         }
+        topology_->generateExclusions(&excls_, pd->getNexcl(), atoms->nr);
     }
     if (immStatus::OK == imm)
     {
@@ -1032,11 +1033,6 @@ immStatus MyMol::GenerateTopology(FILE              *fp,
         if (pd->polarizable())
         {
             addShells(debug, pd, atoms);
-        }
-        else
-        {
-            snew(excls_, atoms->nr);
-            excls_->nr = 0;
         }
         char **molnameptr = put_symtab(symtab_, getMolname().c_str());
         // Generate mtop

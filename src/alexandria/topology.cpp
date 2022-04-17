@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021
+ * Copyright (C) 2021-2022
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -509,7 +509,60 @@ void Topology::addEntry(InteractionType                     itype,
     }
     entries_.insert(std::pair<InteractionType, std::vector<TopologyEntry *>>(itype, entry));
 }
-
  
+void Topology::generateExclusions(t_excls **gmx_excls,
+                                  int       nrexcl,
+                                  int       nratoms)
+{
+    std::vector<std::vector<int>> excl(nratoms);
+    
+    for(auto &myEntry: entries_)
+    {
+        switch (myEntry.first)
+        {
+        case InteractionType::BONDS:
+            {
+                if (nrexcl > 0)
+                {
+                    for(auto &b : myEntry.second)
+                    {
+                        auto a = b->atomIndices();
+                        excl[a[0]].push_back(a[1]);
+                        excl[a[1]].push_back(a[0]);
+                    }
+                }
+            }
+            break;
+        case InteractionType::ANGLES:
+        case InteractionType::LINEAR_ANGLES:
+            {
+                if (nrexcl > 1)
+                {
+                    for(auto &b : myEntry.second)
+                    {
+                        auto a = b->atomIndices();
+                        excl[a[0]].push_back(a[2]);
+                        excl[a[2]].push_back(a[0]);
+                    }
+                }
+            } 
+            break;
+        default:
+            break;
+        }
+    }
+    t_excls *gmx;
+    snew(gmx, nratoms);
+    for(int i = 0; i < nratoms; i++)
+    {
+        snew(gmx[i].e, excl[i].size());
+        for (size_t j = 0; j < excl[i].size(); j++)
+        {
+            gmx[i].e[j] = excl[i][j];
+        }
+        gmx[i].nr = excl[i].size();
+    }
+    *gmx_excls = gmx;
+}
 
 } // namespace alexandria
