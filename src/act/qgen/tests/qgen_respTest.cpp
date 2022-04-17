@@ -80,7 +80,7 @@ class RespTest : public gmx::test::CommandLineTestBase
             const char *molnm    = (char *)"XXX";
             const char *iupac    = (char *)"";
             const char *conf     = (char *)"minimum";
-            const char *basis    = (char *)"";
+            std::string basis, method;
             const char *jobtype  = (char *)"Pop";
             int         maxpot   = 100;
             int         nsymm    = 0;
@@ -88,7 +88,7 @@ class RespTest : public gmx::test::CommandLineTestBase
             //Read input file for molprop
             auto dataName = gmx::test::TestFileManager::getInputFilePath("1-butanol-3-oep.log");
             double qtot = 0;
-            if (readBabel(dataName.c_str(), &molprop, molnm, iupac, conf, basis,
+            if (readBabel(dataName.c_str(), &molprop, molnm, iupac, conf, &method, &basis,
                           maxpot, nsymm, jobtype, &qtot, false))
             {
                 std::map<std::string, std::string> g2a;

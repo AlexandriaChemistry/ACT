@@ -92,7 +92,9 @@ class BabelFiles
  * \param[in]  molnm       Molecule name to override the one from the filename [ maybe nullptr ]
  * \param[in]  iupac       IUPAC name to override the one from the filename [ maybe nullptr ]
  * \param[in]  conf        Conformation the molecule is in [ maybe nullptr ]
- * \param[in]  basis       Basis set used for the calculation [ maybe nullptr ]
+ * \param[out] method      Theoretical chemistry method detected in the file.
+ * \param[inout] basis     Basis set used for the calculation. If not empty, will override
+ *                         what is detected in the file. If empty, will get the detected value.
  * \param[in]  maxpot      Maximum number of electrostatic potential data points to store
  * \param[in]  nsymm       Symmetry number for this molecule. If zero it will be detected from
  *                         the input.
@@ -108,7 +110,8 @@ bool readBabel(const char          *g98,
                const char          *molnm,
                const char          *iupac,
                const char          *conf,
-               const char          *basis,
+               std::string         *method,
+               std::string         *basis,
                int                  maxpot,
                int                  nsymm,
                const char          *jobtype,

@@ -367,9 +367,9 @@ const Experiment *MolProp::findExperimentConst(const std::string &method,
 {
     for(auto ei = exper_.begin(); ei < exper_.end(); ++ei)
     {
-        if (((conformation.size() == 0)   || stringEqual(ei->getConformation(), conformation)) &&
-            stringEqual(ei->getMethod(), method) &&
-            stringEqual(ei->getBasisset(), basis))
+        if ((conformation.empty() || stringEqual(ei->getConformation(), conformation)) &&
+            (method.empty()       || stringEqual(ei->getMethod(), method)) &&
+            (basis.empty()        || stringEqual(ei->getBasisset(), basis)))
         {
             return &(*ei);
         }

@@ -316,7 +316,8 @@ bool readBabel(const char          *g09,
                const char          *molnm,
                const char          *iupac,
                const char          *conformation,
-               const char          *basisset,
+               std::string         *method,
+               std::string         *basisset,
                int                  maxPotential,
                int                  nsymm,
                const char          *jobType,
@@ -390,9 +391,9 @@ bool readBabel(const char          *g09,
     // Basis Set
     std::string basis;
     OBpd = (OpenBabel::OBPairData *)mol.GetData("basis");
-    if ((nullptr != basisset) && (strlen(basisset) > 0))
+    if (!basisset->empty())
     {
-        basis.assign(basisset);
+        basis.assign(*basisset);
     }
     else if (nullptr != OBpd)
     {
@@ -402,6 +403,7 @@ bool readBabel(const char          *g09,
         {
             basis.erase(p, basis.npos);
         }
+        basisset->assign(basis);
     }
     else
     {
@@ -417,11 +419,10 @@ bool readBabel(const char          *g09,
     }
 
     // Method
-    std::string method;
     OBpd = (OpenBabel::OBPairData *)mol.GetData("method");
     if (nullptr != OBpd)
     {
-        method.assign(OBpd->GetValue());
+        method->assign(OBpd->GetValue());
     }
     g09ptr = (char *) strrchr(g09, '/');
     if (nullptr == g09ptr)
@@ -437,7 +438,7 @@ bool readBabel(const char          *g09,
         }
     }
 
-    alexandria::Experiment exp(program, method, basis, reference, conformation, g09ptr, jobtype);
+    alexandria::Experiment exp(program, *method, basis, reference, conformation, g09ptr, jobtype);
     // We don't just set this here, since the user may override the value
     // However, it seems that OB does not extract this correctly from
     // the input, unless it is a Gaussian log file.

@@ -70,7 +70,7 @@ class AtomtypeTest : public gmx::test::CommandLineTestBase
             int                             maxpot   = 100;
             int                             nsymm    = 0;
             const char                     *conf     = (char *)"minimum";
-            const char                     *basis    = (char *)"";
+            std::string                     basis, method;
             const char                     *jobtype  = (char *)"Opt";
 
             std::string                     dataName;
@@ -79,7 +79,7 @@ class AtomtypeTest : public gmx::test::CommandLineTestBase
             dataName    = gmx::test::TestFileManager::getInputFilePath(molname);
             double qtot = 0.0;
             bool readOK = readBabel(dataName.c_str(), &molprop, molname, molname,
-                                    conf, basis, maxpot, nsymm, jobtype, &qtot, false);
+                                    conf, &method, &basis, maxpot, nsymm, jobtype, &qtot, false);
             EXPECT_TRUE(readOK);
             if (readOK)
             {

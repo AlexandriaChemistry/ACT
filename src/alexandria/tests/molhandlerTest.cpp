@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2021
+ * Copyright (C) 2022
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -73,8 +73,7 @@ protected:
         int                             maxpot   = 100;
         int                             nsymm    = 0;
         const char                     *conf     = (char *)"minimum";
-        const char                     *basis    = (char *)"";
-        const char                     *method   = (char *)"";
+        std::string                     method, basis;
         const char                     *jobtype  = (char *)"Opt";
         
         std::string                     dataName;
@@ -83,7 +82,8 @@ protected:
         dataName = gmx::test::TestFileManager::getInputFilePath(molname);
         double qtot = 0;
         bool readOK = readBabel(dataName.c_str(), &molprop, molname, molname,
-                                conf, basis, maxpot, nsymm, jobtype, &qtot, false);
+                                conf, &method, &basis,
+                                maxpot, nsymm, jobtype, &qtot, false);
         EXPECT_TRUE(readOK);
         if (readOK)
         {
@@ -105,18 +105,19 @@ protected:
         // Get poldata
         auto pd  = getPoldata(forcefield);
         auto imm = mp_.GenerateTopology(stdout, pd, method, basis,
-                                        missingParameters::Error);
+                                        missingParameters::Error, true);
+        EXPECT_TRUE(immStatus::OK == imm);
         if (immStatus::OK != imm)
         {
-            fprintf(stderr, "Error generating topology: %s\n", immsg(imm));
+            fprintf(stderr, "Could not generate topology because '%s'. Used basis %s and method %s.\n",
+                    immsg(imm), basis.c_str(), method.c_str());
             return;
         }
-        
         // Needed for GenerateCharges
         CommunicationRecord cr;
         auto           pnc      = gmx::PhysicalNodeCommunicator(MPI_COMM_WORLD, 0);
         gmx::MDLogger  mdlog {};
-        std::string    lot      = gmx::formatString("%s/%s", method, basis);
+        std::string    lot      = gmx::formatString("%s/%s", method.c_str(), basis.c_str());
         auto alg = ChargeGenerationAlgorithm::NONE;
         std::vector<double> qcustom;
         bool qSymm = false;
@@ -128,13 +129,24 @@ protected:
         double rmsd = 0;
         imm = mh.minimizeCoordinates(&mp_, &rmsd);
         EXPECT_TRUE(immStatus::OK == imm);
+        if (immStatus::OK != imm)
+        {
+            fprintf(stderr, "Could not minimize energy because '%s'\n", immsg(imm));
+            return;
+        }
         checker_.checkReal(rmsd, "Coordinate RMSD after minimizing");
         std::vector<double> freq, inten;
-        mh.nma(&mp_, &freq, &inten, nullptr);
+        mh.nma(&mp_, &freq, &inten, stdout);
         checker_.checkSequence(freq.begin(), freq.end(), "Frequencies");
         checker_.checkSequence(inten.begin(), inten.end(), "Intensities");
     }
 };
+
+TEST_F (MolHandlerTest, HydrogenChloride)
+{
+
+    test("hydrogen-chloride.sdf", "ACS-g");
+}
 
 TEST_F (MolHandlerTest, Acetone)
 {
@@ -144,11 +156,6 @@ TEST_F (MolHandlerTest, Acetone)
 TEST_F (MolHandlerTest, Uracil)
 {
     test("acetone-3-oep.log.pdb", "ACS-g");
-}
-
-TEST_F (MolHandlerTest, Ammonia)
-{
-    test("ammonia.sdf", "ACS-g");
 }
 
 } // namespace

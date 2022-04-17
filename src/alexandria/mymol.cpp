@@ -329,7 +329,7 @@ immStatus MyMol::GenerateAtoms(const Poldata     *pd,
     double                    xx, yy, zz;
     int                       natom = 0;
     immStatus                 imm   = immStatus::OK;
-    std::vector<std::string>  confs = { "minimum", "excited" };
+    std::vector<std::string>  confs = { "minimum", "excited", "" };
     const Experiment         *ci    = nullptr;
     
     for(size_t iconf = 0; iconf < confs.size(); iconf++)
