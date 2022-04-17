@@ -136,7 +136,7 @@ protected:
         }
         checker_.checkReal(rmsd, "Coordinate RMSD after minimizing");
         std::vector<double> freq, inten;
-        mh.nma(&mp_, &freq, &inten, stdout);
+        mh.nma(&mp_, &freq, &inten, nullptr);
         checker_.checkSequence(freq.begin(), freq.end(), "Frequencies");
         checker_.checkSequence(inten.begin(), inten.end(), "Intensities");
     }
