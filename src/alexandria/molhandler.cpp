@@ -175,8 +175,8 @@ void MolHandler::nma(MyMol               *mol,
     // Call diagonalization routine
     // fprintf(stderr, "\nDiagonalizing to find vectors...\n");
     auto hessianFlat = hessian.flatten();
-    std::vector<double> eigenvalues(matrixSide+1);
-    std::vector<double> eigenvectors(matrixSide*(matrixSide+1));
+    std::vector<double> eigenvalues(matrixSide);
+    std::vector<double> eigenvectors(matrixSide*matrixSide);
     eigensolver(hessianFlat.data(), matrixSide, 0, matrixSide - 1, eigenvalues.data(), eigenvectors.data());
 
     // Scale the output eigenvectors
