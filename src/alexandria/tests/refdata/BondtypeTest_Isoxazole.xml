@@ -4,13 +4,13 @@
   <Int Name="isoxazole.sdf">8</Int>
   <Sequence Name="bondorder">
     <Int Name="Length">8</Int>
-    <String>os-1 nc-2: 1</String>
-    <String>os-1 cc-3: 1</String>
-    <String>nc-2 cd-5: 2</String>
-    <String>cc-3 cd-4: 2</String>
-    <String>cc-3 h4-6: 1</String>
-    <String>cd-4 cd-5: 1</String>
-    <String>cd-4 ha-7: 1</String>
-    <String>cd-5 h4-8: 1</String>
+    <String>o2-0 nb-1: 1.5</String>
+    <String>o2-0 ca-2: 1.5</String>
+    <String>nb-1 ca-4: 1.5</String>
+    <String>ca-2 ca-3: 1.5</String>
+    <String>ca-2 h4-5: 1</String>
+    <String>ca-3 ca-4: 1.5</String>
+    <String>ca-3 ha-6: 1</String>
+    <String>ca-4 h4-7: 1</String>
   </Sequence>
 </ReferenceData>

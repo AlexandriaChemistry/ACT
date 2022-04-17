@@ -4,26 +4,26 @@
   <Int Name="histidine-hdhe-3-oep.log.pdb">21</Int>
   <Sequence Name="bondorder">
     <Int Name="Length">21</Int>
-    <String>nh-1 hn-14: 1</String>
-    <String>nh-1 c3-2: 1</String>
-    <String>nh-1 hn-13: 1</String>
-    <String>c3-2 h1-15: 1</String>
-    <String>c3-2 c-3: 1</String>
-    <String>c3-2 c3-5: 1</String>
-    <String>c-3 oh-4: 1</String>
-    <String>c-3 o-11: 2</String>
-    <String>oh-4 ho-12: 1</String>
-    <String>c3-5 cd-6: 1</String>
-    <String>c3-5 hc-16: 1</String>
-    <String>c3-5 hc-17: 1</String>
-    <String>cd-6 cc-7: 2</String>
-    <String>cd-6 na-9: 1</String>
-    <String>cc-7 na-10: 1</String>
-    <String>cc-7 h4-19: 1</String>
-    <String>cc-8 h5-20: 1</String>
-    <String>cc-8 na-10: 1</String>
-    <String>cc-8 na-9: 2</String>
-    <String>na-9 hn-18: 1</String>
-    <String>na-10 hn-21: 1</String>
+    <String>n3-0 hn-13: 1</String>
+    <String>n3-0 c3-1: 1</String>
+    <String>n3-0 hn-12: 1</String>
+    <String>c3-1 h1-14: 1</String>
+    <String>c3-1 c-2: 1</String>
+    <String>c3-1 c3-4: 1</String>
+    <String>c-2 oh-3: 1</String>
+    <String>c-2 o-10: 2</String>
+    <String>oh-3 ho-11: 1</String>
+    <String>c3-4 ca-5: 1</String>
+    <String>c3-4 hc-15: 1</String>
+    <String>c3-4 hc-16: 1</String>
+    <String>ca-5 ca-6: 1.5</String>
+    <String>ca-5 nb-8: 1.5</String>
+    <String>ca-6 nb-9: 1.5</String>
+    <String>ca-6 h4-18: 1</String>
+    <String>ca-7 h5-19: 1</String>
+    <String>ca-7 nb-9: 1.5</String>
+    <String>ca-7 nb-8: 1.5</String>
+    <String>nb-8 hn-17: 1</String>
+    <String>nb-9 hn-20: 1</String>
   </Sequence>
 </ReferenceData>

@@ -4,7 +4,7 @@
   <Int Name="sulfur-monoxide.sdf">2</Int>
   <Sequence Name="atomtypes">
     <Int Name="Length">2</Int>
-    <String>s</String>
+    <String>st</String>
     <String>o</String>
   </Sequence>
 </ReferenceData>

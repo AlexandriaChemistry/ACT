@@ -4,7 +4,7 @@
   <Int Name="phosphorus-nitride.sdf">2</Int>
   <Sequence Name="atomtypes">
     <Int Name="Length">2</Int>
-    <String>p2</String>
+    <String>p1</String>
     <String>n1</String>
   </Sequence>
 </ReferenceData>

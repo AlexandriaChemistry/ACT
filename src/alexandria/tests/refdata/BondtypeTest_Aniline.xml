@@ -4,19 +4,19 @@
   <Int Name="aniline.sdf">14</Int>
   <Sequence Name="bondorder">
     <Int Name="Length">14</Int>
-    <String>ca-1 ca-6: 1</String>
-    <String>ca-2 ca-1: 2</String>
-    <String>ca-2 ca-3: 1</String>
-    <String>ca-3 ca-4: 2</String>
-    <String>ca-4 ca-5: 1</String>
+    <String>ca-0 ca-5: 1.5</String>
+    <String>ca-1 ca-0: 1.5</String>
+    <String>ca-1 ca-2: 1.5</String>
+    <String>ca-2 ca-3: 1.5</String>
+    <String>ca-3 ca-4: 1.5</String>
+    <String>ca-3 ha-8: 1</String>
     <String>ca-4 ha-9: 1</String>
+    <String>ca-5 ca-4: 1.5</String>
     <String>ca-5 ha-10: 1</String>
-    <String>ca-6 ca-5: 2</String>
-    <String>ca-6 ha-11: 1</String>
-    <String>nh-7 ca-2: 1</String>
-    <String>nh-7 hn-14: 1</String>
-    <String>nh-7 hn-13: 1</String>
-    <String>ha-8 ca-3: 1</String>
-    <String>ha-12 ca-1: 1</String>
+    <String>nh-6 ca-1: 1</String>
+    <String>nh-6 hn-13: 1</String>
+    <String>nh-6 hn-12: 1</String>
+    <String>ha-7 ca-2: 1</String>
+    <String>ha-11 ca-0: 1</String>
   </Sequence>
 </ReferenceData>

@@ -4,7 +4,7 @@
   <Int Name="carbon-dioxide.sdf">2</Int>
   <Sequence Name="bondorder">
     <Int Name="Length">2</Int>
-    <String>c1-2 o-1: 2</String>
-    <String>o-3 c1-2: 2</String>
+    <String>c1-1 o-0: 2</String>
+    <String>o-2 c1-1: 2</String>
   </Sequence>
 </ReferenceData>

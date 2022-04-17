@@ -4,7 +4,7 @@
   <Int Name="glutamate-3-oep.log.pdb">18</Int>
   <Sequence Name="atomtypes">
     <Int Name="Length">18</Int>
-    <String>nh</String>
+    <String>n3</String>
     <String>c3</String>
     <String>c</String>
     <String>oh</String>

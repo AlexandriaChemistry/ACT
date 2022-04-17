@@ -4,9 +4,9 @@
   <Int Name="sulfate.sdf">4</Int>
   <Sequence Name="bondorder">
     <Int Name="Length">4</Int>
-    <String>s6-1 om-4: 1</String>
-    <String>s6-1 om-3: 1</String>
-    <String>om-2 s6-1: 2</String>
-    <String>om-5 s6-1: 2</String>
+    <String>s6-0 om-3: 1.5</String>
+    <String>s6-0 om-2: 1.5</String>
+    <String>om-1 s6-0: 1.5</String>
+    <String>om-4 s6-0: 1.5</String>
   </Sequence>
 </ReferenceData>

@@ -4,16 +4,16 @@
   <Int Name="phosphinine.sdf">11</Int>
   <Sequence Name="bondorder">
     <Int Name="Length">11</Int>
-    <String>pb-1 c2-5: 2</String>
-    <String>pb-1 c2-6: 1</String>
-    <String>ca-2 ca-3: 2</String>
-    <String>ca-2 ca-4: 1</String>
+    <String>pb-0 ca-4: 1.5</String>
+    <String>pb-0 ca-5: 1.5</String>
+    <String>ca-1 ca-2: 1.5</String>
+    <String>ca-1 ca-3: 1.5</String>
+    <String>ca-1 ha-6: 1</String>
+    <String>ca-2 ca-4: 1.5</String>
     <String>ca-2 ha-7: 1</String>
-    <String>ca-3 c2-5: 1</String>
+    <String>ca-3 ca-5: 1.5</String>
     <String>ca-3 ha-8: 1</String>
-    <String>ca-4 c2-6: 2</String>
     <String>ca-4 ha-9: 1</String>
-    <String>c2-5 ha-10: 1</String>
-    <String>c2-6 ha-11: 1</String>
+    <String>ca-5 ha-10: 1</String>
   </Sequence>
 </ReferenceData>

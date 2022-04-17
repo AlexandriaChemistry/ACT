@@ -4,14 +4,14 @@
   <Int Name="3H-diphosphole.sdf">9</Int>
   <Sequence Name="bondorder">
     <Int Name="Length">9</Int>
-    <String>p2-2 c2-5: 1</String>
-    <String>p2-2 p2-1: 2</String>
-    <String>c3-3 c2-4: 1</String>
-    <String>c3-3 p2-1: 1</String>
-    <String>c3-3 hc-7: 1</String>
-    <String>c2-4 c2-5: 2</String>
+    <String>p2-1 c2-4: 2</String>
+    <String>p2-1 p2-0: 1</String>
+    <String>c3-2 c2-3: 1</String>
+    <String>c3-2 p2-0: 1</String>
+    <String>c3-2 hc-6: 1</String>
+    <String>c2-3 c2-4: 1</String>
+    <String>c2-3 ha-7: 1</String>
     <String>c2-4 ha-8: 1</String>
-    <String>c2-5 ha-9: 1</String>
-    <String>hc-6 c3-3: 1</String>
+    <String>hc-5 c3-2: 1</String>
   </Sequence>
 </ReferenceData>

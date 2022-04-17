@@ -5,7 +5,7 @@
   <Sequence Name="atomtypes">
     <Int Name="Length">3</Int>
     <String>s2</String>
-    <String>s</String>
+    <String>st</String>
     <String>o</String>
   </Sequence>
 </ReferenceData>

@@ -4,14 +4,14 @@
   <Int Name="furan.sdf">9</Int>
   <Sequence Name="atomtypes">
     <Int Name="Length">9</Int>
-    <String>cc</String>
+    <String>ca</String>
     <String>h4</String>
-    <String>cd</String>
+    <String>ca</String>
     <String>ha</String>
-    <String>cd</String>
+    <String>ca</String>
     <String>ha</String>
-    <String>cc</String>
+    <String>ca</String>
     <String>h4</String>
-    <String>os</String>
+    <String>o2</String>
   </Sequence>
 </ReferenceData>

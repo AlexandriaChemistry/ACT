@@ -4,7 +4,7 @@
   <Int Name="pentachlorophosphorane.sdf">6</Int>
   <Sequence Name="atomtypes">
     <Int Name="Length">6</Int>
-    <String>p5</String>
+    <String>p6</String>
     <String>cl</String>
     <String>cl</String>
     <String>cl</String>

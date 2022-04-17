@@ -5,9 +5,9 @@
   <Sequence Name="atomtypes">
     <Int Name="Length">12</Int>
     <String>oh</String>
+    <String>n</String>
     <String>n3</String>
-    <String>nh</String>
-    <String>nh</String>
+    <String>n</String>
     <String>n2</String>
     <String>c2</String>
     <String>hn</String>

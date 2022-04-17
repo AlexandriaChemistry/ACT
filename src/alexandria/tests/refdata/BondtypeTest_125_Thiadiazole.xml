@@ -4,12 +4,12 @@
   <Int Name="125-thiadiazole.sdf">7</Int>
   <Sequence Name="bondorder">
     <Int Name="Length">7</Int>
-    <String>ss-1 nc-2: 1</String>
-    <String>ss-1 nc-5: 1</String>
-    <String>nc-2 cd-3: 2</String>
-    <String>cd-3 cd-4: 1</String>
-    <String>cd-3 h4-7: 1</String>
-    <String>cd-4 nc-5: 2</String>
-    <String>cd-4 h4-6: 1</String>
+    <String>st-0 nb-1: 1.5</String>
+    <String>st-0 nb-4: 1.5</String>
+    <String>nb-1 ca-2: 1.5</String>
+    <String>ca-2 ca-3: 1.5</String>
+    <String>ca-2 h4-6: 1</String>
+    <String>ca-3 nb-4: 1.5</String>
+    <String>ca-3 h4-5: 1</String>
   </Sequence>
 </ReferenceData>

@@ -5,6 +5,6 @@
   <Sequence Name="atomtypes">
     <Int Name="Length">2</Int>
     <String>cl</String>
-    <String>ha</String>
+    <String>ho</String>
   </Sequence>
 </ReferenceData>

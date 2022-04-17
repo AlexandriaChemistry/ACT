@@ -4,34 +4,34 @@
   <Int Name="fluoranthene.sdf">29</Int>
   <Sequence Name="bondorder">
     <Int Name="Length">29</Int>
-    <String>ca-1 cp-3: 2</String>
-    <String>ca-1 cp-2: 1</String>
-    <String>ca-1 ca-6: 1</String>
-    <String>cp-2 ca-7: 2</String>
-    <String>cp-2 cp-4: 1</String>
-    <String>cp-3 ca-8: 1</String>
-    <String>cp-3 cp-5: 1</String>
-    <String>cp-4 ca-9: 1</String>
-    <String>cp-5 cp-4: 2</String>
-    <String>cp-5 ca-10: 1</String>
-    <String>ca-6 ca-11: 1</String>
-    <String>ca-6 ca-12: 2</String>
+    <String>ca-0 ca-2: 1.5</String>
+    <String>ca-0 ca-1: 1.5</String>
+    <String>ca-0 ca-5: 1.5</String>
+    <String>ca-1 ca-6: 1.5</String>
+    <String>ca-1 ca-3: 1</String>
+    <String>ca-2 ca-7: 1.5</String>
+    <String>ca-2 ca-4: 1</String>
+    <String>ca-3 ca-8: 1.5</String>
+    <String>ca-4 ca-3: 1.5</String>
+    <String>ca-4 ca-9: 1.5</String>
+    <String>ca-5 ca-10: 1.5</String>
+    <String>ca-5 ca-11: 1.5</String>
+    <String>ca-6 ha-16: 1</String>
+    <String>ca-6 ca-12: 1.5</String>
     <String>ca-7 ha-17: 1</String>
-    <String>ca-7 ca-13: 1</String>
+    <String>ca-7 ca-13: 1.5</String>
     <String>ca-8 ha-18: 1</String>
-    <String>ca-8 ca-14: 2</String>
-    <String>ca-9 ha-19: 1</String>
-    <String>ca-9 ca-15: 2</String>
-    <String>ca-10 ca-16: 2</String>
+    <String>ca-8 ca-14: 1.5</String>
+    <String>ca-9 ca-15: 1.5</String>
+    <String>ca-10 ha-20: 1</String>
     <String>ca-11 ha-21: 1</String>
     <String>ca-12 ha-22: 1</String>
+    <String>ca-12 ca-10: 1.5</String>
+    <String>ca-13 ca-11: 1.5</String>
     <String>ca-13 ha-23: 1</String>
-    <String>ca-13 ca-11: 2</String>
-    <String>ca-14 ca-12: 1</String>
     <String>ca-14 ha-24: 1</String>
+    <String>ca-15 ca-14: 1.5</String>
     <String>ca-15 ha-25: 1</String>
-    <String>ca-16 ca-15: 1</String>
-    <String>ca-16 ha-26: 1</String>
-    <String>ha-20 ca-10: 1</String>
+    <String>ha-19 ca-9: 1</String>
   </Sequence>
 </ReferenceData>

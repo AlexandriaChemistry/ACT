@@ -338,7 +338,7 @@ int gentop(int argc, char *argv[])
                                  &pd,
                                  method,
                                  basis,
-                                 bAllowMissing ? missingParameters::Ignore : missingParameters::Error);
+                                 bAllowMissing ? missingParameters::Ignore : missingParameters::Error, false);
 
     gmx_omp_nthreads_init(mdlog, cr.commrec(), 1, 1, 1, 0, false, false);
     if (immStatus::OK == imm)

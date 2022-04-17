@@ -4,11 +4,11 @@
   <Int Name="nitromethane-3-oep.log.pdb">6</Int>
   <Sequence Name="bondorder">
     <Int Name="Length">6</Int>
-    <String>c3-1 h1-4: 1</String>
-    <String>c3-1 h1-2: 1</String>
-    <String>c3-1 no-5: 1</String>
-    <String>c3-1 h1-3: 1</String>
-    <String>no-5 on-6: 2</String>
-    <String>no-5 on-7: 2</String>
+    <String>c3-0 h1-3: 1</String>
+    <String>c3-0 h1-1: 1</String>
+    <String>c3-0 n3-4: 1</String>
+    <String>c3-0 h1-2: 1</String>
+    <String>n3-4 o-5: 2</String>
+    <String>n3-4 o-6: 2</String>
   </Sequence>
 </ReferenceData>

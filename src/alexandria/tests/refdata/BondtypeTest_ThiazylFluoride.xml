@@ -4,7 +4,7 @@
   <Int Name="thiazyl-fluoride-3-oep.log.pdb">2</Int>
   <Sequence Name="bondorder">
     <Int Name="Length">2</Int>
-    <String>f-1 s4-2: 1</String>
-    <String>s4-2 n2-3: 2</String>
+    <String>f-0 s4-1: 1</String>
+    <String>s4-1 n2-2: 2</String>
   </Sequence>
 </ReferenceData>

@@ -4,16 +4,16 @@
   <Int Name="histidine-hdhe-3-oep.log.pdb">21</Int>
   <Sequence Name="atomtypes">
     <Int Name="Length">21</Int>
-    <String>nh</String>
+    <String>n3</String>
     <String>c3</String>
     <String>c</String>
     <String>oh</String>
     <String>c3</String>
-    <String>cc</String>
-    <String>c2</String>
-    <String>c3</String>
-    <String>na</String>
-    <String>na</String>
+    <String>ca</String>
+    <String>ca</String>
+    <String>ca</String>
+    <String>nb</String>
+    <String>nb</String>
     <String>o</String>
     <String>ho</String>
     <String>hn</String>
@@ -22,8 +22,8 @@
     <String>hc</String>
     <String>hc</String>
     <String>hn</String>
-    <String>h1</String>
-    <String>h2</String>
+    <String>h4</String>
+    <String>h5</String>
     <String>hn</String>
   </Sequence>
 </ReferenceData>

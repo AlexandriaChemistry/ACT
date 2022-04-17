@@ -4,11 +4,11 @@
   <Int Name="isoxazole.sdf">8</Int>
   <Sequence Name="atomtypes">
     <Int Name="Length">8</Int>
-    <String>os</String>
-    <String>nc</String>
-    <String>cc</String>
-    <String>cd</String>
-    <String>cd</String>
+    <String>o2</String>
+    <String>nb</String>
+    <String>ca</String>
+    <String>ca</String>
+    <String>ca</String>
     <String>h4</String>
     <String>ha</String>
     <String>h4</String>

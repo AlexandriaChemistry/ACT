@@ -4,10 +4,10 @@
   <Int Name="1-nitroethyne.pdb">5</Int>
   <Sequence Name="bondorder">
     <Int Name="Length">5</Int>
-    <String>on-1 no-3: 2</String>
-    <String>on-2 no-3: 2</String>
-    <String>no-3 c1-4: 1</String>
-    <String>c1-4 c1-5: 3</String>
-    <String>c1-5 ha-6: 1</String>
+    <String>on-0 no-2: 1.5</String>
+    <String>on-1 no-2: 1.5</String>
+    <String>no-2 c1-3: 1</String>
+    <String>c1-3 c1-4: 3</String>
+    <String>c1-4 ha-5: 1</String>
   </Sequence>
 </ReferenceData>

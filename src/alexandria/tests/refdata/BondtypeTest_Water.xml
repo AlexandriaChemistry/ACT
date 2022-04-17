@@ -4,7 +4,7 @@
   <Int Name="water-3-oep.log.pdb">2</Int>
   <Sequence Name="bondorder">
     <Int Name="Length">2</Int>
-    <String>ow-1 hw-2: 1</String>
-    <String>ow-1 hw-3: 1</String>
+    <String>ow-0 hw-1: 1</String>
+    <String>ow-0 hw-2: 1</String>
   </Sequence>
 </ReferenceData>

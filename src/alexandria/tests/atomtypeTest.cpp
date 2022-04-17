@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2019
+ * Copyright (C) 2019-2022
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -44,16 +44,16 @@
 #include "alexandria/babel_io.h"
 #include "alexandria/fill_inputrec.h"
 #include "alexandria/mymol.h"
-#include "alexandria/poldata.h"
-#include "alexandria/poldata_xml.h"
-#include "alexandria/qgen_acm.h"
+#include "act/poldata/poldata.h"
+#include "act/poldata/poldata_xml.h"
+#include "act/qgen/qgen_acm.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
 
-#include "poldata_utils.h"
+#include "act/poldata/poldata_utils.h"
 
 namespace alexandria
 {
@@ -76,10 +76,10 @@ class AtomtypeTest : public gmx::test::CommandLineTestBase
             std::string                     dataName;
             alexandria::MolProp             molprop;
 
-            dataName = gmx::test::TestFileManager::getInputFilePath(molname);
-
+            dataName    = gmx::test::TestFileManager::getInputFilePath(molname);
+            double qtot = 0.0;
             bool readOK = readBabel(dataName.c_str(), &molprop, molname, molname,
-                                    conf, basis, maxpot, nsymm, jobtype, 0.0, false);
+                                    conf, basis, maxpot, nsymm, jobtype, &qtot, false);
             EXPECT_TRUE(readOK);
             if (readOK)
             {
@@ -99,12 +99,12 @@ class AtomtypeTest : public gmx::test::CommandLineTestBase
                     std::vector<std::string> bondorder;
                     for (auto &bond : molprop.bondsConst())
                     {
-                        auto ai = bond.getAi();
-                        auto aj = bond.getAj();
-                        bondorder.push_back(gmx::formatString("%s-%d %s-%d: %d",
-                                                              atypes[ai-1].c_str(), ai,
-                                                              atypes[aj-1].c_str(), aj,
-                                                              bond.getBondOrder()));
+                        auto ai = bond.aI();
+                        auto aj = bond.aJ();
+                        bondorder.push_back(gmx::formatString("%s-%d %s-%d: %g",
+                                                              atypes[ai].c_str(), ai,
+                                                              atypes[aj].c_str(), aj,
+                                                              bond.bondOrder()));
                     }
                     checker_.checkInteger(static_cast<int>(bondorder.size()), molname);
                     checker_.checkSequence(bondorder.begin(), bondorder.end(), "bondorder");

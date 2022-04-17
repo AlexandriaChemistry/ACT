@@ -4,11 +4,11 @@
   <Int Name="123-trimethyl-imidazolium.sdf">19</Int>
   <Sequence Name="atomtypes">
     <Int Name="Length">19</Int>
-    <String>cd</String>
-    <String>cc</String>
-    <String>na</String>
-    <String>cc</String>
-    <String>na</String>
+    <String>ca</String>
+    <String>ca</String>
+    <String>nb</String>
+    <String>ca</String>
+    <String>nb</String>
     <String>c3</String>
     <String>c3</String>
     <String>h4</String>

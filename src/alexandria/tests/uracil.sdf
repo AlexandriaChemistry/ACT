@@ -1,6 +1,6 @@
 OPT/uracil/uracil3-opt.log.gz
  OpenBabel01231816593D
-
+Gaussian 03 #P B3LYP/gen Int(Grid=Ultrafine) maxdisk=40GB SCF(Tight,Save,MaxCycl
  12 12  0  0  0  0  0  0  0  0999 V2000
     0.0000    0.9875    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0
    -0.0215    1.9974    0.0000 H   0  0  0  0  0  0  0  0  0  0  0  0

@@ -4,12 +4,12 @@
   <Int Name="cyclopropene.sdf">7</Int>
   <Sequence Name="bondorder">
     <Int Name="Length">7</Int>
-    <String>cu-1 cu-2: 2</String>
-    <String>cu-1 cx-3: 1</String>
+    <String>cu-0 cu-1: 2</String>
+    <String>cu-0 cx-2: 1</String>
+    <String>cu-0 ha-5: 1</String>
+    <String>cu-1 cx-2: 1</String>
     <String>cu-1 ha-6: 1</String>
-    <String>cu-2 cx-3: 1</String>
-    <String>cu-2 ha-7: 1</String>
-    <String>cx-3 hc-4: 1</String>
-    <String>hc-5 cx-3: 1</String>
+    <String>cx-2 hc-3: 1</String>
+    <String>hc-4 cx-2: 1</String>
   </Sequence>
 </ReferenceData>

@@ -330,7 +330,6 @@ bool readBabel(const char          *g09,
     const char                *reference   = "Spoel2022a";
     const char                *mymol       = "AMM";
     const char                *myprogram   = "ACT2022";
-    const char                *mybasis     = "";
 
     /* Variables to read a Gaussian log file */
     char                      *g09ptr;
@@ -406,7 +405,7 @@ bool readBabel(const char          *g09,
     }
     else
     {
-        basis.assign(mybasis);
+        basis.clear();
     }
 
     // QM Program

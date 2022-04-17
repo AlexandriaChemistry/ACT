@@ -4,7 +4,7 @@
   <Int Name="dihydrogen-phosphate.sdf">7</Int>
   <Sequence Name="atomtypes">
     <Int Name="Length">7</Int>
-    <String>p5</String>
+    <String>p6</String>
     <String>oh</String>
     <String>om</String>
     <String>oh</String>

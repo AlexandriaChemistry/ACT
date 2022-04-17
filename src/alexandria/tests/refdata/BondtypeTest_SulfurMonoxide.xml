@@ -4,6 +4,6 @@
   <Int Name="sulfur-monoxide.sdf">1</Int>
   <Sequence Name="bondorder">
     <Int Name="Length">1</Int>
-    <String>o-2 s-1: 2</String>
+    <String>o-1 st-0: 2</String>
   </Sequence>
 </ReferenceData>

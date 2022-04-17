@@ -4,10 +4,10 @@
   <Int Name="pentachlorophosphorane.sdf">5</Int>
   <Sequence Name="bondorder">
     <Int Name="Length">5</Int>
-    <String>p5-1 cl-2: 1</String>
-    <String>p5-1 cl-3: 1</String>
-    <String>p5-1 cl-4: 1</String>
-    <String>p5-1 cl-5: 1</String>
-    <String>p5-1 cl-6: 1</String>
+    <String>p6-0 cl-1: 1</String>
+    <String>p6-0 cl-2: 1</String>
+    <String>p6-0 cl-3: 1</String>
+    <String>p6-0 cl-4: 1</String>
+    <String>p6-0 cl-5: 1</String>
   </Sequence>
 </ReferenceData>

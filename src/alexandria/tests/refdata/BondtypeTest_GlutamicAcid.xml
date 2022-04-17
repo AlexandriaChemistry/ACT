@@ -4,23 +4,23 @@
   <Int Name="glutamic-acid-3-oep.log.pdb">18</Int>
   <Sequence Name="bondorder">
     <Int Name="Length">18</Int>
-    <String>nh-1 hn-12: 1</String>
-    <String>nh-1 c3-2: 1</String>
-    <String>nh-1 hn-13: 1</String>
-    <String>c3-2 c-3: 1</String>
-    <String>c3-2 c3-5: 1</String>
-    <String>c3-2 h1-14: 1</String>
-    <String>c-3 oh-4: 1</String>
-    <String>c-3 o-10: 2</String>
-    <String>oh-4 ho-11: 1</String>
+    <String>n3-0 hn-11: 1</String>
+    <String>n3-0 c3-1: 1</String>
+    <String>n3-0 hn-12: 1</String>
+    <String>c3-1 c-2: 1</String>
+    <String>c3-1 c3-4: 1</String>
+    <String>c3-1 h1-13: 1</String>
+    <String>c-2 oh-3: 1</String>
+    <String>c-2 o-9: 2</String>
+    <String>oh-3 ho-10: 1</String>
+    <String>c3-4 hc-15: 1</String>
+    <String>c3-4 hc-14: 1</String>
+    <String>c3-4 c3-5: 1</String>
+    <String>c3-5 c-6: 1</String>
     <String>c3-5 hc-16: 1</String>
-    <String>c3-5 hc-15: 1</String>
-    <String>c3-5 c3-6: 1</String>
-    <String>c3-6 c-7: 1</String>
-    <String>c3-6 hc-17: 1</String>
-    <String>c3-6 hc-18: 1</String>
-    <String>c-7 o-9: 2</String>
-    <String>c-7 oh-8: 1</String>
-    <String>oh-8 ho-19: 1</String>
+    <String>c3-5 hc-17: 1</String>
+    <String>c-6 o-8: 2</String>
+    <String>c-6 oh-7: 1</String>
+    <String>oh-7 ho-18: 1</String>
   </Sequence>
 </ReferenceData>

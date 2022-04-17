@@ -5,10 +5,10 @@
   <Sequence Name="atomtypes">
     <Int Name="Length">26</Int>
     <String>ca</String>
-    <String>cp</String>
-    <String>cp</String>
-    <String>cp</String>
-    <String>cp</String>
+    <String>ca</String>
+    <String>ca</String>
+    <String>ca</String>
+    <String>ca</String>
     <String>ca</String>
     <String>ca</String>
     <String>ca</String>

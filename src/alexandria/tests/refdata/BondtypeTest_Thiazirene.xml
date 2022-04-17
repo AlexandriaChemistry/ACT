@@ -4,9 +4,9 @@
   <Int Name="thiazirene.sdf">4</Int>
   <Sequence Name="bondorder">
     <Int Name="Length">4</Int>
-    <String>s2-1 nd-2: 1</String>
-    <String>s2-1 cu-3: 1</String>
-    <String>nd-2 cu-3: 2</String>
-    <String>cu-3 h2-4: 1</String>
+    <String>st-0 nd-1: 1</String>
+    <String>st-0 cu-2: 1</String>
+    <String>nd-1 cu-2: 2</String>
+    <String>cu-2 h2-3: 1</String>
   </Sequence>
 </ReferenceData>

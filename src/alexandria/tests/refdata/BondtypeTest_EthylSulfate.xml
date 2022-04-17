@@ -4,16 +4,16 @@
   <Int Name="ethyl-sulfate-3-oep.log.pdb">11</Int>
   <Sequence Name="bondorder">
     <Int Name="Length">11</Int>
-    <String>c3-1 hc-10: 1</String>
-    <String>c3-1 c3-2: 1</String>
-    <String>c3-1 hc-8: 1</String>
-    <String>c3-1 hc-9: 1</String>
-    <String>c3-2 h1-12: 1</String>
-    <String>c3-2 os-3: 1</String>
-    <String>c3-2 h1-11: 1</String>
-    <String>os-3 s6-4: 1</String>
-    <String>s6-4 om-6: 1</String>
-    <String>s6-4 om-7: 1</String>
-    <String>s6-4 om-5: 1</String>
+    <String>c3-0 hc-9: 1</String>
+    <String>c3-0 c3-1: 1</String>
+    <String>c3-0 hc-7: 1</String>
+    <String>c3-0 hc-8: 1</String>
+    <String>c3-1 h1-11: 1</String>
+    <String>c3-1 os-2: 1</String>
+    <String>c3-1 h1-10: 1</String>
+    <String>os-2 s6-3: 1</String>
+    <String>s6-3 om-5: 1.5</String>
+    <String>s6-3 om-6: 1.5</String>
+    <String>s6-3 om-4: 1.5</String>
   </Sequence>
 </ReferenceData>

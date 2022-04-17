@@ -4,7 +4,7 @@
   <Int Name="disulfur-monoxide-3-oep.log.pdb">2</Int>
   <Sequence Name="bondorder">
     <Int Name="Length">2</Int>
-    <String>s2-1 s-2: 2</String>
-    <String>s2-1 o-3: 2</String>
+    <String>s2-0 st-1: 2</String>
+    <String>s2-0 o-2: 2</String>
   </Sequence>
 </ReferenceData>

@@ -4,10 +4,10 @@
   <Int Name="formamide.sdf">5</Int>
   <Sequence Name="bondorder">
     <Int Name="Length">5</Int>
-    <String>o-1 c-2: 2</String>
-    <String>h2-3 c-2: 1</String>
-    <String>n-4 c-2: 1</String>
-    <String>n-4 hn-5: 1</String>
-    <String>n-4 hn-6: 1</String>
+    <String>o-0 c-1: 2</String>
+    <String>h2-2 c-1: 1</String>
+    <String>n-3 c-1: 1</String>
+    <String>n-3 hn-4: 1</String>
+    <String>n-3 hn-5: 1</String>
   </Sequence>
 </ReferenceData>

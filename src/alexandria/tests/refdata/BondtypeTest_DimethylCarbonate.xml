@@ -4,16 +4,16 @@
   <Int Name="dimethyl-carbonate.pdb">11</Int>
   <Sequence Name="bondorder">
     <Int Name="Length">11</Int>
-    <String>c3-1 os-5: 1</String>
-    <String>c3-1 h1-4: 1</String>
-    <String>c3-1 h1-2: 1</String>
-    <String>c3-1 h1-3: 1</String>
-    <String>os-5 c-6: 1</String>
-    <String>c-6 os-8: 1</String>
-    <String>c-6 o-7: 2</String>
-    <String>os-8 c3-9: 1</String>
-    <String>c3-9 h1-10: 1</String>
-    <String>c3-9 h1-11: 1</String>
-    <String>c3-9 h1-12: 1</String>
+    <String>c3-0 o2-4: 1</String>
+    <String>c3-0 h1-3: 1</String>
+    <String>c3-0 h1-1: 1</String>
+    <String>c3-0 h1-2: 1</String>
+    <String>o2-4 c-5: 1</String>
+    <String>c-5 o2-7: 1</String>
+    <String>c-5 o-6: 2</String>
+    <String>o2-7 c3-8: 1</String>
+    <String>c3-8 h1-9: 1</String>
+    <String>c3-8 h1-10: 1</String>
+    <String>c3-8 h1-11: 1</String>
   </Sequence>
 </ReferenceData>

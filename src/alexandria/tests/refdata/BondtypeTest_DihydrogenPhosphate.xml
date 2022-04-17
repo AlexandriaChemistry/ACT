@@ -4,11 +4,11 @@
   <Int Name="dihydrogen-phosphate.sdf">6</Int>
   <Sequence Name="bondorder">
     <Int Name="Length">6</Int>
-    <String>p5-1 om-3: 2</String>
-    <String>p5-1 om-5: 1</String>
-    <String>oh-2 ho-6: 1</String>
-    <String>oh-2 p5-1: 1</String>
-    <String>oh-4 ho-7: 1</String>
-    <String>oh-4 p5-1: 1</String>
+    <String>p6-0 om-2: 2</String>
+    <String>p6-0 om-4: 1</String>
+    <String>oh-1 ho-5: 1</String>
+    <String>oh-1 p6-0: 1</String>
+    <String>oh-3 ho-6: 1</String>
+    <String>oh-3 p6-0: 1</String>
   </Sequence>
 </ReferenceData>

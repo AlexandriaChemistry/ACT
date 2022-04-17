@@ -1,8 +1,3 @@
-TEST_F (AtomtypeTest, Butanol)
-{
-    testAtype("1-butanol.pdb");
-}
-
 TEST_F (AtomtypeTest, NitroEthyne)
 {
     testAtype("1-nitroethyne.pdb");
@@ -11,11 +6,6 @@ TEST_F (AtomtypeTest, NitroEthyne)
 TEST_F (AtomtypeTest, Guanidine)
 {
     testAtype("guanidine.pdb");
-}
-
-TEST_F (AtomtypeTest, Guanidinium)
-{
-    testAtype("guanidinium.sdf");
 }
 
 TEST_F (AtomtypeTest, DimethylCarbonate)
@@ -223,11 +213,6 @@ TEST_F (AtomtypeTest, Isoxazole)
     testAtype("isoxazole.sdf");
 }
 
-TEST_F (AtomtypeTest, Pyrazole)
-{
-    testAtype("pyrazole.sdf");
-}
-
 TEST_F (AtomtypeTest, PhosphorusNitride)
 {
     testAtype("phosphorus-nitride.sdf");
@@ -323,11 +308,6 @@ TEST_F (AtomtypeTest, Uracil)
     testAtype("uracil.sdf");
 }
 
-TEST_F (BondtypeTest, Butanol)
-{
-    testAtype("1-butanol.pdb");
-}
-
 TEST_F (BondtypeTest, NitroEthyne)
 {
     testAtype("1-nitroethyne.pdb");
@@ -336,11 +316,6 @@ TEST_F (BondtypeTest, NitroEthyne)
 TEST_F (BondtypeTest, Guanidine)
 {
     testAtype("guanidine.pdb");
-}
-
-TEST_F (BondtypeTest, Guanidinium)
-{
-    testAtype("guanidinium.sdf");
 }
 
 TEST_F (BondtypeTest, DimethylCarbonate)
@@ -546,11 +521,6 @@ TEST_F (BondtypeTest, Thiophene)
 TEST_F (BondtypeTest, Isoxazole)
 {
     testAtype("isoxazole.sdf");
-}
-
-TEST_F (BondtypeTest, Pyrazole)
-{
-    testAtype("pyrazole.sdf");
 }
 
 TEST_F (BondtypeTest, PhosphorusNitride)

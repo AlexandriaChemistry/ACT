@@ -4,11 +4,11 @@
   <Int Name="acetaldehyde.sdf">6</Int>
   <Sequence Name="bondorder">
     <Int Name="Length">6</Int>
-    <String>c-1 c3-2: 1</String>
-    <String>c-1 o-3: 2</String>
-    <String>c-1 h1-4: 1</String>
-    <String>c3-2 hc-5: 1</String>
-    <String>c3-2 hc-6: 1</String>
-    <String>hc-7 c3-2: 1</String>
+    <String>c-0 c3-1: 1</String>
+    <String>c-0 o-2: 2</String>
+    <String>c-0 h1-3: 1</String>
+    <String>c3-1 hc-4: 1</String>
+    <String>c3-1 hc-5: 1</String>
+    <String>hc-6 c3-1: 1</String>
   </Sequence>
 </ReferenceData>

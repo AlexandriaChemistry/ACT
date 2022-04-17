@@ -4,16 +4,16 @@
   <Int Name="pyridine.sdf">11</Int>
   <Sequence Name="bondorder">
     <Int Name="Length">11</Int>
-    <String>nb-1 ca-2: 2</String>
-    <String>nb-1 ca-10: 1</String>
-    <String>ca-2 h4-3: 1</String>
-    <String>ca-2 ca-4: 1</String>
-    <String>ca-4 ha-5: 1</String>
-    <String>ca-4 ca-6: 2</String>
-    <String>ca-6 ha-7: 1</String>
-    <String>ca-6 ca-8: 1</String>
-    <String>ca-8 ha-9: 1</String>
-    <String>ca-8 ca-10: 2</String>
-    <String>ca-10 h4-11: 1</String>
+    <String>nb-0 ca-1: 1.5</String>
+    <String>nb-0 ca-9: 1.5</String>
+    <String>ca-1 h4-2: 1</String>
+    <String>ca-1 ca-3: 1.5</String>
+    <String>ca-3 ha-4: 1</String>
+    <String>ca-3 ca-5: 1.5</String>
+    <String>ca-5 ha-6: 1</String>
+    <String>ca-5 ca-7: 1.5</String>
+    <String>ca-7 ha-8: 1</String>
+    <String>ca-7 ca-9: 1.5</String>
+    <String>ca-9 h4-10: 1</String>
   </Sequence>
 </ReferenceData>
