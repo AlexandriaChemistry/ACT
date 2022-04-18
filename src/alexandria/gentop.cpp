@@ -332,7 +332,6 @@ int gentop(int argc, char *argv[])
             gmx_fatal(FARGS, "No input file has been specified.");
         }
     }
-    mymol.SetForceField(ff[0]);
     fill_inputrec(inputrec);
     mymol.setInputrec(inputrec);
     imm = mymol.GenerateTopology(stdout,

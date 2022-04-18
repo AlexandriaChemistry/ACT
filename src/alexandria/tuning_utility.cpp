@@ -650,31 +650,42 @@ void TuneForceFieldPrinter::printEnergyForces(FILE                   *fp,
         fprintf(fp, "   %-20s  %10.3f  Difference: %10.3f\n", "Reference EPOT", deltaE0,
                 eBefore[F_EPOT]-deltaE0);
     }
-    double rmsd = 0;
-    // Now get the minimized structure RMSD and Energy
-    // TODO: Only do this for JobType::OPT
-    molHandler_.minimizeCoordinates(&(*mol), &rmsd);
-    auto eAfter = mol->energyTerms();
-    fprintf(fp, "   %-20s  %10s  %10s  %10s minimization\n", "Term", "Before", "After", "Difference");
-    for(auto &ep : ePlot)
+    if (mol->jobType() == JobType::OPT)
     {
-        fprintf(fp, "   %-20s  %10.3f  %10.3f  %10.3f\n",
-                interaction_function[ep].name,
-                eBefore[ep], eAfter[ep], eAfter[ep]-eBefore[ep]);
-    }
-    fprintf(fp, "Coordinate RMSD after minimization %10g pm\n\n", 1000*rmsd);
-    
-    // Do normal-mode analysis
-    auto ref_freq = mol->referenceFrequencies();
-    if (!ref_freq.empty())
-    {
-        std::vector<double> frequencies, intensities;
-        molHandler_.nma(&(*mol), &frequencies, &intensities, fp);
-        auto unit = mpo_unit2(MolPropObservable::FREQUENCY);
-        for(size_t k = 0; k < frequencies.size(); k++)
+        double rmsd = 0;
+        // Now get the minimized structure RMSD and Energy
+        // TODO: Only do this for JobType::OPT
+        molHandler_.minimizeCoordinates(&(*mol), &rmsd);
+        auto eAfter = mol->energyTerms();
+        fprintf(fp, "   %-20s  %10s  %10s  %10s minimization\n", "Term", "Before", "After", "Difference");
+        for(auto &ep : ePlot)
         {
-            lsq_freq->add_point(convertFromGromacs(ref_freq[k], unit),
-                                convertFromGromacs(frequencies[k], unit), 0, 0);
+            fprintf(fp, "   %-20s  %10.3f  %10.3f  %10.3f\n",
+                    interaction_function[ep].name,
+                    eBefore[ep], eAfter[ep], eAfter[ep]-eBefore[ep]);
+        }
+        fprintf(fp, "Coordinate RMSD after minimization %10g pm\n\n", 1000*rmsd);
+        
+        // Do normal-mode analysis
+        auto ref_freq = mol->referenceFrequencies();
+        if (!ref_freq.empty())
+        {
+            std::vector<double> frequencies, intensities;
+            molHandler_.nma(&(*mol), &frequencies, &intensities, fp);
+            auto unit = mpo_unit2(MolPropObservable::FREQUENCY);
+            for(size_t k = 0; k < frequencies.size(); k++)
+            {
+                lsq_freq->add_point(convertFromGromacs(ref_freq[k], unit),
+                                    convertFromGromacs(frequencies[k], unit), 0, 0);
+            }
+        }
+    }
+    else
+    {
+        for(auto &ep : ePlot)
+        {
+            fprintf(fp, "   %-20s  %10.3f\n",
+                    interaction_function[ep].name, eBefore[ep]);
         }
     }
 }

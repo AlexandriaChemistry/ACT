@@ -131,7 +131,6 @@ class RespTest : public gmx::test::CommandLineTestBase
             std::string   basis("Gen");
             t_inputrec    inputrec;
             fill_inputrec(&inputrec);
-            mp_.SetForceField("alexandria");
             Poldata      *pd = getPoldata(qdist);
             auto imm = mp_.GenerateTopology(nullptr, pd, method, basis,
                                             missingParameters::Error);

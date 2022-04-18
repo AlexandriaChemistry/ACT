@@ -354,6 +354,7 @@ immStatus MyMol::GenerateAtoms(const Poldata     *pd,
         {
             return immStatus::NoAtoms;
         }
+        myJobType_ = ci->getJobtype();
         t_param nb;
         memset(&nb, 0, sizeof(nb));
         natom = 0;
@@ -2156,7 +2157,8 @@ void MyMol::PrintTopology(FILE                      *fp,
               topology_, excls_, gromppAtomtype_, pd);
     if (!bITP)
     {
-        print_top_mols(fp, printmol.name, getForceField().c_str(), nullptr, 0, nullptr, 1, &printmol);
+        print_top_mols(fp, printmol.name, pd->filename().c_str(),
+                       nullptr, 0, nullptr, 1, &printmol);
     }
     if (bVerbose)
     {

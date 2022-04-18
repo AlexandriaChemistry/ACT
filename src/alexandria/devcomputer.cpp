@@ -345,6 +345,11 @@ void HarmonicsDevComputer::calcDeviation(MyMol                                *m
     {
         GMX_THROW(gmx::InternalError("Only frequency fitting implemented in HarmonicsDevComputer"));
     }
+    // Only compute frequencies for structures that have an optimize reference
+    if (JobType::OPT != mymol->jobType())
+    {
+        return;
+    }
     // Compute frequencies
     std::vector<double> frequencies, intensities;
     handler_.nma(mymol, &frequencies, &intensities);
@@ -399,6 +404,11 @@ void ForceDevComputer::calcDeviation(      MyMol                          *mymol
                                      const gmx_unused std::vector<double> &param,
                                      const gmx_unused CommunicationRecord *commrec)
 {
+    // Only compute forces for structures that have an optimize reference
+    if (JobType::OPT != mymol->jobType())
+    {
+        return;
+    }
     auto myatoms = mymol->atomsConst();
     (*targets).find(eRMS::Force2)->second.increase(1, mymol->force2()/myatoms.nr);
 }

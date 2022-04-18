@@ -112,14 +112,13 @@ namespace alexandria
         MyForceProvider                 *myforce_        = nullptr;
         //! How to renumber input atom numbers to numbers with shells
         std::vector<int>                 shellRenumber_;
-        //GentopVsites                     gvt_;
         //! This points to the atom indices before shells were added
         std::map<int, int>               originalAtomIndex_;
-        std::string                      forcefield_;
         bool                             gromacsGenerated_ = false;
         gpp_atomtype_t                   gromppAtomtype_;
         double                           atomizationEnergy_ = 0;
-
+        //! The job type corresponding to the coordinates
+        JobType                          myJobType_        = JobType::UNKNOWN;
         //! Map of charge type dependent properties
         std::map<qType, QtypeProps>           qProps_;
         //! Center of nuclear charge
@@ -281,6 +280,9 @@ namespace alexandria
         {
             dataset_type_ = dataset_type;
         }
+
+        //! \return the job type corresponding to coordinates
+        const JobType &jobType() const { return myJobType_; }
 
         //! \return true if shells are present
         bool haveShells() const { return nullptr != shellfc_; }
@@ -558,11 +560,6 @@ namespace alexandria
         bool getOptimizedGeometry(rvec *x);
 
         /*! \brief
-         * Set the force field name.
-         */
-        void SetForceField(const char *ff) { forcefield_.assign(ff); }
-
-        /*! \brief
          * Update internal structures for bondtype due to changes in pd
          *
          * \param[in] pd           Data structure containing atomic properties
@@ -570,13 +567,6 @@ namespace alexandria
          */
         void UpdateIdef(const Poldata   *pd,
                         InteractionType  iType);
-
-        /*! \brief
-         * Get the force field
-         *
-         * \param[out] forcefield_     Force field
-         */
-        std::string getForceField() { return forcefield_; }
 
         /*! \brief
          * Generate GROMACS structures.
