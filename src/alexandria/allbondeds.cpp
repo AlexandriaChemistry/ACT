@@ -106,7 +106,7 @@ void AllBondeds::addOptions(std::vector<t_pargs> *pargs)
 {
     t_pargs mypargs[] = 
         {
-            { "-Dm",    FALSE, etREAL, {&Dm_},
+            { "-De",    FALSE, etREAL, {&De_},
               "Dissociation energy (kJ/mol). Ignore if the [TT]-dissoc[tt] option is used." },
             { "-beta",    FALSE, etREAL, {&beta_},
               "Steepness of the Morse potential (1/nm)" },
@@ -341,6 +341,7 @@ void AllBondeds::updatePoldata(FILE    *fp,
     auto bType = InteractionType::BONDS;
     auto fs    = pd->findForces(bType);
     fs->eraseParameter();
+    auto fType = fs->fType();
     for(auto &i : bondeds_[bType])
     {
         size_t N = 0;
@@ -349,13 +350,30 @@ void AllBondeds::updatePoldata(FILE    *fp,
         auto bondId = i.id();
         // Note that the order of parameters is important!
         // Rounding the numbers to 1/10 pm and 1/10 degree
-        round_numbers(&av, &sig, 10); 
-        fs->addParameter(bondId, "bondlength",
-                         ForceFieldParameter("pm", av, sig, N, av*factor_, av/factor_, Mutability::Bounded, false, true));
-        fs->addParameter(bondId, "Dm",
-                         ForceFieldParameter("kJ/mol", Dm_, 0, 1, Dm_*factor_, Dm_/factor_, Mutability::Bounded, false, true));
-        fs->addParameter(bondId, "beta",
-                         ForceFieldParameter("1/nm", beta_, 0, 1, beta_*factor_, beta_/factor_, Mutability::Bounded, false, true));
+        round_numbers(&av, &sig, 10);
+        switch (fType)
+        {
+        case F_MORSE:
+            {
+                fs->addParameter(bondId, "bondlength",
+                                 ForceFieldParameter("pm", av, sig, N, av*factor_, av/factor_, Mutability::Bounded, false, true));
+                fs->addParameter(bondId, "De",
+                                 ForceFieldParameter("kJ/mol", De_, 0, 1, De_*factor_, De_/factor_, Mutability::Bounded, false, true));
+                fs->addParameter(bondId, "beta",
+                                 ForceFieldParameter("1/nm", beta_, 0, 1, beta_*factor_, beta_/factor_, Mutability::Bounded, false, true));
+            }
+            break;
+        case F_BONDS:
+            {
+                fs->addParameter(bondId, "bondlength",
+                                 ForceFieldParameter("pm", av, sig, N, av*factor_, av/factor_, Mutability::Bounded, false, true));
+                fs->addParameter(bondId, "kb",
+                                 ForceFieldParameter("kJ/mol/nm2", kb_, 0, 1, kb_*factor_, kb_/factor_, Mutability::Bounded, false, true));
+            }
+            break;
+        default:
+            gmx_fatal(FARGS, "Don't know what to do for ftype %s", interaction_function[fType].name);
+        }
                     
         fprintf(fp, "bond-%s len %g sigma %g (pm) N = %d%s\n",
                 i.id().id().c_str(), av, sig, static_cast<int>(N), (sig > bond_tol_) ? " WARNING" : "");
@@ -365,7 +383,7 @@ void AllBondeds::updatePoldata(FILE    *fp,
     {
         auto iType = bb.first;
         auto fs    = pd->findForces(iType);
-        auto fType = fs->fType();
+        fType      = fs->fType();
         if (iType != bType)
         {
             fs->eraseParameter();

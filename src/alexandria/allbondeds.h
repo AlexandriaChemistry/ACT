@@ -98,13 +98,15 @@ namespace alexandria
         //! Map from interaction type to list of bondeds
         std::map<InteractionType, std::vector<OneBonded> > bondeds_;
         //! Default dissociation energy
-        real                                               Dm_        = 400;
+        real                                               De_        = 400;
         //! Default steepness for Morse potentials
         real                                               beta_      = 20;
         //! Default force constant for harmonic angles
         real                                               kt_        = 300;
+        //! Default force constant for harmonic bonds
+        real                                               kb_        = 300000;
         //! Default force constant for harmonic linear angles
-        real                                               klin_      = 150000;
+        real                                               klin_      = 20000;
         //! Default force constant for dihedral angles
         real                                               kp_        = 5;
         //! Default force constant for improper dihedrals

@@ -1,10 +1,11 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <Real Name="Coordinate RMSD after minimizing">5.0000001357867075e-05</Real>
+  <Real Name="Coordinate RMSD after minimizing">4.9999999999927706e-05</Real>
+  <Real Name="Potential energy">348.125</Real>
   <Sequence Name="Frequencies">
     <Int Name="Length">1</Int>
-    <Real>3820.2984654662532</Real>
+    <Real>2841.2466580830369</Real>
   </Sequence>
   <Sequence Name="Intensities">
     <Int Name="Length">0</Int>

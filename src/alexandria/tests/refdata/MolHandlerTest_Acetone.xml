@@ -1,33 +1,34 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <Real Name="Coordinate RMSD after minimizing">0.034153956545476649</Real>
+  <Real Name="Coordinate RMSD after minimizing">0.15770885853298017</Real>
+  <Real Name="Potential energy">152809.02607496234</Real>
   <Sequence Name="Frequencies">
     <Int Name="Length">24</Int>
     <Real>0</Real>
-    <Real>37.727729086110493</Real>
-    <Real>82.635068554196138</Real>
-    <Real>109.66503668600207</Real>
-    <Real>287.13820779166775</Real>
-    <Real>614.79467143292732</Real>
-    <Real>1086.3278993064014</Real>
-    <Real>1133.4644685869714</Real>
-    <Real>1170.0299514899725</Real>
-    <Real>1349.1549408681135</Real>
-    <Real>1385.4789011354387</Real>
-    <Real>1387.5151640967497</Real>
-    <Real>1696.9799725873961</Real>
-    <Real>1704.0831599325911</Real>
-    <Real>1718.9063109148187</Real>
-    <Real>1770.5226822268062</Real>
-    <Real>2497.8854356584025</Real>
-    <Real>2558.6597839869696</Real>
-    <Real>4008.7747703350765</Real>
-    <Real>4125.6167297265465</Real>
-    <Real>4458.8113540797322</Real>
-    <Real>4473.8571889839086</Real>
-    <Real>4508.2977822122357</Real>
-    <Real>4608.0917781915505</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>10.126865501688913</Real>
+    <Real>44.225022836701243</Real>
+    <Real>1806.1991360810357</Real>
+    <Real>3233.3808025835488</Real>
+    <Real>3283.1907356201145</Real>
+    <Real>4757.534167302977</Real>
+    <Real>6229.8501071406563</Real>
+    <Real>6644.1894520343585</Real>
+    <Real>6825.3316902827164</Real>
+    <Real>8824.2399566494605</Real>
+    <Real>12423.129309153963</Real>
+    <Real>14154.257180606404</Real>
+    <Real>19498.913730340089</Real>
+    <Real>20016.578640834086</Real>
+    <Real>22142.624084132069</Real>
+    <Real>33745.396915481295</Real>
+    <Real>38364.518348572128</Real>
   </Sequence>
   <Sequence Name="Intensities">
     <Int Name="Length">0</Int>

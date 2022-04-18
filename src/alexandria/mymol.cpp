@@ -668,6 +668,29 @@ static void UpdateIdefEntry(const ForceFieldParameterList &fs,
             }
         }
         break;
+    case F_BONDS:
+        {
+            auto fp = fs.findParameterTypeConst(bondId, "bondlength");
+            myval = convertToGromacs(fp.value(), fp.unit());
+            mtop->ffparams.iparams[gromacsType].harmonic.rA         =
+                mtop->ffparams.iparams[gromacsType].harmonic.rB     = myval;
+            if (ltop)
+            {
+                ltop->idef.iparams[gromacsType].harmonic.rA     =
+                ltop->idef.iparams[gromacsType].harmonic.rB = myval;
+            }
+                        
+            fp = fs.findParameterTypeConst(bondId, "kb");
+            myval = convertToGromacs(fp.value(), fp.unit());
+            mtop->ffparams.iparams[gromacsType].harmonic.krA         =
+                mtop->ffparams.iparams[gromacsType].harmonic.krB     = myval;
+            if (ltop)
+            {
+                ltop->idef.iparams[gromacsType].harmonic.krA     =
+                ltop->idef.iparams[gromacsType].harmonic.krB = myval;
+            }
+        }
+        break;
     case F_ANGLES:
         {
             auto fp = fs.findParameterTypeConst(bondId, "angle");
