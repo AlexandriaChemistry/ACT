@@ -149,6 +149,12 @@ TEST_F (MolHandlerTest, HydrogenChloride)
     test("hydrogen-chloride.sdf", "ACS-g");
 }
 
+TEST_F (MolHandlerTest, Water)
+{
+
+    test("water-3-oep.log.pdb", "ACS-g");
+}
+
 TEST_F (MolHandlerTest, Acetone)
 {
     test("acetone-3-oep.log.pdb", "ACS-g");

@@ -2319,6 +2319,10 @@
       <parameter type="angle" unit="degree" value="105.7" uncertainty="0" minimum="84.56" maximum="132.125" ntrain="1" mutability="Bounded" nonnegative="yes"/>
       <parameter type="kt" unit="kJ/mol/rad2" value="300" uncertainty="0" minimum="240" maximum="375" ntrain="1" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
+    <parameterlist identifier="h_b~o3_b~h_b">
+      <parameter type="angle" unit="degree" value="108.7" uncertainty="0" minimum="84.56" maximum="132.125" ntrain="1" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="kt" unit="kJ/mol/rad2" value="300" uncertainty="0" minimum="240" maximum="375" ntrain="1" mutability="Bounded" nonnegative="no"/>
+    </parameterlist>
     <parameterlist identifier="h_b~o3_b~n2_b">
       <parameter type="angle" unit="degree" value="102.3" uncertainty="1.3" minimum="81.84" maximum="127.875" ntrain="6" mutability="Bounded" nonnegative="yes"/>
       <parameter type="kt" unit="kJ/mol/rad2" value="300" uncertainty="0" minimum="240" maximum="375" ntrain="1" mutability="Bounded" nonnegative="no"/>
