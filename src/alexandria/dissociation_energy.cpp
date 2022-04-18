@@ -425,7 +425,7 @@ double getDissociationEnergy(FILE               *fplog,
             delta = std::abs(average*0.1);
         }
         // Fetch the parameter from the force field
-        auto fp  = fs->findParameterType(bi.first, "Dm");
+        auto fp  = fs->findParameterType(bi.first, "De");
         int  ntr = ntrain.find(bi.first)->second;
         // Print to the log file    
         if (fplog)

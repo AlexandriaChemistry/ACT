@@ -6,7 +6,7 @@
   <Int64 Name="popSize">1</Int64>
   <Int64 Name="ncrossovers">0</Int64>
   <String Name="algorithm">MCMC</String>
-  <Bool Name="Dm">true</Bool>
+  <Bool Name="De">true</Bool>
   <Bool Name="sigma">true</Bool>
   <Bool Name="BONDS">true</Bool>
   <Bool Name="VANDERWAALS">true</Bool>
@@ -14,7 +14,7 @@
   <Real Name="Weight_TOT">1</Real>
   <Sequence Name="paramClass">
     <Int Name="Length">2</Int>
-    <String>Dm</String>
+    <String>De</String>
     <String>sigma</String>
   </Sequence>
   <Sequence Name="MoleculeName">
@@ -35,10 +35,10 @@
   </Sequence>
   <Sequence Name="paramNames">
     <Int Name="Length">7</Int>
-    <String>c3_b~c3_b-Dm</String>
-    <String>c3_b~h_b-Dm</String>
-    <String>c3_b~o3_b-Dm</String>
-    <String>h_b~o3_b-Dm</String>
+    <String>c3_b~c3_b-De</String>
+    <String>c3_b~h_b-De</String>
+    <String>c3_b~o3_b-De</String>
+    <String>h_b~o3_b-De</String>
     <String>c3-sigma</String>
     <String>h-sigma</String>
     <String>o3-sigma</String>

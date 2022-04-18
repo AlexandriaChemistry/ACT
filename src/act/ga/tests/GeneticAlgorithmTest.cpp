@@ -350,7 +350,7 @@ TEST_F (GeneticAlgorithmTest, MCMCEpot)  // MCMC
 {
     GMX_MPI_TEST(6);
     testIt(alexandria::OptimizerAlg::MCMC, 0, 1, false, 0,
-           { "Dm", "sigma" }, 1991, { alexandria::eRMS::EPOT });
+           { "De", "sigma" }, 1991, { alexandria::eRMS::EPOT });
 }
 
 TEST_F (GeneticAlgorithmTest, GAEpot)  // GA

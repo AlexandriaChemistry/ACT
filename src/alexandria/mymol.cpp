@@ -647,7 +647,7 @@ static void UpdateIdefEntry(const ForceFieldParameterList &fs,
                 ltop->idef.iparams[gromacsType].morse.b0B = myval;
             }
                     
-            fp = fs.findParameterTypeConst(bondId, "Dm");
+            fp = fs.findParameterTypeConst(bondId, "De");
             myval = convertToGromacs(fp.value(), fp.unit());
             mtop->ffparams.iparams[gromacsType].morse.cbA         =
                 mtop->ffparams.iparams[gromacsType].morse.cbB     = myval;
