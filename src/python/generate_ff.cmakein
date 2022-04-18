@@ -129,9 +129,12 @@ class AtomTypes:
       sys.exit("Unknown atomtype %s when adding reference %s" % ( atomtype, reference ))
     self.atp[atomtype]["reference"] = reference
     
-  def print_vdwparams(self, outf):
+  def print_vdwparams(self, outf, bham:bool):
     vdwparamlist = []
-    units = { "epsilon": "kJ/mol", "gamma": "", "sigma": "nm" }
+    units = { "epsilon": "kJ/mol", "sigma": "nm" }
+    if bham:
+      units["gamma"] = ""
+      
     for key in sorted(list(self.atp.keys()), key=lambda y: (self.atp[y]["index"])):
       param_header(outf, key)
       for u in units.keys():
@@ -164,7 +167,6 @@ class ForceField:
         self.reference = row[6]
         found = True
         print("chargetype  = {}".format(self.chargetype))
-        print("vanderwaals = {}".format(self.vanderwaals))
         print("polarizable = {}".format(self.polarizable))
     if not found:
       sys.exit("Unsupported force field %s" % qdist)
@@ -298,7 +300,8 @@ def write_polarization(out, myff, myatp):
   out.write("  </interaction>\n")
 
 def print_gentop(output, myff, myatp, bs,
-                 combRule, nexcl, anglefunc, pdihs, 
+                 combRule, nexcl:int, bham:bool,
+                 bondfunc:str, anglefunc:str, pdihfunc:str,
                  vsite, reference):
   out = open(output, "w")
   out.write("<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n")
@@ -320,12 +323,12 @@ def print_gentop(output, myff, myatp, bs,
   write_interactions(out, "VANDERWAALS", myff.vanderwaals,
                     True, False,
                      [ [ "combination_rule", combRule ] ] )
-  myatp.print_vdwparams(out)
+  myatp.print_vdwparams(out, bham)
   out.write("  </interaction>\n")
-  write_interactions(out, "BONDS", "MORSE", True, True)
+  write_interactions(out, "BONDS", bondfunc, True, True)
   write_interactions(out, "ANGLES", anglefunc, True, True)
   write_interactions(out, "LINEAR_ANGLES", "LINEAR_ANGLES", False, True)
-  write_interactions(out, "PROPER_DIHEDRALS", pdihs, True, True)
+  write_interactions(out, "PROPER_DIHEDRALS", pdihfunc, True, True)
   write_interactions(out, "IMPROPER_DIHEDRALS", "IDIHS", True, True)
 
   write_syms(out)  
@@ -362,6 +365,10 @@ if __name__ == '__main__':
         parser.add_argument("-comb",     "--combRule",   help=("Combination rule:  Arithmetic, Geometric, Kong. Default %s" % defcomb), type=str, default =defcomb)
         nexcl = 0
         parser.add_argument("-nexcl",    "--nexcl",      help=("Number of exclusions. Default %d" % nexcl), type=int,   default=nexcl)
+        defvdw = "BHAM"
+        parser.add_argument("-vdw",      "--vdw",   help="Which GROMACS function to use for Van der Waals interaction, LJ_SR or BHAM. Default is read from share/ffnames.csv", type=str, default=None)
+        defbond = "MORSE"
+        parser.add_argument("-bond",     "--bond",   help=("Which GROMACS function to use for bonds, BONDS (harmonic) or MORSE. Default %s" % defbond), type=str, default=defbond)
         defang = "ANGLES"
         parser.add_argument("-ang",      "--angle",   help=("Which GROMACS function to use for angles, ANGLES or UREY_BRADLEY. Default %s" % defang), type=str, default=defang)
         defdih = "FOURDIHS"
@@ -388,6 +395,8 @@ if __name__ == '__main__':
     myff   = ForceField()
     arg    = parseArguments(myff)
     myff.assign(arg.force_field)
+    if None != arg.vdw:
+      myff.vanderwaals = arg.vdw
     aprops = AtomProps()
     myatp  = AtomTypes()
     myatp.read4(arg.atomtypes, aprops, myff.polarizable)
@@ -404,5 +413,6 @@ if __name__ == '__main__':
       output += ".xml"
 
     print_gentop(output, myff, myatp, bs,
-                 arg.combRule, arg.nexcl, arg.angle, arg.dihedral,
+                 arg.combRule, arg.nexcl, myff.vanderwaals == "BHAM",
+                 arg.bond, arg.angle, arg.dihedral,
                  None, "Ghahremanpour2022a")
