@@ -137,10 +137,6 @@ void MolHandler::nma(MyMol               *mol,
         }
     }
 
-    // Get the atoms structure of the molecule
-    // FIXME: does this atoms structure also contain shells. i.e. is the atomIndex valid for this?
-    auto atoms = mol->atomsConst();
-
     // Compute and average hessian
     const int matrixSide = DIM*atomIndex.size();
     MatrixWrapper       hessian(matrixSide, matrixSide);
@@ -150,8 +146,6 @@ void MolHandler::nma(MyMol               *mol,
 
     // Dispose single use commrec
     done_commrec(crtmp);
-
-    // TODO: maybe print the hessian?
 
     // divide elements hessian[i][j] by sqrt(mass[i])*sqrt(mass[j])
     double massFac;
@@ -163,7 +157,7 @@ void MolHandler::nma(MyMol               *mol,
             for (size_t k = 0; (k < atomIndex.size()); k++)
             {
                 size_t ak = atomIndex[k];
-                massFac   = gmx::invsqrt(atoms.atom[ai].m * atoms.atom[ak].m);
+                massFac   = gmx::invsqrt(mdatoms->massT[ai] * mdatoms->massT[ak]);
                 for (size_t l = 0; (l < DIM); l++)
                 {
                     hessian.mult(i+j, k+l, massFac);
@@ -185,7 +179,7 @@ void MolHandler::nma(MyMol               *mol,
         for (size_t j = 0; j < atomIndex.size(); j++)
         {
             size_t aj = atomIndex[j];
-            massFac   = gmx::invsqrt(atoms.atom[aj].m);
+            massFac   = gmx::invsqrt(mdatoms->massT[aj]);
             for (size_t k = 0; (k < DIM); k++)
             {
                 eigenvectors[i * matrixSide + j * DIM + k] *= massFac;
