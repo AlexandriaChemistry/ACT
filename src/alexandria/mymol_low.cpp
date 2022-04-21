@@ -367,7 +367,7 @@ static void getBhamParams(const ForceFieldParameterList &fa,
         case eCOMB_WALDMAN_HAGLER: // Waldman & Hagler, J. Comp. Chem., Year: 1993. 
             *a = pow(((pow(sigmaI,6)+pow(sigmaJ,6))/2.0),(1/6));
             *b = std::sqrt(epsilonI * epsilonJ) * ((2.0 * pow(epsilonI,3) * pow(epsilonJ,3))/(pow(epsilonI,6) + pow(epsilonJ,6)));
-            *c = *a * (0.5*((gammaI/sigmaI)+(gammaJ/sigmaJ)));
+            *c = 0.5 * (gammaI + gammaJ);;
             break;            
         case eCOMB_GEOM_SIG_EPS:
         case eCOMB_NONE:
