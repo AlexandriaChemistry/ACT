@@ -297,7 +297,7 @@ bool HybridGAMC::evolve(ga::Genome *bestGenome)
         {
             fprintf(debug, "Computing probabilities...\n");
         }
-        probabilityComputer()->compute(gp);
+        probabilityComputer()->compute(gp, generation);
         
         if (debug)
         {

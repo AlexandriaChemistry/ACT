@@ -196,6 +196,8 @@ void GAConfigHandler::add_pargs(std::vector<t_pargs> *pargs)
           "Probability computation algorithm" },
         { "-boltz_temp", FALSE, etREAL, {&boltzTemp_},
           "Initial temperature for Boltzmann probability computing." },
+        { "-boltz_anneal", FALSE, etREAL, {&boltzAnneal_},
+          "Starting from this fraction of generations, the Boltzmann temperature will be linearly lowered until it reaches 0 at the last generation." },
         { "-pr_cross", FALSE, etREAL, {&prCross_},
           "Probability of a crossover event." },
         { "-pr_mut", FALSE, etREAL, {&prMut_},
@@ -256,6 +258,8 @@ void GAConfigHandler::check_pargs()
     
     GMX_RELEASE_ASSERT(boltzTemp_ >= 0, "-boltz_temp must be nonnegative.");
     
+    GMX_RELEASE_ASSERT(boltzAnneal_ >= 0 && boltzAnneal_ <= 1, "-boltz_anneal must be in range [0, 1].");
+
     GMX_RELEASE_ASSERT(prCross_ >= 0 && prCross_ <= 1, "-pr_cross must be in [0,1].");
     
     GMX_RELEASE_ASSERT(prMut_ >= 0 && prMut_ <= 1, "-pr_mut must be in [0,1].");

@@ -96,8 +96,10 @@ private:
     bool sort_ = true;
     //! Probability computing algorithm
     const char *probComputer_[5] = {nullptr, "RANK", "FITNESS", "BOLTZMANN", nullptr};
-    //! Boltzmann probability temperature. TODO: This temperature should be lowered over time.
+    //! Boltzmann probability temperature.
     real boltzTemp_ = 1;
+    //! Anneal start (as fraction of maxGenerations) for Boltzmann temperature
+    real boltzAnneal_ = 1;
     //! Probability of crossover
     real prCross_ = 0.35;
     //! Probability of mutation
@@ -175,6 +177,9 @@ public:
 
     //! \return the Boltzmann temperature parameter
     real boltzTemp() const { return boltzTemp_; }
+
+    //! \return the Boltzmann anneal starting fraction
+    real boltzAnneal() const { return boltzAnneal_; };
 
     //! \return the probability of crossover
     real prCross() const { return prCross_; }

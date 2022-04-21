@@ -259,7 +259,10 @@ void OptACM::initMaster()
         }
     case ProbabilityComputerAlg::pcBOLTZMANN:
         {
-            probComputer = new ga::BoltzmannProbabilityComputer(gach_.boltzTemp(), gach_.popSize());
+            probComputer = new ga::BoltzmannProbabilityComputer(
+                gach_.boltzTemp(), gach_.maxGenerations(),
+                gach_.boltzAnneal(), gach_.popSize()
+            );
             break;
         }
     }
