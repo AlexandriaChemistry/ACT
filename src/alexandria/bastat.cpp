@@ -193,7 +193,6 @@ int bastat(int argc, char *argv[])
     MolSelect                        gms;
     std::vector<alexandria::MolProp> mp;
     std::string                      method, basis;
-    splitLot(lot, &method, &basis);
     AllBondeds bonds;
     
     bonds.addOptions(&pa);    
@@ -204,6 +203,7 @@ int bastat(int argc, char *argv[])
         return 0;
     }
 
+    splitLot(lot, &method, &basis);
     fp                 = gmx_ffopen(opt2fn("-g", NFILE, fnm), "w");
     print_memory_usage(debug);
     time(&my_t);
