@@ -35,6 +35,8 @@ def parseArguments():
   parser.add_argument("-elem",       "--elements",     help="List of elements to filter compounds, e.g. 'C H'. Default allow all.",  type=str,         default=None)
   parser.add_argument("-fullelem",   "--fullelem",     help="Select a molecule if all its elements exists in -elem",   action="store_true")
   parser.add_argument("-supported",  "--supported",    help="Only non-radical compounds with elements supported by Alexandria FF",               action="store_true")
+  maxweight = 0.0
+  parser.add_argument("-maxwt", "--maxweight",         help="Maximum molecular weight, 0 is no limit. Default "+str(maxweight), type=float, default=maxweight)
   parser.add_argument("-nometal",    "--noMetal",      help="Remove metals from the selected molecules",               action="store_true")
   parser.add_argument("-noradical",  "--noRadical",    help="Remove radicals from the selected molecules",             action="store_true")
   parser.add_argument("-charged",    "--charged",      help="Select charged compounds only",                           action="store_true")
@@ -95,6 +97,13 @@ def filter_mols_by_element(mols, my_elems, fullelem = False):
           have_all = False
       if have_all:
         filtered_mols.append(mol)
+  return filtered_mols
+
+def filter_maxweight(mols, maxweight:float):
+  filtered_mols = []
+  for mol in mols:
+    if float(mol.weight) <= maxweight:
+      filtered_mols.append(mol)
   return filtered_mols
 
 def filter_metals(mols):
@@ -208,6 +217,8 @@ if __name__ == '__main__':
     mols = filter_mols_by_class(mols, args.molclass)
   if args.unstrained:
     mols = filter_strained(mols)
+  if args.maxweight > 0:
+    mols = filter_maxweight(mols, args.maxweight)
 
   print("%s of the rest are selected to generate %s.dat randomly." % (len(mols) , args.outfile))
 
