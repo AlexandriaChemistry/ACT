@@ -2397,7 +2397,7 @@ immStatus MyMol::getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
         }
     }
     xatom.resizeWithPadding(natom);
-    
+    bool foundNothing = true;
     for (const auto &miq : iqm)
     {
         auto mpo = miq.first;
@@ -2429,10 +2429,7 @@ immStatus MyMol::getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
                             qp->second.calcMoments();
                         }
                     }
-                }
-                else
-                {
-                    imm = immStatus::NoData;
+                    foundNothing = false;
                 }
             }
             break;
@@ -2445,10 +2442,7 @@ immStatus MyMol::getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
                 if (gp)
                 {
                     energy_.insert(std::pair<MolPropObservable, double>(mpo, gp->getValue()));
-                }
-                else
-                {
-                    imm = immStatus::NoData;
+                    foundNothing = false;
                 }
             }
             break;
@@ -2461,10 +2455,7 @@ immStatus MyMol::getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
                 if (gp)
                 {
                     qProps_.find(qType::Elec)->second.setMultipole(mpo, gp->getVector());
-                }
-                else
-                {
-                    imm = immStatus::NoData;
+                    foundNothing = false; 
                 }
             }
             break;
@@ -2475,10 +2466,7 @@ immStatus MyMol::getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
                 {
                     auto qelec = qTypeProps(qType::Elec);
                     qelec->setPolarizabilityTensor(gp->getTensor());
-                }
-                else
-                {
-                    imm = immStatus::NoData;
+                    foundNothing = false;
                 }
             }
             break;
@@ -2486,7 +2474,10 @@ immStatus MyMol::getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
             break;
         }
     }
-
+    if (foundNothing)
+    {
+        imm = immStatus::NoData;
+    }
     return imm;
 }
 
