@@ -81,7 +81,7 @@ const std::string &probabilityComputerAlgToString(ProbabilityComputerAlg opt)
 void BayesConfigHandler::add_pargs(std::vector<t_pargs> *pargs)
 {
     t_pargs pa[] = {
-        { "-maxiter", FALSE, etINT, {&maxiter_},
+        { "-max_iter", FALSE, etINT, {&maxiter_},
           "Max number of iterations for MCMC optimization. Also applies for the mutation step in the HYBRID optimization algoroithm." },
         { "-temp",    FALSE, etREAL, {&temperature_},
           "'Temperature' for the Monte Carlo simulation." },
