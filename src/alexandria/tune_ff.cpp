@@ -439,11 +439,22 @@ void OptACM::printNumCalcDevEstimate()
     nCalcDevTest += 1;  // At the end, for the best
     nCalcDevIgnore += 1;  // At the end, for the best
 
-    fprintf(
-        logFile(),
-        "\nMaximum number of fitness computations to be done for %d generations:\n  - Train: %ld\n  - Test: %ld\n  - Ignore: %ld\nConsider that in GA and HYBRID each penalty conveys an extra fitness computation per genome for the training set.\n\n",
-        gach_.maxGenerations(), nCalcDevTrain, nCalcDevTest, nCalcDevIgnore
-    );
+    if (gach_.optimizer() == OptimizerAlg::MCMC)
+    {
+        fprintf(
+            logFile(),
+            "\nMaximum number of fitness computations to be done for MCMC:\n  - Train: %ld\n  - Test: %ld\n  - Ignore: %ld\n\n",
+            nCalcDevTrain, nCalcDevTest, nCalcDevIgnore
+        );
+    }
+    else  // GA/HYBRID
+    {
+        fprintf(
+            logFile(),
+            "\nMaximum number of fitness computations to be done for %d generations:\n  - Train: %ld\n  - Test: %ld\n  - Ignore: %ld\nConsider that in GA and HYBRID each penalty conveys an extra fitness computation per genome for the training set.\n\n",
+            gach_.maxGenerations(), nCalcDevTrain, nCalcDevTest, nCalcDevIgnore
+        );
+    }
 }
 
 void OptACM::printGenomeTable(const ga::Genome   &genome,
