@@ -404,11 +404,6 @@ void ForceDevComputer::calcDeviation(      MyMol                          *mymol
                                      const gmx_unused std::vector<double> &param,
                                      const gmx_unused CommunicationRecord *commrec)
 {
-    // Only compute forces for structures that have an optimize reference
-    if (JobType::OPT != mymol->jobType())
-    {
-        return;
-    }
     auto myatoms = mymol->atomsConst();
     (*targets).find(eRMS::Force2)->second.increase(1, mymol->force2()/myatoms.nr);
 }
