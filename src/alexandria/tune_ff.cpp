@@ -681,7 +681,7 @@ int tune_ff(int argc, char *argv[])
 
     gmx_output_env_t           *oenv;
     MolSelect                   gms;
-    TuneForceFieldPrinter       printer;
+    TuneForceFieldPrinter       printer;  // TODO: pargs is a ConfigHandler, maybe we could inherit the superclass?
 
     std::vector<t_pargs>        pargs;
     {

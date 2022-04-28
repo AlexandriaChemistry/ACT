@@ -82,6 +82,8 @@ using qtStats = std::map<qType, gmx_stats>;
         real isopol_toler_        = 2;
         //! Fit regression analysis of results to y = ax+b instead of y = ax
         bool useOffset_           = false;
+        //! Perform energy minimization and compute vibrational frequencies for each molecule (after optimizing the force field if -optimize is enabled)
+        bool calcFrequencies_     = true;
 
         //! \brief Analyse polarizability, add to statistics and print
         void analysePolarisability(FILE              *fp,

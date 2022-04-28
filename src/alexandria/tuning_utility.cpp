@@ -473,7 +473,9 @@ void TuneForceFieldPrinter::addOptions(std::vector<t_pargs> *pargs)
         { "-isopol_toler", FALSE, etREAL, {&isopol_toler_},
           "Tolerance (A^3) for marking isotropic polarizability as an outlier in the log file" },
         { "-use_offset", FALSE, etBOOL,{&useOffset_},
-          "Fit regression analysis of results to y = ax+b instead of y = ax" }
+          "Fit regression analysis of results to y = ax+b instead of y = ax" },
+        { "-calc_frequencies",  FALSE, etBOOL, {&calcFrequencies_},
+              "Perform energy minimization and compute vibrational frequencies for each molecule (after optimizing the force field if -optimize is enabled)." }
     };
     doAddOptions(pargs, sizeof(pa)/sizeof(pa[0]), pa);
 }
@@ -650,12 +652,12 @@ void TuneForceFieldPrinter::printEnergyForces(FILE                   *fp,
         fprintf(fp, "   %-20s  %10.3f  Difference: %10.3f\n", "Reference EPOT", deltaE0,
                 eBefore[F_EPOT]-deltaE0);
     }
-    if (mol->jobType() == JobType::OPT)
+    if (mol->jobType() == JobType::OPT && calcFrequencies_)
     {
         double rmsd = 0;
         // Now get the minimized structure RMSD and Energy
         // TODO: Only do this for JobType::OPT
-        molHandler_.minimizeCoordinates(&(*mol), &rmsd);
+        molHandler_.minimizeCoordinates(mol, &rmsd);
         auto eAfter = mol->energyTerms();
         fprintf(fp, "   %-20s  %10s  %10s  %10s minimization\n", "Term", "Before", "After", "Difference");
         for(auto &ep : ePlot)
@@ -671,7 +673,7 @@ void TuneForceFieldPrinter::printEnergyForces(FILE                   *fp,
         if (!ref_freq.empty())
         {
             std::vector<double> frequencies, intensities;
-            molHandler_.nma(&(*mol), &frequencies, &intensities, fp);
+            molHandler_.nma(mol, &frequencies, &intensities, fp);
             auto unit = mpo_unit2(MolPropObservable::FREQUENCY);
             for(size_t k = 0; k < frequencies.size(); k++)
             {
