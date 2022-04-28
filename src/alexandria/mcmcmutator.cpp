@@ -158,6 +158,10 @@ void MCMCMutator::stepMCMC(ga::Genome                   *genome,
     // Store the original value of the parameter
     const double storeParam = (*param)[paramIndex];
 
+    // Datasets
+    const auto imstr = iMolSelect::Train;
+    const auto imste = iMolSelect::Test;
+
     // Change the parameter
     changeParam(genome, paramIndex);
 
@@ -170,26 +174,24 @@ void MCMCMutator::stepMCMC(ga::Genome                   *genome,
 
     std::map<iMolSelect, double> currEval;
     // Evaluate the energy on training set
-    auto ims = iMolSelect::Train;
-    currEval.insert({ims,
-            fitComp_->calcDeviation(param, CalcDev::Parallel, ims) });
-    double deltaEval = currEval[ims] - prevEval->find(ims)->second;
+    currEval.insert({imstr,
+            fitComp_->calcDeviation(param, CalcDev::Parallel, imstr) });
+    double deltaEval = currEval[imstr] - prevEval->find(imstr)->second;
     // Evaluate the energy on the test set only on whole steps!
     if (evaluateTestSet_ && pp == 0)
     {
-        ims            = iMolSelect::Test;
         // Is the first time we insert a test value?
-        if (currEval.find(ims) == currEval.end())
+        if (currEval.find(imste) == currEval.end())
         {
             double oldTest = currEval[iMolSelect::Train];
-            auto pef = prevEval->find(ims);
+            auto pef = prevEval->find(imste);
             if (prevEval->end() != pef)
             {
                 oldTest = pef->second;
             }
-            currEval.insert({ims, oldTest});
+            currEval.insert({imste, oldTest});
         }
-        currEval[ims] = fitComp_->calcDeviation(param, CalcDev::Parallel, ims);
+        currEval[imste] = fitComp_->calcDeviation(param, CalcDev::Parallel, imste);
     }
 
     // Accept any downhill move
@@ -213,7 +215,6 @@ void MCMCMutator::stepMCMC(ga::Genome                   *genome,
     const double xiter = iterOffset + iter + (1.0*pp)/genome->nBase();
     if (accept)
     {  // If the parameter change is accepted
-        auto imstr = iMolSelect::Train;
         if (!bestGenome->hasFitness(imstr) || 
             currEval[imstr] < bestGenome->fitness(imstr))  // If a new minimim was found
         {
@@ -224,15 +225,17 @@ void MCMCMutator::stepMCMC(ga::Genome                   *genome,
             }
             *bestGenome = *genome;
             bestGenome->setFitness(imstr, currEval[imstr]);  // Pass the fitness for training set to the best genome
+            if (evaluateTestSet_)
+            {
+                bestGenome->setFitness(imste, currEval[imste]);  // Pass the fitness for the test set to the best genome
+            }
             sii_->saveState(false);
         }
         prevEval->find(imstr)->second = currEval[imstr];
         genome->setFitness(imstr, currEval[imstr]);
         if (evaluateTestSet_)
         {
-            auto imste = iMolSelect::Test;
             prevEval->find(imste)->second = currEval[imste];
-            bestGenome->setFitness(imste, currEval[imste]);  // Pass the fitness for the test set to the best genome
             genome->setFitness(imste, currEval[imste]);
         }
         acceptedMoves_[paramIndex] += 1;
@@ -402,7 +405,7 @@ void MCMCMutator::printChi2Step(const std::map<iMolSelect, double> &chi2,
     {
         fprintf(fpe_.get(), "%8f  %10g  %10g\n",
                 xiter, chi2.find(iMolSelect::Train)->second,
-                chi2.find(iMolSelect::Train)->second);
+                chi2.find(iMolSelect::Test)->second);
     }
     else
     {
