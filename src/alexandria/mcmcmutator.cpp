@@ -178,20 +178,13 @@ void MCMCMutator::stepMCMC(ga::Genome                   *genome,
             fitComp_->calcDeviation(param, CalcDev::Parallel, imstr) });
     double deltaEval = currEval[imstr] - prevEval->find(imstr)->second;
     // Evaluate the energy on the test set only on whole steps!
-    if (evaluateTestSet_ && pp == 0)
+    if (evaluateTestSet_)
     {
-        // Is the first time we insert a test value?
-        if (currEval.find(imste) == currEval.end())
+        currEval.insert({imste, prevEval->find(imste)->second});
+        if (pp == 0)  // Recompute for test set
         {
-            double oldTest = currEval[iMolSelect::Train];
-            auto pef = prevEval->find(imste);
-            if (prevEval->end() != pef)
-            {
-                oldTest = pef->second;
-            }
-            currEval.insert({imste, oldTest});
+            currEval[imste] = fitComp_->calcDeviation(param, CalcDev::Parallel, imste);
         }
-        currEval[imste] = fitComp_->calcDeviation(param, CalcDev::Parallel, imste);
     }
 
     // Accept any downhill move
