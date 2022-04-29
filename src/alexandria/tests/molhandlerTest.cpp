@@ -143,6 +143,12 @@ protected:
     }
 };
 
+#if CMAKE_BUILD_TYPE == CMAKE_BUILD_TYPE_RELEASE
+TEST_F (MolHandlerTest, CarbonDioxide)
+{
+    test("carbon-dioxide.sdf", "ACS-g");
+}
+
 TEST_F (MolHandlerTest, HydrogenChloride)
 {
 
@@ -164,11 +170,7 @@ TEST_F (MolHandlerTest, Uracil)
 {
     test("acetone-3-oep.log.pdb", "ACS-g");
 }
-
-TEST_F (MolHandlerTest, CarbonDioxide)
-{
-    test("carbon-dioxide.pdb", "ACS-g");
-}
+#endif
 
 } // namespace
 

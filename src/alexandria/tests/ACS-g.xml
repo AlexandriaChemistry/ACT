@@ -430,8 +430,8 @@
       <parameter type="kb" unit="kJ/mol/nm2" value="300000" uncertainty="0" minimum="240000" maximum="375000" ntrain="1" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c1_b=o2_b">
-      <parameter type="bondlength" unit="pm" value="116.4" uncertainty="0.7" minimum="93.12" maximum="145.5" ntrain="6" mutability="Bounded" nonnegative="yes"/>
-      <parameter type="kb" unit="kJ/mol/nm2" value="300000" uncertainty="0" minimum="240000" maximum="375000" ntrain="1" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="bondlength" unit="pm" value="116.1" uncertainty="0.7" minimum="93.12" maximum="145.5" ntrain="6" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="kb" unit="kJ/mol/nm2" value="770200" uncertainty="0" minimum="240000" maximum="875000" ntrain="1" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c1_b=p2_b">
       <parameter type="bondlength" unit="pm" value="164.9" uncertainty="0.7" minimum="131.92" maximum="206.125" ntrain="2" mutability="Bounded" nonnegative="yes"/>
@@ -2946,10 +2946,10 @@
       <parameter type="r13lin" unit="pm" value="248.966" uncertainty="0" minimum="199.173" maximum="311.208" ntrain="2" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="o2_b=c1_b=o2_b">
-      <parameter type="a" unit="" value="0.5" uncertainty="0.989949" minimum="0.495" maximum="0.505051" ntrain="1" mutability="Bounded" nonnegative="yes"/>
-      <parameter type="klin" unit="kJ/mol/nm2" value="20000" uncertainty="0" minimum="16000" maximum="25000" ntrain="1" mutability="Bounded" nonnegative="yes"/>
-      <parameter type="kublin" unit="kJ/mol/nm2" value="30000" uncertainty="0" minimum="24000" maximum="37500" ntrain="1" mutability="Bounded" nonnegative="no"/>
-      <parameter type="r13lin" unit="pm" value="232.8" uncertainty="0" minimum="186.24" maximum="291" ntrain="1" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="a" unit="" value="0.5" uncertainty="0." minimum="0.495" maximum="0.505051" ntrain="1" mutability="Fixed" nonnegative="yes"/>
+      <parameter type="klin" unit="kJ/mol/nm2" value="220066" uncertainty="0" minimum="16000" maximum="250000" ntrain="1" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="kublin" unit="kJ/mol/nm2" value="164800" uncertainty="0" minimum="24000" maximum="37500" ntrain="1" mutability="Bounded" nonnegative="no"/>
+      <parameter type="r13lin" unit="pm" value="232.2" uncertainty="0" minimum="186.24" maximum="291" ntrain="1" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="o3_b~c1_b#n1_b">
       <parameter type="a" unit="" value="0.471358" uncertainty="1.02956" minimum="0.466645" maximum="0.47612" ntrain="1" mutability="Bounded" nonnegative="yes"/>
