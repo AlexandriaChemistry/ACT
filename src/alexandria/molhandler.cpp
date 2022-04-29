@@ -86,27 +86,27 @@ double MolHandler::computeHessian(      MyMol               *mol,
                         int atomJ = atomIndex[aj];
                         for (int d = 0; d < DIM; d++)
                         {
-                            fneg[aj*DIM+d] = mol->f_[atomJ][d];
+                            int row   = aj*DIM+d;
+                            fneg[row] = mol->f_[atomJ][d];
                         }
                     }
                 }
             }
             mol->state_->x[atomI][atomXYZ] = xyzRef;  // Restore positions
+            
+            int col = ai*DIM+atomXYZ;
+            for(size_t aj = 0; aj < atomIndex.size(); aj++)
             {
-                int col = ai*DIM+atomXYZ;
-                for(size_t aj = 0; aj < atomIndex.size(); aj++)
+                int    atomJ = atomIndex[aj];
+                for(int d = 0; d < DIM; d++)
                 {
-                    int    atomJ = atomIndex[aj];
-                    for(int d = 0; d < DIM; d++)
+                    int    row   = aj*DIM+d;
+                    double value = -(mol->f_[atomJ][d]-fneg[row])/(2*stepSize);
+                    if (false && debug)
                     {
-                        int    row   = aj*DIM+d;
-                        double value = -(mol->f_[atomJ][d]-fneg[row])/(2*stepSize);
-                        if (false && debug)
-                        {
-                            fprintf(debug, "Setting H[%2d][%2d] = %10g\n", row, col, value); 
-                        }
-                        hessian->set(row, col, value);
+                        fprintf(debug, "Setting H[%2d][%2d] = %10g\n", row, col, value); 
                     }
+                    hessian->set(row, col, value);
                 }
             }
         }
@@ -149,6 +149,7 @@ void MolHandler::nma(MyMol               *mol,
 
     // divide elements hessian[i][j] by sqrt(mass[i])*sqrt(mass[j])
     double massFac;
+    auto atoms = mol->atoms();
     for (size_t i = 0; (i < atomIndex.size()); i++)
     {
         size_t ai = atomIndex[i];
@@ -157,10 +158,10 @@ void MolHandler::nma(MyMol               *mol,
             for (size_t k = 0; (k < atomIndex.size()); k++)
             {
                 size_t ak = atomIndex[k];
-                massFac   = gmx::invsqrt(mdatoms->massT[ai] * mdatoms->massT[ak]);
+                massFac   = gmx::invsqrt(atoms->atom[ai].m * atoms->atom[ak].m);
                 for (size_t l = 0; (l < DIM); l++)
                 {
-                    hessian.mult(i+j, k+l, massFac);
+                    hessian.mult(i*DIM+j, k*DIM+l, massFac);
                 }
             }
         }
@@ -179,7 +180,7 @@ void MolHandler::nma(MyMol               *mol,
         for (size_t j = 0; j < atomIndex.size(); j++)
         {
             size_t aj = atomIndex[j];
-            massFac   = gmx::invsqrt(mdatoms->massT[aj]);
+            massFac   = gmx::invsqrt(atoms->atom[aj].m);
             for (size_t k = 0; (k < DIM); k++)
             {
                 eigenvectors[i * matrixSide + j * DIM + k] *= massFac;
