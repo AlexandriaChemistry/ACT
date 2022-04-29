@@ -50,7 +50,7 @@ namespace alexandria
                                  const Poldata   *pd);  
                                
     /*! \brief
-     * Generates a LaTeX table containing the chi and jaa values 
+     * Generates a LaTeX table containing the chi and eta values 
      * for Alexandria Charge Models
      *
      * \param[out] fp   File pointer to write to

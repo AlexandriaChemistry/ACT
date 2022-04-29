@@ -15086,87 +15086,87 @@
     <option key="reference" value="Ghahremanpour2022a"/>
     <parameterlist identifier="br_z">
       <parameter type="chi" unit="eV" value="6" uncertainty="0" minimum="4.8" maximum="7.5" ntrain="1" mutability="Bounded" nonnegative="yes"/>
-      <parameter type="jaa" unit="eV/e" value="14" uncertainty="0" minimum="11.2" maximum="17.5" ntrain="1" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="eta" unit="eV/e" value="14" uncertainty="0" minimum="11.2" maximum="17.5" ntrain="1" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c1_z">
       <parameter type="chi" unit="eV" value="4" uncertainty="0" minimum="3.2" maximum="5" ntrain="1" mutability="Bounded" nonnegative="yes"/>
-      <parameter type="jaa" unit="eV/e" value="10" uncertainty="0" minimum="8" maximum="12.5" ntrain="1" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="eta" unit="eV/e" value="10" uncertainty="0" minimum="8" maximum="12.5" ntrain="1" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c2_z">
       <parameter type="chi" unit="eV" value="5" uncertainty="0" minimum="4" maximum="6.25" ntrain="1" mutability="Bounded" nonnegative="yes"/>
-      <parameter type="jaa" unit="eV/e" value="9" uncertainty="0" minimum="7.2" maximum="11.25" ntrain="1" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="eta" unit="eV/e" value="9" uncertainty="0" minimum="7.2" maximum="11.25" ntrain="1" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c3_z">
       <parameter type="chi" unit="eV" value="5" uncertainty="0" minimum="4" maximum="6.25" ntrain="1" mutability="Bounded" nonnegative="yes"/>
-      <parameter type="jaa" unit="eV/e" value="9" uncertainty="0" minimum="7.2" maximum="11.25" ntrain="1" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="eta" unit="eV/e" value="9" uncertainty="0" minimum="7.2" maximum="11.25" ntrain="1" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="cl_z">
       <parameter type="chi" unit="eV" value="5" uncertainty="0" minimum="4" maximum="6.25" ntrain="1" mutability="Bounded" nonnegative="yes"/>
-      <parameter type="jaa" unit="eV/e" value="14" uncertainty="0" minimum="11.2" maximum="17.5" ntrain="1" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="eta" unit="eV/e" value="14" uncertainty="0" minimum="11.2" maximum="17.5" ntrain="1" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="f_z">
       <parameter type="chi" unit="eV" value="7" uncertainty="0" minimum="5.6" maximum="8.75" ntrain="1" mutability="Bounded" nonnegative="yes"/>
-      <parameter type="jaa" unit="eV/e" value="14" uncertainty="0" minimum="11.2" maximum="17.5" ntrain="1" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="eta" unit="eV/e" value="14" uncertainty="0" minimum="11.2" maximum="17.5" ntrain="1" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="h_z">
       <parameter type="chi" unit="eV" value="3.5" uncertainty="0" minimum="2.8" maximum="4.375" ntrain="1" mutability="Bounded" nonnegative="yes"/>
-      <parameter type="jaa" unit="eV/e" value="14" uncertainty="0" minimum="11.2" maximum="17.5" ntrain="1" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="eta" unit="eV/e" value="14" uncertainty="0" minimum="11.2" maximum="17.5" ntrain="1" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="i_z">
       <parameter type="chi" unit="eV" value="4" uncertainty="0" minimum="3.2" maximum="5" ntrain="1" mutability="Bounded" nonnegative="yes"/>
-      <parameter type="jaa" unit="eV/e" value="10" uncertainty="0" minimum="8" maximum="12.5" ntrain="1" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="eta" unit="eV/e" value="10" uncertainty="0" minimum="8" maximum="12.5" ntrain="1" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="n1_z">
       <parameter type="chi" unit="eV" value="6" uncertainty="0" minimum="4.8" maximum="7.5" ntrain="1" mutability="Bounded" nonnegative="yes"/>
-      <parameter type="jaa" unit="eV/e" value="11" uncertainty="0" minimum="8.8" maximum="13.75" ntrain="1" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="eta" unit="eV/e" value="11" uncertainty="0" minimum="8.8" maximum="13.75" ntrain="1" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="n2_z">
       <parameter type="chi" unit="eV" value="6" uncertainty="0" minimum="4.8" maximum="7.5" ntrain="1" mutability="Bounded" nonnegative="yes"/>
-      <parameter type="jaa" unit="eV/e" value="11" uncertainty="0" minimum="8.8" maximum="13.75" ntrain="1" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="eta" unit="eV/e" value="11" uncertainty="0" minimum="8.8" maximum="13.75" ntrain="1" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="n3_z">
       <parameter type="chi" unit="eV" value="6" uncertainty="0" minimum="4.8" maximum="7.5" ntrain="1" mutability="Bounded" nonnegative="yes"/>
-      <parameter type="jaa" unit="eV/e" value="11" uncertainty="0" minimum="8.8" maximum="13.75" ntrain="1" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="eta" unit="eV/e" value="11" uncertainty="0" minimum="8.8" maximum="13.75" ntrain="1" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="n4_z">
       <parameter type="chi" unit="eV" value="6" uncertainty="0" minimum="4.8" maximum="7.5" ntrain="1" mutability="Bounded" nonnegative="yes"/>
-      <parameter type="jaa" unit="eV/e" value="11" uncertainty="0" minimum="8.8" maximum="13.75" ntrain="1" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="eta" unit="eV/e" value="11" uncertainty="0" minimum="8.8" maximum="13.75" ntrain="1" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="o1_z">
       <parameter type="chi" unit="eV" value="6" uncertainty="0" minimum="4.8" maximum="7.5" ntrain="1" mutability="Bounded" nonnegative="yes"/>
-      <parameter type="jaa" unit="eV/e" value="10" uncertainty="0" minimum="8" maximum="12.5" ntrain="1" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="eta" unit="eV/e" value="10" uncertainty="0" minimum="8" maximum="12.5" ntrain="1" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="o2_z">
       <parameter type="chi" unit="eV" value="6" uncertainty="0" minimum="4.8" maximum="7.5" ntrain="1" mutability="Bounded" nonnegative="yes"/>
-      <parameter type="jaa" unit="eV/e" value="10" uncertainty="0" minimum="8" maximum="12.5" ntrain="1" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="eta" unit="eV/e" value="10" uncertainty="0" minimum="8" maximum="12.5" ntrain="1" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="o3_z">
       <parameter type="chi" unit="eV" value="6" uncertainty="0" minimum="4.8" maximum="7.5" ntrain="1" mutability="Bounded" nonnegative="yes"/>
-      <parameter type="jaa" unit="eV/e" value="10" uncertainty="0" minimum="8" maximum="12.5" ntrain="1" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="eta" unit="eV/e" value="10" uncertainty="0" minimum="8" maximum="12.5" ntrain="1" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="p1_z">
       <parameter type="chi" unit="eV" value="5" uncertainty="0" minimum="4" maximum="6.25" ntrain="1" mutability="Bounded" nonnegative="yes"/>
-      <parameter type="jaa" unit="eV/e" value="14" uncertainty="0" minimum="11.2" maximum="17.5" ntrain="1" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="eta" unit="eV/e" value="14" uncertainty="0" minimum="11.2" maximum="17.5" ntrain="1" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="p2_z">
       <parameter type="chi" unit="eV" value="5" uncertainty="0" minimum="4" maximum="6.25" ntrain="1" mutability="Bounded" nonnegative="yes"/>
-      <parameter type="jaa" unit="eV/e" value="14" uncertainty="0" minimum="11.2" maximum="17.5" ntrain="1" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="eta" unit="eV/e" value="14" uncertainty="0" minimum="11.2" maximum="17.5" ntrain="1" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="p3_z">
       <parameter type="chi" unit="eV" value="5" uncertainty="0" minimum="4" maximum="6.25" ntrain="1" mutability="Bounded" nonnegative="yes"/>
-      <parameter type="jaa" unit="eV/e" value="14" uncertainty="0" minimum="11.2" maximum="17.5" ntrain="1" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="eta" unit="eV/e" value="14" uncertainty="0" minimum="11.2" maximum="17.5" ntrain="1" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="s1_z">
       <parameter type="chi" unit="eV" value="5" uncertainty="0" minimum="4" maximum="6.25" ntrain="1" mutability="Bounded" nonnegative="yes"/>
-      <parameter type="jaa" unit="eV/e" value="14" uncertainty="0" minimum="11.2" maximum="17.5" ntrain="1" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="eta" unit="eV/e" value="14" uncertainty="0" minimum="11.2" maximum="17.5" ntrain="1" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="s2_z">
       <parameter type="chi" unit="eV" value="5" uncertainty="0" minimum="4" maximum="6.25" ntrain="1" mutability="Bounded" nonnegative="yes"/>
-      <parameter type="jaa" unit="eV/e" value="14" uncertainty="0" minimum="11.2" maximum="17.5" ntrain="1" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="eta" unit="eV/e" value="14" uncertainty="0" minimum="11.2" maximum="17.5" ntrain="1" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="s3_z">
       <parameter type="chi" unit="eV" value="5" uncertainty="0" minimum="4" maximum="6.25" ntrain="1" mutability="Bounded" nonnegative="yes"/>
-      <parameter type="jaa" unit="eV/e" value="14" uncertainty="0" minimum="11.2" maximum="17.5" ntrain="1" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="eta" unit="eV/e" value="14" uncertainty="0" minimum="11.2" maximum="17.5" ntrain="1" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
   </interaction>
   <symmetric_charges>

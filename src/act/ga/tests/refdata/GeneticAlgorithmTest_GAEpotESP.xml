@@ -8,7 +8,7 @@
   <String Name="algorithm">GA</String>
   <Bool Name="chi">true</Bool>
   <Bool Name="epsilon">true</Bool>
-  <Bool Name="jaa">true</Bool>
+  <Bool Name="eta">true</Bool>
   <Bool Name="kt">true</Bool>
   <Bool Name="ANGLES">true</Bool>
   <Bool Name="VANDERWAALS">true</Bool>
@@ -20,7 +20,7 @@
     <Int Name="Length">4</Int>
     <String>chi</String>
     <String>epsilon</String>
-    <String>jaa</String>
+    <String>eta</String>
     <String>kt</String>
   </Sequence>
   <Sequence Name="MoleculeName">
@@ -59,11 +59,11 @@
     <String>h-epsilon</String>
     <String>o3-epsilon</String>
     <String>c3_z-chi</String>
-    <String>c3_z-jaa</String>
+    <String>c3_z-eta</String>
     <String>h_z-chi</String>
-    <String>h_z-jaa</String>
+    <String>h_z-eta</String>
     <String>o3_z-chi</String>
-    <String>o3_z-jaa</String>
+    <String>o3_z-eta</String>
   </Sequence>
   <Real Name="gach.percent">0.10000000000000001</Real>
   <Int64 Name="Maximum Number of Generations">10</Int64>

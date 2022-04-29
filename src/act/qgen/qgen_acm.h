@@ -154,8 +154,8 @@ private:
     std::vector<int>                 atomicNumber_;
     //! Parameters for EEM algorithm, chi is electronegativity
     std::vector<double>              chi0_;
-    //! Parameters for EEM algorithm, jaa is atomic hardness
-    std::vector<double>              jaa_;
+    //! Parameters for EEM algorithm, eta is atomic hardness
+    std::vector<double>              eta_;
     //! Right/hand side in the matrix equation
     std::vector<double>              rhs_;
     //! Atomic coordinates
@@ -184,7 +184,7 @@ private:
     /*! \brief Re-read the EEM parameters from the FF
      *
      * Update the parameters for the Alexandria Charge model.
-     * This includes, chi, JAA, zeta. In case a split charge
+     * This includes, chi, eta, zeta. In case a split charge
      * equilibration algorithm is used also the bond charge
      * correction parameters will be updated.
      * \param[in] pd    Force field database

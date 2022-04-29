@@ -75,7 +75,7 @@ QgenAcm::QgenAcm(const Poldata *pd,
                 GMX_THROW(gmx::InternalError(gmx::formatString("No ACM information for %s",
                                                                atype->id().id().c_str()).c_str()));
             }
-            jaa_.push_back(eem.findParameterTypeConst(acmtype, "jaa").value());
+            eta_.push_back(eem.findParameterTypeConst(acmtype, "eta").value());
             auto myrow = std::min(atype->row(), SLATER_MAX);
             row_.push_back(myrow);
             chi0_.push_back(eem.findParameterTypeConst(acmtype, "chi").value());
@@ -87,7 +87,7 @@ QgenAcm::QgenAcm(const Poldata *pd,
         {
             fixed_.push_back(i);
             q_.push_back(atoms->atom[i].q);
-            jaa_.push_back(0.0);
+            eta_.push_back(0.0);
             chi0_.push_back(0.0);
             row_.push_back(0);
         }
@@ -153,7 +153,7 @@ void QgenAcm::updateParameters(const Poldata *pd,
                                                                acm_id_[i].id().c_str()).c_str()));
             }
             chi0_[i] = fs.findParameterTypeConst(acm_id_[i], "chi").value();
-            jaa_[i]  = fs.findParameterTypeConst(acm_id_[i], "jaa").value();
+            eta_[i]  = fs.findParameterTypeConst(acm_id_[i], "eta").value();
         }
     }
     // Update fixed charges
@@ -230,7 +230,7 @@ void QgenAcm::dump(FILE *fp, const t_atoms *atoms) const
             }
             fprintf(fp, "%4s %4s%5d %8g %8g",
                     *(atoms->resinfo[atoms->atom[i].resind].name),
-                    *(atoms->atomname[i]), i+1, jaa_[i], chi0_[i]);
+                    *(atoms->atomname[i]), i+1, eta_[i], chi0_[i]);
             fprintf(fp, " %3d %8.5f %8.4f\n", row_[i], q_[i], zeta_[i]);
         }
         fprintf(fp, "\n");
@@ -421,7 +421,7 @@ void QgenAcm::calcJcc(double epsilonr,
             }
             else
             {
-                auto j0 = jaa_[j];
+                auto j0 = eta_[j];
                 if ((bYang || bRappe) && (atomicNumber_[i] == 1))
                 {
                     auto zetaH = 1.0698;
@@ -487,7 +487,7 @@ void QgenAcm::calcRhs(double epsilonr)
         // Electronegativity
         rhs_[i]  = -chi0_[nfi]; 
         // TODO Check this stuff: Delta_Eta * q0
-        // rhs_[i] += jaa_[nfi]*q0_[i];
+        // rhs_[i] += eta_[nfi]*q0_[i];
         if (bHaveShell_)
         {
             // Core-Shell interaction
@@ -496,7 +496,7 @@ void QgenAcm::calcRhs(double epsilonr)
             auto shellId = myShell_.find(nfi);
             if (shellId != myShell_.end())
             {
-                rhs_[i] -= jaa_[nfi]*q_[shellId->second];
+                rhs_[i] -= eta_[nfi]*q_[shellId->second];
             }
         }
     }
@@ -712,7 +712,7 @@ int QgenAcm::solveSQE(FILE                    *fp,
             // Check this! Only to be done when there are shells!
             if (false && nonFixed_.size() < static_cast<size_t>(natom_))
             {
-                chi_corr[i] += jaa_[nfi] * q_[myShell_.find(nfi)->second];
+                chi_corr[i] += eta_[nfi] * q_[myShell_.find(nfi)->second];
                 chi_corr[i] += 0.5*calcJcs(nfi, epsilonr);
             }
         }

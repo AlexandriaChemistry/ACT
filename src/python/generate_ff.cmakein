@@ -45,7 +45,7 @@ class AtomTypes:
     rows   = get_csv_rows(act_library_filename(filename), 35)
     header = rows[0]
     # Expecting these elements in the file
-    elements = [ "atomtype", "element", "q_min", "q_max", "charge_mutability", "bondtype", "poltype", "zetatype", "acmtype", "epsilon_min", "epsilon_max", "epsilon_mutability", "gamma_min", "gamma_max", "gamma_mutability", "sigma_min", "sigma_max", "sigma_mutability", "radius", "row", "alpha_min", "alpha_max", "alpha_mutability", "zeta_min", "zeta_max", "zeta_mutability", "jaa_min", "jaa_max", "jaa_mutability", "chi_min", "chi_max", "chi_mutability", "comment", "ref_enthalpy", "reference" ]
+    elements = [ "atomtype", "element", "q_min", "q_max", "charge_mutability", "bondtype", "poltype", "zetatype", "acmtype", "epsilon_min", "epsilon_max", "epsilon_mutability", "gamma_min", "gamma_max", "gamma_mutability", "sigma_min", "sigma_max", "sigma_mutability", "radius", "row", "alpha_min", "alpha_max", "alpha_mutability", "zeta_min", "zeta_max", "zeta_mutability", "eta_min", "eta_max", "eta_mutability", "chi_min", "chi_max", "chi_mutability", "comment", "ref_enthalpy", "reference" ]
     # Simple check for completeness and correctness
     if len(header) != len(elements):
       sys.exit("Found %d elements on the header line in %s, expected %d" % ( len(header), filename, len(elements)))
@@ -273,13 +273,13 @@ def write_eem(out, myatp, reference):
       if elem in myeem:
         continue
       myeem[elem] = True
-      if "chi_min" in myatp.atp[elem] and "chi_max" in myatp.atp[elem] and "jaa_min" in myatp.atp[elem] and "jaa_max" in myatp.atp[elem] and "acmtype" in myatp.atp[elem]:
+      if "chi_min" in myatp.atp[elem] and "chi_max" in myatp.atp[elem] and "eta_min" in myatp.atp[elem] and "eta_max" in myatp.atp[elem] and "acmtype" in myatp.atp[elem]:
         if len(myatp.atp[elem]["acmtype"]) > 0:
           out.write("    <parameterlist identifier=\"%s\">\n" % myatp.atp[elem]["acmtype"])
           print_one(out, "chi", "eV",    myatp.atp[elem]["chi_min"], myatp.atp[elem]["chi_max"],
                     myatp.atp[elem]["chi_mutability"], True)
-          print_one(out, "jaa", "eV/e",  myatp.atp[elem]["jaa_min"], myatp.atp[elem]["jaa_max"],
-                    myatp.atp[elem]["jaa_mutability"], True)
+          print_one(out, "eta", "eV/e",  myatp.atp[elem]["eta_min"], myatp.atp[elem]["eta_max"],
+                    myatp.atp[elem]["eta_mutability"], True)
           out.write("    </parameterlist>\n")
   out.write("  </interaction>\n")
 

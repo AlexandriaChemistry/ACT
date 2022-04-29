@@ -701,10 +701,10 @@ void Poldata::checkConsistency(FILE *fp) const
         {
             auto eep = eem.findParametersConst(ztype);
             double chi0 = eep["chi"].value();
-            double J00  = eep["jaa"].value();
+            double J00  = eep["eta"].value();
             if (nullptr != fp)
             {
-                fprintf(fp, "chi0 %g J00 %g", chi0, J00);
+                fprintf(fp, "chi0 %g eta %g", chi0, J00);
             }
             double zeta = 0;//eep["zeta"].value();
             int    row  = eep["row"].value();

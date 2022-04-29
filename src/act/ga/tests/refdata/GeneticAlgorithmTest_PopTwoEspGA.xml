@@ -7,14 +7,14 @@
   <Int64 Name="ncrossovers">1</Int64>
   <String Name="algorithm">GA</String>
   <Bool Name="chi">true</Bool>
-  <Bool Name="jaa">true</Bool>
+  <Bool Name="eta">true</Bool>
   <Bool Name="ELECTRONEGATIVITYEQUALIZATION">true</Bool>
   <Real Name="Weight_ESP">1</Real>
   <Real Name="Weight_TOT">1</Real>
   <Sequence Name="paramClass">
     <Int Name="Length">2</Int>
     <String>chi</String>
-    <String>jaa</String>
+    <String>eta</String>
   </Sequence>
   <Sequence Name="MoleculeName">
     <Int Name="Length">3</Int>
@@ -34,11 +34,11 @@
   <Sequence Name="paramNames">
     <Int Name="Length">6</Int>
     <String>c3_z-chi</String>
-    <String>c3_z-jaa</String>
+    <String>c3_z-eta</String>
     <String>h_z-chi</String>
-    <String>h_z-jaa</String>
+    <String>h_z-eta</String>
     <String>o3_z-chi</String>
-    <String>o3_z-jaa</String>
+    <String>o3_z-eta</String>
   </Sequence>
   <Real Name="gach.percent">0.10000000000000001</Real>
   <Int64 Name="Maximum Number of Generations">10</Int64>

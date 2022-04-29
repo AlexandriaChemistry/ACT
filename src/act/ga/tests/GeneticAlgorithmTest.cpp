@@ -322,28 +322,28 @@ TEST_F (GeneticAlgorithmTest, PopOneMCMC)  // MCMC
 {
     GMX_MPI_TEST(6);
     testIt(alexandria::OptimizerAlg::MCMC, 0, 1, false, 0,
-           { "chi", "jaa" }, 1993, { alexandria::eRMS::MU });
+           { "chi", "eta" }, 1993, { alexandria::eRMS::MU });
 }
 
 TEST_F (GeneticAlgorithmTest, PopTwoEspGA)  // GA
 {
     GMX_MPI_TEST(6);
     testIt(alexandria::OptimizerAlg::GA, 0, 2, true, 1,
-           { "chi", "jaa" }, 1993, { alexandria::eRMS::ESP });
+           { "chi", "eta" }, 1993, { alexandria::eRMS::ESP });
 }
 
 TEST_F (GeneticAlgorithmTest, MCMCThreeVariables)  // MCMC
 {
     GMX_MPI_TEST(6);
     testIt(alexandria::OptimizerAlg::MCMC, 0, 1, false, 0,
-           { "chi", "jaa", "zeta" }, 1997, { alexandria::eRMS::MU });
+           { "chi", "eta", "zeta" }, 1997, { alexandria::eRMS::MU });
 }
 
 TEST_F (GeneticAlgorithmTest, MCMCTwoVariablesQuad)  // MCMC
 {
     GMX_MPI_TEST(6);
     testIt(alexandria::OptimizerAlg::MCMC, 0, 1, false, 0,
-           { "jaa", "zeta" }, 1997, { alexandria::eRMS::QUAD });
+           { "eta", "zeta" }, 1997, { alexandria::eRMS::QUAD });
 }
 
 TEST_F (GeneticAlgorithmTest, MCMCEpot)  // MCMC
@@ -364,7 +364,7 @@ TEST_F (GeneticAlgorithmTest, GAEpotESP)  // GA
 {
     GMX_MPI_TEST(6);
     testIt(alexandria::OptimizerAlg::GA, 0, 6, false, 0,
-           { "epsilon", "kt", "jaa", "chi" }, 1991, { alexandria::eRMS::EPOT, alexandria::eRMS::ESP } );
+           { "epsilon", "kt", "eta", "chi" }, 1991, { alexandria::eRMS::EPOT, alexandria::eRMS::ESP } );
 }
 #endif
 

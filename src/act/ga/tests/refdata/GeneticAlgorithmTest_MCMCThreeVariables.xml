@@ -7,7 +7,7 @@
   <Int64 Name="ncrossovers">0</Int64>
   <String Name="algorithm">MCMC</String>
   <Bool Name="chi">true</Bool>
-  <Bool Name="jaa">true</Bool>
+  <Bool Name="eta">true</Bool>
   <Bool Name="zeta">true</Bool>
   <Bool Name="CHARGEDISTRIBUTION">true</Bool>
   <Bool Name="ELECTRONEGATIVITYEQUALIZATION">true</Bool>
@@ -16,7 +16,7 @@
   <Sequence Name="paramClass">
     <Int Name="Length">3</Int>
     <String>chi</String>
-    <String>jaa</String>
+    <String>eta</String>
     <String>zeta</String>
   </Sequence>
   <Sequence Name="MoleculeName">
@@ -37,11 +37,11 @@
   <Sequence Name="paramNames">
     <Int Name="Length">6</Int>
     <String>c3_z-chi</String>
-    <String>c3_z-jaa</String>
+    <String>c3_z-eta</String>
     <String>h_z-chi</String>
-    <String>h_z-jaa</String>
+    <String>h_z-eta</String>
     <String>o3_z-chi</String>
-    <String>o3_z-jaa</String>
+    <String>o3_z-eta</String>
   </Sequence>
   <Int64 Name="bch.maxIter">20</Int64>
   <Int64 Name="bch.seed">1997</Int64>
