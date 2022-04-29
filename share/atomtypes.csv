@@ -1,4 +1,4 @@
-atomtype|element|q_min|q_max|charge_mutability|bondtype|poltype|zetatype|acmtype|epsilon_min|epsilon_max|epsilon_mutability|gamma_min|gamma_max|gamma_mutability|sigma_min|sigma_max|sigma_mutability|radius|row|alpha_min|alpha_max|alpha_mutability|zeta_min|zeta_max|zeta_mutability|jaa_min|jaa_max|jaa_mutability|chi_min|chi_max|chi_mutability|comment|ref_enthalpy|reference
+atomtype|element|q_min|q_max|charge_mutability|bondtype|poltype|zetatype|acmtype|epsilon_min|epsilon_max|epsilon_mutability|gamma_min|gamma_max|gamma_mutability|sigma_min|sigma_max|sigma_mutability|radius|row|alpha_min|alpha_max|alpha_mutability|zeta_min|zeta_max|zeta_mutability|eta_min|eta_max|eta_mutability|chi_min|chi_max|chi_mutability|comment|ref_enthalpy|reference
 #|||||||||kJ/mol||||||nm|||nm||A3|A3||1/nm|1/nm||eV|||eV|||||
 h|H|0|0|ACM|h_b|h_s|h_z|h_z|0.03|0.1|Bounded|10|20|Bounded|0.15|0.4|Bounded|0.031|1||||6|20|Bounded|6|24|Bounded|2|5|Bounded|hydrogen|222.232|
 h_s|X|-1.2|-0.4|Bounded|||h_s_z||0|0|Fixed|0|0|Fixed|0|0|Fixed|0|0|0.1|0.7|Bounded|6|20|Bounded|||||||hydrogen shell|0|
