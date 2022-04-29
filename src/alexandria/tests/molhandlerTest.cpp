@@ -165,6 +165,11 @@ TEST_F (MolHandlerTest, Uracil)
     test("acetone-3-oep.log.pdb", "ACS-g");
 }
 
+TEST_F (MolHandlerTest, CarbonDioxide)
+{
+    test("carbon-dioxide.pdb", "ACS-g");
+}
+
 } // namespace
 
 } // namespace alexandria

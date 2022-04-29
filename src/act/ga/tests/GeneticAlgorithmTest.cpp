@@ -303,7 +303,7 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
     
 };
 
-
+#ifdef CMAKE_BUILD_TYPE_DEBUG
 TEST_F (GeneticAlgorithmTest, PopSix)  // HYBRID
 {
     GMX_MPI_TEST(6);
@@ -366,7 +366,7 @@ TEST_F (GeneticAlgorithmTest, GAEpotESP)  // GA
     testIt(alexandria::OptimizerAlg::GA, 0, 6, false, 0,
            { "epsilon", "kt", "jaa", "chi" }, 1991, { alexandria::eRMS::EPOT, alexandria::eRMS::ESP } );
 }
-
+#endif
 
 }
 
