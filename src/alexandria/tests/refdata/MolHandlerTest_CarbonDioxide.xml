@@ -4,7 +4,8 @@
   <Real Name="Coordinate RMSD after minimizing">4.0828544155699744e-05</Real>
   <Real Name="Potential energy">1224.749</Real>
   <Sequence Name="Frequencies">
-    <Int Name="Length">3</Int>
+    <Int Name="Length">4</Int>
+    <Real>842.74874632526985</Real>
     <Real>842.74874632527121</Real>
     <Real>1220.1896159750429</Real>
     <Real>2383.6114405556546</Real>

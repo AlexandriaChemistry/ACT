@@ -70,6 +70,8 @@ protected:
     void test(const char *molname, const char *forcefield)
     {
         gmx::test::TestReferenceChecker checker_(this->rootChecker());
+        auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 5e-2);
+        checker_.setDefaultTolerance(tolerance);
         int                             maxpot   = 100;
         int                             nsymm    = 0;
         const char                     *conf     = (char *)"minimum";

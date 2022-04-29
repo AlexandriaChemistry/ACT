@@ -1196,15 +1196,31 @@ void MyMol::addBondVsites(FILE          *fp,
 bool MyMol::linearMolecule()
 {
     const auto myatoms = atoms();
-    int ncore = 0;
+    std::vector<int> core;
     for(int i = 0; i < myatoms->nr; i++)
     {
         if (myatoms->atom[i].ptype == eptAtom)
         {
-            ncore += 1;
+            core.push_back(i);
         }
     }
-    return ncore == 2;
+    if (core.size() <= 2)
+    {
+        return true;
+    }
+    t_pbc *pbc    = nullptr;
+    real th_toler = 175; // Degrees
+    bool linear   = true;
+    for(size_t c = 2; c < core.size(); c++)
+    {
+        linear = linear && is_linear(state_->x[core[c-2]], state_->x[core[c-1]], 
+                                     state_->x[core[c]], pbc, th_toler);
+        if (!linear)
+        {
+            break;
+        }
+    }
+    return linear;
 }
 
 void MyMol::addShells(FILE          *fp,

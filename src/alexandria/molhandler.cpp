@@ -127,11 +127,11 @@ void MolHandler::nma(MyMol               *mol,
     crtmp->nodeid = 0;
 
     // Get the indices of the real atoms of the molecule (not shells and such)
-    auto mdatoms = mol->MDatoms_->get()->mdatoms();
+    auto atoms = mol->atoms();
     std::vector<int> atomIndex;
-    for(int atom = 0; atom < mdatoms->nr; atom++)
+    for(int atom = 0; atom < atoms->nr; atom++)
     {
-        if (mdatoms->ptype[atom] == eptAtom)
+        if (atoms->atom[atom].ptype == eptAtom)
         {
             atomIndex.push_back(atom);
         }
@@ -149,7 +149,6 @@ void MolHandler::nma(MyMol               *mol,
 
     // divide elements hessian[i][j] by sqrt(mass[i])*sqrt(mass[j])
     double massFac;
-    auto atoms = mol->atoms();
     for (size_t i = 0; (i < atomIndex.size()); i++)
     {
         size_t ai = atomIndex[i];
@@ -167,13 +166,19 @@ void MolHandler::nma(MyMol               *mol,
         }
     }
 
+    // Get the vibrational frequencies
+    int rot_trans = 6;
+    if (mol->linearMolecule())
+    {
+        rot_trans = 5;
+    }
     // Call diagonalization routine
     // fprintf(stderr, "\nDiagonalizing to find vectors...\n");
     auto hessianFlat = hessian.flatten();
     std::vector<double> eigenvalues(matrixSide);
     std::vector<double> eigenvectors(matrixSide*matrixSide);
-    eigensolver(hessianFlat.data(), matrixSide, 0, matrixSide - 1, eigenvalues.data(), eigenvectors.data());
-
+    eigensolver(hessianFlat.data(), matrixSide, 0, matrixSide - 1,
+                eigenvalues.data(), eigenvectors.data());
     // Scale the output eigenvectors
     for (int i = 0; i < matrixSide; i++)
     {
@@ -188,12 +193,6 @@ void MolHandler::nma(MyMol               *mol,
         }
     }
 
-    // Get the vibrational frequencies
-    int rot_trans = 6;
-    if (mol->linearMolecule())
-    {
-        rot_trans = 5;
-    }
     frequencies->clear();
     intensities->clear();
     for (size_t i = rot_trans; i < eigenvalues.size(); i++)
