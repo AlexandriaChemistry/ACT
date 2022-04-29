@@ -137,7 +137,14 @@ protected:
             return;
         }
         checker_.checkReal(rmsd, "Coordinate RMSD after minimizing");
-        checker_.checkReal(mp_.energyTerms()[F_EPOT], "Potential energy");
+        for(int i = 0; i < F_NRE; i++)
+        {
+            if (mp_.energyTerms()[i] != 0)
+            {
+                checker_.checkReal(mp_.energyTerms()[i], 
+                                   interaction_function[i].longname);
+            }
+        }
         std::vector<double> freq, inten;
         mh.nma(&mp_, &freq, &inten, nullptr);
         checker_.checkSequence(freq.begin(), freq.end(), "Frequencies");

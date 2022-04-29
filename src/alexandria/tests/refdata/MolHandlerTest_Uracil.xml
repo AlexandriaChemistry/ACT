@@ -2,7 +2,14 @@
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
   <Real Name="Coordinate RMSD after minimizing">0.15770885853298017</Real>
-  <Real Name="Potential energy">152809.02607496234</Real>
+  <Real Name="Bond">14095.139720246072</Real>
+  <Real Name="Angle">59.104776474717333</Real>
+  <Real Name="Improper Dih.">1.4855605474050854e-11</Real>
+  <Real Name="LJ (SR)">134934.61369787893</Real>
+  <Real Name="Coulomb (SR)">-19.901119637386607</Real>
+  <Real Name="Atomization">3740.069</Real>
+  <Real Name="Potential">152809.02607496234</Real>
+  <Real Name="Total Energy">152809.02607496234</Real>
   <Sequence Name="Frequencies">
     <Int Name="Length">24</Int>
     <Real>0</Real>

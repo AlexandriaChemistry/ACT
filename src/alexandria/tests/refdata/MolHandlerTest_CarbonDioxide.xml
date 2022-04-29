@@ -2,7 +2,11 @@
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
   <Real Name="Coordinate RMSD after minimizing">4.0828544155699744e-05</Real>
-  <Real Name="Potential energy">1224.749</Real>
+  <Real Name="Bond">1.8541890539588113e-27</Real>
+  <Real Name="Lin. Angle">1.3529816812054303e-28</Real>
+  <Real Name="Atomization">1224.749</Real>
+  <Real Name="Potential">1224.749</Real>
+  <Real Name="Total Energy">1224.749</Real>
   <Sequence Name="Frequencies">
     <Int Name="Length">4</Int>
     <Real>842.74874632526985</Real>

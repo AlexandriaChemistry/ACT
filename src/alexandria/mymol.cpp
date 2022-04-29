@@ -1611,7 +1611,7 @@ immStatus MyMol::calculateEnergy(const t_commrec *crtmp,
     }
     enerd_->term[F_ATOMIZATION] = atomizationEnergy();
     enerd_->term[F_EPOT]       += atomizationEnergy();
-    enerd_->term[F_ETOT]       += atomizationEnergy();
+    enerd_->term[F_ETOT]        = enerd_->term[F_EPOT];
 
     return imm;
 }
