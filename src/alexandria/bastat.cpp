@@ -71,7 +71,7 @@ namespace alexandria
 {
 
 static void generate_bcc(Poldata *pd,
-                         double   hardness)
+                         double   delta_eta)
 {
     // Bonds should be present, so no checking
     auto bonds = pd->findForcesConst(InteractionType::BONDS);
@@ -85,9 +85,9 @@ static void generate_bcc(Poldata *pd,
     auto bcc   = pd->findForces(itype);
     bcc->clearParameters();
 
-    auto hardnessParam = ForceFieldParameter("eV/e", hardness, 0, 0, -4, 12, Mutability::Bounded, true, false);
-    auto enpBounded    = ForceFieldParameter("eV", 0, 0, 0, -5, 5, Mutability::Bounded, true, false);
-    auto enpFixed      = ForceFieldParameter("eV", 0, 0, 0, 0, 0, Mutability::Fixed, true, true);
+    auto delta_etaParam = ForceFieldParameter("eV/e", delta_eta, 0, 0, -4, 12, Mutability::Bounded, true, false);
+    auto enpBounded     = ForceFieldParameter("eV", 0, 0, 0, -5, 5, Mutability::Bounded, true, false);
+    auto enpFixed       = ForceFieldParameter("eV", 0, 0, 0, 0, 0, Mutability::Fixed, true, true);
     auto ptypes = pd->particleTypesConst();
     for (auto &ai : ptypes)
     {
@@ -114,13 +114,13 @@ static void generate_bcc(Poldata *pd,
                         {
                             if (zi == zj)
                             {
-                                bcc->addParameter(bccId1, "electronegativity", enpFixed);
+                                bcc->addParameter(bccId1, "delta_chi", enpFixed);
                             }
                             else
                             {
-                                bcc->addParameter(bccId1, "electronegativity", enpBounded);
+                                bcc->addParameter(bccId1, "delta_chi", enpBounded);
                             }
-                            bcc->addParameter(bccId1, "hardness", hardnessParam);
+                            bcc->addParameter(bccId1, "delta_eta", delta_etaParam);
                         }
                     }
                 }
@@ -150,7 +150,7 @@ int bastat(int argc, char *argv[])
     };
 
     const int                        NFILE       = asize(fnm);
-    static real                      hardness    = 5;
+    static real                      delta_eta    = 5;
     static int                       compress    = 0;
     static int                       maxwarn     = 0;
     static int                       nBootStrap  = 0;
@@ -182,8 +182,8 @@ int bastat(int argc, char *argv[])
           "Make separate bonds for different bond orders" },
         { "-gen_bcc", FALSE, etBOOL, {&genBCC},
           "Re-generate bond charge corrections based on the list of bonds" },
-        { "-hardness", FALSE, etREAL, {&hardness},
-          "Default bond hardness when generating bond charge corrections based on the list of bonds" },
+        { "-delta_eta", FALSE, etREAL, {&delta_eta},
+          "Default bond delta_eta when generating bond charge corrections based on the list of bonds" },
     };
 
     FILE                            *fp;
@@ -254,7 +254,7 @@ int bastat(int argc, char *argv[])
     pd.setPolarizable(polar);
     if (genBCC)
     {
-        generate_bcc(&pd, hardness);
+        generate_bcc(&pd, delta_eta);
     }
     print_memory_usage(debug);
     if (bDissoc)

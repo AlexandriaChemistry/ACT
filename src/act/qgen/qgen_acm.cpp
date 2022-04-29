@@ -486,7 +486,7 @@ void QgenAcm::calcRhs(double epsilonr)
         auto nfi = nonFixed_[i];
         // Electronegativity
         rhs_[i]  = -chi0_[nfi]; 
-        // TODO Check this stuff: Hardness * q0
+        // TODO Check this stuff: Delta_Eta * q0
         // rhs_[i] += jaa_[nfi]*q0_[i];
         if (bHaveShell_)
         {
@@ -598,8 +598,8 @@ void QgenAcm::getBccParams(const Poldata *pd,
                            int            ai,
                            int            aj,
                            double         bondorder,
-                           double        *deltachi,
-                           double        *hardness)
+                           double        *delta_chi,
+                           double        *delta_eta)
 {
     auto itype    = InteractionType::BONDCORRECTIONS;
     auto fs       = pd->findForcesConst(itype);
@@ -620,12 +620,12 @@ void QgenAcm::getBccParams(const Poldata *pd,
             swapped = true;
         }
     }
-    *deltachi = fs.findParameterTypeConst(bccId, "electronegativity").value();
+    *delta_chi = fs.findParameterTypeConst(bccId, "delta_chi").value();
     if (swapped)
     {
-        *deltachi *= -1;
+        *delta_chi *= -1;
     }
-    *hardness = fs.findParameterTypeConst(bccId, "hardness").value();
+    *delta_eta = fs.findParameterTypeConst(bccId, "delta_eta").value();
 }
 
 int QgenAcm::solveSQE(FILE                    *fp,
@@ -648,13 +648,13 @@ int QgenAcm::solveSQE(FILE                    *fp,
             auto ai      = bonds[bij].aI();
             auto aj      = bonds[bij].aJ();
             
-            double delta_chi = 0, hardness = 0;
+            double delta_chi = 0, delta_eta = 0;
             getBccParams(pd, ai, aj, bonds[bij].bondOrder(),
-                     &delta_chi, &hardness);
+                         &delta_chi, &delta_eta);
             if (debug)
             {
-                fprintf(debug, "Delta_chi %10g Hardness %10g\n",
-                        delta_chi, hardness);
+                fprintf(debug, "Delta_chi %10g Delta_Eta %10g\n",
+                        delta_chi, delta_eta);
             }
             // The bonds use the original numbering, to get to the ACM data
             // we have to map to numbers including shells.
@@ -668,7 +668,7 @@ int QgenAcm::solveSQE(FILE                    *fp,
                 double J = (Jcc_[ai][ak] - Jcc_[ai][al] - Jcc_[aj][ak] + Jcc_[aj][al]);
                 if (bij == bkl)
                 {
-                    J += hardness;
+                    J += delta_eta;
                 }
                 lhs.set(bij, bkl, J);
             }

@@ -14418,668 +14418,668 @@
   </interaction>
   <interaction type="BONDCORRECTIONS" function="" canswap="false">
     <parameterlist identifier="br_z~br_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="br_z~i_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c1_z~br_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c1_z~c1_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c1_z=c1_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c1_z#c1_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c1_z~c2_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c1_z=c2_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c1_z~c3_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c1_z~cl_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c1_z~f_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c1_z~i_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c1_z~n1_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c1_z~n2_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c1_z=n2_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c1_z~n3_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c1_z~o2_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c1_z~o3_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c1_z~p1_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c1_z~p2_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c1_z=p2_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c1_z~p3_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c1_z~s2_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c1_z~s3_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c2_z~br_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c2_z~c2_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c2_z=c2_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c2_z:c2_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c2_z~c3_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c2_z~cl_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c2_z~f_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c2_z~i_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c2_z~n2_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c2_z=n2_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c2_z:n2_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c2_z~n3_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c2_z~n4_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c2_z~o2_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c2_z=o2_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c2_z:o2_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c2_z~o3_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c2_z=o3_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c2_z~p2_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c2_z=p2_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c2_z:p2_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c2_z~p3_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c2_z=p3_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c2_z~s2_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c2_z=s2_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c2_z:s2_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c2_z~s3_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c2_z=s3_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c2_z:s3_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c3_z~br_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c3_z~c3_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c3_z~cl_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c3_z~f_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c3_z~i_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c3_z~n2_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c3_z~n3_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c3_z~n4_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c3_z~o2_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c3_z~o3_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c3_z~p2_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c3_z~p3_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c3_z~s2_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="c3_z~s3_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="cl_z~br_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="cl_z~cl_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="cl_z~i_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="f_z~br_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="f_z~cl_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="f_z~f_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="f_z~i_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="f_z~p2_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="f_z~p3_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="f_z~s2_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="f_z~s3_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="h_z~br_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="h_z~c1_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="h_z~c2_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="h_z~c3_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="h_z~cl_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="h_z~f_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="h_z~h_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="h_z~i_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="h_z~n2_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="h_z~n3_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="h_z~n4_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="h_z~o3_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="h_z~p2_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="h_z~p3_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="h_z~s2_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="h_z~s3_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="i_z~i_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="n1_z~n1_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="n1_z~n2_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="n1_z~o3_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="n1_z~p1_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="n1_z~s2_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="n1_z~s3_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="n2_z~br_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="n2_z~cl_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="n2_z~f_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="n2_z~n2_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="n2_z=n2_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="n2_z:n2_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="n2_z~n3_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="n2_z~o2_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="n2_z=o2_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="n2_z:o2_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="n2_z~o3_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="n2_z~p2_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="n2_z=p2_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="n2_z:p2_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="n2_z~p3_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="n2_z~s2_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="n2_z=s2_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="n2_z:s2_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="n2_z~s3_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="n2_z=s3_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="n3_z~cl_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="n3_z~f_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="n3_z~n3_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="n3_z~o3_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="n3_z~p2_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="n3_z~p3_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="n3_z~s2_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="n3_z~s3_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="o2_z~o2_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="o2_z~o3_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="o2_z~p2_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="o2_z=p2_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="o2_z:p2_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="o2_z~p3_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="o2_z=p3_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="o2_z~s2_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="o2_z~s3_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="o2_z=s3_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="o2_z:s3_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="o3_z~cl_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="o3_z~f_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="o3_z~o3_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="o3_z~p2_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="o3_z~p3_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="o3_z~s3_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="o3_z:s3_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="p1_z~p1_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="p2_z~br_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="p2_z~cl_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="p2_z~i_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="p2_z~p2_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="p2_z:p2_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="p2_z=p2_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="p2_z:s2_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="p2_z~s2_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="p2_z=s2_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="p2_z~s3_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="p3_z~cl_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="p3_z~p3_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="p3_z~s2_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="p3_z~s3_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="s2_z~s2_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="s2_z~s3_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="s3_z~cl_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="-2" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="s3_z~s3_z">
-      <parameter type="electronegativity" unit="eV" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
-      <parameter type="hardness" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="delta_chi" unit="eV" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="yes"/>
+      <parameter type="delta_eta" unit="eV/e" value="1" uncertainty="0" minimum="0" maximum="2" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
   </interaction>
   <interaction type="ELECTRONEGATIVITYEQUALIZATION" function="" canswap="false">

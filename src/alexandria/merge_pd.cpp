@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020 
+ * Copyright (C) 2014-2022
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -223,7 +223,7 @@ int merge_pd(int argc, char *argv[])
     {
         return 0;
     }
-    std::string allParams("alpha chi jaa zeta hardness electronegativity charge");
+    std::string allParams("alpha chi eta zeta delta_eta delta_chi charge");
     if (nullptr == mergeString)
     {
         mergeString = strdup(allParams.c_str());

@@ -64,7 +64,7 @@ enum class InteractionType
     VSITE3OUT,
     //! Charge distribution parameters of particles
     CHARGEDISTRIBUTION,
-    //! Bond hardness needed to use the split charge equilibration algorithm
+    //! Bond hardness and electronegativity needed to use the split charge equilibration algorithm
     BONDCORRECTIONS,
     //! Correction to the electronegativity difference between two atoms connected by a bond
     ELECTRONEGATIVITYEQUALIZATION,

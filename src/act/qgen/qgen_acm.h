@@ -211,21 +211,21 @@ private:
                  int    rowJ,
                  double epsilonr);
     
-    /*! \brief Return delta chi and bond hardness for atom pair
+    /*! \brief Return delta_chi and delta_eta for atom pair
      *
      * \param[in]  pd  Poldata structure
      * \param[in]  ai  Atom id i
      * \param[in]  aj  Atom id j
      * \param[in]  bondorder The bond order for this bond
-     * \param[out] deltachi the electronegativity correction
-     * \param[out] hardness the bond hardness
+     * \param[out] delta_chi the electronegativity correction
+     * \param[out] delta_eta the bond hardness
      */
     void getBccParams(const Poldata *pd,
                       int            ai,
                       int            aj,
                       double         bondorder,
-                      double        *deltachi,
-                      double        *hardness);
+                      double        *delta_chi,
+                      double        *delta_eta);
     
     void copyChargesToAtoms(t_atoms *atoms);
     
