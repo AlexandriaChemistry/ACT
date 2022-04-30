@@ -499,38 +499,21 @@ namespace alexandria
         /*! \brief
          * Print the topology that was generated previously in GROMACS format.
          *
-         * \param[in] fn        File name to open
-         * \param[in] bVerbose  Verbose output
+         * \param[in] fn        File name
+         * \param[in] bVerbose  Verbose
          * \param[in] pd        Data structure containing atomic properties
          * \param[in] cr        Gromacs communication record
          * \param[in] method    QC method
          * \param[in] basis     QC basis set
+         * \param[in] bITP      Whether or not to write an itp file iso top file
          */
         void PrintTopology(const char                *fn,
                            bool                       bVerbose,
                            const Poldata             *pd,
                            const CommunicationRecord *cr,
                            const std::string         &method,
-                           const std::string         &basis);
-
-        /*! \brief
-         * Print the topology that was generated previously in GROMACS format.
-         *
-         * \param[in] fp        File pointer opened previously.
-         * \param[in] bVerbose  Verbose
-         * \param[in] pd        Data structure containing atomic properties
-         * \param[in] bITP      Whether or not to write an itp file iso top file
-         * \param[in] cr        Gromacs communication record
-         * \param[in] method    QC method
-         * \param[in] basis     WC basis set
-         */
-        void PrintTopology(FILE                      *fp,
-                           bool                       bVerbose,
-                           const Poldata             *pd,
-                           bool                       bITP,
-                           const CommunicationRecord *cr,
-                           const std::string         &method,
-                           const std::string         &basis);
+                           const std::string         &basis,
+                           bool                       bITP = false);
 
         //! \brief Update GROMACS data structures
         void updateMDAtoms();

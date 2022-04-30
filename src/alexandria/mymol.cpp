@@ -605,20 +605,20 @@ static void setTopologyIdentifiers(Topology      *top,
                 switch (entry.first)
                 {
                 case InteractionType::VSITE2:
-                {
+                    {
                     btype.push_back(*myatoms->atomtype[jj]);
                     break;
-                }
+                    }
                 case InteractionType::POLARIZATION:
-                {
-                    btype.push_back(atype->interactionTypeToIdentifier(entry.first).id());
-                    break;
-                }
+                    {
+                        btype.push_back(atype->interactionTypeToIdentifier(entry.first).id());
+                        break;
+                    }
                 default:
-                {
-                    btype.push_back(atype->interactionTypeToIdentifier(InteractionType::BONDS).id());
-                    break;
-                }
+                    {
+                        btype.push_back(atype->interactionTypeToIdentifier(InteractionType::BONDS).id());
+                        break;
+                    }
                 }
             }
             topentry->setId(Identifier(btype, topentry->bondOrders(), fs.canSwap()));   
@@ -2030,21 +2030,6 @@ void MyMol::PrintConformation(const char *fn)
     write_sto_conf(fn, title, atoms(), as_rvec_array(state_->x.data()), nullptr, epbcNONE, state_->box);
 }
 
-void MyMol::PrintTopology(const char                *fn,
-                          bool                       bVerbose,
-                          const Poldata             *pd,
-                          const CommunicationRecord *cr,
-                          const std::string         &method,
-                          const std::string         &basis)
-{
-    FILE  *fp   = gmx_ffopen(fn, "w");
-    bool   bITP = (fn2ftp(fn) == efITP);
-
-    PrintTopology(fp, bVerbose, pd, bITP, cr, method, basis);
-
-    fclose(fp);
-}
-
 static void add_tensor(std::vector<std::string> *commercials,
                        const char               *title,
                        const char               *unit,
@@ -2062,13 +2047,13 @@ static void add_tensor(std::vector<std::string> *commercials,
     commercials->push_back(buf);
 }
 
-void MyMol::PrintTopology(FILE                      *fp,
+void MyMol::PrintTopology(const char                *fn,
                           bool                       bVerbose,
                           const Poldata             *pd,
-                          bool                       bITP,
                           const CommunicationRecord *cr,
                           const std::string         &method,
-                          const std::string         &basis)
+                          const std::string         &basis,
+                          bool                       bITP)
 {
     char                     buf[256];
     t_mols                   printmol;
@@ -2080,10 +2065,7 @@ void MyMol::PrintTopology(FILE                      *fp,
     auto iChargeType = name2ChargeType(qt.optionValue("chargetype"));
     std::string              mylot       = makeLot(method, basis);
 
-    if (fp == nullptr)
-    {
-        return;
-    }
+    FILE *fp = gmx_ffopen(fn, "w");
 
     auto ref_enthalpy = calcRefEnthalpy(pd, atomsConst());
     if (getMolname().size() > 0)
@@ -2217,6 +2199,8 @@ void MyMol::PrintTopology(FILE                      *fp,
     }
 
     sfree(printmol.name);
+    
+    gmx_ffclose(fp);
 }
 
 void MyMol::GenerateCube(const Poldata          *pd,

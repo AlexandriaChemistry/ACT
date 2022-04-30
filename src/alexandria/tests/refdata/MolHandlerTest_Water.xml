@@ -1,12 +1,17 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
+  <Real Name="Bond before">0.0016970125992016587</Real>
+  <Real Name="Angle before">0.5866140134937593</Real>
+  <Real Name="Atomization before">697.97799999999995</Real>
+  <Real Name="Potential before">698.56631102609288</Real>
+  <Real Name="Total Energy before">698.56631102609288</Real>
   <Real Name="Coordinate RMSD after minimizing">0.031903889176291209</Real>
-  <Real Name="Bond">1.6118502895771715e-20</Real>
-  <Real Name="Angle">1.3788679511225248e-17</Real>
-  <Real Name="Atomization">697.97799999999995</Real>
-  <Real Name="Potential">697.97799999999995</Real>
-  <Real Name="Total Energy">697.97799999999995</Real>
+  <Real Name="Bond after">1.6118502895771715e-20</Real>
+  <Real Name="Angle after">1.3788679511225248e-17</Real>
+  <Real Name="Atomization after">697.97799999999995</Real>
+  <Real Name="Potential after">697.97799999999995</Real>
+  <Real Name="Total Energy after">697.97799999999995</Real>
   <Sequence Name="Frequencies">
     <Int Name="Length">3</Int>
     <Real>1397.0443915702131</Real>

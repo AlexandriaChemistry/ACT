@@ -50,6 +50,7 @@
 #include "gromacs/hardware/detecthardware.h"
 #include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/physicalnodecommunicator.h"
 
@@ -63,6 +64,22 @@ namespace alexandria
 
 namespace
 {
+
+static void add_energies(gmx::test::TestReferenceChecker *checker,
+                         const real                       ener[F_NRE],
+                         const char                      *label)
+{
+    for(int i = 0; i < F_NRE; i++)
+    {
+        real ee = ener[i];
+        if (ee != 0)
+        {
+            std::string mylabel = gmx::formatString("%s %s",
+                                                    interaction_function[i].longname, label);
+            checker->checkReal(ee, mylabel.c_str());
+        }
+    }
+}
 
 class MolHandlerTest : public gmx::test::CommandLineTestBase
 {
@@ -79,11 +96,12 @@ protected:
         const char                     *jobtype  = (char *)"Opt";
         
         std::string                     dataName;
-        alexandria::MolProp             molprop;
+        auto molprop = new alexandria::MolProp;
+        
         
         dataName = gmx::test::TestFileManager::getInputFilePath(molname);
         double qtot = 0;
-        bool readOK = readBabel(dataName.c_str(), &molprop, molname, molname,
+        bool readOK = readBabel(dataName.c_str(), molprop, molname, molname,
                                 conf, &method, &basis,
                                 maxpot, nsymm, jobtype, &qtot, false);
         EXPECT_TRUE(readOK);
@@ -93,11 +111,11 @@ protected:
             gaffToAlexandria("", &g2a);
             if (!g2a.empty())
             {
-                EXPECT_TRUE(renameAtomTypes(&molprop, g2a));
+                EXPECT_TRUE(renameAtomTypes(molprop, g2a));
             }
         }
         MyMol mp_;
-        mp_.Merge(&molprop);
+        mp_.Merge(molprop);
         // Generate charges and topology
         t_inputrec      inputrecInstance;
         t_inputrec     *inputrec   = &inputrecInstance;
@@ -126,6 +144,10 @@ protected:
         mp_.symmetrizeCharges(pd, qSymm, nullptr);
         mp_.GenerateCharges(pd, mdlog, &cr, alg, qcustom, lot);
         
+        real shellForceRMS;
+        (void) mp_.calculateEnergy(cr.commrec(), &shellForceRMS);
+        add_energies(&checker_, mp_.energyTerms(), "before");
+
         MolHandler mh;
         
         double rmsd = 0;
@@ -137,14 +159,8 @@ protected:
             return;
         }
         checker_.checkReal(rmsd, "Coordinate RMSD after minimizing");
-        for(int i = 0; i < F_NRE; i++)
-        {
-            if (mp_.energyTerms()[i] != 0)
-            {
-                checker_.checkReal(mp_.energyTerms()[i], 
-                                   interaction_function[i].longname);
-            }
-        }
+        add_energies(&checker_, mp_.energyTerms(), "after");
+
         std::vector<double> freq, inten;
         mh.nma(&mp_, &freq, &inten, nullptr);
         checker_.checkSequence(freq.begin(), freq.end(), "Frequencies");
@@ -152,6 +168,8 @@ protected:
     }
 };
 
+// We cannot run these tests in debug mode because the LAPACK library
+// performs a 1/0 calculation to test the exception handling.
 #if CMAKE_BUILD_TYPE == CMAKE_BUILD_TYPE_RELEASE
 TEST_F (MolHandlerTest, CarbonDioxide)
 {
@@ -177,7 +195,7 @@ TEST_F (MolHandlerTest, Acetone)
 
 TEST_F (MolHandlerTest, Uracil)
 {
-    test("acetone-3-oep.log.pdb", "ACS-g");
+    test("uracil.sdf", "ACS-g");
 }
 #endif
 

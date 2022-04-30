@@ -1,41 +1,48 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <Real Name="Coordinate RMSD after minimizing">0.15770885853298017</Real>
-  <Real Name="Bond">14095.139720246072</Real>
-  <Real Name="Angle">59.104776474717333</Real>
-  <Real Name="Improper Dih.">1.4855605474050854e-11</Real>
-  <Real Name="LJ (SR)">134934.61369787893</Real>
-  <Real Name="Coulomb (SR)">-19.901119637386607</Real>
-  <Real Name="Atomization">3740.069</Real>
-  <Real Name="Potential">152809.02607496234</Real>
-  <Real Name="Total Energy">152809.02607496234</Real>
+  <Real Name="Bond before">0.18400695828798241</Real>
+  <Real Name="Angle before">1.6749064998308814</Real>
+  <Real Name="LJ (SR) before">-0.00010483179484315386</Real>
+  <Real Name="Coulomb (SR) before">-34.189297501647346</Real>
+  <Real Name="Atomization before">3740.069</Real>
+  <Real Name="Potential before">3707.7385111246767</Real>
+  <Real Name="Total Energy before">3707.7385111246767</Real>
+  <Real Name="Coordinate RMSD after minimizing">0.030375428823582021</Real>
+  <Real Name="Bond after">0.025596809186955703</Real>
+  <Real Name="Angle after">0.37595561852554438</Real>
+  <Real Name="Improper Dih. after">1.9522177659554261e-12</Real>
+  <Real Name="LJ (SR) after">-0.0001065743280076168</Real>
+  <Real Name="Coulomb (SR) after">-34.516079474321714</Real>
+  <Real Name="Atomization after">3740.069</Real>
+  <Real Name="Potential after">3705.9543663790646</Real>
+  <Real Name="Total Energy after">3705.9543663790646</Real>
   <Sequence Name="Frequencies">
     <Int Name="Length">24</Int>
-    <Real>0</Real>
-    <Real>0</Real>
-    <Real>0</Real>
-    <Real>0</Real>
-    <Real>0</Real>
-    <Real>0</Real>
-    <Real>0.0051758626459725236</Real>
-    <Real>435.64931255138754</Real>
-    <Real>1015.4481892835331</Real>
-    <Real>1215.5321256699171</Real>
-    <Real>1385.9606326788248</Real>
-    <Real>1504.3731823133166</Real>
-    <Real>1914.8688261438613</Real>
-    <Real>2137.7172139316117</Real>
-    <Real>3898.8889376561351</Real>
-    <Real>4199.0657622039107</Real>
-    <Real>6955.9005737381285</Real>
-    <Real>7476.0289699418254</Real>
-    <Real>13045.453256654182</Real>
-    <Real>13411.037633374108</Real>
-    <Real>19506.585721917483</Real>
-    <Real>19713.15116191766</Real>
-    <Real>29033.545406987727</Real>
-    <Real>29802.140815250787</Real>
+    <Real>0.44209370134125164</Real>
+    <Real>20.445246380117677</Real>
+    <Real>81.387789227292927</Real>
+    <Real>298.05211651930671</Real>
+    <Real>380.68768517616769</Real>
+    <Real>718.91941744313874</Real>
+    <Real>847.82486686031916</Real>
+    <Real>852.31642363666151</Real>
+    <Real>854.53769032369507</Real>
+    <Real>908.47375065622862</Real>
+    <Real>1175.2915995497269</Real>
+    <Real>1270.4298178624256</Real>
+    <Real>1383.6460920869408</Real>
+    <Real>1384.9556211085903</Real>
+    <Real>1386.9652140198041</Real>
+    <Real>1387.3337609970331</Real>
+    <Real>1468.6374004234076</Real>
+    <Real>1494.3474235153606</Real>
+    <Real>2639.2648918538403</Real>
+    <Real>2639.7765733260826</Real>
+    <Real>2734.4637819839563</Real>
+    <Real>2735.0750466680356</Real>
+    <Real>2735.1594531421779</Real>
+    <Real>2736.6648400274657</Real>
   </Sequence>
   <Sequence Name="Intensities">
     <Int Name="Length">0</Int>

@@ -4345,11 +4345,11 @@
     </parameterlist>
     <parameterlist identifier="c2">
       <parameter type="epsilon" unit="kJ/mol" value="0.55" uncertainty="0" minimum="0.3" maximum="0.8" ntrain="0" mutability="Bounded" nonnegative="yes"/>
-      <parameter type="sigma" unit="nm" value="0.375" uncertainty="0" minimum="0.25" maximum="0.5" ntrain="0" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="sigma" unit="nm" value="0.2" uncertainty="0" minimum="0.2" maximum="0.5" ntrain="0" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c3">
       <parameter type="epsilon" unit="kJ/mol" value="0.55" uncertainty="0" minimum="0.3" maximum="0.8" ntrain="0" mutability="Bounded" nonnegative="yes"/>
-      <parameter type="sigma" unit="nm" value="0.375" uncertainty="0" minimum="0.25" maximum="0.5" ntrain="0" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="sigma" unit="nm" value="0.2" uncertainty="0" minimum="0.2" maximum="0.5" ntrain="0" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="cl">
       <parameter type="epsilon" unit="kJ/mol" value="1.05" uncertainty="0" minimum="0.6" maximum="1.5" ntrain="0" mutability="Bounded" nonnegative="yes"/>
@@ -4357,15 +4357,15 @@
     </parameterlist>
     <parameterlist identifier="f">
       <parameter type="epsilon" unit="kJ/mol" value="0.4" uncertainty="0" minimum="0.2" maximum="0.6" ntrain="0" mutability="Bounded" nonnegative="yes"/>
-      <parameter type="sigma" unit="nm" value="0.375" uncertainty="0" minimum="0.25" maximum="0.5" ntrain="0" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="sigma" unit="nm" value="0.275" uncertainty="0" minimum="0.25" maximum="0.5" ntrain="0" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="h">
       <parameter type="epsilon" unit="kJ/mol" value="0.065" uncertainty="0" minimum="0.03" maximum="0.1" ntrain="0" mutability="Bounded" nonnegative="yes"/>
-      <parameter type="sigma" unit="nm" value="0.275" uncertainty="0" minimum="0.15" maximum="0.4" ntrain="0" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="sigma" unit="nm" value="0.005" uncertainty="0" minimum="0.005" maximum="0.4" ntrain="0" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="i">
       <parameter type="epsilon" unit="kJ/mol" value="2.1" uncertainty="0" minimum="1.2" maximum="3" ntrain="0" mutability="Bounded" nonnegative="yes"/>
-      <parameter type="sigma" unit="nm" value="0.375" uncertainty="0" minimum="0.25" maximum="0.5" ntrain="0" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="sigma" unit="nm" value="0.275" uncertainty="0" minimum="0.25" maximum="0.5" ntrain="0" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="n1">
       <parameter type="epsilon" unit="kJ/mol" value="0.55" uncertainty="0" minimum="0.3" maximum="0.8" ntrain="0" mutability="Bounded" nonnegative="yes"/>
@@ -4373,11 +4373,11 @@
     </parameterlist>
     <parameterlist identifier="n2">
       <parameter type="epsilon" unit="kJ/mol" value="0.55" uncertainty="0" minimum="0.3" maximum="0.8" ntrain="0" mutability="Bounded" nonnegative="yes"/>
-      <parameter type="sigma" unit="nm" value="0.375" uncertainty="0" minimum="0.25" maximum="0.5" ntrain="0" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="sigma" unit="nm" value="0.275" uncertainty="0" minimum="0.25" maximum="0.5" ntrain="0" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="n3">
       <parameter type="epsilon" unit="kJ/mol" value="0.55" uncertainty="0" minimum="0.3" maximum="0.8" ntrain="0" mutability="Bounded" nonnegative="yes"/>
-      <parameter type="sigma" unit="nm" value="0.375" uncertainty="0" minimum="0.25" maximum="0.5" ntrain="0" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="sigma" unit="nm" value="0.275" uncertainty="0" minimum="0.25" maximum="0.5" ntrain="0" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="n4">
       <parameter type="epsilon" unit="kJ/mol" value="0.55" uncertainty="0" minimum="0.3" maximum="0.8" ntrain="0" mutability="Bounded" nonnegative="yes"/>
@@ -4389,11 +4389,11 @@
     </parameterlist>
     <parameterlist identifier="o2">
       <parameter type="epsilon" unit="kJ/mol" value="0.75" uncertainty="0" minimum="0.5" maximum="1" ntrain="0" mutability="Bounded" nonnegative="yes"/>
-      <parameter type="sigma" unit="nm" value="0.375" uncertainty="0" minimum="0.25" maximum="0.5" ntrain="0" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="sigma" unit="nm" value="0.2" uncertainty="0" minimum="0.2" maximum="0.5" ntrain="0" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="o3">
       <parameter type="epsilon" unit="kJ/mol" value="0.75" uncertainty="0" minimum="0.5" maximum="1" ntrain="0" mutability="Bounded" nonnegative="yes"/>
-      <parameter type="sigma" unit="nm" value="0.375" uncertainty="0" minimum="0.25" maximum="0.5" ntrain="0" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="sigma" unit="nm" value="0.25" uncertainty="0" minimum="0.2" maximum="0.5" ntrain="0" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="p1">
       <parameter type="epsilon" unit="kJ/mol" value="0.85" uncertainty="0" minimum="0.5" maximum="1.2" ntrain="0" mutability="Bounded" nonnegative="yes"/>

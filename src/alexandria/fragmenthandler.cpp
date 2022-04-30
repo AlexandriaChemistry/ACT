@@ -36,7 +36,7 @@ FragmentHandler::FragmentHandler(const Poldata               *pd,
             auto anew = a;
             if (!shellRenumber.empty())
             {
-                GMX_RELEASE_ASSERT(a < shellRenumber.size(), "Atom number out of range");
+                GMX_RELEASE_ASSERT(a < static_cast<int>(shellRenumber.size()), "Atom number out of range");
                 anew = shellRenumber[a];
             }
             // We add the new atom index, but relative to the first atom
@@ -54,8 +54,8 @@ FragmentHandler::FragmentHandler(const Poldata               *pd,
         }
         // The next fragment, if there is one, starts after this one!
         atomStart_.push_back(atomStart_[ff]+toAdd.size());
+        init_t_atoms(&FragAtoms_[ff], toAdd.size(), false);
         
-        add_t_atoms(&FragAtoms_[ff], toAdd.size(), 1);
         // The stupid routine above will not handle the atomtype array
         snew(FragAtoms_[ff].atomtype, toAdd.size());
         int j = 0;
@@ -63,6 +63,10 @@ FragmentHandler::FragmentHandler(const Poldata               *pd,
         {
             FragAtoms_[ff].atom[j]     = atoms->atom[i+atomStart_[ff]];
             FragAtoms_[ff].atomtype[j] = atoms->atomtype[i+atomStart_[ff]];
+            FragAtoms_[ff].atomname[j] = atoms->atomname[i+atomStart_[ff]];
+            int resind = atoms->atom[i+atomStart_[ff]].resind;
+            FragAtoms_[ff].resinfo[resind] = atoms->resinfo[resind];
+
             j++;
         }
         QgenAcm_.push_back(QgenAcm(pd, &FragAtoms_[ff], f->charge()));

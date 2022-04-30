@@ -411,7 +411,8 @@ int gentop(int argc, char *argv[])
                                 &pd,
                                 &cr,
                                 method,
-                                basis);
+                                basis,
+                                bITP);
         }
     }
     else

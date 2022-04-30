@@ -274,8 +274,11 @@ static void getLjParams(const ForceFieldParameterList &fa,
     {
     case eCOMB_GEOMETRIC:
         {
-            *c6 = std::sqrt(sigmaI * sigmaJ);
-            *cn = std::sqrt(epsilonI * epsilonJ);
+            double sig  = std::sqrt(sigmaI * sigmaJ);
+            double eps  = std::sqrt(epsilonI * epsilonJ);
+            double sig6 = std::pow(sig, 6.0);
+            *c6 = 4*eps*sig6;
+            *cn = *c6 * sig6;
         }
         break;
     case eCOMB_ARITHMETIC:
