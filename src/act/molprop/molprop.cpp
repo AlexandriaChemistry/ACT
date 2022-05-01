@@ -361,15 +361,11 @@ static bool stringEqual(const std::string &a, const std::string &b)
     return true;
 }
 
-const Experiment *MolProp::findExperimentConst(const std::string &method,
-                                               const std::string &basis,
-                                               const std::string &conformation) const
+const Experiment *MolProp::findExperimentConst(JobType job) const
 {
     for(auto ei = exper_.begin(); ei < exper_.end(); ++ei)
     {
-        if ((conformation.empty() || stringEqual(ei->getConformation(), conformation)) &&
-            (method.empty()       || stringEqual(ei->getMethod(), method)) &&
-            (basis.empty()        || stringEqual(ei->getBasisset(), basis)))
+        if (ei->getJobtype() == job)
         {
             return &(*ei);
         }
@@ -377,12 +373,9 @@ const Experiment *MolProp::findExperimentConst(const std::string &method,
     return nullptr;
 }
 
-const GenericProperty *MolProp::findProperty(MolPropObservable  mpo, 
-                                             iqmType            iQM,
-                                             double             T,
-                                             const std::string &method,
-                                             const std::string &basis,
-                                             const std::string &conf) const
+const GenericProperty *MolProp::qmProperty(MolPropObservable  mpo, 
+                                           double             T,
+                                           JobType            jt) const
 {
     for(auto ei = exper_.begin(); ei < exper_.end(); ++ei)
     {
@@ -390,25 +383,10 @@ const GenericProperty *MolProp::findProperty(MolPropObservable  mpo,
         {
             for (const auto &pp : ei->propertyConst(mpo))
             { 
-                if (bCheckTemperature(T, pp->getTemperature()))
+                if (ei->getJobtype() == jt &&
+                    bCheckTemperature(T, pp->getTemperature()))
                 {
-                    if ((ei->dataSource() == dsExperiment) &&
-                        (iqmType::Exp == iQM || iqmType::Both == iQM))
-                    {
-                        // For an experiment it is sufficient if the temperature and
-                        // the mpo are correct
-                        return pp;
-                    }
-                    else if ((ei->dataSource() == dsTheory) &&
-                             (iqmType::QM == iQM || iqmType::Both == iQM))
-                    {
-                        if (((conf.size() == 0)   || stringEqual(ei->getConformation(), conf)) &&
-                            ((method.size() == 0) || stringEqual(ei->getMethod(), method)) &&
-                            ((basis.size() == 0)  || stringEqual(ei->getBasisset(), basis)))
-                        {
-                            return pp;
-                        }
-                    }
+                    return pp;
                 }
             }
         }
@@ -416,92 +394,33 @@ const GenericProperty *MolProp::findProperty(MolPropObservable  mpo,
     return nullptr;
 }
 
-#ifdef OLD
-bool MolProp::getPropRef(MolPropObservable mpo, iqmType iQM,
-                         const std::string &method,
-                         const std::string &basis,
-                         const std::string &conf,
-                         double *value, double *error, double *T,
-                         std::string *ref, std::string *mylot,
-                         std::vector<double> *vec, tensor quad_polar)
+const GenericProperty *MolProp::expProperty(MolPropObservable  mpo, 
+                                            double             T) const
 {
-    bool   done = false;
-    double Told = *T;
-
-    if (iQM == iqmType::Both)
+    for(auto ei = exper_.begin(); ei < exper_.end(); ++ei)
     {
-        for (auto &ei : experimentConst())
+        if (ei->hasProperty(mpo))
         {
-            if ((conf.size() == 0) ||
-                stringEqual(ei.getConformation(), conf))
-            {
-                if (ei.getVal(mpo, value, error, T, vec, quad_polar) &&
-                    bCheckTemperature(Told, *T))
+            for (const auto &pp : ei->propertyConst(mpo))
+            { 
+                if (ei->dataSource() == dsExperiment &&
+                    bCheckTemperature(T, pp->getTemperature()))
                 {
-                    ref->assign(ei.getReference());
-                    mylot->assign("Experiment");
-                    done = true;
-                    break;
+                    return pp;
                 }
             }
         }
     }
-    if (iQM == iqmType::Exp)
-    {
-        for (auto &ei : experimentConst())
-        {
-            if (dsExperiment != ei.dataSource())
-            {
-                continue;
-            }
-            if ((conf.size() == 0) ||
-                stringEqual(ei.getConformation(), conf))
-            {
-                if (ei.getVal(type, mpo, value, error, T, vec, quad_polar) &&
-                    bCheckTemperature(Told, *T))
-                {
-                    ref->assign(ei.getReference());
-                    mylot->assign("Experiment");
-                    done = true;
-                    break;
-                }
-            }
-        }
-    }
-    else if (iQM == iqmType::QM)
-    {
-        for (auto &ci : experimentConst())
-        {
-            if (dsExperiment == ci.dataSource())
-            {
-                continue;
-            }
-            if (((method.size() == 0 || method == ci.getMethod()) &&
-                 (basis.size() == 0  || basis == ci.getBasisset())) &&
-                (conf.size() == 0    || conf == ci.getConformation()))
-            {
-                if  (ci.getVal(type.c_str(), mpo, value, error, T, vec, quad_polar) &&
-                     bCheckTemperature(Told, *T))
-                {
-                    ref->assign(ci.getReference());
-                    mylot->assign(method + "/" + basis);
-                    done = true;
-                    break;
-                }
-            }
-        }
-    }
-    return done;
+    return nullptr;
 }
-#endif
+
 bool MolProp::getOptHF(double *value)
 {
     bool done = false;
 
     std::string empty;
     
-    auto gp = findProperty(MolPropObservable::HF, iqmType::QM, 0.0,
-                           empty, empty, empty);
+    auto gp = qmProperty(MolPropObservable::HF, 0.0, JobType::OPT);
     if (gp)
     {
         *value = gp->getValue();

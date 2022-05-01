@@ -55,7 +55,7 @@ FragmentHandler::FragmentHandler(const Poldata               *pd,
         // The next fragment, if there is one, starts after this one!
         atomStart_.push_back(atomStart_[ff]+toAdd.size());
         init_t_atoms(&FragAtoms_[ff], toAdd.size(), false);
-        
+        FragAtoms_[ff].nres = toAdd.size();
         // The stupid routine above will not handle the atomtype array
         snew(FragAtoms_[ff].atomtype, toAdd.size());
         int j = 0;
@@ -64,9 +64,10 @@ FragmentHandler::FragmentHandler(const Poldata               *pd,
             FragAtoms_[ff].atom[j]     = atoms->atom[i+atomStart_[ff]];
             FragAtoms_[ff].atomtype[j] = atoms->atomtype[i+atomStart_[ff]];
             FragAtoms_[ff].atomname[j] = atoms->atomname[i+atomStart_[ff]];
-            int resind = atoms->atom[i+atomStart_[ff]].resind;
-            FragAtoms_[ff].resinfo[resind] = atoms->resinfo[resind];
-
+            // All atoms in all fragments get residue number 1.
+            int resind = 1;
+            FragAtoms_[ff].resinfo[resind] = atoms->resinfo[atoms->atom[i+atomStart_[ff]].resind];
+            FragAtoms_[ff].nres = std::max(resind, FragAtoms_[ff].nres);
             j++;
         }
         QgenAcm_.push_back(QgenAcm(pd, &FragAtoms_[ff], f->charge()));

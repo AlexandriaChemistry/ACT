@@ -154,7 +154,6 @@ int bastat(int argc, char *argv[])
     static int                       compress    = 0;
     static int                       maxwarn     = 0;
     static int                       nBootStrap  = 0;
-    static char                     *lot         = (char *)"B3LYP/aug-cc-pVTZ";
     static gmx_bool                  bHisto      = false;
     static gmx_bool                  bBondOrder  = true;
     static gmx_bool                  genBCC      = true;
@@ -162,8 +161,6 @@ int bastat(int argc, char *argv[])
     static gmx_bool                  strict      = true;
     static gmx_bool                  bQM         = true;
     std::vector<t_pargs> pa = {
-        { "-lot",    FALSE, etSTR,  {&lot},
-          "Use this method and level of theory when selecting coordinates and charges" },
         { "-strict", FALSE, etBOOL, {&strict},
           "Whether or not to be pedantic about the level of theory" },
         { "-maxwarn", FALSE, etINT, {&maxwarn},
@@ -171,7 +168,7 @@ int bastat(int argc, char *argv[])
         { "-dissoc",  FALSE, etBOOL, {&bDissoc},
           "Derive dissociation energy from the enthalpy of formation. If not chosen, the dissociation energy will be read from the gentop.dat file." },
         { "-qm", FALSE, etBOOL, {&bQM},
-          "Usa data from quantum chemistry to determine the dissociation energies. See also the [TT]-lot[tt] option." },
+          "Usa data from quantum chemistry to determine the dissociation energies." },
         { "-bootstrap", FALSE, etINT, {&nBootStrap},
           "Use bootstrap analysis for determining the uncertainty in the dissocation energy. If the value is less than 2 no bootstrapping will be done." },
         { "-histo", FALSE, etBOOL, {&bHisto},
@@ -203,7 +200,6 @@ int bastat(int argc, char *argv[])
         return 0;
     }
 
-    splitLot(lot, &method, &basis);
     fp                 = gmx_ffopen(opt2fn("-g", NFILE, fnm), "w");
     print_memory_usage(debug);
     time(&my_t);
@@ -242,8 +238,7 @@ int bastat(int argc, char *argv[])
         return 0;
     }
     std::vector<MyMol> mymols;
-    bonds.extractGeometries(fp, mp, &mymols, pd, gms,
-                            method, basis, bBondOrder);
+    bonds.extractGeometries(fp, mp, &mymols, pd, gms, method, basis);
     
     print_memory_usage(debug);
     if (bHisto)
@@ -266,7 +261,7 @@ int bastat(int argc, char *argv[])
         }
         double rmsd = getDissociationEnergy(fp, &pd, &mymols, iqm,
                                             opt2fn_null("-de",  NFILE, fnm), 
-                                            method, basis, nBootStrap);
+                                            nBootStrap);
         fprintf(fp, "Root mean square deviation %.1f kJ/mol\n", rmsd);
     }
     pd.updateTimeStamp();

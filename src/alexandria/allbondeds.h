@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021
+ * Copyright (C) 2021-2022
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -169,7 +169,6 @@ namespace alexandria
          * \param[in]  gms    Selection of compounds
          * \param[in]  method QM method
          * \param[in]  basis  QM basis set
-         * \param[in]  strict Whether to strictly adhere to the QM level of theory
          */                          
         void extractGeometries(FILE                       *fp,
                                const std::vector<MolProp> &mp,
@@ -177,8 +176,7 @@ namespace alexandria
                                const Poldata              &pd,
                                const MolSelect            &gms,
                                const std::string          &method,
-                               const std::string          &basis,
-                               bool                        strict);
+                               const std::string          &basis);
 
         /*! \brief Write how many bonds etc. were found
          * \param[in] fp File to write to

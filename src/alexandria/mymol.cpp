@@ -321,33 +321,14 @@ bool MyMol::IsVsiteNeeded(std::string    atype,
 }
 
 immStatus MyMol::GenerateAtoms(const Poldata     *pd,
-                               t_atoms           *atoms,
-                               const std::string &method,
-                               const std::string &basis,
-                               bool               strict=true)
+                               t_atoms           *atoms)
 {
     double                    xx, yy, zz;
     int                       natom = 0;
     immStatus                 imm   = immStatus::OK;
-    std::vector<std::string>  confs = { "minimum", "excited", "" };
     const Experiment         *ci    = nullptr;
     
-    for(size_t iconf = 0; iconf < confs.size(); iconf++)
-    { 
-        ci = findExperimentConst(method, basis, confs[iconf]);
-        if (ci && ci->NAtom() > 0)
-        {
-            break;
-        }
-    }
-    if (!ci && !strict)
-    {
-        if (debug)
-        {
-            fprintf(debug, "Trying to find calculation without known method/basisset for %s\n", getMolname().c_str());
-        }
-        ci = findExperimentConst("", "", "");
-    }
+    ci = findExperimentConst(JobType::OPT);
     if (ci)
     {
         if (ci->NAtom() == 0)
@@ -428,7 +409,8 @@ immStatus MyMol::GenerateAtoms(const Poldata     *pd,
     {
         fprintf(debug, "Tried to convert %s to gromacs. LOT is %s/%s. Natoms is %d\n",
                 getMolname().c_str(),
-                method.c_str(), basis.c_str(), natom);
+                ci->getMethod().c_str(),
+                ci->getBasisset().c_str(), natom);
     }
 
     return imm;
@@ -972,10 +954,7 @@ static void TopologyToMtop(Topology       *top,
                  
 immStatus MyMol::GenerateTopology(FILE              *fp,
                                   const Poldata     *pd,
-                                  const std::string &method,
-                                  const std::string &basis,
-                                  missingParameters  missing,
-                                  bool               strict)
+                                  missingParameters  missing)
 {
     immStatus   imm = immStatus::OK;
     std::string btype1, btype2;
@@ -994,7 +973,7 @@ immStatus MyMol::GenerateTopology(FILE              *fp,
     {
         snew(atoms, 1);
         state_change_natoms(state_, NAtom());
-        imm = GenerateAtoms(pd, atoms, method, basis, strict);
+        imm = GenerateAtoms(pd, atoms);
     }
     if (immStatus::OK == imm)
     {
@@ -1116,8 +1095,7 @@ immStatus MyMol::GenerateTopology(FILE              *fp,
         }
     }
     // Finally, extract frequencies etc.
-    std::string lot = gmx::formatString("%s/%s", method.c_str(), basis.c_str());
-    getHarmonics(lot);
+    getHarmonics();
     
     return imm;
 }
@@ -1721,8 +1699,7 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
                                  const gmx::MDLogger       &mdlog,
                                  const CommunicationRecord *cr,
                                  ChargeGenerationAlgorithm  algorithm,
-                                 const std::vector<double> &qcustom,
-                                 const std::string         &lot)
+                                 const std::vector<double> &qcustom)
 {
     immStatus imm         = immStatus::OK;
     bool      converged   = false;
@@ -1806,23 +1783,18 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
             auto myatoms = atoms();
             for (auto exper : experimentConst())
             {
-                std::string mylot(exper.getMethod());
-                mylot += "/" + exper.getBasisset();
-                if (lot == mylot)
+                int i = 0;
+                for (auto &ca : exper.calcAtomConst())
                 {
-                    int i = 0;
-                    for (auto &ca : exper.calcAtomConst())
+                    if (ca.hasCharge(qtmap[algorithm]))
                     {
-                        if (ca.hasCharge(qtmap[algorithm]))
-                        {
-                            myatoms->atom[i].q  = myatoms->atom[i].qB = ca.charge(qtmap[algorithm]);
-                            i++;
-                        }
-                        else
-                        {
-                            gmx_fatal(FARGS, "No charge type %s for %s",
-                                      qTypeName(qtmap[algorithm]).c_str(), getMolname().c_str());
-                        }
+                        myatoms->atom[i].q  = myatoms->atom[i].qB = ca.charge(qtmap[algorithm]);
+                        i++;
+                    }
+                    else
+                    {
+                        gmx_fatal(FARGS, "No charge type %s for %s",
+                                  qTypeName(qtmap[algorithm]).c_str(), getMolname().c_str());
                     }
                 }
             }
@@ -2100,10 +2072,9 @@ void MyMol::PrintTopology(const char                *fn,
     qcalc->calcMoments();
     
     T = -1;
-    const char *qm_conf = "minimum";
     for(auto &mpo : mpoMultiPoles)
     {
-        auto gp = findProperty(mpo, iqmType::QM, T, method, basis, qm_conf);
+        auto gp = qmProperty(mpo, T, JobType::OPT);
         if (gp)
         {
             auto vec = gp->getVector();
@@ -2149,7 +2120,8 @@ void MyMol::PrintTopology(const char                *fn,
             commercials.push_back(buf);
 
             T = -1;
-            auto gp = findProperty(MolPropObservable::POLARIZABILITY, iqmType::QM, T, method, basis, "");
+            auto gp = qmProperty(MolPropObservable::POLARIZABILITY,
+                                 T, JobType::OPT);
             if (gp)
             {
                 auto qelec = qTypeProps(qType::Elec);
@@ -2334,7 +2306,7 @@ void MyMol::calcEspRms(const Poldata *pd)
     done_atom(&myatoms);
 }
 
-void MyMol::getHarmonics(const std::string &lot)
+void MyMol::getHarmonics()
 {
     for(auto &mpo : { MolPropObservable::FREQUENCY, 
                      MolPropObservable::INTENSITY })
@@ -2371,9 +2343,6 @@ const real *MyMol::energyTerms() const
 }
         
 immStatus MyMol::getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
-                             const std::string                          &method,
-                             const std::string                          &basis,
-                             const Poldata                              *pd,
                              double                                      T)
 {
     int                 natom = 0;
@@ -2406,7 +2375,7 @@ immStatus MyMol::getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
         case MolPropObservable::CHARGE:
             {
                 std::string conf;
-                auto ei = findExperimentConst(method, basis, conf);
+                auto ei = findExperimentConst(JobType::OPT);
                 if (ei)
                 {
                     for(auto &i : qTypes())
@@ -2438,7 +2407,7 @@ immStatus MyMol::getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
         case MolPropObservable::DGFORM:
         case MolPropObservable::ZPE:
             {
-                auto gp = static_cast<const MolecularEnergy *>(findProperty(mpo, miq.second, T, method, basis, ""));
+                auto gp = static_cast<const MolecularEnergy *>(qmProperty(mpo, T, JobType::OPT));
                 if (gp)
                 {
                     energy_.insert(std::pair<MolPropObservable, double>(mpo, gp->getValue()));
@@ -2451,7 +2420,7 @@ immStatus MyMol::getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
         case MolPropObservable::OCTUPOLE:
         case MolPropObservable::HEXADECAPOLE:
             {
-                auto gp = static_cast<const MolecularMultipole *>(findProperty(mpo, miq.second, T, method, basis, ""));
+                auto gp = static_cast<const MolecularMultipole *>(qmProperty(mpo, T, JobType::OPT));
                 if (gp)
                 {
                     qProps_.find(qType::Elec)->second.setMultipole(mpo, gp->getVector());
@@ -2461,7 +2430,7 @@ immStatus MyMol::getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
             break;
         case MolPropObservable::POLARIZABILITY:
             {
-                auto gp = static_cast<const MolecularPolarizability *>(findProperty(mpo, miq.second, T, method, basis, ""));
+                auto gp = static_cast<const MolecularPolarizability *>(qmProperty(mpo, T, JobType::OPT));
                 if (gp)
                 {
                     auto qelec = qTypeProps(qType::Elec);
@@ -2519,8 +2488,6 @@ void MyMol::UpdateIdef(const Poldata   *pd,
 }
 
 void MyMol::initQgenResp(const Poldata     *pd,
-                         const std::string &method,
-                         const std::string &basis,
                          real               watoms,
                          int                maxESP)
 {
@@ -2551,7 +2518,7 @@ void MyMol::initQgenResp(const Poldata     *pd,
     std::uniform_real_distribution<> uniform(0.0, 1.0);
     double                           cutoff = 0.01*maxESP;
  
-    auto ci = findExperimentConst(method, basis, "");
+    auto ci = findExperimentConst(JobType::OPT);
     if (ci)
     {
         int iesp = 0;

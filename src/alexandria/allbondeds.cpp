@@ -508,8 +508,8 @@ void AllBondeds::extractGeometries(FILE                       *fp,
                                    const Poldata              &pd,
                                    const MolSelect            &gms,
                                    const std::string          &method,
-                                   const std::string          &basis,
-                                   bool                        strict)
+                                   const std::string          &basis)
+                                   
 {
     for (auto mpi = mp.begin(); mpi < mp.end(); mpi++)
     {
@@ -526,12 +526,8 @@ void AllBondeds::extractGeometries(FILE                       *fp,
                         mmi.formula().c_str());
                 continue;
             }
-            auto imm = mmi.GenerateTopology(fp,
-                                            &pd,
-                                            method,
-                                            basis,
-                                            missingParameters::Generate,
-                                            strict);
+            auto imm = mmi.GenerateTopology(fp, &pd,
+                                            missingParameters::Generate);
             if (immStatus::OK != imm)
             {
                 if (nullptr != debug)

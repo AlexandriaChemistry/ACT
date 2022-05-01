@@ -27894,7 +27894,7 @@
         <q type="Mulliken">0.398778</q>
       </atom>
     </experiment>
-    <experiment datasource="Theory" reference="Spoel2022a" conformation="minimum" program="Gaussian 09, Revision D.01," method="G4" basisset="G4" jobtype="G4" datafile="/Users/spoel/Alexandria/AlexandriaLib/compounds/1-butanol/1-butanol-g4.log.gz">
+    <experiment datasource="Theory" reference="Spoel2022a" conformation="minimum" program="Gaussian 09, Revision D.01," method="G4" basisset="G4" jobtype="Opt" datafile="/Users/spoel/Alexandria/AlexandriaLib/compounds/1-butanol/1-butanol-g4.log.gz">
       <dipole type="electronic" unit="D" temperature="0">
         <x>-0.001</x>
         <y>1.675</y>
@@ -61827,7 +61827,7 @@
         <q type="Mulliken">0.341529</q>
       </atom>
     </experiment>
-    <experiment datasource="Theory" reference="Spoel2022a" conformation="minimum" program="Gaussian 16, Revision A.03," method="G4" basisset="G4" jobtype="G4" datafile="/Users/spoel/Alexandria/AlexandriaLib/compounds/water/water-g4.log.gz">
+    <experiment datasource="Theory" reference="Spoel2022a" conformation="minimum" program="Gaussian 16, Revision A.03," method="G4" basisset="G4" jobtype="Opt" datafile="/Users/spoel/Alexandria/AlexandriaLib/compounds/water/water-g4.log.gz">
       <dipole type="electronic" unit="D" temperature="0">
         <x>-0.000</x>
         <y>-0.000</y>

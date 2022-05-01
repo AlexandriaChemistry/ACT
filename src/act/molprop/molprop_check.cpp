@@ -58,8 +58,6 @@ namespace alexandria
 typedef std::map<const std::string, int> stringCount;
 
 static void dump_molecule(FILE              *fp,
-                          const std::string &method,
-                          const std::string &basis,
                           stringCount       *atomTypeCount,
                           stringCount       *bccTypeCount,
                           const Poldata     &pd,
@@ -71,10 +69,7 @@ static void dump_molecule(FILE              *fp,
     mymol.setInputrec(inputrec);
     auto imm = mymol.GenerateTopology(fp,
                                       &pd,
-                                      method,
-                                      basis,
-                                      missingParameters::Error,
-                                      false);
+                                      missingParameters::Error);
     if (immStatus::OK != imm)
     {
         fprintf(fp, "Failed to generate topology for %s. Outcome: %s\n",
@@ -93,7 +88,7 @@ static void dump_molecule(FILE              *fp,
         {
             f.dump(fp);
         }
-        mymol.getExpProps(iqm, "", "", &pd, -1);
+        mymol.getExpProps(iqm, -1);
         mymol.Dump(fp);
         // Atoms!
         auto &atoms = mymol.atomsConst();
@@ -192,19 +187,13 @@ int molprop_check(int argc, char*argv[])
         { efXML, "-f",  "allmols",  ffREAD },
         { efLOG, "-g",  "molprop_check", ffWRITE }
     };
-    int                              NFILE   = (sizeof(fnm)/sizeof(fnm[0]));
-    const char *lot                          = "B3LYP/aug-cc-pVTZ";
+    int NFILE = (sizeof(fnm)/sizeof(fnm[0]));
 
-    t_pargs pa[] = {
-        { "-lot",    FALSE, etSTR,  {&lot},
-          "Use this method and level of theory when selecting coordinates and charges. Multiple levels can be specified which will be used in the order given, e.g.  B3LYP/aug-cc-pVTZ:HF/6-311G**" }
-    };
 std::vector<alexandria::MolProp> mp;
     gmx_output_env_t                *oenv;
     
-    int  npa   = (sizeof(pa)/sizeof(pa[0]));
     if (!parse_common_args(&argc, argv, PCA_NOEXIT_ON_ARGS, NFILE, fnm,
-                           npa, pa,
+                           0, nullptr,
                            sizeof(desc)/sizeof(desc[0]), desc,
                            0, nullptr, &oenv))
     {
@@ -219,8 +208,6 @@ std::vector<alexandria::MolProp> mp;
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
-    std::string method, basis;
-    splitLot(lot, &method, &basis);
     auto inputrec  = new t_inputrec();
     fill_inputrec(inputrec);
 
@@ -237,7 +224,7 @@ std::vector<alexandria::MolProp> mp;
             std::string name;
             rvec        mu;
         } name_mu;
-        
+        std::string basis, method;
         std::vector<name_mu> mus;
         for (auto &ci : m.experimentConst())
         {
@@ -260,8 +247,13 @@ std::vector<alexandria::MolProp> mp;
                         ci.getDatafile().c_str(), 
                         nC, nH);
             }
+            if (ci.NAtom() > 0)
+            {
+                method = ci.getMethod();
+                basis  = ci.getBasisset();
+            }
             double T = 0;
-            auto gp = m.findProperty(MolPropObservable::DIPOLE, iqmType::QM, T, "", "", "");
+            auto gp = m.qmProperty(MolPropObservable::DIPOLE, T, JobType::OPT);
             if (gp)
             {
                 std::vector<double> mu = gp->getVector();
@@ -311,7 +303,7 @@ std::vector<alexandria::MolProp> mp;
             }
         }
 
-        dump_molecule(mylog, method, basis, &atomTypeCount, &bccTypeCount, pd, m, inputrec);
+        dump_molecule(mylog, &atomTypeCount, &bccTypeCount, pd, m, inputrec);
     }
     fprintf(mylog, "Statistics\n");
     for(auto &atc : atomTypeCount)

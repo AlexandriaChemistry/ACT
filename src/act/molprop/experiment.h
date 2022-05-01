@@ -46,19 +46,7 @@ namespace alexandria
 /*! \brief
  * Enum describing the type of the QM job computed by the Gaussian software
  */
-enum class JobType {
-    OPT       = 0,
-    POP       = 1,
-    POLAR     = 2,
-    G2        = 3,
-    G3        = 4,
-    G4        = 5,
-    CBSQB3    = 6,
-    W1U       = 7,
-    W1BD      = 8,
-    SP        = 9,
-    UNKNOWN   = 10
-};
+enum class JobType { OPT, SP, UNKNOWN };
 
 /*! \brief
  * Return string corresponding to the job type
@@ -430,7 +418,7 @@ public:
         return property_.find(mpo)->second;
     }
 private:
-    /*! \brief Utility to set reference and lot
+    /*! \brief Utility to get reference and lot
      * \param[out] reference Reference to literature, if not nullptr
      * \param[out] lot       Level of theory, if not nullptr
      */

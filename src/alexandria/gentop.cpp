@@ -89,7 +89,7 @@ int gentop(int argc, char *argv[])
         "from the input coordinates, the force constant are set with",
         "command line options.",
         "With the [TT]-db molecule[tt] option a file is extracted from the",
-        "database from one of the specified QM calculations (given with [TT]-lot[tt]).",
+        "database from the QM calculations.",
         "An alternative to the system-wide database [TT]molprops.dat[tt]",
         "can be passed along using the [TT]-mpdb[tt] flag.[PAR]",
         "If the flag [TT]-act/qgen/qgen[tt] is given, charges will be generated using the",
@@ -155,7 +155,6 @@ int gentop(int argc, char *argv[])
     static gmx_bool                  addHydrogens   = false;
 
     static const char               *ff[]           = {nullptr, "ACM-g", "ACM-pg", "ACM-s", "ACM-ps", "Verstraelen", nullptr};
-    static const char               *lot            = nullptr;
     static const char               *qcustom        = nullptr;
 
     t_pargs                          pa[]     = 
@@ -166,8 +165,6 @@ int gentop(int argc, char *argv[])
           "Generate verbose output in the top file and on terminal." },
         { "-db",     FALSE, etSTR,  {&dbname},
           "Read a molecule from the database rather than from a file" },
-        { "-lot",    FALSE, etSTR,  {&lot},
-          "Use this method and level of theory when selecting coordinates and charges" },
         { "-name",   FALSE, etSTR,  {&molnm},
           "Name of your molecule" },
         { "-iupac",   FALSE, etSTR,  {&iupac},
@@ -217,7 +214,6 @@ int gentop(int argc, char *argv[])
     CommunicationRecord cr;
     gmx::MDLogger  mdlog {};
     std::string    method, basis;
-    splitLot(lot, &method, &basis);
 
     /* Check the options */
     bITP = opt2bSet("-oi", NFILE, fnm);
@@ -334,11 +330,8 @@ int gentop(int argc, char *argv[])
     }
     fill_inputrec(inputrec);
     mymol.setInputrec(inputrec);
-    imm = mymol.GenerateTopology(stdout,
-                                 &pd,
-                                 method,
-                                 basis,
-                                 bAllowMissing ? missingParameters::Ignore : missingParameters::Error, false);
+    imm = mymol.GenerateTopology(stdout, &pd,
+                                 bAllowMissing ? missingParameters::Ignore : missingParameters::Error);
 
     gmx_omp_nthreads_init(mdlog, cr.commrec(), 1, 1, 1, 0, false, false);
     if (immStatus::OK == imm)
@@ -346,7 +339,7 @@ int gentop(int argc, char *argv[])
         mymol.symmetrizeCharges(&pd, bQsym, symm_string);
         maxpot = 100; // Use 100 percent of the ESP read from Gaussian file.
         
-        mymol.initQgenResp(&pd, method, basis, 0.0, maxpot);
+        mymol.initQgenResp(&pd, 0.0, maxpot);
 
         ChargeGenerationAlgorithm alg = ChargeGenerationAlgorithm::NONE;
         std::vector<double> myq;
@@ -361,20 +354,9 @@ int gentop(int argc, char *argv[])
         }
         else if (strlen(qqm) > 0)
         {
-            GMX_RELEASE_ASSERT(nullptr != lot, "Please specify the level of theory to use when selecting QM charges.");
             alg = nameToChargeGenerationAlgorithm(qqm);
         }
-        std::string mylot;
-        if (lot)
-        {
-            mylot.assign(lot);
-        }
-        imm    = mymol.GenerateCharges(&pd,
-                                       mdlog,
-                                       &cr,
-                                       alg,
-                                       myq,
-                                       mylot);
+        imm    = mymol.GenerateCharges(&pd, mdlog, &cr, alg, myq);
     }
     /* Generate output file for debugging if requested */
     if (immStatus::OK == imm)

@@ -61,8 +61,6 @@ namespace alexandria
  * \param[in]    iqm     Whether to use QM or Exp data for determining
  *                        the energies or both
  * \param[in]    csvFile Will dump the matrix and right hand side to a csv file
- * \param[in]    method  QM method
- * \param[in]    basis   QM basis set
  * \param[in]    nBootStrap Number of times a bootstrap is repeated
  * \return Root mean square deviation from experimental data
  */
@@ -71,8 +69,6 @@ double getDissociationEnergy(FILE                     *fplog,
                              std::vector<MyMol>       *molset,
                              iqmType                  iqm,
                              const char               *csvFile,
-                             const std::string        &method,
-                             const std::string        &basis,
                              int                       nBootStrap);
 
 }

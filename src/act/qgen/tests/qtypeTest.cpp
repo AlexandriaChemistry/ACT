@@ -175,7 +175,7 @@ class QtypeTest : public gmx::test::CommandLineTestBase
 
             // Get poldata
             auto pd  = getPoldata(model);
-            auto imm = mymol.GenerateTopology(stdout, pd, method, basis,
+            auto imm = mymol.GenerateTopology(stdout, pd,
                                             missingParameters::Error);
             if (immStatus::OK != imm)
             {
@@ -187,15 +187,13 @@ class QtypeTest : public gmx::test::CommandLineTestBase
             CommunicationRecord cr;
             auto           pnc      = gmx::PhysicalNodeCommunicator(MPI_COMM_WORLD, 0);
             gmx::MDLogger  mdlog {};
-            std::string    lot(method);
-            lot += "/" + basis;
             auto alg = ChargeGenerationAlgorithm::NONE;
             if (!qcustom.empty())
             {
                 alg = ChargeGenerationAlgorithm::Custom;
             }
             mymol.symmetrizeCharges(pd, qSymm, nullptr);
-            mymol.GenerateCharges(pd, mdlog, &cr, alg, qcustom, lot);
+            mymol.GenerateCharges(pd, mdlog, &cr, alg, qcustom);
                                 
             std::vector<double> q;
             auto myatoms = mymol.atomsConst();

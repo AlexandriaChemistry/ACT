@@ -103,7 +103,6 @@ void FittingTarget::print(FILE *fp) const
 MolGen::MolGen(const CommunicationRecord *cr)
 {
     cr_        = cr;
-    lot_       = "B3LYP/aug-cc-pVTZ";
     inputrec_  = new t_inputrec();
     fill_inputrec(inputrec_);
 }
@@ -115,8 +114,6 @@ void MolGen::addOptions(std::vector<t_pargs>          *pargs,
     {
         { "-mindata", FALSE, etINT, {&mindata_},
           "Minimum number of data points to optimize force field parameters" },
-        { "-lot",    FALSE, etSTR,  {&lot_},
-          "Use this method and level of theory when selecting coordinates and charges. Multiple levels can be specified which will be used in the order given, e.g.  B3LYP/aug-cc-pVTZ:HF/6-311G**" },
         { "-qsymm",  FALSE, etBOOL, {&qsymm_},
           "Symmetrize the charges on symmetric groups, e.g. CH3, NH2. The list of groups to symmetrize is specified in the force field file." },
         { "-fit", FALSE, etSTR, {&fitString_},
@@ -567,7 +564,6 @@ size_t MolGen::Read(FILE            *fp,
     }
     /* Generate topology for Molecules and distribute them among the nodes */
     std::string      method, basis;
-    splitLot(lot_, &method, &basis);
     std::map<iMolSelect, int> nLocal;
     for(const auto &ims : iMolSelectNames())
     {
@@ -603,8 +599,6 @@ size_t MolGen::Read(FILE            *fp,
                 mymol.setInputrec(inputrec_);
                 imm = mymol.GenerateTopology(fp,
                                              pd,
-                                             method,
-                                             basis,
                                              missingParameters::Error);
                 if (immStatus::OK != imm)
                 {
@@ -617,14 +611,13 @@ size_t MolGen::Read(FILE            *fp,
                 }
 
                 mymol.symmetrizeCharges(pd, qsymm_, nullptr);
-                mymol.initQgenResp(pd, method, basis, 0.0, 100);
+                mymol.initQgenResp(pd, 0.0, 100);
                 std::vector<double> dummy;
                 imm = mymol.GenerateCharges(pd,
                                             mdlog_,
                                             cr_,
                                             ChargeGenerationAlgorithm::NONE,
-                                            dummy,
-                                            lot_);
+                                            dummy);
 
                 if (immStatus::OK != imm)
                 {
@@ -636,7 +629,7 @@ size_t MolGen::Read(FILE            *fp,
                     continue;
                 }
 
-                imm = mymol.getExpProps(iqmMap, method, basis, pd, 0);
+                imm = mymol.getExpProps(iqmMap, 0);
                 if (immStatus::OK != imm)
                 {
                     if (verbose && fp)
@@ -812,25 +805,22 @@ size_t MolGen::Read(FILE            *fp,
 
             imm = mymol.GenerateTopology(debug,
                                          pd,
-                                         method,
-                                         basis,
                                          missingParameters::Error);
 
             if (immStatus::OK == imm)
             {
                 std::vector<double> dummy;
                 mymol.symmetrizeCharges(pd, qsymm_, nullptr);
-                mymol.initQgenResp(pd, method, basis, 0.0, 100);
+                mymol.initQgenResp(pd, 0.0, 100);
                 imm = mymol.GenerateCharges(pd,
                                             mdlog_,
                                             cr_,
                                             ChargeGenerationAlgorithm::NONE,
-                                            dummy,
-                                            lot_);
+                                            dummy);
             }
             if (immStatus::OK == imm)
             {
-                imm = mymol.getExpProps(iqmMap, method, basis, pd, 0);
+                imm = mymol.getExpProps(iqmMap, 0);
             }
             mymol.setSupport(eSupport::Local);
             incrementImmCount(&imm_count, imm);
