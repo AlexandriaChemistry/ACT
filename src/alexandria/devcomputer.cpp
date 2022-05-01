@@ -15,15 +15,13 @@
 namespace alexandria
 {
 
-
-/* * * * * * * * * * * * * * * * * * * * * *
-* BEGIN: BoundsDevComputer                 *
-* * * * * * * * * * * * * * * * * * * * * */
-
-double BoundsDevComputer::l2_regularizer(      double          x,
-                                               double          min,
-                                               double          max,
-                                         const std::string    &label)
+/*! \brief Compute penalty for variables that are out of bounds
+ * \param[in] x       The actual value
+ * \param[in] min     The minimum allowed value
+ * \param[in] max     The maximum allowed value
+ * \return 0 when in bounds, square deviation from bounds otherwise.
+ */
+static double l2_regularizer(double x, double min, double max)
 {
     double p = 0;
     if (x < min)
@@ -34,14 +32,13 @@ double BoundsDevComputer::l2_regularizer(      double          x,
     {
         p = (0.5 * gmx::square(x-max));
     }
-    if (verbose_ && logfile_ && p != 0.0)
-    {
-        fprintf(logfile_, "Variable %s is %g, should be within %g and %g\n", label.c_str(), x, min, max);
-    }
     return p;
-
 }
 
+
+/* * * * * * * * * * * * * * * * * * * * * *
+* BEGIN: BoundsDevComputer                 *
+* * * * * * * * * * * * * * * * * * * * * */
 
 void BoundsDevComputer::calcDeviation(gmx_unused MyMol                         *mymol,
                                       gmx_unused std::map<eRMS, FittingTarget> *targets,
@@ -65,8 +62,15 @@ void BoundsDevComputer::calcDeviation(gmx_unused MyMol                         *
         }
         if (p.mutability() == Mutability::Bounded)
         {
-            bound += l2_regularizer(param[n], p.minimum(), p.maximum(), optIndex.name());
+            real db = l2_regularizer(param[n], p.minimum(), p.maximum());
+            bound += db;
+            if (verbose_ && logfile_ && db != 0.0)
+            {
+                fprintf(logfile_, "Variable %s is %g, should be within %g and %g\n",
+                        optIndex.name().c_str(), param[n], p.minimum(), p.maximum());
+            }
         }
+
         n++;
     }
     (*targets).find(eRMS::BOUNDS)->second.increase(1, bound);
@@ -137,16 +141,11 @@ void ChargeCM5DevComputer::calcDeviation(MyMol                                *m
             {
                 if ((*targets).find(eRMS::CHARGE)->second.weight() > 0)
                 {
-                    real dq = 0;
-                    if (qj < qparm.minimum())
+                    if (qparm.maximum() > qparm.minimum())
                     {
-                        dq = qparm.minimum() - qj;
+                        (*targets).find(eRMS::CHARGE)->second.increase(1, l2_regularizer(qjj, qparm.minimum(),
+                                                                                         qparm.maximum()));
                     }
-                    else if (qj > qparm.maximum())
-                    {
-                        dq = qj - qparm.maximum();
-                    }
-                    (*targets).find(eRMS::CHARGE)->second.increase(1, dq*dq);
                 }
             }
             break;

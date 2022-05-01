@@ -80,18 +80,6 @@ private:
     //! Information about each force field parameter
     std::vector<OptimizationIndex> *optIndex_;
 
-    /*! \brief Compute penalty for variables that are out of bounds
-     * \param[in] x       The actual value
-     * \param[in] min     The minimum allowed value
-     * \param[in] max     The maximum allowed value
-     * \param[in] label   String to print if verbose
-     * \return 0 when in bounds, square deviation from bounds otherwise.
-     */
-    double l2_regularizer(      double          x,
-                                double          min,
-                                double          max,
-                          const std::string    &label);
-
 public:
 
     /*! \brief Create a new BoundsDevComputer
