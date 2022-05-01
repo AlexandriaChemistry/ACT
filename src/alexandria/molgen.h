@@ -325,8 +325,6 @@ private:
     gmx::MDModules                  mdModules_;
     //! The molecules used in the optimization
     std::vector<alexandria::MyMol>  mymol_;
-    //! Level of theory used from QM
-    const char                     *lot_        = nullptr;
     
     /*! \brief Check that we have enough data 
      * Check that we have enough data for all parameters to optimize
@@ -438,9 +436,6 @@ public:
     //! \return the GROMACS hardware information structure      
     gmx_hw_info_t *hwinfo() {return hwinfo_;}
         
-    //! \brief Return level of theory
-    const char *lot() const { return lot_; }
-    
     /*! \brief Read the molecular property data file to generate molecules.
      * \param[in] fp      File pointer for printing information, may be nullptr
      * \param[in] fn      Filename for to read molecules from

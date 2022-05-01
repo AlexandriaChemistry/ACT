@@ -696,7 +696,6 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
                                   std::vector<alexandria::MyMol> *mymol,
                                   const Poldata                  *pd,
                                   const gmx::MDLogger            &fplog,
-                                  const char                     *lot,
                                   const gmx_output_env_t         *oenv,
                                   const CommunicationRecord      *cr,
                                   real                            efield,
@@ -808,7 +807,7 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
             // Recalculate the atomic charges using the optimized parameters.
             std::vector<double> dummy;
             mol->GenerateCharges(pd, fplog, cr,
-                                 ChargeGenerationAlgorithm::NONE, dummy, lot);
+                                 ChargeGenerationAlgorithm::NONE, dummy);
             // Now compute all the ESP RMSDs and multipoles and print it.
             fprintf(fp, "Electrostatic properties.\n");
             mol->calcEspRms(pd);

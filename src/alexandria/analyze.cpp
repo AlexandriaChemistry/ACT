@@ -352,9 +352,7 @@ int analyze(int argc, char *argv[])
         "and you should ideally have a line for each molecule in the molecule database",
         "([TT]-m[tt] option). Missing molecules will be ignored. You can also write a",
         "selection file ([TT]-selout[tt]) that contains all the molecules in the",
-        "output corresponding to the [TT]-prop[tt] flag. You can steer the content of",
-        "this file e.g. by running the program with an empty [TT]-lot[tt] flag,",
-        "yielding only those molecules for which experimental data is available."
+        "output corresponding to the [TT]-prop[tt] flag."
     };
     t_filenm                         fnm[] = {
         { efXML, "-d",      "gentop",    ffREAD   },
@@ -371,7 +369,6 @@ int analyze(int argc, char *argv[])
     static int                       catmin            = 1;
     static int                       maxwarn           = 0;
     static char                     *fc_str            = (char *)"";
-    static char                     *lot               = (char *)"B3LYP/aug-cc-pVTZ";
     static real                      rtoler            = 0.15;
     static real                      atoler            = 0;
     static real                      outlier           = 1;
@@ -397,8 +394,6 @@ int analyze(int argc, char *argv[])
           "Outlier indicates a level (in units of sigma, one standard deviation). Calculations that deviate more than this level from the experiment are not taken into account when computing statistics. Moreover, the outliers are printed to the standard error. If outlier is 0, no action is taken. " },
         { "-merge",  FALSE, etBOOL, {&bMerge},
           "Merge molecule records in the input file and generate atomtype compositions based on the calculated geometry." },
-        { "-lot",    FALSE, etSTR,  {&lot},
-          "Indicate the method and level of theory that were used together with experimental data in refining polarizabilities. If empty, is is assumed that only experimental data were used." },
         { "-prop",   FALSE, etENUM, {prop},
           "Property to print" },
         { "-catmin", FALSE, etINT, {&catmin},

@@ -187,15 +187,13 @@ class QtypeTest : public gmx::test::CommandLineTestBase
             CommunicationRecord cr;
             auto           pnc      = gmx::PhysicalNodeCommunicator(MPI_COMM_WORLD, 0);
             gmx::MDLogger  mdlog {};
-            std::string    lot(method);
-            lot += "/" + basis;
             auto alg = ChargeGenerationAlgorithm::NONE;
             if (!qcustom.empty())
             {
                 alg = ChargeGenerationAlgorithm::Custom;
             }
             mymol.symmetrizeCharges(pd, qSymm, nullptr);
-            mymol.GenerateCharges(pd, mdlog, &cr, alg, qcustom, lot);
+            mymol.GenerateCharges(pd, mdlog, &cr, alg, qcustom);
                                 
             std::vector<double> q;
             auto myatoms = mymol.atomsConst();

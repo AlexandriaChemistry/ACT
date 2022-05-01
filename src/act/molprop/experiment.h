@@ -430,7 +430,7 @@ public:
         return property_.find(mpo)->second;
     }
 private:
-    /*! \brief Utility to set reference and lot
+    /*! \brief Utility to get reference and lot
      * \param[out] reference Reference to literature, if not nullptr
      * \param[out] lot       Level of theory, if not nullptr
      */

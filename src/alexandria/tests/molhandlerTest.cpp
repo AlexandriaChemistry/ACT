@@ -137,12 +137,11 @@ protected:
         CommunicationRecord cr;
         auto           pnc      = gmx::PhysicalNodeCommunicator(MPI_COMM_WORLD, 0);
         gmx::MDLogger  mdlog {};
-        std::string    lot      = gmx::formatString("%s/%s", method.c_str(), basis.c_str());
         auto alg = ChargeGenerationAlgorithm::NONE;
         std::vector<double> qcustom;
         bool qSymm = false;
         mp_.symmetrizeCharges(pd, qSymm, nullptr);
-        mp_.GenerateCharges(pd, mdlog, &cr, alg, qcustom, lot);
+        mp_.GenerateCharges(pd, mdlog, &cr, alg, qcustom);
         
         real shellForceRMS;
         (void) mp_.calculateEnergy(cr.commrec(), &shellForceRMS);

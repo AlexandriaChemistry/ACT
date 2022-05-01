@@ -361,6 +361,18 @@ static bool stringEqual(const std::string &a, const std::string &b)
     return true;
 }
 
+const Experiment *MolProp::findExperimentConst(JobType job) const
+{
+    for(auto ei = exper_.begin(); ei < exper_.end(); ++ei)
+    {
+        if (ei->getJobtype() == job)
+        {
+            return &(*ei);
+        }
+    }
+    return nullptr;
+}
+
 const Experiment *MolProp::findExperimentConst(const std::string &method,
                                                const std::string &basis,
                                                const std::string &conformation) const
@@ -416,84 +428,6 @@ const GenericProperty *MolProp::findProperty(MolPropObservable  mpo,
     return nullptr;
 }
 
-#ifdef OLD
-bool MolProp::getPropRef(MolPropObservable mpo, iqmType iQM,
-                         const std::string &method,
-                         const std::string &basis,
-                         const std::string &conf,
-                         double *value, double *error, double *T,
-                         std::string *ref, std::string *mylot,
-                         std::vector<double> *vec, tensor quad_polar)
-{
-    bool   done = false;
-    double Told = *T;
-
-    if (iQM == iqmType::Both)
-    {
-        for (auto &ei : experimentConst())
-        {
-            if ((conf.size() == 0) ||
-                stringEqual(ei.getConformation(), conf))
-            {
-                if (ei.getVal(mpo, value, error, T, vec, quad_polar) &&
-                    bCheckTemperature(Told, *T))
-                {
-                    ref->assign(ei.getReference());
-                    mylot->assign("Experiment");
-                    done = true;
-                    break;
-                }
-            }
-        }
-    }
-    if (iQM == iqmType::Exp)
-    {
-        for (auto &ei : experimentConst())
-        {
-            if (dsExperiment != ei.dataSource())
-            {
-                continue;
-            }
-            if ((conf.size() == 0) ||
-                stringEqual(ei.getConformation(), conf))
-            {
-                if (ei.getVal(type, mpo, value, error, T, vec, quad_polar) &&
-                    bCheckTemperature(Told, *T))
-                {
-                    ref->assign(ei.getReference());
-                    mylot->assign("Experiment");
-                    done = true;
-                    break;
-                }
-            }
-        }
-    }
-    else if (iQM == iqmType::QM)
-    {
-        for (auto &ci : experimentConst())
-        {
-            if (dsExperiment == ci.dataSource())
-            {
-                continue;
-            }
-            if (((method.size() == 0 || method == ci.getMethod()) &&
-                 (basis.size() == 0  || basis == ci.getBasisset())) &&
-                (conf.size() == 0    || conf == ci.getConformation()))
-            {
-                if  (ci.getVal(type.c_str(), mpo, value, error, T, vec, quad_polar) &&
-                     bCheckTemperature(Told, *T))
-                {
-                    ref->assign(ci.getReference());
-                    mylot->assign(method + "/" + basis);
-                    done = true;
-                    break;
-                }
-            }
-        }
-    }
-    return done;
-}
-#endif
 bool MolProp::getOptHF(double *value)
 {
     bool done = false;

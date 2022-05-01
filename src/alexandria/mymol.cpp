@@ -321,33 +321,14 @@ bool MyMol::IsVsiteNeeded(std::string    atype,
 }
 
 immStatus MyMol::GenerateAtoms(const Poldata     *pd,
-                               t_atoms           *atoms,
-                               const std::string &method,
-                               const std::string &basis,
-                               bool               strict=true)
+                               t_atoms           *atoms)
 {
     double                    xx, yy, zz;
     int                       natom = 0;
     immStatus                 imm   = immStatus::OK;
-    std::vector<std::string>  confs = { "minimum", "excited", "" };
     const Experiment         *ci    = nullptr;
     
-    for(size_t iconf = 0; iconf < confs.size(); iconf++)
-    { 
-        ci = findExperimentConst(method, basis, confs[iconf]);
-        if (ci && ci->NAtom() > 0)
-        {
-            break;
-        }
-    }
-    if (!ci && !strict)
-    {
-        if (debug)
-        {
-            fprintf(debug, "Trying to find calculation without known method/basisset for %s\n", getMolname().c_str());
-        }
-        ci = findExperimentConst("", "", "");
-    }
+    ci = findExperimentConst(JobType::OPT);
     if (ci)
     {
         if (ci->NAtom() == 0)
@@ -428,7 +409,8 @@ immStatus MyMol::GenerateAtoms(const Poldata     *pd,
     {
         fprintf(debug, "Tried to convert %s to gromacs. LOT is %s/%s. Natoms is %d\n",
                 getMolname().c_str(),
-                method.c_str(), basis.c_str(), natom);
+                ci->getMethod().c_str(),
+                ci->getBasisset().c_str(), natom);
     }
 
     return imm;
@@ -994,7 +976,7 @@ immStatus MyMol::GenerateTopology(FILE              *fp,
     {
         snew(atoms, 1);
         state_change_natoms(state_, NAtom());
-        imm = GenerateAtoms(pd, atoms, method, basis, strict);
+        imm = GenerateAtoms(pd, atoms);
     }
     if (immStatus::OK == imm)
     {
@@ -1721,8 +1703,7 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
                                  const gmx::MDLogger       &mdlog,
                                  const CommunicationRecord *cr,
                                  ChargeGenerationAlgorithm  algorithm,
-                                 const std::vector<double> &qcustom,
-                                 const std::string         &lot)
+                                 const std::vector<double> &qcustom)
 {
     immStatus imm         = immStatus::OK;
     bool      converged   = false;
@@ -1806,23 +1787,18 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
             auto myatoms = atoms();
             for (auto exper : experimentConst())
             {
-                std::string mylot(exper.getMethod());
-                mylot += "/" + exper.getBasisset();
-                if (lot == mylot)
+                int i = 0;
+                for (auto &ca : exper.calcAtomConst())
                 {
-                    int i = 0;
-                    for (auto &ca : exper.calcAtomConst())
+                    if (ca.hasCharge(qtmap[algorithm]))
                     {
-                        if (ca.hasCharge(qtmap[algorithm]))
-                        {
-                            myatoms->atom[i].q  = myatoms->atom[i].qB = ca.charge(qtmap[algorithm]);
-                            i++;
-                        }
-                        else
-                        {
-                            gmx_fatal(FARGS, "No charge type %s for %s",
-                                      qTypeName(qtmap[algorithm]).c_str(), getMolname().c_str());
-                        }
+                        myatoms->atom[i].q  = myatoms->atom[i].qB = ca.charge(qtmap[algorithm]);
+                        i++;
+                    }
+                    else
+                    {
+                        gmx_fatal(FARGS, "No charge type %s for %s",
+                                  qTypeName(qtmap[algorithm]).c_str(), getMolname().c_str());
                     }
                 }
             }

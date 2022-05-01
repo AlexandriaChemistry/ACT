@@ -121,7 +121,6 @@ using qtStats = std::map<qType, gmx_stats>;
                    std::vector<alexandria::MyMol> *mymol,
                    const Poldata                  *pd,
                    const gmx::MDLogger            &fplog,
-                   const char                     *lot,
                    const gmx_output_env_t         *oenv,
                    const CommunicationRecord      *cr,
                    real                            efield,

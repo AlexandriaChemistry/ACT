@@ -141,16 +141,10 @@ namespace alexandria
          * level can be tried if the strict flag is false.
          * \param[in]  pd     Force field data
          * \param[out] atoms  The structure to update
-         * \param[in]  method Method used for QM calculations
-         * \param[in]  basis  Basis set used for QM calculations
-         * \param[in]  strict Whether or not to only allow the requested LOT
-         * \return The staus
+         * \return The status
          */
         immStatus GenerateAtoms(const Poldata     *pd,
-                                t_atoms           *atoms,
-                                const std::string &method,
-                                const std::string &basis,
-                                bool               strict);
+                                t_atoms           *atoms);
 
         /*! \brief
          * Generate angles, dihedrals, exclusions etc.
@@ -430,20 +424,18 @@ namespace alexandria
         /*! \brief
          * Generate atomic partial charges
          *
-         * \param[in] pd                             Data structure containing atomic properties
-         * \param[in] fplog                          Logger
-         * \param[in] cr      Communication parameters
+         * \param[in] pd        Data structure containing atomic properties
+         * \param[in] fplog     Logger
+         * \param[in] cr        Communication parameters
          * \param[in] algorithm The algorithm for determining charges,
-         *                    if NONE it is read from the Poldata structure.
-         * \param[in] qcustom Custom (user-provided) charges
-         * \param[in] lot     Level of theory when using QM charges
+         *                      if NONE it is read from the Poldata structure.
+         * \param[in] qcustom   Custom (user-provided) charges
          */
         immStatus GenerateCharges(const Poldata             *pd,
                                   const gmx::MDLogger       &fplog,
                                   const CommunicationRecord *cr,
                                   ChargeGenerationAlgorithm  algorithm,
-                                  const std::vector<double> &qcustom,
-                                  const std::string         &lot);
+                                  const std::vector<double> &qcustom);
         /*! \brief
          * Generate atomic partial charges using EEM or SQE.
          * If shells are present they will be minimized.

@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2014-2021
+ * Copyright (C) 2014-2022
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -81,7 +81,7 @@ class RespTest : public gmx::test::CommandLineTestBase
             const char *iupac    = (char *)"";
             const char *conf     = (char *)"minimum";
             std::string basis, method;
-            const char *jobtype  = (char *)"Pop";
+            const char *jobtype  = (char *)"Opt";
             int         maxpot   = 100;
             int         nsymm    = 0;
 
@@ -146,8 +146,6 @@ class RespTest : public gmx::test::CommandLineTestBase
             gmx::MDLogger  mdlog {};
             auto qt = pd->findForcesConst(InteractionType::CHARGEDISTRIBUTION);
             auto ct = name2ChargeType(qt.optionValue("chargetype"));
-            std::string    lot(method);
-            lot += "/" + basis;
             
             if (ChargeType::Slater  == ct)
             {
@@ -158,7 +156,7 @@ class RespTest : public gmx::test::CommandLineTestBase
             mp_.initQgenResp(pd, method, basis, 0.0, 100);
             std::vector<double> qcustom;
             mp_.GenerateCharges(pd, mdlog, &cr,
-                                ChargeGenerationAlgorithm::ESP, qcustom, lot);
+                                ChargeGenerationAlgorithm::ESP, qcustom);
 
             std::vector<double> qtotValues;
             auto atoms = mp_.atoms();

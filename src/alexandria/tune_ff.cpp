@@ -202,7 +202,6 @@ FILE *OptACM::logFile() {
 void OptACM::initChargeGeneration(iMolSelect ims)
 {
     std::string method, basis, conf, type, myref, mylot;
-    splitLot(mg_.lot(), &method, &basis);
     std::vector<double> vec;
     for (MyMol &mymol : mg_.mymols())
     {
@@ -846,8 +845,7 @@ int tune_ff(int argc, char *argv[])
             }
             MolGen *tmpMg = opt.mg();
             printer.print(opt.logFile(), &(tmpMg->mymols()),
-                          opt.sii()->poldata(),
-                          tmpMg->mdlog(), tmpMg->lot(),
+                          opt.sii()->poldata(), tmpMg->mdlog(),
                           oenv, opt.commRec(), efield, filenms);
             print_memory_usage(debug);
         }

@@ -192,19 +192,13 @@ int molprop_check(int argc, char*argv[])
         { efXML, "-f",  "allmols",  ffREAD },
         { efLOG, "-g",  "molprop_check", ffWRITE }
     };
-    int                              NFILE   = (sizeof(fnm)/sizeof(fnm[0]));
-    const char *lot                          = "B3LYP/aug-cc-pVTZ";
+    int NFILE = (sizeof(fnm)/sizeof(fnm[0]));
 
-    t_pargs pa[] = {
-        { "-lot",    FALSE, etSTR,  {&lot},
-          "Use this method and level of theory when selecting coordinates and charges. Multiple levels can be specified which will be used in the order given, e.g.  B3LYP/aug-cc-pVTZ:HF/6-311G**" }
-    };
 std::vector<alexandria::MolProp> mp;
     gmx_output_env_t                *oenv;
     
-    int  npa   = (sizeof(pa)/sizeof(pa[0]));
     if (!parse_common_args(&argc, argv, PCA_NOEXIT_ON_ARGS, NFILE, fnm,
-                           npa, pa,
+                           0, nullptr,
                            sizeof(desc)/sizeof(desc[0]), desc,
                            0, nullptr, &oenv))
     {
@@ -219,8 +213,6 @@ std::vector<alexandria::MolProp> mp;
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
-    std::string method, basis;
-    splitLot(lot, &method, &basis);
     auto inputrec  = new t_inputrec();
     fill_inputrec(inputrec);
 
@@ -237,7 +229,7 @@ std::vector<alexandria::MolProp> mp;
             std::string name;
             rvec        mu;
         } name_mu;
-        
+        std::string basis, method;
         std::vector<name_mu> mus;
         for (auto &ci : m.experimentConst())
         {
@@ -259,6 +251,11 @@ std::vector<alexandria::MolProp> mp;
                 fprintf(mylog, "%s #C %d #H %d\n",
                         ci.getDatafile().c_str(), 
                         nC, nH);
+            }
+            if (ci.NAtom() > 0)
+            {
+                method = ci.getMethod();
+                basis  = ci.getBasisset();
             }
             double T = 0;
             auto gp = m.findProperty(MolPropObservable::DIPOLE, iqmType::QM, T, "", "", "");
