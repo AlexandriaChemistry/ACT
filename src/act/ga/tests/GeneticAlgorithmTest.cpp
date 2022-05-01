@@ -303,7 +303,8 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
     
 };
 
-#ifdef CMAKE_BUILD_TYPE_DEBUG
+// We only run these tests in debug mode to not confuse user.s.
+#if CMAKE_BUILD_TYPE == CMAKE_BUILD_TYPE_DEBUG
 TEST_F (GeneticAlgorithmTest, PopSix)  // HYBRID
 {
     GMX_MPI_TEST(6);
