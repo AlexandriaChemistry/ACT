@@ -8,6 +8,8 @@ import os, argparse
 from matplotlib import rcParams
 from matplotlib.animation import FuncAnimation
 
+debug = False
+
 def interpret_legend(line):
     legval = None
     legkey = "title"
@@ -84,7 +86,8 @@ def read_xvg(filename):
             if len(w) == numwords:
                 if numwords == 2:
                     if len(dataset) == 0:
-                        print("Found data but no dataset yet")
+                        if debug:
+                            print("Found data but no dataset yet")
                         dataset.append(xvgDataSet())
                     dataset[len(dataset)-1].add_point(float(w[0]), float(w[1]))
                 elif numwords > 2:
