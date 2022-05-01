@@ -330,11 +330,8 @@ int gentop(int argc, char *argv[])
     }
     fill_inputrec(inputrec);
     mymol.setInputrec(inputrec);
-    imm = mymol.GenerateTopology(stdout,
-                                 &pd,
-                                 method,
-                                 basis,
-                                 bAllowMissing ? missingParameters::Ignore : missingParameters::Error, false);
+    imm = mymol.GenerateTopology(stdout, &pd,
+                                 bAllowMissing ? missingParameters::Ignore : missingParameters::Error);
 
     gmx_omp_nthreads_init(mdlog, cr.commrec(), 1, 1, 1, 0, false, false);
     if (immStatus::OK == imm)
@@ -342,7 +339,7 @@ int gentop(int argc, char *argv[])
         mymol.symmetrizeCharges(&pd, bQsym, symm_string);
         maxpot = 100; // Use 100 percent of the ESP read from Gaussian file.
         
-        mymol.initQgenResp(&pd, method, basis, 0.0, maxpot);
+        mymol.initQgenResp(&pd, 0.0, maxpot);
 
         ChargeGenerationAlgorithm alg = ChargeGenerationAlgorithm::NONE;
         std::vector<double> myq;

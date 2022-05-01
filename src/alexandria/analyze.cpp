@@ -165,7 +165,7 @@ static void write_corr_xvg(FILE                             *fplog,
         {
             bExp      = false;
             {
-                auto gp = mpi.findProperty(mpo, iqmType::Exp, Texp, q->method(), q->basis(), "");
+                auto gp = mpi.expProperty(mpo, Texp);
                 if (gp)
                 {
                     exp_val   = gp->getValue();
@@ -174,7 +174,7 @@ static void write_corr_xvg(FILE                             *fplog,
             }
             bQM = false;
             {
-                auto gp = mpi.findProperty(mpo, iqmType::QM, Tqm, q->method(), q->basis(), "");
+                auto gp = mpi.qmProperty(mpo, Tqm, JobType::OPT);
                 if (gp)
                 {
                     qm_val   = gp->getValue();
@@ -316,11 +316,7 @@ static void alexandria_molprop_analyze(FILE                              *fplog,
                 iupac = mpi->getIupac().c_str();
                 GMX_RELEASE_ASSERT((nullptr != iupac) && (strlen(iupac) > 0), "Empty IUPAC");
                 
-                if (mpi->findProperty(mpo, iqmType::Both, T,
-                                      method, basis, ""))
-                {
-                    fprintf(gp, "%s|Train\n", iupac);
-                }
+                fprintf(gp, "%s|Train\n", iupac);
             }
             fclose(gp);
         }

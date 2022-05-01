@@ -132,7 +132,7 @@ class RespTest : public gmx::test::CommandLineTestBase
             t_inputrec    inputrec;
             fill_inputrec(&inputrec);
             Poldata      *pd = getPoldata(qdist);
-            auto imm = mp_.GenerateTopology(nullptr, pd, method, basis,
+            auto imm = mp_.GenerateTopology(nullptr, pd,
                                             missingParameters::Error);
             if (immStatus::OK != imm)
             {
@@ -153,7 +153,7 @@ class RespTest : public gmx::test::CommandLineTestBase
             }
             mp_.setInputrec(&inputrec);
             mp_.symmetrizeCharges(pd, qSymm, nullptr);
-            mp_.initQgenResp(pd, method, basis, 0.0, 100);
+            mp_.initQgenResp(pd, 0.0, 100);
             std::vector<double> qcustom;
             mp_.GenerateCharges(pd, mdlog, &cr,
                                 ChargeGenerationAlgorithm::ESP, qcustom);

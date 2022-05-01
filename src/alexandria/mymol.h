@@ -231,10 +231,10 @@ namespace alexandria
          */
         void computeAtomizationEnergy(const Poldata *pd);
 
-        /*! \brief extract frequencies and intensities if present
-         * \param[in] lot Level of theory
+        /*! \brief extract frequencies and intensities if present.
+         * This will use the optimized structure only.
          */
-        void getHarmonics(const std::string &lot);
+        void getHarmonics();
         
         //! Energy terms for this compounds
         std::map<MolPropObservable, double> energy_;
@@ -395,18 +395,12 @@ namespace alexandria
          *
          * \param[in]  fp      File to write (debug) information to
          * \param[in]  pd      Data structure containing atomic properties
-         * \param[in]  method  Method used for QM calculation
-         * \param[in]  basis   Basis set used for QM calculation
          * \param[in]  missing How to treat missing parameters
-         * \param[in]  strict  Whether or not to only allow the requested LOT
          * \return status
          */
         immStatus GenerateTopology(FILE              *fp,
                                    const Poldata     *pd,
-                                   const std::string &method,
-                                   const std::string &basis,
-                                   missingParameters  missing,
-                                   bool               strict=true);
+                                   missingParameters  missing);
 
         //! Return the ACT topology structure
         const Topology *topology() const { return topology_; }
@@ -474,18 +468,13 @@ namespace alexandria
                                 const gmx_output_env_t    *oenv);
 
         /*! \brief
-         * Collect the experimental properties
+         * Collect the properties from QM (Optimized structure) or
+         * from experiment.
          *
          * \param[in] iqm      Determine whether to allow exp or QM results or both for each property
-         * \param[in] method   Method used for QM calculation
-         * \param[in] basis    Basis set used for QM calculation
-         * \param[in] pd       Force field structure
          * \param[in] T        The temperature to use. -1 allows any T.
          */
         immStatus getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
-                              const std::string &method,
-                              const std::string &basis,
-                              const Poldata     *pd,
                               double             T);
 
         /*! \brief
@@ -611,15 +600,11 @@ namespace alexandria
          * is used for charge generation, since ESP points can be used
          * in analysis.
          * \param[in]  pd      Data structure containing atomic properties
-         * \param[in]  method  Method used for QM
-         * \param[in]  basis   Basis set used for QM
          * \param[in]  watoms  Weight for the potential on the atoms in 
          *                     doing the RESP fit. Should be 0 in most cases.
          * \param[in]  maxESP  Percentage of the ESP points to consider (<= 100)
          */
         void initQgenResp(const Poldata     *pd,
-                          const std::string &method,
-                          const std::string &basis,
                           real               watoms,
                           int                maxESP);
 

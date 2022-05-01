@@ -373,28 +373,9 @@ const Experiment *MolProp::findExperimentConst(JobType job) const
     return nullptr;
 }
 
-const Experiment *MolProp::findExperimentConst(const std::string &method,
-                                               const std::string &basis,
-                                               const std::string &conformation) const
-{
-    for(auto ei = exper_.begin(); ei < exper_.end(); ++ei)
-    {
-        if ((conformation.empty() || stringEqual(ei->getConformation(), conformation)) &&
-            (method.empty()       || stringEqual(ei->getMethod(), method)) &&
-            (basis.empty()        || stringEqual(ei->getBasisset(), basis)))
-        {
-            return &(*ei);
-        }
-    }
-    return nullptr;
-}
-
-const GenericProperty *MolProp::findProperty(MolPropObservable  mpo, 
-                                             iqmType            iQM,
-                                             double             T,
-                                             const std::string &method,
-                                             const std::string &basis,
-                                             const std::string &conf) const
+const GenericProperty *MolProp::qmProperty(MolPropObservable  mpo, 
+                                           double             T,
+                                           JobType            jt) const
 {
     for(auto ei = exper_.begin(); ei < exper_.end(); ++ei)
     {
@@ -402,25 +383,30 @@ const GenericProperty *MolProp::findProperty(MolPropObservable  mpo,
         {
             for (const auto &pp : ei->propertyConst(mpo))
             { 
-                if (bCheckTemperature(T, pp->getTemperature()))
+                if (ei->getJobtype() == jt &&
+                    bCheckTemperature(T, pp->getTemperature()))
                 {
-                    if ((ei->dataSource() == dsExperiment) &&
-                        (iqmType::Exp == iQM || iqmType::Both == iQM))
-                    {
-                        // For an experiment it is sufficient if the temperature and
-                        // the mpo are correct
-                        return pp;
-                    }
-                    else if ((ei->dataSource() == dsTheory) &&
-                             (iqmType::QM == iQM || iqmType::Both == iQM))
-                    {
-                        if (((conf.size() == 0)   || stringEqual(ei->getConformation(), conf)) &&
-                            ((method.size() == 0) || stringEqual(ei->getMethod(), method)) &&
-                            ((basis.size() == 0)  || stringEqual(ei->getBasisset(), basis)))
-                        {
-                            return pp;
-                        }
-                    }
+                    return pp;
+                }
+            }
+        }
+    }
+    return nullptr;
+}
+
+const GenericProperty *MolProp::expProperty(MolPropObservable  mpo, 
+                                            double             T) const
+{
+    for(auto ei = exper_.begin(); ei < exper_.end(); ++ei)
+    {
+        if (ei->hasProperty(mpo))
+        {
+            for (const auto &pp : ei->propertyConst(mpo))
+            { 
+                if (ei->dataSource() == dsExperiment &&
+                    bCheckTemperature(T, pp->getTemperature()))
+                {
+                    return pp;
                 }
             }
         }
@@ -434,8 +420,7 @@ bool MolProp::getOptHF(double *value)
 
     std::string empty;
     
-    auto gp = findProperty(MolPropObservable::HF, iqmType::QM, 0.0,
-                           empty, empty, empty);
+    auto gp = qmProperty(MolPropObservable::HF, 0.0, JobType::OPT);
     if (gp)
     {
         *value = gp->getValue();

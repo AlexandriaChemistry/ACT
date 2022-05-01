@@ -321,8 +321,6 @@ double getDissociationEnergy(FILE               *fplog,
                              std::vector<MyMol> *molset,
                              iqmType             iqm,
                              const char         *csvFile,
-                             const std::string  &method,
-                             const std::string  &basis,
                              int                 nBootStrap)
 {
     std::random_device               rd;
@@ -340,8 +338,7 @@ double getDissociationEnergy(FILE               *fplog,
     for (size_t i = 0; i < molset->size(); i++)
     {
         auto mymol = &((*molset)[i]);
-        if (immStatus::OK == mymol->getExpProps(myprops, method, basis, pd, 
-                                                tmap[iqm]))
+        if (immStatus::OK == mymol->getExpProps(myprops, tmap[iqm]))
         {
             double deltaE0;
             if (mymol->energy(MolPropObservable::DELTAE0, &deltaE0))

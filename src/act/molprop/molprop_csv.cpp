@@ -134,7 +134,15 @@ static void gmx_molprop_csv(const char                 *fn,
             std::vector<iqmType> iqms = { iqmType::Exp, iqmType::QM };
             for (auto &iqm : iqms)
             {
-                auto gp = mpi->findProperty(mpo[k], iqm, T, "", "", "");
+                const GenericProperty *gp;
+                if (iqmType::Exp == iqm)
+                {
+                    gp = mpi->expProperty(mpo[k], T);
+                }
+                else
+                {
+                    gp = mpi->qmProperty(mpo[k], T, JobType::OPT);
+                }
                 if (gp)
                 {
                     fprintf(fp, ",\"%.4f\",\"FIXME\"", gp->getValue());

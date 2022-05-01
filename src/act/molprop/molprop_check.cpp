@@ -58,8 +58,6 @@ namespace alexandria
 typedef std::map<const std::string, int> stringCount;
 
 static void dump_molecule(FILE              *fp,
-                          const std::string &method,
-                          const std::string &basis,
                           stringCount       *atomTypeCount,
                           stringCount       *bccTypeCount,
                           const Poldata     &pd,
@@ -71,10 +69,7 @@ static void dump_molecule(FILE              *fp,
     mymol.setInputrec(inputrec);
     auto imm = mymol.GenerateTopology(fp,
                                       &pd,
-                                      method,
-                                      basis,
-                                      missingParameters::Error,
-                                      false);
+                                      missingParameters::Error);
     if (immStatus::OK != imm)
     {
         fprintf(fp, "Failed to generate topology for %s. Outcome: %s\n",
@@ -93,7 +88,7 @@ static void dump_molecule(FILE              *fp,
         {
             f.dump(fp);
         }
-        mymol.getExpProps(iqm, "", "", &pd, -1);
+        mymol.getExpProps(iqm, -1);
         mymol.Dump(fp);
         // Atoms!
         auto &atoms = mymol.atomsConst();
@@ -258,7 +253,7 @@ std::vector<alexandria::MolProp> mp;
                 basis  = ci.getBasisset();
             }
             double T = 0;
-            auto gp = m.findProperty(MolPropObservable::DIPOLE, iqmType::QM, T, "", "", "");
+            auto gp = m.qmProperty(MolPropObservable::DIPOLE, T, JobType::OPT);
             if (gp)
             {
                 std::vector<double> mu = gp->getVector();
@@ -308,7 +303,7 @@ std::vector<alexandria::MolProp> mp;
             }
         }
 
-        dump_molecule(mylog, method, basis, &atomTypeCount, &bccTypeCount, pd, m, inputrec);
+        dump_molecule(mylog, &atomTypeCount, &bccTypeCount, pd, m, inputrec);
     }
     fprintf(mylog, "Statistics\n");
     for(auto &atc : atomTypeCount)

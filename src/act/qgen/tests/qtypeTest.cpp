@@ -175,7 +175,7 @@ class QtypeTest : public gmx::test::CommandLineTestBase
 
             // Get poldata
             auto pd  = getPoldata(model);
-            auto imm = mymol.GenerateTopology(stdout, pd, method, basis,
+            auto imm = mymol.GenerateTopology(stdout, pd,
                                             missingParameters::Error);
             if (immStatus::OK != imm)
             {

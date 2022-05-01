@@ -954,10 +954,7 @@ static void TopologyToMtop(Topology       *top,
                  
 immStatus MyMol::GenerateTopology(FILE              *fp,
                                   const Poldata     *pd,
-                                  const std::string &method,
-                                  const std::string &basis,
-                                  missingParameters  missing,
-                                  bool               strict)
+                                  missingParameters  missing)
 {
     immStatus   imm = immStatus::OK;
     std::string btype1, btype2;
@@ -1098,8 +1095,7 @@ immStatus MyMol::GenerateTopology(FILE              *fp,
         }
     }
     // Finally, extract frequencies etc.
-    std::string lot = gmx::formatString("%s/%s", method.c_str(), basis.c_str());
-    getHarmonics(lot);
+    getHarmonics();
     
     return imm;
 }
@@ -2076,10 +2072,9 @@ void MyMol::PrintTopology(const char                *fn,
     qcalc->calcMoments();
     
     T = -1;
-    const char *qm_conf = "minimum";
     for(auto &mpo : mpoMultiPoles)
     {
-        auto gp = findProperty(mpo, iqmType::QM, T, method, basis, qm_conf);
+        auto gp = qmProperty(mpo, T, JobType::OPT);
         if (gp)
         {
             auto vec = gp->getVector();
@@ -2125,7 +2120,8 @@ void MyMol::PrintTopology(const char                *fn,
             commercials.push_back(buf);
 
             T = -1;
-            auto gp = findProperty(MolPropObservable::POLARIZABILITY, iqmType::QM, T, method, basis, "");
+            auto gp = qmProperty(MolPropObservable::POLARIZABILITY,
+                                 T, JobType::OPT);
             if (gp)
             {
                 auto qelec = qTypeProps(qType::Elec);
@@ -2310,7 +2306,7 @@ void MyMol::calcEspRms(const Poldata *pd)
     done_atom(&myatoms);
 }
 
-void MyMol::getHarmonics(const std::string &lot)
+void MyMol::getHarmonics()
 {
     for(auto &mpo : { MolPropObservable::FREQUENCY, 
                      MolPropObservable::INTENSITY })
@@ -2347,9 +2343,6 @@ const real *MyMol::energyTerms() const
 }
         
 immStatus MyMol::getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
-                             const std::string                          &method,
-                             const std::string                          &basis,
-                             const Poldata                              *pd,
                              double                                      T)
 {
     int                 natom = 0;
@@ -2382,7 +2375,7 @@ immStatus MyMol::getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
         case MolPropObservable::CHARGE:
             {
                 std::string conf;
-                auto ei = findExperimentConst(method, basis, conf);
+                auto ei = findExperimentConst(JobType::OPT);
                 if (ei)
                 {
                     for(auto &i : qTypes())
@@ -2414,7 +2407,7 @@ immStatus MyMol::getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
         case MolPropObservable::DGFORM:
         case MolPropObservable::ZPE:
             {
-                auto gp = static_cast<const MolecularEnergy *>(findProperty(mpo, miq.second, T, method, basis, ""));
+                auto gp = static_cast<const MolecularEnergy *>(qmProperty(mpo, T, JobType::OPT));
                 if (gp)
                 {
                     energy_.insert(std::pair<MolPropObservable, double>(mpo, gp->getValue()));
@@ -2427,7 +2420,7 @@ immStatus MyMol::getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
         case MolPropObservable::OCTUPOLE:
         case MolPropObservable::HEXADECAPOLE:
             {
-                auto gp = static_cast<const MolecularMultipole *>(findProperty(mpo, miq.second, T, method, basis, ""));
+                auto gp = static_cast<const MolecularMultipole *>(qmProperty(mpo, T, JobType::OPT));
                 if (gp)
                 {
                     qProps_.find(qType::Elec)->second.setMultipole(mpo, gp->getVector());
@@ -2437,7 +2430,7 @@ immStatus MyMol::getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
             break;
         case MolPropObservable::POLARIZABILITY:
             {
-                auto gp = static_cast<const MolecularPolarizability *>(findProperty(mpo, miq.second, T, method, basis, ""));
+                auto gp = static_cast<const MolecularPolarizability *>(qmProperty(mpo, T, JobType::OPT));
                 if (gp)
                 {
                     auto qelec = qTypeProps(qType::Elec);
@@ -2495,8 +2488,6 @@ void MyMol::UpdateIdef(const Poldata   *pd,
 }
 
 void MyMol::initQgenResp(const Poldata     *pd,
-                         const std::string &method,
-                         const std::string &basis,
                          real               watoms,
                          int                maxESP)
 {
@@ -2527,7 +2518,7 @@ void MyMol::initQgenResp(const Poldata     *pd,
     std::uniform_real_distribution<> uniform(0.0, 1.0);
     double                           cutoff = 0.01*maxESP;
  
-    auto ci = findExperimentConst(method, basis, "");
+    auto ci = findExperimentConst(JobType::OPT);
     if (ci)
     {
         int iesp = 0;

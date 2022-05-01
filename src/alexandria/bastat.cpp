@@ -238,8 +238,7 @@ int bastat(int argc, char *argv[])
         return 0;
     }
     std::vector<MyMol> mymols;
-    bonds.extractGeometries(fp, mp, &mymols, pd, gms,
-                            method, basis, bBondOrder);
+    bonds.extractGeometries(fp, mp, &mymols, pd, gms, method, basis);
     
     print_memory_usage(debug);
     if (bHisto)
@@ -262,7 +261,7 @@ int bastat(int argc, char *argv[])
         }
         double rmsd = getDissociationEnergy(fp, &pd, &mymols, iqm,
                                             opt2fn_null("-de",  NFILE, fnm), 
-                                            method, basis, nBootStrap);
+                                            nBootStrap);
         fprintf(fp, "Root mean square deviation %.1f kJ/mol\n", rmsd);
     }
     pd.updateTimeStamp();

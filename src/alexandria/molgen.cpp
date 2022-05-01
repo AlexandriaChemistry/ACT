@@ -599,8 +599,6 @@ size_t MolGen::Read(FILE            *fp,
                 mymol.setInputrec(inputrec_);
                 imm = mymol.GenerateTopology(fp,
                                              pd,
-                                             method,
-                                             basis,
                                              missingParameters::Error);
                 if (immStatus::OK != imm)
                 {
@@ -613,7 +611,7 @@ size_t MolGen::Read(FILE            *fp,
                 }
 
                 mymol.symmetrizeCharges(pd, qsymm_, nullptr);
-                mymol.initQgenResp(pd, method, basis, 0.0, 100);
+                mymol.initQgenResp(pd, 0.0, 100);
                 std::vector<double> dummy;
                 imm = mymol.GenerateCharges(pd,
                                             mdlog_,
@@ -631,7 +629,7 @@ size_t MolGen::Read(FILE            *fp,
                     continue;
                 }
 
-                imm = mymol.getExpProps(iqmMap, method, basis, pd, 0);
+                imm = mymol.getExpProps(iqmMap, 0);
                 if (immStatus::OK != imm)
                 {
                     if (verbose && fp)
@@ -807,15 +805,13 @@ size_t MolGen::Read(FILE            *fp,
 
             imm = mymol.GenerateTopology(debug,
                                          pd,
-                                         method,
-                                         basis,
                                          missingParameters::Error);
 
             if (immStatus::OK == imm)
             {
                 std::vector<double> dummy;
                 mymol.symmetrizeCharges(pd, qsymm_, nullptr);
-                mymol.initQgenResp(pd, method, basis, 0.0, 100);
+                mymol.initQgenResp(pd, 0.0, 100);
                 imm = mymol.GenerateCharges(pd,
                                             mdlog_,
                                             cr_,
@@ -824,7 +820,7 @@ size_t MolGen::Read(FILE            *fp,
             }
             if (immStatus::OK == imm)
             {
-                imm = mymol.getExpProps(iqmMap, method, basis, pd, 0);
+                imm = mymol.getExpProps(iqmMap, 0);
             }
             mymol.setSupport(eSupport::Local);
             incrementImmCount(&imm_count, imm);

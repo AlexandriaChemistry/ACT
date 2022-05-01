@@ -165,24 +165,29 @@ public:
     //! Return the IUPAC International Chemical Identifier (InChI) see http://www.iupac.org/home/publications/e-resources/inchi.html
     const std::string &getInchi() const { return inchi_; }
     
-    /*! \brief Find a property according to specifications below
-     * \param[in] mpo    The property of interest
-     * \param[in] iQM    Whether Exp, QM or Both are acceptable
-     * \param[in] T      The temperature at which the property
-     *                   should have been measured. If -1 any T
-     *                   may be returned.
-     * \param[in] method The QM method, may be empty
-     * \param[in] basis  The QM basisset, may be empty
-     * \param[in] conf   The molecular conformation, may be empty
+    /*! \brief Find a QM property according to JobType below
+     * \param[in] mpo The property of interest
+     * \param[in] T   The temperature at which the property
+     *                should have been measured. If -1 any T
+     *                may be returned.
+     * \param[in] jt  The JobType, OPT or SP. In the latter case
+     *                the first in the list will be returned.
      * \return the property of interest or nullptr if not found
      */
-    const GenericProperty *findProperty(MolPropObservable  mpo, 
-                                        iqmType            iQM,
-                                        double             T,
-                                        const std::string &method,
-                                        const std::string &basis,
-                                        const std::string &conf) const;
-    
+    const GenericProperty *qmProperty(MolPropObservable  mpo, 
+                                      double             T,
+                                      JobType            jt) const;
+
+    /*! \brief Find an Experimental property
+     * \param[in] mpo The property of interest
+     * \param[in] T   The temperature at which the property
+     *                should have been measured. If -1 any T
+     *                may be returned.
+     * \return the property of interest or nullptr if not found
+     */
+    const GenericProperty *expProperty(MolPropObservable  mpo, 
+                                       double             T) const;
+
     //! Returns true if the HF energy of the optimized geometry exists and returns the HF
     bool getOptHF(double *value);
     
@@ -253,15 +258,6 @@ public:
      */
     const Experiment *findExperimentConst(JobType job) const;
     
-    /*! \brief Fetch a calculation according to specifications
-     * \param[in] method The QM method
-     * \param[in] basis  The basisset
-     * \param[in] conformation May be empty
-     * \return the Experiment or nullptr
-     */
-    const Experiment *findExperimentConst(const std::string &method,
-                                          const std::string &basis,
-                                          const std::string &conformation) const;
     //! Add an experiment
     void AddExperiment(const Experiment &myexp) { exper_.push_back(myexp); }
     

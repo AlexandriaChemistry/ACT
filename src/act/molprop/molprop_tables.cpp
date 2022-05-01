@@ -181,13 +181,13 @@ void alexandria_molprop_stats_table(FILE                 *fp,
                     (mpi.SearchCategory(i.getName()) == 1))
                 {
                     double Texp  = -1;
-                    auto   gpexp = mpi.findProperty(mpo, iqmType::Exp, Texp, "", "", "");
+                    auto   gpexp = mpi.expProperty(mpo, Texp);
                     if (gpexp)
                     {
                         double exp_val = gpexp->getValue();
                         double exp_err = gpexp->getError();
                         double Tqm     = -1;
-                        auto   gpqm    = mpi.findProperty(mpo, iqmType::QM, Tqm, q->method(), q->basis(), "");
+                        auto   gpqm    = mpi.qmProperty(mpo, Tqm, JobType::OPT);
                         if (gpqm)
                         {
                             double qm_val = gpqm->getValue();
@@ -239,13 +239,13 @@ void alexandria_molprop_stats_table(FILE                 *fp,
                 mpi->hasAllAtomTypes())
             {
                 double Texp = -1;
-                auto gpexp = mpi->findProperty(mpo, iqmType::Exp, Texp, "", "", "");
+                auto gpexp = mpi->expProperty(mpo, Texp);
                 if (gpexp)
                 {
                     double Tqm     = -1;
                     double exp_err = gpexp->getError();
                     double exp_val = gpexp->getValue();
-                    auto   gpqm = mpi->findProperty(mpo, iqmType::QM, Tqm, "", "", "");
+                    auto   gpqm = mpi->qmProperty(mpo, Tqm, JobType::OPT);
                     if (gpqm)
                     {
                         double qm_err = gpqm->getError();
