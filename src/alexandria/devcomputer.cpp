@@ -5,9 +5,10 @@
  * \author Julian Ramon Marrades Furquet <julian.marrades@hotmail.es>
  * \author Oskar Tegby <oskar.tegby@it.uu.se>
  */
-
-
 #include "devcomputer.h"
+
+#include <numeric>
+#include <vector>
 
 #include "act/utility/communicationrecord.h"
 #include "act/utility/units.h"
@@ -372,43 +373,38 @@ void HarmonicsDevComputer::calcDeviation(MyMol                                *m
 
 
 /* * * * * * * * * * * * * * * * * * * * * *
-* BEGIN: EnergyDevComputer                 *
+* BEGIN: ForceEnergyDevComputer                 *
 * * * * * * * * * * * * * * * * * * * * * */
 
-void EnergyDevComputer::calcDeviation(MyMol                                *mymol,
-                                      std::map<eRMS, FittingTarget>        *targets,
-                                      gmx_unused Poldata                   *poldata,
-                                      gmx_unused const std::vector<double> &param,
-                                      gmx_unused const CommunicationRecord *commrec)
+void ForceEnergyDevComputer::calcDeviation(MyMol                                *mymol,
+                                           std::map<eRMS, FittingTarget>        *targets,
+                                           gmx_unused Poldata                   *poldata,
+                                           gmx_unused const std::vector<double> &param,
+                                           gmx_unused const CommunicationRecord *commrec)
 {
-    double deltaE0;
-    GMX_RELEASE_ASSERT(mymol->energy(MolPropObservable::DELTAE0, &deltaE0),
-                       gmx::formatString("No molecular energy for %s", mymol->getMolname().c_str()).c_str());
-    
-    real delta = gmx::square(mymol->potentialEnergy() - deltaE0-mymol->atomizationEnergy());
-    (*targets).find(eRMS::EPOT)->second.increase(1, delta);
+    std::map<double, double> eMap, fMap;
+    mymol->forceEnergyMaps(&fMap, &eMap);
+
+    auto tf = targets->find(eRMS::Force2);
+    if (tf != targets->end() && !fMap.empty())
+    {
+        for(const auto &ff : fMap)
+        {
+            tf->second.increase(1, gmx::square(ff.first-ff.second));
+        }
+    }
+    auto te = targets->find(eRMS::EPOT);
+    if (te != targets->end() && !eMap.empty())
+    {
+        for(const auto &ff : eMap)
+        {
+            te->second.increase(1, gmx::square(ff.first-ff.second));
+        }
+    }
 }
 
 /* * * * * * * * * * * * * * * * * * * * * *
-* END: EnergyDevComputer                   *
-* * * * * * * * * * * * * * * * * * * * * */
-
-/* * * * * * * * * * * * * * * * * * * * * *
-* BEGIN: ForceDevComputer                 *
-* * * * * * * * * * * * * * * * * * * * * */
-
-void ForceDevComputer::calcDeviation(      MyMol                          *mymol,
-                                           std::map<eRMS, FittingTarget>  *targets,
-                                           gmx_unused Poldata             *poldata,
-                                     const gmx_unused std::vector<double> &param,
-                                     const gmx_unused CommunicationRecord *commrec)
-{
-    auto myatoms = mymol->atomsConst();
-    (*targets).find(eRMS::Force2)->second.increase(1, mymol->force2()/myatoms.nr);
-}
-
-/* * * * * * * * * * * * * * * * * * * * * *
-* END: ForceDevComputer                    *
+* END: ForceEnergyDevComputer              *
 * * * * * * * * * * * * * * * * * * * * * */
 
 } // namespace alexandria

@@ -630,12 +630,31 @@ void TuneForceFieldPrinter::printEnergyForces(FILE                   *fp,
                                               qtStats                *lsq_epot,
                                               gmx_stats              *lsq_freq)
 {
-    // RMS force
-    double rmsf  = mol->rmsForce();
-    fprintf(fp, "\nRMS Force %g (kJ/mol/nm)\n", rmsf);
-    auto force   = mol->f();
+    std::map<double, double> eMap, fMap;
+    mol->forceEnergyMaps(&fMap, &eMap);
     
-    lsq_rmsf->add_point(0, rmsf, 0, 0);
+    for(const auto &ff : fMap)
+    {
+        lsq_rmsf->add_point(ff.first, ff.second, 0, 0);
+    }
+    for(const auto &ff : eMap)
+    {
+        (*lsq_epot)[qType::Calc].add_point(ff.first, ff.second, 0, 0);
+    }
+    // RMS force
+    if (lsq_rmsf->get_npoints() > 0)
+    {
+        double rmsf  = 0;
+        (void) lsq_rmsf->get_rmsd(&rmsf);
+        fprintf(fp, "\nRMS Force %g (kJ/mol/nm)\n", rmsf);
+    }
+    // RMS energy
+    if ((*lsq_epot)[qType::Calc].get_npoints() > 0)
+    {
+        double rmsf  = 0;
+        (void) (*lsq_epot)[qType::Calc].get_rmsd(&rmsf);
+        fprintf(fp, "\nRMS Energy %g (kJ/mol)\n", rmsf);
+    }
     // Energy
     fprintf(fp, "Energy terms (kJ/mol, EPOT including atomization terms)\n");
     std::vector<double> eBefore;
@@ -648,7 +667,6 @@ void TuneForceFieldPrinter::printEnergyForces(FILE                   *fp,
     if (mol->energy(MolPropObservable::DELTAE0, &deltaE0))
     {
         deltaE0 += mol->atomizationEnergy();
-        (*lsq_epot)[qType::Calc].add_point(deltaE0, mol->potentialEnergy(), 0, 0);
         fprintf(fp, "   %-20s  %10.3f  Difference: %10.3f\n", "Reference EPOT", deltaE0,
                 eBefore[F_EPOT]-deltaE0);
     }

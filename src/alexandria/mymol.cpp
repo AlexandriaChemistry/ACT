@@ -502,53 +502,69 @@ immStatus MyMol::zetaToAtoms(const Poldata *pd,
     return immStatus::OK;
 }
 
-double MyMol::force2() const
+void MyMol::forceEnergyMaps(std::map<double, double> *forceMap,
+                            std::map<double, double> *enerMap)
 {
-    auto   myatoms = atomsConst();
-    double f2      = 0;
+    auto       myatoms = atomsConst();
+    t_commrec *crtmp   = init_commrec();
+    backupCoordinates();
+    forceMap->clear();
+    enerMap->clear();
     for (auto &ei : experimentConst())
     {
-        const std::vector<gmx::RVec> &fff = ei.getForces();
-        if (fff.empty())
-        {
-            continue;
-        }
-        size_t ifff = 0;
-        for (int i = 0; i < myatoms.nr; i++)
+        // TODO: no need to recompute the energy if we just have
+        // done that. Check for OPT being the first calculation.
+        const std::vector<gmx::RVec> &xxx = ei.getCoordinates();
+        int j = 0;
+        for(int i = 0; i < myatoms.nr; i++)
         {
             if (myatoms.atom[i].ptype == eptAtom)
             {
-                rvec df;
-                if (ifff >= fff.size())
+                for(int m = 0; m < DIM; m++)
                 {
-                    GMX_THROW(gmx::InternalError(gmx::formatString("Inconsistency: there are %d atoms and shells, but only %zu forces", myatoms.nr, fff.size())));
+                    state_->x[i][m] = xxx[j][m];
                 }
-                rvec_sub(f_[i], fff[ifff], df);
-                f2 += iprod(df, df);
-                ifff += 1;
+                j += 1;
             }
         }
-        // Once we found a force array, we quit.
-        if (f2 > 0)
+        real shellForceRMS;
+        calculateEnergy(crtmp, &shellForceRMS);
+    
+        if (ei.hasProperty(MolPropObservable::DELTAE0))
         {
-            break;
+            auto eprops = ei.propertyConst(MolPropObservable::DELTAE0);
+            if (eprops.size() > 1)
+            {
+                gmx_fatal(FARGS, "Multiple energies for this experiment");
+            }
+            else if (eprops.size() == 1)
+            {
+                enerMap->insert({ eprops[0]->getValue(), energyTerms()[F_EPOT] });
+            }
+        }
+        const std::vector<gmx::RVec> &fff = ei.getForces();
+        if (!fff.empty())
+        {
+            size_t ifff = 0;
+            for (int i = 0; i < myatoms.nr; i++)
+            {
+                if (myatoms.atom[i].ptype == eptAtom)
+                {
+                    if (ifff >= fff.size())
+                    {
+                        GMX_THROW(gmx::InternalError(gmx::formatString("Inconsistency: there are %d atoms and shells, but only %zu forces", myatoms.nr, fff.size())));
+                    }
+                    for(int m = 0; m < DIM; m++)
+                    {
+                        forceMap->insert({ fff[ifff][m], f_[i][m] });
+                    }
+                    ifff += 1;
+                }
+            }
         }
     }
-    return f2;
-}
-
-double MyMol::rmsForce() const
-{
-    const auto myatoms = atomsConst();
-    int natoms = 0;
-    for (int i = 0; i < myatoms.nr; i++)
-    {
-        if (myatoms.atom[i].ptype == eptAtom)
-        {
-            natoms++;
-        }
-    }
-    return std::sqrt(force2()/natoms);
+    restoreCoordinates();
+    done_commrec(crtmp);
 }
 
 static void fill_atom(t_atom *atom,

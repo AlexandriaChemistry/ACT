@@ -310,12 +310,17 @@ namespace alexandria
             return true;
         }
 
-        //! Return the sum of squared forces on the atoms
-        double force2() const;
+        /*! \brief Compute energies and forces for all structures
+         * The optimized structure as well as all the excited
+         * structures will be used to compute the energy and
+         * forces. Store the results in a map containing two
+         * doubles, first the reference, then the calculated one.
+         * \param[out] forceMap The forces
+         * \param[out] enerMap  The energies
+         */
+        void forceEnergyMaps(std::map<double, double> *forceMap,
+                             std::map<double, double> *enerMap);
         
-        //! Return the root mean square force on the atoms
-        double rmsForce() const;
-
         //! Return the reference frequencies collected earlier
         const std::vector<double> &referenceFrequencies() const { return ref_frequencies_; }
                 

@@ -259,17 +259,18 @@ public:
 
 /*!
  * DevComputer the computes the deviation of the molecular energy -> eRMS::EPOT
+ * and of the forces, depending on command line options.
  */
-class EnergyDevComputer : public DevComputer
+class ForceEnergyDevComputer : public DevComputer
 {
 
 public:
 
-    /*! \brief Create a new EnergyDevComputer
+    /*! \brief Create a new ForceEnergyDevComputer
      * @param logfile   pointer to log file
      * @param verbose   whether we are in verbose mode
      */
-    EnergyDevComputer(      FILE *logfile,
+    ForceEnergyDevComputer(      FILE *logfile,
                       const bool  verbose)
     : DevComputer(logfile, verbose)
     {
@@ -280,32 +281,6 @@ public:
                                      Poldata                       *poldata,
                                const std::vector<double>           &param,
                                const CommunicationRecord           *commrec);
-
-};
-
-/*!
- * DevComputer the computes the deviation of the molecular energy -> eRMS::Force2
- */
-class ForceDevComputer : public DevComputer
-{
-
-public:
-
-    /*! \brief Create a new ForceDevComputer
-     * @param logfile   pointer to log file
-     * @param verbose   whether we are in verbose mode
-     */
-    ForceDevComputer(      FILE *logfile,
-                     const bool  verbose)
-    : DevComputer(logfile, verbose)
-    {
-    }
-
-    virtual void calcDeviation(      MyMol                          *mymol,
-                                     std::map<eRMS, FittingTarget>  *targets,
-                                     gmx_unused Poldata             *poldata,
-                               const gmx_unused std::vector<double> &param,
-                               const gmx_unused CommunicationRecord *commrec);
 
 };
 

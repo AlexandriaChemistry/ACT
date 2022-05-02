@@ -651,7 +651,7 @@
     </parameterlist>
     <parameterlist identifier="cl_b~h_b">
       <parameter type="bondlength" unit="pm" value="128.3" uncertainty="0" minimum="102.64" maximum="160.375" ntrain="1" mutability="Bounded" nonnegative="yes"/>
-      <parameter type="kb" unit="kJ/mol/nm2" value="177000" uncertainty="0" minimum="140000" maximum="375000" ntrain="1" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="kb" unit="kJ/mol/nm2" value="289056" uncertainty="0" minimum="140000" maximum="375000" ntrain="1" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="cl_b~n2_b">
       <parameter type="bondlength" unit="pm" value="186.8" uncertainty="4.4" minimum="149.44" maximum="233.5" ntrain="2" mutability="Bounded" nonnegative="yes"/>

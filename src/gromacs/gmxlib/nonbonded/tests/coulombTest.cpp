@@ -49,12 +49,16 @@ class CoulombTest : public gmx::test::CommandLineTestBase
 {
 protected:
     gmx::test::TestReferenceChecker checker_;
-    std::vector<real>               r_ = { 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5 };
+    std::vector<real>               r_;
     
     CoulombTest () : checker_(this->rootChecker())
     {
         auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 5e-2);
         checker_.setDefaultTolerance(tolerance);
+        for(int i = 50; i<=250; i++)
+        {
+            r_.push_back(0.002*i);
+        }
     }
     
     // Static initiation, only run once every test.
@@ -85,6 +89,12 @@ protected:
         checker_.checkSequence(r_.begin(), r_.end(), "Distance");
         checker_.checkSequence(energy.begin(), energy.end(), "Energy");
         checker_.checkSequence(force.begin(), force.end(), "Force");
+        std::vector<real> mindEdr;
+        for (size_t i = 1; i < energy.size()-1; i++)
+        {
+            mindEdr.push_back(force[i] + (energy[i+1]-energy[i-1])/(r_[i+1]-r_[i-1]));
+        }
+        checker_.checkSequence(mindEdr.begin(), mindEdr.end(), "Force+dE/dr");
     }
 };
 
