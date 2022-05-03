@@ -41,6 +41,7 @@ gmx_add_unit_test(
     # files with code for tests
     atomtypeTest.cpp
     allbondedsTest.cpp
+    combinationRuleTest.cpp
     molhandlerTest.cpp
     topologyTest.cpp
     # pseudo-library for code for alexandria
