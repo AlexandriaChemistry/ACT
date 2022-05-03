@@ -358,7 +358,7 @@ static void getBhamParams(const ForceFieldParameterList &fa,
                 *b = (2.0 * epsilonI * epsilonJ)/(epsilonI + epsilonJ);
                 double itmp = (epsilonI*gammaI*std::pow(sigmaI,6.0))/(gammaI-6.0);
                 double jtmp = (epsilonJ*gammaJ*std::pow(sigmaJ,6.0))/(gammaJ-6.0);
-                *a = std::pow(std::sqrt(itmp*jtmp*(*c - 6.0)/(*b * *c)), (1.0/6.0));
+                *a = std::pow(std::sqrt(itmp*jtmp)*(*c - 6.0)/(*b * *c), (1.0/6.0));
             }
             break;   
         case eCOMB_YANG: // Yang, JPhysChemA, Volume: 122, Page: 1672, Year: 2018. Combination rules for Morse.
