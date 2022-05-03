@@ -477,8 +477,9 @@ class GaussianReader:
                 
             elif line.find("#P") >= 0 and None == self.exper:
                 basis, content_index = self.get_method(content, content_index)
+                myForce = self.jobtype == "Opt"
                 self.exper = Experiment("Theory", self.author, self.program, self.tcmap["Method"], basis,
-                                        self.conformation, self.jobtype, infile)
+                                        self.conformation, self.jobtype, infile, useForces=myForce)
                                    
             elif line.find("Multiplicity") >= 0:
                 content_index += self.get_qmult(line) 

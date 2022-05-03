@@ -36,6 +36,9 @@ class Molprops:
 
         for ep in molecule.experiments:
             exper = ET.SubElement(lastmol, "experiment")
+            fc_unit = None
+            if ep.useForce:
+                fc_unit = "force_unit"
             for prop in ep.properties:
                 exper.set(prop, ep.properties[prop])
             for ene in ep.energies:
@@ -66,12 +69,14 @@ class Molprops:
                     harm.set("intensity", ep.intensities[k])
             for atom in ep.atoms:
                 myatm   = ET.SubElement(exper, "atom")
-                fc_unit = "force_unit"
-                for myprop in [ "name", "obtype", "atomid", "coord_unit", fc_unit ]:
+                testprops = [ "name", "obtype", "atomid", "coord_unit" ]
+                if None != fc_unit:
+                    testprops.append(fc_unit)
+                for myprop in testprops:
                     if myprop in atom and None != atom[myprop]:
                         myatm.set(myprop, atom[myprop])
                 myelem = [ "x", "y", "z" ]
-                if fc_unit in atom and None != atom[fc_unit]:
+                if None != fc_unit and fc_unit in atom and None != atom[fc_unit]:
                     myelem += [ "fx", "fy", "fz" ]
                 for coord in myelem:
                     if coord in atom:
@@ -202,7 +207,7 @@ class Experiment:
     '''
     Class to hold Experiment data for a molecule
     '''
-    def __init__(self, datasource, reference, program, method, basisset, conformation, jobtype, datafile):
+    def __init__(self, datasource, reference, program, method, basisset, conformation, jobtype, datafile, useForces):
         self.properties = {}
         self.properties["datasource"] = datasource
         self.properties["reference"]  = reference
@@ -223,6 +228,7 @@ class Experiment:
         self.intensities = []
         self.atoms = []
         self.tcmap = None
+        self.useForce = useForces
         
     def add_prop(self, propname, value):
         self.properties[propname] = str(value)
@@ -252,7 +258,7 @@ class Experiment:
         self.polarisability.append({"type":type, "unit": unit, "temperature": str(temperature), "average": str(average), "error":str(error), "xx":xx, "yy":yy, "zz":zz, "xy":xy, "xz":xz, "yz":yz})
 
     def add_atom(self, name, obtype, atomid, coord_unit, x, y, z,
-                 force_unit, fx, fy, fz, qmap=None):
+                 force_unit, fx, fy, fz, qmap=None, useForces=True):
         newatom = { "name": name, "obtype": obtype, "atomid": str(atomid),
                     "coord_unit": coord_unit, 
                     "x": str(x), "y": str(y), "z": str(z),
