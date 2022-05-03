@@ -563,15 +563,6 @@ bool OptACM::runMaster(bool optimize,
         }
     }
 
-    // else
-    // {
-    //     // ... or the helpers if there are no middlemen.
-    //     for(auto &dest : commRec_.helpers())
-    //     {
-    //         commRec_.send_done(dest);
-    //     }
-    // }
-
     if (bMinimum)
     {
         if (bestGenome.bases().empty())

@@ -632,28 +632,30 @@ void TuneForceFieldPrinter::printEnergyForces(FILE                   *fp,
 {
     std::map<double, double> eMap, fMap;
     mol->forceEnergyMaps(&fMap, &eMap);
-    
+    double df2 = 0;    
     for(const auto &ff : fMap)
     {
         lsq_rmsf->add_point(ff.first, ff.second, 0, 0);
+        df2 += gmx::square(ff.first - ff.second);
     }
+    double de2 = 0;
     for(const auto &ff : eMap)
     {
         (*lsq_epot)[qType::Calc].add_point(ff.first, ff.second, 0, 0);
+        de2 += gmx::square(ff.first - ff.second);
     }
     // RMS force
-    if (lsq_rmsf->get_npoints() > 0)
+    // TODO: Check real number of atoms.
+    if (fMap.size() - DIM*mol->atoms()->nr > 0)
     {
-        double rmsf  = 0;
-        (void) lsq_rmsf->get_rmsd(&rmsf);
-        fprintf(fp, "\nRMS Force %g (kJ/mol/nm)\n", rmsf);
+        fprintf(fp, "RMS force  %g (kJ/mol nm) N = %zu\n",
+                std::sqrt(df2/(mol->atoms()->nr)), fMap.size()/(DIM*mol->atoms()->nr));
     }
     // RMS energy
-    if ((*lsq_epot)[qType::Calc].get_npoints() > 0)
+    if (eMap.size() > 1)
     {
-        double rmsf  = 0;
-        (void) (*lsq_epot)[qType::Calc].get_rmsd(&rmsf);
-        fprintf(fp, "\nRMS Energy %g (kJ/mol)\n", rmsf);
+        fprintf(fp, "RMS energy  %g (kJ/mol nm) N = %zu\n",
+                std::sqrt(de2/eMap.size()), eMap.size());
     }
     // Energy
     fprintf(fp, "Energy terms (kJ/mol, EPOT including atomization terms)\n");

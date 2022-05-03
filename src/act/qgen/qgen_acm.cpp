@@ -229,7 +229,7 @@ void QgenAcm::dump(FILE *fp, const t_atoms *atoms) const
                 mu[m] += atoms->atom[i].q * x_[i][m] * ENM2DEBYE;
             }
             fprintf(fp, "%4s %4s%5d %8g %8g",
-                    *(atoms->resinfo[atoms->atom[i].resind].name),
+                    "",
                     *(atoms->atomname[i]), i+1, eta_[i], chi0_[i]);
             fprintf(fp, " %3d %8.5f %8.4f\n", row_[i], q_[i], zeta_[i]);
         }

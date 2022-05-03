@@ -1,18 +1,18 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <Real Name="Bond before">0.00088499999999931374</Real>
+  <Real Name="Bond before">0.0014452799999988793</Real>
   <Real Name="Atomization before">348.125</Real>
-  <Real Name="Potential before">348.12588499999998</Real>
-  <Real Name="Total Energy before">348.12588499999998</Real>
-  <Real Name="Coordinate RMSD after minimizing">4.9999999999927706e-05</Real>
-  <Real Name="Bond after">6.1360128028177334e-28</Real>
+  <Real Name="Potential before">348.12644527999998</Real>
+  <Real Name="Total Energy before">348.12644527999998</Real>
+  <Real Name="Coordinate RMSD after minimizing">4.999999999992814e-05</Real>
+  <Real Name="Bond after">1.0020628908086343e-27</Real>
   <Real Name="Atomization after">348.125</Real>
   <Real Name="Potential after">348.125</Real>
   <Real Name="Total Energy after">348.125</Real>
   <Sequence Name="Frequencies">
     <Int Name="Length">1</Int>
-    <Real>2256.1321601414802</Real>
+    <Real>2883.1610174040479</Real>
   </Sequence>
   <Sequence Name="Intensities">
     <Int Name="Length">0</Int>

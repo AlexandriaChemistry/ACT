@@ -507,6 +507,7 @@ void MyMol::forceEnergyMaps(std::map<double, double> *forceMap,
 {
     auto       myatoms = atomsConst();
     t_commrec *crtmp   = init_commrec();
+    crtmp->nnodes      = 1;
     backupCoordinates();
     forceMap->clear();
     enerMap->clear();
