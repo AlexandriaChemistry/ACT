@@ -41,6 +41,7 @@
 #include "act/poldata/poldata_utils.h"
 #include "act/poldata/poldata_xml.h"
 #include "act/qgen/qgen_acm.h"
+#include "act/utility/units.h"
 #include "alexandria/atype_mapping.h"
 #include "alexandria/babel_io.h"
 #include "alexandria/fill_inputrec.h"
@@ -162,6 +163,12 @@ protected:
 
         std::vector<double> freq, inten;
         mh.nma(&mp_, &freq, &inten, nullptr);
+        auto mpo = MolPropObservable::FREQUENCY;
+        const char *unit = mpo_unit2(mpo);
+        for(auto f = freq.begin(); f < freq.end(); ++f)
+        {
+            *f = convertFromGromacs(*f, unit);
+        }
         checker_.checkSequence(freq.begin(), freq.end(), "Frequencies");
         checker_.checkSequence(inten.begin(), inten.end(), "Intensities");
     }

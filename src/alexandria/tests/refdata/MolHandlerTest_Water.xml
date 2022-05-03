@@ -1,22 +1,22 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <Real Name="Bond before">0.0016970125992016587</Real>
-  <Real Name="Angle before">0.5866140134937593</Real>
+  <Real Name="Bond before">0.0021212657490020733</Real>
+  <Real Name="Angle before">0.55728331281907129</Real>
   <Real Name="Atomization before">697.97799999999995</Real>
-  <Real Name="Potential before">698.56631102609288</Real>
-  <Real Name="Total Energy before">698.56631102609288</Real>
-  <Real Name="Coordinate RMSD after minimizing">0.031903889176291209</Real>
-  <Real Name="Bond after">1.6118502895771715e-20</Real>
-  <Real Name="Angle after">1.3788679511225248e-17</Real>
+  <Real Name="Potential before">698.53740457856804</Real>
+  <Real Name="Total Energy before">698.53740457856804</Real>
+  <Real Name="Coordinate RMSD after minimizing">0.059902530838969528</Real>
+  <Real Name="Bond after">1.7183916132094458e-22</Real>
+  <Real Name="Angle after">4.2772326169091347e-20</Real>
   <Real Name="Atomization after">697.97799999999995</Real>
   <Real Name="Potential after">697.97799999999995</Real>
   <Real Name="Total Energy after">697.97799999999995</Real>
   <Sequence Name="Frequencies">
     <Int Name="Length">3</Int>
-    <Real>1397.0443915702131</Real>
-    <Real>2959.0265863928848</Real>
-    <Real>3014.4240978142743</Real>
+    <Real>1361.8491343214232</Real>
+    <Real>3307.8581952938212</Real>
+    <Real>3370.2285978427781</Real>
   </Sequence>
   <Sequence Name="Intensities">
     <Int Name="Length">0</Int>

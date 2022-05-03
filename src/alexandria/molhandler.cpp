@@ -195,6 +195,8 @@ void MolHandler::nma(MyMol               *mol,
 
     frequencies->clear();
     intensities->clear();
+    auto mpo = MolPropObservable::FREQUENCY;
+    const char *unit = mpo_unit2(mpo);
     for (size_t i = rot_trans; i < eigenvalues.size(); i++)
     {
         auto val = eigenvalues[i];
@@ -210,9 +212,8 @@ void MolHandler::nma(MyMol               *mol,
         else
         {
             #define SOL_CM_PER_S 29979245800
-            frequencies->push_back(
-                1.0/(2.0*M_PI*SOL_CM_PER_S) * 1E12 * std::sqrt(val)
-            );
+            double f = 1.0/(2.0*M_PI*SOL_CM_PER_S) * 1E12 * std::sqrt(val);
+            frequencies->push_back(convertToGromacs(f, unit));
         }
     }
 
@@ -222,7 +223,6 @@ void MolHandler::nma(MyMol               *mol,
     if (fp)
     {
         std::vector<GenericProperty *> harm;
-        auto mpo = MolPropObservable::FREQUENCY;
         for (auto &ee : mol->experimentConst())
         {
             if (ee.hasMolPropObservable(mpo))
@@ -231,7 +231,6 @@ void MolHandler::nma(MyMol               *mol,
                 break;
             }
         }
-        const char *unit = mpo_unit2(mpo);
         double delta = 0;
         if (!harm.empty())
         {

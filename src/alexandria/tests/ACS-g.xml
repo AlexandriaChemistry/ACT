@@ -731,7 +731,7 @@
     </parameterlist>
     <parameterlist identifier="h_b~o3_b">
       <parameter type="bondlength" unit="pm" value="96.3" uncertainty="0.7" minimum="77.04" maximum="120.375" ntrain="392" mutability="Bounded" nonnegative="yes"/>
-      <parameter type="kb" unit="kJ/mol/nm2" value="300000" uncertainty="0" minimum="240000" maximum="375000" ntrain="1" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="kb" unit="kJ/mol/nm2" value="469716" uncertainty="0" minimum="240000" maximum="375000" ntrain="1" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="h_b~p2_b">
       <parameter type="bondlength" unit="pm" value="143.6" uncertainty="2.3" minimum="114.88" maximum="179.5" ntrain="5" mutability="Bounded" nonnegative="yes"/>
@@ -2321,7 +2321,7 @@
     </parameterlist>
     <parameterlist identifier="h_b~o3_b~h_b">
       <parameter type="angle" unit="degree" value="108.7" uncertainty="0" minimum="84.56" maximum="132.125" ntrain="1" mutability="Bounded" nonnegative="yes"/>
-      <parameter type="kt" unit="kJ/mol/rad2" value="300" uncertainty="0" minimum="240" maximum="375" ntrain="1" mutability="Bounded" nonnegative="no"/>
+      <parameter type="kt" unit="kJ/mol/rad2" value="285" uncertainty="0" minimum="240" maximum="375" ntrain="1" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="h_b~o3_b~n2_b">
       <parameter type="angle" unit="degree" value="102.3" uncertainty="1.3" minimum="81.84" maximum="127.875" ntrain="6" mutability="Bounded" nonnegative="yes"/>
