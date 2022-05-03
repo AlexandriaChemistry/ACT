@@ -329,6 +329,10 @@ immStatus MyMol::GenerateAtoms(const Poldata     *pd,
     const Experiment         *ci    = nullptr;
     
     ci = findExperimentConst(JobType::OPT);
+    if (!ci)
+    {
+        ci = findExperimentConst(JobType::TOPOLOGY);
+    }
     if (ci)
     {
         if (ci->NAtom() == 0)
@@ -399,11 +403,11 @@ immStatus MyMol::GenerateAtoms(const Poldata     *pd,
                                                     &nb, 0,
                                                     atoms->atom[i].atomnumber);
         }
-        GMX_RELEASE_ASSERT(atoms->nr == natom, "Inconsitency numbering atoms");
+        GMX_RELEASE_ASSERT(atoms->nr == natom, "Inconsistency numbering atoms");
     }
     else
     {
-        imm = immStatus::LOT;
+        imm = immStatus::Topology;
     }
     if (nullptr != debug)
     {

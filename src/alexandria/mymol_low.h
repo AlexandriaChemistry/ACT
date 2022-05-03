@@ -103,10 +103,10 @@ enum class immStatus {
     ChargeGeneration,
     //! Shell minimization did not converge
     ShellMinimization,
-    //! Requested level of theory missing
-    LOT,
     //! QM Inconsistency (ESP dipole does not match Electronic)
     QMInconsistency,
+    //! No input to generate topology
+    Topology,
     //! Compound not in training set
     Test,
     //! No experimental data

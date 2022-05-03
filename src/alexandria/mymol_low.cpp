@@ -75,7 +75,7 @@ std::map<immStatus, const char *> immMessages = {
     { immStatus::RespInit,                 "RESP Initialization" },
     { immStatus::ChargeGeneration,         "Charge generation" },
     { immStatus::ShellMinimization,        "Shell minimization" },
-    { immStatus::LOT,                      "Requested level of theory missing" },
+    { immStatus::Topology,                 "No input to generate a topology" },
     { immStatus::QMInconsistency,          "QM Inconsistency (ESP dipole does not match Electronic)" },
     { immStatus::Test,                     "Compound not in training set" },
     { immStatus::NoData,                   "No experimental data" },
@@ -356,9 +356,9 @@ static void getBhamParams(const ForceFieldParameterList &fa,
             {
                 *c = 0.5 * (gammaI + gammaJ);  
                 *b = (2.0 * epsilonI * epsilonJ)/(epsilonI + epsilonJ);
-                double itmp = (epsilonI*gammaI*std::pow(sigmaI,6))/(gammaI-6);
-                double jtmp = (epsilonJ*gammaJ*std::pow(sigmaJ,6))/(gammaJ-6);
-                *a = std::pow(std::sqrt(itmp*jtmp*(*c - 6)/(*b * *c)), (1/6.0));
+                double itmp = (epsilonI*gammaI*std::pow(sigmaI,6.0))/(gammaI-6.0);
+                double jtmp = (epsilonJ*gammaJ*std::pow(sigmaJ,6.0))/(gammaJ-6.0);
+                *a = std::pow(std::sqrt(itmp*jtmp*(*c - 6.0)/(*b * *c)), (1.0/6.0));
             }
             break;   
         case eCOMB_YANG: // Yang, JPhysChemA, Volume: 122, Page: 1672, Year: 2018. Combination rules for Morse.
@@ -372,8 +372,8 @@ static void getBhamParams(const ForceFieldParameterList &fa,
             *c = 0.5 * (gammaI + gammaJ);
             break;
         case eCOMB_WALDMAN_HAGLER: // Waldman & Hagler, J. Comp. Chem., Year: 1993. 
-            *a = pow(((pow(sigmaI,6)+pow(sigmaJ,6))/2.0),(1/6));
-            *b = std::sqrt(epsilonI * epsilonJ) * ((2.0 * pow(epsilonI,3) * pow(epsilonJ,3))/(pow(epsilonI,6) + pow(epsilonJ,6)));
+            *a = pow(((pow(sigmaI,6.0)+pow(sigmaJ,6.0))/2.0),(1.0/6.0));
+            *b = std::sqrt(epsilonI * epsilonJ) * ((2.0 * pow(epsilonI,3.0) * pow(epsilonJ,3.0))/(pow(epsilonI,6.0) + pow(epsilonJ,6.0)));
             *c = 0.5 * (gammaI + gammaJ);;
             break;            
         case eCOMB_GEOM_SIG_EPS:

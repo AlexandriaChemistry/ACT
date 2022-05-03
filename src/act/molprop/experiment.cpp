@@ -41,17 +41,10 @@ namespace alexandria
 
 std::map<JobType, const char *> job_name =
 {
-    { JobType::OPT,    "Opt"    },
-    //    { JobType::POP,    "Pop"    },
-    //{ JobType::POLAR,  "POLAR"  },
-    //{ JobType::G2,     "G2"     },
-    //{ JobType::G3,     "G3"     },
-    //{ JobType::G4,     "G4"     },
-    //{ JobType::CBSQB3, "CBSQB3" },
-    //{ JobType::W1U,    "W1U"    },
-    //{ JobType::W1BD,   "W1BD"   },
-    { JobType::SP,     "SP"     },
-    { JobType::UNKNOWN,"unknown"}
+    { JobType::OPT,      "Opt"      },
+    { JobType::TOPOLOGY, "Topology" },
+    { JobType::SP,       "SP"       },
+    { JobType::UNKNOWN,  "unknown"  }
 };
 
 const char *jobType2string(JobType jType)

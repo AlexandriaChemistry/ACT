@@ -46,7 +46,7 @@ namespace alexandria
 /*! \brief
  * Enum describing the type of the QM job computed by the Gaussian software
  */
-enum class JobType { OPT, SP, UNKNOWN };
+enum class JobType { OPT, SP, TOPOLOGY, UNKNOWN };
 
 /*! \brief
  * Return string corresponding to the job type
