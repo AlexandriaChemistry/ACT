@@ -115,11 +115,14 @@ double ThermoChemistry::translationalEntropy(double mass,
                                              double temperature,
                                              double pressure)
 {
+    if (temperature <= 0)
+    {
+        return 0.0;
+    }
     double kT = BOLTZ * temperature;
     
     GMX_RELEASE_ASSERT(mass > 0, "Molecular mass should be larger than zero");
     GMX_RELEASE_ASSERT(pressure > 0, "Pressure should be larger than zero");
-    GMX_RELEASE_ASSERT(temperature > 0, "Temperature should be larger than zero");
     // Convert bar to Pascal
     double P  = pressure * 1e5;
     double qT = (std::pow(2 * M_PI * mass * kT / gmx::square(PLANCK), 1.5) * (kT / P)
@@ -133,8 +136,11 @@ double ThermoChemistry::rotationalEntropy(double      temperature,
                                           const rvec &theta,
                                           double      sigma_r)
 {
+    if (temperature <= 0)
+    {
+        return 0.0;
+    }
     GMX_RELEASE_ASSERT(sigma_r > 0, "Symmetry factor should be larger than zero");
-    GMX_RELEASE_ASSERT(temperature > 0, "Temperature should be larger than zero");
 
     double sR = 0;
     if (natom > 1)
@@ -246,7 +252,7 @@ ThermoChemistry::ThermoChemistry(const MyMol               *mymol,
             E_[TCComponent::Total]  += E_[tc.first];
         }
     }
-    dhForm_ = mymol->energyTerms()[F_EPOT] + E_[TCComponent::Total];
+    dhForm_ = mymol->energyTerms()[F_EPOT] + E_[TCComponent::Total] + zpe_;
 
 }
 

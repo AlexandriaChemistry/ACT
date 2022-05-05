@@ -701,19 +701,26 @@ void TuneForceFieldPrinter::printEnergyForces(FILE                   *fp,
                                     convertFromGromacs(frequencies[k], unit), 0, 0);
             }
             real scale_factor = 1;
-            ThermoChemistry tc(mol, frequencies, 298.15, 1, scale_factor);
             std::vector<std::string> tcout;
             tcout.push_back(gmx::formatString("Thermochemistry data:"));
-            tcout.push_back(gmx::formatString("Zero point energy     %g (kJ/mol)", tc.ZPE()));
-            tcout.push_back(gmx::formatString("Delta H formation     %g (kJ/mol)", tc.DHform()));
-            for(const auto &tcc : tccmap())
+            for (const double &temp : { 0.0, 298.15 })
             {
-                tcout.push_back(gmx::formatString("Standard entropy - %11s %g (J/mol K)",
-                                                            tcc.second.c_str(), tc.S0(tcc.first)));
-                tcout.push_back(gmx::formatString("Heat capacity cV - %11s %g (J/mol K)", 
-                                                            tcc.second.c_str(), tc.cv(tcc.first)));
-                tcout.push_back(gmx::formatString("Internal energy  - %11s %g (kJ/mol)",
-                                                            tcc.second.c_str(), tc.Einternal(tcc.first)));
+                ThermoChemistry tc(mol, frequencies, temp, 1, scale_factor);
+                tcout.push_back(gmx::formatString("Temperature = %g K", temp));
+                tcout.push_back(gmx::formatString("%-30s %10g (kJ/mol)", "Zero point energy", tc.ZPE()));
+                tcout.push_back(gmx::formatString("%-30s %10g (kJ/mol)", "Delta H formation", tc.DHform()));
+                for(const auto &tcc : tccmap())
+                {
+                    tcout.push_back(gmx::formatString("%-30s %10g (J/mol K)",
+                                                      gmx::formatString("Standard entropy - %s",
+                                                                        tcc.second.c_str()).c_str(), tc.S0(tcc.first)));
+                    tcout.push_back(gmx::formatString("%-30s %10g (J/mol K)",
+                                                      gmx::formatString("Heat capacity cV - %s",
+                                                                        tcc.second.c_str()).c_str(), tc.cv(tcc.first)));
+                    tcout.push_back(gmx::formatString("%-30s %10g (kJ/mol)",
+                                                      gmx::formatString("Internal energy - %s",
+                                                                        tcc.second.c_str()).c_str(), tc.Einternal(tcc.first)));
+                }
             }
             for(const auto &tout : tcout)
             {
