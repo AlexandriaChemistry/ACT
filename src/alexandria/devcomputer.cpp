@@ -382,15 +382,19 @@ void ForceEnergyDevComputer::calcDeviation(MyMol                                
                                            gmx_unused const std::vector<double> &param,
                                            gmx_unused const CommunicationRecord *commrec)
 {
-    std::vector<std::pair<double, double> > eMap, fMap;
+    std::vector<std::pair<double, double> > eMap;
+    std::vector<std::vector<std::pair<double, double> > > fMap;
     mymol->forceEnergyMaps(&fMap, &eMap);
 
     auto tf = targets->find(eRMS::Force2);
     if (tf != targets->end() && !fMap.empty())
     {
-        for(const auto &ff : fMap)
+        for(const auto &fstruct : fMap)
         {
-            tf->second.increase(1, gmx::square(ff.first-ff.second));
+            for(const auto &ff : fstruct)
+            {
+                tf->second.increase(1, gmx::square(ff.first-ff.second));
+            }
         }
     }
     auto te = targets->find(eRMS::EPOT);

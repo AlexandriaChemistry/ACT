@@ -475,6 +475,8 @@ void TuneForceFieldPrinter::addOptions(std::vector<t_pargs> *pargs)
           "Tolerance (A^3) for marking isotropic polarizability as an outlier in the log file" },
         { "-use_offset", FALSE, etBOOL,{&useOffset_},
           "Fit regression analysis of results to y = ax+b instead of y = ax" },
+        { "-printSP", FALSE, etBOOL,{&printSP_},
+          "Print information from all single point calculations in detail" },
         { "-calc_frequencies",  FALSE, etBOOL, {&calcFrequencies_},
           "Perform energy minimization and compute vibrational frequencies for each molecule (after optimizing the force field if -optimize is enabled). If turned on, this option will also generate thermochemistry values based on the force field." }
     };
@@ -624,41 +626,62 @@ void TuneForceFieldPrinter::printAtoms(FILE              *fp,
     }
 }
 
-void TuneForceFieldPrinter::printEnergyForces(FILE                   *fp,
-                                              alexandria::MyMol      *mol,
-                                              const std::vector<int> &ePlot,
-                                              gmx_stats              *lsq_rmsf,
-                                              qtStats                *lsq_epot,
-                                              gmx_stats              *lsq_freq)
+void TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
+                                              alexandria::MyMol        *mol,
+                                              const std::vector<int>   &ePlot,
+                                              gmx_stats                *lsq_rmsf,
+                                              qtStats                  *lsq_epot,
+                                              gmx_stats                *lsq_freq)
 {
-    std::vector<std::pair<double, double> > eMap, fMap;
+    std::vector<std::pair<double, double> > eMap;
+    std::vector<std::vector<std::pair<double, double> > > fMap;
     mol->forceEnergyMaps(&fMap, &eMap);
-    double df2 = 0;    
-    for(const auto &ff : fMap)
+    std::vector<std::string> dataFileNames;
+    if (printSP_)
     {
-        lsq_rmsf->add_point(ff.first, ff.second, 0, 0);
-        df2 += gmx::square(ff.first - ff.second);
+        for (auto &ei : mol->experimentConst())
+        {
+            dataFileNames.push_back(ei.getDatafile());
+        }
     }
     double de2 = 0;
+    size_t ccc = 0;
     for(const auto &ff : eMap)
     {
-        (*lsq_epot)[qType::Calc].add_point(ff.first, ff.second, 0, 0);
-        de2 += gmx::square(ff.first - ff.second);
-    }
-    // RMS force
-    if (fMap.size() > 0)
-    {
-        fprintf(fp, "RMS force   %g (kJ/mol nm) #structures = %zu\n",
-                std::sqrt(df2/(mol->nRealAtoms())), fMap.size()/(DIM*mol->nRealAtoms()));
+        auto enerexp = mol->atomizationEnergy() + ff.first;
+        (*lsq_epot)[qType::Calc].add_point(enerexp, ff.second, 0, 0);
+        de2 += gmx::square(enerexp - ff.second);
+        if (printSP_)
+        {
+            tcout->push_back(gmx::formatString("%s Reference EPOT %g Calculated %g Difference %g",
+                                               dataFileNames[ccc].c_str(),
+                                               enerexp, ff.second, enerexp - ff.second));
+        }
     }
     // RMS energy
     if (eMap.size() > 0)
     {
-        fprintf(fp, "RMS energy  %g (kJ/mol) #structures = %zu\n",
-                std::sqrt(de2/eMap.size()), eMap.size());
+        tcout->push_back(gmx::formatString("RMS energy  %g (kJ/mol) #structures = %zu",
+                                           std::sqrt(de2/eMap.size()), eMap.size()));
+    }
+    double df2 = 0;    
+    for(const auto &fstruct : fMap)
+    {
+        for(const auto &ff : fstruct)
+        {
+            lsq_rmsf->add_point(ff.first, ff.second, 0, 0);
+            df2 += gmx::square(ff.first - ff.second);
+        }
+    }
+    // RMS force
+    if (fMap.size() > 0)
+    {
+        tcout->push_back(gmx::formatString("RMS force   %g (kJ/mol nm) #structures = %zu",
+                                           std::sqrt(df2/(mol->nRealAtoms())),
+                                           fMap.size()/(DIM*mol->nRealAtoms())));
     }
     // Energy
-    fprintf(fp, "Energy terms (kJ/mol, EPOT including atomization terms)\n");
+    tcout->push_back(gmx::formatString("Energy terms (kJ/mol, EPOT including atomization terms)"));
     std::vector<double> eBefore;
     auto terms = mol->energyTerms();
     for(int ii = 0; ii < F_NRE; ii++)
@@ -669,8 +692,8 @@ void TuneForceFieldPrinter::printEnergyForces(FILE                   *fp,
     if (mol->energy(MolPropObservable::DELTAE0, &deltaE0))
     {
         deltaE0 += mol->atomizationEnergy();
-        fprintf(fp, "   %-20s  %10.3f  Difference: %10.3f\n", "Reference EPOT", deltaE0,
-                eBefore[F_EPOT]-deltaE0);
+        tcout->push_back(gmx::formatString("   %-20s  %10.3f  Difference: %10.3f",
+                                           "Reference EPOT", deltaE0, eBefore[F_EPOT]-deltaE0));
     }
     if (mol->jobType() == JobType::OPT && calcFrequencies_)
     {
@@ -679,21 +702,22 @@ void TuneForceFieldPrinter::printEnergyForces(FILE                   *fp,
         // TODO: Only do this for JobType::OPT
         molHandler_.minimizeCoordinates(mol, &rmsd);
         auto eAfter = mol->energyTerms();
-        fprintf(fp, "   %-20s  %10s  %10s  %10s minimization\n", "Term", "Before", "After", "Difference");
+        tcout->push_back(gmx::formatString("   %-20s  %10s  %10s  %10s minimization",
+                                           "Term", "Before", "After", "Difference"));
         for(auto &ep : ePlot)
         {
-            fprintf(fp, "   %-20s  %10.3f  %10.3f  %10.3f\n",
-                    interaction_function[ep].name,
-                    eBefore[ep], eAfter[ep], eAfter[ep]-eBefore[ep]);
+            tcout->push_back(gmx::formatString("   %-20s  %10.3f  %10.3f  %10.3f",
+                                               interaction_function[ep].name,
+                                               eBefore[ep], eAfter[ep], eAfter[ep]-eBefore[ep]));
         }
-        fprintf(fp, "Coordinate RMSD after minimization %10g pm\n\n", 1000*rmsd);
+        tcout->push_back(gmx::formatString("Coordinate RMSD after minimization %10g pm", 1000*rmsd));
         
         // Do normal-mode analysis
         auto ref_freq = mol->referenceFrequencies();
         if (!ref_freq.empty())
         {
             std::vector<double> frequencies, intensities;
-            molHandler_.nma(mol, &frequencies, &intensities, fp);
+            molHandler_.nma(mol, &frequencies, &intensities, nullptr);
             auto unit = mpo_unit2(MolPropObservable::FREQUENCY);
             for(size_t k = 0; k < frequencies.size(); k++)
             {
@@ -701,30 +725,25 @@ void TuneForceFieldPrinter::printEnergyForces(FILE                   *fp,
                                     convertFromGromacs(frequencies[k], unit), 0, 0);
             }
             real scale_factor = 1;
-            std::vector<std::string> tcout;
-            tcout.push_back(gmx::formatString("Thermochemistry data:"));
+            tcout->push_back(gmx::formatString("Thermochemistry data:"));
             for (const double &temp : { 0.0, 298.15 })
             {
                 ThermoChemistry tc(mol, frequencies, temp, 1, scale_factor);
-                tcout.push_back(gmx::formatString("Temperature = %g K", temp));
-                tcout.push_back(gmx::formatString("%-30s %10g (kJ/mol)", "Zero point energy", tc.ZPE()));
-                tcout.push_back(gmx::formatString("%-30s %10g (kJ/mol)", "Delta H formation", tc.DHform()));
+                tcout->push_back(gmx::formatString("Temperature = %g K", temp));
+                tcout->push_back(gmx::formatString("%-30s %10g (kJ/mol)", "Zero point energy", tc.ZPE()));
+                tcout->push_back(gmx::formatString("%-30s %10g (kJ/mol)", "Delta H formation", tc.DHform()));
                 for(const auto &tcc : tccmap())
                 {
-                    tcout.push_back(gmx::formatString("%-30s %10g (J/mol K)",
+                    tcout->push_back(gmx::formatString("%-30s %10g (J/mol K)",
                                                       gmx::formatString("Standard entropy - %s",
                                                                         tcc.second.c_str()).c_str(), tc.S0(tcc.first)));
-                    tcout.push_back(gmx::formatString("%-30s %10g (J/mol K)",
+                    tcout->push_back(gmx::formatString("%-30s %10g (J/mol K)",
                                                       gmx::formatString("Heat capacity cV - %s",
                                                                         tcc.second.c_str()).c_str(), tc.cv(tcc.first)));
-                    tcout.push_back(gmx::formatString("%-30s %10g (kJ/mol)",
+                    tcout->push_back(gmx::formatString("%-30s %10g (kJ/mol)",
                                                       gmx::formatString("Internal energy - %s",
                                                                         tcc.second.c_str()).c_str(), tc.Einternal(tcc.first)));
                 }
-            }
-            for(const auto &tout : tcout)
-            {
-                fprintf(fp, "%s\n", tout.c_str());
             }
         }
     }
@@ -732,8 +751,8 @@ void TuneForceFieldPrinter::printEnergyForces(FILE                   *fp,
     {
         for(auto &ep : ePlot)
         {
-            fprintf(fp, "   %-20s  %10.3f\n",
-                    interaction_function[ep].name, eBefore[ep]);
+            tcout->push_back(gmx::formatString("   %-20s  %10.3f",
+                                               interaction_function[ep].name, eBefore[ep]));
         }
     }
 }
@@ -902,9 +921,14 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
             // Atomic charges
             printAtoms(fp, &(*mol));
             // Energies
-            printEnergyForces(fp, &(*mol), ePlot,
+            std::vector<std::string> tcout;
+            printEnergyForces(&tcout, &(*mol), ePlot,
                               &lsq_rmsf[ims], &lsq_epot[ims],
                               &lsq_freq[ims]);
+            for(const auto &tout : tcout)
+            {
+                fprintf(fp, "%s\n", tout.c_str());
+            }
             fprintf(fp, "\n");
             n++;
         }

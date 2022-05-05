@@ -506,8 +506,8 @@ immStatus MyMol::zetaToAtoms(const Poldata *pd,
     return immStatus::OK;
 }
 
-void MyMol::forceEnergyMaps(std::vector<std::pair<double, double> > *forceMap,
-                            std::vector<std::pair<double, double> > *enerMap)
+void MyMol::forceEnergyMaps(std::vector<std::vector<std::pair<double, double> > > *forceMap,
+                            std::vector<std::pair<double, double> >  *enerMap)
 {
     auto       myatoms = atomsConst();
     t_commrec *crtmp   = init_commrec();
@@ -551,6 +551,7 @@ void MyMol::forceEnergyMaps(std::vector<std::pair<double, double> > *forceMap,
         if (!fff.empty())
         {
             size_t ifff = 0;
+            std::vector<std::pair<double, double> > thisForce;
             for (int i = 0; i < myatoms.nr; i++)
             {
                 if (myatoms.atom[i].ptype == eptAtom)
@@ -561,11 +562,12 @@ void MyMol::forceEnergyMaps(std::vector<std::pair<double, double> > *forceMap,
                     }
                     for(int m = 0; m < DIM; m++)
                     {
-                        forceMap->push_back({ fff[ifff][m], f_[i][m] });
+                        thisForce.push_back({ fff[ifff][m], f_[i][m] });
                     }
                     ifff += 1;
                 }
             }
+            forceMap->push_back(std::move(thisForce));
         }
     }
     restoreCoordinates();

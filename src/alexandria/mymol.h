@@ -319,10 +319,12 @@ namespace alexandria
          * structures will be used to compute the energy and
          * forces. Store the results in vectors containing two
          * doubles, first the reference, then the calculated one.
+         * Forces are stored as a vector of structures and then a
+         * vector of atoms. Energies are stored as a 1D vector.
          * \param[out] forceMap The forces
          * \param[out] enerMap  The energies
          */
-        void forceEnergyMaps(std::vector<std::pair<double, double> > *forceMap,
+        void forceEnergyMaps(std::vector<std::vector<std::pair<double, double> > > *forceMap,
                              std::vector<std::pair<double, double> > *enerMap);
         
         //! Return the reference frequencies collected earlier

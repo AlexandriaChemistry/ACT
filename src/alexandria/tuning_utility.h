@@ -82,6 +82,8 @@ using qtStats = std::map<qType, gmx_stats>;
         real isopol_toler_        = 2;
         //! Fit regression analysis of results to y = ax+b instead of y = ax
         bool useOffset_           = false;
+        //! Print all information from all SP calculation
+        bool printSP_             = false;
         //! Perform energy minimization and compute vibrational frequencies for each molecule (after optimizing the force field if -optimize is enabled)
         bool calcFrequencies_     = true;
 
@@ -98,12 +100,12 @@ using qtStats = std::map<qType, gmx_stats>;
                         alexandria::MyMol *mol);
 
         //! \brief do part of the printing, add to statistics
-        void printEnergyForces(FILE                   *fp,
-                               alexandria::MyMol      *mol,
-                               const std::vector<int> &ePlot,
-                               gmx_stats              *lsq_rmsf,
-                               qtStats                *lsq_epot,
-                               gmx_stats              *lsq_freq);
+        void printEnergyForces(std::vector<std::string> *tcout,
+                               alexandria::MyMol        *mol,
+                               const std::vector<int>   &ePlot,
+                               gmx_stats                *lsq_rmsf,
+                               qtStats                  *lsq_epot,
+                               gmx_stats                *lsq_freq);
     public:
         TuneForceFieldPrinter() {}
     
