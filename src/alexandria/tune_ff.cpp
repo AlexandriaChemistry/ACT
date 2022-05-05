@@ -408,6 +408,10 @@ void OptACM::printNumCalcDevEstimate()
     else if (gach_.optimizer() == OptimizerAlg::GA)
     {
         nCalcDevTrain += gach_.maxGenerations() + 1;  // Extra initial generation
+        if (gach_.cpGenInterval() > 0)  // Extra when catastrophe penalizer
+        {
+            nCalcDevTrain += gach_.maxGenerations() / gach_.cpGenInterval();
+        }
         if (gach_.evaluateTestset())
         {
             nCalcDevTest += gach_.maxGenerations() + 1;  // Extra initial generation
@@ -416,6 +420,10 @@ void OptACM::printNumCalcDevEstimate()
     else if (gach_.optimizer() == OptimizerAlg::HYBRID)
     {
         nCalcDevTrain += (bch_.maxIter() * sii_->nParam() + 1) * gach_.maxGenerations() + 1;
+        if (gach_.cpGenInterval() > 0)  // Extra when catastrophe penalizer
+        {
+            nCalcDevTrain += gach_.maxGenerations() / gach_.cpGenInterval();
+        }
         if (bch_.evaluateTestset())
         {
             nCalcDevTest += (bch_.maxIter() + 1) * gach_.maxGenerations();
@@ -449,7 +457,7 @@ void OptACM::printNumCalcDevEstimate()
     {
         fprintf(
             logFile(),
-            "\nMaximum number of fitness computations to be done for %d generations:\n  - Train: %ld\n  - Test: %ld\n  - Ignore: %ld\nConsider that in GA and HYBRID each penalty conveys an extra fitness computation per genome for the training set.\n\n",
+            "\nMaximum number of fitness computations to be done for %d generations:\n  - Train: %ld\n  - Test: %ld\n  - Ignore: %ld\nConsider that in GA and HYBRID each penalty conveys an extra fitness computation per genome for the training set. The count above includes the Catastrophe penalizer but we cannot predict when the VolumePenalizer will kick in...\n\n",
             gach_.maxGenerations(), nCalcDevTrain, nCalcDevTest, nCalcDevIgnore
         );
     }
