@@ -402,7 +402,8 @@ void ForceEnergyDevComputer::calcDeviation(MyMol                                
     {
         for(const auto &ff : eMap)
         {
-            te->second.increase(1, gmx::square(ff.first-ff.second));
+            auto enerexp = mymol->atomizationEnergy() + ff.first;
+            te->second.increase(1, gmx::square(enerexp-ff.second));
         }
     }
 }
