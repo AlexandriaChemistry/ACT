@@ -506,8 +506,8 @@ immStatus MyMol::zetaToAtoms(const Poldata *pd,
     return immStatus::OK;
 }
 
-void MyMol::forceEnergyMaps(std::map<double, double> *forceMap,
-                            std::map<double, double> *enerMap)
+void MyMol::forceEnergyMaps(std::vector<std::pair<double, double> > *forceMap,
+                            std::vector<std::pair<double, double> > *enerMap)
 {
     auto       myatoms = atomsConst();
     t_commrec *crtmp   = init_commrec();
@@ -544,7 +544,7 @@ void MyMol::forceEnergyMaps(std::map<double, double> *forceMap,
             }
             else if (eprops.size() == 1)
             {
-                enerMap->insert({ eprops[0]->getValue(), energyTerms()[F_EPOT] });
+                enerMap->push_back({ eprops[0]->getValue(), energyTerms()[F_EPOT] });
             }
         }
         const std::vector<gmx::RVec> &fff = ei.getForces();
@@ -561,7 +561,7 @@ void MyMol::forceEnergyMaps(std::map<double, double> *forceMap,
                     }
                     for(int m = 0; m < DIM; m++)
                     {
-                        forceMap->insert({ fff[ifff][m], f_[i][m] });
+                        forceMap->push_back({ fff[ifff][m], f_[i][m] });
                     }
                     ifff += 1;
                 }

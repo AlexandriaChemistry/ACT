@@ -317,13 +317,13 @@ namespace alexandria
         /*! \brief Compute energies and forces for all structures
          * The optimized structure as well as all the excited
          * structures will be used to compute the energy and
-         * forces. Store the results in a map containing two
+         * forces. Store the results in vectors containing two
          * doubles, first the reference, then the calculated one.
          * \param[out] forceMap The forces
          * \param[out] enerMap  The energies
          */
-        void forceEnergyMaps(std::map<double, double> *forceMap,
-                             std::map<double, double> *enerMap);
+        void forceEnergyMaps(std::vector<std::pair<double, double> > *forceMap,
+                             std::vector<std::pair<double, double> > *enerMap);
         
         //! Return the reference frequencies collected earlier
         const std::vector<double> &referenceFrequencies() const { return ref_frequencies_; }

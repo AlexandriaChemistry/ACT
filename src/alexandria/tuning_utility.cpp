@@ -631,7 +631,7 @@ void TuneForceFieldPrinter::printEnergyForces(FILE                   *fp,
                                               qtStats                *lsq_epot,
                                               gmx_stats              *lsq_freq)
 {
-    std::map<double, double> eMap, fMap;
+    std::vector<std::pair<double, double> > eMap, fMap;
     mol->forceEnergyMaps(&fMap, &eMap);
     double df2 = 0;    
     for(const auto &ff : fMap)
@@ -646,15 +646,15 @@ void TuneForceFieldPrinter::printEnergyForces(FILE                   *fp,
         de2 += gmx::square(ff.first - ff.second);
     }
     // RMS force
-    if (fMap.size() - DIM*mol->nRealAtoms() > 0)
+    if (fMap.size() > 0)
     {
-        fprintf(fp, "RMS force  %g (kJ/mol nm) N = %zu\n",
-                std::sqrt(df2/(mol->atoms()->nr)), fMap.size()/(DIM*mol->nRealAtoms()));
+        fprintf(fp, "RMS force   %g (kJ/mol nm) #structures = %zu\n",
+                std::sqrt(df2/(mol->nRealAtoms())), fMap.size()/(DIM*mol->nRealAtoms()));
     }
     // RMS energy
-    if (eMap.size() > 1)
+    if (eMap.size() > 0)
     {
-        fprintf(fp, "RMS energy  %g (kJ/mol nm) N = %zu\n",
+        fprintf(fp, "RMS energy  %g (kJ/mol) #structures = %zu\n",
                 std::sqrt(de2/eMap.size()), eMap.size());
     }
     // Energy
