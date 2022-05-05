@@ -677,8 +677,7 @@ void TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
     if (fMap.size() > 0)
     {
         tcout->push_back(gmx::formatString("RMS force   %g (kJ/mol nm) #structures = %zu",
-                                           std::sqrt(df2/(mol->nRealAtoms())),
-                                           fMap.size()/(DIM*mol->nRealAtoms())));
+                                           std::sqrt(df2/(mol->nRealAtoms())), fMap.size()));
     }
     // Energy
     tcout->push_back(gmx::formatString("Energy terms (kJ/mol, EPOT including atomization terms)"));
