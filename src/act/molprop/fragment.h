@@ -52,11 +52,13 @@ class Fragment
     //! Identifier for this fragment
     std::string      id_;
     //! Mass of this fragment
-    double           mass_         = 0.0;
+    double           mass_           = 0.0;
     //! Charge of this fragment
-    int              charge_       = 0;
+    int              charge_         = 0;
     //! Multiplicity of this fragment
-    int              multiplicity_ = 1;
+    int              multiplicity_   = 1;
+    //! Symmetry number of this fragment
+    int              symmetryNumber_ = 1;
     //! The formula of this fragment
     std::string      formula_;
     //! The formula of this fragment formatted for LaTeX
@@ -82,10 +84,12 @@ class Fragment
              double                  mass,
              int                     charge,
              int                     multiplicity,
+             int                     symmetryNumber,
              const std::string      &formula,
              const std::vector<int> &atoms) : 
         id_(id), mass_(mass), charge_(charge),
         multiplicity_(multiplicity),
+        symmetryNumber_(symmetryNumber),
         formula_(formula), atoms_(atoms)
     {
         makeAtomString();
@@ -113,6 +117,9 @@ class Fragment
     
     //! Return the multiplicity
     int multiplicity() const { return multiplicity_; }
+    
+    //! Return the symmetry number
+    int symmetryNumber() const { return symmetryNumber_; } 
     
     //! Return the formula
     const std::string &formula() const { return formula_; }

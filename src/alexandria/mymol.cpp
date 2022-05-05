@@ -1058,6 +1058,14 @@ immStatus MyMol::GenerateTopology(FILE              *fp,
         {
             addShells(debug, pd, atoms);
         }
+        nRealAtoms_ = 0;
+        for(int i = 0; i < atoms->nr; i++)
+        {
+            if (atoms->atom[i].ptype == eptAtom)
+            {
+                nRealAtoms_ += 1;
+            }
+        }
         char **molnameptr = put_symtab(symtab_, getMolname().c_str());
         // Generate mtop
         mtop_ = do_init_mtop(pd, molnameptr, atoms,
@@ -1192,13 +1200,13 @@ void MyMol::addBondVsites(FILE          *fp,
     }
 }
 
-bool MyMol::linearMolecule()
+bool MyMol::linearMolecule() const
 {
-    const auto myatoms = atoms();
+    const auto myatoms = atomsConst();
     std::vector<int> core;
-    for(int i = 0; i < myatoms->nr; i++)
+    for(int i = 0; i < myatoms.nr; i++)
     {
-        if (myatoms->atom[i].ptype == eptAtom)
+        if (myatoms.atom[i].ptype == eptAtom)
         {
             core.push_back(i);
         }

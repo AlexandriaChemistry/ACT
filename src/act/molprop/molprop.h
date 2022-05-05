@@ -250,7 +250,7 @@ public:
     int totalMultiplicity();
     
     //! Return the total mass by summing over all fragments
-    double totalMass();
+    double totalMass() const;
     
     /*! \brief Return the first calculation that matches the specification
      * \param[in] job The JobType, typically JobType::Opt

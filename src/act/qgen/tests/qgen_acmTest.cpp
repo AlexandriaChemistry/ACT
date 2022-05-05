@@ -197,7 +197,8 @@ class AcmTest : public gmx::test::CommandLineTestBase
                 {
                     atomIndices.push_back(k);
                 }
-                molprop.addFragment(Fragment(std::to_string(i), 0, qtotal[i], 1, formula[i], atomIndices));
+                molprop.addFragment(Fragment(std::to_string(i), 0, qtotal[i], 1, 1, 
+                                             formula[i], atomIndices));
                 qtot_sum += qtotal[i];
             }
 

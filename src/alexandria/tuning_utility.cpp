@@ -42,9 +42,10 @@
 
 #include "act/molprop/molprop_util.h"
 #include "act/molprop/multipole_names.h"
-#include "mymol.h"
 #include "act/qgen/qtype.h"
 #include "act/utility/units.h"
+#include "alexandria/mymol.h"
+#include "alexandria/thermochemistry.h"
 
 void doAddOptions(std::vector<t_pargs> *pargs, size_t npa, t_pargs pa[])
 {
@@ -475,7 +476,7 @@ void TuneForceFieldPrinter::addOptions(std::vector<t_pargs> *pargs)
         { "-use_offset", FALSE, etBOOL,{&useOffset_},
           "Fit regression analysis of results to y = ax+b instead of y = ax" },
         { "-calc_frequencies",  FALSE, etBOOL, {&calcFrequencies_},
-              "Perform energy minimization and compute vibrational frequencies for each molecule (after optimizing the force field if -optimize is enabled)." }
+          "Perform energy minimization and compute vibrational frequencies for each molecule (after optimizing the force field if -optimize is enabled). If turned on, this option will also generate thermochemistry values based on the force field." }
     };
     doAddOptions(pargs, sizeof(pa)/sizeof(pa[0]), pa);
 }
@@ -645,11 +646,10 @@ void TuneForceFieldPrinter::printEnergyForces(FILE                   *fp,
         de2 += gmx::square(ff.first - ff.second);
     }
     // RMS force
-    // TODO: Check real number of atoms.
-    if (fMap.size() - DIM*mol->atoms()->nr > 0)
+    if (fMap.size() - DIM*mol->nRealAtoms() > 0)
     {
         fprintf(fp, "RMS force  %g (kJ/mol nm) N = %zu\n",
-                std::sqrt(df2/(mol->atoms()->nr)), fMap.size()/(DIM*mol->atoms()->nr));
+                std::sqrt(df2/(mol->atoms()->nr)), fMap.size()/(DIM*mol->nRealAtoms()));
     }
     // RMS energy
     if (eMap.size() > 1)
@@ -699,6 +699,25 @@ void TuneForceFieldPrinter::printEnergyForces(FILE                   *fp,
             {
                 lsq_freq->add_point(convertFromGromacs(ref_freq[k], unit),
                                     convertFromGromacs(frequencies[k], unit), 0, 0);
+            }
+            real scale_factor = 1;
+            ThermoChemistry tc(mol, frequencies, 298.15, 1, scale_factor);
+            std::vector<std::string> tcout;
+            tcout.push_back(gmx::formatString("Thermochemistry data:"));
+            tcout.push_back(gmx::formatString("Zero point energy     %g (kJ/mol)", tc.ZPE()));
+            tcout.push_back(gmx::formatString("Delta H formation     %g (kJ/mol)", tc.DHform()));
+            for(const auto &tcc : tccmap())
+            {
+                tcout.push_back(gmx::formatString("Standard entropy - %11s %g (J/mol K)",
+                                                            tcc.second.c_str(), tc.S0(tcc.first)));
+                tcout.push_back(gmx::formatString("Heat capacity cV - %11s %g (J/mol K)", 
+                                                            tcc.second.c_str(), tc.cv(tcc.first)));
+                tcout.push_back(gmx::formatString("Internal energy  - %11s %g (kJ/mol)",
+                                                            tcc.second.c_str(), tc.Einternal(tcc.first)));
+            }
+            for(const auto &tout : tcout)
+            {
+                fprintf(fp, "%s\n", tout.c_str());
             }
         }
     }

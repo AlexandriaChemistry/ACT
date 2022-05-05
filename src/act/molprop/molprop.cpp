@@ -164,7 +164,7 @@ int MolProp::totalMultiplicity()
     return mtot;
 }
 
-double MolProp::totalMass()
+double MolProp::totalMass() const
 {
     double mtot = 0;
     

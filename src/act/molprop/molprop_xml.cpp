@@ -533,6 +533,7 @@ static void mp_process_tree(FILE                              *fp,
                                                       xbuf_atof(xbuf, MolPropXml::MASS),
                                                       xbuf_atoi(xbuf, MolPropXml::CHARGE),
                                                       xbuf_atoi(xbuf, MolPropXml::MULTIPLICITY),
+                                                      1, // TODO put the real number here
                                                       xbuf->find(MolPropXml::FORMULA)->second,
                                                       atoms));
                             clean_xbuf(xbuf, clean1);

@@ -58,8 +58,10 @@ target_sources(actLib
            mymol_low.cpp
            openmm_xml.cpp
            percentmutator.cpp
+           princ.cpp
            staticindividualinfo.cpp
            symmetrize_charges.cpp
+           thermochemistry.cpp
            topology.cpp
            tune_ff.cpp
            tuning_utility.cpp          

@@ -47,6 +47,7 @@
 #include "alexandria/fill_inputrec.h"
 #include "alexandria/molhandler.h"
 #include "alexandria/mymol.h"
+#include "alexandria/thermochemistry.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/hardware/detecthardware.h"
 #include "gromacs/mdrunutility/mdmodules.h"
@@ -171,6 +172,20 @@ protected:
         }
         checker_.checkSequence(freq.begin(), freq.end(), "Frequencies");
         checker_.checkSequence(inten.begin(), inten.end(), "Intensities");
+
+        double scale_factor = 1;  
+        ThermoChemistry tc(&mp_, freq, 298.15, 1, scale_factor);
+        checker_.checkReal(tc.ZPE(),  "Zero point energy (kJ/mol)");
+        checker_.checkReal(tc.DHform(), "Delta H form (kJ/mol)");
+        for(const auto &tcc : tccmap())
+        {
+            checker_.checkReal(tc.S0(tcc.first), gmx::formatString("Standard entropy - %11s  (J/mol K)",
+                                                                   tcc.second.c_str()).c_str());
+            checker_.checkReal(tc.cv(tcc.first), gmx::formatString("Heat capacity cV - %11s (J/mol K)", 
+                                                                     tcc.second.c_str()).c_str());
+            checker_.checkReal(tc.Einternal(tcc.first), gmx::formatString("Internal energy  - %11s (kJ/mol)",
+                                                                          tcc.second.c_str()).c_str());
+        }
     }
 };
 

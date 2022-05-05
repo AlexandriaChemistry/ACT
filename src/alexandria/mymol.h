@@ -246,6 +246,7 @@ namespace alexandria
         t_inputrec                    *inputrec_       = nullptr;
         gmx_enerdata_t                *enerd_          = nullptr;
         t_fcdata                      *fcd_            = nullptr;
+        int                            nRealAtoms_     = 0;
         PaddedVector<gmx::RVec>        f_;
         PaddedVector<gmx::RVec>        optf_;
         // Reference data for devcomputer
@@ -282,7 +283,7 @@ namespace alexandria
         bool haveShells() const { return nullptr != shellfc_; }
 
         //! \return whether this is a linear molecule
-        bool linearMolecule();
+        bool linearMolecule() const;
         
         //! \return how this compound is supported on this processor
         eSupport support() const { return eSupp_; }
@@ -291,6 +292,9 @@ namespace alexandria
          * \param[in] esup The support type
          */
         void setSupport(eSupport esup) { eSupp_ = esup; }
+        
+        //! \return the number of real atoms, i.e. not shells or vsites
+        int nRealAtoms() const { return nRealAtoms_; }
 
         //! \return the atomization energy
         double atomizationEnergy() const { return atomizationEnergy_; }

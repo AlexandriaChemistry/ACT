@@ -647,8 +647,10 @@ bool readBabel(const char          *g09,
                 forcefield.c_str());
         return false;
     }
-    // Fragment infor
-    Fragment f("1", mol.GetMolWt(), *qtot, mol.GetTotalSpinMultiplicity(), mol.GetFormula(), atomIndices);
+    // Fragment information
+    // TODO: extract correct symmetry number
+    Fragment f("1", mol.GetMolWt(), *qtot, mol.GetTotalSpinMultiplicity(), 
+               1, mol.GetFormula(), atomIndices);
     mpt->addFragment(f);
 
     // Bonds
