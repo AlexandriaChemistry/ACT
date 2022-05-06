@@ -350,6 +350,8 @@ void HarmonicsDevComputer::calcDeviation(MyMol                                *m
     {
         return;
     }
+    double rmsd;
+    handler_.minimizeCoordinates(mymol, &rmsd);
     // Compute frequencies
     std::vector<double> frequencies, intensities;
     handler_.nma(mymol, &frequencies, &intensities);

@@ -71,15 +71,23 @@ struct t_nrnb;
 namespace alexandria
 {
 
-    //! Determine on which core/processor this compound is supported
-    enum class eSupport {
-        //! Not supported at all
-        No,
-        //! Supported on this core
-        Local,
-        //! Supported on another core
-        Remote
-    };
+//! Determine on which core/processor this compound is supported
+enum class eSupport {
+    //! Not supported at all
+    No,
+    //! Supported on this core
+    Local,
+    //! Supported on another core
+    Remote
+};
+
+//! Distinguish different sets of coordinates
+enum class coordSet {
+    //! The original coordinates
+    Original,
+    //! The minimized coordinates
+    Minimized
+};
 
     //! Forward declaration, full declaration is in mymol.cpp
     class MyForceProvider;
@@ -129,12 +137,16 @@ namespace alexandria
         t_forcerec               *fr_         = nullptr;
         //! Function that returns true if a molecule is symmetric
         bool             IsSymmetric(real toler);
-        //! Vector to back up coordinates
-        std::vector<gmx::RVec>    backupCoordinates_;
-        //! Make a back up of coordinates
-        void backupCoordinates();
-        //! Restored backed up coordinates
-        void restoreCoordinates();
+        //! Map of vectors to back up coordinates
+        std::map<coordSet, std::vector<gmx::RVec> > backupCoordinates_;
+        /*! Make a back up of coordinates
+         * \param[in] cs Which data set to back up to
+         */
+        void backupCoordinates(coordSet cs);
+        /*! Restored backed up coordinates
+         * \param[in] cs Which data set to restore from
+         */
+        void restoreCoordinates(coordSet cs);
         /*! \brief
          * Generate Atoms based on quantum calculation with specified level of theory.
          * If the requested level of theory is not present, another

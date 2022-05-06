@@ -512,7 +512,7 @@ void MyMol::forceEnergyMaps(std::vector<std::vector<std::pair<double, double> > 
     auto       myatoms = atomsConst();
     t_commrec *crtmp   = init_commrec();
     crtmp->nnodes      = 1;
-    backupCoordinates();
+    backupCoordinates(coordSet::Original);
     forceMap->clear();
     enerMap->clear();
     for (auto &ei : experimentConst())
@@ -570,7 +570,7 @@ void MyMol::forceEnergyMaps(std::vector<std::vector<std::pair<double, double> > 
             forceMap->push_back(std::move(thisForce));
         }
     }
-    restoreCoordinates();
+    restoreCoordinates(coordSet::Original);
     done_commrec(crtmp);
 }
 
@@ -1738,9 +1738,9 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
     auto      iChargeType = name2ChargeType(qt.optionValue("chargetype"));
 
     GenerateGromacs(mdlog, cr, nullptr, iChargeType);
-    if (backupCoordinates_.size() == 0)
+    if (backupCoordinates_[coordSet::Original].size() == 0)
     {
-        backupCoordinates();
+        backupCoordinates(coordSet::Original);
     }
     if (algorithm == ChargeGenerationAlgorithm::Custom)
     {
@@ -1943,27 +1943,27 @@ static double calcRefEnthalpy(const Poldata *pd,
     return ereftot;
 }
 
-void MyMol::backupCoordinates()
+void MyMol::backupCoordinates(coordSet cs)
 {
-    backupCoordinates_.resize(mtop_->natoms);
+    backupCoordinates_[cs].resize(mtop_->natoms);
     for(int i = 0; i < mtop_->natoms; i++)
     {
         for(int m = 0; m < DIM; m++)
         {
-            backupCoordinates_[i][m] = state_->x[i][m];
+            backupCoordinates_[cs][i][m] = state_->x[i][m];
         }
     }
 }
 
-void MyMol::restoreCoordinates()
+void MyMol::restoreCoordinates(coordSet cs)
 {
-    if (static_cast<int>(backupCoordinates_.size()) == mtop_->natoms)
+    if (static_cast<int>(backupCoordinates_[cs].size()) == mtop_->natoms)
     {
         for(int i = 0; i < mtop_->natoms; i++)
         {
             for(int m = 0; m < DIM; m++)
             {
-                state_->x[i][m] = backupCoordinates_[i][m];
+                state_->x[i][m] = backupCoordinates_[cs][i][m];
             }
         }
     }
@@ -1976,7 +1976,7 @@ immStatus MyMol::CalcPolarizability(double efield)
     double              rmsf;
     QtypeProps          qtp(qType::Calc);
 
-    backupCoordinates();
+    backupCoordinates(coordSet::Original);
     field.resize(DIM, 0);
     myforce_->setField(field);
     imm = computeForces(&rmsf);
@@ -2018,7 +2018,7 @@ immStatus MyMol::CalcPolarizability(double efield)
             qcalc->setPolarizabilityTensor(alpha);
         }
     }
-    restoreCoordinates();
+    restoreCoordinates(coordSet::Original);
     imm = computeForces(&rmsf);
     return imm;
 }
