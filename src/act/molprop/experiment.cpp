@@ -211,12 +211,15 @@ void Experiment::AddAtom(CalcAtom ca)
         x[ZZ]           = convertToGromacs(ca.getZ(), cunit);
         coordinates_.push_back(x);
         auto      funit = ca.forceUnit();
-        ca.forces(&f[XX], &f[YY], &f[ZZ]);
-        for (int m = 0; m < DIM; m++)
+        if (!funit.empty())
         {
-            f[m] = convertToGromacs(f[m], funit);
+            ca.forces(&f[XX], &f[YY], &f[ZZ]);
+            for (int m = 0; m < DIM; m++)
+            {
+                f[m] = convertToGromacs(f[m], funit);
+            }
+            forces_.push_back(f);
         }
-        forces_.push_back(f);
         catom_.push_back(ca);
     }
     else

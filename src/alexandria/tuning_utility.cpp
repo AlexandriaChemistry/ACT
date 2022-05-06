@@ -712,37 +712,37 @@ void TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
         tcout->push_back(gmx::formatString("Coordinate RMSD after minimization %10g pm", 1000*rmsd));
         
         // Do normal-mode analysis
+        std::vector<double> frequencies, intensities;
+        molHandler_.nma(mol, &frequencies, &intensities, nullptr);
+        auto unit = mpo_unit2(MolPropObservable::FREQUENCY);
         auto ref_freq = mol->referenceFrequencies();
         if (!ref_freq.empty())
         {
-            std::vector<double> frequencies, intensities;
-            molHandler_.nma(mol, &frequencies, &intensities, nullptr);
-            auto unit = mpo_unit2(MolPropObservable::FREQUENCY);
             for(size_t k = 0; k < frequencies.size(); k++)
             {
                 lsq_freq->add_point(convertFromGromacs(ref_freq[k], unit),
                                     convertFromGromacs(frequencies[k], unit), 0, 0);
             }
-            real scale_factor = 1;
-            tcout->push_back(gmx::formatString("Thermochemistry data:"));
-            for (const double &temp : { 0.0, 298.15 })
+        }
+        real scale_factor = 1;
+        tcout->push_back(gmx::formatString("Thermochemistry data:"));
+        for (const double &temp : { 0.0, 298.15 })
+        {
+            ThermoChemistry tc(mol, frequencies, temp, 1, scale_factor);
+            tcout->push_back(gmx::formatString("Temperature = %g K", temp));
+            tcout->push_back(gmx::formatString("%-30s %10g (kJ/mol)", "Zero point energy", tc.ZPE()));
+            tcout->push_back(gmx::formatString("%-30s %10g (kJ/mol)", "Delta H formation", tc.DHform()));
+            for(const auto &tcc : tccmap())
             {
-                ThermoChemistry tc(mol, frequencies, temp, 1, scale_factor);
-                tcout->push_back(gmx::formatString("Temperature = %g K", temp));
-                tcout->push_back(gmx::formatString("%-30s %10g (kJ/mol)", "Zero point energy", tc.ZPE()));
-                tcout->push_back(gmx::formatString("%-30s %10g (kJ/mol)", "Delta H formation", tc.DHform()));
-                for(const auto &tcc : tccmap())
-                {
-                    tcout->push_back(gmx::formatString("%-30s %10g (J/mol K)",
-                                                      gmx::formatString("Standard entropy - %s",
-                                                                        tcc.second.c_str()).c_str(), tc.S0(tcc.first)));
-                    tcout->push_back(gmx::formatString("%-30s %10g (J/mol K)",
-                                                      gmx::formatString("Heat capacity cV - %s",
-                                                                        tcc.second.c_str()).c_str(), tc.cv(tcc.first)));
-                    tcout->push_back(gmx::formatString("%-30s %10g (kJ/mol)",
-                                                      gmx::formatString("Internal energy - %s",
-                                                                        tcc.second.c_str()).c_str(), tc.Einternal(tcc.first)));
-                }
+                tcout->push_back(gmx::formatString("%-30s %10g (J/mol K)",
+                                                   gmx::formatString("Standard entropy - %s",
+                                                                     tcc.second.c_str()).c_str(), tc.S0(tcc.first)));
+                tcout->push_back(gmx::formatString("%-30s %10g (J/mol K)",
+                                                   gmx::formatString("Heat capacity cV - %s",
+                                                                     tcc.second.c_str()).c_str(), tc.cv(tcc.first)));
+                tcout->push_back(gmx::formatString("%-30s %10g (kJ/mol)",
+                                                   gmx::formatString("Internal energy - %s",
+                                                                     tcc.second.c_str()).c_str(), tc.Einternal(tcc.first)));
             }
         }
     }
