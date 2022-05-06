@@ -1,6 +1,7 @@
 #include "GenePool.h"
 
 #include <algorithm>
+#include <limits>
 #include <vector>
 
 #include <cstdio>
