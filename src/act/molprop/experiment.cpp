@@ -99,7 +99,6 @@ Experiment::Experiment(const std::string &program,
       basisset_(basisset),
       datafile_(datafile),
       jobtype_(jtype)
-
 {}
 
 void Experiment::Dump(FILE *fp) const
@@ -285,7 +284,6 @@ CommunicationStatus Experiment::Receive(const CommunicationRecord *cr, int src)
         cr->recv_str(src, &datafile_);
         cr->recv_str(src, &jobtype);
         jobtype_    = string2jobType(jobtype);
-
         int nmpo = cr->recv_int(src);
         
         //! Receive Properties
@@ -404,7 +402,6 @@ CommunicationStatus Experiment::Send(const CommunicationRecord *cr, int dest) co
         cr->send_str(dest, &datafile_);
         jobtype.assign(jobType2string(jobtype_));
         cr->send_str(dest, &jobtype);
-        
         cr->send_int(dest, property_.size());
         for(const auto &prop : property_)
         {

@@ -150,12 +150,13 @@ class Fragment:
     means compounds in e.g. a dimer.
     '''
     
-    def __init__(self, identifier:str, charge:int, multiplicity:int, atoms:list, mass:float, formula: str):
-        self.identifier   = identifier
-        self.charge       = charge
-        self.multiplicity = multiplicity
-        self.mass         = mass
-        self.formula      = formula
+    def __init__(self, identifier:str, charge:int, multiplicity:int, symmetry_number: int, atoms:list, mass:float, formula: str):
+        self.identifier      = identifier
+        self.charge          = charge
+        self.multiplicity    = multiplicity
+        self.symmetry_number = symmetry_number
+        self.mass            = mass
+        self.formula         = formula
         if len(atoms) == 0:
             sys.exit("Trying to create a fragment without atoms")
         self.atoms = ""
@@ -167,6 +168,7 @@ class Fragment:
         xml.set("identifier", self.identifier)
         xml.set("charge", str(self.charge))
         xml.set("multiplicity", str(self.multiplicity))
+        xml.set("symmetry_number", str(self.symmetry_number))
         xml.set("mass", str(self.mass))
         xml.set("formula", self.formula)
         xml.text = self.atoms

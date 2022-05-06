@@ -873,11 +873,12 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
         if (mol->support() != eSupport::No)
         {
             auto ims = mol->datasetType();
-            fprintf(fp, "\nMolecule %d: Name: %s, Qtot: %d, Multiplicity: %d, MolWt: %g Dataset: %s\n", n+1,
+            fprintf(fp, "\nMolecule %d: Name: %s, Qtot: %d, Multiplicity: %d, MolWt: %g SymmetryNumber: %d Dataset: %s\n", n+1,
                     mol->getMolname().c_str(),
                     mol->totalCharge(),
                     mol->totalMultiplicity(),
                     mol->totalMass(),
+                    mol->symmetryNumber(),
                     iMolSelectName(ims));
 
             // Recalculate the atomic charges using the optimized parameters.

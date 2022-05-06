@@ -252,6 +252,9 @@ public:
     //! Return the total mass by summing over all fragments
     double totalMass() const;
     
+    //! Return the total symmetry number
+    int symmetryNumber() const;
+
     /*! \brief Return the first calculation that matches the specification
      * \param[in] job The JobType, typically JobType::Opt
      * \return the Experiment or nullptr

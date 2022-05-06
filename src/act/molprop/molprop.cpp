@@ -175,6 +175,17 @@ double MolProp::totalMass() const
     return mtot;
 }
 
+int MolProp::symmetryNumber() const
+{
+    int symm = 1;
+    
+    if (fragment_.size() == 1)
+    {
+        symm = fragment_[0].symmetryNumber();
+    }
+    return symm;
+}
+
 int MolProp::Merge(const MolProp *src)
 {
     std::string stmp;

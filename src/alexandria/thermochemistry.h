@@ -69,8 +69,8 @@ const std::map<TCComponent, std::string> &tccmap();
 class ThermoChemistry
 {
 private:
-    double zpe_     = 0;
-    double dhForm_  = 0;
+    double zpe_             = 0;
+    double dhForm_          = 0;
     std::map<TCComponent, double> cv_;
     std::map<TCComponent, double> S0_;
     std::map<TCComponent, double> E_;

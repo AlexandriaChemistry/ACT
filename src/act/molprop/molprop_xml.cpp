@@ -132,6 +132,7 @@ enum class MolPropXml {
     PROGRAM,
     BASISSET,
     JOBTYPE,
+    SYMMETRY_NUMBER,
     CONFORMATION,
     DATAFILE,
     UNIT,
@@ -212,6 +213,7 @@ std::map<const std::string, MolPropXml> xmlxxx =
     { "program",          MolPropXml::PROGRAM        },
     { "basisset",         MolPropXml::BASISSET       },
     { "jobtype",          MolPropXml::JOBTYPE        },
+    { "symmetry_number",  MolPropXml::SYMMETRY_NUMBER},
     { "conformation",     MolPropXml::CONFORMATION   },
     { "datafile",         MolPropXml::DATAFILE       },
     { "unit",             MolPropXml::UNIT           },
@@ -533,7 +535,7 @@ static void mp_process_tree(FILE                              *fp,
                                                       xbuf_atof(xbuf, MolPropXml::MASS),
                                                       xbuf_atoi(xbuf, MolPropXml::CHARGE),
                                                       xbuf_atoi(xbuf, MolPropXml::MULTIPLICITY),
-                                                      1, // TODO put the real number here
+                                                      xbuf_atoi(xbuf, MolPropXml::SYMMETRY_NUMBER),
                                                       xbuf->find(MolPropXml::FORMULA)->second,
                                                       atoms));
                             clean_xbuf(xbuf, clean1);
@@ -1004,6 +1006,7 @@ static void add_xml_molprop(xmlNodePtr     parent,
         add_xml_double(grandChild, rmap[MolPropXml::MASS], f.mass());
         add_xml_double(grandChild, rmap[MolPropXml::CHARGE], f.charge());
         add_xml_double(grandChild, rmap[MolPropXml::MULTIPLICITY], f.multiplicity());
+        add_xml_int(grandChild, rmap[MolPropXml::SYMMETRY_NUMBER], f.symmetryNumber());
         add_xml_string(grandChild, rmap[MolPropXml::FORMULA], f.formula());
     }
     child = add_xml_child(ptr, rmap[MolPropXml::MOLINFO]);
