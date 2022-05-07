@@ -597,7 +597,7 @@ size_t MolGen::Read(FILE            *fp,
                 }
                 mymol.Merge(&(*mpi));
                 mymol.setInputrec(inputrec_);
-                imm = mymol.GenerateTopology(fp,
+                imm = mymol.GenerateTopology(fp, 
                                              pd,
                                              missingParameters::Error);
                 if (immStatus::OK != imm)
@@ -663,14 +663,16 @@ size_t MolGen::Read(FILE            *fp,
         {
             int mymolIndex = 0;
             std::set<int> destMiddleMen;
+            destMiddleMen.insert(cr_->rank());
             for(auto &i : cr_->middlemen())
             {
                 destMiddleMen.insert(i);
             }
-            for(auto &mymol : mymol_)
+            for(auto mymol = mymol_.begin(); mymol < mymol_.end(); ++mymol)
             {
-                if (mymol.datasetType() != ts.first)
+                if (mymol->datasetType() != ts.first)
                 {
+                    // Do one set at a time,
                     continue;
                 }
                 std::set<int> destAll = destMiddleMen;
@@ -679,41 +681,50 @@ size_t MolGen::Read(FILE            *fp,
                     // Looks like an MCMC run where compounds are distributed evenly
                     destAll.insert(mymolIndex % cr_->size());
                 }
-                else if (cr_->nhelper_per_middleman() > 0)  // If we have more than one middleman, and we also have helpers
+                else if (cr_->nhelper_per_middleman() > 0)
                 {
-                    // We have to divide the molecules in a complicated manner.
-                    // Each individual gets the complete set and divides it between
-                    // helpers.
-                    int helperDest = mymolIndex % cr_->nhelper_per_middleman();
-                    // Add master's helper
-                    destAll.insert(1 + helperDest);
-                    // Add middleman's helper
+                    // If we have more than one middleman, and we also have helpers
+                    // we have to divide the molecules in a complicated manner.
+                    // Each individual (middleman) gets the complete set and helpers
+                    // only get their share to compute. However for middleman only
+                    // the real part that they should compute gets the eSupport::Local.
+                    int helperDest = mymolIndex % (1+cr_->nhelper_per_middleman());
+                    // Add the coorect helper for each middleman
                     for(auto &mm : destMiddleMen)
                     {
                         // TODO Check this
-                        destAll.insert(mm + 1 + helperDest);
+                        destAll.insert(mm + helperDest);
                     }
                 }
-                mymolIndex += 1;
+                // Now we have a list of destination processors that should receive this 
+                // molecule.
                 for (auto &mydest : destAll)
                 {
                     if (mydest == cr_->rank())
                     {
-                        mymol.setSupport(eSupport::Local);
-                        nLocal.find(mymol.datasetType())->second += 1; 
-                        incrementImmCount(&imm_count, imm);
+                        // Do not send to myself, but put the compound
+                        // in the right support category.
+                        if (cr_->nhelper_per_middleman() == 0 ||
+                            mymolIndex % (1+cr_->nhelper_per_middleman()) == 0)
+                        {
+                            mymol->setSupport(eSupport::Local);
+                            nLocal.find(ts.first)->second += 1;
+                        }
+                        else
+                        {
+                            mymol->setSupport(eSupport::Remote);
+                        }
                         continue;
                     }
-                    mymol.setSupport(eSupport::Remote);
                     if (nullptr != debug)
                     {
-                        fprintf(debug, "Going to send %s to cpu %d\n", mymol.getMolname().c_str(), mydest);
+                        fprintf(debug, "Going to send %s to cpu %d\n", mymol->getMolname().c_str(), mydest);
                     }
                     if (CommunicationStatus::SEND_DATA != cr_->send_data(mydest))
                     {
                         GMX_THROW(gmx::InternalError("Communication problem."));
                     }
-                    CommunicationStatus cs = mymol.Send(cr_, mydest);
+                    CommunicationStatus cs = mymol->Send(cr_, mydest);
                     if (CommunicationStatus::OK != cs)
                     {
                         imm = immStatus::CommProblem;
@@ -722,30 +733,33 @@ size_t MolGen::Read(FILE            *fp,
                             GMX_THROW(gmx::InternalError("Comunication problem."));
                         }
                     }
+                    incrementImmCount(&imm_count, imm);
                 }
                 // Small optimization. First send to all processors,
                 // then wait for the answer.
                 for (auto &mydest : destAll)
                 {
-                    if (mydest == cr_->rank())
+                    if (mydest != cr_->rank())
                     {
-                        continue;
-                    }
-                    imm = static_cast<immStatus>(cr_->recv_int(mydest));
-
-                    if (imm != immStatus::OK)
-                    {
-                        fprintf(stderr, "Molecule %s was not accepted on node %d - error %s\n",
-                                mymol.getMolname().c_str(), mydest, alexandria::immsg(imm));
-                    }
-                    else if (nullptr != debug)
-                    {
-                        fprintf(debug, "Succesfully beamed over %s\n", mymol.getMolname().c_str());
+                        // Do not wait for a message from myself. It will
+                        // hang the MPI implementation on some machines.
+                        imm = static_cast<immStatus>(cr_->recv_int(mydest));
+                        
+                        if (imm != immStatus::OK)
+                        {
+                            fprintf(stderr, "Molecule %s was not accepted on node %d - error %s\n",
+                                    mymol->getMolname().c_str(), mydest, alexandria::immsg(imm));
+                        }
+                        else if (nullptr != debug)
+                        {
+                            fprintf(debug, "Succesfully beamed over %s\n", mymol->getMolname().c_str());
+                        }
                     }
                 }
+                mymolIndex += 1;
             }
         }
-        /* Send signal done` transferring molecules */
+        /* Send signal done with transferring molecules */
         for (int i = 1;  i < cr_->size(); i++)
         {
             cr_->send_done(i);
@@ -782,6 +796,7 @@ size_t MolGen::Read(FILE            *fp,
          *          H E L P E R  N O D E S             *
          *                                             *
          ***********************************************/
+        int mymolIndex = 0;
         while (CommunicationStatus::RECV_DATA == cr_->recv_data(0))
         {
             alexandria::MyMol mymol;
@@ -820,13 +835,27 @@ size_t MolGen::Read(FILE            *fp,
             {
                 imm = mymol.getExpProps(iqmMap, 0);
             }
-            mymol.setSupport(eSupport::Local);
+            if (cr_->isMiddleMan())
+            {
+                mymol.setSupport(eSupport::Remote);
+                if (cr_->nhelper_per_middleman() == 0 ||
+                    mymolIndex % (1+cr_->nhelper_per_middleman()) == 0)
+                {
+                    mymol.setSupport(eSupport::Local);
+                }
+                mymolIndex += 1;
+            }
+            else
+            {
+                mymol.setSupport(eSupport::Local);
+            }
             incrementImmCount(&imm_count, imm);
             if (immStatus::OK == imm)
             {
-                mymol_.push_back(std::move(mymol));
-
-                nLocal.find(mymol.datasetType())->second += 1;
+                if (mymol.support() == eSupport::Local)
+                {
+                    nLocal.find(mymol.datasetType())->second += 1;
+                }
                 // TODO Checks for energy should be done only when energy is a target for fitting.
                 if (false)
                 {
@@ -859,6 +888,7 @@ size_t MolGen::Read(FILE            *fp,
                         }
                     }
                 }
+                mymol_.push_back(std::move(mymol));
             }
             cr_->send_int(0, static_cast<int>(imm));
         }
@@ -872,6 +902,24 @@ size_t MolGen::Read(FILE            *fp,
     // support for them, at least on the middlemen but may be needed everywhere.
     // TODO Check that this is correct.
     checkDataSufficiency(fp, pd);
+    
+    // Some extra debug printing.
+    if (debug)
+    {
+        std::map<iMolSelect, int> nCount;
+        nCount.insert({iMolSelect::Train, 0});
+        nCount.insert({iMolSelect::Test, 0});
+        for(const auto &m : mymol_)
+        {
+            if (m.support() == eSupport::Remote)
+            {
+                auto ims = m.datasetType();
+                nCount[ims] += 1;
+            }
+        }
+        fprintf(debug, "Node %d Train: %d Test: %d #mols: %zu\n", cr_->rank(), nCount[iMolSelect::Train],
+                nCount[iMolSelect::Test], mymol_.size());
+    }
     if (fp)
     {
         fprintf(fp, "There were %d warnings because of zero error bars.\n", nwarn);
