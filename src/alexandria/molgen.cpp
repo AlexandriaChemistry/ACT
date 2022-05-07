@@ -700,6 +700,8 @@ size_t MolGen::Read(FILE            *fp,
                     if (mydest == cr_->rank())
                     {
                         mymol.setSupport(eSupport::Local);
+                        nLocal.find(mymol.datasetType())->second += 1; 
+                        incrementImmCount(&imm_count, imm);
                         continue;
                     }
                     mymol.setSupport(eSupport::Remote);
@@ -741,10 +743,6 @@ size_t MolGen::Read(FILE            *fp,
                         fprintf(debug, "Succesfully beamed over %s\n", mymol.getMolname().c_str());
                     }
                 }
-                // Now modify the local copy
-                mymol.setSupport(eSupport::Local);
-                nLocal.find(mymol.datasetType())->second += 1;
-                incrementImmCount(&imm_count, imm);
             }
         }
         /* Send signal done` transferring molecules */
