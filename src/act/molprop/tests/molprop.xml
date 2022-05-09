@@ -3,7 +3,7 @@
 <molecules>
   <molecule molname="1-butanol">
     <fragments>
-      <fragment identifier="1" formula="C4H10O" mass="74.1216" charge="0" multiplicity="1">1 2 3 4 5 6 7 8 9 10 11 12 13 14 15</fragment>
+      <fragment identifier="1" formula="C4H10O" symmetry_number="1" mass="74.1216" charge="0" multiplicity="1">1 2 3 4 5 6 7 8 9 10 11 12 13 14 15</fragment>
     </fragments>
     <molinfo iupac="1-butanol" cas="" cid="" inchi=""/>
     <bond ai="1" aj="3" bondorder="1"/>
@@ -28085,7 +28085,7 @@
   </molecule>
   <molecule molname="acetone">
     <fragments>
-      <fragment identifier="1" formula="C3H6O" mass="58.0791" charge="0" multiplicity="1" >1 2 3 4 5 6 7 8 9 10</fragment>
+      <fragment identifier="1" formula="C3H6O" symmetry_number="1" mass="58.0791" charge="0" multiplicity="1" >1 2 3 4 5 6 7 8 9 10</fragment>
     </fragments>
     <molinfo iupac="acetone" cas="" cid="" inchi=""/>
     <bond ai="1" aj="2" bondorder="2"/>
@@ -50484,7 +50484,7 @@
   </molecule>
   <molecule molname="water">
     <fragments>
-      <fragment identifier="1" formula="H2O" mass="18.0153" charge="0" multiplicity="1" >1 2 3</fragment>
+      <fragment identifier="1" formula="H2O" symmetry_number="2" mass="18.0153" charge="0" multiplicity="1" >1 2 3</fragment>
     </fragments>
     <molinfo iupac="water" cas="" cid="" inchi=""/>
     <bond ai="1" aj="2" bondorder="1"/>

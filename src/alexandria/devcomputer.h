@@ -206,6 +206,10 @@ public:
  */
 class PolarDevComputer : public DevComputer
 {
+private:
+    //! Conversion from internal to external units
+    //! to make the deviation more comprehensible.
+    double convert_ = 1;
 public:
 
     /*! \brief Create a new PolarDevComputer
@@ -213,10 +217,7 @@ public:
      * @param verbose           whether we are in verbose mode
      */
     PolarDevComputer(    FILE  *logfile,
-                     const bool verbose)
-    : DevComputer(logfile, verbose)
-    {
-    }
+                    const bool verbose);
 
     virtual void calcDeviation(      MyMol                         *mymol,
                                      std::map<eRMS, FittingTarget> *targets,
