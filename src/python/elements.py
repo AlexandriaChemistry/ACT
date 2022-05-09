@@ -2,7 +2,7 @@
 # This file is part of the Alexandria Chemistry Toolkit
 # https://github.com/dspoel/ACT
 #
-import os
+import os, sys
 from actutils     import *
 from get_csv_rows import *
 
@@ -12,7 +12,10 @@ def readElementsData():
     edata = act_library_filename("elements.csv")
     for words in get_csv_rows(edata, 2):
         if len(words) >= 2:
-            atomicnumber = int(words[1])
+            try:
+                atomicnumber = int(words[1])
+            except ValueError:
+                sys.exit("Incorrect words '%s|%s' in %s" % ( words[0], words[1], edata ))
             nameToNumber[words[0]] = atomicnumber
             # There are the short and the long name in the file, only store the short one
             if not atomicnumber in numberToName:

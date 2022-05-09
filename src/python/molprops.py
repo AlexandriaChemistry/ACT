@@ -260,7 +260,7 @@ class Experiment:
         self.polarisability.append({"type":type, "unit": unit, "temperature": str(temperature), "average": str(average), "error":str(error), "xx":xx, "yy":yy, "zz":zz, "xy":xy, "xz":xz, "yz":yz})
 
     def add_atom(self, name, obtype, atomid, coord_unit, x, y, z,
-                 force_unit, fx, fy, fz, qmap=None, useForces=True):
+                 force_unit, fx, fy, fz, qmap=None):
         newatom = { "name": name, "obtype": obtype, "atomid": str(atomid),
                     "coord_unit": coord_unit, 
                     "x": str(x), "y": str(y), "z": str(z),
