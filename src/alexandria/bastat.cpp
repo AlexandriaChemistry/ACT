@@ -85,8 +85,8 @@ static void generate_bcc(Poldata *pd,
     auto bcc   = pd->findForces(itype);
     bcc->clearParameters();
 
-    auto delta_etaParam = ForceFieldParameter("eV/e", delta_eta, 0, 0, -4, 12, Mutability::Bounded, true, false);
-    auto enpBounded     = ForceFieldParameter("eV", 0, 0, 0, -5, 5, Mutability::Bounded, true, false);
+    auto delta_etaParam = ForceFieldParameter("eV/e", delta_eta, 0, 0, -4, 16, Mutability::Bounded, true, false);
+    auto enpBounded     = ForceFieldParameter("eV", 0, 0, 0, -8, 8, Mutability::Bounded, true, false);
     auto enpFixed       = ForceFieldParameter("eV", 0, 0, 0, 0, 0, Mutability::Fixed, true, true);
     auto ptypes = pd->particleTypesConst();
     for (auto &ai : ptypes)
