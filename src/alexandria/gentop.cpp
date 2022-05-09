@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020
+ * Copyright (C) 2014-2022
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -145,7 +145,7 @@ int gentop(int argc, char *argv[])
     static char                     *symm_string    = (char *)"";
     static char                     *qqm            = (char *)"";
     static char                     *conf           = (char *)"minimum";
-    static char                     *jobtype        = (char *)"unknown";
+    static char                     *jobtype        = (char *)"Opt";
     static char                     *filename       = (char *)"";
     static gmx_bool                  bQsym          = false;
     static gmx_bool                  bITP           = false;
