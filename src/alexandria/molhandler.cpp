@@ -285,7 +285,7 @@ immStatus MolHandler::minimizeCoordinates(MyMol  *mol,
     crtmp->nodeid = 0;
 
     // TODO: check if this is really necessary
-    mol->restoreCoordinates();
+    mol->restoreCoordinates(coordSet::Minimized);
     immStatus imm          = immStatus::OK;
     auto      mdatoms      = mol->MDatoms_->get()->mdatoms();
     // Below is a Newton-Rhapson algorithm
@@ -389,6 +389,7 @@ immStatus MolHandler::minimizeCoordinates(MyMol  *mol,
     double shellForceRMS = 0;
     (void) mol->calculateEnergy(crtmp, &shellForceRMS);
     // Compute RMSD
+    mol->backupCoordinates(coordSet::Minimized);
     std::vector<gmx::RVec> xmin(mol->mtop_->natoms);
     for (auto &kk : theAtoms)
     {

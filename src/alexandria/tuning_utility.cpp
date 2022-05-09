@@ -718,32 +718,43 @@ void TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
         auto ref_freq = mol->referenceFrequencies();
         if (!ref_freq.empty())
         {
+            tcout->push_back(gmx::formatString("Frequencies (%s)", mpo_unit2(MolPropObservable::FREQUENCY)));
+            tcout->push_back(gmx::formatString("%10s  %10s", "Reference", "Alexandria"));
             for(size_t k = 0; k < frequencies.size(); k++)
             {
-                lsq_freq->add_point(convertFromGromacs(ref_freq[k], unit),
-                                    convertFromGromacs(frequencies[k], unit), 0, 0);
+                double fref  = convertFromGromacs(ref_freq[k], unit);
+                double fcalc = convertFromGromacs(frequencies[k], unit);
+                lsq_freq->add_point(fref, fcalc, 0, 0);
+                tcout->push_back(gmx::formatString("%10g  %10g", fref, fcalc));
             }
         }
         real scale_factor = 1;
-        tcout->push_back(gmx::formatString("Thermochemistry data:"));
-        for (const double &temp : { 0.0, 298.15 })
+        ThermoChemistry tc0(mol, frequencies, 0.0, 1, scale_factor);
+        ThermoChemistry tcRT(mol, frequencies, 298.15, 1, scale_factor);
+        tcout->push_back(gmx::formatString("%-30s  %10s  %10s", "Thermochemistry prediction", "0 K", "298.15 K"));
+        
+        tcout->push_back(gmx::formatString("%-30s  %10g  %10g (kJ/mol)", "Zero point energy", tc0.ZPE(), tcRT.ZPE()));
+        tcout->push_back(gmx::formatString("%-30s  %10g  %10g (kJ/mol)", "Delta H formation", tc0.DHform(), tcRT.DHform()));
+        for(const auto &tcc : tccmap())
         {
-            ThermoChemistry tc(mol, frequencies, temp, 1, scale_factor);
-            tcout->push_back(gmx::formatString("Temperature = %g K", temp));
-            tcout->push_back(gmx::formatString("%-30s %10g (kJ/mol)", "Zero point energy", tc.ZPE()));
-            tcout->push_back(gmx::formatString("%-30s %10g (kJ/mol)", "Delta H formation", tc.DHform()));
-            for(const auto &tcc : tccmap())
-            {
-                tcout->push_back(gmx::formatString("%-30s %10g (J/mol K)",
-                                                   gmx::formatString("Standard entropy - %s",
-                                                                     tcc.second.c_str()).c_str(), tc.S0(tcc.first)));
-                tcout->push_back(gmx::formatString("%-30s %10g (J/mol K)",
-                                                   gmx::formatString("Heat capacity cV - %s",
-                                                                     tcc.second.c_str()).c_str(), tc.cv(tcc.first)));
-                tcout->push_back(gmx::formatString("%-30s %10g (kJ/mol)",
-                                                   gmx::formatString("Internal energy - %s",
-                                                                     tcc.second.c_str()).c_str(), tc.Einternal(tcc.first)));
-            }
+            tcout->push_back(gmx::formatString("%-30s  %10g  %10g (J/mol K)",
+                                               gmx::formatString("Standard entropy - %s",
+                                                                 tcc.second.c_str()).c_str(), 
+                                               tc0.S0(tcc.first), tcRT.S0(tcc.first)));
+        }
+        for(const auto &tcc : tccmap())
+        {
+            tcout->push_back(gmx::formatString("%-30s  %10g  %10g (J/mol K)",
+                                               gmx::formatString("Heat capacity cV - %s",
+                                                                 tcc.second.c_str()).c_str(),
+                                               tc0.cv(tcc.first), tcRT.cv(tcc.first)));
+        }
+        for(const auto &tcc : tccmap())
+        {
+            tcout->push_back(gmx::formatString("%-30s  %10g  %10g (kJ/mol)",
+                                               gmx::formatString("Internal energy - %s",
+                                                                 tcc.second.c_str()).c_str(),
+                                               tc0.Einternal(tcc.first), tcRT.Einternal(tcc.first)));
         }
     }
     else
@@ -862,11 +873,12 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
         if (mol->support() != eSupport::No)
         {
             auto ims = mol->datasetType();
-            fprintf(fp, "\nMolecule %d: Name: %s, Qtot: %d, Multiplicity: %d, MolWt: %g Dataset: %s\n", n+1,
+            fprintf(fp, "\nMolecule %d: Name: %s, Qtot: %d, Multiplicity: %d, MolWt: %g SymmetryNumber: %d Dataset: %s\n", n+1,
                     mol->getMolname().c_str(),
                     mol->totalCharge(),
                     mol->totalMultiplicity(),
                     mol->totalMass(),
+                    mol->symmetryNumber(),
                     iMolSelectName(ims));
 
             // Recalculate the atomic charges using the optimized parameters.

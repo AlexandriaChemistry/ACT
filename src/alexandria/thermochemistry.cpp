@@ -115,19 +115,20 @@ double ThermoChemistry::translationalEntropy(double mass,
                                              double temperature,
                                              double pressure)
 {
-    if (temperature <= 0)
+    double ST = 2.5;
+    if (temperature > 0)
     {
-        return 0.0;
+        double kT = BOLTZ * temperature;
+        
+        GMX_RELEASE_ASSERT(mass > 0, "Molecular mass should be larger than zero");
+        GMX_RELEASE_ASSERT(pressure > 0, "Pressure should be larger than zero");
+        // Convert bar to Pascal
+        double P   = pressure * 1e5;
+        double qT  = (std::pow(2 * M_PI * mass * kT / gmx::square(PLANCK), 1.5) * (kT / P)
+                      * (1e30 / AVOGADRO));
+        ST        += std::log(qT);
     }
-    double kT = BOLTZ * temperature;
-    
-    GMX_RELEASE_ASSERT(mass > 0, "Molecular mass should be larger than zero");
-    GMX_RELEASE_ASSERT(pressure > 0, "Pressure should be larger than zero");
-    // Convert bar to Pascal
-    double P  = pressure * 1e5;
-    double qT = (std::pow(2 * M_PI * mass * kT / gmx::square(PLANCK), 1.5) * (kT / P)
-                 * (1e30 / AVOGADRO));
-    return universalGasConstant * (std::log(qT) + 2.5);
+    return universalGasConstant * ST;
 }
 
 double ThermoChemistry::rotationalEntropy(double      temperature,
@@ -136,30 +137,29 @@ double ThermoChemistry::rotationalEntropy(double      temperature,
                                           const rvec &theta,
                                           double      sigma_r)
 {
-    if (temperature <= 0)
+    double SR = 1.5;
+    if (temperature > 0)
     {
-        return 0.0;
-    }
-    GMX_RELEASE_ASSERT(sigma_r > 0, "Symmetry factor should be larger than zero");
-
-    double sR = 0;
-    if (natom > 1)
-    {
-        if (linear)
+        GMX_RELEASE_ASSERT(sigma_r > 0, "Symmetry factor should be larger than zero");
+        
+        if (natom > 1)
         {
-            GMX_RELEASE_ASSERT(theta[0] > 0, "Theta should be larger than zero");
-            double qR = temperature / (sigma_r * theta[0]);
-            sR        = universalGasConstant * (std::log(qR) + 1);
-        }
-        else
-        {
-            double Q = theta[XX] * theta[YY] * theta[ZZ];
-            GMX_RELEASE_ASSERT(Q > 0, "Q should be larger than zero");
-            double qR = std::sqrt(M_PI * std::pow(temperature, 3) / Q) / sigma_r;
-            sR        = universalGasConstant * (std::log(qR) + 1.5);
+            if (linear)
+            {
+                GMX_RELEASE_ASSERT(theta[0] > 0, "Theta should be larger than zero");
+                double qR  = temperature / (sigma_r * theta[0]);
+                SR        += (std::log(qR) + 1);
+            }
+            else
+            {
+                double Q = theta[XX] * theta[YY] * theta[ZZ];
+                GMX_RELEASE_ASSERT(Q > 0, "Q should be larger than zero");
+                double qR  = std::sqrt(M_PI * std::pow(temperature, 3) / Q) / sigma_r;
+                SR        += (std::log(qR) + 1.5);
+            }
         }
     }
-    return sR;
+    return universalGasConstant * SR;
 }
 
 static void calcTheta(const MyMol *mymol,

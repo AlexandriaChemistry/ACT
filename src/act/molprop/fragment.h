@@ -89,11 +89,11 @@ class Fragment
              const std::vector<int> &atoms) : 
         id_(id), mass_(mass), charge_(charge),
         multiplicity_(multiplicity),
-        symmetryNumber_(symmetryNumber),
         formula_(formula), atoms_(atoms)
     {
         makeAtomString();
         makeTexFormula();
+        symmetryNumber_ = std::max(1, symmetryNumber);
     }
        
     //! Return the id

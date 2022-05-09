@@ -87,12 +87,13 @@ def get_mols(M, whitelist, ahlist, output):
   print("There are %d molecules in %s to generate %s" % ( len(mols), whitelist, output ) )
   return mols
 
-def build_one(logfile, datafile, maxpot, molname, basisset, jobtype):
+def build_one(logfile:str, datafile:str, maxpot: int, molname:str, basisset:str, jobtype:str, symmetry_number:int) -> str:
   if not os.path.exists(datafile):
     mp = read_gaussian_log(logfile, molname, basisset, False)
     if mp:
       molprops = Molprops()
       mp.experiments[0].add_prop("jobtype", jobtype)
+      mp.fragments[0].symmetry_number = str(symmetry_number)
       molprops.add_molecule(mp)
       molprops.write(datafile)
   if os.path.exists(datafile):
@@ -109,15 +110,19 @@ def get_method_basis_jobtype(meth:str):
     mm = meth.upper()
     return mm, mm, mm
   
-def parallel_build(mols, methods:str, xmldir:str, maxpot:int, sdf_ok):
+def parallel_build(M, mols, methods:str, xmldir:str, maxpot:int, sdf_ok):
   pool      = Pool()
   results   = []
   for molname in mols:
     for meth in methods.split(";"):
       datafile, logfile = name_of_data_log_file(meth, molname, xmldir, sdf_ok)
       mm, basis, jobtype = get_method_basis_jobtype(meth)
+      symm = 1
+      mmm  = M.find_mol(molname)
+      if mmm:
+        symm = mmm.symmetry_number
       if logfile and os.path.exists(logfile):
-        results.append(pool.apply_async(build_one, [logfile, datafile, maxpot, molname, basis, jobtype]))
+        results.append(pool.apply_async(build_one, [logfile, datafile, maxpot, molname, basis, jobtype, symm]))
   for r in results:
     ddd = r.get(timeout=1000)
 
@@ -167,6 +172,6 @@ if __name__ == "__main__":
     os.makedirs(args.xmldir, exist_ok=True)
   maxpot = min(100, max(20, args.maxpot))
   if not args.skip_build:
-    parallel_build(mols, args.methods, args.xmldir, maxpot, False)
+    parallel_build(M, mols, args.methods, args.xmldir, maxpot, False)
   run_merge(mols, args.methods, merge_mp, args.xmldir,
             gentop, args.database, maxpot, args.output)

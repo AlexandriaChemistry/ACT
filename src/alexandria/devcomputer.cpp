@@ -247,6 +247,13 @@ void EspDevComputer::dumpQX(FILE *fp, MyMol *mol, const std::string &info)
 * BEGIN: PolarDevComputer                  *
 * * * * * * * * * * * * * * * * * * * * * */
 
+PolarDevComputer::PolarDevComputer(    FILE  *logfile,
+                                   const bool verbose)
+    : DevComputer(logfile, verbose)
+{
+    convert_ = convertFromGromacs(1.0, mpo_unit2(MolPropObservable::POLARIZABILITY));
+}
+
 void PolarDevComputer::calcDeviation(MyMol                                *mymol,
                                      std::map<eRMS, FittingTarget>        *targets,
                                      gmx_unused Poldata                   *poldata,
@@ -261,7 +268,7 @@ void PolarDevComputer::calcDeviation(MyMol                                *mymol
     {
         for(int j = 0; j < DIM; j++)
         {
-            diff2 += gmx::square(aelec[i][j]-acalc[i][j]);
+            diff2 += gmx::square(convert_*(aelec[i][j]-acalc[i][j]));
         }
     }
     
@@ -350,6 +357,8 @@ void HarmonicsDevComputer::calcDeviation(MyMol                                *m
     {
         return;
     }
+    double rmsd;
+    handler_.minimizeCoordinates(mymol, &rmsd);
     // Compute frequencies
     std::vector<double> frequencies, intensities;
     handler_.nma(mymol, &frequencies, &intensities);

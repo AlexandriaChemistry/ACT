@@ -48,17 +48,17 @@
     <Int Name="Length">0</Int>
   </Sequence>
   <Real Name="Zero point energy (kJ/mol)">1922.1057416934759</Real>
-  <Real Name="Delta H form (kJ/mol)">4027.0526973201513</Real>
+  <Real Name="Delta H form (kJ/mol)">5949.1584390136268</Real>
   <Real Name="Standard entropy - Translation  (J/mol K)">159.51290525733373</Real>
   <Real Name="Heat capacity cV - Translation (J/mol K)">12.471693218203427</Real>
   <Real Name="Internal energy  - Translation (kJ/mol)">3.7184353330073514</Real>
-  <Real Name="Standard entropy -    Rotation  (J/mol K)">100.88430037023774</Real>
+  <Real Name="Standard entropy -    Rotation  (J/mol K)">113.35599358844117</Real>
   <Real Name="Heat capacity cV -    Rotation (J/mol K)">12.471693218203427</Real>
   <Real Name="Internal energy  -    Rotation (kJ/mol)">3.7184353330073514</Real>
   <Real Name="Standard entropy -   Vibration  (J/mol K)">0.097109181804427389</Real>
   <Real Name="Heat capacity cV -   Vibration (J/mol K)">0.037581507372621809</Real>
   <Real Name="Internal energy  -   Vibration (kJ/mol)">313.66146027507182</Real>
-  <Real Name="Standard entropy -       Total  (J/mol K)">260.49431480937591</Real>
+  <Real Name="Standard entropy -       Total  (J/mol K)">272.96600802757933</Real>
   <Real Name="Heat capacity cV -       Total (J/mol K)">24.980967943779476</Real>
   <Real Name="Internal energy  -       Total (kJ/mol)">321.09833094108654</Real>
 </ReferenceData>

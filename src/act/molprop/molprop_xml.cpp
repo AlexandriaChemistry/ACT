@@ -132,6 +132,7 @@ enum class MolPropXml {
     PROGRAM,
     BASISSET,
     JOBTYPE,
+    SYMMETRY_NUMBER,
     CONFORMATION,
     DATAFILE,
     UNIT,
@@ -212,6 +213,7 @@ std::map<const std::string, MolPropXml> xmlxxx =
     { "program",          MolPropXml::PROGRAM        },
     { "basisset",         MolPropXml::BASISSET       },
     { "jobtype",          MolPropXml::JOBTYPE        },
+    { "symmetry_number",  MolPropXml::SYMMETRY_NUMBER},
     { "conformation",     MolPropXml::CONFORMATION   },
     { "datafile",         MolPropXml::DATAFILE       },
     { "unit",             MolPropXml::UNIT           },
@@ -300,24 +302,34 @@ static bool xmlFound(const std::map<MolPropXml, std::string> *xbuf,
     return found;
 }
 
-static double xbuf_atof(const std::map<MolPropXml, std::string> *xbuf, MolPropXml index)
+static double xbuf_atof(const std::map<MolPropXml, std::string> *xbuf, MolPropXml index, bool crash)
 {
     auto ptr = xbuf->find(index);
     if (ptr != xbuf->end())
     {
         return my_atof(ptr->second.c_str(), rmap[index].c_str());
     }
-    return my_atof("", rmap[index].c_str());
+    if (crash)
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("Input for %s is missing", 
+                                                           rmap[index].c_str()).c_str()));
+    }
+    return 0.0;
 }
 
-static int xbuf_atoi(const std::map<MolPropXml, std::string> *xbuf, MolPropXml index)
+static int xbuf_atoi(const std::map<MolPropXml, std::string> *xbuf, MolPropXml index, bool crash)
 {
     auto ptr = xbuf->find(index);
     if (ptr != xbuf->end())
     {
         return my_atoi(ptr->second.c_str(), rmap[index].c_str());
     }
-    return my_atoi("", rmap[index].c_str());
+    if (crash)
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("Input for %s is missing", 
+                                                           rmap[index].c_str()).c_str()));
+    }
+    return 0;
 }
 
 static void get_attributes(FILE                              *fp, 
@@ -418,7 +430,7 @@ static void get_harmonics(std::map<MolPropXml, std::string> *xbuf,
             auto gps  = last->property(xoMap.find(ff)->second);
             
             auto harm = static_cast<Harmonics *>((*gps)[0]);
-            harm->addValue(xbuf_atof(xbuf, ff));
+            harm->addValue(xbuf_atof(xbuf, ff, true));
         }
     }
     clean_xbuf(xbuf, clean1);
@@ -434,15 +446,15 @@ static void get_polarizability(std::map<MolPropXml, std::string> *xbuf,
     }
     auto mdp = new MolecularPolarizability(mytype,
                                            (*xbuf)[MolPropXml::UNIT],
-                                           xbuf_atof(xbuf, MolPropXml::TEMPERATURE),
-                                           xbuf_atof(xbuf, MolPropXml::qXX),
-                                           xbuf_atof(xbuf, MolPropXml::qYY),
-                                           xbuf_atof(xbuf, MolPropXml::qZZ),
-                                           xbuf_atof(xbuf, MolPropXml::qXY),
-                                           xbuf_atof(xbuf, MolPropXml::qXZ),
-                                           xbuf_atof(xbuf, MolPropXml::qYZ),
-                                           xbuf_atof(xbuf, MolPropXml::AVERAGE),
-                                           xbuf_atof(xbuf, MolPropXml::ERROR));
+                                           xbuf_atof(xbuf, MolPropXml::TEMPERATURE, true),
+                                           xbuf_atof(xbuf, MolPropXml::qXX, false),
+                                           xbuf_atof(xbuf, MolPropXml::qYY, false),
+                                           xbuf_atof(xbuf, MolPropXml::qZZ, false),
+                                           xbuf_atof(xbuf, MolPropXml::qXY, false),
+                                           xbuf_atof(xbuf, MolPropXml::qXZ, false),
+                                           xbuf_atof(xbuf, MolPropXml::qYZ, false),
+                                           xbuf_atof(xbuf, MolPropXml::AVERAGE, false),
+                                           xbuf_atof(xbuf, MolPropXml::ERROR, false));
     last->addProperty(MolPropObservable::POLARIZABILITY, mdp);
     clean_xbuf(xbuf,
                { MolPropXml::TEMPERATURE, MolPropXml::qXX, MolPropXml::qYY, MolPropXml::qZZ,
@@ -530,10 +542,10 @@ static void mp_process_tree(FILE                              *fp,
                                 atoms.push_back(my_atoi(ss.c_str(), rmap[MolPropXml::FRAGMENT].c_str())-1);
                             }
                             mpt->addFragment(Fragment(xbuf->find(MolPropXml::IDENTIFIER)->second,
-                                                      xbuf_atof(xbuf, MolPropXml::MASS),
-                                                      xbuf_atoi(xbuf, MolPropXml::CHARGE),
-                                                      xbuf_atoi(xbuf, MolPropXml::MULTIPLICITY),
-                                                      1, // TODO put the real number here
+                                                      xbuf_atof(xbuf, MolPropXml::MASS, true),
+                                                      xbuf_atoi(xbuf, MolPropXml::CHARGE, true),
+                                                      xbuf_atoi(xbuf, MolPropXml::MULTIPLICITY, true),
+                                                      xbuf_atoi(xbuf, MolPropXml::SYMMETRY_NUMBER, true),
                                                       xbuf->find(MolPropXml::FORMULA)->second,
                                                       atoms));
                             clean_xbuf(xbuf, clean1);
@@ -620,10 +632,10 @@ static void mp_process_tree(FILE                              *fp,
                                 ElectrostaticPotential ep((*xbuf)[MolPropXml::X_UNIT],
                                                           (*xbuf)[MolPropXml::V_UNIT],
                                                           atoi((*xbuf)[MolPropXml::ESPID].c_str()),
-                                                          xbuf_atof(xbuf, MolPropXml::dX),
-                                                          xbuf_atof(xbuf, MolPropXml::dY),
-                                                          xbuf_atof(xbuf, MolPropXml::dZ),
-                                                          xbuf_atof(xbuf, MolPropXml::dV));
+                                                          xbuf_atof(xbuf, MolPropXml::dX, true),
+                                                          xbuf_atof(xbuf, MolPropXml::dY, true),
+                                                          xbuf_atof(xbuf, MolPropXml::dZ, true),
+                                                          xbuf_atof(xbuf, MolPropXml::dV, true));
                                 last->AddPotential(ep);
                                 clean_xbuf(xbuf, clean2);
                             }
@@ -645,7 +657,7 @@ static void mp_process_tree(FILE                              *fp,
                         MolPropObservable mpo = xoMap.find(elem)->second;
                         auto mq = new MolecularMultipole((*xbuf)[MolPropXml::TYPE],
                                                          (*xbuf)[MolPropXml::UNIT],
-                                                         xbuf_atof(xbuf, MolPropXml::TEMPERATURE),
+                                                         xbuf_atof(xbuf, MolPropXml::TEMPERATURE, true),
                                                          mpo);
                         std::vector<MolPropXml> myclean;
                         for(auto &x : *xbuf)
@@ -653,7 +665,7 @@ static void mp_process_tree(FILE                              *fp,
                         
                             if (mq->hasId(rmap[x.first]))
                             {
-                                mq->setValue(rmap[x.first], xbuf_atof(xbuf, x.first));
+                                mq->setValue(rmap[x.first], xbuf_atof(xbuf, x.first, true));
                                 myclean.push_back(x.first);
                             }
                         }
@@ -668,9 +680,9 @@ static void mp_process_tree(FILE                              *fp,
                         NN(xbuf, MolPropXml::AJ) &&
                         NN(xbuf, MolPropXml::BONDORDER))
                     {
-                        Bond b(xbuf_atoi(xbuf, MolPropXml::AI)-1, 
-                               xbuf_atoi(xbuf, MolPropXml::AJ)-1,
-                               xbuf_atof(xbuf, MolPropXml::BONDORDER));
+                        Bond b(xbuf_atoi(xbuf, MolPropXml::AI, true)-1, 
+                               xbuf_atoi(xbuf, MolPropXml::AJ, true)-1,
+                               xbuf_atof(xbuf, MolPropXml::BONDORDER, true));
                         mpt->AddBond(b);
                         clean_xbuf(xbuf, { MolPropXml::AI, MolPropXml::AJ, MolPropXml::BONDORDER });
                     }
@@ -698,10 +710,10 @@ static void mp_process_tree(FILE                              *fp,
                                     mytype = exp_type;
                                 }
                                 auto me  = new MolecularEnergy(mpo, mytype, (*xbuf)[MolPropXml::UNIT],
-                                                               xbuf_atof(xbuf, MolPropXml::TEMPERATURE),
+                                                               xbuf_atof(xbuf, MolPropXml::TEMPERATURE, true),
                                                                string2phase((*xbuf)[MolPropXml::PHASE]),
-                                                               xbuf_atof(xbuf, MolPropXml::AVERAGE),
-                                                               xbuf_atof(xbuf, MolPropXml::ERROR));
+                                                               xbuf_atof(xbuf, MolPropXml::AVERAGE, true),
+                                                               xbuf_atof(xbuf, MolPropXml::ERROR, false));
                                 last->addProperty(mpo, me);
                             }
                             else
@@ -724,7 +736,7 @@ static void mp_process_tree(FILE                              *fp,
                         {
                             CalcAtom ca((*xbuf)[MolPropXml::NAME],
                                         (*xbuf)[MolPropXml::OBTYPE],
-                                        xbuf_atoi(xbuf, MolPropXml::ATOMID));
+                                        xbuf_atoi(xbuf, MolPropXml::ATOMID, true));
                             clean_xbuf(xbuf, clean0);
                             mp_process_tree(fp, tree->children, molprops, xbuf);
                         
@@ -735,9 +747,9 @@ static void mp_process_tree(FILE                              *fp,
                             if (xmlFound(xbuf, clean1))
                             {
                                 ca.setCoordUnit((*xbuf)[MolPropXml::X_UNIT]);
-                                ca.setCoords(xbuf_atof(xbuf, MolPropXml::dX),
-                                             xbuf_atof(xbuf, MolPropXml::dY),
-                                             xbuf_atof(xbuf, MolPropXml::dZ));
+                                ca.setCoords(xbuf_atof(xbuf, MolPropXml::dX, true),
+                                             xbuf_atof(xbuf, MolPropXml::dY, true),
+                                             xbuf_atof(xbuf, MolPropXml::dZ, true));
                                 clean_xbuf(xbuf, clean1);
                             }
                             std::vector<MolPropXml> clean3 = {
@@ -747,9 +759,9 @@ static void mp_process_tree(FILE                              *fp,
                             if (xmlFound(xbuf, clean3))
                             {
                                 ca.setForceUnit((*xbuf)[MolPropXml::F_UNIT]);
-                                ca.setForces(xbuf_atof(xbuf, MolPropXml::fX),
-                                             xbuf_atof(xbuf, MolPropXml::fY),
-                                             xbuf_atof(xbuf, MolPropXml::fZ));
+                                ca.setForces(xbuf_atof(xbuf, MolPropXml::fX, true),
+                                             xbuf_atof(xbuf, MolPropXml::fY, true),
+                                             xbuf_atof(xbuf, MolPropXml::fZ, true));
                                 clean_xbuf(xbuf, clean3);
                             }
                             std::vector<MolPropXml> clean2 = {
@@ -758,7 +770,7 @@ static void mp_process_tree(FILE                              *fp,
                             if (xmlFound(xbuf, clean2))
                             {
                                 ca.AddCharge(stringToQtype((*xbuf)[MolPropXml::TYPE]),
-                                             xbuf_atof(xbuf, MolPropXml::aQ));
+                                             xbuf_atof(xbuf, MolPropXml::aQ, true));
                                 clean_xbuf(xbuf, clean2);
                             }
                             /* Now finally add the atom */
@@ -1004,6 +1016,7 @@ static void add_xml_molprop(xmlNodePtr     parent,
         add_xml_double(grandChild, rmap[MolPropXml::MASS], f.mass());
         add_xml_double(grandChild, rmap[MolPropXml::CHARGE], f.charge());
         add_xml_double(grandChild, rmap[MolPropXml::MULTIPLICITY], f.multiplicity());
+        add_xml_int(grandChild, rmap[MolPropXml::SYMMETRY_NUMBER], f.symmetryNumber());
         add_xml_string(grandChild, rmap[MolPropXml::FORMULA], f.formula());
     }
     child = add_xml_child(ptr, rmap[MolPropXml::MOLINFO]);
