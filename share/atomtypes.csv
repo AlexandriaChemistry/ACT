@@ -1,6 +1,6 @@
 atomtype|element|q_min|q_max|charge_mutability|bondtype|poltype|zetatype|acmtype|epsilon_min|epsilon_max|epsilon_mutability|gamma_min|gamma_max|gamma_mutability|sigma_min|sigma_max|sigma_mutability|radius|row|alpha_min|alpha_max|alpha_mutability|zeta_min|zeta_max|zeta_mutability|eta_min|eta_max|eta_mutability|chi_min|chi_max|chi_mutability|comment|ref_enthalpy|reference
 #|||||||||kJ/mol||||||nm|||nm||A3|A3||1/nm|1/nm||eV|||eV|||||
-h|H|0|0.5|ACM|h_b|h_s|h_z|h_z|0.03|0.1|Bounded|10|20|Bounded|0.15|0.4|Bounded|0.031|1||||6|20|Bounded|6|24|Bounded|2|5|Bounded|hydrogen|222.232|
+h|H|0|0|ACM|h_b|h_s|h_z|h_z|0.03|0.1|Bounded|10|20|Bounded|0.15|0.4|Bounded|0.031|1||||6|20|Bounded|6|24|Bounded|2|5|Bounded|hydrogen|222.232|
 h_s|X|-1.2|-0.4|Bounded|||h_s_z||0|0|Fixed|0|0|Fixed|0|0|Fixed|0|0|0.1|0.7|Bounded|6|20|Bounded|||||||hydrogen shell|0|
 c1|C|0|0|ACM|c1_b|c1_s|c1_z|c1_z|0.5|1|Bounded|10|20|Bounded|0.25|0.5|Bounded|0.069|2||||6|20|Bounded|6|24|Bounded|3|9|Bounded|sp carbon|717.721|
 c1_s|X|-2|-0.4|Bounded|||c1_s_z||0|0|Fixed|0|0|Fixed|0|0|Fixed|0|0|0.6|1.8|Bounded|4|12|Bounded|||||||sp carbon shell|0|
@@ -70,3 +70,11 @@ Cs+|Cs|8.542|8.542|Fixed||Cs+_s|Cs+_z||0.342742|0.342742|Fixed|18.6293|18.6293|F
 Cs+_s|X|-7.542|-7.542|Fixed|||Cs+_s_z||0|0|Fixed|0|0|Fixed|0|0|Fixed|0|0|2.02|2.02|Fixed|11.88|11.88|Fixed|||||||cesium ion shell|0|
 K+|K|5.464|5.464|Fixed||K+_s|K+_z||0.310514|0.310514|Fixed|16.8963|16.8963|Fixed|0.417016|0.417016|Fixed|0.152|4||||12.412|12.412|Fixed|||||||potassium ion|0|Walz2018a
 K+_s|X|-4.464|-4.464|Fixed|||K+_s_z||0|0|Fixed|0|0|Fixed|0|0|Fixed|0|0|0.81|0.81|Fixed|12.412|12.412|Fixed|||||||potassium ion shell|0|
+He|He|0|0|ACM||he_s|he_z|he_z|0.03|1|Bounded|10|20|Bounded|0.15|0.4|Bounded|0.031|1||||6|20|Bounded|6|24|Bounded|2|5|Bounded|he|0|
+he_s|X|-1.2|-0.4|Bounded|||he_s_z||0|0|Fixed|0|0|Fixed|0|0|Fixed|0|0|0.1|2|Bounded|6|20|Bounded|||||||he shell|0|
+Ne|Ne|0|0|ACM||ne_s|ne_z|ne_z|0.03|1|Bounded|10|20|Bounded|0.15|0.4|Bounded|0.031|1||||6|20|Bounded|6|24|Bounded|2|5|Bounded|ne|0|
+ne_s|X|-1.2|-0.4|Bounded|||ne_s_z||0|0|Fixed|0|0|Fixed|0|0|Fixed|0|0|0.1|5|Bounded|6|20|Bounded|||||||he shell|0|
+Ar|Ar|0|0|ACM||ar_s|ar_z|ar_z|0.03|1|Bounded|10|20|Bounded|0.15|0.4|Bounded|0.031|1||||6|20|Bounded|6|24|Bounded|2|5|Bounded|ar|0|
+ar_s|X|-1.2|-0.4|Bounded|||ar_s_z||0|0|Fixed|0|0|Fixed|0|0|Fixed|0|0|0.1|7|Bounded|6|20|Bounded|||||||he shell|0|
+Kr|Kr|0|0|ACM||kr_s|kr_z|kr_z|0.03|1|Bounded|10|20|Bounded|0.15|0.4|Bounded|0.031|1||||6|20|Bounded|6|24|Bounded|2|5|Bounded|kr|0|
+kr_s|X|-1.2|-0.4|Bounded|||kr_s_z||0|0|Fixed|0|0|Fixed|0|0|Fixed|0|0|0.1|10|Bounded|6|20|Bounded|||||||he shell|0|
