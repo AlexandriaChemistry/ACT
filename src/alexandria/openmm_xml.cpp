@@ -224,10 +224,18 @@ static void addSpecParameter(xmlNodePtr parent, const std::string &type,
         {
             add_xml_double(parent, specparam.c_str(), param.value()-0.1); 
         }
-        // Harmonic bond force
+        // Custom bond force (Morse potential)
         else if (strcmp(type.c_str(), "bondlength") == 0)
         {
-            add_xml_double(parent, "length", param.value()/1000); 
+            add_xml_double(parent, "r0", param.value()/1000); 
+        }
+        else if (strcmp(type.c_str(), "De") == 0)
+        {
+            add_xml_double(parent, "D_e", param.value()); 
+        }
+        else if (strcmp(type.c_str(), "beta") == 0)
+        {
+            add_xml_double(parent, "a", param.value()); 
         }
         else if (strcmp(type.c_str(), "kt") == 0)
         {
@@ -431,11 +439,48 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
 
     for (auto &fs : pd->forcesConst())
     {
-        // This part has to be added again in order to add the Morse potential;
-        // It is unclear how to link the bondorder information to the paramter assignment that happens via atomtypes
-        //if (strcmp(interactionTypeToString(fs.first).c_str(), "BONDS") == 0)
-        //{
-        //    auto child3 = add_xml_child(parent, exml_names(xmlEntryOpenMM::CUSTOMBONDFORCE));
+        // This adds the Morse potential;
+        // TODO: link the bondorder information to the paramter assignment that happens via atomtypes
+        if (strcmp(interactionTypeToString(fs.first).c_str(), "BONDS") == 0)
+        {
+            auto child3 = add_xml_child(parent, exml_names(xmlEntryOpenMM::CUSTOMBONDFORCE));
+            // The Morse potential could be written as a string here, or it can be added in the openmm python script
+            add_xml_double(child3, "energy", 0.0); 
+ 
+            // Specify the per bond parameters
+            auto grandchild0 = add_xml_child(child3, exml_names(xmlEntryOpenMM::PERBONDPARAMETER));
+            add_xml_char(grandchild0, exml_names(xmlEntryOpenMM::NAME), "D_e");
+            auto grandchild1 = add_xml_child(child3, exml_names(xmlEntryOpenMM::PERBONDPARAMETER));
+            add_xml_char(grandchild1, exml_names(xmlEntryOpenMM::NAME), "a");
+            auto grandchild2 = add_xml_child(child3, exml_names(xmlEntryOpenMM::PERBONDPARAMETER));
+            add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::NAME), "r0");
+            
+            // Add all bonds
+            for (auto &params : fs.second.parametersConst())
+            {
+                auto grandchild3 = add_xml_child(child3, exml_names(xmlEntryOpenMM::BOND_RES));
+                
+                int i = 0;
+                for (auto &a:params.first.atoms())
+                {
+                    std::string s = a.c_str();
+ 
+                    if (!s.empty()) 
+                    {
+                        s.resize(s.size() - 2);
+                    }
+                    add_xml_char(grandchild3, exml_names(class_vec[i]), s.c_str());
+                    i++;
+                } 
+
+                for (const auto &param : params.second)
+                {
+                    addSpecParameter(grandchild3, param.first, param.second, "De");
+                    addSpecParameter(grandchild3, param.first, param.second, "beta");
+                    addSpecParameter(grandchild3, param.first, param.second, "bondlength");  
+                }
+            }
+        }    
         //    
         //    int i=0;
         //    for (auto &params : fs.second.parametersConst())
@@ -478,35 +523,33 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
 
         //}
 
-        if (strcmp(interactionTypeToString(fs.first).c_str(), "BONDS") == 0)
-        {
-            auto child3 = add_xml_child(parent, exml_names(xmlEntryOpenMM::HARMONICBONDFORCE));  
-            for (auto &params : fs.second.parametersConst())
-            {
-                auto grandchild2 = add_xml_child(child3, exml_names(xmlEntryOpenMM::BOND_RES));
-                
-                int i = 0;
-                for (auto &a:params.first.atoms())
-                {
-                    std::string s = a.c_str();
- 
-                    if (!s.empty()) 
-                    {
-                        s.resize(s.size() - 2);
-                    }
-                    add_xml_char(grandchild2, exml_names(class_vec[i]), s.c_str());
-                    i++;
-                } 
-
-                for (const auto &param : params.second)
-                {
-                    addSpecParameter(grandchild2, param.first, param.second, "bondlength");
-                }
-                add_xml_double(grandchild2, "k", 458148 );
-            }
-
-
-        }
+        // This part is to add a harmonic bond, currently removed as we use Morse potential for bonds
+        //if (strcmp(interactionTypeToString(fs.first).c_str(), "BONDS") == 0)
+        //{
+        //    auto child3 = add_xml_child(parent, exml_names(xmlEntryOpenMM::HARMONICBONDFORCE));  
+        //    for (auto &params : fs.second.parametersConst())
+        //    {
+        //        auto grandchild2 = add_xml_child(child3, exml_names(xmlEntryOpenMM::BOND_RES));
+        //        
+        //        int i = 0;
+        //        for (auto &a:params.first.atoms())
+        //        {
+        //            std::string s = a.c_str();
+        //            if (!s.empty()) 
+        //            {
+        //                s.resize(s.size() - 2);
+        //            }
+        //            add_xml_char(grandchild2, exml_names(class_vec[i]), s.c_str());
+        //            i++;
+        //        } 
+        //        for (const auto &param : params.second)
+        //        {
+        //            addSpecParameter(grandchild2, param.first, param.second, "bondlength");
+        //        }
+        //        // hardcoded force constant, should be changed if we'd like to use harmonic bond
+        //        add_xml_double(grandchild2, "k", 458148 );
+        //   }
+        //}
 
 
         if (strcmp(interactionTypeToString(fs.first).c_str(), "ANGLES") == 0)
@@ -540,35 +583,34 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
             }    
         }
 
-        if (strcmp(interactionTypeToString(fs.first).c_str(), "ANGLES") == 0)
-        {
-            auto child4 = add_xml_child(parent, exml_names(xmlEntryOpenMM::AMOEBA_UB_FORCE));
-
-            for (auto &params : fs.second.parametersConst())
-            {
-
-                auto grandchild2 = add_xml_child(child4, exml_names(xmlEntryOpenMM::UREY_BRADLEY_FORCE));
-                 
-                int i = 0;
-                for (auto &a:params.first.atoms())
-                {
-                    std::string s = a.c_str();
-                    if (!s.empty()) 
-                    {
-                        s.resize(s.size() - 2);
-                    }
-                    add_xml_char(grandchild2, exml_names(class_vec[i]), s.c_str());
-                    i++;
-                } 
-
-                for (const auto &param : params.second)
-                {
-                    addSpecParameter(grandchild2, param.first, param.second, "kub"); 
-                    addSpecParameter(grandchild2, param.first, param.second, "r13"); 
-                    //add_xml_double(grandchild2, param.first.c_str(), param.second.value());
-                }
-            }    
-        }
+        // Currently removed, as we decided to use harmonic angles
+        //if (strcmp(interactionTypeToString(fs.first).c_str(), "ANGLES") == 0)
+        //{
+        //    auto child4 = add_xml_child(parent, exml_names(xmlEntryOpenMM::AMOEBA_UB_FORCE));
+        //
+        //    for (auto &params : fs.second.parametersConst())
+        //    {
+        //        auto grandchild2 = add_xml_child(child4, exml_names(xmlEntryOpenMM::UREY_BRADLEY_FORCE));
+        //         
+        //        int i = 0;
+        //        for (auto &a:params.first.atoms())
+        //        {
+        //            std::string s = a.c_str();
+        //            if (!s.empty()) 
+        //            {
+        //                s.resize(s.size() - 2);
+        //            }
+        //            add_xml_char(grandchild2, exml_names(class_vec[i]), s.c_str());
+        //            i++;
+        //        } 
+        //        for (const auto &param : params.second)
+        //        {
+        //            addSpecParameter(grandchild2, param.first, param.second, "kub"); 
+        //            addSpecParameter(grandchild2, param.first, param.second, "r13"); 
+        //            //add_xml_double(grandchild2, param.first.c_str(), param.second.value());
+        //        }
+        //    }    
+        //}
 
         //if (strcmp(interactionTypeToString(fs.first).c_str(), "LINEAR_ANGLES") == 0) 
         //{
@@ -637,7 +679,8 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
                 {
                     add_xml_double(grandchild2, param.first.c_str(), param.second.value());
                 }
-                // OpenMM expects 6 parameters for RBTorsion force
+                // OpenMM expects 7 parameters for RBTorsion force
+                // TODO: Do we also need more parameters for the RBTorsion force in ACT? Currently c0, c1, c2, c3 in ACT.
                 add_xml_double(grandchild2, "c4", 0);
                 add_xml_double(grandchild2, "c5", 0);
                 add_xml_double(grandchild2, "c6", 0);
