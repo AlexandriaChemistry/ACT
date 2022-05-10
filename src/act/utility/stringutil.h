@@ -91,4 +91,11 @@ double my_atof(const char *str, const char *description);
  */
 int my_atoi(const char *str, const char *description);
 
+/*! \brief Do case-insensitive string compare
+ * \param[in] a First string
+ * \param[in] b Second string
+ * \return true if equal
+ */
+bool stringEqual(const std::string &a, const std::string &b);
+
 #endif

@@ -1,0 +1,183 @@
+acetylenolate|no support in force field
+ethenolate|no support in force field
+fulminic-acid|no support in force field
+dicarbon|no support in force field
+azide|no support in force field
+methyl-oxo-sulfanium|no support in force field
+sulfinylazanide|no support in force field
+phosphanide|no support in force field
+thiocyanate|no support in force field
+sulfinamoylazanide|no support in force field
+ethanolate|no support in force field
+phosphonoazanide|no support in force field
+sulfur-monofluoride|no support for charged S in force field
+methylene|double radical
+disulfur|problematic for some QM methods
+fluoromethylidyne+|no support in force field
+fluoromethylidyne|radical
+sulfanylazaniumylidynemethane|no support in force field
+diazomethane|no support in force field for N with just one single bond
+methylidyne-oxo-lambda-5-phosphane|OB does not get carbon or oxygen type correct
+chlorine-trifluoride|no support in force field
+disilicon|no support in force field
+carbon-monosulfide|no support in force field
+isocyanocyclopropane|no support in force field
+methylidyne-sulfido-azanium|no support in force field
+isocyanomethane|no support in force field
+2-isocyanopropane|no support in force field
+2-isocyano-2-methylpropane|no support in force field
+isocyanomethane|no support in force field
+trifluoroisocyanomethane|no support in force field
+isocyanobenzene|no support in force field
+isocyanomethanide|no support in force field
+methanedithione|openbabel generates incorrect bonds
+bromine-pentafluoride|no support in force field
+iodine-pentafluoride|no support in force field
+perchloryl-fluoride|no support in force field
+1E5Z-cycloocta-15-diene|unknown
+zinc-sulfide|no support in force field
+#carbon-oxide-sulfide
+nitrosyl-chloride|no support in force field
+nitrosyl-fluoride|no support in force field
+trifluoramine-oxide|no support in force field
+ozone|no support in force field
+perchloric-acid|no support in force field
+silicon-monosulfide|no support in force field
+thiothionyl-fluoride|no support in force field
+carbon-monoxide|no support in force field
+OO-dimethyl-phosphorochloridothioate|no support in force field
+phosphorus-V-sulfide-trifluoride|no support in force field
+N--bis-dimethylamino-phosphinothioyl--N-methylmethanamine|no support in force field
+4-methyl-1-thioxo-267-trioxa-1-phosphabicyclo-222-octane|no support in force field
+phosphorus-V-sulfide-trifluoride|no support in force field
+ethyl-nitrite|no support in force field
+methyl-nitrite|no support in force field
+thionitrosyl-fluoride|no support in force field
+thionylimide|no support in force field
+nitrous-acid-trans|no support in force field
+diazinon|no support in force field
+vinyloxy-radical|no support in force field
+hydronium|no support in force field
+ethynyloxidanyl|no support in force field
+methylidyne-sulfido-azanium|no support in force field
+isocyanomethane|no support in force field
+#bromochloromethane
+prop-1-yn-1-ol|no support in force field
+diethyl-chlorophosphanate|no support in force field
+#problem with cl
+#isophthaloyl-chloride
+#112344-hexachlorobuta-13-diene
+#hexachlorobenzene
+#benzoyl-chloride
+#3-chloropentanoic-acid
+#1-chloronaphthalene
+#2452-4-5--hexachloro-biphenyl
+#23462-4-6--heptachloro-biphenyl
+#2462-4--pentachloro-biphenyl
+#9-chloroanthracene
+#endosulfan
+difluoromethene|no support in force field
+#13-diiodobenzene
+#233-trimethylpentane
+#problem is Exact polarizability in the logfile level 3
+#dibenzo-ai-phenazine
+# Incorrect bonds
+#2-iodo-2-methylpropane
+phosphoallene|no support in force field
+perchlorate|no support in force field
+#problem is dipole
+#2-tert-butylsulfanyl-2-methylpropane
+tert-octyl-mercaptan|unknown
+223-trimethylpentane|unknown
+2-heptanol|problem in ESP logfile
+34-xylenol|problem in ESP logfile
+3-pentanol|problem in ESP logfile
+cis-2-buten-1-ol|problem is ESP in logfile
+tetrahydrofurfuryl-alcohol|problem is ESP in logfile
+phenanthrene|problem is ESP in logfile
+triphenylene|problem is ESP in logfile
+ethyl-3-chlorobutanoate|problem is ESP in logfile
+benzo-e-pyrene|problem is ESP in logfile
+nenaphtho-12-b-phenanthrene|problem is ESP in logfile
+methylidyne|no support in force field
+methylidyne+|no support in force field
+fluoromethylene|no support in force field
+hydrogen-isocyanide|no support in force field
+1-propyn-3-ylium-1-ide|no support in force field
+helium-argon|not bound system
+neon-krypton|not bound system
+neon-argon|not bound system
+helium-neon|not bound system
+bromine-dioxide|unsupported valence
+chlorine-trifluoride|unsupported valence
+ethenylidenephosphane|unknown
+phenylphosphane|unknown
+3-fluorotoluene|unknown
+#2-4-methyl-1-3-thiazol-2-yl-guanidine
+123-pentatriene|unknown
+ketene|openbabel assigns wrong atomtype
+thiiran-2-ol|openbabel assigns wrong atomtype
+2-methylprop-1-en-1-one|openbabel assigns wrong atomtype
+cyanide|unsupported carbon
+methanethiolate|unsupported sulfur
+methanide|unsupported carbon
+phosphorus-V-oxyfluoride|something funny with ESP
+#bonds can not be handled by RDKit
+hexaborane-10|problem with RDKit
+4-oxo-1-3-2-4lambda5-dioxathiaphosphetan-4-amine|Incorrrect atom types
+3-7-dihydropurine-2-6-dione|Incorrrect atom types
+methylidyne-oxo-lambda-5-phosphane|Incorrrect atom types
+N---2-methylprop-1-enyl-methanimidamide|Incorrrect atom types
+N-but-3-en-2-ylidenemethanimidamide|Incorrrect atom types
+perchlorate|Incorrrect atom types
+arginine|Incorrrect atom types
+2-iodooxirene|Incorrrect atom types
+13-dimethyl-5-nitrobenzene|Incorrrect atom types
+caffeine|Incorrrect atom types
+2-amino-2-oxo-1-3-2lambda5-dioxaphosphetane-4-thione|Incorrrect atom types
+gly-pro|Incorrrect atom types
+1-chloro-2-nitrobenzene|Incorrrect atom types
+ala-gly|Incorrrect atom types
+dithiol-1-ium|Incorrrect atom types
+2-isocyanopropane|Incorrrect atom types
+5-iminopyrrol-3-ol|Incorrrect atom types
+oxidooxyphosphonamidous-acid|Incorrrect atom types
+o-dinitrobenzene|Incorrrect atom types
+2-bromooxirene|Incorrrect atom types
+gly-ala|Incorrrect atom types
+ethenylidenephosphane|Incorrrect atom types
+N-methoxy-N--methylethanimidamide|Incorrrect atom types
+ala-ala|Incorrrect atom types
+2-isocyano-2-methylpropane|Incorrrect atom types
+chloro-hydroxy-dioxidophosphanium|Incorrrect atom types
+3-nitrobenzotrifluoride|Incorrrect atom types
+thiamethoxam|Incorrrect atom types
+pyridinium|Incorrrect atom types
+24-dinitrotoluene|Incorrrect atom types
+34-dinitrotoluene|Incorrrect atom types
+1-phosphatricyclo-3.1.0.02-6-hex-3-ene|Incorrrect atom types
+imidogen|Incorrrect atom types
+123-pentatriene|Incorrrect atom types
+1H-imidazole-5-carbaldehyde|Incorrrect atom types
+N-propan-2-ylidenemethanimidamide|Incorrrect atom types
+3-ethyloxirene-2-carbaldehyde|Incorrrect atom types
+1-methylpyridinium|Incorrrect atom types
+2-phosphatricyclo-3.1.0.02-6-hex-3-ene|Incorrrect atom types
+3-sulfonylcyclopropene|Incorrrect atom types
+beta-truxene|Incorrrect atom types
+nitro-oxido-azanium|Incorrrect atom types
+3-methylidenepyrrol-2-amine|Incorrrect atom types
+thiopyrylium|Incorrrect atom types
+1H-pyrazole-4-carbaldehyde|Incorrrect atom types
+hydronium|Incorrrect atom types
+2-iodooxirene|no ring formed
+2-bromooxirene|no ring formed
+3-ethyloxirene-2-carbaldehyde|no ring formed
+4-oxo-1-3-2-4lambda5-dioxathiaphosphetan-4-amine|extra incorrect bond
+2-amino-2-oxo-1-3-2lambda5-dioxaphosphetane-4-thione|extra incorrect bond
+methylidyne-oxo-lambda-5-phosphane|extra incorrect bond
+3-sulfonylcyclopropene|extra incorrect bond
+nitro-oxido-azanium|missing bond
+imidogen|no support in force field
+neopentane|inconsisten coordinates in log file
+hydroxyazaniumylidynemethane|no support for C.

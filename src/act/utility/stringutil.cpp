@@ -143,3 +143,21 @@ int my_atoi(const char *str, const char *description)
     }
     return d;
 }
+
+bool stringEqual(const std::string &a, const std::string &b)
+{
+    size_t sz = a.size();
+    if (b.size() != sz)
+    {
+        return false;
+    }
+    for (size_t i = 0; i < sz; ++i)
+    {
+        if (tolower(a[i]) != tolower(b[i]))
+        {
+            return false;
+        }
+    }
+    return true;
+}
+

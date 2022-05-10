@@ -355,23 +355,6 @@ bool bCheckTemperature(double Tref, double T)
     return (Tref < 0) || (fabs(T - Tref) < 0.05);
 }
 
-static bool stringEqual(const std::string &a, const std::string &b)
-{
-    size_t sz = a.size();
-    if (b.size() != sz)
-    {
-        return false;
-    }
-    for (size_t i = 0; i < sz; ++i)
-    {
-        if (tolower(a[i]) != tolower(b[i]))
-        {
-            return false;
-        }
-    }
-    return true;
-}
-
 const Experiment *MolProp::findExperimentConst(JobType job) const
 {
     for(auto ei = exper_.begin(); ei < exper_.end(); ++ei)

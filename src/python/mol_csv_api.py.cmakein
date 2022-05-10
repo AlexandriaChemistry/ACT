@@ -19,9 +19,9 @@ try:
 except ImportError:
     print("Warning: pubchempy is not installed. Proceed at your own risk.")
 
-dbdir = "AlexandriaDB"
+dbdir = "ACTDATA"
 try:
-    alexandria_db = os.environ[dbdir]
+    ACTDATA = os.environ[dbdir]
 except:
     print("Please set the %s environment variable" % dbdir)
     exit(1)
@@ -321,65 +321,6 @@ class Molecule:
     def print_self(self, logfile):
         logfile.write("Self-checking compound %d %s fn %s\n" % ( self.alexandria, self.iupac, self.filename ) )
 
-    def self_check(self, logfile, fix_charges):
-        if not self.filename:
-            print("Filename not defined for %s" % self.iupac)
-            return
-        sdfdir  = alexandria_db + "/COMPOUNDS/"
-        sdffile = os.path.splitext(self.filename)[0] + ".sdf"
-        fn      = sdfdir + self.filename
-        if not os.path.isfile(fn):
-            if os.path.isfile(sdfdir+sdffile):
-                print("File '%s' for compound %d does not exist, but '%s' does. Changing the filename" % ( fn, self.alexandria, sdffile ) )
-                self.filename = sdffile
-            else:
-                print("File '%s' for compound %d does not exist, and neither does '%s'." % ( fn, self.alexandria, sdffile ) )
-                return
-
-        sdf_fn = sdfdir + sdffile
-        
-        # Check the charge of the molecule
-        if self.charge != 0:
-            missing_charge = False
-            try:
-                sdf = open(sdf_fn, "r")
-                q_sdf = None
-                for line in sdf:
-                    if line.find("M  CHG") == 0:
-                        words = line.split()
-                        q_sdf = 0
-                        if (len(words) >= 5):
-                            nchg  = int(words[2])
-                            for i in range(nchg):
-                                q_sdf += int(words[4+2*i])
-                if q_sdf:
-                    if q_sdf != self.charge:
-                        logfile.write("Incorrect charge %d in %s\n" % ( q_sdf, sdf_fn ) )
-                else:
-                    logfile.write("No charge field in %s. Should be %d\n" % ( sdf_fn, self.charge ) )
-                    missing_charge = True
-            finally:
-                sdf.close()
-            if fix_charges and missing_charge:
-                set_sdf_charge(sdf_fn, self.charge)
-
-        # Check the InChI and formula
-        molecule_dict = get_mol_dict(sdf_fn, "sdf")
-            
-        # Extract inchi from OpenBabel and strip off newline
-        if "inchi" in molecule_dict:
-            compare_inchi(logfile, molecule_dict["inchi"], self.stdinchi)
-        if "formula" in molecule_dict:
-            compare_formula(logfile, molecule_dict["formula"], self.formula)
-        # Extract inchikey
-        if "inchikey" in molecule_dict:
-            if not self.inchikey:
-                logfile.write("Inchikey missing for %s, adding it\n" % sdf_fn)
-                self.inchikey = inchikey
-            elif self.inchikey != inchikey:
-                logfile.write("Inchikey mismatch for %s alexandria: %s pybel: %s\n" %
-                              ( sdf_fn, self.inchikey, inchikey ))
-
     def add_ion_categories(self):
         if (self.formula.find('+') != -1 or self.charge > 0):
             self.classification += ";cation"
@@ -488,15 +429,13 @@ class Molecule:
             return True
         return False
 
-    def is_blacklisted(self):
-        blacklist = []
-        blacklist_file = '{}/DEFINITIONS/blacklist.dat'.format(alexandria_db)
-        with open(blacklist_file, 'r', encoding='utf-8') as bl_file:
-            for line in bl_file.readlines():
-                if line[0] != '#':
-                    blacklist += [line.split('|')[0]]
-        if self.filename.split('.')[0] in blacklist:
-            return True
+    def is_excluded(self):
+        needle = self.filename.split('.')[0]
+        excluded_file = ACTDATA + "/excluded_molecules.csv"
+        for row in get_csv_rows(excluded_file, 2):
+            if len(row) == 2:
+                if row[0] == needle:
+                   return True
         return False
 
     # Couple of functions for sorting on formula
@@ -596,7 +535,7 @@ class Molecules:
             self.clean()
 
     def read_default(self):
-        acsv = alexandria_db + "/DEFINITIONS/alexandria.csv"
+        acsv = ACTDATA + "/alexandria.csv"
         self.read(acsv, 3, False)
 
     def write(self, output_file, version):
