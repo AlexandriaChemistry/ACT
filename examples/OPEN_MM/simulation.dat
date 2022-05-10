@@ -1,0 +1,64 @@
+# Set simulation parameters for OpenMM
+
+# RUN CONTROL PARAMETERS
+################################################
+# dt in picoseconds
+dt                 = 0.0004*picoseconds
+equilibrationSteps = 0
+steps              = 2500
+
+
+# OPTIONS FOR OUTPUT
+################################################
+save               = 500
+outStep            = True
+outTime            = True
+outSpeed           = True
+outProgress        = True
+outPotentialEnergy = True
+outKineticEnergy   = True
+outTemperature     = True
+outVolume          = True
+outDensity         = True
+outSeparator       = \t
+
+# OPTIONS FOR ELECTROSTATICS AND VDW
+################################################
+#LJPME; PME; Ewald; CutoffPeriodic; NoCutoff; use LJPME with disperion correction off, and PME with dispersion correction on; use 1nm cutoff for NaCl
+nonbondedMethod        = LJPME           
+use_switching_function = False
+switch_width           = 0*nanometers
+nonbondedCutoff        = 1*nanometers
+use_dispersion_correction = False 
+ewaldErrorTolerance    = 1e-4 
+
+
+
+# OPTIONS FOR WEAK COUPLING ALGORITHMS
+################################################
+# Temperature coupling; Temperatures in Kelvin 
+useAndersenThermostat  = True   
+temperature_c          = 298.15*kelvin 
+temperature_s          = 1*kelvin
+# pressure coupling;   friction coefficients in /picosecond; pressure in atomsphers
+useMonteCarloBarostat  = True
+friction_c             = 5.0/picosecond
+friction_s             = 20/picosecond
+pressure               = 1.0*atmospheres
+barostatInterval       = 25
+
+
+# OPTIONS FOR BONDS ,constraints          = None, HBonds, AllBonds, HAngles
+################################################
+constraints          = None
+rigidWater           = False
+constraintTolerance  = 0.000001
+
+
+
+
+# OPTIONS FOR COMPUTING PLATFORM AND PRECISION
+################################################
+# Platform CUDA or OpenCL (single/double)
+usePlatform         = OpenCL
+usePrecisionCuda    = single
