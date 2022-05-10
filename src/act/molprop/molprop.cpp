@@ -425,36 +425,6 @@ const GenericProperty *MolProp::expProperty(MolPropObservable  mpo,
     return nullptr;
 }
 
-bool MolProp::getOptHF(double *value)
-{
-    bool done = false;
-
-    std::string empty;
-    
-    auto gp = qmProperty(MolPropObservable::HF, 0.0, JobType::OPT);
-    if (gp)
-    {
-        *value = gp->getValue();
-        done = true;
-    }
-    return done;
-}
-
-int MolProp::NOptSP()
-{
-    int n = 0;
-
-    for (auto &ei : experimentConst())
-    {
-        if (ei.getJobtype() == JobType::OPT ||
-            ei.getJobtype() == JobType::SP)
-        {
-            n++;
-        }
-    }
-    return n;
-}
-
 CommunicationStatus MolProp::Send(const CommunicationRecord *cr, int dest) const
 {
     CommunicationStatus                cs = CommunicationStatus::OK;
