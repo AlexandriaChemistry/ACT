@@ -46,6 +46,8 @@
 #include "act/utility/units.h"
 #include "alexandria/mymol.h"
 #include "alexandria/thermochemistry.h"
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/pdbio.h"
 
 void doAddOptions(std::vector<t_pargs> *pargs, size_t npa, t_pargs pa[])
 {
@@ -626,6 +628,27 @@ void TuneForceFieldPrinter::printAtoms(FILE              *fp,
     }
 }
 
+/*! Store coordinates to a file, first original, then minimized.
+ * \param[in] pdb   File name
+ * \param[in] title Text string
+ */
+static void writeCoordinates(const t_atoms           *atoms,
+                             const std::string       &pdb,
+                             const std::string       &title,
+                             const std::map<coordSet, std::vector<gmx::RVec> > &xrmsd)
+{
+    FILE *out = gmx_fio_fopen(pdb.c_str(), "w");
+    matrix box = { { 4, 0, 0 }, { 0, 4, 0 }, { 0, 0, 4 } };
+    write_pdbfile(out, title.c_str(), atoms, as_rvec_array(xrmsd.find(coordSet::Original)->second.data()),
+                  epbcNONE, box, 'A', 1, nullptr, false);
+
+    write_pdbfile(out, title.c_str(), atoms, as_rvec_array(xrmsd.find(coordSet::Minimized)->second.data()),
+                  epbcNONE, box, 'B', 1, nullptr, false);
+
+    gmx_fio_fclose(out);
+}
+
+
 void TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
                                               alexandria::MyMol        *mol,
                                               const std::vector<int>   &ePlot,
@@ -696,10 +719,18 @@ void TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
     }
     if (mol->jobType() == JobType::OPT && calcFrequencies_)
     {
-        double rmsd = 0;
         // Now get the minimized structure RMSD and Energy
         // TODO: Only do this for JobType::OPT
-        molHandler_.minimizeCoordinates(mol, &rmsd);
+        molHandler_.minimizeCoordinates(mol);
+        std::map<coordSet, std::vector<gmx::RVec> > xrmsd; 
+        double rmsd = molHandler_.coordinateRmsd(mol, &xrmsd);
+        
+        if (rmsd > 0.1) // nm
+        {
+            auto pdb   = gmx::formatString("inds/%s-original-minimized.pdb", mol->getMolname().c_str());
+            auto title = gmx::formatString("%s RMSD %g Angstrom", mol->getMolname().c_str(), 10*rmsd);
+            writeCoordinates(mol->atoms(), pdb, title, xrmsd);
+        }
         auto eAfter = mol->energyTerms();
         tcout->push_back(gmx::formatString("   %-20s  %10s  %10s  %10s minimization",
                                            "Term", "Before", "After", "Difference"));

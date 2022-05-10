@@ -275,8 +275,7 @@ void MolHandler::nma(MyMol               *mol,
 
 }
 
-immStatus MolHandler::minimizeCoordinates(MyMol  *mol,
-                                          double *rmsd) const
+immStatus MolHandler::minimizeCoordinates(MyMol  *mol) const
 {
     mol->updateMDAtoms();
     // We need to use a single core system for minimizing shells
@@ -295,21 +294,13 @@ immStatus MolHandler::minimizeCoordinates(MyMol  *mol,
     int       maxIter      = 100;
     // List of atoms (not shells) and weighting factors
     std::vector<int> theAtoms;
-    std::vector<real> w_rls;
     for(int atom = 0; atom < mdatoms->nr; atom++)
     {
         if (mdatoms->ptype[atom] == eptAtom)
         {
             theAtoms.push_back(atom);
-            w_rls.push_back(1);
-        }
-        else
-        {
-            w_rls.push_back(0);
         }
     }
-    // The original coordinates, including shell positions
-    std::vector<gmx::RVec> xold(mol->mtop_->natoms);
     // Create Hessian, just containings atoms, not shells
     MatrixWrapper       Hessian(DIM*theAtoms.size(), DIM*theAtoms.size());
     std::vector<double> f0, f00;
@@ -325,11 +316,6 @@ immStatus MolHandler::minimizeCoordinates(MyMol  *mol,
             epot0     = newEpot;
             // Store forces
             f00       = f0;
-            // Store coordinates, including shell positions
-            for (int kk = 0; kk < mol->mtop_->natoms; kk++)
-            {
-                copy_rvec(mol->state_->x[kk], xold[kk]);
-            }
             firstStep = false;
         }
         std::vector<double> deltaX(DIM*theAtoms.size(), 0.0);
@@ -388,25 +374,58 @@ immStatus MolHandler::minimizeCoordinates(MyMol  *mol,
     // Re-compute the energy one last time.
     double shellForceRMS = 0;
     (void) mol->calculateEnergy(crtmp, &shellForceRMS);
-    // Compute RMSD
     mol->backupCoordinates(coordSet::Minimized);
-    std::vector<gmx::RVec> xmin(mol->mtop_->natoms);
-    for (auto &kk : theAtoms)
-    {
-        copy_rvec(mol->state_->x[kk], xmin[kk]);
-    }
-    do_fit(w_rls.size(), w_rls.data(),
-           as_rvec_array(xold.data()), as_rvec_array(xmin.data()));
-    double msd  = 0;
-    for (auto &kk : theAtoms)
-    {
-        rvec dx;
-        rvec_sub(mol->state_->x[kk], xold[kk], dx);
-        msd += iprod(dx, dx);
-    }
-    *rmsd = std::sqrt(msd/theAtoms.size());
     done_commrec(crtmp);
     return imm;
+}
+
+double MolHandler::coordinateRmsd(MyMol                                       *mol,
+                                  std::map<coordSet, std::vector<gmx::RVec> > *x) const
+{
+    // Compute RMSD
+    auto   mdatoms = mol->MDatoms_->get()->mdatoms();
+    double tmass = mol->totalMass();
+    x->clear();
+    for (const auto &cs : { coordSet::Original, coordSet::Minimized })
+    {
+        if (!mol->hasCoordinateSet(cs))
+        {
+            return 0.0;
+        }
+        std::vector<gmx::RVec> xcs = mol->coordinateSet(cs);
+        rvec                   com = { 0, 0, 0 };
+        for (size_t i = 0; i < xcs.size(); ++i)
+        {
+            double relativeMass = mdatoms->massT[i]/tmass;
+            for(int m = 0; m < DIM; m++)
+            {
+                com[m] += relativeMass*xcs[i][m];
+            }
+        }
+        for (size_t i = 0; i < xcs.size(); ++i)
+        {
+            for(int m = 0; m < DIM; m++)
+            {
+                xcs[i][m] -= com[m];
+            }
+        }
+        x->insert({ cs, xcs });
+    }
+    do_fit(mdatoms->nr, mdatoms->massT, 
+           as_rvec_array((*x)[coordSet::Original].data()),
+           as_rvec_array((*x)[coordSet::Minimized].data()));
+    
+    double msd  = 0;
+    for (int i = 0; i < mdatoms->nr; i++)
+    {
+        if (mdatoms->massT[i] > 0)
+        {
+            rvec dx;
+            rvec_sub((*x)[coordSet::Original][i], (*x)[coordSet::Minimized][i], dx);
+            msd += iprod(dx, dx);
+        }
+    }
+    return std::sqrt(msd/mol->nRealAtoms());
 }
 
 } // namespace alexandria

@@ -311,6 +311,17 @@ enum class coordSet {
         //! \return the atomization energy
         double atomizationEnergy() const { return atomizationEnergy_; }
         
+        /*! Check whether a coordinate set is present
+         * \param[in] cs The coordinate set wanted
+         * \return Whether or not it is there
+         */
+        bool hasCoordinateSet(coordSet cs) const { return backupCoordinates_.find(cs) != backupCoordinates_.end(); }
+        
+        /*! Return a coordinate set. Will throw when the coordinate set is not present.
+         * \param[in] cs The coordinate set wanted
+         */
+        const std::vector<gmx::RVec> &coordinateSet(coordSet cs) const { return backupCoordinates_.find(cs)->second; }
+
         /*! Return an energy component
          * \param[in]  mpo  The particular term that is requested
          * \param[out] ener The value found

@@ -151,14 +151,17 @@ protected:
 
         MolHandler mh;
         
-        double rmsd = 0;
-        imm = mh.minimizeCoordinates(&mp_, &rmsd);
+        std::map<coordSet, std::vector<gmx::RVec> > xrmsd; 
+        double rmsd = mh.coordinateRmsd(&mp_, &xrmsd);
+        checker_.checkReal(rmsd, "Coordinate RMSD before minimizing");
+        imm = mh.minimizeCoordinates(&mp_);
         EXPECT_TRUE(immStatus::OK == imm);
         if (immStatus::OK != imm)
         {
             fprintf(stderr, "Could not minimize energy because '%s'\n", immsg(imm));
             return;
         }
+        rmsd = mh.coordinateRmsd(&mp_, &xrmsd);
         checker_.checkReal(rmsd, "Coordinate RMSD after minimizing");
         add_energies(&checker_, mp_.energyTerms(), "after");
 

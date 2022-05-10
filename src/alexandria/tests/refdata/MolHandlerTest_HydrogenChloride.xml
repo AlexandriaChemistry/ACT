@@ -5,7 +5,8 @@
   <Real Name="Atomization before">348.125</Real>
   <Real Name="Potential before">348.12644527999998</Real>
   <Real Name="Total Energy before">348.12644527999998</Real>
-  <Real Name="Coordinate RMSD after minimizing">4.999999999992814e-05</Real>
+  <Real Name="Coordinate RMSD before minimizing">0</Real>
+  <Real Name="Coordinate RMSD after minimizing">6.8783744593833024e-05</Real>
   <Real Name="Bond after">1.0020628908086343e-27</Real>
   <Real Name="Atomization after">348.125</Real>
   <Real Name="Potential after">348.125</Real>

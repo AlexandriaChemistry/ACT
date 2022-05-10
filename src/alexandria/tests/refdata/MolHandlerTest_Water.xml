@@ -6,7 +6,8 @@
   <Real Name="Atomization before">697.97799999999995</Real>
   <Real Name="Potential before">698.53740457856804</Real>
   <Real Name="Total Energy before">698.53740457856804</Real>
-  <Real Name="Coordinate RMSD after minimizing">0.059902530838969528</Real>
+  <Real Name="Coordinate RMSD before minimizing">0</Real>
+  <Real Name="Coordinate RMSD after minimizing">0.0022962127346353154</Real>
   <Real Name="Bond after">1.7183916132094458e-22</Real>
   <Real Name="Angle after">4.2772326169091347e-20</Real>
   <Real Name="Atomization after">697.97799999999995</Real>
