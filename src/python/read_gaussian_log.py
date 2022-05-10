@@ -440,12 +440,13 @@ class GaussianReader:
             qmap = {}
             if len(self.qEsp) == len(self.atomtypes):
                 qmap["ESP"] = self.qEsp[i]
-            if len(self.qCM5) == len(self.atomtypes):
-                qmap["CM5"] = self.qCM5[i]
-            if len(self.qHirshfeld) == len(self.atomtypes):
-                qmap["Hirshfeld"] = self.qHirshfeld[i]
-            if len(self.qMulliken) == len(self.atomtypes):
-                qmap["Mulliken"] = self.qMulliken[i]
+            if False:
+                if len(self.qCM5) == len(self.atomtypes):
+                    qmap["CM5"] = self.qCM5[i]
+                if len(self.qHirshfeld) == len(self.atomtypes):
+                    qmap["Hirshfeld"] = self.qHirshfeld[i]
+                if len(self.qMulliken) == len(self.atomtypes):
+                    qmap["Mulliken"] = self.qMulliken[i]
             # If no forces are found, the fc_unit will be None
             # and no forces will be written.
             ff      = [ 0.0, 0.0, 0.0 ]
