@@ -120,7 +120,7 @@ static int multi_regression2(std::vector<double> *rhs,
     /* Check for convergence */
     if (info > 0)
     {
-        fprintf(stderr, "The algorithm computing SVD failed to converge and the least squares solution could not be computed. Info = %d.", info);
+        fprintf(stderr, "The algorithm computing SVD failed to converge and the least squares solution could not be computed. Info = %d, nrow = %d, ncol = %d", info, nrow, ncol);
     }
     else
     {

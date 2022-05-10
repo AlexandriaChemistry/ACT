@@ -366,14 +366,18 @@ void HarmonicsDevComputer::calcDeviation(MyMol                                *m
     auto ref_freqs = mymol->referenceFrequencies();
     if (ref_freqs.size() != frequencies.size())
     {
-        GMX_THROW(gmx::InternalError(gmx::formatString("Reference frequencies size %zu, but calculated %zu for %s", ref_freqs.size(), frequencies.size(), mymol->getMolname().c_str()).c_str()));
+        fprintf(stderr, "Reference frequencies size %zu, but calculated %zu for %s. Ignoring frequencies for this compound.\n",
+                ref_freqs.size(), frequencies.size(), mymol->getMolname().c_str());
     }
-    double delta = 0;
-    for(size_t k = 0; k < frequencies.size(); k++)
+    else
     {
-        delta += gmx::square(frequencies[k]-ref_freqs[k]);
+        double delta = 0;
+        for(size_t k = 0; k < frequencies.size(); k++)
+        {
+            delta += gmx::square(frequencies[k]-ref_freqs[k]);
+        }
+        (*targets).find(eRMS::FREQUENCY)->second.increase(1, delta);
     }
-    (*targets).find(eRMS::FREQUENCY)->second.increase(1, delta);
 }
 
 /* * * * * * * * * * * * * * * * * * * * * *
