@@ -576,7 +576,8 @@ size_t MolGen::Read(FILE            *fp,
             { MolPropObservable::QUADRUPOLE,     iqmType::QM },
             { MolPropObservable::OCTUPOLE,       iqmType::QM },
             { MolPropObservable::HEXADECAPOLE,   iqmType::QM },
-            { MolPropObservable::POLARIZABILITY, iqmType::QM }
+            { MolPropObservable::POLARIZABILITY, iqmType::QM },
+            { MolPropObservable::CHARGE,         iqmType::QM }
         };
     if (cr_->isMaster())
     {

@@ -1032,8 +1032,9 @@ immStatus MyMol::GenerateTopology(FILE              *fp,
     }
     if (immStatus::OK == imm)
     {
-        qProps_.insert(std::pair<qType, QtypeProps>(qType::Calc, QtypeProps(qType::Calc)));
-        qProps_.insert(std::pair<qType, QtypeProps>(qType::Elec, QtypeProps(qType::Elec)));
+        qProps_.insert({ qType::Calc, QtypeProps(qType::Calc) });
+        qProps_.insert({ qType::Elec, QtypeProps(qType::Elec) });
+        qProps_.insert({ qType::ESP, QtypeProps(qType::ESP) });
     }
     if (immStatus::OK == imm)
     {
@@ -2404,6 +2405,7 @@ immStatus MyMol::getExpProps(const std::map<MolPropObservable, iqmType> &iqm,
         switch (mpo)
         {
         case MolPropObservable::CHARGE:
+        case MolPropObservable::POTENTIAL:
             {
                 std::string conf;
                 auto ei = findExperimentConst(JobType::OPT);

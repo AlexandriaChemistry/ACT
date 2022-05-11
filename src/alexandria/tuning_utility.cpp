@@ -321,8 +321,8 @@ static void analyse_multipoles(FILE                                             
                 {
                     flag = " MULTI";
                 }
-                fprintf(fp, "Difference %s Norm %g RMS = %g (%s)%s:\n",
-                        name, factor*std::sqrt(delta), factor*rms, unit, flag.c_str());
+                fprintf(fp, "%s-Electronic Norm %g RMS = %g (%s)%s:\n",
+                        qTypeName(qt).c_str(), factor*std::sqrt(delta), factor*rms, unit, flag.c_str());
                 printMultipole(fp, mpo, diff);
             }
         }
