@@ -1034,7 +1034,6 @@ immStatus MyMol::GenerateTopology(FILE              *fp,
     {
         qProps_.insert({ qType::Calc, QtypeProps(qType::Calc) });
         qProps_.insert({ qType::Elec, QtypeProps(qType::Elec) });
-        qProps_.insert({ qType::ESP, QtypeProps(qType::ESP) });
     }
     if (immStatus::OK == imm)
     {
