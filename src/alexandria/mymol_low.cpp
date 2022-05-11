@@ -281,15 +281,15 @@ void CombineLJ(int     CombinationRule,
     case eCOMB_ARITHMETIC:
         {
             double sig  = 0.5 * (sigmaI + sigmaJ);
-            double eps  = std::sqrt(epsilonI + epsilonJ);
+            double eps  = 0.5 * (epsilonI + epsilonJ);
             double sig6 = std::pow(sig, 6.0);
             *c6  = 4*eps*sig6;
             *c12 = *c6 * sig6;
         }
         break;
-    case eCOMB_GEOM_SIG_EPS:
+    case eCOMB_LORENTZ_BERTHELOT:
         {
-            double sig  = std::sqrt(sigmaI * sigmaJ);
+            double sig  = 0.5 * (sigmaI + sigmaJ);
             double eps  = std::sqrt(epsilonI * epsilonJ);
             double sig6 = std::pow(sig, 6.0);
             *c6  = 4*eps*sig6;
@@ -385,7 +385,6 @@ void CombineBham(int     CombinationRule,
             *epsilonIJ = std::sqrt(epsilonI * epsilonJ) * ((2.0 * pow(epsilonI,3.0) * pow(epsilonJ,3.0))/(pow(epsilonI,6.0) + pow(epsilonJ,6.0)));
             *gammaIJ = 0.5 * (gammaI + gammaJ);;
             break;            
-        case eCOMB_GEOM_SIG_EPS:
         case eCOMB_NONE:
         case eCOMB_NR:
             gmx_fatal(FARGS, "Unsupported combination rule %d for Buckingham", CombinationRule);

@@ -284,7 +284,7 @@ extern const char *edisreweighting_names[edrwNR+1];
 
 //! Combination rule algorithm.
 enum {
-  eCOMB_NONE, eCOMB_GEOMETRIC, eCOMB_ARITHMETIC, eCOMB_GEOM_SIG_EPS, eCOMB_KONG_MASON, eCOMB_HOGERVORST, eCOMB_YANG, eCOMB_QI, eCOMB_WALDMAN_HAGLER, eCOMB_NR
+  eCOMB_NONE, eCOMB_GEOMETRIC, eCOMB_ARITHMETIC, eCOMB_LORENTZ_BERTHELOT, eCOMB_KONG_MASON, eCOMB_HOGERVORST, eCOMB_YANG, eCOMB_QI, eCOMB_WALDMAN_HAGLER, eCOMB_NR
 };
 //! String for combination rule algorithm
 extern const char *ecomb_names[eCOMB_NR+1];
