@@ -152,9 +152,9 @@ TEST_F (CombinationRuleTest, LjArithmetic)
     testLJ(eCOMB_ARITHMETIC);
 }
 
-TEST_F (CombinationRuleTest, LjGeomSigEps)
+TEST_F (CombinationRuleTest, LjLorentzBerthelot)
 {
-    testLJ(eCOMB_GEOM_SIG_EPS);
+    testLJ(eCOMB_LORENTZ_BERTHELOT);
 }
 
 TEST_F (CombinationRuleTest, BhamGeometric)
