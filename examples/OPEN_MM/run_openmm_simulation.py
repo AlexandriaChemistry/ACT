@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 # OpenMM python example script (using DrudeLangevin integrator). 
 # This script implements a modified Buckingham potential (using Hogervorst combination rules) and Gaussian distributed charges for the nonbonded 
 # interactions, and a Morse potential for the bonded interactions.
@@ -6,23 +8,27 @@
 # Author: Marie-Madeleine Walz, Department of Cell and Molecular Biology, Uppsala University, Sweden. marie-madeleine.walz@icm.uu.se
 ###################################################################################################################################################
 
-from simtk.openmm import *
-from simtk.openmm.app import *
+from openmm import *
+from openmm.app import *
 from simtk.unit import *
-from sys import stdout
 from simtk import openmm, unit
 import numpy as np
-import argparse
+import argparse, sys
 
 parser = argparse.ArgumentParser()
-parser.add_argument("-pdb", "--pdb_file", help="coordinate .pdb file")
-parser.add_argument("-xml", "--xml_file", help="openMM force field .xml file")
-parser.add_argument("-dat", "--dat_file", help="simulation parameter .dat file")
+parser.add_argument("-pdb", "--pdb_file", help="coordinate .pdb file", default=None)
+parser.add_argument("-xml", "--xml_file", help="openMM force field .xml file", default=None)
+parser.add_argument("-dat", "--dat_file", help="simulation parameter .dat file", default=None)
 args = parser.parse_args()
 
-
-pdb          = PDBFile(args.pdb_file) 
+if None == args.pdb_file or not os.path.exists(args.pdb_file):
+    sys.exit("Please pass a correct pdb file")
+pdb          = PDBFile(args.pdb_file)
+if None == args.xml_file or not os.path.exists(args.xml_file):
+    sys.exit("Please pass a correct xml force field file")
 forcefield   = ForceField(args.xml_file)
+if None == args.dat_file or not os.path.exists(args.dat_file):
+    sys.exit("Please pass a correct simulation parameter file")
 sim_dat_file = args.dat_file
 
 
@@ -106,12 +112,14 @@ platform = Platform.getPlatformByName(usePlatform)
 
 # OUTPUT
 ################################################
-dcdReporter = DCDReporter('output/trajectory.dcd', save)
-dataReporter = StateDataReporter('output/log.txt', save, totalSteps=steps,
+outputdir = "output"
+os.makedirs(outputdir, exist_ok=True)
+dcdReporter = DCDReporter(outputdir+'/trajectory.dcd', save)
+dataReporter = StateDataReporter(outputdir+'/log.txt', save, totalSteps=steps,
     step=outStep, time= outTime, speed=outSpeed, progress=outProgress, potentialEnergy=outPotentialEnergy, kineticEnergy=outKineticEnergy, temperature=outTemperature, volume=outVolume, density=outDensity, separator=outSeparator)
 
-chkReporter = CheckpointReporter('output/checkpnt.chk', save)
-pdbReporter = PDBReporter('output/output.pdb', save)
+chkReporter = CheckpointReporter(outputdir+'/checkpnt.chk', save)
+pdbReporter = PDBReporter(outputdir+'/output.pdb', save)
 
 
 # TOPOLOGY
