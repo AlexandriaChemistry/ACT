@@ -28,7 +28,7 @@ potential energy = -391.35 kJ/mol
 
 Proceed at your own risk and modify the scripts to your needs.
 
-(OpenMM documentation)[http://docs.openmm.org/development/userguide/].
+[OpenMM documentation](http://docs.openmm.org/development/userguide/).
 
 (Generic information on OpenMM)[https://openmm.org]
 
