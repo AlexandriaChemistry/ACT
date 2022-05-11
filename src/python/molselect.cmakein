@@ -204,7 +204,7 @@ if __name__ == '__main__':
   
   mols = []
   for mol in M.mols:
-    if M.mols[mol].is_supported() and not M.mols[mol].is_blacklisted():
+    if M.mols[mol].is_supported() and not M.mols[mol].is_excluded():
       mols.append(M.mols[mol])
   if not args.withoutoep:
     mols = filter_noOEPcalcs(mols)

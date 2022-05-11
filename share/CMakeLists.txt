@@ -39,6 +39,7 @@ install(FILES
          atomization-energies-dft.csv
          atomtypes.csv
          elements.csv
+         excluded_molecules.csv
          atomization-energies.csv
          atomtypes_nonpol.csv
          ffnames.csv
