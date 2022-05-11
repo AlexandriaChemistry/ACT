@@ -30,7 +30,7 @@ Proceed at your own risk and modify the scripts to your needs.
 
 [OpenMM documentation](http://docs.openmm.org/development/userguide/).
 
-(Generic information on OpenMM)[https://openmm.org]
+[Generic information on OpenMM](https://openmm.org).
 
 
 
