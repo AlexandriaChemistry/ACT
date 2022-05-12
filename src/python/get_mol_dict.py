@@ -53,7 +53,7 @@ class MoleculeDict:
                 print("No OpenBabel support for force field %s" % forcefield)
                 return False
             if not ff.Setup(obmol):
-                print("Could not setup the force field %s for %s" % ( forcefield, filename))
+                print("Could not setup the force field %s for %s" % ( forcefield, self.formula))
                 return False
             else:
                 if not ff.GetAtomTypes(obmol):

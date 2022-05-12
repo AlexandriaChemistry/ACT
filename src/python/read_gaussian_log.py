@@ -116,14 +116,19 @@ class GaussianReader:
                 rmsbefore  += xdiff.dot(xdiff)
 
         # Now do the fit and get the matrix in return
-        Rfit = calc_fit_R(natom, refcoord, testcoord)
+        Rfit = None
+        if natom > 1:
+            Rfit = calc_fit_R(natom, refcoord, testcoord)
         if debug:
             print("Rfit {}".format(Rfit))
         # Now rotate the esp points and add them to the experiment
         rmsafter = 0.0
         for i in range(len(self.espfitcenter)):
             oldx = testcoord[i]
-            newx = Rfit.dot(oldx) + ref_com #test_com
+            if natom > 1:
+                newx = Rfit.dot(oldx) + ref_com #test_com
+            else:
+                newx = oldx + ref_com
             if i < natom:
                 if debug:
                     print("refx {}".format(self.coordinates[i]))
