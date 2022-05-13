@@ -604,6 +604,10 @@ bool OptACM::runMaster(bool optimize,
     std::vector<double> dummy;
     fitComp_->calcDeviation(&dummy, CalcDev::Final, iMolSelect::Train);
 
+    // Final energy calculation for all molecules
+    // TODO: parallellize this.
+    fitComp_->calcDeviation(bestGenome.basesPtr(), CalcDev::Master, iMolSelect::Train);
+
     // Delete the penalizers
     if (nullptr != ga_->penalizers())
     {
