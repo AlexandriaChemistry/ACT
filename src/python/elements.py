@@ -17,6 +17,7 @@ def readElementsData():
             except ValueError:
                 sys.exit("Incorrect words '%s|%s' in %s" % ( words[0], words[1], edata ))
             nameToNumber[words[0]] = atomicnumber
+            nameToNumber[words[0].upper] = atomicnumber
             # There are the short and the long name in the file, only store the short one
             if not atomicnumber in numberToName:
                 numberToName[atomicnumber] = words[0]
