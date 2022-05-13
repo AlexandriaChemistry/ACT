@@ -117,7 +117,7 @@ class GaussianReader:
 
         # Now do the fit and get the matrix in return
         Rfit = None
-        if natom > 1:
+        if natom > 2:
             Rfit = calc_fit_R(natom, refcoord, testcoord)
         if debug:
             print("Rfit {}".format(Rfit))
@@ -125,7 +125,7 @@ class GaussianReader:
         rmsafter = 0.0
         for i in range(len(self.espfitcenter)):
             oldx = testcoord[i]
-            if natom > 1:
+            if natom > 2:
                 newx = Rfit.dot(oldx) + ref_com #test_com
             else:
                 newx = oldx + ref_com

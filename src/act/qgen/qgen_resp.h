@@ -123,7 +123,9 @@ class QgenResp
 
         size_t nEsp() const { return ep_.size(); }
 
-        const std::vector<EspPoint> &espPoint() const {return ep_; }
+        const std::vector<EspPoint> &espPoints() const {return ep_; }
+
+        const EspPoint &espPoint(size_t index) const {return ep_[index]; }
 
         void summary(FILE *gp);
         

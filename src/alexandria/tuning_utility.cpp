@@ -943,7 +943,7 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
                         rms, rrms, cosesp, qTypeName(qi).c_str(), warning.c_str());   
                 if (mol->datasetType() == ims)
                 {
-                    auto ep = qp->qgenResp()->espPoint();
+                    auto ep = qp->qgenResp()->espPoints();
                     for (size_t j = 0; j < ep.size(); j++)
                     {
                         lsq_esp[ims][qi].add_point(ep[j].v(), ep[j].vCalc(), 0, 0);

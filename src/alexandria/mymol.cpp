@@ -2326,9 +2326,10 @@ void MyMol::calcEspRms(const Poldata *pd)
             qgr->setChargeType(ChargeType::Point);
             qgr->setAtomInfo(&myatoms, pd, myx, totalCharge());
             qgr->updateAtomCharges(i.second.charge());
-            for (const auto &ep : qgrcalc->espPoint())
+            for (size_t j = myatoms.nr; j < qgrcalc->nEsp(); j++)
             {
-                auto r = ep.esp();
+                auto ep = qgrcalc->espPoint(j);
+                auto r  = ep.esp();
                 qgr->addEspPoint(r[XX], r[YY], r[ZZ], ep.v());
             }
             qgr->calcPot(pd->getEpsilonR());

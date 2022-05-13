@@ -361,7 +361,7 @@ static double calcJ(ChargeType  chargeType,
     }
     if (chargeType == ChargeType::Point && r == 0)
     {
-        gmx_fatal(FARGS, "Zero distance between the atom and the grid.");
+        gmx_fatal(FARGS, "Zero distance between the atom and the grid. Zeta = %g", zeta);
     }
     if (ChargeType::Gaussian == chargeType)
     {
