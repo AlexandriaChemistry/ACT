@@ -66,5 +66,7 @@ def calc_fit_R(natoms:int, xp, x):
         for c in range(ndim):
             for s in range(ndim):
                 R[r][c] += vk[s][r]*vh[s][c]
+    if np.linalg.det(R) == 0:
+        R = np.identity(3)
     return R
 
