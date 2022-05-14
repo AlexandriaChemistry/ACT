@@ -1,9 +1,10 @@
-1#
+#
 # This file is part of the Alexandria Chemistry Toolkit
 # https://github.com/dspoel/ACT
 #
 import math, os, sys
 from actutils     import *
+from elements     import *
 from get_csv_rows import *
 
 debug = False
@@ -66,6 +67,9 @@ class AtomicHOF:
     def get_atomization(self, elem, method, temp):
         akey = elem + "|0"
         if not akey in self.ahof:
+            myelem = AtomNumberToAtomName(AtomNameToAtomNumber(elem))
+            akey   = myelem + "|0"
+        if not akey in self.ahof:
             sys.exit("Cannot find key %s in the Atomic Heat of Formation table. Method is %s" % ( akey, self.method ))
         for p in range(len(self.ahof[akey])):
             thisprop = self.ahof[akey][p]
@@ -75,6 +79,9 @@ class AtomicHOF:
         
     def get(self, elem, temp, charge):
         akey = elem + "|" + str(charge)
+        if not akey in self.ahof:
+            myelem = AtomNumberToAtomName(AtomNameToAtomNumber(elem))
+            akey   = myelem + "|" + str(charge)
         if not akey in self.ahof:
             sys.exit("Cannot find key %s in the Atomic Heat of Formation table. Method is %s" % ( akey, self.method ))
         HexpT  = None

@@ -49,7 +49,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
-#include "alex_modules.h"
+#include "alexandria/alex_modules.h"
 #include "act/basics/identifier.h"
 #include "act/poldata/poldata.h"
 #include "act/poldata/poldata_tables.h"
@@ -187,8 +187,8 @@ int merge_pd(int argc, char *argv[])
     };    
     t_filenm    fnm[] =
     {
-        { efXML, "-di",    "pdin",  ffRDMULT},
-        { efXML, "-do",    "pdout", ffWRITE },
+        { efXML, "-ff",    "pdin",  ffRDMULT},
+        { efXML, "-o",    "pdout", ffWRITE },
         { efTEX, "-latex", "pdout", ffWRITE }
     };
     int         NFILE       = asize(fnm);;
