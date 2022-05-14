@@ -30,7 +30,6 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
  
- 
 #include "actpre.h"
 
 #include <stdio.h>
@@ -48,7 +47,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
-#include "alex_modules.h"
+#include "alexandria/alex_modules.h"
 #include "act/molprop/molprop.h"
 #include "act/molprop/molprop_sqlite3.h"
 #include "act/molprop/molprop_util.h"
@@ -70,23 +69,26 @@ int merge_mp(int argc, char *argv[])
     };
     t_filenm                         fnm[] =
     {
-        { efXML, "-f",  "data",      ffOPTRDMULT },
-        { efXML, "-o",  "allmols",   ffWRITE },
-        { efXML, "-di", "gentop",    ffOPTRD },
-        { efDAT, "-db", "sqlite",    ffOPTRD }
+        { efXML, "-mp",  "data",      ffOPTRDMULT },
+        { efXML, "-o",   "allmols",   ffWRITE },
+        { efXML, "-ff",  "gentop",    ffOPTRD },
+        { efDAT, "-db",  "sqlite",    ffOPTRD }
     };
-    int                              NFILE       = asize(fnm);
-    static int                       compress    = 1;
-    static real                      temperature = 298.15;
-    static int                       maxwarn     = 0;
-    t_pargs                          pa[]        =
+    int     NFILE       = asize(fnm);
+    int     compress    = 1;
+    real    temperature = 298.15;
+    bool    forceMerge  = false;
+    int     maxwarn     = 0;
+    t_pargs pa[]        =
     {
         { "-compress", FALSE, etBOOL, {&compress},
           "Compress output XML files" },
         { "-maxwarn", FALSE, etINT, {&maxwarn},
           "Will only write output if number of warnings is at most this." },
         { "-temperature", FALSE, etREAL, {&temperature},
-          "Temperature for properties to extract from the SQLite database" }
+          "Temperature for properties to extract from the SQLite database" },
+        { "-force", FALSE, etBOOL, {&forceMerge},
+          "Force merging compounds with the same name even if not the formula matches" }
     };
     std::vector<MolProp>  mp;
     Poldata               pd;
@@ -100,12 +102,12 @@ int merge_mp(int argc, char *argv[])
 
     try 
     {
-        alexandria::readPoldata(opt2fn("-di", NFILE, fnm), &pd);
+        alexandria::readPoldata(opt2fn("-ff", NFILE, fnm), &pd);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
-    auto fns = opt2fns("-f", NFILE, fnm);
-    int nwarn = merge_xml(fns, &mp, nullptr, nullptr, nullptr, true);
+    auto fns = opt2fns("-mp", NFILE, fnm);
+    int nwarn = merge_xml(fns, &mp, nullptr, nullptr, nullptr, forceMerge);
 
     if (nwarn <= maxwarn)
     {

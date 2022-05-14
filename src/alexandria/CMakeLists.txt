@@ -49,7 +49,6 @@ target_sources(actLib
            gentop.cpp
            gromacs_top.cpp
            mcmcmutator.cpp
-           merge_mp.cpp
            merge_pd.cpp
            molgen.cpp
            molhandler.cpp

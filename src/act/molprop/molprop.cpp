@@ -205,6 +205,7 @@ int MolProp::Merge(const MolProp *src)
             if (src_f.id() == dst_f.id() &&
                 src_f.atoms() == dst_f.atoms() &&
                 src_f.multiplicity() == dst_f.multiplicity() &&
+                src_f.symmetryNumber() == dst_f.symmetryNumber() &&
                 src_f.formula() == dst_f.formula() &&
                 src_f.charge() == dst_f.charge())
             {

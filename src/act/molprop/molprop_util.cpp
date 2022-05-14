@@ -125,10 +125,10 @@ int MergeDoubleMolprops(std::vector<alexandria::MolProp> *mp,
             bName = (molname[prev] == molname[cur]);
             if (bName)
             {
-                if (!bForm && debug)
+                if (!bForm)
                 {
-                    fprintf(debug, "%s %s with formulae %s - %s\n",
-                            bForceMerge ? "Merging molecules" : "Found molecule",
+                    fprintf(stderr, "%s %s with different formulae %s - %s\n",
+                            bForceMerge ? "Merging molecules" : "Found molecules",
                             molname[prev].c_str(), form[prev].c_str(), form[cur].c_str());
                 }
                 if (bForceMerge || bForm)
