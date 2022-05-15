@@ -506,8 +506,9 @@ immStatus MyMol::zetaToAtoms(const Poldata *pd,
     return immStatus::OK;
 }
 
-void MyMol::forceEnergyMaps(std::vector<std::vector<std::pair<double, double> > > *forceMap,
-                            std::vector<std::pair<double, double> >  *enerMap)
+void MyMol::forceEnergyMaps(std::vector<std::vector<std::pair<double, double> > >   *forceMap,
+                            std::vector<std::pair<double, double> >                 *enerMap,
+                            std::vector<std::pair<double, std::map<int, double> > > *enerAllMap)
 {
     auto       myatoms = atomsConst();
     t_commrec *crtmp   = init_commrec();
@@ -515,6 +516,7 @@ void MyMol::forceEnergyMaps(std::vector<std::vector<std::pair<double, double> > 
     backupCoordinates(coordSet::Original);
     forceMap->clear();
     enerMap->clear();
+    enerAllMap->clear();
     for (auto &ei : experimentConst())
     {
         // TODO: no need to recompute the energy if we just have
@@ -544,7 +546,17 @@ void MyMol::forceEnergyMaps(std::vector<std::vector<std::pair<double, double> > 
             }
             else if (eprops.size() == 1)
             {
-                enerMap->push_back({ eprops[0]->getValue(), energyTerms()[F_EPOT] });
+                auto terms = energyTerms();
+                enerMap->push_back({ eprops[0]->getValue(), terms[F_EPOT] });
+                std::map<int, double> evals;
+                for(int i = 0; i < F_NRE; i++)
+                {
+                    if (terms[i] != 0)
+                    {
+                        evals.insert({i, terms[i]});
+                    }
+                }
+                enerAllMap->push_back({ eprops[0]->getValue(), std::move(evals) });
             }
         }
         const std::vector<gmx::RVec> &fff = ei.getForces();

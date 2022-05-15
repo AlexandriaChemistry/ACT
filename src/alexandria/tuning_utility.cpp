@@ -656,9 +656,10 @@ void TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
                                               qtStats                  *lsq_epot,
                                               gmx_stats                *lsq_freq)
 {
-    std::vector<std::pair<double, double> > eMap;
-    std::vector<std::vector<std::pair<double, double> > > fMap;
-    mol->forceEnergyMaps(&fMap, &eMap);
+    std::vector<std::pair<double, double> >                 eMap;
+    std::vector<std::vector<std::pair<double, double> > >   fMap;
+    std::vector<std::pair<double, std::map<int, double> > > enerAllMap;
+    mol->forceEnergyMaps(&fMap, &eMap, &enerAllMap);
     std::vector<std::string> dataFileNames;
     if (printSP_)
     {
@@ -674,11 +675,19 @@ void TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
         auto enerexp = mol->atomizationEnergy() + ff.first;
         (*lsq_epot)[qType::Calc].add_point(enerexp, ff.second, 0, 0);
         de2 += gmx::square(enerexp - ff.second);
-        if (printSP_)
+    }
+    if (printSP_)
+    {
+        for(const auto &eam : enerAllMap)
         {
-            tcout->push_back(gmx::formatString("%s Reference EPOT %g Calculated %g Difference %g",
-                                               dataFileNames[ccc].c_str(),
-                                               enerexp, ff.second, enerexp - ff.second));
+            auto enerexp = mol->atomizationEnergy() + eam.first;
+            std::string ttt = gmx::formatString("%s Reference EPOT %g", dataFileNames[ccc].c_str(),
+                                                enerexp);
+            for(const auto &terms : eam.second)
+            {
+                ttt += gmx::formatString(" %s: %g", interaction_function[terms.first].name, terms.second);
+            }
+            tcout->push_back(ttt);
         }
     }
     // RMS energy

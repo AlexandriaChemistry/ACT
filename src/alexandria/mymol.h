@@ -343,12 +343,17 @@ enum class coordSet {
          * forces. Store the results in vectors containing two
          * doubles, first the reference, then the calculated one.
          * Forces are stored as a vector of structures and then a
-         * vector of atoms. Energies are stored as a 1D vector.
-         * \param[out] forceMap The forces
-         * \param[out] enerMap  The energies
+         * vector of atoms. Energies are stored as a 1D vector pair.
+         * All energy components are stored as a vector of
+         * reference energies paired with a map of ACT energy components. The integer
+         * index points into the gromacs energy types.
+         * \param[out] forceMap   The forces
+         * \param[out] enerMap    The potential energies
+         * \param[out] enerAllMap The energy components for each calculation
          */
-        void forceEnergyMaps(std::vector<std::vector<std::pair<double, double> > > *forceMap,
-                             std::vector<std::pair<double, double> > *enerMap);
+        void forceEnergyMaps(std::vector<std::vector<std::pair<double, double> > >   *forceMap,
+                             std::vector<std::pair<double, double> >                 *enerMap,
+                             std::vector<std::pair<double, std::map<int, double> > > *enerAllMap);
         
         //! Return the reference frequencies collected earlier
         const std::vector<double> &referenceFrequencies() const { return ref_frequencies_; }
