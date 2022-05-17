@@ -46,7 +46,7 @@ def parseArguments():
   output = "allmols.xml"
   parser.add_argument("-o", "--output",            help="Output file, default "+output, type=str, default=output)
   gentop = "ACS-pg.xml"
-  parser.add_argument("-d", "--force_field",       help="Force field input file, default "+gentop, type=str, default=gentop)
+  parser.add_argument("-ff", "--force_field",      help="Force field input file, default "+gentop, type=str, default=gentop)
   parser.add_argument("-db", "--database",         help="Optional SQLite database containing experimental data, default none", type=str, default="")
   xmldir = "xmldir"
   parser.add_argument("-xmldir", "--xmldir",       help="Directory for molecule.xml files, leave empty to use the current directory", type=str, default=xmldir)
@@ -134,7 +134,7 @@ def run_merge(mols, methods:str, merge_mp:str, xmldir:str, gentop:str,
       datafile, logfile = name_of_data_log_file(meth, molname, xmldir, sdf_ok)
       if os.path.exists(datafile):
         files += " " + datafile
-  command = ("%s -di %s -o %s -maxwarn 0 -f %s" % (merge_mp, gentop, output, files))
+  command = ("%s -ff %s -o %s -maxwarn 0 -mp %s" % (merge_mp, gentop, output, files))
   if len(database) > 0:
     command += " -db " + database
   os.system(command)
