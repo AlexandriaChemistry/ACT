@@ -386,7 +386,7 @@ private:
     bool hasEntry(InteractionType itype) const { return entries_.find(itype) != entries_.end(); }
 
     /*! \brief Return the desired entry or throw
-     * \param[in] itype The deisred interaction type
+     * \param[in] itype The desired interaction type
      * \return a vector of pointers
      * \throws if not found. If you do not want that to happen, check first!
      */
