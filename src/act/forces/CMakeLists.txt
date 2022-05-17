@@ -29,6 +29,6 @@ file(GLOB UTILITY_SOURCES *.cpp *.h)
 target_sources(actLib PRIVATE ${UTILITY_SOURCES})
 	
 if (BUILD_TESTING)
-    add_subdirectory(tests)
+#    add_subdirectory(tests)
 endif()
 

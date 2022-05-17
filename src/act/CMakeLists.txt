@@ -27,6 +27,7 @@
 
 add_subdirectory(basics)
 add_subdirectory(coulombintegrals)
+add_subdirectory(forces)
 add_subdirectory(ga)
 add_subdirectory(molprop)
 add_subdirectory(poldata)
