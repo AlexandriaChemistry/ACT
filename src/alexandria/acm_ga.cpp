@@ -420,7 +420,7 @@ bool HybridGAMC::evolve(ga::Genome *bestGenome)
             pool[pnew]->genomePtr(i)->setFitness(imstr, fitness);
             if (gach_->evaluateTestset())
             {
-                auto fitnessTest = cr->recv_double(src);  // Receiving the new training fitness
+                auto fitnessTest = cr->recv_double(src);  // Receiving the new test fitness
                 pool[pnew]->genomePtr(i)->setFitness(imste, fitnessTest);
             }
         }
