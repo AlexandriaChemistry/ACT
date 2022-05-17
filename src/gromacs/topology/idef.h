@@ -130,7 +130,7 @@ typedef union t_iparams
         real doh, dhh;
     } settle;
     struct {
-        real b0A, cbA, betaA, b0B, cbB, betaB;
+        real b0A, cbA, betaA, D0A, b0B, cbB, betaB, D0B;
     } morse;
     struct {
         real pos0A[DIM], fcA[DIM], pos0B[DIM], fcB[DIM];

@@ -179,21 +179,16 @@ def plot_once():
                 ax.bar(xy.x, xy.y, width=0.8/len(xy.y), bottom=0.0, align="center", label=fn)
         else:
             print_label = len(label) == len(dataset)
-            mylabel     = None
-            if args.marker:
-                markers = [ "+", "x", ".", "v", "s", "o" ]
-                for n in range(len(dataset)):
-                    if label[n] not in args.ignore:
-                        if print_label:
-                            mylabel = label[n]
-                        ax.plot(dataset[n].x, dataset[n].y, label=mylabel, ls=args.linestyle, marker=markers[n % len(markers)])
-            else:
-                for n in range(len(dataset)):
-                    mylabel = ""
-                    if len(label) > n and label[n] not in args.ignore:
-                        if print_label:
-                            mylabel = label[n]
-                    ax.plot(dataset[n].x, dataset[n].y, label=mylabel, ls=args.linestyle, marker=None)
+            markers = [ "+", "x", ".", "v", "s", "o" ]
+            for n in range(len(dataset)):
+                mylabel  = None
+                if len(label) > n and label[n] not in args.ignore:
+                    if print_label:
+                        mylabel = label[n]
+                mymarker = None
+                if args.marker:
+                    mymarker=markers[n % len(markers)]
+                ax.plot(dataset[n].x, dataset[n].y, label=mylabel, ls=args.linestyle, marker=mymarker)
 
     if "title" in legends:
         plt.title(legends["title"], fontsize=args.titlefontsize)

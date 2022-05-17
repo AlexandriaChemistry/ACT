@@ -118,6 +118,7 @@ static int pbc_rvec_sub(const t_pbc *pbc, const rvec xi, const rvec xj, rvec dx)
  * b0 = equilibrium distance in nm
  * be = beta in nm^-1 (actually, it's nu_e*Sqrt(2*pi*pi*mu/D_e))
  * cb = well depth in kJ/mol
+ * D0 = offset from zero
  *
  * Note: the potential is referenced to be +cb at infinite separation
  *       and zero at the equilibrium distance!
@@ -133,7 +134,7 @@ real morse_bonds(int nbonds,
     const real one = 1.0;
     const real two = 2.0;
     real       dr, dr2, temp, omtemp, cbomtemp, fbond, vbond, fij, vtot;
-    real       b0, be, cb, b0A, beA, cbA, b0B, beB, cbB, L1;
+    real       b0, be, cb, D0, b0A, beA, cbA, D0A, b0B, beB, cbB, D0B, L1;
     rvec       dx;
     int        i, m, ki, type, ai, aj;
     ivec       dt;
@@ -148,16 +149,19 @@ real morse_bonds(int nbonds,
         b0A   = forceparams[type].morse.b0A;
         beA   = forceparams[type].morse.betaA;
         cbA   = forceparams[type].morse.cbA;
+        D0A   = forceparams[type].morse.D0A;
 
         b0B   = forceparams[type].morse.b0B;
         beB   = forceparams[type].morse.betaB;
         cbB   = forceparams[type].morse.cbB;
+        D0B   = forceparams[type].morse.D0B;
 
         L1 = one-lambda;                            /* 1 */
         b0 = L1*b0A + lambda*b0B;                   /* 3 */
         be = L1*beA + lambda*beB;                   /* 3 */
         cb = L1*cbA + lambda*cbB;                   /* 3 */
-
+        D0 = L1*D0A + lambda*D0B;                   /* 3 */
+        
         ki   = pbc_rvec_sub(pbc, x[ai], x[aj], dx); /*   3          */
         dr2  = iprod(dx, dx);                       /*   5          */
         dr   = dr2*gmx::invsqrt(dr2);               /*  10          */
@@ -175,7 +179,7 @@ real morse_bonds(int nbonds,
 
         omtemp    = one-temp;          /*   1          */
         cbomtemp  = cb*omtemp;         /*   1          */
-        vbond     = cbomtemp*omtemp;   /*   1          */
+        vbond     = D0+cbomtemp*omtemp;   /*   2          */
         fbond     = -two*be*temp*cbomtemp*gmx::invsqrt(dr2); /*   9          */
         vtot     += vbond-cb; /*   2          */
 
@@ -195,7 +199,7 @@ real morse_bonds(int nbonds,
             fshift[ki][m]      += fij;
             fshift[CENTRAL][m] -= fij;
         }
-    }                                           /*  83 TOTAL    */
+    }                                           /*  87 TOTAL    */
     return vtot;
 }
 

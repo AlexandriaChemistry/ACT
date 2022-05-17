@@ -673,7 +673,7 @@ static void UpdateIdefEntry(const ForceFieldParameterList &fs,
                 ltop->idef.iparams[gromacsType].morse.cbA     =
                 ltop->idef.iparams[gromacsType].morse.cbB = myval;
             }   
-                        
+
             fp = fs.findParameterTypeConst(bondId, "beta");
             myval = convertToGromacs(fp.value(), fp.unit());
             mtop->ffparams.iparams[gromacsType].morse.betaA         =
@@ -682,6 +682,16 @@ static void UpdateIdefEntry(const ForceFieldParameterList &fs,
             {
                 ltop->idef.iparams[gromacsType].morse.betaA     =
                 ltop->idef.iparams[gromacsType].morse.betaB = myval;
+            }
+            
+            fp = fs.findParameterTypeConst(bondId, "D0");
+            myval = convertToGromacs(fp.value(), fp.unit());
+            mtop->ffparams.iparams[gromacsType].morse.D0A         =
+                mtop->ffparams.iparams[gromacsType].morse.D0B     = myval;
+            if (ltop)
+            {
+                ltop->idef.iparams[gromacsType].morse.D0A     =
+                        ltop->idef.iparams[gromacsType].morse.D0B = myval;
             }
         }
         break;

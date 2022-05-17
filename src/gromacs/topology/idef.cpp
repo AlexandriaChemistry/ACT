@@ -99,9 +99,11 @@ void pr_iparams(FILE *fp, t_functype ftype, const t_iparams *iparams)
             pr_harm(fp, iparams, "xi", "cx");
             break;
         case F_MORSE:
-            fprintf(fp, "b0A=%15.8e, cbA=%15.8e, betaA=%15.8e, b0B=%15.8e, cbB=%15.8e, betaB=%15.8e\n",
-                    iparams->morse.b0A, iparams->morse.cbA, iparams->morse.betaA,
-                    iparams->morse.b0B, iparams->morse.cbB, iparams->morse.betaB);
+            fprintf(fp, "b0A=%15.8e, cbA=%15.8e, betaA=%15.8e, D0A=%15.8e b0B=%15.8e, cbB=%15.8e, betaB=%15.8e, D0B=%15.8e\n",
+                    iparams->morse.b0A, iparams->morse.cbA,
+                    iparams->morse.betaA, iparams->morse.D0A,
+                    iparams->morse.b0B, iparams->morse.cbB,
+                    iparams->morse.betaB, iparams->morse.D0B);
             break;
         case F_CUBICBONDS:
             fprintf(fp, "b0=%15.8e, kb=%15.8e, kcub=%15.8e\n",
