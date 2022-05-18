@@ -32,16 +32,14 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-set(testname "ACTUtilityTests")
-set(exename "act-utility-test")
+set(testname "ACTForcesTests")
+set(exename "act-forces-test")
 
 gmx_add_unit_test(
     ${testname}
     ${exename}
     # files with code for tests
-    regressionTest.cpp
-    unitsTest.cpp
+    forcecomputerutilsTest.cpp
     # pseudo-library for code for alexandria
     )
-target_link_libraries(${exename} actLib libactgromacs ${GMX_EXTRA_LIBRARIES} ${XML_LIBRARIES}
-         ${GMX_EXE_LINKER_FLAGS})
+target_link_libraries(${exename} actLib libactgromacs ${GMX_EXTRA_LIBRARIES} ${XML_LIBRARIES} ${GMX_EXE_LINKER_FLAGS})

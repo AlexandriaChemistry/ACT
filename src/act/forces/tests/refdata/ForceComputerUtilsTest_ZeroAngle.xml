@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Real Name="angle">0</Real>
+  <Real Name="cosine_angle">1</Real>
+</ReferenceData>
