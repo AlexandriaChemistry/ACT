@@ -52,7 +52,7 @@ int molprop_test(int argc, char*argv[])
     gmx_output_env_t                *oenv;
     std::vector<alexandria::MolProp> mpt;
     t_filenm                         fnm[] = {
-        { efXML, "-f", "molin",     ffREAD },
+        { efXML, "-mp", "molin",     ffREAD },
         { efXML, "-o", "molout",    ffWRITE }
     };
 #define NFILE sizeof(fnm)/sizeof(fnm[0])
@@ -67,8 +67,8 @@ int molprop_test(int argc, char*argv[])
         return 0;
     }
 
-    MolPropRead(opt2fn("-f", NFILE, fnm), &mpt);
-    printf("Read %d molecules from %s\n", (int)mpt.size(), opt2fn("-f", NFILE, fnm));
+    MolPropRead(opt2fn("-mp", NFILE, fnm), &mpt);
+    printf("Read %d molecules from %s\n", (int)mpt.size(), opt2fn("-mp", NFILE, fnm));
     MolPropWrite(opt2fn("-o", NFILE, fnm), mpt, compress);
 
     return 0;

@@ -183,9 +183,9 @@ int molprop_check(int argc, char*argv[])
     };
     t_filenm                         fnm[] =
     {
-        { efXML, "-d",  "gentop",  ffREAD },
-        { efXML, "-f",  "allmols",  ffREAD },
-        { efLOG, "-g",  "molprop_check", ffWRITE }
+        { efXML, "-ff",  "gentop",  ffREAD },
+        { efXML, "-mp",  "allmols",  ffREAD },
+        { efLOG, "-g",   "molprop_check", ffWRITE }
     };
     int NFILE = (sizeof(fnm)/sizeof(fnm[0]));
 
@@ -199,12 +199,12 @@ std::vector<alexandria::MolProp> mp;
     {
         return 0;
     }
-    MolPropRead(opt2fn("-f", NFILE, fnm), &mp);
+    MolPropRead(opt2fn("-mp", NFILE, fnm), &mp);
     
     alexandria::Poldata pd;
     try
     {
-        alexandria::readPoldata(opt2fn("-d", NFILE, fnm), &pd);
+        alexandria::readPoldata(opt2fn("-ff", NFILE, fnm), &pd);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
@@ -215,8 +215,8 @@ std::vector<alexandria::MolProp> mp;
     stringCount bccTypeCount;
 
     FILE *mylog = gmx_fio_fopen(opt2fn("-g", NFILE, fnm), "w");
-    fprintf(mylog, "Force field file %s\n", opt2fn("-d", NFILE, fnm));
-    fprintf(mylog, "Molprop file     %s\n", opt2fn("-f", NFILE, fnm));
+    fprintf(mylog, "Force field file %s\n", opt2fn("-ff", NFILE, fnm));
+    fprintf(mylog, "Molprop file     %s\n", opt2fn("-mp", NFILE, fnm));
     for (auto &m : mp)
     {
         typedef struct
