@@ -351,8 +351,8 @@ int analyze(int argc, char *argv[])
         "output corresponding to the [TT]-prop[tt] flag."
     };
     t_filenm                         fnm[] = {
-        { efXML, "-d",      "gentop",    ffREAD   },
-        { efXML, "-m",      "allmols",   ffRDMULT },
+        { efXML, "-ff",     "gentop",    ffREAD   },
+        { efXML, "-mp",     "allmols",   ffRDMULT },
         { efTEX, "-t",      "table",     ffWRITE  },
         { efTEX, "-cat",    "category",  ffOPTWR  },
         { efDAT, "-sel",    "molselect", ffREAD   },
@@ -430,7 +430,7 @@ int analyze(int argc, char *argv[])
         return 0;
     }
     ap = gmx_atomprop_init();
-    gmx::ArrayRef<const std::string> mpname = opt2fns("-m", NFILE, fnm);
+    gmx::ArrayRef<const std::string> mpname = opt2fns("-mp", NFILE, fnm);
     gms.read(opt2fn("-sel", NFILE, fnm));
     mpsa = MPSA_NR;
     if (opt2parg_bSet("-sort", npa, pa))
@@ -455,7 +455,7 @@ int analyze(int argc, char *argv[])
 
     try
     {
-        alexandria::readPoldata(opt2fn("-d", NFILE, fnm), &pd);
+        alexandria::readPoldata(opt2fn("-ff", NFILE, fnm), &pd);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
