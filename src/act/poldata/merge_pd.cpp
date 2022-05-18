@@ -229,7 +229,7 @@ int merge_pd(int argc, char *argv[])
         mergeString = strdup(allParams.c_str());
     }
     /* Read all the gentop files. */
-    auto filenames = opt2fns("-di", NFILE, fnm);
+    auto filenames = opt2fns("-ff", NFILE, fnm);
     if (filenames.size() < 2)
     {
         gmx_fatal(FARGS, "At least two gentop files are needed for merging!\n");
@@ -260,7 +260,7 @@ int merge_pd(int argc, char *argv[])
         }
     }
 
-    writePoldata(opt2fn("-do", NFILE, fnm), &pdout, bcompress);
+    writePoldata(opt2fn("-o", NFILE, fnm), &pdout, bcompress);
     if (opt2bSet("-latex", NFILE, fnm))
     {
         FILE *tp = gmx_ffopen(opt2fn("-latex", NFILE, fnm), "w");
