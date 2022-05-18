@@ -15,7 +15,7 @@ enum class FunctionType
 
 {
 
-    // Potential functions for describing InteractionType::BOND
+    // Potential functions for describing FunctionType::BOND
 
     //! Harmonic function
     HARMONIC;
@@ -23,7 +23,7 @@ enum class FunctionType
     //! Morse function
     MORSE;
 
-    // Potential functions for describing InteractionType::ANGLE
+    // Potential functions for describing FunctionType::ANGLE
 
     //!
     UREY_BRADLEY;
@@ -32,15 +32,15 @@ enum class FunctionType
     COSINE;
 
 
-    // Potential functions for describing InteractionType::LINEAR_ANGLES
+    // Potential functions for describing FunctionType::LINEAR_ANGLES
     LINEAR_ANGLE;
 
 
-    // Potential functions for describing InteractionType::IMPROPER_DIHEDRAL
+    // Potential functions for describing FunctionType::IMPROPER_DIHEDRAL
 
     IDIHS;
 
-    // Potential functions for describing InteractionType::PROPER_DIHEDRAL
+    // Potential functions for describing FunctionType::PROPER_DIHEDRAL
 
     //!
     PDIHS;
@@ -48,7 +48,7 @@ enum class FunctionType
     //!
     FOURDIHS;
 
-    // Potential functions for describing InteractionType::CHARGEDISTRIBUTION
+    // Potential functions for describing FunctionType::CHARGEDISTRIBUTION
 
     //! Dirac delat function
     DIRAC_DELTA;
@@ -59,7 +59,7 @@ enum class FunctionType
     //! Slater distribution function
     SLATER;
 
-    // Potential functions for describing InteractionType::VDW
+    // Potential functions for describing FunctionType::VDW
 
     //! Lennard-Jones function
     LENNARD_JONES
@@ -71,11 +71,36 @@ enum class FunctionType
     WANG_BUCKINGHAM;
 };
 
+
+/*! \brief
+ * Convert function type to string.
+ * \param[in] fType The function type
+ * \return The corresponding string
+ */
 const std::string &functionTypeToString(FunctionType fType);
 
-FunctionType stringToFfunctionType(const std::string &name);
+/*! \brief
+ * Convert function type to descriptive string rather than 
+ * what is force field files.
+ * \param[in] fType The function type
+ * \return The corresponding string
+ */
+const std::string &functionTypeToDescription(FunctionType fType);
 
+/*! \brief
+ * Convert string to function type.
+ * \param[in] name Name of the function
+ * \return The corresponding function type
+ * \throws if there is no corresponding function type
+ */
+FunctionType stringToFunctionType(const std::string &name);
 
+/*! \brief
+ * Return number of parameters s involved with this function type
+ * \param[in] fType The functionType
+ * \return number of parameters.
+ */
+int functionTypeToNparams(FunctionType fType);
 
 
 } // namespace alexandria
