@@ -710,8 +710,8 @@ int tune_ff(int argc, char *argv[])
 
     std::vector<t_filenm>       filenms =
     {
-        { efXML, "-f",         "allmols",    ffREAD   },
-        { efXML, "-d",         "gentop",     ffRDMULT },
+        { efXML, "-mp",        "allmols",    ffREAD   },
+        { efXML, "-ff",        "gentop",     ffRDMULT },
         { efXML, "-o",         "tune_ff",    ffWRITE  },
         { efDAT, "-sel",       "molselect",  ffREAD   },
         { efLOG, "-g",         "tune_ff",    ffWRITE  },
@@ -769,7 +769,7 @@ int tune_ff(int argc, char *argv[])
 
     // Read poldata in StaticIndividualInfo sii_
     {
-        auto fns = opt2fns("-d", filenms.size(), filenms.data());
+        auto fns = opt2fns("-ff", filenms.size(), filenms.data());
         GMX_RELEASE_ASSERT(fns.size() == 1 || fns.size() == opt.gach()->popSize(),
                            gmx::formatString("Please pass exactly one or %d (popSize) force field file names", opt.gach()->popSize()).c_str());
 
@@ -786,7 +786,7 @@ int tune_ff(int argc, char *argv[])
 
     // MolGen read being called here!
     if (0 == opt.mg()->Read(fp,
-                            opt2fn("-f", filenms.size(), filenms.data()),
+                            opt2fn("-mp", filenms.size(), filenms.data()),
                             opt.sii()->poldata(),
                             gms,
                             opt.verbose()))
