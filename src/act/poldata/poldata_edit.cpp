@@ -629,9 +629,9 @@ int poldata_edit(int argc, char*argv[])
     };
     gmx_output_env_t                *oenv;
     t_filenm                         fnm[] = {
-        { efXML, "-f",  "pdin" , ffREAD  },
-        { efXML, "-f2", "pdin2", ffOPTRD },
-        { efXML, "-o", "pdout",  ffOPTWR },
+        { efXML, "-ff",   "pdin" , ffREAD  },
+        { efXML, "-ff2",  "pdin2", ffOPTRD },
+        { efXML, "-o",    "pdout",  ffOPTWR },
         { efDAT, "-dump", "params", ffOPTWR }
     };
 
@@ -695,16 +695,16 @@ int poldata_edit(int argc, char*argv[])
         
         try 
         {
-            alexandria::readPoldata(opt2fn("-f", NFILE, fnm), &pd);
+            alexandria::readPoldata(opt2fn("-ff", NFILE, fnm), &pd);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         (void) pd.verifyCheckSum(stderr, poldataCheckSum(&pd));
-        if (opt2bSet("-f2", NFILE, fnm))
+        if (opt2bSet("-ff2", NFILE, fnm))
         {
             alexandria::Poldata pd2;
             try
             {
-                alexandria::readPoldata(opt2fn("-f2", NFILE, fnm), &pd2);
+                alexandria::readPoldata(opt2fn("-ff2", NFILE, fnm), &pd2);
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
             (void) pd2.verifyCheckSum(stderr, poldataCheckSum(&pd2));
