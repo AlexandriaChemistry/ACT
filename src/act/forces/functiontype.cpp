@@ -65,7 +65,7 @@ FunctionType stringToFunctionType(const std::string &name)
     }
     GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such function type %s",
                                                        name.c_str()).c_str()));
-    return FunctionType::BONDS;
+    return FunctionType::MORSE;
 }
 
 int functionTypeToNparams(FunctionType fType)

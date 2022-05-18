@@ -1,8 +1,3 @@
-
-
-
-
-
 #ifndef FUNCTIONTYPE_H
 #define FUNCTIONTYPE_H
 
@@ -12,63 +7,60 @@ namespace alexandria
 {
 
 enum class FunctionType
-
 {
-
-    // Potential functions for describing FunctionType::BOND
-
-    //! Harmonic function
-    HARMONIC;
+ // Potential functions for describing FunctionType::BOND
+ 
+ //! Harmonic function
+ HARMONIC,
     
-    //! Morse function
-    MORSE;
+ //! Morse function
+ MORSE,
 
-    // Potential functions for describing FunctionType::ANGLE
+ // Potential functions for describing FunctionType::ANGLE
+ 
+ //!
+ UREY_BRADLEY,
 
-    //!
-    UREY_BRADLEY;
-
-    //!
-    COSINE;
-
-
-    // Potential functions for describing FunctionType::LINEAR_ANGLES
-    LINEAR_ANGLE;
+ //!
+ COSINE,
 
 
-    // Potential functions for describing FunctionType::IMPROPER_DIHEDRAL
+ // Potential functions for describing FunctionType::LINEAR_ANGLES
+ LINEAR_ANGLE,
 
-    IDIHS;
 
-    // Potential functions for describing FunctionType::PROPER_DIHEDRAL
+ // Potential functions for describing FunctionType::IMPROPER_DIHEDRAL
+ IDIHS,
 
-    //!
-    PDIHS;
+ // Potential functions for describing FunctionType::PROPER_DIHEDRAL
 
-    //!
-    FOURDIHS;
+ //!
+ PDIHS,
 
-    // Potential functions for describing FunctionType::CHARGEDISTRIBUTION
+ //!
+ FOURDIHS,
 
-    //! Dirac delat function
-    DIRAC_DELTA;
+ // Potential functions for describing FunctionType::CHARGEDISTRIBUTION
 
-    //! Gaussain distribution function
-    GAUSSIAN;
+ //! Dirac delta function
+ DIRAC_DELTA,
 
-    //! Slater distribution function
-    SLATER;
+ //! Gaussain distribution function
+ GAUSSIAN,
 
-    // Potential functions for describing FunctionType::VDW
+ //! Slater distribution function
+ SLATER,
 
-    //! Lennard-Jones function
-    LENNARD_JONES
+ // Potential functions for describing FunctionType::VDW
 
-    //! Buckingham function
-    BUCKINGHAM;
+ //! Lennard-Jones function
+ LENNARD_JONES,
 
-    //! Wang-Buckingham function
-    WANG_BUCKINGHAM;
+ //! Buckingham function
+ BUCKINGHAM,
+
+ //! Wang-Buckingham function
+ WANG_BUCKINGHAM
 };
 
 
