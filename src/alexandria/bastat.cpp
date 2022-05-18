@@ -141,8 +141,8 @@ int bastat(int argc, char *argv[])
     };
 
     t_filenm                         fnm[] = {
-        { efXML, "-f",   "allmols",      ffRDMULT },
-        { efXML, "-d",   "gentop",       ffOPTRD },
+        { efXML, "-mp",   "allmols",      ffRDMULT },
+        { efXML, "-ff",   "gentop",       ffOPTRD },
         { efXML, "-o",   "bastat",       ffWRITE },
         { efDAT, "-sel", "molselect",    ffREAD },
         { efLOG, "-g",   "bastat",       ffWRITE },
@@ -219,7 +219,7 @@ int bastat(int argc, char *argv[])
     /* Read PolData */
     try
     {
-        readPoldata(opt2fn_null("-d", NFILE, fnm), &pd);
+        readPoldata(opt2fn_null("-ff", NFILE, fnm), &pd);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     print_memory_usage(debug);
@@ -229,7 +229,7 @@ int bastat(int argc, char *argv[])
     pd.setPolarizable(false);
 
     /* Read Molprops */
-    auto nwarn = merge_xml(opt2fns("-f", NFILE, fnm), &mp, nullptr, nullptr, nullptr, true);
+    auto nwarn = merge_xml(opt2fns("-mp", NFILE, fnm), &mp, nullptr, nullptr, nullptr, true);
     print_memory_usage(debug);
 
     if (nwarn > maxwarn)
