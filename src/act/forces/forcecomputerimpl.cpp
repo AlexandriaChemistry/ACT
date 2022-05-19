@@ -84,6 +84,7 @@ static double computeMorse(const ForceFieldParameterList      &ffpl,
     return ebond;
 }
 
+// It is not finished yes, needs to be double checked. 
 static double computeAngles(const ForceFieldParameterList      &ffpl,
                             const std::vector<TopologyEntry *> &bonds,
                             const std::vector<gmx::RVec>       *coordinates,
