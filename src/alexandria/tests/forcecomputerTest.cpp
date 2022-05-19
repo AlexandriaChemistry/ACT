@@ -144,6 +144,7 @@ protected:
         for(int i = 0; i < mp_.NAtom(); i++)
         {
             coordinates.push_back(mp_.x()[i]);
+            forces.push_back({ 0, 0, 0 });
         }
         fcomp.compute(*pd, *mp_.topology(), &coordinates, &forces, &energies);
 

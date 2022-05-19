@@ -8,6 +8,41 @@
 namespace alexandria
 {
 
+static double computeBonds(const ForceFieldParameterList      &ffpl,
+                           const std::vector<TopologyEntry *> &bonds,
+                           const std::vector<gmx::RVec>       *coordinates,
+                           std::vector<gmx::RVec>             *forces)
+{
+    double ebond = 0;
+    auto   x     = *coordinates;
+    auto   f     = *forces;
+    const  real half = 0.5;
+    for (const auto b : bonds)
+    {
+        // Get the parameters. We have to know their names to do this.
+        auto id         = b->id(); 
+        auto bondlength = ffpl.findParameterTypeConst(id, "bondlength").value();
+        auto kb         = ffpl.findParameterTypeConst(id, "kb").value();
+        // Get the atom indices
+        auto indices    = b->atomIndices();
+        rvec dx;
+        rvec_sub(x[indices[0]], x[indices[1]], dx);
+        auto dr2        = iprod(dx, dx);
+        auto dr         = std::sqrt(dr2) - bondlength;
+        
+        auto fbond      = kb*dr*gmx::invsqrt(dr2);
+        ebond          += half*dr*dr;
+        
+        for (int m = 0; (m < DIM); m++)
+        {
+            auto fij          = fbond*dx[m];
+            f[indices[0]][m] += fij;
+            f[indices[1]][m] -= fij;
+        }
+    }
+    return ebond;
+}
+
 static double computeMorse(const ForceFieldParameterList      &ffpl,
                            const std::vector<TopologyEntry *> &bonds,
                            const std::vector<gmx::RVec>       *coordinates,
@@ -48,6 +83,7 @@ static double computeMorse(const ForceFieldParameterList      &ffpl,
 }
 
 std::map<int, bondForceComputer> bondForceComputerMap = {
+    { F_BONDS, computeBonds },
     { F_MORSE, computeMorse }
 };
 
@@ -58,7 +94,7 @@ bondForceComputer getBondForceComputer(int gromacs_index)
     {
         return *bfc->second;
     }
-    GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such gromacs_index %d implemented to compute bonded forces for", gromacs_index).c_str()));
+    // GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such gromacs_index %d implemented to compute bonded forces for", gromacs_index).c_str()));
     // Keep the compiler happy
     return nullptr;
 }

@@ -36,9 +36,16 @@ void ForceComputer::compute(const Poldata                     &pd,
         auto ffpl  = pd.findForcesConst(entry.first);
         // The function we need to do the math
         auto bfc   = getBondForceComputer(ffpl.fType());
-        // Now do the calculations and store the energy
-        energies->insert({ entry.first,
-                bfc(ffpl, entry.second, coordinates, forces) });
+        if (nullptr == bfc)
+        {
+            fprintf(stderr, "Please implement a force function for type %s\n", interaction_function[ffpl.fType()].name);
+        }
+        else
+        {
+            // Now do the calculations and store the energy
+            energies->insert({ entry.first,
+                    bfc(ffpl, entry.second, coordinates, forces) });
+        }
     }
 }
 
