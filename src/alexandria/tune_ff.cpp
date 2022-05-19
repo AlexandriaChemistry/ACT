@@ -624,7 +624,7 @@ bool OptACM::runMaster(bool optimize,
 int tune_ff(int argc, char *argv[])
 {
     static const char          *desc[] = {
-        "tune_ff read a series of molecules and corresponding physicochemical",
+        "tune_ff reads a series of molecules and corresponding physico-chemical",
         "properties from a file. The properties can either originate from",
         "experimental data or from quantum chemistry calculations.",
         "The program then tunes empirical force field parameters using",
@@ -670,8 +670,8 @@ int tune_ff(int argc, char *argv[])
         "iupac|Test[PAR]",
         "iupac|Ignore[PAR]",
         "and you should ideally have a line for each molecule in the molecule database",
-        "([TT]-f[tt] option). Missing molecules will be ignored. Selection files",
-        " can be generated using the [TT]molselect[tt] script."
+        "([TT]-mp[tt] option). Missing molecules will be ignored. Selection files",
+        "can be generated using the [TT]molselect[tt] script."
     };
 
     real                efield              = 1;
