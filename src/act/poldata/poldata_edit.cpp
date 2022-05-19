@@ -688,7 +688,7 @@ int poldata_edit(int argc, char*argv[])
     if (cr.isMaster())
     {
         if (!parse_common_args(&argc, argv, 0, NFILE, fnm, npargs, pa,
-                               1, desc, 0, nullptr, &oenv))
+                               asize(desc), desc, 0, nullptr, &oenv))
         {
             return 0;
         }
