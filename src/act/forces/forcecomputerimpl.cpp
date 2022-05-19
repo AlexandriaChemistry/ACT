@@ -87,7 +87,7 @@ static double computeMorse(const ForceFieldParameterList      &ffpl,
 
 // It is not finished yes, needs to be double checked. 
 static double computeAngles(const ForceFieldParameterList      &ffpl,
-                            const std::vector<TopologyEntry *> &bonds,
+                            const std::vector<TopologyEntry *> &angles,
                             const std::vector<gmx::RVec>       *coordinates,
                             std::vector<gmx::RVec>             *forces)
 {
@@ -116,13 +116,13 @@ static double computeAngles(const ForceFieldParameterList      &ffpl,
 		  theta  *= DEG2RAD;
 
 		  // Compute deviation from the reference angle
-		  auto da  = theta - theta0
-		  auto da2 = da*da
+		  auto da  = theta - theta0;
+		  auto da2 = da*da;
         
         auto fangle      = ka*da;
         energy          += half*ka*da2;
         
-        auto = costh2 = gmx::square(costh);
+        auto costh2 = gmx::square(costh);
         if (costh2 < 1)
         {
             real st, sth;
