@@ -6,6 +6,7 @@
 
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/math/units.h"
 
 namespace alexandria
 {
