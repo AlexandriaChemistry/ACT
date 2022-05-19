@@ -21,8 +21,8 @@ static double computeBonds(const ForceFieldParameterList      &ffpl,
     {
         // Get the parameters. We have to know their names to do this.
         auto id         = b->id(); 
-        auto bondlength = ffpl.findParameterTypeConst(id, "bondlength").value();
-        auto kb         = ffpl.findParameterTypeConst(id, "kb").value();
+        auto bondlength = ffpl.findParameterTypeConst(id, "bondlength").gromacsValue();
+        auto kb         = ffpl.findParameterTypeConst(id, "kb").gromacsValue();
         // Get the atom indices
         auto indices    = b->atomIndices();
         rvec dx;
@@ -31,13 +31,13 @@ static double computeBonds(const ForceFieldParameterList      &ffpl,
         auto dr         = std::sqrt(dr2) - bondlength;
         
         auto fbond      = kb*dr*gmx::invsqrt(dr2);
-        ebond          += half*dr*dr;
+        ebond          += half*kb*dr*dr;
         
         for (int m = 0; (m < DIM); m++)
         {
             auto fij          = fbond*dx[m];
-            f[indices[0]][m] += fij;
-            f[indices[1]][m] -= fij;
+            (*forces)[indices[0]][m] += fij;
+            (*forces)[indices[1]][m] -= fij;
         }
     }
     return ebond;
@@ -55,10 +55,10 @@ static double computeMorse(const ForceFieldParameterList      &ffpl,
     {
         // Get the parameters. We have to know their names to do this.
         auto id         = b->id(); 
-        auto bondlength = ffpl.findParameterTypeConst(id, "bondlength").value();
-        auto beta       = ffpl.findParameterTypeConst(id, "beta").value();
-        auto De         = ffpl.findParameterTypeConst(id, "De").value();
-        auto D0         = ffpl.findParameterTypeConst(id, "D0").value();
+        auto bondlength = ffpl.findParameterTypeConst(id, "bondlength").gromacsValue();
+        auto beta       = ffpl.findParameterTypeConst(id, "beta").gromacsValue();
+        auto De         = ffpl.findParameterTypeConst(id, "De").gromacsValue();
+        auto D0         = ffpl.findParameterTypeConst(id, "D0").gromacsValue();
         // Get the atom indices
         auto indices    = b->atomIndices();
         rvec dx;

@@ -152,6 +152,18 @@ protected:
         {
             checker_.checkReal(ener.second, interactionTypeToString(ener.first).c_str());
         }
+        auto atoms = mp_.atoms();
+        const char *xyz[DIM] = { "X", "Y", "Z" };
+        for(size_t i = 0; i < forces.size(); i++)
+        {
+            for(int m = 0; m < DIM; m++)
+            {
+                auto label = gmx::formatString("%s-%zu f%s", 
+                                               *atoms->atomtype[i],
+                                               i+1, xyz[m]);
+                checker_.checkReal(forces[i][m], label.c_str());
+            }
+        }
     }
 };
 

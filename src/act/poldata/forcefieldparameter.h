@@ -42,6 +42,7 @@
 #include "gromacs/utility/fatalerror.h"
 
 #include "act/utility/communicationrecord.h"
+#include "act/utility/units.h"
 #include "act/basics/mutability.h"
 
 /*! \brief Convert string to boolean
@@ -138,6 +139,9 @@ class ForceFieldParameter
     
     //! \brief Return current parameter value
     double value() const { return value_; }
+    
+    //! \brief Return current parameter value
+    double gromacsValue() const { return convertToGromacs(value_, unit_); }
     
     //! \brief Return original parameter value
     double originalValue() const { return originalValue_; }

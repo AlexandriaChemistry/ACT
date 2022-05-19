@@ -1,5 +1,14 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <Real Name="BONDS">9255.166364866709</Real>
+  <Real Name="BONDS">0.0021212657490020733</Real>
+  <Real Name="o3-1 fX">0</Real>
+  <Real Name="o3-1 fY">0</Real>
+  <Real Name="o3-1 fZ">-34.293520284521072</Real>
+  <Real Name="h-2 fX">0</Real>
+  <Real Name="h-2 fY">-22.393375638781279</Real>
+  <Real Name="h-2 fZ">17.146760142260536</Real>
+  <Real Name="h-3 fX">0</Real>
+  <Real Name="h-3 fY">22.393375638781279</Real>
+  <Real Name="h-3 fZ">17.146760142260536</Real>
 </ReferenceData>
