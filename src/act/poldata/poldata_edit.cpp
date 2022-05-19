@@ -611,10 +611,10 @@ static void compare_pd(Poldata *pd1,
 
 int poldata_edit(int argc, char*argv[])
 {
-    static const char               *desc[] = {
-        "poldata_edit reads a poldata (force field) file and can do ",
-        "a number of things.[PAR]",
-        "If the analyze flag is set it will analyze the file and print",
+    static const char               *desc[] =
+    {
+        "poldata_edit reads a poldata (force field) file and can do a number of things.[PAR]",
+        "If the flag [TT]-ana[TT] is set it will analyze the file and print",
         "if parameters are close to their bounds.[PAR]",
         "It may write a new file that can be compared to the input.",
         "If run in parallel, this utility will read on the first processor,",
