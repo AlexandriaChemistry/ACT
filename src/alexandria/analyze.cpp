@@ -346,7 +346,7 @@ int analyze(int argc, char *argv[])
         "iupac|Test[PAR]",
         "iupac|Ignore[PAR]",
         "and you should ideally have a line for each molecule in the molecule database",
-        "([TT]-m[tt] option). Missing molecules will be ignored. You can also write a",
+        "([TT]mp[tt] option). Missing molecules will be ignored. You can also write a",
         "selection file ([TT]-selout[tt]) that contains all the molecules in the",
         "output corresponding to the [TT]-prop[tt] flag."
     };

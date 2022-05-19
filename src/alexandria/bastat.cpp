@@ -135,14 +135,14 @@ int bastat(int argc, char *argv[])
     static const char               *desc[] = {
         "bastat read a series of molecules and extracts average geometries from",
         "those. First atomtypes are determined and then bond-lengths, bond-angles",
-        "and dihedral angles are extracted. The results are stored in a gentop.dat file.[PAR]"
+        "and dihedral angles are extracted. The results are stored in the updated force field file (bastat.xml).[PAR]"
         "The program can also generate (quite) realistic dissociation energies from"
         "experimental or QM data when the [TT]-dissoc[tt] optionis given." 
     };
 
     t_filenm                         fnm[] = {
-        { efXML, "-mp",   "allmols",      ffRDMULT },
-        { efXML, "-ff",   "gentop",       ffOPTRD },
+        { efXML, "-mp",  "allmols",      ffRDMULT },
+        { efXML, "-ff",  "gentop",       ffOPTRD },
         { efXML, "-o",   "bastat",       ffWRITE },
         { efDAT, "-sel", "molselect",    ffREAD },
         { efLOG, "-g",   "bastat",       ffWRITE },
