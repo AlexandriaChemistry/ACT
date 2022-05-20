@@ -4,12 +4,89 @@
 
 #include "act/forces/forcecomputerutils.h"
 
+#include "gromacs/gmxlib/nonbonded/nb_generic.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/units.h"
 
 namespace alexandria
 {
+
+static double computeWBH(const ForceFieldParameterList      &ffpl,
+                         const std::vector<TopologyEntry *> &pairs,
+                         const std::vector<gmx::RVec>       *coordinates,
+                         std::vector<gmx::RVec>             *forces)
+{
+    double ebond = 0;
+    auto   x     = *coordinates;
+    auto  &f     = *forces;
+    for (const auto b : pairs)
+    {
+        // Get the parameters. We have to know their names to do this.
+        // For this to work, we need ffpl containing the parameters
+        // with the combination rules applied. Something like that does
+        // not exist in the input force field files.
+        auto id      = b->id(); 
+        auto sigma   = ffpl.findParameterTypeConst(id, "sigma").gromacsValue();
+        auto epsilon = ffpl.findParameterTypeConst(id, "epsilon").gromacsValue();
+        auto gamma   = ffpl.findParameterTypeConst(id, "gamma").gromacsValue();
+        // Get the atom indices
+        auto indices    = b->atomIndices();
+        rvec dx;
+        rvec_sub(x[indices[0]], x[indices[1]], dx);
+        auto dr2        = iprod(dx, dx);
+        auto rinv       = gmx::invsqrt(dr2);
+        real ewbh, fwbh;
+        wang_buckingham(sigma, epsilon, gamma, dr2, rinv, &ewbh, &fwbh);
+        ebond      += ewbh;
+        real fbond  = fwbh*rinv;
+        for (int m = 0; (m < DIM); m++)
+        {
+            auto fij          = fbond*dx[m];
+            f[indices[0]][m] += fij;
+            f[indices[1]][m] -= fij;
+        }
+    }
+    return ebond;
+}
+
+static double computeCoulomb(const ForceFieldParameterList      &ffpl,
+                             const std::vector<TopologyEntry *> &pairs,
+                             const std::vector<gmx::RVec>       *coordinates,
+                             std::vector<gmx::RVec>             *forces)
+{
+    double ebond = 0;
+    auto   x     = *coordinates;
+    auto  &f     = *forces;
+    for (const auto b : pairs)
+    {
+        // Get the parameters. We have to know their names to do this.
+        // For this to work, we need ffpl containing the parameters
+        // with the combination rules applied. Something like that does
+        // not exist in the input force field files.
+        auto id    = b->id(); 
+        auto qq    = ffpl.findParameterTypeConst(id, "qq").gromacsValue();
+        auto izeta = ffpl.findParameterTypeConst(id, "izeta").gromacsValue();
+        auto jzeta = ffpl.findParameterTypeConst(id, "jzeta").gromacsValue();
+        // Get the atom indices
+        auto indices    = b->atomIndices();
+        rvec dx;
+        rvec_sub(x[indices[0]], x[indices[1]], dx);
+        auto dr2        = iprod(dx, dx);
+        auto rinv       = gmx::invsqrt(dr2);
+        real velec, felec;
+        coulomb_gaussian(qq, izeta, jzeta, std::sqrt(dr2), &velec, &felec);
+        ebond      += velec;
+        real fbond  = felec*rinv;
+        for (int m = 0; (m < DIM); m++)
+        {
+            auto fij          = fbond*dx[m];
+            f[indices[0]][m] += fij;
+            f[indices[1]][m] -= fij;
+        }
+    }
+    return ebond;
+}
 
 static double computeBonds(const ForceFieldParameterList      &ffpl,
                            const std::vector<TopologyEntry *> &bonds,
@@ -111,10 +188,6 @@ static double computeAngles(const ForceFieldParameterList      &ffpl,
         auto theta = bond_angle(x[indices[0]], x[indices[1]], x[indices[2]], 
                                 r_ij, r_kj, &costh);
 
-        // Convert Dergree to Radian
-        theta0 *= DEG2RAD;
-        theta  *= DEG2RAD;
-
         // Compute deviation from the reference angle
         auto da  = theta - theta0;
         auto da2 = da*da;
@@ -158,11 +231,12 @@ static double computeAngles(const ForceFieldParameterList      &ffpl,
     return energy;
 }
 
-
 std::map<int, bondForceComputer> bondForceComputerMap = {
-    { F_BONDS,  computeBonds },
-    { F_MORSE,  computeMorse },
-    { F_ANGLES, computeAngles }
+    { F_BONDS,   computeBonds   },
+    { F_MORSE,   computeMorse   },
+    { F_ANGLES,  computeAngles  },
+    { F_BHAM,    computeWBH     },
+    { F_COUL_SR, computeCoulomb }
 };
 
 bondForceComputer getBondForceComputer(int gromacs_index)

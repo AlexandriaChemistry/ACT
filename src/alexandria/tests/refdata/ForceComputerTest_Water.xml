@@ -2,14 +2,14 @@
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
   <Real Name="BONDS">0.0021212657490020733</Real>
-  <Real Name="ANGLES">0.00016975820484113559</Real>
+  <Real Name="ANGLES">0.55728331281907129</Real>
   <Real Name="o3-1 fX">0</Real>
-  <Real Name="o3-1 fY">1.9653266662827851</Real>
-  <Real Name="o3-1 fZ">-36.86020331535876</Real>
+  <Real Name="o3-1 fY">112.60492334251931</Real>
+  <Real Name="o3-1 fZ">-181.35362529936677</Real>
   <Real Name="h-2 fX">0</Real>
-  <Real Name="h-2 fY">-24.358702305064064</Real>
-  <Real Name="h-2 fZ">14.580077111422849</Real>
+  <Real Name="h-2 fY">-134.99829898130059</Real>
+  <Real Name="h-2 fZ">-129.91334487258516</Real>
   <Real Name="h-3 fX">0</Real>
   <Real Name="h-3 fY">22.393375638781279</Real>
-  <Real Name="h-3 fZ">22.280126203935914</Real>
+  <Real Name="h-3 fZ">311.26697017195193</Real>
 </ReferenceData>
