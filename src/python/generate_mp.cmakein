@@ -126,18 +126,39 @@ def parallel_build(M, mols, methods:str, xmldir:str, maxpot:int, sdf_ok):
   for r in results:
     ddd = r.get(timeout=1000)
 
-def run_merge(mols, methods:str, merge_mp:str, xmldir:str, gentop:str,
+def make_index_list(mols, block_length):
+  numb_blocks = int(len(mols)/block_length)
+  index_list = [(x*block_length) for x in range(0,numb_blocks + 1)]
+  index_list.append(len(mols))
+  return index_list
+
+def run_merge(mols, block_length, methods:str, merge_mp:str, xmldir:str, gentop:str,
               database:str, maxpot, output:str, sdf_ok=False):
-  files = ""
-  for molname in mols:
-    for meth in methods.split(";"):
-      datafile, logfile = name_of_data_log_file(meth, molname, xmldir, sdf_ok)
-      if os.path.exists(datafile):
-        files += " " + datafile
-  command = ("%s -ff %s -o %s -maxwarn 0 -mp %s" % (merge_mp, gentop, output, files))
-  if len(database) > 0:
-    command += " -db " + database
+
+  index_list = make_index_list(mols,block_length)
+  print("Compounds will be merged in %s blocks with a maximum of %s molecules. Temporary files will be deleted after merging all molecules." % ((len(index_list)-1), block_length))
+
+  temp_files = ""
+  for block_index in range(len(index_list)-1):
+    files = ""
+    for molname_index in range(index_list[block_index],index_list[block_index+1]):
+      molname = mols[molname_index]
+      for meth in methods.split(";"):
+        datafile, logfile = name_of_data_log_file(meth, molname, xmldir, sdf_ok)
+        if os.path.exists(datafile):
+          files += " " + datafile
+    
+    command = ("%s -ff %s -o temp_%s_%s -maxwarn 0 -mp %s" % (merge_mp, gentop, (block_index + 1), output, files))
+    temp_files += "temp_%s_%s " % ((block_index +1), output)
+
+    if (block_index == (len(index_list)-1)):
+      if len(database) > 0:
+        command += " -db " + database
+    os.system(command)
+
+  command = ("%s -ff %s -o %s -maxwarn 0 -mp %s" % (merge_mp, gentop, output, temp_files))
   os.system(command)
+  os.system("rm temp_*")
 
 def get_alexandria():
   for name in ["alexandria", "alexandria_d", "alexandria_mpi", "alexandria_mpi_d"]:
@@ -173,5 +194,7 @@ if __name__ == "__main__":
   maxpot = min(100, max(20, args.maxpot))
   if not args.skip_build:
     parallel_build(M, mols, args.methods, args.xmldir, maxpot, False)
-  run_merge(mols, args.methods, merge_mp, args.xmldir,
+  
+  block_length = 2000  
+  run_merge(mols, block_length, args.methods, merge_mp, args.xmldir,
             gentop, args.database, maxpot, args.output)
