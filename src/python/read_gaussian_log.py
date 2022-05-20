@@ -517,6 +517,7 @@ class GaussianReader:
             elif line.find("Atomic Center") >= 0 and atomicCenter < 2:
                 delta_c = self.get_esp_centers(content, content_index)
                 if delta_c == 0:
+                    print("Cannot find ESP centers")
                     return None
                 atomicCenter += 1
                 if delta_c != len(self.espfitcenter):
@@ -584,7 +585,7 @@ class GaussianReader:
         
         # See if we gathered any thermochemistry data
         if self.verbose:
-            print("tcmap {}".format(self.tcmap))
+            print("tcmap1 {}".format(self.tcmap))
         if None != self.tcmap["Temp"] and None != self.tcmap["Method"]:
             leveloftheory =  self.tcmap["Method"] + "/" + basis
             ahof = AtomicHOF(leveloftheory, self.tcmap["Temp"], self.verbose)
@@ -592,7 +593,8 @@ class GaussianReader:
             
             # Find the right set of coordinates.
             self.select_coordinates()
-            
+            if debug:
+                print("Got coordinates")
             md = MoleculeDict()
             if not md.from_coords_elements(self.atomname, self.coordinates, "alexandria"):
                 print("Cannot deduce weight or formula from %s" % infile)
@@ -620,6 +622,7 @@ class GaussianReader:
                 # We can only add the atoms after selecting the coordinates.
                 # This is likely a peculiarity of the Alexandria library.
                 if not self.add_atoms(g2a):
+                    print("Cannot add the atoms or atomtypes")
                     return None
                 frag = Fragment("1", self.charge, self.multiplicity, 1, range(1,1+len(self.atomtypes)), md.mol_weight, md.formula)
                 self.mp.add_fragment(frag)
@@ -635,6 +638,8 @@ class GaussianReader:
                 return self.mp
             else:
                 print("tcmap2 {}".format(tcmap))
+        else:
+            print("No temperature or method? tcmap3 {}".format(tcmap))
         return None
     
     def read(self, infile:str) -> Molprop:

@@ -70,7 +70,8 @@ class AtomicHOF:
             myelem = AtomNumberToAtomName(AtomNameToAtomNumber(elem))
             akey   = myelem + "|0"
         if not akey in self.ahof:
-            sys.exit("Cannot find key %s in the Atomic Heat of Formation table. Method is %s" % ( akey, self.method ))
+            print("Cannot find key %s in the Atomic Heat of Formation table. Method is %s" % ( akey, self.method ))
+            return None
         for p in range(len(self.ahof[akey])):
             thisprop = self.ahof[akey][p]
             if thisprop["Method"] == method and thisprop["Temp"] == temp:
@@ -83,7 +84,8 @@ class AtomicHOF:
             myelem = AtomNumberToAtomName(AtomNameToAtomNumber(elem))
             akey   = myelem + "|" + str(charge)
         if not akey in self.ahof:
-            sys.exit("Cannot find key %s in the Atomic Heat of Formation table. Method is %s" % ( akey, self.method ))
+            print("Cannot find key %s in the Atomic Heat of Formation table. Method is %s" % ( akey, self.method ))
+            return None, None, None
         HexpT  = None
         S0     = None
         Vdhf   = None
