@@ -18,7 +18,7 @@ static double computeBonds(const ForceFieldParameterList      &ffpl,
 {
     double ebond = 0;
     auto   x     = *coordinates;
-    auto   f     = *forces;
+    auto  &f     = *forces;
     const  real half = 0.5;
     for (const auto b : bonds)
     {
@@ -39,8 +39,8 @@ static double computeBonds(const ForceFieldParameterList      &ffpl,
         for (int m = 0; (m < DIM); m++)
         {
             auto fij          = fbond*dx[m];
-            (*forces)[indices[0]][m] += fij;
-            (*forces)[indices[1]][m] -= fij;
+            f[indices[0]][m] += fij;
+            f[indices[1]][m] -= fij;
         }
     }
     return ebond;
@@ -51,9 +51,9 @@ static double computeMorse(const ForceFieldParameterList      &ffpl,
                            const std::vector<gmx::RVec>       *coordinates,
                            std::vector<gmx::RVec>             *forces)
 {
-    double ebond = 0;
-    auto   x     = *coordinates;
-    auto   f     = *forces;
+    double  ebond = 0;
+    auto    x     = *coordinates;
+    auto   &f     = *forces;
     for (const auto b : bonds)
     {
         // Get the parameters. We have to know their names to do this.
@@ -91,16 +91,16 @@ static double computeAngles(const ForceFieldParameterList      &ffpl,
                             const std::vector<gmx::RVec>       *coordinates,
                             std::vector<gmx::RVec>             *forces)
 {
-    double energy = 0, costh = 0;
-    auto   x     = *coordinates;
-    auto   f     = *forces;
+    double  energy = 0, costh = 0;
+    auto    x     = *coordinates;
+    auto   &f     = *forces;
     const  real half = 0.5;
     for (const auto a : angles)
     {
         // Get the parameters. We have to know their names to do this.
         auto id         = a->id(); 
-        auto theta0     = ffpl.findParameterTypeConst(id, "theta0").gromacsValue();
-        auto ka         = ffpl.findParameterTypeConst(id, "ka").gromacsValue();
+        auto theta0     = ffpl.findParameterTypeConst(id, "angle").gromacsValue();
+        auto ka         = ffpl.findParameterTypeConst(id, "kt").gromacsValue();
         // Get the atom indices
         auto indices    = a->atomIndices();
 
@@ -108,16 +108,16 @@ static double computeAngles(const ForceFieldParameterList      &ffpl,
 	     // atom1 -> k
 		  // atom2 -> j
         rvec r_ij, r_kj;
-		  auto theta = bond_angle(x[indices[0]], x[indices[1]], x[indices[2]], 
-										  r_ij, r_kj, &costh);
+        auto theta = bond_angle(x[indices[0]], x[indices[1]], x[indices[2]], 
+                                r_ij, r_kj, &costh);
 
-		  // Convert Dergree to Radian
-		  theta0 *= DEG2RAD;
-		  theta  *= DEG2RAD;
+        // Convert Dergree to Radian
+        theta0 *= DEG2RAD;
+        theta  *= DEG2RAD;
 
-		  // Compute deviation from the reference angle
-		  auto da  = theta - theta0;
-		  auto da2 = da*da;
+        // Compute deviation from the reference angle
+        auto da  = theta - theta0;
+        auto da2 = da*da;
         
         auto fangle      = ka*da;
         energy          += half*ka*da2;
@@ -149,9 +149,9 @@ static double computeAngles(const ForceFieldParameterList      &ffpl,
                 f_i[m]    = -(cik*r_kj[m] - cii*r_ij[m]);
                 f_k[m]    = -(cik*r_ij[m] - ckk*r_kj[m]);
                 f_j[m]    = -f_i[m] - f_k[m];
-                (*forces)[indices[0]][m] += f_i[m];
-                (*forces)[indices[1]][m] += f_k[m];
-                (*forces)[indices[2]][m] += f_j[m];
+                f[indices[0]][m] += f_i[m];
+                f[indices[1]][m] += f_k[m];
+                f[indices[2]][m] += f_j[m];
             }
         }                                          
     }
@@ -160,8 +160,9 @@ static double computeAngles(const ForceFieldParameterList      &ffpl,
 
 
 std::map<int, bondForceComputer> bondForceComputerMap = {
-    { F_BONDS, computeBonds },
-    { F_MORSE, computeMorse }
+    { F_BONDS,  computeBonds },
+    { F_MORSE,  computeMorse },
+    { F_ANGLES, computeAngles }
 };
 
 bondForceComputer getBondForceComputer(int gromacs_index)

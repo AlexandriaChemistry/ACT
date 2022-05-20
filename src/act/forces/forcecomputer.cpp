@@ -32,6 +32,10 @@ void ForceComputer::compute(const Poldata                     &pd,
     }
     for(const auto &entry : top.entries())
     {
+        if (entry.second.empty())
+        {
+            continue;
+        }
         // Force field parameter list
         auto ffpl  = pd.findForcesConst(entry.first);
         // The function we need to do the math
