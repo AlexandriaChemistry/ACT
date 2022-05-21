@@ -124,6 +124,7 @@ class ForceFieldParameter
                       gmx::formatString("Value for force field parameter %g (%s) not within bounds [%g, %g]",
                       value_, unit_.c_str(), minimum_, maximum_).c_str()));
         }
+        calculateInternalValue();
     }
         
     //! \brief Return unit of parameter
@@ -141,7 +142,7 @@ class ForceFieldParameter
     double value() const { return value_; }
     
     //! \brief Return current parameter value
-    double gromacsValue() const { return convertToGromacs(value_, unit_); }
+    double internalValue() const { return internalValue_; }
     
     //! \brief Return original parameter value
     double originalValue() const { return originalValue_; }
@@ -214,7 +215,8 @@ class ForceFieldParameter
         maximum_ = std::max(minimum_, maximum_);
         value_   = std::max(minimum_, value_);
         value_   = std::min(maximum_, value_);
-        nonNegative_ = true; 
+        nonNegative_ = true;
+        calculateInternalValue();
     }
 
     bool nonNegative() const { return nonNegative_; }
@@ -255,10 +257,14 @@ class ForceFieldParameter
     CommunicationStatus Receive(const CommunicationRecord *cr, int src);
 
  private:
+    //! Update the internal value by converting units
+    void calculateInternalValue() { internalValue_ = convertToGromacs(value_, unit_); }
     //! The unit of the parameter
     std::string unit_;
     //! The current value of the parameter
     double      value_               = 0;
+    //! The current internal value of the parameter
+    double      internalValue_       = 0;
     //! The original value of the parameter
     double      originalValue_       = 0;
     //! The current uncertainty in the parameter
