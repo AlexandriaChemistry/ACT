@@ -8,9 +8,13 @@
 
 #include "staticindividualinfo.h"
 
+#include <algorithm>
+
 #include "act/ga/Genome.h"
 #include "act/utility/memory_check.h"
 #include "act/poldata/poldata_xml.h"
+
+#include "gromacs/utility/stringutil.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -392,7 +396,8 @@ void StaticIndividualInfo::assignParamClassIndex()
     {
         for (size_t j = 0; j < paramNames_.size(); j++)
         {
-            if (paramNames_[j].find(paramClass_[i]) != std::string::npos)
+            const auto tokenizedName = gmx::splitDelimitedString(paramNames_[j], '-');
+            if (std::find(tokenizedName.begin(), tokenizedName.end(), paramClass_[i]) != tokenizedName.end())
             {
                 paramClassIndex_[j] = i;
             }
