@@ -19,7 +19,11 @@ class Molprops:
  
     def add_molecule(self, molecule):
         if len(molecule.fragments) == 0:
-            sys.exit("You forgot to add fragments")
+            molname = ""
+            if "molname" in molecule.properties:
+                molname = molecule.properties["molname"]
+            print("There are no fragments. Ignoring molecule %s" % molname)
+            return
         lastmol = ET.SubElement(self.molecules, "molecule")
         for prop in molecule.properties.keys():
             lastmol.set(prop, molecule.properties[prop])
