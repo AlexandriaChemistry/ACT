@@ -82,6 +82,7 @@ void ForceFieldParameter::setValue(double value)
         }
         break;
     }
+    calculateInternalValue();
 }
 
 void ForceFieldParameter::setUncertainty(double uncertainty)

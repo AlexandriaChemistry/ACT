@@ -97,7 +97,7 @@ int gentop(int argc, char *argv[])
         //"will be used.",
         "Using the [TT]-ff[tt] flag, a force field file can be specified.",
         "Depending on the selected force field file, the force field",
-        "uses polarizable or non-polarizable Gaussian charges. [PAR]"
+        "uses polarizable or non-polarizable Gaussian charges. [PAR]",
         "When the [TT]-openmm[tt] flag is passed, an XML file will be created",
         "that can be used to run a simulation of the system using the OpenMM",
         "software."

@@ -2,41 +2,41 @@
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
   <Int Name="qtotSize">34</Int>
-  <Sequence Name="qtotValuesEqdAlgorithm_EEM">
+  <Sequence Name="qtotValuesEqdAlgorithm_SQE">
     <Int Name="Length">34</Int>
-    <Real>1.0275442559165671</Real>
-    <Real>-0.59999999999999998</Real>
-    <Real>-0.83018605110857413</Real>
-    <Real>-0.59999999999999998</Real>
-    <Real>0.72504704533942854</Real>
-    <Real>-0.59999999999999998</Real>
-    <Real>0.59074813087332001</Real>
-    <Real>-0.59999999999999998</Real>
-    <Real>0.75106982999759087</Real>
-    <Real>-0.59999999999999998</Real>
-    <Real>-0.82501288610316359</Real>
-    <Real>-0.59999999999999998</Real>
-    <Real>1.0242607335115852</Real>
-    <Real>-0.59999999999999998</Real>
-    <Real>0.5706091533693709</Real>
-    <Real>-0.59999999999999998</Real>
-    <Real>0.7510698299975922</Real>
-    <Real>-0.59999999999999998</Real>
-    <Real>-0.82501288610316159</Real>
-    <Real>-0.59999999999999998</Real>
-    <Real>1.024260733511587</Real>
-    <Real>-0.59999999999999998</Real>
-    <Real>1.0381392640806328</Real>
-    <Real>-0.59999999999999998</Real>
-    <Real>1.0381392640806337</Real>
-    <Real>-0.59999999999999998</Real>
-    <Real>1.0336029949362235</Real>
-    <Real>-0.59999999999999998</Real>
-    <Real>1.0360587963820675</Real>
-    <Real>-0.59999999999999998</Real>
-    <Real>1.0360587963820671</Real>
-    <Real>-0.59999999999999998</Real>
-    <Real>1.0336029949362222</Real>
-    <Real>-0.59999999999999998</Real>
+    <Real>1.0492367607716051</Real>
+    <Real>-0.80000000000000004</Real>
+    <Real>0.90367115747767579</Real>
+    <Real>-1.2</Real>
+    <Real>0.92547087325589772</Real>
+    <Real>-1.2</Real>
+    <Real>0.90716659142460743</Real>
+    <Real>-1.2</Real>
+    <Real>0.92264135438877759</Real>
+    <Real>-1.2</Real>
+    <Real>0.90235693456806931</Real>
+    <Real>-1.2</Real>
+    <Real>1.0492373302885829</Real>
+    <Real>-0.80000000000000004</Real>
+    <Real>0.95611121971880753</Real>
+    <Real>-1.2</Real>
+    <Real>0.9226413543887777</Real>
+    <Real>-1.2</Real>
+    <Real>0.90235693456806909</Real>
+    <Real>-1.2</Real>
+    <Real>1.0492373302885829</Real>
+    <Real>-0.80000000000000004</Real>
+    <Real>1.0522859337855368</Real>
+    <Real>-0.80000000000000004</Real>
+    <Real>1.0522859337855366</Real>
+    <Real>-0.80000000000000004</Real>
+    <Real>1.0494840304556081</Real>
+    <Real>-0.80000000000000004</Real>
+    <Real>1.0531661151891309</Real>
+    <Real>-0.80000000000000004</Real>
+    <Real>1.0531661151891309</Real>
+    <Real>-0.80000000000000004</Real>
+    <Real>1.0494840304556081</Real>
+    <Real>-0.80000000000000004</Real>
   </Sequence>
 </ReferenceData>

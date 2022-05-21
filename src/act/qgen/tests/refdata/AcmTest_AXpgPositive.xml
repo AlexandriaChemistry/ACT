@@ -2,27 +2,27 @@
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
   <Int Name="qtotSize">20</Int>
-  <Sequence Name="qtotValuesEqdAlgorithm_EEM">
+  <Sequence Name="qtotValuesEqdAlgorithm_SQE">
     <Int Name="Length">20</Int>
-    <Real>-0.25439848915033325</Real>
-    <Real>-0.59999999999999998</Real>
-    <Real>-0.25438259046293754</Real>
-    <Real>-0.59999999999999998</Real>
-    <Real>-0.25443620654938981</Real>
-    <Real>-0.59999999999999998</Real>
-    <Real>1.2988606900410096</Real>
-    <Real>-0.59999999999999998</Real>
-    <Real>1.0773880477983111</Real>
-    <Real>-0.59999999999999998</Real>
-    <Real>1.0773774122007962</Real>
-    <Real>-0.59999999999999998</Real>
-    <Real>1.0773853614524305</Real>
-    <Real>-0.59999999999999998</Real>
-    <Real>1.0773888252706856</Real>
-    <Real>-0.59999999999999998</Real>
-    <Real>1.0774122230691554</Real>
-    <Real>-0.59999999999999998</Real>
-    <Real>1.0774047263302742</Real>
-    <Real>-0.59999999999999998</Real>
+    <Real>0.92981341139803786</Real>
+    <Real>-1.2</Real>
+    <Real>0.92981391722919771</Real>
+    <Real>-1.2</Real>
+    <Real>0.92981383970706355</Real>
+    <Real>-1.2</Real>
+    <Real>0.97563375944815123</Real>
+    <Real>-1.2</Real>
+    <Real>1.1391537368287947</Real>
+    <Real>-0.80000000000000004</Real>
+    <Real>1.1391554124066627</Real>
+    <Real>-0.80000000000000004</Real>
+    <Real>1.1391554106245012</Real>
+    <Real>-0.80000000000000004</Real>
+    <Real>1.1391535438049243</Real>
+    <Real>-0.80000000000000004</Real>
+    <Real>1.1391528803806226</Real>
+    <Real>-0.80000000000000004</Real>
+    <Real>1.139154088172047</Real>
+    <Real>-0.80000000000000004</Real>
   </Sequence>
 </ReferenceData>

@@ -4,23 +4,23 @@
   <Int Name="qtotSize">18</Int>
   <Sequence Name="qtotValuesEqdAlgorithm_SQE">
     <Int Name="Length">18</Int>
-    <Real>0.71057359132125364</Real>
+    <Real>0.81274657048058163</Real>
     <Real>-1.2</Real>
-    <Real>1.0797043984973549</Real>
+    <Real>1.0038329309858494</Real>
     <Real>-0.80000000000000004</Real>
-    <Real>0.68746488760566438</Real>
+    <Real>0.82923570551470649</Real>
     <Real>-1.2</Real>
-    <Real>1.0388619866038222</Real>
+    <Real>0.98417119834254141</Real>
     <Real>-0.80000000000000004</Real>
-    <Real>1.0388677586656581</Real>
+    <Real>0.9841721141582408</Real>
     <Real>-0.80000000000000004</Real>
-    <Real>1.0445273773062462</Real>
+    <Real>0.98584148051807974</Real>
     <Real>-0.80000000000000004</Real>
-    <Real>1.0688175019701731</Real>
+    <Real>0.99835051360055727</Real>
     <Real>-0.80000000000000004</Real>
-    <Real>0.6623097934311335</Real>
+    <Real>0.8032936668181343</Real>
     <Real>-1.2</Real>
-    <Real>1.068872704598693</Real>
+    <Real>0.99835581958130803</Real>
     <Real>-0.80000000000000004</Real>
   </Sequence>
   <Real Name="Molecule 1 charge">-6.6613381477509392e-16</Real>

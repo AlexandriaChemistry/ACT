@@ -27,9 +27,9 @@ static double computeWBH(const ForceFieldParameterList      &ffpl,
         // with the combination rules applied. Something like that does
         // not exist in the input force field files.
         auto id      = b->id(); 
-        auto sigma   = ffpl.findParameterTypeConst(id, "sigma").gromacsValue();
-        auto epsilon = ffpl.findParameterTypeConst(id, "epsilon").gromacsValue();
-        auto gamma   = ffpl.findParameterTypeConst(id, "gamma").gromacsValue();
+        auto sigma   = ffpl.findParameterTypeConst(id, "sigma").internalValue();
+        auto epsilon = ffpl.findParameterTypeConst(id, "epsilon").internalValue();
+        auto gamma   = ffpl.findParameterTypeConst(id, "gamma").internalValue();
         // Get the atom indices
         auto indices    = b->atomIndices();
         rvec dx;
@@ -65,9 +65,9 @@ static double computeCoulomb(const ForceFieldParameterList      &ffpl,
         // with the combination rules applied. Something like that does
         // not exist in the input force field files.
         auto id    = b->id(); 
-        auto qq    = ffpl.findParameterTypeConst(id, "qq").gromacsValue();
-        auto izeta = ffpl.findParameterTypeConst(id, "izeta").gromacsValue();
-        auto jzeta = ffpl.findParameterTypeConst(id, "jzeta").gromacsValue();
+        auto qq    = ffpl.findParameterTypeConst(id, "qq").internalValue();
+        auto izeta = ffpl.findParameterTypeConst(id, "izeta").internalValue();
+        auto jzeta = ffpl.findParameterTypeConst(id, "jzeta").internalValue();
         // Get the atom indices
         auto indices    = b->atomIndices();
         rvec dx;
@@ -88,6 +88,72 @@ static double computeCoulomb(const ForceFieldParameterList      &ffpl,
     return ebond;
 }
 
+static double computePartridge(const ForceFieldParameterList      &ffpl,
+                               const std::vector<TopologyEntry *> &angles,
+                               const std::vector<gmx::RVec>       *coordinates,
+                               std::vector<gmx::RVec>             *forces)
+{
+    // Energy function according to 
+    // The determination of an accurate isotope dependent potential energy 
+    // surface for water from extensive ab initio calculations and 
+    // experimental data
+    // Harry Partridge and David W. Schwenke
+    // J Chem Phys 106 (1997) p. 4618
+    double  energy = 0, costh = 0;
+    auto    x     = *coordinates;
+    auto   &f     = *forces;
+    const  real half = 0.5;
+    for (const auto a : angles)
+    {
+        // Get the parameters. We have to know their names to do this.
+        auto id         = a->id(); 
+        auto rij0       = ffpl.findParameterTypeConst(id, "rij0").internalValue();
+        auto rjk0       = ffpl.findParameterTypeConst(id, "rjk0").internalValue();
+        auto betaij     = ffpl.findParameterTypeConst(id, "betaij").internalValue();
+        auto betajk     = ffpl.findParameterTypeConst(id, "betajk").internalValue();
+        auto theta0     = ffpl.findParameterTypeConst(id, "angle").internalValue();
+        auto c000       = ffpl.findParameterTypeConst(id, "c000").internalValue();
+        auto c111       = ffpl.findParameterTypeConst(id, "c111").internalValue();
+        auto c222       = ffpl.findParameterTypeConst(id, "c222").internalValue();
+        // Get the atom indices
+        auto indices    = a->atomIndices();
+
+        rvec r_ij, r_kj;
+        auto theta = bond_angle(x[indices[0]], x[indices[1]], x[indices[2]], 
+                                r_ij, r_kj, &costh);
+        // Compute the components of the potential
+        auto costh0 = std::cos(theta0);
+        auto drij   = rij0-norm(r_ij);
+        auto drkj   = rjk0-norm(r_kj);
+        
+        auto costh2 = gmx::square(costh);
+        auto st    = theta0*gmx::invsqrt(1 - costh2);   
+        auto sth   = st*costh;                      
+        
+        auto nrij2 = iprod(r_ij, r_ij);                 
+        auto nrkj2 = iprod(r_kj, r_kj);                 
+        
+        auto nrij_1 = gmx::invsqrt(nrij2);              
+        auto nrkj_1 = gmx::invsqrt(nrkj2);              
+        
+        auto cik = st*nrij_1*nrkj_1;                    
+        auto cii = sth*nrij_1*nrij_1;                   
+        auto ckk = sth*nrkj_1*nrkj_1;                  
+        
+        for (auto m = 0; m < DIM; m++)
+        {
+            auto f_im    = -(cik*r_kj[m] - cii*r_ij[m]);
+            auto f_km    = -(cik*r_ij[m] - ckk*r_kj[m]);
+            auto f_jm    = -f_im - f_km;
+            f[indices[0]][m] += f_im;
+            f[indices[1]][m] += f_km;
+            f[indices[2]][m] += f_jm;
+        }                                          
+    }
+    return energy;
+}
+
+
 static double computeBonds(const ForceFieldParameterList      &ffpl,
                            const std::vector<TopologyEntry *> &bonds,
                            const std::vector<gmx::RVec>       *coordinates,
@@ -101,8 +167,8 @@ static double computeBonds(const ForceFieldParameterList      &ffpl,
     {
         // Get the parameters. We have to know their names to do this.
         auto id         = b->id(); 
-        auto bondlength = ffpl.findParameterTypeConst(id, "bondlength").gromacsValue();
-        auto kb         = ffpl.findParameterTypeConst(id, "kb").gromacsValue();
+        auto bondlength = ffpl.findParameterTypeConst(id, "bondlength").internalValue();
+        auto kb         = ffpl.findParameterTypeConst(id, "kb").internalValue();
         // Get the atom indices
         auto indices    = b->atomIndices();
         rvec dx;
@@ -135,10 +201,10 @@ static double computeMorse(const ForceFieldParameterList      &ffpl,
     {
         // Get the parameters. We have to know their names to do this.
         auto id         = b->id(); 
-        auto bondlength = ffpl.findParameterTypeConst(id, "bondlength").gromacsValue();
-        auto beta       = ffpl.findParameterTypeConst(id, "beta").gromacsValue();
-        auto De         = ffpl.findParameterTypeConst(id, "De").gromacsValue();
-        auto D0         = ffpl.findParameterTypeConst(id, "D0").gromacsValue();
+        auto bondlength = ffpl.findParameterTypeConst(id, "bondlength").internalValue();
+        auto beta       = ffpl.findParameterTypeConst(id, "beta").internalValue();
+        auto De         = ffpl.findParameterTypeConst(id, "De").internalValue();
+        auto D0         = ffpl.findParameterTypeConst(id, "D0").internalValue();
         // Get the atom indices
         auto indices    = b->atomIndices();
         rvec dx;
@@ -176,8 +242,8 @@ static double computeAngles(const ForceFieldParameterList      &ffpl,
     {
         // Get the parameters. We have to know their names to do this.
         auto id         = a->id(); 
-        auto theta0     = ffpl.findParameterTypeConst(id, "angle").gromacsValue();
-        auto ka         = ffpl.findParameterTypeConst(id, "kt").gromacsValue();
+        auto theta0     = ffpl.findParameterTypeConst(id, "angle").internalValue();
+        auto ka         = ffpl.findParameterTypeConst(id, "kt").internalValue();
         // Get the atom indices
         auto indices    = a->atomIndices();
 
