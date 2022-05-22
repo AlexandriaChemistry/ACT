@@ -52,7 +52,7 @@ void GenePool::sort(iMolSelect ims)
               });
 }
 
-size_t GenePool::findBestIndex() const
+size_t GenePool::findBestIndex(const iMolSelect ims) const
 {
     auto ims = iMolSelect::Train;
     return std::min_element(genomes_.begin(), genomes_.end(),
@@ -75,6 +75,11 @@ size_t GenePool::findBestIndex() const
                                 }
                             }
                             ) - genomes_.begin();
+}
+
+const Genome &GenePool::getBest(const iMolSelect ims) const
+{
+    return genomes_[findBestIndex(ims)];
 }
 
 void GenePool::addGenome(const std::vector<double> &genome, double fitness)

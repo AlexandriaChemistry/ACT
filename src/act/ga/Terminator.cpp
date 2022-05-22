@@ -51,15 +51,15 @@ bool TestGenTerminator::terminate(           const GenePool *pool,
                                   gmx_unused const int       generationNumber)
 {
     remaining_ -= 1;
-
-    for (auto genome : pool->genePool())
+    
+    // Get best genome in population
+    const auto bestGenome = pool->getBest(iMolSelect::Train);
+    // Check if its test fitness is better than the best one so far
+    const double tmpTestFit = bestGenome.fitness(iMolSelect::Test);
+    if (tmpTestFit < bestFitness_)
     {
-        const double tmpFit = genome.fitness(iMolSelect::Test);
-        if (tmpFit < bestFitness_)
-        {
-            bestFitness_ = tmpFit;
-            remaining_ = generations_;
-        }
+        bestFitness_ = tmpTestFit;
+        remaining_ = generations_;
     }
 
     if (remaining_ <= 0)

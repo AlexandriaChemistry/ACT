@@ -100,9 +100,15 @@ public:
      */
     void sort(iMolSelect ims);
     
-    /*! \return the index of the genome with the lowest fitness. 
+    /*! \return the index of the genome with the lowest fitness.
+     * \param[in] ims the dataset to grab the fitness from
      */
-    size_t findBestIndex() const;
+    size_t findBestIndex(const iMolSelect ims) const;
+
+    /*! \return a const referene of the genome with the lowest fitness.
+     * \param[in] ims the dataset to grab the fitness from
+     */
+    const Genome &getBest(const iMolSelect ims) const;
 
     /*! Print the Gene Pool
      * \param[in] fp The file to print to
