@@ -91,10 +91,12 @@ public:
 
  
     /*! \brief Evolve the initial population
-     * \param[out] bestGenome The best genome found during the evolution
-     * \return whether a genome with better fitness was found.
+     * \param[out] bestGenome The best genome(s) found during the evolution (for different datasets, if applicable).
+     *                        Comes in as an empty map, and subclasses of GeneticAlgorithm will fill it for the
+     *                        datasets according to their configuration
+     * \return whether a genome with better fitness (for training set) was found.
      */
-    virtual bool evolve(Genome *bestGenome) = 0;
+    virtual bool evolve(std::map<iMolSelect, Genome> *bestGenome) = 0;
 
     /*! \brief Retrieve the last population (to be called after evolve,
      * otherwise undersired behavior will occur)

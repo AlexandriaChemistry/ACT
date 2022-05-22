@@ -463,23 +463,37 @@ void OptACM::printNumCalcDevEstimate()
     }
 }
 
-void OptACM::printGenomeTable(const ga::Genome   &genome,
-                              const ga::GenePool &pop)
+void OptACM::printGenomeTable(const std::map<iMolSelect, ga::Genome> &genome,
+                              const ga::GenePool                     &pop)
 {
     if (!logFile())
     {
         return;
     }
-    const std::vector<std::string> HEADER_NAMES{ "CLASS", "NAME", "BEST", "MIN", "MAX", "MEAN", "STDEV", "MEDIAN" };
+    // Get header names
+    std::vector<std::string> headerNames{ "CLASS", "NAME" };
+    for (const auto &pair : genome)
+    {
+        headerNames.push_back(gmx::formatString("BEST (%s)", iMolSelectName(pair.first)));
+    }
+    const std::vector<std::string> tmpHeaderNames{"MIN", "MAX", "MEAN", "STDEV", "MEDIAN"};
+    headerNames.insert(headerNames.end(), tmpHeaderNames.begin(), tmpHeaderNames.end());
+    // Get header sizes
     const int FLOAT_SIZE = 14;  // Adjusted for the %g formatting plus negative numbers
-    std::vector<int> SIZES{5, 4, FLOAT_SIZE, FLOAT_SIZE, FLOAT_SIZE, FLOAT_SIZE, FLOAT_SIZE, FLOAT_SIZE};
+    std::vector<int> sizes{5, 4};
+    for (size_t i = 0; i < genome.size(); i++)
+    {
+        sizes.push_back(FLOAT_SIZE);
+    }
+    std::vector<int> tmpSizes{FLOAT_SIZE, FLOAT_SIZE, FLOAT_SIZE, FLOAT_SIZE, FLOAT_SIZE};
+    sizes.insert(sizes.end(), tmpSizes.begin(), tmpSizes.end());
     // Adjust size for class field
     const auto paramClass = sii_->paramClass();
     for (auto pClass : paramClass)
     {
-        if (static_cast<int>(pClass.size()) > SIZES[0])
+        if (static_cast<int>(pClass.size()) > sizes[0])
         {
-            SIZES[0] = pClass.size();
+            sizes[0] = pClass.size();
         }
     }
     // Adjust size for name field
@@ -487,18 +501,18 @@ void OptACM::printGenomeTable(const ga::Genome   &genome,
     const auto paramNames = sii_->paramNamesWOClass();
     for (auto pName : paramNames)
     {
-        if (static_cast<int>(pName.size()) > SIZES[1])
+        if (static_cast<int>(pName.size()) > sizes[1])
         {
-            SIZES[1] = pName.size();
+            sizes[1] = pName.size();
         }
     }
-    const size_t TOTAL_WIDTH = SIZES[0] + SIZES[1] + 6*FLOAT_SIZE + 25;
+    const size_t TOTAL_WIDTH = static_cast<size_t>(std::accumulate(sizes.begin(), sizes.end(), 0)) + 3*(sizes.size()-1) + 4;
     const std::string HLINE(TOTAL_WIDTH, '-');
     // Print header
     fprintf(logFile(), "%s\n|", HLINE.c_str());
-    for (size_t i = 0; i < HEADER_NAMES.size(); i++)
+    for (size_t i = 0; i < headerNames.size(); i++)
     {
-        fprintf(logFile(), " %-*s |", SIZES[i], HEADER_NAMES[i].c_str());
+        fprintf(logFile(), " %-*s |", sizes[i], headerNames[i].c_str());
     }
     fprintf(logFile(), "\n%s\n", HLINE.c_str());
     // Gather statistics from the population
@@ -518,15 +532,28 @@ void OptACM::printGenomeTable(const ga::Genome   &genome,
             }
             fprintf(
                 logFile(),
-                "| %-*s | %-*s | %-*g | %-*g | %-*g | %-*g | %-*g | %-*g |\n%s\n",
-                SIZES[0], paramClass[i].c_str(),
-                SIZES[1], paramNames[j].c_str(),
-                SIZES[2], genome.base(j),
-                SIZES[3], min[j],
-                SIZES[4], max[j],
-                SIZES[5], mean[j],
-                SIZES[6], stdev[j],
-                SIZES[7], median[j],
+                "| %-*s | %-*s |",
+                sizes[0], paramClass[i].c_str(),
+                sizes[1], paramNames[j].c_str()
+            );
+            size_t k = 2;
+            for (const auto &pair : genome)
+            {
+                fprintf(
+                    logFile(),
+                    " %-*g |",
+                    sizes[k], pair.second.base(j)
+                );
+                k++;
+            }
+            fprintf(
+                logFile(),
+                " %-*g | %-*g | %-*g | %-*g | %-*g |\n%s\n",
+                sizes[k], min[j],
+                sizes[k+1], max[j],
+                sizes[k+2], mean[j],
+                sizes[k+3], stdev[j],
+                sizes[k+4], median[j],
                 HLINE.c_str()
             );
         }
@@ -541,7 +568,7 @@ bool OptACM::runMaster(bool optimize,
 
     print_memory_usage(debug);
     bool bMinimum = false;
-    ga::Genome bestGenome;
+    std::map<iMolSelect, ga::Genome> bestGenome;
     if (optimize)
     {
         // Estimate number of fitness computations per dataset
@@ -573,24 +600,36 @@ bool OptACM::runMaster(bool optimize,
 
     if (bMinimum)
     {
-        if (bestGenome.bases().empty())
+        if (bestGenome.empty())
         {
-            GMX_THROW(gmx::InternalError("Minimum found but no best parameters"));
+            GMX_THROW(gmx::InternalError("Minimum found but the <Dataset, Genome> map is empty"));
         }
         if (logFile())
-        {
-            fprintf(logFile(), "\nChi2 components of the best parameter vector found:\n");
-            for (const auto &ims : iMolSelectNames())
+        {   
+            std::map<iMolSelect, ga::Genome>::iterator it;
+            for (it = bestGenome.begin(); it != bestGenome.end(); it++)
             {
-                fitComp_->compute(&bestGenome, ims.first, true);
-                double chi2 = bestGenome.fitness(ims.first);
-                fprintf(logFile(), "Minimum chi2 for %s %g\n",
-                        iMolSelectName(ims.first), chi2);
+                fprintf(logFile(), "\nChi2 components of the best parameter vector found (for %s):\n", iMolSelectName(it->first));
+                for (const auto &ims : iMolSelectNames())
+                {
+                    fitComp_->compute(&(it->second), ims.first, true);
+                    double chi2 = it->second.fitness(ims.first);
+                    fprintf(logFile(), "Minimum chi2 for %s %g\n", ims.second, chi2);
+                }
             }
         }
-        // Save force field of best individual
-        sii_->setFinalOutputFile(baseOutputFileName_);
-        sii_->saveState(true);
+        // Save force field of best individual(s)
+        for (const auto &pair : bestGenome)
+        {
+            sii_->updatePoldata(&(pair.second));
+            // sii_->setFinalOutputFile(baseOutputFileName_);
+            sii_->saveState(
+                true,
+                gmx::formatString("%s-", iMolSelectName(pair.first)) + baseOutputFileName_
+            );
+        }
+        // FIXME: resetting the train parameters for the TuneFFPrinter. We may have to work on that if we want to show the best test parameters too
+        sii_->updatePoldata(&(bestGenome.find(iMolSelect::Train)->second));
     }
     else if (optimize)
     {
@@ -605,8 +644,8 @@ bool OptACM::runMaster(bool optimize,
     fitComp_->calcDeviation(&dummy, CalcDev::Final, iMolSelect::Train);
 
     // Final energy calculation for all molecules
-    // TODO: parallellize this.
-    fitComp_->calcDeviation(bestGenome.basesPtr(), CalcDev::Master, iMolSelect::Train);
+    // TODO: parallellize this. FIXME: there is no need to do this I believe, it's done above, and parallel!
+    // fitComp_->calcDeviation(bestGenome.basesPtr(), CalcDev::Master, iMolSelect::Train);
 
     // Delete the penalizers
     if (nullptr != ga_->penalizers())
