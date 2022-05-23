@@ -75,3 +75,7 @@ P|0|pwpb95-d3bj/aug-cc-pVTZ|E0|0|-341.22121172713|4|Hartree|Spoel2022a||
 S|0|pwpb95-d3bj/aug-cc-pVQZ|E0|0|-398.085421922916|3|Hartree|Spoel2022a||
 S|0|pwpb95-d3bj/aug-cc-pVTZ|E0|0|-398.075020995379|3|Hartree|Spoel2022a||
 Si|0|pwpb95-d3bj/aug-cc-pVTZ|E0|0|-289.285112721876|1|Hartree|Spoel2022a||
+He|0|B3LYP/aug-cc-pVTZ|E0|0|-2.91469381767|1|Hartree|Kriz2022||
+Ne|0|B3LYP/aug-cc-pVTZ|E0|0|-128.966285946|1|Hartree|Kriz2022||
+Ar|0|B3LYP/aug-cc-pVTZ|E0|0|-527.560001976|1|Hartree|Kriz2022||
+Kr|0|B3LYP/aug-cc-pVTZ|E0|0|-2753.83708152|1|Hartree|Kriz2022||
