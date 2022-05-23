@@ -229,7 +229,7 @@ int bastat(int argc, char *argv[])
     pd.setPolarizable(false);
 
     /* Read Molprops */
-    auto nwarn = merge_xml(opt2fns("-mp", NFILE, fnm), &mp, nullptr, nullptr, nullptr, true);
+    auto nwarn = merge_xml(opt2fns("-mp", NFILE, fnm), &mp, nullptr, nullptr, nullptr, false);
     print_memory_usage(debug);
 
     if (nwarn > maxwarn)
