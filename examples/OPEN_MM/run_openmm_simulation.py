@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# OpenMM python example script (using DrudeLangevin integrator). 
+# OpenMM python example script (using DrudeLangevin mintegrator). 
 # This script implements a modified Buckingham potential (using Hogervorst combination rules) and Gaussian distributed charges for the nonbonded 
 # interactions, and a Morse potential for the bonded interactions.
 ############################################################ Proceed at your own risk. ############################################################
@@ -19,6 +19,10 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-pdb", "--pdb_file", help="coordinate .pdb file", default=None)
 parser.add_argument("-xml", "--xml_file", help="openMM force field .xml file", default=None)
 parser.add_argument("-dat", "--dat_file", help="simulation parameter .dat file", default=None)
+parser.add_argument("-pol", "--polarizable", help="Turn on support for polarization", action="store_true")
+defout = "output"
+parser.add_argument("-odir", "--outputdir", help="Directory to write output to, default: "+defout, type=str, default=defout)
+
 args = parser.parse_args()
 
 if None == args.pdb_file or not os.path.exists(args.pdb_file):
@@ -112,14 +116,13 @@ platform = Platform.getPlatformByName(usePlatform)
 
 # OUTPUT
 ################################################
-outputdir = "output"
-os.makedirs(outputdir, exist_ok=True)
-dcdReporter = DCDReporter(outputdir+'/trajectory.dcd', save)
-dataReporter = StateDataReporter(outputdir+'/log.txt', save, totalSteps=steps,
+os.makedirs(args.outputdir, exist_ok=True)
+dcdReporter = DCDReporter(args.outputdir+'/trajectory.dcd', save)
+dataReporter = StateDataReporter(args.outputdir+'/log.csv', save, totalSteps=steps,
     step=outStep, time= outTime, speed=outSpeed, progress=outProgress, potentialEnergy=outPotentialEnergy, kineticEnergy=outKineticEnergy, temperature=outTemperature, volume=outVolume, density=outDensity, separator=outSeparator)
 
-chkReporter = CheckpointReporter(outputdir+'/checkpnt.chk', save)
-pdbReporter = PDBReporter(outputdir+'/output.pdb', save)
+chkReporter = CheckpointReporter(args.outputdir+'/checkpnt.chk', save)
+pdbReporter = PDBReporter(args.outputdir+'/output.pdb', save)
 
 
 # TOPOLOGY
@@ -163,16 +166,16 @@ def add_direct_space_force(system, group_cnb, group_cb):
     reference_nb_force  = forces['NonbondedForce']
     reference_cnb_force = forces['CustomNonbondedForce']
     reference_cb_force  = forces['CustomBondForce']
-    reference_pol_force = forces['DrudeForce']
-    
-    cores = []
-    shells = []
-    core_shell=[]
-    for index in range(reference_pol_force.getNumParticles()):
-        [particle, particle1, particle2, particle3, particle4, charge, pol, aniso12, aniso34] = reference_pol_force.getParticleParameters(index)
-        shells.append(particle) # particle  = shell
-        cores.append(particle1) # particle1 = core
-        core_shell.append((particle,particle1))
+    if args.polarizable:
+        reference_pol_force = forces['DrudeForce']
+        cores = []
+        shells = []
+        core_shell=[]
+        for index in range(reference_pol_force.getNumParticles()):
+            [particle, particle1, particle2, particle3, particle4, charge, pol, aniso12, aniso34] = reference_pol_force.getParticleParameters(index)
+            shells.append(particle) # particle  = shell
+            cores.append(particle1) # particle1 = core
+            core_shell.append((particle,particle1))
 
     ONE_4PI_EPS0 = 138.935456
     [alpha_ewald, nx, ny, nz] = reference_nb_force.getPMEParameters()
@@ -273,8 +276,9 @@ def add_direct_space_force(system, group_cnb, group_cb):
         gamma = ((gamma1 + gamma2)/2)
         sigma = (((sqrt(((epsilon1*gamma1*sigma1**6)/(gamma1-6)) * ((epsilon2*gamma2*sigma2**6)/(gamma2-6)))*(gamma-6))/(epsilon*gamma))**(1/6))
         vdW = vdW1*vdW2
-        if ((jatom,iatom) not in core_shell) and ((iatom,jatom) not in core_shell): 
-            bond_force.addBond(iatom, jatom, [chargeprod, beta, sigma, epsilon, gamma, vdW])
+        if args.polarizable:
+            if ((jatom,iatom) not in core_shell) and ((iatom,jatom) not in core_shell): 
+                bond_force.addBond(iatom, jatom, [chargeprod, beta, sigma, epsilon, gamma, vdW])
     bond_force.setForceGroup(group_cb)
     system.addForce(bond_force)
     
@@ -291,43 +295,53 @@ def add_direct_space_force(system, group_cnb, group_cb):
         # Retrieve parameters.
         [iatom, jatom, (D_e, a, r0)] = reference_cb_force.getBondParameters(bond_index)  
         Morse_force.addBond(iatom, jatom, [D_e, a, r0])
-    group_cb = 6
     Morse_force.setForceGroup(group_cb)
     system.addForce(Morse_force)
     
 
+
+## Print energy components
+force_group_names = {
+    0 : 'HarmonicBondForce',
+    1 : 'HarmonicAngleForce',
+    2 : 'CustomNonbondedForce (direct space)',
+    3 : 'NonbondedForce (direct space)',
+    4 : 'NonbondedForce (reciprocal space)',
+    5 : 'CustomBondForce'
+}
+if args.polarizable:
+    force_group_names[6] = 'DrudeForce'
+fgnumbers = {}
+for f in force_group_names.keys():
+    fgnumbers[force_group_names[f]] = f
+
 # Set force groups:
 for force in system.getForces():
-    if force.__class__.__name__ == 'HarmonicBondForce':
-        force.setForceGroup(0)
-    if force.__class__.__name__ == 'HarmonicAngleForce':
-        force.setForceGroup(1)    
-    if force.__class__.__name__ == 'CustomBondForce':
-        force.setForceGroup(6) 
+    fcname = force.__class__.__name__
+    if fcname in fgnumbers:
+        force.setForceGroup(fgnumbers[fcname])
     if force.__class__.__name__ == 'NonbondedForce':
-       force.setForceGroup(3)
-       force.setReciprocalSpaceForceGroup(4)
-    if force.__class__.__name__ == 'DrudeForce':
-        force.setForceGroup(5)
+       force.setForceGroup(fgnumbers['NonbondedForce (direct space)'])
+       force.setReciprocalSpaceForceGroup(fgnumbers['NonbondedForce (reciprocal space)'])
 
 
 # Create a new CustomNonbondedForce to mimic the direct space 
-add_direct_space_force(system, group_cnb=2, group_cb=6)
+add_direct_space_force(system, group_cnb=2, group_cb=fgnumbers['CustomBondForce'])
 
 forces = { force.__class__.__name__ : force for force in system.getForces() }
 Cnbforce = forces['CustomNonbondedForce']
 CBondforce = forces['CustomBondForce']
 nbforce  = forces['NonbondedForce']
-polforce = forces['DrudeForce']
-
-cores = []
-shells = []
-core_shell=[]
-for index in range(polforce.getNumParticles()):
-  [particle, particle1, particle2, particle3, particle4, charge, pol, aniso12, aniso34] = polforce.getParticleParameters(index)
-  shells.append(particle) # particle  = shell
-  cores.append(particle1) # particle1 = core
-  core_shell.append([particle,particle1])
+if args.polarizable:
+    polforce = forces['DrudeForce']
+    cores = []
+    shells = []
+    core_shell=[]
+    for index in range(polforce.getNumParticles()):
+        [particle, particle1, particle2, particle3, particle4, charge, pol, aniso12, aniso34] = polforce.getParticleParameters(index)
+        shells.append(particle) # particle  = shell
+        cores.append(particle1) # particle1 = core
+        core_shell.append([particle,particle1])
   
 
 print("----------------------------")
@@ -362,7 +376,10 @@ if nonbondedMethod != NoCutoff:
   system.addForce(AndersenThermostat(temperature_c, 1/picosecond))
 
 #### Integrator ####
-integrator = DrudeLangevinIntegrator(temperature_c, friction_c, temperature_s, friction_s, dt)
+if args.polarizable:
+    integrator = DrudeLangevinIntegrator(temperature_c, friction_c, temperature_s, friction_s, dt)
+else:
+    integrator = NoseHooverIntegrator(temperature_c, friction_c, dt)
 
 #### Simulation setup ####
 simulation = Simulation(topology, system, integrator, platform)
@@ -376,10 +393,10 @@ positions = simulation.context.getState(getPositions=True).getPositions()
 new_pos = []
 ##print(new_pos)
 for index in range(system.getNumParticles()):
-  if (index in cores):
+  if (not args.polarizable or index in cores):
     new_pos_x = positions[index][0]+0.000*nanometer
     new_pos.append((new_pos_x,positions[index][1],positions[index][2]))
-  if (index in shells):
+  if (args.polarizable and index in shells):
     new_pos_x = positions[index][0]+0.01*nanometer
     new_pos_y = positions[index][1]+0.01*nanometer
     new_pos_z = positions[index][2]+0.01*nanometer
@@ -388,24 +405,11 @@ simulation.context.setPositions(new_pos)
 Cnbforce.updateParametersInContext(simulation.context)
 
 
-## Print energy components
-force_group_names = {
-    0 : 'HarmonicBondForce',
-    1 : 'HarmonicAngleForce',
-    2 : 'CustomNonbondedForce (direct space)',
-    3 : 'NonbondedForce (direct space)',
-    4 : 'NonbondedForce (reciprocal space)',
-    5 : 'Drude Force',
-    6 : 'CustomBondForce (direct space)'
-}
+#### for systems with core shell particles in general; nbforce.getNumParticles() is cores+shells  #### TODO: get the real number of particle
+Numb_particles = nbforce.getNumParticles()
 
-#### for systems with core shell particles in general; nbforce.getNumParticles() is cores+shells  ####
-Numb_particles = nbforce.getNumParticles()/2
-
-### for pure AHs ####  
-#Numb_particles = nbforce.getNumParticles()/4
-
-for group in range(1,7):
+group_range = range(1, len(force_group_names.keys()))
+for group in group_range:
     print('%8d : %64s : %16.4f kJ/mol' % (group, force_group_names[group], simulation.context.getState(getEnergy=True, groups=(1 << group)).getPotentialEnergy()/unit.kilojoule_per_mole))
 potE = simulation.context.getState(getEnergy=True).getPotentialEnergy()/unit.kilojoule_per_mole 
 print('potential energy = {0:.2f} kJ/mol\n'.format(potE/Numb_particles))    
@@ -421,7 +425,7 @@ simulation.context.setVelocitiesToTemperature(temperature_c)
 simulation.step(equilibrationSteps)
 
 # Simulate
-for group in range(1,7):
+for group in group_range:
     print('%8d : %64s : %16.4f kJ/mol' % (group, force_group_names[group], simulation.context.getState(getEnergy=True, groups=(1 << group)).getPotentialEnergy()/unit.kilojoule_per_mole))
 potE = simulation.context.getState(getEnergy=True).getPotentialEnergy()/unit.kilojoule_per_mole 
 print('potential energy = {0:.2f} kJ/mol\n'.format(potE/Numb_particles))
@@ -435,7 +439,7 @@ simulation.currentStep = 0
 simulation.step(steps)
 
 
-for group in range(1,7):
+for group in group_range:
     print('%8d : %64s : %16.4f kJ/mol' % (group, force_group_names[group], simulation.context.getState(getEnergy=True, groups=(1 << group)).getPotentialEnergy()/unit.kilojoule_per_mole))
 potE = simulation.context.getState(getEnergy=True).getPotentialEnergy()/unit.kilojoule_per_mole 
 print('potential energy = {0:.2f} kJ/mol\n'.format(potE/Numb_particles)) 
