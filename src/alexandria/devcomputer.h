@@ -95,11 +95,11 @@ public:
         optIndex_ = optIndex;
     }
 
-    virtual void calcDeviation(      MyMol                         *mymol,
-                                     std::map<eRMS, FittingTarget> *targets,
-                                     Poldata                       *poldata,
-                               const std::vector<double>           &param,
-                               const CommunicationRecord           *commrec);
+    virtual void calcDeviation(MyMol                         *mymol,
+                               std::map<eRMS, FittingTarget> *targets,
+                               Poldata                       *poldata,
+                               const std::vector<double>     &param,
+                               const CommunicationRecord     *commrec);
 
 };
 

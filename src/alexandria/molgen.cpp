@@ -62,22 +62,22 @@
 namespace alexandria
 {
 
-    std::map<eRMS, const char *> ermsNames =
-    {
-     { eRMS::BOUNDS,    "BOUNDS"     },
-     { eRMS::CHARGE,    "CHARGE"     },
-     { eRMS::MU,        "MU"         },
-     { eRMS::QUAD,      "QUAD"       },
-     { eRMS::OCT,       "OCT"        },
-     { eRMS::HEXADEC,   "HEXADEC"    },
-     { eRMS::FREQUENCY, "FREQUENCY"  },
-     { eRMS::CM5,       "CM5"        },
-     { eRMS::ESP,       "ESP"        },
-     { eRMS::EPOT,      "EPOT"       },
-     { eRMS::Force2,    "Force2"     },
-     { eRMS::Polar,     "Polar"      },
-     { eRMS::TOT,       "TOT"        }
-    };
+std::map<eRMS, const char *> ermsNames = {
+    { eRMS::BOUNDS,     "BOUNDS"     },
+    { eRMS::UNPHYSICAL, "UNPHYSICAL" },
+    { eRMS::CHARGE,     "CHARGE"     },
+    { eRMS::MU,         "MU"         },
+    { eRMS::QUAD,       "QUAD"       },
+    { eRMS::OCT,        "OCT"        },
+    { eRMS::HEXADEC,    "HEXADEC"    },
+    { eRMS::FREQUENCY,  "FREQUENCY"  },
+    { eRMS::CM5,        "CM5"        },
+    { eRMS::ESP,        "ESP"        },
+    { eRMS::EPOT,       "EPOT"       },
+    { eRMS::Force2,     "Force2"     },
+    { eRMS::Polar,      "Polar"      },
+    { eRMS::TOT,        "TOT"        }
+};
 
 const std::map<eRMS, const char *> &geteRMSNames()
 {
@@ -120,6 +120,8 @@ void MolGen::addOptions(std::vector<t_pargs>          *pargs,
           "Quoted list of parameters to fit,  e.g. 'alpha zeta'." },
         { "-fc_bound",    FALSE, etREAL, {targets->find(eRMS::BOUNDS)->second.weightPtr()},
           "Force constant in the penalty function for going outside the borders given with the fitting options (see below)." },
+        { "-fc_unphysical",  FALSE, etREAL, {targets->find(eRMS::UNPHYSICAL)->second.weightPtr()},
+          "Force constant in the penalty function for unphysical combinations of parameters. In particular this parameter penalized that shell zeta is larger the core zeta." },
         { "-fc_epot",    FALSE, etREAL, {targets->find(eRMS::EPOT)->second.weightPtr()},
           "Force constant in the penalty function for the deviation of the potential energy of the compound from the reference." },
         { "-fc_force",  FALSE, etREAL, {targets->find(eRMS::Force2)->second.weightPtr()},

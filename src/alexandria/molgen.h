@@ -50,6 +50,8 @@ namespace alexandria
 enum class eRMS { 
     //! Parameters going out of bound
     BOUNDS,
+    //! Unphysical parameters
+    UNPHYSICAL,
     //! Charge
     CHARGE,
     //! Molecular dipole

@@ -8,8 +8,10 @@
 #include "devcomputer.h"
 
 #include <numeric>
+#include <string>
 #include <vector>
 
+#include "act/basics/identifier.h"
 #include "act/utility/communicationrecord.h"
 #include "act/utility/units.h"
 
@@ -41,42 +43,76 @@ static double l2_regularizer(double x, double min, double max)
 * BEGIN: BoundsDevComputer                 *
 * * * * * * * * * * * * * * * * * * * * * */
 
-void BoundsDevComputer::calcDeviation(gmx_unused MyMol                         *mymol,
-                                      gmx_unused std::map<eRMS, FittingTarget> *targets,
-                                            Poldata                             *poldata,
-                                      const std::vector<double>                 &param,
-                                      gmx_unused const CommunicationRecord      *commrec)
+void BoundsDevComputer::calcDeviation(gmx_unused MyMol                     *mymol,
+                                      std::map<eRMS, FittingTarget>        *targets,
+                                      Poldata                              *poldata,
+                                      const std::vector<double>            &param,
+                                      gmx_unused const CommunicationRecord *commrec)
 {
-    double bound = 0;
-    size_t n     = 0;
-    for (auto &optIndex : *optIndex_)
+    auto   mytarget = targets->find(eRMS::BOUNDS);
+    if (targets->end() != mytarget)
     {
-        InteractionType iType = optIndex.iType();
-        ForceFieldParameter p;
-        if (iType == InteractionType::CHARGE)
+        double bound = 0;
+        size_t n     = 0;
+        for (auto &optIndex : *optIndex_)
         {
-            p = poldata->findParticleType(optIndex.particleType())->parameterConst(optIndex.parameterType());
-        }
-        else if (poldata->interactionPresent(iType))
-        {
-            p = poldata->findForcesConst(iType).findParameterTypeConst(optIndex.id(), optIndex.parameterType());
-        }
-        if (p.mutability() == Mutability::Bounded)
-        {
-            real db = l2_regularizer(param[n], p.minimum(), p.maximum());
-            bound += db;
-            if (verbose_ && logfile_ && db != 0.0)
+            InteractionType iType = optIndex.iType();
+            ForceFieldParameter p;
+            if (iType == InteractionType::CHARGE)
             {
-                fprintf(logfile_, "Variable %s is %g, should be within %g and %g\n",
-                        optIndex.name().c_str(), param[n], p.minimum(), p.maximum());
+                p = poldata->findParticleType(optIndex.particleType())->parameterConst(optIndex.parameterType());
+            }
+            else if (poldata->interactionPresent(iType))
+            {
+                p = poldata->findForcesConst(iType).findParameterTypeConst(optIndex.id(), optIndex.parameterType());
+            }
+            if (p.mutability() == Mutability::Bounded)
+            {
+                real db = l2_regularizer(param[n], p.minimum(), p.maximum());
+                bound += db;
+                if (verbose_ && logfile_ && db != 0.0)
+                {
+                    fprintf(logfile_, "Variable %s is %g, should be within %g and %g\n",
+                            optIndex.name().c_str(), param[n], p.minimum(), p.maximum());
+                }
+            }
+
+            n++;
+        }
+        mytarget->second.increase(1, bound);
+        GMX_RELEASE_ASSERT(n == param.size(),
+                           gmx::formatString("Death horror error. n=%zu param.size()=%zu", n, param.size()).c_str());
+    }
+    mytarget = targets->find(eRMS::UNPHYSICAL);
+    if (targets->end() != mytarget)
+    {
+        double bound = 0;
+        // Check whether shell zeta > core zeta. Only for polarizable models.
+        auto   itype = InteractionType::CHARGEDISTRIBUTION;
+        if (poldata->polarizable() && poldata->interactionPresent(itype))
+        {
+            auto fs              = poldata->findForcesConst(itype);
+            std::string poltype  = "poltype";
+            std::string zetatype = "zetatype";
+            for(const auto &p : poldata->particleTypesConst())
+            {
+                if (p.hasOption(poltype))
+                {
+                    auto coreID  = Identifier(p.optionValue(zetatype));
+                    auto shell   = poldata->findParticleType(p.optionValue(poltype));
+                    auto shellID = Identifier(shell->optionValue(zetatype));
+                    auto fpshell = fs.findParameterTypeConst(shellID, zetatype);
+                    auto fpcore  = fs.findParameterTypeConst(coreID, zetatype);
+                    double deltaZeta = fpshell.value() - fpcore.value();
+                    if (deltaZeta > 0)
+                    {
+                        bound += gmx::square(deltaZeta);
+                    }
+                }
             }
         }
-
-        n++;
+        mytarget->second.increase(1, bound);
     }
-    (*targets).find(eRMS::BOUNDS)->second.increase(1, bound);
-    GMX_RELEASE_ASSERT(n == param.size(),
-                        gmx::formatString("Death horror error. n=%zu param.size()=%zu", n, param.size()).c_str());
 }
 
 /* * * * * * * * * * * * * * * * * * * * * *
