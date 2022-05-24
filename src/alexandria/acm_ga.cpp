@@ -10,7 +10,7 @@
 namespace ga
 {
 
-bool MCMC::evolve(ga::Genome *bestGenome)
+bool MCMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
 {
 
     if (sii_->nParam() < 1)
@@ -59,8 +59,7 @@ bool MCMC::evolve(ga::Genome *bestGenome)
     pool.print(logFile_);
 
     // Update best genome
-    auto bestIndex = pool.findBestIndex();
-    *bestGenome    = pool.genome(bestIndex);
+    bestGenome->insert({imstr, pool.getBest(imstr)});
 
     // When random initialization, assume a better minimum has been found no matter what
     bool bMinimum = gach_->randomInit() ? true : false;
@@ -111,24 +110,20 @@ bool MCMC::evolve(ga::Genome *bestGenome)
     sii_->saveState(true, sii_->outputFileLast());
 
     // Check if a better genome was found, and update if so
-    size_t newBest = pool.findBestIndex();
-    if (newBest < pool.popSize() &&
-        pool.genome(newBest).hasFitness(imstr))
+    const auto tmpGenome = pool.getBest(imstr);
+    const auto tmpBest   = bestGenome->find(imstr)->second;
+    if (tmpGenome.fitness(imstr) < tmpBest.fitness(imstr))  // If we have a new best
     {
-        if (pool.genome(newBest).fitness(imstr) < 
-            bestGenome->fitness(imstr))  // If we have a new best
-        {
-            bestGenome->print("A new best individual has been found!\nPrevious best:\n",
-                              logFile_);
-            *bestGenome = pool.genome(newBest); 
-            bestGenome->print("New best:\n", logFile_);
-            fprintf(logFile_, "\nMCMC Statistics for the master node only\n");
-            auto mymut = reinterpret_cast<alexandria::MCMCMutator *>(mutator());
-            mymut->printMonteCarloStatistics(logFile_, ind->initialGenome(),
-                                             *bestGenome);
+        tmpBest.print("A new best individual has been found!\nPrevious best:\n",
+                      logFile_);
+        (*bestGenome)[imstr] = tmpGenome; 
+        tmpGenome.print("New best:\n", logFile_);
+        fprintf(logFile_, "\nMCMC Statistics for the master node only\n");
+        auto mymut = reinterpret_cast<alexandria::MCMCMutator *>(mutator());
+        mymut->printMonteCarloStatistics(logFile_, ind->initialGenome(),
+                                         tmpGenome);
 
-            bMinimum = true;
-        }
+        bMinimum = true;
     }
     else
     {
@@ -141,7 +136,7 @@ bool MCMC::evolve(ga::Genome *bestGenome)
     return bMinimum;
 }
 
-bool HybridGAMC::evolve(ga::Genome *bestGenome)
+bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
 {
     if (gach_->popSize() < 2)  // FIXME: This is already checked in GAConfigHandler::check_pargs()
     {
@@ -225,9 +220,12 @@ bool HybridGAMC::evolve(ga::Genome *bestGenome)
     // Print fitness to surveillance files
     fprintFitness(*(pool[pold]));
 
-    auto bestIndex = pool[pold]->findBestIndex();
     // TODO: Check whether we need to update this at all here
-    *bestGenome    = pool[pold]->genome(bestIndex);
+    bestGenome->insert({imstr, pool[pold]->getBest(imstr)});
+    if (gach_->evaluateTestset())
+    {
+        bestGenome->insert({imste, pool[pold]->getBest(imstr)});
+    }
     
     // When random initialization, assume a better minimum has been found no matter what
     bool bMinimum = gach_->randomInit() ? true : false;
@@ -441,24 +439,24 @@ bool HybridGAMC::evolve(ga::Genome *bestGenome)
         // Print fitness to surveillance files
         fprintFitness(*(pool[pold]));
         
-        // Check if a better genome was found, and update if so
-        size_t newBest = pool[pold]->findBestIndex();
-        if (newBest < pool[pold]->popSize() &&
-            pool[pold]->genome(newBest).hasFitness(imstr))
+        // Check if a better genome (for train) was found, and update if so
+        const auto tmpGenome   = pool[pold]->getBest(imstr);
+        const auto tmpBest     = bestGenome->find(imstr)->second;
+        const auto tmpBestTest = bestGenome->find(imste)->second;
+        if (tmpGenome.fitness(imstr) < tmpBest.fitness(imstr))  // If we have a new best
         {
-            if (pool[pold]->genome(newBest).fitness(imstr) < 
-                bestGenome->fitness(imstr))  // If we have a new best
-            {
-                bestGenome->print("A new best individual has been found!\nPrevious best:\n",
-                                  logFile_);
-                *bestGenome = pool[pold]->genome(newBest); 
-                bestGenome->print("New best:\n", logFile_);
-                bMinimum = true;
-            }
+            tmpBest.print("A new best individual (for train) has been found!\nPrevious best:\n",
+                          logFile_);
+            (*bestGenome)[imstr] = tmpGenome; 
+            tmpGenome.print("New best:\n", logFile_);
+            bMinimum = true;
         }
-        else
+        if (gach_->evaluateTestset() && tmpGenome.fitness(imste) < tmpBestTest.fitness(imste))
         {
-            fprintf(stderr, "No best genome in pool. Que?\n");
+            tmpBestTest.print("The best individual in the population has outperformed the best test loss!\nPrevious best:\n",
+                              logFile_);
+            (*bestGenome)[imste] = tmpGenome;
+            tmpGenome.print("New best:\n", logFile_);
         }
     }
     while (!terminate(pool[pold], generation));
@@ -473,7 +471,11 @@ bool HybridGAMC::evolve(ga::Genome *bestGenome)
     {
         fprintf(logFile_, "\nGA/HYBRID Evolution is done!\n");
     }
-    bestGenome->print("Best: ", logFile_);
+    bestGenome->find(imstr)->second.print("Best (Train): ", logFile_);
+    if (gach_->evaluateTestset())
+    {
+        bestGenome->find(imste)->second.print("Best (Test): ", logFile_);
+    }
 
     // Save last population
     lastPop_ = *(pool[pold]);

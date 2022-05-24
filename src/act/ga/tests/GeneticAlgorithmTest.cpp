@@ -255,9 +255,11 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
                 checker_.checkInt64(gach.maxGenerations(), "Maximum Number of Generations");
                 checker_.checkReal(gach.prCross(), "Probability for Crossover");
                 checker_.checkReal(gach.prMut(), "Probability for Mutation");
-                Genome best;
-                ga->evolve(&best);
-                checker_.checkReal(best.fitness(iMolSelect::Train), "Training fitness");
+                const auto imstr = iMolSelect::Train;
+                std::map<iMolSelect, Genome> bestGenome;
+                ga->evolve(&bestGenome);
+                Genome best = bestGenome.find(imstr)->second;
+                checker_.checkReal(best.fitness(imstr), "Training fitness");
                 if (cr.nmiddlemen() > 1)  // If we have more middlemen than the master, stop them
                 {
                     for(auto &dest : cr.middlemen())
@@ -269,7 +271,6 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
                     }
                 }
 
-                auto imstr = iMolSelect::Train;
                 checker_.checkReal(best.fitness(imstr), "Training fitness after evolve");
                 
                 auto bestDuplicate = best;

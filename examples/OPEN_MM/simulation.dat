@@ -20,7 +20,7 @@ outKineticEnergy   = True
 outTemperature     = True
 outVolume          = True
 outDensity         = True
-outSeparator       = \t
+outSeparator       = ;
 
 # OPTIONS FOR ELECTROSTATICS AND VDW
 ################################################
@@ -41,7 +41,7 @@ useAndersenThermostat  = True
 temperature_c          = 298.15*kelvin 
 temperature_s          = 1*kelvin
 # pressure coupling;   friction coefficients in /picosecond; pressure in atomsphers
-useMonteCarloBarostat  = True
+useMonteCarloBarostat  = False
 friction_c             = 5.0/picosecond
 friction_s             = 20/picosecond
 pressure               = 1.0*atmospheres

@@ -52,9 +52,8 @@ void GenePool::sort(iMolSelect ims)
               });
 }
 
-size_t GenePool::findBestIndex() const
+size_t GenePool::findBestIndex(const iMolSelect ims) const
 {
-    auto ims = iMolSelect::Train;
     return std::min_element(genomes_.begin(), genomes_.end(),
                             [ims](const Genome &a, const Genome &b) 
                             {
@@ -75,6 +74,16 @@ size_t GenePool::findBestIndex() const
                                 }
                             }
                             ) - genomes_.begin();
+}
+
+const Genome &GenePool::getBest(const iMolSelect ims) const
+{
+    const size_t index = findBestIndex(ims);
+    GMX_RELEASE_ASSERT(
+        index < popSize() && genomes_[index].hasFitness(ims),
+        "Oh no! The returned index is beyond the vector limits or the genome does not have a fitness entry for the dataset..."
+    );
+    return genomes_[index];
 }
 
 void GenePool::addGenome(const std::vector<double> &genome, double fitness)

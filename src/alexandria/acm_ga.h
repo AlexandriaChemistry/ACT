@@ -59,7 +59,7 @@ public:
       sii_(sii), gach_(gach), logFile_(logFile), seed_(seed) {}
 
     //! \copydocs ga::GeneticAlgorithm::evolve
-    virtual bool evolve(ga::Genome *bestGenome);
+    virtual bool evolve(std::map<iMolSelect, Genome> *bestGenome);
 
 };
 
@@ -87,7 +87,7 @@ public:
       sii_(sii), gach_(gach), logFile_(logFile) {}
 
     //! \copydocs ga::GeneticAlgorithm::evolve
-    virtual bool evolve(ga::Genome *bestGenome);
+    virtual bool evolve(std::map<iMolSelect, Genome> *bestGenome);
 
 };
 

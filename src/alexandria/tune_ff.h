@@ -86,13 +86,13 @@ private:
     void printNumCalcDevEstimate();
 
     /*!
-     * \brief Print a table about the parameters in a best genome and a population
-     * to the logfile, if it exists
-     * \param[in] genome the best Genome object
+     * \brief Print a table about the parameters in a best genome(s) and a population
+     *        to the logfile, if it exists
+     * \param[in] genome the best Genome object (for different datasets)
      * \param[in] pop    the population to define summary statistics
      */
-    void printGenomeTable(const ga::Genome   &genome,
-                          const ga::GenePool &pop);
+    void printGenomeTable(const std::map<iMolSelect, ga::Genome> &genome,
+                          const ga::GenePool                     &pop);
 
 public:
 

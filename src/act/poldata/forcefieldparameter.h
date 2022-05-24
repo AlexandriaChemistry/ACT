@@ -100,20 +100,18 @@ class ForceFieldParameter
             {
                 if (value_ < minimum_)
                 {
-                    if (debug)
-                    {
-                        fprintf(debug, "Resetting value %g (%s) to minimum allowed %g\n",
-                                value_, unit_.c_str(), minimum_);
-                    }
+
+                    fprintf(stderr, "Resetting value %g (%s) to minimum allowed %g\n",
+                            value_, unit_.c_str(), minimum_);
+                    
                     value_ = minimum_;
                 }
                 if (value_ > maximum_)
                 {
-                    if (debug)
-                    {
-                        fprintf(debug, "Resetting value %g (%s) to maximum allowed %g\n",
-                                value_, unit_.c_str(), maximum_);
-                    }
+
+                    fprintf(stderr, "Resetting value %g (%s) to maximum allowed %g\n",
+                            value_, unit_.c_str(), maximum_);
+                    
                     value_ = maximum_;
                 }
             }
