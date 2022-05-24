@@ -71,6 +71,11 @@ FragmentHandler::FragmentHandler(const Poldata               *pd,
             j++;
         }
         QgenAcm_.push_back(QgenAcm(pd, &FragAtoms_[ff], f->charge()));
+        int offset = 0;
+        for(int k = 0; k < static_cast<int>(ff); k++)
+        {
+            offset += (*fragments)[k].atoms().size();
+        }
         for(const auto &b : bonds)
         {
             int ai = b.aI();
@@ -88,11 +93,6 @@ FragmentHandler::FragmentHandler(const Poldata               *pd,
                 // Bonds should be numbered from the start of the atom.
                 // Now the shells should not be taken into account, since
                 // the ACM code will do it.
-                auto offset = 0;
-                if (ff > 0)
-                {
-                    offset = (*fragments)[ff-1].atoms().size();
-                }
                 Bond bb(ai - offset, aj - offset, b.bondOrder());
                 bonds_[ff].push_back(bb);
             }
