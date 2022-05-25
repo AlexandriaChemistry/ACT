@@ -93,7 +93,7 @@ void FittingTarget::print(FILE *fp) const
 {
   if (fp != nullptr && chiSquared_ > 0 && numberOfDatapoints_ > 0)
     {
-      fprintf(fp, "%-8s  %12.3f  N: %6d  fc: %10g  weighted: %10g  %s\n",
+      fprintf(fp, "%-10s  %12.3f  N: %6d  fc: %10g  weighted: %10g  %s\n",
               rmsName(erms_), chiSquared_, numberOfDatapoints_,
               weight_, chiSquaredWeighted(),
               iMolSelectName(ims_));

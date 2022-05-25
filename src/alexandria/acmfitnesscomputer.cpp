@@ -172,7 +172,8 @@ void ACMFitnessComputer::computeMultipoles(std::map<eRMS, FittingTarget> *target
 
 void ACMFitnessComputer::fillDevComputers(const bool verbose)
 {
-    if (sii_->target(iMolSelect::Train, eRMS::BOUNDS)->weight() > 0)
+    if (sii_->target(iMolSelect::Train, eRMS::BOUNDS)->weight() > 0 ||
+        sii_->target(iMolSelect::Train, eRMS::UNPHYSICAL)->weight() > 0)
     {
         bdc_ = new BoundsDevComputer(logfile_, verbose, sii_->optIndexPtr());
     }

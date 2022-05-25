@@ -101,8 +101,8 @@ void BoundsDevComputer::calcDeviation(gmx_unused MyMol                     *mymo
                     auto coreID  = Identifier(p.optionValue(zetatype));
                     auto shell   = poldata->findParticleType(p.optionValue(poltype));
                     auto shellID = Identifier(shell->optionValue(zetatype));
-                    auto fpshell = fs.findParameterTypeConst(shellID, zetatype);
-                    auto fpcore  = fs.findParameterTypeConst(coreID, zetatype);
+                    auto fpshell = fs.findParameterTypeConst(shellID, "zeta");
+                    auto fpcore  = fs.findParameterTypeConst(coreID, "zeta");
                     double deltaZeta = fpshell.value() - fpcore.value();
                     if (deltaZeta > 0)
                     {
