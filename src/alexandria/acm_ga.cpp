@@ -442,7 +442,6 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
         // Check if a better genome (for train) was found, and update if so
         const auto tmpGenome   = pool[pold]->getBest(imstr);
         const auto tmpBest     = bestGenome->find(imstr)->second;
-        const auto tmpBestTest = bestGenome->find(imste)->second;
         if (tmpGenome.fitness(imstr) < tmpBest.fitness(imstr))  // If we have a new best
         {
             tmpBest.print("A new best individual (for train) has been found!\nPrevious best:\n",
@@ -451,12 +450,16 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
             tmpGenome.print("New best:\n", logFile_);
             bMinimum = true;
         }
-        if (gach_->evaluateTestset() && tmpGenome.fitness(imste) < tmpBestTest.fitness(imste))
+        if (gach_->evaluateTestset())
         {
-            tmpBestTest.print("The best individual in the population has outperformed the best test loss!\nPrevious best:\n",
-                              logFile_);
-            (*bestGenome)[imste] = tmpGenome;
-            tmpGenome.print("New best:\n", logFile_);
+            const auto tmpBestTest = bestGenome->find(imste)->second;
+            if (tmpGenome.fitness(imste) < tmpBestTest.fitness(imste))
+            { 
+                tmpBestTest.print("The best individual in the population has outperformed the best test loss!\nPrevious best:\n",
+                                  logFile_);
+                (*bestGenome)[imste] = tmpGenome;
+                tmpGenome.print("New best:\n", logFile_);
+            }
         }
     }
     while (!terminate(pool[pold], generation));
