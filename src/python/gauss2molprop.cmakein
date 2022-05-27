@@ -21,13 +21,14 @@ def parseArguments():
     parser.add_argument("-n", "--molname", help="Molecule name, default "+molname, type=str, default=molname)
     parser.add_argument("-basis", "--basisset", help="Basis set, will override what is in the input file", type=str, default="")
     parser.add_argument("-v", "--verbose", help="write debug statements", action="store_true")
+    parser.add_argument("-coordset", "--coordinate_set", help="Use this coordinate set out of all stored in the gaussian log file. Default 0 which means the last one.", type=int, default=0)
     return parser.parse_args()
 
 if __name__ == '__main__':
     args  = parseArguments()
 
     mp = read_gaussian_log(args.infile, args.molname,
-                           args.basisset, args.verbose)
+                           args.basisset, args.verbose, args.coordinate_set)
     if mp:
         molprops = Molprops()
         molprops.add_molecule(mp)

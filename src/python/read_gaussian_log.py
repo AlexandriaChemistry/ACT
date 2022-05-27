@@ -31,12 +31,13 @@ class GaussianReader:
     '''Read the output from a Gaussian calculation to extract
     coordinates, charge, multiplicity, multipole moments and
     more.'''
-    def __init__(self, molname:str, basisset:str, verbose:bool):
+    def __init__(self, molname:str, basisset:str, verbose:bool, coordinate_set:int):
         # Default stuff
         self.author        = "Spoel2022a"
         self.conformation  = "minimum"
         self.jobtype       = None
         self.qmtype        = "electronic"
+        self.coordset      = coordinate_set
         # New compound
         self.mp            = Molprop(molname)
         self.charge        = 0
@@ -44,7 +45,6 @@ class GaussianReader:
         self.atomname      = []
         self.atomtypes     = None
         self.coord_archive = []
-        self.coordinates   = []
         self.forces        = []
         self.exper         = None
         self.espfitcenter  = []
@@ -66,12 +66,18 @@ class GaussianReader:
                                "Gcorr": None, "Temp": None, "Method": None,
                                "E0": None, "Scomponent": [], "RotSymNum": 1 }
         
+    def coordinates(self):
+        myindex = -1
+        if self.coordset > 0 and self.coordset < len(self.coord_archive):
+            myindex  = self.coordset
+        return self.coord_archive[myindex]
+
     def rotate_esp_and_add_to_exper(self, infile:str):
         # Added by MMW START
         # Get optimized coords and the last set of coords to determine the rotation matrix
         # Using the rotation matrix we will then rotate the esp grid points
-
-        natom     = len(self.coordinates)
+        mycoords = self.coordinates()
+        natom    = len(mycoords)
         if natom < 1:
             print("No atoms")
             return
@@ -87,8 +93,8 @@ class GaussianReader:
         ref_com   = np.zeros(3)
         test_com  = np.zeros(3)
         for i in range(natom):
-            refcoord[i] = self.coordinates[i]
-            ref_com    += self.coordinates[i]
+            refcoord[i] = mycoords[i]
+            ref_com    += mycoords[i]
             if debug:
                 print("ref  {}".format(refcoord[i]))
         for i in range(len(self.espfitcenter)):
@@ -119,7 +125,7 @@ class GaussianReader:
         Rfit = None
         if natom > 2:
             Rfit = calc_fit_R(natom, refcoord, testcoord)
-        if debug:
+        if debug or self.verbose:
             print("Rfit {}".format(Rfit))
         # Now rotate the esp points and add them to the experiment
         rmsafter = 0.0
@@ -131,7 +137,7 @@ class GaussianReader:
                 newx = oldx + ref_com
             if i < natom:
                 if debug:
-                    print("refx {}".format(self.coordinates[i]))
+                    print("refx {}".format(mycoords[i]))
                     print("oldx {}".format(oldx))
                     print("newx {}".format(newx))
                 xdiff     = newx - (refcoord[i]+ref_com)
@@ -169,14 +175,6 @@ class GaussianReader:
             self.charge       = int(words[2])
             self.multiplicity = int(words[5])
         return 1
-
-    def select_coordinates(self):
-        n_archive = len(self.coord_archive)
-        if n_archive > 2:
-            n_select = n_archive - 1
-            if self.verbose:
-                print("There are %d sets of coordinates. Will use #%d." % ( n_archive, n_select ))
-            self.coordinates = self.coord_archive[n_select]
 
     def get_forces(self, content, content_index:int) -> int:
         c         = content_index+3
@@ -224,11 +222,11 @@ class GaussianReader:
             else:
                 break
             c += 1
+        if debug:
+            print("Found %d new atoms" % len(newatomname))
         if len(newatomname) > 0:
-            if len(self.coordinates) > 0:
-                self.coord_archive.append(self.coordinates)
+            self.coord_archive.append(newcoordinates)
             self.atomname    = newatomname
-            self.coordinates = newcoordinates
         return c-content_index
 
     def get_energy(self, line:str) -> int:
@@ -382,10 +380,14 @@ class GaussianReader:
             elif thisline.find("----------") >= 0:
                 break
         return cindex-content_index
+
+    def natom(self):
+        return len(self.coord_archive[-1])
         
     def get_esp_charges(self, content, content_index:int) -> int:
         self.qEsp.clear()
-        for c in range(content_index+3, content_index+3+len(self.coordinates)):
+        
+        for c in range(content_index+3, content_index+3+self.natom()):
             words = content[c].strip().split()
             if len(words) == 3:
                 try:
@@ -393,11 +395,11 @@ class GaussianReader:
                 except ValueError:
                     print("No charge on this line '%s'" % content[c].strip())
                     break
-        return len(self.coordinates)+3
+        return self.natom()+3
 
     def get_mulliken_charges(self, content, content_index:int) -> int:
         self.qMulliken.clear()
-        for c in range(content_index+2, content_index+2+len(self.coordinates)):
+        for c in range(content_index+2, content_index+2+self.natom()):
             words = content[c].strip().split()
             if len(words) == 3:
                 try:
@@ -405,12 +407,12 @@ class GaussianReader:
                 except ValueError:
                     print("No charge on this line '%s'" % content[c].strip())
                     break
-        return len(self.coordinates)+2
+        return self.natom()+2
  
     def get_cm5_hf_charges(self, content, content_index:int) -> int:
         self.qCM5.clear()
         self.qHirshfeld.clear()
-        for c in range(content_index+2, content_index+2+len(self.coordinates)):
+        for c in range(content_index+2, content_index+2+self.natom()):
             words = content[c].strip().split()
             if len(words) == 8:
                 try:
@@ -419,7 +421,7 @@ class GaussianReader:
                 except ValueError:
                     print("No charge on this line '%s'" % content[c].strip())
                     break
-        return 2+len(self.coordinates)
+        return 2+self.natom()
 
     def get_entropy(self, content, content_index:int) -> int:
         words = content[content_index+2].strip().split()
@@ -437,8 +439,8 @@ class GaussianReader:
         return 6
  
     def add_atoms(self, g2a) -> bool:
-        if len(self.atomtypes) != len(self.coordinates):
-            print("Found %d atomtype for %d coordinates in %s" % ( len(self.atomtypes), len(self.coordinates), infile))
+        if len(self.atomtypes) != self.natom():
+            print("Found %d atomtype for %d coordinates in %s" % ( len(self.atomtypes), self.natom(), infile))
             return False
         for i in range(len(self.atomtypes)):
             alextype = g2a.rename(self.atomtypes[i])
@@ -460,10 +462,11 @@ class GaussianReader:
                 ff      = self.forces[i]
                 fc_unit = "Hartree/Bohr"
             # Convert Angstrom to pm
+            mycoords = self.coordinates()
             self.exper.add_atom(self.atomname[i], alextype, i+1, "pm", 
-                                100*self.coordinates[i][0], 
-                                100*self.coordinates[i][1], 
-                                100*self.coordinates[i][2], 
+                                100*mycoords[i][0], 
+                                100*mycoords[i][1], 
+                                100*mycoords[i][2], 
                                 fc_unit, ff[0], ff[1], ff[2], qmap)
         return True
 
@@ -486,11 +489,13 @@ class GaussianReader:
                 myForce = self.jobtype == "Opt"
                 self.exper = Experiment("Theory", self.author, self.program, self.tcmap["Method"], basis,
                                         self.conformation, self.jobtype, infile, useForces=myForce)
-                                   
+                content_index += 1
             elif line.find("Multiplicity") >= 0:
                 content_index += self.get_qmult(line) 
                 
             elif line.find("Standard orientation") >= 0:
+                if debug:
+                    print("Found new coords at line %d" % content_index)
                 content_index += self.get_standard_orientation(content, content_index)
             
             elif line.find("Forces (Hartrees/Bohr)") >= 0:
@@ -591,12 +596,8 @@ class GaussianReader:
             ahof = AtomicHOF(leveloftheory, self.tcmap["Temp"], self.verbose)
             self.exper.extract_thermo(self.tcmap, self.atomname, ahof)
             
-            # Find the right set of coordinates.
-            self.select_coordinates()
-            if debug:
-                print("Got coordinates")
             md = MoleculeDict()
-            if not md.from_coords_elements(self.atomname, self.coordinates, "alexandria"):
+            if not md.from_coords_elements(self.atomname, self.coordinates(), "alexandria"):
                 print("Cannot deduce weight or formula from %s" % infile)
                 return None
             self.atomtypes = []
@@ -661,8 +662,8 @@ class GaussianReader:
                 print("Something fishy with " + infile)
         return None
         
-def read_gaussian_log(infile:str, molname:str, basisset:str, verbose:bool) -> Molprop:
-    gr = GaussianReader(molname, basisset, verbose)
+def read_gaussian_log(infile:str, molname:str, basisset:str, verbose:bool, coordinate_set:int) -> Molprop:
+    gr = GaussianReader(molname, basisset, verbose, coordinate_set)
     mp = gr.read(infile)
     if None == mp:
         sys.exit("Could not read %s" % infile)

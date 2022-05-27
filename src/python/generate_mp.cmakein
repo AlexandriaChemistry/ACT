@@ -16,6 +16,8 @@ from mol_csv_api       import *
 from molprops          import *
 from read_gaussian_log import *
 
+debug = True
+
 def get_environ(myvar):
   if myvar in os.environ:
     return os.environ[myvar]
@@ -89,7 +91,7 @@ def get_mols(M, whitelist, ahlist, output):
 
 def build_one(logfile:str, datafile:str, maxpot: int, molname:str, basisset:str, jobtype:str, symmetry_number:int) -> str:
   if not os.path.exists(datafile):
-    mp = read_gaussian_log(logfile, molname, basisset, False)
+    mp = read_gaussian_log(logfile, molname, basisset, False, 0)
     if mp:
       molprops = Molprops()
       mp.experiments[0].add_prop("jobtype", jobtype)
@@ -131,8 +133,8 @@ def parallel_build(M, mols, methods:str, xmldir:str, maxpot:int, sdf_ok):
       print(e)
 
 def make_index_list(mols, block_length):
-  numb_blocks = int(len(mols)/block_length)
-  index_list = [(x*block_length) for x in range(0,numb_blocks + 1)]
+  numb_blocks = int(len(mols)/block_length) + 1
+  index_list  = [ (x*block_length) for x in range(0,numb_blocks)]
   index_list.append(len(mols))
   return index_list
 
@@ -140,8 +142,9 @@ def run_merge(mols, block_length, methods:str, merge_mp:str, xmldir:str, gentop:
               database:str, maxpot, output:str, sdf_ok=False):
 
   index_list = make_index_list(mols,block_length)
-  print("Compounds will be merged in %s blocks with a maximum of %s molecules. Temporary files will be deleted after merging all molecules." % ((len(index_list)-1), block_length))
-
+  print("Compounds will be merged in %s blocks with a maximum of %s molecules.\nTemporary files will be deleted after merging all molecules." % ((len(index_list)-1), block_length))
+  print(index_list)
+  
   temp_files = ""
   for block_index in range(len(index_list)-1):
     files = ""
@@ -149,20 +152,23 @@ def run_merge(mols, block_length, methods:str, merge_mp:str, xmldir:str, gentop:
       molname = mols[molname_index]
       for meth in methods.split(";"):
         datafile, logfile = name_of_data_log_file(meth, molname, xmldir, sdf_ok)
+        if debug:
+          print("looking for %s" % datafile)
         if os.path.exists(datafile):
           files += " " + datafile
     
-    command = ("%s -ff %s -o temp_%s_%s -maxwarn 0 -mp %s" % (merge_mp, gentop, (block_index + 1), output, files))
-    temp_files += "temp_%s_%s " % ((block_index +1), output)
-
-    if (block_index == (len(index_list)-1)):
-      if len(database) > 0:
-        command += " -db " + database
+    new_temp = ( "temp_%s_%s " % ( block_index, output ) )
+    command = ("%s -ff %s -o %s -maxwarn 0 -mp %s" % (merge_mp, gentop, new_temp, files))
+    temp_files += " " + new_temp
+    print(command)
     os.system(command)
 
   command = ("%s -ff %s -o %s -maxwarn 0 -mp %s" % (merge_mp, gentop, output, temp_files))
+  if len(database) > 0:
+    command += " -db " + database
+  print(command)
   os.system(command)
-  os.system("rm temp_*")
+  os.system("rm %s" % temp_files)
 
 def get_alexandria():
   for name in ["alexandria", "alexandria_d", "alexandria_mpi", "alexandria_mpi_d"]:
