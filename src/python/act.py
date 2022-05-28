@@ -65,6 +65,8 @@ class ACT:
                          "-cp_pop_frac":     "0.2",
                          "-max_generations": "20",
                          "-pop_size":        str(popsize),
+                         "-pr_cross":        "0.5",
+                         "-n_crossovers":    "5",
                          "-tweight":         "",
                          "-max_iter":        "20",
                          "-anneal":          "0.5",
