@@ -13,6 +13,7 @@ configure_file(mol_csv_api.py.cmakein mol_csv_api.py @ONLY)
 configure_file(molselect.cmakein molselect @ONLY)
 
 # Library scripts
+install(FILES act.py DESTINATION ${ACT_PYTHON_LIB_PATH})
 install(FILES actutils.py DESTINATION ${ACT_PYTHON_LIB_PATH})
 install(FILES atomic_heat_of_formation.py DESTINATION ${ACT_PYTHON_LIB_PATH})
 install(FILES dofit.py DESTINATION ${ACT_PYTHON_LIB_PATH})
