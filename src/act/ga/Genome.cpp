@@ -21,16 +21,11 @@ void Genome::print(const char *name, FILE *fp) const
         fprintf(fp, "%8g ", ele);
     }
     fprintf(fp, "]; ");
-    auto ff = fitness_.find(iMolSelect::Train);
-    if (ff != fitness_.end())
+    for (const auto &pair : fitness_)
     {
-        fprintf(fp, "fitness_[Train]: %8g; probability_: %8g\n",
-                ff->second, probability_);
+        fprintf(fp, "fitness_[%s]: %8g; ", iMolSelectName(pair.first), pair.second);
     }
-    else
-    {
-        fprintf(fp, "\n");
-    }
+    fprintf(fp, "probability_: %8g\n", probability_);
 }
 
 double Genome::fitness(iMolSelect ims) const
