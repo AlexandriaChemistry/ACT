@@ -30,8 +30,8 @@ class ACT:
         for myfiletest in [ MolPropFile, SelectionFile ]:
             if not os.path.exists(myfiletest):
                 sys.exit("File %s does not exist" % myfiletest)
-        self.molprops  = MolPropFile
-        self.selection = SelectionFile
+        self.molpropfile   = MolPropFile
+        self.selectionfile = SelectionFile
         self.analyze_nodes()
         self.analyze_selection()
         # Todo implement algorithm to suggest reasonable pop_size
@@ -85,7 +85,7 @@ class ACT:
                LogFile:str, options: dict):
         cmd = ( "alexandria bastat -ff %s -o %s -mp %s -sel %s -g %s" % 
                 ( ForceFieldFileIn, ForceFieldFileOut,
-                  MolPropFile, SelectionFile, LogFile ) )
+                  self.molpropfile, self.selectionfile, LogFile ) )
         for opt in options:
             cmd += ( " %s %s " % ( opt, options[opt] ))
         if self.verbose:
@@ -96,7 +96,7 @@ class ACT:
                 LogFile:str, target: Target, options: dict):
         cmd = ( "%s alexandria tune_ff -ff %s -o %s -mp %s -sel %s -g %s" % 
                 ( self.runpar(), ForceFieldFileIn, ForceFieldFileOut,
-                  MolPropFile, SelectionFile, LogFile ) )
+                  self.molpropfile, self.selectionfile, LogFile ) )
         for opt in options:
             cmd += ( " %s %s " % ( opt, options[opt] ))
         if target == Target.EEM:
