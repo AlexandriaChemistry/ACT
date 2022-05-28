@@ -25,6 +25,10 @@ def get_environ(myvar):
     sys.exit("Please set the %s environment variable" % myvar)
     
 AlexandriaLib = get_environ("AlexandriaLib")
+# Some code for development versions of the Alexandria Library
+Liquids       = None
+if "LIQUIDS" in os.environ:
+  Liquids = os.environ["LIQUIDS"]
 
 def parseArguments():
   desc='''This script will generate a molecular property (molprop) file for input to the
@@ -63,7 +67,13 @@ def name_of_data_log_file(meth, molname, xmldir, sdf_ok=False):
     datafile = ( "%s/%s-%s.xml" % ( xmldir, molname, meth ))
   else:
     datafile = ( "%s-%s.xml" % ( molname, meth ))
-  alexfile = ( "%s/compounds/%s/%s-%s.log.gz" % ( AlexandriaLib, molname, molname, meth))
+  alexfile = None
+  if Liquids:
+    alexfile = ( "%s/MOLECULES/OEP/%s/%s-3-oep.log.gz" % ( Liquids, molname, molname ) )
+    if not os.path.exists(alexfile):
+      alexfile = None
+  if not alexfile:
+    alexfile = ( "%s/compounds/%s/%s-%s.log.gz" % ( AlexandriaLib, molname, molname, meth))
   if os.path.exists(alexfile):
     logfile = alexfile
 
