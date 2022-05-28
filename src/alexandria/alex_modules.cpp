@@ -72,7 +72,7 @@ void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
                    "Deduce bond/angle/dihedral distributions from a set of strucures and create a new force field file.");
     registerModule(manager, &alexandria::analyze, "analyze",
                    "Analyze molecular- or force field properties from a database and generate publication quality tables in LaTeX.");
-    registerModule(manager, &alexandria::poldata_edit, "poldata_edit",
+    registerModule(manager, &alexandria::edit, "edit",
                    "Manipulate force field files in various ways and test whether reading and writing works.");
     registerModule(manager, &alexandria::molprop_test, "molprop_test",
                    "Test reading and writing the molecular property file.");
@@ -113,7 +113,7 @@ void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
     {
         gmx::CommandLineModuleGroup group =
             manager->addModuleGroup("Testing stuff and funky utilities");
-        group.addModule("poldata_edit");
+        group.addModule("edit");
         group.addModule("molprop_test");
     }
 }

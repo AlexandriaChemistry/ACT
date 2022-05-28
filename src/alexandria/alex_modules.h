@@ -38,7 +38,7 @@ namespace alexandria
 
 int gentop(int argc, char *argv[]);
 int tune_ff(int argc, char *argv[]);
-int poldata_edit(int argc, char *argv[]);
+int edit(int argc, char *argv[]);
 int bastat(int argc, char *argv[]);
 int analyze(int argc, char *argv[]);
 int merge_mp(int argc, char *argv[]);
