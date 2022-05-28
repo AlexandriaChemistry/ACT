@@ -50,7 +50,7 @@ class ACT:
     def analyze_selection(self):
         self.ntrain = 0
         self.ntest  = 0
-        for row in get_csv_rows(self.selection, 2):
+        for row in get_csv_rows(self.selectionfile, 2):
             if row[1] == "Train":
                 self.ntrain += 1
             elif row[1] == "Test":
