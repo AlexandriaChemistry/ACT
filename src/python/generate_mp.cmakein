@@ -22,8 +22,7 @@ def get_environ(myvar):
   if myvar in os.environ:
     return os.environ[myvar]
   else:
-    print("Please set the %s environment variable" % myvar)
-    exit(1)
+    sys.exit("Please set the %s environment variable" % myvar)
     
 AlexandriaLib = get_environ("AlexandriaLib")
 
@@ -70,7 +69,7 @@ def name_of_data_log_file(meth, molname, xmldir, sdf_ok=False):
 
   return datafile, logfile
 
-def get_mols(M, whitelist, ahlist, output):
+def get_mols(M, musthave, ahlist, output):
   mols  = []
   if ahlist:
     for m in M.mols:
@@ -79,14 +78,14 @@ def get_mols(M, whitelist, ahlist, output):
         filename = Path(mol.filename).stem
         mols.append(mol)
   else:
-    white = get_csv_rows(whitelist, 2)
-    print("There are %d entries in %s" % ( len(white), whitelist ))
-    for www in white:
+    must = get_csv_rows(musthave, 2)
+    print("There are %d entries in %s" % ( len(must), musthave ))
+    for www in must:
       mol = M.find_mol(www[0])
       if mol:
         filename = Path(mol.filename).stem
         mols.append(filename)
-  print("There are %d molecules in %s to generate %s" % ( len(mols), whitelist, output ) )
+  print("There are %d molecules in %s to generate %s" % ( len(mols), musthave, output ) )
   return mols
 
 def build_one(logfile:str, datafile:str, maxpot: int, molname:str, basisset:str, jobtype:str, symmetry_number:int) -> str:
@@ -118,13 +117,14 @@ def parallel_build(M, mols, methods:str, xmldir:str, maxpot:int, sdf_ok):
   for molname in mols:
     for meth in methods.split(";"):
       datafile, logfile = name_of_data_log_file(meth, molname, xmldir, sdf_ok)
-      mm, basis, jobtype = get_method_basis_jobtype(meth)
-      symm = 1
-      mmm  = M.find_mol(molname)
-      if mmm:
-        symm = mmm.symmetry_number
-      if logfile and os.path.exists(logfile):
-        results.append(pool.apply_async(build_one, [logfile, datafile, maxpot, molname, basis, jobtype, symm]))
+      if None != datafile and None != logfile:
+        mm, basis, jobtype = get_method_basis_jobtype(meth)
+        symm = 1
+        mmm  = M.find_mol(molname)
+        if mmm:
+          symm = mmm.symmetry_number
+        if logfile and os.path.exists(logfile):
+          results.append(pool.apply_async(build_one, [logfile, datafile, maxpot, molname, basis, jobtype, symm]))
 
   for r in results:
     try:
@@ -141,9 +141,8 @@ def make_index_list(mols, block_length):
 def run_merge(mols, block_length, methods:str, merge_mp:str, xmldir:str, gentop:str,
               database:str, maxpot, output:str, sdf_ok=False):
 
-  index_list = make_index_list(mols,block_length)
+  index_list = make_index_list(mols, block_length)
   print("Compounds will be merged in %s blocks with a maximum of %s molecules.\nTemporary files will be deleted after merging all molecules." % ((len(index_list)-1), block_length))
-  print(index_list)
   
   temp_files = ""
   for block_index in range(len(index_list)-1):
@@ -152,23 +151,28 @@ def run_merge(mols, block_length, methods:str, merge_mp:str, xmldir:str, gentop:
       molname = mols[molname_index]
       for meth in methods.split(";"):
         datafile, logfile = name_of_data_log_file(meth, molname, xmldir, sdf_ok)
-        if debug:
-          print("looking for %s" % datafile)
-        if os.path.exists(datafile):
-          files += " " + datafile
+        if None != datafile and None != logfile:
+          if debug:
+            print("looking for %s" % datafile)
+          if os.path.exists(datafile):
+            files += " " + datafile
     
-    new_temp = ( "temp_%s_%s " % ( block_index, output ) )
-    command = ("%s -ff %s -o %s -maxwarn 0 -mp %s" % (merge_mp, gentop, new_temp, files))
-    temp_files += " " + new_temp
+    if len(files.strip().split()):
+      new_temp = ( "temp_%s_%s " % ( block_index, output ) )
+      command = ("%s -ff %s -o %s -maxwarn 0 -mp %s" % (merge_mp, gentop, new_temp, files))
+      temp_files += " " + new_temp
+      print(command)
+      os.system(command)
+
+  if len(temp_files.strip().split()) > 0:
+    command = ("%s -ff %s -o %s -maxwarn 0 -mp %s" % (merge_mp, gentop, output, temp_files))
+    if len(database) > 0:
+      command += " -db " + database
     print(command)
     os.system(command)
-
-  command = ("%s -ff %s -o %s -maxwarn 0 -mp %s" % (merge_mp, gentop, output, temp_files))
-  if len(database) > 0:
-    command += " -db " + database
-  print(command)
-  os.system(command)
-  os.system("rm %s" % temp_files)
+    os.system("rm %s" % temp_files)
+  else:
+    print("Did not find any input files")
 
 def get_alexandria():
   for name in ["alexandria", "alexandria_d", "alexandria_mpi", "alexandria_mpi_d"]:

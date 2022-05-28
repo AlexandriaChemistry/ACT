@@ -83,6 +83,8 @@ class ACT:
         
     def bastat(self, ForceFieldFileIn: str, ForceFieldFileOut: str,
                LogFile:str, options: dict):
+        if not os.path.exists(ForceFieldFileIn):
+            sys.exit("No force field file %s" % ForceFieldFileIn)
         cmd = ( "alexandria bastat -ff %s -o %s -mp %s -sel %s -g %s" % 
                 ( ForceFieldFileIn, ForceFieldFileOut,
                   self.molpropfile, self.selectionfile, LogFile ) )
@@ -94,6 +96,8 @@ class ACT:
         
     def tune_ff(self, ForceFieldFileIn: str, ForceFieldFileOut: str,
                 LogFile:str, target: Target, options: dict):
+        if not os.path.exists(ForceFieldFileIn):
+            sys.exit("No force field file %s" % ForceFieldFileIn)
         cmd = ( "%s alexandria tune_ff -ff %s -o %s -mp %s -sel %s -g %s" % 
                 ( self.runpar(), ForceFieldFileIn, ForceFieldFileOut,
                   self.molpropfile, self.selectionfile, LogFile ) )
