@@ -36,12 +36,14 @@ for target in Target:
     # After the last step of the optimizations, where we tune the
     # frequencies, we will also print some files for analysis.
     if Target.Freq == target:
+        options["-norandom_init"] = ""
         options["-printSP"]   = ""
         options["-alphacorr"] = "alpha_corr.xvg"
         options["-espcorr"]   = "esp_corr.xvg"
         options["-epotcorr"]  = "epot_corr.xvg"
         options["-freqcorr"]  = "freq_corr.xvg"
     else:
+        options["-random_init"] = ""
         options["-nocalc_frequencies"] = ""
     act.tune_ff(ForceFieldFileIn, ForceFieldFileOut, 
                 LogFile, target, options)

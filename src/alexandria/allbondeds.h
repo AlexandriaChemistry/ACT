@@ -118,7 +118,7 @@ namespace alexandria
         //! Tolerance for warning about large sigma in angles (degrees)
         real                                               angle_tol_ = 5;
         //! Scaling factor for setting min and max for force parameters
-        real                                               factor_    = 0.8;
+        real                                               factor_    = 0.5;
         //! Spacing for bond histograms in pm
         real                                               bspacing_  = 1;
         //! Spacing for angle histograms in degrees
