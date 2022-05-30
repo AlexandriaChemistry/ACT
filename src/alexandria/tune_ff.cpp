@@ -749,13 +749,13 @@ int tune_ff(int argc, char *argv[])
 
     std::vector<t_filenm>       filenms =
     {
-        { efXML, "-mp",        "allmols",    ffREAD   },
-        { efXML, "-ff",        "gentop",     ffRDMULT },
-        { efXML, "-o",         "tune_ff",    ffWRITE  },
-        { efDAT, "-sel",       "molselect",  ffREAD   },
-        { efLOG, "-g",         "tune_ff",    ffWRITE  },
-        { efXVG, "-conv",      "param-conv", ffWRITE  },
-        { efXVG, "-epot",      "param-epot", ffWRITE  }
+        { efXML, "-mp",        "allmols",     ffREAD   },
+        { efXML, "-ff",        "gentop",      ffRDMULT },
+        { efXML, "-o",         "tune_ff",     ffWRITE  },
+        { efDAT, "-sel",       "molselect",   ffREAD   },
+        { efLOG, "-g",         "tune_ff",     ffWRITE  },
+        { efXVG, "-conv",      "param_conv" , ffWRITE  },
+        { efXVG, "-chi2",      "chi_squared", ffWRITE  }
     };
 
     printer.addFileOptions(&filenms);
@@ -853,7 +853,7 @@ int tune_ff(int argc, char *argv[])
         }
         opt.sii()->setOutputFiles(opt2fn("-conv", filenms.size(), filenms.data()),
                                   paramClass,
-                                  opt2fn("-epot", filenms.size(), filenms.data()));
+                                  opt2fn("-chi2", filenms.size(), filenms.data()));
         opt.sii()->assignParamClassIndex();  // paramClass needs to be defined when we call this!
     }
 
