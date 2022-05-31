@@ -38,6 +38,8 @@ class AtomicHOF:
         self.method      = method
         self.temperature = temperature
         self.verbose     = verbose
+        if debug:
+            print("Level of theory for HOF %s" % method)
         self.read()
         
     def read(self):
@@ -63,6 +65,8 @@ class AtomicHOF:
                                                  "Unit": row[7]})
                 except ValueError:
                     print("It seems that '%s' is not a number" % row[4])
+            if debug:
+                print("Read %d entries from %s" % ( len(self.ahof.keys()), datafile) )
 
     def get_atomization(self, elem, method, temp):
         akey = elem + "|0"

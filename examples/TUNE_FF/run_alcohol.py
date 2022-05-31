@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 #SBATCH -t "24:00:00"
-#SBATCH -n 32
+#SBATCH -n 16
 
 import os
 from act import *
@@ -15,7 +15,8 @@ act = ACT(xml, sel, True)
 ForceFieldFileIn  = "../ACS-pg.xml"
 
 # Generate Bonds, Angles etc.
-act.bastat(ForceFieldFileIn, ForceFieldFileIn, "bastat.log", {})
+act.bastat(ForceFieldFileIn, ForceFieldFileIn, "bastat.log", 
+           { "-klin": 36000 })
 
 # Now loop over the optimization targets.
 # First, the EEM parameters will be optimized to reproduce the
@@ -27,11 +28,13 @@ act.bastat(ForceFieldFileIn, ForceFieldFileIn, "bastat.log", {})
 for target in Target:
     ForceFieldFileOut = ( "tune_ff_%s.xml" % ( target.name ) )
     LogFile           = ( "tune_ff_%s.log" % ( target.name ) )
-    EpotFile          = ( "epot_%s.xvg" % ( target.name ) )
+    Chi2File          = ( "chi2_%s.xvg" % ( target.name ) )
     ConvFile          = ( "conv_%s.xvg" % ( target.name ) )
+    # Make sure the pop_size is even and at most as large as the
+    # number of core on the machine. 
     options           = { "-max_generations": 20, 
-                          "-pop_size":        32,
-                          "-epot":            EpotFile,
+                          "-pop_size":        16,
+                          "-chi2":            EpotFile,
                           "-conv":            ConvFile }
     # After the last step of the optimizations, where we tune the
     # frequencies, we will also print some files for analysis.
