@@ -7,16 +7,6 @@
 namespace alexandria
 {
 
-void ForceComputer::makePairList(const Topology &top)
-{
-
-}
-
-ForceComputer::ForceComputer(const Topology &top)
-{
-    makePairList(top);
-}
-    
 void ForceComputer::compute(const Poldata                     &pd,
                             const Topology                    &top,
                             std::vector<gmx::RVec>            *coordinates,

@@ -70,6 +70,17 @@ void TopologyEntry::setBondOrder(size_t ai, double bo)
     bondOrder_[ai] = bo;
 }
 
+AtomPair AtomPair::swap() const
+{
+    AtomPair te;
+    auto &indices = atomIndices();
+    for (size_t i = 0; i < indices.size(); i++)
+    {
+        te.addAtom(indices[indices.size()-1-i]);
+    }
+    return te;
+}
+
 Bond Bond::swap() const
 {
     Bond te;
@@ -136,10 +147,23 @@ CommunicationStatus TopologyEntry::Receive(const CommunicationRecord *cr, int sr
     return cs;
 }
 
+bool AtomPair::operator==(const AtomPair &other) const
+{
+    return ((aI() == other.aI() && aJ() == other.aJ()) ||
+            (aJ() == other.aI() && aI() == other.aJ()));
+}
+
 bool Bond::operator==(const Bond &other) const
 {
     return ((aI() == other.aI() && aJ() == other.aJ()) ||
             (aJ() == other.aI() && aI() == other.aJ()));
+}
+
+void AtomPair::get(int *ai, int *aj) const
+{
+    check(2);
+    *ai        = atomIndex(0);
+    *aj        = atomIndex(1);
 }
 
 void Bond::get(int *ai, int *aj, double *bondorder) const
@@ -429,6 +453,47 @@ void Topology::makeImpropers(const gmx::HostVector<gmx::RVec> &x,
     }
 }
 
+void Topology::makePairs(int natoms)
+{
+    entries_.insert(std::pair<InteractionType, std::vector<TopologyEntry *>>(InteractionType::VDW, {}));
+    auto &pairs = entries_.find(InteractionType::VDW)->second;
+    for(int i = 0; i < natoms; i++)
+    {
+        for(int j = i+1; j < natoms; j++)
+        {
+            pairs.push_back(new AtomPair(i, j));
+        }
+    }
+}
+
+void  Topology::addShellPairs()
+{
+    if (hasEntry(InteractionType::VDW) && 
+        hasEntry(InteractionType::POLARIZATION))
+    {
+        auto vdw = entries_.find(InteractionType::VDW)->second;
+        auto pol = entries_.find(InteractionType::POLARIZATION)->second;
+        for(const auto &p_i : pol)
+        {
+            auto core_i  = p_i->atomIndices()[0];
+            auto shell_i = p_i->atomIndices()[1];
+            for(const auto &p_j : pol)
+            {
+                auto core_j  = p_j->atomIndices()[0];
+                auto shell_j = p_j->atomIndices()[1];
+                AtomPair ap(core_i, core_j);
+                if (vdw.end() != std::find(vdw.begin(), vdw.end(), &ap))
+                {
+                    // This pair of cores interacts, now add the shells.
+                    vdw.push_back(new AtomPair(core_i, shell_j));
+                    vdw.push_back(new AtomPair(core_j, shell_i));
+                    vdw.push_back(new AtomPair(shell_i, shell_j));
+                }
+            }        
+        }
+    }   
+}
+
 void Topology::makePropers()
 {
     entries_.insert(std::pair<InteractionType, std::vector<TopologyEntry *>>(InteractionType::PROPER_DIHEDRALS, {}));
@@ -509,12 +574,11 @@ void Topology::addEntry(InteractionType                     itype,
     }
     entries_.insert(std::pair<InteractionType, std::vector<TopologyEntry *>>(itype, entry));
 }
- 
-void Topology::generateExclusions(t_excls **gmx_excls,
-                                  int       nrexcl,
-                                  int       nratoms)
+
+void Topology::generateExclusions(int nrexcl,
+                                  int nratoms)
 {
-    std::vector<std::vector<int>> excl(nratoms);
+    exclusions_.resize(nratoms);
     
     for(auto &myEntry: entries_)
     {
@@ -527,8 +591,8 @@ void Topology::generateExclusions(t_excls **gmx_excls,
                     for(auto &b : myEntry.second)
                     {
                         auto a = b->atomIndices();
-                        excl[a[0]].push_back(a[1]);
-                        excl[a[1]].push_back(a[0]);
+                        exclusions_[a[0]].push_back(a[1]);
+                        exclusions_[a[1]].push_back(a[0]);
                     }
                 }
             }
@@ -541,8 +605,8 @@ void Topology::generateExclusions(t_excls **gmx_excls,
                     for(auto &b : myEntry.second)
                     {
                         auto a = b->atomIndices();
-                        excl[a[0]].push_back(a[2]);
-                        excl[a[2]].push_back(a[0]);
+                        exclusions_[a[0]].push_back(a[2]);
+                        exclusions_[a[2]].push_back(a[0]);
                     }
                 }
             } 
@@ -551,18 +615,39 @@ void Topology::generateExclusions(t_excls **gmx_excls,
             break;
         }
     }
-    t_excls *gmx;
-    snew(gmx, nratoms);
-    for(int i = 0; i < nratoms; i++)
+    // Update our own VDW pairs if present
+    if (hasEntry(InteractionType::VDW))
     {
-        snew(gmx[i].e, excl[i].size());
-        for (size_t j = 0; j < excl[i].size(); j++)
+        auto vdw = entry(InteractionType::VDW);
+        for(size_t ai = 0; ai < exclusions_.size(); ai++)
         {
-            gmx[i].e[j] = excl[i][j];
+            for(size_t j = 0; j < exclusions_[ai].size(); j++)
+            {
+                AtomPair ap(ai, exclusions_[ai][j]);
+                auto pp = std::find(vdw.begin(), vdw.end(), &ap);
+                if (vdw.end() != pp)
+                {
+                    vdw.erase(pp);
+                }
+            }
         }
-        gmx[i].nr = excl[i].size();
     }
-    *gmx_excls = gmx;
+}
+
+t_excls *Topology::gromacsExclusions()
+{
+    t_excls *gmx;
+    snew(gmx, exclusions_.size());
+    for(size_t i = 0; i < exclusions_.size(); i++)
+    {
+        snew(gmx[i].e, exclusions_[i].size());
+        for (size_t j = 0; j < exclusions_[i].size(); j++)
+        {
+            gmx[i].e[j] = exclusions_[i][j];
+        }
+        gmx[i].nr = exclusions_[i].size();
+    }
+    return gmx;
 }
 
 } // namespace alexandria

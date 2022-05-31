@@ -71,13 +71,6 @@ class Identifier
      */
     Identifier() {}
 
-    /*! \brief Simple constructor
-     * \param[in] atoms   Vector containing atom/bond names
-     * \param[in] canSwap Can the order of the atoms be swapped
-     */
-    //Identifier(const std::vector<std::string> &atoms,
-    //         CanSwap                         canSwap);
-
     /*! \brief Constructor
      * Will extract atoms and bondorders from the id string. If the string
      * is incorrect the program will be terminated with a message.

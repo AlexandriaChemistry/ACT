@@ -215,14 +215,12 @@ void AllBondeds::addBonded(FILE                           *fplog,
             }
         }
         break;
+    case InteractionType::VDW:
+        break;
     default:
         {
             gmx_fatal(FARGS, "Help!");
         }
-    }
-    if (iType == InteractionType::IMPROPER_DIHEDRALS)
-    {
-        //printf("Got it\n");
     }
     // Look up the interaction type
     if (bondeds_.find(iType) == bondeds_.end())

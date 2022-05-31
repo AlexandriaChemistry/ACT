@@ -146,6 +146,55 @@ public:
 };
 
 /*! \brief
+ * Atom pair in a molecule
+ *
+ * \inpublicapi
+ * \ingroup module_alexandria
+ */
+class AtomPair : public TopologyEntry
+{
+ public:
+    //! Default constructor
+    AtomPair() {}
+    
+    //! Constructor setting the ids of the atoms
+    AtomPair(int ai, int aj) { Set(ai, aj); }
+
+     //! Sets the ids of the atoms
+    void Set(int ai, int aj)
+    {
+        addAtom(ai);
+        addAtom(aj);
+        // TODO: This is a fake bond order.
+        addBondOrder(1);
+    }
+    
+    //! Returns the ids of the atoms and the bondorder
+    void get(int *ai, int *aj) const;
+    
+    //! Returns the first atom id
+    int aI() const
+    {
+        return atomIndex(0);
+    }
+      
+     //! Returns the second atom id
+    int aJ() const
+    {
+        return atomIndex(1);
+    }
+    
+    //! Return an AtomPair with the order of atoms swapped
+    AtomPair swap() const;
+    
+    /*! \brief Return whether two AtomPairs are the same
+     * \param[in] other The other AtomPair
+     * \return true if they are the same
+     */
+    bool operator==(const AtomPair &other) const;
+};
+
+/*! \brief
  * Chemical bond in a molecule with associated bond order.
  *
  * The chemical bonds in a molecule are stored here along with the bond order
@@ -321,6 +370,8 @@ class Topology
 private:
     //! Map from InteractionType to topology element pointers
     std::map<InteractionType, std::vector<TopologyEntry *> > entries_;
+    //! Non bonded exclusions, array is length of number of atoms
+    std::vector<std::vector<int> > exclusions_;
  public:
     Topology() {}
 
@@ -368,6 +419,29 @@ private:
     void addEntry(InteractionType                     itype,
                   const std::vector<TopologyEntry *> &entry);
 
+    /*! \brief Generate exclusiones
+     * \param[in]  nrexcl    The number of exclusions to generate (max 2)
+     * \param[in]  nratom    The number of atoms in the system
+     */
+    void generateExclusions(int nrexcl,
+                            int nratoms);
+                            
+    /*! \brief Convert to gromacs exclusiones
+     */
+    t_excls *gromacsExclusions();
+    /*! Generate the non-bonded pair list based on just the atoms
+     * \param[in] natoms The number of atoms
+     */
+    void makePairs(int natoms);
+
+    /*! Add shell pairs
+     * Based on the atom pair list, add interaction between atoms and shell
+     * and between pairs of shells. This should be called after makePairs and
+     * generateExclusions have been called (and in that order) and after shells
+     * have been added.
+     */
+    void addShellPairs();
+    
     /*! Generate the proper dihedrals
      */
     void makePropers();
@@ -398,14 +472,6 @@ private:
     //! \return the whole map of parameters, const style
     const std::map<InteractionType, std::vector<TopologyEntry *> > &entries() const { return entries_; }
     
-    /*! \brief Generate exclusiones
-     * \param[out] gmx_excls The GROMACS structure for exclusions
-     * \param[in]  nrexcl    The number of exclusions to generate (max 2)
-     * \param[in]  nratom    The number of atoms in the system
-     */
-    void generateExclusions(t_excls **gmx_excls,
-                            int       nrexcl,
-                            int       nratoms);
  };
 
 } // namespace alexandria

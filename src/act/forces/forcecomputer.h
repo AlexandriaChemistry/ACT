@@ -10,16 +10,10 @@ namespace alexandria
  */
 class ForceComputer
 {
- private:
-    std::vector<std::pair<int, int> > pairList_;
-    
-    void makePairList(const Topology &top);
-    
  public:
     /*! \brief Constructor
-     * \param[in] top The molecular topology
      */
-    ForceComputer(const Topology &top);
+    ForceComputer() {}
     
     /*! Do the actual computations.
      * Will do all the force computations. If shells are present their 

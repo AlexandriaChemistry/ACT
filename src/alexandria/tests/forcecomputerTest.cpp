@@ -138,7 +138,7 @@ protected:
         mp_.symmetrizeCharges(pd, qSymm, nullptr);
         mp_.GenerateCharges(pd, mdlog, &cr, alg, qcustom);
 
-        ForceComputer                     fcomp(*mp_.topology());
+        ForceComputer                     fcomp;
         std::vector<gmx::RVec>            forces, coordinates;
         std::map<InteractionType, double> energies;
         for(int i = 0; i < mp_.NAtom(); i++)

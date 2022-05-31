@@ -933,6 +933,9 @@ static void UpdateIdefEntry(const ForceFieldParameterList &fs,
             }
         }
         break;
+    case F_LJ:
+    case F_BHAM:
+        break;
     default:
         GMX_THROW(gmx::InternalError(gmx::formatString("Do not know what to do for %s",
                                                         interaction_function[fs.fType()].longname).c_str()));
@@ -1050,7 +1053,9 @@ immStatus MyMol::GenerateTopology(FILE              *fp,
         {
             topology_->makeVsite2s(pd->findForcesConst(InteractionType::VSITE2));
         }
-        topology_->generateExclusions(&excls_, pd->getNexcl(), atoms->nr);
+        topology_->makePairs(atoms->nr);
+        topology_->generateExclusions(pd->getNexcl(), atoms->nr);
+        excls_ = topology_->gromacsExclusions();
     }
     if (immStatus::OK == imm)
     {
@@ -1081,6 +1086,7 @@ immStatus MyMol::GenerateTopology(FILE              *fp,
         if (pd->polarizable())
         {
             addShells(debug, pd, atoms);
+            topology_->addShellPairs();
         }
         nRealAtoms_ = 0;
         for(int i = 0; i < atoms->nr; i++)
