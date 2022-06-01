@@ -385,7 +385,7 @@ void AllBondeds::updatePoldata(FILE    *fp,
         auto iType = bb.first;
         auto fs    = pd->findForces(iType);
         fType      = fs->fType();
-        if (iType != bType)
+        if (iType != bType && iType != InteractionType::VDW)
         {
             fs->eraseParameter();
         }
