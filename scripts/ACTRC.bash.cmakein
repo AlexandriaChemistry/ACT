@@ -48,7 +48,7 @@ MANPATH=$tmppath
 ##########################################################
 # This is the real configuration part. We save the ACT
 # things in separate vars, so we can remove them later.
-# If you move gromacs, change the first line.
+# If you move ACT, change the first line.
 ##########################################################
 ACTPREFIX=@CMAKE_INSTALL_PREFIX@
 ACTBIN=${ACTPREFIX}/@CMAKE_INSTALL_BINDIR@
@@ -60,6 +60,11 @@ GROMACS_DIR=${ACTPREFIX}
 LD_LIBRARY_PATH=${ACTLDLIB}${LD_LIBRARY_PATH:+:}${LD_LIBRARY_PATH}
 PKG_CONFIG_PATH=${ACTLDLIB}/pkgconfig${PKG_CONFIG_PATH:+:}${PKG_CONFIG_PATH}
 PATH=${ACTBIN}${PATH:+:}${PATH}
+if [[ -z "${PYTHONPATH}" ]]; then
+  PYTHONPATH=${ACTLDLIB}/site-packages/act
+else
+  PYTHONPATH=${PYTHONPATH}:${ACTLDLIB}/site-packages/act
+fi
 #debian/ubuntu needs a : at the end
 MANPATH=${ACTMAN}:${MANPATH}
 
