@@ -796,6 +796,9 @@ void TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
                                                                  tcc.second.c_str()).c_str(),
                                                tc0.Einternal(tcc.first), tcRT.Einternal(tcc.first)));
         }
+
+        // Restore original coordinates
+        mol->restoreCoordinates(coordSet::Original);
     }
     else
     {

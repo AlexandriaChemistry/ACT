@@ -84,7 +84,7 @@ public:
      * \param[in] mol          The molecule to analyze
      * \param[out] frequencies The normal mode frequencies (in cm^-1)
      * \param[out] intensities The normal mode intensities
-     * \param[in] fp           File to write frequencies to, maybe nullptr
+     * \param[in] fp           File to write frequencies to, may be nullptr (default)
      */
     void nma(MyMol               *mol,
              std::vector<double> *frequencies,
