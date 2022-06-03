@@ -83,7 +83,7 @@ private:
     // After argument parsing, first element in the array will point to the selected enum value, so optimizer_[0]
     // Static means the variable will be shared among objects (only 1 place in memory)
     //! Optimizer to use
-    OptimizerAlg  alg_ = OptimizerAlg::GA;
+    OptimizerAlg optAlg_ = OptimizerAlg::GA;
     //! Population size
     int popSize_ = 1;
     //! Amount of elites in the population
@@ -95,7 +95,7 @@ private:
     //! Whether we sort the population or not
     bool sort_ = true;
     //! Probability computing algorithm
-    const char *probComputer_[5] = {nullptr, "RANK", "FITNESS", "BOLTZMANN", nullptr};
+    ProbabilityComputerAlg pcAlg_ = ProbabilityComputerAlg::pcRANK;
     //! Boltzmann probability temperature.
     real boltzTemp_ = 1;
     //! Anneal start (as fraction of maxGenerations) for Boltzmann temperature
@@ -140,12 +140,12 @@ public:
     * * * * * * * * * * * * * * * * * * * * * */
 
     //! \return the optimizer
-    OptimizerAlg optimizer() const { return alg_; }
+    OptimizerAlg optimizer() const { return optAlg_; }
 
     /*! \brief Set the optimizer algorithm
      * \param[in] alg The new algorithm
      */
-    void setOptimizerAlg(OptimizerAlg alg) { alg_ = alg; }
+    void setOptimizerAlg(OptimizerAlg optAlg) { optAlg_ = optAlg; }
     
     //! \return the size of the population
     int popSize() const { return popSize_; }
@@ -173,7 +173,13 @@ public:
     bool sort() const { return sort_; }
 
     //! \return the probability computer
-    ProbabilityComputerAlg probabilityComputerAlg() const { return stringToProbabilityComputerAlg(probComputer_[0]); }
+    ProbabilityComputerAlg probabilityComputerAlg() const { return pcAlg_; }
+
+    /*!
+     * \brief Set a new probabilityComputerAlgorithm
+     * \param[in] pcAlg the new algorithm
+     */
+    void setProbabilityComputerAlg(ProbabilityComputerAlg pcAlg) { pcAlg_ = pcAlg; }
 
     //! \return the Boltzmann temperature parameter
     real boltzTemp() const { return boltzTemp_; }
