@@ -413,6 +413,8 @@ void HarmonicsDevComputer::calcDeviation(MyMol                                *m
         }
         (*targets).find(eRMS::FREQUENCY)->second.increase(1, delta);
     }
+    // Restore coordinates
+    mymol->restoreCoordinates(coordSet::Original);
 }
 
 /* * * * * * * * * * * * * * * * * * * * * *

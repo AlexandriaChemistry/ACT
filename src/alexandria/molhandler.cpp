@@ -284,7 +284,7 @@ immStatus MolHandler::minimizeCoordinates(MyMol  *mol) const
     crtmp->nodeid = 0;
 
     // TODO: check if this is really necessary
-    mol->restoreCoordinates(coordSet::Minimized);
+    mol->restoreCoordinates(coordSet::Minimized);  // Is minimized defined??? I guess it makes sense: if not defined, nothing changes
     immStatus imm          = immStatus::OK;
     auto      mdatoms      = mol->MDatoms_->get()->mdatoms();
     // Below is a Newton-Rhapson algorithm

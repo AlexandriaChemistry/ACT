@@ -143,10 +143,6 @@ enum class coordSet {
          * \param[in] cs Which data set to back up to
          */
         void backupCoordinates(coordSet cs);
-        /*! Restored backed up coordinates
-         * \param[in] cs Which data set to restore from
-         */
-        void restoreCoordinates(coordSet cs);
         /*! \brief
          * Generate Atoms based on quantum calculation with specified level of theory.
          * If the requested level of theory is not present, another
@@ -273,7 +269,7 @@ enum class coordSet {
         //! Structure to manage charge generation
         FragmentHandler               *fraghandler_   = nullptr;
    public:
-  
+
         /*! \brief
          * Constructor
          */
@@ -321,6 +317,11 @@ enum class coordSet {
          * \param[in] cs The coordinate set wanted
          */
         const std::vector<gmx::RVec> &coordinateSet(coordSet cs) const { return backupCoordinates_.find(cs)->second; }
+
+        /*! Restored backed up coordinates
+         * \param[in] cs Which data set to restore from
+         */
+        void restoreCoordinates(coordSet cs);
 
         /*! Return an energy component
          * \param[in]  mpo  The particular term that is requested
