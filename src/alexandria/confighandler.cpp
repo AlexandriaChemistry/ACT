@@ -93,8 +93,8 @@ void BayesConfigHandler::add_pargs(std::vector<t_pargs> *pargs)
           "Random number seed. If zero, a seed will be generated." },
         { "-step",  FALSE, etREAL, {&step_},
           "Step size for the MCMC parameter optimization. Is used as fraction of the available range per parameter which depends on the parameter type." },
-        { "-evaluate_testset", FALSE, etBOOL, {&evaluate_testset_},
-          "Evaluate the parameters on the test set. Only used in pure MCMC optmization." }
+        { "-mcmc_evaltest", FALSE, etBOOL, {&evaluate_testset_},
+          "Evaluate the parameters on the test set during MCMC." }
     };
     for (int i = 0; i < asize(pa); i++)
     {
@@ -181,6 +181,8 @@ void GAConfigHandler::add_pargs(std::vector<t_pargs> *pargs)
 {
 
     t_pargs pa[] = {
+        { "-ga_evaltest", FALSE, etBOOL, {&evaluateTestset_},
+          "Evaluate the paramters on the test set during GA." },
         { "-optimizer", FALSE, etENUM, {optimizerStr},
           "Optimization method (see above)." },
         { "-pop_size", FALSE, etINT, {&popSize_},
@@ -289,10 +291,23 @@ void GAConfigHandler::check_pargs()
       "-cp_pop_frac must be in [0, 1]."
     );
 
+    // Enable test loss if needed
+    if (maxTestGenerations_ > 0)
+    {
+      if (!evaluateTestset_)
+      {
+        printf("Enabling test loss computation in GA...\n");
+      }
+      evaluateTestset_ = true;
+    }
+
     // Enable sorting if needed
     if (nElites_ > 0 || pcAlg_ == ProbabilityComputerAlg::pcRANK || vfpVolFracLimit_ != -1)
     {
-      printf("Enabling sorting...\n");
+      if (!sort_)
+      {
+        printf("Enabling sorting...\n");
+      }
       sort_ = true;
     }
 

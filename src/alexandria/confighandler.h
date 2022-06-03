@@ -84,6 +84,8 @@ private:
     // Static means the variable will be shared among objects (only 1 place in memory)
     //! Optimizer to use
     OptimizerAlg optAlg_ = OptimizerAlg::GA;
+    //! Whether to evaluate loss for the test set
+    bool evaluateTestset_ = false;
     //! Population size
     int popSize_ = 1;
     //! Amount of elites in the population
@@ -208,7 +210,7 @@ public:
     int maxTestGenerations() const { return maxTestGenerations_; }
 
     //! \return true if we must evaluate fitness on test set, false otherwise
-    bool evaluateTestset() const { return maxTestGenerations_ > 0; }
+    bool evaluateTestset() const { return evaluateTestset_; }
 
     //! \return true whether the volume will be computed in log scale, false otherwise
     bool logVolume() const { return logVolume_; }
