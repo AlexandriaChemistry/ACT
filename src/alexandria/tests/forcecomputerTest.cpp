@@ -195,10 +195,10 @@ TEST_F (ForceComputerTest, Uracil)
     test("uracil.sdf", "ACS-g");
 }
 
-//TEST_F (ForceComputerTest, CarbonDioxidePol)
-//{
-//  test("carbon-dioxide.sdf", "ACS-pg");
-//}
+TEST_F (ForceComputerTest, CarbonDioxidePol)
+{
+  test("carbon-dioxide.sdf", "ACS-pg");
+}
 
 TEST_F (ForceComputerTest, HydrogenChloridePol)
 {
