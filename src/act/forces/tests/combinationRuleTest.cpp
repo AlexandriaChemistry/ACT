@@ -35,7 +35,7 @@
 
 #include <gtest/gtest.h>
 
-#include "alexandria/mymol_low.h"
+#include "act/forces/combinationrules.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/stringutil.h"
 

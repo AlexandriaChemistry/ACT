@@ -36,7 +36,7 @@ static double computeWBH(const ForceFieldParameterList      &ffpl,
         // For this to work, we need ffpl containing the parameters
         // with the combination rules applied. Something like that does
         // not exist in the input force field files.
-        auto id      = b->id(); 
+        auto id      = b->id();
         auto sigma   = ffpl.findParameterTypeConst(id, "sigma").internalValue();
         auto epsilon = ffpl.findParameterTypeConst(id, "epsilon").internalValue();
         auto gamma   = ffpl.findParameterTypeConst(id, "gamma").internalValue();

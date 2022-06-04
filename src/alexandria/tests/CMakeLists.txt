@@ -41,7 +41,6 @@ gmx_add_unit_test(
     # files with code for tests
     atomtypeTest.cpp
     allbondedsTest.cpp
-    combinationRuleTest.cpp
     forcecomputerTest.cpp
     molhandlerTest.cpp
     topologyTest.cpp

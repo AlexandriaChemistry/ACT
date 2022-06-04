@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020
+ * Copyright (C) 2014-2022
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -165,46 +165,6 @@ gmx_mtop_t *do_init_mtop(const Poldata                   *pd,
                          t_inputrec                      *ir,
                          t_symtab                        *symtab,
                          const char                      *tabfn);
-
-/*! \brief Combine epsilon and sigma into c6 and c12 for LJ
- * \param[in]  CombinationRule The combination rule used
- * \param[in]  sigmaI          The first sigma
- * \param[in]  sigmaJ          The second sigma
- * \param[in]  epsilonI        The first epsilon
- * \param[in]  epsilonJ        The second epsilon
- * \param[out] c6              The LJ c6
- * \param[out] c12             The LJ c12
- */
-void CombineLJ(int     CombinationRule,
-               double  sigmaI,
-               double  sigmaJ,
-               double  epsilonI,
-               double  epsilonJ,
-               double *c6,
-               double *c12);
-
-/*! \brief Combine epsilon, sigma and gamm.
- * \param[in]  CombinationRule The combination rule used
- * \param[in]  sigmaI          The first sigma
- * \param[in]  sigmaJ          The second sigma
- * \param[in]  epsilonI        The first epsilon
- * \param[in]  epsilonJ        The second epsilon
- * \param[in]  gammaI          The first gamma
- * \param[in]  gammaJ          The second gamma
- * \param[out] sigmaIJ         The combined sigma
- * \param[out] epsilonIJ       The combined epsilon
- * \param[out] gammaIJ         The combined gamma
- */
-void CombineBham(int     CombinationRule,
-                 double  sigmaI,
-                 double  sigmaJ,
-                 double  epsilonI,
-                 double  epsilonJ,
-                 double  gammaI,
-                 double  gammaJ,
-                 double *sigmaIJ,
-                 double *epsilonIJ,
-                 double *gammaIJ);
 
 } // namespace alexandria
 #endif
