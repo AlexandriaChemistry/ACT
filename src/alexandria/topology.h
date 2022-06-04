@@ -365,6 +365,43 @@ class Proper : public TopologyEntry
     void renumberAtoms(const std::vector<int> &renumber);
 };
 
+class ActAtom
+{
+private:
+    //! My identifier
+    Identifier  id_;
+    //! The atom name
+    std::string name_;
+    //! The atom type in the force field
+    std::string ffType_;
+    //! The particle type
+    int         pType_;
+    //! The mass
+    double      mass_;
+public:
+    ActAtom(const std::string &name,
+            const std::string &ffType,
+            int                pType,
+            double             mass) :
+        id_({ name }, {}, CanSwap::No), name_(name), ffType_(ffType), pType_(pType), mass_(mass)
+    {}
+    
+    //! \return Identifier
+    const Identifier &id() const { return id_; }
+
+    //! \return the name
+    const std::string &name() const { return name_; }
+    
+    //! \return the ffType
+    const std::string &ffType() const { return ffType_; }
+    
+    //! \return the particle type
+    int pType() const { return pType_; }
+
+    //! \return the mass
+    double mass() const { return mass_; }
+};
+
 class Topology
 {
 private:
@@ -372,11 +409,13 @@ private:
     std::map<InteractionType, std::vector<TopologyEntry *> > entries_;
     //! Non bonded exclusions, array is length of number of atoms
     std::vector<std::vector<int> > exclusions_;
+    //! List of atoms
+    std::vector<ActAtom>           atoms_;
  public:
     Topology() {}
 
     /*! Constructor
-     * This code. 
+     * This code copies relevant structures from the outside world
      * \param[in] bonds The bonds connecting this molecule.
      */
     Topology(const std::vector<Bond> &bonds);
@@ -389,6 +428,21 @@ private:
      */
     const Bond *findBond(int ai, int aj) const;
 
+    /*! \brief Initiate the atoms data
+     * \param[in] atoms Gromacs atoms structure
+     */
+    void setAtoms(const t_atoms *atoms);
+             
+    //! \return the vector of atoms
+    const std::vector<ActAtom> &atoms() const { return atoms_; }
+    
+    /*! \brief Find a topology entry matching the inputs
+     * \param[in] itype     The InteractionType
+     * \param[in] aindex    The atom indices
+     * \param[in] bondOrder The array of bond orders
+     * \param[in] cs        Whether or not the order of the atoms can be swapped
+     * \return the entry
+     */
     const TopologyEntry *findTopologyEntry(InteractionType            itype,
                                            const std::vector<int>    &aindex,
                                            const std::vector<double> &bondOrder,

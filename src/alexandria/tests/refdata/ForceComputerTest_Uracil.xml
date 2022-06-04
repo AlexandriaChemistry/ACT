@@ -3,6 +3,8 @@
 <ReferenceData>
   <Real Name="BONDS">24.06338900613936</Real>
   <Real Name="ANGLES">25.427796327841193</Real>
+  <Real Name="IMPROPER_DIHEDRALS">0</Real>
+  <Real Name="VANDERWAALS">0</Real>
   <Real Name="n2-1 fX">-533.38814872794705</Real>
   <Real Name="n2-1 fY">2013.7496186977789</Real>
   <Real Name="n2-1 fZ">0</Real>
