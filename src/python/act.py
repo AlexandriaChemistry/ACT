@@ -12,7 +12,8 @@ class Alg(Enum):
 class Target(Enum):
     EEM    = 1
     Epot   = 2
-    Freq   = 3
+    Force  = 3
+    Freq   = 4
 
 class ACT:
     '''Simple class to run Alexandria Chemistry Toolkit programs.'''
@@ -67,6 +68,7 @@ class ACT:
                          "-pop_size":        str(popsize),
                          "-pr_cross":        "0.5",
                          "-n_crossovers":    "5",
+                         "-temp":            "20",
                          "-tweight":         "",
                          "-max_iter":        "20",
                          "-anneal":          "0.5",
@@ -97,7 +99,7 @@ class ACT:
         os.system(cmd)
         
     def tune_ff(self, ForceFieldFileIn: str, ForceFieldFileOut: str,
-                LogFile:str, target: Target, options: dict):
+                LogFile:str, target: Target, OptimizeGeometry: bool, options: dict):
         if not os.path.exists(ForceFieldFileIn):
             sys.exit("No force field file %s" % ForceFieldFileIn)
         cmd = ( "%s alexandria tune_ff -ff %s -o %s -mp %s -sel %s -g %s" % 
@@ -105,6 +107,15 @@ class ACT:
                   self.molpropfile, self.selectionfile, LogFile ) )
         for opt in options:
             cmd += ( " %s %s " % ( opt, options[opt] ))
+        ener_params = [ "sigma", "epsilon", "gamma", "kt", "klin", "kimp" ]
+        #"De", "D0", "beta", 
+        if OptimizeGeometry:
+            ener_params.append("bondlength")
+            ener_params.append("angle")
+        fit_params = "'"
+        for e in ener_params:
+            fit_params += " " + e
+        fit_params += "'"
         if target == Target.EEM:
             myopts = { "-fc_esp":          "1", 
                        "-fc_charge":       "400", 
@@ -114,12 +125,15 @@ class ACT:
         elif target == Target.Epot:
             myopts = { "-fc_epot":  "1",
                        "-fc_force": "0.1",
-                       "-fit":      "'De D0 beta sigma epsilon gamma kt klin kimp'" }
+                       "-fit":      fit_params }
+        elif target == Target.Force:
+            myopts = { "-fc_force": "0.1",
+                       "-fit":      "'De D0 beta kt klin kimp'" }
         elif target == Target.Freq:
             myopts = { "-fc_epot":  "1",
                        "-fc_force": "0.1",
                        "-fc_freq":  "0.1",
-                       "-fit":      "'De D0 beta sigma epsilon gamma kt klin kimp'" }
+                       "-fit":      fit_params }
 
         for opt in myopts:
             if not opt in options:
