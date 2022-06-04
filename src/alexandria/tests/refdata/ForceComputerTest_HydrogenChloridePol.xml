@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Real Name="BONDS">0.0015968037301342748</Real>
+  <Real Name="VANDERWAALS">0</Real>
+  <Real Name="POLARIZATION">0</Real>
+  <Real Name="cl-1 fX">0</Real>
+  <Real Name="cl-1 fY">0</Real>
+  <Real Name="cl-1 fZ">-31.904149173452932</Real>
+  <Real Name="cl_s-2 fX">0</Real>
+  <Real Name="cl_s-2 fY">0</Real>
+  <Real Name="cl_s-2 fZ">0</Real>
+  <Real Name="h-3 fX">0</Real>
+  <Real Name="h-3 fY">0</Real>
+  <Real Name="h-3 fZ">31.904149173452932</Real>
+  <Real Name="h_s-4 fX">0</Real>
+  <Real Name="h_s-4 fY">0</Real>
+  <Real Name="h_s-4 fZ">0</Real>
+</ReferenceData>
