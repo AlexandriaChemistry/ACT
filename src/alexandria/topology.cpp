@@ -262,6 +262,18 @@ Topology::Topology(const std::vector<Bond> &bonds)
     }
 }
 
+void Topology::setAtoms(const t_atoms *atoms)
+{
+    atoms_.clear();
+    for(int i = 0; i < atoms->nr; i++)
+    {
+        atoms_.push_back(ActAtom(*atoms->atomname[i],
+                                 *atoms->atomtype[i],
+                                 atoms->atom[i].ptype,
+                                 atoms->atom[i].m));
+    }
+}
+
 const Bond *Topology::findBond(int ai, int aj) const
 {
     Bond b(ai, aj, 1.0);

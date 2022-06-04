@@ -12,12 +12,22 @@
 namespace alexandria
 {
 
+static double computeLJ(const ForceFieldParameterList      &ffpl,
+                        const std::vector<TopologyEntry *> &pairs,
+                        const std::vector<gmx::RVec>       *coordinates,
+                        std::vector<gmx::RVec>             *forces)
+{
+    double ebond = 0;
+    return ebond;
+}
+
 static double computeWBH(const ForceFieldParameterList      &ffpl,
                          const std::vector<TopologyEntry *> &pairs,
                          const std::vector<gmx::RVec>       *coordinates,
                          std::vector<gmx::RVec>             *forces)
 {
     double ebond = 0;
+    return ebond;
     auto   x     = *coordinates;
     auto  &f     = *forces;
     for (const auto b : pairs)
@@ -56,6 +66,7 @@ static double computeCoulomb(const ForceFieldParameterList      &ffpl,
                              std::vector<gmx::RVec>             *forces)
 {
     double ebond = 0;
+    return ebond;
     auto   x     = *coordinates;
     auto  &f     = *forces;
     for (const auto b : pairs)
@@ -153,7 +164,6 @@ static double computePartridge(const ForceFieldParameterList      &ffpl,
     return energy;
 }
 
-
 static double computeBonds(const ForceFieldParameterList      &ffpl,
                            const std::vector<TopologyEntry *> &bonds,
                            const std::vector<gmx::RVec>       *coordinates,
@@ -228,6 +238,46 @@ static double computeMorse(const ForceFieldParameterList      &ffpl,
     return ebond;
 }
 
+static double computeLinearAngles(const ForceFieldParameterList      &ffpl,
+                                  const std::vector<TopologyEntry *> &angles,
+                                  const std::vector<gmx::RVec>       *coordinates,
+                                  std::vector<gmx::RVec>             *forces)
+{
+    double  ebond = 0;
+    auto    x     = *coordinates;
+    auto   &f     = *forces;
+    for (const auto aaa : angles)
+    {
+        // Get the parameters. We have to know their names to do this.
+        auto id      = aaa->id(); 
+        auto a       = ffpl.findParameterTypeConst(id, "a").internalValue();
+        auto klin    = ffpl.findParameterTypeConst(id, "klin").internalValue();
+        // Get the atom indices
+        auto indices = aaa->atomIndices();
+        
+        rvec r_ij, r_kj, r_ik;
+        rvec_sub(x[indices[0]], x[indices[1]], r_ij);
+        rvec_sub(x[indices[2]], x[indices[1]], r_kj);
+        rvec_sub(r_ij, r_kj, r_ik);
+
+        real dr2 = 0;
+        real b   = 1-a;
+        for (int m = 0; (m < DIM); m++)
+        {
+            real dr   = -a * r_ij[m] - b * r_kj[m];
+            dr2      += dr*dr;
+            real f_i  = a*klin*dr;
+            real f_k  = b*klin*dr;
+            real f_j  = -(f_i+f_k);
+            f[indices[0]][m] += f_i;
+            f[indices[1]][m] += f_j;
+            f[indices[2]][m] += f_k;
+        }
+        ebond += 0.5*klin*dr2;
+    }
+    return ebond;
+}
+
 // It is not finished yes, needs to be double checked. 
 static double computeAngles(const ForceFieldParameterList      &ffpl,
                             const std::vector<TopologyEntry *> &angles,
@@ -297,12 +347,32 @@ static double computeAngles(const ForceFieldParameterList      &ffpl,
     return energy;
 }
 
+static double computePolarization(const ForceFieldParameterList      &ffpl,
+                                  const std::vector<TopologyEntry *> &angles,
+                                  const std::vector<gmx::RVec>       *coordinates,
+                                  std::vector<gmx::RVec>             *forces)
+{
+    return 0;
+}
+
+static double computeImpropers(const ForceFieldParameterList      &ffpl,
+                               const std::vector<TopologyEntry *> &angles,
+                               const std::vector<gmx::RVec>       *coordinates,
+                               std::vector<gmx::RVec>             *forces)
+{
+    return 0;
+}
+
 std::map<int, bondForceComputer> bondForceComputerMap = {
-    { F_BONDS,   computeBonds   },
-    { F_MORSE,   computeMorse   },
-    { F_ANGLES,  computeAngles  },
-    { F_BHAM,    computeWBH     },
-    { F_COUL_SR, computeCoulomb }
+    { F_BONDS,         computeBonds        },
+    { F_MORSE,         computeMorse        },
+    { F_ANGLES,        computeAngles       },
+    { F_LINEAR_ANGLES, computeLinearAngles },
+    { F_LJ,            computeLJ           },
+    { F_BHAM,          computeWBH          },
+    { F_COUL_SR,       computeCoulomb      },
+    { F_POLARIZATION,  computePolarization },
+    { F_IDIHS,         computeImpropers    }
 };
 
 bondForceComputer getBondForceComputer(int gromacs_index)

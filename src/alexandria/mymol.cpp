@@ -1087,6 +1087,7 @@ immStatus MyMol::GenerateTopology(FILE              *fp,
         {
             addShells(debug, pd, atoms);
             topology_->addShellPairs();
+            topology_->setAtoms(atoms);
         }
         nRealAtoms_ = 0;
         for(int i = 0; i < atoms->nr; i++)

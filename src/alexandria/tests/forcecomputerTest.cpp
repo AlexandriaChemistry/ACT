@@ -137,22 +137,23 @@ protected:
         bool qSymm = false;
         mp_.symmetrizeCharges(pd, qSymm, nullptr);
         mp_.GenerateCharges(pd, mdlog, &cr, alg, qcustom);
-
+        auto atoms = mp_.atoms();
         ForceComputer                     fcomp;
         std::vector<gmx::RVec>            forces, coordinates;
         std::map<InteractionType, double> energies;
-        for(int i = 0; i < mp_.NAtom(); i++)
+        std::vector<double>               charges;
+        for(int i = 0; i < atoms->nr; i++)
         {
             coordinates.push_back(mp_.x()[i]);
             forces.push_back({ 0, 0, 0 });
+            charges.push_back(atoms->atom[i].q);
         }
-        fcomp.compute(*pd, *mp_.topology(), &coordinates, &forces, &energies);
+        fcomp.compute(*pd, *mp_.topology(), charges, &coordinates, &forces, &energies);
 
         for(auto &ener: energies)
         {
             checker_.checkReal(ener.second, interactionTypeToString(ener.first).c_str());
         }
-        auto atoms = mp_.atoms();
         const char *xyz[DIM] = { "X", "Y", "Z" };
         for(size_t i = 0; i < forces.size(); i++)
         {
@@ -192,6 +193,33 @@ TEST_F (ForceComputerTest, Acetone)
 TEST_F (ForceComputerTest, Uracil)
 {
     test("uracil.sdf", "ACS-g");
+}
+
+//TEST_F (ForceComputerTest, CarbonDioxidePol)
+//{
+//  test("carbon-dioxide.sdf", "ACS-pg");
+//}
+
+TEST_F (ForceComputerTest, HydrogenChloridePol)
+{
+
+    test("hydrogen-chloride.sdf", "ACS-pg");
+}
+
+TEST_F (ForceComputerTest, WaterPol)
+{
+
+    test("water-3-oep.log.pdb", "ACS-pg");
+}
+
+TEST_F (ForceComputerTest, AcetonePol)
+{
+    test("acetone-3-oep.log.pdb", "ACS-pg");
+}
+
+TEST_F (ForceComputerTest, UracilPol)
+{
+    test("uracil.sdf", "ACS-pg");
 }
 
 }  // namespace

@@ -35,6 +35,7 @@
 
 #include <map>
 
+#include "act/forces/forcecomputer.h"
 #include "act/molprop/molprop.h"
 #include "act/poldata/poldata.h"
 #include "act/qgen/qgen_acm.h"
@@ -105,6 +106,8 @@ enum class coordSet {
     private:
         // Now class MolHandler can access private members of MyMol
         friend class MolHandler;
+        // The force computer
+        ForceComputer                    forceComputer_; 
         int                             *cgnr_           = nullptr;
         bool                             bHaveShells_    = false;
         bool                             bHaveVSites_    = false;
