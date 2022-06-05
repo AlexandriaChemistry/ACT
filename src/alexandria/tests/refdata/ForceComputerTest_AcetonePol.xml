@@ -3,9 +3,7 @@
 <ReferenceData>
   <Real Name="BONDS">0.29682869734866435</Real>
   <Real Name="ANGLES">1.5500121645022678</Real>
-  <Real Name="IMPROPER_DIHEDRALS">0</Real>
   <Real Name="VANDERWAALS">7456.1261245914702</Real>
-  <Real Name="POLARIZATION">0</Real>
   <Real Name="o2-1 fX">-0.0040527267427128422</Real>
   <Real Name="o2-1 fY">82814.812796181723</Real>
   <Real Name="o2-1 fZ">0</Real>

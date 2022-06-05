@@ -471,7 +471,7 @@ void Topology::makePairs(int natoms)
     auto &pairs = entries_.find(InteractionType::VDW)->second;
     for(int i = 0; i < natoms; i++)
     {
-        // TODO check for exclusions
+        // Check for exclusions is done later.
         for(int j = i+1; j < natoms; j++)
         {
             pairs.push_back(new AtomPair(i, j));
@@ -631,16 +631,19 @@ void Topology::generateExclusions(int nrexcl,
     // Update our own VDW pairs if present
     if (hasEntry(InteractionType::VDW))
     {
-        auto vdw = entry(InteractionType::VDW);
+        auto vdw = &entries_.find(InteractionType::VDW)->second;
         for(size_t ai = 0; ai < exclusions_.size(); ai++)
         {
             for(size_t j = 0; j < exclusions_[ai].size(); j++)
             {
                 AtomPair ap(ai, exclusions_[ai][j]);
-                auto pp = std::find(vdw.begin(), vdw.end(), &ap);
-                if (vdw.end() != pp)
+                for(auto pp = vdw->begin(); pp < vdw->end(); ++pp)
                 {
-                    vdw.erase(pp);
+                    if (ap == *static_cast<AtomPair *>(*pp))
+                    {
+                        vdw->erase(pp);
+                        break;
+                    }
                 }
             }
         }

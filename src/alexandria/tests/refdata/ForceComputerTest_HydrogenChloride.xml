@@ -2,7 +2,6 @@
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
   <Real Name="BONDS">0.0014452799999988793</Real>
-  <Real Name="VANDERWAALS">0</Real>
   <Real Name="cl-1 fX">0</Real>
   <Real Name="cl-1 fY">0</Real>
   <Real Name="cl-1 fZ">28.905599999988791</Real>

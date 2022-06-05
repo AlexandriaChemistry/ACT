@@ -3,7 +3,6 @@
 <ReferenceData>
   <Real Name="BONDS">0.0026570465668220209</Real>
   <Real Name="ANGLES">0.55728331281907129</Real>
-  <Real Name="VANDERWAALS">0</Real>
   <Real Name="o3-1 fX">0</Real>
   <Real Name="o3-1 fY">112.60492334251931</Real>
   <Real Name="o3-1 fZ">-190.01534547874996</Real>

@@ -3,7 +3,6 @@
 <ReferenceData>
   <Real Name="BONDS">0.0015968037301342748</Real>
   <Real Name="VANDERWAALS">390.88601284998487</Real>
-  <Real Name="POLARIZATION">0</Real>
   <Real Name="cl-1 fX">0</Real>
   <Real Name="cl-1 fY">0</Real>
   <Real Name="cl-1 fZ">23015.012316811979</Real>

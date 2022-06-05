@@ -2,8 +2,6 @@
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
   <Real Name="BONDS">0.0019254999999995758</Real>
-  <Real Name="LINEAR_ANGLES">0</Real>
-  <Real Name="VANDERWAALS">0</Real>
   <Real Name="o2-1 fX">0</Real>
   <Real Name="o2-1 fY">0</Real>
   <Real Name="o2-1 fZ">-38.509999999995756</Real>

@@ -18,6 +18,35 @@ static double computeLJ(const ForceFieldParameterList      &ffpl,
                         std::vector<gmx::RVec>             *forces)
 {
     double ebond = 0;
+
+    auto   x     = *coordinates;
+    auto  &f     = *forces;
+    for (const auto b : pairs)
+    {
+        // Get the parameters. We have to know their names to do this.
+        auto id  = b->id();
+        auto c6  = ffpl.findParameterTypeConst(id, "c6_ij").internalValue();
+        auto c12 = ffpl.findParameterTypeConst(id, "c12_ij").internalValue();
+        // Get the atom indices
+        auto indices    = b->atomIndices();
+        rvec dx;
+        rvec_sub(x[indices[0]], x[indices[1]], dx);
+        auto dr2        = iprod(dx, dx);
+        auto rinv       = gmx::invsqrt(dr2);
+        auto rinv2      = rinv*rinv;
+        auto rinv6      = rinv2*rinv2*rinv2;
+        auto rinv12     = rinv6*rinv6;
+        auto elj        = c12*rinv12 - c6*rinv6;
+        auto flj        = 12*c12*rinv12*rinv2 - 6*c6*rinv6*rinv2;
+        
+        ebond      += elj;
+        for (int m = 0; (m < DIM); m++)
+        {
+            auto fij          = flj*dx[m];
+            f[indices[0]][m] += fij;
+            f[indices[1]][m] -= fij;
+        }
+    }
     return ebond;
 }
 
@@ -32,9 +61,6 @@ static double computeWBH(const ForceFieldParameterList      &ffpl,
     for (const auto b : pairs)
     {
         // Get the parameters. We have to know their names to do this.
-        // For this to work, we need ffpl containing the parameters
-        // with the combination rules applied. Something like that does
-        // not exist in the input force field files.
         auto id      = b->id();
         auto sigma   = ffpl.findParameterTypeConst(id, "sigma_ij").internalValue();
         auto epsilon = ffpl.findParameterTypeConst(id, "epsilon_ij").internalValue();

@@ -152,7 +152,10 @@ protected:
 
         for(auto &ener: energies)
         {
-            checker_.checkReal(ener.second, interactionTypeToString(ener.first).c_str());
+            if (ener.second != 0)
+            {
+                checker_.checkReal(ener.second, interactionTypeToString(ener.first).c_str());
+            }
         }
         const char *xyz[DIM] = { "X", "Y", "Z" };
         for(size_t i = 0; i < forces.size(); i++)
