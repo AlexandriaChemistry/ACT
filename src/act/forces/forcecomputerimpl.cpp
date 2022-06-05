@@ -27,7 +27,6 @@ static double computeWBH(const ForceFieldParameterList      &ffpl,
                          std::vector<gmx::RVec>             *forces)
 {
     double ebond = 0;
-    return ebond;
     auto   x     = *coordinates;
     auto  &f     = *forces;
     for (const auto b : pairs)
@@ -37,9 +36,9 @@ static double computeWBH(const ForceFieldParameterList      &ffpl,
         // with the combination rules applied. Something like that does
         // not exist in the input force field files.
         auto id      = b->id();
-        auto sigma   = ffpl.findParameterTypeConst(id, "sigma").internalValue();
-        auto epsilon = ffpl.findParameterTypeConst(id, "epsilon").internalValue();
-        auto gamma   = ffpl.findParameterTypeConst(id, "gamma").internalValue();
+        auto sigma   = ffpl.findParameterTypeConst(id, "sigma_ij").internalValue();
+        auto epsilon = ffpl.findParameterTypeConst(id, "epsilon_ij").internalValue();
+        auto gamma   = ffpl.findParameterTypeConst(id, "gamma_ij").internalValue();
         // Get the atom indices
         auto indices    = b->atomIndices();
         rvec dx;

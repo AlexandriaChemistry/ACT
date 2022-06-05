@@ -2,7 +2,9 @@
 
 #include <cmath>
 
+#include "act/basics/mutability.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/fatalerror.h"
 
 namespace alexandria
@@ -106,6 +108,130 @@ void CombineBham(int     CombinationRule,
         case eCOMB_NR:
             gmx_fatal(FARGS, "Unsupported combination rule %d for Buckingham", CombinationRule);
     }
+}
+
+static int getCombinationRule(const ForceFieldParameterList &vdw)
+{
+    auto combRule = vdw.optionValue("combination_rule");
+    int  i;
+    for(i = 0; i < eCOMB_NR; i++)
+    {
+        if (combRule.compare(ecomb_names[i]) == 0)
+        {
+            break;
+        }
+    }
+    GMX_RELEASE_ASSERT(i < eCOMB_NR, gmx::formatString("Cannot find combination rule %s in GROMACS",
+                                                       combRule.c_str()).c_str());
+    return i;
+}
+
+void generateNonbondedParameterPairs(Poldata *pd)
+{
+    auto forcesVdw = pd->findForces(InteractionType::VDW);
+    auto ftypeVdW  = forcesVdw->fType();
+    int  comb_rule = getCombinationRule(*forcesVdw);
+    
+    // We temporarily store the new parameters here
+    ForceFieldParameterList newParams;
+    
+    // Fudge unit
+    std::string unit("kJ/mol");
+    
+    // We use dependent mutability to show these are not independent params
+    auto mut = Mutability::Dependent;
+
+    // Now do the double loop
+    for (auto &ivdw : *forcesVdw->parameters())
+    {
+        auto iid    = ivdw.first;
+        // Check whether this is a single atom parameter
+        if (iid.atoms().size() > 1)
+        {
+            continue;
+        }
+        auto iparam = ivdw.second;
+        double igamma   = 0;
+        double isigma   = ivdw.second["sigma"].internalValue();
+        double iepsilon = ivdw.second["epsilon"].internalValue();
+        if (ftypeVdW == F_BHAM)
+        {
+            igamma = ivdw.second["gamma"].internalValue();
+        }
+        for (auto &jvdw : *forcesVdw->parameters())
+        {
+            auto jid    = jvdw.first;
+            // Check whether this is a single atom parameter and
+            // whether this is is larger or equal to iid.
+            if (jid.atoms().size() > 1 || jid.id() < iid.id())
+            {
+                continue;
+            }
+            auto jparam = jvdw.second;
+            double jgamma   = 0;
+            double jsigma   = jvdw.second["sigma"].internalValue();
+            double jepsilon = jvdw.second["epsilon"].internalValue();
+            if (ftypeVdW == F_BHAM)
+            {
+                jgamma = jvdw.second["gamma"].internalValue();
+            }
+            Identifier pairID({ iid.id(), jid.id() }, { 1 }, CanSwap::Yes);
+            switch (ftypeVdW)
+            {
+            case F_LJ:
+                {
+                    double c6 = 0, c12 = 0;
+                    CombineLJ(comb_rule, isigma, jsigma,
+                              iepsilon, jepsilon, &c6, &c12);
+                    ForceFieldParameter c6parm(unit, c6, 0, 1, c6, c6, 
+                                               mut, true, true);
+                    ForceFieldParameter c12parm(unit, c12, 0, 1, c12, c12, 
+                                                mut, true, true);
+                    newParams.addParameter(pairID, "c6_ij", c6parm);
+                    newParams.addParameter(pairID, "c12_ij", c12parm);
+                }
+                break;
+            case F_BHAM:
+                {
+                    double sigmaij = 0, epsilonij = 0, gammaij = 0;
+                    CombineBham(comb_rule, isigma, jsigma,
+                                iepsilon, jepsilon, 
+                                igamma, jgamma, &sigmaij,
+                                &epsilonij, &gammaij);
+                    ForceFieldParameter sigparm(unit, sigmaij, 0, 1,
+                                                sigmaij, sigmaij,
+                                                mut, true, true);
+                    ForceFieldParameter epsparm(unit, epsilonij, 0, 1,
+                                                epsilonij, epsilonij,
+                                                mut, true, true);
+                    ForceFieldParameter gamparm(unit, gammaij, 0, 1,
+                                                gammaij, gammaij,
+                                                mut, true, true);
+                    newParams.addParameter(pairID, "sigma_ij", sigparm);
+                    newParams.addParameter(pairID, "epsilon_ij", epsparm);
+                    newParams.addParameter(pairID, "gamma_ij", gamparm);
+                }
+                break;
+            default:
+                fprintf(stderr, "Invalid van der waals type %s\n",
+                        interaction_function[ftypeVdW].longname);
+            }
+        }
+    }
+    // Finally add the new parameters to the exisiting list
+    auto fold = forcesVdw->parameters();
+    for(const auto &np : newParams.parametersConst())
+    {
+        // Remove old copy if it exists
+        auto oldfp = fold->find(np.first);
+        if (oldfp != fold->end())
+        {
+            fold->erase(oldfp);
+        }
+        // Now add the new one
+        fold->insert({ np.first, np.second });
+    }
+    // Phew, we're done!
 }
 
 } // namespace alexandria

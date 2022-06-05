@@ -67,12 +67,17 @@ void ForceComputer::compute(const Poldata                     &pd,
     // TODO pass the real maxiter
     int    maxiter  = 25;
     int    iter     = 1;
+    // Golden ratio
+    double gold     = 0.5*(1+std::sqrt(5.0));
     while (rmsForce > toler && iter < maxiter)
     {
         // Loop over polarizabilities
         for(const auto &p : pols)
         {
             // Displace the shells according to the force
+            // Since the potential is harmonic we use Hooke's law
+            // F = k dx -> dx = F / k
+            // TODO Optimize this protocol using overrelaxation
             int shell = p->atomIndex(1);
             for(int m = 0; m < DIM; m++)
             {

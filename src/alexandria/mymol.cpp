@@ -621,10 +621,11 @@ static void setTopologyIdentifiers(Topology      *top,
                 auto atype = pd->findParticleType(*myatoms->atomtype[jj]);
                 switch (entry.first)
                 {
+                case InteractionType::VDW:
                 case InteractionType::VSITE2:
                     {
-                    btype.push_back(*myatoms->atomtype[jj]);
-                    break;
+                        btype.push_back(*myatoms->atomtype[jj]);
+                        break;
                     }
                 case InteractionType::POLARIZATION:
                     {

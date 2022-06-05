@@ -3,11 +3,11 @@
 <ReferenceData>
   <Real Name="BONDS">0.097871664799296501</Real>
   <Real Name="LINEAR_ANGLES">0</Real>
-  <Real Name="VANDERWAALS">0</Real>
+  <Real Name="VANDERWAALS">4829.1964772415586</Real>
   <Real Name="POLARIZATION">0</Real>
   <Real Name="o2-1 fX">0</Real>
   <Real Name="o2-1 fY">0</Real>
-  <Real Name="o2-1 fZ">178.92899241149715</Real>
+  <Real Name="o2-1 fZ">125852.38163541339</Real>
   <Real Name="o2_s-2 fX">0</Real>
   <Real Name="o2_s-2 fY">0</Real>
   <Real Name="o2_s-2 fZ">0</Real>
@@ -19,7 +19,7 @@
   <Real Name="c1_s-4 fZ">0</Real>
   <Real Name="o2-5 fX">0</Real>
   <Real Name="o2-5 fY">0</Real>
-  <Real Name="o2-5 fZ">-178.92899241149715</Real>
+  <Real Name="o2-5 fZ">-125852.38163541337</Real>
   <Real Name="o2_s-6 fX">0</Real>
   <Real Name="o2_s-6 fY">0</Real>
   <Real Name="o2_s-6 fZ">0</Real>

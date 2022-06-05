@@ -32,6 +32,8 @@
 #ifndef ACT_COMBINATIONRULES_H
 #define ACT_COMBINATIONRULES_H
 
+#include "act/poldata/poldata.h"
+
 namespace alexandria
 {
 /*! \brief Combine epsilon and sigma into c6 and c12 for LJ
@@ -73,6 +75,11 @@ void CombineBham(int     CombinationRule,
                  double *sigmaIJ,
                  double *epsilonIJ,
                  double *gammaIJ);
+
+/*! \brief Generate nonbonded parameters for pairs of atoms
+ * \param[inout] pd The force field structure
+ */
+void generateNonbondedParameterPairs(Poldata *pd);
 
 } // namespace alexandria
 

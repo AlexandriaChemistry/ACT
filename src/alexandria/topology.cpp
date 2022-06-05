@@ -471,6 +471,7 @@ void Topology::makePairs(int natoms)
     auto &pairs = entries_.find(InteractionType::VDW)->second;
     for(int i = 0; i < natoms; i++)
     {
+        // TODO check for exclusions
         for(int j = i+1; j < natoms; j++)
         {
             pairs.push_back(new AtomPair(i, j));

@@ -44,6 +44,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/futil.h"
 
+#include "act/forces/combinationrules.h"
 #include "act/poldata/forcefieldparameter.h"
 #include "act/poldata/forcefieldparameterlist.h"
 #include "poldata.h"
@@ -585,6 +586,8 @@ void readPoldata(const std::string &fileName,
     // Generate maps
     pd->checkForPolarizability();
     pd->checkConsistency(debug);
+    generateNonbondedParameterPairs(pd);
+
     if (nullptr != debug)
     {
         writePoldata("pdout.dat", pd, false);
