@@ -9,6 +9,7 @@ namespace alexandria
 
 typedef double (*bondForceComputer)(const ForceFieldParameterList      &ffpl,
                                     const std::vector<TopologyEntry *> &bonds,
+                                    const std::vector<ActAtom>         &atoms,
                                     const std::vector<gmx::RVec>       *coordinates,
                                     std::vector<gmx::RVec>             *forces);
 

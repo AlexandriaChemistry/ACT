@@ -337,10 +337,16 @@ static void processAttr(FILE       *fp,
             NNobligatory(xbuf, xmlEntry::FUNCTION) && 
             NNobligatory(xbuf, xmlEntry::CANSWAP))
         {
-            CanSwap canSwap = stringToCanSwap(xbufString(xmlEntry::CANSWAP));
-            ForceFieldParameterList newparam(xbufString(xmlEntry::FUNCTION), canSwap);
-            pd->addForces(xbufString(xmlEntry::TYPE), newparam);
-            currentItype = stringToInteractionType(xbufString(xmlEntry::TYPE).c_str());
+            CanSwap canSwap      = stringToCanSwap(xbufString(xmlEntry::CANSWAP));
+            std::string function = xbufString(xmlEntry::FUNCTION);
+            std::string inter    = xbufString(xmlEntry::TYPE);
+            currentItype = stringToInteractionType(inter.c_str());
+            if (function.empty() && currentItype == InteractionType::COULOMB)
+            {
+                GMX_THROW(gmx::InvalidInputError(gmx::formatString("Please specify the correct function type for InteractionType %s", inter.c_str()).c_str()));
+            }
+            ForceFieldParameterList newparam(function, canSwap);
+            pd->addForces(inter, newparam);
             parentEntry = elem;
         }
         break;
@@ -586,8 +592,7 @@ void readPoldata(const std::string &fileName,
     // Generate maps
     pd->checkForPolarizability();
     pd->checkConsistency(debug);
-    generateNonbondedParameterPairs(pd);
-
+    generateDependentParameter(pd);
     if (nullptr != debug)
     {
         writePoldata("pdout.dat", pd, false);

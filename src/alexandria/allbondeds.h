@@ -167,16 +167,12 @@ namespace alexandria
          * \param[out] mymols MyMol array will be filled here
          * \param[in]  pd     Force field structure
          * \param[in]  gms    Selection of compounds
-         * \param[in]  method QM method
-         * \param[in]  basis  QM basis set
          */                          
         void extractGeometries(FILE                       *fp,
                                const std::vector<MolProp> &mp,
                                std::vector<MyMol>         *mymols,
                                const Poldata              &pd,
-                               const MolSelect            &gms,
-                               const std::string          &method,
-                               const std::string          &basis);
+                               const MolSelect            &gms);
 
         /*! \brief Write how many bonds etc. were found
          * \param[in] fp File to write to

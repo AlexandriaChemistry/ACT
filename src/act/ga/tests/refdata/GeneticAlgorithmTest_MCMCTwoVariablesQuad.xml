@@ -8,7 +8,7 @@
   <String Name="algorithm">MCMC</String>
   <Bool Name="eta">true</Bool>
   <Bool Name="zeta">true</Bool>
-  <Bool Name="CHARGEDISTRIBUTION">true</Bool>
+  <Bool Name="COULOMB">true</Bool>
   <Bool Name="ELECTRONEGATIVITYEQUALIZATION">true</Bool>
   <Real Name="Weight_QUAD">1</Real>
   <Real Name="Weight_TOT">1</Real>

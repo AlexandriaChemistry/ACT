@@ -248,7 +248,7 @@ class BondVsites:
     outf.write("  </interaction>\n")
 
 def write_charge_dist(out, myatp):
-  out.write("  <interaction type=\"CHARGEDISTRIBUTION\" function=\"\" canswap=\"false\">\n")
+  out.write("  <interaction type=\"COULOMB\" function=\"COUL_SR\" canswap=\"false\">\n")
   out.write("    <option key=\"chargetype\" value=\"%s\"/>\n" % (myff.chargetype))
   out.write("    <option key=\"reference\" value=\"%s\"/>\n" % (myff.reference))
   mycd = {}

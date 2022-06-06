@@ -19949,7 +19949,7 @@
       <parameter type="alpha" unit="Angstrom3" value="2.932" uncertainty="0" minimum="2.35" maximum="3.66" ntrain="0" mutability="Free" nonnegative="no"/>
     </parameterlist>
   </interaction>
-  <interaction type="CHARGEDISTRIBUTION" function="" canswap="false">
+  <interaction type="COULOMB" function="COUL_SR" canswap="false">
     <option key="chargetype" value="Slater"/>
     <option key="reference" value="Ghahremanpour2018b"/>
     <parameterlist identifier="Br-_z">

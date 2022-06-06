@@ -49,5 +49,5 @@ for target in Target:
         options["-random_init"] = ""
         options["-nocalc_frequencies"] = ""
     act.tune_ff(ForceFieldFileIn, ForceFieldFileOut, 
-                LogFile, target, options)
+                LogFile, target, False, options)
     ForceFieldFileIn  = "Train-" + ForceFieldFileOut

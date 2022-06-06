@@ -135,7 +135,7 @@ const std::string Poldata::ztype2elem(const std::string &ztype) const
     {
         for (i = 0; i < alexandria_.size(); i++)
         {
-            if (alexandria_[i].interactionTypeToIdentifier(InteractionType::CHARGEDISTRIBUTION).id() == ztype)
+            if (alexandria_[i].interactionTypeToIdentifier(InteractionType::COULOMB).id() == ztype)
             {
                 return alexandria_[i].element();
             }
@@ -558,7 +558,7 @@ void Poldata::receiveParticles(const CommunicationRecord *cr, int src)
 /* Force Field Parameter Lists */
 static std::vector<InteractionType> eemlist = 
     { InteractionType::BONDCORRECTIONS,
-      InteractionType::CHARGEDISTRIBUTION,
+      InteractionType::COULOMB,
       InteractionType::POLARIZATION,
       InteractionType::ELECTRONEGATIVITYEQUALIZATION
     };

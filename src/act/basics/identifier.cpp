@@ -151,11 +151,11 @@ Identifier::Identifier(InteractionType    iType,
     int  natoms = interactionTypeToNatoms(iType);
     // For natoms atoms we should have natoms-1 bond orders
     // which means 2*natoms - 1 items in ids
-    if (static_cast<int>(atoms_.size()) != natoms)
+    if (false && static_cast<int>(atoms_.size()) != natoms)
     {
         GMX_THROW(gmx::InvalidInputError(gmx::formatString("Expected %d atoms but found %d. Id = %s", natoms, static_cast<int>(atoms_.size()), id.c_str()).c_str()));
     }
-    if (static_cast<int>(bondOrders_.size()) != natoms-1)
+    if (false && static_cast<int>(bondOrders_.size()) != natoms-1)
     {
         GMX_THROW(gmx::InvalidInputError(gmx::formatString("Expected %d bondOrders but found %d. Id = %s", natoms-1, static_cast<int>(bondOrders_.size()), id.c_str()).c_str()));
     }

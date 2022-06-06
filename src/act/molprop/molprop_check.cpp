@@ -93,7 +93,7 @@ static void dump_molecule(FILE              *fp,
         // Atoms!
         auto &atoms = mymol.atomsConst();
         std::vector<Identifier> atomId;
-        auto ztype = InteractionType::CHARGEDISTRIBUTION;
+        auto ztype = InteractionType::COULOMB;
         for (int i = 0; i < atoms.nr; i++)
         {
             const char *atype = *atoms.atomtype[i];

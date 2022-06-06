@@ -3532,7 +3532,7 @@
   </interaction>
   <interaction type="POLARIZATION" function="Polarization" canswap="false"/>
   <interaction type="VSITE2" function="vsite2" canswap="false"/>
-  <interaction type="CHARGEDISTRIBUTION" function="" canswap="false">
+  <interaction type="COULOMB" function="COUL_SR" canswap="false">
     <option key="chargetype" value="Point"/>
     <option key="reference" value="Ghahremanpour2018b"/>
     <parameterlist identifier="Be2+_z">

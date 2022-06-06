@@ -77,9 +77,10 @@ void CombineBham(int     CombinationRule,
                  double *gammaIJ);
 
 /*! \brief Generate nonbonded parameters for pairs of atoms
+ * as well as force constants force shells.
  * \param[inout] pd The force field structure
  */
-void generateNonbondedParameterPairs(Poldata *pd);
+void generateDependentParameter(Poldata *pd);
 
 } // namespace alexandria
 

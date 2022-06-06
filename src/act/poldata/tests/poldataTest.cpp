@@ -212,8 +212,8 @@ TEST_F (PoldataTest, zeta)
         {
             auto pd  = getPoldata(model);
             auto fa  = pd->findParticleType(atom);
-            auto ztp = fa->interactionTypeToIdentifier(InteractionType::CHARGEDISTRIBUTION);
-            auto eep = pd->findForcesConst(InteractionType::CHARGEDISTRIBUTION);
+            auto ztp = fa->interactionTypeToIdentifier(InteractionType::COULOMB);
+            auto eep = pd->findForcesConst(InteractionType::COULOMB);
             auto p   = eep.findParameterTypeConst(ztp, "zeta");
             zetas.push_back(p.value());
         }

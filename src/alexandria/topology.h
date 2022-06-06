@@ -378,12 +378,15 @@ private:
     int         pType_;
     //! The mass
     double      mass_;
+    //! The charge
+    double      charge_;
 public:
     ActAtom(const std::string &name,
             const std::string &ffType,
             int                pType,
-            double             mass) :
-        id_({ name }, {}, CanSwap::No), name_(name), ffType_(ffType), pType_(pType), mass_(mass)
+            double             newmass,
+            double             newcharge) :
+        id_({ name }, {}, CanSwap::No), name_(name), ffType_(ffType), pType_(pType), mass_(newmass), charge_(newcharge)
     {}
     
     //! \return Identifier
@@ -400,6 +403,14 @@ public:
 
     //! \return the mass
     double mass() const { return mass_; }
+    
+    //! \return the charge
+    double charge() const { return charge_; }
+    
+    /*! Set the charge
+     * \param[in] charge The new value
+     */
+    void setCharge(double newcharge) { charge_ = newcharge; }
 };
 
 class Topology
@@ -428,7 +439,8 @@ private:
      */
     const Bond *findBond(int ai, int aj) const;
 
-    /*! \brief Initiate the atoms data
+    /*! \brief Initiate or update the atoms data.
+     * Must be called every time the data changes (e.g. charges).
      * \param[in] atoms Gromacs atoms structure
      */
     void setAtoms(const t_atoms *atoms);

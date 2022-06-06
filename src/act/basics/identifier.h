@@ -124,7 +124,7 @@ class Identifier
      */
     friend bool operator==(const Identifier &a, const Identifier &b);
 
-    //! \brief Return the atoms
+    //! \brief Return the atoms, or rather the components of the id
     const std::vector<std::string> &atoms() const { return atoms_; }
 
     /*! \brief Send the contents to another processor

@@ -215,6 +215,7 @@ void AllBondeds::addBonded(FILE                           *fplog,
             }
         }
         break;
+    case InteractionType::COULOMB:
     case InteractionType::VDW:
         break;
     default:
@@ -385,7 +386,9 @@ void AllBondeds::updatePoldata(FILE    *fp,
         auto iType = bb.first;
         auto fs    = pd->findForces(iType);
         fType      = fs->fType();
-        if (iType != bType && iType != InteractionType::VDW)
+        if (iType != bType &&
+            iType != InteractionType::VDW &&
+            iType != InteractionType::COULOMB)
         {
             fs->eraseParameter();
         }
@@ -507,9 +510,7 @@ void AllBondeds::extractGeometries(FILE                       *fp,
                                    const std::vector<MolProp> &mp,
                                    std::vector<MyMol>         *mymols,
                                    const Poldata              &pd,
-                                   const MolSelect            &gms,
-                                   const std::string          &method,
-                                   const std::string          &basis)
+                                   const MolSelect            &gms)
                                    
 {
     for (auto mpi = mp.begin(); mpi < mp.end(); mpi++)

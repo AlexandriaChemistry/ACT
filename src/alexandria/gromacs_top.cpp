@@ -345,7 +345,7 @@ void print_top_header(FILE                    *fp,
                       bool                     bItp)
 {
     std::string   gt_old, gt_type;
-    auto qt          = pd->findForcesConst(InteractionType::CHARGEDISTRIBUTION);
+    auto qt          = pd->findForcesConst(InteractionType::COULOMB);
     auto iChargeType = name2ChargeType(qt.optionValue("chargetype"));
 
     fprintf(fp, ";\n");
@@ -427,11 +427,11 @@ void print_top_header(FILE                    *fp,
         fprintf(fp, "\n");
         if (iChargeType != ChargeType::Point)
         {
-            auto eem = pd->findForcesConst(InteractionType::CHARGEDISTRIBUTION);
+            auto eem = pd->findForcesConst(InteractionType::COULOMB);
             fprintf(fp, "[ distributed_charges ]\n");
             for (const auto &atype : pd->particleTypesConst())
             {
-                auto ztype     = atype.interactionTypeToIdentifier(InteractionType::CHARGEDISTRIBUTION);
+                auto ztype     = atype.interactionTypeToIdentifier(InteractionType::COULOMB);
                 auto eep       = eem.findParametersConst(ztype);
                 auto shellName = atype.interactionTypeToIdentifier(InteractionType::POLARIZATION);
                 if (ChargeType::Slater == iChargeType)

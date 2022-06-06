@@ -40,8 +40,9 @@ enum class FunctionType
  //!
  FOURDIHS,
 
- // Potential functions for describing FunctionType::CHARGEDISTRIBUTION
-
+ // Potential functions for describing FunctionType::COULOMB
+ COUL_SR,
+ 
  //! Dirac delta function
  DIRAC_DELTA,
 

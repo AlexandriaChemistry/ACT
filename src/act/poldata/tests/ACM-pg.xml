@@ -622,11 +622,11 @@
       <parameter type="mass" unit="Da" value="18.9984" uncertainty="0" minimum="15.1987" maximum="22.7981" ntrain="0" mutability="Fixed" nonnegative="yes"/>
       <parameter type="ref_enthalpy" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="1" ntrain="0" mutability="Fixed" nonnegative="yes"/>
     </particletype>
-    <particletype identifier="F+_s" type="Atom" description="">
+    <particletype identifier="F-_s" type="Atom" description="">
       <option key="atomnumber" value="0"/>
       <option key="element" value="X"/>
       <option key="row" value="0"/>
-      <option key="vdwtype" value="F+_s"/>
+      <option key="vdwtype" value="F-_s"/>
       <option key="zetatype" value="F-_s_z"/>
       <parameter type="charge" unit="e" value="-6.59" uncertainty="0" minimum="-7.908" maximum="-5.272" ntrain="0" mutability="Fixed" nonnegative="no"/>
       <parameter type="mass" unit="Da" value="0" uncertainty="0" minimum="0" maximum="1" ntrain="0" mutability="Fixed" nonnegative="yes"/>
@@ -14597,7 +14597,7 @@
     <parameterlist identifier="Cs+_s">
       <parameter type="alpha" unit="Angstrom3" value="2.02" uncertainty="0" minimum="1.62" maximum="2.52" ntrain="0" mutability="Fixed" nonnegative="yes"/>
     </parameterlist>
-    <parameterlist identifier="F+_s">
+    <parameterlist identifier="F-_s">
       <parameter type="alpha" unit="Angstrom3" value="1.3" uncertainty="0" minimum="1.04" maximum="1.62" ntrain="0" mutability="Fixed" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="I-_s">
@@ -14686,7 +14686,7 @@
     </parameterlist>
   </interaction>
   <interaction type="VSITE2" function="vsite2" canswap="false"/>
-  <interaction type="CHARGEDISTRIBUTION" function="" canswap="false">
+  <interaction type="COULOMB" function="COUL_SR" canswap="false">
     <option key="chargetype" value="Gaussian"/>
     <option key="reference" value="Ghahremanpour2022a"/>
     <parameterlist identifier="Be2+_s_z">

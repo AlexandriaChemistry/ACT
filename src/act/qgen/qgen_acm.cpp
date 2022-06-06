@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2021
+ * Copyright (C) 2014-2022
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -54,7 +54,7 @@ QgenAcm::QgenAcm(const Poldata *pd,
                  t_atoms       *atoms,
                  int            qtotal)
 {
-    auto qt     = pd->findForcesConst(InteractionType::CHARGEDISTRIBUTION);
+    auto qt     = pd->findForcesConst(InteractionType::COULOMB);
     ChargeType_ = name2ChargeType(qt.optionValue("chargetype"));
     bHaveShell_ = pd->polarizable();
     eQGEN_      = eQgen::OK;
@@ -99,7 +99,7 @@ QgenAcm::QgenAcm(const Poldata *pd,
         {
             myShell_.insert({ i, i+1 });
         }
-        auto qtype = atype->interactionTypeToIdentifier(InteractionType::CHARGEDISTRIBUTION);
+        auto qtype = atype->interactionTypeToIdentifier(InteractionType::COULOMB);
         auto eqtModel = name2ChargeType(qt.optionValue("chargetype"));
         if (eqtModel != ChargeType::Point)
         {
@@ -126,7 +126,7 @@ QgenAcm::QgenAcm(const Poldata *pd,
 void QgenAcm::updateParameters(const Poldata *pd,
                                const t_atoms *atoms)
 {
-    auto qt = pd->findForcesConst(InteractionType::CHARGEDISTRIBUTION);
+    auto qt = pd->findForcesConst(InteractionType::COULOMB);
     auto eqtModel = name2ChargeType(qt.optionValue("chargetype"));
     if (eqtModel != ChargeType::Point)
     {

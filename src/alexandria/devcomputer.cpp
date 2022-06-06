@@ -88,7 +88,7 @@ void BoundsDevComputer::calcDeviation(gmx_unused MyMol                     *mymo
     {
         double bound = 0;
         // Check whether shell zeta > core zeta. Only for polarizable models.
-        auto   itype = InteractionType::CHARGEDISTRIBUTION;
+        auto   itype = InteractionType::COULOMB;
         if (poldata->polarizable() && poldata->interactionPresent(itype))
         {
             auto fs              = poldata->findForcesConst(itype);

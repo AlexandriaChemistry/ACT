@@ -14,6 +14,7 @@ namespace alexandria
 
 static double computeLJ(const ForceFieldParameterList      &ffpl,
                         const std::vector<TopologyEntry *> &pairs,
+                        const std::vector<ActAtom>         &atoms,
                         const std::vector<gmx::RVec>       *coordinates,
                         std::vector<gmx::RVec>             *forces)
 {
@@ -52,6 +53,7 @@ static double computeLJ(const ForceFieldParameterList      &ffpl,
 
 static double computeWBH(const ForceFieldParameterList      &ffpl,
                          const std::vector<TopologyEntry *> &pairs,
+                         const std::vector<ActAtom>         &atoms,
                          const std::vector<gmx::RVec>       *coordinates,
                          std::vector<gmx::RVec>             *forces)
 {
@@ -65,21 +67,24 @@ static double computeWBH(const ForceFieldParameterList      &ffpl,
         auto sigma   = ffpl.findParameterTypeConst(id, "sigma_ij").internalValue();
         auto epsilon = ffpl.findParameterTypeConst(id, "epsilon_ij").internalValue();
         auto gamma   = ffpl.findParameterTypeConst(id, "gamma_ij").internalValue();
-        // Get the atom indices
-        auto indices    = b->atomIndices();
-        rvec dx;
-        rvec_sub(x[indices[0]], x[indices[1]], dx);
-        auto dr2        = iprod(dx, dx);
-        auto rinv       = gmx::invsqrt(dr2);
-        real ewbh, fwbh;
-        wang_buckingham(sigma, epsilon, gamma, dr2, rinv, &ewbh, &fwbh);
-        ebond      += ewbh;
-        real fbond  = fwbh*rinv;
-        for (int m = 0; (m < DIM); m++)
+        if (epsilon > 0 && gamma > 0 && sigma > 0)
         {
-            auto fij          = fbond*dx[m];
-            f[indices[0]][m] += fij;
-            f[indices[1]][m] -= fij;
+            // Get the atom indices
+            auto indices    = b->atomIndices();
+            rvec dx;
+            rvec_sub(x[indices[0]], x[indices[1]], dx);
+            auto dr2        = iprod(dx, dx);
+            auto rinv       = gmx::invsqrt(dr2);
+            real ewbh = 0, fwbh = 0;
+            wang_buckingham(sigma, epsilon, gamma, dr2, rinv, &ewbh, &fwbh);
+            ebond      += ewbh;
+            real fbond  = fwbh*rinv;
+            for (int m = 0; (m < DIM); m++)
+            {
+                auto fij          = fbond*dx[m];
+                f[indices[0]][m] += fij;
+                f[indices[1]][m] -= fij;
+            }
         }
     }
     return ebond;
@@ -87,11 +92,11 @@ static double computeWBH(const ForceFieldParameterList      &ffpl,
 
 static double computeCoulomb(const ForceFieldParameterList      &ffpl,
                              const std::vector<TopologyEntry *> &pairs,
+                             const std::vector<ActAtom>         &atoms,
                              const std::vector<gmx::RVec>       *coordinates,
                              std::vector<gmx::RVec>             *forces)
 {
     double ebond = 0;
-    return ebond;
     auto   x     = *coordinates;
     auto  &f     = *forces;
     for (const auto b : pairs)
@@ -100,25 +105,29 @@ static double computeCoulomb(const ForceFieldParameterList      &ffpl,
         // For this to work, we need ffpl containing the parameters
         // with the combination rules applied. Something like that does
         // not exist in the input force field files.
-        auto id    = b->id(); 
-        auto qq    = ffpl.findParameterTypeConst(id, "qq").internalValue();
-        auto izeta = ffpl.findParameterTypeConst(id, "izeta").internalValue();
-        auto jzeta = ffpl.findParameterTypeConst(id, "jzeta").internalValue();
+        auto ai    = b->atomIndices()[0];
+        auto aj    = b->atomIndices()[1];
+        auto iid   = Identifier(b->id().atoms()[0]);
+        auto jid   = Identifier(b->id().atoms()[1]);
+        auto izeta = ffpl.findParameterTypeConst(iid, "zeta").internalValue();
+        auto jzeta = ffpl.findParameterTypeConst(jid, "zeta").internalValue();
         // Get the atom indices
-        auto indices    = b->atomIndices();
+        real qq         = atoms[ai].charge()*atoms[aj].charge();
         rvec dx;
-        rvec_sub(x[indices[0]], x[indices[1]], dx);
+        rvec_sub(x[ai], x[aj], dx);
         auto dr2        = iprod(dx, dx);
-        auto rinv       = gmx::invsqrt(dr2);
         real velec, felec;
         coulomb_gaussian(qq, izeta, jzeta, std::sqrt(dr2), &velec, &felec);
         ebond      += velec;
-        real fbond  = felec*rinv;
-        for (int m = 0; (m < DIM); m++)
+        if (dr2 > 0)
         {
-            auto fij          = fbond*dx[m];
-            f[indices[0]][m] += fij;
-            f[indices[1]][m] -= fij;
+            felec *= gmx::invsqrt(dr2);
+            for (int m = 0; (m < DIM); m++)
+            {
+                auto fij  = felec*dx[m];
+                f[ai][m] += fij;
+                f[aj][m] -= fij;
+            }
         }
     }
     return ebond;
@@ -126,6 +135,7 @@ static double computeCoulomb(const ForceFieldParameterList      &ffpl,
 
 static double computePartridge(const ForceFieldParameterList      &ffpl,
                                const std::vector<TopologyEntry *> &angles,
+                               const std::vector<ActAtom>         &atoms,
                                const std::vector<gmx::RVec>       *coordinates,
                                std::vector<gmx::RVec>             *forces)
 {
@@ -191,6 +201,7 @@ static double computePartridge(const ForceFieldParameterList      &ffpl,
 
 static double computeBonds(const ForceFieldParameterList      &ffpl,
                            const std::vector<TopologyEntry *> &bonds,
+                           const std::vector<ActAtom>         &atoms,
                            const std::vector<gmx::RVec>       *coordinates,
                            std::vector<gmx::RVec>             *forces)
 {
@@ -226,6 +237,7 @@ static double computeBonds(const ForceFieldParameterList      &ffpl,
 
 static double computeMorse(const ForceFieldParameterList      &ffpl,
                            const std::vector<TopologyEntry *> &bonds,
+                           const std::vector<ActAtom>         &atoms,
                            const std::vector<gmx::RVec>       *coordinates,
                            std::vector<gmx::RVec>             *forces)
 {
@@ -265,6 +277,7 @@ static double computeMorse(const ForceFieldParameterList      &ffpl,
 
 static double computeLinearAngles(const ForceFieldParameterList      &ffpl,
                                   const std::vector<TopologyEntry *> &angles,
+                                  const std::vector<ActAtom>         &atoms,
                                   const std::vector<gmx::RVec>       *coordinates,
                                   std::vector<gmx::RVec>             *forces)
 {
@@ -306,6 +319,7 @@ static double computeLinearAngles(const ForceFieldParameterList      &ffpl,
 // It is not finished yes, needs to be double checked. 
 static double computeAngles(const ForceFieldParameterList      &ffpl,
                             const std::vector<TopologyEntry *> &angles,
+                            const std::vector<ActAtom>         &atoms,
                             const std::vector<gmx::RVec>       *coordinates,
                             std::vector<gmx::RVec>             *forces)
 {
@@ -373,15 +387,43 @@ static double computeAngles(const ForceFieldParameterList      &ffpl,
 }
 
 static double computePolarization(const ForceFieldParameterList      &ffpl,
-                                  const std::vector<TopologyEntry *> &angles,
+                                  const std::vector<TopologyEntry *> &bonds,
+                                  const std::vector<ActAtom>         &atoms,
                                   const std::vector<gmx::RVec>       *coordinates,
                                   std::vector<gmx::RVec>             *forces)
 {
-    return 0;
+    double ebond = 0;
+    auto   x     = *coordinates;
+    auto  &f     = *forces;
+    const  real half = 0.5;
+    for (const auto b : bonds)
+    {
+        // Get the parameters. We have to know their names to do this.
+        auto id  = b->id(); 
+        auto ksh = ffpl.findParameterTypeConst(id, "kshell").internalValue();
+        // Get the atom indices
+        auto indices    = b->atomIndices();
+        rvec dx;
+        rvec_sub(x[indices[0]], x[indices[1]], dx);
+        auto dr2        = iprod(dx, dx);
+        
+        auto fbond      = -ksh;
+        ebond          += half*ksh*dr2;
+        
+        for (int m = 0; (m < DIM); m++)
+        {
+            auto fij          = fbond*dx[m];
+            f[indices[0]][m] += fij;
+            f[indices[1]][m] -= fij;
+        }
+    }
+    return ebond;
+
 }
 
 static double computeImpropers(const ForceFieldParameterList      &ffpl,
                                const std::vector<TopologyEntry *> &angles,
+                               const std::vector<ActAtom>         &atoms,
                                const std::vector<gmx::RVec>       *coordinates,
                                std::vector<gmx::RVec>             *forces)
 {

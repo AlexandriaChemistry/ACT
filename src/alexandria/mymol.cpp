@@ -463,7 +463,7 @@ immStatus MyMol::zetaToAtoms(const Poldata *pd,
      * For later calls during optimization of zeta also the
      * zeta on the shells will be set. 
      */
-    auto qt        = pd->findForcesConst(InteractionType::CHARGEDISTRIBUTION);
+    auto qt        = pd->findForcesConst(InteractionType::COULOMB);
     const char *ct = "chargetype";
     if (!qt.optionExists(ct))
     {
@@ -475,7 +475,7 @@ immStatus MyMol::zetaToAtoms(const Poldata *pd,
         return immStatus::OK;
     }
     
-    auto iType = InteractionType::CHARGEDISTRIBUTION;
+    auto iType = InteractionType::COULOMB;
     for (auto i = 0; i < atoms->nr; i++)
     {
         auto atype = pd->findParticleType(*atoms->atomtype[i]);
@@ -627,6 +627,7 @@ static void setTopologyIdentifiers(Topology      *top,
                         btype.push_back(*myatoms->atomtype[jj]);
                         break;
                     }
+                case InteractionType::COULOMB:
                 case InteractionType::POLARIZATION:
                     {
                         btype.push_back(atype->interactionTypeToIdentifier(entry.first).id());
@@ -935,6 +936,7 @@ static void UpdateIdefEntry(const ForceFieldParameterList &fs,
         }
         break;
     case F_LJ:
+    case F_COUL_SR:
     case F_BHAM:
         break;
     default:
@@ -983,7 +985,8 @@ static void TopologyToMtop(Topology       *top,
                 GMX_THROW(gmx::InternalError("Could not add a force field parameter to the gromacs structure"));
             }
             // One more consistency check
-            if (interaction_function[fs.fType()].nratoms !=
+            if (interaction_function[fs.fType()].nratoms > 0 &&
+                interaction_function[fs.fType()].nratoms !=
                 static_cast<int>(topentry->atomIndices().size()))
             {
                 GMX_THROW(gmx::InternalError(
@@ -1088,8 +1091,10 @@ immStatus MyMol::GenerateTopology(FILE              *fp,
         {
             addShells(debug, pd, atoms);
             topology_->addShellPairs();
-            topology_->setAtoms(atoms);
         }
+        // Now we can add the atom structures, whether or not the FF 
+               // is polarizable.
+        topology_->setAtoms(atoms);
         nRealAtoms_ = 0;
         for(int i = 0; i < atoms->nr; i++)
         {
@@ -1168,7 +1173,7 @@ void MyMol::addBondVsites(FILE          *fp,
     int     atomNrOld = atoms->nr;
     // First add virtual sites for bond shells if needed.
     auto    vs2       = pd->findForcesConst(InteractionType::VSITE2);
-    auto    qt        = pd->findForcesConst(InteractionType::CHARGEDISTRIBUTION);
+    auto    qt        = pd->findForcesConst(InteractionType::COULOMB);
     // TODO: add a flag to turn that on or off?
     t_atom  vsite_atom = { 0 };
     t_param nb         = { { 0 } };
@@ -1207,7 +1212,7 @@ void MyMol::addBondVsites(FILE          *fp,
             auto q         = ptype->paramValue("charge");
             auto vsid      = ptype->interactionTypeToIdentifier(InteractionType::POLARIZATION);
             auto vstype    = pd->findParticleType(vsid.id());
-            auto vszetaid  = vstype->interactionTypeToIdentifier(InteractionType::CHARGEDISTRIBUTION);
+            auto vszetaid  = vstype->interactionTypeToIdentifier(InteractionType::COULOMB);
             auto vseep     = qt.findParametersConst(vszetaid);
             // Now fill the newatom
             auto zeta      = vseep["zeta"].value();
@@ -1299,7 +1304,7 @@ void MyMol::addShells(FILE          *fp,
     state_change_natoms(state_, nParticles);
     
     /* Add Polarization to the plist. */
-    auto qt  = pd->findForcesConst(InteractionType::CHARGEDISTRIBUTION);
+    auto qt  = pd->findForcesConst(InteractionType::COULOMB);
     auto fs  = pd->findForcesConst(InteractionType::POLARIZATION);
     
     // Atoms first
@@ -1399,7 +1404,7 @@ void MyMol::addShells(FILE          *fp,
                 continue;
             }
             auto shelltype    = pd->findParticleType(shellid.id());
-            auto shellzetaid  = shelltype->interactionTypeToIdentifier(InteractionType::CHARGEDISTRIBUTION);
+            auto shellzetaid  = shelltype->interactionTypeToIdentifier(InteractionType::COULOMB);
             auto shelleep     = qt.findParametersConst(shellzetaid);
             // Now fill the newatom
             newatoms->atom[j]               = atoms->atom[i];
@@ -1764,7 +1769,7 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
 {
     immStatus imm         = immStatus::OK;
     bool      converged   = false;
-    auto      qt          = pd->findForcesConst(InteractionType::CHARGEDISTRIBUTION);
+    auto      qt          = pd->findForcesConst(InteractionType::COULOMB);
     auto      iChargeType = name2ChargeType(qt.optionValue("chargetype"));
 
     GenerateGromacs(mdlog, cr, nullptr, iChargeType);
@@ -1815,6 +1820,8 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
                 auto qval  = ptype->parameterConst("charge").value();
                 myatoms->atom[i].q  = myatoms->atom[i].qB = qval;
             }
+            // Copy charges to topology
+            topology_->setAtoms(myatoms);
             // If we have shells, we still have to minimize them,
             // but we may want to know the energies anyway.
             double rmsf;
@@ -1859,6 +1866,8 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
                     }
                 }
             }
+            // Copy charges to topology
+            topology_->setAtoms(myatoms);
             return immStatus::OK;
         }
     case ChargeGenerationAlgorithm::Custom:
@@ -1868,6 +1877,8 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
             {
                 myatoms->atom[i].q  = myatoms->atom[i].qB = qcustom[i];
             }
+            // Copy charges to topology
+            topology_->setAtoms(myatoms);
             return immStatus::OK;
         }
     case ChargeGenerationAlgorithm::ESP:
@@ -1899,6 +1910,8 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
                 {
                     myatoms->atom[i].q = myatoms->atom[i].qB = qq[i];
                 }
+                // Copy charges to topology
+                topology_->setAtoms(myatoms);
                 double rmsf;
                 auto imm = computeForces(&rmsf);
                 if (imm != immStatus::OK)
@@ -1927,12 +1940,16 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
                 myatoms->atom[i].q      =
                     myatoms->atom[i].qB = qq[i];
             }
+            // Copy charges to topology
+            topology_->setAtoms(myatoms);
         }
         break;
     case ChargeGenerationAlgorithm::EEM:
     case ChargeGenerationAlgorithm::SQE:
         {
-            return GenerateAcmCharges(pd);
+            imm = GenerateAcmCharges(pd);
+            // Copy charges to topology
+            topology_->setAtoms(atoms());
         }
         break;
     }
@@ -2094,7 +2111,7 @@ void MyMol::PrintTopology(const char                *fn,
     std::vector<double>      vec;
     double                   T = -1;
     std::string              myref;
-    auto qt          = pd->findForcesConst(InteractionType::CHARGEDISTRIBUTION);
+    auto qt          = pd->findForcesConst(InteractionType::COULOMB);
     auto iChargeType = name2ChargeType(qt.optionValue("chargetype"));
     std::string              mylot       = makeLot(method, basis);
 
@@ -2249,7 +2266,7 @@ void MyMol::GenerateCube(const Poldata          *pd,
                          const char             *diffhistfn,
                          const gmx_output_env_t *oenv)
 {
-    auto qt          = pd->findForcesConst(InteractionType::CHARGEDISTRIBUTION);
+    auto qt          = pd->findForcesConst(InteractionType::COULOMB);
     auto iChargeType = name2ChargeType(qt.optionValue("chargetype"));
 
     if (potfn || hisfn || rhofn || difffn || pdbdifffn)
@@ -2555,7 +2572,7 @@ void MyMol::initQgenResp(const Poldata     *pd,
                          int                maxESP)
 {
     std::string        mylot;
-    auto qt          = pd->findForcesConst(InteractionType::CHARGEDISTRIBUTION);
+    auto qt          = pd->findForcesConst(InteractionType::COULOMB);
     auto iChargeType = name2ChargeType(qt.optionValue("chargetype"));
     auto qp          = qTypeProps(qType::Calc);
     QgenResp *qgr = qp->qgenResp();

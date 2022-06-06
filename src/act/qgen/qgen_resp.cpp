@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2021
+ * Copyright (C) 2014-2022
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -105,7 +105,7 @@ void QgenResp::setAtomInfo(const t_atoms                    *atoms,
     qtot_    = qtotal;
     qshell_  = 0;
     x_       = x;
-    auto zzz = pd->findForcesConst(InteractionType::CHARGEDISTRIBUTION);
+    auto zzz = pd->findForcesConst(InteractionType::COULOMB);
     auto eqtModel = name2ChargeType(zzz.optionValue("chargetype"));
     bool haveZeta = eqtModel != ChargeType::Point;
 
@@ -113,7 +113,7 @@ void QgenResp::setAtomInfo(const t_atoms                    *atoms,
     for (int i = 0; i < atoms->nr; i++)
     {
         auto atype = pd->findParticleType(*atoms->atomtype[i]);
-        auto ztype = atype->interactionTypeToIdentifier(InteractionType::CHARGEDISTRIBUTION);
+        auto ztype = atype->interactionTypeToIdentifier(InteractionType::COULOMB);
         auto qparm = atype->parameterConst("charge");
         q_.push_back(qparm.value());
         row_.push_back(atype->row());
@@ -556,11 +556,11 @@ void QgenResp::optimizeCharges(double epsilonr)
 
 void QgenResp::updateZeta(t_atoms *atoms, const Poldata *pd)
 {
-    auto    fs   = pd->findForcesConst(InteractionType::CHARGEDISTRIBUTION);
+    auto    fs   = pd->findForcesConst(InteractionType::COULOMB);
     for (int i = 0; i < nAtom_; i++)
     {
         auto atype = pd->findParticleType(*(atoms->atomtype[i]));
-        auto myid  = atype->interactionTypeToIdentifier(InteractionType::CHARGEDISTRIBUTION);
+        auto myid  = atype->interactionTypeToIdentifier(InteractionType::COULOMB);
         auto eep   = fs.findParametersConst(myid);
         zeta_[i]   = eep.find("zeta")->second.value();
     }

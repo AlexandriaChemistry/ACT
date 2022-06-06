@@ -252,7 +252,7 @@ void MolGen::checkDataSufficiency(FILE     *fp,
         std::vector<InteractionType> atomicItypes = {
             InteractionType::VDW,
             InteractionType::POLARIZATION,
-            InteractionType::CHARGEDISTRIBUTION,
+            InteractionType::COULOMB,
             InteractionType::ELECTRONEGATIVITYEQUALIZATION,
             InteractionType::CHARGE
         };

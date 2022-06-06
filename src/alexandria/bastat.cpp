@@ -238,7 +238,7 @@ int bastat(int argc, char *argv[])
         return 0;
     }
     std::vector<MyMol> mymols;
-    bonds.extractGeometries(fp, mp, &mymols, pd, gms, method, basis);
+    bonds.extractGeometries(fp, mp, &mymols, pd, gms);
     
     print_memory_usage(debug);
     if (bHisto)

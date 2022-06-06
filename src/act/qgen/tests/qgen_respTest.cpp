@@ -144,7 +144,7 @@ class RespTest : public gmx::test::CommandLineTestBase
             CommunicationRecord cr;
             auto           pnc         = gmx::PhysicalNodeCommunicator(MPI_COMM_WORLD, 0);
             gmx::MDLogger  mdlog {};
-            auto qt = pd->findForcesConst(InteractionType::CHARGEDISTRIBUTION);
+            auto qt = pd->findForcesConst(InteractionType::COULOMB);
             auto ct = name2ChargeType(qt.optionValue("chargetype"));
             
             if (ChargeType::Slater  == ct)

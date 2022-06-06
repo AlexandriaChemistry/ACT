@@ -242,7 +242,7 @@ int gentop(int argc, char *argv[])
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     (void) pd.verifyCheckSum(stderr);
 
-    auto fs = pd.findForcesConst(InteractionType::CHARGEDISTRIBUTION);
+    auto fs = pd.findForcesConst(InteractionType::COULOMB);
     const char *ct = "chargetype";
     if (!fs.optionExists(ct))
     {

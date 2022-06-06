@@ -803,7 +803,7 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
                         {
                             for (auto &fs : pd->forcesConst())
                             {
-                               if (strcmp(interactionTypeToString(fs.first).c_str(), "CHARGEDISTRIBUTION") == 0)
+                               if (strcmp(interactionTypeToString(fs.first).c_str(), "COULOMB") == 0)
                                {
                                     for (auto &params : fs.second.parametersConst())
                                     {
@@ -893,7 +893,7 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd, const MyMol *mym
                             {
                                 for (auto &fs : pd->forcesConst())
                                 {
-                                    if (strcmp(interactionTypeToString(fs.first).c_str(), "CHARGEDISTRIBUTION") == 0)
+                                    if (strcmp(interactionTypeToString(fs.first).c_str(), "COULOMB") == 0)
                                     {
                                         for (auto &params : fs.second.parametersConst())
                                         {

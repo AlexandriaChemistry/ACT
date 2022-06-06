@@ -3,16 +3,18 @@
 <ReferenceData>
   <Real Name="BONDS">0.0015968037301342748</Real>
   <Real Name="VANDERWAALS">390.88601284998487</Real>
+  <Real Name="COULOMB">-4.463552169582151</Real>
+  <Real Name="POLARIZATION">5.3021030326458997e-12</Real>
   <Real Name="cl-1 fX">0</Real>
   <Real Name="cl-1 fY">0</Real>
-  <Real Name="cl-1 fZ">23015.012316811979</Real>
+  <Real Name="cl-1 fZ">23021.125459993506</Real>
   <Real Name="cl_s-2 fX">0</Real>
   <Real Name="cl_s-2 fY">0</Real>
-  <Real Name="cl_s-2 fZ">0</Real>
+  <Real Name="cl_s-2 fZ">0.00087837828169830474</Real>
   <Real Name="h-3 fX">0</Real>
   <Real Name="h-3 fY">0</Real>
-  <Real Name="h-3 fZ">-23015.012316811979</Real>
+  <Real Name="h-3 fZ">-23021.126414178805</Real>
   <Real Name="h_s-4 fX">0</Real>
   <Real Name="h_s-4 fY">0</Real>
-  <Real Name="h_s-4 fZ">0</Real>
+  <Real Name="h_s-4 fZ">7.5807022308013687e-05</Real>
 </ReferenceData>

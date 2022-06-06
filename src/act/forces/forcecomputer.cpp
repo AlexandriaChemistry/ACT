@@ -51,10 +51,10 @@ void ForceComputer::compute(const Poldata                     &pd,
         if (bIS)
         {
             Identifier atID({aa.ffType()}, {}, CanSwap::No);
-            auto alpha = ffpl.findParameterTypeConst(atID, "alpha").value();
-            if (alpha > 0 && charge[i] != 0)
+            auto fc = ffpl.findParameterTypeConst(atID, "kshell").value();
+            if (fc != 0)
             {
-                fc_1 = alpha/(gmx::square(charge[i])*ONE_4PI_EPS0);
+                fc_1 = 1.0/fc;
             }
         }
         fcShell_1.push_back(fc_1);
@@ -123,7 +123,7 @@ void ForceComputer::computeOnce(const Poldata                     &pd,
         {
             // Now do the calculations and store the energy
             energies->insert({ entry.first,
-                    bfc(ffpl, entry.second, coordinates, forces) });
+                    bfc(ffpl, entry.second, top.atoms(), coordinates, forces) });
         }
     }
 }

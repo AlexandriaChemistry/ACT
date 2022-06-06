@@ -57,7 +57,7 @@ std::map<InteractionType, NameDescr> eitNames = {
     { InteractionType::VSITE2,             { "VSITE2", "virtual sites with two constructing atoms" } },
     { InteractionType::VSITE3FAD,          { "VSITE3FAD", "virtual sites with 3FAD" } },
     { InteractionType::VSITE3OUT,          { "VSITE3OUT", "virtual sites with three contructing atoms, out of plane" } },
-    { InteractionType::CHARGEDISTRIBUTION, { "CHARGEDISTRIBUTION", "charge distributions" } },
+    { InteractionType::COULOMB,            { "COULOMB", "Coulomb interactions" } },
     { InteractionType::BONDCORRECTIONS,    { "BONDCORRECTIONS", "bond charge corrections" } },
     { InteractionType::ELECTRONEGATIVITYEQUALIZATION, { "ELECTRONEGATIVITYEQUALIZATION", "electronegativity equalization" } },
     { InteractionType::CHARGE, { "CHARGE", "charge" } }
@@ -113,7 +113,7 @@ int interactionTypeToNatoms(InteractionType iType)
         return 3;
     case InteractionType::VDW:
     case InteractionType::POLARIZATION:
-    case InteractionType::CHARGEDISTRIBUTION:
+    case InteractionType::COULOMB:
     case InteractionType::ELECTRONEGATIVITYEQUALIZATION:
         return 1;
     case InteractionType::BONDS:

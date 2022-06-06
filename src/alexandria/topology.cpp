@@ -270,7 +270,8 @@ void Topology::setAtoms(const t_atoms *atoms)
         atoms_.push_back(ActAtom(*atoms->atomname[i],
                                  *atoms->atomtype[i],
                                  atoms->atom[i].ptype,
-                                 atoms->atom[i].m));
+                                 atoms->atom[i].m,
+                                 atoms->atom[i].q));
     }
 }
 
@@ -467,42 +468,62 @@ void Topology::makeImpropers(const gmx::HostVector<gmx::RVec> &x,
 
 void Topology::makePairs(int natoms)
 {
-    entries_.insert(std::pair<InteractionType, std::vector<TopologyEntry *>>(InteractionType::VDW, {}));
-    auto &pairs = entries_.find(InteractionType::VDW)->second;
-    for(int i = 0; i < natoms; i++)
+    for(const auto &itype : { InteractionType::VDW,
+                              InteractionType::COULOMB })
     {
-        // Check for exclusions is done later.
-        for(int j = i+1; j < natoms; j++)
+        entries_.insert({itype, {} });
+        auto &pairs = entries_.find(itype)->second;
+        for(int i = 0; i < natoms; i++)
         {
-            pairs.push_back(new AtomPair(i, j));
+            // Check for exclusions is done later.
+            for(int j = i+1; j < natoms; j++)
+            {
+                pairs.push_back(new AtomPair(i, j));
+            }
         }
     }
 }
 
 void  Topology::addShellPairs()
 {
-    if (hasEntry(InteractionType::VDW) && 
-        hasEntry(InteractionType::POLARIZATION))
+    if (hasEntry(InteractionType::POLARIZATION))
     {
-        auto vdw = entries_.find(InteractionType::VDW)->second;
         auto pol = entries_.find(InteractionType::POLARIZATION)->second;
-        for(const auto &p_i : pol)
+        for (const auto &itype : { InteractionType::VDW,
+                                   InteractionType::COULOMB } )
         {
-            auto core_i  = p_i->atomIndices()[0];
-            auto shell_i = p_i->atomIndices()[1];
-            for(const auto &p_j : pol)
+            if (!hasEntry(itype))
             {
-                auto core_j  = p_j->atomIndices()[0];
-                auto shell_j = p_j->atomIndices()[1];
-                AtomPair ap(core_i, core_j);
-                if (vdw.end() != std::find(vdw.begin(), vdw.end(), &ap))
+                continue;
+            }
+            auto &ffpl = entries_.find(itype)->second;
+            std::vector<AtomPair *> newf;
+            for(const auto &p_i : pol)
+            {
+                auto core_i  = p_i->atomIndices()[0];
+                auto shell_i = p_i->atomIndices()[1];
+                for(const auto &p_j : pol)
                 {
-                    // This pair of cores interacts, now add the shells.
-                    vdw.push_back(new AtomPair(core_i, shell_j));
-                    vdw.push_back(new AtomPair(core_j, shell_i));
-                    vdw.push_back(new AtomPair(shell_i, shell_j));
+                    auto core_j  = p_j->atomIndices()[0];
+                    auto shell_j = p_j->atomIndices()[1];
+                    for(auto &f : ffpl)
+                    {
+                        auto indices = f->atomIndices();
+                        if (!(core_i == indices[0] && core_j == indices[1]) && 
+                            !(core_i == indices[1] && core_j == indices[0]))
+                        {
+                            // This pair of cores interacts, now add the shells.
+                            newf.push_back(new AtomPair(core_i, shell_j));
+                            newf.push_back(new AtomPair(core_j, shell_i));
+                            newf.push_back(new AtomPair(shell_i, shell_j));
+                        }
+                    }
                 }
-            }        
+            }
+            for(const auto &n : newf)
+            {
+                ffpl.push_back(std::move(n));
+            }
         }
     }   
 }
@@ -628,21 +649,25 @@ void Topology::generateExclusions(int nrexcl,
             break;
         }
     }
-    // Update our own VDW pairs if present
-    if (hasEntry(InteractionType::VDW))
+    // Update our own VDW and COULOMB pairs if present
+    for(const auto &itype : { InteractionType::VDW,
+                              InteractionType::COULOMB })
     {
-        auto vdw = &entries_.find(InteractionType::VDW)->second;
-        for(size_t ai = 0; ai < exclusions_.size(); ai++)
+        if (hasEntry(itype))
         {
-            for(size_t j = 0; j < exclusions_[ai].size(); j++)
+            auto itt = &entries_.find(itype)->second;
+            for(size_t ai = 0; ai < exclusions_.size(); ai++)
             {
-                AtomPair ap(ai, exclusions_[ai][j]);
-                for(auto pp = vdw->begin(); pp < vdw->end(); ++pp)
+                for(size_t j = 0; j < exclusions_[ai].size(); j++)
                 {
+                    AtomPair ap(ai, exclusions_[ai][j]);
+                    for(auto pp = itt->begin(); pp < itt->end(); ++pp)
+                    {
                     if (ap == *static_cast<AtomPair *>(*pp))
                     {
-                        vdw->erase(pp);
+                        itt->erase(pp);
                         break;
+                    }
                     }
                 }
             }
