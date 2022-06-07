@@ -108,8 +108,7 @@ class ACT:
                   self.molpropfile, self.selectionfile, LogFile ) )
         for opt in options:
             cmd += ( " %s %s " % ( opt, options[opt] ))
-        ener_params = [ "sigma", "epsilon", "gamma", "kt", "klin", "kimp" ]
-        #"De", "D0", "beta", 
+        ener_params = [ "sigma", "epsilon", "gamma", "kt", "klin", "kimp", "De", "D0", "beta" ]
         if OptimizeGeometry:
             ener_params.append("bondlength")
             ener_params.append("angle")
