@@ -14,6 +14,7 @@ class Target(Enum):
     Epot   = 2
     Force  = 3
     Freq   = 4
+    Epot_only = 5
 
 class ACT:
     '''Simple class to run Alexandria Chemistry Toolkit programs.'''
@@ -107,8 +108,7 @@ class ACT:
                   self.molpropfile, self.selectionfile, LogFile ) )
         for opt in options:
             cmd += ( " %s %s " % ( opt, options[opt] ))
-        ener_params = [ "sigma", "epsilon", "gamma", "kt", "klin", "kimp" ]
-        #"De", "D0", "beta", 
+        ener_params = [ "sigma", "epsilon", "gamma", "kt", "klin", "kimp", "De", "D0", "beta" ]
         if OptimizeGeometry:
             ener_params.append("bondlength")
             ener_params.append("angle")
@@ -134,6 +134,10 @@ class ACT:
                        "-fc_force": "0.1",
                        "-fc_freq":  "0.1",
                        "-fit":      fit_params }
+        elif target == Target.Epot_only:
+            myopts = { "-fc_epot":  "1",
+                       "-fit":      fit_params }
+
 
         for opt in myopts:
             if not opt in options:
