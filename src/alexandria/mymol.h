@@ -106,8 +106,9 @@ enum class coordSet {
     private:
         // Now class MolHandler can access private members of MyMol
         friend class MolHandler;
-        // The force computer
-        ForceComputer                    forceComputer_; 
+        // The energy storage
+        std::map<InteractionType, double> energies_;
+        // Older stuff
         int                             *cgnr_           = nullptr;
         bool                             bHaveShells_    = false;
         bool                             bHaveVSites_    = false;
@@ -543,13 +544,19 @@ enum class coordSet {
         void updateMDAtoms();
         
         /*! \brief Calculate the forces and energies
-         * For a polatizable model the shell positions are minimized.
+         * For a polarizable model the shell positions are minimized.
          * \param[in]  crtmp         Temporary communication record with one core only.
          * \param[out] shellForceRMS Root mean square force on the shells
          * \return immStatus::OK if everything worked fine, error code otherwise.
          */
         immStatus calculateEnergy(const t_commrec *crtmp,
                                   real            *shellForceRMS);
+
+        /*! \brief Calculate the forces and energies
+         * For a polarizable model the shell positions are minimized.
+         * \param[in] forceComputer The code to run the calculations
+         */
+        void calculateEnergy(ForceComputer   *forceComputer);
 
         /*! \brief
          * Relax the shells (if any) or compute the forces in the molecule.

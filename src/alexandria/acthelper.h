@@ -7,6 +7,7 @@
 #define ACT_ACTHELPER_H
 
 #include "gromacs/mdtypes/commrec.h"
+#include "act/forces/forcecomputer.h"
 
 namespace alexandria
 {
@@ -21,7 +22,9 @@ namespace alexandria
     {
     private:
         //! Fitness computer
-        ACMFitnessComputer  *fitComp_;
+        ACMFitnessComputer *fitComp_;
+        //! Force computer
+        ForceComputer      *forceComp_;
     public:
         /*! \brief Constructor
          * \param[in] sii Static information

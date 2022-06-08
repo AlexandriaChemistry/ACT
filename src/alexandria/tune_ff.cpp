@@ -264,10 +264,11 @@ void OptACM::initMaster()
             break;
         }
     }
-
+    // Force computer
+    forceComp_ = new ForceComputer(sii_->poldata());
     // Fitness computer
     // FIXME: what about the flags? Here it is a bit more clear that they should be all false?
-    fitComp_ = new ACMFitnessComputer(logFile(), verbose_, sii_, &mg_, false);
+    fitComp_ = new ACMFitnessComputer(logFile(), verbose_, sii_, &mg_, false, forceComp_);
 
     // Adjust the seed that gets passed around to components of the optimizer
     int seed = bch_.seed();

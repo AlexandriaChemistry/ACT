@@ -138,17 +138,15 @@ protected:
         mp_.symmetrizeCharges(pd, qSymm, nullptr);
         mp_.GenerateCharges(pd, mdlog, &cr, alg, qcustom);
         auto atoms = mp_.atoms();
-        ForceComputer                     fcomp;
+        auto fcomp = new ForceComputer(pd);
         std::vector<gmx::RVec>            forces, coordinates;
         std::map<InteractionType, double> energies;
-        std::vector<double>               charges;
         for(int i = 0; i < atoms->nr; i++)
         {
             coordinates.push_back(mp_.x()[i]);
             forces.push_back({ 0, 0, 0 });
-            charges.push_back(atoms->atom[i].q);
         }
-        fcomp.compute(*pd, *mp_.topology(), charges, &coordinates, &forces, &energies);
+        fcomp->compute(mp_.topology(), &coordinates, &forces, &energies);
 
         for(auto &ener: energies)
         {

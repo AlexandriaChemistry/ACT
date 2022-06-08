@@ -6,12 +6,12 @@
  * \author Oskar Tegby <oskar.tegby@it.uu.se>
  */
 
-
 #ifndef ALEXANDRIA_MCMCMUTATOR_H
 #define ALEXANDRIA_MCMCMUTATOR_H
 
-#include "act/ga//Genome.h"
-#include "act/ga//Mutator.h"
+#include "act/forces/forcecomputer.h"
+#include "act/ga/Genome.h"
+#include "act/ga/Mutator.h"
 #include "gromacs/utility/fileptr.h"
 #include "confighandler.h"
 #include "acmfitnesscomputer.h"
@@ -31,13 +31,13 @@ class MCMCMutator : public ga::Mutator
 
 private:
     //! Did we find a minimum yet?
-    bool                       bMinimum_ = false;
+    bool                       bMinimum_  = false;
     //! Pointer to BayesConfigHandler
-    BayesConfigHandler        *bch_     = nullptr;
+    BayesConfigHandler        *bch_       = nullptr;
     //! Pointer to ACMFitnessComputer
-    ACMFitnessComputer        *fitComp_ = nullptr;
+    ACMFitnessComputer        *fitComp_   = nullptr;
     //! Pointer to Individual
-    StaticIndividualInfo      *sii_     = nullptr;
+    StaticIndividualInfo      *sii_       = nullptr;
     //! Attempted changes for each parameter
     std::vector<int>           attemptedMoves_;
     //! Accepted changes for each parameter

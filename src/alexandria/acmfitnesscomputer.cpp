@@ -18,9 +18,9 @@ namespace alexandria
 * BEGIN: ACMFitnessComputer            *
 * * * * * * * * * * * * * * * * * * * */
 
-void ACMFitnessComputer::compute(ga::Genome *genome,
-                                 iMolSelect  trgtFit,
-                                 bool        verbose)
+void ACMFitnessComputer::compute(ga::Genome    *genome,
+                                 iMolSelect     trgtFit,
+                                 bool           verbose)
 {
     if (nullptr == genome)
     {
@@ -97,7 +97,7 @@ double ACMFitnessComputer::calcDeviation(std::vector<double> *params,
     // If actMaster or actMiddleMan, penalize out of bounds
     if (cr->isMasterOrMiddleMan() && bdc_)
     {
-        bdc_->calcDeviation(nullptr, targets, sii_->poldata(),
+        bdc_->calcDeviation(forceComp_, nullptr, targets, sii_->poldata(),
                             *myparams, nullptr);
     }
 
@@ -141,7 +141,7 @@ double ACMFitnessComputer::calcDeviation(std::vector<double> *params,
 
             for (DevComputer *mydev : devComputers_)
             {
-                mydev->calcDeviation(&mymol, targets, sii_->poldata(),
+                mydev->calcDeviation(forceComp_, &mymol, targets, sii_->poldata(),
                                      *myparams, cr);
             }
         }

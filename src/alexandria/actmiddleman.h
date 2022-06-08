@@ -28,17 +28,19 @@ namespace alexandria
     {
     private:
         //! Fitness computer
-        ACMFitnessComputer *fitComp_;
+        ACMFitnessComputer   *fitComp_;
         //! Mutator
-        ga::Mutator        *mutator_;
+        ga::Mutator          *mutator_;
         //! Individual
-        ACMIndividual      *ind_;
+        ACMIndividual        *ind_;
         //! Config handler for GA
-        GAConfigHandler    *gach_;
+        GAConfigHandler      *gach_;
+        //! Force computer
+        ForceComputer        *forceComp_;
         //! SharedIndividualInfo
         StaticIndividualInfo *sii_;
         //! My ID
-        int                 id_;
+        int                   id_;
 
         //! \brief Stop my helpers
         void stopHelpers();

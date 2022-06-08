@@ -12,8 +12,8 @@
 
 #include <vector>
 
-#include "act/ga//FitnessComputer.h"
-
+#include "act/ga/FitnessComputer.h"
+#include "act/forces/forcecomputer.h"
 #include "acmindividual.h"
 #include "bayes.h"
 #include "devcomputer.h"
@@ -38,6 +38,8 @@ private:
     std::vector<DevComputer*>  devComputers_;
     //! \brief StaticIndividualInfo pointer
     StaticIndividualInfo      *sii_ = nullptr;
+    //! The force computer
+    ForceComputer             *forceComp_;
     //! \brief MolGen pointer
     MolGen *molgen_;
     //! \brief Whether or not to remove molecules that fail to converge in the shell minimization
@@ -72,15 +74,22 @@ public:
                        const bool                   verbose,
                              StaticIndividualInfo  *sii,
                              MolGen                *molgen,
-                       const bool                   removeMol)
-    : logfile_(logfile), sii_(sii), molgen_(molgen), removeMol_(removeMol)
+                       const bool                   removeMol,
+                             ForceComputer         *forceComp)
+        : logfile_(logfile), sii_(sii), forceComp_(forceComp), molgen_(molgen), removeMol_(removeMol)
     {
         fillDevComputers(verbose);
     }
 
-    void compute(ga::Genome *genome,
-                 iMolSelect  trgtFit,
-                 bool        verbose = false) override;  // Does not inherit the default value, damn C++ ...
+    /*! \brief Do the actual computation
+     * \param[in] genome    The genome
+     * \param[in] trgtFit   The selection to compute
+     * \param[in] forceComp The force computer
+     * \param[in] verbose   Whether to print stuff
+     */
+    void compute(ga::Genome    *genome,
+                 iMolSelect     trgtFit,
+                 bool           verbose = false) override;  // Does not inherit the default value, damn C++ ...
 
     /*! \brief Computes deviation from target
      * \param[in] params   The force field parameters

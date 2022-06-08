@@ -104,13 +104,13 @@ public:
     /*! \brief
      * The routine will compute the RMSD between the minimized coordinates
      * and the original ones for a given mymol object.
-     * This routine should be after minimizing the coordinates, since
-     * otherwise there is no minimized structure.
+     * This routine should be called only after minimizing the coordinates,
+     * since otherwise there is no minimized structure.
      *
      * \param[in]  mol  the molecule object (will be modified)
      * \param[out] x    The two coordinate sets after alignment. Map will be cleared first.
      * \return Root mean square atomic deviation of atomic
-     *                  coordinates after minimization.
+     *         coordinates after minimization.
      */
     double coordinateRmsd(MyMol                                       *mol,
                           std::map<coordSet, std::vector<gmx::RVec> > *x) const;

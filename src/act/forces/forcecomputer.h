@@ -14,6 +14,9 @@ namespace alexandria
 class ForceComputer
 {
 private:
+    //! Force field structure
+    const Poldata *pd_;
+    
     /*! Do one actual computations.
      * Will do one force/energy computation.
      * \param[in]  pd          The force field structure
@@ -23,20 +26,19 @@ private:
      * \param[out] forces      The atomic forces
      * \param[out] energies    The energy components
      */
-    void computeOnce(const Poldata                     &pd,
-                     const Topology                    &top,
+    void computeOnce(const Topology                    *top,
                      std::vector<gmx::RVec>            *coordinates,
                      std::vector<gmx::RVec>            *forces,
                      std::map<InteractionType, double> *energies);
                  
  public:
     /*! \brief Constructor
+     * \param[in] pd Pointer to force field structure
      */
-    ForceComputer() {}
+    ForceComputer(const Poldata *pd) : pd_(pd) {}
     
     /*! Do complete energy/force computation.
      * If shells are present their positions will be minimized.
-     * \param[in]  pd          The force field structure
      * \param[in]  top         The molecular topology
      * \param[in]  charges     The charges for all particles
      * \param[in]  coordinates The atomic coordinates. Coordinates of
@@ -44,9 +46,7 @@ private:
      * \param[out] forces      The atomic forces
      * \param[out] energies    The energy components
      */
-    void compute(const Poldata                     &pd,
-                 const Topology                    &top,
-                 const std::vector<double>         &charge,
+    void compute(const Topology                    *top,
                  std::vector<gmx::RVec>            *coordinates,
                  std::vector<gmx::RVec>            *forces,
                  std::map<InteractionType, double> *energies);

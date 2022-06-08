@@ -43,7 +43,8 @@ static double l2_regularizer(double x, double min, double max)
 * BEGIN: BoundsDevComputer                 *
 * * * * * * * * * * * * * * * * * * * * * */
 
-void BoundsDevComputer::calcDeviation(gmx_unused MyMol                     *mymol,
+void BoundsDevComputer::calcDeviation(gmx_unused const ForceComputer       *forceComputer,
+                                      gmx_unused MyMol                     *mymol,
                                       std::map<eRMS, FittingTarget>        *targets,
                                       Poldata                              *poldata,
                                       const std::vector<double>            &param,
@@ -123,7 +124,8 @@ void BoundsDevComputer::calcDeviation(gmx_unused MyMol                     *mymo
 * BEGIN: ChargeCM5DevComputer              *
 * * * * * * * * * * * * * * * * * * * * * */
 
-void ChargeCM5DevComputer::calcDeviation(MyMol                                *mymol,
+void ChargeCM5DevComputer::calcDeviation(gmx_unused const ForceComputer       *forceComputer,
+                                         MyMol                                *mymol,
                                          std::map<eRMS, FittingTarget>        *targets,
                                          Poldata                              *poldata,
                                          gmx_unused const std::vector<double> &param,
@@ -211,7 +213,8 @@ void ChargeCM5DevComputer::calcDeviation(MyMol                                *m
 * BEGIN: EspDevComputer                    *
 * * * * * * * * * * * * * * * * * * * * * */
 
-void EspDevComputer::calcDeviation(MyMol                                *mymol,
+void EspDevComputer::calcDeviation(gmx_unused const ForceComputer       *forceComputer,
+                                   MyMol                                *mymol,
                                    std::map<eRMS, FittingTarget>        *targets,
                                    Poldata                              *poldata,
                                    gmx_unused const std::vector<double> &param,
@@ -290,7 +293,8 @@ PolarDevComputer::PolarDevComputer(    FILE  *logfile,
     convert_ = convertFromGromacs(1.0, mpo_unit2(MolPropObservable::POLARIZABILITY));
 }
 
-void PolarDevComputer::calcDeviation(MyMol                                *mymol,
+void PolarDevComputer::calcDeviation(gmx_unused const ForceComputer       *forceComputer,
+                                     MyMol                                *mymol,
                                      std::map<eRMS, FittingTarget>        *targets,
                                      gmx_unused Poldata                   *poldata,
                                      gmx_unused const std::vector<double> &param,
@@ -323,7 +327,8 @@ void PolarDevComputer::calcDeviation(MyMol                                *mymol
 * BEGIN: MultiPoleDevComputer              *
 * * * * * * * * * * * * * * * * * * * * * */
 
-void MultiPoleDevComputer::calcDeviation(MyMol                                *mymol,
+void MultiPoleDevComputer::calcDeviation(gmx_unused const ForceComputer       *forceComputer,
+                                         MyMol                                *mymol,
                                          std::map<eRMS, FittingTarget>        *targets,
                                          gmx_unused Poldata                   *poldata,
                                          gmx_unused const std::vector<double> &param,
@@ -378,7 +383,8 @@ HarmonicsDevComputer::HarmonicsDevComputer(      FILE              *logfile,
 {
 }
 
-void HarmonicsDevComputer::calcDeviation(MyMol                                *mymol,
+void HarmonicsDevComputer::calcDeviation(const ForceComputer                  *forceComputer,
+                                         MyMol                                *mymol,
                                          std::map<eRMS, FittingTarget>        *targets,
                                          gmx_unused Poldata                   *poldata,
                                          gmx_unused const std::vector<double> &param,
@@ -426,7 +432,8 @@ void HarmonicsDevComputer::calcDeviation(MyMol                                *m
 * BEGIN: ForceEnergyDevComputer                 *
 * * * * * * * * * * * * * * * * * * * * * */
 
-void ForceEnergyDevComputer::calcDeviation(MyMol                                *mymol,
+void ForceEnergyDevComputer::calcDeviation(const ForceComputer                  *forceComputer,
+                                           MyMol                                *mymol,
                                            std::map<eRMS, FittingTarget>        *targets,
                                            gmx_unused Poldata                   *poldata,
                                            gmx_unused const std::vector<double> &param,

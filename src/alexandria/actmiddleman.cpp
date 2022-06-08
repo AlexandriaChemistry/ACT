@@ -39,8 +39,12 @@ ACTMiddleMan::ACTMiddleMan(MolGen               *mg,
     // Create and initialize the individual
     ind_ = static_cast<ACMIndividual *>(initializer->initialize());
 
+    // Create force computer
+    forceComp_ = new ForceComputer(sii->poldata());
+
     // Fitness computer FIXME: what about those false flags?
-    fitComp_ = new ACMFitnessComputer(nullptr, false, sii, mg, false);
+    fitComp_ = new ACMFitnessComputer(nullptr, false, sii, mg, false, forceComp_);
+    
     // Create and initialize the mutator
     sii->makeIndividualDir();  // We need to call this before opening working files!
     if (gach->optimizer() == OptimizerAlg::GA)

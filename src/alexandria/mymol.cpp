@@ -1581,6 +1581,23 @@ static void reset_f_e(int                      natoms,
     }
 }
 
+void MyMol::calculateEnergy(ForceComputer *forceComputer)
+{
+    std::vector<gmx::RVec> forces;
+    std::vector<gmx::RVec> myx;
+    int natom = getMdatoms()->nr;
+    for (int i = 0; i < natom; i++)
+    {
+        myx.push_back(state_->x[i]);
+    }
+    forceComputer->compute(topology_, &myx, &forces, &energies_);
+    for (int i = 0; i < natom; i++)
+    {
+        copy_rvec(myx[i], state_->x[i]);
+        copy_rvec(forces[i], f_[i]);
+    }
+}
+
 immStatus MyMol::calculateEnergy(const t_commrec *crtmp,
                                  real            *shellForceRMS)
 {
