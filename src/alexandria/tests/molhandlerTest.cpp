@@ -150,11 +150,12 @@ protected:
         add_energies(&checker_, mp_.energyTerms(), "before");
 
         MolHandler mh;
+        auto forceComp = new ForceComputer(pd);
         
         std::map<coordSet, std::vector<gmx::RVec> > xrmsd; 
         double rmsd = mh.coordinateRmsd(&mp_, &xrmsd);
         checker_.checkReal(rmsd, "Coordinate RMSD before minimizing");
-        imm = mh.minimizeCoordinates(&mp_);
+        imm = mh.minimizeCoordinates(&mp_, forceComp);
         EXPECT_TRUE(immStatus::OK == imm);
         if (immStatus::OK != imm)
         {
@@ -166,7 +167,7 @@ protected:
         add_energies(&checker_, mp_.energyTerms(), "after");
 
         std::vector<double> freq, inten;
-        mh.nma(&mp_, &freq, &inten, nullptr);
+        mh.nma(&mp_, forceComp, &freq, &inten, nullptr);
         auto mpo = MolPropObservable::FREQUENCY;
         const char *unit = mpo_unit2(mpo);
         for(auto f = freq.begin(); f < freq.end(); ++f)

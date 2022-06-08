@@ -44,6 +44,7 @@
 
 #include "mymol.h"
 #include "molhandler.h"
+#include "act/forces/forcecomputer.h"
 #include "act/poldata/poldata.h"
 
 /*! \brief Utility function to merge command line arguments
@@ -101,6 +102,7 @@ using qtStats = std::map<qType, gmx_stats>;
 
         //! \brief do part of the printing, add to statistics
         void printEnergyForces(std::vector<std::string> *tcout,
+                               const ForceComputer      *forceComp,
                                alexandria::MyMol        *mol,
                                const std::vector<int>   &ePlot,
                                gmx_stats                *lsq_rmsf,

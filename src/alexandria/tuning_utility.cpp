@@ -40,6 +40,7 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/utility/coolstuff.h"
 
+#include "act/forces/forcecomputer.h"
 #include "act/molprop/molprop_util.h"
 #include "act/molprop/multipole_names.h"
 #include "act/qgen/qtype.h"
@@ -650,6 +651,7 @@ static void writeCoordinates(const t_atoms           *atoms,
 
 
 void TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
+                                              const ForceComputer      *forceComp,
                                               alexandria::MyMol        *mol,
                                               const std::vector<int>   &ePlot,
                                               gmx_stats                *lsq_rmsf,
@@ -659,7 +661,7 @@ void TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
     std::vector<std::pair<double, double> >                 eMap;
     std::vector<std::vector<std::pair<double, double> > >   fMap;
     std::vector<std::pair<double, std::map<int, double> > > enerAllMap;
-    mol->forceEnergyMaps(&fMap, &eMap, &enerAllMap);
+    mol->forceEnergyMaps(forceComp, &fMap, &eMap, &enerAllMap);
     std::vector<std::string> dataFileNames;
     if (printSP_)
     {
@@ -730,7 +732,7 @@ void TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
     {
         // Now get the minimized structure RMSD and Energy
         // TODO: Only do this for JobType::OPT
-        molHandler_.minimizeCoordinates(mol);
+        molHandler_.minimizeCoordinates(mol, forceComp);
         std::map<coordSet, std::vector<gmx::RVec> > xrmsd; 
         double rmsd = molHandler_.coordinateRmsd(mol, &xrmsd);
         
@@ -753,7 +755,7 @@ void TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
         
         // Do normal-mode analysis
         std::vector<double> frequencies, intensities;
-        molHandler_.nma(mol, &frequencies, &intensities, nullptr);
+        molHandler_.nma(mol, forceComp, &frequencies, &intensities, nullptr);
         auto unit = mpo_unit2(MolPropObservable::FREQUENCY);
         auto ref_freq = mol->referenceFrequencies();
         if (!ref_freq.empty())
@@ -911,6 +913,9 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
             }
         }
     }
+    
+    auto forceComp = new ForceComputer(pd);
+    
     for (auto mol = mymol->begin(); mol < mymol->end(); ++mol)
     {
         if (mol->support() != eSupport::No)
@@ -976,7 +981,8 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
             printAtoms(fp, &(*mol));
             // Energies
             std::vector<std::string> tcout;
-            printEnergyForces(&tcout, &(*mol), ePlot,
+            printEnergyForces(&tcout, forceComp,
+                              &(*mol), ePlot,
                               &lsq_rmsf[ims], &lsq_epot[ims],
                               &lsq_freq[ims]);
             for(const auto &tout : tcout)

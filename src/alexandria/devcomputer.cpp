@@ -399,10 +399,10 @@ void HarmonicsDevComputer::calcDeviation(const ForceComputer                  *f
     {
         return;
     }
-    handler_.minimizeCoordinates(mymol);
+    handler_.minimizeCoordinates(mymol, forceComputer);
     // Compute frequencies
     std::vector<double> frequencies, intensities;
-    handler_.nma(mymol, &frequencies, &intensities);
+    handler_.nma(mymol, forceComputer, &frequencies, &intensities);
 
     auto ref_freqs = mymol->referenceFrequencies();
     if (ref_freqs.size() != frequencies.size())
@@ -442,7 +442,7 @@ void ForceEnergyDevComputer::calcDeviation(const ForceComputer                  
     std::vector<std::pair<double, double> >                 eMap;
     std::vector<std::vector<std::pair<double, double> > >   fMap;
     std::vector<std::pair<double, std::map<int, double> > > enerAllMap;
-    mymol->forceEnergyMaps(&fMap, &eMap, &enerAllMap);
+    mymol->forceEnergyMaps(forceComputer, &fMap, &eMap, &enerAllMap);
 
     auto tf = targets->find(eRMS::Force2);
     if (tf != targets->end() && !fMap.empty())

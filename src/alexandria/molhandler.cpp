@@ -47,6 +47,7 @@ namespace alexandria
 {
 
 double MolHandler::computeHessian(      MyMol               *mol,
+                                  const ForceComputer       *forceComp,
                                   const t_commrec           *crtmp,
                                   const std::vector<int>    &atomIndex,
                                         MatrixWrapper       *hessian,
@@ -116,6 +117,7 @@ double MolHandler::computeHessian(      MyMol               *mol,
 }
 
 void MolHandler::nma(MyMol               *mol,
+                     const ForceComputer *forceComp,
                      std::vector<double> *frequencies,
                      std::vector<double> *intensities,
                      FILE                *fp) const
@@ -141,7 +143,7 @@ void MolHandler::nma(MyMol               *mol,
     const int matrixSide = DIM*atomIndex.size();
     MatrixWrapper       hessian(matrixSide, matrixSide);
     std::vector<double> f0;
-    computeHessian(mol, crtmp, atomIndex, &hessian, &f0);
+    computeHessian(mol, forceComp, crtmp, atomIndex, &hessian, &f0);
     hessian.averageTriangle();
 
     // Dispose single use commrec
@@ -275,7 +277,8 @@ void MolHandler::nma(MyMol               *mol,
 
 }
 
-immStatus MolHandler::minimizeCoordinates(MyMol  *mol) const
+immStatus MolHandler::minimizeCoordinates(MyMol               *mol,
+                                          const ForceComputer *forceComp) const
 {
     mol->updateMDAtoms();
     // We need to use a single core system for minimizing shells
@@ -309,7 +312,7 @@ immStatus MolHandler::minimizeCoordinates(MyMol  *mol) const
     // Now start the minimization loop.
     do
     {
-        double newEpot = computeHessian(mol, crtmp, theAtoms, &Hessian, &f0);
+        double newEpot = computeHessian(mol, forceComp, crtmp, theAtoms, &Hessian, &f0);
         if (firstStep)
         {
             // Store energy

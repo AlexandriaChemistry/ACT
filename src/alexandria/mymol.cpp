@@ -506,7 +506,8 @@ immStatus MyMol::zetaToAtoms(const Poldata *pd,
     return immStatus::OK;
 }
 
-void MyMol::forceEnergyMaps(std::vector<std::vector<std::pair<double, double> > >   *forceMap,
+void MyMol::forceEnergyMaps(const ForceComputer                                     *forceComp,
+                            std::vector<std::vector<std::pair<double, double> > >   *forceMap,
                             std::vector<std::pair<double, double> >                 *enerMap,
                             std::vector<std::pair<double, std::map<int, double> > > *enerAllMap)
 {

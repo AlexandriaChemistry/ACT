@@ -352,11 +352,13 @@ enum class coordSet {
          * All energy components are stored as a vector of
          * reference energies paired with a map of ACT energy components. The integer
          * index points into the gromacs energy types.
+         * \param[in]  forceComp  The force computer utility
          * \param[out] forceMap   The forces
          * \param[out] enerMap    The potential energies
          * \param[out] enerAllMap The energy components for each calculation
          */
-        void forceEnergyMaps(std::vector<std::vector<std::pair<double, double> > >   *forceMap,
+        void forceEnergyMaps(const ForceComputer                                     *forceComp,
+                             std::vector<std::vector<std::pair<double, double> > >   *forceMap,
                              std::vector<std::pair<double, double> >                 *enerMap,
                              std::vector<std::pair<double, std::map<int, double> > > *enerAllMap);
         

@@ -36,6 +36,7 @@
 
 #include <vector>
 
+#include "act/forces/forcecomputer.h"
 #include "act/utility/regression.h"
 #include "mymol.h"
 #include "gromacs/mdtypes/commrec.h"
@@ -55,6 +56,7 @@ public:
     /*! \brief Compute the second derivative matrix of the potential energy
      *
      * \param[in]  mol       Molecule to get the hessian for
+     * \param[in]  forceComp Force Computer utility
      * \param[in]  crtmp     Temporary communication record for one core.
      *                       FIXME: another method without this
      * \param[in]  atomIndex Vector containing the indices of the real 
@@ -69,6 +71,7 @@ public:
      * \return the potential energy of the input structure
      */
     double computeHessian(      MyMol               *mol,
+                          const ForceComputer       *forceComp,
                           const t_commrec           *crtmp,
                           const std::vector<int>    &atomIndex,
                                 MatrixWrapper       *hessian,
@@ -82,11 +85,13 @@ public:
      * hessian matrix to the debug file, if not nullptr.
      * 
      * \param[in] mol          The molecule to analyze
+     * \param[in]  forceComp Force Computer utility
      * \param[out] frequencies The normal mode frequencies (in cm^-1)
      * \param[out] intensities The normal mode intensities
      * \param[in] fp           File to write frequencies to, may be nullptr (default)
      */
     void nma(MyMol               *mol,
+             const ForceComputer *forceComp,
              std::vector<double> *frequencies,
              std::vector<double> *intensities,
              FILE                *fp = nullptr) const;
@@ -97,9 +102,11 @@ public:
      * mymol object.
      *
      * \param[in] mol  the molecule object (will be modified)
+     * \param[in]  forceComp Force Computer utility
      * \return immOK if everything went fine, an error otherwise.
      */
-    immStatus minimizeCoordinates(MyMol  *mol) const;
+    immStatus minimizeCoordinates(MyMol               *mol,
+                                  const ForceComputer *forceComp) const;
 
     /*! \brief
      * The routine will compute the RMSD between the minimized coordinates
