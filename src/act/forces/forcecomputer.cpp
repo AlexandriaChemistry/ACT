@@ -139,9 +139,9 @@ void ForceComputer::calcPolarizability(const Topology         *top,
                                        std::vector<gmx::RVec> *coordinates,
                                        QtypeProps             *qtp) const
 {
-    std::vector<gmx::RVec>            forces;
+    std::vector<gmx::RVec>            forces(coordinates->size());
     std::map<InteractionType, double> energies;
-    gmx::RVec  field = { 0 };
+    gmx::RVec  field = { 0, 0, 0 };
     
     computeOnce(top, coordinates, &forces, &energies, field);
     std::vector<double> q;
