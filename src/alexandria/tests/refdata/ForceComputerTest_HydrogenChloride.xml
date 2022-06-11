@@ -1,11 +1,20 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
+  <Real Name="BONDS_gmx">0.0014452799999988793</Real>
+  <Real Name="EPOT_gmx">0.0014452799999988793</Real>
   <Real Name="BONDS">0.0014452799999988793</Real>
+  <Real Name="EPOT">0.0014452799999988793</Real>
+  <Real Name="cl-1_gmx fX">0</Real>
+  <Real Name="cl-1_gmx fY">0</Real>
+  <Real Name="cl-1_gmx fZ">-28.905599999988791</Real>
+  <Real Name="h-2_gmx fX">0</Real>
+  <Real Name="h-2_gmx fY">0</Real>
+  <Real Name="h-2_gmx fZ">28.905599999988791</Real>
   <Real Name="cl-1 fX">0</Real>
   <Real Name="cl-1 fY">0</Real>
-  <Real Name="cl-1 fZ">28.905599999988791</Real>
+  <Real Name="cl-1 fZ">-28.905599999988791</Real>
   <Real Name="h-2 fX">0</Real>
   <Real Name="h-2 fY">0</Real>
-  <Real Name="h-2 fZ">-28.905599999988791</Real>
+  <Real Name="h-2 fZ">28.905599999988791</Real>
 </ReferenceData>

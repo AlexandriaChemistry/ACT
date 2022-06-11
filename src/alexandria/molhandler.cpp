@@ -48,7 +48,6 @@ namespace alexandria
 
 double MolHandler::computeHessian(      MyMol               *mol,
                                   const ForceComputer       *forceComp,
-                                  const t_commrec           *crtmp,
                                   const std::vector<int>    &atomIndex,
                                         MatrixWrapper       *hessian,
                                         std::vector<double> *forceZero) const
@@ -56,8 +55,7 @@ double MolHandler::computeHessian(      MyMol               *mol,
     std::vector<double> fneg;
     fneg.resize(DIM*atomIndex.size(), 0.0);
     
-    double shellForceRMS = 0;
-    (void) mol->calculateEnergy(crtmp, &shellForceRMS);
+    (void) mol->calculateEnergy(forceComp);
     double epot0  = mol->enerd_->term[F_EPOT];
 
     // Store central force vector
@@ -79,7 +77,7 @@ double MolHandler::computeHessian(      MyMol               *mol,
             for(int delta = 0; delta <= 1; delta++)
             {
                 mol->state_->x[atomI][atomXYZ] = xyzRef + (2*delta-1)*stepSize;
-                (void) mol->calculateEnergy(crtmp, &shellForceRMS);
+                (void) mol->calculateEnergy(forceComp);
                 if (delta == 0)
                 {
                     for(size_t aj = 0; aj < atomIndex.size(); aj++)
@@ -112,7 +110,8 @@ double MolHandler::computeHessian(      MyMol               *mol,
             }
         }
     }
-    (void) mol->calculateEnergy(crtmp, &shellForceRMS);
+    (void) mol->calculateEnergy(forceComp);
+
     return epot0;
 }
 
@@ -122,12 +121,6 @@ void MolHandler::nma(MyMol               *mol,
                      std::vector<double> *intensities,
                      FILE                *fp) const
 {
-
-    // Init single use commrec
-    t_commrec *crtmp = init_commrec();
-    crtmp->nnodes = 1;
-    crtmp->nodeid = 0;
-
     // Get the indices of the real atoms of the molecule (not shells and such)
     auto atoms = mol->atoms();
     std::vector<int> atomIndex;
@@ -143,11 +136,8 @@ void MolHandler::nma(MyMol               *mol,
     const int matrixSide = DIM*atomIndex.size();
     MatrixWrapper       hessian(matrixSide, matrixSide);
     std::vector<double> f0;
-    computeHessian(mol, forceComp, crtmp, atomIndex, &hessian, &f0);
+    computeHessian(mol, forceComp, atomIndex, &hessian, &f0);
     hessian.averageTriangle();
-
-    // Dispose single use commrec
-    done_commrec(crtmp);
 
     // divide elements hessian[i][j] by sqrt(mass[i])*sqrt(mass[j])
     double massFac;
@@ -280,12 +270,6 @@ void MolHandler::nma(MyMol               *mol,
 immStatus MolHandler::minimizeCoordinates(MyMol               *mol,
                                           const ForceComputer *forceComp) const
 {
-    mol->updateMDAtoms();
-    // We need to use a single core system for minimizing shells
-    t_commrec *crtmp = init_commrec();
-    crtmp->nnodes = 1;
-    crtmp->nodeid = 0;
-
     // TODO: check if this is really necessary
     mol->restoreCoordinates(coordSet::Minimized);  // Is minimized defined??? I guess it makes sense: if not defined, nothing changes
     immStatus imm          = immStatus::OK;
@@ -312,7 +296,7 @@ immStatus MolHandler::minimizeCoordinates(MyMol               *mol,
     // Now start the minimization loop.
     do
     {
-        double newEpot = computeHessian(mol, forceComp, crtmp, theAtoms, &Hessian, &f0);
+        double newEpot = computeHessian(mol, forceComp, theAtoms, &Hessian, &f0);
         if (firstStep)
         {
             // Store energy
@@ -354,9 +338,7 @@ immStatus MolHandler::minimizeCoordinates(MyMol               *mol,
         }
                 
         // One more energy and force calculation with the new coordinates
-        double shellForceRMS = 0;
-        imm = mol->calculateEnergy(crtmp, &shellForceRMS);
-        
+        (void) mol->calculateEnergy(forceComp);
         double msAtomForce  = 0;
         for(size_t kk = 0; kk < theAtoms.size(); kk++)
         {
@@ -375,10 +357,8 @@ immStatus MolHandler::minimizeCoordinates(MyMol               *mol,
     }
     while (!converged && myIter < maxIter);
     // Re-compute the energy one last time.
-    double shellForceRMS = 0;
-    (void) mol->calculateEnergy(crtmp, &shellForceRMS);
+    (void) mol->calculateEnergy(forceComp);
     mol->backupCoordinates(coordSet::Minimized);
-    done_commrec(crtmp);
     return imm;
 }
 

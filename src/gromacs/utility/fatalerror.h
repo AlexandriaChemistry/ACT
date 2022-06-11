@@ -76,6 +76,10 @@ extern gmx_bool gmx_debug_at;
  */
 void gmx_init_debug(int dbglevel, const char *dbgfile);
 
+/*! \brief Stop debugging again
+ */
+void gmx_stop_debug();
+
 /** Returns TRUE when the program was started in debug mode */
 gmx_bool bDebugMode();
 

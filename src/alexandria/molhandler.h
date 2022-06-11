@@ -72,7 +72,6 @@ public:
      */
     double computeHessian(      MyMol               *mol,
                           const ForceComputer       *forceComp,
-                          const t_commrec           *crtmp,
                           const std::vector<int>    &atomIndex,
                                 MatrixWrapper       *hessian,
                                 std::vector<double> *forceZero) const;
@@ -84,11 +83,11 @@ public:
      * Also prints eigenvalues and eigenvectors of the mass-weighted 
      * hessian matrix to the debug file, if not nullptr.
      * 
-     * \param[in] mol          The molecule to analyze
-     * \param[in]  forceComp Force Computer utility
-     * \param[out] frequencies The normal mode frequencies (in cm^-1)
-     * \param[out] intensities The normal mode intensities
-     * \param[in] fp           File to write frequencies to, may be nullptr (default)
+     * \param[in]  mol          The molecule to analyze
+     * \param[in]  forceComp    Force Computer utility
+     * \param[out] frequencies  The normal mode frequencies (in cm^-1)
+     * \param[out] intensities  The normal mode intensities
+     * \param[in]  fp           File to write frequencies to, may be nullptr (default)
      */
     void nma(MyMol               *mol,
              const ForceComputer *forceComp,
@@ -101,8 +100,8 @@ public:
      * relaxing the shells. The minimized coordinates will be stored in the 
      * mymol object.
      *
-     * \param[in] mol  the molecule object (will be modified)
-     * \param[in]  forceComp Force Computer utility
+     * \param[in] mol       The molecule object (will be modified)
+     * \param[in] forceComp Force Computer utility
      * \return immOK if everything went fine, an error otherwise.
      */
     immStatus minimizeCoordinates(MyMol               *mol,

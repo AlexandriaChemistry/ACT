@@ -293,14 +293,14 @@ PolarDevComputer::PolarDevComputer(    FILE  *logfile,
     convert_ = convertFromGromacs(1.0, mpo_unit2(MolPropObservable::POLARIZABILITY));
 }
 
-void PolarDevComputer::calcDeviation(gmx_unused const ForceComputer       *forceComputer,
+void PolarDevComputer::calcDeviation(const ForceComputer                  *forceComputer,
                                      MyMol                                *mymol,
                                      std::map<eRMS, FittingTarget>        *targets,
                                      gmx_unused Poldata                   *poldata,
                                      gmx_unused const std::vector<double> &param,
                                      gmx_unused const CommunicationRecord *commrec)
 {
-    mymol->CalcPolarizability(1);
+    mymol->CalcPolarizability(forceComputer);
     auto aelec = mymol->qTypeProps(qType::Elec)->polarizabilityTensor();
     auto acalc = mymol->qTypeProps(qType::Calc)->polarizabilityTensor();
     double diff2 = 0;

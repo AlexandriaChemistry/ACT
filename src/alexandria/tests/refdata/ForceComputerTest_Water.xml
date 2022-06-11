@@ -1,15 +1,28 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
+  <Real Name="BONDS_gmx">0.0026570465668220209</Real>
+  <Real Name="ANGLES_gmx">0.55728331281907129</Real>
+  <Real Name="EPOT_gmx">0.55994035938589326</Real>
   <Real Name="BONDS">0.0026570465668220209</Real>
   <Real Name="ANGLES">0.55728331281907129</Real>
+  <Real Name="EPOT">0.55994035938589326</Real>
+  <Real Name="o3-1_gmx fX">0</Real>
+  <Real Name="o3-1_gmx fY">0</Real>
+  <Real Name="o3-1_gmx fZ">-251.16496956578715</Real>
+  <Real Name="h-2_gmx fX">0</Real>
+  <Real Name="h-2_gmx fY">140.65432822664141</Real>
+  <Real Name="h-2_gmx fZ">125.58248478289357</Real>
+  <Real Name="h-3_gmx fX">0</Real>
+  <Real Name="h-3_gmx fY">-140.65432822664141</Real>
+  <Real Name="h-3_gmx fZ">125.58248478289357</Real>
   <Real Name="o3-1 fX">0</Real>
-  <Real Name="o3-1 fY">112.60492334251931</Real>
-  <Real Name="o3-1 fZ">-190.01534547874996</Real>
+  <Real Name="o3-1 fY">0</Real>
+  <Real Name="o3-1 fZ">-251.16496956578715</Real>
   <Real Name="h-2 fX">0</Real>
-  <Real Name="h-2 fY">-140.65432822664141</Real>
-  <Real Name="h-2 fZ">-125.58248478289357</Real>
+  <Real Name="h-2 fY">140.65432822664141</Real>
+  <Real Name="h-2 fZ">125.58248478289357</Real>
   <Real Name="h-3 fX">0</Real>
-  <Real Name="h-3 fY">28.049404884122101</Real>
-  <Real Name="h-3 fZ">315.59783026164354</Real>
+  <Real Name="h-3 fY">-140.65432822664141</Real>
+  <Real Name="h-3 fZ">125.58248478289357</Real>
 </ReferenceData>

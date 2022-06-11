@@ -2948,7 +2948,7 @@
     <parameterlist identifier="o2_b=c1_b=o2_b">
       <parameter type="a" unit="" value="0.5" uncertainty="0." minimum="0.495" maximum="0.505051" ntrain="1" mutability="Fixed" nonnegative="yes"/>
       <parameter type="klin" unit="kJ/mol/nm2" value="220066" uncertainty="0" minimum="16000" maximum="250000" ntrain="1" mutability="Bounded" nonnegative="yes"/>
-      <parameter type="kublin" unit="kJ/mol/nm2" value="164800" uncertainty="0" minimum="14000" maximum="375000" ntrain="1" mutability="Bounded" nonnegative="no"/>
+      <parameter type="kublin" unit="kJ/mol/nm2" value="0" uncertainty="0" minimum="0" maximum="375000" ntrain="1" mutability="Bounded" nonnegative="no"/>
       <parameter type="r13lin" unit="pm" value="232.2" uncertainty="0" minimum="186.24" maximum="291" ntrain="1" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="o3_b~c1_b#n1_b">

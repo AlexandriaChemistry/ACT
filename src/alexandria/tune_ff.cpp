@@ -714,7 +714,6 @@ int tune_ff(int argc, char *argv[])
         "can be generated using the [TT]molselect[tt] script."
     };
 
-    real                efield              = 1;
     bool                bcompress           = false;
     bool                bOptimize           = true;
     bool                bSensitivity        = true;
@@ -729,8 +728,6 @@ int tune_ff(int argc, char *argv[])
         t_pargs                     pa[]         = {
             { "-compress", FALSE, etBOOL, {&bcompress},
               "Compress output XML file" },
-            { "-efield",  FALSE, etREAL, {&efield},
-              "The magnitude of the external electric field to calculate polarizability tensor." },
             { "-optimize",     FALSE, etBOOL, {&bOptimize},
               "Do parameter optimization when true, or a single calculation otherwise." },
             { "-sensitivity",  FALSE, etBOOL, {&bSensitivity},
@@ -888,7 +885,7 @@ int tune_ff(int argc, char *argv[])
             MolGen *tmpMg = opt.mg();
             printer.print(opt.logFile(), &(tmpMg->mymols()),
                           opt.sii()->poldata(), tmpMg->mdlog(),
-                          oenv, opt.commRec(), efield, filenms);
+                          oenv, opt.commRec(), filenms);
             print_memory_usage(debug);
         }
         else if (!bMinimum)

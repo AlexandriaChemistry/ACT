@@ -535,9 +535,15 @@ void MyMol::forceEnergyMaps(const ForceComputer                                 
                 j += 1;
             }
         }
-        real shellForceRMS;
-        calculateEnergy(crtmp, &shellForceRMS);
-    
+        if (forceComp)
+        {
+            (void) calculateEnergy(forceComp);
+        }
+        else
+        {
+            real shellForceRMS;
+            calculateEnergyOld(crtmp, &shellForceRMS);
+        }
         if (ei.hasProperty(MolPropObservable::DELTAE0))
         {
             auto eprops = ei.propertyConst(MolPropObservable::DELTAE0);
@@ -1582,7 +1588,7 @@ static void reset_f_e(int                      natoms,
     }
 }
 
-void MyMol::calculateEnergy(ForceComputer *forceComputer)
+double MyMol::calculateEnergy(const ForceComputer *forceComputer)
 {
     std::vector<gmx::RVec> forces;
     std::vector<gmx::RVec> myx;
@@ -1590,17 +1596,30 @@ void MyMol::calculateEnergy(ForceComputer *forceComputer)
     for (int i = 0; i < natom; i++)
     {
         myx.push_back(state_->x[i]);
+        forces.push_back({0, 0, 0});
     }
-    forceComputer->compute(topology_, &myx, &forces, &energies_);
+    // Set force and energy to zero (old style)
+    reset_f_e(mtop_->natoms, &f_, enerd_);
+    
+    auto rmsf = forceComputer->compute(topology_, &myx, &forces, &energies_);
     for (int i = 0; i < natom; i++)
     {
         copy_rvec(myx[i], state_->x[i]);
         copy_rvec(forces[i], f_[i]);
     }
+    for (const auto &ee : energies_)
+    {
+        int ftype = forceComputer->ftype(ee.first);
+        enerd_->term[ftype] = ee.second;
+    }
+    enerd_->term[F_ATOMIZATION] = 0; //atomizationEnergy();
+    enerd_->term[F_EPOT]       += enerd_->term[F_ATOMIZATION];
+    
+    return rmsf;
 }
 
-immStatus MyMol::calculateEnergy(const t_commrec *crtmp,
-                                 real            *shellForceRMS)
+immStatus MyMol::calculateEnergyOld(const t_commrec *crtmp,
+                                    real            *shellForceRMS)
 {
     auto          imm         = immStatus::OK;
     unsigned long force_flags = ~0;
@@ -1608,8 +1627,14 @@ immStatus MyMol::calculateEnergy(const t_commrec *crtmp,
     rvec          mu_tot      = { 0, 0, 0 };
     tensor        force_vir   = { { 0 } };
     auto          mdatoms     = MDatoms_->get()->mdatoms();
-    
-    // Recreate v-sites
+    updateMDAtoms();
+
+    // (Re)create v-sites if needed
+    if (!vsite_)
+    {
+        vsite_  = new std::unique_ptr<gmx_vsite_t>(new gmx_vsite_t());
+        *vsite_ = initVsite(*mtop_, crtmp);
+    }
     constructVsitesGlobal(*mtop_, state_->x);
     
     // Set force and energy to zero
@@ -1671,28 +1696,9 @@ immStatus MyMol::calculateEnergy(const t_commrec *crtmp,
                  force_flags);
         *shellForceRMS = 0;
     }
-    enerd_->term[F_ATOMIZATION] = atomizationEnergy();
-    enerd_->term[F_EPOT]       += atomizationEnergy();
-    enerd_->term[F_ETOT]        = enerd_->term[F_EPOT];
+    enerd_->term[F_ATOMIZATION] = 0;
+    enerd_->term[F_EPOT]       += enerd_->term[F_ATOMIZATION];
 
-    return imm;
-}
-
-immStatus MyMol::computeForces(double *rmsf)
-{
-    updateMDAtoms();
-    t_commrec *crtmp = init_commrec();
-    crtmp->nnodes = 1;
-    crtmp->nodeid = 0;
-    if (!vsite_)
-    {
-        vsite_  = new std::unique_ptr<gmx_vsite_t>(new gmx_vsite_t());
-        *vsite_ = initVsite(*mtop_, crtmp);
-    }
-    // TODO check if this is really necessary
-    // restoreCoordinates();
-    immStatus imm = calculateEnergy(crtmp, rmsf);
-    done_commrec(crtmp);
     return imm;
 }
 
@@ -1715,7 +1721,8 @@ void MyMol::symmetrizeCharges(const Poldata  *pd,
     }
 }
 
-immStatus MyMol::GenerateAcmCharges(const Poldata *pd)
+immStatus MyMol::GenerateAcmCharges(const Poldata       *pd,
+                                    const ForceComputer *forceComp)
 {
     if (!fraghandler_)
     {
@@ -1739,12 +1746,7 @@ immStatus MyMol::GenerateAcmCharges(const Poldata *pd)
                                                        state_->x, pd, 
                                                        atoms()))
         {
-            double rmsf;
-            auto imm = computeForces(&rmsf);
-            if (imm != immStatus::OK)
-            {
-                return imm;
-            }
+            (void) calculateEnergy(forceComp);
             EemRms = 0;
             std::vector<double> qnew;
             fraghandler_->fetchCharges(&qnew);
@@ -1780,6 +1782,7 @@ immStatus MyMol::GenerateAcmCharges(const Poldata *pd)
 }
 
 immStatus MyMol::GenerateCharges(const Poldata             *pd,
+                                 const ForceComputer       *forceComp,
                                  const gmx::MDLogger       &mdlog,
                                  const CommunicationRecord *cr,
                                  ChargeGenerationAlgorithm  algorithm,
@@ -1842,12 +1845,7 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
             topology_->setAtoms(myatoms);
             // If we have shells, we still have to minimize them,
             // but we may want to know the energies anyway.
-            double rmsf;
-            auto imm = computeForces(&rmsf);
-            if (imm != immStatus::OK)
-            {
-                return imm;
-            }
+            (void) calculateEnergy(forceComp);
             if (nullptr != shellfc_)
             {
                 auto qcalc = qTypeProps(qType::Calc);
@@ -1930,12 +1928,7 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
                 }
                 // Copy charges to topology
                 topology_->setAtoms(myatoms);
-                double rmsf;
-                auto imm = computeForces(&rmsf);
-                if (imm != immStatus::OK)
-                {
-                    return imm;
-                }
+                (void) calculateEnergy(forceComp);
                 if (nullptr != shellfc_)
                 {
                     qcalc->setX(state_->x);
@@ -1965,7 +1958,7 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
     case ChargeGenerationAlgorithm::EEM:
     case ChargeGenerationAlgorithm::SQE:
         {
-            imm = GenerateAcmCharges(pd);
+            imm = GenerateAcmCharges(pd, forceComp);
             // Copy charges to topology
             topology_->setAtoms(atoms());
         }
@@ -2034,58 +2027,15 @@ void MyMol::restoreCoordinates(coordSet cs)
     }
 }
 
-immStatus MyMol::CalcPolarizability(double efield)
+void MyMol::CalcPolarizability(const ForceComputer *forceComp)
 {
-    std::vector<double> field;
-    immStatus           imm = immStatus::OK;
-    double              rmsf;
-    QtypeProps          qtp(qType::Calc);
-
-    backupCoordinates(coordSet::Original);
-    field.resize(DIM, 0);
-    myforce_->setField(field);
-    imm = computeForces(&rmsf);
-    if (immStatus::OK == imm)
+    std::vector<gmx::RVec> coordinates(mtop_->natoms);
+    for(int i = 0; i < mtop_->natoms; i++)
     {
-        qtp.setQ(atoms());
-        qtp.setX(state_->x);
-        qtp.calcMoments();
-        auto mpo = MolPropObservable::DIPOLE;
-        if (!qtp.hasMultipole(mpo))
-        {
-            GMX_THROW(gmx::InternalError("No dipole to compute."));
-        }
-        auto mu_ref = qtp.getMultipole(mpo);
-        // Convert from e nm2/V to cubic nm
-        double enm2_V = E_CHARGE*1e6*1e-18/(4*M_PI*EPSILON0_SI)*1e21;
-        tensor alpha;
-        for (auto m = 0; imm == immStatus::OK && m < DIM; m++)
-        {
-            field[m] = efield;
-            myforce_->setField(field);
-            imm = computeForces(&rmsf);
-            qtp.setX(state_->x);
-            field[m] = 0;
-            myforce_->setField(field);
-            if (imm == immStatus::OK)
-            {
-                qtp.calcMoments();
-                auto qmu = qtp.getMultipole(mpo);
-                for (auto n = 0; n < DIM; n++)
-                {
-                    alpha[n][m] = enm2_V*((qmu[n]-mu_ref[n])/efield);
-                }
-            }
-        }
-        if (immStatus::OK == imm)
-        {
-            auto qcalc = qTypeProps(qType::Calc);
-            qcalc->setPolarizabilityTensor(alpha);
-        }
+        copy_rvec(state_->x[i], coordinates[i]);
     }
-    restoreCoordinates(coordSet::Original);
-    imm = computeForces(&rmsf);
-    return imm;
+    forceComp->calcPolarizability(topology_, &coordinates,
+                                  qTypeProps(qType::Calc));
 }
 
 void MyMol::PrintConformation(const char *fn)
@@ -2118,6 +2068,7 @@ static void add_tensor(std::vector<std::string> *commercials,
 void MyMol::PrintTopology(const char                *fn,
                           bool                       bVerbose,
                           const Poldata             *pd,
+                          const ForceComputer       *forceComp,
                           const CommunicationRecord *cr,
                           const std::string         &method,
                           const std::string         &basis,
@@ -2194,49 +2145,41 @@ void MyMol::PrintTopology(const char                *fn,
         }
     }
 
-    double efield = 0.1;
     if (nullptr != cr)
     {
-        auto imm = CalcPolarizability(efield);
-        if (imm == immStatus::OK)
+        CalcPolarizability(forceComp);
+        auto qcalc = qTypeProps(qType::Calc);
+        auto acalc = qcalc->polarizabilityTensor();
+        std::vector<double> ac = { acalc[XX][XX], acalc[XX][YY], acalc[XX][ZZ],
+                                   acalc[YY][YY], acalc[YY][ZZ], acalc[ZZ][ZZ] };
+        auto unit = mpo_unit2(MolPropObservable::POLARIZABILITY);
+        add_tensor(&commercials, "Alexandria Polarizability components (A^3)", unit, ac);
+        
+        snprintf(buf, sizeof(buf), "Alexandria Isotropic Polarizability: %.2f (A^3)\n",
+                 qcalc->isotropicPolarizability());
+        commercials.push_back(buf);
+        
+        snprintf(buf, sizeof(buf), "Alexandria Anisotropic Polarizability: %.2f (A^3)\n",
+                 qcalc->anisotropicPolarizability());
+        commercials.push_back(buf);
+        
+        T = -1;
+        auto gp = qmProperty(MolPropObservable::POLARIZABILITY,
+                             T, JobType::OPT);
+        if (gp)
         {
-            auto qcalc = qTypeProps(qType::Calc);
-            auto acalc = qcalc->polarizabilityTensor();
-            std::vector<double> ac = { acalc[XX][XX], acalc[XX][YY], acalc[XX][ZZ],
-                acalc[YY][YY], acalc[YY][ZZ], acalc[ZZ][ZZ] };
-            auto unit = mpo_unit2(MolPropObservable::POLARIZABILITY);
-            add_tensor(&commercials, "Alexandria Polarizability components (A^3)", unit, ac);
-            
-            snprintf(buf, sizeof(buf), "Alexandria Isotropic Polarizability: %.2f (A^3)\n",
-                     qcalc->isotropicPolarizability());
+            auto qelec = qTypeProps(qType::Elec);
+            auto aelec = qelec->polarizabilityTensor();
+            std::vector<double> ae = { aelec[XX][XX], aelec[XX][YY], aelec[XX][ZZ],
+                                       aelec[YY][YY], aelec[YY][ZZ], aelec[ZZ][ZZ] };
+            snprintf(buf, sizeof(buf), "%s + Polarizability components (A^3)", mylot.c_str());
+            add_tensor(&commercials, buf, unit, ae);
+            snprintf(buf, sizeof(buf), "%s Isotropic Polarizability: %.2f (A^3)\n",
+                     mylot.c_str(), qelec->isotropicPolarizability());
             commercials.push_back(buf);
-            
-            snprintf(buf, sizeof(buf), "Alexandria Anisotropic Polarizability: %.2f (A^3)\n",
-                     qcalc->anisotropicPolarizability());
+            snprintf(buf, sizeof(buf), "%s Anisotropic Polarizability: %.2f (A^3)\n",
+                     mylot.c_str(), qelec->anisotropicPolarizability());
             commercials.push_back(buf);
-
-            T = -1;
-            auto gp = qmProperty(MolPropObservable::POLARIZABILITY,
-                                 T, JobType::OPT);
-            if (gp)
-            {
-                auto qelec = qTypeProps(qType::Elec);
-                auto aelec = qelec->polarizabilityTensor();
-                std::vector<double> ae = { aelec[XX][XX], aelec[XX][YY], aelec[XX][ZZ],
-                    aelec[YY][YY], aelec[YY][ZZ], aelec[ZZ][ZZ] };
-                snprintf(buf, sizeof(buf), "%s + Polarizability components (A^3)", mylot.c_str());
-                add_tensor(&commercials, buf, unit, ae);
-                snprintf(buf, sizeof(buf), "%s Isotropic Polarizability: %.2f (A^3)\n",
-                         mylot.c_str(), qelec->isotropicPolarizability());
-                commercials.push_back(buf);
-                snprintf(buf, sizeof(buf), "%s Anisotropic Polarizability: %.2f (A^3)\n",
-                         mylot.c_str(), qelec->anisotropicPolarizability());
-                commercials.push_back(buf);
-            }
-        }
-        else
-        {
-            commercials.push_back("Could not minimize shells. Cannot compute interactive polarizability.");
         }
     }
 
@@ -2663,20 +2606,18 @@ const QtypeProps *MyMol::qTypeProps(qType qt) const
     return nullptr;
 }
 
-void MyMol::plotEspCorrelation(const char                *espcorr,
-                               const gmx_output_env_t    *oenv)
+void MyMol::plotEspCorrelation(const char             *espcorr,
+                               const gmx_output_env_t *oenv,
+                               const ForceComputer    *forceComp)
 {
     if (espcorr && oenv)
     {
         auto qgr   = qTypeProps(qType::Calc)->qgenResp();
         qgr->updateAtomCharges(atoms());
         qgr->updateAtomCoords(state_->x);
-        double rmsf = 0;
-        if (immStatus::OK == computeForces(&rmsf))
-        {
-            qgr->calcPot(1.0);
-            qgr->plotLsq(oenv, espcorr);
-        }
+        (void) calculateEnergy(forceComp);
+        qgr->calcPot(1.0);
+        qgr->plotLsq(oenv, espcorr);
     }
 }
 

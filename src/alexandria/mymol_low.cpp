@@ -386,8 +386,8 @@ void nonbondedFromPdToMtop(gmx_mtop_t    *mtop,
                             mtop->ffparams.iparams[idx].lj.c12 = c12;
                             if (nullptr != fr)
                             {
-                                C6(fr->nbfp, ntype, i, j)  = c6*6.0;
-                                C12(fr->nbfp, ntype, i, j) = c12*12.0;
+                                C6(fr->nbfp, ntype, i, j)  = c6;
+                                C12(fr->nbfp, ntype, i, j) = c12;
                             }
                         }
                         break;

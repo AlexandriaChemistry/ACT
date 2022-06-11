@@ -327,6 +327,9 @@ enum class coordSet {
          */
         void restoreCoordinates(coordSet cs);
 
+        //! \return the GROMACS energy data
+        const gmx_enerdata_t *enerdata() const { return enerd_; }
+        
         /*! Return an energy component
          * \param[in]  mpo  The particular term that is requested
          * \param[out] ener The value found
@@ -456,15 +459,15 @@ enum class coordSet {
          *  electric field. The result is stored in 
          *  mymol->qTypeProps(qType::Calc).
          *
-         * \param[in]  efield   Strenght of the external electric field
-         * \returns the result of the calculation, if fine it is immOK
+         * \param[in] forceComp The force computer
          */
-        immStatus CalcPolarizability(double efield);
-        
+        void CalcPolarizability(const ForceComputer *forceComp);
+
         /*! \brief
          * Generate atomic partial charges
          *
          * \param[in] pd        Data structure containing atomic properties
+         * \param[in] forceComp Force computer utility
          * \param[in] fplog     Logger
          * \param[in] cr        Communication parameters
          * \param[in] algorithm The algorithm for determining charges,
@@ -472,6 +475,7 @@ enum class coordSet {
          * \param[in] qcustom   Custom (user-provided) charges
          */
         immStatus GenerateCharges(const Poldata             *pd,
+                                  const ForceComputer       *forceComp,
                                   const gmx::MDLogger       &fplog,
                                   const CommunicationRecord *cr,
                                   ChargeGenerationAlgorithm  algorithm,
@@ -482,7 +486,8 @@ enum class coordSet {
          *
          * \param[in] pd      Data structure containing atomic properties
          */
-        immStatus GenerateAcmCharges(const Poldata *pd);
+        immStatus GenerateAcmCharges(const Poldata       *pd,
+                                     const ForceComputer *forceComp);
                                      
         /*! \brief Implement charge symmetrization
          *
@@ -507,11 +512,13 @@ enum class coordSet {
          * Will compute the electrostatic potential around the compound
          * and make a correlation plot between the QM potential and the
          * Alexandria potential.
-         * \param[in] espcorr File name to plot to
-         * \param[in] oenv    Gromacs output structure
+         * \param[in] espcorr   File name to plot to
+         * \param[in] oenv      Gromacs output structure
+         * \param[in] forceComp Utility to compute forces
          */
-        void plotEspCorrelation(const char                *espcorr,
-                                const gmx_output_env_t    *oenv);
+        void plotEspCorrelation(const char             *espcorr,
+                                const gmx_output_env_t *oenv,
+                                const ForceComputer    *forceComp);
 
         /*! \brief
          * Collect the properties from QM (Optimized structure) or
@@ -529,6 +536,7 @@ enum class coordSet {
          * \param[in] fn        File name
          * \param[in] bVerbose  Verbose
          * \param[in] pd        Data structure containing atomic properties
+         * \param[in] forceComp The force computer utility
          * \param[in] cr        Gromacs communication record
          * \param[in] method    QC method
          * \param[in] basis     QC basis set
@@ -537,6 +545,7 @@ enum class coordSet {
         void PrintTopology(const char                *fn,
                            bool                       bVerbose,
                            const Poldata             *pd,
+                           const ForceComputer       *forceComp,
                            const CommunicationRecord *cr,
                            const std::string         &method,
                            const std::string         &basis,
@@ -547,26 +556,21 @@ enum class coordSet {
         
         /*! \brief Calculate the forces and energies
          * For a polarizable model the shell positions are minimized.
+         * This code is maintained only for comparing ACT native energies and forces
+         * to the gromacs code. Do not use inproduction code.
          * \param[in]  crtmp         Temporary communication record with one core only.
          * \param[out] shellForceRMS Root mean square force on the shells
          * \return immStatus::OK if everything worked fine, error code otherwise.
          */
-        immStatus calculateEnergy(const t_commrec *crtmp,
-                                  real            *shellForceRMS);
+        immStatus calculateEnergyOld(const t_commrec *crtmp,
+                                     real            *shellForceRMS);
 
         /*! \brief Calculate the forces and energies
          * For a polarizable model the shell positions are minimized.
-         * \param[in] forceComputer The code to run the calculations
+         * \param[in] forceComputer The code to run the calculations.
+         * \return The root mean square force on the shells or zero if none
          */
-        void calculateEnergy(ForceComputer   *forceComputer);
-
-        /*! \brief
-         * Relax the shells (if any) or compute the forces in the molecule.
-         *
-         * \param[out] rmsf                Root mean square force on the shells
-         * \return immOK if everything went fine, an error otherwise.
-         */
-        immStatus computeForces(double *rmsf);
+        double calculateEnergy(const ForceComputer *forceComputer);
 
         /*! \brief
          * Return the optimized geometry of the molecule from the data file.

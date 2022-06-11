@@ -102,7 +102,6 @@ double ACMFitnessComputer::calcDeviation(std::vector<double> *params,
     }
 
     // Loop over molecules
-    int nmolCalculated = 0;
     for (MyMol &mymol : molgen_->mymols())
     {
         if (ims != mymol.datasetType())
@@ -112,7 +111,6 @@ double ACMFitnessComputer::calcDeviation(std::vector<double> *params,
         if ((mymol.support() == eSupport::Local) ||
             (calcDev == CalcDev::Master && mymol.support() == eSupport::Remote))
         {
-            nmolCalculated += 1;
             for(auto &io : molgen_->iopt())
             {
                 if (io.second)
@@ -128,7 +126,7 @@ double ACMFitnessComputer::calcDeviation(std::vector<double> *params,
                 mymol.zetaToAtoms(sii_->poldata(), mymol.atoms());
             }
             // Run charge generation including shell minimization
-            immStatus imm = mymol.GenerateAcmCharges(sii_->poldata());
+            immStatus imm = mymol.GenerateAcmCharges(sii_->poldata(), forceComp_);
 
             // Check whether we have to disable this compound
             if (immStatus::OK != imm && removeMol_)

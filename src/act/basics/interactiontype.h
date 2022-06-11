@@ -55,6 +55,8 @@ enum class InteractionType
     COULOMB,
     //! Polarization interaction between an atom (core) or a virtual site and its directly connected shell.
     POLARIZATION,
+    //! Potential energy, sum over the above
+    EPOT,
     //! Constrained bonds, that are not allowed to fluctuate.
     CONSTR,
     //! Virtual interaction sites along the bond between two atoms.

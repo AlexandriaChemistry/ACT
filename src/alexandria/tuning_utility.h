@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2021
+ * Copyright (C) 2014-2022
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -89,12 +89,12 @@ using qtStats = std::map<qType, gmx_stats>;
         bool calcFrequencies_     = true;
 
         //! \brief Analyse polarizability, add to statistics and print
-        void analysePolarisability(FILE              *fp,
-                                   alexandria::MyMol *mol,
-                                   qtStats           *lsq_isoPol,
-                                   qtStats           *lsq_anisoPol,
-                                   qtStats           *lsq_alpha,
-                                   real               efield);
+        void analysePolarisability(FILE                *fp,
+                                   alexandria::MyMol   *mol,
+                                   const ForceComputer *forceComp,
+                                   qtStats             *lsq_isoPol,
+                                   qtStats             *lsq_anisoPol,
+                                   qtStats             *lsq_alpha);
 
         //! \brief And the atoms.
         void printAtoms(FILE              *fp,
@@ -102,6 +102,7 @@ using qtStats = std::map<qType, gmx_stats>;
 
         //! \brief do part of the printing, add to statistics
         void printEnergyForces(std::vector<std::string> *tcout,
+                               const Poldata            *pd,
                                const ForceComputer      *forceComp,
                                alexandria::MyMol        *mol,
                                const std::vector<int>   &ePlot,
@@ -127,7 +128,6 @@ using qtStats = std::map<qType, gmx_stats>;
                    const gmx::MDLogger            &fplog,
                    const gmx_output_env_t         *oenv,
                    const CommunicationRecord      *cr,
-                   real                            efield,
                    const std::vector<t_filenm>    &filenm);
     };
     

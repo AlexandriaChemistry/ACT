@@ -329,6 +329,7 @@ int gentop(int argc, char *argv[])
     imm = mymol.GenerateTopology(stdout, &pd,
                                  bAllowMissing ? missingParameters::Ignore : missingParameters::Error);
 
+    auto forceComp = new ForceComputer(&pd);
     gmx_omp_nthreads_init(mdlog, cr.commrec(), 1, 1, 1, 0, false, false);
     if (immStatus::OK == imm)
     {
@@ -352,12 +353,12 @@ int gentop(int argc, char *argv[])
         {
             alg = nameToChargeGenerationAlgorithm(qqm);
         }
-        imm    = mymol.GenerateCharges(&pd, mdlog, &cr, alg, myq);
+        imm    = mymol.GenerateCharges(&pd, forceComp, mdlog, &cr, alg, myq);
     }
     /* Generate output file for debugging if requested */
     if (immStatus::OK == imm)
     {
-        mymol.plotEspCorrelation(opt2fn_null("-plot_esp", NFILE, fnm), oenv);
+        mymol.plotEspCorrelation(opt2fn_null("-plot_esp", NFILE, fnm), oenv, forceComp);
     }
 
     if (immStatus::OK == imm)
@@ -387,6 +388,7 @@ int gentop(int argc, char *argv[])
             mymol.PrintTopology(bITP ? ftp2fn(efITP, NFILE, fnm) : ftp2fn(efTOP, NFILE, fnm),
                                 bVerbose,
                                 &pd,
+                                forceComp,
                                 &cr,
                                 method,
                                 basis,

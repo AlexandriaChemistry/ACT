@@ -2,15 +2,11 @@
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
   <Real Name="Bond before">0.0014452799999988793</Real>
-  <Real Name="Atomization before">348.125</Real>
-  <Real Name="Potential before">348.12644527999998</Real>
-  <Real Name="Total Energy before">348.12644527999998</Real>
+  <Real Name="Potential before">0.0014452799999988793</Real>
   <Real Name="Coordinate RMSD before minimizing">0</Real>
   <Real Name="Coordinate RMSD after minimizing">6.8783744593833024e-05</Real>
   <Real Name="Bond after">1.0020628908086343e-27</Real>
-  <Real Name="Atomization after">348.125</Real>
-  <Real Name="Potential after">348.125</Real>
-  <Real Name="Total Energy after">348.125</Real>
+  <Real Name="Potential after">1.0020628908086343e-27</Real>
   <Sequence Name="Frequencies">
     <Int Name="Length">1</Int>
     <Real>2883.1610174040479</Real>
@@ -19,7 +15,7 @@
     <Int Name="Length">0</Int>
   </Sequence>
   <Real Name="Zero point energy (kJ/mol)">172.45132542971504</Real>
-  <Real Name="Delta H form (kJ/mol)">554.22019854954647</Real>
+  <Real Name="Delta H form (kJ/mol)">206.09519854954652</Real>
   <Real Name="Standard entropy - Translation  (J/mol K)">153.70652124646321</Real>
   <Real Name="Heat capacity cV - Translation (J/mol K)">12.471693218203427</Real>
   <Real Name="Internal energy  - Translation (kJ/mol)">3.7184353330073514</Real>

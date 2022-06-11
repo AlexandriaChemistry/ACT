@@ -140,17 +140,18 @@ protected:
         auto           pnc      = gmx::PhysicalNodeCommunicator(MPI_COMM_WORLD, 0);
         gmx::MDLogger  mdlog {};
         auto alg = ChargeGenerationAlgorithm::NONE;
+        auto forceComp = new ForceComputer(pd);
         std::vector<double> qcustom;
         bool qSymm = false;
         mp_.symmetrizeCharges(pd, qSymm, nullptr);
-        mp_.GenerateCharges(pd, mdlog, &cr, alg, qcustom);
+        mp_.GenerateCharges(pd, forceComp, mdlog, &cr, alg, qcustom);
         
-        real shellForceRMS;
-        (void) mp_.calculateEnergy(cr.commrec(), &shellForceRMS);
+        // real shellForceRMS;
+        // (void) mp_.calculateEnergy(cr.commrec(), &shellForceRMS);
+        mp_.calculateEnergy(forceComp);
         add_energies(&checker_, mp_.energyTerms(), "before");
 
         MolHandler mh;
-        auto forceComp = new ForceComputer(pd);
         
         std::map<coordSet, std::vector<gmx::RVec> > xrmsd; 
         double rmsd = mh.coordinateRmsd(&mp_, &xrmsd);
@@ -195,7 +196,7 @@ protected:
 
 // We cannot run these tests in debug mode because the LAPACK library
 // performs a 1/0 calculation to test the exception handling.
-#if CMAKE_BUILD_TYPE == CMAKE_BUILD_TYPE_RELEASE
+//#if CMAKE_BUILD_TYPE != CMAKE_BUILD_TYPE_DEBUG
 TEST_F (MolHandlerTest, CarbonDioxide)
 {
     test("carbon-dioxide.sdf", "ACS-g");
@@ -222,7 +223,7 @@ TEST_F (MolHandlerTest, Uracil)
 {
     test("uracil.sdf", "ACS-g");
 }
-#endif
+//#endif
 
 } // namespace
 

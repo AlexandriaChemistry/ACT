@@ -33,6 +33,7 @@
 #ifndef ACT_TOPOLOGY_H
 #define ACT_TOPOLOGY_H
 
+#include <cstdio>
 #include <map>
 #include <vector>
 
@@ -160,7 +161,7 @@ class AtomPair : public TopologyEntry
     //! Constructor setting the ids of the atoms
     AtomPair(int ai, int aj) { Set(ai, aj); }
 
-     //! Sets the ids of the atoms
+    //! Sets the ids of the atoms
     void Set(int ai, int aj)
     {
         addAtom(ai);
@@ -192,6 +193,12 @@ class AtomPair : public TopologyEntry
      * \return true if they are the same
      */
     bool operator==(const AtomPair &other) const;
+    
+    /*! \brief Return whether one AtomPair is smaller than the other
+     * \param[in] other The other AtomPair
+     * \return true if this pair is smaller
+     */
+    bool operator<(const AtomPair &other) const;
 };
 
 /*! \brief
@@ -537,6 +544,11 @@ private:
 
     //! \return the whole map of parameters, const style
     const std::map<InteractionType, std::vector<TopologyEntry *> > &entries() const { return entries_; }
+    
+    /*! \brief Print structure to a file
+     * \param[in] fp The file pointer
+     */
+    void dump(FILE *fp) const;
     
  };
 

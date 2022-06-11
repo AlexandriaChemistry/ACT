@@ -1,16 +1,40 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <Real Name="BONDS">0.097871664799296501</Real>
-  <Real Name="VANDERWAALS">4829.1964772415586</Real>
-  <Real Name="COULOMB">-115.94133374369297</Real>
-  <Real Name="POLARIZATION">4.5296000025943968e-07</Real>
+  <Real Name="MORSE_gmx">-799.9021283352007</Real>
+  <Real Name="BHAM_gmx">4829.1964772415586</Real>
+  <Real Name="COUL_SR_gmx">-0.36199491309059795</Real>
+  <Real Name="POLARIZATION_gmx">0.00054708412841748019</Real>
+  <Real Name="EPOT_gmx">4028.9329010773954</Real>
+  <Real Name="MORSE">-799.9021283352007</Real>
+  <Real Name="BHAM">4829.1964772415586</Real>
+  <Real Name="COUL_SR">-0.3619949129847555</Real>
+  <Real Name="POLARIZATION">0.00054708402244562509</Real>
+  <Real Name="EPOT">4028.9329010773954</Real>
+  <Real Name="o2-1_gmx fX">0</Real>
+  <Real Name="o2-1_gmx fY">0</Real>
+  <Real Name="o2-1_gmx fZ">125852.29338586751</Real>
+  <Real Name="o2_s-2_gmx fX">0</Real>
+  <Real Name="o2_s-2_gmx fY">0</Real>
+  <Real Name="o2_s-2_gmx fZ">2.7954494008497477e-07</Real>
+  <Real Name="c1-3_gmx fX">0</Real>
+  <Real Name="c1-3_gmx fY">0</Real>
+  <Real Name="c1-3_gmx fZ">0</Real>
+  <Real Name="c1_s-4_gmx fX">0</Real>
+  <Real Name="c1_s-4_gmx fY">0</Real>
+  <Real Name="c1_s-4_gmx fZ">0</Real>
+  <Real Name="o2-5_gmx fX">0</Real>
+  <Real Name="o2-5_gmx fY">0</Real>
+  <Real Name="o2-5_gmx fZ">-125852.29338586751</Real>
+  <Real Name="o2_s-6_gmx fX">0</Real>
+  <Real Name="o2_s-6_gmx fY">0</Real>
+  <Real Name="o2_s-6_gmx fZ">-2.7954471271129933e-07</Real>
   <Real Name="o2-1 fX">0</Real>
   <Real Name="o2-1 fY">0</Real>
-  <Real Name="o2-1 fZ">125794.62625860109</Real>
+  <Real Name="o2-1 fZ">125852.29338671024</Real>
   <Real Name="o2_s-2 fX">0</Real>
   <Real Name="o2_s-2 fY">0</Real>
-  <Real Name="o2_s-2 fZ">0.00011175307376140586</Real>
+  <Real Name="o2_s-2 fZ">-5.6410025095487981e-07</Real>
   <Real Name="c1-3 fX">0</Real>
   <Real Name="c1-3 fY">0</Real>
   <Real Name="c1-3 fZ">0</Real>
@@ -19,8 +43,8 @@
   <Real Name="c1_s-4 fZ">0</Real>
   <Real Name="o2-5 fX">0</Real>
   <Real Name="o2-5 fY">0</Real>
-  <Real Name="o2-5 fZ">-125794.62625860107</Real>
+  <Real Name="o2-5 fZ">-125852.29338671024</Real>
   <Real Name="o2_s-6 fX">0</Real>
   <Real Name="o2_s-6 fY">0</Real>
-  <Real Name="o2_s-6 fZ">-0.00011175307376140586</Real>
+  <Real Name="o2_s-6 fZ">5.6410002358120437e-07</Real>
 </ReferenceData>

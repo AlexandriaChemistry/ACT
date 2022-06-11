@@ -153,6 +153,13 @@ bool AtomPair::operator==(const AtomPair &other) const
             (aJ() == other.aI() && aI() == other.aJ()));
 }
 
+bool AtomPair::operator<(const AtomPair &other) const
+{
+    return (aI() < other.aI() ||
+            (aI() == other.aI() && aJ() < other.aJ()) ||
+            (aI() == other.aJ() && aJ() < other.aI()));
+}
+
 bool Bond::operator==(const Bond &other) const
 {
     return ((aI() == other.aI() && aJ() == other.aJ()) ||
@@ -497,32 +504,47 @@ void  Topology::addShellPairs()
                 continue;
             }
             auto &ffpl = entries_.find(itype)->second;
-            std::vector<AtomPair *> newf;
-            for(const auto &p_i : pol)
+            std::set<AtomPair> newf;
+            for(auto &f : ffpl)
             {
-                auto core_i  = p_i->atomIndices()[0];
-                auto shell_i = p_i->atomIndices()[1];
+                auto indices = f->atomIndices();
+                auto core_i = indices[0];
+                auto core_j = indices[1];
+                int shell_i = -1;
+                int shell_j = -1;
+                for(const auto &p_i : pol)
+                {
+                    if (core_i == p_i->atomIndices()[0])
+                    {
+                        shell_i = p_i->atomIndices()[1];
+                        break;
+                    }
+                }
                 for(const auto &p_j : pol)
                 {
-                    auto core_j  = p_j->atomIndices()[0];
-                    auto shell_j = p_j->atomIndices()[1];
-                    for(auto &f : ffpl)
+                    if (core_j == p_j->atomIndices()[0])
                     {
-                        auto indices = f->atomIndices();
-                        if (!(core_i == indices[0] && core_j == indices[1]) && 
-                            !(core_i == indices[1] && core_j == indices[0]))
-                        {
-                            // This pair of cores interacts, now add the shells.
-                            newf.push_back(new AtomPair(core_i, shell_j));
-                            newf.push_back(new AtomPair(core_j, shell_i));
-                            newf.push_back(new AtomPair(shell_i, shell_j));
-                        }
+                        shell_j = p_j->atomIndices()[1];
+                        break;
                     }
+                }
+                if (shell_i != -1)
+                {
+                    newf.emplace(AtomPair(shell_i, core_j));
+                }
+                if (shell_j != -1)
+                {
+                    newf.emplace(AtomPair(core_i, shell_j));
+                }
+                if (shell_i != -1 && shell_j != -1)
+                {
+                    newf.emplace(AtomPair(shell_i, shell_j));
                 }
             }
             for(const auto &n : newf)
             {
-                ffpl.push_back(std::move(n));
+                auto ap = new AtomPair(n);
+                ffpl.push_back(std::move(ap));
             }
         }
     }   
@@ -689,6 +711,26 @@ t_excls *Topology::gromacsExclusions()
         gmx[i].nr = exclusions_[i].size();
     }
     return gmx;
+}
+
+void Topology::dump(FILE *fp) const
+{
+    if (nullptr == fp)
+    {
+        return;
+    }
+    for(auto &myEntry: entries_)
+    {
+        fprintf(fp, "%s\n", interactionTypeToString(myEntry.first).c_str());
+        for (auto &tt : myEntry.second)
+        {
+            for(auto &aa : tt->atomIndices())
+            {
+                fprintf(fp, " %d", aa+1);
+            }
+            fprintf(fp, "\n");
+        }
+    }
 }
 
 } // namespace alexandria
