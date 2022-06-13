@@ -34,7 +34,7 @@ for target in Target:
     # number of core on the machine. 
     options           = { "-max_generations": 20, 
                           "-pop_size":        16,
-                          "-chi2":            EpotFile,
+                          "-chi2":            Chi2File,
                           "-conv":            ConvFile }
     # After the last step of the optimizations, where we tune the
     # frequencies, we will also print some files for analysis.
