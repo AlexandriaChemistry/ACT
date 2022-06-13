@@ -38,6 +38,7 @@
 #include <random>
 #include <string>
 
+#include "act/poldata/forcefieldparametername.h"
 #include "act/molprop/molprop_util.h"
 #include "act/molprop/multipole_names.h"
 #include "act/poldata/forcefieldparameter.h"
@@ -612,6 +613,18 @@ static void fill_atom(t_atom *atom,
     atom->resind        = resind;
 }
 
+static void fillParams(const ForceFieldParameterList &fs,
+                       const Identifier              &btype,
+                       int                            nr,
+                       const char                    *param_names[],
+                       std::vector<double>           *param)
+{
+    for (int i = 0; i < nr; i++)
+    { 
+        param->push_back(fs.findParameterTypeConst(btype, param_names[i]).internalValue());
+    }
+}
+
 static void setTopologyIdentifiers(Topology      *top,
                                    const Poldata *pd,
                                    const t_atoms *myatoms)
@@ -647,7 +660,49 @@ static void setTopologyIdentifiers(Topology      *top,
                     }
                 }
             }
-            topentry->setId(Identifier(btype, topentry->bondOrders(), fs.canSwap()));   
+            topentry->setId({ Identifier(btype, topentry->bondOrders(), fs.canSwap()) });
+            const auto &topIDs = topentry->ids();
+
+            std::vector<double> param;
+            switch (fs.fType())
+            {
+            case F_LJ:
+                fillParams(fs, topIDs[0], ljNR, lj_name, &param);
+                break;
+            case F_BHAM:
+                fillParams(fs, topIDs[0], wbhNR, wbh_name, &param);
+                break;
+            case F_COUL_SR:
+                fillParams(fs, topIDs[0], coulNR, coul_name, &param);
+                break;
+            case F_MORSE:
+                fillParams(fs, topIDs[0], morseNR, morse_name, &param);
+                break;
+            case F_BONDS:
+                fillParams(fs, topIDs[0], bondNR, bond_name, &param);
+                break;
+            case F_ANGLES:
+                fillParams(fs, topIDs[0], angleNR, angle_name, &param);
+                break;
+            case F_UREY_BRADLEY:
+                fillParams(fs, topIDs[0], ubNR, ub_name, &param);
+                break;
+            case F_LINEAR_ANGLES:
+                fillParams(fs, topIDs[0], linangNR, linang_name, &param);
+                break;
+            case F_IDIHS:
+                fillParams(fs, topIDs[0], idihNR, idih_name, &param);
+                break;
+            case F_FOURDIHS:
+                fillParams(fs, topIDs[0], fdihNR, fdih_name, &param);
+                break;
+            case F_POLARIZATION:
+                fillParams(fs, topIDs[0], polNR, pol_name, &param);
+                break;
+            default:
+                GMX_THROW(gmx::InternalError(gmx::formatString("Missing case %s", interaction_function[fs.fType()].name).c_str()));
+            }
+            topentry->setParams(param);
         }
     }
 }
@@ -967,7 +1022,8 @@ static void TopologyToMtop(Topology       *top,
         {
             int gromacsType = -1;
             // First check whether we have this gromacsType already
-            auto &bondId = topentry->id();
+            // TODO check multiple
+            auto &bondId = topentry->ids()[0];
             GMX_RELEASE_ASSERT(!bondId.id().empty(), "Empty bondId");
             if (idToGromacsType.end() != idToGromacsType.find(bondId))
             {
@@ -979,7 +1035,7 @@ static void TopologyToMtop(Topology       *top,
                 t_iparams ip = { { 0 } };
                 mtop->ffparams.iparams.push_back(ip);
                 gromacsType = mtop->ffparams.numTypes()-1;
-                UpdateIdefEntry(fs, topentry->id(), gromacsType, mtop, nullptr);
+                UpdateIdefEntry(fs, topentry->ids()[0], gromacsType, mtop, nullptr);
                 
             }
             if (gromacsType >= ffparamsSize)
@@ -2516,7 +2572,8 @@ void MyMol::UpdateIdef(const Poldata   *pd,
             auto entry = topology_->entry(iType);
             for (size_t i = 0; i < entry.size(); i++)
             {
-                auto &bondId = entry[i]->id();
+                // TODO check multiple
+                auto &bondId = entry[i]->ids()[0];
                 auto  gromacsType     = entry[i]->gromacsType();
                 if (gromacsType < 0 || gromacsType >= mtop_->ffparams.numTypes())
                 {

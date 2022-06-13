@@ -38,6 +38,7 @@
 #include <vector>
 
 #include "act/basics/identifier.h"
+#include "act/poldata/poldata.h"
 #include "act/poldata/forcefieldparameterlist.h"
 #include "act/utility/communicationrecord.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"
@@ -53,13 +54,15 @@ class TopologyEntry
 {
 private:
     //! Atom indices
-    std::vector<int>    indices_;
+    std::vector<int>                            indices_;
+    //! Parameters belonging to this interaction
+    std::vector<double>                         params_;
     //! The bond orders
-    std::vector<double> bondOrder_;
+    std::vector<double>                         bondOrder_;
     //! The force field identifier belonging to this entry
-    Identifier          id_;
+    std::vector<Identifier>                     ids_;
     //! The gromacs topology index (in idef.ffparams)
-    int                 gromacsType_ = -1;
+    int                                         gromacsType_ = -1;
 public:
     //! Default empty constructor
     TopologyEntry() {}
@@ -112,13 +115,20 @@ public:
     //! Set the gromacs type
     void setGromacsType(int gromacsType) { gromacsType_ = gromacsType; }
 
-    /*! \brief Set the identifier
-     * \param[in] id The identifier
+    /*! \brief Set the identifier(s)
+     * \param[in] id    The identifier(s)
      */
-    void setId(const Identifier &id) { id_ = id; }
+    void setId(const std::vector<Identifier> &id) { ids_ = id; }
+    
+    /*! \brief Set the parameters
+     * \param[in] param The parameter(s)
+     */
+    void setParams(const std::vector<double> &param) { params_ = param; }
 
-    //! Return my identifier
-    const Identifier &id() const { return id_; }
+    const std::vector<double> &params() const { return params_; }
+    
+    //! Return my identifier(s)
+    const std::vector<Identifier> &ids() const { return ids_; }
 
     /*! \brief Check whether this entry has nAtom atoms
      * \param[in] nAtom the expected number of atoms
@@ -424,11 +434,11 @@ class Topology
 {
 private:
     //! Map from InteractionType to topology element pointers
-    std::map<InteractionType, std::vector<TopologyEntry *> > entries_;
+    std::map<InteractionType, std::vector<TopologyEntry *> >  entries_;
     //! Non bonded exclusions, array is length of number of atoms
-    std::vector<std::vector<int> > exclusions_;
+    std::vector<std::vector<int> >                            exclusions_;
     //! List of atoms
-    std::vector<ActAtom>           atoms_;
+    std::vector<ActAtom>                                      atoms_;
  public:
     Topology() {}
 

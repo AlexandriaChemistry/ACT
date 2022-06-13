@@ -262,7 +262,7 @@ void Proper::renumberAtoms(const std::vector<int> &renumber)
 
 Topology::Topology(const std::vector<Bond> &bonds)
 {
-    entries_.insert(std::pair<InteractionType, std::vector<TopologyEntry *> > (InteractionType::BONDS, {}));
+    entries_.insert({ InteractionType::BONDS, {} });
     for(auto &b : bonds)
     {
         entries_[InteractionType::BONDS].push_back(new Bond(b));
@@ -367,8 +367,8 @@ void Topology::makeAngles(const gmx::HostVector<gmx::RVec> &x,
                           double                            LinearAngleMin)
 {
     auto bonds = entry(InteractionType::BONDS);
-    entries_.insert(std::pair<InteractionType, std::vector<TopologyEntry *>>(InteractionType::ANGLES, {}));
-    entries_.insert(std::pair<InteractionType, std::vector<TopologyEntry *>>(InteractionType::LINEAR_ANGLES, {}));
+    entries_.insert({ InteractionType::ANGLES, {} });
+    entries_.insert({ InteractionType::LINEAR_ANGLES, {} });
     auto &angles    = entries_.find(InteractionType::ANGLES)->second;
     auto &linangles = entries_.find(InteractionType::LINEAR_ANGLES)->second;
     for(size_t i = 0; i < bonds.size(); i++)
@@ -443,7 +443,7 @@ void Topology::makeImpropers(const gmx::HostVector<gmx::RVec> &x,
         mybonds[b->atomIndex(0)].insert(b->atomIndex(1));
         mybonds[b->atomIndex(1)].insert(b->atomIndex(0));
     }
-    entries_.insert(std::pair<InteractionType, std::vector<TopologyEntry *>>(InteractionType::IMPROPER_DIHEDRALS, {}));
+    entries_.insert({ InteractionType::IMPROPER_DIHEDRALS, {} });
     auto &impropers = entries_.find(InteractionType::IMPROPER_DIHEDRALS)->second;
     // Now loop over the atoms
     const rvec *myx = as_rvec_array(x.data());
@@ -552,7 +552,7 @@ void  Topology::addShellPairs()
 
 void Topology::makePropers()
 {
-    entries_.insert(std::pair<InteractionType, std::vector<TopologyEntry *>>(InteractionType::PROPER_DIHEDRALS, {}));
+    entries_.insert({ InteractionType::PROPER_DIHEDRALS, {} });
     auto &propers = entries_.find(InteractionType::PROPER_DIHEDRALS)->second;
     auto &angles  = entries_.find(InteractionType::ANGLES)->second;
     for(size_t i = 0; i < angles.size(); i++)
@@ -628,7 +628,7 @@ void Topology::addEntry(InteractionType                     itype,
         GMX_THROW(gmx::InternalError(gmx::formatString("InteractionType %s already present",
                                      interactionTypeToString(itype).c_str()).c_str()));
     }
-    entries_.insert(std::pair<InteractionType, std::vector<TopologyEntry *>>(itype, entry));
+    entries_.insert({ itype, entry });
 }
 
 void Topology::generateExclusions(int nrexcl,

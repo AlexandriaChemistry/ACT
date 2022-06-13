@@ -314,7 +314,8 @@ void MolGen::checkDataSufficiency(FILE     *fp,
             {
                 if (optimize(btype))
                 {
-                    for(auto &ff : *(bonds->findParameters(topentry->id())))
+                    // TODO check the loop over multiple ids
+                    for(auto &ff : *(bonds->findParameters(topentry->ids()[0])))
                     {
                         if (ff.second.isMutable())
                         {
@@ -362,7 +363,8 @@ void MolGen::checkDataSufficiency(FILE     *fp,
                     auto angles = pd->findForces(atype);
                     for (const auto &topentry : top->entry(atype))
                     {
-                        for (auto &ff : *(angles->findParameters(topentry->id())))
+                        // TODO check multiple ids
+                        for (auto &ff : *(angles->findParameters(topentry->ids()[0])))
                         {
                             if (ff.second.isMutable())
                             {

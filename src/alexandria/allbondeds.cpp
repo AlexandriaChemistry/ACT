@@ -570,7 +570,7 @@ void AllBondeds::extractGeometries(FILE                       *fp,
             {
                 for (auto topentry : entry.second)
                 {
-                    addBonded(fp, entry.first, mmi, topentry->id(), topentry->atomIndices());
+                    addBonded(fp, entry.first, mmi, topentry->ids()[0], topentry->atomIndices());
                 }
             }
             mymols->push_back(mmi);

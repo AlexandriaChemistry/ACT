@@ -61,7 +61,7 @@ static void print_bondeds(FILE                               *out,
         {
             fprintf(out, "  %10g", 0.0);
         }
-        fprintf(out, "; %s\n", entry->id().id().c_str());
+        fprintf(out, "; %s\n", entry->ids()[0].id().c_str());
     }
     fprintf(out, "\n");
 }
