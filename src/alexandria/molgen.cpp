@@ -315,7 +315,7 @@ void MolGen::checkDataSufficiency(FILE     *fp,
                 if (optimize(btype))
                 {
                     // TODO check the loop over multiple ids
-                    for(auto &ff : *(bonds->findParameters(topentry->ids()[0])))
+                    for(auto &ff : *(bonds->findParameters(topentry->id())))
                     {
                         if (ff.second.isMutable())
                         {
@@ -364,7 +364,7 @@ void MolGen::checkDataSufficiency(FILE     *fp,
                     for (const auto &topentry : top->entry(atype))
                     {
                         // TODO check multiple ids
-                        for (auto &ff : *(angles->findParameters(topentry->ids()[0])))
+                        for (auto &ff : *(angles->findParameters(topentry->id())))
                         {
                             if (ff.second.isMutable())
                             {

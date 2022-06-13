@@ -60,7 +60,7 @@ private:
     //! The bond orders
     std::vector<double>                         bondOrder_;
     //! The force field identifier belonging to this entry
-    std::vector<Identifier>                     ids_;
+    Identifier                                  id_;
     //! The gromacs topology index (in idef.ffparams)
     int                                         gromacsType_ = -1;
 public:
@@ -118,7 +118,7 @@ public:
     /*! \brief Set the identifier(s)
      * \param[in] id    The identifier(s)
      */
-    void setId(const std::vector<Identifier> &id) { ids_ = id; }
+    void setId(const Identifier &id) { id_ = id; }
     
     /*! \brief Set the parameters
      * \param[in] param The parameter(s)
@@ -128,7 +128,7 @@ public:
     const std::vector<double> &params() const { return params_; }
     
     //! Return my identifier(s)
-    const std::vector<Identifier> &ids() const { return ids_; }
+    const Identifier &id() const { return id_; }
 
     /*! \brief Check whether this entry has nAtom atoms
      * \param[in] nAtom the expected number of atoms
