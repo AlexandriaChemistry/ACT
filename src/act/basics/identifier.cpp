@@ -230,12 +230,16 @@ CommunicationStatus Identifier::Receive(const CommunicationRecord *cr, int src)
 
 bool operator==(const Identifier &a, const Identifier &b)
 {
-    return (a.id() == b.id());
+    // TODO check implementation
+    return (a.id() == b.id() || 
+            (!a.swappedId().empty() && a.swappedId() == b.id()));
 }
 
 bool operator<(const Identifier &a, const Identifier &b)
 {
-    return (a.id() < b.id());
+    // TODO check implementation
+    return (a.id() < b.id() ||
+            (!a.swappedId().empty() && a.swappedId() < b.id()));
 }
 
 } // namespace alexandria

@@ -1170,11 +1170,11 @@ immStatus MyMol::GenerateTopology(FILE              *fp,
         // Generate mtop
         mtop_ = do_init_mtop(pd, molnameptr, atoms,
                              inputrec_, symtab_, nullptr);
-        // First create the identifiers for topology entries
-        setTopologyIdentifiers(topology_, pd, atoms);
-        // Now generate the mtop fields
         if (missing != missingParameters::Generate)
         {
+            // First create the identifiers for topology entries
+            setTopologyIdentifiers(topology_, pd, atoms);
+            // Now generate the mtop fields
             TopologyToMtop(topology_, pd, mtop_);
         }
         if (excls_)
