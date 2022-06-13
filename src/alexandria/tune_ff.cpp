@@ -292,6 +292,7 @@ void OptACM::initMaster()
     else
     {
         auto mut = new alexandria::MCMCMutator(logFile(), verbose_, flush_, seed, &bch_, fitComp_, sii_, bch_.evaluateTestset());
+        // TODO Only open these files when we are optimizing.
         mut->openParamConvFiles(oenv_);
         mut->openChi2ConvFile(oenv_);
         mutator = mut;

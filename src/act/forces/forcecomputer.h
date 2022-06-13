@@ -18,7 +18,10 @@ class ForceComputer
 private:
     //! Force field structure
     const Poldata *pd_;
-    
+    //! Convergence criterium for minimizing shells: root mean square force
+    double         rmsForce_;
+    //! Maximum number of iterations to spend on minimizing shells
+    int            maxiter_;
     /*! Do one actual computations.
      * Will do one force/energy computation.
      * \param[in]  pd          The force field structure
@@ -37,9 +40,13 @@ private:
                      
  public:
     /*! \brief Constructor
-     * \param[in] pd Pointer to force field structure
+     * \param[in] pd       Pointer to force field structure
+     * \param[in] rmsForce The root mean square force on shells
+     * \param[in] maxiter  The maximum number of iterations for shell minimization
      */
-    ForceComputer(const Poldata *pd) : pd_(pd) {}
+    ForceComputer(const Poldata *pd,
+                  double         rmsForce = 0.0001,
+                  int            maxiter  = 25) : pd_(pd), rmsForce_(rmsForce), maxiter_(maxiter) {}
     
     /*! Do complete energy/force computation.
      * If shells are present their positions will be minimized.

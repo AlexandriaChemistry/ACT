@@ -128,7 +128,8 @@ protected:
         // Needed for GenerateCharges
         CommunicationRecord cr;
         gmx::MDLogger  mdlog {};
-        auto fcomp = new ForceComputer(pd);
+        double rmsToler = 0.00001;
+        auto fcomp = new ForceComputer(pd, rmsToler, 25);
         auto alg = ChargeGenerationAlgorithm::NONE;
         std::vector<double> qcustom;
         bool qSymm = false;
@@ -179,22 +180,18 @@ protected:
         auto mpf = mp_.f();
         for(size_t i = 0; i < forces.size(); i++)
         {
+            bool shell = atoms->atom[i].ptype == eptShell;
             for(int m = 0; m < DIM; m++)
             {
-                auto label = gmx::formatString("%s-%zu_gmx f%s", 
-                                               *atoms->atomtype[i],
-                                               i+1, xyz[m]);
-                checker_.checkReal(mpf[i][m], label.c_str());
-            }
-        }
-        for(size_t i = 0; i < forces.size(); i++)
-        {
-            for(int m = 0; m < DIM; m++)
-            {
-                auto label = gmx::formatString("%s-%zu f%s", 
-                                               *atoms->atomtype[i],
-                                               i+1, xyz[m]);
-                checker_.checkReal(forces[i][m], label.c_str());
+                if (!shell)
+                {
+                    checker_.checkReal(mpf[i][m], gmx::formatString("%s-%zu_gmx f%s", 
+                                                                    *atoms->atomtype[i],
+                                                                    i+1, xyz[m]).c_str());
+                    checker_.checkReal(forces[i][m], gmx::formatString("%s-%zu_act f%s", 
+                                                                       *atoms->atomtype[i],
+                                                                       i+1, xyz[m]).c_str());
+                }
                 EXPECT_TRUE(std::abs(forces[i][m]-mpf[i][m]) < 1e-3);
             }
         }

@@ -41,7 +41,8 @@ double ForceComputer::compute(const Topology                    *top,
     std::vector<bool>   isShell;
     // One over force constant for this particle
     std::vector<double> fcShell_1;
-    auto ffpl = pd_->findForcesConst(itype);
+    auto ffpl   = pd_->findForcesConst(itype);
+    int  nshell = 0;
     for(auto &aa : top->atoms())
     {
         bool bIS = aa.pType() == eptShell;
@@ -55,19 +56,17 @@ double ForceComputer::compute(const Topology                    *top,
             {
                 fc_1 = 1.0/fc;
             }
+            nshell += 1;
         }
         fcShell_1.push_back(fc_1);
     }
-    double msForce  = dotProdRvec(isShell, *forces);
-    auto pols       = top->entry(itype);
-    // TODO pass the real tolerance
-    double toler    = 0.00000001;
-    // TODO pass the real maxiter
-    int    maxiter  = 25;
-    int    iter     = 1;
+    double msForceMax = (rmsForce_*rmsForce_)*nshell;
+    double msForce    = dotProdRvec(isShell, *forces);
+    auto pols         = top->entry(itype);
+    int    iter       = 1;
     // Golden ratio, may be used for overrelaxation
     // double gold     = 0.5*(1+std::sqrt(5.0));
-    while (msForce > toler && iter < maxiter)
+    while (msForce > msForceMax && iter < maxiter_)
     {
         // Loop over polarizabilities
         for(const auto &p : pols)
@@ -87,7 +86,7 @@ double ForceComputer::compute(const Topology                    *top,
         msForce  = dotProdRvec(isShell, *forces);
         iter    += 1;
     }
-    return std::sqrt(msForce);
+    return std::sqrt(msForce/nshell);
 }
 
 void ForceComputer::computeOnce(const Topology                    *top,
@@ -100,14 +99,9 @@ void ForceComputer::computeOnce(const Topology                    *top,
     energies->clear();
     // Clear forces
     auto atoms = top->atoms();
-    int i = 0;
     for(size_t ff = 0; ff < forces->size(); ++ff)
     {
-        for(int m = 0; m < DIM; m++)
-        {
-            (*forces)[ff][m] = field[m]*atoms[i].charge();
-        }
-        i += 1;
+        svmul(atoms[ff].charge(), field, (*forces)[ff]);
     }
     double epot = 0;
     for(const auto &entry : top->entries())
