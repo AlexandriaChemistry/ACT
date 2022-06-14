@@ -10,18 +10,11 @@ class Alg(Enum):
     HYBRID = 3
     
 class Target(Enum):
-<<<<<<< HEAD
     EEM    = 1
     Epot_only = 2
     Epot   = 3
     Force  = 4
     Freq   = 5
-=======
-    EEM   = 1
-    Epot  = 2
-    Force = 3
-    Freq  = 4
->>>>>>> 5714063f012999594c6f1949852dec3bc176b41e
 
 class ACT:
     '''Simple class to run Alexandria Chemistry Toolkit programs.'''
