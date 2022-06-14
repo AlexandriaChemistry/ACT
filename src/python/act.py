@@ -11,10 +11,10 @@ class Alg(Enum):
     
 class Target(Enum):
     EEM    = 1
-    Epot   = 2
-    Force  = 3
-    Freq   = 4
-    Epot_only = 5
+    Epot_only = 2
+    Epot   = 3
+    Force  = 4
+    Freq   = 5
 
 class ACT:
     '''Simple class to run Alexandria Chemistry Toolkit programs.'''
