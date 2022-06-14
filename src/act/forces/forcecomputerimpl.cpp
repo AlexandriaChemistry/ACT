@@ -276,7 +276,7 @@ static double computeMorse(const ForceFieldParameterList      &ffpl,
         auto cbomtemp   = De*omtemp;
         auto vbond      = D0+cbomtemp*omtemp;
         auto fbond      = -2.0*beta*temp*cbomtemp/dr;
-        ebond          += vbond-De;
+        ebond          += vbond;
 
         for (int m = 0; (m < DIM); m++)
         {

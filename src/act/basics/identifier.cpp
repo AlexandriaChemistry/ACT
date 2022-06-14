@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2020 
+ * Copyright (C) 2020-2022
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -106,7 +106,7 @@ void Identifier::orderAtoms()
 
 void Identifier::createSwapped(CanSwap canSwap)
 {
-    if (canSwap == CanSwap::Yes)
+    if (canSwap == CanSwap::Yes && atoms_.size() > 0)
     {
         swappedId_ = atoms_[atoms_.size()-1];
         for(size_t i = atoms_.size()-1; i > 0; i--)
@@ -231,15 +231,15 @@ CommunicationStatus Identifier::Receive(const CommunicationRecord *cr, int src)
 bool operator==(const Identifier &a, const Identifier &b)
 {
     // TODO check implementation
-    return (a.id() == b.id() || 
-            (!a.swappedId().empty() && a.swappedId() == b.id()));
+    return a.id() == b.id();
+    //|| (!a.swappedId().empty() && a.swappedId() == b.id()));
 }
 
 bool operator<(const Identifier &a, const Identifier &b)
 {
     // TODO check implementation
-    return (a.id() < b.id() ||
-            (!a.swappedId().empty() && a.swappedId() < b.id()));
+    return a.id() < b.id();
+    // || (!a.swappedId().empty() && a.swappedId() < b.id()));
 }
 
 } // namespace alexandria

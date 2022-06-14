@@ -36,6 +36,7 @@
 #include <set>
 #include <vector>
 
+#include "act/poldata/forcefieldparametername.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/fatalerror.h"
 
@@ -729,6 +730,71 @@ void Topology::dump(FILE *fp) const
                 fprintf(fp, " %d", aa+1);
             }
             fprintf(fp, "\n");
+        }
+    }
+}
+
+static void fillParams(const ForceFieldParameterList &fs,
+                       const Identifier              &btype,
+                       int                            nr,
+                       const char                    *param_names[],
+                       std::vector<double>           *param)
+{
+    for (int i = 0; i < nr; i++)
+    { 
+        param->push_back(fs.findParameterTypeConst(btype, param_names[i]).internalValue());
+    }
+}
+
+void Topology::fillParameters(const Poldata *pd)
+{
+    for(auto &entry : entries_)
+    {
+        auto fs = pd->findForcesConst(entry.first);
+        for(auto &topentry : entry.second)
+        {
+            const auto &topID = topentry->id();
+
+            std::vector<double> param;
+            switch (fs.fType())
+            {
+            case F_LJ:
+                fillParams(fs, topID, ljNR, lj_name, &param);
+                break;
+            case F_BHAM:
+                fillParams(fs, topID, wbhNR, wbh_name, &param);
+                break;
+            case F_COUL_SR:
+                fillParams(fs, topID, coulNR, coul_name, &param);
+                break;
+            case F_MORSE:
+                fillParams(fs, topID, morseNR, morse_name, &param);
+                break;
+            case F_BONDS:
+                fillParams(fs, topID, bondNR, bond_name, &param);
+                break;
+            case F_ANGLES:
+                fillParams(fs, topID, angleNR, angle_name, &param);
+                break;
+            case F_UREY_BRADLEY:
+                fillParams(fs, topID, ubNR, ub_name, &param);
+                break;
+            case F_LINEAR_ANGLES:
+                fillParams(fs, topID, linangNR, linang_name, &param);
+                break;
+            case F_IDIHS:
+                fillParams(fs, topID, idihNR, idih_name, &param);
+                break;
+            case F_FOURDIHS:
+                fillParams(fs, topID, fdihNR, fdih_name, &param);
+                break;
+            case F_POLARIZATION:
+                fillParams(fs, topID, polNR, pol_name, &param);
+                break;
+            default:
+                GMX_THROW(gmx::InternalError(gmx::formatString("Missing case %s", interaction_function[fs.fType()].name).c_str()));
+            }
+            topentry->setParams(param);
         }
     }
 }

@@ -38,7 +38,6 @@
 #include <random>
 #include <string>
 
-#include "act/poldata/forcefieldparametername.h"
 #include "act/molprop/molprop_util.h"
 #include "act/molprop/multipole_names.h"
 #include "act/poldata/forcefieldparameter.h"
@@ -613,21 +612,9 @@ static void fill_atom(t_atom *atom,
     atom->resind        = resind;
 }
 
-static void fillParams(const ForceFieldParameterList &fs,
-                       const Identifier              &btype,
-                       int                            nr,
-                       const char                    *param_names[],
-                       std::vector<double>           *param)
-{
-    for (int i = 0; i < nr; i++)
-    { 
-        param->push_back(fs.findParameterTypeConst(btype, param_names[i]).internalValue());
-    }
-}
-
-static void setTopologyIdentifiers(Topology      *top,
-                                   const Poldata *pd,
-                                   const t_atoms *myatoms)
+static void setTopologyIdentifiers(Topology          *top,
+                                   const Poldata     *pd,
+                                   const t_atoms     *myatoms)
 {
     auto entries = top->entries(); 
     for(auto &entry : *entries)
@@ -661,48 +648,6 @@ static void setTopologyIdentifiers(Topology      *top,
                 }
             }
             topentry->setId({ Identifier(btype, topentry->bondOrders(), fs.canSwap()) });
-            const auto &topID = topentry->id();
-
-            std::vector<double> param;
-            switch (fs.fType())
-            {
-            case F_LJ:
-                fillParams(fs, topID, ljNR, lj_name, &param);
-                break;
-            case F_BHAM:
-                fillParams(fs, topID, wbhNR, wbh_name, &param);
-                break;
-            case F_COUL_SR:
-                fillParams(fs, topID, coulNR, coul_name, &param);
-                break;
-            case F_MORSE:
-                fillParams(fs, topID, morseNR, morse_name, &param);
-                break;
-            case F_BONDS:
-                fillParams(fs, topID, bondNR, bond_name, &param);
-                break;
-            case F_ANGLES:
-                fillParams(fs, topID, angleNR, angle_name, &param);
-                break;
-            case F_UREY_BRADLEY:
-                fillParams(fs, topID, ubNR, ub_name, &param);
-                break;
-            case F_LINEAR_ANGLES:
-                fillParams(fs, topID, linangNR, linang_name, &param);
-                break;
-            case F_IDIHS:
-                fillParams(fs, topID, idihNR, idih_name, &param);
-                break;
-            case F_FOURDIHS:
-                fillParams(fs, topID, fdihNR, fdih_name, &param);
-                break;
-            case F_POLARIZATION:
-                fillParams(fs, topID, polNR, pol_name, &param);
-                break;
-            default:
-                GMX_THROW(gmx::InternalError(gmx::formatString("Missing case %s", interaction_function[fs.fType()].name).c_str()));
-            }
-            topentry->setParams(param);
         }
     }
 }
@@ -1170,10 +1115,12 @@ immStatus MyMol::GenerateTopology(FILE              *fp,
         // Generate mtop
         mtop_ = do_init_mtop(pd, molnameptr, atoms,
                              inputrec_, symtab_, nullptr);
+        // First create the identifiers for topology entries
+        setTopologyIdentifiers(topology_, pd, atoms);
         if (missing != missingParameters::Generate)
         {
-            // First create the identifiers for topology entries
-            setTopologyIdentifiers(topology_, pd, atoms);
+            // Fill the parameters
+            topology_->fillParameters(pd);
             // Now generate the mtop fields
             TopologyToMtop(topology_, pd, mtop_);
         }
@@ -2554,6 +2501,8 @@ void MyMol::UpdateIdef(const Poldata   *pd,
     {
         fprintf(debug, "UpdateIdef for %s\n", interactionTypeToString(iType).c_str());
     }
+    topology_->fillParameters(pd);
+    // The rest may not be needed anymore!
 
     if (iType == InteractionType::VDW)
     {

@@ -204,6 +204,7 @@ TEST_F (BondedTest, IfuncMorseAtBondLength)
     iparams.morse.b0A   = iparams.morse.b0B   = 1.0;
     iparams.morse.cbA   = iparams.morse.cbB   = 50;
     iparams.morse.betaA = iparams.morse.betaB = 20;
+    iparams.morse.D0A   = iparams.morse.D0B   = -50;
     testIfunc(F_MORSE, iatoms, &iparams, epbcNONE);
 }
 
@@ -214,6 +215,7 @@ TEST_F (BondedTest, IfuncMorseTooClose)
     iparams.morse.b0A   = iparams.morse.b0B   = 1.25;
     iparams.morse.cbA   = iparams.morse.cbB   = 50;
     iparams.morse.betaA = iparams.morse.betaB = 20;
+    iparams.morse.D0A   = iparams.morse.D0B   = -50;
     testIfunc(F_MORSE, iatoms, &iparams, epbcNONE);
 }
 
@@ -224,6 +226,7 @@ TEST_F (BondedTest, IfuncMorseTooFar)
     iparams.morse.b0A   = iparams.morse.b0B   = 0.8;
     iparams.morse.cbA   = iparams.morse.cbB   = 50;
     iparams.morse.betaA = iparams.morse.betaB = 20;
+    iparams.morse.D0A   = iparams.morse.D0B   = -50;
     testIfunc(F_MORSE, iatoms, &iparams, epbcNONE);
 }
 

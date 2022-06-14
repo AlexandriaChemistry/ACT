@@ -89,13 +89,23 @@ def read_xvg(filename):
                         if debug:
                             print("Found data but no dataset yet")
                         dataset.append(xvgDataSet())
-                    dataset[len(dataset)-1].add_point(float(w[0]), float(w[1]))
+                    try:
+                        w0 = float(w[0])
+                        w1 = float(w[1])
+                        dataset[len(dataset)-1].add_point(w0, w1)
+                    except:
+                        if debug:
+                            print("Could not read line '%s'" % line)
                 elif numwords > 2:
                     if len(dataset) < numwords-1:
                         for i in range(len(dataset), numwords-1):
                             dataset.append(xvgDataSet())
                     for i in range(numwords-1):
-                        dataset[i].add_point(float(w[0]), float(w[i+1]))
+                        try:
+                            dataset[i].add_point(float(w[0]), float(w[i+1]))
+                        except:
+                            if debug:
+                                print("Could not read line '%s'" % line)
     return labels, legends, dataset
     
 def parseArguments():

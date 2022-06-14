@@ -559,7 +559,13 @@ private:
      * \param[in] fp The file pointer
      */
     void dump(FILE *fp) const;
-    
+
+    /*! \brief Fill in the parameters in the topology entries.
+     * Must be called repeatedly during optimizations of energy.
+     * \param[in] pd The force field structure
+     */
+    void fillParameters(const Poldata *pd);
+                                       
  };
 
 } // namespace alexandria

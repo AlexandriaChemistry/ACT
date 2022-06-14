@@ -172,7 +172,7 @@ real morse_bonds(int nbonds,
             /* bonds are constrained. This may _not_ include bond constraints
                if they are lambda dependent.
                The bond energy should still be included in the total! */
-            vtot       -= cb;
+            vtot       += D0;
             *dvdlambda += cbB-cbA;
             continue;
         }
@@ -181,7 +181,7 @@ real morse_bonds(int nbonds,
         cbomtemp  = cb*omtemp;         /*   1          */
         vbond     = D0+cbomtemp*omtemp;   /*   2          */
         fbond     = -two*be*temp*cbomtemp*gmx::invsqrt(dr2); /*   9          */
-        vtot     += vbond-cb; /*   2          */
+        vtot     += vbond; /*   2          */
 
         *dvdlambda += (cbB - cbA) * omtemp * omtemp - (2-2*omtemp)*omtemp * cb * ((b0B-b0A)*be - (beB-beA)*(dr-b0)); /* 15 */
 

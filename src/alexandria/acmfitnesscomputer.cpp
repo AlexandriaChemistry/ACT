@@ -9,7 +9,8 @@
 #include "acmfitnesscomputer.h"
 
 #include "act/basics/dataset.h"
-#include "act/ga//Genome.h"
+#include "act/forces/combinationrules.h"
+#include "act/ga/Genome.h"
 
 namespace alexandria
 {
@@ -100,6 +101,8 @@ double ACMFitnessComputer::calcDeviation(std::vector<double> *params,
         bdc_->calcDeviation(forceComp_, nullptr, targets, sii_->poldata(),
                             *myparams, nullptr);
     }
+
+    generateDependentParameter(sii_->poldata());
 
     // Loop over molecules
     for (MyMol &mymol : molgen_->mymols())
