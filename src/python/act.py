@@ -10,11 +10,18 @@ class Alg(Enum):
     HYBRID = 3
     
 class Target(Enum):
+<<<<<<< HEAD
     EEM    = 1
     Epot_only = 2
     Epot   = 3
     Force  = 4
     Freq   = 5
+=======
+    EEM   = 1
+    Epot  = 2
+    Force = 3
+    Freq  = 4
+>>>>>>> 5714063f012999594c6f1949852dec3bc176b41e
 
 class ACT:
     '''Simple class to run Alexandria Chemistry Toolkit programs.'''
@@ -124,18 +131,15 @@ class ACT:
                        "-fit":             "'alpha zeta charge eta chi delta_eta delta_chi'" }
         elif target == Target.Epot:
             myopts = { "-fc_epot":  "1",
-                       "-fc_force": "0.1",
                        "-fit":      fit_params }
         elif target == Target.Force:
-            myopts = { "-fc_force": "0.1",
-                       "-fit":      "'De D0 beta kt klin kimp'" }
+            myopts = { "-fc_epot":  "1",
+                       "-fc_force": "0.1",
+                       "-fit":      fit_params }
         elif target == Target.Freq:
             myopts = { "-fc_epot":  "1",
                        "-fc_force": "0.1",
                        "-fc_freq":  "0.1",
-                       "-fit":      fit_params }
-        elif target == Target.Epot_only:
-            myopts = { "-fc_epot":  "1",
                        "-fit":      fit_params }
 
 

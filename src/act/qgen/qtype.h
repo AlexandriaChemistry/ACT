@@ -146,6 +146,12 @@ class QtypeProps
      */
     void setX(const gmx::HostVector<gmx::RVec> &x);
     
+    /*! \brief Set coordinates.
+     *
+     * \param[in] x The coordinates
+     */
+    void setX(const std::vector<gmx::RVec> &x);
+    
     //! Return the coordinates
     const gmx::HostVector<gmx::RVec> &x() const { return x_; }
     

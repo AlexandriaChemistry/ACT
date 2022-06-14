@@ -52,6 +52,7 @@ std::map<InteractionType, NameDescr> eitNames = {
     { InteractionType::PROPER_DIHEDRALS,   { "PROPER_DIHEDRALS", "proper dihedrals" } },
     { InteractionType::IMPROPER_DIHEDRALS, { "IMPROPER_DIHEDRALS", "improper dihedrals" } },
     { InteractionType::VDW,                { "VANDERWAALS", "Van der Waals interactions" } },
+    { InteractionType::EPOT,               { "EPOT", "Potential energy" } },
     { InteractionType::POLARIZATION,       { "POLARIZATION", "polarization" } },
     { InteractionType::CONSTR,             { "CONSTR", "constraints" } },
     { InteractionType::VSITE2,             { "VSITE2", "virtual sites with two constructing atoms" } },
@@ -122,6 +123,7 @@ int interactionTypeToNatoms(InteractionType iType)
     case InteractionType::BONDCORRECTIONS:
         return 2;
     case InteractionType::CHARGE:
+    case InteractionType::EPOT:
         return 0;
     }
     return 0;

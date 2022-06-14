@@ -115,9 +115,9 @@ static real *mk_nbfp(const gmx_ffparams_t *idef, gmx_bool bBHAM)
                 BHAMA(nbfp, atnr, i, j) = idef->iparams[k].bham.a;
                 BHAMB(nbfp, atnr, i, j) = idef->iparams[k].bham.b;
                 /* nbfp now includes the 6.0 derivative prefactor */
-		/* the 6.0 derivative prefactor is turned off for the modified BHAM implemented in nb_generic */
+                /* the 6.0 derivative prefactor is turned off for the modified BHAM implemented in nb_generic */
                 /* BHAMC(nbfp, atnr, i, j) = idef->iparams[k].bham.c*6.0; */
-		BHAMC(nbfp, atnr, i, j) = idef->iparams[k].bham.c;
+                BHAMC(nbfp, atnr, i, j) = idef->iparams[k].bham.c;
             }
         }
     }
@@ -128,9 +128,8 @@ static real *mk_nbfp(const gmx_ffparams_t *idef, gmx_bool bBHAM)
         {
             for (j = 0; (j < atnr); j++, k++)
             {
-                /* nbfp now includes the 6.0/12.0 derivative prefactors */
-                C6(nbfp, atnr, i, j)   = idef->iparams[k].lj.c6*6.0;
-                C12(nbfp, atnr, i, j)  = idef->iparams[k].lj.c12*12.0;
+                C6(nbfp, atnr, i, j)   = idef->iparams[k].lj.c6;
+                C12(nbfp, atnr, i, j)  = idef->iparams[k].lj.c12;
             }
         }
     }

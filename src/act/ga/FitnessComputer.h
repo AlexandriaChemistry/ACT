@@ -26,10 +26,10 @@ public:
      * \param[in] trgtFit The target for fitness computation. Either Train or Test
      * \param[in] verbose Whether to print the components of the fitness
      */
-    virtual void compute(Genome     *genome,
-                         iMolSelect  trgtFit,
-                         bool        verbose = false) = 0;
-
+    virtual void compute(Genome                    *genome,
+                         iMolSelect                 trgtFit,
+                         bool                       verbose = false) = 0;
+    
 };
 
 

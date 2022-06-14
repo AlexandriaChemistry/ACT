@@ -40,6 +40,7 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/utility/coolstuff.h"
 
+#include "act/forces/forcecomputer.h"
 #include "act/molprop/molprop_util.h"
 #include "act/molprop/multipole_names.h"
 #include "act/qgen/qtype.h"
@@ -517,16 +518,16 @@ void TuneForceFieldPrinter::addFileOptions(std::vector<t_filenm> *filenm)
     }
 }
 
-void TuneForceFieldPrinter::analysePolarisability(FILE              *fp,
-                                                  alexandria::MyMol *mol,
-                                                  qtStats           *lsq_isoPol,
-                                                  qtStats           *lsq_anisoPol,
-                                                  qtStats           *lsq_alpha,
-                                                  real               efield)
+void TuneForceFieldPrinter::analysePolarisability(FILE                *fp,
+                                                  alexandria::MyMol   *mol,
+                                                  const ForceComputer *forceComp,
+                                                  qtStats             *lsq_isoPol,
+                                                  qtStats             *lsq_anisoPol,
+                                                  qtStats             *lsq_alpha)
 {
     auto qelec = mol->qTypeProps(qType::Elec);
     auto aelec = qelec->polarizabilityTensor();
-    mol->CalcPolarizability(efield);
+    mol->CalcPolarizability(forceComp);
     auto qcalc = mol->qTypeProps(qType::Calc);
     auto acalc = qcalc->polarizabilityTensor();
     
@@ -650,6 +651,8 @@ static void writeCoordinates(const t_atoms           *atoms,
 
 
 void TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
+                                              const Poldata            *pd,
+                                              const ForceComputer      *forceComp,
                                               alexandria::MyMol        *mol,
                                               const std::vector<int>   &ePlot,
                                               gmx_stats                *lsq_rmsf,
@@ -659,7 +662,7 @@ void TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
     std::vector<std::pair<double, double> >                 eMap;
     std::vector<std::vector<std::pair<double, double> > >   fMap;
     std::vector<std::pair<double, std::map<int, double> > > enerAllMap;
-    mol->forceEnergyMaps(&fMap, &eMap, &enerAllMap);
+    mol->forceEnergyMaps(forceComp, &fMap, &eMap, &enerAllMap);
     std::vector<std::string> dataFileNames;
     if (printSP_)
     {
@@ -730,7 +733,7 @@ void TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
     {
         // Now get the minimized structure RMSD and Energy
         // TODO: Only do this for JobType::OPT
-        molHandler_.minimizeCoordinates(mol);
+        molHandler_.minimizeCoordinates(mol, forceComp);
         std::map<coordSet, std::vector<gmx::RVec> > xrmsd; 
         double rmsd = molHandler_.coordinateRmsd(mol, &xrmsd);
         
@@ -753,7 +756,7 @@ void TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
         
         // Do normal-mode analysis
         std::vector<double> frequencies, intensities;
-        molHandler_.nma(mol, &frequencies, &intensities, nullptr);
+        molHandler_.nma(mol, forceComp, &frequencies, &intensities, nullptr);
         auto unit = mpo_unit2(MolPropObservable::FREQUENCY);
         auto ref_freq = mol->referenceFrequencies();
         if (!ref_freq.empty())
@@ -816,7 +819,6 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
                                   const gmx::MDLogger            &fplog,
                                   const gmx_output_env_t         *oenv,
                                   const CommunicationRecord      *cr,
-                                  real                            efield,
                                   const std::vector<t_filenm>    &filenm)
 {
     int  n = 0;
@@ -911,6 +913,9 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
             }
         }
     }
+    
+    auto forceComp = new ForceComputer(pd);
+    
     for (auto mol = mymol->begin(); mol < mymol->end(); ++mol)
     {
         if (mol->support() != eSupport::No)
@@ -926,7 +931,7 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
 
             // Recalculate the atomic charges using the optimized parameters.
             std::vector<double> dummy;
-            mol->GenerateCharges(pd, fplog, cr,
+            mol->GenerateCharges(pd, forceComp, fplog, cr,
                                  ChargeGenerationAlgorithm::NONE, dummy);
             // Now compute all the ESP RMSDs and multipoles and print it.
             fprintf(fp, "Electrostatic properties.\n");
@@ -968,15 +973,16 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
             // Polarizability
             if (bPolar)
             {
-                analysePolarisability(fp, &(*mol), &(lsq_isoPol[ims]),
-                                      &(lsq_anisoPol[ims]), &(lsq_alpha[ims]), efield);
+                analysePolarisability(fp, &(*mol), forceComp, &(lsq_isoPol[ims]),
+                                      &(lsq_anisoPol[ims]), &(lsq_alpha[ims]));
             }
 
             // Atomic charges
             printAtoms(fp, &(*mol));
             // Energies
             std::vector<std::string> tcout;
-            printEnergyForces(&tcout, &(*mol), ePlot,
+            printEnergyForces(&tcout, pd, forceComp,
+                              &(*mol), ePlot,
                               &lsq_rmsf[ims], &lsq_epot[ims],
                               &lsq_freq[ims]);
             for(const auto &tout : tcout)

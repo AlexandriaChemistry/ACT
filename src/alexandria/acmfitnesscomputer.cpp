@@ -9,7 +9,8 @@
 #include "acmfitnesscomputer.h"
 
 #include "act/basics/dataset.h"
-#include "act/ga//Genome.h"
+#include "act/forces/combinationrules.h"
+#include "act/ga/Genome.h"
 
 namespace alexandria
 {
@@ -18,9 +19,9 @@ namespace alexandria
 * BEGIN: ACMFitnessComputer            *
 * * * * * * * * * * * * * * * * * * * */
 
-void ACMFitnessComputer::compute(ga::Genome *genome,
-                                 iMolSelect  trgtFit,
-                                 bool        verbose)
+void ACMFitnessComputer::compute(ga::Genome    *genome,
+                                 iMolSelect     trgtFit,
+                                 bool           verbose)
 {
     if (nullptr == genome)
     {
@@ -97,12 +98,13 @@ double ACMFitnessComputer::calcDeviation(std::vector<double> *params,
     // If actMaster or actMiddleMan, penalize out of bounds
     if (cr->isMasterOrMiddleMan() && bdc_)
     {
-        bdc_->calcDeviation(nullptr, targets, sii_->poldata(),
+        bdc_->calcDeviation(forceComp_, nullptr, targets, sii_->poldata(),
                             *myparams, nullptr);
     }
 
+    generateDependentParameter(sii_->poldata());
+
     // Loop over molecules
-    int nmolCalculated = 0;
     for (MyMol &mymol : molgen_->mymols())
     {
         if (ims != mymol.datasetType())
@@ -112,7 +114,6 @@ double ACMFitnessComputer::calcDeviation(std::vector<double> *params,
         if ((mymol.support() == eSupport::Local) ||
             (calcDev == CalcDev::Master && mymol.support() == eSupport::Remote))
         {
-            nmolCalculated += 1;
             for(auto &io : molgen_->iopt())
             {
                 if (io.second)
@@ -128,7 +129,7 @@ double ACMFitnessComputer::calcDeviation(std::vector<double> *params,
                 mymol.zetaToAtoms(sii_->poldata(), mymol.atoms());
             }
             // Run charge generation including shell minimization
-            immStatus imm = mymol.GenerateAcmCharges(sii_->poldata());
+            immStatus imm = mymol.GenerateAcmCharges(sii_->poldata(), forceComp_);
 
             // Check whether we have to disable this compound
             if (immStatus::OK != imm && removeMol_)
@@ -141,7 +142,7 @@ double ACMFitnessComputer::calcDeviation(std::vector<double> *params,
 
             for (DevComputer *mydev : devComputers_)
             {
-                mydev->calcDeviation(&mymol, targets, sii_->poldata(),
+                mydev->calcDeviation(forceComp_, &mymol, targets, sii_->poldata(),
                                      *myparams, cr);
             }
         }

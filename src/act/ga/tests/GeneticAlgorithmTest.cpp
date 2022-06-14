@@ -44,6 +44,7 @@
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
 
+#include "act/forces/forcecomputer.h"
 #include "alexandria/acm_ga.h"
 #include "alexandria/bayes.h"
 #include "alexandria/acmfitnesscomputer.h"
@@ -201,8 +202,10 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
                 seed = dis(gen);
 
                 // Initializer
-                auto *initializer = new alexandria::ACMInitializer(&sii, gach.randomInit(), seed);
-                auto *fitComp     = new alexandria::ACMFitnessComputer(nullptr, false, &sii, &molgen, false);
+                auto initializer  = new alexandria::ACMInitializer(&sii, gach.randomInit(), seed);
+                auto forceComp    = new alexandria::ForceComputer(sii.poldata());
+                auto fitComp      = new alexandria::ACMFitnessComputer(nullptr, false, &sii, &molgen,
+                                                                       false, forceComp);
 
                 auto probComputer = new RankProbabilityComputer(gach.popSize());
                 // Selector

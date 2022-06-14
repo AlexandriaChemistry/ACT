@@ -144,6 +144,7 @@ class RespTest : public gmx::test::CommandLineTestBase
             CommunicationRecord cr;
             auto           pnc         = gmx::PhysicalNodeCommunicator(MPI_COMM_WORLD, 0);
             gmx::MDLogger  mdlog {};
+            auto forceComp = new ForceComputer(pd);
             auto qt = pd->findForcesConst(InteractionType::COULOMB);
             auto ct = name2ChargeType(qt.optionValue("chargetype"));
             
@@ -155,7 +156,7 @@ class RespTest : public gmx::test::CommandLineTestBase
             mp_.symmetrizeCharges(pd, qSymm, nullptr);
             mp_.initQgenResp(pd, 0.0, 100);
             std::vector<double> qcustom;
-            mp_.GenerateCharges(pd, mdlog, &cr,
+            mp_.GenerateCharges(pd, forceComp, mdlog, &cr,
                                 ChargeGenerationAlgorithm::ESP, qcustom);
 
             std::vector<double> qtotValues;

@@ -2,6 +2,7 @@
 
 #include "forcecomputerimpl.h"
 
+#include "act/poldata/forcefieldparametername.h"
 #include "act/forces/forcecomputerutils.h"
 
 #include "gromacs/gmxlib/nonbonded/nb_generic.h"
@@ -25,20 +26,27 @@ static double computeLJ(const ForceFieldParameterList      &ffpl,
     for (const auto b : pairs)
     {
         // Get the parameters. We have to know their names to do this.
-        auto id  = b->id();
-        auto c6  = ffpl.findParameterTypeConst(id, "c6_ij").internalValue();
-        auto c12 = ffpl.findParameterTypeConst(id, "c12_ij").internalValue();
+        auto params     = b->params();
+        auto c6         = params[ljC6_IJ];
+        auto c12        = params[ljC12_IJ];
         // Get the atom indices
         auto indices    = b->atomIndices();
+        auto ai         = indices[0];
+        auto aj         = indices[1];
         rvec dx;
-        rvec_sub(x[indices[0]], x[indices[1]], dx);
+        rvec_sub(x[ai], x[aj], dx);
         auto dr2        = iprod(dx, dx);
         auto rinv       = gmx::invsqrt(dr2);
         auto rinv2      = rinv*rinv;
         auto rinv6      = rinv2*rinv2*rinv2;
-        auto rinv12     = rinv6*rinv6;
-        auto elj        = c12*rinv12 - c6*rinv6;
-        auto flj        = 12*c12*rinv12*rinv2 - 6*c6*rinv6*rinv2;
+        auto vvdw_disp  = c6*rinv6;
+        auto vvdw_rep   = c12*rinv6*rinv6;
+        auto elj        = vvdw_rep - vvdw_disp;
+        auto flj        = (12*vvdw_rep - 6*vvdw_disp)*rinv2;
+        if (debug)
+        {
+            fprintf(debug, "ACT ai %d aj %d vvdw: %10g c6: %10g c12: %10g\n", ai, aj, elj, c6, c12);
+        }
         
         ebond      += elj;
         for (int m = 0; (m < DIM); m++)
@@ -47,6 +55,10 @@ static double computeLJ(const ForceFieldParameterList      &ffpl,
             f[indices[0]][m] += fij;
             f[indices[1]][m] -= fij;
         }
+    }
+    if (debug)
+    {
+        fprintf(debug, "ACT vvdwtot: %10g \n", ebond);
     }
     return ebond;
 }
@@ -63,10 +75,10 @@ static double computeWBH(const ForceFieldParameterList      &ffpl,
     for (const auto b : pairs)
     {
         // Get the parameters. We have to know their names to do this.
-        auto id      = b->id();
-        auto sigma   = ffpl.findParameterTypeConst(id, "sigma_ij").internalValue();
-        auto epsilon = ffpl.findParameterTypeConst(id, "epsilon_ij").internalValue();
-        auto gamma   = ffpl.findParameterTypeConst(id, "gamma_ij").internalValue();
+        auto params     = b->params();
+        auto sigma      = params[wbhSIGMA_IJ];
+        auto epsilon    = params[wbhEPSILON_IJ];
+        auto gamma      = params[wbhGAMMA_IJ];
         if (epsilon > 0 && gamma > 0 && sigma > 0)
         {
             // Get the atom indices
@@ -102,23 +114,19 @@ static double computeCoulomb(const ForceFieldParameterList      &ffpl,
     for (const auto b : pairs)
     {
         // Get the parameters. We have to know their names to do this.
-        // For this to work, we need ffpl containing the parameters
-        // with the combination rules applied. Something like that does
-        // not exist in the input force field files.
-        auto ai    = b->atomIndices()[0];
-        auto aj    = b->atomIndices()[1];
-        auto iid   = Identifier(b->id().atoms()[0]);
-        auto jid   = Identifier(b->id().atoms()[1]);
-        auto izeta = ffpl.findParameterTypeConst(iid, "zeta").internalValue();
-        auto jzeta = ffpl.findParameterTypeConst(jid, "zeta").internalValue();
+        auto ai     = b->atomIndices()[0];
+        auto aj     = b->atomIndices()[1];
+        auto params = b->params();
+        auto izeta  = params[coulZETAI];
+        auto jzeta  = params[coulZETAJ];
         // Get the atom indices
-        real qq         = atoms[ai].charge()*atoms[aj].charge();
+        real qq         = ONE_4PI_EPS0*atoms[ai].charge()*atoms[aj].charge();
         rvec dx;
         rvec_sub(x[ai], x[aj], dx);
         auto dr2        = iprod(dx, dx);
         real velec, felec;
         coulomb_gaussian(qq, izeta, jzeta, std::sqrt(dr2), &velec, &felec);
-        ebond      += velec;
+        ebond += velec;
         if (dr2 > 0)
         {
             felec *= gmx::invsqrt(dr2);
@@ -152,15 +160,10 @@ static double computePartridge(const ForceFieldParameterList      &ffpl,
     for (const auto a : angles)
     {
         // Get the parameters. We have to know their names to do this.
-        auto id         = a->id(); 
-        auto rij0       = ffpl.findParameterTypeConst(id, "rij0").internalValue();
-        auto rjk0       = ffpl.findParameterTypeConst(id, "rjk0").internalValue();
-        auto betaij     = ffpl.findParameterTypeConst(id, "betaij").internalValue();
-        auto betajk     = ffpl.findParameterTypeConst(id, "betajk").internalValue();
-        auto theta0     = ffpl.findParameterTypeConst(id, "angle").internalValue();
-        auto c000       = ffpl.findParameterTypeConst(id, "c000").internalValue();
-        auto c111       = ffpl.findParameterTypeConst(id, "c111").internalValue();
-        auto c222       = ffpl.findParameterTypeConst(id, "c222").internalValue();
+        auto params     = a->params();
+        auto theta0     = params[psANGLE];
+        auto rij0       = params[psRIJ0];
+        auto rjk0       = params[psRJK0];
         // Get the atom indices
         auto indices    = a->atomIndices();
 
@@ -205,24 +208,34 @@ static double computeBonds(const ForceFieldParameterList      &ffpl,
                            const std::vector<gmx::RVec>       *coordinates,
                            std::vector<gmx::RVec>             *forces)
 {
+    if (nullptr == coordinates || nullptr == forces)
+    {
+        GMX_THROW(gmx::InternalError("nullptr"));
+    }
     double ebond = 0;
     auto   x     = *coordinates;
     auto  &f     = *forces;
     const  real half = 0.5;
+    
     for (const auto b : bonds)
     {
         // Get the parameters. We have to know their names to do this.
-        auto id         = b->id(); 
-        auto bondlength = ffpl.findParameterTypeConst(id, "bondlength").internalValue();
-        auto kb         = ffpl.findParameterTypeConst(id, "kb").internalValue();
+        auto params     = b->params();
+        auto bondlength = params[bondLENGTH];
+        auto kb         = params[bondKB];
         // Get the atom indices
         auto indices    = b->atomIndices();
+        if (indices[0] >= coordinates->size() || indices[1] >= coordinates->size())
+        {
+            GMX_THROW(gmx::InternalError(gmx::formatString("Range check error. Have %zu coordinates, %zu forces. Atoms %d and %d", coordinates->size(), forces->size(), indices[0], indices[1]).c_str()));
+        }
+
         rvec dx;
         rvec_sub(x[indices[0]], x[indices[1]], dx);
         auto dr2        = iprod(dx, dx);
         auto dr         = std::sqrt(dr2) - bondlength;
         
-        auto fbond      = kb*dr*gmx::invsqrt(dr2);
+        auto fbond      = -kb*dr*gmx::invsqrt(dr2);
         ebond          += half*kb*dr*dr;
         
         for (int m = 0; (m < DIM); m++)
@@ -247,11 +260,11 @@ static double computeMorse(const ForceFieldParameterList      &ffpl,
     for (const auto b : bonds)
     {
         // Get the parameters. We have to know their names to do this.
-        auto id         = b->id(); 
-        auto bondlength = ffpl.findParameterTypeConst(id, "bondlength").internalValue();
-        auto beta       = ffpl.findParameterTypeConst(id, "beta").internalValue();
-        auto De         = ffpl.findParameterTypeConst(id, "De").internalValue();
-        auto D0         = ffpl.findParameterTypeConst(id, "D0").internalValue();
+        auto params     = b->params();
+        auto bondlength = params[morseLENGTH];
+        auto beta       = params[morseBETA];
+        auto De         = params[morseDE];
+        auto D0         = params[morseD0];
         // Get the atom indices
         auto indices    = b->atomIndices();
         rvec dx;
@@ -263,7 +276,7 @@ static double computeMorse(const ForceFieldParameterList      &ffpl,
         auto cbomtemp   = De*omtemp;
         auto vbond      = D0+cbomtemp*omtemp;
         auto fbond      = -2.0*beta*temp*cbomtemp/dr;
-        ebond          += vbond-D0;
+        ebond          += vbond;
 
         for (int m = 0; (m < DIM); m++)
         {
@@ -287,9 +300,9 @@ static double computeLinearAngles(const ForceFieldParameterList      &ffpl,
     for (const auto aaa : angles)
     {
         // Get the parameters. We have to know their names to do this.
-        auto id      = aaa->id(); 
-        auto a       = ffpl.findParameterTypeConst(id, "a").internalValue();
-        auto klin    = ffpl.findParameterTypeConst(id, "klin").internalValue();
+        auto params = aaa->params();
+        auto a      = params[linangA];
+        auto klin   = params[linangKLIN];
         // Get the atom indices
         auto indices = aaa->atomIndices();
         
@@ -330,15 +343,12 @@ static double computeAngles(const ForceFieldParameterList      &ffpl,
     for (const auto a : angles)
     {
         // Get the parameters. We have to know their names to do this.
-        auto id         = a->id(); 
-        auto theta0     = ffpl.findParameterTypeConst(id, "angle").internalValue();
-        auto ka         = ffpl.findParameterTypeConst(id, "kt").internalValue();
+        auto params     = a->params();
+        auto theta0     = params[angleANGLE];
+        auto ka         = params[angleKTH];
         // Get the atom indices
         auto indices    = a->atomIndices();
 
-		  // atom0 -> i
-	     // atom1 -> k
-		  // atom2 -> j
         rvec r_ij, r_kj;
         auto theta = bond_angle(x[indices[0]], x[indices[1]], x[indices[2]], 
                                 r_ij, r_kj, &costh);
@@ -347,7 +357,7 @@ static double computeAngles(const ForceFieldParameterList      &ffpl,
         auto da  = theta - theta0;
         auto da2 = da*da;
         
-        auto fangle      = ka*da;
+        auto fangle      = -ka*da;
         energy          += half*ka*da2;
         
         auto costh2 = gmx::square(costh);
@@ -378,8 +388,8 @@ static double computeAngles(const ForceFieldParameterList      &ffpl,
                 f_k[m]    = -(cik*r_ij[m] - ckk*r_kj[m]);
                 f_j[m]    = -f_i[m] - f_k[m];
                 f[indices[0]][m] += f_i[m];
-                f[indices[1]][m] += f_k[m];
-                f[indices[2]][m] += f_j[m];
+                f[indices[1]][m] += f_j[m];
+                f[indices[2]][m] += f_k[m];
             }
         }                                          
     }
@@ -399,8 +409,8 @@ static double computePolarization(const ForceFieldParameterList      &ffpl,
     for (const auto b : bonds)
     {
         // Get the parameters. We have to know their names to do this.
-        auto id  = b->id(); 
-        auto ksh = ffpl.findParameterTypeConst(id, "kshell").internalValue();
+        auto params = b->params();
+        auto ksh    = params[polKSH];
         // Get the atom indices
         auto indices    = b->atomIndices();
         rvec dx;
@@ -439,7 +449,9 @@ std::map<int, bondForceComputer> bondForceComputerMap = {
     { F_BHAM,          computeWBH          },
     { F_COUL_SR,       computeCoulomb      },
     { F_POLARIZATION,  computePolarization },
-    { F_IDIHS,         computeImpropers    }
+    { F_IDIHS,         computeImpropers    },
+    { F_FOURDIHS,      computeImpropers    },
+    { F_UREY_BRADLEY,  computeImpropers    }
 };
 
 bondForceComputer getBondForceComputer(int gromacs_index)
@@ -449,7 +461,7 @@ bondForceComputer getBondForceComputer(int gromacs_index)
     {
         return *bfc->second;
     }
-    // GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such gromacs_index %d implemented to compute bonded forces for", gromacs_index).c_str()));
+
     // Keep the compiler happy
     return nullptr;
 }

@@ -34,6 +34,8 @@ private:
     alexandria::StaticIndividualInfo *sii_;
     //! GAConfigHandler pointer
     alexandria::GAConfigHandler      *gach_;
+    //! The force computer
+    alexandria::ForceComputer        *forceComp_;
     //! logFile
     FILE                             *logFile_;
     //! seed for random numbers
@@ -56,7 +58,10 @@ public:
                int                                  seed)
     : GeneticAlgorithm(initializer, fitnessComputer, probComputer, selector, crossover,
                        mutator, terminators, penalizers, gach->popSize()),
-      sii_(sii), gach_(gach), logFile_(logFile), seed_(seed) {}
+      sii_(sii), gach_(gach), logFile_(logFile), seed_(seed)
+    {
+        forceComp_ = new alexandria::ForceComputer(sii->poldata());
+    }
 
     //! \copydocs ga::GeneticAlgorithm::evolve
     virtual bool evolve(std::map<iMolSelect, Genome> *bestGenome);
@@ -70,6 +75,8 @@ private:
     alexandria::StaticIndividualInfo *sii_;
     //! GAConfigHandler pointer
     alexandria::GAConfigHandler      *gach_;
+    //! The force computer
+    alexandria::ForceComputer        *forceComp_;
     //! logFile
     FILE                             *logFile_;
 public:
@@ -84,7 +91,10 @@ public:
          alexandria::GAConfigHandler         *gach)
     : GeneticAlgorithm(initializer, fitnessComputer, nullptr, nullptr, nullptr,
                        mutator, nullptr, nullptr, gach->popSize()),
-      sii_(sii), gach_(gach), logFile_(logFile) {}
+      sii_(sii), gach_(gach), logFile_(logFile)
+    {
+        forceComp_ = new alexandria::ForceComputer(sii->poldata());
+    }
 
     //! \copydocs ga::GeneticAlgorithm::evolve
     virtual bool evolve(std::map<iMolSelect, Genome> *bestGenome);

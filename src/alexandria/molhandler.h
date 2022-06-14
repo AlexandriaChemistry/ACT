@@ -36,6 +36,7 @@
 
 #include <vector>
 
+#include "act/forces/forcecomputer.h"
 #include "act/utility/regression.h"
 #include "mymol.h"
 #include "gromacs/mdtypes/commrec.h"
@@ -55,6 +56,7 @@ public:
     /*! \brief Compute the second derivative matrix of the potential energy
      *
      * \param[in]  mol       Molecule to get the hessian for
+     * \param[in]  forceComp Force Computer utility
      * \param[in]  crtmp     Temporary communication record for one core.
      *                       FIXME: another method without this
      * \param[in]  atomIndex Vector containing the indices of the real 
@@ -69,7 +71,7 @@ public:
      * \return the potential energy of the input structure
      */
     double computeHessian(      MyMol               *mol,
-                          const t_commrec           *crtmp,
+                          const ForceComputer       *forceComp,
                           const std::vector<int>    &atomIndex,
                                 MatrixWrapper       *hessian,
                                 std::vector<double> *forceZero) const;
@@ -81,12 +83,14 @@ public:
      * Also prints eigenvalues and eigenvectors of the mass-weighted 
      * hessian matrix to the debug file, if not nullptr.
      * 
-     * \param[in] mol          The molecule to analyze
-     * \param[out] frequencies The normal mode frequencies (in cm^-1)
-     * \param[out] intensities The normal mode intensities
-     * \param[in] fp           File to write frequencies to, may be nullptr (default)
+     * \param[in]  mol          The molecule to analyze
+     * \param[in]  forceComp    Force Computer utility
+     * \param[out] frequencies  The normal mode frequencies (in cm^-1)
+     * \param[out] intensities  The normal mode intensities
+     * \param[in]  fp           File to write frequencies to, may be nullptr (default)
      */
     void nma(MyMol               *mol,
+             const ForceComputer *forceComp,
              std::vector<double> *frequencies,
              std::vector<double> *intensities,
              FILE                *fp = nullptr) const;
@@ -96,21 +100,23 @@ public:
      * relaxing the shells. The minimized coordinates will be stored in the 
      * mymol object.
      *
-     * \param[in] mol  the molecule object (will be modified)
+     * \param[in] mol       The molecule object (will be modified)
+     * \param[in] forceComp Force Computer utility
      * \return immOK if everything went fine, an error otherwise.
      */
-    immStatus minimizeCoordinates(MyMol  *mol) const;
+    immStatus minimizeCoordinates(MyMol               *mol,
+                                  const ForceComputer *forceComp) const;
 
     /*! \brief
      * The routine will compute the RMSD between the minimized coordinates
      * and the original ones for a given mymol object.
-     * This routine should be after minimizing the coordinates, since
-     * otherwise there is no minimized structure.
+     * This routine should be called only after minimizing the coordinates,
+     * since otherwise there is no minimized structure.
      *
      * \param[in]  mol  the molecule object (will be modified)
      * \param[out] x    The two coordinate sets after alignment. Map will be cleared first.
      * \return Root mean square atomic deviation of atomic
-     *                  coordinates after minimization.
+     *         coordinates after minimization.
      */
     double coordinateRmsd(MyMol                                       *mol,
                           std::map<coordSet, std::vector<gmx::RVec> > *x) const;

@@ -88,6 +88,15 @@ void gmx_init_debug(const int dbglevel, const char *dbgfile)
     }
 }
 
+void gmx_stop_debug()
+{
+    if (nullptr != debug)
+    {
+        gmx_ffclose(debug);
+    }
+    bDebug = false;
+}
+
 gmx_bool bDebugMode()
 {
     return bDebug;

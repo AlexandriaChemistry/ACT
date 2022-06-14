@@ -264,10 +264,11 @@ void OptACM::initMaster()
             break;
         }
     }
-
+    // Force computer
+    forceComp_ = new ForceComputer(sii_->poldata());
     // Fitness computer
     // FIXME: what about the flags? Here it is a bit more clear that they should be all false?
-    fitComp_ = new ACMFitnessComputer(logFile(), verbose_, sii_, &mg_, false);
+    fitComp_ = new ACMFitnessComputer(logFile(), verbose_, sii_, &mg_, false, forceComp_);
 
     // Adjust the seed that gets passed around to components of the optimizer
     int seed = bch_.seed();
@@ -291,6 +292,7 @@ void OptACM::initMaster()
     else
     {
         auto mut = new alexandria::MCMCMutator(logFile(), verbose_, flush_, seed, &bch_, fitComp_, sii_, bch_.evaluateTestset());
+        // TODO Only open these files when we are optimizing.
         mut->openParamConvFiles(oenv_);
         mut->openChi2ConvFile(oenv_);
         mutator = mut;
@@ -713,7 +715,6 @@ int tune_ff(int argc, char *argv[])
         "can be generated using the [TT]molselect[tt] script."
     };
 
-    real                efield              = 1;
     bool                bcompress           = false;
     bool                bOptimize           = true;
     bool                bSensitivity        = true;
@@ -728,8 +729,6 @@ int tune_ff(int argc, char *argv[])
         t_pargs                     pa[]         = {
             { "-compress", FALSE, etBOOL, {&bcompress},
               "Compress output XML file" },
-            { "-efield",  FALSE, etREAL, {&efield},
-              "The magnitude of the external electric field to calculate polarizability tensor." },
             { "-optimize",     FALSE, etBOOL, {&bOptimize},
               "Do parameter optimization when true, or a single calculation otherwise." },
             { "-sensitivity",  FALSE, etBOOL, {&bSensitivity},
@@ -887,7 +886,7 @@ int tune_ff(int argc, char *argv[])
             MolGen *tmpMg = opt.mg();
             printer.print(opt.logFile(), &(tmpMg->mymols()),
                           opt.sii()->poldata(), tmpMg->mdlog(),
-                          oenv, opt.commRec(), efield, filenms);
+                          oenv, opt.commRec(), filenms);
             print_memory_usage(debug);
         }
         else if (!bMinimum)

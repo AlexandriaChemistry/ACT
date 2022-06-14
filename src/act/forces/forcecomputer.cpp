@@ -3,6 +3,7 @@
 #include "alexandria/topology.h"
 #include "act/forces/forcecomputerimpl.h"
 #include "gromacs/math/vec.h"
+#include "act/qgen/qtype.h"
 
 namespace alexandria
 {
@@ -22,54 +23,50 @@ static double dotProdRvec(const std::vector<bool>      &isShell,
     return dpr;
 }
 
-void ForceComputer::compute(const Poldata                     &pd,
-                            const Topology                    &top,
-                            const std::vector<double>         &charge,
-                            std::vector<gmx::RVec>            *coordinates,
-                            std::vector<gmx::RVec>            *forces,
-                            std::map<InteractionType, double> *energies)
+double ForceComputer::compute(const Topology                    *top,
+                              std::vector<gmx::RVec>            *coordinates,
+                              std::vector<gmx::RVec>            *forces,
+                              std::map<InteractionType, double> *energies) const
 {
+    gmx::RVec field = { 0, 0, 0 };
     // Do first calculation every time.
-    computeOnce(pd, top, coordinates, forces, energies);
+    computeOnce(top, coordinates, forces, energies, field);
     // Now let's have a look whether we are polarizable
     auto itype = InteractionType::POLARIZATION;
-    if (!pd.polarizable() || !top.hasEntry(itype))
+    if (!pd_->polarizable() || !top->hasEntry(itype))
     {
-        return;
+        return 0;
     }
     // Is this particle a shell?
     std::vector<bool>   isShell;
     // One over force constant for this particle
     std::vector<double> fcShell_1;
-    auto ffpl = pd.findForcesConst(itype);
-    int i = 0;
-    for(auto &aa : top.atoms())
+    auto ffpl   = pd_->findForcesConst(itype);
+    int  nshell = 0;
+    for(auto &aa : top->atoms())
     {
         bool bIS = aa.pType() == eptShell;
         isShell.push_back(bIS);
         double fc_1 = 0;
         if (bIS)
         {
-            Identifier atID({aa.ffType()}, {}, CanSwap::No);
-            auto fc = ffpl.findParameterTypeConst(atID, "kshell").value();
+            Identifier atID(aa.ffType());
+            auto fc = ffpl.findParameterTypeConst(atID, "kshell").internalValue();
             if (fc != 0)
             {
                 fc_1 = 1.0/fc;
             }
+            nshell += 1;
         }
         fcShell_1.push_back(fc_1);
-        i += 1;
     }
-    double rmsForce = dotProdRvec(isShell, *forces);
-    auto pols       = top.entry(itype);
-    // TODO pass the real tolerance
-    double toler    = 0.001;
-    // TODO pass the real maxiter
-    int    maxiter  = 25;
-    int    iter     = 1;
-    // Golden ratio
-    double gold     = 0.5*(1+std::sqrt(5.0));
-    while (rmsForce > toler && iter < maxiter)
+    double msForceMax = (rmsForce_*rmsForce_)*nshell;
+    double msForce    = dotProdRvec(isShell, *forces);
+    auto pols         = top->entry(itype);
+    int    iter       = 1;
+    // Golden ratio, may be used for overrelaxation
+    // double gold     = 0.5*(1+std::sqrt(5.0));
+    while (msForce > msForceMax && iter < maxiter_)
     {
         // Loop over polarizabilities
         for(const auto &p : pols)
@@ -85,34 +82,36 @@ void ForceComputer::compute(const Poldata                     &pd,
             }
         }
         // Do next calculation
-        computeOnce(pd, top, coordinates, forces, energies);
-        rmsForce  = dotProdRvec(isShell, *forces);
-        iter     += 1;
+        computeOnce(top, coordinates, forces, energies, field);
+        msForce  = dotProdRvec(isShell, *forces);
+        iter    += 1;
     }
-#undef next
+    return std::sqrt(msForce/nshell);
 }
 
-void ForceComputer::computeOnce(const Poldata                     &pd,
-                                const Topology                    &top,
+void ForceComputer::computeOnce(const Topology                    *top,
                                 std::vector<gmx::RVec>            *coordinates,
                                 std::vector<gmx::RVec>            *forces,
-                                std::map<InteractionType, double> *energies)
+                                std::map<InteractionType, double> *energies,
+                                const gmx::RVec                   &field) const
 {
     // Clear energies
     energies->clear();
     // Clear forces
-    for(auto ff = forces->begin(); ff < forces->end(); ++ff)
+    auto atoms = top->atoms();
+    for(size_t ff = 0; ff < forces->size(); ++ff)
     {
-        clear_rvec(*ff);
+        svmul(atoms[ff].charge(), field, (*forces)[ff]);
     }
-    for(const auto &entry : top.entries())
+    double epot = 0;
+    for(const auto &entry : top->entries())
     {
         if (entry.second.empty())
         {
             continue;
         }
         // Force field parameter list
-        auto ffpl  = pd.findForcesConst(entry.first);
+        auto ffpl  = pd_->findForcesConst(entry.first);
         // The function we need to do the math
         auto bfc   = getBondForceComputer(ffpl.fType());
         if (nullptr == bfc)
@@ -122,10 +121,68 @@ void ForceComputer::computeOnce(const Poldata                     &pd,
         else
         {
             // Now do the calculations and store the energy
-            energies->insert({ entry.first,
-                    bfc(ffpl, entry.second, top.atoms(), coordinates, forces) });
+            double eee = bfc(ffpl, entry.second, top->atoms(), coordinates, forces);
+            energies->insert({ entry.first, eee });
+            epot += eee;
         }
     }
+    energies->insert({ InteractionType::EPOT, epot });
+}
+
+void ForceComputer::calcPolarizability(const Topology         *top,
+                                       std::vector<gmx::RVec> *coordinates,
+                                       QtypeProps             *qtp) const
+{
+    std::vector<gmx::RVec>            forces(coordinates->size());
+    std::map<InteractionType, double> energies;
+    gmx::RVec  field = { 0, 0, 0 };
+    
+    computeOnce(top, coordinates, &forces, &energies, field);
+    std::vector<double> q;
+    for (auto &at : top->atoms())
+    {
+        q.push_back(at.charge());
+    }
+    qtp->setQ(q);
+    qtp->setX(*coordinates);
+    qtp->calcMoments();
+    auto mpo = MolPropObservable::DIPOLE;
+    if (!qtp->hasMultipole(mpo))
+    {
+        GMX_THROW(gmx::InternalError("No dipole to compute."));
+    }
+    auto mu_ref = qtp->getMultipole(mpo);
+    // Convert from e nm2/V to cubic nm
+    double enm2_V = E_CHARGE*1e6*1e-18/(4*M_PI*EPSILON0_SI)*1e21;
+    tensor alpha  = { { 0 } };
+    double efield = 0.1;
+    for (auto m = 0; m < DIM; m++)
+    {
+        field[m] = efield;
+        computeOnce(top, coordinates, &forces, &energies, field);
+        qtp->setX(*coordinates);
+        field[m] = 0;
+        qtp->calcMoments();
+        auto qmu = qtp->getMultipole(mpo);
+        for (auto n = 0; n < DIM; n++)
+        {
+            alpha[n][m] = enm2_V*((qmu[n]-mu_ref[n])/efield);
+        }
+    }
+    // Store the tensor
+    qtp->setPolarizabilityTensor(alpha);
+    // Reset energies etc.
+    computeOnce(top, coordinates, &forces, &energies, field);
+}
+
+int ForceComputer::ftype(InteractionType itype) const
+{
+    int ftype = F_EPOT;
+    if (pd_->interactionPresent(itype))
+    {
+        ftype = pd_->findForcesConst(itype).fType();
+    }
+    return ftype;
 }
 
 } // namespace alexandria

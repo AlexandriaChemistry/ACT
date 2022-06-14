@@ -1,20 +1,26 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <Real Name="BONDS">0.0015968037301342748</Real>
-  <Real Name="VANDERWAALS">390.88601284998487</Real>
-  <Real Name="COULOMB">-4.463552169582151</Real>
-  <Real Name="POLARIZATION">5.3021030326458997e-12</Real>
-  <Real Name="cl-1 fX">0</Real>
-  <Real Name="cl-1 fY">0</Real>
-  <Real Name="cl-1 fZ">23021.125459993506</Real>
-  <Real Name="cl_s-2 fX">0</Real>
-  <Real Name="cl_s-2 fY">0</Real>
-  <Real Name="cl_s-2 fZ">0.00087837828169830474</Real>
-  <Real Name="h-3 fX">0</Real>
-  <Real Name="h-3 fY">0</Real>
-  <Real Name="h-3 fZ">-23021.126414178805</Real>
-  <Real Name="h_s-4 fX">0</Real>
-  <Real Name="h_s-4 fY">0</Real>
-  <Real Name="h_s-4 fZ">7.5807022308013687e-05</Real>
+  <Real Name="MORSE_gmx">-399.99840319626986</Real>
+  <Real Name="BHAM_gmx">390.88601284998487</Real>
+  <Real Name="COUL_SR_gmx">-60.558098155625771</Real>
+  <Real Name="POLARIZATION_gmx">0.78090269738286056</Real>
+  <Real Name="EPOT_gmx">-68.889585804527911</Real>
+  <Real Name="MORSE">-399.99840319626986</Real>
+  <Real Name="BHAM">390.88601284998487</Real>
+  <Real Name="COUL_SR">-60.558098276056967</Real>
+  <Real Name="POLARIZATION">0.78090281781411774</Real>
+  <Real Name="EPOT">-68.88958580452784</Real>
+  <Real Name="cl-1_gmx fX">0</Real>
+  <Real Name="cl-1_act fX">0</Real>
+  <Real Name="cl-1_gmx fY">0</Real>
+  <Real Name="cl-1_act fY">0</Real>
+  <Real Name="cl-1_gmx fZ">22939.885353795897</Real>
+  <Real Name="cl-1_act fZ">22939.885318664547</Real>
+  <Real Name="h-3_gmx fX">0</Real>
+  <Real Name="h-3_act fX">0</Real>
+  <Real Name="h-3_gmx fY">0</Real>
+  <Real Name="h-3_act fY">0</Real>
+  <Real Name="h-3_gmx fZ">-22939.885326199746</Real>
+  <Real Name="h-3_act fZ">-22939.885303709296</Real>
 </ReferenceData>

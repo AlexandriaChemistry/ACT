@@ -3,6 +3,7 @@
 #include <cmath>
 
 #include "act/basics/mutability.h"
+#include "act/poldata/forcefieldparametername.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/ifunc.h"
@@ -188,8 +189,8 @@ static void generateVdwParameterPairs(Poldata *pd)
                                                mut, true, true);
                     ForceFieldParameter c12parm(unit, c12, 0, 1, c12, c12, 
                                                 mut, true, true);
-                    newParams.addParameter(pairID, "c6_ij", c6parm);
-                    newParams.addParameter(pairID, "c12_ij", c12parm);
+                    newParams.addParameter(pairID, lj_name[ljC6_IJ], c6parm);
+                    newParams.addParameter(pairID, lj_name[ljC12_IJ], c12parm);
                 }
                 break;
             case F_BHAM:
@@ -208,9 +209,9 @@ static void generateVdwParameterPairs(Poldata *pd)
                     ForceFieldParameter gamparm(unit, gammaij, 0, 1,
                                                 gammaij, gammaij,
                                                 mut, true, true);
-                    newParams.addParameter(pairID, "sigma_ij", sigparm);
-                    newParams.addParameter(pairID, "epsilon_ij", epsparm);
-                    newParams.addParameter(pairID, "gamma_ij", gamparm);
+                    newParams.addParameter(pairID, wbh_name[wbhSIGMA_IJ], sigparm);
+                    newParams.addParameter(pairID, wbh_name[wbhEPSILON_IJ], epsparm);
+                    newParams.addParameter(pairID, wbh_name[wbhGAMMA_IJ], gamparm);
                 }
                 break;
             default:
@@ -221,6 +222,65 @@ static void generateVdwParameterPairs(Poldata *pd)
     }
     // Finally add the new parameters to the exisiting list
     auto fold = forcesVdw->parameters();
+    for(const auto &np : newParams.parametersConst())
+    {
+        // Remove old copy if it exists
+        auto oldfp = fold->find(np.first);
+        if (oldfp != fold->end())
+        {
+            fold->erase(oldfp);
+        }
+        // Now add the new one
+        fold->insert({ np.first, np.second });
+    }
+    // Phew, we're done!
+}
+
+static void generateCoulombParameterPairs(Poldata *pd)
+{
+    auto forcesCoul = pd->findForces(InteractionType::COULOMB);
+    auto ftypeCoul  = forcesCoul->fType();
+    
+    // We temporarily store the new parameters here
+    ForceFieldParameterList newParams;
+    
+    // Fudge unit
+    std::string unit("kJ/mol");
+    
+    // We use dependent mutability to show these are not independent params
+    auto mut = Mutability::Dependent;
+
+    // Now do the double loop
+    for (auto &icoul : *forcesCoul->parameters())
+    {
+        auto iid    = icoul.first;
+        // Check whether this is a single atom parameter
+        if (iid.atoms().size() > 1)
+        {
+            continue;
+        }
+        auto iparam = icoul.second;
+        double izeta = icoul.second["zeta"].internalValue();
+        for (auto &jcoul : *forcesCoul->parameters())
+        {
+            auto jid    = jcoul.first;
+            // Check whether this is a single atom parameter and
+            // whether this is is larger or equal to iid.
+            if (jid.atoms().size() > 1 || jid.id() < iid.id())
+            {
+                continue;
+            }
+            auto jparam = jcoul.second;
+            double jzeta  = jcoul.second["zeta"].internalValue();
+            Identifier pairID({ iid.id(), jid.id() }, { 1 }, CanSwap::Yes);
+            ForceFieldParameter pi(unit, izeta, 0, 1, izeta, izeta, mut, true, true);
+            ForceFieldParameter pj(unit, jzeta, 0, 1, jzeta, jzeta, mut, true, true);
+            newParams.addParameter(pairID, coul_name[coulZETAI], pi);
+            newParams.addParameter(pairID, coul_name[coulZETAJ], pj);
+        }
+    }
+    // Finally add the new parameters to the exisiting list
+    auto fold = forcesCoul->parameters();
     for(const auto &np : newParams.parametersConst())
     {
         // Remove old copy if it exists
@@ -285,6 +345,7 @@ static void generateShellForceConstants(Poldata *pd)
 void generateDependentParameter(Poldata *pd)
 {
     generateVdwParameterPairs(pd);
+    generateCoulombParameterPairs(pd);
     generateShellForceConstants(pd);
 }
 

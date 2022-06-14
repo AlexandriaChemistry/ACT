@@ -36,6 +36,7 @@
 #include <set>
 #include <vector>
 
+#include "act/poldata/forcefieldparametername.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/fatalerror.h"
 
@@ -153,6 +154,13 @@ bool AtomPair::operator==(const AtomPair &other) const
             (aJ() == other.aI() && aI() == other.aJ()));
 }
 
+bool AtomPair::operator<(const AtomPair &other) const
+{
+    return (aI() < other.aI() ||
+            (aI() == other.aI() && aJ() < other.aJ()) ||
+            (aI() == other.aJ() && aJ() < other.aI()));
+}
+
 bool Bond::operator==(const Bond &other) const
 {
     return ((aI() == other.aI() && aJ() == other.aJ()) ||
@@ -255,7 +263,7 @@ void Proper::renumberAtoms(const std::vector<int> &renumber)
 
 Topology::Topology(const std::vector<Bond> &bonds)
 {
-    entries_.insert(std::pair<InteractionType, std::vector<TopologyEntry *> > (InteractionType::BONDS, {}));
+    entries_.insert({ InteractionType::BONDS, {} });
     for(auto &b : bonds)
     {
         entries_[InteractionType::BONDS].push_back(new Bond(b));
@@ -360,8 +368,8 @@ void Topology::makeAngles(const gmx::HostVector<gmx::RVec> &x,
                           double                            LinearAngleMin)
 {
     auto bonds = entry(InteractionType::BONDS);
-    entries_.insert(std::pair<InteractionType, std::vector<TopologyEntry *>>(InteractionType::ANGLES, {}));
-    entries_.insert(std::pair<InteractionType, std::vector<TopologyEntry *>>(InteractionType::LINEAR_ANGLES, {}));
+    entries_.insert({ InteractionType::ANGLES, {} });
+    entries_.insert({ InteractionType::LINEAR_ANGLES, {} });
     auto &angles    = entries_.find(InteractionType::ANGLES)->second;
     auto &linangles = entries_.find(InteractionType::LINEAR_ANGLES)->second;
     for(size_t i = 0; i < bonds.size(); i++)
@@ -436,7 +444,7 @@ void Topology::makeImpropers(const gmx::HostVector<gmx::RVec> &x,
         mybonds[b->atomIndex(0)].insert(b->atomIndex(1));
         mybonds[b->atomIndex(1)].insert(b->atomIndex(0));
     }
-    entries_.insert(std::pair<InteractionType, std::vector<TopologyEntry *>>(InteractionType::IMPROPER_DIHEDRALS, {}));
+    entries_.insert({ InteractionType::IMPROPER_DIHEDRALS, {} });
     auto &impropers = entries_.find(InteractionType::IMPROPER_DIHEDRALS)->second;
     // Now loop over the atoms
     const rvec *myx = as_rvec_array(x.data());
@@ -497,32 +505,47 @@ void  Topology::addShellPairs()
                 continue;
             }
             auto &ffpl = entries_.find(itype)->second;
-            std::vector<AtomPair *> newf;
-            for(const auto &p_i : pol)
+            std::set<AtomPair> newf;
+            for(auto &f : ffpl)
             {
-                auto core_i  = p_i->atomIndices()[0];
-                auto shell_i = p_i->atomIndices()[1];
+                auto indices = f->atomIndices();
+                auto core_i = indices[0];
+                auto core_j = indices[1];
+                int shell_i = -1;
+                int shell_j = -1;
+                for(const auto &p_i : pol)
+                {
+                    if (core_i == p_i->atomIndices()[0])
+                    {
+                        shell_i = p_i->atomIndices()[1];
+                        break;
+                    }
+                }
                 for(const auto &p_j : pol)
                 {
-                    auto core_j  = p_j->atomIndices()[0];
-                    auto shell_j = p_j->atomIndices()[1];
-                    for(auto &f : ffpl)
+                    if (core_j == p_j->atomIndices()[0])
                     {
-                        auto indices = f->atomIndices();
-                        if (!(core_i == indices[0] && core_j == indices[1]) && 
-                            !(core_i == indices[1] && core_j == indices[0]))
-                        {
-                            // This pair of cores interacts, now add the shells.
-                            newf.push_back(new AtomPair(core_i, shell_j));
-                            newf.push_back(new AtomPair(core_j, shell_i));
-                            newf.push_back(new AtomPair(shell_i, shell_j));
-                        }
+                        shell_j = p_j->atomIndices()[1];
+                        break;
                     }
+                }
+                if (shell_i != -1)
+                {
+                    newf.emplace(AtomPair(shell_i, core_j));
+                }
+                if (shell_j != -1)
+                {
+                    newf.emplace(AtomPair(core_i, shell_j));
+                }
+                if (shell_i != -1 && shell_j != -1)
+                {
+                    newf.emplace(AtomPair(shell_i, shell_j));
                 }
             }
             for(const auto &n : newf)
             {
-                ffpl.push_back(std::move(n));
+                auto ap = new AtomPair(n);
+                ffpl.push_back(std::move(ap));
             }
         }
     }   
@@ -530,7 +553,7 @@ void  Topology::addShellPairs()
 
 void Topology::makePropers()
 {
-    entries_.insert(std::pair<InteractionType, std::vector<TopologyEntry *>>(InteractionType::PROPER_DIHEDRALS, {}));
+    entries_.insert({ InteractionType::PROPER_DIHEDRALS, {} });
     auto &propers = entries_.find(InteractionType::PROPER_DIHEDRALS)->second;
     auto &angles  = entries_.find(InteractionType::ANGLES)->second;
     for(size_t i = 0; i < angles.size(); i++)
@@ -606,7 +629,7 @@ void Topology::addEntry(InteractionType                     itype,
         GMX_THROW(gmx::InternalError(gmx::formatString("InteractionType %s already present",
                                      interactionTypeToString(itype).c_str()).c_str()));
     }
-    entries_.insert(std::pair<InteractionType, std::vector<TopologyEntry *>>(itype, entry));
+    entries_.insert({ itype, entry });
 }
 
 void Topology::generateExclusions(int nrexcl,
@@ -689,6 +712,91 @@ t_excls *Topology::gromacsExclusions()
         gmx[i].nr = exclusions_[i].size();
     }
     return gmx;
+}
+
+void Topology::dump(FILE *fp) const
+{
+    if (nullptr == fp)
+    {
+        return;
+    }
+    for(auto &myEntry: entries_)
+    {
+        fprintf(fp, "%s\n", interactionTypeToString(myEntry.first).c_str());
+        for (auto &tt : myEntry.second)
+        {
+            for(auto &aa : tt->atomIndices())
+            {
+                fprintf(fp, " %d", aa+1);
+            }
+            fprintf(fp, "\n");
+        }
+    }
+}
+
+static void fillParams(const ForceFieldParameterList &fs,
+                       const Identifier              &btype,
+                       int                            nr,
+                       const char                    *param_names[],
+                       std::vector<double>           *param)
+{
+    for (int i = 0; i < nr; i++)
+    { 
+        param->push_back(fs.findParameterTypeConst(btype, param_names[i]).internalValue());
+    }
+}
+
+void Topology::fillParameters(const Poldata *pd)
+{
+    for(auto &entry : entries_)
+    {
+        auto fs = pd->findForcesConst(entry.first);
+        for(auto &topentry : entry.second)
+        {
+            const auto &topID = topentry->id();
+
+            std::vector<double> param;
+            switch (fs.fType())
+            {
+            case F_LJ:
+                fillParams(fs, topID, ljNR, lj_name, &param);
+                break;
+            case F_BHAM:
+                fillParams(fs, topID, wbhNR, wbh_name, &param);
+                break;
+            case F_COUL_SR:
+                fillParams(fs, topID, coulNR, coul_name, &param);
+                break;
+            case F_MORSE:
+                fillParams(fs, topID, morseNR, morse_name, &param);
+                break;
+            case F_BONDS:
+                fillParams(fs, topID, bondNR, bond_name, &param);
+                break;
+            case F_ANGLES:
+                fillParams(fs, topID, angleNR, angle_name, &param);
+                break;
+            case F_UREY_BRADLEY:
+                fillParams(fs, topID, ubNR, ub_name, &param);
+                break;
+            case F_LINEAR_ANGLES:
+                fillParams(fs, topID, linangNR, linang_name, &param);
+                break;
+            case F_IDIHS:
+                fillParams(fs, topID, idihNR, idih_name, &param);
+                break;
+            case F_FOURDIHS:
+                fillParams(fs, topID, fdihNR, fdih_name, &param);
+                break;
+            case F_POLARIZATION:
+                fillParams(fs, topID, polNR, pol_name, &param);
+                break;
+            default:
+                GMX_THROW(gmx::InternalError(gmx::formatString("Missing case %s", interaction_function[fs.fType()].name).c_str()));
+            }
+            topentry->setParams(param);
+        }
+    }
 }
 
 } // namespace alexandria

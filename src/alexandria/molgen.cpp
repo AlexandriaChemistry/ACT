@@ -314,6 +314,7 @@ void MolGen::checkDataSufficiency(FILE     *fp,
             {
                 if (optimize(btype))
                 {
+                    // TODO check the loop over multiple ids
                     for(auto &ff : *(bonds->findParameters(topentry->id())))
                     {
                         if (ff.second.isMutable())
@@ -362,6 +363,7 @@ void MolGen::checkDataSufficiency(FILE     *fp,
                     auto angles = pd->findForces(atype);
                     for (const auto &topentry : top->entry(atype))
                     {
+                        // TODO check multiple ids
                         for (auto &ff : *(angles->findParameters(topentry->id())))
                         {
                             if (ff.second.isMutable())
@@ -522,7 +524,8 @@ size_t MolGen::Read(FILE            *fp,
     std::map<immStatus, int>         imm_count;
     immStatus                        imm      = immStatus::OK;
     std::vector<alexandria::MolProp> mp;
-
+    
+    auto forceComp = new ForceComputer(pd);
     print_memory_usage(debug);
 
     //  Now  we have read the poldata and spread it to processors
@@ -617,6 +620,7 @@ size_t MolGen::Read(FILE            *fp,
                 mymol.initQgenResp(pd, 0.0, 100);
                 std::vector<double> dummy;
                 imm = mymol.GenerateCharges(pd,
+                                            forceComp,
                                             mdlog_,
                                             cr_,
                                             ChargeGenerationAlgorithm::NONE,
@@ -829,6 +833,7 @@ size_t MolGen::Read(FILE            *fp,
                 mymol.symmetrizeCharges(pd, qsymm_, nullptr);
                 mymol.initQgenResp(pd, 0.0, 100);
                 imm = mymol.GenerateCharges(pd,
+                                            forceComp,
                                             mdlog_,
                                             cr_,
                                             ChargeGenerationAlgorithm::NONE,

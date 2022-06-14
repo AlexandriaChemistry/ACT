@@ -26,6 +26,7 @@
 #include "acmfitnesscomputer.h"
 #include "acminitializer.h"
 #include "act/utility/communicationrecord.h"
+#include "act/forces/forcecomputer.h"
 #include "act/ga/Mutator.h"
 #include "act/ga/GeneticAlgorithm.h"
 
@@ -76,6 +77,8 @@ private:
     //! GeneticAlgorithm instance
     ga::GeneticAlgorithm *ga_          = nullptr;
 
+    //! Pointer to ForceComputer
+    ForceComputer        *forceComp_   = nullptr;
     //! Pointer to ACMFitnessComputer since it will be initialized later
     ACMFitnessComputer   *fitComp_     = nullptr;
 

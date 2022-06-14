@@ -243,7 +243,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                             }
                             else
                             {
-                                velec = qq*Coulomb_SS(r, irow, jrow, izeta, jzeta);
+                                velec =  qq*Coulomb_SS(r, irow, jrow, izeta, jzeta);
                                 felec = -qq*DCoulomb_SS(r, irow, jrow, izeta, jzeta);
                             }
                         }
@@ -288,7 +288,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                         vvdw             = vvdw_rep-vvdw_disp;
                         if (debug)
                         {
-                            fprintf(debug, "vvdw: %0.3f c6: %0.3f c12: %0.3f\n", vvdw, c6, c12);
+                            fprintf(debug, "ai %d aj %d vvdw: %10g c6: %10g c12: %10g\n", ii, jnr, vvdw, c6, c12);
                         }
                         break;
 
@@ -310,7 +310,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
             } /* end VdW interactions */
             if (debug)
             {
-                fprintf(debug, "vvdwtot: %0.3f \n", vvdwtot);
+                fprintf(debug, "vvdwtot: %10g \n", vvdwtot);
             }
             
             auto fscal_rinv  = rinv*(felec+fvdw);

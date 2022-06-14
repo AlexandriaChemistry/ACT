@@ -60,7 +60,8 @@ public:
      * @param param     the current force field parameter vector
      * @param commrec   pointer to communications record
      */
-    virtual void calcDeviation(      MyMol                         *mymol,
+    virtual void calcDeviation(const ForceComputer                 *forceComputer,
+                               MyMol                         *mymol,
                                      std::map<eRMS, FittingTarget> *targets,
                                      Poldata                       *poldata,
                                const std::vector<double>           &param,
@@ -95,7 +96,8 @@ public:
         optIndex_ = optIndex;
     }
 
-    virtual void calcDeviation(MyMol                         *mymol,
+    virtual void calcDeviation(const ForceComputer           *forceComputer,
+                               MyMol                         *mymol,
                                std::map<eRMS, FittingTarget> *targets,
                                Poldata                       *poldata,
                                const std::vector<double>     &param,
@@ -125,7 +127,8 @@ public:
                          const bool               verbose,
                                MolPropObservable  mpo);
 
-    virtual void calcDeviation(      MyMol                         *mymol,
+    virtual void calcDeviation(const ForceComputer                 *forceComputer,
+                                     MyMol                         *mymol,
                                      std::map<eRMS, FittingTarget> *targets,
                                      Poldata                       *poldata,
                                const std::vector<double>           &param,
@@ -150,7 +153,8 @@ public:
     : DevComputer(logfile, verbose)
     {}
 
-    virtual void calcDeviation(      MyMol                         *mymol,
+    virtual void calcDeviation(const ForceComputer                 *forceComputer,
+                                     MyMol                         *mymol,
                                      std::map<eRMS, FittingTarget> *targets,
                                      Poldata                       *poldata,
                                const std::vector<double>           &param,
@@ -193,7 +197,8 @@ public:
         fit_ = fit;
     }
 
-    virtual void calcDeviation(      MyMol                         *mymol,
+    virtual void calcDeviation(const ForceComputer                 *forceComputer,
+                                     MyMol                         *mymol,
                                      std::map<eRMS, FittingTarget> *targets,
                                      Poldata                       *poldata,
                                const std::vector<double>           &param,
@@ -219,7 +224,8 @@ public:
     PolarDevComputer(    FILE  *logfile,
                     const bool verbose);
 
-    virtual void calcDeviation(      MyMol                         *mymol,
+    virtual void calcDeviation(const ForceComputer                 *forceComputer,
+                                     MyMol                         *mymol,
                                      std::map<eRMS, FittingTarget> *targets,
                                      Poldata                       *poldata,
                                const std::vector<double>           &param,
@@ -250,7 +256,8 @@ public:
     {
     }
 
-    virtual void calcDeviation(      MyMol                         *mymol,
+    virtual void calcDeviation(const ForceComputer                 *forceComputer,
+                                     MyMol                         *mymol,
                                      std::map<eRMS, FittingTarget> *targets,
                                      Poldata                       *poldata,
                                const std::vector<double>           &param,
@@ -277,7 +284,8 @@ public:
     {
     }
 
-    virtual void calcDeviation(      MyMol                         *mymol,
+    virtual void calcDeviation(const ForceComputer                 *forceComputer,
+                                     MyMol                         *mymol,
                                      std::map<eRMS, FittingTarget> *targets,
                                      Poldata                       *poldata,
                                const std::vector<double>           &param,

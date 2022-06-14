@@ -262,7 +262,7 @@ bool HybridGAMC::evolve(std::map<iMolSelect, Genome> *bestGenome)
                 cr->send_ff_middleman_mode(dest, alexandria::TuneFFMiddlemanMode::FITNESS);
             }
             // Recompute my fitness
-            fitnessComputer()->compute(pool[pold]->genomePtr(0), imstr);
+            fitnessComputer()->compute(pool[pold]->genomePtr(0), imstr, forceComp_);
             // Receive fitness from middlemen
             for (size_t i = 1; i < pool[pold]->popSize(); i++)
             {
