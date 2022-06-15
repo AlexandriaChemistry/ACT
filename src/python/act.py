@@ -38,7 +38,11 @@ class ACT:
         # Todo implement algorithm to suggest reasonable pop_size
         self.pop_size = self.node_count
         self.set_algorithm(Alg.HYBRID, self.pop_size)
+        self.debug = False
     
+    def set_debug(self, debug:bool):
+        self.debug = debug
+
     def analyze_nodes(self):
         scpt = "SLURM_CPUS_PER_TASK"
         if scpt in os.environ:
@@ -94,9 +98,10 @@ class ACT:
                   self.molpropfile, self.selectionfile, LogFile ) )
         for opt in options:
             cmd += ( " %s %s " % ( opt, options[opt] ))
-        if self.verbose:
+        if self.verbose or self.debug:
             print(cmd)
-        os.system(cmd)
+        if not self.debug:
+            os.system(cmd)
         
     def tune_ff(self, ForceFieldFileIn: str, ForceFieldFileOut: str,
                 LogFile:str, target: Target, OptimizeGeometry: bool, options: dict):
@@ -142,10 +147,11 @@ class ACT:
             if not opt in options:
                 cmd += ( " %s %s " % ( opt, self.algopts[opt] ))
       
-        if self.verbose:
+        if self.verbose or self.debug:
             print(cmd)
-        os.system(cmd)
-     
+        if not self.debug:
+            os.system(cmd)
+
 if __name__ == '__main__':
     MolPropFile       = "molprop.xml"
     SelectionFile     = "sel.dat"
