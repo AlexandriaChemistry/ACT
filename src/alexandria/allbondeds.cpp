@@ -34,6 +34,7 @@
 #include "gromacs/fileio/xvgr.h"
 
 #include "tuning_utility.h"
+#include "act/poldata/forcefieldparametername.h"
 #include "act/utility/units.h"
     
 static void round_numbers(real *av, real *sig, int power10)
@@ -354,22 +355,26 @@ void AllBondeds::updatePoldata(FILE    *fp,
         {
         case F_MORSE:
             {
-                fs->addParameter(bondId, "bondlength",
-                                 ForceFieldParameter("pm", av, sig, N, av*factor_, av/factor_, Mutability::Bounded, false, true));
-                fs->addParameter(bondId, "De",
-                                 ForceFieldParameter("kJ/mol", De_, 0, 1, De_*factor_, De_/factor_, Mutability::Bounded, false, true));
-                fs->addParameter(bondId, "beta",
-                                 ForceFieldParameter("1/nm", beta_, 0, 1, beta_*factor_, beta_/factor_, Mutability::Bounded, false, true));
+                fs->addParameter(bondId, morse_name[morseLENGTH],
+                                 ForceFieldParameter("pm", av, sig, N, av*factor_, av/factor_,
+                                                     Mutability::Bounded, false, true));
+                fs->addParameter(bondId, morse_name[morseDE],
+                                 ForceFieldParameter("kJ/mol", De_, 0, 1, De_*factor_, De_/factor_,
+                                                     Mutability::Bounded, false, true));
+                fs->addParameter(bondId, morse_name[morseBETA],
+                                 ForceFieldParameter("1/nm", beta_, 0, 1, beta_*factor_, beta_/factor_,
+                                                     Mutability::Bounded, false, true));
                 real D0_ = 0;
-                fs->addParameter(bondId, "D0",
-                                 ForceFieldParameter("kJ/mol", D0_, 0, 1, -800, 0, Mutability::Bounded, false, true));
+                fs->addParameter(bondId, morse_name[morseD0],
+                                 ForceFieldParameter("kJ/mol", D0_, 0, 1, -800, 0,
+                                                     Mutability::Bounded, false, false));
             }
             break;
         case F_BONDS:
             {
-                fs->addParameter(bondId, "bondlength",
+                fs->addParameter(bondId, bond_name[bondLENGTH],
                                  ForceFieldParameter("pm", av, sig, N, av*factor_, av/factor_, Mutability::Bounded, false, true));
-                fs->addParameter(bondId, "kb",
+                fs->addParameter(bondId, bond_name[bondKB],
                                  ForceFieldParameter("kJ/mol/nm2", kb_, 0, 1, kb_*factor_, kb_/factor_, Mutability::Bounded, false, true));
             }
             break;
@@ -406,10 +411,10 @@ void AllBondeds::updatePoldata(FILE    *fp,
             case InteractionType::ANGLES:
                 {
                     round_numbers(&av, &sig, 10);
-                    fs->addParameter(bondId, "angle",
+                    fs->addParameter(bondId, angle_name[angleANGLE],
                                      ForceFieldParameter("degree", av, sig, N, av*factor_, 
                                                          std::min(180.0, av/factor_), Mutability::Bounded, false, true));
-                    fs->addParameter(bondId, "kt",
+                    fs->addParameter(bondId, angle_name[angleKTH],
                                      ForceFieldParameter("kJ/mol/rad2", kt_, 0, 1, kt_*factor_, kt_/factor_, Mutability::Bounded, false, false));
                     fprintf(fp, "angle-%s angle %g sigma %g (deg) N = %d%s\n",
                             bondId.id().c_str(), av, sig, static_cast<int>(N), (sig > angle_tol_) ? " WARNING" : "");
@@ -417,10 +422,10 @@ void AllBondeds::updatePoldata(FILE    *fp,
                     {
                         std::string unit("pm");
                         double r13 = convertFromGromacs(calc_r13(pd, bondId, av), unit);
-                        fs->addParameter(bondId, "r13", 
+                        fs->addParameter(bondId, ub_name[ubR13], 
                                          ForceFieldParameter(unit, r13, 0, N, r13*factor_, r13/factor_,
                                                              Mutability::Bounded, false, true));
-                        fs->addParameter(bondId, "kub", 
+                        fs->addParameter(bondId, ub_name[ubKUB], 
                                          ForceFieldParameter("kJ/mol/nm2", kub_, 0, 1, kub_*factor_, kub_/factor_, Mutability::Bounded, false, false));
                     }
                 }
@@ -430,21 +435,21 @@ void AllBondeds::updatePoldata(FILE    *fp,
                     double alin, sigmalin, myfactor = 0.99;
                     
                     calc_linear_angle_a(pd, bondId, &alin, &sigmalin);
-                    fs->addParameter(bondId, "a",
+                    fs->addParameter(bondId, linang_name[linangA],
                                      ForceFieldParameter("", alin, sigmalin, N, alin*myfactor, alin/myfactor, Mutability::Bounded, false, true));
-                    fs->addParameter(bondId, "klin", 
+                    fs->addParameter(bondId, linang_name[linangKLIN], 
                                      ForceFieldParameter("kJ/mol/nm2", klin_, 0, 1, klin_*factor_, klin_/factor_, Mutability::Bounded, false, true));
                     
                     fprintf(fp, "linear_angle-%s angle %g sigma %g N = %d%s\n",
                             bondId.id().c_str(), av, sig, static_cast<int>(N), (sig > angle_tol_) ? " WARNING" : "");
                 
-                    std::string unit("pm");
-                    double r13 = convertFromGromacs(calc_r13(pd, bondId, av), unit);
-                    fs->addParameter(bondId, "r13lin", 
-                                     ForceFieldParameter(unit, r13, 0, N, r13*factor_, r13/factor_,
-                                                         Mutability::Bounded, false, true));
-                    fs->addParameter(bondId, "kublin", 
-                                     ForceFieldParameter("kJ/mol/nm2", kub_, 0, 1, kub_*factor_, kub_/factor_, Mutability::Bounded, false, false));
+                    //std::string unit("pm");
+                    //double r13 = convertFromGromacs(calc_r13(pd, bondId, av), unit);
+                    //fs->addParameter(bondId, linang_name[linangR13LIN], 
+                        //               ForceFieldParameter(unit, r13, 0, N, r13*factor_, r13/factor_,
+                        //                               Mutability::Bounded, false, true));
+                        //fs->addParameter(bondId, linang_name[linangKUBLIN], 
+                        //           ForceFieldParameter("kJ/mol/nm2", kub_, 0, 1, kub_*factor_, kub_/factor_, Mutability::Bounded, false, false));
                 }
                 break;
             case InteractionType::PROPER_DIHEDRALS:
@@ -465,11 +470,11 @@ void AllBondeds::updatePoldata(FILE    *fp,
                     case F_PDIHS:
                         {
                             round_numbers(&av, &sig, 10);
-                            fs->addParameter(bondId, "angle", 
+                            fs->addParameter(bondId, "angle",
                                              ForceFieldParameter("degree", av, sig, N, av*factor_, av/factor_, Mutability::Bounded, false, true));
-                            fs->addParameter(bondId, "kp", 
+                            fs->addParameter(bondId, "kp",
                                              ForceFieldParameter("kJ/mol", kp_, 0, 1, kp_*factor_, kp_/factor_, Mutability::Bounded, false, true));
-                            fs->addParameter(bondId, "mult", 
+                            fs->addParameter(bondId, "mult",
                                              ForceFieldParameter("", 3, 0, 1, 3, 3, Mutability::Fixed, true, true));
                         }
                         break;
