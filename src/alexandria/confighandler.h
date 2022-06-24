@@ -333,6 +333,42 @@ public:
     
 };
 
+class SimulationConfigHandler : ConfigHandler
+{
+private:
+    //! Number of integration steps
+    int      nsteps_      = 0;
+    //! The integration time step
+    double   deltat_      = 0.0002;
+    //! Simulation temperature
+    double   temperature_ = 298.15;
+    //! How often to write coordinates
+    int      nstxout_     = 1;
+    //! How often to write velocities
+    int      nstvout_     = 0;
+    //! How often to write energies
+    int      nstener_     = 1;
+public:
+    /*!
+     * \brief Add command-line arguments to a vector
+     * @param pargs     pointer to arguments vector
+     */
+    virtual void add_pargs(std::vector<t_pargs> *pargs);
+
+    /*!
+     * \brief Check the validity of the provided arguments
+     * Throw an exception if an invalid combination of arguments is encountered
+     */
+    virtual void check_pargs();
+
+    int nsteps() const { return nsteps_; }
+    
+    double deltat() const { return deltat_; }
+    
+    int nstxout() const { return nstxout_; }
+    
+    int nstener() const { return nstener_; }
+};
 
 } //namespace alexandria
 

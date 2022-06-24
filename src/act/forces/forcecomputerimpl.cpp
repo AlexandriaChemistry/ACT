@@ -141,6 +141,7 @@ static double computeCoulomb(const ForceFieldParameterList      &ffpl,
     return ebond;
 }
 
+#ifdef FUTURE
 static double computePartridge(const ForceFieldParameterList      &ffpl,
                                const std::vector<TopologyEntry *> &angles,
                                const std::vector<ActAtom>         &atoms,
@@ -201,6 +202,7 @@ static double computePartridge(const ForceFieldParameterList      &ffpl,
     }
     return energy;
 }
+#endif
 
 static double computeBonds(const ForceFieldParameterList      &ffpl,
                            const std::vector<TopologyEntry *> &bonds,
@@ -315,6 +317,7 @@ static double computeLinearAngles(const ForceFieldParameterList      &ffpl,
         real b   = 1-a;
         for (int m = 0; (m < DIM); m++)
         {
+            // Minus sign due to F = -dV/dr
             real dr   = -a * r_ij[m] - b * r_kj[m];
             dr2      += dr*dr;
             real f_i  = a*klin*dr;

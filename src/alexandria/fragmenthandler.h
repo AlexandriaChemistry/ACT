@@ -12,23 +12,25 @@ namespace alexandria
     {
     private:
         //! We need one ACM structure for each fragment
-        std::vector<QgenAcm>             QgenAcm_;
+        std::vector<QgenAcm>               QgenAcm_;
         //! And a supporting atoms structure too
-        std::vector<t_atoms>             FragAtoms_;
+        std::vector<std::vector<ActAtom> > FragAtoms_;
         //! And a vector of bonds
-        std::vector<std::vector<Bond> >  bonds_;
+        std::vector<std::vector<Bond> >    bonds_;
         //! Array denoting where the atoms start in the global
-        std::vector<size_t>              atomStart_;
+        std::vector<size_t>                atomStart_;
         //! Total number of atoms
-        size_t                           natoms_ = 0;
+        size_t                             natoms_ = 0;
     public:
         /*! Constructor
          * \param[in] pd        Force field data
          * \param[in] atoms     The atoms
+         * \param[in] bonds     The bonds
          * \param[in] fragments The fragmentation information
+         * \param[in] shellRenumber Info on renumbering atoms because of shells
          */
         FragmentHandler(const Poldata               *pd,
-                        const t_atoms               *atoms,
+                        const std::vector<ActAtom>  &atoms,
                         const std::vector<Bond>     &bonds,
                         const std::vector<Fragment> *fragments,
                         const std::vector<int>      &shellRenumber);
@@ -53,6 +55,6 @@ namespace alexandria
                               const std::string                &molname,
                               const gmx::HostVector<gmx::RVec> &x,
                               const Poldata                    *pd,
-                              t_atoms                          *atoms);
+                              std::vector<ActAtom>             *atoms);
     };
 } // namespace alexandria

@@ -576,16 +576,16 @@ void TuneForceFieldPrinter::printAtoms(FILE              *fp,
     double qtot  = 0;
     auto myatoms = mol->atomsConst();
     auto force   = mol->f();
-    for (int j = i = 0; j < myatoms.nr; j++)
+    for (size_t j = i = 0; j < myatoms.size(); j++)
     {
-        if (myatoms.atom[j].ptype == eptAtom ||
-            myatoms.atom[j].ptype == eptNucleus)
+        if (myatoms[j].pType() == eptAtom ||
+            myatoms[j].pType() == eptNucleus)
         {
-            real qCalc = myatoms.atom[j].q;
-            fprintf(fp, "%-2d%3d  %-5s  %12g",
-                    myatoms.atom[j].atomnumber,
+            real qCalc = myatoms[j].charge();
+            fprintf(fp, "%-2d%3lu  %-5s  %12g",
+                    myatoms[j].atomicNumber(),
                     j+1,
-                    *(myatoms.atomtype[j]),
+                    myatoms[j].ffType().c_str(),
                     qCalc);
             qtot += qCalc;
             for(auto &qt : qQM)
@@ -606,12 +606,12 @@ void TuneForceFieldPrinter::printAtoms(FILE              *fp,
         else
         {
             // Turned on printing of shells again
-            fprintf(fp, "%-2d%3d  %-5s  %12g",
+            fprintf(fp, "%-2d%3lu  %-5s  %12g",
                     0,
                     j+1,
-                    *(myatoms.atomtype[j]),
-                    myatoms.atom[j].q);
-            qtot += myatoms.atom[j].q;
+                    myatoms[j].ffType().c_str(),
+                    myatoms[j].charge());
+            qtot += myatoms[j].charge();
             for(auto &qt : qQM)
             {
                 if (!qQM.find(qt.first)->second.empty())
@@ -741,7 +741,7 @@ void TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
         {
             auto pdb   = gmx::formatString("inds/%s-original-minimized.pdb", mol->getMolname().c_str());
             auto title = gmx::formatString("%s RMSD %g Angstrom", mol->getMolname().c_str(), 10*rmsd);
-            writeCoordinates(mol->atoms(), pdb, title, xrmsd);
+            writeCoordinates(mol->gmxAtomsConst(), pdb, title, xrmsd);
         }
         auto eAfter = mol->energyTerms();
         tcout->push_back(gmx::formatString("   %-20s  %10s  %10s  %10s minimization",

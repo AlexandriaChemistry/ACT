@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020 
+ * Copyright (C) 2014-2022
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -46,19 +46,19 @@ struct gmx_atomprop;
 namespace alexandria
 {
 
-/*! Generate a list of symmetry-related charges
+/*! Generate a list of symmetry-related charges.
+ * If appropriate, symmetrize the charges in the topology.
  * \param[in]  bQsym       If false, make an identity list
- * \param[in]  atoms       The atoms in the molecules
+ * \param[in]  topology    The molecular topology
  * \param[in]  pd          The force field, containing symmetrization info
  * \param[in]  symm_string Optional (may be nullptr) user provided list
  * \param[out] sym_charges The final list
  */
-void symmetrize_charges(bool                                bQsym,
-                        const t_atoms                      *atoms,
-                        const std::vector<TopologyEntry *> &bonds,
-                        const Poldata                      *pd,
-                        const char                         *symm_string,
-                        std::vector<int>                   *sym_charges);
+void symmetrize_charges(bool              bQsym,
+                        Topology         *topology,
+                        const Poldata    *pd,
+                        const char       *symm_string,
+                        std::vector<int> *sym_charges);
 
 } // namespace alexandria
 

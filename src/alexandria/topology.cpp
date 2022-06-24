@@ -276,8 +276,10 @@ void Topology::setAtoms(const t_atoms *atoms)
     for(int i = 0; i < atoms->nr; i++)
     {
         atoms_.push_back(ActAtom(*atoms->atomname[i],
+                                 atoms->atom[i].elem,
                                  *atoms->atomtype[i],
                                  atoms->atom[i].ptype,
+                                 atoms->atom[i].atomnumber,
                                  atoms->atom[i].m,
                                  atoms->atom[i].q));
     }

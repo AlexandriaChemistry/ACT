@@ -133,7 +133,7 @@ void ChargeCM5DevComputer::calcDeviation(gmx_unused const ForceComputer       *f
 {
     double qtot = 0;
     int i = 0;
-    const t_atoms myatoms = mymol->atomsConst();
+    const auto myatoms = mymol->topology()->atoms();
     std::vector<double> qcm5;
     QtypeProps *qp = mymol->qTypeProps(qType::CM5);
     if (qp)
@@ -141,29 +141,29 @@ void ChargeCM5DevComputer::calcDeviation(gmx_unused const ForceComputer       *f
         qcm5 = qp->charge();
         if (debug)
         {
-            for (int j = 0; j < myatoms.nr; j++)
+            for (size_t j = 0; j < myatoms.size(); j++)
             {
-                fprintf(debug, "Charge %d. CM5 = %g ACM = %g\n", j, qcm5[j], myatoms.atom[j].q);
+                fprintf(debug, "Charge %lu. CM5 = %g ACM = %g\n", j, qcm5[j], myatoms[j].charge());
             }
         }
     }
     // Iterate over the atoms
-    for (int j = 0; j < myatoms.nr; j++)
+    for (size_t j = 0; j < myatoms.size(); j++)
     {
-        if (myatoms.atom[j].ptype == eptShell)
+        if (myatoms[j].pType() == eptShell)
         {
             continue;
         }
-        ParticleTypeIterator atype = poldata->findParticleType(*myatoms.atomtype[j]);
+        ParticleTypeIterator atype = poldata->findParticleType(myatoms[j].ffType());
         const ForceFieldParameter qparm = atype->parameterConst("charge");
-        double qj  = myatoms.atom[j].q;
+        double qj  = myatoms[j].charge();
         double qjj = qj;
         // TODO: only count in real shells
         if (mymol->haveShells() &&
-            j < myatoms.nr-1 &&
-            myatoms.atom[j+1].ptype == eptShell)
+            j < myatoms.size()-1 &&
+            myatoms[j+1].pType() == eptShell)
         {
-            qjj += myatoms.atom[j+1].q;
+            qjj += myatoms[j+1].charge();
         }
         qtot += qjj;
         switch (qparm.mutability())
@@ -172,7 +172,8 @@ void ChargeCM5DevComputer::calcDeviation(gmx_unused const ForceComputer       *f
             if (qparm.value() != qj)
             {
                 GMX_THROW(gmx::InternalError(gmx::formatString("Fixed charge for atom %s in %s was changed from %g to %g",
-                                                                *myatoms.atomname[j], mymol->getMolname().c_str(), qparm.value(), qj).c_str()));
+                                                               myatoms[j].name().c_str(),
+                                                               mymol->getMolname().c_str(), qparm.value(), qj).c_str()));
             }
             break;
         case Mutability::ACM:
@@ -230,10 +231,10 @@ void EspDevComputer::calcDeviation(gmx_unused const ForceComputer       *forceCo
     }
     if (fit_)
     {
-        qgr->updateZeta(mymol->atoms(), poldata);
+        qgr->updateZeta(mymol->topology()->atoms(), poldata);
     }
     dumpQX(logfile_, mymol, "ESP");
-    qgr->updateAtomCharges(mymol->atoms());
+    qgr->updateAtomCharges(mymol->topology()->atoms());
     qgr->calcPot(poldata->getEpsilonR());
     real mae, mse;
     real rms = qgr->getStatistics(&rrms, &cosangle, &mae, &mse);
@@ -255,12 +256,10 @@ void EspDevComputer::dumpQX(FILE *fp, MyMol *mol, const std::string &info)
     {
         std::string label = mol->getMolname() + "-" + info;
         fprintf(fp, "%s q:", label.c_str());
-        t_mdatoms *md = mol->getMdatoms();
-        auto myatoms = mol->atomsConst();
-        for (int i = 0; i < myatoms.nr; i++)
+        auto myatoms = mol->topology()->atoms();
+        for (size_t i = 0; i < myatoms.size(); i++)
         {
-            fprintf(fp, " %g (%g)", myatoms.atom[i].q,
-                    md->chargeA[i]);
+            fprintf(fp, " %g", myatoms[i].charge());
         }
         fprintf(fp, "\n");
         auto top = mol->topology();
@@ -273,7 +272,7 @@ void EspDevComputer::dumpQX(FILE *fp, MyMol *mol, const std::string &info)
             }
             fprintf(fp, "\n");
         }
-        pr_rvecs(fp, 0, label.c_str(), mol->x().rvec_array(), myatoms.nr);
+        pr_rvecs(fp, 0, label.c_str(), mol->x().rvec_array(), myatoms.size());
     }
 }
 

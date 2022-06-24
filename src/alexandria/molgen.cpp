@@ -44,7 +44,6 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
-#include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/shellfc.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/arraysize.h"
@@ -268,14 +267,14 @@ void MolGen::checkDataSufficiency(FILE     *fp,
             {
                 continue;
             }
-            auto myatoms = mol.atomsConst();
-            for(int i = 0; i < myatoms.nr; i++)
+            auto myatoms = mol.topology()->atoms();
+            for(size_t i = 0; i < myatoms.size(); i++)
             {
                 for(auto &itype : atomicItypes)
                 {
                     if (optimize(itype))
                     {
-                        auto atype  = pd->findParticleType(*myatoms.atomtype[i]);
+                        auto atype  = pd->findParticleType(myatoms[i].ffType());
                         if (atype->hasInteractionType(itype))
                         {
                             auto fplist = pd->findForces(itype);
@@ -329,8 +328,8 @@ void MolGen::checkDataSufficiency(FILE     *fp,
                     int ai = topentry->atomIndex(0);
                     int aj = topentry->atomIndex(1);
                     auto ztype  = InteractionType::ELECTRONEGATIVITYEQUALIZATION;
-                    auto iPType = pd->findParticleType(*myatoms.atomtype[ai])->interactionTypeToIdentifier(ztype).id();
-                    auto jPType = pd->findParticleType(*myatoms.atomtype[aj])->interactionTypeToIdentifier(ztype).id();
+                    auto iPType = pd->findParticleType(myatoms[ai].ffType())->interactionTypeToIdentifier(ztype).id();
+                    auto jPType = pd->findParticleType(myatoms[aj].ffType())->interactionTypeToIdentifier(ztype).id();
                     auto bcc   = pd->findForces(bcctype);
                     auto bccId = Identifier({iPType, jPType}, topentry->bondOrders(), bcc->canSwap());
                     if (!bcc->parameterExists(bccId))
@@ -382,10 +381,10 @@ void MolGen::checkDataSufficiency(FILE     *fp,
             // Now we check all molecules, including the Test and Ignore
             // set.
             bool keep = true;
-            auto myatoms = mol.atomsConst();
-            for(int i = 0; i < myatoms.nr; i++)
+            auto myatoms = mol.topology()->atoms();
+            for(size_t i = 0; i < myatoms.size(); i++)
             {
-                auto atype = pd->findParticleType(*myatoms.atomtype[i]);
+                auto atype = pd->findParticleType(myatoms[i].ffType());
                 for(auto &itype : atomicItypes)
                 {
                     if (optimize(itype))
@@ -603,9 +602,8 @@ size_t MolGen::Read(FILE            *fp,
                 }
                 mymol.Merge(&(*mpi));
                 mymol.setInputrec(inputrec_);
-                imm = mymol.GenerateTopology(fp, 
-                                             pd,
-                                             missingParameters::Error);
+                imm = mymol.GenerateTopology(fp, pd,
+                                             missingParameters::Error, false);
                 if (immStatus::OK != imm)
                 {
                     if (verbose && fp)
@@ -823,9 +821,8 @@ size_t MolGen::Read(FILE            *fp,
             }
             mymol.setInputrec(inputrec_);
 
-            imm = mymol.GenerateTopology(debug,
-                                         pd,
-                                         missingParameters::Error);
+            imm = mymol.GenerateTopology(debug, pd,
+                                         missingParameters::Error, false);
 
             if (immStatus::OK == imm)
             {

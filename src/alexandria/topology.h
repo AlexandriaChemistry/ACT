@@ -389,21 +389,27 @@ private:
     Identifier  id_;
     //! The atom name
     std::string name_;
+    //! The chemical element
+    std::string elem_;
     //! The atom type in the force field
     std::string ffType_;
     //! The particle type
     int         pType_;
+    //! The atomic number
+    int         atomicNumber_;
     //! The mass
     double      mass_;
     //! The charge
     double      charge_;
 public:
     ActAtom(const std::string &name,
+            const std::string &elem,
             const std::string &ffType,
             int                pType,
+            int                atomicNumber,
             double             newmass,
             double             newcharge) :
-        id_({ name }, {}, CanSwap::No), name_(name), ffType_(ffType), pType_(pType), mass_(newmass), charge_(newcharge)
+        id_({ name }), name_(name), elem_(elem), ffType_(ffType), pType_(pType), atomicNumber_(atomicNumber), mass_(newmass), charge_(newcharge)
     {}
     
     //! \return Identifier
@@ -412,11 +418,17 @@ public:
     //! \return the name
     const std::string &name() const { return name_; }
     
+    //! \return the element
+    const std::string &element() const { return elem_; }
+    
     //! \return the ffType
     const std::string &ffType() const { return ffType_; }
     
     //! \return the particle type
     int pType() const { return pType_; }
+
+    //! \return the atomic number
+    int atomicNumber() const { return atomicNumber_; }
 
     //! \return the mass
     double mass() const { return mass_; }
@@ -461,11 +473,14 @@ private:
      * \param[in] atoms Gromacs atoms structure
      */
     void setAtoms(const t_atoms *atoms);
-             
+
     //! \return the vector of atoms
     const std::vector<ActAtom> &atoms() const { return atoms_; }
     
-    /*! \brief Find a topology entry matching the inputs
+    //! \return the vector of atoms for editing
+    std::vector<ActAtom> *atomsPtr() { return &atoms_; }
+    
+    /*! \brief Find a topology entry matching the inputs/
      * \param[in] itype     The InteractionType
      * \param[in] aindex    The atom indices
      * \param[in] bondOrder The array of bond orders
@@ -508,7 +523,10 @@ private:
      */
     void generateExclusions(int nrexcl,
                             int nratoms);
-                            
+    
+    //! \return the number of atoms                    
+    size_t nAtoms() const { return atoms_.size(); }
+        
     /*! \brief Convert to gromacs exclusiones
      */
     t_excls *gromacsExclusions();

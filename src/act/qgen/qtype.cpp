@@ -37,7 +37,6 @@
 
 #include "act/molprop/multipole_names.h"
 #include "act/utility/units.h"
-#include "gromacs/topology/atoms.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -149,17 +148,17 @@ void QtypeProps::setQ(const std::vector<double> &q)
     }
 }
 
-void QtypeProps::setQ(const t_atoms *atoms)
+void QtypeProps::setQ(const std::vector<ActAtom> &atoms)
 {
-    q_.clear();
-    for(int i = 0; i < atoms->nr; i++)
+    q_.resize(atoms.size(), 0.0);
+    for(size_t i = 0; i < atoms.size(); i++)
     {
-        q_.push_back(atoms->atom[i].q);
+        q_[i] = atoms[i].charge();
     }
     // If QgenResp_ has not been allocated we likely don't need it.
     if (QgenResp_)
     {
-        QgenResp_->updateAtomCharges(atoms);
+        QgenResp_->updateAtomCharges(q_);
     }
 }
 

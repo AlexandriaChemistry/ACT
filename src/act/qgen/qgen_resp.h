@@ -40,12 +40,11 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/statistics/statistics.h"
-//#include "gromacs/topology/atomprop.h"
 
 #include "act/basics/chargemodel.h"
+#include "alexandria/topology.h"
 
 struct gmx_output_env_t;
-struct t_atoms;
 struct t_symtab;
 
 namespace alexandria
@@ -132,13 +131,13 @@ class QgenResp
         /*! \brief Set the inforamtion about atoms
          * The size of arrays in atoms and x is checked and compared 
          * to what was there previously if anything. 
-         * \param[in] atoms  The gromacs atoms structure
+         * \param[in] atoms  The ACT atoms structure
          * \param[in] pd     The force field
          * \param[in] x      The coordinates
          * \param[in] qtotal Total charge of the compound, needed when
          *                   generating charges
          */
-        void setAtomInfo(const t_atoms                    *atoms,
+        void setAtomInfo(const std::vector<ActAtom>       &atoms,
                          const Poldata                    *pd,
                          const gmx::HostVector<gmx::RVec> &x,
                          const int                         qtotal);
@@ -148,9 +147,9 @@ class QgenResp
         void updateAtomCoords(const gmx::HostVector<gmx::RVec> &x);
 
         /*! \brief Update the charges
-         * \param[in] atoms Atoms struct containing charges
+         * \param[in] q Vector containing new charges
          */
-        void updateAtomCharges(const t_atoms  *atoms);
+        void updateAtomCharges(const std::vector<ActAtom> &atoms);
 
         /*! \brief Update the charges
          * \param[in] q Vector containing new charges
@@ -240,15 +239,21 @@ class QgenResp
         // Make sure the total charge is correct and that symmetry is obeyed
         void regularizeCharges();
 
-        void potcomp(const char             *potcomp,
-                     const t_atoms          *atoms,
-                     const rvec             *x,
-                     const char             *pdbdiff,
-                     const gmx_output_env_t *oenv);
+        void potcomp(const char                 *potcomp,
+                     const std::vector<ActAtom> &atoms,
+                     const rvec                 *x,
+                     const char                 *pdbdiff,
+                     const gmx_output_env_t     *oenv);
 
         real myWeight(int iatom) const;
-
-        void updateZeta(t_atoms *atoms, const Poldata *pd);
+    
+        /*! \brief Update the internal copies of zeta
+         * \param[in] atoms The atom info
+         * \param[in] pd    The force field
+         */
+        void updateZeta(const std::vector<ActAtom> &atoms,
+                        const Poldata              *pd);
+                        
         //! Return the charge for one particle
         double getCharge(int atom) const { return q_[atom]; }
 

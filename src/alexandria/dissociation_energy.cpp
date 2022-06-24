@@ -172,11 +172,11 @@ static bool calcDissoc(FILE                              *fplog,
     for (const auto &uu : used)
     {
         auto mymol   = &(molset[uu.first]);
-        auto myatoms = mymol->atomsConst();
+        auto myatoms = mymol->topology()->atoms();
         for (auto &b : mymol->bondsConst())
         {
-            auto atypeI = *myatoms.atomtype[b.aI()];
-            auto atypeJ = *myatoms.atomtype[b.aJ()];
+            const auto &atypeI = myatoms[b.aI()].ffType();
+            const auto &atypeJ = myatoms[b.aJ()].ffType();
             std::string btypeI, btypeJ;
             if (pd->atypeToBtype(atypeI, &btypeI) &&
                 pd->atypeToBtype(atypeJ, &btypeJ))
@@ -190,7 +190,7 @@ static bool calcDissoc(FILE                              *fplog,
             else
             {
                 gmx_fatal(FARGS, "No parameters for bond in the force field, atoms %s-%s mol %s",
-                          atypeI, atypeJ,
+                          atypeI.c_str(), atypeJ.c_str(),
                           mymol->getIupac().c_str());
             }
         }
@@ -217,11 +217,11 @@ static bool calcDissoc(FILE                              *fplog,
     for (const auto &uu : used)
     {
         auto mymol = &(molset[uu.first]);
-        auto myatoms = mymol->atomsConst();
+        auto myatoms = mymol->topology()->atoms();
         for (auto &b : mymol->bondsConst())
         {
-            const char *atypeI = *myatoms.atomtype[b.aI()];
-            const char *atypeJ = *myatoms.atomtype[b.aJ()];
+            const auto &atypeI = myatoms[b.aI()].ffType();
+            const auto &atypeJ = myatoms[b.aJ()].ffType();
             std::string btypeI, btypeJ;
             if (pd->atypeToBtype(atypeI, &btypeI) &&
                 pd->atypeToBtype(atypeJ, &btypeJ))

@@ -37,19 +37,20 @@
 namespace alexandria
 {
 
-void symmetrize_charges(bool                                bQsym, 
-                        const t_atoms                      *atoms,
-                        const std::vector<TopologyEntry *> &bonds,
-                        const Poldata                      *pd,
-                        const char                         *symm_string,
-                        std::vector<int>                   *sym_charges)
+void symmetrize_charges(bool              bQsym, 
+                        Topology         *topology,
+                        const Poldata    *pd,
+                        const char       *symm_string,
+                        std::vector<int> *sym_charges)
 {
     std::string  central, attached;
     int          nrq;
     double       qaver, qsum;
 
+    auto atoms = topology->atomsPtr();
+    
     sym_charges->clear();
-    for (int i = 0; i < atoms->nr; i++)
+    for (size_t i = 0; i < atoms->size(); i++)
     {
         sym_charges->push_back(i);
     }
@@ -58,10 +59,10 @@ void symmetrize_charges(bool                                bQsym,
         if ((nullptr != symm_string) && (strlen(symm_string) > 0))
         {
             std::vector<std::string> ss = gmx::splitString(symm_string);
-            if (static_cast<int>(ss.size()) != atoms->nr)
+            if (ss.size() != atoms->size())
             {
-                gmx_fatal(FARGS, "Wrong number (%d) of atom-numbers in symm_string: expected %d",
-                          static_cast<int>(ss.size()), atoms->nr);
+                gmx_fatal(FARGS, "Wrong number (%lu) of atom-numbers in symm_string: expected %lu",
+                          ss.size(), atoms->size());
             }
             int ii = 0;
             for (auto is = ss.begin();
@@ -73,28 +74,29 @@ void symmetrize_charges(bool                                bQsym,
         }
         else
         {
+            auto &bonds = topology->entry(InteractionType::BONDS);
             for (auto symcharges = pd->getSymchargesBegin();
                  symcharges != pd->getSymchargesEnd(); symcharges++)
             {
-                for (int i = 0; i < atoms->nr; i++)
+                for (size_t i = 0; i < atoms->size(); i++)
                 {
-                    if (symcharges->getCentral().compare(atoms->atom[i].elem) == 0)
+                    if (symcharges->getCentral().compare((*atoms)[i].element()) == 0)
                     {
                         int              hsmin = -1;
                         std::vector<int> hs;
-                        for (auto &jj : bonds)
+                        for (const auto &jj : bonds)
                         {
                             auto j  = static_cast<const Bond *>(jj);
-                            auto ai = j->aI();
-                            auto aj = j->aJ();
+                            size_t ai = j->aI();
+                            size_t aj = j->aJ();
                             
                             if (ai == i && 
-                                symcharges->getAttached().compare(atoms->atom[aj].elem) == 0)
+                                symcharges->getAttached().compare((*atoms)[aj].element()) == 0)
                             {
                                 hs.push_back(aj);
                             }
                             else if (aj == i &&
-                                     symcharges->getAttached().compare(atoms->atom[ai].elem) == 0)
+                                     symcharges->getAttached().compare((*atoms)[ai].element()) == 0)
                             {
                                 hs.push_back(ai);
                             }
@@ -116,26 +118,26 @@ void symmetrize_charges(bool                                bQsym,
             }
         }
 
-        for (int i = 0; i < atoms->nr; i++)
+        for (size_t i = 0; i < atoms->size(); i++)
         { 
             qsum = 0;
             nrq  = 0;
-            for (int j = i+1; j < atoms->nr; j++)
+            for (size_t j = i+1; j < atoms->size(); j++)
             {
                 if ((*sym_charges)[j] == (*sym_charges)[i])
                 {
-                    qsum += atoms->atom[j].q;
+                    qsum += (*atoms)[j].charge();
                     nrq++;
                 }
             }
             if (0 < nrq)
             {
                 qaver = qsum/nrq;
-                for (int j = 0; j < atoms->nr; j++)
+                for (size_t j = 0; j < atoms->size(); j++)
                 {
                     if ((*sym_charges)[j] == (*sym_charges)[i])
                     {
-                        atoms->atom[j].q = atoms->atom[j].qB = qaver;
+                        (*atoms)[j].setCharge(qaver);
                     }
                 }
             }

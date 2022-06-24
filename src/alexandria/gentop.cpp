@@ -327,7 +327,8 @@ int gentop(int argc, char *argv[])
     fill_inputrec(inputrec);
     mymol.setInputrec(inputrec);
     imm = mymol.GenerateTopology(stdout, &pd,
-                                 bAllowMissing ? missingParameters::Ignore : missingParameters::Error);
+                                 bAllowMissing ? missingParameters::Ignore : missingParameters::Error,
+                                 false);
 
     auto forceComp = new ForceComputer(&pd);
     gmx_omp_nthreads_init(mdlog, cr.commrec(), 1, 1, 1, 0, false, false);

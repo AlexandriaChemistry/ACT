@@ -133,7 +133,7 @@ class RespTest : public gmx::test::CommandLineTestBase
             fill_inputrec(&inputrec);
             Poldata      *pd = getPoldata(qdist);
             auto imm = mp_.GenerateTopology(nullptr, pd,
-                                            missingParameters::Error);
+                                            missingParameters::Error, false);
             if (immStatus::OK != imm)
             {
                 fprintf(stderr, "Error generating topology: %s\n", immsg(imm));
@@ -160,10 +160,10 @@ class RespTest : public gmx::test::CommandLineTestBase
                                 ChargeGenerationAlgorithm::ESP, qcustom);
 
             std::vector<double> qtotValues;
-            auto atoms = mp_.atoms();
-            for (int atom = 0; atom < atoms->nr; atom++)
+            auto atoms = mp_.atomsConst();
+            for (size_t atom = 0; atom < atoms.size(); atom++)
             {
-                qtotValues.push_back(atoms->atom[atom].q);
+                qtotValues.push_back(atoms[atom].charge());
             }
             char buf[256];
             snprintf(buf, sizeof(buf), "qtotValuesEqdModel_%s",

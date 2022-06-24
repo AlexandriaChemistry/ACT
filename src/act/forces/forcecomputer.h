@@ -79,7 +79,9 @@ private:
     void calcPolarizability(const Topology         *top,
                             std::vector<gmx::RVec> *coordinates,
                             QtypeProps             *qtp) const;
-                 
+
+    //! \return the internal convergence criterion
+    double convergenceTolerance() const { return rmsForce_; }                 
 };
 
 } // namespace alexandria

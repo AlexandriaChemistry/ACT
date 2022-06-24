@@ -114,20 +114,17 @@ double ACMFitnessComputer::calcDeviation(std::vector<double> *params,
         if ((mymol.support() == eSupport::Local) ||
             (calcDev == CalcDev::Master && mymol.support() == eSupport::Remote))
         {
+            std::vector<InteractionType> itUpdate;
             for(auto &io : molgen_->iopt())
             {
                 if (io.second)
                 {
-                    // Update the polarizabilities only once before the loop
-                    mymol.UpdateIdef(sii_->poldata(), io.first);
+                    itUpdate.push_back(io.first);
                 }
             }
-            // TODO Check whether this is sufficient for updating the particleTypes
-            if (molgen_->fit("zeta"))
-            {
-                // Update the electronegativity parameters
-                mymol.zetaToAtoms(sii_->poldata(), mymol.atoms());
-            }
+            // Update the polarizabilities and other params only once before the loop
+            mymol.UpdateIdef(sii_->poldata(), itUpdate, 
+                             molgen_->fit("zeta"));
             // Run charge generation including shell minimization
             immStatus imm = mymol.GenerateAcmCharges(sii_->poldata(), forceComp_);
 
@@ -165,7 +162,7 @@ void ACMFitnessComputer::computeMultipoles(std::map<eRMS, FittingTarget> *target
         (*targets).find(eRMS::OCT)->second.weight() > 0  ||
         (*targets).find(eRMS::HEXADEC)->second.weight() > 0)
     {
-        qcalc->setQ(mymol->atoms());
+        qcalc->setQ(mymol->topology()->atoms());
         qcalc->setX(mymol->x());
         qcalc->calcMoments();
     }

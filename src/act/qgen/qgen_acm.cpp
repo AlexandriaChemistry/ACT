@@ -50,21 +50,21 @@
 namespace alexandria
 {
 
-QgenAcm::QgenAcm(const Poldata *pd,
-                 t_atoms       *atoms,
-                 int            qtotal)
+QgenAcm::QgenAcm(const Poldata              *pd,
+                 const std::vector<ActAtom> &atoms,
+                 int                         qtotal)
 {
     auto qt     = pd->findForcesConst(InteractionType::COULOMB);
     ChargeType_ = name2ChargeType(qt.optionValue("chargetype"));
     bHaveShell_ = pd->polarizable();
     eQGEN_      = eQgen::OK;
-    natom_      = atoms->nr;
+    natom_      = atoms.size();
     qtotal_     = qtotal;
 
     auto eem = pd->findForcesConst(InteractionType::ELECTRONEGATIVITYEQUALIZATION);
-    for (int i = 0; i < atoms->nr; i++)
+    for (size_t i = 0; i < atoms.size(); i++)
     {
-        auto atype = pd->findParticleType(*atoms->atomtype[i]);
+        auto atype = pd->findParticleType(atoms[i].ffType());
         atomicNumber_.push_back(atype->atomnumber());
         auto qparam = atype->parameterConst("charge");
         if (qparam.mutability() == Mutability::ACM)
@@ -86,7 +86,7 @@ QgenAcm::QgenAcm(const Poldata *pd,
         else
         {
             fixed_.push_back(i);
-            q_.push_back(atoms->atom[i].q);
+            q_.push_back(atoms[i].charge());
             eta_.push_back(0.0);
             chi0_.push_back(0.0);
             row_.push_back(0);
@@ -94,8 +94,8 @@ QgenAcm::QgenAcm(const Poldata *pd,
         // If this particle has a shell, it is assumed to be the next particle
         // TODO: check the polarization array instead.
         if (atype->hasInteractionType(InteractionType::POLARIZATION) &&
-            i < atoms->nr-1 &&
-            atoms->atom[i+1].ptype == eptShell)
+            i < atoms.size()-1 &&
+            atoms[i+1].pType() == eptShell)
         {
             myShell_.insert({ i, i+1 });
         }
@@ -115,7 +115,7 @@ QgenAcm::QgenAcm(const Poldata *pd,
     }
     rhs_.resize(nonFixed_.size() + 1, 0);
     Jcc_.resize(nonFixed_.size() + 1, {0});
-    x_.resize(atoms->nr, {0, 0, 0});
+    x_.resize(atoms.size(), {0, 0, 0});
 
     for (size_t ii = 0; ii < nonFixed_.size()+1; ii++)
     {
@@ -123,8 +123,8 @@ QgenAcm::QgenAcm(const Poldata *pd,
     }
 }
 
-void QgenAcm::updateParameters(const Poldata *pd,
-                               const t_atoms *atoms)
+void QgenAcm::updateParameters(const Poldata              *pd,
+                               const std::vector<ActAtom> &atoms)
 {
     auto qt = pd->findForcesConst(InteractionType::COULOMB);
     auto eqtModel = name2ChargeType(qt.optionValue("chargetype"));
@@ -159,7 +159,8 @@ void QgenAcm::updateParameters(const Poldata *pd,
     // Update fixed charges
     for (auto &i : fixed_)
     {
-        q_[i] = pd->findParticleType(*atoms->atomtype[i])->paramValue("charge");
+        // TODO if fixed charges are in the atoms struct we do not need to look them up
+        q_[i] = pd->findParticleType(atoms[i].ffType())->paramValue("charge");
     }
 }
 
@@ -196,7 +197,8 @@ static double Coulomb_PP(double r)
     return 1/r;
 }
 
-void QgenAcm::dump(FILE *fp, const t_atoms *atoms) const
+void QgenAcm::dump(FILE                       *fp,
+                   const std::vector<ActAtom> *atoms) const
 {
     if (fp && eQGEN_ == eQgen::OK)
     {
@@ -222,15 +224,15 @@ void QgenAcm::dump(FILE *fp, const t_atoms *atoms) const
 
         fprintf(fp, "                                          Core                 Shell\n");
         fprintf(fp, "Res  Atom   Nr       J0    chi0  row   q   zeta        row    q     zeta\n");
-        for (int i = 0; i < atoms->nr; i++)
+        for (size_t i = 0; i < atoms->size(); i++)
         {
             for (auto m = 0; m < DIM; m++)
             {
-                mu[m] += atoms->atom[i].q * x_[i][m] * ENM2DEBYE;
+                mu[m] += (*atoms)[i].charge() * x_[i][m] * ENM2DEBYE;
             }
-            fprintf(fp, "%4s %4s%5d %8g %8g",
+            fprintf(fp, "%4s %4s%5lu %8g %8g",
                     "",
-                    *(atoms->atomname[i]), i+1, eta_[i], chi0_[i]);
+                    (*atoms)[i].name().c_str(), i+1, eta_[i], chi0_[i]);
             fprintf(fp, " %3d %8.5f %8.4f\n", row_[i], q_[i], zeta_[i]);
         }
         fprintf(fp, "\n");
@@ -507,11 +509,11 @@ void QgenAcm::calcRhs(double epsilonr)
     rhs_[nonFixed_.size()] = qtotal_ - qfixed;
 }
 
-void QgenAcm::copyChargesToAtoms(t_atoms *atoms)
+void QgenAcm::copyChargesToAtoms(std::vector<ActAtom> *atoms)
 {
-    for (auto i = 0; i < atoms->nr; i++)
+    for (size_t i = 0; i < atoms->size(); i++)
     {
-        atoms->atom[i].q = atoms->atom[i].qB = q_[i];
+        (*atoms)[i].setCharge(q_[i]);
     }
 }
 
@@ -792,7 +794,7 @@ int QgenAcm::solveSQE(FILE                    *fp,
 eQgen QgenAcm::generateCharges(FILE                             *fp,
                                const std::string                &molname,
                                const Poldata                    *pd,
-                               t_atoms                          *atoms,
+                               std::vector<ActAtom>             *atoms,
                                const gmx::HostVector<gmx::RVec> &x,
                                const std::vector<Bond>          &bonds)
 {
@@ -810,7 +812,7 @@ eQgen QgenAcm::generateCharges(FILE                             *fp,
     int info = 0;
     if (eQgen::OK == eQGEN_)
     {
-        updateParameters(pd, atoms);
+        updateParameters(pd, *atoms);
         updatePositions(x);
         calcJcc(pd->getEpsilonR(), pd->yang(), pd->rappe());
         if (pd->interactionPresent(InteractionType::BONDCORRECTIONS) &&
