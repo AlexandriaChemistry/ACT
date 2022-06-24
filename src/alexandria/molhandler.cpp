@@ -428,6 +428,7 @@ static void energyLegend(FILE                                    *exvg,
     }
     enames.push_back("EKIN");
     enames.push_back("ETOT");
+    enames.push_back("TEMPERATURE");
     xvgr_legend(exvg, enames.size(), enames.data(), oenv);
 }
 
@@ -436,6 +437,62 @@ static double rvecNormSquared(const gmx::RVec &v)
     return v[XX]*v[XX]+v[YY]*v[YY]+v[ZZ]*v[ZZ];
 }
 
+static void printEnergies(FILE                                    *exvg, 
+                          int                                      step, 
+                          double                                   deltat, 
+                          const std::map<InteractionType, double> &energies,
+                          double                                   ekin,
+                          int                                      nDOF,
+                          const gmx_output_env_t                  *oenv)
+{
+    // For energy writing first time around
+    if (step == 0)
+    {
+        energyLegend(exvg, energies, oenv);
+    }
+    fprintf(exvg, "%10g", step*deltat);
+    for(auto &e : energies)
+    {
+        fprintf(exvg, "  %10g", e.second);
+    }
+    auto epot = energies.find(InteractionType::EPOT)->second;
+    auto temp = ekin*2/(3*nDOF*BOLTZ);
+    fprintf(exvg, " %10g %10g %10g\n", ekin, ekin+epot, temp);
+}
+
+static void initArrays(const MyMol            *mol,
+                       std::vector<gmx::RVec> *coordinates, 
+                       std::vector<gmx::RVec> *velocities, 
+                       std::vector<gmx::RVec> *forcesCur,
+                       std::vector<gmx::RVec> *forcesPrev,
+                       std::vector<double>    *inv2mass,
+                       std::vector<double>    *mass_2)
+{
+    auto &xmol = mol->x();
+    coordinates->resize(xmol.size());
+    velocities->resize(xmol.size());
+    forcesPrev->resize(xmol.size());
+    forcesCur->resize(xmol.size());
+    gmx::RVec zero = { 0, 0, 0 };
+    auto &atoms = mol->atomsConst();
+    for (long i = 0; i < xmol.size(); i++)
+    {
+        copy_rvec(xmol[i], (*coordinates)[i]);
+        copy_rvec(zero, (*velocities)[i]);
+        copy_rvec(zero, (*forcesPrev)[i]);
+        copy_rvec(zero, (*forcesCur)[i]);
+        mass_2->push_back(atoms[i].mass()*0.5);
+        if (atoms[i].mass() > 0)
+        {
+            inv2mass->push_back(0.5/atoms[i].mass());
+        }
+        else
+        {
+            inv2mass->push_back(0);
+        }
+    }
+}
+                       
 void MolHandler::simulate(MyMol                         *mol,
                           const ForceComputer           *forceComp,
                           const SimulationConfigHandler &simConfig,
@@ -450,44 +507,25 @@ void MolHandler::simulate(MyMol                         *mol,
     std::vector<gmx::RVec>             coordinates, velocities, forces[2];
     std::map<InteractionType, double>  energies;
     std::vector<double>                inv2mass;
+    std::vector<double>                mass_2;
 
     // To swap between forces efficiently
     int cur = 0;
 #define prev (1-cur)
 
     // Initiate coordinates, etc.
-    auto &xmol = mol->x();
-    coordinates.resize(xmol.size());
-    velocities.resize(xmol.size());
-    forces[prev].resize(xmol.size());
-    forces[cur].resize(xmol.size());
-    gmx::RVec zero = { 0, 0, 0 };
-    auto &atoms = mol->atomsConst();
-    for (long i = 0; i < xmol.size(); i++)
-    {
-        copy_rvec(xmol[i], coordinates[i]);
-        copy_rvec(zero, velocities[i]);
-        copy_rvec(zero, forces[prev][i]);
-        copy_rvec(zero, forces[cur][i]);
-        if (atoms[i].mass() > 0)
-        {
-            inv2mass.push_back(0.5/atoms[i].mass());
-        }
-        else
-        {
-            inv2mass.push_back(0);
-        }
-    }
+    initArrays(mol, &coordinates, &velocities,
+               &forces[cur], &forces[prev], &inv2mass, &mass_2);
+
+    auto xmol    = mol->x();
     auto deltat  = simConfig.deltat();
     auto deltat2 = deltat*deltat;
     // For trajectory writing
     matrix      box   = { { 4, 0, 0 }, { 0, 4, 0 }, { 0, 0, 4 } };
     char        chain = ' ';
     const char *title = "ACT trajectory";
-    
-    fprintf(logFile, "Will start simulation.\n");
-    // TODO implement the below
-    // simConfig.print(logFile);
+    int         nDOF  = DIM*mol->nRealAtoms();
+    fprintf(logFile, "\nWill start simulation.\n");
     for (int step = 0; step < simConfig.nsteps(); step++)
     {
         // Check whether we need to print stuff
@@ -506,7 +544,7 @@ void MolHandler::simulate(MyMol                         *mol,
                 }
                 if (doPrintEner)
                 {
-                    ekin += inv2mass[i]*rvecNormSquared(velocities[i]);
+                    ekin += mass_2[i]*rvecNormSquared(velocities[i]);
                 }
             }
         }
@@ -516,17 +554,7 @@ void MolHandler::simulate(MyMol                         *mol,
         // Write energies if requested
         if (doPrintEner)
         {
-            // For energy writing first time around
-            if (step == 0)
-            {
-                energyLegend(exvg, energies, oenv);
-            }
-            fprintf(exvg, "%10g", step*deltat);
-            for(auto &e : energies)
-            {
-                fprintf(exvg, "  %10g", e.second);
-            }
-            fprintf(exvg, " %10g %10g\n", ekin, ekin+energies[InteractionType::EPOT]);
+            printEnergies(exvg, step, deltat, energies, ekin, nDOF, oenv);
         }
         // Integrate velocities using velocity Verlet
         for(long i = 0; i < xmol.size(); i++)
@@ -541,8 +569,7 @@ void MolHandler::simulate(MyMol                         *mol,
             }
         }
         // Write output if needed
-        if (simConfig.nstxout() > 0 &&
-            step % simConfig.nstxout() == 0)
+        if (simConfig.nstxout() > 0 && step % simConfig.nstxout() == 0)
         {
             write_pdbfile(traj, title, mol->gmxAtoms(),
                           as_rvec_array(coordinates.data()), epbcNONE,
@@ -553,7 +580,8 @@ void MolHandler::simulate(MyMol                         *mol,
     }
     
     gmx_ffclose(traj);
-                  xvgrclose(exvg);
+    xvgrclose(exvg);
+    fprintf(logFile, "Simulation finished correctly.\n");
 }
 
 } // namespace alexandria
