@@ -13,11 +13,10 @@
 namespace alexandria
 {
 
-static double computeLJ(const ForceFieldParameterList      &ffpl,
-                        const std::vector<TopologyEntry *> &pairs,
-                        const std::vector<ActAtom>         &atoms,
-                        const std::vector<gmx::RVec>       *coordinates,
-                        std::vector<gmx::RVec>             *forces)
+static double computeLJ(const std::vector<TopologyEntry *>    &pairs,
+                        gmx_unused const std::vector<ActAtom> &atoms,
+                        const std::vector<gmx::RVec>          *coordinates,
+                        std::vector<gmx::RVec>                *forces)
 {
     double ebond = 0;
 
@@ -26,11 +25,11 @@ static double computeLJ(const ForceFieldParameterList      &ffpl,
     for (const auto b : pairs)
     {
         // Get the parameters. We have to know their names to do this.
-        auto params     = b->params();
+        auto &params    = b->params();
         auto c6         = params[ljC6_IJ];
         auto c12        = params[ljC12_IJ];
         // Get the atom indices
-        auto indices    = b->atomIndices();
+        auto &indices   = b->atomIndices();
         auto ai         = indices[0];
         auto aj         = indices[1];
         rvec dx;
@@ -63,11 +62,10 @@ static double computeLJ(const ForceFieldParameterList      &ffpl,
     return ebond;
 }
 
-static double computeWBH(const ForceFieldParameterList      &ffpl,
-                         const std::vector<TopologyEntry *> &pairs,
-                         const std::vector<ActAtom>         &atoms,
-                         const std::vector<gmx::RVec>       *coordinates,
-                         std::vector<gmx::RVec>             *forces)
+static double computeWBH(const std::vector<TopologyEntry *>    &pairs,
+                         gmx_unused const std::vector<ActAtom> &atoms,
+                         const std::vector<gmx::RVec>          *coordinates,
+                         std::vector<gmx::RVec>                *forces)
 {
     double ebond = 0;
     auto   x     = *coordinates;
@@ -75,14 +73,14 @@ static double computeWBH(const ForceFieldParameterList      &ffpl,
     for (const auto b : pairs)
     {
         // Get the parameters. We have to know their names to do this.
-        auto params     = b->params();
+        auto &params    = b->params();
         auto sigma      = params[wbhSIGMA_IJ];
         auto epsilon    = params[wbhEPSILON_IJ];
         auto gamma      = params[wbhGAMMA_IJ];
         if (epsilon > 0 && gamma > 0 && sigma > 0)
         {
             // Get the atom indices
-            auto indices    = b->atomIndices();
+            auto &indices   = b->atomIndices();
             rvec dx;
             rvec_sub(x[indices[0]], x[indices[1]], dx);
             auto dr2        = iprod(dx, dx);
@@ -102,8 +100,7 @@ static double computeWBH(const ForceFieldParameterList      &ffpl,
     return ebond;
 }
 
-static double computeCoulomb(const ForceFieldParameterList      &ffpl,
-                             const std::vector<TopologyEntry *> &pairs,
+static double computeCoulomb(const std::vector<TopologyEntry *> &pairs,
                              const std::vector<ActAtom>         &atoms,
                              const std::vector<gmx::RVec>       *coordinates,
                              std::vector<gmx::RVec>             *forces)
@@ -116,7 +113,7 @@ static double computeCoulomb(const ForceFieldParameterList      &ffpl,
         // Get the parameters. We have to know their names to do this.
         auto ai     = b->atomIndices()[0];
         auto aj     = b->atomIndices()[1];
-        auto params = b->params();
+        auto &params= b->params();
         auto izeta  = params[coulZETAI];
         auto jzeta  = params[coulZETAJ];
         // Get the atom indices
@@ -142,11 +139,10 @@ static double computeCoulomb(const ForceFieldParameterList      &ffpl,
 }
 
 #ifdef FUTURE
-static double computePartridge(const ForceFieldParameterList      &ffpl,
-                               const std::vector<TopologyEntry *> &angles,
-                               const std::vector<ActAtom>         &atoms,
-                               const std::vector<gmx::RVec>       *coordinates,
-                               std::vector<gmx::RVec>             *forces)
+static double computePartridge(const std::vector<TopologyEntry *>    &angles,
+                               gmx_unused const std::vector<ActAtom> &atoms,
+                               const std::vector<gmx::RVec>          *coordinates,
+                               std::vector<gmx::RVec>                *forces)
 {
     // Energy function according to 
     // The determination of an accurate isotope dependent potential energy 
@@ -161,12 +157,12 @@ static double computePartridge(const ForceFieldParameterList      &ffpl,
     for (const auto a : angles)
     {
         // Get the parameters. We have to know their names to do this.
-        auto params     = a->params();
+        auto &params    = a->params();
         auto theta0     = params[psANGLE];
         auto rij0       = params[psRIJ0];
         auto rjk0       = params[psRJK0];
         // Get the atom indices
-        auto indices    = a->atomIndices();
+        auto &indices   = a->atomIndices();
 
         rvec r_ij, r_kj;
         auto theta = bond_angle(x[indices[0]], x[indices[1]], x[indices[2]], 
@@ -204,11 +200,10 @@ static double computePartridge(const ForceFieldParameterList      &ffpl,
 }
 #endif
 
-static double computeBonds(const ForceFieldParameterList      &ffpl,
-                           const std::vector<TopologyEntry *> &bonds,
-                           const std::vector<ActAtom>         &atoms,
-                           const std::vector<gmx::RVec>       *coordinates,
-                           std::vector<gmx::RVec>             *forces)
+static double computeBonds(const std::vector<TopologyEntry *>    &bonds,
+                           gmx_unused const std::vector<ActAtom> &atoms,
+                           const std::vector<gmx::RVec>          *coordinates,
+                           std::vector<gmx::RVec>                *forces)
 {
     if (nullptr == coordinates || nullptr == forces)
     {
@@ -222,15 +217,11 @@ static double computeBonds(const ForceFieldParameterList      &ffpl,
     for (const auto b : bonds)
     {
         // Get the parameters. We have to know their names to do this.
-        auto params     = b->params();
+        auto &params    = b->params();
         auto bondlength = params[bondLENGTH];
         auto kb         = params[bondKB];
         // Get the atom indices
-        auto indices    = b->atomIndices();
-        if (indices[0] >= coordinates->size() || indices[1] >= coordinates->size())
-        {
-            GMX_THROW(gmx::InternalError(gmx::formatString("Range check error. Have %zu coordinates, %zu forces. Atoms %d and %d", coordinates->size(), forces->size(), indices[0], indices[1]).c_str()));
-        }
+        auto &indices   = b->atomIndices();
 
         rvec dx;
         rvec_sub(x[indices[0]], x[indices[1]], dx);
@@ -250,11 +241,10 @@ static double computeBonds(const ForceFieldParameterList      &ffpl,
     return ebond;
 }
 
-static double computeMorse(const ForceFieldParameterList      &ffpl,
-                           const std::vector<TopologyEntry *> &bonds,
-                           const std::vector<ActAtom>         &atoms,
-                           const std::vector<gmx::RVec>       *coordinates,
-                           std::vector<gmx::RVec>             *forces)
+static double computeMorse(const std::vector<TopologyEntry *>    &bonds,
+                           gmx_unused const std::vector<ActAtom> &atoms,
+                           const std::vector<gmx::RVec>          *coordinates,
+                           std::vector<gmx::RVec>                *forces)
 {
     double  ebond = 0;
     auto    x     = *coordinates;
@@ -262,13 +252,13 @@ static double computeMorse(const ForceFieldParameterList      &ffpl,
     for (const auto b : bonds)
     {
         // Get the parameters. We have to know their names to do this.
-        auto params     = b->params();
+        auto &params    = b->params();
         auto bondlength = params[morseLENGTH];
         auto beta       = params[morseBETA];
         auto De         = params[morseDE];
         auto D0         = params[morseD0];
         // Get the atom indices
-        auto indices    = b->atomIndices();
+        auto &indices   = b->atomIndices();
         rvec dx;
         rvec_sub(x[indices[0]], x[indices[1]], dx);
         auto dr2        = iprod(dx, dx);
@@ -290,11 +280,10 @@ static double computeMorse(const ForceFieldParameterList      &ffpl,
     return ebond;
 }
 
-static double computeLinearAngles(const ForceFieldParameterList      &ffpl,
-                                  const std::vector<TopologyEntry *> &angles,
-                                  const std::vector<ActAtom>         &atoms,
-                                  const std::vector<gmx::RVec>       *coordinates,
-                                  std::vector<gmx::RVec>             *forces)
+static double computeLinearAngles(const std::vector<TopologyEntry *>    &angles,
+                                  gmx_unused const std::vector<ActAtom> &atoms,
+                                  const std::vector<gmx::RVec>          *coordinates,
+                                  std::vector<gmx::RVec>                *forces)
 {
     double  ebond = 0;
     auto    x     = *coordinates;
@@ -302,11 +291,11 @@ static double computeLinearAngles(const ForceFieldParameterList      &ffpl,
     for (const auto aaa : angles)
     {
         // Get the parameters. We have to know their names to do this.
-        auto params = aaa->params();
+        auto &params= aaa->params();
         auto a      = params[linangA];
         auto klin   = params[linangKLIN];
         // Get the atom indices
-        auto indices = aaa->atomIndices();
+        auto &indices= aaa->atomIndices();
         
         rvec r_ij, r_kj, r_ik;
         rvec_sub(x[indices[0]], x[indices[1]], r_ij);
@@ -333,11 +322,10 @@ static double computeLinearAngles(const ForceFieldParameterList      &ffpl,
 }
 
 // It is not finished yes, needs to be double checked. 
-static double computeAngles(const ForceFieldParameterList      &ffpl,
-                            const std::vector<TopologyEntry *> &angles,
-                            const std::vector<ActAtom>         &atoms,
-                            const std::vector<gmx::RVec>       *coordinates,
-                            std::vector<gmx::RVec>             *forces)
+static double computeAngles(const std::vector<TopologyEntry *>    &angles,
+                            gmx_unused const std::vector<ActAtom> &atoms,
+                            const std::vector<gmx::RVec>          *coordinates,
+                            std::vector<gmx::RVec>                *forces)
 {
     double  energy = 0, costh = 0;
     auto    x     = *coordinates;
@@ -346,11 +334,11 @@ static double computeAngles(const ForceFieldParameterList      &ffpl,
     for (const auto a : angles)
     {
         // Get the parameters. We have to know their names to do this.
-        auto params     = a->params();
+        auto &params    = a->params();
         auto theta0     = params[angleANGLE];
         auto ka         = params[angleKTH];
         // Get the atom indices
-        auto indices    = a->atomIndices();
+        auto &indices   = a->atomIndices();
 
         rvec r_ij, r_kj;
         auto theta = bond_angle(x[indices[0]], x[indices[1]], x[indices[2]], 
@@ -399,11 +387,10 @@ static double computeAngles(const ForceFieldParameterList      &ffpl,
     return energy;
 }
 
-static double computePolarization(const ForceFieldParameterList      &ffpl,
-                                  const std::vector<TopologyEntry *> &bonds,
-                                  const std::vector<ActAtom>         &atoms,
-                                  const std::vector<gmx::RVec>       *coordinates,
-                                  std::vector<gmx::RVec>             *forces)
+static double computePolarization(const std::vector<TopologyEntry *>    &bonds,
+                                  gmx_unused const std::vector<ActAtom> &atoms,
+                                  const std::vector<gmx::RVec>          *coordinates,
+                                  std::vector<gmx::RVec>                *forces)
 {
     double ebond = 0;
     auto   x     = *coordinates;
@@ -412,10 +399,10 @@ static double computePolarization(const ForceFieldParameterList      &ffpl,
     for (const auto b : bonds)
     {
         // Get the parameters. We have to know their names to do this.
-        auto params = b->params();
-        auto ksh    = params[polKSH];
+        auto &params   = b->params();
+        auto ksh       = params[polKSH];
         // Get the atom indices
-        auto indices    = b->atomIndices();
+        auto &indices  = b->atomIndices();
         rvec dx;
         rvec_sub(x[indices[0]], x[indices[1]], dx);
         auto dr2        = iprod(dx, dx);
@@ -493,11 +480,10 @@ static real dih_angle(const rvec xi, const rvec xj, const rvec xk, const rvec xl
 
 
 
-static double computeImpropers(const ForceFieldParameterList      &ffpl,
-                               const std::vector<TopologyEntry *> &impropers,
-                               const std::vector<ActAtom>         &atoms,
-                               const std::vector<gmx::RVec>       *coordinates,
-                               std::vector<gmx::RVec>             *forces)
+static double computeImpropers(const std::vector<TopologyEntry *>    &impropers,
+                               gmx_unused const std::vector<ActAtom> &atoms,
+                               const std::vector<gmx::RVec>          *coordinates,
+                               std::vector<gmx::RVec>                *forces)
 {
     double  energy = 0;
     auto    x     = *coordinates;
@@ -520,7 +506,7 @@ static double computeImpropers(const ForceFieldParameterList      &ffpl,
 
         auto dp2 = phi*phi;
 
-        energy     += 0.5*kA*dp2;
+        energy     += half*kA*dp2;
         auto ddphi  = -kA*phi;
 
         do_dih_fup_noshiftf(ai, aj, ak, al, -ddphi, r_ij, r_kj, r_kl, m, n,

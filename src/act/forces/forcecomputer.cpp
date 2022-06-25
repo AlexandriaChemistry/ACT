@@ -121,7 +121,7 @@ void ForceComputer::computeOnce(const Topology                    *top,
         else
         {
             // Now do the calculations and store the energy
-            double eee = bfc(ffpl, entry.second, top->atoms(), coordinates, forces);
+            double eee = bfc(entry.second, top->atoms(), coordinates, forces);
             energies->insert({ entry.first, eee });
             epot += eee;
         }
