@@ -388,7 +388,7 @@ immStatus MyMol::zetaToAtoms(const Poldata *pd,
      * For later calls during optimization of zeta also the
      * zeta on the shells will be set. 
      */
-    auto qt        = pd->findForcesConst(InteractionType::COULOMB);
+    auto &qt       = pd->findForcesConst(InteractionType::COULOMB);
     const char *ct = "chargetype";
     if (!qt.optionExists(ct))
     {
@@ -544,7 +544,7 @@ static void setTopologyIdentifiers(Topology          *top,
     auto entries = top->entries(); 
     for(auto &entry : *entries)
     {
-        auto fs = pd->findForcesConst(entry.first);
+        auto &fs = pd->findForcesConst(entry.first);
         for(auto &topentry : entry.second)
         {
             std::vector<std::string> btype;
@@ -887,7 +887,7 @@ static void TopologyToMtop(Topology       *top,
     for(auto &entry : *entries)
     {
         std::map<Identifier, int> idToGromacsType;
-        auto fs = pd->findForcesConst(entry.first);
+        auto &fs = pd->findForcesConst(entry.first);
         for(auto &topentry: entry.second)
         {
             int gromacsType = -1;
@@ -975,16 +975,23 @@ immStatus MyMol::GenerateTopology(FILE              *fp,
         topology_->makeAngles(state_->x, 175.0);
         topology_->makeImpropers(state_->x, 5.0);
         // Check whether we have dihedrals in the force field.
-        if (pd->interactionPresent(InteractionType::PROPER_DIHEDRALS) &&
-            !pd->findForcesConst(InteractionType::PROPER_DIHEDRALS).empty())
+        if (pd->interactionPresent(InteractionType::PROPER_DIHEDRALS))
         {
-            topology_->makePropers();
+            // Store temporary address of variable for performance
+            auto &fs = pd->findForcesConst(InteractionType::PROPER_DIHEDRALS);
+            if (!fs.empty())
+            {
+                topology_->makePropers();
+            }
         }
         // Check whether we have virtual sites in the force field.
-        if (pd->interactionPresent(InteractionType::VSITE2) &&
-            !pd->findForcesConst(InteractionType::VSITE2).empty())
+        if (pd->interactionPresent(InteractionType::VSITE2))
         {
-            topology_->makeVsite2s(pd->findForcesConst(InteractionType::VSITE2));
+            auto &fs = pd->findForcesConst(InteractionType::VSITE2);
+            if (!fs.empty())
+            {
+                topology_->makeVsite2s(fs);
+            }
         }
         topology_->makePairs(atoms_->nr);
         topology_->generateExclusions(pd->getNexcl(), atoms_->nr);
@@ -1111,8 +1118,8 @@ void MyMol::addBondVsites(FILE          *fp,
 {
     int     atomNrOld = atoms->nr;
     // First add virtual sites for bond shells if needed.
-    auto    vs2       = pd->findForcesConst(InteractionType::VSITE2);
-    auto    qt        = pd->findForcesConst(InteractionType::COULOMB);
+    auto   &vs2       = pd->findForcesConst(InteractionType::VSITE2);
+    auto   &qt        = pd->findForcesConst(InteractionType::COULOMB);
     // TODO: add a flag to turn that on or off?
     t_atom  vsite_atom = { 0 };
     t_param nb         = { { 0 } };
@@ -1243,8 +1250,8 @@ void MyMol::addShells(FILE          *fp,
     state_change_natoms(state_, nParticles);
     
     /* Add Polarization to the plist. */
-    auto qt  = pd->findForcesConst(InteractionType::COULOMB);
-    auto fs  = pd->findForcesConst(InteractionType::POLARIZATION);
+    auto &qt  = pd->findForcesConst(InteractionType::COULOMB);
+    auto &fs  = pd->findForcesConst(InteractionType::POLARIZATION);
     
     // Atoms first
     for (int i = 0; i < atoms->nr; i++)
@@ -1725,7 +1732,7 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
 {
     immStatus imm         = immStatus::OK;
     bool      converged   = false;
-    auto      qt          = pd->findForcesConst(InteractionType::COULOMB);
+    auto      &qt         = pd->findForcesConst(InteractionType::COULOMB);
     auto      iChargeType = name2ChargeType(qt.optionValue("chargetype"));
 
     if (nullptr != mtop_)
@@ -2021,7 +2028,7 @@ void MyMol::PrintTopology(const char                *fn,
     std::vector<double>      vec;
     double                   T = -1;
     std::string              myref;
-    auto qt          = pd->findForcesConst(InteractionType::COULOMB);
+    auto &qt         = pd->findForcesConst(InteractionType::COULOMB);
     auto iChargeType = name2ChargeType(qt.optionValue("chargetype"));
     std::string              mylot       = makeLot(method, basis);
 
@@ -2137,7 +2144,8 @@ void MyMol::PrintTopology(const char                *fn,
     {
         for (auto &entry : *(topology_->entries()))
         {
-            int ftype = pd->findForcesConst(entry.first).fType();
+            auto &fs = pd->findForcesConst(entry.first);
+            int ftype = fs.fType();
             if (entry.second.size() > 0)
             {
                 printf("There are %4d %s interactions\n", static_cast<int>(entry.second.size()),
@@ -2168,7 +2176,7 @@ void MyMol::GenerateCube(const Poldata          *pd,
                          const char             *diffhistfn,
                          const gmx_output_env_t *oenv)
 {
-    auto qt          = pd->findForcesConst(InteractionType::COULOMB);
+    auto &qt         = pd->findForcesConst(InteractionType::COULOMB);
     auto iChargeType = name2ChargeType(qt.optionValue("chargetype"));
 
     if (potfn || hisfn || rhofn || difffn || pdbdifffn)
@@ -2243,14 +2251,16 @@ void MyMol::calcEspRms(const Poldata *pd)
             natoms++;
         }
     }
-    gmx::HostVector<gmx::RVec> myx(natoms);
-    natoms = 0;
+    gmx::HostVector<gmx::RVec> myx(nRealAtoms());
+    std::vector<ActAtom> realAtoms;
+    size_t ii = 0;
     for (size_t i = 0; i < myatoms.size(); i++)
     {
         if (myatoms[i].pType() == eptAtom)
         {
-            copy_rvec(x()[i], myx[natoms]);
-            natoms++;
+            realAtoms.push_back(myatoms[i]);
+            copy_rvec(x()[i], myx[ii]);
+            ii++;
         }
     }
     
@@ -2269,7 +2279,7 @@ void MyMol::calcEspRms(const Poldata *pd)
         {
             QgenResp *qgr = i.second.qgenResp();
             qgr->setChargeType(ChargeType::Point);
-            qgr->setAtomInfo(myatoms, pd, myx, totalCharge());
+            qgr->setAtomInfo(realAtoms, pd, myx, totalCharge());
             qgr->updateAtomCharges(i.second.charge());
             for (size_t j = myatoms.size(); j < qgrcalc->nEsp(); j++)
             {
@@ -2463,7 +2473,7 @@ void MyMol::UpdateIdef(const Poldata                      *pd,
             // Update other iTypes
             if (topology_->hasEntry(iType))
             {
-                auto fs    = pd->findForcesConst(iType);
+                auto &fs   = pd->findForcesConst(iType);
                 auto entry = topology_->entry(iType);
                 for (size_t i = 0; i < entry.size(); i++)
                 {
@@ -2486,7 +2496,7 @@ void MyMol::initQgenResp(const Poldata     *pd,
                          int                maxESP)
 {
     std::string        mylot;
-    auto qt          = pd->findForcesConst(InteractionType::COULOMB);
+    auto &qt         = pd->findForcesConst(InteractionType::COULOMB);
     auto iChargeType = name2ChargeType(qt.optionValue("chargetype"));
     auto qp          = qTypeProps(qType::Calc);
     QgenResp *qgr = qp->qgenResp();

@@ -434,13 +434,99 @@ static double computePolarization(const ForceFieldParameterList      &ffpl,
 
 }
 
+static void do_dih_fup_noshiftf(int i, int j, int k, int l, real ddphi,
+                                rvec r_ij, rvec r_kj, rvec r_kl,
+                                rvec m, rvec n,
+                                std::vector<gmx::RVec> *forces)
+{
+    rvec f_i, f_j, f_k, f_l;
+    rvec uvec, vvec, svec;
+    real iprm, iprn, nrkj, nrkj2, nrkj_1, nrkj_2;
+    real a, b, p, q, toler;
+    auto   &f     = *forces;
+
+    iprm  = iprod(m, m);       /*  5    */
+    iprn  = iprod(n, n);       /*  5	*/
+    nrkj2 = iprod(r_kj, r_kj); /*  5	*/
+    toler = nrkj2*GMX_REAL_EPS;
+    if ((iprm > toler) && (iprn > toler))
+    {
+        nrkj_1 = gmx::invsqrt(nrkj2); /* 10	*/
+        nrkj_2 = nrkj_1*nrkj_1;       /*  1	*/
+        nrkj   = nrkj2*nrkj_1;        /*  1	*/
+        a      = -ddphi*nrkj/iprm;    /* 11	*/
+        svmul(a, m, f_i);             /*  3	*/
+        b     = ddphi*nrkj/iprn;      /* 11	*/
+        svmul(b, n, f_l);             /*  3  */
+        p     = iprod(r_ij, r_kj);    /*  5	*/
+        p    *= nrkj_2;               /*  1	*/
+        q     = iprod(r_kl, r_kj);    /*  5	*/
+        q    *= nrkj_2;               /*  1	*/
+        svmul(p, f_i, uvec);          /*  3	*/
+        svmul(q, f_l, vvec);          /*  3	*/
+        rvec_sub(uvec, vvec, svec);   /*  3	*/
+        rvec_sub(f_i, svec, f_j);     /*  3	*/
+        rvec_add(f_l, svec, f_k);     /*  3	*/
+        rvec_inc(f[i], f_i);          /*  3	*/
+        rvec_dec(f[j], f_j);          /*  3	*/
+        rvec_dec(f[k], f_k);          /*  3	*/
+        rvec_inc(f[l], f_l);          /*  3	*/
+    }
+}
+
+static real dih_angle(const rvec xi, const rvec xj, const rvec xk, const rvec xl,
+                      rvec r_ij, rvec r_kj, rvec r_kl, rvec m, rvec n)
+{
+    rvec_sub(xi, xj, r_ij); /*  3        */
+    rvec_sub(xk, xj, r_kj); /*  3		*/
+    rvec_sub(xk, xl, r_kl); /*  3		*/
+
+    cprod(r_ij, r_kj, m);                  /*  9        */
+    cprod(r_kj, r_kl, n);                  /*  9		*/
+    real phi  = gmx_angle(m, n);           /* 49 (assuming 25 for atan2) */
+    real ipr  = iprod(r_ij, n);            /*  5        */
+    real sign = (ipr < 0.0) ? -1.0 : 1.0;
+    phi       = sign*phi;                  /*  1		*/
+    /* 82 TOTAL	*/
+    return phi;
+}
+
+
+
 static double computeImpropers(const ForceFieldParameterList      &ffpl,
-                               const std::vector<TopologyEntry *> &angles,
+                               const std::vector<TopologyEntry *> &impropers,
                                const std::vector<ActAtom>         &atoms,
                                const std::vector<gmx::RVec>       *coordinates,
                                std::vector<gmx::RVec>             *forces)
 {
-    return 0;
+    double  energy = 0;
+    auto    x     = *coordinates;
+    const  real half = 0.5;
+    for (const auto a : impropers)
+    {
+        // Get the parameters. We have to know their names to do this.
+        auto &params  = a->params();
+        auto kA       = params[idihKPHI];
+        // Get the atom indices
+        auto &indices = a->atomIndices();
+        auto ai       = indices[0];
+        auto aj       = indices[1];
+        auto ak       = indices[2];
+        auto al       = indices[3];
+
+        rvec r_ij, r_kj, r_kl, m, n;
+        auto phi = dih_angle(x[ai], x[aj], x[ak], x[al],
+                             r_ij, r_kj, r_kl, m, n);
+
+        auto dp2 = phi*phi;
+
+        energy     += 0.5*kA*dp2;
+        auto ddphi  = -kA*phi;
+
+        do_dih_fup_noshiftf(ai, aj, ak, al, -ddphi, r_ij, r_kj, r_kl, m, n,
+                            forces);
+    }
+    return energy;
 }
 
 std::map<int, bondForceComputer> bondForceComputerMap = {

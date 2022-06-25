@@ -74,8 +74,8 @@ static void generate_bcc(Poldata *pd,
                          double   delta_eta)
 {
     // Bonds should be present, so no checking
-    auto bonds = pd->findForcesConst(InteractionType::BONDS);
-    auto itype = InteractionType::BONDCORRECTIONS;
+    auto &bonds = pd->findForcesConst(InteractionType::BONDS);
+    auto itype  = InteractionType::BONDCORRECTIONS;
     if (!pd->interactionPresent(itype))
     {
         auto canSwap = CanSwap::No;

@@ -752,7 +752,7 @@ void Topology::fillParameters(const Poldata *pd)
 {
     for(auto &entry : entries_)
     {
-        auto fs = pd->findForcesConst(entry.first);
+        auto &fs = pd->findForcesConst(entry.first);
         for(auto &topentry : entry.second)
         {
             const auto &topID = topentry->id();

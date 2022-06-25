@@ -206,8 +206,9 @@ real calc_relposition(const Poldata                  *pd,
     Identifier ajk({atoms[1], atoms[2]}, { bondOrders[1] }, CanSwap::Yes);
 
     std::string type("bondlength");
-    auto bij = pd->findForcesConst(InteractionType::BONDS).findParameterTypeConst(aij, type);
-    auto bjk = pd->findForcesConst(InteractionType::BONDS).findParameterTypeConst(ajk, type);
+    auto &fs = pd->findForcesConst(InteractionType::BONDS);
+    auto bij = fs.findParameterTypeConst(aij, type);
+    auto bjk = fs.findParameterTypeConst(ajk, type);
 
     b0 = convertToGromacs(bij.value(), bij.unit());
     b1 = convertToGromacs(bjk.value(), bjk.unit());
@@ -327,8 +328,8 @@ void nonbondedFromPdToMtop(gmx_mtop_t    *mtop,
     {
         mtop->ffparams.iparams.resize(ntype2, {});
     }
-    auto forcesVdw = pd->findForcesConst(InteractionType::VDW);
-    auto ftypeVdW  = forcesVdw.fType();
+    auto &forcesVdw = pd->findForcesConst(InteractionType::VDW);
+    auto ftypeVdW   = forcesVdw.fType();
     typedef struct
     {
         std::string name;
@@ -364,7 +365,7 @@ void nonbondedFromPdToMtop(gmx_mtop_t    *mtop,
         }
     }
     // TODO: Use the symmetry in the matrix
-    auto fa = pd->findForcesConst(InteractionType::VDW);
+    auto &fa = pd->findForcesConst(InteractionType::VDW);
     for (auto i = 0; (i < ntype); i++)
     {
         if (mytypes[i].ptype == eptAtom)

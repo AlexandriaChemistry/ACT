@@ -65,7 +65,8 @@ void BoundsDevComputer::calcDeviation(gmx_unused const ForceComputer       *forc
             }
             else if (poldata->interactionPresent(iType))
             {
-                p = poldata->findForcesConst(iType).findParameterTypeConst(optIndex.id(), optIndex.parameterType());
+                auto &fs = poldata->findForcesConst(iType);
+                p = fs.findParameterTypeConst(optIndex.id(), optIndex.parameterType());
             }
             if (p.mutability() == Mutability::Bounded)
             {
@@ -92,7 +93,7 @@ void BoundsDevComputer::calcDeviation(gmx_unused const ForceComputer       *forc
         auto   itype = InteractionType::COULOMB;
         if (poldata->polarizable() && poldata->interactionPresent(itype))
         {
-            auto fs              = poldata->findForcesConst(itype);
+            auto &fs             = poldata->findForcesConst(itype);
             std::string poltype  = "poltype";
             std::string zetatype = "zetatype";
             for(const auto &p : poldata->particleTypesConst())

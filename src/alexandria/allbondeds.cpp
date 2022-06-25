@@ -286,7 +286,7 @@ static real calc_r13(const Poldata    *pd,
     Identifier akj ({atoms[2], atoms[1] }, { bondOrders[1] }, CanSwap::Yes);
 
     std::string type("bondlength");
-    auto fs  = pd->findForcesConst(InteractionType::BONDS);
+    auto &fs  = pd->findForcesConst(InteractionType::BONDS);
     if (fs.parameterExists(aij) && fs.parameterExists(akj))
     {
         auto bij = fs.findParameterTypeConst(aij, type);
@@ -322,7 +322,7 @@ static void calc_linear_angle_a(const Poldata    *pd,
     auto bondOrders = bondId.bondOrders();
     auto bij = Identifier({atoms[0], atoms[1]}, {bondOrders[0]}, CanSwap::Yes);
     auto bjk = Identifier({atoms[1], atoms[2]}, {bondOrders[1]}, CanSwap::Yes);
-    auto fs  = pd->findForcesConst(InteractionType::BONDS);
+    auto &fs = pd->findForcesConst(InteractionType::BONDS);
     if (!fs.parameterExists(bij) || !fs.parameterExists(bjk))
     {
         GMX_THROW(gmx::InternalError(gmx::formatString("Cannot find bond %s or %s in force field", bij.id().c_str(), bjk.id().c_str()).c_str()));

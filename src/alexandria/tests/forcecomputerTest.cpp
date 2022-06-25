@@ -245,6 +245,11 @@ TEST_F (ForceComputerTest, Acetone)
     test("acetone-3-oep.log.pdb", "ACS-g");
 }
 
+TEST_F (ForceComputerTest, AcetoneNonPlanar)
+{
+    test("acetone-nonplanar.pdb", "ACS-g");
+}
+
 TEST_F (ForceComputerTest, Uracil)
 {
     test("uracil.sdf", "ACS-g");
@@ -270,6 +275,11 @@ TEST_F (ForceComputerTest, WaterPol)
 TEST_F (ForceComputerTest, AcetonePol)
 {
     test("acetone-3-oep.log.pdb", "ACS-pg");
+}
+
+TEST_F (ForceComputerTest, AcetoneNonPlanarPol)
+{
+    test("acetone-nonplanar.pdb", "ACS-pg");
 }
 
 TEST_F (ForceComputerTest, UracilPol)
