@@ -134,7 +134,7 @@ void ChargeCM5DevComputer::calcDeviation(gmx_unused const ForceComputer       *f
 {
     double qtot = 0;
     int i = 0;
-    const auto myatoms = mymol->topology()->atoms();
+    const auto &myatoms = mymol->atomsConst();
     std::vector<double> qcm5;
     QtypeProps *qp = mymol->qTypeProps(qType::CM5);
     if (qp)
@@ -155,13 +155,12 @@ void ChargeCM5DevComputer::calcDeviation(gmx_unused const ForceComputer       *f
         {
             continue;
         }
-        ParticleTypeIterator atype = poldata->findParticleType(myatoms[j].ffType());
-        const ForceFieldParameter qparm = atype->parameterConst("charge");
+        ParticleTypeIterator       atype = poldata->findParticleType(myatoms[j].ffType());
+        const ForceFieldParameter &qparm = atype->parameterConst("charge");
         double qj  = myatoms[j].charge();
         double qjj = qj;
         // TODO: only count in real shells
-        if (mymol->haveShells() &&
-            j < myatoms.size()-1 &&
+        if (mymol->haveShells() && j < myatoms.size()-1 &&
             myatoms[j+1].pType() == eptShell)
         {
             qjj += myatoms[j+1].charge();
@@ -197,7 +196,6 @@ void ChargeCM5DevComputer::calcDeviation(gmx_unused const ForceComputer       *f
             qparm.mutability() != Mutability::Fixed &&
             (*targets).find(eRMS::CM5)->second.weight() > 0)
         {
-            // TODO: Add charge of shell!
             real dq2 = gmx::square(qjj - qcm5[i]);
             (*targets).find(eRMS::CM5)->second.increase(1, dq2);
         }
@@ -232,10 +230,10 @@ void EspDevComputer::calcDeviation(gmx_unused const ForceComputer       *forceCo
     }
     if (fit_)
     {
-        qgr->updateZeta(mymol->topology()->atoms(), poldata);
+        qgr->updateZeta(mymol->atomsConst(), poldata);
     }
     dumpQX(logfile_, mymol, "ESP");
-    qgr->updateAtomCharges(mymol->topology()->atoms());
+    qgr->updateAtomCharges(mymol->atomsConst());
     qgr->calcPot(poldata->getEpsilonR());
     real mae, mse;
     real rms = qgr->getStatistics(&rrms, &cosangle, &mae, &mse);

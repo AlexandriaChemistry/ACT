@@ -517,7 +517,7 @@ void QgenAcm::copyChargesToAtoms(std::vector<ActAtom> *atoms)
     }
 }
 
-void QgenAcm::updatePositions(gmx::HostVector<gmx::RVec> x)
+void QgenAcm::updatePositions(const gmx::HostVector<gmx::RVec> &x)
 {
     if (x.size() - x_.size() != 0)
     {

@@ -293,7 +293,7 @@ enum class coordSet {
         const JobType &jobType() const { return myJobType_; }
 
         //! \return true if shells are present
-        bool haveShells() const { return nullptr != shellfc_; }
+        bool haveShells() const { return bHaveShells_; }
 
         //! \return whether this is a linear molecule
         bool linearMolecule() const;

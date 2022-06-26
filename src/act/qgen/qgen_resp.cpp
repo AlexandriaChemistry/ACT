@@ -97,6 +97,11 @@ void QgenResp::setAtomInfo(const std::vector<ActAtom>       &atoms,
                            const gmx::HostVector<gmx::RVec> &x,
                            const int                         qtotal)
 {
+    if (nAtom_ != 0)
+    {
+        fprintf(stderr, "setAtomInfo called more than once. Ignoring second time.\n");
+        return;
+    }
     GMX_RELEASE_ASSERT(nAtom_ == 0 || (nAtom_ - atoms.size() == 0),
                        gmx::formatString("Changing the number of atoms from %d to %lu", nAtom_, atoms.size()).c_str());
     nAtom_   = atoms.size();
@@ -108,7 +113,6 @@ void QgenResp::setAtomInfo(const std::vector<ActAtom>       &atoms,
     auto zzz = pd->findForcesConst(InteractionType::COULOMB);
     auto eqtModel = name2ChargeType(zzz.optionValue("chargetype"));
     bool haveZeta = eqtModel != ChargeType::Point;
-
     nFixed_ = 0;
     for (size_t i = 0; i < atoms.size(); i++)
     {

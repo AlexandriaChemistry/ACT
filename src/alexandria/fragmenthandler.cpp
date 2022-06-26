@@ -132,6 +132,7 @@ eQgen FragmentHandler::generateCharges(FILE                             *fp,
     size_t ff    = 0;
     for (auto &fa : FragAtoms_)
     {
+        // TODO only copy the coordinates if there is more than one fragment.
         gmx::HostVector<gmx::RVec> xx;
         xx.resizeWithPadding(fa.size());
         for(size_t a = 0; a < fa.size(); a++)

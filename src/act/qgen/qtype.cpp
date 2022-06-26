@@ -136,11 +136,9 @@ void QtypeProps::setX(const std::vector<gmx::RVec> &x)
 
 void QtypeProps::setQ(const std::vector<double> &q)
 {
-    q_.clear();
-    for(auto &qq : q)
-    {
-        q_.push_back(qq);
-    }
+    q_.resize(q.size());
+    std::copy(q.begin(), q.end(), q_.begin());
+
     // If QgenResp_ has not been allocated we likely don't need it.
     if (QgenResp_)
     {

@@ -1796,7 +1796,7 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
             // If we have shells, we still have to minimize them,
             // but we may want to know the energies anyway.
             (void) calculateEnergy(forceComp);
-            if (nullptr != shellfc_)
+            if (haveShells())
             {
                 auto qcalc = qTypeProps(qType::Calc);
                 qcalc->setQ(*myatoms);
@@ -2271,7 +2271,7 @@ void MyMol::calcEspRms(const Poldata *pd)
         auto qi = i.first;
         if (qType::Calc == qi)
         {
-            qgrcalc->setAtomInfo(atomsConst(), pd, x(), totalCharge());
+            //qgrcalc->setAtomInfo(atomsConst(), pd, x(), totalCharge());
             qgrcalc->updateAtomCharges(atomsConst());
             qgrcalc->calcPot(pd->getEpsilonR());
         }
@@ -2281,10 +2281,10 @@ void MyMol::calcEspRms(const Poldata *pd)
             qgr->setChargeType(ChargeType::Point);
             qgr->setAtomInfo(realAtoms, pd, myx, totalCharge());
             qgr->updateAtomCharges(i.second.charge());
-            for (size_t j = myatoms.size(); j < qgrcalc->nEsp(); j++)
+            for (size_t j = realAtoms.size(); j < qgrcalc->nEsp(); j++)
             {
-                auto ep = qgrcalc->espPoint(j);
-                auto r  = ep.esp();
+                auto &ep = qgrcalc->espPoint(j);
+                auto &r  = ep.esp();
                 qgr->addEspPoint(r[XX], r[YY], r[ZZ], ep.v());
             }
             qgr->calcPot(pd->getEpsilonR());

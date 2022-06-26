@@ -279,7 +279,7 @@ private:
     /*! \brief update the positions
      * \param[in] x The new coordinates
      */        
-    void updatePositions(gmx::HostVector<gmx::RVec> x);
+    void updatePositions(const gmx::HostVector<gmx::RVec> &x);
     
     /*! \brief Compute shielding factor for some EEM algorithms
      * \param[in] i Atom index

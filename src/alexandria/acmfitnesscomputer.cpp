@@ -162,7 +162,7 @@ void ACMFitnessComputer::computeMultipoles(std::map<eRMS, FittingTarget> *target
         (*targets).find(eRMS::OCT)->second.weight() > 0  ||
         (*targets).find(eRMS::HEXADEC)->second.weight() > 0)
     {
-        qcalc->setQ(mymol->topology()->atoms());
+        qcalc->setQ(mymol->atomsConst());
         qcalc->setX(mymol->x());
         qcalc->calcMoments();
     }
