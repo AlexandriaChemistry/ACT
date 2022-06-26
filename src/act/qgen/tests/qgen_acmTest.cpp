@@ -212,7 +212,7 @@ class AcmTest : public gmx::test::CommandLineTestBase
             // Get poldata
             auto pd  = getPoldata(model);
             auto imm = mp_.GenerateTopology(stdout, pd,
-                                            missingParameters::Error);
+                                            missingParameters::Error, false);
             if (immStatus::OK != imm)
             {
                 fprintf(stderr, "Error generating topology: %s\n", immsg(imm));
@@ -234,9 +234,9 @@ class AcmTest : public gmx::test::CommandLineTestBase
                                 
             std::vector<double> qtotValues;
             auto myatoms = mp_.atomsConst();
-            for (int atom = 0; atom < myatoms.nr; atom++)
+            for (size_t atom = 0; atom < myatoms.size(); atom++)
             {
-                qtotValues.push_back(myatoms.atom[atom].q);
+                qtotValues.push_back(myatoms[atom].charge());
             }
             double qtot_all = std::accumulate(qtotValues.begin(), qtotValues.end(), 0.0);
             EXPECT_TRUE(std::fabs(qtot_all - qtot_sum) < 1e-4);
@@ -257,7 +257,7 @@ class AcmTest : public gmx::test::CommandLineTestBase
                         double qt = 0;
                         for(size_t atom = atomStart[f]; atom < atomStart[f+1]; atom++)
                         {
-                            qt += myatoms.atom[atom].q;
+                            qt += myatoms[atom].charge();
                         }
                         auto label = gmx::formatString("Molecule %zu charge", f+1);
                         checker_.checkReal(qt, label.c_str());

@@ -90,8 +90,6 @@ enum class coordSet {
     Minimized
 };
 
-    //! Forward declaration, full declaration is in mymol.cpp
-    class MyForceProvider;
     /*! \brief
      * Contains molecular properties from a range of sources.
      * Overloads the regular molprop and adds a lot of functionality.
@@ -121,7 +119,6 @@ enum class coordSet {
         std::unique_ptr<gmx_vsite_t>    *vsite_          = nullptr;
         std::unique_ptr<gmx::MDAtoms>   *MDatoms_        = nullptr;
         std::unique_ptr<gmx::MDModules> *mdModules_      = nullptr;
-        MyForceProvider                 *myforce_        = nullptr;
         //! How to renumber input atom numbers to numbers with shells
         std::vector<int>                 shellRenumber_;
         //! This points to the atom indices before shells were added
@@ -252,9 +249,13 @@ enum class coordSet {
         std::map<MolPropObservable, double> energy_;
         //! Molecular Topology
         Topology                      *topology_;
+        //! GROMACS style atoms structure
+        t_atoms                       *atoms_;
+        //! GROMACS symbol table
+        t_symtab                      *symtab_         = nullptr;
+        //! GROMACS Topology etc.
         gmx_mtop_t                    *mtop_           = nullptr;
         gmx_localtop_t                *ltop_           = nullptr;
-        t_symtab                      *symtab_         = nullptr;
         t_inputrec                    *inputrec_       = nullptr;
         gmx_enerdata_t                *enerd_          = nullptr;
         t_fcdata                      *fcd_            = nullptr;
@@ -292,7 +293,7 @@ enum class coordSet {
         const JobType &jobType() const { return myJobType_; }
 
         //! \return true if shells are present
-        bool haveShells() const { return nullptr != shellfc_; }
+        bool haveShells() const { return bHaveShells_; }
 
         //! \return whether this is a linear molecule
         bool linearMolecule() const;
@@ -419,9 +420,14 @@ enum class coordSet {
         t_mdatoms *getMdatoms() { return MDatoms_->get()->mdatoms(); }
 
         /*! \brief
-         * \return atoms structure for editing
+         * \return GROMACS atoms structure
          */
-        t_atoms *atoms();
+        t_atoms *gmxAtoms() const { return atoms_; }
+        
+        /*! \brief
+         * \return atoms data for editing
+         */
+        std::vector<ActAtom> *atoms() { return topology_->atomsPtr(); }
         
         /*! \brief Return the fragment handler
          */
@@ -430,7 +436,12 @@ enum class coordSet {
         /*! \brief
          * \return atoms const structure
          */
-        const t_atoms &atomsConst() const;
+        const t_atoms *gmxAtomsConst() const { return atoms_; }
+        
+        /*! \brief
+         * \return atoms data
+         */
+        const std::vector<ActAtom> &atomsConst() const { return topology_->atoms(); }
         
         /*! \brief Return the bond order
          * \param[in] ai Atom I
@@ -445,11 +456,13 @@ enum class coordSet {
          * \param[in]  fp      File to write (debug) information to
          * \param[in]  pd      Data structure containing atomic properties
          * \param[in]  missing How to treat missing parameters
+         * \param[in]  gromacsSupport Whether or not to include legacy gromacs
          * \return status
          */
         immStatus GenerateTopology(FILE              *fp,
                                    const Poldata     *pd,
-                                   missingParameters  missing);
+                                   missingParameters  missing,
+                                   bool               gromacsSupport);
 
         //! Return the ACT topology structure
         const Topology *topology() const { return topology_; }
@@ -582,11 +595,13 @@ enum class coordSet {
         /*! \brief
          * Update internal structures for bondtype due to changes in pd
          *
-         * \param[in] pd           Data structure containing atomic properties
-         * \param[in] iType        Interaction type
+         * \param[in] pd     Data structure containing atomic properties
+         * \param[in] iTypes Interaction types
+         * \param[in] updateZeta Whether to update the atomic zeta as well
          */
-        void UpdateIdef(const Poldata   *pd,
-                        InteractionType  iType);
+        void UpdateIdef(const Poldata                      *pd,
+                        const std::vector<InteractionType> &iTypes,
+                        bool                                updateZeta);
 
         /*! \brief
          * Generate GROMACS structures.

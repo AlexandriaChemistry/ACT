@@ -57,6 +57,7 @@ target_sources(actLib
            openmm_xml.cpp
            percentmutator.cpp
            princ.cpp
+           simulate.cpp
            staticindividualinfo.cpp
            symmetrize_charges.cpp
            thermochemistry.cpp

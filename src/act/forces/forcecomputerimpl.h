@@ -1,14 +1,12 @@
 #include <vector>
 
-#include "act/poldata/forcefieldparameterlist.h"
 #include "alexandria/topology.h"
 #include "gromacs/math/vectypes.h"
 
 namespace alexandria
 {
 
-typedef double (*bondForceComputer)(const ForceFieldParameterList      &ffpl,
-                                    const std::vector<TopologyEntry *> &bonds,
+typedef double (*bondForceComputer)(const std::vector<TopologyEntry *> &bonds,
                                     const std::vector<ActAtom>         &atoms,
                                     const std::vector<gmx::RVec>       *coordinates,
                                     std::vector<gmx::RVec>             *forces);

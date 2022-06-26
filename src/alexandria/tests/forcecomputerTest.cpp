@@ -80,7 +80,7 @@ protected:
         checker_.setDefaultTolerance(tolerance);
     }
 
-    void test(const char *molname, const char *forcefield)
+    void test(const char *molname, const char *forcefield, double stretch = 1)
     {
         int                             maxpot   = 100;
         int                             nsymm    = 0;
@@ -117,7 +117,7 @@ protected:
         // Get poldata
         auto pd  = getPoldata(forcefield);
         auto imm = mp_.GenerateTopology(stdout, pd,
-                                        missingParameters::Error);
+                                        missingParameters::Error, true);
         EXPECT_TRUE(immStatus::OK == imm);
         if (immStatus::OK != imm)
         {
@@ -139,12 +139,17 @@ protected:
         // gmx_init_debug(1, gmx::formatString("%s-%s.debug", molname, forcefield).c_str());
         // mp_.topology()->dump(stdout);
         
-        auto atoms = mp_.atoms();
+        auto atoms = mp_.atomsConst();
         std::vector<gmx::RVec>            forces, coordinates;
         std::map<InteractionType, double> energies;
-        for(int i = 0; i < atoms->nr; i++)
+        for(size_t i = 0; i < atoms.size(); i++)
         {
-            coordinates.push_back(mp_.x()[i]);
+            rvec xxx;
+            for(int m = 0; m < DIM; m++)
+            {
+                xxx[m] = mp_.x()[i][m]*stretch;
+            }
+            coordinates.push_back(xxx);
             forces.push_back({ 0, 0, 0 });
         }
         double shellRmsf;
@@ -172,27 +177,39 @@ protected:
                 {
                     ftype = pd->findForcesConst(ener.first).fType();
                 }
-                checker_.checkReal(ener.second, interaction_function[ftype].name);
-                EXPECT_TRUE(std::abs(ener.second-ed->term[ftype]) < 1e-3);
+                std::string ifname(interaction_function[ftype].name);
+                if (stretch != 1)
+                {
+                    ifname += gmx::formatString("%g", stretch);
+                }
+                checker_.checkReal(ener.second, ifname.c_str());
+                //EXPECT_TRUE(std::abs(ener.second-ed->term[ftype]) < 1e-3);
             }
         }
         const char *xyz[DIM] = { "X", "Y", "Z" };
         auto mpf = mp_.f();
         for(size_t i = 0; i < forces.size(); i++)
         {
-            bool shell = atoms->atom[i].ptype == eptShell;
+            bool shell = atoms[i].pType() == eptShell;
             for(int m = 0; m < DIM; m++)
             {
                 if (!shell)
                 {
-                    checker_.checkReal(mpf[i][m], gmx::formatString("%s-%zu_gmx f%s", 
-                                                                    *atoms->atomtype[i],
-                                                                    i+1, xyz[m]).c_str());
-                    checker_.checkReal(forces[i][m], gmx::formatString("%s-%zu_act f%s", 
-                                                                       *atoms->atomtype[i],
-                                                                       i+1, xyz[m]).c_str());
+                    std::string stretchName;
+                    if (stretch != 1)
+                    {
+                        stretchName += gmx::formatString("%g", stretch);
+                    }
+                    checker_.checkReal(mpf[i][m], gmx::formatString("%s-%zu_gmx%s f%s", 
+                                                                    atoms[i].ffType().c_str(),
+                                                                    i+1, stretchName.c_str(),
+                                                                    xyz[m]).c_str());
+                    checker_.checkReal(forces[i][m], gmx::formatString("%s-%zu_act%s f%s", 
+                                                                       atoms[i].ffType().c_str(),
+                                                                       i+1, stretchName.c_str(),
+                                                                       xyz[m]).c_str());
                 }
-                EXPECT_TRUE(std::abs(forces[i][m]-mpf[i][m]) < 1e-3);
+                //EXPECT_TRUE(std::abs(forces[i][m]-mpf[i][m]) < 1e-3);
             }
         }
         // gmx_stop_debug();
@@ -210,6 +227,13 @@ TEST_F (ForceComputerTest, HydrogenChloride)
     test("hydrogen-chloride.sdf", "ACS-g");
 }
 
+TEST_F (ForceComputerTest, HydrogenChlorideStretch)
+{
+    test("hydrogen-chloride.sdf", "ACS-g", 0.98);
+    test("hydrogen-chloride.sdf", "ACS-g", 1);
+    test("hydrogen-chloride.sdf", "ACS-g", 1.02);
+}
+
 TEST_F (ForceComputerTest, Water)
 {
 
@@ -219,6 +243,11 @@ TEST_F (ForceComputerTest, Water)
 TEST_F (ForceComputerTest, Acetone)
 {
     test("acetone-3-oep.log.pdb", "ACS-g");
+}
+
+TEST_F (ForceComputerTest, AcetoneNonPlanar)
+{
+    test("acetone-nonplanar.pdb", "ACS-g");
 }
 
 TEST_F (ForceComputerTest, Uracil)
@@ -246,6 +275,11 @@ TEST_F (ForceComputerTest, WaterPol)
 TEST_F (ForceComputerTest, AcetonePol)
 {
     test("acetone-3-oep.log.pdb", "ACS-pg");
+}
+
+TEST_F (ForceComputerTest, AcetoneNonPlanarPol)
+{
+    test("acetone-nonplanar.pdb", "ACS-pg");
 }
 
 TEST_F (ForceComputerTest, UracilPol)

@@ -165,13 +165,13 @@ double ThermoChemistry::rotationalEntropy(double      temperature,
 static void calcTheta(const MyMol *mymol,
                       rvec         theta)
 {
-    rvec   xcm;
-    auto  &atoms = mymol->atomsConst();
+    rvec       xcm;
+    const auto atoms = mymol->gmxAtomsConst();
     std::vector<int> index;
     std::vector<gmx::RVec> xx;
-    for(int i = 0; i < atoms.nr; i++)
+    for(int i = 0; i < atoms->nr; i++)
     {
-        if (atoms.atom[i].ptype == eptAtom)
+        if (atoms->atom[i].ptype == eptAtom)
         {
             index.push_back(i);
         }
@@ -184,20 +184,20 @@ static void calcTheta(const MyMol *mymol,
     }
     
     (void) calc_xcm(as_rvec_array(xx.data()),
-                    index.size(), index.data(), atoms.atom, xcm, false);
+                    index.size(), index.data(), atoms->atom, xcm, false);
     std::vector<gmx::RVec> x_com;
-    x_com.resize(atoms.nr);
+    x_com.resize(atoms->nr);
     clear_rvec(theta);
-    for (int i = 0; i < atoms.nr; i++)
+    for (int i = 0; i < atoms->nr; i++)
     {
         copy_rvec(mymol->x()[i], x_com[i]);
     }
     (void)sub_xcm(as_rvec_array(x_com.data()), index.size(), index.data(), 
-                  atoms.atom, xcm, false);
+                  atoms->atom, xcm, false);
 
     rvec   inertia;
     matrix trans;
-    principal_comp(index.size(), index.data(), atoms.atom, as_rvec_array(x_com.data()),
+    principal_comp(index.size(), index.data(), atoms->atom, as_rvec_array(x_com.data()),
                    trans, inertia);
     // (kJ/mol ps)^2/(Dalton nm^2 kJ/mol K) =
     // c_kilo kg m^2 ps^2/(s^2 mol g/mol nm^2 K) =

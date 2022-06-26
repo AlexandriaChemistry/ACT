@@ -45,7 +45,7 @@ private:
      * \param[in] maxiter  The maximum number of iterations for shell minimization
      */
     ForceComputer(const Poldata *pd,
-                  double         rmsForce = 0.0001,
+                  double         rmsForce = 0.001,
                   int            maxiter  = 25) : pd_(pd), rmsForce_(rmsForce), maxiter_(maxiter) {}
     
     /*! Do complete energy/force computation.
@@ -79,7 +79,9 @@ private:
     void calcPolarizability(const Topology         *top,
                             std::vector<gmx::RVec> *coordinates,
                             QtypeProps             *qtp) const;
-                 
+
+    //! \return the internal convergence criterion
+    double convergenceTolerance() const { return rmsForce_; }                 
 };
 
 } // namespace alexandria

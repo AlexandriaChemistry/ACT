@@ -66,6 +66,8 @@ void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
     // Modules from this directory
     registerModule(manager, &alexandria::gentop, "gentop",
                    "Generate a molecular topology and coordinates based on structure files or quantum chemistry output from Gaussian.");
+    registerModule(manager, &alexandria::simulate, "simulate",
+                   "Do a baby MD simulation.");
     registerModule(manager, &alexandria::tune_ff, "tune_ff",
                    "Optimize force field parameters.");
     registerModule(manager, &alexandria::bastat, "bastat",
@@ -91,6 +93,7 @@ void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
         group.addModule("bastat");
         group.addModule("tune_ff");
         group.addModule("molprop_check");
+        group.addModule("simulate");
     }
     {
         gmx::CommandLineModuleGroup group =

@@ -36,6 +36,7 @@
 #include <string>
 
 #include "act/molprop/molpropobservable.h"
+#include "alexandria/topology.h"
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
@@ -130,9 +131,9 @@ class QtypeProps
     
     /*! \brief Set charges.
      *
-     * \param[in] atoms An t_atoms structure
+     * \param[in] atoms An ActAtoms vector
      */
-    void setQ(const t_atoms *atoms);
+    void setQ(const std::vector<ActAtom> &atoms);
     
     /*! \brief Set charges.
      *

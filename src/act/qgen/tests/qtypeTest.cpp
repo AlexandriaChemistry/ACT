@@ -176,7 +176,7 @@ class QtypeTest : public gmx::test::CommandLineTestBase
             // Get poldata
             auto pd  = getPoldata(model);
             auto imm = mymol.GenerateTopology(stdout, pd,
-                                            missingParameters::Error);
+                                              missingParameters::Error, false);
             if (immStatus::OK != imm)
             {
                 fprintf(stderr, "Error generating topology: %s\n", immsg(imm));
@@ -198,9 +198,9 @@ class QtypeTest : public gmx::test::CommandLineTestBase
                                 
             std::vector<double> q;
             auto myatoms = mymol.atomsConst();
-            for (int atom = 0; atom < myatoms.nr; atom++)
+            for (size_t atom = 0; atom < myatoms.size(); atom++)
             {
-                q.push_back(myatoms.atom[atom].q);
+                q.push_back(myatoms[atom].charge());
             }
             checker_.checkSequence(q.begin(), q.end(), "Charge");
             QtypeProps qp(qType::Calc);

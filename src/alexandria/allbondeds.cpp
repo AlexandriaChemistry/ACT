@@ -286,7 +286,7 @@ static real calc_r13(const Poldata    *pd,
     Identifier akj ({atoms[2], atoms[1] }, { bondOrders[1] }, CanSwap::Yes);
 
     std::string type("bondlength");
-    auto fs  = pd->findForcesConst(InteractionType::BONDS);
+    auto &fs  = pd->findForcesConst(InteractionType::BONDS);
     if (fs.parameterExists(aij) && fs.parameterExists(akj))
     {
         auto bij = fs.findParameterTypeConst(aij, type);
@@ -322,7 +322,7 @@ static void calc_linear_angle_a(const Poldata    *pd,
     auto bondOrders = bondId.bondOrders();
     auto bij = Identifier({atoms[0], atoms[1]}, {bondOrders[0]}, CanSwap::Yes);
     auto bjk = Identifier({atoms[1], atoms[2]}, {bondOrders[1]}, CanSwap::Yes);
-    auto fs  = pd->findForcesConst(InteractionType::BONDS);
+    auto &fs = pd->findForcesConst(InteractionType::BONDS);
     if (!fs.parameterExists(bij) || !fs.parameterExists(bjk))
     {
         GMX_THROW(gmx::InternalError(gmx::formatString("Cannot find bond %s or %s in force field", bij.id().c_str(), bjk.id().c_str()).c_str()));
@@ -524,7 +524,6 @@ void AllBondeds::extractGeometries(FILE                       *fp,
             (imol == iMolSelect::Train || imol == iMolSelect::Test))
         {
             alexandria::MyMol mmi;
-            int               i;
             mmi.Merge(&(*mpi));
             if (mmi.getMolname().size() == 0)
             {
@@ -533,7 +532,8 @@ void AllBondeds::extractGeometries(FILE                       *fp,
                 continue;
             }
             auto imm = mmi.GenerateTopology(fp, &pd,
-                                            missingParameters::Generate);
+                                            missingParameters::Generate,
+                                            false);
             if (immStatus::OK != imm)
             {
                 if (nullptr != debug)
@@ -544,30 +544,32 @@ void AllBondeds::extractGeometries(FILE                       *fp,
                 }
                 continue;
             }
-            
-            auto myatoms = mmi.atomsConst();
-#define ATP(ii) (*myatoms.atomtype[ii])
-            for (i = 0; i < myatoms.nr; i++)
             {
-                std::string btpi;
-                if (!pd.atypeToBtype(*myatoms.atomtype[i], &btpi))
+                auto myatoms = mmi.topology()->atoms();
+                size_t i;
+                for (i = 0; i < myatoms.size(); i++)
+                {
+                    std::string btpi;
+                    if (!pd.atypeToBtype(myatoms[i].ffType(), &btpi))
+                    {
+                        if (nullptr != debug)
+                        {
+                            fprintf(debug, "No bond-type support for atom %s in %s\n",
+                                    myatoms[i].ffType().c_str(), 
+                                    mmi.getMolname().c_str());
+                        }
+                        break;
+                    }
+                }
+                if (i < myatoms.size())
                 {
                     if (nullptr != debug)
                     {
-                        fprintf(debug, "No bond-type support for atom %s in %s\n",
-                                *myatoms.atomtype[i], mmi.getMolname().c_str());
+                        fprintf(debug, "You may need to check the number of atoms for %s\n",
+                                mmi.getMolname().c_str());
                     }
-                    break;
+                    continue;
                 }
-            }
-            if ((myatoms.nr <= 0) || (i < myatoms.nr))
-            {
-                if (nullptr != debug)
-                {
-                    fprintf(debug, "You may need to check the number of atoms for %s\n",
-                            mmi.getMolname().c_str());
-                }
-                continue;
             }
             auto top = mmi.topology();
             for(const auto &entry : top->entries())

@@ -57,11 +57,11 @@
 namespace alexandria
 {
 
-void QgenResp::potcomp(const char             *potcomp,
-                       const t_atoms          *atoms,
-                       const rvec             *x,
-                       const char             *pdbdiff,
-                       const gmx_output_env_t *oenv)
+void QgenResp::potcomp(const char                 *potcomp,
+                       const std::vector<ActAtom> &atoms,
+                       const rvec                 *x,
+                       const char                 *pdbdiff,
+                       const gmx_output_env_t     *oenv)
 {
     FILE       *fp;
     std::string unit("Hartree/e");
@@ -91,10 +91,10 @@ void QgenResp::potcomp(const char             *potcomp,
     if (pdbdiff)
     {
         fp = fopen(pdbdiff, "w");
-        for (int i = 0; i < atoms->nr; i++)
+        for (size_t i = 0; i < atoms.size(); i++)
         {
-            fprintf(fp, "%-6s%5u  %-4.4s%3.3s %c%4d%c   %8.3f%8.3f%8.3f%6.2f%6.2f\n",
-                    "ATOM", 1, *atoms->atomname[i], "MOL", 'A', i+1,
+            fprintf(fp, "%-6s%5u  %-4.4s%3.3s %c%4lu%c   %8.3f%8.3f%8.3f%6.2f%6.2f\n",
+                    "ATOM", 1, atoms[i].name().c_str(), "MOL", 'A', i+1,
                     ' ', 10*x[i][XX], 10*x[i][YY], 10*x[i][ZZ], 0.0, 0.0);
         }
         double ymin, ymax;

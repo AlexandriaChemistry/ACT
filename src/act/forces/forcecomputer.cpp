@@ -41,7 +41,7 @@ double ForceComputer::compute(const Topology                    *top,
     std::vector<bool>   isShell;
     // One over force constant for this particle
     std::vector<double> fcShell_1;
-    auto ffpl   = pd_->findForcesConst(itype);
+    auto &ffpl  = pd_->findForcesConst(itype);
     int  nshell = 0;
     for(auto &aa : top->atoms())
     {
@@ -111,7 +111,7 @@ void ForceComputer::computeOnce(const Topology                    *top,
             continue;
         }
         // Force field parameter list
-        auto ffpl  = pd_->findForcesConst(entry.first);
+        auto &ffpl = pd_->findForcesConst(entry.first);
         // The function we need to do the math
         auto bfc   = getBondForceComputer(ffpl.fType());
         if (nullptr == bfc)
@@ -121,7 +121,7 @@ void ForceComputer::computeOnce(const Topology                    *top,
         else
         {
             // Now do the calculations and store the energy
-            double eee = bfc(ffpl, entry.second, top->atoms(), coordinates, forces);
+            double eee = bfc(entry.second, top->atoms(), coordinates, forces);
             energies->insert({ entry.first, eee });
             epot += eee;
         }

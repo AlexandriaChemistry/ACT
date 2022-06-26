@@ -82,9 +82,9 @@ public:
      * \param[in] atoms  Atoms data
      * \param[in] qtotal The total charge in this compound
      */
-    QgenAcm(const Poldata *pd,
-            t_atoms       *atoms,
-            int            qtotal);
+    QgenAcm(const Poldata              *pd,
+            const std::vector<ActAtom> &atoms,
+            int                         qtotal);
     
     /*! \brief Routine that computes the charges
      * 
@@ -98,7 +98,7 @@ public:
     eQgen generateCharges(FILE                             *fp,
                           const std::string                &molname,
                           const Poldata                    *pd,
-                          t_atoms                          *atoms,
+                          std::vector<ActAtom>             *atoms,
                           const gmx::HostVector<gmx::RVec> &x,
                           const std::vector<Bond>          &bonds);
                           
@@ -131,7 +131,8 @@ private:
      * \param[in] fp The file pointer to write to
      * \param[in] atoms Information about the atoms
      */
-    void dump(FILE *fp, const t_atoms *atoms) const;
+    void dump(FILE                       *fp, 
+              const std::vector<ActAtom> *atoms) const;
     
     /*! \brief Check whether the compound has support in the force field
      * \param[in] pd The force field data structure
@@ -190,8 +191,8 @@ private:
      * \param[in] pd    Force field database
      * \param[in] atoms Atoms data structure
      */
-    void updateParameters(const Poldata *pd,
-                          const t_atoms *atoms);
+    void updateParameters(const Poldata              *pd,
+                          const std::vector<ActAtom> &atoms);
     
     /*! \brief Compute Coulomb interaction
      * \param[in] xI       Coordinates for atom I
@@ -227,7 +228,11 @@ private:
                       double        *delta_chi,
                       double        *delta_eta);
     
-    void copyChargesToAtoms(t_atoms *atoms);
+    /*! \brief Store the atoms in their destination structure
+     * \param[inout] atoms The array with atom properties
+     */
+    void copyChargesToAtoms(std::vector<ActAtom> *atoms);
+
     
     /*! \brief Compute the Jcc matrix
      *
@@ -274,7 +279,7 @@ private:
     /*! \brief update the positions
      * \param[in] x The new coordinates
      */        
-    void updatePositions(gmx::HostVector<gmx::RVec> x);
+    void updatePositions(const gmx::HostVector<gmx::RVec> &x);
     
     /*! \brief Compute shielding factor for some EEM algorithms
      * \param[in] i Atom index

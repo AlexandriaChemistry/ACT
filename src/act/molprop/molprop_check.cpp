@@ -69,7 +69,8 @@ static void dump_molecule(FILE              *fp,
     mymol.setInputrec(inputrec);
     auto imm = mymol.GenerateTopology(fp,
                                       &pd,
-                                      missingParameters::Error);
+                                      missingParameters::Error,
+                                      false);
     if (immStatus::OK != imm)
     {
         fprintf(fp, "Failed to generate topology for %s. Outcome: %s\n",
@@ -91,13 +92,14 @@ static void dump_molecule(FILE              *fp,
         mymol.getExpProps(iqm, -1);
         mymol.Dump(fp);
         // Atoms!
-        auto &atoms = mymol.atomsConst();
+        auto &atoms = mymol.topology()->atoms();
         std::vector<Identifier> atomId;
         auto ztype = InteractionType::COULOMB;
-        for (int i = 0; i < atoms.nr; i++)
+        for (size_t i = 0; i < atoms.size(); i++)
         {
-            const char *atype = *atoms.atomtype[i];
-            fprintf(fp, "atom: %2d  %5s  %5s", i+1, *atoms.atomname[i], atype);
+            const auto &atype = atoms[i].ffType();
+            fprintf(fp, "atom: %2lu  %5s  %5s", i+1, 
+                    atoms[i].name().c_str(), atype.c_str());
             Identifier pid(atype);
             atomId.push_back(pid);
             if (pd.hasParticleType(pid))

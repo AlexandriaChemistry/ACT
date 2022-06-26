@@ -35,10 +35,14 @@
 
 #include "act/molprop/molpropobservable.h"
 #include "act/utility/units.h"
+#include "gromacs/fileio/pdbio.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/math/units.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/linearalgebra/eigensolver.h"
+#include "gromacs/fileio/xvgr.h"
 #include "gromacs/math/do_fit.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/topology/topology.h"
@@ -122,11 +126,11 @@ void MolHandler::nma(MyMol               *mol,
                      FILE                *fp) const
 {
     // Get the indices of the real atoms of the molecule (not shells and such)
-    auto atoms = mol->atoms();
+    auto atoms = mol->topology()->atoms();
     std::vector<int> atomIndex;
-    for(int atom = 0; atom < atoms->nr; atom++)
+    for(size_t atom = 0; atom < atoms.size(); atom++)
     {
-        if (atoms->atom[atom].ptype == eptAtom)
+        if (atoms[atom].pType() == eptAtom)
         {
             atomIndex.push_back(atom);
         }
@@ -149,7 +153,7 @@ void MolHandler::nma(MyMol               *mol,
             for (size_t k = 0; (k < atomIndex.size()); k++)
             {
                 size_t ak = atomIndex[k];
-                massFac   = gmx::invsqrt(atoms->atom[ai].m * atoms->atom[ak].m);
+                massFac   = gmx::invsqrt(atoms[ai].mass() * atoms[ak].mass());
                 for (size_t l = 0; (l < DIM); l++)
                 {
                     hessian.mult(i*DIM+j, k*DIM+l, massFac);
@@ -177,7 +181,7 @@ void MolHandler::nma(MyMol               *mol,
         for (size_t j = 0; j < atomIndex.size(); j++)
         {
             size_t aj = atomIndex[j];
-            massFac   = gmx::invsqrt(atoms->atom[aj].m);
+            massFac   = gmx::invsqrt(atoms[aj].mass());
             for (size_t k = 0; (k < DIM); k++)
             {
                 eigenvectors[i * matrixSide + j * DIM + k] *= massFac;
@@ -273,17 +277,17 @@ immStatus MolHandler::minimizeCoordinates(MyMol               *mol,
     // TODO: check if this is really necessary
     mol->restoreCoordinates(coordSet::Minimized);  // Is minimized defined??? I guess it makes sense: if not defined, nothing changes
     immStatus imm          = immStatus::OK;
-    auto      mdatoms      = mol->MDatoms_->get()->mdatoms();
     // Below is a Newton-Rhapson algorithm
     bool      converged    = false;
-    double    myForceToler = mol->inputrec_->em_tol; // kJ/mol nm
+    double    myForceToler = forceComp->convergenceTolerance();
     int       myIter       = 0;
     int       maxIter      = 100;
     // List of atoms (not shells) and weighting factors
+    auto      myatoms      = mol->atomsConst();
     std::vector<int> theAtoms;
-    for(int atom = 0; atom < mdatoms->nr; atom++)
+    for(size_t atom = 0; atom < myatoms.size(); atom++)
     {
-        if (mdatoms->ptype[atom] == eptAtom)
+        if (myatoms[atom].pType() == eptAtom)
         {
             theAtoms.push_back(atom);
         }
@@ -366,8 +370,9 @@ double MolHandler::coordinateRmsd(MyMol                                       *m
                                   std::map<coordSet, std::vector<gmx::RVec> > *x) const
 {
     // Compute RMSD
-    auto   mdatoms = mol->MDatoms_->get()->mdatoms();
-    double tmass = mol->totalMass();
+    auto   myatoms = mol->atomsConst();
+    double tmass   = mol->totalMass();
+    std::vector<real> myMass;
     x->clear();
     for (const auto &cs : { coordSet::Original, coordSet::Minimized })
     {
@@ -379,7 +384,8 @@ double MolHandler::coordinateRmsd(MyMol                                       *m
         rvec                   com = { 0, 0, 0 };
         for (size_t i = 0; i < xcs.size(); ++i)
         {
-            double relativeMass = mdatoms->massT[i]/tmass;
+            myMass.push_back(myatoms[i].mass());
+            double relativeMass = myatoms[i].mass()/tmass;
             for(int m = 0; m < DIM; m++)
             {
                 com[m] += relativeMass*xcs[i][m];
@@ -394,14 +400,14 @@ double MolHandler::coordinateRmsd(MyMol                                       *m
         }
         x->insert({ cs, xcs });
     }
-    do_fit(mdatoms->nr, mdatoms->massT, 
+    do_fit(myatoms.size(), myMass.data(),
            as_rvec_array((*x)[coordSet::Original].data()),
            as_rvec_array((*x)[coordSet::Minimized].data()));
     
     double msd  = 0;
-    for (int i = 0; i < mdatoms->nr; i++)
+    for (size_t i = 0; i < myatoms.size(); i++)
     {
-        if (mdatoms->massT[i] > 0)
+        if (myMass[i] > 0)
         {
             rvec dx;
             rvec_sub((*x)[coordSet::Original][i], (*x)[coordSet::Minimized][i], dx);
@@ -409,6 +415,173 @@ double MolHandler::coordinateRmsd(MyMol                                       *m
         }
     }
     return std::sqrt(msd/mol->nRealAtoms());
+}
+
+static void energyLegend(FILE                                    *exvg, 
+                         const std::map<InteractionType, double> &energies,
+                         const gmx_output_env_t                  *oenv)
+{
+    std::vector<const char *> enames;
+    for(auto &e : energies)
+    {
+        enames.push_back(interactionTypeToString(e.first).c_str());
+    }
+    enames.push_back("EKIN");
+    enames.push_back("ETOT");
+    enames.push_back("TEMPERATURE");
+    xvgr_legend(exvg, enames.size(), enames.data(), oenv);
+}
+
+static double rvecNormSquared(const gmx::RVec &v)
+{
+    return v[XX]*v[XX]+v[YY]*v[YY]+v[ZZ]*v[ZZ];
+}
+
+static void printEnergies(FILE                                    *exvg, 
+                          int                                      step, 
+                          double                                   deltat, 
+                          const std::map<InteractionType, double> &energies,
+                          double                                   ekin,
+                          int                                      nDOF,
+                          const gmx_output_env_t                  *oenv)
+{
+    // For energy writing first time around
+    if (step == 0)
+    {
+        energyLegend(exvg, energies, oenv);
+    }
+    fprintf(exvg, "%10g", step*deltat);
+    for(auto &e : energies)
+    {
+        fprintf(exvg, "  %10g", e.second);
+    }
+    auto epot = energies.find(InteractionType::EPOT)->second;
+    auto temp = ekin*2/(3*nDOF*BOLTZ);
+    fprintf(exvg, " %10g %10g %10g\n", ekin, ekin+epot, temp);
+}
+
+static void initArrays(const MyMol            *mol,
+                       std::vector<gmx::RVec> *coordinates, 
+                       std::vector<gmx::RVec> *velocities, 
+                       std::vector<gmx::RVec> *forcesCur,
+                       std::vector<gmx::RVec> *forcesPrev,
+                       std::vector<double>    *inv2mass,
+                       std::vector<double>    *mass_2)
+{
+    auto &xmol = mol->x();
+    coordinates->resize(xmol.size());
+    velocities->resize(xmol.size());
+    forcesPrev->resize(xmol.size());
+    forcesCur->resize(xmol.size());
+    gmx::RVec zero = { 0, 0, 0 };
+    auto &atoms = mol->atomsConst();
+    for (long i = 0; i < xmol.size(); i++)
+    {
+        copy_rvec(xmol[i], (*coordinates)[i]);
+        copy_rvec(zero, (*velocities)[i]);
+        copy_rvec(zero, (*forcesPrev)[i]);
+        copy_rvec(zero, (*forcesCur)[i]);
+        mass_2->push_back(atoms[i].mass()*0.5);
+        if (atoms[i].mass() > 0)
+        {
+            inv2mass->push_back(0.5/atoms[i].mass());
+        }
+        else
+        {
+            inv2mass->push_back(0);
+        }
+    }
+}
+                       
+void MolHandler::simulate(MyMol                         *mol,
+                          const ForceComputer           *forceComp,
+                          const SimulationConfigHandler &simConfig,
+                          FILE                          *logFile,
+                          const char                    *trajectoryFile,
+                          const char                    *energyFile,
+                          const gmx_output_env_t        *oenv) const
+{
+    FILE                              *traj = gmx_ffopen(trajectoryFile, "w");
+    FILE                              *exvg = xvgropen(energyFile, "ACT Energies",
+                                                       "Time (ps)", "Energy (kJ/mol)", oenv);
+    std::vector<gmx::RVec>             coordinates, velocities, forces[2];
+    std::map<InteractionType, double>  energies;
+    std::vector<double>                inv2mass;
+    std::vector<double>                mass_2;
+
+    // To swap between forces efficiently
+    int cur = 0;
+#define prev (1-cur)
+
+    // Initiate coordinates, etc.
+    initArrays(mol, &coordinates, &velocities,
+               &forces[cur], &forces[prev], &inv2mass, &mass_2);
+
+    auto xmol    = mol->x();
+    auto deltat  = simConfig.deltat();
+    auto deltat2 = deltat*deltat;
+    // For trajectory writing
+    matrix      box   = { { 4, 0, 0 }, { 0, 4, 0 }, { 0, 0, 4 } };
+    char        chain = ' ';
+    const char *title = "ACT trajectory";
+    int         nDOF  = DIM*mol->nRealAtoms();
+    fprintf(logFile, "\nWill start simulation.\n");
+    for (int step = 0; step < simConfig.nsteps(); step++)
+    {
+        // Check whether we need to print stuff
+        bool   doPrintEner = simConfig.nstener() > 0 && step % simConfig.nstener() == 0;
+        double ekin        = 0;
+        // Integrate positions using velocity Verlet
+        for(long i = 0; i < xmol.size(); i++)
+        {
+            if (inv2mass[i] > 0)
+            {
+                double dt2m = deltat2*inv2mass[i];
+                for(int m = 0; m < DIM; m++)
+                {
+                    coordinates[i][m] += (deltat*velocities[i][m] + 
+                                          dt2m*forces[prev][i][m]);
+                }
+                if (doPrintEner)
+                {
+                    ekin += mass_2[i]*rvecNormSquared(velocities[i]);
+                }
+            }
+        }
+        // Compute forces and energies
+        forceComp->compute(mol->topology(), &coordinates,
+                           &forces[cur], &energies);
+        // Write energies if requested
+        if (doPrintEner)
+        {
+            printEnergies(exvg, step, deltat, energies, ekin, nDOF, oenv);
+        }
+        // Integrate velocities using velocity Verlet
+        for(long i = 0; i < xmol.size(); i++)
+        {
+            if (inv2mass[i] > 0)
+            {
+                for(int m = 0; m < DIM; m++)
+                {
+                    velocities[i][m] += deltat*inv2mass[i]*(forces[cur][i][m] +
+                                                            forces[prev][i][m]);
+                }
+            }
+        }
+        // Write output if needed
+        if (simConfig.nstxout() > 0 && step % simConfig.nstxout() == 0)
+        {
+            write_pdbfile(traj, title, mol->gmxAtoms(),
+                          as_rvec_array(coordinates.data()), epbcNONE,
+                          box, chain, step+1, nullptr, false);
+        }
+        // Swap force arrays
+        cur = prev;
+    }
+    
+    gmx_ffclose(traj);
+    xvgrclose(exvg);
+    fprintf(logFile, "Simulation finished correctly.\n");
 }
 
 } // namespace alexandria

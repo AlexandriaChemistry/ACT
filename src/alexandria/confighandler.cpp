@@ -317,4 +317,41 @@ void GAConfigHandler::check_pargs()
 * END: GAConfigHandler                     *
 * * * * * * * * * * * * * * * * * * * * * */
 
+/* * * * * * * * * * * * * * * * * * * * * *
+* BEGIN: SimulationConfigHandler           *
+* * * * * * * * * * * * * * * * * * * * * */
+
+void SimulationConfigHandler::add_pargs(std::vector<t_pargs> *pargs)
+{
+    std::vector<t_pargs> extra = {
+        { "-nsteps", FALSE, etINT, {&nsteps_},
+          "Number of integration steps." },
+        { "-deltat", FALSE, etREAL, {&deltat_},
+          "Integration time step (ps)" },
+        { "-temp", FALSE, etREAL, {&temperature_},
+          "Simulation temperature (K)" },
+        { "-nstxout", FALSE, etINT, {&nstxout_},
+          "Number of steps between writing coordinates." },
+        { "-nstvout", FALSE, etINT, {&nstvout_},
+          "Number of steps between writing velocities." },
+        { "-nstener", FALSE, etINT, {&nstener_},
+          "Number of steps between writing energies." }
+    };
+    for(auto &i : extra)
+    {
+        pargs->push_back(i);
+    }
+}
+
+void SimulationConfigHandler::check_pargs()
+{
+    GMX_RELEASE_ASSERT(nsteps_ > 0, "Number of steps must be larger than zero");
+    GMX_RELEASE_ASSERT(temperature_ > 0, "Temperature must be larger than zero");
+    GMX_RELEASE_ASSERT(deltat_ > 0, "Integration time step must be larger than zero");
+}
+
+/* * * * * * * * * * * * * * * * * * * * * *
+* END: SimulationConfigHandler             *
+* * * * * * * * * * * * * * * * * * * * * */
+
 } //namespace alexandria

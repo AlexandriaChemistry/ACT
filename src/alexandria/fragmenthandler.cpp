@@ -4,13 +4,14 @@
 
 #include "act/qgen/qgen_acm.h"
 #include "act/molprop/fragment.h"
+#include "act/utility/stringutil.h"
 #include "gromacs/topology/atoms.h"
 
 namespace alexandria
 {    
 
 FragmentHandler::FragmentHandler(const Poldata               *pd,
-                                 const t_atoms               *atoms,
+                                 const std::vector<ActAtom>  &atoms,
                                  const std::vector<Bond>     &bonds,
                                  const std::vector<Fragment> *fragments,
                                  const std::vector<int>      &shellRenumber)
@@ -44,7 +45,7 @@ FragmentHandler::FragmentHandler(const Poldata               *pd,
             toAdd.push_back(anew-atomStart_[ff]);
             if (pd->polarizable())
             {
-                auto fa = pd->findParticleType(*atoms->atomtype[anew]);
+                auto fa = pd->findParticleType(atoms[anew].ffType());
                 if (fa->hasInteractionType(InteractionType::POLARIZATION))
                 {
                     // TODO remove assumption that shell is next to the atom in order
@@ -54,23 +55,23 @@ FragmentHandler::FragmentHandler(const Poldata               *pd,
         }
         // The next fragment, if there is one, starts after this one!
         atomStart_.push_back(atomStart_[ff]+toAdd.size());
-        init_t_atoms(&FragAtoms_[ff], toAdd.size(), false);
-        FragAtoms_[ff].nres = toAdd.size();
-        // The stupid routine above will not handle the atomtype array
-        snew(FragAtoms_[ff].atomtype, toAdd.size());
+
         int j = 0;
         for(auto &i : toAdd)
         {
-            FragAtoms_[ff].atom[j]     = atoms->atom[i+atomStart_[ff]];
-            FragAtoms_[ff].atomtype[j] = atoms->atomtype[i+atomStart_[ff]];
-            FragAtoms_[ff].atomname[j] = atoms->atomname[i+atomStart_[ff]];
-            // All atoms in all fragments get residue number 1.
-            int resind = 1;
-            FragAtoms_[ff].resinfo[resind] = atoms->resinfo[atoms->atom[i+atomStart_[ff]].resind];
-            FragAtoms_[ff].nres = std::max(resind, FragAtoms_[ff].nres);
+            auto fa      = pd->findParticleType(atoms[i+atomStart_[ff]].ffType());
+            int  anumber = my_atoi(fa->optionValue("atomnumber").c_str(), "atomic number");
+            ActAtom newat(atoms[i+atomStart_[ff]].name(),
+                          fa->optionValue("element"),
+                          atoms[i+atomStart_[ff]].ffType(),
+                          atoms[i+atomStart_[ff]].pType(),
+                          anumber,
+                          atoms[i+atomStart_[ff]].mass(),
+                          atoms[i+atomStart_[ff]].charge());
+            FragAtoms_[ff].push_back(newat);
             j++;
         }
-        QgenAcm_.push_back(QgenAcm(pd, &FragAtoms_[ff], f->charge()));
+        QgenAcm_.push_back(QgenAcm(pd, FragAtoms_[ff], f->charge()));
         int offset = 0;
         for(int k = 0; k < static_cast<int>(ff); k++)
         {
@@ -102,8 +103,8 @@ FragmentHandler::FragmentHandler(const Poldata               *pd,
     }
     if (debug)
     {
-        fprintf(debug, "FragmentHandler: atoms->nr %d natoms %zu nbonds %zu nfragments %zu\n",
-                atoms->nr, natoms_, bonds.size(), FragAtoms_.size());
+        fprintf(debug, "FragmentHandler: atoms.size() %lu natoms %zu nbonds %zu nfragments %zu\n",
+                atoms.size(), natoms_, bonds.size(), FragAtoms_.size());
     }
 }
 
@@ -113,7 +114,7 @@ void FragmentHandler::fetchCharges(std::vector<double> *qq)
     size_t ff = 0;
     for (auto &fa : FragAtoms_)
     {
-        for (int a = 0; a < fa.nr; a++)
+        for (size_t a = 0; a < fa.size(); a++)
         {
             (*qq)[atomStart_[ff] + a] = QgenAcm_[ff].getQ(a);
         }
@@ -125,15 +126,16 @@ eQgen FragmentHandler::generateCharges(FILE                             *fp,
                                        const std::string                &molname,
                                        const gmx::HostVector<gmx::RVec> &x,
                                        const Poldata                    *pd,
-                                       t_atoms                          *atoms)
+                                       std::vector<ActAtom>             *atoms)
 {
     auto   eqgen = eQgen::OK;
     size_t ff    = 0;
     for (auto &fa : FragAtoms_)
     {
+        // TODO only copy the coordinates if there is more than one fragment.
         gmx::HostVector<gmx::RVec> xx;
-        xx.resizeWithPadding(fa.nr);
-        for(int a = 0; a < fa.nr; a++)
+        xx.resizeWithPadding(fa.size());
+        for(size_t a = 0; a < fa.size(); a++)
         {
             copy_rvec(x[atomStart_[ff]+a], xx[a]);
         }
@@ -143,9 +145,9 @@ eQgen FragmentHandler::generateCharges(FILE                             *fp,
         {
             break;
         }
-        for(int a = 0; a < fa.nr; a++)
+        for(size_t a = 0; a < fa.size(); a++)
         {
-            atoms->atom[atomStart_[ff]+a].q = fa.atom[a].q;
+            (*atoms)[atomStart_[ff]+a].setCharge(fa[a].charge());
         }
         ff += 1;
     }

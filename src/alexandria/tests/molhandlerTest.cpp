@@ -127,7 +127,7 @@ protected:
         // Get poldata
         auto pd  = getPoldata(forcefield);
         auto imm = mp_.GenerateTopology(stdout, pd,
-                                        missingParameters::Error);
+                                        missingParameters::Error, false);
         EXPECT_TRUE(immStatus::OK == imm);
         if (immStatus::OK != imm)
         {

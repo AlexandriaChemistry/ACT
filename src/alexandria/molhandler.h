@@ -39,7 +39,8 @@
 #include "act/forces/forcecomputer.h"
 #include "act/utility/regression.h"
 #include "mymol.h"
-#include "gromacs/mdtypes/commrec.h"
+#include "confighandler.h"
+//#include "gromacs/mdtypes/commrec.h"
 
 namespace alexandria
 {
@@ -106,6 +107,26 @@ public:
      */
     immStatus minimizeCoordinates(MyMol               *mol,
                                   const ForceComputer *forceComp) const;
+
+    /*! \brief
+     * The routine will perform a MD simulation of a molecule or multiple
+     * molecules, while relaxing shells if present.
+     *
+     * \param[in] mol            The molecule object (will be modified)
+     * \param[in] forceComp      Force Computer utility
+     * \param[in] simConfig      Simulation configuration handler
+     * \param[in] logFile        File for logging information
+     * \param[in] trajectoryFile Filename for writing coordinates
+     * \param[in] energyFile     Filename for writing energies
+     * \param[in] oenv           GROMACS output environment
+     */
+    void simulate(MyMol                         *mol,
+                  const ForceComputer           *forceComp,
+                  const SimulationConfigHandler &simConfig,
+                  FILE                          *logFile,
+                  const char                    *trajectoryFile,
+                  const char                    *energyFile,
+                  const gmx_output_env_t        *oenv) const;
 
     /*! \brief
      * The routine will compute the RMSD between the minimized coordinates

@@ -46,12 +46,12 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/topology/atomprop.h"
-#include "gromacs/topology/atoms.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/textreader.h"
 
+#include "alexandria/topology.h"
 #include "act/coulombintegrals/coulombintegrals.h"
 #include "act/poldata/poldata.h"
 #include "act/utility/regression.h"
@@ -70,21 +70,10 @@ void QgenResp::updateAtomCoords(const gmx::HostVector<gmx::RVec> &x)
     }
 }
 
-void QgenResp::updateAtomCharges(const t_atoms  *atoms)
-{
-    GMX_RELEASE_ASSERT(nAtom_ == atoms->nr,
-                       gmx::formatString("Inconsistency between number of resp atoms %d and topology atoms %d", atoms->nr, nAtom_).c_str());
-
-    for (int i = 0; i < nAtom_; i++)
-    {
-        q_[i] = atoms->atom[i].q;
-    }
-}
-
 void QgenResp::updateAtomCharges(const std::vector<double> &q)
 {
-    GMX_RELEASE_ASSERT(nAtom_ == static_cast<int>(q.size()),
-                       gmx::formatString("Inconsistency between number of resp atoms (%d) and charges (%d)", nAtom_, static_cast<int>(q.size())).c_str());
+    GMX_RELEASE_ASSERT(nAtom_ - q.size() == 0,
+                       gmx::formatString("Inconsistency between number of resp atoms %d and topology atoms %lu", nAtom_, q.size()).c_str());
 
     for (int i = 0; i < nAtom_; i++)
     {
@@ -92,14 +81,30 @@ void QgenResp::updateAtomCharges(const std::vector<double> &q)
     }
 }
 
-void QgenResp::setAtomInfo(const t_atoms                    *atoms,
+void QgenResp::updateAtomCharges(const std::vector<ActAtom> &atoms)
+{
+    GMX_RELEASE_ASSERT(nAtom_ - atoms.size() == 0,
+                       gmx::formatString("Inconsistency between number of resp atoms %d and topology atoms %lu", nAtom_, atoms.size()).c_str());
+
+    for (int i = 0; i < nAtom_; i++)
+    {
+        q_[i] = atoms[i].charge();
+    }
+}
+
+void QgenResp::setAtomInfo(const std::vector<ActAtom>       &atoms,
                            const alexandria::Poldata        *pd,
                            const gmx::HostVector<gmx::RVec> &x,
                            const int                         qtotal)
 {
-    GMX_RELEASE_ASSERT(nAtom_ == 0 || (nAtom_ == atoms->nr),
-                       gmx::formatString("Changing the number of atoms from %d to %d", nAtom_, atoms->nr).c_str());
-    nAtom_   = atoms->nr;
+    if (nAtom_ != 0)
+    {
+        fprintf(stderr, "setAtomInfo called more than once. Ignoring second time.\n");
+        return;
+    }
+    GMX_RELEASE_ASSERT(nAtom_ == 0 || (nAtom_ - atoms.size() == 0),
+                       gmx::formatString("Changing the number of atoms from %d to %lu", nAtom_, atoms.size()).c_str());
+    nAtom_   = atoms.size();
     GMX_RELEASE_ASSERT(nAtom_ - x.size() == 0,
                        gmx::formatString("Number of coordinates %d does not match atoms structure %d", static_cast<int>(x.size()), nAtom_).c_str());
     qtot_    = qtotal;
@@ -108,11 +113,10 @@ void QgenResp::setAtomInfo(const t_atoms                    *atoms,
     auto zzz = pd->findForcesConst(InteractionType::COULOMB);
     auto eqtModel = name2ChargeType(zzz.optionValue("chargetype"));
     bool haveZeta = eqtModel != ChargeType::Point;
-
     nFixed_ = 0;
-    for (int i = 0; i < atoms->nr; i++)
+    for (size_t i = 0; i < atoms.size(); i++)
     {
-        auto atype = pd->findParticleType(*atoms->atomtype[i]);
+        auto atype = pd->findParticleType(atoms[i].ffType());
         auto ztype = atype->interactionTypeToIdentifier(InteractionType::COULOMB);
         auto qparm = atype->parameterConst("charge");
         q_.push_back(qparm.value());
@@ -554,12 +558,13 @@ void QgenResp::optimizeCharges(double epsilonr)
     regularizeCharges();
 }
 
-void QgenResp::updateZeta(t_atoms *atoms, const Poldata *pd)
+void QgenResp::updateZeta(const std::vector<ActAtom> &atoms,
+                          const Poldata              *pd)
 {
     auto    fs   = pd->findForcesConst(InteractionType::COULOMB);
     for (int i = 0; i < nAtom_; i++)
     {
-        auto atype = pd->findParticleType(*(atoms->atomtype[i]));
+        auto atype = pd->findParticleType(atoms[i].ffType());
         auto myid  = atype->interactionTypeToIdentifier(InteractionType::COULOMB);
         auto eep   = fs.findParametersConst(myid);
         zeta_[i]   = eep.find("zeta")->second.value();

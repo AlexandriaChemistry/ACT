@@ -242,7 +242,7 @@ int gentop(int argc, char *argv[])
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     (void) pd.verifyCheckSum(stderr);
 
-    auto fs = pd.findForcesConst(InteractionType::COULOMB);
+    auto &fs = pd.findForcesConst(InteractionType::COULOMB);
     const char *ct = "chargetype";
     if (!fs.optionExists(ct))
     {
@@ -327,7 +327,8 @@ int gentop(int argc, char *argv[])
     fill_inputrec(inputrec);
     mymol.setInputrec(inputrec);
     imm = mymol.GenerateTopology(stdout, &pd,
-                                 bAllowMissing ? missingParameters::Ignore : missingParameters::Error);
+                                 bAllowMissing ? missingParameters::Ignore : missingParameters::Error,
+                                 false);
 
     auto forceComp = new ForceComputer(&pd);
     gmx_omp_nthreads_init(mdlog, cr.commrec(), 1, 1, 1, 0, false, false);
