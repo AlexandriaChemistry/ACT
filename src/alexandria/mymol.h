@@ -65,7 +65,6 @@ struct gmx_enerdata_t;
 struct gmx_shellfc_t;
 struct t_forcerec;
 struct t_inputrec;
-struct gmx_hw_info_t;
 struct gmx_vsite_t;
 struct t_nrnb;
 

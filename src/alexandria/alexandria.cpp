@@ -34,7 +34,7 @@
 
 #include <cstdlib>
 
-#include "mpi.h"
+//#include "mpi.h"
 
 #include "gromacs/commandline/cmdlineinit.h"
 #include "gromacs/commandline/cmdlinemodulemanager.h"

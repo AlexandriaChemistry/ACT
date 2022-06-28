@@ -317,8 +317,6 @@ private:
     gmx::MDLogger                   mdlog_;
     //! GROMACS MD parameter structure
     t_inputrec                     *inputrec_   = nullptr;
-    //! GROMACS hardware information structure
-    gmx_hw_info_t                  *hwinfo_     = nullptr;
     //! String for command line to harvest the options to fit
     char                            *fitString_ = nullptr;
     //! Map to determine whether or not to fit a parameter type
@@ -435,9 +433,6 @@ public:
     //! \brief Return minimum amount of data needed
     int mindata() const { return mindata_; }
   
-    //! \return the GROMACS hardware information structure      
-    gmx_hw_info_t *hwinfo() {return hwinfo_;}
-        
     /*! \brief Read the molecular property data file to generate molecules.
      * \param[in] fp      File pointer for printing information, may be nullptr
      * \param[in] fn      Filename for to read molecules from
