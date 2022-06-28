@@ -414,7 +414,7 @@ void AllBondeds::updatePoldata(FILE    *fp,
                     fs->addParameter(bondId, angle_name[angleANGLE],
                                      ForceFieldParameter("degree", av, sig, N, av*factor_, 
                                                          std::min(180.0, av/factor_), Mutability::Bounded, false, true));
-                    fs->addParameter(bondId, angle_name[angleKTH],
+                    fs->addParameter(bondId, angle_name[angleKT],
                                      ForceFieldParameter("kJ/mol/rad2", kt_, 0, 1, kt_*factor_, kt_/factor_, Mutability::Bounded, false, false));
                     fprintf(fp, "angle-%s angle %g sigma %g (deg) N = %d%s\n",
                             bondId.id().c_str(), av, sig, static_cast<int>(N), (sig > angle_tol_) ? " WARNING" : "");
@@ -458,23 +458,22 @@ void AllBondeds::updatePoldata(FILE    *fp,
                     {
                     case F_FOURDIHS:
                         {
-                            double val = 1;
-                            std::vector<std::string> cname = { "c0", "c1", "c2", "c3" };
-                            for(auto &c : cname)
+                            double val = 1.0;
+                            for(int i = 0; i < fdihNR; i++)
                             {
-                                fs->addParameter(bondId, c,
-                                                 ForceFieldParameter("kJ/mol", val, 0, 1, val*factor_, val/factor_, Mutability::Bounded, false, false));
+                                fs->addParameter(bondId, fdih_name[i],
+                                                 ForceFieldParameter("kJ/mol", val, 0, 1, -5, 5, Mutability::Bounded, false, false));
                             }
                         }
                         break;
                     case F_PDIHS:
                         {
                             round_numbers(&av, &sig, 10);
-                            fs->addParameter(bondId, "angle",
+                            fs->addParameter(bondId, pdih_name[pdihANGLE],
                                              ForceFieldParameter("degree", av, sig, N, av*factor_, av/factor_, Mutability::Bounded, false, true));
-                            fs->addParameter(bondId, "kp",
+                            fs->addParameter(bondId, pdih_name[pdihKP],
                                              ForceFieldParameter("kJ/mol", kp_, 0, 1, kp_*factor_, kp_/factor_, Mutability::Bounded, false, true));
-                            fs->addParameter(bondId, "mult",
+                            fs->addParameter(bondId, pdih_name[pdihMULT],
                                              ForceFieldParameter("", 3, 0, 1, 3, 3, Mutability::Fixed, true, true));
                         }
                         break;

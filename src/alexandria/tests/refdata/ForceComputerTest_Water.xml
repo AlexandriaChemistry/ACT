@@ -4,9 +4,9 @@
   <Real Name="BONDS_gmx">0.0026570465668220209</Real>
   <Real Name="ANGLES_gmx">0.55728331281907129</Real>
   <Real Name="EPOT_gmx">0.55994035938589326</Real>
-  <Real Name="BONDS">0.0026570465668220209</Real>
-  <Real Name="ANGLES">0.55728331281907129</Real>
-  <Real Name="EPOT">0.55994035938589326</Real>
+  <Real Name="BONDS_act">0.0026570465668220209</Real>
+  <Real Name="ANGLES_act">0.55728331281907129</Real>
+  <Real Name="EPOT_act">0.55994035938589326</Real>
   <Real Name="o3-1_gmx fX">0</Real>
   <Real Name="o3-1_act fX">0</Real>
   <Real Name="o3-1_gmx fY">0</Real>

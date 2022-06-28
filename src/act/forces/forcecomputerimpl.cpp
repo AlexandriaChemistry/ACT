@@ -200,6 +200,17 @@ static double computePartridge(const std::vector<TopologyEntry *>    &angles,
 }
 #endif
 
+static void harmonic(real k, real x0, real x, real *V, real *F)
+{
+    const real half = 0.5;
+
+    real dx  = x-x0;
+    real dx2 = dx*dx;
+
+    *F  = -k*dx;
+    *V  = half*k*dx2;
+}
+
 static double computeBonds(const std::vector<TopologyEntry *>    &bonds,
                            gmx_unused const std::vector<ActAtom> &atoms,
                            const std::vector<gmx::RVec>          *coordinates,
@@ -212,7 +223,6 @@ static double computeBonds(const std::vector<TopologyEntry *>    &bonds,
     double ebond = 0;
     auto   x     = *coordinates;
     auto  &f     = *forces;
-    const  real half = 0.5;
     
     for (const auto b : bonds)
     {
@@ -226,10 +236,12 @@ static double computeBonds(const std::vector<TopologyEntry *>    &bonds,
         rvec dx;
         rvec_sub(x[indices[0]], x[indices[1]], dx);
         auto dr2        = iprod(dx, dx);
-        auto dr         = std::sqrt(dr2) - bondlength;
+
+        real vB, fbond;
+        harmonic(kb, bondlength, std::sqrt(dr2), &vB, &fbond);
         
-        auto fbond      = -kb*dr*gmx::invsqrt(dr2);
-        ebond          += half*kb*dr*dr;
+        fbond *= gmx::invsqrt(dr2);
+        ebond += vB;
         
         for (int m = 0; (m < DIM); m++)
         {
@@ -330,13 +342,13 @@ static double computeAngles(const std::vector<TopologyEntry *>    &angles,
     double  energy = 0, costh = 0;
     auto    x     = *coordinates;
     auto   &f     = *forces;
-    const  real half = 0.5;
+
     for (const auto a : angles)
     {
         // Get the parameters. We have to know their names to do this.
         auto &params    = a->params();
         auto theta0     = params[angleANGLE];
-        auto ka         = params[angleKTH];
+        auto ka         = params[angleKT];
         // Get the atom indices
         auto &indices   = a->atomIndices();
 
@@ -344,12 +356,10 @@ static double computeAngles(const std::vector<TopologyEntry *>    &angles,
         auto theta = bond_angle(x[indices[0]], x[indices[1]], x[indices[2]], 
                                 r_ij, r_kj, &costh);
 
-        // Compute deviation from the reference angle
-        auto da  = theta - theta0;
-        auto da2 = da*da;
+        real vA, fangle;
+        harmonic(ka, theta0, theta, &vA, &fangle);
         
-        auto fangle      = -ka*da;
-        energy          += half*ka*da2;
+        energy += vA;
         
         auto costh2 = gmx::square(costh);
         if (costh2 < 1)
@@ -381,6 +391,87 @@ static double computeAngles(const std::vector<TopologyEntry *>    &angles,
                 f[indices[0]][m] += f_i[m];
                 f[indices[1]][m] += f_j[m];
                 f[indices[2]][m] += f_k[m];
+            }
+        }                                          
+    }
+    return energy;
+}
+
+// It is not finished yes, needs to be double checked. 
+static double computeUreyBradley(const std::vector<TopologyEntry *>    &angles,
+                                 gmx_unused const std::vector<ActAtom> &atoms,
+                                 const std::vector<gmx::RVec>          *coordinates,
+                                 std::vector<gmx::RVec>                *forces)
+{
+    double  energy = 0, costh = 0;
+    auto    x     = *coordinates;
+    auto   &f     = *forces;
+    const  real half = 0.5;
+    for (const auto a : angles)
+    {
+        // Get the parameters. We have to know their names to do this.
+        auto &params    = a->params();
+        auto theta0     = params[ubANGLE];
+        auto ka         = params[ubKT];
+        auto r13        = params[ubR13];
+        auto kUB        = params[ubKUB];
+        // Get the atom indices
+        auto &indices   = a->atomIndices();
+        auto ai = indices[0];
+        auto aj = indices[1];
+        auto ak = indices[2];
+        
+        rvec r_ij, r_kj;
+        auto theta = bond_angle(x[ai], x[aj], x[ak], r_ij, r_kj, &costh);
+
+        // Compute deviation from the reference angle
+        auto da  = theta - theta0;
+        auto da2 = da*da;
+        
+        auto fangle      = -ka*da;
+        energy          += half*ka*da2;
+        
+        // Now UB part
+        rvec r_ik;
+        rvec_sub(x[ai], x[ak], r_ik);
+        auto rik2        = iprod(r_ik, r_ik);
+        auto norm_rik    = std::sqrt(rik2);
+        
+        real vUB, fUB;
+        harmonic(kUB, r13, norm_rik, &vUB, &fUB);
+
+        energy += vUB;
+        fUB    *= gmx::invsqrt(rik2);
+
+        auto costh2 = gmx::square(costh);
+        if (costh2 < 1)
+        {
+            real st, sth;
+            real cik, cii, ckk;
+            real nrkj2, nrij2;
+            real nrkj_1, nrij_1;
+
+            st    = fangle*gmx::invsqrt(1 - costh2);   
+            sth   = st*costh;                      
+
+            nrij2 = iprod(r_ij, r_ij);                 
+            nrkj2 = iprod(r_kj, r_kj);                 
+
+            nrij_1 = gmx::invsqrt(nrij2);              
+            nrkj_1 = gmx::invsqrt(nrkj2);              
+
+            cik = st*nrij_1*nrkj_1;                    
+            cii = sth*nrij_1*nrij_1;                   
+            ckk = sth*nrkj_1*nrkj_1;                  
+
+            for (auto m = 0; m < DIM; m++)
+            {
+                real f_i = -(cik*r_kj[m] - cii*r_ij[m]);
+                real f_k = -(cik*r_ij[m] - ckk*r_kj[m]);
+                real f_j = -f_i - f_k;
+                f[ai][m] += f_i + fUB*r_ik[m];
+                f[aj][m] += f_j;
+                f[ak][m] += f_k - fUB*r_ik[m];
             }
         }                                          
     }
@@ -478,6 +569,69 @@ static real dih_angle(const rvec xi, const rvec xj, const rvec xk, const rvec xl
     return phi;
 }
 
+static double computeFourDihs(const std::vector<TopologyEntry *>    &propers,
+                              gmx_unused const std::vector<ActAtom> &atoms,
+                              const std::vector<gmx::RVec>          *coordinates,
+                              std::vector<gmx::RVec>                *forces)
+{
+    double energy = 0;
+    auto   x      = *coordinates;
+    for (const auto a : propers)
+    {
+        // Get the parameters. We have to know their names to do this.
+        auto &params  = a->params();
+        // Assume we have the parameters in the correct order 0-nparam-1
+        size_t nparam = params.size();
+        // Get the atom indices
+        auto &indices = a->atomIndices();
+        auto ai       = indices[0];
+        auto aj       = indices[1];
+        auto ak       = indices[2];
+        auto al       = indices[3];
+
+        rvec r_ij, r_kj, r_kl, m, n;
+        auto phi = dih_angle(x[ai], x[aj], x[ak], x[al],
+                             r_ij, r_kj, r_kl, m, n);
+        /* Change to polymer convention */
+#ifdef WRONG
+        if (phi < 0)
+        {
+            phi += M_PI;
+        }
+        else
+        {
+            phi -= M_PI;    /*   1		*/
+        }
+#endif
+        real cos_phi = std::cos(phi);
+        
+        /* Calculate cosine powers */
+        /* Calculate the energy */
+        /* Calculate the derivative */
+
+        // Energy is
+        // \sum_{j=0}^{nparam} params[j] cos^j(phi)
+        // Force then becomes
+        // - \sum_{j=1}^{nparam} j * params[j] cos^{j-1}(phi) sin(phi)
+        real cosfac = 1;
+        real v      = params[0];
+        real dvdphi = 0;
+        for (size_t j = 1; (j < nparam); j++)
+        {
+            dvdphi += j*params[j]*cosfac;
+            cosfac *= cos_phi;
+            v      += params[j]*cosfac;
+        }
+
+        /* Beware of accuracy loss, cannot use 1-sqrt(cos^2) ! */
+        dvdphi *= -std::sin(phi);
+
+        do_dih_fup_noshiftf(ai, aj, ak, al, dvdphi, r_ij, r_kj, r_kl, m, n,
+                            forces);
+        energy += v;
+    }
+    return energy;
+}
 
 
 static double computeImpropers(const std::vector<TopologyEntry *>    &impropers,
@@ -507,9 +661,9 @@ static double computeImpropers(const std::vector<TopologyEntry *>    &impropers,
         auto dp2 = phi*phi;
 
         energy     += half*kA*dp2;
-        auto ddphi  = -kA*phi;
+        auto ddphi  = kA*phi;
 
-        do_dih_fup_noshiftf(ai, aj, ak, al, -ddphi, r_ij, r_kj, r_kl, m, n,
+        do_dih_fup_noshiftf(ai, aj, ak, al, ddphi, r_ij, r_kj, r_kl, m, n,
                             forces);
     }
     return energy;
@@ -525,8 +679,8 @@ std::map<int, bondForceComputer> bondForceComputerMap = {
     { F_COUL_SR,       computeCoulomb      },
     { F_POLARIZATION,  computePolarization },
     { F_IDIHS,         computeImpropers    },
-    { F_FOURDIHS,      computeImpropers    },
-    { F_UREY_BRADLEY,  computeImpropers    }
+    { F_FOURDIHS,      computeFourDihs     },
+    { F_UREY_BRADLEY,  computeUreyBradley  }
 };
 
 bondForceComputer getBondForceComputer(int gromacs_index)

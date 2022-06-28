@@ -152,6 +152,10 @@ protected:
             coordinates.push_back(xxx);
             forces.push_back({ 0, 0, 0 });
         }
+        if (stretch != 1)
+        {
+            mp_.setX(coordinates);
+        }
         double shellRmsf;
         t_commrec *crtmp = init_commrec();
         crtmp->nnodes = 1;
@@ -161,7 +165,12 @@ protected:
         {
             if (ed->term[i] != 0)
             {
-                std::string label = gmx::formatString("%s_gmx", interaction_function[i].name);
+                std::string label = gmx::formatString("%s", interaction_function[i].name);
+                if (stretch != 1)
+                {
+                    label += gmx::formatString("%g", stretch);
+                }
+                label += "_gmx";
                 checker_.checkReal(ed->term[i], label.c_str());
             }
         }
@@ -177,13 +186,14 @@ protected:
                 {
                     ftype = pd->findForcesConst(ener.first).fType();
                 }
-                std::string ifname(interaction_function[ftype].name);
+                std::string label(interaction_function[ftype].name);
                 if (stretch != 1)
                 {
-                    ifname += gmx::formatString("%g", stretch);
+                    label += gmx::formatString("%g", stretch);
                 }
-                checker_.checkReal(ener.second, ifname.c_str());
-                //EXPECT_TRUE(std::abs(ener.second-ed->term[ftype]) < 1e-3);
+                label += "_act";
+                checker_.checkReal(ener.second, label.c_str());
+                EXPECT_TRUE(std::abs(ener.second-ed->term[ftype]) < 1e-3);
             }
         }
         const char *xyz[DIM] = { "X", "Y", "Z" };
@@ -209,7 +219,7 @@ protected:
                                                                        i+1, stretchName.c_str(),
                                                                        xyz[m]).c_str());
                 }
-                //EXPECT_TRUE(std::abs(forces[i][m]-mpf[i][m]) < 1e-3);
+                EXPECT_TRUE(std::abs(forces[i][m]-mpf[i][m]) < 1e-3);
             }
         }
         // gmx_stop_debug();
@@ -236,13 +246,24 @@ TEST_F (ForceComputerTest, HydrogenChlorideStretch)
 
 TEST_F (ForceComputerTest, Water)
 {
-
     test("water-3-oep.log.pdb", "ACS-g");
+}
+
+TEST_F (ForceComputerTest, WaterStretch)
+{
+    test("water-3-oep.log.pdb", "ACS-g", 0.98);
+    test("water-3-oep.log.pdb", "ACS-g", 1.02);
 }
 
 TEST_F (ForceComputerTest, Acetone)
 {
     test("acetone-3-oep.log.pdb", "ACS-g");
+}
+
+TEST_F (ForceComputerTest, AcetoneStretch)
+{
+    test("acetone-3-oep.log.pdb", "ACS-g", 0.98);
+    test("acetone-3-oep.log.pdb", "ACS-g", 1.07);
 }
 
 TEST_F (ForceComputerTest, AcetoneNonPlanar)
@@ -255,6 +276,28 @@ TEST_F (ForceComputerTest, Uracil)
     test("uracil.sdf", "ACS-g");
 }
 
+TEST_F (ForceComputerTest, UracilStretch)
+{
+    test("uracil.sdf", "ACS-g", 0.9);
+    test("uracil.sdf", "ACS-g", 1.1);
+}
+
+TEST_F (ForceComputerTest, AcetoneDih)
+{
+    test("acetone-3-oep.log.pdb", "ACS-g-dih");
+}
+
+TEST_F (ForceComputerTest, UracilDih)
+{
+    test("uracil.sdf", "ACS-g-dih");
+}
+
+TEST_F (ForceComputerTest, WaterUB)
+{
+
+    test("water-3-oep.log.pdb", "ACS-g-dih");
+}
+
 TEST_F (ForceComputerTest, CarbonDioxidePol)
 {
   test("carbon-dioxide.sdf", "ACS-pg");
@@ -262,19 +305,35 @@ TEST_F (ForceComputerTest, CarbonDioxidePol)
 
 TEST_F (ForceComputerTest, HydrogenChloridePol)
 {
-
     test("hydrogen-chloride.sdf", "ACS-pg");
+}
+
+TEST_F (ForceComputerTest, HydrogenChloridePolStretch)
+{
+    test("hydrogen-chloride.sdf", "ACS-pg", 0.98);
+    test("hydrogen-chloride.sdf", "ACS-pg", 1.05);
 }
 
 TEST_F (ForceComputerTest, WaterPol)
 {
-
     test("water-3-oep.log.pdb", "ACS-pg");
+}
+
+TEST_F (ForceComputerTest, WaterPolStretch)
+{
+    test("water-3-oep.log.pdb", "ACS-pg", 0.98);
+    test("water-3-oep.log.pdb", "ACS-pg", 1.04);
 }
 
 TEST_F (ForceComputerTest, AcetonePol)
 {
     test("acetone-3-oep.log.pdb", "ACS-pg");
+}
+
+TEST_F (ForceComputerTest, AcetonePolStretch)
+{
+    test("acetone-3-oep.log.pdb", "ACS-pg", 0.97);
+    test("acetone-3-oep.log.pdb", "ACS-pg", 1.01);
 }
 
 TEST_F (ForceComputerTest, AcetoneNonPlanarPol)
@@ -285,6 +344,12 @@ TEST_F (ForceComputerTest, AcetoneNonPlanarPol)
 TEST_F (ForceComputerTest, UracilPol)
 {
     test("uracil.sdf", "ACS-pg");
+}
+
+TEST_F (ForceComputerTest, UracilPolStretch)
+{
+    test("uracil.sdf", "ACS-pg", 0.99);
+    test("uracil.sdf", "ACS-pg", 1.06);
 }
 
 }  // namespace

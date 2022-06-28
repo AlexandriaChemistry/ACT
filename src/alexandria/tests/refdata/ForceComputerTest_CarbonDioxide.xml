@@ -3,8 +3,8 @@
 <ReferenceData>
   <Real Name="BONDS_gmx">0.0019254999999995758</Real>
   <Real Name="EPOT_gmx">0.0019254999999995758</Real>
-  <Real Name="BONDS">0.0019254999999995758</Real>
-  <Real Name="EPOT">0.0019254999999995758</Real>
+  <Real Name="BONDS_act">0.0019254999999995758</Real>
+  <Real Name="EPOT_act">0.0019254999999995758</Real>
   <Real Name="o2-1_gmx fX">0</Real>
   <Real Name="o2-1_act fX">0</Real>
   <Real Name="o2-1_gmx fY">0</Real>

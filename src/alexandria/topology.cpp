@@ -220,6 +220,7 @@ Improper::Improper(Bond bij, Bond bik, Bond bil)
     addAtom(b_[0].aJ());
     addAtom(b_[1].aJ());
     addAtom(b_[2].aJ());
+    GMX_RELEASE_ASSERT(atomIndices().size() == 4, "Something weird with impropers");
     addBondOrder(bij.bondOrder());
     addBondOrder(bik.bondOrder());
     addBondOrder(bil.bondOrder());

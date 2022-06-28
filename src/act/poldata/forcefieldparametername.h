@@ -51,7 +51,7 @@ namespace alexandria
     
     extern const char *bond_name[bondNR];
     
-    enum { angleKTH = 0, angleANGLE = 1, angleNR = 2 };
+    enum { angleKT = 0, angleANGLE = 1, angleNR = 2 };
     
     extern const char *angle_name[angleNR];
     
@@ -82,6 +82,10 @@ namespace alexandria
     enum { fdihC0 = 0, fdihC1 = 1, fdihC2 = 2, fdihC3 = 3, fdihNR = 4 };
     
     extern const char *fdih_name[fdihNR];
+    
+    enum { pdihANGLE = 0, pdihKP = 1, pdihMULT = 2, pdihNR = 3 };
+    
+    extern const char *pdih_name[pdihNR];
     
 } // namespace alexandria
 

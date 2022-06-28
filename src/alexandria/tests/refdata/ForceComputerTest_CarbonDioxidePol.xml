@@ -3,20 +3,20 @@
 <ReferenceData>
   <Real Name="MORSE_gmx">-799.9021283352007</Real>
   <Real Name="BHAM_gmx">4829.1964772415586</Real>
-  <Real Name="COUL_SR_gmx">-0.36199491309059795</Real>
-  <Real Name="POLARIZATION_gmx">0.00054708412841748019</Real>
-  <Real Name="EPOT_gmx">4028.9329010773954</Real>
-  <Real Name="MORSE">-799.9021283352007</Real>
-  <Real Name="BHAM">4829.1964772415586</Real>
-  <Real Name="COUL_SR">-0.3619949129847555</Real>
-  <Real Name="POLARIZATION">0.00054708402244562509</Real>
-  <Real Name="EPOT">4028.9329010773954</Real>
+  <Real Name="COUL_SR_gmx">-0.36199491307445442</Real>
+  <Real Name="POLARIZATION_gmx">0.00054708411252736826</Real>
+  <Real Name="EPOT_gmx">4028.9329010773959</Real>
+  <Real Name="MORSE_act">-799.9021283352007</Real>
+  <Real Name="BHAM_act">4829.1964772415586</Real>
+  <Real Name="COUL_SR_act">-0.36199491307490916</Real>
+  <Real Name="POLARIZATION_act">0.00054708411252736826</Real>
+  <Real Name="EPOT_act">4028.9329010773954</Real>
   <Real Name="o2-1_gmx fX">0</Real>
   <Real Name="o2-1_act fX">0</Real>
   <Real Name="o2-1_gmx fY">0</Real>
   <Real Name="o2-1_act fY">0</Real>
-  <Real Name="o2-1_gmx fZ">125852.29338586751</Real>
-  <Real Name="o2-1_act fZ">125852.29338671024</Real>
+  <Real Name="o2-1_gmx fZ">125852.29338599388</Real>
+  <Real Name="o2-1_act fZ">125852.29338599392</Real>
   <Real Name="c1-3_gmx fX">0</Real>
   <Real Name="c1-3_act fX">0</Real>
   <Real Name="c1-3_gmx fY">0</Real>
@@ -27,6 +27,6 @@
   <Real Name="o2-5_act fX">0</Real>
   <Real Name="o2-5_gmx fY">0</Real>
   <Real Name="o2-5_act fY">0</Real>
-  <Real Name="o2-5_gmx fZ">-125852.29338586751</Real>
-  <Real Name="o2-5_act fZ">-125852.29338671024</Real>
+  <Real Name="o2-5_gmx fZ">-125852.29338599388</Real>
+  <Real Name="o2-5_act fZ">-125852.29338599392</Real>
 </ReferenceData>

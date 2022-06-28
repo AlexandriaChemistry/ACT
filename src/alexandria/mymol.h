@@ -156,25 +156,6 @@ enum class coordSet {
                                 t_atoms           *atoms);
 
         /*! \brief
-         * Generate angles, dihedrals, exclusions etc.
-         *
-         * \param[in] atoms  The atoms structure
-         * \param[in] bDihs  Whether to generate dihedrals
-         * \param[in] nrexcl Number of exclusions for use in GROMACS code
-         */
-        void MakeAngles(t_atoms *atoms,
-                        bool     bDihs,
-                        int      nrexcl);
-
-        /*! \brief
-         * Generate virtual sites or linear angles
-         *
-         * \param[in] pd         Poldata
-         * \param[in] atoms      Atoms structure
-         */
-        //void MakeSpecialInteractions(const Poldata *pd,
-        //                             t_atoms       *atoms);
-        /*! \brief
          * Add vsites on bonds to hos bond shell particles
          *
          * \param[in]  fp    File to write (debug) information to
@@ -402,6 +383,13 @@ enum class coordSet {
          * Return the coordinate vector of the molecule
          */
         const gmx::HostVector<gmx::RVec> &x() const { return state_->x; }
+        
+        /*! \brief Update the internal coordinates
+         * Mainly for testing to see what happens to energies and forces
+         * if coordinates are changed.
+         * \param[in] coordinates The new coordinates.
+         */
+        void setX(const std::vector<gmx::RVec> &coordinates);
 
         /*! \brief
          * Return the force vector of the molecule

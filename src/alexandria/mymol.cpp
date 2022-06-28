@@ -785,12 +785,12 @@ static void UpdateIdefEntry(const ForceFieldParameterList &fs,
                 fs.findParameterTypeConst(bondId, "c2").value(),
                 fs.findParameterTypeConst(bondId, "c3").value()
             };
-            newparam->rbdihs.rbcA[0] = parameters[1]+0.5*(parameters[0]+parameters[2]);
-            newparam->rbdihs.rbcA[1] = 0.5*(3.0*parameters[2]-parameters[0]);
-            newparam->rbdihs.rbcA[2] = 4.0*parameters[3]-parameters[1];
-            newparam->rbdihs.rbcA[3] = -2.0*parameters[2];
-            newparam->rbdihs.rbcA[4] = -4.0*parameters[3];
-            newparam->rbdihs.rbcA[5] = 0.0;
+            newparam->rbdihs.rbcA[0] =  parameters[0];
+            newparam->rbdihs.rbcA[1] = -parameters[1];
+            newparam->rbdihs.rbcA[2] =  parameters[2];
+            newparam->rbdihs.rbcA[3] = -parameters[3];
+            newparam->rbdihs.rbcA[4] =  0.0;
+            newparam->rbdihs.rbcA[5] =  0.0;
             for (int k = 0; k < NR_RBDIHS; k++)
             {
                 if (ltop)
@@ -979,7 +979,7 @@ immStatus MyMol::GenerateTopology(FILE              *fp,
         {
             // Store temporary address of variable for performance
             auto &fs = pd->findForcesConst(InteractionType::PROPER_DIHEDRALS);
-            if (!fs.empty())
+            if (!fs.empty() || missingParameters::Generate == missing)
             {
                 topology_->makePropers();
             }
@@ -2538,6 +2538,14 @@ void MyMol::initQgenResp(const Poldata     *pd,
                     getMolname().c_str(), qgr->nEsp(),
                     ci->electrostaticPotentialConst().size());
         }
+    }
+}
+
+void MyMol::setX(const std::vector<gmx::RVec> &coordinates)
+{
+    for(size_t i = 0; i < coordinates.size(); i++)
+    {
+        copy_rvec(coordinates[i], state_->x[i]);
     }
 }
 

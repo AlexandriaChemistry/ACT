@@ -27,4 +27,6 @@ const char *idih_name[idihNR] = { "kimp" };
 
 const char *fdih_name[fdihNR] = { "c0", "c1", "c2", "c3" };
 
+const char *pdih_name[pdihNR] = { "angle", "kp", "mult" };
+
 } // namespace alexandria

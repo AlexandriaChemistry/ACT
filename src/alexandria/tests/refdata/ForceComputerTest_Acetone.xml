@@ -6,11 +6,11 @@
   <Real Name="LJ_SR_gmx">-1.7472008376964437e-05</Real>
   <Real Name="COUL_SR_gmx">-34.189297501647346</Real>
   <Real Name="EPOT_gmx">-32.333179531696771</Real>
-  <Real Name="BONDS">0.18122894212807097</Real>
-  <Real Name="ANGLES">1.6749064998308814</Real>
-  <Real Name="LJ_SR">-1.7472008376964434e-05</Real>
-  <Real Name="COUL_SR">-34.189297501647353</Real>
-  <Real Name="EPOT">-32.333179531696778</Real>
+  <Real Name="BONDS_act">0.18122894212807097</Real>
+  <Real Name="ANGLES_act">1.6749064998308814</Real>
+  <Real Name="LJ_SR_act">-1.7472008376964434e-05</Real>
+  <Real Name="COUL_SR_act">-34.189297501647353</Real>
+  <Real Name="EPOT_act">-32.333179531696778</Real>
   <Real Name="o2-1_gmx fX">-0.0073618461182616279</Real>
   <Real Name="o2-1_act fX">-0.0073618461182629602</Real>
   <Real Name="o2-1_gmx fY">-220.69775725392495</Real>
