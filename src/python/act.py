@@ -81,6 +81,9 @@ class ACT:
                          "-debug":           "0" }
 
     def runpar(self) -> str:
+        runit = shutil.which("mpprun")
+        if None != runit:
+            return runit
         runit = shutil.which("srun")
         if None != runit:
             return runit
