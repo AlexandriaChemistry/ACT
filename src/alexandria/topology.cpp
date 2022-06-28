@@ -794,8 +794,11 @@ void Topology::fillParameters(const Poldata *pd)
             case F_POLARIZATION:
                 fillParams(fs, topID, polNR, pol_name, &param);
                 break;
+            case F_PDIHS:
+                fillParams(fs, topID, pdihNR, pdih_name, &param);
+                break;
             default:
-                GMX_THROW(gmx::InternalError(gmx::formatString("Missing case %s", interaction_function[fs.fType()].name).c_str()));
+                GMX_THROW(gmx::InternalError(gmx::formatString("Missing case %s when filling the topology structure.", interaction_function[fs.fType()].name).c_str()));
             }
             topentry->setParams(param);
         }

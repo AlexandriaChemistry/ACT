@@ -1121,21 +1121,21 @@ real linear_angles(int nbonds,
         rvec_inc(fshift[CENTRAL], f_j);
         rvec_inc(fshift[t2], f_k);
 
+#ifdef OLD
         ki   = pbc_rvec_sub(pbc, x[ai], x[ak], r_ik);                               
         dr2  = iprod(r_ik, r_ik);                                                   
         dr   = dr2*gmx::invsqrt(dr2);                                               
-
+        
         *dvdlambda += harmonic(kUBA, kUBB, r13A, r13B, dr, lambda, &vbond, &fbond); 
-
-	if (dr2 == 0.0)
+        
+        if (dr2 == 0.0)
         {
             continue;
         }
 
-	vtot  += vbond;
-	fbond *= gmx::invsqrt(dr2);
-
-	if (g)
+        vtot  += vbond;
+        fbond *= gmx::invsqrt(dr2);
+        if (g)
         {
             ivec_sub(SHIFT_IVEC(g, ai), SHIFT_IVEC(g, ak), dt_ik);
             ki = IVEC2IS(dt_ik);
@@ -1148,6 +1148,7 @@ real linear_angles(int nbonds,
             fshift[ki][m]      += fik;
             fshift[CENTRAL][m] -= fik;
         }
+#endif
     }                                         /* 116 TOTAL	*/
     return vtot;
 }

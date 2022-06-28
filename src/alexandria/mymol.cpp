@@ -41,6 +41,7 @@
 #include "act/molprop/molprop_util.h"
 #include "act/molprop/multipole_names.h"
 #include "act/poldata/forcefieldparameter.h"
+#include "act/poldata/forcefieldparametername.h"
 #include "act/utility/regression.h"
 #include "act/utility/units.h"
 #include "gromacs/commandline/filenm.h"
@@ -588,8 +589,8 @@ static void UpdateIdefEntry(const ForceFieldParameterList &fs,
     {
     case F_MORSE:
         {
-            auto fp = fs.findParameterTypeConst(bondId, "bondlength");
-            myval = convertToGromacs(fp.value(), fp.unit());
+            auto fp = fs.findParameterTypeConst(bondId, morse_name[morseLENGTH]);
+            myval = fp.internalValue();
             mtop->ffparams.iparams[gromacsType].morse.b0A         =
                 mtop->ffparams.iparams[gromacsType].morse.b0B     = myval;
             if (ltop)
@@ -598,8 +599,8 @@ static void UpdateIdefEntry(const ForceFieldParameterList &fs,
                 ltop->idef.iparams[gromacsType].morse.b0B = myval;
             }
                     
-            fp = fs.findParameterTypeConst(bondId, "De");
-            myval = convertToGromacs(fp.value(), fp.unit());
+            fp = fs.findParameterTypeConst(bondId, morse_name[morseDE]);
+            myval = fp.internalValue();
             mtop->ffparams.iparams[gromacsType].morse.cbA         =
                 mtop->ffparams.iparams[gromacsType].morse.cbB     = myval;
             if (ltop)
@@ -608,8 +609,8 @@ static void UpdateIdefEntry(const ForceFieldParameterList &fs,
                 ltop->idef.iparams[gromacsType].morse.cbB = myval;
             }   
 
-            fp = fs.findParameterTypeConst(bondId, "beta");
-            myval = convertToGromacs(fp.value(), fp.unit());
+            fp = fs.findParameterTypeConst(bondId, morse_name[morseBETA]);
+            myval = fp.internalValue();
             mtop->ffparams.iparams[gromacsType].morse.betaA         =
                 mtop->ffparams.iparams[gromacsType].morse.betaB     = myval;
             if (ltop)
@@ -618,8 +619,8 @@ static void UpdateIdefEntry(const ForceFieldParameterList &fs,
                 ltop->idef.iparams[gromacsType].morse.betaB = myval;
             }
             
-            fp = fs.findParameterTypeConst(bondId, "D0");
-            myval = convertToGromacs(fp.value(), fp.unit());
+            fp = fs.findParameterTypeConst(bondId, morse_name[morseD0]);
+            myval = fp.internalValue();
             mtop->ffparams.iparams[gromacsType].morse.D0A         =
                 mtop->ffparams.iparams[gromacsType].morse.D0B     = myval;
             if (ltop)
@@ -631,8 +632,8 @@ static void UpdateIdefEntry(const ForceFieldParameterList &fs,
         break;
     case F_BONDS:
         {
-            auto fp = fs.findParameterTypeConst(bondId, "bondlength");
-            myval = convertToGromacs(fp.value(), fp.unit());
+            auto fp = fs.findParameterTypeConst(bondId, bond_name[bondLENGTH]);
+            myval = fp.internalValue();
             mtop->ffparams.iparams[gromacsType].harmonic.rA         =
                 mtop->ffparams.iparams[gromacsType].harmonic.rB     = myval;
             if (ltop)
@@ -641,8 +642,8 @@ static void UpdateIdefEntry(const ForceFieldParameterList &fs,
                 ltop->idef.iparams[gromacsType].harmonic.rB = myval;
             }
                         
-            fp = fs.findParameterTypeConst(bondId, "kb");
-            myval = convertToGromacs(fp.value(), fp.unit());
+            fp = fs.findParameterTypeConst(bondId, bond_name[bondKB]);
+            myval = fp.internalValue();
             mtop->ffparams.iparams[gromacsType].harmonic.krA         =
                 mtop->ffparams.iparams[gromacsType].harmonic.krB     = myval;
             if (ltop)
@@ -654,9 +655,9 @@ static void UpdateIdefEntry(const ForceFieldParameterList &fs,
         break;
     case F_ANGLES:
         {
-            auto fp = fs.findParameterTypeConst(bondId, "angle");
+            auto fp = fs.findParameterTypeConst(bondId, angle_name[angleANGLE]);
             // GROMACS uses degrees internally, therefore no conversion
-            // myval = convertToGromacs(fp.value(), fp.unit());
+            // myval = fp.internalValue();
             myval = fp.value();
             mtop->ffparams.iparams[gromacsType].harmonic.rA         =
                 mtop->ffparams.iparams[gromacsType].harmonic.rB     = myval;
@@ -666,8 +667,8 @@ static void UpdateIdefEntry(const ForceFieldParameterList &fs,
                 ltop->idef.iparams[gromacsType].harmonic.rB = myval;
             }
                         
-            fp = fs.findParameterTypeConst(bondId, "kt");
-            myval = convertToGromacs(fp.value(), fp.unit());
+            fp = fs.findParameterTypeConst(bondId, angle_name[angleKT]);
+            myval = fp.internalValue();
             mtop->ffparams.iparams[gromacsType].harmonic.krA         =
                 mtop->ffparams.iparams[gromacsType].harmonic.krB     = myval;
             if (ltop)
@@ -679,8 +680,8 @@ static void UpdateIdefEntry(const ForceFieldParameterList &fs,
         break;
     case F_POLARIZATION:
         {
-            auto fp = fs.findParameterTypeConst(bondId, "alpha");
-            myval = convertToGromacs(fp.value(), fp.unit());
+            auto fp = fs.findParameterTypeConst(bondId, pol_name[polALPHA]);
+            myval = fp.internalValue();
             mtop->ffparams.iparams[gromacsType].polarize.alpha = myval;
             if (ltop)
             {
@@ -690,9 +691,9 @@ static void UpdateIdefEntry(const ForceFieldParameterList &fs,
         break;
     case F_UREY_BRADLEY:
         {
-            auto fp = fs.findParameterTypeConst(bondId, "angle");
+            auto fp = fs.findParameterTypeConst(bondId, ub_name[ubANGLE]);
             // GROMACS uses degrees internally, therefore no conversion
-            // double angle = convertToGromacs(fp.value(), fp.unit());
+            // double angle = fp.internalValue();
             double angle = fp.value();
             mtop->ffparams.iparams[gromacsType].u_b.thetaA         =
                 mtop->ffparams.iparams[gromacsType].u_b.thetaB     = angle;
@@ -702,8 +703,8 @@ static void UpdateIdefEntry(const ForceFieldParameterList &fs,
                 ltop->idef.iparams[gromacsType].u_b.thetaB = angle;
             }
 
-            fp = fs.findParameterTypeConst(bondId, "kt");
-            myval = convertToGromacs(fp.value(), fp.unit());
+            fp = fs.findParameterTypeConst(bondId, ub_name[ubKT]);
+            myval = fp.internalValue();
             mtop->ffparams.iparams[gromacsType].u_b.kthetaA         =
                 mtop->ffparams.iparams[gromacsType].u_b.kthetaB     = myval;
             if (ltop)
@@ -712,8 +713,8 @@ static void UpdateIdefEntry(const ForceFieldParameterList &fs,
                 ltop->idef.iparams[gromacsType].u_b.kthetaB = myval;
             }
 
-            fp = fs.findParameterTypeConst(bondId, "r13");
-            myval = convertToGromacs(fp.value(), fp.unit());
+            fp = fs.findParameterTypeConst(bondId, ub_name[ubR13]);
+            myval = fp.internalValue();
             mtop->ffparams.iparams[gromacsType].u_b.r13A         =
                 mtop->ffparams.iparams[gromacsType].u_b.r13B     = myval;
             if (ltop)
@@ -722,8 +723,8 @@ static void UpdateIdefEntry(const ForceFieldParameterList &fs,
                 ltop->idef.iparams[gromacsType].u_b.r13B = myval;
             }                     
                          
-            fp = fs.findParameterTypeConst(bondId, "kub");
-            myval = convertToGromacs(fp.value(), fp.unit());
+            fp = fs.findParameterTypeConst(bondId, ub_name[ubKUB]);
+            myval = fp.internalValue();
             mtop->ffparams.iparams[gromacsType].u_b.kUBA         =
                 mtop->ffparams.iparams[gromacsType].u_b.kUBB     = myval;
             if (ltop)
@@ -735,8 +736,8 @@ static void UpdateIdefEntry(const ForceFieldParameterList &fs,
         break;
     case F_LINEAR_ANGLES:
         {
-            auto fp = fs.findParameterTypeConst(bondId, "a");
-            myval = convertToGromacs(fp.value(), fp.unit());
+            auto fp = fs.findParameterTypeConst(bondId, linang_name[linangA]);
+            myval = fp.internalValue();
             mtop->ffparams.iparams[gromacsType].linangle.aA         =
                 mtop->ffparams.iparams[gromacsType].linangle.aB     = myval;
             if (ltop)
@@ -745,8 +746,8 @@ static void UpdateIdefEntry(const ForceFieldParameterList &fs,
                 ltop->idef.iparams[gromacsType].linangle.aB = myval;
             }
             
-            fp = fs.findParameterTypeConst(bondId, "klin");
-            myval = convertToGromacs(fp.value(), fp.unit());
+            fp = fs.findParameterTypeConst(bondId, linang_name[linangKLIN]);
+            myval = fp.internalValue();
             mtop->ffparams.iparams[gromacsType].linangle.klinA         =
                 mtop->ffparams.iparams[gromacsType].linangle.klinB     = myval;
             if (ltop)
@@ -755,20 +756,16 @@ static void UpdateIdefEntry(const ForceFieldParameterList &fs,
                 ltop->idef.iparams[gromacsType].linangle.klinB = myval;
             }
 
-            fp = fs.findParameterTypeConst(bondId, "r13lin");
-            myval = convertToGromacs(fp.value(), fp.unit());
             mtop->ffparams.iparams[gromacsType].linangle.r13A         =
-                mtop->ffparams.iparams[gromacsType].linangle.r13B     = myval;
+                mtop->ffparams.iparams[gromacsType].linangle.r13B     = 0;
             if (ltop)
             {
                 ltop->idef.iparams[gromacsType].linangle.r13A     =
                 ltop->idef.iparams[gromacsType].linangle.r13B = myval;
             }
                         
-            fp = fs.findParameterTypeConst(bondId, "kublin");
-            myval = convertToGromacs(fp.value(), fp.unit());
             mtop->ffparams.iparams[gromacsType].linangle.kUBA         =
-                mtop->ffparams.iparams[gromacsType].linangle.kUBB     = myval;
+                mtop->ffparams.iparams[gromacsType].linangle.kUBB     = 0;
             if (ltop)
             {
                 ltop->idef.iparams[gromacsType].linangle.kUBA     =
@@ -779,12 +776,12 @@ static void UpdateIdefEntry(const ForceFieldParameterList &fs,
     case F_FOURDIHS:
         {
             auto newparam = &mtop->ffparams.iparams[gromacsType];
-            std::vector<double> parameters = {
-                fs.findParameterTypeConst(bondId, "c0").value(),
-                fs.findParameterTypeConst(bondId, "c1").value(),
-                fs.findParameterTypeConst(bondId, "c2").value(),
-                fs.findParameterTypeConst(bondId, "c3").value()
-            };
+            std::vector<double> parameters;
+            for(int i = 0; i < fdihNR; i++)
+            {
+                auto p = fs.findParameterTypeConst(bondId, fdih_name[i]).value();
+                parameters.push_back(p);
+            }
             newparam->rbdihs.rbcA[0] =  parameters[0];
             newparam->rbdihs.rbcA[1] = -parameters[1];
             newparam->rbdihs.rbcA[2] =  parameters[2];
@@ -805,8 +802,10 @@ static void UpdateIdefEntry(const ForceFieldParameterList &fs,
         }
     case F_PDIHS:
         {
-            auto fp = fs.findParameterTypeConst(bondId, "phi");
-            myval = convertToGromacs(fp.value(), fp.unit());
+            auto fp = fs.findParameterTypeConst(bondId, pdih_name[pdihANGLE]);
+            // GROMACS uses degrees internally, therefore no conversion
+            // double angle = fp.internalValue();
+            myval   = fp.value();
             mtop->ffparams.iparams[gromacsType].pdihs.phiA         =
                 mtop->ffparams.iparams[gromacsType].pdihs.phiB     = myval;
             if (ltop)
@@ -815,8 +814,8 @@ static void UpdateIdefEntry(const ForceFieldParameterList &fs,
                 ltop->idef.iparams[gromacsType].pdihs.phiB = myval;
             }
                         
-            fp = fs.findParameterTypeConst(bondId, "cp");
-            myval = convertToGromacs(fp.value(), fp.unit());
+            fp    = fs.findParameterTypeConst(bondId, pdih_name[pdihKP]);
+            myval = fp.internalValue();
             mtop->ffparams.iparams[gromacsType].pdihs.cpA         =
                 mtop->ffparams.iparams[gromacsType].pdihs.cpB     = myval;
             if (ltop)
@@ -825,7 +824,7 @@ static void UpdateIdefEntry(const ForceFieldParameterList &fs,
                 ltop->idef.iparams[gromacsType].pdihs.cpB = myval;
             }
                     
-            int mult = fs.findParameterTypeConst(bondId, "mult").value();
+            int mult = fs.findParameterTypeConst(bondId, pdih_name[pdihMULT]).value();
             mtop->ffparams.iparams[gromacsType].pdihs.mult = mult;
             if (ltop)
             {
@@ -835,18 +834,16 @@ static void UpdateIdefEntry(const ForceFieldParameterList &fs,
         break;
     case F_IDIHS:
         {
-            auto fp = fs.findParameterTypeConst(bondId, "phi");
-            myval = convertToGromacs(fp.value(), fp.unit());
             mtop->ffparams.iparams[gromacsType].harmonic.rA         =
-                mtop->ffparams.iparams[gromacsType].harmonic.rB     = myval;
+                mtop->ffparams.iparams[gromacsType].harmonic.rB     = 0;
             if (ltop)
             {
                 ltop->idef.iparams[gromacsType].harmonic.rA     =
                 ltop->idef.iparams[gromacsType].harmonic.rB = myval;
             }
-                        
-            fp = fs.findParameterTypeConst(bondId, "kimp");
-            myval = convertToGromacs(fp.value(), fp.unit());
+            
+            auto fp    = fs.findParameterTypeConst(bondId, idih_name[idihKPHI]);
+            auto myval = fp.internalValue();
             mtop->ffparams.iparams[gromacsType].harmonic.krA         =
                 mtop->ffparams.iparams[gromacsType].harmonic.krB     = myval;
             if (ltop)
@@ -859,7 +856,7 @@ static void UpdateIdefEntry(const ForceFieldParameterList &fs,
     case F_VSITE2:
         {
             auto fp = fs.findParameterTypeConst(bondId, "v2_a");
-            myval = convertToGromacs(fp.value(), fp.unit());
+            myval = fp.internalValue();
             mtop->ffparams.iparams[gromacsType].vsite.a         = myval;
             if (ltop)
             {

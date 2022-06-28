@@ -156,8 +156,11 @@ protected:
         {
             mp_.setX(coordinates);
         }
-        double shellRmsf;
-        t_commrec *crtmp = init_commrec();
+        // This turn comparison of gromacs and ACT on. For debugging
+        // you may want to set this to false.
+        bool       strict    = true;
+        double     shellRmsf;
+        t_commrec *crtmp     = init_commrec();
         crtmp->nnodes = 1;
         mp_.calculateEnergyOld(crtmp, &shellRmsf);
         auto ed = mp_.enerdata();
@@ -193,7 +196,10 @@ protected:
                 }
                 label += "_act";
                 checker_.checkReal(ener.second, label.c_str());
-                EXPECT_TRUE(std::abs(ener.second-ed->term[ftype]) < 1e-3);
+                if (strict)
+                {
+                    EXPECT_TRUE(std::abs(ener.second-ed->term[ftype]) < 1e-3);
+                }
             }
         }
         const char *xyz[DIM] = { "X", "Y", "Z" };
@@ -219,7 +225,10 @@ protected:
                                                                        i+1, stretchName.c_str(),
                                                                        xyz[m]).c_str());
                 }
-                EXPECT_TRUE(std::abs(forces[i][m]-mpf[i][m]) < 1e-3);
+                if (strict)
+                {
+                    EXPECT_TRUE(std::abs(forces[i][m]-mpf[i][m]) < 1e-3);
+                }
             }
         }
         // gmx_stop_debug();

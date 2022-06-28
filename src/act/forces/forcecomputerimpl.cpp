@@ -633,7 +633,6 @@ static double computeFourDihs(const std::vector<TopologyEntry *>    &propers,
     return energy;
 }
 
-
 static double computeImpropers(const std::vector<TopologyEntry *>    &impropers,
                                gmx_unused const std::vector<ActAtom> &atoms,
                                const std::vector<gmx::RVec>          *coordinates,
@@ -669,6 +668,46 @@ static double computeImpropers(const std::vector<TopologyEntry *>    &impropers,
     return energy;
 }
 
+static double computePropers(const std::vector<TopologyEntry *>    &propers,
+                             gmx_unused const std::vector<ActAtom> &atoms,
+                             const std::vector<gmx::RVec>          *coordinates,
+                             std::vector<gmx::RVec>                *forces)
+{
+    double energy = 0;
+    auto   x      = *coordinates;
+    for (const auto a : propers)
+    {
+        // Get the parameters. We have to know their names to do this.
+        auto &params  = a->params();
+        auto phi0     = params[pdihANGLE];
+        auto kphi     = params[pdihKP];
+        auto mult     = params[pdihMULT];
+        // Get the atom indices
+        auto &indices = a->atomIndices();
+        auto ai       = indices[0];
+        auto aj       = indices[1];
+        auto ak       = indices[2];
+        auto al       = indices[3];
+
+        rvec r_ij, r_kj, r_kl, m, n;
+        auto phi = dih_angle(x[ai], x[aj], x[ak], x[al],
+                             r_ij, r_kj, r_kl, m, n);
+
+        auto mdphi  =  mult*phi - phi0;
+        auto sdphi  =  std::sin(mdphi);
+        auto ddphi  = -kphi*mult*sdphi;
+        auto v      = kphi*(1.0 + std::cos(mdphi));
+        energy     += v;
+#ifdef DEBUG
+        printf("ai %d aj %d ak %d al %d phi %g phi0 %g kphi %g, mult %g, mdphi %g, v %g ddphi %g\n",
+               ai, aj, ak, al, phi, phi0, kphi, mult, mdphi, v, ddphi);
+#endif
+        do_dih_fup_noshiftf(ai, aj, ak, al, ddphi, r_ij, r_kj, r_kl, m, n,
+                            forces);
+    }
+    return energy;
+}
+
 std::map<int, bondForceComputer> bondForceComputerMap = {
     { F_BONDS,         computeBonds        },
     { F_MORSE,         computeMorse        },
@@ -679,6 +718,7 @@ std::map<int, bondForceComputer> bondForceComputerMap = {
     { F_COUL_SR,       computeCoulomb      },
     { F_POLARIZATION,  computePolarization },
     { F_IDIHS,         computeImpropers    },
+    { F_PDIHS,         computePropers      },
     { F_FOURDIHS,      computeFourDihs     },
     { F_UREY_BRADLEY,  computeUreyBradley  }
 };

@@ -494,9 +494,7 @@ void AllBondeds::updatePoldata(FILE    *fp,
                         fprintf(stderr, "Warning: large improper dihedral %g for %s\n",
                                 av, bondId.id().c_str());
                     }
-                    fs->addParameter(bondId, "phi", 
-                                     ForceFieldParameter("degree", 0, 0, N, 0, 0, Mutability::Fixed, false, false));
-                    fs->addParameter(bondId, "kimp", 
+                    fs->addParameter(bondId, idih_name[idihKPHI], 
                                      ForceFieldParameter("kJ/mol", kimp_, 0, 1, kimp_*factor_, kimp_/factor_, Mutability::Bounded, false, true));
                     
                     fprintf(fp, "improper-%s angle %g sigma %g (deg)\n",
