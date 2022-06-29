@@ -74,6 +74,8 @@ enum class MolPropObservable {
     HF,
     //! QM energy of molecule minus atomic contribution
     DELTAE0,
+    //! Interaction energy between fragments
+    INTERACTIONENERGY,
     //! Delta H formation
     DHFORM,
     //! Delta G formation

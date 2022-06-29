@@ -323,6 +323,7 @@ CommunicationStatus Experiment::Receive(const CommunicationRecord *cr, int src)
                     }
                 case MolPropObservable::HF:
                 case MolPropObservable::DELTAE0:
+                case MolPropObservable::INTERACTIONENERGY:
                 case MolPropObservable::DHFORM:
                 case MolPropObservable::DGFORM:
                 case MolPropObservable::DSFORM:

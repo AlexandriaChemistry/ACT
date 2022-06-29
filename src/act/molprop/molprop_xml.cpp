@@ -877,6 +877,7 @@ static void add_exper_properties(xmlNodePtr        exp,
             {
             case MolPropObservable::HF:
             case MolPropObservable::DELTAE0:
+            case MolPropObservable::INTERACTIONENERGY:
             case MolPropObservable::DHFORM:
             case MolPropObservable::DGFORM:
             case MolPropObservable::DSFORM:
