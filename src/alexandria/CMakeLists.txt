@@ -64,6 +64,7 @@ target_sources(actLib
            topology.cpp
            tune_ff.cpp
            tuning_utility.cpp          
+           velocityhandler.cpp
 	)
 	
 add_executable(alexandria alexandria.cpp ${actLib})

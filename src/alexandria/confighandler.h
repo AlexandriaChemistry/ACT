@@ -337,17 +337,19 @@ class SimulationConfigHandler : ConfigHandler
 {
 private:
     //! Number of integration steps
-    int      nsteps_      = 0;
+    int      nsteps_             = 0;
     //! The integration time step
-    double   deltat_      = 0.0002;
-    //! Simulation temperature
-    double   temperature_ = 298.15;
+    double   deltat_             = 0.0002;
+    //! Initial simulation temperature
+    double   temperature_        = 0;
+    //! Random number seed for generating velocities
+    int      seed_               = 0;
     //! How often to write coordinates
-    int      nstxout_     = 1;
+    int      nstxout_            = 1;
     //! How often to write velocities
-    int      nstvout_     = 0;
+    int      nstvout_            = 0;
     //! How often to write energies
-    int      nstener_     = 1;
+    int      nstener_            = 1;
 public:
     /*!
      * \brief Add command-line arguments to a vector
@@ -368,6 +370,10 @@ public:
     int nstxout() const { return nstxout_; }
     
     int nstener() const { return nstener_; }
+
+    double temperature() const { return temperature_; }
+    
+    int seed() const { return seed_; }   
 };
 
 } //namespace alexandria

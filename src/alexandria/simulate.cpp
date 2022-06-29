@@ -36,15 +36,15 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/utility/futil.h"
 
-#include "alex_modules.h"
-#include "atype_mapping.h"
-#include "babel_io.h"
 #include "act/molprop/molprop_util.h"
 #include "act/molprop/molprop_xml.h"
-#include "mymol.h"
-#include "confighandler.h"
-#include "molhandler.h"
 #include "act/poldata/poldata_xml.h"
+#include "alexandria/alex_modules.h"
+#include "alexandria/atype_mapping.h"
+#include "alexandria/babel_io.h"
+#include "alexandria/confighandler.h"
+#include "alexandria/molhandler.h"
+#include "alexandria/mymol.h"
 #include "alexandria/tuning_utility.h"
 
 namespace alexandria
@@ -132,7 +132,7 @@ int simulate(int argc, char *argv[])
     }
     auto imm = mymol.GenerateTopology(logFile, &pd, missingParameters::Error,
                                       false);
-    
+
     CommunicationRecord cr;
     gmx::MDLogger  mdlog {};
     if (immStatus::OK == imm)

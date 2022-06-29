@@ -35,6 +35,7 @@
 
 #include "act/molprop/molpropobservable.h"
 #include "act/utility/units.h"
+#include "alexandria/velocityhandler.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/math/units.h"
@@ -516,7 +517,14 @@ void MolHandler::simulate(MyMol                         *mol,
     // Initiate coordinates, etc.
     initArrays(mol, &coordinates, &velocities,
                &forces[cur], &forces[prev], &inv2mass, &mass_2);
-
+               
+    // Generate velocities
+    if (simConfig.temperature() > 0)
+    {
+        maxwell_speed(simConfig.temperature(), simConfig.seed(),
+                      mol->atomsConst(), &velocities, logFile);
+        stop_cm(mol->atomsConst(), coordinates, &velocities);
+    }
     auto xmol    = mol->x();
     auto deltat  = simConfig.deltat();
     auto deltat2 = deltat*deltat;
