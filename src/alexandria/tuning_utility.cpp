@@ -675,7 +675,7 @@ void TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
     size_t ccc = 0;
     for(const auto &ff : eMap)
     {
-        auto enerexp = mol->atomizationEnergy() + ff.first;
+        auto enerexp = /*mol->atomizationEnergy() + */ ff.first;
         (*lsq_epot)[qType::Calc].add_point(enerexp, ff.second, 0, 0);
         de2 += gmx::square(enerexp - ff.second);
     }
@@ -683,7 +683,7 @@ void TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
     {
         for(const auto &eam : enerAllMap)
         {
-            auto enerexp = mol->atomizationEnergy() + eam.first;
+            auto enerexp = /* mol->atomizationEnergy() + */ eam.first;
             std::string ttt = gmx::formatString("%s Reference EPOT %g", dataFileNames[ccc].c_str(),
                                                 enerexp);
             for(const auto &terms : eam.second)
@@ -715,7 +715,7 @@ void TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
                                            std::sqrt(df2/(mol->nRealAtoms())), fMap.size()));
     }
     // Energy
-    tcout->push_back(gmx::formatString("Energy terms (kJ/mol, EPOT including atomization terms)"));
+    tcout->push_back(gmx::formatString("Energy terms (kJ/mol)"));
     std::vector<double> eBefore;
     auto terms = mol->energyTerms();
     for(int ii = 0; ii < F_NRE; ii++)
@@ -725,7 +725,7 @@ void TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
     double deltaE0 = 0;
     if (mol->energy(MolPropObservable::DELTAE0, &deltaE0))
     {
-        deltaE0 += mol->atomizationEnergy();
+        //deltaE0 += mol->atomizationEnergy();
         tcout->push_back(gmx::formatString("   %-20s  %10.3f  Difference: %10.3f",
                                            "Reference EPOT", deltaE0, eBefore[F_EPOT]-deltaE0));
     }
@@ -1141,7 +1141,7 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
                 GMX_THROW(gmx::InternalError(gmx::formatString("No molecular energy for %s",
                                                                mol->getMolname().c_str()).c_str()));
             }
-            deltaE0 += mol->atomizationEnergy();
+            // deltaE0 += mol->atomizationEnergy();
             auto diff = std::abs(mol->potentialEnergy()-deltaE0);
             if ((mol->support() != eSupport::No) && (diff > epotMax))
             {
