@@ -479,17 +479,12 @@ void MyMol::forceEnergyMaps(const ForceComputer                                 
             }
             else if (eprops.size() == 1)
             {
-                auto terms = energyTerms();
-                enerMap->push_back({ eprops[0]->getValue(), terms[F_EPOT] });
-                std::map<int, double> evals;
-                for(int i = 0; i < F_NRE; i++)
+                if (forceComp)
                 {
-                    if (terms[i] != 0)
-                    {
-                        evals.insert({i, terms[i]});
-                    }
+                    double Einter = calculateInteractionEnergy(forceComp);
+                    
+                    enerMap->push_back({ eprops[0]->getValue(), Einter });
                 }
-                enerAllMap->push_back({ eprops[0]->getValue(), std::move(evals) });
             }
         }
         else if (ei.hasProperty(MolPropObservable::DELTAE0))

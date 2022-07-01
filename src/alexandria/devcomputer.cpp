@@ -458,8 +458,17 @@ void ForceEnergyDevComputer::calcDeviation(const ForceComputer                  
     {
         for(const auto &ff : eMap)
         {
+            // TODO Double check if the atomizationEnergy is needed.
             auto enerexp = mymol->atomizationEnergy() + ff.first;
             te->second.increase(1, gmx::square(enerexp-ff.second));
+        }
+    }
+    auto ti = targets->find(eRMS::Interaction);
+    if (ti != targets->end() && !eMap.empty())
+    {
+        for(const auto &ff : eMap)
+        {
+            ti->second.increase(1, gmx::square(ff.first-ff.second));
         }
     }
 }

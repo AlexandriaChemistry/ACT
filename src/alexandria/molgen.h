@@ -70,6 +70,8 @@ enum class eRMS {
     ESP,
     //! Potential energy deviation
     EPOT,
+    //! Interaction energy deviation
+    Interaction,
     //! Mean square force on the atoms
     Force2,
     //! Deviation of polarizability components
