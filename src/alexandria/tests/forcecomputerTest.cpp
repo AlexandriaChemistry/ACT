@@ -79,7 +79,7 @@ protected:
         gmx::test::FloatingPointTolerance tolerance(gmx::test::relativeToleranceAsFloatingPoint(1.0, 1e-6));
         checker_.setDefaultTolerance(tolerance);
     }
-
+    
     void test(const char *molname, const char *forcefield, double stretch = 1)
     {
         int                             maxpot   = 100;
@@ -138,6 +138,7 @@ protected:
         // For debugging: print all the interactions in the topology
         // gmx_init_debug(1, gmx::formatString("%s-%s.debug", molname, forcefield).c_str());
         // mp_.topology()->dump(stdout);
+        
         
         auto atoms = mp_.atomsConst();
         std::vector<gmx::RVec>            forces, coordinates;

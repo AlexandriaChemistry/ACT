@@ -470,7 +470,29 @@ void MyMol::forceEnergyMaps(const ForceComputer                                 
             real shellForceRMS;
             calculateEnergyOld(crtmp, &shellForceRMS);
         }
-        if (ei.hasProperty(MolPropObservable::DELTAE0))
+        if (ei.hasProperty(MolPropObservable::INTERACTIONENERGY))
+        {
+            auto eprops = ei.propertyConst(MolPropObservable::INTERACTIONENERGY);
+            if (eprops.size() > 1)
+            {
+                gmx_fatal(FARGS, "Multiple interaction energies for this experiment");
+            }
+            else if (eprops.size() == 1)
+            {
+                auto terms = energyTerms();
+                enerMap->push_back({ eprops[0]->getValue(), terms[F_EPOT] });
+                std::map<int, double> evals;
+                for(int i = 0; i < F_NRE; i++)
+                {
+                    if (terms[i] != 0)
+                    {
+                        evals.insert({i, terms[i]});
+                    }
+                }
+                enerAllMap->push_back({ eprops[0]->getValue(), std::move(evals) });
+            }
+        }
+        else if (ei.hasProperty(MolPropObservable::DELTAE0))
         {
             auto eprops = ei.propertyConst(MolPropObservable::DELTAE0);
             if (eprops.size() > 1)
@@ -536,46 +558,6 @@ static void fill_atom(t_atom *atom,
     atom->zetaB         = zetaB;
     atom->row           = row;
     atom->resind        = resind;
-}
-
-static void setTopologyIdentifiers(Topology          *top,
-                                   const Poldata     *pd,
-                                   const t_atoms     *myatoms)
-{
-    auto entries = top->entries(); 
-    for(auto &entry : *entries)
-    {
-        auto &fs = pd->findForcesConst(entry.first);
-        for(auto &topentry : entry.second)
-        {
-            std::vector<std::string> btype;
-            for(auto &jj : topentry->atomIndices())
-            {
-                auto atype = pd->findParticleType(*myatoms->atomtype[jj]);
-                switch (entry.first)
-                {
-                case InteractionType::VDW:
-                case InteractionType::VSITE2:
-                    {
-                        btype.push_back(*myatoms->atomtype[jj]);
-                        break;
-                    }
-                case InteractionType::COULOMB:
-                case InteractionType::POLARIZATION:
-                    {
-                        btype.push_back(atype->interactionTypeToIdentifier(entry.first).id());
-                        break;
-                    }
-                default:
-                    {
-                        btype.push_back(atype->interactionTypeToIdentifier(InteractionType::BONDS).id());
-                        break;
-                    }
-                }
-            }
-            topentry->setId({ Identifier(btype, topentry->bondOrders(), fs.canSwap()) });
-        }
-    }
 }
 
 static void UpdateIdefEntry(const ForceFieldParameterList &fs,
@@ -969,29 +951,7 @@ immStatus MyMol::GenerateTopology(FILE              *fp,
     
     if (immStatus::OK == imm)
     {
-        topology_->makeAngles(state_->x, 175.0);
-        topology_->makeImpropers(state_->x, 5.0);
-        // Check whether we have dihedrals in the force field.
-        if (pd->interactionPresent(InteractionType::PROPER_DIHEDRALS))
-        {
-            // Store temporary address of variable for performance
-            auto &fs = pd->findForcesConst(InteractionType::PROPER_DIHEDRALS);
-            if (!fs.empty() || missingParameters::Generate == missing)
-            {
-                topology_->makePropers();
-            }
-        }
-        // Check whether we have virtual sites in the force field.
-        if (pd->interactionPresent(InteractionType::VSITE2))
-        {
-            auto &fs = pd->findForcesConst(InteractionType::VSITE2);
-            if (!fs.empty())
-            {
-                topology_->makeVsite2s(fs);
-            }
-        }
-        topology_->makePairs(atoms_->nr);
-        topology_->generateExclusions(pd->getNexcl(), atoms_->nr);
+        topology_->build(pd, state_->x, 175.0, 5.0, missing);
         excls_ = topology_->gromacsExclusions();
     }
     if (immStatus::OK == imm)
@@ -1044,7 +1004,7 @@ immStatus MyMol::GenerateTopology(FILE              *fp,
                                  inputrec_, symtab_, nullptr);
         }
         // First create the identifiers for topology entries
-        setTopologyIdentifiers(topology_, pd, atoms_);
+        topology_->setIdentifiers(pd);
         if (missing != missingParameters::Generate)
         {
             // Fill the parameters
@@ -1103,6 +1063,10 @@ immStatus MyMol::GenerateTopology(FILE              *fp,
             fprintf(debug, "%s\n", emsg.c_str());
         }
     }
+    fraghandler_ = new FragmentHandler(pd, state_->x, topology_->atoms(), 
+                                       bondsConst(), 
+                                       fragmentPtr(), shellRenumber_);
+
     // Finally, extract frequencies etc.
     getHarmonics();
     
@@ -1531,12 +1495,6 @@ double MyMol::calculateEnergy(const ForceComputer *forceComputer)
         copy_rvec(state_->x[i], myx[i]);
         clear_rvec(forces[i]);
     }
-    // Set force and energy to zero (old style)
-    // reset_f_e(natom, &f_, enerd_);
-    if (forceComputer == nullptr)
-    {
-        GMX_THROW(gmx::InternalError("forceComputer == nullptr"));
-    }
     auto rmsf = forceComputer->compute(topology_, &myx, &forces, &energies_);
     for (int i = 0; i < natom; i++)
     {
@@ -1550,8 +1508,43 @@ double MyMol::calculateEnergy(const ForceComputer *forceComputer)
     }
     enerd_->term[F_ATOMIZATION] = 0; //atomizationEnergy();
     enerd_->term[F_EPOT]       += enerd_->term[F_ATOMIZATION];
-    
+
     return rmsf;
+}
+
+double MyMol::calculateInteractionEnergy(const ForceComputer *forceComputer)
+{
+    // This assumes the total energy has been computed
+    auto &tops = fraghandler_->topologies();
+    if (tops.size() <= 1)
+    {
+        return 0;
+    }
+    // Now compute interaction energies if there are fragments
+    double Einter  = enerd_->term[F_EPOT];
+    auto   &astart = fraghandler_->atomStart();
+    for(size_t ff = 0; ff < tops.size(); ff++)
+    {
+        int natom = tops[ff].atoms().size();
+        std::vector<gmx::RVec> forces(natom);
+        std::vector<gmx::RVec> myx(natom);
+        int j = 0;
+        for (size_t i = astart[ff]; i < astart[ff+1]; i++)
+        {
+            copy_rvec(state_->x[i], myx[j]);
+            clear_rvec(forces[j]);
+            j++;
+        }
+        std::map<InteractionType, double> energies;
+        (void) forceComputer->compute(&tops[ff], &myx, &forces, &energies);
+        Einter -= energies[InteractionType::EPOT];
+        if (debug)
+        {
+            fprintf(debug, "%s Fragment %zu Epot %g\n", getMolname().c_str(), ff, 
+                    energies[InteractionType::EPOT]);
+        }
+    }
+    return Einter;
 }
 
 immStatus MyMol::calculateEnergyOld(const t_commrec *crtmp,
@@ -1661,11 +1654,6 @@ void MyMol::symmetrizeCharges(const Poldata  *pd,
 immStatus MyMol::GenerateAcmCharges(const Poldata       *pd,
                                     const ForceComputer *forceComp)
 {
-    if (!fraghandler_)
-    {
-        fraghandler_ = new FragmentHandler(pd, topology_->atoms(), bondsConst(),
-                                           fragmentPtr(), shellRenumber_);
-    }
     std::vector<double> qold;
     fraghandler_->fetchCharges(&qold);
     if (qold.size() != atomsConst().size())

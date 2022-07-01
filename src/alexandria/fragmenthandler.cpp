@@ -10,15 +10,18 @@
 namespace alexandria
 {    
 
-FragmentHandler::FragmentHandler(const Poldata               *pd,
-                                 const std::vector<ActAtom>  &atoms,
-                                 const std::vector<Bond>     &bonds,
-                                 const std::vector<Fragment> *fragments,
-                                 const std::vector<int>      &shellRenumber)
+FragmentHandler::FragmentHandler(const Poldata                    *pd,
+                                 const gmx::HostVector<gmx::RVec> &coordinates,
+                                 const std::vector<ActAtom>       &atoms,
+                                 const std::vector<Bond>          &bonds,
+                                 const std::vector<Fragment>      *fragments,
+                                 const std::vector<int>           &shellRenumber)
 {
     GMX_RELEASE_ASSERT(fragments != nullptr,
                        "Empty fragments passed. Wazzuppwitdat?");
     GMX_RELEASE_ASSERT(fragments->size() > 0, "No fragments. Huh?");
+    topologies_.resize(fragments->size());
+
     FragAtoms_.resize(fragments->size());
     bonds_.resize(fragments->size());
     natoms_           = 0;
@@ -69,13 +72,22 @@ FragmentHandler::FragmentHandler(const Poldata               *pd,
                           atoms[i+atomStart_[ff]].mass(),
                           atoms[i+atomStart_[ff]].charge());
             FragAtoms_[ff].push_back(newat);
+            topologies_[ff].addAtom(newat);
             j++;
         }
         QgenAcm_.push_back(QgenAcm(pd, FragAtoms_[ff], f->charge()));
+        // We need to compute the molecule offset, that is
+        // the atom number where fragment ff starts.
         int offset = 0;
         for(int k = 0; k < static_cast<int>(ff); k++)
         {
             offset += (*fragments)[k].atoms().size();
+        }
+        // In case we have shells the offset may be different
+        int pol_offset = offset;
+        if (!shellRenumber.empty())
+        {
+            pol_offset = shellRenumber[offset];
         }
         for(const auto &b : bonds)
         {
@@ -86,20 +98,42 @@ FragmentHandler::FragmentHandler(const Poldata               *pd,
                 std::find(f->atoms().begin(), f->atoms().end(),
                           aj) != f->atoms().end())
             {
-                if (!shellRenumber.empty())
-                {
-                    //ai = shellRenumber[ai];
-                    //aj = shellRenumber[aj];
-                }
                 // Bonds should be numbered from the start of the atom.
                 // Now the shells should not be taken into account, since
                 // the ACM code will do it.
                 Bond bb(ai - offset, aj - offset, b.bondOrder());
                 bonds_[ff].push_back(bb);
+                // For the internal topologies however, the atoms are renumbered
+                // already, and the bonds should be too.
+                if (!shellRenumber.empty())
+                {
+                    ai     = shellRenumber[ai];
+                    aj     = shellRenumber[aj];
+                }
+                Bond bb2(ai-pol_offset, aj-pol_offset, b.bondOrder());
+                topologies_[ff].addBond(bb2);
             }
         }
         natoms_ += toAdd.size();
         ff      += 1;
+    }
+    for(size_t ff = 0; ff < topologies_.size(); ff++)
+    {
+        int natom = atomStart_[ff+1]-atomStart_[ff];
+        gmx::HostVector<gmx::RVec> myx(natom);
+        int j = 0;
+        for (size_t i = atomStart_[ff]; i < atomStart_[ff+1]; i++)
+        {
+            copy_rvec(coordinates[i], myx[j++]);
+        }
+
+        topologies_[ff].build(pd, myx, 175.0, 5.0, missingParameters::Error);
+        if (pd->polarizable())
+        {
+            topologies_[ff].addShellPairs();
+        }
+        topologies_[ff].setIdentifiers(pd);
+        topologies_[ff].fillParameters(pd);
     }
     if (debug)
     {

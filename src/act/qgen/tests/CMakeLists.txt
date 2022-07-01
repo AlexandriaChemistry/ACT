@@ -39,6 +39,7 @@ gmx_add_unit_test(
     ${testname}
     ${exename}
     # files with code for tests
+    interactionEnergyTest.cpp
     qgen_acmTest.cpp
     qgen_respTest.cpp
     qtypeTest.cpp

@@ -121,7 +121,7 @@ const std::map<std::string, ForceFieldParameter> &ForceFieldParameterList::findP
     
     if (params == parameters_.end())
     {
-        GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such identifier '%s' in const parameter list with %d entries for function '%s'",
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("1. No such identifier '%s' in const parameter list with %d entries for function '%s'",
                                                            identifier.id().c_str(),
                                                            static_cast<int>(parameters_.size()),
                                                            function_.c_str()).c_str()));
@@ -137,7 +137,7 @@ const ForceFieldParameter &ForceFieldParameterList::findParameterTypeConst(const
     
     if (params == parameters_.end())
     {
-        GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such identifier %s in parameter list for %s looking for type %s", identifier.id().c_str(), function_.c_str(), type.c_str()).c_str()));
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("2. No such identifier %s in parameter list for %s looking for type %s", identifier.id().c_str(), function_.c_str(), type.c_str()).c_str()));
     }
     auto ffparam = params->second.find(type);
     if (ffparam == params->second.end())
@@ -154,7 +154,7 @@ ForceFieldParameter *ForceFieldParameterList::findParameterType(const Identifier
     
     if (params == parameters_.end())
     {
-        GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such identifier %s in parameter list for %s looking for type %s", identifier.id().c_str(), function_.c_str(), type.c_str()).c_str()));
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("3. No such identifier %s in parameter list for %s looking for type %s", identifier.id().c_str(), function_.c_str(), type.c_str()).c_str()));
     }
     auto ffparam = params->second.find(type);
     if (ffparam == params->second.end())
@@ -170,7 +170,7 @@ ForceFieldParameterMap *ForceFieldParameterList::findParameters(const Identifier
     
     if (params == parameters_.end())
     {
-        GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such identifier %s in mutable parameter list for %s", identifier.id().c_str(), function_.c_str()).c_str()));
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("4. No such identifier %s in mutable parameter list for %s", identifier.id().c_str(), function_.c_str()).c_str()));
     }
     
     return &params->second;

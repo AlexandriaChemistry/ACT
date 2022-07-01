@@ -43,6 +43,7 @@
 #include "act/utility/communicationrecord.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/gpu_utils/hostallocator.h"
+#include "alexandria/mymol_low.h"
 
 namespace alexandria
 {
@@ -85,7 +86,10 @@ public:
      */
     int atomIndex(size_t ai) const
     {
-        GMX_RELEASE_ASSERT(ai < indices_.size(), "Atom index out of range");
+        if (ai >= indices_.size())
+        {
+            GMX_THROW(gmx::InternalError("Atom index out of range"));
+        }
         return indices_[ai];
     }
 
@@ -468,11 +472,34 @@ private:
      */
     const Bond *findBond(int ai, int aj) const;
 
+    /*! \brief Add one bond to the list
+     * \param[in] bond The bond to add
+     */
+    void addBond(const Bond &bond);
+
     /*! \brief Initiate or update the atoms data.
      * Must be called every time the data changes (e.g. charges).
      * \param[in] atoms Gromacs atoms structure
      */
     void setAtoms(const t_atoms *atoms);
+
+    //! Add an atom to the topology
+    void addAtom(const ActAtom &atom) { atoms_.push_back(atom); }
+    
+    /*! \brief Build the topology internals
+     * Calls the functions to generate angles, impropers and dihedrals (if flag set).
+     * Will also generate non-bonded atom pairs and exclusions.
+     * \param[in] pd             The force field structure
+     * \param[in] x              The atomic coordinates
+     * \param[in] LinearAngleMin Minimum angle to be considered linear (degrees)
+     * \param[in] PlanarAngleMax Maximum angle to be considered planar (degrees)
+     * \param[in] missing        How to treat missing parameters
+     */
+    void build(const Poldata                    *pd,
+               const gmx::HostVector<gmx::RVec> &x,
+               double                            LinearAngleMin,
+               double                            PlanarAngleMax,
+               missingParameters                 missing);
 
     //! \return the vector of atoms
     const std::vector<ActAtom> &atoms() const { return atoms_; }
@@ -583,8 +610,12 @@ private:
      * \param[in] pd The force field structure
      */
     void fillParameters(const Poldata *pd);
-                                       
- };
+         
+    /*! \brief Add identifiers to interactions
+     * \param[in] pd The force field structure
+     */                              
+    void setIdentifiers(const Poldata *pd);
+};
 
 } // namespace alexandria
 

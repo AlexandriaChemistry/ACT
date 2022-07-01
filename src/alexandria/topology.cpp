@@ -271,6 +271,12 @@ Topology::Topology(const std::vector<Bond> &bonds)
     }
 }
 
+void Topology::addBond(const Bond &bond)
+{
+    entries_.insert({ InteractionType::BONDS, {} });
+    entries_[InteractionType::BONDS].push_back(new Bond(bond));
+}
+
 void Topology::setAtoms(const t_atoms *atoms)
 {
     atoms_.clear();
@@ -370,7 +376,12 @@ const TopologyEntry *Topology::findTopologyEntry(InteractionType            ityp
 void Topology::makeAngles(const gmx::HostVector<gmx::RVec> &x,
                           double                            LinearAngleMin)
 {
-    auto bonds = entry(InteractionType::BONDS);
+    auto ib = InteractionType::BONDS;
+    if (entries_.find(ib) == entries_.end())
+    {
+        return;
+    }
+    auto &bonds = entry(ib);
     entries_.insert({ InteractionType::ANGLES, {} });
     entries_.insert({ InteractionType::LINEAR_ANGLES, {} });
     auto &angles    = entries_.find(InteractionType::ANGLES)->second;
@@ -435,6 +446,11 @@ void Topology::makeAngles(const gmx::HostVector<gmx::RVec> &x,
 void Topology::makeImpropers(const gmx::HostVector<gmx::RVec> &x,
                              double                            PlanarAngleMax)
 {
+    auto ib = InteractionType::BONDS;
+    if (entries_.find(ib) == entries_.end())
+    {
+        return;
+    }
     size_t nAtoms = x.size();
     // Premature optimization is the root...
     // Store the bonds in a bidrectional data structure
@@ -556,9 +572,14 @@ void  Topology::addShellPairs()
 
 void Topology::makePropers()
 {
+    auto ia = InteractionType::ANGLES;
+    if (entries_.find(ia) == entries_.end())
+    {
+        return;
+    }
     entries_.insert({ InteractionType::PROPER_DIHEDRALS, {} });
     auto &propers = entries_.find(InteractionType::PROPER_DIHEDRALS)->second;
-    auto &angles  = entries_.find(InteractionType::ANGLES)->second;
+    auto &angles  = entries_.find(ia)->second;
     for(size_t i = 0; i < angles.size(); i++)
     {
         auto a1 = static_cast<Angle *>(angles[i]);
@@ -617,6 +638,37 @@ void Topology::renumberAtoms(const std::vector<int> &renumber)
             b->renumberAtoms(renumber);
         }
     }
+}
+
+void Topology::build(const Poldata                    *pd,
+                     const gmx::HostVector<gmx::RVec> &x,
+                     double                            LinearAngleMin,
+                     double                            PlanarAngleMax,
+                     missingParameters                 missing)
+{
+    makeAngles(x, LinearAngleMin);
+    makeImpropers(x, PlanarAngleMax);
+    // Check whether we have dihedrals in the force field.
+    if (pd->interactionPresent(InteractionType::PROPER_DIHEDRALS))
+    {
+        // Store temporary address of variable for performance
+        auto &fs = pd->findForcesConst(InteractionType::PROPER_DIHEDRALS);
+        if (!fs.empty() || missingParameters::Generate == missing)
+        {
+            makePropers();
+        }
+    }
+    // Check whether we have virtual sites in the force field.
+    if (pd->interactionPresent(InteractionType::VSITE2))
+    {
+        auto &fs = pd->findForcesConst(InteractionType::VSITE2);
+        if (!fs.empty())
+        {
+            makeVsite2s(fs);
+        }
+    }
+    makePairs(x.size());
+    generateExclusions(pd->getNexcl(), x.size());
 }
 
 const std::vector<TopologyEntry *> &Topology::entry(InteractionType itype) const
@@ -801,6 +853,56 @@ void Topology::fillParameters(const Poldata *pd)
                 GMX_THROW(gmx::InternalError(gmx::formatString("Missing case %s when filling the topology structure.", interaction_function[fs.fType()].name).c_str()));
             }
             topentry->setParams(param);
+        }
+    }
+}
+
+void Topology::setIdentifiers(const Poldata *pd)
+{
+    for(auto &entry : entries_)
+    {
+        auto &fs = pd->findForcesConst(entry.first);
+        for(auto &topentry : entry.second)
+        {
+            std::vector<std::string> btype;
+            for(auto &jj : topentry->atomIndices())
+            {
+                auto atype = pd->findParticleType(atoms_[jj].ffType());
+                switch (entry.first)
+                {
+                case InteractionType::VDW:
+                case InteractionType::VSITE2:
+                    {
+                        btype.push_back(atoms_[jj].ffType());
+                        break;
+                    }
+                case InteractionType::POLARIZATION:
+                case InteractionType::COULOMB:
+                    {
+                        // For COULOMB there are two particles,
+                        // but for polarization just one.
+                        if (atype->hasInteractionType(entry.first))
+                        {
+                            btype.push_back(atype->interactionTypeToIdentifier(entry.first).id());
+                        }
+                        break;
+                    }
+                default:
+                    {
+                        btype.push_back(atype->interactionTypeToIdentifier(InteractionType::BONDS).id());
+                        break;
+                    }
+                }
+            }
+            if (btype.size() == 1)
+            {
+                topentry->setId(Identifier(btype[0]));
+            }
+            else
+            {
+                topentry->setId({ Identifier(btype, topentry->bondOrders(),
+                                             fs.canSwap()) });
+            }
         }
     }
 }

@@ -572,6 +572,16 @@ enum class coordSet {
          */
         double calculateEnergy(const ForceComputer *forceComputer);
 
+        /*! \brief Calculate the interaction energies.
+         * For a system with multiple fragments this will compute
+         * Epot(system) - Sum_f Epot(f) 
+         * where f are the fragments.
+         * For a polarizable model the shell positions are minimized.
+         * \param[in] forceComputer The code to run the calculations.
+         * \return The interaction energy.
+         */
+        double calculateInteractionEnergy(const ForceComputer *forceComputer);
+
         /*! \brief
          * Return the optimized geometry of the molecule from the data file.
          * The structure returned here corresponds to the one from the input

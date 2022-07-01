@@ -13,6 +13,8 @@ namespace alexandria
     private:
         //! We need one ACM structure for each fragment
         std::vector<QgenAcm>               QgenAcm_;
+        //! A complete topology for each fragment is needed to compute energies
+        std::vector<Topology>              topologies_;
         //! And a supporting atoms structure too
         std::vector<std::vector<ActAtom> > FragAtoms_;
         //! And a vector of bonds
@@ -23,17 +25,19 @@ namespace alexandria
         size_t                             natoms_ = 0;
     public:
         /*! Constructor
-         * \param[in] pd        Force field data
-         * \param[in] atoms     The atoms
-         * \param[in] bonds     The bonds
-         * \param[in] fragments The fragmentation information
+         * \param[in] pd            Force field data
+         * \param[in] coordinates   The atomic coordinates
+         * \param[in] atoms         The atoms
+         * \param[in] bonds         The bonds
+         * \param[in] fragments     The fragmentation information
          * \param[in] shellRenumber Info on renumbering atoms because of shells
          */
-        FragmentHandler(const Poldata               *pd,
-                        const std::vector<ActAtom>  &atoms,
-                        const std::vector<Bond>     &bonds,
-                        const std::vector<Fragment> *fragments,
-                        const std::vector<int>      &shellRenumber);
+        FragmentHandler(const Poldata                    *pd,
+                        const gmx::HostVector<gmx::RVec> &coordinates,
+                        const std::vector<ActAtom>       &atoms,
+                        const std::vector<Bond>          &bonds,
+                        const std::vector<Fragment>      *fragments,
+                        const std::vector<int>           &shellRenumber);
 
         /*! \brief Fetch charges for all atoms
          * \param[out] qq Vector that will be reinitialized at correct lenght
@@ -42,7 +46,10 @@ namespace alexandria
         
         //! \return the atomStart_ vector, containing one extra index more than the number of fragments.
         const std::vector<size_t> atomStart() const { return atomStart_; }
-        
+
+        //! \return the vector of Topology structures        
+        const std::vector<Topology> topologies() const { return topologies_; }
+
         /*! \brief Generate charges for all fragments
          * \param[in]  fp      Debug file pointer, may be nullptr
          * \param[in]  molname Molecule name for printing
