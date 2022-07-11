@@ -165,7 +165,7 @@ int simulate(int argc, char *argv[])
                            as_rvec_array(xx.data()), nullptr,
                            epbcNONE, box);
         }
-        if (immStatus::OK != imm)
+        if (immStatus::OK == imm)
         {
             if (sch.nma())
             {
