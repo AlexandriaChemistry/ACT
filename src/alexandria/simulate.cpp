@@ -169,8 +169,12 @@ int simulate(int argc, char *argv[])
         {
             if (sch.nma())
             {
-                std::vector<double> frequencies, intensities;
-                molhandler.nma(&mymol, forceComp, &frequencies, &intensities, logFile);
+                std::vector<std::string> output;
+                doFrequencyAnalysis(&mymol, molhandler, forceComp, nullptr, &output);
+                for(const auto &op : output)
+                {
+                    fprintf(logFile, "%s\n", op.c_str());
+                }
             }
             else
             {

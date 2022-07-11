@@ -131,15 +131,28 @@ using qtStats = std::map<qType, gmx_stats>;
                    const std::vector<t_filenm>    &filenm);
     };
     
-    /*! \brief Print header and command line arguments
-     *
-     * \param[in] fp    File pointer, if nullptr the function returns 
-     *                  without doing anything
-     * \param[in] pargs The command line arguments
-     */
-    void print_header(FILE                       *fp, 
-                      const std::vector<t_pargs> &pargs);
+/*! \brief Print header and command line arguments
+ *
+ * \param[in] fp    File pointer, if nullptr the function returns 
+ *                  without doing anything
+ * \param[in] pargs The command line arguments
+ */
+void print_header(FILE                       *fp, 
+                  const std::vector<t_pargs> &pargs);
 
+/*! \brief Do an analysis of frequencies compared to reference if present.
+ * \param[in]    mol        Molecule data
+ * \param[in]    molhandler The molecule handler
+ * \param[in]    forceComp  The force computer
+ * \param[out]   lsq_freq   Statistics structure, may be nullptr
+ * \param[inout] output     Output strings
+ */
+void doFrequencyAnalysis(alexandria::MyMol        *mol,
+                         const MolHandler         &molhandler,
+                         const ForceComputer      *forceComp,
+                         gmx_stats                *lsq_freq,
+                         std::vector<std::string> *output);
+                            
 } // namespace alexandria
 
 #endif

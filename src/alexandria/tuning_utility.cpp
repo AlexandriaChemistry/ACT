@@ -649,6 +649,64 @@ static void writeCoordinates(const t_atoms           *atoms,
     gmx_fio_fclose(out);
 }
 
+void doFrequencyAnalysis(alexandria::MyMol        *mol,
+                         const MolHandler         &molhandler,
+                         const ForceComputer      *forceComp,
+                         gmx_stats                *lsq_freq,
+                         std::vector<std::string> *output)
+{
+    std::vector<double> alex_freq, intensities;
+    molhandler.nma(mol, forceComp, &alex_freq, &intensities, nullptr);
+    auto unit     = mpo_unit2(MolPropObservable::FREQUENCY);
+    auto ref_freq = mol->referenceFrequencies();
+    output->push_back(gmx::formatString("Frequencies (%s)", mpo_unit2(MolPropObservable::FREQUENCY)));
+    output->push_back(gmx::formatString("%10s  %10s", "Reference", "Alexandria"));
+    for(size_t k = 0; k < alex_freq.size(); k++)
+    {
+        double fcalc = convertFromGromacs(alex_freq[k], unit);
+        if (ref_freq.empty())
+        {
+            output->push_back(gmx::formatString("%10s  %10g", "N/A", fcalc));
+        }
+        else
+        {
+            double fref  = convertFromGromacs(ref_freq[k], unit);
+            if (nullptr != lsq_freq)
+            {
+                lsq_freq->add_point(fref, fcalc, 0, 0);
+            }
+            output->push_back(gmx::formatString("%10g  %10g", fref, fcalc));
+        }
+    }
+    real scale_factor = 1;
+    ThermoChemistry tc0(mol, alex_freq, 0.0, 1, scale_factor);
+    ThermoChemistry tcRT(mol, alex_freq, 298.15, 1, scale_factor);
+    output->push_back(gmx::formatString("%-30s  %10s  %10s", "Thermochemistry prediction", "0 K", "298.15 K"));
+    
+    output->push_back(gmx::formatString("%-30s  %10g  %10g (kJ/mol)", "Zero point energy", tc0.ZPE(), tcRT.ZPE()));
+    output->push_back(gmx::formatString("%-30s  %10g  %10g (kJ/mol)", "Delta H formation", tc0.DHform(), tcRT.DHform()));
+    for(const auto &tcc : tccmap())
+    {
+        output->push_back(gmx::formatString("%-30s  %10g  %10g (J/mol K)",
+                                            gmx::formatString("Standard entropy - %s",
+                                                              tcc.second.c_str()).c_str(), 
+                                            tc0.S0(tcc.first), tcRT.S0(tcc.first)));
+    }
+    for(const auto &tcc : tccmap())
+    {
+        output->push_back(gmx::formatString("%-30s  %10g  %10g (J/mol K)",
+                                            gmx::formatString("Heat capacity cV - %s",
+                                                              tcc.second.c_str()).c_str(),
+                                            tc0.cv(tcc.first), tcRT.cv(tcc.first)));
+    }
+    for(const auto &tcc : tccmap())
+    {
+        output->push_back(gmx::formatString("%-30s  %10g  %10g (kJ/mol)",
+                                            gmx::formatString("Internal energy - %s",
+                                                              tcc.second.c_str()).c_str(),
+                                            tc0.Einternal(tcc.first), tcRT.Einternal(tcc.first)));
+    }
+}
 
 void TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
                                               const Poldata            *pd,
@@ -754,52 +812,9 @@ void TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
         }
         tcout->push_back(gmx::formatString("Coordinate RMSD after minimization %10g pm", 1000*rmsd));
         
-        // Do normal-mode analysis
-        std::vector<double> frequencies, intensities;
-        molHandler_.nma(mol, forceComp, &frequencies, &intensities, nullptr);
-        auto unit = mpo_unit2(MolPropObservable::FREQUENCY);
-        auto ref_freq = mol->referenceFrequencies();
-        if (!ref_freq.empty())
-        {
-            tcout->push_back(gmx::formatString("Frequencies (%s)", mpo_unit2(MolPropObservable::FREQUENCY)));
-            tcout->push_back(gmx::formatString("%10s  %10s", "Reference", "Alexandria"));
-            for(size_t k = 0; k < frequencies.size(); k++)
-            {
-                double fref  = convertFromGromacs(ref_freq[k], unit);
-                double fcalc = convertFromGromacs(frequencies[k], unit);
-                lsq_freq->add_point(fref, fcalc, 0, 0);
-                tcout->push_back(gmx::formatString("%10g  %10g", fref, fcalc));
-            }
-        }
-        real scale_factor = 1;
-        ThermoChemistry tc0(mol, frequencies, 0.0, 1, scale_factor);
-        ThermoChemistry tcRT(mol, frequencies, 298.15, 1, scale_factor);
-        tcout->push_back(gmx::formatString("%-30s  %10s  %10s", "Thermochemistry prediction", "0 K", "298.15 K"));
+        // Do normal-mode analysis etc.
+        doFrequencyAnalysis(mol, molHandler_, forceComp, lsq_freq, tcout);
         
-        tcout->push_back(gmx::formatString("%-30s  %10g  %10g (kJ/mol)", "Zero point energy", tc0.ZPE(), tcRT.ZPE()));
-        tcout->push_back(gmx::formatString("%-30s  %10g  %10g (kJ/mol)", "Delta H formation", tc0.DHform(), tcRT.DHform()));
-        for(const auto &tcc : tccmap())
-        {
-            tcout->push_back(gmx::formatString("%-30s  %10g  %10g (J/mol K)",
-                                               gmx::formatString("Standard entropy - %s",
-                                                                 tcc.second.c_str()).c_str(), 
-                                               tc0.S0(tcc.first), tcRT.S0(tcc.first)));
-        }
-        for(const auto &tcc : tccmap())
-        {
-            tcout->push_back(gmx::formatString("%-30s  %10g  %10g (J/mol K)",
-                                               gmx::formatString("Heat capacity cV - %s",
-                                                                 tcc.second.c_str()).c_str(),
-                                               tc0.cv(tcc.first), tcRT.cv(tcc.first)));
-        }
-        for(const auto &tcc : tccmap())
-        {
-            tcout->push_back(gmx::formatString("%-30s  %10g  %10g (kJ/mol)",
-                                               gmx::formatString("Internal energy - %s",
-                                                                 tcc.second.c_str()).c_str(),
-                                               tc0.Einternal(tcc.first), tcRT.Einternal(tcc.first)));
-        }
-
         // Restore original coordinates
         mol->restoreCoordinates(coordSet::Original);
     }
