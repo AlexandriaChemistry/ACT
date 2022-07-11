@@ -149,7 +149,8 @@ int simulate(int argc, char *argv[])
         MolHandler molhandler;
         if (sch.nma() || sch.minimize())
         {
-            int myIter = molhandler.minimizeCoordinates(&mymol, forceComp, logFile, 10000);
+            const real goldenRatio = 0.5*(1+std::sqrt(5.0));
+            int myIter = molhandler.minimizeCoordinates(&mymol, forceComp, logFile, 10000, goldenRatio);
             fprintf(logFile, "Number of iterations %d, final energy %g\n",
                     myIter, mymol.potentialEnergy());
             matrix box;

@@ -252,7 +252,7 @@ ThermoChemistry::ThermoChemistry(const MyMol               *mymol,
             E_[TCComponent::Total]  += E_[tc.first];
         }
     }
-    dhForm_ = mymol->energyTerms()[F_EPOT] + E_[TCComponent::Total] + zpe_;
+    dhForm_ = mymol->atomizationEnergy() + mymol->energyTerms()[F_EPOT] + E_[TCComponent::Total] + zpe_;
 
 }
 

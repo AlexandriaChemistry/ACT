@@ -156,7 +156,7 @@ protected:
         std::map<coordSet, std::vector<gmx::RVec> > xrmsd; 
         double rmsd = mh.coordinateRmsd(&mp_, &xrmsd);
         checker_.checkReal(rmsd, "Coordinate RMSD before minimizing");
-        (void) mh.minimizeCoordinates(&mp_, forceComp, nullptr, 0);
+        (void) mh.minimizeCoordinates(&mp_, forceComp, nullptr, 0, 1.0);
 
         rmsd = mh.coordinateRmsd(&mp_, &xrmsd);
         checker_.checkReal(rmsd, "Coordinate RMSD after minimizing");

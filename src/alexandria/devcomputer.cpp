@@ -397,7 +397,7 @@ void HarmonicsDevComputer::calcDeviation(const ForceComputer                  *f
     {
         return;
     }
-    handler_.minimizeCoordinates(mymol, forceComputer, nullptr, 0);
+    handler_.minimizeCoordinates(mymol, forceComputer, nullptr, 0, 1.0);
     // Compute frequencies
     std::vector<double> frequencies, intensities;
     handler_.nma(mymol, forceComputer, &frequencies, &intensities);

@@ -172,7 +172,7 @@ std::map<const std::string, MolPropXml> xmlxxx =
     { "harmonics",        MolPropXml::HARMONICS      },
     { "harmonic",         MolPropXml::HARMONIC       },
     { "frequency",        MolPropXml::FREQUENCY      },
-    { "frequency",        MolPropXml::INTENSITY      },
+    { "intensity",        MolPropXml::INTENSITY      },
     { "frequency_unit",   MolPropXml::FREQUENCY_UNIT },
     { "intensity_unit",   MolPropXml::INTENSITY_UNIT },
     { "formula",          MolPropXml::FORMULA        },

@@ -577,6 +577,35 @@ bool readBabel(const char          *g09,
     {
         mol.AddHydrogens();
     }
+    // Frequencies
+    auto vibtype = OpenBabel::OBGenericDataType::VibrationData;
+    if (mol.HasData(vibtype))
+    {
+        auto vibdata = static_cast<OpenBabel::OBVibrationData *>(mol.GetData(vibtype));
+        auto freq    = vibdata->GetFrequencies();
+        if (!freq.empty())
+        {
+            auto mpo = MolPropObservable::FREQUENCY;
+            auto hf  = new Harmonics(mpo_unit2(mpo), 0, mpo);
+            for (const auto &f : freq)
+            {
+                hf->addValue(f);
+            }
+            mpt->LastExperiment()->addProperty(mpo, hf);
+        }
+        auto inten   = vibdata->GetIntensities();
+        if (!inten.empty())
+        {
+            auto mpo = MolPropObservable::INTENSITY;
+            auto hf  = new Harmonics(mpo_unit2(mpo), 0, mpo);
+            for (const auto &f : inten)
+            {
+                hf->addValue(f);
+            }
+            mpt->LastExperiment()->addProperty(mpo, hf);
+        }
+    }
+
     // Atoms
     const std::string forcefield("alexandria");
     auto *ff = OpenBabel::OBForceField::FindForceField(forcefield);

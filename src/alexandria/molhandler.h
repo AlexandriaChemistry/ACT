@@ -105,12 +105,14 @@ public:
      * \param[in] forceComp Force Computer utility
      * \param[in] logFile   File to write some info to, may be a nullptr
      * \param[in] maxIter   Maximum number of iterations, 0 means until convergence
+     * \param[in] overRelax Factor to use for overrelaxation of the step size
      * \return Number of iterations used
      */
     int minimizeCoordinates(MyMol               *mol,
                             const ForceComputer *forceComp,
                             FILE                *logFile,
-                            int                  maxIter) const;
+                            int                  maxIter,
+                            double               overRelax) const;
 
     /*! \brief
      * The routine will perform a MD simulation of a molecule or multiple

@@ -275,7 +275,8 @@ void MolHandler::nma(MyMol               *mol,
 int MolHandler::minimizeCoordinates(MyMol               *mol,
                                     const ForceComputer *forceComp,
                                     FILE                *logFile,
-                                    int                  maxIter) const
+                                    int                  maxIter,
+                                    double               overRelax) const
 {
     // TODO: check if this is really necessary
     mol->restoreCoordinates(coordSet::Minimized);  // Is minimized defined??? I guess it makes sense: if not defined, nothing changes
@@ -332,7 +333,8 @@ int MolHandler::minimizeCoordinates(MyMol               *mol,
             {
                 scaleDeltaX = deltaXTolerance/rmsDeltaX;
             }
-            int  i    = 0;
+            scaleDeltaX *= overRelax;
+            int  i       = 0;
             for (auto &atomI : theAtoms)
             {
                 for (int m = 0; m < DIM; m++)

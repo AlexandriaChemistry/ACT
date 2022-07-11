@@ -791,7 +791,7 @@ void TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
     {
         // Now get the minimized structure RMSD and Energy
         // TODO: Only do this for JobType::OPT
-        molHandler_.minimizeCoordinates(mol, forceComp, nullptr, 100);
+        molHandler_.minimizeCoordinates(mol, forceComp, nullptr, 100, 1.0);
         std::map<coordSet, std::vector<gmx::RVec> > xrmsd; 
         double rmsd = molHandler_.coordinateRmsd(mol, &xrmsd);
         

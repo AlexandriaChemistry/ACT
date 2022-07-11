@@ -15,7 +15,7 @@
     <Int Name="Length">0</Int>
   </Sequence>
   <Real Name="Zero point energy (kJ/mol)">172.45132542971504</Real>
-  <Real Name="Delta H form (kJ/mol)">206.09519854954652</Real>
+  <Real Name="Delta H form (kJ/mol)">554.22019854954647</Real>
   <Real Name="Standard entropy - Translation  (J/mol K)">153.70652124646321</Real>
   <Real Name="Heat capacity cV - Translation (J/mol K)">12.471693218203427</Real>
   <Real Name="Internal energy  - Translation (kJ/mol)">3.7184353330073514</Real>
