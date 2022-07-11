@@ -103,10 +103,14 @@ public:
      *
      * \param[in] mol       The molecule object (will be modified)
      * \param[in] forceComp Force Computer utility
-     * \return immOK if everything went fine, an error otherwise.
+     * \param[in] logFile   File to write some info to, may be a nullptr
+     * \param[in] maxIter   Maximum number of iterations, 0 means until convergence
+     * \return Number of iterations used
      */
-    immStatus minimizeCoordinates(MyMol               *mol,
-                                  const ForceComputer *forceComp) const;
+    int minimizeCoordinates(MyMol               *mol,
+                            const ForceComputer *forceComp,
+                            FILE                *logFile,
+                            int                  maxIter) const;
 
     /*! \brief
      * The routine will perform a MD simulation of a molecule or multiple

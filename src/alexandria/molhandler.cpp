@@ -272,17 +272,17 @@ void MolHandler::nma(MyMol               *mol,
 
 }
 
-immStatus MolHandler::minimizeCoordinates(MyMol               *mol,
-                                          const ForceComputer *forceComp) const
+int MolHandler::minimizeCoordinates(MyMol               *mol,
+                                    const ForceComputer *forceComp,
+                                    FILE                *logFile,
+                                    int                  maxIter) const
 {
     // TODO: check if this is really necessary
     mol->restoreCoordinates(coordSet::Minimized);  // Is minimized defined??? I guess it makes sense: if not defined, nothing changes
-    immStatus imm          = immStatus::OK;
     // Below is a Newton-Rhapson algorithm
     bool      converged    = false;
     double    myForceToler = forceComp->convergenceTolerance();
     int       myIter       = 0;
-    int       maxIter      = 100;
     // List of atoms (not shells) and weighting factors
     auto      myatoms      = mol->atomsConst();
     std::vector<int> theAtoms;
@@ -299,6 +299,11 @@ immStatus MolHandler::minimizeCoordinates(MyMol               *mol,
     double              epot0     = 0;
     bool                firstStep = true;
     // Now start the minimization loop.
+    if (logFile)
+    {
+        fprintf(logFile, "Starting minimization of '%s'\n", mol->getMolname().c_str());
+    }
+    std::vector<double> deltaX(DIM*theAtoms.size(), 0.0);
     do
     {
         double newEpot = computeHessian(mol, forceComp, theAtoms, &Hessian, &f0);
@@ -310,7 +315,6 @@ immStatus MolHandler::minimizeCoordinates(MyMol               *mol,
             f00       = f0;
             firstStep = false;
         }
-        std::vector<double> deltaX(DIM*theAtoms.size(), 0.0);
         // Solve H delta X = -grad (E) = force(E)
         int result = Hessian.solve(f0, &deltaX);
         if (0 == result)
@@ -353,18 +357,18 @@ immStatus MolHandler::minimizeCoordinates(MyMol               *mol,
         msAtomForce /= theAtoms.size();
         converged = msAtomForce <= myForceToler;
         
-        if (debug)
+        if (logFile)
         {
-            fprintf(debug, "%s rmsForce %10g Epot before %10g now %10g\n", mol->getMolname().c_str(),
+            fprintf(logFile, "Iter %5d rmsForce %10g Epot before %10g now %10g\n", myIter,
                     std::sqrt(msAtomForce), epot0, mol->enerd_->term[F_EPOT]);
         }
         myIter += 1;
     }
-    while (!converged && myIter < maxIter);
+    while (!converged && (myIter < maxIter || 0 == maxIter));
     // Re-compute the energy one last time.
     (void) mol->calculateEnergy(forceComp);
     mol->backupCoordinates(coordSet::Minimized);
-    return imm;
+    return myIter;
 }
 
 double MolHandler::coordinateRmsd(MyMol                                       *mol,

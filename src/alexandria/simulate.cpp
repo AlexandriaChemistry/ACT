@@ -34,6 +34,7 @@
 
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/confio.h"
 #include "gromacs/utility/futil.h"
 
 #include "act/molprop/molprop_util.h"
@@ -65,6 +66,7 @@ int simulate(int argc, char *argv[])
     std::vector<t_filenm>     fnm = {
         { efXML, "-ff", "gentop",     ffREAD  },
         { efPDB, "-o",  "trajectory", ffWRITE },
+        { efSTO, "-c",  "confout",    ffOPTWR },
         { efXVG, "-e",  "energy",     ffWRITE },
         { efLOG, "-g",  "simulation", ffWRITE }
     };
@@ -78,7 +80,7 @@ int simulate(int argc, char *argv[])
         { "-name",   FALSE, etSTR,  {&molnm},
           "Name of your molecule" },
         { "-qtot",   FALSE, etREAL, {&qtot},
-          "Total charge of the molecule. This will be taken from the input file by default, but that is reliable only if the input is a Gaussian log file." },
+          "Combined charge of the molecule(s). This will be taken from the input file by default, but that is not always reliable." },
     };
     SimulationConfigHandler  sch;
     sch.add_pargs(&pa);
@@ -145,11 +147,39 @@ int simulate(int argc, char *argv[])
     if (immStatus::OK == imm && mymol.errors().size() == 0)
     {
         MolHandler molhandler;
-        molhandler.simulate(&mymol, forceComp, sch, logFile,
-                            opt2fn("-o", fnm.size(),fnm.data()),
-                            opt2fn("-e", fnm.size(),fnm.data()),
-                            oenv);
-        
+        if (sch.nma() || sch.minimize())
+        {
+            int myIter = molhandler.minimizeCoordinates(&mymol, forceComp, logFile, 10000);
+            fprintf(logFile, "Number of iterations %d, final energy %g\n",
+                    myIter, mymol.potentialEnergy());
+            matrix box;
+            clear_mat(box);
+            std::vector<gmx::RVec> xx;
+            for(const auto &x1 : mymol.coordinateSet(coordSet::Minimized))
+            {
+                xx.push_back(x1);
+            }
+            write_sto_conf(opt2fn("-c", fnm.size(),fnm.data()), 
+                           mymol.getMolname().c_str(),
+                           mymol.gmxAtomsConst(),
+                           as_rvec_array(xx.data()), nullptr,
+                           epbcNONE, box);
+        }
+        if (immStatus::OK != imm)
+        {
+            if (sch.nma())
+            {
+                std::vector<double> frequencies, intensities;
+                molhandler.nma(&mymol, forceComp, &frequencies, &intensities, logFile);
+            }
+            else
+            {
+                molhandler.simulate(&mymol, forceComp, sch, logFile,
+                                    opt2fn("-o", fnm.size(),fnm.data()),
+                                    opt2fn("-e", fnm.size(),fnm.data()),
+                                    oenv);
+            }
+        }
     }
     else
     {

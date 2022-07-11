@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Real Name="Bond before">0.18122894212807097</Real>
+  <Real Name="Angle before">1.6749064998308814</Real>
+  <Real Name="Proper Dih. before">74.979201869337771</Real>
+  <Real Name="LJ (SR) before">-1.7472008376964434e-05</Real>
+  <Real Name="Coulomb (SR) before">-34.189297501647353</Real>
+  <Real Name="Potential before">42.646022337640993</Real>
+  <Real Name="Coordinate RMSD before minimizing">0</Real>
+  <Real Name="Coordinate RMSD after minimizing">0.018728607873649314</Real>
+  <Real Name="Bond after">0.025880346037569307</Real>
+  <Real Name="Angle after">1.0372891031887834</Real>
+  <Real Name="Proper Dih. after">85.792098097909047</Real>
+  <Real Name="Improper Dih. after">0.025646873005060116</Real>
+  <Real Name="LJ (SR) after">-1.8304459509574803e-05</Real>
+  <Real Name="Coulomb (SR) after">-34.687589064641017</Real>
+  <Real Name="Potential after">52.193307051039923</Real>
+</ReferenceData>

@@ -337,7 +337,12 @@ void SimulationConfigHandler::add_pargs(std::vector<t_pargs> *pargs)
         { "-nstvout", FALSE, etINT, {&nstvout_},
           "Number of steps between writing velocities." },
         { "-nstener", FALSE, etINT, {&nstener_},
-          "Number of steps between writing energies." }
+          "Number of steps between writing energies." },
+        { "-minimize", FALSE, etBOOL, {&minimize_},
+          "Minimize the energy with respect to input coordinates." },
+        { "-nma",      FALSE, etBOOL, {&nma_},
+          "Do a normal mode analysis rather than a MD simulation. Coordinates will be minimized before the NMA." }
+          
     };
     for(auto &i : extra)
     {

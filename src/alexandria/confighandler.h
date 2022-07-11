@@ -350,6 +350,10 @@ private:
     int      nstvout_            = 0;
     //! How often to write energies
     int      nstener_            = 1;
+    //! Minmize (before MD)
+    bool     minimize_           = false;
+    //! Run normal mode analysis instead of MD
+    bool     nma_                = false;
 public:
     /*!
      * \brief Add command-line arguments to a vector
@@ -363,17 +367,29 @@ public:
      */
     virtual void check_pargs();
 
+    //! \return number of MD steps
     int nsteps() const { return nsteps_; }
     
+    //! \return MD integration time step (ps)
     double deltat() const { return deltat_; }
     
+    //! \return number of steps between coordinate output
     int nstxout() const { return nstxout_; }
     
+    //! \return number of steps between energy output
     int nstener() const { return nstener_; }
 
+    //! \return initial simulation temperature
     double temperature() const { return temperature_; }
     
-    int seed() const { return seed_; }   
+    //! \return user provided random number seed
+    int seed() const { return seed_; }
+    
+    //! \return whether or not to minimize the energy with respect to input coordinates
+    bool minimize() const { return minimize_; }
+    
+    //! \return whether or not to do a normal mode analysis
+    bool nma() const { return nma_; }
 };
 
 } //namespace alexandria

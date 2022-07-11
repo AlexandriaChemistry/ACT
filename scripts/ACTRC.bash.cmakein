@@ -18,7 +18,7 @@ for i in $LD_LIBRARY_PATH; do
 done
 LD_LIBRARY_PATH=$tmppath
 
-# remove gromacs part of PKG_CONFIG_PATH
+# remove ACT part of PKG_CONFIG_PATH
 tmppath=""
 for i in $PKG_CONFIG_PATH; do
   if test "$i" != "$ACTLDLIB/pkgconfig"; then
@@ -27,7 +27,7 @@ for i in $PKG_CONFIG_PATH; do
 done
 PKG_CONFIG_PATH=$tmppath
 
-# remove gromacs part of path
+# remove ACT part of path
 tmppath=""
 for i in $PATH; do
   if test "$i" != "$ACTBIN"; then
@@ -36,7 +36,7 @@ for i in $PATH; do
 done
 PATH=$tmppath
 
-# and remove the gmx part of manpath
+# and remove the ACT part of manpath
 tmppath=""
 for i in $MANPATH; do
   if test "$i" != "$ACTMAN"; then
@@ -55,10 +55,19 @@ ACTBIN=${ACTPREFIX}/@CMAKE_INSTALL_BINDIR@
 ACTLDLIB=${ACTPREFIX}/@CMAKE_INSTALL_LIBDIR@
 ACTMAN=${ACTPREFIX}/@CMAKE_INSTALL_MANDIR@
 ACTDATA=${ACTPREFIX}/@ACT_INSTALL_ACTDATADIR@share/act
-ACTLIB=${ACTPREFIX}/lib
-BABEL_LIBDIR=`/bin/ls -d ${ACTLDLIB}/openbabel/*`
+ACTLIB=${ACTPREFIX}/lib64
+ALLDIR=${ACTLDLIB}/openbabel
+if [[ -d "${ALLDIR}" ]]; then
+   BABEL_LIBDIR=`/bin/ls -d ${ALLDIR}/*`
+   if [[ -z "${BABEL_LIBDIR}" ]]; then
+      ALDIR=${ACTLIB}/openbabel
+      if [[ -d "${ALDIR}" ]]; then
+         BABEL_LIBDIR=`/bin/ls -d ${ALDIR}/*`
+      fi
+   fi
+fi
 if [[ -z "${BABEL_LIBDIR}" ]]; then
-  BABEL_LIBDIR=`/bin/ls -d ${ACTLIB}/openbabel/*`
+  echo "Could not find the OpenBabel shared objects"
 fi
 
 LD_LIBRARY_PATH=${ACTLDLIB}:${LD_LIBRARY_PATH:+:}${LD_LIBRARY_PATH}
