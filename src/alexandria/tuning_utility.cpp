@@ -652,15 +652,16 @@ static void writeCoordinates(const t_atoms           *atoms,
 void doFrequencyAnalysis(alexandria::MyMol        *mol,
                          const MolHandler         &molhandler,
                          const ForceComputer      *forceComp,
-                         gmx_stats                *lsq_freq,
+                         gmx_stats                *lsq_freq_all,
                          std::vector<std::string> *output)
 {
     std::vector<double> alex_freq, intensities;
     molhandler.nma(mol, forceComp, &alex_freq, &intensities, nullptr);
     auto unit     = mpo_unit2(MolPropObservable::FREQUENCY);
     auto ref_freq = mol->referenceFrequencies();
-    output->push_back(gmx::formatString("Frequencies (%s)", mpo_unit2(MolPropObservable::FREQUENCY)));
+    output->push_back(gmx::formatString("Frequencies (%s)", unit));
     output->push_back(gmx::formatString("%10s  %10s", "Reference", "Alexandria"));
+    gmx_stats lsq_freq;
     for(size_t k = 0; k < alex_freq.size(); k++)
     {
         double fcalc = convertFromGromacs(alex_freq[k], unit);
@@ -671,45 +672,83 @@ void doFrequencyAnalysis(alexandria::MyMol        *mol,
         else
         {
             double fref  = convertFromGromacs(ref_freq[k], unit);
-            if (nullptr != lsq_freq)
+            if (nullptr != lsq_freq_all)
             {
-                lsq_freq->add_point(fref, fcalc, 0, 0);
+                lsq_freq_all->add_point(fref, fcalc, 0, 0);
             }
+            lsq_freq.add_point(fref, fcalc, 0, 0);
             output->push_back(gmx::formatString("%10g  %10g", fref, fcalc));
         }
     }
+    if (lsq_freq.get_npoints() > 0)
+    {
+        real r, rmsd;
+        if (eStats::OK == lsq_freq.get_corr_coeff(&r) &&
+            eStats::OK == lsq_freq.get_rmsd(&rmsd))
+        {
+            output->push_back(gmx::formatString("Frequency statistics: Pearson r^2 %g %% RMSD %g %s",
+                                                100*r*r, rmsd, unit));
+        }
+    }
     real scale_factor = 1;
+    real roomTemp     = 298.15;
     ThermoChemistry tc0(mol, alex_freq, 0.0, 1, scale_factor);
-    ThermoChemistry tcRT(mol, alex_freq, 298.15, 1, scale_factor);
-    output->push_back(gmx::formatString("%-30s  %10s  %10s", "Thermochemistry prediction", "0 K", "298.15 K"));
-    
-    output->push_back(gmx::formatString("%-30s  %10g  %10g (kJ/mol)", "Zero point energy", tc0.ZPE(), tcRT.ZPE()));
-    output->push_back(gmx::formatString("%-30s  %10g  %10g (kJ/mol)", "Delta H formation", tc0.DHform(), tcRT.DHform()));
+    ThermoChemistry tcRT(mol, alex_freq, roomTemp, 1, scale_factor);
+    std::vector<std::string> ref_str;
+    ref_str.resize(1+3*tccmap().size());
+    if (!ref_freq.empty())
+    {
+        ThermoChemistry tcdft0(mol, ref_freq, 0.0, 1, scale_factor);
+        ThermoChemistry tcdftRT(mol, ref_freq, roomTemp, 1, scale_factor);
+        int index = 0;
+        ref_str[index++] = gmx::formatString("  %10g  %10g", tcdft0.ZPE(), tcdftRT.ZPE());
+        for(const auto &tcc : tccmap())
+        {
+            ref_str[index++] = gmx::formatString("  %10g  %10g", tcdft0.S0(tcc.first), tcdftRT.S0(tcc.first));
+        }
+        for(const auto &tcc : tccmap())
+        {
+            ref_str[index++] = gmx::formatString("  %10g  %10g", tcdft0.cv(tcc.first), tcdftRT.cv(tcc.first));
+        }
+        for(const auto &tcc : tccmap())
+        {
+            ref_str[index++] = gmx::formatString("  %10g  %10g", 
+                                                 tcdft0.Einternal(tcc.first), tcdftRT.Einternal(tcc.first));
+        }
+    }
+    output->push_back(gmx::formatString("%-30s  %22s  %22s", "Thermochemistry", "Alexandria", "Reference"));
+    output->push_back(gmx::formatString("%-30s  %10s  %10s  %10s  %10s", "", "0 K", "298.15 K", "0 K", "298.15 K"));
+    int index = 0;
+    output->push_back(gmx::formatString("%-30s  %10g  %10g%s (kJ/mol)", "Zero point energy", tc0.ZPE(), tcRT.ZPE(),
+                                        ref_str[index++].c_str()));
     for(const auto &tcc : tccmap())
     {
-        output->push_back(gmx::formatString("%-30s  %10g  %10g (J/mol K)",
+        output->push_back(gmx::formatString("%-30s  %10g  %10g%s (J/mol K)",
                                             gmx::formatString("Standard entropy - %s",
                                                               tcc.second.c_str()).c_str(), 
-                                            tc0.S0(tcc.first), tcRT.S0(tcc.first)));
+                                            tc0.S0(tcc.first), tcRT.S0(tcc.first),
+                                            ref_str[index++].c_str()));
     }
     for(const auto &tcc : tccmap())
     {
-        output->push_back(gmx::formatString("%-30s  %10g  %10g (J/mol K)",
+        output->push_back(gmx::formatString("%-30s  %10g  %10g%s (J/mol K)",
                                             gmx::formatString("Heat capacity cV - %s",
                                                               tcc.second.c_str()).c_str(),
-                                            tc0.cv(tcc.first), tcRT.cv(tcc.first)));
+                                            tc0.cv(tcc.first), tcRT.cv(tcc.first),
+                                            ref_str[index++].c_str()));
     }
     for(const auto &tcc : tccmap())
     {
-        output->push_back(gmx::formatString("%-30s  %10g  %10g (kJ/mol)",
+        output->push_back(gmx::formatString("%-30s  %10g  %10g%s (kJ/mol)",
                                             gmx::formatString("Internal energy - %s",
                                                               tcc.second.c_str()).c_str(),
-                                            tc0.Einternal(tcc.first), tcRT.Einternal(tcc.first)));
+                                            tc0.Einternal(tcc.first), tcRT.Einternal(tcc.first),
+                                            ref_str[index++].c_str()));
     }
+    output->push_back(gmx::formatString("%-30s  %10g  %10g (kJ/mol)", "Delta H formation", tc0.DHform(), tcRT.DHform()));
 }
 
 void TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
-                                              const Poldata            *pd,
                                               const ForceComputer      *forceComp,
                                               alexandria::MyMol        *mol,
                                               const std::vector<int>   &ePlot,
@@ -996,7 +1035,7 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
             printAtoms(fp, &(*mol));
             // Energies
             std::vector<std::string> tcout;
-            printEnergyForces(&tcout, pd, forceComp,
+            printEnergyForces(&tcout, forceComp,
                               &(*mol), ePlot,
                               &lsq_rmsf[ims], &lsq_epot[ims],
                               &lsq_freq[ims]);

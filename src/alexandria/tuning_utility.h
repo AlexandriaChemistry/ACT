@@ -102,7 +102,6 @@ using qtStats = std::map<qType, gmx_stats>;
 
         //! \brief do part of the printing, add to statistics
         void printEnergyForces(std::vector<std::string> *tcout,
-                               const Poldata            *pd,
                                const ForceComputer      *forceComp,
                                alexandria::MyMol        *mol,
                                const std::vector<int>   &ePlot,
@@ -141,16 +140,16 @@ void print_header(FILE                       *fp,
                   const std::vector<t_pargs> &pargs);
 
 /*! \brief Do an analysis of frequencies compared to reference if present.
- * \param[in]    mol        Molecule data
- * \param[in]    molhandler The molecule handler
- * \param[in]    forceComp  The force computer
- * \param[out]   lsq_freq   Statistics structure, may be nullptr
- * \param[inout] output     Output strings
+ * \param[in]    mol          Molecule data
+ * \param[in]    molhandler   The molecule handler
+ * \param[in]    forceComp    The force computer
+ * \param[out]   lsq_freq_all Statistics structure, may be nullptr
+ * \param[inout] output       Output strings
  */
 void doFrequencyAnalysis(alexandria::MyMol        *mol,
                          const MolHandler         &molhandler,
                          const ForceComputer      *forceComp,
-                         gmx_stats                *lsq_freq,
+                         gmx_stats                *lsq_freq_all,
                          std::vector<std::string> *output);
                             
 } // namespace alexandria
