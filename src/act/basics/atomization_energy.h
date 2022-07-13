@@ -34,6 +34,7 @@
 
 #include <cstdio>
 #include <map>
+#include <string>
 #include <vector>
 
 namespace alexandria

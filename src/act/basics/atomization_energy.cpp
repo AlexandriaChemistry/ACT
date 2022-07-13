@@ -1,5 +1,6 @@
 #include "atomization_energy.h"
 
+#include <algorithm>
 #include <cstdlib>
 #include <stdexcept>
 

@@ -158,7 +158,7 @@ protected:
         checker_.checkReal(rmsd, "Coordinate RMSD before minimizing");
         double overRelax  = 1;
         // MS force tolerance
-        double forceToler = 1e-6;
+        double forceToler = 1e-8;
         // Infinite number of shell iterations, i.e. until convergence.
         int    maxIter    = 0;
         (void) mh.minimizeCoordinates(&mp_, forceComp, nullptr, maxIter, overRelax, forceToler);
