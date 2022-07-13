@@ -101,18 +101,20 @@ public:
      * relaxing the shells. The minimized coordinates will be stored in the 
      * mymol object.
      *
-     * \param[in] mol       The molecule object (will be modified)
-     * \param[in] forceComp Force Computer utility
-     * \param[in] logFile   File to write some info to, may be a nullptr
-     * \param[in] maxIter   Maximum number of iterations, 0 means until convergence
-     * \param[in] overRelax Factor to use for overrelaxation of the step size
+     * \param[in] mol          The molecule object (will be modified)
+     * \param[in] forceComp    Force Computer utility
+     * \param[in] logFile      File to write some info to, may be a nullptr
+     * \param[in] maxIter      Maximum number of iterations, 0 means until convergence
+     * \param[in] overRelax    Factor to use for overrelaxation of the step size
+     * \param[in] msForceToler Tolerance in the mean square force for convergence
      * \return Number of iterations used
      */
     int minimizeCoordinates(MyMol               *mol,
                             const ForceComputer *forceComp,
                             FILE                *logFile,
                             int                  maxIter,
-                            double               overRelax) const;
+                            double               overRelax,
+                            double               msForceToler) const;
 
     /*! \brief
      * The routine will perform a MD simulation of a molecule or multiple

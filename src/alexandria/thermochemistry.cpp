@@ -42,6 +42,7 @@
 #include <cstdio>
 
 #include "act/utility/units.h"
+#include "alexandria/mymol_low.h"
 #include "alexandria/princ.h"
 #include "gromacs/math/units.h"
 #include "gromacs/utility/arrayref.h"
@@ -74,11 +75,11 @@ double ThermoChemistry::zeroPointEnergy(const std::vector<double> &frequencies,
                                         double                     scale_factor)
 {
     // Convert frequency (ps^-1) to energy (kJ/mol)
-    double factor = PLANCK; // (2.0 * M_PI);
+    double factor = PLANCK;
     double zpe    = 0;
     for (const auto &omega : frequencies)
     {
-        zpe += 0.5 * factor * scale_factor * convertToGromacs(omega, mpo_unit2(MolPropObservable::FREQUENCY));
+        zpe += 0.5 * factor * scale_factor * omega;
     }
     return zpe;
 }
@@ -87,25 +88,34 @@ void ThermoChemistry::calcVibrationalProperties(const std::vector<double> &frequ
                                                 double                     temperature,
                                                 double                     scale_factor)
 {
-    double hbar  = PLANCK1 / (2 * M_PI);
+    if (temperature == 0)
+    {
+        return;
+    }
+    real T_1 = 1.0/temperature;
+    //double hbar  = PLANCK1 / (2 * M_PI);
     for (size_t i = 0; i < frequencies.size(); i++)
     {
         if (frequencies[i] > 0)
         {
-            double omega = scale_factor * convertToGromacs(frequencies[i], mpo_unit2(MolPropObservable::FREQUENCY));
-            //double omega = scale_factor * frequencies[i];
-            // * eigval_to_frequency(eigval[i]);
-            double hwkT  = (hbar * omega) / (PICO * BOLTZMANN * temperature);
+            // Scaled frequency
+            double sf    = scale_factor*frequencies[i];
+            // Vibrational temperature
+            // https://en.wikipedia.org/wiki/Vibrational_temperature
+            double theta = PLANCK*sf/BOLTZ;
             if (debug)
             {
-                fprintf(debug, "freq %g omega %g hwkT %g\n", frequencies[i], omega, hwkT);
+                fprintf(debug, "scaled freq %10g (1/ps) %10g (1/cm) theta %10g\n", sf, 
+                        convertFromGromacs(sf, mpo_unit2(MolPropObservable::FREQUENCY)),
+                        theta);
             }
             // Prevent overflow by checking for unreasonably large numbers.
-            if (hwkT < 100)
+            real tt = theta * T_1;
+            if (tt < 100)
             {
-                E_[TCComponent::Vibration]  += temperature * BOLTZ * hwkT * (0.5 + 1.0 / (std::expm1(hwkT)));
-                cv_[TCComponent::Vibration] += BOLTZ * std::exp(hwkT) * gmx::square(hwkT / std::expm1(hwkT));
-                S0_[TCComponent::Vibration] += BOLTZ *  (hwkT / std::expm1(hwkT) - std::log1p(-std::exp(-hwkT)));
+                E_[TCComponent::Vibration]  += BOLTZ * theta * (0.5 + 1.0 / (std::expm1(tt)));
+                cv_[TCComponent::Vibration] += KILO * BOLTZ * std::exp(tt) * gmx::square(tt / std::expm1(tt));
+                S0_[TCComponent::Vibration] += KILO * BOLTZ *  (tt/ std::expm1(tt) - std::log1p(-std::exp(-tt)));
             }
         }
     }
@@ -138,25 +148,29 @@ double ThermoChemistry::rotationalEntropy(double      temperature,
                                           double      sigma_r)
 {
     double SR = 1.5;
+    if (linear)
+    {
+        SR = 1;
+    }
     if (temperature > 0)
     {
         GMX_RELEASE_ASSERT(sigma_r > 0, "Symmetry factor should be larger than zero");
         
         if (natom > 1)
         {
+            double qR;
             if (linear)
             {
                 GMX_RELEASE_ASSERT(theta[0] > 0, "Theta should be larger than zero");
-                double qR  = temperature / (sigma_r * theta[0]);
-                SR        += (std::log(qR) + 1);
+                qR  = temperature / (sigma_r * theta[0]);
             }
             else
             {
                 double Q = theta[XX] * theta[YY] * theta[ZZ];
                 GMX_RELEASE_ASSERT(Q > 0, "Q should be larger than zero");
-                double qR  = std::sqrt(M_PI * std::pow(temperature, 3) / Q) / sigma_r;
-                SR        += (std::log(qR) + 1.5);
+                qR  = std::sqrt(M_PI * std::pow(temperature, 3) / Q) / sigma_r;
             }
+            SR += std::log(qR);
         }
     }
     return universalGasConstant * SR;
@@ -217,9 +231,14 @@ static void calcTheta(const MyMol *mymol,
             theta[m] = rot_const / inertia[m];
         }
     }
+    if (debug)
+    {
+        fprintf(debug, "Rotational temperatures (Kelvin)%12.5f%12.5f%12.5f\n", theta[XX], theta[YY], theta[ZZ]);
+    }
 }
 
 ThermoChemistry::ThermoChemistry(const MyMol               *mymol,
+                                 const AtomizationEnergy   &atomenergy,
                                  const std::vector<double> &frequencies,
                                  double                     temperature,
                                  double                     pressure,
@@ -252,8 +271,19 @@ ThermoChemistry::ThermoChemistry(const MyMol               *mymol,
             E_[TCComponent::Total]  += E_[tc.first];
         }
     }
-    dhForm_ = mymol->atomizationEnergy() + mymol->energyTerms()[F_EPOT] + E_[TCComponent::Total] + zpe_;
-
+    // Using the equations from Ochterski2000a
+    double sumAtomicEps0 = 0;
+    double D0M           = sumAtomicEps0 - mymol->energyTerms()[F_EPOT] - zpe_;
+    double sumAtomicH0   = computeAtomizationEnergy(mymol->atomsConst(), atomenergy, 0);
+    double dhF0          = sumAtomicH0 - D0M;
+    if (temperature == 0)
+    {
+        dhForm_ = dhF0;
+    }
+    else
+    {
+        dhForm_ = dhF0 + E_[TCComponent::Total] - (computeAtomizationEnergy(mymol->atomsConst(), atomenergy, temperature) - sumAtomicH0);
+    }
 }
 
 }

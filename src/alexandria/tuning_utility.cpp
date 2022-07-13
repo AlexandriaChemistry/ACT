@@ -652,6 +652,7 @@ static void writeCoordinates(const t_atoms           *atoms,
 void doFrequencyAnalysis(alexandria::MyMol        *mol,
                          const MolHandler         &molhandler,
                          const ForceComputer      *forceComp,
+                         const AtomizationEnergy  &atomenergy,
                          gmx_stats                *lsq_freq_all,
                          std::vector<std::string> *output)
 {
@@ -692,14 +693,14 @@ void doFrequencyAnalysis(alexandria::MyMol        *mol,
     }
     real scale_factor = 1;
     real roomTemp     = 298.15;
-    ThermoChemistry tc0(mol, alex_freq, 0.0, 1, scale_factor);
-    ThermoChemistry tcRT(mol, alex_freq, roomTemp, 1, scale_factor);
+    ThermoChemistry tc0(mol, atomenergy, alex_freq, 0.0, 1, scale_factor);
+    ThermoChemistry tcRT(mol, atomenergy, alex_freq, roomTemp, 1, scale_factor);
     std::vector<std::string> ref_str;
     ref_str.resize(1+3*tccmap().size());
     if (!ref_freq.empty())
     {
-        ThermoChemistry tcdft0(mol, ref_freq, 0.0, 1, scale_factor);
-        ThermoChemistry tcdftRT(mol, ref_freq, roomTemp, 1, scale_factor);
+        ThermoChemistry tcdft0(mol, atomenergy, ref_freq, 0.0, 1, scale_factor);
+        ThermoChemistry tcdftRT(mol, atomenergy, ref_freq, roomTemp, 1, scale_factor);
         int index = 0;
         ref_str[index++] = gmx::formatString("  %10g  %10g", tcdft0.ZPE(), tcdftRT.ZPE());
         for(const auto &tcc : tccmap())
@@ -750,6 +751,7 @@ void doFrequencyAnalysis(alexandria::MyMol        *mol,
 
 void TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
                                               const ForceComputer      *forceComp,
+                                              const AtomizationEnergy  &atomenergy,
                                               alexandria::MyMol        *mol,
                                               const std::vector<int>   &ePlot,
                                               gmx_stats                *lsq_rmsf,
@@ -829,8 +831,8 @@ void TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
     if (mol->jobType() == JobType::OPT && calcFrequencies_)
     {
         // Now get the minimized structure RMSD and Energy
-        // TODO: Only do this for JobType::OPT
-        molHandler_.minimizeCoordinates(mol, forceComp, nullptr, 100, 1.0);
+        const real goldenRatio = 0.5*(1+std::sqrt(5.0));
+        molHandler_.minimizeCoordinates(mol, forceComp, nullptr, 0, goldenRatio, 1e-6);
         std::map<coordSet, std::vector<gmx::RVec> > xrmsd; 
         double rmsd = molHandler_.coordinateRmsd(mol, &xrmsd);
         
@@ -852,7 +854,7 @@ void TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
         tcout->push_back(gmx::formatString("Coordinate RMSD after minimization %10g pm", 1000*rmsd));
         
         // Do normal-mode analysis etc.
-        doFrequencyAnalysis(mol, molHandler_, forceComp, lsq_freq, tcout);
+        doFrequencyAnalysis(mol, molHandler_, forceComp, atomenergy, lsq_freq, tcout);
         
         // Restore original coordinates
         mol->restoreCoordinates(coordSet::Original);
@@ -953,7 +955,7 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
         { MolPropObservable::HEXADECAPOLE, hex_toler_  },
     };
     // Extract terms to print for the enery terms
-    std::vector<int> ePlot = { F_EPOT, F_COUL_SR, F_ATOMIZATION };
+    std::vector<int> ePlot = { F_EPOT, F_COUL_SR };
     {
         std::vector<InteractionType> includeTerms = { InteractionType::BONDS, InteractionType::ANGLES,
             InteractionType::LINEAR_ANGLES, InteractionType::PROPER_DIHEDRALS,
@@ -969,6 +971,7 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
     }
     
     auto forceComp = new ForceComputer(pd);
+    AtomizationEnergy atomenergy;
     
     for (auto mol = mymol->begin(); mol < mymol->end(); ++mol)
     {
@@ -1035,7 +1038,7 @@ void TuneForceFieldPrinter::print(FILE                           *fp,
             printAtoms(fp, &(*mol));
             // Energies
             std::vector<std::string> tcout;
-            printEnergyForces(&tcout, forceComp,
+            printEnergyForces(&tcout, forceComp, atomenergy,
                               &(*mol), ePlot,
                               &lsq_rmsf[ims], &lsq_epot[ims],
                               &lsq_freq[ims]);

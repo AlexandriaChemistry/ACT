@@ -18,18 +18,18 @@
   <Sequence Name="Intensities">
     <Int Name="Length">0</Int>
   </Sequence>
-  <Real Name="Zero point energy (kJ/mol)">528.49164020445846</Real>
-  <Real Name="Delta H form (kJ/mol)">1318.0193108270291</Real>
+  <Real Name="Zero point energy (kJ/mol)">52.849164020445841</Real>
+  <Real Name="Delta H form (kJ/mol)">772.89851732002001</Real>
   <Real Name="Standard entropy - Translation  (J/mol K)">144.91371233061693</Real>
+  <Real Name="Standard entropy -    Rotation  (J/mol K)">49.456036764031303</Real>
+  <Real Name="Standard entropy -   Vibration  (J/mol K)">0.088170279302075785</Real>
+  <Real Name="Standard entropy -       Total  (J/mol K)">194.45791937395029</Real>
   <Real Name="Heat capacity cV - Translation (J/mol K)">12.471693218203427</Real>
-  <Real Name="Internal energy  - Translation (kJ/mol)">3.7184353330073514</Real>
-  <Real Name="Standard entropy -    Rotation  (J/mol K)">61.92772998223473</Real>
   <Real Name="Heat capacity cV -    Rotation (J/mol K)">12.471693218203427</Real>
+  <Real Name="Heat capacity cV -   Vibration (J/mol K)">0.50376347295469004</Real>
+  <Real Name="Heat capacity cV -       Total (J/mol K)">25.447149909361546</Real>
+  <Real Name="Internal energy  - Translation (kJ/mol)">3.7184353330073514</Real>
   <Real Name="Internal energy  -    Rotation (kJ/mol)">3.7184353330073514</Real>
-  <Real Name="Standard entropy -   Vibration  (J/mol K)">2.73039975428205e-06</Real>
-  <Real Name="Heat capacity cV -   Vibration (J/mol K)">2.6069194700436543e-05</Real>
-  <Real Name="Internal energy  -   Vibration (kJ/mol)">84.112799956555932</Real>
-  <Real Name="Standard entropy -       Total  (J/mol K)">206.84144504325141</Real>
-  <Real Name="Heat capacity cV -       Total (J/mol K)">24.943412505601554</Real>
-  <Real Name="Internal energy  -       Total (kJ/mol)">91.54967062257063</Real>
+  <Real Name="Internal energy  -   Vibration (kJ/mol)">52.871982633559355</Real>
+  <Real Name="Internal energy  -       Total (kJ/mol)">60.308853299574061</Real>
 </ReferenceData>

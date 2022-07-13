@@ -578,4 +578,34 @@ void calc_rotmatrix(rvec target_vec, rvec ref_vec, matrix rotmatrix)
     rotmatrix[2][2] = bu[2]*au[2];
 }
 
+double computeAtomizationEnergy(const std::vector<ActAtom> &atoms,
+                                const AtomizationEnergy    &atomenergy,
+                                double                      temperature)
+{
+    double atomizationEnergy = 0;
+    std::string H0("H(0)-H(T)");
+    std::string DHf("DHf(T)");
+    for (auto &a : atoms)
+    {
+        if (a.pType() == eptAtom ||
+            a.pType() == eptNucleus)
+        {
+            std::string h0unit;
+            double h0_hT = atomenergy.term(a.element(), 0, "exp",
+                                           H0, temperature, &h0unit, nullptr);
+            std::string dhFunit;
+            double dhF   = atomenergy.term(a.element(), 0, "exp",
+                                           DHf, temperature, &dhFunit, nullptr);
+            if (debug)
+            {
+                fprintf(debug, "Found atomization energy terms %s = %g (%s) %s = %g (%s)\n",
+                        H0.c_str(), h0_hT, h0unit.c_str(),
+                        DHf.c_str(), dhF, dhFunit.c_str());
+            }
+            atomizationEnergy += convertToGromacs(h0_hT, h0unit) + convertToGromacs(dhF, dhFunit);
+        }
+    }
+    return atomizationEnergy;
+}
+
 } // namespace alexandria

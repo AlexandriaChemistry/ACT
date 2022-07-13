@@ -397,7 +397,8 @@ void HarmonicsDevComputer::calcDeviation(const ForceComputer                  *f
     {
         return;
     }
-    handler_.minimizeCoordinates(mymol, forceComputer, nullptr, 0, 1.0);
+    const real goldenRatio = 0.5*(1+std::sqrt(5.0));
+    handler_.minimizeCoordinates(mymol, forceComputer, nullptr, 0, goldenRatio, 1e-6);
     // Compute frequencies
     std::vector<double> frequencies, intensities;
     handler_.nma(mymol, forceComputer, &frequencies, &intensities);

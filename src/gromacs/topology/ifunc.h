@@ -172,7 +172,6 @@ enum
     F_WATER_POL,
     F_THOLE_POL,
     F_ANHARM_POL,
-    F_ATOMIZATION,
     F_POSRES,
     F_FBPOSRES,
     F_DISRES,

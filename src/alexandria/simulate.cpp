@@ -71,9 +71,11 @@ int simulate(int argc, char *argv[])
         { efLOG, "-g",  "simulation", ffWRITE }
     };
     gmx_output_env_t         *oenv;
-    static char              *filename = (char *)"";
-    static char              *molnm    = (char *)"";
-    double                    qtot     = 0;
+    static char              *filename   = (char *)"";
+    static char              *molnm      = (char *)"";
+    double                    qtot       = 0;
+    double                    forceToler = 1e-6;
+    int                       maxIter    = 0;
     std::vector<t_pargs>      pa = {
         { "-f",      FALSE, etSTR,  {&filename},
           "Molecular structure file in e.g. pdb format" },
@@ -81,6 +83,10 @@ int simulate(int argc, char *argv[])
           "Name of your molecule" },
         { "-qtot",   FALSE, etREAL, {&qtot},
           "Combined charge of the molecule(s). This will be taken from the input file by default, but that is not always reliable." },
+        { "-toler",  FALSE, etREAL, {&forceToler},
+          "Convergence tolerance on the mean square force for the energy minimizer." },
+        { "-maxiter",FALSE, etINT,  {&maxIter},
+          "Maximum number of iterations for the energy minimizer, 0 is until convergence." }
     };
     SimulationConfigHandler  sch;
     sch.add_pargs(&pa);
@@ -150,7 +156,7 @@ int simulate(int argc, char *argv[])
         if (sch.nma() || sch.minimize())
         {
             const real goldenRatio = 0.5*(1+std::sqrt(5.0));
-            int myIter = molhandler.minimizeCoordinates(&mymol, forceComp, logFile, 10000, goldenRatio);
+            int myIter = molhandler.minimizeCoordinates(&mymol, forceComp, logFile, maxIter, goldenRatio, forceToler);
             fprintf(logFile, "Number of iterations %d, final energy %g\n",
                     myIter, mymol.potentialEnergy());
             matrix box;
@@ -170,8 +176,9 @@ int simulate(int argc, char *argv[])
         {
             if (sch.nma())
             {
+                AtomizationEnergy        atomenergy;
                 std::vector<std::string> output;
-                doFrequencyAnalysis(&mymol, molhandler, forceComp, nullptr, &output);
+                doFrequencyAnalysis(&mymol, molhandler, forceComp, atomenergy, nullptr, &output);
                 for(const auto &op : output)
                 {
                     fprintf(logFile, "%s\n", op.c_str());

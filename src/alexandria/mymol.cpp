@@ -1014,7 +1014,6 @@ immStatus MyMol::GenerateTopology(FILE              *fp,
         {
             excls_to_blocka(atoms_->nr, excls_, &(mtop_->moltype[0].excls));
         }
-        computeAtomizationEnergy(pd);
         
         if (pd->polarizable() && gromacsSupport)
         {
@@ -1425,20 +1424,6 @@ real MyMol::potentialEnergy() const
     return enerd_->term[F_EPOT];
 }
 
-void MyMol::computeAtomizationEnergy(const Poldata *pd)
-{
-    atomizationEnergy_ = 0;
-    for (auto &a : topology_->atoms())
-    {
-        if (a.pType() == eptAtom ||
-            a.pType() == eptNucleus)
-        {
-            auto atype = pd->findParticleType(a.ffType());
-            atomizationEnergy_ += atype->refEnthalpy();
-        }
-    }
-}
-
 void MyMol::updateMDAtoms()
 {
     auto mdatoms = MDatoms_->get()->mdatoms();
@@ -1501,8 +1486,6 @@ double MyMol::calculateEnergy(const ForceComputer *forceComputer)
         int ftype = forceComputer->ftype(ee.first);
         enerd_->term[ftype] = ee.second;
     }
-    enerd_->term[F_ATOMIZATION] = 0; //atomizationEnergy();
-    enerd_->term[F_EPOT]       += enerd_->term[F_ATOMIZATION];
 
     return rmsf;
 }
@@ -1620,8 +1603,6 @@ immStatus MyMol::calculateEnergyOld(const t_commrec *crtmp,
                  force_flags);
         *shellForceRMS = 0;
     }
-    enerd_->term[F_ATOMIZATION] = 0;
-    enerd_->term[F_EPOT]       += enerd_->term[F_ATOMIZATION];
 
     return imm;
 }
@@ -1911,20 +1892,6 @@ bool MyMol::getOptimizedGeometry(rvec *x)
     return bopt;
 }
 
-static double calcRefEnthalpy(const Poldata              *pd,
-                              const std::vector<ActAtom> &myatoms)
-{
-    double ereftot;
-
-    ereftot = 0;
-    for (size_t i = 0; i < myatoms.size(); i++)
-    {
-        auto atype = pd->findParticleType(myatoms[i].ffType());
-        ereftot += atype->refEnthalpy();
-    }
-    return ereftot;
-}
-
 void MyMol::backupCoordinates(coordSet cs)
 {
     auto natoms = topology_->nAtoms();
@@ -2014,7 +1981,6 @@ void MyMol::PrintTopology(const char                *fn,
 
     FILE *fp = gmx_ffopen(fn, "w");
     
-    auto ref_enthalpy = calcRefEnthalpy(pd, atomsConst());
     if (getMolname().size() > 0)
     {
         printmol.name = strdup(getMolname().c_str());
@@ -2031,8 +1997,6 @@ void MyMol::PrintTopology(const char                *fn,
     printmol.nr = 1;
 
     snprintf(buf, sizeof(buf), "Total Mass = %.3f (Da)", totalMass());
-    commercials.push_back(buf);
-    snprintf(buf, sizeof(buf), "Reference_Enthalpy = %.3f (kJ/mol)", ref_enthalpy);
     commercials.push_back(buf);
     snprintf(buf, sizeof(buf), "Total Charge = %d (e)", totalCharge());
     commercials.push_back(buf);

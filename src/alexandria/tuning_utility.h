@@ -103,6 +103,7 @@ using qtStats = std::map<qType, gmx_stats>;
         //! \brief do part of the printing, add to statistics
         void printEnergyForces(std::vector<std::string> *tcout,
                                const ForceComputer      *forceComp,
+                               const AtomizationEnergy  &atomenergy,
                                alexandria::MyMol        *mol,
                                const std::vector<int>   &ePlot,
                                gmx_stats                *lsq_rmsf,
@@ -143,12 +144,14 @@ void print_header(FILE                       *fp,
  * \param[in]    mol          Molecule data
  * \param[in]    molhandler   The molecule handler
  * \param[in]    forceComp    The force computer
+ * \param[in]    atomenergy   The atomization energy data
  * \param[out]   lsq_freq_all Statistics structure, may be nullptr
  * \param[inout] output       Output strings
  */
 void doFrequencyAnalysis(alexandria::MyMol        *mol,
                          const MolHandler         &molhandler,
                          const ForceComputer      *forceComp,
+                         const AtomizationEnergy  &atomenergy,
                          gmx_stats                *lsq_freq_all,
                          std::vector<std::string> *output);
                             

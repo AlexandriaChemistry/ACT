@@ -276,13 +276,13 @@ int MolHandler::minimizeCoordinates(MyMol               *mol,
                                     const ForceComputer *forceComp,
                                     FILE                *logFile,
                                     int                  maxIter,
-                                    double               overRelax) const
+                                    double               overRelax,
+                                    double               msForceToler) const
 {
     // TODO: check if this is really necessary
     mol->restoreCoordinates(coordSet::Minimized);  // Is minimized defined??? I guess it makes sense: if not defined, nothing changes
     // Below is a Newton-Rhapson algorithm
     bool      converged    = false;
-    double    myForceToler = forceComp->convergenceTolerance();
     int       myIter       = 0;
     // List of atoms (not shells) and weighting factors
     auto      myatoms      = mol->atomsConst();
@@ -357,7 +357,7 @@ int MolHandler::minimizeCoordinates(MyMol               *mol,
             msAtomForce  += iprod(mol->f_[atomI], mol->f_[atomI]);
         }
         msAtomForce /= theAtoms.size();
-        converged = msAtomForce <= myForceToler;
+        converged = msAtomForce <= msForceToler;
         
         if (logFile)
         {

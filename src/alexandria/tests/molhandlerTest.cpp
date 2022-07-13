@@ -156,7 +156,12 @@ protected:
         std::map<coordSet, std::vector<gmx::RVec> > xrmsd; 
         double rmsd = mh.coordinateRmsd(&mp_, &xrmsd);
         checker_.checkReal(rmsd, "Coordinate RMSD before minimizing");
-        (void) mh.minimizeCoordinates(&mp_, forceComp, nullptr, 0, 1.0);
+        double overRelax  = 1;
+        // MS force tolerance
+        double forceToler = 1e-6;
+        // Infinite number of shell iterations, i.e. until convergence.
+        int    maxIter    = 0;
+        (void) mh.minimizeCoordinates(&mp_, forceComp, nullptr, maxIter, overRelax, forceToler);
 
         rmsd = mh.coordinateRmsd(&mp_, &xrmsd);
         checker_.checkReal(rmsd, "Coordinate RMSD after minimizing");
@@ -164,27 +169,34 @@ protected:
 
         if (nma)
         {
-            std::vector<double> freq, inten;
+            std::vector<double> freq, freq_extern, inten;
             mh.nma(&mp_, forceComp, &freq, &inten, nullptr);
             auto mpo = MolPropObservable::FREQUENCY;
             const char *unit = mpo_unit2(mpo);
             for(auto f = freq.begin(); f < freq.end(); ++f)
             {
-                *f = convertFromGromacs(*f, unit);
+                freq_extern.push_back(convertFromGromacs(*f, unit));
             }
-            checker_.checkSequence(freq.begin(), freq.end(), "Frequencies");
+            checker_.checkSequence(freq_extern.begin(), freq_extern.end(), "Frequencies");
             checker_.checkSequence(inten.begin(), inten.end(), "Intensities");
             
-            double scale_factor = 1;  
-            ThermoChemistry tc(&mp_, freq, 298.15, 1, scale_factor);
+            double scale_factor = 1;
+            AtomizationEnergy atomenergy;
+            ThermoChemistry tc(&mp_, atomenergy, freq, 298.15, 1, scale_factor);
             checker_.checkReal(tc.ZPE(),  "Zero point energy (kJ/mol)");
             checker_.checkReal(tc.DHform(), "Delta H form (kJ/mol)");
             for(const auto &tcc : tccmap())
             {
                 checker_.checkReal(tc.S0(tcc.first), gmx::formatString("Standard entropy - %11s  (J/mol K)",
                                                                        tcc.second.c_str()).c_str());
+            }
+            for(const auto &tcc : tccmap())
+            {
                 checker_.checkReal(tc.cv(tcc.first), gmx::formatString("Heat capacity cV - %11s (J/mol K)", 
                                                                        tcc.second.c_str()).c_str());
+            }
+            for(const auto &tcc : tccmap())
+            {
                 checker_.checkReal(tc.Einternal(tcc.first), gmx::formatString("Internal energy  - %11s (kJ/mol)",
                                                                               tcc.second.c_str()).c_str());
             }

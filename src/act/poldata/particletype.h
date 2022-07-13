@@ -193,6 +193,11 @@ class ParticleType
      */
     double refEnthalpy() const;
     
+    /*! \brief Return enthalpy for this particle for going from 0 K to room temperature
+     * \return deltaH of the particle or 0 if not available
+     */
+    double deltaHRT() const;
+    
     /*! \brief Return element if present
      * \return element or empty string
      */

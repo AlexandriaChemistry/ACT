@@ -124,7 +124,6 @@ enum class coordSet {
         std::map<int, int>               originalAtomIndex_;
         bool                             gromacsGenerated_ = false;
         gpp_atomtype_t                   gromppAtomtype_;
-        double                           atomizationEnergy_ = 0;
         //! The job type corresponding to the coordinates
         JobType                          myJobType_        = JobType::UNKNOWN;
         //! Map of charge type dependent properties
@@ -213,13 +212,6 @@ enum class coordSet {
          */
         void findOutPlaneAtoms(int ca, std::vector<int> &atoms);
 
-        /*! \brief Compute the atomization energy
-         * Will add the reference enthalpy values per atom
-         * in the molecule and store it locally.
-         * \param[in] pd The force field structure.
-         */
-        void computeAtomizationEnergy(const Poldata *pd);
-
         /*! \brief extract frequencies and intensities if present.
          * This will use the optimized structure only.
          */
@@ -289,9 +281,6 @@ enum class coordSet {
         //! \return the number of real atoms, i.e. not shells or vsites
         int nRealAtoms() const { return nRealAtoms_; }
 
-        //! \return the atomization energy
-        double atomizationEnergy() const { return atomizationEnergy_; }
-        
         /*! Check whether a coordinate set is present
          * \param[in] cs The coordinate set wanted
          * \return Whether or not it is there

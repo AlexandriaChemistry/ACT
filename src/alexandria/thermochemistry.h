@@ -44,6 +44,7 @@
 #include <map>
 #include <vector>
 
+#include "act/basics/atomization_energy.h"
 #include "alexandria/mymol.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
@@ -79,7 +80,7 @@ private:
      *
      * This routine computes the zero point energy.
      *
-     * \param[in] frequencies  The frequencies
+     * \param[in] frequencies  The frequencies in 1/ps
      * \param[in] scale_factor Factor to scale frequencies by before computing cv
      * \return The zero point energy (kJ/mol)
      */
@@ -90,7 +91,7 @@ private:
     /*! \brief Compute properties due to vibrational motion
      *
      * Results for cv, S0 and E are stored in internal variables.
-     * \param[in] frequencies  The vibrational frequencies
+     * \param[in] frequencies  The vibrational frequencies in 1/ps
      * \param[in] temperature  Temperature (K)
      * \param[in] scale_factor Factor to scale frequencies by before computing properties
      */
@@ -134,9 +135,14 @@ private:
     
 public:
     /*! \brief Constructor that computes everything at once
-     * TODO add comments
+     * \param[in] mymol        Molecule info
+     * \param[in] frequencies  The vibrational frequencies in 1/ps
+     * \param[in] temperature  Temperature (K)
+     * \param[in] pressure     Pressure (bar) at which to compute
+     * \param[in] scale_factor Factor to scale frequencies by before computing properties
      */
     ThermoChemistry(const MyMol               *mymol,
+                    const AtomizationEnergy   &atomenergy,
                     const std::vector<double> &frequencies,
                     double                     temperature,
                     double                     pressure,

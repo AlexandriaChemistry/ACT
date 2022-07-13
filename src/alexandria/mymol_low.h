@@ -37,26 +37,25 @@
 
 #include <cstdio>
 #include <cstring>
+#include <vector>
 
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/pbcutil/pbc.h"
 
+#include "act/basics/atomization_energy.h"
 #include "act/basics/chargemodel.h"
 #include "act/basics/identifier.h"
 
-struct gpp_atomtype;
 struct t_atoms;
-struct t_blocka;
-struct t_excls;
 struct t_symtab;
 
 namespace alexandria
 {
 
+class ActAtom;
 class Poldata;
 class QgenAcm;
-class Topology;
 
 /*! \brief
  * Class to determine how to treat missing parameters.
@@ -165,6 +164,10 @@ gmx_mtop_t *do_init_mtop(const Poldata                   *pd,
                          t_inputrec                      *ir,
                          t_symtab                        *symtab,
                          const char                      *tabfn);
+
+double computeAtomizationEnergy(const std::vector<ActAtom> &atoms,
+                                const AtomizationEnergy    &atomenergy,
+                                double                      temperature);
 
 } // namespace alexandria
 #endif
