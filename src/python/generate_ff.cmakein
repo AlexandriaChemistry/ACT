@@ -331,7 +331,7 @@ def print_gentop(output, myff, myatp, bs,
   write_interactions(out, "ANGLES", anglefunc, True, True)
   write_interactions(out, "LINEAR_ANGLES", "LINEAR_ANGLES", False, True)
   write_interactions(out, "PROPER_DIHEDRALS", pdihfunc, True, True)
-  write_interactions(out, "IMPROPER_DIHEDRALS", "IDIHS", True, True)
+  write_interactions(out, "IMPROPER_DIHEDRALS", "IDIHS", False, True)
 
   write_syms(out)  
   write_charge_dist(out, myatp)
