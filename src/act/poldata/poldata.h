@@ -215,6 +215,7 @@ class Poldata
                                 { return (id == f.id()); });
         return (atp != alexandria_.end());
     }
+
     /*! \brief Check whether particle type exists
      * \param[in] ptype The name of the particle type
      * \return true if ptype exists
@@ -225,39 +226,44 @@ class Poldata
         return hasParticleType(id);
     }
         
-        ParticleTypeIterator findParticleType(const Identifier &id)
+    ParticleTypeIterator findParticleType(const Identifier &id)
+    {
+        auto atp = std::find_if(alexandria_.begin(), alexandria_.end(),
+                                [id](ParticleType const &f)
+                                { return (id == f.id()); });
+        if (atp == alexandria_.end())
         {
-            auto atp = std::find_if(alexandria_.begin(), alexandria_.end(),
-                                    [id](ParticleType const &f)
-                                    { return (id == f.id()); });
-            if (atp == alexandria_.end())
-            {
-                GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such atom type %s", id.id().c_str()).c_str()));
-            }
-            return atp;
+            GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such atom type %s", id.id().c_str()).c_str()));
         }
-        ParticleTypeConstIterator findParticleType(const Identifier &id) const
+        return atp;
+    }
+    
+    ParticleTypeConstIterator findParticleType(const Identifier &id) const
+    {
+        auto atp = std::find_if(alexandria_.begin(), alexandria_.end(),
+                                [id](ParticleType const &f)
+                                { return (id == f.id()); });
+        if (atp == alexandria_.end())
         {
-            auto atp = std::find_if(alexandria_.begin(), alexandria_.end(),
-                                    [id](ParticleType const &f)
-                                    { return (id == f.id()); });
-            if (atp == alexandria_.end())
-            {
-                GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such atom ype %s", id.id().c_str()).c_str()));
-            }
-            return atp;
+            GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such atom ype %s", id.id().c_str()).c_str()));
         }
-        /*! \brief
-         * Return the iterator corresponding to the atom type
-         *
-         * \param[in] atype  Atom Type
-         * \throw if atom type not  found.
-         */
-        ParticleTypeIterator findParticleType(const std::string &atype)
-        {
-            Identifier id(atype);
-            return findParticleType(id);
-        }
+        return atp;
+    }
+    
+    ParticleTypeConstIterator findParticleType(InteractionType    itype,
+                                               const std::string &subtype) const;
+    
+    /*! \brief
+     * Return the iterator corresponding to the atom type
+     *
+     * \param[in] atype  Atom Type
+     * \throw if atom type not  found.
+     */
+    ParticleTypeIterator findParticleType(const std::string &atype)
+    {
+        Identifier id(atype);
+        return findParticleType(id);
+    }
 
         /*! \brief
          * Return the const_iterator corresponding to the atom type

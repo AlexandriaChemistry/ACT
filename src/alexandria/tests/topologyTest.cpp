@@ -52,7 +52,7 @@ class TopologyTest : public gmx::test::CommandLineTestBase
 {
 protected:
     std::vector<Bond> bonds_;
-    gmx::HostVector<gmx::RVec> x_, y_;
+    std::vector<gmx::RVec> x_, y_;
 
     //! Constructor that does initialization and reads an input file
     TopologyTest()
@@ -96,7 +96,7 @@ protected:
     }
 
     //! Test the generation of angles
-    void testAngles (const gmx::HostVector<gmx::RVec> &xx)
+    void testAngles (const std::vector<gmx::RVec> &xx)
     {
         gmx::test::TestReferenceChecker myCheck(this->rootChecker());
         Topology top(bonds_);
@@ -113,7 +113,7 @@ protected:
     }
 
     //! Test the generation of linear angles
-    void testLinearAngles (const gmx::HostVector<gmx::RVec> &xx)
+    void testLinearAngles (const std::vector<gmx::RVec> &xx)
     {
         gmx::test::TestReferenceChecker myCheck(this->rootChecker());
         Topology top(bonds_);
@@ -159,7 +159,7 @@ protected:
     }
 
     //! Test the generation of propers
-    void testPropers (const gmx::HostVector<gmx::RVec> &xx)
+    void testPropers (const std::vector<gmx::RVec> &xx)
     {
         gmx::test::TestReferenceChecker myCheck(this->rootChecker());
         Topology top(bonds_);

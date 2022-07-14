@@ -39,6 +39,7 @@
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/utility/arraysize.h"
 
+#include "act/forces/forcecomputer.h"
 #include "act/poldata/act_checksum.h"
 #include "alexandria/alex_modules.h"
 #include "act/poldata/forcefieldparameter.h"
@@ -445,6 +446,22 @@ static void dumpPoldata(Poldata           *pd,
     printf("Stored %d parameters in %s\n", nparm, filenm.c_str());
 }
 
+static void plotInteractions(Poldata           *pd,
+                             const std::string &analyze)
+{
+    bool found;
+    auto myset = findInteractionMap(analyze, &found);
+    if (!found)
+    {
+        return;
+    }
+    ForceComputer fc(pd);
+    for(auto &m : myset)
+    {
+        fc.plot(m);
+    }
+}
+
 static void copy_missing(const Poldata     *pdref,
                          Poldata           *pdout,
                          const std::string &analyze,
@@ -629,10 +646,10 @@ int edit(int argc, char*argv[])
     };
     gmx_output_env_t                *oenv;
     t_filenm                         fnm[] = {
-        { efXML, "-ff",   "pdin" , ffREAD  },
-        { efXML, "-ff2",  "pdin2", ffOPTRD },
-        { efXML, "-o",    "pdout",  ffOPTWR },
-        { efDAT, "-dump", "params", ffOPTWR }
+        { efXML, "-ff",   "pdin" ,       ffREAD  },
+        { efXML, "-ff2",  "pdin2",       ffOPTRD },
+        { efXML, "-o",    "pdout",       ffOPTWR },
+        { efDAT, "-dump", "params",      ffOPTWR }
     };
 
     static char *parameter  = (char *)"";
@@ -645,6 +662,7 @@ int edit(int argc, char*argv[])
     real         limits     = 1;
     gmx_bool     force      = false;
     gmx_bool     stretch    = false;
+    gmx_bool     plot       = false;
     static char *missing    = (char *)"";
     static char *replace    = (char *)"";
     static char *implant    = (char *)"";
@@ -678,7 +696,9 @@ int edit(int argc, char*argv[])
         { "-replace", FALSE, etSTR, {&replace},
           "Replace either the EEM, the BONDS or OTHER parameters in file one [TT]-f[ff] by those from file two [TT]-f2[tt] and store in another [TT]-o[tt]." },
         { "-implant", FALSE, etSTR, {&implant},
-          "Implant (write over) either the EEM, the BONDS or OTHER parameters in file one [TT]-f[ff] by those from file two [TT]-f2[tt] and store in another [TT]-o[tt]." }
+          "Implant (write over) either the EEM, the BONDS or OTHER parameters in file one [TT]-f[ff] by those from file two [TT]-f2[tt] and store in another [TT]-o[tt]." },
+        { "-plot",    FALSE, etBOOL, {&plot},
+          "Plot many interactions as a function of distance or angle" }
     };
     int                 npargs = asize(pa);
     int                 NFILE  = asize(fnm);
@@ -728,9 +748,14 @@ int edit(int argc, char*argv[])
         }
         else if (strlen(analyze) > 0)
         {
-            if (strlen(particle) > 0)
+            auto dumpfn = opt2fn_null("-dump", NFILE, fnm);
+            if (strlen(particle) > 0 && dumpfn)
             {
-                dumpPoldata(&pd, analyze, particle, opt2fn("-dump", NFILE, fnm));
+                dumpPoldata(&pd, analyze, particle, dumpfn);
+            }
+            else if (plot)
+            {
+                plotInteractions(&pd, analyze);
             }
             else
             {

@@ -217,16 +217,6 @@ double ParticleType::refEnthalpy() const
     return 0.0;
 }
 
-double ParticleType::deltaHRT() const
-{ 
-    std::string dhRT("deltah_rt");
-    if (hasParameter(dhRT))
-    {
-        return paramValue(dhRT);
-    }
-    return 0.0;
-}
-
 std::string ParticleType::element() const
 {
     std::string elem("element");

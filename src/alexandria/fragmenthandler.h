@@ -31,13 +31,15 @@ namespace alexandria
          * \param[in] bonds         The bonds
          * \param[in] fragments     The fragmentation information
          * \param[in] shellRenumber Info on renumbering atoms because of shells
+         * \param[in] missing       How to deal with missing parameters
          */
         FragmentHandler(const Poldata                    *pd,
                         const gmx::HostVector<gmx::RVec> &coordinates,
                         const std::vector<ActAtom>       &atoms,
                         const std::vector<Bond>          &bonds,
                         const std::vector<Fragment>      *fragments,
-                        const std::vector<int>           &shellRenumber);
+                        const std::vector<int>           &shellRenumber,
+                        missingParameters                 missing);
 
         /*! \brief Fetch charges for all atoms
          * \param[out] qq Vector that will be reinitialized at correct lenght

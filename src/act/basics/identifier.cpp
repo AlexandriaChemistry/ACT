@@ -100,6 +100,13 @@ void Identifier::orderAtoms()
         std::string tmp = id_;
         id_             = swappedId_;
         swappedId_      = tmp;
+        auto nbo        = bondOrders_.size();
+        for(size_t i = 0; i < nbo/2; i++)
+        {
+            auto tmp = bondOrders_[i];
+            bondOrders_[i] = bondOrders_[nbo-1-i];
+            bondOrders_[nbo-1-i] = tmp;
+        }
     }
 }
 

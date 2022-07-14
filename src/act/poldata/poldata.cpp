@@ -269,6 +269,33 @@ void Poldata::addParticleType(const ParticleType &ptp)
     alexandria_.push_back(ptp);
 }
 
+ParticleTypeConstIterator Poldata::findParticleType(InteractionType    itype,
+                                                    const std::string &subtype) const
+{
+    std::string btype("bondtype");
+    std::string vdwtype("vdwtype");
+
+    std::map<InteractionType, const std::string> i2s = {
+        { InteractionType::BONDS,              btype },
+        { InteractionType::ANGLES,             btype },
+        { InteractionType::LINEAR_ANGLES,      btype },
+        { InteractionType::PROPER_DIHEDRALS,   btype },
+        { InteractionType::IMPROPER_DIHEDRALS, btype },
+        { InteractionType::VDW,                vdwtype },
+        { InteractionType::COULOMB,            vdwtype }
+    };
+    auto mysubtype = i2s.find(itype);
+    auto atp       = alexandria_.end();
+    if (i2s.end() != mysubtype)
+    {
+        atp = std::find_if(alexandria_.begin(), alexandria_.end(),
+                           [&](ParticleType const &f)
+                           { return f.hasOption(mysubtype->second) && f.optionValue(mysubtype->second) == subtype; });
+    }
+    return atp;
+}
+    
+
 void Poldata::addForces(const std::string             &interaction,
                         const ForceFieldParameterList &forces)
 {

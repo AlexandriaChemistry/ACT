@@ -38,6 +38,7 @@
 #include <vector>
 
 #include "act/basics/identifier.h"
+#include "act/poldata/particletype.h"
 #include "act/poldata/poldata.h"
 #include "act/poldata/forcefieldparameterlist.h"
 #include "act/utility/communicationrecord.h"
@@ -416,6 +417,11 @@ public:
         id_({ name }), name_(name), elem_(elem), ffType_(ffType), pType_(pType), atomicNumber_(atomicNumber), mass_(newmass), charge_(newcharge)
     {}
     
+    ActAtom(const ParticleType &pt) :
+        id_({ pt.id() }), name_(pt.id().id() ), elem_(pt.element()), ffType_( pt.id().id() ),
+        pType_( pt.gmxParticleType()), atomicNumber_(pt.atomnumber()), mass_(pt.mass()), charge_(pt.charge())
+    {}
+    
     //! \return Identifier
     const Identifier &id() const { return id_; }
 
@@ -495,11 +501,11 @@ private:
      * \param[in] PlanarAngleMax Maximum angle to be considered planar (degrees)
      * \param[in] missing        How to treat missing parameters
      */
-    void build(const Poldata                    *pd,
-               const gmx::HostVector<gmx::RVec> &x,
-               double                            LinearAngleMin,
-               double                            PlanarAngleMax,
-               missingParameters                 missing);
+    void build(const Poldata                *pd,
+               const std::vector<gmx::RVec> &x,
+               double                        LinearAngleMin,
+               double                        PlanarAngleMax,
+               missingParameters             missing);
 
     //! \return the vector of atoms
     const std::vector<ActAtom> &atoms() const { return atoms_; }
@@ -525,8 +531,8 @@ private:
      * \param[in] x              The atomic coordinates
      * \param[in] LinearAngleMin Minimum angle to be considered linear (degrees)
      */
-    void makeAngles(const gmx::HostVector<gmx::RVec> &x,
-                    double                            LinearAngleMin);
+    void makeAngles(const std::vector<gmx::RVec> &x,
+                    double                        LinearAngleMin);
 
     /*! Generate the impropers
      * To generate impropers we need the coordinates to check whether
@@ -534,8 +540,8 @@ private:
      * \param[in] x              The atomic coordinates
      * \param[in] PlanarAngleMax Maximum angle to be considered planar (degrees)
       */
-    void makeImpropers(const gmx::HostVector<gmx::RVec> &x,
-                       double                            PlanarAngleMax);
+    void makeImpropers(const std::vector<gmx::RVec> &x,
+                       double                        PlanarAngleMax);
 
     /*! \brief Add a custom list of interactions
      * \param[in] itype The interaction type (should not yet exist)

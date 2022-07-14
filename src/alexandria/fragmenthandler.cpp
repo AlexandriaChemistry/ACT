@@ -15,7 +15,8 @@ FragmentHandler::FragmentHandler(const Poldata                    *pd,
                                  const std::vector<ActAtom>       &atoms,
                                  const std::vector<Bond>          &bonds,
                                  const std::vector<Fragment>      *fragments,
-                                 const std::vector<int>           &shellRenumber)
+                                 const std::vector<int>           &shellRenumber,
+                                 missingParameters                 missing)
 {
     GMX_RELEASE_ASSERT(fragments != nullptr,
                        "Empty fragments passed. Wazzuppwitdat?");
@@ -120,7 +121,7 @@ FragmentHandler::FragmentHandler(const Poldata                    *pd,
     for(size_t ff = 0; ff < topologies_.size(); ff++)
     {
         int natom = atomStart_[ff+1]-atomStart_[ff];
-        gmx::HostVector<gmx::RVec> myx(natom);
+        std::vector<gmx::RVec> myx(natom);
         int j = 0;
         for (size_t i = atomStart_[ff]; i < atomStart_[ff+1]; i++)
         {
@@ -133,7 +134,10 @@ FragmentHandler::FragmentHandler(const Poldata                    *pd,
             topologies_[ff].addShellPairs();
         }
         topologies_[ff].setIdentifiers(pd);
-        topologies_[ff].fillParameters(pd);
+        if (missing != missingParameters::Generate)
+        {
+            topologies_[ff].fillParameters(pd);
+        }
     }
     if (debug)
     {

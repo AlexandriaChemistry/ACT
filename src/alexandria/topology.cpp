@@ -373,8 +373,8 @@ const TopologyEntry *Topology::findTopologyEntry(InteractionType            ityp
     }
 }
  
-void Topology::makeAngles(const gmx::HostVector<gmx::RVec> &x,
-                          double                            LinearAngleMin)
+void Topology::makeAngles(const std::vector<gmx::RVec> &x,
+                          double                        LinearAngleMin)
 {
     auto ib = InteractionType::BONDS;
     if (entries_.find(ib) == entries_.end())
@@ -443,8 +443,8 @@ void Topology::makeAngles(const gmx::HostVector<gmx::RVec> &x,
     }
 }
 
-void Topology::makeImpropers(const gmx::HostVector<gmx::RVec> &x,
-                             double                            PlanarAngleMax)
+void Topology::makeImpropers(const std::vector<gmx::RVec> &x,
+                             double                        PlanarAngleMax)
 {
     auto ib = InteractionType::BONDS;
     if (entries_.find(ib) == entries_.end())
@@ -640,11 +640,11 @@ void Topology::renumberAtoms(const std::vector<int> &renumber)
     }
 }
 
-void Topology::build(const Poldata                    *pd,
-                     const gmx::HostVector<gmx::RVec> &x,
-                     double                            LinearAngleMin,
-                     double                            PlanarAngleMax,
-                     missingParameters                 missing)
+void Topology::build(const Poldata                *pd,
+                     const std::vector<gmx::RVec> &x,
+                     double                        LinearAngleMin,
+                     double                        PlanarAngleMax,
+                     missingParameters             missing)
 {
     makeAngles(x, LinearAngleMin);
     makeImpropers(x, PlanarAngleMax);
@@ -902,6 +902,11 @@ void Topology::setIdentifiers(const Poldata *pd)
             {
                 topentry->setId({ Identifier(btype, topentry->bondOrders(),
                                              fs.canSwap()) });
+                if ((btype.size() == 3 && btype[2].compare("h_b") == 0 && topentry->bondOrders()[1] != 1) || 
+                    (topentry->id().id().compare("c2_b:c2_b:h_b~c2_b") == 0))
+                {
+                    fprintf(stderr, "Found a funny one: %s\n", topentry->id().id().c_str());
+                }
             }
         }
     }

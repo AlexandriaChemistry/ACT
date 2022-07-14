@@ -71,6 +71,13 @@ private:
      */
     int ftype(InteractionType itype) const;
 
+    /*! \brief Plot the potential functions
+     * This plots the potential functions corresponding to
+     * InteractionType.
+     * \param[in] itype    The interaction type
+     */
+    void plot(InteractionType itype) const;
+
     /*! \brief Compute the polarizability tensor
      * \param[in]  top         The topology
      * \param[in]  coordinates The coordinates

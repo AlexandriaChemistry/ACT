@@ -946,7 +946,12 @@ immStatus MyMol::GenerateTopology(FILE              *fp,
     
     if (immStatus::OK == imm)
     {
-        topology_->build(pd, state_->x, 175.0, 5.0, missing);
+        std::vector<gmx::RVec> xx(atoms_->nr);
+        for(int i = 0; i < atoms_->nr; i++)
+        {
+            copy_rvec(state_->x[i], xx[i]);
+        }
+        topology_->build(pd, xx, 175.0, 5.0, missing);
         excls_ = topology_->gromacsExclusions();
     }
     if (immStatus::OK == imm)
@@ -1059,7 +1064,7 @@ immStatus MyMol::GenerateTopology(FILE              *fp,
     }
     fraghandler_ = new FragmentHandler(pd, state_->x, topology_->atoms(), 
                                        bondsConst(), 
-                                       fragmentPtr(), shellRenumber_);
+                                       fragmentPtr(), shellRenumber_, missing);
 
     // Finally, extract frequencies etc.
     getHarmonics();

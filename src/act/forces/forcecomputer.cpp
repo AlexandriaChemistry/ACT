@@ -1,8 +1,11 @@
 #include "forcecomputer.h"
 
+#include <cstdlib>
+
 #include "alexandria/topology.h"
 #include "act/forces/forcecomputerimpl.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/utility/futil.h"
 #include "act/qgen/qtype.h"
 
 namespace alexandria
@@ -183,6 +186,181 @@ int ForceComputer::ftype(InteractionType itype) const
         ftype = pd_->findForcesConst(itype).fType();
     }
     return ftype;
+}
+
+void ForceComputer::plot(InteractionType itype) const
+{
+    if (!pd_->interactionPresent(itype))
+    {
+        fprintf(stderr, "No such interaction %s in the force field.\n",
+                interactionTypeToString(itype).c_str());
+        return;
+    }
+    auto &fs = pd_->findForcesConst(itype);
+    // The function we need to do the math
+    auto bfc = getBondForceComputer(fs.fType());
+    if (nullptr == bfc)
+    {
+        fprintf(stderr, "Please implement a force function for type %s\n",
+                interaction_function[fs.fType()].name);
+    }
+    else
+    {
+        std::vector<std::pair<int, int>> linear_bonds = { 
+            { 0, 1}, {1, 2}, {2, 3} 
+        };
+        std::vector<std::pair<int, int>> idih_bonds = { 
+            { 0, 1}, {0, 2}, {0, 3} 
+        };
+        for(const auto &f : fs.parametersConst())
+        {
+            int  ntrain  = 0;
+            for(const auto &pp : f.second)
+            {
+                ntrain = std::max(ntrain, pp.second.ntrain());
+            }
+            if (ntrain == 0)
+            {
+                continue;
+            }
+            auto bos   = f.first.bondOrders();
+            std::vector<Bond> bbb;
+            for(size_t i = 0; i < bos.size(); i++)
+            {
+                if (InteractionType::IMPROPER_DIHEDRALS == itype)
+                {
+                    bbb.push_back(Bond(idih_bonds[i].first, idih_bonds[i].second, bos[i]));
+                }
+                else if (InteractionType::VDW == itype)
+                {
+                    ;
+                }
+                else
+                {
+                    bbb.push_back(Bond(linear_bonds[i].first, linear_bonds[i].second, bos[i]));
+                }
+            }
+            Topology               top(bbb);
+            std::vector<gmx::RVec> forces;
+            gmx::RVec rvnul = { 0, 0, 0 };
+            for(const auto &atomname : f.first.atoms())
+            {
+                auto p = pd_->findParticleType(itype, atomname);
+                if (p != pd_->particleTypesConst().end())
+                {
+                    top.addAtom(ActAtom(*p));
+                }
+            }
+            if (top.nAtoms() < 2)
+            {
+                continue;
+            }
+            forces.resize(top.nAtoms(), rvnul);
+            // Open outfile
+            std::string filename = gmx::formatString("%s_%s.xvg", 
+                                                     interactionTypeToString(itype).c_str(),
+                                                     f.first.id().c_str());
+            FILE *fp = gmx_ffopen(filename.c_str(), "w");
+            switch (itype)
+            {
+            case InteractionType::BONDS:
+            case InteractionType::VDW:
+                {
+                    std::vector<gmx::RVec> coordinates = { { 0, 0, 0 }, { 1, 0, 0 } };
+                    top.build(pd_, coordinates, 175.0, 5.0, missingParameters::Error);
+                    top.setIdentifiers(pd_);
+                    top.fillParameters(pd_);
+                    
+                    // Now do the calculations and store the energy
+                    double r0 = 0.05, r1 = 1.0, delta = 0.01;
+                    int    nsteps = (r1-r0)/delta+1;
+                    for(int i = 0; i < nsteps; i++)
+                    {
+                        double x = r0+i*delta;
+                        coordinates[1][0] = x;
+                        double eee = bfc(top.entry(itype), top.atoms(), &coordinates, &forces);
+                        fprintf(fp, "%10g  %10g\n", x, eee);
+                    }
+                }
+                break;
+            case InteractionType::ANGLES:
+                {
+                    std::vector<gmx::RVec> coordinates = { { 0, 0, 0 }, { 1, 0, 0 }, { 1, 1, 0 } };
+                    top.build(pd_, coordinates, 175.0, 5.0, missingParameters::Error);
+                    top.setIdentifiers(pd_);
+                    top.fillParameters(pd_);
+                    double th0 = 0, th1 = 180, delta = 1;
+                    int    nsteps = (th1-th0)/delta+1;
+                    for(int i = 0; i < nsteps; i++)
+                    {
+                        double theta = (th0+i*delta);
+                        coordinates[2][0] = 1+std::cos(theta*DEG2RAD);
+                        coordinates[2][1] = std::sin(theta*DEG2RAD);
+                        double eee = bfc(top.entry(itype), top.atoms(), &coordinates, &forces);
+                        fprintf(fp, "%10g  %10g\n", theta, eee);
+                    }
+                }
+                break;
+            case InteractionType::LINEAR_ANGLES:
+                {
+                    // TODO take a into account
+                    std::vector<gmx::RVec> coordinates = { { 0, 0, 0 }, { 1, 0, 0 }, { 2, 0, 0 } };
+                    top.build(pd_, coordinates, 175.0, 5.0, missingParameters::Error);
+                    top.setIdentifiers(pd_);
+                    top.fillParameters(pd_);
+                    double r0 = 0.0, r1 = 0.1, delta = 0.001;
+                    int    nsteps = (r1-r0)/delta+1;
+                    for(int i = 0; i < nsteps; i++)
+                    {
+                        double xx = (r0+i*delta);
+                        coordinates[1][1] = xx;
+                        double eee = bfc(top.entry(itype), top.atoms(), &coordinates, &forces);
+                        fprintf(fp, "%10g  %10g\n", xx, eee);
+                    }
+                    
+                }
+                break;
+            case InteractionType::PROPER_DIHEDRALS:
+                {
+                    std::vector<gmx::RVec> coordinates = { { 0, 0, 0 }, { 1, 0, 0 }, { 1, 1, 0 }, { 1, 1, 1 } };
+                    top.build(pd_, coordinates, 175.0, 5.0, missingParameters::Error);
+                    top.setIdentifiers(pd_);
+                    top.fillParameters(pd_);
+                    double th0 = 0, th1 = 360, delta = 2;
+                    int    nsteps = (th1-th0)/delta+1;
+                    for(int i = 0; i < nsteps; i++)
+                    {
+                        double theta = (th0+i*delta);
+                        coordinates[3][0] = 1+std::cos(theta*DEG2RAD);
+                        coordinates[3][1] = 1+std::sin(theta*DEG2RAD);
+                        double eee = bfc(top.entry(itype), top.atoms(), &coordinates, &forces);
+                        fprintf(fp, "%10g  %10g\n", theta, eee);
+                    }
+                }
+                break;
+            case InteractionType::IMPROPER_DIHEDRALS:
+                {
+                    std::vector<gmx::RVec> coordinates = { { 1, 0.5, 0 }, { 0, 0, 0 }, { 2, 0, 0 }, { 1, 1.5, 0 } };
+                    top.build(pd_, coordinates, 175.0, 5.0, missingParameters::Error);
+                    top.setIdentifiers(pd_);
+                    top.fillParameters(pd_);
+                    double th0 = -0.02, th1 = 0.02, delta = 0.001;
+                    int    nsteps = (th1-th0)/delta+1;
+                    for(int i = 0; i < nsteps; i++)
+                    {
+                        double theta = (th0+i*delta);
+                        coordinates[3][2] = theta;
+                        double eee = bfc(top.entry(itype), top.atoms(), &coordinates, &forces);
+                        fprintf(fp, "%10g  %10g\n", theta, eee);
+                    }
+                }
+                break;
+            default:
+                break;
+            }
+            gmx_ffclose(fp);
+        }
+    }
 }
 
 } // namespace alexandria
