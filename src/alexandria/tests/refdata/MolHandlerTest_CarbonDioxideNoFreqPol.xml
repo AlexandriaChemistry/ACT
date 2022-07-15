@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Real Name="Morse before">-799.9021283352007</Real>
+  <Real Name="Buck.ham (SR) before">4829.1964772415586</Real>
+  <Real Name="Coulomb (SR) before">-0.36199491307490916</Real>
+  <Real Name="Polarization before">0.00054708411252736826</Real>
+  <Real Name="Potential before">4028.9329010773954</Real>
+  <Real Name="Coordinate RMSD before minimizing">0</Real>
+  <Real Name="Coordinate RMSD after minimizing">0.058893354153429257</Real>
+  <Real Name="Morse after">-336.61737863803171</Real>
+  <Real Name="Lin. Angle after">6.2931849084257761e-22</Real>
+  <Real Name="Buck.ham (SR) after">104.51554898148817</Real>
+  <Real Name="Coulomb (SR) after">-0.34258388185742206</Real>
+  <Real Name="Polarization after">0.0028912846218865813</Real>
+  <Real Name="Potential after">-232.44152225377908</Real>
+</ReferenceData>

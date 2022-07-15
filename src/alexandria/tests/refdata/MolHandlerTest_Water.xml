@@ -7,7 +7,6 @@
   <Real Name="Coordinate RMSD before minimizing">0</Real>
   <Real Name="Coordinate RMSD after minimizing">0.0022962831455863959</Real>
   <Real Name="Bond after">8.1316835251115936e-15</Real>
-  <Real Name="Angle after">5.5885112347240173e-14</Real>
   <Real Name="Potential after">6.4016795872351764e-14</Real>
   <Sequence Name="Frequencies">
     <Int Name="Length">3</Int>

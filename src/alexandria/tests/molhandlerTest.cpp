@@ -140,7 +140,9 @@ protected:
         auto           pnc      = gmx::PhysicalNodeCommunicator(MPI_COMM_WORLD, 0);
         gmx::MDLogger  mdlog {};
         auto alg = ChargeGenerationAlgorithm::NONE;
-        auto forceComp = new ForceComputer(pd);
+        double shellTolerance = 1e-6;
+        int    shellMaxIter   = 100;
+        auto forceComp = new ForceComputer(pd, shellTolerance, shellMaxIter);
         std::vector<double> qcustom;
         bool qSymm = false;
         mp_.symmetrizeCharges(pd, qSymm, nullptr);
@@ -157,8 +159,9 @@ protected:
         double rmsd = mh.coordinateRmsd(&mp_, &xrmsd);
         checker_.checkReal(rmsd, "Coordinate RMSD before minimizing");
         double overRelax  = 1;
-        // MS force tolerance
-        double forceToler = 1e-8;
+        // MS force tolerance. Note that this cannot be smaller than the shell force tolerance
+        // squared.
+        double forceToler = 1e-10;
         // Infinite number of shell iterations, i.e. until convergence.
         int    maxIter    = 0;
         (void) mh.minimizeCoordinates(&mp_, forceComp, nullptr, maxIter, overRelax, forceToler);
@@ -231,6 +234,33 @@ TEST_F (MolHandlerTest, UracilNoFreq)
     test("uracil.sdf", "ACS-g", false);
 }
 
+TEST_F (MolHandlerTest, CarbonDioxideNoFreqPol)
+{
+    test("carbon-dioxide.sdf", "ACS-pg", false);
+}
+
+TEST_F (MolHandlerTest, HydrogenChlorideNoFreqPol)
+{
+
+    test("hydrogen-chloride.sdf", "ACS-pg", false);
+}
+
+TEST_F (MolHandlerTest, WaterNoFreqPol)
+{
+
+    test("water-3-oep.log.pdb", "ACS-pg", false);
+}
+
+TEST_F (MolHandlerTest, AcetoneNoFreqPol)
+{
+    test("acetone-3-oep.log.pdb", "ACS-pg", false);
+}
+
+TEST_F (MolHandlerTest, UracilNoFreqPol)
+{
+    test("uracil.sdf", "ACS-pg", false);
+}
+
 // We cannot run these tests in debug mode because the LAPACK library
 // performs a 1/0 calculation to test the exception handling.
 #if CMAKE_BUILD_TYPE != CMAKE_BUILD_TYPE_DEBUG
@@ -259,6 +289,33 @@ TEST_F (MolHandlerTest, Acetone)
 TEST_F (MolHandlerTest, Uracil)
 {
     test("uracil.sdf", "ACS-g", true);
+}
+
+TEST_F (MolHandlerTest, CarbonDioxidePol)
+{
+    test("carbon-dioxide.sdf", "ACS-pg", true);
+}
+
+TEST_F (MolHandlerTest, HydrogenChloridePol)
+{
+
+    test("hydrogen-chloride.sdf", "ACS-pg", true);
+}
+
+TEST_F (MolHandlerTest, WaterPol)
+{
+
+    test("water-3-oep.log.pdb", "ACS-pg", true);
+}
+
+TEST_F (MolHandlerTest, AcetonePol)
+{
+    test("acetone-3-oep.log.pdb", "ACS-pg", true);
+}
+
+TEST_F (MolHandlerTest, UracilPol)
+{
+    test("uracil.sdf", "ACS-pg", true);
 }
 #endif
 

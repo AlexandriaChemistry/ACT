@@ -110,7 +110,11 @@ TEST_F (PoldataTest, getAtype){
     checker_.checkString(aType->element(), "element");
     checker_.checkString(aType->description(), "description");
     checker_.checkString(aType->id().id(), "type");
-    checker_.checkString(aType->interactionTypeToIdentifier(InteractionType::POLARIZATION).id().c_str(), "poltype");
+    auto itp = InteractionType::POLARIZATION;
+    if (aType->hasInteractionType(itp))
+    {
+        checker_.checkString(aType->interactionTypeToIdentifier(itp).id().c_str(), "poltype");
+    }
     checker_.checkString(aType->interactionTypeToIdentifier(InteractionType::BONDS).id().c_str(), "bondtype");
     checker_.checkString(aType->interactionTypeToIdentifier(InteractionType::ELECTRONEGATIVITYEQUALIZATION).id().c_str(), "zetatype");
     checker_.checkDouble(aType->refEnthalpy(), "refEnthalpy");

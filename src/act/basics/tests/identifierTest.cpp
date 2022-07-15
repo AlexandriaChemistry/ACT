@@ -167,6 +167,76 @@ TEST(IdentifierSimpleTest, ANotEqualToBBondOrder2) {
     EXPECT_FALSE((equal));
 }
 
+TEST(IdentifierSimpleTest, Idih1a) {
+    std::vector<double> bOa = { 1, 1.5, 1.5 };
+    std::vector<double> bOb = { 1.5, 1, 1.5 };
+    std::vector<double> bOc = { 1.5, 1.5, 1 };
+    std::vector<std::string> aa = {"C", "H", "C", "C"};
+    std::vector<std::string> ab = {"C", "C", "H", "C"};
+    std::vector<std::string> ac = {"C", "C", "C", "H"};
+    Identifier a(aa, bOa, CanSwap::Idih);
+    Identifier b(ab, bOb, CanSwap::Idih);
+    bool equal = a == b;
+    EXPECT_TRUE((equal));
+    EXPECT_FALSE(bOb == b.bondOrders());
+    EXPECT_FALSE(bOa == a.bondOrders());
+    EXPECT_TRUE(bOc == a.bondOrders());
+    EXPECT_TRUE(bOc == b.bondOrders());
+    EXPECT_FALSE(aa == a.atoms());
+    EXPECT_FALSE(ab == b.atoms());
+    EXPECT_TRUE(ac == a.atoms());
+    EXPECT_TRUE(ac == b.atoms());
+}
+
+TEST(IdentifierSimpleTest, Idih1b) {
+    Identifier a({"C", "H", "C", "C"}, { 1, 1.5, 1.5 }, CanSwap::Idih);
+    Identifier b({"C", "C", "C", "H"}, { 1.5, 1.5, 1 }, CanSwap::Idih);
+    bool equal = a == b;
+    EXPECT_TRUE((equal));
+}
+
+TEST(IdentifierSimpleTest, Idih1c) {
+    Identifier a({"C", "C", "H", "C"}, { 1.5, 1, 1.5 }, CanSwap::Idih);
+    Identifier b({"C", "C", "C", "H"}, { 1.5, 1.5, 1 }, CanSwap::Idih);
+    bool equal = a == b;
+    EXPECT_TRUE((equal));
+}
+
+TEST(IdentifierSimpleTest, Idih1d) {
+    Identifier a({"C", "C", "H", "C"}, { 1.5, 1, 1.5 }, CanSwap::Idih);
+    Identifier b({"C", "C", "C", "H"}, { 1.5, 1.5, 1 }, CanSwap::Idih);
+    bool equal = !(a < b) && !(b < a);
+    EXPECT_TRUE((equal));
+}
+
+TEST(IdentifierSimpleTest, Idih2) {
+    Identifier a({"C", "H", "C", "C"}, { 1, 1.5, 1.5 }, CanSwap::Idih);
+    Identifier b({"C", "C", "F", "C"}, { 1.5, 1, 1.5 }, CanSwap::Idih);
+    bool equal = a == b;
+    EXPECT_FALSE((equal));
+}
+
+TEST(IdentifierSimpleTest, Idih3) {
+    Identifier a({"C", "H", "C", "C"}, { 1, 1.5, 1.5 }, CanSwap::Idih);
+    Identifier b({"C", "C", "F", "C"}, { 1.5, 1, 1.5 }, CanSwap::Idih);
+    bool smaller = b < a;
+    EXPECT_TRUE((smaller));
+}
+
+TEST(IdentifierSimpleTest, Idih4) {
+    Identifier a({"C", "H", "C", "C"}, { 1, 1.5, 1.5 }, CanSwap::Idih);
+    Identifier b({"C", "C", "F", "C"}, { 1.5, 1, 1.5 }, CanSwap::Idih);
+    bool smaller = a < b;
+    EXPECT_FALSE((smaller));
+}
+
+TEST(IdentifierSimpleTest, Idih5) {
+    Identifier a({"C", "H", "C", "C"}, { 1, 1.5, 1.5 }, CanSwap::Idih);
+    Identifier b({"C", "C", "F", "C"}, { 1.5, 1, 1.5 }, CanSwap::Idih);
+    bool equal = a == b;
+    EXPECT_FALSE((equal));
+}
+
 }
 
 }

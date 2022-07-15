@@ -197,13 +197,9 @@ def write_syms(out):
      out.write("    <sym_charge central=\"%s\" attached=\"%s\" numattach=\"%s\"/>\n" % (syms[sym][0], syms[sym][1], syms[sym][2]))
   out.write("  </symmetric_charges>\n")
 
-def write_interactions(out, fftype, function, canswap, terminate, options=None):
-  if canswap:
-    swap = "true"
-  else:
-    swap = "false"
+def write_interactions(out, fftype, function, canswap:str, terminate, options=None):
   out.write("  <interaction type=\"%s\" function=\"%s\" canswap=\"%s\">\n" %
-            ( fftype, function, swap ))
+            ( fftype, function, canswap ))
   if options:
     for opt in options:
       if len(opt) == 2:
@@ -286,7 +282,7 @@ def write_eem(out, myatp, reference):
   out.write("  </interaction>\n")
 
 def write_polarization(out, myff, myatp):
-  write_interactions(out, "POLARIZATION", "Polarization", False, False)
+  write_interactions(out, "POLARIZATION", "Polarization", "false", False)
   if myff.polarizable:
     out.write("    <option key=\"reference\" value=\"Molina2011a,Ghahremanpour2018b\"/>\n")
     for key in myatp.keys():
@@ -323,15 +319,15 @@ def print_gentop(output, myff, myatp, bs,
              vsite[key]['angle'], vsite[key]['ncontrolatoms']))
     out.write("  </gt_vsites>\n")
   write_interactions(out, "VANDERWAALS", myff.vanderwaals,
-                    True, False,
+                    "true", False,
                      [ [ "combination_rule", combRule ] ] )
   myatp.print_vdwparams(out, bham)
   out.write("  </interaction>\n")
-  write_interactions(out, "BONDS", bondfunc, True, True)
-  write_interactions(out, "ANGLES", anglefunc, True, True)
-  write_interactions(out, "LINEAR_ANGLES", "LINEAR_ANGLES", False, True)
-  write_interactions(out, "PROPER_DIHEDRALS", pdihfunc, True, True)
-  write_interactions(out, "IMPROPER_DIHEDRALS", "IDIHS", False, True)
+  write_interactions(out, "BONDS", bondfunc, "true", True)
+  write_interactions(out, "ANGLES", anglefunc, "true", True)
+  write_interactions(out, "LINEAR_ANGLES", "LINEAR_ANGLES", "false", True)
+  write_interactions(out, "PROPER_DIHEDRALS", pdihfunc, "true", True)
+  write_interactions(out, "IMPROPER_DIHEDRALS", "IDIHS", "idih", True)
 
   write_syms(out)  
   write_charge_dist(out, myatp)

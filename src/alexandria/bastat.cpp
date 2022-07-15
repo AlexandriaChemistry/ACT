@@ -89,16 +89,25 @@ static void generate_bcc(Poldata *pd,
     auto enpBounded     = ForceFieldParameter("eV", 0, 0, 0, -8, 8, Mutability::Bounded, true, false);
     auto enpFixed       = ForceFieldParameter("eV", 0, 0, 0, 0, 0, Mutability::Fixed, true, true);
     auto ptypes = pd->particleTypesConst();
+    auto itpbond = InteractionType::BONDS;
     for (auto &ai : ptypes)
     {
+        if (!ai.hasInteractionType(itpbond))
+        {
+            continue;
+        }
+        auto bi = ai.interactionTypeToIdentifier(itpbond).id();
         for (auto &aj : ptypes)
         {
+            if (!aj.hasInteractionType(itpbond))
+            {
+                continue;
+            }
+            auto bj = aj.interactionTypeToIdentifier(itpbond).id();
             const double bondorders[] = { 1, 1.5, 2, 3 };
             const size_t nBondorder   = std::extent<decltype(bondorders)>::value;
             for(size_t bb = 0; bb < nBondorder; bb++)
             {
-                auto bi = ai.interactionTypeToIdentifier(InteractionType::BONDS).id();
-                auto bj = aj.interactionTypeToIdentifier(InteractionType::BONDS).id();
                 Identifier bondId({ bi, bj }, { bondorders[bb] }, bonds.canSwap());
                 if (bonds.parameterExists(bondId))
                 {

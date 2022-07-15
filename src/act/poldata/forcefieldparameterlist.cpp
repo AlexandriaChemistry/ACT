@@ -85,11 +85,14 @@ void ForceFieldParameterList::addParameter(const Identifier          &identifier
     }
     else
     {
-        if (params->second.find(type) != params->second.end())
+        if (params->second.find(type) == params->second.end())
         {
-            GMX_THROW(gmx::InvalidInputError(gmx::formatString("A parameter with type %s was defined for identifier %s already.", type.c_str(), identifier.id().c_str()).c_str()));
+            params->second.insert(std::pair<std::string, ForceFieldParameter>( type, param ));
         }
-        params->second.insert(std::pair<std::string, ForceFieldParameter>( type, param ));
+        else
+        {
+            fprintf(stderr, "Ignoring parameter with type %s defined for identifier %s since it exists already.\n", type.c_str(), identifier.id().c_str());
+        }
     }
 }
 

@@ -44,8 +44,10 @@ namespace alexandria
 enum class CanSwap {
     //! The order of atoms in an interaction cannot be swapped
     No,
-    //! The order of atoms in an interaction can be swapped
-    Yes
+    //! The order of atoms in an interaction can be swapped by reversing the order
+    Yes,
+    //! The order of atoms can be swapped specific for improper dihedrals
+    Idih
 };
 
 /*! \brief Convert string to CanSwap
@@ -98,10 +100,7 @@ class Identifier
     Identifier(const std::string &atom);
 
     //! \brief Return standard identifier string
-    const std::string &id() const { return id_; }
-
-    //! \brief Return swapped identifier string
-    const std::string &swappedId() const { return swappedId_; }
+    const std::string &id() const { return ids_[0]; }
 
     //! \brief Return the bond orders
     const std::vector<double> &bondOrders() const { return bondOrders_; }
@@ -140,23 +139,17 @@ class Identifier
     CommunicationStatus Receive(const CommunicationRecord *cr, int src);
 
  private:
-
-    //! The id in short of these parameter
-    std::string              id_;
-    //! The swapped id
-    std::string              swappedId_;
+    //! Whether we can swap and if so, how
+    CanSwap                  canSwap_;
+    //! The id in short of these parameter, with alternate ids
+    std::vector<std::string> ids_;
     //! The bond orders
     std::vector<double>      bondOrders_;
     //! The atoms
     std::vector<std::string> atoms_;
 
-    //! Correct the order of atoms
+    //! Correct the order of atoms and created permuted ids
     void orderAtoms();
-
-    /*! Create the swapped version of the id if needed
-     * \param[in] canSwap What we are allowed to do in this case
-     */
-    void createSwapped(CanSwap canSwap);
 };
 
 } // namespace alexandria

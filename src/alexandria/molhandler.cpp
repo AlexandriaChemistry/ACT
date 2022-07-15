@@ -284,6 +284,18 @@ int MolHandler::minimizeCoordinates(MyMol               *mol,
     // Below is a Newton-Rhapson algorithm
     bool      converged    = false;
     int       myIter       = 0;
+    // Check for meaningful convergence tolerance
+    double    shellToler2  = gmx::square(forceComp->convergenceTolerance());
+    if (msForceToler < shellToler2)
+    {
+        if (logFile)
+        {
+            fprintf(logFile, "Atom mean square force tolerance (%g) more strict than shell force tolerance (%g).\n",
+                msForceToler, shellToler2);
+            fprintf(logFile, "Increasing atom mean square force tolerance to double that for shells.\n");
+        }
+        msForceToler = 2*shellToler2;
+    }
     // List of atoms (not shells) and weighting factors
     auto      myatoms      = mol->atomsConst();
     std::vector<int> theAtoms;

@@ -707,26 +707,27 @@ void Poldata::checkConsistency(FILE *fp) const
         fprintf(fp, "Can only have bond corrections when ChargeGenerationAlgorithm = SQE\n");
         nerror += 1;
     }
-    auto eem = findForcesConst(InteractionType::ELECTRONEGATIVITYEQUALIZATION);
+    auto itype = InteractionType::ELECTRONEGATIVITYEQUALIZATION;
+    auto eem = findForcesConst(itype);
     for (const auto &atp : alexandria_)
     {
-        auto ztype = atp.interactionTypeToIdentifier(InteractionType::ELECTRONEGATIVITYEQUALIZATION);
-        if (ztype.id().empty())
+        if (!atp.hasInteractionType(itype))
         {
             continue;
         }
+        auto acmtype = atp.interactionTypeToIdentifier(InteractionType::ELECTRONEGATIVITYEQUALIZATION);
         // Check whether zeta types are present
-        if (!eem.parameterExists(ztype))
+        if (!eem.parameterExists(acmtype))
         {
             if (fp)
             {
-                fprintf(fp, "ERROR: No eemprops for %s in Poldata::checkConsistency\n", ztype.id().c_str());
+                fprintf(fp, "ERROR: No eemprops for %s in Poldata::checkConsistency\n", acmtype.id().c_str());
             }
             nerror += 1;
         }
         else
         {
-            auto eep = eem.findParametersConst(ztype);
+            auto eep = eem.findParametersConst(acmtype);
             double chi0 = eep["chi"].value();
             double J00  = eep["eta"].value();
             if (nullptr != fp)

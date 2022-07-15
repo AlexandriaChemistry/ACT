@@ -113,7 +113,7 @@ bool ParticleType::hasInteractionType(InteractionType itype) const
 
 Identifier ParticleType::interactionTypeToIdentifier(InteractionType itype) const
 {
-    //auto itypeOrig = itype;
+    auto itypeOrig = itype;
     itype = remapInteractionType(itype);
     for(const auto &s2i : stringToItype)
     {
@@ -122,7 +122,7 @@ Identifier ParticleType::interactionTypeToIdentifier(InteractionType itype) cons
             return Identifier(optionValue(s2i.first));
         }
     }
-    // GMX_THROW(gmx::InvalidInputError(gmx::formatString("Interaction type %s not present in particle %s", interactionTypeToString(itypeOrig).c_str(), id_.id().c_str()).c_str()));
+    GMX_THROW(gmx::InvalidInputError(gmx::formatString("Interaction type %s not present in particle %s", interactionTypeToString(itypeOrig).c_str(), id_.id().c_str()).c_str()));
     // To make the compiler happy.
     Identifier dummy;
     return dummy;

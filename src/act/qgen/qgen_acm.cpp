@@ -110,8 +110,16 @@ QgenAcm::QgenAcm(const Poldata              *pd,
             zeta_.push_back(0.0);
         }
         qdist_id_.push_back(qtype);
-        auto acmtype = atype->interactionTypeToIdentifier(InteractionType::ELECTRONEGATIVITYEQUALIZATION);
-        acm_id_.push_back(acmtype);
+        auto acmtp = InteractionType::ELECTRONEGATIVITYEQUALIZATION;
+        if (atype->hasInteractionType(acmtp))
+        {
+            auto acmtype = atype->interactionTypeToIdentifier(acmtp);
+            acm_id_.push_back(acmtype);
+        }
+        else
+        {
+            acm_id_.push_back(Identifier(""));
+        }
     }
     rhs_.resize(nonFixed_.size() + 1, 0);
     Jcc_.resize(nonFixed_.size() + 1, {0});

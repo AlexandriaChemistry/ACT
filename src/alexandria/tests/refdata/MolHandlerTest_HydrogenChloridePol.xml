@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Real Name="Morse before">-399.99840319626986</Real>
+  <Real Name="Buck.ham (SR) before">390.88601284998487</Real>
+  <Real Name="Coulomb (SR) before">-60.558098320055365</Real>
+  <Real Name="Polarization before">0.78090286181280766</Real>
+  <Real Name="Potential before">-68.889585804527556</Real>
+  <Real Name="Coordinate RMSD before minimizing">0</Real>
+  <Real Name="Coordinate RMSD after minimizing">0.02040998088688507</Real>
+  <Real Name="Morse after">-319.47177709494696</Real>
+  <Real Name="Buck.ham (SR) after">66.285653698332538</Real>
+  <Real Name="Coulomb (SR) after">-58.37764718566541</Real>
+  <Real Name="Polarization after">1.020913837101368</Real>
+  <Real Name="Potential after">-310.54285674517848</Real>
+  <Sequence Name="Frequencies">
+    <Int Name="Length">1</Int>
+    <Real>2721.2220659461168</Real>
+  </Sequence>
+  <Sequence Name="Intensities">
+    <Int Name="Length">0</Int>
+  </Sequence>
+  <Real Name="Zero point energy (kJ/mol)">16.276522512208704</Real>
+  <Real Name="Delta H form (kJ/mol)">51.394644998793112</Real>
+  <Real Name="Standard entropy - Translation  (J/mol K)">153.70652124646321</Real>
+  <Real Name="Standard entropy -    Rotation  (J/mol K)">36.621928738637337</Real>
+  <Real Name="Standard entropy -   Vibration  (J/mol K)">0.00023280049594541461</Real>
+  <Real Name="Standard entropy -       Total  (J/mol K)">190.3286827855965</Real>
+  <Real Name="Heat capacity cV - Translation (J/mol K)">12.471693218203427</Real>
+  <Real Name="Heat capacity cV -    Rotation (J/mol K)">8.3144621454689513</Real>
+  <Real Name="Heat capacity cV -   Vibration (J/mol K)">0.0028407570940914674</Real>
+  <Real Name="Heat capacity cV -       Total (J/mol K)">20.78899612076647</Real>
+  <Real Name="Internal energy  - Translation (kJ/mol)">3.7184353330073514</Real>
+  <Real Name="Internal energy  -    Rotation (kJ/mol)">2.478956888671568</Real>
+  <Real Name="Internal energy  -   Vibration (kJ/mol)">16.276587010084008</Real>
+  <Real Name="Internal energy  -       Total (kJ/mol)">22.473979231762925</Real>
+</ReferenceData>
