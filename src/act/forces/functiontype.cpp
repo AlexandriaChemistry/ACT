@@ -99,7 +99,10 @@ int functionTypeToNparams(FunctionType fType)
 {
     switch (fType)
     {
+    case FunctionType::COSINE:
+        return 5;
     case FunctionType::FOURDIHS:
+    case FunctionType::UREY_BRADLEY:
         return 4;
     case FunctionType::MORSE:
     case FunctionType::BUCKINGHAM:
@@ -109,6 +112,8 @@ int functionTypeToNparams(FunctionType fType)
     case FunctionType::LINEAR_ANGLE:
     case FunctionType::IDIHS:
     case FunctionType::LENNARD_JONES:
+    case FunctionType::COUL_SR:
+    case FunctionType::PDIHS:
         return 2;
     case FunctionType::GAUSSIAN:
     case FunctionType::SLATER:
