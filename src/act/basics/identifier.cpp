@@ -4,7 +4,9 @@
  * Copyright (C) 2020-2022
  *
  * Developers:
- *             Mohammad Mehdi Ghahremanpour, 
+ *             Mohammad Mehdi Ghahremanpour,
+ *             Julian Marrades,
+ *             Marie-Madeleine Walz,
  *             Paul J. van Maaren, 
  *             David van der Spoel (Project leader)
  *
