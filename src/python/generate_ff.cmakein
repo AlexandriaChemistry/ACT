@@ -44,10 +44,10 @@ class AtomTypes:
     self.atp = {}
     
   def read4(self, filename, aprops, polarizable):
-    rows   = get_csv_rows(act_library_filename(filename), 35)
+    rows   = get_csv_rows(act_library_filename(filename), 34)
     header = rows[0]
     # Expecting these elements in the file
-    elements = [ "atomtype", "element", "q_min", "q_max", "charge_mutability", "bondtype", "poltype", "zetatype", "acmtype", "epsilon_min", "epsilon_max", "epsilon_mutability", "gamma_min", "gamma_max", "gamma_mutability", "sigma_min", "sigma_max", "sigma_mutability", "radius", "row", "alpha_min", "alpha_max", "alpha_mutability", "zeta_min", "zeta_max", "zeta_mutability", "eta_min", "eta_max", "eta_mutability", "chi_min", "chi_max", "chi_mutability", "comment", "ref_enthalpy", "reference" ]
+    elements = [ "atomtype", "element", "q_min", "q_max", "charge_mutability", "bondtype", "poltype", "zetatype", "acmtype", "epsilon_min", "epsilon_max", "epsilon_mutability", "gamma_min", "gamma_max", "gamma_mutability", "sigma_min", "sigma_max", "sigma_mutability", "radius", "row", "alpha_min", "alpha_max", "alpha_mutability", "zeta_min", "zeta_max", "zeta_mutability", "eta_min", "eta_max", "eta_mutability", "chi_min", "chi_max", "chi_mutability", "comment", "reference" ]
     # Simple check for completeness and correctness
     if len(header) != len(elements):
       sys.exit("Found %d elements on the header line in %s, expected %d" % ( len(header), filename, len(elements)))
@@ -100,8 +100,6 @@ class AtomTypes:
       self.write_parm(out, "charge", "e", self.atp[key]["charge_mutability"], self.atp[key]["q_min"], 
                       self.atp[key]["q_max"], False)
       self.write_parm(out, "mass", "Da", "Fixed", mymass, mymass, True)
-      self.write_parm(out, "ref_enthalpy", "kJ/mol", "Fixed", self.atp[key]["ref_enthalpy"],
-                      self.atp[key]["ref_enthalpy"], True)
       out.write("    </particletype>\n")
     out.write("  </particletypes>\n")
 
