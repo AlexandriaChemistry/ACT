@@ -292,9 +292,9 @@ int MolHandler::minimizeCoordinates(MyMol               *mol,
         {
             fprintf(logFile, "Atom mean square force tolerance (%g) more strict than shell force tolerance (%g).\n",
                 msForceToler, shellToler2);
-            fprintf(logFile, "Increasing atom mean square force tolerance to double that for shells.\n");
+            fprintf(logFile, "Increasing atom mean square force tolerance to hundred times that for shells.\n");
         }
-        msForceToler = 2*shellToler2;
+        msForceToler = 100*shellToler2;
     }
     // List of atoms (not shells) and weighting factors
     auto      myatoms      = mol->atomsConst();

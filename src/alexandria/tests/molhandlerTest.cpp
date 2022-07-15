@@ -140,7 +140,7 @@ protected:
         auto           pnc      = gmx::PhysicalNodeCommunicator(MPI_COMM_WORLD, 0);
         gmx::MDLogger  mdlog {};
         auto alg = ChargeGenerationAlgorithm::NONE;
-        double shellTolerance = 1e-6;
+        double shellTolerance = 1e-4;
         int    shellMaxIter   = 100;
         auto forceComp = new ForceComputer(pd, shellTolerance, shellMaxIter);
         std::vector<double> qcustom;
@@ -161,7 +161,7 @@ protected:
         double overRelax  = 1;
         // MS force tolerance. Note that this cannot be smaller than the shell force tolerance
         // squared.
-        double forceToler = 1e-10;
+        double forceToler = 1e-6;
         // Infinite number of shell iterations, i.e. until convergence.
         int    maxIter    = 0;
         (void) mh.minimizeCoordinates(&mp_, forceComp, nullptr, maxIter, overRelax, forceToler);
