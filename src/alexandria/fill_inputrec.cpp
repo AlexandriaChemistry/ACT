@@ -5,6 +5,8 @@
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
+ *             Julian Marrades,
+ *             Marie-Madeleine Walz,
  *             Paul J. van Maaren,
  *             David van der Spoel (Project leader)
  *
