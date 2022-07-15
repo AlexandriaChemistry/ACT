@@ -117,7 +117,6 @@ TEST_F (PoldataTest, getAtype){
     }
     checker_.checkString(aType->interactionTypeToIdentifier(InteractionType::BONDS).id().c_str(), "bondtype");
     checker_.checkString(aType->interactionTypeToIdentifier(InteractionType::ELECTRONEGATIVITYEQUALIZATION).id().c_str(), "zetatype");
-    checker_.checkDouble(aType->refEnthalpy(), "refEnthalpy");
 }
 
 TEST_F(PoldataTest, addingParticleTypeTwiceThrows)

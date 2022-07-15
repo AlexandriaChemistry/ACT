@@ -6,5 +6,4 @@
   <String Name="type">h</String>
   <String Name="bondtype">h_b</String>
   <String Name="zetatype">h_z</String>
-  <Real Name="refEnthalpy">222.232</Real>
 </ReferenceData>

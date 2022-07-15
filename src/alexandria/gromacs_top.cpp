@@ -373,9 +373,9 @@ void print_top_header(FILE                    *fp,
                 1.0, 1.0);
 
         fprintf(fp, "[ atomtypes ]\n");
-        fprintf(fp, "%-7s%-6s  %6s  %11s  %10s  %5s %-s  %s\n",
+        fprintf(fp, "%-7s%-6s  %6s  %11s  %10s  %5s %-s\n",
                 ";atype ", "btype", "at.num", "mass", "charge", "ptype",
-                "Van_der_Waals", "Ref_Enthalpy");
+                "Van_der_Waals");
 
         gt_old = "";
 
@@ -396,14 +396,13 @@ void print_top_header(FILE                    *fp,
                     epsilon    = myvdw["epsilon"].value();
                     gamma      = myvdw["gamma"].value();
                 }
-                fprintf(fp, "%-6s %-6s %6d  %12.6f  %10.4f %s %g %g %g %g\n",
+                fprintf(fp, "%-6s %-6s %6d  %12.6f  %10.4f %s %g %g %g\n",
                         gt_type.c_str(), 
                         !btype.id().empty() ? btype.id().c_str() : gt_type.c_str(), 
                         aType.atomnumber(), 
                         aType.mass(), 0.0,
                         ptype_str[aType.gmxParticleType()],
-                        sigma, epsilon, gamma,
-                        aType.refEnthalpy());
+                        sigma, epsilon, gamma);
                 if (false && bPol)
                 {
                     if (strcasecmp(ff.c_str(), "LJ") == 0)

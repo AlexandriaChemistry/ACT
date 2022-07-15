@@ -188,11 +188,6 @@ class ParticleType
      */
     int row() const;
     
-    /*! \brief Return reference enthalpy for this particle
-     * \return ref_enthalpy of the particle or 0 if not available
-     */
-    double refEnthalpy() const;
-    
     /*! \brief Return element if present
      * \return element or empty string
      */

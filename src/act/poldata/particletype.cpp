@@ -207,16 +207,6 @@ int ParticleType::row() const
     return 0;
 }
 
-double ParticleType::refEnthalpy() const
-{ 
-    std::string refenthalpy("ref_enthalpy");
-    if (hasParameter(refenthalpy))
-    {
-        return paramValue(refenthalpy);
-    }
-    return 0.0;
-}
-
 std::string ParticleType::element() const
 {
     std::string elem("element");
