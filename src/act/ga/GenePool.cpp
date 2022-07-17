@@ -135,12 +135,12 @@ void GenePool::addGenome(const Genome &genome)
 
 std::vector<double> GenePool::min() const
 {
-    std::vector<double> vec(genomeSize_, std::numeric_limits<double>::max());
+    std::vector<double> vec(genomeSize_, 1e12);
     for (size_t i = 0; i < genomeSize_; i++)
     {
         for (size_t j = 0; j < popSize(); j++)
         {
-            vec[i] = genomes_[j].base(i) < vec[i] ? genomes_[j].base(i) : vec[i];
+            vec[i] = std::min(vec[i], genomes_[j].base(i));
         }
     }
     return vec;
@@ -148,12 +148,12 @@ std::vector<double> GenePool::min() const
 
 std::vector<double> GenePool::max() const
 {
-    std::vector<double> vec(genomeSize_, std::numeric_limits<double>::min());
+    std::vector<double> vec(genomeSize_, -1e12);
     for (size_t i = 0; i < genomeSize_; i++)
     {
         for (size_t j = 0; j < popSize(); j++)
         {
-            vec[i] = genomes_[j].base(i) > vec[i] ? genomes_[j].base(i) : vec[i];
+            vec[i] = std::max(vec[i], genomes_[j].base(i));
         }
     }
     return vec;

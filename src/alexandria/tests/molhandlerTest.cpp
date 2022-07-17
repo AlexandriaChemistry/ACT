@@ -69,15 +69,17 @@ namespace alexandria
 namespace
 {
 
-static void add_energies(gmx::test::TestReferenceChecker *checker,
+static void add_energies(const Poldata                   *pd,
+                         gmx::test::TestReferenceChecker *checker,
                          const real                       ener[F_NRE],
                          const char                      *label)
 {
-    for(int i = 0; i < F_NRE; i++)
+    for(auto &fs : pd->forcesConst())
     {
-        real ee = ener[i];
-        if (ee != 0)
+        int i   = fs.second.fType();
+        if (i >= 0 && i < F_NRE)
         {
+            real ee = ener[i];
             std::string mylabel = gmx::formatString("%s %s",
                                                     interaction_function[i].longname, label);
             checker->checkReal(ee, mylabel.c_str());
@@ -101,7 +103,6 @@ protected:
         
         std::string                     dataName;
         auto molprop = new alexandria::MolProp;
-        
         
         dataName = gmx::test::TestFileManager::getInputFilePath(molname);
         double qtot = 0;
@@ -153,24 +154,25 @@ protected:
         // real shellForceRMS;
         // (void) mp_.calculateEnergy(cr.commrec(), &shellForceRMS);
         mp_.calculateEnergy(forceComp);
-        add_energies(&checker_, mp_.energyTerms(), "before");
-
+        add_energies(pd, &checker_, mp_.energyTerms(), "before");
+        
         MolHandler mh;
         
         std::map<coordSet, std::vector<gmx::RVec> > xrmsd; 
         double rmsd = mh.coordinateRmsd(&mp_, &xrmsd);
         checker_.checkReal(rmsd, "Coordinate RMSD before minimizing");
         double overRelax  = 1;
-        // MS force tolerance. Note that this cannot be smaller than the shell force tolerance
-        // squared.
-        double forceToler = 1e-6;
+        // MS force tolerance. Note that this cannot be smaller 
+        // than the shell force tolerance squared.
+        double forceToler = 10*gmx::square(shellTolerance);
         // Infinite number of shell iterations, i.e. until convergence.
         int    maxIter    = 0;
-        (void) mh.minimizeCoordinates(&mp_, forceComp, nullptr, maxIter, overRelax, forceToler);
+        (void) mh.minimizeCoordinates(&mp_, forceComp, nullptr, maxIter,
+                                      overRelax, forceToler);
 
         rmsd = mh.coordinateRmsd(&mp_, &xrmsd);
         checker_.checkReal(rmsd, "Coordinate RMSD after minimizing");
-        add_energies(&checker_, mp_.energyTerms(), "after");
+        add_energies(pd, &checker_, mp_.energyTerms(), "after");
 
         if (nma)
         {

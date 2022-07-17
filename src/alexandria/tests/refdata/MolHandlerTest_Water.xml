@@ -3,11 +3,24 @@
 <ReferenceData>
   <Real Name="Bond before">0.0026570465668220209</Real>
   <Real Name="Angle before">0.55728331281907129</Real>
-  <Real Name="Potential before">0.55994035938589326</Real>
+  <Real Name="Lin. Angle before">0</Real>
+  <Real Name="Proper Dih. before">0</Real>
+  <Real Name="Improper Dih. before">0</Real>
+  <Real Name="LJ (SR) before">0</Real>
+  <Real Name="Coulomb (SR) before">0</Real>
+  <Real Name="Polarization before">0</Real>
+  <Real Name="Virtual site 2 before">0</Real>
   <Real Name="Coordinate RMSD before minimizing">0</Real>
   <Real Name="Coordinate RMSD after minimizing">0.0022962831455863959</Real>
   <Real Name="Bond after">8.1316835251115936e-15</Real>
-  <Real Name="Potential after">6.4016795872351764e-14</Real>
+  <Real Name="Angle after">5.5885112347240173e-14</Real>
+  <Real Name="Lin. Angle after">0</Real>
+  <Real Name="Proper Dih. after">0</Real>
+  <Real Name="Improper Dih. after">0</Real>
+  <Real Name="LJ (SR) after">0</Real>
+  <Real Name="Coulomb (SR) after">0</Real>
+  <Real Name="Polarization after">0</Real>
+  <Real Name="Virtual site 2 after">0</Real>
   <Sequence Name="Frequencies">
     <Int Name="Length">3</Int>
     <Real>1361.9517127925262</Real>

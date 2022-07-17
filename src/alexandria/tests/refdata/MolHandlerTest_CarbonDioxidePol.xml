@@ -2,40 +2,47 @@
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
   <Real Name="Morse before">-799.9021283352007</Real>
+  <Real Name="Angle before">0</Real>
+  <Real Name="Lin. Angle before">0</Real>
+  <Real Name="Fourier Dih. before">0</Real>
+  <Real Name="Improper Dih. before">0</Real>
   <Real Name="Buck.ham (SR) before">4829.1964772415586</Real>
-  <Real Name="Coulomb (SR) before">-0.36199491307490916</Real>
-  <Real Name="Polarization before">0.00054708411252736826</Real>
-  <Real Name="Potential before">4028.9329010773954</Real>
+  <Real Name="Coulomb (SR) before">-0.36199490562876235</Real>
+  <Real Name="Polarization before">0.00054707666624309419</Real>
+  <Real Name="Virtual site 2 before">0</Real>
   <Real Name="Coordinate RMSD before minimizing">0</Real>
-  <Real Name="Coordinate RMSD after minimizing">0.058893354153429257</Real>
-  <Real Name="Morse after">-336.61737863803171</Real>
-  <Real Name="Lin. Angle after">6.2931849084257761e-22</Real>
-  <Real Name="Buck.ham (SR) after">104.51554898148817</Real>
-  <Real Name="Coulomb (SR) after">-0.34258388185742206</Real>
-  <Real Name="Polarization after">0.0028912846218865813</Real>
-  <Real Name="Potential after">-232.44152225377908</Real>
+  <Real Name="Coordinate RMSD after minimizing">0.058893354095602257</Real>
+  <Real Name="Morse after">-336.617379050149</Real>
+  <Real Name="Angle after">0</Real>
+  <Real Name="Lin. Angle after">4.9032526400085282e-16</Real>
+  <Real Name="Fourier Dih. after">0</Real>
+  <Real Name="Improper Dih. after">0</Real>
+  <Real Name="Buck.ham (SR) after">104.51554939363562</Real>
+  <Real Name="Coulomb (SR) after">-0.34258388113346427</Real>
+  <Real Name="Polarization after">0.0028912838680364861</Real>
+  <Real Name="Virtual site 2 after">0</Real>
   <Sequence Name="Frequencies">
     <Int Name="Length">4</Int>
-    <Real>253.79477559118922</Real>
-    <Real>253.79531270024034</Real>
-    <Real>449.1218877375743</Real>
-    <Real>896.83234716708932</Real>
+    <Real>253.88734369180062</Real>
+    <Real>254.02066324445283</Real>
+    <Real>449.11392947674051</Real>
+    <Real>896.84313793462775</Real>
   </Sequence>
   <Sequence Name="Intensities">
     <Int Name="Length">0</Int>
   </Sequence>
-  <Real Name="Zero point energy (kJ/mol)">11.086657087424646</Real>
-  <Real Name="Delta H form (kJ/mol)">984.07388164377812</Real>
+  <Real Name="Zero point energy (kJ/mol)">11.088575605359658</Real>
+  <Real Name="Delta H form (kJ/mol)">984.07656879617161</Real>
   <Real Name="Standard entropy - Translation  (J/mol K)">156.0532445438906</Real>
-  <Real Name="Standard entropy -    Rotation  (J/mol K)">68.504090974096016</Real>
-  <Real Name="Standard entropy -   Vibration  (J/mol K)">18.191941216524292</Real>
-  <Real Name="Standard entropy -       Total  (J/mol K)">242.74927673451091</Real>
+  <Real Name="Standard entropy -    Rotation  (J/mol K)">68.504090967837527</Real>
+  <Real Name="Standard entropy -   Vibration  (J/mol K)">18.182815650662945</Real>
+  <Real Name="Standard entropy -       Total  (J/mol K)">242.74015116239107</Real>
   <Real Name="Heat capacity cV - Translation (J/mol K)">12.471693218203427</Real>
   <Real Name="Heat capacity cV -    Rotation (J/mol K)">8.3144621454689513</Real>
-  <Real Name="Heat capacity cV -   Vibration (J/mol K)">22.509870945903938</Real>
-  <Real Name="Heat capacity cV -       Total (J/mol K)">43.29602630957632</Real>
+  <Real Name="Heat capacity cV -   Vibration (J/mol K)">22.507636075900312</Real>
+  <Real Name="Heat capacity cV -       Total (J/mol K)">43.293791439572686</Real>
   <Real Name="Internal energy  - Translation (kJ/mol)">3.7184353330073514</Real>
   <Real Name="Internal energy  -    Rotation (kJ/mol)">2.478956888671568</Real>
-  <Real Name="Internal energy  -   Vibration (kJ/mol)">14.4513545884531</Real>
-  <Real Name="Internal energy  -       Total (kJ/mol)">20.648746810132018</Real>
+  <Real Name="Internal energy  -   Vibration (kJ/mol)">14.452123222911649</Real>
+  <Real Name="Internal energy  -       Total (kJ/mol)">20.64951544459057</Real>
 </ReferenceData>
