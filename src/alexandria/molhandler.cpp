@@ -290,7 +290,7 @@ int MolHandler::minimizeCoordinates(MyMol               *mol,
     double    shellToler2  = gmx::square(forceComp->convergenceTolerance());
     if (msForceToler < shellToler2)
     {
-        if (logFile)
+        if (logFile && msForceToler != 0)
         {
             fprintf(logFile, "Atom mean square force tolerance (%g) more strict than shell force tolerance (%g).\n",
                 msForceToler, shellToler2);

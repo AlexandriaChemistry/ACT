@@ -162,13 +162,9 @@ protected:
         double rmsd = mh.coordinateRmsd(&mp_, &xrmsd);
         checker_.checkReal(rmsd, "Coordinate RMSD before minimizing");
         double overRelax  = 1;
-        // MS force tolerance. Note that this cannot be smaller 
-        // than the shell force tolerance squared.
-        double forceToler = 10*gmx::square(shellTolerance);
         // Infinite number of shell iterations, i.e. until convergence.
         int    maxIter    = 0;
-        (void) mh.minimizeCoordinates(&mp_, forceComp, nullptr, maxIter,
-                                      overRelax, forceToler);
+        (void) mh.minimizeCoordinates(&mp_, forceComp, nullptr, maxIter, overRelax);
 
         rmsd = mh.coordinateRmsd(&mp_, &xrmsd);
         checker_.checkReal(rmsd, "Coordinate RMSD after minimizing");

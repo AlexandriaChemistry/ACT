@@ -76,7 +76,7 @@ int simulate(int argc, char *argv[])
     static char              *filename   = (char *)"";
     static char              *molnm      = (char *)"";
     double                    qtot       = 0;
-    double                    forceToler = 1e-6;
+    double                    forceToler = 0;
     double                    overRelax  = 1.0;
     int                       maxIter    = 0;
     std::vector<t_pargs>      pa = {
@@ -87,7 +87,7 @@ int simulate(int argc, char *argv[])
         { "-qtot",   FALSE, etREAL, {&qtot},
           "Combined charge of the molecule(s). This will be taken from the input file by default, but that is not always reliable." },
         { "-toler",  FALSE, etREAL, {&forceToler},
-          "Convergence tolerance on the mean square force for the energy minimizer." },
+          "Convergence tolerance on the mean square force for the energy minimizer. If zero it will be determined automatically." },
         { "-maxiter",FALSE, etINT,  {&maxIter},
           "Maximum number of iterations for the energy minimizer, 0 is until convergence." },
         { "-overrelax", FALSE, etREAL, {&overRelax},

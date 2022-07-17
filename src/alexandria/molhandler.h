@@ -101,7 +101,9 @@ public:
     /*! \brief
      * The routine will energy minimize the atomic coordinates of a molecule while
      * relaxing the shells. The minimized coordinates will be stored in the 
-     * mymol object.
+     * mymol object. If the msForceToler = 0, the value will be derived from the
+     * tolerance inside the forceComp, accoring to:
+     * toler = 10*forceComp->rmsForce()^2
      *
      * \param[in] mol          The molecule object (will be modified)
      * \param[in] forceComp    Force Computer utility
@@ -116,7 +118,7 @@ public:
                             FILE                *logFile,
                             int                  maxIter,
                             double               overRelax,
-                            double               msForceToler) const;
+                            double               msForceToler=0) const;
 
     /*! \brief
      * The routine will perform a MD simulation of a molecule or multiple

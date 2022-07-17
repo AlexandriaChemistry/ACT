@@ -833,8 +833,9 @@ void TuneForceFieldPrinter::printEnergyForces(std::vector<std::string> *tcout,
     if (mol->jobType() == JobType::OPT && calcFrequencies_)
     {
         // Now get the minimized structure RMSD and Energy
-        const real goldenRatio = 0.5*(1+std::sqrt(5.0));
-        molHandler_.minimizeCoordinates(mol, forceComp, nullptr, 0, goldenRatio, 1e-6);
+        const real goldenRatio = 1.0; //0.5*(1+std::sqrt(5.0));
+        int    maxiter = 200;
+        molHandler_.minimizeCoordinates(mol, forceComp, nullptr, maxiter, goldenRatio);
         std::map<coordSet, std::vector<gmx::RVec> > xrmsd; 
         double rmsd = molHandler_.coordinateRmsd(mol, &xrmsd);
         
