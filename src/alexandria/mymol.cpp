@@ -1483,6 +1483,11 @@ double MyMol::calculateEnergy(const ForceComputer *forceComputer)
         clear_rvec(forces[i]);
     }
     auto rmsf = forceComputer->compute(topology_, &myx, &forces, &energies_);
+    if (rmsf > forceComputer->rmsForce() && debug)
+    {
+        fprintf(debug, "Shell optimization did not converge for %s. RMS force is %g (tolerance %g)\n",
+                getMolname().c_str(), rmsf, forceComputer->rmsForce());
+    }
     for (int i = 0; i < natom; i++)
     {
         copy_rvec(myx[i], state_->x[i]);
@@ -1711,10 +1716,12 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
     {
         f_.resizeWithPadding(state_->natoms);
     }
-    if (backupCoordinates_[coordSet::Original].size() == 0)
+    if (backupCoordinates_[coordSet::Original].empty())
     {
         backupCoordinates(coordSet::Original);
     }
+    // TODO check whether this needed
+    restoreCoordinates(coordSet::Original);
     if (algorithm == ChargeGenerationAlgorithm::Custom)
     {
         GMX_RELEASE_ASSERT(atomsConst().size() == qcustom.size(),

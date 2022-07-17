@@ -77,6 +77,7 @@ int simulate(int argc, char *argv[])
     static char              *molnm      = (char *)"";
     double                    qtot       = 0;
     double                    forceToler = 1e-6;
+    double                    overRelax  = 1.0;
     int                       maxIter    = 0;
     std::vector<t_pargs>      pa = {
         { "-f",      FALSE, etSTR,  {&filename},
@@ -88,7 +89,9 @@ int simulate(int argc, char *argv[])
         { "-toler",  FALSE, etREAL, {&forceToler},
           "Convergence tolerance on the mean square force for the energy minimizer." },
         { "-maxiter",FALSE, etINT,  {&maxIter},
-          "Maximum number of iterations for the energy minimizer, 0 is until convergence." }
+          "Maximum number of iterations for the energy minimizer, 0 is until convergence." },
+        { "-overrelax", FALSE, etREAL, {&overRelax},
+          "Apply overrelaxation (if > 1) to speed up minimization. Can be dangerous for poor energy functions." }
     };
     SimulationConfigHandler  sch;
     sch.add_pargs(&pa);
@@ -151,14 +154,17 @@ int simulate(int argc, char *argv[])
         auto alg = pd.chargeGenerationAlgorithm();
         imm    = mymol.GenerateCharges(&pd, forceComp, mdlog, &cr, alg, myq);
     }
+    if (debug)
+    {
+        mymol.topology()->dump(debug);
+    }
     /* Generate output file for debugging if requested */
     if (immStatus::OK == imm && mymol.errors().size() == 0)
     {
         MolHandler molhandler;
         if (sch.nma() || sch.minimize())
         {
-            const real goldenRatio = 0.5*(1+std::sqrt(5.0));
-            int myIter = molhandler.minimizeCoordinates(&mymol, forceComp, logFile, maxIter, goldenRatio, forceToler);
+            int myIter = molhandler.minimizeCoordinates(&mymol, forceComp, logFile, maxIter, overRelax, forceToler);
             fprintf(logFile, "Number of iterations %d, final energy %g\n",
                     myIter, mymol.potentialEnergy());
             matrix box;

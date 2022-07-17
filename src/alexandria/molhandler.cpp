@@ -378,6 +378,22 @@ int MolHandler::minimizeCoordinates(MyMol               *mol,
             fprintf(logFile, "Iter %5d rmsForce %10g Epot before %10g now %10g\n", myIter,
                     std::sqrt(msAtomForce), epot0, mol->enerd_->term[F_EPOT]);
         }
+        if (debug)
+        {
+            for(size_t kk = 0; kk < mol->topology()->nAtoms(); kk++)
+            {
+                fprintf(debug, "f[%2zu] =  %10g  %10g  %10g x[%2zu] = %10g  %10g  %10g\n", kk,
+                        mol->f_[kk][XX], mol->f_[kk][YY], mol->f_[kk][ZZ], kk,
+                        mol->x()[kk][XX], mol->x()[kk][YY], mol->x()[kk][ZZ]);
+            }
+            for(int i = 0; i < F_NRE; i++)
+            {
+                if (mol->enerd_->term[i] != 0)
+                {
+                    fprintf(debug, "%-20s  %10g\n", interaction_function[i].name, mol->enerd_->term[i]);
+                }
+            }
+        }
         myIter += 1;
     }
     while (!converged && (myIter < maxIter || 0 == maxIter));

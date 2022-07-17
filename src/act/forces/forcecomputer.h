@@ -97,6 +97,9 @@ private:
      * \return the force type
      */
     int ftype(InteractionType itype) const;
+    
+    //! \return the force tolerance
+    double rmsForce() const { return rmsForce_; }
 
     /*! \brief Plot the potential functions
      * This plots the potential functions corresponding to
